@@ -1,78 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933006AbaHYRLs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 13:11:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60076 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932185AbaHYRLr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 13:11:47 -0400
-Date: Mon, 25 Aug 2014 19:09:20 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fenghua Yu <fenghua.yu@intel.com>, Suresh Siddha <sbsiddha@gmail.com>,
-        Bean Anderson <bean@azulsystems.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] x86, fpu: don't drop_fpu() in
-	__restore_xstate_sig() if use_eager_fpu()
-Message-ID: <20140825170920.GA8338@redhat.com>
-References: <20140824194700.GA27281@redhat.com> <20140824194736.GA27441@redhat.com> <CA+55aFyQzvvmWUDA01x69vYkrwUG07q9P3Mv5KaT31pOFsBZGQ@mail.gmail.com> <20140825144111.GB31880@redhat.com> <CA+55aFwNUF+CLWKkDBe56xOtK_JTj9zHWip+_Ep41GJniN+sPw@mail.gmail.com>
+	id S1756189AbaHYROm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 13:14:42 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:58988 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858AbaHYROk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 13:14:40 -0400
+Message-ID: <53FB6EF1.4020805@infradead.org>
+Date: Mon, 25 Aug 2014 10:14:25 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwNUF+CLWKkDBe56xOtK_JTj9zHWip+_Ep41GJniN+sPw@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Geert Uytterhoeven <geert+renesas@glider.be>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] regulator: Proofread documentation
+References: <1408956471-16579-1-git-send-email-geert+renesas@glider.be>	<53FB6B26.3030906@infradead.org> <CAMuHMdXOf8L5QpLdtpxkW1x7iA1hCGMuK+h_7NsKS0VvZDy6Mw@mail.gmail.com>
+In-Reply-To: <CAMuHMdXOf8L5QpLdtpxkW1x7iA1hCGMuK+h_7NsKS0VvZDy6Mw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25, Linus Torvalds wrote:
->
-> On Mon, Aug 25, 2014 at 7:41 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> >
-> > I think this should be safe, because this thread and/or swapper/0 can
-> > do nothing with with fpu->state, and they should not use fpu.
->
-> .. but if that's the case, then what was wrong with the old code
+On 08/25/14 10:10, Geert Uytterhoeven wrote:
+> Hi Randy,
+> 
+> On Mon, Aug 25, 2014 at 6:58 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
+>>> -The load_uA value can be determined from the consumers datasheet. e.g.most
+>>> -datasheets have tables showing the max current consumed in certain situations.
+>>> +The load_uA value can be determined from the consumer's datasheet. e.g. most
+>>
+>> Prefer:                                                               E.g.
+> 
+> Me too. But the regulator docs consistently use full stops followed by
+> lower-case abbreviations everywhere, so I kept them.
 
-Confused... Just in case, I think that you mean current code, and ignoring
-the lack of preempt_disable() around math_state_restore() it is correct.
+oh.  oh well, OK.
+Thanks.
 
-I'd like to change it only because this code is the main source of the
-nasty special case, used_math() and/or __thread_has_fpu(current) can be
-false even if use_eager_fpu().
+>> otherwise,
+>> Acked-by: Randy Dunlap <rdunlap@infradead.org>
+> 
+> Thanks!
+> 
+> Gr{oetje,eeting}s,
+> 
+>                         Geert
 
-> that
-> just copied the state over the unused space from the user space
-> buffer?
 
-But it is not unused? Although I probably misunderstood you from the
-very beginning.
-
-OK, what I meant that without switch_fpu_xstate(init_task.fpu.state)
-or another hack we can't avoid drop_fpu() which leads to this special
-case.
-
-Currently __copy_from_user(&xstate->xsave) copies the new registers
-right into this thread's fpu->state. If this thread is preempted before
-math_state_restore(), the context switch (__save_init_fpu) will overwrite
-the same buffer, the result of __copy_from_user() can be simply lost
-(entirely or not).
-
-With this patch we can safely do __copy_from_user(xstate), this buffer
-is not used until the 2nd switch_fpu_xstate().
-
-> You can't have it both ways. Either the old code was fine (because it
-> doesn't use the buffer while it is in flux), or the new code is broken
-> (because it uses the shared buffer). Your choice.No?
-
-It uses the shared buffer, yes. But in this case (I think! please correct
-me!), when this thread uses the swapper's fpu->state, schedule() ->
-fpu_xsave() into this shared buffer should be fine because it should write
-the same content?
-
-Oleg.
-
+-- 
+~Randy
