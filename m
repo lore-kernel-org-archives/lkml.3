@@ -1,104 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755179AbaHYKqK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 06:46:10 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:39092 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755003AbaHYKqI (ORCPT
+	id S1755233AbaHYKsM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 06:48:12 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:61190 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752951AbaHYKsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 06:46:08 -0400
+	Mon, 25 Aug 2014 06:48:10 -0400
 MIME-Version: 1.0
-In-Reply-To: <53FAFCBC.2050407@collabora.co.uk>
-References: <1408350762-15520-1-git-send-email-javier.martinez@collabora.co.uk>
-	<1408350762-15520-2-git-send-email-javier.martinez@collabora.co.uk>
-	<CA+NduCDL65=Y=PyU3FfXsTz0FfbmYzicGrY4U7ji3_V+nXhtCQ@mail.gmail.com>
-	<53F73472.8010609@collabora.co.uk>
-	<20140822144531.GV24407@sirena.org.uk>
-	<53F7838F.8060906@collabora.co.uk>
-	<20140822183054.GY24407@sirena.org.uk>
-	<53F7BDD8.7060500@collabora.co.uk>
-	<CAD=FV=WC0h7fYm2QFqu3Zka7CsU4BtG-oyPpJav+ygC+gmCR+A@mail.gmail.com>
-	<CA+NduCCT-KQ=gh7QWkBE4qkA2YOJ8KCVqbkC6Tkmb1aPvCsGFQ@mail.gmail.com>
-	<53FAFCBC.2050407@collabora.co.uk>
-Date: Mon, 25 Aug 2014 16:16:06 +0530
-Message-ID: <CA+NduCDWnPBxJPGKSN1yg-kUCYJjSw4NP5eiCPnTQoMikYhGHA@mail.gmail.com>
-Subject: Re: [PATCH v9 1/2] regulator: Add driver for max77802 PMIC PMIC regulators
-From: Yuvaraj Cd <yuvaraj.lkml@gmail.com>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Doug Anderson <dianders@chromium.org>, Mark Brown <broonie@kernel.org>,
-        Olof Johansson <olof@lixom.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+In-Reply-To: <20140820034116.GA3407@sucs.org>
+References: <20140819123655.GC12160@sucs.org>
+	<8dcf334714c44eeda54ecb129479719b@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+	<20140820034116.GA3407@sucs.org>
+Date: Mon, 25 Aug 2014 12:48:08 +0200
+Message-ID: <CAFLxGvx5_JSb7sRPXY01d+eNJ4p4fk=MySGyui91KNbdyLyQ_g@mail.gmail.com>
+Subject: Re: [hyperv] BUG at drivers/hv/channel.c:462 while changing MTU
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Sitsofe Wheeler <sitsofe@gmail.com>
+Cc: Haiyang Zhang <haiyangz@microsoft.com>, KY Srinivasan <kys@microsoft.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Prashanth G <prashanth.g@samsung.com>,
-        Alim Akhtar <alim.akhtar@samsung.com>, sunil joshi <joshi@samsung.com>
+        Jason Wang <jasowang@redhat.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 2:37 PM, Javier Martinez Canillas
-<javier.martinez@collabora.co.uk> wrote:
-> Hello Yuvaraj,
->
-> On 08/25/2014 10:22 AM, Yuvaraj Cd wrote:
->>>> Good question. I'm not that familiar with the dw_mmc host controller nor
->>>> its driver implementation so I'll let Yuvaraj or Doug to answer that.
->> Well,here it goes!
->> 1. Power ON the board LDO4CTRL1[7:6] 11b
->> 2. dw_mmc driver enable the vqmmc.
->> 3. checks for UHS support, complete the voltage switching t0 1.8V
->> 4. Does warm reset by reboot command.
->> 5. mmc core calls mmc_set_ios() with MMC_POWER_OFF.
->> 6. dw_mmc driver cut-off the regulator with LDO4CTRL1[7:6] is 00b
->> 7.dw_mmc driver enable the vqmmc.
->>  But after step 7 also, LD4CTRL[7:6] is 00b.
->
-> Ok, so the dw_mmc driver is enabling vqmmc, that's good.
->
->>>
->>> I haven't seen the issue that Yuvaraj is reporting (but I also haven't
->>> picked up all of the relevant patches and tried to reproduce), so I'm
->>> going to have to leave it to Yuvaraj to answer.
->>     static int max77802_enable(struct regulator_dev *rdev)
->>     {
->>       struct max77802_regulator_prv *max77802 = rdev_get_drvdata(rdev);
->>      int id = rdev_get_id(rdev);
->>      int shift = max77802_get_opmode_shift(id);
->>      return regmap_update_bits(rdev->regmap,
->> rdev->desc->enable_reg,rdev->desc->enable_mask,max77802->opmode[id] <<
->> shift);
->>   }
->> I think in the above code snippet, the "val" is what we got it during
->> the probe.We always write that value for enabling this regulator(which
->> is LDO4CTRL1[7:6] 00b after warm reset) which is not correct according
->> the MAX77802 manual.
->>>
->
-> I see, so probably until we have a way to define the operating mode for
-> each regulator using DT we should set the opmode to normal when enabling a
-> regulator independently of the value the hardware register reported on probe.
->
-> Can you please test the following change [0] so I can post as a proper
-> patch? Doug, Mark do you think that forcing the regulator to opmode normal
-> when enabling is the right solution here?
->
-> Best regards,
-> Javier
->
-> [0]
-> diff --git a/drivers/regulator/max77802.c b/drivers/regulator/max77802.c
-> index ad1caa9..917b5ab 100644
-> --- a/drivers/regulator/max77802.c
-> +++ b/drivers/regulator/max77802.c
-> @@ -180,7 +180,7 @@ static int max77802_enable(struct regulator_dev *rdev)
->
->         return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
->                                   rdev->desc->enable_mask,
-> -                                 max77802->opmode[id] << shift);
-> +                                 MAX77802_OPMODE_NORMAL << shift);
->  }
-It works.
+ via
+
+
+On Wed, Aug 20, 2014 at 5:41 AM, Sitsofe Wheeler <sitsofe@gmail.com> wrote:
+> Aug 20 04:04:41 ubuntuhv kernel: [    9.230399] random: nonblocking pool is initialized
+> Aug 20 04:04:41 ubuntuhv kernel: [   10.338487] EXT4-fs (sda1): re-mounted. Opts: errors=remount-ro
+> Aug 20 04:04:41 ubuntuhv kernel: [   11.099094] hv_storvsc vmbus_0_1: cmd 0x85 scsi status 0x2 srb status 0x6
+> Aug 20 04:04:41 ubuntuhv kernel: [   11.099901] hv_storvsc vmbus_0_1: cmd 0x85 scsi status 0x2 srb status 0x6
+> Aug 20 04:04:43 ubuntuhv kernel: [   12.999830] psmouse serio1: trackpoint: IBM TrackPoint firmware: 0x01, buttons: 0/0
+> Aug 20 03:55:47 ubuntuhv kernel: [   13.003659] input: TPPS/2 IBM TrackPoint as /devices/platform/i8042/serio1/input/input4
+> Aug 20 03:57:28 ubuntuhv kernel: [  113.711832] hv_netvsc vmbus_0_14: net device safe to remove
+> Aug 20 03:57:28 ubuntuhv kernel: [  113.713882] hv_netvsc: hv_netvsc channel opened successfully
+> Aug 20 03:57:29 ubuntuhv kernel: [  114.961312] hv_netvsc vmbus_0_14: Send section size: 6144, Section count:2560
+> Aug 20 03:57:29 ubuntuhv kernel: [  114.962711] hv_netvsc vmbus_0_14: Device MAC 00:15:5d:6f:02:af link state up
+> Aug 20 03:57:34 ubuntuhv kernel: [  120.027718] hv_netvsc vmbus_0_14: net device safe to remove
+> Aug 20 03:57:34 ubuntuhv kernel: [  120.030047] hv_netvsc: hv_netvsc channel opened successfully
+> Aug 20 03:57:34 ubuntuhv kernel: [  120.035422] hv_netvsc vmbus_0_14 eth0: unable to establish receive buffer's gpadl
+> Aug 20 03:57:34 ubuntuhv kernel: [  120.039778] hv_netvsc vmbus_0_14 eth0: unable to connect to NetVSP - 4
+> Aug 20 03:57:34 ubuntuhv kernel: [  120.039818] ------------[ cut here ]------------
+> Aug 20 03:57:34 ubuntuhv kernel: [  120.039832] kernel BUG at drivers/hv/channel.c:504!
+
+This is one is also a rude BUG_ON:
+        ret = vmbus_post_msg(msg, sizeof(struct vmbus_channel_close_channel));
+
+        BUG_ON(ret != 0);
+
+vmbus_post_msg() hv_post_message() can easily return !0.
+i.e. if this kmalloc() fails:
+        addr = (unsigned long)kmalloc(sizeof(struct aligned_input), GFP_ATOMIC);
+        if (!addr)
+                return -ENOMEM;
+
+-- 
+Thanks,
+//richard
