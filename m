@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102AbaHYQUl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 12:20:41 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:47174 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754813AbaHYQUj (ORCPT
+	id S1756061AbaHYQ1k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 12:27:40 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:47848 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751240AbaHYQ1j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 12:20:39 -0400
-Date: Mon, 25 Aug 2014 09:18:48 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Oleg Nesterov <oleg@redhat.com>
-cc: Hugh Dickins <hughd@google.com>, Cyrill Gorcunov <gorcunov@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Julien Tinnes <jln@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] ipc/shm: fix the historical/wrong mm->start_stack
- check
-In-Reply-To: <20140825150301.GB3021@redhat.com>
-Message-ID: <alpine.LSU.2.11.1408250856020.24245@eggly.anvils>
-References: <20140823144246.GA6281@redhat.com> <20140823144327.GA6299@redhat.com> <20140823152240.GH25918@moon> <20140823155832.GA9406@redhat.com> <alpine.LSU.2.11.1408241818530.8474@eggly.anvils> <20140825150301.GB3021@redhat.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Mon, 25 Aug 2014 12:27:39 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20140825144111.GB31880@redhat.com>
+References: <20140824194700.GA27281@redhat.com>
+	<20140824194736.GA27441@redhat.com>
+	<CA+55aFyQzvvmWUDA01x69vYkrwUG07q9P3Mv5KaT31pOFsBZGQ@mail.gmail.com>
+	<20140825144111.GB31880@redhat.com>
+Date: Mon, 25 Aug 2014 09:27:37 -0700
+X-Google-Sender-Auth: Lv7h00liZ2VOMTQ8AEmRJxsXyS4
+Message-ID: <CA+55aFwNUF+CLWKkDBe56xOtK_JTj9zHWip+_Ep41GJniN+sPw@mail.gmail.com>
+Subject: Re: [PATCH 2/5] x86, fpu: don't drop_fpu() in __restore_xstate_sig()
+ if use_eager_fpu()
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fenghua Yu <fenghua.yu@intel.com>, Suresh Siddha <sbsiddha@gmail.com>,
+        Bean Anderson <bean@azulsystems.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Aug 2014, Oleg Nesterov wrote:
-> On 08/24, Hugh Dickins wrote:
-> >
-> > I'd say it comes earlier, from Christoph Rohland's 2.4.17-pre7's
-> > "Add missing checks on shmat()", though I didn't find more than that.
-> >
-> > We can all understand wanting to leave a gap below the growsdown stack,
-> > but of course could argue about growsup and 1 or 4 or 5 or whatever:
-> 
-> And it is not clear to me why the kernel should care at all,
+On Mon, Aug 25, 2014 at 7:41 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> I think this should be safe, because this thread and/or swapper/0 can
+> do nothing with with fpu->state, and they should not use fpu.
 
-Care about what exactly?  Leaving a gap between shm and stack?
+.. but if that's the case, then what was wrong with the old code that
+just copied the state over the unused space from the user space
+buffer?
 
-The man page says that (unless SHM_REMAP) shmat() will fail with
-EINVAL if a mapping already exists there, and I think it's fair
-to regard the vm_start of a VM_GROWSDOWN somewhat elastically.
+You can't have it both ways. Either the old code was fine (because it
+doesn't use the buffer while it is in flux), or the new code is broken
+(because it uses the shared buffer). Your choice.No?
 
-It may be that Linus's check_stack_guard_page() work in 2.6.36
-changed the importance of this shmat() check, but I'd still feel
-safer to leave it as is (while turning a blind eye to the
-VM_GROWSUP omission).
-
-> 
-> > okay that we're all more interested in just removing that start_stack.
-> 
-> so perhaps v2 should simply remove it? Or do you think it would be safer
-> to not do this?
-
-It would be safer to leave it, but replace the start_stack use as you did.
-And I think I'll let Linus's guard page justify your 4 (to match comment)
-in place of the original's mysterious 5.
-
-Hugh
+                       Linus
