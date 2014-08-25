@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932874AbaHYOeB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 10:34:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37350 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932345AbaHYOeA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 10:34:00 -0400
-Message-ID: <53FB4952.1090104@redhat.com>
-Date: Mon, 25 Aug 2014 16:33:54 +0200
-From: Harald Hoyer <harald@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1755116AbaHYOkQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 10:40:16 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:41563 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751812AbaHYOkO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 10:40:14 -0400
+Date: Mon, 25 Aug 2014 10:40:09 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Cc: lizefan@huawei.com, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cgroup: Enable controllers for default hierarchy by
+ default.
+Message-ID: <20140825144009.GB31066@mtj.dyndns.org>
+References: <1408966052-2076-1-git-send-email-yangds.fnst@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Matt Fleming <matt@console-pimps.org>
-CC: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: Re: [PATCH V2] efi_high_alloc: use EFI_ALLOCATE_MAX_ADDRESS
-References: <1408715303-2215-1-git-send-email-harald@redhat.com> <1408967732-2381-1-git-send-email-harald@redhat.com> <20140825130724.GT29733@console-pimps.org>
-In-Reply-To: <20140825130724.GT29733@console-pimps.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408966052-2076-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25.08.2014 15:07, Matt Fleming wrote:
-> On Mon, 25 Aug, at 01:55:32PM, harald@redhat.com wrote:
->> From: Harald Hoyer <harald@redhat.com>
->>
->> On my Lenovo T420s with 4GB memory, efi_high_alloc() was checking the
->> following memory regions:
->>
->> 0x0000000000100000 - 0x0000000020000000
->> 0x0000000020200000 - 0x0000000040000000
->> 0x0000000040200000 - 0x00000000d2c02000
->> 0x00000000d6e9f000 - 0x000000011e600000
->>
->> and decided to allocate 2649 pages at address 0x11dba7000.
->> ...
->> [    0.000000] efi: mem53: type=2, attr=0xf, range=[0x000000011dba7000-0x000000011e600000) (10MB)
->> ...
->> [    0.000000] RAMDISK: [mem 0x11dba7000-0x11e5fffff]
->> ...
->> [    0.154933] Unpacking initramfs...
->> [    0.160990] Initramfs unpacking failed: junk in compressed archive
->> [    0.163436] Freeing initrd memory: 10596K (ffff88011dba7000 - ffff88011e600000)
->> ...
->>
->> Nevertheless, unpacking of the initramfs later on failed.
->> This is maybe caused by my buggy EFI BIOS and
->> commit 4bf7111f50167133a71c23530ca852a41355e739,
->> which enables loading the initramfs above 4G addresses.
->>
->> With this patch efi_high_alloc() now uses EFI_ALLOCATE_MAX_ADDRESS,
->> which should do the same as before, but use the EFI logic to select the high memory range.
->  
-> No, that's not correct. Your patch changes the semantics of
-> efi_high_alloc(). The original version allocates from the top of memory
-> down, so you always get the highest aligned address, that is no higher
-> than 'max_addr'.
-> 
-> Your version allocates some address that isn't above 'max_addr', but it
-> needn't necessarily be the highest possible address. The following is
-> taken from the AllocatePages() documentation in the UEFI spec,
-> 
->   "Allocation requests of Type AllocateMaxAddress allocate any available
->    range of pages whose uppermost address is less than or equal to the
->    address pointed to by Memory on input."
-> 
-> Note the part about allocating *any* available range.
-> 
-> Furthermore, there are more callers of efi_high_alloc() than the initrd
-> loading case, and you've changed their behaviour with this patch.
-> 
-> I get where you're coming from, but this isn't the best way to solve
-> this problem, sorry. NAK.
-> 
+Hello, Dongsheng.
 
-So is that ok, if other callers of efi_high_alloc() get an address > 4GB?
+On Mon, Aug 25, 2014 at 07:27:32PM +0800, Dongsheng Yang wrote:
+> When we create a cgroup in unified hierarchy, we have to enable
+> controllers in cgrp_dfl_root.subtree_control manually. From
+> my practice, I did not find the benefit we disable controllers
+> in cgrp_dfl_root by default.
 
-Will the buggy EFI implementation work with the usage of the other caller's
-allocated memory? Or will they run into the same issues as the initramfs loader?
+Hehe, I actually enjoyed the frankness.  No fudging around, basically
+just "I used it for a bit and it didn't feel useful to me".
+
+> As I am a newbie to cgroup, please correct me if I am wrong.
+
+I don't think being new to cgroup is important here.  Regardless of
+the specific area, you should be able to build and argue the
+rationales for the changes you propose.  This is important because not
+only the changes need to be justified but also the process will help
+you actually think about and analyze the changes that you're
+proposing.  If you can't build strong enough rationales for a given
+change, it probably shouldn't be proposed.
+
+Here, your rationale is nothing more than "I played with it 5 mins and
+it seemed weird to me".  There was no effort in understanding the
+overall design, use cases or implications.  You're just driving by
+shooting random patches expecting other people to do what you should
+have done before submitting the patches.  If you want to change the
+behavior, please first study and think about it and ask specific
+questions when unsure.  Submitting basically random patches expecting
+others to argue for or against it is one of the worst ways to learn
+about a subsystem.  Please don't ever do this regardless of the
+subsystem in question.
+
+Nacked-by: Tejun Heo <tj@kernel.org>
+
+Thanks.
+
+-- 
+tejun
