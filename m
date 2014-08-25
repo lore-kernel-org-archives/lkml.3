@@ -1,86 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756029AbaHYP62 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 11:58:28 -0400
-Received: from relay.parallels.com ([195.214.232.42]:54124 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754715AbaHYP61 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 11:58:27 -0400
-Message-ID: <53FB5D20.8040806@parallels.com>
-Date: Mon, 25 Aug 2014 19:58:24 +0400
-From: Maxim Patlasov <mpatlasov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1756077AbaHYQAf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 12:00:35 -0400
+Received: from mail.kernel.org ([198.145.19.201]:57632 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754715AbaHYQAe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 12:00:34 -0400
+Date: Mon, 25 Aug 2014 12:59:14 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Jiri Olsa <jolsa@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 06/10] perf evlist: Allow growing pollfd on add method
+Message-ID: <20140825155914.GB2849@kernel.org>
+References: <1408741190-5123-1-git-send-email-acme@kernel.org>
+ <1408741190-5123-7-git-send-email-acme@kernel.org>
+ <20140825094747.GB11611@krava.brq.redhat.com>
 MIME-Version: 1.0
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Anand Avati <avati@gluster.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/6] fuse: fix synchronous case of fuse_file_put()
-References: <20140821160304.11005.15166.stgit@localhost.localdomain>	<20140821160916.11005.37344.stgit@localhost.localdomain> <CAJfpegsWoaqR1vQRq8QpYdwUX9Ace9XTe77eOkOUy2VyHUeEdQ@mail.gmail.com>
-In-Reply-To: <CAJfpegsWoaqR1vQRq8QpYdwUX9Ace9XTe77eOkOUy2VyHUeEdQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.22.200]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140825094747.GB11611@krava.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2014 06:08 PM, Miklos Szeredi wrote:
-> On Thu, Aug 21, 2014 at 6:09 PM, Maxim Patlasov <MPatlasov@parallels.com> wrote:
->> If fuse_file_put() is called with sync==true, the user may be blocked for
->> a while, until userspace ACKs our FUSE_RELEASE request. This blocking must be
->> uninterruptible. Otherwise request could be interrupted, but file association
->> in user space remains.
->>
->> Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
->> ---
->>   fs/fuse/file.c |    4 ++++
->>   1 file changed, 4 insertions(+)
->>
->> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
->> index cd55488..b92143a 100644
->> --- a/fs/fuse/file.c
->> +++ b/fs/fuse/file.c
->> @@ -136,6 +136,10 @@ static void fuse_file_put(struct fuse_file *ff, bool sync)
->>                          path_put(&req->misc.release.path);
->>                          fuse_put_request(ff->fc, req);
->>                  } else if (sync) {
->> +                       /* Must force. Otherwise request could be interrupted,
->> +                        * but file association in user space remains.
->> +                        */
->> +                       req->force = 1;
->>                          req->background = 0;
->>                          fuse_request_send(ff->fc, req);
->>                          path_put(&req->misc.release.path);
->>
->
-> Some thought needs to go into this:  if RELEASE is interrupted, then
-> we should possibly allow that, effectively backgrounding the request.
->
-> The synchronous nature is just an optimization and we really don't
-> know where we are being interrupted, possibly in a place which very
-> much *should* allow interruption.
+Em Mon, Aug 25, 2014 at 11:47:47AM +0200, Jiri Olsa escreveu:
+> On Fri, Aug 22, 2014 at 05:59:46PM -0300, Arnaldo Carvalho de Melo wrote:
 
-A fuse daemon who explicitly enables the feature (synchronous release) 
-would definitely want non-interruptible behaviour of last fput. 
-Otherwise, it would face the same problem that the feature tries to 
-resolve: an application was killed and exited, but there is no way to 
-determine why actual processing of RELEASE will be completed.
+> > -static int perf_evlist__alloc_pollfd(struct perf_evlist *evlist)
+> > +static int perf_evlist__grow_pollfd(struct perf_evlist *evlist, int hint)
+> > +{
+> > +	int nr_fds_alloc = evlist->nr_fds_alloc + hint;
+> > +	size_t size = sizeof(struct pollfd) * nr_fds_alloc;
+> > +	struct pollfd *pollfd = realloc(evlist->pollfd, size);
+> > +
+> > +	if (pollfd == NULL)
+> > +		return -ENOMEM;
+> > +
+> > +	evlist->nr_fds_alloc = nr_fds_alloc;
+> > +	evlist->pollfd	     = pollfd;
+> > +	return 0;
+> > +}
+> > +
+> > +int perf_evlist__alloc_pollfd(struct perf_evlist *evlist)
+> >  {
+> >  	int nr_cpus = cpu_map__nr(evlist->cpus);
+> >  	int nr_threads = thread_map__nr(evlist->threads);
+> > @@ -416,16 +430,28 @@ static int perf_evlist__alloc_pollfd(struct perf_evlist *evlist)
+> >  			nfds += nr_cpus * nr_threads;
+> >  	}
+> >  
+> > -	evlist->pollfd = malloc(sizeof(struct pollfd) * nfds);
+> > -	return evlist->pollfd != NULL ? 0 : -ENOMEM;
+> > +	if (evlist->nr_fds_alloc - evlist->nr_fds < nfds &&
+> > +	    perf_evlist__grow_pollfd(evlist, nfds) < 0)
+> > +		return -ENOMEM;
+> 
+> hum, so do we still need perf_evlist__alloc_pollfd?
+> we grow any time we need inside perf_evlist__add_pollfd..
 
-As for fuseblk mounts, I'm not so sure. I believed the lack of force=1 
-was a bug and my patch fixes it. If you think it's safer to preserve old 
-behaviour, I could set "force" conditionally. May be you could explain 
-in more details why you think we should allow interruption somewhere. 
-Any examples or use cases? Btw, fuse_flush also uses force=1. Do you 
-concerns deal with it as well?
+Humm, yeah, it could conceivably be removed and then we would rely
+always on add_pollfd() autogrowing it as needed. But then, I thought
+that code using this could optimize for the case where it knows in
+advance how many entries it will need, just like perf_evlist does.
 
->
-> Also fuse really should distinguish fatal and non-fatal interruptions
-> and handle them accordingly...
+I.e. the first thing builtin-kvm.c should do would be to grow it by two
+more entries, because it knows it wants to add just two more entries, in
+advance, etc.
 
-Do you think it's worthy to elaborate this in the scope of "synchronous 
-release" feature?
-
-Thanks,
-Maxim
+- Arnaldo
