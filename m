@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932429AbaHYNON (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 09:14:13 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:50545 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932235AbaHYNOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 09:14:10 -0400
-Message-ID: <1408972440.5256.8.camel@iivanov-dev>
-Subject: Re: [PATCH v3 1/6] pinctrl: Device tree bindings for Qualcomm
- pm8xxx gpio block
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 25 Aug 2014 16:14:00 +0300
-In-Reply-To: <20140820222741.GD16274@sonymobile.com>
-References: <1407771634-14946-1-git-send-email-iivanov@mm-sol.com>
-	 <1407771634-14946-2-git-send-email-iivanov@mm-sol.com>
-	 <20140820222741.GD16274@sonymobile.com>
-Content-Type: text/plain; charset="UTF-8"
+	id S932322AbaHYNPY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 09:15:24 -0400
+Received: from smtprelay0041.hostedemail.com ([216.40.44.41]:54634 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753582AbaHYNPX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 09:15:23 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:968:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3872:3874:4250:4321:5007:7652:8957:9040:10004:10400:10848:11026:11232:11473:11657:11658:11914:12043:12438:12517:12519:12740:13069:13141:13230:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: watch38_4be0dc4d5f748
+X-Filterd-Recvd-Size: 2079
+Message-ID: <1408972519.20683.41.camel@joe-AO725>
+Subject: Re: [PATCH] drivers: staging: rtl8821ae: Fix spaces required around
+ that '?' errors
+From: Joe Perches <joe@perches.com>
+To: Greg Donald <gdonald@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Mon, 25 Aug 2014 06:15:19 -0700
+In-Reply-To: <1408966502-22350-1-git-send-email-gdonald@gmail.com>
+References: <1408966502-22350-1-git-send-email-gdonald@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 X-Mailer: Evolution 3.10.4-0ubuntu2 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
@@ -31,112 +29,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-08-20 at 15:27 -0700, Bjorn Andersson wrote:
-> On Mon 11 Aug 08:40 PDT 2014, Ivan T. Ivanov wrote:
-> [...]
-> > diff --git a/Documentation/devicetree/bindings/pinctrl/qcom,pmic-gpio.txt b/Documentation/devicetree/bindings/pinctrl/qcom,pmic-gpio.txt
-> [...]
-> > +SUBNODES:
-> [...]
-> > +- function:
-> > +	Usage: required
-> > +	Value type: <string>
-> > +	Definition: Specify the alternative function to be configured for the
-> > +		    specified pins.  Valid values are:
-> > +		    "normal",
-> > +		    "paired",
-> > +		    "func1",
-> > +		    "func2",
-> > +		    "dtest1",
-> > +		    "dtest2",
-> > +		    "dtest3",
-> > +		    "dtest4"
-> > +
-> 
-> I still think it looks better with "real" functions, but I rather go with this
-> than discussing it forever.
-> 
-> > +- qcom,pull-up-strength:
-> > +	Usage: optional
-> > +	Value type: <u32>
-> > +	Definition: Specifies the strength to use for pull up, if selected.
-> > +		    Valid values are; as defined in
-> > +		    <dt-bindings/pinctrl/qcom,pmic-gpio.h>:
-> > +		    1: 30uA                     (PMIC_GPIO_PULL_UP_30)
-> > +		    2: 1.5uA                    (PMIC_GPIO_PULL_UP_1P5)
-> > +		    3: 31.5uA                   (PMIC_GPIO_PULL_UP_31P5)
-> > +		    4: 1.5uA + 30uA boost       (PMIC_GPIO_PULL_UP_1P5_30)
-> > +		    If this property is ommited 30uA strength will be used if
-> > +		    pull up is selected
-> 
-> I would prefer if we decrement this one step, as it will follow the register
-> values of both the "ssbi" and "spmi" based pmics.
+On Mon, 2014-08-25 at 06:35 -0500, Greg Donald wrote:
+> Fix checkpatch.pl spaces required around that '?' errors
 
-Ok.
+It'd be better to convert all parts of the
+ternary at the same time.
 
-> 
-> [...]
-> > +
-> > +- power-source:
-> > +	Usage: optional
-> > +	Value type: <u32>
-> > +	Definition: Selects the power source for the specified pins. Valid
-> > +		    power sources are defined per chip in
-> > +		    <dt-bindings/pinctrl/qcom,pmic-gpio.h>
-> > +		    xxxx_GPIO_L6, xxxx_GPIO_L5...
-> 
-> After implementing this my only concern is that debugfs output is not as useful
-> anymore; saying VIN2 instead of S4. But I can live with this.
-> 
-> > diff --git a/include/dt-bindings/pinctrl/qcom,pmic-gpio.h b/include/dt-bindings/pinctrl/qcom,pmic-gpio.h
-> [...]
-> > +
-> > +#define PM8038_GPIO1_2_LPG_DRV		PMIC_GPIO_FUNC_FUNC1
-> > +#define PM8038_GPIO3_5V_BOOST_EN	PMIC_GPIO_FUNC_FUNC1
-> > +#define PM8038_GPIO4_SSBI_ALT_CLK	PMIC_GPIO_FUNC_FUNC1
-> > +#define PM8038_GPIO5_6_EXT_REG_EN	PMIC_GPIO_FUNC_FUNC1
-> > +#define PM8038_GPIO10_11_EXT_REG_EN	PMIC_GPIO_FUNC_FUNC1
-> > +#define PM8038_GPIO6_7_CLK		PMIC_GPIO_FUNC_FUNC1
-> > +#define PM8038_GPIO9_BAT_ALRM_OUT	PMIC_GPIO_FUNC_FUNC1
-> > +#define PM8038_GPIO6_12_KYPD_DRV	PMIC_GPIO_FUNC_FUNC2
-> > +
-> > +#define PM8058_GPIO7_8_MP3_CLK		PMIC_GPIO_FUNC_FUNC1
-> > +#define PM8058_GPIO7_8_BCLK_19P2MHZ	PMIC_GPIO_FUNC_FUNC2
-> > +#define PM8058_GPIO9_26_KYPD_DRV	PMIC_GPIO_FUNC_FUNC1
-> > +#define PM8058_GPIO21_23_UART_TX	PMIC_GPIO_FUNC_FUNC2
-> > +#define PM8058_GPIO24_26_LPG_DRV	PMIC_GPIO_FUNC_FUNC2
-> > +#define PM8058_GPIO33_BCLK_19P2MHZ	PMIC_GPIO_FUNC_FUNC1
-> > +#define PM8058_GPIO34_35_MP3_CLK	PMIC_GPIO_FUNC_FUNC1
-> > +#define PM8058_GPIO36_BCLK_19P2MHZ	PMIC_GPIO_FUNC_FUNC1
-> > +#define PM8058_GPIO37_UPL_OUT		PMIC_GPIO_FUNC_FUNC1
-> > +#define PM8058_GPIO37_UART_M_RX		PMIC_GPIO_FUNC_FUNC2
-> > +#define PM8058_GPIO38_XO_SLEEP_CLK	PMIC_GPIO_FUNC_FUNC1
-> > +#define PM8058_GPIO38_39_CLK_32KHZ	PMIC_GPIO_FUNC_FUNC2
-> > +#define PM8058_GPIO39_MP3_CLK		PMIC_GPIO_FUNC_FUNC1
-> > +#define PM8058_GPIO40_EXT_BB_EN		PMIC_GPIO_FUNC_FUNC1
-> > +
-> > +#define PM8917_GPIO9_18_KEYP_DRV	PMIC_GPIO_FUNC_FUNC1
-> > +#define PM8917_GPIO20_BAT_ALRM_OUT	PMIC_GPIO_FUNC_FUNC1
-> > +#define PM8917_GPIO21_23_UART_TX	PMIC_GPIO_FUNC_FUNC2
-> > +#define PM8917_GPIO25_26_EXT_REG_EN	PMIC_GPIO_FUNC_FUNC1
-> > +#define PM8917_GPIO37_38_XO_SLEEP_CLK	PMIC_GPIO_FUNC_FUNC1
-> > +#define PM8917_GPIO37_38_MP3_CLK	PMIC_GPIO_FUNC_FUNC2
-> 
-> Stephens argument was that we don't want to have huge tables for the functions
-> and I can see his point, it will be some work to build all the tables.
-> Adding all this defines is unfortunately doing just that.
+> diff --git a/drivers/staging/rtl8821ae/btcoexist/HalBtc8812a1Ant.c b/drivers/staging/rtl8821ae/btcoexist/HalBtc8812a1Ant.c
+[]
+> @@ -652,7 +652,7 @@ halbtc8812a1ant_SetFwDecBtPwr(
+>  	u1Byte	buf[5] = {0};
+>  
+>  	BTC_PRINT(BTC_MSG_ALGORITHM, ALGO_TRACE_FW_EXEC, ("[BTCoex], decrease Bt Power : %s\n", 
+> -			(dec_bt_pwr? "Yes!!":"No!!")));
+> +			(dec_bt_pwr ? "Yes!!":"No!!")));
 
-It is still little bit simpler :-)
+		    (dec_bt_pwr ? "Yes!!" : "No!!")
+			
+>  
+>  	buf[0] = dataLen;
+>  	buf[1] = 0x3;		// OP_Code
+> @@ -674,7 +674,7 @@ halbtc8812a1ant_DecBtPwr(
+>  {
+>  	return;
+>  	BTC_PRINT(BTC_MSG_ALGORITHM, ALGO_TRACE_FW, ("[BTCoex], %s Dec BT power = %s\n",  
+> -		(force_exec? "force to":""), ((dec_bt_pwr)? "ON":"OFF")));
+> +		(force_exec ? "force to":""), ((dec_bt_pwr) ? "ON":"OFF")));
 
-> 
-> I had a version of my driver that exposed real functions by name from the
-> driver, following the pattern we have for other pinctrl drivers and making the
-> dts very easy to read. But if you don't think we should go that route then I
-> suggest that we just call it func1/func2 and skip these defines.
-> 
-> Regards,
-> Bjorn
+		    (force_exec ? "force to" : ""), ((dec_bt_pwr) ? "ON" : "OFF")));
 
-Regards,
-Ivan
+etc...
+
+A subsequent change might be to remove the unnecessary
+parentheses like:
+
+		    force_exec ? "force to" : "", dec_bt_pwr ? "ON" : "OFF");
+
 
