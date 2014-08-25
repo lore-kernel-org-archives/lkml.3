@@ -1,150 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933580AbaHYVsg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 17:48:36 -0400
-Received: from mail-bn1lp0145.outbound.protection.outlook.com ([207.46.163.145]:15662
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933438AbaHYVsf convert rfc822-to-8bit (ORCPT
+	id S933600AbaHYVvc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 17:51:32 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:34643 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933438AbaHYVva (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 17:48:35 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Sitsofe Wheeler <sitsofe@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jason Wang <jasowang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [hyperv] BUG at drivers/hv/channel.c:462 while changing MTU
-Thread-Topic: [hyperv] BUG at drivers/hv/channel.c:462 while changing MTU
-Thread-Index: AQHPu6pIm2pwB6mvJU2s1pqxWk+oepvhGNoAgADK6YCAAAEhgA==
-Date: Mon, 25 Aug 2014 21:48:31 +0000
-Message-ID: <d282e41ecdb54a2ab3012a3471f649f3@BY2PR0301MB0711.namprd03.prod.outlook.com>
-References: <20140819123655.GC12160@sucs.org> <20140825093648.GB5046@mwanda>
- <20140825214303.GA32390@sucs.org>
-In-Reply-To: <20140825214303.GA32390@sucs.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [131.107.159.176]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-x-o365ent-eop-header: Message processed by -  O365_ENT: Allow from ranges
- (Engineering ONLY)
-x-forefront-prvs: 03142412E2
-x-forefront-antispam-report: SFV:NSPM;SFS:(979002)(6009001)(199003)(189002)(24454002)(377454003)(13464003)(43544003)(479174003)(51704005)(95666004)(99286002)(74316001)(101416001)(77096002)(15202345003)(15395725005)(108616004)(107046002)(76576001)(85306004)(106356001)(106116001)(105586002)(54356999)(31966008)(87936001)(64706001)(15975445006)(74662001)(20776003)(99396002)(4396001)(74502001)(575784001)(19580405001)(86612001)(81542001)(66066001)(2656002)(79102001)(21056001)(50986999)(80022001)(83072002)(46102001)(77982001)(76176999)(90102001)(33646002)(83322001)(19580395003)(86362001)(81342001)(85852003)(92566001)(76482001)(24736002)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR0301MB0710;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;MLV:ovrnspm;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 25 Aug 2014 17:51:30 -0400
+Date: Mon, 25 Aug 2014 14:49:45 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Oleg Nesterov <oleg@redhat.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Julien Tinnes <jln@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] ipc/shm: fix the historical/wrong mm->start_stack
+ check
+In-Reply-To: <20140825191207.GA26106@redhat.com>
+Message-ID: <alpine.LSU.2.11.1408251303220.25799@eggly.anvils>
+References: <20140823144246.GA6281@redhat.com> <20140825191207.GA26106@redhat.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.onmicrosoft.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 25 Aug 2014, Oleg Nesterov wrote:
 
+> The ->start_stack check in do_shmat() looks ugly and simply wrong.
+> 
+> 1. ->start_stack is only valid right after exec(), the application
+>    can switch to another stack and even unmap this area. Or a stack
+>    can simply grow, ->start_stack won't even notice this.
+> 
+> 2. The reason for this check is not clear at all. The application
+>    should know what it does. And why 4 pages? And why in fact it
+>    requires 5 pages? Plus "start_stack - size - PAGE_SIZE * 5" can
+>    underflow although this is minor.
+> 
+>    As Hugh pointed out, we actually need to require the additional
+>    guard page, but this code was written before linux had it.
+> 
+> 3. This wrongly assumes that the stack can only grown down.
+> 
+> Personally I think we should simply kill this check, but I did not
+> dare to do this. So the patch only fixes the 1st problem (mostly to
+> avoid the usage of mm->start_stack) and ignores the VM_GROWSUP case.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-> -----Original Message-----
-> From: Sitsofe Wheeler [mailto:sitsofe@gmail.com]
-> Sent: Monday, August 25, 2014 2:43 PM
-> To: Dan Carpenter
-> Cc: KY Srinivasan; Greg Kroah-Hartman; Jason Wang; linux-
-> kernel@vger.kernel.org; David S. Miller; Daniel Borkmann;
-> netdev@vger.kernel.org; devel@linuxdriverproject.org; Haiyang Zhang
-> Subject: Re: [hyperv] BUG at drivers/hv/channel.c:462 while changing MTU
-> 
-> On Mon, Aug 25, 2014 at 12:36:48PM +0300, Dan Carpenter wrote:
-> > The code here is:
-> >
-> > drivers/hv/channel.c
-> >    460          BUG_ON(ret != 0);
-> >    461          t = wait_for_completion_timeout(&info->waitevent, 5*HZ);
-> >    462          BUG_ON(t == 0);
-> >
-> 
-> There is also a case of the BUG_ON at line 460 being hit (from
-> https://lkml.org/lkml/2014/8/19/708 ):
-> 
-> 457        ret = vmbus_post_msg(msg,
-> 458                                       sizeof(struct vmbus_channel_gpadl_teardown));
-> 459
-> 460        BUG_ON(ret != 0);
-> 
-> Aug 20 03:42:58 ubuntuhv kernel: [   13.028182] input: TPPS/2 IBM TrackPoint
-> as /devices/platform/i8042/serio1/input/input4
-> Aug 20 03:41:09 ubuntuhv kernel: [  179.973064] hv_netvsc vmbus_0_14: net
-> device safe to remove Aug 20 03:41:09 ubuntuhv kernel: [  179.974995]
-> hv_netvsc: hv_netvsc channel opened successfully Aug 20 03:41:10 ubuntuhv
-> kernel: [  180.402957] hv_netvsc vmbus_0_14 eth0: unable to establish send
-> buffer's gpadl Aug 20 03:41:10 ubuntuhv kernel: [  180.403080] ------------[ cut
-> here ]------------ Aug 20 03:41:10 ubuntuhv kernel: [  180.403141] kernel BUG
-> at drivers/hv/channel.c:460!
-> Aug 20 03:41:10 ubuntuhv kernel: [  180.403253] invalid opcode: 0000 [#1]
-> SMP Aug 20 03:41:10 ubuntuhv kernel: [  180.403328] CPU: 1 PID: 1482 Comm:
-> ifconfig Not tainted 3.17.0-rc1.x86_64 #1 Aug 20 03:41:10 ubuntuhv kernel: [
-> 180.403431] Hardware name: Microsoft Corporation Virtual Machine/Virtual
-> Machine, BIOS 090006  05/23/2012 Aug 20 03:41:10 ubuntuhv kernel: [
-> 180.403536] task: ffff88006e45b9f0 ti: ffff880070b20000 task.ti:
-> ffff880070b20000 Aug 20 03:41:10 ubuntuhv kernel: [  180.403536] RIP:
-> 0010:[<ffffffff815a9901>]  [<ffffffff815a9901>]
-> vmbus_teardown_gpadl+0xc1/0x130 Aug 20 03:41:10 ubuntuhv kernel: [
-> 180.403536] RSP: 0018:ffff880070b23c00  EFLAGS: 00010202 Aug 20 03:41:10
-> ubuntuhv kernel: [  180.403536] RAX: 0000000000000004 RBX:
-> ffff88006fef0e38 RCX: 0000000000000006 Aug 20 03:41:10 ubuntuhv kernel: [
-> 180.403536] RDX: 0000000000000006 RSI: ffff88006e45c130 RDI:
-> 0000000000000246 Aug 20 03:41:10 ubuntuhv kernel: [  180.403536] RBP:
-> ffff880070b23c20 R08: 0000000000000000 R09: 0000000000000000 Aug 20
-> 03:41:10 ubuntuhv kernel: [  180.403536] R10: 0000000000000001 R11:
-> 0000000000000001 R12: 0000000000000296 Aug 20 03:41:10 ubuntuhv kernel: [
-> 180.403536] R13: ffff88007b911520 R14: ffff88006fef0e58 R15:
-> 0000000000000004 Aug 20 03:41:10 ubuntuhv kernel: [  180.403536] FS:
-> 00007fe5cd41d740(0000) GS:ffff88007fc20000(0000) knlGS:0000000000000000
-> Aug 20 03:41:10 ubuntuhv kernel: [  180.403536] CS:  0010 DS: 0000 ES: 0000
-> CR0: 0000000080050033 Aug 20 03:41:10 ubuntuhv kernel: [  180.403536] CR2:
-> 00007f4e3766d410 CR3: 0000000074bcb000 CR4: 00000000000406e0 Aug 20
-> 03:41:10 ubuntuhv kernel: [  180.403536] Stack:
-> Aug 20 03:41:10 ubuntuhv kernel: [  180.403536]  ffff880074550000
-> 0000000000000000 ffff880078154520 ffff880074550000 Aug 20 03:41:10
-> ubuntuhv kernel: [  180.403536]  ffff880070b23c48 ffffffff814e8276
-> ffff88007b916458 ffff880078154520 Aug 20 03:41:10 ubuntuhv kernel: [
-> 180.403536]  ffff880074550000 ffff880070b23cb8 ffffffff814e957f
-> ffff88007b911520 Aug 20 03:41:10 ubuntuhv kernel: [  180.403536] Call Trace:
-> Aug 20 03:41:10 ubuntuhv kernel: [  180.403536]  [<ffffffff814e8276>]
-> netvsc_destroy_buf+0xb6/0x210 Aug 20 03:41:10 ubuntuhv kernel: [
-> 180.403536]  [<ffffffff814e957f>] netvsc_device_add+0x6ef/0x7c0 Aug 20
-> 03:41:10 ubuntuhv kernel: [  180.403536]  [<ffffffff814ea6e0>]
-> rndis_filter_device_add+0x80/0x430
-> Aug 20 03:41:10 ubuntuhv kernel: [  180.403536]  [<ffffffff810b16c0>] ?
-> __wake_up_common+0x90/0x90 Aug 20 03:41:10 ubuntuhv kernel: [
-> 180.403536]  [<ffffffff814e6dfc>] netvsc_change_mtu+0x15c/0x1f0 Aug 20
-> 03:41:10 ubuntuhv kernel: [  180.403536]  [<ffffffff815d19d0>]
-> dev_set_mtu+0x80/0x130 Aug 20 03:41:10 ubuntuhv kernel: [  180.403536]
-> [<ffffffff815e67b4>] dev_ifsioc+0x124/0x390 Aug 20 03:41:10 ubuntuhv
-> kernel: [  180.403536]  [<ffffffff815e7006>] dev_ioctl+0x516/0x5e0 Aug 20
-> 03:41:10 ubuntuhv kernel: [  180.403536]  [<ffffffff815b339d>]
-> sock_ioctl+0x1fd/0x210 Aug 20 03:41:10 ubuntuhv kernel: [  180.403536]
-> [<ffffffff811d54b0>] do_vfs_ioctl+0x4d0/0x510 Aug 20 03:41:10 ubuntuhv
-> kernel: [  180.403536]  [<ffffffff8132aa9e>] ? file_has_perm+0x7e/0x90 Aug
-> 20 03:41:10 ubuntuhv kernel: [  180.403536]  [<ffffffff811d5543>]
-> SyS_ioctl+0x53/0x90 Aug 20 03:41:10 ubuntuhv kernel: [  180.403536]
-> [<ffffffff816a38e9>] system_call_fastpath+0x16/0x1b Aug 20 03:41:10
-> ubuntuhv kernel: [  180.403536] Code: 89 df e8 c3 ba df ff 4c 89 e6 48 c7 c7 40
-> 27 ce 81 e8 24 93 0f 00 48 8d bb 88 00 00 00 be 10 00 00 00 e8 13 f2 ff ff 85 c0 74
-> 07 <0f> 0b 0f 1f 44 00 00 be 88 13 00 00 4c 89 f7 e8 5b 4d 0f 00 85 Aug 20
-> 03:41:10 ubuntuhv kernel: [  180.403536] RIP  [<ffffffff815a9901>]
-> vmbus_teardown_gpadl+0xc1/0x130 Aug 20 03:41:10 ubuntuhv kernel: [
-> 180.403536]  RSP <ffff880070b23c00> Aug 20 03:41:10 ubuntuhv kernel: [
-> 180.405770] ---[ end trace 9ec56592fdff213b ]---
+Sorry, I cannot ack this, because your comment below "at least 4 pages
+plus a guard page enforced by check_stack_guard_page()" makes no sense
+to me as an explanation for the 5.  The guard page (gap) enforced by
+check_stack_guard_page() is already at vma->vm_start (and I just
+verified that, though wasted some time on it not behaving as I had
+expected, until I found show_map_vma()'s start += PAGE_SIZE hides it).
 
-I will take care of all BUG_ON() instances in channel.c
+But in the course of trying to understand what I saw in /proc/<pid>/maps,
+I did come across 2.6.34's 128k stack_expand inherited from 2.6.11's
+20 page EXTRA_STACK_VM_PAGES.  With Linus's guard page enforcing a
+page gap since 2.6.36.
 
-Regards,
+This shmat() 4 or 5 page gap dates from long before all of those
+were added.  That, together with your preference, and our difficulty
+in communicating a sensible way of updating and describing the test,
+now drives me to agree with you.  Please just rip out the start_stack
+test and the comment defending it.
 
-K. Y
+Hugh
+
+> ---
+>  ipc/shm.c |   26 ++++++++++++++++----------
+>  1 files changed, 16 insertions(+), 10 deletions(-)
 > 
-> --
-> Sitsofe | http://sucs.org/~sits/
+> diff --git a/ipc/shm.c b/ipc/shm.c
+> index 7fc9f9f..9a322f5 100644
+> --- a/ipc/shm.c
+> +++ b/ipc/shm.c
+> @@ -1166,19 +1166,25 @@ long do_shmat(int shmid, char __user *shmaddr, int shmflg, ulong *raddr,
+>  
+>  	down_write(&current->mm->mmap_sem);
+>  	if (addr && !(shmflg & SHM_REMAP)) {
+> -		err = -EINVAL;
+> -		if (addr + size < addr)
+> -			goto invalid;
+> +		struct vm_area_struct *vma;
+>  
+> -		if (find_vma_intersection(current->mm, addr, addr + size))
+> -			goto invalid;
+> +		err = -EINVAL;
+>  		/*
+> -		 * If shm segment goes below stack, make sure there is some
+> -		 * space left for the stack to grow (at least 4 pages).
+> +		 * Ensure this segment doesn't overlap with the next vma.
+> +		 * If it is stack, make sure there is some space left for
+> +		 * the stack to grow, at least 4 pages plus a guard page
+> +		 * enforced by check_stack_guard_page(). (Why?)
+>  		 */
+> -		if (addr < current->mm->start_stack &&
+> -		    addr > current->mm->start_stack - size - PAGE_SIZE * 5)
+> -			goto invalid;
+> +		vma = find_vma(current->mm, addr);
+> +		if (vma) {
+> +			unsigned long end = addr + size;
+> +
+> +			if (vma->vm_flags & VM_GROWSDOWN)
+> +				end += PAGE_SIZE * 5;
+> +
+> +			if (end < addr || end > vma->vm_start)
+> +				goto invalid;
+> +		}
+>  	}
+>  
+>  	addr = do_mmap_pgoff(file, addr, size, prot, flags, 0, &populate);
+> -- 
+> 1.5.5.1
