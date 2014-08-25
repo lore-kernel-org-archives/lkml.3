@@ -1,49 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932154AbaHYKRP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 06:17:15 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:20362 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753344AbaHYKRN (ORCPT
+	id S1755121AbaHYKSp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 06:18:45 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:60006 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752730AbaHYKSo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 06:17:13 -0400
-Date: Mon, 25 Aug 2014 13:16:16 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Josh Triplett <josh@joshtriplett.org>, Paul Mackerras <paulus@samba.org>,
-        kernel-janitors@vger.kernel.org,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 8/9] video: fbdev: aty: use c99 initializers in structures
-Message-ID: <20140825101616.GD5046@mwanda>
-References: <1408792831-25615-1-git-send-email-Julia.Lawall@lip6.fr>
- <1408792831-25615-9-git-send-email-Julia.Lawall@lip6.fr>
- <20140823152015.GB2074@thin>
- <alpine.DEB.2.02.1408231731550.2068@localhost6.localdomain6>
+	Mon, 25 Aug 2014 06:18:44 -0400
+Date: Mon, 25 Aug 2014 11:18:32 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mattis Lorentzon <Mattis.Lorentzon@autoliv.com>
+Cc: Fabio Estevam <festevam@gmail.com>,
+        Fredrik Noring <fredrik.noring@autoliv.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Oops: 17 SMP ARM (v3.16-rc2)
+Message-ID: <20140825101832.GT30401@n2100.arm.linux.org.uk>
+References: <C4A61A5CA4AD2246942F4BA6F20ACB8043575072@ALVA-EXMB04.alv.autoliv.int> <20140806095012.GN30282@n2100.arm.linux.org.uk> <C4A61A5CA4AD2246942F4BA6F20ACB8043575172@ALVA-EXMB04.alv.autoliv.int> <20140806125550.GO30282@n2100.arm.linux.org.uk> <C4A61A5CA4AD2246942F4BA6F20ACB804357526C@ALVA-EXMB04.alv.autoliv.int> <20140807121248.GY30282@n2100.arm.linux.org.uk> <20140808180900.GG30282@n2100.arm.linux.org.uk> <C4A61A5CA4AD2246942F4BA6F20ACB8043576356@ALVA-EXMB04.alv.autoliv.int> <CAOMZO5B8GR+ABBoJ=dJcFqw3Wagfaip7HM+C1FTz+aE4CmqiPw@mail.gmail.com> <C4A61A5CA4AD2246942F4BA6F20ACB80435774FD@ALVA-EXMB04.alv.autoliv.int>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1408231731550.2068@localhost6.localdomain6>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <C4A61A5CA4AD2246942F4BA6F20ACB80435774FD@ALVA-EXMB04.alv.autoliv.int>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 23, 2014 at 05:32:37PM +0200, Julia Lawall wrote:
-> > 
-> > The closing brace should be in column 0 of the next line.  Also, the
-> > final field initializer should have a comma after it. (Likewise for the
-> > remaining changes in this file.)
-> 
-> In general, I haven't changed the presence or absence of trailing commas.
-> Should I add them everywhere?
+On Wed, Aug 13, 2014 at 01:39:27PM +0000, Mattis Lorentzon wrote:
+> All our tests seem to behave the same way on the Sabrelite as on our own board.
+> A working theory is that the switch (3Com Switch 4400) triggers the degeneration
+> of the network stack from which Linux does not seem to recover, even if we later
+> bypass the switch and directly connect the board to the server machine.
 
-Probably, yeah.  Trailing commas are better.
+Please can you try something - what happens if you completely disable
+pause frame support (flow control) on all machines on the switch?
 
-It's not worth resending, but the script should add them I think.
-
-regards,
-dan carpenter
-
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
