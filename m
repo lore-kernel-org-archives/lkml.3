@@ -1,37 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933671AbaHYW4M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 18:56:12 -0400
-Received: from mail.mx.mfdns.com ([58.64.146.89]:36499 "HELO mx.xdbxz.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S933523AbaHYW4K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 18:56:10 -0400
-Date: Tue, 26 Aug 2014 06:55:29 +0800
-From: "John" <john@kingsfang.com>
-Reply-To: john@kingsfang.com
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: CIJ inks
-Message-ID: <201408260655294015677@kingsfang.com>
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+	id S933691AbaHYW4Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 18:56:25 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:65124 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932084AbaHYW4X convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 18:56:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
+In-Reply-To: <20140825172204.769ab4e6@gandalf.local.home>
+References: <CA+r1ZhiMSLq1jOr0OmTvB5Qwww_azDbNpQB2=R43+3Fti7b83w@mail.gmail.com>
+	<20140825172204.769ab4e6@gandalf.local.home>
+Date: Mon, 25 Aug 2014 15:56:21 -0700
+Message-ID: <CA+r1ZhhfBL=qS1oNkehwtAXm++AXt6V9T7TsU2SzQ6c=vgy-aQ@mail.gmail.com>
+Subject: Re: randconfig build error with next-20140825, in include/linux/tracepoint.h
+From: Jim Davis <jim.epost@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, mingo@redhat.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7PMuJg1029708
 
-Dear Sir, 
+On Mon, Aug 25, 2014 at 2:22 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Mon, 25 Aug 2014 09:30:14 -0700
+> Jim Davis <jim.epost@gmail.com> wrote:
+>
+>> Building with the attached random configuration file,
+>>
+>> In file included from include/linux/linkage.h:6:0,
+>>                  from include/linux/preempt.h:9,
+>>                  from include/linux/preempt_mask.h:4,
+>>                  from include/linux/hardirq.h:4,
+>>                  from include/linux/kvm_host.h:10,
+>>                  from arch/x86/kvm/x86.c:22:
+>> include/linux/tracepoint.h:214:20: error:
+>> â€˜__tracepoint_kvm_ple_windowâ€™ undeclared here (not in a function)
+>>   EXPORT_SYMBOL_GPL(__tracepoint_##name)
+>>                     ^
+>> include/linux/export.h:57:16: note: in definition of macro â€˜__EXPORT_SYMBOLâ€™
+>>   extern typeof(sym) sym;     \
+>>                 ^
+>> include/linux/tracepoint.h:214:2: note: in expansion of macro â€˜EXPORT_SYMBOL_GPL
+>> â€™
+>>   EXPORT_SYMBOL_GPL(__tracepoint_##name)
+>>   ^
+>> arch/x86/kvm/x86.c:7676:1: note: in expansion of macro â€˜EXPORT_TRACEPOINT_SYMBOL
+>> _GPLâ€™
+>>  EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_ple_window);
+>>  ^
+>>   LD      fs/affs/built-in.o
+>>   CC [M]  fs/affs/super.o
+>> make[2]: *** [arch/x86/kvm/x86.o] Error 1
+>> make[1]: *** [arch/x86/kvm] Error 2
+>
+> Does this fix it for you?
+>
+> -- Steve
+>
+> From e754b26d0d2d5671780f418a0b3acaa8edce4276 Mon Sep 17 00:00:00 2001
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> Date: Mon, 25 Aug 2014 17:19:02 -0400
+> Subject: [PATCH] KVM: Only export kvm_ple_window for x86_64
+>
+> Commit 7b46268d2954 "KVM: trace kvm_ple_window grow/shrink"
+> Added the tracepoint kvm_ple_window under a #ifdef CONFIG_X86_64 but
+> left the export for that tracepoint unprotected, which would cause it
+> to fail to compile when X86_32 is set.
+>
+> Reported-by: Jim Davis <jim.epost@gmail.com>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  arch/x86/kvm/x86.c | 2 ++
+>  1 file changed, 2 insertions(+)
+>
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index c10408ef9ab1..3da45a3ecaa4 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -7673,4 +7673,6 @@ EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_invlpga);
+>  EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_skinit);
+>  EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_nested_intercepts);
+>  EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_write_tsc_offset);
+> +#ifdef CONFIG_X86_64
+>  EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_ple_window);
+> +#endif
+> --
+> 1.8.1.4
+>
 
-  Glad to hear you're on the market for CIJ inks.
-  This is Kingsfang(Xiamen)Import&Export Co.,Ltd in China.We specialized in the production of replacement of inkjet printer ink,such as Imaje, Domino, Videojet, Linx, Willet, Hitachi, KGK and so on, we have our own factory.
-   For all the ink products got the SGS approval every year. Some have passed non-halogen request.
-  
-  Hope to find a way to cooperate with you!
+Yes, looks good.  Thanks!
 
-Saleskingsfang
-Kingsfang(Xiamen)Import&Export Co.,Ltd
-Tel: +86-592-6058718
-Email:Smile@kingsfang.com
-Website: www.kingsfang.comÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Tested-by: Jim Davis <jim.epost@gmail.com>
