@@ -1,90 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753609AbaHYBke (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 21:40:34 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:63513 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753088AbaHYBkd (ORCPT
+	id S1753563AbaHYBun (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 21:50:43 -0400
+Received: from regular1.263xmail.com ([211.150.99.132]:44236 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753088AbaHYBum (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 21:40:33 -0400
-Date: Sun, 24 Aug 2014 18:38:44 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Oleg Nesterov <oleg@redhat.com>
-cc: Cyrill Gorcunov <gorcunov@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Julien Tinnes <jln@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] ipc/shm: fix the historical/wrong mm->start_stack
- check
-In-Reply-To: <20140823155832.GA9406@redhat.com>
-Message-ID: <alpine.LSU.2.11.1408241818530.8474@eggly.anvils>
-References: <20140823144246.GA6281@redhat.com> <20140823144327.GA6299@redhat.com> <20140823152240.GH25918@moon> <20140823155832.GA9406@redhat.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 24 Aug 2014 21:50:42 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: zyw@rock-chips.com
+X-FST-TO: broonie@kernel.org
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: zyw@rock-chips.com
+X-UNIQUE-TAG: <c8cf06bb984dfe0e8bd10eddc872d9cf>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Chris Zhong <zyw@rock-chips.com>
+To: broonie@kernel.org
+Cc: cf@rock-chips.com, zhangqing@rock-chips.com, dianders@chromium.org,
+        heiko@sntech.de, olof@lixom.net, sonnyrao@chromium.org,
+        dtor@chromium.org, javier.martinez@collabora.co.uk,
+        Chris Zhong <zyw@rock-chips.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Regulator: RK808: modify for struct rk808 change in v4
+Date: Mon, 25 Aug 2014 09:48:19 +0800
+Message-Id: <1408931299-20103-1-git-send-email-zyw@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 23 Aug 2014, Oleg Nesterov wrote:
-> On 08/23, Cyrill Gorcunov wrote:
-> >
-> > On Sat, Aug 23, 2014 at 04:43:27PM +0200, Oleg Nesterov wrote:
-> > > The ->start_stack check in do_shmat() looks ugly and simply wrong.
-> > >
-> > > 1. ->start_stack is only valid right after exec(), the application
-> > >    can switch to another stack and even unmap this area.
-> > >
-> > > 2. The reason for this check is not clear at all. The application
-> > >    should know what it does. And why 4 pages? And why in fact it
-> > >    requires 5 pages?
-> > >
-> > > 3. This wrongly assumes that the stack can only grown down.
-> > >
-> > > Personally I think we should simply kill this check, but I did not
-> > > dare to do this. So the patch only fixes the 1st problem (mostly to
-> > > avoid the usage of mm->start_stack) and ignores VM_GROWSUP.
-> > >
-> > > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> > Reviewed-by: Cyrill Gorcunov <gorcunov@gmail.com>
+The "dev" has been deleted from "struct rk808" in rk808 mfd driver v4,
+so rk808->dev should be replaced &client->dev here.
 
-Yes, much better to use find_vma than have this strange stray use
-of unreliable start_stack.
+Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+---
 
-Acked-by: Hugh Dickins <hughd@google.com>
+ drivers/regulator/rk808-regulator.c |   34 ++++++++++++++--------------------
+ 1 file changed, 14 insertions(+), 20 deletions(-)
 
-though like Manfred I didn't quite see how overflow was impossible
-on unfamiliar architectures.
+diff --git a/drivers/regulator/rk808-regulator.c b/drivers/regulator/rk808-regulator.c
+index 4d5041c..f00d6d8 100644
+--- a/drivers/regulator/rk808-regulator.c
++++ b/drivers/regulator/rk808-regulator.c
+@@ -296,13 +296,14 @@ static struct of_regulator_match rk808_reg_matches[] = {
+ 
+ static int rk808_regulator_dts(struct rk808 *rk808)
+ {
+-	struct rk808_board *pdata = rk808->pdata;
+ 	struct device_node *np, *reg_np;
++	struct i2c_client *client = rk808->i2c;
++	struct rk808_board *pdata = rk808->pdata;
+ 	int i, ret;
+ 
+-	np = rk808->dev->of_node;
++	np = client->dev.of_node;
+ 	if (!np) {
+-		dev_err(rk808->dev, "could not find pmic sub-node\n");
++		dev_err(&client->dev, "could not find pmic sub-node\n");
+ 		return -ENXIO;
+ 	}
+ 
+@@ -310,10 +311,10 @@ static int rk808_regulator_dts(struct rk808 *rk808)
+ 	if (!reg_np)
+ 		return -ENXIO;
+ 
+-	ret = of_regulator_match(rk808->dev, reg_np, rk808_reg_matches,
++	ret = of_regulator_match(&client->dev, reg_np, rk808_reg_matches,
+ 				 RK808_NUM_REGULATORS);
+-	if (ret  < 0) {
+-		dev_err(rk808->dev,
++	if (ret < 0) {
++		dev_err(&client->dev,
+ 			"failed to parse regulator data: %d\n", ret);
+ 		return ret;
+ 	}
+@@ -333,24 +334,17 @@ static int rk808_regulator_dts(struct rk808 *rk808)
+ static int rk808_regulator_probe(struct platform_device *pdev)
+ {
+ 	struct rk808 *rk808 = dev_get_drvdata(pdev->dev.parent);
+-	struct rk808_board *pdata;
++	struct i2c_client *client = rk808->i2c;
++	struct rk808_board *pdata = rk808->pdata;
+ 	struct regulator_config config = {};
+ 	struct regulator_dev *rk808_rdev;
+ 	struct regulator_init_data *reg_data;
+ 	int i = 0;
+ 	int ret = 0;
+ 
+-	dev_dbg(rk808->dev, "%s\n", __func__);
+-
+-	if (!rk808) {
+-		dev_err(rk808->dev, "%s no rk808\n", __func__);
+-		return -ENODEV;
+-	}
+-
+-	pdata = rk808->pdata;
+ 	if (!pdata) {
+-		dev_warn(rk808->dev, "%s no pdata, create it\n", __func__);
+-		pdata = devm_kzalloc(rk808->dev, sizeof(*pdata), GFP_KERNEL);
++		dev_warn(&client->dev, "%s no pdata, create it\n", __func__);
++		pdata = devm_kzalloc(&client->dev, sizeof(*pdata), GFP_KERNEL);
+ 		if (!pdata)
+ 			return -ENOMEM;
+ 	}
+@@ -371,11 +365,11 @@ static int rk808_regulator_probe(struct platform_device *pdev)
+ 		if (!reg_data)
+ 			continue;
+ 
+-		config.dev = rk808->dev;
++		config.dev = &client->dev;
+ 		config.driver_data = rk808;
+ 		config.regmap = rk808->regmap;
+ 
+-		if (rk808->dev->of_node)
++		if (client->dev.of_node)
+ 			config.of_node = pdata->of_node[i];
+ 
+ 		reg_data->supply_regulator = rk808_reg[i].name;
+@@ -384,7 +378,7 @@ static int rk808_regulator_probe(struct platform_device *pdev)
+ 		rk808_rdev = devm_regulator_register(&pdev->dev,
+ 						     &rk808_reg[i], &config);
+ 		if (IS_ERR(rk808_rdev)) {
+-			dev_err(rk808->dev,
++			dev_err(&client->dev,
+ 				"failed to register %d regulator\n", i);
+ 			return PTR_ERR(rk808_rdev);
+ 		}
+-- 
+1.7.9.5
 
-> 
-> Thanks!
-> 
-> > I don't understand this check either, the comment above it says nothing
-> > but only commits what code is doing not explaining why.
-> 
-> Yes, and this check predates the git history. I even looked into
-> git://git.kernel.org/pub/scm/linux/kernel/git/tglx/history.git but this
-> change was added by the huge "v2.5.0.7 -> v2.5.0.8" update in 2002,
-> and obviously without any explanation (apart from "fix up proper shmat
-> semantics", but this connects SHM_REMAP itself).
 
-I'd say it comes earlier, from Christoph Rohland's 2.4.17-pre7's
-"Add missing checks on shmat()", though I didn't find more than that.
-
-We can all understand wanting to leave a gap below the growsdown stack,
-but of course could argue about growsup and 1 or 4 or 5 or whatever:
-okay that we're all more interested in just removing that start_stack.
-
-Hugh
