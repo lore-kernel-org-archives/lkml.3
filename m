@@ -1,218 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756467AbaHYTGH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 15:06:07 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:33801 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753068AbaHYTGE (ORCPT
+	id S933408AbaHYTGg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 15:06:36 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:47625 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932253AbaHYTGe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 15:06:04 -0400
-Date: Mon, 25 Aug 2014 12:05:59 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Bryan Wu <cooloney@gmail.com>
-Cc: Andreas Werner <andreas.werner@men.de>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        wim@iguana.be, linux-watchdog@vger.kernel.org,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        Jean Delvare <jdelvare@suse.de>, lm-sensors@lm-sensors.org
-Subject: Re: [PATCH v4 3/4] drivers/leds/leds-menf21bmc: introduce MEN
- 14F021P00 BMC LED driver
-Message-ID: <20140825190559.GA29112@roeck-us.net>
-References: <cover.1407918792.git.andreas.werner@men.de>
- <b3c6bc75345ba821572b22e05432960f7867bdbb.1407918792.git.andreas.werner@men.de>
- <CAK5ve-KCv=kfkJK-x5m1sFiSBVH9FMUys_tLw5Cup=3rHLZxYQ@mail.gmail.com>
+	Mon, 25 Aug 2014 15:06:34 -0400
+Message-ID: <53FB8952.9080404@wwwdotorg.org>
+Date: Mon, 25 Aug 2014 13:06:58 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAK5ve-KCv=kfkJK-x5m1sFiSBVH9FMUys_tLw5Cup=3rHLZxYQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Bresticker <abrestic@chromium.org>,
+        Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
+        Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH v2 1/9] of: Add NVIDIA Tegra XUSB mailbox binding
+References: <1408381705-3623-1-git-send-email-abrestic@chromium.org> <1408381705-3623-2-git-send-email-abrestic@chromium.org> <53FB84F7.8030509@wwwdotorg.org>
+In-Reply-To: <53FB84F7.8030509@wwwdotorg.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 11:53:32AM -0700, Bryan Wu wrote:
-> On Wed, Aug 13, 2014 at 1:40 AM, Andreas Werner <andreas.werner@men.de> wrote:
-> > Added driver to support the 14F021P00 BMC LEDs.
-> > The BMC is a Board Management Controller including four LEDs which
-> > can be switched on and off.
-> >
-> > Signed-off-by: Andreas Werner <andreas.werner@men.de>
-> > ---
-> >  drivers/leds/Kconfig          |   6 ++
-> >  drivers/leds/Makefile         |   1 +
-> >  drivers/leds/leds-menf21bmc.c | 131 ++++++++++++++++++++++++++++++++++++++++++
-> >  3 files changed, 138 insertions(+)
-> >  create mode 100644 drivers/leds/leds-menf21bmc.c
-> >
-> > diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-> > index 27cf0cd..d38ff3f 100644
-> > --- a/drivers/leds/Kconfig
-> > +++ b/drivers/leds/Kconfig
-> > @@ -458,6 +458,12 @@ config LEDS_OT200
-> >           This option enables support for the LEDs on the Bachmann OT200.
-> >           Say Y to enable LEDs on the Bachmann OT200.
-> >
-> > +config LEDS_MENF21BMC
-> > +       tristate "LED support for the MEN 14F021P00 BMC"
-> > +       depends on LEDS_CLASS && MFD_MENF21BMC
-> > +       help
-> > +         Say Y here to include support for the MEN 14F021P00 BMC LEDs.
-> > +
-> >  comment "LED driver for blink(1) USB RGB LED is under Special HID drivers (HID_THINGM)"
-> >
-> >  config LEDS_BLINKM
-> > diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-> > index 3c03666..cadc433 100644
-> > --- a/drivers/leds/Makefile
-> > +++ b/drivers/leds/Makefile
-> > @@ -53,6 +53,7 @@ obj-$(CONFIG_LEDS_MAX8997)            += leds-max8997.o
-> >  obj-$(CONFIG_LEDS_LM355x)              += leds-lm355x.o
-> >  obj-$(CONFIG_LEDS_BLINKM)              += leds-blinkm.o
-> >  obj-$(CONFIG_LEDS_VERSATILE)           += leds-versatile.o
-> > +obj-$(CONFIG_LEDS_MENF21BMC)           += leds-menf21bmc.o
-> >
-> >  # LED SPI Drivers
-> >  obj-$(CONFIG_LEDS_DAC124S085)          += leds-dac124s085.o
-> > diff --git a/drivers/leds/leds-menf21bmc.c b/drivers/leds/leds-menf21bmc.c
-> > new file mode 100644
-> > index 0000000..4621f72
-> > --- /dev/null
-> > +++ b/drivers/leds/leds-menf21bmc.c
-> > @@ -0,0 +1,131 @@
-> > +/*
-> > + *  MEN 14F021P00 Board Management Controller (BMC) LEDs Driver.
-> > + *
-> > + *  This is the core LED driver of the MEN 14F021P00 BMC.
-> > + *  There are four LEDs available which can be switched on and off.
-> > + *  STATUS LED, HOT SWAP LED, USER LED 1, USER LED 2
-> > + *
-> > + *  Copyright (C) 2014 MEN Mikro Elektronik Nuernberg GmbH
-> > + *
-> > + *  This program is free software; you can redistribute  it and/or modify it
-> > + *  under  the terms of  the GNU General  Public License as published by the
-> > + *  Free Software Foundation;  either version 2 of the  License, or (at your
-> > + *  option) any later version.
-> > + */
-> > +
-> > +#include <linux/module.h>
-> > +#include <linux/kernel.h>
-> > +#include <linux/platform_device.h>
-> > +#include <linux/leds.h>
-> > +#include <linux/i2c.h>
-> > +
-> > +#define BMC_CMD_LED_GET_SET    0xA0
-> > +#define BMC_BIT_LED_STATUS     BIT(0)
-> > +#define BMC_BIT_LED_HOTSWAP    BIT(1)
-> > +#define BMC_BIT_LED_USER1      BIT(2)
-> > +#define BMC_BIT_LED_USER2      BIT(3)
-> > +
-> > +struct menf21bmc_led {
-> > +       struct led_classdev cdev;
-> > +       u8 led_bit;
-> > +       const char *name;
-> > +       struct i2c_client *i2c_client;
-> > +};
-> > +
-> > +static struct menf21bmc_led leds[] = {
-> > +       {
-> > +               .name = "menf21bmc:led_status",
-> > +               .led_bit = BMC_BIT_LED_STATUS,
-> > +       },
-> > +       {
-> > +               .name = "menf21bmc:led_hotswap",
-> > +               .led_bit = BMC_BIT_LED_HOTSWAP,
-> > +       },
-> > +       {
-> > +               .name = "menf21bmc:led_user1",
-> > +               .led_bit = BMC_BIT_LED_USER1,
-> > +       },
-> > +       {
-> > +               .name = "menf21bmc:led_user2",
-> > +               .led_bit = BMC_BIT_LED_USER2,
-> > +       }
-> > +};
-> > +
-> > +static DEFINE_MUTEX(led_lock);
-> > +
-> > +static void
-> > +menf21bmc_led_set(struct led_classdev *led_cdev, enum led_brightness value)
-> > +{
-> > +       int led_val;
-> > +       struct menf21bmc_led *led = container_of(led_cdev,
-> > +                                       struct menf21bmc_led, cdev);
-> > +
-> > +       mutex_lock(&led_lock);
-> > +       led_val = i2c_smbus_read_byte_data(led->i2c_client,
-> > +                                               BMC_CMD_LED_GET_SET);
-> > +       if (led_val < 0)
-> > +               goto err_out;
-> > +
-> > +       if (value == LED_OFF)
-> > +               led_val &= ~led->led_bit;
-> > +       else
-> > +               led_val |= led->led_bit;
-> > +
-> > +       i2c_smbus_write_byte_data(led->i2c_client,
-> > +                                       BMC_CMD_LED_GET_SET, led_val);
-> > +err_out:
-> > +       mutex_unlock(&led_lock);
-> > +}
-> > +
-> > +static int menf21bmc_led_probe(struct platform_device *pdev)
-> > +{
-> > +       int i;
-> > +       int ret;
-> > +       struct i2c_client *i2c_client = to_i2c_client(pdev->dev.parent);
-> > +
-> > +       for (i = 0; i < ARRAY_SIZE(leds); i++) {
-> > +               leds[i].cdev.name = leds[i].name;
-> > +               leds[i].cdev.brightness_set = menf21bmc_led_set;
-> > +               leds[i].i2c_client = i2c_client;
-> > +               ret = led_classdev_register(&pdev->dev, &leds[i].cdev);
-> > +               if (ret < 0)
-> > +                       goto err_free_leds;
-> > +       }
-> > +       dev_info(&pdev->dev, "MEN 140F21P00 BMC LED device enabled\n");
-> > +
-> > +       return 0;
-> > +
-> > +err_free_leds:
-> > +       dev_err(&pdev->dev, "failed to register LED device\n");
-> > +
-> > +       for (i = i - 1; i >= 0; i--)
-> > +               led_classdev_unregister(&leds[i].cdev);
-> > +
-> > +       return ret;
-> > +}
-> > +
-> > +static int menf21bmc_led_remove(struct platform_device *pdev)
-> > +{
-> > +       int i;
-> > +
-> > +       for (i = 0; i < ARRAY_SIZE(leds); i++)
-> > +               led_classdev_unregister(&leds[i].cdev);
-> > +
-> > +       return 0;
-> > +}
-> > +
-> > +static struct platform_driver menf21bmc_led = {
-> > +       .probe          = menf21bmc_led_probe,
-> > +       .remove         = menf21bmc_led_remove,
-> > +       .driver         = {
-> > +               .name           = "menf21bmc_led",
-> > +               .owner          = THIS_MODULE,
-> > +       },
-> > +};
-> > +
-> 
-> I still think this driver should be an I2C driver which is simply than
-> a platform driver.
-> Did I miss some discussion about this in our email?
-> 
-It is not possible to instantiate multiple drivers (watchdog, hwmon, led
-in this case) with a single i2c chip.
+On 08/25/2014 12:48 PM, Stephen Warren wrote:
+> On 08/18/2014 11:08 AM, Andrew Bresticker wrote:
+>> Add device-tree bindings for the Tegra XUSB mailbox which will be used
+>> for communication between the Tegra xHCI controller's firmware and the
+>> host processor.
+>
+>> diff --git
+>> a/Documentation/devicetree/bindings/mailbox/nvidia,tegra124-xusb-mbox.txt
+>> b/Documentation/devicetree/bindings/mailbox/nvidia,tegra124-xusb-mbox.txt
+>
+>> +NVIDIA Tegra XUSB mailbox
+>> +=========================
+>> +
+>> +The Tegra XUSB mailbox is used by the Tegra xHCI controller's
+>> firmware to
+>> +communicate requests to the host and PHY drivers.
+>> +
+>> +Required properties:
+>> +--------------------
+>> + - compatible: Should be "nvidia,tegra124-xusb-mbox".
+>> + - reg: Address and length of the XUSB FPCI registers.
+>> + - interrupts: XUSB mailbox interrupt.
+>> + - #mbox-cells: Should be 1.  The specifier is the index of the
+>> mailbox to
+>> +   reference.  See <dt-bindings/mailbox/tegra-xusb-mailbox.h> for the
+>> list
+>> +   of valid values.
+>
+> Is there a common mailbox binding somewhere? I couldn't find one. While
+> the text above specifies the value for #mbox-cells, it doesn't specify
+> the details of what the property is used for (i.e. there's no
+> documentation of the consumer-side of this property, for parsing the
+> mboxes property). Typically, that would be part of a subsystem's common
+> binding document, and that document would be referenced here.
 
-Thanks,
-Guenter
+Ah, I see it's still being developed. I found it at:
+http://lkml.iu.edu/hypermail/linux/kernel/1408.0/00201.html
+
+It would be good to mention that the semantics of this property are 
+defined by ../mailbox/mailbox.txt.
