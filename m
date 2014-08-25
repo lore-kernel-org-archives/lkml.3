@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933146AbaHYOqa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 10:46:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6252 "EHLO mx1.redhat.com"
+	id S933194AbaHYOqi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 10:46:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33010 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933111AbaHYOq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 10:46:26 -0400
+	id S933166AbaHYOqe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 10:46:34 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Andi Kleen <andi@firstfloor.org>,
@@ -18,29 +18,28 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Andi Kleen <andi@firstfloor.org>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 3/9] perf: Allow PERF_FORMAT_GROUP format on inherited events
-Date: Mon, 25 Aug 2014 16:45:37 +0200
-Message-Id: <1408977943-16594-4-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 7/9] perf tools: Allow PERF_FORMAT_GROUP for inherited events
+Date: Mon, 25 Aug 2014 16:45:41 +0200
+Message-Id: <1408977943-16594-8-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1408977943-16594-1-git-send-email-jolsa@kernel.org>
 References: <1408977943-16594-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I assume the reason for this being disabled is the difficulty
-to read child events once in perf overflow routine, thus the
-perf_output_read_group function. The read syscall function
-perf_event_read_group seems to handle this nicely.
+Swithing on leader sampling on inherited events.
 
-My goal is to be able to read all events in group on leader
-sample by using the PERF_SAMPLE_READ with PERF_FORMAT_GROUP
-format. Once the monitored process forks, I need the child
-processes/events do the same and store samples into parents
-ring buffer.
+Following command will now get data from all children processes:
+  $ perf record -e '{cycles,cache-misses}:S' <workload>
 
-So I need all events sample just to report their own value
-(without child events being included). Thus switching the
-perf_event_count call for simple read of event->count.
+Use following command to display the data:
+  $ perf report --group
+
+Adding warning for record command if the support
+is not detected:
+  $ perf record -e '{cycles,cache-misses}:S,{instructions,branch}:S' kill
+  Disabling inherit for sample read events, no kernel support.
+  ...
 
 Reported-by: Jen-Cheng(Tommy) Huang <tommy24@gatech.edu>
 Cc: Andi Kleen <andi@firstfloor.org>
@@ -56,54 +55,77 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- kernel/events/core.c | 13 ++-----------
- 1 file changed, 2 insertions(+), 11 deletions(-)
+ tools/perf/perf.h        |  1 +
+ tools/perf/util/evsel.c  |  6 +++++-
+ tools/perf/util/record.c | 12 ++++++++++++
+ 3 files changed, 18 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index ff6a17607ddb..9d6b15c8f728 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -4608,9 +4608,6 @@ static void perf_output_read_one(struct perf_output_handle *handle,
- 	__output_copy(handle, values, n * sizeof(u64));
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 510c65f72858..54e1cb42277e 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -45,6 +45,7 @@ struct record_opts {
+ 	bool         call_graph_enabled;
+ 	bool	     group;
+ 	bool	     inherit_stat;
++	bool	     inherit_format_group;
+ 	bool	     no_buffering;
+ 	bool	     no_inherit;
+ 	bool	     no_inherit_set;
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 507d458ded2c..7415159bbcea 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -586,7 +586,11 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
+ 		 */
+ 		if (leader->nr_members > 1) {
+ 			attr->read_format |= PERF_FORMAT_GROUP;
+-			attr->inherit = 0;
++			attr->inherit = opts->inherit_format_group;
++			if (!opts->inherit_format_group) {
++				pr_warning_once("Disabling inherit for sample read events, "
++						"no kernel support.\n");
++			}
+ 		}
+ 	}
+ 
+diff --git a/tools/perf/util/record.c b/tools/perf/util/record.c
+index cf69325b985f..22b1d9c79ac0 100644
+--- a/tools/perf/util/record.c
++++ b/tools/perf/util/record.c
+@@ -85,6 +85,12 @@ static void perf_probe_comm_exec(struct perf_evsel *evsel)
+ 	evsel->attr.comm_exec = 1;
  }
  
--/*
-- * XXX PERF_FORMAT_GROUP vs inherited events seems difficult.
-- */
- static void perf_output_read_group(struct perf_output_handle *handle,
- 			    struct perf_event *event,
- 			    u64 enabled, u64 running)
-@@ -4631,7 +4628,7 @@ static void perf_output_read_group(struct perf_output_handle *handle,
- 	if (leader != event)
- 		leader->pmu->read(leader);
++static void perf_probe_inherit_format_group(struct perf_evsel *evsel)
++{
++	evsel->attr.inherit = 1;
++	evsel->attr.read_format |= PERF_FORMAT_GROUP;
++}
++
+ bool perf_can_sample_identifier(void)
+ {
+ 	return perf_probe_api(perf_probe_sample_identifier);
+@@ -95,6 +101,11 @@ static bool perf_can_comm_exec(void)
+ 	return perf_probe_api(perf_probe_comm_exec);
+ }
  
--	values[n++] = perf_event_count(leader);
-+	values[n++] = local64_read(&leader->count);
- 	if (read_format & PERF_FORMAT_ID)
- 		values[n++] = primary_event_id(leader);
++static bool perf_can_inherit_format_group(void)
++{
++	return perf_probe_api(perf_probe_inherit_format_group);
++}
++
+ void perf_evlist__config(struct perf_evlist *evlist, struct record_opts *opts)
+ {
+ 	struct perf_evsel *evsel;
+@@ -111,6 +122,7 @@ void perf_evlist__config(struct perf_evlist *evlist, struct record_opts *opts)
+ 	if (evlist->cpus->map[0] < 0)
+ 		opts->no_inherit = true;
  
-@@ -4644,7 +4641,7 @@ static void perf_output_read_group(struct perf_output_handle *handle,
- 		    (sub->state == PERF_EVENT_STATE_ACTIVE))
- 			sub->pmu->read(sub);
++	opts->inherit_format_group = perf_can_inherit_format_group();
+ 	use_comm_exec = perf_can_comm_exec();
  
--		values[n++] = perf_event_count(sub);
-+		values[n++] = local64_read(&sub->count);
- 		if (read_format & PERF_FORMAT_ID)
- 			values[n++] = primary_event_id(sub);
- 
-@@ -6953,12 +6950,6 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
- 
- 	local64_set(&hwc->period_left, hwc->sample_period);
- 
--	/*
--	 * we currently do not support PERF_FORMAT_GROUP on inherited events
--	 */
--	if (attr->inherit && (attr->read_format & PERF_FORMAT_GROUP))
--		goto err_ns;
--
- 	pmu = perf_init_event(event);
- 	if (!pmu)
- 		goto err_ns;
+ 	evlist__for_each(evlist, evsel) {
 -- 
 1.8.3.1
 
