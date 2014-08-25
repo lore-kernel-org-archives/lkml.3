@@ -1,75 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932719AbaHYOH6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 10:07:58 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:53944 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754526AbaHYOH4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 10:07:56 -0400
-Message-ID: <1408975667.5256.45.camel@iivanov-dev>
-Subject: Re: [PATCH v3 3/6] pinctrl: Add documentation for SPMI PMIC pinctrl
- driver bindings
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        linux-arm-msm@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 25 Aug 2014 17:07:47 +0300
-In-Reply-To: <20140813143247.GE32301@codeaurora.org>
-References: <1407771634-14946-1-git-send-email-iivanov@mm-sol.com>
-	 <1407771634-14946-4-git-send-email-iivanov@mm-sol.com>
-	 <20140813143247.GE32301@codeaurora.org>
+	id S932747AbaHYOJJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 10:09:09 -0400
+Received: from g2t1383g.austin.hp.com ([15.217.136.92]:34642 "EHLO
+	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753895AbaHYOJH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 10:09:07 -0400
+Message-ID: <1408975109.28990.98.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v2] memory-hotplug: add sysfs zones_online_to attribute
+From: Toshi Kani <toshi.kani@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Zhang Zhen <zhenzhang.zhang@huawei.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        David Rientjes <rientjes@google.com>, isimatu.yasuaki@jp.fujitsu.com,
+        n-horiguchi@ah.jp.nec.com, wangnan0@huawei.com,
+        linux-kernel@vger.kernel.org, Linux MM <linux-mm@kvack.org>
+Date: Mon, 25 Aug 2014 07:58:29 -0600
+In-Reply-To: <20140822151622.6786c1089548ea5ceb3732bf@linux-foundation.org>
+References: <1407902811-4873-1-git-send-email-zhenzhang.zhang@huawei.com>
+	 <53EAE534.8030303@huawei.com> <1408138647.26567.42.camel@misato.fc.hp.com>
+	 <53F17230.5020409@huawei.com>
+	 <20140822151622.6786c1089548ea5ceb3732bf@linux-foundation.org>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-08-13 at 07:32 -0700, Stephen Boyd wrote:
-> On 08/11, Ivan T. Ivanov wrote:
-> > diff --git a/Documentation/devicetree/bindings/pinctrl/qcom,pmic-mpp.txt b/Documentation/devicetree/bindings/pinctrl/qcom,pmic-mpp.txt
-> > new file mode 100644
-> > index 0000000..0a64567
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/pinctrl/qcom,pmic-mpp.txt
-> > @@ -0,0 +1,179 @@
-> > +Qualcomm PMIC Multi-Purpose Pin (MPP) block
-> > +
-> > +This binding describes the MPP block(s) found in the 8xxx series of pmics from
-> > +Qualcomm.
-> > +
-> > +- compatible:
-> > +	Usage: required
-> > +	Value type: <string>
-> > +	Definition: must be one of:
-> > +		    "qcom,pm8841-mpp"
-> > +		    "qcom,pm8941-mpp"
-> > +		    "qcom,pma8084-mpp"
-> > +
-> > +- reg:
-> > +	Usage: required
-> > +	Value type: <u32>
-> > +	Definition: Register base of the gpio block
+On Fri, 2014-08-22 at 15:16 -0700, Andrew Morton wrote:
+> On Mon, 18 Aug 2014 11:25:36 +0800 Zhang Zhen <zhenzhang.zhang@huawei.com> wrote:
 > 
-> MPP?
+> > On 2014/8/16 5:37, Toshi Kani wrote:
+> > > On Wed, 2014-08-13 at 12:10 +0800, Zhang Zhen wrote:
+> > >> Currently memory-hotplug has two limits:
+> > >> 1. If the memory block is in ZONE_NORMAL, you can change it to
+> > >> ZONE_MOVABLE, but this memory block must be adjacent to ZONE_MOVABLE.
+> > >> 2. If the memory block is in ZONE_MOVABLE, you can change it to
+> > >> ZONE_NORMAL, but this memory block must be adjacent to ZONE_NORMAL.
+> > >>
+> > >> With this patch, we can easy to know a memory block can be onlined to
+> > >> which zone, and don't need to know the above two limits.
+> > >>
+> > >> Updated the related Documentation.
+> > >>
+> > >> Change v1 -> v2:
+> > >> - optimize the implementation following Dave Hansen's suggestion
+> > >>
+> > >> Signed-off-by: Zhang Zhen <zhenzhang.zhang@huawei.com>
+> > >> ---
+> > >>  Documentation/ABI/testing/sysfs-devices-memory |  8 ++++
+> > >>  Documentation/memory-hotplug.txt               |  4 +-
+> > >>  drivers/base/memory.c                          | 62 ++++++++++++++++++++++++++
+> > >>  include/linux/memory_hotplug.h                 |  1 +
+> > >>  mm/memory_hotplug.c                            |  2 +-
+> > >>  5 files changed, 75 insertions(+), 2 deletions(-)
+> > >>
+> > >> diff --git a/Documentation/ABI/testing/sysfs-devices-memory b/Documentation/ABI/testing/sysfs-devices-memory
+> > >> index 7405de2..2b2a1d7 100644
+> > >> --- a/Documentation/ABI/testing/sysfs-devices-memory
+> > >> +++ b/Documentation/ABI/testing/sysfs-devices-memory
+> > >> @@ -61,6 +61,14 @@ Users:		hotplug memory remove tools
+> > >>  		http://www.ibm.com/developerworks/wikis/display/LinuxP/powerpc-utils
+> > >>
+> > >>
+> > >> +What:           /sys/devices/system/memory/memoryX/zones_online_to
+> > > 
+> > > I think this name is a bit confusing.  How about "valid_online_types"?
+> > > 
+> > Thanks for your suggestion.
+> > 
+> > This patch has been added to -mm tree.
+> > If most people think so, i would like to modify the interface name.
+> > If not, let's leave it as it is.
 > 
-> > +
-> > +- interrupts:
-> > +	Usage: required
-> > +	Value type: <prop-encoded-array>
-> > +	Definition: Must contain an array of encoded interrupt specifiers for
-> > +		    each available gpio
-> 
-> MPP? Maybe gpio makes sense.
+> Yes, the name could be better.  Do we actually need "online" in there? 
+> How about "valid_zones"?
 
-Thank you Stephen. Will fix them in next version.
+I suggested using "online" because a user specifies a zone type during
+an online operation as follows.
 
-regards,
-Ivan
+  $ echo online_movable > /sys/devices/system/memory/memoryXXX/state
+
+I also like "valid_zones" and it well represents what it is (and the
+name is shorter :-).  I am fine with this name as well.
+
+Thanks,
+-Toshi
 
