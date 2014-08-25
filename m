@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932955AbaHYPMq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 11:12:46 -0400
-Received: from relay.parallels.com ([195.214.232.42]:47103 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754586AbaHYPMo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 11:12:44 -0400
-Message-ID: <53FB5268.1010209@parallels.com>
-Date: Mon, 25 Aug 2014 19:12:40 +0400
-From: Maxim Patlasov <mpatlasov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S932991AbaHYPSy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 11:18:54 -0400
+Received: from arrakis.dune.hu ([78.24.191.176]:39229 "EHLO arrakis.dune.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932350AbaHYPSv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 11:18:51 -0400
 MIME-Version: 1.0
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Anand Avati <avati@gluster.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/6] fuse: wait for end of IO on release
-References: <20140821160304.11005.15166.stgit@localhost.localdomain>	<20140821160823.11005.32693.stgit@localhost.localdomain> <CAJfpegu6ZDNK9LyG6Vi2_hRMAW7cisTYZ_7wgT9foYOpbZRoqg@mail.gmail.com>
-In-Reply-To: <CAJfpegu6ZDNK9LyG6Vi2_hRMAW7cisTYZ_7wgT9foYOpbZRoqg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.22.200]
+In-Reply-To: <CAMuHMdXudu0kuOkKN8JCrWZSrQ4awKHhHU0E2ss++ProP0rteQ@mail.gmail.com>
+References: <1408651466-8334-1-git-send-email-abrestic@chromium.org>
+ <CAGVrzcZobuL4z0WNX+Sz4p_uwaPL-S5yvEmgRUwZPJi4+qq0tg@mail.gmail.com>
+ <CAL1qeaGb-o0P7x4nZPJ+dGfoSKz+2ANrB0gGrBi19TtPxVTAZQ@mail.gmail.com>
+ <20140823063113.GC23715@localhost> <CAMuHMdXudu0kuOkKN8JCrWZSrQ4awKHhHU0E2ss++ProP0rteQ@mail.gmail.com>
+From: Jonas Gorski <jogo@openwrt.org>
+Date: Mon, 25 Aug 2014 17:17:41 +0200
+Message-ID: <CAOiHx=mZPt=p_jw4fyEqgniJvqunQ86ro_Run5ZtD1zLYWzmqA@mail.gmail.com>
+Subject: Re: [PATCH 0/7] MIPS: Move device-tree files to a common location
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Olof Johansson <olof@lixom.net>, Andrew Bresticker <abrestic@chromium.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Kumar Gala <galak@codeaurora.org>, Ralf Baechle <ralf@linux-mips.org>,
+        David Daney <david.daney@cavium.com>, Rob Herring <robh+dt@kernel.org>,
+        Linux-MIPS <linux-mips@linux-mips.org>,
+        Qais Yousef <qais.yousef@imgtec.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, John Crispin <blogic@openwrt.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Jayachandran C <jchandra@broadcom.com>,
+        Paul Burton <paul.burton@imgtec.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2014 06:00 PM, Miklos Szeredi wrote:
-> On Thu, Aug 21, 2014 at 6:08 PM, Maxim Patlasov <MPatlasov@parallels.com> wrote:
->> There are two types of I/O activity that can be "in progress" at the time
->> of fuse_release() execution: asynchronous read-ahead and write-back. The
->> patch ensures that they are completed before fuse_release_common sends
->> FUSE_RELEASE to userspace.
+On Sat, Aug 23, 2014 at 9:50 PM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> On Sat, Aug 23, 2014 at 8:31 AM, Olof Johansson <olof@lixom.net> wrote:
+>>> > arch/arm/boot/dts/<vendor>/
+>>> >
+>>> > Is this something we should do for the MIPS and update the other architectures
+>>> > to follow that scheme?
+>>>
+>>> I recall reading that as well and that it would be adopted for ARM64,
+>>> but that hasn't seemed to have happened.  Perhaps Olof (CC'ed) will no
+>>> more.
 >>
->> So far as fuse_release() waits for end of async I/O, its callbacks
->> (fuse_readpages_end and fuse_writepage_finish) calling fuse_file_put cannot
->> be the last holders of fuse file anymore. To emphasize the fact, the patch
->> replaces fuse_file_put with __fuse_file_put there.
-> 1) spinlock around __fuse_file_put() is unnecessary,
-> wake_up/wait_event will provide the necessary synchronization.
-Yes, I agree.
+>> Yeah, I highly recommend having a directory per vendor. We didn't on ARM,
+>> and the amount of files in that directory is becoming pretty
+>> insane. Moving to a subdirectory structure later gets messy which is
+>> why we've been holding off on it.
+>
+> It would mean we can change our scripts to operate on "interesting"
+> DTS files from
+>
+>      do-something-with $(git grep -l $vendor, -- arch/arm/boot/dts)
+>
+> to
+>
+>     do-something-with arch/arm/boot/dts/$vendor/*
+>
+> which is easier to type...
 
-> 2) can't we always wait for I/O and just make the actual RELEASE
-> message sync or async based on the flag?
-> 3) and can't we merge the fuseblk case into this as well?
+Btw, do you mean chip-vendor or device-vendor with vendor?
+Device-vendor could get a bit messy on the source part as the router
+manufacturers tend to switch them quite often. E.g. d-link used arm,
+mips and ubi32 chips from marvell, ubicom, broadcom, atheros, realtek
+and ralink for their dir-615 router, happily switching back and forth.
+There are 14 known different hardware revisions of it where the chip
+differed from the previous one.
 
-I think this is doable, but the same argument that Anand suggested for 
-doing sync release selectively:
 
-> In a real world scenario you may want to perform synchronous release 
-> selectively. As such performance over lots of small files is generally 
-> slow because of context switches, and a synchronous release adds an 
-> extra switch.
 
-is applicable here: if an application opened a file read-only and read a 
-block initiating read-ahead, it's not obvious why the app doing close(2) 
-should always wait for the end of that read-ahead. For some fs it's 
-desirable, for others is not. Let's fuse daemon decide which behaviour 
-is preferable.
-
-Thanks,
-Maxim
+Jonas
