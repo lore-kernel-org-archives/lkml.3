@@ -1,117 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754934AbaHYJo5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 05:44:57 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:34688 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751454AbaHYJoz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 05:44:55 -0400
-Date: Mon, 25 Aug 2014 11:44:52 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: josh@joshtriplett.org, kernel-janitors@vger.kernel.org,
-        linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/9] pwm: lpss: use c99 initializers in structures
-Message-ID: <20140825094450.GC2399@ulmo>
-References: <1408792831-25615-1-git-send-email-Julia.Lawall@lip6.fr>
- <1408792831-25615-4-git-send-email-Julia.Lawall@lip6.fr>
+	id S1754872AbaHYJsG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 05:48:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8825 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752100AbaHYJsE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 05:48:04 -0400
+Date: Mon, 25 Aug 2014 11:47:47 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Jiri Olsa <jolsa@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 06/10] perf evlist: Allow growing pollfd on add method
+Message-ID: <20140825094747.GB11611@krava.brq.redhat.com>
+References: <1408741190-5123-1-git-send-email-acme@kernel.org>
+ <1408741190-5123-7-git-send-email-acme@kernel.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2/5bycvrmDh4d1IB"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1408792831-25615-4-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1408741190-5123-7-git-send-email-acme@kernel.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Aug 22, 2014 at 05:59:46PM -0300, Arnaldo Carvalho de Melo wrote:
 
---2/5bycvrmDh4d1IB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+SNIP
 
-On Sat, Aug 23, 2014 at 01:20:25PM +0200, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
->=20
-> Use c99 initializers for structures.
->=20
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
->=20
-> // <smpl>
-> @decl@
-> identifier i1,fld;
-> type T;
-> field list[n] fs;
-> @@
->=20
-> struct i1 {
->  fs
->  T fld;
->  ...};
->=20
-> @bad@
-> identifier decl.i1,i2;
-> expression e;
-> initializer list[decl.n] is;
-> @@
->=20
-> struct i1 i2 =3D { is,
-> + .fld =3D e
-> - e
->  ,...};
-> // </smpl>
->=20
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
->=20
-> ---
-> The patches in this series do not depend on each other.
->=20
->  drivers/pwm/pwm-lpss.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/drivers/pwm/pwm-lpss.c b/drivers/pwm/pwm-lpss.c
-> index 4df994f..441a046 100644
-> --- a/drivers/pwm/pwm-lpss.c
-> +++ b/drivers/pwm/pwm-lpss.c
-> @@ -45,7 +45,7 @@ struct pwm_lpss_boardinfo {
-> =20
->  /* BayTrail */
->  static const struct pwm_lpss_boardinfo byt_info =3D {
-> -	25000000
-> +	.clk_rate =3D 25000000
->  };
-> =20
->  static inline struct pwm_lpss_chip *to_lpwm(struct pwm_chip *chip)
+>  
+> -static int perf_evlist__alloc_pollfd(struct perf_evlist *evlist)
+> +static int perf_evlist__grow_pollfd(struct perf_evlist *evlist, int hint)
+> +{
+> +	int nr_fds_alloc = evlist->nr_fds_alloc + hint;
+> +	size_t size = sizeof(struct pollfd) * nr_fds_alloc;
+> +	struct pollfd *pollfd = realloc(evlist->pollfd, size);
+> +
+> +	if (pollfd == NULL)
+> +		return -ENOMEM;
+> +
+> +	evlist->nr_fds_alloc = nr_fds_alloc;
+> +	evlist->pollfd	     = pollfd;
+> +	return 0;
+> +}
+> +
+> +int perf_evlist__alloc_pollfd(struct perf_evlist *evlist)
+>  {
+>  	int nr_cpus = cpu_map__nr(evlist->cpus);
+>  	int nr_threads = thread_map__nr(evlist->threads);
+> @@ -416,16 +430,28 @@ static int perf_evlist__alloc_pollfd(struct perf_evlist *evlist)
+>  			nfds += nr_cpus * nr_threads;
+>  	}
+>  
+> -	evlist->pollfd = malloc(sizeof(struct pollfd) * nfds);
+> -	return evlist->pollfd != NULL ? 0 : -ENOMEM;
+> +	if (evlist->nr_fds_alloc - evlist->nr_fds < nfds &&
+> +	    perf_evlist__grow_pollfd(evlist, nfds) < 0)
+> +		return -ENOMEM;
 
-I've applied this patch to the for-next branch of the PWM tree. There
-was a conflict due to a patch that was recently applied, but it was
-trivial to fix it up, so I did.
+hum, so do we still need perf_evlist__alloc_pollfd?
+we grow any time we need inside perf_evlist__add_pollfd..
 
-Thanks,
-Thierry
-
---2/5bycvrmDh4d1IB
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT+wWSAAoJEN0jrNd/PrOhZpcP/0Fe4z6FfKJO3zjA0R9If1Ef
-0BaphloBbqfcxWH14dd/YUW20WhtwttXvhUMIcLra9VWdDdrU+/HLL3OcgCmOxO7
-LX56E0XcMBdxZPDqWKgTuaOZMgjbpvMSW1Xi0+LsaG7E0cY+ECBvy8Ga8P5iPXHY
-dH2eDqUqI8i+Z+PSBUyZXRBkFTM+ySHlYl7u8iz7G1CHTkbqJEzWIJE2pg2qLA0m
-edWVTDKuxNoVep4mAA1HazNLMKNZ2/Vq2TTx5DVhjWsNStykctzwB/XTE6phpSPm
-NqDqGqnmj3bYq76dNH60TBH+BwmSztPIDHdFT4X5E9WsM17QlMWqXfxdYh3osjdr
-YMrjLOvFKUozbYUyFn2M/BWT3RsQvbrfOCsNAvbGoYjvfYGMlkr2+eNdD0og48g/
-JX62GAamC0wLPLjPnrn6OU+nF18NIEOPQTDl/41NNwfYJ7LdZjhasKmSpWOH1ojE
-WJFT0XBK8ZTaWSp83MYmIZokevx9qa/q5P3RNPSOGKZVqt6Nz1BZNPDYj56sHfrr
-ZnzrB/3w4dd3D8YjCjkqkRZ082A+Dd18aHXwKicWe/57FK0vvfI1ouEZDk0MrhRB
-0m49Ehil/Oym/dI2O7nS0155QgUmdKHnOY1RsRGkPvNVC0D3JMki+PIWKnxV9Pxf
-ufJdAf/ZQ9WL21bMksuR
-=H9WT
------END PGP SIGNATURE-----
-
---2/5bycvrmDh4d1IB--
+jirka
