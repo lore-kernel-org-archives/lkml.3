@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933063AbaHYQ5n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 12:57:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59880 "EHLO
+	id S933092AbaHYQ6A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 12:58:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59871 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756249AbaHYQzY (ORCPT
+	with ESMTP id S1756066AbaHYQzX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 12:55:24 -0400
+	Mon, 25 Aug 2014 12:55:23 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 12/13] ptrace,x86: force IRET path after a ptrace_stop()
-Date: Mon, 25 Aug 2014 09:54:58 -0700
-Message-Id: <1408985699-31838-13-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 09/13] mnt: Move the test for MNT_LOCK_READONLY from change_mount_flags into do_remount
+Date: Mon, 25 Aug 2014 09:54:55 -0700
+Message-Id: <1408985699-31838-10-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408985699-31838-1-git-send-email-kamal@canonical.com>
 References: <1408985699-31838-1-git-send-email-kamal@canonical.com>
@@ -27,80 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit b9cd18de4db3c9ffa7e17b0dc0ca99ed5aa4d43a upstream.
+commit 07b645589dcda8b7a5249e096fece2a67556f0f4 upstream.
 
-The 'sysret' fastpath does not correctly restore even all regular
-registers, much less any segment registers or reflags values.  That is
-very much part of why it's faster than 'iret'.
+There are no races as locked mount flags are guaranteed to never change.
 
-Normally that isn't a problem, because the normal ptrace() interface
-catches the process using the signal handler infrastructure, which
-always returns with an iret.
+Moving the test into do_remount makes it more visible, and ensures all
+filesystem remounts pass the MNT_LOCK_READONLY permission check.  This
+second case is not an issue today as filesystem remounts are guarded
+by capable(CAP_DAC_ADMIN) and thus will always fail in less privileged
+mount namespaces, but it could become an issue in the future.
 
-However, some paths can get caught using ptrace_event() instead of the
-signal path, and for those we need to make sure that we aren't going to
-return to user space using 'sysret'.  Otherwise the modifications that
-may have been done to the register set by the tracer wouldn't
-necessarily take effect.
-
-Fix it by forcing IRET path by setting TIF_NOTIFY_RESUME from
-arch_ptrace_stop_needed() which is invoked from ptrace_stop().
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Andy Lutomirski <luto@amacapital.net>
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-CVE-2014-4699
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/include/asm/ptrace.h | 16 ++++++++++++++++
- include/linux/ptrace.h        |  3 +++
- 2 files changed, 19 insertions(+)
+ fs/namespace.c | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/include/asm/ptrace.h b/arch/x86/include/asm/ptrace.h
-index 942a086..68e9f00 100644
---- a/arch/x86/include/asm/ptrace.h
-+++ b/arch/x86/include/asm/ptrace.h
-@@ -232,6 +232,22 @@ static inline unsigned long regs_get_kernel_stack_nth(struct pt_regs *regs,
+diff --git a/fs/namespace.c b/fs/namespace.c
+index ddbd5bc..9171ac3 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -1740,9 +1740,6 @@ static int change_mount_flags(struct vfsmount *mnt, int ms_flags)
+ 	if (readonly_request == __mnt_is_readonly(mnt))
+ 		return 0;
  
- #define ARCH_HAS_USER_SINGLE_STEP_INFO
+-	if (mnt->mnt_flags & MNT_LOCK_READONLY)
+-		return -EPERM;
+-
+ 	if (readonly_request)
+ 		error = mnt_make_readonly(real_mount(mnt));
+ 	else
+@@ -1771,6 +1768,16 @@ static int do_remount(struct path *path, int flags, int mnt_flags,
+ 	if (path->dentry != path->mnt->mnt_root)
+ 		return -EINVAL;
  
-+/*
-+ * When hitting ptrace_stop(), we cannot return using SYSRET because
-+ * that does not restore the full CPU state, only a minimal set.  The
-+ * ptracer can change arbitrary register values, which is usually okay
-+ * because the usual ptrace stops run off the signal delivery path which
-+ * forces IRET; however, ptrace_event() stops happen in arbitrary places
-+ * in the kernel and don't force IRET path.
-+ *
-+ * So force IRET path after a ptrace stop.
-+ */
-+#define arch_ptrace_stop_needed(code, info)				\
-+({									\
-+	set_thread_flag(TIF_NOTIFY_RESUME);				\
-+	false;								\
-+})
-+
- struct user_desc;
- extern int do_get_thread_area(struct task_struct *p, int idx,
- 			      struct user_desc __user *info);
-diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
-index 2e99b8e..bb980ae 100644
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -337,6 +337,9 @@ static inline void user_single_step_siginfo(struct task_struct *tsk,
-  * calling arch_ptrace_stop() when it would be superfluous.  For example,
-  * if the thread has not been back to user mode since the last stop, the
-  * thread state might indicate that nothing needs to be done.
-+ *
-+ * This is guaranteed to be invoked once before a task stops for ptrace and
-+ * may include arch-specific operations necessary prior to a ptrace stop.
-  */
- #define arch_ptrace_stop_needed(code, info)	(0)
- #endif
++	/* Don't allow changing of locked mnt flags.
++	 *
++	 * No locks need to be held here while testing the various
++	 * MNT_LOCK flags because those flags can never be cleared
++	 * once they are set.
++	 */
++	if ((mnt->mnt.mnt_flags & MNT_LOCK_READONLY) &&
++	    !(mnt_flags & MNT_READONLY)) {
++		return -EPERM;
++	}
+ 	err = security_sb_remount(sb, data);
+ 	if (err)
+ 		return err;
 -- 
 1.9.1
 
