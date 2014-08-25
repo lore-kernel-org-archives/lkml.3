@@ -1,137 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753563AbaHYBun (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 21:50:43 -0400
-Received: from regular1.263xmail.com ([211.150.99.132]:44236 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753088AbaHYBum (ORCPT
+	id S1753671AbaHYBzn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 21:55:43 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:27980 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753189AbaHYBzm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 21:50:42 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: zyw@rock-chips.com
-X-FST-TO: broonie@kernel.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: zyw@rock-chips.com
-X-UNIQUE-TAG: <c8cf06bb984dfe0e8bd10eddc872d9cf>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Chris Zhong <zyw@rock-chips.com>
-To: broonie@kernel.org
-Cc: cf@rock-chips.com, zhangqing@rock-chips.com, dianders@chromium.org,
-        heiko@sntech.de, olof@lixom.net, sonnyrao@chromium.org,
-        dtor@chromium.org, javier.martinez@collabora.co.uk,
-        Chris Zhong <zyw@rock-chips.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Regulator: RK808: modify for struct rk808 change in v4
-Date: Mon, 25 Aug 2014 09:48:19 +0800
-Message-Id: <1408931299-20103-1-git-send-email-zyw@rock-chips.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 24 Aug 2014 21:55:42 -0400
+Message-ID: <53FA978F.8020705@huawei.com>
+Date: Mon, 25 Aug 2014 09:55:27 +0800
+From: Zhang Zhen <zhenzhang.zhang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Toshi Kani <toshi.kani@hp.com>, Dave Hansen <dave.hansen@intel.com>,
+        "David Rientjes" <rientjes@google.com>,
+        <isimatu.yasuaki@jp.fujitsu.com>, <n-horiguchi@ah.jp.nec.com>,
+        <wangnan0@huawei.com>, <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>
+Subject: Re: [PATCH v2] memory-hotplug: add sysfs zones_online_to attribute
+References: <1407902811-4873-1-git-send-email-zhenzhang.zhang@huawei.com> <53EAE534.8030303@huawei.com> <1408138647.26567.42.camel@misato.fc.hp.com> <53F17230.5020409@huawei.com> <20140822151622.6786c1089548ea5ceb3732bf@linux-foundation.org>
+In-Reply-To: <20140822151622.6786c1089548ea5ceb3732bf@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.69.77]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020206.53FA979B.00CC,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2011-05-27 18:58:46
+X-Mirapoint-Loop-Id: c7bc47f269dc7965e9b8e935dd9c1286
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The "dev" has been deleted from "struct rk808" in rk808 mfd driver v4,
-so rk808->dev should be replaced &client->dev here.
+On 2014/8/23 6:16, Andrew Morton wrote:
+> On Mon, 18 Aug 2014 11:25:36 +0800 Zhang Zhen <zhenzhang.zhang@huawei.com> wrote:
+> 
+>> On 2014/8/16 5:37, Toshi Kani wrote:
+>>> On Wed, 2014-08-13 at 12:10 +0800, Zhang Zhen wrote:
+>>>> Currently memory-hotplug has two limits:
+>>>> 1. If the memory block is in ZONE_NORMAL, you can change it to
+>>>> ZONE_MOVABLE, but this memory block must be adjacent to ZONE_MOVABLE.
+>>>> 2. If the memory block is in ZONE_MOVABLE, you can change it to
+>>>> ZONE_NORMAL, but this memory block must be adjacent to ZONE_NORMAL.
+>>>>
+>>>> With this patch, we can easy to know a memory block can be onlined to
+>>>> which zone, and don't need to know the above two limits.
+>>>>
+>>>> Updated the related Documentation.
+>>>>
+>>>> Change v1 -> v2:
+>>>> - optimize the implementation following Dave Hansen's suggestion
+>>>>
+>>>> Signed-off-by: Zhang Zhen <zhenzhang.zhang@huawei.com>
+>>>> ---
+>>>>  Documentation/ABI/testing/sysfs-devices-memory |  8 ++++
+>>>>  Documentation/memory-hotplug.txt               |  4 +-
+>>>>  drivers/base/memory.c                          | 62 ++++++++++++++++++++++++++
+>>>>  include/linux/memory_hotplug.h                 |  1 +
+>>>>  mm/memory_hotplug.c                            |  2 +-
+>>>>  5 files changed, 75 insertions(+), 2 deletions(-)
+>>>>
+>>>> diff --git a/Documentation/ABI/testing/sysfs-devices-memory b/Documentation/ABI/testing/sysfs-devices-memory
+>>>> index 7405de2..2b2a1d7 100644
+>>>> --- a/Documentation/ABI/testing/sysfs-devices-memory
+>>>> +++ b/Documentation/ABI/testing/sysfs-devices-memory
+>>>> @@ -61,6 +61,14 @@ Users:		hotplug memory remove tools
+>>>>  		http://www.ibm.com/developerworks/wikis/display/LinuxP/powerpc-utils
+>>>>
+>>>>
+>>>> +What:           /sys/devices/system/memory/memoryX/zones_online_to
+>>>
+>>> I think this name is a bit confusing.  How about "valid_online_types"?
+>>>
+>> Thanks for your suggestion.
+>>
+>> This patch has been added to -mm tree.
+>> If most people think so, i would like to modify the interface name.
+>> If not, let's leave it as it is.
+> 
+> Yes, the name could be better.  Do we actually need "online" in there? 
+> How about "valid_zones"?
 
-Signed-off-by: Chris Zhong <zyw@rock-chips.com>
----
+Ok, i will change it to valid_zones.
+> 
+> Also, it's not really clear to me why we need this sysfs file at all. 
+> Do people really read sysfs files, make onlining decisions and manually
+> type in commands?  Or is this stuff all automated?  If the latter then
+> the script can take care of all this?  For example, attempt to online
+> the memory into the desired zone and report failure if that didn't
+> succeed?
 
- drivers/regulator/rk808-regulator.c |   34 ++++++++++++++--------------------
- 1 file changed, 14 insertions(+), 20 deletions(-)
+Just like Dave Hansen says, the scripts should be changed when we add a new
+zone type. And ZONE_MOVABLE may be missed by the scripts writer.
+> 
+> IOW, please update the changelog to show
+> 
+> a) example output from
+>    /sys/devices/system/memory/memoryX/whatever-we-call-it and
+> 
+> b) example use-cases which help reviewers understand why this
+>    feature will be valuable to users.
 
-diff --git a/drivers/regulator/rk808-regulator.c b/drivers/regulator/rk808-regulator.c
-index 4d5041c..f00d6d8 100644
---- a/drivers/regulator/rk808-regulator.c
-+++ b/drivers/regulator/rk808-regulator.c
-@@ -296,13 +296,14 @@ static struct of_regulator_match rk808_reg_matches[] = {
- 
- static int rk808_regulator_dts(struct rk808 *rk808)
- {
--	struct rk808_board *pdata = rk808->pdata;
- 	struct device_node *np, *reg_np;
-+	struct i2c_client *client = rk808->i2c;
-+	struct rk808_board *pdata = rk808->pdata;
- 	int i, ret;
- 
--	np = rk808->dev->of_node;
-+	np = client->dev.of_node;
- 	if (!np) {
--		dev_err(rk808->dev, "could not find pmic sub-node\n");
-+		dev_err(&client->dev, "could not find pmic sub-node\n");
- 		return -ENXIO;
- 	}
- 
-@@ -310,10 +311,10 @@ static int rk808_regulator_dts(struct rk808 *rk808)
- 	if (!reg_np)
- 		return -ENXIO;
- 
--	ret = of_regulator_match(rk808->dev, reg_np, rk808_reg_matches,
-+	ret = of_regulator_match(&client->dev, reg_np, rk808_reg_matches,
- 				 RK808_NUM_REGULATORS);
--	if (ret  < 0) {
--		dev_err(rk808->dev,
-+	if (ret < 0) {
-+		dev_err(&client->dev,
- 			"failed to parse regulator data: %d\n", ret);
- 		return ret;
- 	}
-@@ -333,24 +334,17 @@ static int rk808_regulator_dts(struct rk808 *rk808)
- static int rk808_regulator_probe(struct platform_device *pdev)
- {
- 	struct rk808 *rk808 = dev_get_drvdata(pdev->dev.parent);
--	struct rk808_board *pdata;
-+	struct i2c_client *client = rk808->i2c;
-+	struct rk808_board *pdata = rk808->pdata;
- 	struct regulator_config config = {};
- 	struct regulator_dev *rk808_rdev;
- 	struct regulator_init_data *reg_data;
- 	int i = 0;
- 	int ret = 0;
- 
--	dev_dbg(rk808->dev, "%s\n", __func__);
--
--	if (!rk808) {
--		dev_err(rk808->dev, "%s no rk808\n", __func__);
--		return -ENODEV;
--	}
--
--	pdata = rk808->pdata;
- 	if (!pdata) {
--		dev_warn(rk808->dev, "%s no pdata, create it\n", __func__);
--		pdata = devm_kzalloc(rk808->dev, sizeof(*pdata), GFP_KERNEL);
-+		dev_warn(&client->dev, "%s no pdata, create it\n", __func__);
-+		pdata = devm_kzalloc(&client->dev, sizeof(*pdata), GFP_KERNEL);
- 		if (!pdata)
- 			return -ENOMEM;
- 	}
-@@ -371,11 +365,11 @@ static int rk808_regulator_probe(struct platform_device *pdev)
- 		if (!reg_data)
- 			continue;
- 
--		config.dev = rk808->dev;
-+		config.dev = &client->dev;
- 		config.driver_data = rk808;
- 		config.regmap = rk808->regmap;
- 
--		if (rk808->dev->of_node)
-+		if (client->dev.of_node)
- 			config.of_node = pdata->of_node[i];
- 
- 		reg_data->supply_regulator = rk808_reg[i].name;
-@@ -384,7 +378,7 @@ static int rk808_regulator_probe(struct platform_device *pdev)
- 		rk808_rdev = devm_regulator_register(&pdev->dev,
- 						     &rk808_reg[i], &config);
- 		if (IS_ERR(rk808_rdev)) {
--			dev_err(rk808->dev,
-+			dev_err(&client->dev,
- 				"failed to register %d regulator\n", i);
- 			return PTR_ERR(rk808_rdev);
- 		}
--- 
-1.7.9.5
+Sorry, this patch has been added to -next tree. I can't modify the changelog.
+> 
+> Also, please do address the error which Yasuaki Ishimatsu identified.
+> 
+Yeah, i have been waiting for http://ozlabs.org/~akpm/mmots/broken-out/memory-hotplug-add-sysfs-zones_online_to-attribute-fix-2.patch
+added to -mm tree.
+So i can send a patch based on -mm tree to address the error which Yasuaki Ishimatsu identified.
+Otherwise, conflicts may occur.
+
+Thanks!
+> 
+> .
+> 
 
 
