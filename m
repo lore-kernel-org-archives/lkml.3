@@ -1,252 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752743AbaHYJ1I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 05:27:08 -0400
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.175]:7798 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751000AbaHYJ1G (ORCPT
+	id S1753149AbaHYJ3O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 05:29:14 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:45073 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751127AbaHYJ3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 05:27:06 -0400
-X-Greylist: delayed 425 seconds by postgrey-1.27 at vger.kernel.org; Mon, 25 Aug 2014 05:27:05 EDT
-X-Env-Sender: James.Ban.opensource@diasemi.com
-X-Msg-Ref: server-3.tower-38.messagelabs.com!1408958397!18666824!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <201408250919.s7P9Jpt4047076@krsrvapps-01.diasemi.com>
-From: James Ban <james.ban.opensource@diasemi.com>
-Date: Mon, 25 Aug 2014 18:16:56 +0900
-Subject: [PATCH V1] regulator: DA9211 : support device tree
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Support Opensource <support.opensource@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>
-CC: David Dajun Chen <david.chen@diasemi.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 25 Aug 2014 05:29:12 -0400
+X-AuditID: cbfee68d-f79c46d000000b84-09-53fb01e57b45
+From: Inha Song <ideal.song@samsung.com>
+To: broonie@kernel.org
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        sameo@linux.intel.com, lee.jones@linaro.org,
+        ckeepax@opensource.wolfsonmicro.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        alsa-devel@alsa-project.org, cw00.choi@samsung.com,
+        Inha Song <ideal.song@samsung.com>
+Subject: [alsa-devel] [RESEND PATCH v4 0/2] mfd: arizona: add support for
+ INn_MODE register
+Date: Mon, 25 Aug 2014 18:25:38 +0900
+Message-id: <1408958740-1037-1-git-send-email-ideal.song@samsung.com>
+X-Mailer: git-send-email 2.0.0.390.gcb682f8
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmkeLIzCtJLcpLzFFi42JZI2JSqPuU8XewwZNXhhZXLh5ispj68Amb
+	xb8pN9gtrn95zmox/8g5Vov+NwtZLXb9vc9oce7VSkaL+1+PMlpc3jWHzWLp9YtMFsvf/mez
+	mDB9LYtF694j7Banu1kd+D02fG5i81gzbw2jx+W+XiaPlcu/sHlsWtXJ5nHn2h42j3knAz1e
+	TvzN5tG3ZRWjx+dNcgFcUVw2Kak5mWWpRfp2CVwZrzYvZSnYxFax5e0T9gbGRtYuRk4OCQET
+	icO7e5kgbDGJC/fWs4HYQgJLGSX+XCmDqfl08Rl7FyMXUHw6o8Sv/mOMEM4cJomLP3awg1Sx
+	CWhIfP+8mRnEFgGadHtOJzNIEbNAB7PElG27GEESwgKxEt/WNLCA2CwCqhKX/2wFa+YVcJXY
+	+ewgM8Q6bYl9DTPZQJolBG6xS+xaco4RokFA4tvkQ0DNHEAJWYlNB6DqJSUOrrjBMoFRcAEj
+	wypG0dSC5ILipPQiQ73ixNzi0rx0veT83E2MwLg5/e9Z7w7G2wesDzEKcDAq8fCu4PwVLMSa
+	WFZcmXuI0RRow0RmKdHkfGB05pXEGxqbGVmYmpgaG5lbmimJ8ypK/QwWEkhPLEnNTk0tSC2K
+	LyrNSS0+xMjEwSnVwFgneyjmxs7j9UwuvyomOd07zVl9/K2YYuUvm4L/TNbvZ8mJSFZpxm36
+	4JJxXer8nn38MROCZfdMdVt6fINEw6QLybemHtjPcKLFf7tbd7PqyXtTryT/W7l/WneECO+b
+	+P9rQzdKsdlXbJkS8KCtrPKt/ua881On5/75rxG0/+SXPfzLN5b+r9yqxFKckWioxVxUnAgA
+	/PoPVJYCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHIsWRmVeSWpSXmKPExsVy+t9jQd2njL+DDXZu0LS4cvEQk8XUh0/Y
+	LP5NucFucf3Lc1aL+UfOsVr0v1nIarHr731Gi3OvVjJa3P96lNHi8q45bBZLr19kslj+9j+b
+	xYTpa1ksWvceYbc43c3qwO+x4XMTm8eaeWsYPS739TJ5rFz+hc1j06pONo871/awecw7Gejx
+	cuJvNo++LasYPT5vkgvgimpgtMlITUxJLVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshL
+	zE21VXLxCdB1y8wBekNJoSwxpxQoFJBYXKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjDmPFq
+	81KWgk1sFVvePmFvYGxk7WLk5JAQMJH4dPEZO4QtJnHh3nq2LkYuDiGB6YwSv/qPMUI4c5gk
+	Lv7YAVbFJqAh8f3zZmYQWwSo4/acTmaQImaBDmaJKdt2MYIkhAViJb6taWABsVkEVCUu/9kK
+	1swr4Cqx89lBZoh12hL7GmayTWDkXsDIsIpRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjOC6f
+	Se1gXNlgcYhRgINRiYd3JeevYCHWxLLiytxDjBIczEoivBp/gEK8KYmVValF+fFFpTmpxYcY
+	TYG2T2SWEk3OB6aMvJJ4Q2MTMyNLI3NDCyNjcyVx3gOt1oFCAumJJanZqakFqUUwfUwcnFIN
+	jOf1rsXX7d7zpTXG0qY6YYP9s7S7irLbfSvZlp0UL/E7fODUM1OTFeWPLgiuncAoEXZ8zvln
+	b4I/p3y7WKh/wm5y7JOjh/aU5TBVqO5ceoy5SOC+Rs8ZD4fdqe4X1j9P9CxO/qmfs+lRxIr4
+	dZLPpNsXL42riL8VMLkkM+O/gPEi1nc/bK24dZVYijMSDbWYi4oTAW2B6PfhAgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch for supporting device tree of DA9211/DA9213.
+This patch series add support for INn_MODE register control using platform data.
+Each input signal path can be configurated either as a Analogue or Digital using
+the INn_MODE registers.
 
-Signed-off-by: James Ban <james.ban.opensource@diasemi.com>
----
+Changes for v4
+- Update document content for more clarity
 
-This patch is relative to linux-next repository tag next-20140822.
- .../devicetree/bindings/regulator/da9211.txt       |   58 +++++++++++++
- drivers/regulator/da9211-regulator.c               |   85 ++++++++++++++++++--
- include/linux/regulator/da9211.h                   |    2 +-
- 3 files changed, 137 insertions(+), 8 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/regulator/da9211.txt
+Changes for v3
+- Change to use of_property_read_u32_array
+- Fix a few typos
+- Update commit message
 
-diff --git a/Documentation/devicetree/bindings/regulator/da9211.txt b/Documentation/devicetree/bindings/regulator/da9211.txt
-new file mode 100644
-index 0000000..ec29830
---- /dev/null
-+++ b/Documentation/devicetree/bindings/regulator/da9211.txt
-@@ -0,0 +1,58 @@
-+* Dialog Semiconductor DA9211/DA9213 Voltage Regulator
-+
-+Required properties:
-+
-+- compatible:	It should be "dlg,da9211" or "dlg,da9213".
-+- reg:		the i2c slave address of the regulator. It should be 0x68.
-+
-+Any standard regulator properties can be used to configure the
-+da9211/da9213 DCDC.
-+
-+Example 1) DA9211
-+
-+	pmic: da9211@68 {
-+		compatible = "dlg,da9211";
-+		reg = <0x68>;
-+		interrupts = <3 27>;
-+
-+		regulators {
-+			BUCKA {
-+				regulator-name = "VBUCKA";
-+				regulator-min-microvolt = < 300000>;
-+				regulator-max-microvolt = <1570000>;
-+				regulator-min-microamp 	= <2000000>;
-+				regulator-max-microamp 	= <5000000>;
-+			};
-+			BUCKB {
-+				regulator-name = "VBUCKB";
-+				regulator-min-microvolt = < 300000>;
-+				regulator-max-microvolt = <1570000>;
-+				regulator-min-microamp 	= <2000000>;
-+				regulator-max-microamp 	= <5000000>;
-+			};
-+		};
-+	};
-+
-+Example 2) DA92113
-+	pmic: da9213@68 {
-+		compatible = "dlg,da9213";
-+		reg = <0x68>;
-+		interrupts = <3 27>;
-+
-+		regulators {
-+			BUCKA {
-+				regulator-name = "VBUCKA";
-+				regulator-min-microvolt = < 300000>;
-+				regulator-max-microvolt = <1570000>;
-+				regulator-min-microamp 	= <3000000>;
-+				regulator-max-microamp 	= <6000000>;
-+			};
-+			BUCKB {
-+				regulator-name = "VBUCKB";
-+				regulator-min-microvolt = < 300000>;
-+				regulator-max-microvolt = <1570000>;
-+				regulator-min-microamp 	= <3000000>;
-+				regulator-max-microamp 	= <6000000>;
-+			};
-+		};
-+	};
-diff --git a/drivers/regulator/da9211-regulator.c b/drivers/regulator/da9211-regulator.c
-index a26f1d2..5aabbac 100644
---- a/drivers/regulator/da9211-regulator.c
-+++ b/drivers/regulator/da9211-regulator.c
-@@ -24,6 +24,7 @@
- #include <linux/regmap.h>
- #include <linux/irq.h>
- #include <linux/interrupt.h>
-+#include <linux/regulator/of_regulator.h>
- #include <linux/regulator/da9211.h>
- #include "da9211-regulator.h"
- 
-@@ -236,6 +237,59 @@ static struct regulator_desc da9211_regulators[] = {
- 	DA9211_BUCK(BUCKB),
- };
- 
-+#ifdef CONFIG_OF
-+static struct of_regulator_match da9211_matches[] = {
-+	[DA9211_ID_BUCKA] = { .name = "BUCKA" },
-+	[DA9211_ID_BUCKB] = { .name = "BUCKB" },
-+	};
-+
-+static struct da9211_pdata *da9211_parse_regulators_dt(
-+		struct device *dev)
-+{
-+	struct da9211_pdata *pdata;
-+	struct device_node *node;
-+	int i, num, n;
-+
-+	node = of_get_child_by_name(dev->of_node, "regulators");
-+	if (!node) {
-+		dev_err(dev, "regulators node not found\n");
-+		return ERR_PTR(-ENODEV);
-+	}
-+
-+	num = of_regulator_match(dev, node, da9211_matches,
-+				 ARRAY_SIZE(da9211_matches));
-+	of_node_put(node);
-+	if (num < 0) {
-+		dev_err(dev, "Failed to match regulators\n");
-+		return ERR_PTR(-EINVAL);
-+	}
-+
-+	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-+	if (!pdata)
-+		return ERR_PTR(-ENOMEM);
-+
-+	pdata->num_buck = num;
-+
-+	n = 0;
-+	for (i = 0; i < ARRAY_SIZE(da9211_matches); i++) {
-+		if (!da9211_matches[i].init_data)
-+			continue;
-+
-+		pdata->init_data[n] = da9211_matches[i].init_data;
-+
-+		n++;
-+	};
-+
-+	return pdata;
-+}
-+#else
-+static struct da9211_pdata *da9211_parse_regulators_dt(
-+		struct device *dev)
-+{
-+	return ERR_PTR(-ENODEV);
-+}
-+#endif
-+
- static irqreturn_t da9211_irq_handler(int irq, void *data)
- {
- 	struct da9211 *chip = data;
-@@ -306,7 +360,7 @@ static int da9211_regulator_init(struct da9211 *chip)
- 	}
- 
- 	for (i = 0; i < chip->num_regulator; i++) {
--		config.init_data = &(chip->pdata->init_data[i]);
-+		config.init_data = chip->pdata->init_data[i];
- 		config.dev = chip->dev;
- 		config.driver_data = chip;
- 		config.regmap = chip->regmap;
-@@ -332,6 +386,21 @@ static int da9211_regulator_init(struct da9211 *chip)
- 
- 	return 0;
- }
-+
-+static const struct i2c_device_id da9211_i2c_id[] = {
-+	{"da9211", DA9211},
-+	{"da9213", DA9213},
-+	{},
-+};
-+
-+#ifdef CONFIG_OF
-+static const struct of_device_id da9211_dt_ids[] = {
-+	{ .compatible = "dlg,da9211", .data = &da9211_i2c_id[0] },
-+	{ .compatible = "dlg,da9213", .data = &da9211_i2c_id[1] },
-+	{},
-+};
-+#endif
-+
- /*
-  * I2C driver interface functions
-  */
-@@ -377,6 +446,14 @@ static int da9211_i2c_probe(struct i2c_client *i2c,
- 		return -ENODEV;
- 	}
- 
-+	if (!chip->pdata)
-+		chip->pdata = da9211_parse_regulators_dt(chip->dev);
-+
-+	if (IS_ERR(chip->pdata)) {
-+		dev_err(chip->dev, "No regulators defined for the platform\n");
-+		return PTR_ERR(chip->pdata);
-+	}
-+
- 	chip->chip_irq = i2c->irq;
- 
- 	if (chip->chip_irq != 0) {
-@@ -401,12 +478,6 @@ static int da9211_i2c_probe(struct i2c_client *i2c,
- 	return ret;
- }
- 
--static const struct i2c_device_id da9211_i2c_id[] = {
--	{"da9211", DA9211},
--	{"da9213", DA9213},
--	{},
--};
--
- MODULE_DEVICE_TABLE(i2c, da9211_i2c_id);
- 
- static struct i2c_driver da9211_regulator_driver = {
-diff --git a/include/linux/regulator/da9211.h b/include/linux/regulator/da9211.h
-index 658c3c3..5479394 100644
---- a/include/linux/regulator/da9211.h
-+++ b/include/linux/regulator/da9211.h
-@@ -32,6 +32,6 @@ struct da9211_pdata {
- 	 * 2 : 2 phase 2 buck
- 	 */
- 	int num_buck;
--	struct regulator_init_data *init_data;
-+	struct regulator_init_data *init_data[DA9211_MAX_REGULATORS];
- };
- #endif
+Changes for v2
+- Change to support
+- Update commit message
+- Update document content for more clarity
+
+Inha Song (2):
+  mfd: arizona: Add support for INn_Mode register control
+  mfd: arizona: Update DT binding to support INn_MODE init_data
+
+ Documentation/devicetree/bindings/mfd/arizona.txt | 7 +++++++
+ drivers/mfd/arizona-core.c                        | 8 +++++++-
+ 2 files changed, 14 insertions(+), 1 deletion(-)
+
 -- 
-end-of-patch for regulator: DA9211 : support device tree V1
+2.0.0.390.gcb682f8
 
