@@ -1,104 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933286AbaHYR6n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 13:58:43 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:33598 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933108AbaHYR6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 13:58:41 -0400
-From: "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "Srivatsa S. Bhat" <srivatsa@MIT.EDU>,
-        "Preeti U. Murthy" <preeti@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-pm@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH 0/9] powerpc/powernv: Support for fastsleep and winkle
-Date: Mon, 25 Aug 2014 23:27:52 +0530
-Message-Id: <1408989481-13891-1-git-send-email-shreyas@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.9.0
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082517-5806-0000-0000-0000004C0395
+	id S933301AbaHYR7s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 13:59:48 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:30099 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933043AbaHYR7r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 13:59:47 -0400
+From: Josef Bacik <jbacik@fb.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <kafai@fb.com>, <rostedt@goodmis.org>
+Subject: [PATCH] trace: fix epoll hang when we race with new entries
+Date: Mon, 25 Aug 2014 13:59:41 -0400
+Message-ID: <1408989581-23727-1-git-send-email-jbacik@fb.com>
+X-Mailer: git-send-email 1.9.3
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
+ definitions=2014-08-25_04:2014-08-25,2014-08-25,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=1.58206781009085e-14 kscore.compositescore=0
+ circleOfTrustscore=22.6900859407804 compositescore=0.997695897463551
+ urlsuspect_oldscore=0.997695897463551 suspectscore=1
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.997695897463551 spamscore=0
+ recipient_to_sender_domain_totalscore=6 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1408250232
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fast sleep is an idle state, where the core and the L1 and L2
-caches are brought down to a threshold voltage. This also means that
-the communication between L2 and L3 caches have to be fenced. However
-the current P8 chips have a bug wherein this fencing between L2 and
-L3 caches get delayed by a cpu cycle. This can delay L3 response to
-the other cpus if they request for data during this time. Thus they
-would fetch the same data from the memory which could lead to data
-corruption if L3 cache is not flushed.
-Patch 4 adds support to work around this.
+Epoll on trace_pipe can sometimes hang in a weird case.  If the ring buffer is
+empty when we set waiters_pending but an event shows up exactly at that moment
+we can miss being woken up by the ring buffers irq work.  Since
+ring_buffer_empty() is inherently racey we will sometimes think that the buffer
+is not empty.  So we don't get woken up and we don't think there are any events
+even though there were some ready when we added the watch, which makes us hang.
+This patch fixes this by making sure that we are actually on the wait list
+before we set waiters_pending, and add a memory barrier to make sure
+ring_buffer_empty() is going to be correct.
 
-'Deep Winkle' is a deeper idle state where core and private L2 are powered
-off. While it offers higher power savings, it is at the cost of losing
-hypervisor register state and higher latency.
-Patch 5-9 adds support for winkle and uses it for offline cpus.
+cc: kafai@fb.com
+cc: rostedt@goodmis.org
+Signed-off-by: Josef Bacik <jbacik@fb.com>
+---
+ kernel/trace/ring_buffer.c | 16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
 
-Patch 1 - Moves parameters required discover idle states to a location 
-common to both cpuidle driver and powernv core code
-Patch 2 - Populates idle state details from device tree
-Patch 3 - Enables cpus to run guest after waking up from fastsleep/winkle
-
-
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Michael Ellerman <mpe@ellerman.id.au>
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Cc: Srivatsa S. Bhat <srivatsa@MIT.EDU>
-Cc: Preeti U. Murthy <preeti@linux.vnet.ibm.com>
-Cc: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: devicetree@vger.kernel.org
-Cc: linux-pm@vger.kernel.org
-Cc: linuxppc-dev@lists.ozlabs.org
-
-Preeti U Murthy (2):
-  cpuidle/powernv: Populate cpuidle state details by querying the
-    device-tree
-  powerpc/powernv/cpuidle: Add workaround to enable fastsleep
-
-Shreyas B. Prabhu (6):
-  powerpc/kvm/book3s_hv: Enable CPUs to run guest after waking up from
-    fast-sleep
-  powerpc/powernv: Add OPAL call to save and restore
-  powerpc: Adding macro for accessing Thread Switch Control Register
-  powerpc/powernv: Add winkle infrastructure
-  powerpc/powernv: Discover and enable winkle
-  powerpc/powernv: Enter deepest supported idle state in offline
-
-Srivatsa S. Bhat (1):
-  powerpc/powernv: Enable Offline CPUs to enter deep idle states
-
- arch/powerpc/include/asm/machdep.h             |   4 +
- arch/powerpc/include/asm/opal.h                |  10 ++
- arch/powerpc/include/asm/paca.h                |   3 +
- arch/powerpc/include/asm/ppc-opcode.h          |   2 +
- arch/powerpc/include/asm/processor.h           |   6 +-
- arch/powerpc/include/asm/reg.h                 |   1 +
- arch/powerpc/kernel/asm-offsets.c              |   1 +
- arch/powerpc/kernel/exceptions-64s.S           |  37 ++---
- arch/powerpc/kernel/idle.c                     |  30 ++++
- arch/powerpc/kernel/idle_power7.S              |  83 +++++++++-
- arch/powerpc/platforms/powernv/opal-wrappers.S |   2 +
- arch/powerpc/platforms/powernv/powernv.h       |   8 +
- arch/powerpc/platforms/powernv/setup.c         | 217 +++++++++++++++++++++++++
- arch/powerpc/platforms/powernv/smp.c           |  13 +-
- arch/powerpc/platforms/powernv/subcore.c       |  15 ++
- drivers/cpuidle/cpuidle-powernv.c              |  40 ++++-
- 16 files changed, 439 insertions(+), 33 deletions(-)
-
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index afb04b9..b38fb2b 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -626,8 +626,22 @@ int ring_buffer_poll_wait(struct ring_buffer *buffer, int cpu,
+ 		work = &cpu_buffer->irq_work;
+ 	}
+ 
+-	work->waiters_pending = true;
+ 	poll_wait(filp, &work->waiters, poll_table);
++	work->waiters_pending = true;
++	/*
++	 * There's a tight race between setting the waiters_pending and
++	 * checking if the ring buffer is empty.  Once the waiters_pending bit
++	 * is set, the next event will wake the task up, but we can get stuck
++	 * if there's only a single event in.
++	 *
++	 * FIXME: Ideally, we need a memory barrier on the writer side as well,
++	 * but adding a memory barrier to all events will cause too much of a
++	 * performance hit in the fast path.  We only need a memory barrier when
++	 * the buffer goes from empty to having content.  But as this race is
++	 * extremely small, and it's not a problem if another event comes in, we
++	 * will fix it later.
++	 */
++	smp_mb();
+ 
+ 	if ((cpu == RING_BUFFER_ALL_CPUS && !ring_buffer_empty(buffer)) ||
+ 	    (cpu != RING_BUFFER_ALL_CPUS && !ring_buffer_empty_cpu(buffer, cpu)))
 -- 
-1.9.0
+1.9.3
 
