@@ -1,75 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755118AbaHYOzd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 10:55:33 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:47779 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753060AbaHYOzc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 10:55:32 -0400
-Message-ID: <1408978530.6599.1.camel@leira.trondhjem.org>
-Subject: [GIT PULL] Please pull NFS client fixes
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux NFS mailing list <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
-Date: Mon, 25 Aug 2014 10:55:30 -0400
-Organization: Primary Data, Inc
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755877AbaHYO4L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 10:56:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60749 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753397AbaHYO4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 10:56:09 -0400
+From: Jiri Olsa <jolsa@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@kernel.org>, Kyle McMartin <kyle@mcmartin.ca>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH] perf tools: Allow to specify lib compile variable for spec usage
+Date: Mon, 25 Aug 2014 16:55:52 +0200
+Message-Id: <1408978552-17131-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+We need a way to specify $(lib) part of the installation
+path for traceevent plugin libraries. Currently we use
+'lib64' for x86_64 and 'lib' otherwise.
 
-The following changes since commit 451fd72219dd6f3355e2d036c598544c760ee532:
+Instead of listing all possible values, this change allows
+the rpm spec code to specify the correct $(lib) part based
+on processed architecture, like
 
-  Merge tag 'pwm/for-3.17-rc2' of git://git.kernel.org/pub/scm/linux/kernel/git/thierry.reding/linux-pwm (2014-08-22 14:50:21 -0700)
+  $ make ... lib=%{_lib}
 
-are available in the git repository at:
+Cc: Kyle McMartin <kyle@mcmartin.ca>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ tools/perf/config/Makefile | 2 ++
+ 1 file changed, 2 insertions(+)
 
-
-  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.17-2
-
-for you to fetch changes up to 92a56555bd576c61b27a5cab9f38a33a1e9a1df5:
-
-  nfs: Don't busy-wait on SIGKILL in __nfs_iocounter_wait (2014-08-22 18:04:44 -0400)
-
-----------------------------------------------------------------
-NFS client fixes for 3.17
-
-Highlights:
-
-- More fixes for read/write codepath regressions
-  - Sleeping while holding the inode lock
-  - Stricter enforcement of page contiguity when coalescing requests
-  - Fix up error handling in the page coalescing code
-- Don't busy wait on SIGKILL in the file locking code
-
-----------------------------------------------------------------
-David Jeffery (1):
-      nfs: Don't busy-wait on SIGKILL in __nfs_iocounter_wait
-
-Weston Andros Adamson (7):
-      nfs: change nfs_page_group_lock argument
-      nfs: fix nonblocking calls to nfs_page_group_lock
-      nfs: use blocking page_group_lock in add_request
-      nfs: fix error handling in lock_and_join_requests
-      nfs: don't sleep with inode lock in lock_and_join_requests
-      nfs: disallow duplicate pages in pgio page vectors
-      nfs: can_coalesce_requests must enforce contiguity
-
- fs/nfs/pagelist.c        | 84 ++++++++++++++++++++++++++++++++++--------------
- fs/nfs/write.c           | 21 +++++++++---
- include/linux/nfs_page.h |  1 +
- 3 files changed, 77 insertions(+), 29 deletions(-)
-
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 75d4c237b03d..eaf36dafb482 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -651,11 +651,13 @@ else
+ sysconfdir = $(prefix)/etc
+ ETC_PERFCONFIG = etc/perfconfig
+ endif
++ifndef lib
+ ifeq ($(IS_X86_64),1)
+ lib = lib64
+ else
+ lib = lib
+ endif
++endif # lib
+ libdir = $(prefix)/$(lib)
+ 
+ # Shell quote (do not use $(call) to accommodate ancient setups);
 -- 
-Trond Myklebust
-Linux NFS client maintainer, PrimaryData
-trond.myklebust@primarydata.com
-
+1.8.3.1
 
