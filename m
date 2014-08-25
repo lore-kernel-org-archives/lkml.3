@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754254AbaHYDfy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 23:35:54 -0400
-Received: from mail-bl2lp0205.outbound.protection.outlook.com ([207.46.163.205]:36237
+	id S1754321AbaHYDgG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 23:36:06 -0400
+Received: from mail-bl2lp0203.outbound.protection.outlook.com ([207.46.163.203]:58588
 	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753805AbaHYDfw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 23:35:52 -0400
+	id S1754212AbaHYDfy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Aug 2014 23:35:54 -0400
 From: Xiubo Li <Li.Xiubo@freescale.com>
 To: <broonie@kernel.org>, <nicoleotsuka@gmail.com>, <timur@tabi.org>,
         <lgirdwood@gmail.com>, <perex@perex.cz>, <tiwai@suse.de>,
@@ -14,14 +14,14 @@ To: <broonie@kernel.org>, <nicoleotsuka@gmail.com>, <timur@tabi.org>,
 CC: <galak@codeaurora.org>, <mark.rutland@arm.com>, <robh+dt@kernel.org>,
         <pawel.moll@arm.com>, <linux-kernel@vger.kernel.org>,
         Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCHv3 2/4] ASoC: fsl-esai: Convert to use regmap framework's endianness method.
-Date: Mon, 25 Aug 2014 11:31:00 +0800
-Message-ID: <1408937462-18727-3-git-send-email-Li.Xiubo@freescale.com>
+Subject: [PATCHv3 1/4] ASoC: fsl-asrc: Convert to use regmap framework's endianness method.
+Date: Mon, 25 Aug 2014 11:30:59 +0800
+Message-ID: <1408937462-18727-2-git-send-email-Li.Xiubo@freescale.com>
 X-Mailer: git-send-email 1.8.5
 In-Reply-To: <1408937462-18727-1-git-send-email-Li.Xiubo@freescale.com>
 References: <1408937462-18727-1-git-send-email-Li.Xiubo@freescale.com>
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199003)(19580405001)(6806004)(83322001)(68736004)(77156001)(44976005)(69596002)(47776003)(90102001)(64706001)(19580395003)(87286001)(4396001)(50226001)(80022001)(81342001)(104166001)(104016003)(46102001)(105606002)(81156004)(26826002)(99396002)(102836001)(84676001)(85306004)(20776003)(106466001)(21056001)(31966008)(62966002)(74502001)(74662001)(76482001)(50466002)(79102001)(76176999)(88136002)(50986999)(87936001)(95666004)(92566001)(2201001)(48376002)(229853001)(107046002)(89996001)(77982001)(86362001)(93916002)(92726001)(97736001)(36756003)(83072002)(81542001)(85852003);DIR:OUT;SFP:;SCL:1;SRVR:CY1PR0301MB0620;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199003)(189002)(81342001)(77156001)(26826002)(2201001)(20776003)(64706001)(4396001)(87936001)(76482001)(104016003)(77982001)(62966002)(85306004)(97736001)(92726001)(47776003)(21056001)(89996001)(83072002)(92566001)(102836001)(50226001)(80022001)(104166001)(90102001)(85852003)(88136002)(79102001)(46102001)(93916002)(86362001)(84676001)(95666004)(99396002)(229853001)(107046002)(6806004)(87286001)(36756003)(50466002)(19580395003)(19580405001)(44976005)(68736004)(81542001)(105606002)(69596002)(81156004)(48376002)(31966008)(76176999)(106466001)(74502001)(83322001)(74662001)(50986999);DIR:OUT;SFP:;SCL:1;SRVR:CY1PR0301MB0618;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
@@ -35,32 +35,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
 ---
- sound/soc/fsl/fsl_esai.c | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ sound/soc/fsl/fsl_asrc.c | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
-diff --git a/sound/soc/fsl/fsl_esai.c b/sound/soc/fsl/fsl_esai.c
-index b2f6b3e..8bcdfda 100644
---- a/sound/soc/fsl/fsl_esai.c
-+++ b/sound/soc/fsl/fsl_esai.c
-@@ -710,7 +710,7 @@ static bool fsl_esai_writeable_reg(struct device *dev, unsigned int reg)
+diff --git a/sound/soc/fsl/fsl_asrc.c b/sound/soc/fsl/fsl_asrc.c
+index 8221104..3b14531 100644
+--- a/sound/soc/fsl/fsl_asrc.c
++++ b/sound/soc/fsl/fsl_asrc.c
+@@ -684,7 +684,7 @@ static bool fsl_asrc_writeable_reg(struct device *dev, unsigned int reg)
  	}
  }
  
--static struct regmap_config fsl_esai_regmap_config = {
-+static const struct regmap_config fsl_esai_regmap_config = {
+-static struct regmap_config fsl_asrc_regmap_config = {
++static const struct regmap_config fsl_asrc_regmap_config = {
  	.reg_bits = 32,
  	.reg_stride = 4,
  	.val_bits = 32,
-@@ -736,9 +736,6 @@ static int fsl_esai_probe(struct platform_device *pdev)
- 	esai_priv->pdev = pdev;
- 	strcpy(esai_priv->name, np->name);
+@@ -802,10 +802,6 @@ static int fsl_asrc_probe(struct platform_device *pdev)
  
+ 	asrc_priv->paddr = res->start;
+ 
+-	/* Register regmap and let it prepare core clock */
 -	if (of_property_read_bool(np, "big-endian"))
--		fsl_esai_regmap_config.val_format_endian = REGMAP_ENDIAN_BIG;
+-		fsl_asrc_regmap_config.val_format_endian = REGMAP_ENDIAN_BIG;
 -
- 	/* Get the addresses and IRQ */
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	regs = devm_ioremap_resource(&pdev->dev, res);
+ 	asrc_priv->regmap = devm_regmap_init_mmio_clk(&pdev->dev, "mem", regs,
+ 						      &fsl_asrc_regmap_config);
+ 	if (IS_ERR(asrc_priv->regmap)) {
 -- 
 1.8.5
 
