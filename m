@@ -1,135 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755102AbaHYJUI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 05:20:08 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:56929 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752233AbaHYJUE convert rfc822-to-8bit (ORCPT
+	id S1752743AbaHYJ1I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 05:27:08 -0400
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.175]:7798 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751000AbaHYJ1G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 05:20:04 -0400
-X-AuditID: cbfee68e-f79536d000000fd1-25-53faffc2b0e9
-Date: Mon, 25 Aug 2014 18:20:01 +0900
-From: Inha Song <ideal.song@samsung.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: mark.rutland@arm.com, devicetree@vger.kernel.org,
-        alsa-devel@alsa-project.org, sameo@linux.intel.com, pawel.moll@arm.com,
-        ijc+devicetree@hellion.org.uk, patches@opensource.wolfsonmicro.com,
-        lgirdwood@gmail.com, robh+dt@kernel.org, linux-kernel@vger.kernel.org,
-        cw00.choi@samsung.com, broonie@kernel.org, galak@codeaurora.org,
-        ckeepax@opensource.wolfsonmicro.com
-Subject: Re: [alsa-devel] [PATCH v2 1/2] mfd: arizona: Add support for INn_Mode
- register control
-Message-id: <20140825182001.666bd966@songinha-Samsung-DeskTop-System>
-In-reply-to: <20140821121219.GF4266@lee--X1>
-References: <20140813205313.65bbe343@songinha-Samsung-DeskTop-System>
- <20140821121219.GF4266@lee--X1>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCIsWRmVeSWpSXmKPExsWyRsSkRPfQ/1/BBkdX6lhcuXiIyWLqwyds
-	Fv+m3GC3uP7lOavF/CPnWC363yxktTj3aiWjxf2vRxktvl3pYLK4vGsOm8XS6xeZLJa//c9m
-	MWH6WhaL1r1H2C1Od7M68Hts+NzE5rFm3hpGj8t9vUweO2fdZfdYufwLm8emVZ1sHneu7WHz
-	mHcy0OPlxN9sHn1bVjF6fN4kF8AdxWWTkpqTWZZapG+XwJWxdvYlxoLjQhXfzrcxNjDe5uti
-	5OCQEDCR+LNFsouRE8gUk7hwbz1bFyMXh5DAUkaJu+uOMUIkTCROzJvBDGILCUxnlJg30xnC
-	7meS+LtaG8RmEVCVaD4wHayeTUBD4vvnzcwg80UEVCTOvTEHmcks8J1J4tSP32A1wgJJEvtv
-	zmYHsXkFXCVWvmgBszkFdCRmPznJDtIrJJAuceqsNMQJNhKrd65jhigXlPgx+R4LiM0soC4x
-	ad4iZghbW+LJuwusILskBNZySFzbt5UF4jYBiW+TD7FA/CsrsekAM8RMSYmDK26wTGAUm4Vk
-	7CwkY2chGbuAkXkVo2hqQXJBcVJ6kZFecWJucWleul5yfu4mRmDkn/73rG8H480D1ocYBTgY
-	lXh4V3D+ChZiTSwrrsw9xGgKdMVEZinR5HxgeskriTc0NjOyMDUxNTYytzRTEudNkPoZDPRv
-	YklqdmpqQWpRfFFpTmrxIUYmDk6pBsZQ2Ukci84EbdmVvdTW+O+LtweS/z0tW9Fw4rnpw6sT
-	3Sd9Cp5yYrJwMYtvzZTO0Purjqmtl55ePk+pxEjD8Aw/++TcR73J5e0PnzUKdcctCKjhuXRZ
-	+NVqjkemu3+sOL1vbY5ckYhzMidPXJBO+Zam/nOna8r6ty6bWLrl1rsnU/23nMrKZ9ykxFKc
-	kWioxVxUnAgAFSvep/cCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPKsWRmVeSWpSXmKPExsVy+t9jQd1D/38FG2y7o2Rx5eIhJoupD5+w
-	WfybcoPd4vqX56wW84+cY7Xof7OQ1eLcq5WMFve/HmW0+Halg8ni8q45bBZLr19kslj+9j+b
-	xYTpa1ksWvceYbc43c3qwO+x4XMTm8eaeWsYPS739TJ57Jx1l91j5fIvbB6bVnWyedy5tofN
-	Y97JQI+XE3+zefRtWcXo8XmTXAB3VAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGl
-	hbmSQl5ibqqtkotPgK5bZg7QL0oKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBA
-	whrGjLWzLzEWHBeq+Ha+jbGB8TZfFyMnh4SAicSJeTOYIWwxiQv31rOB2EIC0xkl5s10hrD7
-	mST+rtYGsVkEVCWaD0xnBLHZBDQkvn/eDNTLwSEioCJx7o15FyMXB7PAdyaJUz9+g9UICyRJ
-	7L85mx3E5hVwlVj5ogXM5hTQkZj95CQ7SK+QQLrEqbPSECfYSKzeuY4ZolxQ4sfkeywgNrOA
-	usSkeYuYIWxtiSfvLrBOYBSYhaRsFpKyWUjKFjAyr2IUTS1ILihOSs810itOzC0uzUvXS87P
-	3cQITizPpHcwrmqwOMQowMGoxMO7kvNXsBBrYllxZe4hRgkOZiURXo0/QCHelMTKqtSi/Pii
-	0pzU4kOMpsDAmMgsJZqcD0x6eSXxhsYmZkaWRuaGFkbG5krivAdbrQOBXkssSc1OTS1ILYLp
-	Y+LglGpgrJsy4e/U3gPqYTdfrlhk0XqyQemMqrSQwHm5p53Tl390//nwgON++WgnRvvAn2m7
-	3h4NyG/J8dxmqs269tXCgk9bPvDNXbv5c/f02w9TTOP1b1wN14kOcLPvCrG10JTbVL3qO/Nf
-	++vrdx6p2Su5+p/WB7OgVRkvFsdJJ099oPk7YLJ5mHLwDCWW4oxEQy3mouJEAJ8QtaBCAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 25 Aug 2014 05:27:06 -0400
+X-Greylist: delayed 425 seconds by postgrey-1.27 at vger.kernel.org; Mon, 25 Aug 2014 05:27:05 EDT
+X-Env-Sender: James.Ban.opensource@diasemi.com
+X-Msg-Ref: server-3.tower-38.messagelabs.com!1408958397!18666824!1
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.3; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <201408250919.s7P9Jpt4047076@krsrvapps-01.diasemi.com>
+From: James Ban <james.ban.opensource@diasemi.com>
+Date: Mon, 25 Aug 2014 18:16:56 +0900
+Subject: [PATCH V1] regulator: DA9211 : support device tree
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Support Opensource <support.opensource@diasemi.com>,
+        LKML <linux-kernel@vger.kernel.org>
+CC: David Dajun Chen <david.chen@diasemi.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
+This is a patch for supporting device tree of DA9211/DA9213.
 
-On Thu, 21 Aug 2014 13:12:19 +0100
-Lee Jones <lee.jones@linaro.org> wrote:
+Signed-off-by: James Ban <james.ban.opensource@diasemi.com>
+---
 
-> On Wed, 13 Aug 2014, Inha Song wrote:
-> 
-> > Some boards need to set the INn_MODE[1:0] register to change
-> > the input signal patch. This wlf,inmode property is optional.
-> > If present values must be specified by the number of
-> > ARIZONA_MAX_INPUT.
-> > 
-> > Example:
-> >    - wlf,inmode = <2 0 2 0>;	/* IN1, IN3 use DMIC */
-> > 
-> > Signed-off-by: Inha Song <ideal.song@samsung.com>
-> > ---
-> >  drivers/mfd/arizona-core.c | 11 ++++++++++-
-> >  1 file changed, 10 insertions(+), 1 deletion(-)
-> 
-> This is going to require a DT Ack.
-> 
-> Is [2/2] adding the documentation?  I can't easily go and look because
-> you send the patch-set unthreaded.  Please thread patch-sets.  See
-> the man page for `git send-email` for more information.
-> 
+This patch is relative to linux-next repository tag next-20140822.
+ .../devicetree/bindings/regulator/da9211.txt       |   58 +++++++++++++
+ drivers/regulator/da9211-regulator.c               |   85 ++++++++++++++++++--
+ include/linux/regulator/da9211.h                   |    2 +-
+ 3 files changed, 137 insertions(+), 8 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/regulator/da9211.txt
 
-Sorry, I will resend this patch set to use "git send email".
+diff --git a/Documentation/devicetree/bindings/regulator/da9211.txt b/Documentation/devicetree/bindings/regulator/da9211.txt
+new file mode 100644
+index 0000000..ec29830
+--- /dev/null
++++ b/Documentation/devicetree/bindings/regulator/da9211.txt
+@@ -0,0 +1,58 @@
++* Dialog Semiconductor DA9211/DA9213 Voltage Regulator
++
++Required properties:
++
++- compatible:	It should be "dlg,da9211" or "dlg,da9213".
++- reg:		the i2c slave address of the regulator. It should be 0x68.
++
++Any standard regulator properties can be used to configure the
++da9211/da9213 DCDC.
++
++Example 1) DA9211
++
++	pmic: da9211@68 {
++		compatible = "dlg,da9211";
++		reg = <0x68>;
++		interrupts = <3 27>;
++
++		regulators {
++			BUCKA {
++				regulator-name = "VBUCKA";
++				regulator-min-microvolt = < 300000>;
++				regulator-max-microvolt = <1570000>;
++				regulator-min-microamp 	= <2000000>;
++				regulator-max-microamp 	= <5000000>;
++			};
++			BUCKB {
++				regulator-name = "VBUCKB";
++				regulator-min-microvolt = < 300000>;
++				regulator-max-microvolt = <1570000>;
++				regulator-min-microamp 	= <2000000>;
++				regulator-max-microamp 	= <5000000>;
++			};
++		};
++	};
++
++Example 2) DA92113
++	pmic: da9213@68 {
++		compatible = "dlg,da9213";
++		reg = <0x68>;
++		interrupts = <3 27>;
++
++		regulators {
++			BUCKA {
++				regulator-name = "VBUCKA";
++				regulator-min-microvolt = < 300000>;
++				regulator-max-microvolt = <1570000>;
++				regulator-min-microamp 	= <3000000>;
++				regulator-max-microamp 	= <6000000>;
++			};
++			BUCKB {
++				regulator-name = "VBUCKB";
++				regulator-min-microvolt = < 300000>;
++				regulator-max-microvolt = <1570000>;
++				regulator-min-microamp 	= <3000000>;
++				regulator-max-microamp 	= <6000000>;
++			};
++		};
++	};
+diff --git a/drivers/regulator/da9211-regulator.c b/drivers/regulator/da9211-regulator.c
+index a26f1d2..5aabbac 100644
+--- a/drivers/regulator/da9211-regulator.c
++++ b/drivers/regulator/da9211-regulator.c
+@@ -24,6 +24,7 @@
+ #include <linux/regmap.h>
+ #include <linux/irq.h>
+ #include <linux/interrupt.h>
++#include <linux/regulator/of_regulator.h>
+ #include <linux/regulator/da9211.h>
+ #include "da9211-regulator.h"
+ 
+@@ -236,6 +237,59 @@ static struct regulator_desc da9211_regulators[] = {
+ 	DA9211_BUCK(BUCKB),
+ };
+ 
++#ifdef CONFIG_OF
++static struct of_regulator_match da9211_matches[] = {
++	[DA9211_ID_BUCKA] = { .name = "BUCKA" },
++	[DA9211_ID_BUCKB] = { .name = "BUCKB" },
++	};
++
++static struct da9211_pdata *da9211_parse_regulators_dt(
++		struct device *dev)
++{
++	struct da9211_pdata *pdata;
++	struct device_node *node;
++	int i, num, n;
++
++	node = of_get_child_by_name(dev->of_node, "regulators");
++	if (!node) {
++		dev_err(dev, "regulators node not found\n");
++		return ERR_PTR(-ENODEV);
++	}
++
++	num = of_regulator_match(dev, node, da9211_matches,
++				 ARRAY_SIZE(da9211_matches));
++	of_node_put(node);
++	if (num < 0) {
++		dev_err(dev, "Failed to match regulators\n");
++		return ERR_PTR(-EINVAL);
++	}
++
++	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
++	if (!pdata)
++		return ERR_PTR(-ENOMEM);
++
++	pdata->num_buck = num;
++
++	n = 0;
++	for (i = 0; i < ARRAY_SIZE(da9211_matches); i++) {
++		if (!da9211_matches[i].init_data)
++			continue;
++
++		pdata->init_data[n] = da9211_matches[i].init_data;
++
++		n++;
++	};
++
++	return pdata;
++}
++#else
++static struct da9211_pdata *da9211_parse_regulators_dt(
++		struct device *dev)
++{
++	return ERR_PTR(-ENODEV);
++}
++#endif
++
+ static irqreturn_t da9211_irq_handler(int irq, void *data)
+ {
+ 	struct da9211 *chip = data;
+@@ -306,7 +360,7 @@ static int da9211_regulator_init(struct da9211 *chip)
+ 	}
+ 
+ 	for (i = 0; i < chip->num_regulator; i++) {
+-		config.init_data = &(chip->pdata->init_data[i]);
++		config.init_data = chip->pdata->init_data[i];
+ 		config.dev = chip->dev;
+ 		config.driver_data = chip;
+ 		config.regmap = chip->regmap;
+@@ -332,6 +386,21 @@ static int da9211_regulator_init(struct da9211 *chip)
+ 
+ 	return 0;
+ }
++
++static const struct i2c_device_id da9211_i2c_id[] = {
++	{"da9211", DA9211},
++	{"da9213", DA9213},
++	{},
++};
++
++#ifdef CONFIG_OF
++static const struct of_device_id da9211_dt_ids[] = {
++	{ .compatible = "dlg,da9211", .data = &da9211_i2c_id[0] },
++	{ .compatible = "dlg,da9213", .data = &da9211_i2c_id[1] },
++	{},
++};
++#endif
++
+ /*
+  * I2C driver interface functions
+  */
+@@ -377,6 +446,14 @@ static int da9211_i2c_probe(struct i2c_client *i2c,
+ 		return -ENODEV;
+ 	}
+ 
++	if (!chip->pdata)
++		chip->pdata = da9211_parse_regulators_dt(chip->dev);
++
++	if (IS_ERR(chip->pdata)) {
++		dev_err(chip->dev, "No regulators defined for the platform\n");
++		return PTR_ERR(chip->pdata);
++	}
++
+ 	chip->chip_irq = i2c->irq;
+ 
+ 	if (chip->chip_irq != 0) {
+@@ -401,12 +478,6 @@ static int da9211_i2c_probe(struct i2c_client *i2c,
+ 	return ret;
+ }
+ 
+-static const struct i2c_device_id da9211_i2c_id[] = {
+-	{"da9211", DA9211},
+-	{"da9213", DA9213},
+-	{},
+-};
+-
+ MODULE_DEVICE_TABLE(i2c, da9211_i2c_id);
+ 
+ static struct i2c_driver da9211_regulator_driver = {
+diff --git a/include/linux/regulator/da9211.h b/include/linux/regulator/da9211.h
+index 658c3c3..5479394 100644
+--- a/include/linux/regulator/da9211.h
++++ b/include/linux/regulator/da9211.h
+@@ -32,6 +32,6 @@ struct da9211_pdata {
+ 	 * 2 : 2 phase 2 buck
+ 	 */
+ 	int num_buck;
+-	struct regulator_init_data *init_data;
++	struct regulator_init_data *init_data[DA9211_MAX_REGULATORS];
+ };
+ #endif
+-- 
+end-of-patch for regulator: DA9211 : support device tree V1
 
-Best regards,
-Inha Song.
-
-> > diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-> > index 10a0cb9..2b68ccd 100644
-> > --- a/drivers/mfd/arizona-core.c
-> > +++ b/drivers/mfd/arizona-core.c
-> > @@ -534,7 +534,7 @@ EXPORT_SYMBOL_GPL(arizona_of_get_named_gpio);
-> >  static int arizona_of_get_core_pdata(struct arizona *arizona)
-> >  {
-> >  	struct arizona_pdata *pdata = &arizona->pdata;
-> > -	int ret, i;
-> > +	int ret, i, proplen;
-> >  
-> >  	pdata->reset = arizona_of_get_named_gpio(arizona, "wlf,reset", true);
-> >  
-> > @@ -560,6 +560,15 @@ static int arizona_of_get_core_pdata(struct arizona *arizona)
-> >  			ret);
-> >  	}
-> >  
-> > +	proplen = of_property_count_u32_elems(arizona->dev->of_node,
-> > +					      "wlf,inmode");
-> > +	if (proplen > 0 && proplen <= ARRAY_SIZE(arizona->pdata.inmode)) {
-> > +		for (i = 0; i < proplen; i++)
-> > +			of_property_read_u32_index(arizona->dev->of_node,
-> > +						   "wlf,inmode", i,
-> > +						    &arizona->pdata.inmode[i]);
-> > +	}
-> > +
-> >  	return 0;
-> >  }
-> >  
-> 
-> -- 
-> Lee Jones
-> Linaro STMicroelectronics Landing Team Lead
-> Linaro.org │ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
-> _______________________________________________
-> Alsa-devel mailing list
-> Alsa-devel@alsa-project.org
-> http://mailman.alsa-project.org/mailman/listinfo/alsa-devel
