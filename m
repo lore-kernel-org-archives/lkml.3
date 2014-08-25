@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152AbaHYEJw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 00:09:52 -0400
-Received: from mail-oi0-f53.google.com ([209.85.218.53]:60993 "EHLO
-	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750955AbaHYEJu (ORCPT
+	id S1754219AbaHYELO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 00:11:14 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:58557 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754087AbaHYELN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 00:09:50 -0400
+	Mon, 25 Aug 2014 00:11:13 -0400
+Date: Sun, 24 Aug 2014 21:11:01 -0700
+From: Nicolin Chen <nicoleotsuka@gmail.com>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: broonie@kernel.org, timur@tabi.org, lgirdwood@gmail.com, perex@perex.cz,
+        tiwai@suse.de, alsa-devel@alsa-project.org, galak@codeaurora.org,
+        mark.rutland@arm.com, robh+dt@kernel.org, pawel.moll@arm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 1/4] ASoC: fsl-asrc: Convert to use regmap framework's
+ endianness method.
+Message-ID: <20140825041100.GA2126@Alpha>
+References: <1408937462-18727-1-git-send-email-Li.Xiubo@freescale.com>
+ <1408937462-18727-2-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-In-Reply-To: <20140823145737.GJ24407@sirena.org.uk>
-References: <1408791890-17328-1-git-send-email-zyw@rock-chips.com>
-	<20140823145737.GJ24407@sirena.org.uk>
-Date: Sun, 24 Aug 2014 21:09:49 -0700
-X-Google-Sender-Auth: 1dOIMtZSYgY-Xvgau6VKDtTosyQ
-Message-ID: <CAD=FV=XsNn9OHZkmtGEvX0HoidzH=aSF0e9cm6MB3Xq==UBZaA@mail.gmail.com>
-Subject: Re: [PATCH v3 4/5] Regulator: RK808: Add regulator driver for RK808
-From: Doug Anderson <dianders@chromium.org>
-To: Chris Zhong <zyw@rock-chips.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Mike Turquette <mturquette@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        rtc-linux@googlegroups.com, Grant Likely <grant.likely@linaro.org>,
-        Lin Huang <hl@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, zhangqing <zhangqing@rock-chips.com>,
-        xxx <xxx@rock-chips.com>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        Dmitry Torokhov <dtor@chromium.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Kever Yang <kever.yang@rock-chips.com>,
-        Mark Brown <broonie@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408937462-18727-2-git-send-email-Li.Xiubo@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chris,
+On Mon, Aug 25, 2014 at 11:30:59AM +0800, Xiubo Li wrote:
+> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> ---
+>  sound/soc/fsl/fsl_asrc.c | 6 +-----
+>  1 file changed, 1 insertion(+), 5 deletions(-)
+> 
+> diff --git a/sound/soc/fsl/fsl_asrc.c b/sound/soc/fsl/fsl_asrc.c
+> index 8221104..3b14531 100644
+> --- a/sound/soc/fsl/fsl_asrc.c
+> +++ b/sound/soc/fsl/fsl_asrc.c
+> @@ -802,10 +802,6 @@ static int fsl_asrc_probe(struct platform_device *pdev)
+>  
+>  	asrc_priv->paddr = res->start;
+>  
+> -	/* Register regmap and let it prepare core clock */
 
-On Sat, Aug 23, 2014 at 7:57 AM, Mark Brown <broonie@kernel.org> wrote:
-> On Sat, Aug 23, 2014 at 07:04:50PM +0800, Chris Zhong wrote:
->> The regulator module consists of 4 DCDCs, 8 LDOs and 2 switches.
->> The output voltages are configurable and are meant to supply power
->> to the main processor and other components
->
-> To repeat what I said on your previous posting: this driver has already
-> been applied, if there are any changes required please send incremental
-> patches against what is in the tree.
+Oops, I didn't notice this change. This should be needless.
 
-In you're next version, you should include your fixup to the regulator
-driver in the series and you shouldn't include the regulator patch.
-So you'd have:
+Otherwise, the whole change within sound/soc/fsl by this series looks fine.
 
-1. Regulator: RK808: modify for struct rk808 change
-2. MFD: Add rk808 device tree bindings documentation
-3. MFD: RK808: Add new mfd driver for RK808
-4. RTC: RK808: add RTC driver for RK808
-5. Clk: RK808: Add clkout driver for RK808
+Acked-by: Nicolin Chen <nicoleotsuka@gmail.com>
 
-Also please check your capitalization.  "Clk" should be "clk" and you
-should be consistent about whether RK808 is caps or lower case.
+> -	if (of_property_read_bool(np, "big-endian"))
+> -		fsl_asrc_regmap_config.val_format_endian = REGMAP_ENDIAN_BIG;
+> -
+ 
