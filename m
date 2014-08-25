@@ -1,45 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755496AbaHYL3m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 07:29:42 -0400
-Received: from mga03.intel.com ([143.182.124.21]:27568 "EHLO mga03.intel.com"
+	id S932161AbaHYLbH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 07:31:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44412 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755003AbaHYL3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 07:29:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,397,1406617200"; 
-   d="scan'208";a="472303462"
-From: Tiejun Chen <tiejun.chen@intel.com>
-To: pbonzini@redhat.com
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] x86:kvm: fix one typo in comment
-Date: Mon, 25 Aug 2014 19:26:17 +0800
-Message-Id: <1408965977-32575-1-git-send-email-tiejun.chen@intel.com>
-X-Mailer: git-send-email 1.9.1
+	id S1755504AbaHYLbA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 07:31:00 -0400
+Message-ID: <53FB1E6F.7080803@suse.de>
+Date: Mon, 25 Aug 2014 13:30:55 +0200
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Christoph Hellwig <hch@lst.de>,
+        "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+CC: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Doug Gilbert <dgilbert@interlog.com>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
+Subject: Re: scsi logging future directions, was Re: [RFC PATCH -logging 00/10]
+ scsi/constants: Output continuous error messages on trace
+References: <20140808115004.6768.97014.stgit@yuno-kbuild.novalocal> <94D0CD8314A33A4D9D801C0FE68B402958C1A9E5@G9W0745.americas.hpqcorp.net> <20140824204454.GA11423@lst.de>
+In-Reply-To: <20140824204454.GA11423@lst.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-s/drity/dirty
+On 08/24/2014 10:44 PM, Christoph Hellwig wrote:
+> On Fri, Aug 22, 2014 at 12:39:59AM +0000, Elliott, Robert (Server Storage) wrote:
+>> If you trigger hundreds of errors (e.g., hot remove a device
+>> during heavy IO), then all the prints to the linux serial console
+>> bog down the system, causing timeouts in commands to other
+>> devices and soft lockups for applications.
+>>
+>> Some changes that would help are:
+>> 1. Put them under SCSI logging level control
+>> 2. Use printk_ratelimited so an excessive number are trimmed
+>>
+>> Would you like to include something like this in your
+>> patch set?
+>
+> I think we should come to an agreement where we want to go with scsi
+> logging first before doing various smaller adjustments.  (Although your
+> example is one that's urgent enough that I'd like to put it in ASAP,
+> I had issues with it a few times).
+>
+> I had a chat with Martin at Linuxcon about these issues, and we were
+> both in favor of getting rid of the old scsi logging mechansisms and
+> instead replace it by an extended version of the scsi tracepoints that
+> cover all places, and dump all data from the old logging mechanism
+> that people find useful.
+>
+> In a few places we'd still want to log normal dev_printk style errors,
+> and the I/O completion is one of them, even if they really need to be
+> ratelimited and condensed.
+>
+> If someone has arguments in favour of keeping the old logging code
+> I'd love to hear them, but in practive the traceevent code has huge
+> benefits:
+>
+>   - almost zero overhead if disabled
+>   - can easily be used without any tools through configs, but can be used
+>     even better with tools like trace-cmd or perf
+>   - allows both fine and coarse grained selections of events to trace
+>   - allows to capture statistics on each trace point without event enabling the
+>     output
+>   - doesn't have any of the console lockup problems.
+>
+I've already been working on updating scsi logging infrastructure, 
+removing old cludges and streamlining it.
+I'm all in favour of moving things over to scsi tracing; in fact I've 
+already moved all the current SCSI_ML_XXX statements to tracepoints in
+my current patchset.
 
-Signed-off-by: Tiejun Chen <tiejun.chen@intel.com>
----
- arch/x86/kvm/mmu.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Unfortunately I haven't found time to test things out there, and there's 
+the patchset from Yoshihiro which needs review and integration.
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 9314678..09b9f05 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1180,7 +1180,7 @@ static void drop_large_spte(struct kvm_vcpu *vcpu, u64 *sptep)
-  * Write-protect on the specified @sptep, @pt_protect indicates whether
-  * spte write-protection is caused by protecting shadow page table.
-  *
-- * Note: write protection is difference between drity logging and spte
-+ * Note: write protection is difference between dirty logging and spte
-  * protection:
-  * - for dirty logging, the spte can be set to writable at anytime if
-  *   its dirty bitmap is properly set.
+As of now I've treated this as rather low priority as no-one seemed to 
+mind and the patchsets will be touching each and every driver.
+
+I'll be updating the patchset and send it for review.
+
+Cheers,
+
+Hannes
 -- 
-1.9.1
-
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
