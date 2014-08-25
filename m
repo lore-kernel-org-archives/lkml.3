@@ -1,109 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933114AbaHYOq1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 10:46:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20704 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932536AbaHYOqU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 10:46:20 -0400
-From: Jiri Olsa <jolsa@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Jen-Cheng(Tommy) Huang" <tommy24@gatech.edu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@kernel.org>
-Subject: [RFCv2 0/9] perf: Allow leader sampling on inherited events
-Date: Mon, 25 Aug 2014 16:45:34 +0200
-Message-Id: <1408977943-16594-1-git-send-email-jolsa@kernel.org>
+	id S933081AbaHYOqS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 10:46:18 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:35029 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933032AbaHYOqL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 10:46:11 -0400
+From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+To: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, olof@lixom.net
+Cc: linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lee Jones <lee.jones@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
+        Olivier Bideau <olivier.bideau@st.com>
+Subject: [RESEND PATCH 3/4] ARM: STi: DT: STiH407: 407 DT Entry for clockgen D0/D2/D3
+Date: Mon, 25 Aug 2014 16:44:47 +0200
+Message-Id: <1408977888-10473-4-git-send-email-gabriel.fernandez@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1408977888-10473-1-git-send-email-gabriel.fernandez@linaro.org>
+References: <1408977888-10473-1-git-send-email-gabriel.fernandez@linaro.org>
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
+ definitions=2014-08-25_01:2014-08-25,2014-08-24,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-Jen-Cheng(Tommy) Huang reported the leader sampling not working
-on children processes:
-  http://www.mail-archive.com/linux-perf-users@vger.kernel.org/msg01644.html
+Patch adds DT entries for clockgen D0/D2/D3
 
-The leader sampling (example below) lets the group leader event (cycles)
-do the sampling and reads the rest of the group (cache-misses) via
-PERF_FORMAT_GROUP format.
-
-Example:
-  $ perf record -e '{cycles,cache-misses}:S' <workload>
-  $ perf report --group
-
-  The perf report --group allows to see all events group
-  data in single view.
-
-The reason for leader sampling being switched off for inherited
-events, is that the kernel does no allow PERF_FORMAT_GROUP format
-on inherited events (which is used by leader sampling).
-
-I switched on the PERF_FORMAT_GROUP format for inherited events
-with few other fixies in patches:
-  perf: Deny optimized switch for events read by PERF_SAMPLE_READ
-  perf: Allow PERF_FORMAT_GROUP format on inherited events
-
-And I fixed perf tool code to be able to process data from
-children processes.
-
-Anyway, I might have missed some other reason why this was
-never switched on in kernel, so sending this as RFC.
-
-v2 changes:
-   - detection of the kernel support
-   - added perf script support for period column
-   - separate kernel change for context_equiv change
-
-thanks for comments,
-jirka
-
-
-Reported-by: Jen-Cheng(Tommy) Huang <tommy24@gatech.edu>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jen-Cheng(Tommy) Huang <tommy24@gatech.edu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Signed-off-by: Olivier Bideau <olivier.bideau@st.com>
 ---
-Jiri Olsa (9):
-      perf: Remove redundant parent context check from context_equiv
-      perf: Deny optimized switch for events read by PERF_SAMPLE_READ
-      perf: Allow PERF_FORMAT_GROUP format on inherited events
-      perf tools: Add support to traverse xyarrays
-      perf tools: Add pr_warning_once debug macro
-      perf tools: Add hash of periods for struct perf_sample_id
-      perf tools: Allow PERF_FORMAT_GROUP for inherited events
-      perf script: Add period data column
-      perf script: Add period as a default output column
+ arch/arm/boot/dts/stih407-clock.dtsi | 126 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 126 insertions(+)
 
- kernel/events/core.c                     | 33 ++++++++++++++------------------
- tools/perf/Documentation/perf-script.txt |  2 +-
- tools/perf/Makefile.perf                 |  1 +
- tools/perf/builtin-script.c              | 21 +++++++++++++++++----
- tools/perf/perf.h                        |  1 +
- tools/perf/tests/builtin-test.c          |  4 ++++
- tools/perf/tests/tests.h                 |  1 +
- tools/perf/tests/xyarray.c               | 33 ++++++++++++++++++++++++++++++++
- tools/perf/util/debug.h                  | 12 ++++++++++++
- tools/perf/util/evsel.c                  | 19 ++++++++++++++++++-
- tools/perf/util/evsel.h                  |  5 ++++-
- tools/perf/util/record.c                 | 12 ++++++++++++
- tools/perf/util/session.c                | 93 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++------
- tools/perf/util/xyarray.c                |  4 +++-
- tools/perf/util/xyarray.h                |  6 ++++++
- 15 files changed, 214 insertions(+), 33 deletions(-)
- create mode 100644 tools/perf/tests/xyarray.c
+diff --git a/arch/arm/boot/dts/stih407-clock.dtsi b/arch/arm/boot/dts/stih407-clock.dtsi
+index 85cc135..6e59011 100644
+--- a/arch/arm/boot/dts/stih407-clock.dtsi
++++ b/arch/arm/boot/dts/stih407-clock.dtsi
+@@ -139,5 +139,131 @@
+ 						     "clk-compo-dvp";
+ 			};
+ 		};
++
++		clk_s_d0_quadfs: clk-s-d0-quadfs@9104000 {
++			#clock-cells = <1>;
++			compatible = "st,stih407-quadfs660-D", "st,quadfs";
++			reg = <0x9104000 0x1000>;
++
++			clocks = <&clk_sysin>;
++
++			clock-output-names = "clk-s-d0-fs0-ch0",
++					     "clk-s-d0-fs0-ch1",
++					     "clk-s-d0-fs0-ch2",
++					     "clk-s-d0-fs0-ch3";
++		};
++
++		clockgen-d0@09104000 {
++			compatible = "st,clkgen-c32";
++			reg = <0x9104000 0x1000>;
++
++			clk_s_d0_flexgen: clk-s-d0-flexgen {
++				#clock-cells = <1>;
++				compatible = "st,flexgen";
++
++				clocks = <&clk_s_d0_quadfs 0>,
++					 <&clk_s_d0_quadfs 1>,
++					 <&clk_s_d0_quadfs 2>,
++					 <&clk_s_d0_quadfs 3>,
++					 <&clk_sysin>;
++
++				clock-output-names = "clk-pcm-0",
++						     "clk-pcm-1",
++						     "clk-pcm-2",
++						     "clk-spdiff";
++			};
++		};
++
++		clk_s_d2_quadfs: clk-s-d2-quadfs@9106000 {
++			#clock-cells = <1>;
++			compatible = "st,stih407-quadfs660-D", "st,quadfs";
++			reg = <0x9106000 0x1000>;
++
++			clocks = <&clk_sysin>;
++
++			clock-output-names = "clk-s-d2-fs0-ch0",
++					     "clk-s-d2-fs0-ch1",
++					     "clk-s-d2-fs0-ch2",
++					     "clk-s-d2-fs0-ch3";
++		};
++
++		clk_tmdsout_hdmi: clk-tmdsout-hdmi {
++			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <0>;
++		};
++
++		clockgen-d2@x9106000 {
++			compatible = "st,clkgen-c32";
++			reg = <0x9106000 0x1000>;
++
++			clk_s_d2_flexgen: clk-s-d2-flexgen {
++				#clock-cells = <1>;
++				compatible = "st,flexgen";
++
++				clocks = <&clk_s_d2_quadfs 0>,
++					 <&clk_s_d2_quadfs 1>,
++					 <&clk_s_d2_quadfs 2>,
++					 <&clk_s_d2_quadfs 3>,
++					 <&clk_sysin>,
++					 <&clk_sysin>,
++					 <&clk_tmdsout_hdmi>;
++
++				clock-output-names = "clk-pix-main-disp",
++						     "clk-pix-pip",
++						     "clk-pix-gdp1",
++						     "clk-pix-gdp2",
++						     "clk-pix-gdp3",
++						     "clk-pix-gdp4",
++						     "clk-pix-aux-disp",
++						     "clk-denc",
++						     "clk-pix-hddac",
++						     "clk-hddac",
++						     "clk-sddac",
++						     "clk-pix-dvo",
++						     "clk-dvo",
++						     "clk-pix-hdmi",
++						     "",
++						     "clk-ref-hdmiphy";
++						     };
++		};
++
++		clk_s_d3_quadfs: clk-s-d3-quadfs@9107000 {
++			#clock-cells = <1>;
++			compatible = "st,stih407-quadfs660-D", "st,quadfs";
++			reg = <0x9107000 0x1000>;
++
++			clocks = <&clk_sysin>;
++
++			clock-output-names = "clk-s-d3-fs0-ch0",
++					     "clk-s-d3-fs0-ch1",
++					     "clk-s-d3-fs0-ch2",
++					     "clk-s-d3-fs0-ch3";
++		};
++
++		clockgen-d3@9107000 {
++			compatible = "st,clkgen-c32";
++			reg = <0x9107000 0x1000>;
++
++			clk_s_d3_flexgen: clk-s-d3-flexgen {
++				#clock-cells = <1>;
++				compatible = "st,flexgen";
++
++				clocks = <&clk_s_d3_quadfs 0>,
++					 <&clk_s_d3_quadfs 1>,
++					 <&clk_s_d3_quadfs 2>,
++					 <&clk_s_d3_quadfs 3>,
++					 <&clk_sysin>;
++
++				clock-output-names = "clk-stfe-frc1",
++						     "clk-tsout-0",
++						     "clk-tsout-1",
++						     "clk-mchi",
++						     "clk-vsens-compo",
++						     "clk-frc1-remote",
++						     "clk-lpc-0",
++						     "clk-lpc-1";
++			};
++		};
+ 	};
+ };
+-- 
+1.9.1
+
