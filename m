@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754827AbaHYJD4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 05:03:56 -0400
-Received: from mga09.intel.com ([134.134.136.24]:42034 "EHLO mga09.intel.com"
+	id S1752618AbaHYJDc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 05:03:32 -0400
+Received: from mga14.intel.com ([192.55.52.115]:53376 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753337AbaHYJDy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 05:03:54 -0400
+	id S1751399AbaHYJDa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 05:03:30 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,395,1406617200"; 
-   d="scan'208";a="592823099"
+   d="scan'208";a="581256940"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: Tadeusz Struk <tadeusz.struk@intel.com>,
         Herbert Xu <herbert@gondor.apana.org.au>,
@@ -18,9 +18,9 @@ To: Tadeusz Struk <tadeusz.struk@intel.com>,
         Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
         Joe Perches <joe@perches.com>, Marek Vasut <marex@denx.de>
 Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v3 1/5] seq_file: provide an analogue of print_hex_dump()
-Date: Mon, 25 Aug 2014 12:03:11 +0300
-Message-Id: <1408957395-404-2-git-send-email-andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v3 4/5] parisc: use seq_hex_dump() to dump buffers
+Date: Mon, 25 Aug 2014 12:03:14 +0300
+Message-Id: <1408957395-404-5-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1408957395-404-1-git-send-email-andriy.shevchenko@linux.intel.com>
 References: <1408957395-404-1-git-send-email-andriy.shevchenko@linux.intel.com>
@@ -28,85 +28,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new seq_hex_dump() is a complete analogue of print_hex_dump().
+Instead of custom approach let's use recently introduced seq_hex_dump() helper.
 
-We have few users of this functionality already. It allows to reduce their
-codebase.
+In one case it changes the output from
+	1111111122222222333333334444444455555555666666667777777788888888
+to
+	11111111 22222222 33333333 44444444 55555555 66666666 77777777 88888888
+
+though it seems it prints same data (by meaning) in both cases. I decide to
+choose to use the space divided one.
 
 Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 ---
- fs/seq_file.c            | 35 +++++++++++++++++++++++++++++++++++
- include/linux/seq_file.h |  4 ++++
- 2 files changed, 39 insertions(+)
+ drivers/parisc/ccio-dma.c  | 14 +++-----------
+ drivers/parisc/sba_iommu.c | 11 +++--------
+ 2 files changed, 6 insertions(+), 19 deletions(-)
 
-diff --git a/fs/seq_file.c b/fs/seq_file.c
-index 3857b72..fec4a6b 100644
---- a/fs/seq_file.c
-+++ b/fs/seq_file.c
-@@ -12,6 +12,7 @@
- #include <linux/slab.h>
- #include <linux/cred.h>
- #include <linux/mm.h>
-+#include <linux/printk.h>
+diff --git a/drivers/parisc/ccio-dma.c b/drivers/parisc/ccio-dma.c
+index 8b490d7..9d353d2 100644
+--- a/drivers/parisc/ccio-dma.c
++++ b/drivers/parisc/ccio-dma.c
+@@ -1101,20 +1101,12 @@ static const struct file_operations ccio_proc_info_fops = {
  
- #include <asm/uaccess.h>
- #include <asm/page.h>
-@@ -794,6 +795,40 @@ void seq_pad(struct seq_file *m, char c)
- }
- EXPORT_SYMBOL(seq_pad);
- 
-+/* Analogue of print_hex_dump() */
-+void seq_hex_dump(struct seq_file *m, const char *prefix_str, int prefix_type,
-+		  int rowsize, int groupsize, const void *buf, size_t len,
-+		  bool ascii)
-+{
-+	const u8 *ptr = buf;
-+	int i, linelen, remaining = len;
-+	unsigned char linebuf[32 * 3 + 2 + 32 + 1];
-+
-+	if (rowsize != 16 && rowsize != 32)
-+		rowsize = 16;
-+
-+	for (i = 0; i < len; i += rowsize) {
-+		linelen = min(remaining, rowsize);
-+		remaining -= rowsize;
-+
-+		hex_dump_to_buffer(ptr + i, linelen, rowsize, groupsize,
-+				   linebuf, sizeof(linebuf), ascii);
-+
-+		switch (prefix_type) {
-+		case DUMP_PREFIX_ADDRESS:
-+			seq_printf(m, "%s%p: %s\n", prefix_str, ptr + i, linebuf);
-+			break;
-+		case DUMP_PREFIX_OFFSET:
-+			seq_printf(m, "%s%.8x: %s\n", prefix_str, i, linebuf);
-+			break;
-+		default:
-+			seq_printf(m, "%s%s\n", prefix_str, linebuf);
-+			break;
-+		}
-+	}
-+}
-+EXPORT_SYMBOL(seq_hex_dump);
-+
- struct list_head *seq_list_start(struct list_head *head, loff_t pos)
+ static int ccio_proc_bitmap_info(struct seq_file *m, void *p)
  {
- 	struct list_head *lh;
-diff --git a/include/linux/seq_file.h b/include/linux/seq_file.h
-index 52e0097..6a8be4c 100644
---- a/include/linux/seq_file.h
-+++ b/include/linux/seq_file.h
-@@ -107,6 +107,10 @@ int seq_write(struct seq_file *seq, const void *data, size_t len);
- __printf(2, 3) int seq_printf(struct seq_file *, const char *, ...);
- __printf(2, 0) int seq_vprintf(struct seq_file *, const char *, va_list args);
+-	int len = 0;
+ 	struct ioc *ioc = ioc_list;
  
-+void seq_hex_dump(struct seq_file *m, const char *prefix_str, int prefix_type,
-+		  int rowsize, int groupsize, const void *buf, size_t len,
-+		  bool ascii);
-+
- int seq_path(struct seq_file *, const struct path *, const char *);
- int seq_dentry(struct seq_file *, struct dentry *, const char *);
- int seq_path_root(struct seq_file *m, const struct path *path,
+ 	while (ioc != NULL) {
+-		u32 *res_ptr = (u32 *)ioc->res_map;
+-		int j;
+-
+-		for (j = 0; j < (ioc->res_size / sizeof(u32)); j++) {
+-			if ((j & 7) == 0)
+-				len += seq_puts(m, "\n   ");
+-			len += seq_printf(m, "%08x", *res_ptr);
+-			res_ptr++;
+-		}
+-		len += seq_puts(m, "\n\n");
++		seq_hex_dump(m, "   ", DUMP_PREFIX_NONE, 32, 4, ioc->res_map,
++			     ioc->res_size, false);
++		seq_putc(m, '\n');
+ 		ioc = ioc->next;
+ 		break; /* XXX - remove me */
+ 	}
+diff --git a/drivers/parisc/sba_iommu.c b/drivers/parisc/sba_iommu.c
+index 1ff1b67..fbc4db9 100644
+--- a/drivers/parisc/sba_iommu.c
++++ b/drivers/parisc/sba_iommu.c
+@@ -1857,15 +1857,10 @@ sba_proc_bitmap_info(struct seq_file *m, void *p)
+ {
+ 	struct sba_device *sba_dev = sba_list;
+ 	struct ioc *ioc = &sba_dev->ioc[0];	/* FIXME: Multi-IOC support! */
+-	unsigned int *res_ptr = (unsigned int *)ioc->res_map;
+-	int i, len = 0;
+ 
+-	for (i = 0; i < (ioc->res_size/sizeof(unsigned int)); ++i, ++res_ptr) {
+-		if ((i & 7) == 0)
+-			len += seq_printf(m, "\n   ");
+-		len += seq_printf(m, " %08x", *res_ptr);
+-	}
+-	len += seq_printf(m, "\n");
++	seq_hex_dump(m, "   ", DUMP_PREFIX_NONE, 32, 4, ioc->res_map,
++		     ioc->res_size, false);
++	seq_printf(m, "\n");
+ 
+ 	return 0;
+ }
 -- 
 2.1.0
 
