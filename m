@@ -1,97 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932740AbaHYNbz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 09:31:55 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:54274 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932300AbaHYN2h (ORCPT
+	id S932765AbaHYNcj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 09:32:39 -0400
+Received: from smtp-out-036.synserver.de ([212.40.185.36]:1030 "EHLO
+	smtp-out-029.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932300AbaHYNch (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 09:28:37 -0400
-From: Eric Auger <eric.auger@linaro.org>
-To: eric.auger@st.com, eric.auger@linaro.org, christoffer.dall@linaro.org,
-        marc.zyngier@arm.com, linux-arm-kernel@lists.infradead.org,
-        kvmarm@lists.cs.columbia.edu, kvm@vger.kernel.org,
-        alex.williamson@redhat.com, joel.schopp@amd.com,
-        kim.phillips@freescale.com
-Cc: linux-kernel@vger.kernel.org, patches@linaro.org, will.deacon@arm.com,
-        a.motakis@virtualopensystems.com, a.rigo@virtualopensystems.com,
-        john.liuli@huawei.com
-Subject: [RFC 1/9] KVM: ARM: VGIC: fix multiple injection of level sensitive forwarded IRQ
-Date: Mon, 25 Aug 2014 15:27:36 +0200
-Message-Id: <1408973264-30384-2-git-send-email-eric.auger@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1408973264-30384-1-git-send-email-eric.auger@linaro.org>
-References: <1408973264-30384-1-git-send-email-eric.auger@linaro.org>
+	Mon, 25 Aug 2014 09:32:37 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 7665
+Message-ID: <53FB3AF3.6060808@metafoo.de>
+Date: Mon, 25 Aug 2014 15:32:35 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.7.0
+MIME-Version: 1.0
+To: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>,
+        sanjeev sharma <sanjeevsharmaengg@gmail.com>
+CC: "jic23@kernel.org" <jic23@kernel.org>, gregkh <gregkh@linuxfoundation.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        devel <devel@driverdev.osuosl.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging:iio: moved platform_data into include/linux/iio
+References: <1408516869-6099-1-git-send-email-sanjeev_sharma@mentor.com>	<53F441FF.9090304@metafoo.de> <CAGUYZuSENkSjoA9U0E8MQKp0a1J3moE8p8NYAzfiZ+BpxND4Aw@mail.gmail.com> <53F4451B.3040209@metafoo.de> <FDC088D3B5555644AE135ED28A7ABDE94DF3CC4B@EU-MBX-04.mgc.mentorg.com> <53FAEF10.7010001@metafoo.de> <FDC088D3B5555644AE135ED28A7ABDE94DF3ECF2@EU-MBX-04.mgc.mentorg.com>
+In-Reply-To: <FDC088D3B5555644AE135ED28A7ABDE94DF3ECF2@EU-MBX-04.mgc.mentorg.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix multiple injection of level sensitive forwarded IRQs.
-With current code, the second injection fails since the state bitmaps
-are not reset (process_maintenance is not called anymore).
-New implementation consists in fully bypassing the vgic state
-management for forwarded IRQ (checks are ignored in
-vgic_update_irq_pending). This obviously assumes the forwarded IRQ is
-injected from kernel side.
+On 08/25/2014 01:49 PM, Sharma, Sanjeev wrote:
+> -----Original Message-----
+> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
+> Sent: Monday, August 25, 2014 1:39 PM
+> To: Sharma, Sanjeev; sanjeev sharma
+> Cc: jic23@kernel.org; gregkh; linux-iio@vger.kernel.org; devel; linux-kernel
+> Subject: Re: [PATCH] staging:iio: moved platform_data into include/linux/iio
+>
+> On 08/25/2014 09:17 AM, Sharma, Sanjeev wrote:
+>> Hello Lars,
+>>
+>> As per your suggestion Can I move complete Driver out of staging specially SPI ADC Driver.
+>
+> Only if they are cleaned up first. All of the drivers that are still in staging do have issues, otherwise we'd already had moved them. A few of them are OK codestyle wise, but do have ABI issues which need to be resolved before they can be moved.
+>
+> - Lars
+>
+> Where I can find ABI issues which need to be resolved so that these can be looked upon.
 
----
-  It was attempted to reset the states in __kvm_vgic_sync_hwstate, checking
-  the emptied LR of forwarded IRQ. However surprisingly this solution does
-  not seem to work. Some times, a new forwarded IRQ injection is observed
-  while the LR of the previous instance was not observed as empty.
+Compare the sysfs files and their behavior that the driver registers with 
+what is documented in the IIO ABI spec[1]. If you can't find it in the 
+documentation it either needs to be documented or updated to use the 
+existing ABI correctly. Note that this is not necessarily trivial and may 
+require in-depth knowledge and understanding of the IIO ABI.
 
-Signed-off-by: Eric Auger <eric.auger@linaro.org>
----
- include/kvm/arm_vgic.h | 1 +
- virt/kvm/arm/vgic.c    | 9 +++++++--
- 2 files changed, 8 insertions(+), 2 deletions(-)
+Thanks,
+- Lars
 
-diff --git a/include/kvm/arm_vgic.h b/include/kvm/arm_vgic.h
-index 743020f..3da244f 100644
---- a/include/kvm/arm_vgic.h
-+++ b/include/kvm/arm_vgic.h
-@@ -177,6 +177,7 @@ struct vgic_dist {
- 	unsigned long		irq_pending_on_cpu;
- 
- 	struct rb_root		irq_phys_map;
-+	spinlock_t			rb_tree_lock;
- #endif
- };
- 
-diff --git a/virt/kvm/arm/vgic.c b/virt/kvm/arm/vgic.c
-index 0007300..195c10c 100644
---- a/virt/kvm/arm/vgic.c
-+++ b/virt/kvm/arm/vgic.c
-@@ -1517,14 +1517,18 @@ static bool vgic_update_irq_pending(struct kvm *kvm, int cpuid,
- 	int edge_triggered, level_triggered;
- 	int enabled;
- 	bool ret = true;
-+	bool is_forwarded;
- 
- 	spin_lock(&dist->lock);
- 
- 	vcpu = kvm_get_vcpu(kvm, cpuid);
-+	is_forwarded = (vgic_get_phys_irq(vcpu, irq_num) >0);
-+		
- 	edge_triggered = vgic_irq_is_edge(vcpu, irq_num);
- 	level_triggered = !edge_triggered;
- 
--	if (!vgic_validate_injection(vcpu, irq_num, level)) {
-+	if (!is_forwarded &&
-+		!vgic_validate_injection(vcpu, irq_num, level)) {
- 		ret = false;
- 		goto out;
- 	}
-@@ -1557,7 +1561,8 @@ static bool vgic_update_irq_pending(struct kvm *kvm, int cpuid,
- 		goto out;
- 	}
- 
--	if (level_triggered && vgic_irq_is_queued(vcpu, irq_num)) {
-+	if (!is_forwarded &&
-+		level_triggered && vgic_irq_is_queued(vcpu, irq_num)) {
- 		/*
- 		 * Level interrupt in progress, will be picked up
- 		 * when EOId.
--- 
-1.9.1
+[1] 
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/ABI/testing/sysfs-bus-iio
+
+>
+> -Sanjeev
+>>
+>> Regards
+>> Sanjeev Sharma
+>>
+>> -----Original Message-----
+>> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
+>> Sent: Wednesday, August 20, 2014 12:20 PM
+>> To: sanjeev sharma
+>> Cc: Sharma, Sanjeev; jic23@kernel.org; gregkh;
+>> linux-iio@vger.kernel.org; devel; linux-kernel
+>> Subject: Re: [PATCH] staging:iio: moved platform_data into
+>> include/linux/iio
+>>
+>> On 08/20/2014 08:44 AM, sanjeev sharma wrote:
+>>> Hi,
+>>>
+>>> This was the action item(TO-DO). IMO, it make sense to move into
+>>> include/linux/iio because IIO complete subsystem may take some time.
+>>
+>> The code that is in staging is not supposed to 'leak' outside of staging. So either you move the driver as a whole out of staging or leave it there, but do not move individual files of the driver out of staging. The action item is for when the driver is moved out of staging.
+>>
+>
+> N�����r��y���b�X��ǧv�^�)޺{.n�+����{��*"��^n�r���z���h����&���G���h�(�階�ݢj"���m�����z�ޖ���f���h���~�mml==
+>
 
