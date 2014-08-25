@@ -1,120 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932230AbaHYLuF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 07:50:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45483 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932203AbaHYLuB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 07:50:01 -0400
-Message-ID: <53FB22E4.8040906@suse.de>
-Date: Mon, 25 Aug 2014 13:49:56 +0200
-From: =?ISO-8859-1?Q?Andreas_F=E4rber?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S932266AbaHYLux (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 07:50:53 -0400
+Received: from mail-bn1blp0190.outbound.protection.outlook.com ([207.46.163.190]:52728
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932203AbaHYLuv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 07:50:51 -0400
+From: Ley Foon Tan <lftan@altera.com>
+To: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>
+CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
+        "Giuseppe Cavallaro" <peppe.cavallaro@st.com>,
+        Vince Bridgers <vbridger@altera.com>
+Subject: [PATCH] net: stmmac: add dcrs parameter
+Date: Mon, 25 Aug 2014 19:50:42 +0800
+Message-ID: <1408967442-2724-1-git-send-email-lftan@altera.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-CC: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Kevin Hilman <khilman@linaro.org>,
-        Ajay Kumar <ajaykumar.rs@samsung.com>,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/1] ARM: exynos_defconfig: Enable options for display
- panel support
-References: <1408956336-17376-1-git-send-email-javier.martinez@collabora.co.uk> <5825205.70RuHaSG5p@amdc1032>
-In-Reply-To: <5825205.70RuHaSG5p@amdc1032>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199003)(189002)(105596002)(76482001)(97736001)(79102001)(92726001)(92566001)(77982001)(83072002)(89996001)(86362001)(93916002)(50986999)(99396002)(85852003)(104166001)(42186005)(107046002)(87936001)(33646002)(106466001)(229853001)(77096002)(102836001)(81542001)(47776003)(50466002)(21056001)(20776003)(48376002)(68736004)(46102001)(84676001)(64706001)(85306004)(87286001)(80022001)(81342001)(6806004)(44976005)(74502001)(77156001)(31966008)(19580405001)(74662001)(88136002)(95666004)(62966002)(83322001)(36756003)(90102001)(4396001)(19580395003)(50226001);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB034;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03142412E2
+Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
+ smtp.mailfrom=lftan@altera.com; 
+X-OriginatorOrg: altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patch add the option to enable DCRS bit in GMAC control register.
+Default is disabled if snps,dcrs is not defined.
 
-Am 25.08.2014 13:43, schrieb Bartlomiej Zolnierkiewicz:
-> On Monday, August 25, 2014 10:45:36 AM Javier Martinez Canillas wrote:
->> Many Exynos devices have a display panel. Most of them just have
->> a simple panel while others have more complex configurations that
->> requires an embedded DisplayPort (eDP) to LVDS bridges.
->>
->> This patch enables the following features to be built in the kernel
->> image to suport both setups:
->>
->> - Direct Rendering Manager (DRM)
->> - DRM bridge registration and lookup framework
->> - Parade ps8622/ps8625 eDP/LVDS bridge
->> - NXP ptn3460 eDP/LVDS bridge
->> - Exynos Fully Interactive Mobile Display controller (FIMD)
->> - Panel registration and lookup framework
->> - Simple panels
->> - Backlight & LCD device support
->>
->> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
->> Tested-by: Kevin Hilman <khilman@linaro.org>
-> 
-> Could you please also do corresponding update to multi_v7_defconfig?
+For MII, Carrier Sense (CRS) must be asserted during transmission
+whereas in RGMII, CRS is not. RGMII does not provide a way to signal
+loss of carrier during a transmission.
 
-As was mentioned in v1 (but now below), some of these options depend on
-patches yet to be respun and be accepted into drm, so I would consider
-this an RFC patch and suggest to wait with multi_v7.
+When DCRS bit set high in control register, the MAC transmitter
+ignore the (G)MII Carrier Sense signal during frame transmission
+in the half-duplex mode. This request results in no errors generated
+because of Loss of Carrier or No Carrier during such transmission.
 
-It could of course be split, as CONFIG_DRM_EXYNOS* and backlight parts
-are certainly okay.
+Signed-off-by: Ley Foon Tan <lftan@altera.com>
+---
+ Documentation/devicetree/bindings/net/stmmac.txt      | 4 ++++
+ drivers/net/ethernet/stmicro/stmmac/common.h          | 3 ++-
+ drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c  | 4 +++-
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c     | 3 ++-
+ drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c | 2 ++
+ include/linux/stmmac.h                                | 1 +
+ 6 files changed, 14 insertions(+), 3 deletions(-)
 
-Regards,
-Andreas
-
-> 
-> Best regards,
-> --
-> Bartlomiej Zolnierkiewicz
-> Samsung R&D Institute Poland
-> Samsung Electronics
-> 
->> ---
->>
->> Changes since v1:
->>  - Forgot to enable ptn3460 eDP/LVDS bridge config option
->>    which is used for some boards (e.g: Exynos5250 Snow).
->>
->>  arch/arm/configs/exynos_defconfig | 15 +++++++++++++++
->>  1 file changed, 15 insertions(+)
->>
->> diff --git a/arch/arm/configs/exynos_defconfig b/arch/arm/configs/exynos_defconfig
->> index 676c744..d6d1f7c 100644
->> --- a/arch/arm/configs/exynos_defconfig
->> +++ b/arch/arm/configs/exynos_defconfig
->> @@ -101,11 +101,26 @@ CONFIG_REGULATOR_S2MPA01=y
->>  CONFIG_REGULATOR_S2MPS11=y
->>  CONFIG_REGULATOR_S5M8767=y
->>  CONFIG_REGULATOR_TPS65090=y
->> +CONFIG_DRM=y
->> +CONFIG_DRM_BRIDGE=y
->> +CONFIG_DRM_PTN3460=y
->> +CONFIG_DRM_PS8622=y
->> +CONFIG_DRM_EXYNOS=y
->> +CONFIG_DRM_EXYNOS_FIMD=y
->> +CONFIG_DRM_EXYNOS_DP=y
->> +CONFIG_DRM_PANEL=y
->> +CONFIG_DRM_PANEL_SIMPLE=y
->>  CONFIG_FB=y
->>  CONFIG_FB_MODE_HELPERS=y
->>  CONFIG_FB_SIMPLE=y
->>  CONFIG_EXYNOS_VIDEO=y
->>  CONFIG_EXYNOS_MIPI_DSI=y
->> +CONFIG_BACKLIGHT_LCD_SUPPORT=y
->> +CONFIG_LCD_CLASS_DEVICE=y
->> +CONFIG_LCD_PLATFORM=y
->> +CONFIG_BACKLIGHT_CLASS_DEVICE=y
->> +CONFIG_BACKLIGHT_GENERIC=y
->> +CONFIG_BACKLIGHT_PWM=y
->>  CONFIG_FRAMEBUFFER_CONSOLE=y
->>  CONFIG_FONTS=y
->>  CONFIG_FONT_7x14=y
-> 
-
-
+diff --git a/Documentation/devicetree/bindings/net/stmmac.txt b/Documentation/devicetree/bindings/net/stmmac.txt
+index 9b03c57..a68e720 100644
+--- a/Documentation/devicetree/bindings/net/stmmac.txt
++++ b/Documentation/devicetree/bindings/net/stmmac.txt
+@@ -39,6 +39,10 @@ Optional properties:
+   further clocks may be specified in derived bindings.
+ - clock-names: One name for each entry in the clocks property, the
+   first one should be "stmmaceth".
++- snps,dcrs: Enable DCRS bit in GMAC control register. This DCRS bit makes the
++	MAC transmitter ignore the (G)MII CRS signal during frame transmission
++	in the half-duplex mode. This request results in no errors generated
++	because of Loss of Carrier or No Carrier during such transmission.
+ 
+ Examples:
+ 
+diff --git a/drivers/net/ethernet/stmicro/stmmac/common.h b/drivers/net/ethernet/stmicro/stmmac/common.h
+index de507c3..9abe221 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/common.h
++++ b/drivers/net/ethernet/stmicro/stmmac/common.h
+@@ -445,10 +445,11 @@ struct mac_device_info {
+ 	int multicast_filter_bins;
+ 	int unicast_filter_entries;
+ 	int mcast_bits_log2;
++	int dcrs;
+ };
+ 
+ struct mac_device_info *dwmac1000_setup(void __iomem *ioaddr, int mcbins,
+-					int perfect_uc_entries);
++					int perfect_uc_entries, int dcrs);
+ struct mac_device_info *dwmac100_setup(void __iomem *ioaddr);
+ 
+ void stmmac_set_mac_addr(void __iomem *ioaddr, u8 addr[6],
+diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c b/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
+index d8ef187..924d450 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
++++ b/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
+@@ -37,6 +37,7 @@ static void dwmac1000_core_init(struct mac_device_info *hw, int mtu)
+ 	void __iomem *ioaddr = hw->pcsr;
+ 	u32 value = readl(ioaddr + GMAC_CONTROL);
+ 	value |= GMAC_CORE_INIT;
++	value |= hw->dcrs;
+ 	if (mtu > 1500)
+ 		value |= GMAC_CONTROL_2K;
+ 	if (mtu > 2000)
+@@ -409,7 +410,7 @@ static const struct stmmac_ops dwmac1000_ops = {
+ };
+ 
+ struct mac_device_info *dwmac1000_setup(void __iomem *ioaddr, int mcbins,
+-					int perfect_uc_entries)
++					int perfect_uc_entries, int dcrs)
+ {
+ 	struct mac_device_info *mac;
+ 	u32 hwid = readl(ioaddr + GMAC_VERSION);
+@@ -422,6 +423,7 @@ struct mac_device_info *dwmac1000_setup(void __iomem *ioaddr, int mcbins,
+ 	mac->multicast_filter_bins = mcbins;
+ 	mac->unicast_filter_entries = perfect_uc_entries;
+ 	mac->mcast_bits_log2 = 0;
++	mac->dcrs = dcrs;
+ 
+ 	if (mac->multicast_filter_bins)
+ 		mac->mcast_bits_log2 = ilog2(mac->multicast_filter_bins);
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+index 08addd6..bf35b19 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+@@ -2600,7 +2600,8 @@ static int stmmac_hw_init(struct stmmac_priv *priv)
+ 		priv->dev->priv_flags |= IFF_UNICAST_FLT;
+ 		mac = dwmac1000_setup(priv->ioaddr,
+ 				      priv->plat->multicast_filter_bins,
+-				      priv->plat->unicast_filter_entries);
++				      priv->plat->unicast_filter_entries,
++				      priv->plat->dcrs);
+ 	} else {
+ 		mac = dwmac100_setup(priv->ioaddr);
+ 	}
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+index bb524a9..07f895f 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+@@ -227,6 +227,8 @@ static int stmmac_probe_config_dt(struct platform_device *pdev,
+ 		pr_warn("force_sf_dma_mode is ignored if force_thresh_dma_mode is set.");
+ 	}
+ 
++	plat->dcrs = of_property_read_bool(np, "snps,dcrs");
++
+ 	return 0;
+ }
+ #else
+diff --git a/include/linux/stmmac.h b/include/linux/stmmac.h
+index cd63851..6367f42 100644
+--- a/include/linux/stmmac.h
++++ b/include/linux/stmmac.h
+@@ -114,6 +114,7 @@ struct plat_stmmacenet_data {
+ 	int maxmtu;
+ 	int multicast_filter_bins;
+ 	int unicast_filter_entries;
++	int dcrs;
+ 	void (*fix_mac_speed)(void *priv, unsigned int speed);
+ 	void (*bus_setup)(void __iomem *ioaddr);
+ 	void *(*setup)(struct platform_device *pdev);
 -- 
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
+1.8.2.1
+
