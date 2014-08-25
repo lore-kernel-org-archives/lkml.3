@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933194AbaHYOqi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 10:46:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33010 "EHLO mx1.redhat.com"
+	id S933179AbaHYOqg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 10:46:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22033 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933166AbaHYOqe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 10:46:34 -0400
+	id S933163AbaHYOqd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 10:46:33 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Andi Kleen <andi@firstfloor.org>,
@@ -18,30 +18,30 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Andi Kleen <andi@firstfloor.org>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 7/9] perf tools: Allow PERF_FORMAT_GROUP for inherited events
-Date: Mon, 25 Aug 2014 16:45:41 +0200
-Message-Id: <1408977943-16594-8-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 9/9] perf script: Add period as a default output column
+Date: Mon, 25 Aug 2014 16:45:43 +0200
+Message-Id: <1408977943-16594-10-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1408977943-16594-1-git-send-email-jolsa@kernel.org>
 References: <1408977943-16594-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Swithing on leader sampling on inherited events.
+Adding period as a default output column in script command
+fo hardware, software and raw events.
 
-Following command will now get data from all children processes:
-  $ perf record -e '{cycles,cache-misses}:S' <workload>
+If PERF_SAMPLE_PERIOD sample type is defined in perf.data,
+following will be displayed in perf script output:
 
-Use following command to display the data:
-  $ perf report --group
+  $ perf script
+              ls  8034 57477.887209:     250000 task-clock:  ffffffff81361d72 memset ([kernel.kallsyms])
+              ls  8034 57477.887464:     250000 task-clock:  ffffffff816f6d92 _raw_spin_unlock_irqrestore ([kernel.kallsyms])
+              ls  8034 57477.887708:     250000 task-clock:  ffffffff811a94f0 do_munmap ([kernel.kallsyms])
+              ls  8034 57477.887959:     250000 task-clock:        34080916c6 get_next_seq (/usr/lib64/libc-2.17.so)
+              ls  8034 57477.888208:     250000 task-clock:        3408079230 _IO_doallocbuf (/usr/lib64/libc-2.17.so)
+              ls  8034 57477.888717:     250000 task-clock:  ffffffff814242c8 n_tty_write ([kernel.kallsyms])
+              ls  8034 57477.889285:     250000 task-clock:        3408076402 fwrite_unlocked (/usr/lib64/libc-2.17.so)
 
-Adding warning for record command if the support
-is not detected:
-  $ perf record -e '{cycles,cache-misses}:S,{instructions,branch}:S' kill
-  Disabling inherit for sample read events, no kernel support.
-  ...
-
-Reported-by: Jen-Cheng(Tommy) Huang <tommy24@gatech.edu>
 Cc: Andi Kleen <andi@firstfloor.org>
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -55,77 +55,43 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/perf.h        |  1 +
- tools/perf/util/evsel.c  |  6 +++++-
- tools/perf/util/record.c | 12 ++++++++++++
- 3 files changed, 18 insertions(+), 1 deletion(-)
+ tools/perf/builtin-script.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 510c65f72858..54e1cb42277e 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -45,6 +45,7 @@ struct record_opts {
- 	bool         call_graph_enabled;
- 	bool	     group;
- 	bool	     inherit_stat;
-+	bool	     inherit_format_group;
- 	bool	     no_buffering;
- 	bool	     no_inherit;
- 	bool	     no_inherit_set;
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 507d458ded2c..7415159bbcea 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -586,7 +586,11 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
- 		 */
- 		if (leader->nr_members > 1) {
- 			attr->read_format |= PERF_FORMAT_GROUP;
--			attr->inherit = 0;
-+			attr->inherit = opts->inherit_format_group;
-+			if (!opts->inherit_format_group) {
-+				pr_warning_once("Disabling inherit for sample read events, "
-+						"no kernel support.\n");
-+			}
- 		}
- 	}
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 7f08c8d4d633..cbe37df81085 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -82,7 +82,8 @@ static struct {
+ 		.fields = PERF_OUTPUT_COMM | PERF_OUTPUT_TID |
+ 			      PERF_OUTPUT_CPU | PERF_OUTPUT_TIME |
+ 			      PERF_OUTPUT_EVNAME | PERF_OUTPUT_IP |
+-				  PERF_OUTPUT_SYM | PERF_OUTPUT_DSO,
++			      PERF_OUTPUT_SYM | PERF_OUTPUT_DSO |
++			      PERF_OUTPUT_PERIOD,
  
-diff --git a/tools/perf/util/record.c b/tools/perf/util/record.c
-index cf69325b985f..22b1d9c79ac0 100644
---- a/tools/perf/util/record.c
-+++ b/tools/perf/util/record.c
-@@ -85,6 +85,12 @@ static void perf_probe_comm_exec(struct perf_evsel *evsel)
- 	evsel->attr.comm_exec = 1;
- }
+ 		.invalid_fields = PERF_OUTPUT_TRACE,
+ 	},
+@@ -93,7 +94,8 @@ static struct {
+ 		.fields = PERF_OUTPUT_COMM | PERF_OUTPUT_TID |
+ 			      PERF_OUTPUT_CPU | PERF_OUTPUT_TIME |
+ 			      PERF_OUTPUT_EVNAME | PERF_OUTPUT_IP |
+-				  PERF_OUTPUT_SYM | PERF_OUTPUT_DSO,
++			      PERF_OUTPUT_SYM | PERF_OUTPUT_DSO |
++			      PERF_OUTPUT_PERIOD,
  
-+static void perf_probe_inherit_format_group(struct perf_evsel *evsel)
-+{
-+	evsel->attr.inherit = 1;
-+	evsel->attr.read_format |= PERF_FORMAT_GROUP;
-+}
-+
- bool perf_can_sample_identifier(void)
- {
- 	return perf_probe_api(perf_probe_sample_identifier);
-@@ -95,6 +101,11 @@ static bool perf_can_comm_exec(void)
- 	return perf_probe_api(perf_probe_comm_exec);
- }
+ 		.invalid_fields = PERF_OUTPUT_TRACE,
+ 	},
+@@ -112,7 +114,8 @@ static struct {
+ 		.fields = PERF_OUTPUT_COMM | PERF_OUTPUT_TID |
+ 			      PERF_OUTPUT_CPU | PERF_OUTPUT_TIME |
+ 			      PERF_OUTPUT_EVNAME | PERF_OUTPUT_IP |
+-				  PERF_OUTPUT_SYM | PERF_OUTPUT_DSO,
++			      PERF_OUTPUT_SYM | PERF_OUTPUT_DSO |
++			      PERF_OUTPUT_PERIOD,
  
-+static bool perf_can_inherit_format_group(void)
-+{
-+	return perf_probe_api(perf_probe_inherit_format_group);
-+}
-+
- void perf_evlist__config(struct perf_evlist *evlist, struct record_opts *opts)
- {
- 	struct perf_evsel *evsel;
-@@ -111,6 +122,7 @@ void perf_evlist__config(struct perf_evlist *evlist, struct record_opts *opts)
- 	if (evlist->cpus->map[0] < 0)
- 		opts->no_inherit = true;
- 
-+	opts->inherit_format_group = perf_can_inherit_format_group();
- 	use_comm_exec = perf_can_comm_exec();
- 
- 	evlist__for_each(evlist, evsel) {
+ 		.invalid_fields = PERF_OUTPUT_TRACE,
+ 	},
 -- 
 1.8.3.1
 
