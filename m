@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932942AbaHYQ4y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 12:56:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59894 "EHLO
+	id S932673AbaHYQ4x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 12:56:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59898 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756279AbaHYQzZ (ORCPT
+	with ESMTP id S1756282AbaHYQzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Aug 2014 12:55:25 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Roland McGrath <roland@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
+Cc: Xufeng Zhang <xufeng.zhang@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 01/13] x86_32, entry: Do syscall exit work on badsys (CVE-2014-4508)
-Date: Mon, 25 Aug 2014 09:54:47 -0700
-Message-Id: <1408985699-31838-2-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 07/13] sctp: Fix sk_ack_backlog wrap-around problem
+Date: Mon, 25 Aug 2014 09:54:53 -0700
+Message-Id: <1408985699-31838-8-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408985699-31838-1-git-send-email-kamal@canonical.com>
 References: <1408985699-31838-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,60 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Xufeng Zhang <xufeng.zhang@windriver.com>
 
-commit 554086d85e71f30abe46fc014fea31929a7c6a8a upstream.
+commit d3217b15a19a4779c39b212358a5c71d725822ee upstream.
 
-The bad syscall nr paths are their own incomprehensible route
-through the entry control flow.  Rearrange them to work just like
-syscalls that return -ENOSYS.
+Consider the scenario:
+For a TCP-style socket, while processing the COOKIE_ECHO chunk in
+sctp_sf_do_5_1D_ce(), after it has passed a series of sanity check,
+a new association would be created in sctp_unpack_cookie(), but afterwards,
+some processing maybe failed, and sctp_association_free() will be called to
+free the previously allocated association, in sctp_association_free(),
+sk_ack_backlog value is decremented for this socket, since the initial
+value for sk_ack_backlog is 0, after the decrement, it will be 65535,
+a wrap-around problem happens, and if we want to establish new associations
+afterward in the same socket, ABORT would be triggered since sctp deem the
+accept queue as full.
+Fix this issue by only decrementing sk_ack_backlog for associations in
+the endpoint's list.
 
-This fixes an OOPS in the audit code when fast-path auditing is
-enabled and sysenter gets a bad syscall nr (CVE-2014-4508).
-
-This has probably been broken since Linux 2.6.27:
-af0575bba0 i386 syscall audit fast-path
-
-Cc: Roland McGrath <roland@redhat.com>
-Reported-by: Toralf Förster <toralf.foerster@gmx.de>
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Link: http://lkml.kernel.org/r/e09c499eade6fc321266dd6b54da7beb28d6991c.1403558229.git.luto@amacapital.net
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Fix-suggested-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+Acked-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Reference: CVE-2014-4667
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/kernel/entry_32.S | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ net/sctp/associola.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 60d03c2..b32b466 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -434,9 +434,10 @@ sysenter_past_esp:
- 	jnz sysenter_audit
- sysenter_do_call:
- 	cmpl $(NR_syscalls), %eax
--	jae syscall_badsys
-+	jae sysenter_badsys
- 	call *sys_call_table(,%eax,4)
- 	movl %eax,PT_EAX(%esp)
-+sysenter_after_call:
- 	LOCKDEP_SYS_EXIT
- 	DISABLE_INTERRUPTS(CLBR_ANY)
- 	TRACE_IRQS_OFF
-@@ -686,7 +687,12 @@ END(syscall_fault)
+diff --git a/net/sctp/associola.c b/net/sctp/associola.c
+index 67c6823..c5cd799 100644
+--- a/net/sctp/associola.c
++++ b/net/sctp/associola.c
+@@ -396,7 +396,7 @@ void sctp_association_free(struct sctp_association *asoc)
+ 	/* Only real associations count against the endpoint, so
+ 	 * don't bother for if this is a temporary association.
+ 	 */
+-	if (!asoc->temp) {
++	if (!list_empty(&asoc->asocs)) {
+ 		list_del(&asoc->asocs);
  
- syscall_badsys:
- 	movl $-ENOSYS,PT_EAX(%esp)
--	jmp resume_userspace
-+	jmp syscall_exit
-+END(syscall_badsys)
-+
-+sysenter_badsys:
-+	movl $-ENOSYS,PT_EAX(%esp)
-+	jmp sysenter_after_call
- END(syscall_badsys)
- 	CFI_ENDPROC
- /*
+ 		/* Decrement the backlog value for a TCP-style listening
 -- 
 1.9.1
 
