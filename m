@@ -1,82 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756154AbaHYQrZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 12:47:25 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:33785 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858AbaHYQrW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 12:47:22 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+crV38Ost4sxwq92tAPvoC
-Date: Mon, 25 Aug 2014 09:47:07 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: computersforpeace@gmail.com, gregkh@linuxfoundation.org, nsekhar@ti.com,
-        ezequiel.garcia@free-electrons.com, pekon@pek-sem.com,
-        artem.bityutskiy@linux.intel.com, dwmw2@infradead.org,
-        jg1.han@samsung.com, linux-mtd@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] mtd: nand: omap: Fix 1-bit Hamming code scheme,
- omap_calculate_ecc()
-Message-ID: <20140825164706.GK17254@atomide.com>
-References: <1407508028-12973-1-git-send-email-rogerq@ti.com>
+	id S1756272AbaHYQrh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 12:47:37 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:38567 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753635AbaHYQrX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 12:47:23 -0400
+Date: Mon, 25 Aug 2014 18:41:24 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Chen-Yu Tsai <wens@csie.org>
+Cc: Wolfram Sang <wsa@the-dreams.de>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, linux-i2c@vger.kernel.org,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] i2c: mv64xxx: continue probe when clock-frequency is
+ missing
+Message-ID: <20140825164124.GA22771@lunn.ch>
+References: <1408981819-3477-1-git-send-email-wens@csie.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1407508028-12973-1-git-send-email-rogerq@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1408981819-3477-1-git-send-email-wens@csie.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Roger Quadros <rogerq@ti.com> [140808 07:29]:
-> commit 65b97cf6b8de introduced in v3.7 caused a regression
-> by using a reversed CS_MASK thus causing omap_calculate_ecc to
-> always fail. As the NAND base driver never checks for .calculate()'s
-> return value, the zeroed ECC values are used as is without showing
-> any error to the user. However, this won't work and the NAND device
-> won't be guarded by any error code.
+On Mon, Aug 25, 2014 at 11:50:19PM +0800, Chen-Yu Tsai wrote:
+> The "clock-frequency" DT property is listed as optional, However,
+> the current code stores the return value of of_property_read_u32 in
+> the return code of mv64xxx_of_config, but then forgets to clear it
+> after setting the default value of "clock-frequency". It is then
+> passed out to the main probe function, resulting in a probe failure
+> when "clock-frequency" is missing.
 > 
-> Fix the issue by using the correct mask.
+> This patch checks and then throws away the result of
+> of_property_read_u32, instead of storing it and having to clear it
+> afterwards.
 > 
-> Code was tested on omap3beagle using the following procedure
-> - flash the primary bootloader (MLO) from the kernel to the first
-> NAND partition using nandwrite.
-> - boot the board from NAND. This utilizes OMAP ROM loader that
-> relies on 1-bit Hamming code ECC.
+> This issue was discovered after the property was removed from all
+> sunxi DTs.
 > 
-> Fixes: 65b97cf6b8de (mtd: nand: omap2: handle nand on gpmc)
-> 
-> Cc: <stable@vger.kernel.org>	[3.7+]
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+> Cc: stable@vger.kernel.org
 
-I'll apply this into omap-for-v3.17/fixes thanks.
+It would be good to add
 
-Regards,
+Fixes: 4c730a06c19bb ("i2c: mv64xxx: Set bus frequency to 100kHz if clock-frequency is not provided")
 
-Tony
+Acked-by: Andrew Lunn <andrew@lunn.ch>
+
+	  Andrew
+
 
 > ---
->  drivers/mtd/nand/omap2.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  drivers/i2c/busses/i2c-mv64xxx.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
 > 
-> diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
-> index f0ed92e..e2b9b34 100644
-> --- a/drivers/mtd/nand/omap2.c
-> +++ b/drivers/mtd/nand/omap2.c
-> @@ -931,7 +931,7 @@ static int omap_calculate_ecc(struct mtd_info *mtd, const u_char *dat,
->  	u32 val;
+> diff --git a/drivers/i2c/busses/i2c-mv64xxx.c b/drivers/i2c/busses/i2c-mv64xxx.c
+> index 6dc5ded..2f64273 100644
+> --- a/drivers/i2c/busses/i2c-mv64xxx.c
+> +++ b/drivers/i2c/busses/i2c-mv64xxx.c
+> @@ -746,8 +746,7 @@ mv64xxx_of_config(struct mv64xxx_i2c_data *drv_data,
+>  	}
+>  	tclk = clk_get_rate(drv_data->clk);
 >  
->  	val = readl(info->reg.gpmc_ecc_config);
-> -	if (((val >> ECC_CONFIG_CS_SHIFT)  & ~CS_MASK) != info->gpmc_cs)
-> +	if (((val >> ECC_CONFIG_CS_SHIFT) & CS_MASK) != info->gpmc_cs)
->  		return -EINVAL;
+> -	rc = of_property_read_u32(np, "clock-frequency", &bus_freq);
+> -	if (rc)
+> +	if (of_property_read_u32(np, "clock-frequency", &bus_freq))
+>  		bus_freq = 100000; /* 100kHz by default */
 >  
->  	/* read ecc result */
+>  	if (!mv64xxx_find_baud_factors(bus_freq, tclk,
 > -- 
-> 1.8.3.2
+> 2.1.0
 > 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
