@@ -1,114 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743AbaHYH7H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 03:59:07 -0400
-Received: from mail-bn1blp0190.outbound.protection.outlook.com ([207.46.163.190]:28241
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754490AbaHYH7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 03:59:05 -0400
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <wim@iguana.be>, <linux@roeck-us.net>, <mpa@pengutronix.de>,
-        <linux-watchdog@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCHv2] watchdog: imx2_wdt: Convert to use regmap framework's endianness method.
-Date: Mon, 25 Aug 2014 15:54:37 +0800
-Message-ID: <1408953277-2069-1-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.5
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199003)(189002)(89996001)(86362001)(77156001)(50986999)(19580405001)(69596002)(87286001)(105606002)(84676001)(79102001)(87936001)(6806004)(85852003)(19580395003)(92726001)(85306004)(99396002)(93916002)(95666004)(81342001)(2201001)(92566001)(104016003)(81156004)(83322001)(44976005)(104166001)(102836001)(74662001)(47776003)(21056001)(46102001)(20776003)(48376002)(76482001)(4396001)(36756003)(31966008)(80022001)(68736004)(229853001)(90102001)(81542001)(50466002)(88136002)(83072002)(74502001)(50226001)(26826002)(107046002)(97736001)(64706001)(77982001)(106466001)(62966002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR0301MB0613;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;UriScan:;
-X-Forefront-PRVS: 03142412E2
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Li.Xiubo@freescale.com; 
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;
-X-OriginatorOrg: freescale.com
+	id S1754764AbaHYIAE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 04:00:04 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:41332 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754493AbaHYIAC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 04:00:02 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: "John W. Linville" <linville@tuxdriver.com>, Kalle Valo <kvalo@adurom.com>
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Subject: [PATCH v2] ray_cs: Add include guards
+Date: Mon, 25 Aug 2014 09:59:29 +0200
+Message-Id: <1408953569-5647-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <87ppfq85bh.fsf@purkki.adurom.net>
+References: <87ppfq85bh.fsf@purkki.adurom.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Regmap framework will contain some patches to handle endianess, and there
-does not need any parsing of endianness DT properties of individual driver,
-so we can savely remove it here.
+The files ray_cs.h and rayctl.h both contain two thirds of what
+appears to be an include guard using the macro name RAYLINK_H (both
+lack the #define). Since RAYLINK_H is not defined anywhere, the
+#ifndefs are confusing no-ops. Add proper include guards using
+different macro names.
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: Markus Pargmann <mpa@pengutronix.de>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 ---
 
-Changes in v2:
-- Remove useless header file.
+Notes:
+    v2: Change subject prefix and fix broken commit message.
 
+ drivers/net/wireless/ray_cs.h | 5 +++--
+ drivers/net/wireless/rayctl.h | 5 +++--
+ 2 files changed, 6 insertions(+), 4 deletions(-)
 
-
-
- Documentation/devicetree/bindings/watchdog/fsl-imx-wdt.txt | 4 ++--
- drivers/watchdog/imx2_wdt.c                                | 9 +--------
- 2 files changed, 3 insertions(+), 10 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/watchdog/fsl-imx-wdt.txt b/Documentation/devicetree/bindings/watchdog/fsl-imx-wdt.txt
-index e52ba2d..9e1ebe2 100644
---- a/Documentation/devicetree/bindings/watchdog/fsl-imx-wdt.txt
-+++ b/Documentation/devicetree/bindings/watchdog/fsl-imx-wdt.txt
-@@ -6,8 +6,8 @@ Required properties:
- - interrupts : Should contain WDT interrupt
+diff --git a/drivers/net/wireless/ray_cs.h b/drivers/net/wireless/ray_cs.h
+index e79848f..524c2f0 100644
+--- a/drivers/net/wireless/ray_cs.h
++++ b/drivers/net/wireless/ray_cs.h
+@@ -3,7 +3,8 @@
+    Written by Corey Thomas
+ */
  
- Optional property:
--- big-endian: If present the watchdog device's registers are implemented
--  in big endian mode, otherwise in little mode.
-+- big-endian: Boolean property, required if all the i.MX WDT registers
-+  are big-endian rather than little-endian.
+-#ifndef RAYLINK_H
++#ifndef _RAY_CS_H_
++#define _RAY_CS_H_
  
- Examples:
+ struct beacon_rx {
+     struct mac_header mac;
+@@ -69,4 +70,4 @@ typedef struct ray_dev_t {
+ } ray_dev_t;
+ /*****************************************************************************/
  
-diff --git a/drivers/watchdog/imx2_wdt.c b/drivers/watchdog/imx2_wdt.c
-index 68c3d37..afc8738 100644
---- a/drivers/watchdog/imx2_wdt.c
-+++ b/drivers/watchdog/imx2_wdt.c
-@@ -28,7 +28,6 @@
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/moduleparam.h>
--#include <linux/of_address.h>
- #include <linux/platform_device.h>
- #include <linux/regmap.h>
- #include <linux/timer.h>
-@@ -182,7 +181,7 @@ static struct watchdog_ops imx2_wdt_ops = {
- 	.set_timeout = imx2_wdt_set_timeout,
- };
+-#endif /* RAYLINK_H */
++#endif /* _RAY_CS_H_ */
+diff --git a/drivers/net/wireless/rayctl.h b/drivers/net/wireless/rayctl.h
+index 3c3b98b..b21ed64 100644
+--- a/drivers/net/wireless/rayctl.h
++++ b/drivers/net/wireless/rayctl.h
+@@ -1,4 +1,5 @@
+-#ifndef RAYLINK_H
++#ifndef _RAYCTL_H_
++#define _RAYCTL_H_
  
--static struct regmap_config imx2_wdt_regmap_config = {
-+static const struct regmap_config imx2_wdt_regmap_config = {
- 	.reg_bits = 16,
- 	.reg_stride = 2,
- 	.val_bits = 16,
-@@ -191,12 +190,10 @@ static struct regmap_config imx2_wdt_regmap_config = {
+ typedef unsigned char UCHAR;
  
- static int __init imx2_wdt_probe(struct platform_device *pdev)
- {
--	struct device_node *np = pdev->dev.of_node;
- 	struct imx2_wdt_device *wdev;
- 	struct watchdog_device *wdog;
- 	struct resource *res;
- 	void __iomem *base;
--	bool big_endian;
- 	int ret;
- 	u32 val;
- 
-@@ -204,10 +201,6 @@ static int __init imx2_wdt_probe(struct platform_device *pdev)
- 	if (!wdev)
- 		return -ENOMEM;
- 
--	big_endian = of_property_read_bool(np, "big-endian");
--	if (big_endian)
--		imx2_wdt_regmap_config.val_format_endian = REGMAP_ENDIAN_BIG;
--
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	base = devm_ioremap_resource(&pdev->dev, res);
- 	if (IS_ERR(base))
+@@ -729,4 +730,4 @@ typedef struct snaphdr_t
+ #define RAY_IPX_TYPE  0x8137
+ #define APPLEARP_TYPE 0x80f3
+ /*****************************************************************************/
+-#endif /* #ifndef RAYLINK_H */
++#endif /* _RAYCTL_H_ */
 -- 
-1.8.5
+2.0.4
 
