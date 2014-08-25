@@ -1,259 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756296AbaHYQug (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 12:50:36 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:53123 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756226AbaHYQue convert rfc822-to-8bit (ORCPT
+	id S1756110AbaHYQyg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 12:54:36 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:33534 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858AbaHYQye (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 12:50:34 -0400
+	Mon, 25 Aug 2014 12:54:34 -0400
+Date: Mon, 25 Aug 2014 09:54:30 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Adam.Thomson.Opensource@diasemi.com,
+        knaack.h@gmx.de, lars@metafoo.de, pmeerw@pmeerw.net,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] iio: core: Propagate error codes from OF layer to client
+ drivers
+Message-ID: <20140825165430.GB14614@roeck-us.net>
+References: <1408971437-10751-1-git-send-email-iivanov@mm-sol.com>
+ <53FB5FF7.8020504@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <53FB673F.8070200@6wind.com>
-References: <cover.1408581429.git.rgb@redhat.com> <cd6cd0622ce677b639afae18a69ff79c72490bab.1408581429.git.rgb@redhat.com>
- <CALCETrUnzG1V8w+H9ctAJP+Hvo8LQax=dhLG4bBpBKmVi+C1cQ@mail.gmail.com>
- <20140822015803.GG20529@madcap2.tricolour.ca> <CALCETrUkFD0iNi1SV_6ypN5Kf4GYybT5tzjRjRQuLzT9iBnQAg@mail.gmail.com>
- <53FB3A86.2060203@6wind.com> <CALCETrW1Lv0qeccMjNHSEzgtiaNN3NgJVR1dFjjR_dw5KVVnqA@mail.gmail.com>
- <53FB59A3.5030804@6wind.com> <CALCETrWHrWhm89B5s=pLt_9eTx3ZF8ifA6y6CwknWaWU7dp=sQ@mail.gmail.com>
- <53FB673F.8070200@6wind.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 25 Aug 2014 09:50:11 -0700
-Message-ID: <CALCETrVVQ2Ugesq8zWK_gmj46Zr6mFL2Riyf=Lrdqy8ze3YfPA@mail.gmail.com>
-Subject: Re: [PATCH V4 3/8] namespaces: expose ns instance serial numbers in proc
-To: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, linux-audit@redhat.com,
-        Linux API <linux-api@vger.kernel.org>,
-        Richard Guy Briggs <rgb@redhat.com>, netdev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53FB5FF7.8020504@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 9:41 AM, Nicolas Dichtel
-<nicolas.dichtel@6wind.com> wrote:
-> Le 25/08/2014 18:13, Andy Lutomirski a écrit :
->
->> On Mon, Aug 25, 2014 at 8:43 AM, Nicolas Dichtel
->> <nicolas.dichtel@6wind.com> wrote:
->>>
->>> Le 25/08/2014 16:04, Andy Lutomirski a écrit :
->>>
->>>> On Aug 25, 2014 6:30 AM, "Nicolas Dichtel" <nicolas.dichtel@6wind.com>
->>>> wrote:
->>>>>>
->>>>>>
->>>>>> CRIU wants to save the complete state of a namespace and then restore
->>>>>> it.  For that to work, any information exposed to things in the
->>>>>> namespace *cannot* be globally unique or unique per boot, since CRIU
->>>>>> needs to arrange for that information to match whatever it was when
->>>>>> CRIU saved it.
->>>>>
->>>>>
->>>>>
->>>>> How are ifindex of network devices managed? These ifindexes are unique
->>>>> per boot,
->>>>> thus can change depending on the order in which netdev are created.
->>>>> These ifindexes are unique per boot and exposed to userspace ...
->>>>>
->>>>
->>>> This does not appear to be true.
->>>>
->>>> $ sudo unshare --net
->>>> # ip link add veth0 type veth peer name veth1
->>>> # ip link
->>>> 1: lo: <LOOPBACK> mtu 65536 qdisc noop state DOWN mode DEFAULT group
->>>> default
->>>>       link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
->>>> 2: veth1: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode
->>>> DEFAULT group default qlen 1000
->>>>       link/ether 06:0d:59:c7:a6:a8 brd ff:ff:ff:ff:ff:ff
->>>> 3: veth0: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode
->>>> DEFAULT group default qlen 1000
->>>>       link/ether b2:5c:8b:f2:12:28 brd ff:ff:ff:ff:ff:ff
->>>> # logout
->>>> $ ip link
->>>> 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN
->>>>       link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
->>>> 3: em1: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc pfifo_fast
->>>> state DOWN qlen 1000
->>>>
->>> I've probably misunderstood what you're trying to say. ifindexes are
->>> unique
->>> per
->>> boot and per netns.
->>
->>
->> I think we both misunderstood each other.  The ifindexes are unique
->> *per netns*, which means that, if you're unprivileged in a netns,
->> global information doesn't leak to you.  I think this is good.
->
-> Ok, I agree. I think audit daemons are always running under privileged
-> users.
->
->
->>
->>>>
->>>> Let me try again, with emphasis in the right place.
->>>>
->>>> I think that *code running in a namespace* has no business even
->>>> knowing a unique identity of *that namespace* from the perspective of
->>>> the host.
->>>>
->>>> In your example, if there's a veth device between netns A and netns B,
->>>> then code *in netns A* has no business knowing the identity of its
->>>> veth peer if its peer (B) is a sibling or ancestor.  It also IMO has
->>>> no business knowing the identity of its own netns (A) other than as
->>>> "my netns".
->>>
->>>
->>> I do not agree (see the example below).
->>>
->>>
->>>>
->>>> If A and B are siblings, then their parent needs to know where that
->>>> veth device goes, but I think this is already the case to a sufficient
->>>> extent today.
->>>
->>>
->>> I'm not aware of a hierarchy between netns. A daemon should be able to
->>> got the full network configuration, even if it's started when this
->>> configuration
->>> is already applied, ie even if it doesn't know what happen before it
->>> starts.
->>>
->>
->> I don't know exactly which namespaces have an explicit hierarchy, but
->> there is certainly a hierarchy of *user* namespaces, and network
->> namespaces live in user namespaces, so they at least have somewhat of
->> a hierarchy.
->>
->>>
->>>>
->>>> I feel like this discussion is falling into a common trap of new API
->>>> discussions.  Can one of you who wants this API please articulate,
->>>> with a reasonably precise example, what it is that you want to do, why
->>>> you can't easily do it already, and how this API helps?  I currently
->>>> understand how the API creates problems, but I don't understand how it
->>>> solves any problems, and I will NAK it (and I suspect that Eric will,
->>>> too, which is pretty much fatal) unless that changes.
->>>
->>>
->>> What I'm trying to solve is to have full info in netlink messages sent by
->>> the
->>> kernel, thus beeing able to identify a peer netns (and this is close from
->>> what
->>> audit guys are trying to have). Theorically, messages sent by the kernel
->>> can
->>> be
->>> reused as is to have the same configuration. This is not the case with
->>> x-netns
->>> devices. Here is an example, with ip tunnels:
->>>
->>> $ ip netns add 1
->>> $ ip link add ipip1 type ipip remote 10.16.0.121 local 10.16.0.249 dev
->>> eth0
->>> $ ip -d link ls ipip1
->>> 8: ipip1@eth0: <POINTOPOINT,NOARP> mtu 1480 qdisc noop state DOWN mode
->>> DEFAULT group default
->>>      link/ipip 10.16.0.249 peer 10.16.0.121 promiscuity 0
->>>      ipip remote 10.16.0.121 local 10.16.0.249 dev eth0 ttl inherit
->>> pmtudisc
->>> $ ip link set ipip1 netns 1
->>> $ ip netns exec 1 ip -d link ls ipip1
->>> 8: ipip1@tunl0: <POINTOPOINT,NOARP,M-DOWN> mtu 1480 qdisc noop state DOWN
->>> mode DEFAULT group default
->>>      link/ipip 10.16.0.249 peer 10.16.0.121 promiscuity 0
->>>      ipip remote 10.16.0.121 local 10.16.0.249 dev tunl0 ttl inherit
->>> pmtudisc
->>>
->>> Now informations got with 'ip link' are wrong and incomplete:
->>>   - the link dev is now tunl0 instead of eth0, because we only got an
->>> ifindex
->>>     from the kernel without any netns informations.
->>>   - the encapsulation addresses are not part of this netns but the user
->>> doesn't
->>>     known that (still because netns info is missing). These IPv4
->>> addresses
->>> may
->>>     exist into this netns.
->>>   - it's not possible to create the same netdevice with these infos.
->>>
->>
->> Aha.  That's a genuine problem.
->>
->> Perhaps we need a concept of which netnses should be able to see each
->> other.
->
-> Yes, I agree. This is not required for all netns, only a subset of netns
-> should
->
-> be able to see each other.
->
->>
->> I think I would be okay with a somewhat different outcome from your
->> example:
->>
->> $ ip netns exec 1 ip -d link ls ipip1
->> 8: ipip1@[unknown device in another namespace]:
->> <POINTOPOINT,NOARP,M-DOWN> mtu 1480 qdisc noop state DOWN
->>
->> I think this outcome is mandatory if netns 1 lives in a subsidiary
->> user namespace.
->
-> Yes.
->
->
->>
->> Certainly, if you do the 'ip link' in the original namespace, I agree
->> that this should work.
->
-> And yes :)
->
-> I will update my previous proposal
-> (http://thread.gmane.org/gmane.linux.network/315933/focus=321753)
-> to allow to get an id for a peer netns only when the user namespace is the
-> same.
->
+On Mon, Aug 25, 2014 at 05:10:31PM +0100, Jonathan Cameron wrote:
+> On 25/08/14 13:57, Ivan T. Ivanov wrote:
+> > Do not overwrite error codes returned from of_iio_channel_get().
+> > Error codes are used to distinguish between "io-channel-names"
+> > not present in DT bindings, property is optional, and IIO channel
+> > provider driver still not being loaded, defer probe.
+> > 
+> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> Cc'd Guenter who often takes an interest in this code (and wrote it ;)
+> 
+> Mostly seems logical to me, though I don't like the change of
+> priority in the last bit.  I've also just taken a fix for this
+> code so there may be some fuzz from that once it's propogated
+> through to mainline and back to the togreg tree of iio.git
+> 
+> Thanks,
+> 
+> Jonathan
+> > ---
+> >  drivers/iio/inkern.c | 24 ++++++++++++------------
+> >  1 file changed, 12 insertions(+), 12 deletions(-)
+> > 
+> > diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
+> > index c749700..66a6cde 100644
+> > --- a/drivers/iio/inkern.c
+> > +++ b/drivers/iio/inkern.c
+> > @@ -162,7 +162,7 @@ err_free_channel:
+> >  static struct iio_channel *of_iio_channel_get_by_name(struct device_node *np,
+> >  						      const char *name)
+> >  {
+> > -	struct iio_channel *chan = NULL;
+> > +	struct iio_channel *chan = ERR_PTR(-ENODEV);
+> >  
+> >  	/* Walk up the tree of devices looking for a matching iio channel */
+> >  	while (np) {
+> > @@ -183,7 +183,7 @@ static struct iio_channel *of_iio_channel_get_by_name(struct device_node *np,
+> >  		else if (name && index >= 0) {
+> >  			pr_err("ERROR: could not get IIO channel %s:%s(%i)\n",
+> >  				np->full_name, name ? name : "", index);
+> > -			return NULL;
+> > +			break;
+> >  		}
+> >  
+> >  		/*
+> > @@ -193,7 +193,7 @@ static struct iio_channel *of_iio_channel_get_by_name(struct device_node *np,
+> >  		 */
+> >  		np = np->parent;
+> >  		if (np && !of_get_property(np, "io-channel-ranges", NULL))
+> > -			return NULL;
+> > +			break;
+> >  	}
+> >  
+> >  	return chan;
+> > @@ -243,12 +243,12 @@ error_free_chans:
+> >  static inline struct iio_channel *
+> >  of_iio_channel_get_by_name(struct device_node *np, const char *name)
+> >  {
+> > -	return NULL;
+> > +	return ERR_PTR(-ENODEV);
+> >  }
+> >  
+> >  static inline struct iio_channel *of_iio_channel_get_all(struct device *dev)
+> >  {
+> > -	return NULL;
+> > +	return ERR_PTR(-ENODEV);
+> >  }
+> >  
+> >  #endif /* CONFIG_OF */
+> > @@ -312,14 +312,14 @@ struct iio_channel *iio_channel_get(struct device *dev,
+> >  	const char *name = dev ? dev_name(dev) : NULL;
+> >  	struct iio_channel *channel;
+> >  
+> > -	if (dev) {
+> > -		channel = of_iio_channel_get_by_name(dev->of_node,
+> > -						     channel_name);
+> > -		if (channel != NULL)
+> > -			return channel;
+> > -	}
+> > +	channel = iio_channel_get_sys(name, channel_name);
+> > +	if (!IS_ERR(channel))
+> > +		return channel;
+> > +
+> > +	if (!dev)
+> > +		return channel;
+> >  
+> > -	return iio_channel_get_sys(name, channel_name);
+> > +	return of_iio_channel_get_by_name(dev->of_node, channel_name);
+> >  }
+> Why reorder the logic?   This makes this patch less obviously
+> correct for limited obvious gain?
+> 
+> Previously the priority was clearly given to device tree bindings
+> wherease now it is given to board file provided map elements.  It
+> would be interesting to see boards with both provided, but it is
+> possible.
 
-I think it should work if the peer userns is the same or a descendent.
-I also wonder whether the peer's ifindex should be suppressed if peer
-userns is not the same or a descendent.
+I am not entirely sure I understand what problem this patch is supposed
+to fix on top of the patch you just applied, and I am also a bit concerned
+about reversing the logic. Also, iio_channel_get_sys can return -ENOMEM
+and -EINVAL besides -ENODEV, all of which is now being ignored unless dev is
+set, and then it is returned unconditionally. So instead of ignoring error
+codes from of_iio_channel_get_by_name, the code now ignores error codes
+from iio_channel_get_sys under some circumstances (which, coincidentially,
+does not return -EPROBE_DEFER), and in other circumstances may return an error
+even if devicetree data exists. Why and how is that better than before ?
+Seems to me it just introduces a whole number of new failure conditions.
 
-Now you just have to get Eric to be happy with the id allocation. :)
-This may be nontrivial.
-
->
->>
->> For most namespace types, this all works transparently, since
->> everything has an real identity all the way up the hierarchy.  Network
->> namespaces are different.
->>
->> I don't think that exposing serial numbers in /proc is a good
->> solution, both for the reasons already described and because I don't
->> think that iproute2 should need to muck around with /proc to function
->
-> A netlink API is probably enough. But it will help only for the network
-> problem, not for audit. I was hoping to find a common solution.
-
-I still don't understand why audit needs anything beyond the audit
-part of this patch set.  I have no problem with audit seeing that
-migrated/restored namespaces are really brand-new namespaces, as long
-as the code in those namespaces isn't exposed to it.
-
->
->
->> correctly.  Eric, any clever ideas here?  Do we need fancier netlink
->> messages for this?
->>
->> --Andy
->>
->
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Guenter
