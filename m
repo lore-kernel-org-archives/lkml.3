@@ -1,67 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932248AbaHYMxN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 08:53:13 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:34302 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755839AbaHYMxK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 08:53:10 -0400
-Date: Mon, 25 Aug 2014 13:53:06 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Mantas =?utf-8?Q?Mikul=C4=97nas?= <grawity@gmail.com>
-Cc: Harald Hoyer <harald@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-efi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: Loading initrd above 4G causes freeze on boot
-Message-ID: <20140825125306.GS29733@console-pimps.org>
-References: <53E62EEF.9040801@gmail.com>
- <53F752A2.7080604@redhat.com>
- <CAPWNY8V4pfazk4Hw9qu07cAQZywC-GS7eyS+54fazXZaKMjMQw@mail.gmail.com>
- <CAPWNY8V=T=Y5uPX9J_qjdkTJRnctDs-PoTQP7LEX_cKQEn0_Zg@mail.gmail.com>
- <20140825105559.GQ29733@console-pimps.org>
- <CAPWNY8V8D74CNXGhDwp2gpPpeV2F=Qao32i-0Mhq=9zhvDXLLw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPWNY8V8D74CNXGhDwp2gpPpeV2F=Qao32i-0Mhq=9zhvDXLLw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755760AbaHYM53 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 08:57:29 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:49480 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755634AbaHYM52 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 08:57:28 -0400
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Adam.Thomson.Opensource@diasemi.com,
+        knaack.h@gmx.de, lars@metafoo.de, pmeerw@pmeerw.net,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] iio: core: Propagate error codes from OF layer to client drivers
+Date: Mon, 25 Aug 2014 15:57:17 +0300
+Message-Id: <1408971437-10751-1-git-send-email-iivanov@mm-sol.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Aug, at 02:08:59PM, Mantas Mikulėnas wrote:
-> 
-> Well, all I could find is:
-> 
-> > Freeing initrd memory: 5552K (ffff8800be22e000 - ffff8800be79a000)
-> 
-> Attaching the entire log.
+Do not overwrite error codes returned from of_iio_channel_get().
+Error codes are used to distinguish between "io-channel-names"
+not present in DT bindings, property is optional, and IIO channel
+provider driver still not being loaded, defer probe.
 
-Here we go,
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+---
+ drivers/iio/inkern.c | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-> [    0.000000] RAMDISK: [mem 0xbe22e000-0xbe799fff]
-
-OK, we're out of options here. Yinghai, we're going to have to revert
-your patch, 4bf7111f5016 ("x86/efi: Support initrd loaded above 4G")
-
-We could conceivably add a boot parameter option to attempt loading
-inirds above 4G, but we can't turn the feature on by default because of
-all these buggy EFI implementations - things must work out of the box.
-
-But the boot parameter would be useful for those people that a) know
-their firmware isn't buggy and b) need to leave < 4G memory available
-for use by other things. Yinghai, can you provide some justification for
-your original commit? Do you have concrete use cases where loading
-initrds above 4G is critical? How important is it that we enable this
-functionality as opposed to reverting it?
-
-It might also make sense to bump the default max initrd address
-(hdr->initrd_addr_max) from 0x7fffffff to 0xffffffff at this point.
-Peter, do you forsee any problem with this change?
-
+diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
+index c749700..66a6cde 100644
+--- a/drivers/iio/inkern.c
++++ b/drivers/iio/inkern.c
+@@ -162,7 +162,7 @@ err_free_channel:
+ static struct iio_channel *of_iio_channel_get_by_name(struct device_node *np,
+ 						      const char *name)
+ {
+-	struct iio_channel *chan = NULL;
++	struct iio_channel *chan = ERR_PTR(-ENODEV);
+ 
+ 	/* Walk up the tree of devices looking for a matching iio channel */
+ 	while (np) {
+@@ -183,7 +183,7 @@ static struct iio_channel *of_iio_channel_get_by_name(struct device_node *np,
+ 		else if (name && index >= 0) {
+ 			pr_err("ERROR: could not get IIO channel %s:%s(%i)\n",
+ 				np->full_name, name ? name : "", index);
+-			return NULL;
++			break;
+ 		}
+ 
+ 		/*
+@@ -193,7 +193,7 @@ static struct iio_channel *of_iio_channel_get_by_name(struct device_node *np,
+ 		 */
+ 		np = np->parent;
+ 		if (np && !of_get_property(np, "io-channel-ranges", NULL))
+-			return NULL;
++			break;
+ 	}
+ 
+ 	return chan;
+@@ -243,12 +243,12 @@ error_free_chans:
+ static inline struct iio_channel *
+ of_iio_channel_get_by_name(struct device_node *np, const char *name)
+ {
+-	return NULL;
++	return ERR_PTR(-ENODEV);
+ }
+ 
+ static inline struct iio_channel *of_iio_channel_get_all(struct device *dev)
+ {
+-	return NULL;
++	return ERR_PTR(-ENODEV);
+ }
+ 
+ #endif /* CONFIG_OF */
+@@ -312,14 +312,14 @@ struct iio_channel *iio_channel_get(struct device *dev,
+ 	const char *name = dev ? dev_name(dev) : NULL;
+ 	struct iio_channel *channel;
+ 
+-	if (dev) {
+-		channel = of_iio_channel_get_by_name(dev->of_node,
+-						     channel_name);
+-		if (channel != NULL)
+-			return channel;
+-	}
++	channel = iio_channel_get_sys(name, channel_name);
++	if (!IS_ERR(channel))
++		return channel;
++
++	if (!dev)
++		return channel;
+ 
+-	return iio_channel_get_sys(name, channel_name);
++	return of_iio_channel_get_by_name(dev->of_node, channel_name);
+ }
+ EXPORT_SYMBOL_GPL(iio_channel_get);
+ 
 -- 
-Matt Fleming, Intel Open Source Technology Center
+1.9.1
+
