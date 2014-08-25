@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933445AbaHYSDw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 14:03:52 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:47284 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933123AbaHYSDi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 14:03:38 -0400
+	id S1756360AbaHYSEI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 14:04:08 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:34033 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755638AbaHYSEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 14:04:05 -0400
+Date: Mon, 25 Aug 2014 12:03:45 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Scot Doyle <lkml14@scotdoyle.com>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>,
+        Stefan Berger <stefanb@linux.vnet.ibm.com>,
+        Luigi Semenzato <semenzato@google.com>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tpm: fix interrupt timeouts
+Message-ID: <20140825180345.GA1298@obsidianresearch.com>
+References: <alpine.LNX.2.11.1408250710470.1443@localhost.localdomain>
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:157d:55cc:a8e7:51c8:5b83]
-In-Reply-To: <20140825173542.GX18411@ld-irv-0074>
-References: <1407960049-1591-1-git-send-email-computersforpeace@gmail.com>
-	<20140825173542.GX18411@ld-irv-0074>
-Date: Mon, 25 Aug 2014 11:03:36 -0700
-Message-ID: <CAOesGMhmer-V9qXQboeULK91fkrVLQ=4uKuJtOOOnxMGs5WQfA@mail.gmail.com>
-Subject: Re: [PATCH] ARM: brcmstb: revert SMP support
-From: Olof Johansson <olof@lixom.net>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: Matt Porter <mporter@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Marc Carino <marc.ceeeee@gmail.com>,
-        Gregory Fong <gregory.0xf0@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.11.1408250710470.1443@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Aug 25, 2014 at 07:14:03AM +0000, Scot Doyle wrote:
+> commit 4c663cfc523a88d97a8309b04a089c27dc57fd7e
+>     wait: fix false timeouts when using wait_event_timeout()
+> 
+> changed the semantics of wait_event_interruptible_timeout so that a
+> condition check is performed after timeout and 1 is returned if true.
+> 
+> The TPM chip may not send interrupts even though the tpm module is
+> attempting to receive interrupts. In this case, after the module
+> sends a command to the TPM chip it performs a blocking wait on the
+> interrupt queue. No interrupts are sent from the chip, the queue is
+> not woken up and the blocking wait times out. Despite timing out,
+> the command has completed and the condition check performed by
+> wait_event_interruptible_timeout after timeout is true, resulting in
+> a return value of 1. Since the expected return value on timeout is 0
+> the timeout is not detected.
+> 
+> To fix, assume a return value of 1 or less indicates an elapsed
+> timeout. It is possible for the return value to be 1 after receiving
+> an interrupt, but this should be rare. The condition is not double-
+> checked because of possible side effects.
 
-On Mon, Aug 25, 2014 at 10:35 AM, Brian Norris
-<computersforpeace@gmail.com> wrote:
-> Hi Matt, Olof,
->
-> Can this go into 3.17? Besides the other improvements that need to be
-> made to this code, more people are noticing the build errors Russell
-> noticed previously.
->
->   http://article.gmane.org/gmane.linux.ports.arm.kernel/350226
->
-> I meant to have put [PATCH -3.17] in the subject, in case that would
-> help it get the attention it deserved.
+Hum.. Okay, so I see what you are trying to fix here, but the code is
+actually using wait_event_interruptible_timeout correctly as is. 
 
-Yeah, I'll apply this one directly.
+The TPM actually did complete the operation, and the test sentinal
+checks directly at the TPM - which makes sense to me..
 
+I think you'll have to directly test in the tis driver if the
+interrupt is working.
 
--Olof
+The ordering in the TIS driver is wrong, interrupts should be turned
+on before any TPM commands are issued. This is what other drivers are
+doing.
+	
+If you fix this, tis can then just count interrupts recieved and check
+if that is 0 to detect failure and then turn them off.
+
+Jason
