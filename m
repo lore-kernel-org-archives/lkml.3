@@ -1,115 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755437AbaHYLni (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 07:43:38 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:35807 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755151AbaHYLng (ORCPT
+	id S1755349AbaHYLtP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 07:49:15 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:39780 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753027AbaHYLtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 07:43:36 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-d6-53fb21667879
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>,
-        Olof Johansson <olof@lixom.net>, Kevin Hilman <khilman@linaro.org>,
-        afaerber@suse.de, Ajay Kumar <ajaykumar.rs@samsung.com>,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/1] ARM: exynos_defconfig: Enable options for display
- panel support
-Date: Mon, 25 Aug 2014 13:43:30 +0200
-Message-id: <5825205.70RuHaSG5p@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <1408956336-17376-1-git-send-email-javier.martinez@collabora.co.uk>
-References: <1408956336-17376-1-git-send-email-javier.martinez@collabora.co.uk>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=ISO-8859-1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMLMWRmVeSWpSXmKPExsVy+t9jAd00xd/BBt1X1CyaNxVbHHh/kMXi
-	7LKDbBZHfxdY9C64ymbx9fAKRotNj6+xWlzeNYfNYsb5fUwWp65/ZnPg8pjdcJHF4+/z6ywe
-	d67tYfPYvKTe48qJJlaPvi2rGD02n672+LxJLoAjissmJTUnsyy1SN8ugSvj2AT5gi2CFQeW
-	XGRrYDzJ18XIySEhYCJxaeo/NghbTOLCvfVANheHkMAiRolPGzayQDgtTBJf3+9gAaliE7CS
-	mNi+ihHEFhGwk7ix+iEzSBGzwE4miZVPvrN2MXJwCAvESnzZUQZisgioSqy+qAxi8gpoSlxZ
-	Ig/SKSrgKbFj+0qwvZwCARLbl+9nBrGFBPwljr29zQ5i8woISvyYfA9sK7OAvMS+/VNZIWwd
-	if2t09gmMArMQlI2C0nZLCRlCxiZVzGKphYkFxQnpeca6RUn5haX5qXrJefnbmIER8Uz6R2M
-	qxosDjEKcDAq8fCu5PwVLMSaWFZcmXuIUYKDWUmEl1f0d7AQb0piZVVqUX58UWlOavEhRmkO
-	FiVx3oOt1oFCAumJJanZqakFqUUwWSYOTqkGxu4jlwKPtRqJvXcLSPOok21zvLwweX/ffeYF
-	N96bvmUS3X299vPqJxVZimJSK51+Pdu3MvzCxK+zitYfve8TPcHyVeck3eq5vgWvzgTpsdsd
-	EhOfdPJcv/iDBxFr3hSJZ0qFns1zM9j03JBjrd5cJvnwrWrrpS5bs0aEeO1ZufLOexbrhsiz
-	ZUosxRmJhlrMRcWJAE5QRW6GAgAA
+	Mon, 25 Aug 2014 07:49:14 -0400
+From: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>
+To: Lars-Peter Clausen <lars@metafoo.de>,
+        sanjeev sharma <sanjeevsharmaengg@gmail.com>
+CC: "jic23@kernel.org" <jic23@kernel.org>, gregkh <gregkh@linuxfoundation.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        devel <devel@driverdev.osuosl.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] staging:iio: moved platform_data into include/linux/iio
+Thread-Topic: [PATCH] staging:iio: moved platform_data into include/linux/iio
+Thread-Index: AQHPvD/0dxnEQqo0D0eqpJHW9TvQ6ZvY+PeAgAACRoCAAAFvgIAH85xQ///+DQCAAE3yQA==
+Date: Mon, 25 Aug 2014 11:49:09 +0000
+Message-ID: <FDC088D3B5555644AE135ED28A7ABDE94DF3ECF2@EU-MBX-04.mgc.mentorg.com>
+References: <1408516869-6099-1-git-send-email-sanjeev_sharma@mentor.com>
+	<53F441FF.9090304@metafoo.de>
+ <CAGUYZuSENkSjoA9U0E8MQKp0a1J3moE8p8NYAzfiZ+BpxND4Aw@mail.gmail.com>
+ <53F4451B.3040209@metafoo.de>
+ <FDC088D3B5555644AE135ED28A7ABDE94DF3CC4B@EU-MBX-04.mgc.mentorg.com>
+ <53FAEF10.7010001@metafoo.de>
+In-Reply-To: <53FAEF10.7010001@metafoo.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [137.202.0.76]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OriginalArrivalTime: 25 Aug 2014 11:49:12.0059 (UTC) FILETIME=[9670ACB0:01CFC05A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7PBnZtj025993
 
+-----Original Message-----
+From: Lars-Peter Clausen [mailto:lars@metafoo.de] 
+Sent: Monday, August 25, 2014 1:39 PM
+To: Sharma, Sanjeev; sanjeev sharma
+Cc: jic23@kernel.org; gregkh; linux-iio@vger.kernel.org; devel; linux-kernel
+Subject: Re: [PATCH] staging:iio: moved platform_data into include/linux/iio
 
-Hi,
+On 08/25/2014 09:17 AM, Sharma, Sanjeev wrote:
+> Hello Lars,
+>
+> As per your suggestion Can I move complete Driver out of staging specially SPI ADC Driver.
 
-On Monday, August 25, 2014 10:45:36 AM Javier Martinez Canillas wrote:
-> Many Exynos devices have a display panel. Most of them just have
-> a simple panel while others have more complex configurations that
-> requires an embedded DisplayPort (eDP) to LVDS bridges.
-> 
-> This patch enables the following features to be built in the kernel
-> image to suport both setups:
-> 
-> - Direct Rendering Manager (DRM)
-> - DRM bridge registration and lookup framework
-> - Parade ps8622/ps8625 eDP/LVDS bridge
-> - NXP ptn3460 eDP/LVDS bridge
-> - Exynos Fully Interactive Mobile Display controller (FIMD)
-> - Panel registration and lookup framework
-> - Simple panels
-> - Backlight & LCD device support
-> 
-> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> Tested-by: Kevin Hilman <khilman@linaro.org>
+Only if they are cleaned up first. All of the drivers that are still in staging do have issues, otherwise we'd already had moved them. A few of them are OK codestyle wise, but do have ABI issues which need to be resolved before they can be moved.
 
-Could you please also do corresponding update to multi_v7_defconfig?
+- Lars
 
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
+Where I can find ABI issues which need to be resolved so that these can be looked upon.
 
-> ---
-> 
-> Changes since v1:
->  - Forgot to enable ptn3460 eDP/LVDS bridge config option
->    which is used for some boards (e.g: Exynos5250 Snow).
-> 
->  arch/arm/configs/exynos_defconfig | 15 +++++++++++++++
->  1 file changed, 15 insertions(+)
-> 
-> diff --git a/arch/arm/configs/exynos_defconfig b/arch/arm/configs/exynos_defconfig
-> index 676c744..d6d1f7c 100644
-> --- a/arch/arm/configs/exynos_defconfig
-> +++ b/arch/arm/configs/exynos_defconfig
-> @@ -101,11 +101,26 @@ CONFIG_REGULATOR_S2MPA01=y
->  CONFIG_REGULATOR_S2MPS11=y
->  CONFIG_REGULATOR_S5M8767=y
->  CONFIG_REGULATOR_TPS65090=y
-> +CONFIG_DRM=y
-> +CONFIG_DRM_BRIDGE=y
-> +CONFIG_DRM_PTN3460=y
-> +CONFIG_DRM_PS8622=y
-> +CONFIG_DRM_EXYNOS=y
-> +CONFIG_DRM_EXYNOS_FIMD=y
-> +CONFIG_DRM_EXYNOS_DP=y
-> +CONFIG_DRM_PANEL=y
-> +CONFIG_DRM_PANEL_SIMPLE=y
->  CONFIG_FB=y
->  CONFIG_FB_MODE_HELPERS=y
->  CONFIG_FB_SIMPLE=y
->  CONFIG_EXYNOS_VIDEO=y
->  CONFIG_EXYNOS_MIPI_DSI=y
-> +CONFIG_BACKLIGHT_LCD_SUPPORT=y
-> +CONFIG_LCD_CLASS_DEVICE=y
-> +CONFIG_LCD_PLATFORM=y
-> +CONFIG_BACKLIGHT_CLASS_DEVICE=y
-> +CONFIG_BACKLIGHT_GENERIC=y
-> +CONFIG_BACKLIGHT_PWM=y
->  CONFIG_FRAMEBUFFER_CONSOLE=y
->  CONFIG_FONTS=y
->  CONFIG_FONT_7x14=y
+-Sanjeev 
+>
+> Regards
+> Sanjeev Sharma
+>
+> -----Original Message-----
+> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
+> Sent: Wednesday, August 20, 2014 12:20 PM
+> To: sanjeev sharma
+> Cc: Sharma, Sanjeev; jic23@kernel.org; gregkh; 
+> linux-iio@vger.kernel.org; devel; linux-kernel
+> Subject: Re: [PATCH] staging:iio: moved platform_data into 
+> include/linux/iio
+>
+> On 08/20/2014 08:44 AM, sanjeev sharma wrote:
+>> Hi,
+>>
+>> This was the action item(TO-DO). IMO, it make sense to move into 
+>> include/linux/iio because IIO complete subsystem may take some time.
+>
+> The code that is in staging is not supposed to 'leak' outside of staging. So either you move the driver as a whole out of staging or leave it there, but do not move individual files of the driver out of staging. The action item is for when the driver is moved out of staging.
+>
 
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
