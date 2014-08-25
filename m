@@ -1,82 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933389AbaHYTLv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 15:11:51 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:37687 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932253AbaHYTLt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 15:11:49 -0400
-Message-ID: <53FB8A8C.8040107@wwwdotorg.org>
-Date: Mon, 25 Aug 2014 13:12:12 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S933426AbaHYTMq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 15:12:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34194 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932253AbaHYTMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 15:12:45 -0400
+Date: Mon, 25 Aug 2014 21:09:56 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Julien Tinnes <jln@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] ipc/shm: fix the historical/wrong mm->start_stack
+	check
+Message-ID: <20140825190956.GA25759@redhat.com>
+References: <20140823144246.GA6281@redhat.com> <20140823144327.GA6299@redhat.com> <20140823152240.GH25918@moon> <20140823155832.GA9406@redhat.com> <alpine.LSU.2.11.1408241818530.8474@eggly.anvils> <20140825150301.GB3021@redhat.com> <alpine.LSU.2.11.1408250856020.24245@eggly.anvils> <20140825171820.GB8338@redhat.com> <alpine.LSU.2.11.1408251135540.24957@eggly.anvils>
 MIME-Version: 1.0
-To: Andrew Bresticker <abrestic@chromium.org>,
-        Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
-        Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH v2 3/9] of: Update Tegra XUSB pad controller binding for
- USB
-References: <1408381705-3623-1-git-send-email-abrestic@chromium.org> <1408381705-3623-4-git-send-email-abrestic@chromium.org>
-In-Reply-To: <1408381705-3623-4-git-send-email-abrestic@chromium.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1408251135540.24957@eggly.anvils>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/18/2014 11:08 AM, Andrew Bresticker wrote:
-> Add new bindings used for USB support by the Tegra XUSB pad controller.
-> This includes additional PHY types, USB-specific pinconfig properties, etc.
-
-I'll mainly defer to Thierry for this patch, since he's the expert on 
-this HW module.
-
-> diff --git a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-xusb-padctl.txt b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-xusb-padctl.txt
-
->   - #phy-cells: Should be 1. The specifier is the index of the PHY to reference.
->     See <dt-bindings/pinctrl/pinctrl-tegra-xusb.h> for the list of valid values.
-> +- mboxes: Must contain an entry for the XUSB PHY mailbox channel.
-> +  See ../mailbox/mailbox.txt for details.
-
-Can we require the mbox-names property here, so that everything is 
-looked up by names. I know that the proposed mbox binding states that 
-using indexes is preferred over names, but that's just silly considering 
-that names are widely used in most other similar bindings, and are much 
-easier to extend in a backwards compatible fashion in the face of 
-optional entries. As such, I'd prefer that all Tegra bindings use 
-foo-names properties where they exist.
-
-> +Optional properties:
-> +-------------------
-> +- vbus-otg-{0,1,2}-supply: VBUS regulator for the corresponding UTMI pad.
-
-Why "-otg"? It's quite possible to have a regulator for VBUS even on 
-systems that don't support OTG, but rather simply have the ability to 
-turn VBUS off.
-
-
->     - pcie-0, pcie-1, pcie-2, pcie-3, pcie-4, sata-0:
+On 08/25, Hugh Dickins wrote:
 >
->       Valid functions for this group are: "pcie", "usb3", "sata", "rsvd".
+> On Mon, 25 Aug 2014, Oleg Nesterov wrote:
+> > On 08/25, Hugh Dickins wrote:
+> >
+> > > And I think I'll let Linus's guard page justify your 4 (to match comment)
+> > > in place of the original's mysterious 5.
+> >
+> > Ah, thanks again. Yes, if we want to guarantee 4 pages we should check 5.
+> >
+> > Although obviously this doesn't explain the original's 5, this was
+> > written before check_stack_guard_page().
 >
-> +    The nvidia,usb2-port-num property only applies and is required when
-> +    the function is usb3.
-> +
->
+> I meant, you changed the coded 5 to 4, to match the comment above it;
+> and if I were insistent on maximizing back-compatible-safety, I would
+> say that 4 should go back to 5;
 
-There are 2 blank lines there.
+I already did this ;) I'll send v2 patch in a minute.
+
+> But I didn't understand your "to guarantee 4 we should check 5".
+
+I just tried to say that I fully agree with your point.
+
+I didn't dare to preserve your acks although the patch is almost the
+same, I'll appreciate it if you can ack v2 too.
+
+Oleg.
 
