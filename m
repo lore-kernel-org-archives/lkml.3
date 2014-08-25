@@ -1,53 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756636AbaHYWCc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 18:02:32 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:49971 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753168AbaHYWCa (ORCPT
+	id S933573AbaHYWGH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 18:06:07 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:60250 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933512AbaHYWGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 18:02:30 -0400
-Date: Mon, 25 Aug 2014 15:00:44 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-        Sabrina Dubroca <sd@queasysnail.net>, Valdis.Kletnieks@vt.edu,
-        Hugh Dickins <hughd@google.com>,
-        Vincent Donnefort <vdonnefort@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
-Subject: Re: 3.17-rc1: leds blink workqueue causes sleeping BUGs
-In-Reply-To: <20140825213752.GD3070@type.youpi.perso.aquilenet.fr>
-Message-ID: <alpine.LSU.2.11.1408251454570.26438@eggly.anvils>
-References: <alpine.LSU.2.11.1408161946450.1064@eggly.anvils> <10857.1408467967@turing-police.cc.vt.edu> <20140825211340.GA22168@kria> <20140825212324.GC3070@type.youpi.perso.aquilenet.fr> <20140825213752.GD3070@type.youpi.perso.aquilenet.fr>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Mon, 25 Aug 2014 18:06:05 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
+        Dirk Griesbach <spamthis@freenet.de>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [PATCH] ACPI / scan: Allow ACPI drivers to bind to PNP device objects
+Date: Tue, 26 Aug 2014 00:25:09 +0200
+Message-ID: <1493252.guStSdlKdN@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1408864010.3315.47.camel@rzhang1-toshiba>
+References: <5487060.QsgluucUH4@vostro.rjw.lan> <1408864010.3315.47.camel@rzhang1-toshiba>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="0-1686296495-1409004052=:26438"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Sunday, August 24, 2014 03:06:50 PM Zhang Rui wrote:
+> On Thu, 2014-08-21 at 06:04 +0200, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
---0-1686296495-1409004052=:26438
-Content-Type: TEXT/PLAIN; charset=iso-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+[cut]
 
-On Mon, 25 Aug 2014, Samuel Thibault wrote:
-> Samuel Thibault, le Mon 25 Aug 2014 23:23:24 +0200, a =E9crit :
-> > We could indeed have a loop if the user was making the VT::* leds use
-> > the vt-* trigger,
->=20
-> Actually, while there can be a loop, it wouldn't be possible to inject
-> events in it: a VT::* led only makes the corresponding vt-* trigger if
-> it got an event from its trigger, etc. So it's really a false positive,
-> the lock detector just can not know that it can not happen.
+> >  3 files changed, 7 insertions(+), 1 deletion(-)
+> > 
+> > Index: linux-pm/drivers/acpi/acpi_pnp.c
+> > ===================================================================
+> > --- linux-pm.orig/drivers/acpi/acpi_pnp.c
+> > +++ linux-pm/drivers/acpi/acpi_pnp.c
+> > @@ -396,3 +396,8 @@ void __init acpi_pnp_init(void)
+> >  {
+> >  	acpi_scan_add_handler(&acpi_pnp_handler);
+> >  }
+> > +
+> > +bool is_acpi_pnp_device(struct acpi_device *adev)
+> > +{
+> > +	return adev->handler == &acpi_pnp_handler;
+> > +}
+> 
+> can we reuse acpi_is_pnp_device()?
+> The only difference is that acpi_is_pnp_device() returns true for
+> RTC_CMOS devices, which is not a problem IMO because RTC CMOS devices
+> have PNP driver only.
 
-I'm not suffering from this lockdep warning myself; but, false positive
-or not, it does need to be fixed (or annotated).  Because once lockdep
-reports one issue, it turns itself off.  So any developer who hits this
-warning is then unable test their own changes with lockdep afterwards.
+Yes, we can.  Overlooked that.
 
-Hugh
---0-1686296495-1409004052=:26438--
+Updated patch is appended.
+
+Rafael
+
+
+---
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Subject: [PATCH] ACPI / scan: Allow ACPI drivers to bind to PNP device objects
+
+We generally don't allow ACPI drivers to bind to ACPI device objects
+that companion "physical" device objects are created for to avoid
+situations in which two different drivers may attempt to handle one
+device at the same time.  Recent ACPI device enumeration rework
+extended that approach to ACPI PNP devices by starting to use a scan
+handler for enumerating them.  However, we previously allowed ACPI
+drivers to bind to ACPI device objects with existing PNP device
+companions and changing that led to functional regressions on some
+systems.
+
+For this reason, add a special check for PNP devices in
+acpi_device_probe() so that ACPI drivers can bind to ACPI device
+objects having existing PNP device companions as before.
+
+Fixes: eec15edbb0e1 (ACPI / PNP: use device ID list for PNPACPI device enumeration)
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=81511
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=81971
+Reported-by: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+Reported-by: Dirk Griesbach <spamthis@freenet.de>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/scan.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -975,7 +975,7 @@ static int acpi_device_probe(struct devi
+ 	struct acpi_driver *acpi_drv = to_acpi_driver(dev->driver);
+ 	int ret;
+ 
+-	if (acpi_dev->handler)
++	if (acpi_dev->handler && !acpi_is_pnp_device(acpi_dev))
+ 		return -EINVAL;
+ 
+ 	if (!acpi_drv->ops.add)
+
