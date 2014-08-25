@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754806AbaHYIAX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 04:00:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35575 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754767AbaHYIAT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 04:00:19 -0400
-Date: Mon, 25 Aug 2014 03:00:18 -0500 (CDT)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ben Hawkes <hawkes@google.com>
-Subject: Re: [PATCH 1/2] HID: logitech-dj: prevent false errors to be shown
-In-Reply-To: <20140825075552.GA298@x4>
-Message-ID: <alpine.LNX.2.00.1408250300030.23162@pobox.suse.cz>
-References: <1408738566-6805-1-git-send-email-benjamin.tissoires@redhat.com> <alpine.LNX.2.00.1408250249150.23162@pobox.suse.cz> <20140825075552.GA298@x4>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754605AbaHYIHZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 04:07:25 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:51393 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752937AbaHYIHW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 04:07:22 -0400
+X-Auth-Info: ZWKa/YMUQN4KSxO/sKK7yjSQn/vYTVTdfMM0qA7qGew=
+From: Marek Vasut <marex@denx.de>
+To: Robin Gong <b38343@freescale.com>
+Subject: Re: [PATCH v4] spi: spi-imx: add DMA support
+Date: Mon, 25 Aug 2014 10:07:22 +0200
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
+Cc: broonie@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Frank.Li@freescale.com, shawn.guo@linaro.org
+References: <1408752835-10995-1-git-send-email-b38343@freescale.com>
+In-Reply-To: <1408752835-10995-1-git-send-email-b38343@freescale.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201408251007.22393.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Aug 2014, Markus Trippelsdorf wrote:
+On Saturday, August 23, 2014 at 02:13:55 AM, Robin Gong wrote:
+> After enable DMA
 
-> > > Commit "HID: logitech: perform bounds checking on device_id early
-> > > enough" unfortunately leaks some errors to dmesg which are not real
-> > > ones:
-> > > - if the report is not a DJ one, then there is not point in checking
-> > >   the device_id
-> > > - the receiver (index 0) can also receive some notifications which
-> > >   can be safely ignored given the current implementation
-> > > 
-> > > Move out the test regarding the report_id and also discards
-> > > printing errors when the receiver got notified.
-> > > 
-> > > Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> > 
-> > I have now queued this one for 3.17. Adding Markus to CC -- Markus, this 
-> > should make the spurious error messages you have reported go away.
+Please also add a commit message which describes the change, not only some test 
+results.
+
+[...]
+
+> @@ -911,6 +1194,13 @@ static int spi_imx_probe(struct platform_device
+> *pdev) goto out_put_per;
 > 
-> Indeed it does. Feel free to add:
+>  	spi_imx->spi_clk = clk_get_rate(spi_imx->clk_per);
+> +	/*
+> +	 * Only validated on i.mx6 now, can remove the constrain if validated on
+> +	 * other chips.
+> +	 */
+
+Given that the check below tests for imx51_ecspi_devtype_data ... does that 
+mean, that this code was never tested on MX51 and MX53, yet will be enabled
+for those chips and might possibly break them ?
+
+> +	if (spi_imx->devtype_data == &imx51_ecspi_devtype_data
+> +	    && spi_imx_sdma_init(&pdev->dev, spi_imx, master, res))
+> +		dev_err(&pdev->dev, "dma setup error,use pio instead\n");
 > 
-> Reported-and-tested-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+>  	spi_imx->devtype_data->reset(spi_imx);
+> 
+> @@ -949,6 +1239,7 @@ static int spi_imx_remove(struct platform_device
+> *pdev) writel(0, spi_imx->base + MXC_CSPICTRL);
+>  	clk_unprepare(spi_imx->clk_ipg);
+>  	clk_unprepare(spi_imx->clk_per);
+> +	spi_imx_sdma_exit(spi_imx);
+>  	spi_master_put(master);
+> 
+>  	return 0;
 
-Excellent, thanks. Will be pushing it to Linus this week.
-
--- 
-Jiri Kosina
-SUSE Labs
+Best regards,
+Marek Vasut
