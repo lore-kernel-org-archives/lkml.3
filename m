@@ -1,105 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933573AbaHYWGH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 18:06:07 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:60250 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933512AbaHYWGF (ORCPT
+	id S1756642AbaHYWHP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 18:07:15 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:62794 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933512AbaHYWHM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 18:06:05 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
-        Dirk Griesbach <spamthis@freenet.de>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [PATCH] ACPI / scan: Allow ACPI drivers to bind to PNP device objects
-Date: Tue, 26 Aug 2014 00:25:09 +0200
-Message-ID: <1493252.guStSdlKdN@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1408864010.3315.47.camel@rzhang1-toshiba>
-References: <5487060.QsgluucUH4@vostro.rjw.lan> <1408864010.3315.47.camel@rzhang1-toshiba>
+	Mon, 25 Aug 2014 18:07:12 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <CAHA+R7MTJcsDpw=5P7hOsVf_pEOEZX_=cLrcw4ep4xntUxk=3Q@mail.gmail.com>
+References: <1408911690-7598-1-git-send-email-ast@plumgrid.com>
+	<1408911690-7598-7-git-send-email-ast@plumgrid.com>
+	<CAHA+R7MTJcsDpw=5P7hOsVf_pEOEZX_=cLrcw4ep4xntUxk=3Q@mail.gmail.com>
+Date: Mon, 25 Aug 2014 15:07:11 -0700
+Message-ID: <CAMEtUuzB3zc86W4SUY-L3BDRPmzPOD+V7-jfzS7cTEbg74YOoA@mail.gmail.com>
+Subject: Re: [PATCH v5 net-next 06/29] bpf: add lookup/update/delete/iterate
+ methods to BPF maps
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Cong Wang <cwang@twopensource.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Brendan Gregg <brendan.d.gregg@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, August 24, 2014 03:06:50 PM Zhang Rui wrote:
-> On Thu, 2014-08-21 at 06:04 +0200, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Mon, Aug 25, 2014 at 2:33 PM, Cong Wang <cwang@twopensource.com> wrote:
+> On Sun, Aug 24, 2014 at 1:21 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>> 'maps' is a generic storage of different types for sharing data between kernel
+>> and userspace.
+>>
+>> The maps are accessed from user space via BPF syscall, which has commands:
+>>
+>> - create a map with given type and attributes
+>>   fd = bpf_map_create(map_type, struct nlattr *attr, int len)
+>>   returns fd or negative error
+>>
+>> - lookup key in a given map referenced by fd
+>>   err = bpf_map_lookup_elem(int fd, void *key, void *value)
+>>   returns zero and stores found elem into value or negative error
+>>
+>> - create or update key/value pair in a given map
+>>   err = bpf_map_update_elem(int fd, void *key, void *value)
+>>   returns zero or negative error
+>>
+>> - find and delete element by key in a given map
+>>   err = bpf_map_delete_elem(int fd, void *key)
+>>
+>> - iterate map elements (based on input key return next_key)
+>>   err = bpf_map_get_next_key(int fd, void *key, void *next_key)
+>
+>
+> I think you need to document the bpf() syscall instead of wrappers on it,
+> from a developer's point of view. You will anyway need to document a new
+> syscall with a man page as a general rule.
 
-[cut]
+yep. I've mentioned before that man page is on todo list. I'm delaying
+writing it, because it's the most difficult part and I don't want to keep
+rewriting it when interface changes (like it did from global id to fd).
+Once implementation lands, manpage will be the highest priority.
 
-> >  3 files changed, 7 insertions(+), 1 deletion(-)
-> > 
-> > Index: linux-pm/drivers/acpi/acpi_pnp.c
-> > ===================================================================
-> > --- linux-pm.orig/drivers/acpi/acpi_pnp.c
-> > +++ linux-pm/drivers/acpi/acpi_pnp.c
-> > @@ -396,3 +396,8 @@ void __init acpi_pnp_init(void)
-> >  {
-> >  	acpi_scan_add_handler(&acpi_pnp_handler);
-> >  }
-> > +
-> > +bool is_acpi_pnp_device(struct acpi_device *adev)
-> > +{
-> > +	return adev->handler == &acpi_pnp_handler;
-> > +}
-> 
-> can we reuse acpi_is_pnp_device()?
-> The only difference is that acpi_is_pnp_device() returns true for
-> RTC_CMOS devices, which is not a problem IMO because RTC CMOS devices
-> have PNP driver only.
+> In the changelog I mean something like:
+>
+> err = bpf(BPF_MAP_LOOKUP_ELEM, ...);
 
-Yes, we can.  Overlooked that.
+Are you saying instead of:
+err = bpf_map_lookup_elem(int fd, void *key, void *value)
+write
+err = bpf(BPF_MAP_LOOKUP_ELEM, fd, key, value)
+in commit log?
+I think that style carries less information per line.
 
-Updated patch is appended.
-
-Rafael
-
-
----
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Subject: [PATCH] ACPI / scan: Allow ACPI drivers to bind to PNP device objects
-
-We generally don't allow ACPI drivers to bind to ACPI device objects
-that companion "physical" device objects are created for to avoid
-situations in which two different drivers may attempt to handle one
-device at the same time.  Recent ACPI device enumeration rework
-extended that approach to ACPI PNP devices by starting to use a scan
-handler for enumerating them.  However, we previously allowed ACPI
-drivers to bind to ACPI device objects with existing PNP device
-companions and changing that led to functional regressions on some
-systems.
-
-For this reason, add a special check for PNP devices in
-acpi_device_probe() so that ACPI drivers can bind to ACPI device
-objects having existing PNP device companions as before.
-
-Fixes: eec15edbb0e1 (ACPI / PNP: use device ID list for PNPACPI device enumeration)
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=81511
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=81971
-Reported-by: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-Reported-by: Dirk Griesbach <spamthis@freenet.de>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/scan.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Index: linux-pm/drivers/acpi/scan.c
-===================================================================
---- linux-pm.orig/drivers/acpi/scan.c
-+++ linux-pm/drivers/acpi/scan.c
-@@ -975,7 +975,7 @@ static int acpi_device_probe(struct devi
- 	struct acpi_driver *acpi_drv = to_acpi_driver(dev->driver);
- 	int ret;
- 
--	if (acpi_dev->handler)
-+	if (acpi_dev->handler && !acpi_is_pnp_device(acpi_dev))
- 		return -EINVAL;
- 
- 	if (!acpi_drv->ops.add)
-
+For man page I'll document the syscall in a traditional way, but
+for commit log I like to have maximum info in the fewest lines.
