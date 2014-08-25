@@ -1,48 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531AbaHYJhL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 05:37:11 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:38237 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751127AbaHYJhJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 05:37:09 -0400
-Date: Mon, 25 Aug 2014 12:36:48 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Sitsofe Wheeler <sitsofe@gmail.com>
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jason Wang <jasowang@redhat.com>, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>, netdev@vger.kernel.org,
-        devel@linuxdriverproject.org, Haiyang Zhang <haiyangz@microsoft.com>
-Subject: Re: [hyperv] BUG at drivers/hv/channel.c:462 while changing MTU
-Message-ID: <20140825093648.GB5046@mwanda>
-References: <20140819123655.GC12160@sucs.org>
+	id S1754789AbaHYJil (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 05:38:41 -0400
+Received: from mga11.intel.com ([192.55.52.93]:40452 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753066AbaHYJik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 05:38:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,396,1406617200"; 
+   d="scan'208";a="589426248"
+Date: Mon, 25 Aug 2014 17:40:18 +0800
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Zhang Yang <yang.z.zhang@intel.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: x86: fix xen guest panic due to lack of
+ KVM_REQ_EVENT
+Message-ID: <20140825094018.GA5113@kernel>
+Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+References: <1408953506-7289-1-git-send-email-wanpeng.li@linux.intel.com>
+ <53FAFB53.7040806@redhat.com>
+ <20140825090822.GA4955@kernel>
+ <53FAFEE0.9000408@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140819123655.GC12160@sucs.org>
+In-Reply-To: <53FAFEE0.9000408@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code here is:
+Hi Paolo,
+On Mon, Aug 25, 2014 at 11:16:16AM +0200, Paolo Bonzini wrote:
+>Il 25/08/2014 11:08, Wanpeng Li ha scritto:
+>> Hi Paolo,
+>> On Mon, Aug 25, 2014 at 11:01:07AM +0200, Paolo Bonzini wrote:
+>>> Il 25/08/2014 09:58, Wanpeng Li ha scritto:
+>>>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+>>>> index c10408e..b7c0073 100644
+>>>> --- a/arch/x86/kvm/x86.c
+>>>> +++ b/arch/x86/kvm/x86.c
+>>>> @@ -4928,6 +4928,8 @@ static void toggle_interruptibility(struct kvm_vcpu *vcpu, u32 mask)
+>>>>  		if (!mask)
+>>>>  			kvm_make_request(KVM_REQ_EVENT, vcpu);
+>>>>  	}
+>>>> +	if (!(int_shadow || mask))
+>>>> +		kvm_make_request(KVM_REQ_EVENT, vcpu);
+>>>>  }
+>>>>  
+>>>>  static void inject_emulated_exception(struct kvm_vcpu *vcpu)
+>>>
+>>> No, this patch undoes the optimization in the buggy patch.
+>>>
+>>> A KVM_REQ_EVENT must be missing somewhere else.
+>>>
+>> 
+>> Could you give some tips in order that I can figure it out?
+>
+>I have no idea right now (I was planning to debug it this week).
+>
+>(BTW, look at the original commit that introduced KVM_REQ_EVENT --
+>https://git.kernel.org/cgit/virt/kvm/kvm.git/commit/?id=3842d135 -- and
+>compare the patch and the commit message.  You can see that it was added
+>to the emulator because it is a "place that can set EFLAGS" and this
+>idea is preserved in the buggy patch).
+>
+>The important thing is that (despite Xen being involved) this is not
+>related to nested virtualization.  So I would first of all try to see if
+>some module parameter makes it go away (apicv and unrestricted mode
 
-drivers/hv/channel.c
-   460          BUG_ON(ret != 0);
-   461          t = wait_for_completion_timeout(&info->waitevent, 5*HZ);
-   462          BUG_ON(t == 0);
+This bug can be reproduced w/o apicv.
 
-So it calls BUG_ON() if the teardown takes more than 5 seconds.  It's
-most likely that there is a race condition somewhere.  It's also
-possible that it's just taking longer than 5 seconds for some odd
-reason and the bug would go away if we raised it to 60 seconds.
+>especially), then capture a trace of the panic.  At least this is how I
+>was planning to start... :)
 
-BUG_ON() after 5 seconds seems like a very aggressive thing.
+Great, I will also continue to debug it. ;-)
 
-regards,
-dan carpenter
+Regards,
+Wanpeng Li 
 
+>
+>Paolo
