@@ -1,60 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933220AbaHYOrD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 10:47:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58327 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933203AbaHYOq5 (ORCPT
+	id S933233AbaHYOrT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 10:47:19 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:63812 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932613AbaHYOrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 10:46:57 -0400
-Date: Mon, 25 Aug 2014 07:46:14 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Scott Yuan <scottzero0@gmail.com>
-Cc: robh@kernel.org, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] 8250: serial device file is out of order
-Message-ID: <20140825144614.GA14325@kroah.com>
-References: <53FB2033.5010101@gmail.com>
+	Mon, 25 Aug 2014 10:47:14 -0400
+Date: Mon, 25 Aug 2014 10:47:10 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Dongsheng Yang <dongsheng081251@gmail.com>
+Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>, lizefan@huawei.com,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] cgroup: Introduce cgroup_detach_task().
+Message-ID: <20140825144710.GA21688@htj.dyndns.org>
+References: <1408966330-2374-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+ <20140825141220.GA31066@mtj.dyndns.org>
+ <CA+qeAOq7hYq-TJMh8jQpJy=nWwk2FsUMSS1Hd=-JkhLLXbweEQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53FB2033.5010101@gmail.com>
+In-Reply-To: <CA+qeAOq7hYq-TJMh8jQpJy=nWwk2FsUMSS1Hd=-JkhLLXbweEQ@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 07:38:27PM +0800, Scott Yuan wrote:
-> From ebb85a61456bf25f87aeb8a31c92c74540bdf306 Mon Sep 17 00:00:00 2001
-> From: Scott Yuan <scottzero0@gmail.com>
-> Date: Sun, 24 Aug 2014 13:46:56 +0800
-> Subject: [PATCH] 8250: serial device file is out of order
+On Mon, Aug 25, 2014 at 10:46:03PM +0800, Dongsheng Yang wrote:
+> My point here is that attaching and detaching are a pair of operations.
 
-Why is this here in the email?  Please use git send-email to not send
-this.
+There is no detaching from a cgroup.  A task is always attached to a
+cgroup whether that's a root or non-root cgroup.
 
-> On x86 architecture, the configuration of serial device maybe get from ACPI
-> DSDT, but the order of DSDT is not mandatory, result as array
-> serial8250_ports
-> is out of order. This situation is more obvious in multiple serial port
-> mainboard. Sort it by unique id that in DSDT will fix it.
-> 
-> Signed-off-by: Scott Yuan <scottzero0@gmail.com>
-> ---
->  drivers/pnp/pnpacpi/core.c          |  1 +
->  drivers/tty/serial/8250/8250_core.c | 40
-> ++++++++++++++++++++++++++++++++++++-
->  drivers/tty/serial/8250/8250_pnp.c  | 12 +++++++++++
->  include/linux/pnp.h                 |  1 +
->  include/linux/serial_8250.h         |  2 ++
->  5 files changed, 55 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/pnp/pnpacpi/core.c b/drivers/pnp/pnpacpi/core.c
-> index a5c6cb7..84b518e 100644
-> --- a/drivers/pnp/pnpacpi/core.c
-> +++ b/drivers/pnp/pnpacpi/core.c
-> @@ -254,6 +254,7 @@ static int __init pnpacpi_add_device(struct acpi_device
-> *device)
+Thanks.
 
-Your patch is line-wrapped and can not be applied :(
-
+-- 
+tejun
