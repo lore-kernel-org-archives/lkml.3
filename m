@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754685AbaHYIPx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 04:15:53 -0400
-Received: from mga03.intel.com ([143.182.124.21]:23272 "EHLO mga03.intel.com"
+	id S1754725AbaHYIRZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 04:17:25 -0400
+Received: from mga11.intel.com ([192.55.52.93]:28932 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753843AbaHYIPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 04:15:51 -0400
+	id S1753843AbaHYIRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 04:17:24 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,395,1406617200"; 
-   d="scan'208";a="472248598"
-Message-ID: <1408954526.30155.2.camel@linux.intel.com>
-Subject: Re: [PATCH v3 04/11] lib/vsprintf: add %*pE[achnops] format
- specifier
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Joe Perches <joe@perches.com>
-Cc: "John W . Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>, devel@driverdev.osuosl.org,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+   d="scan'208";a="581242054"
+Date: Mon, 25 Aug 2014 11:17:07 +0300
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Vivek Gautam <gautam.vivek@samsung.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Mon, 25 Aug 2014 11:15:26 +0300
-In-Reply-To: <1408546008.23250.23.camel@joe-AO725>
-References: <1408527772-27224-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1408527772-27224-5-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1408546008.23250.23.camel@joe-AO725>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.5-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        Felipe Balbi <balbi@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 4/6] phy: remove the old lookup method
+Message-ID: <20140825081707.GA21712@xps8300>
+References: <1408620803-10464-1-git-send-email-heikki.krogerus@linux.intel.com>
+ <1408620803-10464-5-git-send-email-heikki.krogerus@linux.intel.com>
+ <CAFp+6iEihFwvJA7qkdhkGrSGkgEZz4Qtm4CAU6h0Aq3zUt1bxw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFp+6iEihFwvJA7qkdhkGrSGkgEZz4Qtm4CAU6h0Aq3zUt1bxw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-08-20 at 07:46 -0700, Joe Perches wrote:
-> On Wed, 2014-08-20 at 12:42 +0300, Andy Shevchenko wrote:
-> > This allows user to print a given buffer as an escaped string. The rules are
-> > applied according to an optional mix of flags provided by additional format
-> > letters.
-> 
-> Thanks Andy.  Looks good to me.
+On Mon, Aug 25, 2014 at 01:11:34PM +0530, Vivek Gautam wrote:
+> Please squash the attached diff which removes the 'init_data' field
+> from some of the other instances
+> of devm_phy_create() in few other drivers.
+> This should prevent any build errors that i could see with multi_v7_defconfig.
 
-Can I imply your Reviewed-by?
+OK, I'll add those changes into this patch, and it seems there
+is now at least one more new driver on top of those calling
+devm_phy_create.
 
 
-> Very trivial note:
-
-Fixed locally. Waiting for few days for more comments and will send v5
-then.
-
+Thanks!
 
 -- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
-
+heikki
