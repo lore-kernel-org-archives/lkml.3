@@ -1,111 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932295AbaHYN2f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 09:28:35 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:52539 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755458AbaHYN2c (ORCPT
+	id S932370AbaHYN2i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 09:28:38 -0400
+Received: from regular1.263xmail.com ([211.150.99.139]:44073 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932091AbaHYN2f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 09:28:32 -0400
-From: Eric Auger <eric.auger@linaro.org>
-To: eric.auger@st.com, eric.auger@linaro.org, christoffer.dall@linaro.org,
-        marc.zyngier@arm.com, linux-arm-kernel@lists.infradead.org,
-        kvmarm@lists.cs.columbia.edu, kvm@vger.kernel.org,
-        alex.williamson@redhat.com, joel.schopp@amd.com,
-        kim.phillips@freescale.com
-Cc: linux-kernel@vger.kernel.org, patches@linaro.org, will.deacon@arm.com,
-        a.motakis@virtualopensystems.com, a.rigo@virtualopensystems.com,
-        john.liuli@huawei.com
-Subject: [RFC 0/9] KVM-VFIO IRQ forward control
-Date: Mon, 25 Aug 2014 15:27:35 +0200
-Message-Id: <1408973264-30384-1-git-send-email-eric.auger@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	Mon, 25 Aug 2014 09:28:35 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: zyw@rock-chips.com
+X-FST-TO: robh+dt@kernel.org
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: zyw@rock-chips.com
+X-UNIQUE-TAG: <50ee685fd43bd19bb0331015324e5441>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Chris Zhong <zyw@rock-chips.com>
+To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        sameo@linux.intel.com, lee.jones@linaro.org, lgirdwood@gmail.com,
+        broonie@kernel.org, a.zummo@towertech.it, mturquette@linaro.org
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
+        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
+        xxx@rock-chips.com, dianders@chromium.org, heiko@sntech.de,
+        olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
+        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com,
+        Chris Zhong <zyw@rock-chips.com>
+Subject: [PATCH v5 0/5] Add rockchip RK808 pmic driver
+Date: Mon, 25 Aug 2014 21:26:24 +0800
+Message-Id: <1408973184-21146-1-git-send-email-zyw@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This RFC proposes an integration of "ARM: Forwarding physical
-interrupts to a guest VM" (http://lwn.net/Articles/603514/) in
-KVM.
+This is the initial version of the RK808 PMIC. This is a power management IC
+for multimedia products.
 
-It enables to transform a VFIO platform driver IRQ into a forwarded
-IRQ. The direct benefit is that, for a level sensitive IRQ, a VM
-switch can be avoided on guest virtual IRQ completion. Before this
-patch, a maintenance IRQ was triggered on the virtual IRQ completion.
+It provides regulators that are able to supply power to processor cores
+and other components. The chip provides other modules including RTC, Clockout
 
-When the IRQ is forwarded, the VFIO platform driver does not need to
-disable the IRQ anymore. Indeed when returning from the IRQ handler
-the IRQ is not deactivated. Only its priority is lowered. This means
-the same IRQ cannot hit before the guest completes the virtual IRQ
-and the GIC automatically deactivates the corresponding physical IRQ.
+Changes in v5:
+Adviced by doug
+- add some error checking in probe
+- move "rockchip,rk808.h" into the patch about dt-bindings
+- re-edit base on Mark's branch
+- fixed a bug about set_time failed
+Advices by Mark Brown
+- add description about regulator valid name.
+- add a header file "rockchip,rk808".
 
-Besides, the injection still is based on irqfd triggering. The only
-impact on irqfd process is resamplefd is not called anymore on
-virtual IRQ completion since this latter becomes "transparent".
+Changes in v4:
+Adviced by doug
+- add "clock-output-names" propertiey
+- add a header file "rockchip,rk808.h"
+- use &client->dev replace rk808->dev
+Adviced by Lee Jones in v2
+- modify the description in Kconfig
+- remove some unnecessary header files
+- remove dev from struct rk808
+- use enum for define RK808_ID...
+Advices by Doug
+- add a "#clock-cells" propertiy
+- update the example
 
-The current integration is based on an extension of the KVM-VFIO
-device, previously used by KVM to interact with VFIO groups. The
-patch serie now enables KVM to directly interact with a VFIO
-platform device. The VFIO external API was extended for that purpose.
+Changes in v3:
+- fix compile err
+- fix compile err
 
-Th KVM-VFIO device can get/put the vfio platform device, check its
-integrity and type, get the IRQ number associated to an IRQ index.
+Changes in v2:
+Adviced by javier.martinez
+- separated from rtc-rk808.c
+Adviced by Mark Browm:
+- change of_find_node_by_name to find_child_by_name
+- use RK808_NUM_REGULATORS as the name of the constant
+- create a pdata when missing platform data
+- use the rk808_reg name to supply_regulator name
+- replace regulator_register with devm_regulator_register
+- some other problem with coding style
+Adviced by javier.martinez
+- Add a separate clock driver, rather than in RTC driver
+Adviced by Mark Browm:
+- use defines for register setting value
+- remove rtc alarm disable in shutdown
+- remove while(1) in shutdown
+- remove read 0x2f in probe
 
-The KVM-VFIO is extended with an architecture specific implementation.
-IRQ forward control is implemented in the ARM specific part.
+Chris Zhong (5):
+  dt-bindings: Add RK808 device tree bindings document
+  MFD: RK808: Add new mfd driver for RK808
+  RTC: RK808: add RTC driver for RK808
+  Regulator: RK808: modify for struct rk808 change
+  clk: RK808: Add clkout driver for RK808
 
-from a user point of view, the functionality is provided through new
-KVM-VFIO device commands, KVM_DEV_VFIO_DEVICE_(DE)ASSIGN_IRQ
-and the capability can be checked with KVM_HAS_DEVICE_ATTR.
-Assignment can only be changed when the physical IRQ is not active.
-It is the responsability of the user to do this check.
-
-This patch serie has the following dependencies:
-- "ARM: Forwarding physical interrupts to a guest VM"
-  (http://lwn.net/Articles/603514/) in
-- [PATCH v2] irqfd for ARM
-  which itself depends on
-  - arm/arm64: KVM: Various VGIC cleanups and improvements
-    http://lists.infradead.org/pipermail/linux-arm-kernel/2014-June/263685.html
-- and obviously the VFIO platform driver serie:
-  [RFC PATCH v6 00/20] VFIO support for platform devices on ARM
-  https://www.mail-archive.com/kvm@vger.kernel.org/msg103247.html
-
-Integrated pieces can be found at
-git://git.linaro.org/people/eric.auger/linux.git
-on branch 3.17rc1_forward_integ_v0
-
-This was was tested on Calxeda Miday, assigning the xgmac main IRQ.
-
-
-Eric Auger (9):
-  KVM: ARM: VGIC: fix multiple injection of level sensitive forwarded
-    IRQ
-  KVM: ARM: VGIC: add forwarded irq rbtree lock
-  VFIO: platform: handler tests whether the IRQ is forwarded
-  KVM: KVM-VFIO: update user API to program forwarded IRQ
-  VFIO: Extend external user API
-  KVM: KVM-VFIO: allow arch specific implementation
-  KVM: KVM-VFIO: add new VFIO external API hooks
-  KVM: KVM-VFIO: add kvm_vfio_arch_data and accessors
-  KVM: KVM_VFIO: ARM: implement irq forwarding control
-
- Documentation/virtual/kvm/devices/vfio.txt |  25 ++
- arch/arm/include/asm/kvm_host.h            |  16 +
- arch/arm/include/uapi/asm/kvm.h            |   6 +
- arch/arm/kvm/Makefile                      |   2 +-
- arch/arm/kvm/kvm_vfio_arm.c                | 599 +++++++++++++++++++++++++++++
- drivers/vfio/platform/vfio_platform_irq.c  |   7 +-
- drivers/vfio/vfio.c                        |  35 ++
- include/kvm/arm_vgic.h                     |   1 +
- include/linux/kvm_host.h                   |  30 ++
- include/linux/vfio.h                       |   4 +
- include/uapi/linux/kvm.h                   |   3 +
- virt/kvm/arm/vgic.c                        |  55 ++-
- virt/kvm/vfio.c                            |  92 +++++
- 13 files changed, 862 insertions(+), 13 deletions(-)
- create mode 100644 arch/arm/kvm/kvm_vfio_arm.c
+ Documentation/devicetree/bindings/mfd/rk808.txt |  142 ++++++++
+ drivers/clk/Kconfig                             |    9 +
+ drivers/clk/Makefile                            |    1 +
+ drivers/clk/clk-rk808.c                         |  164 +++++++++
+ drivers/mfd/Kconfig                             |   13 +
+ drivers/mfd/Makefile                            |    1 +
+ drivers/mfd/rk808.c                             |  265 ++++++++++++++
+ drivers/regulator/rk808-regulator.c             |   34 +-
+ drivers/rtc/Kconfig                             |   11 +
+ drivers/rtc/Makefile                            |    1 +
+ drivers/rtc/rtc-rk808.c                         |  442 +++++++++++++++++++++++
+ include/dt-bindings/clock/rockchip,rk808.h      |   11 +
+ include/linux/mfd/rk808.h                       |  211 +++++++++++
+ 13 files changed, 1285 insertions(+), 20 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/rk808.txt
+ create mode 100644 drivers/clk/clk-rk808.c
+ create mode 100644 drivers/mfd/rk808.c
+ create mode 100644 drivers/rtc/rtc-rk808.c
+ create mode 100644 include/dt-bindings/clock/rockchip,rk808.h
+ create mode 100644 include/linux/mfd/rk808.h
 
 -- 
-1.9.1
+1.7.9.5
+
 
