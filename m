@@ -1,135 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933538AbaHYUPM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 16:15:12 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:56046 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933212AbaHYUPJ (ORCPT
+	id S1756562AbaHYUV4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 16:21:56 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:43583 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754818AbaHYUVz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 16:15:09 -0400
-Date: Mon, 25 Aug 2014 16:12:55 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Hans Wennborg <hans@hanshq.net>
-Cc: Larry.Finger@lwfinger.net, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 12/19] rtlwifi: fix %d confusingly prefixed with 0x in
- format strings
-Message-ID: <20140825201255.GG1966@tuxdriver.com>
-References: <1407111616-15051-1-git-send-email-hans@hanshq.net>
+	Mon, 25 Aug 2014 16:21:55 -0400
+Message-ID: <53FB9AC4.8010704@gmail.com>
+Date: Mon, 25 Aug 2014 13:21:24 -0700
+From: Florian Fainelli <f.fainelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+CC: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 3/3] ARM: zynq: DT: Add Ethernet phys
+References: <1408550219-19825-1-git-send-email-soren.brinkmann@xilinx.com> <1408550219-19825-3-git-send-email-soren.brinkmann@xilinx.com> <5a7b6f57-b6c0-4fb3-af0d-d403277c0207@BN1AFFO11FD045.protection.gbl> <53F5D8D9.7040604@suse.de> <f166a186-301c-4288-97cf-71f8173c07e7@BN1AFFO11FD010.protection.gbl> <CAGVrzcYWN83tznwvw1M9V_mwWgobs2kwtRvEj4stqE=XGC10fg@mail.gmail.com> <20140825174610.GA13737@obsidianresearch.com>
+In-Reply-To: <20140825174610.GA13737@obsidianresearch.com>
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1407111616-15051-1-git-send-email-hans@hanshq.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  CC      drivers/net/wireless/rtlwifi/rtl8192de/phy.o
-drivers/net/wireless/rtlwifi/rtl8192de/phy.c: In function ‘_rtl92d_store_pwrindex_diffrate_offset’:
-drivers/net/wireless/rtlwifi/rtl8192de/phy.c:679:2: warning: format ‘%lx’ expects argument of type ‘long unsigned int’, but argument 7 has type ‘u32’ [-Wformat=]
-  RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
-  ^
-drivers/net/wireless/rtlwifi/rtl8192de/phy.c: In function ‘_rtl92d_phy_reload_lck_setting’:
-drivers/net/wireless/rtlwifi/rtl8192de/phy.c:2533:3: warning: format ‘%lx’ expects argument of type ‘long unsigned int’, but argument 2 has type ‘u32’ [-Wformat=]
-   RTPRINT(rtlpriv, FINIT, INIT_IQK,
-   ^
-drivers/net/wireless/rtlwifi/rtl8192de/phy.c:2552:3: warning: format ‘%lx’ expects argument of type ‘long unsigned int’, but argument 2 has type ‘u32’ [-Wformat=]
-   RTPRINT(rtlpriv, FINIT, INIT_IQK,
-   ^
-drivers/net/wireless/rtlwifi/rtl8192de/phy.c:2564:3: warning: format ‘%lx’ expects argument of type ‘long unsigned int’, but argument 2 has type ‘u32’ [-Wformat=]
-   RTPRINT(rtlpriv, FINIT, INIT_IQK,
-   ^
+On 08/25/2014 10:46 AM, Jason Gunthorpe wrote:
+> On Fri, Aug 22, 2014 at 01:47:09PM -0700, Florian Fainelli wrote:
+> 
+>>>  - the ID based strings seem to be not needed since, IIUC, the core
+>>>    reads the ID from the PHY and uses it, so I just left it out not
+>>>    trying to figure out how to obtain the correct ID
+>>
+>> It is not needed, but it is one way to specify a PHY device if you do
+>> not know what compatible string to use instead.
+> 
+> No, it is a way to specify a PHY device if the kernel can't auto probe
+> the Phy ID.
+> 
+> Last I checked, the kernel doesn't support plain text compatible
+> strings for phys - everything is driven on the phy id, either auto
+> probed or specified in the DT.
 
-On Sun, Aug 03, 2014 at 05:20:16PM -0700, Hans Wennborg wrote:
-> Signed-off-by: Hans Wennborg <hans@hanshq.net>
-> ---
->  drivers/net/wireless/rtlwifi/pci.c           | 6 +++---
->  drivers/net/wireless/rtlwifi/rtl8192de/phy.c | 8 ++++----
->  2 files changed, 7 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/net/wireless/rtlwifi/pci.c b/drivers/net/wireless/rtlwifi/pci.c
-> index 67d1ee6..74a8ba4 100644
-> --- a/drivers/net/wireless/rtlwifi/pci.c
-> +++ b/drivers/net/wireless/rtlwifi/pci.c
-> @@ -646,7 +646,7 @@ static void _rtl_pci_tx_isr(struct ieee80211_hw *hw, int prio)
->  				== 2) {
->  
->  			RT_TRACE(rtlpriv, COMP_ERR, DBG_LOUD,
-> -				 "more desc left, wake skb_queue@%d, ring->idx = %d, skb_queue_len = 0x%d\n",
-> +				 "more desc left, wake skb_queue@%d, ring->idx = %d, skb_queue_len = 0x%x\n",
->  				 prio, ring->idx,
->  				 skb_queue_len(&ring->queue));
->  
-> @@ -1469,7 +1469,7 @@ static int rtl_pci_tx(struct ieee80211_hw *hw,
->  
->  		if ((own == 1) && (hw_queue != BEACON_QUEUE)) {
->  			RT_TRACE(rtlpriv, COMP_ERR, DBG_WARNING,
-> -				 "No more TX desc@%d, ring->idx = %d, idx = %d, skb_queue_len = 0x%d\n",
-> +				 "No more TX desc@%d, ring->idx = %d, idx = %d, skb_queue_len = 0x%x\n",
->  				 hw_queue, ring->idx, idx,
->  				 skb_queue_len(&ring->queue));
->  
-> @@ -1511,7 +1511,7 @@ static int rtl_pci_tx(struct ieee80211_hw *hw,
->  	if ((ring->entries - skb_queue_len(&ring->queue)) < 2 &&
->  	    hw_queue != BEACON_QUEUE) {
->  		RT_TRACE(rtlpriv, COMP_ERR, DBG_LOUD,
-> -			 "less desc left, stop skb_queue@%d, ring->idx = %d, idx = %d, skb_queue_len = 0x%d\n",
-> +			 "less desc left, stop skb_queue@%d, ring->idx = %d, idx = %d, skb_queue_len = 0x%x\n",
->  			 hw_queue, ring->idx, idx,
->  			 skb_queue_len(&ring->queue));
->  
-> diff --git a/drivers/net/wireless/rtlwifi/rtl8192de/phy.c b/drivers/net/wireless/rtlwifi/rtl8192de/phy.c
-> index 592125a..7cfdfc9 100644
-> --- a/drivers/net/wireless/rtlwifi/rtl8192de/phy.c
-> +++ b/drivers/net/wireless/rtlwifi/rtl8192de/phy.c
-> @@ -677,7 +677,7 @@ static void _rtl92d_store_pwrindex_diffrate_offset(struct ieee80211_hw *hw,
->  
->  	rtlphy->mcs_offset[rtlphy->pwrgroup_cnt][index] = data;
->  	RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
-> -		 "MCSTxPowerLevelOriginalOffset[%d][%d] = 0x%ulx\n",
-> +		 "MCSTxPowerLevelOriginalOffset[%d][%d] = 0x%lx\n",
->  		 rtlphy->pwrgroup_cnt, index,
->  		 rtlphy->mcs_offset[rtlphy->pwrgroup_cnt][index]);
->  	if (index == 13)
-> @@ -2531,7 +2531,7 @@ static void _rtl92d_phy_reload_lck_setting(struct ieee80211_hw *hw,
->  	if (rtlpriv->rtlhal.current_bandtype == BAND_ON_5G) {/* Path-A for 5G */
->  		u4tmp = curveindex_5g[channel-1];
->  		RTPRINT(rtlpriv, FINIT, INIT_IQK,
-> -			"ver 1 set RF-A, 5G,	0x28 = 0x%ulx !!\n", u4tmp);
-> +			"ver 1 set RF-A, 5G,	0x28 = 0x%lx !!\n", u4tmp);
->  		if (rtlpriv->rtlhal.macphymode == DUALMAC_DUALPHY &&
->  			rtlpriv->rtlhal.interfaceindex == 1) {
->  			bneed_powerdown_radio =
-> @@ -2550,7 +2550,7 @@ static void _rtl92d_phy_reload_lck_setting(struct ieee80211_hw *hw,
->  	} else if (rtlpriv->rtlhal.current_bandtype == BAND_ON_2_4G) {
->  		u4tmp = curveindex_2g[channel-1];
->  		RTPRINT(rtlpriv, FINIT, INIT_IQK,
-> -			"ver 3 set RF-B, 2G, 0x28 = 0x%ulx !!\n", u4tmp);
-> +			"ver 3 set RF-B, 2G, 0x28 = 0x%lx !!\n", u4tmp);
->  		if (rtlpriv->rtlhal.macphymode == DUALMAC_DUALPHY &&
->  			rtlpriv->rtlhal.interfaceindex == 0) {
->  			bneed_powerdown_radio =
-> @@ -2562,7 +2562,7 @@ static void _rtl92d_phy_reload_lck_setting(struct ieee80211_hw *hw,
->  		}
->  		rtl_set_rfreg(hw, erfpath, RF_SYN_G4, 0x3f800, u4tmp);
->  		RTPRINT(rtlpriv, FINIT, INIT_IQK,
-> -			"ver 3 set RF-B, 2G, 0x28 = 0x%ulx !!\n",
-> +			"ver 3 set RF-B, 2G, 0x28 = 0x%lx !!\n",
->  			rtl_get_rfreg(hw,  erfpath, RF_SYN_G4, 0x3f800));
->  		if (bneed_powerdown_radio)
->  			_rtl92d_phy_restore_rf_env(hw, erfpath, &u4regvalue);
-> -- 
-> 2.0.0.526.g5318336
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+That's right. Some PHY drivers might be relying on specific compatible
+strings though, but not the core PHY library that probes and maps a
+driver to a PHY node.
 
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+> 
+>>>  - the marvell compatible strings are used in our vendor tree. They
+>>>    aren't used anywhere but in our vendor tree. I though keeping them is
+>>>    nice since it identifies the PHY fully. And in case that level of
+>>>    detail is needed at some point it is already there.
+>>
+>> And this is the recommended way to do it in case we ever need to key a
+>> software decision based on the hardware.
+> 
+> All compatible strings need to be documented.
+> 
+> .. and they need to encode more information than you get from the phy
+> id - die revsision, package option, functional options, voltage
+> codes. Etc.
+> 
+> .. and they actually need to be *right*
+
+Agreed.
+
+> 
+> An example: The kernel reports 88E1318S for all four chips in that
+> family, AFAIK you have to read the package marking to figure out which
+> you have (it is the same die, with options switched on/off at
+> packaging time). People have already posted patches trying to
+> helpfully add a 'marvell,88E1318S' compatible string based on kernel
+> output. Except it is wrong, it isn't actually the '8S version in the
+> HW.
+> 
+> Even worse, Marvell has a whole series of socket compatible phys. Just
+> because the board the DT author looked at has a '318, doesn't mean
+> that every board ever made will. We've actually already been switching
+> between the 318 and 318S for production depending on which has part
+> availability.
+> 
+> Basically: don't try to override self-discoverable hardware in DT
+> without a really good reason.
+
+I think that's a very good point, at the very least let's use a
+compatible string that contains the full 32-bits PHY OUI.
+
+Thanks
+--
+Florian
