@@ -1,80 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764AbaHYIAE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 04:00:04 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:41332 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754493AbaHYIAC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 04:00:02 -0400
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: "John W. Linville" <linville@tuxdriver.com>, Kalle Valo <kvalo@adurom.com>
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Subject: [PATCH v2] ray_cs: Add include guards
-Date: Mon, 25 Aug 2014 09:59:29 +0200
-Message-Id: <1408953569-5647-1-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <87ppfq85bh.fsf@purkki.adurom.net>
-References: <87ppfq85bh.fsf@purkki.adurom.net>
+	id S1754806AbaHYIAX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 04:00:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35575 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754767AbaHYIAT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 04:00:19 -0400
+Date: Mon, 25 Aug 2014 03:00:18 -0500 (CDT)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ben Hawkes <hawkes@google.com>
+Subject: Re: [PATCH 1/2] HID: logitech-dj: prevent false errors to be shown
+In-Reply-To: <20140825075552.GA298@x4>
+Message-ID: <alpine.LNX.2.00.1408250300030.23162@pobox.suse.cz>
+References: <1408738566-6805-1-git-send-email-benjamin.tissoires@redhat.com> <alpine.LNX.2.00.1408250249150.23162@pobox.suse.cz> <20140825075552.GA298@x4>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The files ray_cs.h and rayctl.h both contain two thirds of what
-appears to be an include guard using the macro name RAYLINK_H (both
-lack the #define). Since RAYLINK_H is not defined anywhere, the
-#ifndefs are confusing no-ops. Add proper include guards using
-different macro names.
+On Mon, 25 Aug 2014, Markus Trippelsdorf wrote:
 
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
----
+> > > Commit "HID: logitech: perform bounds checking on device_id early
+> > > enough" unfortunately leaks some errors to dmesg which are not real
+> > > ones:
+> > > - if the report is not a DJ one, then there is not point in checking
+> > >   the device_id
+> > > - the receiver (index 0) can also receive some notifications which
+> > >   can be safely ignored given the current implementation
+> > > 
+> > > Move out the test regarding the report_id and also discards
+> > > printing errors when the receiver got notified.
+> > > 
+> > > Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> > 
+> > I have now queued this one for 3.17. Adding Markus to CC -- Markus, this 
+> > should make the spurious error messages you have reported go away.
+> 
+> Indeed it does. Feel free to add:
+> 
+> Reported-and-tested-by: Markus Trippelsdorf <markus@trippelsdorf.de>
 
-Notes:
-    v2: Change subject prefix and fix broken commit message.
+Excellent, thanks. Will be pushing it to Linus this week.
 
- drivers/net/wireless/ray_cs.h | 5 +++--
- drivers/net/wireless/rayctl.h | 5 +++--
- 2 files changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/net/wireless/ray_cs.h b/drivers/net/wireless/ray_cs.h
-index e79848f..524c2f0 100644
---- a/drivers/net/wireless/ray_cs.h
-+++ b/drivers/net/wireless/ray_cs.h
-@@ -3,7 +3,8 @@
-    Written by Corey Thomas
- */
- 
--#ifndef RAYLINK_H
-+#ifndef _RAY_CS_H_
-+#define _RAY_CS_H_
- 
- struct beacon_rx {
-     struct mac_header mac;
-@@ -69,4 +70,4 @@ typedef struct ray_dev_t {
- } ray_dev_t;
- /*****************************************************************************/
- 
--#endif /* RAYLINK_H */
-+#endif /* _RAY_CS_H_ */
-diff --git a/drivers/net/wireless/rayctl.h b/drivers/net/wireless/rayctl.h
-index 3c3b98b..b21ed64 100644
---- a/drivers/net/wireless/rayctl.h
-+++ b/drivers/net/wireless/rayctl.h
-@@ -1,4 +1,5 @@
--#ifndef RAYLINK_H
-+#ifndef _RAYCTL_H_
-+#define _RAYCTL_H_
- 
- typedef unsigned char UCHAR;
- 
-@@ -729,4 +730,4 @@ typedef struct snaphdr_t
- #define RAY_IPX_TYPE  0x8137
- #define APPLEARP_TYPE 0x80f3
- /*****************************************************************************/
--#endif /* #ifndef RAYLINK_H */
-+#endif /* _RAYCTL_H_ */
 -- 
-2.0.4
-
+Jiri Kosina
+SUSE Labs
