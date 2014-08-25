@@ -1,88 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755284AbaHYLHU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 07:07:20 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:40056 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755134AbaHYLHR (ORCPT
+	id S1755312AbaHYLIt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 07:08:49 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:35704 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752496AbaHYLIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 07:07:17 -0400
-Date: Mon, 25 Aug 2014 07:07:13 -0400
+	Mon, 25 Aug 2014 07:08:48 -0400
+Date: Mon, 25 Aug 2014 07:08:46 -0400
 From: Eduardo Valentin <edubezval@gmail.com>
 To: Wei Ni <wni@nvidia.com>
 Cc: khali@linux-fr.org, linux@roeck-us.net, swarren@wwwdotorg.org,
         lm-sensors@lm-sensors.org, linux-tegra@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 3/4] thermal: add more description for thermal-zones
-Message-ID: <20140825110711.GA12349@developer>
+Subject: Re: [PATCH v3 4/4] ARM: tegra: dalmore: add thermal zones for nct1008
+Message-ID: <20140825110844.GB12349@developer>
 References: <1408948188-4181-1-git-send-email-wni@nvidia.com>
- <1408948188-4181-4-git-send-email-wni@nvidia.com>
+ <1408948188-4181-5-git-send-email-wni@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1408948188-4181-4-git-send-email-wni@nvidia.com>
+In-Reply-To: <1408948188-4181-5-git-send-email-wni@nvidia.com>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Wei Ni,
-
-On Mon, Aug 25, 2014 at 02:29:47PM +0800, Wei Ni wrote:
-> Add more description for the "polling-delay" property.
-> Set "trips" and "cooling maps" as optional property, because
-> if missing these two sub-nodes, the thermal zone device still
-> work properly.
+On Mon, Aug 25, 2014 at 02:29:48PM +0800, Wei Ni wrote:
+> From: lightning314 <wni@nvidia.com>
+> 
+> Add dt node to describe the thermal zone for the nct1008.
 > 
 > Signed-off-by: Wei Ni <wni@nvidia.com>
 > ---
->  Documentation/devicetree/bindings/thermal/thermal.txt | 10 ++++++----
->  1 file changed, 6 insertions(+), 4 deletions(-)
+>  arch/arm/boot/dts/tegra114-dalmore.dts | 20 +++++++++++++++++++-
+>  1 file changed, 19 insertions(+), 1 deletion(-)
 > 
-> diff --git a/Documentation/devicetree/bindings/thermal/thermal.txt b/Documentation/devicetree/bindings/thermal/thermal.txt
-> index f5db6b7..e3d3ed9 100644
-> --- a/Documentation/devicetree/bindings/thermal/thermal.txt
-> +++ b/Documentation/devicetree/bindings/thermal/thermal.txt
-> @@ -136,8 +136,8 @@ containing trip nodes and one sub-node containing all the zone cooling maps.
+> diff --git a/arch/arm/boot/dts/tegra114-dalmore.dts b/arch/arm/boot/dts/tegra114-dalmore.dts
+> index 5c21d21..94a1b5d 100644
+> --- a/arch/arm/boot/dts/tegra114-dalmore.dts
+> +++ b/arch/arm/boot/dts/tegra114-dalmore.dts
+> @@ -779,12 +779,14 @@
+>  				<&gpio TEGRA_GPIO(V, 3) GPIO_ACTIVE_HIGH>;
+>  		};
 >  
->  Required properties:
->  - polling-delay:	The maximum number of milliseconds to wait between polls
-> -  Type: unsigned	when checking this thermal zone.
-> -  Size: one cell
-> +  Type: unsigned	when checking this thermal zone. If this value is 0, the
-> +  Size: one cell	driver will not run polling queue, but just cancel it.
+> -		temperature-sensor@4c {
+> +		nct1008: temperature-sensor@4c {
+>  			compatible = "onnn,nct1008";
+>  			reg = <0x4c>;
+>  			vcc-supply = <&palmas_ldo6_reg>;
+>  			interrupt-parent = <&gpio>;
+>  			interrupts = <TEGRA_GPIO(O, 4) IRQ_TYPE_LEVEL_LOW>;
+> +
+> +			#thermal-sensor-cells = <1>;
+>  		};
+>  	};
 >  
+> @@ -1283,4 +1285,20 @@
+>  			 <&tegra_car TEGRA114_CLK_EXTERN1>;
+>  		clock-names = "pll_a", "pll_a_out0", "mclk";
+>  	};
+> +
+> +	thermal-zones {
+> +		nct1008-local {
+> +			polling-delay-passive = <2000>; /* milliseconds */
+> +			polling-delay = <0>; /* milliseconds */
+> +
+> +			thermal-sensors = <&nct1008 0>;
+> +		};
+> +
+> +		nct1008-remote {
+> +			polling-delay-passive = <1000>; /* milliseconds */
+> +			polling-delay = <0>; /* milliseconds */
+> +
+> +			thermal-sensors = <&nct1008 1>;
+> +		};
+> +	};
 
-The description above is specific to Linux kernel implementation
-nomenclature. DT description needs to be OS agnostic.
+The above zones misses the required properties, as per the thermal.txt
+binding description. Could you please have a look on those that are
+required and improve the zones above?
 
->  - polling-delay-passive: The maximum number of milliseconds to wait
->    Type: unsigned	between polls when performing passive cooling.
-> @@ -148,14 +148,16 @@ Required properties:
->    phandles + sensor
->    specifier
->  
-> +Optional property:
->  - trips:		A sub-node which is a container of only trip point nodes
->    Type: sub-node	required to describe the thermal zone.
->  
->  - cooling-maps:		A sub-node which is a container of only cooling device
->    Type: sub-node	map nodes, used to describe the relation between trips
-> -			and cooling devices.
-> +			and cooling devices. If missing the "trips" property,
-> +			This sub-node will not be parsed, because no trips can
-> +			be bound to cooling devices.
-
-Do you mean if the thermal zone misses the "trips" property? Actually,
-the binding describes both, cooling-maps and trips, as required
-properties. Thus, both needs to be in place to consider the thermal zone
-as a proper described zone.
-
->  
-> -Optional property:
->  - coefficients:		An array of integers (one signed cell) containing
->    Type: array		coefficients to compose a linear relation between
->    Elem size: one cell	the sensors listed in the thermal-sensors property.
+>  };
 > -- 
 > 1.8.1.5
 > 
