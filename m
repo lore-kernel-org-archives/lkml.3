@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754190AbaHYDnS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 23:43:18 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:38884 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753805AbaHYDnP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 23:43:15 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s7P3h78j025788, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: David Miller <davem@davemloft.net>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        nic_swsd <nic_swsd@realtek.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: RE: [PATCH net-next 0/4] r8152: firmware support
-Thread-Topic: [PATCH net-next 0/4] r8152: firmware support
-Thread-Index: AQHPvFUGvJCSNb1dlUOr/EZt9Z/MxJvc+J+AgAO4krA=
-Date: Mon, 25 Aug 2014 03:43:04 +0000
-Message-ID: <0835B3720019904CB8F7AA43166CEEB2516177@RTITMBSV03.realtek.com.tw>
-References: <1394712342-15778-16-Taiwan-albertk@realtek.com>
- <20140822.194111.760144805197214266.davem@davemloft.net>
-In-Reply-To: <20140822.194111.760144805197214266.davem@davemloft.net>
-Accept-Language: zh-TW, en-US
-Content-Language: zh-TW
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.21.71.143]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754195AbaHYDqH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 23:46:07 -0400
+Received: from mga03.intel.com ([143.182.124.21]:22781 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753805AbaHYDqF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Aug 2014 23:46:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,394,1406617200"; 
+   d="scan'208";a="472188834"
+Message-ID: <53FAB0C9.3070907@intel.com>
+Date: Mon, 25 Aug 2014 11:43:05 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Knut Petersen <Knut_Petersen@t-online.de>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Thomas Renninger <trenn@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [Bug 3.14.17] inconsistent lock state
+References: <53F9CC77.70009@t-online.de>	<CA+55aFwZP1gyf=mvTrKjWwj6YE6=5y1+aZdmsNMHUp6d3dckXw@mail.gmail.com>	<53FAA544.4030401@intel.com> <CA+55aFzaHF=S3QQ6M-+JBdWVRCSHKs-jjKo==8OS7q90cUyHBw@mail.gmail.com>
+In-Reply-To: <CA+55aFzaHF=S3QQ6M-+JBdWVRCSHKs-jjKo==8OS7q90cUyHBw@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- From: David Miller [mailto:davem@davemloft.net] 
-[...]
-> You haven't told us why you need to do this.
+On 2014年08月25日 11:13, Linus Torvalds wrote:
+> On Sun, Aug 24, 2014 at 7:53 PM, Lan Tianyu <tianyu.lan@intel.com> wrote:
+>>
+>> Sorry about this. We are resolving the issue in the other bug
+>> report(https://lkml.org/lkml/2014/8/21/606) and I have proposed a fix
+>> patch(http://marc.info/?l=linux-acpi&m=140869309231199&w=2).
 > 
-> These are just programming registers in the chip, and I see no reason
-> to not keep these in the driver with real code.
+> Ahh. Good. That patch looks fine to me, and while it makes me worry a
+> bit that some codepath expects the power/sleep button to be handled
+> immediately in interrupt context, I guess the actual callbacks have
+> never actually done anything but schedule other things to happen (ie
+> add events to some queue), and making the context be the same as the
+> other notify callbacks would seem to be a good thing regardless of
+> this particular bug.
+
+Yes, I have the same opinion and the callback just reports power/sleep
+button event to user space via input layer or ACPI netlink routines.
+
+The button devices enumerated from ACPI namespace and FADT table share
+the same notify callback and do the same things while they are running
+different context. This seems not make sense.
+
 > 
-> I'm not applying this series, you haven't explained what is happening
-> here and the reason for doing so.  Ironically, that's exactly what you
-> are supposed to provide in this 0/4 header email.
+> Knut - can you please test the patch Lan pointed at? I realize it
+> doesn't seem to be entirely consistent for you (which is a bit
+> surprising, I wonder why lockdep doesn't trigger it consistently), but
+> it would be good to have more testing. Even if that patch looks
+> "obviously good" (tm) at a quick glance.
 
-The nic has the MCU inside which is used to fix the PHY,
-MAC, and some behavior of the USB device. Each parts have
-different methods of updating the firmware by accessing the
-registers. The firmware files are used to deal with the
-processes, so I need some functions to parse the firmware
-files to update the fimrware code.
+BTW, this bug only takes place on the machines with fixed button device.
+This can be identified via check whether there are LNXPWRBN:00 or
+LNXSLPBN:00 device nodes under /sys/bus/acpi/devices.
 
-I would resend these. Sorry.
- 
-Best Regards,
-Hayes
+> 
+>                   Linus
+> 
+
+
+-- 
+Best regards
+Tianyu Lan
