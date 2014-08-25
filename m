@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932322AbaHYNPY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 09:15:24 -0400
-Received: from smtprelay0041.hostedemail.com ([216.40.44.41]:54634 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753582AbaHYNPX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 09:15:23 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:968:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3872:3874:4250:4321:5007:7652:8957:9040:10004:10400:10848:11026:11232:11473:11657:11658:11914:12043:12438:12517:12519:12740:13069:13141:13230:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: watch38_4be0dc4d5f748
-X-Filterd-Recvd-Size: 2079
-Message-ID: <1408972519.20683.41.camel@joe-AO725>
-Subject: Re: [PATCH] drivers: staging: rtl8821ae: Fix spaces required around
- that '?' errors
-From: Joe Perches <joe@perches.com>
-To: Greg Donald <gdonald@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Mon, 25 Aug 2014 06:15:19 -0700
-In-Reply-To: <1408966502-22350-1-git-send-email-gdonald@gmail.com>
-References: <1408966502-22350-1-git-send-email-gdonald@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
+	id S1755758AbaHYNQO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 09:16:14 -0400
+Received: from mga01.intel.com ([192.55.52.88]:17375 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753027AbaHYNQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 09:16:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="376649643"
+Message-ID: <53FB3715.7070009@linux.intel.com>
+Date: Mon, 25 Aug 2014 16:16:05 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>, Jason Wang <jasowang@redhat.com>
+CC: Ingo Molnar <mingo@kernel.org>, Mike Galbraith <umgwanakikbuti@gmail.com>,
+        davem@davemloft.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mst@redhat.com,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Ingo Molnar jacob.e.keller@intel.com" <mingo@elte.hu>
+Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process
+ is runnable
+References: <1408608310-13579-1-git-send-email-jasowang@redhat.com>	 <1408608310-13579-2-git-send-email-jasowang@redhat.com>	 <1408683665.5648.69.camel@marge.simpson.net>	 <20140822073653.GA7372@gmail.com> <53F70887.8030602@redhat.com> <1408716976.5604.18.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <1408716976.5604.18.camel@edumazet-glaptop2.roam.corp.google.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-08-25 at 06:35 -0500, Greg Donald wrote:
-> Fix checkpatch.pl spaces required around that '?' errors
+On 22/08/2014 17:16, Eric Dumazet wrote:
+> On Fri, 2014-08-22 at 17:08 +0800, Jason Wang wrote:
+> 
+>> But this is just for current process. We want to determine whether or
+>> not it was worth to loop busily in current process by checking if
+>> there's any another runnable processes or callbacks. And what we need
+>> here is just a simple and lockless hint which can't be wrong but may be
+>> inaccurate to exit the busy loop. The net code does not depends on this
+>> hint to do scheduling or yielding.
+>>
+>> How about just introducing a boolean helper like current_can_busy_loop()
+>> and return true in one of the following conditions:
+>>
+>> - Current task is SCHED_FIFO
+>> - Current task is neither SCHED_FIFO nor SCHED_IDLE and no other
+>> runnable processes or pending RCU callbacks in current cpu
+>>
+>> And add warns to make sure it can only be called in process context.
+> 
+> 
+> 1) Any reasons Eliezer Tamir is not included in the CC list ?
 
-It'd be better to convert all parts of the
-ternary at the same time.
+Thanks for remembering me, Eric ;)
 
-> diff --git a/drivers/staging/rtl8821ae/btcoexist/HalBtc8812a1Ant.c b/drivers/staging/rtl8821ae/btcoexist/HalBtc8812a1Ant.c
-[]
-> @@ -652,7 +652,7 @@ halbtc8812a1ant_SetFwDecBtPwr(
->  	u1Byte	buf[5] = {0};
->  
->  	BTC_PRINT(BTC_MSG_ALGORITHM, ALGO_TRACE_FW_EXEC, ("[BTCoex], decrease Bt Power : %s\n", 
-> -			(dec_bt_pwr? "Yes!!":"No!!")));
-> +			(dec_bt_pwr ? "Yes!!":"No!!")));
+Here are my 2 cents:
+I think Ingo's suggestion of only yielding to tasks with same or higher
+priority makes sense.
 
-		    (dec_bt_pwr ? "Yes!!" : "No!!")
-			
->  
->  	buf[0] = dataLen;
->  	buf[1] = 0x3;		// OP_Code
-> @@ -674,7 +674,7 @@ halbtc8812a1ant_DecBtPwr(
->  {
->  	return;
->  	BTC_PRINT(BTC_MSG_ALGORITHM, ALGO_TRACE_FW, ("[BTCoex], %s Dec BT power = %s\n",  
-> -		(force_exec? "force to":""), ((dec_bt_pwr)? "ON":"OFF")));
-> +		(force_exec ? "force to":""), ((dec_bt_pwr) ? "ON":"OFF")));
+IF you change the current behavior, please update the documentation.
+You are going to make people scratch their head and ask "what changed?"
+you owe them a clue.
 
-		    (force_exec ? "force to" : ""), ((dec_bt_pwr) ? "ON" : "OFF")));
+I also would like to have some way to keep track of when/if/how much
+this yield happens.
 
-etc...
+> 2) It looks like sk_buy_loop() should not be inlined, its is already too
+> big.
 
-A subsequent change might be to remove the unnecessary
-parentheses like:
+You made this comment in the past, my response was that it's inlnied so
+it can be optimized when nonblock is known at compile time to be true
+(e.g when called from sock_poll).
+IFF you think that's less important, then I will defer to your opinion.
 
-		    force_exec ? "force to" : "", dec_bt_pwr ? "ON" : "OFF");
-
-
+-Eliezer
