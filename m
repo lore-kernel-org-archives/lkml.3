@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933368AbaHYT6z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 15:58:55 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:36559 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834AbaHYT6x (ORCPT
+	id S933451AbaHYUAO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 16:00:14 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:55861 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933017AbaHYUAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 15:58:53 -0400
-Date: Mon, 25 Aug 2014 12:58:52 -0700 (PDT)
-Message-Id: <20140825.125852.744688824103211496.davem@davemloft.net>
-To: hayeswang@realtek.com
-Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH net-next] r8152: check code with checkpatch.pl
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1394712342-15778-21-Taiwan-albertk@realtek.com>
-References: <1394712342-15778-16-Taiwan-albertk@realtek.com>
-	<1394712342-15778-21-Taiwan-albertk@realtek.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 25 Aug 2014 12:58:53 -0700 (PDT)
+	Mon, 25 Aug 2014 16:00:12 -0400
+Date: Mon, 25 Aug 2014 15:59:06 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: bluetooth-next 2014-08-14
+Message-ID: <20140825195906.GF1966@tuxdriver.com>
+References: <20140814145000.GA14226@t440s.P-661HNU-F1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140814145000.GA14226@t440s.P-661HNU-F1>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hayes Wang <hayeswang@realtek.com>
-Date: Mon, 25 Aug 2014 15:53:00 +0800
-
->  626: CHECK: Alignment should match open parenthesis
->  646: CHECK: Alignment should match open parenthesis
->  655: CHECK: Alignment should match open parenthesis
->  695: CHECK: Alignment should match open parenthesis
->  729: CHECK: Alignment should match open parenthesis
->  739: CHECK: Alignment should match open parenthesis
->  976: WARNING: externs should be avoided in .c files
->  1314: CHECK: Alignment should match open parenthesis
->  1358: WARNING: networking block comments don't use an empty /* line, use /* Comment...
->  1402: WARNING: networking block comments don't use an empty /* line, use /* Comment...
->  1521: CHECK: multiple assignments should be avoided
->  1775: CHECK: Alignment should match open parenthesis
->  1838: CHECK: multiple assignments should be avoided
->  1843: CHECK: multiple assignments should be avoided
->  1847: CHECK: multiple assignments should be avoided
->  1850: WARNING: Missing a blank line after declarations
->  1864: CHECK: Alignment should match open parenthesis
->  1872: CHECK: braces {} should be used on all arms of this statement
->  1906: CHECK: usleep_range is preferred over udelay
->  2865: WARNING: networking block comments don't use an empty /* line, use /* Comment...
->  3088: CHECK: Alignment should match open parenthesis
->  total: 0 errors, 5 warnings, 16 checks, 3567 lines checked
+On Thu, Aug 14, 2014 at 05:50:00PM +0300, Johan Hedberg wrote:
+> Hi John,
 > 
-> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+> Here's our first bluetooth-next pull request for the 3.18 kernel. Our
+> tree is based on net-next so you'd need to pull from there first before
+> pulling from our tree.
+> 
+> The changes consists of:
+> 
+> 	- Coding style fixes to HCI drivers
+> 	- Corrupted ack value fix for the H5 HCI driver
+> 	- A couple of Enhanced L2CAP fixes
+> 	- Conversion of SMP code to use common L2CAP channel API
+> 	- Page scan optimizations when using the kernel-side whitelist
+> 	- Various mac802154 and and ieee802154 6lowpan cleanups
+> 	- One new Atheros USB ID
+> 
+> Please let me know if there are any issues pulling. Thanks.
+> 
+> Johan
+> 
+> ---
+> The following changes since commit f0094b28f3038936c1985be64dbe83f0e950b671:
+> 
+>   Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2014-08-13 18:27:40 -0600)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git for-upstream
+> 
+> for you to fetch changes up to 13cac15296afe7e42088ecfcd0f1d4b658248c46:
+> 
+>   Bluetooth: Fix ERTM L2CAP resend packet (2014-08-14 09:47:02 +0200)
 
-Applied, thanks.
+Pulling now...
+
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
