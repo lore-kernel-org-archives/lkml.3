@@ -1,103 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932849AbaHYOEw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 10:04:52 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:40351 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932274AbaHYOEt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 10:04:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <53FB3A86.2060203@6wind.com>
-References: <cover.1408581429.git.rgb@redhat.com> <cd6cd0622ce677b639afae18a69ff79c72490bab.1408581429.git.rgb@redhat.com>
- <CALCETrUnzG1V8w+H9ctAJP+Hvo8LQax=dhLG4bBpBKmVi+C1cQ@mail.gmail.com>
- <20140822015803.GG20529@madcap2.tricolour.ca> <CALCETrUkFD0iNi1SV_6ypN5Kf4GYybT5tzjRjRQuLzT9iBnQAg@mail.gmail.com>
- <53FB3A86.2060203@6wind.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 25 Aug 2014 07:04:28 -0700
-Message-ID: <CALCETrW1Lv0qeccMjNHSEzgtiaNN3NgJVR1dFjjR_dw5KVVnqA@mail.gmail.com>
-Subject: Re: [PATCH V4 3/8] namespaces: expose ns instance serial numbers in proc
-To: nicolas.dichtel@6wind.com
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, linux-audit@redhat.com,
-        Linux API <linux-api@vger.kernel.org>,
-        Richard Guy Briggs <rgb@redhat.com>, netdev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S932937AbaHYOGx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 10:06:53 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:53868 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932510AbaHYOGv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 10:06:51 -0400
+Message-ID: <1408975601.5256.44.camel@iivanov-dev>
+Subject: Re: [PATCH v3 5/6] ARM: dts: qcom: Add PM8941 and PM8841 pinctrl
+ nodes
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Pramod Gurav <pramod.gurav@smartplayin.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        linux-arm-msm@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 25 Aug 2014 17:06:41 +0300
+In-Reply-To: <53EC6631.3020203@smartplayin.com>
+References: <1407771634-14946-1-git-send-email-iivanov@mm-sol.com>
+	 <1407771634-14946-6-git-send-email-iivanov@mm-sol.com>
+	 <53EC6631.3020203@smartplayin.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Aug 25, 2014 6:30 AM, "Nicolas Dichtel" <nicolas.dichtel@6wind.com> wrote:
->> CRIU wants to save the complete state of a namespace and then restore
->> it.  For that to work, any information exposed to things in the
->> namespace *cannot* be globally unique or unique per boot, since CRIU
->> needs to arrange for that information to match whatever it was when
->> CRIU saved it.
->
-> How are ifindex of network devices managed? These ifindexes are unique per boot,
-> thus can change depending on the order in which netdev are created.
-> These ifindexes are unique per boot and exposed to userspace ...
->
+On Thu, 2014-08-14 at 13:03 +0530, Pramod Gurav wrote:
+> Hi Ivan,
+> This patch fail to apply on linux-next Tree. Probably because this is
+> based on Stanimir's older patch series "Support for Qualcomm QPNP
+> PMIC's". He has posted v4 of them on which it fails to apply. Am I correct?
 
-This does not appear to be true.
+Right, sorry about that. I should clearly stated that this is based on Stan's patches.
 
-$ sudo unshare --net
-# ip link add veth0 type veth peer name veth1
-# ip link
-1: lo: <LOOPBACK> mtu 65536 qdisc noop state DOWN mode DEFAULT group default
-    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
-2: veth1: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode
-DEFAULT group default qlen 1000
-    link/ether 06:0d:59:c7:a6:a8 brd ff:ff:ff:ff:ff:ff
-3: veth0: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode
-DEFAULT group default qlen 1000
-    link/ether b2:5c:8b:f2:12:28 brd ff:ff:ff:ff:ff:ff
-# logout
-$ ip link
-1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN
-    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
-3: em1: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc pfifo_fast
-state DOWN qlen 1000
+Regards,
+Ivan
 
->
->>
->> Also, I think that code running in a namespace has no business even
->> knowing a unique identity of that namespace from the perspective of
->> the host.
->
-> Another scenario is when you have virtual network devices across two netns. You
-> need to identify the peer netns to have a netlink message which is fully interpretable by the userspace.
-
-Let me try again, with emphasis in the right place.
-
-I think that *code running in a namespace* has no business even
-knowing a unique identity of *that namespace* from the perspective of
-the host.
-
-In your example, if there's a veth device between netns A and netns B,
-then code *in netns A* has no business knowing the identity of its
-veth peer if its peer (B) is a sibling or ancestor.  It also IMO has
-no business knowing the identity of its own netns (A) other than as
-"my netns".
-
-If A and B are siblings, then their parent needs to know where that
-veth device goes, but I think this is already the case to a sufficient
-extent today.
-
-I feel like this discussion is falling into a common trap of new API
-discussions.  Can one of you who wants this API please articulate,
-with a reasonably precise example, what it is that you want to do, why
-you can't easily do it already, and how this API helps?  I currently
-understand how the API creates problems, but I don't understand how it
-solves any problems, and I will NAK it (and I suspect that Eric will,
-too, which is pretty much fatal) unless that changes.
-
-Thanks,
-Andy
-
->
->
-> Regards,
-> Nicolas
