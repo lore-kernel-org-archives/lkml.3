@@ -1,282 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932735AbaHYNmF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 09:42:05 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:47510 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932407AbaHYNld (ORCPT
+	id S932755AbaHYNnn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 09:43:43 -0400
+Received: from regular1.263xmail.com ([211.150.99.135]:47141 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932121AbaHYNnl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 09:41:33 -0400
-From: Guodong Xu <guodong.xu@linaro.org>
-To: lee.jones@linaro.org, sameo@linux.intel.com, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
+	Mon, 25 Aug 2014 09:43:41 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: zyw@rock-chips.com
+X-FST-TO: broonie@kernel.org
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: zyw@rock-chips.com
+X-UNIQUE-TAG: <d72468c9108fee2d2b51b0e0c09525a4>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+Message-ID: <53FB3D87.1080900@rock-chips.com>
+Date: Mon, 25 Aug 2014 21:43:35 +0800
+From: Chris Zhong <zyw@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>
+CC: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, grant.likely@linaro.org, khilman@linaro.org,
+        sameo@linux.intel.com, lee.jones@linaro.org, lgirdwood@gmail.com,
+        a.zummo@towertech.it, mturquette@linaro.org,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, zhangnian@huawei.com
-Cc: Guodong Xu <guodong.xu@linaro.org>
-Subject: [PATCH 3/3] ARM: dts: hi3620-hi4511: Add HI6421 MFD and regulator nodes
-Date: Mon, 25 Aug 2014 21:39:42 +0800
-Message-Id: <1408973982-2072-4-git-send-email-guodong.xu@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1408973982-2072-1-git-send-email-guodong.xu@linaro.org>
-References: <1408973982-2072-1-git-send-email-guodong.xu@linaro.org>
+        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
+        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
+        xxx@rock-chips.com, dianders@chromium.org, heiko@sntech.de,
+        olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
+        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com
+Subject: Re: [PATCH v3 4/5] Regulator: RK808: Add regulator driver for RK808
+References: <1408791890-17328-1-git-send-email-zyw@rock-chips.com> <20140823145737.GJ24407@sirena.org.uk>
+In-Reply-To: <20140823145737.GJ24407@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add Hi6421 MFD dts node and regulator nodes into hi3620-hi4511
-board config dts file.
-
-Signed-off-by: Guodong Xu <guodong.xu@linaro.org>
----
- arch/arm/boot/dts/hi3620-hi4511.dts | 233 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 233 insertions(+)
-
-diff --git a/arch/arm/boot/dts/hi3620-hi4511.dts b/arch/arm/boot/dts/hi3620-hi4511.dts
-index fe62392..a1aadbb 100644
---- a/arch/arm/boot/dts/hi3620-hi4511.dts
-+++ b/arch/arm/boot/dts/hi3620-hi4511.dts
-@@ -635,6 +635,239 @@
- 				pinctrl-single,bias-pullup = <0 1 0 1>;
- 			};
- 		};
-+
-+		hi6421 {
-+			compatible = "hisilicon,hi6421-pmic";
-+			reg = <0xc00000 0x0180>; /* 0x60 << 2 */
-+
-+			regulators {
-+				// supply for MLC NAND/ eMMC
-+				hi6421_vout0_reg: hi6421_vout0 {
-+					regulator-name = "VOUT0";
-+					regulator-min-microvolt = <2850000>;
-+					regulator-max-microvolt = <2850000>;
-+				};
-+
-+				// supply for 26M Oscillator
-+				hi6421_vout1_reg: hi6421_vout1 {
-+					regulator-name = "VOUT1";
-+					regulator-min-microvolt = <1700000>;
-+					regulator-max-microvolt = <2000000>;
-+					regulator-boot-on;
-+					regulator-always-on;
-+				};
-+
-+				// supply for AP system
-+				hi6421_vout2_reg: hi6421_vout2 {
-+					regulator-name = "VOUT2";
-+					regulator-min-microvolt = <1050000>;
-+					regulator-max-microvolt = <1400000>;
-+					regulator-boot-on;
-+					regulator-always-on;
-+				};
-+
-+				// supply for DDR PHY I/O
-+				hi6421_vout3_reg: hi6421_vout3 {
-+					regulator-name = "VOUT3";
-+					regulator-min-microvolt = <1050000>;
-+					regulator-max-microvolt = <1400000>;
-+					regulator-boot-on;
-+					regulator-always-on;
-+				};
-+
-+				// supply for MIPI, USB2.0, PCIe, PLL Analog
-+				hi6421_vout4_reg: hi6421_vout4 {
-+					regulator-name = "VOUT4";
-+					regulator-min-microvolt = <1500000>;
-+					regulator-max-microvolt = <3000000>;
-+					regulator-boot-on;
-+					regulator-always-on;
-+				};
-+
-+				// supply for I/O 1.8V
-+				hi6421_vout5_reg: hi6421_vout5 {
-+					regulator-name = "VOUT5";
-+					regulator-min-microvolt = <1500000>;
-+					regulator-max-microvolt = <3000000>;
-+					regulator-boot-on;
-+					regulator-always-on;
-+				};
-+
-+				// supply for I/O 2.6V
-+				hi6421_vout6_reg: hi6421_vout6 {
-+					regulator-name = "VOUT6";
-+					regulator-min-microvolt = <1500000>;
-+					regulator-max-microvolt = <3000000>;
-+					regulator-boot-on;
-+					regulator-always-on;
-+				};
-+
-+				// supply for SD I/O
-+				hi6421_vout7_reg: hi6421_vout7 {
-+					regulator-name = "VOUT7";
-+					regulator-min-microvolt = <1500000>;
-+					regulator-max-microvolt = <3000000>;
-+					regulator-boot-on;
-+					regulator-always-on;
-+				};
-+
-+				// supply for USB PHY
-+				hi6421_vout8_reg: hi6421_vout8 {
-+					regulator-name = "VOUT8";
-+					regulator-min-microvolt = <1500000>;
-+					regulator-max-microvolt = <3300000>;
-+					regulator-boot-on;
-+					regulator-always-on;
-+				};
-+
-+				// supply for Efuse power
-+				hi6421_vout9_reg: hi6421_vout9 {
-+					regulator-name = "VOUT9";
-+					regulator-min-microvolt = <1500000>;
-+					regulator-max-microvolt = <3000000>;
-+				};
-+
-+				// supply for BT RF&PA
-+				hi6421_vout10_reg: hi6421_vout10 {
-+					regulator-name = "VOUT10";
-+					regulator-min-microvolt = <1500000>;
-+					regulator-max-microvolt = <3000000>;
-+				};
-+
-+				// supply for GPS RF&PA
-+				hi6421_vout11_reg: hi6421_vout11 {
-+					regulator-name = "VOUT11";
-+					regulator-min-microvolt = <1500000>;
-+					regulator-max-microvolt = <3000000>;
-+				};
-+
-+				// supply for SD card
-+				hi6421_vout12_reg: hi6421_vout12 {
-+					regulator-name = "VOUT12";
-+					regulator-min-microvolt = <2850000>;
-+					regulator-max-microvolt = <2850000>;
-+				};
-+
-+				// supply for CMMB
-+				hi6421_vout13_reg: hi6421_vout13 {
-+					regulator-name = "VOUT13";
-+					regulator-min-microvolt = <1500000>;
-+					regulator-max-microvolt = <3000000>;
-+				};
-+
-+				// supply for WIFI I/O
-+				hi6421_vout14_reg: hi6421_vout14 {
-+					regulator-name = "VOUT14";
-+					regulator-min-microvolt = <1500000>;
-+					regulator-max-microvolt = <3000000>;
-+				};
-+
-+				// supply for WIFI core & PA
-+				hi6421_vout15_reg: hi6421_vout15 {
-+					regulator-name = "VOUT15";
-+					regulator-min-microvolt = <1500000>;
-+					regulator-max-microvolt = <3300000>;
-+				};
-+
-+				// supply for LCD I/O
-+				hi6421_vout16_reg: hi6421_vout16 {
-+					regulator-name = "VOUT16";
-+					regulator-min-microvolt = <1500000>;
-+					regulator-max-microvolt = <3000000>;
-+					regulator-always-on;
-+				};
-+
-+				// supply for LCD Ananlog
-+				hi6421_vout17_reg: hi6421_vout17 {
-+					regulator-name = "VOUT17";
-+					regulator-min-microvolt = <1500000>;
-+					regulator-max-microvolt = <3000000>;
-+					regulator-always-on;
-+				};
-+
-+				// supply for Camera I/O
-+				hi6421_vout18_reg: hi6421_vout18 {
-+					regulator-name = "VOUT18";
-+					regulator-min-microvolt = <1500000>;
-+					regulator-max-microvolt = <3000000>;
-+				};
-+
-+				// supply for Camera Analog
-+				hi6421_vout19_reg: hi6421_vout19 {
-+					regulator-name = "VOUT19";
-+					regulator-min-microvolt = <1500000>;
-+					regulator-max-microvolt = <3000000>;
-+				};
-+
-+				// supply for Camera VCM
-+				hi6421_vout20_reg: hi6421_vout20 {
-+					regulator-name = "VOUT20";
-+					regulator-min-microvolt = <1500000>;
-+					regulator-max-microvolt = <3000000>;
-+				};
-+
-+				// supply for Audio, incl. HKADC
-+				hi6421_vout_audio_reg: hi6421_vout_audio {
-+					regulator-name = "AVDD2";
-+					regulator-min-microvolt = <2800000>;
-+					regulator-max-microvolt = <3300000>;
-+				};
-+
-+				// supply for Cortex-A9 CPU core
-+				hi6421_buck0_reg: hi6421_buck0 {
-+					regulator-name = "VBUCK0";
-+					regulator-min-microvolt = <700000>;
-+					regulator-max-microvolt = <1600000>;
-+					regulator-boot-on;
-+					regulator-always-on;
-+				};
-+
-+				// supply for Cortex-A9 CPU core
-+				hi6421_buck1_reg: hi6421_buck1 {
-+					regulator-name = "VBUCK1";
-+					regulator-min-microvolt = <700000>;
-+					regulator-max-microvolt = <1600000>;
-+					regulator-boot-on;
-+					regulator-always-on;
-+				};
-+
-+				// supply for GPU
-+				hi6421_buck2_reg: hi6421_buck2 {
-+					regulator-name = "VBUCK2";
-+					regulator-min-microvolt = <700000>;
-+					regulator-max-microvolt = <1600000>;
-+					regulator-boot-on;
-+				};
-+
-+				// supply for Peripheral
-+				hi6421_buck3_reg: hi6421_buck3 {
-+					regulator-name = "VBUCK3";
-+					regulator-min-microvolt = <950000>;
-+					regulator-max-microvolt = <1200000>;
-+					regulator-boot-on;
-+					regulator-always-on;
-+				};
-+
-+				// supply for LPDDR2 and AP I/O
-+				hi6421_buck4_reg: hi6421_buck4 {
-+					regulator-name = "VBUCK4";
-+					regulator-min-microvolt = <1150000>;
-+					regulator-max-microvolt = <2000000>;
-+					regulator-boot-on;
-+					regulator-always-on;
-+				};
-+
-+				// supply for Low voltage
-+				hi6421_buck5_reg: hi6421_buck5 {
-+					regulator-name = "VBUCK5";
-+					regulator-min-microvolt = <1150000>;
-+					regulator-max-microvolt = <1900000>;
-+					regulator-boot-on;
-+					regulator-always-on;
-+				};
-+			};
-+		};
-+
- 	};
- 
- 	gpio-keys {
--- 
-1.9.1
+On 08/23/2014 10:57 PM, Mark Brown wrote:
+> On Sat, Aug 23, 2014 at 07:04:50PM +0800, Chris Zhong wrote:
+>> The regulator module consists of 4 DCDCs, 8 LDOs and 2 switches.
+>> The output voltages are configurable and are meant to supply power
+>> to the main processor and other components
+> To repeat what I said on your previous posting: this driver has already
+> been applied, if there are any changes required please send incremental
+> patches against what is in the tree.
+I fixed it in v5.
 
