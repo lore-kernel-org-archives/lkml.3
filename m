@@ -1,158 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933112AbaHYQ6B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 12:58:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59864 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755951AbaHYQzX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 12:55:23 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 10/13] mnt: Correct permission checks in do_remount
-Date: Mon, 25 Aug 2014 09:54:56 -0700
-Message-Id: <1408985699-31838-11-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1408985699-31838-1-git-send-email-kamal@canonical.com>
-References: <1408985699-31838-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	id S933208AbaHYRAO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 13:00:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6853 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932952AbaHYRAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 13:00:12 -0400
+Date: Mon, 25 Aug 2014 12:59:17 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Geoff Levand <geoff@infradead.org>
+Cc: Eric Biederman <ebiederm@xmission.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Andrew Morton <akpm@linux-foundation.org>, kexec@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] kexec: minor fixups and enhancements
+Message-ID: <20140825165916.GC14379@redhat.com>
+References: <cover.1408731991.git.geoff@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1408731991.git.geoff@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.28 -stable review patch.  If anyone has any objections, please let me know.
+On Fri, Aug 22, 2014 at 06:39:47PM +0000, Geoff Levand wrote:
+> Hi,
+> 
+> Here are a few minor fixups and enhancements for kexec support. 
+> 
+> Patch 3 and 4 that add preprocessor macros for the kimage list flags are
+> ones that I use in the arm64 kexec support I am working on, so it would
+> be nice for those to go in.
+> 
+> Please consider.
 
-------------------
+Hi Geoff,
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+Does arm64 has secureboot? If yes, then it might make sense to
+enable the new syscall kexec_file_load() on arm64 instead of trying
+to make old syscall work first.
 
-commit 9566d6742852c527bf5af38af5cbb878dad75705 upstream.
+Thanks
+Vivek
 
-While invesgiating the issue where in "mount --bind -oremount,ro ..."
-would result in later "mount --bind -oremount,rw" succeeding even if
-the mount started off locked I realized that there are several
-additional mount flags that should be locked and are not.
-
-In particular MNT_NOSUID, MNT_NODEV, MNT_NOEXEC, and the atime
-flags in addition to MNT_READONLY should all be locked.  These
-flags are all per superblock, can all be changed with MS_BIND,
-and should not be changable if set by a more privileged user.
-
-The following additions to the current logic are added in this patch.
-- nosuid may not be clearable by a less privileged user.
-- nodev  may not be clearable by a less privielged user.
-- noexec may not be clearable by a less privileged user.
-- atime flags may not be changeable by a less privileged user.
-
-The logic with atime is that always setting atime on access is a
-global policy and backup software and auditing software could break if
-atime bits are not updated (when they are configured to be updated),
-and serious performance degradation could result (DOS attack) if atime
-updates happen when they have been explicitly disabled.  Therefore an
-unprivileged user should not be able to mess with the atime bits set
-by a more privileged user.
-
-The additional restrictions are implemented with the addition of
-MNT_LOCK_NOSUID, MNT_LOCK_NODEV, MNT_LOCK_NOEXEC, and MNT_LOCK_ATIME
-mnt flags.
-
-Taken together these changes and the fixes for MNT_LOCK_READONLY
-should make it safe for an unprivileged user to create a user
-namespace and to call "mount --bind -o remount,... ..." without
-the danger of mount flags being changed maliciously.
-
-Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- fs/namespace.c        | 36 +++++++++++++++++++++++++++++++++---
- include/linux/mount.h |  5 +++++
- 2 files changed, 38 insertions(+), 3 deletions(-)
-
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 9171ac3..1d8b3d8 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -799,8 +799,21 @@ static struct mount *clone_mnt(struct mount *old, struct dentry *root,
- 
- 	mnt->mnt.mnt_flags = old->mnt.mnt_flags & ~MNT_WRITE_HOLD;
- 	/* Don't allow unprivileged users to change mount flags */
--	if ((flag & CL_UNPRIVILEGED) && (mnt->mnt.mnt_flags & MNT_READONLY))
--		mnt->mnt.mnt_flags |= MNT_LOCK_READONLY;
-+	if (flag & CL_UNPRIVILEGED) {
-+		mnt->mnt.mnt_flags |= MNT_LOCK_ATIME;
-+
-+		if (mnt->mnt.mnt_flags & MNT_READONLY)
-+			mnt->mnt.mnt_flags |= MNT_LOCK_READONLY;
-+
-+		if (mnt->mnt.mnt_flags & MNT_NODEV)
-+			mnt->mnt.mnt_flags |= MNT_LOCK_NODEV;
-+
-+		if (mnt->mnt.mnt_flags & MNT_NOSUID)
-+			mnt->mnt.mnt_flags |= MNT_LOCK_NOSUID;
-+
-+		if (mnt->mnt.mnt_flags & MNT_NOEXEC)
-+			mnt->mnt.mnt_flags |= MNT_LOCK_NOEXEC;
-+	}
- 
- 	atomic_inc(&sb->s_active);
- 	mnt->mnt.mnt_sb = sb;
-@@ -1778,6 +1791,23 @@ static int do_remount(struct path *path, int flags, int mnt_flags,
- 	    !(mnt_flags & MNT_READONLY)) {
- 		return -EPERM;
- 	}
-+	if ((mnt->mnt.mnt_flags & MNT_LOCK_NODEV) &&
-+	    !(mnt_flags & MNT_NODEV)) {
-+		return -EPERM;
-+	}
-+	if ((mnt->mnt.mnt_flags & MNT_LOCK_NOSUID) &&
-+	    !(mnt_flags & MNT_NOSUID)) {
-+		return -EPERM;
-+	}
-+	if ((mnt->mnt.mnt_flags & MNT_LOCK_NOEXEC) &&
-+	    !(mnt_flags & MNT_NOEXEC)) {
-+		return -EPERM;
-+	}
-+	if ((mnt->mnt.mnt_flags & MNT_LOCK_ATIME) &&
-+	    ((mnt->mnt.mnt_flags & MNT_ATIME_MASK) != (mnt_flags & MNT_ATIME_MASK))) {
-+		return -EPERM;
-+	}
-+
- 	err = security_sb_remount(sb, data);
- 	if (err)
- 		return err;
-@@ -1978,7 +2008,7 @@ static int do_new_mount(struct path *path, const char *fstype, int flags,
- 		 */
- 		if (!(type->fs_flags & FS_USERNS_DEV_MOUNT)) {
- 			flags |= MS_NODEV;
--			mnt_flags |= MNT_NODEV;
-+			mnt_flags |= MNT_NODEV | MNT_LOCK_NODEV;
- 		}
- 	}
- 
-diff --git a/include/linux/mount.h b/include/linux/mount.h
-index 16fc05d..f058e13 100644
---- a/include/linux/mount.h
-+++ b/include/linux/mount.h
-@@ -45,10 +45,15 @@ struct mnt_namespace;
- #define MNT_USER_SETTABLE_MASK  (MNT_NOSUID | MNT_NODEV | MNT_NOEXEC \
- 				 | MNT_NOATIME | MNT_NODIRATIME | MNT_RELATIME \
- 				 | MNT_READONLY)
-+#define MNT_ATIME_MASK (MNT_NOATIME | MNT_NODIRATIME | MNT_RELATIME )
- 
- 
- #define MNT_INTERNAL	0x4000
- 
-+#define MNT_LOCK_ATIME		0x040000
-+#define MNT_LOCK_NOEXEC		0x080000
-+#define MNT_LOCK_NOSUID		0x100000
-+#define MNT_LOCK_NODEV		0x200000
- #define MNT_LOCK_READONLY	0x400000
- 
- struct vfsmount {
--- 
-1.9.1
-
+> 
+> -Geoff
+>     
+> The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
+> 
+>   Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
+> 
+> are available in the git repository at:
+> 
+>   git://git.linaro.org/people/geoff.levand/linux-kexec.git for-kexec
+> 
+> for you to fetch changes up to dc3c63e69815e00dce5454bd50e2991e9ea33f64:
+> 
+>   powerpc/kexec: Use global IND_FLAGS macro (2014-08-22 11:15:18 -0700)
+> 
+> ----------------------------------------------------------------
+> Geoff Levand (5):
+>       kexec: Fix make headers_check
+>       kexec: Simplify conditional
+>       kexec: Add bit definitions for kimage entry flags
+>       kexec: Add IND_FLAGS macro
+>       powerpc/kexec: Use global IND_FLAGS macro
+> 
+>  arch/powerpc/kernel/machine_kexec_64.c |  2 --
+>  include/linux/kexec.h                  | 20 ++++++++++++++++----
+>  include/uapi/linux/kexec.h             |  6 ------
+>  kernel/kexec.c                         | 17 ++++++++++-------
+>  4 files changed, 26 insertions(+), 19 deletions(-)
+> 
+> -- 
+> 1.9.1
+> 
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
