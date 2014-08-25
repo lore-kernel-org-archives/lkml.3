@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755601AbaHYMT5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 08:19:57 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:59358 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755514AbaHYMTe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 08:19:34 -0400
-From: Eric Auger <eric.auger@linaro.org>
-To: eric.auger@st.com, eric.auger@linaro.org, christoffer.dall@linaro.org,
-        marc.zyngier@arm.com, linux-arm-kernel@lists.infradead.org,
-        kvmarm@lists.cs.columbia.edu, kvm@vger.kernel.org,
-        alex.williamson@redhat.com, joel.schopp@amd.com
-Cc: linux-kernel@vger.kernel.org, patches@linaro.org, will.deacon@arm.com,
-        a.motakis@virtualopensystems.com, a.rigo@virtualopensystems.com,
-        john.liuli@huawei.com
-Subject: [PATCH v2 1/2] KVM: EVENTFD: remove inclusion of irq.h
-Date: Mon, 25 Aug 2014 14:18:58 +0200
-Message-Id: <1408969139-14700-2-git-send-email-eric.auger@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1408969139-14700-1-git-send-email-eric.auger@linaro.org>
-References: <1408969139-14700-1-git-send-email-eric.auger@linaro.org>
+	id S1755647AbaHYMWj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 08:22:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46719 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755444AbaHYMWi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 08:22:38 -0400
+Message-ID: <53FB2A8B.1040500@suse.com>
+Date: Mon, 25 Aug 2014 14:22:35 +0200
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Jan Beulich <JBeulich@suse.com>
+CC: stefan.bader@canonical.com, toshi.kani@hp.com, x86@kernel.org,
+        ville.syrjala@linux.intel.com,
+        xen-devel <xen-devel@lists.xenproject.org>, konrad.wilk@oracle.com,
+        linux-kernel@vger.kernel.org, hpa@zytor.com
+Subject: Re: [Xen-devel] [PATCH RFC 2/3] x86: Enable PAT to use cache mode
+ translation tables
+References: <1408454745-32358-1-git-send-email-jgross@suse.com> <1408454745-32358-3-git-send-email-jgross@suse.com> <53F72A46020000780002C957@mail.emea.novell.com>
+In-Reply-To: <53F72A46020000780002C957@mail.emea.novell.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No more needed. Also irq.h is not used on ARM.
+On 08/22/2014 11:32 AM, Jan Beulich wrote:
+>>>> On 19.08.14 at 15:25, <JGross@suse.com> wrote:
+>> @@ -118,8 +167,14 @@ void pat_init(void)
+>>   	      PAT(4, WB) | PAT(5, WC) | PAT(6, UC_MINUS) | PAT(7, UC);
+>>
+>>   	/* Boot CPU check */
+>> -	if (!boot_pat_state)
+>> +	if (!boot_pat_state) {
+>>   		rdmsrl(MSR_IA32_CR_PAT, boot_pat_state);
+>> +		/*
+>> +		 * Init cache mode tables before writing MSR to give Xen a
+>> +		 * chance to correct the changes when doing the write.
+>> +		 */
+>
+> This comment seems pretty odd to me: For one, a PV guest on Xen
+> shouldn't be trying to write PAT MSR at all under the current ABI
+> (the write will be ignored, yes, but accompanied with a warning
+> message, which PV kernels - by the mere fact that they're PV -
+> should try to avoid). And then "correct the changes" both gives
+> the impression as if they were wrong and as if some of what the
+> kernel writes may be under the kernel's control. Hence I think this
+> code and comment should either be consistently assuming that the
+> kernel has no control at all, or should read back the value after
+> having written it, and set the internal tables based on the value
+> read back.
 
-Signed-off-by: Eric Auger <eric.auger@linaro.org>
----
- virt/kvm/eventfd.c | 1 -
- 1 file changed, 1 deletion(-)
+I think the latter alternative is the better one. I'll change the
+patch.
 
-diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
-index 3c5981c..0c712a7 100644
---- a/virt/kvm/eventfd.c
-+++ b/virt/kvm/eventfd.c
-@@ -36,7 +36,6 @@
- #include <linux/seqlock.h>
- #include <trace/events/kvm.h>
- 
--#include "irq.h"
- #include "iodev.h"
- 
- #ifdef CONFIG_HAVE_KVM_IRQFD
--- 
-1.9.1
+Juergen
 
