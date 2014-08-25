@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756052AbaHYNZL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 09:25:11 -0400
-Received: from zimbra13.linbit.com ([212.69.166.240]:56668 "EHLO
+	id S1756025AbaHYNZJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 09:25:09 -0400
+Received: from zimbra13.linbit.com ([212.69.166.240]:56663 "EHLO
 	zimbra13.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755932AbaHYNZD (ORCPT
+	with ESMTP id S1755880AbaHYNZA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 09:25:03 -0400
+	Mon, 25 Aug 2014 09:25:00 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 7/8] drbd: Improve asender performance
-Date: Mon, 25 Aug 2014 15:16:37 +0200
-Message-Id: <1408972598-16650-8-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 4/8] drbd: Avoid inconsistent locking warning
+Date: Mon, 25 Aug 2014 15:16:34 +0200
+Message-Id: <1408972598-16650-5-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408972598-16650-1-git-send-email-philipp.reisner@linbit.com>
 References: <1408972598-16650-1-git-send-email-philipp.reisner@linbit.com>
@@ -20,70 +20,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lars Ellenberg <lars@linbit.com>
+From: Andreas Gruenbacher <agruen@linbit.com>
 
-Shorten receive path in the asender thread. Reduces CPU utilisation
-of asender when receiving packets, and with that increases IOPs.
+request_timer_fn() takes resource->req_lock via the device and releases it via
+the connection.  Avoid this as it is confusing static code checkers.
+
+Reported-by: "Dan Carpenter" <dan.carpenter@oracle.com>
+Signed-off-by: Andreas Gruenbacher <agruen@linbit.com>
 
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_receiver.c |  6 ++++++
- drivers/block/drbd/drbd_worker.c   | 11 +----------
- 2 files changed, 7 insertions(+), 10 deletions(-)
+ drivers/block/drbd/drbd_req.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index 3ae769e..6960fb0 100644
---- a/drivers/block/drbd/drbd_receiver.c
-+++ b/drivers/block/drbd/drbd_receiver.c
-@@ -5561,6 +5561,7 @@ int drbd_asender(struct drbd_thread *thi)
- 		 * rv <  expected: "woken" by signal during receive
- 		 * rv == 0	 : "connection shut down by peer"
- 		 */
-+received_more:
- 		if (likely(rv > 0)) {
- 			received += rv;
- 			buf	 += rv;
-@@ -5636,6 +5637,11 @@ int drbd_asender(struct drbd_thread *thi)
- 			expect	 = header_size;
- 			cmd	 = NULL;
- 		}
-+		if (test_bit(SEND_PING, &connection->flags))
-+			continue;
-+		rv = drbd_recv_short(connection->meta.socket, buf, expect-received, MSG_DONTWAIT);
-+		if (rv > 0)
-+			goto received_more;
- 	}
- 
- 	if (0) {
-diff --git a/drivers/block/drbd/drbd_worker.c b/drivers/block/drbd/drbd_worker.c
-index 3b74f08..3ed2d87 100644
---- a/drivers/block/drbd/drbd_worker.c
-+++ b/drivers/block/drbd/drbd_worker.c
-@@ -1994,22 +1994,13 @@ static bool dequeue_work_batch(struct drbd_work_queue *queue, struct list_head *
- 	return !list_empty(work_list);
+diff --git a/drivers/block/drbd/drbd_req.c b/drivers/block/drbd/drbd_req.c
+index c67717d..5a01c53 100644
+--- a/drivers/block/drbd/drbd_req.c
++++ b/drivers/block/drbd/drbd_req.c
+@@ -1645,6 +1645,6 @@ void request_timer_fn(unsigned long data)
+ 		? oldest_submit_jif + dt : now + et;
+ 	nt = time_before(ent, dt) ? ent : dt;
+ out:
+-	spin_unlock_irq(&connection->resource->req_lock);
++	spin_unlock_irq(&device->resource->req_lock);
+ 	mod_timer(&device->request_timer, nt);
  }
- 
--static bool dequeue_work_item(struct drbd_work_queue *queue, struct list_head *work_list)
--{
--	spin_lock_irq(&queue->q_lock);
--	if (!list_empty(&queue->q))
--		list_move(queue->q.next, work_list);
--	spin_unlock_irq(&queue->q_lock);
--	return !list_empty(work_list);
--}
--
- static void wait_for_work(struct drbd_connection *connection, struct list_head *work_list)
- {
- 	DEFINE_WAIT(wait);
- 	struct net_conf *nc;
- 	int uncork, cork;
- 
--	dequeue_work_item(&connection->sender_work, work_list);
-+	dequeue_work_batch(&connection->sender_work, work_list);
- 	if (!list_empty(work_list))
- 		return;
- 
 -- 
 1.9.1
 
