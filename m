@@ -1,109 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933364AbaHYSCA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 14:02:00 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:36067 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933125AbaHYSB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 14:01:57 -0400
+	id S933430AbaHYSDj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 14:03:39 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:38094 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933105AbaHYSB7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 14:01:59 -0400
 From: "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>, linuxppc-dev@lists.ozlabs.org,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Subject: [PATCH 3/9] powerpc/kvm/book3s_hv: Enable CPUs to run guest after waking up from fast-sleep
-Date: Mon, 25 Aug 2014 23:31:07 +0530
-Message-Id: <1408989673-14137-4-git-send-email-shreyas@linux.vnet.ibm.com>
+        Michael Ellerman <mpe@ellerman.id.au>
+Subject: [PATCH 5/9] powerpc/powernv: Add OPAL call to save and restore
+Date: Mon, 25 Aug 2014 23:31:09 +0530
+Message-Id: <1408989673-14137-6-git-send-email-shreyas@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1408989673-14137-1-git-send-email-shreyas@linux.vnet.ibm.com>
 References: <1408989673-14137-1-git-send-email-shreyas@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082518-0320-0000-0000-0000004F6A78
+x-cbid: 14082518-9332-0000-0000-000001CB4DB2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When guests have to be launched, the secondary threads which are offline
-are woken up to run the guests. Today these threads wake up from nap
-and check if they have to run guests. Now that the offline secondary
-threads can go to fastsleep or going ahead a deeper idle state such as winkle,
-add this check in the wakeup from any of the deep idle states path as well.
+PORE can be programmed to restore hypervisor registers when waking up
+from deep cpu idle states like winkle.
 
+Add call to pass SPR address and value to OPAL, which in turn will
+program PORE to restore the register state.
+
+Cc: linuxppc-dev@lists.ozlabs.org
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Michael Ellerman <mpe@ellerman.id.au>
-Cc: linuxppc-dev@lists.ozlabs.org
-Suggested-by: "Srivatsa S. Bhat" <srivatsa@mit.edu>
+Suggested-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
 Signed-off-by: Shreyas B. Prabhu <shreyas@linux.vnet.ibm.com>
-[ Changelog added by <preeti@linux.vnet.ibm.com> ]
-Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 ---
- arch/powerpc/kernel/exceptions-64s.S | 35 ++++++++++++++++-------------------
- 1 file changed, 16 insertions(+), 19 deletions(-)
+ arch/powerpc/include/asm/opal.h                | 2 ++
+ arch/powerpc/platforms/powernv/opal-wrappers.S | 1 +
+ 2 files changed, 3 insertions(+)
 
-diff --git a/arch/powerpc/kernel/exceptions-64s.S b/arch/powerpc/kernel/exceptions-64s.S
-index 050f79a..c64f3cc0 100644
---- a/arch/powerpc/kernel/exceptions-64s.S
-+++ b/arch/powerpc/kernel/exceptions-64s.S
-@@ -100,25 +100,8 @@ system_reset_pSeries:
- 	SET_SCRATCH0(r13)
- #ifdef CONFIG_PPC_P7_NAP
- BEGIN_FTR_SECTION
--	/* Running native on arch 2.06 or later, check if we are
--	 * waking up from nap. We only handle no state loss and
--	 * supervisor state loss. We do -not- handle hypervisor
--	 * state loss at this time.
--	 */
--	mfspr	r13,SPRN_SRR1
--	rlwinm.	r13,r13,47-31,30,31
--	beq	9f
+diff --git a/arch/powerpc/include/asm/opal.h b/arch/powerpc/include/asm/opal.h
+index 166d572..d376020 100644
+--- a/arch/powerpc/include/asm/opal.h
++++ b/arch/powerpc/include/asm/opal.h
+@@ -150,6 +150,7 @@ struct opal_sg_list {
+ #define OPAL_PCI_EEH_FREEZE_SET			97
+ #define OPAL_HANDLE_HMI				98
+ #define OPAL_CONFIG_IDLE_STATE			99
++#define OPAL_SLW_SET_REG			100
+ #define OPAL_REGISTER_DUMP_REGION		101
+ #define OPAL_UNREGISTER_DUMP_REGION		102
  
--	/* waking up from powersave (nap) state */
--	cmpwi	cr1,r13,2
--	/* Total loss of HV state is fatal, we could try to use the
--	 * PIR to locate a PACA, then use an emergency stack etc...
--	 * OPAL v3 based powernv platforms have new idle states
--	 * which fall in this catagory.
--	 */
--	bgt	cr1,8f
- 	GET_PACA(r13)
--
- #ifdef CONFIG_KVM_BOOK3S_HV_POSSIBLE
- 	li	r0,KVM_HWTHREAD_IN_KERNEL
- 	stb	r0,HSTATE_HWTHREAD_STATE(r13)
-@@ -131,13 +114,27 @@ BEGIN_FTR_SECTION
- 1:
- #endif
+@@ -978,6 +979,7 @@ extern int opal_handle_hmi_exception(struct pt_regs *regs);
+ extern void opal_shutdown(void);
+ extern int opal_resync_timebase(void);
+ int64_t opal_config_idle_state(uint64_t state, uint64_t enter);
++int64_t opal_slw_set_reg(uint64_t cpu_pir, uint64_t sprn, uint64_t val);
  
-+	/* Running native on arch 2.06 or later, check if we are
-+	 * waking up from nap. We only handle no state loss and
-+	 * supervisor state loss. We do -not- handle hypervisor
-+	 * state loss at this time.
-+	 */
-+	mfspr	r13,SPRN_SRR1
-+	rlwinm.	r13,r13,47-31,30,31
-+	beq	9f
-+
-+	/* waking up from powersave (nap) state */
-+	cmpwi	cr1,r13,2
-+	GET_PACA(r13)
-+
-+	bgt	cr1,8f
-+
- 	beq	cr1,2f
- 	b	power7_wakeup_noloss
- 2:	b	power7_wakeup_loss
+ extern void opal_lpc_init(void);
  
- 	/* Fast Sleep wakeup on PowerNV */
--8:	GET_PACA(r13)
--	b 	power7_wakeup_tb_loss
-+8:	b 	power7_wakeup_tb_loss
- 
- 9:
- END_FTR_SECTION_IFSET(CPU_FTR_HVMODE | CPU_FTR_ARCH_206)
+diff --git a/arch/powerpc/platforms/powernv/opal-wrappers.S b/arch/powerpc/platforms/powernv/opal-wrappers.S
+index 8d1e724..12e5d46 100644
+--- a/arch/powerpc/platforms/powernv/opal-wrappers.S
++++ b/arch/powerpc/platforms/powernv/opal-wrappers.S
+@@ -246,5 +246,6 @@ OPAL_CALL(opal_get_param,			OPAL_GET_PARAM);
+ OPAL_CALL(opal_set_param,			OPAL_SET_PARAM);
+ OPAL_CALL(opal_handle_hmi,			OPAL_HANDLE_HMI);
+ OPAL_CALL(opal_config_idle_state,		OPAL_CONFIG_IDLE_STATE);
++OPAL_CALL(opal_slw_set_reg,			OPAL_SLW_SET_REG);
+ OPAL_CALL(opal_register_dump_region,		OPAL_REGISTER_DUMP_REGION);
+ OPAL_CALL(opal_unregister_dump_region,		OPAL_UNREGISTER_DUMP_REGION);
 -- 
 1.9.0
 
