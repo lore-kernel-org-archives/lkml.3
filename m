@@ -1,185 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651AbaHYMvc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 08:51:32 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:55364 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754287AbaHYMvb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 08:51:31 -0400
-Message-ID: <53FB313C.9010808@st.com>
-Date: Mon, 25 Aug 2014 14:51:08 +0200
-From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1755767AbaHYMwc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 08:52:32 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:65280 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753657AbaHYMw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 08:52:29 -0400
+Message-ID: <53FB3189.10109@nod.at>
+Date: Mon, 25 Aug 2014 14:52:25 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Chen-Yu Tsai <wens@csie.org>, Ley Foon Tan <lftan@altera.com>
-Cc: netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, <lftan.linux@gmail.com>,
-        Vince Bridgers <vbridger@altera.com>
-Subject: Re: [PATCH] net: stmmac: add dcrs parameter
-References: <1408967442-2724-1-git-send-email-lftan@altera.com> <CAGb2v65fi=D_TQBSospft4T5OrBCj5TwQfgtkX=11M8TWFftYg@mail.gmail.com>
-In-Reply-To: <CAGb2v65fi=D_TQBSospft4T5OrBCj5TwQfgtkX=11M8TWFftYg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, Sam Ravnborg <sam@ravnborg.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-ia64@vger.kernel.org,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        sparclinux@vger.kernel.org, "x86@kernel.org" <x86@kernel.org>,
+        linux-serial@vger.kernel.org, Linux-Arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 0/8] asm-generic/io.h overhaul
+References: <1407925738-26170-1-git-send-email-thierry.reding@gmail.com> <CAFLxGvyyW5J0En1bFwonZiMwoJK+XDgtHvC2PQOhqgvyF4F-uQ@mail.gmail.com> <20140825122734.GD4163@ulmo.nvidia.com>
+In-Reply-To: <20140825122734.GD4163@ulmo.nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.52.138.46]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
- definitions=2014-08-24_02:2014-08-23,2014-08-24,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/25/2014 2:34 PM, Chen-Yu Tsai wrote:
-> Hi,
->
-> On Mon, Aug 25, 2014 at 7:50 PM, Ley Foon Tan <lftan@altera.com> wrote:
->> This patch add the option to enable DCRS bit in GMAC control register.
->> Default is disabled if snps,dcrs is not defined.
+Am 25.08.2014 14:27, schrieb Thierry Reding:
+> On Mon, Aug 25, 2014 at 01:53:30PM +0200, Richard Weinberger wrote:
+>> On Wed, Aug 13, 2014 at 12:28 PM, Thierry Reding
+>> <thierry.reding@gmail.com> wrote:
+>>> From: Thierry Reding <treding@nvidia.com>
+>>>
+>>> Hi,
+>>>
+>>> Here is the fourth version of a series that started out as an attempt to
+>>> provide string versions of the read*() and write*() accessors to more
+>>> architectures so that drivers can use them portably. The series has
+>>> since evolved into a more general cleanup of asm-generic/io.h and the
+>>> functions defined therein.
+>>>
+>>> Patch 1 is trivial and removes a redundant redefinition of PCI_IOBASE
+>>> from the asm/io.h header on ARC. Patches 2 and 3 remove unnecessary
+>>> volatile keywoards from some functions, which is a prerequisite to clean
+>>> up some of the functions in subsequent patches.
+>>>
+>>> The xlate_dev_{kmem,mem}_ptr() functions are used to map memory when the
+>>> /dev/mem device is accessed. Patches 4 and 5 use more consistent data
+>>> types for these functions, which will get a "standard" prototype in the
+>>> asm-generic/io.h header in a subsequent patch.
+>>>
+>>> Patch 6 is the bulk of this series. It implements the string variants of
+>>> the read*() and write*() accessors and cleans up various other parts of
+>>> the asm-generic/io.h header file. Macros are converted to static inline
+>>> functions for better type checking. Overriding generic implementations
+>>> in architectures is handled more consistently.
+>>>
+>>> Patches 7 and 8, finally, make use of the asm-generic/io.h header on the
+>>> 32-bit and 64-bit ARM architectures.
+>>>
+>>> This is compile- and runtime-tested on 32-bit and 64-bit ARM and compile
+>>> tested on IA64, Microblaze, s390, SPARC, x86 and Xtensa. For ARC,
+>>> Blackfin, Metag, OpenRISC, Score and Unicore32 which also use
+>>> asm-generic/io.h I couldn't find or build a cross-compiler that would
+>>> run on my system. But by code inspection they shouldn't break with this
+>>> patch.
+>>>
+>>> To ensure bisectability I built multi_v7_defconfig on 32-bit ARM and the
+>>> defconfig for 64-bit ARM, IA64, Microblaze, s390, SPARC, x86 and Xtensa
+>>> after each commit and verified that the series does not introduce any
+>>> build errors or warnings.
+>>>
+>>> Provided there are no objections to the patches there's still the matter
+>>> of how to merge them. Patch 6 depends on patches 1-5 to avoid warnings
+>>> and/or errors during the build. Patches 7 and 8 depend on patch 6. In my
+>>> opinion it doesn't make much sense to split them up, so I guess we'll
+>>> need a volunteer to take them all into one tree. Ideally that tree would
+>>> feed into linux-next so that we can get as much build and test-coverage
+>>> as possible during the 3.17 release cycle so that these patches can go
+>>> into 3.18.
+>>>
+>>> Arnd, I'm opportunistically sending this To: you in the hopes that you
+>>> can take it into your asm-generic tree which seems like the best fit for
+>>> this.
 >>
->> For MII, Carrier Sense (CRS) must be asserted during transmission
->> whereas in RGMII, CRS is not. RGMII does not provide a way to signal
->> loss of carrier during a transmission.
->>
->> When DCRS bit set high in control register, the MAC transmitter
->> ignore the (G)MII Carrier Sense signal during frame transmission
->> in the half-duplex mode. This request results in no errors generated
->> because of Loss of Carrier or No Carrier during such transmission.
->>
->> Signed-off-by: Ley Foon Tan <lftan@altera.com>
->> ---
->>   Documentation/devicetree/bindings/net/stmmac.txt      | 4 ++++
->>   drivers/net/ethernet/stmicro/stmmac/common.h          | 3 ++-
->>   drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c  | 4 +++-
->>   drivers/net/ethernet/stmicro/stmmac/stmmac_main.c     | 3 ++-
->>   drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c | 2 ++
->>   include/linux/stmmac.h                                | 1 +
->>   6 files changed, 14 insertions(+), 3 deletions(-)
->>
->> diff --git a/Documentation/devicetree/bindings/net/stmmac.txt b/Documentation/devicetree/bindings/net/stmmac.txt
->> index 9b03c57..a68e720 100644
->> --- a/Documentation/devicetree/bindings/net/stmmac.txt
->> +++ b/Documentation/devicetree/bindings/net/stmmac.txt
->> @@ -39,6 +39,10 @@ Optional properties:
->>     further clocks may be specified in derived bindings.
->>   - clock-names: One name for each entry in the clocks property, the
->>     first one should be "stmmaceth".
->> +- snps,dcrs: Enable DCRS bit in GMAC control register. This DCRS bit makes the
->> +       MAC transmitter ignore the (G)MII CRS signal during frame transmission
->> +       in the half-duplex mode. This request results in no errors generated
->
-> Since you know this is only required under (G)MII, could you not re-use
-> the "phy-mode" property, instead of adding another one?
->
-> Better yet, use the "interface" field in the platform data. This way you'll
-> fix non-DT devices as well. You could then avoid touching the platform driver,
-> and just modify the driver core.
+>> Do you have a git tree for that?
+>> Would be nice for testing UML, it depends also on generic io.
+> 
+> Yes, it's all here:
+> 
+> 	https://github.com/thierryreding/linux.git staging/asm-generic-io
+> 
+> That branch is based on today's linux-next (next-20140825).
 
-yes this is what I asked. Thx ChenYu for the this detail.
-Ley Foon Tan, could you do that? Let me know
+Looks good, UML builds and boots fine here.
 
-peppe
-
->
->
-> Cheers
-> ChenYu
->
->> +       because of Loss of Carrier or No Carrier during such transmission.
->>
->>   Examples:
->>
->> diff --git a/drivers/net/ethernet/stmicro/stmmac/common.h b/drivers/net/ethernet/stmicro/stmmac/common.h
->> index de507c3..9abe221 100644
->> --- a/drivers/net/ethernet/stmicro/stmmac/common.h
->> +++ b/drivers/net/ethernet/stmicro/stmmac/common.h
->> @@ -445,10 +445,11 @@ struct mac_device_info {
->>          int multicast_filter_bins;
->>          int unicast_filter_entries;
->>          int mcast_bits_log2;
->> +       int dcrs;
->>   };
->>
->>   struct mac_device_info *dwmac1000_setup(void __iomem *ioaddr, int mcbins,
->> -                                       int perfect_uc_entries);
->> +                                       int perfect_uc_entries, int dcrs);
->>   struct mac_device_info *dwmac100_setup(void __iomem *ioaddr);
->>
->>   void stmmac_set_mac_addr(void __iomem *ioaddr, u8 addr[6],
->> diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c b/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
->> index d8ef187..924d450 100644
->> --- a/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
->> +++ b/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
->> @@ -37,6 +37,7 @@ static void dwmac1000_core_init(struct mac_device_info *hw, int mtu)
->>          void __iomem *ioaddr = hw->pcsr;
->>          u32 value = readl(ioaddr + GMAC_CONTROL);
->>          value |= GMAC_CORE_INIT;
->> +       value |= hw->dcrs;
->>          if (mtu > 1500)
->>                  value |= GMAC_CONTROL_2K;
->>          if (mtu > 2000)
->> @@ -409,7 +410,7 @@ static const struct stmmac_ops dwmac1000_ops = {
->>   };
->>
->>   struct mac_device_info *dwmac1000_setup(void __iomem *ioaddr, int mcbins,
->> -                                       int perfect_uc_entries)
->> +                                       int perfect_uc_entries, int dcrs)
->>   {
->>          struct mac_device_info *mac;
->>          u32 hwid = readl(ioaddr + GMAC_VERSION);
->> @@ -422,6 +423,7 @@ struct mac_device_info *dwmac1000_setup(void __iomem *ioaddr, int mcbins,
->>          mac->multicast_filter_bins = mcbins;
->>          mac->unicast_filter_entries = perfect_uc_entries;
->>          mac->mcast_bits_log2 = 0;
->> +       mac->dcrs = dcrs;
->>
->>          if (mac->multicast_filter_bins)
->>                  mac->mcast_bits_log2 = ilog2(mac->multicast_filter_bins);
->> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
->> index 08addd6..bf35b19 100644
->> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
->> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
->> @@ -2600,7 +2600,8 @@ static int stmmac_hw_init(struct stmmac_priv *priv)
->>                  priv->dev->priv_flags |= IFF_UNICAST_FLT;
->>                  mac = dwmac1000_setup(priv->ioaddr,
->>                                        priv->plat->multicast_filter_bins,
->> -                                     priv->plat->unicast_filter_entries);
->> +                                     priv->plat->unicast_filter_entries,
->> +                                     priv->plat->dcrs);
->>          } else {
->>                  mac = dwmac100_setup(priv->ioaddr);
->>          }
->> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
->> index bb524a9..07f895f 100644
->> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
->> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
->> @@ -227,6 +227,8 @@ static int stmmac_probe_config_dt(struct platform_device *pdev,
->>                  pr_warn("force_sf_dma_mode is ignored if force_thresh_dma_mode is set.");
->>          }
->>
->> +       plat->dcrs = of_property_read_bool(np, "snps,dcrs");
->> +
->>          return 0;
->>   }
->>   #else
->> diff --git a/include/linux/stmmac.h b/include/linux/stmmac.h
->> index cd63851..6367f42 100644
->> --- a/include/linux/stmmac.h
->> +++ b/include/linux/stmmac.h
->> @@ -114,6 +114,7 @@ struct plat_stmmacenet_data {
->>          int maxmtu;
->>          int multicast_filter_bins;
->>          int unicast_filter_entries;
->> +       int dcrs;
->>          void (*fix_mac_speed)(void *priv, unsigned int speed);
->>          void (*bus_setup)(void __iomem *ioaddr);
->>          void *(*setup)(struct platform_device *pdev);
->> --
->> 1.8.2.1
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe netdev" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
-
+Thanks,
+//richard
