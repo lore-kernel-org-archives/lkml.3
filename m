@@ -1,128 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756248AbaHYQiq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 12:38:46 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:46162 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754768AbaHYQip (ORCPT
+	id S1756261AbaHYQll (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 12:41:41 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:64587 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756067AbaHYQli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 12:38:45 -0400
-Message-ID: <53FB6667.9010600@oracle.com>
-Date: Mon, 25 Aug 2014 12:37:59 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 25 Aug 2014 12:41:38 -0400
+Message-ID: <53FB673F.8070200@6wind.com>
+Date: Mon, 25 Aug 2014 18:41:35 +0200
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Reply-To: nicolas.dichtel@6wind.com
+Organization: 6WIND
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: ericvh@gmail.com, lucho@ionkov.net, rminnich@sandia.gov,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        v9fs-developer@lists.sourceforge.net
-Subject: mm/v9fs: kernel panic accessing kmap()ed pages
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Linux Containers <containers@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, linux-audit@redhat.com,
+        Linux API <linux-api@vger.kernel.org>,
+        Richard Guy Briggs <rgb@redhat.com>, netdev <netdev@vger.kernel.org>
+Subject: Re: [PATCH V4 3/8] namespaces: expose ns instance serial numbers
+ in proc
+References: <cover.1408581429.git.rgb@redhat.com> <cd6cd0622ce677b639afae18a69ff79c72490bab.1408581429.git.rgb@redhat.com> <CALCETrUnzG1V8w+H9ctAJP+Hvo8LQax=dhLG4bBpBKmVi+C1cQ@mail.gmail.com> <20140822015803.GG20529@madcap2.tricolour.ca> <CALCETrUkFD0iNi1SV_6ypN5Kf4GYybT5tzjRjRQuLzT9iBnQAg@mail.gmail.com> <53FB3A86.2060203@6wind.com> <CALCETrW1Lv0qeccMjNHSEzgtiaNN3NgJVR1dFjjR_dw5KVVnqA@mail.gmail.com> <53FB59A3.5030804@6wind.com> <CALCETrWHrWhm89B5s=pLt_9eTx3ZF8ifA6y6CwknWaWU7dp=sQ@mail.gmail.com>
+In-Reply-To: <CALCETrWHrWhm89B5s=pLt_9eTx3ZF8ifA6y6CwknWaWU7dp=sQ@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Le 25/08/2014 18:13, Andy Lutomirski a écrit :
+> On Mon, Aug 25, 2014 at 8:43 AM, Nicolas Dichtel
+> <nicolas.dichtel@6wind.com> wrote:
+>> Le 25/08/2014 16:04, Andy Lutomirski a écrit :
+>>
+>>> On Aug 25, 2014 6:30 AM, "Nicolas Dichtel" <nicolas.dichtel@6wind.com>
+>>> wrote:
+>>>>>
+>>>>> CRIU wants to save the complete state of a namespace and then restore
+>>>>> it.  For that to work, any information exposed to things in the
+>>>>> namespace *cannot* be globally unique or unique per boot, since CRIU
+>>>>> needs to arrange for that information to match whatever it was when
+>>>>> CRIU saved it.
+>>>>
+>>>>
+>>>> How are ifindex of network devices managed? These ifindexes are unique
+>>>> per boot,
+>>>> thus can change depending on the order in which netdev are created.
+>>>> These ifindexes are unique per boot and exposed to userspace ...
+>>>>
+>>>
+>>> This does not appear to be true.
+>>>
+>>> $ sudo unshare --net
+>>> # ip link add veth0 type veth peer name veth1
+>>> # ip link
+>>> 1: lo: <LOOPBACK> mtu 65536 qdisc noop state DOWN mode DEFAULT group
+>>> default
+>>>       link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+>>> 2: veth1: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode
+>>> DEFAULT group default qlen 1000
+>>>       link/ether 06:0d:59:c7:a6:a8 brd ff:ff:ff:ff:ff:ff
+>>> 3: veth0: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode
+>>> DEFAULT group default qlen 1000
+>>>       link/ether b2:5c:8b:f2:12:28 brd ff:ff:ff:ff:ff:ff
+>>> # logout
+>>> $ ip link
+>>> 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN
+>>>       link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+>>> 3: em1: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc pfifo_fast
+>>> state DOWN qlen 1000
+>>>
+>> I've probably misunderstood what you're trying to say. ifindexes are unique
+>> per
+>> boot and per netns.
+>
+> I think we both misunderstood each other.  The ifindexes are unique
+> *per netns*, which means that, if you're unprivileged in a netns,
+> global information doesn't leak to you.  I think this is good.
+Ok, I agree. I think audit daemons are always running under privileged users.
 
-While fuzzing with trinity inside a KVM tools guest running the latest -next
-kernel, I've stumbled on the following spew:
+>
+>>>
+>>> Let me try again, with emphasis in the right place.
+>>>
+>>> I think that *code running in a namespace* has no business even
+>>> knowing a unique identity of *that namespace* from the perspective of
+>>> the host.
+>>>
+>>> In your example, if there's a veth device between netns A and netns B,
+>>> then code *in netns A* has no business knowing the identity of its
+>>> veth peer if its peer (B) is a sibling or ancestor.  It also IMO has
+>>> no business knowing the identity of its own netns (A) other than as
+>>> "my netns".
+>>
+>> I do not agree (see the example below).
+>>
+>>
+>>>
+>>> If A and B are siblings, then their parent needs to know where that
+>>> veth device goes, but I think this is already the case to a sufficient
+>>> extent today.
+>>
+>> I'm not aware of a hierarchy between netns. A daemon should be able to
+>> got the full network configuration, even if it's started when this
+>> configuration
+>> is already applied, ie even if it doesn't know what happen before it starts.
+>>
+>
+> I don't know exactly which namespaces have an explicit hierarchy, but
+> there is certainly a hierarchy of *user* namespaces, and network
+> namespaces live in user namespaces, so they at least have somewhat of
+> a hierarchy.
+>
+>>
+>>>
+>>> I feel like this discussion is falling into a common trap of new API
+>>> discussions.  Can one of you who wants this API please articulate,
+>>> with a reasonably precise example, what it is that you want to do, why
+>>> you can't easily do it already, and how this API helps?  I currently
+>>> understand how the API creates problems, but I don't understand how it
+>>> solves any problems, and I will NAK it (and I suspect that Eric will,
+>>> too, which is pretty much fatal) unless that changes.
+>>
+>> What I'm trying to solve is to have full info in netlink messages sent by
+>> the
+>> kernel, thus beeing able to identify a peer netns (and this is close from
+>> what
+>> audit guys are trying to have). Theorically, messages sent by the kernel can
+>> be
+>> reused as is to have the same configuration. This is not the case with
+>> x-netns
+>> devices. Here is an example, with ip tunnels:
+>>
+>> $ ip netns add 1
+>> $ ip link add ipip1 type ipip remote 10.16.0.121 local 10.16.0.249 dev eth0
+>> $ ip -d link ls ipip1
+>> 8: ipip1@eth0: <POINTOPOINT,NOARP> mtu 1480 qdisc noop state DOWN mode
+>> DEFAULT group default
+>>      link/ipip 10.16.0.249 peer 10.16.0.121 promiscuity 0
+>>      ipip remote 10.16.0.121 local 10.16.0.249 dev eth0 ttl inherit pmtudisc
+>> $ ip link set ipip1 netns 1
+>> $ ip netns exec 1 ip -d link ls ipip1
+>> 8: ipip1@tunl0: <POINTOPOINT,NOARP,M-DOWN> mtu 1480 qdisc noop state DOWN
+>> mode DEFAULT group default
+>>      link/ipip 10.16.0.249 peer 10.16.0.121 promiscuity 0
+>>      ipip remote 10.16.0.121 local 10.16.0.249 dev tunl0 ttl inherit pmtudisc
+>>
+>> Now informations got with 'ip link' are wrong and incomplete:
+>>   - the link dev is now tunl0 instead of eth0, because we only got an ifindex
+>>     from the kernel without any netns informations.
+>>   - the encapsulation addresses are not part of this netns but the user
+>> doesn't
+>>     known that (still because netns info is missing). These IPv4 addresses
+>> may
+>>     exist into this netns.
+>>   - it's not possible to create the same netdevice with these infos.
+>>
+>
+> Aha.  That's a genuine problem.
+>
+> Perhaps we need a concept of which netnses should be able to see each other.
+Yes, I agree. This is not required for all netns, only a subset of netns should
+be able to see each other.
 
-[12886.637991] BUG: unable to handle kernel paging request at ffff88017dce7000
-[12886.640053] IP: memset (arch/x86/lib/memset_64.S:84)
-[12886.640053] PGD 15b46067 PUD 9763c5067 PMD 9761d6067 PTE 800000017dce7060
-[12886.640053] Oops: 0002 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[12886.640053] Dumping ftrace buffer:
-[12886.640053]    (ftrace buffer empty)
-[12886.640053] Modules linked in:
-[12886.640053] CPU: 4 PID: 7421 Comm: modprobe Not tainted 3.17.0-rc1-next-20140823-sasha-00034-g503bc40 #1077
-[12886.640053] task: ffff8804c2288000 ti: ffff88008398c000 task.ti: ffff88008398c000
-[12886.640053] RIP: memset (arch/x86/lib/memset_64.S:84)
-[12886.640053] RSP: 0018:ffff88008398f9f0  EFLAGS: 00010212
-[12886.640053] RAX: 0000000000000000 RBX: ffffea0005f6e800 RCX: 03ffffffffffae7f
-[12886.640053] RDX: fffffffffffe4c08 RSI: 0000000000000000 RDI: ffff88017dce6ff8
-[12886.640053] RBP: ffff88008398fa28 R08: 0000000000000002 R09: 0000000000000006
-[12886.640053] R10: ffff88017dbbc3f6 R11: 0000000000000000 R12: ffff880271538de8
-[12886.640053] R13: ffff88076b4ff500 R14: ffff88017dba0000 R15: ffffea0005f6e820
-[12886.640053] FS:  0000000000000000(0000) GS:ffff880277c00000(0000) knlGS:0000000000000000
-[12886.640053] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[12886.640053] CR2: ffff88017dce7000 CR3: 00000007990c2000 CR4: 00000000000006a0
-[12886.640053] Stack:
-[12886.640053]  ffffffff8e7a9a25 ffff88008398fa08 ffffffff8e2a77cd ffffea0005f6e800
-[12886.640053]  ffff88008398fb38 ffff880271538ff8 ffff8804c2288000 ffff88008398fa38
-[12886.640053]  ffffffff8e7a9b75 ffff88008398fa98 ffffffff8e2a4b25 ffffffff8e7acf40
-[12886.640053] Call Trace:
-[12886.640053] ? v9fs_fid_readpage (./arch/x86/include/asm/bitops.h:75 include/linux/page-flags.h:321 fs/9p/vfs_addr.c:79)
-[12886.640053] ? lru_cache_add (mm/swap.c:665)
-[12886.640053] v9fs_vfs_readpage (fs/9p/vfs_addr.c:101)
-[12886.640053] read_cache_pages (mm/readahead.c:100)
-[12886.640053] ? v9fs_cache_session_get_key (fs/9p/cache.c:306)
-[12886.640053] ? v9fs_write_begin (fs/9p/vfs_addr.c:99)
-[12886.640053] v9fs_vfs_readpages (fs/9p/vfs_addr.c:127)
-[12886.640053] __do_page_cache_readahead (mm/readahead.c:123 mm/readahead.c:200)
-[12886.640053] ? __do_page_cache_readahead (include/linux/rcupdate.h:814 mm/readahead.c:178)
-[12886.640053] filemap_fault (include/linux/memcontrol.h:137 include/linux/memcontrol.h:194 mm/filemap.c:1891)
-[12886.640053] __do_fault (mm/memory.c:2712)
-[12886.640053] ? _raw_spin_unlock (./arch/x86/include/asm/preempt.h:98 include/linux/spinlock_api_smp.h:152 kernel/locking/spinlock.c:183)
-[12886.640053] do_read_fault.isra.40 (mm/memory.c:2901)
-[12886.640053] ? get_parent_ip (kernel/sched/core.c:2552)
-[12886.640053] ? preempt_count_sub (kernel/sched/core.c:2608)
-[12886.640053] __handle_mm_fault (mm/memory.c:3048 mm/memory.c:3214 mm/memory.c:3341)
-[12886.640053] handle_mm_fault (include/linux/memcontrol.h:120 mm/memory.c:3373)
-[12886.640053] ? __do_page_fault (arch/x86/mm/fault.c:1163)
-[12886.640053] __do_page_fault (arch/x86/mm/fault.c:1231)
-[12886.640053] ? vtime_account_user (kernel/sched/cputime.c:687)
-[12886.640053] ? get_parent_ip (kernel/sched/core.c:2552)
-[12886.640053] ? preempt_count_sub (kernel/sched/core.c:2608)
-[12886.640053] ? context_tracking_user_exit (kernel/context_tracking.c:184)
-[12886.640053] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
-[12886.640053] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2640 (discriminator 2))
-[12886.640053] trace_do_page_fault (arch/x86/mm/fault.c:1314 include/linux/jump_label.h:114 include/linux/context_tracking_state.h:27 include/linux/context_tracking.h:45 arch/x86/mm/fault.c:1315)
-[12886.640053] do_async_page_fault (arch/x86/kernel/kvm.c:264)
-[12886.640053] async_page_fault (arch/x86/kernel/entry_64.S:1313)
-[12886.640053] Code: 01 01 01 01 01 01 48 0f af c1 41 89 f9 41 83 e1 07 75 70 48 89 d1 48 c1 e9 06 74 39 66 0f 1f 84 00 00 00 00 00 48 ff c9 48 89 07 <48> 89 47 08 48 89 47 10 48 89 47 18 48 89 47 20 48 89 47 28 48
-All code
-========
-   0:	01 01                	add    %eax,(%rcx)
-   2:	01 01                	add    %eax,(%rcx)
-   4:	01 01                	add    %eax,(%rcx)
-   6:	48 0f af c1          	imul   %rcx,%rax
-   a:	41 89 f9             	mov    %edi,%r9d
-   d:	41 83 e1 07          	and    $0x7,%r9d
-  11:	75 70                	jne    0x83
-  13:	48 89 d1             	mov    %rdx,%rcx
-  16:	48 c1 e9 06          	shr    $0x6,%rcx
-  1a:	74 39                	je     0x55
-  1c:	66 0f 1f 84 00 00 00 	nopw   0x0(%rax,%rax,1)
-  23:	00 00
-  25:	48 ff c9             	dec    %rcx
-  28:	48 89 07             	mov    %rax,(%rdi)
-  2b:*	48 89 47 08          	mov    %rax,0x8(%rdi)		<-- trapping instruction
-  2f:	48 89 47 10          	mov    %rax,0x10(%rdi)
-  33:	48 89 47 18          	mov    %rax,0x18(%rdi)
-  37:	48 89 47 20          	mov    %rax,0x20(%rdi)
-  3b:	48 89 47 28          	mov    %rax,0x28(%rdi)
-  3f:	48                   	rex.W
-	...
+>
+> I think I would be okay with a somewhat different outcome from your example:
+>
+> $ ip netns exec 1 ip -d link ls ipip1
+> 8: ipip1@[unknown device in another namespace]:
+> <POINTOPOINT,NOARP,M-DOWN> mtu 1480 qdisc noop state DOWN
+>
+> I think this outcome is mandatory if netns 1 lives in a subsidiary
+> user namespace.
+Yes.
 
-Code starting with the faulting instruction
-===========================================
-   0:	48 89 47 08          	mov    %rax,0x8(%rdi)
-   4:	48 89 47 10          	mov    %rax,0x10(%rdi)
-   8:	48 89 47 18          	mov    %rax,0x18(%rdi)
-   c:	48 89 47 20          	mov    %rax,0x20(%rdi)
-  10:	48 89 47 28          	mov    %rax,0x28(%rdi)
-  14:	48                   	rex.W
-	...
-[12886.640053] RIP memset (arch/x86/lib/memset_64.S:84)
-[12886.640053]  RSP <ffff88008398f9f0>
-[12886.640053] CR2: ffff88017dce7000
+>
+> Certainly, if you do the 'ip link' in the original namespace, I agree
+> that this should work.
+And yes :)
 
+I will update my previous proposal 
+(http://thread.gmane.org/gmane.linux.network/315933/focus=321753)
+to allow to get an id for a peer netns only when the user namespace is the same.
 
-Thanks,
-Sasha
+>
+> For most namespace types, this all works transparently, since
+> everything has an real identity all the way up the hierarchy.  Network
+> namespaces are different.
+>
+> I don't think that exposing serial numbers in /proc is a good
+> solution, both for the reasons already described and because I don't
+> think that iproute2 should need to muck around with /proc to function
+A netlink API is probably enough. But it will help only for the network
+problem, not for audit. I was hoping to find a common solution.
+
+> correctly.  Eric, any clever ideas here?  Do we need fancier netlink
+> messages for this?
+>
+> --Andy
+>
+
