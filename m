@@ -1,90 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933300AbaHYRqf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 13:46:35 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:44184 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932256AbaHYRqd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 13:46:33 -0400
-Date: Mon, 25 Aug 2014 11:46:10 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>,
+	id S933147AbaHYRvN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 13:51:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60370 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932253AbaHYRvL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 13:51:11 -0400
+Date: Mon, 25 Aug 2014 10:50:29 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Sitsofe Wheeler <sitsofe@gmail.com>, Jason Wang <jasowang@redhat.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        Andreas =?iso-8859-1?Q?F=E4rber?= <afaerber@suse.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 3/3] ARM: zynq: DT: Add Ethernet phys
-Message-ID: <20140825174610.GA13737@obsidianresearch.com>
-References: <1408550219-19825-1-git-send-email-soren.brinkmann@xilinx.com>
- <1408550219-19825-3-git-send-email-soren.brinkmann@xilinx.com>
- <5a7b6f57-b6c0-4fb3-af0d-d403277c0207@BN1AFFO11FD045.protection.gbl>
- <53F5D8D9.7040604@suse.de>
- <f166a186-301c-4288-97cf-71f8173c07e7@BN1AFFO11FD010.protection.gbl>
- <CAGVrzcYWN83tznwvw1M9V_mwWgobs2kwtRvEj4stqE=XGC10fg@mail.gmail.com>
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [hyperv] BUG at drivers/hv/channel.c:462 while changing MTU
+Message-ID: <20140825175029.GA25551@kroah.com>
+References: <20140819123655.GC12160@sucs.org>
+ <20140825093648.GB5046@mwanda>
+ <cf94fd58947d4c5aa6d0d369c1126d7f@BY2PR0301MB0711.namprd03.prod.outlook.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGVrzcYWN83tznwvw1M9V_mwWgobs2kwtRvEj4stqE=XGC10fg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+In-Reply-To: <cf94fd58947d4c5aa6d0d369c1126d7f@BY2PR0301MB0711.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 01:47:09PM -0700, Florian Fainelli wrote:
-
-> >  - the ID based strings seem to be not needed since, IIUC, the core
-> >    reads the ID from the PHY and uses it, so I just left it out not
-> >    trying to figure out how to obtain the correct ID
+On Mon, Aug 25, 2014 at 05:34:27PM +0000, KY Srinivasan wrote:
 > 
-> It is not needed, but it is one way to specify a PHY device if you do
-> not know what compatible string to use instead.
-
-No, it is a way to specify a PHY device if the kernel can't auto probe
-the Phy ID.
-
-Last I checked, the kernel doesn't support plain text compatible
-strings for phys - everything is driven on the phy id, either auto
-probed or specified in the DT.
-
-> >  - the marvell compatible strings are used in our vendor tree. They
-> >    aren't used anywhere but in our vendor tree. I though keeping them is
-> >    nice since it identifies the PHY fully. And in case that level of
-> >    detail is needed at some point it is already there.
 > 
-> And this is the recommended way to do it in case we ever need to key a
-> software decision based on the hardware.
+> > -----Original Message-----
+> > From: Dan Carpenter [mailto:dan.carpenter@oracle.com]
+> > Sent: Monday, August 25, 2014 2:37 AM
+> > To: Sitsofe Wheeler
+> > Cc: KY Srinivasan; Greg Kroah-Hartman; Jason Wang; linux-
+> > kernel@vger.kernel.org; David S. Miller; Daniel Borkmann;
+> > netdev@vger.kernel.org; devel@linuxdriverproject.org; Haiyang Zhang
+> > Subject: Re: [hyperv] BUG at drivers/hv/channel.c:462 while changing MTU
+> > 
+> > The code here is:
+> > 
+> > drivers/hv/channel.c
+> >    460          BUG_ON(ret != 0);
+> >    461          t = wait_for_completion_timeout(&info->waitevent, 5*HZ);
+> >    462          BUG_ON(t == 0);
+> > 
+> > So it calls BUG_ON() if the teardown takes more than 5 seconds.  It's most
+> > likely that there is a race condition somewhere.  It's also possible that it's just
+> > taking longer than 5 seconds for some odd reason and the bug would go
+> > away if we raised it to 60 seconds.
+> > 
+> > BUG_ON() after 5 seconds seems like a very aggressive thing.
+> 
+> Dan,
+> 
+> I am going to audit all BUG_ON() instances.
 
-All compatible strings need to be documented.
+Please remove them all, no kernel driver should ever crash the kernel
+and not give a user a chance to recover :(
 
-.. and they need to encode more information than you get from the phy
-id - die revsision, package option, functional options, voltage
-codes. Etc.
+thanks,
 
-.. and they actually need to be *right*
-
-An example: The kernel reports 88E1318S for all four chips in that
-family, AFAIK you have to read the package marking to figure out which
-you have (it is the same die, with options switched on/off at
-packaging time). People have already posted patches trying to
-helpfully add a 'marvell,88E1318S' compatible string based on kernel
-output. Except it is wrong, it isn't actually the '8S version in the
-HW.
-
-Even worse, Marvell has a whole series of socket compatible phys. Just
-because the board the DT author looked at has a '318, doesn't mean
-that every board ever made will. We've actually already been switching
-between the 318 and 318S for production depending on which has part
-availability.
-
-Basically: don't try to override self-discoverable hardware in DT
-without a really good reason.
-
-Jason
+greg k-h
