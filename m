@@ -1,110 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932198AbaHYLbW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 07:31:22 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:54322 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932169AbaHYLbT (ORCPT
+	id S932221AbaHYLdQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 07:33:16 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:58081 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932169AbaHYLdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 07:31:19 -0400
-Date: Mon, 25 Aug 2014 13:31:16 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: David Miller <davem@davemloft.net>
-Cc: peppe.cavallaro@st.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH for -next] stmmac: simple cleanups
-Message-ID: <20140825113116.GA21632@amd>
-References: <20140819105646.GA27984@amd>
- <20140822.123408.2064974279443073401.davem@davemloft.net>
+	Mon, 25 Aug 2014 07:33:15 -0400
+X-IronPort-AV: E=Sophos;i="5.04,396,1406563200"; 
+   d="scan'208";a="35035777"
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+To: <tj@kernel.org>, <lizefan@huawei.com>
+CC: <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Subject: [PATCH V2] cgroup: Introduce cgroup_detach_task().
+Date: Mon, 25 Aug 2014 19:32:10 +0800
+Message-ID: <1408966330-2374-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.4.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140822.123408.2064974279443073401.davem@davemloft.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.66]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds simple cleanups for stmmac, removing test we know is always
-true, fixing whitespace, and moving code out of if().
+Currently, the only method to detach a task from a cgroup is moving
+it to others. It looks not natrual to me.
 
-Signed-off-by: Pavel Machek <pavel@denx.de>
+Inspired by cgroup_subtree_control_write(), this patch introduce allow
+user to at-detach a process to/from a cgroup by echo "+/-pid" to
+cgroup.procs. In addition, we keep the old method to allow user
+echo "pid" without "+/-" to cgroup.procs as a attaching behavior.
 
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 ---
 
-Now against -net-next.
+>From v1:
+	*Sorry for a incorrect comment in v1.
 
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
-index 9af50ba..493fe69 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
-@@ -261,11 +261,11 @@ static int stmmac_ethtool_getsettings(struct net_device *dev,
- 		ethtool_cmd_speed_set(cmd, priv->xstats.pcs_speed);
+ kernel/cgroup.c | 61 +++++++++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 59 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 7dc8788..a4bb604 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -2348,6 +2348,43 @@ static int cgroup_attach_task(struct cgroup *dst_cgrp,
+ 	return ret;
+ }
  
- 		/* Get and convert ADV/LP_ADV from the HW AN registers */
--		if (priv->hw->mac->get_adv)
--			priv->hw->mac->get_adv(priv->hw, &adv);
--		else
-+		if (!priv->hw->mac->get_adv)
- 			return -EOPNOTSUPP;	/* should never happen indeed */
- 
-+		priv->hw->mac->get_adv(priv->hw, &adv);
++/**
++ * cgroup_detach_task - detach a task or a whole threadgroup to a cgroup
++ * @src_cgrp: the cgroup to detach from
++ * @leader: the task or the leader of the threadgroup to be attached
++ * @threadgroup: attach the whole threadgroup?
++ *
++ * Call holding cgroup_mutex and threadgroup_lock of @leader.
++ */
++static int cgroup_detach_task(struct cgroup *src_cgrp __maybe_unused,
++			      struct task_struct *leader, bool threadgroup)
++{
++	LIST_HEAD(preloaded_csets);
++	struct task_struct *task;
++	int ret;
 +
- 		/* Encoding of PSE bits is defined in 802.3z, 37.2.1.4 */
++	/* look up all src csets */
++	down_read(&css_set_rwsem);
++	rcu_read_lock();
++	task = leader;
++	do {
++		cgroup_migrate_add_src(task_css_set(task), &cgrp_dfl_root.cgrp,
++				       &preloaded_csets);
++		if (!threadgroup)
++			break;
++	} while_each_thread(leader, task);
++	rcu_read_unlock();
++	up_read(&css_set_rwsem);
++
++	/* prepare dst csets and commit */
++	ret = cgroup_migrate_prepare_dst(&cgrp_dfl_root.cgrp, &preloaded_csets);
++	if (!ret)
++		ret = cgroup_migrate(&cgrp_dfl_root.cgrp, leader, threadgroup);
++
++	cgroup_migrate_finish(&preloaded_csets);
++	return ret;
++}
++
+ /*
+  * Find the task_struct of the task to attach by vpid and pass it along to the
+  * function to attach either it or all tasks in its threadgroup. Will lock
+@@ -2361,8 +2398,25 @@ static ssize_t __cgroup_procs_write(struct kernfs_open_file *of, char *buf,
+ 	struct cgroup *cgrp;
+ 	pid_t pid;
+ 	int ret;
++	bool attach;
  
- 		if (adv.pause & STMMAC_PCS_PAUSE)
-@@ -340,19 +340,17 @@ static int stmmac_ethtool_setsettings(struct net_device *dev,
- 		if (cmd->autoneg != AUTONEG_ENABLE)
- 			return -EINVAL;
+-	if (kstrtoint(strstrip(buf), 0, &pid) || pid < 0)
++	/*
++	 * Parse input - pid prefixed with either + or -.
++	 */
++	buf = strstrip(buf);
++	if (*buf == '+') {
++		attach = true;
++		buf++;
++	} else if (*buf == '-') {
++		attach = false;
++		buf++;
++	} else {
++		if (!isdigit(*buf))
++			return -EINVAL;
++		attach = true;
++	}
++
++	if (kstrtoint(buf, 0, &pid) || pid < 0)
+ 		return -EINVAL;
  
--		if (cmd->autoneg == AUTONEG_ENABLE) {
--			mask &= (ADVERTISED_1000baseT_Half |
-+		mask &= (ADVERTISED_1000baseT_Half |
- 			ADVERTISED_1000baseT_Full |
- 			ADVERTISED_100baseT_Half |
- 			ADVERTISED_100baseT_Full |
- 			ADVERTISED_10baseT_Half |
- 			ADVERTISED_10baseT_Full);
- 
--			spin_lock(&priv->lock);
--			if (priv->hw->mac->ctrl_ane)
--				priv->hw->mac->ctrl_ane(priv->hw, 1);
--			spin_unlock(&priv->lock);
--		}
-+		spin_lock(&priv->lock);
-+		if (priv->hw->mac->ctrl_ane)
-+			priv->hw->mac->ctrl_ane(priv->hw, 1);
-+		spin_unlock(&priv->lock);
- 
- 		return 0;
+ 	cgrp = cgroup_kn_lock_live(of->kn);
+@@ -2426,7 +2480,10 @@ retry_find_task:
+ 		}
  	}
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-index 08addd6..8fcc64c 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-@@ -818,7 +818,7 @@ static int stmmac_init_phy(struct net_device *dev)
- 	/* Stop Advertising 1000BASE Capability if interface is not GMII */
- 	if ((interface == PHY_INTERFACE_MODE_MII) ||
- 	    (interface == PHY_INTERFACE_MODE_RMII) ||
--		(max_speed < 1000 &&  max_speed > 0))
-+		(max_speed < 1000 && max_speed > 0))
- 		phydev->advertising &= ~(SUPPORTED_1000baseT_Half |
- 					 SUPPORTED_1000baseT_Full);
  
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c
-index a5b1e1b..8dd0408 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c
-@@ -253,7 +253,7 @@ int stmmac_mdio_register(struct net_device *ndev)
- 			}
+-	ret = cgroup_attach_task(cgrp, tsk, threadgroup);
++	if (attach)
++		ret = cgroup_attach_task(cgrp, tsk, threadgroup);
++	else
++		ret = cgroup_detach_task(cgrp, tsk, threadgroup);
  
- 			/*
--			 * If we're  going to bind the MAC to this PHY bus,
-+			 * If we're going to bind the MAC to this PHY bus,
- 			 * and no PHY number was provided to the MAC,
- 			 * use the one probed here.
- 			 */
-
+ 	threadgroup_unlock(tsk);
+ 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.8.4.2
+
