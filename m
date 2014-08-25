@@ -1,70 +1,282 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932706AbaHYNlm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 09:41:42 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:51768 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932262AbaHYNli (ORCPT
+	id S932735AbaHYNmF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 09:42:05 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:47510 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932407AbaHYNld (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 09:41:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <53F589C3.4050504@huawei.com>
-References: <53F589C3.4050504@huawei.com>
-Date: Mon, 25 Aug 2014 19:11:37 +0530
-Message-ID: <CAKohpo=HbdDo1RsYt4brs9VVj3g61FVwOT2F-e37M6hu=vqfaQ@mail.gmail.com>
-Subject: Re: [RESEND PATCH] acpi-cpufreq: get the cur_freq from
- acpi_processor_performance states
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Wang Weidong <wangweidong1@huawei.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org >> linux-kernel@vger.kernel.org" 
-	<linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 25 Aug 2014 09:41:33 -0400
+From: Guodong Xu <guodong.xu@linaro.org>
+To: lee.jones@linaro.org, sameo@linux.intel.com, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, grant.likely@linaro.org, khilman@linaro.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, zhangnian@huawei.com
+Cc: Guodong Xu <guodong.xu@linaro.org>
+Subject: [PATCH 3/3] ARM: dts: hi3620-hi4511: Add HI6421 MFD and regulator nodes
+Date: Mon, 25 Aug 2014 21:39:42 +0800
+Message-Id: <1408973982-2072-4-git-send-email-guodong.xu@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1408973982-2072-1-git-send-email-guodong.xu@linaro.org>
+References: <1408973982-2072-1-git-send-email-guodong.xu@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 August 2014 11:25, Wang Weidong <wangweidong1@huawei.com> wrote:
-> As the initialized freq_tables maybe different from the p-states
-> values, so the array index is different as well.
->
-> p-states value: [2400 2400 2000 ...], while the freq_tables:
-> [2400 2000 ... CPUFREQ_TABLE_END]. After setted the freqs 2000,
-> the perf->state is 3 while the freqs_table's index should be 2.
-> So when call the get_cur_freq_on_cpu, the freqs value we get
-> is 2400.
->
-> So, fix the problem with the correct tables.
->
-> Signed-off-by: Wang Weidong <wangweidong1@huawei.com>
-> ---
->  drivers/cpufreq/acpi-cpufreq.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
-> index b0c18ed..ac93885 100644
-> --- a/drivers/cpufreq/acpi-cpufreq.c
-> +++ b/drivers/cpufreq/acpi-cpufreq.c
-> @@ -365,6 +365,7 @@ static u32 get_cur_val(const struct cpumask *mask)
->  static unsigned int get_cur_freq_on_cpu(unsigned int cpu)
->  {
->         struct acpi_cpufreq_data *data = per_cpu(acfreq_data, cpu);
-> +       struct acpi_processor_performance *perf;
->         unsigned int freq;
->         unsigned int cached_freq;
->
-> @@ -375,7 +376,8 @@ static unsigned int get_cur_freq_on_cpu(unsigned int cpu)
->                 return 0;
->         }
->
-> -       cached_freq = data->freq_table[data->acpi_data->state].frequency;
-> +       perf = data->acpi_data;
-> +       cached_freq = perf->states[perf->state].core_frequency * 1000;
->         freq = extract_freq(get_cur_val(cpumask_of(cpu)), data);
->         if (freq != cached_freq) {
->                 /*
+Add Hi6421 MFD dts node and regulator nodes into hi3620-hi4511
+board config dts file.
 
-The problem looks real but I am not very well aware of this driver and
-so it would
-be more appropriate if Rafael replies/Applies..
+Signed-off-by: Guodong Xu <guodong.xu@linaro.org>
+---
+ arch/arm/boot/dts/hi3620-hi4511.dts | 233 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 233 insertions(+)
+
+diff --git a/arch/arm/boot/dts/hi3620-hi4511.dts b/arch/arm/boot/dts/hi3620-hi4511.dts
+index fe62392..a1aadbb 100644
+--- a/arch/arm/boot/dts/hi3620-hi4511.dts
++++ b/arch/arm/boot/dts/hi3620-hi4511.dts
+@@ -635,6 +635,239 @@
+ 				pinctrl-single,bias-pullup = <0 1 0 1>;
+ 			};
+ 		};
++
++		hi6421 {
++			compatible = "hisilicon,hi6421-pmic";
++			reg = <0xc00000 0x0180>; /* 0x60 << 2 */
++
++			regulators {
++				// supply for MLC NAND/ eMMC
++				hi6421_vout0_reg: hi6421_vout0 {
++					regulator-name = "VOUT0";
++					regulator-min-microvolt = <2850000>;
++					regulator-max-microvolt = <2850000>;
++				};
++
++				// supply for 26M Oscillator
++				hi6421_vout1_reg: hi6421_vout1 {
++					regulator-name = "VOUT1";
++					regulator-min-microvolt = <1700000>;
++					regulator-max-microvolt = <2000000>;
++					regulator-boot-on;
++					regulator-always-on;
++				};
++
++				// supply for AP system
++				hi6421_vout2_reg: hi6421_vout2 {
++					regulator-name = "VOUT2";
++					regulator-min-microvolt = <1050000>;
++					regulator-max-microvolt = <1400000>;
++					regulator-boot-on;
++					regulator-always-on;
++				};
++
++				// supply for DDR PHY I/O
++				hi6421_vout3_reg: hi6421_vout3 {
++					regulator-name = "VOUT3";
++					regulator-min-microvolt = <1050000>;
++					regulator-max-microvolt = <1400000>;
++					regulator-boot-on;
++					regulator-always-on;
++				};
++
++				// supply for MIPI, USB2.0, PCIe, PLL Analog
++				hi6421_vout4_reg: hi6421_vout4 {
++					regulator-name = "VOUT4";
++					regulator-min-microvolt = <1500000>;
++					regulator-max-microvolt = <3000000>;
++					regulator-boot-on;
++					regulator-always-on;
++				};
++
++				// supply for I/O 1.8V
++				hi6421_vout5_reg: hi6421_vout5 {
++					regulator-name = "VOUT5";
++					regulator-min-microvolt = <1500000>;
++					regulator-max-microvolt = <3000000>;
++					regulator-boot-on;
++					regulator-always-on;
++				};
++
++				// supply for I/O 2.6V
++				hi6421_vout6_reg: hi6421_vout6 {
++					regulator-name = "VOUT6";
++					regulator-min-microvolt = <1500000>;
++					regulator-max-microvolt = <3000000>;
++					regulator-boot-on;
++					regulator-always-on;
++				};
++
++				// supply for SD I/O
++				hi6421_vout7_reg: hi6421_vout7 {
++					regulator-name = "VOUT7";
++					regulator-min-microvolt = <1500000>;
++					regulator-max-microvolt = <3000000>;
++					regulator-boot-on;
++					regulator-always-on;
++				};
++
++				// supply for USB PHY
++				hi6421_vout8_reg: hi6421_vout8 {
++					regulator-name = "VOUT8";
++					regulator-min-microvolt = <1500000>;
++					regulator-max-microvolt = <3300000>;
++					regulator-boot-on;
++					regulator-always-on;
++				};
++
++				// supply for Efuse power
++				hi6421_vout9_reg: hi6421_vout9 {
++					regulator-name = "VOUT9";
++					regulator-min-microvolt = <1500000>;
++					regulator-max-microvolt = <3000000>;
++				};
++
++				// supply for BT RF&PA
++				hi6421_vout10_reg: hi6421_vout10 {
++					regulator-name = "VOUT10";
++					regulator-min-microvolt = <1500000>;
++					regulator-max-microvolt = <3000000>;
++				};
++
++				// supply for GPS RF&PA
++				hi6421_vout11_reg: hi6421_vout11 {
++					regulator-name = "VOUT11";
++					regulator-min-microvolt = <1500000>;
++					regulator-max-microvolt = <3000000>;
++				};
++
++				// supply for SD card
++				hi6421_vout12_reg: hi6421_vout12 {
++					regulator-name = "VOUT12";
++					regulator-min-microvolt = <2850000>;
++					regulator-max-microvolt = <2850000>;
++				};
++
++				// supply for CMMB
++				hi6421_vout13_reg: hi6421_vout13 {
++					regulator-name = "VOUT13";
++					regulator-min-microvolt = <1500000>;
++					regulator-max-microvolt = <3000000>;
++				};
++
++				// supply for WIFI I/O
++				hi6421_vout14_reg: hi6421_vout14 {
++					regulator-name = "VOUT14";
++					regulator-min-microvolt = <1500000>;
++					regulator-max-microvolt = <3000000>;
++				};
++
++				// supply for WIFI core & PA
++				hi6421_vout15_reg: hi6421_vout15 {
++					regulator-name = "VOUT15";
++					regulator-min-microvolt = <1500000>;
++					regulator-max-microvolt = <3300000>;
++				};
++
++				// supply for LCD I/O
++				hi6421_vout16_reg: hi6421_vout16 {
++					regulator-name = "VOUT16";
++					regulator-min-microvolt = <1500000>;
++					regulator-max-microvolt = <3000000>;
++					regulator-always-on;
++				};
++
++				// supply for LCD Ananlog
++				hi6421_vout17_reg: hi6421_vout17 {
++					regulator-name = "VOUT17";
++					regulator-min-microvolt = <1500000>;
++					regulator-max-microvolt = <3000000>;
++					regulator-always-on;
++				};
++
++				// supply for Camera I/O
++				hi6421_vout18_reg: hi6421_vout18 {
++					regulator-name = "VOUT18";
++					regulator-min-microvolt = <1500000>;
++					regulator-max-microvolt = <3000000>;
++				};
++
++				// supply for Camera Analog
++				hi6421_vout19_reg: hi6421_vout19 {
++					regulator-name = "VOUT19";
++					regulator-min-microvolt = <1500000>;
++					regulator-max-microvolt = <3000000>;
++				};
++
++				// supply for Camera VCM
++				hi6421_vout20_reg: hi6421_vout20 {
++					regulator-name = "VOUT20";
++					regulator-min-microvolt = <1500000>;
++					regulator-max-microvolt = <3000000>;
++				};
++
++				// supply for Audio, incl. HKADC
++				hi6421_vout_audio_reg: hi6421_vout_audio {
++					regulator-name = "AVDD2";
++					regulator-min-microvolt = <2800000>;
++					regulator-max-microvolt = <3300000>;
++				};
++
++				// supply for Cortex-A9 CPU core
++				hi6421_buck0_reg: hi6421_buck0 {
++					regulator-name = "VBUCK0";
++					regulator-min-microvolt = <700000>;
++					regulator-max-microvolt = <1600000>;
++					regulator-boot-on;
++					regulator-always-on;
++				};
++
++				// supply for Cortex-A9 CPU core
++				hi6421_buck1_reg: hi6421_buck1 {
++					regulator-name = "VBUCK1";
++					regulator-min-microvolt = <700000>;
++					regulator-max-microvolt = <1600000>;
++					regulator-boot-on;
++					regulator-always-on;
++				};
++
++				// supply for GPU
++				hi6421_buck2_reg: hi6421_buck2 {
++					regulator-name = "VBUCK2";
++					regulator-min-microvolt = <700000>;
++					regulator-max-microvolt = <1600000>;
++					regulator-boot-on;
++				};
++
++				// supply for Peripheral
++				hi6421_buck3_reg: hi6421_buck3 {
++					regulator-name = "VBUCK3";
++					regulator-min-microvolt = <950000>;
++					regulator-max-microvolt = <1200000>;
++					regulator-boot-on;
++					regulator-always-on;
++				};
++
++				// supply for LPDDR2 and AP I/O
++				hi6421_buck4_reg: hi6421_buck4 {
++					regulator-name = "VBUCK4";
++					regulator-min-microvolt = <1150000>;
++					regulator-max-microvolt = <2000000>;
++					regulator-boot-on;
++					regulator-always-on;
++				};
++
++				// supply for Low voltage
++				hi6421_buck5_reg: hi6421_buck5 {
++					regulator-name = "VBUCK5";
++					regulator-min-microvolt = <1150000>;
++					regulator-max-microvolt = <1900000>;
++					regulator-boot-on;
++					regulator-always-on;
++				};
++			};
++		};
++
+ 	};
+ 
+ 	gpio-keys {
+-- 
+1.9.1
+
