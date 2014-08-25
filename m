@@ -1,172 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529AbaHYMev (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 08:34:51 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:39874 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751626AbaHYMet (ORCPT
+	id S932323AbaHYMf7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 08:35:59 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:61132 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753596AbaHYMf6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 08:34:49 -0400
+	Mon, 25 Aug 2014 08:35:58 -0400
+Date: Mon, 25 Aug 2014 14:35:50 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Bo Shen <voice.shen@atmel.com>, linux-pwm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] PWM: atmel: fix incorrect CDTY value after enabling or
+ disabling
+Message-ID: <20140825123548.GE4163@ulmo.nvidia.com>
+References: <1394823931-2815-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <20140825101522.GA16960@ulmo.nvidia.com>
+ <20140825115454.GA2077@piout.net>
 MIME-Version: 1.0
-In-Reply-To: <1408967442-2724-1-git-send-email-lftan@altera.com>
-References: <1408967442-2724-1-git-send-email-lftan@altera.com>
-From: Chen-Yu Tsai <wens@csie.org>
-Date: Mon, 25 Aug 2014 20:34:29 +0800
-X-Google-Sender-Auth: CS6bDc2cXS6WsDnXz_JLqFA5HdY
-Message-ID: <CAGb2v65fi=D_TQBSospft4T5OrBCj5TwQfgtkX=11M8TWFftYg@mail.gmail.com>
-Subject: Re: [PATCH] net: stmmac: add dcrs parameter
-To: Ley Foon Tan <lftan@altera.com>
-Cc: netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, lftan.linux@gmail.com,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        Vince Bridgers <vbridger@altera.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TD8GDToEDw0WLGOL"
+Content-Disposition: inline
+In-Reply-To: <20140825115454.GA2077@piout.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Mon, Aug 25, 2014 at 7:50 PM, Ley Foon Tan <lftan@altera.com> wrote:
-> This patch add the option to enable DCRS bit in GMAC control register.
-> Default is disabled if snps,dcrs is not defined.
->
-> For MII, Carrier Sense (CRS) must be asserted during transmission
-> whereas in RGMII, CRS is not. RGMII does not provide a way to signal
-> loss of carrier during a transmission.
->
-> When DCRS bit set high in control register, the MAC transmitter
-> ignore the (G)MII Carrier Sense signal during frame transmission
-> in the half-duplex mode. This request results in no errors generated
-> because of Loss of Carrier or No Carrier during such transmission.
->
-> Signed-off-by: Ley Foon Tan <lftan@altera.com>
-> ---
->  Documentation/devicetree/bindings/net/stmmac.txt      | 4 ++++
->  drivers/net/ethernet/stmicro/stmmac/common.h          | 3 ++-
->  drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c  | 4 +++-
->  drivers/net/ethernet/stmicro/stmmac/stmmac_main.c     | 3 ++-
->  drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c | 2 ++
->  include/linux/stmmac.h                                | 1 +
->  6 files changed, 14 insertions(+), 3 deletions(-)
->
-> diff --git a/Documentation/devicetree/bindings/net/stmmac.txt b/Documentation/devicetree/bindings/net/stmmac.txt
-> index 9b03c57..a68e720 100644
-> --- a/Documentation/devicetree/bindings/net/stmmac.txt
-> +++ b/Documentation/devicetree/bindings/net/stmmac.txt
-> @@ -39,6 +39,10 @@ Optional properties:
->    further clocks may be specified in derived bindings.
->  - clock-names: One name for each entry in the clocks property, the
->    first one should be "stmmaceth".
-> +- snps,dcrs: Enable DCRS bit in GMAC control register. This DCRS bit makes the
-> +       MAC transmitter ignore the (G)MII CRS signal during frame transmission
-> +       in the half-duplex mode. This request results in no errors generated
+--TD8GDToEDw0WLGOL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Since you know this is only required under (G)MII, could you not re-use
-the "phy-mode" property, instead of adding another one?
+On Mon, Aug 25, 2014 at 01:54:54PM +0200, Alexandre Belloni wrote:
+> Hi,
+>=20
+> On 25/08/2014 at 12:15:23 +0200, Thierry Reding wrote :
+> > On Fri, Mar 14, 2014 at 08:05:31PM +0100, Alexandre Belloni wrote:
+> > > pwm-leds calls .config() and .disable() in a row. This exhibits that =
+it may
+> > > happen that the channel gets disabled before CDTY has been updated wi=
+th CUPD.
+> > > The issue gets quite worse with long periods.
+> > > So, ensure by reading ISR that at least one period has past before di=
+sabling the
+> > > channel.
+> > >=20
+> > > The other issue is that it may happen that CUPD is not flushed before=
+ enabling
+> > > the channel so it will update CDTY/CPRD just after one period. So we =
+always set
+> > > CUPD, even when the channel is not enabled.
+> > >=20
+> > > Tested on at91sam9g45 and sama5d31ek.
+> > >=20
+> > > Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.co=
+m>
+> > > ---
+> > >  drivers/pwm/pwm-atmel.c | 46 +++++++++++++++++++++++++++++----------=
+-------
+> > >  1 file changed, 29 insertions(+), 17 deletions(-)
+> >=20
+> > going through the list of unapplied patches I came across this old
+> > patch. It was never reviewed nor acked by anyone and you didn't ping me,
+> > so I always assumed it must no longer be required. Is that so?
+> >=20
+>=20
+> It is still required but Nicolas is not happy with the polling on
+> PWM_ISR and he was supposed to discuss that internally with the IP
+> designer to understand if there is a better way.
+>=20
+> I'll either ping on that one or send a new version when I'll know a bit
+> more.
 
-Better yet, use the "interface" field in the platform data. This way you'll
-fix non-DT devices as well. You could then avoid touching the platform driver,
-and just modify the driver core.
+Okay, thanks.
 
+Thierry
 
-Cheers
-ChenYu
+--TD8GDToEDw0WLGOL
+Content-Type: application/pgp-signature
 
-> +       because of Loss of Carrier or No Carrier during such transmission.
->
->  Examples:
->
-> diff --git a/drivers/net/ethernet/stmicro/stmmac/common.h b/drivers/net/ethernet/stmicro/stmmac/common.h
-> index de507c3..9abe221 100644
-> --- a/drivers/net/ethernet/stmicro/stmmac/common.h
-> +++ b/drivers/net/ethernet/stmicro/stmmac/common.h
-> @@ -445,10 +445,11 @@ struct mac_device_info {
->         int multicast_filter_bins;
->         int unicast_filter_entries;
->         int mcast_bits_log2;
-> +       int dcrs;
->  };
->
->  struct mac_device_info *dwmac1000_setup(void __iomem *ioaddr, int mcbins,
-> -                                       int perfect_uc_entries);
-> +                                       int perfect_uc_entries, int dcrs);
->  struct mac_device_info *dwmac100_setup(void __iomem *ioaddr);
->
->  void stmmac_set_mac_addr(void __iomem *ioaddr, u8 addr[6],
-> diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c b/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
-> index d8ef187..924d450 100644
-> --- a/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
-> +++ b/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
-> @@ -37,6 +37,7 @@ static void dwmac1000_core_init(struct mac_device_info *hw, int mtu)
->         void __iomem *ioaddr = hw->pcsr;
->         u32 value = readl(ioaddr + GMAC_CONTROL);
->         value |= GMAC_CORE_INIT;
-> +       value |= hw->dcrs;
->         if (mtu > 1500)
->                 value |= GMAC_CONTROL_2K;
->         if (mtu > 2000)
-> @@ -409,7 +410,7 @@ static const struct stmmac_ops dwmac1000_ops = {
->  };
->
->  struct mac_device_info *dwmac1000_setup(void __iomem *ioaddr, int mcbins,
-> -                                       int perfect_uc_entries)
-> +                                       int perfect_uc_entries, int dcrs)
->  {
->         struct mac_device_info *mac;
->         u32 hwid = readl(ioaddr + GMAC_VERSION);
-> @@ -422,6 +423,7 @@ struct mac_device_info *dwmac1000_setup(void __iomem *ioaddr, int mcbins,
->         mac->multicast_filter_bins = mcbins;
->         mac->unicast_filter_entries = perfect_uc_entries;
->         mac->mcast_bits_log2 = 0;
-> +       mac->dcrs = dcrs;
->
->         if (mac->multicast_filter_bins)
->                 mac->mcast_bits_log2 = ilog2(mac->multicast_filter_bins);
-> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-> index 08addd6..bf35b19 100644
-> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-> @@ -2600,7 +2600,8 @@ static int stmmac_hw_init(struct stmmac_priv *priv)
->                 priv->dev->priv_flags |= IFF_UNICAST_FLT;
->                 mac = dwmac1000_setup(priv->ioaddr,
->                                       priv->plat->multicast_filter_bins,
-> -                                     priv->plat->unicast_filter_entries);
-> +                                     priv->plat->unicast_filter_entries,
-> +                                     priv->plat->dcrs);
->         } else {
->                 mac = dwmac100_setup(priv->ioaddr);
->         }
-> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-> index bb524a9..07f895f 100644
-> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-> @@ -227,6 +227,8 @@ static int stmmac_probe_config_dt(struct platform_device *pdev,
->                 pr_warn("force_sf_dma_mode is ignored if force_thresh_dma_mode is set.");
->         }
->
-> +       plat->dcrs = of_property_read_bool(np, "snps,dcrs");
-> +
->         return 0;
->  }
->  #else
-> diff --git a/include/linux/stmmac.h b/include/linux/stmmac.h
-> index cd63851..6367f42 100644
-> --- a/include/linux/stmmac.h
-> +++ b/include/linux/stmmac.h
-> @@ -114,6 +114,7 @@ struct plat_stmmacenet_data {
->         int maxmtu;
->         int multicast_filter_bins;
->         int unicast_filter_entries;
-> +       int dcrs;
->         void (*fix_mac_speed)(void *priv, unsigned int speed);
->         void (*bus_setup)(void __iomem *ioaddr);
->         void *(*setup)(struct platform_device *pdev);
-> --
-> 1.8.2.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIbBAEBAgAGBQJT+y2kAAoJEN0jrNd/PrOhFNsP93TQj/KOzqpjR0oca2Z8Qltn
+0Nas+y/OuaIdziEU0gfIB4a656Hos/6Cm/GnATAPQye/lu8hzOvnosZQlgHKL4tL
+Q/3fMD/xO7fwatODRwEglOGtgp8ERcXLC8rEx/H++CTzhPvr6EEY4RceGOMwdUSK
+CvEE/4iiZqoML+9QEjJEfDNX2YHDjASZ7W6Rz8udnDwRpY6FahQmwo+K8YJRT9tl
+wRrgMRmScIPgUVxHn0WUg+kLXC2l10PRqdq35/+85YGIZUI3x+cMhNFs5DLRaO/C
+YeP/0fAVBaCywvc6rdzmQMLXrytFwb9aHc72l7o0G6JTF7+HviDCOJuz5af0c1Z6
+mz/7Gbs7mUm10k9Z30VUJRogrpRfhJKSUaSYEdY7sn9L8SI2JNW+ZGaWMQjf2WuD
++xT6gyJlrDXXpnMGQq85dk8bi16rp6ENsgAwMWL3qkJCNZpw3FCTged50Dn8DqsW
+ftD/2ys3UDNU0QwlGnGnygBwT86YyVWQ/HnqNaYPMZ4RTR9Px27zQAlYKkpQ61ig
+Jh//4UfFX9R5UuFgfIh9DuzfknVyPR+I4k5XuswuNMUrKhKD82mcTZnXKZj9uG84
+R8EwScZQKRkxogN6ACL/0rDh2H5Qi8JHEp+tsxTEN1nJSp3Xqnjd+TEs/xSci3gc
+MfTySKMgYkTDtp+mjAM=
+=B1R7
+-----END PGP SIGNATURE-----
+
+--TD8GDToEDw0WLGOL--
