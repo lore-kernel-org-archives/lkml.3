@@ -1,135 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933474AbaHYUBt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 16:01:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62458 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932420AbaHYUBs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 16:01:48 -0400
-From: Daniel Borkmann <dborkman@redhat.com>
-To: tytso@mit.edu
-Cc: zatimend@hotmail.co.uk, linux-kernel@vger.kernel.org,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>
-Subject: [PATCH] random: add and use memzero_explicit() for clearing data
-Date: Mon, 25 Aug 2014 22:01:39 +0200
-Message-Id: <1408996899-4892-1-git-send-email-dborkman@redhat.com>
+	id S1756543AbaHYUGW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 16:06:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32965 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754647AbaHYUGU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 16:06:20 -0400
+Date: Mon, 25 Aug 2014 13:05:39 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: iommu@lists.linux-foundation.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-mm-sig@lists.linaro.org, Arnd Bergmann <arnd@arndb.de>,
+        Shaik Ameer Basha <shaik.ameer@samsung.com>,
+        Cho KyongHo <pullip.cho@samsung.com>, Joerg Roedel <joro@8bytes.org>,
+        Thierry Reding <treding@nvidia.com>, Olof Johansson <olof@lixom.net>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Rob Herring <robh@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Inki Dae <inki.dae@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH 04/29] drivers: base: add notifier for failed driver bind
+Message-ID: <20140825200539.GA22076@kroah.com>
+References: <1407235677-26324-1-git-send-email-m.szyprowski@samsung.com>
+ <1407235677-26324-5-git-send-email-m.szyprowski@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407235677-26324-5-git-send-email-m.szyprowski@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-zatimend has reported that in his environment (3.16/gcc4.8.3/corei7)
-memset() calls which clear out sensitive data in extract_{buf,entropy,
-entropy_user}() in random driver are being optimized away by gcc.
+On Tue, Aug 05, 2014 at 12:47:32PM +0200, Marek Szyprowski wrote:
+> This patch adds support for getting a notify for failed device driver
+> bind, so all the items done in BUS_NOTIFY_BIND_DRIVER event can be
+> cleaned if the driver fails to bind.
 
-Add a helper memzero_explicit() (similarly as explicit_bzero() variants)
-that can be used in such cases where a variable with sensitive data is
-being cleared out in the end. Other use cases might also be in crypto
-code. [ I have put this into lib/string.c though, as it's always built-in
-and doesn't need any dependencies then. ]
+But doesn't the bus know if the driver fails to bind, so why would a
+notifier be needed here?  Can't it unwind any problems then?
 
-Fixes kernel bugzilla: 82041
+> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> ---
+>  drivers/base/dd.c      | 10 +++++++---
+>  include/linux/device.h |  4 +++-
+>  2 files changed, 10 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+> index e4ffbcf..541a41f 100644
+> --- a/drivers/base/dd.c
+> +++ b/drivers/base/dd.c
+> @@ -237,10 +237,14 @@ static int driver_sysfs_add(struct device *dev)
+>  	return ret;
+>  }
+>  
+> -static void driver_sysfs_remove(struct device *dev)
+> +static void driver_sysfs_remove(struct device *dev, int failed)
 
-Reported-by: zatimend@hotmail.co.uk
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>
----
- drivers/char/random.c  |  8 ++++----
- include/linux/string.h |  5 +++--
- lib/string.c           | 16 ++++++++++++++++
- 3 files changed, 23 insertions(+), 6 deletions(-)
+I _hate_ having functions with a flag that does something different
+depending on it.  If you _really_ need this, just make the notifier call
+before calling this function, which should work just fine, right?
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index c18d41d..8c86a95 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -1106,7 +1106,7 @@ static void extract_buf(struct entropy_store *r, __u8 *out)
- 	__mix_pool_bytes(r, hash.w, sizeof(hash.w));
- 	spin_unlock_irqrestore(&r->lock, flags);
- 
--	memset(workspace, 0, sizeof(workspace));
-+	memzero_explicit(workspace, sizeof(workspace));
- 
- 	/*
- 	 * In case the hash function has some recognizable output
-@@ -1118,7 +1118,7 @@ static void extract_buf(struct entropy_store *r, __u8 *out)
- 	hash.w[2] ^= rol32(hash.w[2], 16);
- 
- 	memcpy(out, &hash, EXTRACT_SIZE);
--	memset(&hash, 0, sizeof(hash));
-+	memzero_explicit(&hash, sizeof(hash));
- }
- 
- /*
-@@ -1175,7 +1175,7 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
- 	}
- 
- 	/* Wipe data just returned from memory */
--	memset(tmp, 0, sizeof(tmp));
-+	memzero_explicit(tmp, sizeof(tmp));
- 
- 	return ret;
- }
-@@ -1218,7 +1218,7 @@ static ssize_t extract_entropy_user(struct entropy_store *r, void __user *buf,
- 	}
- 
- 	/* Wipe data just returned from memory */
--	memset(tmp, 0, sizeof(tmp));
-+	memzero_explicit(tmp, sizeof(tmp));
- 
- 	return ret;
- }
-diff --git a/include/linux/string.h b/include/linux/string.h
-index d36977e..3b42b37 100644
---- a/include/linux/string.h
-+++ b/include/linux/string.h
-@@ -132,7 +132,7 @@ int bprintf(u32 *bin_buf, size_t size, const char *fmt, ...) __printf(3, 4);
- #endif
- 
- extern ssize_t memory_read_from_buffer(void *to, size_t count, loff_t *ppos,
--			const void *from, size_t available);
-+				       const void *from, size_t available);
- 
- /**
-  * strstarts - does @str start with @prefix?
-@@ -144,7 +144,8 @@ static inline bool strstarts(const char *str, const char *prefix)
- 	return strncmp(str, prefix, strlen(prefix)) == 0;
- }
- 
--extern size_t memweight(const void *ptr, size_t bytes);
-+size_t memweight(const void *ptr, size_t bytes);
-+void memzero_explicit(void *s, size_t count);
- 
- /**
-  * kbasename - return the last part of a pathname.
-diff --git a/lib/string.c b/lib/string.c
-index 992bf30..0f3a927 100644
---- a/lib/string.c
-+++ b/lib/string.c
-@@ -604,6 +604,22 @@ void *memset(void *s, int c, size_t count)
- EXPORT_SYMBOL(memset);
- #endif
- 
-+/**
-+ * memzero_explicit - Fill a region of memory (e.g. sensitive
-+ *		      keying data) with 0s.
-+ * @s: Pointer to the start of the area.
-+ * @count: The size of the area.
-+ *
-+ * memzero_explicit() doesn't need an arch-specific version as
-+ * it just invokes the one of memset() implicitly.
-+ */
-+void memzero_explicit(void *s, size_t count)
-+{
-+	memset(s, 0, count);
-+	OPTIMIZER_HIDE_VAR(s);
-+}
-+EXPORT_SYMBOL(memzero_explicit);
-+
- #ifndef __HAVE_ARCH_MEMCPY
- /**
-  * memcpy - Copy one area of memory to another
--- 
-1.7.11.7
+thanks,
 
+greg k-h
