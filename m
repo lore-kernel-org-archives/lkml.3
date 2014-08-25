@@ -1,74 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758AbaHYAUV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 20:20:21 -0400
-Received: from a2z.a2zuae.com ([192.163.251.99]:60972 "EHLO a2z.a2zuae.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752188AbaHYAUU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 20:20:20 -0400
-X-Greylist: delayed 1283 seconds by postgrey-1.27 at vger.kernel.org; Sun, 24 Aug 2014 20:20:20 EDT
-Date: Sun, 24 Aug 2014 23:57:13 +0000
-Message-ID: <20140824235713.Horde.1PtTjFb7sMouj5sXDiqf-A5@webmail.eccgroup.ae>
-From: "DR.JOHN MARTINS" <martinsjohnk@gmail.com>
-Subject: =?utf-8?b?S8OkcmEg?= =?utf-8?b?dsOkbiw=?=
-Reply-to: martinsjohn036@gmail.com
-User-Agent: Internet Messaging Program (IMP) H5 (6.1.4)
-Content-Type: text/plain; charset=UTF-8; format=flowed; DelSp=Yes
+	id S1752881AbaHYAfc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 20:35:32 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:38206 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752575AbaHYAfb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Aug 2014 20:35:31 -0400
+X-Original-SENDERIP: 10.177.222.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Mon, 25 Aug 2014 09:36:10 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Chao Yu <chao2.yu@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, ngupta@vflare.org,
+        "'Jerome Marchand'" <jmarchan@redhat.com>,
+        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>
+Subject: Re: [PATCH v3] zram: add num_discards for discarded pages stat
+Message-ID: <20140825003610.GM17372@bbox>
+References: <000201cfbde2$2ae08710$80a19530$@samsung.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-X-OutGoing-Spam-Status: No, score=1.6
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - a2z.a2zuae.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - gmail.com
-X-Get-Message-Sender-Via: a2z.a2zuae.com: authenticated_id: jobantony@eccgroup.ae
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <000201cfbde2$2ae08710$80a19530$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Chao,
 
-Barclays Bank PLC
-28 High Street
-Nottinghamshire
-Storbritannien
-NG1 2bd
-martinsjohn036@gmail.com
+On Fri, Aug 22, 2014 at 04:21:01PM +0800, Chao Yu wrote:
+> Since we have supported handling discard request in this commit
+> f4659d8e620d08bd1a84a8aec5d2f5294a242764 (zram: support REQ_DISCARD), zram got
+> one more chance to free unused memory whenever received discard request. But
+> without stating for discard request, there is no method for user to know whether
+> discard request has been handled by zram or how many blocks were discarded by
+> zram when user wants to know the effect of discard.
 
-Kära vän,
+My concern is that how much we are able to know the effect of discard
+exactly with your patch.
 
+The issue I can think of is zram-swap discard.
+Now, zram handles notification from VM to free duplicated copy between
+VM-owned memory and zRAM-owned's one so discarding for zram-swap might
+be pointless overhead but your stat indicates lots of free page discarded
+without real freeing so that user might think "We should keep enable
+swap discard for zRAM because the stat indicates it's really good".
 
-Mitt namn är John k. Martins och jag chefstjänsteman Barclays bank  
-nottingham, Storbritannien. Jag är gift med 3 barn.
+In summary, wouldn't it better to have two?
 
-Jag vill informera er om att jag behöver din brådskande hjälp. Summan  
-av 16,5 miljoner brittiska pund var kvar i min bank av den sena Hugo  
-Chavez, tidigare president i venezuela och jag var hans konton officer  
-tills han dog.
+num_discards,
+num_failed_discards?
 
-Jag träffade Mr chavez i venezuela 2008 och han skapade kontot i min  
-bank och informerade mig om att han ville investera i fastigheter i  
-Storbritannien.
+For it, we should modify zram_free_page has return value.
+What do other guys think?
 
-Jag behöver att överföra pengarna från min bank till din bank så att  
-vi båda skall dela pengarna och jag behöver överföringen göras snarast.
+> 
+> In this patch, we add num_discards to stat discarded pages, and export it to
+> sysfs for users.
+> 
+> * From v1
+>  * Update zram document to show num_discards in statistics list.
+> 
+> * From v2
+>  * Update description of this patch with clear goal.
+> 
+> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> ---
+>  Documentation/ABI/testing/sysfs-block-zram | 10 ++++++++++
+>  Documentation/blockdev/zram.txt            |  1 +
+>  drivers/block/zram/zram_drv.c              |  3 +++
+>  drivers/block/zram/zram_drv.h              |  1 +
+>  4 files changed, 15 insertions(+)
+> 
+> diff --git a/Documentation/ABI/testing/sysfs-block-zram b/Documentation/ABI/testing/sysfs-block-zram
+> index 70ec992..fa8936e 100644
+> --- a/Documentation/ABI/testing/sysfs-block-zram
+> +++ b/Documentation/ABI/testing/sysfs-block-zram
+> @@ -57,6 +57,16 @@ Description:
+>  		The failed_writes file is read-only and specifies the number of
+>  		failed writes happened on this device.
+>  
+> +
+> +What:		/sys/block/zram<id>/num_discards
+> +Date:		August 2014
+> +Contact:	Chao Yu <chao2.yu@samsung.com>
+> +Description:
+> +		The num_discards file is read-only and specifies the number of
+> +		physical blocks which are discarded by this device. These blocks
+> +		are included in discard request which is sended by filesystem as
+> +		the blocks are no longer used.
+> +
+>  What:		/sys/block/zram<id>/max_comp_streams
+>  Date:		February 2014
+>  Contact:	Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
+> index 0595c3f..e50e18b 100644
+> --- a/Documentation/blockdev/zram.txt
+> +++ b/Documentation/blockdev/zram.txt
+> @@ -89,6 +89,7 @@ size of the disk when not in use so a huge zram is wasteful.
+>  		num_writes
+>  		failed_reads
+>  		failed_writes
+> +		num_discards
+>  		invalid_io
+>  		notify_free
+>  		zero_pages
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index d00831c..904e7a5 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -606,6 +606,7 @@ static void zram_bio_discard(struct zram *zram, u32 index,
+>  		bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
+>  		zram_free_page(zram, index);
+>  		bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
+> +		atomic64_inc(&zram->stats.num_discards);
+>  		index++;
+>  		n -= PAGE_SIZE;
+>  	}
+> @@ -866,6 +867,7 @@ ZRAM_ATTR_RO(num_reads);
+>  ZRAM_ATTR_RO(num_writes);
+>  ZRAM_ATTR_RO(failed_reads);
+>  ZRAM_ATTR_RO(failed_writes);
+> +ZRAM_ATTR_RO(num_discards);
+>  ZRAM_ATTR_RO(invalid_io);
+>  ZRAM_ATTR_RO(notify_free);
+>  ZRAM_ATTR_RO(zero_pages);
+> @@ -879,6 +881,7 @@ static struct attribute *zram_disk_attrs[] = {
+>  	&dev_attr_num_writes.attr,
+>  	&dev_attr_failed_reads.attr,
+>  	&dev_attr_failed_writes.attr,
+> +	&dev_attr_num_discards.attr,
+>  	&dev_attr_invalid_io.attr,
+>  	&dev_attr_notify_free.attr,
+>  	&dev_attr_zero_pages.attr,
+> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+> index e0f725c..2994aaf 100644
+> --- a/drivers/block/zram/zram_drv.h
+> +++ b/drivers/block/zram/zram_drv.h
+> @@ -86,6 +86,7 @@ struct zram_stats {
+>  	atomic64_t num_writes;	/* --do-- */
+>  	atomic64_t failed_reads;	/* can happen when memory is too low */
+>  	atomic64_t failed_writes;	/* can happen when memory is too low */
+> +	atomic64_t num_discards;	/* no. of discarded pages */
+>  	atomic64_t invalid_io;	/* non-page-aligned I/O requests */
+>  	atomic64_t notify_free;	/* no. of swap slot free notifications */
+>  	atomic64_t zero_pages;		/* no. of zero filled pages */
+> -- 
+> 2.0.1.474.g72c7794
+> 
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-Kontakta mig nu om du kan hjälpa mig och sända jag den nedan Detaljer
-
-
-1} fullständiga namn och adress
-
-2} adress
-
-3} telefonnummer
-
-Jag väntar att höra från dig nu.
-
-
-John k.Martins
-
+-- 
+Kind regards,
+Minchan Kim
