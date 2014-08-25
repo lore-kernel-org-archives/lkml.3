@@ -1,110 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756586AbaHYVy1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 17:54:27 -0400
+	id S933622AbaHYVye (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 17:54:34 -0400
 Received: from mga09.intel.com ([134.134.136.24]:11405 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753168AbaHYVyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 17:54:25 -0400
+	id S933607AbaHYVyb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 17:54:31 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,398,1406617200"; 
-   d="scan'208";a="563299546"
+   d="scan'208";a="563299616"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org
 Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Alexander Usyskin <alexander.usyskin@intel.com>,
         Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 01/10] mei: enable adding more IOCTL handlers
-Date: Tue, 26 Aug 2014 00:53:19 +0300
-Message-Id: <1409003608-30274-1-git-send-email-tomas.winkler@intel.com>
+Subject: [char-misc-next 04/10] mei: debugfs: adjust print buffer
+Date: Tue, 26 Aug 2014 00:53:22 +0300
+Message-Id: <1409003608-30274-4-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1409003608-30274-1-git-send-email-tomas.winkler@intel.com>
+References: <1409003608-30274-1-git-send-email-tomas.winkler@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Handle ioctls in a switch statement so we can
-add more commands easily
+From: Alexander Usyskin <alexander.usyskin@intel.com>
 
+In case of many me clients (15 and more) 1K buffer
+is not enough for full information print.
+Calculate buffer size according to real clients number.
+
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- drivers/misc/mei/main.c | 53 ++++++++++++++++++++++++++-----------------------
- 1 file changed, 28 insertions(+), 25 deletions(-)
+ drivers/misc/mei/debugfs.c | 22 +++++++++++++++-------
+ 1 file changed, 15 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
-index 957f44a..2f80c77 100644
---- a/drivers/misc/mei/main.c
-+++ b/drivers/misc/mei/main.c
-@@ -523,8 +523,6 @@ static long mei_ioctl(struct file *file, unsigned int cmd, unsigned long data)
- 	struct mei_connect_client_data *connect_data = NULL;
- 	int rets;
+diff --git a/drivers/misc/mei/debugfs.c b/drivers/misc/mei/debugfs.c
+index 2399b31..ca2a12d 100644
+--- a/drivers/misc/mei/debugfs.c
++++ b/drivers/misc/mei/debugfs.c
+@@ -29,20 +29,28 @@ static ssize_t mei_dbgfs_read_meclients(struct file *fp, char __user *ubuf,
+ {
+ 	struct mei_device *dev = fp->private_data;
+ 	struct mei_me_client *me_cl;
+-	const size_t bufsz = 1024;
+-	char *buf = kzalloc(bufsz, GFP_KERNEL);
++	size_t bufsz = 1;
++	char *buf;
+ 	int i = 0;
+ 	int pos = 0;
+ 	int ret;
  
--	if (cmd != IOCTL_MEI_CONNECT_CLIENT)
--		return -EINVAL;
- 
- 	if (WARN_ON(!cl || !cl->dev))
- 		return -ENODEV;
-@@ -539,34 +537,39 @@ static long mei_ioctl(struct file *file, unsigned int cmd, unsigned long data)
- 		goto out;
- 	}
- 
--	dev_dbg(&dev->pdev->dev, ": IOCTL_MEI_CONNECT_CLIENT.\n");
+-	if  (!buf)
+-		return -ENOMEM;
 -
--	connect_data = kzalloc(sizeof(struct mei_connect_client_data),
-+	switch (cmd) {
-+	case IOCTL_MEI_CONNECT_CLIENT:
-+		dev_dbg(&dev->pdev->dev, ": IOCTL_MEI_CONNECT_CLIENT.\n");
-+		connect_data = kzalloc(sizeof(struct mei_connect_client_data),
- 							GFP_KERNEL);
--	if (!connect_data) {
--		rets = -ENOMEM;
--		goto out;
--	}
--	dev_dbg(&dev->pdev->dev, "copy connect data from user\n");
--	if (copy_from_user(connect_data, (char __user *)data,
--				sizeof(struct mei_connect_client_data))) {
--		dev_dbg(&dev->pdev->dev, "failed to copy data from userland\n");
--		rets = -EFAULT;
--		goto out;
--	}
-+		if (!connect_data) {
-+			rets = -ENOMEM;
-+			goto out;
-+		}
+-	pos += scnprintf(buf + pos, bufsz - pos,
+-			"  |id|addr|         UUID                       |con|msg len|\n");
++#define HDR "  |id|addr|         UUID                       |con|msg len|\n"
  
--	rets = mei_ioctl_connect_client(file, connect_data);
-+		if (copy_from_user(connect_data, (char __user *)data,
-+				sizeof(struct mei_connect_client_data))) {
-+			dev_dbg(&dev->pdev->dev, "failed to copy data from userland\n");
-+			rets = -EFAULT;
-+			goto out;
-+		}
+ 	mutex_lock(&dev->device_lock);
  
--	/* if all is ok, copying the data back to user. */
--	if (rets)
--		goto out;
-+		rets = mei_ioctl_connect_client(file, connect_data);
-+		if (rets)
-+			goto out;
- 
--	dev_dbg(&dev->pdev->dev, "copy connect data to user\n");
--	if (copy_to_user((char __user *)data, connect_data,
-+		/* if all is ok, copying the data back to user. */
-+		if (copy_to_user((char __user *)data, connect_data,
- 				sizeof(struct mei_connect_client_data))) {
--		dev_dbg(&dev->pdev->dev, "failed to copy data to userland\n");
--		rets = -EFAULT;
--		goto out;
-+			dev_dbg(&dev->pdev->dev, "failed to copy data to userland\n");
-+			rets = -EFAULT;
-+			goto out;
-+		}
++	list_for_each_entry(me_cl, &dev->me_clients, list)
++		bufsz++;
 +
-+		break;
-+	default:
-+		dev_err(&dev->pdev->dev, ": unsupported ioctl %d.\n", cmd);
-+		rets = -ENOIOCTLCMD;
- 	}
- 
- out:
++	bufsz *= sizeof(HDR) + 1;
++	buf = kzalloc(bufsz, GFP_KERNEL);
++	if (!buf) {
++		mutex_unlock(&dev->device_lock);
++		return -ENOMEM;
++	}
++
++	pos += scnprintf(buf + pos, bufsz - pos, HDR);
++
+ 	/*  if the driver is not enabled the list won't be consistent */
+ 	if (dev->dev_state != MEI_DEV_ENABLED)
+ 		goto out;
 -- 
 1.9.3
 
