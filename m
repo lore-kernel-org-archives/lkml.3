@@ -1,59 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756730AbaHYXe5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 19:34:57 -0400
-Received: from toccata.ens-lyon.org ([140.77.166.68]:44516 "EHLO
-	toccata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755221AbaHYXez (ORCPT
+	id S1756787AbaHYXik (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 19:38:40 -0400
+Received: from galahad.ideasonboard.com ([185.26.127.97]:50130 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755334AbaHYXii (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 19:34:55 -0400
-Date: Tue, 26 Aug 2014 01:34:43 +0200
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Sabrina Dubroca <sd@queasysnail.net>, Valdis.Kletnieks@vt.edu,
-        Vincent Donnefort <vdonnefort@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
-Subject: Re: 3.17-rc1: leds blink workqueue causes sleeping BUGs
-Message-ID: <20140825233443.GB13130@type.youpi.perso.aquilenet.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Hugh Dickins <hughd@google.com>,
-	Sabrina Dubroca <sd@queasysnail.net>, Valdis.Kletnieks@vt.edu,
-	Vincent Donnefort <vdonnefort@gmail.com>,
-	Bryan Wu <cooloney@gmail.com>, linux-leds@vger.kernel.org,
-	linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
-References: <alpine.LSU.2.11.1408161946450.1064@eggly.anvils>
- <10857.1408467967@turing-police.cc.vt.edu>
- <20140825211340.GA22168@kria>
- <20140825212324.GC3070@type.youpi.perso.aquilenet.fr>
- <20140825213752.GD3070@type.youpi.perso.aquilenet.fr>
- <alpine.LSU.2.11.1408251454570.26438@eggly.anvils>
+	Mon, 25 Aug 2014 19:38:38 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, linux-pwm@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Rob Clark <robdclark@gmail.com>, Mark Rutland <mark.rutland@arm.com>,
+        devicetree@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Bo Shen <voice.shen@atmel.com>, Kumar Gala <galak@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 00/11] drm: add support for Atmel HLCDC Display Controller
+Date: Tue, 26 Aug 2014 01:39:21 +0200
+Message-ID: <1997793.CWhjU3F32E@avalon>
+User-Agent: KMail/4.12.5 (Linux/3.14.14-gentoo; KDE/4.12.5; x86_64; ; )
+In-Reply-To: <20140821192633.69f6b21b@bbrezillon>
+References: <1406034695-15534-1-git-send-email-boris.brezillon@free-electrons.com> <2138720.5GSxsvjVxS@avalon> <20140821192633.69f6b21b@bbrezillon>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.LSU.2.11.1408251454570.26438@eggly.anvils>
-User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hugh Dickins, le Mon 25 Aug 2014 15:00:44 -0700, a écrit :
-> On Mon, 25 Aug 2014, Samuel Thibault wrote:
-> > Samuel Thibault, le Mon 25 Aug 2014 23:23:24 +0200, a écrit :
-> > > We could indeed have a loop if the user was making the VT::* leds use
-> > > the vt-* trigger,
-> > 
-> > Actually, while there can be a loop, it wouldn't be possible to inject
-> > events in it: a VT::* led only makes the corresponding vt-* trigger if
-> > it got an event from its trigger, etc. So it's really a false positive,
-> > the lock detector just can not know that it can not happen.
+Hi Boris,
+
+On Thursday 21 August 2014 19:26:33 Boris BREZILLON wrote:
+> On Thu, 21 Aug 2014 19:08:53 +0200
+> Laurent Pinchart <laurent.pinchart@ideasonboard.com> wrote:
 > 
-> I'm not suffering from this lockdep warning myself; but, false positive
-> or not, it does need to be fixed (or annotated).  Because once lockdep
-> reports one issue, it turns itself off.  So any developer who hits this
-> warning is then unable test their own changes with lockdep afterwards.
+> [...]
+> 
+> >>>> While this could be acceptable when all drivers are statically linked
+> >>>> in the kernel, it might be problematic when you're using modules,
+> >>>> meaning that you won't be able to display anything on your LCD panel
+> >>>> until your HDMI bridge module has been loaded.
+> >>> 
+> >>> No. HDMI should be using proper hotplugging anyway, hence it should be
+> >>> always be loaded anyway. You're in for a world of pain if you think
+> >>> you can run DRM with a driver that's composed of separate kernel
+> >>> modules.
+> >> 
+> >> I was talking about the external RGB to HDMI encoder, should the driver
+> >> for this encoder (which is not on On Chip block) be compiled
+> >> statically too ?
+> > 
+> > Given the move to multiplatform kernels we need to aim for as few modules
+> > compiled in as possible. I'd say this includes HDMI encoders, panels and
+> > display controllers.
+> > 
+> >>> Also if you don't want to use deferred probe, then you're in for the
+> >>> full hotplugging panel dance and that implies that you need to fix a
+> >>> bunch of things in DRM (one being the framebuffer console
+> >>> instantiation
+> >>> that I referred to in the other thread).
+> >> 
+> >> For now, I wait until there is a device connected on the RGB connector
+> >> (connector status set to connector_status_connected) before creating an
+> >> fbdev. It might not be the cleanest way to solve this issue, but it
+> >> works :-).
+> > 
+> > Do you create a new drm_encoder at runtime for the HDMI encoder when it
+> > appears ? I thought the DRM core and API were not able to correctly cope
+> > with that.
+> 
+> I haven't started to work on the HDMI encoder yet, and ATM I only have
+> a single connector (which is true from an HW POV), which is then bound
+> to an LCD panel (the only type of remote endpoint I currently support).
+> 
+> BTW, I wonder how my use case should be represented in the DRM
+> subsystem. As I said, from an HW POV I only have one RGB (or whatever
+> name you choose for it) connector. But on such kind of connectors you
+> can connect several output devices (panels, encoders, ...).
+> And in my case I have 2 devices on the same RGB connector: a panel and
+> an RGB to HDMI converter.
 
-Ew. I'll have a look.
+The DRM connector object was initially meant to model a physical user-
+accessible connector on a board (VGA, DVI, HDMI, ...) and the properties of 
+the monitor plugged into it. It has then been (ab)used to represent panels, as 
+they're similar to monitors.
 
-Samuel
+In your case the VGA and HDMI connectors should be modeled as DRM connectors, 
+the RGB to HDMI encoder as a DRM encoder, and the LCDC as a DRM CRTC.
+
+As DRM hardcodes the pipeline model to CRTC -> encoder -> connector, you will 
+also need a DRM encoder in the VGA path. I suppose your board has a VGA DAC, 
+that's the component you should expose as a DRM encoder (even if it can't be 
+controlled and doesn't limit the valid modes).
+
+> >>> You also can't be using the current device tree bindings because they
+> >>> all assume a dependency from the display controller/output to the
+> >>> panel. For hotplugging you'd need the dependency the other way around
+> >>> (the panel needs to refer to the output by phandle).
+> >> 
+> >> Here [1] is a proposal for notification support in the drm_panel
+> >> infrastructure (which is not that complicated), and here [2] is how
+> >> I use it in my atmel-hlcdc driver to generate hotplug events.
+> > 
+> > Is there a way we could use the component framework for that ? I know that
+> > partial notification isn't supported at the moment, but Russell agreed it
+> > was a real use case that should be implemented at some point.
+> 
+> I'll give it a try.
+
+-- 
+Regards,
+
+Laurent Pinchart
+
