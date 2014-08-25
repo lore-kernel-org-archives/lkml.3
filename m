@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933555AbaHYVWQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 17:22:16 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:45875 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754983AbaHYVWM (ORCPT
+	id S933572AbaHYVWd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 17:22:33 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:36795 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933557AbaHYVWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 17:22:12 -0400
-Date: Tue, 26 Aug 2014 01:22:09 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Julien Tinnes <jln@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] ipc/shm: fix the historical/wrong mm->start_stack
- check
-Message-ID: <20140825212209.GQ25918@moon>
-References: <20140823144246.GA6281@redhat.com>
- <20140825191207.GA26106@redhat.com>
+	Mon, 25 Aug 2014 17:22:31 -0400
+Date: Mon, 25 Aug 2014 14:22:24 -0700
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Anton Blanchard <anton@samba.org>
+Cc: mpe@ellerman.id.au, acme@redhat.com, a.p.zijlstra@chello.nl,
+        paulus@samba.org, mingo@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] perf powerpc: Skip callchain code must include
+ util/debug.h
+Message-ID: <20140825212223.GA866@us.ibm.com>
+References: <20140825182307.49774a04@kryten>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140825191207.GA26106@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140825182307.49774a04@kryten>
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14082521-0928-0000-0000-00000464A334
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 09:12:07PM +0200, Oleg Nesterov wrote:
-> +		vma = find_vma(current->mm, addr);
-> +		if (vma) {
-> +			unsigned long end = addr + size;
-> +
-> +			if (vma->vm_flags & VM_GROWSDOWN)
-> +				end += PAGE_SIZE * 5;
-> +
-> +			if (end < addr || end > vma->vm_start)
-> +				goto invalid;
+Anton Blanchard [anton@samba.org] wrote:
+| Fix a compile error, the prototype for pr_debug could not be found.
+| 
+Arnaldo pushed this patch to Ingo recently.
 
-Looks good to me, but I somehow missed in first version of the patch
-too the following aspect -- end > vma->vm_start? Maybe end >= vma->vm_end?
+	https://lkml.org/lkml/2014/8/22/393
+
+| Signed-off-by: Anton Blanchard <anton@samba.org>
+| ---
+| 
+| Index: b/tools/perf/arch/powerpc/util/skip-callchain-idx.c
+| ===================================================================
+| --- a/tools/perf/arch/powerpc/util/skip-callchain-idx.c
+| +++ b/tools/perf/arch/powerpc/util/skip-callchain-idx.c
+| @@ -15,6 +15,7 @@
+| 
+|  #include "util/thread.h"
+|  #include "util/callchain.h"
+| +#include "util/debug.h"
+| 
+|  /*
+|   * When saving the callchain on Power, the kernel conservatively saves
+
