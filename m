@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756488AbaHYQ4R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 12:56:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59904 "EHLO
+	id S932942AbaHYQ4y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 12:56:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59894 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756299AbaHYQz0 (ORCPT
+	with ESMTP id S1756279AbaHYQzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 12:55:26 -0400
+	Mon, 25 Aug 2014 12:55:25 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Phil Turnbull <phil.turnbull@oracle.com>,
-        Vegard Nossum <vegard.nossum@oracle.com>, Willy Tarreau <w@1wt.eu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Roland McGrath <roland@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 13/13] net/l2tp: don't fall back on UDP [get|set]sockopt
-Date: Mon, 25 Aug 2014 09:54:59 -0700
-Message-Id: <1408985699-31838-14-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 01/13] x86_32, entry: Do syscall exit work on badsys (CVE-2014-4508)
+Date: Mon, 25 Aug 2014 09:54:47 -0700
+Message-Id: <1408985699-31838-2-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408985699-31838-1-git-send-email-kamal@canonical.com>
 References: <1408985699-31838-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,57 +31,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit 3cf521f7dc87c031617fd47e4b7aa2593c2f3daf upstream.
+commit 554086d85e71f30abe46fc014fea31929a7c6a8a upstream.
 
-The l2tp [get|set]sockopt() code has fallen back to the UDP functions
-for socket option levels != SOL_PPPOL2TP since day one, but that has
-never actually worked, since the l2tp socket isn't an inet socket.
+The bad syscall nr paths are their own incomprehensible route
+through the entry control flow.  Rearrange them to work just like
+syscalls that return -ENOSYS.
 
-As David Miller points out:
+This fixes an OOPS in the audit code when fast-path auditing is
+enabled and sysenter gets a bad syscall nr (CVE-2014-4508).
 
-  "If we wanted this to work, it'd have to look up the tunnel and then
-   use tunnel->sk, but I wonder how useful that would be"
+This has probably been broken since Linux 2.6.27:
+af0575bba0 i386 syscall audit fast-path
 
-Since this can never have worked so nobody could possibly have depended
-on that functionality, just remove the broken code and return -EINVAL.
-
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Acked-by: James Chapman <jchapman@katalix.com>
-Acked-by: David Miller <davem@davemloft.net>
-Cc: Phil Turnbull <phil.turnbull@oracle.com>
-Cc: Vegard Nossum <vegard.nossum@oracle.com>
-Cc: Willy Tarreau <w@1wt.eu>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-CVE-2014-4943
+Cc: Roland McGrath <roland@redhat.com>
+Reported-by: Toralf Förster <toralf.foerster@gmx.de>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Link: http://lkml.kernel.org/r/e09c499eade6fc321266dd6b54da7beb28d6991c.1403558229.git.luto@amacapital.net
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/l2tp/l2tp_ppp.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kernel/entry_32.S | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/net/l2tp/l2tp_ppp.c b/net/l2tp/l2tp_ppp.c
-index 26dbd9a..fbd6bbf 100644
---- a/net/l2tp/l2tp_ppp.c
-+++ b/net/l2tp/l2tp_ppp.c
-@@ -1404,7 +1404,7 @@ static int pppol2tp_setsockopt(struct socket *sock, int level, int optname,
- 	int err;
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 60d03c2..b32b466 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -434,9 +434,10 @@ sysenter_past_esp:
+ 	jnz sysenter_audit
+ sysenter_do_call:
+ 	cmpl $(NR_syscalls), %eax
+-	jae syscall_badsys
++	jae sysenter_badsys
+ 	call *sys_call_table(,%eax,4)
+ 	movl %eax,PT_EAX(%esp)
++sysenter_after_call:
+ 	LOCKDEP_SYS_EXIT
+ 	DISABLE_INTERRUPTS(CLBR_ANY)
+ 	TRACE_IRQS_OFF
+@@ -686,7 +687,12 @@ END(syscall_fault)
  
- 	if (level != SOL_PPPOL2TP)
--		return udp_prot.setsockopt(sk, level, optname, optval, optlen);
-+		return -EINVAL;
- 
- 	if (optlen < sizeof(int))
- 		return -EINVAL;
-@@ -1530,7 +1530,7 @@ static int pppol2tp_getsockopt(struct socket *sock, int level, int optname,
- 	struct pppol2tp_session *ps;
- 
- 	if (level != SOL_PPPOL2TP)
--		return udp_prot.getsockopt(sk, level, optname, optval, optlen);
-+		return -EINVAL;
- 
- 	if (get_user(len, optlen))
- 		return -EFAULT;
+ syscall_badsys:
+ 	movl $-ENOSYS,PT_EAX(%esp)
+-	jmp resume_userspace
++	jmp syscall_exit
++END(syscall_badsys)
++
++sysenter_badsys:
++	movl $-ENOSYS,PT_EAX(%esp)
++	jmp sysenter_after_call
+ END(syscall_badsys)
+ 	CFI_ENDPROC
+ /*
 -- 
 1.9.1
 
