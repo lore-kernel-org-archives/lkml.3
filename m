@@ -1,43 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756234AbaHYQgs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 12:36:48 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:41373 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754768AbaHYQgp (ORCPT
+	id S1756248AbaHYQiq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 12:38:46 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:46162 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754768AbaHYQip (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 12:36:45 -0400
+	Mon, 25 Aug 2014 12:38:45 -0400
+Message-ID: <53FB6667.9010600@oracle.com>
+Date: Mon, 25 Aug 2014 12:37:59 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <53FAE383.6050308@t-online.de>
-References: <53F9CC77.70009@t-online.de>
-	<CA+55aFwZP1gyf=mvTrKjWwj6YE6=5y1+aZdmsNMHUp6d3dckXw@mail.gmail.com>
-	<53FAA544.4030401@intel.com>
-	<CA+55aFzaHF=S3QQ6M-+JBdWVRCSHKs-jjKo==8OS7q90cUyHBw@mail.gmail.com>
-	<53FAE383.6050308@t-online.de>
-Date: Mon, 25 Aug 2014 09:36:45 -0700
-X-Google-Sender-Auth: NBoZY52jMaAkrLu8N3mRCx4l5Cs
-Message-ID: <CA+55aFzUECeazRoX7gRb24WvhOzGAgtm922gvU4qLX+3EZXHDA@mail.gmail.com>
-Subject: Re: [Bug 3.14.17] inconsistent lock state
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Knut Petersen <Knut_Petersen@t-online.de>
-Cc: Lan Tianyu <tianyu.lan@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Thomas Renninger <trenn@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: ericvh@gmail.com, lucho@ionkov.net, rminnich@sandia.gov,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        v9fs-developer@lists.sourceforge.net
+Subject: mm/v9fs: kernel panic accessing kmap()ed pages
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 12:19 AM, Knut Petersen
-<Knut_Petersen@t-online.de> wrote:
->
-> Testing some other kernels lurking around on the disk I realized that
-> after kernel 3.11.5 and before kernel 3.12.9 both the power button
-> and "shutdown -h now" lost the ability to power off the machine - the
-> system is halted instead and needs a reset / 4 second power button pressing.
+Hi all,
 
-Hmm. Does "shutdown -p" work? But it might be interesting to see where
-the behavior changed.
+While fuzzing with trinity inside a KVM tools guest running the latest -next
+kernel, I've stumbled on the following spew:
 
-           Linus
+[12886.637991] BUG: unable to handle kernel paging request at ffff88017dce7000
+[12886.640053] IP: memset (arch/x86/lib/memset_64.S:84)
+[12886.640053] PGD 15b46067 PUD 9763c5067 PMD 9761d6067 PTE 800000017dce7060
+[12886.640053] Oops: 0002 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[12886.640053] Dumping ftrace buffer:
+[12886.640053]    (ftrace buffer empty)
+[12886.640053] Modules linked in:
+[12886.640053] CPU: 4 PID: 7421 Comm: modprobe Not tainted 3.17.0-rc1-next-20140823-sasha-00034-g503bc40 #1077
+[12886.640053] task: ffff8804c2288000 ti: ffff88008398c000 task.ti: ffff88008398c000
+[12886.640053] RIP: memset (arch/x86/lib/memset_64.S:84)
+[12886.640053] RSP: 0018:ffff88008398f9f0  EFLAGS: 00010212
+[12886.640053] RAX: 0000000000000000 RBX: ffffea0005f6e800 RCX: 03ffffffffffae7f
+[12886.640053] RDX: fffffffffffe4c08 RSI: 0000000000000000 RDI: ffff88017dce6ff8
+[12886.640053] RBP: ffff88008398fa28 R08: 0000000000000002 R09: 0000000000000006
+[12886.640053] R10: ffff88017dbbc3f6 R11: 0000000000000000 R12: ffff880271538de8
+[12886.640053] R13: ffff88076b4ff500 R14: ffff88017dba0000 R15: ffffea0005f6e820
+[12886.640053] FS:  0000000000000000(0000) GS:ffff880277c00000(0000) knlGS:0000000000000000
+[12886.640053] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[12886.640053] CR2: ffff88017dce7000 CR3: 00000007990c2000 CR4: 00000000000006a0
+[12886.640053] Stack:
+[12886.640053]  ffffffff8e7a9a25 ffff88008398fa08 ffffffff8e2a77cd ffffea0005f6e800
+[12886.640053]  ffff88008398fb38 ffff880271538ff8 ffff8804c2288000 ffff88008398fa38
+[12886.640053]  ffffffff8e7a9b75 ffff88008398fa98 ffffffff8e2a4b25 ffffffff8e7acf40
+[12886.640053] Call Trace:
+[12886.640053] ? v9fs_fid_readpage (./arch/x86/include/asm/bitops.h:75 include/linux/page-flags.h:321 fs/9p/vfs_addr.c:79)
+[12886.640053] ? lru_cache_add (mm/swap.c:665)
+[12886.640053] v9fs_vfs_readpage (fs/9p/vfs_addr.c:101)
+[12886.640053] read_cache_pages (mm/readahead.c:100)
+[12886.640053] ? v9fs_cache_session_get_key (fs/9p/cache.c:306)
+[12886.640053] ? v9fs_write_begin (fs/9p/vfs_addr.c:99)
+[12886.640053] v9fs_vfs_readpages (fs/9p/vfs_addr.c:127)
+[12886.640053] __do_page_cache_readahead (mm/readahead.c:123 mm/readahead.c:200)
+[12886.640053] ? __do_page_cache_readahead (include/linux/rcupdate.h:814 mm/readahead.c:178)
+[12886.640053] filemap_fault (include/linux/memcontrol.h:137 include/linux/memcontrol.h:194 mm/filemap.c:1891)
+[12886.640053] __do_fault (mm/memory.c:2712)
+[12886.640053] ? _raw_spin_unlock (./arch/x86/include/asm/preempt.h:98 include/linux/spinlock_api_smp.h:152 kernel/locking/spinlock.c:183)
+[12886.640053] do_read_fault.isra.40 (mm/memory.c:2901)
+[12886.640053] ? get_parent_ip (kernel/sched/core.c:2552)
+[12886.640053] ? preempt_count_sub (kernel/sched/core.c:2608)
+[12886.640053] __handle_mm_fault (mm/memory.c:3048 mm/memory.c:3214 mm/memory.c:3341)
+[12886.640053] handle_mm_fault (include/linux/memcontrol.h:120 mm/memory.c:3373)
+[12886.640053] ? __do_page_fault (arch/x86/mm/fault.c:1163)
+[12886.640053] __do_page_fault (arch/x86/mm/fault.c:1231)
+[12886.640053] ? vtime_account_user (kernel/sched/cputime.c:687)
+[12886.640053] ? get_parent_ip (kernel/sched/core.c:2552)
+[12886.640053] ? preempt_count_sub (kernel/sched/core.c:2608)
+[12886.640053] ? context_tracking_user_exit (kernel/context_tracking.c:184)
+[12886.640053] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+[12886.640053] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2640 (discriminator 2))
+[12886.640053] trace_do_page_fault (arch/x86/mm/fault.c:1314 include/linux/jump_label.h:114 include/linux/context_tracking_state.h:27 include/linux/context_tracking.h:45 arch/x86/mm/fault.c:1315)
+[12886.640053] do_async_page_fault (arch/x86/kernel/kvm.c:264)
+[12886.640053] async_page_fault (arch/x86/kernel/entry_64.S:1313)
+[12886.640053] Code: 01 01 01 01 01 01 48 0f af c1 41 89 f9 41 83 e1 07 75 70 48 89 d1 48 c1 e9 06 74 39 66 0f 1f 84 00 00 00 00 00 48 ff c9 48 89 07 <48> 89 47 08 48 89 47 10 48 89 47 18 48 89 47 20 48 89 47 28 48
+All code
+========
+   0:	01 01                	add    %eax,(%rcx)
+   2:	01 01                	add    %eax,(%rcx)
+   4:	01 01                	add    %eax,(%rcx)
+   6:	48 0f af c1          	imul   %rcx,%rax
+   a:	41 89 f9             	mov    %edi,%r9d
+   d:	41 83 e1 07          	and    $0x7,%r9d
+  11:	75 70                	jne    0x83
+  13:	48 89 d1             	mov    %rdx,%rcx
+  16:	48 c1 e9 06          	shr    $0x6,%rcx
+  1a:	74 39                	je     0x55
+  1c:	66 0f 1f 84 00 00 00 	nopw   0x0(%rax,%rax,1)
+  23:	00 00
+  25:	48 ff c9             	dec    %rcx
+  28:	48 89 07             	mov    %rax,(%rdi)
+  2b:*	48 89 47 08          	mov    %rax,0x8(%rdi)		<-- trapping instruction
+  2f:	48 89 47 10          	mov    %rax,0x10(%rdi)
+  33:	48 89 47 18          	mov    %rax,0x18(%rdi)
+  37:	48 89 47 20          	mov    %rax,0x20(%rdi)
+  3b:	48 89 47 28          	mov    %rax,0x28(%rdi)
+  3f:	48                   	rex.W
+	...
+
+Code starting with the faulting instruction
+===========================================
+   0:	48 89 47 08          	mov    %rax,0x8(%rdi)
+   4:	48 89 47 10          	mov    %rax,0x10(%rdi)
+   8:	48 89 47 18          	mov    %rax,0x18(%rdi)
+   c:	48 89 47 20          	mov    %rax,0x20(%rdi)
+  10:	48 89 47 28          	mov    %rax,0x28(%rdi)
+  14:	48                   	rex.W
+	...
+[12886.640053] RIP memset (arch/x86/lib/memset_64.S:84)
+[12886.640053]  RSP <ffff88008398f9f0>
+[12886.640053] CR2: ffff88017dce7000
+
+
+Thanks,
+Sasha
