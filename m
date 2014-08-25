@@ -1,97 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932161AbaHYLbH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 07:31:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44412 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755504AbaHYLbA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 07:31:00 -0400
-Message-ID: <53FB1E6F.7080803@suse.de>
-Date: Mon, 25 Aug 2014 13:30:55 +0200
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S932198AbaHYLbW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 07:31:22 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:54322 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932169AbaHYLbT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 07:31:19 -0400
+Date: Mon, 25 Aug 2014 13:31:16 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: David Miller <davem@davemloft.net>
+Cc: peppe.cavallaro@st.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH for -next] stmmac: simple cleanups
+Message-ID: <20140825113116.GA21632@amd>
+References: <20140819105646.GA27984@amd>
+ <20140822.123408.2064974279443073401.davem@davemloft.net>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>,
-        "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-CC: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Doug Gilbert <dgilbert@interlog.com>,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
-Subject: Re: scsi logging future directions, was Re: [RFC PATCH -logging 00/10]
- scsi/constants: Output continuous error messages on trace
-References: <20140808115004.6768.97014.stgit@yuno-kbuild.novalocal> <94D0CD8314A33A4D9D801C0FE68B402958C1A9E5@G9W0745.americas.hpqcorp.net> <20140824204454.GA11423@lst.de>
-In-Reply-To: <20140824204454.GA11423@lst.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140822.123408.2064974279443073401.davem@davemloft.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/24/2014 10:44 PM, Christoph Hellwig wrote:
-> On Fri, Aug 22, 2014 at 12:39:59AM +0000, Elliott, Robert (Server Storage) wrote:
->> If you trigger hundreds of errors (e.g., hot remove a device
->> during heavy IO), then all the prints to the linux serial console
->> bog down the system, causing timeouts in commands to other
->> devices and soft lockups for applications.
->>
->> Some changes that would help are:
->> 1. Put them under SCSI logging level control
->> 2. Use printk_ratelimited so an excessive number are trimmed
->>
->> Would you like to include something like this in your
->> patch set?
->
-> I think we should come to an agreement where we want to go with scsi
-> logging first before doing various smaller adjustments.  (Although your
-> example is one that's urgent enough that I'd like to put it in ASAP,
-> I had issues with it a few times).
->
-> I had a chat with Martin at Linuxcon about these issues, and we were
-> both in favor of getting rid of the old scsi logging mechansisms and
-> instead replace it by an extended version of the scsi tracepoints that
-> cover all places, and dump all data from the old logging mechanism
-> that people find useful.
->
-> In a few places we'd still want to log normal dev_printk style errors,
-> and the I/O completion is one of them, even if they really need to be
-> ratelimited and condensed.
->
-> If someone has arguments in favour of keeping the old logging code
-> I'd love to hear them, but in practive the traceevent code has huge
-> benefits:
->
->   - almost zero overhead if disabled
->   - can easily be used without any tools through configs, but can be used
->     even better with tools like trace-cmd or perf
->   - allows both fine and coarse grained selections of events to trace
->   - allows to capture statistics on each trace point without event enabling the
->     output
->   - doesn't have any of the console lockup problems.
->
-I've already been working on updating scsi logging infrastructure, 
-removing old cludges and streamlining it.
-I'm all in favour of moving things over to scsi tracing; in fact I've 
-already moved all the current SCSI_ML_XXX statements to tracepoints in
-my current patchset.
+This adds simple cleanups for stmmac, removing test we know is always
+true, fixing whitespace, and moving code out of if().
 
-Unfortunately I haven't found time to test things out there, and there's 
-the patchset from Yoshihiro which needs review and integration.
+Signed-off-by: Pavel Machek <pavel@denx.de>
 
-As of now I've treated this as rather low priority as no-one seemed to 
-mind and the patchsets will be touching each and every driver.
+---
 
-I'll be updating the patchset and send it for review.
+Now against -net-next.
 
-Cheers,
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
+index 9af50ba..493fe69 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
+@@ -261,11 +261,11 @@ static int stmmac_ethtool_getsettings(struct net_device *dev,
+ 		ethtool_cmd_speed_set(cmd, priv->xstats.pcs_speed);
+ 
+ 		/* Get and convert ADV/LP_ADV from the HW AN registers */
+-		if (priv->hw->mac->get_adv)
+-			priv->hw->mac->get_adv(priv->hw, &adv);
+-		else
++		if (!priv->hw->mac->get_adv)
+ 			return -EOPNOTSUPP;	/* should never happen indeed */
+ 
++		priv->hw->mac->get_adv(priv->hw, &adv);
++
+ 		/* Encoding of PSE bits is defined in 802.3z, 37.2.1.4 */
+ 
+ 		if (adv.pause & STMMAC_PCS_PAUSE)
+@@ -340,19 +340,17 @@ static int stmmac_ethtool_setsettings(struct net_device *dev,
+ 		if (cmd->autoneg != AUTONEG_ENABLE)
+ 			return -EINVAL;
+ 
+-		if (cmd->autoneg == AUTONEG_ENABLE) {
+-			mask &= (ADVERTISED_1000baseT_Half |
++		mask &= (ADVERTISED_1000baseT_Half |
+ 			ADVERTISED_1000baseT_Full |
+ 			ADVERTISED_100baseT_Half |
+ 			ADVERTISED_100baseT_Full |
+ 			ADVERTISED_10baseT_Half |
+ 			ADVERTISED_10baseT_Full);
+ 
+-			spin_lock(&priv->lock);
+-			if (priv->hw->mac->ctrl_ane)
+-				priv->hw->mac->ctrl_ane(priv->hw, 1);
+-			spin_unlock(&priv->lock);
+-		}
++		spin_lock(&priv->lock);
++		if (priv->hw->mac->ctrl_ane)
++			priv->hw->mac->ctrl_ane(priv->hw, 1);
++		spin_unlock(&priv->lock);
+ 
+ 		return 0;
+ 	}
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+index 08addd6..8fcc64c 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+@@ -818,7 +818,7 @@ static int stmmac_init_phy(struct net_device *dev)
+ 	/* Stop Advertising 1000BASE Capability if interface is not GMII */
+ 	if ((interface == PHY_INTERFACE_MODE_MII) ||
+ 	    (interface == PHY_INTERFACE_MODE_RMII) ||
+-		(max_speed < 1000 &&  max_speed > 0))
++		(max_speed < 1000 && max_speed > 0))
+ 		phydev->advertising &= ~(SUPPORTED_1000baseT_Half |
+ 					 SUPPORTED_1000baseT_Full);
+ 
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c
+index a5b1e1b..8dd0408 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c
+@@ -253,7 +253,7 @@ int stmmac_mdio_register(struct net_device *ndev)
+ 			}
+ 
+ 			/*
+-			 * If we're  going to bind the MAC to this PHY bus,
++			 * If we're going to bind the MAC to this PHY bus,
+ 			 * and no PHY number was provided to the MAC,
+ 			 * use the one probed here.
+ 			 */
 
-Hannes
 -- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
