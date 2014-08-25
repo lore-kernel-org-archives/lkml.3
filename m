@@ -1,99 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754440AbaHYHRL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 03:17:11 -0400
-Received: from mx1.scotdoyle.com ([23.226.141.211]:53644 "EHLO
-	mx1.scotdoyle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753649AbaHYHRJ (ORCPT
+	id S1754529AbaHYHRl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 03:17:41 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:54109 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752755AbaHYHRj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 03:17:09 -0400
-Date: Mon, 25 Aug 2014 07:14:03 +0000 (UTC)
-From: Scot Doyle <lkml14@scotdoyle.com>
-To: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>
-cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Stefan Berger <stefanb@linux.vnet.ibm.com>,
-        Luigi Semenzato <semenzato@google.com>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [PATCH] tpm: fix interrupt timeouts
-Message-ID: <alpine.LNX.2.11.1408250710470.1443@localhost.localdomain>
-User-Agent: Alpine 2.11 (LNX 23 2013-08-11)
+	Mon, 25 Aug 2014 03:17:39 -0400
+From: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>
+To: Lars-Peter Clausen <lars@metafoo.de>,
+        sanjeev sharma <sanjeevsharmaengg@gmail.com>
+CC: "jic23@kernel.org" <jic23@kernel.org>, gregkh <gregkh@linuxfoundation.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        devel <devel@driverdev.osuosl.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] staging:iio: moved platform_data into include/linux/iio
+Thread-Topic: [PATCH] staging:iio: moved platform_data into include/linux/iio
+Thread-Index: AQHPvD/0dxnEQqo0D0eqpJHW9TvQ6ZvY+PeAgAACRoCAAAFvgIAH85xQ
+Date: Mon, 25 Aug 2014 07:17:33 +0000
+Message-ID: <FDC088D3B5555644AE135ED28A7ABDE94DF3CC4B@EU-MBX-04.mgc.mentorg.com>
+References: <1408516869-6099-1-git-send-email-sanjeev_sharma@mentor.com>
+	<53F441FF.9090304@metafoo.de>
+ <CAGUYZuSENkSjoA9U0E8MQKp0a1J3moE8p8NYAzfiZ+BpxND4Aw@mail.gmail.com>
+ <53F4451B.3040209@metafoo.de>
+In-Reply-To: <53F4451B.3040209@metafoo.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [137.202.0.76]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-OriginalArrivalTime: 25 Aug 2014 07:17:37.0836 (UTC) FILETIME=[A6538EC0:01CFC034]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7P7HjHM024757
 
-commit 4c663cfc523a88d97a8309b04a089c27dc57fd7e
-    wait: fix false timeouts when using wait_event_timeout()
+Hello Lars,
 
-changed the semantics of wait_event_interruptible_timeout so that a
-condition check is performed after timeout and 1 is returned if true.
+As per your suggestion Can I move complete Driver out of staging specially SPI ADC Driver.
 
-The TPM chip may not send interrupts even though the tpm module is
-attempting to receive interrupts. In this case, after the module
-sends a command to the TPM chip it performs a blocking wait on the
-interrupt queue. No interrupts are sent from the chip, the queue is
-not woken up and the blocking wait times out. Despite timing out,
-the command has completed and the condition check performed by
-wait_event_interruptible_timeout after timeout is true, resulting in
-a return value of 1. Since the expected return value on timeout is 0
-the timeout is not detected.
+Regards
+Sanjeev Sharma
 
-To fix, assume a return value of 1 or less indicates an elapsed
-timeout. It is possible for the return value to be 1 after receiving
-an interrupt, but this should be rare. The condition is not double-
-checked because of possible side effects.
+-----Original Message-----
+From: Lars-Peter Clausen [mailto:lars@metafoo.de] 
+Sent: Wednesday, August 20, 2014 12:20 PM
+To: sanjeev sharma
+Cc: Sharma, Sanjeev; jic23@kernel.org; gregkh; linux-iio@vger.kernel.org; devel; linux-kernel
+Subject: Re: [PATCH] staging:iio: moved platform_data into include/linux/iio
 
-Signed-off-by: Scot Doyle
----
-Patch for wait_event_interruptible_timeout documentation:
-https://lkml.kernel.org/g/alpine.LNX.2.11.1408241710070.6462@localhost.localdomain
+On 08/20/2014 08:44 AM, sanjeev sharma wrote:
+> Hi,
+>
+> This was the action item(TO-DO). IMO, it make sense to move into 
+> include/linux/iio because IIO complete subsystem may take some time.
 
- drivers/char/tpm/tpm-interface.c   | 2 +-
- drivers/char/tpm/tpm_i2c_nuvoton.c | 2 +-
- drivers/char/tpm/tpm_tis.c         | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
-index 6af1700..cceda56 100644
---- a/drivers/char/tpm/tpm-interface.c
-+++ b/drivers/char/tpm/tpm-interface.c
-@@ -863,7 +863,7 @@ again:
- 			wait_for_tpm_stat_cond(chip, mask, check_cancel,
- 					       &canceled),
- 			timeout);
--		if (rc > 0) {
-+		if (rc > 1) {
- 			if (canceled)
- 				return -ECANCELED;
- 			return 0;
-diff --git a/drivers/char/tpm/tpm_i2c_nuvoton.c b/drivers/char/tpm/tpm_i2c_nuvoton.c
-index 7b158ef..fce0c70 100644
---- a/drivers/char/tpm/tpm_i2c_nuvoton.c
-+++ b/drivers/char/tpm/tpm_i2c_nuvoton.c
-@@ -185,7 +185,7 @@ static int i2c_nuvoton_wait_for_stat(struct tpm_chip *chip, u8 mask, u8 value,
- 		rc = wait_event_interruptible_timeout(*queue,
- 						      cur_intrs != priv->intrs,
- 						      timeout);
--		if (rc > 0)
-+		if (rc > 1)
- 			return 0;
- 		/* At this point we know that the SINT pin is asserted, so we
- 		 * do not need to do i2c_nuvoton_check_status */
-diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
-index 2c46734..6cb0f7a 100644
---- a/drivers/char/tpm/tpm_tis.c
-+++ b/drivers/char/tpm/tpm_tis.c
-@@ -158,7 +158,7 @@ again:
- 						      (check_locality
- 						       (chip, l) >= 0),
- 						      timeout);
--		if (rc > 0)
-+		if (rc > 1)
- 			return l;
- 		if (rc == -ERESTARTSYS && freezing(current)) {
- 			clear_thread_flag(TIF_SIGPENDING);
--- 
-2.0.4
-
+The code that is in staging is not supposed to 'leak' outside of staging. So either you move the driver as a whole out of staging or leave it there, but do not move individual files of the driver out of staging. The action item is for when the driver is moved out of staging.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
