@@ -1,163 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753267AbaHYA5q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 20:57:46 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:51998 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752917AbaHYA5o (ORCPT
+	id S1753319AbaHYBJL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 21:09:11 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:36322 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752188AbaHYBJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 20:57:44 -0400
-X-AuditID: cbfee68e-f79536d000000fd1-12-53fa89fdd262
-Message-id: <53FA89FD.1030004@samsung.com>
-Date: Mon, 25 Aug 2014 09:57:33 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: a.zummo@towertech.it, kgene.kim@samsung.com, kyungmin.park@samsung.com,
-        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-Subject: Re: [PATCHv2 1/5] rtc: s3c: Define s3c_rtc structure to remove global
- variables.
-References: <y@samsung.com> <1407808871-6046-1-git-send-email-y@samsung.com>
- <1407808871-6046-2-git-send-email-y@samsung.com>
- <20140822134204.1fa5be7aeb76a50b45ccc5f5@linux-foundation.org>
-In-reply-to: <20140822134204.1fa5be7aeb76a50b45ccc5f5@linux-foundation.org>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMIsWRmVeSWpSXmKPExsWyRsSkUPdv569gg6tbTSyWXLzKbjFn/Ro2
-	i94FV9kszja9Ybe4vGsOm8WM8/uYLPZ3djA6sHvsmXiSzePEjN8sHn1bVjF6TJ/3k8nj8ya5
-	ANYoLpuU1JzMstQifbsErowlGxewFHyUrPj7r4GlgfGESBcjB4eEgInE3B7zLkZOIFNM4sK9
-	9WxdjFwcQgJLGSVuTnjEBlPz7YwORHwRo0R71wVmCOc1o8S6cy2MIN28AloSKzc/ZQaxWQRU
-	JV61X2QCsdmA4vtf3GADsUUFwiRWTr/CAlEvKPFj8j0wW0RAV2LV811gvcwCqxklXp3WB7GF
-	BaIlfu38zAix7ACjRN+Om2DLOAW8Jdb2TGCFaNCR2N86jQ3ClpfYvOYt2HUSAufYJTYe3ccC
-	cZGAxLfJh1gg3pGV2HSAGeJlSYmDK26wTGAUm4XkpllIxs5CMnYBI/MqRtHUguSC4qT0IiO9
-	4sTc4tK8dL3k/NxNjMC4O/3vWd8OxpsHrA8xCnAwKvHwruD8FSzEmlhWXJl7iNEU6IqJzFKi
-	yfnA6M4riTc0NjOyMDUxNTYytzRTEudNkPoZLCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoFR
-	wEgj1Npna6D8jh8+wUZV6988WFQZzzlJvIT7u2ic9eeodWK/slfOkY9unZGYoPXZMX+PuGNC
-	hlqslS5bUV2aSNfptas3TU0923ebM84vIi63QsJzy7GezZ9NXzw9L7p8o7qZzc99a969lp/9
-	qaZpOnuvUF9oR+XsfqYehf8vBZPN6tNLGpVYijMSDbWYi4oTARsT4N22AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHIsWRmVeSWpSXmKPExsVy+t9jAd2/nb+CDS6907ZYcvEqu8Wc9WvY
-	LHoXXGWzONv0ht3i8q45bBYzzu9jstjf2cHowO6xZ+JJNo8TM36zePRtWcXoMX3eTyaPz5vk
-	AlijGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4Du
-	UFIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jBmLNm4gKXgo2TF338NLA2M
-	J0S6GDk4JARMJL6d0eli5AQyxSQu3FvP1sXIxSEksIhRor3rAjOE85pRYt25FkaQKl4BLYmV
-	m58yg9gsAqoSr9ovMoHYbEDx/S9usIHYogJhEiunX2GBqBeU+DH5HpgtIqArser5LrBeZoHV
-	jBKvTuuD2MIC0RK/dn5mhFh2gFGib8dNsGWcAt4Sa3smsEI06Ejsb53GBmHLS2xe85Z5AqPA
-	LCQ7ZiEpm4WkbAEj8ypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2M4Lh+JrWDcWWDxSFGAQ5G
-	JR7elZy/goVYE8uKK3MPMUpwMCuJ8LbzAYV4UxIrq1KL8uOLSnNSiw8xmgKDYCKzlGhyPjDl
-	5JXEGxqbmBlZGpkbWhgZmyuJ8x5otQ4UEkhPLEnNTk0tSC2C6WPi4JRqYFyUO/HXet/Jez0q
-	LjWdCl/5wuSd6vw1brx/tWZyzhKZ4Jy465xfSkZEg3/rkRpmuZpHy3fMv3VG3Cz23eP6lptR
-	h759nn4v+Y/FiTe9j6f+01x7K+Dsr/9dJz/Mf2QiH/vpgodxnl3qo/2HBF9eODhpT5m22epY
-	3/B6H48bi1RWXbJ7/06X0XCVEktxRqKhFnNRcSIAtDF3GQEDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sun, 24 Aug 2014 21:09:08 -0400
+From: Simon Horman <horms+renesas@verge.net.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Simon Horman <horms+renesas@verge.net.au>
+Subject: [PATCH] sh: intc: Confine SH_INTC to platforms that need it
+Date: Mon, 25 Aug 2014 10:08:56 +0900
+Message-Id: <049d28048be595e0a10a58fe1c104b153c386633.1408928574.git.horms+renesas@verge.net.au>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <cover.1408928574.git.horms+renesas@verge.net.au>
+References: <cover.1408928574.git.horms+renesas@verge.net.au>
+In-Reply-To: <cover.1408928574.git.horms+renesas@verge.net.au>
+References: <cover.1408928574.git.horms+renesas@verge.net.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Andrew, 
+From: Geert Uytterhoeven <geert+renesas@glider.be>
 
-On 08/23/2014 05:42 AM, Andrew Morton wrote:
-> On Tue, 12 Aug 2014 11:01:07 +0900 y@samsung.com wrote:
-> 
->> This patch define s3c_rtc structure including necessary variables for S3C RTC
->> device instead of global variables. This patch improves the readability by
->> removing global variables.
-> 
-> Below is the v1->v2 delta.
-> 
-> Why were all those tests of info->base added?  Can it really be zero? 
-> I don't see how.
+Currently the sh-intc driver is compiled on all SuperH and
+non-multiplatform SH-Mobile platforms, while it's only used on a limited
+number of platforms:
+  - SuperH: SH2(A), SH3(A), SH4(A)(L) (all but SH5)
+  - ARM: sh7372, sh73a0
 
-If some functions (e.g., s3c_rtc_settime) accesses the rtc register
-by using info->base before the initialization of info->base in s3c_rtc_probe,
-I thought that null pointer error would happen.
+Drop the "default y" on SH_INTC, make all CPU platforms that use it
+select it, and protect all sub-options by "if SH_INTC" to fix this.
 
-But, I missed one point which info->base might have the garbate data instead of NULL.
-I'll add the initialization code for info->base.
-	info->base = NULL;
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Acked-by: Magnus Damm <damm+renesas@opensource.se>
+Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
+---
+ arch/arm/mach-shmobile/Kconfig | 2 ++
+ arch/sh/Kconfig                | 3 +++
+ drivers/sh/Makefile            | 3 +--
+ drivers/sh/intc/Kconfig        | 6 +++++-
+ 4 files changed, 11 insertions(+), 3 deletions(-)
 
-If you don't agree it, I'll drop this code checking the state of info->base on next patchset(v3).
-
-Best Regads,
-Chanwoo Choi
-
-> 
-> --- a/drivers/rtc/rtc-s3c.c~rtc-s3c-define-s3c_rtc-structure-to-remove-global-variables-v2
-> +++ a/drivers/rtc/rtc-s3c.c
-> @@ -121,6 +121,9 @@ static int s3c_rtc_setaie(struct device
->  	struct s3c_rtc *info = dev_get_drvdata(dev);
->  	unsigned int tmp;
->  
-> +	if (!info->base)
-> +		return -EINVAL;
-> +
->  	dev_dbg(info->dev, "%s: aie=%d\n", __func__, enabled);
->  
->  	clk_enable(info->rtc_clk);
-> @@ -180,6 +183,9 @@ static int s3c_rtc_gettime(struct device
->  	struct s3c_rtc *info = dev_get_drvdata(dev);
->  	unsigned int have_retried = 0;
->  
-> +	if (!info->base)
-> +		return -EINVAL;
-> +
->  	clk_enable(info->rtc_clk);
->   retry_get_time:
->  	rtc_tm->tm_min  = readb(info->base + S3C2410_RTCMIN);
-> @@ -224,6 +230,9 @@ static int s3c_rtc_settime(struct device
->  	struct s3c_rtc *info = dev_get_drvdata(dev);
->  	int year = tm->tm_year - 100;
->  
-> +	if (!info->base)
-> +		return -EINVAL;
-> +
->  	dev_dbg(dev, "set time %04d.%02d.%02d %02d:%02d:%02d\n",
->  		 1900 + tm->tm_year, tm->tm_mon, tm->tm_mday,
->  		 tm->tm_hour, tm->tm_min, tm->tm_sec);
-> @@ -255,6 +264,9 @@ static int s3c_rtc_getalarm(struct devic
->  	struct rtc_time *alm_tm = &alrm->time;
->  	unsigned int alm_en;
->  
-> +	if (!info->base)
-> +		return -EINVAL;
-> +
->  	clk_enable(info->rtc_clk);
->  	alm_tm->tm_sec  = readb(info->base + S3C2410_ALMSEC);
->  	alm_tm->tm_min  = readb(info->base + S3C2410_ALMMIN);
-> @@ -317,6 +329,9 @@ static int s3c_rtc_setalarm(struct devic
->  	struct rtc_time *tm = &alrm->time;
->  	unsigned int alrm_en;
->  
-> +	if (!info->base)
-> +		return -EINVAL;
-> +
->  	clk_enable(info->rtc_clk);
->  	dev_dbg(dev, "s3c_rtc_setalarm: %d, %04d.%02d.%02d %02d:%02d:%02d\n",
->  		 alrm->enabled,
-> @@ -357,6 +372,9 @@ static int s3c_rtc_proc(struct device *d
->  	struct s3c_rtc *info = dev_get_drvdata(dev);
->  	unsigned int ticnt;
->  
-> +	if (!info->base)
-> +		return -EINVAL;
-> +
->  	clk_enable(info->rtc_clk);
->  	if (info->cpu_type == TYPE_S3C64XX) {
->  		ticnt = readw(info->base + S3C2410_RTCCON);
-> @@ -548,7 +566,7 @@ static int s3c_rtc_probe(struct platform
->  		rtc_tm.tm_min	= 0;
->  		rtc_tm.tm_sec	= 0;
->  
-> -		s3c_rtc_settime(NULL, &rtc_tm);
-> +		s3c_rtc_settime(&pdev->dev, &rtc_tm);
->  
->  		dev_warn(&pdev->dev, "warning: invalid RTC value so initializing it\n");
->  	}
-> _
-> 
-> 
+diff --git a/arch/arm/mach-shmobile/Kconfig b/arch/arm/mach-shmobile/Kconfig
+index e15dff7..1e6c51c 100644
+--- a/arch/arm/mach-shmobile/Kconfig
++++ b/arch/arm/mach-shmobile/Kconfig
+@@ -75,6 +75,7 @@ config ARCH_SH7372
+ 	select ARM_CPU_SUSPEND if PM || CPU_IDLE
+ 	select CPU_V7
+ 	select SH_CLK_CPG
++	select SH_INTC
+ 	select SYS_SUPPORTS_SH_CMT
+ 	select SYS_SUPPORTS_SH_TMU
+ 
+@@ -85,6 +86,7 @@ config ARCH_SH73A0
+ 	select CPU_V7
+ 	select I2C
+ 	select SH_CLK_CPG
++	select SH_INTC
+ 	select RENESAS_INTC_IRQPIN
+ 	select SYS_SUPPORTS_SH_CMT
+ 	select SYS_SUPPORTS_SH_TMU
+diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
+index 453fa5c..b319846 100644
+--- a/arch/sh/Kconfig
++++ b/arch/sh/Kconfig
+@@ -172,6 +172,7 @@ menu "System type"
+ #
+ config CPU_SH2
+ 	bool
++	select SH_INTC
+ 
+ config CPU_SH2A
+ 	bool
+@@ -182,6 +183,7 @@ config CPU_SH3
+ 	bool
+ 	select CPU_HAS_INTEVT
+ 	select CPU_HAS_SR_RB
++	select SH_INTC
+ 	select SYS_SUPPORTS_SH_TMU
+ 
+ config CPU_SH4
+@@ -189,6 +191,7 @@ config CPU_SH4
+ 	select CPU_HAS_INTEVT
+ 	select CPU_HAS_SR_RB
+ 	select CPU_HAS_FPU if !CPU_SH4AL_DSP
++	select SH_INTC
+ 	select SYS_SUPPORTS_SH_TMU
+ 	select SYS_SUPPORTS_HUGETLBFS if MMU
+ 
+diff --git a/drivers/sh/Makefile b/drivers/sh/Makefile
+index 788ed9b..114203f 100644
+--- a/drivers/sh/Makefile
++++ b/drivers/sh/Makefile
+@@ -1,8 +1,7 @@
+ #
+ # Makefile for the SuperH specific drivers.
+ #
+-obj-$(CONFIG_SUPERH)			+= intc/
+-obj-$(CONFIG_ARCH_SHMOBILE_LEGACY)	+= intc/
++obj-$(CONFIG_SH_INTC)			+= intc/
+ ifneq ($(CONFIG_COMMON_CLK),y)
+ obj-$(CONFIG_HAVE_CLK)			+= clk/
+ endif
+diff --git a/drivers/sh/intc/Kconfig b/drivers/sh/intc/Kconfig
+index 60228fa..6a1b05d 100644
+--- a/drivers/sh/intc/Kconfig
++++ b/drivers/sh/intc/Kconfig
+@@ -1,7 +1,9 @@
+ config SH_INTC
+-	def_bool y
++	bool
+ 	select IRQ_DOMAIN
+ 
++if SH_INTC
++
+ comment "Interrupt controller options"
+ 
+ config INTC_USERIMASK
+@@ -37,3 +39,5 @@ config INTC_MAPPING_DEBUG
+ 	  between system IRQs and the per-controller id tables.
+ 
+ 	  If in doubt, say N.
++
++endif
+-- 
+2.0.1
 
