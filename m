@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367AbaHYGXM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 02:23:12 -0400
-Received: from mga01.intel.com ([192.55.52.88]:2265 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752640AbaHYGXK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 02:23:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,395,1406617200"; 
-   d="scan'208";a="581207971"
-Message-ID: <53FAD5E3.1060600@intel.com>
-Date: Mon, 25 Aug 2014 09:21:23 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753661AbaHYGaR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 02:30:17 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:10636 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752995AbaHYGaP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 02:30:15 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Sun, 24 Aug 2014 23:20:18 -0700
+From: Wei Ni <wni@nvidia.com>
+To: <edubezval@gmail.com>, <khali@linux-fr.org>, <linux@roeck-us.net>,
+        <swarren@wwwdotorg.org>
+CC: <lm-sensors@lm-sensors.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Wei Ni <wni@nvidia.com>
+Subject: [PATCH v3 0/4] expose lm90 to thermal fw
+Date: Mon, 25 Aug 2014 14:29:44 +0800
+Message-ID: <1408948188-4181-1-git-send-email-wni@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com
-Subject: Re: [PATCH v4 00/22] perf: Add infrastructure and support for Intel
- PT
-References: <1408538179-792-1-git-send-email-alexander.shishkin@linux.intel.com>
-In-Reply-To: <1408538179-792-1-git-send-email-alexander.shishkin@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2014 03:35 PM, Alexander Shishkin wrote:
-> This patchset adds support for Intel Processor Trace (PT) extension [1] of
-> Intel Architecture that allows the capture of information about software
-> execution flow, to the perf kernel infrastructure.
-> 
+Expose lm90 to thermal framework via DT nodes.
 
-Alex is away, so I would like to know if anyone (Peter?) plans to review or
-comment on these patches.
+This series is v3, previous version patches are:
+[v2]: https://lkml.org/lkml/2014/3/4/194
+
+Changes from v2:
+add more description in documentation, per Stephen's comment.
+
+Changes from v1:
+1. remove the unnecessary log messages, per Guenter's request.
+2. add thermal zones node for nct1008 on dalmore.
+
+Wei Ni (1):
+  thermal: add more description for thermal-zones
+
+lightning314 (3):
+  hwmon: (lm90) split set&show temp as common codes
+  hwmon: lm90: expose to thermal fw via DT nodes
+  ARM: tegra: dalmore: add thermal zones for nct1008
+
+ .../devicetree/bindings/thermal/thermal.txt        |  10 +-
+ arch/arm/boot/dts/tegra114-dalmore.dts             |  20 +-
+ drivers/hwmon/lm90.c                               | 222 ++++++++++++++++-----
+ 3 files changed, 192 insertions(+), 60 deletions(-)
+
+-- 
+1.8.1.5
 
