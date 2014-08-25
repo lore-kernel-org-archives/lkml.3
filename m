@@ -1,45 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933482AbaHYUOI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 16:14:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33169 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933458AbaHYUOF (ORCPT
+	id S933503AbaHYUOM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 16:14:12 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:36327 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933458AbaHYUOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 16:14:05 -0400
-Date: Mon, 25 Aug 2014 13:13:24 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Jiri Slaby <jslaby@suse.cz>,
-        "open list:SERIAL DRIVERS" <linux-serial@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] serial: Fix build failure caused by missing header file
-Message-ID: <20140825201324.GA32033@kroah.com>
-References: <1408553745-3536-1-git-send-email-bobby.prani@gmail.com>
- <1408553745-3536-2-git-send-email-bobby.prani@gmail.com>
+	Mon, 25 Aug 2014 16:14:09 -0400
+Message-ID: <53FB9910.3020601@infradead.org>
+Date: Mon, 25 Aug 2014 13:14:08 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408553745-3536-2-git-send-email-bobby.prani@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        David Miller <davem@davemloft.net>
+CC: Jim Davis <jim.epost@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ariel Elior <ariel.elior@qlogic.com>
+Subject: Re: [PATCH] net: bnx2x: fix build error with ptp
+References: <53FB9884.8000707@infradead.org>
+In-Reply-To: <53FB9884.8000707@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 12:55:45PM -0400, Pranith Kumar wrote:
-> Fix build failure caused by missing header file:
+Note: This patch fixes a build error in linux-next (not in mainline).
+
+
+On 08/25/14 13:11, Randy Dunlap wrote:
+> From: Randy Dunlap <rdunlap@infradead.org>
 > 
-> drivers/tty/serial/nwpserial.c: In function 'wait_for_bits':
-> drivers/tty/serial/nwpserial.c:53:3: error: implicit declaration of function 'udelay' [-Werror=implicit-function-declaration]
+> bnx2x uses ptp functions, so it should select the provider of
+> those functions (PTP_1588_CLOCK).  Fixes these build errors:
 > 
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+> drivers/built-in.o: In function `__bnx2x_remove':
+> /home/jim/linux/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c:13409:
+> undefined reference to `ptp_clock_unregister'
+> drivers/built-in.o: In function `bnx2x_register_phc':
+> /home/jim/linux/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c:13202:
+> undefined reference to `ptp_clock_register'
+> drivers/built-in.o: In function `bnx2x_get_ts_info':
+> /home/jim/linux/drivers/net/ethernet/broadcom/bnx2x/bnx2x_ethtool.c:3498:
+> undefined reference to `ptp_clock_index'
+> 
+> Reported-by: Jim Davis <jim.epost@gmail.com>
+> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
 > ---
->  drivers/tty/serial/nwpserial.c | 1 +
+>  drivers/net/ethernet/broadcom/Kconfig |    1 +
 >  1 file changed, 1 insertion(+)
+> 
+> Index: linux-next-20140825/drivers/net/ethernet/broadcom/Kconfig
+> ===================================================================
+> --- linux-next-20140825.orig/drivers/net/ethernet/broadcom/Kconfig
+> +++ linux-next-20140825/drivers/net/ethernet/broadcom/Kconfig
+> @@ -122,6 +122,7 @@ config TIGON3
+>  config BNX2X
+>  	tristate "Broadcom NetXtremeII 10Gb support"
+>  	depends on PCI
+> +	select PTP_1588_CLOCK
+>  	select FW_LOADER
+>  	select ZLIB_INFLATE
+>  	select LIBCRC32C
+> --
 
-Where is this failing?  What arch?  What kernel version did it show up
-in (i.e. what commit caused this problem?)
 
-thanks,
-
-greg k-h
+-- 
+~Randy
