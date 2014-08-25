@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933605AbaHYVya (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 17:54:30 -0400
+	id S933716AbaHYV4o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 17:56:44 -0400
 Received: from mga09.intel.com ([134.134.136.24]:11405 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933438AbaHYVy2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 17:54:28 -0400
+	id S1755073AbaHYVy0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 17:54:26 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,398,1406617200"; 
-   d="scan'208";a="563299589"
+   d="scan'208";a="563299563"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org
 Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Alexander Usyskin <alexander.usyskin@intel.com>,
         Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 03/10] mei: add hbm and pg state in devstate debugfs print
-Date: Tue, 26 Aug 2014 00:53:21 +0300
-Message-Id: <1409003608-30274-3-git-send-email-tomas.winkler@intel.com>
+Subject: [char-misc-next 02/10] mei: use connect_data on the stack
+Date: Tue, 26 Aug 2014 00:53:20 +0300
+Message-Id: <1409003608-30274-2-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1409003608-30274-1-git-send-email-tomas.winkler@intel.com>
 References: <1409003608-30274-1-git-send-email-tomas.winkler@intel.com>
@@ -24,116 +23,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexander Usyskin <alexander.usyskin@intel.com>
+There is no need for dynamic allocation for connect_data.
+We can use variable on the stack and make code less
+error prone and simple
 
-Add hbm state, pg enablement and state to devstate file in debugfs
-(<debugfs>/mei/devstate)
-
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- drivers/misc/mei/debugfs.c |  7 ++++++-
- drivers/misc/mei/hbm.c     | 16 ++++++++++++++++
- drivers/misc/mei/hbm.h     |  2 ++
- drivers/misc/mei/init.c    | 12 ++++++++++++
- drivers/misc/mei/mei_dev.h |  2 ++
- 5 files changed, 38 insertions(+), 1 deletion(-)
+ drivers/misc/mei/main.c | 21 +++++----------------
+ 1 file changed, 5 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/misc/mei/debugfs.c b/drivers/misc/mei/debugfs.c
-index 3b03288..2399b31 100644
---- a/drivers/misc/mei/debugfs.c
-+++ b/drivers/misc/mei/debugfs.c
-@@ -134,8 +134,13 @@ static ssize_t mei_dbgfs_read_devstate(struct file *fp, char __user *ubuf,
- 	if  (!buf)
- 		return -ENOMEM;
+diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
+index 2f80c77..d60621e 100644
+--- a/drivers/misc/mei/main.c
++++ b/drivers/misc/mei/main.c
+@@ -433,9 +433,6 @@ static int mei_ioctl_connect_client(struct file *file,
+ 	int rets;
  
--	pos += scnprintf(buf + pos, bufsz - pos, "%s\n",
-+	pos += scnprintf(buf + pos, bufsz - pos, "dev: %s\n",
- 			mei_dev_state_str(dev->dev_state));
-+	pos += scnprintf(buf + pos, bufsz - pos, "hbm: %s\n",
-+			mei_hbm_state_str(dev->hbm_state));
-+	pos += scnprintf(buf + pos, bufsz - pos, "pg:  %s, %s\n",
-+			mei_pg_is_enabled(dev) ? "ENABLED" : "DISABLED",
-+			mei_pg_state_str(mei_pg_state(dev)));
- 	ret = simple_read_from_buffer(ubuf, cnt, ppos, buf, pos);
- 	kfree(buf);
- 	return ret;
-diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
-index 9fc051b..3311b5c 100644
---- a/drivers/misc/mei/hbm.c
-+++ b/drivers/misc/mei/hbm.c
-@@ -56,6 +56,22 @@ static const char *mei_cl_conn_status_str(enum mei_cl_connect_status status)
- #undef MEI_CL_CCS
+ 	cl = file->private_data;
+-	if (WARN_ON(!cl || !cl->dev))
+-		return -ENODEV;
+-
+ 	dev = cl->dev;
+ 
+ 	if (dev->dev_state != MEI_DEV_ENABLED) {
+@@ -506,7 +503,6 @@ end:
+ 	return rets;
  }
  
-+const char *mei_hbm_state_str(enum mei_hbm_state state)
-+{
-+#define MEI_HBM_STATE(state) case MEI_HBM_##state: return #state
-+	switch (state) {
-+	MEI_HBM_STATE(IDLE);
-+	MEI_HBM_STATE(STARTING);
-+	MEI_HBM_STATE(STARTED);
-+	MEI_HBM_STATE(ENUM_CLIENTS);
-+	MEI_HBM_STATE(CLIENT_PROPERTIES);
-+	MEI_HBM_STATE(STOPPED);
-+	default:
-+		return "unknown";
-+	}
-+#undef MEI_HBM_STATE
-+}
-+
+-
  /**
-  * mei_cl_conn_status_to_errno - convert client connect response
-  * status to error code
-diff --git a/drivers/misc/mei/hbm.h b/drivers/misc/mei/hbm.h
-index 80920f0..efcb0d4 100644
---- a/drivers/misc/mei/hbm.h
-+++ b/drivers/misc/mei/hbm.h
-@@ -40,6 +40,8 @@ enum mei_hbm_state {
- 	MEI_HBM_STOPPED,
- };
- 
-+const char *mei_hbm_state_str(enum mei_hbm_state state);
-+
- int mei_hbm_dispatch(struct mei_device *dev, struct mei_msg_hdr *hdr);
- 
- static inline void mei_hbm_hdr(struct mei_msg_hdr *hdr, size_t length)
-diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
-index 9f635be..81695e4 100644
---- a/drivers/misc/mei/init.c
-+++ b/drivers/misc/mei/init.c
-@@ -43,6 +43,18 @@ const char *mei_dev_state_str(int state)
- #undef MEI_DEV_STATE
- }
- 
-+const char *mei_pg_state_str(enum mei_pg_state state)
-+{
-+#define MEI_PG_STATE(state) case MEI_PG_##state: return #state
-+	switch (state) {
-+	MEI_PG_STATE(OFF);
-+	MEI_PG_STATE(ON);
-+	default:
-+		return "unknown";
-+	}
-+#undef MEI_PG_STATE
-+}
-+
- 
- /**
-  * mei_cancel_work. Cancel mei background jobs
-diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index 719edee..be7b147 100644
---- a/drivers/misc/mei/mei_dev.h
-+++ b/drivers/misc/mei/mei_dev.h
-@@ -375,6 +375,8 @@ enum mei_pg_state {
- 	MEI_PG_ON =  1,
- };
- 
-+const char *mei_pg_state_str(enum mei_pg_state state);
-+
- /*
-  * mei_cfg
+  * mei_ioctl - the IOCTL function
   *
+@@ -520,7 +516,7 @@ static long mei_ioctl(struct file *file, unsigned int cmd, unsigned long data)
+ {
+ 	struct mei_device *dev;
+ 	struct mei_cl *cl = file->private_data;
+-	struct mei_connect_client_data *connect_data = NULL;
++	struct mei_connect_client_data connect_data;
+ 	int rets;
+ 
+ 
+@@ -540,26 +536,19 @@ static long mei_ioctl(struct file *file, unsigned int cmd, unsigned long data)
+ 	switch (cmd) {
+ 	case IOCTL_MEI_CONNECT_CLIENT:
+ 		dev_dbg(&dev->pdev->dev, ": IOCTL_MEI_CONNECT_CLIENT.\n");
+-		connect_data = kzalloc(sizeof(struct mei_connect_client_data),
+-							GFP_KERNEL);
+-		if (!connect_data) {
+-			rets = -ENOMEM;
+-			goto out;
+-		}
+-
+-		if (copy_from_user(connect_data, (char __user *)data,
++		if (copy_from_user(&connect_data, (char __user *)data,
+ 				sizeof(struct mei_connect_client_data))) {
+ 			dev_dbg(&dev->pdev->dev, "failed to copy data from userland\n");
+ 			rets = -EFAULT;
+ 			goto out;
+ 		}
+ 
+-		rets = mei_ioctl_connect_client(file, connect_data);
++		rets = mei_ioctl_connect_client(file, &connect_data);
+ 		if (rets)
+ 			goto out;
+ 
+ 		/* if all is ok, copying the data back to user. */
+-		if (copy_to_user((char __user *)data, connect_data,
++		if (copy_to_user((char __user *)data, &connect_data,
+ 				sizeof(struct mei_connect_client_data))) {
+ 			dev_dbg(&dev->pdev->dev, "failed to copy data to userland\n");
+ 			rets = -EFAULT;
+@@ -567,13 +556,13 @@ static long mei_ioctl(struct file *file, unsigned int cmd, unsigned long data)
+ 		}
+ 
+ 		break;
++
+ 	default:
+ 		dev_err(&dev->pdev->dev, ": unsupported ioctl %d.\n", cmd);
+ 		rets = -ENOIOCTLCMD;
+ 	}
+ 
+ out:
+-	kfree(connect_data);
+ 	mutex_unlock(&dev->device_lock);
+ 	return rets;
+ }
 -- 
 1.9.3
 
