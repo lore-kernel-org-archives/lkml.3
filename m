@@ -1,104 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493AbaHYFnn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 01:43:43 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:36076 "EHLO mail.skyhub.de"
+	id S1754214AbaHYFrc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 01:47:32 -0400
+Received: from mga02.intel.com ([134.134.136.20]:34852 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752334AbaHYFnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 01:43:41 -0400
-Date: Mon, 25 Aug 2014 07:43:39 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-Cc: dougthompson@xmission.com, m.chehab@samsung.com,
-        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] edac, amd64_edac: Modify usage of
- amd64_read_dct_pci_cfg()
-Message-ID: <20140825054339.GA13911@nazgul.tnic>
-References: <1408659586-4736-1-git-send-email-aravind.gopalakrishnan@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1408659586-4736-1-git-send-email-aravind.gopalakrishnan@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752334AbaHYFrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 01:47:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,395,1406617200"; 
+   d="scan'208";a="592760827"
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: hpa@zytor.com, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, x86@kernel.org,
+        Borislav Petkov <bp@alien8.de>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Toshi Kani <toshi.kani@hp.com>,
+        Zhang Yang <yang.z.zhang@intel.com>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: [PATCH RESEND v4] sched: fix llc shared map unreleased during cpu hotplug
+Date: Mon, 25 Aug 2014 13:49:36 +0800
+Message-Id: <1408945776-92404-1-git-send-email-wanpeng.li@linux.intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21, 2014 at 05:19:46PM -0500, Aravind Gopalakrishnan wrote:
-> @@ -767,17 +750,25 @@ static void read_dct_base_mask(struct amd64_pvt *pvt)
->  		int reg1   = DCSB1 + (cs * 4);
->  		u32 *base0 = &pvt->csels[0].csbases[cs];
->  		u32 *base1 = &pvt->csels[1].csbases[cs];
-> +		u8 dct = 0;
->  
-> -		if (!amd64_read_dct_pci_cfg(pvt, reg0, base0))
-> +		if (!amd64_read_dct_pci_cfg(pvt, dct, reg0, base0))
->  			edac_dbg(0, "  DCSB0[%d]=0x%08x reg: F2x%x\n",
->  				 cs, *base0, reg0);
->  
-> -		if (pvt->fam == 0xf || dct_ganging_enabled(pvt))
-> +		if (pvt->fam == 0xf) {
->  			continue;
-> -
-> -		if (!amd64_read_dct_pci_cfg(pvt, reg1, base1))
-> -			edac_dbg(0, "  DCSB1[%d]=0x%08x reg: F2x%x\n",
-> -				 cs, *base1, reg1);
-> +		} else if (pvt->fam == 0x10 && !dct_ganging_enabled(pvt)) {
-> +			if (!amd64_read_pci_cfg(pvt->F2, reg1, base1))
-> +				edac_dbg(0, "  DCSB1[%d]=0x%08x reg: F2x%x\n",
-> +					 cs, *base1, reg1);
-> +		} else {
-> +			dct = ((pvt->fam == 0x15)
-> +				&& (pvt->model == 0x30)) ? 3 : 1;
-> +			if (!amd64_read_dct_pci_cfg(pvt, dct, reg0, base1))
-> +				edac_dbg(0, "  DCSB1[%d]=0x%08x reg: F2x%x\n",
-> +					 cs, *base1, reg0);
-> +		}
->  	}
->  
->  	for_each_chip_select_mask(cs, 0, pvt) {
-> @@ -785,17 +776,25 @@ static void read_dct_base_mask(struct amd64_pvt *pvt)
->  		int reg1   = DCSM1 + (cs * 4);
->  		u32 *mask0 = &pvt->csels[0].csmasks[cs];
->  		u32 *mask1 = &pvt->csels[1].csmasks[cs];
-> +		u8 dct = 0;
->  
-> -		if (!amd64_read_dct_pci_cfg(pvt, reg0, mask0))
-> +		if (!amd64_read_dct_pci_cfg(pvt, dct, reg0, mask0))
->  			edac_dbg(0, "    DCSM0[%d]=0x%08x reg: F2x%x\n",
->  				 cs, *mask0, reg0);
->  
-> -		if (pvt->fam == 0xf || dct_ganging_enabled(pvt))
-> +		if (pvt->fam == 0xf) {
->  			continue;
-> -
-> -		if (!amd64_read_dct_pci_cfg(pvt, reg1, mask1))
-> -			edac_dbg(0, "    DCSM1[%d]=0x%08x reg: F2x%x\n",
-> -				 cs, *mask1, reg1);
-> +		} else if (pvt->fam == 0x10 && !dct_ganging_enabled(pvt)) {
-> +			if (!amd64_read_pci_cfg(pvt->F2, reg1, mask1))
-> +				edac_dbg(0, "    DCSM1[%d]=0x%08x reg: F2x%x\n",
-> +					 cs, *mask1, reg1);
-> +		} else {
-> +			dct = ((pvt->fam == 0x15)
-> +				&& (pvt->model == 0x30)) ? 3 : 1;
-> +			if (!amd64_read_dct_pci_cfg(pvt, dct, reg0, mask1))
-> +				edac_dbg(0, "    DCSM1[%d]=0x%08x reg: F2x%x\n",
-> +					 cs, *mask1, reg0);
-> +		}
+[  220.262245] Call Trace:
+[  220.262252]  [<ffffffff810e8396>] load_balance+0x156/0x980
+[  220.262259]  [<ffffffff816eeffe>] ? _raw_spin_unlock_irqrestore+0x2e/0xa0
+[  220.262266]  [<ffffffff810e9aa3>] idle_balance+0xe3/0x150
+[  220.262270]  [<ffffffff816ec4e7>] __schedule+0x797/0x8d0
+[  220.262277]  [<ffffffff816ec934>] schedule+0x24/0x70
+[  220.262283]  [<ffffffff816e9cd9>] schedule_timeout+0x119/0x1f0
+[  220.262294]  [<ffffffff810bb6e0>] ? lock_timer_base+0x70/0x70
+[  220.262301]  [<ffffffff816e9dc9>] schedule_timeout_uninterruptible+0x19/0x20
+[  220.262308]  [<ffffffff810bd3e8>] msleep+0x18/0x20
+[  220.262317]  [<ffffffff813aa11a>] lock_device_hotplug_sysfs+0x2a/0x50
+[  220.262323]  [<ffffffff813aa16e>] online_store+0x2e/0x80
+[  220.262358]  [<ffffffff813a873b>] dev_attr_store+0x1b/0x20
 
-This is almost unreadable now with all the family checks everywhere.
-You need to hide all that per-family logic into the function and have a
-single
+Last level cache shared map is built during cpu up and build sched domain 
+routine takes advantage of it to setup sched domain cpu topology, however, 
+llc shared map is unreleased during cpu disable which lead to invalid sched 
+domain cpu topology. This patch fix it by release llc shared map correctly
+during cpu disable.
 
-amd_read_pci_cfg_dct(pvt, dct, ...)
+Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Tested-by: Linn Crosetto <linn@hp.com>
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+---
+v3 -> v4:
+ * simplify backtrace
+v2 -> v3:
+ * simplify backtrace 
+v1 -> v2:
+ * fix subject line
 
-which contains all that logic. Calling code doesn't need to care about
-details like on which family it is running, etc, etc.
+ arch/x86/kernel/smpboot.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 5492798..0134ec7 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -1292,6 +1292,9 @@ static void remove_siblinginfo(int cpu)
+ 
+ 	for_each_cpu(sibling, cpu_sibling_mask(cpu))
+ 		cpumask_clear_cpu(cpu, cpu_sibling_mask(sibling));
++	for_each_cpu(sibling, cpu_llc_shared_mask(cpu))
++		cpumask_clear_cpu(cpu, cpu_llc_shared_mask(sibling));
++	cpumask_clear(cpu_llc_shared_mask(cpu));
+ 	cpumask_clear(cpu_sibling_mask(cpu));
+ 	cpumask_clear(cpu_core_mask(cpu));
+ 	c->phys_proc_id = 0;
 -- 
-Regards/Gruss,
-    Boris.
+1.9.1
 
-Sent from a fat crate under my desk. Formatting is fine.
---
