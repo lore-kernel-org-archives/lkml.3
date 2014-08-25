@@ -1,125 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932370AbaHYN2i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 09:28:38 -0400
-Received: from regular1.263xmail.com ([211.150.99.139]:44073 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932091AbaHYN2f (ORCPT
+	id S932488AbaHYN2s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 09:28:48 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:53449 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932376AbaHYN2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 09:28:35 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: zyw@rock-chips.com
-X-FST-TO: robh+dt@kernel.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: zyw@rock-chips.com
-X-UNIQUE-TAG: <50ee685fd43bd19bb0331015324e5441>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Chris Zhong <zyw@rock-chips.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        sameo@linux.intel.com, lee.jones@linaro.org, lgirdwood@gmail.com,
-        broonie@kernel.org, a.zummo@towertech.it, mturquette@linaro.org
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
-        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
-        xxx@rock-chips.com, dianders@chromium.org, heiko@sntech.de,
-        olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
-        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com,
-        Chris Zhong <zyw@rock-chips.com>
-Subject: [PATCH v5 0/5] Add rockchip RK808 pmic driver
-Date: Mon, 25 Aug 2014 21:26:24 +0800
-Message-Id: <1408973184-21146-1-git-send-email-zyw@rock-chips.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 25 Aug 2014 09:28:39 -0400
+From: Eric Auger <eric.auger@linaro.org>
+To: eric.auger@st.com, eric.auger@linaro.org, christoffer.dall@linaro.org,
+        marc.zyngier@arm.com, linux-arm-kernel@lists.infradead.org,
+        kvmarm@lists.cs.columbia.edu, kvm@vger.kernel.org,
+        alex.williamson@redhat.com, joel.schopp@amd.com,
+        kim.phillips@freescale.com
+Cc: linux-kernel@vger.kernel.org, patches@linaro.org, will.deacon@arm.com,
+        a.motakis@virtualopensystems.com, a.rigo@virtualopensystems.com,
+        john.liuli@huawei.com
+Subject: [RFC 2/9] KVM: ARM: VGIC: add forwarded irq rbtree lock
+Date: Mon, 25 Aug 2014 15:27:37 +0200
+Message-Id: <1408973264-30384-3-git-send-email-eric.auger@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1408973264-30384-1-git-send-email-eric.auger@linaro.org>
+References: <1408973264-30384-1-git-send-email-eric.auger@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the initial version of the RK808 PMIC. This is a power management IC
-for multimedia products.
+add a lock related to the rb tree manipulation. The rb tree can be
+searched in one thread (irqfd handler for instance) and map/unmap
+happen in another.
 
-It provides regulators that are able to supply power to processor cores
-and other components. The chip provides other modules including RTC, Clockout
+Signed-off-by: Eric Auger <eric.auger@linaro.org>
+---
+ virt/kvm/arm/vgic.c | 46 +++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 37 insertions(+), 9 deletions(-)
 
-Changes in v5:
-Adviced by doug
-- add some error checking in probe
-- move "rockchip,rk808.h" into the patch about dt-bindings
-- re-edit base on Mark's branch
-- fixed a bug about set_time failed
-Advices by Mark Brown
-- add description about regulator valid name.
-- add a header file "rockchip,rk808".
-
-Changes in v4:
-Adviced by doug
-- add "clock-output-names" propertiey
-- add a header file "rockchip,rk808.h"
-- use &client->dev replace rk808->dev
-Adviced by Lee Jones in v2
-- modify the description in Kconfig
-- remove some unnecessary header files
-- remove dev from struct rk808
-- use enum for define RK808_ID...
-Advices by Doug
-- add a "#clock-cells" propertiy
-- update the example
-
-Changes in v3:
-- fix compile err
-- fix compile err
-
-Changes in v2:
-Adviced by javier.martinez
-- separated from rtc-rk808.c
-Adviced by Mark Browm:
-- change of_find_node_by_name to find_child_by_name
-- use RK808_NUM_REGULATORS as the name of the constant
-- create a pdata when missing platform data
-- use the rk808_reg name to supply_regulator name
-- replace regulator_register with devm_regulator_register
-- some other problem with coding style
-Adviced by javier.martinez
-- Add a separate clock driver, rather than in RTC driver
-Adviced by Mark Browm:
-- use defines for register setting value
-- remove rtc alarm disable in shutdown
-- remove while(1) in shutdown
-- remove read 0x2f in probe
-
-Chris Zhong (5):
-  dt-bindings: Add RK808 device tree bindings document
-  MFD: RK808: Add new mfd driver for RK808
-  RTC: RK808: add RTC driver for RK808
-  Regulator: RK808: modify for struct rk808 change
-  clk: RK808: Add clkout driver for RK808
-
- Documentation/devicetree/bindings/mfd/rk808.txt |  142 ++++++++
- drivers/clk/Kconfig                             |    9 +
- drivers/clk/Makefile                            |    1 +
- drivers/clk/clk-rk808.c                         |  164 +++++++++
- drivers/mfd/Kconfig                             |   13 +
- drivers/mfd/Makefile                            |    1 +
- drivers/mfd/rk808.c                             |  265 ++++++++++++++
- drivers/regulator/rk808-regulator.c             |   34 +-
- drivers/rtc/Kconfig                             |   11 +
- drivers/rtc/Makefile                            |    1 +
- drivers/rtc/rtc-rk808.c                         |  442 +++++++++++++++++++++++
- include/dt-bindings/clock/rockchip,rk808.h      |   11 +
- include/linux/mfd/rk808.h                       |  211 +++++++++++
- 13 files changed, 1285 insertions(+), 20 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/rk808.txt
- create mode 100644 drivers/clk/clk-rk808.c
- create mode 100644 drivers/mfd/rk808.c
- create mode 100644 drivers/rtc/rtc-rk808.c
- create mode 100644 include/dt-bindings/clock/rockchip,rk808.h
- create mode 100644 include/linux/mfd/rk808.h
-
+diff --git a/virt/kvm/arm/vgic.c b/virt/kvm/arm/vgic.c
+index 195c10c..3311e0a 100644
+--- a/virt/kvm/arm/vgic.c
++++ b/virt/kvm/arm/vgic.c
+@@ -1628,9 +1628,15 @@ static struct rb_root *vgic_get_irq_phys_map(struct kvm_vcpu *vcpu,
+ 
+ int vgic_map_phys_irq(struct kvm_vcpu *vcpu, int virt_irq, int phys_irq)
+ {
+-	struct rb_root *root = vgic_get_irq_phys_map(vcpu, virt_irq);
+-	struct rb_node **new = &root->rb_node, *parent = NULL;
++	struct rb_root *root;
++	struct rb_node **new, *parent = NULL;
+ 	struct irq_phys_map *new_map;
++	struct vgic_dist *dist = &vcpu->kvm->arch.vgic;
++
++	spin_lock(&dist->rb_tree_lock);
++
++	root = vgic_get_irq_phys_map(vcpu, virt_irq);
++	new = &root->rb_node;
+ 
+ 	/* Boilerplate rb_tree code */
+ 	while (*new) {
+@@ -1642,13 +1648,17 @@ int vgic_map_phys_irq(struct kvm_vcpu *vcpu, int virt_irq, int phys_irq)
+ 			new = &(*new)->rb_left;
+ 		else if (this->virt_irq > virt_irq)
+ 			new = &(*new)->rb_right;
+-		else
++		else {
++			spin_unlock(&dist->rb_tree_lock);
+ 			return -EEXIST;
++		}
+ 	}
+ 
+ 	new_map = kzalloc(sizeof(*new_map), GFP_KERNEL);
+-	if (!new_map)
++	if (!new_map) {
++		spin_unlock(&dist->rb_tree_lock);
+ 		return -ENOMEM;
++	}
+ 
+ 	new_map->virt_irq = virt_irq;
+ 	new_map->phys_irq = phys_irq;
+@@ -1656,6 +1666,8 @@ int vgic_map_phys_irq(struct kvm_vcpu *vcpu, int virt_irq, int phys_irq)
+ 	rb_link_node(&new_map->node, parent, new);
+ 	rb_insert_color(&new_map->node, root);
+ 
++	spin_unlock(&dist->rb_tree_lock);
++
+ 	return 0;
+ }
+ 
+@@ -1683,24 +1695,39 @@ static struct irq_phys_map *vgic_irq_map_search(struct kvm_vcpu *vcpu,
+ 
+ int vgic_get_phys_irq(struct kvm_vcpu *vcpu, int virt_irq)
+ {
+-	struct irq_phys_map *map = vgic_irq_map_search(vcpu, virt_irq);
++	struct irq_phys_map *map;
++	struct vgic_dist *dist = &vcpu->kvm->arch.vgic;
++	int ret;
++
++	spin_lock(&dist->rb_tree_lock);
++	map = vgic_irq_map_search(vcpu, virt_irq);
+ 
+ 	if (map)
+-		return map->phys_irq;
++		ret = map->phys_irq;
++	else
++		ret =  -ENOENT;
++
++	spin_unlock(&dist->rb_tree_lock);
++	return ret;
+ 
+-	return -ENOENT;
+ }
+ 
+ int vgic_unmap_phys_irq(struct kvm_vcpu *vcpu, int virt_irq, int phys_irq)
+ {
+-	struct irq_phys_map *map = vgic_irq_map_search(vcpu, virt_irq);
++	struct irq_phys_map *map;
++	struct vgic_dist *dist = &vcpu->kvm->arch.vgic;
++
++	spin_lock(&dist->rb_tree_lock);
++
++	map = vgic_irq_map_search(vcpu, virt_irq);
+ 
+ 	if (map && map->phys_irq == phys_irq) {
+ 		rb_erase(&map->node, vgic_get_irq_phys_map(vcpu, virt_irq));
+ 		kfree(map);
++		spin_unlock(&dist->rb_tree_lock);
+ 		return 0;
+ 	}
+-
++	spin_unlock(&dist->rb_tree_lock);
+ 	return -ENOENT;
+ }
+ 
+@@ -1896,6 +1923,7 @@ int kvm_vgic_create(struct kvm *kvm)
+ 	}
+ 
+ 	spin_lock_init(&kvm->arch.vgic.lock);
++	spin_lock_init(&kvm->arch.vgic.rb_tree_lock);
+ 	kvm->arch.vgic.in_kernel = true;
+ 	kvm->arch.vgic.vctrl_base = vgic->vctrl_base;
+ 	kvm->arch.vgic.vgic_dist_base = VGIC_ADDR_UNDEF;
 -- 
-1.7.9.5
-
+1.9.1
 
