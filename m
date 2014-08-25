@@ -1,71 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754872AbaHYJsG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 05:48:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8825 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752100AbaHYJsE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 05:48:04 -0400
-Date: Mon, 25 Aug 2014 11:47:47 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Jiri Olsa <jolsa@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 06/10] perf evlist: Allow growing pollfd on add method
-Message-ID: <20140825094747.GB11611@krava.brq.redhat.com>
-References: <1408741190-5123-1-git-send-email-acme@kernel.org>
- <1408741190-5123-7-git-send-email-acme@kernel.org>
+	id S1753528AbaHYJ7E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 05:59:04 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:31512 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751540AbaHYJ7B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 05:59:01 -0400
+Date: Mon, 25 Aug 2014 12:58:48 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Janet Liu <janetliu526@qq.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging:lustre:lnet: lib-md.c fix checkpath warnings and
+ errors.
+Message-ID: <20140825095848.GC5046@mwanda>
+References: <1408902090-8397-1-git-send-email-janetliu526@qq.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1408741190-5123-7-git-send-email-acme@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1408902090-8397-1-git-send-email-janetliu526@qq.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 05:59:46PM -0300, Arnaldo Carvalho de Melo wrote:
+On Mon, Aug 25, 2014 at 01:41:29AM +0800, Janet Liu wrote:
+> Sliences the following warning and error:
+> 
+>   WARNING: line over 80 characters
+>   WARNING: space prohibited between function name and open parenthesis '('
+>   ERROR: do not use C99 // comments
+>   ERROR: trailing statements should be on next line
+> 
+> Signed-off-by: Janet Liu <janetliu526@qq.com>
 
-SNIP
+This breaks the build.
 
->  
-> -static int perf_evlist__alloc_pollfd(struct perf_evlist *evlist)
-> +static int perf_evlist__grow_pollfd(struct perf_evlist *evlist, int hint)
-> +{
-> +	int nr_fds_alloc = evlist->nr_fds_alloc + hint;
-> +	size_t size = sizeof(struct pollfd) * nr_fds_alloc;
-> +	struct pollfd *pollfd = realloc(evlist->pollfd, size);
-> +
-> +	if (pollfd == NULL)
-> +		return -ENOMEM;
-> +
-> +	evlist->nr_fds_alloc = nr_fds_alloc;
-> +	evlist->pollfd	     = pollfd;
-> +	return 0;
-> +}
-> +
-> +int perf_evlist__alloc_pollfd(struct perf_evlist *evlist)
->  {
->  	int nr_cpus = cpu_map__nr(evlist->cpus);
->  	int nr_threads = thread_map__nr(evlist->threads);
-> @@ -416,16 +430,28 @@ static int perf_evlist__alloc_pollfd(struct perf_evlist *evlist)
->  			nfds += nr_cpus * nr_threads;
->  	}
->  
-> -	evlist->pollfd = malloc(sizeof(struct pollfd) * nfds);
-> -	return evlist->pollfd != NULL ? 0 : -ENOMEM;
-> +	if (evlist->nr_fds_alloc - evlist->nr_fds < nfds &&
-> +	    perf_evlist__grow_pollfd(evlist, nfds) < 0)
-> +		return -ENOMEM;
+regards,
+dan carpenter
 
-hum, so do we still need perf_evlist__alloc_pollfd?
-we grow any time we need inside perf_evlist__add_pollfd..
-
-jirka
