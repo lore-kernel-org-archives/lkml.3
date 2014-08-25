@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004AbaHYC5j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 22:57:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47952 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753826AbaHYC5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 22:57:38 -0400
-Message-ID: <53FAA607.3060307@redhat.com>
-Date: Mon, 25 Aug 2014 10:57:11 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1753992AbaHYDNo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 23:13:44 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:62323 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753805AbaHYDNn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Aug 2014 23:13:43 -0400
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>, Pankaj Gupta <pagupta@redhat.com>
-CC: Jiri Pirko <jiri@resnulli.us>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, davem@davemloft.net, dgibson@redhat.com,
-        vfalico@gmail.com, edumazet@google.com, vyasevic@redhat.com,
-        hkchu@google.com, wuzhy@linux.vnet.ibm.com, xemul@parallels.com,
-        therbert@google.com, bhutchings@solarflare.com, xii@google.com,
-        stephen@networkplumber.org
-Subject: Re: [RFC 2/4] tuntap: Publish tuntap maximum number of queues as
- module_param
-References: <1408369040-1216-1-git-send-email-pagupta@redhat.com> <1408369040-1216-3-git-send-email-pagupta@redhat.com> <20140820105817.GB1916@nanopsycho.orion> <20140820111724.GE17371@redhat.com> <53F575F8.7000208@redhat.com> <175719847.27217377.1408708342392.JavaMail.zimbra@redhat.com> <20140824111421.GC9561@redhat.com>
-In-Reply-To: <20140824111421.GC9561@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <53FAA544.4030401@intel.com>
+References: <53F9CC77.70009@t-online.de>
+	<CA+55aFwZP1gyf=mvTrKjWwj6YE6=5y1+aZdmsNMHUp6d3dckXw@mail.gmail.com>
+	<53FAA544.4030401@intel.com>
+Date: Sun, 24 Aug 2014 20:13:42 -0700
+X-Google-Sender-Auth: 4L26qroq1D_j9HJEsGMGv0COdFA
+Message-ID: <CA+55aFzaHF=S3QQ6M-+JBdWVRCSHKs-jjKo==8OS7q90cUyHBw@mail.gmail.com>
+Subject: Re: [Bug 3.14.17] inconsistent lock state
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: Knut Petersen <Knut_Petersen@t-online.de>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Thomas Renninger <trenn@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/24/2014 07:14 PM, Michael S. Tsirkin wrote:
-> On Fri, Aug 22, 2014 at 07:52:22AM -0400, Pankaj Gupta wrote:
->>> On 08/20/2014 07:17 PM, Michael S. Tsirkin wrote:
->>>> On Wed, Aug 20, 2014 at 12:58:17PM +0200, Jiri Pirko wrote:
->>>>>> Mon, Aug 18, 2014 at 03:37:18PM CEST, pagupta@redhat.com wrote:
->>>>>>>> This patch publishes maximum number of tun/tap queues allocated as a
->>>>>>>> read_only module parameter which a user space application like
->>>>>>>> libvirt
->>>>>>>> can make use of to limit maximum number of queues. Value of read_only
->>>>>>>> module parameter can be writable only at module load time. If no
->>>>>>>> value is set
->>>>>>>> at module load time a default value 256 is used which is equal to
->>>>>>>> maximum number
->>>>>>>> of vCPUS allowed by KVM.
->>>>>>>>
->>>>>>>> Administrator can specify maximum number of queues only at the driver
->>>>>>>> module load time.
->>>>>>>>
->>>>>>>> Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
->>>>>>>> ---
->>>>>>>> drivers/net/tun.c |   13 +++++++++++--
->>>>>>>> 1 files changed, 11 insertions(+), 2 deletions(-)
->>>>>>>>
->>>>>>>> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
->>>>>>>> index acaaf67..1f518e2 100644
->>>>>>>> --- a/drivers/net/tun.c
->>>>>>>> +++ b/drivers/net/tun.c
->>>>>>>> @@ -119,6 +119,9 @@ struct tap_filter {
->>>>>>>>
->>>>>>>> #define TUN_FLOW_EXPIRE (3 * HZ)
->>>>>>>>
->>>>>>>> +static int max_tap_queues = MAX_TAP_QUEUES;
->>>>>>>> +module_param(max_tap_queues, int, S_IRUGO);
->>>>>> Please do not introduce new module paramaters. Please other ways to
->>>>>> interchange values with userspace.
->>>> I suggested this initially, but thinking more about it, I agree.
->>>>
->>>> It's a global limit (necessary to limit memory utilization by
->>>> userspace), but it should be possible to change it
->>>> after module load.
->>> How about pass this limit through ifr during TUNSETIFF, then
->>> alloc_netdev_mq() can use this limit.
->> Any other ideas/comments from the experts. Or shall I re-repost other patches 
->> in the series except this patch until we agree on one.
->>
-> It's kind of useless without a way for userspace to discover
-> how many queues it can create, no?
+On Sun, Aug 24, 2014 at 7:53 PM, Lan Tianyu <tianyu.lan@intel.com> wrote:
 >
+> Sorry about this. We are resolving the issue in the other bug
+> report(https://lkml.org/lkml/2014/8/21/606) and I have proposed a fix
+> patch(http://marc.info/?l=linux-acpi&m=140869309231199&w=2).
 
-We can implement ethtool_get_channels for tuntap. But I'm still not
-clear why this is necessary.
+Ahh. Good. That patch looks fine to me, and while it makes me worry a
+bit that some codepath expects the power/sleep button to be handled
+immediately in interrupt context, I guess the actual callbacks have
+never actually done anything but schedule other things to happen (ie
+add events to some queue), and making the context be the same as the
+other notify callbacks would seem to be a good thing regardless of
+this particular bug.
+
+Knut - can you please test the patch Lan pointed at? I realize it
+doesn't seem to be entirely consistent for you (which is a bit
+surprising, I wonder why lockdep doesn't trigger it consistently), but
+it would be good to have more testing. Even if that patch looks
+"obviously good" (tm) at a quick glance.
+
+                  Linus
