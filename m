@@ -1,82 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933138AbaHYRXe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 13:23:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25135 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932836AbaHYRXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 13:23:33 -0400
-Date: Mon, 25 Aug 2014 13:22:34 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Geoff Levand <geoff@infradead.org>
-Cc: Eric Biederman <ebiederm@xmission.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andrew Morton <akpm@linux-foundation.org>, kexec@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        maximilian attems <max@stro.at>, Paul Bolle <pebolle@tiscali.nl>
-Subject: Re: [PATCH 1/5] kexec: Fix make headers_check
-Message-ID: <20140825172234.GD14379@redhat.com>
-References: <cover.1408731991.git.geoff@infradead.org>
- <115373b6ac68ee7a305975896e1c4971e8e51d4c.1408731991.git.geoff@infradead.org>
+	id S1756217AbaHYRZU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 13:25:20 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:56143 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858AbaHYRZR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 13:25:17 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18791SA5hFQJnWXBNnXNVJf
+Date: Mon, 25 Aug 2014 10:25:07 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Nishanth Menon <nm@ti.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Tero Kristo <t-kristo@ti.com>,
+        Paul Walmsley <paul@pwsan.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Keerthy <j-keerthy@ti.com>,
+        =?utf-8?Q?Beno=C3=AEt?= Cousson <bcousson@baylibre.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        devicetree@vger.kernel.org, Dave Gerlach <d-gerlach@ti.com>
+Subject: Re: [PATCH 1/3] pinctrl: bindings: Add OMAP pinctrl binding
+Message-ID: <20140825172506.GM17254@atomide.com>
+References: <1408716062-26055-1-git-send-email-nm@ti.com>
+ <1408716062-26055-2-git-send-email-nm@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <115373b6ac68ee7a305975896e1c4971e8e51d4c.1408731991.git.geoff@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1408716062-26055-2-git-send-email-nm@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 06:39:47PM +0000, Geoff Levand wrote:
-> Remove the unneded declaration for a kexec_load() routine.
+* Nishanth Menon <nm@ti.com> [140822 07:03]:
+> Add basic skeleton of OMAP pinctrl bindings. This is compatible with
+> pinctrl,single bindings and is meant purely as a reference point.
 > 
-> Fixes errors like these when running 'make headers_check':
-> 
-> include/uapi/linux/kexec.h: userspace cannot reference function or variable defined in the kernel
-> 
-> Signed-off-by: Geoff Levand <geoff@infradead.org>
+> Signed-off-by: Nishanth Menon <nm@ti.com>
 
-I think Paul Bolle tried to remove this in the past and maximilian
-had objections.
+Looks like you have ti,omap2420-padconf and ti,omap2430-padconf missing
+but after adding those too:
 
-http://lists.infradead.org/pipermail/kexec/2014-January/010902.html
-
-I can't see that how exporting kernel prototype helps here. kexec-tools
-seems to be using syscall(__NR_kexec_load) directly for non-xen case. So
-I would be fine with removing this definition. Just trying to make sure
-that it does not break any other library or users of this declaration.
-
-Thanks
-Vivek
-
+Acked-by: Tony Lindgren <tony@atomide.com>
 
 > ---
->  include/uapi/linux/kexec.h | 6 ------
->  1 file changed, 6 deletions(-)
+>  .../bindings/pinctrl/ti,omap-pinctrl.txt           |    9 +++++++++
+>  1 file changed, 9 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/pinctrl/ti,omap-pinctrl.txt
 > 
-> diff --git a/include/uapi/linux/kexec.h b/include/uapi/linux/kexec.h
-> index 6925f5b..99048e5 100644
-> --- a/include/uapi/linux/kexec.h
-> +++ b/include/uapi/linux/kexec.h
-> @@ -55,12 +55,6 @@ struct kexec_segment {
->  	size_t memsz;
->  };
->  
-> -/* Load a new kernel image as described by the kexec_segment array
-> - * consisting of passed number of segments at the entry-point address.
-> - * The flags allow different useage types.
-> - */
-> -extern int kexec_load(void *, size_t, struct kexec_segment *,
-> -		unsigned long int);
->  #endif /* __KERNEL__ */
->  
->  #endif /* _UAPILINUX_KEXEC_H */
+> diff --git a/Documentation/devicetree/bindings/pinctrl/ti,omap-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/ti,omap-pinctrl.txt
+> new file mode 100644
+> index 0000000..156d964
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/pinctrl/ti,omap-pinctrl.txt
+> @@ -0,0 +1,9 @@
+> +OMAP Pinctrl definitions
+> +
+> +Required properties:
+> +- compatible : Should be one of:
+> +  "ti,omap3-padconf" - OMAP3 compatible pinctrl
+> +  "ti,omap4-padconf" - OMAP4 compatible pinctrl
+> +  "ti,omap5-padconf" - OMAP5 compatible pinctrl
+> +
+> +See Documentation/devicetree/bindings/pinctrl/pinctrl-single.txt for further details.
 > -- 
-> 1.9.1
+> 1.7.9.5
 > 
-> 
-> 
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
