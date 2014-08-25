@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756411AbaHYSai (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 14:30:38 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:54535 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752760AbaHYSah (ORCPT
+	id S1756433AbaHYSiv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 14:38:51 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:33588 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754005AbaHYSiu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 14:30:37 -0400
-Date: Mon, 25 Aug 2014 11:30:32 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: linux-input@vger.kernel.org
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Yunkang Tang <yunkang.tang@cn.alps.com>,
-        Paul Menzel <paulepanter@users.sourceforge.net>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Input: ALPS - suppress message about 'Unknown touchpad'
-Message-ID: <20140825183031.GA5151@core.coreip.homeip.net>
+	Mon, 25 Aug 2014 14:38:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140825102932.GA5772@amd>
+References: <72714b6b69d00496d6e55453423c4070de292bf4.1408724662.git.luto@amacapital.net>
+ <20140825102932.GA5772@amd>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 25 Aug 2014 11:38:28 -0700
+Message-ID: <CALCETrVk82563HWRYdX0a75usssLE=F_jM=vhTKL0y0xr9eEsg@mail.gmail.com>
+Subject: Re: [PATCH v2] checkpatch.pl: New instances of ENOSYS are errors
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Joe Perches <joe@perches.com>, Andy Whitcroft <apw@canonical.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we fail to match data returned by E7 and EC reports we state that we
-found "Unknown ALPS touchpad" whereas it is most likely it is not ALPS
-touchpad at all. Change wording a bit and reduce the message to debug so
-that it does not litter users logs and confuse them.
+On Aug 25, 2014 3:29 AM, "Pavel Machek" <pavel@ucw.cz> wrote:
+>
+> On Fri 2014-08-22 09:26:31, Andy Lutomirski wrote:
+> > ENOSYS means that a nonexistent system call was called.  We have a
+> > bad habit of using it for things like invalid operations on
+> > otherwise valid syscalls.  We should avoid this in new code.
+>
+> Is it good idea? I mean, doing EINVAL for subcalls is pretty
+> unhelpful.
 
-Reported-by: Paul Menzel <paulepanter@users.sourceforge.net>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
----
- drivers/input/mouse/alps.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+EOPNOTSUPP?
 
-diff --git a/drivers/input/mouse/alps.c b/drivers/input/mouse/alps.c
-index a59a1a6..a956b98 100644
---- a/drivers/input/mouse/alps.c
-+++ b/drivers/input/mouse/alps.c
-@@ -2234,8 +2234,8 @@ static int alps_identify(struct psmouse *psmouse, struct alps_data *priv)
- 		return 0;
- 	}
- 
--	psmouse_info(psmouse,
--		     "Unknown ALPS touchpad: E7=%3ph, EC=%3ph\n", e7, ec);
-+	psmouse_dbg(psmouse,
-+		    "Likely not an ALPS touchpad: E7=%3ph, EC=%3ph\n", e7, ec);
- 
- 	return -EINVAL;
- }
--- 
-2.1.0.rc2.206.gedb03e5
+The problem is that user code wants to do:
 
+bool foo_wrapper(int op)
+{
+  if (foo_not_supported)
+    return false
 
--- 
-Dmitry
+  if (foo(op) != 0) {
+    if (errno == ENOSYS)
+      foo_not_supported = true;
+    return false;
+  }
+
+  return true;
+}
+
+foo_wrapper(FOO_OP_A);
+foo_wrapper(FOO_OP_B);
+
+If FOO_OP_A returns -ENOSYS but FOO_OP_B does not, then this doesn't work.
+
+--Andy
