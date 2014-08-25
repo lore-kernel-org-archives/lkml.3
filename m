@@ -1,87 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932649AbaHYOOS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 10:14:18 -0400
-Received: from jdl.com ([208.123.74.7]:48725 "EHLO jdl.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754526AbaHYOOR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 10:14:17 -0400
-Message-Id: <E1XLv1z-0002Jv-VN@jdl.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-cc: Mark Rutland <mark.rutland@arm.com>,
-        Alexander Holler <holler@ahsoftware.de>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 0/9] dt: dependencies (for deterministic driver initialization order based on the DT)
-In-reply-to: <20140825133714.GH4163@ulmo.nvidia.com>
-References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de> <20140514141914.446F7C4153D@trevor.secretlab.ca> <20140821140211.GD19293@ulmo.nvidia.com> <53F64624.5000403@ahsoftware.de> <20140822131919.GX21734@leverpostej> <20140825093931.GB2399@ulmo> <E1XLu15-0002DP-6o@jdl.com> <20140825133714.GH4163@ulmo.nvidia.com>
-Comments: In-reply-to Thierry Reding <thierry.reding@gmail.com>
-   message dated "Mon, 25 Aug 2014 15:37:16 +0200."
-Date: Mon, 25 Aug 2014 09:13:59 -0500
-From: Jon Loeliger <jdl@jdl.com>
-X-Spam-Score: 0.8
+	id S932652AbaHYOWW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 10:22:22 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:42123 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932274AbaHYOWU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 10:22:20 -0400
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: netdev@vger.kernel.org
+Cc: davem@davemloft.net, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, f.fainelli@gmail.com,
+        eric.dumazet@gmail.com, mirqus@gmail.com,
+        Jonas Jensen <jonas.jensen@gmail.com>
+Subject: [PATCH v6 1/4] net: moxa: clear DESC1 on ndo_start_xmit()
+Date: Mon, 25 Aug 2014 16:22:11 +0200
+Message-Id: <1408976531-15589-1-git-send-email-jonas.jensen@gmail.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1408544322-32023-1-git-send-email-jonas.jensen@gmail.com>
+References: <1408544322-32023-1-git-send-email-jonas.jensen@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> 
-> > I believe some of the issues that need to be resolved are:
-> >
-> >     1) What constitutes a dependency?
-> >     2) How is that dependency expressed?
-> >     3) How do we add missing dependencies?
-> >     4) Backward compatability problems.
-> >
-> > There are other questions, of course.  Is it a topsort
-> > per bus?  Are there required "early devices"?  Should
-> > the inter-node dependencies be expressed at each node,
-> > or in a separate hierarchy within the DTS?  Others.
-> 
-> I think Grant already objected to the idea of explicitly adding
-> dependency information into the device tree sources.
+TX buffer length is not cleared on ndo_start_xmit().
+Failing to do so can bug/hang the controller and
+cause TX interrupts to stop altogether.
 
-Clearly, the reason to object to the introdcution of such
-an artificial dependency implies that it would be trying
-to express something that doesn't actually describe an
-existing hardware requirement.  That is, it wouldn't be
-"describing hardware".  That's fine.
+Remove the readl() and compute a new value for DESC1.
 
-But the inverse should also be true.  That is, we should
-ensure that where there *is* a hardware dependency that
-is currently not expressed, we should introduce that
-relationship.
+Addresses https://bugzilla.kernel.org/show_bug.cgi?id=69031
 
+Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+---
 
-> For regulators (and regulator-like bindings) the problem is somewhat
-> more difficult because they property names are not standardized. One way
-> to solve this would be to look for property names with a -supply suffix,
-> but that could obviously lead to false positives. One alternative that I
-> think could eliminate this would be to explicitly list dependencies in
-> drivers. This would allow core code to step through such a list and
-> resolve the (phandle, specifier) tuples.
+Notes:
+    Changes since v5:
+    
+    1. remove readl(desc + TX_REG_OFFSET_DESC1) in moxart_mac_start_xmit()
+    2. compute entirely new values for DESC1
+    3. set TX_DESC1_END if (tx_head == TX_DESC_NUM_MASK)
+    
+    Applies to next-20140825
 
-So, express the "additional SW dependencies" in the SW?
+ drivers/net/ethernet/moxa/moxart_ether.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-> Clocks are usually not a problem with deferred probing since they often
-> are registered early anyway.
+diff --git a/drivers/net/ethernet/moxa/moxart_ether.c b/drivers/net/ethernet/moxa/moxart_ether.c
+index 5020fd4..eed70d9 100644
+--- a/drivers/net/ethernet/moxa/moxart_ether.c
++++ b/drivers/net/ethernet/moxa/moxart_ether.c
+@@ -346,10 +346,9 @@ static int moxart_mac_start_xmit(struct sk_buff *skb, struct net_device *ndev)
+ 		len = ETH_ZLEN;
+ 	}
+ 
+-	txdes1 = readl(desc + TX_REG_OFFSET_DESC1);
+-	txdes1 |= TX_DESC1_LTS | TX_DESC1_FTS;
+-	txdes1 &= ~(TX_DESC1_FIFO_COMPLETE | TX_DESC1_INTR_COMPLETE);
+-	txdes1 |= (len & TX_DESC1_BUF_SIZE_MASK);
++	txdes1 = TX_DESC1_LTS | TX_DESC1_FTS | (len & TX_DESC1_BUF_SIZE_MASK);
++	if (tx_head == TX_DESC_NUM_MASK)
++		txdes1 |= TX_DESC1_END;
+ 	writel(txdes1, desc + TX_REG_OFFSET_DESC1);
+ 	writel(TX_DESC0_DMA_OWN, desc + TX_REG_OFFSET_DESC0);
+ 
+-- 
+1.8.2.1
 
-Ah, but how are they known to be needed early?  A toposort should sort
-them into that position.  That's not currently done.  And I doubt the
-set of nodes and expressed dependencies would cause them to be done
-early enough by today's standards.
-
-> Regulators on the other hand seem to be a fairly common trigger,
-> though, so they seem like a good candidate to focus on.
-
-Yeah.  And I've seen some debatable IRQ-PHY-PCIe interaction too.
-
-> Thierry
-
-jdl
