@@ -1,82 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756272AbaHYQrh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 12:47:37 -0400
-Received: from vps0.lunn.ch ([178.209.37.122]:38567 "EHLO vps0.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753635AbaHYQrX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 12:47:23 -0400
-Date: Mon, 25 Aug 2014 18:41:24 +0200
-From: Andrew Lunn <andrew@lunn.ch>
-To: Chen-Yu Tsai <wens@csie.org>
-Cc: Wolfram Sang <wsa@the-dreams.de>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, linux-i2c@vger.kernel.org,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] i2c: mv64xxx: continue probe when clock-frequency is
- missing
-Message-ID: <20140825164124.GA22771@lunn.ch>
-References: <1408981819-3477-1-git-send-email-wens@csie.org>
+	id S1756296AbaHYQug (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 12:50:36 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:53123 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756226AbaHYQue convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 12:50:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408981819-3477-1-git-send-email-wens@csie.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53FB673F.8070200@6wind.com>
+References: <cover.1408581429.git.rgb@redhat.com> <cd6cd0622ce677b639afae18a69ff79c72490bab.1408581429.git.rgb@redhat.com>
+ <CALCETrUnzG1V8w+H9ctAJP+Hvo8LQax=dhLG4bBpBKmVi+C1cQ@mail.gmail.com>
+ <20140822015803.GG20529@madcap2.tricolour.ca> <CALCETrUkFD0iNi1SV_6ypN5Kf4GYybT5tzjRjRQuLzT9iBnQAg@mail.gmail.com>
+ <53FB3A86.2060203@6wind.com> <CALCETrW1Lv0qeccMjNHSEzgtiaNN3NgJVR1dFjjR_dw5KVVnqA@mail.gmail.com>
+ <53FB59A3.5030804@6wind.com> <CALCETrWHrWhm89B5s=pLt_9eTx3ZF8ifA6y6CwknWaWU7dp=sQ@mail.gmail.com>
+ <53FB673F.8070200@6wind.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 25 Aug 2014 09:50:11 -0700
+Message-ID: <CALCETrVVQ2Ugesq8zWK_gmj46Zr6mFL2Riyf=Lrdqy8ze3YfPA@mail.gmail.com>
+Subject: Re: [PATCH V4 3/8] namespaces: expose ns instance serial numbers in proc
+To: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, linux-audit@redhat.com,
+        Linux API <linux-api@vger.kernel.org>,
+        Richard Guy Briggs <rgb@redhat.com>, netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 11:50:19PM +0800, Chen-Yu Tsai wrote:
-> The "clock-frequency" DT property is listed as optional, However,
-> the current code stores the return value of of_property_read_u32 in
-> the return code of mv64xxx_of_config, but then forgets to clear it
-> after setting the default value of "clock-frequency". It is then
-> passed out to the main probe function, resulting in a probe failure
-> when "clock-frequency" is missing.
-> 
-> This patch checks and then throws away the result of
-> of_property_read_u32, instead of storing it and having to clear it
-> afterwards.
-> 
-> This issue was discovered after the property was removed from all
-> sunxi DTs.
-> 
-> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
-> Cc: stable@vger.kernel.org
+On Mon, Aug 25, 2014 at 9:41 AM, Nicolas Dichtel
+<nicolas.dichtel@6wind.com> wrote:
+> Le 25/08/2014 18:13, Andy Lutomirski a écrit :
+>
+>> On Mon, Aug 25, 2014 at 8:43 AM, Nicolas Dichtel
+>> <nicolas.dichtel@6wind.com> wrote:
+>>>
+>>> Le 25/08/2014 16:04, Andy Lutomirski a écrit :
+>>>
+>>>> On Aug 25, 2014 6:30 AM, "Nicolas Dichtel" <nicolas.dichtel@6wind.com>
+>>>> wrote:
+>>>>>>
+>>>>>>
+>>>>>> CRIU wants to save the complete state of a namespace and then restore
+>>>>>> it.  For that to work, any information exposed to things in the
+>>>>>> namespace *cannot* be globally unique or unique per boot, since CRIU
+>>>>>> needs to arrange for that information to match whatever it was when
+>>>>>> CRIU saved it.
+>>>>>
+>>>>>
+>>>>>
+>>>>> How are ifindex of network devices managed? These ifindexes are unique
+>>>>> per boot,
+>>>>> thus can change depending on the order in which netdev are created.
+>>>>> These ifindexes are unique per boot and exposed to userspace ...
+>>>>>
+>>>>
+>>>> This does not appear to be true.
+>>>>
+>>>> $ sudo unshare --net
+>>>> # ip link add veth0 type veth peer name veth1
+>>>> # ip link
+>>>> 1: lo: <LOOPBACK> mtu 65536 qdisc noop state DOWN mode DEFAULT group
+>>>> default
+>>>>       link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+>>>> 2: veth1: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode
+>>>> DEFAULT group default qlen 1000
+>>>>       link/ether 06:0d:59:c7:a6:a8 brd ff:ff:ff:ff:ff:ff
+>>>> 3: veth0: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode
+>>>> DEFAULT group default qlen 1000
+>>>>       link/ether b2:5c:8b:f2:12:28 brd ff:ff:ff:ff:ff:ff
+>>>> # logout
+>>>> $ ip link
+>>>> 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN
+>>>>       link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+>>>> 3: em1: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc pfifo_fast
+>>>> state DOWN qlen 1000
+>>>>
+>>> I've probably misunderstood what you're trying to say. ifindexes are
+>>> unique
+>>> per
+>>> boot and per netns.
+>>
+>>
+>> I think we both misunderstood each other.  The ifindexes are unique
+>> *per netns*, which means that, if you're unprivileged in a netns,
+>> global information doesn't leak to you.  I think this is good.
+>
+> Ok, I agree. I think audit daemons are always running under privileged
+> users.
+>
+>
+>>
+>>>>
+>>>> Let me try again, with emphasis in the right place.
+>>>>
+>>>> I think that *code running in a namespace* has no business even
+>>>> knowing a unique identity of *that namespace* from the perspective of
+>>>> the host.
+>>>>
+>>>> In your example, if there's a veth device between netns A and netns B,
+>>>> then code *in netns A* has no business knowing the identity of its
+>>>> veth peer if its peer (B) is a sibling or ancestor.  It also IMO has
+>>>> no business knowing the identity of its own netns (A) other than as
+>>>> "my netns".
+>>>
+>>>
+>>> I do not agree (see the example below).
+>>>
+>>>
+>>>>
+>>>> If A and B are siblings, then their parent needs to know where that
+>>>> veth device goes, but I think this is already the case to a sufficient
+>>>> extent today.
+>>>
+>>>
+>>> I'm not aware of a hierarchy between netns. A daemon should be able to
+>>> got the full network configuration, even if it's started when this
+>>> configuration
+>>> is already applied, ie even if it doesn't know what happen before it
+>>> starts.
+>>>
+>>
+>> I don't know exactly which namespaces have an explicit hierarchy, but
+>> there is certainly a hierarchy of *user* namespaces, and network
+>> namespaces live in user namespaces, so they at least have somewhat of
+>> a hierarchy.
+>>
+>>>
+>>>>
+>>>> I feel like this discussion is falling into a common trap of new API
+>>>> discussions.  Can one of you who wants this API please articulate,
+>>>> with a reasonably precise example, what it is that you want to do, why
+>>>> you can't easily do it already, and how this API helps?  I currently
+>>>> understand how the API creates problems, but I don't understand how it
+>>>> solves any problems, and I will NAK it (and I suspect that Eric will,
+>>>> too, which is pretty much fatal) unless that changes.
+>>>
+>>>
+>>> What I'm trying to solve is to have full info in netlink messages sent by
+>>> the
+>>> kernel, thus beeing able to identify a peer netns (and this is close from
+>>> what
+>>> audit guys are trying to have). Theorically, messages sent by the kernel
+>>> can
+>>> be
+>>> reused as is to have the same configuration. This is not the case with
+>>> x-netns
+>>> devices. Here is an example, with ip tunnels:
+>>>
+>>> $ ip netns add 1
+>>> $ ip link add ipip1 type ipip remote 10.16.0.121 local 10.16.0.249 dev
+>>> eth0
+>>> $ ip -d link ls ipip1
+>>> 8: ipip1@eth0: <POINTOPOINT,NOARP> mtu 1480 qdisc noop state DOWN mode
+>>> DEFAULT group default
+>>>      link/ipip 10.16.0.249 peer 10.16.0.121 promiscuity 0
+>>>      ipip remote 10.16.0.121 local 10.16.0.249 dev eth0 ttl inherit
+>>> pmtudisc
+>>> $ ip link set ipip1 netns 1
+>>> $ ip netns exec 1 ip -d link ls ipip1
+>>> 8: ipip1@tunl0: <POINTOPOINT,NOARP,M-DOWN> mtu 1480 qdisc noop state DOWN
+>>> mode DEFAULT group default
+>>>      link/ipip 10.16.0.249 peer 10.16.0.121 promiscuity 0
+>>>      ipip remote 10.16.0.121 local 10.16.0.249 dev tunl0 ttl inherit
+>>> pmtudisc
+>>>
+>>> Now informations got with 'ip link' are wrong and incomplete:
+>>>   - the link dev is now tunl0 instead of eth0, because we only got an
+>>> ifindex
+>>>     from the kernel without any netns informations.
+>>>   - the encapsulation addresses are not part of this netns but the user
+>>> doesn't
+>>>     known that (still because netns info is missing). These IPv4
+>>> addresses
+>>> may
+>>>     exist into this netns.
+>>>   - it's not possible to create the same netdevice with these infos.
+>>>
+>>
+>> Aha.  That's a genuine problem.
+>>
+>> Perhaps we need a concept of which netnses should be able to see each
+>> other.
+>
+> Yes, I agree. This is not required for all netns, only a subset of netns
+> should
+>
+> be able to see each other.
+>
+>>
+>> I think I would be okay with a somewhat different outcome from your
+>> example:
+>>
+>> $ ip netns exec 1 ip -d link ls ipip1
+>> 8: ipip1@[unknown device in another namespace]:
+>> <POINTOPOINT,NOARP,M-DOWN> mtu 1480 qdisc noop state DOWN
+>>
+>> I think this outcome is mandatory if netns 1 lives in a subsidiary
+>> user namespace.
+>
+> Yes.
+>
+>
+>>
+>> Certainly, if you do the 'ip link' in the original namespace, I agree
+>> that this should work.
+>
+> And yes :)
+>
+> I will update my previous proposal
+> (http://thread.gmane.org/gmane.linux.network/315933/focus=321753)
+> to allow to get an id for a peer netns only when the user namespace is the
+> same.
+>
 
-It would be good to add
+I think it should work if the peer userns is the same or a descendent.
+I also wonder whether the peer's ifindex should be suppressed if peer
+userns is not the same or a descendent.
 
-Fixes: 4c730a06c19bb ("i2c: mv64xxx: Set bus frequency to 100kHz if clock-frequency is not provided")
+Now you just have to get Eric to be happy with the id allocation. :)
+This may be nontrivial.
 
-Acked-by: Andrew Lunn <andrew@lunn.ch>
+>
+>>
+>> For most namespace types, this all works transparently, since
+>> everything has an real identity all the way up the hierarchy.  Network
+>> namespaces are different.
+>>
+>> I don't think that exposing serial numbers in /proc is a good
+>> solution, both for the reasons already described and because I don't
+>> think that iproute2 should need to muck around with /proc to function
+>
+> A netlink API is probably enough. But it will help only for the network
+> problem, not for audit. I was hoping to find a common solution.
 
-	  Andrew
+I still don't understand why audit needs anything beyond the audit
+part of this patch set.  I have no problem with audit seeing that
+migrated/restored namespaces are really brand-new namespaces, as long
+as the code in those namespaces isn't exposed to it.
+
+>
+>
+>> correctly.  Eric, any clever ideas here?  Do we need fancier netlink
+>> messages for this?
+>>
+>> --Andy
+>>
+>
 
 
-> ---
->  drivers/i2c/busses/i2c-mv64xxx.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-mv64xxx.c b/drivers/i2c/busses/i2c-mv64xxx.c
-> index 6dc5ded..2f64273 100644
-> --- a/drivers/i2c/busses/i2c-mv64xxx.c
-> +++ b/drivers/i2c/busses/i2c-mv64xxx.c
-> @@ -746,8 +746,7 @@ mv64xxx_of_config(struct mv64xxx_i2c_data *drv_data,
->  	}
->  	tclk = clk_get_rate(drv_data->clk);
->  
-> -	rc = of_property_read_u32(np, "clock-frequency", &bus_freq);
-> -	if (rc)
-> +	if (of_property_read_u32(np, "clock-frequency", &bus_freq))
->  		bus_freq = 100000; /* 100kHz by default */
->  
->  	if (!mv64xxx_find_baud_factors(bus_freq, tclk,
-> -- 
-> 2.1.0
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
