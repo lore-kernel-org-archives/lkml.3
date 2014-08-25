@@ -1,92 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755031AbaHYJHQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 05:07:16 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:45981 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751849AbaHYJHN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 05:07:13 -0400
-Message-ID: <53FAFCBC.2050407@collabora.co.uk>
-Date: Mon, 25 Aug 2014 11:07:08 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1752380AbaHYJQk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 05:16:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33266 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751000AbaHYJQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 05:16:39 -0400
+Message-ID: <53FAFEE0.9000408@redhat.com>
+Date: Mon, 25 Aug 2014 11:16:16 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Yuvaraj Cd <yuvaraj.lkml@gmail.com>, Doug Anderson <dianders@chromium.org>
-CC: Mark Brown <broonie@kernel.org>, Olof Johansson <olof@lixom.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Prashanth G <prashanth.g@samsung.com>,
-        Alim Akhtar <alim.akhtar@samsung.com>, sunil joshi <joshi@samsung.com>
-Subject: Re: [PATCH v9 1/2] regulator: Add driver for max77802 PMIC PMIC regulators
-References: <1408350762-15520-1-git-send-email-javier.martinez@collabora.co.uk>	<1408350762-15520-2-git-send-email-javier.martinez@collabora.co.uk>	<CA+NduCDL65=Y=PyU3FfXsTz0FfbmYzicGrY4U7ji3_V+nXhtCQ@mail.gmail.com>	<53F73472.8010609@collabora.co.uk>	<20140822144531.GV24407@sirena.org.uk>	<53F7838F.8060906@collabora.co.uk>	<20140822183054.GY24407@sirena.org.uk>	<53F7BDD8.7060500@collabora.co.uk>	<CAD=FV=WC0h7fYm2QFqu3Zka7CsU4BtG-oyPpJav+ygC+gmCR+A@mail.gmail.com> <CA+NduCCT-KQ=gh7QWkBE4qkA2YOJ8KCVqbkC6Tkmb1aPvCsGFQ@mail.gmail.com>
-In-Reply-To: <CA+NduCCT-KQ=gh7QWkBE4qkA2YOJ8KCVqbkC6Tkmb1aPvCsGFQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: Wanpeng Li <wanpeng.li@linux.intel.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Zhang Yang <yang.z.zhang@intel.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: x86: fix xen guest panic due to lack of KVM_REQ_EVENT
+References: <1408953506-7289-1-git-send-email-wanpeng.li@linux.intel.com> <53FAFB53.7040806@redhat.com> <20140825090822.GA4955@kernel>
+In-Reply-To: <20140825090822.GA4955@kernel>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Yuvaraj,
-
-On 08/25/2014 10:22 AM, Yuvaraj Cd wrote:
->>> Good question. I'm not that familiar with the dw_mmc host controller nor
->>> its driver implementation so I'll let Yuvaraj or Doug to answer that.
-> Well,here it goes!
-> 1. Power ON the board LDO4CTRL1[7:6] 11b
-> 2. dw_mmc driver enable the vqmmc.
-> 3. checks for UHS support, complete the voltage switching t0 1.8V
-> 4. Does warm reset by reboot command.
-> 5. mmc core calls mmc_set_ios() with MMC_POWER_OFF.
-> 6. dw_mmc driver cut-off the regulator with LDO4CTRL1[7:6] is 00b
-> 7.dw_mmc driver enable the vqmmc.
->  But after step 7 also, LD4CTRL[7:6] is 00b.
-
-Ok, so the dw_mmc driver is enabling vqmmc, that's good.
-
+Il 25/08/2014 11:08, Wanpeng Li ha scritto:
+> Hi Paolo,
+> On Mon, Aug 25, 2014 at 11:01:07AM +0200, Paolo Bonzini wrote:
+>> Il 25/08/2014 09:58, Wanpeng Li ha scritto:
+>>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+>>> index c10408e..b7c0073 100644
+>>> --- a/arch/x86/kvm/x86.c
+>>> +++ b/arch/x86/kvm/x86.c
+>>> @@ -4928,6 +4928,8 @@ static void toggle_interruptibility(struct kvm_vcpu *vcpu, u32 mask)
+>>>  		if (!mask)
+>>>  			kvm_make_request(KVM_REQ_EVENT, vcpu);
+>>>  	}
+>>> +	if (!(int_shadow || mask))
+>>> +		kvm_make_request(KVM_REQ_EVENT, vcpu);
+>>>  }
+>>>  
+>>>  static void inject_emulated_exception(struct kvm_vcpu *vcpu)
 >>
->> I haven't seen the issue that Yuvaraj is reporting (but I also haven't
->> picked up all of the relevant patches and tried to reproduce), so I'm
->> going to have to leave it to Yuvaraj to answer.
->     static int max77802_enable(struct regulator_dev *rdev)
->     {
->       struct max77802_regulator_prv *max77802 = rdev_get_drvdata(rdev);
->      int id = rdev_get_id(rdev);
->      int shift = max77802_get_opmode_shift(id);
->      return regmap_update_bits(rdev->regmap,
-> rdev->desc->enable_reg,rdev->desc->enable_mask,max77802->opmode[id] <<
-> shift);
->   }
-> I think in the above code snippet, the "val" is what we got it during
-> the probe.We always write that value for enabling this regulator(which
-> is LDO4CTRL1[7:6] 00b after warm reset) which is not correct according
-> the MAX77802 manual.
+>> No, this patch undoes the optimization in the buggy patch.
 >>
+>> A KVM_REQ_EVENT must be missing somewhere else.
+>>
+> 
+> Could you give some tips in order that I can figure it out?
 
-I see, so probably until we have a way to define the operating mode for
-each regulator using DT we should set the opmode to normal when enabling a
-regulator independently of the value the hardware register reported on probe.
+I have no idea right now (I was planning to debug it this week).
 
-Can you please test the following change [0] so I can post as a proper
-patch? Doug, Mark do you think that forcing the regulator to opmode normal
-when enabling is the right solution here?
+(BTW, look at the original commit that introduced KVM_REQ_EVENT --
+https://git.kernel.org/cgit/virt/kvm/kvm.git/commit/?id=3842d135 -- and
+compare the patch and the commit message.  You can see that it was added
+to the emulator because it is a "place that can set EFLAGS" and this
+idea is preserved in the buggy patch).
 
-Best regards,
-Javier
+The important thing is that (despite Xen being involved) this is not
+related to nested virtualization.  So I would first of all try to see if
+some module parameter makes it go away (apicv and unrestricted mode
+especially), then capture a trace of the panic.  At least this is how I
+was planning to start... :)
 
-[0]
-diff --git a/drivers/regulator/max77802.c b/drivers/regulator/max77802.c
-index ad1caa9..917b5ab 100644
---- a/drivers/regulator/max77802.c
-+++ b/drivers/regulator/max77802.c
-@@ -180,7 +180,7 @@ static int max77802_enable(struct regulator_dev *rdev)
-
-        return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
-                                  rdev->desc->enable_mask,
--                                 max77802->opmode[id] << shift);
-+                                 MAX77802_OPMODE_NORMAL << shift);
- }
+Paolo
