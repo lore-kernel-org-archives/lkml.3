@@ -1,82 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754AbaHYILO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 04:11:14 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:54221 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754607AbaHYILM (ORCPT
+	id S1754777AbaHYIMa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 04:12:30 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:59286 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753965AbaHYIM2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 04:11:12 -0400
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Christoph Hellwig <hch@infradead.org>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Subject: [PATCH v2] drivers: scsi: #define missing include guards
-Date: Mon, 25 Aug 2014 10:10:48 +0200
-Message-Id: <1408954248-5913-1-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <20140824153515.GB16490@infradead.org>
-References: <20140824153515.GB16490@infradead.org>
+	Mon, 25 Aug 2014 04:12:28 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Olof Johansson <olof@lixom.net>, Andrew Bresticker <abrestic@chromium.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Kumar Gala <galak@codeaurora.org>, Ralf Baechle <ralf@linux-mips.org>,
+        David Daney <david.daney@cavium.com>, Rob Herring <robh+dt@kernel.org>,
+        Linux-MIPS <linux-mips@linux-mips.org>,
+        Qais Yousef <qais.yousef@imgtec.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, John Crispin <blogic@openwrt.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Jayachandran C <jchandra@broadcom.com>,
+        Paul Burton <paul.burton@imgtec.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 0/7] MIPS: Move device-tree files to a common location
+Date: Mon, 25 Aug 2014 10:12:10 +0200
+Message-ID: <2336240.173zr5MfQE@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-26-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAL_JsqLGdZRFXni0Y5Loij3FVfw8RzaizNaRA+_hccXz0opkKw@mail.gmail.com>
+References: <1408651466-8334-1-git-send-email-abrestic@chromium.org> <20140823161456.GA2758@localhost> <CAL_JsqLGdZRFXni0Y5Loij3FVfw8RzaizNaRA+_hccXz0opkKw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:fnt7z7cDY94EwYpLt3sZPm7SRGzXbeXCjniWA+2MT7K
+ FtwUg8CFLix7kWsDtMEHqZ6OgRPQYX1N/gVRNa/77IwwZB/FY0
+ H5uhakb/0TBty54gzW0IetgBACZno2g12jnbCsxUhSm9r1mDlo
+ ViuKyPxHCcFshxsj0Jo4SFE550NYSE/qsatJv0B+CVzkAjuYOg
+ ml2/XahyPt/qs+PUs85Vu2T+3KILgCPqg9HB+Sy4FgyXYKGrZD
+ UBUSIrbPIX2jHwGJU7sn8jyNA3fAXcsOmPu4aqCf37jHynlqnF
+ T+CO6VUBHtlsfHaKmNmonQYgUetinja9LbwjJOKcQWEqCIyQv/
+ KIlw420VLkZ5ReHUZLso=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The four files aha1542.h, aha1740.h, gvp11.h and mvme147.h under
-drivers/scsi/ contain two-thirds of an include guard, but do not
-#define the macro. Add those #defines. git grep says the macro names
-are not defined elsewhere.
+On Sunday 24 August 2014 18:43:35 Rob Herring wrote:
+> On Sat, Aug 23, 2014 at 11:14 AM, Olof Johansson <olof@lixom.net> wrote:
+> > On Sat, Aug 23, 2014 at 03:56:42PM +0200, Arnd Bergmann wrote:
+> >>
+> >> Another argument is that we plan to actually move all the dts files out of
+> >> the kernel into a separate project in the future. We really don't want to
+> >> have the churn of moving all the files now when they get deleted in one
+> >> of the next merge windows.
+> >
+> > To be honest, I don't see that happening within the forseeable
+> > future. Some of us maintainers like talking about this, but everyone who
+> > actually develops have nightmares about this scenario. Nobody knows how
+> > it'll be done without causing some real serious impact on productivity.
+> >
+> >> I don't know if we talked about whether that move should be done for
+> >> all architectures at the same time. If that is the plan, I think it
+> >> would be best to not move the MIPS files at all but also wait until
+> >> they can get removed from the kernel tree.
+> >
+> > If MIPS can restructure now before things start growing, then I'd really
+> > recommend that they do so and not hold off waiting on some event that
+> > might never happen. 
+> 
+> Yes, I agree on both points.
+> 
 
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
----
-For good measure, here's a version with a non-broken commit message.
+Ok, fair enough.
 
- drivers/scsi/aha1542.h | 1 +
- drivers/scsi/aha1740.h | 1 +
- drivers/scsi/gvp11.h   | 1 +
- drivers/scsi/mvme147.h | 1 +
- 4 files changed, 4 insertions(+)
-
-diff --git a/drivers/scsi/aha1542.h b/drivers/scsi/aha1542.h
-index b871d2b..8f4e07a 100644
---- a/drivers/scsi/aha1542.h
-+++ b/drivers/scsi/aha1542.h
-@@ -1,4 +1,5 @@
- #ifndef _AHA1542_H
-+#define _AHA1542_H
- 
- /* $Id: aha1542.h,v 1.1 1992/07/24 06:27:38 root Exp root $
-  *
-diff --git a/drivers/scsi/aha1740.h b/drivers/scsi/aha1740.h
-index af23fd6..7ea484f 100644
---- a/drivers/scsi/aha1740.h
-+++ b/drivers/scsi/aha1740.h
-@@ -1,4 +1,5 @@
- #ifndef _AHA1740_H
-+#define _AHA1740_H
- 
- /* $Id$
-  *
-diff --git a/drivers/scsi/gvp11.h b/drivers/scsi/gvp11.h
-index 852913c..5aabe90 100644
---- a/drivers/scsi/gvp11.h
-+++ b/drivers/scsi/gvp11.h
-@@ -1,4 +1,5 @@
- #ifndef GVP11_H
-+#define GVP11_H
- 
- /* $Id: gvp11.h,v 1.4 1997/01/19 23:07:12 davem Exp $
-  *
-diff --git a/drivers/scsi/mvme147.h b/drivers/scsi/mvme147.h
-index bfd4566..479e9b4 100644
---- a/drivers/scsi/mvme147.h
-+++ b/drivers/scsi/mvme147.h
-@@ -1,4 +1,5 @@
- #ifndef MVME147_H
-+#define MVME147_H
- 
- /* $Id: mvme147.h,v 1.4 1997/01/19 23:07:10 davem Exp $
-  *
--- 
-2.0.4
-
+	Arnd
