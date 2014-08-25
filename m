@@ -1,111 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756405AbaHYSWi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 14:22:38 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:43421 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751316AbaHYSWh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 14:22:37 -0400
+	id S1756454AbaHYSYc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 14:24:32 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:37335 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754959AbaHYSYa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 14:24:30 -0400
+Date: Mon, 25 Aug 2014 12:24:14 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Scot Doyle <lkml14@scotdoyle.com>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>,
+        Stefan Berger <stefanb@linux.vnet.ibm.com>,
+        Luigi Semenzato <semenzato@google.com>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tpm_tis: Verify ACPI-specified interrupt
+Message-ID: <20140825182414.GB1298@obsidianresearch.com>
+References: <alpine.LNX.2.11.1408220043560.1360@localhost.localdomain>
+ <20140822160626.GA8477@obsidianresearch.com>
+ <alpine.LNX.2.11.1408221924070.1046@localhost.localdomain>
+ <20140822203241.GB1733@obsidianresearch.com>
+ <alpine.LNX.2.11.1408250629110.1207@localhost.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <20140825125306.GS29733@console-pimps.org>
-References: <53E62EEF.9040801@gmail.com>
-	<53F752A2.7080604@redhat.com>
-	<CAPWNY8V4pfazk4Hw9qu07cAQZywC-GS7eyS+54fazXZaKMjMQw@mail.gmail.com>
-	<CAPWNY8V=T=Y5uPX9J_qjdkTJRnctDs-PoTQP7LEX_cKQEn0_Zg@mail.gmail.com>
-	<20140825105559.GQ29733@console-pimps.org>
-	<CAPWNY8V8D74CNXGhDwp2gpPpeV2F=Qao32i-0Mhq=9zhvDXLLw@mail.gmail.com>
-	<20140825125306.GS29733@console-pimps.org>
-Date: Mon, 25 Aug 2014 11:22:34 -0700
-X-Google-Sender-Auth: CDATDDf7TV2F_mLX70FkfFlYyvQ
-Message-ID: <CAE9FiQWOp0pGSXhnaTe62zaFe7QodS6BSCKnC8qamjm3qTRRJA@mail.gmail.com>
-Subject: Re: Loading initrd above 4G causes freeze on boot
-From: Yinghai Lu <yinghai@kernel.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: =?UTF-8?Q?Mantas_Mikul=C4=97nas?= <grawity@gmail.com>,
-        Harald Hoyer <harald@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-efi@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: multipart/mixed; boundary=20cf3011e1256897320501784593
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.11.1408250629110.1207@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf3011e1256897320501784593
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Mon, Aug 25, 2014 at 06:38:33AM +0000, Scot Doyle wrote:
 
-On Mon, Aug 25, 2014 at 5:53 AM, Matt Fleming <matt@console-pimps.org> wrot=
-e:
-> On Mon, 25 Aug, at 02:08:59PM, Mantas Mikul=C4=97nas wrote:
+>    command. Now the chip is running. It will not be reboot on resume
+>    (unlike stock SeaBIOS), presumably since the firmware is not
+>    interacting with the TPM. But because an error 38 is returned during
+>    the selftest issued on resume, its functioning will degrade over
+>    suspend/resume cycles until the machine refuses to enter suspend,
 
->> [    0.000000] RAMDISK: [mem 0xbe22e000-0xbe799fff]
+So, be aware, on x86 the TPM specs require some BIOS support for
+suspend/resume to work properly.
 
-that is pushed down under 4G.
+> Manual workarounds for these three payloads:
+> 
+> 1. Depthcharge. I don't know how ChromeOS interacts with the TPM chip.
+>    From what I've seen, it may boot with kernel parameters tpm_tis.force=1
+>    and tpm_tis.interrupts=0 (see #2 following). The kernel is older.
 
->
-> OK, we're out of options here. Yinghai, we're going to have to revert
-> your patch, 4bf7111f5016 ("x86/efi: Support initrd loaded above 4G")
->
-> We could conceivably add a boot parameter option to attempt loading
-> inirds above 4G, but we can't turn the feature on by default because of
-> all these buggy EFI implementations - things must work out of the box.
->
-> But the boot parameter would be useful for those people that a) know
-> their firmware isn't buggy and b) need to leave < 4G memory available
-> for use by other things. Yinghai, can you provide some justification for
-> your original commit? Do you have concrete use cases where loading
-> initrds above 4G is critical? How important is it that we enable this
-> functionality as opposed to reverting it?
+The HW or interrupt routing is fundamentally broken somehow?
+ 
+> 2. Stock SeaBIOS. Boot the kernel with tpm_tis.force=1 or
+>    tpm_tis.interrupts=0. 'force=1' causes the module to ignore the ACPI
+>    TPM interrupt entry and instead probe for interrupts. Since no
+>    interrupts are found to be valid, the driver falls back to polling
+>    mode. And 'interrupts=0' causes the interrupt probing to be skipped,
+>    defaulting to polling mode. So, even though most users set BOTH of
+>    these parameters, they have the same effect on these machines and only
+>    one or the other are necessary.
+> 
+> 3. Custom SeaBIOS. Blacklist the tpm_tis module so that it doesn't load
+>    and therefore doesn't issue startup(clear) to the TPM chip.
 
-The use case: install RHEL full will take more than 8G in the root disk.
-then make initramfs image to include every file in the disk, then boot
-kernel and initramfs as diskless boot.
+It seems to me at least in this case you should be able to get rid of
+the IRQ entry, people are going to be flashing the custom SeaBIOS
+anyhow.
 
-To use this huge initramfs image, first one is kexec, second way is using
-UEFI 64bit.
+Further, in x86 land you really should have BIOS support for operating
+a TPM if the OS is going to touch it. I don't really understand why
+you want to flash a custom BIOS that doesn't work and then hack the
+kernel to fix the custom BIOS's deficiencies? Fix the BIOS, you are
+flashing it already anyhow.
 
-So the point is the initramfs is bigger than 4G.
+> The firmware sends a startup(clear). Then the tpm_tis module is loaded 
+> because there is a matching ACPI entry for "IFX0102". By default, module 
+> parameters are interrupts=1 and force=0. I will talk about these default 
+> values, since that is the case that I'd like to fix. force=0 causes the 
+> module to look for an ACPI entry. It finds an entry indicating IRQ 6 and 
+> continues with the tpm_tis_init function.
 
-Please check if you can apply attached one. That will keep under 2G at firs=
-t,
-then try any high address.
+So, sounds like IRQ=6 is a BIOS bug.
 
-Thanks
+> tpm_tis_init starts in polling mode. It registers the hardware device, 
+> performs some initial setup, queries the chip manufacturer and vendor id,
+> deterines the chip capabilities (I think they are all enabled), gets 
+> timeouts, does a selftest (which passes), sets up the interrupt and read 
+> queues, and enables chip interrupts. It does all of this in polling
+> mode.
 
-Yinghai
+This is the wrong order, I think, the interrupts should be on before
+issuing commands, other tpm drivers are working this way already.
 
---20cf3011e1256897320501784593
-Content-Type: text/x-patch; charset=US-ASCII; name="efi_initrd_above_4g_second_try.patch"
-Content-Disposition: attachment; 
-	filename="efi_initrd_above_4g_second_try.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hza4kfia0
+> I've verified that no blocking commands are send to the TPM during the 
+> tpm_tis_init function. Since none are sent, no interrupts fail, and the 
+> attach procedes as normal.
 
-LS0tCiBhcmNoL3g4Ni9ib290L2NvbXByZXNzZWQvZWJvb3QuYyB8ICAgMTYgKysrKysrKysrLS0t
-LS0tLQogMSBmaWxlIGNoYW5nZWQsIDkgaW5zZXJ0aW9ucygrKSwgNyBkZWxldGlvbnMoLSkKCklu
-ZGV4OiBsaW51eC0yLjYvYXJjaC94ODYvYm9vdC9jb21wcmVzc2VkL2Vib290LmMKPT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PQotLS0gbGludXgtMi42Lm9yaWcvYXJjaC94ODYvYm9vdC9jb21wcmVzc2VkL2Vib290LmMKKysr
-IGxpbnV4LTIuNi9hcmNoL3g4Ni9ib290L2NvbXByZXNzZWQvZWJvb3QuYwpAQCAtMTAzMiw3ICsx
-MDMyLDYgQEAgc3RydWN0IGJvb3RfcGFyYW1zICptYWtlX2Jvb3RfcGFyYW1zKHN0cgogCWludCBp
-OwogCXVuc2lnbmVkIGxvbmcgcmFtZGlza19hZGRyOwogCXVuc2lnbmVkIGxvbmcgcmFtZGlza19z
-aXplOwotCXVuc2lnbmVkIGxvbmcgaW5pdHJkX2FkZHJfbWF4OwogCiAJZWZpX2Vhcmx5ID0gYzsK
-IAlzeXNfdGFibGUgPSAoZWZpX3N5c3RlbV90YWJsZV90ICopKHVuc2lnbmVkIGxvbmcpZWZpX2Vh
-cmx5LT50YWJsZTsKQEAgLTEwOTUsMTUgKzEwOTQsMTggQEAgc3RydWN0IGJvb3RfcGFyYW1zICpt
-YWtlX2Jvb3RfcGFyYW1zKHN0cgogCiAJbWVtc2V0KHNkdCwgMCwgc2l6ZW9mKCpzZHQpKTsKIAot
-CWlmIChoZHItPnhsb2FkZmxhZ3MgJiBYTEZfQ0FOX0JFX0xPQURFRF9BQk9WRV80RykKLQkJaW5p
-dHJkX2FkZHJfbWF4ID0gLTFVTDsKLQllbHNlCi0JCWluaXRyZF9hZGRyX21heCA9IGhkci0+aW5p
-dHJkX2FkZHJfbWF4OwotCiAJc3RhdHVzID0gaGFuZGxlX2NtZGxpbmVfZmlsZXMoc3lzX3RhYmxl
-LCBpbWFnZSwKIAkJCQkgICAgICAoY2hhciAqKSh1bnNpZ25lZCBsb25nKWhkci0+Y21kX2xpbmVf
-cHRyLAotCQkJCSAgICAgICJpbml0cmQ9IiwgaW5pdHJkX2FkZHJfbWF4LAorCQkJCSAgICAgICJp
-bml0cmQ9IiwgaGRyLT5pbml0cmRfYWRkcl9tYXgsCisJCQkJICAgICAgJnJhbWRpc2tfYWRkciwg
-JnJhbWRpc2tfc2l6ZSk7CisKKwlpZiAoc3RhdHVzICE9IEVGSV9TVUNDRVNTICYmCisJICAgIGhk
-ci0+eGxvYWRmbGFncyAmIFhMRl9DQU5fQkVfTE9BREVEX0FCT1ZFXzRHKQorCQlzdGF0dXMgPSBo
-YW5kbGVfY21kbGluZV9maWxlcyhzeXNfdGFibGUsIGltYWdlLAorCQkJCSAgICAgIChjaGFyICop
-KHVuc2lnbmVkIGxvbmcpaGRyLT5jbWRfbGluZV9wdHIsCisJCQkJICAgICAgImluaXRyZD0iLCAt
-MVVMLAogCQkJCSAgICAgICZyYW1kaXNrX2FkZHIsICZyYW1kaXNrX3NpemUpOworCiAJaWYgKHN0
-YXR1cyAhPSBFRklfU1VDQ0VTUykKIAkJZ290byBmYWlsMjsKIAloZHItPnJhbWRpc2tfaW1hZ2Ug
-PSByYW1kaXNrX2FkZHIgJiAweGZmZmZmZmZmOwo=
---20cf3011e1256897320501784593--
+tpm_get_timeouts and tpm_do_selftest should both be commands that
+potentially wait for interrupt.
+ 
+> Side note 1: my understanding is that the module exchanges data with the 
+> TPM in the same way whether in polling mode or interrupt mode.
+
+Right, the interrupt simply indicates when the TPM has completed
+executing the comamnd, the driver can either poll loop or wait on IRQ
+to read back the status register bit indicating the command is done.
+
+> To make stock SeaBIOS work automatically:
+> 1. For all systems in interrupt mode because of an ACPI entry: Use a
+>    non-fragile method to detect correct functioning of the TPM and the
+>    failure of interrupts. If detected, then fall back to polling mode.
+>    Worst case is (slightly?) degraded performance.
+> 2. Same as 1, but only for quirked machines
+> 
+> To make custom SeaBIOS work automatically:
+> 3. For all systems: If error 38 received from selftest at resume, do not
+>    issue subsequent save_state commands before suspend. (This approach has
+>    been tested.)
+
+This isn't right, if tpm core is going to handle resume without BIOS
+support then it must do the protocol properly. IIRC this is issuing a
+startup and then restore state command at resume (the BIOS is expected
+to do this on x86, and it is expected to not jump back to the OS if
+something goes wrong with the TPM, or the resume image has been
+tampered with)
+
+This might be interesting to people doing embedded (and I can't recall
+exactly, but I want to say that one of the drivers implemented this).
+
+Clearly we'd need a way to turn on 'embedded' mode for the TPM, but
+that could potentially be a module parameter on x86...
+
+> 4. For all systems: Do not send startup(clear) in tpm_get_timeouts unless
+>    a module parameter is set.
+
+No, all embedded systems require this functionality, why would you
+want to take this out?
+
+Jason
