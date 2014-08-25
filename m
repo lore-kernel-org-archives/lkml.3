@@ -1,89 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756321AbaHYQz1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 12:55:27 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:38148 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755473AbaHYQzV (ORCPT
+	id S1756348AbaHYQza (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 12:55:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59909 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756314AbaHYQz1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 12:55:21 -0400
-Date: Mon, 25 Aug 2014 18:10:34 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Chen-Yu Tsai <wens@csie.org>
-Cc: Wolfram Sang <wsa@the-dreams.de>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, stable@vger.kernel.org
-Subject: Re: [PATCH] i2c: mv64xxx: continue probe when clock-frequency is
- missing
-Message-ID: <20140825161033.GF15297@lukather>
-References: <1408981819-3477-1-git-send-email-wens@csie.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="JCYGd/UpHK4EX+A4"
-Content-Disposition: inline
-In-Reply-To: <1408981819-3477-1-git-send-email-wens@csie.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 25 Aug 2014 12:55:27 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Hugh Dickins <hughd@google.com>, Konstantin Khlebnikov <koct9i@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Lukas Czerner <lczerner@redhat.com>, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 05/13] shmem: fix splicing from a hole while it's punched
+Date: Mon, 25 Aug 2014 09:54:51 -0700
+Message-Id: <1408985699-31838-6-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1408985699-31838-1-git-send-email-kamal@canonical.com>
+References: <1408985699-31838-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.8.13.28 -stable review patch.  If anyone has any objections, please let me know.
 
---JCYGd/UpHK4EX+A4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+------------------
 
-On Mon, Aug 25, 2014 at 11:50:19PM +0800, Chen-Yu Tsai wrote:
-> The "clock-frequency" DT property is listed as optional, However,
-> the current code stores the return value of of_property_read_u32 in
-> the return code of mv64xxx_of_config, but then forgets to clear it
-> after setting the default value of "clock-frequency". It is then
-> passed out to the main probe function, resulting in a probe failure
-> when "clock-frequency" is missing.
->=20
-> This patch checks and then throws away the result of
-> of_property_read_u32, instead of storing it and having to clear it
-> afterwards.
->=20
-> This issue was discovered after the property was removed from all
-> sunxi DTs.
->=20
-> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
-> Cc: stable@vger.kernel.org
+From: Hugh Dickins <hughd@google.com>
 
-Good catch!
+commit b1a366500bd537b50c3aad26dc7df083ec03a448 upstream.
 
-Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+shmem_fault() is the actual culprit in trinity's hole-punch starvation,
+and the most significant cause of such problems: since a page faulted is
+one that then appears page_mapped(), needing unmap_mapping_range() and
+i_mmap_mutex to be unmapped again.
 
-Thanks!
-Maxime
+But it is not the only way in which a page can be brought into a hole in
+the radix_tree while that hole is being punched; and Vlastimil's testing
+implies that if enough other processors are busy filling in the hole,
+then shmem_undo_range() can be kept from completing indefinitely.
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+shmem_file_splice_read() is the main other user of SGP_CACHE, which can
+instantiate shmem pagecache pages in the read-only case (without holding
+i_mutex, so perhaps concurrently with a hole-punch).  Probably it's
+silly not to use SGP_READ already (using the ZERO_PAGE for holes): which
+ought to be safe, but might bring surprises - not a change to be rushed.
 
---JCYGd/UpHK4EX+A4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+shmem_read_mapping_page_gfp() is an internal interface used by
+drivers/gpu/drm GEM (and next by uprobes): it should be okay.  And
+shmem_file_read_iter() uses the SGP_DIRTY variant of SGP_CACHE, when
+called internally by the kernel (perhaps for a stacking filesystem,
+which might rely on holes to be reserved): it's unclear whether it could
+be provoked to keep hole-punch busy or not.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+We could apply the same umbrella as now used in shmem_fault() to
+shmem_file_splice_read() and the others; but it looks ugly, and use over
+a range raises questions - should it actually be per page? can these get
+starved themselves?
 
-iQIcBAEBAgAGBQJT+1/5AAoJEBx+YmzsjxAgXk4QAIrsDsvevACWgULkDCKbX6GG
-Om+1BX0PnSWgG/36X9316UshKp04C1n36TzZjqWtWsviyZS7wuwo7i+yfwzdmia4
-xGisS+0wq/hyKzBv6NwpOoZaV+Pqsri21LNLGG/I/4h/yN8F77zPtx2DaQig6M/+
-PaNl8Ut3oeXYSQoo9oby38rsu1hccifJUORRidAic5L7sRCp2Cg0UXDtvZpphA5J
-Korn74Fss335PLNR+IQWX0JNLj0iY3Xhshdh9M9Ox0Bdq9C0PPiNf/ySpGeiZVYZ
-v94zuZdgbadTcnIXa9uzD/MYlVVgucFpPjTGWlG2XWk3N12Sb+obfLFBJIJ6ZWLS
-2G1Qno/wNcVIBPV8/FpEJ38rjVdZkObDBCqDCP86zWB/P2UONiSbcRE5uXR5VNIu
-DjlFqtfY5ASAtF6hxVaI6jqg+VKW1PXpTIagn8BsixI+KZwLK3Q21kSkuNU9pUGJ
-lPBj1r4Z9j802jYGCzUxv6Fx1Z6EhyEeVwInqNB/gqIFrlVB4RzgMDqiT6aLH6/Y
-KsRSlbDmXwqLXAEhWAqTcEuexewFljxhHijI1cxGIPtL42LuheG+s3RB4/iG7heH
-DA9M3s56Rh405V+wv+ZjxDy1YRKtLcZre44leOZ/d4h1+Dl6AJHP4HKtU2NAFb1+
-XEh1gbtU1x1juOsiLukX
-=jzml
------END PGP SIGNATURE-----
+The origin of this part of the problem is my v3.1 commit d0823576bf4b
+("mm: pincer in truncate_inode_pages_range"), once it was duplicated
+into shmem.c.  It seemed like a nice idea at the time, to ensure
+(barring RCU lookup fuzziness) that there's an instant when the entire
+hole is empty; but the indefinitely repeated scans to ensure that make
+it vulnerable.
 
---JCYGd/UpHK4EX+A4--
+Revert that "enhancement" to hole-punch from shmem_undo_range(), but
+retain the unproblematic rescanning when it's truncating; add a couple
+of comments there.
+
+Remove the "indices[0] >= end" test: that is now handled satisfactorily
+by the inner loop, and mem_cgroup_uncharge_start()/end() are too light
+to be worth avoiding here.
+
+But if we do not always loop indefinitely, we do need to handle the case
+of swap swizzled back to page before shmem_free_swap() gets it: add a
+retry for that case, as suggested by Konstantin Khlebnikov; and for the
+case of page swizzled back to swap, as suggested by Johannes Weiner.
+
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Suggested-by: Vlastimil Babka <vbabka@suse.cz>
+Cc: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Lukas Czerner <lczerner@redhat.com>
+Cc: Dave Jones <davej@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ luis: backported to 3.11: used hughd's backport to 3.10.50 ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ mm/shmem.c | 24 +++++++++++++++---------
+ 1 file changed, 15 insertions(+), 9 deletions(-)
+
+diff --git a/mm/shmem.c b/mm/shmem.c
+index e679c38..840643a 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -533,22 +533,19 @@ static void shmem_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
+ 		return;
+ 
+ 	index = start;
+-	for ( ; ; ) {
++	while (index < end) {
+ 		cond_resched();
+ 		pvec.nr = shmem_find_get_pages_and_swap(mapping, index,
+ 				min(end - index, (pgoff_t)PAGEVEC_SIZE),
+ 							pvec.pages, indices);
+ 		if (!pvec.nr) {
+-			if (index == start || unfalloc)
++			/* If all gone or hole-punch or unfalloc, we're done */
++			if (index == start || end != -1)
+ 				break;
++			/* But if truncating, restart to make sure all gone */
+ 			index = start;
+ 			continue;
+ 		}
+-		if ((index == start || unfalloc) && indices[0] >= end) {
+-			shmem_deswap_pagevec(&pvec);
+-			pagevec_release(&pvec);
+-			break;
+-		}
+ 		mem_cgroup_uncharge_start();
+ 		for (i = 0; i < pagevec_count(&pvec); i++) {
+ 			struct page *page = pvec.pages[i];
+@@ -560,8 +557,12 @@ static void shmem_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
+ 			if (radix_tree_exceptional_entry(page)) {
+ 				if (unfalloc)
+ 					continue;
+-				nr_swaps_freed += !shmem_free_swap(mapping,
+-								index, page);
++				if (shmem_free_swap(mapping, index, page)) {
++					/* Swap was replaced by page: retry */
++					index--;
++					break;
++				}
++				nr_swaps_freed++;
+ 				continue;
+ 			}
+ 
+@@ -570,6 +571,11 @@ static void shmem_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
+ 				if (page->mapping == mapping) {
+ 					VM_BUG_ON(PageWriteback(page));
+ 					truncate_inode_page(mapping, page);
++				} else {
++					/* Page was replaced by swap: retry */
++					unlock_page(page);
++					index--;
++					break;
+ 				}
+ 			}
+ 			unlock_page(page);
+-- 
+1.9.1
+
