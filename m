@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933426AbaHYTMq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 15:12:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34194 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932253AbaHYTMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 15:12:45 -0400
-Date: Mon, 25 Aug 2014 21:09:56 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Julien Tinnes <jln@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] ipc/shm: fix the historical/wrong mm->start_stack
-	check
-Message-ID: <20140825190956.GA25759@redhat.com>
-References: <20140823144246.GA6281@redhat.com> <20140823144327.GA6299@redhat.com> <20140823152240.GH25918@moon> <20140823155832.GA9406@redhat.com> <alpine.LSU.2.11.1408241818530.8474@eggly.anvils> <20140825150301.GB3021@redhat.com> <alpine.LSU.2.11.1408250856020.24245@eggly.anvils> <20140825171820.GB8338@redhat.com> <alpine.LSU.2.11.1408251135540.24957@eggly.anvils>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1408251135540.24957@eggly.anvils>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756509AbaHYTO1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 15:14:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:60481 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751189AbaHYTOZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 15:14:25 -0400
+Message-ID: <1408994058.8997.33.camel@fourier>
+Subject: Re: [3.8.y.z extended stable] Linux 3.8.13.28 stable review
+From: Kamal Mostafa <kamal@canonical.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com, "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, 25 Aug 2014 12:14:18 -0700
+In-Reply-To: <20140825170033.GA18021@kroah.com>
+References: <1408985699-31838-1-git-send-email-kamal@canonical.com>
+	 <20140825170033.GA18021@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25, Hugh Dickins wrote:
->
-> On Mon, 25 Aug 2014, Oleg Nesterov wrote:
-> > On 08/25, Hugh Dickins wrote:
-> >
-> > > And I think I'll let Linus's guard page justify your 4 (to match comment)
-> > > in place of the original's mysterious 5.
-> >
-> > Ah, thanks again. Yes, if we want to guarantee 4 pages we should check 5.
-> >
-> > Although obviously this doesn't explain the original's 5, this was
-> > written before check_stack_guard_page().
->
-> I meant, you changed the coded 5 to 4, to match the comment above it;
-> and if I were insistent on maximizing back-compatible-safety, I would
-> say that 4 should go back to 5;
+On Mon, 2014-08-25 at 10:00 -0700, Greg KH wrote:
+> On Mon, Aug 25, 2014 at 09:54:46AM -0700, Kamal Mostafa wrote:
+> > This is the start of the review cycle for the Linux 3.8.13.28 stable kernel.
+> > 
+> >  ** NOTE: This will be the last Linux 3.8.y.z extended stable version
+> >  ** to be released and supported by me and the Ubuntu Kernel team.
+> 
+> I know this is the last release, but I have gotten some complaints by
+> people who are confused by the numbering scheme you are using for the
+> Canonical stable kernel releases.  Can you please use the EXTRAVERSION
+> field with a "-something" tag in it to differenciate from the "normal"
+> kernel.org stable releases?
 
-I already did this ;) I'll send v2 patch in a minute.
+We'll consider that idea for future extended stable versions maintained
+by our team.
 
-> But I didn't understand your "to guarantee 4 we should check 5".
+Thanks,
 
-I just tried to say that I fully agree with your point.
+ -Kamal
 
-I didn't dare to preserve your acks although the patch is almost the
-same, I'll appreciate it if you can ack v2 too.
 
-Oleg.
+> A simple "-ubuntu" or "-canonical" or "-fuzzy_bunnies" marking would be
+> fine, or whatever you want to pick.
+> 
+> Everyone used to do this a long time ago when we had lots of different
+> kernel releases / trees floating around in the pre-git days, which made
+> things much easier to figure out where the trees came from.
+> 
+> thanks,
+> 
+> greg k-h
+> 
+
 
