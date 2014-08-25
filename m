@@ -1,199 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756173AbaHYQCa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 12:02:30 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:40907 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755979AbaHYQC2 (ORCPT
+	id S1756179AbaHYQES (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 12:04:18 -0400
+Received: from smtprelay0015.hostedemail.com ([216.40.44.15]:48274 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754782AbaHYQER (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 12:02:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <F766E4F80769BD478052FB6533FA745D5944CE9331@SC-VEXCH4.marvell.com>
-References: <1398346047-10276-1-git-send-email-yxlraid@gmail.com>
-	<CAPcyv4jZaR0x4ChMvBYCCq-sUgyvf6CraKj+Tn+qmcvUbxwezQ@mail.gmail.com>
-	<CAPcyv4hQxtHdAXDvj9cF1prTpH0unJ7VX1ZjA5aJq8UeVhNC2Q@mail.gmail.com>
-	<F766E4F80769BD478052FB6533FA745D5944CE9331@SC-VEXCH4.marvell.com>
-Date: Mon, 25 Aug 2014 09:02:27 -0700
-Message-ID: <CAPcyv4i6oEO7Bcz6m652SyW1HCisXfUZVX9-sWB2QWKBMnH2mw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] libsas: modify SATA error handler
-From: Dan Williams <dan.j.williams@intel.com>
-To: Xiangliang Yu <yuxiangl@marvell.com>
-Cc: Xiangliang Yu <yxlraid@gmail.com>, Tejun Heo <tj@kernel.org>,
-        James Bottomley <JBottomley@parallels.com>,
-        Todd E Brandt <todd.e.brandt@intel.com>,
-        Lukasz Dorau <lukasz.dorau@intel.com>,
-        "IDE/ATA development list" <linux-ide@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 25 Aug 2014 12:04:17 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 64,4,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:968:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1539:1566:1593:1594:1711:1714:1730:1747:1777:1792:2332:2393:2559:2562:2828:3138:3139:3140:3141:3142:3871:3874:3876:4321:5007:7652:10004:10400:10848:11658:11914:12517:12519:12555:13019:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: neck73_5f64adb49c226
+X-Filterd-Recvd-Size: 1297
+Message-ID: <1408982654.20683.53.camel@joe-AO725>
+Subject: [PATCH] checkpatch: Remove debugging message
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Whitcroft <apw@canonical.com>, LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 25 Aug 2014 09:04:14 -0700
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some more comments below.
+An unnecessary --fix debugging left-over is removed.
 
-[..]
->>> +
->>> +       pmp = sata_srst_pmp(link);
->>> +
->>> +       msecs = 0;
->>> +       now = jiffies;
->>> +       if (time_after(deadline, now))
->>> +               msecs = jiffies_to_msecs(deadline - now);
->>> +
->>> +       memset(&tf, 0, sizeof(struct ata_taskfile));
->>> +       tf.ctl = ATA_SRST;
->>> +       tf.device = ATA_DEVICE_OBS;
->>> +
->>> +       if (sas_ata_exec_polled_cmd(ap, &tf, pmp, msecs)) {
->>> +               ret = -EIO;
->>> +               goto fail;
->>> +       }
->>> +
->>> +       tf.ctl &= ~ATA_SRST;
->>> +       sas_ata_exec_polled_cmd(ap, &tf, pmp, msecs);
->>
->> What about lldd's that do not know how to handle ATA_SRST?  I think we
->> need preparation patches to make SRST support opt-in, or teach all
->> lldds how to handle these SRST sas_tasks.
->
-> I think lldds have different actions to handle SRST because there is no unified standard.
-> But it should be easy to support it.
-> Later, I'll submit a mvsas patch to show how to support it.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ scripts/checkpatch.pl | 1 -
+ 1 file changed, 1 deletion(-)
 
-Right, but what about the other lldd's?  Libsas needs to check whether
-the lldd supports SRST before attempting to submit.
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index b385bcb..2152369 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -3749,7 +3749,6 @@ sub process {
+ 			if (ERROR("SPACING",
+ 				  "space prohibited before that close parenthesis ')'\n" . $herecurr) &&
+ 			    $fix) {
+-				print("fixlinenr: <$fixlinenr> fixed[fixlinenr]: <$fixed[$fixlinenr]>\n");
+ 				$fixed[$fixlinenr] =~
+ 				    s/\s+\)/\)/;
+ 			}
 
-[..]
->>> +/* According sata 3.0 spec 13.15.4.2, enable the device port */
->>> +static int sas_ata_pmp_hard_reset(struct ata_link *link, unsigned int *class,
->>> +                             unsigned long deadline) {
->>> +       struct ata_port *ap = link->ap;
->>> +       struct domain_device *dev = ap->private_data;
->>> +       struct sas_ha_struct *sas_ha = dev->port->ha;
->>> +       struct Scsi_Host *host = sas_ha->core.shost;
->>> +       struct sas_internal *i = to_sas_internal(host->transportt);
->>> +       int ret = -1;
->>> +       u32 scontrol = 0;
->>> +
->>> +       set_bit(SAS_DEV_RESET, &dev->state);
->>> +
->>> +       ret = sata_scr_read(link, SCR_CONTROL, &scontrol);
->>
->> I think a comment is needed clarifying that these reads generate
->> sas_tasks to a pmp and are not trying to read/write local SCR
->> registers that do not exist on a SAS hba.
->>
->
-> I think the situation can't happen here.
 
-Right, that's why we need a comment, because by normally libsas lldd's
-do not support scr-register accesses.
 
->
->>> +       if (ret)
->>> +               goto error;
->>> +
->>> +       /* enable device port */
->>> +       scontrol = 0x1;
->>> +       ret = sata_scr_write(link, SCR_CONTROL, scontrol);
->>> +       if (ret)
->>> +               goto error;
->>> +
->>> +       ata_msleep(ap, 1);
->>> +
->>> +       scontrol = 0x0;
->>> +       ret = sata_scr_write(link, SCR_CONTROL, scontrol);
->>> +       if (ret)
->>> +               goto error;
->>> +
->>> +       ata_msleep(ap, 10);
->>> +
->>> +       /* check device link status */
->>> +       if (ata_link_offline(link)) {
->>> +               SAS_DPRINTK("link is offline.\n");
->>> +               goto error;
->>> +       }
->>> +
->>> +       /* clear X bit */
->>> +       scontrol = 0xFFFFFFFF;
->>> +       ret = sata_scr_write(link, SCR_ERROR, scontrol);
->>> +       if (ret)
->>> +               goto error;
->>> +
->>> +       /* may be need to wait for device sig */
->>> +       ata_msleep(ap, 3);
->>> +
->>> +       /* check device class */
->>> +       if (i->dft->lldd_dev_classify)
->>> +               *class = i->dft->lldd_dev_classify(dev);
->>> +
->>> +       return 0;
->>> +
->>> +error:
->>> +       SAS_DPRINTK("failed to hard reset.\n");
->>> +       return ret;
->>> +}
->>> +
->>>  /*
->>>   * notify the lldd to forget the sas_task for this internal ata command
->>>   * that bypasses scsi-eh
->>> @@ -551,8 +771,12 @@ void sas_ata_end_eh(struct ata_port *ap)  static
->>> struct ata_port_operations sas_sata_ops = {
->>>         .prereset               = ata_std_prereset,
->>>         .hardreset              = sas_ata_hard_reset,
->>> +       .softreset              = sas_ata_soft_reset,
->>> +       .pmp_hardreset          = sas_ata_pmp_hard_reset,
->>> +       .freeze                 = sas_ata_freeze,
->>> +       .thaw                   = sas_ata_thaw,
->>>         .postreset              = ata_std_postreset,
->>> -       .error_handler          = ata_std_error_handler,
->>> +       .error_handler          = sata_pmp_error_handler,
->>>         .post_internal_cmd      = sas_ata_post_internal,
->>>         .qc_defer               = ata_std_qc_defer,
->>>         .qc_prep                = ata_noop_qc_prep,
->>> diff --git a/include/scsi/libsas.h b/include/scsi/libsas.h index
->>> ef7872c..a26466a 100644
->>> --- a/include/scsi/libsas.h
->>> +++ b/include/scsi/libsas.h
->>> @@ -689,6 +689,12 @@ struct sas_domain_function_template {
->>>         /* GPIO support */
->>>         int (*lldd_write_gpio)(struct sas_ha_struct *, u8 reg_type,
->>>                                u8 reg_index, u8 reg_count, u8
->>> *write_data);
->>> +
->>> +       /* ATA EH functions */
->>> +       void (*lldd_dev_freeze)(struct domain_device *);
->>
->> Why do we need to pass this all the way through to the lldd?  Can we
->> get away with emulating this in sas_ata.c.
->>
->
-> Because SAS HBAs spec haven't a unified standard, not like AHCI.
-> But I think we can delete the interface because we don't disable interrupt
-> during EH now.
->
-
-Ok.
-
->>> +       void (*lldd_dev_thaw)(struct domain_device *);
->>
->> Same note as lldd_dev_freeze
->>
->>> +       int (*lldd_wait_task_done)(struct sas_task *);
->>
->> Should not be needed.
->>
->>> +       int (*lldd_dev_classify)(struct domain_device *);
->>
->> I think this belongs in a different patch set.  If we solve device
->> re-classification for soft reset we need to do the same for the
->> sas_ata_hard_reset path.
->
-> Could you explain more details? Thanks!
-
-See sas_ata_hard_reset().  It currently does not perform device
-re-classification in the same manner as libata.  If you want to
-improve the "re-classify after reset" implementation then it should be
-done in a separate patch in my opinion.  In other words, just doing it
-for the SRST case is incomplete.
