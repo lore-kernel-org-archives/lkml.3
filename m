@@ -1,130 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933250AbaHYR5I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 13:57:08 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:45075 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932256AbaHYR5G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 13:57:06 -0400
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
-Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] sound: pci: ctxfi: ctatc.c: printk replacement
-Date: Mon, 25 Aug 2014 23:26:52 +0530
-Message-Id: <1408989412-30805-1-git-send-email-sudipm.mukherjee@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S933286AbaHYR6n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 13:58:43 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:33598 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933108AbaHYR6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 13:58:41 -0400
+From: "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Srivatsa S. Bhat" <srivatsa@MIT.EDU>,
+        "Preeti U. Murthy" <preeti@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-pm@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH 0/9] powerpc/powernv: Support for fastsleep and winkle
+Date: Mon, 25 Aug 2014 23:27:52 +0530
+Message-Id: <1408989481-13891-1-git-send-email-shreyas@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.9.0
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14082517-5806-0000-0000-0000004C0395
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-printk replaced ith corresponding pr_err
-fixed three broken user-visible strings
-fixed a checkpatch warning of space before new line
+Fast sleep is an idle state, where the core and the L1 and L2
+caches are brought down to a threshold voltage. This also means that
+the communication between L2 and L3 caches have to be fenced. However
+the current P8 chips have a bug wherein this fencing between L2 and
+L3 caches get delayed by a cpu cycle. This can delay L3 response to
+the other cpus if they request for data during this time. Thus they
+would fetch the same data from the memory which could lead to data
+corruption if L3 cache is not flushed.
+Patch 4 adds support to work around this.
+
+'Deep Winkle' is a deeper idle state where core and private L2 are powered
+off. While it offers higher power savings, it is at the cost of losing
+hypervisor register state and higher latency.
+Patch 5-9 adds support for winkle and uses it for offline cpus.
+
+Patch 1 - Moves parameters required discover idle states to a location 
+common to both cpuidle driver and powernv core code
+Patch 2 - Populates idle state details from device tree
+Patch 3 - Enables cpus to run guest after waking up from fastsleep/winkle
 
 
-Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
----
- sound/pci/ctxfi/ctatc.c | 23 ++++++++++-------------
- 1 file changed, 10 insertions(+), 13 deletions(-)
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Michael Ellerman <mpe@ellerman.id.au>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Srivatsa S. Bhat <srivatsa@MIT.EDU>
+Cc: Preeti U. Murthy <preeti@linux.vnet.ibm.com>
+Cc: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: devicetree@vger.kernel.org
+Cc: linux-pm@vger.kernel.org
+Cc: linuxppc-dev@lists.ozlabs.org
 
-diff --git a/sound/pci/ctxfi/ctatc.c b/sound/pci/ctxfi/ctatc.c
-index af632bd..41597a8 100644
---- a/sound/pci/ctxfi/ctatc.c
-+++ b/sound/pci/ctxfi/ctatc.c
-@@ -185,7 +185,7 @@ static unsigned int convert_format(snd_pcm_format_t snd_format)
- 	case SNDRV_PCM_FORMAT_FLOAT_LE:
- 		return SRC_SF_F32;
- 	default:
--		printk(KERN_ERR "ctxfi: not recognized snd format is %d \n",
-+		pr_err("ctxfi: not recognized snd format is %d\n",
- 			snd_format);
- 		return SRC_SF_S16;
- 	}
-@@ -1282,7 +1282,7 @@ static int atc_identify_card(struct ct_atc *atc, unsigned int ssid)
- 	p = snd_pci_quirk_lookup_id(vendor_id, device_id, list);
- 	if (p) {
- 		if (p->value < 0) {
--			printk(KERN_ERR "ctxfi: "
-+			pr_err("ctxfi: "
- 			       "Device %04x:%04x is black-listed\n",
- 			       vendor_id, device_id);
- 			return -ENOENT;
-@@ -1315,8 +1315,7 @@ int ct_atc_create_alsa_devs(struct ct_atc *atc)
- 		err = alsa_dev_funcs[i].create(atc, i,
- 				alsa_dev_funcs[i].public_name);
- 		if (err) {
--			printk(KERN_ERR "ctxfi: "
--			       "Creating alsa device %d failed!\n", i);
-+			pr_err("ctxfi: Creating alsa device %d failed!\n", i);
- 			return err;
- 		}
- 	}
-@@ -1332,7 +1331,7 @@ static int atc_create_hw_devs(struct ct_atc *atc)
- 
- 	err = create_hw_obj(atc->pci, atc->chip_type, atc->model, &hw);
- 	if (err) {
--		printk(KERN_ERR "Failed to create hw obj!!!\n");
-+		pr_err("Failed to create hw obj!!!\n");
- 		return err;
- 	}
- 	atc->hw = hw;
-@@ -1351,8 +1350,7 @@ static int atc_create_hw_devs(struct ct_atc *atc)
- 
- 		err = rsc_mgr_funcs[i].create(atc->hw, &atc->rsc_mgrs[i]);
- 		if (err) {
--			printk(KERN_ERR "ctxfi: "
--			       "Failed to create rsc_mgr %d!!!\n", i);
-+			pr_err("ctxfi: Failed to create rsc_mgr %d!!!\n", i);
- 			return err;
- 		}
- 	}
-@@ -1399,7 +1397,7 @@ static int atc_get_resources(struct ct_atc *atc)
- 		err = daio_mgr->get_daio(daio_mgr, &da_desc,
- 					(struct daio **)&atc->daios[i]);
- 		if (err) {
--			printk(KERN_ERR "ctxfi: Failed to get DAIO "
-+			pr_err("ctxfi: Failed to get DAIO "
- 					"resource %d!!!\n", i);
- 			return err;
- 		}
-@@ -1603,8 +1601,7 @@ static int atc_resume(struct ct_atc *atc)
- 	/* Do hardware resume. */
- 	err = atc_hw_resume(atc);
- 	if (err < 0) {
--		printk(KERN_ERR "ctxfi: pci_enable_device failed, "
--		       "disabling device\n");
-+		pr_err("ctxfi: pci_enable_device failed, disabling device\n");
- 		snd_card_disconnect(atc->card);
- 		return err;
- 	}
-@@ -1701,7 +1698,7 @@ int ct_atc_create(struct snd_card *card, struct pci_dev *pci,
- 	/* Find card model */
- 	err = atc_identify_card(atc, ssid);
- 	if (err < 0) {
--		printk(KERN_ERR "ctatc: Card not recognised\n");
-+		pr_err("ctatc: Card not recognised\n");
- 		goto error1;
- 	}
- 
-@@ -1717,7 +1714,7 @@ int ct_atc_create(struct snd_card *card, struct pci_dev *pci,
- 
- 	err = ct_mixer_create(atc, (struct ct_mixer **)&atc->mixer);
- 	if (err) {
--		printk(KERN_ERR "ctxfi: Failed to create mixer obj!!!\n");
-+		pr_err("ctxfi: Failed to create mixer obj!!!\n");
- 		goto error1;
- 	}
- 
-@@ -1744,6 +1741,6 @@ int ct_atc_create(struct snd_card *card, struct pci_dev *pci,
- 
- error1:
- 	ct_atc_destroy(atc);
--	printk(KERN_ERR "ctxfi: Something wrong!!!\n");
-+	pr_err("ctxfi: Something wrong!!!\n");
- 	return err;
- }
+Preeti U Murthy (2):
+  cpuidle/powernv: Populate cpuidle state details by querying the
+    device-tree
+  powerpc/powernv/cpuidle: Add workaround to enable fastsleep
+
+Shreyas B. Prabhu (6):
+  powerpc/kvm/book3s_hv: Enable CPUs to run guest after waking up from
+    fast-sleep
+  powerpc/powernv: Add OPAL call to save and restore
+  powerpc: Adding macro for accessing Thread Switch Control Register
+  powerpc/powernv: Add winkle infrastructure
+  powerpc/powernv: Discover and enable winkle
+  powerpc/powernv: Enter deepest supported idle state in offline
+
+Srivatsa S. Bhat (1):
+  powerpc/powernv: Enable Offline CPUs to enter deep idle states
+
+ arch/powerpc/include/asm/machdep.h             |   4 +
+ arch/powerpc/include/asm/opal.h                |  10 ++
+ arch/powerpc/include/asm/paca.h                |   3 +
+ arch/powerpc/include/asm/ppc-opcode.h          |   2 +
+ arch/powerpc/include/asm/processor.h           |   6 +-
+ arch/powerpc/include/asm/reg.h                 |   1 +
+ arch/powerpc/kernel/asm-offsets.c              |   1 +
+ arch/powerpc/kernel/exceptions-64s.S           |  37 ++---
+ arch/powerpc/kernel/idle.c                     |  30 ++++
+ arch/powerpc/kernel/idle_power7.S              |  83 +++++++++-
+ arch/powerpc/platforms/powernv/opal-wrappers.S |   2 +
+ arch/powerpc/platforms/powernv/powernv.h       |   8 +
+ arch/powerpc/platforms/powernv/setup.c         | 217 +++++++++++++++++++++++++
+ arch/powerpc/platforms/powernv/smp.c           |  13 +-
+ arch/powerpc/platforms/powernv/subcore.c       |  15 ++
+ drivers/cpuidle/cpuidle-powernv.c              |  40 ++++-
+ 16 files changed, 439 insertions(+), 33 deletions(-)
+
 -- 
-1.8.1.2
+1.9.0
 
