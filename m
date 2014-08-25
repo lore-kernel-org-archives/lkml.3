@@ -1,123 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932779AbaHYNo0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 09:44:26 -0400
-Received: from mail-oi0-f46.google.com ([209.85.218.46]:40485 "EHLO
-	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754586AbaHYNoZ (ORCPT
+	id S1755806AbaHYNsB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 09:48:01 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:65516 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754557AbaHYNsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 09:44:25 -0400
+	Mon, 25 Aug 2014 09:48:00 -0400
 MIME-Version: 1.0
-In-Reply-To: <1408960813-12237-1-git-send-email-hdegoede@redhat.com>
-References: <1408960813-12237-1-git-send-email-hdegoede@redhat.com>
-Date: Mon, 25 Aug 2014 09:44:24 -0400
-X-Google-Sender-Auth: kIwa_7lhI0725rv8QVJQFL8f08Y
-Message-ID: <CA+5PVA7pEwu4amAn+gH3TS-a6CvsSH=TyE+3k07Uoz9BpcpRMA@mail.gmail.com>
-Subject: Re: [3.17 REGRESSION FIX] Revert "ideapad-laptop: Disable touchpad
- interface on Yoga models"
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Hans de Goede <hdegoede@redhat.com>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
-        Corentin Chary <corentin.chary@gmail.com>,
-        GOESSEL Guillaume <g_goessel@outlook.com>,
-        platform-driver-x86@vger.kernel.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        Darren Hart <darren@dvhart.com>
+In-Reply-To: <20140811133352.GC9918@twins.programming.kicks-ass.net>
+References: <20140810044127.GB11810@localhost> <20140810075915.GR9918@twins.programming.kicks-ass.net>
+ <20140810105413.GA29451@localhost> <20140811133352.GC9918@twins.programming.kicks-ass.net>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Mon, 25 Aug 2014 15:47:39 +0200
+Message-ID: <CAKfTPtBnyeO1+1=Sbf6On-eXRG3th=0gsfhDectyQQuMCLeP-g@mail.gmail.com>
+Subject: Re: [sched] 143e1e28cb4: +17.9% aim7.jobs-per-min, -9.7% hackbench.throughput
+To: Peter Zijlstra <peterz@infradead.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Cc: Dave Hansen <dave.hansen@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        lkp@01.org, Ingo Molnar <mingo@kernel.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 6:00 AM, Hans de Goede <hdegoede@redhat.com> wrote:
-> I've received a bug report from a user that the touchpad control part
-> of the ideapad-laptop ACPI interface does work for him on his
-> "Lenovo Yoga 2 13", and that this patch causes a regression for him.
->
-> Since it did not work for me when I had a "Lenovo Yoga 2 11" in my own
-> hands (loaned from a friend). It seems that this is a bit of hit and miss.
->
-> Since the result of having a false positive here is worse, then the minor
-> annoyance of a false touchpad disabled messages being shown after suspend /
-> resume on models (or is it firmware versions?) where the interface does not
-> work, simply revert the patch.
->
-> This reverts commit f79a901331a823ae370584b15cd39dd110b95a0a.
->
-> Reported-by: GOESSEL Guillaume <g_goessel@outlook.com>
-> Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+On 11 August 2014 15:33, Peter Zijlstra <peterz@infradead.org> wrote:
 
-Adding Daren on CC.  He recently agreed to take over the platform drivers.
+[snip]
 
-josh
+>
+>
+> Now I think I see why this is; we've reduced load balancing frequency
+> significantly on this machine due to:
 
+I agree with you about the root cause
+
+>
+>
+> -#define SD_SIBLING_INIT (struct sched_domain) {                                \
+> -       .min_interval           = 1,                                    \
+> -       .max_interval           = 2,                                    \
+>
+>
+> -#define SD_MC_INIT (struct sched_domain) {                             \
+> -       .min_interval           = 1,                                    \
+> -       .max_interval           = 4,                                    \
+>
+>
+> -#define SD_CPU_INIT (struct sched_domain) {                            \
+> -       .min_interval           = 1,                                    \
+> -       .max_interval           = 4,                                    \
+>
+>
+>         *sd = (struct sched_domain){
+>                 .min_interval           = sd_weight,
+>                 .max_interval           = 2*sd_weight,
+>
+> Which both increased the min and max value significantly for all domains
+> involved.
+>
+> That said; I think we might want to do something like the below; I can
+> imagine decreasing load balancing too much will negatively impact other
+> workloads.
+>
+> Maybe slightly modified to make sure the first domain has a min_interval
+> of 1.
+>
 > ---
->  drivers/platform/x86/ideapad-laptop.c | 27 ---------------------------
->  1 file changed, 27 deletions(-)
+>  kernel/sched/core.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
 >
-> diff --git a/drivers/platform/x86/ideapad-laptop.c b/drivers/platform/x86/ideapad-laptop.c
-> index fc468a3..de1e0c3 100644
-> --- a/drivers/platform/x86/ideapad-laptop.c
-> +++ b/drivers/platform/x86/ideapad-laptop.c
-> @@ -88,7 +88,6 @@ struct ideapad_private {
->         struct dentry *debug;
->         unsigned long cfg;
->         bool has_hw_rfkill_switch;
-> -       bool has_touchpad_control;
->  };
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 1211575a2208..67ed5d854da1 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -6049,8 +6049,8 @@ sd_init(struct sched_domain_topology_level *tl, int cpu)
+>                 sd_flags &= ~TOPOLOGY_SD_FLAGS;
 >
->  static bool no_bt_rfkill;
-> @@ -767,9 +766,6 @@ static void ideapad_sync_touchpad_state(struct ideapad_private *priv)
->  {
->         unsigned long value;
+>         *sd = (struct sched_domain){
+> -               .min_interval           = sd_weight,
+> -               .max_interval           = 2*sd_weight,
+> +               .min_interval           = max(1, sd_weight/2),
+> +               .max_interval           = sd_weight,
+
+What about using ilog2 like the default scaling mode of other
+scheduler tunables ?
+
+Regards,
+Vincent
+
+>                 .busy_factor            = 32,
+>                 .imbalance_pct          = 125,
 >
-> -       if (!priv->has_touchpad_control)
-> -               return;
-> -
->         /* Without reading from EC touchpad LED doesn't switch state */
->         if (!read_ec_data(priv->adev->handle, VPCCMD_R_TOUCHPAD, &value)) {
->                 /* Some IdeaPads don't really turn off touchpad - they only
-> @@ -844,28 +840,6 @@ static struct dmi_system_id no_hw_rfkill_list[] = {
->         {}
->  };
+> @@ -6076,7 +6076,7 @@ sd_init(struct sched_domain_topology_level *tl, int cpu)
+>                                         ,
 >
-> -/*
-> - * Some models don't offer touchpad ctrl through the ideapad interface, causing
-> - * ideapad_sync_touchpad_state to send wrong touchpad enable/disable events.
-> - */
-> -static struct dmi_system_id no_touchpad_ctrl_list[] = {
-> -       {
-> -               .ident = "Lenovo Yoga 1 series",
-> -               .matches = {
-> -                       DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-> -                       DMI_MATCH(DMI_PRODUCT_VERSION, "Lenovo IdeaPad Yoga"),
-> -               },
-> -       },
-> -       {
-> -               .ident = "Lenovo Yoga 2 11 / 13 / Pro",
-> -               .matches = {
-> -                       DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-> -                       DMI_MATCH(DMI_PRODUCT_VERSION, "Lenovo Yoga 2"),
-> -               },
-> -       },
-> -       {}
-> -};
-> -
->  static int ideapad_acpi_add(struct platform_device *pdev)
->  {
->         int ret, i;
-> @@ -889,7 +863,6 @@ static int ideapad_acpi_add(struct platform_device *pdev)
->         priv->adev = adev;
->         priv->platform_device = pdev;
->         priv->has_hw_rfkill_switch = !dmi_check_system(no_hw_rfkill_list);
-> -       priv->has_touchpad_control = !dmi_check_system(no_touchpad_ctrl_list);
->
->         ret = ideapad_sysfs_init(priv);
->         if (ret)
-> --
-> 2.1.0
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>                 .last_balance           = jiffies,
+> -               .balance_interval       = sd_weight,
+> +               .balance_interval       = max(1, sd_weight/2),
+>                 .smt_gain               = 0,
+>                 .max_newidle_lb_cost    = 0,
+>                 .next_decay_max_lb_cost = jiffies,
