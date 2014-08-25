@@ -1,75 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933047AbaHYPdX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 11:33:23 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:56170 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755979AbaHYPdI (ORCPT
+	id S933020AbaHYPkp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 11:40:45 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:60534 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932606AbaHYPkm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 11:33:08 -0400
-Message-ID: <53FB5733.4010607@bluespec.com>
-Date: Mon, 25 Aug 2014 11:33:07 -0400
-From: Darius Rad <darius@bluespec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.7.0
+	Mon, 25 Aug 2014 11:40:42 -0400
 MIME-Version: 1.0
-To: linux-arch@vger.kernel.org
-CC: linux-kernel@vger.kernel.org
-Subject: [PATCH] include/asm-generic/cmpxchg-local.h: perform comparison in
- cmpxchg using appropriate size of data
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <53FAFCBC.2050407@collabora.co.uk>
+References: <1408350762-15520-1-git-send-email-javier.martinez@collabora.co.uk>
+	<1408350762-15520-2-git-send-email-javier.martinez@collabora.co.uk>
+	<CA+NduCDL65=Y=PyU3FfXsTz0FfbmYzicGrY4U7ji3_V+nXhtCQ@mail.gmail.com>
+	<53F73472.8010609@collabora.co.uk>
+	<20140822144531.GV24407@sirena.org.uk>
+	<53F7838F.8060906@collabora.co.uk>
+	<20140822183054.GY24407@sirena.org.uk>
+	<53F7BDD8.7060500@collabora.co.uk>
+	<CAD=FV=WC0h7fYm2QFqu3Zka7CsU4BtG-oyPpJav+ygC+gmCR+A@mail.gmail.com>
+	<CA+NduCCT-KQ=gh7QWkBE4qkA2YOJ8KCVqbkC6Tkmb1aPvCsGFQ@mail.gmail.com>
+	<53FAFCBC.2050407@collabora.co.uk>
+Date: Mon, 25 Aug 2014 08:40:40 -0700
+X-Google-Sender-Auth: ot-xL2uQRGznNkyXiP_U4lR8vXk
+Message-ID: <CAD=FV=V4TSKsbjj3dXCdSzVrh3sxH-FkpFEbEo+JA1bN9R-XWA@mail.gmail.com>
+Subject: Re: [PATCH v9 1/2] regulator: Add driver for max77802 PMIC PMIC regulators
+From: Doug Anderson <dianders@chromium.org>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Yuvaraj Cd <yuvaraj.lkml@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Olof Johansson <olof@lixom.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Prashanth G <prashanth.g@samsung.com>,
+        Alim Akhtar <alim.akhtar@samsung.com>, sunil joshi <joshi@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the generic implementation of cmpxchg, cast the parameters to the size
-of the data prior to comparison.  Otherwise, it is possible for the
-comparison to be done incorrectly in the case where the data size is
-smaller than the architecture register size.
+Javier,
 
-For example, on a 64-bit architecture, a 32-bit value is sign extended
-differently if it is typecast from an int to an unsigned long as compared
-to being loaded from memory via an unsigned pointer (u32 *).  Given that
-the primary, or possibly only, use of cmpxchg is with 4 and 8 byte values,
-the incorrect comparison could only occur on 64-bit architectures that make
-use of the generic cmpxchg.
+On Mon, Aug 25, 2014 at 2:07 AM, Javier Martinez Canillas
+<javier.martinez@collabora.co.uk> wrote:
+> Hello Yuvaraj,
+>
+> On 08/25/2014 10:22 AM, Yuvaraj Cd wrote:
+>>>> Good question. I'm not that familiar with the dw_mmc host controller nor
+>>>> its driver implementation so I'll let Yuvaraj or Doug to answer that.
+>> Well,here it goes!
+>> 1. Power ON the board LDO4CTRL1[7:6] 11b
+>> 2. dw_mmc driver enable the vqmmc.
+>> 3. checks for UHS support, complete the voltage switching t0 1.8V
+>> 4. Does warm reset by reboot command.
+>> 5. mmc core calls mmc_set_ios() with MMC_POWER_OFF.
+>> 6. dw_mmc driver cut-off the regulator with LDO4CTRL1[7:6] is 00b
+>> 7.dw_mmc driver enable the vqmmc.
+>>  But after step 7 also, LD4CTRL[7:6] is 00b.
+>
+> Ok, so the dw_mmc driver is enabling vqmmc, that's good.
+>
+>>>
+>>> I haven't seen the issue that Yuvaraj is reporting (but I also haven't
+>>> picked up all of the relevant patches and tried to reproduce), so I'm
+>>> going to have to leave it to Yuvaraj to answer.
+>>     static int max77802_enable(struct regulator_dev *rdev)
+>>     {
+>>       struct max77802_regulator_prv *max77802 = rdev_get_drvdata(rdev);
+>>      int id = rdev_get_id(rdev);
+>>      int shift = max77802_get_opmode_shift(id);
+>>      return regmap_update_bits(rdev->regmap,
+>> rdev->desc->enable_reg,rdev->desc->enable_mask,max77802->opmode[id] <<
+>> shift);
+>>   }
+>> I think in the above code snippet, the "val" is what we got it during
+>> the probe.We always write that value for enabling this regulator(which
+>> is LDO4CTRL1[7:6] 00b after warm reset) which is not correct according
+>> the MAX77802 manual.
+>>>
+>
+> I see, so probably until we have a way to define the operating mode for
+> each regulator using DT we should set the opmode to normal when enabling a
+> regulator independently of the value the hardware register reported on probe.
+>
+> Can you please test the following change [0] so I can post as a proper
+> patch? Doug, Mark do you think that forcing the regulator to opmode normal
+> when enabling is the right solution here?
 
-Signed-off-by: Darius Rad <darius@bluespec.com>
-
----
-It does not appear that this is relevant to architectures that are in the
-kernel tree, since the generic cmpxchg is only ever used by some 32-bit
-architectures.  This does impact the RISC-V architecture that is currently
-in development.
-
-Patch generated against 3.17-rc1.
-
- include/asm-generic/cmpxchg-local.h |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
---- linux-3.17-rc1.orig/include/asm-generic/cmpxchg-local.h	2014-08-16 12:40:26.000000000 -0400
-+++ linux-3.17-rc1/include/asm-generic/cmpxchg-local.h	2014-08-22 14:26:59.280746090 -0400
-@@ -25,19 +25,19 @@ static inline unsigned long __cmpxchg_lo
- 	raw_local_irq_save(flags);
- 	switch (size) {
- 	case 1: prev = *(u8 *)ptr;
--		if (prev == old)
-+		if ((u8)prev == (u8)old)
- 			*(u8 *)ptr = (u8)new;
- 		break;
- 	case 2: prev = *(u16 *)ptr;
--		if (prev == old)
-+		if ((u16)prev == (u16)old)
- 			*(u16 *)ptr = (u16)new;
- 		break;
- 	case 4: prev = *(u32 *)ptr;
--		if (prev == old)
-+		if ((u32)prev == (u32)old)
- 			*(u32 *)ptr = (u32)new;
- 		break;
- 	case 8: prev = *(u64 *)ptr;
--		if (prev == old)
-+		if ((u64)prev == (u64)old)
- 			*(u64 *)ptr = (u64)new;
- 		break;
- 	default:
+IMHO that makes sense.
