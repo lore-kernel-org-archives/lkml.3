@@ -1,95 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933290AbaHYOvr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 10:51:47 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:48177 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932673AbaHYOqN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 10:46:13 -0400
-From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-To: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, olof@lixom.net
-Cc: linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
-        Olivier Bideau <olivier.bideau@st.com>
-Subject: [RESEND PATCH 1/4] ARM: STi: DT: STiH407: 407 DT Entry for clockgen A0
-Date: Mon, 25 Aug 2014 16:44:45 +0200
-Message-Id: <1408977888-10473-2-git-send-email-gabriel.fernandez@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1408977888-10473-1-git-send-email-gabriel.fernandez@linaro.org>
-References: <1408977888-10473-1-git-send-email-gabriel.fernandez@linaro.org>
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
- definitions=2014-08-25_01:2014-08-25,2014-08-24,1970-01-01 signatures=0
+	id S933229AbaHYOwN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 10:52:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1680 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932673AbaHYOwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 10:52:11 -0400
+Date: Mon, 25 Aug 2014 16:51:34 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Jiri Olsa <jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Jen-Cheng(Tommy) Huang" <tommy24@gatech.edu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [RFCv2 0/9] perf: Allow leader sampling on inherited events
+Message-ID: <20140825145134.GC24926@krava.brq.redhat.com>
+References: <1408977943-16594-1-git-send-email-jolsa@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408977943-16594-1-git-send-email-jolsa@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch adds DT entries for clockgen A0
+On Mon, Aug 25, 2014 at 04:45:34PM +0200, Jiri Olsa wrote:
+> hi,
+> Jen-Cheng(Tommy) Huang reported the leader sampling not working
+> on children processes:
+>   http://www.mail-archive.com/linux-perf-users@vger.kernel.org/msg01644.html
+> 
+> The leader sampling (example below) lets the group leader event (cycles)
+> do the sampling and reads the rest of the group (cache-misses) via
+> PERF_FORMAT_GROUP format.
+> 
+> Example:
+>   $ perf record -e '{cycles,cache-misses}:S' <workload>
+>   $ perf report --group
+> 
+>   The perf report --group allows to see all events group
+>   data in single view.
+> 
+> The reason for leader sampling being switched off for inherited
+> events, is that the kernel does no allow PERF_FORMAT_GROUP format
+> on inherited events (which is used by leader sampling).
+> 
+> I switched on the PERF_FORMAT_GROUP format for inherited events
+> with few other fixies in patches:
+>   perf: Deny optimized switch for events read by PERF_SAMPLE_READ
+>   perf: Allow PERF_FORMAT_GROUP format on inherited events
+> 
+> And I fixed perf tool code to be able to process data from
+> children processes.
+> 
+> Anyway, I might have missed some other reason why this was
+> never switched on in kernel, so sending this as RFC.
+> 
+> v2 changes:
+>    - detection of the kernel support
+>    - added perf script support for period column
+>    - separate kernel change for context_equiv change
 
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Signed-off-by: Olivier Bideau <olivier.bideau@st.com>
----
- arch/arm/boot/dts/stih407-clock.dtsi | 32 ++++++++++++++++++++++++++++++++
- 1 file changed, 32 insertions(+)
+and as usuall I forgot.. also reachable in here:
+  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
+  perf/core_format_group
 
-diff --git a/arch/arm/boot/dts/stih407-clock.dtsi b/arch/arm/boot/dts/stih407-clock.dtsi
-index 800f46f..e03e86e 100644
---- a/arch/arm/boot/dts/stih407-clock.dtsi
-+++ b/arch/arm/boot/dts/stih407-clock.dtsi
-@@ -7,6 +7,10 @@
-  */
- / {
- 	clocks {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		ranges;
-+
- 		/*
- 		 * Fixed 30MHz oscillator inputs to SoC
- 		 */
-@@ -35,5 +39,33 @@
- 			clock-frequency = <200000000>;
- 			clock-output-names = "clk-s-icn-reg-0";
- 		};
-+
-+		/*
-+		 * ClockGenAs on SASG2
-+		 */
-+		clockgen-a@090ff000 {
-+			compatible = "st,clkgen-c32";
-+			reg = <0x90ff000 0x1000>;
-+
-+			clk_s_a0_pll: clk-s-a0-pll {
-+				#clock-cells = <1>;
-+				compatible = "st,stih407-plls-c32-a0", "st,clkgen-plls-c32";
-+
-+				clocks = <&clk_sysin>;
-+
-+				clock-output-names = "clk-s-a0-pll-ofd-0";
-+			};
-+
-+			clk_s_a0_flexgen: clk-s-a0-flexgen {
-+				compatible = "st,flexgen";
-+
-+				#clock-cells = <1>;
-+
-+				clocks = <&clk_s_a0_pll 0>,
-+					 <&clk_sysin>;
-+
-+				clock-output-names = "clk-ic-lmi0";
-+			};
-+		};
- 	};
- };
--- 
-1.9.1
-
+jirka
