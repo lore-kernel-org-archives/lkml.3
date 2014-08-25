@@ -1,351 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756795AbaHYXlA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 19:41:00 -0400
-Received: from mail-oi0-f48.google.com ([209.85.218.48]:40358 "EHLO
-	mail-oi0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755334AbaHYXk6 convert rfc822-to-8bit (ORCPT
+	id S1756731AbaHYXx3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 19:53:29 -0400
+Received: from mail-ob0-f201.google.com ([209.85.214.201]:37454 "EHLO
+	mail-ob0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755148AbaHYXx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 19:40:58 -0400
+	Mon, 25 Aug 2014 19:53:27 -0400
+Date: Mon, 25 Aug 2014 16:53:25 -0700
+From: akpm@linux-foundation.org
+To: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-next@vger.kernel.org, sfr@canb.auug.org.au, mhocko@suse.cz
+Subject: mmotm 2014-08-25-16-52 uploaded
+Message-ID: <53fbcc75.sRxDj9Tf9kSY0MiY%akpm@linux-foundation.org>
+User-Agent: Heirloom mailx 12.5 6/20/10
 MIME-Version: 1.0
-In-Reply-To: <20140821164705.GA1172@ulmo>
-References: <1408381749-14156-1-git-send-email-dianders@chromium.org>
-	<20140820153801.GB3427@ulmo>
-	<CAD=FV=Xf4Hm5tCaaW3QG-ZSQGovh6RKH=1Og1K-yxj+jKyGsmA@mail.gmail.com>
-	<2927513.T62GI7nq9T@phil>
-	<20140821063637.GB4486@ulmo>
-	<CAD=FV=XKr0T-mwma1WdTKQDVyS06rbj3=J4GwbAkc1KsXQspOw@mail.gmail.com>
-	<20140821164705.GA1172@ulmo>
-Date: Mon, 25 Aug 2014 16:40:57 -0700
-X-Google-Sender-Auth: BsQGH_xuZkarWROt0xG7tFnu-Kk
-Message-ID: <CAD=FV=U6S3idZds57G2itFw6mdb-fTVt41Lv_jpBuNuq0fimnA@mail.gmail.com>
-Subject: Re: [PATCH 1/4] ARM: rockchip: rk3288: Switch to use the proper PWM IP
-From: Doug Anderson <dianders@chromium.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Caesar Wang <caesar.wang@rock-chips.com>,
-        Sonny Rao <sonnyrao@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Eddie Cai <eddie.cai@rock-chips.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thierry,
+The mm-of-the-moment snapshot 2014-08-25-16-52 has been uploaded to
 
-On Thu, Aug 21, 2014 at 9:47 AM, Thierry Reding
-<thierry.reding@gmail.com> wrote:
-> On Thu, Aug 21, 2014 at 08:38:57AM -0700, Doug Anderson wrote:
->> Thierry,
->>
->> On Wed, Aug 20, 2014 at 11:36 PM, Thierry Reding
->> <thierry.reding@gmail.com> wrote:
->> > On Wed, Aug 20, 2014 at 06:20:31PM +0200, Heiko Stübner wrote:
->> >> Am Mittwoch, 20. August 2014, 08:55:09 schrieb Doug Anderson:
->> >> > Thierry,
->> >> >
->> >> > On Wed, Aug 20, 2014 at 8:38 AM, Thierry Reding
->> >> >
->> >> > <thierry.reding@gmail.com> wrote:
->> >> > > On Wed, Aug 20, 2014 at 08:20:53AM -0700, Doug Anderson wrote:
->> >> > >> Thierry,
->> >> > >>
->> >> > >> On Tue, Aug 19, 2014 at 11:08 PM, Thierry Reding
->> >> > >>
->> >> > >> <thierry.reding@gmail.com> wrote:
->> >> > >> > On Tue, Aug 19, 2014 at 08:18:54AM -0700, Doug Anderson wrote:
->> >> > >> >> Thierry,
->> >> > >> >>
->> >> > >> >> On Tue, Aug 19, 2014 at 12:10 AM, Thierry Reding
->> >> > >> >>
->> >> > >> >> <thierry.reding@gmail.com> wrote:
->> >> > >> >> > On Mon, Aug 18, 2014 at 10:09:06AM -0700, Doug Anderson wrote:
->> >> > >> >> >> The rk3288 SoC has an option to switch all of the PWMs in the
->> >> > >> >> >> system
->> >> > >> >> >> between the old IP block and the new IP block.  The new IP block is
->> >> > >> >> >> working and tested and the suggested PWM to use, so setup the SoC
->> >> > >> >> >> to
->> >> > >> >> >> use it and then we can pretend that the other IP block doesn't
->> >> > >> >> >> exist.
->> >> > >> >
->> >> > >> > A few more questions as to how this actually works. Does it mean there
->> >> > >> > are two physically separate blocks (with different physical addresses)
->> >> > >> > to control the same PWM? And this register simply causes some of the
->> >> > >> > pins to be routed to one or another? As far as I recall there are a
->> >> > >> > number of instances of the PWM block, so the above would need to count
->> >> > >> > for all of them. Or are there separate bits for each of them?
->> >> > >>
->> >> > >> All I have is the TRM (technical reference manual) which doesn't give
->> >> > >> me much more info than I've provided you.  But I can answer some of
->> >> > >> your questoins:
->> >> > >>
->> >> > >> 1. If there are two physically separate blocks then the "old" block is
->> >> > >> not documented in my TRM.
->> >> > >>
->> >> > >> 1a) It's entirely possible it's located at some memory address that is
->> >> > >> marked "Reserved" in the TRM, but I have no idea.
->> >> > >>
->> >> > >> 1b) It's entirely possible that the old IP block and the new IP block
->> >> > >> are supposed to be "compatible" but that the old block is broken and
->> >> > >> thus isn't behaving properly.
->> >> > >>
->> >> > >> 1c) It's entirely possible that the old IP block and the new IP block
->> >> > >> are located at the same physical addresses but somehow work
->> >> > >> differently.  If so, the old IP block isn't documented.
->> >> > >>
->> >> > >>
->> >> > >> 2. As per the patch description, there is a single bit that controls
->> >> > >> all of the PWMs.  My guess is that there's actually a single IP block
->> >> > >> that implements all 4 PWMs.
->> >> > >
->> >> > > Looking at the register offsets in the device tree that seems likely. At
->> >> > > least PWMs 0 and 1 as well as 2 and 3 seem like they could be in the
->> >> > >
->> >> > > same IP block. Their placement in the register map is somewhat strange:
->> >> > >         pwm0: pwm@20030000 {
->> >> > >
->> >> > >                 ...
->> >> > >                 reg = <0x20030000 0x10>;
->> >> > >                 ...
->> >> > >                 clocks = <&cru PCLK_PWM01>;
->> >> > >                 ...
->> >> > >
->> >> > >         };
->> >> > >
->> >> > >         pwm1: pwm@20030010 {
->> >> > >
->> >> > >                 ...
->> >> > >                 reg = <0x20030010 0x10>;
->> >> > >                 ...
->> >> > >                 clocks = <&cru PCLK_PWM01>;
->> >> > >                 ...
->> >> > >
->> >> > >         };
->> >> > >
->> >> > >         ...
->> >> > >
->> >> > >         pwm2: pwm@20050020 {
->> >> > >
->> >> > >                 ...
->> >> > >                 reg = <0x20050020 0x10>;
->> >> > >                 ...
->> >> > >                 clocks = <&cru PCLK_PWM23>;
->> >> > >                 ...
->> >> > >
->> >> > >         };
->> >> > >
->> >> > >         pwm3: pwm@20050030 {
->> >> > >
->> >> > >                 ...
->> >> > >                 reg = <0x20050030 0x10>;
->> >> > >                 ...
->> >> > >                 clocks = <&cru PCLK_PWM23>;
->> >> > >                 ...
->> >> > >
->> >> > >         };
->> >> >
->> >> > Ah, you're looking at "rk3xxx.dtsi".  That doesn't apply to rk3288
->> >> > (the downsides of trying to guess ahead of time what SoC vendors will
->> >> > name new models).
->> >>
->> >> It did sound like a nice idea at the time to hold the common stuff of
->> >> rk3066/rk3188 and all their derivatives and I assumed a SoC that changed
->> >> dramatically (including the core) would be called 4xxx or so :-) .
->> >>
->> >> >
->> >> > In rk3288 they have the same clocks.  See patch #3 in this series.
->> >> >
->> >> > > The clocks would also indicate that there are actually two blocks. I
->> >> > > seem to remember a discussion about whether to handle them as a single
->> >> > > block or two/four, but I can't seem to find a reference to it. Maybe I'm
->> >> > > confusing it with another driver.
->> >> >
->> >> > At this point it seems like the choice has already been made to handle
->> >> > them as separate PWMs.  I can change this choice if you want...
->> >> >
->> >> > >> >> >> This code could go lots of other places, but we've put it here.
->> >> > >> >> >> Why?
->> >> > >> >> >> - Pushing it to the bootloader just makes the code harder to update
->> >> > >> >> >> in
->> >> > >> >> >>
->> >> > >> >> >>   the field.  If we later find a bug in the new IP block and want
->> >> > >> >> >>   to
->> >> > >> >> >>   change our mind about what to use we want it to be easy to
->> >> > >> >> >>   update.
->> >> > >> >
->> >> > >> > Depending on how this muxing works you won't be able to change your
->> >> > >> > mind
->> >> > >> > anyway. If the IP blocks are different then the device tree will
->> >> > >> > effectively make the decision for you. So if you really want to be safe
->> >> > >> > you'd need to have code in the kernel that parses the device tree and
->> >> > >> > checks that all PWM instances are of the new type, then set this
->> >> > >> > register accordingly.
->> >> > >>
->> >> > >> Since there is no documentation about how you would instantiate the
->> >> > >> "old" type in the TRM and no good reason I can think of why someone
->> >> > >> would want to do this, it doesn't seem super fruitful.
->> >> > >
->> >> > > Okay, so if it's not at all documented and never used then yes, we'd
->> >> > > better just ignore it.
->> >> >
->> >> > Heiko just pointed me at the base address for the other block.
->> >> > There's nothing in the rk3288 TRM about it, but we can see the base
->> >> > address.  We could probably guess that it behaves the same as the
->> >> > older PWM if we need to.  I'm still not convinced there's a good
->> >> > reason for someone to use it.
->> >>
->> >> From what I understood the old one was included as a fallback in case some
->> >> drastic problem appeared with the newly developed IP. Similarly for the I2C
->> >> the rk2928 and before contained the old IP, the rk3xxx SoCs did contain both
->> >> old and new i2c IP and now the rk3288 only contains the new one, as the new IP
->> >> seems to have proven stable.
->> >>
->> >> So there really is no incentive to use the old one if no drastic issue has
->> >> appeared with the new one until now.
->> >>
->> >>
->> >> > >> >> >> diff --git a/arch/arm/mach-rockchip/rockchip.c
->> >> > >> >> >> b/arch/arm/mach-rockchip/rockchip.c index 8ab9e0e..99133b9 100644
->> >> > >> >> >> --- a/arch/arm/mach-rockchip/rockchip.c
->> >> > >> >> >> +++ b/arch/arm/mach-rockchip/rockchip.c
->> >> > >> >> >> @@ -24,6 +24,24 @@
->> >> > >> >> >>
->> >> > >> >> >>  #include <asm/hardware/cache-l2x0.h>
->> >> > >> >> >>  #include "core.h"
->> >> > >> >> >>
->> >> > >> >> >> +static void __init rk3288_init_machine(void)
->> >> > >> >> >> +{
->> >> > >> >> >> +     void *grf = ioremap(0xff770000, 0x10000);
->> >> > >> >> >
->> >> > >> >> > This region of memory is part of the "grf" "syscon" device
->> >> > >> >> > (according to
->> >> > >> >> > arch/arm/boot/dts/rk3288.dtsi) so the register should be accessed
->> >> > >> >> > from
->> >> > >> >> > that driver. It looks as if no such driver currently exists, but
->> >> > >> >> > given
->> >> > >> >> > the existence of the device tree node it's fair to assume that one
->> >> > >> >> > will
->> >> > >> >> > eventually be merged.
->> >> > >> >>
->> >> > >> >> The "grf" syscon device is the "general register file".  It's a
->> >> > >> >> collection of totally random registers stuffed together in one address
->> >> > >> >> space.  Sometimes a single 32-bit register has things you need to
->> >> > >> >> tweak for completely different subsystems.
->> >> > >> >>
->> >> > >> >> Most drivers referene the syscon using this in dts:
->> >> > >> >>   rockchip,grf = <&grf>;
->> >> > >> >>
->> >> > >> >> Then the drivers do:
->> >> > >> >>   grf = syscon_regmap_lookup_by_phandle(np, "rockchip,grf");
->> >> > >> >>
->> >> > >> >> See the Rockchip i2c, pinctrl, or clock drivers for examples.
->> >> > >> >
->> >> > >> > That's one way to do it. But if it's really just a one-time thing, then
->> >> > >> > you could easily perform the register write from the syscon driver
->> >> > >> > where
->> >> > >> > the memory is already parsed from device tree and mapped. That way you
->> >> > >> > don't have to hardcode the physical address in some other random piece
->> >> > >> > of code and map the memory again.
->> >> > >>
->> >> > >> Well, except that we're using the general "syscon" driver.  I could
->> >> > >> create a whole new driver that "subclasses" this syscon driver I
->> >> > >> suppose.
->> >> > >
->> >> > > Ah, I wasn't aware that there was even something like a generic syscon
->> >> > > driver. But yes, subclassing it sounds like a reasonable thing to do.
->> >> >
->> >> > I will do that if need be, but it's not my favorite.  I will let
->> >> > others chime in.
->> >>
->> >> I guess personally I like the idea best of just setting the relevant bit in
->> >> _probe of the pwm driver, like the i2c driver does:
->> >>
->> >> if (of_device_is_compatible(np, "rockchip,rk3288-pwm") {
->> >>       /* get regmap and set bit */
->> >> }
->> >>
->> >> The downside would be that the bit would be written 4 times, but I guess this
->> >> shouldn't matter to much. And I don't think anybody will get the idea of
->> >> combining both ip variants in one dts anyway.
->> >> And of course in the next SoC the old IP will mostly have gone away and keep
->> >> this somewhat close to the driver and not scatter pwm settings into other
->> >> kernel parts.
->> >>
->> >> Hacking up the syscon driver feels bad to me, especially as it is meant to be
->> >> generic and export such shared registers to other drivers for just these stuff.
->> >
->> > I think using syscon in the first place is bad. In my opinion it would
->> > be far better to export an explicit API from drivers that are currently
->> > "implemented" as syscon. The thing is, nothing about syscon is truly
->> > generic. All it provides is a memory-mapped I/O region and lets drivers
->> > do to that memory region whatever they wants. But ioremap() can be used
->> > for that purpose already. Yet we have infrastructure to prevent drivers
->> > from doing that (request_resource() and friends) because it's usually a
->> > bad idea. All syscon really gives us is a ratified way of doing things
->> > that are otherwise frowned upon.
->>
->> Agreed that it's a bit awkward, but it's the generally accepted way of
->> doing things across multiple drivers as far as I can tell...
->
-> But that's exactly what I've been saying. I consider it a very bad thing
-> that this is a generally accepted way. Sure, it's a very easy solution,
-> but it also means that all the details about how the syscon registers
-> need to be programmed are moved into drivers. That makes them inherently
-> non-portable. Consider for example if you have a driver for an IP block
-> that's used in one device and needs some registers set in a "syscon"
-> device to work on that device. Now somebody licenses the same IP block
-> and instantiates it in a completely different design. Now with some luck
-> it won't need a syscon's help in the second design, so you can make the
-> syscon optional and ignore it. But what if you need to program some
-> syscon in the second design as well but it has a different register
-> layout?
->
-> Admittedly this will also be a problem if you have an explicit API, but
-> then it's still better to create the proper abstraction that can be made
-> to work on both SoCs, or as in the case of this PWM block you move the
-> code that needs to be executed only once into the syscon driver where it
-> belongs. That way the driver becomes completely generic, no need to play
-> tricks because you (or somebody else for that matter) chose the easy way
-> out.
->
->> In exynos we were also doing this.  Another alternative (which I saw
->> used before syscon) was just to list a second address in the "reg =
->> <>".  The second address might only be 4 bytes big if only a single
->> 32-bit register was needed.  That started failing because sometimes
->> two drivers needed to access the same 32-bit register.
->
-> That's /exactly/ what syscon does as well (albeit with a bunch of
-> overhead).
->
->> At the moment I'm not planning to spin this patch.  If folks come up
->> with a solution that they definitely like better I'm happy to spin it,
->> but for now this seems to work and doesn't seem (to me) to be terribly
->> worse than the alternatives proposed so far.
->
-> I still think having a separate syscon driver that does this one-time
-> initialization is the proper thing to do.
+   http://www.ozlabs.org/~akpm/mmotm/
 
-You probably noticed that I reposted my patches without the offending
-parts.  Maybe we could at least land those while we figure things out?
+mmotm-readme.txt says
 
-It turns out that right now "syscon" can't be subclassed.  Heiko
-pointed me at some WIP patches from Tomasz that allow subclassing of
-syscon, but they're not all done yet.
+README for mm-of-the-moment:
 
-I was doing some thinking about what to do, then.  I wondered whether
-the right thing to do is not to make a "rk3288 syscon" driver that
-configures these bits, but rather to make a "rk3288" driver has access
-to the syscon.  It could live in drivers/soc/rockchip/rk3288.c and we
-could give it a handle to the syscon.  It could do the one-time
-initialization.  It would also be a place to put special rk3288 APIs
-in cases where other drivers need similar things.
+http://www.ozlabs.org/~akpm/mmotm/
 
-What do you think?
+This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
+more than once a week.
 
--Doug
+You will need quilt to apply these patches to the latest Linus release (3.x
+or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
+http://ozlabs.org/~akpm/mmotm/series
+
+The file broken-out.tar.gz contains two datestamp files: .DATE and
+.DATE-yyyy-mm-dd-hh-mm-ss.  Both contain the string yyyy-mm-dd-hh-mm-ss,
+followed by the base kernel version against which this patch series is to
+be applied.
+
+This tree is partially included in linux-next.  To see which patches are
+included in linux-next, consult the `series' file.  Only the patches
+within the #NEXT_PATCHES_START/#NEXT_PATCHES_END markers are included in
+linux-next.
+
+A git tree which contains the memory management portion of this tree is
+maintained at git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
+by Michal Hocko.  It contains the patches which are between the
+"#NEXT_PATCHES_START mm" and "#NEXT_PATCHES_END" markers, from the series
+file, http://www.ozlabs.org/~akpm/mmotm/series.
+
+
+A full copy of the full kernel tree with the linux-next and mmotm patches
+already applied is available through git within an hour of the mmotm
+release.  Individual mmotm releases are tagged.  The master branch always
+points to the latest release, so it's constantly rebasing.
+
+http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary
+
+To develop on top of mmotm git:
+
+  $ git remote add mmotm git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
+  $ git remote update mmotm
+  $ git checkout -b topic mmotm/master
+  <make changes, commit>
+  $ git send-email mmotm/master.. [...]
+
+To rebase a branch with older patches to a new mmotm release:
+
+  $ git remote update mmotm
+  $ git rebase --onto mmotm/master <topic base> topic
+
+
+
+
+The directory http://www.ozlabs.org/~akpm/mmots/ (mm-of-the-second)
+contains daily snapshots of the -mm tree.  It is updated more frequently
+than mmotm, and is untested.
+
+A git copy of this tree is available at
+
+	http://git.cmpxchg.org/?p=linux-mmots.git;a=summary
+
+and use of this tree is similar to
+http://git.cmpxchg.org/?p=linux-mmotm.git, described above.
+
+
+This mmotm tree contains the following patches against 3.17-rc1:
+(patches marked "*" will be included in linux-next)
+
+  origin.patch
+  i-need-old-gcc.patch
+  arch-alpha-kernel-systblss-remove-debug-check.patch
+  maintainers-akpm-maintenance.patch
+* checkpatch-relax-check-for-length-of-git-commit-ids.patch
+* resource-fix-the-case-of-null-pointer-access.patch
+* memblock-memhotplug-fix-wrong-type-in-memblock_find_in_range_node.patch
+* mm-actually-clear-pmd_numa-before-invalidating.patch
+* lib-turn-config_stacktrace-into-an-actual-option.patch
+* zram-fix-incorrectly-stat-with-failed_reads.patch
+* mm-zpool-use-prefixed-module-loading.patch
+* hugetlb_cgroup-use-lockdep_assert_held-rather-than-spin_is_locked.patch
+* x86mm-fix-pte_special-versus-pte_numa.patch
+* kexec-create-a-new-config-option-config_kexec_file-for-new-syscall.patch
+* kexec-remove-config_kexec-dependency-on-crypto.patch
+* xattr-fix-check-for-simultaneous-glibc-header-inclusion.patch
+* rtc-s5m-re-add-support-for-devices-without-irq-specified.patch
+* x86-purgatory-use-approprate-m64-32-build-flag-for-arch-x86-purgatory.patch
+* ocfs2-do-not-write-error-flag-to-user-structure-we-cannot-copy-from-to.patch
+* ocfs2-o2net-dont-shutdown-connection-when-idle-timeout.patch
+* ocfs2-o2net-set-tcp-user-timeout-to-max-value.patch
+* ocfs2-quorum-add-a-log-for-node-not-fenced.patch
+* tools-selftests-fixing-build-issue-with-make-kselftests-target.patch
+* flush_icache_range-export-symbol-to-fix-build-errors.patch
+* add-arm-description-to-documentation-kdump-kdumptxt.patch
+* purgatory-add-clean-up-for-purgatory-directory.patch
+* mem-hotplug-let-memblock-skip-the-hotpluggable-memory-regions-in-__next_mem_range.patch
+* mm-slab_commonc-suppress-warning.patch
+* x86mem-hotplug-pass-sync_global_pgds-a-correct-argument-in-remove_pagetable.patch
+* x86mem-hotplug-modify-pgd-entry-when-removing-memory.patch
+* x86-numa-setup_node_data-drop-dead-code-and-rename-function.patch
+* mem-hotplug-fix-boot-failed-in-case-all-the-nodes-are-hotpluggable.patch
+* mem-hotplug-fix-boot-failed-in-case-all-the-nodes-are-hotpluggable-checkpatch-fixes.patch
+* fs-cifs-remove-obsolete-__constant.patch
+* fs-cifs-filec-replace-countsize-kzalloc-by-kcalloc.patch
+* fs-cifs-smb2filec-replace-countsize-kzalloc-by-kcalloc.patch
+* efi-bgrt-add-error-handling-inform-the-user-when-ignoring-the-bgrt.patch
+* kernel-posix-timersc-code-clean-up.patch
+* kernel-posix-timersc-code-clean-up-checkpatch-fixes.patch
+* input-route-kbd-leds-through-the-generic-leds-layer.patch
+* input-route-kbd-leds-through-the-generic-leds-layer-fix.patch
+* fs-ext4-fsyncc-generic_file_fsync-call-based-on-barrier-flag.patch
+* fs-ocfs2-stack_userc-fix-typo-in-ocfs2_control_release.patch
+* o2dlm-fix-null-pointer-dereference-in-o2dlm_blocking_ast_wrapper.patch
+* o2dlm-fix-null-pointer-dereference-in-o2dlm_blocking_ast_wrapper-checkpatch-fixes.patch
+* ocfs2-free-inode-when-i_count-becomes-zero.patch
+* ocfs2-call-ocfs2_journal_access_di-before-ocfs2_journal_dirty-in-ocfs2_write_end_nolock.patch
+* ocfs2-avoid-access-invalid-address-when-read-o2dlm-debug-messages.patch
+* ocfs2-dlm-fix-race-between-dispatched_work-and-dlm_lockres_grab_inflight_worker.patch
+* ocfs2-reflink-fix-slow-unlink-for-refcounted-file.patch
+* ocfs2-fix-journal-commit-deadlock.patch
+* bio-integrity-remove-the-needless-fail-handle-of-bip_slab-creating.patch
+* block-restore-proc-partitions-to-not-display-non-partitionable-removable-devices.patch
+  mm.patch
+* fix-checkpatch-errors-for-mm-mmapc.patch
+* memory-hotplug-add-sysfs-zones_online_to-attribute.patch
+* memory-hotplug-add-sysfs-zones_online_to-attribute-fix.patch
+* memory-hotplug-add-sysfs-zones_online_to-attribute-fix-2.patch
+* mm-remove-misleading-arch_uses_numa_prot_none.patch
+* lib-genallocc-add-power-aligned-algorithm.patch
+* lib-genallocc-add-genpool-range-check-function.patch
+* common-dma-mapping-introduce-common-remapping-functions.patch
+* arm-use-genalloc-for-the-atomic-pool.patch
+* arm64-add-atomic-pool-for-non-coherent-and-cma-allocations.patch
+* mm-page_alloc-determine-migratetype-only-once.patch
+* vfs-make-guard_bh_eod-more-generic.patch
+* vfs-guard-end-of-device-for-mpage-interface.patch
+* block_dev-implement-readpages-to-optimize-sequential-read.patch
+* mm-thp-dont-hold-mmap_sem-in-khugepaged-when-allocating-thp.patch
+* mm-compaction-defer-each-zone-individually-instead-of-preferred-zone.patch
+* mm-compaction-defer-each-zone-individually-instead-of-preferred-zone-fix.patch
+* mm-compaction-do-not-count-compact_stall-if-all-zones-skipped-compaction.patch
+* mm-compaction-do-not-recheck-suitable_migration_target-under-lock.patch
+* mm-compaction-move-pageblock-checks-up-from-isolate_migratepages_range.patch
+* mm-compaction-reduce-zone-checking-frequency-in-the-migration-scanner.patch
+* mm-compaction-khugepaged-should-not-give-up-due-to-need_resched.patch
+* mm-compaction-khugepaged-should-not-give-up-due-to-need_resched-fix.patch
+* mm-compaction-periodically-drop-lock-and-restore-irqs-in-scanners.patch
+* mm-compaction-skip-rechecks-when-lock-was-already-held.patch
+* mm-compaction-remember-position-within-pageblock-in-free-pages-scanner.patch
+* mm-compaction-skip-buddy-pages-by-their-order-in-the-migrate-scanner.patch
+* mm-rename-allocflags_to_migratetype-for-clarity.patch
+* mm-compaction-pass-gfp-mask-to-compact_control.patch
+* mm-introduce-check_data_rlimit-helper-v2.patch
+* mm-use-may_adjust_brk-helper.patch
+* prctl-pr_set_mm-factor-out-mmap_sem-when-update-mm-exe_file.patch
+* prctl-pr_set_mm-introduce-pr_set_mm_map-operation-v3.patch
+* prctl-pr_set_mm-introduce-pr_set_mm_map-operation-v3-fix.patch
+* vmstat-on-demand-vmstat-workers-v8.patch
+* vmstat-on-demand-vmstat-workers-v8-fix.patch
+* vmstat-on-demand-vmstat-workers-v8-do-not-open-code-alloc_cpumask_var.patch
+* vmstat-on-demand-vmstat-workers-v8-fix-2.patch
+* mm-introduce-do_shared_fault-and-drop-do_fault-fix-fix.patch
+* fs-mpagec-forgotten-write_sync-in-case-of-data-integrity-write.patch
+* m68k-call-find_vma-with-the-mmap_sem-held-in-sys_cacheflush.patch
+* m68k-call-find_vma-with-the-mmap_sem-held-in-sys_cacheflush-v2.patch
+* do_shared_fault-check-that-mmap_sem-is-held.patch
+* include-kernelh-rewrite-min3-max3-and-clamp-using-min-and-max.patch
+* include-kernelh-rewrite-min3-max3-and-clamp-using-min-and-max-fix.patch
+* kernel-async-fixed-coding-style-issues.patch
+* drivers-misc-ti-st-st_corec-fix-null-dereference-on-protocol-type-check.patch
+* printk-dont-bother-using-log_cpu_max_buf_shift-on-smp.patch
+* earlyprintk-re-enable-earlyprintk-calling-early_param.patch
+* lib-vsprintf-add-%pt-format-specifier.patch
+* maintainers-assing-systemace-driver-to-xilinx.patch
+* remove-non-existent-files-from-maintainerspatch-added-to-mm-tree.patch
+* maintainers-linaro-mm-sig-is-moderated.patch
+* drivers-video-backlight-backlightc-remove-backlight-sysfs-uevent.patch
+* mm-utilc-add-kstrimdup.patch
+* lib-add-crc64-ecma-module.patch
+* checkpatch-fix-spello.patch
+* rtc-s3c-define-s3c_rtc-structure-to-remove-global-variables.patch
+* rtc-s3c-define-s3c_rtc-structure-to-remove-global-variables-v2.patch
+* rtc-s3c-remove-warning-message-when-checking-coding-style-with-checkpatch-script.patch
+* rtc-s3c-add-s3c_rtc_data-structure-to-use-variant-data-instead-of-s3c_cpu_type.patch
+* rtc-s3c-add-support-for-rtc-of-exynos3250-soc.patch
+* arm-dts-fix-wrong-compatible-string-of-exynos3250-rtc-dt-node.patch
+* fs-befs-btreec-remove-typedef-befs_btree_node.patch
+* hfsplus-fix-longname-handling.patch
+* fs-proc-task_mmuc-dont-use-task-mm-in-m_start-and-show_map.patch
+* fs-proc-task_mmuc-unify-simplify-do_maps_open-and-numa_maps_open.patch
+* proc-introduce-proc_mem_open.patch
+* fs-proc-task_mmuc-shift-mm_access-from-m_start-to-proc_maps_open.patch
+* fs-proc-task_mmuc-shift-mm_access-from-m_start-to-proc_maps_open-checkpatch-fixes.patch
+* fs-proc-task_mmuc-simplify-the-vma_stop-logic.patch
+* fs-proc-task_mmuc-simplify-the-vma_stop-logic-checkpatch-fixes.patch
+* fs-proc-task_mmuc-cleanup-the-tail_vma-horror-in-m_next.patch
+* fs-proc-task_mmuc-shift-priv-task-=-null-from-m_start-to-m_stop.patch
+* fs-proc-task_mmuc-kill-the-suboptimal-and-confusing-m-version-logic.patch
+* fs-proc-task_mmuc-simplify-m_start-to-make-it-readable.patch
+* fs-proc-task_mmuc-introduce-m_next_vma-helper.patch
+* fs-proc-task_mmuc-reintroduce-m-version-logic.patch
+* fs-proc-task_mmuc-update-m-version-in-the-main-loop-in-m_start.patch
+* fs-proc-task_nommuc-change-maps_open-to-use-__seq_open_private.patch
+* fs-proc-task_nommuc-shift-mm_access-from-m_start-to-proc_maps_open.patch
+* fs-proc-task_nommuc-shift-mm_access-from-m_start-to-proc_maps_open-checkpatch-fixes.patch
+* fs-proc-task_nommuc-dont-use-priv-task-mm.patch
+* kgdb-timeout-if-secondary-cpus-ignore-the-roundup.patch
+* ipc-always-handle-a-new-value-of-auto_msgmni.patch
+* build-trivia-scripts-headers_installsh.patch
+  linux-next.patch
+* drivers-gpio-gpio-zevioc-fix-build.patch
+* x86-vdso-fix-vdso2cs-special_pages-error-checking.patch
+* drivers-staging-unisys-fix-build.patch
+* include-linux-remove-strict_strto-definitions.patch
+* mm-replace-remap_file_pages-syscall-with-emulation.patch
+* fat-add-i_disksize-to-represent-uninitialized-size-v4.patch
+* fat-add-fat_fallocate-operation-v4.patch
+* fat-zero-out-seek-range-on-_fat_get_block-v4.patch
+* fat-fallback-to-buffered-write-in-case-of-fallocated-region-on-direct-io-v4.patch
+* fat-permit-to-return-phy-block-number-by-fibmap-in-fallocated-region-v4.patch
+* documentation-filesystems-vfattxt-update-the-limitation-for-fat-fallocate-v4.patch
+* w1-call-put_device-if-device_register-fails.patch
+* softlockup-make-detector-be-aware-of-task-switch-of-processes-hogging-cpu.patch
+* watchdog-control-hard-lockup-detection-default.patch
+* watchdog-control-hard-lockup-detection-default-fix.patch
+* kvm-ensure-hard-lockup-detection-is-disabled-by-default.patch
+* mm-add-strictlimit-knob-v2.patch
+  debugging-keep-track-of-page-owners.patch
+  debugging-keep-track-of-page-owners-fix.patch
+  page-owners-correct-page-order-when-to-free-page.patch
+  make-sure-nobodys-leaking-resources.patch
+  journal_add_journal_head-debug.patch
+  journal_add_journal_head-debug-fix.patch
+  releasing-resources-with-children.patch
+  make-frame_pointer-default=y.patch
+  kernel-forkc-export-kernel_thread-to-modules.patch
+  mutex-subsystem-synchro-test-module.patch
+  slab-leaks3-default-y.patch
+  add-debugging-aid-for-memory-initialisation-problems.patch
+  workaround-for-a-pci-restoring-bug.patch
+  single_open-seq_release-leak-diagnostics.patch
