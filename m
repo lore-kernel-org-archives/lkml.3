@@ -1,73 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756743AbaHYXLe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 19:11:34 -0400
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:38695 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755133AbaHYXLd (ORCPT
+	id S933619AbaHYXOb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 19:14:31 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:61014 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754242AbaHYXO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 19:11:33 -0400
-X-Sasl-enc: UXr7xAUXAopsPQajB63M37+iUAhpZusClVxhiB4DIBQO 1409008291
-Message-ID: <1409008290.6274.73.camel@localhost>
-Subject: Re: [PATCH] random: add and use memzero_explicit() for clearing data
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: tytso@mit.edu, zatimend@hotmail.co.uk, linux-kernel@vger.kernel.org,
-        Alexey Dobriyan <adobriyan@gmail.com>
-Date: Tue, 26 Aug 2014 01:11:30 +0200
-In-Reply-To: <1408996899-4892-1-git-send-email-dborkman@redhat.com>
-References: <1408996899-4892-1-git-send-email-dborkman@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 25 Aug 2014 19:14:29 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: bebl@mageta.org, Lan Tianyu <tianyu.lan@intel.com>,
+        Knut Petersen <Knut_Petersen@t-online.de>
+Cc: lenb@kernel.org, davem@davemloft.net, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] ACPI: Run fixed button devices' notify callback in the process context
+Date: Tue, 26 Aug 2014 01:33:36 +0200
+Message-ID: <3697885.H2NjtMFh3C@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <53F78516.3040607@mageta.org>
+References: <1408693091-16268-1-git-send-email-tianyu.lan@intel.com> <3313221.quKCYo2xmm@vostro.rjw.lan> <53F78516.3040607@mageta.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mo, 2014-08-25 at 22:01 +0200, Daniel Borkmann wrote:
-> zatimend has reported that in his environment (3.16/gcc4.8.3/corei7)
-> memset() calls which clear out sensitive data in extract_{buf,entropy,
-> entropy_user}() in random driver are being optimized away by gcc.
+On Friday, August 22, 2014 07:59:50 PM Benjamin Block wrote:
+> This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+> --jcnP2A9R7oLCVKLLsxCrieJLxfXGKbBUw
+> Content-Type: text/plain; charset=utf-8
+> Content-Transfer-Encoding: quoted-printable
 > 
-> Add a helper memzero_explicit() (similarly as explicit_bzero() variants)
-> that can be used in such cases where a variable with sensitive data is
-> being cleared out in the end. Other use cases might also be in crypto
-> code. [ I have put this into lib/string.c though, as it's always built-in
-> and doesn't need any dependencies then. ]
+> On 08/22/2014 07:33 PM, Rafael J. Wysocki wrote:
+> > On Friday, August 22, 2014 03:37:55 PM Lan Tianyu wrote:
+> >> Currently fixed button devices' notify callbacks are running in the
+> >> interrupt context. It's not necessary and prevent calling functions
+> >> with mutex lock(E,G evaluating ACPI method). Otherwise, it's different=
 > 
-> Fixes kernel bugzilla: 82041
+> >> with non-fixed button device whose notify callback is running in the p=
+> rocess
+> >> context. This patch is to make fixed button device's notify
+> >> callback in the process context and this also can avoid dead lock
+> >> when using netlink to report button event to user space.
+> >=20
+> > I guess this is the main reason for the patch?
+> >=20
+> > Is there a bug report regarding this?
+> >
 > 
-> Reported-by: zatimend@hotmail.co.uk
-> Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-> Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
-> Cc: Alexey Dobriyan <adobriyan@gmail.com>
+> There is: https://lkml.org/lkml/2014/8/21/606
 
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+OK, below is my version.
 
-In case this pattern of important function calls getting optimized away
-emerges more often we could also go with a wrapper which forces the
-execution of the function, like:
+Benjamin, Knut, can you please test this one just in case?
 
---- a/include/linux/compiler.h
-+++ b/include/linux/compiler.h
-@@ -181,6 +181,13 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
- #define OPTIMIZER_HIDE_VAR(var) barrier()
- #endif
+Rafael
+
+
+---
+From: Lan Tianyu <tianyu.lan@intel.com>
+Subject: ACPI: Run fixed event device notifications in process context
+
+Currently, notify callbacks for fixed button events are run from
+interrupt context.  That is not necessary and after commit 0bf6368ee8f2
+(ACPI / button: Add ACPI Button event via netlink routine) it causes
+netlink routines to be called from interrupt context which is not
+correct.
+
+Also, that is different from non-fixed device events (including
+non-fixed button events) whose notify callbacks are all executed from
+process context.
+
+For the above reasons, make fixed button device notify callbacks run
+in process context which will avoid the deadlock when using netlink
+to report button events to user space.
+
+Fixes: 0bf6368ee8f2 (ACPI / button: Add ACPI Button event via netlink routine)
+Link: https://lkml.org/lkml/2014/8/21/606
+Reported-by: Benjamin Block <bebl@mageta.org>
+Reported-by: Knut Petersen <Knut_Petersen@t-online.de>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+[rjw: Function names, subject and changelog.]
+Cc: 3.15+ <stable@vger.kernel.org> # 3.15+
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+drivers/acpi/scan.c | 9 +++++++--
+ drivers/acpi/scan.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
+
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -922,12 +922,17 @@ static void acpi_device_notify(acpi_hand
+ 	device->driver->ops.notify(device, event);
+ }
  
-+#ifndef OPTIMIZER_FORCE_CALL
-+#define OPTIMIZER_FORCE_CALL(func, args...) ({                         \
-+                       typeof(func) * volatile __func = (func);        \
-+                       __func(args);                                   \
-+               })
-+#endif
+-static acpi_status acpi_device_notify_fixed(void *data)
++static void acpi_device_notify_fixed(void *data)
+ {
+ 	struct acpi_device *device = data;
+ 
+ 	/* Fixed hardware devices have no handles */
+ 	acpi_device_notify(NULL, ACPI_FIXED_HARDWARE_EVENT, device);
++}
 +
- /* Not-quite-unique ID. */
- #ifndef __UNIQUE_ID
- # define __UNIQUE_ID(prefix) __PASTE(__PASTE(__UNIQUE_ID_, prefix), __LINE__)
-
-
-Thanks,
-Hannes
-
++static acpi_status acpi_device_fixed_event(void *data)
++{
++	acpi_os_execute(OSL_NOTIFY_HANDLER, acpi_device_notify_fixed, data);
+ 	return AE_OK;
+ }
+ 
+@@ -938,12 +943,12 @@ static int acpi_device_install_notify_ha
+ 	if (device->device_type == ACPI_BUS_TYPE_POWER_BUTTON)
+ 		status =
+ 		    acpi_install_fixed_event_handler(ACPI_EVENT_POWER_BUTTON,
+-						     acpi_device_notify_fixed,
++						     acpi_device_fixed_event,
+ 						     device);
+ 	else if (device->device_type == ACPI_BUS_TYPE_SLEEP_BUTTON)
+ 		status =
+ 		    acpi_install_fixed_event_handler(ACPI_EVENT_SLEEP_BUTTON,
+-						     acpi_device_notify_fixed,
++						     acpi_device_fixed_event,
+ 						     device);
+ 	else
+ 		status = acpi_install_notify_handler(device->handle,
+@@ -960,10 +965,10 @@ static void acpi_device_remove_notify_ha
+ {
+ 	if (device->device_type == ACPI_BUS_TYPE_POWER_BUTTON)
+ 		acpi_remove_fixed_event_handler(ACPI_EVENT_POWER_BUTTON,
+-						acpi_device_notify_fixed);
++						acpi_device_fixed_event);
+ 	else if (device->device_type == ACPI_BUS_TYPE_SLEEP_BUTTON)
+ 		acpi_remove_fixed_event_handler(ACPI_EVENT_SLEEP_BUTTON,
+-						acpi_device_notify_fixed);
++						acpi_device_fixed_event);
+ 	else
+ 		acpi_remove_notify_handler(device->handle, ACPI_DEVICE_NOTIFY,
+ 					   acpi_device_notify);
 
