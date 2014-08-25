@@ -1,219 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933637AbaHYWnp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 18:43:45 -0400
+	id S933617AbaHYWnn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 18:43:43 -0400
 Received: from mga02.intel.com ([134.134.136.20]:65151 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933550AbaHYWnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 18:43:42 -0400
+	id S932113AbaHYWnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 18:43:41 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,400,1406617200"; 
-   d="scan'208";a="563318683"
+   d="scan'208";a="563318682"
 From: Andi Kleen <andi@firstfloor.org>
 To: peterz@infradead.org
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 3/5] perf, x86: Add Broadwell core support
-Date: Mon, 25 Aug 2014 15:43:29 -0700
-Message-Id: <1409006611-30741-4-git-send-email-andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com
+Subject: Broadwell perf support
+Date: Mon, 25 Aug 2014 15:43:26 -0700
+Message-Id: <1409006611-30741-1-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1409006611-30741-1-git-send-email-andi@firstfloor.org>
-References: <1409006611-30741-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+Updated version of the perf Broadwell patchkit. This also has some fixes
+for Haswell.
 
-Add Broadwell support for Broadwell Client to perf.
-This is very similar to Haswell.  It uses a new cache event table,
-because there were various changes there.
+This addresses all earlier feedback. Too low user specified periods
+on INST_RETIRED.ALL are now rejected with an error. The Haswell
+models are documented. The event matches use the perf macros.
 
-The constraint list has one new event that needs to be handled over Haswell.
-
-The PEBS event list is the same, so we reuse Haswell's.
-
-v2: Remove unnamed model numbers.
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/kernel/cpu/perf_event_intel.c | 150 +++++++++++++++++++++++++++++++++
- 1 file changed, 150 insertions(+)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 0e9c272..1cca4ae 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -220,6 +220,15 @@ static struct event_constraint intel_hsw_event_constraints[] = {
- 	EVENT_CONSTRAINT_END
- };
- 
-+struct event_constraint intel_bdw_event_constraints[] = {
-+	FIXED_EVENT_CONSTRAINT(0x00c0, 0),	/* INST_RETIRED.ANY */
-+	FIXED_EVENT_CONSTRAINT(0x003c, 1),	/* CPU_CLK_UNHALTED.CORE */
-+	FIXED_EVENT_CONSTRAINT(0x0300, 2),	/* CPU_CLK_UNHALTED.REF */
-+	INTEL_UEVENT_CONSTRAINT(0x148, 0x4),	/* L1D_PEND_MISS.PENDING */
-+	INTEL_EVENT_CONSTRAINT(0xa3, 0x4),	/* CYCLE_ACTIVITY.* */
-+	EVENT_CONSTRAINT_END
-+};
-+
- static u64 intel_pmu_event_map(int hw_event)
- {
- 	return intel_perfmon_event_map[hw_event];
-@@ -415,6 +424,126 @@ static __initconst const u64 snb_hw_cache_event_ids
- 
- };
- 
-+static __initconst const u64 bdw_hw_cache_event_ids
-+				[PERF_COUNT_HW_CACHE_MAX]
-+				[PERF_COUNT_HW_CACHE_OP_MAX]
-+				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
-+{
-+ [ C(L1D ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x81d0, 	/* MEM_UOPS_RETIRED.ALL_LOADS */
-+		[ C(RESULT_MISS)   ] = 0x151, 	/* L1D.REPLACEMENT */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x82d0, 	/* MEM_UOPS_RETIRED.ALL_STORES */
-+		[ C(RESULT_MISS)   ] = 0x0,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x0,
-+	},
-+ },
-+ [ C(L1I ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x280, 	/* ICACHE.MISSES */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x0,
-+	},
-+ },
-+ [ C(LL  ) ] = {
-+	[ C(OP_READ) ] = {
-+		/* OFFCORE_RESPONSE:ALL_DATA_RD|ALL_CODE_RD */
-+		[ C(RESULT_ACCESS) ] = 0x1b7,
-+		/* OFFCORE_RESPONSE:ALL_DATA_RD|ALL_CODE_RD|SUPPLIER_NONE|
-+                   L3_MISS|ANY_SNOOP */
-+		[ C(RESULT_MISS)   ] = 0x1b7,
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x1b7, 	/* OFFCORE_RESPONSE:ALL_RFO */
-+		/* OFFCORE_RESPONSE:ALL_RFO|SUPPLIER_NONE|L3_MISS|ANY_SNOOP */
-+		[ C(RESULT_MISS)   ] = 0x1b7,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x0,
-+	},
-+ },
-+ [ C(DTLB) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x81d0, 	/* MEM_UOPS_RETIRED.ALL_LOADS */
-+		[ C(RESULT_MISS)   ] = 0x108, 	/* DTLB_LOAD_MISSES.MISS_CAUSES_A_WALK */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x82d0, 	/* MEM_UOPS_RETIRED.ALL_STORES */
-+		[ C(RESULT_MISS)   ] = 0x149, 	/* DTLB_STORE_MISSES.MISS_CAUSES_A_WALK */
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x0,
-+	},
-+ },
-+ [ C(ITLB) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x6085, 	/* ITLB_MISSES.STLB_HIT */
-+		[ C(RESULT_MISS)   ] = 0x185, 	/* ITLB_MISSES.MISS_CAUSES_A_WALK */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+ },
-+ [ C(BPU ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0xc4, 	/* BR_INST_RETIRED.ALL_BRANCHES */
-+		[ C(RESULT_MISS)   ] = 0xc5, 	/* BR_MISP_RETIRED.ALL_BRANCHES */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+ },
-+};
-+
-+static __initconst const u64 bdw_hw_cache_extra_regs
-+				[PERF_COUNT_HW_CACHE_MAX]
-+				[PERF_COUNT_HW_CACHE_OP_MAX]
-+				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
-+{
-+ [ C(LL  ) ] = {
-+	[ C(OP_READ) ] = {
-+		/* OFFCORE_RESPONSE:ALL_DATA_RD|ALL_CODE_RD */
-+		[ C(RESULT_ACCESS) ] = 0x2d5,
-+		/* OFFCORE_RESPONSE:ALL_DATA_RD|ALL_CODE_RD|SUPPLIER_NONE|
-+                   L3_MISS|ANY_SNOOP */
-+		[ C(RESULT_MISS)   ] = 0x3fbc0202d5,
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x122, 	/* OFFCORE_RESPONSE:ALL_RFO */
-+		/* OFFCORE_RESPONSE:ALL_RFO|SUPPLIER_NONE|L3_MISS|ANY_SNOOP */
-+		[ C(RESULT_MISS)   ] = 0x3fbc020122,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x0,
-+	},
-+ },
-+};
-+
- static __initconst const u64 westmere_hw_cache_event_ids
- 				[PERF_COUNT_HW_CACHE_MAX]
- 				[PERF_COUNT_HW_CACHE_OP_MAX]
-@@ -2565,6 +2694,27 @@ __init int intel_pmu_init(void)
- 		pr_cont("Haswell events, ");
- 		break;
- 
-+	case 61: /* Broadwell Client */
-+		x86_pmu.late_ack = true;
-+		memcpy(hw_cache_event_ids, bdw_hw_cache_event_ids, sizeof(hw_cache_event_ids));
-+		memcpy(hw_cache_extra_regs, bdw_hw_cache_extra_regs, sizeof(hw_cache_extra_regs));
-+
-+		intel_pmu_lbr_init_snb();
-+
-+		x86_pmu.event_constraints = intel_bdw_event_constraints;
-+		x86_pmu.pebs_constraints = intel_hsw_pebs_event_constraints;
-+		x86_pmu.extra_regs = intel_snbep_extra_regs;
-+		x86_pmu.pebs_aliases = intel_pebs_aliases_snb;
-+		/* all extra regs are per-cpu when HT is on */
-+		x86_pmu.er_flags |= ERF_HAS_RSP_1;
-+		x86_pmu.er_flags |= ERF_NO_HT_SHARING;
-+
-+		x86_pmu.hw_config = hsw_hw_config;
-+		x86_pmu.get_event_constraints = hsw_get_event_constraints;
-+		x86_pmu.cpu_events = hsw_events_attrs;
-+		pr_cont("Broadwell events, ");
-+		break;
-+
- 	default:
- 		switch (x86_pmu.version) {
- 		case 1:
--- 
-1.9.3
+-Andi
 
