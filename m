@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816AbaHYI3X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 04:29:23 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:44018 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753958AbaHYI3V (ORCPT
+	id S1754845AbaHYIb0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 04:31:26 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:45073 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753953AbaHYIbY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 04:29:21 -0400
-X-Original-SENDERIP: 10.177.222.131
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Mon, 25 Aug 2014 17:29:32 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] mm/slab_common: move kmem_cache definition to
- internal header
-Message-ID: <20140825082932.GC13475@js1304-P5Q-DELUXE>
-References: <1408608562-20339-1-git-send-email-iamjoonsoo.kim@lge.com>
- <53F5AD88.9050303@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53F5AD88.9050303@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 25 Aug 2014 04:31:24 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>, <stable@vger.kernel.org>
+Subject: [PATCH v3] drivers: usb: gadget: fusb300_udc.h: Fix typo in include guard
+Date: Mon, 25 Aug 2014 10:30:25 +0200
+Message-Id: <1408955425-6169-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <20140822155809.GA27616@saruman.home>
+References: <20140822155809.GA27616@saruman.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21, 2014 at 04:27:52PM +0800, Zhang Yanfei wrote:
-> Hello Joonsoo,
+Clearly this was meant to be an include guard, but a trailing
+underscore was missing. It has been this way since the file was
+introduced in 0fe6f1d1 ("usb: udc: add Faraday fusb300 driver").
 
-Hello. :)
+Fixes: 0fe6f1d1 ("usb: udc: add Faraday fusb300 driver")
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+---
 
-> 
-> Seems like this is a cleanup patchset. I want to mention another
-> tiny cleanup here.
+Notes:
+    v2: Add proper commit message.
+    
+    v3: Add "Fixes:" and "Cc: stable" tags as requested by Felipe Balbi.
 
-I think these are not only cleanup but also build improvement.
+ drivers/usb/gadget/udc/fusb300_udc.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> You removed the "struct slab" before but it seems there is still
-> a slab_page field in page descriptor left and has no user now, right?
+diff --git a/drivers/usb/gadget/udc/fusb300_udc.h b/drivers/usb/gadget/udc/fusb300_udc.h
+index ae811d8..ad39f89 100644
+--- a/drivers/usb/gadget/udc/fusb300_udc.h
++++ b/drivers/usb/gadget/udc/fusb300_udc.h
+@@ -12,7 +12,7 @@
+ 
+ 
+ #ifndef __FUSB300_UDC_H__
+-#define __FUSB300_UDC_H_
++#define __FUSB300_UDC_H__
+ 
+ #include <linux/kernel.h>
+ 
+-- 
+2.0.4
 
-Yes, you are right. I will do it in next spin. :)
-
-Thanks.
