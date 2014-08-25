@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932167AbaHYKzw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 06:55:52 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:55773 "EHLO
+	id S1755265AbaHYKz7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 06:55:59 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:55791 "EHLO
 	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932110AbaHYKzt (ORCPT
+	with ESMTP id S1751780AbaHYKz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 06:55:49 -0400
-Subject: [RFC PATCH 3/5] lib/bug: Use RCU list ops for module_bug_list
+	Mon, 25 Aug 2014 06:55:56 -0400
+Subject: [RFC PATCH 4/5] module: Lock up a module when loading with a LOCLUP
+ flag
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 To: Rusty Russell <rusty@rustcorp.com.au>
 Cc: Lucas De Marchi <lucas.demarchi@intel.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Josh Poimboeuf <jpoimboe@redhat.com>
-Date: Mon, 25 Aug 2014 10:55:41 +0000
-Message-ID: <20140825105541.21089.19536.stgit@kbuild-fedora.novalocal>
+Date: Mon, 25 Aug 2014 10:55:48 +0000
+Message-ID: <20140825105548.21089.42883.stgit@kbuild-fedora.novalocal>
 In-Reply-To: <20140825105520.21089.26870.stgit@kbuild-fedora.novalocal>
 References: <20140825105520.21089.26870.stgit@kbuild-fedora.novalocal>
 User-Agent: StGit/0.17-dirty
@@ -25,81 +26,174 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Actually since module_bug_list should be used in BUG context,
-we may not need this. But for someone who want to use this
-from normal context, this makes module_bug_list an RCU list.
+Lock-up a module in kernel so that it is not removed unless
+forcibly unload. This is done by loading a module with
+MODULE_INIT_LOCKUP_MODULE flag (via finit_module).
+This speeds up try_module_get by skipping refcount inc/dec for
+the locked modules.
+
+Note that this flag requires to update libkmod to support it.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
- kernel/module.c |    5 +++--
- lib/bug.c       |   20 ++++++++++++++------
- 2 files changed, 17 insertions(+), 8 deletions(-)
+ include/linux/module.h      |    6 ++++++
+ include/uapi/linux/module.h |    1 +
+ kernel/module.c             |   28 ++++++++++++++++++++--------
+ 3 files changed, 27 insertions(+), 8 deletions(-)
 
+diff --git a/include/linux/module.h b/include/linux/module.h
+index 71f282a..670cb2e 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -205,6 +205,7 @@ struct module_use {
+ 
+ enum module_state {
+ 	MODULE_STATE_LIVE,	/* Normal state. */
++	MODULE_STATE_LOCKUP,	/* Module is never removed except forced */
+ 	MODULE_STATE_COMING,	/* Full formed, running module_init. */
+ 	MODULE_STATE_GOING,	/* Going away. */
+ 	MODULE_STATE_UNFORMED,	/* Still setting it up. */
+@@ -390,6 +391,11 @@ static inline int module_is_live(struct module *mod)
+ 	return mod->state != MODULE_STATE_GOING;
+ }
+ 
++static inline int module_is_locked(struct module *mod)
++{
++	return mod->state == MODULE_STATE_LOCKUP;
++}
++
+ struct module *__module_text_address(unsigned long addr);
+ struct module *__module_address(unsigned long addr);
+ bool is_module_address(unsigned long addr);
+diff --git a/include/uapi/linux/module.h b/include/uapi/linux/module.h
+index 38da425..8195603 100644
+--- a/include/uapi/linux/module.h
++++ b/include/uapi/linux/module.h
+@@ -4,5 +4,6 @@
+ /* Flags for sys_finit_module: */
+ #define MODULE_INIT_IGNORE_MODVERSIONS	1
+ #define MODULE_INIT_IGNORE_VERMAGIC	2
++#define MODULE_INIT_LOCKUP_MODULE	4
+ 
+ #endif /* _UAPI_LINUX_MODULE_H */
 diff --git a/kernel/module.c b/kernel/module.c
-index 84b068d..3bd0dc9 100644
+index 3bd0dc9..85ffc1d 100644
 --- a/kernel/module.c
 +++ b/kernel/module.c
-@@ -1848,9 +1848,10 @@ static void free_module(struct module *mod)
+@@ -753,7 +753,7 @@ static int __try_stop_module(void *_sref)
+ 	struct stopref *sref = _sref;
+ 
+ 	/* If it's not unused, quit unless we're forcing. */
+-	if (module_refcount(sref->mod) != 0) {
++	if (module_is_locked(sref->mod) || module_refcount(sref->mod) != 0) {
+ 		if (!(*sref->forced = try_force_unload(sref->flags)))
+ 			return -EWOULDBLOCK;
+ 	}
+@@ -830,7 +830,8 @@ SYSCALL_DEFINE2(delete_module, const char __user *, name_user,
+ 	}
+ 
+ 	/* Doing init or already dying? */
+-	if (mod->state != MODULE_STATE_LIVE) {
++	if (mod->state != MODULE_STATE_LIVE &&
++	    mod->state != MODULE_STATE_LOCKUP) {
+ 		/* FIXME: if (force), slam module count damn the torpedoes */
+ 		pr_debug("%s already dying\n", mod->name);
+ 		ret = -EBUSY;
+@@ -947,6 +948,9 @@ bool try_module_get(struct module *module)
+ 	bool ret = true;
+ 
+ 	if (module) {
++		if (module_is_locked(module))
++			goto end;
++
+ 		preempt_disable();
+ 
+ 		if (likely(module_is_live(module))) {
+@@ -957,13 +961,14 @@ bool try_module_get(struct module *module)
+ 
+ 		preempt_enable();
+ 	}
++end:
+ 	return ret;
+ }
+ EXPORT_SYMBOL(try_module_get);
+ 
+ void module_put(struct module *module)
+ {
+-	if (module) {
++	if (module && !module_is_locked(module)) {
+ 		preempt_disable();
+ 		smp_wmb(); /* see comment in module_refcount */
+ 		__this_cpu_inc(module->refptr->decs);
+@@ -1026,6 +1031,7 @@ static ssize_t show_initstate(struct module_attribute *mattr,
+ 
+ 	switch (mk->mod->state) {
+ 	case MODULE_STATE_LIVE:
++	case MODULE_STATE_LOCKUP:
+ 		state = "live";
+ 		break;
+ 	case MODULE_STATE_COMING:
+@@ -2981,6 +2987,7 @@ static bool finished_loading(const char *name)
  	mutex_lock(&module_mutex);
- 	/* Unlink carefully: kallsyms could be walking list. */
- 	list_del_rcu(&mod->list);
--	/* Wait for RCU synchronizing before releasing mod->list. */
--	synchronize_rcu();
-+	/* Remove this module from bug list, this uses list_del_rcu */
- 	module_bug_cleanup(mod);
-+	/* Wait for RCU synchronizing before releasing mod->list and buglist. */
-+	synchronize_rcu();
+ 	mod = find_module_all(name, strlen(name), true);
+ 	ret = !mod || mod->state == MODULE_STATE_LIVE
++		|| mod->state == MODULE_STATE_LOCKUP
+ 		|| mod->state == MODULE_STATE_GOING;
  	mutex_unlock(&module_mutex);
  
- 	/* This may be NULL, but that's OK */
-diff --git a/lib/bug.c b/lib/bug.c
-index d1d7c78..0c3bd95 100644
---- a/lib/bug.c
-+++ b/lib/bug.c
-@@ -64,16 +64,22 @@ static LIST_HEAD(module_bug_list);
- static const struct bug_entry *module_find_bug(unsigned long bugaddr)
+@@ -2999,7 +3006,7 @@ static void do_mod_ctors(struct module *mod)
+ }
+ 
+ /* This is where the real work happens */
+-static int do_init_module(struct module *mod)
++static int do_init_module(struct module *mod, bool locked)
  {
- 	struct module *mod;
-+	const struct bug_entry *bug = NULL;
+ 	int ret = 0;
  
--	list_for_each_entry(mod, &module_bug_list, bug_list) {
--		const struct bug_entry *bug = mod->bug_table;
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(mod, &module_bug_list, bug_list) {
- 		unsigned i;
- 
-+		bug = mod->bug_table;
- 		for (i = 0; i < mod->num_bugs; ++i, ++bug)
- 			if (bugaddr == bug_addr(bug))
--				return bug;
-+				goto out;
+@@ -3034,7 +3041,7 @@ static int do_init_module(struct module *mod)
  	}
--	return NULL;
-+	bug = NULL;
-+out:
-+	rcu_read_unlock();
-+
-+	return bug;
- }
  
- void module_bug_finalize(const Elf_Ehdr *hdr, const Elf_Shdr *sechdrs,
-@@ -99,13 +105,15 @@ void module_bug_finalize(const Elf_Ehdr *hdr, const Elf_Shdr *sechdrs,
- 	 * Strictly speaking this should have a spinlock to protect against
- 	 * traversals, but since we only traverse on BUG()s, a spinlock
- 	 * could potentially lead to deadlock and thus be counter-productive.
-+	 * Thus, this uses RCU to safely manipulate the bug list, since BUG
-+	 * must run in non-interruptive state.
- 	 */
--	list_add(&mod->bug_list, &module_bug_list);
-+	list_add_rcu(&mod->bug_list, &module_bug_list);
- }
+ 	/* Now it's a first class citizen! */
+-	mod->state = MODULE_STATE_LIVE;
++	mod->state = locked ? MODULE_STATE_LOCKUP : MODULE_STATE_LIVE;
+ 	blocking_notifier_call_chain(&module_notify_list,
+ 				     MODULE_STATE_LIVE, mod);
  
- void module_bug_cleanup(struct module *mod)
- {
--	list_del(&mod->bug_list);
-+	list_del_rcu(&mod->bug_list);
- }
+@@ -3290,7 +3297,7 @@ static int load_module(struct load_info *info, const char __user *uargs,
+ 	/* Done! */
+ 	trace_module_load(mod);
  
- #else
+-	return do_init_module(mod);
++	return do_init_module(mod, flags & MODULE_INIT_LOCKUP_MODULE);
+ 
+  bug_cleanup:
+ 	/* module_bug_cleanup needs module_mutex protection */
+@@ -3358,8 +3365,9 @@ SYSCALL_DEFINE3(finit_module, int, fd, const char __user *, uargs, int, flags)
+ 
+ 	pr_debug("finit_module: fd=%d, uargs=%p, flags=%i\n", fd, uargs, flags);
+ 
+-	if (flags & ~(MODULE_INIT_IGNORE_MODVERSIONS
+-		      |MODULE_INIT_IGNORE_VERMAGIC))
++	if (flags & ~(MODULE_INIT_IGNORE_MODVERSIONS |
++		      MODULE_INIT_IGNORE_VERMAGIC |
++		      MODULE_INIT_LOCKUP_MODULE))
+ 		return -EINVAL;
+ 
+ 	err = copy_module_from_fd(fd, &info);
+@@ -3602,10 +3610,14 @@ static char *module_flags(struct module *mod, char *buf)
+ 
+ 	BUG_ON(mod->state == MODULE_STATE_UNFORMED);
+ 	if (mod->taints ||
++	    mod->state == MODULE_STATE_LOCKUP ||
+ 	    mod->state == MODULE_STATE_GOING ||
+ 	    mod->state == MODULE_STATE_COMING) {
+ 		buf[bx++] = '(';
+ 		bx += module_flags_taint(mod, buf + bx);
++		/* Show a - for module-is-locked */
++		if (mod->state == MODULE_STATE_LOCKUP)
++			buf[bx++] = '*';
+ 		/* Show a - for module-is-being-unloaded */
+ 		if (mod->state == MODULE_STATE_GOING)
+ 			buf[bx++] = '-';
 
 
