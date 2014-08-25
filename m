@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933327AbaHYTK2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 15:10:28 -0400
-Received: from arrakis.dune.hu ([78.24.191.176]:47089 "EHLO arrakis.dune.hu"
+	id S1756456AbaHYTL3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 15:11:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42016 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933124AbaHYTK1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 15:10:27 -0400
+	id S1751799AbaHYTL1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 15:11:27 -0400
+Date: Mon, 25 Aug 2014 15:11:13 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michael Welling <mwelling@ieee.org>
+Cc: akpm@linux-foundation.org, tglx@linutronix.de, mingo@redhat.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH] purgatory: add clean-up for purgatory directory
+Message-ID: <20140825191113.GI14379@redhat.com>
+References: <1408750630-11573-1-git-send-email-mwelling@ieee.org>
 MIME-Version: 1.0
-In-Reply-To: <20140825112754.GE27724@linux-mips.org>
-References: <1408818808-18850-1-git-send-email-Julia.Lawall@lip6.fr>
- <1408818808-18850-5-git-send-email-Julia.Lawall@lip6.fr> <20140825112754.GE27724@linux-mips.org>
-From: Jonas Gorski <jogo@openwrt.org>
-Date: Mon, 25 Aug 2014 21:09:53 +0200
-Message-ID: <CAOiHx=m_-GmRwAmPOWFg8w9pFMPU8Vn9U-UO+k=jDdDxNH7R3Q@mail.gmail.com>
-Subject: Re: [PATCH 4/7] MIPS: BCM63xx: delete double assignment
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: Julia Lawall <Julia.Lawall@lip6.fr>, joe@perches.com,
-        kernel-janitors@vger.kernel.org,
-        MIPS Mailing List <linux-mips@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408750630-11573-1-git-send-email-mwelling@ieee.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 1:27 PM, Ralf Baechle <ralf@linux-mips.org> wrote:
-> On Sat, Aug 23, 2014 at 08:33:25PM +0200, Julia Lawall wrote:
->
->> Delete successive assignments to the same location.  In each case, the
->> duplicated assignment is modified to be in line with other nearby code.
->>
->> A simplified version of the semantic match that finds this problem is as
->> follows: (http://coccinelle.lip6.fr/)
->
-> Looking good, applied.
+On Fri, Aug 22, 2014 at 06:37:10PM -0500, Michael Welling wrote:
+> Without this patch the kexec-purgatory.c and purgatory.ro files are not removed after make mrproper.
+> 
+> Signed-off-by: Michael Welling <mwelling@ieee.org>
 
-Huh, somehow gmail decided the original emails were spam.
+Looks good to me. 
 
-> Thanks,
->
->   Ralf
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
-Also thanks from me for cleaning up behind me! These mistakes were
-definitely mine.
+Vivek
 
-
-Jonas
+> ---
+>  arch/x86/Makefile |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+> index c96bcec..60087ca 100644
+> --- a/arch/x86/Makefile
+> +++ b/arch/x86/Makefile
+> @@ -251,6 +251,7 @@ archclean:
+>  	$(Q)rm -rf $(objtree)/arch/x86_64
+>  	$(Q)$(MAKE) $(clean)=$(boot)
+>  	$(Q)$(MAKE) $(clean)=arch/x86/tools
+> +	$(Q)$(MAKE) $(clean)=arch/x86/purgatory
+>  
+>  PHONY += kvmconfig
+>  kvmconfig:
+> -- 
+> 1.7.9.5
