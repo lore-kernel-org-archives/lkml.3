@@ -1,67 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233AbaHYKsM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 06:48:12 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:61190 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752951AbaHYKsK (ORCPT
+	id S1755140AbaHYKyq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 06:54:46 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:58497 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751894AbaHYKyp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 06:48:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140820034116.GA3407@sucs.org>
-References: <20140819123655.GC12160@sucs.org>
-	<8dcf334714c44eeda54ecb129479719b@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-	<20140820034116.GA3407@sucs.org>
-Date: Mon, 25 Aug 2014 12:48:08 +0200
-Message-ID: <CAFLxGvx5_JSb7sRPXY01d+eNJ4p4fk=MySGyui91KNbdyLyQ_g@mail.gmail.com>
-Subject: Re: [hyperv] BUG at drivers/hv/channel.c:462 while changing MTU
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: Sitsofe Wheeler <sitsofe@gmail.com>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>, KY Srinivasan <kys@microsoft.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jason Wang <jasowang@redhat.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 25 Aug 2014 06:54:45 -0400
+From: Kautuk Consul <consul.kautuk@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
+        Ionut Alexa <ionut.m.alexa@gmail.com>,
+        Guillaume Morin <guillaume@morinfr.org>, linux-kernel@vger.kernel.org
+Cc: Kautuk Consul <consul.kautuk@gmail.com>
+Subject: [PATCH 1/1] do_exit(): Solve possibility of BUG() due to race with try_to_wake_up()
+Date: Mon, 25 Aug 2014 16:24:24 +0530
+Message-Id: <1408964064-21447-1-git-send-email-consul.kautuk@gmail.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- via
+I encountered a BUG() scenario within do_exit() on an ARM system.
 
+The problem is due to a race scenario between do_exit() and try_to_wake_up()
+on different CPUs due to usage of sleeping primitives such as __down_common
+and wait_for_common.
 
-On Wed, Aug 20, 2014 at 5:41 AM, Sitsofe Wheeler <sitsofe@gmail.com> wrote:
-> Aug 20 04:04:41 ubuntuhv kernel: [    9.230399] random: nonblocking pool is initialized
-> Aug 20 04:04:41 ubuntuhv kernel: [   10.338487] EXT4-fs (sda1): re-mounted. Opts: errors=remount-ro
-> Aug 20 04:04:41 ubuntuhv kernel: [   11.099094] hv_storvsc vmbus_0_1: cmd 0x85 scsi status 0x2 srb status 0x6
-> Aug 20 04:04:41 ubuntuhv kernel: [   11.099901] hv_storvsc vmbus_0_1: cmd 0x85 scsi status 0x2 srb status 0x6
-> Aug 20 04:04:43 ubuntuhv kernel: [   12.999830] psmouse serio1: trackpoint: IBM TrackPoint firmware: 0x01, buttons: 0/0
-> Aug 20 03:55:47 ubuntuhv kernel: [   13.003659] input: TPPS/2 IBM TrackPoint as /devices/platform/i8042/serio1/input/input4
-> Aug 20 03:57:28 ubuntuhv kernel: [  113.711832] hv_netvsc vmbus_0_14: net device safe to remove
-> Aug 20 03:57:28 ubuntuhv kernel: [  113.713882] hv_netvsc: hv_netvsc channel opened successfully
-> Aug 20 03:57:29 ubuntuhv kernel: [  114.961312] hv_netvsc vmbus_0_14: Send section size: 6144, Section count:2560
-> Aug 20 03:57:29 ubuntuhv kernel: [  114.962711] hv_netvsc vmbus_0_14: Device MAC 00:15:5d:6f:02:af link state up
-> Aug 20 03:57:34 ubuntuhv kernel: [  120.027718] hv_netvsc vmbus_0_14: net device safe to remove
-> Aug 20 03:57:34 ubuntuhv kernel: [  120.030047] hv_netvsc: hv_netvsc channel opened successfully
-> Aug 20 03:57:34 ubuntuhv kernel: [  120.035422] hv_netvsc vmbus_0_14 eth0: unable to establish receive buffer's gpadl
-> Aug 20 03:57:34 ubuntuhv kernel: [  120.039778] hv_netvsc vmbus_0_14 eth0: unable to connect to NetVSP - 4
-> Aug 20 03:57:34 ubuntuhv kernel: [  120.039818] ------------[ cut here ]------------
-> Aug 20 03:57:34 ubuntuhv kernel: [  120.039832] kernel BUG at drivers/hv/channel.c:504!
+Race Scenario
+=============
 
-This is one is also a rude BUG_ON:
-        ret = vmbus_post_msg(msg, sizeof(struct vmbus_channel_close_channel));
+Let us assume there are 2 CPUs A and B execute code in the following order:
+1)	CPU A was running in user-mode and enters kernel mode via some
+	syscall/exception handler.
+2)	CPU A sets the current task(t) state to TASK_INTERRUPTIBLE via __down_common
+	or wait_for_common.
+3)	CPU A checks for signal_pending() and returns due to TIF_SIGPENDING
+	being set in t's threadinfo due to a previous signal(say SIGKILL) being
+	received on this task t.
+4)	CPU A returns returns back to the assembly trap handler and calls
+	do_work_pending() -> do_signal() -> get_signal() -> do_group_exit()
+	 -> do_exit()
+	CPU A  has not yet executed the following line of code before the final
+	call to schedule:
+    /* causes final put_task_struct in finish_task_switch(). */
+    tsk->state = TASK_DEAD;
+5)	CPU B tries to send a signal to task t (currently executing on CPU A)
+	and thus enters: signal_wake_up_state() -> wake_up_state() ->
+					 try_to_wake_up()
+6)	CPU B executes all code in try_to_wake_up() till the call to
+	ttwu_queue -> ttwu_do_activate -> ttwu_do_wakeup().
+	CPU B has still not executed the following code in ttwu_do_wakeup():
+	p->state = TASK_RUNNING;
+7)	CPU A executes the following line of code:
+    /* causes final put_task_struct in finish_task_switch(). */
+    tsk->state = TASK_DEAD;
+8)	CPU B executes the following code in ttwu_do_wakeup():
+	p->state = TASK_RUNNING;
+9)	CPU A continues to the call to do_exit() -> schedule().
+	Since the tsk->state is TASK_RUNNING, the call to schedule() returns and
+	do_exit() -> BUG() is hit on CPU A.
 
-        BUG_ON(ret != 0);
+Alternate Solution
+==================
 
-vmbus_post_msg() hv_post_message() can easily return !0.
-i.e. if this kmalloc() fails:
-        addr = (unsigned long)kmalloc(sizeof(struct aligned_input), GFP_ATOMIC);
-        if (!addr)
-                return -ENOMEM;
+An alternate solution would be to simply set the current task state to
+TASK_RUNNING in __down_common(), wait_for_common() and all other interruptible
+sleeping primitives in their if(signal_pending/signal_pending_state) conditional
+blocks.
 
+But this change seems to me to be more logical because:
+i)		This will involve lesser changes to the kernel core code.
+ii)		Any further sleeping primitives in the kernel also need not suffer from
+		this kind of race scenario.
+
+Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
+---
+ kernel/exit.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/exit.c b/kernel/exit.c
+index 32c58f7..69a8231 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -824,14 +824,16 @@ void do_exit(long code)
+ 	 *     (or hypervisor of virtual machine switches to other guest)
+ 	 *  As a result, we may become TASK_RUNNING after becoming TASK_DEAD
+ 	 *
+-	 * To avoid it, we have to wait for releasing tsk->pi_lock which
+-	 * is held by try_to_wake_up()
++	 * To solve this, we have to compete for tsk->pi_lock which is held by
++	 * try_to_wake_up().
+ 	 */
+-	smp_mb();
+-	raw_spin_unlock_wait(&tsk->pi_lock);
++	raw_spin_lock(&tsk->pi_lock);
+ 
+ 	/* causes final put_task_struct in finish_task_switch(). */
+ 	tsk->state = TASK_DEAD;
++
++	raw_spin_unlock(&tsk->pi_lock);
++
+ 	tsk->flags |= PF_NOFREEZE;	/* tell freezer to ignore us */
+ 	schedule();
+ 	BUG();
 -- 
-Thanks,
-//richard
+1.7.9.5
+
