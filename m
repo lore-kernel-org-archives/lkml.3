@@ -1,80 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092AbaHYJQw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 05:16:52 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:29009 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752531AbaHYJQs (ORCPT
+	id S1754690AbaHYJQz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 05:16:55 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:12104 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752760AbaHYJQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 05:16:48 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-8c-53fafefde8e6
+	Mon, 25 Aug 2014 05:16:52 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-71-53faff02b2fc
 From: Robert Baldyga <r.baldyga@samsung.com>
 To: balbi@ti.com
 Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org, mina86@mina86.com,
         m.szyprowski@samsung.com, andrzej.p@samsung.com, k.opasiak@samsung.com,
         Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH v6 0/3] usb: gadget: f_fs: userspace API fixes and improvements
-Date: Mon, 25 Aug 2014 11:16:26 +0200
-Message-id: <1408958189-20611-1-git-send-email-r.baldyga@samsung.com>
+Subject: [PATCH v6 1/3] usb: gadget: f_fs: fix the redundant ep files problem
+Date: Mon, 25 Aug 2014 11:16:27 +0200
+Message-id: <1408958189-20611-2-git-send-email-r.baldyga@samsung.com>
 X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplluLIzCtJLcpLzFFi42I5/e+xoO7ff7+CDR7+N7WY9bKdxeLg/XqL
+In-reply-to: <1408958189-20611-1-git-send-email-r.baldyga@samsung.com>
+References: <1408958189-20611-1-git-send-email-r.baldyga@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDLMWRmVeSWpSXmKPExsVy+t9jQV2m/7+CDXZOU7aY9bKdxeLg/XqL
 	5sXr2SxuT5zGZnF51xw2i0XLWpkt1h65y26x4HgLq8WDwzvZHTg99s9dw+6x7s8rJo++LasY
-	PY7f2M7k8XmTXABrFJdNSmpOZllqkb5dAlfG1VN/GAue81RM6t3N1sB4lKuLkZNDQsBE4vj5
-	v8wQtpjEhXvr2boYuTiEBKYzSix60MYC4bQzSZw8/IcNpIpNQEdiy/cJjCC2iICAxPoXl9hB
-	ipgFHjBKtN+6DFYkLOAvcW79U6AiDg4WAVWJ9XNVQMK8Aq4Slye+ZYPYJidx8thk1gmM3AsY
-	GVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBAfOM6kdjCsbLA4xCnAwKvHwruT8FSzEmlhW
-	XJl7iFGCg1lJhFfjD1CINyWxsiq1KD++qDQntfgQozQHi5I474FW60AhgfTEktTs1NSC1CKY
-	LBMHp1QD4+4X2/VcJh94HaI+s2ay2M/CHTv+TWu61L46fqf05KyH37UKLvDPMzNbemDzV5G3
-	WhdDL+/9GTSxQesOa24Bd0TDq6Y7HgJxbzZt+pTyeSqjxcZHiWJpswT+bfYx3/3G5dKfdf3z
-	Gc/1ylysXpuxu5o/9jlzyCezRMcdF+7UlH3wTZ+/XE+u/qQSS3FGoqEWc1FxIgD6sqvhGAIA	AA==
+	PY7f2M7k8XmTXABrFJdNSmpOZllqkb5dAlfGjOdb2AqeaVf8fX2IsYFxtnIXIyeHhICJRN+X
+	E6wQtpjEhXvr2UBsIYHpjBJ/WkMg7HYmiVldtiA2m4COxJbvExhBbBEBAYn1Ly6xdzFycTAL
+	PGCUaL91GaxZWMBX4uOXVWA2i4CqxJOWu2ANvAKuEvunHYNaJidx8thkMJtTwE1i8swtTBDL
+	XCU6Vk5jncDIu4CRYRWjaGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcJg9k97BuKrB4hCjAAej
+	Eg/vSs5fwUKsiWXFlbmHGCU4mJVEeDX+AIV4UxIrq1KL8uOLSnNSiw8xSnOwKInzHmy1DhQS
+	SE8sSc1OTS1ILYLJMnFwSjUwij1eq/msxe9ILfuHdW6ZPU+4Ty1jP75PfSsPy6E6n18cxxax
+	HPz513m+vX+LJEu1qKvmS+37zR+7t2rPndbyctJ7hkCfBQ9PT4v3USpauOr4W0XP2wcfHt1+
+	bfaTm7f+q94/d0Rk+Y5nElM619TvO1j9IEVB/prsscmpKgv2lL8IeV/2fEvf+dlKLMUZiYZa
+	zEXFiQBuFKnfLwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset contains changes in FunctionFS making it easier and
-safer to use. It fixes bug in endpoint files handling code, adds new
-ioctl allowing to obtain endpoint descriptor, and introduces virtual
-address mapping which allows to separate endpoint address space in
-function from physical endpoint addresses, and introduces new endpoint
-files naming convention.
+Up to now, when endpoint addresses in descriptors were non-consecutive,
+there were created redundant files, which could cause problems in kernel,
+when user tried to read/write to them. It was result of fact that maximum
+endpoint address was taken as total number of endpoints in funciton.
 
-Changelog:
+This patch adds endpoint descriptors counting and storing their addresses
+in eps_addrmap to verify their cohesion in each speed.
 
-v6:
-- unlock spinlock before copy_to_user() call 
-- remove duplicated eps_count value check
-- few minor fixes
+Endpoint address map would be also useful for further features, just like
+vitual endpoint address mapping.
 
-v5: https://lkml.org/lkml/2014/8/21/252
-- fix typo pointed by Sergei Shtylyov
+Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
+---
+ drivers/usb/gadget/function/f_fs.c | 66 +++++++++++++++++++++++++++++++-------
+ drivers/usb/gadget/function/u_fs.h |  2 ++
+ 2 files changed, 57 insertions(+), 11 deletions(-)
 
-v4: https://lkml.org/lkml/2014/8/20/277
-- change if() sequence into switch() statement
-
-v3: https://lkml.org/lkml/2014/7/30/115
-- move fix for the redundant ep files problem into sepatare patch
-- merge user space API affecting changes into single patch
-- add flag switching between old and new style API
-
-v2: https://lkml.org/lkml/2014/7/25/296
-- return proper endpont address in setup request handling
-- add patch usb: gadget: f_fs: add ioctl returning ep descriptor
-- add patch usb: gadget: f_fs: make numbers in ep file names the same
-  as ep addresses
-
-v1: https://lkml.org/lkml/2014/7/18/1010
-
-Robert Baldyga (3):
-  usb: gadget: f_fs: fix the redundant ep files problem
-  usb: gadget: f_fs: add ioctl returning ep descriptor
-  usb: gadget: f_fs: virtual endpoint address mapping
-
- drivers/usb/gadget/function/f_fs.c  | 112 +++++++++++++++++++++++++++++++-----
- drivers/usb/gadget/function/u_fs.h  |   4 ++
- include/uapi/linux/usb/functionfs.h |   7 +++
- 3 files changed, 110 insertions(+), 13 deletions(-)
-
+diff --git a/drivers/usb/gadget/function/f_fs.c b/drivers/usb/gadget/function/f_fs.c
+index dc30adf..0dc3552d 100644
+--- a/drivers/usb/gadget/function/f_fs.c
++++ b/drivers/usb/gadget/function/f_fs.c
+@@ -155,6 +155,12 @@ struct ffs_io_data {
+ 	struct usb_request *req;
+ };
+ 
++struct ffs_desc_helper {
++	struct ffs_data *ffs;
++	unsigned interfaces_count;
++	unsigned eps_count;
++};
++
+ static int  __must_check ffs_epfiles_create(struct ffs_data *ffs);
+ static void ffs_epfiles_destroy(struct ffs_epfile *epfiles, unsigned count);
+ 
+@@ -1830,7 +1836,8 @@ static int __ffs_data_do_entity(enum ffs_entity_type type,
+ 				u8 *valuep, struct usb_descriptor_header *desc,
+ 				void *priv)
+ {
+-	struct ffs_data *ffs = priv;
++	struct ffs_desc_helper *helper = priv;
++	struct usb_endpoint_descriptor *d;
+ 
+ 	ENTER();
+ 
+@@ -1844,8 +1851,8 @@ static int __ffs_data_do_entity(enum ffs_entity_type type,
+ 		 * encountered interface "n" then there are at least
+ 		 * "n+1" interfaces.
+ 		 */
+-		if (*valuep >= ffs->interfaces_count)
+-			ffs->interfaces_count = *valuep + 1;
++		if (*valuep >= helper->interfaces_count)
++			helper->interfaces_count = *valuep + 1;
+ 		break;
+ 
+ 	case FFS_STRING:
+@@ -1853,14 +1860,22 @@ static int __ffs_data_do_entity(enum ffs_entity_type type,
+ 		 * Strings are indexed from 1 (0 is magic ;) reserved
+ 		 * for languages list or some such)
+ 		 */
+-		if (*valuep > ffs->strings_count)
+-			ffs->strings_count = *valuep;
++		if (*valuep > helper->ffs->strings_count)
++			helper->ffs->strings_count = *valuep;
+ 		break;
+ 
+ 	case FFS_ENDPOINT:
+-		/* Endpoints are indexed from 1 as well. */
+-		if ((*valuep & USB_ENDPOINT_NUMBER_MASK) > ffs->eps_count)
+-			ffs->eps_count = (*valuep & USB_ENDPOINT_NUMBER_MASK);
++		d = (void *)desc;
++		helper->eps_count++;
++		if (helper->eps_count >= 15)
++			return -EINVAL;
++		/* Check if descriptors for any speed were already parsed */
++		if (!helper->ffs->eps_count && !helper->ffs->interfaces_count)
++			helper->ffs->eps_addrmap[helper->eps_count] =
++				d->bEndpointAddress;
++		else if (helper->ffs->eps_addrmap[helper->eps_count] !=
++				d->bEndpointAddress)
++			return -EINVAL;
+ 		break;
+ 	}
+ 
+@@ -2053,6 +2068,7 @@ static int __ffs_data_got_descs(struct ffs_data *ffs,
+ 	char *data = _data, *raw_descs;
+ 	unsigned os_descs_count = 0, counts[3], flags;
+ 	int ret = -EINVAL, i;
++	struct ffs_desc_helper helper;
+ 
+ 	ENTER();
+ 
+@@ -2101,13 +2117,29 @@ static int __ffs_data_got_descs(struct ffs_data *ffs,
+ 
+ 	/* Read descriptors */
+ 	raw_descs = data;
++	helper.ffs = ffs;
+ 	for (i = 0; i < 3; ++i) {
+ 		if (!counts[i])
+ 			continue;
++		helper.interfaces_count = 0;
++		helper.eps_count = 0;
+ 		ret = ffs_do_descs(counts[i], data, len,
+-				   __ffs_data_do_entity, ffs);
++				   __ffs_data_do_entity, &helper);
+ 		if (ret < 0)
+ 			goto error;
++		if (!ffs->eps_count && !ffs->interfaces_count) {
++			ffs->eps_count = helper.eps_count;
++			ffs->interfaces_count = helper.interfaces_count;
++		} else {
++			if (ffs->eps_count != helper.eps_count) {
++				ret = -EINVAL;
++				goto error;
++			}
++			if (ffs->interfaces_count != helper.interfaces_count) {
++				ret = -EINVAL;
++				goto error;
++			}
++		}
+ 		data += ret;
+ 		len  -= ret;
+ 	}
+@@ -2342,9 +2374,18 @@ static void ffs_event_add(struct ffs_data *ffs,
+ 	spin_unlock_irqrestore(&ffs->ev.waitq.lock, flags);
+ }
+ 
+-
+ /* Bind/unbind USB function hooks *******************************************/
+ 
++static int ffs_ep_addr2idx(struct ffs_data *ffs, u8 endpoint_address)
++{
++	int i;
++
++	for (i = 1; i < ARRAY_SIZE(ffs->eps_addrmap); ++i)
++		if (ffs->eps_addrmap[i] == endpoint_address)
++			return i;
++	return -ENOENT;
++}
++
+ static int __ffs_func_bind_do_descs(enum ffs_entity_type type, u8 *valuep,
+ 				    struct usb_descriptor_header *desc,
+ 				    void *priv)
+@@ -2378,7 +2419,10 @@ static int __ffs_func_bind_do_descs(enum ffs_entity_type type, u8 *valuep,
+ 	if (!desc || desc->bDescriptorType != USB_DT_ENDPOINT)
+ 		return 0;
+ 
+-	idx = (ds->bEndpointAddress & USB_ENDPOINT_NUMBER_MASK) - 1;
++	idx = ffs_ep_addr2idx(func->ffs, ds->bEndpointAddress) - 1;
++	if (idx < 0)
++		return idx;
++
+ 	ffs_ep = func->eps + idx;
+ 
+ 	if (unlikely(ffs_ep->descs[ep_desc_id])) {
+diff --git a/drivers/usb/gadget/function/u_fs.h b/drivers/usb/gadget/function/u_fs.h
+index 63d6e71..d48897e 100644
+--- a/drivers/usb/gadget/function/u_fs.h
++++ b/drivers/usb/gadget/function/u_fs.h
+@@ -224,6 +224,8 @@ struct ffs_data {
+ 	void				*ms_os_descs_ext_prop_name_avail;
+ 	void				*ms_os_descs_ext_prop_data_avail;
+ 
++	u8				eps_addrmap[15];
++
+ 	unsigned short			strings_count;
+ 	unsigned short			interfaces_count;
+ 	unsigned short			eps_count;
 -- 
 1.9.1
 
