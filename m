@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583AbaHYHas (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 03:30:48 -0400
+	id S1754643AbaHYHbG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 03:31:06 -0400
 Received: from mailout4.samsung.com ([203.254.224.34]:59175 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753819AbaHYHan (ORCPT
+	with ESMTP id S1754541AbaHYHap (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 03:30:43 -0400
-X-AuditID: cbfee68d-f79c46d000000b84-f9-53fae6187b16
+	Mon, 25 Aug 2014 03:30:45 -0400
+X-AuditID: cbfee68e-f79536d000000fd1-5b-53fae619480e
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: eduardo.valentin@ti.com, amit.daniel@samsung.com, rui.zhang@intel.com
 Cc: kgene.kim@samsung.com, robh+dt@kernel.org, pawel.moll@arm.com,
@@ -15,38 +15,41 @@ Cc: kgene.kim@samsung.com, robh+dt@kernel.org, pawel.moll@arm.com,
         kyungmin.park@samsung.com, linux-pm@vger.kernel.org,
         devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCHv4 0/4] thermal: exynos: Add support for TRIMINFO feature of
- Exynos3250
-Date: Mon, 25 Aug 2014 16:30:21 +0900
-Message-id: <1408951825-2639-1-git-send-email-cw00.choi@samsung.com>
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Eduardo Valentin <edubezval@gmail.com>
+Subject: [PATCHv4 1/4] thermal: exynos: Fix wrong value of TRIMINFO_RELOAD_SHIFT
+Date: Mon, 25 Aug 2014 16:30:22 +0900
+Message-id: <1408951825-2639-2-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLLMWRmVeSWpSXmKPExsWyRsSkWFfi2a9gg3VTLS0aroZY3H1+mNHi
-	+pfnrBbzj5xjtViz/yeTRf+bhawWvQuuslmcbXrDbrHp8TVWi8u75rBZfO49wmgx4/w+Joul
-	1y8yWUyYvpbFonXvEXaLJw/72BwEPNbMW8Pocbmvl8lj8Z6XTB6bVnWyeWxeUu/Rt2UVo8fx
-	G9uZPD5vkgvgiOKySUnNySxLLdK3S+DK2HzSqmA/T8XBqzPZGxhnc3UxcnBICJhI9B1K7GLk
-	BDLFJC7cW8/WxcjFISSwlFFixuKVzBAJE4n92/vZIRLTGSVmP/jECOE0MUlM/97JBFLFJqAl
-	sf/FDTYQW0TAU2LuwhYmkCJmgTdMEr+WnWMHSQgLREi0r17GAmKzCKhKnNn/hBXE5hVwkdi1
-	cRM7xDo5iQ97HoGtkxC4xi4x/8IuqAYBiW+TD7FA3C0rsekA1HmSEgdX3GCZwCi4gJFhFaNo
-	akFyQXFSepGhXnFibnFpXrpecn7uJkZgrJz+96x3B+PtA9aHGAU4GJV4eFdw/goWYk0sK67M
-	PcRoCrRhIrOUaHI+MCLzSuINjc2MLExNTI2NzC3NlMR5FaV+BgsJpCeWpGanphakFsUXleak
-	Fh9iZOLglGpg3Nv4/o9UQFNlxNxvc8U3v776M2fl3I8h8xWuHnDW0va66M8cenPeKb70Q+2q
-	ydsfem/16Od+9mHx15x5vw0f7r+zr+/+O4d1rfumqi1p2RFQoiTkfbfwsvYX62t3SrYaT+E8
-	KGJ/9dmrsM09W6/Zp4ZeXrr2sEb+CvWImDMaAd/q3t9OOf987xUlluKMREMt5qLiRABQ6f2h
-	kAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBIsWRmVeSWpSXmKPExsVy+t9jQV2JZ7+CDd7PMbBouBpicff5YUaL
-	61+es1rMP3KO1WLN/p9MFv1vFrJa9C64ymZxtukNu8Wmx9dYLS7vmsNm8bn3CKPFjPP7mCyW
-	Xr/IZDFh+loWi9a9R9gtnjzsY3MQ8Fgzbw2jx+W+XiaPxXteMnlsWtXJ5rF5Sb1H35ZVjB7H
-	b2xn8vi8SS6AI6qB0SYjNTEltUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnF
-	J0DXLTMH6AMlhbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGENY8bmk1YF+3kq
-	Dl6dyd7AOJuri5GTQ0LARGL/9n52CFtM4sK99WxdjFwcQgLTGSVmP/jECOE0MUlM/97JBFLF
-	JqAlsf/FDTYQW0TAU2LuwhYmkCJmgTdMEr+WnQMbJSwQIdG+ehkLiM0ioCpxZv8TVhCbV8BF
-	YtfGTVDr5CQ+7HnEPoGRewEjwypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2M4Fh8JrWDcWWD
-	xSFGAQ5GJR7elZy/goVYE8uKK3MPMUpwMCuJ8E45DhTiTUmsrEotyo8vKs1JLT7EaAq0fSKz
-	lGhyPjBN5JXEGxqbmBlZGpkbWhgZmyuJ8x5otQ4UEkhPLEnNTk0tSC2C6WPi4JRqYAxQeL9t
-	ppm6BL9HXNXMQ8VcDA96f2/9k/TzvevtSx6VSe8CjHmv2N5NsPyxe6bKB+WpanyvN4c6en5h
-	71zLdvSwtbi/xNmTdyVufj3to3Y2fF3GTP7AmKMnbl4stWNiW7Z9ync5/xcx2d1FJ/cEfzDh
-	lxPbJmfsc9l0cZDlotPLl69RfZkjMEmJpTgj0VCLuag4EQCRCpEx2wIAAA==
+In-reply-to: <1408951825-2639-1-git-send-email-cw00.choi@samsung.com>
+References: <1408951825-2639-1-git-send-email-cw00.choi@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHIsWRmVeSWpSXmKPExsWyRsSkRFfy2a9ggzfbtSwaroZY3H1+mNHi
+	+pfnrBbzj5xjtViz/yeTxfwr11gt+t8sZLXoXXCVzeJs0xt2i02PgWKXd81hs/jce4TRYsb5
+	fUwWS69fZLKYMH0ti0Xr3iPsFk8e9rE5CHqsmbeG0eNyXy+Tx85Zd9k9Fu95yeSxaVUnm8fm
+	JfUefVtWMXocv7GdyePzJrkAzigum5TUnMyy1CJ9uwSujIlzJ7EX3GSvuL50BVMD4w22LkZO
+	DgkBE4mnc9tZIWwxiQv31gPFuTiEBJYySix69osFpujC73csEInpjBIvT31ihHCamCRW3e8C
+	G8UmoCWx/wXEWBEBT4m5C1uYQIqYBaYwS5zqOAq0g4NDWCBAYteLZJAaFgFViVknO5hBbF4B
+	F4k3a1oYIbbJSXzY84gdpJxTwFXi7CI7kLAQUMnfaWuYIUr+skuc2+oOMUZA4tvkQywg5RIC
+	shKbDkCVSEocXHGDZQKj8AJGhlWMoqkFyQXFSelFRnrFibnFpXnpesn5uZsYgdF2+t+zvh2M
+	Nw9YH2IU4GBU4uFdwfkrWIg1say4MvcQoynQhonMUqLJ+cCYziuJNzQ2M7IwNTE1NjK3NFMS
+	502Q+hksJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgdFzaqHSOm/LmsnbVntqzFr+/FGIxvUN
+	i16eUjl46xlT84m+sDCWJfITL5UblC+UlUrbttiDtzS46Xm0pnzszZ+rllvu6AiffV99W6bi
+	JlnxW5WGthzr3vjpdO7gNlolMKdYcmZLsPqsVSs0Qg5z+LPa7TU1v1Jn3Xf/1US1wC/clbJq
+	b38/u6PEUpyRaKjFXFScCADJV1+RsQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJIsWRmVeSWpSXmKPExsVy+t9jQV3JZ7+CDfZeUbRouBpicff5YUaL
+	61+es1rMP3KO1WLN/p9MFvOvXGO16H+zkNWid8FVNouzTW/YLTY9Bopd3jWHzeJz7xFGixnn
+	9zFZLL1+kcliwvS1LBate4+wWzx52MfmIOixZt4aRo/Lfb1MHjtn3WX3WLznJZPHplWdbB6b
+	l9R79G1Zxehx/MZ2Jo/Pm+QCOKMaGG0yUhNTUosUUvOS81My89JtlbyD453jTc0MDHUNLS3M
+	lRTyEnNTbZVcfAJ03TJzgH5RUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLW
+	MGZMnDuJveAme8X1pSuYGhhvsHUxcnJICJhIXPj9jgXCFpO4cG89UJyLQ0hgOqPEy1OfGCGc
+	JiaJVfe7wDrYBLQk9r+A6BYR8JSYu7CFCaSIWWAKs8SpjqOsXYwcHMICARK7XiSD1LAIqErM
+	OtnBDGLzCrhIvFnTwgixTU7iw55H7CDlnAKuEmcX2YGEhYBK/k5bwzyBkXcBI8MqRtHUguSC
+	4qT0XCO94sTc4tK8dL3k/NxNjOBofia9g3FVg8UhRgEORiUe3pWcv4KFWBPLiitzDzFKcDAr
+	ifBOOQ4U4k1JrKxKLcqPLyrNSS0+xGgKdNREZinR5HxgoskriTc0NjEzsjQyN7QwMjZXEuc9
+	2GodKCSQnliSmp2aWpBaBNPHxMEp1cDIHPzwaLr4hNdyc8oMMs+/0JbkDtOZ2HCDY8oiy+tl
+	MbOq5lyy5DCd+Nq0d8OVk4/ibY9uTmtdtSF08eGOeXz6/I93XzOfaiP9V25/cZjqc50l6Rcu
+	Z3X+CTA98V/xtu+M3Wy676N81nLw52+paFl3/5uFTNcvjsXaEq9zl+TbeLN+z+x4/VRTiaU4
+	I9FQi7moOBEAQziOm/wCAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -54,42 +57,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset add the support of TRIMINFO_RELOAD feature for Exynos3250.
-But Exynos3250 has two TRIMINFO_CTRL register instead other Exynos has only one
-TRIMINFO_CTRL register. So, this patchset support the some Exynos SoC which
-has more than one TRIMINF_CTRL.
+This patch fix wrong value of TRIMINFO_RELOAD_SHIFT. TRIMINFO_CONTROL register
+has 'RELOAD' field at [0] bit.
 
-Also, this patchset fix wrong value of TRIMINFO_RELOAD_SHIFT and remove
-duplicate code when reading triminfo register of Exynos5440.
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Acked-by: Kyungmin Park <cw00.choi@samsung.com>
+Cc: Zhang Rui <rui.zhang@intel.com>
+Cc: Eduardo Valentin <edubezval@gmail.com>
+Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>
+---
+ drivers/thermal/samsung/exynos_tmu_data.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Changes from v3:
-- Add reviewed message of Amit Daniel Kachhap <amit.daniel@samsung.com>
-- Split RELOAD patch as two patch
-- Fix 'TRIMINFO_RELOAD_SHIFT' value
-- This series includes separate patch[1]
-  [1] https://lkml.org/lkml/2014/8/20/5
-- Drop ACTIME bit setting because TRM includes not enough information of ACTIME bit.
-
-Changes from v2:
-- Fix build break because of missing 'or' operation.
-
-Changes from v1:
-- Add missing 'TMU_SUPPORT_TRIM_RELOAD' features
-
-Chanwoo Choi (4):
-  thermal: exynos: Fix wrong value of TRIMINFO_RELOAD_SHIFT
-  thermal: exynos: Add support for many TRIMINFO_CTRL registers
-  thermal: exynos: Add support for TRIM_RELOAD feature at Exynos3250
-  thermal: exynos: Remove duplicate code when reading triminfo register
-    of Exynos5440
-
- drivers/thermal/samsung/exynos_thermal_common.h |  1 +
- drivers/thermal/samsung/exynos_tmu.c            | 27 +++++++++++++++++++------
- drivers/thermal/samsung/exynos_tmu.h            |  9 +++++++--
- drivers/thermal/samsung/exynos_tmu_data.c       | 14 +++++++++++--
- drivers/thermal/samsung/exynos_tmu_data.h       | 12 ++++++++---
- 5 files changed, 50 insertions(+), 13 deletions(-)
-
+diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/thermal/samsung/exynos_tmu_data.h
+index f0979e5..401bab7 100644
+--- a/drivers/thermal/samsung/exynos_tmu_data.h
++++ b/drivers/thermal/samsung/exynos_tmu_data.h
+@@ -63,7 +63,7 @@
+ #define EXYNOS_THD_TEMP_FALL		0x54
+ #define EXYNOS_EMUL_CON		0x80
+ 
+-#define EXYNOS_TRIMINFO_RELOAD_SHIFT	1
++#define EXYNOS_TRIMINFO_RELOAD_SHIFT	0
+ #define EXYNOS_TRIMINFO_25_SHIFT	0
+ #define EXYNOS_TRIMINFO_85_SHIFT	8
+ #define EXYNOS_TMU_RISE_INT_MASK	0x111
 -- 
 1.8.0
 
