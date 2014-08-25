@@ -1,43 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933367AbaHYSGh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 14:06:37 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:61688 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751316AbaHYSGg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 14:06:36 -0400
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] new page link in SubmittingPatches
-Date: Mon, 25 Aug 2014 23:36:21 +0530
-Message-Id: <1408989981-31192-1-git-send-email-sudipm.mukherjee@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1756356AbaHYSKc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 14:10:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35227 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750938AbaHYSKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 14:10:31 -0400
+Date: Mon, 25 Aug 2014 20:08:06 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Suresh Siddha <sbsiddha@gmail.com>
+Cc: Bean Anderson <bean@azulsystems.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] x86, fpu: __restore_xstate_sig()->math_state_restore()
+	needs preempt_disable()
+Message-ID: <20140825180806.GA22193@redhat.com>
+References: <20140822171142.GA14812@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140822171142.GA14812@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-new link for - How to piss off a Linux kernel subsystem  maintainer
+Add preempt_disable() + preempt_enable() around math_state_restore() in
+__restore_xstate_sig(). Otherwise __switch_to() after __thread_fpu_begin()
+can overwrite fpu->state we are going to restore.
 
-Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Cc: stable@vger.kernel.org
 ---
- Documentation/SubmittingPatches | 1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/kernel/xsave.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
-index 0a523c9..482c749 100644
---- a/Documentation/SubmittingPatches
-+++ b/Documentation/SubmittingPatches
-@@ -794,6 +794,7 @@ Greg Kroah-Hartman, "How to piss off a kernel subsystem maintainer".
-   <http://www.kroah.com/log/linux/maintainer-03.html>
-   <http://www.kroah.com/log/linux/maintainer-04.html>
-   <http://www.kroah.com/log/linux/maintainer-05.html>
-+  <http://www.kroah.com/log/linux/maintainer-06.html>
+diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
+index 453343c..c52eb9c 100644
+--- a/arch/x86/kernel/xsave.c
++++ b/arch/x86/kernel/xsave.c
+@@ -397,8 +397,11 @@ int __restore_xstate_sig(void __user *buf, void __user *buf_fx, int size)
+ 			set_used_math();
+ 		}
  
- NO!!!! No more huge patch bombs to linux-kernel@vger.kernel.org people!
-   <https://lkml.org/lkml/2005/7/11/336>
+-		if (use_eager_fpu())
++		if (use_eager_fpu()) {
++			preempt_disable();
+ 			math_state_restore();
++			preempt_enable();
++		}
+ 
+ 		return err;
+ 	} else {
 -- 
-1.8.1.2
+1.5.5.1
+
 
