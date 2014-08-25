@@ -1,129 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756159AbaHYN13 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 09:27:29 -0400
-Received: from zimbra13.linbit.com ([212.69.166.240]:56660 "EHLO
-	zimbra13.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755809AbaHYNZA (ORCPT
+	id S932295AbaHYN2f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 09:28:35 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:52539 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755458AbaHYN2c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 09:25:00 -0400
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 2/8] drbd: Use consistent names for all the bi_end_io callbacks
-Date: Mon, 25 Aug 2014 15:16:32 +0200
-Message-Id: <1408972598-16650-3-git-send-email-philipp.reisner@linbit.com>
+	Mon, 25 Aug 2014 09:28:32 -0400
+From: Eric Auger <eric.auger@linaro.org>
+To: eric.auger@st.com, eric.auger@linaro.org, christoffer.dall@linaro.org,
+        marc.zyngier@arm.com, linux-arm-kernel@lists.infradead.org,
+        kvmarm@lists.cs.columbia.edu, kvm@vger.kernel.org,
+        alex.williamson@redhat.com, joel.schopp@amd.com,
+        kim.phillips@freescale.com
+Cc: linux-kernel@vger.kernel.org, patches@linaro.org, will.deacon@arm.com,
+        a.motakis@virtualopensystems.com, a.rigo@virtualopensystems.com,
+        john.liuli@huawei.com
+Subject: [RFC 0/9] KVM-VFIO IRQ forward control
+Date: Mon, 25 Aug 2014 15:27:35 +0200
+Message-Id: <1408973264-30384-1-git-send-email-eric.auger@linaro.org>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1408972598-16650-1-git-send-email-philipp.reisner@linbit.com>
-References: <1408972598-16650-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Gruenbacher <andreas.gruenbacher@gmail.com>
+This RFC proposes an integration of "ARM: Forwarding physical
+interrupts to a guest VM" (http://lwn.net/Articles/603514/) in
+KVM.
 
-Now they follow the _endio naming sheme.
+It enables to transform a VFIO platform driver IRQ into a forwarded
+IRQ. The direct benefit is that, for a level sensitive IRQ, a VM
+switch can be avoided on guest virtual IRQ completion. Before this
+patch, a maintenance IRQ was triggered on the virtual IRQ completion.
 
-Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
-Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
----
- drivers/block/drbd/drbd_actlog.c | 4 ++--
- drivers/block/drbd/drbd_bitmap.c | 6 +++---
- drivers/block/drbd/drbd_int.h    | 2 +-
- drivers/block/drbd/drbd_worker.c | 6 +++---
- 4 files changed, 9 insertions(+), 9 deletions(-)
+When the IRQ is forwarded, the VFIO platform driver does not need to
+disable the IRQ anymore. Indeed when returning from the IRQ handler
+the IRQ is not deactivated. Only its priority is lowered. This means
+the same IRQ cannot hit before the guest completes the virtual IRQ
+and the GIC automatically deactivates the corresponding physical IRQ.
 
-diff --git a/drivers/block/drbd/drbd_actlog.c b/drivers/block/drbd/drbd_actlog.c
-index d26a3fa..a2dfa16 100644
---- a/drivers/block/drbd/drbd_actlog.c
-+++ b/drivers/block/drbd/drbd_actlog.c
-@@ -158,14 +158,14 @@ static int _drbd_md_sync_page_io(struct drbd_device *device,
- 	if (bio_add_page(bio, device->md_io.page, size, 0) != size)
- 		goto out;
- 	bio->bi_private = device;
--	bio->bi_end_io = drbd_md_io_complete;
-+	bio->bi_end_io = drbd_md_endio;
- 	bio->bi_rw = rw;
- 
- 	if (!(rw & WRITE) && device->state.disk == D_DISKLESS && device->ldev == NULL)
- 		/* special case, drbd_md_read() during drbd_adm_attach(): no get_ldev */
- 		;
- 	else if (!get_ldev_if_state(device, D_ATTACHING)) {
--		/* Corresponding put_ldev in drbd_md_io_complete() */
-+		/* Corresponding put_ldev in drbd_md_endio() */
- 		drbd_err(device, "ASSERT FAILED: get_ldev_if_state() == 1 in _drbd_md_sync_page_io()\n");
- 		err = -ENODEV;
- 		goto out;
-diff --git a/drivers/block/drbd/drbd_bitmap.c b/drivers/block/drbd/drbd_bitmap.c
-index 426c97a..434c77d 100644
---- a/drivers/block/drbd/drbd_bitmap.c
-+++ b/drivers/block/drbd/drbd_bitmap.c
-@@ -941,7 +941,7 @@ static void drbd_bm_aio_ctx_destroy(struct kref *kref)
- }
- 
- /* bv_page may be a copy, or may be the original */
--static void bm_async_io_complete(struct bio *bio, int error)
-+static void drbd_bm_endio(struct bio *bio, int error)
- {
- 	struct drbd_bm_aio_ctx *ctx = bio->bi_private;
- 	struct drbd_device *device = ctx->device;
-@@ -1027,7 +1027,7 @@ static void bm_page_io_async(struct drbd_bm_aio_ctx *ctx, int page_nr) __must_ho
- 	 * according to api.  Do we want to assert that? */
- 	bio_add_page(bio, page, len, 0);
- 	bio->bi_private = ctx;
--	bio->bi_end_io = bm_async_io_complete;
-+	bio->bi_end_io = drbd_bm_endio;
- 
- 	if (drbd_insert_fault(device, (rw & WRITE) ? DRBD_FAULT_MD_WR : DRBD_FAULT_MD_RD)) {
- 		bio->bi_rw |= rw;
-@@ -1125,7 +1125,7 @@ static int bm_rw(struct drbd_device *device, const unsigned int flags, unsigned
- 	}
- 
- 	/*
--	 * We initialize ctx->in_flight to one to make sure bm_async_io_complete
-+	 * We initialize ctx->in_flight to one to make sure drbd_bm_endio
- 	 * will not set ctx->done early, and decrement / test it here.  If there
- 	 * are still some bios in flight, we need to wait for them here.
- 	 * If all IO is done already (or nothing had been submitted), there is
-diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
-index 9e1288e..f424dc0 100644
---- a/drivers/block/drbd/drbd_int.h
-+++ b/drivers/block/drbd/drbd_int.h
-@@ -1483,7 +1483,7 @@ extern int drbd_khelper(struct drbd_device *device, char *cmd);
- 
- /* drbd_worker.c */
- /* bi_end_io handlers */
--extern void drbd_md_io_complete(struct bio *bio, int error);
-+extern void drbd_md_endio(struct bio *bio, int error);
- extern void drbd_peer_request_endio(struct bio *bio, int error);
- extern void drbd_request_endio(struct bio *bio, int error);
- extern int drbd_worker(struct drbd_thread *thi);
-diff --git a/drivers/block/drbd/drbd_worker.c b/drivers/block/drbd/drbd_worker.c
-index 50776b3..6e01e62 100644
---- a/drivers/block/drbd/drbd_worker.c
-+++ b/drivers/block/drbd/drbd_worker.c
-@@ -43,10 +43,10 @@ static int make_ov_request(struct drbd_device *, int);
- static int make_resync_request(struct drbd_device *, int);
- 
- /* endio handlers:
-- *   drbd_md_io_complete (defined here)
-+ *   drbd_md_endio (defined here)
-  *   drbd_request_endio (defined here)
-  *   drbd_peer_request_endio (defined here)
-- *   bm_async_io_complete (defined in drbd_bitmap.c)
-+ *   drbd_bm_endio (defined in drbd_bitmap.c)
-  *
-  * For all these callbacks, note the following:
-  * The callbacks will be called in irq context by the IDE drivers,
-@@ -65,7 +65,7 @@ rwlock_t global_state_lock;
- /* used for synchronous meta data and bitmap IO
-  * submitted by drbd_md_sync_page_io()
-  */
--void drbd_md_io_complete(struct bio *bio, int error)
-+void drbd_md_endio(struct bio *bio, int error)
- {
- 	struct drbd_device *device;
- 
+Besides, the injection still is based on irqfd triggering. The only
+impact on irqfd process is resamplefd is not called anymore on
+virtual IRQ completion since this latter becomes "transparent".
+
+The current integration is based on an extension of the KVM-VFIO
+device, previously used by KVM to interact with VFIO groups. The
+patch serie now enables KVM to directly interact with a VFIO
+platform device. The VFIO external API was extended for that purpose.
+
+Th KVM-VFIO device can get/put the vfio platform device, check its
+integrity and type, get the IRQ number associated to an IRQ index.
+
+The KVM-VFIO is extended with an architecture specific implementation.
+IRQ forward control is implemented in the ARM specific part.
+
+from a user point of view, the functionality is provided through new
+KVM-VFIO device commands, KVM_DEV_VFIO_DEVICE_(DE)ASSIGN_IRQ
+and the capability can be checked with KVM_HAS_DEVICE_ATTR.
+Assignment can only be changed when the physical IRQ is not active.
+It is the responsability of the user to do this check.
+
+This patch serie has the following dependencies:
+- "ARM: Forwarding physical interrupts to a guest VM"
+  (http://lwn.net/Articles/603514/) in
+- [PATCH v2] irqfd for ARM
+  which itself depends on
+  - arm/arm64: KVM: Various VGIC cleanups and improvements
+    http://lists.infradead.org/pipermail/linux-arm-kernel/2014-June/263685.html
+- and obviously the VFIO platform driver serie:
+  [RFC PATCH v6 00/20] VFIO support for platform devices on ARM
+  https://www.mail-archive.com/kvm@vger.kernel.org/msg103247.html
+
+Integrated pieces can be found at
+git://git.linaro.org/people/eric.auger/linux.git
+on branch 3.17rc1_forward_integ_v0
+
+This was was tested on Calxeda Miday, assigning the xgmac main IRQ.
+
+
+Eric Auger (9):
+  KVM: ARM: VGIC: fix multiple injection of level sensitive forwarded
+    IRQ
+  KVM: ARM: VGIC: add forwarded irq rbtree lock
+  VFIO: platform: handler tests whether the IRQ is forwarded
+  KVM: KVM-VFIO: update user API to program forwarded IRQ
+  VFIO: Extend external user API
+  KVM: KVM-VFIO: allow arch specific implementation
+  KVM: KVM-VFIO: add new VFIO external API hooks
+  KVM: KVM-VFIO: add kvm_vfio_arch_data and accessors
+  KVM: KVM_VFIO: ARM: implement irq forwarding control
+
+ Documentation/virtual/kvm/devices/vfio.txt |  25 ++
+ arch/arm/include/asm/kvm_host.h            |  16 +
+ arch/arm/include/uapi/asm/kvm.h            |   6 +
+ arch/arm/kvm/Makefile                      |   2 +-
+ arch/arm/kvm/kvm_vfio_arm.c                | 599 +++++++++++++++++++++++++++++
+ drivers/vfio/platform/vfio_platform_irq.c  |   7 +-
+ drivers/vfio/vfio.c                        |  35 ++
+ include/kvm/arm_vgic.h                     |   1 +
+ include/linux/kvm_host.h                   |  30 ++
+ include/linux/vfio.h                       |   4 +
+ include/uapi/linux/kvm.h                   |   3 +
+ virt/kvm/arm/vgic.c                        |  55 ++-
+ virt/kvm/vfio.c                            |  92 +++++
+ 13 files changed, 862 insertions(+), 13 deletions(-)
+ create mode 100644 arch/arm/kvm/kvm_vfio_arm.c
+
 -- 
 1.9.1
 
