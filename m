@@ -1,220 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933221AbaHYS7j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 14:59:39 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:52697 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751399AbaHYS7h (ORCPT
+	id S933309AbaHYTBb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 15:01:31 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:43196 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933174AbaHYTB2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 14:59:37 -0400
+	Mon, 25 Aug 2014 15:01:28 -0400
+Message-ID: <53FB8820.4010202@wwwdotorg.org>
+Date: Mon, 25 Aug 2014 13:01:52 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <87egw7a5yd.fsf@steelpick.2x.cz>
-References: <87ha149j2z.fsf@steelpick.2x.cz> <1408752502-4162-1-git-send-email-sojka@merica.cz>
- <1408752502-4162-3-git-send-email-sojka@merica.cz> <CAK5ve-LgeZcR+NHZoLo=rVKCk8TfRjRy-u7KwKRYs1weW==Nqw@mail.gmail.com>
- <87egw7a5yd.fsf@steelpick.2x.cz>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Mon, 25 Aug 2014 11:59:14 -0700
-Message-ID: <CAK5ve-Jz7=7uZ3_Qg2bAH9BiGRZ36k-Oj9TNZ-_nAvaq6LGbjA@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] usb: Add LED trigger for USB host activity
-To: Michal Sojka <sojka@merica.cz>
-Cc: linux-usb@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+To: Andrew Bresticker <abrestic@chromium.org>,
+        Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, michal.vokac@comap.cz
-Content-Type: text/plain; charset=UTF-8
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
+        Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH v2 2/9] mailbox: Add NVIDIA Tegra XUSB mailbox driver
+References: <1408381705-3623-1-git-send-email-abrestic@chromium.org> <1408381705-3623-3-git-send-email-abrestic@chromium.org>
+In-Reply-To: <1408381705-3623-3-git-send-email-abrestic@chromium.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 23, 2014 at 2:52 AM, Michal Sojka <sojka@merica.cz> wrote:
-> Hi Bryan,
->
-> thanks for the review. See some comments below.
->
-> On Sat, Aug 23 2014, Bryan Wu wrote:
->> On Fri, Aug 22, 2014 at 5:08 PM, Michal Sojka <sojka@merica.cz> wrote:
->>> With this patch, USB host activity can be signaled by blinking a LED.
->>>
->>> This should work with all host controllers. Tested only with musb.
->>>
->>> Signed-off-by: Michal Sojka <sojka@merica.cz>
->>> ---
->>>  drivers/usb/core/Kconfig  |  9 +++++++++
->>>  drivers/usb/core/Makefile |  1 +
->>>  drivers/usb/core/hcd.c    |  2 ++
->>>  drivers/usb/core/led.c    | 38 ++++++++++++++++++++++++++++++++++++++
->>>  include/linux/usb/hcd.h   |  6 ++++++
->>>  5 files changed, 56 insertions(+)
->>>  create mode 100644 drivers/usb/core/led.c
->>>
->>> diff --git a/drivers/usb/core/Kconfig b/drivers/usb/core/Kconfig
->>> index 1060657..8295f65 100644
->>> --- a/drivers/usb/core/Kconfig
->>> +++ b/drivers/usb/core/Kconfig
->>> @@ -90,3 +90,12 @@ config USB_OTG_FSM
->>>           Implements OTG Finite State Machine as specified in On-The-Go
->>>           and Embedded Host Supplement to the USB Revision 2.0 Specification.
->>>
->>> +config USB_HOST_LED
->>> +       bool "USB Host LED Trigger"
->>> +       depends on LEDS_CLASS
->>> +       select LEDS_TRIGGERS
->>> +       help
->>> +         This option adds a LED trigger for USB host controllers.
->>> +
->>> +         Say Y here if you are working on a system with led-class supported
->>> +         LEDs and you want to use them as USB host activity indicators.
->>> diff --git a/drivers/usb/core/Makefile b/drivers/usb/core/Makefile
->>> index 2f6f932..324c8c9 100644
->>> --- a/drivers/usb/core/Makefile
->>> +++ b/drivers/usb/core/Makefile
->>> @@ -9,5 +9,6 @@ usbcore-y += port.o
->>>
->>>  usbcore-$(CONFIG_PCI)          += hcd-pci.o
->>>  usbcore-$(CONFIG_ACPI)         += usb-acpi.o
->>> +usbcore-$(CONFIG_USB_HOST_LED) += led.o
->>>
->>>  obj-$(CONFIG_USB)              += usbcore.o
->>> diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
->>> index 487abcf..46d9f3a 100644
->>> --- a/drivers/usb/core/hcd.c
->>> +++ b/drivers/usb/core/hcd.c
->>> @@ -1664,6 +1664,8 @@ static void __usb_hcd_giveback_urb(struct urb *urb)
->>>         usbmon_urb_complete(&hcd->self, urb, status);
->>>         usb_anchor_suspend_wakeups(anchor);
->>>         usb_unanchor_urb(urb);
->>> +       if (status == 0)
->>> +               usb_hcd_led_activity();
->>>
->>>         /* pass ownership to the completion handler */
->>>         urb->status = status;
->>> diff --git a/drivers/usb/core/led.c b/drivers/usb/core/led.c
->>> new file mode 100644
->>> index 0000000..49ff76c
->>> --- /dev/null
->>> +++ b/drivers/usb/core/led.c
->>> @@ -0,0 +1,38 @@
->>> +/*
->>> + * LED Trigger for USB Host Activity
->>> + *
->>> + * Copyright 2014 Michal Sojka <sojka@merica.cz>
->>> + *
->>> + * This program is free software; you can redistribute it and/or modify
->>> + * it under the terms of the GNU General Public License version 2 as
->>> + * published by the Free Software Foundation.
->>> + *
->>> + */
->>> +
->>> +#include <linux/module.h>
->>> +#include <linux/kernel.h>
->>> +#include <linux/init.h>
->>> +#include <linux/leds.h>
->>> +#include <linux/usb/hcd.h>
->>> +
->>> +#define BLINK_DELAY 30
->>> +
->>> +DEFINE_LED_TRIGGER(ledtrig_usb_hcd);
->>
->> Add one more trigger named ledtrig_usb_gadget
->>
->>> +static unsigned long usb_hcd_blink_delay = BLINK_DELAY;
->>> +
->>> +void usb_hcd_led_activity(void)
->>
->> Give an input parameter like emum usb_led_event.
->> USB_LED_EVENT_HOST = 0
->> USB_LED_EVENT_GADGET = 1
->>
->>
->>> +{
->>
->> Add case for USB_LED_EVENT_HOST:
->>> +       led_trigger_blink_oneshot(ledtrig_usb_hcd,
->>> +                                 &usb_hcd_blink_delay, &usb_hcd_blink_delay, 0);
->>
->> Add case for USB_LED_EVENT_GADGET:
->>  led_trigger_blink_oneshot(ledtrig_usb_gadget,
->>                              &usb_gadget_blink_delay,
->> &usb_gadget_blink_delay, 0);
->>
->>> +}
->>> +
->>> +int __init ledtrig_usb_hcd_init(void)
->>> +{
->>> +       led_trigger_register_simple("usb-host", &ledtrig_usb_hcd);
->> register one more trigger for gadget.
->
-> This way, the code will be full of #ifdefs. Is the following really what
-> you want? If you want to have it without #ifdefs, then I don't think it
-> is a good idea to offer users the usb-gadget trigger on systems without
-> usb gadget support.
->
+On 08/18/2014 11:08 AM, Andrew Bresticker wrote:
+> The Tegra xHCI controller's firmware communicates requests to the host
+> processor through a mailbox interface.  While there is only a single
+> communication channel, messages sent by the controller can be divided
+> into two groups: those intended for the PHY driver and those intended
+> for the host-controller driver.  This mailbox driver exposes the two
+> channels and routes incoming messages to the appropriate channel based
+> on the command encoded in the message.
 
-Why do we need #ifdef here?
-We can always define the 2 triggers for both USB host and gadget and
-provide API like usb_led_activity().
+> diff --git a/drivers/mailbox/tegra-xusb-mailbox.c b/drivers/mailbox/tegra-xusb-mailbox.c
 
-If USB gadget stack is disabled in kernel, there is no users of this
-usb_led_activity(, USB_LED_EVENT_GADGET). We don't need to change
-anything in our driver but just waste one trigger instance.
+> +#define XUSB_CFG_ARU_MBOX_CMD			0xe4
+> +#define  MBOX_FALC_INT_EN			BIT(27)
+> +#define  MBOX_PME_INT_EN			BIT(28)
+> +#define  MBOX_SMI_INT_EN			BIT(29)
+> +#define  MBOX_XHCI_INT_EN			BIT(30)
+> +#define  MBOX_INT_EN				BIT(31)
 
-Thanks,
--Bryan
+Those field names don't match the documentation in the TRM; they're 
+called DEST_xxx rather than xxx_INT_EN. I'm not sure what that 
+disconnect means (i.e. whether it's just a different naming choice, or 
+there's some practical disconnect that will cause issues.)
 
-> #define BLINK_DELAY 30
->
-> static unsigned long usb_blink_delay = BLINK_DELAY;
->
-> enum usb_led_event {
->         USB_LED_EVENT_HOST = 0,
->         USB_LED_EVENT_GADGET = 1,
-> };
->
-> #ifdef CONFIG_USB_GADGET_LED
-> DEFINE_LED_TRIGGER(ledtrig_usbgadget);
-> #endif
-> #ifdef CONFIG_USB_HOST_LED
-> DEFINE_LED_TRIGGER(ledtrig_usb_hcd);
-> #endif
->
-> void usb_led_activity(enum usb_led_event ev)
-> {
->         struct led_trigger *trig;
->
->         switch (ev) {
-> #ifdef CONFIG_USB_GADGET_LED
->         case USB_LED_EVENT_GADGET: trig = ledtrig_usb_gadget; break;
-> #endif
-> #ifdef CONFIG_USB_HOST_LED
->         case USB_LED_EVENT_HOST:   trig = ledtrig_usb_hcd; break;
-> #endif
->         default:;
->         }
->         led_trigger_blink_oneshot(trig, &usb_blink_delay, &usb_blink_delay, 0);
-> }
-> EXPORT_SYMBOL(usb_led_activity);
->
->
-> int __init ledtrig_usb_init(void)
-> {
-> #ifdef CONFIG_USB_GADGET_LED
->         led_trigger_register_simple("usb-gadget", &ledtrig_usbgadget);
-> #endif
-> #ifdef CONFIG_USB_HOST_LED
->         led_trigger_register_simple("usb-host", &ledtrig_usb_hcd);
-> #endif
->         return 0;
-> }
->
-> void __exit ledtrig_usb_exit(void)
-> {
-> #ifdef CONFIG_USB_GADGET_LED
->         led_trigger_unregister_simple(ledtrig_usbgadget);
-> #endif
-> #ifdef CONFIG_USB_HOST_LED
->         led_trigger_unregister_simple(ledtrig_usb_hcd);
-> #endif
-> }
->
->
-> -Michal
+> +static struct mbox_chan *mbox_cmd_to_chan(struct tegra_xusb_mbox *mbox, u32 cmd)
+> +{
+> +	switch (cmd) {
+> +	case MBOX_CMD_INC_FALC_CLOCK:
+> +	case MBOX_CMD_DEC_FALC_CLOCK:
+> +	case MBOX_CMD_INC_SSPI_CLOCK:
+> +	case MBOX_CMD_DEC_SSPI_CLOCK:
+> +	case MBOX_CMD_SET_BW:
+> +		return &mbox->mbox.chans[TEGRA_XUSB_MBOX_CHAN_HOST];
+> +	case MBOX_CMD_SAVE_DFE_CTLE_CTX:
+> +	case MBOX_CMD_START_HSIC_IDLE:
+> +	case MBOX_CMD_STOP_HSIC_IDLE:
+> +		return &mbox->mbox.chans[TEGRA_XUSB_MBOX_CHAN_PHY];
+> +	default:
+> +		return NULL;
+> +	}
+> +}
+
+This makes me think that the CHAN_HOST/CHAN_PHY values are purely a 
+facet of the Linux driver's message de-multiplexing, rather than 
+anything to do with the HW.
+
+I'm not even sure if it's appropriate for the low-level mailbox driver 
+to know about the semantics of the message, rather than simply sending 
+them on to the client driver? Perhaps when drivers register(?) for 
+callbacks(?) for messages, they should state which types of messages 
+they want to listen to?
+
+> +static irqreturn_t tegra_xusb_mbox_irq(int irq, void *p)
+
+> +	/* Clear mbox interrupts */
+> +	reg = mbox_readl(mbox, XUSB_CFG_ARU_SMI_INTR);
+> +	if (reg & MBOX_SMI_INTR_FW_HANG)
+> +		dev_err(mbox->mbox.dev, "Controller firmware hang\n");
+> +	mbox_writel(mbox, reg, XUSB_CFG_ARU_SMI_INTR);
+
+> +	/*
+> +	 * Set the mailbox back to idle.  The recipient of the message is
+> +	 * responsible for sending an ACK/NAK, if necessary.
+> +	 */
+> +	reg = mbox_readl(mbox, XUSB_CFG_ARU_MBOX_CMD);
+> +	reg &= ~MBOX_SMI_INT_EN;
+> +	mbox_writel(mbox, reg, XUSB_CFG_ARU_MBOX_CMD);
+
+Does the protocol not allow the remote firmware to send another message 
+until the host has ack'd/nak'd the message; the code above turns off the 
+IRQ that indicated to the host that a message was sent to it...
+
+> +static int tegra_xusb_mbox_probe(struct platform_device *pdev)
+
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	if (!res)
+> +		return -ENODEV;
+
+Should devm_request_mem_region() be called here to claim the region?
+
+> +	mbox->regs = devm_ioremap_nocache(&pdev->dev, res->start,
+> +					  resource_size(res));
+> +	if (!mbox->regs)
+> +		return -ENOMEM;
+
+Is _nocache required? I don't see other drivers using it. I assume 
+there's nothing special about the mbox registers.
+
+> +	mbox->irq = platform_get_irq(pdev, 0);
+> +	if (mbox->irq < 0)
+> +		return mbox->irq;
+> +	ret = devm_request_irq(&pdev->dev, mbox->irq, tegra_xusb_mbox_irq, 0,
+> +			       dev_name(&pdev->dev), mbox);
+
+Is it possible for an IRQ to occur after tegra_xusb_mbox_remove() has 
+returned, but before the cleanup for the devm IRQ allocation occurs? If 
+that happens, will the code handle it gracefully, or crash?
+
+> +MODULE_ALIAS("platform:tegra-xusb-mailbox");
+
+I don't think that's required; it should auto-load based on the 
+of_device_id/MODULE_DEVICE_TABLE(of,...) table.
+
+> diff --git a/include/soc/tegra/xusb.h b/include/soc/tegra/xusb.h
+
+> +#define TEGRA_XUSB_MBOX_NUM_CHANS 2 /* host + phy */
+
+I'd rather see that definition in the same place as the 
+TEGRA_XUSB_MBOX_CHAN_* values it refers to. Otherwise, it'd be quite 
+easy to add values without updating this constant.
