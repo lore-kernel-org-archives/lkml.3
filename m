@@ -1,58 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933424AbaHYSCs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 14:02:48 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:36458 "EHLO e8.ny.us.ibm.com"
+	id S933364AbaHYSCA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 14:02:00 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:36067 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932253AbaHYSCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 14:02:45 -0400
+	id S933125AbaHYSB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 14:01:57 -0400
 From: "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH 9/9] powerpc/powernv: Enter deepest supported idle state in offline
-Date: Mon, 25 Aug 2014 23:31:13 +0530
-Message-Id: <1408989673-14137-10-git-send-email-shreyas@linux.vnet.ibm.com>
+        Michael Ellerman <mpe@ellerman.id.au>, linuxppc-dev@lists.ozlabs.org,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Subject: [PATCH 3/9] powerpc/kvm/book3s_hv: Enable CPUs to run guest after waking up from fast-sleep
+Date: Mon, 25 Aug 2014 23:31:07 +0530
+Message-Id: <1408989673-14137-4-git-send-email-shreyas@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1408989673-14137-1-git-send-email-shreyas@linux.vnet.ibm.com>
 References: <1408989673-14137-1-git-send-email-shreyas@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082518-0320-0000-0000-0000004F6AD1
+x-cbid: 14082518-0320-0000-0000-0000004F6A78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enter winkle during offline if supported, else revert to sleep or nap.
+When guests have to be launched, the secondary threads which are offline
+are woken up to run the guests. Today these threads wake up from nap
+and check if they have to run guests. Now that the offline secondary
+threads can go to fastsleep or going ahead a deeper idle state such as winkle,
+add this check in the wakeup from any of the deep idle states path as well.
 
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Michael Ellerman <mpe@ellerman.id.au>
 Cc: linuxppc-dev@lists.ozlabs.org
+Suggested-by: "Srivatsa S. Bhat" <srivatsa@mit.edu>
 Signed-off-by: Shreyas B. Prabhu <shreyas@linux.vnet.ibm.com>
+[ Changelog added by <preeti@linux.vnet.ibm.com> ]
+Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 ---
- arch/powerpc/platforms/powernv/smp.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ arch/powerpc/kernel/exceptions-64s.S | 35 ++++++++++++++++-------------------
+ 1 file changed, 16 insertions(+), 19 deletions(-)
 
-diff --git a/arch/powerpc/platforms/powernv/smp.c b/arch/powerpc/platforms/powernv/smp.c
-index 3ad31d2..e3fc2c9 100644
---- a/arch/powerpc/platforms/powernv/smp.c
-+++ b/arch/powerpc/platforms/powernv/smp.c
-@@ -169,8 +169,10 @@ static void pnv_smp_cpu_kill_self(void)
- 	while (!generic_check_cpu_restart(cpu)) {
- 		ppc64_runlatch_off();
+diff --git a/arch/powerpc/kernel/exceptions-64s.S b/arch/powerpc/kernel/exceptions-64s.S
+index 050f79a..c64f3cc0 100644
+--- a/arch/powerpc/kernel/exceptions-64s.S
++++ b/arch/powerpc/kernel/exceptions-64s.S
+@@ -100,25 +100,8 @@ system_reset_pSeries:
+ 	SET_SCRATCH0(r13)
+ #ifdef CONFIG_PPC_P7_NAP
+ BEGIN_FTR_SECTION
+-	/* Running native on arch 2.06 or later, check if we are
+-	 * waking up from nap. We only handle no state loss and
+-	 * supervisor state loss. We do -not- handle hypervisor
+-	 * state loss at this time.
+-	 */
+-	mfspr	r13,SPRN_SRR1
+-	rlwinm.	r13,r13,47-31,30,31
+-	beq	9f
  
--		/* If sleep is supported, go to sleep, instead of nap */
--		if (idle_states & IDLE_USE_SLEEP)
-+		/* Go to deepest supported idle state */
-+		if (idle_states & IDLE_USE_WINKLE)
-+			power7_winkle();
-+		else if (idle_states & IDLE_USE_SLEEP)
- 			power7_sleep();
- 		else
- 			power7_nap(1);
+-	/* waking up from powersave (nap) state */
+-	cmpwi	cr1,r13,2
+-	/* Total loss of HV state is fatal, we could try to use the
+-	 * PIR to locate a PACA, then use an emergency stack etc...
+-	 * OPAL v3 based powernv platforms have new idle states
+-	 * which fall in this catagory.
+-	 */
+-	bgt	cr1,8f
+ 	GET_PACA(r13)
+-
+ #ifdef CONFIG_KVM_BOOK3S_HV_POSSIBLE
+ 	li	r0,KVM_HWTHREAD_IN_KERNEL
+ 	stb	r0,HSTATE_HWTHREAD_STATE(r13)
+@@ -131,13 +114,27 @@ BEGIN_FTR_SECTION
+ 1:
+ #endif
+ 
++	/* Running native on arch 2.06 or later, check if we are
++	 * waking up from nap. We only handle no state loss and
++	 * supervisor state loss. We do -not- handle hypervisor
++	 * state loss at this time.
++	 */
++	mfspr	r13,SPRN_SRR1
++	rlwinm.	r13,r13,47-31,30,31
++	beq	9f
++
++	/* waking up from powersave (nap) state */
++	cmpwi	cr1,r13,2
++	GET_PACA(r13)
++
++	bgt	cr1,8f
++
+ 	beq	cr1,2f
+ 	b	power7_wakeup_noloss
+ 2:	b	power7_wakeup_loss
+ 
+ 	/* Fast Sleep wakeup on PowerNV */
+-8:	GET_PACA(r13)
+-	b 	power7_wakeup_tb_loss
++8:	b 	power7_wakeup_tb_loss
+ 
+ 9:
+ END_FTR_SECTION_IFSET(CPU_FTR_HVMODE | CPU_FTR_ARCH_206)
 -- 
 1.9.0
 
