@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755758AbaHYNQO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 09:16:14 -0400
-Received: from mga01.intel.com ([192.55.52.88]:17375 "EHLO mga01.intel.com"
+	id S932459AbaHYNQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 09:16:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49827 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753027AbaHYNQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 09:16:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="376649643"
-Message-ID: <53FB3715.7070009@linux.intel.com>
-Date: Mon, 25 Aug 2014 16:16:05 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>, Jason Wang <jasowang@redhat.com>
-CC: Ingo Molnar <mingo@kernel.org>, Mike Galbraith <umgwanakikbuti@gmail.com>,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mst@redhat.com,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Ingo Molnar jacob.e.keller@intel.com" <mingo@elte.hu>
-Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process
- is runnable
-References: <1408608310-13579-1-git-send-email-jasowang@redhat.com>	 <1408608310-13579-2-git-send-email-jasowang@redhat.com>	 <1408683665.5648.69.camel@marge.simpson.net>	 <20140822073653.GA7372@gmail.com> <53F70887.8030602@redhat.com> <1408716976.5604.18.camel@edumazet-glaptop2.roam.corp.google.com>
-In-Reply-To: <1408716976.5604.18.camel@edumazet-glaptop2.roam.corp.google.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S932261AbaHYNQZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 09:16:25 -0400
+In-Reply-To: <20140821.163320.476216950054835385.davem@davemloft.net>
+References: <20140821.163320.476216950054835385.davem@davemloft.net>
+From: Michal Kubecek <mkubecek@suse.cz>
+Subject: [PATCH net v2] net: fix checksum features handling in
+ netif_skb_features()
+To: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-Id: <20140825131622.6233CA0BB0@unicorn.suse.cz>
+Date: Mon, 25 Aug 2014 15:16:22 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/08/2014 17:16, Eric Dumazet wrote:
-> On Fri, 2014-08-22 at 17:08 +0800, Jason Wang wrote:
-> 
->> But this is just for current process. We want to determine whether or
->> not it was worth to loop busily in current process by checking if
->> there's any another runnable processes or callbacks. And what we need
->> here is just a simple and lockless hint which can't be wrong but may be
->> inaccurate to exit the busy loop. The net code does not depends on this
->> hint to do scheduling or yielding.
->>
->> How about just introducing a boolean helper like current_can_busy_loop()
->> and return true in one of the following conditions:
->>
->> - Current task is SCHED_FIFO
->> - Current task is neither SCHED_FIFO nor SCHED_IDLE and no other
->> runnable processes or pending RCU callbacks in current cpu
->>
->> And add warns to make sure it can only be called in process context.
-> 
-> 
-> 1) Any reasons Eliezer Tamir is not included in the CC list ?
+This is follow-up to
 
-Thanks for remembering me, Eric ;)
+  da08143b8520 ("vlan: more careful checksum features handling")
 
-Here are my 2 cents:
-I think Ingo's suggestion of only yielding to tasks with same or higher
-priority makes sense.
+which introduced more careful feature intersection in vlan code,
+taking into account that HW_CSUM should be considered superset
+of IP_CSUM/IPV6_CSUM. The same is needed in netif_skb_features()
+in order to avoid offloading mismatch warning when vlan is
+created on top of a bond consisting of slaves supporting IP/IPv6
+checksumming but not vlan Tx offloading.
 
-IF you change the current behavior, please update the documentation.
-You are going to make people scratch their head and ask "what changed?"
-you owe them a clue.
+Signed-off-by: Michal Kubecek <mkubecek@suse.cz>
+---
+ net/core/dev.c | 16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
 
-I also would like to have some way to keep track of when/if/how much
-this yield happens.
+diff --git a/net/core/dev.c b/net/core/dev.c
+index b65a505..a964017 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2587,13 +2587,19 @@ netdev_features_t netif_skb_features(struct sk_buff *skb)
+ 		return harmonize_features(skb, features);
+ 	}
+ 
+-	features &= (skb->dev->vlan_features | NETIF_F_HW_VLAN_CTAG_TX |
+-					       NETIF_F_HW_VLAN_STAG_TX);
++	features = netdev_intersect_features(features,
++					     skb->dev->vlan_features |
++					     NETIF_F_HW_VLAN_CTAG_TX |
++					     NETIF_F_HW_VLAN_STAG_TX);
+ 
+ 	if (protocol == htons(ETH_P_8021Q) || protocol == htons(ETH_P_8021AD))
+-		features &= NETIF_F_SG | NETIF_F_HIGHDMA | NETIF_F_FRAGLIST |
+-				NETIF_F_GEN_CSUM | NETIF_F_HW_VLAN_CTAG_TX |
+-				NETIF_F_HW_VLAN_STAG_TX;
++		features = netdev_intersect_features(features,
++						     NETIF_F_SG |
++						     NETIF_F_HIGHDMA |
++						     NETIF_F_FRAGLIST |
++						     NETIF_F_GEN_CSUM |
++						     NETIF_F_HW_VLAN_CTAG_TX |
++						     NETIF_F_HW_VLAN_STAG_TX);
+ 
+ 	return harmonize_features(skb, features);
+ }
+-- 
+1.8.4.5
 
-> 2) It looks like sk_buy_loop() should not be inlined, its is already too
-> big.
-
-You made this comment in the past, my response was that it's inlnied so
-it can be optimized when nonblock is known at compile time to be true
-(e.g when called from sock_poll).
-IFF you think that's less important, then I will defer to your opinion.
-
--Eliezer
