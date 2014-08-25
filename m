@@ -1,82 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498AbaHYGa5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 02:30:57 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:15420 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754416AbaHYGaz (ORCPT
+	id S1754556AbaHYGeL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 02:34:11 -0400
+Received: from mga01.intel.com ([192.55.52.88]:3669 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753093AbaHYGeI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 02:30:55 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Sun, 24 Aug 2014 23:16:48 -0700
-From: Wei Ni <wni@nvidia.com>
-To: <edubezval@gmail.com>, <khali@linux-fr.org>, <linux@roeck-us.net>,
-        <swarren@wwwdotorg.org>
-CC: <lm-sensors@lm-sensors.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, lightning314 <wni@nvidia.com>
-Subject: [PATCH v3 4/4] ARM: tegra: dalmore: add thermal zones for nct1008
-Date: Mon, 25 Aug 2014 14:29:48 +0800
-Message-ID: <1408948188-4181-5-git-send-email-wni@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1408948188-4181-1-git-send-email-wni@nvidia.com>
-References: <1408948188-4181-1-git-send-email-wni@nvidia.com>
-X-NVConfidentiality: public
+	Mon, 25 Aug 2014 02:34:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,395,1406617200"; 
+   d="scan'208";a="581211145"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: Dave Young <dyoung@redhat.com>, Matt Fleming <matt@console-pimps.org>
+CC: "Fleming, Matt" <matt.fleming@intel.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@acpica.org" <devel@acpica.org>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "Moore, Robert" <robert.moore@intel.com>
+Subject: RE: kernel boot fail with efi earlyprintk (bisected)
+Thread-Topic: kernel boot fail with efi earlyprintk (bisected)
+Thread-Index: AQHPu4XSRTaCxkfh/U+HttRB4JxB75vg3lk+gAAHPUA=
+Date: Mon, 25 Aug 2014 06:34:02 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E880265F57B@SHSMSX101.ccr.corp.intel.com>
+References: <20140819081658.GA1795@darkstar.nay.redhat.com>
+ <20140821205224.GJ29733@console-pimps.org>
+ <20140822100258.GA1877@darkstar.nay.redhat.com>
+ <20140825060713.GA4011@darkstar.nay.redhat.com>
+In-Reply-To: <20140825060713.GA4011@darkstar.nay.redhat.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: lightning314 <wni@nvidia.com>
+Hi,
 
-Add dt node to describe the thermal zone for the nct1008.
+> From: Dave Young [mailto:dyoung@redhat.com]
+> Sent: Monday, August 25, 2014 2:07 PM
+> To: Matt Fleming
+> Cc: Zheng, Lv; Fleming, Matt; linux-efi@vger.kernel.org; linux-acpi@vger.kernel.org; linux-kernel@vger.kernel.org; devel@acpica.org;
+> lenb@kernel.org; Wysocki, Rafael J; Moore, Robert
+> Subject: Re: kernel boot fail with efi earlyprintk (bisected)
+> 
+> On 08/22/14 at 06:02pm, Dave Young wrote:
+> > On 08/21/14 at 09:52pm, Matt Fleming wrote:
+> > > On Tue, 19 Aug, at 04:16:58PM, Dave Young wrote:
+> > > > Hi,
+> > > >
+> > > > 3.16 kernel boot fail with earlyprintk=efi on my laptop.
+> > > > It keeps scrolling at the bottom line of screen.
+> > > >
+> > > > Bisected, the first bad commit is below:
+> > > > commit 86dfc6f339886559d80ee0d4bd20fe5ee90450f0
+> > > > Author: Lv Zheng <lv.zheng@intel.com>
+> > > > Date:   Fri Apr 4 12:38:57 2014 +0800
+> > > >
+> > > >     ACPICA: Tables: Fix table checksums verification before installation.
+> > > >
+> > > >
+> > > > I did some debugging by enabling both serial and efi earlyprintk, below is
+> > > > some debug dmesg, seems early_ioremap fails in scroll up function due to
+> > > > no free slot, but I'm still not sure if the debug info is right or not.
+> > >
+> > > Thanks Dave, your callstack seems to make sense.
+> > >
+> > > Can you also enable early_ioremap_debug so that we can figure out where
+> > > all the FIXMAP slots are going?
+> >
+> > With early_ioremap_debug enabled, there will be a lot of "dropped printk", so
+> > I can not get any useful information.
+> >
+> > Will try to do more debug.
+> 
+> early_ioremap_debug does not work because we are debugging early_printk but
+> early_ioremap_debug itself will print warning message at the same time.
+> 
+> Tried what Lv mentioned, increasing the early ioremap slots does help.
 
-Signed-off-by: Wei Ni <wni@nvidia.com>
----
- arch/arm/boot/dts/tegra114-dalmore.dts | 20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
+Could you send a tested patch to linux-acpi@vger.kermel.org for this?
+I think the number of early mapping slots need to be increased by 1 because of this case.
 
-diff --git a/arch/arm/boot/dts/tegra114-dalmore.dts b/arch/arm/boot/dts/tegra114-dalmore.dts
-index 5c21d21..94a1b5d 100644
---- a/arch/arm/boot/dts/tegra114-dalmore.dts
-+++ b/arch/arm/boot/dts/tegra114-dalmore.dts
-@@ -779,12 +779,14 @@
- 				<&gpio TEGRA_GPIO(V, 3) GPIO_ACTIVE_HIGH>;
- 		};
- 
--		temperature-sensor@4c {
-+		nct1008: temperature-sensor@4c {
- 			compatible = "onnn,nct1008";
- 			reg = <0x4c>;
- 			vcc-supply = <&palmas_ldo6_reg>;
- 			interrupt-parent = <&gpio>;
- 			interrupts = <TEGRA_GPIO(O, 4) IRQ_TYPE_LEVEL_LOW>;
-+
-+			#thermal-sensor-cells = <1>;
- 		};
- 	};
- 
-@@ -1283,4 +1285,20 @@
- 			 <&tegra_car TEGRA114_CLK_EXTERN1>;
- 		clock-names = "pll_a", "pll_a_out0", "mclk";
- 	};
-+
-+	thermal-zones {
-+		nct1008-local {
-+			polling-delay-passive = <2000>; /* milliseconds */
-+			polling-delay = <0>; /* milliseconds */
-+
-+			thermal-sensors = <&nct1008 0>;
-+		};
-+
-+		nct1008-remote {
-+			polling-delay-passive = <1000>; /* milliseconds */
-+			polling-delay = <0>; /* milliseconds */
-+
-+			thermal-sensors = <&nct1008 1>;
-+		};
-+	};
- };
--- 
-1.8.1.5
-
+Thanks and best regards
+-Lv
