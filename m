@@ -1,127 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932479AbaHYM1Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 08:27:16 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:40441 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932406AbaHYM1H (ORCPT
+	id S932507AbaHYM1q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 08:27:46 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:43670 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755525AbaHYM1m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 08:27:07 -0400
-Message-ID: <53FB2B77.8070606@gmail.com>
-Date: Mon, 25 Aug 2014 20:26:31 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Mon, 25 Aug 2014 08:27:42 -0400
+Date: Mon, 25 Aug 2014 14:27:35 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Richard Weinberger <richard.weinberger@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, Sam Ravnborg <sam@ravnborg.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-ia64@vger.kernel.org,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        sparclinux@vger.kernel.org, "x86@kernel.org" <x86@kernel.org>,
+        linux-serial@vger.kernel.org, Linux-Arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 0/8] asm-generic/io.h overhaul
+Message-ID: <20140825122734.GD4163@ulmo.nvidia.com>
+References: <1407925738-26170-1-git-send-email-thierry.reding@gmail.com>
+ <CAFLxGvyyW5J0En1bFwonZiMwoJK+XDgtHvC2PQOhqgvyF4F-uQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Ralf Baechle <ralf@linux-mips.org>
-CC: Arnd Bergmann <arnd@arndb.de>, akpm@linux-foundation.org, rth@twiddle.net,
-        ink@jurassic.park.msu.ru, mattst88@gmail.com, vgupta@synopsys.com,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Jean Delvare <jdelvare@suse.de>, linux@arm.linux.org.uk,
-        catalin.marinas@arm.com, will.deacon@arm.com, hskinnemoen@gmail.com,
-        egtvedt@samfundet.no, realmz6@gmail.com, msalter@redhat.com,
-        a-jacquiot@ti.com, starvik@axis.com, jesper.nilsson@axis.com,
-        dhowells@redhat.com, rkuo@codeaurora.org, tony.luck@intel.com,
-        fenghua.yu@intel.com, takata@linux-m32r.org, james.hogan@imgtec.com,
-        Michal Simek <monstr@monstr.eu>, yasutake.koichi@jp.panasonic.com,
-        jonas@southpole.se, jejb@parisc-linux.org, deller@gmx.de,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>, paulus@samba.org,
-        mpe@ellerman.id.au, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        heiko.carstens@de.ibm.com, Liqin Chen <liqin.linux@gmail.com>,
-        Lennox Wu <lennox.wu@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>, cmetcalf@tilera.com,
-        jdike@addtoit.com, Richard Weinberger <richard@nod.at>,
-        gxt@mprc.pku.edu.cn, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, chris@zankel.net, jcmvbkbc@gmail.com,
-        linux390@de.ibm.com, x86@kernel.org, linux-alpha@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org,
-        adi-buildroot-devel@lists.sourceforge.net, linux-c6x-dev@linux-c6x.org,
-        linux-cris-kernel@axis.com, linux-hexagon@vger.kernel.org,
-        linux-ia64@vger.kernel.org, linux-m32r@ml.linux-m32r.org,
-        linux-m32r-ja@ml.linux-m32r.org, linux-m68k@vger.kernel.org,
-        linux-metag@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-am33-list@redhat.com, linux@openrisc.net,
-        linux-parisc@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-s390@vger.kernel.org, sparclinux@vger.kernel.org,
-        user-mode-linux-devel@lists.sourceforge.net,
-        user-mode-linux-user@lists.sourceforge.net,
-        linux-xtensa@linux-xtensa.org, linux-sh@vger.kernel.org,
-        torvalds@linux-foundation.org
-Subject: Re: [PATCH v3] arch: Kconfig: Let all architectures set endian explicitly
-References: <53ECE9DD.80004@gmail.com> <20140814180418.GA20777@linux-mips.org> <53ED34CE.3040001@gmail.com> <53EDCC60.5040608@gmail.com> <53F9A48F.3020803@gmail.com>
-In-Reply-To: <53F9A48F.3020803@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="k4f25fnPtRuIRUb3"
+Content-Disposition: inline
+In-Reply-To: <CAFLxGvyyW5J0En1bFwonZiMwoJK+XDgtHvC2PQOhqgvyF4F-uQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello all:
 
-It seems no any additional rejections for it. I guess, I need split the
-'big' patch into pieces, and each send to its' related mailing list, so
-let it not like a spam. And the schedule may like:
+--k4f25fnPtRuIRUb3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
- - Firstly, send patch for "init/Kconfig" to add CPU_*_ENDIAN. If pass
-   checking (hope it can be passed checking), then
+On Mon, Aug 25, 2014 at 01:53:30PM +0200, Richard Weinberger wrote:
+> On Wed, Aug 13, 2014 at 12:28 PM, Thierry Reding
+> <thierry.reding@gmail.com> wrote:
+> > From: Thierry Reding <treding@nvidia.com>
+> >
+> > Hi,
+> >
+> > Here is the fourth version of a series that started out as an attempt to
+> > provide string versions of the read*() and write*() accessors to more
+> > architectures so that drivers can use them portably. The series has
+> > since evolved into a more general cleanup of asm-generic/io.h and the
+> > functions defined therein.
+> >
+> > Patch 1 is trivial and removes a redundant redefinition of PCI_IOBASE
+> > from the asm/io.h header on ARC. Patches 2 and 3 remove unnecessary
+> > volatile keywoards from some functions, which is a prerequisite to clean
+> > up some of the functions in subsequent patches.
+> >
+> > The xlate_dev_{kmem,mem}_ptr() functions are used to map memory when the
+> > /dev/mem device is accessed. Patches 4 and 5 use more consistent data
+> > types for these functions, which will get a "standard" prototype in the
+> > asm-generic/io.h header in a subsequent patch.
+> >
+> > Patch 6 is the bulk of this series. It implements the string variants of
+> > the read*() and write*() accessors and cleans up various other parts of
+> > the asm-generic/io.h header file. Macros are converted to static inline
+> > functions for better type checking. Overriding generic implementations
+> > in architectures is handled more consistently.
+> >
+> > Patches 7 and 8, finally, make use of the asm-generic/io.h header on the
+> > 32-bit and 64-bit ARM architectures.
+> >
+> > This is compile- and runtime-tested on 32-bit and 64-bit ARM and compile
+> > tested on IA64, Microblaze, s390, SPARC, x86 and Xtensa. For ARC,
+> > Blackfin, Metag, OpenRISC, Score and Unicore32 which also use
+> > asm-generic/io.h I couldn't find or build a cross-compiler that would
+> > run on my system. But by code inspection they shouldn't break with this
+> > patch.
+> >
+> > To ensure bisectability I built multi_v7_defconfig on 32-bit ARM and the
+> > defconfig for 64-bit ARM, IA64, Microblaze, s390, SPARC, x86 and Xtensa
+> > after each commit and verified that the series does not introduce any
+> > build errors or warnings.
+> >
+> > Provided there are no objections to the patches there's still the matter
+> > of how to merge them. Patch 6 depends on patches 1-5 to avoid warnings
+> > and/or errors during the build. Patches 7 and 8 depend on patch 6. In my
+> > opinion it doesn't make much sense to split them up, so I guess we'll
+> > need a volunteer to take them all into one tree. Ideally that tree would
+> > feed into linux-next so that we can get as much build and test-coverage
+> > as possible during the 3.17 release cycle so that these patches can go
+> > into 3.18.
+> >
+> > Arnd, I'm opportunistically sending this To: you in the hopes that you
+> > can take it into your asm-generic tree which seems like the best fit for
+> > this.
+>=20
+> Do you have a git tree for that?
+> Would be nice for testing UML, it depends also on generic io.
 
- - Send each related patch to each related architectures which already
-   knew their ENDIAN attributes in config time (24 patches, I guess),
-   then
+Yes, it's all here:
 
- - Make patch for Kbuild to support __BUILDING_TIME_BIG_ENDIAN__, and
-   pass checking (hope I can finish), then
+	https://github.com/thierryreding/linux.git staging/asm-generic-io
 
- - Finish left architectures which need __BUILDING_TIME_BIG_ENDIAN__
-   (4 patches, I guess).
+That branch is based on today's linux-next (next-20140825).
 
-Welcome any ideas, suggestions, or completions. And if no additional
-reply, I shall not send any additional information any more to avoid
-spam to other members.
+Thierry
 
+--k4f25fnPtRuIRUb3
+Content-Type: application/pgp-signature
 
-Thanks.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-On 08/24/2014 04:38 PM, Chen Gang wrote:
-> Hello Maintainers:
-> 
-> Is this patch OK? If it pass basic checking, please let me know, and I
-> shall try to make another related patch for KBuild (I can do nothing
-> related with Kbuild, before get confirmation for this patch).
-> 
-> Thanks.
-> 
-> On 8/15/14 17:01, Chen Gang wrote:
->>
->>
->> On 8/15/14 6:14, Chen Gang wrote:
->>> On 08/15/2014 02:04 AM, Ralf Baechle wrote:
->>>>
->>>
->>> OK, thanks, I assumes when support both endian, the default choice is
->>> CPU_BIG_ENDIAN, although no default value for choice (originally, I did
->>> worry about it).
->>>
->>>> So I think you can just drop the MIPS segment from your patch.
->>>>
->>>
->>> If what I assumes is correct, what you said sounds reasonable to me.
->>>
->>>
->>
->> So for me, it is harmless to add CPU_*_ENDIAN explicitly, and can let
->> other members don't need think of.
->>
->> By the way, for sh, it is almost the same case, except it contents the
->> default value, for me, it is clear enough, so I skip sh architecture in
->> this patch.
->>
->>
->> Thanks
->>
-> 
+iQIcBAEBAgAGBQJT+yu2AAoJEN0jrNd/PrOh+AcP/2a/7t9y0saxuvXfle2hOY3Y
+1oGDlghGLODVxM4AcdylgjzHfgbd/NaO9xgYMYNduPAjQ60SIcAqEzWKq+1Vl/yF
+rEvUuEtEUXwswhZ7w+1GPJeANwcB5ZmxnMdY9WqzRB6fWNmNpJHz5HB9pjWx3xpH
+KDYEik1I0VLQ1zOYwYvK9399yPmzA5mcgok403uW+q2mhCLWR3ezT9KYKdGOo+4q
+mT7pYoyKYVL8cQTdQlrbmM2c/6pBUhSNZ3sVXlT/ecS5JeudP4/IB/gF5PXrsHC+
+pa0tPeIR5r8RF8pxKaUVoMPC76FUAFAfrAh5YAGGpa5vYMtdKpd+lzF5D1susSxH
+sMwXVm0wuYc8u+GzQWMnjutlvfXMdkMC/2JX21ZG5eoZ77+KxAQ+Yv9aMKNCeDLm
+Y+VRXyXYkTxro84vaKEmk8GGjsiNokyGkidU5wuAlhNAqrmu3nQiYj7eCUZeR6Wc
+McxzMFcLtl666curxWW3HvTS/I0dwxzeHstRBEcoS9bfbZqkA4uWZWgvn8ZSZKNh
+oebDv1W8dqCrvJuENlPr0RWqvQc5upqFfuEUwllYEEkU1eUklTjkCetJ5BxFqDpx
+PAkQWF4/jCbvpRY/+zEMh15w2NQiyAx7M4nQrgLm2OCZRfq6BvnLBjuWe5HEdo3K
+2LsO0HupoQ/dtuddqU/n
+=Jynz
+-----END PGP SIGNATURE-----
 
--- 
-Chen Gang
-
-Open, share, and attitude like air, water, and life which God blessed
+--k4f25fnPtRuIRUb3--
