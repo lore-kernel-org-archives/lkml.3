@@ -1,55 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933213AbaHYRwa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 13:52:30 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:48496 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932253AbaHYRw2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 13:52:28 -0400
-Message-ID: <53FB77F5.3010604@wwwdotorg.org>
-Date: Mon, 25 Aug 2014 11:52:53 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S933249AbaHYRxr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 13:53:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60587 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932253AbaHYRxq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 13:53:46 -0400
+Date: Mon, 25 Aug 2014 13:52:57 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Geoff Levand <geoff@infradead.org>
+Cc: Eric Biederman <ebiederm@xmission.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Andrew Morton <akpm@linux-foundation.org>, kexec@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5] kexec: Add bit definitions for kimage entry flags
+Message-ID: <20140825175256.GF14379@redhat.com>
+References: <cover.1408731991.git.geoff@infradead.org>
+ <b13fc1b6d923e7063746f34968bd2f1c4cb09002.1408731991.git.geoff@infradead.org>
 MIME-Version: 1.0
-To: Tomeu Vizoso <tomeu.vizoso@collabora.com>, Pavel Machek <pavel@ucw.cz>,
-        Thierry Reding <thierry.reding@gmail.com>
-CC: linux-pm@vger.kernel.org,
-        =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Mikko Perttunen <mperttunen@nvidia.com>
-Subject: Re: [PATCH v3 3/3] memory: tegra124-emc: Add EMC driver
-References: <1408437523-8542-1-git-send-email-tomeu.vizoso@collabora.com> <1408437523-8542-4-git-send-email-tomeu.vizoso@collabora.com> <20140819090314.GC7862@amd> <CAAObsKA+JofL3JANtdqAqGgtA3-x+GMQ0Ei7gMzmmWynP3U9Sg@mail.gmail.com>
-In-Reply-To: <CAAObsKA+JofL3JANtdqAqGgtA3-x+GMQ0Ei7gMzmmWynP3U9Sg@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <b13fc1b6d923e7063746f34968bd2f1c4cb09002.1408731991.git.geoff@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/19/2014 03:06 AM, Tomeu Vizoso wrote:
-> On 19 August 2014 11:03, Pavel Machek <pavel@ucw.cz> wrote:
->> On Tue 2014-08-19 10:38:43, Tomeu Vizoso wrote:
->>> Sets the EMC clock rate based on the bandwidth requirements registered by
->>> memory clients through the PM_QOS_MEMORY_BANDWIDTH class.
->>>
->>> Note: this is just an example and not a proper driver for a external memory
->>> controller. Its only purpose is to illustrate how such a driver
->>> would set the
->>
->> So... you don't want this to be merged?
->
-> Not really, there's quite some work left to do until we have a proper
-> EMC driver for Tegra124.
+On Fri, Aug 22, 2014 at 06:39:47PM +0000, Geoff Levand wrote:
+> Define new kexec preprocessor macros IND_*_BIT that define the bit position of
+> the kimage entry flags.  Change the existing IND_* flag macros to be defined as
+> bit shifts of the corresponding IND_*_BIT macros.  Also wrap all C language code
+> in kexec.h with #if !defined(__ASSEMBLY__) so assembly files can include kexec.h
+> to get the IND_* and IND_*_BIT macros.
+> 
+> Some CPU instruction sets have tests for bit position which are convenient in
+> implementing routines that operate on the kimage entry list.  The addition of
+> these bit position macros in a common location will avoid duplicate definitions
+> and the chance that changes to the IND_* flags will not be propagated to
+> assembly files.
+> 
+> Signed-off-by: Geoff Levand <geoff@infradead.org>
 
-Given that, the only patches in this series that should be merged touch 
-(a) pm_qos, (b) tegradrm. As such, I would suggest that patch 1 be 
-merged into the pm_qos tree in a standalone topic branch, and Thierry 
-can merge this into the Tegra tree and apply patch 2 when he's ready.
+Looks good to me.
 
-Since patch 3 is the only patch that would normally go through the Tegra 
-tree, and patch 3 isn't to be applied yet, I don't intend on applying 
-any of these patches to the Tegra tree.
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+
+Vivek
+
+> ---
+>  include/linux/kexec.h | 19 +++++++++++++++----
+>  1 file changed, 15 insertions(+), 4 deletions(-)
+> 
+> diff --git a/include/linux/kexec.h b/include/linux/kexec.h
+> index 4b2a0e1..8c628ca 100644
+> --- a/include/linux/kexec.h
+> +++ b/include/linux/kexec.h
+> @@ -1,6 +1,18 @@
+>  #ifndef LINUX_KEXEC_H
+>  #define LINUX_KEXEC_H
+>  
+> +#define IND_DESTINATION_BIT 0
+> +#define IND_INDIRECTION_BIT 1
+> +#define IND_DONE_BIT        2
+> +#define IND_SOURCE_BIT      3
+> +
+> +#define IND_DESTINATION  (1 << IND_DESTINATION_BIT)
+> +#define IND_INDIRECTION  (1 << IND_INDIRECTION_BIT)
+> +#define IND_DONE         (1 << IND_DONE_BIT)
+> +#define IND_SOURCE       (1 << IND_SOURCE_BIT)
+> +
+> +#if !defined(__ASSEMBLY__)
+> +
+>  #include <uapi/linux/kexec.h>
+>  
+>  #ifdef CONFIG_KEXEC
+> @@ -64,10 +76,6 @@
+>   */
+>  
+>  typedef unsigned long kimage_entry_t;
+> -#define IND_DESTINATION  0x1
+> -#define IND_INDIRECTION  0x2
+> -#define IND_DONE         0x4
+> -#define IND_SOURCE       0x8
+>  
+>  struct kexec_segment {
+>  	/*
+> @@ -312,4 +320,7 @@ struct task_struct;
+>  static inline void crash_kexec(struct pt_regs *regs) { }
+>  static inline int kexec_should_crash(struct task_struct *p) { return 0; }
+>  #endif /* CONFIG_KEXEC */
+> +
+> +#endif /* !defined(__ASSEBMLY__) */
+> +
+>  #endif /* LINUX_KEXEC_H */
+> -- 
+> 1.9.1
+> 
+> 
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
