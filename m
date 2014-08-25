@@ -1,153 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756228AbaHYRSx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 13:18:53 -0400
-Received: from vserver.eikelenboom.it ([84.200.39.61]:50646 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751316AbaHYRSw (ORCPT
+	id S933068AbaHYRUQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 13:20:16 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:46308 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932212AbaHYRUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 13:18:52 -0400
-Date: Mon, 25 Aug 2014 19:18:45 +0200
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <373053698.20140825191845@eikelenboom.it>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: David Vrabel <david.vrabel@citrix.com>, gregkh@linuxfoundation.org,
-        <boris.ostrovsky@oracle.com>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xenproject.org>
-Subject: Re: [Xen-devel] [PATCH v5] Fixes to Xen pciback for 3.17.
-In-Reply-To: <53E34102.8030002@citrix.com>
-References: <53DBB27D.2040203@citrix.com> <20140804184318.GB9009@laptop.dumpdata.com> <75613802.20140805104438@eikelenboom.it> <53E0A45C.4050400@citrix.com> <1985206568.20140805114433@eikelenboom.it> <20140805134930.GE13057@laptop.dumpdata.com> <1724263917.20140805160443@eikelenboom.it> <182103485.20140806205959@eikelenboom.it> <20140806191831.GB30062@laptop.dumpdata.com> <1081188855.20140806212559@eikelenboom.it> <20140806193916.GA31040@laptop.dumpdata.com> <53E34102.8030002@citrix.com>
+	Mon, 25 Aug 2014 13:20:14 -0400
+Message-ID: <53FB7047.7080508@collabora.co.uk>
+Date: Mon, 25 Aug 2014 19:20:07 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Doug Anderson <dianders@chromium.org>
+CC: Yuvaraj Cd <yuvaraj.lkml@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Olof Johansson <olof@lixom.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Prashanth G <prashanth.g@samsung.com>,
+        Alim Akhtar <alim.akhtar@samsung.com>, sunil joshi <joshi@samsung.com>
+Subject: Re: [PATCH v9 1/2] regulator: Add driver for max77802 PMIC PMIC regulators
+References: <1408350762-15520-1-git-send-email-javier.martinez@collabora.co.uk>	<1408350762-15520-2-git-send-email-javier.martinez@collabora.co.uk>	<CA+NduCDL65=Y=PyU3FfXsTz0FfbmYzicGrY4U7ji3_V+nXhtCQ@mail.gmail.com>	<53F73472.8010609@collabora.co.uk>	<20140822144531.GV24407@sirena.org.uk>	<53F7838F.8060906@collabora.co.uk>	<20140822183054.GY24407@sirena.org.uk>	<53F7BDD8.7060500@collabora.co.uk>	<CAD=FV=WC0h7fYm2QFqu3Zka7CsU4BtG-oyPpJav+ygC+gmCR+A@mail.gmail.com>	<CA+NduCCT-KQ=gh7QWkBE4qkA2YOJ8KCVqbkC6Tkmb1aPvCsGFQ@mail.gmail.com>	<53FAFCBC.2050407@collabora.co.uk> <CAD=FV=V4TSKsbjj3dXCdSzVrh3sxH-FkpFEbEo+JA1bN9R-XWA@mail.gmail.com>
+In-Reply-To: <CAD=FV=V4TSKsbjj3dXCdSzVrh3sxH-FkpFEbEo+JA1bN9R-XWA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Doug,
 
-Hi Konrad,
+On 08/25/2014 05:40 PM, Doug Anderson wrote:
+>>
+>> I see, so probably until we have a way to define the operating mode for
+>> each regulator using DT we should set the opmode to normal when enabling a
+>> regulator independently of the value the hardware register reported on probe.
+>>
+>> Can you please test the following change [0] so I can post as a proper
+>> patch? Doug, Mark do you think that forcing the regulator to opmode normal
+>> when enabling is the right solution here?
+> 
+> IMHO that makes sense.
+> 
 
-Just in case you forgot this one .. a subtle ping (we are just in the low RC's) :-)
+Thanks, I'll post it as a proper patch tomorrow then.
 
---
-Sander
-
-Thursday, August 7, 2014, 11:04:02 AM, you wrote:
-
-> On 06/08/14 20:39, Konrad Rzeszutek Wilk wrote:
->> 
->> From 00a5b6e3c9ee2c2d605879bdaebc627fa640b024 Mon Sep 17 00:00:00 2001
->> From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->> Date: Wed, 6 Aug 2014 16:21:32 -0400
->> Subject: [PATCH] xen/pciback: Restore configuration space when detaching from
->>  a guest.
->> 
->> The commit 9eea3f7695226f9af9992cebf8e98ac0ad78b277
->> "xen/pciback: Don't deadlock when unbinding." was using
->> the version of pci_reset_function which would lock the device lock.
->> That is no good as we can dead-lock. As such we swapped to using
->> the lock-less version and requiring that the callers
->> of 'pcistub_put_pci_dev' take the device lock. And as such
->> this bug got exposed.
->> 
->> Using the lock-less version is  OK, except that we tried to
->> use 'pci_restore_state' after the lock-less version of
->> __pci_reset_function_locked - which won't work as 'state_saved'
->> is set to false. Said 'state_saved' is a toggle boolean that
->> is to be used by the sequence of a) pci_save_state/pci_restore_state
->> or b) pci_load_and_free_saved_state/pci_restore_state. We don't
->> want to use a) as the guest might have messed up the PCI
->> configuration space and we want it to revert to the state
->> when the PCI device was binded to us. Therefore we pick
->> b) to restore the configuration space.
->> 
->> To still retain the PCI configuration space, we save it once
->> more and store it on our private copy to be restored when:
->>  - Device is unbinded from pciback
->>  - Device is detached from a guest.
-
-> This should be folded into the original patch.
-
-> [...]
->> --- a/drivers/xen/xen-pciback/pci_stub.c
->> +++ b/drivers/xen/xen-pciback/pci_stub.c
->> @@ -105,7 +105,7 @@ static void pcistub_device_release(struct kref *kref)
->>        */
->>       __pci_reset_function_locked(dev);
->>       if (pci_load_and_free_saved_state(dev, &dev_data->pci_saved_state))
-
-> I dislike testing for errors like this as it looks like it's testing for
-> a boolean success.  Use
-
->    ret = pci_load_and_free_saved_state(...);
->    if (ret < 0)
->       ...
-
-> And similarly, below.
-
->> -             dev_dbg(&dev->dev, "Could not reload PCI state\n");
->> +             dev_info(&dev->dev, "Could not reload PCI state\n");
-
-> This should be dev_warn().
-
-> pci_load_and_free_saved_state() won't fail because we know the state is
-> valid (since we saved it from the device originally).  Warning and
-> skipping the restore is fine here (and below).
-
->>       else
->>               pci_restore_state(dev);
->>  
->> @@ -257,6 +257,7 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
->>  {
->>       struct pcistub_device *psdev, *found_psdev = NULL;
->>       unsigned long flags;
->> +     struct xen_pcibk_dev_data *dev_data;
->>  
->>       spin_lock_irqsave(&pcistub_devices_lock, flags);
->>  
->> @@ -279,9 +280,25 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
->>        * (so it's ready for the next domain)
->>        */
->>       device_lock_assert(&dev->dev);
->> -     __pci_reset_function_locked(dev);
->> -     pci_restore_state(dev);
->> -
->> +     dev_data = pci_get_drvdata(dev);
->> +     if (pci_load_and_free_saved_state(dev, &dev_data->pci_saved_state))
-
-> This should be pci_load_saved_state() and then you can avoid the
-> pci_save_state() below.
-
->> +             dev_info(&dev->dev, "Could not reload PCI state\n");
-
-> dev_warn() also.
-
->> +     else {
->> +             __pci_reset_function_locked(dev);
->> +             /*
->> +              * The usual sequence is pci_save_state & pci_restore_state
->> +              * but the guest might have messed the configuration space up.
->> +              * Use the initial version (when device was binded to us).
-
-> s/binded/bound/
-
->> +             pci_restore_state(dev);
->> +             /*
->> +              * The next steps are to reload the configuration for the
->> +              * next time we bind & unbind to a guest - or unload from
->> +              * pciback.
->> +              */
->> +             pci_save_state(dev);
->> +             dev_data->pci_saved_state = pci_store_saved_state(dev);
-
-> You don't need this if you don't free the original state above.
-
->> +     }
->>       /* This disables the device. */
->>       xen_pcibk_reset_device(dev);
-
-> David
-
-
+Best regards,
+Javier
