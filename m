@@ -1,112 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754883AbaHYJFI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 05:05:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21677 "EHLO mx1.redhat.com"
+	id S1754907AbaHYJFb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 05:05:31 -0400
+Received: from mga11.intel.com ([192.55.52.93]:35785 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751000AbaHYJFG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 05:05:06 -0400
-Date: Mon, 25 Aug 2014 17:06:19 +0800
-From: Dave Young <dyoung@redhat.com>
-To: "Zheng, Lv" <lv.zheng@intel.com>
-Cc: Matt Fleming <matt@console-pimps.org>,
-        "Fleming, Matt" <matt.fleming@intel.com>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@acpica.org" <devel@acpica.org>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Moore, Robert" <robert.moore@intel.com>
-Subject: Re: kernel boot fail with efi earlyprintk (bisected)
-Message-ID: <20140825090619.GA3202@darkstar.nay.redhat.com>
-References: <20140819081658.GA1795@darkstar.nay.redhat.com>
- <20140821205224.GJ29733@console-pimps.org>
- <20140822100258.GA1877@darkstar.nay.redhat.com>
- <20140825060713.GA4011@darkstar.nay.redhat.com>
- <1AE640813FDE7649BE1B193DEA596E880265F57B@SHSMSX101.ccr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1AE640813FDE7649BE1B193DEA596E880265F57B@SHSMSX101.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751000AbaHYJF2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 05:05:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,395,1406617200"; 
+   d="scan'208";a="581257595"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Tadeusz Struk <tadeusz.struk@intel.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Helge Deller <deller@gmx.de>,
+        Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>, Marek Vasut <marex@denx.de>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v3 3/5] crypto: qat - use seq_hex_dump() to dump buffers
+Date: Mon, 25 Aug 2014 12:03:13 +0300
+Message-Id: <1408957395-404-4-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1408957395-404-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1408957395-404-1-git-send-email-andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25/14 at 06:34am, Zheng, Lv wrote:
-> Hi,
-> 
-> > From: Dave Young [mailto:dyoung@redhat.com]
-> > Sent: Monday, August 25, 2014 2:07 PM
-> > To: Matt Fleming
-> > Cc: Zheng, Lv; Fleming, Matt; linux-efi@vger.kernel.org; linux-acpi@vger.kernel.org; linux-kernel@vger.kernel.org; devel@acpica.org;
-> > lenb@kernel.org; Wysocki, Rafael J; Moore, Robert
-> > Subject: Re: kernel boot fail with efi earlyprintk (bisected)
-> > 
-> > On 08/22/14 at 06:02pm, Dave Young wrote:
-> > > On 08/21/14 at 09:52pm, Matt Fleming wrote:
-> > > > On Tue, 19 Aug, at 04:16:58PM, Dave Young wrote:
-> > > > > Hi,
-> > > > >
-> > > > > 3.16 kernel boot fail with earlyprintk=efi on my laptop.
-> > > > > It keeps scrolling at the bottom line of screen.
-> > > > >
-> > > > > Bisected, the first bad commit is below:
-> > > > > commit 86dfc6f339886559d80ee0d4bd20fe5ee90450f0
-> > > > > Author: Lv Zheng <lv.zheng@intel.com>
-> > > > > Date:   Fri Apr 4 12:38:57 2014 +0800
-> > > > >
-> > > > >     ACPICA: Tables: Fix table checksums verification before installation.
-> > > > >
-> > > > >
-> > > > > I did some debugging by enabling both serial and efi earlyprintk, below is
-> > > > > some debug dmesg, seems early_ioremap fails in scroll up function due to
-> > > > > no free slot, but I'm still not sure if the debug info is right or not.
-> > > >
-> > > > Thanks Dave, your callstack seems to make sense.
-> > > >
-> > > > Can you also enable early_ioremap_debug so that we can figure out where
-> > > > all the FIXMAP slots are going?
-> > >
-> > > With early_ioremap_debug enabled, there will be a lot of "dropped printk", so
-> > > I can not get any useful information.
-> > >
-> > > Will try to do more debug.
-> > 
-> > early_ioremap_debug does not work because we are debugging early_printk but
-> > early_ioremap_debug itself will print warning message at the same time.
-> > 
-> > Tried what Lv mentioned, increasing the early ioremap slots does help.
-> 
-> Could you send a tested patch to linux-acpi@vger.kermel.org for this?
-> I think the number of early mapping slots need to be increased by 1 because of this case.
+Instead of custom approach let's use recently introduced seq_hex_dump() helper.
 
-Problem is I do not understand the implementation detail yet.
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Acked-by: Tadeusz Struk <tadeusz.struk@intel.com>
+---
+ drivers/crypto/qat/qat_common/adf_transport_debug.c | 16 ++--------------
+ 1 file changed, 2 insertions(+), 14 deletions(-)
 
-I did below changes:
+diff --git a/drivers/crypto/qat/qat_common/adf_transport_debug.c b/drivers/crypto/qat/qat_common/adf_transport_debug.c
+index 6b69745..5f438a1 100644
+--- a/drivers/crypto/qat/qat_common/adf_transport_debug.c
++++ b/drivers/crypto/qat/qat_common/adf_transport_debug.c
+@@ -86,9 +86,7 @@ static int adf_ring_show(struct seq_file *sfile, void *v)
+ {
+ 	struct adf_etr_ring_data *ring = sfile->private;
+ 	struct adf_etr_bank_data *bank = ring->bank;
+-	uint32_t *msg = v;
+ 	void __iomem *csr = ring->bank->csr_addr;
+-	int i, x;
+ 
+ 	if (v == SEQ_START_TOKEN) {
+ 		int head, tail, empty;
+@@ -111,18 +109,8 @@ static int adf_ring_show(struct seq_file *sfile, void *v)
+ 		seq_puts(sfile, "----------- Ring data ------------\n");
+ 		return 0;
+ 	}
+-	seq_printf(sfile, "%p:", msg);
+-	x = 0;
+-	i = 0;
+-	for (; i < (ADF_MSG_SIZE_TO_BYTES(ring->msg_size) >> 2); i++) {
+-		seq_printf(sfile, " %08X", *(msg + i));
+-		if ((ADF_MSG_SIZE_TO_BYTES(ring->msg_size) >> 2) != i + 1 &&
+-		    (++x == 8)) {
+-			seq_printf(sfile, "\n%p:", msg + i + 1);
+-			x = 0;
+-		}
+-	}
+-	seq_puts(sfile, "\n");
++	seq_hex_dump(sfile, "", DUMP_PREFIX_ADDRESS, 32, 4,
++		     v, ADF_MSG_SIZE_TO_BYTES(ring->msg_size), false);
+ 	return 0;
+ }
+ 
+-- 
+2.1.0
 
-Original values:
-#define NR_FIX_BTMAPS           64
-#define FIX_BTMAPS_SLOTS        4
-
--> new values tested:
-#define NR_FIX_BTMAPS           32
-#define FIX_BTMAPS_SLOTS        8
-
-
-There's below comments
-        /*
-         * 256 temporary boot-time mappings, used by early_ioremap(),
-         * before ioremap() is functional.
-         *
-         * If necessary we round it up to the next 256 pages boundary so
-         * that we can have a single pgd entry and a single pte table:
-         */
-
-So seems increase it to 64 * 8 = 512 should be ok. If it's fine I can test again
-and post a patch.
-
-
-Thanks
-Dave
