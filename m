@@ -1,53 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933068AbaHYRUQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 13:20:16 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:46308 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932212AbaHYRUO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 13:20:14 -0400
-Message-ID: <53FB7047.7080508@collabora.co.uk>
-Date: Mon, 25 Aug 2014 19:20:07 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S933085AbaHYRVM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 13:21:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17652 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753314AbaHYRVK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 13:21:10 -0400
+Date: Mon, 25 Aug 2014 19:18:20 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Julien Tinnes <jln@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] ipc/shm: fix the historical/wrong mm->start_stack
+	check
+Message-ID: <20140825171820.GB8338@redhat.com>
+References: <20140823144246.GA6281@redhat.com> <20140823144327.GA6299@redhat.com> <20140823152240.GH25918@moon> <20140823155832.GA9406@redhat.com> <alpine.LSU.2.11.1408241818530.8474@eggly.anvils> <20140825150301.GB3021@redhat.com> <alpine.LSU.2.11.1408250856020.24245@eggly.anvils>
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>
-CC: Yuvaraj Cd <yuvaraj.lkml@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Olof Johansson <olof@lixom.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Prashanth G <prashanth.g@samsung.com>,
-        Alim Akhtar <alim.akhtar@samsung.com>, sunil joshi <joshi@samsung.com>
-Subject: Re: [PATCH v9 1/2] regulator: Add driver for max77802 PMIC PMIC regulators
-References: <1408350762-15520-1-git-send-email-javier.martinez@collabora.co.uk>	<1408350762-15520-2-git-send-email-javier.martinez@collabora.co.uk>	<CA+NduCDL65=Y=PyU3FfXsTz0FfbmYzicGrY4U7ji3_V+nXhtCQ@mail.gmail.com>	<53F73472.8010609@collabora.co.uk>	<20140822144531.GV24407@sirena.org.uk>	<53F7838F.8060906@collabora.co.uk>	<20140822183054.GY24407@sirena.org.uk>	<53F7BDD8.7060500@collabora.co.uk>	<CAD=FV=WC0h7fYm2QFqu3Zka7CsU4BtG-oyPpJav+ygC+gmCR+A@mail.gmail.com>	<CA+NduCCT-KQ=gh7QWkBE4qkA2YOJ8KCVqbkC6Tkmb1aPvCsGFQ@mail.gmail.com>	<53FAFCBC.2050407@collabora.co.uk> <CAD=FV=V4TSKsbjj3dXCdSzVrh3sxH-FkpFEbEo+JA1bN9R-XWA@mail.gmail.com>
-In-Reply-To: <CAD=FV=V4TSKsbjj3dXCdSzVrh3sxH-FkpFEbEo+JA1bN9R-XWA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1408250856020.24245@eggly.anvils>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Doug,
+On 08/25, Hugh Dickins wrote:
+>
+> On Mon, 25 Aug 2014, Oleg Nesterov wrote:
+> > On 08/24, Hugh Dickins wrote:
+> > >
+> > > I'd say it comes earlier, from Christoph Rohland's 2.4.17-pre7's
+> > > "Add missing checks on shmat()", though I didn't find more than that.
+> > >
+> > > We can all understand wanting to leave a gap below the growsdown stack,
+> > > but of course could argue about growsup and 1 or 4 or 5 or whatever:
+> >
+> > And it is not clear to me why the kernel should care at all,
+>
+> Care about what exactly?  Leaving a gap between shm and stack?
+>
+> The man page says that (unless SHM_REMAP) shmat() will fail with
+> EINVAL if a mapping already exists there, and I think it's fair
+> to regard the vm_start of a VM_GROWSDOWN somewhat elastically.
+>
+> It may be that Linus's check_stack_guard_page() work in 2.6.36
+> changed the importance of this shmat() check, but I'd still feel
+> safer to leave it as is (while turning a blind eye to the
+> VM_GROWSUP omission).
+>
+> >
+> > > okay that we're all more interested in just removing that start_stack.
+> >
+> > so perhaps v2 should simply remove it? Or do you think it would be safer
+> > to not do this?
+>
+> It would be safer to leave it, but replace the start_stack use as you did.
 
-On 08/25/2014 05:40 PM, Doug Anderson wrote:
->>
->> I see, so probably until we have a way to define the operating mode for
->> each regulator using DT we should set the opmode to normal when enabling a
->> regulator independently of the value the hardware register reported on probe.
->>
->> Can you please test the following change [0] so I can post as a proper
->> patch? Doug, Mark do you think that forcing the regulator to opmode normal
->> when enabling is the right solution here?
-> 
-> IMHO that makes sense.
-> 
+OK, thanks.
 
-Thanks, I'll post it as a proper patch tomorrow then.
+> And I think I'll let Linus's guard page justify your 4 (to match comment)
+> in place of the original's mysterious 5.
 
-Best regards,
-Javier
+Ah, thanks again. Yes, if we want to guarantee 4 pages we should check 5.
+
+Although obviously this doesn't explain the original's 5, this was
+written before check_stack_guard_page().
+
+OK.
+
+Oleg.
+
