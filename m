@@ -1,47 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756214AbaHYQbv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 12:31:51 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:46944 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750894AbaHYQbt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 12:31:49 -0400
+	id S1756215AbaHYQgi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 12:36:38 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:35953 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754768AbaHYQgh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 12:36:37 -0400
+Message-ID: <53FB65F7.6010704@ti.com>
+Date: Mon, 25 Aug 2014 11:36:07 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <20140825163518.GB5853@agordeev.usersys.redhat.com>
-References: <cover.1394128952.git.agordeev@redhat.com>
-	<2ba22558b5db90740d5833c35570c3e7cc1e359e.1394128952.git.agordeev@redhat.com>
-	<CAPcyv4jW19zxApviDdbofbXB1OvvN2sCriL3Paszfk9o3T8x0w@mail.gmail.com>
-	<20140306214356.GA16376@dhcp-26-207.brq.redhat.com>
-	<CAPcyv4ivvxHvyT_5oybVvRJAUKABQQ1ZH4Eua-1KVDeri5kpkA@mail.gmail.com>
-	<20140307074932.GC2670@dhcp-26-207.brq.redhat.com>
-	<20140825163518.GB5853@agordeev.usersys.redhat.com>
-Date: Mon, 25 Aug 2014 09:31:48 -0700
-Message-ID: <CAPcyv4hhM+EFsgr66Tdr4CrsnvJdnDoS0S9LLnZCP65nJ59CBw@mail.gmail.com>
-Subject: Re: [PATCH v2] ioat: Use pci_enable_msix_exact() instead of pci_enable_msix()
-From: Dan Williams <dan.j.williams@intel.com>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: Vinod Koul <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Tero Kristo <t-kristo@ti.com>,
+        Paul Walmsley <paul@pwsan.com>
+CC: Kevin Hilman <khilman@deeprootsystems.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Keerthy <j-keerthy@ti.com>,
+        =?windows-1252?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>
+Subject: Re: [PATCH 00/10] ARM: OMAP5 / DRA7: Add framework for suspend and
+ cpuidle
+References: <1408716154-26101-1-git-send-email-nm@ti.com>
+In-Reply-To: <1408716154-26101-1-git-send-email-nm@ti.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 9:35 AM, Alexander Gordeev <agordeev@redhat.com> wrote:
-> On Fri, Mar 07, 2014 at 08:49:32AM +0100, Alexander Gordeev wrote:
->> As result of deprecation of MSI-X/MSI enablement functions
->> pci_enable_msix() and pci_enable_msi_block() all drivers
->> using these two interfaces need to be updated to use the
->> new pci_enable_msi_range()  or pci_enable_msi_exact()
->> and pci_enable_msix_range() or pci_enable_msix_exact()
->> interfaces.
->
-> Dan, Vinod,
->
-> This patch hangs in -next for quite some time.
-> Would you release it, please?
+On 08/22/2014 09:02 AM, Nishanth Menon wrote:
+[...]
+> An complete integrated branch is available here: https://github.com/nmenon/linux-2.6-playground/commits/testing/v3.17/cpu-idle-suspend-dra7-omap5-framework
+> 
+> Example test log:
+> DRA7 based BeagleBoard X15: http://slexy.org/view/s2jgsH8bos (wakeup from external using pinctrl wakeup).
+> OMAP5UEVM: http://slexy.org/view/s20MiQJQIq (external pinctrl not hooked)
 
-On its way... apologies for the delay.
+Tony wanted a slightly wider test coverage including OMAP4 platforms:
+So using
+https://github.com/nmenon/linux-2.6-playground/commit/92e5e7407aa707ad6be8ae3b5bf21cfc741daab6
+wakeup timer as a wakeup source (remote boards):
+
+am37x-evm: http://slexy.org/raw/s2l2vPAlBi
+BeagleBoard-XM: http://slexy.org/raw/s2HvJHuZ8K
+beagleboard-vanilla: http://slexy.org/raw/s2re4CjsVS
+n900: http://slexy.org/raw/s21kRad9UC
+sdp3430: http://slexy.org/raw/s217hjHveS
+pandaboard-es: http://slexy.org/raw/s21Vhfl96g
+pandaboard-vanilla: http://slexy.org/raw/s21uPHllrR
+sdp4430: http://slexy.org/raw/s20Jl3cika
+
+Vs:
+3.17-rc1:
+am37x-evm: http://slexy.org/raw/s21FKtfXlb
+BeagleBoard-XM: http://slexy.org/raw/s2q3LCSDkd
+beagleboard-vanilla: http://slexy.org/raw/s21ioe8utf
+n900: http://slexy.org/raw/s20E3oQhCl
+sdp3430: http://slexy.org/raw/s21XQDe1s3
+pandaboard-es: http://slexy.org/raw/s21DcS0IIt
+pandaboard-vanilla: http://slexy.org/raw/s25W1A4JsP
+sdp4430: http://slexy.org/raw/s2019HPstN
+
+-- 
+Regards,
+Nishanth Menon
