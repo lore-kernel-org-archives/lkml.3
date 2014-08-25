@@ -1,83 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933152AbaHYQ6G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 12:58:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59869 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755413AbaHYQzX (ORCPT
+	id S933183AbaHYQ6W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 12:58:22 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:57607 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932952AbaHYQ6T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 12:55:23 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 08/13] mnt: Only change user settable mount flags in remount
-Date: Mon, 25 Aug 2014 09:54:54 -0700
-Message-Id: <1408985699-31838-9-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1408985699-31838-1-git-send-email-kamal@canonical.com>
-References: <1408985699-31838-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Mon, 25 Aug 2014 12:58:19 -0400
+Message-ID: <53FB6B26.3030906@infradead.org>
+Date: Mon, 25 Aug 2014 09:58:14 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert+renesas@glider.be>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
+CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: Proofread documentation
+References: <1408956471-16579-1-git-send-email-geert+renesas@glider.be>
+In-Reply-To: <1408956471-16579-1-git-send-email-geert+renesas@glider.be>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.28 -stable review patch.  If anyone has any objections, please let me know.
+On 08/25/14 01:47, Geert Uytterhoeven wrote:
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+> ---
+>  Documentation/power/regulator/consumer.txt  | 7 ++++---
+>  Documentation/power/regulator/design.txt    | 8 ++++----
+>  Documentation/power/regulator/machine.txt   | 4 ++--
+>  Documentation/power/regulator/overview.txt  | 6 +++---
+>  Documentation/power/regulator/regulator.txt | 6 +++---
+>  5 files changed, 16 insertions(+), 15 deletions(-)
+> 
+> diff --git a/Documentation/power/regulator/consumer.txt b/Documentation/power/regulator/consumer.txt
+> index 81c0e2b49cd8..8afb236ca765 100644
+> --- a/Documentation/power/regulator/consumer.txt
+> +++ b/Documentation/power/regulator/consumer.txt
+> @@ -143,8 +143,9 @@ This will cause the core to recalculate the total load on the regulator (based
+>  on all its consumers) and change operating mode (if necessary and permitted)
+>  to best match the current operating load.
+>  
+> -The load_uA value can be determined from the consumers datasheet. e.g.most
+> -datasheets have tables showing the max current consumed in certain situations.
+> +The load_uA value can be determined from the consumer's datasheet. e.g. most
 
-------------------
+Prefer:                                                               E.g.
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+otherwise,
+Acked-by: Randy Dunlap <rdunlap@infradead.org>
 
-commit a6138db815df5ee542d848318e5dae681590fccd upstream.
+Thanks.
 
-Kenton Varda <kenton@sandstorm.io> discovered that by remounting a
-read-only bind mount read-only in a user namespace the
-MNT_LOCK_READONLY bit would be cleared, allowing an unprivileged user
-to the remount a read-only mount read-write.
+> +datasheets have tables showing the maximum current consumed in certain
+> +situations.
+>  
+>  Most consumers will use indirect operating mode control since they have no
+>  knowledge of the regulator or whether the regulator is shared with other
 
-Correct this by replacing the mask of mount flags to preserve
-with a mask of mount flags that may be changed, and preserve
-all others.   This ensures that any future bugs with this mask and
-remount will fail in an easy to detect way where new mount flags
-simply won't change.
 
-Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- fs/namespace.c        | 2 +-
- include/linux/mount.h | 4 +++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 5dd7709..ddbd5bc 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -1782,7 +1782,7 @@ static int do_remount(struct path *path, int flags, int mnt_flags,
- 		err = do_remount_sb(sb, flags, data, 0);
- 	if (!err) {
- 		br_write_lock(&vfsmount_lock);
--		mnt_flags |= mnt->mnt.mnt_flags & MNT_PROPAGATION_MASK;
-+		mnt_flags |= mnt->mnt.mnt_flags & ~MNT_USER_SETTABLE_MASK;
- 		mnt->mnt.mnt_flags = mnt_flags;
- 		br_write_unlock(&vfsmount_lock);
- 	}
-diff --git a/include/linux/mount.h b/include/linux/mount.h
-index 73005f9..16fc05d 100644
---- a/include/linux/mount.h
-+++ b/include/linux/mount.h
-@@ -42,7 +42,9 @@ struct mnt_namespace;
-  * flag, consider how it interacts with shared mounts.
-  */
- #define MNT_SHARED_MASK	(MNT_UNBINDABLE)
--#define MNT_PROPAGATION_MASK	(MNT_SHARED | MNT_UNBINDABLE)
-+#define MNT_USER_SETTABLE_MASK  (MNT_NOSUID | MNT_NODEV | MNT_NOEXEC \
-+				 | MNT_NOATIME | MNT_NODIRATIME | MNT_RELATIME \
-+				 | MNT_READONLY)
- 
- 
- #define MNT_INTERNAL	0x4000
 -- 
-1.9.1
-
+~Randy
