@@ -1,48 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933587AbaHYViQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 17:38:16 -0400
-Received: from toccata.ens-lyon.fr ([140.77.166.68]:43593 "EHLO
-	toccata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933466AbaHYViO (ORCPT
+	id S933568AbaHYVnN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 17:43:13 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:45572 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933438AbaHYVnL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 17:38:14 -0400
-Date: Mon, 25 Aug 2014 23:37:52 +0200
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Sabrina Dubroca <sd@queasysnail.net>, Valdis.Kletnieks@vt.edu,
-        Hugh Dickins <hughd@google.com>,
-        Vincent Donnefort <vdonnefort@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
-Subject: Re: 3.17-rc1: leds blink workqueue causes sleeping BUGs
-Message-ID: <20140825213752.GD3070@type.youpi.perso.aquilenet.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Sabrina Dubroca <sd@queasysnail.net>, Valdis.Kletnieks@vt.edu,
-	Hugh Dickins <hughd@google.com>,
-	Vincent Donnefort <vdonnefort@gmail.com>,
-	Bryan Wu <cooloney@gmail.com>, linux-leds@vger.kernel.org,
-	linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
-References: <alpine.LSU.2.11.1408161946450.1064@eggly.anvils>
- <10857.1408467967@turing-police.cc.vt.edu>
- <20140825211340.GA22168@kria>
- <20140825212324.GC3070@type.youpi.perso.aquilenet.fr>
+	Mon, 25 Aug 2014 17:43:11 -0400
+Date: Mon, 25 Aug 2014 22:43:03 +0100
+From: Sitsofe Wheeler <sitsofe@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jason Wang <jasowang@redhat.com>, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>, netdev@vger.kernel.org,
+        devel@linuxdriverproject.org, Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [hyperv] BUG at drivers/hv/channel.c:462 while changing MTU
+Message-ID: <20140825214303.GA32390@sucs.org>
+References: <20140819123655.GC12160@sucs.org>
+ <20140825093648.GB5046@mwanda>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140825212324.GC3070@type.youpi.perso.aquilenet.fr>
-User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
+In-Reply-To: <20140825093648.GB5046@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Samuel Thibault, le Mon 25 Aug 2014 23:23:24 +0200, a écrit :
-> We could indeed have a loop if the user was making the VT::* leds use
-> the vt-* trigger,
+On Mon, Aug 25, 2014 at 12:36:48PM +0300, Dan Carpenter wrote:
+> The code here is:
+> 
+> drivers/hv/channel.c
+>    460          BUG_ON(ret != 0);
+>    461          t = wait_for_completion_timeout(&info->waitevent, 5*HZ);
+>    462          BUG_ON(t == 0);
+> 
 
-Actually, while there can be a loop, it wouldn't be possible to inject
-events in it: a VT::* led only makes the corresponding vt-* trigger if
-it got an event from its trigger, etc. So it's really a false positive,
-the lock detector just can not know that it can not happen.
+There is also a case of the BUG_ON at line 460 being hit
+(from https://lkml.org/lkml/2014/8/19/708 ):
 
-Samuel
+457        ret = vmbus_post_msg(msg,
+458                                       sizeof(struct vmbus_channel_gpadl_teardown));
+459
+460        BUG_ON(ret != 0);
+
+Aug 20 03:42:58 ubuntuhv kernel: [   13.028182] input: TPPS/2 IBM TrackPoint as /devices/platform/i8042/serio1/input/input4
+Aug 20 03:41:09 ubuntuhv kernel: [  179.973064] hv_netvsc vmbus_0_14: net device safe to remove
+Aug 20 03:41:09 ubuntuhv kernel: [  179.974995] hv_netvsc: hv_netvsc channel opened successfully
+Aug 20 03:41:10 ubuntuhv kernel: [  180.402957] hv_netvsc vmbus_0_14 eth0: unable to establish send buffer's gpadl
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403080] ------------[ cut here ]------------
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403141] kernel BUG at drivers/hv/channel.c:460!
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403253] invalid opcode: 0000 [#1] SMP 
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403328] CPU: 1 PID: 1482 Comm: ifconfig Not tainted 3.17.0-rc1.x86_64 #1
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403431] Hardware name: Microsoft Corporation Virtual Machine/Virtual Machine, BIOS 090006  05/23/2012
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536] task: ffff88006e45b9f0 ti: ffff880070b20000 task.ti: ffff880070b20000
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536] RIP: 0010:[<ffffffff815a9901>]  [<ffffffff815a9901>] vmbus_teardown_gpadl+0xc1/0x130
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536] RSP: 0018:ffff880070b23c00  EFLAGS: 00010202
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536] RAX: 0000000000000004 RBX: ffff88006fef0e38 RCX: 0000000000000006
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536] RDX: 0000000000000006 RSI: ffff88006e45c130 RDI: 0000000000000246
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536] RBP: ffff880070b23c20 R08: 0000000000000000 R09: 0000000000000000
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536] R10: 0000000000000001 R11: 0000000000000001 R12: 0000000000000296
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536] R13: ffff88007b911520 R14: ffff88006fef0e58 R15: 0000000000000004
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536] FS:  00007fe5cd41d740(0000) GS:ffff88007fc20000(0000) knlGS:0000000000000000
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536] CR2: 00007f4e3766d410 CR3: 0000000074bcb000 CR4: 00000000000406e0
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536] Stack:
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536]  ffff880074550000 0000000000000000 ffff880078154520 ffff880074550000
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536]  ffff880070b23c48 ffffffff814e8276 ffff88007b916458 ffff880078154520
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536]  ffff880074550000 ffff880070b23cb8 ffffffff814e957f ffff88007b911520
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536] Call Trace:
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536]  [<ffffffff814e8276>] netvsc_destroy_buf+0xb6/0x210
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536]  [<ffffffff814e957f>] netvsc_device_add+0x6ef/0x7c0
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536]  [<ffffffff814ea6e0>] rndis_filter_device_add+0x80/0x430
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536]  [<ffffffff810b16c0>] ? __wake_up_common+0x90/0x90
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536]  [<ffffffff814e6dfc>] netvsc_change_mtu+0x15c/0x1f0
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536]  [<ffffffff815d19d0>] dev_set_mtu+0x80/0x130
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536]  [<ffffffff815e67b4>] dev_ifsioc+0x124/0x390
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536]  [<ffffffff815e7006>] dev_ioctl+0x516/0x5e0
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536]  [<ffffffff815b339d>] sock_ioctl+0x1fd/0x210
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536]  [<ffffffff811d54b0>] do_vfs_ioctl+0x4d0/0x510
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536]  [<ffffffff8132aa9e>] ? file_has_perm+0x7e/0x90
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536]  [<ffffffff811d5543>] SyS_ioctl+0x53/0x90
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536]  [<ffffffff816a38e9>] system_call_fastpath+0x16/0x1b
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536] Code: 89 df e8 c3 ba df ff 4c 89 e6 48 c7 c7 40 27 ce 81 e8 24 93 0f 00 48 8d bb 88 00 00 00 be 10 00 00 00 e8 13 f2 ff ff 85 c0 74 07 <0f> 0b 0f 1f 44 00 00 be 88 13 00 00 4c 89 f7 e8 5b 4d 0f 00 85 
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536] RIP  [<ffffffff815a9901>] vmbus_teardown_gpadl+0xc1/0x130
+Aug 20 03:41:10 ubuntuhv kernel: [  180.403536]  RSP <ffff880070b23c00>
+Aug 20 03:41:10 ubuntuhv kernel: [  180.405770] ---[ end trace 9ec56592fdff213b ]---
+
+-- 
+Sitsofe | http://sucs.org/~sits/
