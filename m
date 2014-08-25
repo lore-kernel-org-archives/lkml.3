@@ -1,80 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126AbaHYADQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 20:03:16 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:55323 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753417AbaHYADP (ORCPT
+	id S1754136AbaHYAFW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 20:05:22 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:51886 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753417AbaHYAFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 20:03:15 -0400
-MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <CA+55aFzW676RhCgu8Wp2SMcnKT2q82_DB9Aof74fwZPuXNtjZw@mail.gmail.com>
-References: <20140824184035.GA13254@localhost>
-	<CA+55aFzW676RhCgu8Wp2SMcnKT2q82_DB9Aof74fwZPuXNtjZw@mail.gmail.com>
-Date: Sun, 24 Aug 2014 17:03:14 -0700
-Message-ID: <CAOesGMg+CMMgHm=arDM_JuL0SMknPTKzoa-FMuf_UOGZyDx+6g@mail.gmail.com>
-Subject: Re: [GIT PULL] ARM: SoC fixes for 3.17-rc
-From: Olof Johansson <olof@lixom.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Kukjin Kim <kgene.kim@gmail.com>, ARM SoC <arm@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 24 Aug 2014 20:05:20 -0400
+X-Original-SENDERIP: 10.177.222.156
+X-Original-MAILFROM: minchan@kernel.org
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
+        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjennings@variantweb.net>,
+        Dan Streetman <ddstreet@ieee.org>, ds2horner@gmail.com,
+        Minchan Kim <minchan@kernel.org>
+Subject: [PATCH v5 0/4] zram memory control enhance
+Date: Mon, 25 Aug 2014 09:05:52 +0900
+Message-Id: <1408925156-11733-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 24, 2014 at 3:58 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Sun, Aug 24, 2014 at 11:40 AM, Olof Johansson <olof@lixom.net> wrote:
->>
->> are available in the git repository at:
->>
->>   git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git fixes
->
-> Grr. Yes and no.
->
-> You didn't really mean for me to pull that branch, you meant for me to
-> pull your tag "fixes-for-linus".
+Currently, zram has no feature to limit memory so theoretically
+zram can deplete system memory.
+Users have asked for a limit several times as even without exhaustion
+zram makes it hard to control memory usage of the platform.
+This patchset adds the feature.
 
-Yes, of course -- and I missed that.
+Patch 1 makes zs_get_total_size_bytes faster because it would be
+used frequently in later patches for the new feature.
 
-> Where did this fail? Do you still run an old broken git version that
-> guesses at what the pull target is, and makes sh*t up? Please update
-> if so.
->
-> And if not, how did the tag contents get added to the pull request
-> despite the pull request not mentioning the tag?
+Patch 2 changes zs_get_total_size_bytes's return unit from bytes
+to page so that zsmalloc doesn't need unnecessary operation(ie,
+<< PAGE_SHIFT).
 
-TL;DR: My fault, I'll double-check this in the future.
+Patch 3 adds new feature. I added the feature into zram layer,
+not zsmalloc because limiation is zram's requirement, not zsmalloc
+so any other user using zsmalloc(ie, zpool) shouldn't affected
+by unnecessary branch of zsmalloc. In future, if every users
+of zsmalloc want the feature, then, we could move the feature
+from client side to zsmalloc easily but vice versa would be
+painful.
 
-Long version:
+Patch 4 adds news facility to report maximum memory usage of zram
+so that this avoids user polling frequently via /sys/block/zram0/
+mem_used_total and ensures transient max are not missed.
 
-100% operator error due to the tools changing. I'm still used to
-looking for the warning that it doesn't find/use the remote tag as a
-safety for these mistakes.
+* From v4
+ * Add Reviewed-by - Dan
+ * Clean up document of mem_limit - David
 
-I'm still used to the older version that figured out tag name on its
-own, so I did my usual:
+* From v3
+ * get_zs_total_size_byte function name change - Dan
+ * clarifiction of the document - Dan
+ * atomic account instead of introducing new lock in zsmalloc - David
+ * remove unnecessary atomic instruction in updating max - David
+ 
+* From v2
+ * introduce helper funcntion to update max_used_pages
+   for readability - David
+ * avoid unncessary zs_get_total_size call in updating loop
+   for max_used_pages - David
 
- * run request-pull to double-check what's in the branch
- * create the tag
- * push the tag
- * rerun request-pull with the tag, redirect to file
-...and then finally send the email with the file contents.
+* From v1
+ * rebased on next-20140815
+ * fix up race problem - David, Dan
+ * reset mem_used_max as current total_bytes, rather than 0 - David
+ * resetting works with only "0" write for extensiblilty - David, Dan
 
-What I forgot to do was change the command line between the first and
-the second run -- the first one referenced the branch, the second
-should have referenced the tag but I just reused the same command from
-history.
+Minchan Kim (4):
+  zsmalloc: move pages_allocated to zs_pool
+  zsmalloc: change return value unit of  zs_get_total_size_bytes
+  zram: zram memory size limitation
+  zram: report maximum used memory
 
-The old version of git that auto-guessed branch/tag name used to warn
-if it used a tag to create the pull request, but didn't find the tag
-in the remote repo. I suppose it'd be useful if the current version
-warned if the third argument wasn't referring to the same tag as well,
-it would definitely have saved me here.
+ Documentation/ABI/testing/sysfs-block-zram |  20 ++++++
+ Documentation/blockdev/zram.txt            |  25 +++++--
+ drivers/block/zram/zram_drv.c              | 101 ++++++++++++++++++++++++++++-
+ drivers/block/zram/zram_drv.h              |   6 ++
+ include/linux/zsmalloc.h                   |   2 +-
+ mm/zsmalloc.c                              |  30 ++++-----
+ 6 files changed, 158 insertions(+), 26 deletions(-)
 
+-- 
+2.0.0
 
--Olof
