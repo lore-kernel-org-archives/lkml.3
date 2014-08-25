@@ -1,56 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932755AbaHYNnn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 09:43:43 -0400
-Received: from regular1.263xmail.com ([211.150.99.135]:47141 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932121AbaHYNnl (ORCPT
+	id S932779AbaHYNo0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 09:44:26 -0400
+Received: from mail-oi0-f46.google.com ([209.85.218.46]:40485 "EHLO
+	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754586AbaHYNoZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 09:43:41 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: zyw@rock-chips.com
-X-FST-TO: broonie@kernel.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: zyw@rock-chips.com
-X-UNIQUE-TAG: <d72468c9108fee2d2b51b0e0c09525a4>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-Message-ID: <53FB3D87.1080900@rock-chips.com>
-Date: Mon, 25 Aug 2014 21:43:35 +0800
-From: Chris Zhong <zyw@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 25 Aug 2014 09:44:25 -0400
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        sameo@linux.intel.com, lee.jones@linaro.org, lgirdwood@gmail.com,
-        a.zummo@towertech.it, mturquette@linaro.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
-        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
-        xxx@rock-chips.com, dianders@chromium.org, heiko@sntech.de,
-        olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
-        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com
-Subject: Re: [PATCH v3 4/5] Regulator: RK808: Add regulator driver for RK808
-References: <1408791890-17328-1-git-send-email-zyw@rock-chips.com> <20140823145737.GJ24407@sirena.org.uk>
-In-Reply-To: <20140823145737.GJ24407@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1408960813-12237-1-git-send-email-hdegoede@redhat.com>
+References: <1408960813-12237-1-git-send-email-hdegoede@redhat.com>
+Date: Mon, 25 Aug 2014 09:44:24 -0400
+X-Google-Sender-Auth: kIwa_7lhI0725rv8QVJQFL8f08Y
+Message-ID: <CA+5PVA7pEwu4amAn+gH3TS-a6CvsSH=TyE+3k07Uoz9BpcpRMA@mail.gmail.com>
+Subject: Re: [3.17 REGRESSION FIX] Revert "ideapad-laptop: Disable touchpad
+ interface on Yoga models"
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Hans de Goede <hdegoede@redhat.com>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>,
+        Corentin Chary <corentin.chary@gmail.com>,
+        GOESSEL Guillaume <g_goessel@outlook.com>,
+        platform-driver-x86@vger.kernel.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Darren Hart <darren@dvhart.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2014 10:57 PM, Mark Brown wrote:
-> On Sat, Aug 23, 2014 at 07:04:50PM +0800, Chris Zhong wrote:
->> The regulator module consists of 4 DCDCs, 8 LDOs and 2 switches.
->> The output voltages are configurable and are meant to supply power
->> to the main processor and other components
-> To repeat what I said on your previous posting: this driver has already
-> been applied, if there are any changes required please send incremental
-> patches against what is in the tree.
-I fixed it in v5.
+On Mon, Aug 25, 2014 at 6:00 AM, Hans de Goede <hdegoede@redhat.com> wrote:
+> I've received a bug report from a user that the touchpad control part
+> of the ideapad-laptop ACPI interface does work for him on his
+> "Lenovo Yoga 2 13", and that this patch causes a regression for him.
+>
+> Since it did not work for me when I had a "Lenovo Yoga 2 11" in my own
+> hands (loaned from a friend). It seems that this is a bit of hit and miss.
+>
+> Since the result of having a false positive here is worse, then the minor
+> annoyance of a false touchpad disabled messages being shown after suspend /
+> resume on models (or is it firmware versions?) where the interface does not
+> work, simply revert the patch.
+>
+> This reverts commit f79a901331a823ae370584b15cd39dd110b95a0a.
+>
+> Reported-by: GOESSEL Guillaume <g_goessel@outlook.com>
+> Signed-off-by: Hans de Goede <hdegoede@redhat.com>
 
+Adding Daren on CC.  He recently agreed to take over the platform drivers.
+
+josh
+
+> ---
+>  drivers/platform/x86/ideapad-laptop.c | 27 ---------------------------
+>  1 file changed, 27 deletions(-)
+>
+> diff --git a/drivers/platform/x86/ideapad-laptop.c b/drivers/platform/x86/ideapad-laptop.c
+> index fc468a3..de1e0c3 100644
+> --- a/drivers/platform/x86/ideapad-laptop.c
+> +++ b/drivers/platform/x86/ideapad-laptop.c
+> @@ -88,7 +88,6 @@ struct ideapad_private {
+>         struct dentry *debug;
+>         unsigned long cfg;
+>         bool has_hw_rfkill_switch;
+> -       bool has_touchpad_control;
+>  };
+>
+>  static bool no_bt_rfkill;
+> @@ -767,9 +766,6 @@ static void ideapad_sync_touchpad_state(struct ideapad_private *priv)
+>  {
+>         unsigned long value;
+>
+> -       if (!priv->has_touchpad_control)
+> -               return;
+> -
+>         /* Without reading from EC touchpad LED doesn't switch state */
+>         if (!read_ec_data(priv->adev->handle, VPCCMD_R_TOUCHPAD, &value)) {
+>                 /* Some IdeaPads don't really turn off touchpad - they only
+> @@ -844,28 +840,6 @@ static struct dmi_system_id no_hw_rfkill_list[] = {
+>         {}
+>  };
+>
+> -/*
+> - * Some models don't offer touchpad ctrl through the ideapad interface, causing
+> - * ideapad_sync_touchpad_state to send wrong touchpad enable/disable events.
+> - */
+> -static struct dmi_system_id no_touchpad_ctrl_list[] = {
+> -       {
+> -               .ident = "Lenovo Yoga 1 series",
+> -               .matches = {
+> -                       DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+> -                       DMI_MATCH(DMI_PRODUCT_VERSION, "Lenovo IdeaPad Yoga"),
+> -               },
+> -       },
+> -       {
+> -               .ident = "Lenovo Yoga 2 11 / 13 / Pro",
+> -               .matches = {
+> -                       DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+> -                       DMI_MATCH(DMI_PRODUCT_VERSION, "Lenovo Yoga 2"),
+> -               },
+> -       },
+> -       {}
+> -};
+> -
+>  static int ideapad_acpi_add(struct platform_device *pdev)
+>  {
+>         int ret, i;
+> @@ -889,7 +863,6 @@ static int ideapad_acpi_add(struct platform_device *pdev)
+>         priv->adev = adev;
+>         priv->platform_device = pdev;
+>         priv->has_hw_rfkill_switch = !dmi_check_system(no_hw_rfkill_list);
+> -       priv->has_touchpad_control = !dmi_check_system(no_touchpad_ctrl_list);
+>
+>         ret = ideapad_sysfs_init(priv);
+>         if (ret)
+> --
+> 2.1.0
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
