@@ -1,56 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753216AbaHYBJK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 21:09:10 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:36321 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752883AbaHYBJH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 21:09:07 -0400
-From: Simon Horman <horms+renesas@verge.net.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Simon Horman <horms+renesas@verge.net.au>
-Subject: [GIT PULL] SH Drivers Updates For v3.17
-Date: Mon, 25 Aug 2014 10:08:55 +0900
-Message-Id: <cover.1408928574.git.horms+renesas@verge.net.au>
-X-Mailer: git-send-email 2.0.1
+	id S1753483AbaHYBfH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 21:35:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27173 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752917AbaHYBfE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Aug 2014 21:35:04 -0400
+Date: Mon, 25 Aug 2014 11:35:11 +1000
+From: David Gibson <dgibson@redhat.com>
+To: Pankaj Gupta <pagupta@redhat.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, davem@davemloft.net,
+        jasowang@redhat.com, mst@redhat.com, vfalico@gmail.com,
+        edumazet@google.com, vyasevic@redhat.com, hkchu@google.com,
+        wuzhy@linux.vnet.ibm.com, xemul@parallels.com, therbert@google.com,
+        bhutchings@solarflare.com, xii@google.com, stephen@networkplumber.org
+Subject: Re: [RFC 3/4] tuntap: reduce the size of tun_struct by using flex
+ array
+Message-Id: <20140825113511.cc52779b6c2f13c9abef23ee@redhat.com>
+In-Reply-To: <1408369040-1216-4-git-send-email-pagupta@redhat.com>
+References: <1408369040-1216-1-git-send-email-pagupta@redhat.com>
+	<1408369040-1216-4-git-send-email-pagupta@redhat.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__25_Aug_2014_11_35_11_+1000_+OyL/QXpMUHP80Iz"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+--Signature=_Mon__25_Aug_2014_11_35_11_+1000_+OyL/QXpMUHP80Iz
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Please consider these SH drivers updates for v3.17.
+On Mon, 18 Aug 2014 19:07:19 +0530
+Pankaj Gupta <pagupta@redhat.com> wrote:
 
-I realise these are slightly late in the rc cycle so
-please don't hesitate to ask me to defer them to v3.18.
+> This patch switches to flex array to implement the flow caches, it brings
+> several advantages:
+>=20
+> - Reduce the size of the tun_struct structure, which allows us to increas=
+e the
+>   upper limit of queues in future.
+> - Avoid higher order memory allocation. It will be useful when switching =
+to
+>   pure hashing in flow cache which may demand a larger size array in futu=
+re.
+>=20
+> After this patch, the size of tun_struct on x86_64 reduced from 8512 to
+> 328
+>=20
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
 
+Reviewed-by: David Gibson <dgibson@redhat.com>
 
-The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
+--=20
+David Gibson <dgibson@redhat.com>
 
-  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
+--Signature=_Mon__25_Aug_2014_11_35_11_+1000_+OyL/QXpMUHP80Iz
+Content-Type: application/pgp-signature
 
-are available in the git repository at:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/horms/renesas.git tags/renesas-sh-drivers-for-v3.17
+iQIcBAEBAgAGBQJT+pLPAAoJEGw4ysog2bOSDY8QAJ/0tFaq4J0GUXknB4+4z7Z7
+asmSKDqtQD9oVKiaXjM39zd76cdfEuX0ZIXsRpqjU3mJ8EMNub82jBp51BN/PGjb
+8WyponHG30gMXBCgw6Vpdf1IQrQEJisifSWQtB1ASkMbTU3+/gWCTUza8NbAkCmK
+XlfSkObBuQJN73YcBh0zY5AbhjfqAF3G2i+1Jf3+taj8PbyxbNCvtyDaYA8Qkf+t
+gvSeAFBw12rZDA/PMd37nyC727M2mfZTi5FVwuCxIpC/kQAxgvhARhGWckQFv6A5
+U6dUsWPXDr3TpA1/x+pS4tErugqyMC9YbO89Je8xl1aV50xeydvcc6umbeL0saUf
+kSsU0JU/PZMZreIHO8ZRNK3LDp+NSFXgna+IOjrd6CHTOYjxnk28iMfxk0MgRCIz
+lvkFqmTB3+arZQq69+2xuVa8TH1gOqWtOp3zhzPYaDmRP4Jy5KDbMDk7n6NuLiaf
+YyaMM4Oz5v4cwfX+m/ES63HQmD9CoVZWn/3HLdGT+Uatiy4Ywq0KlQkR0zS5o0nv
+UeOWA5fC8pmJ93Q2Rr0CAJpVS3zoJmgPyh07+xnZ90fU/HFfbU5gAHtXuHyBD70d
+mEjVhDPpmBXZfGbGVT/gIPozd9Hlsas3GuDbfK2sf0UK9Y9tbUlrsL10kYQ3sEm3
+DNXtFDhoaoCrgjBpp/lC
+=/GtQ
+-----END PGP SIGNATURE-----
 
-for you to fetch changes up to 049d28048be595e0a10a58fe1c104b153c386633:
-
-  sh: intc: Confine SH_INTC to platforms that need it (2014-08-22 12:28:16 +0900)
-
-----------------------------------------------------------------
-SH Drivers Updates For v3.17
-
-* Confine SH_INTC to platforms that need it
-
-----------------------------------------------------------------
-Geert Uytterhoeven (1):
-      sh: intc: Confine SH_INTC to platforms that need it
-
- arch/arm/mach-shmobile/Kconfig | 2 ++
- arch/sh/Kconfig                | 3 +++
- drivers/sh/Makefile            | 3 +--
- drivers/sh/intc/Kconfig        | 6 +++++-
- 4 files changed, 11 insertions(+), 3 deletions(-)
+--Signature=_Mon__25_Aug_2014_11_35_11_+1000_+OyL/QXpMUHP80Iz--
