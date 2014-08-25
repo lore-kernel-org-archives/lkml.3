@@ -1,220 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933157AbaHYSx4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 14:53:56 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:54061 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932907AbaHYSxy (ORCPT
+	id S933221AbaHYS7j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 14:59:39 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:52697 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751399AbaHYS7h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 14:53:54 -0400
+	Mon, 25 Aug 2014 14:59:37 -0400
 MIME-Version: 1.0
-In-Reply-To: <b3c6bc75345ba821572b22e05432960f7867bdbb.1407918792.git.andreas.werner@men.de>
-References: <cover.1407918792.git.andreas.werner@men.de> <b3c6bc75345ba821572b22e05432960f7867bdbb.1407918792.git.andreas.werner@men.de>
+In-Reply-To: <87egw7a5yd.fsf@steelpick.2x.cz>
+References: <87ha149j2z.fsf@steelpick.2x.cz> <1408752502-4162-1-git-send-email-sojka@merica.cz>
+ <1408752502-4162-3-git-send-email-sojka@merica.cz> <CAK5ve-LgeZcR+NHZoLo=rVKCk8TfRjRy-u7KwKRYs1weW==Nqw@mail.gmail.com>
+ <87egw7a5yd.fsf@steelpick.2x.cz>
 From: Bryan Wu <cooloney@gmail.com>
-Date: Mon, 25 Aug 2014 11:53:32 -0700
-Message-ID: <CAK5ve-KCv=kfkJK-x5m1sFiSBVH9FMUys_tLw5Cup=3rHLZxYQ@mail.gmail.com>
-Subject: Re: [PATCH v4 3/4] drivers/leds/leds-menf21bmc: introduce MEN
- 14F021P00 BMC LED driver
-To: Andreas Werner <andreas.werner@men.de>
-Cc: lkml <linux-kernel@vger.kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, wim@iguana.be,
-        linux-watchdog@vger.kernel.org,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+Date: Mon, 25 Aug 2014 11:59:14 -0700
+Message-ID: <CAK5ve-Jz7=7uZ3_Qg2bAH9BiGRZ36k-Oj9TNZ-_nAvaq6LGbjA@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] usb: Add LED trigger for USB host activity
+To: Michal Sojka <sojka@merica.cz>
+Cc: linux-usb@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        Jean Delvare <jdelvare@suse.de>, linux@roeck-us.net,
-        lm-sensors@lm-sensors.org
+        lkml <linux-kernel@vger.kernel.org>, michal.vokac@comap.cz
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 1:40 AM, Andreas Werner <andreas.werner@men.de> wrote:
-> Added driver to support the 14F021P00 BMC LEDs.
-> The BMC is a Board Management Controller including four LEDs which
-> can be switched on and off.
+On Sat, Aug 23, 2014 at 2:52 AM, Michal Sojka <sojka@merica.cz> wrote:
+> Hi Bryan,
 >
-> Signed-off-by: Andreas Werner <andreas.werner@men.de>
-> ---
->  drivers/leds/Kconfig          |   6 ++
->  drivers/leds/Makefile         |   1 +
->  drivers/leds/leds-menf21bmc.c | 131 ++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 138 insertions(+)
->  create mode 100644 drivers/leds/leds-menf21bmc.c
+> thanks for the review. See some comments below.
 >
-> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-> index 27cf0cd..d38ff3f 100644
-> --- a/drivers/leds/Kconfig
-> +++ b/drivers/leds/Kconfig
-> @@ -458,6 +458,12 @@ config LEDS_OT200
->           This option enables support for the LEDs on the Bachmann OT200.
->           Say Y to enable LEDs on the Bachmann OT200.
+> On Sat, Aug 23 2014, Bryan Wu wrote:
+>> On Fri, Aug 22, 2014 at 5:08 PM, Michal Sojka <sojka@merica.cz> wrote:
+>>> With this patch, USB host activity can be signaled by blinking a LED.
+>>>
+>>> This should work with all host controllers. Tested only with musb.
+>>>
+>>> Signed-off-by: Michal Sojka <sojka@merica.cz>
+>>> ---
+>>>  drivers/usb/core/Kconfig  |  9 +++++++++
+>>>  drivers/usb/core/Makefile |  1 +
+>>>  drivers/usb/core/hcd.c    |  2 ++
+>>>  drivers/usb/core/led.c    | 38 ++++++++++++++++++++++++++++++++++++++
+>>>  include/linux/usb/hcd.h   |  6 ++++++
+>>>  5 files changed, 56 insertions(+)
+>>>  create mode 100644 drivers/usb/core/led.c
+>>>
+>>> diff --git a/drivers/usb/core/Kconfig b/drivers/usb/core/Kconfig
+>>> index 1060657..8295f65 100644
+>>> --- a/drivers/usb/core/Kconfig
+>>> +++ b/drivers/usb/core/Kconfig
+>>> @@ -90,3 +90,12 @@ config USB_OTG_FSM
+>>>           Implements OTG Finite State Machine as specified in On-The-Go
+>>>           and Embedded Host Supplement to the USB Revision 2.0 Specification.
+>>>
+>>> +config USB_HOST_LED
+>>> +       bool "USB Host LED Trigger"
+>>> +       depends on LEDS_CLASS
+>>> +       select LEDS_TRIGGERS
+>>> +       help
+>>> +         This option adds a LED trigger for USB host controllers.
+>>> +
+>>> +         Say Y here if you are working on a system with led-class supported
+>>> +         LEDs and you want to use them as USB host activity indicators.
+>>> diff --git a/drivers/usb/core/Makefile b/drivers/usb/core/Makefile
+>>> index 2f6f932..324c8c9 100644
+>>> --- a/drivers/usb/core/Makefile
+>>> +++ b/drivers/usb/core/Makefile
+>>> @@ -9,5 +9,6 @@ usbcore-y += port.o
+>>>
+>>>  usbcore-$(CONFIG_PCI)          += hcd-pci.o
+>>>  usbcore-$(CONFIG_ACPI)         += usb-acpi.o
+>>> +usbcore-$(CONFIG_USB_HOST_LED) += led.o
+>>>
+>>>  obj-$(CONFIG_USB)              += usbcore.o
+>>> diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
+>>> index 487abcf..46d9f3a 100644
+>>> --- a/drivers/usb/core/hcd.c
+>>> +++ b/drivers/usb/core/hcd.c
+>>> @@ -1664,6 +1664,8 @@ static void __usb_hcd_giveback_urb(struct urb *urb)
+>>>         usbmon_urb_complete(&hcd->self, urb, status);
+>>>         usb_anchor_suspend_wakeups(anchor);
+>>>         usb_unanchor_urb(urb);
+>>> +       if (status == 0)
+>>> +               usb_hcd_led_activity();
+>>>
+>>>         /* pass ownership to the completion handler */
+>>>         urb->status = status;
+>>> diff --git a/drivers/usb/core/led.c b/drivers/usb/core/led.c
+>>> new file mode 100644
+>>> index 0000000..49ff76c
+>>> --- /dev/null
+>>> +++ b/drivers/usb/core/led.c
+>>> @@ -0,0 +1,38 @@
+>>> +/*
+>>> + * LED Trigger for USB Host Activity
+>>> + *
+>>> + * Copyright 2014 Michal Sojka <sojka@merica.cz>
+>>> + *
+>>> + * This program is free software; you can redistribute it and/or modify
+>>> + * it under the terms of the GNU General Public License version 2 as
+>>> + * published by the Free Software Foundation.
+>>> + *
+>>> + */
+>>> +
+>>> +#include <linux/module.h>
+>>> +#include <linux/kernel.h>
+>>> +#include <linux/init.h>
+>>> +#include <linux/leds.h>
+>>> +#include <linux/usb/hcd.h>
+>>> +
+>>> +#define BLINK_DELAY 30
+>>> +
+>>> +DEFINE_LED_TRIGGER(ledtrig_usb_hcd);
+>>
+>> Add one more trigger named ledtrig_usb_gadget
+>>
+>>> +static unsigned long usb_hcd_blink_delay = BLINK_DELAY;
+>>> +
+>>> +void usb_hcd_led_activity(void)
+>>
+>> Give an input parameter like emum usb_led_event.
+>> USB_LED_EVENT_HOST = 0
+>> USB_LED_EVENT_GADGET = 1
+>>
+>>
+>>> +{
+>>
+>> Add case for USB_LED_EVENT_HOST:
+>>> +       led_trigger_blink_oneshot(ledtrig_usb_hcd,
+>>> +                                 &usb_hcd_blink_delay, &usb_hcd_blink_delay, 0);
+>>
+>> Add case for USB_LED_EVENT_GADGET:
+>>  led_trigger_blink_oneshot(ledtrig_usb_gadget,
+>>                              &usb_gadget_blink_delay,
+>> &usb_gadget_blink_delay, 0);
+>>
+>>> +}
+>>> +
+>>> +int __init ledtrig_usb_hcd_init(void)
+>>> +{
+>>> +       led_trigger_register_simple("usb-host", &ledtrig_usb_hcd);
+>> register one more trigger for gadget.
 >
-> +config LEDS_MENF21BMC
-> +       tristate "LED support for the MEN 14F021P00 BMC"
-> +       depends on LEDS_CLASS && MFD_MENF21BMC
-> +       help
-> +         Say Y here to include support for the MEN 14F021P00 BMC LEDs.
-> +
->  comment "LED driver for blink(1) USB RGB LED is under Special HID drivers (HID_THINGM)"
+> This way, the code will be full of #ifdefs. Is the following really what
+> you want? If you want to have it without #ifdefs, then I don't think it
+> is a good idea to offer users the usb-gadget trigger on systems without
+> usb gadget support.
 >
->  config LEDS_BLINKM
-> diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-> index 3c03666..cadc433 100644
-> --- a/drivers/leds/Makefile
-> +++ b/drivers/leds/Makefile
-> @@ -53,6 +53,7 @@ obj-$(CONFIG_LEDS_MAX8997)            += leds-max8997.o
->  obj-$(CONFIG_LEDS_LM355x)              += leds-lm355x.o
->  obj-$(CONFIG_LEDS_BLINKM)              += leds-blinkm.o
->  obj-$(CONFIG_LEDS_VERSATILE)           += leds-versatile.o
-> +obj-$(CONFIG_LEDS_MENF21BMC)           += leds-menf21bmc.o
->
->  # LED SPI Drivers
->  obj-$(CONFIG_LEDS_DAC124S085)          += leds-dac124s085.o
-> diff --git a/drivers/leds/leds-menf21bmc.c b/drivers/leds/leds-menf21bmc.c
-> new file mode 100644
-> index 0000000..4621f72
-> --- /dev/null
-> +++ b/drivers/leds/leds-menf21bmc.c
-> @@ -0,0 +1,131 @@
-> +/*
-> + *  MEN 14F021P00 Board Management Controller (BMC) LEDs Driver.
-> + *
-> + *  This is the core LED driver of the MEN 14F021P00 BMC.
-> + *  There are four LEDs available which can be switched on and off.
-> + *  STATUS LED, HOT SWAP LED, USER LED 1, USER LED 2
-> + *
-> + *  Copyright (C) 2014 MEN Mikro Elektronik Nuernberg GmbH
-> + *
-> + *  This program is free software; you can redistribute  it and/or modify it
-> + *  under  the terms of  the GNU General  Public License as published by the
-> + *  Free Software Foundation;  either version 2 of the  License, or (at your
-> + *  option) any later version.
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/kernel.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/leds.h>
-> +#include <linux/i2c.h>
-> +
-> +#define BMC_CMD_LED_GET_SET    0xA0
-> +#define BMC_BIT_LED_STATUS     BIT(0)
-> +#define BMC_BIT_LED_HOTSWAP    BIT(1)
-> +#define BMC_BIT_LED_USER1      BIT(2)
-> +#define BMC_BIT_LED_USER2      BIT(3)
-> +
-> +struct menf21bmc_led {
-> +       struct led_classdev cdev;
-> +       u8 led_bit;
-> +       const char *name;
-> +       struct i2c_client *i2c_client;
-> +};
-> +
-> +static struct menf21bmc_led leds[] = {
-> +       {
-> +               .name = "menf21bmc:led_status",
-> +               .led_bit = BMC_BIT_LED_STATUS,
-> +       },
-> +       {
-> +               .name = "menf21bmc:led_hotswap",
-> +               .led_bit = BMC_BIT_LED_HOTSWAP,
-> +       },
-> +       {
-> +               .name = "menf21bmc:led_user1",
-> +               .led_bit = BMC_BIT_LED_USER1,
-> +       },
-> +       {
-> +               .name = "menf21bmc:led_user2",
-> +               .led_bit = BMC_BIT_LED_USER2,
-> +       }
-> +};
-> +
-> +static DEFINE_MUTEX(led_lock);
-> +
-> +static void
-> +menf21bmc_led_set(struct led_classdev *led_cdev, enum led_brightness value)
-> +{
-> +       int led_val;
-> +       struct menf21bmc_led *led = container_of(led_cdev,
-> +                                       struct menf21bmc_led, cdev);
-> +
-> +       mutex_lock(&led_lock);
-> +       led_val = i2c_smbus_read_byte_data(led->i2c_client,
-> +                                               BMC_CMD_LED_GET_SET);
-> +       if (led_val < 0)
-> +               goto err_out;
-> +
-> +       if (value == LED_OFF)
-> +               led_val &= ~led->led_bit;
-> +       else
-> +               led_val |= led->led_bit;
-> +
-> +       i2c_smbus_write_byte_data(led->i2c_client,
-> +                                       BMC_CMD_LED_GET_SET, led_val);
-> +err_out:
-> +       mutex_unlock(&led_lock);
-> +}
-> +
-> +static int menf21bmc_led_probe(struct platform_device *pdev)
-> +{
-> +       int i;
-> +       int ret;
-> +       struct i2c_client *i2c_client = to_i2c_client(pdev->dev.parent);
-> +
-> +       for (i = 0; i < ARRAY_SIZE(leds); i++) {
-> +               leds[i].cdev.name = leds[i].name;
-> +               leds[i].cdev.brightness_set = menf21bmc_led_set;
-> +               leds[i].i2c_client = i2c_client;
-> +               ret = led_classdev_register(&pdev->dev, &leds[i].cdev);
-> +               if (ret < 0)
-> +                       goto err_free_leds;
-> +       }
-> +       dev_info(&pdev->dev, "MEN 140F21P00 BMC LED device enabled\n");
-> +
-> +       return 0;
-> +
-> +err_free_leds:
-> +       dev_err(&pdev->dev, "failed to register LED device\n");
-> +
-> +       for (i = i - 1; i >= 0; i--)
-> +               led_classdev_unregister(&leds[i].cdev);
-> +
-> +       return ret;
-> +}
-> +
-> +static int menf21bmc_led_remove(struct platform_device *pdev)
-> +{
-> +       int i;
-> +
-> +       for (i = 0; i < ARRAY_SIZE(leds); i++)
-> +               led_classdev_unregister(&leds[i].cdev);
-> +
-> +       return 0;
-> +}
-> +
-> +static struct platform_driver menf21bmc_led = {
-> +       .probe          = menf21bmc_led_probe,
-> +       .remove         = menf21bmc_led_remove,
-> +       .driver         = {
-> +               .name           = "menf21bmc_led",
-> +               .owner          = THIS_MODULE,
-> +       },
-> +};
-> +
 
-I still think this driver should be an I2C driver which is simply than
-a platform driver.
-Did I miss some discussion about this in our email?
+Why do we need #ifdef here?
+We can always define the 2 triggers for both USB host and gadget and
+provide API like usb_led_activity().
+
+If USB gadget stack is disabled in kernel, there is no users of this
+usb_led_activity(, USB_LED_EVENT_GADGET). We don't need to change
+anything in our driver but just waste one trigger instance.
 
 Thanks,
 -Bryan
 
-> +module_platform_driver(menf21bmc_led);
-> +
-> +MODULE_AUTHOR("Andreas Werner <andreas.werner@men.de>");
-> +MODULE_DESCRIPTION("MEN 14F021P00 BMC led driver");
-> +MODULE_LICENSE("GPL v2");
-> +MODULE_ALIAS("platform:menf21bmc_led");
-> --
-> 2.0.4
+> #define BLINK_DELAY 30
 >
+> static unsigned long usb_blink_delay = BLINK_DELAY;
+>
+> enum usb_led_event {
+>         USB_LED_EVENT_HOST = 0,
+>         USB_LED_EVENT_GADGET = 1,
+> };
+>
+> #ifdef CONFIG_USB_GADGET_LED
+> DEFINE_LED_TRIGGER(ledtrig_usbgadget);
+> #endif
+> #ifdef CONFIG_USB_HOST_LED
+> DEFINE_LED_TRIGGER(ledtrig_usb_hcd);
+> #endif
+>
+> void usb_led_activity(enum usb_led_event ev)
+> {
+>         struct led_trigger *trig;
+>
+>         switch (ev) {
+> #ifdef CONFIG_USB_GADGET_LED
+>         case USB_LED_EVENT_GADGET: trig = ledtrig_usb_gadget; break;
+> #endif
+> #ifdef CONFIG_USB_HOST_LED
+>         case USB_LED_EVENT_HOST:   trig = ledtrig_usb_hcd; break;
+> #endif
+>         default:;
+>         }
+>         led_trigger_blink_oneshot(trig, &usb_blink_delay, &usb_blink_delay, 0);
+> }
+> EXPORT_SYMBOL(usb_led_activity);
+>
+>
+> int __init ledtrig_usb_init(void)
+> {
+> #ifdef CONFIG_USB_GADGET_LED
+>         led_trigger_register_simple("usb-gadget", &ledtrig_usbgadget);
+> #endif
+> #ifdef CONFIG_USB_HOST_LED
+>         led_trigger_register_simple("usb-host", &ledtrig_usb_hcd);
+> #endif
+>         return 0;
+> }
+>
+> void __exit ledtrig_usb_exit(void)
+> {
+> #ifdef CONFIG_USB_GADGET_LED
+>         led_trigger_unregister_simple(ledtrig_usbgadget);
+> #endif
+> #ifdef CONFIG_USB_HOST_LED
+>         led_trigger_unregister_simple(ledtrig_usb_hcd);
+> #endif
+> }
+>
+>
+> -Michal
