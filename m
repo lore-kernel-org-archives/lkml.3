@@ -1,150 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755375AbaHYL0l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 07:26:41 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:53731 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752496AbaHYL0i (ORCPT
+	id S1755420AbaHYL2m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 07:28:42 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:64809 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755041AbaHYL2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 07:26:38 -0400
-Date: Mon, 25 Aug 2014 13:26:33 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, Sam Ravnborg <sam@ravnborg.org>,
-        linux-arm-kernel@lists.infradead.org, linux-ia64@vger.kernel.org,
-        linux-s390@vger.kernel.org, sparclinux@vger.kernel.org, x86@kernel.org,
-        linux-serial@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 0/8] asm-generic/io.h overhaul
-Message-ID: <20140825112630.GA4163@ulmo.nvidia.com>
-References: <1407925738-26170-1-git-send-email-thierry.reding@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3V7upXqbjpZ4EhLz"
-Content-Disposition: inline
-In-Reply-To: <1407925738-26170-1-git-send-email-thierry.reding@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 25 Aug 2014 07:28:39 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-c6-53fb1de2c150
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org, eduardo.valentin@ti.com,
+        amit.daniel@samsung.com, rui.zhang@intel.com, mark.rutland@arm.com,
+        devicetree@vger.kernel.org, kgene.kim@samsung.com, pawel.moll@arm.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eduardo Valentin <edubezval@gmail.com>,
+        linux-samsung-soc@vger.kernel.org, kyungmin.park@samsung.com,
+        robh+dt@kernel.org, galak@codeaurora.org, ch.naveen@samsung.com
+Subject: Re: [PATCHv4 2/4] thermal: exynos: Add support for many TRIMINFO_CTRL
+ registers
+Date: Mon, 25 Aug 2014 13:28:29 +0200
+Message-id: <1595080.7e4t1E1lOO@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <13170930.3cdcLOtxou@amdc1032>
+References: <1408951825-2639-1-git-send-email-cw00.choi@samsung.com>
+ <53FB11E5.2070503@samsung.com> <13170930.3cdcLOtxou@amdc1032>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=ISO-8859-1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrIIsWRmVeSWpSXmKPExsVy+t9jAd1Hsr+DDdbsELdouBpicff5YUaL
+	61+es1rMP3KO1WLN/p9MFvOvXGO16H+zkNWid8FVNouzTW/YLTY9Bopd3jWHzeJz7xFGixnn
+	9zFZLL1+kcliwvS1LBate4+wWzx52MfmIOixZt4aRo/Lfb1MHjtn3WX3WLznJZPHplWdbB6b
+	l9R79G1Zxehx/MZ2Jo/Pm+QCOKO4bFJSczLLUov07RK4Mq4dnMla0KNWcWepWANjk1wXIyeH
+	hICJxKUFrxkhbDGJC/fWs3UxcnEICSxilJjUfZAJwmlhkthwbBc7SBWbgJXExPZVYB0iAhoS
+	M/9eYQQpYhbYziyx+fdvVpCEsECUxI4ZG5hBbBYBVYl1l3rBGngFNCUWtT4Di4sKeErs2L6S
+	DcTmFNCWeLZgBTPUNkaJ1p1vmCEaBCV+TL7HAmIzC8hL7Ns/lRXC1pHY3zqNbQKjwCwkZbOQ
+	lM1CUraAkXkVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnDEPZPewbiqweIQowAHoxIP70rO
+	X8FCrIllxZW5hxglOJiVRHh5RX8HC/GmJFZWpRblxxeV5qQWH2KU5mBREuc92GodKCSQnliS
+	mp2aWpBaBJNl4uCUamDULz678ZBL2mGH1I+7r7V5Zbg3W7f6PyngfK0jKv9x4f1OacMVhSx1
+	31dM7+BOfdth2Sub7KFyqTbhetO6ZVO9+/NP9/yu2V2Z0pNc9/X3NS75KUqq1oECSxbvi73q
+	KHOjPyt16j+G+VvWC15O3f9v09sTh+743rnHeNzMetHFvQerpy3avM9OiaU4I9FQi7moOBEA
+	+8ia1bQCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday, August 25, 2014 01:19:04 PM Bartlomiej Zolnierkiewicz wrote:
+> On Monday, August 25, 2014 07:37:25 PM Chanwoo Choi wrote:
+> > Hi Bartlomiej,
+> > 
+> > On 08/25/2014 07:15 PM, Bartlomiej Zolnierkiewicz wrote:
+> > > 
+> > > Hi,
+> > > 
+> > > On Monday, August 25, 2014 04:30:23 PM Chanwoo Choi wrote:
+> > >> This patch support many TRIMINFO_CTRL registers if specific Exynos SoC
+> > >> has one more TRIMINFO_CTRL registers. Also this patch uses proper 'RELOAD'
+> > >> shift/mask bit operation to set RELOAD feature instead of static value.
+> > >>
+> > >> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> > >> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> > >> Cc: Zhang Rui <rui.zhang@intel.com>
+> > >> Cc: Eduardo Valentin <edubezval@gmail.com>
+> > >> Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> > >> Reviewed-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> > >> ---
+> > >>  drivers/thermal/samsung/exynos_thermal_common.h |  1 +
+> > >>  drivers/thermal/samsung/exynos_tmu.c            | 23 ++++++++++++++++++++---
+> > >>  drivers/thermal/samsung/exynos_tmu.h            |  9 +++++++--
+> > >>  drivers/thermal/samsung/exynos_tmu_data.c       |  5 ++++-
+> > >>  drivers/thermal/samsung/exynos_tmu_data.h       |  3 +++
+> > >>  5 files changed, 35 insertions(+), 6 deletions(-)
+> > >>
+> > >> diff --git a/drivers/thermal/samsung/exynos_thermal_common.h b/drivers/thermal/samsung/exynos_thermal_common.h
+> > >> index 3eb2ed9..b211976 100644
+> > >> --- a/drivers/thermal/samsung/exynos_thermal_common.h
+> > >> +++ b/drivers/thermal/samsung/exynos_thermal_common.h
+> > >> @@ -28,6 +28,7 @@
+> > >>  #define MAX_TRIP_COUNT	8
+> > >>  #define MAX_COOLING_DEVICE 4
+> > >>  #define MAX_THRESHOLD_LEVS 5
+> > >> +#define MAX_TRIMINFO_CTRL_REG	2
+> > >>  
+> > >>  #define ACTIVE_INTERVAL 500
+> > >>  #define IDLE_INTERVAL 10000
+> > >> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+> > >> index acbff14..7234f38 100644
+> > >> --- a/drivers/thermal/samsung/exynos_tmu.c
+> > >> +++ b/drivers/thermal/samsung/exynos_tmu.c
+> > >> @@ -147,7 +147,7 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+> > >>  	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
+> > >>  	struct exynos_tmu_platform_data *pdata = data->pdata;
+> > >>  	const struct exynos_tmu_registers *reg = pdata->registers;
+> > >> -	unsigned int status, trim_info = 0, con;
+> > >> +	unsigned int status, trim_info = 0, con, ctrl;
+> > >>  	unsigned int rising_threshold = 0, falling_threshold = 0;
+> > >>  	int ret = 0, threshold_code, i, trigger_levs = 0;
+> > >>  
+> > >> @@ -164,8 +164,25 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+> > >>  		}
+> > >>  	}
+> > >>  
+> > >> -	if (TMU_SUPPORTS(pdata, TRIM_RELOAD))
+> > >> -		__raw_writel(1, data->base + reg->triminfo_ctrl);
+> > >> +	if (TMU_SUPPORTS(pdata, TRIM_RELOAD)) {
+> > >> +		if (reg->triminfo_ctrl_count > MAX_TRIMINFO_CTRL_REG) {
+> > > 
+> > > Please remove this check and MAX_TRIMINFO_CTRL_REG define.
+> > > 
+> > > We do not want such runtime checks for development time errors.
+> > 
+> > OK, I'll remove it.
+> > 
+> > > 
+> > >> +			ret = -EINVAL;
+> > >> +			goto out;
+> > >> +		}
+> > >> +
+> > >> +		for (i = 0; i < reg->triminfo_ctrl_count; i++) {
+> > >> +			if (pdata->triminfo_reload[i]) {
+> > >> +				ctrl = readl(data->base +
+> > >> +						reg->triminfo_ctrl[i]);
+> > >> +				ctrl &= ~(reg->triminfo_reload_mask <<
+> > >> +						reg->triminfo_reload_shift);
+> > >> +				ctrl |= pdata->triminfo_reload[i] <<
+> > >> +						reg->triminfo_reload_shift;
+> > > 
+> > > triminfo_reload_shift and triminfo_reload_mask variables have always
+> > > the same values when this code is run so there is no need for them.
+> > 
+> > I don't understand. Do you mean that timinfo_reload_{shift/mask} variable is un-needed?
+> 
+> Yes.
+> 
+> > If you possible, I need more detailed comment.
+> 
+> Currently triminfo_reload_shift is always "0" and triminfo_reload_mask
+> is "1" so there is no need to add an abstraction for different SoCs
+> (it should be added only when there is a real need for it).
+> 
+> Please just rewrite this code as:
+> 
+> 			if (pdata->triminfo_reload[i]) {
+> 				ctrl = readl(data->base +
+> 						reg->triminfo_ctrl[i]);
+> 				ctrl |= pdata->triminfo_reload[i];
+> 				__raw_writel(ctrl, data->base +
+> 						reg->triminfo_ctrl[i]);
+> 			}
 
---3V7upXqbjpZ4EhLz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+or even better lets get rid of the only __raw_writel() call in Exynos
+thermal driver while at it:
 
-On Wed, Aug 13, 2014 at 12:28:50PM +0200, Thierry Reding wrote:
-> From: Thierry Reding <treding@nvidia.com>
->=20
-> Hi,
->=20
-> Here is the fourth version of a series that started out as an attempt to
-> provide string versions of the read*() and write*() accessors to more
-> architectures so that drivers can use them portably. The series has
-> since evolved into a more general cleanup of asm-generic/io.h and the
-> functions defined therein.
->=20
-> Patch 1 is trivial and removes a redundant redefinition of PCI_IOBASE
-> from the asm/io.h header on ARC. Patches 2 and 3 remove unnecessary
-> volatile keywoards from some functions, which is a prerequisite to clean
-> up some of the functions in subsequent patches.
->=20
-> The xlate_dev_{kmem,mem}_ptr() functions are used to map memory when the
-> /dev/mem device is accessed. Patches 4 and 5 use more consistent data
-> types for these functions, which will get a "standard" prototype in the
-> asm-generic/io.h header in a subsequent patch.
->=20
-> Patch 6 is the bulk of this series. It implements the string variants of
-> the read*() and write*() accessors and cleans up various other parts of
-> the asm-generic/io.h header file. Macros are converted to static inline
-> functions for better type checking. Overriding generic implementations
-> in architectures is handled more consistently.
->=20
-> Patches 7 and 8, finally, make use of the asm-generic/io.h header on the
-> 32-bit and 64-bit ARM architectures.
->=20
-> This is compile- and runtime-tested on 32-bit and 64-bit ARM and compile
-> tested on IA64, Microblaze, s390, SPARC, x86 and Xtensa. For ARC,
-> Blackfin, Metag, OpenRISC, Score and Unicore32 which also use
-> asm-generic/io.h I couldn't find or build a cross-compiler that would
-> run on my system. But by code inspection they shouldn't break with this
-> patch.
->=20
-> To ensure bisectability I built multi_v7_defconfig on 32-bit ARM and the
-> defconfig for 64-bit ARM, IA64, Microblaze, s390, SPARC, x86 and Xtensa
-> after each commit and verified that the series does not introduce any
-> build errors or warnings.
->=20
-> Provided there are no objections to the patches there's still the matter
-> of how to merge them. Patch 6 depends on patches 1-5 to avoid warnings
-> and/or errors during the build. Patches 7 and 8 depend on patch 6. In my
-> opinion it doesn't make much sense to split them up, so I guess we'll
-> need a volunteer to take them all into one tree. Ideally that tree would
-> feed into linux-next so that we can get as much build and test-coverage
-> as possible during the 3.17 release cycle so that these patches can go
-> into 3.18.
->=20
-> Arnd, I'm opportunistically sending this To: you in the hopes that you
-> can take it into your asm-generic tree which seems like the best fit for
-> this.
->=20
-> Thierry
->=20
-> Thierry Reding (8):
->   ARC: Remove redundant PCI_IOBASE declaration
->   serial: sunzilog: Remove unnecessary volatile keyword
->   sparc: Remove unnecessary volatile usage
->   [IA64] Change xlate_dev_{kmem,mem}_ptr() prototypes
->   /dev/mem: Use more consistent data types
->   asm-generic/io.h: Implement generic {read,write}s*()
->   ARM: Use include/asm-generic/io.h
->   arm64: Use include/asm-generic/io.h
->=20
->  arch/arc/include/asm/io.h       |   2 -
->  arch/arm/include/asm/io.h       |  75 ++---
->  arch/arm/include/asm/memory.h   |   2 +
->  arch/arm64/Kconfig              |   1 -
->  arch/arm64/include/asm/io.h     | 122 ++-----
->  arch/arm64/include/asm/memory.h |   2 +
->  arch/ia64/include/asm/uaccess.h |  16 +-
->  arch/s390/include/asm/io.h      |   5 +-
->  arch/s390/mm/maccess.c          |   4 +-
->  arch/sparc/include/asm/io_32.h  |  18 +-
->  arch/x86/include/asm/io.h       |   4 +-
->  arch/x86/mm/ioremap.c           |   4 +-
->  drivers/char/mem.c              |  13 +-
->  drivers/tty/serial/sunzilog.h   |   8 +-
->  include/asm-generic/io.h        | 683 ++++++++++++++++++++++++++++++++--=
-------
->  15 files changed, 647 insertions(+), 312 deletions(-)
+			if (pdata->triminfo_reload[i]) {
+				ctrl = readl(data->base +
+						reg->triminfo_ctrl[i]);
+				ctrl |= pdata->triminfo_reload[i];
+				writel(ctrl, data->base +
+						reg->triminfo_ctrl[i]);
+			}
 
-Arnd, do you think this looks good to take for test-driving in
-linux-next?
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
 
-Thierry
-
---3V7upXqbjpZ4EhLz
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT+x1mAAoJEN0jrNd/PrOhB6cP/3hBN9312AUPTbkDv6xnddM7
-Z519rK6er4jx7i1+fwNgZIzpZ36XlgFavja3Gj12Md/tPi/p/GtRFbZTm62QkOs8
-AqMX4b/2/S8iWeCmCBM8Cp/GOQmpRDqv7lbDZHpNGeQE4bL36cLpFi47+MklEUug
-cUydGG9BrNVN0Y4bMlvBNbiq7vzZPbM0YTGyJ2VjeKduuJYkIA1nVM4QW2e9cJ/4
-HbLSKFU5OKkHCuXSYAE6wd+xlYxz6pZMb6NQTtQnw4VPFBYaQf/89vsXGIAh7T/i
-LbiyJH7nGZRFUmGIwtq8FTgNayydZJBfP8Oqxcb3gh0sSG25L3Mc3a2d0JqbTYJF
-jjX8O2KGKFWLolhOWEAOmEkvsSx6j8CchPfInRF7GD70Fy7Kclo5VV/XMIJMED46
-kQ/PyCxokdRmJERlPaIIuUItBIQ5GHrNeeUtUjetQoFI45js9Lkm+s71MBFeNAzh
-xzxin7A3IRbH4zFXTtm4NrQLxL9PS9VPCubK9cGYETKDCFjrO6CnD52ZuilTNrrK
-dktw7vcBGUX0nVcVEAceweCLOVutQVGSxvasGT3aYdMHqp6yIvIzUdtiwpi3njsp
-XlYBj7DhrT7IK4IF/foZDulcfn4M7ULkuswVMwJG2FLczrG7RjinEQfsezqF47ta
-i/k8tEowx0DE21ZTa6a1
-=6o5v
------END PGP SIGNATURE-----
-
---3V7upXqbjpZ4EhLz--
