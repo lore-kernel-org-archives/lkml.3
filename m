@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962AbaHYC5J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 22:57:09 -0400
-Received: from mga02.intel.com ([134.134.136.20]:10300 "EHLO mga02.intel.com"
+	id S1754004AbaHYC5j (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 22:57:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47952 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753826AbaHYC5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 22:57:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,394,1406617200"; 
-   d="scan'208";a="592719541"
-Message-ID: <53FAA544.4030401@intel.com>
-Date: Mon, 25 Aug 2014 10:53:56 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1753826AbaHYC5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Aug 2014 22:57:38 -0400
+Message-ID: <53FAA607.3060307@redhat.com>
+Date: Mon, 25 Aug 2014 10:57:11 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Knut Petersen <Knut_Petersen@t-online.de>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Thomas Renninger <trenn@suse.de>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [Bug 3.14.17] inconsistent lock state
-References: <53F9CC77.70009@t-online.de> <CA+55aFwZP1gyf=mvTrKjWwj6YE6=5y1+aZdmsNMHUp6d3dckXw@mail.gmail.com>
-In-Reply-To: <CA+55aFwZP1gyf=mvTrKjWwj6YE6=5y1+aZdmsNMHUp6d3dckXw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: "Michael S. Tsirkin" <mst@redhat.com>, Pankaj Gupta <pagupta@redhat.com>
+CC: Jiri Pirko <jiri@resnulli.us>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, davem@davemloft.net, dgibson@redhat.com,
+        vfalico@gmail.com, edumazet@google.com, vyasevic@redhat.com,
+        hkchu@google.com, wuzhy@linux.vnet.ibm.com, xemul@parallels.com,
+        therbert@google.com, bhutchings@solarflare.com, xii@google.com,
+        stephen@networkplumber.org
+Subject: Re: [RFC 2/4] tuntap: Publish tuntap maximum number of queues as
+ module_param
+References: <1408369040-1216-1-git-send-email-pagupta@redhat.com> <1408369040-1216-3-git-send-email-pagupta@redhat.com> <20140820105817.GB1916@nanopsycho.orion> <20140820111724.GE17371@redhat.com> <53F575F8.7000208@redhat.com> <175719847.27217377.1408708342392.JavaMail.zimbra@redhat.com> <20140824111421.GC9561@redhat.com>
+In-Reply-To: <20140824111421.GC9561@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014年08月25日 01:50, Linus Torvalds wrote:
-> Rafael? Lan Tianyu? This is not some minor locking bug. This is a
-> *major* mistake unless I misread something.
-> 
+On 08/24/2014 07:14 PM, Michael S. Tsirkin wrote:
+> On Fri, Aug 22, 2014 at 07:52:22AM -0400, Pankaj Gupta wrote:
+>>> On 08/20/2014 07:17 PM, Michael S. Tsirkin wrote:
+>>>> On Wed, Aug 20, 2014 at 12:58:17PM +0200, Jiri Pirko wrote:
+>>>>>> Mon, Aug 18, 2014 at 03:37:18PM CEST, pagupta@redhat.com wrote:
+>>>>>>>> This patch publishes maximum number of tun/tap queues allocated as a
+>>>>>>>> read_only module parameter which a user space application like
+>>>>>>>> libvirt
+>>>>>>>> can make use of to limit maximum number of queues. Value of read_only
+>>>>>>>> module parameter can be writable only at module load time. If no
+>>>>>>>> value is set
+>>>>>>>> at module load time a default value 256 is used which is equal to
+>>>>>>>> maximum number
+>>>>>>>> of vCPUS allowed by KVM.
+>>>>>>>>
+>>>>>>>> Administrator can specify maximum number of queues only at the driver
+>>>>>>>> module load time.
+>>>>>>>>
+>>>>>>>> Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
+>>>>>>>> ---
+>>>>>>>> drivers/net/tun.c |   13 +++++++++++--
+>>>>>>>> 1 files changed, 11 insertions(+), 2 deletions(-)
+>>>>>>>>
+>>>>>>>> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+>>>>>>>> index acaaf67..1f518e2 100644
+>>>>>>>> --- a/drivers/net/tun.c
+>>>>>>>> +++ b/drivers/net/tun.c
+>>>>>>>> @@ -119,6 +119,9 @@ struct tap_filter {
+>>>>>>>>
+>>>>>>>> #define TUN_FLOW_EXPIRE (3 * HZ)
+>>>>>>>>
+>>>>>>>> +static int max_tap_queues = MAX_TAP_QUEUES;
+>>>>>>>> +module_param(max_tap_queues, int, S_IRUGO);
+>>>>>> Please do not introduce new module paramaters. Please other ways to
+>>>>>> interchange values with userspace.
+>>>> I suggested this initially, but thinking more about it, I agree.
+>>>>
+>>>> It's a global limit (necessary to limit memory utilization by
+>>>> userspace), but it should be possible to change it
+>>>> after module load.
+>>> How about pass this limit through ifr during TUNSETIFF, then
+>>> alloc_netdev_mq() can use this limit.
+>> Any other ideas/comments from the experts. Or shall I re-repost other patches 
+>> in the series except this patch until we agree on one.
+>>
+> It's kind of useless without a way for userspace to discover
+> how many queues it can create, no?
+>
 
-Hi Linus:
-
-Sorry about this. We are resolving the issue in the other bug
-report(https://lkml.org/lkml/2014/8/21/606) and I have proposed a fix
-patch(http://marc.info/?l=linux-acpi&m=140869309231199&w=2).
-
-It's my fault. ACPI button notify callback will be called in the
-interrupt context when the button device is enumerated from ACPI FADT
-table(So called fixed button device). The ACPI button device also can be
-enumerated from ACPI namespace and its callback will be run in the
-process context just like other ACPI devices' notify callbacks. These
-two kind of butt devices uses the same callback. Originally, I assumed
-all ACPI notify callbacks were run in the process context and didn't
-check whether netlink routine can use in the interrupt context or not.
-Sorry again.
-
->                 Linus
-> 
-
-
--- 
-Best regards
-Tianyu Lan
+We can implement ethtool_get_channels for tuntap. But I'm still not
+clear why this is necessary.
