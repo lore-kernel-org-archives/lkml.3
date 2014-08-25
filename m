@@ -1,91 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933082AbaHYR0N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 13:26:13 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:57931 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752580AbaHYR0L (ORCPT
+	id S933164AbaHYR0R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 13:26:17 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:51128 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933039AbaHYR0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 13:26:11 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX199XhszqenisoXQAFaXuzCv
-Date: Mon, 25 Aug 2014 10:26:02 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Tero Kristo <t-kristo@ti.com>,
-        Paul Walmsley <paul@pwsan.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Keerthy <j-keerthy@ti.com>,
-        =?utf-8?Q?Beno=C3=AEt?= Cousson <bcousson@baylibre.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        devicetree@vger.kernel.org, Dave Gerlach <d-gerlach@ti.com>
-Subject: Re: [PATCH 2/3] pinctrl: single: Add DRA7 pinctrl compatibility
-Message-ID: <20140825172602.GN17254@atomide.com>
-References: <1408716062-26055-1-git-send-email-nm@ti.com>
- <1408716062-26055-3-git-send-email-nm@ti.com>
+	Mon, 25 Aug 2014 13:26:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408716062-26055-3-git-send-email-nm@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140825170920.GA8338@redhat.com>
+References: <20140824194700.GA27281@redhat.com>
+	<20140824194736.GA27441@redhat.com>
+	<CA+55aFyQzvvmWUDA01x69vYkrwUG07q9P3Mv5KaT31pOFsBZGQ@mail.gmail.com>
+	<20140825144111.GB31880@redhat.com>
+	<CA+55aFwNUF+CLWKkDBe56xOtK_JTj9zHWip+_Ep41GJniN+sPw@mail.gmail.com>
+	<20140825170920.GA8338@redhat.com>
+Date: Mon, 25 Aug 2014 10:26:12 -0700
+X-Google-Sender-Auth: nkkj3pC7iglQ-mD3b2noLxdeShw
+Message-ID: <CA+55aFw_-_h9Rj8F1H-nRm2-x8wMZ=f0ee122UXCVyJ_seuk2w@mail.gmail.com>
+Subject: Re: [PATCH 2/5] x86, fpu: don't drop_fpu() in __restore_xstate_sig()
+ if use_eager_fpu()
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fenghua Yu <fenghua.yu@intel.com>, Suresh Siddha <sbsiddha@gmail.com>,
+        Bean Anderson <bean@azulsystems.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nishanth Menon <nm@ti.com> [140822 07:03]:
-> DRA7 pinctrl definitions now differ from traditional 16 bit OMAP pin
-> ctrl definitions, in that all 32 bits are used to describe a single pin
-> 
-> Also the location of wakeupenable and event bits have changed.
-> 
-> Signed-off-by: Nishanth Menon <nm@ti.com>
+On Mon, Aug 25, 2014 at 10:09 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> I'd like to change it only because this code is the main source of the
+> nasty special case, used_math() and/or __thread_has_fpu(current) can be
+> false even if use_eager_fpu().
 
-Acked-by: Tony Lindgren <tony@atomide.com>
+Well, if you think it is correct (apart from missing preemption), then
+I disagree *violently* with your "clean it up by restoring things
+twice" model.
 
-> ---
->  .../bindings/pinctrl/ti,omap-pinctrl.txt           |    1 +
->  drivers/pinctrl/pinctrl-single.c                   |    7 +++++++
->  2 files changed, 8 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/pinctrl/ti,omap-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/ti,omap-pinctrl.txt
-> index 156d964..d45386d 100644
-> --- a/Documentation/devicetree/bindings/pinctrl/ti,omap-pinctrl.txt
-> +++ b/Documentation/devicetree/bindings/pinctrl/ti,omap-pinctrl.txt
-> @@ -5,5 +5,6 @@ Required properties:
->    "ti,omap3-padconf" - OMAP3 compatible pinctrl
->    "ti,omap4-padconf" - OMAP4 compatible pinctrl
->    "ti,omap5-padconf" - OMAP5 compatible pinctrl
-> +  "ti,dra7-padconf" - DRA7 compatible pinctrl
->  
->  See Documentation/devicetree/bindings/pinctrl/pinctrl-single.txt for further details.
-> diff --git a/drivers/pinctrl/pinctrl-single.c b/drivers/pinctrl/pinctrl-single.c
-> index 95dd9cf..598d600 100644
-> --- a/drivers/pinctrl/pinctrl-single.c
-> +++ b/drivers/pinctrl/pinctrl-single.c
-> @@ -1981,6 +1981,12 @@ static const struct pcs_soc_data pinctrl_single_omap_wkup = {
->  	.irq_status_mask = (1 << 15),	/* OMAP_WAKEUP_EVENT */
->  };
->  
-> +static const struct pcs_soc_data pinctrl_single_dra7 = {
-> +	.flags = PCS_QUIRK_SHARED_IRQ,
-> +	.irq_enable_mask = (1 << 24),	/* WAKEUPENABLE */
-> +	.irq_status_mask = (1 << 25),	/* WAKEUPEVENT */
-> +};
-> +
->  static const struct pcs_soc_data pinctrl_single = {
->  };
->  
-> @@ -1992,6 +1998,7 @@ static struct of_device_id pcs_of_match[] = {
->  	{ .compatible = "ti,omap3-padconf", .data = &pinctrl_single_omap_wkup },
->  	{ .compatible = "ti,omap4-padconf", .data = &pinctrl_single_omap_wkup },
->  	{ .compatible = "ti,omap5-padconf", .data = &pinctrl_single_omap_wkup },
-> +	{ .compatible = "ti,dra7-padconf", .data = &pinctrl_single_dra7 },
->  	{ .compatible = "pinctrl-single", .data = &pinctrl_single },
->  	{ .compatible = "pinconf-single", .data = &pinconf_single },
->  	{ },
-> -- 
-> 1.7.9.5
-> 
+The signal handling overhead of floating point restore is not small,
+and it's not theoretical. It's actually one of the main things that
+make signal handling slow. I haven't tested with the new optimized
+fxrstor, but it was one of the main annoyances with the lmbench
+numbers back when we used to track those closely (and which were one
+of the only tests to check signal handling performance).
+
+Of course, these days people try to avoid signals (because they are
+slow), but still..
+
+              Linus
