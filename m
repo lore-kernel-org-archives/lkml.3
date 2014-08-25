@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933576AbaHYVdw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 17:33:52 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:47611 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933464AbaHYVdu (ORCPT
+	id S933587AbaHYViQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 17:38:16 -0400
+Received: from toccata.ens-lyon.fr ([140.77.166.68]:43593 "EHLO
+	toccata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933466AbaHYViO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 17:33:50 -0400
+	Mon, 25 Aug 2014 17:38:14 -0400
+Date: Mon, 25 Aug 2014 23:37:52 +0200
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: Sabrina Dubroca <sd@queasysnail.net>, Valdis.Kletnieks@vt.edu,
+        Hugh Dickins <hughd@google.com>,
+        Vincent Donnefort <vdonnefort@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, linux-leds@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
+Subject: Re: 3.17-rc1: leds blink workqueue causes sleeping BUGs
+Message-ID: <20140825213752.GD3070@type.youpi.perso.aquilenet.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	Sabrina Dubroca <sd@queasysnail.net>, Valdis.Kletnieks@vt.edu,
+	Hugh Dickins <hughd@google.com>,
+	Vincent Donnefort <vdonnefort@gmail.com>,
+	Bryan Wu <cooloney@gmail.com>, linux-leds@vger.kernel.org,
+	linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
+References: <alpine.LSU.2.11.1408161946450.1064@eggly.anvils>
+ <10857.1408467967@turing-police.cc.vt.edu>
+ <20140825211340.GA22168@kria>
+ <20140825212324.GC3070@type.youpi.perso.aquilenet.fr>
 MIME-Version: 1.0
-In-Reply-To: <1408911690-7598-7-git-send-email-ast@plumgrid.com>
-References: <1408911690-7598-1-git-send-email-ast@plumgrid.com>
-	<1408911690-7598-7-git-send-email-ast@plumgrid.com>
-Date: Mon, 25 Aug 2014 14:33:48 -0700
-Message-ID: <CAHA+R7MTJcsDpw=5P7hOsVf_pEOEZX_=cLrcw4ep4xntUxk=3Q@mail.gmail.com>
-Subject: Re: [PATCH v5 net-next 06/29] bpf: add lookup/update/delete/iterate
- methods to BPF maps
-From: Cong Wang <cwang@twopensource.com>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Brendan Gregg <brendan.d.gregg@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140825212324.GC3070@type.youpi.perso.aquilenet.fr>
+User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 24, 2014 at 1:21 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-> 'maps' is a generic storage of different types for sharing data between kernel
-> and userspace.
->
-> The maps are accessed from user space via BPF syscall, which has commands:
->
-> - create a map with given type and attributes
->   fd = bpf_map_create(map_type, struct nlattr *attr, int len)
->   returns fd or negative error
->
-> - lookup key in a given map referenced by fd
->   err = bpf_map_lookup_elem(int fd, void *key, void *value)
->   returns zero and stores found elem into value or negative error
->
-> - create or update key/value pair in a given map
->   err = bpf_map_update_elem(int fd, void *key, void *value)
->   returns zero or negative error
->
-> - find and delete element by key in a given map
->   err = bpf_map_delete_elem(int fd, void *key)
->
-> - iterate map elements (based on input key return next_key)
->   err = bpf_map_get_next_key(int fd, void *key, void *next_key)
+Samuel Thibault, le Mon 25 Aug 2014 23:23:24 +0200, a écrit :
+> We could indeed have a loop if the user was making the VT::* leds use
+> the vt-* trigger,
 
+Actually, while there can be a loop, it wouldn't be possible to inject
+events in it: a VT::* led only makes the corresponding vt-* trigger if
+it got an event from its trigger, etc. So it's really a false positive,
+the lock detector just can not know that it can not happen.
 
-I think you need to document the bpf() syscall instead of wrappers on it,
-from a developer's point of view. You will anyway need to document a new
-syscall with a man page as a general rule.
-
-In the changelog I mean something like:
-
-err = bpf(BPF_MAP_LOOKUP_ELEM, ...);
+Samuel
