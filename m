@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934305AbaHZO5w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 10:57:52 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:33983 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755253AbaHZO5u (ORCPT
+	id S1758475AbaHZPAq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 11:00:46 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:34806 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758436AbaHZPAp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 10:57:50 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, linux-pci@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 0/6] PCI: tegra: Fixes and Tegra124 support
-Date: Tue, 26 Aug 2014 16:57:38 +0200
-Message-Id: <1409065064-17617-1-git-send-email-thierry.reding@gmail.com>
-X-Mailer: git-send-email 2.0.4
+	Tue, 26 Aug 2014 11:00:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <53FC9FF5.7060106@fb.com>
+References: <CACVxJT8LW4NOj7ksbcmfHig7MjJTK3AabZbnzWcNPNfznwPKrw@mail.gmail.com>
+	<53FC9FF5.7060106@fb.com>
+Date: Tue, 26 Aug 2014 18:00:43 +0300
+Message-ID: <CACVxJT_usd+8bDnctx6+4kgozE1GDONA+a+W+QWaa_tzuKCUEg@mail.gmail.com>
+Subject: Re: /proc/diskstats buglet
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Jens Axboe <axboe@fb.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thierry Reding <treding@nvidia.com>
+On Tue, Aug 26, 2014 at 5:55 PM, Jens Axboe <axboe@fb.com> wrote:
+> On 08/26/2014 08:47 AM, Alexey Dobriyan wrote:
+>> Found and reproduced some time ago, almost forgot about :-)
+>>
+>> In part_round_stats_single(), ->stamp field is written but without
+>> locking SMP-wise.
+>>
+>>     part->stamp = now;
+>>
+>> So, if two processes read /proc/diskstats, it is possible for "now -
+>> part->stamp" value to become negative.
+>>
+>> And indeed this can happen:
+>>
+>> now 4294755500, ->stamp 4294755501
+>> ------------[ cut here ]------------
+>> WARNING: CPU: 0 PID: 1950 at block/blk-core.c:1229
+>> part_round_stats_single+0xc0/0xd0()
+>>  ...
+>>  [<ffffffff811963f0>] part_round_stats_single+0xc0/0xd0
+>>  [<ffffffff81196447>] part_round_stats+0x47/0x70
+>>  [<ffffffff811a069d>] diskstats_show+0x8d/0x4b0
+>>  ...
+>>
+>> Dunno how important used fields in /proc/diskstats but they can be
+>> clearly bogus.
+>
+> Easiest fix is probably just to do the now - part->stamp math earlier,
+> and ignore <= 0 instead of just now == part->stamp. I think that should
+> be good enough for disk stats, and (most importantly), it would avoid
+> the warning.
+>
+> Speaking of the warning, I don't see where that is. Where is it from?
 
-This series implements various fixes and adds support for Tegra124 to the
-Tegra PCIe controller driver.
+I inserted the warning to be sure bug exists and I am not misreading the code.
 
-Patches 1 and 2 were already sent out separately earlier on but haven't been
-applied yet, so I'm including them here for convenience.
-
-Patches 3 to 5 are various fixes that should make the driver more reliable,
-though they don't (except maybe for patch 4) fix any known issues.
-
-Patch 6 finally adds support for Tegra124.
-
-Thierry
-
-Eric Yuen (1):
-  PCI: tegra: Make sure the PCIe PLL is really reset
-
-Peter Daifuku (1):
-  PCI: tegra: Fix extended configuration space mapping
-
-Thierry Reding (4):
-  resource: Add device-managed request/release_resource()
-  PCI: tegra: Implement a proper resource hierarchy
-  PCI: tegra: Clear CLKREQ# enable on port disable
-  PCI: tegra: Add Tegra124 support
-
- .../bindings/pci/nvidia,tegra20-pcie.txt           |  25 +-
- Documentation/driver-model/devres.txt              |   2 +
- drivers/pci/host/pci-tegra.c                       | 257 ++++++++++++++++++---
- include/linux/ioport.h                             |   5 +
- kernel/resource.c                                  |  70 ++++++
- 5 files changed, 323 insertions(+), 36 deletions(-)
-
--- 
-2.0.4
-
+  Alexey
