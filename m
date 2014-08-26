@@ -1,169 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756167AbaHZXhd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 19:37:33 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:61963 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755242AbaHZXg6 (ORCPT
+	id S1756105AbaHZXm1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 19:42:27 -0400
+Received: from regular1.263xmail.com ([211.150.99.140]:41789 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755541AbaHZXmZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 19:36:58 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Dmitry Torokhov <dtor@google.com>, Aubrey Li <aubrey.li@intel.com>
-Subject: [PATCH 4/5 v3] PCI / PM: Make PCIe PME interrupts wake up from suspend-to-idle
-Date: Wed, 27 Aug 2014 01:51:31 +0200
-Message-ID: <3100042.GU96J7QUhN@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5320472.coYotHR1d0@vostro.rjw.lan>
-References: <26580319.OZP7jvJnA9@vostro.rjw.lan> <5320472.coYotHR1d0@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Tue, 26 Aug 2014 19:42:25 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: wxt@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: wxt@rock-chips.com
+X-UNIQUE-TAG: <f41f77f446b181cf22b3f1def8018b19>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Caesar Wang <caesar.wang@rock-chips.com>
+To: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com,
+        grant.likely@linaro.org
+Cc: robh+dt@kernel.org, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, huangtao@rock-chips.com, cf@rock-chips.com,
+        dianders@chromium.org, dtor@chromium.org, zyw@rock-chips.com,
+        addy.ke@rock-chips.com, Caesar Wang <caesar.wang@rock-chips.com>
+Subject: [PATCH v2 0/2] Rockchip soc theamal driver
+Date: Wed, 27 Aug 2014 07:41:41 +0800
+Message-Id: <1409096503-7081-1-git-send-email-caesar.wang@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+This series adds support for the thermal Found on Rockhip RK32 SoCs.
+Tested on RK3288 SDK board.
 
-To make PCIe PME interrupts wake up the system from suspend to idle,
-make the PME driver use enable_irq_wake() on the IRQ during system
-suspend (if there are any wakeup devices below the given PCIe port)
-without disabling PME interrupts.  This way, an interrupt will still
-trigger if a wakeup event happens and the system will be woken up (or
-system suspend in progress will be aborted) by means of the new
-mechanics introduced previously.
+Changes in v2:
+	* address comments from Heiko Stubner:
+	- fix dt-bindings in rockchip-thermal.txt
+	- remove Author mark 
+	- rename TSADC_XXX->TSADC_XXX,it eill ready to merge compatible other SoCs.
+	- fix a identation
+	- remove clk_set_rate(),it's no necessary. 
+	- fix the SIMPLE_DEV_PM_OPS() function  style.
 
-This change allows Wake-on-LAN to be used for wakeup from
-suspend-to-idle on my MSI Wind tesbed netbook.
+Caesar Wang (2):
+  thermal: rockchip: add driver for thermal
+  dt-bindings: document Rockchip thermal
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/pci/pcie/pme.c |   61 ++++++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 51 insertions(+), 10 deletions(-)
+ .../bindings/thermal/rockchip-thermal.txt          |   20 +
+ drivers/thermal/Kconfig                            |    9 +
+ drivers/thermal/Makefile                           |    1 +
+ drivers/thermal/rockchip_thermal.c                 |  642 ++++++++++++++++++++
+ 4 files changed, 672 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+ create mode 100644 drivers/thermal/rockchip_thermal.c
 
+-- 
+1.7.9.5
 
---
-To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-Index: linux-pm/drivers/pci/pcie/pme.c
-===================================================================
---- linux-pm.orig/drivers/pci/pcie/pme.c
-+++ linux-pm/drivers/pci/pcie/pme.c
-@@ -41,11 +41,17 @@ static int __init pcie_pme_setup(char *s
- }
- __setup("pcie_pme=", pcie_pme_setup);
- 
-+enum pme_suspend_level {
-+	PME_SUSPEND_NONE = 0,
-+	PME_SUSPEND_WAKEUP,
-+	PME_SUSPEND_NOIRQ,
-+};
-+
- struct pcie_pme_service_data {
- 	spinlock_t lock;
- 	struct pcie_device *srv;
- 	struct work_struct work;
--	bool noirq; /* Don't enable the PME interrupt used by this service. */
-+	enum pme_suspend_level suspend_level;
- };
- 
- /**
-@@ -223,7 +229,7 @@ static void pcie_pme_work_fn(struct work
- 	spin_lock_irq(&data->lock);
- 
- 	for (;;) {
--		if (data->noirq)
-+		if (data->suspend_level != PME_SUSPEND_NONE)
- 			break;
- 
- 		pcie_capability_read_dword(port, PCI_EXP_RTSTA, &rtsta);
-@@ -250,7 +256,7 @@ static void pcie_pme_work_fn(struct work
- 		spin_lock_irq(&data->lock);
- 	}
- 
--	if (!data->noirq)
-+	if (data->suspend_level == PME_SUSPEND_NONE)
- 		pcie_pme_interrupt_enable(port, true);
- 
- 	spin_unlock_irq(&data->lock);
-@@ -367,6 +373,21 @@ static int pcie_pme_probe(struct pcie_de
- 	return ret;
- }
- 
-+static bool pcie_pme_check_wakeup(struct pci_bus *bus)
-+{
-+	struct pci_dev *dev;
-+
-+	if (!bus)
-+		return false;
-+
-+	list_for_each_entry(dev, &bus->devices, bus_list)
-+		if (device_may_wakeup(&dev->dev)
-+		    || pcie_pme_check_wakeup(dev->subordinate))
-+			return true;
-+
-+	return false;
-+}
-+
- /**
-  * pcie_pme_suspend - Suspend PCIe PME service device.
-  * @srv: PCIe service device to suspend.
-@@ -375,11 +396,26 @@ static int pcie_pme_suspend(struct pcie_
- {
- 	struct pcie_pme_service_data *data = get_service_data(srv);
- 	struct pci_dev *port = srv->port;
-+	bool wakeup;
- 
-+	if (device_may_wakeup(&port->dev)) {
-+		wakeup = true;
-+	} else {
-+		down_read(&pci_bus_sem);
-+		wakeup = pcie_pme_check_wakeup(port->subordinate);
-+		up_read(&pci_bus_sem);
-+	}
- 	spin_lock_irq(&data->lock);
--	pcie_pme_interrupt_enable(port, false);
--	pcie_clear_root_pme_status(port);
--	data->noirq = true;
-+	if (wakeup) {
-+		enable_irq_wake(srv->irq);
-+		data->suspend_level = PME_SUSPEND_WAKEUP;
-+	} else {
-+		struct pci_dev *port = srv->port;
-+
-+		pcie_pme_interrupt_enable(port, false);
-+		pcie_clear_root_pme_status(port);
-+		data->suspend_level = PME_SUSPEND_NOIRQ;
-+	}
- 	spin_unlock_irq(&data->lock);
- 
- 	synchronize_irq(srv->irq);
-@@ -394,12 +430,17 @@ static int pcie_pme_suspend(struct pcie_
- static int pcie_pme_resume(struct pcie_device *srv)
- {
- 	struct pcie_pme_service_data *data = get_service_data(srv);
--	struct pci_dev *port = srv->port;
- 
- 	spin_lock_irq(&data->lock);
--	data->noirq = false;
--	pcie_clear_root_pme_status(port);
--	pcie_pme_interrupt_enable(port, true);
-+	if (data->suspend_level == PME_SUSPEND_NOIRQ) {
-+		struct pci_dev *port = srv->port;
-+
-+		pcie_clear_root_pme_status(port);
-+		pcie_pme_interrupt_enable(port, true);
-+	} else {
-+		disable_irq_wake(srv->irq);
-+	}
-+	data->suspend_level = PME_SUSPEND_NONE;
- 	spin_unlock_irq(&data->lock);
- 
- 	return 0;
 
