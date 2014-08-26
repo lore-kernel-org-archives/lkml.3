@@ -1,69 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752502AbaHZEM0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 00:12:26 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:58724 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784AbaHZEMY (ORCPT
+	id S1751034AbaHZETo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 00:19:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35954 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716AbaHZETn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 00:12:24 -0400
+	Tue, 26 Aug 2014 00:19:43 -0400
+Date: Mon, 25 Aug 2014 21:19:02 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Scott Yuan <scottzero0@gmail.com>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] 8250: serial device file is out of order
+Message-ID: <20140826041902.GA27596@kroah.com>
+References: <1409022297-15555-1-git-send-email-scottzero0@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140825.180621.1003932711320755950.davem@davemloft.net>
-References: <1409014858-1410-1-git-send-email-ast@plumgrid.com>
-	<1409014858-1410-2-git-send-email-ast@plumgrid.com>
-	<20140825.180621.1003932711320755950.davem@davemloft.net>
-Date: Mon, 25 Aug 2014 21:12:23 -0700
-Message-ID: <CAMEtUuz4OGOuhtftnVAvFFS0a_6qPBj=CNsTAc23GzA10+S=bg@mail.gmail.com>
-Subject: Re: [PATCH v6 net-next 1/6] net: filter: add "load 64-bit immediate"
- eBPF instruction
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: David Miller <davem@davemloft.net>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Brendan Gregg <brendan.d.gregg@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409022297-15555-1-git-send-email-scottzero0@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 6:06 PM, David Miller <davem@davemloft.net> wrote:
->
-> Instead I would rather you look into a model like what the quake
-> engine uses for it's VM.
+On Tue, Aug 26, 2014 at 11:04:57AM +0800, Scott Yuan wrote:
+> On x86 architecture, the configuration of serial device maybe get from ACPI
+> DSDT, but the order of DSDT is not mandatory, result as array serial8250_ports
+> is out of order. This situation is more obvious in multiple serial port
+> mainboard. Sort it by unique id that in DSDT will fix it.
 
-Thanks for the tip! I wasn't aware of quake vm.
-I've looked through several papers and slides.
-I'm surely missing something in what they're doing, but
-here is my comparison of eBPF vs QVM:
-- QVM ISA is stack based vs eBPF registers
-- pointer types are predefined by QVM ISA whereas eBPF relies
-  on static verifier which is more extensible, since verifier can get
-  progressively smarter with time without need to change interpreter,
-  llvm and JITs, whereas QVM would need changes through the
-  toolchain, interpreter, JITs to support new pointer type
-- QVM calls with negative values invoke helper functions, which is
-  similar to eBPF calls. The difference is QVM keeps negative values
-  while interpreting and doing run-time checking of arguments whereas
-  eBPF is statically verifying all before interpreting
-- access to QVM 'local' memory is bounds checked at run-time,
-  whereas eBPF does load/store bounds checking by static analysis
+Who cares about the order, you should use the "persistant" names in
+/dev/serial/ to connect to things that you really care about which is
+which.
 
-I may be wrong, but it seems possible to side step QVM run-time
-checking, since their 'top of stack' is typeless and it seems possible
-to push constant as a pointer there.
+> 
+> Signed-off-by: Scott Yuan <scottzero0@gmail.com>
+> ---
+>  drivers/pnp/pnpacpi/core.c          |  1 +
+>  drivers/tty/serial/8250/8250_core.c | 40 ++++++++++++++++++++++++++++++++++++-
+>  drivers/tty/serial/8250/8250_pnp.c  | 12 +++++++++++
+>  include/linux/pnp.h                 |  1 +
+>  include/linux/serial_8250.h         |  2 ++
+>  5 files changed, 55 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/pnp/pnpacpi/core.c b/drivers/pnp/pnpacpi/core.c
+> index a5c6cb7..84b518e 100644
+> --- a/drivers/pnp/pnpacpi/core.c
+> +++ b/drivers/pnp/pnpacpi/core.c
+> @@ -254,6 +254,7 @@ static int __init pnpacpi_add_device(struct acpi_device *device)
+>  		return -ENOMEM;
+>  
+>  	dev->data = device;
+> +	dev->is_acpi = 1;
+>  	/* .enabled means the device can decode the resources */
+>  	dev->active = device->status.enabled;
+>  	if (acpi_has_method(device->handle, "_SRS"))
+> diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
+> index 7a91c6d..0e5ece5 100644
+> --- a/drivers/tty/serial/8250/8250_core.c
+> +++ b/drivers/tty/serial/8250/8250_core.c
+> @@ -3221,6 +3221,41 @@ static struct uart_8250_port *serial8250_find_match_or_unused(struct uart_port *
+>  	return NULL;
+>  }
+>  
+> +static struct uart_8250_port *
+> +serial8250_find_match_sorted_port(struct uart_port *port)
+> +{
+> +	int i, j;
+> +	struct uart_8250_port *uart;
+> +
+> +	uart = container_of(port, struct uart_8250_port, port);
+> +
+> +	/*
+> +	 * We need sorted array serial8250_ports, it is sort by ACPI
+> +	 * device unique id, so find an apropriate position to insert.
+> +	 */
+> +	for (i = 0; i < nr_uarts; i++) {
+> +		if (serial8250_ports[i].uid == 0 ||
+> +			uart->uid < serial8250_ports[i].uid)
+> +			break;
+> +	}
+> +
+> +	/*
+> +	 * If current uid that in serial8250_ports is big than port uid,
+> +	 * then move 8250 port data.
+> +	 */
+> +	if (i < nr_uarts - 1 &&
+> +		uart->uid < serial8250_ports[i].uid) {
+> +		memmove(&serial8250_ports[i+1], &serial8250_ports[i],
+> +			(nr_uarts - i - 1) * sizeof(struct uart_8250_port));
 
-I'm biased, but eBPF seems like better architecture,
-more flexible, likely faster to interpret, simple JITs, more powerful
-compiler. The downside, of course, eBPF verifier is more complex
-than QVM which is mainly relying on run-time checks.
+Heh, no, that's crazy...
+
+> +
+> +		/* modify port.line, since data moved */
+> +		for (j = i + 1; j < nr_uarts; j++)
+> +			serial8250_ports[j].port.line += 1;
+> +	}
+> +	serial8250_ports[i].uid = uart->uid;
+> +	return &serial8250_ports[i];
+> +}
+
+I really don't understand what you are trying to "solve" here.  What is
+wrong with the current kernel code?  What does this patch change?
+
+Why is acpi "special"?
+
+greg k-h
