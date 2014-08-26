@@ -1,71 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754971AbaHZUmI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 16:42:08 -0400
-Received: from omr1.cc.vt.edu ([198.82.141.52]:53834 "EHLO omr1.cc.vt.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754810AbaHZUmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 16:42:05 -0400
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
-To: Samuel Thibault <samuel.thibault@ens-lyon.org>
-Cc: Hugh Dickins <hughd@google.com>, akpm@linux-foundation.org,
-        Sabrina Dubroca <sd@queasysnail.net>,
-        Vincent Donnefort <vdonnefort@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
-Subject: Re: [PATCHv2][input-led] Defer input led work to workqueue
-In-Reply-To: Your message of "Tue, 26 Aug 2014 11:17:25 +0200."
-             <20140826091725.GA23293@type.youpi.perso.aquilenet.fr>
-From: Valdis.Kletnieks@vt.edu
-References: <20140826015453.GA5235@type.youpi.perso.aquilenet.fr>
-            <20140826091725.GA23293@type.youpi.perso.aquilenet.fr>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1409085709_3249P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Tue, 26 Aug 2014 16:41:49 -0400
-Message-ID: <3469.1409085709@turing-police.cc.vt.edu>
+	id S1755085AbaHZUnV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 16:43:21 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:56179 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752696AbaHZUnU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 16:43:20 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+Cc: Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] acpi: fan.c: printk replacement
+Date: Tue, 26 Aug 2014 23:02:27 +0200
+Message-ID: <8052272.VnRivAuOcQ@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140826153039.GA2684@sudip-PC>
+References: <1408709001-3272-1-git-send-email-sudipm.mukherjee@gmail.com> <6969509.uGLFfCOQBb@vostro.rjw.lan> <20140826153039.GA2684@sudip-PC>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1409085709_3249P
-Content-Type: text/plain; charset=us-ascii
+On Tuesday, August 26, 2014 09:00:39 PM Sudip Mukherjee wrote:
+> On Tue, Aug 26, 2014 at 12:45:20AM +0200, Rafael J. Wysocki wrote:
+> > On Friday, August 22, 2014 05:33:21 PM Sudip Mukherjee wrote:
+> > > printk replaced with corresponding dev_err and dev_info
+> > > fixed one broken user-visible string
+> > > multiine comment edited for correct commenting style
+> > > asm/uaccess.h replaced with linux/uaccess.h
+> > > 
+> > > Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+> > > ---
+> > >  drivers/acpi/fan.c | 18 +++++++++---------
+> > >  1 file changed, 9 insertions(+), 9 deletions(-)
+> > > 
+> > > diff --git a/drivers/acpi/fan.c b/drivers/acpi/fan.c
+> > > index 8acf53e..7900d55 100644
+> > > --- a/drivers/acpi/fan.c
+> > > +++ b/drivers/acpi/fan.c
+> > > @@ -27,7 +27,7 @@
+> > >  #include <linux/module.h>
+> > >  #include <linux/init.h>
+> > >  #include <linux/types.h>
+> > > -#include <asm/uaccess.h>
+> > > +#include <linux/uaccess.h>
+> > >  #include <linux/thermal.h>
+> > >  #include <linux/acpi.h>
+> > >  
+> > > @@ -127,8 +127,9 @@ static const struct thermal_cooling_device_ops fan_cooling_ops = {
+> > >  };
+> > >  
+> > >  /* --------------------------------------------------------------------------
+> > > -                                 Driver Interface
+> > > -   -------------------------------------------------------------------------- */
+> > > + *                               Driver Interface
+> > > + * --------------------------------------------------------------------------
+> > > +*/
+> > >  
+> > >  static int acpi_fan_add(struct acpi_device *device)
+> > >  {
+> > > @@ -143,7 +144,7 @@ static int acpi_fan_add(struct acpi_device *device)
+> > >  
+> > >  	result = acpi_bus_update_power(device->handle, NULL);
+> > >  	if (result) {
+> > > -		printk(KERN_ERR PREFIX "Setting initial power state\n");
+> > > +		dev_err(&device->dev, PREFIX "Setting initial power state\n");
+> > 
+> > While at it, please define a proper pr_fmt() for this file and get rid of PREFIX
+> > too.
+> > 
+> > Otherwise I don't see a compelling reason to apply this.
+> > 
+> 
+> Hi,
+> Since in the patch I am not using any pr_* , so I am unable to understand why
+> you are asking for a proper pr_fmt().
 
-On Tue, 26 Aug 2014 11:17:25 +0200, you said:
+Never mind, I was confused somehow, not exactly sure why.  Sorry about that.
 
->
-> Difference with v1: uses schedule_work instead of its own workqueue.
->
-> --- a/drivers/input/leds.c
-> +++ b/drivers/input/leds.c
-> @@ -100,13 +100,24 @@ static unsigned long vt_led_registered[B
+> I can get rid of the PREFIX . Then should I use pr_* in the patch instead of dev_* ? 
+> My understanding was dev_* is more preffered than pr_*.
+> waiting for your suggestion on this.
 
-Same thing for B2 - next-20140826 complains, and no complaints with this patch
-on top.
+Well, that really depends on the particular case.  It really is better to use
+dev_err() here, but then PREFIX with it is not really useful, so please just
+drop PREFIX from the new messages.
 
-Tested-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
+Rafael
 
---==_Exmh_1409085709_3249P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBU/zxDQdmEQWDXROgAQJ3cg/9Hvx/H5aJwYevd+dj6U81mBSm07bO6RJC
-+XhtvhhBEUSFPKmArBlxBY2PyICbnpmtJldvG9E+I2+S1zqPczoIEatQgwR6ttfa
-8BiLhoOxsq3O6IEUFsWpgHHcT9EXUSc5tqEnv5xVxBDkNp4pB+2Uca+5f3IsXuFX
-DNnfh6o9/pCoRVIlWDykUC7cenDagwCR/i5KHQQRSL+b5/YiGFH1Qt/YCGml+WWK
-8McdfW+xbG8Oc28HcIhUw2aoUwsb0wE5TwH/mwuzfl+Ad62XuKZXcuW77VjejzX0
-dF4YPhkQ2YkSto1OrOgpaSPgaKcYXsO1hWylEOntzltwovxhn2dDkt2kSwYCGcTc
-d1A+e+3YpLi4HB4hyJ8rXlYeuMq0w0u6BKA3MymVDsFJiqO3tjFOaj8sNLwZjaXC
-k8AdL2ILirwA4Iovq7FW6YLt3gbwmiBDkAn5O9p3Mk5YMQEZW+cGltLbwUcfgI7e
-BZHZ9PCDjwo2omcoSaiiMzSDd5ggv502AlrSUcPBZVposHVq4ZshHjCldRzRHinf
-FQCjdJm9SWcTLn9E0/2d79Zy9A7zSZsfM500hOKOYBSoK9WKxwvJe+H8akb6/1sX
-/Q+xKnJgFcY6PPXd6atsjMdUFDfK7QZhxrJQCKfXganugNmZhfU9vqt4ouLtdc65
-4T4q0W7Icxg=
-=d9AD
------END PGP SIGNATURE-----
-
---==_Exmh_1409085709_3249P--
