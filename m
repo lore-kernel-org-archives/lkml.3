@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757415AbaHZHS2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 03:18:28 -0400
-Received: from ozlabs.org ([103.22.144.67]:41202 "EHLO ozlabs.org"
+	id S1757327AbaHZHWU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 03:22:20 -0400
+Received: from ozlabs.org ([103.22.144.67]:46778 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757249AbaHZHSZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 03:18:25 -0400
-Date: Tue, 26 Aug 2014 17:18:18 +1000
+	id S1755535AbaHZHWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 03:22:19 -0400
+Date: Tue, 26 Aug 2014 17:22:08 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ulrich Obergfell <uobergfe@redhat.com>,
-        Andrew Jones <drjones@redhat.com>, Don Zickus <dzickus@redhat.com>
-Subject: linux-next: build failure after merge of the akpm tree
-Message-ID: <20140826171818.719c4e6a@canb.auug.org.au>
+        Xishi Qiu <qiuxishi@huawei.com>
+Subject: linux-next: build warnings after merge of the akpm-current tree
+Message-ID: <20140826172208.1dbc37db@canb.auug.org.au>
 X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/Z.Ss58ZUbCqyBcPX2Ue8RyV"; protocol="application/pgp-signature"
+ boundary="Sig_/ITFg8dzlG6xLYXX=P+6RpQO"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Z.Ss58ZUbCqyBcPX2Ue8RyV
+--Sig_/ITFg8dzlG6xLYXX=P+6RpQO
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: quoted-printable
 
 Hi Andrew,
 
-After merging the akpm tree, today's linux-next build (sparc64
-defconfig) failed like this:
+After merging the akpm-current tree, today's linux-next build (arm
+defconfig) produced these warnings:
 
-kernel/built-in.o: In function `proc_dowatchdog':
-(.text+0x6a620): undefined reference to `watchdog_hardlockup_detector_is_en=
-abled'
-kernel/built-in.o: In function `proc_dowatchdog':
-(.text+0x6a6a8): undefined reference to `watchdog_enable_hardlockup_detecto=
-r'
-kernel/built-in.o: In function `proc_dowatchdog':
-(.text+0x6a79c): undefined reference to `watchdog_enable_hardlockup_detecto=
-r'
+In file included from /scratch/sfr/next/include/asm-generic/bug.h:13:0,
+                 from /scratch/sfr/next/arch/arm/include/asm/bug.h:61,
+                 from /scratch/sfr/next/include/linux/bug.h:4,
+                 from /scratch/sfr/next/include/linux/thread_info.h:11,
+                 from /scratch/sfr/next/include/asm-generic/preempt.h:4,
+                 from arch/arm/include/generated/asm/preempt.h:1,
+                 from /scratch/sfr/next/include/linux/preempt.h:18,
+                 from /scratch/sfr/next/include/linux/spinlock.h:50,
+                 from /scratch/sfr/next/include/linux/mmzone.h:7,
+                 from /scratch/sfr/next/include/linux/gfp.h:5,
+                 from /scratch/sfr/next/include/linux/slab.h:14,
+                 from /scratch/sfr/next/mm/nobootmem.c:13:
+/scratch/sfr/next/mm/nobootmem.c: In function 'free_low_memory_core_early':
+/scratch/sfr/next/include/linux/kernel.h:29:20: warning: large integer impl=
+icitly truncated to unsigned type [-Woverflow]
+ #define ULLONG_MAX (~0ULL)
+                    ^
+/scratch/sfr/next/mm/nobootmem.c:122:28: note: in expansion of macro 'ULLON=
+G_MAX'
+  memblock_clear_hotplug(0, ULLONG_MAX);
+                            ^
 
-Caused by commit 72355eed4bd7 ("kernel/watchdog.c: control hard lockup
-detection default").  This build has CONFIG_HAVE_NMI_WATCHDOG=3Dy,
-CONFIG_HARDLOCKUP_DETECTOR not set.
+Introduced by commit 6e162b4c49f7 ("mem-hotplug: let memblock skip the
+hotpluggable memory regions in __next_mem_range()").  The second
+argument to memblock_clear_hotplug() is a phys_addr_t, which varies in
+size between architectures/platforms.
 
-I have reverted that commit (and commits
-"watchdog-control-hard-lockup-detection-default-fix" and "kvm: ensure
-hard lockup detection is disabled by default" that follow it) for today.
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
---Sig_/Z.Ss58ZUbCqyBcPX2Ue8RyV
+--Sig_/ITFg8dzlG6xLYXX=P+6RpQO
 Content-Type: application/pgp-signature; name=signature.asc
 Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAEBCAAGBQJT/DS+AAoJEMDTa8Ir7ZwVBAgP/R9zyLgdvioWneLLPV2d7tB+
-DVmnCE/GZt5ylKW9BtjuJospk8GiJn41QLWauNKryQkcb56VJU5tk4gwyjIooKS/
-AzVmeN/+vHynS9jezwhL+fMBMMrppSpIwbEGcepYUJKR+I+7C6x92CeWWc0n3/M0
-1vtoR5S4wY4RaHG7sxKXRQ+ANx8prp6ciLcB2VJf43+u6q6pOBByZswdInwKWLUM
-avUKGcE69RJItRLCeAF7L7a0srzV0K7/IGcGLLRQnRfWQvEjE65vM7Sq4cDC1ljq
-Lzs4HRcZmfV9D8fzEo1shlHMkx1ohXqfiPa1oCRbe8Lee72vLJ3tHRn+H/fpk0MJ
-5uiuZEPyCT2IOqoIGOyt2oellZAZS6C2tr+aB4X3il7Ebq0VgfIEYwGu2O85Vxjr
-rAQIMGfYPlBYPoKTw1jru/HGXX7Be2hJSvK1V8fN2UjFnpG2oh5eX/Yg1QLo2ph0
-NSo5AU/XWFZmX1jEwIOyfCVLiCWZ5AvXwGoFAV9JsrcxeRHBPHQhwLAP+qI6Ilju
-rcEW0gootqDcdy3EMXZ9S/34J1qra6FKW9CHjl7tHFWIWNcrsdA+7bpoV8KQsF4d
-s5ALeyGh9o4obfm4nk2k28e1ABlg7pZ5uK3d15FaoramK19u/ptcVdytYNuz39v1
-wY3GWt7eih1o8Zs5JjkV
-=ErbU
+iQIcBAEBCAAGBQJT/DWoAAoJEMDTa8Ir7ZwVX20P/3+oUj3I3jL4TPUoiX2YEZnM
+79sC0OHhsjD33KQusspYcCA1htjNhehK6tyT5czZ4HVhJjR5IYdW1gFMELtlgkMt
+F60J/WR94HJo9Z474XhRIfWBLrH5cjgIcXI3UcMPCZaRRRsxUyeAEbMuyuQGX+tO
+ONKHnVREEiSpEnRFGqdynUAHZK/vK69MFN4jyxP29oZJ0ZfZ0epBDNHTK69GRBSM
+ddzODw23/4JwAYIK3NYlPhrAb8EEPx6opNmNI0U5jPKPTyaKJcABWjqvQPgUJrX/
+VTAF3KT4o4ZL6ARHtTPz/qmfDPBGdoh1RrenrMDy5FQ3qCSNJvznS8RLWryu8gP4
+uWOqOl7eQljQxWZBh9vyw922Pbk/1H8f0NLshsPMNGwp9o357UTylPzKOzmjWo3l
+RCaSBhoNnm9tv81+EyENtjjEzjvNVzNKuVlT4DAI9Nd8o2VjTAzuQhvs64i4fX8k
+WjhJC37vDlTEKiKjH9KjgofY+axQ8ZN6T7eLt3uxPo3qnl1ksDmSNOx8B198yuBt
+kfIdBC7FK0FoJCLl5K/bKP8jWm125fzz8fkWkMabPMguUUq2ET3GuGB08zlLfDSw
+Mt377AGN2tm3Q0Eg0yCHpOXpCBKr7CFcpdZBWGvd7FieeNuQPRnoeZFLZMpFUj2F
+hgoCoDaQGyZk7LE3Byw3
+=TtnT
 -----END PGP SIGNATURE-----
 
---Sig_/Z.Ss58ZUbCqyBcPX2Ue8RyV--
+--Sig_/ITFg8dzlG6xLYXX=P+6RpQO--
