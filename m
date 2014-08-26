@@ -1,194 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757468AbaHZJ5z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 05:57:55 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:40870 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754021AbaHZJ5y (ORCPT
+	id S1757496AbaHZJ62 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 05:58:28 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33237 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754021AbaHZJ60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 05:57:54 -0400
-Message-ID: <53FC5A04.9070300@huawei.com>
-Date: Tue, 26 Aug 2014 17:57:24 +0800
-From: Zhang Zhen <zhenzhang.zhang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Tue, 26 Aug 2014 05:58:26 -0400
+Date: Tue, 26 Aug 2014 10:58:04 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Z Lim <zlim.lnx@gmail.com>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        Alexei Starovoitov <ast@plumgrid.com>, Jiang Liu <liuj97@gmail.com>,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH 00/14] arm64: eBPF JIT compiler
+Message-ID: <20140826095804.GB23445@arm.com>
+References: <1405708100-13604-1-git-send-email-zlim.lnx@gmail.com>
+ <20140721091623.GA16122@arm.com>
+ <CAMEtUuyC+MykPDO0ghTc=oex7KPLEy=BLRgWBdW+qJY7JXQmDQ@mail.gmail.com>
+ <20140723103219.GA1366@localhost>
+ <CABg9mcvU44W5AkPLtyswNWdDdF_nnqvLyKqv7RWhpuRRSWDW3A@mail.gmail.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Toshi Kani <toshi.kani@hp.com>, David Rientjes <rientjes@google.com>
-CC: <wangnan0@huawei.com>, <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>
-Subject: [PATCH] memory-hotplug: fix not enough check of valid_zones
-References: <1409046575-11025-1-git-send-email-zhenzhang.zhang@huawei.com>
-In-Reply-To: <1409046575-11025-1-git-send-email-zhenzhang.zhang@huawei.com>
-X-Forwarded-Message-Id: <1409046575-11025-1-git-send-email-zhenzhang.zhang@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.77]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABg9mcvU44W5AkPLtyswNWdDdF_nnqvLyKqv7RWhpuRRSWDW3A@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As Yasuaki Ishimatsu described the check here is not enough
-if memory has hole as follows:
+Hi Z Lim,
 
-PFN       0x00          0xd0          0xe0          0xf0
-             +-------------+-------------+-------------+
-zone type   |   Normal    |     hole    |   Normal    |
-             +-------------+-------------+-------------+
-In this case, the check can't guarantee that this is "the last
-block of memory".
-The check of ZONE_MOVABLE has the same problem.
+On Thu, Jul 24, 2014 at 05:55:36AM +0100, Z Lim wrote:
+> On Wed, Jul 23, 2014 at 3:32 AM, Catalin Marinas
+> <catalin.marinas@arm.com> wrote:
+> > On Mon, Jul 21, 2014 at 04:49:29PM +0100, Alexei Starovoitov wrote:
+> >> On Mon, Jul 21, 2014 at 2:16 AM, Will Deacon <will.deacon@arm.com> wrote:
+> >> > On Fri, Jul 18, 2014 at 07:28:06PM +0100, Zi Shen Lim wrote:
+> [...]
+> >> >> This series applies against net-next and is tested working
+> >> >> with lib/test_bpf on ARMv8 Foundation Model.
+> >> >
+> >> > Looks like it works on my Juno board too, so:
+> >> >
+> >> >   Acked-by: Will Deacon <will.deacon@arm.com>
+> >> >
+> >> > for the series.
+> >> >
+> >> > It's a bit late for 3.17 now, so I guess we'll queue this for 3.18 (which
+> >> > also means the dependency on -next isn't an issue). Perhaps you could repost
+> >> > around -rc3?
+> >>
+> >> Thanks for testing! Nice to see it working on real hw.
+> >> I'm not sure why you're proposing a 4+ week delay. The patches
+> >> will rot instead of getting used and tested. Imo it makes sense to
+> >> get them into net-next now for 3.17.
+> >> JIT is disabled by sysctl by default anyway.
+> >
+> > We normally like some patches (especially new functionality) to sit in
+> > linux-next for a while before the mering window (ideally starting with
+> > -rc4 or -rc5). We are at -rc6 already, so getting close to the 3.17
+> > merging window.
+> >
+> > Another aspect is that the arm64/bpf branch depends on the net tree, so
+> > it can't easily go in via the arm64 tree for 3.17 (3.18 would not be a
+> > problem).
+> 
+> Hi Catalin, I take it you prefer this series going through arm64 tree,
+> targeting 3.18, is that right?
+> 
+> I understand your preference to have it sitting in linux-next for a
+> longer period for arm64 material, I'll repost this again after 3.17 so
+> it gets more exposure in linux-next.
 
-Change the interface name to valid_zones according to most pepole's
-suggestion.
+Any chance you could post a new version of this, based on a 3.17 -rc,
+please? Whilst your current patches apply, I get a bunch of errors if I try
+to build them.
 
-Sample output of the sysfs files:
-	memory0/valid_zones: none
-	memory1/valid_zones: DMA32
-	memory2/valid_zones: DMA32
-	memory3/valid_zones: DMA32
-	memory4/valid_zones: Normal
-	memory5/valid_zones: Normal
-	memory6/valid_zones: Normal Movable
-	memory7/valid_zones: Movable Normal
-	memory8/valid_zones: Movable
+Cheers,
 
-Signed-off-by: Zhang Zhen <zhenzhang.zhang@huawei.com>
----
- Documentation/ABI/testing/sysfs-devices-memory |  8 ++---
- Documentation/memory-hotplug.txt               |  4 +--
- drivers/base/memory.c                          | 42 ++++++--------------------
- 3 files changed, 15 insertions(+), 39 deletions(-)
-
-diff --git a/Documentation/ABI/testing/sysfs-devices-memory b/Documentation/ABI/testing/sysfs-devices-memory
-index 2b2a1d7..deef3b5 100644
---- a/Documentation/ABI/testing/sysfs-devices-memory
-+++ b/Documentation/ABI/testing/sysfs-devices-memory
-@@ -61,13 +61,13 @@ Users:		hotplug memory remove tools
- 		http://www.ibm.com/developerworks/wikis/display/LinuxP/powerpc-utils
-
-
--What:           /sys/devices/system/memory/memoryX/zones_online_to
-+What:           /sys/devices/system/memory/memoryX/valid_zones
- Date:           July 2014
- Contact:	Zhang Zhen <zhenzhang.zhang@huawei.com>
- Description:
--		The file /sys/devices/system/memory/memoryX/zones_online_to
--		is read-only and is designed to show which zone this memory block can
--		be onlined to.
-+		The file /sys/devices/system/memory/memoryX/valid_zones	is
-+		read-only and is designed to show which zone this memory
-+		block can be onlined to.
-
- What:		/sys/devices/system/memoryX/nodeY
- Date:		October 2009
-diff --git a/Documentation/memory-hotplug.txt b/Documentation/memory-hotplug.txt
-index 5b34e33..947229c 100644
---- a/Documentation/memory-hotplug.txt
-+++ b/Documentation/memory-hotplug.txt
-@@ -155,7 +155,7 @@ Under each memory block, you can see 4 files:
- /sys/devices/system/memory/memoryXXX/phys_device
- /sys/devices/system/memory/memoryXXX/state
- /sys/devices/system/memory/memoryXXX/removable
--/sys/devices/system/memory/memoryXXX/zones_online_to
-+/sys/devices/system/memory/memoryXXX/valid_zones
-
- 'phys_index'      : read-only and contains memory block id, same as XXX.
- 'state'           : read-write
-@@ -171,7 +171,7 @@ Under each memory block, you can see 4 files:
-                     block is removable and a value of 0 indicates that
-                     it is not removable. A memory block is removable only if
-                     every section in the block is removable.
--'zones_online_to' : read-only: designed to show which zone this memory block
-+'valid_zones' : read-only: designed to show which zone this memory block
- 		    can be onlined to.
-
- NOTE:
-diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-index ccaf37c..efd456c 100644
---- a/drivers/base/memory.c
-+++ b/drivers/base/memory.c
-@@ -374,21 +374,7 @@ static ssize_t show_phys_device(struct device *dev,
- }
-
- #ifdef CONFIG_MEMORY_HOTREMOVE
--static int __zones_online_to(unsigned long end_pfn,
--				struct page *first_page, unsigned long nr_pages)
--{
--	struct zone *zone_next;
--
--	/* The mem block is the last block of memory. */
--	if (!pfn_valid(end_pfn + 1))
--		return 1;
--	zone_next = page_zone(first_page + nr_pages);
--	if (zone_idx(zone_next) == ZONE_MOVABLE)
--		return 1;
--	return 0;
--}
--
--static ssize_t show_zones_online_to(struct device *dev,
-+static ssize_t show_valid_zones(struct device *dev,
- 				struct device_attribute *attr, char *buf)
- {
- 	struct memory_block *mem = to_memory_block(dev);
-@@ -407,33 +393,23 @@ static ssize_t show_zones_online_to(struct device *dev,
-
- 	zone = page_zone(first_page);
-
--#ifdef CONFIG_HIGHMEM
--	if (zone_idx(zone) == ZONE_HIGHMEM) {
--		if (__zones_online_to(end_pfn, first_page, nr_pages))
-+	if (zone_idx(zone) == ZONE_MOVABLE - 1) {
-+		/*The mem block is the last memoryblock of this zone.*/
-+		if (end_pfn == zone_end_pfn(zone))
- 			return sprintf(buf, "%s %s\n",
- 					zone->name, (zone + 1)->name);
- 	}
--#else
--	if (zone_idx(zone) == ZONE_NORMAL) {
--		if (__zones_online_to(end_pfn, first_page, nr_pages))
--			return sprintf(buf, "%s %s\n",
--					zone->name, (zone + 1)->name);
--	}
--#endif
-
- 	if (zone_idx(zone) == ZONE_MOVABLE) {
--		if (!pfn_valid(start_pfn - nr_pages))
--			return sprintf(buf, "%s %s\n",
--						zone->name, (zone - 1)->name);
--		zone_prev = page_zone(first_page - nr_pages);
--		if (zone_idx(zone_prev) != ZONE_MOVABLE)
-+		/*The mem block is the first memoryblock of ZONE_MOVABLE.*/
-+		if (start_pfn == zone->zone_start_pfn)
- 			return sprintf(buf, "%s %s\n",
--						zone->name, (zone - 1)->name);
-+					zone->name, (zone - 1)->name);
- 	}
-
- 	return sprintf(buf, "%s\n", zone->name);
- }
--static DEVICE_ATTR(zones_online_to, 0444, show_zones_online_to, NULL);
-+static DEVICE_ATTR(valid_zones, 0444, show_valid_zones, NULL);
- #endif
-
- static DEVICE_ATTR(phys_index, 0444, show_mem_start_phys_index, NULL);
-@@ -587,7 +563,7 @@ static struct attribute *memory_memblk_attrs[] = {
- 	&dev_attr_phys_device.attr,
- 	&dev_attr_removable.attr,
- #ifdef CONFIG_MEMORY_HOTREMOVE
--	&dev_attr_zones_online_to.attr,
-+	&dev_attr_valid_zones.attr,
- #endif
- 	NULL
- };
--- 
-1.8.1.4
-
-
-.
-
-
-
-
+Will
