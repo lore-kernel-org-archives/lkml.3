@@ -1,92 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758602AbaHZPa4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 11:30:56 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:40724 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755879AbaHZPax (ORCPT
+	id S1758631AbaHZPbB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 11:31:01 -0400
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:35826 "EHLO
+	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755879AbaHZPa6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 11:30:53 -0400
-Date: Tue, 26 Aug 2014 21:00:39 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] acpi: fan.c: printk replacement
-Message-ID: <20140826153039.GA2684@sudip-PC>
-References: <1408709001-3272-1-git-send-email-sudipm.mukherjee@gmail.com>
- <6969509.uGLFfCOQBb@vostro.rjw.lan>
+	Tue, 26 Aug 2014 11:30:58 -0400
+Date: Tue, 26 Aug 2014 11:30:48 -0400 (EDT)
+From: Pankaj Gupta <pagupta@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, Jiri Pirko <jiri@resnulli.us>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        davem@davemloft.net, dgibson@redhat.com, vfalico@gmail.com,
+        edumazet@google.com, vyasevic@redhat.com, hkchu@google.com,
+        wuzhy@linux.vnet.ibm.com, xemul@parallels.com, therbert@google.com,
+        bhutchings@solarflare.com, xii@google.com, stephen@networkplumber.org
+Message-ID: <1505182754.28731957.1409067048371.JavaMail.zimbra@redhat.com>
+In-Reply-To: <53FAA607.3060307@redhat.com>
+References: <1408369040-1216-1-git-send-email-pagupta@redhat.com> <1408369040-1216-3-git-send-email-pagupta@redhat.com> <20140820105817.GB1916@nanopsycho.orion> <20140820111724.GE17371@redhat.com> <53F575F8.7000208@redhat.com> <175719847.27217377.1408708342392.JavaMail.zimbra@redhat.com> <20140824111421.GC9561@redhat.com> <53FAA607.3060307@redhat.com>
+Subject: Re: [RFC 2/4] tuntap: Publish tuntap maximum number of queues as
+ module_param
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6969509.uGLFfCOQBb@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.6]
+X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF23 (Linux)/8.0.6_GA_5922)
+Thread-Topic: tuntap: Publish tuntap maximum number of queues as module_param
+Thread-Index: J0s46q09NUFGF29Qj6wW+5fvL/8xBQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 12:45:20AM +0200, Rafael J. Wysocki wrote:
-> On Friday, August 22, 2014 05:33:21 PM Sudip Mukherjee wrote:
-> > printk replaced with corresponding dev_err and dev_info
-> > fixed one broken user-visible string
-> > multiine comment edited for correct commenting style
-> > asm/uaccess.h replaced with linux/uaccess.h
-> > 
-> > Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
-> > ---
-> >  drivers/acpi/fan.c | 18 +++++++++---------
-> >  1 file changed, 9 insertions(+), 9 deletions(-)
-> > 
-> > diff --git a/drivers/acpi/fan.c b/drivers/acpi/fan.c
-> > index 8acf53e..7900d55 100644
-> > --- a/drivers/acpi/fan.c
-> > +++ b/drivers/acpi/fan.c
-> > @@ -27,7 +27,7 @@
-> >  #include <linux/module.h>
-> >  #include <linux/init.h>
-> >  #include <linux/types.h>
-> > -#include <asm/uaccess.h>
-> > +#include <linux/uaccess.h>
-> >  #include <linux/thermal.h>
-> >  #include <linux/acpi.h>
-> >  
-> > @@ -127,8 +127,9 @@ static const struct thermal_cooling_device_ops fan_cooling_ops = {
-> >  };
-> >  
-> >  /* --------------------------------------------------------------------------
-> > -                                 Driver Interface
-> > -   -------------------------------------------------------------------------- */
-> > + *                               Driver Interface
-> > + * --------------------------------------------------------------------------
-> > +*/
-> >  
-> >  static int acpi_fan_add(struct acpi_device *device)
-> >  {
-> > @@ -143,7 +144,7 @@ static int acpi_fan_add(struct acpi_device *device)
-> >  
-> >  	result = acpi_bus_update_power(device->handle, NULL);
-> >  	if (result) {
-> > -		printk(KERN_ERR PREFIX "Setting initial power state\n");
-> > +		dev_err(&device->dev, PREFIX "Setting initial power state\n");
-> 
-> While at it, please define a proper pr_fmt() for this file and get rid of PREFIX
-> too.
-> 
-> Otherwise I don't see a compelling reason to apply this.
-> 
 
-Hi,
-Since in the patch I am not using any pr_* , so I am unable to understand why you are asking for a proper pr_fmt().
-I can get rid of the PREFIX . Then should I use pr_* in the patch instead of dev_* ? 
-My understanding was dev_* is more preffered than pr_*.
-waiting for your suggestion on this.
-
-thanks
-sudip
-
-
-> > 
+> On 08/24/2014 07:14 PM, Michael S. Tsirkin wrote:
+> > On Fri, Aug 22, 2014 at 07:52:22AM -0400, Pankaj Gupta wrote:
+> >>> On 08/20/2014 07:17 PM, Michael S. Tsirkin wrote:
+> >>>> On Wed, Aug 20, 2014 at 12:58:17PM +0200, Jiri Pirko wrote:
+> >>>>>> Mon, Aug 18, 2014 at 03:37:18PM CEST, pagupta@redhat.com wrote:
+> >>>>>>>> This patch publishes maximum number of tun/tap queues allocated as a
+> >>>>>>>> read_only module parameter which a user space application like
+> >>>>>>>> libvirt
+> >>>>>>>> can make use of to limit maximum number of queues. Value of
+> >>>>>>>> read_only
+> >>>>>>>> module parameter can be writable only at module load time. If no
+> >>>>>>>> value is set
+> >>>>>>>> at module load time a default value 256 is used which is equal to
+> >>>>>>>> maximum number
+> >>>>>>>> of vCPUS allowed by KVM.
+> >>>>>>>>
+> >>>>>>>> Administrator can specify maximum number of queues only at the
+> >>>>>>>> driver
+> >>>>>>>> module load time.
+> >>>>>>>>
+> >>>>>>>> Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
+> >>>>>>>> ---
+> >>>>>>>> drivers/net/tun.c |   13 +++++++++++--
+> >>>>>>>> 1 files changed, 11 insertions(+), 2 deletions(-)
+> >>>>>>>>
+> >>>>>>>> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> >>>>>>>> index acaaf67..1f518e2 100644
+> >>>>>>>> --- a/drivers/net/tun.c
+> >>>>>>>> +++ b/drivers/net/tun.c
+> >>>>>>>> @@ -119,6 +119,9 @@ struct tap_filter {
+> >>>>>>>>
+> >>>>>>>> #define TUN_FLOW_EXPIRE (3 * HZ)
+> >>>>>>>>
+> >>>>>>>> +static int max_tap_queues = MAX_TAP_QUEUES;
+> >>>>>>>> +module_param(max_tap_queues, int, S_IRUGO);
+> >>>>>> Please do not introduce new module paramaters. Please other ways to
+> >>>>>> interchange values with userspace.
+> >>>> I suggested this initially, but thinking more about it, I agree.
+> >>>>
+> >>>> It's a global limit (necessary to limit memory utilization by
+> >>>> userspace), but it should be possible to change it
+> >>>> after module load.
+> >>> How about pass this limit through ifr during TUNSETIFF, then
+> >>> alloc_netdev_mq() can use this limit.
+> >> Any other ideas/comments from the experts. Or shall I re-repost other
+> >> patches
+> >> in the series except this patch until we agree on one.
+> >>
+> > It's kind of useless without a way for userspace to discover
+> > how many queues it can create, no?
+> >
 > 
-> -- 
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
+> We can implement ethtool_get_channels for tuntap. But I'm still not
+> clear why this is necessary.
+
+ethtool_get_channels for tuntap sounds good idea to retrieve number of queues
+configured.
+> 
