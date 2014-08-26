@@ -1,258 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757730AbaHZLPu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 07:15:50 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:34483 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757617AbaHZLPs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 07:15:48 -0400
-Subject: [RFC PATCH v2 4/4] ftracetest: Add XFAIL/XPASS/UNSUPPORTED as
- result code
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-To: Shuah Khan <shuah.kh@samsung.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Tue, 26 Aug 2014 11:15:39 +0000
-Message-ID: <20140826111539.5711.93588.stgit@kbuild-fedora.novalocal>
-In-Reply-To: <20140826111511.5711.28493.stgit@kbuild-fedora.novalocal>
-References: <20140826111511.5711.28493.stgit@kbuild-fedora.novalocal>
-User-Agent: StGit/0.17-dirty
+	id S1757591AbaHZLTc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 07:19:32 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:60277 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754200AbaHZLTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 07:19:30 -0400
+Message-ID: <53FC6D36.8000102@ti.com>
+Date: Tue, 26 Aug 2014 14:19:18 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+To: Pramod Gurav <pramod.gurav@smartplayin.com>, <linux-fbdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Rob Clark <robdclark@gmail.com>
+Subject: Re: [PATCH] msm: msm_fb: Add remove function for platform driver
+ for clean unloading
+References: <1407163433-13528-1-git-send-email-pramod.gurav@smartplayin.com>
+In-Reply-To: <1407163433-13528-1-git-send-email-pramod.gurav@smartplayin.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="CekNernRPhHRFJJ8d4Sn2Ie3F4Lag1TaD"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add XFAIL, XPASS and UNSUPPORTED as a result code. These are
-used for the results that test case is expected to fail or
-unsupported feature (by config).
-This also introduces PASS/FAIL/XFAIL/XPASS/UNSUP result codes
-for each testcase. Since the results are not binary, each
-testcase must use these code to return the test result.
+--CekNernRPhHRFJJ8d4Sn2Ie3F4Lag1TaD
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
----
- tools/testing/ftrace/ftracetest                    |   61 +++++++++++++++-----
- tools/testing/ftrace/test.d/basic1.tc              |    6 ++
- tools/testing/ftrace/test.d/basic2.tc              |    6 +-
- tools/testing/ftrace/test.d/basic3.tc              |    9 ++-
- .../testing/ftrace/test.d/kprobe/add_and_remove.tc |   15 +++--
- tools/testing/ftrace/test.d/kprobe/busy_check.tc   |   20 +++----
- tools/testing/ftrace/test.d/template               |    6 ++
- 7 files changed, 84 insertions(+), 39 deletions(-)
+Hi,
 
-diff --git a/tools/testing/ftrace/ftracetest b/tools/testing/ftrace/ftracetest
-index 0378c8a..bfcd56a 100755
---- a/tools/testing/ftrace/ftracetest
-+++ b/tools/testing/ftrace/ftracetest
-@@ -107,22 +107,53 @@ catlog() { #file
- }
- 
- # Testcase management
-+# Test result codes
-+PASS=0	# The test succeeded.
-+FAIL=1	# The test failed, but was expected to succeed.
-+XFAIL=2	# The test failed, and was expected to fail.
-+XPASS=3	# The test succeeded, but was expected to fail.
-+UNSUP=4 # The test failed because of lack of feature.
-+# Accumulations
- PASSED_CASES=
- FAILED_CASES=
-+XFAILED_CASES=
-+XPASSED_CASES=
-+UNSUPPORTED_CASES=
-+
- CASENO=0
- testcase() { # testfile
-   CASENO=$((CASENO+1))
-   prlog -n "[$CASENO]"`grep "^#[ \t]*description:" $1 | cut -f2 -d:`
- }
--failed() {
--  prlog -e "\t[FAIL]"
--  FAILED_CASES="$FAILED_CASES $CASENO"
--}
--passed() {
--  prlog -e "\t[PASS]"
--  PASSED_CASES="$PASSED_CASES $CASENO"
--}
- 
-+eval_result() { # retval testlog
-+  case $1 in
-+    $PASS)
-+      prlog -e "\t[PASS]"
-+      PASSED_CASES="$PASSED_CASES $CASENO"
-+      return 0
-+    ;;
-+    $FAIL)
-+      prlog -e "\t[FAIL]"
-+      FAILED_CASES="$FAILED_CASES $CASENO"
-+      return 1 # this is a bug
-+    ;;
-+    $XFAIL)
-+      prlog -e "\t[XFAIL]"
-+      XFAILED_CASES="$XFAILED_CASES $CASENO"
-+      return 0
-+    ;;
-+    $XPASS)
-+      prlog -e "\t[XPASS]"
-+      XPASSED_CASES="$XPASSED_CASES $CASENO"
-+      return 1 # this can be a bug
-+    ;;
-+    $UNSUP)
-+      prlog -e "\t[UNSUPPORTED]"
-+      UNSUPPORTED_CASES="$UNSUPPORTED_CASES $CASENO"
-+      return 0 # this is not a bug
-+  esac
-+}
- 
- # Run one test case
- run_test() { # testfile
-@@ -132,11 +163,9 @@ run_test() { # testfile
-   echo "execute: "$1 > $testlog
-   (cd $TRACING_DIR; set -x ; source $t) >> $testlog 2>&1
-   ret=$?
--  if [ $ret -ne 0 ]; then
--    failed
--    catlog $testlog
--  else
--    passed
-+  eval_result $ret $testlog
-+  if [ $? -eq 0 ]; then
-+    # Remove test log if the test was done as it was expected.
-     [ $KEEP_LOG -eq 0 ] && rm $testlog
-   fi
- }
-@@ -145,8 +174,12 @@ run_test() { # testfile
- for t in $TEST_CASES; do
-   run_test $t
- done
-+
- prlog ""
- prlog "# of passed: " `echo $PASSED_CASES | wc -w`
- prlog "# of failed: " `echo $FAILED_CASES | wc -w`
-+prlog "# of xfailed: " `echo $XFAILED_CASES | wc -w`
-+prlog "# of xpassed: " `echo $XPASSED_CASES | wc -w`
-+prlog "# of unsupported: " `echo $UNSUPPORTED_CASES | wc -w`
- 
--test -z "$FAILED_CASES" # if no error, return 0
-+test -z "$FAILED_CASES$XPASSED_CASES" # if no error, return 0
-diff --git a/tools/testing/ftrace/test.d/basic1.tc b/tools/testing/ftrace/test.d/basic1.tc
-index 9980ff1..1e95209 100644
---- a/tools/testing/ftrace/test.d/basic1.tc
-+++ b/tools/testing/ftrace/test.d/basic1.tc
-@@ -1,3 +1,7 @@
- #!/bin/sh
- # description: Basic trace file check
--test -f README -a -f trace -a -f tracing_on -a -f trace_pipe
-+if test -f README -a -f trace -a -f tracing_on -a -f trace_pipe; then
-+  exit $PASS
-+else
-+  exit $FAIL
-+fi
-diff --git a/tools/testing/ftrace/test.d/basic2.tc b/tools/testing/ftrace/test.d/basic2.tc
-index b04f30d..44949e9 100644
---- a/tools/testing/ftrace/test.d/basic2.tc
-+++ b/tools/testing/ftrace/test.d/basic2.tc
-@@ -1,6 +1,8 @@
- #!/bin/sh
- # description: Basic test for tracers
-+test -f available_tracers || exit $FAIL # this is basic feature, must be there.
- for t in `cat available_tracers`; do
--  echo $t > current_tracer || exit 1
-+  echo $t > current_tracer || exit $FAIL
- done
--echo nop > current_tracer
-+echo nop > current_tracer || exit $FAIL
-+exit $PASS
-diff --git a/tools/testing/ftrace/test.d/basic3.tc b/tools/testing/ftrace/test.d/basic3.tc
-index 0c1a3a2..7bc5a53 100644
---- a/tools/testing/ftrace/test.d/basic3.tc
-+++ b/tools/testing/ftrace/test.d/basic3.tc
-@@ -1,8 +1,9 @@
- #!/bin/sh
- # description: Basic trace clock test
--[ -f trace_clock ] || exit 1
-+[ -f trace_clock ] || exit $FAIL # this is basic feature, must be there
- for c in `cat trace_clock | tr  -d \[\]`; do
--  echo $c > trace_clock || exit 1
--  grep '\['$c'\]' trace_clock || exit 1
-+  echo $c > trace_clock || exit $FAIL
-+  grep '\['$c'\]' trace_clock || exit $FAIL
- done
--echo local > trace_clock
-+echo local > trace_clock || exit $FAIL
-+exit $PASS
-diff --git a/tools/testing/ftrace/test.d/kprobe/add_and_remove.tc b/tools/testing/ftrace/test.d/kprobe/add_and_remove.tc
-index 5ddfb47..fa3034b 100644
---- a/tools/testing/ftrace/test.d/kprobe/add_and_remove.tc
-+++ b/tools/testing/ftrace/test.d/kprobe/add_and_remove.tc
-@@ -1,11 +1,12 @@
- #!/bin/sh
- # description: Kprobe dynamic event - adding and removing
- 
--[ -f kprobe_events ] || exit 1
-+[ -f kprobe_events ] || exit $UNSUP # this is configurable
- 
--echo 0 > events/enable || exit 1
--echo > kprobe_events || exit 1
--echo p:myevent do_fork > kprobe_events || exit 1
--grep myevent kprobe_events || exit 1
--[ -d events/kprobes/myevent ] || exit 1
--echo > kprobe_events
-+echo 0 > events/enable || exit $FAIL
-+echo > kprobe_events || exit $FAIL
-+echo p:myevent do_fork > kprobe_events || exit $FAIL
-+grep myevent kprobe_events || exit $FAIL
-+[ -d events/kprobes/myevent ] || exit $FAIL
-+echo > kprobe_events || exit $FAIL
-+exit $PASS
-diff --git a/tools/testing/ftrace/test.d/kprobe/busy_check.tc b/tools/testing/ftrace/test.d/kprobe/busy_check.tc
-index 588fde97..6f47784 100644
---- a/tools/testing/ftrace/test.d/kprobe/busy_check.tc
-+++ b/tools/testing/ftrace/test.d/kprobe/busy_check.tc
-@@ -1,14 +1,14 @@
- #!/bin/sh
- # description: Kprobe dynamic event - busy event check
- 
--[ -f kprobe_events ] || exit 1
--
--echo 0 > events/enable || exit 1
--echo > kprobe_events || exit 1
--echo p:myevent do_fork > kprobe_events || exit 1
--[ -d events/kprobes/myevent ] || exit 1
--echo 1 > events/kprobes/myevent/enable || exit 1
--echo > kprobe_events && exit 1 # this must fail
--echo 0 > events/kprobes/myevent/enable || exit 1
--echo > kprobe_events # this must succeed
-+[ -f kprobe_events ] || exit $UNSUP
- 
-+echo 0 > events/enable || exit $FAIL
-+echo > kprobe_events || exit $FAIL
-+echo p:myevent do_fork > kprobe_events || exit $FAIL
-+[ -d events/kprobes/myevent ] || exit $FAIL
-+echo 1 > events/kprobes/myevent/enable || exit $FAIL
-+echo > kprobe_events && exit $FAIL # this must fail
-+echo 0 > events/kprobes/myevent/enable || exit $FAIL
-+echo > kprobe_events || exit $FAIL # this must succeed
-+exit $PASS
-diff --git a/tools/testing/ftrace/test.d/template b/tools/testing/ftrace/test.d/template
-index ce5f735..881eddd 100644
---- a/tools/testing/ftrace/test.d/template
-+++ b/tools/testing/ftrace/test.d/template
-@@ -1,4 +1,8 @@
- #!/bin/sh
- # description: %HERE DESCRIBE WHAT THIS DOES%
- # you have to add ".tc" extention for your testcase file
--exit 0 # Return 0 if the test is passed, otherwise return !0
-+exit $PASS # Return $PASS if the test is passed.
-+# If the test is failed, return $FAIL.
-+# If the test is failed as expected, return $XFAIL.
-+# If the test is passed, but it was expected to fail, return $XPASS.
-+# If the test can not run because of lack of feature, return $UNSUP
+On 04/08/14 17:43, Pramod Gurav wrote:
+> This adds a  remove function to platform driver structure so that
+> resources are released when driver is unloaded.
+>=20
+> Moved kzalloc to use managed resource and adds a return check if failed=
+=2E
+
+Please split this patch into two. You change two unrelated things here,
+the unloading and the kzalloc part.
+
+> CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+> CC: Tomi Valkeinen <tomi.valkeinen@ti.com>
+> CC: Stephen Boyd <sboyd@codeaurora.org>
+> CC: Jingoo Han <jg1.han@samsung.com>
+> CC: Rob Clark <robdclark@gmail.com>
+>=20
+> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+> ---
+>  drivers/video/fbdev/msm/msm_fb.c |   28 +++++++++++++++++++++++++---
+>  1 file changed, 25 insertions(+), 3 deletions(-)
+>=20
+> diff --git a/drivers/video/fbdev/msm/msm_fb.c b/drivers/video/fbdev/msm=
+/msm_fb.c
+> index 1374803..ac277e2 100644
+> --- a/drivers/video/fbdev/msm/msm_fb.c
+> +++ b/drivers/video/fbdev/msm/msm_fb.c
+> @@ -553,6 +553,7 @@ static int msmfb_probe(struct platform_device *pdev=
+)
+>  	fb =3D framebuffer_alloc(sizeof(struct msmfb_info), &pdev->dev);
+>  	if (!fb)
+>  		return -ENOMEM;
+> +
+>  	msmfb =3D fb->par;
+>  	msmfb->fb =3D fb;
+>  	msmfb->panel =3D panel;
+> @@ -569,8 +570,13 @@ static int msmfb_probe(struct platform_device *pde=
+v)
+>  	mutex_init(&msmfb->panel_init_lock);
+>  	init_waitqueue_head(&msmfb->frame_wq);
+>  	INIT_WORK(&msmfb->resume_work, power_on_panel);
+> -	msmfb->black =3D kzalloc(msmfb->fb->var.bits_per_pixel*msmfb->xres,
+> -			       GFP_KERNEL);
+> +	msmfb->black =3D devm_kzalloc(&pdev->dev,
+> +				    msmfb->fb->var.bits_per_pixel*msmfb->xres,
+> +				    GFP_KERNEL);
+> +	if (!msmfb->black) {
+> +		ret =3D -ENOMEM;
+> +		goto error_register_framebuffer;
+> +	}
+> =20
+>  	printk(KERN_INFO "msmfb_probe() installing %d x %d panel\n",
+>  	       msmfb->xres, msmfb->yres);
+> @@ -589,6 +595,8 @@ static int msmfb_probe(struct platform_device *pdev=
+)
+> =20
+>  	msmfb->sleeping =3D WAKING;
+> =20
+> +	platform_set_drvdata(pdev, msmfb);
+> +
+>  	return 0;
+> =20
+>  error_register_framebuffer:
+> @@ -598,13 +606,27 @@ error_setup_fbmem:
+>  	return ret;
+>  }
+> =20
+> +static int msmfb_remove(struct platform_device *pdev)
+> +{
+> +	struct msmfb_info *msmfb =3D NULL;
+
+No need to initialize to NULL, msmfb is initialized always below.
+
+> +
+> +	msmfb =3D platform_get_drvdata(pdev);
+> +	if (msmfb) {
+
+Can msmfb ever be NULL here? If I'm not mistaken, remove is only called
+if the probe had succeeded. And if probe had succeeded, the drvdata is
+always set to a proper pointer to msmfb_info.
+
+ Tomi
 
 
+
+--CekNernRPhHRFJJ8d4Sn2Ie3F4Lag1TaD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT/G02AAoJEPo9qoy8lh71sgIP/RVtP4PYUlohr2ve74Mwy/JE
+6WrjB0q883nFLJaapssK9RI8AGWA4WdPqXg1lQuI9Y/A3uuNKyIVt4Gf5u9zAz4U
+6fGO0Hicrn2tyEyborZxPEMI8U9PinSY9lV9TF69+dKmY5/h+Y7wZQWMJvtmYRLU
+JAptwsnzfj5UbqsStfDZwq4vKYN2kWOvskaMaSLc5hyHeE7GYC25e1jTDCa1Rg+2
+b0NfbLJ8JnJZk0H6oKXwAjGVuulz9E0nfiYL/3Wi5BPJ7izBxLP/5SmkYCrlvztg
+uK7y5pQTKEEkydjnORRFBjPUpEtQyf9/lmRg3OKB3SYurlh0m+oIlGwdXkhIlyju
+RI8PHq5w7Jdx/xYBMsWY/z+yHCY87DJXmbkb8uCm/omDJxYwlZPXBMdwJ0eUR676
+63eMdKqSIpMjUoTJc0hK8qlRu6yNRbhlCtzSM/RavRQHA3dmbmiCK9QAcnwZGDP+
+5K1A5GRMT2OBQCrXowcetbH8aMu/x7Lvt/A15/p5++Ek+lX9Q9k7qsGD4iWDKXan
+GaZ69Dekfy7GvJJnH2Pee2oiIyOYBotqCvdBJ0BTg18uTEqQSesIJELgHXCbCreH
+WB0c/B72zVF6puPoISjB6WKMK8YDe4Xn4IXbwasdJQPT1turKJkI2ocorJ24zHwt
+BQRFrqmKws5Zn9CrbgXC
+=QkVU
+-----END PGP SIGNATURE-----
+
+--CekNernRPhHRFJJ8d4Sn2Ie3F4Lag1TaD--
