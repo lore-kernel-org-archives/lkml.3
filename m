@@ -1,45 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757631AbaHZLti (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 07:49:38 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36349 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754565AbaHZLth (ORCPT
+	id S1757673AbaHZLvO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 07:51:14 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:53783 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754442AbaHZLvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 07:49:37 -0400
-Date: Tue, 26 Aug 2014 13:49:35 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: kernel list <linux-kernel@vger.kernel.org>, trivial@kernel.org,
-        Andrew Morton <akpm@osdl.org>
-Subject: [PATCH] init/do_mounts: better syntax description
-Message-ID: <20140826114935.GA16731@amd>
+	Tue, 26 Aug 2014 07:51:13 -0400
+Date: Tue, 26 Aug 2014 17:21:00 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sound: pci: ctxfi: prink replacement
+Message-ID: <20140826115100.GA21572@sudip-PC>
+References: <1409048004-19838-1-git-send-email-sudipm.mukherjee@gmail.com>
+ <s5hr4035ymf.wl-tiwai@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <s5hr4035ymf.wl-tiwai@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Specify hex device number unambiquously.
-    
-Signed-off-by: Pavel Machek <pavel@denx.de>
+On Tue, Aug 26, 2014 at 12:33:28PM +0200, Takashi Iwai wrote:
+> At Tue, 26 Aug 2014 15:43:24 +0530,
+> Sudip Mukherjee wrote:
+> > 
+> > printk replaced with corresponding pr_err and pr_alert
+> > 
+> > Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+> > ---
+> > 
+> > Initially started by copy-paste but as Takashi suggested it was done by a script.
+> > bash script is as follows :
+> > 
+> > OLD="printk(KERN_ERR \?"
+> > OLD1="printk(KERN_ALERT \?"
+> > NEW="pr_err("
+> > NEW1="pr_alert("
+> > TFILE="/tmp/out.tmp.$$"
+> > for f in *.c
+> > do
+> > sed "s/$OLD/$NEW/g" "$f" > $TFILE && mv $TFILE "$f"
+> > sed "s/$OLD1/$NEW1/g" "$f" > $TFILE && mv $TFILE "$f"
+> > done
+> 
+> All these can be a single call of sed :)
 
-diff --git a/init/do_mounts.c b/init/do_mounts.c
-index b6237c3..9f9d5e5 100644
---- a/init/do_mounts.c
-+++ b/init/do_mounts.c
-@@ -182,7 +182,8 @@ done:
- /*
-  *	Convert a name into device number.  We accept the following variants:
-  *
-- *	1) device number in hexadecimal	represents itself
-+ *	1) <hex_major><hex_minor> device number in hexadecimal represents itself
-+ *         no leading 0x, for example b302.
-  *	2) /dev/nfs represents Root_NFS (0xff)
-  *	3) /dev/<disk_name> represents the device number of disk
-  *	4) /dev/<disk_name><decimal> represents the device number
+is it? I will try to see .. 
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> 
+> > this patch will generate a warning from checkpatch for an unnecessary space before new line and has not been fixed as this patch is only for printk replacement.
+> 
+> Better to put such information into the changelog.
+> 
+> Do you have the patch reformatting the broken lines, too?
+> If yes, I'll wait for it, as we should apply both such patches at
+> once.
+> 
+
+I will send you the broken string reformatting patch . 
+
+thanks
+sudip
+
+> 
+> Takashi
