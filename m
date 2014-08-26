@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757693AbaHZLgY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 07:36:24 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:60990 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754708AbaHZLgW (ORCPT
+	id S1757756AbaHZLgf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 07:36:35 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:59192 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757719AbaHZLgb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 07:36:22 -0400
-Date: Tue, 26 Aug 2014 12:36:09 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Kever Yang <kever.yang@rock-chips.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Nicolas Pitre <nico@linaro.org>, Marc Carino <marc.ceeeee@gmail.com>,
-        Mahesh Sivasubramanian <msivasub@codeaurora.org>,
-        Jonathan Austin <Jonathan.Austin@arm.com>,
-        "heiko@sntech.de" <heiko@sntech.de>,
-        "addy.ke@rock-chips.com" <addy.ke@rock-chips.com>,
-        "xjq@rock-chips.com" <xjq@rock-chips.com>,
-        "cf@rock-chips.com" <cf@rock-chips.com>,
-        "hj@rock-chips.com" <hj@rock-chips.com>,
-        "huangtao@rock-chips.com" <huangtao@rock-chips.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: errata: Workaround for Cortex-A12 erratum 818325
-Message-ID: <20140826113609.GV30401@n2100.arm.linux.org.uk>
-References: <1408355889-4176-1-git-send-email-kever.yang@rock-chips.com> <20140826101414.GD23445@arm.com>
+	Tue, 26 Aug 2014 07:36:31 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Andrew Bresticker <abrestic@chromium.org>, linux-tegra@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, Jonas Bonn <jonas@southpole.se>,
+        David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
+Subject: Re: [PATCH v2 2/9] mailbox: Add NVIDIA Tegra XUSB mailbox driver
+Date: Tue, 26 Aug 2014 13:35:34 +0200
+Message-ID: <14224406.FU8QFA3vsD@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140826102011.GA31124@ulmo>
+References: <1408381705-3623-1-git-send-email-abrestic@chromium.org> <5184912.mY2hCPH20k@wuerfel> <20140826102011.GA31124@ulmo>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140826101414.GD23445@arm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:r1P8FL91kD5K0xI/S0bVgAANNUgI4gBsOYJxyi4InTM
+ 2r1gcQq+GswNd0q5bH2xWh/NOSZhudrRamAK9DFJhspe8qCtll
+ QF7Z3s7IRQjpzGggVizRmtiwZwAKPhpwOPMlJDOPSLgjDSWAQl
+ udMDgHT+vY6nrkqcDwf4URWt4msxLhcsrneGvhlwLaabnWRjT1
+ udSsEgjyx+qznioMKk9RG3Sqgq3acr1Wd2XANasV8+SuIvUmVE
+ T35kNMTflkbcxiyJUhTa1avHkFoSVKess4K/l61JKXZlug+pmH
+ LmNVkDjDilewy4X5BN/zqEX6HtVeQlWbMg43IjB9iwYle7TgRI
+ E/bNaSUd5n+azAjwIT7U=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 11:14:14AM +0100, Will Deacon wrote:
-> On Mon, Aug 18, 2014 at 10:58:09AM +0100, Kever Yang wrote:
-> > From: Huang Tao <huangtao@rock-chips.com>
-> > 
-> > On Cortex-A12 (r0p0..r0p1-00lac0-rc11), when a CPU executes a sequence of
-> > two conditional store instructions with opposite condition code and
-> > updating the same register, the system might enter a deadlock if the
-> > second conditional instruction is an UNPREDICTABLE STR or STM
-> > instruction. This workaround setting bit[12] of the Feature Register
-> > prevents the erratum. This bit disables an optimisation applied to a
-> > sequence of 2 instructions that use opposing condition codes.
-> > 
-> > Signed-off-by: Huang Tao <huangtao@rock-chips.com>
-> > Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-> > ---
+On Tuesday 26 August 2014 12:20:13 Thierry Reding wrote:
+> On Tue, Aug 26, 2014 at 11:54:43AM +0200, Arnd Bergmann wrote: > 
+> > I'm not sure if it's really worth it. One thing we might do is just
+> > remove all definitions of ioremap_nocache and add a wrapper to
+> > include/linux/io.h, to make it more obvious what is going on.
 > 
-> The Rk3288 I have advertises itself as an r0p1 Cortex-A12 CPU, so isn't
-> affected by this issue. Until we have an SoC supported in mainline that
-> requires this workaround, I don't think we should merge it.
-> 
-> Also, please consider setting these bits in your firmware if possible.
-> The feature register isn't writable from the non-secure side, so if you
-> want to use virtualisation you'll need to do this differently.
+> Yes, I suppose that would work too. I still think there's an advantage
+> in being explicit and avoid aliases like this. Perhaps a __deprecated
+> annotation would help with that?
 
-I think we're at the point where we start insisting that workarounds
-which are simple enable/disable feature bit operations (in other words,
-which can be handled by updating a control register in the firmware or
-boot loader) must be done that way, and we are not going to add such
-workarounds to the kernel anymore.
+I fear adding __deprecated would be too controversial, because that
+would add hundreds of new warnings to code that is not actually wrong.
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+	Arnd
