@@ -1,71 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757835AbaHZMwN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 08:52:13 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:41502 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754327AbaHZMwM (ORCPT
+	id S1757803AbaHZMy4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 08:54:56 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:62150 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754675AbaHZMyz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 08:52:12 -0400
-Message-ID: <53FC82F1.5000709@ti.com>
-Date: Tue, 26 Aug 2014 15:52:01 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Tue, 26 Aug 2014 08:54:55 -0400
+X-IronPort-AV: E=Sophos;i="5.04,404,1406563200"; 
+   d="scan'208";a="35092577"
+Message-ID: <53FC82D2.1020401@cn.fujitsu.com>
+Date: Tue, 26 Aug 2014 20:51:30 +0800
+From: Chai Wen <chaiw.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-To: Pramod Gurav <pramod.gurav@smartplayin.com>,
-        <linux-kernel@vger.kernel.org>, <linux-fbdev@vger.kernel.org>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Rob Clark <robdclark@gmail.com>
-Subject: Re: [PATCH v2 1/2] msm: msm_fb: Add remove function for platform
- driver for clean unloading
-References: <1409055038-9204-1-git-send-email-pramod.gurav@smartplayin.com>
-In-Reply-To: <1409055038-9204-1-git-send-email-pramod.gurav@smartplayin.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="bgw8PcqXxfofNAmxR3CBSuOXi20wHT1Nr"
+To: <akpm@linux-foundation.org>
+CC: Don Zickus <dzickus@redhat.com>, <mingo@redhat.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] softlockup: make detector be aware of task switch of
+ processes hogging cpu
+References: <20140821023051.GO49576@redhat.com> <1408599742-21674-1-git-send-email-chaiw.fnst@cn.fujitsu.com> <20140822015822.GZ49576@redhat.com>
+In-Reply-To: <20140822015822.GZ49576@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.161]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---bgw8PcqXxfofNAmxR3CBSuOXi20wHT1Nr
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+On 08/22/2014 09:58 AM, Don Zickus wrote:
 
-On 26/08/14 15:10, Pramod Gurav wrote:
-> This adds a  remove function to platform driver structure so that
-> resources are released when driver is unloaded.
->=20
-> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
->=20
+> On Thu, Aug 21, 2014 at 01:42:22PM +0800, chai wen wrote:
+>> For now, soft lockup detector warns once for each case of process softlockup.
+>> But the thread 'watchdog/n' may not always get the cpu at the time slot between
+>> the task switch of two processes hogging that cpu to reset soft_watchdog_warn.
+>>
+>> An example would be two processes hogging the cpu.  Process A causes the
+>> softlockup warning and is killed manually by a user.  Process B immediately
+>> becomes the new process hogging the cpu preventing the softlockup code from
+>> resetting the soft_watchdog_warn variable.
+>>
+>> This case is a false negative of "warn only once for a process", as there may
+>> be a different process that is going to hog the cpu.  Resolve this by
+>> saving/checking the task pointer of the hogging process and use that to reset
+>> soft_watchdog_warn too.
+>>
+>> Signed-off-by: chai wen <chaiw.fnst@cn.fujitsu.com>
+>> Signed-off-by: Don Zickus <dzickus@redhat.com>
+> 
+> Acked-by: Don Zickus <dzickus@redhat.com>
+> 
 
-Thanks, queued this series for 3.18.
 
- Tomi
+Hi Andrew
+
+Sorry for some disturbing.
+Could you help to check and pick up this little improvement patch ?
+
+I am not sure which MAINTAINER I should talk to, but the original version of
+this patch is queued to -mm tree by you, so I assume that they are in the charge of you.
+
+
+thanks
+chai wen
+
+>> ---
+>>  kernel/watchdog.c |   16 +++++++++++++++-
+>>  1 files changed, 15 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+>> index 0037db6..2e55620 100644
+>> --- a/kernel/watchdog.c
+>> +++ b/kernel/watchdog.c
+>> @@ -42,6 +42,7 @@ static DEFINE_PER_CPU(bool, softlockup_touch_sync);
+>>  static DEFINE_PER_CPU(bool, soft_watchdog_warn);
+>>  static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts);
+>>  static DEFINE_PER_CPU(unsigned long, soft_lockup_hrtimer_cnt);
+>> +static DEFINE_PER_CPU(struct task_struct *, softlockup_task_ptr_saved);
+>>  #ifdef CONFIG_HARDLOCKUP_DETECTOR
+>>  static DEFINE_PER_CPU(bool, hard_watchdog_warn);
+>>  static DEFINE_PER_CPU(bool, watchdog_nmi_touch);
+>> @@ -328,8 +329,20 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+>>  			return HRTIMER_RESTART;
+>>  
+>>  		/* only warn once */
+>> -		if (__this_cpu_read(soft_watchdog_warn) == true)
+>> +		if (__this_cpu_read(soft_watchdog_warn) == true) {
+>> +			/*
+>> +			 * Handle the case where multiple processes are
+>> +			 * causing softlockups but the duration is small
+>> +			 * enough, the softlockup detector can not reset
+>> +			 * itself in time.  Use task pointers to detect this.
+>> +			 */
+>> +			if (__this_cpu_read(softlockup_task_ptr_saved) !=
+>> +			    current) {
+>> +				__this_cpu_write(soft_watchdog_warn, false);
+>> +				__touch_watchdog();
+>> +			}
+>>  			return HRTIMER_RESTART;
+>> +		}
+>>  
+>>  		if (softlockup_all_cpu_backtrace) {
+>>  			/* Prevent multiple soft-lockup reports if one cpu is already
+>> @@ -345,6 +358,7 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+>>  		pr_emerg("BUG: soft lockup - CPU#%d stuck for %us! [%s:%d]\n",
+>>  			smp_processor_id(), duration,
+>>  			current->comm, task_pid_nr(current));
+>> +		__this_cpu_write(softlockup_task_ptr_saved, current);
+>>  		print_modules();
+>>  		print_irqtrace_events(current);
+>>  		if (regs)
+>> -- 
+>> 1.7.1
+>>
+> .
+> 
 
 
 
---bgw8PcqXxfofNAmxR3CBSuOXi20wHT1Nr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+-- 
+Regards
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJT/ILxAAoJEPo9qoy8lh71ZnwQAKo4GEDhaZpPw/mKdTz/Gs45
-7J6KQkhkWjpe6HavFlxaWdauNYu/eq4EeLCs6QJZrnHCQqzJPj1JLWCoBluaj8+Q
-JWPd1q97aCOUl/3kMJYqky7FOaXvBwgw01rDdRMqcx8JMZCVQ4W0Uu20N6cDAGAD
-hEcUiTvmc7T01EGwAsE3SKWZn5bowWA7H5xfNZg/TSpIA7G2FPPMLOFe4JwpkEg8
-ObqBRh9dwvn28HnttG4PUBpfuRg060j/3Nwm1TQBrYyquCXlmdiNsR7kFBmLmEoc
-uanLMqrv4wKxG07+XMUaQ7bb9DZEn7B1aeGSEijB5ZRzU6MctdR5Tu9cqEjqeEIy
-jPOpbMUXKdpKiIerJk3kAJCwk4Os6UEBWzZsK1yKPesBW1b/HtGhtcSib4bmgEDc
-1Jw+O7ngm6UrDxTvL6IaqXC/z0FQ7US4hyEDF8Ozqj3zNUJtaCjYgXYX2P2nyKKj
-aTHgWQU/hH3jkYU0qxQYV76lg+c8ZlDl6sEDzTh2EUOwm4JNpGbRMCSIlUGTjuxw
-Sqo/4VcBLVi6KRwzmrQnSVsYqbXjchLl387ClSTmjomhA7UoNjiIkDKV2AxfFeYQ
-4hmDjC1roxA3Hla9pHO5nmFSKvz2OtbEMKsw01kJcv2yyLs2GJ3QubShq7OU4BXa
-BpeLV2qqBztZlbeafTe0
-=ePcy
------END PGP SIGNATURE-----
-
---bgw8PcqXxfofNAmxR3CBSuOXi20wHT1Nr--
+Chai Wen
