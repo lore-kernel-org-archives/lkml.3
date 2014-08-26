@@ -1,114 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757658AbaHZLdu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 07:33:50 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:39141 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754562AbaHZLds (ORCPT
+	id S1757693AbaHZLgY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 07:36:24 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:60990 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754708AbaHZLgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 07:33:48 -0400
-From: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>
-To: Lars-Peter Clausen <lars@metafoo.de>,
-        sanjeev sharma <sanjeevsharmaengg@gmail.com>
-CC: "jic23@kernel.org" <jic23@kernel.org>, gregkh <gregkh@linuxfoundation.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        devel <devel@driverdev.osuosl.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] staging:iio: moved platform_data into include/linux/iio
-Thread-Topic: [PATCH] staging:iio: moved platform_data into include/linux/iio
-Thread-Index: AQHPvD/0dxnEQqo0D0eqpJHW9TvQ6ZvY+PeAgAACRoCAAAFvgIAH85xQ///+DQCAAE3yQIAADISAgAGBF9A=
-Date: Tue, 26 Aug 2014 11:33:43 +0000
-Message-ID: <FDC088D3B5555644AE135ED28A7ABDE94DF40824@EU-MBX-04.mgc.mentorg.com>
-References: <1408516869-6099-1-git-send-email-sanjeev_sharma@mentor.com>
-	<53F441FF.9090304@metafoo.de>
- <CAGUYZuSENkSjoA9U0E8MQKp0a1J3moE8p8NYAzfiZ+BpxND4Aw@mail.gmail.com>
- <53F4451B.3040209@metafoo.de>
- <FDC088D3B5555644AE135ED28A7ABDE94DF3CC4B@EU-MBX-04.mgc.mentorg.com>
- <53FAEF10.7010001@metafoo.de>
- <FDC088D3B5555644AE135ED28A7ABDE94DF3ECF2@EU-MBX-04.mgc.mentorg.com>
- <53FB3AF3.6060808@metafoo.de>
-In-Reply-To: <53FB3AF3.6060808@metafoo.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [137.202.0.76]
-Content-Type: text/plain; charset="utf-8"
+	Tue, 26 Aug 2014 07:36:22 -0400
+Date: Tue, 26 Aug 2014 12:36:09 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Kever Yang <kever.yang@rock-chips.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Nicolas Pitre <nico@linaro.org>, Marc Carino <marc.ceeeee@gmail.com>,
+        Mahesh Sivasubramanian <msivasub@codeaurora.org>,
+        Jonathan Austin <Jonathan.Austin@arm.com>,
+        "heiko@sntech.de" <heiko@sntech.de>,
+        "addy.ke@rock-chips.com" <addy.ke@rock-chips.com>,
+        "xjq@rock-chips.com" <xjq@rock-chips.com>,
+        "cf@rock-chips.com" <cf@rock-chips.com>,
+        "hj@rock-chips.com" <hj@rock-chips.com>,
+        "huangtao@rock-chips.com" <huangtao@rock-chips.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: errata: Workaround for Cortex-A12 erratum 818325
+Message-ID: <20140826113609.GV30401@n2100.arm.linux.org.uk>
+References: <1408355889-4176-1-git-send-email-kever.yang@rock-chips.com> <20140826101414.GD23445@arm.com>
 MIME-Version: 1.0
-X-OriginalArrivalTime: 26 Aug 2014 11:33:46.0023 (UTC) FILETIME=[98E48B70:01CFC121]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140826101414.GD23445@arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7QBXtaQ001689
 
------Original Message-----
-From: Lars-Peter Clausen [mailto:lars@metafoo.de] 
-Sent: Monday, August 25, 2014 7:03 PM
-To: Sharma, Sanjeev; sanjeev sharma
-Cc: jic23@kernel.org; gregkh; linux-iio@vger.kernel.org; devel; linux-kernel
-Subject: Re: [PATCH] staging:iio: moved platform_data into include/linux/iio
+On Tue, Aug 26, 2014 at 11:14:14AM +0100, Will Deacon wrote:
+> On Mon, Aug 18, 2014 at 10:58:09AM +0100, Kever Yang wrote:
+> > From: Huang Tao <huangtao@rock-chips.com>
+> > 
+> > On Cortex-A12 (r0p0..r0p1-00lac0-rc11), when a CPU executes a sequence of
+> > two conditional store instructions with opposite condition code and
+> > updating the same register, the system might enter a deadlock if the
+> > second conditional instruction is an UNPREDICTABLE STR or STM
+> > instruction. This workaround setting bit[12] of the Feature Register
+> > prevents the erratum. This bit disables an optimisation applied to a
+> > sequence of 2 instructions that use opposing condition codes.
+> > 
+> > Signed-off-by: Huang Tao <huangtao@rock-chips.com>
+> > Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+> > ---
+> 
+> The Rk3288 I have advertises itself as an r0p1 Cortex-A12 CPU, so isn't
+> affected by this issue. Until we have an SoC supported in mainline that
+> requires this workaround, I don't think we should merge it.
+> 
+> Also, please consider setting these bits in your firmware if possible.
+> The feature register isn't writable from the non-secure side, so if you
+> want to use virtualisation you'll need to do this differently.
 
-On 08/25/2014 01:49 PM, Sharma, Sanjeev wrote:
-> -----Original Message-----
-> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
-> Sent: Monday, August 25, 2014 1:39 PM
-> To: Sharma, Sanjeev; sanjeev sharma
-> Cc: jic23@kernel.org; gregkh; linux-iio@vger.kernel.org; devel; 
-> linux-kernel
-> Subject: Re: [PATCH] staging:iio: moved platform_data into 
-> include/linux/iio
->
-> On 08/25/2014 09:17 AM, Sharma, Sanjeev wrote:
->> Hello Lars,
->>
->> As per your suggestion Can I move complete Driver out of staging specially SPI ADC Driver.
->
-> Only if they are cleaned up first. All of the drivers that are still in staging do have issues, otherwise we'd already had moved them. A few of them are OK codestyle wise, but do have ABI issues which need to be resolved before they can be moved.
->
-> - Lars
->
-> Where I can find ABI issues which need to be resolved so that these can be looked upon.
+I think we're at the point where we start insisting that workarounds
+which are simple enable/disable feature bit operations (in other words,
+which can be handled by updating a control register in the firmware or
+boot loader) must be done that way, and we are not going to add such
+workarounds to the kernel anymore.
 
-Compare the sysfs files and their behavior that the driver registers with what is documented in the IIO ABI spec[1]. If you can't find it in the documentation it either needs to be documented or updated to use the existing ABI correctly. Note that this is not necessarily trivial and may require in-depth knowledge and understanding of the IIO ABI.
-
-You mean to say I shouldn't spent much time here because this is not much important and if this is the case then I think I should look into some area which make more sense.
-
-Thanks
-Sanjeev
-
-Thanks,
-- Lars
-
-[1]
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/ABI/testing/sysfs-bus-iio
-
->
-> -Sanjeev
->>
->> Regards
->> Sanjeev Sharma
->>
->> -----Original Message-----
->> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
->> Sent: Wednesday, August 20, 2014 12:20 PM
->> To: sanjeev sharma
->> Cc: Sharma, Sanjeev; jic23@kernel.org; gregkh; 
->> linux-iio@vger.kernel.org; devel; linux-kernel
->> Subject: Re: [PATCH] staging:iio: moved platform_data into 
->> include/linux/iio
->>
->> On 08/20/2014 08:44 AM, sanjeev sharma wrote:
->>> Hi,
->>>
->>> This was the action item(TO-DO). IMO, it make sense to move into 
->>> include/linux/iio because IIO complete subsystem may take some time.
->>
->> The code that is in staging is not supposed to 'leak' outside of staging. So either you move the driver as a whole out of staging or leave it there, but do not move individual files of the driver out of staging. The action item is for when the driver is moved out of staging.
->>
->
-> N     r  y   b X  Ç§v ^ )Şº{.n +    {  *"  ^n r   z   h    &   G   h 
-> ( éš İ¢j"   m     z Ş–   f   h   ~ mml==
->
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
