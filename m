@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758149AbaHZNQX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 09:16:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3580 "EHLO mx1.redhat.com"
+	id S1757999AbaHZNTQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 09:19:16 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:42554 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754847AbaHZNQW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 09:16:22 -0400
-Date: Tue, 26 Aug 2014 10:18:04 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Anton Blanchard <anton@samba.org>
-Cc: sukadev@linux.vnet.ibm.com, mpe@ellerman.id.au, a.p.zijlstra@chello.nl,
-        paulus@samba.org, mingo@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] perf powerpc: Fix build issue when DWARF support is
- disabled
-Message-ID: <20140826131804.GA3070@redhat.com>
-References: <20140825182307.49774a04@kryten>
- <20140825182506.2be6512d@kryten>
+	id S1754395AbaHZNTN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 09:19:13 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tomasz Figa <t.figa@samsung.com>, linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        rabin@rab.in, Thierry Reding <thierry.reding@gmail.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        kever.yang@rock-chips.com
+Subject: Re: [PATCH v7 0/8] Per-user clock constraints
+Date: Tue, 26 Aug 2014 15:20:54 +0200
+Message-ID: <5035317.536XV5BeWG@diego>
+User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <1408375833-10703-1-git-send-email-tomeu.vizoso@collabora.com>
+References: <1408375833-10703-1-git-send-email-tomeu.vizoso@collabora.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140825182506.2be6512d@kryten>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Aug 25, 2014 at 06:25:06PM +1000, Anton Blanchard escreveu:
-> The powerpc skip callchain code uses DWARF, so we must disable it if
-> DWARF is disabled.
+Hi Tomeu,
+
+Am Montag, 18. August 2014, 17:30:26 schrieb Tomeu Vizoso:
+> Hi,
 > 
-> Signed-off-by: Anton Blanchard <anton@samba.org>
-
-Thanks, applied.
-
-- Arnaldo
-
+> in this v7 of the patchset I have only rebased on top of 3.17rc1, with no
+> other changes. I have had to do a fair amount of fixing due to the rebase,
+> more details below. Follows the original cover letter blurb:
 > 
-> Index: b/tools/perf/arch/powerpc/Makefile
-> ===================================================================
-> --- a/tools/perf/arch/powerpc/Makefile
-> +++ b/tools/perf/arch/powerpc/Makefile
-> @@ -1,6 +1,6 @@
->  ifndef NO_DWARF
->  PERF_HAVE_DWARF_REGS := 1
->  LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
-> +LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/skip-callchain-idx.o
->  endif
->  LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/header.o
-> -LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/skip-callchain-idx.o
-> Index: b/tools/perf/config/Makefile
-> ===================================================================
-> --- a/tools/perf/config/Makefile
-> +++ b/tools/perf/config/Makefile
-> @@ -48,10 +48,6 @@ ifneq ($(ARCH),$(filter $(ARCH),x86 arm)
->    NO_LIBDW_DWARF_UNWIND := 1
->  endif
->  
-> -ifeq ($(ARCH),powerpc)
-> -  CFLAGS += -DHAVE_SKIP_CALLCHAIN_IDX
-> -endif
-> -
->  ifeq ($(LIBUNWIND_LIBS),)
->    NO_LIBUNWIND := 1
->  else
-> @@ -355,6 +351,12 @@ ifndef NO_LIBELF
->    endif # NO_DWARF
->  endif # NO_LIBELF
->  
-> +ifeq ($(ARCH),powerpc)
-> +  ifndef NO_DWARF
-> +    CFLAGS += -DHAVE_SKIP_CALLCHAIN_IDX
-> +  endif
-> +endif
-> +
->  ifndef NO_LIBUNWIND
->    ifneq ($(feature-libunwind), 1)
->      msg := $(warning No libunwind found. Please install libunwind-dev[el] >= 1.1 and/or set LIBUNWIND_DIR);
+> I'm retaking Rabin's patches [0] for splitting the clk API in two: one API
+> for clk consumers and another for providers. The consumer API uses a clk
+> structure that just keeps track of the consumer and has a reference to the
+> actual clk_core struct, which is used internally.
+> 
+> I have kept a patch from Rabin that aims to aid in debugging nested
+> enable/disable calls, though my personal aim is to allow more than one
+> consumer to influence the final, effective frequency rate. For now this is
+> limited to setting floor and ceiling constraints, with the short-term aim
+> of allowing devfreq and thermal drivers to set floor and ceiling
+> frequencies on the memory clock, respectively.
+
+sounds interesting. I've tested your clk-refactoring-7 branch on a Rockchip 
+rk3188-radxarock and rk3288-evb-rk808 board, so
+
+Tested-by: Heiko Stuebner <heiko@sntech.de>
+
+
+Heiko
+
