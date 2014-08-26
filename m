@@ -1,74 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934223AbaHZIvj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 04:51:39 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:58572 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934158AbaHZIvg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 04:51:36 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [RFC PATCH 0/9] dt: dependencies (for deterministic driver
- initialization order based on the DT)
-To: Jon Loeliger <jdl@jdl.com>, Thierry Reding <thierry.reding@gmail.com>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        Alexander Holler <holler@ahsoftware.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-In-Reply-To: <E1XLu15-0002DP-6o@jdl.com>
-References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>
-	<20140514141914.446F7C4153D@trevor.secretlab.ca>
-	<20140821140211.GD19293@ulmo.nvidia.com> <53F64624.5000403@ahsoftware.de>
-	<20140822131919.GX21734@leverpostej> <20140825093931.GB2399@ulmo>
-	<E1XLu15-0002DP-6o@jdl.com>
-Date: Tue, 26 Aug 2014 09:51:28 +0100
-Message-Id: <20140826085128.958A9C40989@trevor.secretlab.ca>
+	id S934236AbaHZIwz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 04:52:55 -0400
+Received: from mail.eperm.de ([89.247.134.16]:46928 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934028AbaHZIwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 04:52:53 -0400
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] DRBG: fix maximum value checks on 32 bit systems
+Date: Tue, 26 Aug 2014 10:52:45 +0200
+Message-ID: <2049245.HpByroTSUp@myon.chronox.de>
+User-Agent: KMail/4.13.3 (Linux/3.15.10-200.fc20.x86_64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <20140826084343.GA4417@gondor.apana.org.au>
+References: <20140826161456.7ad100e3@canb.auug.org.au> <2984929.nIbTCa5fhe@myon.chronox.de> <20140826084343.GA4417@gondor.apana.org.au>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Aug 2014 08:08:59 -0500, Jon Loeliger <jdl@jdl.com> wrote:
+Am Dienstag, 26. August 2014, 16:43:43 schrieb Herbert Xu:
+
+Hi Herbert,
+
+> On Tue, Aug 26, 2014 at 10:29:45AM +0200, Stephan Mueller wrote:
+> > The maximum values for additional input string or generated blocks is
+> > larger than 1<<32. To ensure a sensible value on 32 bit systems, return
+> > SIZE_MAX on 32 bit systems. This value is lower than the maximum
+> > allowed values defined in SP800-90A. The standard allow lower maximum
+> > values, but not larger values.
 > > 
+> > SIZE_MAX - 1 is used for drbg_max_addtl to allow
+> > drbg_healthcheck_sanity to check the enforcement of the variable
+> > without wrapping.
 > 
-> > Anyway, instead of going back and forth between "deferred probe is good"
-> > and "deferred probe is bad", how about we do something useful now and
-> > concentrate on how to make use of the information we have in DT with the
-> > goal to reduce the number of cases where deferred probing is required?
-> 
-> Good idea.
-> 
-> The proposal on the table is to allow the probe code
-> to make a topological sort of the devices based on
-> dependency information either implied, explicitly stated
-> or both.  That is likely a fundamentally correct approach.
-> 
-> I believe some of the issues that need to be resolved are:
-> 
->     1) What constitutes a dependency?
->     2) How is that dependency expressed?
->     3) How do we add missing dependencies?
->     4) Backward compatability problems.
-> 
-> There are other questions, of course.  Is it a topsort
-> per bus?  Are there required "early devices"?  Should
-> the inter-node dependencies be expressed at each node,
-> or in a separate hierarchy within the DTS?  Others.
+> This is really ugly but OK.  However, I'm not sure how the sanity
+> check ever worked.  It would appear that the drbg_generate call in
+> drbg_healthcheck_sanity should always fail because you explicitly
+> set addtl->len to drbg_max_addtl + 1, which should trigger the
+> "DRBG: additional information string too long" error, no?
 
-Getting the dependency tree I think is only half the problem. The other
-have is how to get the driver model to actually order probing using that
-list. That problem is hard because the order drivers are probed is
-currently determined by the interaction of driver link order, driver
-initcall level, and device registration order. The first devices are
-registered at an early initcall, before their drivers, and therefore
-bind order is primarily determined by initcall level and driver link
-order. However, later devices (ie. i2c clients) are registered by the
-bus driver (ie. again, i2c) and probe order may be primarily link order
-(if the driver is not yet registered) or registration order (if the
-driver was registered before the parent bus).
+That is exactly what the test shall do: the test is intended to check whether 
+the maximum values are enforced. And it does that by checking whether an error 
+is returned.
 
-g.
+	/* get the maximum value */
+        max_addtllen = drbg_max_addtl(drbg);
+	/* add one to definitely overflow the maximum value */
+        drbg_string_fill(&addtl, buf, max_addtllen + 1);
+        /* overflow addtllen with additonal info string */
+        len = drbg_generate(drbg, buf, OUTBUFLEN, &addtl);
+	/*
+	 * check that the drbg_generate does not return a positive
+	 * value, i.e. check that drbg_generate does not generate anything
+	 */
+        BUG_ON(0 < len);
+> 
+> Obviously it's working for you but I'd like to understand why
+> it's working and whether it'll continue to work.
+> 
+> Thanks,
+
+
+-- 
+Ciao
+Stephan
