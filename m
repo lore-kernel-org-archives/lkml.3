@@ -1,104 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934353AbaHZJQZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 05:16:25 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:54845 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934013AbaHZJQX (ORCPT
+	id S934352AbaHZJRd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 05:17:33 -0400
+Received: from toccata.ens-lyon.fr ([140.77.166.68]:49134 "EHLO
+	toccata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933975AbaHZJRb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 05:16:23 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Tony Lindgren <tony@atomide.com>, Anton Vorontsov <anton@enomsg.org>,
-        Colin Cross <ccross@android.com>, Kees Cook <keescook@chromium.org>,
-        Tony Luck <tony.luck@intel.com>, Russell King <linux@arm.linux.org.uk>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH] pstore/ram_core: Fix hang on ARMs because of pgprot_noncached
-Date: Tue, 26 Aug 2014 11:16:13 +0200
-Message-ID: <4959575.hJIGzK9yj7@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140825231449.GS17254@atomide.com>
-References: <20140825231449.GS17254@atomide.com>
+	Tue, 26 Aug 2014 05:17:31 -0400
+Date: Tue, 26 Aug 2014 11:17:25 +0200
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: Hugh Dickins <hughd@google.com>, akpm@linux-foundation.org,
+        Sabrina Dubroca <sd@queasysnail.net>, Valdis.Kletnieks@vt.edu,
+        Vincent Donnefort <vdonnefort@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, linux-leds@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
+Subject: [PATCHv2][input-led] Defer input led work to workqueue
+Message-ID: <20140826091725.GA23293@type.youpi.perso.aquilenet.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	Hugh Dickins <hughd@google.com>, akpm@linux-foundation.org,
+	Sabrina Dubroca <sd@queasysnail.net>, Valdis.Kletnieks@vt.edu,
+	Vincent Donnefort <vdonnefort@gmail.com>,
+	Bryan Wu <cooloney@gmail.com>, linux-leds@vger.kernel.org,
+	linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
+References: <20140826015453.GA5235@type.youpi.perso.aquilenet.fr>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:ADBfYMgmmJcKPS1d6D83wmYKKqCio/solu3dmh2rZ3m
- ZEVbcS5wzxmp6KDL66oTaAqzB/5yMwcSObOEdWioEAZsqyImQl
- BQ3skQMq+1QweV0JZAsW/Egfp3Qj35RzDNZ3xLTMzvBNIXi2nR
- v2yy9PJPxqLRGcV9doJeRl/MkXx3wlH9uJSD/66/MHmBz43zxS
- 6NzY3F8vVNxeyIAEYneXvOFye8BPA8/uJQZchT2tYuOF7ZBDuO
- a3JKrT+WZuzQKoxM7xNWpd3HLyK0G7sfg2VueDpu2NwELQqbjF
- HnQPu3MitUj6hs+Qi/xvvdzLwq4T83Nok18dBaE4/luPo8sP9c
- +Wi76M+C/CqftCH14EEs=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140826015453.GA5235@type.youpi.perso.aquilenet.fr>
+User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 25 August 2014 16:14:50 Tony Lindgren wrote:
-> -static void *persistent_ram_vmap(phys_addr_t start, size_t size)
-> +static void *persistent_ram_vmap(phys_addr_t start, size_t size,
-> +               unsigned int cached)
->  {
->         struct page **pages;
->         phys_addr_t page_start;
-> @@ -392,7 +393,10 @@ static void *persistent_ram_vmap(phys_addr_t start, size_t size)
->         page_start = start - offset_in_page(start);
->         page_count = DIV_ROUND_UP(size + offset_in_page(start), PAGE_SIZE);
->  
-> -       prot = pgprot_noncached(PAGE_KERNEL);
-> +       if (cached)
-> +               prot = pgprot_writecombine(PAGE_KERNEL);
-> +       else
-> +               prot = pgprot_noncached(PAGE_KERNEL);
->  
->         pages = kmalloc_array(page_count, sizeof(struct page *), GFP_KERNEL);
->         if (!pages) {
+When the kbd changes its led state (e.g. caps lock), this triggers
+(led_trigger_event) the kbd-capsl trigger, which is by default
+used by the vt::capsl LED, which triggers (led_trigger_event) the
+vt-capsl trigger. These two nested led_trigger_event calls take a
+trig->leddev_list_lock lock and thus lockdep complains.
 
-If you have a 'struct page', you also have a cacheable mapping in the kernel already,
-so you are not really supposed to add another uncached mapping. On some architectures
-(e.g. powerpc) that will cause the CPU to checkstop, on others it is undefined
-behavior. What is the reason for using an uncached mapping here in the first place?
+Actually the user can make the vt::capsl LED use its own vt-capsl
+trigger and thus build a loop.  This produces an immediate oops.
 
-> @@ -411,8 +415,11 @@ static void *persistent_ram_vmap(phys_addr_t start, size_t size)
->         return vaddr;
->  }
->  
-> -static void *persistent_ram_iomap(phys_addr_t start, size_t size)
-> +static void *persistent_ram_iomap(phys_addr_t start, size_t size,
-> +               unsigned int cached)
->  {
-> +       void *va;
-> +
->         if (!request_mem_region(start, size, "persistent_ram")) {
->                 pr_err("request mem region (0x%llx@0x%llx) failed\n",
->                         (unsigned long long)size, (unsigned long long)start);
-> @@ -422,19 +429,24 @@ static void *persistent_ram_iomap(phys_addr_t start, size_t size)
->         buffer_start_add = buffer_start_add_locked;
->         buffer_size_add = buffer_size_add_locked;
->  
-> -       return ioremap(start, size);
-> +       if (cached)
-> +               va = ioremap(start, size);
-> +       else
-> +               va = ioremap_wc(start, size);
-> +
-> +       return va;
->  }
+This changeset defers the second led_trigger_event call into a
+workqueue, which avoids the nested locking altogether.  This does
+not prevent the user from shooting himself in the foot by creating a
+vt::capsl <-> vt-capsl loop, but the only consequence is the workqueue
+threads eating some CPU until the user breaks the loop, which is not too
+bad.
 
-This seems confusing at best, but is probably just wrong: so you use
-an uncached mapping if someone asks for cached, but use a (more relaxed)
-write-combining mapping if someone asked for a stricter mapping?
-It's also the other way round for persistent_ram_vmap above.
+Signed-off-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
 
-According to your description, the intention is to make atomic operations
-work, however most architectures don't allow atomics on either type of
-uncached mapping, since atomicity is a feature of the cache coherency
-fabric.
+---
 
-The only way I see to actually make atomics work here is to use a cached
-mapping and explicit dcache flushes to actually force the data into
-persistent storage.
+Difference with v1: uses schedule_work instead of its own workqueue.
 
-	Arnd
+--- a/drivers/input/leds.c
++++ b/drivers/input/leds.c
+@@ -100,13 +100,24 @@ static unsigned long vt_led_registered[B
+ /* Number of input devices having each LED */
+ static int vt_led_references[LED_CNT];
+ 
++static int vt_led_state[LED_CNT];
++static struct work_struct vt_led_work[LED_CNT];
++
++static void vt_led_cb(struct work_struct *work)
++{
++	int led = work - vt_led_work;
++
++	led_trigger_event(&vt_led_triggers[led], vt_led_state[led]);
++}
++
+ /* VT LED state change, tell the VT trigger.  */
+ static void vt_led_set(struct led_classdev *cdev,
+ 			  enum led_brightness brightness)
+ {
+ 	int led = cdev - vt_leds;
+ 
+-	led_trigger_event(&vt_led_triggers[led], !!brightness);
++	vt_led_state[led] = !!brightness;
++	schedule_work(&vt_led_work[led]);
+ }
+ 
+ /* LED state change for some keyboard, notify that keyboard.  */
+@@ -244,6 +255,22 @@ void input_led_disconnect(struct input_d
+ 	mutex_unlock(&vt_led_registered_lock);
+ }
+ 
++static int __init input_led_init(void)
++{
++	unsigned i;
++
++	for (i = 0; i < LED_CNT; i++)
++		INIT_WORK(&vt_led_work[i], vt_led_cb);
++
++	return 0;
++}
++
++static void __exit input_led_exit(void)
++{
++}
++
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("User LED support for input layer");
+ MODULE_AUTHOR("Samuel Thibault <samuel.thibault@ens-lyon.org>");
++module_init(input_led_init);
++module_exit(input_led_exit);
