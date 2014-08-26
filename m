@@ -1,160 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757987AbaHZMh4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 08:37:56 -0400
-Received: from regular1.263xmail.com ([211.150.99.134]:44355 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757872AbaHZMhy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 08:37:54 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: zyw@rock-chips.com
-X-FST-TO: lee.jones@linaro.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: zyw@rock-chips.com
-X-UNIQUE-TAG: <86f3805babd9e1e79643833863b6f9db>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-Message-ID: <53FC7F8A.2050903@rock-chips.com>
-Date: Tue, 26 Aug 2014 20:37:30 +0800
-From: Chris Zhong <zyw@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1758021AbaHZMiF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 08:38:05 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:35149 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757872AbaHZMiD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 08:38:03 -0400
+Message-ID: <53FC7FA2.1010201@ti.com>
+Date: Tue, 26 Aug 2014 15:37:54 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        sameo@linux.intel.com, lgirdwood@gmail.com, broonie@kernel.org,
-        a.zummo@towertech.it, mturquette@linaro.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
-        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
-        xxx@rock-chips.com, dianders@chromium.org, heiko@sntech.de,
-        olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
-        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com
-Subject: Re: [PATCH v2 2/5] MFD: RK808: Add new mfd driver for RK808
-References: <1408505461-24200-1-git-send-email-zyw@rock-chips.com> <20140820092117.GI4266@lee--X1> <53FA9D1E.8040202@rock-chips.com> <20140826092205.GG9574@lee--X1> <53FC5BD1.7030406@rock-chips.com> <20140826102036.GJ9574@lee--X1> <53FC63EE.6060104@rock-chips.com> <20140826112013.GK9574@lee--X1> <53FC77F0.4030004@rock-chips.com> <20140826122304.GA26707@lee--X1>
-In-Reply-To: <20140826122304.GA26707@lee--X1>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Ian Abbott <abbotti@mev.co.uk>, <linux-fbdev@vger.kernel.org>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] video: da8xx-fb: preserve display width when changing
+ HSYNC
+References: <1404395199-5726-1-git-send-email-abbotti@mev.co.uk>
+In-Reply-To: <1404395199-5726-1-git-send-email-abbotti@mev.co.uk>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="7RSmutHEFgX4pfSMU5NWQAbPU4P4MbH8l"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--7RSmutHEFgX4pfSMU5NWQAbPU4P4MbH8l
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-On 08/26/2014 08:23 PM, Lee Jones wrote:
-> On Tue, 26 Aug 2014, Chris Zhong wrote:
->> On 08/26/2014 07:20 PM, Lee Jones wrote:
->>> On Tue, 26 Aug 2014, Chris Zhong wrote:
->>>> On 08/26/2014 06:20 PM, Lee Jones wrote:
->>>>> On Tue, 26 Aug 2014, Chris Zhong wrote:
->>>>>> On 08/26/2014 05:22 PM, Lee Jones wrote:
->>>>>>> On Mon, 25 Aug 2014, Chris Zhong wrote:
->>>>>>>> On 08/20/2014 05:21 PM, Lee Jones wrote:
->>>>>>>>> On Wed, 20 Aug 2014, Chris Zhong wrote:
->>>>>>>>>
->>>>>>>>>> The RK808 chip is a power management IC for multimedia and handheld
->>>>>>>>>> devices. It contains the following components:
->>>>>>>>>>
->>>>>>>>>> - Regulators
->>>>>>>>>> - RTC
->>>>>>>>>>
->>>>>>>>>> The rk808 core driver is registered as a platform driver and provides
->>>>>>>>>> communication through I2C with the host device for the different
->>>>>>>>>> components.
->>>>>>>>>>
->>>>>>>>>> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
->>>>>>>>>> ---
->>>>>>> [...]
->>>>>>>
->>>>>>>>>> +	rk808->pdata = pdata;
->>>>>>>>> Remove pdata from 'struct rk808'.  You can obtain it from dev.
->>>>>>>> Can I keep this pdata in rk808, because it is used in the regulator driver.
->>>>>>>> The one obtain from dev maybe empty.
->>>>>>> If the one in dev is empty, you should populate that instead.
->>>>>> So, should I malloc a pada, and assign it to client->dev?
->>>>> If client->dev.pdata is NULL, yes.
->>>>>
->>>>> But actually, I have more important questions that need to be answered
->>>>> first.  Ones which I would normally be able to answer myself if the
->>>>> patch-set had been sent as one (i.e. threaded) instead of as
->>>>> individual patches:
->>>>>
->>>>> - What are you using pdata for?
->>>> For save some properties,
->>>>
->>>> like "rockchip,system-power-controller" in MFD
->>>> and some regulator properties in regulator/rk808...
->>>>
->>>>> - Where is pdata populated?
->>>> It is populated in probe in mfd/rk808.c
->>>>
->>>> actually, I copy it from tps65910.c
->>>>
->>>>
->>>>> - Where is pdata used?
->>>> pdata is used in mfd and regulator
->>> I'm still a little confused.  I see it being populated in the MFD
->>> driver, then I only see the attributes populated in the MFD driver
->>> used in the MFD driver and nowhere else?  I do see other attributes
->>> used in the regulator driver i.e. .of_node[], but these are then used
->>> only in the regulator driver, thus they shouldn't really be pdata.
->>>
->>> Let me put it another way:
->>>
->>> struct rk808_board {
->>> +       int irq;
->>> +       int irq_base;
->>> +       int wakeup;
->>> +       bool pm_off;
->>> +       struct regulator_init_data *rk808_init_data[rk808_NUM_REGULATORS];
->>> +       struct device_node *of_node[rk808_NUM_REGULATORS];
->>> +       int pmic_sleep_gpio;
->>> +       unsigned int dcdc_slp_voltage[3]; /* buckx_voltage in uV */
->>> +       unsigned int ldo_slp_voltage[7];
->>> +};
->>>
->>> For each of the above:
->>>
->>> - Can it be passed from platform data i.e. arch/<arch>/{plat,mach}-*?
->>> - Can it use local (not passed from driver to driver) variable instead?
->>>
->>> If the answer to the first question is 'no' and/or if the answer to
->>> the second question is 'yes', then it shouldn't be platform data.
->> Yes, if we have no dts file, these value can pass from mach-rk***.
->>
->> It can be filled with all user setting of rk808, in a struct.
->>
->> the latest struct is:
->>
->> struct rk808_board {
->>
->>      int wakeup;
->>
->>      bool pm_off;
->>
->>      struct regulator_init_data *rk808_init_data[RK808_NUM_REGULATORS];
->>
->>      struct device_node *of_node[RK808_NUM_REGULATORS];
->>
->>      unsigned int dcdc_slp_voltage[3]; /* buckx_voltage in uV */
->>
->>      unsigned int ldo_slp_voltage[7];
->>
->> };
-> This version looks much more acceptable.
->
-> Although, I am concerned about of_node[].  Isn't that only populated
-> and used in the regulator driver?
+On 03/07/14 16:46, Ian Abbott wrote:
+> When looking at this driver for a client, I noticed the code that
+> configures the HSYNC pulse clobbers the display width in the same
+> register.  It only preserves the MS part of the width in bit 3 and zero=
+s
+> the LS part of the width in bits 9 to 4.  This doesn't matter during
+> initialization as the width is configured afterwards, but subsequent us=
+e
+> of the FBIPUT_HSYNC ioctl would clobber the width.
+>=20
+> Preserve bits 9 to 0 of LCD_RASTER_TIMING_0_REG when configuring the
+> horizontal sync.
+>=20
+> Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+> ---
+> I haven't tested this change, but it's pretty trivial.
+> ---
+>  drivers/video/fbdev/da8xx-fb.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/video/fbdev/da8xx-fb.c b/drivers/video/fbdev/da8xx=
+-fb.c
+> index 788f6b3..10c876c 100644
+> --- a/drivers/video/fbdev/da8xx-fb.c
+> +++ b/drivers/video/fbdev/da8xx-fb.c
+> @@ -419,7 +419,7 @@ static void lcd_cfg_horizontal_sync(int back_porch,=
+ int pulse_width,
+>  {
+>  	u32 reg;
+> =20
+> -	reg =3D lcdc_read(LCD_RASTER_TIMING_0_REG) & 0xf;
+> +	reg =3D lcdc_read(LCD_RASTER_TIMING_0_REG) & 0x3ff;
+>  	reg |=3D (((back_porch-1) & 0xff) << 24)
+>  	    | (((front_porch-1) & 0xff) << 16)
+>  	    | (((pulse_width-1) & 0x3f) << 10);
+>=20
 
-Yes, it only used in regulator driver
+Thanks, queued for 3.17 fixes.
 
-Well, it might be better to delete the pdata from MFD.
+ Tomi
 
 
 
+--7RSmutHEFgX4pfSMU5NWQAbPU4P4MbH8l
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
+iQIcBAEBAgAGBQJT/H+iAAoJEPo9qoy8lh71BjsP/AsAEyfdizCCgIw3EQ+QpzVy
+yqgjdB7c1raut8z/8ogyTceno8wZm6Wl+eWlkAJmhauXWU2UvVCllcczi9Av+Ps3
+d3WKDnqfgc/qYgcE9lIsFGm4MA7hCEJSYY8EOCuRogXv2PE20qfE906ZiBsiLn6u
+MJFqzEzpQPBC9kYecGYiODf4SooTreQ7V/HFgmvkeHpefHiuXc3mjC2Wge9FIPpM
+8H5TE45f7B45l2NHNYKnmCArqGnyzy7syBHGIvQkRTmmuLk2PqKuUPr5HlC2Rh79
+O5z6Gro5qoPWuxJR/Qh2oe6Vwmi/Vjf8cqlQOiHEyM+yKSbLraJLgqoiMe3z82lU
+KoIkcfJAW/l6eXF8Zyfv90V1dkpMjzz/QOIY7kM7U7/Q0/NMYyVQj0RLCTM9LOqW
+NEqPmGLGXLIwOVPGNoAWS+i1s1JzqWN+PUE6WpM+9+qqGgm4pfGac8Ycff4+eaa0
+upfYX2/sVecrzrH613fDW8zFx9gkF1aeTmI/8zg1hchCWl+1027Nn0s0EkLW/pad
+9pA4RWlPm+gNoLEzoG/8xUNFZvuw5cwXi0pqupImzw6ZTm8ULGJ6Y8ZlmGrS52Li
+EN02O21gjtPimkSleDtglgu93xr7Uxc6+Zh87sqPJktQJ1AshtWJ7pKnPLTzUmOO
+Ylx6RBc1PoU8cJB8bSVB
+=4NXw
+-----END PGP SIGNATURE-----
+
+--7RSmutHEFgX4pfSMU5NWQAbPU4P4MbH8l--
