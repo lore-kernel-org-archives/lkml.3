@@ -1,94 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754944AbaHZLpp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 07:45:45 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:50458 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754305AbaHZLpn (ORCPT
+	id S1757472AbaHZLrN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 07:47:13 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36303 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751893AbaHZLrM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 07:45:43 -0400
-Date: Tue, 26 Aug 2014 13:45:39 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Andrew Bresticker <abrestic@chromium.org>, linux-tegra@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, Jonas Bonn <jonas@southpole.se>,
-        David Howells <dhowells@redhat.com>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
-Subject: Re: [PATCH v2 2/9] mailbox: Add NVIDIA Tegra XUSB mailbox driver
-Message-ID: <20140826114537.GA641@ulmo>
-References: <1408381705-3623-1-git-send-email-abrestic@chromium.org>
- <5184912.mY2hCPH20k@wuerfel>
- <20140826102011.GA31124@ulmo>
- <14224406.FU8QFA3vsD@wuerfel>
+	Tue, 26 Aug 2014 07:47:12 -0400
+Date: Tue, 26 Aug 2014 13:47:09 +0200
+From: Pavel Machek <pavel@denx.de>
+To: Dinh Nguyen <dinh.linux@gmail.com>
+Cc: Jaehoon Chung <jh80.chung@samsung.com>, dinguyen@altera.com,
+        khilman@linaro.org, olof@lixom.net, arnd@arndb.de, arm@kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        kernel list <linux-kernel@vger.kernel.org>, akpm@linux-foundation.org
+Subject: 3.17-rc2: root=/dev/mmcblk0p2 command line parsing fails
+Message-ID: <20140826114707.GA16372@amd>
+References: <1405397216-909-1-git-send-email-dinguyen@altera.com>
+ <53C4D874.2040206@samsung.com>
+ <20140814184710.GA11558@amd.pavel.ucw.cz>
+ <53ED2262.50604@gmail.com>
+ <20140814210252.GB26857@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ReaqsoxgOBHFXBhH"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <14224406.FU8QFA3vsD@wuerfel>
+In-Reply-To: <20140814210252.GB26857@amd.pavel.ucw.cz>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi!
 
---ReaqsoxgOBHFXBhH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> > > mmc0: new SDHC card at address b368                                             
+> > > mmcblk0: mmc0:b368 USD   7.45 GiB                                               
+> > >  mmcblk0: p1 p2 p3 p4                                                           
+> > > VFS: Cannot open root device "mmcblk0p2" or unknown-block(0,0): error
+> > > -6        
+> > > Please append a correct "root=" boot option; here are the available
+> > > partitions: 
+> > > b300         7822336 mmcblk0  driver: mmcblk                                    
+> > >   b301          102400 mmcblk0p1 00082434-01                                    
+> > >   b302         1048576 mmcblk0p2 00082434-02                                    
+> > >   b303            1024 mmcblk0p3 00082434-03                                    
+> > >   b304         6086656 mmcblk0p4 00082434-04                                    
+> > > Kernel panic - not syncing: VFS: Unable to mount root fs on
+> > > unknown-block(0,0)  
+> > > CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.16.0-11208-gef74117-dirty
+> > > #2        
+> > 
+> > Hmm...today's tip-top(899552d6) and ba36899 booted just fine for me. I
+> > noticed something, you must have commits on top of your ba36899? Mine
+> > shows 3.16.0-11149-gba36899.
+> 
+> Ok, thanks for info. I went back to 3.16, and it worked in same
+> config, and went to 3.17, and it broke.
 
-On Tue, Aug 26, 2014 at 01:35:34PM +0200, Arnd Bergmann wrote:
-> On Tuesday 26 August 2014 12:20:13 Thierry Reding wrote:
-> > On Tue, Aug 26, 2014 at 11:54:43AM +0200, Arnd Bergmann wrote: >=20
-> > > I'm not sure if it's really worth it. One thing we might do is just
-> > > remove all definitions of ioremap_nocache and add a wrapper to
-> > > include/linux/io.h, to make it more obvious what is going on.
-> >=20
-> > Yes, I suppose that would work too. I still think there's an advantage
-> > in being explicit and avoid aliases like this. Perhaps a __deprecated
-> > annotation would help with that?
->=20
-> I fear adding __deprecated would be too controversial, because that
-> would add hundreds of new warnings to code that is not actually wrong.
+The problem is still there in 3.17-rc2. 3.16 does not have the
+problem. Messages are still similar:
 
-Right. __deprecated is enabled via Kconfig, though, so people could turn
-that off if they don't want to see the warnings. I don't mind very much
-either way.
+mmc0: new high speed SDHC card at address b368
+mmcblk0: mmc0:b368 USD   7.45 GiB 
+ mmcblk0: p1 p2 p3 p4
+VFS: Cannot open root device "mmcblk0p2" or unknown-block(0,0): error
+-6
+Please append a correct "root=" boot option; here are the available
+partitions:
+b300         7822336 mmcblk0  driver: mmcblk
+  b301          102400 mmcblk0p1 00082434-01
+  b302         1048576 mmcblk0p2 00082434-02
+  b303            1024 mmcblk0p3 00082434-03
+  b304         6086656 mmcblk0p4 00082434-04
+Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(0,0)
+CPU: 0 PID: 1 Comm: swapper/0 Not tainted
+3.17.0-rc2-00368-gec0400b-dirty #83
 
-Thierry
 
---ReaqsoxgOBHFXBhH
-Content-Type: application/pgp-signature
+What is going on there? Clearly partition table was parsed and
+partitions are available; does the mention of unknown-block(0,0) mean
+that kernel failed to parse the command line?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+I replaced "root=/dev/mmcblk0p2" with "root=b302" and have a booting
+system.
 
-iQIcBAEBAgAGBQJT/HNhAAoJEN0jrNd/PrOhhM8P/Rr+x6dsQRCcRUKorXb6j3dw
-YF2K830WVytEP9/GTNb1ZD77BzFrGhW8Wt+z9dfwip43SYxAxArMytiHkthht8Vz
-+TnBgsNlAG53MxVdyxWN/snFN5Apjykk1L47M7+BSOwlwtOIMeIDzhTLU1fYiEsJ
-q/WGNqsxF5plvDF7vp4pCPBAbVg/rqXYz0abvyHI/xOFWcK1YPoGH8BX6ZhlhyBT
-PUg55X+yUk25qiq+lMxAE0CBYqF+te//pAF/7LzZ1xL8XTYGGQ8A5mFzfoxh+iTn
-61dmMFF7qeZ3CdP+xl7OxT5UPQyKuv8+yD5Rnx7guy0Se0qAdale1wRGkyZEyj0C
-nlogJFOh7qGi9WeG8wJE9GPP4HYwigdDneWWUScg8SCJTG6bPCCCKisPnhU2luqz
-OXEEXOK+l38SpanrO1nZIzc0bz3Qt7e4q0G05+0GbVphXT5YYNOJhl64NDwmofnA
-pd9Z3KNilkkggAP4tCnF+yFu6swDuiZwvBoIe1O/d7dvUu0FXzlfldEDQS4mdqP9
-/6QNyrsznqRptPZkUWIahvNyP80nffzFqNlR5QebQpZD4+VU/9MDwovx1aAyliUH
-ryk1vlnshLgsnyqVT0+5P/MbPtZJgxzvozS0zMIRH729xNVblgyadExyWqdRHGAM
-ypl5zk2EgIlkjpD4l+Wy
-=xbXr
------END PGP SIGNATURE-----
+									Pavel
 
---ReaqsoxgOBHFXBhH--
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
