@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756822AbaHZBBR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 21:01:17 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:39289 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755355AbaHZBBP (ORCPT
+	id S1756862AbaHZBBX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 21:01:23 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:54711 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756833AbaHZBBT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 21:01:15 -0400
+	Mon, 25 Aug 2014 21:01:19 -0400
 From: Alexei Starovoitov <ast@plumgrid.com>
 To: "David S. Miller" <davem@davemloft.net>
 Cc: Ingo Molnar <mingo@kernel.org>,
@@ -21,69 +21,189 @@ Cc: Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v6 net-next 0/6] introduce BPF syscall
-Date: Mon, 25 Aug 2014 18:00:52 -0700
-Message-Id: <1409014858-1410-1-git-send-email-ast@plumgrid.com>
+Subject: [PATCH v6 net-next 1/6] net: filter: add "load 64-bit immediate" eBPF instruction
+Date: Mon, 25 Aug 2014 18:00:53 -0700
+Message-Id: <1409014858-1410-2-git-send-email-ast@plumgrid.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1409014858-1410-1-git-send-email-ast@plumgrid.com>
+References: <1409014858-1410-1-git-send-email-ast@plumgrid.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+add BPF_LD_IMM64 instruction to load 64-bit immediate value into a register.
+All previous instructions were 8-byte. This is first 16-byte instruction.
+Two consecutive 'struct bpf_insn' blocks are interpreted as single instruction:
+insn[0].code = BPF_LD | BPF_DW | BPF_IMM
+insn[0].dst_reg = destination register
+insn[0].imm = lower 32-bit
+insn[1].code = 0
+insn[1].imm = upper 32-bit
+All unused fields must be zero.
 
-splitting big set of patches into smaller sets:
+Classic BPF has similar instruction: BPF_LD | BPF_W | BPF_IMM
+which loads 32-bit immediate value into a register.
 
-1st(this) set - introduces uapi/linux/bpf.h and BPF syscall for maps only
-2nd set will extend BPF syscall with programs and verifier
-3rd set will use eBPF in tracing, add samples and verifier tests
-4th set will have llvm and C examples
+x64 JITs it as single 'movabsq %rax, imm64'
+arm64 may JIT as sequence of four 'movk x0, #imm16, lsl #shift' insn
 
-Tested on x64 and i386.
-BPF syscall with maps only is usable, but not very useful until the rest comes
-Build/boot tested on arm and sparc.
-They got new warning 'syscall bpf not implemented'
+Note that old eBPF programs are binary compatible with new interpreter.
 
-V5->V6:
-- fixed few checkpatch warnings.
-  Few lines are still over 80 char, but fixing them will reduce readability
-- rebased
+In the following patches this instruction is used to store eBPF map pointers:
+ BPF_LD_IMM64(R1, const_imm_map_ptr)
+ BPF_CALL(BPF_FUNC_map_lookup_elem)
+and verifier is introduced to check validity of the programs.
 
-V5 thread:
-https://lkml.org/lkml/2014/8/24/107
+Later LLVM compiler is using this insn as generic load of 64-bit immediate
+constant and as a load of map pointer with relocation.
 
-All patches:
-git://git.kernel.org/pub/scm/linux/kernel/git/ast/bpf master
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+---
+ Documentation/networking/filter.txt |    8 +++++++-
+ arch/x86/net/bpf_jit_comp.c         |   17 +++++++++++++++++
+ include/linux/filter.h              |   18 ++++++++++++++++++
+ kernel/bpf/core.c                   |    5 +++++
+ lib/test_bpf.c                      |   21 +++++++++++++++++++++
+ 5 files changed, 68 insertions(+), 1 deletion(-)
 
-Alexei Starovoitov (6):
-  net: filter: add "load 64-bit immediate" eBPF instruction
-  net: filter: split filter.h and expose eBPF to user space
-  bpf: introduce syscall(BPF, ...) and BPF maps
-  bpf: enable bpf syscall on x64 and i386
-  bpf: add lookup/update/delete/iterate methods to BPF maps
-  bpf: add hashtable type of BPF maps
-
- Documentation/networking/filter.txt |   79 +++++++-
- arch/x86/net/bpf_jit_comp.c         |   17 ++
- arch/x86/syscalls/syscall_32.tbl    |    1 +
- arch/x86/syscalls/syscall_64.tbl    |    1 +
- include/linux/bpf.h                 |   50 +++++
- include/linux/filter.h              |  294 +--------------------------
- include/linux/syscalls.h            |    3 +-
- include/uapi/asm-generic/unistd.h   |    4 +-
- include/uapi/linux/Kbuild           |    1 +
- include/uapi/linux/bpf.h            |  371 ++++++++++++++++++++++++++++++++++
- kernel/bpf/Makefile                 |    2 +-
- kernel/bpf/core.c                   |    5 +
- kernel/bpf/hashtab.c                |  373 +++++++++++++++++++++++++++++++++++
- kernel/bpf/syscall.c                |  354 +++++++++++++++++++++++++++++++++
- kernel/sys_ni.c                     |    3 +
- lib/test_bpf.c                      |   21 ++
- 16 files changed, 1282 insertions(+), 297 deletions(-)
- create mode 100644 include/linux/bpf.h
- create mode 100644 include/uapi/linux/bpf.h
- create mode 100644 kernel/bpf/hashtab.c
- create mode 100644 kernel/bpf/syscall.c
-
+diff --git a/Documentation/networking/filter.txt b/Documentation/networking/filter.txt
+index c48a9704bda8..81916ab5d96f 100644
+--- a/Documentation/networking/filter.txt
++++ b/Documentation/networking/filter.txt
+@@ -951,7 +951,7 @@ Size modifier is one of ...
+ 
+ Mode modifier is one of:
+ 
+-  BPF_IMM  0x00  /* classic BPF only, reserved in eBPF */
++  BPF_IMM  0x00  /* used for 32-bit mov in classic BPF and 64-bit in eBPF */
+   BPF_ABS  0x20
+   BPF_IND  0x40
+   BPF_MEM  0x60
+@@ -995,6 +995,12 @@ BPF_XADD | BPF_DW | BPF_STX: lock xadd *(u64 *)(dst_reg + off16) += src_reg
+ Where size is one of: BPF_B or BPF_H or BPF_W or BPF_DW. Note that 1 and
+ 2 byte atomic increments are not supported.
+ 
++eBPF has one 16-byte instruction: BPF_LD | BPF_DW | BPF_IMM which consists
++of two consecutive 'struct bpf_insn' 8-byte blocks and interpreted as single
++instruction that loads 64-bit immediate value into a dst_reg.
++Classic BPF has similar instruction: BPF_LD | BPF_W | BPF_IMM which loads
++32-bit immediate value into a register.
++
+ Testing
+ -------
+ 
+diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
+index b08a98c59530..98837147ee57 100644
+--- a/arch/x86/net/bpf_jit_comp.c
++++ b/arch/x86/net/bpf_jit_comp.c
+@@ -393,6 +393,23 @@ static int do_jit(struct bpf_prog *bpf_prog, int *addrs, u8 *image,
+ 			EMIT1_off32(add_1reg(0xB8, dst_reg), imm32);
+ 			break;
+ 
++		case BPF_LD | BPF_IMM | BPF_DW:
++			if (insn[1].code != 0 || insn[1].src_reg != 0 ||
++			    insn[1].dst_reg != 0 || insn[1].off != 0) {
++				/* verifier must catch invalid insns */
++				pr_err("invalid BPF_LD_IMM64 insn\n");
++				return -EINVAL;
++			}
++
++			/* movabsq %rax, imm64 */
++			EMIT2(add_1mod(0x48, dst_reg), add_1reg(0xB8, dst_reg));
++			EMIT(insn[0].imm, 4);
++			EMIT(insn[1].imm, 4);
++
++			insn++;
++			i++;
++			break;
++
+ 			/* dst %= src, dst /= src, dst %= imm32, dst /= imm32 */
+ 		case BPF_ALU | BPF_MOD | BPF_X:
+ 		case BPF_ALU | BPF_DIV | BPF_X:
+diff --git a/include/linux/filter.h b/include/linux/filter.h
+index a5227ab8ccb1..f3262b598262 100644
+--- a/include/linux/filter.h
++++ b/include/linux/filter.h
+@@ -161,6 +161,24 @@ enum {
+ 		.off   = 0,					\
+ 		.imm   = IMM })
+ 
++/* BPF_LD_IMM64 macro encodes single 'load 64-bit immediate' insn */
++#define BPF_LD_IMM64(DST, IMM)					\
++	BPF_LD_IMM64_RAW(DST, 0, IMM)
++
++#define BPF_LD_IMM64_RAW(DST, SRC, IMM)				\
++	((struct bpf_insn) {					\
++		.code  = BPF_LD | BPF_DW | BPF_IMM,		\
++		.dst_reg = DST,					\
++		.src_reg = SRC,					\
++		.off   = 0,					\
++		.imm   = (__u32) (IMM) }),			\
++	((struct bpf_insn) {					\
++		.code  = 0, /* zero is reserved opcode */	\
++		.dst_reg = 0,					\
++		.src_reg = 0,					\
++		.off   = 0,					\
++		.imm   = ((__u64) (IMM)) >> 32 })
++
+ /* Short form of mov based on type, BPF_X: dst_reg = src_reg, BPF_K: dst_reg = imm32 */
+ 
+ #define BPF_MOV64_RAW(TYPE, DST, SRC, IMM)			\
+diff --git a/kernel/bpf/core.c b/kernel/bpf/core.c
+index 7f0dbcbb34af..0434c2170f2b 100644
+--- a/kernel/bpf/core.c
++++ b/kernel/bpf/core.c
+@@ -180,6 +180,7 @@ static unsigned int __bpf_prog_run(void *ctx, const struct bpf_insn *insn)
+ 		[BPF_LD | BPF_IND | BPF_W] = &&LD_IND_W,
+ 		[BPF_LD | BPF_IND | BPF_H] = &&LD_IND_H,
+ 		[BPF_LD | BPF_IND | BPF_B] = &&LD_IND_B,
++		[BPF_LD | BPF_IMM | BPF_DW] = &&LD_IMM_DW,
+ 	};
+ 	void *ptr;
+ 	int off;
+@@ -239,6 +240,10 @@ select_insn:
+ 	ALU64_MOV_K:
+ 		DST = IMM;
+ 		CONT;
++	LD_IMM_DW:
++		DST = (u64) (u32) insn[0].imm | ((u64) (u32) insn[1].imm) << 32;
++		insn++;
++		CONT;
+ 	ALU64_ARSH_X:
+ 		(*(s64 *) &DST) >>= SRC;
+ 		CONT;
+diff --git a/lib/test_bpf.c b/lib/test_bpf.c
+index 8c66c6aace04..46ab1a7ef135 100644
+--- a/lib/test_bpf.c
++++ b/lib/test_bpf.c
+@@ -1735,6 +1735,27 @@ static struct bpf_test tests[] = {
+ 		{ },
+ 		{ { 1, 0 } },
+ 	},
++	{
++		"load 64-bit immediate",
++		.u.insns_int = {
++			BPF_LD_IMM64(R1, 0x567800001234L),
++			BPF_MOV64_REG(R2, R1),
++			BPF_MOV64_REG(R3, R2),
++			BPF_ALU64_IMM(BPF_RSH, R2, 32),
++			BPF_ALU64_IMM(BPF_LSH, R3, 32),
++			BPF_ALU64_IMM(BPF_RSH, R3, 32),
++			BPF_ALU64_IMM(BPF_MOV, R0, 0),
++			BPF_JMP_IMM(BPF_JEQ, R2, 0x5678, 1),
++			BPF_EXIT_INSN(),
++			BPF_JMP_IMM(BPF_JEQ, R3, 0x1234, 1),
++			BPF_EXIT_INSN(),
++			BPF_ALU64_IMM(BPF_MOV, R0, 1),
++			BPF_EXIT_INSN(),
++		},
++		INTERNAL,
++		{ },
++		{ { 0, 1 } }
++	},
+ };
+ 
+ static struct net_device dev;
 -- 
 1.7.9.5
 
