@@ -1,156 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757274AbaHZGQd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 02:16:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34803 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757245AbaHZGQ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 02:16:29 -0400
-From: Juergen Gross <jgross@suse.com>
-To: stefan.bader@canonical.com, toshi.kani@hp.com,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        konrad.wilk@oracle.com, ville.syrjala@linux.intel.com, hpa@zytor.com,
-        x86@kernel.org
-Cc: Juergen Gross <jgross@suse.com>
-Subject: [PATCH 3/3] Support Xen pv-domains using PAT
-Date: Tue, 26 Aug 2014 08:16:23 +0200
-Message-Id: <1409033783-12136-4-git-send-email-jgross@suse.com>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1409033783-12136-1-git-send-email-jgross@suse.com>
-References: <1409033783-12136-1-git-send-email-jgross@suse.com>
+	id S1757292AbaHZGQl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 02:16:41 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:10224 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757276AbaHZGQi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 02:16:38 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-42-53fc2643fa18
+Message-id: <53FC263B.9010709@samsung.com>
+Date: Tue, 26 Aug 2014 08:16:27 +0200
+From: Andrzej Hajda <a.hajda@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.0
+MIME-version: 1.0
+To: Joonyoung Shim <jy0922.shim@samsung.com>, Inki Dae <inki.dae@samsung.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        dri-devel@lists.freedesktop.org,
+        open list <linux-kernel@vger.kernel.org>,
+        "moderated list:ARM/S5P EXYNOS AR..." 
+	<linux-samsung-soc@vger.kernel.org>
+Subject: Re: [PATCH 03/15] drm/exynos/ipp: move file reference from memory to
+ command node
+References: <1408693946-15456-1-git-send-email-a.hajda@samsung.com>
+ <1408693946-15456-4-git-send-email-a.hajda@samsung.com>
+ <53FBF71B.7070107@samsung.com> <53FBF818.70407@samsung.com>
+In-reply-to: <53FBF818.70407@samsung.com>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBLMWRmVeSWpSXmKPExsVy+t/xK7rOan+CDe59NbK48vU9m8Wk+xNY
+	LF7cu8hicbbpDbvF5V1z2CxmnN/HZLH2yF12ixmTX7I5cHjc7z7O5NG3ZRWjx+dNcgHMUVw2
+	Kak5mWWpRfp2CVwZL89tZCxol6j41rmLrYHxlXAXIyeHhICJxN+Fe9ggbDGJC/fWA9lcHEIC
+	SxklZv29wQ7hfGKUePF4LiNIFa+AlkTH1odgHSwCqhI3J98Ci7MJaEr83XwTLC4qECbx7NdB
+	Joh6QYkfk++xgNgiAr4SW/6/ZgQZyiywgEni24MOsCJhgRiJW3euskBs280o8eN6K2sXIwcH
+	J9DUFytKQUxmAT2J+xe1QMqZBeQlNq95yzyBUWAWkhWzEKpmIalawMi8ilE0tTS5oDgpPddI
+	rzgxt7g0L10vOT93EyMktL/uYFx6zOoQowAHoxIP74O038FCrIllxZW5hxglOJiVRHgZHgKF
+	eFMSK6tSi/Lji0pzUosPMTJxcEo1MNor3Zzy1W5p+uGv2/56+H9gkdE7WefkP2FZm/uj6M/i
+	sx+un5j55F54ifdZr8R9x4NldgSrT5Cc/HMyx3KdB6aeQmKn5h/8tp5/i2Ow+sclM6ZLinez
+	a0efFt8sYXixaK/YHtU8Q9uHiToVD+/7/96yJ23jjtJ7AoslqtVkuW/eafS3rIk7vFeJpTgj
+	0VCLuag4EQBRgnh8SwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the dynamical mapping between cache modes and pgprot values it is now
-possible to use all cache modes via the Xen hypervisor PAT settings in a
-pv domain.
+Hi Joonyoung,
 
-All to be done is to read the PAT configuration MSR and set up the translation
-tables accordingly.
+Thanks for review.
 
-Signed-off-by: Juergen Gross <jgross@suse.com>
----
- arch/x86/xen/enlighten.c | 11 ++++++----
- arch/x86/xen/mmu.c       | 52 ++++++++++++------------------------------------
- arch/x86/xen/xen-ops.h   |  1 +
- 3 files changed, 21 insertions(+), 43 deletions(-)
+On 08/26/2014 04:59 AM, Joonyoung Shim wrote:
+> On 08/26/2014 11:55 AM, Joonyoung Shim wrote:
+>> Hi Andrzej,
+>>
+>> On 08/22/2014 04:52 PM, Andrzej Hajda wrote:
+>>> Command node should contain file reference to distinguish commands
+>>> created by different processes.
+>>>
+>>> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
+>>> ---
+>>>  drivers/gpu/drm/exynos/exynos_drm_ipp.c | 5 ++---
+>>>  drivers/gpu/drm/exynos/exynos_drm_ipp.h | 2 ++
+>>>  2 files changed, 4 insertions(+), 3 deletions(-)
+>>>
+>>> diff --git a/drivers/gpu/drm/exynos/exynos_drm_ipp.c b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
+>>> index 9770966..bbe9968 100644
+>>> --- a/drivers/gpu/drm/exynos/exynos_drm_ipp.c
+>>> +++ b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
+>>> @@ -75,7 +75,6 @@ struct drm_exynos_ipp_mem_node {
+>>>  	u32	prop_id;
+>>>  	u32	buf_id;
+>>>  	struct drm_exynos_ipp_buf_info	buf_info;
+>>> -	struct drm_file		*filp;
+>>>  };
+>>>  
+>>>  /*
+>>> @@ -448,6 +447,7 @@ int exynos_drm_ipp_set_property(struct drm_device *drm_dev, void *data,
+>>>  	c_node->dev = dev;
+>>>  	c_node->property = *property;
+>>>  	c_node->state = IPP_STATE_IDLE;
+>>> +	c_node->filp = file;
+>>>  
+>>>  	c_node->start_work = ipp_create_cmd_work();
+>>>  	if (IS_ERR(c_node->start_work)) {
+>>> @@ -645,7 +645,6 @@ static struct drm_exynos_ipp_mem_node
+>>>  		}
+>>>  	}
+>>>  
+>>> -	m_node->filp = file;
+>>>  	mutex_lock(&c_node->mem_lock);
+>>>  	list_add_tail(&m_node->list, &c_node->mem_list[qbuf->ops_id]);
+>>>  	mutex_unlock(&c_node->mem_lock);
+>>> @@ -677,7 +676,7 @@ static int ipp_put_mem_node(struct drm_device *drm_dev,
+>> Then, could you remove file argument from exynos_drm_ipp_queue_buf() and
+>> ipp_get_event()?
+> sorry, i mean ipp_put_mem_node() instead of exynos_drm_ipp_queue_buf().
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index c0cb11f..113c01c 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1552,12 +1552,15 @@ asmlinkage __visible void __init xen_start_kernel(void)
- 
- 	xen_init_mmu_ops();
- 
-+	/*
-+	 * Modify the cache mode translation tables to match Xen's PAT
-+	 * configuration.
-+	 */
-+
-+	xen_init_cache_types();
-+
- 	/* Prevent unwanted bits from being set in PTEs. */
- 	__supported_pte_mask &= ~_PAGE_GLOBAL;
--#if 0
--	if (!xen_initial_domain())
--#endif
--		__supported_pte_mask &= ~(_PAGE_PWT | _PAGE_PCD);
- 
- 	__supported_pte_mask |= _PAGE_IOMAP;
- 
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index e8a1201..4d1c736 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -434,13 +434,7 @@ static pteval_t iomap_pte(pteval_t val)
- __visible pteval_t xen_pte_val(pte_t pte)
- {
- 	pteval_t pteval = pte.pte;
--#if 0
--	/* If this is a WC pte, convert back from Xen WC to Linux WC */
--	if ((pteval & (_PAGE_PAT | _PAGE_PCD | _PAGE_PWT)) == _PAGE_PAT) {
--		WARN_ON(!pat_enabled);
--		pteval = (pteval & ~_PAGE_PAT) | _PAGE_PWT;
--	}
--#endif
-+
- 	if (xen_initial_domain() && (pteval & _PAGE_IOMAP))
- 		return pteval;
- 
-@@ -455,47 +449,27 @@ __visible pgdval_t xen_pgd_val(pgd_t pgd)
- PV_CALLEE_SAVE_REGS_THUNK(xen_pgd_val);
- 
- /*
-- * Xen's PAT setup is part of its ABI, though I assume entries 6 & 7
-- * are reserved for now, to correspond to the Intel-reserved PAT
-- * types.
-- *
-- * We expect Linux's PAT set as follows:
-- *
-- * Idx  PTE flags        Linux    Xen    Default
-- * 0                     WB       WB     WB
-- * 1            PWT      WC       WT     WT
-- * 2        PCD          UC-      UC-    UC-
-- * 3        PCD PWT      UC       UC     UC
-- * 4    PAT              WB       WC     WB
-- * 5    PAT     PWT      WC       WP     WT
-- * 6    PAT PCD          UC-      rsv    UC-
-- * 7    PAT PCD PWT      UC       rsv    UC
-+ * Xen's PAT setup is part of its ABI.
-+ * We don't care what Linux wants to use, just fall back to the Xen PAT
-+ * configuration. All we have to do in case of a Linux's PAT configuration
-+ * is to overwrite the cache mode translation tables with the correct
-+ * values for the Xen configuration.
-  */
- 
-+void xen_init_cache_types(void)
-+{
-+	pat_init_cache_modes();
-+}
-+
- void xen_set_pat(u64 pat)
- {
--	/* We expect Linux to use a PAT setting of
--	 * UC UC- WC WB (ignoring the PAT flag) */
--	WARN_ON(pat != 0x0007010600070106ull);
-+	xen_init_cache_types();
- }
- 
- __visible pte_t xen_make_pte(pteval_t pte)
- {
- 	phys_addr_t addr = (pte & PTE_PFN_MASK);
--#if 0
--	/* If Linux is trying to set a WC pte, then map to the Xen WC.
--	 * If _PAGE_PAT is set, then it probably means it is really
--	 * _PAGE_PSE, so avoid fiddling with the PAT mapping and hope
--	 * things work out OK...
--	 *
--	 * (We should never see kernel mappings with _PAGE_PSE set,
--	 * but we could see hugetlbfs mappings, I think.).
--	 */
--	if (pat_enabled && !WARN_ON(pte & _PAGE_PAT)) {
--		if ((pte & (_PAGE_PCD | _PAGE_PWT)) == _PAGE_PWT)
--			pte = (pte & ~(_PAGE_PCD | _PAGE_PWT)) | _PAGE_PAT;
--	}
--#endif
-+
- 	/*
- 	 * Unprivileged domains are allowed to do IOMAPpings for
- 	 * PCI passthrough, but not map ISA space.  The ISA
-diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
-index 28c7e0b..348e68aa 100644
---- a/arch/x86/xen/xen-ops.h
-+++ b/arch/x86/xen/xen-ops.h
-@@ -34,6 +34,7 @@ extern unsigned long xen_max_p2m_pfn;
- void xen_mm_pin_all(void);
- void xen_mm_unpin_all(void);
- void xen_set_pat(u64);
-+void xen_init_cache_types(void);
- 
- char * __init xen_memory_setup(void);
- char * xen_auto_xlated_memory_setup(void);
--- 
-1.8.4.5
+I guess you mean ipp_get_mem_node() and ipp_get_event().
+You are right, it should be removed. Additionally file check should be added
+to exynos_drm_ipp_queue_buf.
+
+Regards
+Andrzej
+
+>
+>>>  		unsigned long handle = m_node->buf_info.handles[i];
+>>>  		if (handle)
+>>>  			exynos_drm_gem_put_dma_addr(drm_dev, handle,
+>>> -							m_node->filp);
+>>> +							c_node->filp);
+>>>  	}
+>>>  
+>>>  	/* delete list in queue */
+>>> diff --git a/drivers/gpu/drm/exynos/exynos_drm_ipp.h b/drivers/gpu/drm/exynos/exynos_drm_ipp.h
+>>> index 6f48d62..0311035 100644
+>>> --- a/drivers/gpu/drm/exynos/exynos_drm_ipp.h
+>>> +++ b/drivers/gpu/drm/exynos/exynos_drm_ipp.h
+>>> @@ -62,6 +62,7 @@ struct drm_exynos_ipp_cmd_work {
+>>>   * @stop_work: stop command work structure.
+>>>   * @event_work: event work structure.
+>>>   * @state: state of command node.
+>>> + * @filp: associated file pointer.
+>>>   */
+>>>  struct drm_exynos_ipp_cmd_node {
+>>>  	struct device		*dev;
+>>> @@ -78,6 +79,7 @@ struct drm_exynos_ipp_cmd_node {
+>>>  	struct drm_exynos_ipp_cmd_work *stop_work;
+>>>  	struct drm_exynos_ipp_event_work *event_work;
+>>>  	enum drm_exynos_ipp_state	state;
+>>> +	struct drm_file	*filp;
+>>>  };
+>>>  
+>>>  /*
+>>>
+>>
+>
 
