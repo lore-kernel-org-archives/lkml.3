@@ -1,126 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757547AbaHZK4Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 06:56:25 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36657 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754369AbaHZK4X (ORCPT
+	id S1757562AbaHZK4i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 06:56:38 -0400
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.162]:16026 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754369AbaHZK4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 06:56:23 -0400
-Message-ID: <53FC67CD.8020901@ti.com>
-Date: Tue, 26 Aug 2014 13:56:13 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Tue, 26 Aug 2014 06:56:34 -0400
+X-Env-Sender: stwiss.opensource@diasemi.com
+X-Msg-Ref: server-8.tower-38.messagelabs.com!1409050500!24753774!1
+X-Originating-IP: [94.185.165.51]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.3; banners=-,-,-
+X-VirusChecked: Checked
+From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
+To: Lee Jones <lee.jones@linaro.org>
+CC: Andrew Lunn <andrew@lunn.ch>, Arnaud Ebalard <arno@natisbad.org>,
+        "DEVICE TREE" <devicetree@vger.kernel.org>,
+        Florian Vaussard <florian.vaussard@epfl.ch>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>,
+        "Jason Gunthorpe" <jgunthorpe@obsidianresearch.com>,
+        Jonathan Cameron <jic23@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        LINUX ARM KERNEL <linux-arm-kernel@lists.infradead.org>,
+        LINUX KERNEL <linux-kernel@vger.kernel.org>,
+        LINUX SH <linux-sh@vger.kernel.org>,
+        "Magnus Damm" <magnus.damm@gmail.com>, Mark Brown <broonie@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Martin Fuzzey <mfuzzey@parkeon.com>, Pawel Moll <pawel.moll@arm.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Rob Herring <robh+dt@kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Silvio F <silvio.fricke@gmail.com>, Simon Horman <horms@verge.net.au>,
+        Support Opensource <Support.Opensource@diasemi.com>,
+        Thierry Reding <thierry.reding@gmail.com>
+Subject: RE: [RESEND PATCH V2] devicetree: Dialog Semiconductor consolidate
+ existing vendor prefixes to standardise on 'dlg'
+Thread-Topic: [RESEND PATCH V2] devicetree: Dialog Semiconductor consolidate
+ existing vendor prefixes to standardise on 'dlg'
+Thread-Index: AQHPvhfch2EQAldnUU2QQdc1zxybRJvilI4AgAAg4zA=
+Date: Tue, 26 Aug 2014 10:54:59 +0000
+Message-ID: <6ED8E3B22081A4459DAC7699F3695FB7D0B39744@SW-EX-MBX02.diasemi.com>
+References: <201408221446.s7MEkNVF001775@swsrvapps-01.diasemi.com>
+ <20140826093312.GI9574@lee--X1>
+In-Reply-To: <20140826093312.GI9574@lee--X1>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.26.77]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>, Maik Broemme <mbroemme@plusserver.de>
-CC: <joe@perches.com>, <kernel-janitors@vger.kernel.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/7] video: fbdev: intelfb: delete double assignment
-References: <1408818808-18850-1-git-send-email-Julia.Lawall@lip6.fr> <1408818808-18850-3-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1408818808-18850-3-git-send-email-Julia.Lawall@lip6.fr>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="iIc1iRTTQgiHXSr1IKcp5ingP1jvcI2Ik"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7QAufGq001383
 
---iIc1iRTTQgiHXSr1IKcp5ingP1jvcI2Ik
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+On 26 August 2014 10:33 Lee Jones wrote:
 
-On 23/08/14 21:33, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
->=20
-> Delete successive assignments to the same location.
->=20
-> In the second case, =3D is converted to |=3D, which looks appropriate b=
-ased on
-> the values involved.
->=20
-> A simplified version of the semantic match that finds this problem is a=
-s
-> follows: (http://coccinelle.lip6.fr/)
->=20
-> // <smpl>
-> @@
-> expression i;
-> @@
->=20
-> *i =3D ...;
->  i =3D ...;
-> // </smpl>
->=20
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
->=20
-> ---
-> The patches in this series do not depend on each other.
->=20
-> This changes the behavior of the code in the second case and is not tes=
-ted.
+> On Fri, 22 Aug 2014, Opensource [Steve Twiss] wrote:
+> > From: Steve Twiss <stwiss.opensource@diasemi.com>
+> >
+> > This patch series updates the device tree vendor prefix for
+> > Dialog Semiconductor.
+> >
 
-In this patch, as in the sis one, the behavior is changed. The subject
-might perhaps be "fix cursor initialization"?
+[...]
 
-The patch does look like it could cause a regression, though. Anyone
-able to test this?
+> > I think this is it. But, if I am missing anything or there are problems, can
+> > I get a quick explanation in the reply so I can fix it and move forwards
+> > please?
+> >
+> > In full:
+> > Acked-by the following people so far:
+> 
+> When you say "so far", does that mean you're missing Acks still?
 
- Tomi
+Hi Lee,
 
->=20
->  drivers/video/fbdev/intelfb/intelfbhw.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
->=20
-> diff --git a/drivers/video/fbdev/intelfb/intelfbhw.c b/drivers/video/fb=
-dev/intelfb/intelfbhw.c
-> index fbad61d..d31ed4e 100644
-> --- a/drivers/video/fbdev/intelfb/intelfbhw.c
-> +++ b/drivers/video/fbdev/intelfb/intelfbhw.c
-> @@ -1191,7 +1191,6 @@ int intelfbhw_mode_to_hw(struct intelfb_info *din=
-fo,
->  	vsync_end =3D vsync_start + var->vsync_len;
->  	vtotal =3D vsync_end + var->upper_margin;
->  	vblank_start =3D vactive;
-> -	vblank_end =3D vtotal;
->  	vblank_end =3D vsync_end + 1;
-> =20
->  	DBG_MSG("V: act %d, ss %d, se %d, tot %d bs %d, be %d\n",
-> @@ -1859,7 +1858,7 @@ void intelfbhw_cursor_init(struct intelfb_info *d=
-info)
->  		tmp =3D INREG(CURSOR_CONTROL);
->  		tmp &=3D ~(CURSOR_FORMAT_MASK | CURSOR_GAMMA_ENABLE |
->  			 CURSOR_ENABLE | CURSOR_STRIDE_MASK);
-> -		tmp =3D CURSOR_FORMAT_3C;
-> +		tmp |=3D CURSOR_FORMAT_3C;
->  		OUTREG(CURSOR_CONTROL, tmp);
->  		OUTREG(CURSOR_A_BASEADDR, dinfo->cursor.offset << 12);
->  		tmp =3D (64 << CURSOR_SIZE_H_SHIFT) |
->=20
+Apologies for my "so far" -- that is just my wording.
 
+As I understand it I have all the Acks that are necessary. I am basing my Acks list on
+the get_maintainers script output and on a previous request for Renesas and 
+Freescale inputs -- which I have also got.
+I do not see any mistakes or missing entries from my part.
 
+> 
+> If you have the full-set I will apply this and send out the necessary
+> pull-request(s).
+> 
 
---iIc1iRTTQgiHXSr1IKcp5ingP1jvcI2Ik
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Yes please.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Regards,
+Steve
 
-iQIcBAEBAgAGBQJT/GfNAAoJEPo9qoy8lh714d4QAKOcT8ic+Ac09d6nl3jtnid5
-HWc7eMhRNQbsuKkScAal465EciwqsjAOaPLW3fneREKNRY7mjOR+xQEM1GuDmYd2
-fyRO5XnsQfUJ9yPTDtvzG9oFckO/8y12z2ZLd/r+ikXzqCwO1ALda4QRb9FH9VMi
-WYnfBxySAhJY9GgzvlnjCtSSvEOXYfKp+14tThTwnxuqooYU5O4qw5RG5Re6DYdI
-VmbGmQVDj/IEGltKFKJq9XHLIvUkDZfhHEyrbRO+qi6MdzHLjt8ryQQP5TG/FPaY
-f2NsJG/K55EmxtQVFZHq+k2kGNLBN17MoCx/BkMsD4ULEq/Wwz7NrGOY/5km8j5U
-FoXC/ZDqBI8V46fto/YjIchw8vYw7swazTSDUptZoB+vHPvtkv0o83Sfx0z7FDHt
-+YHqVN6ipaiFtWx0cXWbzM9ucibueA5X0HCt8YGyi5Ub5u3tOGQEX7oSZj3eZrrD
-lwZSv09fk1wAPx12+CkUzGwHidrXgudFfHa/pNG5geXlSJQyXID+UpAdM9X0dQ+5
-0CEDqnkYwMwK47zE0msaZu93sMmQsOjslh6thgOebykOhZ++dqY+DK7MG7b6Ao3+
-dhfr1u+zChVdZXjCXENRVWz97DJj7O7/EijtP/tDaoeZqBBWvHhPXvv+8gW664JG
-qFbcehcvqXUesnwfHzdb
-=5u3c
------END PGP SIGNATURE-----
+ps. for reference,  this is my justification for all files in the patch.
 
---iIc1iRTTQgiHXSr1IKcp5ingP1jvcI2Ik--
+./drivers/mfd/da9055-core.c
+	Support Opensource <support.opensource@diasemi.com> (supporter:DIALOG SEMICONDUC...)
+	Lee Jones <lee.jones@linaro.org> (supporter:MULTIFUNCTION DEV...,commits:3/8=38%)
+
+./Documentation/devicetree/bindings/regulator/da9210.txt.get_maintainer
+	Rob Herring <robh+dt@kernel.org> (maintainer:OPEN FIRMWARE AND...)
+	S Twiss <stwiss.opensource@diasemi.com> (authored lines:2/21=10%)
+
+./arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi.get_maintainer
+	Shawn Guo <shawn.guo@freescale.com> (maintainer:ARM/FREESCALE IMX...,authored lines:276/279=99%,commits:6/7=86%)
+	Rob Herring <robh+dt@kernel.org> (maintainer:OPEN FIRMWARE AND...)
+
+./arch/arm/boot/dts/imx53-smd.dts.get_maintainer
+	Shawn Guo <shawn.guo@freescale.com> (maintainer:ARM/FREESCALE IMX...,authored lines:276/279=99%,commits:6/7=86%)
+	Rob Herring <robh+dt@kernel.org> (maintainer:OPEN FIRMWARE AND...)
+
+./arch/arm/boot/dts/r8a7791-koelsch.dts.get_maintainer
+	Simon Horman <horms@verge.net.au> (supporter:ARM/SHMOBILE ARM...,commits:25/26=96%)
+	Rob Herring <robh+dt@kernel.org> (maintainer:OPEN FIRMWARE AND...)
+
+./arch/arm/boot/dts/r8a7790-lager.dts.get_maintainer
+	Simon Horman <horms@verge.net.au> (supporter:ARM/SHMOBILE ARM...,commits:25/26=96%)
+	Rob Herring <robh+dt@kernel.org> (maintainer:OPEN FIRMWARE AND...)
+
+./Documentation/devicetree/bindings/vendor-prefixes.txt.get_maintainer
+	Rob Herring <robh+dt@kernel.org> (maintainer:OPEN FIRMWARE AND...,commits:40/78=51%)
+
+./Documentation/devicetree/bindings/i2c/trivial-devices.txt.get_maintainer
+	Rob Herring <robh+dt@kernel.org> (maintainer:OPEN FIRMWARE AND...)
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
