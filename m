@@ -1,83 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933766AbaHZCSx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 22:18:53 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:55609 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933698AbaHZCSw (ORCPT
+	id S933781AbaHZCV1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 22:21:27 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:6053 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933682AbaHZCVZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 22:18:52 -0400
-X-Original-SENDERIP: 10.177.222.131
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Tue, 26 Aug 2014 11:19:04 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        Tejun Heo <htejun@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] mm/slab: use percpu allocator for cpu cache
-Message-ID: <20140826021904.GA1035@js1304-P5Q-DELUXE>
-References: <1408608675-20420-1-git-send-email-iamjoonsoo.kim@lge.com>
- <alpine.DEB.2.11.1408210918050.32524@gentwo.org>
- <20140825082615.GA13475@js1304-P5Q-DELUXE>
- <alpine.DEB.2.11.1408250809420.17236@gentwo.org>
+	Mon, 25 Aug 2014 22:21:25 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 25 Aug 2014 19:07:15 -0700
+Message-ID: <53FBEF37.2040008@nvidia.com>
+Date: Tue, 26 Aug 2014 10:21:43 +0800
+From: Wei Ni <wni@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1408250809420.17236@gentwo.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Eduardo Valentin <edubezval@gmail.com>
+CC: <khali@linux-fr.org>, <linux@roeck-us.net>, <swarren@wwwdotorg.org>,
+        <lm-sensors@lm-sensors.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 4/4] ARM: tegra: dalmore: add thermal zones for nct1008
+References: <1408948188-4181-1-git-send-email-wni@nvidia.com> <1408948188-4181-5-git-send-email-wni@nvidia.com> <20140825110844.GB12349@developer>
+In-Reply-To: <20140825110844.GB12349@developer>
+X-Originating-IP: [10.19.224.131]
+X-ClientProxiedBy: HKMAIL101.nvidia.com (10.18.16.10) To
+ HKMAIL101.nvidia.com (10.18.16.10)
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 08:13:58AM -0500, Christoph Lameter wrote:
-> On Mon, 25 Aug 2014, Joonsoo Kim wrote:
+On 08/25/2014 07:08 PM, Eduardo Valentin wrote:
+> On Mon, Aug 25, 2014 at 02:29:48PM +0800, Wei Ni wrote:
+>> From: lightning314 <wni@nvidia.com>
+>>
+>> Add dt node to describe the thermal zone for the nct1008.
+>>
+>> Signed-off-by: Wei Ni <wni@nvidia.com>
+>> ---
+>>  arch/arm/boot/dts/tegra114-dalmore.dts | 20 +++++++++++++++++++-
+>>  1 file changed, 19 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/arch/arm/boot/dts/tegra114-dalmore.dts b/arch/arm/boot/dts/tegra114-dalmore.dts
+>> index 5c21d21..94a1b5d 100644
+>> --- a/arch/arm/boot/dts/tegra114-dalmore.dts
+>> +++ b/arch/arm/boot/dts/tegra114-dalmore.dts
+>> @@ -779,12 +779,14 @@
+>>  				<&gpio TEGRA_GPIO(V, 3) GPIO_ACTIVE_HIGH>;
+>>  		};
+>>  
+>> -		temperature-sensor@4c {
+>> +		nct1008: temperature-sensor@4c {
+>>  			compatible = "onnn,nct1008";
+>>  			reg = <0x4c>;
+>>  			vcc-supply = <&palmas_ldo6_reg>;
+>>  			interrupt-parent = <&gpio>;
+>>  			interrupts = <TEGRA_GPIO(O, 4) IRQ_TYPE_LEVEL_LOW>;
+>> +
+>> +			#thermal-sensor-cells = <1>;
+>>  		};
+>>  	};
+>>  
+>> @@ -1283,4 +1285,20 @@
+>>  			 <&tegra_car TEGRA114_CLK_EXTERN1>;
+>>  		clock-names = "pll_a", "pll_a_out0", "mclk";
+>>  	};
+>> +
+>> +	thermal-zones {
+>> +		nct1008-local {
+>> +			polling-delay-passive = <2000>; /* milliseconds */
+>> +			polling-delay = <0>; /* milliseconds */
+>> +
+>> +			thermal-sensors = <&nct1008 0>;
+>> +		};
+>> +
+>> +		nct1008-remote {
+>> +			polling-delay-passive = <1000>; /* milliseconds */
+>> +			polling-delay = <0>; /* milliseconds */
+>> +
+>> +			thermal-sensors = <&nct1008 1>;
+>> +		};
+>> +	};
 > 
-> > On Thu, Aug 21, 2014 at 09:21:30AM -0500, Christoph Lameter wrote:
-> > > On Thu, 21 Aug 2014, Joonsoo Kim wrote:
-> > >
-> > > > So, this patch try to use percpu allocator in SLAB. This simplify
-> > > > initialization step in SLAB so that we could maintain SLAB code more
-> > > > easily.
-> > >
-> > > I thought about this a couple of times but the amount of memory used for
-> > > the per cpu arrays can be huge. In contrast to slub which needs just a
-> > > few pointers, slab requires one pointer per object that can be in the
-> > > local cache. CC Tj.
-> > >
-> > > Lets say we have 300 caches and we allow 1000 objects to be cached per
-> > > cpu. That is 300k pointers per cpu. 1.2M on 32 bit. 2.4M per cpu on
-> > > 64bit.
-> >
-> > Amount of memory we need to keep pointers for object is same in any case.
-> 
-> What case? SLUB uses a linked list and therefore does not have these
-> storage requirements.
+> The above zones misses the required properties, as per the thermal.txt
+> binding description. Could you please have a look on those that are
+> required and improve the zones above?
 
-I misunderstand that you mentioned just memory usage. My *any case*
-means memory usage of previous SLAB and SLAB with this percpu alloc
-change. Sorry for confusion.
-
-> 
-> > I know that percpu allocator occupy vmalloc space, so maybe we could
-> > exhaust vmalloc space on 32 bit. 64 bit has no problem on it.
-> > How many cores does largest 32 bit system have? Is it possible
-> > to exhaust vmalloc space if we use percpu allocator?
-> 
-> There were NUMA systems on x86 a while back (not sure if they still
-> exists) with 128 or so processors.
-> 
-> Some people boot 32 bit kernels on contemporary servers. The Intel ones
-> max out at 18 cores (36 hyperthreaded). I think they support up to 8
-> scokets. So 8 * 36?
-> 
-> 
-> Its different on other platforms with much higher numbers. Power can
-> easily go up to hundreds of hardware threads and SGI Altixes 7 yearsago
-> where at 8000 or so.
-
-Okay... These large systems with 32 bit kernel could be break with this
-change. I will do more investigation. Possibly, I will drop this patch. :)
+I changed the thermal.txt in the patch 3/4, to move these two properties
+to optional property.
+On the Dalmore, we just need to register these two sensors as thermal
+zone devices.
+Indeed, we have a skin-temperature driver, which used these two thermal
+zone deives' temperature to estimator the skin temperature, so we
+doesn't need to set trips and bind with any cooling devices on them.
 
 Thanks.
+Wei.
+
+> 
+>>  };
+>> -- 
+>> 1.8.1.5
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
