@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757756AbaHZLgf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 07:36:35 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:59192 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757719AbaHZLgb (ORCPT
+	id S1755154AbaHZLhy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 07:37:54 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:46773 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754555AbaHZLhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 07:36:31 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Andrew Bresticker <abrestic@chromium.org>, linux-tegra@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, Jonas Bonn <jonas@southpole.se>,
-        David Howells <dhowells@redhat.com>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
-Subject: Re: [PATCH v2 2/9] mailbox: Add NVIDIA Tegra XUSB mailbox driver
-Date: Tue, 26 Aug 2014 13:35:34 +0200
-Message-ID: <14224406.FU8QFA3vsD@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140826102011.GA31124@ulmo>
-References: <1408381705-3623-1-git-send-email-abrestic@chromium.org> <5184912.mY2hCPH20k@wuerfel> <20140826102011.GA31124@ulmo>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:r1P8FL91kD5K0xI/S0bVgAANNUgI4gBsOYJxyi4InTM
- 2r1gcQq+GswNd0q5bH2xWh/NOSZhudrRamAK9DFJhspe8qCtll
- QF7Z3s7IRQjpzGggVizRmtiwZwAKPhpwOPMlJDOPSLgjDSWAQl
- udMDgHT+vY6nrkqcDwf4URWt4msxLhcsrneGvhlwLaabnWRjT1
- udSsEgjyx+qznioMKk9RG3Sqgq3acr1Wd2XANasV8+SuIvUmVE
- T35kNMTflkbcxiyJUhTa1avHkFoSVKess4K/l61JKXZlug+pmH
- LmNVkDjDilewy4X5BN/zqEX6HtVeQlWbMg43IjB9iwYle7TgRI
- E/bNaSUd5n+azAjwIT7U=
-X-UI-Out-Filterresults: notjunk:1;
+	Tue, 26 Aug 2014 07:37:53 -0400
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+To: Mark Brown <broonie@kernel.org>
+Cc: Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: [PATCH 1/1] regulator: max77802: set opmode to normal if off is read from hw
+Date: Tue, 26 Aug 2014 13:37:41 +0200
+Message-Id: <1409053061-22568-1-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 26 August 2014 12:20:13 Thierry Reding wrote:
-> On Tue, Aug 26, 2014 at 11:54:43AM +0200, Arnd Bergmann wrote: > 
-> > I'm not sure if it's really worth it. One thing we might do is just
-> > remove all definitions of ioremap_nocache and add a wrapper to
-> > include/linux/io.h, to make it more obvious what is going on.
-> 
-> Yes, I suppose that would work too. I still think there's an advantage
-> in being explicit and avoid aliases like this. Perhaps a __deprecated
-> annotation would help with that?
+The max77802 driver reads the default operating mode (opmode)
+set for regulators when enabled from the hardware registers.
 
-I fear adding __deprecated would be too controversial, because that
-would add hundreds of new warnings to code that is not actually wrong.
+But if a regulator is disabled and the system warm restarted,
+the hardware reports OFF as the opmode so the regulator is
+not enabled. Default to operating mode NORMAL if OFF is read
+from the hardware register.
 
-	Arnd
+Reported-by: Yuvaraj Cd <yuvaraj.lkml@gmail.com>
+Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+---
+
+This patch fixes the issue reported in https://lkml.org/lkml/2014/8/25/69
+
+ drivers/regulator/max77802.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/regulator/max77802.c b/drivers/regulator/max77802.c
+index ad1caa9..967e109 100644
+--- a/drivers/regulator/max77802.c
++++ b/drivers/regulator/max77802.c
+@@ -540,7 +540,17 @@ static int max77802_pmic_probe(struct platform_device *pdev)
+ 		config.of_node = pdata->regulators[i].of_node;
+ 
+ 		ret = regmap_read(iodev->regmap, regulators[i].enable_reg, &val);
+-		max77802->opmode[id] = val >> shift & MAX77802_OPMODE_MASK;
++		val = val >> shift & MAX77802_OPMODE_MASK;
++
++		/*
++		 * If the regulator is disabled and the system warm rebooted,
++		 * the hardware reports OFF as the regulator operating mode.
++		 * Default to operating mode NORMAL in that case.
++		 */
++		if (val == MAX77802_OPMODE_OFF)
++			max77802->opmode[id] = MAX77802_OPMODE_NORMAL;
++		else
++			max77802->opmode[id] = val;
+ 
+ 		rdev = devm_regulator_register(&pdev->dev,
+ 					       &regulators[i], &config);
+-- 
+2.0.1
+
