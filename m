@@ -1,69 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933832AbaHZFJT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 01:09:19 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:59414 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750804AbaHZFJR (ORCPT
+	id S933852AbaHZFKa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 01:10:30 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:34253 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933746AbaHZFK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 01:09:17 -0400
-Date: Tue, 26 Aug 2014 10:39:04 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] new page link in SubmittingPatches
-Message-ID: <20140826050904.GA2622@sudip-PC>
-References: <1408989981-31192-1-git-send-email-sudipm.mukherjee@gmail.com>
- <53FBD1F3.4040003@infradead.org>
+	Tue, 26 Aug 2014 01:10:28 -0400
+X-Original-SENDERIP: 10.177.222.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Tue, 26 Aug 2014 14:11:16 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Chao Yu <chao2.yu@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, ngupta@vflare.org,
+        "'Jerome Marchand'" <jmarchan@redhat.com>,
+        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>
+Subject: Re: [PATCH v3] zram: add num_discards for discarded pages stat
+Message-ID: <20140826051116.GG11319@bbox>
+References: <000201cfbde2$2ae08710$80a19530$@samsung.com>
+ <20140825003610.GM17372@bbox>
+ <008001cfc0da$de01b0d0$9a051270$@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <53FBD1F3.4040003@infradead.org>
+In-Reply-To: <008001cfc0da$de01b0d0$9a051270$@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 05:16:51PM -0700, Randy Dunlap wrote:
-> On 08/25/14 11:06, Sudip Mukherjee wrote:
-> > new link for - How to piss off a Linux kernel subsystem  maintainer
+On Tue, Aug 26, 2014 at 11:05:47AM +0800, Chao Yu wrote:
+> Hi Minchan,
+> 
+> > -----Original Message-----
+> > From: Minchan Kim [mailto:minchan@kernel.org]
+> > Sent: Monday, August 25, 2014 8:36 AM
+> > To: Chao Yu
+> > Cc: linux-kernel@vger.kernel.org; linux-mm@kvack.org; ngupta@vflare.org; 'Jerome Marchand';
+> > 'Sergey Senozhatsky'; 'Andrew Morton'
+> > Subject: Re: [PATCH v3] zram: add num_discards for discarded pages stat
 > > 
-> > Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
-> 
-> Hi,
-> 
-> I'll apply this patch, but it would really be nice if Greg would make
-> one contents/index web page for this so that it wouldn't have to be updated
-> just because there is an addition.
-> 
-> Thanks.
-
-Hi,
-I know Greg is a busy person , so if he wants I can volunteer and put an index page in my server , which will have an index of these pages , so that whenever Greg adds new page to the "How to piss off a kernel subsystem maintainer" , i will update.
-And I can also put links to some other documents (with your approval) which might be helpfull for submitting pathes.
-
-Thanks
-
-> 
-> > ---
-> >  Documentation/SubmittingPatches | 1 +
-> >  1 file changed, 1 insertion(+)
+> > Hello Chao,
 > > 
-> > diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
-> > index 0a523c9..482c749 100644
-> > --- a/Documentation/SubmittingPatches
-> > +++ b/Documentation/SubmittingPatches
-> > @@ -794,6 +794,7 @@ Greg Kroah-Hartman, "How to piss off a kernel subsystem maintainer".
-> >    <http://www.kroah.com/log/linux/maintainer-03.html>
-> >    <http://www.kroah.com/log/linux/maintainer-04.html>
-> >    <http://www.kroah.com/log/linux/maintainer-05.html>
-> > +  <http://www.kroah.com/log/linux/maintainer-06.html>
-> >  
-> >  NO!!!! No more huge patch bombs to linux-kernel@vger.kernel.org people!
-> >    <https://lkml.org/lkml/2005/7/11/336>
+> > On Fri, Aug 22, 2014 at 04:21:01PM +0800, Chao Yu wrote:
+> > > Since we have supported handling discard request in this commit
+> > > f4659d8e620d08bd1a84a8aec5d2f5294a242764 (zram: support REQ_DISCARD), zram got
+> > > one more chance to free unused memory whenever received discard request. But
+> > > without stating for discard request, there is no method for user to know whether
+> > > discard request has been handled by zram or how many blocks were discarded by
+> > > zram when user wants to know the effect of discard.
 > > 
+> > My concern is that how much we are able to know the effect of discard
+> > exactly with your patch.
+> > 
+> > The issue I can think of is zram-swap discard.
+> > Now, zram handles notification from VM to free duplicated copy between
+> > VM-owned memory and zRAM-owned's one so discarding for zram-swap might
+> > be pointless overhead but your stat indicates lots of free page discarded
+> > without real freeing so that user might think "We should keep enable
+> > swap discard for zRAM because the stat indicates it's really good".
 > 
+> Agreed.
 > 
-> -- 
-> ~Randy
+> > 
+> > In summary, wouldn't it better to have two?
+> 
+> Yeah, I'd like to.
+> 
+> > 
+> > num_discards,
+> > num_failed_discards?
+> 
+> It's good, but, IMHO, as it's not failed to discard pages due to inside
+> error of zRAM, How about show this information more positive by using:
+> num_discard_req,
+> num_discarded
+
+Better.
+
+> 
+> Then user might think "We can keep on using real-time mode or batch mode
+> discard, because our freed pages are increased continuously shew by the
+> num_discarded with sending discard reqs each time.
+> 
+> How do you think?
+
+It's good for your goal and my goal but I will wait Sergey's opinion.
+Sergey, does it make sense to you, too?
+
+> 
+> Thanks,
+> Yu
+> 
+> > 
+> > For it, we should modify zram_free_page has return value.
+> > What do other guys think?
+> > 
+> > >
+> > > In this patch, we add num_discards to stat discarded pages, and export it to
+> > > sysfs for users.
+> > >
+> > > * From v1
+> > >  * Update zram document to show num_discards in statistics list.
+> > >
+> > > * From v2
+> > >  * Update description of this patch with clear goal.
+> > >
+> > > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> > > ---
+> > >  Documentation/ABI/testing/sysfs-block-zram | 10 ++++++++++
+> > >  Documentation/blockdev/zram.txt            |  1 +
+> > >  drivers/block/zram/zram_drv.c              |  3 +++
+> > >  drivers/block/zram/zram_drv.h              |  1 +
+> > >  4 files changed, 15 insertions(+)
+> > >
+> > > diff --git a/Documentation/ABI/testing/sysfs-block-zram
+> > b/Documentation/ABI/testing/sysfs-block-zram
+> > > index 70ec992..fa8936e 100644
+> > > --- a/Documentation/ABI/testing/sysfs-block-zram
+> > > +++ b/Documentation/ABI/testing/sysfs-block-zram
+> > > @@ -57,6 +57,16 @@ Description:
+> > >  		The failed_writes file is read-only and specifies the number of
+> > >  		failed writes happened on this device.
+> > >
+> > > +
+> > > +What:		/sys/block/zram<id>/num_discards
+> > > +Date:		August 2014
+> > > +Contact:	Chao Yu <chao2.yu@samsung.com>
+> > > +Description:
+> > > +		The num_discards file is read-only and specifies the number of
+> > > +		physical blocks which are discarded by this device. These blocks
+> > > +		are included in discard request which is sended by filesystem as
+> > > +		the blocks are no longer used.
+> > > +
+> > >  What:		/sys/block/zram<id>/max_comp_streams
+> > >  Date:		February 2014
+> > >  Contact:	Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> > > diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
+> > > index 0595c3f..e50e18b 100644
+> > > --- a/Documentation/blockdev/zram.txt
+> > > +++ b/Documentation/blockdev/zram.txt
+> > > @@ -89,6 +89,7 @@ size of the disk when not in use so a huge zram is wasteful.
+> > >  		num_writes
+> > >  		failed_reads
+> > >  		failed_writes
+> > > +		num_discards
+> > >  		invalid_io
+> > >  		notify_free
+> > >  		zero_pages
+> > > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> > > index d00831c..904e7a5 100644
+> > > --- a/drivers/block/zram/zram_drv.c
+> > > +++ b/drivers/block/zram/zram_drv.c
+> > > @@ -606,6 +606,7 @@ static void zram_bio_discard(struct zram *zram, u32 index,
+> > >  		bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
+> > >  		zram_free_page(zram, index);
+> > >  		bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
+> > > +		atomic64_inc(&zram->stats.num_discards);
+> > >  		index++;
+> > >  		n -= PAGE_SIZE;
+> > >  	}
+> > > @@ -866,6 +867,7 @@ ZRAM_ATTR_RO(num_reads);
+> > >  ZRAM_ATTR_RO(num_writes);
+> > >  ZRAM_ATTR_RO(failed_reads);
+> > >  ZRAM_ATTR_RO(failed_writes);
+> > > +ZRAM_ATTR_RO(num_discards);
+> > >  ZRAM_ATTR_RO(invalid_io);
+> > >  ZRAM_ATTR_RO(notify_free);
+> > >  ZRAM_ATTR_RO(zero_pages);
+> > > @@ -879,6 +881,7 @@ static struct attribute *zram_disk_attrs[] = {
+> > >  	&dev_attr_num_writes.attr,
+> > >  	&dev_attr_failed_reads.attr,
+> > >  	&dev_attr_failed_writes.attr,
+> > > +	&dev_attr_num_discards.attr,
+> > >  	&dev_attr_invalid_io.attr,
+> > >  	&dev_attr_notify_free.attr,
+> > >  	&dev_attr_zero_pages.attr,
+> > > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+> > > index e0f725c..2994aaf 100644
+> > > --- a/drivers/block/zram/zram_drv.h
+> > > +++ b/drivers/block/zram/zram_drv.h
+> > > @@ -86,6 +86,7 @@ struct zram_stats {
+> > >  	atomic64_t num_writes;	/* --do-- */
+> > >  	atomic64_t failed_reads;	/* can happen when memory is too low */
+> > >  	atomic64_t failed_writes;	/* can happen when memory is too low */
+> > > +	atomic64_t num_discards;	/* no. of discarded pages */
+> > >  	atomic64_t invalid_io;	/* non-page-aligned I/O requests */
+> > >  	atomic64_t notify_free;	/* no. of swap slot free notifications */
+> > >  	atomic64_t zero_pages;		/* no. of zero filled pages */
+> > > --
+> > > 2.0.1.474.g72c7794
+> > >
+> > >
+> > > --
+> > > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > > see: http://www.linux-mm.org/ .
+> > > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> > 
+> > --
+> > Kind regards,
+> > Minchan Kim
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
