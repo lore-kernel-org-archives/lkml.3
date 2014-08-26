@@ -1,122 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934105AbaHZKDf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 06:03:35 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:34375 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753960AbaHZKDe (ORCPT
+	id S934388AbaHZKDt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 06:03:49 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:20489 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S934266AbaHZKDq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 06:03:34 -0400
-Message-ID: <53FC5B23.3000205@ti.com>
-Date: Tue, 26 Aug 2014 13:02:11 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Pranith Kumar <bobby.prani@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Peter Griffin <peter.griffin@linaro.org>,
-        Alexander Shiyan <shc_work@mail.ru>, Jean Delvare <jdelvare@suse.de>,
-        Kukjin Kim <kgene.kim@samsung.com>, Mark Brown <broonie@linaro.org>,
-        open list:
-	FRAMEBUFFER LAYER <linux-fbdev@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, ;
-Illegal-Object: Syntax error in CC: address found on vger.kernel.org:
-	CC:	;
-			^-missing semicolon to end mail group, extraneous tokens in mailbox, missing end of mailbox
-Subject: Re: [PATCH] powerpc: Fix build error for vga16fb
-References: <1408396422-32658-1-git-send-email-bobby.prani@gmail.com>	<1408396422-32658-2-git-send-email-bobby.prani@gmail.com> <CAMuHMdV_vAPCPh1JdCxtf0iz6haHULUV8t0oYt0jrEAky2WSLw@mail.gmail.com>
-In-Reply-To: <CAMuHMdV_vAPCPh1JdCxtf0iz6haHULUV8t0oYt0jrEAky2WSLw@mail.gmail.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="fmt6LPghKEMtrwj4DQ6Kwfb261RTsbXKf"
+	Tue, 26 Aug 2014 06:03:46 -0400
+From: Marc Zyngier <marc.zyngier@arm.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux@openrisc.net
+Cc: linux@arm.linux.org.uk, shawn.guo@freescale.com, kernel@pengutronix.de,
+        tony@atomide.com, catalin.marinas@arm.com, will.deacon@arm.com,
+        jonas@southpole.se, tglx@linutronix.de, jason@lakedaemon.net,
+        shc_work@mail.ru, baohua@kernel.org, maxime.ripard@free-electrons.com,
+        marc.zyngier@arm.com, khilman@linaro.org, sboyd@codeaurora.org,
+        lorenzo.pieralisi@arm.com, larry.bassel@linaro.org,
+        mark.rutland@arm.com, sudeep.holla@arm.com,
+        stefan.kristiansson@saunalahti.fi, vkale@apm.com,
+        schwidefsky@de.ibm.com
+Subject: [PATCH v2 00/26] genirq: fix use of irq_find_mapping outside of legal RCU context
+Date: Tue, 26 Aug 2014 11:03:15 +0100
+Message-Id: <1409047421-27649-1-git-send-email-marc.zyngier@arm.com>
+X-Mailer: git-send-email 2.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---fmt6LPghKEMtrwj4DQ6Kwfb261RTsbXKf
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+A number of irqchip drivers are directly calling irq_find_mapping,
+which may use a rcu_read_lock call when walking the radix tree.
 
-On 19/08/14 00:28, Geert Uytterhoeven wrote:
-> Hi Pranith,
->=20
-> On Mon, Aug 18, 2014 at 11:13 PM, Pranith Kumar <bobby.prani@gmail.com>=
- wrote:
->> Fix a build error caused by
->>
->> drivers/built-in.o: In function `vga16fb_probe':
->> drivers/video/fbdev/vga16fb.c:1326: undefined reference to `vgacon_rem=
-ap_base'
->> drivers/video/fbdev/vga16fb.c:1326: undefined reference to `vgacon_rem=
-ap_base'
->> make: *** [vmlinux] Error 1
->>
->> This is occuring as vgacon_remap_base is exported only when
->> CONFIG_VGA_CONSOLE=3Dy. Fix the error by making FB_VBA16 depend on
->> CONFIG_VGA_CONSOLE.
->>
->> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
->> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
->> CC: Andrew Morton <akpm@linux-foundation.org>
->> ---
->>  drivers/video/fbdev/Kconfig | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/video/fbdev/Kconfig b/drivers/video/fbdev/Kconfig=
+Turns out that if you hit that point with CONFIG_PROVE_RCU enabled,
+the kernel will shout at you, as using RCU in this context may be
+illegal (specially if coming from the idle state, where RCU would be
+in a quiescent state).
 
->> index e911b9c..09df564 100644
->> --- a/drivers/video/fbdev/Kconfig
->> +++ b/drivers/video/fbdev/Kconfig
->> @@ -547,7 +547,7 @@ config FB_IMSTT
->>
->>  config FB_VGA16
->>         tristate "VGA 16-color graphics support"
->> -       depends on FB && (X86 || PPC)
->> +       depends on FB && (X86 || PPC) && CONFIG_VGA_CONSOLE
->=20
-> The dependency on CONFIG_VGA_CONSOLE only exists on PPC, not on x86.
-> So this is not correct.
->=20
-> Digging a bit deeper: There's no code left in arch/powerpc that actuall=
-y
-> sets vgacon_remap_base, so it's not gonna work anyway.
-> It seems vga16 support on PPC died with the removal of arch/ppc/.
+A possible fix would be to wrap calls to irq_find_mapping into a
+RCU_NONIDLE macro, but that really looks ugly.
 
-Hmm, so I wonder if vga16fb is supposed to work on ppc or not. Pranith's
-follow-up patch disables vga16fb for PPC, which obviously fixes the
-compilation problem, but is that really a correct fix?
+This patch series introduce another generic IRQ entry point
+(handle_domain_irq), which has the exact same behaviour as handle_IRQ
+(as defined on arm, arm64 and openrisc), except that it also takes a
+irq_domain pointer. This allows the logical IRQ lookup to be done
+inside the irq_{enter,exit} section, which contains a
+rcu_irq_{enter,exit}, making it safe.
 
- Tomi
+A number of irqchips are then converted to this new entry point. I've
+converted all the direct users of irq_find_mapping, except for the
+cases where it was used as a chained handler (chained_irq_{enter,exit}
+makes it safe). Users of irq_linear_revmap are safe as well. I've
+given it some light testing on arm64.
 
+The series is also available in my tree:
 
+git://git.kernel.org/pub/scm/linux/kernel/git/maz/arm-platforms.git handle_domain_irq
 
---fmt6LPghKEMtrwj4DQ6Kwfb261RTsbXKf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+>From v1 [1]:
+- Made handle_domain_irq a generic function
+- Added OpenRISC to the list of affected architectures
+- Converted more interrupt controllers
+- Rebased on v3.17-rc1
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+[1]: https://lkml.org/lkml/2014/7/8/381
 
-iQIcBAEBAgAGBQJT/FsjAAoJEPo9qoy8lh71LJ0P/iagrNPQ9+mBdYt7bSmDX8ka
-5vHlzH6OKUgSKpxuHi5J9u+qp/yCeHAmGyYi8puVTyhpDxDpindD2uw0MGE+3Vmn
-9XdFNAlodTVgsth8hMFYFjG1bedaAhn13ERjMpsWu9qqtsXVf5r6+CN9aUozTjAW
-l3VRuU0tRTy1F2clUcG7FZfagXD2BoQhpk/8YZXiPKLOqIIepiXffANXjQ9+zvvz
-RBkQbLcKYovsRuVC2lmWfs0SIedV9zboLF21CtgZBRzurB5ZDThd6ZjfLG+lAhnN
-Ke3zSUsDM04P0Y7iOZSazGmj+iU0LIH2Uk8ShY9AsZOg9mr0ElmMXzdRyZOgOc0V
-6B2OV2Q5IXw+po+BpfUELhVZhO1KEwWuBnv0y6OqX06tSho1Ka9w0TQ4E6UrACrF
-3ruXWvdF0v4DxzIy4SNU+u7oW1GQOr/xFH/oa6FptBl66QjRkCVN4ciaST/LlmKh
-fn0bGn7yX6kiXdoWFQbOZWX+k1J/6llAOGCTxcxi+f9ikuSgEdaUYOEpTXgjdQle
-K7TBPoMF1sAuvn/LkfwXClYFhLHzZjW8/09KAiaCQc+CHqzV9B6b1auzMVpY8O5X
-fUlfRoht9m3n7E+/hGVL9yzlMJ9ORkWcg/tkaAnbGnvkkmNa0pp9L5DvpX/dlQBg
-jQPeZMn3EmlKrKTzWgeY
-=yFp1
------END PGP SIGNATURE-----
+Marc Zyngier (26):
+  genirq: add irq_domain-aware core IRQ handler
+  arm64: convert handle_IRQ to use __handle_domain_irq
+  ARM: convert handle_IRQ to use __handle_domain_irq
+  openrisc: convert handle_IRQ to use __handle_domain_irq
+  irqchip: GIC: convert to handle_domain_irq
+  irqchip: armada-370-xp: convert to handle_domain_irq
+  irqchip: clps711x: convert to handle_domain_irq
+  irqchip: mmp: convert to handle_domain_irq
+  irqchip: mxs: convert to handle_domain_irq
+  irqchip: orion: convert to handle_domain_irq
+  irqchip: s3c24xx: convert to handle_domain_irq
+  irqchip: sirfsoc: convert to handle_domain_irq
+  irqchip: sun4i: convert to handle_domain_irq
+  irqchip: versatile-fpga: convert to handle_domain_irq
+  irqchip: vic: convert to handle_domain_irq
+  irqchip: vt8500: convert to handle_domain_irq
+  irqchip: zevio: convert to handle_domain_irq
+  irqchip: GICv3: convert to handle_domain_irq
+  irqchip: atmel-aic: convert to handle_domain_irq
+  irqchip: atmel-aic5: convert to handle_domain_irq
+  irqchip: or1k-pic: convert to handle_domain_irq
+  ARM: imx: avic: convert to handle_domain_irq
+  ARM: imx: tzic: convert to handle_domain_irq
+  ARM: omap2: irq: convert to handle_domain_irq
+  arm64: get rid of handle_IRQ
+  openrisc: get rid of handle_IRQ
 
---fmt6LPghKEMtrwj4DQ6Kwfb261RTsbXKf--
+ arch/arm/Kconfig                     |  1 +
+ arch/arm/kernel/irq.c                | 19 +---------------
+ arch/arm/mach-imx/avic.c             |  2 +-
+ arch/arm/mach-imx/tzic.c             |  3 +--
+ arch/arm/mach-omap2/irq.c            |  3 +--
+ arch/arm64/Kconfig                   |  1 +
+ arch/arm64/include/asm/hardirq.h     |  2 --
+ arch/arm64/kernel/irq.c              | 27 -----------------------
+ arch/openrisc/Kconfig                |  1 +
+ arch/openrisc/include/asm/irq.h      |  1 -
+ arch/openrisc/kernel/irq.c           | 12 -----------
+ drivers/irqchip/irq-armada-370-xp.c  | 19 ++++++++--------
+ drivers/irqchip/irq-atmel-aic.c      |  4 +---
+ drivers/irqchip/irq-atmel-aic5.c     |  4 +---
+ drivers/irqchip/irq-clps711x.c       | 18 ++++++----------
+ drivers/irqchip/irq-gic-v3.c         | 13 ++++++-----
+ drivers/irqchip/irq-gic.c            |  3 +--
+ drivers/irqchip/irq-mmp.c            | 10 ++++-----
+ drivers/irqchip/irq-mxs.c            |  3 +--
+ drivers/irqchip/irq-or1k-pic.c       |  4 ++--
+ drivers/irqchip/irq-orion.c          |  5 ++---
+ drivers/irqchip/irq-s3c24xx.c        |  4 +---
+ drivers/irqchip/irq-sirfsoc.c        |  6 ++----
+ drivers/irqchip/irq-sun4i.c          |  5 ++---
+ drivers/irqchip/irq-versatile-fpga.c |  2 +-
+ drivers/irqchip/irq-vic.c            |  2 +-
+ drivers/irqchip/irq-vt8500.c         |  5 ++---
+ drivers/irqchip/irq-zevio.c          |  3 +--
+ include/linux/irqdesc.h              | 19 ++++++++++++++++
+ kernel/irq/Kconfig                   |  3 +++
+ kernel/irq/irqdesc.c                 | 42 ++++++++++++++++++++++++++++++++++++
+ 31 files changed, 116 insertions(+), 130 deletions(-)
+
+-- 
+2.0.4
+
