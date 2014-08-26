@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933803AbaHZEhz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 00:37:55 -0400
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:52658 "EHLO
+	id S933778AbaHZEhx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 00:37:53 -0400
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:15474 "EHLO
 	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933745AbaHZEhr (ORCPT
+	by vger.kernel.org with ESMTP id S932246AbaHZEhr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Aug 2014 00:37:47 -0400
 From: Chao Xie <chao.xie@marvell.com>
@@ -12,9 +12,9 @@ To: <haojian.zhuang@gmail.com>, <haojian.zhuang@linaro.org>,
         <mturquette@linaro.org>, <chao.xie@marvell.com>,
         <xiechao_mail@163.com>, <linux-arm-kernel@lists.infradead.org>,
         <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 09/12] clk: mmp: add pxa910 DT support for clock driver
-Date: Tue, 26 Aug 2014 12:38:21 +0800
-Message-ID: <1409027904-21859-10-git-send-email-chao.xie@marvell.com>
+Subject: [PATCH 12/12] arm: mmp: Make use of the DT supported clock
+Date: Tue, 26 Aug 2014 12:38:24 +0800
+Message-ID: <1409027904-21859-13-git-send-email-chao.xie@marvell.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1409027904-21859-1-git-send-email-chao.xie@marvell.com>
 References: <1409027904-21859-1-git-send-email-chao.xie@marvell.com>
@@ -31,384 +31,457 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Chao Xie <chao.xie@marvell.com>
 
-It adds the DT support for pxa910 clock subsystem.
+Change the dtsi and dts file, soc initialization code to make
+use of DT support clock.
+So now in the code we do only need call of_clk_init to initialize
+the clocks.
 
 Signed-off-by: Chao Xie <chao.xie@marvell.com>
 ---
- .../bindings/clock/marvell-pxa910-clock.txt        |  20 ++
- drivers/clk/mmp/Makefile                           |   2 +-
- drivers/clk/mmp/clk-of-pxa910.c                    | 260 +++++++++++++++++++++
- include/dt-bindings/clock/marvell-pxa910.h         |  54 +++++
- 4 files changed, 335 insertions(+), 1 deletion(-)
- create mode 100644 Documentation/devicetree/bindings/clock/marvell-pxa910-clock.txt
- create mode 100644 drivers/clk/mmp/clk-of-pxa910.c
- create mode 100644 include/dt-bindings/clock/marvell-pxa910.h
+ arch/arm/boot/dts/mmp2.dtsi   | 18 ++++++++++++++
+ arch/arm/boot/dts/pxa168.dtsi | 17 +++++++++++++
+ arch/arm/boot/dts/pxa910.dtsi | 18 ++++++++++++++
+ arch/arm/mach-mmp/Kconfig     | 10 +++-----
+ arch/arm/mach-mmp/mmp-dt.c    | 57 ++++++++++++++-----------------------------
+ arch/arm/mach-mmp/mmp2-dt.c   | 26 +++++++-------------
+ 6 files changed, 84 insertions(+), 62 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/clock/marvell-pxa910-clock.txt b/Documentation/devicetree/bindings/clock/marvell-pxa910-clock.txt
-new file mode 100644
-index 0000000..643b57b0
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/marvell-pxa910-clock.txt
-@@ -0,0 +1,20 @@
-+* Marvell PXA910 Clock Controller
-+
-+The PXA910 clock subsystem generates and supplies clock to various
-+controllers within the PXA910 SoC.
-+
-+Required Properties:
-+
-+- compatible: should be one of the following.
-+  - "marvell,pxa910-clock" - controller compatible with PXA910 SoC.
-+
-+- reg: physical base address of the clock subsystem and length of memory mapped
-+  region. There are 4 places in SOC has clock control logic:
-+  "mpmu", "apmu", "apbc", "apbcp". So four reg spaces need to be defined.
-+
-+- #clock-cells: should be 1.
-+
-+Each clock is assigned an identifier and client nodes use this identifier
-+to specify the clock which they consume.
-+
-+All these identifier could be found in <dt-bindings/clock/marvell-pxa910.h>.
-diff --git a/drivers/clk/mmp/Makefile b/drivers/clk/mmp/Makefile
-index 37c14fa..b803fac 100644
---- a/drivers/clk/mmp/Makefile
-+++ b/drivers/clk/mmp/Makefile
-@@ -4,7 +4,7 @@
+diff --git a/arch/arm/boot/dts/mmp2.dtsi b/arch/arm/boot/dts/mmp2.dtsi
+index e44f996..8a07a94 100644
+--- a/arch/arm/boot/dts/mmp2.dtsi
++++ b/arch/arm/boot/dts/mmp2.dtsi
+@@ -8,6 +8,7 @@
+  */
  
- obj-y += clk-apbc.o clk-apmu.o clk-frac.o clk-mix.o clk-gate.o clk.o
+ #include "skeleton.dtsi"
++#include <dt-bindings/clock/marvell-mmp2.h>
  
--obj-$(CONFIG_MACH_MMP_DT) += clk-of-pxa168.o
-+obj-$(CONFIG_MACH_MMP_DT) += clk-of-pxa168.o clk-of-pxa910.o
+ / {
+ 	aliases {
+@@ -135,6 +136,7 @@
+ 				compatible = "mrvl,mmp-uart";
+ 				reg = <0xd4030000 0x1000>;
+ 				interrupts = <27>;
++				clocks = <&soc_clocks MMP2_CLK_UART0>;
+ 				status = "disabled";
+ 			};
  
- obj-$(CONFIG_CPU_PXA168) += clk-pxa168.o
- obj-$(CONFIG_CPU_PXA910) += clk-pxa910.o
-diff --git a/drivers/clk/mmp/clk-of-pxa910.c b/drivers/clk/mmp/clk-of-pxa910.c
-new file mode 100644
-index 0000000..f746376
---- /dev/null
-+++ b/drivers/clk/mmp/clk-of-pxa910.c
-@@ -0,0 +1,260 @@
-+/*
-+ * pxa910 clock framework source file
-+ *
-+ * Copyright (C) 2012 Marvell
-+ * Chao Xie <xiechao.mail@gmail.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2. This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
+@@ -142,6 +144,7 @@
+ 				compatible = "mrvl,mmp-uart";
+ 				reg = <0xd4017000 0x1000>;
+ 				interrupts = <28>;
++				clocks = <&soc_clocks MMP2_CLK_UART1>;
+ 				status = "disabled";
+ 			};
+ 
+@@ -149,6 +152,7 @@
+ 				compatible = "mrvl,mmp-uart";
+ 				reg = <0xd4018000 0x1000>;
+ 				interrupts = <24>;
++				clocks = <&soc_clocks MMP2_CLK_UART2>;
+ 				status = "disabled";
+ 			};
+ 
+@@ -156,6 +160,7 @@
+ 				compatible = "mrvl,mmp-uart";
+ 				reg = <0xd4016000 0x1000>;
+ 				interrupts = <46>;
++				clocks = <&soc_clocks MMP2_CLK_UART3>;
+ 				status = "disabled";
+ 			};
+ 
+@@ -168,6 +173,7 @@
+ 				#gpio-cells = <2>;
+ 				interrupts = <49>;
+ 				interrupt-names = "gpio_mux";
++				clocks = <&soc_clocks MMP2_CLK_GPIO>;
+ 				interrupt-controller;
+ 				#interrupt-cells = <1>;
+ 				ranges;
+@@ -201,6 +207,7 @@
+ 				compatible = "mrvl,mmp-twsi";
+ 				reg = <0xd4011000 0x1000>;
+ 				interrupts = <7>;
++				clocks = <&soc_clocks MMP2_CLK_TWSI0>;
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
+ 				mrvl,i2c-fast-mode;
+@@ -211,6 +218,7 @@
+ 				compatible = "mrvl,mmp-twsi";
+ 				reg = <0xd4025000 0x1000>;
+ 				interrupts = <58>;
++				clocks = <&soc_clocks MMP2_CLK_TWSI1>;
+ 				status = "disabled";
+ 			};
+ 
+@@ -220,8 +228,18 @@
+ 				interrupts = <1 0>;
+ 				interrupt-names = "rtc 1Hz", "rtc alarm";
+ 				interrupt-parent = <&intcmux5>;
++				clocks = <&soc_clocks MMP2_CLK_RTC>;
+ 				status = "disabled";
+ 			};
+ 		};
 +
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/spinlock.h>
-+#include <linux/io.h>
-+#include <linux/delay.h>
-+#include <linux/err.h>
-+#include <linux/of_address.h>
++		soc_clocks: clocks{
++			compatible = "marvell,mmp2-clock";
++			reg = <0xd4050000 0x1000>,
++			      <0xd4282800 0x400>,
++			      <0xd4015000 0x1000>;
++			reg-names = "mpmu", "apmu", "apbc";
++			#clock-cells = <1>;
++		};
+ 	};
+ };
+diff --git a/arch/arm/boot/dts/pxa168.dtsi b/arch/arm/boot/dts/pxa168.dtsi
+index bfcbdef..e631dd6 100644
+--- a/arch/arm/boot/dts/pxa168.dtsi
++++ b/arch/arm/boot/dts/pxa168.dtsi
+@@ -8,6 +8,7 @@
+  */
+ 
+ #include "skeleton.dtsi"
++#include <dt-bindings/clock/marvell-pxa168.h>
+ 
+ / {
+ 	aliases {
+@@ -59,6 +60,7 @@
+ 				compatible = "mrvl,mmp-uart";
+ 				reg = <0xd4017000 0x1000>;
+ 				interrupts = <27>;
++				clocks = <&soc_clocks PXA168_CLK_UART0>;
+ 				status = "disabled";
+ 			};
+ 
+@@ -66,6 +68,7 @@
+ 				compatible = "mrvl,mmp-uart";
+ 				reg = <0xd4018000 0x1000>;
+ 				interrupts = <28>;
++				clocks = <&soc_clocks PXA168_CLK_UART1>;
+ 				status = "disabled";
+ 			};
+ 
+@@ -73,6 +76,7 @@
+ 				compatible = "mrvl,mmp-uart";
+ 				reg = <0xd4026000 0x1000>;
+ 				interrupts = <29>;
++				clocks = <&soc_clocks PXA168_CLK_UART2>;
+ 				status = "disabled";
+ 			};
+ 
+@@ -84,6 +88,7 @@
+ 				gpio-controller;
+ 				#gpio-cells = <2>;
+ 				interrupts = <49>;
++				clocks = <&soc_clocks PXA168_CLK_GPIO>;
+ 				interrupt-names = "gpio_mux";
+ 				interrupt-controller;
+ 				#interrupt-cells = <1>;
+@@ -110,6 +115,7 @@
+ 				compatible = "mrvl,mmp-twsi";
+ 				reg = <0xd4011000 0x1000>;
+ 				interrupts = <7>;
++				clocks = <&soc_clocks PXA168_CLK_TWSI0>;
+ 				mrvl,i2c-fast-mode;
+ 				status = "disabled";
+ 			};
+@@ -118,6 +124,7 @@
+ 				compatible = "mrvl,mmp-twsi";
+ 				reg = <0xd4025000 0x1000>;
+ 				interrupts = <58>;
++				clocks = <&soc_clocks PXA168_CLK_TWSI1>;
+ 				status = "disabled";
+ 			};
+ 
+@@ -126,8 +133,18 @@
+ 				reg = <0xd4010000 0x1000>;
+ 				interrupts = <5 6>;
+ 				interrupt-names = "rtc 1Hz", "rtc alarm";
++				clocks = <&soc_clocks PXA168_CLK_RTC>;
+ 				status = "disabled";
+ 			};
+ 		};
 +
++		soc_clocks: clocks{
++			compatible = "marvell,pxa168-clock";
++			reg = <0xd4050000 0x1000>,
++			      <0xd4282800 0x400>,
++			      <0xd4015000 0x1000>;
++			reg-names = "mpmu", "apmu", "apbc";
++			#clock-cells = <1>;
++		};
+ 	};
+ };
+diff --git a/arch/arm/boot/dts/pxa910.dtsi b/arch/arm/boot/dts/pxa910.dtsi
+index 884c6e8..a810362 100644
+--- a/arch/arm/boot/dts/pxa910.dtsi
++++ b/arch/arm/boot/dts/pxa910.dtsi
+@@ -8,6 +8,7 @@
+  */
+ 
+ #include "skeleton.dtsi"
 +#include <dt-bindings/clock/marvell-pxa910.h>
+ 
+ / {
+ 	aliases {
+@@ -71,6 +72,7 @@
+ 				compatible = "mrvl,mmp-uart";
+ 				reg = <0xd4017000 0x1000>;
+ 				interrupts = <27>;
++				clocks = <&soc_clocks PXA910_CLK_UART0>;
+ 				status = "disabled";
+ 			};
+ 
+@@ -78,6 +80,7 @@
+ 				compatible = "mrvl,mmp-uart";
+ 				reg = <0xd4018000 0x1000>;
+ 				interrupts = <28>;
++				clocks = <&soc_clocks PXA910_CLK_UART1>;
+ 				status = "disabled";
+ 			};
+ 
+@@ -85,6 +88,7 @@
+ 				compatible = "mrvl,mmp-uart";
+ 				reg = <0xd4036000 0x1000>;
+ 				interrupts = <59>;
++				clocks = <&soc_clocks PXA910_CLK_UART2>;
+ 				status = "disabled";
+ 			};
+ 
+@@ -97,6 +101,7 @@
+ 				#gpio-cells = <2>;
+ 				interrupts = <49>;
+ 				interrupt-names = "gpio_mux";
++				clocks = <&soc_clocks PXA910_CLK_GPIO>;
+ 				interrupt-controller;
+ 				#interrupt-cells = <1>;
+ 				ranges;
+@@ -124,6 +129,7 @@
+ 				#size-cells = <0>;
+ 				reg = <0xd4011000 0x1000>;
+ 				interrupts = <7>;
++				clocks = <&soc_clocks PXA910_CLK_TWSI0>;
+ 				mrvl,i2c-fast-mode;
+ 				status = "disabled";
+ 			};
+@@ -134,6 +140,7 @@
+ 				#size-cells = <0>;
+ 				reg = <0xd4037000 0x1000>;
+ 				interrupts = <54>;
++				clocks = <&soc_clocks PXA910_CLK_TWSI1>;
+ 				status = "disabled";
+ 			};
+ 
+@@ -142,8 +149,19 @@
+ 				reg = <0xd4010000 0x1000>;
+ 				interrupts = <5 6>;
+ 				interrupt-names = "rtc 1Hz", "rtc alarm";
++				clocks = <&soc_clocks PXA910_CLK_RTC>;
+ 				status = "disabled";
+ 			};
+ 		};
 +
-+#include "clk.h"
-+
-+#define APBC_RTC	0x28
-+#define APBC_TWSI0	0x2c
-+#define APBC_KPC	0x18
-+#define APBC_UART0	0x0
-+#define APBC_UART1	0x4
-+#define APBC_GPIO	0x8
-+#define APBC_PWM0	0xc
-+#define APBC_PWM1	0x10
-+#define APBC_PWM2	0x14
-+#define APBC_PWM3	0x18
-+#define APBC_SSP0	0x1c
-+#define APBC_SSP1	0x20
-+#define APBC_SSP2	0x4c
-+#define APBCP_TWSI1	0x28
-+#define APBCP_UART2	0x1c
-+#define APMU_SDH0	0x54
-+#define APMU_SDH1	0x58
-+#define APMU_USB	0x5c
-+#define APMU_DISP0	0x4c
-+#define APMU_CCIC0	0x50
-+#define APMU_DFC	0x60
-+#define MPMU_UART_PLL	0x14
-+
-+struct pxa910_clk_unit {
-+	struct mmp_clk_unit unit;
-+	void __iomem *mpmu_base;
-+	void __iomem *apmu_base;
-+	void __iomem *apbc_base;
-+	void __iomem *apbcp_base;
-+};
-+
-+static struct mmp_param_fixed_rate_clk fixed_rate_clks[] = {
-+	{PXA910_CLK_CLK32, "clk32", NULL, CLK_IS_ROOT, 32768},
-+	{PXA910_CLK_VCTCXO, "vctcxo", NULL, CLK_IS_ROOT, 26000000},
-+	{PXA910_CLK_PLL1, "pll1", NULL, CLK_IS_ROOT, 624000000},
-+};
-+
-+static struct mmp_param_fixed_factor_clk fixed_factor_clks[] = {
-+	{PXA910_CLK_PLL1_2, "pll1_2", "pll1", 1, 2, 0},
-+	{PXA910_CLK_PLL1_4, "pll1_4", "pll1_2", 1, 2, 0},
-+	{PXA910_CLK_PLL1_8, "pll1_8", "pll1_4", 1, 2, 0},
-+	{PXA910_CLK_PLL1_16, "pll1_16", "pll1_8", 1, 2, 0},
-+	{PXA910_CLK_PLL1_6, "pll1_6", "pll1_2", 1, 3, 0},
-+	{PXA910_CLK_PLL1_12, "pll1_12", "pll1_6", 1, 2, 0},
-+	{PXA910_CLK_PLL1_24, "pll1_24", "pll1_12", 1, 2, 0},
-+	{PXA910_CLK_PLL1_48, "pll1_48", "pll1_24", 1, 2, 0},
-+	{PXA910_CLK_PLL1_96, "pll1_96", "pll1_48", 1, 2, 0},
-+	{PXA910_CLK_PLL1_13, "pll1_13", "pll1", 1, 13, 0},
-+	{PXA910_CLK_PLL1_13_1_5, "pll1_13_1_5", "pll1_13", 2, 3, 0},
-+	{PXA910_CLK_PLL1_2_1_5, "pll1_2_1_5", "pll1_2", 2, 3, 0},
-+	{PXA910_CLK_PLL1_3_16, "pll1_3_16", "pll1", 3, 16, 0},
-+};
-+
-+static struct mmp_clk_factor_masks uart_factor_masks = {
-+	.factor = 2,
-+	.num_mask = 0x1fff,
-+	.den_mask = 0x1fff,
-+	.num_shift = 16,
-+	.den_shift = 0,
-+};
-+
-+static struct mmp_clk_factor_tbl uart_factor_tbl[] = {
-+	{.num = 8125, .den = 1536},	/*14.745MHZ */
-+};
-+
-+static void pxa910_pll_init(struct pxa910_clk_unit *pxa_unit)
-+{
-+	struct clk *clk;
-+	struct mmp_clk_unit *unit = &pxa_unit->unit;
-+
-+	mmp_register_fixed_rate_clks(unit, fixed_rate_clks,
-+					ARRAY_SIZE(fixed_rate_clks));
-+
-+	mmp_register_fixed_factor_clks(unit, fixed_factor_clks,
-+					ARRAY_SIZE(fixed_factor_clks));
-+
-+	clk = mmp_clk_register_factor("uart_pll", "pll1_4",
-+				CLK_SET_RATE_PARENT,
-+				pxa_unit->mpmu_base + MPMU_UART_PLL,
-+				&uart_factor_masks, uart_factor_tbl,
-+				ARRAY_SIZE(uart_factor_tbl), NULL);
-+	mmp_clk_add(unit, PXA910_CLK_UART_PLL, clk);
-+}
-+
-+static DEFINE_SPINLOCK(uart0_lock);
-+static DEFINE_SPINLOCK(uart1_lock);
-+static DEFINE_SPINLOCK(uart2_lock);
-+static const char *uart_parent_names[] = {"pll1_3_16", "uart_pll"};
-+
-+static DEFINE_SPINLOCK(ssp0_lock);
-+static DEFINE_SPINLOCK(ssp1_lock);
-+static const char *ssp_parent_names[] = {"pll1_96", "pll1_48", "pll1_24", "pll1_12"};
-+
-+static struct mmp_param_mux_clk apbc_mux_clks[] = {
-+	{0, "uart0_mux", uart_parent_names, ARRAY_SIZE(uart_parent_names), CLK_SET_RATE_PARENT, APBC_UART0, 4, 3, 0, &uart0_lock},
-+	{0, "uart1_mux", uart_parent_names, ARRAY_SIZE(uart_parent_names), CLK_SET_RATE_PARENT, APBC_UART1, 4, 3, 0, &uart1_lock},
-+	{0, "ssp0_mux", ssp_parent_names, ARRAY_SIZE(ssp_parent_names), CLK_SET_RATE_PARENT, APBC_SSP0, 4, 3, 0, &ssp0_lock},
-+	{0, "ssp1_mux", ssp_parent_names, ARRAY_SIZE(ssp_parent_names), CLK_SET_RATE_PARENT, APBC_SSP1, 4, 3, 0, &ssp1_lock},
-+};
-+
-+static struct mmp_param_mux_clk apbcp_mux_clks[] = {
-+	{0, "uart2_mux", uart_parent_names, ARRAY_SIZE(uart_parent_names), CLK_SET_RATE_PARENT, APBCP_UART2, 4, 3, 0, &uart2_lock},
-+};
-+
-+static struct mmp_param_gate_clk apbc_gate_clks[] = {
-+	{PXA910_CLK_TWSI0, "twsi0_clk", "pll1_13_1_5", CLK_SET_RATE_PARENT, APBC_TWSI0, 0x7, 0x3, 0x0, 0, NULL},
-+	{PXA910_CLK_GPIO, "gpio_clk", "vctcxo", CLK_SET_RATE_PARENT, APBC_GPIO, 0x7, 0x3, 0x0, 0, NULL},
-+	{PXA910_CLK_KPC, "kpc_clk", "clk32", CLK_SET_RATE_PARENT, APBC_KPC, 0x7, 0x3, 0x0, MMP_CLK_GATE_NEED_DELAY, NULL},
-+	{PXA910_CLK_RTC, "rtc_clk", "clk32", CLK_SET_RATE_PARENT, APBC_RTC, 0x87, 0x83, 0x0, MMP_CLK_GATE_NEED_DELAY, NULL},
-+	{PXA910_CLK_PWM0, "pwm0_clk", "pll1_48", CLK_SET_RATE_PARENT, APBC_PWM0, 0x7, 0x3, 0x0, 0, NULL},
-+	{PXA910_CLK_PWM1, "pwm1_clk", "pll1_48", CLK_SET_RATE_PARENT, APBC_PWM1, 0x7, 0x3, 0x0, 0, NULL},
-+	{PXA910_CLK_PWM2, "pwm2_clk", "pll1_48", CLK_SET_RATE_PARENT, APBC_PWM2, 0x7, 0x3, 0x0, 0, NULL},
-+	{PXA910_CLK_PWM3, "pwm3_clk", "pll1_48", CLK_SET_RATE_PARENT, APBC_PWM3, 0x7, 0x3, 0x0, 0, NULL},
-+	/* The gate clocks has mux parent. */
-+	{PXA910_CLK_UART0, "uart0_clk", "uart0_mux", CLK_SET_RATE_PARENT, APBC_UART0, 0x7, 0x3, 0x0, 0, &uart0_lock},
-+	{PXA910_CLK_UART1, "uart1_clk", "uart1_mux", CLK_SET_RATE_PARENT, APBC_UART1, 0x7, 0x3, 0x0, 0, &uart1_lock},
-+	{PXA910_CLK_SSP0, "ssp0_clk", "ssp0_mux", CLK_SET_RATE_PARENT, APBC_SSP0, 0x7, 0x3, 0x0, 0, &ssp0_lock},
-+	{PXA910_CLK_SSP1, "ssp1_clk", "ssp1_mux", CLK_SET_RATE_PARENT, APBC_SSP1, 0x7, 0x3, 0x0, 0, &ssp1_lock},
-+};
-+
-+static struct mmp_param_gate_clk apbcp_gate_clks[] = {
-+	{PXA910_CLK_TWSI1, "twsi1_clk", "pll1_13_1_5", CLK_SET_RATE_PARENT, APBCP_TWSI1, 0x7, 0x3, 0x0, 0, NULL},
-+	/* The gate clocks has mux parent. */
-+	{PXA910_CLK_UART2, "uart2_clk", "uart2_mux", CLK_SET_RATE_PARENT, APBCP_UART2, 0x7, 0x3, 0x0, 0, &uart2_lock},
-+};
-+
-+static void pxa910_apb_periph_clk_init(struct pxa910_clk_unit *pxa_unit)
-+{
-+	struct mmp_clk_unit *unit = &pxa_unit->unit;
-+
-+	mmp_register_mux_clks(unit, apbc_mux_clks, pxa_unit->apbc_base,
-+				ARRAY_SIZE(apbc_mux_clks));
-+
-+	mmp_register_mux_clks(unit, apbcp_mux_clks, pxa_unit->apbcp_base,
-+				ARRAY_SIZE(apbcp_mux_clks));
-+
-+	mmp_register_gate_clks(unit, apbc_gate_clks, pxa_unit->apbc_base,
-+				ARRAY_SIZE(apbc_gate_clks));
-+
-+	mmp_register_gate_clks(unit, apbcp_gate_clks, pxa_unit->apbcp_base,
-+				ARRAY_SIZE(apbcp_gate_clks));
-+}
-+
-+static DEFINE_SPINLOCK(sdh0_lock);
-+static DEFINE_SPINLOCK(sdh1_lock);
-+static const char *sdh_parent_names[] = {"pll1_12", "pll1_13"};
-+
-+static DEFINE_SPINLOCK(usb_lock);
-+
-+static DEFINE_SPINLOCK(disp0_lock);
-+static const char *disp_parent_names[] = {"pll1_2", "pll1_12"};
-+
-+static DEFINE_SPINLOCK(ccic0_lock);
-+static const char *ccic_parent_names[] = {"pll1_2", "pll1_12"};
-+static const char *ccic_phy_parent_names[] = {"pll1_6", "pll1_12"};
-+
-+static struct mmp_param_mux_clk apmu_mux_clks[] = {
-+	{0, "sdh0_mux", sdh_parent_names, ARRAY_SIZE(sdh_parent_names), CLK_SET_RATE_PARENT, APMU_SDH0, 6, 1, 0, &sdh0_lock},
-+	{0, "sdh1_mux", sdh_parent_names, ARRAY_SIZE(sdh_parent_names), CLK_SET_RATE_PARENT, APMU_SDH1, 6, 1, 0, &sdh1_lock},
-+	{0, "disp0_mux", disp_parent_names, ARRAY_SIZE(disp_parent_names), CLK_SET_RATE_PARENT, APMU_DISP0, 6, 1, 0, &disp0_lock},
-+	{0, "ccic0_mux", ccic_parent_names, ARRAY_SIZE(ccic_parent_names), CLK_SET_RATE_PARENT, APMU_CCIC0, 6, 1, 0, &ccic0_lock},
-+	{0, "ccic0_phy_mux", ccic_phy_parent_names, ARRAY_SIZE(ccic_phy_parent_names), CLK_SET_RATE_PARENT, APMU_CCIC0, 7, 1, 0, &ccic0_lock},
-+};
-+
-+static struct mmp_param_div_clk apmu_div_clks[] = {
-+	{0, "ccic0_sphy_div", "ccic0_mux", CLK_SET_RATE_PARENT, APMU_CCIC0, 10, 5, 0, &ccic0_lock},
-+};
-+
-+static struct mmp_param_gate_clk apmu_gate_clks[] = {
-+	{PXA910_CLK_DFC, "dfc_clk", "pll1_4", CLK_SET_RATE_PARENT, APMU_DFC, 0x19b, 0x19b, 0x0, 0, NULL},
-+	{PXA910_CLK_USB, "usb_clk", "usb_pll", 0, APMU_USB, 0x9, 0x9, 0x0, 0, &usb_lock},
-+	{PXA910_CLK_SPH, "sph_clk", "usb_pll", 0, APMU_USB, 0x12, 0x12, 0x0, 0, &usb_lock},
-+	/* The gate clocks has mux parent. */
-+	{PXA910_CLK_SDH0, "sdh0_clk", "sdh0_mux", CLK_SET_RATE_PARENT, APMU_SDH0, 0x1b, 0x1b, 0x0, 0, &sdh0_lock},
-+	{PXA910_CLK_SDH1, "sdh1_clk", "sdh1_mux", CLK_SET_RATE_PARENT, APMU_SDH1, 0x1b, 0x1b, 0x0, 0, &sdh1_lock},
-+	{PXA910_CLK_DISP0, "disp0_clk", "disp0_mux", CLK_SET_RATE_PARENT, APMU_DISP0, 0x1b, 0x1b, 0x0, 0, &disp0_lock},
-+	{PXA910_CLK_CCIC0, "ccic0_clk", "ccic0_mux", CLK_SET_RATE_PARENT, APMU_CCIC0, 0x1b, 0x1b, 0x0, 0, &ccic0_lock},
-+	{PXA910_CLK_CCIC0_PHY, "ccic0_phy_clk", "ccic0_phy_mux", CLK_SET_RATE_PARENT, APMU_CCIC0, 0x24, 0x24, 0x0, 0, &ccic0_lock},
-+	{PXA910_CLK_CCIC0_SPHY, "ccic0_sphy_clk", "ccic0_sphy_div", CLK_SET_RATE_PARENT, APMU_CCIC0, 0x300, 0x300, 0x0, 0, &ccic0_lock},
-+};
-+
-+static void pxa910_axi_periph_clk_init(struct pxa910_clk_unit *pxa_unit)
-+{
-+	struct mmp_clk_unit *unit = &pxa_unit->unit;
-+
-+	mmp_register_mux_clks(unit, apmu_mux_clks, pxa_unit->apmu_base,
-+				ARRAY_SIZE(apmu_mux_clks));
-+
-+	mmp_register_div_clks(unit, apmu_div_clks, pxa_unit->apmu_base,
-+				ARRAY_SIZE(apmu_div_clks));
-+
-+	mmp_register_gate_clks(unit, apmu_gate_clks, pxa_unit->apmu_base,
-+				ARRAY_SIZE(apmu_gate_clks));
-+}
-+
-+static void __init pxa910_clk_init(struct device_node *np)
-+{
-+	struct pxa910_clk_unit *pxa_unit;
-+
-+	pxa_unit = kzalloc(sizeof(*pxa_unit), GFP_KERNEL);
-+	if (!pxa_unit)
-+		return;
-+
-+	pxa_unit->mpmu_base = of_iomap(np, 0);
-+	if (!pxa_unit->mpmu_base) {
-+		pr_err("failed to map mpmu registers\n");
-+		return;
-+	}
-+
-+	pxa_unit->apmu_base = of_iomap(np, 1);
-+	if (!pxa_unit->mpmu_base) {
-+		pr_err("failed to map apmu registers\n");
-+		return;
-+	}
-+
-+	pxa_unit->apbc_base = of_iomap(np, 2);
-+	if (!pxa_unit->apbc_base) {
-+		pr_err("failed to map apbc registers\n");
-+		return;
-+	}
-+
-+	pxa_unit->apbcp_base = of_iomap(np, 3);
-+	if (!pxa_unit->mpmu_base) {
-+		pr_err("failed to map apbcp registers\n");
-+		return;
-+	}
-+
-+	mmp_clk_init(np, &pxa_unit->unit, PXA910_NR_CLKS);
-+
-+	pxa910_pll_init(pxa_unit);
-+
-+	pxa910_apb_periph_clk_init(pxa_unit);
-+
-+	pxa910_axi_periph_clk_init(pxa_unit);
-+}
-+
-+CLK_OF_DECLARE(pxa910_clk, "marvell,pxa910-clock", pxa910_clk_init);
-diff --git a/include/dt-bindings/clock/marvell-pxa910.h b/include/dt-bindings/clock/marvell-pxa910.h
-new file mode 100644
-index 0000000..719cffb
---- /dev/null
-+++ b/include/dt-bindings/clock/marvell-pxa910.h
-@@ -0,0 +1,54 @@
-+#ifndef __DTS_MARVELL_PXA910_CLOCK_H
-+#define __DTS_MARVELL_PXA910_CLOCK_H
-+
-+/* fixed clocks and plls */
-+#define PXA910_CLK_CLK32		1
-+#define PXA910_CLK_VCTCXO		2
-+#define PXA910_CLK_PLL1			3
-+#define PXA910_CLK_PLL1_2		8
-+#define PXA910_CLK_PLL1_4		9
-+#define PXA910_CLK_PLL1_8		10
-+#define PXA910_CLK_PLL1_16		11
-+#define PXA910_CLK_PLL1_6		12
-+#define PXA910_CLK_PLL1_12		13
-+#define PXA910_CLK_PLL1_24		14
-+#define PXA910_CLK_PLL1_48		15
-+#define PXA910_CLK_PLL1_96		16
-+#define PXA910_CLK_PLL1_13		17
-+#define PXA910_CLK_PLL1_13_1_5		18
-+#define PXA910_CLK_PLL1_2_1_5		19
-+#define PXA910_CLK_PLL1_3_16		20
-+#define PXA910_CLK_UART_PLL		27
-+
-+/* apb periphrals */
-+#define PXA910_CLK_TWSI0		60
-+#define PXA910_CLK_TWSI1		61
-+#define PXA910_CLK_TWSI2		62
-+#define PXA910_CLK_TWSI3		63
-+#define PXA910_CLK_GPIO			64
-+#define PXA910_CLK_KPC			65
-+#define PXA910_CLK_RTC			66
-+#define PXA910_CLK_PWM0			67
-+#define PXA910_CLK_PWM1			68
-+#define PXA910_CLK_PWM2			69
-+#define PXA910_CLK_PWM3			70
-+#define PXA910_CLK_UART0		71
-+#define PXA910_CLK_UART1		72
-+#define PXA910_CLK_UART2		73
-+#define PXA910_CLK_SSP0			74
-+#define PXA910_CLK_SSP1			75
-+
-+/* axi periphrals */
-+#define PXA910_CLK_DFC			100
-+#define PXA910_CLK_SDH0			101
-+#define PXA910_CLK_SDH1			102
-+#define PXA910_CLK_SDH2			103
-+#define PXA910_CLK_USB			104
-+#define PXA910_CLK_SPH			105
-+#define PXA910_CLK_DISP0		106
-+#define PXA910_CLK_CCIC0		107
-+#define PXA910_CLK_CCIC0_PHY		108
-+#define PXA910_CLK_CCIC0_SPHY		109
-+
-+#define PXA910_NR_CLKS			200
++		soc_clocks: clocks{
++			compatible = "marvell,pxa910-clock";
++			reg = <0xd4050000 0x1000>,
++			      <0xd4282800 0x400>,
++			      <0xd4015000 0x1000>,
++			      <0xd403b000 0x1000>;
++			reg-names = "mpmu", "apmu", "apbc", "apbcp";
++			#clock-cells = <1>;
++		};
+ 	};
+ };
+diff --git a/arch/arm/mach-mmp/Kconfig b/arch/arm/mach-mmp/Kconfig
+index ebdba87..8c1cef2 100644
+--- a/arch/arm/mach-mmp/Kconfig
++++ b/arch/arm/mach-mmp/Kconfig
+@@ -86,11 +86,11 @@ config MACH_GPLUGD
+ 
+ config MACH_MMP_DT
+ 	bool "Support MMP (ARMv5) platforms from device tree"
+-	select CPU_PXA168
+-	select CPU_PXA910
+ 	select USE_OF
+ 	select PINCTRL
+ 	select PINCTRL_SINGLE
++	select COMMON_CLK
++	select CPU_MOHAWK
+ 	help
+ 	  Include support for Marvell MMP2 based platforms using
+ 	  the device tree. Needn't select any other machine while
+@@ -99,10 +99,11 @@ config MACH_MMP_DT
+ config MACH_MMP2_DT
+ 	bool "Support MMP2 (ARMv7) platforms from device tree"
+ 	depends on !CPU_MOHAWK
+-	select CPU_MMP2
+ 	select USE_OF
+ 	select PINCTRL
+ 	select PINCTRL_SINGLE
++	select COMMON_CLK
++	select CPU_PJ4
+ 	help
+ 	  Include support for Marvell MMP2 based platforms using
+ 	  the device tree.
+@@ -111,21 +112,18 @@ endmenu
+ 
+ config CPU_PXA168
+ 	bool
+-	select COMMON_CLK
+ 	select CPU_MOHAWK
+ 	help
+ 	  Select code specific to PXA168
+ 
+ config CPU_PXA910
+ 	bool
+-	select COMMON_CLK
+ 	select CPU_MOHAWK
+ 	help
+ 	  Select code specific to PXA910
+ 
+ config CPU_MMP2
+ 	bool
+-	select COMMON_CLK
+ 	select CPU_PJ4
+ 	help
+ 	  Select code specific to MMP2. MMP2 is ARMv7 compatible.
+diff --git a/arch/arm/mach-mmp/mmp-dt.c b/arch/arm/mach-mmp/mmp-dt.c
+index cca529c..b2296c9 100644
+--- a/arch/arm/mach-mmp/mmp-dt.c
++++ b/arch/arm/mach-mmp/mmp-dt.c
+@@ -11,63 +11,42 @@
+ 
+ #include <linux/irqchip.h>
+ #include <linux/of_platform.h>
++#include <linux/clk-provider.h>
+ #include <asm/mach/arch.h>
+ #include <asm/mach/time.h>
++#include <asm/hardware/cache-tauros2.h>
+ 
+ #include "common.h"
+ 
+ extern void __init mmp_dt_init_timer(void);
+ 
+-static const struct of_dev_auxdata pxa168_auxdata_lookup[] __initconst = {
+-	OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4017000, "pxa2xx-uart.0", NULL),
+-	OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4018000, "pxa2xx-uart.1", NULL),
+-	OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4026000, "pxa2xx-uart.2", NULL),
+-	OF_DEV_AUXDATA("mrvl,mmp-twsi", 0xd4011000, "pxa2xx-i2c.0", NULL),
+-	OF_DEV_AUXDATA("mrvl,mmp-twsi", 0xd4025000, "pxa2xx-i2c.1", NULL),
+-	OF_DEV_AUXDATA("marvell,mmp-gpio", 0xd4019000, "mmp-gpio", NULL),
+-	OF_DEV_AUXDATA("mrvl,mmp-rtc", 0xd4010000, "sa1100-rtc", NULL),
+-	{}
++static const char *pxa168_dt_board_compat[] __initdata = {
++	"mrvl,pxa168-aspenite",
++	NULL,
+ };
+ 
+-static const struct of_dev_auxdata pxa910_auxdata_lookup[] __initconst = {
+-	OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4017000, "pxa2xx-uart.0", NULL),
+-	OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4018000, "pxa2xx-uart.1", NULL),
+-	OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4036000, "pxa2xx-uart.2", NULL),
+-	OF_DEV_AUXDATA("mrvl,mmp-twsi", 0xd4011000, "pxa2xx-i2c.0", NULL),
+-	OF_DEV_AUXDATA("mrvl,mmp-twsi", 0xd4037000, "pxa2xx-i2c.1", NULL),
+-	OF_DEV_AUXDATA("marvell,mmp-gpio", 0xd4019000, "mmp-gpio", NULL),
+-	OF_DEV_AUXDATA("mrvl,mmp-rtc", 0xd4010000, "sa1100-rtc", NULL),
+-	{}
++static const char *pxa910_dt_board_compat[] __initdata = {
++	"mrvl,pxa910-dkb",
++	NULL,
+ };
+ 
+-static void __init pxa168_dt_init(void)
+-{
+-	of_platform_populate(NULL, of_default_bus_match_table,
+-			     pxa168_auxdata_lookup, NULL);
+-}
+-
+-static void __init pxa910_dt_init(void)
++static void __init mmp_init_time(void)
+ {
+-	of_platform_populate(NULL, of_default_bus_match_table,
+-			     pxa910_auxdata_lookup, NULL);
++#ifdef CONFIG_CACHE_TAUROS2
++	tauros2_init(0);
 +#endif
++	mmp_dt_init_timer();
++	of_clk_init(NULL);
+ }
+ 
+-static const char *mmp_dt_board_compat[] __initdata = {
+-	"mrvl,pxa168-aspenite",
+-	"mrvl,pxa910-dkb",
+-	NULL,
+-};
+-
+ DT_MACHINE_START(PXA168_DT, "Marvell PXA168 (Device Tree Support)")
+ 	.map_io		= mmp_map_io,
+-	.init_time	= mmp_dt_init_timer,
+-	.init_machine	= pxa168_dt_init,
+-	.dt_compat	= mmp_dt_board_compat,
++	.init_time	= mmp_init_time,
++	.dt_compat	= pxa168_dt_board_compat,
+ MACHINE_END
+ 
+ DT_MACHINE_START(PXA910_DT, "Marvell PXA910 (Device Tree Support)")
+ 	.map_io		= mmp_map_io,
+-	.init_time	= mmp_dt_init_timer,
+-	.init_machine	= pxa910_dt_init,
+-	.dt_compat	= mmp_dt_board_compat,
++	.init_time	= mmp_init_time,
++	.dt_compat	= pxa910_dt_board_compat,
+ MACHINE_END
+diff --git a/arch/arm/mach-mmp/mmp2-dt.c b/arch/arm/mach-mmp/mmp2-dt.c
+index 023cb45..998c0f5 100644
+--- a/arch/arm/mach-mmp/mmp2-dt.c
++++ b/arch/arm/mach-mmp/mmp2-dt.c
+@@ -12,29 +12,22 @@
+ #include <linux/io.h>
+ #include <linux/irqchip.h>
+ #include <linux/of_platform.h>
++#include <linux/clk-provider.h>
+ #include <asm/mach/arch.h>
+ #include <asm/mach/time.h>
++#include <asm/hardware/cache-tauros2.h>
+ 
+ #include "common.h"
+ 
+ extern void __init mmp_dt_init_timer(void);
+ 
+-static const struct of_dev_auxdata mmp2_auxdata_lookup[] __initconst = {
+-	OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4030000, "pxa2xx-uart.0", NULL),
+-	OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4017000, "pxa2xx-uart.1", NULL),
+-	OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4018000, "pxa2xx-uart.2", NULL),
+-	OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4016000, "pxa2xx-uart.3", NULL),
+-	OF_DEV_AUXDATA("mrvl,mmp-twsi", 0xd4011000, "pxa2xx-i2c.0", NULL),
+-	OF_DEV_AUXDATA("mrvl,mmp-twsi", 0xd4025000, "pxa2xx-i2c.1", NULL),
+-	OF_DEV_AUXDATA("marvell,mmp-gpio", 0xd4019000, "mmp2-gpio", NULL),
+-	OF_DEV_AUXDATA("mrvl,mmp-rtc", 0xd4010000, "sa1100-rtc", NULL),
+-	{}
+-};
+-
+-static void __init mmp2_dt_init(void)
++static void __init mmp_init_time(void)
+ {
+-	of_platform_populate(NULL, of_default_bus_match_table,
+-			     mmp2_auxdata_lookup, NULL);
++#ifdef CONFIG_CACHE_TAUROS2
++	tauros2_init(0);
++#endif
++	mmp_dt_init_timer();
++	of_clk_init(NULL);
+ }
+ 
+ static const char *mmp2_dt_board_compat[] __initdata = {
+@@ -44,7 +37,6 @@ static const char *mmp2_dt_board_compat[] __initdata = {
+ 
+ DT_MACHINE_START(MMP2_DT, "Marvell MMP2 (Device Tree Support)")
+ 	.map_io		= mmp_map_io,
+-	.init_time	= mmp_dt_init_timer,
+-	.init_machine	= mmp2_dt_init,
++	.init_time	= mmp_init_time,
+ 	.dt_compat	= mmp2_dt_board_compat,
+ MACHINE_END
 -- 
 1.8.3.2
 
