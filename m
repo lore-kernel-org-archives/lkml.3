@@ -1,72 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757559AbaHZLBx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 07:01:53 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:52961 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755734AbaHZLBv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 07:01:51 -0400
-Message-ID: <53FC6909.9000704@ahsoftware.de>
-Date: Tue, 26 Aug 2014 13:01:29 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1757540AbaHZLGT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 07:06:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2490 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755724AbaHZLGR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 07:06:17 -0400
+Message-ID: <53FC6A15.5090209@redhat.com>
+Date: Tue, 26 Aug 2014 13:05:57 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Grant Likely <grant.likely@linaro.org>, Jon Loeliger <jdl@jdl.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 0/9] dt: dependencies (for deterministic driver initialization
- order based on the DT)
-References: <20140514141914.446F7C4153D@trevor.secretlab.ca> <20140821140211.GD19293@ulmo.nvidia.com> <53F64624.5000403@ahsoftware.de> <20140822131919.GX21734@leverpostej> <20140825093931.GB2399@ulmo> <E1XLu15-0002DP-6o@jdl.com> <20140825133714.GH4163@ulmo.nvidia.com> <20140826084208.AE5F0C40989@trevor.secretlab.ca> <20140826084922.GG17263@ulmo> <53FC566C.30904@ahsoftware.de> <20140826102503.GC31124@ulmo> <53FC6513.5040800@ahsoftware.de>
-In-Reply-To: <53FC6513.5040800@ahsoftware.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+To: Steven Rostedt <rostedt@goodmis.org>, Gleb Natapov <gleb@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Davis <jim.epost@gmail.com>,
+        linux-next <linux-next@vger.kernel.org>
+Subject: Re: [PATCH] KVM: Only export kvm_ple_window for x86_64
+References: <20140825191035.59673878@gandalf.local.home>
+In-Reply-To: <20140825191035.59673878@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 26.08.2014 12:44, schrieb Alexander Holler:
-> Am 26.08.2014 12:25, schrieb Thierry Reding:
->> On Tue, Aug 26, 2014 at 11:42:04AM +0200, Alexander Holler wrote:
->
->>> You need either the type information in the DTB (that's why I've add
->>> those
->>> "dependencies" to identify phandles), or you need to know every
->>> binding (at
->>> "dependency-resolve-time" to identify phandles. The latter is
->>> impracticable
->>> to implement in a generic way (for use with every possible binding).
->>
->> Like I already mentioned, this could be done in drivers who contain that
->> information already anyway. Or parts of it could be done in subsystem-
->> specific callbacks where a generic binding is available.
->
-> That would end up with almost the same ugly driver-based workarounds as
-> now. It's much better if a driver author only has to define it's
-> prerequisits (in form of dependencies in the dts) and could be sure the
-> driver will only be probed if those are met, than to do that stuff based
-> on a subsystem or even driver level.
->
-> If you add dependency-information to drivers, you have two problems:
->
-> - How do you get these information from the driver (remember, currently
-> there is only one initial call, a initcall which might do almost anything)
->
-> - These information might become outdated and you would have to change
-> all drivers. E.g. if the name of a dependency (driver) changes it
-> wouldn't be done with changing the dts (maybe plural), but you would
-> have to change the source of all dependant drivers too.
+Il 26/08/2014 01:10, Steven Rostedt ha scritto:
+> Commit 7b46268d2954 "KVM: trace kvm_ple_window grow/shrink"
+> Added the tracepoint kvm_ple_window under a #ifdef CONFIG_X86_64 but
+> left the export for that tracepoint unprotected, which would cause it
+> to fail to compile when X86_32 is set.
+> 
+> Link: http://lkml.kernel.org/p/20140825172204.769ab4e6@gandalf.local.home
+> 
+> Reported-by: Jim Davis <jim.epost@gmail.com>
+> tested-by: Jim Davis <jim.epost@gmail.com>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-And after having sorted my brain:
+The current KVM branch should have fixed this already---it leaves the
+tracepoint outside CONFIG_X86_64, which was the right thing to do in the
+first place.
 
-A driver depends on a binding (and its API), but not on explicit named 
-other drivers. So trying it (again) on driver level is doomed to fail.
-
-Alexander Holler
+Paolo
