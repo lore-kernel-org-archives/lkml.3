@@ -1,81 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752800AbaHZSqn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 14:46:43 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:38446 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751989AbaHZSql (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 14:46:41 -0400
-Message-ID: <53FCD60E.1030009@codeaurora.org>
-Date: Tue, 26 Aug 2014 11:46:38 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1753244AbaHZSrf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 14:47:35 -0400
+Received: from [207.46.163.182] ([207.46.163.182]:2263 "EHLO
+	na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753070AbaHZSrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 14:47:33 -0400
+Message-ID: <53FCD41F.2060203@opensource.altera.com>
+Date: Tue, 26 Aug 2014 13:38:23 -0500
+From: Thor Thayer <tthayer@opensource.altera.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Marc Zyngier <marc.zyngier@arm.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux@openrisc.net" <linux@openrisc.net>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "shawn.guo@freescale.com" <shawn.guo@freescale.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "tony@atomide.com" <tony@atomide.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "jonas@southpole.se" <jonas@southpole.se>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "shc_work@mail.ru" <shc_work@mail.ru>,
-        "baohua@kernel.org" <baohua@kernel.org>,
-        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
-        "khilman@linaro.org" <khilman@linaro.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        "larry.bassel@linaro.org" <larry.bassel@linaro.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        "stefan.kristiansson@saunalahti.fi" 
-	<stefan.kristiansson@saunalahti.fi>,
-        "vkale@apm.com" <vkale@apm.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        Vladimir Murzin <Vladimir.Murzin@arm.com>
-Subject: Re: [PATCH v2 01/26] genirq: add irq_domain-aware core IRQ handler
-References: <1409047421-27649-1-git-send-email-marc.zyngier@arm.com> <1409047421-27649-2-git-send-email-marc.zyngier@arm.com> <53FCC714.3090206@codeaurora.org> <53FCCCC7.9070801@arm.com>
-In-Reply-To: <53FCCCC7.9070801@arm.com>
-Content-Type: text/plain; charset=windows-1252
+To: Pavel Machek <pavel@denx.de>
+CC: <robherring2@gmail.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <rob@landley.net>, <linux@arm.linux.org.uk>,
+        <atull@opensource.altera.com>, <delicious.quinoa@gmail.com>,
+        <dinguyen@opensource.altera.com>, <dougthompson@xmission.com>,
+        <grant.likely@linaro.org>, <bp@alien8.de>, <sameo@linux.intel.com>,
+        <lee.jones@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <tthayer.linux@gmail.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-edac@vger.kernel.org>
+Subject: Re: [PATCHv10 1/2] edac: altera: Add Altera SDRAM EDAC support.
+References: <1407770293-27190-1-git-send-email-tthayer@opensource.altera.com> <1407770293-27190-2-git-send-email-tthayer@opensource.altera.com> <20140814184930.GB11558@amd.pavel.ucw.cz>
+In-Reply-To: <20140814184930.GB11558@amd.pavel.ucw.cz>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: CO1PR06CA054.namprd06.prod.outlook.com (10.242.160.44) To
+ BL2PR03MB114.namprd03.prod.outlook.com (10.255.230.14)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03152A99FF
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6049001)(6009001)(199003)(24454002)(189002)(52604005)(51704005)(479174003)(377424004)(377454003)(53754006)(19580395003)(77096002)(74502001)(80316001)(50466002)(107046002)(23746002)(81542001)(74662001)(83322001)(99396002)(95666004)(105586002)(54356999)(110136001)(19580405001)(76176999)(83506001)(50986999)(87266999)(106356001)(64126003)(65806001)(42186005)(31966008)(65816999)(59896002)(79102001)(102836001)(81342001)(101416001)(85306004)(87976001)(76482001)(65956001)(66066001)(33656002)(92566001)(90102001)(86362001)(77982001)(83072002)(64706001)(92726001)(4396001)(21056001)(85852003)(80022001)(47776003)(20776003)(46102001)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB114;H:[137.57.160.203];FPR:;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/14 11:07, Marc Zyngier wrote:
-> Digging into my email, one of the traces looked like this:
+
+On 08/14/2014 01:49 PM, Pavel Machek wrote:
+> On Mon 2014-08-11 10:18:12, tthayer@opensource.altera.com wrote:
+>> From: Thor Thayer <tthayer@opensource.altera.com>
+>>
+>> This patch adds support for the CycloneV and ArriaV SDRAM controllers.
+>> Correction and reporting of SBEs, Panic on DBEs.
+>>
+>> Signed-off-by: Thor Thayer <tthayer@opensource.altera.com>
+> Acked-by: Pavel Machek <pavel@denx.de>
 >
-> stack backtrace:
-> CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.16.0-rc1+ #135
-> Call trace:
-> [<ffffffc0000882cc>] dump_backtrace+0x0/0x12c
-> [<ffffffc000088408>] show_stack+0x10/0x1c
-> [<ffffffc0004ee5f0>] dump_stack+0x74/0xc4
-> [<ffffffc0000edfbc>] lockdep_rcu_suspicious+0xe8/0x124
-> [<ffffffc00010218c>] irq_find_mapping+0x16c/0x198
-> [<ffffffc00008130c>] gic_handle_irq+0x38/0xcc
->
-> Most drivers call irq_find_mapping outside of irq_enter()/irq_exit(), as
-> this is in handle_IRQ().
->
+Hi All,
 
-Ah ok. This is the multi-irq handler case? Has this been broken since
-v3.2 at least for the gic users? Now that we call irq_enter()/irq_exit()
-a lot more code runs, including things like updating jiffies when
-interrupts arrive and invoking softirq? Do we only call irq_exit() on
-the IPI path otherwise?
+Any further comments or suggestions on this patch series? Thanks for 
+reviewing, Pavel!
 
-Are there any plans to send this back to stable trees? Not calling
-irq_enter()/irq_exit() when we get an interrupt seems like a big problem.
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+Thor
