@@ -1,150 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757864AbaHZMF3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 08:05:29 -0400
-Received: from regular1.263xmail.com ([211.150.99.140]:42919 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757845AbaHZMF0 (ORCPT
+	id S1757534AbaHZMHl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 08:07:41 -0400
+Received: from smtp97.ord1c.emailsrvr.com ([108.166.43.97]:39179 "EHLO
+	smtp97.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754626AbaHZMHk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 08:05:26 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: zyw@rock-chips.com
-X-FST-TO: lee.jones@linaro.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: zyw@rock-chips.com
-X-UNIQUE-TAG: <6e715e531745e4e9821c1965ecaab78d>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-Message-ID: <53FC77F0.4030004@rock-chips.com>
-Date: Tue, 26 Aug 2014 20:05:04 +0800
-From: Chris Zhong <zyw@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        sameo@linux.intel.com, lgirdwood@gmail.com, broonie@kernel.org,
-        a.zummo@towertech.it, mturquette@linaro.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
-        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
-        xxx@rock-chips.com, dianders@chromium.org, heiko@sntech.de,
-        olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
-        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com
-Subject: Re: [PATCH v2 2/5] MFD: RK808: Add new mfd driver for RK808
-References: <1408505461-24200-1-git-send-email-zyw@rock-chips.com> <20140820092117.GI4266@lee--X1> <53FA9D1E.8040202@rock-chips.com> <20140826092205.GG9574@lee--X1> <53FC5BD1.7030406@rock-chips.com> <20140826102036.GJ9574@lee--X1> <53FC63EE.6060104@rock-chips.com> <20140826112013.GK9574@lee--X1>
-In-Reply-To: <20140826112013.GK9574@lee--X1>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Aug 2014 08:07:40 -0400
+X-Sender-Id: pramod.gurav@smartplayin.com
+From: Pramod Gurav <pramod.gurav@smartplayin.com>
+To: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org
+Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Rob Clark <robdclark@gmail.com>
+Subject: [PATCH v2 1/2] msm: msm_fb: Add remove function for platform driver for clean unloading
+Date: Tue, 26 Aug 2014 17:40:37 +0530
+Message-Id: <1409055038-9204-1-git-send-email-pramod.gurav@smartplayin.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This adds a  remove function to platform driver structure so that
+resources are released when driver is unloaded.
 
-On 08/26/2014 07:20 PM, Lee Jones wrote:
-> On Tue, 26 Aug 2014, Chris Zhong wrote:
->> On 08/26/2014 06:20 PM, Lee Jones wrote:
->>> On Tue, 26 Aug 2014, Chris Zhong wrote:
->>>> On 08/26/2014 05:22 PM, Lee Jones wrote:
->>>>> On Mon, 25 Aug 2014, Chris Zhong wrote:
->>>>>> On 08/20/2014 05:21 PM, Lee Jones wrote:
->>>>>>> On Wed, 20 Aug 2014, Chris Zhong wrote:
->>>>>>>
->>>>>>>> The RK808 chip is a power management IC for multimedia and handheld
->>>>>>>> devices. It contains the following components:
->>>>>>>>
->>>>>>>> - Regulators
->>>>>>>> - RTC
->>>>>>>>
->>>>>>>> The rk808 core driver is registered as a platform driver and provides
->>>>>>>> communication through I2C with the host device for the different
->>>>>>>> components.
->>>>>>>>
->>>>>>>> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
->>>>>>>> ---
->>>>> [...]
->>>>>
->>>>>>>> +	rk808->pdata = pdata;
->>>>>>> Remove pdata from 'struct rk808'.  You can obtain it from dev.
->>>>>> Can I keep this pdata in rk808, because it is used in the regulator driver.
->>>>>> The one obtain from dev maybe empty.
->>>>> If the one in dev is empty, you should populate that instead.
->>>> So, should I malloc a pada, and assign it to client->dev?
->>> If client->dev.pdata is NULL, yes.
->>>
->>> But actually, I have more important questions that need to be answered
->>> first.  Ones which I would normally be able to answer myself if the
->>> patch-set had been sent as one (i.e. threaded) instead of as
->>> individual patches:
->>>
->>> - What are you using pdata for?
->> For save some properties,
->>
->> like "rockchip,system-power-controller" in MFD
->> and some regulator properties in regulator/rk808...
->>
->>> - Where is pdata populated?
->> It is populated in probe in mfd/rk808.c
->>
->> actually, I copy it from tps65910.c
->>
->>
->>> - Where is pdata used?
->> pdata is used in mfd and regulator
-> I'm still a little confused.  I see it being populated in the MFD
-> driver, then I only see the attributes populated in the MFD driver
-> used in the MFD driver and nowhere else?  I do see other attributes
-> used in the regulator driver i.e. .of_node[], but these are then used
-> only in the regulator driver, thus they shouldn't really be pdata.
->
-> Let me put it another way:
->
-> struct rk808_board {
-> +       int irq;
-> +       int irq_base;
-> +       int wakeup;
-> +       bool pm_off;
-> +       struct regulator_init_data *rk808_init_data[rk808_NUM_REGULATORS];
-> +       struct device_node *of_node[rk808_NUM_REGULATORS];
-> +       int pmic_sleep_gpio;
-> +       unsigned int dcdc_slp_voltage[3]; /* buckx_voltage in uV */
-> +       unsigned int ldo_slp_voltage[7];
-> +};
->
-> For each of the above:
->
-> - Can it be passed from platform data i.e. arch/<arch>/{plat,mach}-*?
-> - Can it use local (not passed from driver to driver) variable instead?
->
-> If the answer to the first question is 'no' and/or if the answer to
-> the second question is 'yes', then it shouldn't be platform data.
+Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
 
-Yes, if we have no dts file, these value can pass from mach-rk***.
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+CC: Tomi Valkeinen <tomi.valkeinen@ti.com>
+CC: Stephen Boyd <sboyd@codeaurora.org>
+CC: Jingoo Han <jg1.han@samsung.com>
+CC: Rob Clark <robdclark@gmail.com>
 
-It can be filled with all user setting of rk808, in a struct.
+---
+ drivers/video/fbdev/msm/msm_fb.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-the latest struct is:
-
-struct rk808_board {
-
-     int wakeup;
-
-     bool pm_off;
-
-     struct regulator_init_data *rk808_init_data[RK808_NUM_REGULATORS];
-
-     struct device_node *of_node[RK808_NUM_REGULATORS];
-
-     unsigned int dcdc_slp_voltage[3]; /* buckx_voltage in uV */
-
-     unsigned int ldo_slp_voltage[7];
-
-};
-
-
-
+diff --git a/drivers/video/fbdev/msm/msm_fb.c b/drivers/video/fbdev/msm/msm_fb.c
+index 1374803..4640188 100644
+--- a/drivers/video/fbdev/msm/msm_fb.c
++++ b/drivers/video/fbdev/msm/msm_fb.c
+@@ -589,6 +589,8 @@ static int msmfb_probe(struct platform_device *pdev)
+ 
+ 	msmfb->sleeping = WAKING;
+ 
++	platform_set_drvdata(pdev, msmfb);
++
+ 	return 0;
+ 
+ error_register_framebuffer:
+@@ -598,9 +600,23 @@ error_setup_fbmem:
+ 	return ret;
+ }
+ 
++static int msmfb_remove(struct platform_device *pdev)
++{
++	struct msmfb_info *msmfb;
++
++	msmfb = platform_get_drvdata(pdev);
++
++	unregister_framebuffer(msmfb->fb);
++	iounmap(msmfb->fb->screen_base);
++	framebuffer_release(msmfb->fb);
++
++	return 0;
++}
++
+ static struct platform_driver msm_panel_driver = {
+ 	/* need to write remove */
+ 	.probe = msmfb_probe,
++	.remove = msmfb_remove,
+ 	.driver = {.name = "msm_panel"},
+ };
+ 
+-- 
+1.7.9.5
 
