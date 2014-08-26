@@ -1,485 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933872AbaHZEjH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 00:39:07 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:48771 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933857AbaHZEjC (ORCPT
+	id S1756638AbaHZEjg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 00:39:36 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:64691 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932580AbaHZEho (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 00:39:02 -0400
-X-Original-SENDERIP: 10.177.222.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Tue, 26 Aug 2014 13:39:54 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: David Horner <ds2horner@gmail.com>
-Cc: Dan Streetman <ddstreet@ieee.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjennings@variantweb.net>
-Subject: Re: [PATCH v4 3/4] zram: zram memory size limitation
-Message-ID: <20140826043954.GC11319@bbox>
-References: <1408668134-21696-1-git-send-email-minchan@kernel.org>
- <1408668134-21696-4-git-send-email-minchan@kernel.org>
- <CAFdhcLQXHoCT2tee8f1hb-XOsh4G5SQUGfhXtobNYjDq6MS9Ug@mail.gmail.com>
- <20140824235607.GJ17372@bbox>
- <CAFdhcLRvwifCVyoW5F9gdOGwcNd0PM679HckJY6+UDYV82n+bg@mail.gmail.com>
- <20140825043755.GE32620@bbox>
- <CAFdhcLRZreD3Ps+vb3osnT3yNYQ_oK+OVq3GJ1oBhfZfyDchww@mail.gmail.com>
- <CALZtONAdrN2sknx_9USJUGEa+dUXLdg=kr_4g1u+zSQh4ZH=5w@mail.gmail.com>
- <CAFdhcLR-OxoOkYDwZMmbk4r6kdw+FDJpOvWkHqeDK=9WH9j46w@mail.gmail.com>
+	Tue, 26 Aug 2014 00:37:44 -0400
+From: Chao Xie <chao.xie@marvell.com>
+To: <haojian.zhuang@gmail.com>, <haojian.zhuang@linaro.org>,
+        <mturquette@linaro.org>, <chao.xie@marvell.com>,
+        <xiechao_mail@163.com>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 06/12] clk: mmp: add mmp private gate clock
+Date: Tue, 26 Aug 2014 12:38:18 +0800
+Message-ID: <1409027904-21859-7-git-send-email-chao.xie@marvell.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1409027904-21859-1-git-send-email-chao.xie@marvell.com>
+References: <1409027904-21859-1-git-send-email-chao.xie@marvell.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAFdhcLR-OxoOkYDwZMmbk4r6kdw+FDJpOvWkHqeDK=9WH9j46w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
+ definitions=2014-08-26_02:2014-08-25,2014-08-26,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1408260059
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan and David,
+From: Chao Xie <chao.xie@marvell.com>
 
-On Mon, Aug 25, 2014 at 09:54:57PM -0400, David Horner wrote:
-> On Mon, Aug 25, 2014 at 2:12 PM, Dan Streetman <ddstreet@ieee.org> wrote:
-> > On Mon, Aug 25, 2014 at 4:22 AM, David Horner <ds2horner@gmail.com> wrote:
-> >> On Mon, Aug 25, 2014 at 12:37 AM, Minchan Kim <minchan@kernel.org> wrote:
-> >>> On Sun, Aug 24, 2014 at 11:40:50PM -0400, David Horner wrote:
-> >>>> On Sun, Aug 24, 2014 at 7:56 PM, Minchan Kim <minchan@kernel.org> wrote:
-> >>>> > Hello David,
-> >>>> >
-> >>>> > On Fri, Aug 22, 2014 at 06:55:38AM -0400, David Horner wrote:
-> >>>> >> On Thu, Aug 21, 2014 at 8:42 PM, Minchan Kim <minchan@kernel.org> wrote:
-> >>>> >> > Since zram has no control feature to limit memory usage,
-> >>>> >> > it makes hard to manage system memrory.
-> >>>> >> >
-> >>>> >> > This patch adds new knob "mem_limit" via sysfs to set up the
-> >>>> >> > a limit so that zram could fail allocation once it reaches
-> >>>> >> > the limit.
-> >>>> >> >
-> >>>> >> > In addition, user could change the limit in runtime so that
-> >>>> >> > he could manage the memory more dynamically.
-> >>>> >> >
-> >>>> >> - Default is no limit so it doesn't break old behavior.
-> >>>> >> + Initial state is no limit so it doesn't break old behavior.
-> >>>> >>
-> >>>> >> I understand your previous post now.
-> >>>> >>
-> >>>> >> I was saying that setting to either a null value or garbage
-> >>>> >>  (which is interpreted as zero by memparse(buf, NULL);)
-> >>>> >> removes the limit.
-> >>>> >>
-> >>>> >> I think this is "surprise" behaviour and rather the null case should
-> >>>> >> return  -EINVAL
-> >>>> >> The test below should be "good enough" though not catching all garbage.
-> >>>> >
-> >>>> > Thanks for suggesting but as I said, it should be fixed in memparse itself,
-> >>>> > not caller if it is really problem so I don't want to touch it in this
-> >>>> > patchset. It's not critical for adding the feature.
-> >>>> >
-> >>>>
-> >>>> I've looked into the memparse function more since we talked.
-> >>>> I do believe a wrapper function around it for the typical use by sysfs would
-> >>>> be very valuable.
-> >>>
-> >>> Agree.
-> >>>
-> >>>> However, there is nothing wrong with memparse itself that needs to be fixed.
-> >>>>
-> >>>> It does what it is documented to do very well (In My Uninformed Opinion).
-> >>>> It provides everything that a caller needs to manage the token that it
-> >>>> processes.
-> >>>> It thus handles strings like "7,,5,8,,9" with the implied zeros.
-> >>>
-> >>> Maybe strict_memparse would be better to protect such things so you
-> >>> could find several places to clean it up.
-> >>>
-> >>>>
-> >>>> The fact that other callers don't check the return pointer value to
-> >>>> see if only a null
-> >>>> string was processed, is not its fault.
-> >>>> Nor that it may not be ideally suited to sysfs attributes; that other store
-> >>>> functions use it in a given manner does not means that is correct -
-> >>>> nor that it is
-> >>>> incorrect for that "knob". Some attributes could be just as valid with
-> >>>> null zeros.
-> >>>>
-> >>>> And you are correct, to disambiguate the zero is not required for the
-> >>>> limit feature.
-> >>>> Your original patch which disallowed zero was full feature for mem_limit.
-> >>>> It is the requested non-crucial feature to allow zero to reestablish
-> >>>> the initial state
-> >>>>  that benefits from distinguishing an explicit zero from a "default zero'
-> >>>>  when garbage is written.
-> >>>>
-> >>>> The final argument is that if we release this feature as is the undocumented
-> >>>>  functionality could be relied upon, and when later fixed: user space breaks.
-> >>>
-> >>> I don't get it. Why does it break userspace?
-> >>> The sysfs-block-zram says "0" means disable the limit.
-> >>> If someone writes *garabge* but work as if disabling the limit,
-> >>> it's not a right thing and he already broke although it worked
-> >>> so it would be not a problem if we fix later.
-> >>> (ie, we don't need to take care of broken userspace)
-> >>> Am I missing your point?
-> >>>
-> >>
-> >> Perhaps you are missing my point, perhaps ignoring or dismissing.
-> >>
-> >> Basically, if a facility works in a useful way, even if it was designed for
-> >> different usage, that becomes the "accepted" interface/usage.
-> >> The developer may not have intended that usage or may even considered
-> >> it wrong and a broken usage, but it is what it is and people become
-> >>  reliant on that behaviour.
-> >>
-> >> Case in point is memparse itself.
-> >>
-> >> The developer intentionally sets the return pointer because that is the
-> >> only value that can be validated for correct performance.
-> >> The return value allows -ve so the standard error message passing is not valid.
-> >> Unfortunately, C allows the user to pass a NULL value in the parameter.
-> >> The developer could consider that absurd and fundamentally broken.
-> >> But to the user it is a valid situation, because (perhaps) it can't be
-> >> bothered to handle error cases.
-> >>
-> >> So, who is to blame.
-> >> You say memparse, that it is fundamentally broken,
-> >>   because it didn't check to see that it was used correctly.
-> >>  And I say  mem_limit_store is fundamentally broken,
-> >>   because it didn't check to see that it was used correctly.
-> >
-> > I think we should look at what the rest of the kernel does as far as
-> > checking memparse results.  It appears to be a mix of some code
-> > checking memparse while others don't.  The most common way to check
-> > appears to be to verify that memparse actually parsed at least 1
-> > character, e.g.:
-> >   oldp = p;
-> >   mem_size = memparse(p, &p);
-> >   if (p == oldp)
-> >     return -EINVAL;
-> >
-> > although other places where 0 isn't valid can simply check for that:
-> >   mem_size = memparse(p, &p);
-> >   /* don't remove all of memory when handling "mem={invalid}" param */
-> >   if (mem_size == 0)
-> >     return -EINVAL;
-> >
-> > or even the other memparse use in zram_drv.c:
-> >   disksize = memparse(buf, NULL);
-> >   if (!disksize)
-> >     return -EINVAL;
-> >
-> >
-> > And there seem to be other places where (maybe?) there's no checking
-> > at all.  However, it also seems like many cases of memparse usage are
-> > looking for a non-zero value, and therefore they can either
-> > immediately check for zero/invalid or (possibly) later code has checks
-> > to avoid using any zero value.  In this case though, 0 is a valid
-> > value.  So, while I agree that if a user passes an invalid (i.e.
-> > non-numeric) value it's clearly user error, it might be closer to the
-> > apparent (although unwritten AFAICT) memparse usage api to check the
-> > result for validity; in our case a simple check if at least 1 char was
-> > parsed is all that's needed, e.g.:
-> >
-> > {
-> >   u64 limit;
-> >   char *tmp = buf;
-> >   struct zram *zram = dev_to_zram(dev);
-> >
-> >   limit = memparse(buf, &tmp);
-> >   if (buf == tmp) /* no chars parsed, invalid input */
-> >     return -EINVAL;
-> >   down_write(&zram->init_lock);
-> 
-> 
-> Thank you Dan, for this clear, unoffensive and I believe compelling analysis.
+Some SOCes have this kind of the gate clock
+1. There are some bits to control the gate not only one bit.
+2. Some clocks has operations of "out of reset" and "enable".
+   To enable clock, we need do "out of reset" and "enable".
+   To disable clock, we may not need "set to reset". It depends
+   on the SOCes' design.
+3. It is not always that "1" is to enable while "0" is to disable
+   when write register.
 
-Thanks for suggestion, Dan.
+So we have to define the "mask", "enable_val", "disable_val" for
+this kind of gate clock.
 
-David, Are you okay for this?
+Signed-off-by: Chao Xie <chao.xie@marvell.com>
+---
+ drivers/clk/mmp/Makefile   |   2 +-
+ drivers/clk/mmp/clk-gate.c | 133 +++++++++++++++++++++++++++++++++++++++++++++
+ drivers/clk/mmp/clk.h      |  21 +++++++
+ 3 files changed, 155 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/clk/mmp/clk-gate.c
 
-You pointed out several cases. One was NULL check.
-Dan's patch will fix it but other example you pointed out was
-"7,,5,8,,9". Slightly modifying your example, "0..1" can reset without
-returning EINVAL. Actually, it was not what we want.
-Couldn't we check it if you guys really want to prevent wrong use from
-userspace? If we don't need it, pz, give me a reason so I will convince
-and proceed this patchset and do further works.
-
-Thanks.
-
-> 
-> I have much to learn.
-> 
-> > ...
-> >
-> >
-> > Separate from this patch, it would also help if the lib/cmdline.c
-> > memparse doc was at least updated to clarify when the result should be
-> > checked for validity (e.g. always, or at least when the result is 0)
-> > and how best to do that (e.g. if 0 is an invalid value, just check if
-> > the result is 0; if 0 is a possible valid value, check if any chars
-> > were parsed).
-> >
-> >
-> 
-> I'd argue that the code is not the place for this usage recommendation.
-> But rather an expansion of the support doc for sysfs
-> on how to use such parsing/validation routines.
-> 
-> I agree with Minchan that these helper functions could be improved
-> for specific use by sysfs.
->  And I will pursue this. (and maybe the documentation?)
-> 
-> 
-> >>
-> >> The difference is that memparse cannot stop being abused
-> >> (C allows the NULL argument and extensive tricks are required to address that)
-> >> however, we can readily fix mem_limit_store and ensure
-> >> 1) no regression when the interface IS fixed and
-> >> 2) predictable behaviour when accidental or "fuzzy" input arrives.
-> >>
-> >>
-> >>>> They say getting API right is a difficult exercise. I suggest, if we
-> >>>> don't insisting on
-> >>>>  an explicit zero we have the API wrong.
-> >>>>
-> >>>> I don't think you disagreed, just that the burden to get it correct
-> >>>> lay elsewhere.
-> >>>>
-> >>>> If that is the case it doesn't really matter, we cannot release this
-> >>>> interface until
-> >>>>  it is corrected wherever it must be.
-> >>>>
-> >>>> And my zero check was a poor hack.
-> >>>>
-> >>>> I should have explicitly checked the returned pointer value.
-> >>>>
-> >>>> I will send that proposed revision, and hopefully you will consider it
-> >>>> for inclusion.
-> >>>>
-> >>>>
-> >>>>
-> >>>>
-> >>>> >>
-> >>>> >> >
-> >>>> >> > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> >>>> >> > ---
-> >>>> >> >  Documentation/ABI/testing/sysfs-block-zram | 10 ++++++++
-> >>>> >> >  Documentation/blockdev/zram.txt            | 24 ++++++++++++++---
-> >>>> >> >  drivers/block/zram/zram_drv.c              | 41 ++++++++++++++++++++++++++++++
-> >>>> >> >  drivers/block/zram/zram_drv.h              |  5 ++++
-> >>>> >> >  4 files changed, 76 insertions(+), 4 deletions(-)
-> >>>> >> >
-> >>>> >> > diff --git a/Documentation/ABI/testing/sysfs-block-zram b/Documentation/ABI/testing/sysfs-block-zram
-> >>>> >> > index 70ec992514d0..b8c779d64968 100644
-> >>>> >> > --- a/Documentation/ABI/testing/sysfs-block-zram
-> >>>> >> > +++ b/Documentation/ABI/testing/sysfs-block-zram
-> >>>> >> > @@ -119,3 +119,13 @@ Description:
-> >>>> >> >                 efficiency can be calculated using compr_data_size and this
-> >>>> >> >                 statistic.
-> >>>> >> >                 Unit: bytes
-> >>>> >> > +
-> >>>> >> > +What:          /sys/block/zram<id>/mem_limit
-> >>>> >> > +Date:          August 2014
-> >>>> >> > +Contact:       Minchan Kim <minchan@kernel.org>
-> >>>> >> > +Description:
-> >>>> >> > +               The mem_limit file is read/write and specifies the amount
-> >>>> >> > +               of memory to be able to consume memory to store store
-> >>>> >> > +               compressed data. The limit could be changed in run time
-> >>>> >> > -               and "0" is default which means disable the limit.
-> >>>> >> > +               and "0" means disable the limit. No limit is the initial state.
-> >>>> >>
-> >>>> >> there should be no default in the API.
-> >>>> >
-> >>>> > Thanks.
-> >>>> >
-> >>>> >>
-> >>>> >> > +               Unit: bytes
-> >>>> >> > diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
-> >>>> >> > index 0595c3f56ccf..82c6a41116db 100644
-> >>>> >> > --- a/Documentation/blockdev/zram.txt
-> >>>> >> > +++ b/Documentation/blockdev/zram.txt
-> >>>> >> > @@ -74,14 +74,30 @@ There is little point creating a zram of greater than twice the size of memory
-> >>>> >> >  since we expect a 2:1 compression ratio. Note that zram uses about 0.1% of the
-> >>>> >> >  size of the disk when not in use so a huge zram is wasteful.
-> >>>> >> >
-> >>>> >> > -5) Activate:
-> >>>> >> > +5) Set memory limit: Optional
-> >>>> >> > +       Set memory limit by writing the value to sysfs node 'mem_limit'.
-> >>>> >> > +       The value can be either in bytes or you can use mem suffixes.
-> >>>> >> > +       In addition, you could change the value in runtime.
-> >>>> >> > +       Examples:
-> >>>> >> > +           # limit /dev/zram0 with 50MB memory
-> >>>> >> > +           echo $((50*1024*1024)) > /sys/block/zram0/mem_limit
-> >>>> >> > +
-> >>>> >> > +           # Using mem suffixes
-> >>>> >> > +           echo 256K > /sys/block/zram0/mem_limit
-> >>>> >> > +           echo 512M > /sys/block/zram0/mem_limit
-> >>>> >> > +           echo 1G > /sys/block/zram0/mem_limit
-> >>>> >> > +
-> >>>> >> > +           # To disable memory limit
-> >>>> >> > +           echo 0 > /sys/block/zram0/mem_limit
-> >>>> >> > +
-> >>>> >> > +6) Activate:
-> >>>> >> >         mkswap /dev/zram0
-> >>>> >> >         swapon /dev/zram0
-> >>>> >> >
-> >>>> >> >         mkfs.ext4 /dev/zram1
-> >>>> >> >         mount /dev/zram1 /tmp
-> >>>> >> >
-> >>>> >> > -6) Stats:
-> >>>> >> > +7) Stats:
-> >>>> >> >         Per-device statistics are exported as various nodes under
-> >>>> >> >         /sys/block/zram<id>/
-> >>>> >> >                 disksize
-> >>>> >> > @@ -96,11 +112,11 @@ size of the disk when not in use so a huge zram is wasteful.
-> >>>> >> >                 compr_data_size
-> >>>> >> >                 mem_used_total
-> >>>> >> >
-> >>>> >> > -7) Deactivate:
-> >>>> >> > +8) Deactivate:
-> >>>> >> >         swapoff /dev/zram0
-> >>>> >> >         umount /dev/zram1
-> >>>> >> >
-> >>>> >> > -8) Reset:
-> >>>> >> > +9) Reset:
-> >>>> >> >         Write any positive value to 'reset' sysfs node
-> >>>> >> >         echo 1 > /sys/block/zram0/reset
-> >>>> >> >         echo 1 > /sys/block/zram1/reset
-> >>>> >> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> >>>> >> > index f0b8b30a7128..370c355eb127 100644
-> >>>> >> > --- a/drivers/block/zram/zram_drv.c
-> >>>> >> > +++ b/drivers/block/zram/zram_drv.c
-> >>>> >> > @@ -122,6 +122,33 @@ static ssize_t max_comp_streams_show(struct device *dev,
-> >>>> >> >         return scnprintf(buf, PAGE_SIZE, "%d\n", val);
-> >>>> >> >  }
-> >>>> >> >
-> >>>> >> > +static ssize_t mem_limit_show(struct device *dev,
-> >>>> >> > +               struct device_attribute *attr, char *buf)
-> >>>> >> > +{
-> >>>> >> > +       u64 val;
-> >>>> >> > +       struct zram *zram = dev_to_zram(dev);
-> >>>> >> > +
-> >>>> >> > +       down_read(&zram->init_lock);
-> >>>> >> > +       val = zram->limit_pages;
-> >>>> >> > +       up_read(&zram->init_lock);
-> >>>> >> > +
-> >>>> >> > +       return scnprintf(buf, PAGE_SIZE, "%llu\n", val << PAGE_SHIFT);
-> >>>> >> > +}
-> >>>> >> > +
-> >>>> >> > +static ssize_t mem_limit_store(struct device *dev,
-> >>>> >> > +               struct device_attribute *attr, const char *buf, size_t len)
-> >>>> >> > +{
-> >>>> >> > +       u64 limit;
-> >>>> >> > +       struct zram *zram = dev_to_zram(dev);
-> >>>> >> > +
-> >>>> >> > +       limit = memparse(buf, NULL);
-> >>>> >>
-> >>>> >>             if (limit = 0 && buf != "0")
-> >>>> >>                   return  -EINVAL
-> >>>> >>
-> >>>> >> > +       down_write(&zram->init_lock);
-> >>>> >> > +       zram->limit_pages = PAGE_ALIGN(limit) >> PAGE_SHIFT;
-> >>>> >> > +       up_write(&zram->init_lock);
-> >>>> >> > +
-> >>>> >> > +       return len;
-> >>>> >> > +}
-> >>>> >> > +
-> >>>> >> >  static ssize_t max_comp_streams_store(struct device *dev,
-> >>>> >> >                 struct device_attribute *attr, const char *buf, size_t len)
-> >>>> >> >  {
-> >>>> >> > @@ -513,6 +540,14 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
-> >>>> >> >                 ret = -ENOMEM;
-> >>>> >> >                 goto out;
-> >>>> >> >         }
-> >>>> >> > +
-> >>>> >> > +       if (zram->limit_pages &&
-> >>>> >> > +               zs_get_total_pages(meta->mem_pool) > zram->limit_pages) {
-> >>>> >> > +               zs_free(meta->mem_pool, handle);
-> >>>> >> > +               ret = -ENOMEM;
-> >>>> >> > +               goto out;
-> >>>> >> > +       }
-> >>>> >> > +
-> >>>> >> >         cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_WO);
-> >>>> >> >
-> >>>> >> >         if ((clen == PAGE_SIZE) && !is_partial_io(bvec)) {
-> >>>> >> > @@ -617,6 +652,9 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
-> >>>> >> >         struct zram_meta *meta;
-> >>>> >> >
-> >>>> >> >         down_write(&zram->init_lock);
-> >>>> >> > +
-> >>>> >> > +       zram->limit_pages = 0;
-> >>>> >> > +
-> >>>> >> >         if (!init_done(zram)) {
-> >>>> >> >                 up_write(&zram->init_lock);
-> >>>> >> >                 return;
-> >>>> >> > @@ -857,6 +895,8 @@ static DEVICE_ATTR(initstate, S_IRUGO, initstate_show, NULL);
-> >>>> >> >  static DEVICE_ATTR(reset, S_IWUSR, NULL, reset_store);
-> >>>> >> >  static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
-> >>>> >> >  static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
-> >>>> >> > +static DEVICE_ATTR(mem_limit, S_IRUGO | S_IWUSR, mem_limit_show,
-> >>>> >> > +               mem_limit_store);
-> >>>> >> >  static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
-> >>>> >> >                 max_comp_streams_show, max_comp_streams_store);
-> >>>> >> >  static DEVICE_ATTR(comp_algorithm, S_IRUGO | S_IWUSR,
-> >>>> >> > @@ -885,6 +925,7 @@ static struct attribute *zram_disk_attrs[] = {
-> >>>> >> >         &dev_attr_orig_data_size.attr,
-> >>>> >> >         &dev_attr_compr_data_size.attr,
-> >>>> >> >         &dev_attr_mem_used_total.attr,
-> >>>> >> > +       &dev_attr_mem_limit.attr,
-> >>>> >> >         &dev_attr_max_comp_streams.attr,
-> >>>> >> >         &dev_attr_comp_algorithm.attr,
-> >>>> >> >         NULL,
-> >>>> >> > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> >>>> >> > index e0f725c87cc6..b7aa9c21553f 100644
-> >>>> >> > --- a/drivers/block/zram/zram_drv.h
-> >>>> >> > +++ b/drivers/block/zram/zram_drv.h
-> >>>> >> > @@ -112,6 +112,11 @@ struct zram {
-> >>>> >> >         u64 disksize;   /* bytes */
-> >>>> >> >         int max_comp_streams;
-> >>>> >> >         struct zram_stats stats;
-> >>>> >> > +       /*
-> >>>> >> > +        * the number of pages zram can consume for storing compressed data
-> >>>> >> > +        */
-> >>>> >> > +       unsigned long limit_pages;
-> >>>> >> > +
-> >>>> >> >         char compressor[10];
-> >>>> >> >  };
-> >>>> >> >  #endif
-> >>>> >> > --
-> >>>> >> > 2.0.0
-> >>>> >> >
-> >>>> >>
-> >>>> >> --
-> >>>> >> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> >>>> >> the body to majordomo@kvack.org.  For more info on Linux MM,
-> >>>> >> see: http://www.linux-mm.org/ .
-> >>>> >> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> >>>> >
-> >>>> > --
-> >>>> > Kind regards,
-> >>>> > Minchan Kim
-> >>>>
-> >>>> --
-> >>>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> >>>> the body to majordomo@kvack.org.  For more info on Linux MM,
-> >>>> see: http://www.linux-mm.org/ .
-> >>>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> >>>
-> >>> --
-> >>> Kind regards,
-> >>> Minchan Kim
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
+diff --git a/drivers/clk/mmp/Makefile b/drivers/clk/mmp/Makefile
+index 8bfee860..2855f7b 100644
+--- a/drivers/clk/mmp/Makefile
++++ b/drivers/clk/mmp/Makefile
+@@ -2,7 +2,7 @@
+ # Makefile for mmp specific clk
+ #
+ 
+-obj-y += clk-apbc.o clk-apmu.o clk-frac.o clk-mix.o
++obj-y += clk-apbc.o clk-apmu.o clk-frac.o clk-mix.o clk-gate.o
+ 
+ obj-$(CONFIG_CPU_PXA168) += clk-pxa168.o
+ obj-$(CONFIG_CPU_PXA910) += clk-pxa910.o
+diff --git a/drivers/clk/mmp/clk-gate.c b/drivers/clk/mmp/clk-gate.c
+new file mode 100644
+index 0000000..adbd9d6
+--- /dev/null
++++ b/drivers/clk/mmp/clk-gate.c
+@@ -0,0 +1,133 @@
++/*
++ * mmp gate clock operation source file
++ *
++ * Copyright (C) 2014 Marvell
++ * Chao Xie <chao.xie@marvell.com>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2. This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/clk-provider.h>
++#include <linux/slab.h>
++#include <linux/io.h>
++#include <linux/err.h>
++#include <linux/delay.h>
++
++#include "clk.h"
++
++/*
++ * Some clocks will have mutiple bits to enable the clocks, and
++ * the bits to disable the clock is not same as enabling bits.
++ */
++
++#define to_clk_mmp_gate(hw)	container_of(hw, struct mmp_clk_gate, hw)
++
++static int mmp_clk_gate_enable(struct clk_hw *hw)
++{
++	struct mmp_clk_gate *gate = to_clk_mmp_gate(hw);
++	struct clk *clk = hw->clk;
++	unsigned long flags = 0;
++	unsigned long rate;
++	u32 tmp;
++
++	if (gate->lock)
++		spin_lock_irqsave(gate->lock, flags);
++
++	tmp = readl(gate->reg);
++	tmp &= ~gate->mask;
++	tmp |= gate->val_enable;
++	writel(tmp, gate->reg);
++
++	if (gate->lock)
++		spin_unlock_irqrestore(gate->lock, flags);
++
++	if (gate->flags & MMP_CLK_GATE_NEED_DELAY) {
++		rate = __clk_get_rate(clk);
++		/* Need delay 2 cycles. */
++		udelay(2000000/rate);
++	}
++
++	return 0;
++}
++
++static void mmp_clk_gate_disable(struct clk_hw *hw)
++{
++	struct mmp_clk_gate *gate = to_clk_mmp_gate(hw);
++	unsigned long flags = 0;
++	u32 tmp;
++
++	if (gate->lock)
++		spin_lock_irqsave(gate->lock, flags);
++
++	tmp = readl(gate->reg);
++	tmp &= ~gate->mask;
++	tmp |= gate->val_disable;
++	writel(tmp, gate->reg);
++
++	if (gate->lock)
++		spin_unlock_irqrestore(gate->lock, flags);
++}
++
++static int mmp_clk_gate_is_enabled(struct clk_hw *hw)
++{
++	struct mmp_clk_gate *gate = to_clk_mmp_gate(hw);
++	unsigned long flags = 0;
++	u32 tmp;
++
++	if (gate->lock)
++		spin_lock_irqsave(gate->lock, flags);
++
++	tmp = readl(gate->reg);
++
++	if (gate->lock)
++		spin_unlock_irqrestore(gate->lock, flags);
++
++	return (tmp & gate->mask) == gate->val_enable;
++}
++
++const struct clk_ops mmp_clk_gate_ops = {
++	.enable = mmp_clk_gate_enable,
++	.disable = mmp_clk_gate_disable,
++	.is_enabled = mmp_clk_gate_is_enabled,
++};
++
++struct clk *mmp_clk_register_gate(struct device *dev, const char *name,
++		const char *parent_name, unsigned long flags,
++		void __iomem *reg, u32 mask, u32 val_enable, u32 val_disable,
++		unsigned int gate_flags, spinlock_t *lock)
++{
++	struct mmp_clk_gate *gate;
++	struct clk *clk;
++	struct clk_init_data init;
++
++	/* allocate the gate */
++	gate = kzalloc(sizeof(*gate), GFP_KERNEL);
++	if (!gate) {
++		pr_err("%s:%s could not allocate gate clk\n", __func__, name);
++		return ERR_PTR(-ENOMEM);
++	}
++
++	init.name = name;
++	init.ops = &mmp_clk_gate_ops;
++	init.flags = flags | CLK_IS_BASIC;
++	init.parent_names = (parent_name ? &parent_name : NULL);
++	init.num_parents = (parent_name ? 1 : 0);
++
++	/* struct clk_gate assignments */
++	gate->reg = reg;
++	gate->mask = mask;
++	gate->val_enable = val_enable;
++	gate->val_disable = val_disable;
++	gate->flags = gate_flags;
++	gate->lock = lock;
++	gate->hw.init = &init;
++
++	clk = clk_register(dev, &gate->hw);
++
++	if (IS_ERR(clk))
++		kfree(gate);
++
++	return clk;
++}
+diff --git a/drivers/clk/mmp/clk.h b/drivers/clk/mmp/clk.h
+index 26b2469..2337106 100644
+--- a/drivers/clk/mmp/clk.h
++++ b/drivers/clk/mmp/clk.h
+@@ -103,6 +103,27 @@ extern struct clk *mmp_clk_register_mix(struct device *dev,
+ 					spinlock_t *lock);
+ 
+ 
++/* Clock type "gate". MMP private gate */
++#define MMP_CLK_GATE_NEED_DELAY		BIT(0)
++
++struct mmp_clk_gate {
++	struct clk_hw hw;
++	void __iomem *reg;
++	u32 mask;
++	u32 val_enable;
++	u32 val_disable;
++	unsigned int flags;
++	spinlock_t *lock;
++};
++
++extern const struct clk_ops mmp_clk_gate_ops;
++extern struct clk *mmp_clk_register_gate(struct device *dev, const char *name,
++			const char *parent_name, unsigned long flags,
++			void __iomem *reg, u32 mask, u32 val_enable,
++			u32 val_disable, unsigned int gate_flags,
++			spinlock_t *lock);
++
++
+ extern struct clk *mmp_clk_register_pll2(const char *name,
+ 		const char *parent_name, unsigned long flags);
+ extern struct clk *mmp_clk_register_apbc(const char *name,
 -- 
-Kind regards,
-Minchan Kim
+1.8.3.2
+
