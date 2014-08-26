@@ -1,40 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934318AbaHZJUy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 05:20:54 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:50887 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932752AbaHZJUx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 05:20:53 -0400
-Message-ID: <53FC514F.6060206@ti.com>
-Date: Tue, 26 Aug 2014 14:50:15 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S934341AbaHZJWR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 05:22:17 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:56634 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934117AbaHZJWP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 05:22:15 -0400
+Date: Tue, 26 Aug 2014 10:22:05 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        sameo@linux.intel.com, lgirdwood@gmail.com, broonie@kernel.org,
+        a.zummo@towertech.it, mturquette@linaro.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
+        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
+        xxx@rock-chips.com, dianders@chromium.org, heiko@sntech.de,
+        olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
+        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com
+Subject: Re: [PATCH v2 2/5] MFD: RK808: Add new mfd driver for RK808
+Message-ID: <20140826092205.GG9574@lee--X1>
+References: <1408505461-24200-1-git-send-email-zyw@rock-chips.com>
+ <20140820092117.GI4266@lee--X1>
+ <53FA9D1E.8040202@rock-chips.com>
 MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-CC: <linux@arm.linux.org.uk>, <vinod.koul@intel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>
-Subject: Re: [PATCH] ARM: edma: Fix configuration parsing for SoCs with multiple
- eDMA3 CC
-References: <1407155216-20267-1-git-send-email-peter.ujfalusi@ti.com>
-In-Reply-To: <1407155216-20267-1-git-send-email-peter.ujfalusi@ti.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53FA9D1E.8040202@rock-chips.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 04 August 2014 05:56 PM, Peter Ujfalusi wrote:
-> The edma_setup_from_hw() should know about the CC number when parsing the
-> CCCFG register - when it reads the register to be precise. The base
-> addresses for CCs stored in an array and we need to provide the correct id
-> to edma_read() in order to read the correct register.
+On Mon, 25 Aug 2014, Chris Zhong wrote:
+> On 08/20/2014 05:21 PM, Lee Jones wrote:
+> >On Wed, 20 Aug 2014, Chris Zhong wrote:
+> >
+> >>The RK808 chip is a power management IC for multimedia and handheld
+> >>devices. It contains the following components:
+> >>
+> >>- Regulators
+> >>- RTC
+> >>
+> >>The rk808 core driver is registered as a platform driver and provides
+> >>communication through I2C with the host device for the different
+> >>components.
+> >>
+> >>Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+> >>---
+
+[...]
+
+> >>+	rk808->pdata = pdata;
+> >Remove pdata from 'struct rk808'.  You can obtain it from dev.
 > 
-> Cc: <stable@vger.kernel.org> # 3.16
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> Can I keep this pdata in rk808, because it is used in the regulator driver.
+> The one obtain from dev maybe empty.
 
-Applied and will queue for v3.17-rc
+If the one in dev is empty, you should populate that instead.
 
-Thanks,
-Sekhar
+[...]
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
