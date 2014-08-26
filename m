@@ -1,150 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757859AbaHZMb1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 08:31:27 -0400
-Received: from hindenburg.barfooze.de ([195.154.9.123]:51757 "EHLO
-	hindenburg.barfooze.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754650AbaHZMb0 (ORCPT
+	id S1757965AbaHZMbq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 08:31:46 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:40654 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757810AbaHZMbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 08:31:26 -0400
-X-Greylist: delayed 1042 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Aug 2014 08:31:26 EDT
-Message-ID: <53FC7987.10509@barfooze.de>
-Date: Tue, 26 Aug 2014 14:11:51 +0200
-From: John Spencer <maillist-linux@barfooze.de>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 26 Aug 2014 08:31:44 -0400
+Message-ID: <53FC7E29.3020603@ti.com>
+Date: Tue, 26 Aug 2014 15:31:37 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] perf Makefile: default WERROR to off.
-References: <53FB9064.1050000@barfooze.de> <87oav7bv25.fsf@sejong.aot.lge.com>
-In-Reply-To: <87oav7bv25.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Fabian Frederick <fabf@skynet.be>, <linux-kernel@vger.kernel.org>
+CC: David Airlie <airlied@linux.ie>, <dri-devel@lists.freedesktop.org>
+Subject: Re: [PATCH 1/1] drm/omap: replace ALIGN(PAGE_SIZE) by PAGE_ALIGN
+References: <1404240770-14938-1-git-send-email-fabf@skynet.be>
+In-Reply-To: <1404240770-14938-1-git-send-email-fabf@skynet.be>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="4Sm3NErWSKpdVaFaNxxMvXslhanjOxrdm"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namhyung Kim wrote:
-> On Mon, 25 Aug 2014 21:37:08 +0200, John Spencer wrote:
->> From 4a72032828a6784d93f4becf723303a17d723544 Mon Sep 17 00:00:00 2001
->> From: John Spencer <maillist-linux@barfooze.de>
->> Date: Mon, 25 Aug 2014 21:25:43 +0200
->> Subject: [PATCH 2/2] perf Makefile: default WERROR to off.
->>
->> Having WERROR on by default breaks build everywhere the author hasn't
->> tested so far; including musl libc which warns about wrong includes.
->>
->> The unsuspecting user will think there's something broken and only
->> if he's coureageuous enough to grep the Makefile infrastructure find
->> out that he may be able to get the build working with WERROR=0.
->>
->> OTOH with WERROR defaulting to off, anything will work for the user
->> and the maintainer can knowingly use WERROR=1 to do his test builds.
-> 
-> I think it's intentionally turned on to fix any warnings in the first
-> place.  But yes, it might miss some non-popular systems tho..
+--4Sm3NErWSKpdVaFaNxxMvXslhanjOxrdm
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-yes, and it's sufficient if someone tries to build it with a 
-newer/different compiler/libc version/whatever to make it fail.
-having -Werror on by default is just silly and annoying because 90% of 
-warnings (at least with -Wall) are utterly unimportant (like unused 
-variables etc).
-there's probably a good reason the kernel itself is not built with -Werror.
+On 01/07/14 21:52, Fabian Frederick wrote:
+> use mm.h definition
+>=20
+> Cc: David Airlie <airlied@linux.ie>
+> Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
+> Cc: dri-devel@lists.freedesktop.org
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> ---
+>  drivers/gpu/drm/omapdrm/omap_fbdev.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/gpu/drm/omapdrm/omap_fbdev.c b/drivers/gpu/drm/oma=
+pdrm/omap_fbdev.c
+> index 1388ca7..8068612 100644
+> --- a/drivers/gpu/drm/omapdrm/omap_fbdev.c
+> +++ b/drivers/gpu/drm/omapdrm/omap_fbdev.c
+> @@ -169,7 +169,7 @@ static int omap_fbdev_create(struct drm_fb_helper *=
+helper,
+>  	fbdev->ywrap_enabled =3D priv->has_dmm && ywrap_enabled;
+>  	if (fbdev->ywrap_enabled) {
+>  		/* need to align pitch to page size if using DMM scrolling */
+> -		mode_cmd.pitches[0] =3D ALIGN(mode_cmd.pitches[0], PAGE_SIZE);
+> +		mode_cmd.pitches[0] =3D PAGE_ALIGN(mode_cmd.pitches[0]);
+>  	}
+> =20
+>  	/* allocate backing bo */
+>=20
 
-(in my head i call people hardcoding -Werror "Werror-nazis"...)
+Thanks, queued for v3.18.
 
-but i agree that *some* warnings should be fatal, for example implicit 
-function declarations, or pointer-to-int casts, because those can 
-actually break code.
-
-
-> 
-> How many errors/warnings do you see on your system (musl libc?).  Any
-> chance to post fixes instead?
-
-there are tons of warnings, mostly from mixing kernel headers with 
-userspace headers (and libc_compat.h is only patched for GLIBC - my 
-musl-related libc_compat.h patches have been ignored so far, but they're 
-archived at https://github.com/sabotage-linux/kernel-headers ).
-
-In file included from perf.c:12:0:
-util/cache.h:74:15: warning: redundant redeclaration of 'strlcpy' 
-[-Wredundant-decls]
-In file included from util/util.h:53:0,
-                  from builtin.h:4,
-                  from perf.c:9:
-/usr/include/string.h:84:8: note: previous declaration of 'strlcpy' was here
-In file included from util/util.h:67:0,
-                  from builtin.h:4,
-                  from perf.c:9:
-/usr/include/sys/poll.h:1:2: warning: #warning redirecting incorrect 
-#include <sys/poll.h> to <poll.h> [-Wcpp]
-In file included from 
-/src/build/kernel/linux-3.14.14.org/arch/x86/include/uapi/asm/ioctl.h:1:0,
-                  from 
-/src/build/kernel/linux-3.14.14.org/include/uapi/linux/ioctl.h:4,
-                  from 
-/src/build/kernel/linux-3.14.14.org/include/uapi/linux/perf_event.h:18,
-                  from util/../perf.h:156,
-                  from util/cache.h:7,
-                  from perf.c:12:
-/src/build/kernel/linux-3.14.14.org/include/uapi/asm-generic/ioctl.h:65:0: 
-warning: "_IOC" redefined [enabled by default]
-In file included from /usr/include/sys/ioctl.h:7:0,
-                  from util/util.h:69,
-                  from builtin.h:4,
-                  from perf.c:9:
-/usr/include/bits/ioctl.h:1:0: note: this is the location of the 
-previous definition
-In file included from 
-/src/build/kernel/linux-3.14.14.org/arch/x86/include/uapi/asm/ioctl.h:1:0,
-                  from 
-/src/build/kernel/linux-3.14.14.org/include/uapi/linux/ioctl.h:4,
-                  from 
-/src/build/kernel/linux-3.14.14.org/include/uapi/linux/perf_event.h:18,
-                  from util/../perf.h:156,
-                  from util/cache.h:7,
-                  from perf.c:12:
-/src/build/kernel/linux-3.14.14.org/include/uapi/asm-generic/ioctl.h:76:0: 
-warning: "_IO" redefined [enabled by default]
-
-(same for _IOR, _IOW, _IOWR, _IOC)
-
-these warnings are repeated over an over again as they come from headers.
-so basically we have
-- util/cache.h:74:15: warning: redundant redeclaration of 'strlcpy'
-- uapi/asm-generic/ioctl.h: warning: "_IO*" redefined (userspace and 
-kernel space defining the same thing)
-- util/util.h: incorrect inclusion of sys/poll.h rather than poll.h (see 
-man 3p poll)
-tho it's possible I may have missed something else in the wall of warnings.
-
-Thanks,
---JS
+ Tomi
 
 
-> 
-> Thanks,
-> Namhyung
-> 
-> 
->> Signed-off-by: John Spencer <maillist-linux@barfooze.de>
->>
->> ---
->>  tools/perf/config/Makefile | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
->> index 1f67aa0..b1d639a 100644
->> --- a/tools/perf/config/Makefile
->> +++ b/tools/perf/config/Makefile
->> @@ -102,7 +102,7 @@ ifeq ($(call get-executable,$(BISON)),)
->>  endif
->>  
->>  # Treat warnings as errors unless directed not to
->> -ifneq ($(WERROR),0)
->> +ifeq ($(WERROR),1)
->>    CFLAGS += -Werror
->>  endif
-> 
 
+--4Sm3NErWSKpdVaFaNxxMvXslhanjOxrdm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT/H4pAAoJEPo9qoy8lh71VDkP/3swDuFTM8BKXRa3Fr748H53
+D9XL9WdpV+nBnN1khU7lhWFKO4x6Ft10CzcVMkj6ykRzehNd8TTt4IWnY/skmC8I
+aPu4ZxF0Y+RrWaGWwXFtzxg/1UVj/Cy+hs6rscHL2dRu8dwieJbycicqjY6YZn83
+1ltppGAfgoibvaLmp4UwR7mjFfnFyhUtlO5jiMxLzvk1+gIbN65AVqxqx3SxgU8h
+Qzb0TaL5nsXaByv69vDKaPvKLMJQXQ2h1WH5QgxvBucu28/cbWMmYeojTTfjdxvB
+yxKiALYgYMy3s9uzOkDtiOYFu28DNgOFp7dHlv6P8IM0jQV4psLoYp0t+pVajxCP
+qqIcx2MScbhARDqYQACrSAoa2XeSKYeOKG8DA6zOnDka2XCtRsOwZcwioz0mu0sU
+jkA2GvtHb+CG9LmuirxKx3NKKbe5KXxj5rGIoAn0p/J7wgvo4/rw5+f+nF3edc2g
+Ijb9WCs5aqdaj4gM2DyR7fndJBY8TzgnIXaAECji513dmskclC30YImbrE+seUok
+Hev5Zxfjz5yBi2RXPFURww0z+eXcaa2/or6tQtKQhJkrGvHaJLEXEwlUrZL/hxQ6
+xZglnO01UX5V44Hv19z+mWntVrnkuEZ0gaCbXB6pjMq8WzXjE8DJx8Pi7jqgixI9
++TcxLnDxQ0CwitgxaUOb
+=DSx0
+-----END PGP SIGNATURE-----
+
+--4Sm3NErWSKpdVaFaNxxMvXslhanjOxrdm--
