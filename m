@@ -1,115 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933960AbaHZHub (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 03:50:31 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:61893 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932349AbaHZHu3 (ORCPT
+	id S934052AbaHZHvN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 03:51:13 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:41509 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752889AbaHZHvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 03:50:29 -0400
-Date: Tue, 26 Aug 2014 09:50:25 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Andrew Bresticker <abrestic@chromium.org>, linux-tegra@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH v2 2/9] mailbox: Add NVIDIA Tegra XUSB mailbox driver
-Message-ID: <20140826075023.GB17263@ulmo>
-References: <1408381705-3623-1-git-send-email-abrestic@chromium.org>
- <53FB8820.4010202@wwwdotorg.org>
- <20140826065729.GC15573@ulmo>
- <3804028.YQzQ4uAVsf@wuerfel>
+	Tue, 26 Aug 2014 03:51:12 -0400
+Date: Tue, 26 Aug 2014 13:21:00 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sound: pci: ctxfi: ctatc.c: printk replacement
+Message-ID: <20140826075100.GA1751@sudip-PC>
+References: <1408989412-30805-1-git-send-email-sudipm.mukherjee@gmail.com>
+ <s5h8umbu5oi.wl-tiwai@suse.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qlTNgmc+xy1dBmNv"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <3804028.YQzQ4uAVsf@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <s5h8umbu5oi.wl-tiwai@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 26, 2014 at 08:27:09AM +0200, Takashi Iwai wrote:
+> At Mon, 25 Aug 2014 23:26:52 +0530,
+> Sudip Mukherjee wrote:
+> > 
+> > printk replaced ith corresponding pr_err
+> > fixed three broken user-visible strings
+> > fixed a checkpatch warning of space before new line
+> 
+> Fixes are good, but is this the final patch for ctxfi?
+> If you're going to post another one, please fold them into a single
+> patch.  All patches do basically the same job, so splitting patches
+> doesn't help much in such a case.  Patches should be split logically.
+> 
+> Also, if you fix broken strings, better to do it consistently to all
+> targeted strings, instead of picking up random ones.
+> 
+> 
+> thanks,
+> 
+> Takashi
 
---qlTNgmc+xy1dBmNv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
+I was posting them separately as i was thinking it will become a big patch. 
+For the broken string , it was actually not random . I did it only for those string that were affected by my patch.
+Anyways, I will send you a complete one for ctxfi.
 
-On Tue, Aug 26, 2014 at 09:43:50AM +0200, Arnd Bergmann wrote:
-> On Tuesday 26 August 2014 08:57:31 Thierry Reding wrote:
-> > On Mon, Aug 25, 2014 at 01:01:52PM -0600, Stephen Warren wrote:
-> > > On 08/18/2014 11:08 AM, Andrew Bresticker wrote:
-> > [...]
-> > > >+static int tegra_xusb_mbox_probe(struct platform_device *pdev)
-> > >=20
-> > > >+    res =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> > > >+    if (!res)
-> > > >+            return -ENODEV;
-> > >=20
-> > > Should devm_request_mem_region() be called here to claim the region?
-> > >=20
-> > > >+    mbox->regs =3D devm_ioremap_nocache(&pdev->dev, res->start,
-> > > >+                                      resource_size(res));
-> > > >+    if (!mbox->regs)
-> > > >+            return -ENOMEM;
-> > >=20
-> > > Is _nocache required? I don't see other drivers using it. I assume th=
-ere's
-> > > nothing special about the mbox registers.
-> >=20
-> > Most drivers should be using devm_ioremap_resource() which will use the
-> > _nocache variant of devm_ioremap() when appropriate. Usually the region
-> > will not be marked cacheable (IORESOURCE_CACHEABLE) and therefore be
-> > remapped uncached.
-> >=20
->=20
-> Note that ioremap() and ioremap_nocache() are the same. We really shouldn=
-'t
-> ever call ioremap_nocache().
+thanks
+sudip
 
-Perhaps we should remove ioremap_nocache() in that case. Or ioremap(),
-really, and keep only those variants that do what they claim to do.
-
-> devm_ioremap_resource() and pci_iomap() checking for IORESOURCE_CACHEABLE=
- is
-> rather silly, since it doesn't call ioremap_cache() in that case.
-
-Then that should be fixed.
-
-Thierry
-
---qlTNgmc+xy1dBmNv
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT/Dw/AAoJEN0jrNd/PrOhNisP/A24pw1TBz0I4UieI1cV0Fus
-XlEkrXWIA2MHd5ZfJtXuu7gm+ecrBKqh0f57w1RZBazUIaidXaPO5wHGG1YyveAf
-2sI7dhPrnQPCNnmrn4cRyWPNzmHNiwtEvSad6oZihUCzMFCVoS4j0a2lQyHI6BKj
-Q4v9kfQq1A1QODclNAOfCWGVkaw9ldMPsHEclMZw4qbbphe4yzPM5qVguN1g/fvI
-SSd+WQwvNGynLZxGw84VN0GI+wwymV74I3ev5WtevnCNBmj9iWz//jOywu/fsOgZ
-uRyfFp7bzYNnA5t8Pu7bH3iCtWX5EcT4oxyvmncraO+ym6/pOtvwf8dAnwjDygAa
-if1IxC0DAjQAU4dPXlltQwswaLVyXe9Cc7fEqNRg4pUYcqDOW4PSFF36cNCQe2Gf
-RO1qDTJRYTaTfRgMjrKATNJfz9hkHMBqwMSwpEE4wIsbnH/hTaY1s2ObRH+zrulW
-rFTnj/5oL2tRzOIaSbDQWXtXCQQPG3YVg1EZaj/gaI0e76A/O4F0RkdQCtXXztF4
-91HSYYC6zv9D6xG7ZrGYTvukmWAI1+VWpl7Q05FKDTTp2Y9H3x4z+El9xplFEN5Z
-Uz54NoJHTJlhooyq6dbGDjQigBrytT/LkK+BcWYoey9wqAbA8aEKIu2UbuaCyopZ
-zOlTN9XP+f6/KKskMLqr
-=gQLC
------END PGP SIGNATURE-----
-
---qlTNgmc+xy1dBmNv--
+> 
+> > 
+> > 
+> > Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+> > ---
+> >  sound/pci/ctxfi/ctatc.c | 23 ++++++++++-------------
+> >  1 file changed, 10 insertions(+), 13 deletions(-)
+> > 
+> > diff --git a/sound/pci/ctxfi/ctatc.c b/sound/pci/ctxfi/ctatc.c
+> > index af632bd..41597a8 100644
+> > --- a/sound/pci/ctxfi/ctatc.c
+> > +++ b/sound/pci/ctxfi/ctatc.c
+> > @@ -185,7 +185,7 @@ static unsigned int convert_format(snd_pcm_format_t snd_format)
+> >  	case SNDRV_PCM_FORMAT_FLOAT_LE:
+> >  		return SRC_SF_F32;
+> >  	default:
+> > -		printk(KERN_ERR "ctxfi: not recognized snd format is %d \n",
+> > +		pr_err("ctxfi: not recognized snd format is %d\n",
+> >  			snd_format);
+> >  		return SRC_SF_S16;
+> >  	}
+> > @@ -1282,7 +1282,7 @@ static int atc_identify_card(struct ct_atc *atc, unsigned int ssid)
+> >  	p = snd_pci_quirk_lookup_id(vendor_id, device_id, list);
+> >  	if (p) {
+> >  		if (p->value < 0) {
+> > -			printk(KERN_ERR "ctxfi: "
+> > +			pr_err("ctxfi: "
+> >  			       "Device %04x:%04x is black-listed\n",
+> >  			       vendor_id, device_id);
+> >  			return -ENOENT;
+> > @@ -1315,8 +1315,7 @@ int ct_atc_create_alsa_devs(struct ct_atc *atc)
+> >  		err = alsa_dev_funcs[i].create(atc, i,
+> >  				alsa_dev_funcs[i].public_name);
+> >  		if (err) {
+> > -			printk(KERN_ERR "ctxfi: "
+> > -			       "Creating alsa device %d failed!\n", i);
+> > +			pr_err("ctxfi: Creating alsa device %d failed!\n", i);
+> >  			return err;
+> >  		}
+> >  	}
+> > @@ -1332,7 +1331,7 @@ static int atc_create_hw_devs(struct ct_atc *atc)
+> >  
+> >  	err = create_hw_obj(atc->pci, atc->chip_type, atc->model, &hw);
+> >  	if (err) {
+> > -		printk(KERN_ERR "Failed to create hw obj!!!\n");
+> > +		pr_err("Failed to create hw obj!!!\n");
+> >  		return err;
+> >  	}
+> >  	atc->hw = hw;
+> > @@ -1351,8 +1350,7 @@ static int atc_create_hw_devs(struct ct_atc *atc)
+> >  
+> >  		err = rsc_mgr_funcs[i].create(atc->hw, &atc->rsc_mgrs[i]);
+> >  		if (err) {
+> > -			printk(KERN_ERR "ctxfi: "
+> > -			       "Failed to create rsc_mgr %d!!!\n", i);
+> > +			pr_err("ctxfi: Failed to create rsc_mgr %d!!!\n", i);
+> >  			return err;
+> >  		}
+> >  	}
+> > @@ -1399,7 +1397,7 @@ static int atc_get_resources(struct ct_atc *atc)
+> >  		err = daio_mgr->get_daio(daio_mgr, &da_desc,
+> >  					(struct daio **)&atc->daios[i]);
+> >  		if (err) {
+> > -			printk(KERN_ERR "ctxfi: Failed to get DAIO "
+> > +			pr_err("ctxfi: Failed to get DAIO "
+> >  					"resource %d!!!\n", i);
+> >  			return err;
+> >  		}
+> > @@ -1603,8 +1601,7 @@ static int atc_resume(struct ct_atc *atc)
+> >  	/* Do hardware resume. */
+> >  	err = atc_hw_resume(atc);
+> >  	if (err < 0) {
+> > -		printk(KERN_ERR "ctxfi: pci_enable_device failed, "
+> > -		       "disabling device\n");
+> > +		pr_err("ctxfi: pci_enable_device failed, disabling device\n");
+> >  		snd_card_disconnect(atc->card);
+> >  		return err;
+> >  	}
+> > @@ -1701,7 +1698,7 @@ int ct_atc_create(struct snd_card *card, struct pci_dev *pci,
+> >  	/* Find card model */
+> >  	err = atc_identify_card(atc, ssid);
+> >  	if (err < 0) {
+> > -		printk(KERN_ERR "ctatc: Card not recognised\n");
+> > +		pr_err("ctatc: Card not recognised\n");
+> >  		goto error1;
+> >  	}
+> >  
+> > @@ -1717,7 +1714,7 @@ int ct_atc_create(struct snd_card *card, struct pci_dev *pci,
+> >  
+> >  	err = ct_mixer_create(atc, (struct ct_mixer **)&atc->mixer);
+> >  	if (err) {
+> > -		printk(KERN_ERR "ctxfi: Failed to create mixer obj!!!\n");
+> > +		pr_err("ctxfi: Failed to create mixer obj!!!\n");
+> >  		goto error1;
+> >  	}
+> >  
+> > @@ -1744,6 +1741,6 @@ int ct_atc_create(struct snd_card *card, struct pci_dev *pci,
+> >  
+> >  error1:
+> >  	ct_atc_destroy(atc);
+> > -	printk(KERN_ERR "ctxfi: Something wrong!!!\n");
+> > +	pr_err("ctxfi: Something wrong!!!\n");
+> >  	return err;
+> >  }
+> > -- 
+> > 1.8.1.2
+> > 
