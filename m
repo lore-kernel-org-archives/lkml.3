@@ -1,108 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932953AbaHZO1P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 10:27:15 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:45836 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755427AbaHZO1N (ORCPT
+	id S1758194AbaHZObg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 10:31:36 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:42971 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754610AbaHZObe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 10:27:13 -0400
-Date: Tue, 26 Aug 2014 17:27:02 +0300
-From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-To: davem@davemloft.net, jiri@resnulli.us, hannes@stressinduktion.org,
-        duanj.fnst@cn.fujitsu.com, ebiederm@xmission.com,
-        aruna.hewapathirane@gmail.com, tim.gardner@canonical.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: paulmck@linux.vnet.ibm.com
-Subject: [PATCH] net: core: neighbour: Replace rcu_assign_pointer() with
- RCU_INIT_POINTER()
-Message-ID: <20140826142702.GA2346@ada>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 26 Aug 2014 10:31:34 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-d1-53fc9a4301b0
+From: Tomasz Figa <t.figa@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        Mike Turquette <mturquette@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>
+Subject: [PATCH] MAINTAINERS: Tomasz has moved
+Date: Tue, 26 Aug 2014 16:30:53 +0200
+Message-id: <1409063453-16124-1-git-send-email-t.figa@samsung.com>
+X-Mailer: git-send-email 2.0.4
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDJMWRmVeSWpSXmKPExsVy+t/xq7rOs/4EG9zdKWMx5c9yJotNj6+x
+	WlzeNYfNYsb5fUwWa4/cZbd4OuEim8XhN+2sFutnvGZx4PC4c20Pm8fmJfUefVtWMXp83iQX
+	wBLFZZOSmpNZllqkb5fAlTH9+mnmgpecFZsXHGFrYJzD0cXIySEhYCJx7dpCVghbTOLCvfVs
+	XYxcHEICSxklznX/YgZJCAn0MUmcmC8GYrMJqEl8bnjEBmKLCChIbO59BtbMLLCQSWLdbx4Q
+	W1hAT6Ll5gmwGhYBVYk7+1+xgNi8Ak4SK/ffYIFYJiexauM+pgmM3AsYGVYxiqaWJhcUJ6Xn
+	GuoVJ+YWl+al6yXn525ihITIlx2Mi49ZHWIU4GBU4uH9UPI7WIg1say4MvcQowQHs5II74+k
+	P8FCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGIv+31u39cmsRclq1e0t5io9b+PCA9lnnnl4TsD1
+	icyLkKCiV349tf/C5i46I+qYIBh9/PsG/ViOuSphPwue1xaV+CWIuG3eeeraYZaHLHobHZK6
+	bP7Xnlye9jz9p8letk03ypjVWWuVFzAkvzVney/yuq34cf+5xw/5SvsqXk/1fNa2vtXfW4ml
+	OCPRUIu5qDgRABqrtN3vAQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to RCU_INIT_POINTER()'s block comment 3.a, it can be used if
-"3.   The referenced data structure has already been exposed to readers either
-at compile time or via rcu_assign_pointer() -and-
- a.   You have not made -any- reader-visible changes to this structure since
-then".
+I am leaving Samsung, so my current e-mail address is not going to work
+any longer. Replace it with my private one. In addition, Sylwester
+Nawrocki is being added as co-maintainer for Samsung clock drivers to
+take some of the responsibilities, as I will be doing my part in my spare
+time.
 
-These cases fulfill the conditions above because between the
-rcu_dereference_protected() calls and the rcu_assign_pointer() calls there is
-no update of those values.
-Therefore, this patch makes the replacements.
-
-The following Coccinelle semantic patch was used:
-@@
-@@
-
-- rcu_assign_pointer
-+ RCU_INIT_POINTER
-  (...,
-(
- rtnl_dereference(...)
-|
- rcu_dereference_protected(...)
-) )
-
-Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+Signed-off-by: Tomasz Figa <t.figa@samsung.com>
 ---
- net/core/neighbour.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ MAINTAINERS | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/net/core/neighbour.c b/net/core/neighbour.c
-index 32d872e..a193932 100644
---- a/net/core/neighbour.c
-+++ b/net/core/neighbour.c
-@@ -147,7 +147,7 @@ static int neigh_forced_gc(struct neigh_table *tbl)
- 			write_lock(&n->lock);
- 			if (atomic_read(&n->refcnt) == 1 &&
- 			    !(n->nud_state & NUD_PERMANENT)) {
--				rcu_assign_pointer(*np,
-+				RCU_INIT_POINTER(*np,
- 					rcu_dereference_protected(n->next,
- 						  lockdep_is_held(&tbl->lock)));
- 				n->dead = 1;
-@@ -216,7 +216,7 @@ static void neigh_flush_dev(struct neigh_table *tbl, struct net_device *dev)
- 				np = &n->next;
- 				continue;
- 			}
--			rcu_assign_pointer(*np,
-+			RCU_INIT_POINTER(*np,
- 				   rcu_dereference_protected(n->next,
- 						lockdep_is_held(&tbl->lock)));
- 			write_lock(&n->lock);
-@@ -386,7 +386,7 @@ static struct neigh_hash_table *neigh_hash_grow(struct neigh_table *tbl,
- 			next = rcu_dereference_protected(n->next,
- 						lockdep_is_held(&tbl->lock));
+diff --git a/MAINTAINERS b/MAINTAINERS
+index acd44c3..d57f6ce 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -7062,7 +7062,7 @@ S:	Maintained
+ F:	drivers/pinctrl/sh-pfc/
  
--			rcu_assign_pointer(n->next,
-+			RCU_INIT_POINTER(n->next,
- 					   rcu_dereference_protected(
- 						new_nht->hash_buckets[hash],
- 						lockdep_is_held(&tbl->lock)));
-@@ -531,7 +531,7 @@ struct neighbour *__neigh_create(struct neigh_table *tbl, const void *pkey,
- 	n->dead = 0;
- 	if (want_ref)
- 		neigh_hold(n);
--	rcu_assign_pointer(n->next,
-+	RCU_INIT_POINTER(n->next,
- 			   rcu_dereference_protected(nht->hash_buckets[hash_val],
- 						     lockdep_is_held(&tbl->lock)));
- 	rcu_assign_pointer(nht->hash_buckets[hash_val], n);
-@@ -2432,7 +2432,7 @@ void __neigh_for_each_release(struct neigh_table *tbl,
- 			write_lock(&n->lock);
- 			release = cb(n);
- 			if (release) {
--				rcu_assign_pointer(*np,
-+				RCU_INIT_POINTER(*np,
- 					rcu_dereference_protected(n->next,
- 						lockdep_is_held(&tbl->lock)));
- 				n->dead = 1;
+ PIN CONTROLLER - SAMSUNG
+-M:	Tomasz Figa <t.figa@samsung.com>
++M:	Tomasz Figa <tomasz.figa@gmail.com>
+ M:	Thomas Abraham <thomas.abraham@linaro.org>
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+ L:	linux-samsung-soc@vger.kernel.org (moderated for non-subscribers)
+@@ -7908,7 +7908,8 @@ S:	Supported
+ F:	drivers/media/i2c/s5k5baf.c
+ 
+ SAMSUNG SOC CLOCK DRIVERS
+-M:	Tomasz Figa <t.figa@samsung.com>
++M:	Sylwester Nawrocki <s.nawrocki@samsung.com>
++M:	Tomasz Figa <tomasz.figa@gmail.com>
+ S:	Supported
+ L:	linux-samsung-soc@vger.kernel.org (moderated for non-subscribers)
+ F:	drivers/clk/samsung/
 -- 
-1.9.1
+2.0.4
 
