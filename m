@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934838AbaHZKOt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 06:14:49 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:3868 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932835AbaHZKOs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 06:14:48 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 26 Aug 2014 03:04:46 -0700
-Message-ID: <53FC5DF0.2040205@nvidia.com>
-Date: Tue, 26 Aug 2014 15:44:08 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S934648AbaHZKQC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 06:16:02 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:56387 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934453AbaHZKQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 06:16:00 -0400
+Message-ID: <53FC5E40.7020904@ti.com>
+Date: Tue, 26 Aug 2014 15:45:28 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: "Arnout Vandecappelle (Essensium/Mind)" <arnout@mind.be>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Mark Brown <broonie@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: David Brown <davidb@codeaurora.org>
-Subject: Re: [PATCH v2] tps65910: Work around silicon erratum SWCZ010
-References: <1408709666-5927-1-git-send-email-arnout@mind.be> <1408721456-8101-1-git-send-email-arnout@mind.be>
-In-Reply-To: <1408721456-8101-1-git-send-email-arnout@mind.be>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>, <khilman@deeprootsystems.com>
+CC: <linux@arm.linux.org.uk>, <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] ARM: davinci: board-da850-evm: Add needed regulators
+ for tlv320aic3106 codec
+References: <1406546678-797-1-git-send-email-peter.ujfalusi@ti.com> <1406546678-797-2-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <1406546678-797-2-git-send-email-peter.ujfalusi@ti.com>
+Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because this patch is dropped from Mark's tree, here is opportunity to 
-revisit patch.
+On Monday 28 July 2014 04:54 PM, Peter Ujfalusi wrote:
+> IOVDD: tps65070's dcdc2
+> AVDD and DRVDD: fixed regulator derived from 5V via TPS73701DCQ
+> DVDD: fixed regulator derived from 5V via TPS73701DCQ
+> 
+> This patch needed to be able to probe the audio codec.
+> 
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> ---
+>  arch/arm/mach-davinci/board-da850-evm.c | 13 +++++++++++++
 
-On Friday 22 August 2014 09:00 PM, Arnout Vandecappelle (Essensium/Mind) 
-wrote:
->  From http://www.ti.com/lit/pdf/SWCZ010 :
->
->
-> Workaround:
-> Repeat I2C access.
+Applied both for v3.18 while fixing the following:
 
-> A simpler workaround is to make a dummy transfer just before the first
-> access to the tps65910 chip. This can be done unconditionally.
-> >id = chip_id;
->   
-> +	/* Work around silicon erratum SWCZ010: the tps65910 may miss the
-> +	 * first I2C transfer. So issue a dummy transfer before the first
-> +	 * real transfer.
-> +	 */
-> +	i2c_master_send(i2c, "", 1);
+CHECK: Please use a blank line after function/struct/union/enum declarations
+#56: FILE: arch/arm/mach-davinci/board-da850-evm.c:845:
+ }
++/* Fixed regulator support */
 
-I think dummy read is more safe operation than dummy write.
-Dummy write can create the write on any register which can damage the 
-critical settings or it may be possible that it will be incomplete 
-calls. Datasheet has not been explained this clearly.
+total: 0 errors, 0 warnings, 1 checks, 37 lines checked
 
-
->   	
+Thanks,
+Sekhar
 
