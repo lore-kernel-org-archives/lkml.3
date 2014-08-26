@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757624AbaHZLHx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 07:07:53 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:40340 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757599AbaHZLHu (ORCPT
+	id S1757646AbaHZLH4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 07:07:56 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:56504 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755724AbaHZLHw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 07:07:50 -0400
+	Tue, 26 Aug 2014 07:07:52 -0400
 From: Vincent Guittot <vincent.guittot@linaro.org>
 To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
         preeti@linux.vnet.ibm.com, linux@arm.linux.org.uk,
@@ -15,9 +15,9 @@ Cc: riel@redhat.com, Morten.Rasmussen@arm.com, efault@gmx.de,
         nicolas.pitre@linaro.org, linaro-kernel@lists.linaro.org,
         daniel.lezcano@linaro.org, dietmar.eggemann@arm.com,
         Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [PATCH v5 03/12] sched: fix avg_load computation
-Date: Tue, 26 Aug 2014 13:06:46 +0200
-Message-Id: <1409051215-16788-4-git-send-email-vincent.guittot@linaro.org>
+Subject: [PATCH v5 04/12] sched: Allow all archs to set the capacity_orig
+Date: Tue, 26 Aug 2014 13:06:47 +0200
+Message-Id: <1409051215-16788-5-git-send-email-vincent.guittot@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
 References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
@@ -25,38 +25,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The computation of avg_load and avg_load_per_task should only takes into
-account the number of cfs tasks. The non cfs task are already taken into
-account by decreasing the cpu's capacity and they will be tracked in the
-CPU's utilization (group_utilization) of the next patches
+capacity_orig is only changed for system with a SMT sched_domain level in order
+to reflect the lower capacity of CPUs. Heterogenous system also have to reflect an
+original capacity that is different from the default value.
+
+Create a more generic function arch_scale_cpu_capacity that can be also used by
+non SMT platform to set capacity_orig.
+
+The weak behavior of arch_scale_cpu_capacity is the previous SMT one in order to
+keep backward compatibility in the use of capacity_orig.
+
+arch_scale_smt_capacity and default_scale_smt_capacity have been removed as
+they were not use elsewhere than in arch_scale_cpu_capacity.
 
 Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
 ---
- kernel/sched/fair.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/sched/fair.c | 25 ++++++-------------------
+ 1 file changed, 6 insertions(+), 19 deletions(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 87b9dc7..b85e9f7 100644
+index b85e9f7..8176bda 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -4092,7 +4092,7 @@ static unsigned long capacity_of(int cpu)
- static unsigned long cpu_avg_load_per_task(int cpu)
+@@ -5705,19 +5705,12 @@ unsigned long __weak arch_scale_freq_capacity(struct sched_domain *sd, int cpu)
+ 	return default_scale_capacity(sd, cpu);
+ }
+ 
+-static unsigned long default_scale_smt_capacity(struct sched_domain *sd, int cpu)
++unsigned long __weak arch_scale_cpu_capacity(struct sched_domain *sd, int cpu)
  {
- 	struct rq *rq = cpu_rq(cpu);
--	unsigned long nr_running = ACCESS_ONCE(rq->nr_running);
-+	unsigned long nr_running = ACCESS_ONCE(rq->cfs.h_nr_running);
- 	unsigned long load_avg = rq->cfs.runnable_load_avg;
+-	unsigned long weight = sd->span_weight;
+-	unsigned long smt_gain = sd->smt_gain;
++	if ((sd->flags & SD_SHARE_CPUCAPACITY) && (sd->span_weight > 1))
++		return sd->smt_gain / sd->span_weight;
  
- 	if (nr_running)
-@@ -5985,7 +5985,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
- 			load = source_load(i, load_idx);
+-	smt_gain /= weight;
+-
+-	return smt_gain;
+-}
+-
+-unsigned long __weak arch_scale_smt_capacity(struct sched_domain *sd, int cpu)
+-{
+-	return default_scale_smt_capacity(sd, cpu);
++	return SCHED_CAPACITY_SCALE;
+ }
  
- 		sgs->group_load += load;
--		sgs->sum_nr_running += rq->nr_running;
-+		sgs->sum_nr_running += rq->cfs.h_nr_running;
+ static unsigned long scale_rt_capacity(int cpu)
+@@ -5756,18 +5749,12 @@ static unsigned long scale_rt_capacity(int cpu)
  
- 		if (rq->nr_running > 1)
- 			*overload = true;
+ static void update_cpu_capacity(struct sched_domain *sd, int cpu)
+ {
+-	unsigned long weight = sd->span_weight;
+ 	unsigned long capacity = SCHED_CAPACITY_SCALE;
+ 	struct sched_group *sdg = sd->groups;
+ 
+-	if ((sd->flags & SD_SHARE_CPUCAPACITY) && weight > 1) {
+-		if (sched_feat(ARCH_CAPACITY))
+-			capacity *= arch_scale_smt_capacity(sd, cpu);
+-		else
+-			capacity *= default_scale_smt_capacity(sd, cpu);
++	capacity *= arch_scale_cpu_capacity(sd, cpu);
+ 
+-		capacity >>= SCHED_CAPACITY_SHIFT;
+-	}
++	capacity >>= SCHED_CAPACITY_SHIFT;
+ 
+ 	sdg->sgc->capacity_orig = capacity;
+ 
 -- 
 1.9.1
 
