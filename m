@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934739AbaHZKFT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 06:05:19 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:21287 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934684AbaHZKFP (ORCPT
+	id S934763AbaHZKFq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 06:05:46 -0400
+Received: from regular1.263xmail.com ([211.150.99.135]:51005 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934741AbaHZKF2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 06:05:15 -0400
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux@openrisc.net
-Cc: linux@arm.linux.org.uk, shawn.guo@freescale.com, kernel@pengutronix.de,
-        tony@atomide.com, catalin.marinas@arm.com, will.deacon@arm.com,
-        jonas@southpole.se, tglx@linutronix.de, jason@lakedaemon.net,
-        shc_work@mail.ru, baohua@kernel.org, maxime.ripard@free-electrons.com,
-        marc.zyngier@arm.com, khilman@linaro.org, sboyd@codeaurora.org,
-        lorenzo.pieralisi@arm.com, larry.bassel@linaro.org,
-        mark.rutland@arm.com, sudeep.holla@arm.com,
-        stefan.kristiansson@saunalahti.fi, vkale@apm.com,
-        schwidefsky@de.ibm.com
-Subject: [PATCH v2 25/26] arm64: get rid of handle_IRQ
-Date: Tue, 26 Aug 2014 11:03:40 +0100
-Message-Id: <1409047421-27649-26-git-send-email-marc.zyngier@arm.com>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1409047421-27649-1-git-send-email-marc.zyngier@arm.com>
-References: <1409047421-27649-1-git-send-email-marc.zyngier@arm.com>
+	Tue, 26 Aug 2014 06:05:28 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: zyw@rock-chips.com
+X-FST-TO: lee.jones@linaro.org
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: zyw@rock-chips.com
+X-UNIQUE-TAG: <832328ad4b7929171360bb73ea30bb4e>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+Message-ID: <53FC5BD1.7030406@rock-chips.com>
+Date: Tue, 26 Aug 2014 18:05:05 +0800
+From: Chris Zhong <zyw@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Lee Jones <lee.jones@linaro.org>
+CC: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        sameo@linux.intel.com, lgirdwood@gmail.com, broonie@kernel.org,
+        a.zummo@towertech.it, mturquette@linaro.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
+        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
+        xxx@rock-chips.com, dianders@chromium.org, heiko@sntech.de,
+        olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
+        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com
+Subject: Re: [PATCH v2 2/5] MFD: RK808: Add new mfd driver for RK808
+References: <1408505461-24200-1-git-send-email-zyw@rock-chips.com> <20140820092117.GI4266@lee--X1> <53FA9D1E.8040202@rock-chips.com> <20140826092205.GG9574@lee--X1>
+In-Reply-To: <20140826092205.GG9574@lee--X1>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All the arm64 irqchip drivers have been converted to handle_domain_irq,
-making it possible to remove the handle_IRQ stub entierely.
 
-Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
----
- arch/arm64/include/asm/hardirq.h |  2 --
- arch/arm64/kernel/irq.c          | 11 -----------
- 2 files changed, 13 deletions(-)
+On 08/26/2014 05:22 PM, Lee Jones wrote:
+> On Mon, 25 Aug 2014, Chris Zhong wrote:
+>> On 08/20/2014 05:21 PM, Lee Jones wrote:
+>>> On Wed, 20 Aug 2014, Chris Zhong wrote:
+>>>
+>>>> The RK808 chip is a power management IC for multimedia and handheld
+>>>> devices. It contains the following components:
+>>>>
+>>>> - Regulators
+>>>> - RTC
+>>>>
+>>>> The rk808 core driver is registered as a platform driver and provides
+>>>> communication through I2C with the host device for the different
+>>>> components.
+>>>>
+>>>> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+>>>> ---
+> [...]
+>
+>>>> +	rk808->pdata = pdata;
+>>> Remove pdata from 'struct rk808'.  You can obtain it from dev.
+>> Can I keep this pdata in rk808, because it is used in the regulator driver.
+>> The one obtain from dev maybe empty.
+> If the one in dev is empty, you should populate that instead.
 
-diff --git a/arch/arm64/include/asm/hardirq.h b/arch/arm64/include/asm/hardirq.h
-index 0be6782..e8a3268 100644
---- a/arch/arm64/include/asm/hardirq.h
-+++ b/arch/arm64/include/asm/hardirq.h
-@@ -47,8 +47,6 @@ static inline void ack_bad_irq(unsigned int irq)
- 	irq_err_count++;
- }
- 
--extern void handle_IRQ(unsigned int, struct pt_regs *);
--
- /*
-  * No arch-specific IRQ flags.
-  */
-diff --git a/arch/arm64/kernel/irq.c b/arch/arm64/kernel/irq.c
-index 2c0e2a7..67ca197 100644
---- a/arch/arm64/kernel/irq.c
-+++ b/arch/arm64/kernel/irq.c
-@@ -40,17 +40,6 @@ int arch_show_interrupts(struct seq_file *p, int prec)
- 	return 0;
- }
- 
--/*
-- * handle_IRQ handles all hardware IRQ's.  Decoded IRQs should
-- * not come via this function.  Instead, they should provide their
-- * own 'handler'.  Used by platform code implementing C-based 1st
-- * level decoding.
-- */
--void handle_IRQ(unsigned int irq, struct pt_regs *regs)
--{
--	__handle_domain_irq(NULL, irq, false, regs);
--}
--
- void __init set_handle_irq(void (*handle_irq)(struct pt_regs *))
- {
- 	if (handle_arch_irq)
--- 
-2.0.4
+So, should I malloc a pada, and assign it to client->dev?
+
+
 
