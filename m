@@ -1,127 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934560AbaHZKXO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 06:23:14 -0400
-Received: from mail-bl2lp0206.outbound.protection.outlook.com ([207.46.163.206]:13230
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S934257AbaHZKXN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 06:23:13 -0400
-Date: Tue, 26 Aug 2014 18:22:40 +0800
-From: Peter Chen <peter.chen@freescale.com>
-To: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <kishon@ti.com>,
-        <stern@rowland.harvard.edu>, <sergei.shtylyov@cogentembedded.com>,
-        <yoshihiro.shimoda.uh@renesas.com>,
-        <alexandre.belloni@free-electrons.com>,
-        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
-        <jszhang@marvell.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 8/9] usb: chipidea: move usb_otg into struct ci_hdrc
-Message-ID: <20140826102239.GD16758@peterchendt>
-References: <1408722621-3635-1-git-send-email-antoine.tenart@free-electrons.com>
- <1408722621-3635-9-git-send-email-antoine.tenart@free-electrons.com>
+	id S934653AbaHZKYM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 06:24:12 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:44406 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934439AbaHZKYJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 06:24:09 -0400
+Date: Tue, 26 Aug 2014 12:24:05 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Alexander Holler <holler@ahsoftware.de>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Jon Loeliger <jdl@jdl.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        =?utf-8?B?U3TDqXBoYW5l?= Marchesin <marcheu@chromium.org>
+Subject: Re: [RFC PATCH 0/9] dt: dependencies (for deterministic driver
+ initialization order based on the DT)
+Message-ID: <20140826102404.GB31124@ulmo>
+References: <20140821140211.GD19293@ulmo.nvidia.com>
+ <53F64624.5000403@ahsoftware.de>
+ <20140822131919.GX21734@leverpostej>
+ <20140825093931.GB2399@ulmo>
+ <E1XLu15-0002DP-6o@jdl.com>
+ <20140825133714.GH4163@ulmo.nvidia.com>
+ <20140826084208.AE5F0C40989@trevor.secretlab.ca>
+ <20140826084922.GG17263@ulmo>
+ <53FC566C.30904@ahsoftware.de>
+ <20140826101107.GC32315@leverpostej>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="H1spWtNR+x+ondvy"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1408722621-3635-9-git-send-email-antoine.tenart@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199003)(24454002)(189002)(51704005)(19580395003)(50466002)(83506001)(106466001)(81542001)(19580405001)(84676001)(95666004)(107046002)(86362001)(6806004)(99396002)(31966008)(46102001)(74662001)(57986006)(110136001)(83322001)(74502001)(81156004)(105606002)(50986999)(44976005)(76176999)(33716001)(68736004)(69596002)(54356999)(104016003)(77982001)(97736001)(81342001)(85306004)(4396001)(76482001)(87936001)(26826002)(83072002)(64706001)(33656002)(47776003)(79102001)(80022001)(92726001)(92566001)(85852003)(23756003)(102836001)(90102001)(20776003)(21056001);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB564;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;UriScan:;
-X-Forefront-PRVS: 03152A99FF
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Peter.Chen@freescale.com; 
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;
-X-OriginatorOrg: freescale.com
+In-Reply-To: <20140826101107.GC32315@leverpostej>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 05:50:19PM +0200, Antoine Ténart wrote:
-> Move the usb_otg member from struct usb_phy to struct ci_hdrc. Rework
-> its initialization taking in account this modification.
-> 
 
-If the common usb_otg and usb_phy struct still has another's pointer, you
-may not need to add this patch.
+--H1spWtNR+x+ondvy
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
-> ---
->  drivers/usb/chipidea/ci.h      |  1 +
->  drivers/usb/chipidea/host.c    |  8 +++-----
->  drivers/usb/chipidea/otg_fsm.c | 15 ++-------------
->  3 files changed, 6 insertions(+), 18 deletions(-)
-> 
-> diff --git a/drivers/usb/chipidea/ci.h b/drivers/usb/chipidea/ci.h
-> index b2caa1772712..dac5ab6adfa2 100644
-> --- a/drivers/usb/chipidea/ci.h
-> +++ b/drivers/usb/chipidea/ci.h
-> @@ -177,6 +177,7 @@ struct ci_hdrc {
->  	struct ci_role_driver		*roles[CI_ROLE_END];
->  	enum ci_role			role;
->  	bool				is_otg;
-> +	struct usb_otg			otg;
->  	struct otg_fsm			fsm;
->  	struct ci_otg_fsm_timer_list	*fsm_timer;
->  	struct work_struct		work;
-> diff --git a/drivers/usb/chipidea/host.c b/drivers/usb/chipidea/host.c
-> index 0b67d78dd953..0952d4adfa4c 100644
-> --- a/drivers/usb/chipidea/host.c
-> +++ b/drivers/usb/chipidea/host.c
-> @@ -85,13 +85,11 @@ static int host_start(struct ci_hdrc *ci)
->  	if (ret) {
->  		goto disable_reg;
->  	} else {
-> -		struct usb_otg *otg = ci->usb_phy->otg;
-> +		struct usb_otg *otg = &ci->otg;
->  
->  		ci->hcd = hcd;
-> -		if (otg) {
-> -			otg->host = &hcd->self;
-> -			hcd->self.otg_port = 1;
-> -		}
-> +		otg->host = &hcd->self;
-> +		hcd->self.otg_port = 1;
->  	}
+On Tue, Aug 26, 2014 at 11:11:07AM +0100, Mark Rutland wrote:
+> On Tue, Aug 26, 2014 at 10:42:04AM +0100, Alexander Holler wrote:
+> > Am 26.08.2014 10:49, schrieb Thierry Reding:
+> > > On Tue, Aug 26, 2014 at 09:42:08AM +0100, Grant Likely wrote:
+> > >> On Mon, 25 Aug 2014 15:37:16 +0200, Thierry Reding <thierry.reding@g=
+mail.com> wrote:
+> > > [...]
+> > >>> There are somewhat standardized bindings for the above and especial=
+ly
+> > >>> for bindings of the type that clocks implement this is trivial. We =
+can
+> > >>> simply iterate over each (phandle, specifier) tuple and check that =
+the
+> > >>> corresponding clock provider can be resolved (which typically means=
+ that
+> > >>> it's been registered with the common clock framework).
+> > >>>
+> > >>> For regulators (and regulator-like bindings) the problem is somewhat
+> > >>> more difficult because they property names are not standardized. On=
+e way
+> > >>> to solve this would be to look for property names with a -supply su=
+ffix,
+> > >>> but that could obviously lead to false positives. One alternative t=
+hat I
+> > >>> think could eliminate this would be to explicitly list dependencies=
+ in
+> > >>> drivers. This would allow core code to step through such a list and
+> > >>> resolve the (phandle, specifier) tuples.
+> > >>
+> > >> False positives and negatives may not actually be a problem. It is
+> > >> suboptimal, certainly, but it shouldn't outright break the kernel.
+> > >
+> > > There could be cases where some random integer in a cell could be
+> > > interpreted as a phandle and resolve to a struct device_node. I suppo=
+se
+> > > it might be unlikely, but not impossible, that the device_node could
+> > > even match a device in the correct subsystem and you'd get a wrong
+> > > dependency. Granted, a wrong dependency may not be catastrophic in th=
+at
+> > > it won't lead to a crash, but it could lead to various kinds of
+> > > weirdness and hard to diagnose problems.
+> >=20
+> > You need either the type information in the DTB (that's why I've add=20
+> > those "dependencies" to identify phandles), or you need to know every=
+=20
+> > binding (at "dependency-resolve-time" to identify phandles.
+>=20
+> While having type information in the DTB would be fantastic, it's not
+> something we can expect from the systems already in the wild, and I
+> worry how it would interact with bootloaders that modify the DTB (I
+> don't know if any modify properties with phandles).
+>=20
+> > The latter is impracticable to implement in a generic way (for use
+> > with every possible binding).
+>=20
+> I don't think we necessarily need dependency information for every
+> binding and driver. We only need dependency information where a device
+> has a dependency on another device and we don't currently have an
+> explicit probe ordering guaranteed by Linux.
+>=20
+> Where a device driver lacks dependency information and fails to probe,
+> we can fall back to the current deferred probing.
+>=20
+> Do we have any worst case example systems / drivers / dts?
 
-You may need use other way to identify if otg is supported or not
+Cc'ing St=C3=A9phane who's brought this up not long ago. There seem to be
+cases where display initialization can be delayed up to 5-6 seconds due
+to deferred probing (where the system would otherwise take 5-6 seconds
+to boot).
 
->  
->  	if (ci->platdata->flags & CI_HDRC_DISABLE_STREAMING)
-> diff --git a/drivers/usb/chipidea/otg_fsm.c b/drivers/usb/chipidea/otg_fsm.c
-> index 8a64ce87364e..7eb86863fb3c 100644
-> --- a/drivers/usb/chipidea/otg_fsm.c
-> +++ b/drivers/usb/chipidea/otg_fsm.c
-> @@ -778,20 +778,9 @@ void ci_hdrc_otg_fsm_start(struct ci_hdrc *ci)
->  int ci_hdrc_otg_fsm_init(struct ci_hdrc *ci)
->  {
->  	int retval = 0;
-> -	struct usb_otg *otg;
->  
-> -	otg = devm_kzalloc(ci->dev,
-> -			sizeof(struct usb_otg), GFP_KERNEL);
-> -	if (!otg) {
-> -		dev_err(ci->dev,
-> -		"Failed to allocate usb_otg structure for ci hdrc otg!\n");
-> -		return -ENOMEM;
-> -	}
-> -
-> -	otg->usb_phy = ci->usb_phy;
-> -	otg->gadget = &ci->gadget;
-> -	ci->fsm.otg = otg;
-> -	ci->usb_phy->otg = ci->fsm.otg;
-> +	ci->otg.usb_phy = ci->usb_phy;
-> +	ci->fsm.otg = &ci->otg;
->  	ci->fsm.power_up = 1;
->  	ci->fsm.id = hw_read_otgsc(ci, OTGSC_ID) ? 1 : 0;
->  	ci->fsm.otg->state = OTG_STATE_UNDEFINED;
+Thierry
 
-Why otg->gadget and ci->usb_phy->otg initialization are deleted?
-At least, the parameters of usb_otg_state_string at your 7th patch uses it.
+--H1spWtNR+x+ondvy
+Content-Type: application/pgp-signature
 
--- 
-Best Regards,
-Peter Chen
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT/GBEAAoJEN0jrNd/PrOh14sP/RsuC7PKbhImqrAgmzM3Ts6V
+Tt0aMvWqlh8wPqYVGqtwogZTQG3y8WESW7hUCVtFtIjCjvrYAH6yt7jZ956eI4m3
+OJAue0Yt8OI06a7lOLMLA3EWh/BVT0GXeNiCi+WCE641S1hFpS//tC3oEwFZlmtb
++38CNmFNeGHvAiPlQQOXZ3T6hODII4AeuG+zcoQs0RU1HKPHYsVp172ddnw03vVd
++nbamP+ljWagw3bDSuuEnyaFnGwJN/opxQOxs4GxNKEzSo11D6lVIClXwKEhuXvK
+XG/Sr9KByRcrDRyn8h3t9wGhaT/3rFm6jlaI+BMVTymVllouq69E6X5FPWdm92zf
+Xd9QyseJkUxLy0cbPkeA5Tx3ohgobJLypz7HD6ihaI0wkSIvARADRjk58pUrOc8k
+szFrQMtI+DZBOGJgNeCUmTmnZfyEyIjuStF6jxOKFmP6J5lIVZNtVc4zKR98O6Im
+p25wMQzljBH0GdqftPX0s1n86VLVigHbjC4gT87Fv8k8mXqpHAiwXeX80Qki42wW
+VKjjdRIOW432D0M39gecako38J65n+8TKKs34ro2c5HoX2ZliYiqiG3JNO7vXLAe
+eW4GypkpS/QlD4BClDLt/FOAGcEfbBMb9ksBvJ24cNbgV9uxHbNVV9wpeEqeXCn0
+Qp6bQFZG/kslf4rvGCOv
+=QBAd
+-----END PGP SIGNATURE-----
+
+--H1spWtNR+x+ondvy--
