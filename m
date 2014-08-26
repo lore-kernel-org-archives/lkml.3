@@ -1,102 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755024AbaHZU7K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 16:59:10 -0400
-Received: from smtprelay0107.hostedemail.com ([216.40.44.107]:33134 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754826AbaHZU7I (ORCPT
+	id S1755212AbaHZVAL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 17:00:11 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:35757 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755121AbaHZVAJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 16:59:08 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 30,2,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:69:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1542:1593:1594:1605:1711:1730:1747:1777:1792:1801:2393:2551:2553:2559:2562:2692:2828:3138:3139:3140:3141:3142:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4184:4250:4321:4605:5007:6119:7652:8825:10010:10400:10848:11026:11232:11233:11658:11914:12043:12050:12296:12438:12517:12519:12555:12663:12683:12740:14096:14097:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:1:0
-X-HE-Tag: hair40_6c7dd82b9c250
-X-Filterd-Recvd-Size: 3965
-Message-ID: <1409086742.20683.75.camel@joe-AO725>
-Subject: Re: [PATCH] acpi: fan.c: printk replacement
-From: Joe Perches <joe@perches.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>,
-        Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 26 Aug 2014 13:59:02 -0700
-In-Reply-To: <8052272.VnRivAuOcQ@vostro.rjw.lan>
-References: <1408709001-3272-1-git-send-email-sudipm.mukherjee@gmail.com>
-	 <6969509.uGLFfCOQBb@vostro.rjw.lan> <20140826153039.GA2684@sudip-PC>
-	 <8052272.VnRivAuOcQ@vostro.rjw.lan>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Aug 2014 17:00:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140826114707.GA16372@amd>
+References: <1405397216-909-1-git-send-email-dinguyen@altera.com>
+	<53C4D874.2040206@samsung.com>
+	<20140814184710.GA11558@amd.pavel.ucw.cz>
+	<53ED2262.50604@gmail.com>
+	<20140814210252.GB26857@amd.pavel.ucw.cz>
+	<20140826114707.GA16372@amd>
+Date: Tue, 26 Aug 2014 16:00:08 -0500
+Message-ID: <CADhT+wdx2SsHnk=zML7a6mUVJxvLQ9ARO16QoYYsopAqhw7cow@mail.gmail.com>
+Subject: Re: 3.17-rc2: root=/dev/mmcblk0p2 command line parsing fails
+From: Dinh Nguyen <dinh.linux@gmail.com>
+To: Pavel Machek <pavel@denx.de>
+Cc: Jaehoon Chung <jh80.chung@samsung.com>, Dinh Nguyen <dinguyen@altera.com>,
+        Kevin Hilman <khilman@linaro.org>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, arm@kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        kernel list <linux-kernel@vger.kernel.org>, akpm@linux-foundation.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-08-26 at 23:02 +0200, Rafael J. Wysocki wrote:
-> On Tuesday, August 26, 2014 09:00:39 PM Sudip Mukherjee wrote:
-> > On Tue, Aug 26, 2014 at 12:45:20AM +0200, Rafael J. Wysocki wrote:
-> > > On Friday, August 22, 2014 05:33:21 PM Sudip Mukherjee wrote:
-> > > > printk replaced with corresponding dev_err and dev_info
-> > > > fixed one broken user-visible string
-> > > > multiine comment edited for correct commenting style
-> > > > asm/uaccess.h replaced with linux/uaccess.h
-> > > > 
-> > > > Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
-> > > > ---
-> > > >  drivers/acpi/fan.c | 18 +++++++++---------
-> > > >  1 file changed, 9 insertions(+), 9 deletions(-)
-> > > > 
-> > > > diff --git a/drivers/acpi/fan.c b/drivers/acpi/fan.c
-> > > > index 8acf53e..7900d55 100644
-> > > > --- a/drivers/acpi/fan.c
-> > > > +++ b/drivers/acpi/fan.c
-> > > > @@ -27,7 +27,7 @@
-> > > >  #include <linux/module.h>
-> > > >  #include <linux/init.h>
-> > > >  #include <linux/types.h>
-> > > > -#include <asm/uaccess.h>
-> > > > +#include <linux/uaccess.h>
-> > > >  #include <linux/thermal.h>
-> > > >  #include <linux/acpi.h>
-> > > >  
-> > > > @@ -127,8 +127,9 @@ static const struct thermal_cooling_device_ops fan_cooling_ops = {
-> > > >  };
-> > > >  
-> > > >  /* --------------------------------------------------------------------------
-> > > > -                                 Driver Interface
-> > > > -   -------------------------------------------------------------------------- */
-> > > > + *                               Driver Interface
-> > > > + * --------------------------------------------------------------------------
-> > > > +*/
-> > > >  
-> > > >  static int acpi_fan_add(struct acpi_device *device)
-> > > >  {
-> > > > @@ -143,7 +144,7 @@ static int acpi_fan_add(struct acpi_device *device)
-> > > >  
-> > > >  	result = acpi_bus_update_power(device->handle, NULL);
-> > > >  	if (result) {
-> > > > -		printk(KERN_ERR PREFIX "Setting initial power state\n");
-> > > > +		dev_err(&device->dev, PREFIX "Setting initial power state\n");
-> > > 
-> > > While at it, please define a proper pr_fmt() for this file and get rid of PREFIX
-> > > too.
-> > > 
-> > > Otherwise I don't see a compelling reason to apply this.
-> > > 
-> > 
-> > Hi,
-> > Since in the patch I am not using any pr_* , so I am unable to understand why
-> > you are asking for a proper pr_fmt().
-> 
-> Never mind, I was confused somehow, not exactly sure why.  Sorry about that.
-> 
-> > I can get rid of the PREFIX . Then should I use pr_* in the patch instead of dev_* ? 
-> > My understanding was dev_* is more preffered than pr_*.
-> > waiting for your suggestion on this.
-> 
-> Well, that really depends on the particular case.  It really is better to use
-> dev_err() here, but then PREFIX with it is not really useful, so please just
-> drop PREFIX from the new messages.
+On Tue, Aug 26, 2014 at 6:47 AM, Pavel Machek <pavel@denx.de> wrote:
+> Hi!
+>
+>> > > mmc0: new SDHC card at address b368
+>> > > mmcblk0: mmc0:b368 USD   7.45 GiB
+>> > >  mmcblk0: p1 p2 p3 p4
+>> > > VFS: Cannot open root device "mmcblk0p2" or unknown-block(0,0): error
+>> > > -6
+>> > > Please append a correct "root=" boot option; here are the available
+>> > > partitions:
+>> > > b300         7822336 mmcblk0  driver: mmcblk
+>> > >   b301          102400 mmcblk0p1 00082434-01
+>> > >   b302         1048576 mmcblk0p2 00082434-02
+>> > >   b303            1024 mmcblk0p3 00082434-03
+>> > >   b304         6086656 mmcblk0p4 00082434-04
+>> > > Kernel panic - not syncing: VFS: Unable to mount root fs on
+>> > > unknown-block(0,0)
+>> > > CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.16.0-11208-gef74117-dirty
+>> > > #2
+>> >
+>> > Hmm...today's tip-top(899552d6) and ba36899 booted just fine for me. I
+>> > noticed something, you must have commits on top of your ba36899? Mine
+>> > shows 3.16.0-11149-gba36899.
+>>
+>> Ok, thanks for info. I went back to 3.16, and it worked in same
+>> config, and went to 3.17, and it broke.
+>
+> The problem is still there in 3.17-rc2. 3.16 does not have the
+> problem. Messages are still similar:
+>
+> mmc0: new high speed SDHC card at address b368
+> mmcblk0: mmc0:b368 USD   7.45 GiB
+>  mmcblk0: p1 p2 p3 p4
+> VFS: Cannot open root device "mmcblk0p2" or unknown-block(0,0): error
+> -6
+> Please append a correct "root=" boot option; here are the available
+> partitions:
+> b300         7822336 mmcblk0  driver: mmcblk
+>   b301          102400 mmcblk0p1 00082434-01
+>   b302         1048576 mmcblk0p2 00082434-02
+>   b303            1024 mmcblk0p3 00082434-03
+>   b304         6086656 mmcblk0p4 00082434-04
+> Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(0,0)
+> CPU: 0 PID: 1 Comm: swapper/0 Not tainted
+> 3.17.0-rc2-00368-gec0400b-dirty #83
+>
+>
+> What is going on there? Clearly partition table was parsed and
+> partitions are available; does the mention of unknown-block(0,0) mean
+> that kernel failed to parse the command line?
+>
+> I replaced "root=/dev/mmcblk0p2" with "root=b302" and have a booting
+> system.
 
-PREFIX is "ACPI: " so I think the idea is
-to be able to grep for that.
 
+Can you do a bisect? 3.17-rc2 booted fine for me today:
+
+EXT3-fs (mmcblk0p2): mounted filesystem with ordered data mode
+VFS: Mounted root (ext3 filesystem) on device 179:2.
+Freeing unused kernel memory: 252K (c052d000 - c056c000)
+random: nonblocking pool is initialized
+
+Poky 8.0 (Yocto Project 1.3 Reference Distro) 1.3 socfpga_cyclone5 ttyS0
+
+socfpga_cyclone5 login: root
+root@socfpga_cyclone5:~# uname -a
+Linux socfpga_cyclone5 3.17.0-rc2-00006-gdd7ad78 #1 SMP Tue Aug 26
+15:51:56 CDT 2014 armv7l GNU/Linux
+
+Dinh
