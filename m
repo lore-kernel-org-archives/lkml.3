@@ -1,154 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758643AbaHZOXM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 10:23:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46014 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755966AbaHZOXK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 10:23:10 -0400
-Message-ID: <53FC984B.7040805@suse.de>
-Date: Tue, 26 Aug 2014 16:23:07 +0200
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1758785AbaHZOYT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 10:24:19 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:47085 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758363AbaHZOYR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 10:24:17 -0400
+Message-ID: <53FC988E.8070007@plexistor.com>
+Date: Tue, 26 Aug 2014 17:24:14 +0300
+From: Boaz Harrosh <boaz@plexistor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: dgilbert@interlog.com,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-CC: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        linux-scsi@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
-        linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Christoph Hellwig <hch@lst.de>
-Subject: Re: [RFC PATCH -logging 00/10] scsi/constants: Output continuous
- error messages on trace
-References: <20140808115004.6768.97014.stgit@yuno-kbuild.novalocal> <53E4CB7B.7020705@interlog.com> <53EAD7CC.8030408@hitachi.com> <53F79FE8.7030406@interlog.com>
-In-Reply-To: <53F79FE8.7030406@interlog.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Michal Marek <mmarek@suse.cz>, Stable Tree <stable@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+CC: David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH] Makefile: One last adjustment to relative paths
+References: <53FAF8BF.3010008@plexistor.com> <53FB3CE7.9060609@suse.cz>
+In-Reply-To: <53FB3CE7.9060609@suse.cz>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2014 09:54 PM, Douglas Gilbert wrote:
-> On 14-08-12 11:13 PM, Yoshihiro YUNOMAE wrote:
->> Hi Douglas,
->>
->> Thank you for your comment.
->>
->> (2014/08/08 22:07), Douglas Gilbert wrote:
->>> On 14-08-08 01:50 PM, Yoshihiro YUNOMAE wrote:
->>>> Hi All,
->>>>
->>>> This patch set introduces new traceevents in order to output
->>>> continuous error
->>>> messages. Current SCSI printk messages in upstream kernel can be
->>>> divided by and
->>>> mixed with other messages. Even if each error message has its
->>>> device id,
->>>> sometimes we can easily be lost in mixed logs because the message's
->>>> device id
->>>> is separated from it's body. To avoid it, I'd like to use
->>>> traceevents to
->>>> store error messages into the ftrace or perf buuffer, because
->>>> traceevents
->>>> are atomically commited to the buffer.
->>>>
->>>> In this patch set, all printk messages are removed based on a local
->>>> discussion with Hannes, but I think printk messages should be kept
->>>> because all
->>>> users don't enable traceevents and rsyslog can store as files.
->>>>
->>>> However, if printk of logging branch is kept, the messages are
->>>> duplicate and
->>>> it can induce stack overflow by using local buffer(*1).
->>>>
->>>>   (*1) https://lkml.org/lkml/2014/5/20/742
->>>>
->>>> So, my suggestion is follows:
->>>>
->>>> 1) printk
->>>> Keeps current implemntation of upstream kernel.
->>>> The messages are divided and can be mixed, but all users can
->>>> check the
->>>> error
->>>> messages without any settings.
->>>>
->>>> 2) traceevents
->>>> To get the complete messages, we can use ftrace or perf (or
->>>> something
->>>> on them).
->>>> Users can always understand correct messages, but they need to
->>>> set up the
->>>> tracers.
->>>>
->>>> This patch set is based on Hannes' logging branch:
->>>> http://git.kernel.org/cgit/linux/kernel/git/hare/scsi-devel.git/log/?h=logging
->>>>
->>>>
->>>>
->>>> [1/10] ~  [6/10]: just cleanup for logging branch
->>>> [7/10] ~ [10/10]: introduce new traceevents
->>>>
->>>> Any comments are welcome!
->>>
->>> In sg3_utils there are now string yielding equivalents
->>> to the sense buffer "print" functions. They take a form
->>> like this:
->>>    char * get_sense_str(const unsigned char * sense_buffer,
->>>                         int sb_len, int blen, char * b);
->>>
->>> So this just does the hard work of decoding the sense buffer
->>> (or saying it is invalid) the result of which it places in
->>> buffer 'b'. And 'b' is returned (so this function can be in
->>> the arguments of a driver's printing function).
->>>
->>> Adding such string functions would give other parts of the
->>> SCSI subsystem the capability of tailoring their own
->>> messages that include sense data information.
->>>
->>>
->>> Existing sense buffer "print" function could be kept and
->>> implemented using the newer "_str" variants. Would that
->>> be worth the trouble?
->>
->> I have already sent the idea using local buffer on this February,
->> but it was rejected by James (*1). By using stack region for local
->> buffer, stack overflow can occur. So, I implemented this feature
->> to atomically output an error message with device information.
->>
->> (*1) https://lkml.org/lkml/2014/5/20/742
->
-> Hi,
-> In the "_str" variants that I referred to, the caller provides
-> the buffer and its length. The responsibility of the
-> implementation of those "_str" variants is to use that
-> buffer, not exceed it, and make sure that it is null terminated
-> on return.
->
-> Can't see any inherent threat to the stack size there, and if
-> there is then that is just bad design by the caller.
->
-> The advantage of the "_str" variants is that the caller can
-> supply context and print/log a more useful message, perhaps
-> including the caller's __func__ . That message could include
-> sense information (perhaps truncated to 128 bytes, say),
-> and be output as a single unit.
->
-> IMO too many log messages are multi-line and in a noisy,
-> misbehaving system those messages can be interleaved
-> with other "noise" making them difficult to decipher.
->
-Precisely, and that is what my patchset is trying to address.
+On 08/25/2014 04:40 PM, Michal Marek wrote:
+> 
+> So I don't understand why are you getting a message with a relative
+> path. I get an absolute path as expected here:
+> $ mkdir aaa
+> $ make O=aaa defconfig
+> make[1]: Entering directory `/home/mmarek/linux-2.6/aaa'
 
-I'm currently porting it to core-for-3.18, will be posting it
-for review once it's done.
+OK that was an operator error. You are absolutely right
 
-Cheers,
+What happened is that my makefile was using
+	make KBUILD_OUTPUT=.build_um -C linux
+and not
+	make O=.build_um -C linux
 
-Hannes
--- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+This was done at the time because when building out-of-tree
+modules (I Have some test modules that I build in my project)
+You must use KBUILD_OUTPUT= because O= is used by the external
+module build system.
+
+But reverting to use the O= as it should be all is well
+and it works as you say
+
+Sorry for the noise
+Boaz
+
