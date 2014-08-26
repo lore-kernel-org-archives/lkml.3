@@ -1,70 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756856AbaHZCel (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 22:34:41 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:52887 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752959AbaHZCej (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 22:34:39 -0400
+	id S1756916AbaHZCio (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 22:38:44 -0400
+Received: from mga02.intel.com ([134.134.136.20]:30623 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752959AbaHZCim (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 22:38:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,400,1406617200"; 
+   d="scan'208";a="563389601"
+Message-ID: <53FBF328.1080205@linux.intel.com>
+Date: Tue, 26 Aug 2014 10:38:32 +0800
+From: "Li, Aubrey" <aubrey.li@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <20140825140407.GH18167@minantech.com>
-References: <CA+U0gVjxF+o3xHPULUQ26wJs4myW3gxUODnUJ3xaYVT6-mFYdg@mail.gmail.com>
- <20140824093759.GG18167@minantech.com> <CA+U0gVg13bF_OwRbbH-ZW2Rb9TbYixwgF9m_Utt_cGWb_iH+qQ@mail.gmail.com>
- <20140825140407.GH18167@minantech.com>
-From: Dennis Chen <kernel.org.gnu@gmail.com>
-Date: Tue, 26 Aug 2014 10:34:18 +0800
-Message-ID: <CA+U0gVh_dWztJ4CQzbNTUKFmew75RE4kc=qrikdFm6hs3S2J0Q@mail.gmail.com>
-Subject: Re: [PATCH] KVM-Use value reading from MSR when construct the eptp in
- VMX mode
-To: Gleb Natapov <gleb@kernel.org>
-Cc: kvm <kvm@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        pbonzini@redhat.com, "wanpeng.li" <wanpeng.li@linux.intel.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+CC: Len Brown <lenb@kernel.org>, Kumar P Mahesh <mahesh.kumar.p@intel.com>,
+        Alan Cox <alan@linux.intel.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] intel_idle: add idle values for Cherrytrail/Braswell
+References: <1408701508-13636-1-git-send-email-mika.westerberg@linux.intel.com> <1408707540-12393-1-git-send-email-mika.westerberg@linux.intel.com> <53F74E5D.2040108@linux.intel.com> <20140825101200.GH1660@lahna.fi.intel.com>
+In-Reply-To: <20140825101200.GH1660@lahna.fi.intel.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 10:04 PM, Gleb Natapov <gleb@kernel.org> wrote:
-> On Mon, Aug 25, 2014 at 11:16:34AM +0800, Dennis Chen wrote:
->> On Sun, Aug 24, 2014 at 5:38 PM, Gleb Natapov <gleb@kernel.org> wrote:
->> > On Sun, Aug 24, 2014 at 11:54:32AM +0800, Dennis Chen wrote:
->> >> This patch is used to construct the eptp in vmx mode with values
->> >> readed from MSR according to the intel x86 software developer's
->> >> manual.
->> >>
->> >>  static u64 construct_eptp(unsigned long root_hpa)
->> >>  {
->> >> -    u64 eptp;
->> >> +    u64 eptp, pwl;
->> >> +
->> >> +    if (cpu_has_vmx_ept_4levels())
->> >> +        pwl = VMX_EPT_DEFAULT_GAW << VMX_EPT_GAW_EPTP_SHIFT;
->> >> +    else {
->> >> +        WARN(1, "Unsupported page-walk length of 4.\n");
->> > Page-walk length of 4 is the only one that is supported.
->> >
->> Since there is a bit 6 in IA32_VMX_EPT_VPID_CAP MSR indicating the
->> support for the page-walk length, I think sanity check is necessary.
->> But I just checked the code, it's already done in the hardware_setup()
->> function which will disable ept feature if the page-wake length is not
->> 4. Gleb, any comments for the memory type check part?
-> Looks fine, but are there CPUs out there that do not support WB for eptp? Since
-> there was no bug reports about it I assume no.
+On 2014/8/25 18:12, Mika Westerberg wrote:
+> On Fri, Aug 22, 2014 at 10:06:21PM +0800, Li, Aubrey wrote:
+>> On 2014/8/22 19:39, Mika Westerberg wrote:
+>>> From: Mahesh Kumar P <mahesh.kumar.p@intel.com>
+>>>
+>>> Cherrytrail/Braswell is a successor of Intel Baytrail but has slighly
+>>> different CPU idle values and latencies.
+>>>
+>>> Signed-off-by: Kumar P Mahesh <mahesh.kumar.p@intel.com>
+>>> Signed-off-by: Alan Cox <alan@linux.intel.com>
+>>> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+>>> ---
+>>> I learned from Mahesh that C1e, C4 and S0i2 states are deprecated so those
+>>> are now removed.
+>>
+>> If the platform has ACPI supported, I believe Len wants to see what
+>> C-states number exported by ACPI.
+>>
+>> Please boot the machine with "intel_idle.max_cstate=0" to disable
+>> intel_idle, then post the output of the following commands
+> 
+> OK, here goes:
 
-Hmm, currently I can't find a x86 processor that don't support WB for
-eptp, also there is no relevant bug reported.
-I just read the intel SDM 24.6.11: SW should read the VMX capability
-MSR_IA32_VMX_EPT_VPID_CAP to determine
-what EPT MT are supported. But looks like this is not a big concern in
-the community, so let's go back this thread if
-we encounter one unfornately in the future. Thanks for the comments.
+ACPI exposes 0x58 as C6 mwait hint while the patch proposes 0x52 for C6.
+Can you please remove "intel_idle.max_cstate=0" and run "dmesg | grep
+idle" again to see how many C6 supports in CPUID enumeration?
 
->
+Thanks,
+-Aubrey
+
+> 
+>> dmesg | grep idle
+> 
+> [    0.523624] cpuidle: using governor ladder
+> [    0.528215] cpuidle: using governor menu
+> [   16.649461] intel_idle: disabled
+> [   16.736481] ACPI: acpi_idle registered with cpuidle
+> 
+>> grep . /sys/devices/system/cpu/cpu0/cpuidle/*/*
+> 
+> /sys/devices/system/cpu/cpu0/cpuidle/state0/desc:CPUIDLE CORE POLL IDLE
+> /sys/devices/system/cpu/cpu0/cpuidle/state0/disable:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state0/latency:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state0/name:POLL
+> /sys/devices/system/cpu/cpu0/cpuidle/state0/power:4294967295
+> /sys/devices/system/cpu/cpu0/cpuidle/state0/residency:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state0/time:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state0/usage:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state1/desc:ACPI FFH INTEL MWAIT 0x0
+> /sys/devices/system/cpu/cpu0/cpuidle/state1/disable:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state1/latency:1
+> /sys/devices/system/cpu/cpu0/cpuidle/state1/name:C1
+> /sys/devices/system/cpu/cpu0/cpuidle/state1/power:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state1/residency:2
+> /sys/devices/system/cpu/cpu0/cpuidle/state1/time:1255076
+> /sys/devices/system/cpu/cpu0/cpuidle/state1/usage:763
+> /sys/devices/system/cpu/cpu0/cpuidle/state2/desc:ACPI FFH INTEL MWAIT 0x58
+> /sys/devices/system/cpu/cpu0/cpuidle/state2/disable:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state2/latency:500
+> /sys/devices/system/cpu/cpu0/cpuidle/state2/name:C2
+> /sys/devices/system/cpu/cpu0/cpuidle/state2/power:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state2/residency:1000
+> /sys/devices/system/cpu/cpu0/cpuidle/state2/time:1694866
+> /sys/devices/system/cpu/cpu0/cpuidle/state2/usage:639
+> /sys/devices/system/cpu/cpu0/cpuidle/state3/desc:ACPI FFH INTEL MWAIT 0x64
+> /sys/devices/system/cpu/cpu0/cpuidle/state3/disable:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state3/latency:5000
+> /sys/devices/system/cpu/cpu0/cpuidle/state3/name:C3
+> /sys/devices/system/cpu/cpu0/cpuidle/state3/power:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state3/residency:10000
+> /sys/devices/system/cpu/cpu0/cpuidle/state3/time:380547473
+> /sys/devices/system/cpu/cpu0/cpuidle/state3/usage:744
 > --
->                         Gleb.
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
 
-
-
--- 
-Den
