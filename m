@@ -1,68 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757408AbaHZHZC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 03:25:02 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:43191 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755391AbaHZHZA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 03:25:00 -0400
-Message-ID: <53FC363E.6050604@st.com>
-Date: Tue, 26 Aug 2014 09:24:46 +0200
-From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1757428AbaHZHZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 03:25:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36116 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755391AbaHZHZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 03:25:56 -0400
+Date: Tue, 26 Aug 2014 09:25:53 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+cc: =?ISO-8859-15?Q?=C9ric_Brunet?= <Eric.Brunet@lps.ens.fr>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HID: input: force generic axis to be mapped to their
+ user space axis
+In-Reply-To: <1408986430-24451-1-git-send-email-benjamin.tissoires@redhat.com>
+Message-ID: <alpine.LNX.2.00.1408260925420.2992@pobox.suse.cz>
+References: <1408986430-24451-1-git-send-email-benjamin.tissoires@redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Ley Foon Tan <lftan@altera.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: <lftan.linux@gmail.com>, Vince Bridgers <vbridger@altera.com>
-Subject: Re: [PATCH] net: stmmac: fix warning from Sparse for socfpga
-References: <1409037076-14775-1-git-send-email-lftan@altera.com>
-In-Reply-To: <1409037076-14775-1-git-send-email-lftan@altera.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.52.138.46]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
- definitions=2014-08-26_03:2014-08-25,2014-08-26,1970-01-01 signatures=0
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/26/2014 9:11 AM, Ley Foon Tan wrote:
-> Warning:
-> drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c:122:41:
-> sparse: cast removes address space of expression
-> drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c:122:38:
-> sparse: incorrect type in assignment (different address spaces)
->
-> Signed-off-by: Ley Foon Tan <lftan@altera.com>
-> ---
->   drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c | 3 ++-
->   1 file changed, 2 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c b/drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c
-> index cd613d7..c1addce 100644
-> --- a/drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c
-> +++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c
-> @@ -119,7 +119,8 @@ static int socfpga_dwmac_parse_data(struct socfpga_dwmac *dwmac, struct device *
->   			return -EINVAL;
->   		}
->
-> -		dwmac->splitter_base = (void *)devm_ioremap_resource(dev,
-> +		dwmac->splitter_base =
-> +			(void __iomem *)devm_ioremap_resource(dev,
+On Mon, 25 Aug 2014, Benjamin Tissoires wrote:
 
-I think, no casting should be done:
+> Atmel 840B digitizer presents a stylus interface which reports twice
+> the X coordinate and then twice the Y coordinate. In its current
+> implementation, hid-input assign the first X to X, then the second to Y,
+> then the first Y to Z, then the second one to RX.
+> 
+> This is wrong, and X should always be mapped to X, no matter what.
+> A solution consists in forcing X, Y, Z, RX, RY, RZ to be mapped to their
+> correct user space counter part.
+> 
+> Reported-by: Éric Brunet <Eric.Brunet@lps.ens.fr>
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 
-    dwmac->splitter_base = devm_ioremap_resource(dev, ....
+Applied, thanks.
 
-
-patch should be for net-next
-
-peppe
-
->   			&res_splitter);
->   		if (!dwmac->splitter_base) {
->   			dev_info(dev, "Failed to mapping emac splitter\n");
->
-
+-- 
+Jiri Kosina
+SUSE Labs
