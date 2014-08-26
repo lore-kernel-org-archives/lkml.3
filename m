@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933944AbaHZHqO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 03:46:14 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:63522 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933859AbaHZHqH (ORCPT
+	id S934011AbaHZHrG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 03:47:06 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:39026 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933860AbaHZHrB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 03:46:07 -0400
+	Tue, 26 Aug 2014 03:47:01 -0400
+Date: Tue, 26 Aug 2014 09:46:55 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: Stephen Hemminger <stephen@networkplumber.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Brendan Gregg <brendan.d.gregg@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 net-next 4/6] bpf: enable bpf syscall on x64 and i386
+Message-ID: <20140826074655.GB19799@gmail.com>
+References: <1409014858-1410-1-git-send-email-ast@plumgrid.com>
+ <1409014858-1410-5-git-send-email-ast@plumgrid.com>
+ <20140825205201.10ac5ee3@uryu.home.lan>
+ <CAMEtUuxicvHsEQ59CeG2kmLW0b4TQ9ExfDkKo2kktH-t8x5tBg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1408969564-6335-1-git-send-email-ulf.hansson@linaro.org>
-References: <1408969564-6335-1-git-send-email-ulf.hansson@linaro.org>
-Date: Tue, 26 Aug 2014 09:46:05 +0200
-X-Google-Sender-Auth: Fn_-J9H9-Y-SjjpBS-hhdUKZ0SQ
-Message-ID: <CAMuHMdWwhLuPp_-4Mhnk4tb_azCeLU7bYEgBUf4zR5bMmd6RHQ@mail.gmail.com>
-Subject: Re: [PATCH 00/12] mmc: tmio: Fixup PM support
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Linux MMC List <linux-mmc@vger.kernel.org>,
-        Ian Molton <ian.molton@codethink.co.uk>, Chris Ball <chris@printf.net>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMEtUuxicvHsEQ59CeG2kmLW0b4TQ9ExfDkKo2kktH-t8x5tBg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ulf,
 
-On Mon, Aug 25, 2014 at 2:25 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
-> This patchset fixup the PM support for tmio and the tmio hosts.
-> Some re-structuring of the code was also necessary to accomplish the above.
->
-> A few of these patches has been posted earlier, but at that time I couldn't get
-> help in testing them on hardware. Let's give this a second try now.
->
-> http://www.spinics.net/lists/linux-mmc/msg23177.html
->
-> Ulf Hansson (12):
->   mmc: tmio: Keep host active while SDIO IRQ is enabled
->   mmc: tmio: Keep host active while serving requests
->   mmc: tmio: Extract bus_width modifications to a separate function
->   mmc: tmio: Restructure ->set_ios() and adapt ->probe() to it
->   mmc: tmio: Handle clock gating from runtime PM functions
->   mmc: tmio: Mask all IRQs when inactive
->   mmc: tmio: Make runtime PM callbacks available for CONFIG_PM
->   mmc: sdhi: Make runtime PM callbacks available for CONFIG_PM
->   mmc: tmio_mmc: Enable runtime PM support
->   mmc: sdhi: Fixup system PM suspend lock-up
->   mmc: tmio_mmc: Fixup system PM suspend lock-up
->   mmc: tmio: Remove library functions for system PM
+* Alexei Starovoitov <ast@plumgrid.com> wrote:
 
-I gave this series a test run on r8a7791/Koelsch, everything seems to
-work fine.
-Even more important, s2ram was fixed by "mmc: sdhi: Fixup system PM
-suspend lock-up".
+> On Mon, Aug 25, 2014 at 8:52 PM, Stephen Hemminger
+> <stephen@networkplumber.org> wrote:
+> > Per discussion at Kernel Summit. Every new syscall requires
+> > a manual page and test programs. We have had too many new syscalls
+> > that are DOA.
+> 
+> There is verifier testsuite that is testing eBPF verifier from userspace
+> via bpf syscall. Also there are multiple examples and libbpf.
+> I think test coverage for bpf syscall is quite substantial already.
 
-For the whole series:
-Acked-by: Geert Uytterhoeven <geert+renesas@glider.be>
+This is in tools/bpf/, right?
 
-Thanks!
+Thanks,
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+	Ingo
