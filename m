@@ -1,524 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758433AbaHZOQF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 10:16:05 -0400
-Received: from regular1.263xmail.com ([211.150.99.139]:36117 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758228AbaHZOQB (ORCPT
+	id S1758581AbaHZOQV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 10:16:21 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:35907 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758249AbaHZOQD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 10:16:01 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: zyw@rock-chips.com
-X-FST-TO: robh+dt@kernel.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: zyw@rock-chips.com
-X-UNIQUE-TAG: <c4828e88109a8bfe1f24b3e5d62e9f26>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Chris Zhong <zyw@rock-chips.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        sameo@linux.intel.com, lee.jones@linaro.org, lgirdwood@gmail.com,
-        broonie@kernel.org, a.zummo@towertech.it, mturquette@linaro.org
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
-        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
-        xxx@rock-chips.com, dianders@chromium.org, heiko@sntech.de,
-        olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
-        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com,
-        Chris Zhong <zyw@rock-chips.com>
-Subject: [PATCH v6 3/5] RTC: RK808: add RTC driver for RK808
-Date: Tue, 26 Aug 2014 22:14:56 +0800
-Message-Id: <1409062496-12074-1-git-send-email-zyw@rock-chips.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 26 Aug 2014 10:16:03 -0400
+Date: Tue, 26 Aug 2014 23:15:43 +0900
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Chao Yu <chao2.yu@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, ngupta@vflare.org,
+        "'Jerome Marchand'" <jmarchan@redhat.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>
+Subject: Re: [PATCH v3] zram: add num_discards for discarded pages stat
+Message-ID: <20140826141543.GB934@swordfish>
+References: <000201cfbde2$2ae08710$80a19530$@samsung.com>
+ <20140825003610.GM17372@bbox>
+ <20140825110118.GA933@swordfish>
+ <20140826050839.GF11319@bbox>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140826050839.GF11319@bbox>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding RTC driver for supporting RTC device present inside RK808 PMIC.
+Hello,
 
-Signed-off-by: Chris Zhong <zyw@rock-chips.com>
-Signed-off-by: Zhang Qing <zhangqing@rock-chips.com>
+On (08/26/14 14:08), Minchan Kim wrote:
+> Hi,
+> 
+> On Mon, Aug 25, 2014 at 08:01:18PM +0900, Sergey Senozhatsky wrote:
+> > Hello,
+> > 
+> > On (08/25/14 09:36), Minchan Kim wrote:
+> > > Hello Chao,
+> > > 
+> > > On Fri, Aug 22, 2014 at 04:21:01PM +0800, Chao Yu wrote:
+> > > > Since we have supported handling discard request in this commit
+> > > > f4659d8e620d08bd1a84a8aec5d2f5294a242764 (zram: support REQ_DISCARD), zram got
+> > > > one more chance to free unused memory whenever received discard request. But
+> > > > without stating for discard request, there is no method for user to know whether
+> > > > discard request has been handled by zram or how many blocks were discarded by
+> > > > zram when user wants to know the effect of discard.
+> > > 
+> > > My concern is that how much we are able to know the effect of discard
+> > > exactly with your patch.
+> > > 
+> > > The issue I can think of is zram-swap discard.
+> > > Now, zram handles notification from VM to free duplicated copy between
+> > > VM-owned memory and zRAM-owned's one so discarding for zram-swap might
+> > > be pointless overhead but your stat indicates lots of free page discarded
+> > > without real freeing 
+> > 
+> > this is why I've moved stats accounting to the place where actual
+> > zs_free() happens. and, frankly, I still would like to see the number
+> > of zs_free() calls, rather than the number of slot free notifications
+> > and REQ_DISCARD (or separately), because they all end up calling
+> > zs_free(). iow, despite the call path, from the user point of view
+> > they are just zs_free() -- the number of pages that's been freed by
+> > the 3rd party and we had have to deal with that.
+> 
+> My qeustion is that what user can do with the only real freeing count?
+> Could you give me a concret example?
 
----
+for !swap device case it's identicall to `num_discarded'.
+for swap device case, it's a bit more complicated (less convenient) if
+we actually can receive both slot free and delayed REQ_DISCARDs.
 
-Changes in v6:
-Adviced by doug
-- move RTC_READSEL setting into probe
+> It's a just number of real freeing count so if you were admin, what
+> do you expect from that? That's what I'd like to see in changelog.
+> 
+> > 
+> > > so that user might think "We should keep enable
+> > > swap discard for zRAM because the stat indicates it's really good".
+> > > 
+> > > In summary, wouldn't it better to have two?
+> > > 
+> > > num_discards,
+> > > num_failed_discards?
+> > 
+> > do we actully need this? the only value I can think of (perhaps I'm
+> > missing something) is that we can make sure that we need to support
+> > both slot free and REQ_DISCARDS, or we can leave only REQ_DISCARDS.
+> > is there anything else?
+> 
+> The secnario I imagined with two stat is how REQ_DISCARDS is effective
+> from swap layer. Normally, slot free logic is called in advance
+> when the page is zapped or swap read happens to avoid duplicate copy,
+> so discard request from swap space would be just overhead without
+> any benefit so we might guide zram-swap user don't use "swap -d".
+> Otherwise, as failed_discard ratio is low, it means it would be
+> better to remove swap slot free logic because swap discard works well
+> without slot free hint.(Although I don't think)
 
-Changes in v5:
-- fixed a bug about set_time failed
-
-Changes in v4:
-- use &client->dev replace rk808->dev
-
-Changes in v3: None
-Changes in v2:
-Adviced by javier.martinez
-- Add a separate clock driver, rather than in RTC driver
-
- drivers/rtc/Kconfig     |   10 ++
- drivers/rtc/Makefile    |    1 +
- drivers/rtc/rtc-rk808.c |  412 +++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 423 insertions(+)
- create mode 100644 drivers/rtc/rtc-rk808.c
-
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index a168e96..aeab9d9 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -288,6 +288,16 @@ config RTC_DRV_MAX77686
- 	  This driver can also be built as a module. If so, the module
- 	  will be called rtc-max77686.
- 
-+config RTC_DRV_RK808
-+	tristate "Rockchip RK808 RTC"
-+	depends on MFD_RK808
-+	help
-+	  If you say yes here you will get support for the
-+	  RTC of RK808 PMIC.
-+
-+	  This driver can also be built as a module. If so, the module
-+	  will be called rk808-rtc.
-+
- config RTC_DRV_RS5C372
- 	tristate "Ricoh R2025S/D, RS5C372A/B, RV5C386, RV5C387A"
- 	help
-diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-index 56f061c..91fe4647 100644
---- a/drivers/rtc/Makefile
-+++ b/drivers/rtc/Makefile
-@@ -109,6 +109,7 @@ obj-$(CONFIG_RTC_DRV_PUV3)	+= rtc-puv3.o
- obj-$(CONFIG_RTC_DRV_PXA)	+= rtc-pxa.o
- obj-$(CONFIG_RTC_DRV_R9701)	+= rtc-r9701.o
- obj-$(CONFIG_RTC_DRV_RC5T583)	+= rtc-rc5t583.o
-+obj-$(CONFIG_RTC_DRV_RK808)	+= rtc-rk808.o
- obj-$(CONFIG_RTC_DRV_RP5C01)	+= rtc-rp5c01.o
- obj-$(CONFIG_RTC_DRV_RS5C313)	+= rtc-rs5c313.o
- obj-$(CONFIG_RTC_DRV_RS5C348)	+= rtc-rs5c348.o
-diff --git a/drivers/rtc/rtc-rk808.c b/drivers/rtc/rtc-rk808.c
-new file mode 100644
-index 0000000..00cd997
---- /dev/null
-+++ b/drivers/rtc/rtc-rk808.c
-@@ -0,0 +1,412 @@
-+/*
-+ * RTC driver for Rockchip RK808
-+ *
-+ * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/rtc.h>
-+#include <linux/bcd.h>
-+#include <linux/mfd/rk808.h>
-+#include <linux/platform_device.h>
-+#include <linux/i2c.h>
-+
-+/* RTC_CTRL_REG bitfields */
-+#define BIT_RTC_CTRL_REG_STOP_RTC_M		BIT(0)
-+#define BIT_RTC_CTRL_REG_RTC_READSEL_M		BIT(7)
-+#define BIT_RTC_INTERRUPTS_REG_IT_ALARM_M	BIT(3)
-+#define RTC_STATUS_MASK		0xFE
-+
-+#define SECONDS_REG_MSK		0x7F
-+#define MINUTES_REG_MAK		0x7F
-+#define HOURS_REG_MSK		0x3F
-+#define DAYS_REG_MSK		0x3F
-+#define MONTHS_REG_MSK		0x1F
-+#define YEARS_REG_MSK		0xFF
-+#define WEEKS_REG_MSK		0x7
-+
-+/* REG_SECONDS_REG through REG_YEARS_REG is how many registers? */
-+
-+#define NUM_TIME_REGS	(RK808_WEEKS_REG - RK808_SECONDS_REG + 1)
-+#define NUM_ALARM_REGS	(RK808_ALARM_YEARS_REG - RK808_ALARM_SECONDS_REG + 1)
-+
-+struct rk808_rtc {
-+	struct rk808 *rk808;
-+	struct rtc_device *rtc;
-+	int irq;
-+};
-+
-+/* Read current time and date in RTC */
-+static int rk808_rtc_readtime(struct device *dev, struct rtc_time *tm)
-+{
-+	struct rk808_rtc *rk808_rtc = dev_get_drvdata(dev);
-+	struct rk808 *rk808 = rk808_rtc->rk808;
-+	u8 rtc_data[NUM_TIME_REGS];
-+	int ret;
-+
-+	ret = regmap_bulk_read(rk808->regmap, RK808_SECONDS_REG,
-+			       rtc_data, NUM_TIME_REGS);
-+	if (ret) {
-+		dev_err(dev, "Failed to bulk read rtc_data: %d\n", ret);
-+		return ret;
-+	}
-+
-+	tm->tm_sec = bcd2bin(rtc_data[0] & SECONDS_REG_MSK);
-+	tm->tm_min = bcd2bin(rtc_data[1] & MINUTES_REG_MAK);
-+	tm->tm_hour = bcd2bin(rtc_data[2] & HOURS_REG_MSK);
-+	tm->tm_mday = bcd2bin(rtc_data[3] & DAYS_REG_MSK);
-+	tm->tm_mon = (bcd2bin(rtc_data[4] & MONTHS_REG_MSK)) - 1;
-+	tm->tm_year = (bcd2bin(rtc_data[5] & YEARS_REG_MSK)) + 100;
-+	tm->tm_wday = bcd2bin(rtc_data[6] & WEEKS_REG_MSK);
-+	dev_dbg(dev, "RTC date/time %4d-%02d-%02d(%d) %02d:%02d:%02d\n",
-+		1900 + tm->tm_year, tm->tm_mon + 1, tm->tm_mday,
-+		tm->tm_wday, tm->tm_hour , tm->tm_min, tm->tm_sec);
-+
-+	return 0;
-+}
-+
-+/* Set current time and date in RTC */
-+static int rk808_rtc_set_time(struct device *dev, struct rtc_time *tm)
-+{
-+	struct rk808_rtc *rk808_rtc = dev_get_drvdata(dev);
-+	struct rk808 *rk808 = rk808_rtc->rk808;
-+	u8 rtc_data[NUM_TIME_REGS];
-+	int ret;
-+
-+	rtc_data[0] = bin2bcd(tm->tm_sec);
-+	rtc_data[1] = bin2bcd(tm->tm_min);
-+	rtc_data[2] = bin2bcd(tm->tm_hour);
-+	rtc_data[3] = bin2bcd(tm->tm_mday);
-+	rtc_data[4] = bin2bcd(tm->tm_mon + 1);
-+	rtc_data[5] = bin2bcd(tm->tm_year - 100);
-+	rtc_data[6] = bin2bcd(tm->tm_wday);
-+	dev_dbg(dev, "set RTC date/time %4d-%02d-%02d(%d) %02d:%02d:%02d\n",
-+		1900 + tm->tm_year, tm->tm_mon + 1, tm->tm_mday,
-+		tm->tm_wday, tm->tm_hour , tm->tm_min, tm->tm_sec);
-+
-+	/* Stop RTC while updating the RTC registers */
-+	ret = regmap_update_bits(rk808->regmap, RK808_RTC_CTRL_REG,
-+				 BIT_RTC_CTRL_REG_STOP_RTC_M,
-+				 BIT_RTC_CTRL_REG_STOP_RTC_M);
-+	if (ret) {
-+		dev_err(dev, "Failed to update RTC control: %d\n", ret);
-+		return ret;
-+	}
-+
-+	ret = regmap_bulk_write(rk808->regmap, RK808_SECONDS_REG,
-+				rtc_data, NUM_TIME_REGS);
-+	if (ret) {
-+		dev_err(dev, "Failed to bull write rtc_data: %d\n", ret);
-+		return ret;
-+	}
-+	/* Start RTC again */
-+	ret = regmap_update_bits(rk808->regmap, RK808_RTC_CTRL_REG,
-+				 BIT_RTC_CTRL_REG_STOP_RTC_M, 0);
-+	if (ret) {
-+		dev_err(dev, "Failed to update RTC control: %d\n", ret);
-+		return ret;
-+	}
-+	return 0;
-+}
-+
-+/* Read alarm time and date in RTC */
-+static int rk808_rtc_readalarm(struct device *dev, struct rtc_wkalrm *alrm)
-+{
-+	struct rk808_rtc *rk808_rtc = dev_get_drvdata(dev);
-+	struct rk808 *rk808 = rk808_rtc->rk808;
-+	u8 alrm_data[NUM_ALARM_REGS];
-+	uint32_t int_reg;
-+	int ret;
-+
-+	ret = regmap_bulk_read(rk808->regmap, RK808_ALARM_SECONDS_REG,
-+			       alrm_data, NUM_ALARM_REGS);
-+
-+	alrm->time.tm_sec = bcd2bin(alrm_data[0] & SECONDS_REG_MSK);
-+	alrm->time.tm_min = bcd2bin(alrm_data[1] & MINUTES_REG_MAK);
-+	alrm->time.tm_hour = bcd2bin(alrm_data[2] & HOURS_REG_MSK);
-+	alrm->time.tm_mday = bcd2bin(alrm_data[3] & DAYS_REG_MSK);
-+	alrm->time.tm_mon = (bcd2bin(alrm_data[4] & MONTHS_REG_MSK)) - 1;
-+	alrm->time.tm_year = (bcd2bin(alrm_data[5] & YEARS_REG_MSK)) + 100;
-+
-+	ret = regmap_read(rk808->regmap, RK808_RTC_INT_REG, &int_reg);
-+	if (ret) {
-+		dev_err(dev, "Failed to read RTC INT REG: %d\n", ret);
-+		return ret;
-+	}
-+
-+	dev_dbg(dev, "alrm read RTC date/time %4d-%02d-%02d(%d) %02d:%02d:%02d\n",
-+		1900 + alrm->time.tm_year, alrm->time.tm_mon + 1,
-+		alrm->time.tm_mday, alrm->time.tm_wday, alrm->time.tm_hour,
-+		alrm->time.tm_min, alrm->time.tm_sec);
-+
-+	alrm->enabled = (int_reg & BIT_RTC_INTERRUPTS_REG_IT_ALARM_M) ? 1 : 0;
-+
-+	return 0;
-+}
-+
-+static int rk808_rtc_stop_alarm(struct rk808_rtc *rk808_rtc)
-+{
-+	struct rk808 *rk808 = rk808_rtc->rk808;
-+	int ret;
-+
-+	ret = regmap_update_bits(rk808->regmap, RK808_RTC_INT_REG,
-+				 BIT_RTC_INTERRUPTS_REG_IT_ALARM_M, 0);
-+
-+	return ret;
-+}
-+
-+static int rk808_rtc_start_alarm(struct rk808_rtc *rk808_rtc)
-+{
-+	struct rk808 *rk808 = rk808_rtc->rk808;
-+	int ret;
-+
-+	ret = regmap_update_bits(rk808->regmap, RK808_RTC_INT_REG,
-+				 BIT_RTC_INTERRUPTS_REG_IT_ALARM_M,
-+				 BIT_RTC_INTERRUPTS_REG_IT_ALARM_M);
-+
-+	return ret;
-+}
-+
-+static int rk808_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
-+{
-+	struct rk808_rtc *rk808_rtc = dev_get_drvdata(dev);
-+	struct rk808 *rk808 = rk808_rtc->rk808;
-+	u8 alrm_data[NUM_ALARM_REGS];
-+	int ret;
-+
-+	ret = rk808_rtc_stop_alarm(rk808_rtc);
-+	if (ret) {
-+		dev_err(dev, "Failed to stop alarm: %d\n", ret);
-+		return ret;
-+	}
-+	dev_dbg(dev, "alrm set RTC date/time %4d-%02d-%02d(%d) %02d:%02d:%02d\n",
-+		1900 + alrm->time.tm_year, alrm->time.tm_mon + 1,
-+		alrm->time.tm_mday, alrm->time.tm_wday, alrm->time.tm_hour,
-+		alrm->time.tm_min, alrm->time.tm_sec);
-+
-+	alrm_data[0] = bin2bcd(alrm->time.tm_sec);
-+	alrm_data[1] = bin2bcd(alrm->time.tm_min);
-+	alrm_data[2] = bin2bcd(alrm->time.tm_hour);
-+	alrm_data[3] = bin2bcd(alrm->time.tm_mday);
-+	alrm_data[4] = bin2bcd(alrm->time.tm_mon + 1);
-+	alrm_data[5] = bin2bcd(alrm->time.tm_year - 100);
-+
-+	ret = regmap_bulk_write(rk808->regmap, RK808_ALARM_SECONDS_REG,
-+				alrm_data, NUM_ALARM_REGS);
-+	if (ret) {
-+		dev_err(dev, "Failed to bulk write: %d\n", ret);
-+		return ret;
-+	}
-+	if (alrm->enabled) {
-+		ret = rk808_rtc_start_alarm(rk808_rtc);
-+		if (ret) {
-+			dev_err(dev, "Failed to start alarm: %d\n", ret);
-+			return ret;
-+		}
-+	}
-+	return 0;
-+}
-+
-+static int rk808_rtc_alarm_irq_enable(struct device *dev,
-+				      unsigned int enabled)
-+{
-+	struct rk808_rtc *rk808_rtc = dev_get_drvdata(dev);
-+
-+	if (enabled)
-+		return rk808_rtc_start_alarm(rk808_rtc);
-+
-+	return rk808_rtc_stop_alarm(rk808_rtc);
-+}
-+
-+/*
-+ * We will just handle setting the frequency and make use the framework for
-+ * reading the periodic interupts.
-+ *
-+ * @freq: Current periodic IRQ freq:
-+ * bit 0: every second
-+ * bit 1: every minute
-+ * bit 2: every hour
-+ * bit 3: every day
-+ */
-+static irqreturn_t rk808_alarm_irq(int irq, void *data)
-+{
-+	struct rk808_rtc *rk808_rtc = data;
-+	struct rk808 *rk808 = rk808_rtc->rk808;
-+	struct i2c_client *client = rk808->i2c;
-+	uint32_t rtc_ctl;
-+	int ret;
-+
-+	ret = regmap_write(rk808->regmap, RK808_RTC_STATUS_REG,
-+			   RTC_STATUS_MASK);
-+	if (ret) {
-+		dev_err(&client->dev,
-+			"%s:Failed to update RTC status: %d\n", __func__, ret);
-+		return ret;
-+	}
-+
-+	rtc_update_irq(rk808_rtc->rtc, 1, RTC_IRQF | RTC_AF);
-+	dev_dbg(&client->dev,
-+		 "%s:irq=%d,rtc_ctl=0x%x\n", __func__, irq, rtc_ctl);
-+	return IRQ_HANDLED;
-+}
-+
-+static const struct rtc_class_ops rk808_rtc_ops = {
-+	.read_time = rk808_rtc_readtime,
-+	.set_time = rk808_rtc_set_time,
-+	.read_alarm = rk808_rtc_readalarm,
-+	.set_alarm = rk808_rtc_setalarm,
-+	.alarm_irq_enable = rk808_rtc_alarm_irq_enable,
-+};
-+
-+#ifdef CONFIG_PM
-+/* Turn off the alarm if it should not be a wake source. */
-+static int rk808_rtc_suspend(struct device *dev)
-+{
-+	struct platform_device *pdev = to_platform_device(dev);
-+	struct rk808_rtc *rk808_rtc = dev_get_drvdata(&pdev->dev);
-+
-+	if (device_may_wakeup(dev))
-+		enable_irq_wake(rk808_rtc->irq);
-+
-+	return 0;
-+}
-+
-+/* Enable the alarm if it should be enabled (in case it was disabled to
-+ * prevent use as a wake source).
-+ */
-+static int rk808_rtc_resume(struct device *dev)
-+{
-+	struct platform_device *pdev = to_platform_device(dev);
-+	struct rk808_rtc *rk808_rtc = dev_get_drvdata(&pdev->dev);
-+
-+	if (device_may_wakeup(dev))
-+		disable_irq_wake(rk808_rtc->irq);
-+
-+	return 0;
-+}
-+#else
-+#define rk808_rtc_suspend NULL
-+#define rk808_rtc_resume NULL
-+#endif
-+
-+static const struct dev_pm_ops rk808_rtc_pm_ops = {
-+	.suspend = rk808_rtc_suspend,
-+	.resume = rk808_rtc_resume,
-+	.poweroff = rk808_rtc_suspend,
-+};
-+
-+/* 2012.1.1 12:00:00 Saturday */
-+struct rtc_time tm_def = {
-+			.tm_wday = 6,
-+			.tm_year = 114,
-+			.tm_mon = 0,
-+			.tm_mday = 1,
-+			.tm_hour = 12,
-+			.tm_min = 0,
-+			.tm_sec = 0,
-+};
-+
-+static int rk808_rtc_probe(struct platform_device *pdev)
-+{
-+	struct rk808 *rk808 = dev_get_drvdata(pdev->dev.parent);
-+	struct rk808_rtc *rk808_rtc;
-+	struct rtc_time tm;
-+	int ret;
-+
-+	rk808_rtc = devm_kzalloc(&pdev->dev, sizeof(*rk808_rtc), GFP_KERNEL);
-+	if (rk808_rtc == NULL)
-+		return -ENOMEM;
-+
-+	platform_set_drvdata(pdev, rk808_rtc);
-+	rk808_rtc->rk808 = rk808;
-+
-+	/* start rtc running by default.
-+	 * RK808 has a shadowed register for saving a "frozen" RTC time.
-+	 * When user setting "RTC_READSEL" to 1, the time will save in this
-+	 * shadowed register. In this case, user read rtc time register,
-+	 * actually get the time of that moment. We need the real time,
-+	 * so clr this bit.
-+	 */
-+	ret = regmap_update_bits(rk808->regmap, RK808_RTC_CTRL_REG,
-+				 BIT_RTC_CTRL_REG_STOP_RTC_M |
-+				 BIT_RTC_CTRL_REG_RTC_READSEL_M, 0);
-+	if (ret) {
-+		dev_err(&pdev->dev,
-+			"Failed to update RTC control: %d\n", ret);
-+		return ret;
-+	}
-+
-+	ret = regmap_write(rk808->regmap, RK808_RTC_STATUS_REG,
-+			   RTC_STATUS_MASK);
-+	if (ret) {
-+		dev_err(&pdev->dev,
-+			"Failed to write RTC status: %d\n", ret);
-+			return ret;
-+	}
-+
-+	/* set init time */
-+	ret = rk808_rtc_readtime(&pdev->dev, &tm);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Failed to read RTC time\n");
-+		return ret;
-+	}
-+	ret = rtc_valid_tm(&tm);
-+	if (ret) {
-+		dev_warn(&pdev->dev, "invalid date/time and init time\n");
-+		rk808_rtc_set_time(&pdev->dev, &tm_def);
-+	}
-+
-+	device_init_wakeup(&pdev->dev, 1);
-+
-+	rk808_rtc->rtc = devm_rtc_device_register(&pdev->dev, "rk808-rtc",
-+						  &rk808_rtc_ops, THIS_MODULE);
-+	if (IS_ERR(rk808_rtc->rtc)) {
-+		ret = PTR_ERR(rk808_rtc->rtc);
-+		return ret;
-+	}
-+
-+	rk808_rtc->irq  = platform_get_irq(pdev, 0);
-+	if (rk808_rtc->irq <= 0) {
-+		dev_warn(&pdev->dev, "Wake up is not possible as irq = %d\n",
-+			rk808_rtc->irq);
-+		return rk808_rtc->irq;
-+	}
-+
-+	/* request alarm irq of rk808 */
-+	ret = devm_request_threaded_irq(&pdev->dev, rk808_rtc->irq, NULL,
-+					rk808_alarm_irq,
-+					IRQF_TRIGGER_LOW | IRQF_EARLY_RESUME,
-+					"RTC alarm", rk808_rtc);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Failed to request alarm IRQ %d: %d\n",
-+			rk808_rtc->irq, ret);
-+	}
-+
-+	return ret;
-+}
-+
-+static struct platform_driver rk808_rtc_driver = {
-+	.probe = rk808_rtc_probe,
-+	.driver = {
-+		.name = "rk808-rtc",
-+		.pm = &rk808_rtc_pm_ops,
-+	},
-+};
-+
-+module_platform_driver(rk808_rtc_driver);
-+
-+MODULE_DESCRIPTION("RTC driver for the rk808 series PMICs");
-+MODULE_AUTHOR("Chris Zhong <zyw@rock-chips.com>");
-+MODULE_AUTHOR("Zhang Qing <zhanqging@rock-chips.com>");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:rk808-rtc");
--- 
-1.7.9.5
+yes, so it looks like it is a developer's stat - to make some
+observations and to come up with some decisions. do we really
+want to put it into release?
 
 
+I'm not strongly against and we can proceed with Chao's patch.
+
+	-ss
+
+> My point is I'm not saying you're wrong but adding a new stat is easy
+> and I need a compelling reason that how it can help users.
+> 
+> Thanks.
+> 
+> > 
+> > 	-ss
+> > 
+> > > For it, we should modify zram_free_page has return value.
+> > > What do other guys think?
+> > > 
+> > > > 
+> > > > In this patch, we add num_discards to stat discarded pages, and export it to
+> > > > sysfs for users.
+> > > > 
+> > > > * From v1
+> > > >  * Update zram document to show num_discards in statistics list.
+> > > > 
+> > > > * From v2
+> > > >  * Update description of this patch with clear goal.
+> > > > 
+> > > > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> > > > ---
+> > > >  Documentation/ABI/testing/sysfs-block-zram | 10 ++++++++++
+> > > >  Documentation/blockdev/zram.txt            |  1 +
+> > > >  drivers/block/zram/zram_drv.c              |  3 +++
+> > > >  drivers/block/zram/zram_drv.h              |  1 +
+> > > >  4 files changed, 15 insertions(+)
+> > > > 
+> > > > diff --git a/Documentation/ABI/testing/sysfs-block-zram b/Documentation/ABI/testing/sysfs-block-zram
+> > > > index 70ec992..fa8936e 100644
+> > > > --- a/Documentation/ABI/testing/sysfs-block-zram
+> > > > +++ b/Documentation/ABI/testing/sysfs-block-zram
+> > > > @@ -57,6 +57,16 @@ Description:
+> > > >  		The failed_writes file is read-only and specifies the number of
+> > > >  		failed writes happened on this device.
+> > > >  
+> > > > +
+> > > > +What:		/sys/block/zram<id>/num_discards
+> > > > +Date:		August 2014
+> > > > +Contact:	Chao Yu <chao2.yu@samsung.com>
+> > > > +Description:
+> > > > +		The num_discards file is read-only and specifies the number of
+> > > > +		physical blocks which are discarded by this device. These blocks
+> > > > +		are included in discard request which is sended by filesystem as
+> > > > +		the blocks are no longer used.
+> > > > +
+> > > >  What:		/sys/block/zram<id>/max_comp_streams
+> > > >  Date:		February 2014
+> > > >  Contact:	Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> > > > diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
+> > > > index 0595c3f..e50e18b 100644
+> > > > --- a/Documentation/blockdev/zram.txt
+> > > > +++ b/Documentation/blockdev/zram.txt
+> > > > @@ -89,6 +89,7 @@ size of the disk when not in use so a huge zram is wasteful.
+> > > >  		num_writes
+> > > >  		failed_reads
+> > > >  		failed_writes
+> > > > +		num_discards
+> > > >  		invalid_io
+> > > >  		notify_free
+> > > >  		zero_pages
+> > > > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> > > > index d00831c..904e7a5 100644
+> > > > --- a/drivers/block/zram/zram_drv.c
+> > > > +++ b/drivers/block/zram/zram_drv.c
+> > > > @@ -606,6 +606,7 @@ static void zram_bio_discard(struct zram *zram, u32 index,
+> > > >  		bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
+> > > >  		zram_free_page(zram, index);
+> > > >  		bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
+> > > > +		atomic64_inc(&zram->stats.num_discards);
+> > > >  		index++;
+> > > >  		n -= PAGE_SIZE;
+> > > >  	}
+> > > > @@ -866,6 +867,7 @@ ZRAM_ATTR_RO(num_reads);
+> > > >  ZRAM_ATTR_RO(num_writes);
+> > > >  ZRAM_ATTR_RO(failed_reads);
+> > > >  ZRAM_ATTR_RO(failed_writes);
+> > > > +ZRAM_ATTR_RO(num_discards);
+> > > >  ZRAM_ATTR_RO(invalid_io);
+> > > >  ZRAM_ATTR_RO(notify_free);
+> > > >  ZRAM_ATTR_RO(zero_pages);
+> > > > @@ -879,6 +881,7 @@ static struct attribute *zram_disk_attrs[] = {
+> > > >  	&dev_attr_num_writes.attr,
+> > > >  	&dev_attr_failed_reads.attr,
+> > > >  	&dev_attr_failed_writes.attr,
+> > > > +	&dev_attr_num_discards.attr,
+> > > >  	&dev_attr_invalid_io.attr,
+> > > >  	&dev_attr_notify_free.attr,
+> > > >  	&dev_attr_zero_pages.attr,
+> > > > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+> > > > index e0f725c..2994aaf 100644
+> > > > --- a/drivers/block/zram/zram_drv.h
+> > > > +++ b/drivers/block/zram/zram_drv.h
+> > > > @@ -86,6 +86,7 @@ struct zram_stats {
+> > > >  	atomic64_t num_writes;	/* --do-- */
+> > > >  	atomic64_t failed_reads;	/* can happen when memory is too low */
+> > > >  	atomic64_t failed_writes;	/* can happen when memory is too low */
+> > > > +	atomic64_t num_discards;	/* no. of discarded pages */
+> > > >  	atomic64_t invalid_io;	/* non-page-aligned I/O requests */
+> > > >  	atomic64_t notify_free;	/* no. of swap slot free notifications */
+> > > >  	atomic64_t zero_pages;		/* no. of zero filled pages */
+> > > > -- 
+> > > > 2.0.1.474.g72c7794
+> > > > 
+> > > > 
+> > > > --
+> > > > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > > > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > > > see: http://www.linux-mm.org/ .
+> > > > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> > > 
+> > > -- 
+> > > Kind regards,
+> > > Minchan Kim
+> > > 
+> > 
+> > --
+> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > see: http://www.linux-mm.org/ .
+> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+> -- 
+> Kind regards,
+> Minchan Kim
+> 
