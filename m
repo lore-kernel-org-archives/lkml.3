@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934162AbaHZIMm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 04:12:42 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33507 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933894AbaHZIMj (ORCPT
+	id S934034AbaHZISE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 04:18:04 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:53622 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933875AbaHZISA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 04:12:39 -0400
-Date: Tue, 26 Aug 2014 09:12:31 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org
-Message-ID: <20140826081231.GY17528@sirena.org.uk>
-References: <1408887148-7627-1-git-send-email-lars@metafoo.de>
+	Tue, 26 Aug 2014 04:18:00 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: David Miller <davem@davemloft.net>
+Cc: dborkman@redhat.com, ffusco@redhat.com, tgraf@suug.ch,
+        linux-kernel@vger.kernel.org, matthew@wil.cx, wli@holomorphy.com,
+        akpm@linux-foundation.org, nyc@holomorphy.com
+Subject: Re: [PATCH/RFC] hash: Let gcc decide how to multiply
+Organization: D03
+References: <1408968804-7295-1-git-send-email-linux@rasmusvillemoes.dk>
+	<53FB32FD.4000603@redhat.com>
+	<20140825.114754.1052522152538122040.davem@davemloft.net>
+X-Hashcash: 1:20:140826:akpm@linux-foundation.org::59cN5Z3l9HxpZjJf:0000000000000000000000000000000000000RUu
+X-Hashcash: 1:20:140826:tgraf@suug.ch::M2YeQg5KjiCYqQT3:00000Fcn
+X-Hashcash: 1:20:140826:nyc@holomorphy.com::o0w34y6x1XiDaUO2:00000000000000000000000000000000000000000001RwZ
+X-Hashcash: 1:20:140826:davem@davemloft.net::OjTUCAt8XQbAWyPg:0000000000000000000000000000000000000000002l50
+X-Hashcash: 1:20:140826:linux-kernel@vger.kernel.org::pAnUedFMpjixSefH:0000000000000000000000000000000002qI6
+X-Hashcash: 1:20:140826:ffusco@redhat.com::vFvEGd1sldol8Hxk:0000000000000000000000000000000000000000000023FU
+X-Hashcash: 1:20:140826:wli@holomorphy.com::nWG951nqD+bCHRHn:00000000000000000000000000000000000000000002SVk
+X-Hashcash: 1:20:140826:dborkman@redhat.com::6UXCd4Pmd/IO2L/I:0000000000000000000000000000000000000000003vp/
+X-Hashcash: 1:20:140826:matthew@wil.cx::8Yh2t9fQB+Ztqqlp:0009PaN
+Date: Tue, 26 Aug 2014 10:17:57 +0200
+In-Reply-To: <20140825.114754.1052522152538122040.davem@davemloft.net> (David
+	Miller's message of "Mon, 25 Aug 2014 11:47:54 -0700 (PDT)")
+Message-ID: <87sikjhdfu.fsf@rasmusvillemoes.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Vi7KrP2J1YMdfyss"
-Content-Disposition: inline
-In-Reply-To: <1408887148-7627-1-git-send-email-lars@metafoo.de>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regmap: Fix regcache debugfs initialization
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+David Miller <davem@davemloft.net> writes:
 
---Vi7KrP2J1YMdfyss
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> From: Daniel Borkmann <dborkman@redhat.com>
+> Date: Mon, 25 Aug 2014 14:58:37 +0200
+>
+>> On 08/25/2014 02:13 PM, Rasmus Villemoes wrote:
+>>> A 9+ years old comment in hash_64 says that gcc can't optimize
+>>> multiplication by GOLDEN_RATIO_PRIME_64. Well, compilers get smarter
+>>> and CPUs get faster all the time, so it is perhaps about time to
+>>> revisit that assumption.
+>> 
+>> Seems fine by me, but Cc'ing a couple of others (as those you have
+>> Cc'ed haven't written that code :)). You might want to let your
+>> changes go via Andrew's tree, too, perhaps ...
+>
+> You need to test the code generation for a cpu where the multiply
+> instruction is more expensive than the shifts and adds.
 
-On Sun, Aug 24, 2014 at 03:32:27PM +0200, Lars-Peter Clausen wrote:
-> Commit 6cfec04bcc05 ("regmap: Separate regmap dev initialization") moved the
-> regmap debugfs initialization after regcache initialization. This means
-> that the regmap debugfs directory is not created yet when the cache
+Yes, I should, but I'm afraid I can't. I only have x86 hardware, and
+even if I managed to set up some cross-compiler toolchain, I wouldn't
+know what CPUs to target. So I was hoping someone else could test this
+on appropriate platforms.
 
-Applied, thanks.
-
---Vi7KrP2J1YMdfyss
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT/EFrAAoJELSic+t+oim9tr0QAI9Kb6WefKNv006c2vDo/nN0
-uEmGvtypvxQI7toHHd6ktmECusspTcfYR8kMHswP5KYfO8NSku3vxqZP7ukYcEQB
-K+qHOg1ozMyAHl37LX7cu4a+iw5qvrubFPg+HS/WT7OV/BdEthWSyyiqQT3Yf8lT
-isOztKhlXSHGBArodb3vHAEmnz5qPUrvRyJsuqzov72NcBXDo1laV1R0oqm9sgOs
-Gg/ur90vKOcIO98l5BGPJfsomy5aVx7P3C7tr9n9vIMD/RFi5moBWgRxf4nhTzT9
-R8DeJO/7FM8u3jUFPSYnnC6iw35SpY2cnNUJp1A5RG5KbR8o5B2ux1DOk/9hpYmt
-vCI8TkO5WKokrz2Ju9Po7oupc4BXElvGo2HQ7rpE7Fahzdt5EW8hT1RCq4Zg4o+Q
-LrTPzDSjv1uR/s3o3I6Kc3MXQxOg8GVtlm2vOq6NBcglNofkedTusHN18E7hMRFT
-QXV9pxaaWgiMKk4l6IXSrEYezSsEKdgllB8+dt1cQUcOoxzPiYk6cPZy/tIvNXvh
-6otWfAl2Nwp5OJwzX2y5QYlym6WyKIC7WMb4rTQ1JVGu2ycOUqGLhedbB1Hi9aQm
-X7AKgdMc6rxZeToHT9x+4K1UKJ6NaXn/yMWMAbszyu+sD8W5jvSLk4cbe9SNWGbT
-Ljtouni5cc3rMBMh/iDv
-=pFHf
------END PGP SIGNATURE-----
-
---Vi7KrP2J1YMdfyss--
+Thanks,
+Rasmus
