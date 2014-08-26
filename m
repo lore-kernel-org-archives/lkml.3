@@ -1,76 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934379AbaHZJ1B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 05:27:01 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:50086 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932445AbaHZJ06 (ORCPT
+	id S934280AbaHZJd0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 05:33:26 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:52953 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755787AbaHZJdW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 05:26:58 -0400
-Message-ID: <53FC52DA.9000303@hitachi.com>
-Date: Tue, 26 Aug 2014 18:26:50 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 26 Aug 2014 05:33:22 -0400
+Date: Tue, 26 Aug 2014 10:33:12 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, Arnaud Ebalard <arno@natisbad.org>,
+        DEVICE TREE <devicetree@vger.kernel.org>,
+        Florian Vaussard <florian.vaussard@epfl.ch>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Jonathan Cameron <jic23@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        LINUX ARM KERNEL <linux-arm-kernel@lists.infradead.org>,
+        LINUX KERNEL <linux-kernel@vger.kernel.org>,
+        LINUX SH <linux-sh@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Mark Brown <broonie@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Martin Fuzzey <mfuzzey@parkeon.com>, Pawel Moll <pawel.moll@arm.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Rob Herring <robh+dt@kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Silvio F <silvio.fricke@gmail.com>, Simon Horman <horms@verge.net.au>,
+        Support Opensource <support.opensource@diasemi.com>,
+        Thierry Reding <thierry.reding@gmail.com>
+Subject: Re: [RESEND PATCH V2] devicetree: Dialog Semiconductor consolidate
+ existing vendor prefixes to standardise on 'dlg'
+Message-ID: <20140826093312.GI9574@lee--X1>
+References: <201408221446.s7MEkNVF001775@swsrvapps-01.diasemi.com>
 MIME-Version: 1.0
-To: Lucas De Marchi <lucas.demarchi@intel.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Josh Poimboeuf <jpoimboe@redhat.com>, linux-modules@vger.kernel.org
-Subject: Re: Re: [RFC PATCH 4/5] module: Lock up a module when loading
- with a LOCLUP flag
-References: <20140825105520.21089.26870.stgit@kbuild-fedora.novalocal> <20140825105548.21089.42883.stgit@kbuild-fedora.novalocal> <20140826053004.GG1409@intel.com>
-In-Reply-To: <20140826053004.GG1409@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201408221446.s7MEkNVF001775@swsrvapps-01.diasemi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/08/26 14:30), Lucas De Marchi wrote:
-> On Mon, Aug 25, 2014 at 10:55:48AM +0000, Masami Hiramatsu wrote:
->> Lock-up a module in kernel so that it is not removed unless
->> forcibly unload. This is done by loading a module with
->> MODULE_INIT_LOCKUP_MODULE flag (via finit_module).
->> This speeds up try_module_get by skipping refcount inc/dec for
->> the locked modules.
->>
->> Note that this flag requires to update libkmod to support it.
+On Fri, 22 Aug 2014, Opensource [Steve Twiss] wrote:
+> From: Steve Twiss <stwiss.opensource@diasemi.com>
 > 
-> Patches to kmod go to linux-modules@vger.kernel.org
-
-OK, thanks. I'll send another series for it.
-
-> However I'm skeptical with the use case of this flag. Is this only so
-> that try_module_get() is a little bit faster? How much?
-
-For the performance side of refcounting, I guess it has no recognizable
-difference compared with current one. It may be a little faster than
-atomic_t ref-counter, and actual overhead will strongly depends on the
-hardware configuration.
-So, I can just drop this "lockup" patch from this series, if nobody
-complains about using atomic_t ref-counter instead of module_ref.
-I'd just like to get rid of the stop_machine() from unloading :)
-
-> Then this would depend on a flag the user passed to modprobe which means
-> only a few modules will use the flag. If you change the default
-> behavior in kmod to pass this flag always, then any module the user
-> wants to remove will need to be forcibly removed.
-
-I saw an environmental variable to control it (MODPROBE_OPTIONS).
-So if a user (e.g. systemtap :) ) want to make it removable, he/she
-can change the env-var before running the command.
-
+> This patch series updates the device tree vendor prefix for
+> Dialog Semiconductor.
 > 
-> I'm leaving the rest of the patch here since I'm CC'ing linux-modules.
+> Various methods are currently used throughout the kernel: 'diasemi',
+> 'dialog' and 'dlg'. Others have also been suggested.
 > 
+> This patch set aims to consolidate the usage of the vendor prefix to
+> use a common standard. The prefix 'dlg' is used.
+> 
+> Acked-by: Simon Horman <horms+renesas@verge.net.au>
+> Acked-by: Rob Herring <robh@kernel.org>
+> Acked-by: Lee Jones <lee.jones@linaro.org>
+> Acked-by: Shawn Guo <shawn.guo@freescale.com>
+> 
+> Signed-off-by: Steve Twiss <stwiss.opensource@diasemi.com>
+> 
+> ---
 
-Thank you,
+[...]
+
+> Hi Lee,
+> 
+> This is a resend according to requests for e-mail reformatting and removal
+> of '[]' in From: and Signed-off-by: tags. There are no patch alterations
+> from RFC V2.
+> 
+> I have got the Ack for the two remaining files r8a7790-lager.dts and
+> r8a7791-koelsch.dts because of the previous request for SHMobile to Ack
+> their part of the patch.
+> - http://www.spinics.net/lists/arm-kernel/msg349289.html
+> - https://lkml.org/lkml/2014/6/11/273
+> 
+> I think this is it. But, if I am missing anything or there are problems, can
+> I get a quick explanation in the reply so I can fix it and move forwards
+> please?
+> 
+> In full:
+> Acked-by the following people so far:
+
+When you say "so far", does that mean you're missing Acks still?
+
+If you have the full-set I will apply this and send out the necessary
+pull-request(s).
+
+[...]
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
