@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756211AbaHZXhh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 19:37:37 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:60808 "HELO
+	id S1756187AbaHZXhf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 19:37:35 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:59492 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755930AbaHZXhB (ORCPT
+	with SMTP id S1755541AbaHZXg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 19:37:01 -0400
+	Tue, 26 Aug 2014 19:36:58 -0400
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 To: Thomas Gleixner <tglx@linutronix.de>
 Cc: Peter Zijlstra <peterz@infradead.org>,
@@ -14,12 +14,12 @@ Cc: Peter Zijlstra <peterz@infradead.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux PCI <linux-pci@vger.kernel.org>,
         Dmitry Torokhov <dtor@google.com>, Aubrey Li <aubrey.li@intel.com>
-Subject: [PATCH 0/5 v3] irq / PM: Suspend-to-idle wakeup interrupts
-Date: Wed, 27 Aug 2014 01:46:23 +0200
-Message-ID: <5320472.coYotHR1d0@vostro.rjw.lan>
+Subject: [PATCH 3/5 v3] x86 / PM: Set IRQCHIP_SKIP_SET_WAKE for IOAPIC IRQ chip objects
+Date: Wed, 27 Aug 2014 01:50:49 +0200
+Message-ID: <5572679.hklRpx9fCZ@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <26580319.OZP7jvJnA9@vostro.rjw.lan>
-References: <26580319.OZP7jvJnA9@vostro.rjw.lan>
+In-Reply-To: <5320472.coYotHR1d0@vostro.rjw.lan>
+References: <26580319.OZP7jvJnA9@vostro.rjw.lan> <5320472.coYotHR1d0@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -27,61 +27,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-On Monday, August 11, 2014 03:56:46 PM Rafael J. Wysocki wrote:
-> Hi,
-> 
-> I thought I'd just refresh the previous patchset, but in the meantime I found
-> a way to avoid adding overhead to note_interrupt(), so I decided to change the
-> approach.
-> 
-> Patch [2/6] fixes the problem with IRQF_NO_SUSPEND and shared interrupts.  The
-> idea is to use wrapper handlers for all irqactions of the shared IRQs where at
-> least one of them has IRQF_NO_SUSPEND set.  Since the wrapper handler is now
-> installed for all irqactions in the given irq_desc, it can track the return
-> codes from the original handlers and "suspend" the IRQ if the interrupt is going
-> to be unhandled eventually.  All described in the changelog.  This is independent
-> of the handling of wakeup interrupts for suspend-to-idle.
-> 
-> Patch [3/6] makes IRQs configured for system wakeup with enable_irq_wake() work
-> for suspend to idle.  It does that by using a (different) wrapper handler for
-> all irqactions in the wakeup irq_descs and that wrapper handler takes care of
-> all the ugly details.  Again, all described in the changelog.
-> 
-> Patches [1/6], [4-5/6] are unmodified and the last one addes documentation.
+Set the IRQCHIP_SKIP_SET_WAKE for IOAPIC IRQ chip objects so that
+interrupts from them can work as wakeup interrupts for suspend-to-idle.
 
-It has occured to me recently that trying to address two different issues at
-once in one patchset may be more confusing than it has to be, so the following
-series has one and only one purpose which is to make enable_irq_wake() interrupts
-wake up from suspend-to-idle while avoiding the shared interrupts pain.
+After this change, running enable_irq_wake() on one of the IRQs in
+question will succeed and IRQD_WAKEUP_STATE will be set for it, so
+all of the suspend-to-idle wakeup mechanics introduced previously
+will work for it automatically.
 
-The way it works is that for each IRQD_WAKEUP_STATE IRQ (a) all of the interrupt
-handlers are substituted for by a special "wakeup mode" handler and (b) the
-IRQ is re-enabled right before entering the suspend-to-idle loop.  After a wakeup
-interrupt all is restored to the previous state left by suspend_device_irqs().
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ arch/x86/kernel/apic/io_apic.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-The "wakeup mode" handler triggers a system wakeup, disables the IRQ and marks
-it as "suspended" and "pending".
-
-To me, all of this is relatively straightforward and the handling of
-IRQF_NO_SUSPEND for shared interrupts, which is a separate problem, can be
-addressed on top of it later (make no mistake, I still think that it should be
-addressed).
-
-The patches are as follows:
-
-[1/5] Mechanism to wake up the system or abort suspend in progress automatically.
-[2/5] Wakeup interrupts support for suspend-to-idle.
-[3/5] Set IRQCHIP_SKIP_SET_WAKE for x86 IOAPIC IRQ chips.
-[4/5] Make PCIe PME wake up from suspend to idle.
-[5/5] Documentation.
-
-Patches [1/5] and [3-4/5] have not been changed since I posted them previously
-and patch [5/5] has been updated to reflect the focus on wakeup (I removed the
-paragraph on IRQF_NO_SUSPEND vs shared interrupts from it).
-
-All tested on MSI Wind.
-
-Rafael
+Index: linux-pm/arch/x86/kernel/apic/io_apic.c
+===================================================================
+--- linux-pm.orig/arch/x86/kernel/apic/io_apic.c
++++ linux-pm/arch/x86/kernel/apic/io_apic.c
+@@ -2618,6 +2618,7 @@ static struct irq_chip ioapic_chip __rea
+ 	.irq_eoi		= ack_apic_level,
+ 	.irq_set_affinity	= native_ioapic_set_affinity,
+ 	.irq_retrigger		= ioapic_retrigger_irq,
++	.flags			= IRQCHIP_SKIP_SET_WAKE,
+ };
+ 
+ static inline void init_IO_APIC_traps(void)
+@@ -3168,6 +3169,7 @@ static struct irq_chip msi_chip = {
+ 	.irq_ack		= ack_apic_edge,
+ 	.irq_set_affinity	= msi_set_affinity,
+ 	.irq_retrigger		= ioapic_retrigger_irq,
++	.flags			= IRQCHIP_SKIP_SET_WAKE,
+ };
+ 
+ int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
+@@ -3266,6 +3268,7 @@ static struct irq_chip dmar_msi_type = {
+ 	.irq_ack		= ack_apic_edge,
+ 	.irq_set_affinity	= dmar_msi_set_affinity,
+ 	.irq_retrigger		= ioapic_retrigger_irq,
++	.flags			= IRQCHIP_SKIP_SET_WAKE,
+ };
+ 
+ int arch_setup_dmar_msi(unsigned int irq)
+@@ -3316,6 +3319,7 @@ static struct irq_chip hpet_msi_type = {
+ 	.irq_ack = ack_apic_edge,
+ 	.irq_set_affinity = hpet_msi_set_affinity,
+ 	.irq_retrigger = ioapic_retrigger_irq,
++	.flags = IRQCHIP_SKIP_SET_WAKE,
+ };
+ 
+ int default_setup_hpet_msi(unsigned int irq, unsigned int id)
+@@ -3379,6 +3383,7 @@ static struct irq_chip ht_irq_chip = {
+ 	.irq_ack		= ack_apic_edge,
+ 	.irq_set_affinity	= ht_set_affinity,
+ 	.irq_retrigger		= ioapic_retrigger_irq,
++	.flags			= IRQCHIP_SKIP_SET_WAKE,
+ };
+ 
+ int arch_setup_ht_irq(unsigned int irq, struct pci_dev *dev)
 
