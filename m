@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757673AbaHZLvO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 07:51:14 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:53783 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754442AbaHZLvN (ORCPT
+	id S1757749AbaHZLvo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 07:51:44 -0400
+Received: from STOEXHUBFE01.domain01.net ([83.145.59.140]:8705 "EHLO
+	stoexhubfe01.domain01.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757708AbaHZLvm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 07:51:13 -0400
-Date: Tue, 26 Aug 2014 17:21:00 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sound: pci: ctxfi: prink replacement
-Message-ID: <20140826115100.GA21572@sudip-PC>
-References: <1409048004-19838-1-git-send-email-sudipm.mukherjee@gmail.com>
- <s5hr4035ymf.wl-tiwai@suse.de>
+	Tue, 26 Aug 2014 07:51:42 -0400
+X-Greylist: delayed 332 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Aug 2014 07:51:42 EDT
+Date: Tue, 26 Aug 2014 13:45:51 +0200
+From: Anders Darander <anders@chargestorm.se>
+CC: <linux-kernel@vger.kernel.org>, <linux-efi@vger.kernel.org>
+Message-ID: <20140826114549.GA8332@ad.chargestorm.se>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <s5hr4035ymf.wl-tiwai@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-GFI-SMTP-Submission: 1
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 12:33:28PM +0200, Takashi Iwai wrote:
-> At Tue, 26 Aug 2014 15:43:24 +0530,
-> Sudip Mukherjee wrote:
-> > 
-> > printk replaced with corresponding pr_err and pr_alert
-> > 
-> > Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
-> > ---
-> > 
-> > Initially started by copy-paste but as Takashi suggested it was done by a script.
-> > bash script is as follows :
-> > 
-> > OLD="printk(KERN_ERR \?"
-> > OLD1="printk(KERN_ALERT \?"
-> > NEW="pr_err("
-> > NEW1="pr_alert("
-> > TFILE="/tmp/out.tmp.$$"
-> > for f in *.c
-> > do
-> > sed "s/$OLD/$NEW/g" "$f" > $TFILE && mv $TFILE "$f"
-> > sed "s/$OLD1/$NEW1/g" "$f" > $TFILE && mv $TFILE "$f"
-> > done
-> 
-> All these can be a single call of sed :)
+To: yinghai@kernel.org
+Cc: 
+Bcc: 
+Subject: Re: Loading initrd above 4G causes freeze on boot
+Reply-To: 
+In-Reply-To: <CAE9FiQWOp0pGSXhnaTe62zaFe7QodS6BSCKnC8qamjm3qTRRJA@mail.gmail.com>
+X-Accept-Language: sv, en, de
+X-GPG-Fingerprint: 5AF0 B2E9 78FE 9D75 D110  6F8F 3E31 84D7 920E 938C
+X-GPG-Key-Id: 0x920E938C
+X-GPG-Keyserver: hkp://keys.gnupg.net
+Organization: ChargeStorm AB
 
-is it? I will try to see .. 
 
-> 
-> > this patch will generate a warning from checkpatch for an unnecessary space before new line and has not been fixed as this patch is only for printk replacement.
-> 
-> Better to put such information into the changelog.
-> 
-> Do you have the patch reformatting the broken lines, too?
-> If yes, I'll wait for it, as we should apply both such patches at
-> once.
-> 
+> Please check if you can apply attached one. That will keep under 2G at
+> first, then try any high address.
 
-I will send you the broken string reformatting patch . 
+That patched solved the issue on my Dell XPS 13 9333, that failed to
+unpack initrd using 3.17-rc1 and -rc2.
 
-thanks
-sudip
+Thus, 
+Acked-by: Anders Darander <anders@chargestorm.se>
 
-> 
-> Takashi
+Cheers,
+Anders
+
+-- 
+It looks like it's up to me to save our skins.  Get into that garbage chute,
+flyboy!
+		-- Princess Leia Organa
