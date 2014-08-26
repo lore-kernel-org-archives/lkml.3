@@ -1,136 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934298AbaHZJre (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 05:47:34 -0400
-Received: from regular1.263xmail.com ([211.150.99.139]:46847 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932262AbaHZJrc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 05:47:32 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: zyw@rock-chips.com
-X-FST-TO: dianders@chromium.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: zyw@rock-chips.com
-X-UNIQUE-TAG: <f8c1090dfa5ecd4ff08242a9b424bf57>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-Message-ID: <53FC579C.50507@rock-chips.com>
-Date: Tue, 26 Aug 2014 17:47:08 +0800
-From: Chris Zhong <zyw@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S934391AbaHZJsM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 05:48:12 -0400
+Received: from mail-bn1lp0140.outbound.protection.outlook.com ([207.46.163.140]:21814
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932560AbaHZJsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 05:48:10 -0400
+From: Ley Foon Tan <lftan@altera.com>
+To: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>
+CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
+        "Giuseppe Cavallaro" <peppe.cavallaro@st.com>,
+        Vince Bridgers <vbridger@altera.com>
+Subject: [PATCH (net-next) v2] net: stmmac: fix warning from Sparse for socfpga
+Date: Tue, 26 Aug 2014 17:47:59 +0800
+Message-ID: <1409046479-18546-1-git-send-email-lftan@altera.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Mike Turquette <mturquette@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        rtc-linux@googlegroups.com, Grant Likely <grant.likely@linaro.org>,
-        Lin Huang <hl@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, zhangqing <zhangqing@rock-chips.com>,
-        xxx <xxx@rock-chips.com>,
-        =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>,
-        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        Dmitry Torokhov <dtor@chromium.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Kever Yang <kever.yang@rock-chips.com>
-Subject: Re: [PATCH v5 3/5] RTC: RK808: add RTC driver for RK808
-References: <1408973668-21436-1-git-send-email-zyw@rock-chips.com> <CAD=FV=VYJvgXXcYkq+vcpZkXZBDbgfRGNyF8GA6MnvMAGaAebQ@mail.gmail.com>
-In-Reply-To: <CAD=FV=VYJvgXXcYkq+vcpZkXZBDbgfRGNyF8GA6MnvMAGaAebQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199003)(19580405001)(87936001)(95666004)(46102001)(62966002)(88136002)(83322001)(50466002)(77156001)(77982001)(106466001)(85306004)(64706001)(48376002)(80022001)(6806004)(229853001)(44976005)(89996001)(19580395003)(20776003)(74502001)(33646002)(68736004)(50226001)(85852003)(42186005)(47776003)(92726001)(84676001)(107046002)(21056001)(36756003)(81542001)(79102001)(105596002)(87286001)(86362001)(83072002)(90102001)(104166001)(81342001)(77096002)(4396001)(92566001)(99396002)(76482001)(31966008)(97736001)(74662001)(102836001)(50986999)(93916002);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB033;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03152A99FF
+Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
+ smtp.mailfrom=lftan@altera.com; 
+X-OriginatorOrg: altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Warning:
+drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c:122:41:
+sparse: cast removes address space of expression
+drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c:122:38:
+sparse: incorrect type in assignment (different address spaces)
 
-On 08/26/2014 11:22 AM, Doug Anderson wrote:
->> +       int ret;
->> >+
->> >+       /* Has the RTC been programmed? */
->> >+       ret = regmap_update_bits(rk808->regmap, RK808_RTC_CTRL_REG,
->> >+                                BIT_RTC_CTRL_REG_RTC_V_OPT_M, 0);
-> Can you explain what you're doing here?  The comment seems wrong since
-> it implies that you're checking something.
->
-> >From what I can tell from the manual you're setting "RTC_READSEL" to 0
-> which means "Read access directly to dynamic registers.".  That's not
-> clear here, and RTC_V_OPT_M makes no sense to me.
+Signed-off-by: Ley Foon Tan <lftan@altera.com>
+---
+ drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-RK808 has a shadowed register for saving a "frozen" RTC time.
-When user setting "RTC_READSEL" to 1, the time will save in this 
-shadowed register.
-In this case, user read rtc time register, actually get the time of that 
-moment.
-So, I move it to probe, this bit needn't clear every time
->> >+       tm->tm_min = bcd2bin(rtc_data[1]) & MINUTES_REG_MAK;
->> >+       tm->tm_hour = bcd2bin(rtc_data[2]) & HOURS_REG_MSK;
->> >+       tm->tm_mday = bcd2bin(rtc_data[3]) & DAYS_REG_MSK;
->> >+       tm->tm_mon = (bcd2bin(rtc_data[4]) & MONTHS_REG_MSK) - 1;
->> >+       tm->tm_year = (bcd2bin(rtc_data[5]) & YEARS_REG_MSK) + 100;
->> >+       tm->tm_wday = bcd2bin(rtc_data[6]) & WEEKS_REG_MSK;
->> >+       dev_dbg(dev, "RTC date/time %4d-%02d-%02d(%d) %02d:%02d:%02d\n",
->> >+               1900 + tm->tm_year, tm->tm_mon + 1, tm->tm_mday,
->> >+               tm->tm_wday, tm->tm_hour , tm->tm_min, tm->tm_sec);
->> >+
->> >+       return 0;
->> >+}
->> >+
->> >+/*
->> >+ * Set current time and date in RTC
->> >+ */
->> >+static int rk808_rtc_set_time(struct device *dev, struct rtc_time *tm)
-> Make this "const struct rtc_time *tm"
-It will be a warning if add const.
-It should be match
-int (*set_time)(struct device *, struct rtc_time *);
-in rtc.h
->
->> +               rk808_rtc_set_time(&pdev->dev, &tm_def);
->> >+       }
->> >+
->> >+       device_init_wakeup(&pdev->dev, 1);
-> You can skip this.  We'll set "wakeup-source" in the device tree.
-> That will set I2C_CLIENT_WAKE.  That will cause the i2c core to call
-> device_init_wakeup() for you.
-If I remove it, wakealarm is disappear, even though I add 
-"wakeup-source" in device tree.
-So, I keep it temporarily
->
->> +       if (IS_ERR(rk808_rtc->rtc)) {
->> >+               ret = PTR_ERR(rk808_rtc->rtc);
->> >+               return ret;
->> >+       }
->> >+
->> >+       alm_irq  = platform_get_irq(pdev, 0);
-> Are you sure that platform_get_irq() works in this case?  In Javier's
-> in-flight max77802 driver he use regmap_irq_get_virq().
->
-> ...oh, maybe your way does work!  You've got the rtc_resources to
-> specify things, so that looks good...
->
-> ...but I tried testing it by doing:
->
-> cd /sys/class/rtc/rtc0
-> echo +2 > wakealarm
-> sleep 5
-> grep 808 /proc/interrupts
->
-> ...and I didn't see an interrupt go off.  Any idea why?
-It works well.
-
-
-
-
+diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c b/drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c
+index cd613d7..ff54a1f 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c
++++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c
+@@ -119,7 +119,7 @@ static int socfpga_dwmac_parse_data(struct socfpga_dwmac *dwmac, struct device *
+ 			return -EINVAL;
+ 		}
+ 
+-		dwmac->splitter_base = (void *)devm_ioremap_resource(dev,
++		dwmac->splitter_base = devm_ioremap_resource(dev,
+ 			&res_splitter);
+ 		if (!dwmac->splitter_base) {
+ 			dev_info(dev, "Failed to mapping emac splitter\n");
+-- 
+1.8.2.1
 
