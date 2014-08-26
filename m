@@ -1,206 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933717AbaHZAn5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 20:43:57 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:33114 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756816AbaHZAnl (ORCPT
+	id S1756850AbaHZAqz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 20:46:55 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:40056 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756712AbaHZAqy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 20:43:41 -0400
-From: Tejun Heo <tj@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: cl@linux-foundation.org, Tejun Heo <tj@kernel.org>,
-        Jan Kara <jack@suse.cz>, Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 2/3] proportions: add @gfp to init functions
-Date: Mon, 25 Aug 2014 20:43:31 -0400
-Message-Id: <1409013812-21700-3-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1409013812-21700-1-git-send-email-tj@kernel.org>
+	Mon, 25 Aug 2014 20:46:54 -0400
+Date: Mon, 25 Aug 2014 17:46:53 -0700 (PDT)
+Message-Id: <20140825.174653.1190425703684375530.davem@davemloft.net>
+To: tj@kernel.org
+Cc: linux-kernel@vger.kernel.org, cl@linux-foundation.org, x86@kernel.org,
+        axboe@kernel.dk, jack@suse.cz, tytso@mit.edu, viro@zeniv.linux.org.uk,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 1/3] percpu_counter: add @gfp to percpu_counter_init()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1409013812-21700-2-git-send-email-tj@kernel.org>
 References: <1409013812-21700-1-git-send-email-tj@kernel.org>
+	<1409013812-21700-2-git-send-email-tj@kernel.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 25 Aug 2014 17:46:53 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Percpu allocator now supports allocation mask.  Add @gfp to
-[flex_]proportions init functions so that !GFP_KERNEL allocation masks
-can be used with them too.
+From: Tejun Heo <tj@kernel.org>
+Date: Mon, 25 Aug 2014 20:43:30 -0400
 
-This patch doesn't make any functional difference.
+> Percpu allocator now supports allocation mask.  Add @gfp to
+> percpu_counter_init() so that !GFP_KERNEL allocation masks can be used
+> with percpu_counters too.
+> 
+> We could have left percpu_counter_init() alone and added
+> percpu_counter_init_gfp(); however, the number of users isn't that
+> high and introducing _gfp variants to all percpu data structures would
+> be quite ugly, so let's just do the conversion.  This is the one with
+> the most users.  Other percpu data structures are a lot easier to
+> convert.
+> 
+> This patch doesn't make any functional difference.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Peter Zijlstra <peterz@infradead.org>
----
- include/linux/flex_proportions.h |  5 +++--
- include/linux/proportions.h      |  5 +++--
- lib/flex_proportions.c           |  8 ++++----
- lib/proportions.c                | 10 +++++-----
- mm/backing-dev.c                 |  2 +-
- mm/page-writeback.c              |  2 +-
- 6 files changed, 17 insertions(+), 15 deletions(-)
+For networking bits:
 
-diff --git a/include/linux/flex_proportions.h b/include/linux/flex_proportions.h
-index 4ebc49f..0d348e0 100644
---- a/include/linux/flex_proportions.h
-+++ b/include/linux/flex_proportions.h
-@@ -10,6 +10,7 @@
- #include <linux/percpu_counter.h>
- #include <linux/spinlock.h>
- #include <linux/seqlock.h>
-+#include <linux/gfp.h>
- 
- /*
-  * When maximum proportion of some event type is specified, this is the
-@@ -32,7 +33,7 @@ struct fprop_global {
- 	seqcount_t sequence;
- };
- 
--int fprop_global_init(struct fprop_global *p);
-+int fprop_global_init(struct fprop_global *p, gfp_t gfp);
- void fprop_global_destroy(struct fprop_global *p);
- bool fprop_new_period(struct fprop_global *p, int periods);
- 
-@@ -79,7 +80,7 @@ struct fprop_local_percpu {
- 	raw_spinlock_t lock;	/* Protect period and numerator */
- };
- 
--int fprop_local_init_percpu(struct fprop_local_percpu *pl);
-+int fprop_local_init_percpu(struct fprop_local_percpu *pl, gfp_t gfp);
- void fprop_local_destroy_percpu(struct fprop_local_percpu *pl);
- void __fprop_inc_percpu(struct fprop_global *p, struct fprop_local_percpu *pl);
- void __fprop_inc_percpu_max(struct fprop_global *p, struct fprop_local_percpu *pl,
-diff --git a/include/linux/proportions.h b/include/linux/proportions.h
-index 26a8a4e..00e8e8f 100644
---- a/include/linux/proportions.h
-+++ b/include/linux/proportions.h
-@@ -12,6 +12,7 @@
- #include <linux/percpu_counter.h>
- #include <linux/spinlock.h>
- #include <linux/mutex.h>
-+#include <linux/gfp.h>
- 
- struct prop_global {
- 	/*
-@@ -40,7 +41,7 @@ struct prop_descriptor {
- 	struct mutex mutex;		/* serialize the prop_global switch */
- };
- 
--int prop_descriptor_init(struct prop_descriptor *pd, int shift);
-+int prop_descriptor_init(struct prop_descriptor *pd, int shift, gfp_t gfp);
- void prop_change_shift(struct prop_descriptor *pd, int new_shift);
- 
- /*
-@@ -61,7 +62,7 @@ struct prop_local_percpu {
- 	raw_spinlock_t lock;		/* protect the snapshot state */
- };
- 
--int prop_local_init_percpu(struct prop_local_percpu *pl);
-+int prop_local_init_percpu(struct prop_local_percpu *pl, gfp_t gfp);
- void prop_local_destroy_percpu(struct prop_local_percpu *pl);
- void __prop_inc_percpu(struct prop_descriptor *pd, struct prop_local_percpu *pl);
- void prop_fraction_percpu(struct prop_descriptor *pd, struct prop_local_percpu *pl,
-diff --git a/lib/flex_proportions.c b/lib/flex_proportions.c
-index b9d026b..8f25652 100644
---- a/lib/flex_proportions.c
-+++ b/lib/flex_proportions.c
-@@ -34,13 +34,13 @@
-  */
- #include <linux/flex_proportions.h>
- 
--int fprop_global_init(struct fprop_global *p)
-+int fprop_global_init(struct fprop_global *p, gfp_t gfp)
- {
- 	int err;
- 
- 	p->period = 0;
- 	/* Use 1 to avoid dealing with periods with 0 events... */
--	err = percpu_counter_init(&p->events, 1, GFP_KERNEL);
-+	err = percpu_counter_init(&p->events, 1, gfp);
- 	if (err)
- 		return err;
- 	seqcount_init(&p->sequence);
-@@ -168,11 +168,11 @@ void fprop_fraction_single(struct fprop_global *p,
-  */
- #define PROP_BATCH (8*(1+ilog2(nr_cpu_ids)))
- 
--int fprop_local_init_percpu(struct fprop_local_percpu *pl)
-+int fprop_local_init_percpu(struct fprop_local_percpu *pl, gfp_t gfp)
- {
- 	int err;
- 
--	err = percpu_counter_init(&pl->events, 0, GFP_KERNEL);
-+	err = percpu_counter_init(&pl->events, 0, gfp);
- 	if (err)
- 		return err;
- 	pl->period = 0;
-diff --git a/lib/proportions.c b/lib/proportions.c
-index ca95f8d..6f72429 100644
---- a/lib/proportions.c
-+++ b/lib/proportions.c
-@@ -73,7 +73,7 @@
- #include <linux/proportions.h>
- #include <linux/rcupdate.h>
- 
--int prop_descriptor_init(struct prop_descriptor *pd, int shift)
-+int prop_descriptor_init(struct prop_descriptor *pd, int shift, gfp_t gfp)
- {
- 	int err;
- 
-@@ -83,11 +83,11 @@ int prop_descriptor_init(struct prop_descriptor *pd, int shift)
- 	pd->index = 0;
- 	pd->pg[0].shift = shift;
- 	mutex_init(&pd->mutex);
--	err = percpu_counter_init(&pd->pg[0].events, 0, GFP_KERNEL);
-+	err = percpu_counter_init(&pd->pg[0].events, 0, gfp);
- 	if (err)
- 		goto out;
- 
--	err = percpu_counter_init(&pd->pg[1].events, 0, GFP_KERNEL);
-+	err = percpu_counter_init(&pd->pg[1].events, 0, gfp);
- 	if (err)
- 		percpu_counter_destroy(&pd->pg[0].events);
- 
-@@ -188,12 +188,12 @@ prop_adjust_shift(int *pl_shift, unsigned long *pl_period, int new_shift)
- 
- #define PROP_BATCH (8*(1+ilog2(nr_cpu_ids)))
- 
--int prop_local_init_percpu(struct prop_local_percpu *pl)
-+int prop_local_init_percpu(struct prop_local_percpu *pl, gfp_t gfp)
- {
- 	raw_spin_lock_init(&pl->lock);
- 	pl->shift = 0;
- 	pl->period = 0;
--	return percpu_counter_init(&pl->events, 0, GFP_KERNEL);
-+	return percpu_counter_init(&pl->events, 0, gfp);
- }
- 
- void prop_local_destroy_percpu(struct prop_local_percpu *pl)
-diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index f19a818..64ec49d 100644
---- a/mm/backing-dev.c
-+++ b/mm/backing-dev.c
-@@ -470,7 +470,7 @@ int bdi_init(struct backing_dev_info *bdi)
- 	bdi->write_bandwidth = INIT_BW;
- 	bdi->avg_write_bandwidth = INIT_BW;
- 
--	err = fprop_local_init_percpu(&bdi->completions);
-+	err = fprop_local_init_percpu(&bdi->completions, GFP_KERNEL);
- 
- 	if (err) {
- err:
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 91d73ef..5085994 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -1777,7 +1777,7 @@ void __init page_writeback_init(void)
- 	writeback_set_ratelimit();
- 	register_cpu_notifier(&ratelimit_nb);
- 
--	fprop_global_init(&writeout_completions);
-+	fprop_global_init(&writeout_completions, GFP_KERNEL);
- }
- 
- /**
--- 
-1.9.3
-
+Acked-by: David S. Miller <davem@davemloft.net>
