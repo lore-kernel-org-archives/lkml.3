@@ -1,249 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756029AbaHZWPz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 18:15:55 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:55540 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755879AbaHZWOy (ORCPT
+	id S1756072AbaHZWRA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 18:17:00 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:47940 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755557AbaHZWQ6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 18:14:54 -0400
-From: Beniamino Galvani <b.galvani@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Carlo Caione <carlo@caione.org>,
-        Beniamino Galvani <b.galvani@gmail.com>
-Subject: [PATCH 2/4] regulator: add driver for Ricoh RN5T618 regulators
-Date: Wed, 27 Aug 2014 00:13:55 +0200
-Message-Id: <1409091237-16722-3-git-send-email-b.galvani@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1409091237-16722-1-git-send-email-b.galvani@gmail.com>
-References: <1409091237-16722-1-git-send-email-b.galvani@gmail.com>
+	Tue, 26 Aug 2014 18:16:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAE9FiQUF4THLRfzbnhK61QHpM2zyox4E8LTmyzVF7PnPdpb7jQ@mail.gmail.com>
+References: <1409089544-24221-1-git-send-email-yinghai@kernel.org>
+	<53FD01D0.8020203@zytor.com>
+	<CAE9FiQUF4THLRfzbnhK61QHpM2zyox4E8LTmyzVF7PnPdpb7jQ@mail.gmail.com>
+Date: Wed, 27 Aug 2014 01:16:57 +0300
+Message-ID: <CAPWNY8WG3E7oZdZDdYsrnGM5pG4kWAKkEq0Eh5Hc_uXJ_8zD5g@mail.gmail.com>
+Subject: Re: [PATCH] x86: only load initrd above 4g on second try
+From: =?UTF-8?Q?Mantas_Mikul=C4=97nas?= <grawity@gmail.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Matt Fleming <matt.fleming@intel.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Anders Darander <anders@chargestorm.se>, linux-efi@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver supports the 3 DCDC and 7 LDO regulators available on
-Ricoh RN5T618 PMIC.
+On Wed, Aug 27, 2014 at 1:05 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Tue, Aug 26, 2014 at 2:53 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 08/26/2014 02:45 PM, Yinghai Lu wrote:
+>>> Mantas found that after commit 4bf7111f5016 ("x86/efi: Support initrd
+>>> loaded above 4G"), the kernel freezes at the earliest possible moment
+>>> when trying to boot via UEFI on Asus laptop.
+>>>
+>>> There are buggy EFI implementations: with EFI run time, kernel need
+>>> to load file with 512bytes alignment when buffer is above 4G.
+>>>
+>>
+>> This makes absolutely zero sense.  Please explain what the actual
+>> problem is here.
+>
+> The firmware has bug and can use buffer above 4G to read files.
+> and if the file size is 512 bytes alignment, then reading could go through.
+>
+> From Mantas:
+> --
+> On Wed, Aug 20, 2014 at 12:05 PM, Mantas Mikulėnas <grawity@gmail.com> wrote:
+>>
+>> I experimented with some things (like setting chunk size to a few kB
+>> to see if it hangs earlier or only at the very end; etc.), and finally
+>> found out that it stops freezing if I pad the initrd file to a
+>> multiple of 512 bytes :/ That is, 5684268 bytes will freeze, 5684736
+>> bytes will not.
+>>
+>> ...In other words, seems like it cannot read chunks that aren't
+>> multiples of 512 into a location above 4 GB. Or something like that..
 
-Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
----
- drivers/regulator/Kconfig             |    6 ++
- drivers/regulator/Makefile            |    1 +
- drivers/regulator/rn5t618-regulator.c |  143 +++++++++++++++++++++++++++++++++
- include/linux/mfd/rn5t618.h           |   14 ++++
- 4 files changed, 164 insertions(+)
- create mode 100644 drivers/regulator/rn5t618-regulator.c
+Note that I'm mostly clueless about how EFI works (my "debugging" is
+mostly just 'efi_printk()'s to see where it hangs), so take my
+description with a grain of salt...
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index 2dc8289..9d14e62 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -459,6 +459,12 @@ config REGULATOR_RC5T583
- 	  through regulator interface. The device supports multiple DCDC/LDO
- 	  outputs which can be controlled by i2c communication.
- 
-+config REGULATOR_RN5T618
-+	tristate "Ricoh RN5T618 voltage regulators"
-+	depends on MFD_RN5T618
-+	help
-+	  Say y here to support the regulators found on Ricoh RN5T618 PMIC.
-+
- config REGULATOR_S2MPA01
- 	tristate "Samsung S2MPA01 voltage regulator"
- 	depends on MFD_SEC_CORE
-diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-index aa4a6aa..f7c4473 100644
---- a/drivers/regulator/Makefile
-+++ b/drivers/regulator/Makefile
-@@ -62,6 +62,7 @@ obj-$(CONFIG_REGULATOR_PBIAS) += pbias-regulator.o
- obj-$(CONFIG_REGULATOR_PCAP) += pcap-regulator.o
- obj-$(CONFIG_REGULATOR_PCF50633) += pcf50633-regulator.o
- obj-$(CONFIG_REGULATOR_RC5T583)  += rc5t583-regulator.o
-+obj-$(CONFIG_REGULATOR_RN5T618)  += rn5t618-regulator.o
- obj-$(CONFIG_REGULATOR_S2MPA01) += s2mpa01.o
- obj-$(CONFIG_REGULATOR_S2MPS11) += s2mps11.o
- obj-$(CONFIG_REGULATOR_S5M8767) += s5m8767.o
-diff --git a/drivers/regulator/rn5t618-regulator.c b/drivers/regulator/rn5t618-regulator.c
-new file mode 100644
-index 0000000..e58d79a
---- /dev/null
-+++ b/drivers/regulator/rn5t618-regulator.c
-@@ -0,0 +1,143 @@
-+/*
-+ * Regulator driver for Ricoh RN5T618 PMIC
-+ *
-+ * Copyright (C) 2014 Beniamino Galvani <b.galvani@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * version 2 as published by the Free Software Foundation.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#include <linux/mfd/rn5t618.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/regmap.h>
-+#include <linux/regulator/driver.h>
-+#include <linux/regulator/of_regulator.h>
-+
-+static struct regulator_ops rn5t618_reg_ops = {
-+	.enable			= regulator_enable_regmap,
-+	.disable		= regulator_disable_regmap,
-+	.is_enabled		= regulator_is_enabled_regmap,
-+	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
-+	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
-+	.list_voltage		= regulator_list_voltage_linear,
-+};
-+
-+#define REG(rid, ereg, emask, vreg, vmask, min, max, step)		\
-+	[RN5T618_##rid] = {						\
-+		.name		= #rid,					\
-+		.id		= RN5T618_##rid,			\
-+		.type		= REGULATOR_VOLTAGE,			\
-+		.owner		= THIS_MODULE,				\
-+		.ops		= &rn5t618_reg_ops,			\
-+		.n_voltages	= ((max) - (min)) / (step) + 1,		\
-+		.min_uV		= (min),				\
-+		.uV_step	= (step),				\
-+		.enable_reg	= RN5T618_##ereg,			\
-+		.enable_mask	= (emask),				\
-+		.vsel_reg	= RN5T618_##vreg,			\
-+		.vsel_mask	= (vmask),				\
-+	}
-+
-+static struct regulator_desc rn5t618_regulators[] = {
-+	/* DCDC */
-+	REG(DCDC1, DC1CTL, BIT(0), DC1DAC, 0xff, 600000, 3500000, 12500),
-+	REG(DCDC2, DC2CTL, BIT(0), DC2DAC, 0xff, 600000, 3500000, 12500),
-+	REG(DCDC3, DC3CTL, BIT(0), DC3DAC, 0xff, 600000, 3500000, 12500),
-+	/* LDO */
-+	REG(LDO1, LDOEN1, BIT(0), LDO1DAC, 0x7f, 900000, 3500000, 25000),
-+	REG(LDO2, LDOEN1, BIT(1), LDO2DAC, 0x7f, 900000, 3500000, 25000),
-+	REG(LDO3, LDOEN1, BIT(2), LDO3DAC, 0x7f, 600000, 3500000, 25000),
-+	REG(LDO4, LDOEN1, BIT(3), LDO4DAC, 0x7f, 900000, 3500000, 25000),
-+	REG(LDO5, LDOEN1, BIT(4), LDO5DAC, 0x7f, 900000, 3500000, 25000),
-+	/* LDO RTC */
-+	REG(LDORTC1, LDOEN2, BIT(4), LDORTCDAC, 0x7f, 1700000, 3500000, 25000),
-+	REG(LDORTC2, LDOEN2, BIT(5), LDORTC2DAC, 0x7f, 900000, 3500000, 25000),
-+};
-+
-+static struct of_regulator_match rn5t618_matches[] = {
-+	[RN5T618_DCDC1]		= { .name = "DCDC1" },
-+	[RN5T618_DCDC2]		= { .name = "DCDC2" },
-+	[RN5T618_DCDC3]		= { .name = "DCDC3" },
-+	[RN5T618_LDO1]		= { .name = "LDO1" },
-+	[RN5T618_LDO2]		= { .name = "LDO2" },
-+	[RN5T618_LDO3]		= { .name = "LDO3" },
-+	[RN5T618_LDO4]		= { .name = "LDO4" },
-+	[RN5T618_LDO5]		= { .name = "LDO5" },
-+	[RN5T618_LDORTC1]	= { .name = "LDORTC1" },
-+	[RN5T618_LDORTC2]	= { .name = "LDORTC2" },
-+};
-+
-+static int rn5t618_regulator_parse_dt(struct platform_device *pdev)
-+{
-+	struct device_node *np, *regulators;
-+	int ret;
-+
-+	np = of_node_get(pdev->dev.parent->of_node);
-+	if (!np)
-+		return 0;
-+
-+	regulators = of_get_child_by_name(np, "regulators");
-+	if (!regulators) {
-+		dev_err(&pdev->dev, "regulators node not found\n");
-+		return -EINVAL;
-+	}
-+
-+	ret = of_regulator_match(&pdev->dev, regulators, rn5t618_matches,
-+				 ARRAY_SIZE(rn5t618_matches));
-+	of_node_put(regulators);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "error parsing regulator init data: %d\n",
-+			ret);
-+	}
-+
-+	return 0;
-+}
-+
-+static int rn5t618_regulator_probe(struct platform_device *pdev)
-+{
-+	struct rn5t618 *rn5t618 = dev_get_drvdata(pdev->dev.parent);
-+	struct regulator_config config = { };
-+	struct regulator_dev *rdev;
-+	int ret, i;
-+
-+	ret = rn5t618_regulator_parse_dt(pdev);
-+	if (ret)
-+		return ret;
-+
-+	for (i = 0; i < RN5T618_REG_NUM; i++) {
-+		config.dev = &pdev->dev;
-+		config.init_data = rn5t618_matches[i].init_data;
-+		config.of_node = rn5t618_matches[i].of_node;
-+		config.regmap = rn5t618->regmap;
-+
-+		rdev = devm_regulator_register(&pdev->dev,
-+					       &rn5t618_regulators[i],
-+					       &config);
-+		if (IS_ERR(rdev)) {
-+			dev_err(&pdev->dev, "failed to register %s regulator\n",
-+				rn5t618_regulators[i].name);
-+			return PTR_ERR(rdev);
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static struct platform_driver rn5t618_regulator_driver = {
-+	.probe = rn5t618_regulator_probe,
-+	.driver = {
-+		.name	= "rn5t618-regulator",
-+	},
-+};
-+
-+module_platform_driver(rn5t618_regulator_driver);
-+
-+MODULE_AUTHOR("Beniamino Galvani <b.galvani@gmail.com>");
-+MODULE_DESCRIPTION("RN5T618 regulator driver");
-+MODULE_LICENSE("GPL v2");
-diff --git a/include/linux/mfd/rn5t618.h b/include/linux/mfd/rn5t618.h
-index 87686eb..e3571d1 100644
---- a/include/linux/mfd/rn5t618.h
-+++ b/include/linux/mfd/rn5t618.h
-@@ -203,6 +203,20 @@
- #define RN5T618_REPCNT_REPWRON		BIT(0)
- #define RN5T618_SLPCNT_SWPWROFF		BIT(0)
- 
-+enum {
-+	RN5T618_DCDC1,
-+	RN5T618_DCDC2,
-+	RN5T618_DCDC3,
-+	RN5T618_LDO1,
-+	RN5T618_LDO2,
-+	RN5T618_LDO3,
-+	RN5T618_LDO4,
-+	RN5T618_LDO5,
-+	RN5T618_LDORTC1,
-+	RN5T618_LDORTC2,
-+	RN5T618_REG_NUM,
-+};
-+
- struct rn5t618 {
- 	struct regmap *regmap;
- };
+In particular, I just realized yesterday that I don't know whether
+it's referring to physical or virtual addresses in the initrd load
+code -- and the laptop only has 4 GB of memory, so the kernel
+shouldn't be using larger physical addresses in the first place.
+(Virtual ones, on the other hand, /would/ mean a weird bug like
+described above.)
+
 -- 
-1.7.10.4
-
+Mantas Mikulėnas <grawity@gmail.com>
