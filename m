@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753244AbaHZSrf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 14:47:35 -0400
-Received: from [207.46.163.182] ([207.46.163.182]:2263 "EHLO
-	na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753070AbaHZSrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 14:47:33 -0400
-Message-ID: <53FCD41F.2060203@opensource.altera.com>
-Date: Tue, 26 Aug 2014 13:38:23 -0500
-From: Thor Thayer <tthayer@opensource.altera.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1753346AbaHZSss (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 14:48:48 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:36482 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752549AbaHZSsr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 14:48:47 -0400
+Message-ID: <53FCD68A.40509@amacapital.net>
+Date: Tue, 26 Aug 2014 11:48:42 -0700
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Pavel Machek <pavel@denx.de>
-CC: <robherring2@gmail.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rob@landley.net>, <linux@arm.linux.org.uk>,
-        <atull@opensource.altera.com>, <delicious.quinoa@gmail.com>,
-        <dinguyen@opensource.altera.com>, <dougthompson@xmission.com>,
-        <grant.likely@linaro.org>, <bp@alien8.de>, <sameo@linux.intel.com>,
-        <lee.jones@linaro.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <tthayer.linux@gmail.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-edac@vger.kernel.org>
-Subject: Re: [PATCHv10 1/2] edac: altera: Add Altera SDRAM EDAC support.
-References: <1407770293-27190-1-git-send-email-tthayer@opensource.altera.com> <1407770293-27190-2-git-send-email-tthayer@opensource.altera.com> <20140814184930.GB11558@amd.pavel.ucw.cz>
-In-Reply-To: <20140814184930.GB11558@amd.pavel.ucw.cz>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
+To: Juergen Gross <jgross@suse.com>, stefan.bader@canonical.com,
+        toshi.kani@hp.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
+        ville.syrjala@linux.intel.com, hpa@zytor.com, x86@kernel.org
+Subject: Re: [PATCH 0/3] x86: Full support of PAT
+References: <1409033783-12136-1-git-send-email-jgross@suse.com>
+In-Reply-To: <1409033783-12136-1-git-send-email-jgross@suse.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: CO1PR06CA054.namprd06.prod.outlook.com (10.242.160.44) To
- BL2PR03MB114.namprd03.prod.outlook.com (10.255.230.14)
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 03152A99FF
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6049001)(6009001)(199003)(24454002)(189002)(52604005)(51704005)(479174003)(377424004)(377454003)(53754006)(19580395003)(77096002)(74502001)(80316001)(50466002)(107046002)(23746002)(81542001)(74662001)(83322001)(99396002)(95666004)(105586002)(54356999)(110136001)(19580405001)(76176999)(83506001)(50986999)(87266999)(106356001)(64126003)(65806001)(42186005)(31966008)(65816999)(59896002)(79102001)(102836001)(81342001)(101416001)(85306004)(87976001)(76482001)(65956001)(66066001)(33656002)(92566001)(90102001)(86362001)(77982001)(83072002)(64706001)(92726001)(4396001)(21056001)(85852003)(80022001)(47776003)(20776003)(46102001)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB114;H:[137.57.160.203];FPR:;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
-X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/25/2014 11:16 PM, Juergen Gross wrote:
+> The x86 architecture offers via the PAT (Page Attribute Table) a way to
+> specify different caching modes in page table entries. The PAT MSR contains
+> 8 entries each specifying one of 6 possible cache modes. A pte references one
+> of those entries via 3 bits: _PAGE_PAT, _PAGE_PWT and _PAGE_PCD.
+> 
+> The Linux kernel currently supports only 4 different cache modes. The PAT MSR
+> is set up in a way that the setting of _PAGE_PAT in a pte doesn't matter: the
+> top 4 entries in the PAT MSR are the same as the 4 lower entries.
+> 
+> This results in the kernel not supporting e.g. write-through mode. Especially
+> this cache mode would speed up drivers of video cards which now have to use
+> uncached accesses.
+> 
+> OTOH some old processors (Pentium) don't support PAT correctly and the Xen
+> hypervisor has been using a different PAT MSR configuration for some time now
+> and can't change that as this setting is part of the ABI.
+> 
+> This patch set abstracts the cache mode from the pte and introduces tables to
+> translate between cache mode and pte bits (the default cache mode "write back"
+> is hard-wired to PAT entry 0). The tables are statically initialized with
+> values being compatible to old processors and current usage. As soon as the
+> PAT MSR is changed (or - in case of Xen - is read at boot time) the tables are
+> changed accordingly. Requests of mappings with special cache modes are always
+> possible now, in case they are not supported there will be a fallback to a
+> compatible but slower mode.
 
-On 08/14/2014 01:49 PM, Pavel Machek wrote:
-> On Mon 2014-08-11 10:18:12, tthayer@opensource.altera.com wrote:
->> From: Thor Thayer <tthayer@opensource.altera.com>
->>
->> This patch adds support for the CycloneV and ArriaV SDRAM controllers.
->> Correction and reporting of SBEs, Panic on DBEs.
->>
->> Signed-off-by: Thor Thayer <tthayer@opensource.altera.com>
-> Acked-by: Pavel Machek <pavel@denx.de>
->
-Hi All,
+I feel like I'm missing something here.  Where's the support for the
+high PAT bit on huge pages?  Once you start using the top four entries,
+you'll need that.
 
-Any further comments or suggestions on this patch series? Thanks for 
-reviewing, Pavel!
+Also, this probably needs errata handling.  IIRC there are a handful of
+CPUs that support PAT but don't work correctly if the high bit is set.
 
-Thor
+--Andy
