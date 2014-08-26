@@ -1,107 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756905AbaHZCCh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 22:02:37 -0400
-Received: from toccata.ens-lyon.fr ([140.77.166.68]:45511 "EHLO
-	toccata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753181AbaHZCCf (ORCPT
+	id S1756986AbaHZCC6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 22:02:58 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:33365 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755315AbaHZCCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 22:02:35 -0400
-X-Greylist: delayed 454 seconds by postgrey-1.27 at vger.kernel.org; Mon, 25 Aug 2014 22:02:34 EDT
-Date: Tue, 26 Aug 2014 03:54:53 +0200
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Hugh Dickins <hughd@google.com>, akpm@linux-foundation.org
-Cc: Sabrina Dubroca <sd@queasysnail.net>, Valdis.Kletnieks@vt.edu,
-        Vincent Donnefort <vdonnefort@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
-Subject: [PATCH][input-led] Defer input led work to workqueue
-Message-ID: <20140826015453.GA5235@type.youpi.perso.aquilenet.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Hugh Dickins <hughd@google.com>, akpm@linux-foundation.org,
-	Sabrina Dubroca <sd@queasysnail.net>, Valdis.Kletnieks@vt.edu,
-	Vincent Donnefort <vdonnefort@gmail.com>,
-	Bryan Wu <cooloney@gmail.com>, linux-leds@vger.kernel.org,
-	linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
+	Mon, 25 Aug 2014 22:02:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
+In-Reply-To: <CALCETrWLvjt_D2B2sYoQtXeU1_9-005BfPcuYDKp75GbPk68dQ@mail.gmail.com>
+References: <1409014858-1410-1-git-send-email-ast@plumgrid.com>
+	<1409014858-1410-2-git-send-email-ast@plumgrid.com>
+	<20140825.180621.1003932711320755950.davem@davemloft.net>
+	<CAMEtUuxdQpkX8t1_szde=Q1ALcp5t7rRyK+zEDafj27_J2LzVg@mail.gmail.com>
+	<CALCETrVgSXuRG_ZPXQt55ze7pHOCezU4Ev1KFUww6Yqk4JACgg@mail.gmail.com>
+	<CAMEtUuwz9MEei+tjWx4Fv8cK_zc9TKVbWxQEAE+yWvxRMa793g@mail.gmail.com>
+	<CALCETrWLvjt_D2B2sYoQtXeU1_9-005BfPcuYDKp75GbPk68dQ@mail.gmail.com>
+Date: Mon, 25 Aug 2014 19:02:52 -0700
+Message-ID: <CAMEtUuxq1t_G1bvrzJQLDj0+E9g3U4ASqzijpG+EL409+i6+7g@mail.gmail.com>
+Subject: Re: [PATCH v6 net-next 1/6] net: filter: add "load 64-bit immediate"
+ eBPF instruction
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: David Miller <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Brendan Gregg <brendan.d.gregg@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the kbd changes its led state (e.g. caps lock), this triggers
-(led_trigger_event) the kbd-capsl trigger, which is by default
-used by the vt::capsl LED, which triggers (led_trigger_event) the
-vt-capsl trigger. These two nested led_trigger_event calls take a
-trig->leddev_list_lock lock and thus lockdep complains.
+On Mon, Aug 25, 2014 at 6:54 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Mon, Aug 25, 2014 at 6:53 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>> On Mon, Aug 25, 2014 at 6:38 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>> On Mon, Aug 25, 2014 at 6:35 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>>>> On Mon, Aug 25, 2014 at 6:06 PM, David Miller <davem@davemloft.net> wrote:
+>>>>> From: Alexei Starovoitov <ast@plumgrid.com>
+>>>>> Date: Mon, 25 Aug 2014 18:00:53 -0700
+>>>>>
+>>>>>> add BPF_LD_IMM64 instruction to load 64-bit immediate value into a register.
+>>>>>
+>>>>> I think you need to rethink this.
+>>>>>
+>>>>> I understand that you want to be able to compile arbitrary C code into
+>>>>> eBPF, but you have to restrict strongly what data the eBPF code can get
+>>>>> to.
+>>>>
+>>>> I believe verifier already does restrict it. I don't see any holes in
+>>>> the architecture. I'm probably not explaining it clearly though :(
+>>>>
+>>>>> Arbitrary pointer loads is asking for trouble.
+>>>>
+>>>> Of course.
+>>>> There is no arbitrary pointer from user space.
+>>>> Verifier checks all pointers.
+>>>> I guess this commit log description is confusing.
+>>>> It says:
+>>>> BPF_LD_IMM64(R1, const_imm_map_ptr)
+>>>> that's what appears in the program _after_ it goes through verifier.
+>>>> User space cannot pass a pointer into the kernel.
+>>>
+>>> If you don't intend for userspace to load a program that contains this
+>>> instruction, then why does it need to be an instruction that the
+>>> verifier rewrites?  Why not have an instruction "load immediate
+>>
+>> user space use _pseudo_ bpf_ld_imm64 instruction.
+>> _pseudo_ stands for using 'map_fd' as imm instead of pointer.
+>>
+>>> relocated pointer" that contains a reference to a relocation table and
+>>
+>> Andy, I guess you missed explanation in:
+>> https://lkml.org/lkml/2014/8/13/111
+>> "
+>> Obviously user space doesn't know what kernel map pointer is associated
+>> with process-local map-FD.
+>> So it's using pseudo BPF_LD_IMM64 instruction.
+>> BPF_LD_IMM64 with src_reg == 0 -> generic move 64-bit immediate into dst_reg
+>> BPF_LD_IMM64 with src_reg == BPF_PSEUDO_MAP_FD -> mov map_fd into dst_reg
+>> Other values are reserved for now. (They will be used to implement
+>> global variables, strings and other constants and per-cpu areas in the future)
+>> So the programs look like:
+>>   BPF_LD_MAP_FD(BPF_REG_1, process_local_map_fd),
+>>   BPF_CALL(BPF_FUNC_map_lookup_elem),
+>> eBPF verifier scans the program for such pseudo instructions, converts
+>> process_local_map_fd -> in-kernel map pointer
+>> and drops 'pseudo' flag of BPF_LD_IMM64 instruction.
+>> "
+>
+> Will a program that uses BPF_LD_IMM64 w/o the FPG_REG_1 thing be accepted?
 
-Actually the user can make the vt::capsl LED use its own vt-capsl
-trigger and thus build a loop.  This produces an immediate oops.
-
-This changeset defers the second led_trigger_event call into a
-workqueue, which avoids the nested locking altogether.  This does
-not prevent the user from shooting himself in the foot by creating a
-vt::capsl <-> vt-capsl loop, but the only consequence is the workqueue
-threads eating some CPU until the user breaks the loop, which is not too
-bad.
-
-Signed-off-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
-
---- a/drivers/input/leds.c
-+++ b/drivers/input/leds.c
-@@ -100,13 +100,25 @@ static unsigned long vt_led_registered[B
- /* Number of input devices having each LED */
- static int vt_led_references[LED_CNT];
- 
-+static int vt_led_state[LED_CNT];
-+static struct workqueue_struct *vt_led_wq;
-+static struct work_struct vt_led_work[LED_CNT];
-+
-+static void vt_led_cb(struct work_struct *work)
-+{
-+	int led = work - vt_led_work;
-+
-+	led_trigger_event(&vt_led_triggers[led], vt_led_state[led]);
-+}
-+
- /* VT LED state change, tell the VT trigger.  */
- static void vt_led_set(struct led_classdev *cdev,
- 			  enum led_brightness brightness)
- {
- 	int led = cdev - vt_leds;
- 
--	led_trigger_event(&vt_led_triggers[led], !!brightness);
-+	vt_led_state[led] = !!brightness;
-+	queue_work(vt_led_wq, &vt_led_work[led]);
- }
- 
- /* LED state change for some keyboard, notify that keyboard.  */
-@@ -244,6 +256,26 @@ void input_led_disconnect(struct input_d
- 	mutex_unlock(&vt_led_registered_lock);
- }
- 
-+static int __init input_led_init(void)
-+{
-+	unsigned i;
-+
-+	vt_led_wq = alloc_workqueue("input_leds", WQ_UNBOUND, 0);
-+	if (!vt_led_wq)
-+		return -ENOMEM;
-+	for (i = 0; i < LED_CNT; i++)
-+		INIT_WORK(&vt_led_work[i], vt_led_cb);
-+
-+	return 0;
-+}
-+
-+static void __exit input_led_exit(void)
-+{
-+	destroy_workqueue(vt_led_wq);
-+}
-+
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("User LED support for input layer");
- MODULE_AUTHOR("Samuel Thibault <samuel.thibault@ens-lyon.org>");
-+module_init(input_led_init);
-+module_exit(input_led_exit);
+If you mean the program like:
+BPF_LD_IMM64(BPF_REG_1, 0xdead),
+BPF_CALL(BPF_FUNC_map_lookup_elem),
+yes, it will be rejected, because type of R1 will not match
+map_lookup() argument
+constraints.
+See check_ld_imm() in verifier.c where it assigns the type during verification.
+There are 5 tests in verifier testsuite that test things around bpf_ld_imm64
+and 2 tests around _pseudo_ bpf_ld_imm64.
