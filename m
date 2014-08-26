@@ -1,64 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753023AbaHZSbl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 14:31:41 -0400
-Received: from smtp81.ord1c.emailsrvr.com ([108.166.43.81]:45363 "EHLO
+	id S1753177AbaHZScD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 14:32:03 -0400
+Received: from smtp81.ord1c.emailsrvr.com ([108.166.43.81]:33344 "EHLO
 	smtp81.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752226AbaHZSbj (ORCPT
+	by vger.kernel.org with ESMTP id S1752070AbaHZScA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 14:31:39 -0400
+	Tue, 26 Aug 2014 14:32:00 -0400
 X-Sender-Id: pramod.gurav@smartplayin.com
 From: Pramod Gurav <pramod.gurav@smartplayin.com>
 To: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
 Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 1/2] ARM: DT: APQ8064: Add pinctrl support This patch adds device tree nodes to support pinctrl for apq8064 SOC
-Date: Tue, 26 Aug 2014 11:31:06 -0700
-Message-Id: <1409077867-9446-1-git-send-email-pramod.gurav@smartplayin.com>
+        Linus Walleij <linus.walleij@linaro.org>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Andy Gross <agross@codeaurora.org>
+Subject: [PATCH 2/2] pinctrl: qcom: Add support for reset for apq8064
+Date: Tue, 26 Aug 2014 11:31:07 -0700
+Message-Id: <1409077867-9446-2-git-send-email-pramod.gurav@smartplayin.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1409077867-9446-1-git-send-email-pramod.gurav@smartplayin.com>
+References: <1409077867-9446-1-git-send-email-pramod.gurav@smartplayin.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC: Rob Herring <robh+dt@kernel.org>
-CC: Pawel Moll <pawel.moll@arm.com>
-CC: Mark Rutland <mark.rutland@arm.com>
-CC: Ian Campbell <ijc+devicetree@hellion.org.uk>
-CC: Kumar Gala <galak@codeaurora.org>
-CC: devicetree@vger.kernel.org
-CC: linux-arm-kernel@lists.infradead.org
+This patch adds support for reset functions to reboot the boards
+with soc apq8064.
 
+CC: Linus Walleij <linus.walleij@linaro.org>
+CC: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+CC: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+CC: Stephen Boyd <sboyd@codeaurora.org>
+CC: Andy Gross <agross@codeaurora.org>
 Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
 ---
- arch/arm/boot/dts/qcom-apq8064.dtsi |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+ drivers/pinctrl/qcom/pinctrl-apq8064.c |    7 +++++-
+ drivers/pinctrl/qcom/pinctrl-msm.c     |   36 ++++++++++++++++++++++++++++++++
+ 2 files changed, 42 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/boot/dts/qcom-apq8064.dtsi b/arch/arm/boot/dts/qcom-apq8064.dtsi
-index d66fb25..681e194 100644
---- a/arch/arm/boot/dts/qcom-apq8064.dtsi
-+++ b/arch/arm/boot/dts/qcom-apq8064.dtsi
-@@ -73,6 +73,17 @@
- 		ranges;
- 		compatible = "simple-bus";
+diff --git a/drivers/pinctrl/qcom/pinctrl-apq8064.c b/drivers/pinctrl/qcom/pinctrl-apq8064.c
+index feb6f15..ef1263c 100644
+--- a/drivers/pinctrl/qcom/pinctrl-apq8064.c
++++ b/drivers/pinctrl/qcom/pinctrl-apq8064.c
+@@ -324,6 +324,7 @@ enum apq8064_functions {
+ 	APQ_MUX_tsif1,
+ 	APQ_MUX_tsif2,
+ 	APQ_MUX_usb2_hsic,
++	APQ_MUX_ps_hold,
+ 	APQ_MUX_NA,
+ };
  
-+		msm_gpio: pinctrl@800000 {
-+			compatible = "qcom,apq8064-pinctrl";
-+			reg = <0x800000 0x4000>;
+@@ -351,6 +352,9 @@ static const char * const gpio_groups[] = {
+ 	"gpio78", "gpio79", "gpio80", "gpio81", "gpio82", "gpio83", "gpio84",
+ 	"gpio85", "gpio86", "gpio87", "gpio88", "gpio89"
+ };
++static const char * const ps_hold_groups[] = {
++	"gpio78"
++};
+ static const char * const gsbi1_groups[] = {
+ 	"gpio18", "gpio19", "gpio20", "gpio21"
+ };
+@@ -477,6 +481,7 @@ static const struct msm_function apq8064_functions[] = {
+ 	FUNCTION(tsif1),
+ 	FUNCTION(tsif2),
+ 	FUNCTION(usb2_hsic),
++	FUNCTION(ps_hold),
+ };
+ 
+ static const struct msm_pingroup apq8064_groups[] = {
+@@ -558,7 +563,7 @@ static const struct msm_pingroup apq8064_groups[] = {
+ 	PINGROUP(75, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
+ 	PINGROUP(76, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
+ 	PINGROUP(77, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
+-	PINGROUP(78, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
++	PINGROUP(78, ps_hold, NA, NA, NA, NA, NA, NA, NA, NA, NA),
+ 	PINGROUP(79, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
+ 	PINGROUP(80, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
+ 	PINGROUP(81, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
+diff --git a/drivers/pinctrl/qcom/pinctrl-msm.c b/drivers/pinctrl/qcom/pinctrl-msm.c
+index 2738108..f4e4f8f 100644
+--- a/drivers/pinctrl/qcom/pinctrl-msm.c
++++ b/drivers/pinctrl/qcom/pinctrl-msm.c
+@@ -12,6 +12,7 @@
+  * GNU General Public License for more details.
+  */
+ 
++#include <linux/delay.h>
+ #include <linux/err.h>
+ #include <linux/io.h>
+ #include <linux/module.h>
+@@ -27,12 +28,17 @@
+ #include <linux/interrupt.h>
+ #include <linux/spinlock.h>
+ 
++#include <asm/system_misc.h>
 +
-+			gpio-controller;
-+			#gpio-cells = <2>;
-+			interrupt-controller;
-+			#interrupt-cells = <2>;
-+			interrupts = <0 32 0x4>;
-+		};
+ #include "../core.h"
+ #include "../pinconf.h"
+ #include "pinctrl-msm.h"
+ #include "../pinctrl-utils.h"
+ 
+ #define MAX_NR_GPIO 300
++#define PS_HOLD_OFFSET 0x820
 +
- 		intc: interrupt-controller@2000000 {
- 			compatible = "qcom,msm-qgic2";
- 			interrupt-controller;
++static void __iomem *msm_ps_hold;
+ 
+ /**
+  * struct msm_pinctrl - state for a pinctrl-msm device
+@@ -848,10 +854,31 @@ static int msm_gpio_init(struct msm_pinctrl *pctrl)
+ 	return 0;
+ }
+ 
++static void qcom_reset(enum reboot_mode reboot_mode, const char *cmd)
++{
++	writel(0, msm_ps_hold);
++	mdelay(10000);
++}
++
++const struct msm_function
++*find_pshold_function(const struct msm_function *functions,
++					unsigned nfunctions, const char *name)
++{
++	int i = 0;
++	const struct msm_function *func;
++
++	for (func = functions; i <= nfunctions; func++, i++)
++		if (!strcmp(func->name, name))
++			return func;
++
++	return NULL;
++}
++
+ int msm_pinctrl_probe(struct platform_device *pdev,
+ 		      const struct msm_pinctrl_soc_data *soc_data)
+ {
+ 	struct msm_pinctrl *pctrl;
++	const struct msm_function *func;
+ 	struct resource *res;
+ 	int ret;
+ 
+@@ -871,6 +898,15 @@ int msm_pinctrl_probe(struct platform_device *pdev,
+ 	if (IS_ERR(pctrl->regs))
+ 		return PTR_ERR(pctrl->regs);
+ 
++#ifdef CONFIG_ARM
++	func = find_pshold_function(soc_data->functions,
++					soc_data->nfunctions, "ps_hold");
++	if (func) {
++		dev_dbg(&pdev->dev, "Found Function %s\n", func->name);
++		msm_ps_hold = pctrl->regs + PS_HOLD_OFFSET;
++		arm_pm_restart = qcom_reset;
++	}
++#endif
+ 	pctrl->irq = platform_get_irq(pdev, 0);
+ 	if (pctrl->irq < 0) {
+ 		dev_err(&pdev->dev, "No interrupt defined for msmgpio\n");
 -- 
 1.7.0.4
 
