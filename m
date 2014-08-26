@@ -1,47 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758202AbaHZNe3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 09:34:29 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:36780 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755082AbaHZNe2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 09:34:28 -0400
-Date: Tue, 26 Aug 2014 19:04:20 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sound: pci: ctxfi: fix broken user-visible string
-Message-ID: <20140826133420.GB21572@sudip-PC>
-References: <1409055734-2777-1-git-send-email-sudipm.mukherjee@gmail.com>
- <s5hegw35t4r.wl-tiwai@suse.de>
+	id S1758218AbaHZNef (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 09:34:35 -0400
+Received: from mx13.mfdns.com ([222.76.219.121]:58750 "HELO mx13.mfdns.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755088AbaHZNec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 09:34:32 -0400
+X-Greylist: delayed 170354 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Aug 2014 09:34:31 EDT
+Date: Tue, 26 Aug 2014 21:34:15 +0800
+From: "John" <smile@kingsfang.com>
+Reply-To: john@kingsfang.com
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: CIJ inks
+Message-ID: <201408262134159976677@kingsfang.com>
+X-Mailer: Foxmail 6, 10, 201, 20 [cn]
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <s5hegw35t4r.wl-tiwai@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="GB2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7QDYhBe002609
 
-On Tue, Aug 26, 2014 at 02:32:04PM +0200, Takashi Iwai wrote:
-> At Tue, 26 Aug 2014 17:52:14 +0530,
-> Sudip Mukherjee wrote:
-> > 
-> > fixed broken user visible strings
-> 
-> This text just repeats what the summary line says.  Instead, you
-> should write *why* the patch is needed.  Ditto for the previous
-> patch.
-> 
+Dear Sir, 
 
-Hi,
-Resent both the patches , and also modified the changelog . Can you please review them again ...
+  Glad to hear you're on the market for CIJ inks.
+  This is Kingsfang(Xiamen)Import&Export Co.,Ltd in China.We specialized in the production of replacement of inkjet printer ink,such as Imaje, Domino, Videojet, Linx, Willet, Hitachi, KGK and so on, we have our own factory.
+   For all the ink products got the SGS approval every year. Some have passed non-halogen request.
+  
+  Hope to find a way to cooperate with you!
 
-thanks
-sudip
-
-> 
-> 
-> Takashi
+Saleskingsfang
+Kingsfang(Xiamen)Import&Export Co.,Ltd
+Tel: +86-592-6058718
+Email:Smile@kingsfang.com
+Website: www.kingsfang.comÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
