@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758082AbaHZM5P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 08:57:15 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:51999 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754387AbaHZM5O (ORCPT
+	id S932556AbaHZM5j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 08:57:39 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:20385 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754847AbaHZM5i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 08:57:14 -0400
-X-AuditID: cbfee690-f79ce6d00000115a-ad-53fc8428e687
+	Tue, 26 Aug 2014 08:57:38 -0400
+X-AuditID: cbfee68d-f79c46d000000b84-4c-53fc84404bbb
 From: Jingoo Han <jg1.han@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: "'Bryan Wu'" <cooloney@gmail.com>, "'Lee Jones'" <lee.jones@linaro.org>,
         "'Jingoo Han'" <jg1.han@samsung.com>
 References: <009301cfc12d$2847ffd0$78d7ff70$%han@samsung.com>
 In-reply-to: <009301cfc12d$2847ffd0$78d7ff70$%han@samsung.com>
-Subject: [PATCH 01/18] backlight: adp5520: add blank line after declarations
-Date: Tue, 26 Aug 2014 21:57:12 +0900
-Message-id: <00ab01cfc12d$40e91560$c2bb4020$%han@samsung.com>
+Subject: [PATCH 02/18] backlight: adp8860: add blank line after declarations
+Date: Tue, 26 Aug 2014 21:57:36 +0900
+Message-id: <00ac01cfc12d$4f288b60$ed79a220$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac/BLSgE1uQ+HizQTQC0PRMOtHkloQAAA1hA
+Thread-index: Ac/BLSgE1uQ+HizQTQC0PRMOtHkloQAABoAA
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsVy+t8zQ12Nlj/BBg8PKlkc3TmRyeLywkus
-	Fve/HmW0uLxrDpsDi8fOWXfZPe5c28Pm0bdlFaPH501yASxRXDYpqTmZZalF+nYJXBkNKxoY
-	Cx6zVmx6vpStgfEjSxcjJ4eEgInEkdd97BC2mMSFe+vZuhi5OIQEljFKTL71nh2m6N+7P+wQ
-	iUWMEk/avzFCOL8ZJT4f3skIUsUmoCbx5cthsA4RAQWJzb3PWEFsZoFcid8zV4LVCAnYSszf
-	tgIszilgJ7H08DmwemEBH4kXT++BncQioCrx8sgasHpeoPp5nceYIGxBiR+TIWqYBbQk1u88
-	zgRhy0tsXvOWuYuRA+hSdYlHf3VBTBEBI4nGmyUQFSIS+168AztZQuAUu8SsI1uZIVYJSHyb
-	fIgFolVWYtMBZoh/JSUOrrjBMoFRYhaSxbOQLJ6FZPEsJCsWMLKsYhRNLUguKE5KLzLRK07M
-	LS7NS9dLzs/dxAiJygk7GO8dsD7EKMDBqMTDeyP+d7AQa2JZcWXuIUZToIsmMkuJJucDYz+v
-	JN7Q2MzIwtTE1NjI3NJMSZz3tdTPYCGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2MqnrnPh+f
-	qrbk3NWMb39FFBpPuthOfdXc+f3zhOsem/ZdZmmr+aFqsqN//TG9LsvFl432m25vf/hQ+kCD
-	QGJsx9VP7RbLfLS76m9ec0nq1xOYEaHz5HK38ZfLpyLPf3p3rNznnGxlxc6clq7Gh/M3ivly
-	7z2kn8iWLJ6zZvKjroXWh6/aMgsbKLEUZyQaajEXFScCAPS1bSvFAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDIsWRmVeSWpSXmKPExsVy+t9jAV2Nlj/BBhf65S2O7pzIZHF54SVW
-	i/tfjzJaXN41h82BxWPnrLvsHneu7WHz6NuyitHj8ya5AJaoBkabjNTElNQihdS85PyUzLx0
-	WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCdSgpliTmlQKGAxOJiJX07TBNCQ9x0
-	LWAaI3R9Q4LgeowM0EDCOsaMhhUNjAWPWSs2PV/K1sD4kaWLkZNDQsBE4t+7P+wQtpjEhXvr
-	2boYuTiEBBYxSjxp/8YI4fxmlPh8eCcjSBWbgJrEly+HwTpEBBQkNvc+YwWxmQVyJX7PXAlW
-	IyRgKzF/2wqwOKeAncTSw+fA6oUFfCRePL0HtplFQFXi5ZE1YPW8QPXzOo8xQdiCEj8mQ9Qw
-	C2hJrN95nAnClpfYvOYtcxcjB9Cl6hKP/uqCmCICRhKNN0sgKkQk9r14xziBUWgWkkGzkAya
-	hWTQLCQtCxhZVjGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEx/wz6R2MqxosDjEKcDAq8fDe
-	iP8dLMSaWFZcmXuIUYKDWUmE90fSn2Ah3pTEyqrUovz4otKc1OJDjKZAf05klhJNzgemo7yS
-	eENjEzMjSyMzCyMTc3Mlcd6DrdaBQgLpiSWp2ampBalFMH1MHJxSwFQjLMSx+tNeH7XYC1Pf
-	Vajv4Iy73nO1d1vX2ZfZ576/jJ3779eMTbwsYZpb1Pnvrl/yeO38v0az8wWkMszXHGYMmFLk
-	vPiOTy/r7WefE19KyVXOrhes+KfyPDQnV9da8s0esVS3qcwF7fzl7245sj9yvK8i+0JhjfkT
-	1b+zxWRk5x5fv9npTZYSS3FGoqEWc1FxIgCOwsvHDwMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsVy+t8zQ12Hlj/BBo8bpC2O7pzIZHF54SVW
+	i/tfjzJaXN41h82BxWPnrLvsHneu7WHz6NuyitHj8ya5AJYoLpuU1JzMstQifbsErozrG/4w
+	FSzjqvj49iVLA+MZji5GTg4JAROJ+4/esEDYYhIX7q1n62Lk4hASWMYo8f7nGiaYoiu357JA
+	JKYzSvz+/owZwvnNKDF9bTczSBWbgJrEly+H2UFsEQEFic29z1hBbGaBXInfM1cygthCArYS
+	87etAItzCthJLD18DqxeWMBH4uaqhWwgNouAqsSaAyfA6nmB6rfNfwFlC0r8mHyPBWKmlsT6
+	nceZIGx5ic1r3gLdwAF0qbrEo7+6ECcYSdxe9wrqBBGJfS/eMUI8c4pdovGjGMQqAYlvkw+x
+	QLTKSmw6wAxRIilxcMUNlgmMErOQLJ6FZPEsJItnIdmwgJFlFaNoakFyQXFSepGhXnFibnFp
+	Xrpecn7uJkZIVPbuYLx9wPoQowAHoxIP743438FCrIllxZW5hxhNgS6ayCwlmpwPjP28knhD
+	YzMjC1MTU2Mjc0szJXFeRamfwUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYzRMv3083eL4w
+	6WDOWrmSV/PTb/KEst6bYRy3k7/0VMvT7w7CGvssAhcUiDBszDv26vuc0x7RBbmi35q5o/vE
+	Uvc98J84aW/s7icvHBO5K1Kl28/JH/QTLvz2iSNd7uqqDnvryzfes53ffnZvr4rE1yVMrc7u
+	tpVlP/kMqnabiD/tv5P0Kf6VEktxRqKhFnNRcSIA4awAq8UCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLIsWRmVeSWpSXmKPExsVy+t9jQV2Hlj/BBj9PiVsc3TmRyeLywkus
+	Fve/HmW0uLxrDpsDi8fOWXfZPe5c28Pm0bdlFaPH501yASxRDYw2GamJKalFCql5yfkpmXnp
+	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUA7lRTKEnNKgUIBicXFSvp2mCaEhrjp
+	WsA0Ruj6hgTB9RgZoIGEdYwZ1zf8YSpYxlXx8e1LlgbGMxxdjJwcEgImElduz2WBsMUkLtxb
+	z9bFyMUhJDCdUeL392fMEM5vRonpa7uZQarYBNQkvnw5zA5iiwgoSGzufcYKYjML5Er8nrmS
+	EcQWErCVmL9tBVicU8BOYunhc2D1wgI+EjdXLWQDsVkEVCXWHDgBVs8LVL9t/gsoW1Dix+R7
+	LBAztSTW7zzOBGHLS2xe8xboBg6gS9UlHv3VhTjBSOL2uldQJ4hI7HvxjnECo9AsJJNmIZk0
+	C8mkWUhaFjCyrGIUTS1ILihOSs810itOzC0uzUvXS87P3cQIjvpn0jsYVzVYHGIU4GBU4uG9
+	Ef87WIg1say4MvcQowQHs5II74+kP8FCvCmJlVWpRfnxRaU5qcWHGE2BHp3ILCWanA9MSHkl
+	8YbGJmZGlkZmFkYm5uZK4rwHW60DhQTSE0tSs1NTC1KLYPqYODilGhg5hboYMmauC5/ud+st
+	C/vjmZFT5r22TPkbu/hgqKN/9GF/Q0b5/8vvivIUV2WrONRW8l69OnHS9m/hDaZffKOiXL77
+	PvPht3o832Tb6a+er3/p7p5ZYlrCfsVl0vcdHDsVY+P/vdIQv7hxg5SXevS8510amx5W//zy
+	W3aKwMxVe8+oBsbbZb1SYinOSDTUYi4qTgQA3CP0RhADAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,20 +61,36 @@ Fixed the following checkpatch warning.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/backlight/adp5520_bl.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/video/backlight/adp8860_bl.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/video/backlight/adp5520_bl.c b/drivers/video/backlight/adp5520_bl.c
-index f37097a261a2..8280245d7c12 100644
---- a/drivers/video/backlight/adp5520_bl.c
-+++ b/drivers/video/backlight/adp5520_bl.c
-@@ -67,6 +67,7 @@ static int adp5520_bl_set(struct backlight_device *bl, int brightness)
- static int adp5520_bl_update_status(struct backlight_device *bl)
+diff --git a/drivers/video/backlight/adp8860_bl.c b/drivers/video/backlight/adp8860_bl.c
+index be8d83deca7d..71147f4461b8 100644
+--- a/drivers/video/backlight/adp8860_bl.c
++++ b/drivers/video/backlight/adp8860_bl.c
+@@ -181,6 +181,7 @@ static int adp8860_clr_bits(struct i2c_client *client, int reg, uint8_t bit_mask
+ static void adp8860_led_work(struct work_struct *work)
+ {
+ 	struct adp8860_led *led = container_of(work, struct adp8860_led, work);
++
+ 	adp8860_write(led->client, ADP8860_ISC1 - led->id + 1,
+ 			 led->new_brightness >> 1);
+ }
+@@ -362,6 +363,7 @@ static int adp8860_bl_set(struct backlight_device *bl, int brightness)
+ static int adp8860_bl_update_status(struct backlight_device *bl)
  {
  	int brightness = bl->props.brightness;
 +
  	if (bl->props.power != FB_BLANK_UNBLANK)
  		brightness = 0;
+ 
+@@ -499,6 +501,7 @@ static ssize_t adp8860_bl_l1_daylight_max_store(struct device *dev,
+ {
+ 	struct adp8860_bl *data = dev_get_drvdata(dev);
+ 	int ret = kstrtoul(buf, 10, &data->cached_daylight_max);
++
+ 	if (ret)
+ 		return ret;
  
 -- 
 2.0.0
