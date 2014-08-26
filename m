@@ -1,102 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757447AbaHZLcV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 07:32:21 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:36532 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754451AbaHZLcT (ORCPT
+	id S1757549AbaHZLd2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 07:33:28 -0400
+Received: from smtp89.ord1c.emailsrvr.com ([108.166.43.89]:47799 "EHLO
+	smtp89.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754305AbaHZLd0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 07:32:19 -0400
-Message-ID: <53FC703F.8040501@suse.cz>
-Date: Tue, 26 Aug 2014 13:32:15 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: linux@roeck-us.net, stable@vger.kernel.org, satoru.takeuchi@gmail.com,
-        shuah.kh@samsung.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.12 000/104] 3.12.27-stable review
-References: <20140820195436.GA22902@roeck-us.net>	<53F5A864.5040206@suse.cz>	<53F8AFEE.2070608@roeck-us.net> <20140823.111035.1932350736810442438.davem@davemloft.net>
-In-Reply-To: <20140823.111035.1932350736810442438.davem@davemloft.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Aug 2014 07:33:26 -0400
+X-Sender-Id: kiran.padwal@smartplayin.com
+From: Kiran Padwal <kiran.padwal@smartplayin.com>
+To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        davidb@codeaurora.org, afaerber@suse.de
+Cc: devicetree@vger.kernel.org, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Kiran Padwal <kiran.padwal@smartplayin.com>
+Subject: [PATCH v3] ARM: apq8064: Add pinmux and i2c pinctrl nodes
+Date: Tue, 26 Aug 2014 17:00:45 +0530
+Message-Id: <1409052645-14984-1-git-send-email-kiran.padwal@smartplayin.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+This patch adds pinmux and i2c pinctrl DT node for IFC6410 board.
+It also adds necessary DT support for i2c eeprom which is present on
+IFC6410.
 
-On 08/23/2014, 08:10 PM, David Miller wrote:
-> From: Guenter Roeck <linux@roeck-us.net> Date: Sat, 23 Aug 2014
-> 08:14:54 -0700
-> 
->> On 08/21/2014 01:05 AM, Jiri Slaby wrote:
->>> The last three are just cosmetical in 3.12. And I do not
->>> immediately see in the rest, how they could improve the state.
->>> So I am going to remove the add-basic-validations patch from
->>> 3.12.
->>> 
->> 
->> Build and tests now look good.
-> 
-> I am hugely disappointed in this.
+Tested on IFC6410 board.
 
-Yes, me too.
+Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
+---
+Changes since v2:
+ - Renamed pinmux i2c subnode "i2c1_pinmux" to "i2c1".
+ - Removed labes of node.
+ - Used canonical value as "okay" instead of "ok".
+ - Used macros.
 
-> This is why I really do all the backports for each -stable release 
-> myself and I therefore really wish there was more thought put into 
-> when these changes are placed into other trees.
+Changes since v1:
+ - Renamed pinmux phandle "qcom_pinmux" to "tlmm_pinmux".
+ - Updated pinmux interrupt.
 
-If everybody were using the standard stable rules and did not
-introduce a very special patches handling, we would have known what
-stable trees should contain which patches. Not only that everybody is
-confused about the special handling, but fixes for holes happened to
-be missed in the special process several times as of now.
+ arch/arm/boot/dts/qcom-apq8064-ifc6410.dts |   27 ++++++++++++++
+ arch/arm/boot/dts/qcom-apq8064.dtsi        |   53 ++++++++++++++++++++++++++++
+ 2 files changed, 80 insertions(+)
 
-Furthermore, with the special handling and given subtree maintainers
-provide backports only to selected stable trees, we have no way to
-find out what should (not) be applied. Interpolation is only what
-remains for us poor. (Leaving apart the great testing by the guys.)
+diff --git a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
+index 7c2441d..ef0857e 100644
+--- a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
++++ b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
+@@ -5,6 +5,24 @@
+ 	compatible = "qcom,apq8064-ifc6410", "qcom,apq8064";
+ 
+ 	soc {
++		gsbi@12440000 {
++			status = "okay";
++			qcom,mode = <GSBI_PROT_I2C>;
++
++			i2c@12460000 {
++				status = "okay";
++				clock-frequency = <200000>;
++				pinctrl-0 = <&i2c1_pins>;
++				pinctrl-names = "default";
++
++				eeprom: eeprom@52 {
++					compatible = "atmel,24c128";
++					reg = <0x52>;
++					pagesize = <32>;
++				};
++			};
++		};
++
+ 		gsbi@16600000 {
+ 			status = "ok";
+ 			qcom,mode = <GSBI_PROT_I2C_UART>;
+@@ -12,5 +30,14 @@
+ 				status = "ok";
+ 			};
+ 		};
++
++		pinmux@800000 {
++			i2c1_pins: i2c1 {
++				mux {
++					pins = "gpio20", "gpio21";
++					function = "gsbi1";
++				};
++			};
++		};
+ 	};
+ };
+diff --git a/arch/arm/boot/dts/qcom-apq8064.dtsi b/arch/arm/boot/dts/qcom-apq8064.dtsi
+index 92bf793..5dddbf3 100644
+--- a/arch/arm/boot/dts/qcom-apq8064.dtsi
++++ b/arch/arm/boot/dts/qcom-apq8064.dtsi
+@@ -89,6 +89,17 @@
+ 			cpu-offset = <0x80000>;
+ 		};
+ 
++		tlmm_pinmux: pinmux@800000 {
++			compatible = "qcom,apq8064-pinctrl";
++			reg = <0x800000 0x4000>;
++
++			gpio-controller;
++			#gpio-cells = <2>;
++			interrupt-controller;
++			#interrupt-cells = <2>;
++			interrupts = <0 16 IRQ_TYPE_LEVEL_HIGH>;
++		};
++
+ 		acc0: clock-controller@2088000 {
+ 			compatible = "qcom,kpss-acc-v1";
+ 			reg = <0x02088000 0x1000>, <0x02008000 0x1000>;
+@@ -133,6 +144,48 @@
+ 			regulator;
+ 		};
+ 
++		gsbi1: gsbi@12440000 {
++			status = "disabled";
++			compatible = "qcom,gsbi-v1.0.0";
++			reg = <0x12440000 0x100>;
++			clocks = <&gcc GSBI1_H_CLK>;
++			clock-names = "iface";
++			#address-cells = <1>;
++			#size-cells = <1>;
++			ranges;
++
++			i2c1: i2c@12460000 {
++				compatible = "qcom,i2c-qup-v1.1.1";
++				reg = <0x12460000 0x1000>;
++				interrupts = <0 194 IRQ_TYPE_NONE>;
++				clocks = <&gcc GSBI1_QUP_CLK>, <&gcc GSBI1_H_CLK>;
++				clock-names = "core", "iface";
++				#address-cells = <1>;
++				#size-cells = <0>;
++			};
++		};
++
++		gsbi2: gsbi@12480000 {
++			status = "disabled";
++			compatible = "qcom,gsbi-v1.0.0";
++			reg = <0x12480000 0x100>;
++			clocks = <&gcc GSBI2_H_CLK>;
++			clock-names = "iface";
++			#address-cells = <1>;
++			#size-cells = <1>;
++			ranges;
++
++			i2c2: i2c@124a0000 {
++				compatible = "qcom,i2c-qup-v1.1.1";
++				reg = <0x124a0000 0x1000>;
++				interrupts = <0 196 IRQ_TYPE_NONE>;
++				clocks = <&gcc GSBI2_QUP_CLK>, <&gcc GSBI2_H_CLK>;
++				clock-names = "core", "iface";
++				#address-cells = <1>;
++				#size-cells = <0>;
++			};
++		};
++
+ 		gsbi7: gsbi@16600000 {
+ 			status = "disabled";
+ 			compatible = "qcom,gsbi-v1.0.0";
+-- 
+1.7.9.5
 
-> Almost all of those sparc64 memory management fixes should not go
-> into anything before v3.13, because all of these fixes are in the
-> context of the page tables encoding PMDs using the PTE layout.
-
-Again, until subtree maintainers distribute their private local
-knowledge somehow, we cannot know.
-
-> If you're just forcing changes you see go into other -stable 
-> submissions into your tree until they compile, and just hoping that
-> a tester will catch any problems, you are absolutely doing it wrong
-> and taking a large amount of value out of the -stable releases.
-
-Actually, like it or not, this is exactly how all stable trees work
-for specific scenarios/hardware. And then, we have the -rc's. If patch
-authors do not bother to reply to the "patch added" mails despite they
-know it is inappropriate, stable maintainers are short of
-possibilities. Unless they are lucky, i.e. maintain a selected stable
-tree, where a subtree maintainer provides them with a set of patches
-for that tree.
-
-thank you,
-- -- 
-js
-suse labs
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT/HA/AAoJEL0lsQQGtHBJAqwP/1iqbPpBmDVA82gijLprtJPt
-O57ELwN9rOYsyfr702eXBm7UVW42T0AroxjAqoNx3MpoXfhXav49KaakAucMp7Sr
-fF4AHUz1ztT//xjhplJqZ/ht3WxwkNfDzliQ31vjFLnMpRyeLHrJeQu4FEk+G5wM
-2NLue5JdG2rHYxYxT5Rzwxg/n0eIXwSHCgt2DydmqhAiIkkigVkD+ajRMzpnmH2y
-QErE3TN5PfKvs0tOjttZGuzCNKPdBfXacZyGe5HuXlg9LQ3TR+mqqWMIX3RUy6np
-i/TCI0aC+MQCsS59YVQaea6GZBC9uFprS+G1lYRlf520Anslrdqw4XNt4m3Y9GdL
-ptdUDTtp2b1bJQIC7PL+T9Nt8Wro1p3q0to1gEW4e8YJLYor0z5E9bDqPBXX/e+x
-fZ9IQsbUa+OjUkjqF+Cp4FWiI5hPzbJBbITiiAhYMjwr5zyaO7dt1higccvaXaIj
-9P3zzqpFgsVQcD6IUC9krW3wJ6Pgba+a9oj+AXwxffAvhHxaR2KSRCzfIMa7rcwk
-Q+wPG31V781h1NHf0q0Wc/3AVacs9WrmGh+MWciUCJUvSQQ+4mTQIoehAGIzF86s
-bljMaVQ1tf4aJpojQ1jltTBbckY2rhuDgs5u5fQDKQn+FKL/IMQ2NIr9xYYy54C0
-MnOIE7FqoMFVJaMAWSC7
-=ueH5
------END PGP SIGNATURE-----
