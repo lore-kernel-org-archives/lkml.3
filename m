@@ -1,166 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757549AbaHZLd2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 07:33:28 -0400
-Received: from smtp89.ord1c.emailsrvr.com ([108.166.43.89]:47799 "EHLO
-	smtp89.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754305AbaHZLd0 (ORCPT
+	id S1757658AbaHZLdu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 07:33:50 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:39141 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754562AbaHZLds (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 07:33:26 -0400
-X-Sender-Id: kiran.padwal@smartplayin.com
-From: Kiran Padwal <kiran.padwal@smartplayin.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        davidb@codeaurora.org, afaerber@suse.de
-Cc: devicetree@vger.kernel.org, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Kiran Padwal <kiran.padwal@smartplayin.com>
-Subject: [PATCH v3] ARM: apq8064: Add pinmux and i2c pinctrl nodes
-Date: Tue, 26 Aug 2014 17:00:45 +0530
-Message-Id: <1409052645-14984-1-git-send-email-kiran.padwal@smartplayin.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 26 Aug 2014 07:33:48 -0400
+From: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>
+To: Lars-Peter Clausen <lars@metafoo.de>,
+        sanjeev sharma <sanjeevsharmaengg@gmail.com>
+CC: "jic23@kernel.org" <jic23@kernel.org>, gregkh <gregkh@linuxfoundation.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        devel <devel@driverdev.osuosl.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] staging:iio: moved platform_data into include/linux/iio
+Thread-Topic: [PATCH] staging:iio: moved platform_data into include/linux/iio
+Thread-Index: AQHPvD/0dxnEQqo0D0eqpJHW9TvQ6ZvY+PeAgAACRoCAAAFvgIAH85xQ///+DQCAAE3yQIAADISAgAGBF9A=
+Date: Tue, 26 Aug 2014 11:33:43 +0000
+Message-ID: <FDC088D3B5555644AE135ED28A7ABDE94DF40824@EU-MBX-04.mgc.mentorg.com>
+References: <1408516869-6099-1-git-send-email-sanjeev_sharma@mentor.com>
+	<53F441FF.9090304@metafoo.de>
+ <CAGUYZuSENkSjoA9U0E8MQKp0a1J3moE8p8NYAzfiZ+BpxND4Aw@mail.gmail.com>
+ <53F4451B.3040209@metafoo.de>
+ <FDC088D3B5555644AE135ED28A7ABDE94DF3CC4B@EU-MBX-04.mgc.mentorg.com>
+ <53FAEF10.7010001@metafoo.de>
+ <FDC088D3B5555644AE135ED28A7ABDE94DF3ECF2@EU-MBX-04.mgc.mentorg.com>
+ <53FB3AF3.6060808@metafoo.de>
+In-Reply-To: <53FB3AF3.6060808@metafoo.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [137.202.0.76]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OriginalArrivalTime: 26 Aug 2014 11:33:46.0023 (UTC) FILETIME=[98E48B70:01CFC121]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7QBXtaQ001689
 
-This patch adds pinmux and i2c pinctrl DT node for IFC6410 board.
-It also adds necessary DT support for i2c eeprom which is present on
-IFC6410.
+-----Original Message-----
+From: Lars-Peter Clausen [mailto:lars@metafoo.de] 
+Sent: Monday, August 25, 2014 7:03 PM
+To: Sharma, Sanjeev; sanjeev sharma
+Cc: jic23@kernel.org; gregkh; linux-iio@vger.kernel.org; devel; linux-kernel
+Subject: Re: [PATCH] staging:iio: moved platform_data into include/linux/iio
 
-Tested on IFC6410 board.
+On 08/25/2014 01:49 PM, Sharma, Sanjeev wrote:
+> -----Original Message-----
+> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
+> Sent: Monday, August 25, 2014 1:39 PM
+> To: Sharma, Sanjeev; sanjeev sharma
+> Cc: jic23@kernel.org; gregkh; linux-iio@vger.kernel.org; devel; 
+> linux-kernel
+> Subject: Re: [PATCH] staging:iio: moved platform_data into 
+> include/linux/iio
+>
+> On 08/25/2014 09:17 AM, Sharma, Sanjeev wrote:
+>> Hello Lars,
+>>
+>> As per your suggestion Can I move complete Driver out of staging specially SPI ADC Driver.
+>
+> Only if they are cleaned up first. All of the drivers that are still in staging do have issues, otherwise we'd already had moved them. A few of them are OK codestyle wise, but do have ABI issues which need to be resolved before they can be moved.
+>
+> - Lars
+>
+> Where I can find ABI issues which need to be resolved so that these can be looked upon.
 
-Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
----
-Changes since v2:
- - Renamed pinmux i2c subnode "i2c1_pinmux" to "i2c1".
- - Removed labes of node.
- - Used canonical value as "okay" instead of "ok".
- - Used macros.
+Compare the sysfs files and their behavior that the driver registers with what is documented in the IIO ABI spec[1]. If you can't find it in the documentation it either needs to be documented or updated to use the existing ABI correctly. Note that this is not necessarily trivial and may require in-depth knowledge and understanding of the IIO ABI.
 
-Changes since v1:
- - Renamed pinmux phandle "qcom_pinmux" to "tlmm_pinmux".
- - Updated pinmux interrupt.
+You mean to say I shouldn't spent much time here because this is not much important and if this is the case then I think I should look into some area which make more sense.
 
- arch/arm/boot/dts/qcom-apq8064-ifc6410.dts |   27 ++++++++++++++
- arch/arm/boot/dts/qcom-apq8064.dtsi        |   53 ++++++++++++++++++++++++++++
- 2 files changed, 80 insertions(+)
+Thanks
+Sanjeev
 
-diff --git a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
-index 7c2441d..ef0857e 100644
---- a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
-+++ b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
-@@ -5,6 +5,24 @@
- 	compatible = "qcom,apq8064-ifc6410", "qcom,apq8064";
- 
- 	soc {
-+		gsbi@12440000 {
-+			status = "okay";
-+			qcom,mode = <GSBI_PROT_I2C>;
-+
-+			i2c@12460000 {
-+				status = "okay";
-+				clock-frequency = <200000>;
-+				pinctrl-0 = <&i2c1_pins>;
-+				pinctrl-names = "default";
-+
-+				eeprom: eeprom@52 {
-+					compatible = "atmel,24c128";
-+					reg = <0x52>;
-+					pagesize = <32>;
-+				};
-+			};
-+		};
-+
- 		gsbi@16600000 {
- 			status = "ok";
- 			qcom,mode = <GSBI_PROT_I2C_UART>;
-@@ -12,5 +30,14 @@
- 				status = "ok";
- 			};
- 		};
-+
-+		pinmux@800000 {
-+			i2c1_pins: i2c1 {
-+				mux {
-+					pins = "gpio20", "gpio21";
-+					function = "gsbi1";
-+				};
-+			};
-+		};
- 	};
- };
-diff --git a/arch/arm/boot/dts/qcom-apq8064.dtsi b/arch/arm/boot/dts/qcom-apq8064.dtsi
-index 92bf793..5dddbf3 100644
---- a/arch/arm/boot/dts/qcom-apq8064.dtsi
-+++ b/arch/arm/boot/dts/qcom-apq8064.dtsi
-@@ -89,6 +89,17 @@
- 			cpu-offset = <0x80000>;
- 		};
- 
-+		tlmm_pinmux: pinmux@800000 {
-+			compatible = "qcom,apq8064-pinctrl";
-+			reg = <0x800000 0x4000>;
-+
-+			gpio-controller;
-+			#gpio-cells = <2>;
-+			interrupt-controller;
-+			#interrupt-cells = <2>;
-+			interrupts = <0 16 IRQ_TYPE_LEVEL_HIGH>;
-+		};
-+
- 		acc0: clock-controller@2088000 {
- 			compatible = "qcom,kpss-acc-v1";
- 			reg = <0x02088000 0x1000>, <0x02008000 0x1000>;
-@@ -133,6 +144,48 @@
- 			regulator;
- 		};
- 
-+		gsbi1: gsbi@12440000 {
-+			status = "disabled";
-+			compatible = "qcom,gsbi-v1.0.0";
-+			reg = <0x12440000 0x100>;
-+			clocks = <&gcc GSBI1_H_CLK>;
-+			clock-names = "iface";
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			ranges;
-+
-+			i2c1: i2c@12460000 {
-+				compatible = "qcom,i2c-qup-v1.1.1";
-+				reg = <0x12460000 0x1000>;
-+				interrupts = <0 194 IRQ_TYPE_NONE>;
-+				clocks = <&gcc GSBI1_QUP_CLK>, <&gcc GSBI1_H_CLK>;
-+				clock-names = "core", "iface";
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+			};
-+		};
-+
-+		gsbi2: gsbi@12480000 {
-+			status = "disabled";
-+			compatible = "qcom,gsbi-v1.0.0";
-+			reg = <0x12480000 0x100>;
-+			clocks = <&gcc GSBI2_H_CLK>;
-+			clock-names = "iface";
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			ranges;
-+
-+			i2c2: i2c@124a0000 {
-+				compatible = "qcom,i2c-qup-v1.1.1";
-+				reg = <0x124a0000 0x1000>;
-+				interrupts = <0 196 IRQ_TYPE_NONE>;
-+				clocks = <&gcc GSBI2_QUP_CLK>, <&gcc GSBI2_H_CLK>;
-+				clock-names = "core", "iface";
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+			};
-+		};
-+
- 		gsbi7: gsbi@16600000 {
- 			status = "disabled";
- 			compatible = "qcom,gsbi-v1.0.0";
--- 
-1.7.9.5
+Thanks,
+- Lars
 
+[1]
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/ABI/testing/sysfs-bus-iio
+
+>
+> -Sanjeev
+>>
+>> Regards
+>> Sanjeev Sharma
+>>
+>> -----Original Message-----
+>> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
+>> Sent: Wednesday, August 20, 2014 12:20 PM
+>> To: sanjeev sharma
+>> Cc: Sharma, Sanjeev; jic23@kernel.org; gregkh; 
+>> linux-iio@vger.kernel.org; devel; linux-kernel
+>> Subject: Re: [PATCH] staging:iio: moved platform_data into 
+>> include/linux/iio
+>>
+>> On 08/20/2014 08:44 AM, sanjeev sharma wrote:
+>>> Hi,
+>>>
+>>> This was the action item(TO-DO). IMO, it make sense to move into 
+>>> include/linux/iio because IIO complete subsystem may take some time.
+>>
+>> The code that is in staging is not supposed to 'leak' outside of staging. So either you move the driver as a whole out of staging or leave it there, but do not move individual files of the driver out of staging. The action item is for when the driver is moved out of staging.
+>>
+>
+> N     r  y   b X  «ßv ^ )ﬁ∫{.n +    {  *"  ^n r   z   h    &   G   h 
+> ( Èöé ›¢j"   m     z ﬁñ   f   h   ~ mml==
+>
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
