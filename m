@@ -1,273 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757742AbaHZLIa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 07:08:30 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:59294 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757680AbaHZLIG (ORCPT
+	id S1757764AbaHZLIf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 07:08:35 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:57811 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757727AbaHZLIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 07:08:06 -0400
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        preeti@linux.vnet.ibm.com, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org
-Cc: riel@redhat.com, Morten.Rasmussen@arm.com, efault@gmx.de,
-        nicolas.pitre@linaro.org, linaro-kernel@lists.linaro.org,
-        daniel.lezcano@linaro.org, dietmar.eggemann@arm.com,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [PATCH v5 11/12] sched: replace capacity_factor by utilization
-Date: Tue, 26 Aug 2014 13:06:54 +0200
-Message-Id: <1409051215-16788-12-git-send-email-vincent.guittot@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
-References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
+	Tue, 26 Aug 2014 07:08:32 -0400
+Date: Tue, 26 Aug 2014 13:08:28 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: Grant Likely <grant.likely@linaro.org>, Jon Loeliger <jdl@jdl.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH 0/9] dt: dependencies (for deterministic driver
+ initialization order based on the DT)
+Message-ID: <20140826110827.GA31350@ulmo>
+References: <53F64624.5000403@ahsoftware.de>
+ <20140822131919.GX21734@leverpostej>
+ <20140825093931.GB2399@ulmo>
+ <E1XLu15-0002DP-6o@jdl.com>
+ <20140825133714.GH4163@ulmo.nvidia.com>
+ <20140826084208.AE5F0C40989@trevor.secretlab.ca>
+ <20140826084922.GG17263@ulmo>
+ <53FC566C.30904@ahsoftware.de>
+ <20140826102503.GC31124@ulmo>
+ <53FC6513.5040800@ahsoftware.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wac7ysb48OaltWcw"
+Content-Disposition: inline
+In-Reply-To: <53FC6513.5040800@ahsoftware.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The scheduler tries to compute how many tasks a group of CPUs can handle by
-assuming that a task's load is SCHED_LOAD_SCALE and a CPU capacity is
-SCHED_CAPACITY_SCALE.
-We can now have a better idea of the capacity of a group of CPUs and of the
-utilization of this group thanks to the rework of group_capacity_orig and the
-group_utilization. We can now deduct how many capacity is still available.
 
-Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
----
- kernel/sched/fair.c | 121 ++++++++++++++++++++++------------------------------
- 1 file changed, 51 insertions(+), 70 deletions(-)
+--wac7ysb48OaltWcw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 2f95d1c..80bd64e 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5673,13 +5673,13 @@ struct sg_lb_stats {
- 	unsigned long sum_weighted_load; /* Weighted load of group's tasks */
- 	unsigned long load_per_task;
- 	unsigned long group_capacity;
-+	unsigned long group_capacity_orig;
- 	unsigned long group_utilization; /* Total utilization of the group */
- 	unsigned int sum_nr_running; /* Nr tasks running in the group */
--	unsigned int group_capacity_factor;
- 	unsigned int idle_cpus;
- 	unsigned int group_weight;
- 	enum group_type group_type;
--	int group_has_free_capacity;
-+	int group_out_of_capacity;
- #ifdef CONFIG_NUMA_BALANCING
- 	unsigned int nr_numa_running;
- 	unsigned int nr_preferred_running;
-@@ -5901,31 +5901,6 @@ void update_group_capacity(struct sched_domain *sd, int cpu)
- }
- 
- /*
-- * Try and fix up capacity for tiny siblings, this is needed when
-- * things like SD_ASYM_PACKING need f_b_g to select another sibling
-- * which on its own isn't powerful enough.
-- *
-- * See update_sd_pick_busiest() and check_asym_packing().
-- */
--static inline int
--fix_small_capacity(struct sched_domain *sd, struct sched_group *group)
--{
--	/*
--	 * Only siblings can have significantly less than SCHED_CAPACITY_SCALE
--	 */
--	if (!(sd->flags & SD_SHARE_CPUCAPACITY))
--		return 0;
--
--	/*
--	 * If ~90% of the cpu_capacity is still there, we're good.
--	 */
--	if (group->sgc->capacity * 32 > group->sgc->capacity_orig * 29)
--		return 1;
--
--	return 0;
--}
--
--/*
-  * Group imbalance indicates (and tries to solve) the problem where balancing
-  * groups is inadequate due to tsk_cpus_allowed() constraints.
-  *
-@@ -5959,38 +5934,37 @@ static inline int sg_imbalanced(struct sched_group *group)
- 	return group->sgc->imbalance;
- }
- 
--/*
-- * Compute the group capacity factor.
-- *
-- * Avoid the issue where N*frac(smt_capacity) >= 1 creates 'phantom' cores by
-- * first dividing out the smt factor and computing the actual number of cores
-- * and limit unit capacity with that.
-- */
--static inline int sg_capacity_factor(struct lb_env *env, struct sched_group *group)
-+static inline int group_has_free_capacity(struct sg_lb_stats *sgs,
-+			struct lb_env *env)
- {
--	unsigned int capacity_factor, smt, cpus;
--	unsigned int capacity, capacity_orig;
-+	if ((sgs->group_capacity_orig * 100) >
-+			(sgs->group_utilization * env->sd->imbalance_pct))
-+		return 1;
-+
-+	if (sgs->sum_nr_running < sgs->group_weight)
-+		return 1;
- 
--	capacity = group->sgc->capacity;
--	capacity_orig = group->sgc->capacity_orig;
--	cpus = group->group_weight;
-+	return 0;
-+}
- 
--	/* smt := ceil(cpus / capacity), assumes: 1 < smt_capacity < 2 */
--	smt = DIV_ROUND_UP(SCHED_CAPACITY_SCALE * cpus, capacity_orig);
--	capacity_factor = cpus / smt; /* cores */
-+static inline int group_is_overloaded(struct sg_lb_stats *sgs,
-+			struct lb_env *env)
-+{
-+	if (sgs->sum_nr_running <= sgs->group_weight)
-+		return 0;
- 
--	capacity_factor = min_t(unsigned,
--		capacity_factor, DIV_ROUND_CLOSEST(capacity, SCHED_CAPACITY_SCALE));
--	if (!capacity_factor)
--		capacity_factor = fix_small_capacity(env->sd, group);
-+	if ((sgs->group_capacity_orig * 100) <
-+			(sgs->group_utilization * env->sd->imbalance_pct))
-+		return 1;
- 
--	return capacity_factor;
-+	return 0;
- }
- 
- static enum group_type
--group_classify(struct sched_group *group, struct sg_lb_stats *sgs)
-+group_classify(struct sched_group *group, struct sg_lb_stats *sgs,
-+			struct lb_env *env)
- {
--	if (sgs->sum_nr_running > sgs->group_capacity_factor)
-+	if (group_is_overloaded(sgs, env))
- 		return group_overloaded;
- 
- 	if (sg_imbalanced(group))
-@@ -6043,6 +6017,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
- 			sgs->idle_cpus++;
- 	}
- 
-+	sgs->group_capacity_orig = group->sgc->capacity_orig;
- 	/* Adjust by relative CPU capacity of the group */
- 	sgs->group_capacity = group->sgc->capacity;
- 	sgs->avg_load = (sgs->group_load*SCHED_CAPACITY_SCALE) / sgs->group_capacity;
-@@ -6051,11 +6026,10 @@ static inline void update_sg_lb_stats(struct lb_env *env,
- 		sgs->load_per_task = sgs->sum_weighted_load / sgs->sum_nr_running;
- 
- 	sgs->group_weight = group->group_weight;
--	sgs->group_capacity_factor = sg_capacity_factor(env, group);
--	sgs->group_type = group_classify(group, sgs);
- 
--	if (sgs->group_capacity_factor > sgs->sum_nr_running)
--		sgs->group_has_free_capacity = 1;
-+	sgs->group_type = group_classify(group, sgs, env);
-+
-+	sgs->group_out_of_capacity = group_is_overloaded(sgs, env);
- }
- 
- /**
-@@ -6185,17 +6159,21 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
- 
- 		/*
- 		 * In case the child domain prefers tasks go to siblings
--		 * first, lower the sg capacity factor to one so that we'll try
-+		 * first, lower the sg capacity to one so that we'll try
- 		 * and move all the excess tasks away. We lower the capacity
- 		 * of a group only if the local group has the capacity to fit
--		 * these excess tasks, i.e. nr_running < group_capacity_factor. The
-+		 * these excess tasks, i.e. group_capacity > 0. The
- 		 * extra check prevents the case where you always pull from the
- 		 * heaviest group when it is already under-utilized (possible
- 		 * with a large weight task outweighs the tasks on the system).
- 		 */
- 		if (prefer_sibling && sds->local &&
--		    sds->local_stat.group_has_free_capacity)
--			sgs->group_capacity_factor = min(sgs->group_capacity_factor, 1U);
-+		    group_has_free_capacity(&sds->local_stat, env)) {
-+			if (sgs->sum_nr_running > 1)
-+				sgs->group_out_of_capacity = 1;
-+			sgs->group_capacity = min(sgs->group_capacity,
-+						SCHED_CAPACITY_SCALE);
-+		}
- 
- 		if (update_sd_pick_busiest(env, sds, sg, sgs)) {
- 			sds->busiest = sg;
-@@ -6373,11 +6351,12 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
- 	 */
- 	if (busiest->group_type == group_overloaded &&
- 	    local->group_type   == group_overloaded) {
--		load_above_capacity =
--			(busiest->sum_nr_running - busiest->group_capacity_factor);
--
--		load_above_capacity *= (SCHED_LOAD_SCALE * SCHED_CAPACITY_SCALE);
--		load_above_capacity /= busiest->group_capacity;
-+		load_above_capacity = busiest->sum_nr_running *
-+					SCHED_LOAD_SCALE;
-+		if (load_above_capacity > busiest->group_capacity)
-+			load_above_capacity -= busiest->group_capacity;
-+		else
-+			load_above_capacity = ~0UL;
- 	}
- 
- 	/*
-@@ -6440,6 +6419,7 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
- 	local = &sds.local_stat;
- 	busiest = &sds.busiest_stat;
- 
-+	/* ASYM feature bypasses nice load balance check */
- 	if ((env->idle == CPU_IDLE || env->idle == CPU_NEWLY_IDLE) &&
- 	    check_asym_packing(env, &sds))
- 		return sds.busiest;
-@@ -6460,8 +6440,9 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
- 		goto force_balance;
- 
- 	/* SD_BALANCE_NEWIDLE trumps SMP nice when underutilized */
--	if (env->idle == CPU_NEWLY_IDLE && local->group_has_free_capacity &&
--	    !busiest->group_has_free_capacity)
-+	if (env->idle == CPU_NEWLY_IDLE &&
-+			group_has_free_capacity(local, env) &&
-+			busiest->group_out_of_capacity)
- 		goto force_balance;
- 
- 	/*
-@@ -6519,7 +6500,7 @@ static struct rq *find_busiest_queue(struct lb_env *env,
- 	int i;
- 
- 	for_each_cpu_and(i, sched_group_cpus(group), env->cpus) {
--		unsigned long capacity, capacity_factor, wl;
-+		unsigned long capacity, wl;
- 		enum fbq_type rt;
- 
- 		rq = cpu_rq(i);
-@@ -6548,9 +6529,6 @@ static struct rq *find_busiest_queue(struct lb_env *env,
- 			continue;
- 
- 		capacity = capacity_of(i);
--		capacity_factor = DIV_ROUND_CLOSEST(capacity, SCHED_CAPACITY_SCALE);
--		if (!capacity_factor)
--			capacity_factor = fix_small_capacity(env->sd, group);
- 
- 		wl = weighted_cpuload(i);
- 
-@@ -6558,7 +6536,10 @@ static struct rq *find_busiest_queue(struct lb_env *env,
- 		 * When comparing with imbalance, use weighted_cpuload()
- 		 * which is not scaled with the cpu capacity.
- 		 */
--		if (capacity_factor && rq->nr_running == 1 && wl > env->imbalance)
-+
-+		if (rq->nr_running == 1 && wl > env->imbalance &&
-+		    ((capacity * env->sd->imbalance_pct) >=
-+				(rq->cpu_capacity_orig * 100)))
- 			continue;
- 
- 		/*
--- 
-1.9.1
+On Tue, Aug 26, 2014 at 12:44:35PM +0200, Alexander Holler wrote:
+> Am 26.08.2014 12:25, schrieb Thierry Reding:
+> >On Tue, Aug 26, 2014 at 11:42:04AM +0200, Alexander Holler wrote:
+>=20
+> >>You need either the type information in the DTB (that's why I've add th=
+ose
+> >>"dependencies" to identify phandles), or you need to know every binding=
+ (at
+> >>"dependency-resolve-time" to identify phandles. The latter is impractic=
+able
+> >>to implement in a generic way (for use with every possible binding).
+> >
+> >Like I already mentioned, this could be done in drivers who contain that
+> >information already anyway. Or parts of it could be done in subsystem-
+> >specific callbacks where a generic binding is available.
+>=20
+> That would end up with almost the same ugly driver-based workarounds as n=
+ow.
+> It's much better if a driver author only has to define it's prerequisits =
+(in
+> form of dependencies in the dts) and could be sure the driver will only be
+> probed if those are met, than to do that stuff based on a subsystem or ev=
+en
+> driver level.
+>=20
+> If you add dependency-information to drivers, you have two problems:
 
+We already have all that dependency information in drivers anyway. Each
+driver requests the resources at .probe() time. What I proposed (it was
+really Arnd who proposed it first) is to move that information out of
+code and into some sort of table that could be used by the driver core
+to figure out dependencies.
+
+> - How do you get these information from the driver (remember, currently
+> there is only one initial call, a initcall which might do almost anything)
+
+While I don't think it's necessary, that's something that could be
+changed. I mean, we have access to the full source code of this
+operating system, so we can change every aspect of it. If we can't find
+a way to make this work with the current initcall sequence it's always
+an option to extend that sequence so that it meets our needs.
+
+> - These information might become outdated and you would have to change all
+> drivers. E.g. if the name of a dependency (driver) changes it wouldn't be
+> done with changing the dts (maybe plural), but you would have to change t=
+he
+> source of all dependant drivers too.
+
+No. Drivers implement a DT binding. That binding defines what power
+supplies, clocks, pinmux, ... the device needs. Those constitute the
+dependencies. We most certainly don't want to depend on driver names
+since there can be a multitude of different drivers that provide a given
+dependency.
+
+What drivers should provide (and what they already provide today) is the
+name of the property and the index of the cell that they expect to find
+a phandle in as well as the type of the phandle. That's all that's
+necessary, really. Everything else can be derived from that phandle and
+the type.
+
+Thierry
+
+--wac7ysb48OaltWcw
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT/GqrAAoJEN0jrNd/PrOhyv8QAKiBbg8DL4/0dYdInmyl8EPD
+dcb92vMSYN9Wbc6guTjtm/YNdB4T1jCyF6RKmWPD+/pgGJ00iKvrnvbqI9O4DTRn
+WIix4j3ihaHYpZYPkLp/ByHf7yg7YXbfPNzoQP5XcVw1htFJcSr/xs5PPI052Iu3
+jglHUdG3sT6Q78k1DmV1oaHNxnKz2MS0fObqz0RAfKJu/7pvkf1N8U/DJrrz9coJ
+LATEkGdm1mY/ww5zDKUPQmih3iN/eq1dDshg0/qM1ki09HUWp+tv91FN1cug+KbT
+mwqCdkGEmXoFDKFOb8bUAjf41qciPdiepHuNFt/55J66+EZgpqJ+hCohevqqpqwX
+jmTgkCT5xbIzaw6HMvtiEcJClmiZ/oiwE4qH03OyshKvlAHH5O72MpN7j+ilxwiO
+J3igNV2ZEzdjsta2Y8SPVxl3g2ahdkyGkA0/yj7EeYsZimAUsORFRBMd3+l8h6oy
+yzMt5rdG45lzT0E0V6TSCoBifRscwZbJrNWeN7Rrc3dfmtmXZTMWD/vKto4N92V8
+Co9Jp85KVLnJcotO4sv0apK/EwKKx4CEy9hNwGqfwZ9K5D46O0CndsARMsXHfW6P
+WuIlZOS3wcjWLHeMDitYTrMC0uE8/JbxnytgUUygWODOyD+UbeFQOx5ogd9b95o4
+ef8EdV0uy0NbvPx5IDbl
+=BvsA
+-----END PGP SIGNATURE-----
+
+--wac7ysb48OaltWcw--
