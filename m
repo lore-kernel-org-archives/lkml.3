@@ -1,73 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934192AbaHZInJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 04:43:09 -0400
-Received: from mga09.intel.com ([134.134.136.24]:59265 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933898AbaHZInE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 04:43:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,402,1406617200"; 
-   d="scan'208";a="563488097"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        x86@kernel.org, Jiang Liu <jiang.liu@linux.intel.com>,
-        Prarit Bhargava <prarit@redhat.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
-Subject: [Bugfix] x86, irq: Fix bug in setting IOAPIC pin attributes
-Date: Tue, 26 Aug 2014 16:45:01 +0800
-Message-Id: <1409042706-11958-1-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20140822124145.GF1660@lahna.fi.intel.com>
-References: <20140822124145.GF1660@lahna.fi.intel.com>
+	id S934213AbaHZInz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 04:43:55 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:52635 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933898AbaHZInx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 04:43:53 -0400
+Date: Tue, 26 Aug 2014 16:43:43 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Stephan Mueller <smueller@chronox.de>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] DRBG: fix maximum value checks on 32 bit systems
+Message-ID: <20140826084343.GA4417@gondor.apana.org.au>
+References: <20140826161456.7ad100e3@canb.auug.org.au>
+ <1998203.8HHRdZPLvI@myon.chronox.de>
+ <20140826080858.GA4161@gondor.apana.org.au>
+ <2984929.nIbTCa5fhe@myon.chronox.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2984929.nIbTCa5fhe@myon.chronox.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On startup, IOAPIC driver preallocates IRQ descriptors and programs
-IOAPIC pins with default level and polarity attributes for all legacy
-IRQs. Later legacy IRQ users may fail to set IOAPIC pin attributes
-if the requested attributes conflicts with the default IOAPIC pin
-attributes. So change mp_irqdomain_map() to allow the first legacy IRQ
-user to reprogram IOAPIC pin with different attributes.
+On Tue, Aug 26, 2014 at 10:29:45AM +0200, Stephan Mueller wrote:
+> The maximum values for additional input string or generated blocks is
+> larger than 1<<32. To ensure a sensible value on 32 bit systems, return
+> SIZE_MAX on 32 bit systems. This value is lower than the maximum
+> allowed values defined in SP800-90A. The standard allow lower maximum
+> values, but not larger values.
+> 
+> SIZE_MAX - 1 is used for drbg_max_addtl to allow
+> drbg_healthcheck_sanity to check the enforcement of the variable
+> without wrapping.
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- arch/x86/kernel/apic/io_apic.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+This is really ugly but OK.  However, I'm not sure how the sanity
+check ever worked.  It would appear that the drbg_generate call in
+drbg_healthcheck_sanity should always fail because you explicitly
+set addtl->len to drbg_max_addtl + 1, which should trigger the
+"DRBG: additional information string too long" error, no?
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 29290f554e79..66c2700c9f83 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3896,7 +3896,15 @@ int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
- 			info->polarity = 1;
- 		}
- 		info->node = NUMA_NO_NODE;
--		info->set = 1;
-+
-+		/*
-+		 * setup_IO_APIC_irqs() programs all legacy IRQs with default
-+		 * trigger and polarity attirbutes. Don't set the flag for that
-+		 * case so the first legacy IRQ user could reprogram the pin
-+		 * with real trigger and polarity attributes.
-+		 */
-+		if (virq >= nr_legacy_irqs() || info->count)
-+			info->set = 1;
- 	}
- 	set_io_apic_irq_attr(&attr, ioapic, hwirq, info->trigger,
- 			     info->polarity);
+Obviously it's working for you but I'd like to understand why
+it's working and whether it'll continue to work.
+
+Thanks,
 -- 
-1.7.10.4
-
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
