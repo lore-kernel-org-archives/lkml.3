@@ -1,45 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483AbaHZSQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 14:16:27 -0400
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:45334 "EHLO
+	id S1753788AbaHZSQo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 14:16:44 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:65458 "EHLO
 	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753203AbaHZSQY (ORCPT
+	with ESMTP id S1753051AbaHZSQn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 14:16:24 -0400
-Date: Tue, 26 Aug 2014 14:16:20 -0400
+	Tue, 26 Aug 2014 14:16:43 -0400
+Date: Tue, 26 Aug 2014 14:16:39 -0400
 From: Tejun Heo <tj@kernel.org>
 To: Christoph Lameter <cl@linux.com>
 Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
         linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, sparclinux@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 31/35] [PATCH 31/36] sparc: Replace __get_cpu_var uses
-Message-ID: <20140826181620.GN31659@mtj.dyndns.org>
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 32/35] [PATCH 32/36] clocksource: Replace __this_cpu_ptr
+ with raw_cpu_ptr
+Message-ID: <20140826181639.GO31659@mtj.dyndns.org>
 References: <20140817173023.439660246@linux.com>
- <20140817173037.730576191@linux.com>
+ <20140817173037.881915198@linux.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140817173037.730576191@linux.com>
+In-Reply-To: <20140817173037.881915198@linux.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 17, 2014 at 12:30:54PM -0500, Christoph Lameter wrote:
-> __get_cpu_var() is used for multiple purposes in the kernel source. One of
-> them is address calculation via the form &__get_cpu_var(x).  This calculates
-> the address for the instance of the percpu variable of the current processor
-> based on an offset.
+On Sun, Aug 17, 2014 at 12:30:55PM -0500, Christoph Lameter wrote:
+> One newly introduced __this_cpu_ptr should be raw_cpu_ptr.
 > 
-> Other use cases are for storing and retrieving data from the current
-> processors percpu area.  __get_cpu_var() can be used as an lvalue when
-> writing data or on the right side of an assignment.
-...
-> Cc: sparclinux@vger.kernel.org
-> Acked-by: David S. Miller <davem@davemloft.net>
 > Signed-off-by: Christoph Lameter <cl@linux.com>
 
 (Please disregard the ones I posted for v1 of the patch series)
