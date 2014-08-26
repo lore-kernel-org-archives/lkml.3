@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755963AbaHZWid (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 18:38:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44538 "EHLO
+	id S1756011AbaHZWi7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 18:38:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44549 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755894AbaHZWia (ORCPT
+	with ESMTP id S1755935AbaHZWi6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 18:38:30 -0400
-Date: Tue, 26 Aug 2014 15:38:29 -0700
+	Tue, 26 Aug 2014 18:38:58 -0400
+Date: Tue, 26 Aug 2014 15:38:57 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>,
@@ -19,30 +19,30 @@ Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         Alan Cox <alan@linux.intel.com>, dmaengine@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 12/12] serial: 8250_pci: Add PCI IDs for Intel Braswell
-Message-ID: <20140826223829.GA29137@kroah.com>
+Subject: Re: [PATCH v1 11/12] serial: 8250: don't use slave_id of
+ dma_slave_config
+Message-ID: <20140826223857.GB29137@kroah.com>
 References: <1408469363-15901-1-git-send-email-andriy.shevchenko@linux.intel.com>
- <1408469363-15901-13-git-send-email-andriy.shevchenko@linux.intel.com>
+ <1408469363-15901-12-git-send-email-andriy.shevchenko@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1408469363-15901-13-git-send-email-andriy.shevchenko@linux.intel.com>
+In-Reply-To: <1408469363-15901-12-git-send-email-andriy.shevchenko@linux.intel.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 08:29:23PM +0300, Andy Shevchenko wrote:
-> From: Alan Cox <alan@linux.intel.com>
+On Tue, Aug 19, 2014 at 08:29:22PM +0300, Andy Shevchenko wrote:
+> That field has been deprecated in favour of getting the necessary information
+> from ACPI or DT.
 > 
-> Add new PCI IDs to cover newer Intel SoCs such as Braswell.
+> However, we still need to deal systems that are PCI only (no ACPI to back up)
+> like Intel Bay Trail. In order to support such systems, we explicitly bind
+> setup() to the appropriate DMA filter function and its corresponding parameter.
+> Then when serial8250_request_dma() doesn't find the channel via ACPI or DT, it
+> falls back to use the given filter function.
 > 
-> Signed-off-by: Alan Cox <alan@linux.intel.com>
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> ---
->  drivers/tty/serial/8250/8250_pci.c | 27 +++++++++++++++++++++++++++
->  1 file changed, 27 insertions(+)
-> 
 
 Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
