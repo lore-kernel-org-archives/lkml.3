@@ -1,111 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752226AbaHZQvC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 12:51:02 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:44054 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752121AbaHZQu6 (ORCPT
+	id S1752272AbaHZQwP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 12:52:15 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:36232 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750823AbaHZQwO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 12:50:58 -0400
+	Tue, 26 Aug 2014 12:52:14 -0400
+Date: Tue, 26 Aug 2014 17:51:38 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux@openrisc.net" <linux@openrisc.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "shawn.guo@freescale.com" <shawn.guo@freescale.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "tony@atomide.com" <tony@atomide.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "jonas@southpole.se" <jonas@southpole.se>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        "shc_work@mail.ru" <shc_work@mail.ru>,
+        "baohua@kernel.org" <baohua@kernel.org>,
+        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
+        "khilman@linaro.org" <khilman@linaro.org>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        "larry.bassel@linaro.org" <larry.bassel@linaro.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        "stefan.kristiansson@saunalahti.fi" 
+	<stefan.kristiansson@saunalahti.fi>,
+        "vkale@apm.com" <vkale@apm.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>
+Subject: Re: [PATCH v2 02/26] arm64: convert handle_IRQ to use
+ __handle_domain_irq
+Message-ID: <20140826165138.GM16482@arm.com>
+References: <1409047421-27649-1-git-send-email-marc.zyngier@arm.com>
+ <1409047421-27649-3-git-send-email-marc.zyngier@arm.com>
 MIME-Version: 1.0
-In-Reply-To: <1397743910-18391-2-git-send-email-pefoley2@pefoley.com>
-References: <1397743910-18391-1-git-send-email-pefoley2@pefoley.com>
-	<1397743910-18391-2-git-send-email-pefoley2@pefoley.com>
-Date: Tue, 26 Aug 2014 20:50:56 +0400
-Message-ID: <CANaxB-wEBzrr9XmAFL_3YTeiO-nsjT6Xj4Q0LnxnNMH+CnyMDg@mail.gmail.com>
-Subject: Re: [PATCH 2/4] Documentation: add makefiles for more targets
-From: Andrey Wagin <avagin@gmail.com>
-To: Peter Foley <pefoley2@pefoley.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, rdunlap@infradead.org,
-        linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409047421-27649-3-git-send-email-marc.zyngier@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On Tue, Aug 26, 2014 at 11:03:17AM +0100, Marc Zyngier wrote:
+> In order to limit code duplication, convert the architecture specific
+> handle_IRQ to use the generic __handle_domain_irq function.
+> 
+> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+> ---
+>  arch/arm64/Kconfig      |  1 +
+>  arch/arm64/kernel/irq.c | 18 +-----------------
+>  2 files changed, 2 insertions(+), 17 deletions(-)
+> 
+> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+> index fd4e81a..1f16ed9 100644
+> --- a/arch/arm64/Kconfig
+> +++ b/arch/arm64/Kconfig
+> @@ -30,6 +30,7 @@ config ARM64
+>  	select GENERIC_STRNCPY_FROM_USER
+>  	select GENERIC_STRNLEN_USER
+>  	select GENERIC_TIME_VSYSCALL
+> +	select HANDLE_DOMAIN_IRQ
+>  	select HARDIRQS_SW_RESEND
+>  	select HAVE_ARCH_AUDITSYSCALL
+>  	select HAVE_ARCH_JUMP_LABEL
+> diff --git a/arch/arm64/kernel/irq.c b/arch/arm64/kernel/irq.c
+> index 0f08dfd..2c0e2a7 100644
+> --- a/arch/arm64/kernel/irq.c
+> +++ b/arch/arm64/kernel/irq.c
+> @@ -48,23 +48,7 @@ int arch_show_interrupts(struct seq_file *p, int prec)
+>   */
+>  void handle_IRQ(unsigned int irq, struct pt_regs *regs)
+>  {
+> -	struct pt_regs *old_regs = set_irq_regs(regs);
+> -
+> -	irq_enter();
+> -
+> -	/*
+> -	 * Some hardware gives randomly wrong interrupts.  Rather
+> -	 * than crashing, do something sensible.
+> -	 */
+> -	if (unlikely(irq >= nr_irqs)) {
+> -		pr_warn_ratelimited("Bad IRQ%u\n", irq);
+> -		ack_bad_irq(irq);
+> -	} else {
+> -		generic_handle_irq(irq);
+> -	}
+> -
+> -	irq_exit();
+> -	set_irq_regs(old_regs);
+> +	__handle_domain_irq(NULL, irq, false, regs);
+>  }
 
-I have got following errors with this patch. I think
-Documentation/video4linux should be built only if a config contains a
-proper options set.
+The only thing that's missing is a pr_warn_ratelimited(). Do we still
+need it? We could add it to ack_bad_irq() though.
 
-  Building modules, stage 2.
-  MODPOST 73 modules
-ERROR: "vb2_ops_wait_finish"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-ERROR: "vb2_ops_wait_prepare"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-ERROR: "v4l2_event_unsubscribe"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-ERROR: "v4l2_ctrl_subscribe_event"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-ERROR: "v4l2_ctrl_log_status"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-ERROR: "vb2_ioctl_streamoff"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-ERROR: "vb2_ioctl_streamon"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-ERROR: "vb2_ioctl_create_bufs"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-ERROR: "vb2_ioctl_dqbuf"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-ERROR: "vb2_ioctl_expbuf"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-ERROR: "vb2_ioctl_qbuf"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-ERROR: "vb2_ioctl_querybuf"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-ERROR: "vb2_ioctl_reqbufs"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-ERROR: "vb2_fop_release"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-ERROR: "v4l2_fh_open" [Documentation/video4linux/v4l2-pci-skeleton.ko]
-undefined!
-ERROR: "vb2_fop_mmap" [Documentation/video4linux/v4l2-pci-skeleton.ko]
-undefined!
-ERROR: "video_ioctl2" [Documentation/video4linux/v4l2-pci-skeleton.ko]
-undefined!
-ERROR: "vb2_fop_poll" [Documentation/video4linux/v4l2-pci-skeleton.ko]
-undefined!
-ERROR: "vb2_fop_read" [Documentation/video4linux/v4l2-pci-skeleton.ko]
-undefined!
-ERROR: "vb2_buffer_done"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-ERROR: "__video_register_device"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-ERROR: "video_device_release_empty"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-ERROR: "vb2_dma_contig_init_ctx"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-ERROR: "vb2_queue_init"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-ERROR: "vb2_dma_contig_memops"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-ERROR: "v4l2_ctrl_new_std"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-ERROR: "v4l2_ctrl_handler_init_class"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-ERROR: "v4l2_device_register"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-  HOSTCC  arch/x86/tools/insn_sanity
-ERROR: "v4l2_match_dv_timings"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-ERROR: "v4l2_find_dv_timings_cap"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-ERROR: "v4l2_valid_dv_timings"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-ERROR: "v4l2_enum_dv_timings_cap"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-ERROR: "video_devdata"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-ERROR: "v4l2_device_unregister"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-ERROR: "vb2_dma_contig_cleanup_ctx"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-ERROR: "v4l2_ctrl_handler_free"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-ERROR: "video_unregister_device"
-[Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-make[1]: *** [__modpost] Error 1
-make: *** [modules] Error 2
-make: *** Waiting for unfinished jobs....
+Either way:
+
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
