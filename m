@@ -1,118 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934189AbaHZIuQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 04:50:16 -0400
-Received: from smtpw.263xmail.com ([63.217.87.9]:50368 "EHLO
-	smtpw.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934147AbaHZIuN (ORCPT
+	id S934223AbaHZIvj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 04:51:39 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:58572 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934158AbaHZIvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 04:50:13 -0400
-X-RL-SENDER: kever.yang@rock-chips.com
-X-FST-TO: linux-kernel@vger.kernel.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: kever.yang@rock-chips.com
-X-UNIQUE-TAG: <f18dca088490f6f14df434968010fdd7>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-Message-ID: <53FC4A1F.8020709@rock-chips.com>
-Date: Tue, 26 Aug 2014 16:49:35 +0800
-From: Kever Yang <kever.yang@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Russell King <linux@arm.linux.org.uk>
-CC: Will Deacon <will.deacon@arm.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Nicolas Pitre <nico@linaro.org>, Marc Carino <marc.ceeeee@gmail.com>,
-        Mahesh Sivasubramanian <msivasub@codeaurora.org>,
-        Jonathan Austin <Jonathan.Austin@arm.com>, heiko@sntech.de,
-        addy.ke@rock-chips.com, xjq@rock-chips.com, cf@rock-chips.com,
-        hj@rock-chips.com, huangtao@rock-chips.com,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: errata: Workaround for Cortex-A12 erratum 818325
-References: <1408355889-4176-1-git-send-email-kever.yang@rock-chips.com>
-In-Reply-To: <1408355889-4176-1-git-send-email-kever.yang@rock-chips.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Aug 2014 04:51:36 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [RFC PATCH 0/9] dt: dependencies (for deterministic driver
+ initialization order based on the DT)
+To: Jon Loeliger <jdl@jdl.com>, Thierry Reding <thierry.reding@gmail.com>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        Alexander Holler <holler@ahsoftware.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <E1XLu15-0002DP-6o@jdl.com>
+References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>
+	<20140514141914.446F7C4153D@trevor.secretlab.ca>
+	<20140821140211.GD19293@ulmo.nvidia.com> <53F64624.5000403@ahsoftware.de>
+	<20140822131919.GX21734@leverpostej> <20140825093931.GB2399@ulmo>
+	<E1XLu15-0002DP-6o@jdl.com>
+Date: Tue, 26 Aug 2014 09:51:28 +0100
+Message-Id: <20140826085128.958A9C40989@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+On Mon, 25 Aug 2014 08:08:59 -0500, Jon Loeliger <jdl@jdl.com> wrote:
+> > 
+> 
+> > Anyway, instead of going back and forth between "deferred probe is good"
+> > and "deferred probe is bad", how about we do something useful now and
+> > concentrate on how to make use of the information we have in DT with the
+> > goal to reduce the number of cases where deferred probing is required?
+> 
+> Good idea.
+> 
+> The proposal on the table is to allow the probe code
+> to make a topological sort of the devices based on
+> dependency information either implied, explicitly stated
+> or both.  That is likely a fundamentally correct approach.
+> 
+> I believe some of the issues that need to be resolved are:
+> 
+>     1) What constitutes a dependency?
+>     2) How is that dependency expressed?
+>     3) How do we add missing dependencies?
+>     4) Backward compatability problems.
+> 
+> There are other questions, of course.  Is it a topsort
+> per bus?  Are there required "early devices"?  Should
+> the inter-node dependencies be expressed at each node,
+> or in a separate hierarchy within the DTS?  Others.
 
-I'd value your feedback on this if you have a moment.
+Getting the dependency tree I think is only half the problem. The other
+have is how to get the driver model to actually order probing using that
+list. That problem is hard because the order drivers are probed is
+currently determined by the interaction of driver link order, driver
+initcall level, and device registration order. The first devices are
+registered at an early initcall, before their drivers, and therefore
+bind order is primarily determined by initcall level and driver link
+order. However, later devices (ie. i2c clients) are registered by the
+bus driver (ie. again, i2c) and probe order may be primarily link order
+(if the driver is not yet registered) or registration order (if the
+driver was registered before the parent bus).
 
-I think this will need by rk3288 soc.
-
-Thanks
-
-On 08/18/2014 05:58 PM, Kever Yang wrote:
-> From: Huang Tao <huangtao@rock-chips.com>
->
-> On Cortex-A12 (r0p0..r0p1-00lac0-rc11), when a CPU executes a sequence of
-> two conditional store instructions with opposite condition code and
-> updating the same register, the system might enter a deadlock if the
-> second conditional instruction is an UNPREDICTABLE STR or STM
-> instruction. This workaround setting bit[12] of the Feature Register
-> prevents the erratum. This bit disables an optimisation applied to a
-> sequence of 2 instructions that use opposing condition codes.
->
-> Signed-off-by: Huang Tao <huangtao@rock-chips.com>
-> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-> ---
->
->   arch/arm/Kconfig      | 13 +++++++++++++
->   arch/arm/mm/proc-v7.S | 15 ++++++++++++++-
->   2 files changed, 27 insertions(+), 1 deletion(-)
->
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 32cbbd5..4545835 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -1245,6 +1245,19 @@ config ARM_ERRATA_773022
->   	  loop buffer may deliver incorrect instructions. This
->   	  workaround disables the loop buffer to avoid the erratum.
->   
-> +config ARM_ERRATA_818325
-> +	bool "ARM errata: Execution of an UNPREDICTABLE STR or STM instruction might deadlock"
-> +	depends on CPU_V7
-> +	help
-> +	  This option enables the workaround for the 818325 Cortex-A12
-> +	  (r0p0..r0p1-00lac0-rc11) erratum. When a CPU executes a sequence of
-> +	  two conditional store instructions with opposite condition code and
-> +	  updating the same register, the system might enter a deadlock if the
-> +	  second conditional instruction is an UNPREDICTABLE STR or STM
-> +	  instruction. This workaround setting bit[12] of the Feature Register
-> +	  prevents the erratum. This bit disables an optimisation applied to a
-> +	  sequence of 2 instructions that use opposing condition codes.
-> +
->   endmenu
->   
->   source "arch/arm/common/Kconfig"
-> diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
-> index b5d67db..5ffdf97 100644
-> --- a/arch/arm/mm/proc-v7.S
-> +++ b/arch/arm/mm/proc-v7.S
-> @@ -408,7 +408,20 @@ __v7_setup:
->   	mcrle	p15, 0, r10, c1, c0, 1		@ write aux control register
->   #endif
->   
-> -4:	mov	r10, #0
-> +	/* Cortex-A12 Errata */
-> +4:	ldr	r10, =0x00000c0d		@ Cortex-A12 primary part number
-> +	teq	r0, r10
-> +	bne	5f
-> +#ifdef CONFIG_ARM_ERRATA_818325
-> +	teq	r6, #0x00			@ present in r0p0
-> +	teqne	r6, #0x01			@ present in r0p1-00lac0-rc11
-> +	mrceq	p15, 0, r10, c15, c0, 1		@ read diagnostic register
-> +	orreq	r10, r10, #1 << 12		@ set bit #12
-> +	mcreq	p15, 0, r10, c15, c0, 1		@ write diagnostic register
-> +	isb
-> +#endif
-> +
-> +5:	mov	r10, #0
->   	mcr	p15, 0, r10, c7, c5, 0		@ I+BTB cache invalidate
->   #ifdef CONFIG_MMU
->   	mcr	p15, 0, r10, c8, c7, 0		@ invalidate I + D TLBs
-
+g.
