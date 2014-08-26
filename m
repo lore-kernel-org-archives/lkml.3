@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755546AbaHZVY2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 17:24:28 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:34087 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755326AbaHZVY1 (ORCPT
+	id S1755564AbaHZVZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 17:25:57 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:45475 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755200AbaHZVZy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 17:24:27 -0400
-Message-ID: <53FCFB08.4080706@kernel.dk>
-Date: Tue, 26 Aug 2014 15:24:24 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Tue, 26 Aug 2014 17:25:54 -0400
 MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>, Joe Lawrence <joe.lawrence@stratus.com>
-CC: linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        Boaz Harrosh <bharrosh@panasas.com>
-Subject: Re: [PATCH v3 0/2] block,scsi: fixup blk_get_request dead queue scenarios
-References: <1404329718-19367-1-git-send-email-joe.lawrence@stratus.com> <x49egw36u55.fsf@segfault.boston.devel.redhat.com> <53FCF9DB.6010501@kernel.dk>
-In-Reply-To: <53FCF9DB.6010501@kernel.dk>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <53FCEDDA.4060906@opensource.altera.com>
+References: <1407770293-27190-1-git-send-email-tthayer@opensource.altera.com>
+	<1407770293-27190-3-git-send-email-tthayer@opensource.altera.com>
+	<20140814184949.GC11558@amd.pavel.ucw.cz>
+	<53FCD456.3050404@opensource.altera.com>
+	<53FCEDDA.4060906@opensource.altera.com>
+Date: Tue, 26 Aug 2014 16:25:52 -0500
+Message-ID: <CADhT+wfHMb=DvXTwzEZdhGrAeihc5QTnTAccU9T-4tXrRZ5SkA@mail.gmail.com>
+Subject: Re: [PATCHv10 2/2] arm: dts: Add Altera SDRAM EDAC bindings &
+ devicetree entries.
+From: Dinh Nguyen <dinh.linux@gmail.com>
+To: Dinh Nguyen <dinguyen@opensource.altera.com>
+Cc: Thor Thayer <tthayer@opensource.altera.com>, Pavel Machek <pavel@denx.de>,
+        Rob Herring <robherring2@gmail.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>, atull@opensource.altera.com,
+        Alan Tull <delicious.quinoa@gmail.com>, dougthompson@xmission.com,
+        Grant Likely <grant.likely@linaro.org>, bp@alien8.de,
+        sameo@linux.intel.com, lee.jones@linaro.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Linux List <linux-kernel@vger.kernel.org>,
+        Thor Thayer <tthayer.linux@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-edac@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2014 03:19 PM, Jens Axboe wrote:
-> On 08/26/2014 11:24 AM, Jeff Moyer wrote:
->> Joe Lawrence <joe.lawrence@stratus.com> writes:
+On Tue, Aug 26, 2014 at 3:28 PM, Dinh Nguyen
+<dinguyen@opensource.altera.com> wrote:
+> On 08/26/2014 01:39 PM, Thor Thayer wrote:
 >>
->>> v2->v3: rebase to 3.16-rc2, consider return values from the
->>>         blk_mq_alloc_request leg of the blk_get_request callchain
->>>         (noted by Jeff), noted in the second patch changelog.
+>> On 08/14/2014 01:49 PM, Pavel Machek wrote:
+>>> On Mon 2014-08-11 10:18:13, tthayer@opensource.altera.com wrote:
+>>>> From: Thor Thayer <tthayer@opensource.altera.com>
+>>>>
+>>>> Add the Altera SDRAM EDAC bindings and device tree changes to the
+>>>> Altera SoC project.
+>>>>
+>>>> Signed-off-by: Thor Thayer <tthayer@opensource.altera.com>
+>>> Acked-by: Pavel Machek <pavel@denx.de>
 >>>
->>> 	blk_mq_queue_enter may return 0 or errno, which
->>>         blk_mq_alloc_request can propogate out via ERR_PTR.
->>> 	__blk_mq_alloc_request doesn't include any blk_queue_dying
->>> 	checks, so I'm assuming that its failures can be attributed
->>>         to -EWOULDBLOCK under !GFP_WAIT conditions.
 >>>
->>> v1->v2: incorporate Jeff's feedback in bsg_map_hdr() and Reviewed-by
->>>         tags.
->>>
->>> Joe Lawrence (2):
->>>   block,scsi: verify return pointer from blk_get_request
->>>   block,scsi: fixup blk_get_request dead queue scenarios
+>> Hi All,
 >>
->> Jens,
->>
->> Did this patch set fall through the cracks again?
-> 
-> Falling through the cracks implies that I meant to apply it and did not,
-> which was not the case. But I think we're at the point now where I'm
-> finally comfortable with applying it. So, Joe, could you ensure that it
-> applies to 3.17-rc2, then I will roll it in to the updates for 3.18.
+>> Any further comments or suggestions on this patch series? Thanks for the
+>> review, Pavel!
+>
+> If Boris is okay with driver part and everyone else is OK with the DTS
+> portion, then I can apply the DTS patch to my tree, and Boris take the
+> driver patch into his tree?
+>
 
-Actually, just audited a few of them, and conversions like this:
 
--	if (!rq)
-+	if (IS_ERR(rq))
+Actually, I think I need to get an Ack-by from a DTS maintainer before
+I can apply
+this as it is introducing a new binding.
 
-will break spectacularly if rq == NULL is returned. Should all these be
-IS_ERR_OR_NULL?
+Sorry for the noise.
 
--- 
-Jens Axboe
-
+Dinh
