@@ -1,44 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755707AbaHZW6w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 18:58:52 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:47154 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755541AbaHZW6u convert rfc822-to-8bit (ORCPT
+	id S1755437AbaHZXE7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 19:04:59 -0400
+Received: from qmta11.emeryville.ca.mail.comcast.net ([76.96.27.211]:44098
+	"EHLO qmta11.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750938AbaHZXE6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 18:58:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPWNY8WG3E7oZdZDdYsrnGM5pG4kWAKkEq0Eh5Hc_uXJ_8zD5g@mail.gmail.com>
-References: <1409089544-24221-1-git-send-email-yinghai@kernel.org>
-	<53FD01D0.8020203@zytor.com>
-	<CAE9FiQUF4THLRfzbnhK61QHpM2zyox4E8LTmyzVF7PnPdpb7jQ@mail.gmail.com>
-	<CAPWNY8WG3E7oZdZDdYsrnGM5pG4kWAKkEq0Eh5Hc_uXJ_8zD5g@mail.gmail.com>
-Date: Tue, 26 Aug 2014 15:58:50 -0700
-X-Google-Sender-Auth: xd6ugv0SVuVPXNfoFGO7dcztBMg
-Message-ID: <CAE9FiQVE-UyXQOGTwErxRHJSUP0X61eL+x1L6x90=JToG12btw@mail.gmail.com>
-Subject: Re: [PATCH] x86: only load initrd above 4g on second try
-From: Yinghai Lu <yinghai@kernel.org>
-To: =?UTF-8?Q?Mantas_Mikul=C4=97nas?= <grawity@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Matt Fleming <matt.fleming@intel.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Anders Darander <anders@chargestorm.se>, linux-efi@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 26 Aug 2014 19:04:58 -0400
+Date: Tue, 26 Aug 2014 18:04:55 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Tejun Heo <htejun@gmail.com>
+cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
+        Mike Travis <travis@sgi.com>
+Subject: Re: percpu: Define this_cpu_cpumask_var_t_ptr
+In-Reply-To: <20140826213735.GS31659@mtj.dyndns.org>
+Message-ID: <alpine.DEB.2.11.1408261803500.15698@gentwo.org>
+References: <alpine.DEB.2.11.1408070959250.28468@gentwo.org> <20140821222212.GA7996@mtj.dyndns.org> <alpine.DEB.2.11.1408212001100.19762@gentwo.org> <20140822164051.GB15713@mtj.dyndns.org> <alpine.DEB.2.11.1408221241340.23099@gentwo.org>
+ <20140823171416.GG13540@mtj.dyndns.org> <alpine.DEB.2.11.1408231500430.31459@gentwo.org> <alpine.DEB.2.11.1408261631350.8819@gentwo.org> <20140826213735.GS31659@mtj.dyndns.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 3:16 PM, Mantas Mikulėnas <grawity@gmail.com> wrote:
+On Tue, 26 Aug 2014, Tejun Heo wrote:
+
+> Ugh.... include hell. :( Does putting the accessors in percpu.h make
+> any difference?  Given the tricky nature of cpumask_var_t, I think
+> type checking can be pretty useful.
+
+Then its going to be difficult to find. This is related to the
+cpumark_var_t handling and should be defined close to where it is
+introduced and discussed.
+
 >
-> In particular, I just realized yesterday that I don't know whether
-> it's referring to physical or virtual addresses in the initrd load
-> code -- and the laptop only has 4 GB of memory, so the kernel
-> shouldn't be using larger physical addresses in the first place.
-> (Virtual ones, on the other hand, /would/ mean a weird bug like
-> described above.)
+> > Regarding naming:
+> >
+> > this_cpu_ptr_cpumask_var()
+> >
+> > is ok?
+>
+> Wouldn't this_cpu_cpumask_var_ptr() be a bit more natural?
 
-When you have 4G ram installed, the mmio could take [3G,4G).
-ram range will be [0,3G), [4G, 5G).
+Ok.
 
-Yinghai
