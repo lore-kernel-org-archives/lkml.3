@@ -1,109 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934206AbaHZIao (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 04:30:44 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:53428 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932744AbaHZIam (ORCPT
+	id S934219AbaHZIbR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 04:31:17 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:37485 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932744AbaHZIbN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 04:30:42 -0400
-From: kpark3469@gmail.com
-To: linux@arm.linux.org.uk
-Cc: keun-o.park@windriver.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, afzal.mohd.ma@gmail.com
-Subject: [PATCH] ARM: compressed/head.S: use addruart properly
-Date: Tue, 26 Aug 2014 17:30:15 +0900
-Message-Id: <1409041815-8766-1-git-send-email-kpark3469@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 26 Aug 2014 04:31:13 -0400
+Message-ID: <53FC45DB.5070006@arm.com>
+Date: Tue, 26 Aug 2014 09:31:23 +0100
+From: Juri Lelli <juri.lelli@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>
+CC: "peterz@infradead.org" <peterz@infradead.org>,
+        "luca.abeni@unitn.it" <luca.abeni@unitn.it>,
+        "rdunlap@infradead.org" <rdunlap@infradead.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "henrik@austad.us" <henrik@austad.us>,
+        "raistlin@linux.it" <raistlin@linux.it>,
+        "juri.lelli@gmail.com" <juri.lelli@gmail.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 2/4] Documentation/scheduler/sched-deadline.txt: Rewrite
+ section 4 intro
+References: <1408611700-9420-1-git-send-email-juri.lelli@arm.com> <1408611700-9420-3-git-send-email-juri.lelli@arm.com> <20140821134625.GB29495@gmail.com>
+In-Reply-To: <20140821134625.GB29495@gmail.com>
+X-OriginalArrivalTime: 26 Aug 2014 08:31:08.0460 (UTC) FILETIME=[15AD1EC0:01CFC108]
+X-MC-Unique: 114082609311011301
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sahara <keun-o.park@windriver.com>
+On 21/08/14 14:46, Ingo Molnar wrote:
+> * Juri Lelli <juri.lelli@arm.com> wrote:
+> 
+>> Section 4 intro was still describing the old interface. Rewrite it.
+>>
+>> Signed-off-by: Juri Lelli <juri.lelli@arm.com>
+>> Signed-off-by: Luca Abeni <luca.abeni@unitn.it>
+>> Cc: Randy Dunlap <rdunlap@infradead.org>
+>> Cc: Peter Zijlstra <peterz@infradead.org>
+>> Cc: Ingo Molnar <mingo@redhat.com>
+>> Cc: Henrik Austad <henrik@austad.us>
+>> Cc: Dario Faggioli <raistlin@linux.it>
+>> Cc: Juri Lelli <juri.lelli@gmail.com>
+>> Cc: linux-doc@vger.kernel.org
+>> Cc: linux-kernel@vger.kernel.org
+>> ---
+>>  Documentation/scheduler/sched-deadline.txt | 49 +++++++++++++++---------------
+>>  1 file changed, 24 insertions(+), 25 deletions(-)
+>>
+>> diff --git a/Documentation/scheduler/sched-deadline.txt b/Documentation/scheduler/sched-deadline.txt
+>> index dce6d63..8372c3d 100644
+>> --- a/Documentation/scheduler/sched-deadline.txt
+>> +++ b/Documentation/scheduler/sched-deadline.txt
+>> @@ -165,39 +165,38 @@ CONTENTS
+>>  
+>>   In order for the -deadline scheduling to be effective and useful, it is
+>>   important to have some method to keep the allocation of the available CPU
+>> - bandwidth to the tasks under control.
+>> - This is usually called "admission control" and if it is not performed at all,
+>> - no guarantee can be given on the actual scheduling of the -deadline tasks.
+>> -
+>> - Since when RT-throttling has been introduced each task group has a bandwidth
+>> - associated, calculated as a certain amount of runtime over a period.
+>> - Moreover, to make it possible to manipulate such bandwidth, readable/writable
+>> - controls have been added to both procfs (for system wide settings) and cgroupfs
+>> - (for per-group settings).
+>> - Therefore, the same interface is being used for controlling the bandwidth
+>> - distrubution to -deadline tasks.
+>> -
+>> - However, more discussion is needed in order to figure out how we want to manage
+>> - SCHED_DEADLINE bandwidth at the task group level. Therefore, SCHED_DEADLINE
+>> - uses (for now) a less sophisticated, but actually very sensible, mechanism to
+>> - ensure that a certain utilization cap is not overcome per each root_domain.
+>> -
+>> - Another main difference between deadline bandwidth management and RT-throttling
+>> + bandwidth to the tasks under control. This is usually called "admission
+>> + control" and if it is not performed at all, no guarantee can be given on
+>> + the actual scheduling of the -deadline tasks.
+>> +
+>> + The interface used to control the fraction of CPU bandwidth that can be
+>> + allocated to -deadline tasks is similar to the one already used for -rt
+>> + tasks with real-time group scheduling (a.k.a. RT-throttling - see
+>> + Documentation/scheduler/sched-rt-group.txt), and is based on readable/
+>> + writable control files located in procfs (for system wide settings).
+>> + Notice that per-group settings (controlled through cgroupfs) are still not
+>> + defined for -deadline tasks, because more discussion is needed in order to
+>> + figure out how we want to manage SCHED_DEADLINE bandwidth at the task group
+>> + level.
+>> +
+>> + A main difference between deadline bandwidth management and RT-throttling
+>>   is that -deadline tasks have bandwidth on their own (while -rt ones don't!),
+>>   and thus we don't need an higher level throttling mechanism to enforce the
+> 
+> s/an higher/a higher
+> 
+>> - desired bandwidth.
+>> + desired bandwidth. Therefore, using this simple interface, we can put a cap
+> 
+> s/interface, we/interface we
+> 
+>> + on total utilization of -deadline tasks (i.e., \Sum (runtime_i / period_i) <
+>> + some_desired_value).
+>
 
-This patch fixes compile error in compressed/head.S, when DEBUG
-is defined. Since addruart macro accepts 3 params, rp, rv, and tmp,
-loadsp macro also needs to be fixed. Or you will meet the following
-error messages:
-Error: ARM register expected -- `mov ,#(5<<1)'
-Error: shift expression expected -- `add r3,r3,'
+Fixed.
 
-Signed-off-by: Sahara <keun-o.park@windriver.com>
----
- arch/arm/boot/compressed/head.S |   22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
+Thanks a lot,
 
-diff --git a/arch/arm/boot/compressed/head.S b/arch/arm/boot/compressed/head.S
-index 413fd94..9f1a6cd 100644
---- a/arch/arm/boot/compressed/head.S
-+++ b/arch/arm/boot/compressed/head.S
-@@ -24,19 +24,19 @@
- #if defined(CONFIG_DEBUG_ICEDCC)
- 
- #if defined(CONFIG_CPU_V6) || defined(CONFIG_CPU_V6K) || defined(CONFIG_CPU_V7)
--		.macro	loadsp, rb, tmp
-+		.macro	loadsp, rp, rv, tmp
- 		.endm
- 		.macro	writeb, ch, rb
- 		mcr	p14, 0, \ch, c0, c5, 0
- 		.endm
- #elif defined(CONFIG_CPU_XSCALE)
--		.macro	loadsp, rb, tmp
-+		.macro	loadsp, rp, rv, tmp
- 		.endm
- 		.macro	writeb, ch, rb
- 		mcr	p14, 0, \ch, c8, c0, 0
- 		.endm
- #else
--		.macro	loadsp, rb, tmp
-+		.macro	loadsp, rp, rv, tmp
- 		.endm
- 		.macro	writeb, ch, rb
- 		mcr	p14, 0, \ch, c1, c0, 0
-@@ -52,17 +52,17 @@
- 		.endm
- 
- #if defined(CONFIG_ARCH_SA1100)
--		.macro	loadsp, rb, tmp
--		mov	\rb, #0x80000000	@ physical base address
-+		.macro	loadsp, rp, rv, tmp
-+		mov	\rp, #0x80000000	@ physical base address
- #ifdef CONFIG_DEBUG_LL_SER3
--		add	\rb, \rb, #0x00050000	@ Ser3
-+		add	\rp, \rp, #0x00050000	@ Ser3
- #else
--		add	\rb, \rb, #0x00010000	@ Ser1
-+		add	\rp, \rp, #0x00010000	@ Ser1
- #endif
- 		.endm
- #else
--		.macro	loadsp,	rb, tmp
--		addruart \rb, \tmp
-+		.macro	loadsp,	rp, rv, tmp
-+		addruart \rp, \rv, \tmp
- 		.endm
- #endif
- #endif
-@@ -1209,7 +1209,7 @@ phex:		adr	r3, phexbuf
- 		b	1b
- 
- @ puts corrupts {r0, r1, r2, r3}
--puts:		loadsp	r3, r1
-+puts:		loadsp	r3, r2, r1
- 1:		ldrb	r2, [r0], #1
- 		teq	r2, #0
- 		moveq	pc, lr
-@@ -1225,9 +1225,9 @@ puts:		loadsp	r3, r1
- 		mov	pc, lr
- @ putc corrupts {r0, r1, r2, r3}
- putc:
-+		loadsp	r3, r2, r1
- 		mov	r2, r0
- 		mov	r0, #0
--		loadsp	r3, r1
- 		b	2b
- 
- @ memdump corrupts {r0, r1, r2, r3, r10, r11, r12, lr}
--- 
-1.7.9.5
+- Juri
 
