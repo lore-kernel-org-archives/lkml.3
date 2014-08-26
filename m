@@ -1,56 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933802AbaHZCXr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 22:23:47 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:37177 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932159AbaHZCXq (ORCPT
+	id S933817AbaHZCYJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 22:24:09 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:6234 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932159AbaHZCYI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 22:23:46 -0400
-X-Original-SENDERIP: 10.177.222.131
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Tue, 26 Aug 2014 11:23:59 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] mm/slab_common: commonize slab merge logic
-Message-ID: <20140826022359.GB1035@js1304-P5Q-DELUXE>
-References: <1408608675-20420-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1408608675-20420-2-git-send-email-iamjoonsoo.kim@lge.com>
- <alpine.DEB.2.11.1408251026110.27302@gentwo.org>
+	Mon, 25 Aug 2014 22:24:08 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 25 Aug 2014 19:14:08 -0700
+Message-ID: <53FBEFEA.8050706@nvidia.com>
+Date: Tue, 26 Aug 2014 10:24:42 +0800
+From: Wei Ni <wni@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1408251026110.27302@gentwo.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Eduardo Valentin <edubezval@gmail.com>
+CC: <khali@linux-fr.org>, <linux@roeck-us.net>, <swarren@wwwdotorg.org>,
+        <lm-sensors@lm-sensors.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 4/4] ARM: tegra: dalmore: add thermal zones for nct1008
+References: <1408948188-4181-1-git-send-email-wni@nvidia.com> <1408948188-4181-5-git-send-email-wni@nvidia.com> <20140825111041.GC12349@developer>
+In-Reply-To: <20140825111041.GC12349@developer>
+X-Originating-IP: [10.19.224.131]
+X-ClientProxiedBy: HKMAIL101.nvidia.com (10.18.16.10) To
+ HKMAIL101.nvidia.com (10.18.16.10)
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 10:27:58AM -0500, Christoph Lameter wrote:
-> On Thu, 21 Aug 2014, Joonsoo Kim wrote:
+On 08/25/2014 07:10 PM, Eduardo Valentin wrote:
+> On Mon, Aug 25, 2014 at 02:29:48PM +0800, Wei Ni wrote:
+>> From: lightning314 <wni@nvidia.com>
+>>
+>> Add dt node to describe the thermal zone for the nct1008.
+>>
+>> Signed-off-by: Wei Ni <wni@nvidia.com>
+>> ---
+>>  arch/arm/boot/dts/tegra114-dalmore.dts | 20 +++++++++++++++++++-
+>>  1 file changed, 19 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/arch/arm/boot/dts/tegra114-dalmore.dts b/arch/arm/boot/dts/tegra114-dalmore.dts
+>> index 5c21d21..94a1b5d 100644
+>> --- a/arch/arm/boot/dts/tegra114-dalmore.dts
+>> +++ b/arch/arm/boot/dts/tegra114-dalmore.dts
+>> @@ -779,12 +779,14 @@
+>>  				<&gpio TEGRA_GPIO(V, 3) GPIO_ACTIVE_HIGH>;
+>>  		};
+>>  
+>> -		temperature-sensor@4c {
+>> +		nct1008: temperature-sensor@4c {
+>>  			compatible = "onnn,nct1008";
+>>  			reg = <0x4c>;
+>>  			vcc-supply = <&palmas_ldo6_reg>;
+>>  			interrupt-parent = <&gpio>;
+>>  			interrupts = <TEGRA_GPIO(O, 4) IRQ_TYPE_LEVEL_LOW>;
+>> +
+>> +			#thermal-sensor-cells = <1>;
+>>  		};
+>>  	};
+>>  
+>> @@ -1283,4 +1285,20 @@
+>>  			 <&tegra_car TEGRA114_CLK_EXTERN1>;
+>>  		clock-names = "pll_a", "pll_a_out0", "mclk";
+>>  	};
+>> +
+>> +	thermal-zones {
+>> +		nct1008-local {
 > 
-> > +static int __init setup_slab_nomerge(char *str)
-> > +{
-> > +	slab_nomerge = 1;
-> > +	return 1;
-> > +}
-> > +__setup("slub_nomerge", setup_slab_nomerge);
-> 
-> Uhh.. You would have to specify "slub_nomerge" to get slab to not merge
-> slab caches?
+> at this level, can the thermal zone name be a meaningful string? What
+> part of the hardware does the local and remote monitors the the dalmore
+> platform?
 
-Should fix it. How about following change?
-
-#ifdef CONFIG_SLUB
-__setup("slub_nomerge", setup_slab_nomerge);
-#endif
-
-__setup("slab_nomerge", setup_slab_nomerge);
-
-This makes "slab_nomerge" works for all SL[aou]B.
+Oh, yes, you are right.
+I think it's better to use "board_thermal_sensor: nct1008-local" and
+"diode_thermal_sensor: nct1008-remote".
 
 Thanks.
+Wei.
+
+> 
+>> +			polling-delay-passive = <2000>; /* milliseconds */
+>> +			polling-delay = <0>; /* milliseconds */
+>> +
+>> +			thermal-sensors = <&nct1008 0>;
+>> +		};
+>> +
+>> +		nct1008-remote {
+>> +			polling-delay-passive = <1000>; /* milliseconds */
+>> +			polling-delay = <0>; /* milliseconds */
+>> +
+>> +			thermal-sensors = <&nct1008 1>;
+>> +		};
+>> +	};
+>>  };
+>> -- 
+>> 1.8.1.5
+>>
+
