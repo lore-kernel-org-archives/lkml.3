@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620AbaHZRky (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 13:40:54 -0400
-Received: from ausxipps301.us.dell.com ([143.166.148.223]:13762 "EHLO
-	ausxipps301.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751868AbaHZRkx (ORCPT
+	id S1752922AbaHZRms (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 13:42:48 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:60511 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752707AbaHZRmq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 13:40:53 -0400
-DomainKey-Signature: s=smtpout; d=dell.com; c=nofws; q=dns;
-  h=X-LoopCount0:X-IronPort-AV:Message-ID:Date:From:
-   Organization:User-Agent:MIME-Version:To:CC:Subject:
-   References:In-Reply-To:Content-Type:
-   Content-Transfer-Encoding;
-  b=HQTuL2ixa52FqMK3AmGFFnPUcIbudag9Gf1jIjY6BlqGUs3YuEa4uOSF
-   8NY6poV98Xvgh+NWb0Jyl/1uku5/zDbpWt3ulBLV4SP1kS4cL0kF55JuI
-   IA90TcwEM7BE8ZfpdtzVGT96kvyoMdUe4h/6SAMenNmP8DuAMzJrbLG+E
-   M=;
-X-LoopCount0: from 10.208.46.70
-X-IronPort-AV: E=Sophos;i="5.04,405,1406610000"; 
-   d="scan'208";a="559113438"
-Message-ID: <53FCC685.8060305@dell.com>
-Date: Tue, 26 Aug 2014 12:40:21 -0500
-From: Mario Limonciello <mario_limonciello@dell.com>
-Organization: Dell Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Tue, 26 Aug 2014 13:42:46 -0400
+Message-ID: <53FCC714.3090206@codeaurora.org>
+Date: Tue, 26 Aug 2014 10:42:44 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Tom Gundersen <teg@jklm.no>, "Luis R. Rodriguez" <mcgrof@suse.com>
-CC: Abhay Salunke <abhay_salunke@dell.com>,
-        =?UTF-8?B?Q3Jpc3RpYW4gUm9kcsOt?= =?UTF-8?B?Z3Vleg==?= 
-	<crrodriguez@opensuse.org>,
-        Takashi Iwai <tiwai@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        systemd Mailing List <systemd-devel@lists.freedesktop.org>,
-        "Hayes, Stuart" <Stuart_Hayes@dell.com>,
-        "Singh, B B" <B_B_Singh@dell.com>
-Subject: Re: dell rbu driver and FW_LOADER_USER_HELPER
-References: <20140826170946.GP3347@wotan.suse.de> <20140826171425.GQ3347@wotan.suse.de> <CAG-2HqULGgC5ftNKOML4XJZ5v_1b+z0t92nctTh7RB2tniRb9Q@mail.gmail.com>
-In-Reply-To: <CAG-2HqULGgC5ftNKOML4XJZ5v_1b+z0t92nctTh7RB2tniRb9Q@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
+To: Marc Zyngier <marc.zyngier@arm.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux@openrisc.net, linux@arm.linux.org.uk,
+        shawn.guo@freescale.com, kernel@pengutronix.de, tony@atomide.com,
+        catalin.marinas@arm.com, will.deacon@arm.com, jonas@southpole.se,
+        tglx@linutronix.de, jason@lakedaemon.net, shc_work@mail.ru,
+        baohua@kernel.org, maxime.ripard@free-electrons.com,
+        khilman@linaro.org, lorenzo.pieralisi@arm.com, larry.bassel@linaro.org,
+        mark.rutland@arm.com, sudeep.holla@arm.com,
+        stefan.kristiansson@saunalahti.fi, vkale@apm.com,
+        schwidefsky@de.ibm.com, Vladimir Murzin <vladimir.murzin@arm.com>
+Subject: Re: [PATCH v2 01/26] genirq: add irq_domain-aware core IRQ handler
+References: <1409047421-27649-1-git-send-email-marc.zyngier@arm.com> <1409047421-27649-2-git-send-email-marc.zyngier@arm.com>
+In-Reply-To: <1409047421-27649-2-git-send-email-marc.zyngier@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/26/14 03:03, Marc Zyngier wrote:
+> Calling irq_find_mapping from outside a irq_{enter,exit} section is
+> unsafe and produces ugly messages if CONFIG_PROVE_RCU is enabled:
+> If coming from the idle state, the rcu_read_lock call in irq_find_mapping
+> will generate an unpleasant warning:
+>
+> <quote>
+> ===============================
+> [ INFO: suspicious RCU usage. ]
+> 3.16.0-rc1+ #135 Not tainted
+> -------------------------------
+> include/linux/rcupdate.h:871 rcu_read_lock() used illegally while idle!
+>
+> other info that might help us debug this:
+>
+> RCU used illegally from idle CPU!
+> rcu_scheduler_active = 1, debug_locks = 0
+> RCU used illegally from extended quiescent state!
+> 1 lock held by swapper/0/0:
+>  #0:  (rcu_read_lock){......}, at: [<ffffffc00010206c>]
+> irq_find_mapping+0x4c/0x198
 
-On 08/26/2014 12:20 PM, Tom Gundersen wrote:
-> On Tue, Aug 26, 2014 at 7:14 PM, Luis R. Rodriguez<mcgrof@suse.com>  wrote:
-> The rework is now upstream, but not yet released [1].
->
-> The dell driver dose not use rely on udev in userspace, nor the
-> /lib/firmware path. It has its own userspace component, which just
-> happens to reuse some of the infrastructure the udev firmware helper
-> used to use. This has now been split up, and as of 3.17 the firmware
-> loader can safely be removed from udev.
->
-> [1]:<http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=5a1379e8748a5cfa3eb068f812d61bde849ef76c>
-Loop in Stuart Hayes and BB Singh.  RBU support is primarily used/supported on poweredge today, and they should be able to help comment and sort this out.
+Do you have the whole stacktrace? I don't see where this is called
+outside of irq_enter() from within the idle loop, but maybe I missed
+something.
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
