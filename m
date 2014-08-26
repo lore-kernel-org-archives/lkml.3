@@ -1,158 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757996AbaHZMom (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 08:44:42 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:54041 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757774AbaHZMok (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 08:44:40 -0400
-Date: Tue, 26 Aug 2014 21:44:19 +0900
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
-        "'Minchan Kim'" <minchan@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, ngupta@vflare.org,
-        "'Jerome Marchand'" <jmarchan@redhat.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>
-Subject: Re: [PATCH] zram: add num_discards for discarded pages stat
-Message-ID: <20140826124419.GA934@swordfish>
-References: <001201cfb838$fb0ac4a0$f1204de0$@samsung.com>
- <20140815061138.GA940@swordfish>
- <002d01cfbb70$ea7410c0$bf5c3240$@samsung.com>
- <20140819112500.GA2484@swordfish>
- <20140820020924.GD32620@bbox>
- <006701cfbc4f$c9d2fe00$5d78fa00$@samsung.com>
- <20140821011854.GE17372@bbox>
- <001601cfbd1f$b9f068d0$2dd13a70$@samsung.com>
- <20140821130504.GB946@swordfish>
- <007f01cfc0d7$a4ddba90$ee992fb0$@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <007f01cfc0d7$a4ddba90$ee992fb0$@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754979AbaHZMqq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 08:46:46 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:33020 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754540AbaHZMqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 08:46:44 -0400
+From: Georgi Djakov <gdjakov@mm-sol.com>
+To: linus.walleij@linaro.org, galak@codeaurora.org,
+        bjorn.andersson@sonymobile.com, agross@codeaurora.org
+Cc: robh+dt@kernel.org, mark.rutland@arm.com, grant.likely@linaro.org,
+        sboyd@codeaurora.org, iivanov@mm-sol.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org, Georgi Djakov <gdjakov@mm-sol.com>
+Subject: [PATCH v2 0/3] pinctrl: qcom: Add APQ8084 pinctrl support
+Date: Tue, 26 Aug 2014 15:45:53 +0300
+Message-Id: <1409057156-1201-1-git-send-email-gdjakov@mm-sol.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This set of patches adds pinctrl support for the Qualcomm APQ8084 platform.
+The first patch adds the pin definitions. The second patch contains the
+devicetree binding documentation. The last patch adds the DT node.
 
-On (08/26/14 10:43), Chao Yu wrote:
-> Hi Sergey,
-> > > Nope, please let me try again, :)
-> > >
-> > > Since we have supported handling discard request in this commit
-> > > f4659d8e620d08bd1a84a8aec5d2f5294a242764 (zram: support REQ_DISCARD), zram got
-> > > one more chance to free unused memory whenever received discard request. But
-> > > without stating for discard request, there is no method for user to know whether
-> > > discard request has been handled by zram or how many blocks were discarded by
-> > > zram when user wants to know the effect of discard.
-> > >
-> > > In this patch, we add num_discards to stat discarded pages, and export it to
-> > > sysfs for users.
-> > >
-> > 
-> > In other words, here is my proposal:
-> > 
-> > -----8<-----8<-----
-> > 
-> > Subject: [PATCH] zram: use notify_free to account all free notifications
-> > 
-> > notify_free device attribute accounts the number of slot free notifications
-> > and internally represents the number of zram_free_page() calls. Slot free
-> > notifications are sent only when device is used as a swap device, hence
-> > notify_free is used only for swap devices. Since f4659d8e620d08 (zram:
-> > support REQ_DISCARD) ZRAM handles yet another one free notification (also
-> > via zram_free_page() call) -- REQ_DISCARD requests, which are sent by a
-> > filesystem, whenever some data blocks are discarded. However, there is no
-> > way to know the number of notifications in the latter case.
-> > 
-> > Use notify_free to account the number of pages freed in zram_free_page(),
-> > instead of accounting only swap_slot_free_notify() calls (each
-> > zram_slot_free_notify() call frees one page).
-> > 
-> > This means that depending on usage scenario notify_free represents:
-> >  a) the number of pages freed because of slot free notifications, which is
-> >    equal to the number of swap_slot_free_notify() calls, so there is no
-> >    behaviour change
-> 
-> As I know, administrator can send discard request by using "swapon -d /dev/zram0"
-> So after then, notify_free may show the page number mixed with both result of
-> handling REQ_DISCARD and slot free notifications.
-> 
-> And as I check the code, there is a workqueue "swap_discard_work" inited
-> in sys_swapon, so maybe there are REQ_DISCARDs sent from background thread,
-> but not filesystem. Is this right?
+Tested on IFC6540 board.
 
-yes, correct. I didn't know that at that time. as Minchan noted, swap
-device may receive both slot free and REQ_DISCARD.
+Changes since v1:
+ - Updated the total number of pins (suggested by Bjorn Andersson)
+ - Added the missing pin info (provided by Andy Gross)
+ - Updated groups and functions to be consistent with other pinctrls.
+   (suggested by Andy Gross)
+ - Removed unused functions, qdss and test pins. (suggested by Andy Gross)
+ - Updated the documentation with the possible functions.
 
-	-ss
+Georgi Djakov (3):
+  pinctrl: qcom: Add APQ8084 pinctrl support
+  dt: Document Qualcomm APQ8084 pinctrl binding
+  ARM: dts: qcom: Add TLMM DT node for APQ8084
 
-> Regards,
-> Yu
-> 
-> > 
-> >  b) the number of pages freed because of REQ_DISCARD notifications
-> > 
-> > Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> > ---
-> >  Documentation/ABI/testing/sysfs-block-zram | 13 ++++++++-----
-> >  drivers/block/zram/zram_drv.c              |  2 +-
-> >  2 files changed, 9 insertions(+), 6 deletions(-)
-> > 
-> > diff --git a/Documentation/ABI/testing/sysfs-block-zram
-> > b/Documentation/ABI/testing/sysfs-block-zram
-> > index 70ec992..73ed400 100644
-> > --- a/Documentation/ABI/testing/sysfs-block-zram
-> > +++ b/Documentation/ABI/testing/sysfs-block-zram
-> > @@ -77,11 +77,14 @@ What:		/sys/block/zram<id>/notify_free
-> >  Date:		August 2010
-> >  Contact:	Nitin Gupta <ngupta@vflare.org>
-> >  Description:
-> > -		The notify_free file is read-only and specifies the number of
-> > -		swap slot free notifications received by this device. These
-> > -		notifications are sent to a swap block device when a swap slot
-> > -		is freed. This statistic is applicable only when this disk is
-> > -		being used as a swap disk.
-> > +		The notify_free file is read-only. Depending on device usage
-> > +		scenario it may account a) the number of swap slot free
-> > +		notifications or b) the number of REQ_DISCARD requests sent
-> > +		by bio. The former ones are sent to a swap block device when a
-> > +		swap slot is freed, which implies that this disk is being used
-> > +		as a swap disk. The latter ones are sent by filesystem mounted
-> > +		with discard option, whenever some data blocks are getting
-> > +		discarded.
-> > 
-> >  What:		/sys/block/zram<id>/zero_pages
-> >  Date:		August 2010
-> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> > index d00831c..c2e7127 100644
-> > --- a/drivers/block/zram/zram_drv.c
-> > +++ b/drivers/block/zram/zram_drv.c
-> > @@ -344,6 +344,7 @@ static void zram_free_page(struct zram *zram, size_t index)
-> >  	atomic64_sub(zram_get_obj_size(meta, index),
-> >  			&zram->stats.compr_data_size);
-> >  	atomic64_dec(&zram->stats.pages_stored);
-> > +	atomic64_inc(&zram->stats.notify_free);
-> > 
-> >  	meta->table[index].handle = 0;
-> >  	zram_set_obj_size(meta, index, 0);
-> > @@ -843,7 +844,6 @@ static void zram_slot_free_notify(struct block_device *bdev,
-> >  	bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
-> >  	zram_free_page(zram, index);
-> >  	bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
-> > -	atomic64_inc(&zram->stats.notify_free);
-> >  }
-> > 
-> >  static const struct block_device_operations zram_devops = {
-> > --
-> > 2.1.0.233.g9eef2c8
-> > 
-> > --
-> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > see: http://www.linux-mm.org/ .
-> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+ .../bindings/pinctrl/qcom,apq8084-pinctrl.txt      |  104 ++
+ arch/arm/boot/dts/qcom-apq8084.dtsi                |   10 +
+ drivers/pinctrl/qcom/Kconfig                       |    8 +
+ drivers/pinctrl/qcom/Makefile                      |    1 +
+ drivers/pinctrl/qcom/pinctrl-apq8084.c             | 1243 ++++++++++++++++++++
+ 5 files changed, 1366 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/qcom,apq8084-pinctrl.txt
+ create mode 100644 drivers/pinctrl/qcom/pinctrl-apq8084.c
+
+-- 
+1.7.9.5
+
