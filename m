@@ -1,41 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755626AbaHZVx7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 17:53:59 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34684 "EHLO mail.zytor.com"
+	id S1755904AbaHZVzt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 17:55:49 -0400
+Received: from smtp6-g21.free.fr ([212.27.42.6]:5119 "EHLO smtp6-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755383AbaHZVx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 17:53:58 -0400
-Message-ID: <53FD01D0.8020203@zytor.com>
-Date: Tue, 26 Aug 2014 14:53:20 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1755877AbaHZVzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 17:55:46 -0400
+Date: Tue, 26 Aug 2014 23:55:35 +0200
+From: Sabrina Dubroca <sd@queasysnail.net>
+To: Valdis.Kletnieks@vt.edu
+Cc: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+        Hugh Dickins <hughd@google.com>, akpm@linux-foundation.org,
+        Vincent Donnefort <vdonnefort@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, linux-leds@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
+Subject: Re: [PATCH][input-led] Defer input led work to workqueue
+Message-ID: <20140826215535.GA6581@kria>
+References: <20140826015453.GA5235@type.youpi.perso.aquilenet.fr>
+ <3942.1409078958@turing-police.cc.vt.edu>
+ <20140826200208.GA11247@kria>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>, Matt Fleming <matt.fleming@intel.com>,
-        Ingo Molnar <mingo@redhat.com>
-CC: =?UTF-8?B?TWFudGFzIE1pa3VsxJduYXM=?= <grawity@gmail.com>,
-        Anders Darander <anders@chargestorm.se>, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: only load initrd above 4g on second try
-References: <1409089544-24221-1-git-send-email-yinghai@kernel.org>
-In-Reply-To: <1409089544-24221-1-git-send-email-yinghai@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140826200208.GA11247@kria>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2014 02:45 PM, Yinghai Lu wrote:
-> Mantas found that after commit 4bf7111f5016 ("x86/efi: Support initrd
-> loaded above 4G"), the kernel freezes at the earliest possible moment
-> when trying to boot via UEFI on Asus laptop.
+2014-08-26, 22:02:08 +0200, Sabrina Dubroca wrote:
+> [...]
 > 
-> There are buggy EFI implementations: with EFI run time, kernel need
-> to load file with 512bytes alignment when buffer is above 4G.
-> 
+> Tested-by: Sabrina Dubroca <sd@queasysnail.net>
 
-This makes absolutely zero sense.  Please explain what the actual
-problem is here.
+Forgot to mention, this applies to both versions of the patch.
 
-	-hpa
 
+-- 
+Sabrina
