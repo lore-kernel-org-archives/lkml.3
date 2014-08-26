@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758067AbaHZNMz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 09:12:55 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:44565 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757982AbaHZNMw (ORCPT
+	id S1758101AbaHZNNB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 09:13:01 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:60199 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757982AbaHZNM4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 09:12:52 -0400
+	Tue, 26 Aug 2014 09:12:56 -0400
 From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 To: linux-pm@vger.kernel.org
 Cc: Thierry Reding <thierry.reding@gmail.com>,
@@ -18,9 +18,9 @@ Cc: Thierry Reding <thierry.reding@gmail.com>,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
         Mikko Perttunen <mperttunen@nvidia.com>,
         Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Subject: [PATCH v4 1/3] PM / QoS: Add PM_QOS_MEMORY_BANDWIDTH class
-Date: Tue, 26 Aug 2014 15:12:06 +0200
-Message-Id: <1409058728-13347-2-git-send-email-tomeu.vizoso@collabora.com>
+Subject: [PATCH v4 3/3] memory: tegra124-emc: Add EMC driver
+Date: Tue, 26 Aug 2014 15:12:08 +0200
+Message-Id: <1409058728-13347-4-git-send-email-tomeu.vizoso@collabora.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1409058728-13347-1-git-send-email-tomeu.vizoso@collabora.com>
 References: <1409058728-13347-1-git-send-email-tomeu.vizoso@collabora.com>
@@ -28,131 +28,207 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also adds a class type PM_QOS_SUM that aggregates the values by summing them.
+Sets the EMC clock rate based on the bandwidth requirements registered by
+memory clients through the PM_QOS_MEMORY_BANDWIDTH class.
 
-It can be used by memory controllers to calculate the optimum clock frequency
-based on the bandwidth needs of the different memory clients.
-
-Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Acked-by: Pavel Machek <pavel@ucw.cz>
+Note: this is just an example and not a proper driver for a external memory
+controller. Its only purpose is to illustrate how such a driver would set the
+frequency of the external memory clock based on the bandwidth requirements of
+memory clients.
 
 ---
 
-v3: * Changed units to be megabits per second
+v4: * Add hack so the driver gets actually registered.
+    * Use the tegra-clk-debug dev_id to query the EMC clock
+    * Get units right and use types consistently
 ---
- Documentation/power/pm_qos_interface.txt |  4 +++-
- include/linux/pm_qos.h                   |  5 ++++-
- kernel/power/qos.c                       | 27 ++++++++++++++++++++++++++-
- 3 files changed, 33 insertions(+), 3 deletions(-)
+ arch/arm/mach-tegra/tegra.c   |  10 ++++
+ drivers/memory/Kconfig        |   9 ++++
+ drivers/memory/Makefile       |   1 +
+ drivers/memory/tegra124-emc.c | 117 ++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 137 insertions(+)
+ create mode 100644 drivers/memory/tegra124-emc.c
 
-diff --git a/Documentation/power/pm_qos_interface.txt b/Documentation/power/pm_qos_interface.txt
-index a5da5c7..129f7c0 100644
---- a/Documentation/power/pm_qos_interface.txt
-+++ b/Documentation/power/pm_qos_interface.txt
-@@ -5,7 +5,8 @@ performance expectations by drivers, subsystems and user space applications on
- one of the parameters.
- 
- Two different PM QoS frameworks are available:
--1. PM QoS classes for cpu_dma_latency, network_latency, network_throughput.
-+1. PM QoS classes for cpu_dma_latency, network_latency, network_throughput,
-+memory_bandwidth.
- 2. the per-device PM QoS framework provides the API to manage the per-device latency
- constraints and PM QoS flags.
- 
-@@ -13,6 +14,7 @@ Each parameters have defined units:
-  * latency: usec
-  * timeout: usec
-  * throughput: kbs (kilo bit / sec)
-+ * memory bandwidth: mbs (mega bit / sec)
- 
- 
- 1. PM QoS framework
-diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
-index 9ab4bf7..636e828 100644
---- a/include/linux/pm_qos.h
-+++ b/include/linux/pm_qos.h
-@@ -15,6 +15,7 @@ enum {
- 	PM_QOS_CPU_DMA_LATENCY,
- 	PM_QOS_NETWORK_LATENCY,
- 	PM_QOS_NETWORK_THROUGHPUT,
-+	PM_QOS_MEMORY_BANDWIDTH,
- 
- 	/* insert new class ID */
- 	PM_QOS_NUM_CLASSES,
-@@ -32,6 +33,7 @@ enum pm_qos_flags_status {
- #define PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
- #define PM_QOS_NETWORK_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
- #define PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE	0
-+#define PM_QOS_MEMORY_BANDWIDTH_DEFAULT_VALUE	0
- #define PM_QOS_RESUME_LATENCY_DEFAULT_VALUE	0
- #define PM_QOS_LATENCY_TOLERANCE_DEFAULT_VALUE	0
- #define PM_QOS_LATENCY_TOLERANCE_NO_CONSTRAINT	(-1)
-@@ -69,7 +71,8 @@ struct dev_pm_qos_request {
- enum pm_qos_type {
- 	PM_QOS_UNITIALIZED,
- 	PM_QOS_MAX,		/* return the largest value */
--	PM_QOS_MIN		/* return the smallest value */
-+	PM_QOS_MIN,		/* return the smallest value */
-+	PM_QOS_SUM		/* return the sum */
+diff --git a/arch/arm/mach-tegra/tegra.c b/arch/arm/mach-tegra/tegra.c
+index 5ef5173..099d8e7f 100644
+--- a/arch/arm/mach-tegra/tegra.c
++++ b/arch/arm/mach-tegra/tegra.c
+@@ -70,6 +70,11 @@ u32 tegra_uart_config[3] = {
+ 	0,
  };
  
- /*
-diff --git a/kernel/power/qos.c b/kernel/power/qos.c
-index 884b770..5f4c006 100644
---- a/kernel/power/qos.c
-+++ b/kernel/power/qos.c
-@@ -105,11 +105,27 @@ static struct pm_qos_object network_throughput_pm_qos = {
- };
- 
- 
-+static BLOCKING_NOTIFIER_HEAD(memory_bandwidth_notifier);
-+static struct pm_qos_constraints memory_bw_constraints = {
-+	.list = PLIST_HEAD_INIT(memory_bw_constraints.list),
-+	.target_value = PM_QOS_MEMORY_BANDWIDTH_DEFAULT_VALUE,
-+	.default_value = PM_QOS_MEMORY_BANDWIDTH_DEFAULT_VALUE,
-+	.no_constraint_value = PM_QOS_MEMORY_BANDWIDTH_DEFAULT_VALUE,
-+	.type = PM_QOS_SUM,
-+	.notifiers = &memory_bandwidth_notifier,
-+};
-+static struct pm_qos_object memory_bandwidth_pm_qos = {
-+	.constraints = &memory_bw_constraints,
-+	.name = "memory_bandwidth",
++static struct platform_device tegra_emc = {
++	.name	= "tegra124-emc",
++	.id	= -1,
 +};
 +
-+
- static struct pm_qos_object *pm_qos_array[] = {
- 	&null_pm_qos,
- 	&cpu_dma_pm_qos,
- 	&network_lat_pm_qos,
--	&network_throughput_pm_qos
-+	&network_throughput_pm_qos,
-+	&memory_bandwidth_pm_qos,
- };
- 
- static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
-@@ -130,6 +146,9 @@ static const struct file_operations pm_qos_power_fops = {
- /* unlocked internal variant */
- static inline int pm_qos_get_value(struct pm_qos_constraints *c)
+ static void __init tegra_init_early(void)
  {
-+	struct plist_node *node;
-+	int total_value = 0;
-+
- 	if (plist_head_empty(&c->list))
- 		return c->no_constraint_value;
+ 	of_register_trusted_foundations();
+@@ -112,6 +117,11 @@ static void __init tegra_dt_init(void)
+ 	parent = soc_device_to_device(soc_dev);
  
-@@ -140,6 +159,12 @@ static inline int pm_qos_get_value(struct pm_qos_constraints *c)
- 	case PM_QOS_MAX:
- 		return plist_last(&c->list)->prio;
+ 	/*
++	 * HACK: register a platform device to probe the driver
++	 */
++	platform_device_register(&tegra_emc);
++
++	/*
+ 	 * Finished with the static registrations now; fill in the missing
+ 	 * devices
+ 	 */
+diff --git a/drivers/memory/Kconfig b/drivers/memory/Kconfig
+index fab81a1..2088b2b 100644
+--- a/drivers/memory/Kconfig
++++ b/drivers/memory/Kconfig
+@@ -61,6 +61,15 @@ config TEGRA30_MC
+ 	  analysis, especially for IOMMU/SMMU(System Memory Management
+ 	  Unit) module.
  
-+	case PM_QOS_SUM:
-+		plist_for_each(node, &c->list)
-+			total_value += node->prio;
++config TEGRA124_EMC
++	tristate "Tegra124 External Memory Controller (EMC) driver"
++	default y
++	depends on ARCH_TEGRA_124_SOC
++	help
++	  This driver is for the External Memory Controller (EMC) module
++	  available in Tegra124 SoCs.
 +
-+		return total_value;
 +
- 	default:
- 		/* runtime check for not using enum */
- 		BUG();
+ config FSL_CORENET_CF
+ 	tristate "Freescale CoreNet Error Reporting"
+ 	depends on FSL_SOC_BOOKE
+diff --git a/drivers/memory/Makefile b/drivers/memory/Makefile
+index 4055c47..0a6d117 100644
+--- a/drivers/memory/Makefile
++++ b/drivers/memory/Makefile
+@@ -12,3 +12,4 @@ obj-$(CONFIG_FSL_IFC)		+= fsl_ifc.o
+ obj-$(CONFIG_MVEBU_DEVBUS)	+= mvebu-devbus.o
+ obj-$(CONFIG_TEGRA20_MC)	+= tegra20-mc.o
+ obj-$(CONFIG_TEGRA30_MC)	+= tegra30-mc.o
++obj-$(CONFIG_TEGRA124_EMC)	+= tegra124-emc.o
+diff --git a/drivers/memory/tegra124-emc.c b/drivers/memory/tegra124-emc.c
+new file mode 100644
+index 0000000..a290ad5
+--- /dev/null
++++ b/drivers/memory/tegra124-emc.c
+@@ -0,0 +1,117 @@
++/*
++ * Copyright (c) 2013, NVIDIA CORPORATION.  All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <linux/clk.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/pm_qos.h>
++
++#define DRV_NAME "tegra124-emc"
++#define EMC_FREQ_CUTOFF_USE_130_PERCENT	100000000
++#define EMC_FREQ_CUTOFF_USE_140_PERCENT	50000000
++#define BYTES_PER_EMC_CLOCK 16
++
++struct tegra124_emc {
++	struct clk *clk;
++	struct notifier_block memory_bw_notifier;
++};
++
++static struct platform_device *emc_pdev;
++
++static unsigned long tegra124_emc_bw_to_freq_req(s32 bw)
++{
++	return (bw * 8 + BYTES_PER_EMC_CLOCK - 1) / BYTES_PER_EMC_CLOCK;
++}
++
++static void tegra124_emc_update_rate(struct tegra124_emc *emc, s32 total_bandwidth)
++{
++	struct clk *emc_master;
++	unsigned long freq;
++
++	emc_master = clk_get_parent(emc->clk);
++	freq = tegra124_emc_bw_to_freq_req(total_bandwidth * 1024);
++	freq = clk_round_rate(emc_master, freq);
++
++	/* Depending on frequency value, the amount of bandwidth usage % of
++	 * total we should use is different. Thus we should request a multiple of
++	 * original bandwidth on this.  Use 1.4 for < 50MHz, 1.3 for < 100MHz,
++	 * else 1.1 */
++	if (freq < EMC_FREQ_CUTOFF_USE_140_PERCENT)
++		total_bandwidth += 4 * total_bandwidth / 10; /* 1.4 */
++	else if (freq < EMC_FREQ_CUTOFF_USE_130_PERCENT)
++		total_bandwidth += 3 * total_bandwidth / 10; /* 1.3 */
++	else
++		total_bandwidth += total_bandwidth / 10; /* 1.1 */
++
++	freq = tegra124_emc_bw_to_freq_req(total_bandwidth * 1024);
++
++	clk_set_floor_rate(emc->clk, freq);
++}
++
++int memory_bw_notify(struct notifier_block *nb, unsigned long data, void *dummy)
++{
++	s32 total_bw = (s32) data;
++	struct tegra124_emc *emc =
++		container_of(nb, struct tegra124_emc,
++			     memory_bw_notifier);
++
++	tegra124_emc_update_rate(emc, total_bw);
++
++	return NOTIFY_OK;
++}
++
++static int tegra124_emc_probe(struct platform_device *pdev)
++{
++	struct tegra124_emc *emc;
++
++	emc_pdev = pdev;
++
++	emc = devm_kzalloc(&pdev->dev, sizeof(*emc), GFP_KERNEL);
++	if (emc == NULL) {
++		dev_err(&pdev->dev, "Failed to allocate private memory\n");
++		return -ENOMEM;
++	}
++
++	emc->clk = clk_get_sys("tegra-clk-debug", "emc");
++	if (IS_ERR(emc->clk)) {
++		devm_kfree(&pdev->dev, emc);
++		dev_err(&pdev->dev, "Can not find EMC clock\n");
++		return -EPROBE_DEFER;
++	}
++
++	platform_set_drvdata(emc_pdev, emc);
++
++	emc->memory_bw_notifier.notifier_call = memory_bw_notify;
++	pm_qos_add_notifier(PM_QOS_MEMORY_BANDWIDTH, &emc->memory_bw_notifier);
++
++	return 0;
++}
++
++static struct platform_driver tegra124_emc_driver = {
++	.driver         = {
++		.name   = DRV_NAME,
++		.owner  = THIS_MODULE,
++	},
++	.probe          = tegra124_emc_probe,
++};
++
++module_platform_driver(tegra124_emc_driver);
++
++MODULE_AUTHOR("Tomeu Vizoso <tomeu.vizoso@collabora.com>");
++MODULE_DESCRIPTION("Tegra124 EMC driver");
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("platform:" DRV_NAME);
 -- 
 1.9.3
 
