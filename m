@@ -1,71 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308AbaHZSiG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 14:38:06 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:22225 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752816AbaHZSiF convert rfc822-to-8bit (ORCPT
+	id S1752800AbaHZSqn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 14:46:43 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:38446 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751989AbaHZSql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 14:38:05 -0400
-From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
-To: Ralf Baechle <ralf@linux-mips.org>
-CC: Max Filippov <jcmvbkbc@gmail.com>,
-        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        Chris Zankel <chris@zankel.net>, "Marc Gauthier" <marc@cadence.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Steven J. Hill" <Steven.Hill@imgtec.com>
-Subject: Re: [PATCH v4 0/2] mm/highmem: make kmap cache coloring aware
-Thread-Topic: [PATCH v4 0/2] mm/highmem: make kmap cache coloring aware
-Thread-Index: AQHPre7N5QBJ5Fz/0EKvD+9jsRp2sZviKfYAgAEz3a8=
-Date: Tue, 26 Aug 2014 18:37:52 +0000
-Message-ID: <nlshxsgfkahrb2t7cl2hk6q5.1409078269675@email.android.com>
-References: <1406941899-19932-1-git-send-email-jcmvbkbc@gmail.com>,<20140825171600.GH25892@linux-mips.org>
-In-Reply-To: <20140825171600.GH25892@linux-mips.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 26 Aug 2014 14:46:41 -0400
+Message-ID: <53FCD60E.1030009@codeaurora.org>
+Date: Tue, 26 Aug 2014 11:46:38 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
+To: Marc Zyngier <marc.zyngier@arm.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux@openrisc.net" <linux@openrisc.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "shawn.guo@freescale.com" <shawn.guo@freescale.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "tony@atomide.com" <tony@atomide.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "jonas@southpole.se" <jonas@southpole.se>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        "shc_work@mail.ru" <shc_work@mail.ru>,
+        "baohua@kernel.org" <baohua@kernel.org>,
+        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
+        "khilman@linaro.org" <khilman@linaro.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        "larry.bassel@linaro.org" <larry.bassel@linaro.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        "stefan.kristiansson@saunalahti.fi" 
+	<stefan.kristiansson@saunalahti.fi>,
+        "vkale@apm.com" <vkale@apm.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        Vladimir Murzin <Vladimir.Murzin@arm.com>
+Subject: Re: [PATCH v2 01/26] genirq: add irq_domain-aware core IRQ handler
+References: <1409047421-27649-1-git-send-email-marc.zyngier@arm.com> <1409047421-27649-2-git-send-email-marc.zyngier@arm.com> <53FCC714.3090206@codeaurora.org> <53FCCCC7.9070801@arm.com>
+In-Reply-To: <53FCCCC7.9070801@arm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-16KB page size solution may sometime be a solution:
+On 08/26/14 11:07, Marc Zyngier wrote:
+> Digging into my email, one of the traces looked like this:
+>
+> stack backtrace:
+> CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.16.0-rc1+ #135
+> Call trace:
+> [<ffffffc0000882cc>] dump_backtrace+0x0/0x12c
+> [<ffffffc000088408>] show_stack+0x10/0x1c
+> [<ffffffc0004ee5f0>] dump_stack+0x74/0xc4
+> [<ffffffc0000edfbc>] lockdep_rcu_suspicious+0xe8/0x124
+> [<ffffffc00010218c>] irq_find_mapping+0x16c/0x198
+> [<ffffffc00008130c>] gic_handle_irq+0x38/0xcc
+>
+> Most drivers call irq_find_mapping outside of irq_enter()/irq_exit(), as
+> this is in handle_IRQ().
+>
 
-1) in microcontroller environment then small pages have advantage
-in small applications world.
+Ah ok. This is the multi-irq handler case? Has this been broken since
+v3.2 at least for the gic users? Now that we call irq_enter()/irq_exit()
+a lot more code runs, including things like updating jiffies when
+interrupts arrive and invoking softirq? Do we only call irq_exit() on
+the IPI path otherwise?
 
-2) some kernel drivers may not fit well a different page size, especially if HW
-has an embedded memory translation: GPU, video/audio decoders,
-supplement accelerators.
+Are there any plans to send this back to stable trees? Not calling
+irq_enter()/irq_exit() when we get an interrupt seems like a big problem.
 
-3) finally, somebody can increase cache size faster than page size,
-this race never finishes.
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-
-
-Ralf Baechle <ralf@linux-mips.org> wrote:
-
-
-On Sat, Aug 02, 2014 at 05:11:37AM +0400, Max Filippov wrote:
-
-> this series adds mapping color control to the generic kmap code, allowing
-> architectures with aliasing VIPT cache to use high memory. There's also
-> use example of this new interface by xtensa.
-
-I haven't actually ported this to MIPS but it certainly appears to be
-the right framework to get highmem aliases handled on MIPS, too.
-
-Though I still consider increasing PAGE_SIZE to 16k the preferable
-solution because it will entirly do away with cache aliases.
-
-Thanks,
-
-  Ralf
