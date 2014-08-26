@@ -1,44 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753727AbaHZSwr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 14:52:47 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:52291 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752365AbaHZSwq (ORCPT
+	id S1753533AbaHZS4F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 14:56:05 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:44272 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753317AbaHZSz6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 14:52:46 -0400
+	Tue, 26 Aug 2014 14:55:58 -0400
+Message-ID: <53FCD816.6070108@infradead.org>
+Date: Tue, 26 Aug 2014 11:55:18 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-In-Reply-To: <1409079005-2454-1-git-send-email-geert@linux-m68k.org>
-References: <1409079005-2454-1-git-send-email-geert@linux-m68k.org>
-Date: Tue, 26 Aug 2014 20:52:44 +0200
-X-Google-Sender-Auth: o3pWeYVOJAQXoRRa6yIbpTAMVvg
-Message-ID: <CAMuHMdUpA5DSXn3BQLL1r1Uuigay29R8vhjQXvcRiVYY4ZXPjA@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.17-rc2
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Jiang Liu <jiang.liu@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        x86@kernel.org, Prarit Bhargava <prarit@redhat.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [Bugfix] x86, irq: Fix bug in setting IOAPIC pin attributes
+References: <20140822124145.GF1660@lahna.fi.intel.com> <1409042706-11958-1-git-send-email-jiang.liu@linux.intel.com>
+In-Reply-To: <1409042706-11958-1-git-send-email-jiang.liu@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 8:50 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> JFYI, when comparing v3.17-rc2[1]  to v3.17-rc1[3], the summaries are:
->   - build errors: +4/-7
+On 08/26/14 01:45, Jiang Liu wrote:
+> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> index 29290f554e79..66c2700c9f83 100644
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -3896,7 +3896,15 @@ int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
+> +		/*
+> +		 * setup_IO_APIC_irqs() programs all legacy IRQs with default
+> +		 * trigger and polarity attirbutes. Don't set the flag for that
 
-Nothing serious, just a known powerpc-randconfig issue and a few more
-R_PPC64_REL24 relocation truncations in powerpc-allyesconfig.
+		                        attributes.
 
-> [1] http://kisskb.ellerman.id.au/kisskb/head/7808/ (all 119 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/7787/ (all 119 configs)
+> +		 * case so the first legacy IRQ user could reprogram the pin
+> +		 * with real trigger and polarity attributes.
+> +		 */
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+thanks,
+-- 
+~Randy
