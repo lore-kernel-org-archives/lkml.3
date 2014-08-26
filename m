@@ -1,60 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934011AbaHZHrG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 03:47:06 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:39026 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933860AbaHZHrB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 03:47:01 -0400
-Date: Tue, 26 Aug 2014 09:46:55 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: Stephen Hemminger <stephen@networkplumber.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Brendan Gregg <brendan.d.gregg@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 net-next 4/6] bpf: enable bpf syscall on x64 and i386
-Message-ID: <20140826074655.GB19799@gmail.com>
-References: <1409014858-1410-1-git-send-email-ast@plumgrid.com>
- <1409014858-1410-5-git-send-email-ast@plumgrid.com>
- <20140825205201.10ac5ee3@uryu.home.lan>
- <CAMEtUuxicvHsEQ59CeG2kmLW0b4TQ9ExfDkKo2kktH-t8x5tBg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMEtUuxicvHsEQ59CeG2kmLW0b4TQ9ExfDkKo2kktH-t8x5tBg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S933913AbaHZHrP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 03:47:15 -0400
+Received: from mga01.intel.com ([192.55.52.88]:10933 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933860AbaHZHrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 03:47:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="377015629"
+From: Lan Tianyu <tianyu.lan@intel.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        toshi.kani@hp.com, imammedo@redhat.com, bp@alien8.de,
+        prarit@redhat.com, tianyu.lan@intel.com
+Cc: mingo@kernel.org, srostedt@redhat.com, linux-kernel@vger.kernel.org
+Subject: [Resend PATCH V2] X86/CPU: Avoid 100ms sleep for cpu offline  during S3
+Date: Tue, 26 Aug 2014 15:43:45 +0800
+Message-Id: <1409039025-32310-1-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+With some bad kernel configures, cpu offline consumes more than 100ms
+during S3. This because native_cpu_die() would fall into 100ms
+sleep when cpu idle loop thread marked cpu state to DEAD slower. It's
+timing related issue. What native_cpu_die() does is that poll cpu
+state and wait for 100ms if cpu state hasn't been marked to DEAD.
+The 100ms sleep doesn't make sense. To avoid such long sleep, this
+patch is to add struct completion to each cpu, wait for the completion
+in the native_cpu_die() and wakeup the completion when the cpu state is
+marked to DEAD.
 
-* Alexei Starovoitov <ast@plumgrid.com> wrote:
+Tested on the Intel Xeon server with 48 cores, Ivbridge and Haswell laptops.
+the times of cpu offline on these machines are reduced from more than 100ms
+to less than 5ms. The system suspend time reduces 2.3s on the servers.
 
-> On Mon, Aug 25, 2014 at 8:52 PM, Stephen Hemminger
-> <stephen@networkplumber.org> wrote:
-> > Per discussion at Kernel Summit. Every new syscall requires
-> > a manual page and test programs. We have had too many new syscalls
-> > that are DOA.
-> 
-> There is verifier testsuite that is testing eBPF verifier from userspace
-> via bpf syscall. Also there are multiple examples and libbpf.
-> I think test coverage for bpf syscall is quite substantial already.
+Borislav and Prarit also helped to test the patch on an AMD machine and
+a few systems of various sizes and configurations (multi-socket,
+single-socket, no hyper threading, etc.). No issues seen.
 
-This is in tools/bpf/, right?
+Acked-by: Borislav Petkov <bp@suse.de>
+Tested-by: Prarit Bhargava <prarit@redhat.com>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+---
+ arch/x86/kernel/smpboot.c | 23 +++++++++++------------
+ 1 file changed, 11 insertions(+), 12 deletions(-)
 
-Thanks,
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 5492798..25a8f17 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -102,6 +102,8 @@ DEFINE_PER_CPU_READ_MOSTLY(cpumask_var_t, cpu_llc_shared_map);
+ DEFINE_PER_CPU_SHARED_ALIGNED(struct cpuinfo_x86, cpu_info);
+ EXPORT_PER_CPU_SYMBOL(cpu_info);
+ 
++DEFINE_PER_CPU(struct completion, die_complete);
++
+ atomic_t init_deasserted;
+ 
+ /*
+@@ -1331,7 +1333,7 @@ int native_cpu_disable(void)
+ 		return ret;
+ 
+ 	clear_local_APIC();
+-
++	init_completion(&per_cpu(die_complete, smp_processor_id()));
+ 	cpu_disable_common();
+ 	return 0;
+ }
+@@ -1339,18 +1341,14 @@ int native_cpu_disable(void)
+ void native_cpu_die(unsigned int cpu)
+ {
+ 	/* We don't do anything here: idle task is faking death itself. */
+-	unsigned int i;
++	wait_for_completion_timeout(&per_cpu(die_complete, cpu), HZ);
+ 
+-	for (i = 0; i < 10; i++) {
+-		/* They ack this in play_dead by setting CPU_DEAD */
+-		if (per_cpu(cpu_state, cpu) == CPU_DEAD) {
+-			if (system_state == SYSTEM_RUNNING)
+-				pr_info("CPU %u is now offline\n", cpu);
+-			return;
+-		}
+-		msleep(100);
+-	}
+-	pr_err("CPU %u didn't die...\n", cpu);
++	/* They ack this in play_dead by setting CPU_DEAD */
++	if (per_cpu(cpu_state, cpu) == CPU_DEAD) {
++		if (system_state == SYSTEM_RUNNING)
++			pr_info("CPU %u is now offline\n", cpu);
++	} else
++		pr_err("CPU %u didn't die...\n", cpu);
+ }
+ 
+ void play_dead_common(void)
+@@ -1362,6 +1360,7 @@ void play_dead_common(void)
+ 	mb();
+ 	/* Ack it */
+ 	__this_cpu_write(cpu_state, CPU_DEAD);
++	complete(&per_cpu(die_complete, smp_processor_id()));
+ 
+ 	/*
+ 	 * With physical CPU hotplug, we should halt the cpu
+-- 
+1.8.4.rc0.1.g8f6a3e5.dirty
 
-	Ingo
