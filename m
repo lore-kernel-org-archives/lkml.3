@@ -1,118 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854AbaHZQ6y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 12:58:54 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:55342 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752458AbaHZQ6w (ORCPT
+	id S1752112AbaHZRC6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 13:02:58 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:38398 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751674AbaHZRC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 12:58:52 -0400
-Message-ID: <53FCBCC7.3090004@arm.com>
-Date: Tue, 26 Aug 2014 17:58:47 +0100
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux@openrisc.net" <linux@openrisc.net>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "shawn.guo@freescale.com" <shawn.guo@freescale.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "tony@atomide.com" <tony@atomide.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "jonas@southpole.se" <jonas@southpole.se>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "shc_work@mail.ru" <shc_work@mail.ru>,
-        "baohua@kernel.org" <baohua@kernel.org>,
-        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
-        "khilman@linaro.org" <khilman@linaro.org>,
-        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        "larry.bassel@linaro.org" <larry.bassel@linaro.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        "stefan.kristiansson@saunalahti.fi" 
-	<stefan.kristiansson@saunalahti.fi>,
-        "vkale@apm.com" <vkale@apm.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>
-Subject: Re: [PATCH v2 02/26] arm64: convert handle_IRQ to use __handle_domain_irq
-References: <1409047421-27649-1-git-send-email-marc.zyngier@arm.com> <1409047421-27649-3-git-send-email-marc.zyngier@arm.com> <20140826165138.GM16482@arm.com>
-In-Reply-To: <20140826165138.GM16482@arm.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Aug 2014 13:02:56 -0400
+From: Janet Liu <jianhua.ljh@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Janet Liu <jianhua.ljh@gmail.com>
+Subject: [PATCH] staging:lustre:lnet: lib-md.c fix checkpath warnings and errors.
+Date: Wed, 27 Aug 2014 01:00:58 +0800
+Message-Id: <1409072458-5984-1-git-send-email-jianhua.ljh@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/08/14 17:51, Catalin Marinas wrote:
-> On Tue, Aug 26, 2014 at 11:03:17AM +0100, Marc Zyngier wrote:
->> In order to limit code duplication, convert the architecture specific
->> handle_IRQ to use the generic __handle_domain_irq function.
->>
->> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
->> ---
->>  arch/arm64/Kconfig      |  1 +
->>  arch/arm64/kernel/irq.c | 18 +-----------------
->>  2 files changed, 2 insertions(+), 17 deletions(-)
->>
->> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
->> index fd4e81a..1f16ed9 100644
->> --- a/arch/arm64/Kconfig
->> +++ b/arch/arm64/Kconfig
->> @@ -30,6 +30,7 @@ config ARM64
->>  	select GENERIC_STRNCPY_FROM_USER
->>  	select GENERIC_STRNLEN_USER
->>  	select GENERIC_TIME_VSYSCALL
->> +	select HANDLE_DOMAIN_IRQ
->>  	select HARDIRQS_SW_RESEND
->>  	select HAVE_ARCH_AUDITSYSCALL
->>  	select HAVE_ARCH_JUMP_LABEL
->> diff --git a/arch/arm64/kernel/irq.c b/arch/arm64/kernel/irq.c
->> index 0f08dfd..2c0e2a7 100644
->> --- a/arch/arm64/kernel/irq.c
->> +++ b/arch/arm64/kernel/irq.c
->> @@ -48,23 +48,7 @@ int arch_show_interrupts(struct seq_file *p, int prec)
->>   */
->>  void handle_IRQ(unsigned int irq, struct pt_regs *regs)
->>  {
->> -	struct pt_regs *old_regs = set_irq_regs(regs);
->> -
->> -	irq_enter();
->> -
->> -	/*
->> -	 * Some hardware gives randomly wrong interrupts.  Rather
->> -	 * than crashing, do something sensible.
->> -	 */
->> -	if (unlikely(irq >= nr_irqs)) {
->> -		pr_warn_ratelimited("Bad IRQ%u\n", irq);
->> -		ack_bad_irq(irq);
->> -	} else {
->> -		generic_handle_irq(irq);
->> -	}
->> -
->> -	irq_exit();
->> -	set_irq_regs(old_regs);
->> +	__handle_domain_irq(NULL, irq, false, regs);
->>  }
-> 
-> The only thing that's missing is a pr_warn_ratelimited(). Do we still
-> need it? We could add it to ack_bad_irq() though.
+Sliences the following warning and error:
 
-Indeed, we could move the warning to ack_bad_irq(), which is always
-architecture specific. I'll add that to the next version of the series.
+  WARNING: line over 80 characters
+  WARNING: space prohibited between function name and open parenthesis '('
+  ERROR: do not use C99 // comments
+  ERROR: trailing statements should be on next line
 
-> Either way:
-> 
-> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-> 
+Signed-off-by: Janet Liu <jianhua.ljh@gmail.com>
+---
+ drivers/staging/lustre/lnet/lnet/lib-md.c |   44 ++++++++++++++++-------------
+ 1 file changed, 24 insertions(+), 20 deletions(-)
 
-Thanks,
-
-	M.
+diff --git a/drivers/staging/lustre/lnet/lnet/lib-md.c b/drivers/staging/lustre/lnet/lnet/lib-md.c
+index 1f386e0..0c3f2d8 100644
+--- a/drivers/staging/lustre/lnet/lnet/lib-md.c
++++ b/drivers/staging/lustre/lnet/lnet/lib-md.c
+@@ -52,7 +52,8 @@ lnet_md_unlink(lnet_libmd_t *md)
+ 
+ 		md->md_flags |= LNET_MD_FLAG_ZOMBIE;
+ 
+-		/* Disassociate from ME (if any), and unlink it if it was created
++		/* Disassociate from ME (if any),
++		 * and unlink it if it was created
+ 		 * with LNET_UNLINK */
+ 		if (me != NULL) {
+ 			/* detach MD from portal */
+@@ -109,11 +110,12 @@ lnet_md_build(lnet_libmd_t *lmd, lnet_md_t *umd, int unlink)
+ 
+ 		lmd->md_niov = niov = umd->length;
+ 		memcpy(lmd->md_iov.iov, umd->start,
+-		       niov * sizeof (lmd->md_iov.iov[0]));
++		       niov * sizeof(lmd->md_iov.iov[0]));
+ 
+ 		for (i = 0; i < (int)niov; i++) {
+ 			/* We take the base address on trust */
+-			if (lmd->md_iov.iov[i].iov_len <= 0) /* invalid length */
++			 /* invalid length */
++			if (lmd->md_iov.iov[i].iov_len <= 0)
+ 				return -EINVAL;
+ 
+ 			total_length += lmd->md_iov.iov[i].iov_len;
+@@ -121,20 +123,21 @@ lnet_md_build(lnet_libmd_t *lmd, lnet_md_t *umd, int unlink)
+ 
+ 		lmd->md_length = total_length;
+ 
+-		if ((umd->options & LNET_MD_MAX_SIZE) != 0 && /* max size used */
+-		    (umd->max_size < 0 ||
+-		     umd->max_size > total_length)) // illegal max_size
++		if ((umd->options & LNET_MD_MAX_SIZE) != 0 && /*max size used*/
++
++			(umd->max_size < 0 ||
++			umd->max_size > total_length)) /* illegal max_size */
+ 			return -EINVAL;
+ 
+ 	} else if ((umd->options & LNET_MD_KIOV) != 0) {
+ 		lmd->md_niov = niov = umd->length;
+ 		memcpy(lmd->md_iov.kiov, umd->start,
+-		       niov * sizeof (lmd->md_iov.kiov[0]));
++		       niov * sizeof(lmd->md_iov.kiov[0]));
+ 
+ 		for (i = 0; i < (int)niov; i++) {
+ 			/* We take the page pointer on trust */
+ 			if (lmd->md_iov.kiov[i].kiov_offset +
+-			    lmd->md_iov.kiov[i].kiov_len > PAGE_CACHE_SIZE )
++			    lmd->md_iov.kiov[i].kiov_len > PAGE_CACHE_SIZE)
+ 				return -EINVAL; /* invalid length */
+ 
+ 			total_length += lmd->md_iov.kiov[i].kiov_len;
+@@ -142,9 +145,9 @@ lnet_md_build(lnet_libmd_t *lmd, lnet_md_t *umd, int unlink)
+ 
+ 		lmd->md_length = total_length;
+ 
+-		if ((umd->options & LNET_MD_MAX_SIZE) != 0 && /* max size used */
++		if ((umd->options & LNET_MD_MAX_SIZE) != 0 && /*max size used*/
+ 		    (umd->max_size < 0 ||
+-		     umd->max_size > total_length)) // illegal max_size
++		     umd->max_size > total_length)) /* illegal max_size */
+ 			return -EINVAL;
+ 	} else {   /* contiguous */
+ 		lmd->md_length = umd->length;
+@@ -152,9 +155,9 @@ lnet_md_build(lnet_libmd_t *lmd, lnet_md_t *umd, int unlink)
+ 		lmd->md_iov.iov[0].iov_base = umd->start;
+ 		lmd->md_iov.iov[0].iov_len = umd->length;
+ 
+-		if ((umd->options & LNET_MD_MAX_SIZE) != 0 && /* max size used */
++		if ((umd->options & LNET_MD_MAX_SIZE) != 0 && /*max size used*/
+ 		    (umd->max_size < 0 ||
+-		     umd->max_size > (int)umd->length)) // illegal max_size
++		     umd->max_size > (int)umd->length)) /* illegal max_size */
+ 			return -EINVAL;
+ 	}
+ 
+@@ -206,7 +209,8 @@ lnet_md_deconstruct(lnet_libmd_t *lmd, lnet_md_t *umd)
+ 	 * and that's all.
+ 	 */
+ 	umd->start = lmd->md_start;
+-	umd->length = ((lmd->md_options & (LNET_MD_IOVEC | LNET_MD_KIOV)) == 0) ?
++	umd->length = ((lmd->md_options &
++			(LNET_MD_IOVEC | LNET_MD_KIOV)) == 0) ?
+ 		      lmd->md_length : lmd->md_niov;
+ 	umd->threshold = lmd->md_threshold;
+ 	umd->max_size = lmd->md_max_size;
+@@ -263,15 +267,15 @@ int
+ LNetMDAttach(lnet_handle_me_t meh, lnet_md_t umd,
+ 	     lnet_unlink_t unlink, lnet_handle_md_t *handle)
+ {
+-	LIST_HEAD		(matches);
+-	LIST_HEAD		(drops);
++	LIST_HEAD(matches);
++	LIST_HEAD(drops);
+ 	struct lnet_me		*me;
+ 	struct lnet_libmd	*md;
+ 	int			cpt;
+ 	int			rc;
+ 
+-	LASSERT (the_lnet.ln_init);
+-	LASSERT (the_lnet.ln_refcount > 0);
++	LASSERT(the_lnet.ln_init);
++	LASSERT(the_lnet.ln_refcount > 0);
+ 
+ 	if (lnet_md_validate(&umd) != 0)
+ 		return -EINVAL;
+@@ -347,8 +351,8 @@ LNetMDBind(lnet_md_t umd, lnet_unlink_t unlink, lnet_handle_md_t *handle)
+ 	int		cpt;
+ 	int		rc;
+ 
+-	LASSERT (the_lnet.ln_init);
+-	LASSERT (the_lnet.ln_refcount > 0);
++	LASSERT(the_lnet.ln_init);
++	LASSERT(the_lnet.ln_refcount > 0);
+ 
+ 	if (lnet_md_validate(&umd) != 0)
+ 		return -EINVAL;
+@@ -416,7 +420,7 @@ EXPORT_SYMBOL(LNetMDBind);
+  * \retval -ENOENT If \a mdh does not point to a valid MD object.
+  */
+ int
+-LNetMDUnlink (lnet_handle_md_t mdh)
++LNetMDUnlink(lnet_handle_md_t mdh)
+ {
+ 	lnet_event_t	ev;
+ 	lnet_libmd_t	*md;
 -- 
-Jazz is not dead. It just smells funny...
+1.7.9.5
+
