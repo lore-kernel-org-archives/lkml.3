@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752530AbaHZQdZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 12:33:25 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:65056 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751879AbaHZQdY (ORCPT
+	id S1752561AbaHZQdr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 12:33:47 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:58262 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752088AbaHZQdp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 12:33:24 -0400
-Date: Tue, 26 Aug 2014 17:33:18 +0100
+	Tue, 26 Aug 2014 12:33:45 -0400
+Date: Tue, 26 Aug 2014 17:33:39 +0100
 From: Lee Jones <lee.jones@linaro.org>
 To: Jingoo Han <jg1.han@samsung.com>
 Cc: linux-kernel@vger.kernel.org, "'Bryan Wu'" <cooloney@gmail.com>
-Subject: Re: [PATCH 11/18] backlight: lp855x: add blank line after
- declarations
-Message-ID: <20140826163318.GM26707@lee--X1>
+Subject: Re: [PATCH 10/18] backlight: lms501kf03: remove 'else' after a return
+Message-ID: <20140826163339.GN26707@lee--X1>
 References: <009301cfc12d$2847ffd0$78d7ff70$%han@samsung.com>
- <00b501cfc12d$b5a1c280$20e54780$%han@samsung.com>
+ <00b401cfc12d$ab9f59f0$02de0dd0$%han@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <00b501cfc12d$b5a1c280$20e54780$%han@samsung.com>
+In-Reply-To: <00b401cfc12d$ab9f59f0$02de0dd0$%han@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,35 +29,45 @@ On Tue, 26 Aug 2014, Jingoo Han wrote:
 
 > Fixed the following checkpatch warning.
 > 
->   WARNING: Missing a blank line after declarations
+>   WARNING: else is not generally useful after a break or return
 > 
 > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 > ---
->  drivers/video/backlight/lp855x_bl.c | 2 ++
->  1 file changed, 2 insertions(+)
+>  drivers/video/backlight/lms501kf03.c | 12 ++++++------
+>  1 file changed, 6 insertions(+), 6 deletions(-)
 
 Acked-by: Lee Jones <lee.jones@linaro.org>
 
-> diff --git a/drivers/video/backlight/lp855x_bl.c b/drivers/video/backlight/lp855x_bl.c
-> index dcdd5443efcf..25fb8e3d75b1 100644
-> --- a/drivers/video/backlight/lp855x_bl.c
-> +++ b/drivers/video/backlight/lp855x_bl.c
-> @@ -268,6 +268,7 @@ static int lp855x_bl_update_status(struct backlight_device *bl)
->  
->  	} else if (lp->mode == REGISTER_BASED) {
->  		u8 val = bl->props.brightness;
-> +
->  		lp855x_write_byte(lp, lp->cfg->reg_brightness, val);
+> diff --git a/drivers/video/backlight/lms501kf03.c b/drivers/video/backlight/lms501kf03.c
+> index 77258b7b04be..7e3810308c3e 100644
+> --- a/drivers/video/backlight/lms501kf03.c
+> +++ b/drivers/video/backlight/lms501kf03.c
+> @@ -232,19 +232,19 @@ static int lms501kf03_power_on(struct lms501kf03 *lcd)
+>  	if (!pd->power_on) {
+>  		dev_err(lcd->dev, "power_on is NULL.\n");
+>  		return -EINVAL;
+> -	} else {
+> -		pd->power_on(lcd->ld, 1);
+> -		msleep(pd->power_on_delay);
 >  	}
 >  
-> @@ -308,6 +309,7 @@ static ssize_t lp855x_get_chip_id(struct device *dev,
->  				struct device_attribute *attr, char *buf)
->  {
->  	struct lp855x *lp = dev_get_drvdata(dev);
+> +	pd->power_on(lcd->ld, 1);
+> +	msleep(pd->power_on_delay);
 > +
->  	return scnprintf(buf, PAGE_SIZE, "%s\n", lp->chipname);
->  }
+>  	if (!pd->reset) {
+>  		dev_err(lcd->dev, "reset is NULL.\n");
+>  		return -EINVAL;
+> -	} else {
+> -		pd->reset(lcd->ld);
+> -		msleep(pd->reset_delay);
+>  	}
 >  
+> +	pd->reset(lcd->ld);
+> +	msleep(pd->reset_delay);
+> +
+>  	ret = lms501kf03_ldi_init(lcd);
+>  	if (ret) {
+>  		dev_err(lcd->dev, "failed to initialize ldi.\n");
 
 -- 
 Lee Jones
