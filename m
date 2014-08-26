@@ -1,293 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934781AbaHZKFw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 06:05:52 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:63719 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934765AbaHZKFs convert rfc822-to-8bit (ORCPT
+	id S934801AbaHZKGf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 06:06:35 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:34434 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934722AbaHZKFR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 06:05:48 -0400
+	Tue, 26 Aug 2014 06:05:17 -0400
+Message-ID: <53FC5BD2.9010504@ti.com>
+Date: Tue, 26 Aug 2014 13:05:06 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-X-Originating-IP: [217.156.156.35]
-In-Reply-To: <1407800431-21566-4-git-send-email-lauraa@codeaurora.org>
-References: <1407800431-21566-1-git-send-email-lauraa@codeaurora.org>
-	<1407800431-21566-4-git-send-email-lauraa@codeaurora.org>
-Date: Tue, 26 Aug 2014 11:05:47 +0100
-X-Google-Sender-Auth: xNmh30-MxC0wun0jmm3SpN_uCng
-Message-ID: <CAAG0J99=wrz4+c49HeDvL0W9rDZKk2HNLdVtHv4ZJxU4-OjewA@mail.gmail.com>
-Subject: Re: [PATCHv7 3/5] common: dma-mapping: Introduce common remapping functions
-From: James Hogan <james.hogan@imgtec.com>
-To: Laura Abbott <lauraa@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Will Deacon <will.deacon@arm.com>, Russell King <linux@arm.linux.org.uk>,
-        David Riley <davidriley@chromium.org>,
-        ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Ritesh Harjain <ritesh.harjani@gmail.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-next@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Julia Lawall <Julia.Lawall@lip6.fr>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: <kernel-janitors@vger.kernel.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] drivers: video: fbdev: atmel_lcdfb.c: fix error return
+ code
+References: <1407355938-10932-4-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1407355938-10932-4-git-send-email-Julia.Lawall@lip6.fr>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="l2S1fpfPIcjfpBNKcE3GKl2p2IpFlW26w"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 August 2014 00:40, Laura Abbott <lauraa@codeaurora.org> wrote:
->
-> For architectures without coherent DMA, memory for DMA may
-> need to be remapped with coherent attributes. Factor out
-> the the remapping code from arm and put it in a
-> common location to reduce code duplication.
->
-> As part of this, the arm APIs are now migrated away from
-> ioremap_page_range to the common APIs which use map_vm_area for remapping.
-> This should be an equivalent change and using map_vm_area is more
-> correct as ioremap_page_range is intended to bring in io addresses
-> into the cpu space and not regular kernel managed memory.
->
-> Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
-> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+--l2S1fpfPIcjfpBNKcE3GKl2p2IpFlW26w
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-This commit in linux-next () breaks the build for metag:
-
-drivers/base/dma-mapping.c: In function ‘dma_common_contiguous_remap’:
-drivers/base/dma-mapping.c:294: error: implicit declaration of
-function ‘dma_common_pages_remap’
-drivers/base/dma-mapping.c:294: warning: assignment makes pointer from
-integer without a cast
-drivers/base/dma-mapping.c: At top level:
-drivers/base/dma-mapping.c:308: error: conflicting types for
-‘dma_common_pages_remap’
-drivers/base/dma-mapping.c:294: error: previous implicit declaration
-of ‘dma_common_pages_remap’ was here
-
-Looks like metag isn't alone either:
-
-$ git grep -L dma-mapping-common arch/*/include/asm/dma-mapping.h
-arch/arc/include/asm/dma-mapping.h
-arch/avr32/include/asm/dma-mapping.h
-arch/blackfin/include/asm/dma-mapping.h
-arch/c6x/include/asm/dma-mapping.h
-arch/cris/include/asm/dma-mapping.h
-arch/frv/include/asm/dma-mapping.h
-arch/m68k/include/asm/dma-mapping.h
-arch/metag/include/asm/dma-mapping.h
-arch/mn10300/include/asm/dma-mapping.h
-arch/parisc/include/asm/dma-mapping.h
-arch/xtensa/include/asm/dma-mapping.h
-
-I've checked a couple of these arches (blackfin, xtensa) which don't
-include dma-mapping-common.h and their builds seem to be broken too.
-
-Cheers
-James
-
+On 06/08/14 23:12, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>=20
+> Convert a zero return value on error to a negative one, as returned
+> elsewhere in the function.
+>=20
+> A simplified version of the semantic match that finds this problem is a=
+s
+> follows: (http://coccinelle.lip6.fr/)
+>=20
+> // <smpl>
+> (
+> if@p1 (\(ret < 0\|ret !=3D 0\))
+>  { ... return ret; }
+> |
+> ret@p1 =3D 0
+> )
+> ... when !=3D ret =3D e1
+>     when !=3D &ret
+> *if(...)
+> {
+>   ... when !=3D ret =3D e2
+>       when forall
+>  return ret;
+> }
+>=20
+> // </smpl>
+>=20
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+>=20
 > ---
->  arch/arm/mm/dma-mapping.c                | 57 +++++---------------------
->  drivers/base/dma-mapping.c               | 68 ++++++++++++++++++++++++++++++++
->  include/asm-generic/dma-mapping-common.h |  9 +++++
->  3 files changed, 86 insertions(+), 48 deletions(-)
->
-> diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-> index 4c88935..f5190ac 100644
-> --- a/arch/arm/mm/dma-mapping.c
-> +++ b/arch/arm/mm/dma-mapping.c
-> @@ -297,37 +297,19 @@ static void *
->  __dma_alloc_remap(struct page *page, size_t size, gfp_t gfp, pgprot_t prot,
->         const void *caller)
->  {
-> -       struct vm_struct *area;
-> -       unsigned long addr;
-> -
->         /*
->          * DMA allocation can be mapped to user space, so lets
->          * set VM_USERMAP flags too.
->          */
-> -       area = get_vm_area_caller(size, VM_ARM_DMA_CONSISTENT | VM_USERMAP,
-> -                                 caller);
-> -       if (!area)
-> -               return NULL;
-> -       addr = (unsigned long)area->addr;
-> -       area->phys_addr = __pfn_to_phys(page_to_pfn(page));
-> -
-> -       if (ioremap_page_range(addr, addr + size, area->phys_addr, prot)) {
-> -               vunmap((void *)addr);
-> -               return NULL;
-> -       }
-> -       return (void *)addr;
-> +       return dma_common_contiguous_remap(page, size,
-> +                       VM_ARM_DMA_CONSISTENT | VM_USERMAP,
-> +                       prot, caller);
->  }
->
->  static void __dma_free_remap(void *cpu_addr, size_t size)
->  {
-> -       unsigned int flags = VM_ARM_DMA_CONSISTENT | VM_USERMAP;
-> -       struct vm_struct *area = find_vm_area(cpu_addr);
-> -       if (!area || (area->flags & flags) != flags) {
-> -               WARN(1, "trying to free invalid coherent area: %p\n", cpu_addr);
-> -               return;
-> -       }
-> -       unmap_kernel_range((unsigned long)cpu_addr, size);
-> -       vunmap(cpu_addr);
-> +       dma_common_free_remap(cpu_addr, size,
-> +                       VM_ARM_DMA_CONSISTENT | VM_USERMAP);
->  }
->
->  #define DEFAULT_DMA_COHERENT_POOL_SIZE SZ_256K
-> @@ -1261,29 +1243,8 @@ static void *
->  __iommu_alloc_remap(struct page **pages, size_t size, gfp_t gfp, pgprot_t prot,
->                     const void *caller)
->  {
-> -       unsigned int i, nr_pages = PAGE_ALIGN(size) >> PAGE_SHIFT;
-> -       struct vm_struct *area;
-> -       unsigned long p;
-> -
-> -       area = get_vm_area_caller(size, VM_ARM_DMA_CONSISTENT | VM_USERMAP,
-> -                                 caller);
-> -       if (!area)
-> -               return NULL;
-> -
-> -       area->pages = pages;
-> -       area->nr_pages = nr_pages;
-> -       p = (unsigned long)area->addr;
-> -
-> -       for (i = 0; i < nr_pages; i++) {
-> -               phys_addr_t phys = __pfn_to_phys(page_to_pfn(pages[i]));
-> -               if (ioremap_page_range(p, p + PAGE_SIZE, phys, prot))
-> -                       goto err;
-> -               p += PAGE_SIZE;
-> -       }
-> -       return area->addr;
-> -err:
-> -       unmap_kernel_range((unsigned long)area->addr, size);
-> -       vunmap(area->addr);
-> +       return dma_common_pages_remap(pages, size,
-> +                       VM_ARM_DMA_CONSISTENT | VM_USERMAP, prot, caller);
->         return NULL;
->  }
->
-> @@ -1491,8 +1452,8 @@ void arm_iommu_free_attrs(struct device *dev, size_t size, void *cpu_addr,
->         }
->
->         if (!dma_get_attr(DMA_ATTR_NO_KERNEL_MAPPING, attrs)) {
-> -               unmap_kernel_range((unsigned long)cpu_addr, size);
-> -               vunmap(cpu_addr);
-> +               dma_common_free_remap(cpu_addr, size,
-> +                       VM_ARM_DMA_CONSISTENT | VM_USERMAP);
->         }
->
->         __iommu_remove_mapping(dev, handle, size);
-> diff --git a/drivers/base/dma-mapping.c b/drivers/base/dma-mapping.c
-> index 6cd08e1..1bc46df 100644
-> --- a/drivers/base/dma-mapping.c
-> +++ b/drivers/base/dma-mapping.c
-> @@ -10,6 +10,8 @@
->  #include <linux/dma-mapping.h>
->  #include <linux/export.h>
->  #include <linux/gfp.h>
-> +#include <linux/slab.h>
-> +#include <linux/vmalloc.h>
->  #include <asm-generic/dma-coherent.h>
->
->  /*
-> @@ -267,3 +269,69 @@ int dma_common_mmap(struct device *dev, struct vm_area_struct *vma,
->         return ret;
->  }
->  EXPORT_SYMBOL(dma_common_mmap);
-> +
-> +/*
-> + * remaps an allocated contiguous region into another vm_area.
-> + * Cannot be used in non-sleeping contexts
-> + */
-> +
-> +void *dma_common_contiguous_remap(struct page *page, size_t size,
-> +                       unsigned long vm_flags,
-> +                       pgprot_t prot, const void *caller)
-> +{
-> +       int i;
-> +       struct page **pages;
-> +       void *ptr;
-> +       unsigned long pfn;
-> +
-> +       pages = kmalloc(sizeof(struct page *) << get_order(size), GFP_KERNEL);
-> +       if (!pages)
-> +               return NULL;
-> +
-> +       for (i = 0, pfn = page_to_pfn(page); i < (size >> PAGE_SHIFT); i++)
-> +               pages[i] = pfn_to_page(pfn + i);
-> +
-> +       ptr = dma_common_pages_remap(pages, size, vm_flags, prot, caller);
-> +
-> +       kfree(pages);
-> +
-> +       return ptr;
-> +}
-> +
-> +/*
-> + * remaps an array of PAGE_SIZE pages into another vm_area
-> + * Cannot be used in non-sleeping contexts
-> + */
-> +void *dma_common_pages_remap(struct page **pages, size_t size,
-> +                       unsigned long vm_flags, pgprot_t prot,
-> +                       const void *caller)
-> +{
-> +       struct vm_struct *area;
-> +
-> +       area = get_vm_area_caller(size, vm_flags, caller);
-> +       if (!area)
-> +               return NULL;
-> +
-> +       if (map_vm_area(area, prot, pages)) {
-> +               vunmap(area->addr);
-> +               return NULL;
-> +       }
-> +
-> +       return area->addr;
-> +}
-> +
-> +/*
-> + * unmaps a range previously mapped by dma_common_*_remap
-> + */
-> +void dma_common_free_remap(void *cpu_addr, size_t size, unsigned long vm_flags)
-> +{
-> +       struct vm_struct *area = find_vm_area(cpu_addr);
-> +
-> +       if (!area || (area->flags & vm_flags) != vm_flags) {
-> +               WARN(1, "trying to free invalid coherent area: %p\n", cpu_addr);
-> +               return;
-> +       }
-> +
-> +       unmap_kernel_range((unsigned long)cpu_addr, size);
-> +       vunmap(cpu_addr);
-> +}
-> diff --git a/include/asm-generic/dma-mapping-common.h b/include/asm-generic/dma-mapping-common.h
-> index de8bf89..a9fd248 100644
-> --- a/include/asm-generic/dma-mapping-common.h
-> +++ b/include/asm-generic/dma-mapping-common.h
-> @@ -179,6 +179,15 @@ dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg,
->  extern int dma_common_mmap(struct device *dev, struct vm_area_struct *vma,
->                            void *cpu_addr, dma_addr_t dma_addr, size_t size);
->
-> +void *dma_common_contiguous_remap(struct page *page, size_t size,
-> +                       unsigned long vm_flags,
-> +                       pgprot_t prot, const void *caller);
-> +
-> +void *dma_common_pages_remap(struct page **pages, size_t size,
-> +                       unsigned long vm_flags, pgprot_t prot,
-> +                       const void *caller);
-> +void dma_common_free_remap(void *cpu_addr, size_t size, unsigned long vm_flags);
-> +
->  /**
->   * dma_mmap_attrs - map a coherent DMA allocation into user space
->   * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
-> --
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> The error codes chosen are the ones that are commonly used elsewhere or=
+
+> these functions.  Perhaps something else is wanted.
+>=20
+>  drivers/video/fbdev/atmel_lcdfb.c |    2 ++
+>  1 file changed, 2 insertions(+)
+>=20
+> diff --git a/drivers/video/fbdev/atmel_lcdfb.c b/drivers/video/fbdev/at=
+mel_lcdfb.c
+> index 92640d4..1d8bdb9 100644
+> --- a/drivers/video/fbdev/atmel_lcdfb.c
+> +++ b/drivers/video/fbdev/atmel_lcdfb.c
+> @@ -1102,12 +1102,14 @@ static int atmel_lcdfb_of_init(struct atmel_lcd=
+fb_info *sinfo)
+>  	timings =3D of_get_display_timings(display_np);
+>  	if (!timings) {
+>  		dev_err(dev, "failed to get display timings\n");
+> +		ret =3D -EINVAL;
+>  		goto put_display_node;
+>  	}
+> =20
+>  	timings_np =3D of_find_node_by_name(display_np, "display-timings");
+>  	if (!timings_np) {
+>  		dev_err(dev, "failed to find display-timings node\n");
+> +		ret =3D -ENODEV;
+>  		goto put_display_node;
+>  	}
+> =20
+>=20
+
+Thanks, queued for 3.17 fbdev fixes.
+
+ Tomi
+
+
+
+--l2S1fpfPIcjfpBNKcE3GKl2p2IpFlW26w
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT/FvSAAoJEPo9qoy8lh71+6YQAIj9XZAZSXAWssvH/txMAAP3
+AbHih3AUdtoI6dCcFCR732zWPSxIIOz8IeC9BhkDkkamX1ZO8IyuU9YWxj+15Xko
+ovqr1vX8/+fAumYyu7kpMHnSz9ivto/TVJiKvBuaQdgy1tlqJSYqevv9K7IJpoNz
+U+yrVt8ASKG23LB5LVGmHgALoNNx8TDbn4eWs7hn9ONneKmv1lhVMgvE73u24hrv
+Vjttc9Bnf/2FQ0WtUa8emylWtlltMQHP/d5iycjgNyoTLvdmP5g1DT5gOBcpCpA4
+lpRIUWR1REc08i3g/21zNiXTOKdKYERPzgMkk7pH1tBb2UbizZ+dHU6SoOTgOPJq
+EK5VWpl14rm5RfzncEf7yOvItPb7G01le/s4B0h/sfrFaqAW+z0Pai5kqkIHMHsc
+q3kvWhJFW+k5x/W6bJGD6eWUN/kRkRrOsTCIoUDl0KGm59Qnj4nRvpqsfqLFuGsp
+9a7fjze9N+fPQKe42LdE/nXYM6qUcO0dY91zorMWXKl8F5uUzx/KNKkI9y0uxOvF
+0M9Fz8MWxUJbTsVo7muhFg9F9jv6sEZ/gOSjRB1AlL53g6pS3+/kNPJ1hDlE3KlN
+9Qp2SSV/NCzqcmNc36rzgxiEI7D4bfJZE9eBX1/uxCv0Fnpu3cNi1uE7irSBZVRN
+9ByBMA2mVmTXXOo+AzSR
+=bkgu
+-----END PGP SIGNATURE-----
+
+--l2S1fpfPIcjfpBNKcE3GKl2p2IpFlW26w--
