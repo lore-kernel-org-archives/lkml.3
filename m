@@ -1,62 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934251AbaHZJg0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 05:36:26 -0400
-Received: from 8bytes.org ([81.169.241.247]:55285 "EHLO theia.8bytes.org"
+	id S934231AbaHZJhF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 05:37:05 -0400
+Received: from mail.eperm.de ([89.247.134.16]:46934 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754193AbaHZJgX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 05:36:23 -0400
-From: Joerg Roedel <joro@8bytes.org>
-To: iommu@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Joerg Roedel <jroedel@suse.de>
-Subject: [PATCH 4/4] iommu/amd: Remove device binding reference count
-Date: Tue, 26 Aug 2014 11:36:14 +0200
-Message-Id: <1409045774-32000-5-git-send-email-joro@8bytes.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1409045774-32000-1-git-send-email-joro@8bytes.org>
-References: <1409045774-32000-1-git-send-email-joro@8bytes.org>
+	id S932497AbaHZJhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 05:37:02 -0400
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] DRBG: fix maximum value checks on 32 bit systems
+Date: Tue, 26 Aug 2014 11:36:54 +0200
+Message-ID: <1471416.zGlxQVbHUr@myon.chronox.de>
+User-Agent: KMail/4.13.3 (Linux/3.15.10-200.fc20.x86_64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <20140826085853.GA4646@gondor.apana.org.au>
+References: <20140826161456.7ad100e3@canb.auug.org.au> <2049245.HpByroTSUp@myon.chronox.de> <20140826085853.GA4646@gondor.apana.org.au>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joerg Roedel <jroedel@suse.de>
+Am Dienstag, 26. August 2014, 16:58:53 schrieb Herbert Xu:
 
-This reference count is not used anymore, as all devices in
-an alias group are now attached and detached together.
+Hi Herbert,
 
-Signed-off-by: Joerg Roedel <jroedel@suse.de>
----
- drivers/iommu/amd_iommu.c | 3 ---
- 1 file changed, 3 deletions(-)
+> On Tue, Aug 26, 2014 at 10:52:45AM +0200, Stephan Mueller wrote:
+> > Am Dienstag, 26. August 2014, 16:43:43 schrieb Herbert Xu:
+> > 
+> > Hi Herbert,
+> > 
+> > > On Tue, Aug 26, 2014 at 10:29:45AM +0200, Stephan Mueller wrote:
+> > > > The maximum values for additional input string or generated blocks is
+> > > > larger than 1<<32. To ensure a sensible value on 32 bit systems,
+> > > > return
+> > > > SIZE_MAX on 32 bit systems. This value is lower than the maximum
+> > > > allowed values defined in SP800-90A. The standard allow lower maximum
+> > > > values, but not larger values.
+> > > > 
+> > > > SIZE_MAX - 1 is used for drbg_max_addtl to allow
+> > > > drbg_healthcheck_sanity to check the enforcement of the variable
+> > > > without wrapping.
+> > > 
+> > > This is really ugly but OK.  However, I'm not sure how the sanity
+> > > check ever worked.  It would appear that the drbg_generate call in
+> > > drbg_healthcheck_sanity should always fail because you explicitly
+> > > set addtl->len to drbg_max_addtl + 1, which should trigger the
+> > > "DRBG: additional information string too long" error, no?
+> > 
+> > That is exactly what the test shall do: the test is intended to check
+> > whether the maximum values are enforced. And it does that by checking
+> > whether an error is returned.
+> 
+> OK that makes sense.  Patch applied.  Thanks!
 
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index a5e6b0a..989c1ae 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -96,7 +96,6 @@ struct iommu_dev_data {
- 	struct list_head alias_list;      /* Link alias-groups together */
- 	struct iommu_dev_data *alias_data;/* The alias dev_data */
- 	struct protection_domain *domain; /* Domain the device is bound to */
--	atomic_t bind;			  /* Domain attach reference count */
- 	u16 devid;			  /* PCI Device ID */
- 	bool iommu_v2;			  /* Device can make use of IOMMUv2 */
- 	bool passthrough;		  /* Default for device is pt_domain */
-@@ -139,7 +138,6 @@ static struct iommu_dev_data *alloc_dev_data(u16 devid)
- 	INIT_LIST_HEAD(&dev_data->alias_list);
- 
- 	dev_data->devid = devid;
--	atomic_set(&dev_data->bind, 0);
- 
- 	spin_lock_irqsave(&dev_data_list_lock, flags);
- 	list_add_tail(&dev_data->dev_data_list, &dev_data_list);
-@@ -3179,7 +3177,6 @@ static void cleanup_domain(struct protection_domain *domain)
- 		entry = list_first_entry(&domain->dev_list,
- 					 struct iommu_dev_data, list);
- 		__detach_device(entry);
--		atomic_set(&entry->bind, 0);
- 	}
- 
- 	write_unlock_irqrestore(&amd_iommu_devtable_lock, flags);
+I am wondering about the current code in Linus' tree though considering the 
+applied patch:
+
+Linus' code contains:
+
+static inline size_t drbg_max_addtl(struct drbg_state *drbg)
+{
+        return (1UL<<(drbg->core->max_addtllen));
+}
+
+static inline size_t drbg_max_requests(struct drbg_state *drbg)
+{
+        return (1UL<<(drbg->core->max_req));
+}
+
+The max_addtllen and max_req are defined in drbg_cores[] in crypto/drbg.c for 
+each DRBG type. As size_t on a 32 bit system is 32 bit the bit shifts would 
+not work either.
+
+Thus, I am wondering whether the just applied patch would need to go to Linus 
+tree too? I would think that the following patch would be in order:
+
+static inline size_t drbg_max_addtl(struct drbg_state *drbg)
+{
+#if (__BITS_PER_LONG == 32)
+        return (SIZE_MAX - 1);
+#else
+        return (1UL<<(drbg->core->max_addtllen));
+#endif
+}
+
+static inline size_t drbg_max_requests(struct drbg_state *drbg)
+{
+#if (__BITS_PER_LONG == 32)
+        return SIZE_MAX;
+#else
+        return (1UL<<(drbg->core->max_req));
+#endif
+}
+
+
 -- 
-1.9.1
-
+Ciao
+Stephan
