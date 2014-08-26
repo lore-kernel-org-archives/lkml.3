@@ -1,119 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757920AbaHZLK5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 07:10:57 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:61051 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757591AbaHZLHs (ORCPT
+	id S1757939AbaHZLLP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 07:11:15 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:51086 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757647AbaHZLLL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 07:07:48 -0400
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        preeti@linux.vnet.ibm.com, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org
-Cc: riel@redhat.com, Morten.Rasmussen@arm.com, efault@gmx.de,
-        nicolas.pitre@linaro.org, linaro-kernel@lists.linaro.org,
-        daniel.lezcano@linaro.org, dietmar.eggemann@arm.com,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [PATCH v5 02/12] sched: remove a wake_affine condition
-Date: Tue, 26 Aug 2014 13:06:45 +0200
-Message-Id: <1409051215-16788-3-git-send-email-vincent.guittot@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
-References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
+	Tue, 26 Aug 2014 07:11:11 -0400
+Date: Tue, 26 Aug 2014 13:11:08 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Mikko Perttunen <mperttunen@nvidia.com>
+Cc: tj@kernel.org, swarren@wwwdotorg.org, linux-ide@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] ata: ahci_tegra: Read calibration fuse
+Message-ID: <20140826111107.GB31350@ulmo>
+References: <1409043630-9674-1-git-send-email-mperttunen@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Fba/0zbH8Xs+Fj9o"
+Content-Disposition: inline
+In-Reply-To: <1409043630-9674-1-git-send-email-mperttunen@nvidia.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have tried to understand the meaning of the condition :
- (this_load <= load &&
-  this_load + target_load(prev_cpu, idx) <= tl_per_task)
-but i failed to find a use case that can take advantage of it and i haven't
-found clear description in the previous commits' log.
-Futhermore, the comment of the condition refers to the task_hot function that
-was used before being replaced by the current condition:
-/*
- * This domain has SD_WAKE_AFFINE and
- * p is cache cold in this domain, and
- * there is no bad imbalance.
- */
 
-If we look more deeply the below condition
- this_load + target_load(prev_cpu, idx) <= tl_per_task
+--Fba/0zbH8Xs+Fj9o
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-When sync is clear, we have :
- tl_per_task = runnable_load_avg / nr_running
- this_load = max(runnable_load_avg, cpuload[idx])
- target_load =  max(runnable_load_avg', cpuload'[idx])
+On Tue, Aug 26, 2014 at 12:00:30PM +0300, Mikko Perttunen wrote:
+> The original version of the driver did not read the SATA calibration
+> fuse to remove the dependency to the fuse driver. The fuse driver
+> is now merged, so add this functionality.
+>=20
+> The calibration fuse contains a 2-bit value used to pick a set
+> of calibration values for the SATA pad.
+>=20
+> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+> ---
+> v2: reordered and separated includes
+>=20
+>  drivers/ata/ahci_tegra.c | 14 ++++++++++----
+>  1 file changed, 10 insertions(+), 4 deletions(-)
 
-It implies that runnable_load_avg' == 0 and nr_running <= 1 in order to match the
-condition. This implies that runnable_load_avg == 0 too because of the
-condition: this_load <= load
-but if this _load is null, balanced is already set and the test is redundant.
+Acked-by: Thierry Reding <treding@nvidia.com>
 
-If sync is set, it's not as straight forward as above (especially if cgroup
-are involved) but the policy should be similar as we have removed a task that's
-going to sleep in order to get a more accurate load and this_load values.
+--Fba/0zbH8Xs+Fj9o
+Content-Type: application/pgp-signature
 
-The current conclusion is that these additional condition don't give any benefit
-so we can remove them.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
----
- kernel/sched/fair.c | 30 ++++++------------------------
- 1 file changed, 6 insertions(+), 24 deletions(-)
+iQIcBAEBAgAGBQJT/GtLAAoJEN0jrNd/PrOh89cP/R9q31XB0bPVjOC4VkztVCaX
+IkeMUIX9mGiYRjgtluMAO1wzwXKu09b9ugoSEObxX6/1XzSFa2+Rtop1U9M/x2Kc
+E9Ucj8/BHVvHYftaP0VJqkJqdDox6AxBKqn11mDUyWhz7mDlNJD8ehlUppVOKMHJ
++xH8FByYOaguryDWmZ0BWHFUJZXmpJrZGGbAm+e8mEDgSoeb9x9qY0NgYAWE+MJ0
+wEeT2pZe9YyWxvViHiipBeG3iw216MGQwu2KEkVkLP7pnbg6bxmrob3AcqJEbP+D
+KrU1Gsb5unTV3NeGRP9t72PAU3Lt/xh5E79ezheZ+S6zLnRcswoEcB3XaMjgk20+
+9johSLjemt6cqzWkOpU2UUlARBXem0QcmoyI45vNJG7suRi2zLKyfOLH2EXfv6h5
+/+Z/EhV+Nm/DI7fCDABhegkF/6mugzNFMAwrbgIt0pnbrVjgNVbuMf8rSFSMkplr
+mRkR1BGX60M8lLeGEivd86va4QuylQoZBYLApTWDVC2BptNf1mO/8XoPGioivyB4
+MlE78V2Uk8QFFcPkeIbjK5D7oRnKYmUd/LFZNv8eqV+w7wdYD0i5R5zDY8REzAJd
+ZzKkbIUHRRFGMf0AZHUE8BnWJ2mZpph62BqIkO5zEh554xgiNbZppd+YcyyaPBNK
+2su8qkRB1nTI0c08wLv5
+=Hqcb
+-----END PGP SIGNATURE-----
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 085e853..87b9dc7 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4282,7 +4282,6 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- {
- 	s64 this_load, load;
- 	int idx, this_cpu, prev_cpu;
--	unsigned long tl_per_task;
- 	struct task_group *tg;
- 	unsigned long weight;
- 	int balanced;
-@@ -4340,32 +4339,15 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- 		balanced = this_eff_load <= prev_eff_load;
- 	} else
- 		balanced = true;
--
--	/*
--	 * If the currently running task will sleep within
--	 * a reasonable amount of time then attract this newly
--	 * woken task:
--	 */
--	if (sync && balanced)
--		return 1;
--
- 	schedstat_inc(p, se.statistics.nr_wakeups_affine_attempts);
--	tl_per_task = cpu_avg_load_per_task(this_cpu);
- 
--	if (balanced ||
--	    (this_load <= load &&
--	     this_load + target_load(prev_cpu, idx) <= tl_per_task)) {
--		/*
--		 * This domain has SD_WAKE_AFFINE and
--		 * p is cache cold in this domain, and
--		 * there is no bad imbalance.
--		 */
--		schedstat_inc(sd, ttwu_move_affine);
--		schedstat_inc(p, se.statistics.nr_wakeups_affine);
-+	if (!balanced)
-+		return 0;
- 
--		return 1;
--	}
--	return 0;
-+	schedstat_inc(sd, ttwu_move_affine);
-+	schedstat_inc(p, se.statistics.nr_wakeups_affine);
-+
-+	return 1;
- }
- 
- /*
--- 
-1.9.1
-
+--Fba/0zbH8Xs+Fj9o--
