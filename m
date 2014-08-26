@@ -1,103 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933826AbaHZHpm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 03:45:42 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:53958 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757198AbaHZHpk (ORCPT
+	id S933901AbaHZHqG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 03:46:06 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:58774 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933859AbaHZHqD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 03:45:40 -0400
-Date: Tue, 26 Aug 2014 09:45:34 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: David Miller <davem@davemloft.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Brendan Gregg <brendan.d.gregg@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 net-next 4/6] bpf: enable bpf syscall on x64 and i386
-Message-ID: <20140826074534.GA19799@gmail.com>
-References: <1409014858-1410-1-git-send-email-ast@plumgrid.com>
- <1409014858-1410-5-git-send-email-ast@plumgrid.com>
- <20140825.180718.137768107010295086.davem@davemloft.net>
- <CAMEtUuy1DXFMABAg2Uup5HtqmiJHw0WR=or-z9CfpVMscrVcVg@mail.gmail.com>
+	Tue, 26 Aug 2014 03:46:03 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Andrew Bresticker <abrestic@chromium.org>, linux-tegra@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH v2 2/9] mailbox: Add NVIDIA Tegra XUSB mailbox driver
+Date: Tue, 26 Aug 2014 09:43:50 +0200
+Message-ID: <3804028.YQzQ4uAVsf@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140826065729.GC15573@ulmo>
+References: <1408381705-3623-1-git-send-email-abrestic@chromium.org> <53FB8820.4010202@wwwdotorg.org> <20140826065729.GC15573@ulmo>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMEtUuy1DXFMABAg2Uup5HtqmiJHw0WR=or-z9CfpVMscrVcVg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:gRlHVcPYhPT42nBUPiyvzux3TX/XjO1XEwNXkmAfnAH
+ glnEGf1GXhKoAbLT3tf3RiEi4NE5nF0m6x49dlh//+Kqvis7he
+ yb+xad9U0UuCJ69wzUnSoldoEqgWkD9aLGqnkXuAlLCEGzUnof
+ 7dBkwGWQN9and1P9f69FsYgLvNfsEIhbKEVzvQwhLoV1lGZIAi
+ hzifBzxUzhH1gQ6WfD8IpzO4rpoiL4i+GXjOZkgx9+r/NYHJrd
+ x/gE9Ts7sMb8pt+kXkVI6j9B9DyqccVhzuf/Ga4f7Ot8VQ0Ho/
+ 8YG7pUkV4a38+403MfKSQZ16RrxOi23cz70G0HI2A57jV6WqtO
+ xjphABNhYh0fwtoPO+NE=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Alexei Starovoitov <ast@plumgrid.com> wrote:
-
-> On Mon, Aug 25, 2014 at 6:07 PM, David Miller <davem@davemloft.net> wrote:
-> > From: Alexei Starovoitov <ast@plumgrid.com>
-> > Date: Mon, 25 Aug 2014 18:00:56 -0700
-> >
-> >> -
-> >> +asmlinkage long sys_bpf(int cmd, unsigned long arg2, unsigned long arg3,
-> >> +                     unsigned long arg4, unsigned long arg5);
-> >
-> > Please do not add interfaces with opaque types as arguments.
-> >
-> > It is impossible for the compiler to type check the args at
-> > compile time when userspace tries to use this stuff.
+On Tuesday 26 August 2014 08:57:31 Thierry Reding wrote:
+> On Mon, Aug 25, 2014 at 01:01:52PM -0600, Stephen Warren wrote:
+> > On 08/18/2014 11:08 AM, Andrew Bresticker wrote:
+> [...]
+> > >+static int tegra_xusb_mbox_probe(struct platform_device *pdev)
+> > 
+> > >+    res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> > >+    if (!res)
+> > >+            return -ENODEV;
+> > 
+> > Should devm_request_mem_region() be called here to claim the region?
+> > 
+> > >+    mbox->regs = devm_ioremap_nocache(&pdev->dev, res->start,
+> > >+                                      resource_size(res));
+> > >+    if (!mbox->regs)
+> > >+            return -ENOMEM;
+> > 
+> > Is _nocache required? I don't see other drivers using it. I assume there's
+> > nothing special about the mbox registers.
 > 
-> I share this concern. I went with single BPF syscall, because
-> alternative is 6 syscalls for every command and more
-> syscalls in the future when we'd need to add another command.
+> Most drivers should be using devm_ioremap_resource() which will use the
+> _nocache variant of devm_ioremap() when appropriate. Usually the region
+> will not be marked cacheable (IORESOURCE_CACHEABLE) and therefore be
+> remapped uncached.
+> 
 
-We had a similar problem growing the perf syscall - and we were 
-able to hold to a single syscall, which I think has served us 
-well. Had we gone with a per functionality syscall we'd have 
-something like a dozen syscalls today, scattered all around 
-non-continuously in the syscall space on most platforms.
+Note that ioremap() and ioremap_nocache() are the same. We really shouldn't
+ever call ioremap_nocache().
 
-But note that 'opaque or non-opaque' is a false dichotomy, as 
-there are 3 options in reality: what we used instead of an opaque 
-type was an extensible data type, and extensible C structure, 
-with structure size expectations part of the structure.
+devm_ioremap_resource() and pci_iomap() checking for IORESOURCE_CACHEABLE is
+rather silly, since it doesn't call ioremap_cache() in that case.
 
-See 'struct perf_event_attr':
-
-SYSCALL_DEFINE5(perf_event_open,
-                struct perf_event_attr __user *, attr_uptr,
-                pid_t, pid, int, cpu, int, group_fd, unsigned long, flags)
-
-That way new versions of the data type are immediately obvious to 
-the kernel, and compatibility can be handled well. Smaller, 
-previous versions received from old user-space are padded out 
-transparently to the kernel's value of the structure, with zeroes 
-filled in.
-
-See perf_copy_attr() in kernel/events/core.c. Instead of 
-versioning the structure, we use its size as a finegrained and 
-robust version indicator in essence.
-
-That way it's both forwards and backwards compatible, as much as 
-possible technically: old kernel can run new user-space, and new 
-user-space will be able to take advantage of as much of an old 
-kernel's capabilities as possible, and in the typical case of 
-version match there's no extra overhead worth speaking of.
-
-This way we were able to gradually grow to the sophisticated ABI 
-you can find in include/uapi/linux/perf_event.h, without having 
-to touch the syscall interface. (It's not the only method: we 
-also have a handful of ioctls, where that's the most natural 
-interface for a perf event fd.)
-
-Thanks,
-
-	Ingo
+	Arnd
