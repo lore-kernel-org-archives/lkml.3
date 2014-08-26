@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757467AbaHZHm1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 03:42:27 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:19012 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757198AbaHZHmZ (ORCPT
+	id S1757482AbaHZHnn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 03:43:43 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:43392 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757198AbaHZHnk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 03:42:25 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 26 Aug 2014 00:32:24 -0700
-Message-ID: <53FC3A5D.8030708@nvidia.com>
-Date: Tue, 26 Aug 2014 10:42:21 +0300
-From: Mikko Perttunen <mperttunen@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 26 Aug 2014 03:43:40 -0400
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>, <pdeschrijver@nvidia.com>,
-        <pgaikwad@nvidia.com>, <mturquette@linaro.org>,
-        <thierry.reding@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 0/8] Tegra124 EMC (external memory controller) support
-References: <1405088313-20048-1-git-send-email-mperttunen@nvidia.com> <53FB7511.9090205@wwwdotorg.org>
-In-Reply-To: <53FB7511.9090205@wwwdotorg.org>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1408969564-6335-11-git-send-email-ulf.hansson@linaro.org>
+References: <1408969564-6335-1-git-send-email-ulf.hansson@linaro.org>
+	<1408969564-6335-11-git-send-email-ulf.hansson@linaro.org>
+Date: Tue, 26 Aug 2014 09:43:39 +0200
+X-Google-Sender-Auth: moghWhFvzYxWnkd_lLuFy2M0ODY
+Message-ID: <CAMuHMdW-+xGKmcDSNjzS6MBB9ZnQ1FVrCeM82kyr5SgO-nPr0Q@mail.gmail.com>
+Subject: Re: [PATCH 10/12] mmc: sdhi: Fixup system PM suspend lock-up
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Linux MMC List <linux-mmc@vger.kernel.org>,
+        Ian Molton <ian.molton@codethink.co.uk>, Chris Ball <chris@printf.net>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/08/14 20:40, Stephen Warren wrote:
-> On 07/11/2014 08:18 AM, Mikko Perttunen wrote:
->> Hi everyone,
->>
->> this series adds support for the EMC (external memory controller) clock
->> in the Tegra124 system-on-chip. The series has been tested on Jetson TK1.
->>
->> The first two patches remove the old "emc_mux" and "emc" clocks from the
->> clock tree and the device tree bindings. This is, of course, not
->> backwards
->> compatible, but as these clocks have never been useful for anything
->> (apart from maybe reading the boot rate of the EMC clock). If this is
->> still
->> not acceptable, the second patch can be dropped.
-> ...
+On Mon, Aug 25, 2014 at 2:26 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+> At system PM suspend, the tmio core accessed the internal registers of
+> the controller without first moving the device into active state. This
+> caused a lock-up in system PM suspend phase.
 >
-> Mikko, this series had some comments, especially on the DT binding
-> (patch 5/8) and how the MC/EMC drivers interact. Is there an updated
-> version of the series? Or, is the series replaced by Tomeu Vizoso's work?
+> The reason for the register access were masking of IRQs. Since that is
+> managed via the runtime PM suspend path, let's just re-use that path
+> for system PM suspend.
+>
+> In other words force the device into runtime PM suspend state at system
+> PM suspend and restore it to active state at system PM resume.
+>
+> Reported-by: Geert Uytterhoeven <geert+renesas@glider.be>
+> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
 
-Yes, I have a v2 with these comments addressed. One concern, though, is 
-the part writing to CLK_SOURCE_EMC. If some other driver also wants to 
-read this register (MC, likely), we might need to have an API for it in 
-the CAR driver. On the other hand, maybe not, since it's only one 
-register. Thierry?
+Tested-by: Geert Uytterhoeven <geert+renesas@glider.be>
 
-Another point is that v2 adds a new API to the MC driver, which also 
-doesn't exist yet. The EMC driver can technically work without the MC 
-driver (but with a header for MC added), but I'm not sure the result 
-would be very useful.
+Gr{oetje,eeting}s,
 
-I believe the plan is that Tomeu's EMC code will be integrated into this 
-EMC driver once both are ready.
+                        Geert
 
-Mikko
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
