@@ -1,55 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757482AbaHZHnn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 03:43:43 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:43392 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757198AbaHZHnk (ORCPT
+	id S933826AbaHZHpm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 03:45:42 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:53958 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757198AbaHZHpk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 03:43:40 -0400
+	Tue, 26 Aug 2014 03:45:40 -0400
+Date: Tue, 26 Aug 2014 09:45:34 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: David Miller <davem@davemloft.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Brendan Gregg <brendan.d.gregg@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 net-next 4/6] bpf: enable bpf syscall on x64 and i386
+Message-ID: <20140826074534.GA19799@gmail.com>
+References: <1409014858-1410-1-git-send-email-ast@plumgrid.com>
+ <1409014858-1410-5-git-send-email-ast@plumgrid.com>
+ <20140825.180718.137768107010295086.davem@davemloft.net>
+ <CAMEtUuy1DXFMABAg2Uup5HtqmiJHw0WR=or-z9CfpVMscrVcVg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1408969564-6335-11-git-send-email-ulf.hansson@linaro.org>
-References: <1408969564-6335-1-git-send-email-ulf.hansson@linaro.org>
-	<1408969564-6335-11-git-send-email-ulf.hansson@linaro.org>
-Date: Tue, 26 Aug 2014 09:43:39 +0200
-X-Google-Sender-Auth: moghWhFvzYxWnkd_lLuFy2M0ODY
-Message-ID: <CAMuHMdW-+xGKmcDSNjzS6MBB9ZnQ1FVrCeM82kyr5SgO-nPr0Q@mail.gmail.com>
-Subject: Re: [PATCH 10/12] mmc: sdhi: Fixup system PM suspend lock-up
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Linux MMC List <linux-mmc@vger.kernel.org>,
-        Ian Molton <ian.molton@codethink.co.uk>, Chris Ball <chris@printf.net>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMEtUuy1DXFMABAg2Uup5HtqmiJHw0WR=or-z9CfpVMscrVcVg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 2:26 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
-> At system PM suspend, the tmio core accessed the internal registers of
-> the controller without first moving the device into active state. This
-> caused a lock-up in system PM suspend phase.
->
-> The reason for the register access were masking of IRQs. Since that is
-> managed via the runtime PM suspend path, let's just re-use that path
-> for system PM suspend.
->
-> In other words force the device into runtime PM suspend state at system
-> PM suspend and restore it to active state at system PM resume.
->
-> Reported-by: Geert Uytterhoeven <geert+renesas@glider.be>
-> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
 
-Tested-by: Geert Uytterhoeven <geert+renesas@glider.be>
+* Alexei Starovoitov <ast@plumgrid.com> wrote:
 
-Gr{oetje,eeting}s,
+> On Mon, Aug 25, 2014 at 6:07 PM, David Miller <davem@davemloft.net> wrote:
+> > From: Alexei Starovoitov <ast@plumgrid.com>
+> > Date: Mon, 25 Aug 2014 18:00:56 -0700
+> >
+> >> -
+> >> +asmlinkage long sys_bpf(int cmd, unsigned long arg2, unsigned long arg3,
+> >> +                     unsigned long arg4, unsigned long arg5);
+> >
+> > Please do not add interfaces with opaque types as arguments.
+> >
+> > It is impossible for the compiler to type check the args at
+> > compile time when userspace tries to use this stuff.
+> 
+> I share this concern. I went with single BPF syscall, because
+> alternative is 6 syscalls for every command and more
+> syscalls in the future when we'd need to add another command.
 
-                        Geert
+We had a similar problem growing the perf syscall - and we were 
+able to hold to a single syscall, which I think has served us 
+well. Had we gone with a per functionality syscall we'd have 
+something like a dozen syscalls today, scattered all around 
+non-continuously in the syscall space on most platforms.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+But note that 'opaque or non-opaque' is a false dichotomy, as 
+there are 3 options in reality: what we used instead of an opaque 
+type was an extensible data type, and extensible C structure, 
+with structure size expectations part of the structure.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+See 'struct perf_event_attr':
+
+SYSCALL_DEFINE5(perf_event_open,
+                struct perf_event_attr __user *, attr_uptr,
+                pid_t, pid, int, cpu, int, group_fd, unsigned long, flags)
+
+That way new versions of the data type are immediately obvious to 
+the kernel, and compatibility can be handled well. Smaller, 
+previous versions received from old user-space are padded out 
+transparently to the kernel's value of the structure, with zeroes 
+filled in.
+
+See perf_copy_attr() in kernel/events/core.c. Instead of 
+versioning the structure, we use its size as a finegrained and 
+robust version indicator in essence.
+
+That way it's both forwards and backwards compatible, as much as 
+possible technically: old kernel can run new user-space, and new 
+user-space will be able to take advantage of as much of an old 
+kernel's capabilities as possible, and in the typical case of 
+version match there's no extra overhead worth speaking of.
+
+This way we were able to gradually grow to the sophisticated ABI 
+you can find in include/uapi/linux/perf_event.h, without having 
+to touch the syscall interface. (It's not the only method: we 
+also have a handful of ioctls, where that's the most natural 
+interface for a perf event fd.)
+
+Thanks,
+
+	Ingo
