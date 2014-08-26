@@ -1,125 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934433AbaHZKgO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 06:36:14 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:33979 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754340AbaHZKgN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 06:36:13 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-a9-53fc631b446d
-From: Chao Yu <chao2.yu@samsung.com>
-To: Jaegeuk Kim <jaegeuk@kernel.org>
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [f2fs-dev][PATCH] f2fs: reposition unlock_new_inode to prevent
- accessing invalid inode
-Date: Tue, 26 Aug 2014 18:35:29 +0800
-Message-id: <009101cfc119$8e7a5a00$ab6f0e00$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac/BD5RCYqgxKWCGR7aF2zZfPhVCfw==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBLMWRmVeSWpSXmKPExsVy+t9jQV3p5D/BBndfSFg8WT+L2eLSIneL
-	y7vmsDkwe2xa1cnmsXvBZyaPz5vkApijuGxSUnMyy1KL9O0SuDKu3NvFUnBZuOL08t9sDYzX
-	+bsYOTkkBEwkpjyfzQRhi0lcuLeeDcQWEpjOKDFlsnYXIxeQ/YNR4lL/LFaQBJuAisTyjv9g
-	DSJA9qFFl9lBbGYBD4nGju9gNcICiRKTt50BG8QioCqx/tATZhCbV8BSovHOZ0YIW1Dix+R7
-	LBC9WhLrdx5ngrDlJTavecsMcZCCxI6zrxkhdulJ3Lx5nhmiRlxi45FbLBMYBWYhGTULyahZ
-	SEbNQtKygJFlFaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZw+D6T3sG4qsHiEKMAB6MSD++N
-	+N/BQqyJZcWVuYcYJTiYlUR4H0b/CRbiTUmsrEotyo8vKs1JLT7EKM3BoiTOe7DVOlBIID2x
-	JDU7NbUgtQgmy8TBKdXAyD3Le/YB7tDV/0SUK5Vm+igdM3g6W/JJyM72jVzeYnzVe04e/6fi
-	8OLPN6EuI6/Ik+9L1k3ocuO4aXHb5qfBl5bp1zjnpUxXKhbdZ6pp+ePr2+T8s2u+X1RkN2DO
-	O570MVMr5+cZrynLI5wOVDPu7iuQV89fq/5gilr4Yf7lxfsfPokvWF0cqMRSnJFoqMVcVJwI
-	AFY1W/tbAgAA
+	id S934469AbaHZKgS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 06:36:18 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:54359 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934435AbaHZKgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 06:36:16 -0400
+Message-ID: <53FC6310.9030901@ti.com>
+Date: Tue, 26 Aug 2014 13:36:00 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Julia Lawall <Julia.Lawall@lip6.fr>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+CC: <kernel-janitors@vger.kernel.org>, <linux-fbdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: [PATCH 14/14] video: of: display_timing: delete unneeded test
+ before of_node_put
+References: <1407492475-26283-14-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1407492475-26283-14-git-send-email-Julia.Lawall@lip6.fr>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="jfGp2xKET0cjtqNatIt4UD9B3bxcHbElJ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As the race condition on the inode cache, following scenario can appear:
-[Thread a]				[Thread b]
-					->f2fs_mkdir
-					  ->f2fs_add_link
-					    ->__f2fs_add_link
-					      ->init_inode_metadata failed here
-->gc_thread_func
-  ->f2fs_gc
-    ->do_garbage_collect
-      ->gc_data_segment
-        ->f2fs_iget
-          ->iget_locked
-            ->wait_on_inode
-					  ->unlock_new_inode
-        ->move_data_page
-					  ->make_bad_inode
-					  ->iput
+--jfGp2xKET0cjtqNatIt4UD9B3bxcHbElJ
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-When we fail in create/symlink/mkdir/mknod/tmpfile, the new allocated inode
-should be set as bad to avoid being accessed by other thread. But in above
-scenario, it allows f2fs to access the invalid inode before this inode was set
-as bad.
-This patch fix the potential problem, and this issue was found by code review.
+On 08/08/14 13:07, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>=20
+> Of_node_put supports NULL as its argument, so the initial test is not
+> necessary.  Furthermore, native_mode cannot be NULL at this point.
+>=20
+> Suggested by Uwe Kleine-K=C3=B6nig.
+>=20
+> The semantic patch that fixes this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+>=20
+> // <smpl>
+> @@
+> expression e;
+> @@
+>=20
+> -if (e)
+>    of_node_put(e);
+> // </smpl>
+>=20
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+>=20
+> ---
+>  drivers/video/of_display_timing.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+>=20
+> diff --git a/drivers/video/of_display_timing.c b/drivers/video/of_displ=
+ay_timing.c
+> index 987edf1..339f831 100644
+> --- a/drivers/video/of_display_timing.c
+> +++ b/drivers/video/of_display_timing.c
+> @@ -233,8 +233,7 @@ struct display_timings *of_get_display_timings(stru=
+ct device_node *np)
+>  	return disp;
+> =20
+>  timingfail:
+> -	if (native_mode)
+> -		of_node_put(native_mode);
+> +	of_node_put(native_mode);
+>  	display_timings_release(disp);
+>  entryfail:
+>  	kfree(disp);
+>=20
 
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
----
- fs/f2fs/namei.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+Thanks, queued for 3.18.
 
-diff --git a/fs/f2fs/namei.c b/fs/f2fs/namei.c
-index 6b53ce9..845f1be 100644
---- a/fs/f2fs/namei.c
-+++ b/fs/f2fs/namei.c
-@@ -134,8 +134,8 @@ static int f2fs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
- 	return 0;
- out:
- 	clear_nlink(inode);
--	unlock_new_inode(inode);
- 	make_bad_inode(inode);
-+	unlock_new_inode(inode);
- 	iput(inode);
- 	alloc_nid_failed(sbi, ino);
- 	return err;
-@@ -267,8 +267,8 @@ static int f2fs_symlink(struct inode *dir, struct dentry *dentry,
- 	return err;
- out:
- 	clear_nlink(inode);
--	unlock_new_inode(inode);
- 	make_bad_inode(inode);
-+	unlock_new_inode(inode);
- 	iput(inode);
- 	alloc_nid_failed(sbi, inode->i_ino);
- 	return err;
-@@ -308,8 +308,8 @@ static int f2fs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
- out_fail:
- 	clear_inode_flag(F2FS_I(inode), FI_INC_LINK);
- 	clear_nlink(inode);
--	unlock_new_inode(inode);
- 	make_bad_inode(inode);
-+	unlock_new_inode(inode);
- 	iput(inode);
- 	alloc_nid_failed(sbi, inode->i_ino);
- 	return err;
-@@ -354,8 +354,8 @@ static int f2fs_mknod(struct inode *dir, struct dentry *dentry,
- 	return 0;
- out:
- 	clear_nlink(inode);
--	unlock_new_inode(inode);
- 	make_bad_inode(inode);
-+	unlock_new_inode(inode);
- 	iput(inode);
- 	alloc_nid_failed(sbi, inode->i_ino);
- 	return err;
-@@ -688,8 +688,8 @@ release_out:
- out:
- 	f2fs_unlock_op(sbi);
- 	clear_nlink(inode);
--	unlock_new_inode(inode);
- 	make_bad_inode(inode);
-+	unlock_new_inode(inode);
- 	iput(inode);
- 	alloc_nid_failed(sbi, inode->i_ino);
- 	return err;
--- 
-2.0.0.421.g786a89d
+ Tomi
 
 
+
+--jfGp2xKET0cjtqNatIt4UD9B3bxcHbElJ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT/GMQAAoJEPo9qoy8lh71L0EP/3ALKBpmcA16+jhrMFXtKWRf
+iHX5X0MbjIvKCKC5soIxYeITyiKMdoE4a7tm5idn7lBkgDECyCpd3eybTzUwceSZ
+T6lYEGjoHXQssjbJ9jot/ozbTbUx5iLjOxcQw38G9p6kWvfDxu70kcJpOHpHtnsA
+TMvX+Tyx0dQv2fk3qv6DdNVgS8afSlbXf/wIRbhW9x8/8IGE96Tkv/e62Ok7dmVs
+z2pi4Ei0nJ6Rq3G0InoDRxTCO0MwvF1QaJdaoDT9xKtPI9/G0AVXUg6eRVUVFkTQ
+r1jaDw6kkxe5+rVWT1SFVSKOdB+hsf7wS8pcULVWPMFEVV6VvFAjz+UWpWY8ucME
+x+pWI6SKuG8XBZpvG3X0tPmNko7U0egTetT1kKm86oEXji91NKsnqC7TZ+rypG+X
+Oo1kMgldbjCgDTj2tk86nrkQNNr9VBJH4vN8hpFExiBfwtcILEhaDvltAf8VIUZT
+sxJUNN4+JiXWBTCYjMTSv1iVb+/QPpLxISfW4KyPbr2kSE/a32PfFlDg2Gjo/Ifz
+KixO5LNRStNmeT/DYREa19dR9j6A6fPd2X+KdWYMySGnslRyggSZ/eOx1JBHJwX3
+b0nizXMrZwVIId8tiPAkg2UMymWuvs7xEddbc3LSy99pNSCCq03t22TZ8sVrWFo7
+uTGjUoM/4AUP8ED0v0Qg
+=i5OF
+-----END PGP SIGNATURE-----
+
+--jfGp2xKET0cjtqNatIt4UD9B3bxcHbElJ--
