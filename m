@@ -1,107 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758445AbaHZOtd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 10:49:33 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:58732 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750950AbaHZOtb (ORCPT
+	id S1758481AbaHZOvH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 10:51:07 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:61578 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758250AbaHZOvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 10:49:31 -0400
-Date: Tue, 26 Aug 2014 17:49:21 +0300
-From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-To: roland@kernel.org, sean.hefty@intel.com, hal.rosenstock@gmail.com,
-        mschmidt@redhat.com, erezsh@mellanox.com, ogerlitz@mellanox.com,
-        linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: paulmck@linux.vnet.ibm.com
-Subject: [PATCH] ipoib: ipoib_main: Replace rcu_assign_pointer() with
- RCU_INIT_POINTER()
-Message-ID: <20140826144921.GA2950@ada>
+	Tue, 26 Aug 2014 10:51:03 -0400
+Date: Tue, 26 Aug 2014 10:50:59 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Mikko Perttunen <mperttunen@nvidia.com>
+Cc: swarren@wwwdotorg.org, thierry.reding@gmail.com, linux-ide@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] ata: ahci_tegra: Read calibration fuse
+Message-ID: <20140826145059.GA29286@htj.dyndns.org>
+References: <1409043630-9674-1-git-send-email-mperttunen@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1409043630-9674-1-git-send-email-mperttunen@nvidia.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to RCU_INIT_POINTER()'s block comment 3.a, it can be used if
-"3.   The referenced data structure has already been exposed to readers either
-at compile time or via rcu_assign_pointer() -and-
- a.   You have not made -any- reader-visible changes to this structure since
-then".
+On Tue, Aug 26, 2014 at 12:00:30PM +0300, Mikko Perttunen wrote:
+> The original version of the driver did not read the SATA calibration
+> fuse to remove the dependency to the fuse driver. The fuse driver
+> is now merged, so add this functionality.
+> 
+> The calibration fuse contains a 2-bit value used to pick a set
+> of calibration values for the SATA pad.
+> 
+> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
 
-These cases fulfill the conditions above because between the
-rcu_dereference_protected() calls and the rcu_assign_pointer() calls there are
-no updates of those values.
-Therefore, this patch makes the replacements.
+Applied to libata/for-3.17-fixes.  One comment below.
 
-The following Coccinelle semantic patch was used:
-@@
-@@
+>  #include <linux/ahci_platform.h>
+> -#include <linux/reset.h>
+>  #include <linux/errno.h>
+>  #include <linux/kernel.h>
+>  #include <linux/module.h>
+>  #include <linux/of_device.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/regulator/consumer.h>
+> +#include <linux/reset.h>
 
-- rcu_assign_pointer
-+ RCU_INIT_POINTER
-  (...,
-(
- rtnl_dereference(...)
-|
- rcu_dereference_protected(...)
-) )
+You moved the include of reset.h w/o any explanation in the patch
+description.  The description doesn't have to be super verbose on
+trivial stuff but it at least has to cover all changes included in the
+patch w/ their rationales, however trivial they may be.
 
-Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
----
- drivers/infiniband/ulp/ipoib/ipoib_main.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+Thanks.
 
-diff --git a/drivers/infiniband/ulp/ipoib/ipoib_main.c b/drivers/infiniband/ulp/ipoib/ipoib_main.c
-index 64cd5b5..c348b14 100644
---- a/drivers/infiniband/ulp/ipoib/ipoib_main.c
-+++ b/drivers/infiniband/ulp/ipoib/ipoib_main.c
-@@ -929,7 +929,7 @@ static void __ipoib_reap_neigh(struct ipoib_dev_priv *priv)
- 							  lockdep_is_held(&priv->lock))) != NULL) {
- 			/* was the neigh idle for two GC periods */
- 			if (time_after(neigh_obsolete, neigh->alive)) {
--				rcu_assign_pointer(*np,
-+				RCU_INIT_POINTER(*np,
- 						   rcu_dereference_protected(neigh->hnext,
- 									     lockdep_is_held(&priv->lock)));
- 				/* remove from path/mc list */
-@@ -1024,7 +1024,7 @@ struct ipoib_neigh *ipoib_neigh_alloc(u8 *daddr,
- 	atomic_inc(&neigh->refcnt);
- 	neigh->alive = jiffies;
- 	/* put in hash */
--	rcu_assign_pointer(neigh->hnext,
-+	RCU_INIT_POINTER(neigh->hnext,
- 			   rcu_dereference_protected(htbl->buckets[hash_val],
- 						     lockdep_is_held(&priv->lock)));
- 	rcu_assign_pointer(htbl->buckets[hash_val], neigh);
-@@ -1092,7 +1092,7 @@ void ipoib_neigh_free(struct ipoib_neigh *neigh)
- 					lockdep_is_held(&priv->lock))) {
- 		if (n == neigh) {
- 			/* found */
--			rcu_assign_pointer(*np,
-+			RCU_INIT_POINTER(*np,
- 					   rcu_dereference_protected(neigh->hnext,
- 								     lockdep_is_held(&priv->lock)));
- 			/* remove from parent list */
-@@ -1177,7 +1177,7 @@ void ipoib_del_neighs_by_gid(struct net_device *dev, u8 *gid)
- 							  lockdep_is_held(&priv->lock))) != NULL) {
- 			/* delete neighs belong to this parent */
- 			if (!memcmp(gid, neigh->daddr + 4, sizeof (union ib_gid))) {
--				rcu_assign_pointer(*np,
-+				RCU_INIT_POINTER(*np,
- 						   rcu_dereference_protected(neigh->hnext,
- 									     lockdep_is_held(&priv->lock)));
- 				/* remove from parent list */
-@@ -1219,7 +1219,7 @@ static void ipoib_flush_neighs(struct ipoib_dev_priv *priv)
- 
- 		while ((neigh = rcu_dereference_protected(*np,
- 				       lockdep_is_held(&priv->lock))) != NULL) {
--			rcu_assign_pointer(*np,
-+			RCU_INIT_POINTER(*np,
- 					   rcu_dereference_protected(neigh->hnext,
- 								     lockdep_is_held(&priv->lock)));
- 			/* remove from path/mc list */
 -- 
-1.9.1
-
+tejun
