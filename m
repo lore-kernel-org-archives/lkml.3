@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554AbaHZUkO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 16:40:14 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:50649 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752427AbaHZUkN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 16:40:13 -0400
-Message-ID: <53FCF0A9.60400@gmail.com>
-Date: Tue, 26 Aug 2014 13:40:09 -0700
-From: Matthew Rushton <mvrushton@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>, konrad.wilk@oracle.com,
-        boris.ostrovsky@oracle.com
-CC: msw@amazon.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com, Matt Rushton <mrushton@amazon.com>
-Subject: Re: [PATCH v2 2/2] xen/setup: Remap Xen Identity Mapped RAM
-References: <1405814495-10868-1-git-send-email-mrushton@amazon.com> <1405814495-10868-2-git-send-email-mrushton@amazon.com> <53DA805D.4020300@citrix.com> <53DBA9AC.8000302@citrix.com>
-In-Reply-To: <53DBA9AC.8000302@citrix.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+	id S1754971AbaHZUmI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 16:42:08 -0400
+Received: from omr1.cc.vt.edu ([198.82.141.52]:53834 "EHLO omr1.cc.vt.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754810AbaHZUmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 16:42:05 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
+To: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Cc: Hugh Dickins <hughd@google.com>, akpm@linux-foundation.org,
+        Sabrina Dubroca <sd@queasysnail.net>,
+        Vincent Donnefort <vdonnefort@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, linux-leds@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
+Subject: Re: [PATCHv2][input-led] Defer input led work to workqueue
+In-Reply-To: Your message of "Tue, 26 Aug 2014 11:17:25 +0200."
+             <20140826091725.GA23293@type.youpi.perso.aquilenet.fr>
+From: Valdis.Kletnieks@vt.edu
+References: <20140826015453.GA5235@type.youpi.perso.aquilenet.fr>
+            <20140826091725.GA23293@type.youpi.perso.aquilenet.fr>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1409085709_3249P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Tue, 26 Aug 2014 16:41:49 -0400
+Message-ID: <3469.1409085709@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/14 07:52, David Vrabel wrote:
-> On 31/07/14 18:43, David Vrabel wrote:
->> On 20/07/14 01:01, Matt Rushton wrote:
->>> Instead of ballooning up and down dom0 memory this remaps the existing mfns
->>> that were replaced by the identity map. The reason for this is that the
->>> existing implementation ballooned memory up and and down which caused dom0
->>> to have discontiguous pages. In some cases this resulted in the use of bounce
->>> buffers which reduced network I/O performance significantly. This change will
->>> honor the existing order of the pages with the exception of some boundary
->>> conditions.
->>>
->>> To do this we need to update both the Linux p2m table and the Xen m2p table.
->>> Particular care must be taken when updating the p2m table since it's important
->>> to limit table memory consumption and reuse the existing leaf pages which get
->>> freed when an entire leaf page is set to the identity map. To implement this,
->>> mapping updates are grouped into blocks with table entries getting cached
->>> temporarily and then released.
->>>
->>> On my test system before:
->>> Total pages: 2105014
->>> Total contiguous: 1640635
->>>
->>> After:
->>> Total pages: 2105014
->>> Total contiguous: 2098904
->> Applied to devel/for-linus-3.17
-> Unfortunately, this produces too many WARNINGs on some boxes or
-> with certain configurations.
+--==_Exmh_1409085709_3249P
+Content-Type: text/plain; charset=us-ascii
+
+On Tue, 26 Aug 2014 11:17:25 +0200, you said:
+
 >
-> I will remove this patch from the queue for 3.17.
+> Difference with v1: uses schedule_work instead of its own workqueue.
 >
+> --- a/drivers/input/leds.c
+> +++ b/drivers/input/leds.c
+> @@ -100,13 +100,24 @@ static unsigned long vt_led_registered[B
 
-Have you had a chance to try the v3 patch set?
+Same thing for B2 - next-20140826 complains, and no complaints with this patch
+on top.
 
+Tested-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
 
+--==_Exmh_1409085709_3249P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBU/zxDQdmEQWDXROgAQJ3cg/9Hvx/H5aJwYevd+dj6U81mBSm07bO6RJC
++XhtvhhBEUSFPKmArBlxBY2PyICbnpmtJldvG9E+I2+S1zqPczoIEatQgwR6ttfa
+8BiLhoOxsq3O6IEUFsWpgHHcT9EXUSc5tqEnv5xVxBDkNp4pB+2Uca+5f3IsXuFX
+DNnfh6o9/pCoRVIlWDykUC7cenDagwCR/i5KHQQRSL+b5/YiGFH1Qt/YCGml+WWK
+8McdfW+xbG8Oc28HcIhUw2aoUwsb0wE5TwH/mwuzfl+Ad62XuKZXcuW77VjejzX0
+dF4YPhkQ2YkSto1OrOgpaSPgaKcYXsO1hWylEOntzltwovxhn2dDkt2kSwYCGcTc
+d1A+e+3YpLi4HB4hyJ8rXlYeuMq0w0u6BKA3MymVDsFJiqO3tjFOaj8sNLwZjaXC
+k8AdL2ILirwA4Iovq7FW6YLt3gbwmiBDkAn5O9p3Mk5YMQEZW+cGltLbwUcfgI7e
+BZHZ9PCDjwo2omcoSaiiMzSDd5ggv502AlrSUcPBZVposHVq4ZshHjCldRzRHinf
+FQCjdJm9SWcTLn9E0/2d79Zy9A7zSZsfM500hOKOYBSoK9WKxwvJe+H8akb6/1sX
+/Q+xKnJgFcY6PPXd6atsjMdUFDfK7QZhxrJQCKfXganugNmZhfU9vqt4ouLtdc65
+4T4q0W7Icxg=
+=d9AD
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1409085709_3249P--
