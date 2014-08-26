@@ -1,136 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757562AbaHZK4i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 06:56:38 -0400
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.162]:16026 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754369AbaHZK4e (ORCPT
+	id S1757580AbaHZK7I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 06:59:08 -0400
+Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:44609 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754379AbaHZK7G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 06:56:34 -0400
-X-Env-Sender: stwiss.opensource@diasemi.com
-X-Msg-Ref: server-8.tower-38.messagelabs.com!1409050500!24753774!1
-X-Originating-IP: [94.185.165.51]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
-To: Lee Jones <lee.jones@linaro.org>
-CC: Andrew Lunn <andrew@lunn.ch>, Arnaud Ebalard <arno@natisbad.org>,
-        "DEVICE TREE" <devicetree@vger.kernel.org>,
-        Florian Vaussard <florian.vaussard@epfl.ch>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>,
-        "Jason Gunthorpe" <jgunthorpe@obsidianresearch.com>,
-        Jonathan Cameron <jic23@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        LINUX ARM KERNEL <linux-arm-kernel@lists.infradead.org>,
-        LINUX KERNEL <linux-kernel@vger.kernel.org>,
-        LINUX SH <linux-sh@vger.kernel.org>,
-        "Magnus Damm" <magnus.damm@gmail.com>, Mark Brown <broonie@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Martin Fuzzey <mfuzzey@parkeon.com>, Pawel Moll <pawel.moll@arm.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Rob Herring <robh+dt@kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Silvio F <silvio.fricke@gmail.com>, Simon Horman <horms@verge.net.au>,
-        Support Opensource <Support.Opensource@diasemi.com>,
-        Thierry Reding <thierry.reding@gmail.com>
-Subject: RE: [RESEND PATCH V2] devicetree: Dialog Semiconductor consolidate
- existing vendor prefixes to standardise on 'dlg'
-Thread-Topic: [RESEND PATCH V2] devicetree: Dialog Semiconductor consolidate
- existing vendor prefixes to standardise on 'dlg'
-Thread-Index: AQHPvhfch2EQAldnUU2QQdc1zxybRJvilI4AgAAg4zA=
-Date: Tue, 26 Aug 2014 10:54:59 +0000
-Message-ID: <6ED8E3B22081A4459DAC7699F3695FB7D0B39744@SW-EX-MBX02.diasemi.com>
-References: <201408221446.s7MEkNVF001775@swsrvapps-01.diasemi.com>
- <20140826093312.GI9574@lee--X1>
-In-Reply-To: <20140826093312.GI9574@lee--X1>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.26.77]
-Content-Type: text/plain; charset="utf-8"
+	Tue, 26 Aug 2014 06:59:06 -0400
+Message-ID: <53FC6872.3060800@codethink.co.uk>
+Date: Tue, 26 Aug 2014 11:58:58 +0100
+From: Rob Jones <rob.jones@codethink.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.7.0
 MIME-Version: 1.0
+To: Steven Whitehouse <swhiteho@redhat.com>, linux-fsdevel@vger.kernel.org
+CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-kernel@lists.codethink.co.uk, viro@ZenIV.linux.org.uk,
+        ebiederm@xmission.com, ian.molton@codethink.co.uk
+Subject: Re: [PATCH V3] seq_file: Document seq_open_private(), seq_release_private()
+References: <1408362005-21504-1-git-send-email-rob.jones@codethink.co.uk> <53F1E879.2050302@redhat.com>
+In-Reply-To: <53F1E879.2050302@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7QAufGq001383
 
-On 26 August 2014 10:33 Lee Jones wrote:
+Are there any other responses on this please? It seems pretty
+uncontentious. Maybe everyone was at LinuxCon last week.
 
-> On Fri, 22 Aug 2014, Opensource [Steve Twiss] wrote:
-> > From: Steve Twiss <stwiss.opensource@diasemi.com>
-> >
-> > This patch series updates the device tree vendor prefix for
-> > Dialog Semiconductor.
-> >
+On 18/08/14 12:50, Steven Whitehouse wrote:
+> Hi,
+>
+> On 18/08/14 12:40, Rob Jones wrote:
+>> Despite the fact that these functions have been around for years, they
+>> are
+>> little used (only 15 uses in 13 files at the preseht time) even though
+>> many other files use work-arounds to achieve the same result.
+>>
+>> By documenting them, hopefully they will become more widely used.
+>>
+>> Signed-off-by: Rob Jones <rob.jones@codethink.co.uk>
+> Acked-by: Steven Whitehouse <swhiteho@redhat.com>
+>
+> Steve.
+>
+>> ---
+>>   Documentation/filesystems/seq_file.txt |   33
+>> ++++++++++++++++++++++++++++++++
+>>   1 file changed, 33 insertions(+)
+>>
+>> diff --git a/Documentation/filesystems/seq_file.txt
+>> b/Documentation/filesystems/seq_file.txt
+>> index a1e2e0d..420fc0d 100644
+>> --- a/Documentation/filesystems/seq_file.txt
+>> +++ b/Documentation/filesystems/seq_file.txt
+>> @@ -226,6 +226,39 @@ be used for more than one file, you can store an
+>> arbitrary pointer in the
+>>   private field of the seq_file structure; that value can then be
+>> retrieved
+>>   by the iterator functions.
+>> +There is also a wrapper function to seq_open() called
+>> seq_open_private(). It
+>> +kmallocs a zero filled block of memory and stores a pointer to it in the
+>> +private field of the seq_file structure, returning 0 on success. The
+>> +block size is specified in a third parameter to the function, e.g.:
+>> +
+>> +    static int ct_open(struct inode *inode, struct file *file)
+>> +    {
+>> +        return seq_open_private(file, &ct_seq_ops,
+>> +                    sizeof(struct mystruct));
+>> +    }
+>> +
+>> +There is also a variant function, __seq_open_private(), which is
+>> functionally
+>> +identical except that, if successful, it returns the pointer to the
+>> allocated
+>> +memory block, allowing further initialisation e.g.:
+>> +
+>> +    static int ct_open(struct inode *inode, struct file *file)
+>> +    {
+>> +        struct mystruct *p =
+>> +            __seq_open_private(file, &ct_seq_ops, sizeof(*p));
+>> +
+>> +        if (!p)
+>> +            return -ENOMEM;
+>> +
+>> +        p->foo = bar; /* initialize my stuff */
+>> +            ...
+>> +        p->baz = true;
+>> +
+>> +        return 0;
+>> +    }
+>> +
+>> +A corresponding close function, seq_release_private() is available which
+>> +frees the memory allocated in the corresponding open.
+>> +
+>>   The other operations of interest - read(), llseek(), and release() -
+>> are
+>>   all implemented by the seq_file code itself. So a virtual file's
+>>   file_operations structure will look like:
+>
+>
+>
 
-[...]
-
-> > I think this is it. But, if I am missing anything or there are problems, can
-> > I get a quick explanation in the reply so I can fix it and move forwards
-> > please?
-> >
-> > In full:
-> > Acked-by the following people so far:
-> 
-> When you say "so far", does that mean you're missing Acks still?
-
-Hi Lee,
-
-Apologies for my "so far" -- that is just my wording.
-
-As I understand it I have all the Acks that are necessary. I am basing my Acks list on
-the get_maintainers script output and on a previous request for Renesas and 
-Freescale inputs -- which I have also got.
-I do not see any mistakes or missing entries from my part.
-
-> 
-> If you have the full-set I will apply this and send out the necessary
-> pull-request(s).
-> 
-
-Yes please.
-
-Regards,
-Steve
-
-ps. for reference,  this is my justification for all files in the patch.
-
-./drivers/mfd/da9055-core.c
-	Support Opensource <support.opensource@diasemi.com> (supporter:DIALOG SEMICONDUC...)
-	Lee Jones <lee.jones@linaro.org> (supporter:MULTIFUNCTION DEV...,commits:3/8=38%)
-
-./Documentation/devicetree/bindings/regulator/da9210.txt.get_maintainer
-	Rob Herring <robh+dt@kernel.org> (maintainer:OPEN FIRMWARE AND...)
-	S Twiss <stwiss.opensource@diasemi.com> (authored lines:2/21=10%)
-
-./arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi.get_maintainer
-	Shawn Guo <shawn.guo@freescale.com> (maintainer:ARM/FREESCALE IMX...,authored lines:276/279=99%,commits:6/7=86%)
-	Rob Herring <robh+dt@kernel.org> (maintainer:OPEN FIRMWARE AND...)
-
-./arch/arm/boot/dts/imx53-smd.dts.get_maintainer
-	Shawn Guo <shawn.guo@freescale.com> (maintainer:ARM/FREESCALE IMX...,authored lines:276/279=99%,commits:6/7=86%)
-	Rob Herring <robh+dt@kernel.org> (maintainer:OPEN FIRMWARE AND...)
-
-./arch/arm/boot/dts/r8a7791-koelsch.dts.get_maintainer
-	Simon Horman <horms@verge.net.au> (supporter:ARM/SHMOBILE ARM...,commits:25/26=96%)
-	Rob Herring <robh+dt@kernel.org> (maintainer:OPEN FIRMWARE AND...)
-
-./arch/arm/boot/dts/r8a7790-lager.dts.get_maintainer
-	Simon Horman <horms@verge.net.au> (supporter:ARM/SHMOBILE ARM...,commits:25/26=96%)
-	Rob Herring <robh+dt@kernel.org> (maintainer:OPEN FIRMWARE AND...)
-
-./Documentation/devicetree/bindings/vendor-prefixes.txt.get_maintainer
-	Rob Herring <robh+dt@kernel.org> (maintainer:OPEN FIRMWARE AND...,commits:40/78=51%)
-
-./Documentation/devicetree/bindings/i2c/trivial-devices.txt.get_maintainer
-	Rob Herring <robh+dt@kernel.org> (maintainer:OPEN FIRMWARE AND...)
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+-- 
+Rob Jones
+Codethink Ltd
+mailto:rob.jones@codethink.co.uk
+tel:+44 161 236 5575
