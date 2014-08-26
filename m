@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757428AbaHZHZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 03:25:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36116 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755391AbaHZHZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 03:25:56 -0400
-Date: Tue, 26 Aug 2014 09:25:53 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-cc: =?ISO-8859-15?Q?=C9ric_Brunet?= <Eric.Brunet@lps.ens.fr>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: input: force generic axis to be mapped to their
- user space axis
-In-Reply-To: <1408986430-24451-1-git-send-email-benjamin.tissoires@redhat.com>
-Message-ID: <alpine.LNX.2.00.1408260925420.2992@pobox.suse.cz>
-References: <1408986430-24451-1-git-send-email-benjamin.tissoires@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S933796AbaHZH1g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 03:27:36 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:44971 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757406AbaHZH1d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 03:27:33 -0400
+Date: Tue, 26 Aug 2014 08:27:27 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Mark Brown <broonie@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Andy Gross <agross@codeaurora.org>,
+        Mark Rutland <mark.rutland@arm.com>, Kevin Hilman <khilman@linaro.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        Josh Cartwright <joshc@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v6 1/3] mfd: devicetree: bindings: Add Qualcomm RPM DT
+ binding
+Message-ID: <20140826072727.GB9574@lee--X1>
+References: <1409029109-28769-1-git-send-email-bjorn.andersson@sonymobile.com>
+ <1409029109-28769-2-git-send-email-bjorn.andersson@sonymobile.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1409029109-28769-2-git-send-email-bjorn.andersson@sonymobile.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Aug 2014, Benjamin Tissoires wrote:
+On Mon, 25 Aug 2014, Bjorn Andersson wrote:
 
-> Atmel 840B digitizer presents a stylus interface which reports twice
-> the X coordinate and then twice the Y coordinate. In its current
-> implementation, hid-input assign the first X to X, then the second to Y,
-> then the first Y to Z, then the second one to RX.
+> Add binding for the Qualcomm Resource Power Manager (RPM) found in 8660,
+> 8960 and 8064 based devices. The binding currently describes the rpm
+> itself and the regulator subnodes.
 > 
-> This is wrong, and X should always be mapped to X, no matter what.
-> A solution consists in forcing X, Y, Z, RX, RY, RZ to be mapped to their
-> correct user space counter part.
-> 
-> Reported-by: Éric Brunet <Eric.Brunet@lps.ens.fr>
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+> ---
+>  Documentation/devicetree/bindings/mfd/qcom,rpm.txt |  246 ++++++++++++++++++++
+>  include/dt-bindings/mfd/qcom,rpm.h                 |  154 ++++++++++++
+>  2 files changed, 400 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/qcom,rpm.txt
+>  create mode 100644 include/dt-bindings/mfd/qcom,rpm.h
 
-Applied, thanks.
+Please use the same filename formatting as the existing files.
+
+[...]
 
 -- 
-Jiri Kosina
-SUSE Labs
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
