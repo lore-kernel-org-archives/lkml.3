@@ -1,97 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757357AbaHZHRo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 03:17:44 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33435 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757186AbaHZHRm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 03:17:42 -0400
-Date: Tue, 26 Aug 2014 08:17:21 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Yuvaraj Cd <yuvaraj.lkml@gmail.com>, Olof Johansson <olof@lixom.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Prashanth G <prashanth.g@samsung.com>,
-        Alim Akhtar <alim.akhtar@samsung.com>, sunil joshi <joshi@samsung.com>
-Message-ID: <20140826071721.GV17528@sirena.org.uk>
-References: <CA+NduCDL65=Y=PyU3FfXsTz0FfbmYzicGrY4U7ji3_V+nXhtCQ@mail.gmail.com>
- <53F73472.8010609@collabora.co.uk>
- <20140822144531.GV24407@sirena.org.uk>
- <53F7838F.8060906@collabora.co.uk>
- <20140822183054.GY24407@sirena.org.uk>
- <53F7BDD8.7060500@collabora.co.uk>
- <CAD=FV=WC0h7fYm2QFqu3Zka7CsU4BtG-oyPpJav+ygC+gmCR+A@mail.gmail.com>
- <CA+NduCCT-KQ=gh7QWkBE4qkA2YOJ8KCVqbkC6Tkmb1aPvCsGFQ@mail.gmail.com>
- <53FAFCBC.2050407@collabora.co.uk>
- <CAD=FV=V4TSKsbjj3dXCdSzVrh3sxH-FkpFEbEo+JA1bN9R-XWA@mail.gmail.com>
+	id S1757399AbaHZHSA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 03:18:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2928 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757249AbaHZHRx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 03:17:53 -0400
+Message-ID: <53FC3466.8000304@redhat.com>
+Date: Tue, 26 Aug 2014 15:16:54 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lu4tnxbYRVx46Dqu"
-Content-Disposition: inline
-In-Reply-To: <CAD=FV=V4TSKsbjj3dXCdSzVrh3sxH-FkpFEbEo+JA1bN9R-XWA@mail.gmail.com>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v9 1/2] regulator: Add driver for max77802 PMIC PMIC
- regulators
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+CC: Ingo Molnar <mingo@kernel.org>, Mike Galbraith <umgwanakikbuti@gmail.com>,
+        davem@davemloft.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mst@redhat.com,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Ingo Molnar jacob.e.keller@intel.com" <mingo@elte.hu>
+Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process
+ is runnable
+References: <1408608310-13579-1-git-send-email-jasowang@redhat.com>	 <1408608310-13579-2-git-send-email-jasowang@redhat.com>	 <1408683665.5648.69.camel@marge.simpson.net>	 <20140822073653.GA7372@gmail.com> <53F70887.8030602@redhat.com> <1408716976.5604.18.camel@edumazet-glaptop2.roam.corp.google.com> <53FB3715.7070009@linux.intel.com>
+In-Reply-To: <53FB3715.7070009@linux.intel.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/25/2014 09:16 PM, Eliezer Tamir wrote:
+> On 22/08/2014 17:16, Eric Dumazet wrote:
+>> > On Fri, 2014-08-22 at 17:08 +0800, Jason Wang wrote:
+>> > 
+>>> >> But this is just for current process. We want to determine whether or
+>>> >> not it was worth to loop busily in current process by checking if
+>>> >> there's any another runnable processes or callbacks. And what we need
+>>> >> here is just a simple and lockless hint which can't be wrong but may be
+>>> >> inaccurate to exit the busy loop. The net code does not depends on this
+>>> >> hint to do scheduling or yielding.
+>>> >>
+>>> >> How about just introducing a boolean helper like current_can_busy_loop()
+>>> >> and return true in one of the following conditions:
+>>> >>
+>>> >> - Current task is SCHED_FIFO
+>>> >> - Current task is neither SCHED_FIFO nor SCHED_IDLE and no other
+>>> >> runnable processes or pending RCU callbacks in current cpu
+>>> >>
+>>> >> And add warns to make sure it can only be called in process context.
+>> > 
+>> > 
+>> > 1) Any reasons Eliezer Tamir is not included in the CC list ?
+> Thanks for remembering me, Eric ;)
+>
+> Here are my 2 cents:
+> I think Ingo's suggestion of only yielding to tasks with same or higher
+> priority makes sense.
 
---lu4tnxbYRVx46Dqu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I'm not sure I get your meaning. Do you mean calling yield_to() directly
+in sk_busy_loop?
 
-On Mon, Aug 25, 2014 at 08:40:40AM -0700, Doug Anderson wrote:
-> On Mon, Aug 25, 2014 at 2:07 AM, Javier Martinez Canillas
+Schedule() which will be called later should handle all cases such as
+priority and rt process. And this patch just want the schedule() to do
+this decision earlier by exiting the busy loop earlier. This will
+improve the latency in both heavy load and light load.
 
-> > I see, so probably until we have a way to define the operating mode for
-> > each regulator using DT we should set the opmode to normal when enabling a
-> > regulator independently of the value the hardware register reported on probe.
+Checking number of nsecs this task is expected to run in the future
+sounds like the work that sk_busy_loop_end_time() should consider. It
+was not the issue that this patch want to address.
+>
+> IF you change the current behavior, please update the documentation.
+> You are going to make people scratch their head and ask "what changed?"
+> you owe them a clue.
 
-> > Can you please test the following change [0] so I can post as a proper
-> > patch? Doug, Mark do you think that forcing the regulator to opmode normal
-> > when enabling is the right solution here?
+Thanks for the reminding. But for this patch itself, it does not change
+user noticeable behaviour.
+> I also would like to have some way to keep track of when/if/how much
+> this yield happens.
+>
 
-> IMHO that makes sense.
+Ok, not very hard to add, maybe just another statistics counter.
 
-No, this doesn't make any obvious sense to me at all.  Picking normal as
-a default if the hardware reads back off due to overlapping
-impelementation or something *might* make sense but not overwriting the
-hardware state without explicit permission from the machine integration
-is a key goal for the regulator API.
-
---lu4tnxbYRVx46Dqu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT/DR+AAoJELSic+t+oim9ZN4P/jLbGogtmFYIfgc7Tfl+re1P
-WMyrGA4jB7P7bJk989oii/0ES/4XFoxbUzBeNhNFNHm9nn6Uhhd6z4y7GTyvV799
-EKF6SDQIcGTVuZ3WSiE7KfPcYnzwz/HM4/yTvSYlY5/1R5VpPNfGeDXpabucGw9M
-rn8Pe3osE5ftP1N91od5qyQXhweE2VCg8eisQOp9ta/S3JncKigA20IViL/hQFXz
-bcMc7hNwMj67DjgD/hPW9Jc/6YBhER4JGHprrzFMAhOGRzkQcsMULuq0TdP80fL0
-N1QUlz0tH8MrBMIZivHn3guxNQ3/OI9x56qQc6iX+TAIQ2qlGaOH83M4XvA3XPWP
-2ahgN88/JWFFjWEdVg9OL8H9ySQfB1Kab1wM+DNbcTOAmxoVc/ADKSDWTbPIUePz
-Znh2f1yxMqpdXso6iGUQyW/egz6R5MycWnh/pxAHZxpzhN8CfD4uKk8tTSdjAIQ3
-qzUJt4vo81ACQvci0JO0xO/UfuoqHv2scqNjbyvAO0w2U13zY9WDfR8HHdxo7Odi
-1/xAEeHHI2pkUwhJNQn+4RizXCd6mBsWYSrOTARquTQUwCRXoNWKhhLC3en6E16L
-VaU/a/U1nCMl11XEC7mA8bjTaT0+zH7oonqV8C/RUsiM5qnzRV4qMt8ORqGG9XA6
-sO4YUGaVn8yIJMjlwQmv
-=juCQ
------END PGP SIGNATURE-----
-
---lu4tnxbYRVx46Dqu--
