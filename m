@@ -1,44 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754408AbaHZSMG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 14:12:06 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:42691 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752743AbaHZSME (ORCPT
+	id S1754896AbaHZSM3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 14:12:29 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:50178 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753689AbaHZSM2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 14:12:04 -0400
-Date: Tue, 26 Aug 2014 14:11:59 -0400
+	Tue, 26 Aug 2014 14:12:28 -0400
+Date: Tue, 26 Aug 2014 14:12:23 -0400
 From: Tejun Heo <tj@kernel.org>
 To: Christoph Lameter <cl@linux.com>
 Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
         linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [PATCH 27/35] [PATCH 27/36] tile: Replace __get_cpu_var uses
-Message-ID: <20140826181159.GC31659@mtj.dyndns.org>
+        David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH 20/35] [PATCH 20/36] MIPS: Replace __get_cpu_var uses in
+ FPU emulator.
+Message-ID: <20140826181223.GD31659@mtj.dyndns.org>
 References: <20140817173023.439660246@linux.com>
- <20140817173037.126470591@linux.com>
+ <20140817173036.021525676@linux.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140817173037.126470591@linux.com>
+In-Reply-To: <20140817173036.021525676@linux.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 17, 2014 at 12:30:50PM -0500, Christoph Lameter wrote:
-> __get_cpu_var() is used for multiple purposes in the kernel source. One of
-> them is address calculation via the form &__get_cpu_var(x).  This calculates
-> the address for the instance of the percpu variable of the current processor
-> based on an offset.
+On Sun, Aug 17, 2014 at 12:30:43PM -0500, Christoph Lameter wrote:
+> The use of __this_cpu_inc() requires a fundamental integer type, so
+> change the type of all the counters to unsigned long, which is the
+> same width they were before, but not wrapped in local_t.
 > 
-> Other use cases are for storing and retrieving data from the current
-> processors percpu area.  __get_cpu_var() can be used as an lvalue when
-> writing data or on the right side of an assignment.
-...
-> Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+> Signed-off-by: David Daney <david.daney@cavium.com>
 > Signed-off-by: Christoph Lameter <cl@linux.com>
 
 (Please disregard the ones I posted for v1 of the patch series)
