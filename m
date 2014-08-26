@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752795AbaHZQym (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 12:54:42 -0400
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.151]:34281 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752099AbaHZQyj (ORCPT
+	id S1752816AbaHZQzH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 12:55:07 -0400
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.113]:6805 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751826AbaHZQzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 12:54:39 -0400
+	Tue, 26 Aug 2014 12:55:03 -0400
 X-Env-Sender: Andreas.Werner@men.de
-X-Msg-Ref: server-6.tower-179.messagelabs.com!1409072076!39574783!1
+X-Msg-Ref: server-13.tower-193.messagelabs.com!1409072101!22086786!1
 X-Originating-IP: [80.255.6.145]
 X-StarScan-Received: 
 X-StarScan-Version: 6.11.3; banners=-,-,-
 X-VirusChecked: Checked
 X-PGP-Universal: processed;
-	by keys.men.de on Tue, 26 Aug 2014 18:54:37 +0200
-Date: Tue, 26 Aug 2014 19:46:29 +0200
+	by keys.men.de on Tue, 26 Aug 2014 18:55:01 +0200
+Date: Tue, 26 Aug 2014 19:46:53 +0200
 From: Andreas Werner <andreas.werner@men.de>
 To: <linux-kernel@vger.kernel.org>
 CC: <sameo@linux.intel.com>, <lee.jones@linaro.org>, <wim@iguana.be>,
@@ -23,9 +23,9 @@ CC: <sameo@linux.intel.com>, <lee.jones@linaro.org>, <wim@iguana.be>,
         <rpurdie@rpsys.net>, <linux-leds@vger.kernel.org>, <jdelvare@suse.de>,
         <linux@roeck-us.net>, <lm-sensors@lm-sensors.org>,
         <johannes.thumshirn@men.de>
-Subject: [PATCH v5 3/4] drivers/leds/leds-menf21bmc: introduce MEN 14F021P00
- BMC LED driver
-Message-ID: <41f51992465aff663d047b9566298f3d702c9add.1409074255.git.andreas.werner@men.de>
+Subject: [PATCH v5 4/4] drivers/hwmon/menf21bmc_hwmon: introduce MEN14F021P00
+ BMC HWMON driver
+Message-ID: <35eb5fcf2fd6efd96810831eb4649a458dbdeec9.1409074255.git.andreas.werner@men.de>
 References: <cover.1409074255.git.andreas.werner@men.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
@@ -37,59 +37,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added driver to support the 14F021P00 BMC LEDs.
-The BMC is a Board Management Controller including four LEDs which
-can be switched on and off.
+Added driver to support the 14F021P00 BMC Hardware Monitoring.
+The BMC is a Board Management Controller including monitoring of the
+board voltages.
 
 Signed-off-by: Andreas Werner <andreas.werner@men.de>
 ---
- drivers/leds/Kconfig          |   6 ++
- drivers/leds/Makefile         |   1 +
- drivers/leds/leds-menf21bmc.c | 131 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 138 insertions(+)
- create mode 100644 drivers/leds/leds-menf21bmc.c
+ Documentation/hwmon/menf21bmc   |  49 +++++++++
+ drivers/hwmon/Kconfig           |   7 ++
+ drivers/hwmon/Makefile          |   1 +
+ drivers/hwmon/menf21bmc_hwmon.c | 230 ++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 287 insertions(+)
+ create mode 100644 Documentation/hwmon/menf21bmc
+ create mode 100644 drivers/hwmon/menf21bmc_hwmon.c
 
-diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-index 27cf0cd..d38ff3f 100644
---- a/drivers/leds/Kconfig
-+++ b/drivers/leds/Kconfig
-@@ -458,6 +458,12 @@ config LEDS_OT200
- 	  This option enables support for the LEDs on the Bachmann OT200.
- 	  Say Y to enable LEDs on the Bachmann OT200.
- 
-+config LEDS_MENF21BMC
-+	tristate "LED support for the MEN 14F021P00 BMC"
-+	depends on LEDS_CLASS && MFD_MENF21BMC
-+	help
-+	  Say Y here to include support for the MEN 14F021P00 BMC LEDs.
-+
- comment "LED driver for blink(1) USB RGB LED is under Special HID drivers (HID_THINGM)"
- 
- config LEDS_BLINKM
-diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-index 3c03666..cadc433 100644
---- a/drivers/leds/Makefile
-+++ b/drivers/leds/Makefile
-@@ -53,6 +53,7 @@ obj-$(CONFIG_LEDS_MAX8997)		+= leds-max8997.o
- obj-$(CONFIG_LEDS_LM355x)		+= leds-lm355x.o
- obj-$(CONFIG_LEDS_BLINKM)		+= leds-blinkm.o
- obj-$(CONFIG_LEDS_VERSATILE)		+= leds-versatile.o
-+obj-$(CONFIG_LEDS_MENF21BMC)		+= leds-menf21bmc.o
- 
- # LED SPI Drivers
- obj-$(CONFIG_LEDS_DAC124S085)		+= leds-dac124s085.o
-diff --git a/drivers/leds/leds-menf21bmc.c b/drivers/leds/leds-menf21bmc.c
+diff --git a/Documentation/hwmon/menf21bmc b/Documentation/hwmon/menf21bmc
 new file mode 100644
-index 0000000..4621f72
+index 0000000..22b6840
 --- /dev/null
-+++ b/drivers/leds/leds-menf21bmc.c
-@@ -0,0 +1,131 @@
++++ b/Documentation/hwmon/menf21bmc
+@@ -0,0 +1,49 @@
++Kernel driver menf21bmc_hwmon
++=============================
++
++Supported chips:
++	* MEN 14F021P00
++	  Prefix: 'menf21bmc_hwmon'
++	  Adresses scanned: -
++
++Author: Andreas Werner <andreas.werner@men.de>
++
++Description
++-----------
++
++The menf21bmc is a Board Management Controller (BMC) which provides an I2C
++interface to the host to access the features implemented in the BMC.
++
++This driver gives access to the voltage monitoring feature of the main
++voltages of the board.
++The voltage sensors are connected to the ADC inputs of the BMC which is
++a PIC16F917 Mikrocontroller.
++
++Usage Notes
++-----------
++
++This driver does not auto-detect devices. You will have to instantiate the
++devices explicitly. Please see Documentation/i2c/instantiating-devices for
++details.
++
++Sysfs entries
++-------------
++
++The following attributes are supported. All attributes are read only
++The Limits are read once by the driver.
++
++in0_input	+3.3V input voltage
++in1_input	+5.0V input voltage
++in2_input	+12.0V input voltage
++in3_input	+5V Standby input voltage
++in4_input	VBAT (on board battery)
++
++in[0-4]_min	Minimum voltage limit
++in[0-4]_max	Maximum voltage limit
++
++in0_label	"MON_3_3V"
++in1_label	"MON_5V"
++in2_label	"MON_12V"
++in3_label	"5V_STANDBY"
++in4_label	"VBAT"
++
+diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+index 37908ff..db3a6eb 100644
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -828,6 +828,13 @@ config SENSORS_MCP3021
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called mcp3021.
+ 
++config SENSORS_MENF21BMC_HWMON
++	tristate "MEN 14F021P00 BMC Hardware Monitoring"
++	depends on MFD_MENF21BMC
++	help
++	  Say Y here to include support for the MEN 14F021P00 BMC
++	  hardware monitoring.
++
+ config SENSORS_ADCXX
+ 	tristate "National Semiconductor ADCxxxSxxx"
+ 	depends on SPI_MASTER
+diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+index 1362382..56ab872 100644
+--- a/drivers/hwmon/Makefile
++++ b/drivers/hwmon/Makefile
+@@ -114,6 +114,7 @@ obj-$(CONFIG_SENSORS_MAX6650)	+= max6650.o
+ obj-$(CONFIG_SENSORS_MAX6697)	+= max6697.o
+ obj-$(CONFIG_SENSORS_MC13783_ADC)+= mc13783-adc.o
+ obj-$(CONFIG_SENSORS_MCP3021)	+= mcp3021.o
++obj-$(CONFIG_SENSORS_MENF21BMC_HWMON) += menf21bmc_hwmon.o
+ obj-$(CONFIG_SENSORS_NCT6683)	+= nct6683.o
+ obj-$(CONFIG_SENSORS_NCT6775)	+= nct6775.o
+ obj-$(CONFIG_SENSORS_NTC_THERMISTOR)	+= ntc_thermistor.o
+diff --git a/drivers/hwmon/menf21bmc_hwmon.c b/drivers/hwmon/menf21bmc_hwmon.c
+new file mode 100644
+index 0000000..2eaec6a
+--- /dev/null
++++ b/drivers/hwmon/menf21bmc_hwmon.c
+@@ -0,0 +1,230 @@
 +/*
-+ *  MEN 14F021P00 Board Management Controller (BMC) LEDs Driver.
++ *  MEN 14F021P00 Board Management Controller (BMC) hwmon driver.
 + *
-+ *  This is the core LED driver of the MEN 14F021P00 BMC.
-+ *  There are four LEDs available which can be switched on and off.
-+ *  STATUS LED, HOT SWAP LED, USER LED 1, USER LED 2
++ *  This is the core hwmon driver of the MEN 14F021P00 BMC.
++ *  The BMC monitors the board voltages which can be access with this
++ *  driver through sysfs.
 + *
 + *  Copyright (C) 2014 MEN Mikro Elektronik Nuernberg GmbH
 + *
@@ -102,119 +160,218 @@ index 0000000..4621f72
 +#include <linux/module.h>
 +#include <linux/kernel.h>
 +#include <linux/platform_device.h>
-+#include <linux/leds.h>
++#include <linux/hwmon.h>
++#include <linux/hwmon-sysfs.h>
++#include <linux/jiffies.h>
++#include <linux/slab.h>
 +#include <linux/i2c.h>
 +
-+#define BMC_CMD_LED_GET_SET	0xA0
-+#define BMC_BIT_LED_STATUS	BIT(0)
-+#define BMC_BIT_LED_HOTSWAP	BIT(1)
-+#define BMC_BIT_LED_USER1	BIT(2)
-+#define BMC_BIT_LED_USER2	BIT(3)
++#define DRV_NAME  "menf21bmc_hwmon"
 +
-+struct menf21bmc_led {
-+	struct led_classdev cdev;
-+	u8 led_bit;
-+	const char *name;
++#define BMC_VOLT_COUNT	5
++#define MENF21BMC_V33	0
++#define MENF21BMC_V5	1
++#define MENF21BMC_V12	2
++#define MENF21BMC_V5_SB	3
++#define MENF21BMC_VBAT	4
++
++#define IDX_TO_VOLT_MIN_CMD(idx) (0x40 + idx)
++#define IDX_TO_VOLT_MAX_CMD(idx) (0x50 + idx)
++#define IDX_TO_VOLT_INP_CMD(idx) (0x60 + idx)
++
++struct menf21bmc_hwmon {
++	char valid;
 +	struct i2c_client *i2c_client;
++	unsigned long last_update;
++	u16 in_val[BMC_VOLT_COUNT];
++	u16 in_min[BMC_VOLT_COUNT];
++	u16 in_max[BMC_VOLT_COUNT];
 +};
 +
-+static struct menf21bmc_led leds[] = {
-+	{
-+		.name = "menf21bmc:led_status",
-+		.led_bit = BMC_BIT_LED_STATUS,
-+	},
-+	{
-+		.name = "menf21bmc:led_hotswap",
-+		.led_bit = BMC_BIT_LED_HOTSWAP,
-+	},
-+	{
-+		.name = "menf21bmc:led_user1",
-+		.led_bit = BMC_BIT_LED_USER1,
-+	},
-+	{
-+		.name = "menf21bmc:led_user2",
-+		.led_bit = BMC_BIT_LED_USER2,
-+	}
++static const char *const input_names[] = {
++	[MENF21BMC_V33]		= "MON_3_3V",
++	[MENF21BMC_V5]		= "MON_5V",
++	[MENF21BMC_V12]		= "MON_12V",
++	[MENF21BMC_V5_SB]	= "5V_STANDBY",
++	[MENF21BMC_VBAT]	= "VBAT"
 +};
 +
-+static DEFINE_MUTEX(led_lock);
-+
-+static void
-+menf21bmc_led_set(struct led_classdev *led_cdev, enum led_brightness value)
-+{
-+	int led_val;
-+	struct menf21bmc_led *led = container_of(led_cdev,
-+					struct menf21bmc_led, cdev);
-+
-+	mutex_lock(&led_lock);
-+	led_val = i2c_smbus_read_byte_data(led->i2c_client,
-+						BMC_CMD_LED_GET_SET);
-+	if (led_val < 0)
-+		goto err_out;
-+
-+	if (value == LED_OFF)
-+		led_val &= ~led->led_bit;
-+	else
-+		led_val |= led->led_bit;
-+
-+	i2c_smbus_write_byte_data(led->i2c_client,
-+					BMC_CMD_LED_GET_SET, led_val);
-+err_out:
-+	mutex_unlock(&led_lock);
-+}
-+
-+static int menf21bmc_led_probe(struct platform_device *pdev)
++static struct menf21bmc_hwmon *menf21bmc_hwmon_update(struct device *dev)
 +{
 +	int i;
++	uint16_t val;
++	struct menf21bmc_hwmon *drv_data = dev_get_drvdata(dev);
++	struct menf21bmc_hwmon *data_ret = drv_data;
++
++	if (time_after(jiffies, drv_data->last_update + HZ) || !drv_data->valid) {
++		for (i = 0; i < BMC_VOLT_COUNT; i++) {
++			val = i2c_smbus_read_word_data(drv_data->i2c_client,
++						       IDX_TO_VOLT_INP_CMD(i));
++			if (val < 0) {
++				data_ret = ERR_PTR(val);
++				goto abort;
++			}
++			drv_data->in_val[i] = val;
++		}
++		drv_data->last_update = jiffies;
++		drv_data->valid = 1;
++	}
++abort:
++	return data_ret;
++}
++
++static int menf21bmc_hwmon_get_volt_limits(struct menf21bmc_hwmon *drv_data)
++{
++	int i;
++	uint16_t val;
++
++	for (i = 0; i < BMC_VOLT_COUNT; i++) {
++		val = i2c_smbus_read_word_data(drv_data->i2c_client,
++					       IDX_TO_VOLT_MIN_CMD(i));
++		if (val < 0)
++			return val;
++
++		drv_data->in_min[i] = val;
++
++		val = i2c_smbus_read_word_data(drv_data->i2c_client,
++					       IDX_TO_VOLT_MAX_CMD(i));
++		if (val < 0)
++			return val;
++
++		drv_data->in_max[i] = val;
++	}
++	return 0;
++}
++
++static ssize_t
++show_label(struct device *dev, struct device_attribute *devattr, char *buf)
++{
++	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
++
++	return sprintf(buf, "%s\n", input_names[attr->index]);
++}
++
++static ssize_t
++show_in(struct device *dev, struct device_attribute *devattr, char *buf)
++{
++	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
++	struct menf21bmc_hwmon *drv_data = menf21bmc_hwmon_update(dev);
++
++	if (IS_ERR(drv_data))
++		return PTR_ERR(drv_data);
++
++	return sprintf(buf, "%d\n", drv_data->in_val[attr->index]);
++}
++
++static ssize_t
++show_min(struct device *dev, struct device_attribute *devattr, char *buf)
++{
++	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
++	struct menf21bmc_hwmon *drv_data = dev_get_drvdata(dev);
++
++	return sprintf(buf, "%d\n", drv_data->in_min[attr->index]);
++}
++
++static ssize_t
++show_max(struct device *dev, struct device_attribute *devattr, char *buf)
++{
++	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
++	struct menf21bmc_hwmon *drv_data = dev_get_drvdata(dev);
++
++	return sprintf(buf, "%d\n", drv_data->in_max[attr->index]);
++}
++
++#define create_voltage_sysfs(idx)			\
++static SENSOR_DEVICE_ATTR(in##idx##_input, S_IRUGO,	\
++			show_in, NULL, idx);		\
++static SENSOR_DEVICE_ATTR(in##idx##_min, S_IRUGO,	\
++			show_min, NULL, idx);		\
++static SENSOR_DEVICE_ATTR(in##idx##_max, S_IRUGO,	\
++			show_max, NULL, idx);		\
++static SENSOR_DEVICE_ATTR(in##idx##_label, S_IRUGO,	\
++			show_label, NULL, idx);
++
++create_voltage_sysfs(0);
++create_voltage_sysfs(1);
++create_voltage_sysfs(2);
++create_voltage_sysfs(3);
++create_voltage_sysfs(4);
++
++static struct attribute *menf21bmc_hwmon_attrs[] = {
++	&sensor_dev_attr_in0_input.dev_attr.attr,
++	&sensor_dev_attr_in0_min.dev_attr.attr,
++	&sensor_dev_attr_in0_max.dev_attr.attr,
++	&sensor_dev_attr_in0_label.dev_attr.attr,
++
++	&sensor_dev_attr_in1_input.dev_attr.attr,
++	&sensor_dev_attr_in1_min.dev_attr.attr,
++	&sensor_dev_attr_in1_max.dev_attr.attr,
++	&sensor_dev_attr_in1_label.dev_attr.attr,
++
++	&sensor_dev_attr_in2_input.dev_attr.attr,
++	&sensor_dev_attr_in2_min.dev_attr.attr,
++	&sensor_dev_attr_in2_max.dev_attr.attr,
++	&sensor_dev_attr_in2_label.dev_attr.attr,
++
++	&sensor_dev_attr_in3_input.dev_attr.attr,
++	&sensor_dev_attr_in3_min.dev_attr.attr,
++	&sensor_dev_attr_in3_max.dev_attr.attr,
++	&sensor_dev_attr_in3_label.dev_attr.attr,
++
++	&sensor_dev_attr_in4_input.dev_attr.attr,
++	&sensor_dev_attr_in4_min.dev_attr.attr,
++	&sensor_dev_attr_in4_max.dev_attr.attr,
++	&sensor_dev_attr_in4_label.dev_attr.attr,
++	NULL
++};
++
++ATTRIBUTE_GROUPS(menf21bmc_hwmon);
++
++static int menf21bmc_hwmon_probe(struct platform_device *pdev)
++{
 +	int ret;
++	struct menf21bmc_hwmon *drv_data;
 +	struct i2c_client *i2c_client = to_i2c_client(pdev->dev.parent);
++	struct device *hwmon_dev;
 +
-+	for (i = 0; i < ARRAY_SIZE(leds); i++) {
-+		leds[i].cdev.name = leds[i].name;
-+		leds[i].cdev.brightness_set = menf21bmc_led_set;
-+		leds[i].i2c_client = i2c_client;
-+		ret = led_classdev_register(&pdev->dev, &leds[i].cdev);
-+		if (ret < 0)
-+			goto err_free_leds;
++	drv_data = devm_kzalloc(&pdev->dev, sizeof(struct menf21bmc_hwmon),
++				GFP_KERNEL);
++	if (!drv_data)
++		return -ENOMEM;
++
++	drv_data->i2c_client = i2c_client;
++
++	ret = menf21bmc_hwmon_get_volt_limits(drv_data);
++	if (ret) {
++		dev_err(&pdev->dev, "failed to read sensor limits");
++		return ret;
 +	}
-+	dev_info(&pdev->dev, "MEN 140F21P00 BMC LED device enabled\n");
 +
-+	return 0;
++	hwmon_dev = devm_hwmon_device_register_with_groups(&pdev->dev,
++							   "menf21bmc", drv_data,
++							   menf21bmc_hwmon_groups);
++	if (IS_ERR(hwmon_dev))
++		return PTR_ERR(hwmon_dev);
 +
-+err_free_leds:
-+	dev_err(&pdev->dev, "failed to register LED device\n");
-+
-+	for (i = i - 1; i >= 0; i--)
-+		led_classdev_unregister(&leds[i].cdev);
-+
-+	return ret;
-+}
-+
-+static int menf21bmc_led_remove(struct platform_device *pdev)
-+{
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(leds); i++)
-+		led_classdev_unregister(&leds[i].cdev);
++	dev_info(&pdev->dev, "MEN 14F021P00 BMC hwmon device enabled");
 +
 +	return 0;
 +}
 +
-+static struct platform_driver menf21bmc_led = {
-+	.probe		= menf21bmc_led_probe,
-+	.remove		= menf21bmc_led_remove,
++static struct platform_driver menf21bmc_hwmon = {
++	.probe		= menf21bmc_hwmon_probe,
 +	.driver		= {
-+		.name		= "menf21bmc_led",
++		.name		= DRV_NAME,
 +		.owner		= THIS_MODULE,
 +	},
 +};
 +
-+module_platform_driver(menf21bmc_led);
++module_platform_driver(menf21bmc_hwmon);
 +
 +MODULE_AUTHOR("Andreas Werner <andreas.werner@men.de>");
-+MODULE_DESCRIPTION("MEN 14F021P00 BMC led driver");
++MODULE_DESCRIPTION("MEN 14F021P00 BMC hwmon");
 +MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:menf21bmc_led");
++MODULE_ALIAS("platform:menf21bmc_hwmon");
 -- 
 2.0.4
 
