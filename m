@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934613AbaHZKEq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 06:04:46 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:20976 "EHLO
+	id S934558AbaHZKEa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 06:04:30 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:20827 "EHLO
 	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934418AbaHZKEn (ORCPT
+	by vger.kernel.org with ESMTP id S934418AbaHZKEZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 06:04:43 -0400
+	Tue, 26 Aug 2014 06:04:25 -0400
 From: Marc Zyngier <marc.zyngier@arm.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-omap@vger.kernel.org, linux@openrisc.net
@@ -19,9 +19,9 @@ Cc: linux@arm.linux.org.uk, shawn.guo@freescale.com, kernel@pengutronix.de,
         mark.rutland@arm.com, sudeep.holla@arm.com,
         stefan.kristiansson@saunalahti.fi, vkale@apm.com,
         schwidefsky@de.ibm.com
-Subject: [PATCH v2 16/26] irqchip: vt8500: convert to handle_domain_irq
-Date: Tue, 26 Aug 2014 11:03:31 +0100
-Message-Id: <1409047421-27649-17-git-send-email-marc.zyngier@arm.com>
+Subject: [PATCH v2 11/26] irqchip: s3c24xx: convert to handle_domain_irq
+Date: Tue, 26 Aug 2014 11:03:26 +0100
+Message-Id: <1409047421-27649-12-git-send-email-marc.zyngier@arm.com>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <1409047421-27649-1-git-send-email-marc.zyngier@arm.com>
 References: <1409047421-27649-1-git-send-email-marc.zyngier@arm.com>
@@ -33,30 +33,29 @@ Use the new handle_domain_irq method to handle interrupts.
 
 Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
 ---
- drivers/irqchip/irq-vt8500.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/irqchip/irq-s3c24xx.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/irqchip/irq-vt8500.c b/drivers/irqchip/irq-vt8500.c
-index eb6e91e..b7af816 100644
---- a/drivers/irqchip/irq-vt8500.c
-+++ b/drivers/irqchip/irq-vt8500.c
-@@ -181,7 +181,7 @@ static struct irq_domain_ops vt8500_irq_domain_ops = {
- static void __exception_irq_entry vt8500_handle_irq(struct pt_regs *regs)
+diff --git a/drivers/irqchip/irq-s3c24xx.c b/drivers/irqchip/irq-s3c24xx.c
+index 78a6acc..c8d373f 100644
+--- a/drivers/irqchip/irq-s3c24xx.c
++++ b/drivers/irqchip/irq-s3c24xx.c
+@@ -339,7 +339,6 @@ static inline int s3c24xx_handle_intc(struct s3c_irq_intc *intc,
  {
- 	u32 stat, i;
--	int irqnr, virq;
-+	int irqnr;
- 	void __iomem *base;
+ 	int pnd;
+ 	int offset;
+-	int irq;
  
- 	/* Loop through each active controller */
-@@ -198,8 +198,7 @@ static void __exception_irq_entry vt8500_handle_irq(struct pt_regs *regs)
- 				continue;
- 		}
+ 	pnd = __raw_readl(intc->reg_intpnd);
+ 	if (!pnd)
+@@ -365,8 +364,7 @@ static inline int s3c24xx_handle_intc(struct s3c_irq_intc *intc,
+ 	if (!(pnd & (1 << offset)))
+ 		offset =  __ffs(pnd);
  
--		virq = irq_find_mapping(intc[i].domain, irqnr);
--		handle_IRQ(virq, regs);
-+		handle_domain_irq(intc[i].domain, irqnr, regs);
- 	}
+-	irq = irq_find_mapping(intc->domain, intc_offset + offset);
+-	handle_IRQ(irq, regs);
++	handle_domain_irq(intc->domain, intc_offset + offset, regs);
+ 	return true;
  }
  
 -- 
