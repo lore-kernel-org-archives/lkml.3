@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757234AbaHZGPs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 02:15:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34768 "EHLO mx2.suse.de"
+	id S1757260AbaHZGQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 02:16:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34772 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757160AbaHZGPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 02:15:47 -0400
+	id S1757160AbaHZGQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 02:16:27 -0400
 From: Juergen Gross <jgross@suse.com>
 To: stefan.bader@canonical.com, toshi.kani@hp.com,
         linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
@@ -13,8 +13,8 @@ To: stefan.bader@canonical.com, toshi.kani@hp.com,
         x86@kernel.org
 Cc: Juergen Gross <jgross@suse.com>
 Subject: [PATCH 0/3] x86: Full support of PAT
-Date: Tue, 26 Aug 2014 08:15:00 +0200
-Message-Id: <1409033703-12063-1-git-send-email-jgross@suse.com>
+Date: Tue, 26 Aug 2014 08:16:20 +0200
+Message-Id: <1409033783-12136-1-git-send-email-jgross@suse.com>
 X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
