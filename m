@@ -1,88 +1,293 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756882AbaHZBJz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 21:09:55 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:41110 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756744AbaHZBJx (ORCPT
+	id S933728AbaHZBMZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 21:12:25 -0400
+Received: from regular1.263xmail.com ([211.150.99.132]:33723 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755355AbaHZBMX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 21:09:53 -0400
-Date: Mon, 25 Aug 2014 18:11:12 -0700
-From: Kent Overstreet <kmo@daterainc.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dan Aloni <dan@kernelim.com>, Benjamin LaHaise <bcrl@kvack.org>,
-        "security@kernel.org" <security@kernel.org>, linux-aio@kvack.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mateusz Guzik <mguzik@redhat.com>, Petr Matousek <pmatouse@redhat.com>,
-        Jeff Moyer <jmoyer@redhat.com>, stable <stable@vger.kernel.org>
-Subject: Re: Revert "aio: fix aio request leak when events are reaped by user
- space"
-Message-ID: <20140826011112.GA10095@kmo-pixel>
-References: <f8567a3845ac05bb28f3c1b478ef752762bd39ef.1403632276.git.bcrl@kvack.org>
- <20140819163733.GA10132@gmail.com>
- <20140819165404.GD13858@kvack.org>
- <20140819171426.GA11811@gmail.com>
- <20140820004651.GJ13858@kvack.org>
- <20140822160111.GD20391@kvack.org>
- <20140822161502.GA30392@gmail.com>
- <20140822162630.GF20391@kvack.org>
- <20140822185110.GA2333@gmail.com>
- <CA+55aFzZbRkEh_MbB-XmurVP-4seMP3z9tbq+YQOhkjtDNTzfg@mail.gmail.com>
+	Mon, 25 Aug 2014 21:12:23 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: zyw@rock-chips.com
+X-FST-TO: dianders@chromium.org
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: zyw@rock-chips.com
+X-UNIQUE-TAG: <5c885621464eefdc64b4e44f9510fa45>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+Message-ID: <53FBDEEF.2090407@rock-chips.com>
+Date: Tue, 26 Aug 2014 09:12:15 +0800
+From: Chris Zhong <zyw@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzZbRkEh_MbB-XmurVP-4seMP3z9tbq+YQOhkjtDNTzfg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Doug Anderson <dianders@chromium.org>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Mike Turquette <mturquette@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        rtc-linux@googlegroups.com, Grant Likely <grant.likely@linaro.org>,
+        Lin Huang <hl@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, zhangqing <zhangqing@rock-chips.com>,
+        xxx <xxx@rock-chips.com>,
+        =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>,
+        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        Dmitry Torokhov <dtor@chromium.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Kever Yang <kever.yang@rock-chips.com>
+Subject: Re: [PATCH v5 5/5] clk: RK808: Add clkout driver for RK808
+References: <1408973962-23883-1-git-send-email-zyw@rock-chips.com> <CAD=FV=U+AkhkebTGi7i06rzh=me3wcsu1S-wjdA8PbGT9xux+Q@mail.gmail.com>
+In-Reply-To: <CAD=FV=U+AkhkebTGi7i06rzh=me3wcsu1S-wjdA8PbGT9xux+Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 02:43:56PM -0700, Linus Torvalds wrote:
-> On Fri, Aug 22, 2014 at 11:51 AM, Dan Aloni <dan@kernelim.com> wrote:
-> >
-> > Ben, seems that the test program needs some twidling to make the bug
-> > appear still by setting MAX_IOS to 256 (and it still passes on a
-> > kernel with the original patch reverted). Under this condition the
-> > ring buffer size remains 128 (here, 32*4 CPUs), and it is overrun on
-> > the second attempt.
-> 
-> Ugh.
-> 
-> Ben, at this point my gut feel is that we should just revert the
-> original "fix", and you should take a much deeper look at this all.
-> The original "fix" was more broken then the leak it purported to fix,
-> and now the patch to fix your fix has gone through two iterations and
-> *still* Dan is finding bugs in it.  I'm getting the feeling that this
-> code needs more thinking than you are actually putting into it.
 
-Ugh, I should've dug into this a lot sooner... mea culpa, I originally wrote
-this percpu reqs_available() nonsense (can I unwrite code?)
+On 08/26/2014 01:59 AM, Doug Anderson wrote:
+> Chris,
+>
+> On Mon, Aug 25, 2014 at 6:39 AM, Chris Zhong <zyw@rock-chips.com> wrote:
+>> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+>>
+>> ---
+>>
+>> Changes in v5:
+>> Advices by Mark Brown
+>> - add description about regulator valid name.
+>> - add a header file "rockchip,rk808".
+>>
+>> Changes in v4:
+>> Advices by Doug
+>> - add a "#clock-cells" propertiy
+>> - update the example
+>>
+>> Changes in v3: None
+>> Changes in v2: None
+>>
+>>   drivers/clk/Kconfig     |    9 +++
+>>   drivers/clk/Makefile    |    1 +
+>>   drivers/clk/clk-rk808.c |  164 +++++++++++++++++++++++++++++++++++++++++++++++
+>>   3 files changed, 174 insertions(+)
+>>   create mode 100644 drivers/clk/clk-rk808.c
+>>
+>> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+>> index cfd3af7..84e0590 100644
+>> --- a/drivers/clk/Kconfig
+>> +++ b/drivers/clk/Kconfig
+>> @@ -38,6 +38,15 @@ config COMMON_CLK_MAX77686
+>>          ---help---
+>>            This driver supports Maxim 77686 crystal oscillator clock.
+>>
+>> +config COMMON_CLK_RK808
+>> +       tristate "Clock driver for RK808"
+>> +       depends on MFD_RK808
+>> +       ---help---
+>> +         This driver supports RK808 crystal oscillator clock. These
+>> +         multi-function devices have two fixed-rate oscillators,
+>> +         clocked at 32KHz each. Clkout1 is always on, Clkout2 can off
+>> +         by control register.
+>> +
+>>   config COMMON_CLK_SI5351
+>>          tristate "Clock driver for SiLabs 5351A/B/C"
+>>          depends on I2C
+>> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+>> index f537a0b..99f53d5 100644
+>> --- a/drivers/clk/Makefile
+>> +++ b/drivers/clk/Makefile
+>> @@ -28,6 +28,7 @@ obj-$(CONFIG_ARCH_NOMADIK)            += clk-nomadik.o
+>>   obj-$(CONFIG_ARCH_NSPIRE)              += clk-nspire.o
+>>   obj-$(CONFIG_COMMON_CLK_PALMAS)                += clk-palmas.o
+>>   obj-$(CONFIG_CLK_PPC_CORENET)          += clk-ppc-corenet.o
+>> +obj-$(CONFIG_COMMON_CLK_RK808)         += clk-rk808.o
+>>   obj-$(CONFIG_COMMON_CLK_S2MPS11)       += clk-s2mps11.o
+>>   obj-$(CONFIG_COMMON_CLK_SI5351)                += clk-si5351.o
+>>   obj-$(CONFIG_COMMON_CLK_SI570)         += clk-si570.o
+>> diff --git a/drivers/clk/clk-rk808.c b/drivers/clk/clk-rk808.c
+>> new file mode 100644
+>> index 0000000..a8f8d81
+>> --- /dev/null
+>> +++ b/drivers/clk/clk-rk808.c
+>> @@ -0,0 +1,164 @@
+>> +/*
+>> + * Clkout driver for Rockchip RK808
+>> + *
+>> + * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
+>> + *
+>> + * Author: Chris Zhong <zyw@rock-chips.com>
+>> + * Author: Zhang Qing <zhangqing@rock-chips.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify it
+>> + * under the terms and conditions of the GNU General Public License,
+>> + * version 2, as published by the Free Software Foundation.
+>> + *
+>> + * This program is distributed in the hope it will be useful, but WITHOUT
+>> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+>> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+>> + * more details.
+>> + */
+>> +
+>> +#include <linux/clk.h>
+>> +#include <linux/clk-provider.h>
+>> +#include <linux/module.h>
+>> +#include <linux/slab.h>
+>> +#include <linux/platform_device.h>
+>> +#include <linux/mfd/rk808.h>
+>> +#include <linux/i2c.h>
+>> +
+>> +struct rk808_clkout {
+>> +       struct rk808 *rk808;
+>> +       struct clk_onecell_data clk_data;
+>> +       struct clk_hw           clkout1_hw;
+>> +       struct clk_hw           clkout2_hw;
+>> +};
+>> +
+>> +static unsigned long rk808_clkout_recalc_rate(struct clk_hw *hw,
+>> +                                             unsigned long parent_rate)
+>> +{
+>> +       return 32768;
+>> +}
+>> +
+>> +static int rk808_clkout1_is_prepared(struct clk_hw *hw)
+>> +{
+>> +       return 1;
+>> +}
+>> +
+>> +static int rk808_clkout2_control(struct clk_hw *hw, bool enable)
+>> +{
+>> +       struct rk808_clkout *rk808_clkout = container_of(hw,
+>> +                                                        struct rk808_clkout,
+>> +                                                        clkout2_hw);
+>> +       struct rk808 *rk808 = rk808_clkout->rk808;
+>> +
+>> +       return regmap_update_bits(rk808->regmap, RK808_CLK32OUT_REG,
+>> +                                 CLK32KOUT2_EN, enable ? CLK32KOUT2_EN : 0);
+>> +}
+>> +
+>> +static int rk808_clkout2_prepare(struct clk_hw *hw)
+>> +{
+>> +       return rk808_clkout2_control(hw, 1);
+>> +}
+>> +
+>> +static void rk808_clkout2_unprepare(struct clk_hw *hw)
+>> +{
+>> +       rk808_clkout2_control(hw, 0);
+>> +}
+>> +
+>> +static int rk808_clkout2_is_prepared(struct clk_hw *hw)
+>> +{
+>> +       struct rk808_clkout *rk808_clkout = container_of(hw,
+>> +                                                        struct rk808_clkout,
+>> +                                                        clkout2_hw);
+>> +       struct rk808 *rk808 = rk808_clkout->rk808;
+>> +       uint32_t val;
+>> +
+>> +       int ret = regmap_read(rk808->regmap, RK808_CLK32OUT_REG, &val);
+>> +
+>> +       if (ret < 0)
+>> +               return ret;
+>> +
+>> +       return (val & CLK32KOUT2_EN) ? 1 : 0;
+>> +}
+>> +
+>> +static const struct clk_ops rk808_clkout1_ops = {
+>> +       .is_prepared = rk808_clkout1_is_prepared,
+>> +       .recalc_rate = rk808_clkout_recalc_rate,
+>> +};
+>> +
+>> +static const struct clk_ops rk808_clkout2_ops = {
+>> +       .prepare = rk808_clkout2_prepare,
+>> +       .unprepare = rk808_clkout2_unprepare,
+>> +       .is_prepared = rk808_clkout2_is_prepared,
+>> +       .recalc_rate = rk808_clkout_recalc_rate,
+>> +};
+>> +
+>> +static int rk808_clkout_probe(struct platform_device *pdev)
+>> +{
+>> +       struct rk808 *rk808 = dev_get_drvdata(pdev->dev.parent);
+>> +       struct i2c_client *client = rk808->i2c;
+>> +       struct device_node *node = client->dev.of_node;
+>> +       struct clk_init_data init = {};
+>> +       struct clk **clk_table;
+>> +       struct rk808_clkout *rk808_clkout;
+>> +
+>> +       rk808_clkout = devm_kzalloc(&client->dev,
+>> +                                   sizeof(*rk808_clkout), GFP_KERNEL);
+>> +       if (!rk808_clkout)
+>> +               return -ENOMEM;
+>> +
+>> +       rk808_clkout->rk808 = rk808;
+>> +
+>> +       clk_table = devm_kzalloc(&client->dev,
+>> +                                2*sizeof(struct clk *), GFP_KERNEL);
+>> +       if (!clk_table)
+>> +               return -ENOMEM;
+>> +
+>> +       init.flags = CLK_IS_ROOT;
+>> +       init.parent_names = NULL;
+>> +       init.num_parents = 0;
+>> +       init.name = "rk808-clkout1";
+>> +       init.ops = &rk808_clkout1_ops;
+>> +       rk808_clkout->clkout1_hw.init = &init;
+>> +
+>> +       /* optional override of the clockname */
+>> +       of_property_read_string_index(node, "clock-output-names",
+>> +                                     0, &init.name);
+>> +
+>> +       clk_table[0] = devm_clk_register(&client->dev,
+>> +                                        &rk808_clkout->clkout1_hw);
+>> +       if (IS_ERR(clk_table[0]))
+>> +               return PTR_ERR(clk_table[0]);
+>> +
+>> +       init.name = "rk808-clkout2";
+>> +       init.ops = &rk808_clkout2_ops;
+>> +       rk808_clkout->clkout2_hw.init = &init;
+>> +
+>> +       /* optional override of the clockname */
+>> +       of_property_read_string_index(node, "clock-output-names",
+>> +                                     1, &init.name);
+>> +
+>> +       clk_table[1] = devm_clk_register(&client->dev,
+>> +                                        &rk808_clkout->clkout2_hw);
+>> +       if (IS_ERR(clk_table[1]))
+>> +               return PTR_ERR(clk_table[1]);
+>> +
+>> +       rk808_clkout->clk_data.clks = clk_table;
+>> +       rk808_clkout->clk_data.clk_num = 2;
+>> +
+>> +       return of_clk_add_provider(node, of_clk_src_onecell_get, clk_table);
+> I'm about 99.9% certain that the above line should be:
+>
+>         return of_clk_add_provider(node, of_clk_src_onecell_get,
+>                                    &rk808_clkout->clk_data);
+>
+> The data for of_clk_src_onecell_get() should be of type "struct
+> clk_onecell_data *".
+>
+>
+> Otherwise this looks good to me and you can add my Reviewed-by tag
+> (and even my Tested-by tag).
+>
+> -Doug
 
-Coming into the discussion late, here's my understanding, please correct me if
-I'm wrong and I'll blame the cold medication...
+Yes, It should be, TKS.
 
-The original patch f8567a3845ac05bb28f3c1b478ef752762bd39ef was broken because
-it changed the logic so that a slot was considered available once an iocb
-completion had been delivered to the ring buffer. BUT THE THING THAT IT'S
-COUNTING IS AVAILABLE SLOTS IN THE RINGBUFFER: get_reqs_available() is reserving
-a slot in the ringbuffer, we can't do the put() until the event is actually
-consumed.
+I will modify it in v6
 
-took me a minute to figure out the logic in Ben's current patch, but here's
-what's going on as I understand it
 
- * maintain a count of events we add to the ring
- * if there's fewer events in the ring than that count, the difference has been
-   reaped so we can release their slots
+>
+>
+>
 
-and nothing else changes. we're just accounting one more thing,
-completed_events, and the rest stays the same.
 
-so, it took me a bit to figure out what was being accounted, I think the code
-could stand some new comments explaining how this works (though I'm certainly
-not one to throw stones) - but the new version makes sense to me, I do agree
-with the approach.
-
-Reviewed-by: Kent Overstreet <kmo@daterainc.com>
-
-I think I owe Ben beer at some point...
