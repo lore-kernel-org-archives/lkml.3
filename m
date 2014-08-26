@@ -1,51 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095AbaHZSTL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 14:19:11 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:35693 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752821AbaHZSTK (ORCPT
+	id S1752483AbaHZSYp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 14:24:45 -0400
+Received: from mail-yh0-f45.google.com ([209.85.213.45]:33717 "EHLO
+	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751989AbaHZSYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 14:19:10 -0400
-Date: Tue, 26 Aug 2014 14:19:04 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Christoph Lameter <cl@linux.com>,
-        "akpm@linuxfoundation.org" <akpm@linuxfoundation.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>
-Subject: Re: [PATCH 19/35] [PATCH 19/36] arm: Replace __this_cpu_ptr with
- raw_cpu_ptr
-Message-ID: <20140826181904.GR31659@mtj.dyndns.org>
-References: <20140817173023.439660246@linux.com>
- <20140817173035.870898843@linux.com>
- <20140826181131.GB31659@mtj.dyndns.org>
- <20140826181614.GH23445@arm.com>
+	Tue, 26 Aug 2014 14:24:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140826181614.GH23445@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <53FC579C.50507@rock-chips.com>
+References: <1408973668-21436-1-git-send-email-zyw@rock-chips.com>
+	<CAD=FV=VYJvgXXcYkq+vcpZkXZBDbgfRGNyF8GA6MnvMAGaAebQ@mail.gmail.com>
+	<53FC579C.50507@rock-chips.com>
+Date: Tue, 26 Aug 2014 11:24:41 -0700
+X-Google-Sender-Auth: xqcHvguqn-YrU1ozVA2B2ahM5oU
+Message-ID: <CAD=FV=XrjrYMY+VZgGmQA8wK-9Dw87ssHpRkE=Wtm95eSuwUsQ@mail.gmail.com>
+Subject: Re: [PATCH v5 3/5] RTC: RK808: add RTC driver for RK808
+From: Doug Anderson <dianders@chromium.org>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Mike Turquette <mturquette@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        rtc-linux@googlegroups.com, Grant Likely <grant.likely@linaro.org>,
+        Lin Huang <hl@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, zhangqing <zhangqing@rock-chips.com>,
+        xxx <xxx@rock-chips.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        Dmitry Torokhov <dtor@chromium.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Kever Yang <kever.yang@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 07:16:14PM +0100, Will Deacon wrote:
-> > Applied to percpu/for-3.18-consistent-ops with Will's ack added.
-> > Please let me know if this patch should be routed differently.  Note
-> > that this patch was to be applied to percpu/for-3.17 but delayed due
-> > to build issues caused by cpumask_var_t.
-> 
-> I was going to send it via RMK, but I'm happy either way.
+Chris,
 
-Yeah, I think it'd be easier to route this through percpu tree.  There
-are too many of these and a dependent change follows afterwards.
+On Tue, Aug 26, 2014 at 2:47 AM, Chris Zhong <zyw@rock-chips.com> wrote:
+>
+> On 08/26/2014 11:22 AM, Doug Anderson wrote:
+>>>
+>>> +       int ret;
+>>> >+
+>>> >+       /* Has the RTC been programmed? */
+>>> >+       ret = regmap_update_bits(rk808->regmap, RK808_RTC_CTRL_REG,
+>>> >+                                BIT_RTC_CTRL_REG_RTC_V_OPT_M, 0);
+>>
+>> Can you explain what you're doing here?  The comment seems wrong since
+>> it implies that you're checking something.
+>>
+>> >From what I can tell from the manual you're setting "RTC_READSEL" to 0
+>> which means "Read access directly to dynamic registers.".  That's not
+>> clear here, and RTC_V_OPT_M makes no sense to me.
+>
+>
+> RK808 has a shadowed register for saving a "frozen" RTC time.
+> When user setting "RTC_READSEL" to 1, the time will save in this shadowed
+> register.
+> In this case, user read rtc time register, actually get the time of that
+> moment.
+> So, I move it to probe, this bit needn't clear every time
 
-Thanks!
+OK, now that I understand what BIT_RTC_CTRL_REG_RTC_READSEL_M is, I
+think that we need it here.
 
--- 
-tejun
+At the beginning to readtime() you should set
+BIT_RTC_CTRL_REG_RTC_READSEL_M to 1.  At the end of readtime() you
+should set it to 0.  Make sure you set it back to 0 in the error
+condition, too.
+
+If you don't use READSEL you can get in confusing situations when
+times wrap over.  Pretend that it's 11:59:59 when you start.  You read
+the seconds.  Then the time ticks and you read the minutes and hours.
+You'll end up reporting 12:00:59 when you really should report
+12:00:00 or 11:59:59
+
+
+>>> >+       tm->tm_min = bcd2bin(rtc_data[1]) & MINUTES_REG_MAK;
+>>> >+       tm->tm_hour = bcd2bin(rtc_data[2]) & HOURS_REG_MSK;
+>>> >+       tm->tm_mday = bcd2bin(rtc_data[3]) & DAYS_REG_MSK;
+>>> >+       tm->tm_mon = (bcd2bin(rtc_data[4]) & MONTHS_REG_MSK) - 1;
+>>> >+       tm->tm_year = (bcd2bin(rtc_data[5]) & YEARS_REG_MSK) + 100;
+>>> >+       tm->tm_wday = bcd2bin(rtc_data[6]) & WEEKS_REG_MSK;
+>>> >+       dev_dbg(dev, "RTC date/time %4d-%02d-%02d(%d) %02d:%02d:%02d\n",
+>>> >+               1900 + tm->tm_year, tm->tm_mon + 1, tm->tm_mday,
+>>> >+               tm->tm_wday, tm->tm_hour , tm->tm_min, tm->tm_sec);
+>>> >+
+>>> >+       return 0;
+>>> >+}
+>>> >+
+>>> >+/*
+>>> >+ * Set current time and date in RTC
+>>> >+ */
+>>> >+static int rk808_rtc_set_time(struct device *dev, struct rtc_time *tm)
+>>
+>> Make this "const struct rtc_time *tm"
+>
+> It will be a warning if add const.
+> It should be match
+> int (*set_time)(struct device *, struct rtc_time *);
+> in rtc.h
+
+Oh, right.  Thanks.
+
+
+>>> +               rk808_rtc_set_time(&pdev->dev, &tm_def);
+>>> >+       }
+>>> >+
+>>> >+       device_init_wakeup(&pdev->dev, 1);
+>>
+>> You can skip this.  We'll set "wakeup-source" in the device tree.
+>> That will set I2C_CLIENT_WAKE.  That will cause the i2c core to call
+>> device_init_wakeup() for you.
+>
+> If I remove it, wakealarm is disappear, even though I add "wakeup-source" in
+> device tree.
+> So, I keep it temporarily
+
+OK, I think I understand.  It's because MFD doesn't percolate things
+down to the devices.  The main device is setup as a wakeup-source but
+not this one.  I think you can leave it as you have it..
+
+
+>>> +       if (IS_ERR(rk808_rtc->rtc)) {
+>>> >+               ret = PTR_ERR(rk808_rtc->rtc);
+>>> >+               return ret;
+>>> >+       }
+>>> >+
+>>> >+       alm_irq  = platform_get_irq(pdev, 0);
+>>
+>> Are you sure that platform_get_irq() works in this case?  In Javier's
+>> in-flight max77802 driver he use regmap_irq_get_virq().
+>>
+>> ...oh, maybe your way does work!  You've got the rtc_resources to
+>> specify things, so that looks good...
+>>
+>> ...but I tried testing it by doing:
+>>
+>> cd /sys/class/rtc/rtc0
+>> echo +2 > wakealarm
+>> sleep 5
+>> grep 808 /proc/interrupts
+>>
+>> ...and I didn't see an interrupt go off.  Any idea why?
+>
+> It works well.
+
+I figured it out.  We need
+<https://chromium-review.googlesource.com/#/c/214241/>.  Maybe you
+have a different bootloader or some other code in your kernel that
+made it so you didn't see the problem.  ...and it's better to change
+the IRQ in the dts to "level low".
+
+-Doug
