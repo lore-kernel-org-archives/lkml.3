@@ -1,162 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753177AbaHZScD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 14:32:03 -0400
-Received: from smtp81.ord1c.emailsrvr.com ([108.166.43.81]:33344 "EHLO
-	smtp81.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752070AbaHZScA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 14:32:00 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-To: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Andy Gross <agross@codeaurora.org>
-Subject: [PATCH 2/2] pinctrl: qcom: Add support for reset for apq8064
-Date: Tue, 26 Aug 2014 11:31:07 -0700
-Message-Id: <1409077867-9446-2-git-send-email-pramod.gurav@smartplayin.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1409077867-9446-1-git-send-email-pramod.gurav@smartplayin.com>
-References: <1409077867-9446-1-git-send-email-pramod.gurav@smartplayin.com>
+	id S1753299AbaHZScQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 14:32:16 -0400
+Received: from mail-by2lp0241.outbound.protection.outlook.com ([207.46.163.241]:27942
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752086AbaHZScN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 14:32:13 -0400
+Message-ID: <53FCD456.3050404@opensource.altera.com>
+Date: Tue, 26 Aug 2014 13:39:18 -0500
+From: Thor Thayer <tthayer@opensource.altera.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Pavel Machek <pavel@denx.de>
+CC: <robherring2@gmail.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <rob@landley.net>, <linux@arm.linux.org.uk>,
+        <atull@opensource.altera.com>, <delicious.quinoa@gmail.com>,
+        <dinguyen@opensource.altera.com>, <dougthompson@xmission.com>,
+        <grant.likely@linaro.org>, <bp@alien8.de>, <sameo@linux.intel.com>,
+        <lee.jones@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <tthayer.linux@gmail.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-edac@vger.kernel.org>
+Subject: Re: [PATCHv10 2/2] arm: dts: Add Altera SDRAM EDAC bindings & devicetree
+ entries.
+References: <1407770293-27190-1-git-send-email-tthayer@opensource.altera.com> <1407770293-27190-3-git-send-email-tthayer@opensource.altera.com> <20140814184949.GC11558@amd.pavel.ucw.cz>
+In-Reply-To: <20140814184949.GC11558@amd.pavel.ucw.cz>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: CO1PR06CA041.namprd06.prod.outlook.com (10.242.160.31) To
+ BL2PR03MB113.namprd03.prod.outlook.com (10.255.230.12)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03152A99FF
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6009001)(6049001)(377454003)(479174003)(53754006)(51704005)(199003)(189002)(51914003)(377424004)(24454002)(106356001)(65806001)(77982001)(64126003)(86362001)(66066001)(83322001)(4396001)(83072002)(110136001)(47776003)(80316001)(23746002)(65956001)(19580395003)(81342001)(107046002)(65816999)(46102001)(19580405001)(81542001)(80022001)(64706001)(87266999)(20776003)(99396002)(76176999)(87976001)(101416001)(54356999)(105586002)(50986999)(95666004)(83506001)(76482001)(74502001)(21056001)(77096002)(74662001)(79102001)(85306004)(31966008)(33656002)(85852003)(42186005)(102836001)(92726001)(59896002)(92566001)(50466002)(90102001)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB113;H:[137.57.160.203];FPR:;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for reset functions to reboot the boards
-with soc apq8064.
 
-CC: Linus Walleij <linus.walleij@linaro.org>
-CC: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-CC: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: Stephen Boyd <sboyd@codeaurora.org>
-CC: Andy Gross <agross@codeaurora.org>
-Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
----
- drivers/pinctrl/qcom/pinctrl-apq8064.c |    7 +++++-
- drivers/pinctrl/qcom/pinctrl-msm.c     |   36 ++++++++++++++++++++++++++++++++
- 2 files changed, 42 insertions(+), 1 deletions(-)
+On 08/14/2014 01:49 PM, Pavel Machek wrote:
+> On Mon 2014-08-11 10:18:13, tthayer@opensource.altera.com wrote:
+>> From: Thor Thayer <tthayer@opensource.altera.com>
+>>
+>> Add the Altera SDRAM EDAC bindings and device tree changes to the Altera SoC project.
+>>
+>> Signed-off-by: Thor Thayer <tthayer@opensource.altera.com>
+> Acked-by: Pavel Machek <pavel@denx.de>
+>
+>
+Hi All,
 
-diff --git a/drivers/pinctrl/qcom/pinctrl-apq8064.c b/drivers/pinctrl/qcom/pinctrl-apq8064.c
-index feb6f15..ef1263c 100644
---- a/drivers/pinctrl/qcom/pinctrl-apq8064.c
-+++ b/drivers/pinctrl/qcom/pinctrl-apq8064.c
-@@ -324,6 +324,7 @@ enum apq8064_functions {
- 	APQ_MUX_tsif1,
- 	APQ_MUX_tsif2,
- 	APQ_MUX_usb2_hsic,
-+	APQ_MUX_ps_hold,
- 	APQ_MUX_NA,
- };
- 
-@@ -351,6 +352,9 @@ static const char * const gpio_groups[] = {
- 	"gpio78", "gpio79", "gpio80", "gpio81", "gpio82", "gpio83", "gpio84",
- 	"gpio85", "gpio86", "gpio87", "gpio88", "gpio89"
- };
-+static const char * const ps_hold_groups[] = {
-+	"gpio78"
-+};
- static const char * const gsbi1_groups[] = {
- 	"gpio18", "gpio19", "gpio20", "gpio21"
- };
-@@ -477,6 +481,7 @@ static const struct msm_function apq8064_functions[] = {
- 	FUNCTION(tsif1),
- 	FUNCTION(tsif2),
- 	FUNCTION(usb2_hsic),
-+	FUNCTION(ps_hold),
- };
- 
- static const struct msm_pingroup apq8064_groups[] = {
-@@ -558,7 +563,7 @@ static const struct msm_pingroup apq8064_groups[] = {
- 	PINGROUP(75, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
- 	PINGROUP(76, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
- 	PINGROUP(77, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
--	PINGROUP(78, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(78, ps_hold, NA, NA, NA, NA, NA, NA, NA, NA, NA),
- 	PINGROUP(79, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
- 	PINGROUP(80, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
- 	PINGROUP(81, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
-diff --git a/drivers/pinctrl/qcom/pinctrl-msm.c b/drivers/pinctrl/qcom/pinctrl-msm.c
-index 2738108..f4e4f8f 100644
---- a/drivers/pinctrl/qcom/pinctrl-msm.c
-+++ b/drivers/pinctrl/qcom/pinctrl-msm.c
-@@ -12,6 +12,7 @@
-  * GNU General Public License for more details.
-  */
- 
-+#include <linux/delay.h>
- #include <linux/err.h>
- #include <linux/io.h>
- #include <linux/module.h>
-@@ -27,12 +28,17 @@
- #include <linux/interrupt.h>
- #include <linux/spinlock.h>
- 
-+#include <asm/system_misc.h>
-+
- #include "../core.h"
- #include "../pinconf.h"
- #include "pinctrl-msm.h"
- #include "../pinctrl-utils.h"
- 
- #define MAX_NR_GPIO 300
-+#define PS_HOLD_OFFSET 0x820
-+
-+static void __iomem *msm_ps_hold;
- 
- /**
-  * struct msm_pinctrl - state for a pinctrl-msm device
-@@ -848,10 +854,31 @@ static int msm_gpio_init(struct msm_pinctrl *pctrl)
- 	return 0;
- }
- 
-+static void qcom_reset(enum reboot_mode reboot_mode, const char *cmd)
-+{
-+	writel(0, msm_ps_hold);
-+	mdelay(10000);
-+}
-+
-+const struct msm_function
-+*find_pshold_function(const struct msm_function *functions,
-+					unsigned nfunctions, const char *name)
-+{
-+	int i = 0;
-+	const struct msm_function *func;
-+
-+	for (func = functions; i <= nfunctions; func++, i++)
-+		if (!strcmp(func->name, name))
-+			return func;
-+
-+	return NULL;
-+}
-+
- int msm_pinctrl_probe(struct platform_device *pdev,
- 		      const struct msm_pinctrl_soc_data *soc_data)
- {
- 	struct msm_pinctrl *pctrl;
-+	const struct msm_function *func;
- 	struct resource *res;
- 	int ret;
- 
-@@ -871,6 +898,15 @@ int msm_pinctrl_probe(struct platform_device *pdev,
- 	if (IS_ERR(pctrl->regs))
- 		return PTR_ERR(pctrl->regs);
- 
-+#ifdef CONFIG_ARM
-+	func = find_pshold_function(soc_data->functions,
-+					soc_data->nfunctions, "ps_hold");
-+	if (func) {
-+		dev_dbg(&pdev->dev, "Found Function %s\n", func->name);
-+		msm_ps_hold = pctrl->regs + PS_HOLD_OFFSET;
-+		arm_pm_restart = qcom_reset;
-+	}
-+#endif
- 	pctrl->irq = platform_get_irq(pdev, 0);
- 	if (pctrl->irq < 0) {
- 		dev_err(&pdev->dev, "No interrupt defined for msmgpio\n");
--- 
-1.7.0.4
+Any further comments or suggestions on this patch series? Thanks for the 
+review, Pavel!
 
+Thor
