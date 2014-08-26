@@ -1,87 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753727AbaHZUXl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 16:23:41 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:36637 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752226AbaHZUXj (ORCPT
+	id S1754346AbaHZUaC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 16:30:02 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:43904 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753324AbaHZUaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 16:23:39 -0400
+	Tue, 26 Aug 2014 16:30:00 -0400
+Date: Tue, 26 Aug 2014 13:28:15 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Oleg Nesterov <oleg@redhat.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Julien Tinnes <jln@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] ipc/shm: kill the historical/wrong mm->start_stack
+ check
+In-Reply-To: <20140826193145.GA26576@redhat.com>
+Message-ID: <alpine.LSU.2.11.1408261316560.19965@eggly.anvils>
+References: <20140823144246.GA6281@redhat.com> <20140826193145.GA26576@redhat.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <1409083725.28990.115.camel@misato.fc.hp.com>
-References: <1409033783-12136-1-git-send-email-jgross@suse.com>
- <53FCD68A.40509@amacapital.net> <1409083725.28990.115.camel@misato.fc.hp.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 26 Aug 2014 13:23:16 -0700
-Message-ID: <CALCETrVL-E0neRQq7AZhcmhJFPrLGHBkW+v39h9oM2onTEBpLA@mail.gmail.com>
-Subject: Re: [PATCH 0/3] x86: Full support of PAT
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: Juergen Gross <jgross@suse.com>, Stefan Bader <stefan.bader@canonical.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        xen-devel@lists.xensource.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        ville.syrjala@linux.intel.com, "H. Peter Anvin" <hpa@zytor.com>,
-        X86 ML <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 1:08 PM, Toshi Kani <toshi.kani@hp.com> wrote:
-> On Tue, 2014-08-26 at 11:48 -0700, Andy Lutomirski wrote:
->> On 08/25/2014 11:16 PM, Juergen Gross wrote:
->> > The x86 architecture offers via the PAT (Page Attribute Table) a way to
->> > specify different caching modes in page table entries. The PAT MSR contains
->> > 8 entries each specifying one of 6 possible cache modes. A pte references one
->> > of those entries via 3 bits: _PAGE_PAT, _PAGE_PWT and _PAGE_PCD.
->> >
->> > The Linux kernel currently supports only 4 different cache modes. The PAT MSR
->> > is set up in a way that the setting of _PAGE_PAT in a pte doesn't matter: the
->> > top 4 entries in the PAT MSR are the same as the 4 lower entries.
->> >
->> > This results in the kernel not supporting e.g. write-through mode. Especially
->> > this cache mode would speed up drivers of video cards which now have to use
->> > uncached accesses.
->> >
->> > OTOH some old processors (Pentium) don't support PAT correctly and the Xen
->> > hypervisor has been using a different PAT MSR configuration for some time now
->> > and can't change that as this setting is part of the ABI.
->> >
->> > This patch set abstracts the cache mode from the pte and introduces tables to
->> > translate between cache mode and pte bits (the default cache mode "write back"
->> > is hard-wired to PAT entry 0). The tables are statically initialized with
->> > values being compatible to old processors and current usage. As soon as the
->> > PAT MSR is changed (or - in case of Xen - is read at boot time) the tables are
->> > changed accordingly. Requests of mappings with special cache modes are always
->> > possible now, in case they are not supported there will be a fallback to a
->> > compatible but slower mode.
->>
->> I feel like I'm missing something here.  Where's the support for the
->> high PAT bit on huge pages?  Once you start using the top four entries,
->> you'll need that.
->
-> pgprot_4k_2_large() and pgprot_large_2_4k() provide the conversion of
-> the PAT bit.
+On Tue, 26 Aug 2014, Oleg Nesterov wrote:
 
-Whoops, I missed that.
+> do_shmat() is the only user of ->start_stack (proc just reports its
+> value), and this check looks ugly and wrong.
+> 
+> The reason for this check is not clear at all, and it wrongly assumes
+> that the stack can only grow down.
+> 
+> But the main problem is that in general mm->start_stack has nothing
+> to do with stack_vma->vm_start. Not only the application can switch
+> to another stack and even unmap this area, setup_arg_pages() expands
+> the stack without updating mm->start_stack during exec(). This means
+> that in the likely case "addr > start_stack - size - PAGE_SIZE * 5"
+> is simply impossible after find_vma_intersection() == F, or the stack
+> can't grow anyway because of RLIMIT_STACK.
+> 
+> Many thanks to Hugh for his explanations.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
->
->> Also, this probably needs errata handling.  IIRC there are a handful of
->> CPUs that support PAT but don't work correctly if the high bit is set.
->
-> This patchset provides the infrastructure, but does not actually use the
-> upper four entries.  I am working on additional patchset on top of this,
-> which enables WT with the PAT bit except on the following Intel
-> processors.  If I missed some processors affected, please let me know.
->
->   errata           cpuid
->   --------------------------------------
->   Pentium 2, A52   family 0x6, model 0x5
->   Pentium 3, E27   family 0x6, model 0x7
->   Pentium M, Y26   family 0x6, model 0x9
->   Pentium 4, N46   family 0xf, model 0x0
->
+Acked-by: Hugh Dickins <hughd@google.com>
 
->From very vague memory, that sounds correct.
+But you're much too generous to me: I never even noticed how exec's
+expand_stack() comes *after* setting start_stack, so that the shmat()
+check is nowadays utterly irrelevant.  Thank you for persisting and
+observing that and finally nailing down this coffin!
 
---Andy
+> ---
+>  ipc/shm.c |    7 -------
+>  1 files changed, 0 insertions(+), 7 deletions(-)
+> 
+> diff --git a/ipc/shm.c b/ipc/shm.c
+> index 7fc9f9f..0145479 100644
+> --- a/ipc/shm.c
+> +++ b/ipc/shm.c
+> @@ -1172,13 +1172,6 @@ long do_shmat(int shmid, char __user *shmaddr, int shmflg, ulong *raddr,
+>  
+>  		if (find_vma_intersection(current->mm, addr, addr + size))
+>  			goto invalid;
+> -		/*
+> -		 * If shm segment goes below stack, make sure there is some
+> -		 * space left for the stack to grow (at least 4 pages).
+> -		 */
+> -		if (addr < current->mm->start_stack &&
+> -		    addr > current->mm->start_stack - size - PAGE_SIZE * 5)
+> -			goto invalid;
+>  	}
+>  
+>  	addr = do_mmap_pgoff(file, addr, size, prot, flags, 0, &populate);
+> -- 
+> 1.5.5.1
