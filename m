@@ -1,86 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933793AbaHZGaK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 02:30:10 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:64756 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751111AbaHZGaH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 02:30:07 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-d8-53fc296d92a7
-Message-id: <53FC296C.1030202@samsung.com>
-Date: Tue, 26 Aug 2014 08:30:04 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101
- Thunderbird/31.0
-MIME-version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-Cc: iommu@lists.linux-foundation.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-mm-sig@lists.linaro.org, Arnd Bergmann <arnd@arndb.de>,
-        Shaik Ameer Basha <shaik.ameer@samsung.com>,
-        Cho KyongHo <pullip.cho@samsung.com>,
-        Thierry Reding <treding@nvidia.com>, Olof Johansson <olof@lixom.net>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Rob Herring <robh@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Inki Dae <inki.dae@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH 04/29] drivers: base: add notifier for failed driver bind
-References: <1407235677-26324-1-git-send-email-m.szyprowski@samsung.com>
- <1407235677-26324-5-git-send-email-m.szyprowski@samsung.com>
- <20140825211823.GH16329@8bytes.org>
-In-reply-to: <20140825211823.GH16329@8bytes.org>
-Content-type: text/plain; charset=utf-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJIsWRmVeSWpSXmKPExsVy+t/xy7q5mn+CDU7c1rX4O+kYu0Xz4vVs
-	FpPuT2CxWLDf2qJz9gZ2i94FV9kszja9YbfonLiE3eLLlYdMFpseX2O1uLxrDpvFjPP7mCxO
-	Xf/MZvGv9yCjxZnTl1gt/u/ZwW5x+E07q8WRh7vZLVbt+sNocfs3n4OIx5OD85g8fv+axOix
-	c9Zddo/ZHTNZPTat6mTz2D93DbvH5iX1Hrf/PWb2mHxjOaPHlRNNrB69ze/YPLZcbWfx6Nuy
-	itHj8ya5AL4oLpuU1JzMstQifbsErox3D5+zFmzkqPhweTZTA+MXti5GTg4JAROJh9MXMELY
-	YhIX7q0HinNxCAksZZR49W4/C4TziVFixZU5zCBVvAJaEnMmTgdKcHCwCKhKfDmlCBJmEzCU
-	6HrbxQYSFhWIkjj2NQ+iWlDix+R7LCC2iICSxPXPrawgI5kF3rBKHJ/ezg6SEBbwlfh27Twr
-	xK61jBJf9v1jBUlwChhIPH/0GqybWcBM4svLw6wQtrzE5jVvmScwCsxCsmQWkrJZSMoWMDKv
-	YhRNLU0uKE5KzzXUK07MLS7NS9dLzs/dxAiJ3i87GBcfszrEKMDBqMTD+6Hkd7AQa2JZcWXu
-	IUYJDmYlEV6Gh0Ah3pTEyqrUovz4otKc1OJDjEwcnFINjBtncAeF26/+t7DraZAl77ND7ku4
-	vtU9k5oYxRP88YQCU4FriPWhnDk+9U8ff9uauOHo+Xkn9aebsHCVvrW0j9ec7XxhksFlsxOe
-	Th5KUj4Nk8X8/x8s+r9GoujdKanVH+5Nq83p/m+WXSfN0pzV+XGRiaTu0w8vv6zetSn5muvh
-	6bpi912TA5RYijMSDbWYi4oTAfc9hDG8AgAA
+	id S1757202AbaHZGfL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 02:35:11 -0400
+Received: from ozlabs.org ([103.22.144.67]:50920 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754384AbaHZGfK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 02:35:10 -0400
+Date: Tue, 26 Aug 2014 16:35:02 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>
+Subject: linux-next: build failure after merge of the akpm-current tree
+Message-ID: <20140826163502.33a837fc@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/hB8BQbDSsyc2nlAvML6icyi"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+--Sig_/hB8BQbDSsyc2nlAvML6icyi
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On 2014-08-25 23:18, Joerg Roedel wrote:
-> On Tue, Aug 05, 2014 at 12:47:32PM +0200, Marek Szyprowski wrote:
->> +	if (failed && dev->bus)
->> +		blocking_notifier_call_chain(&dev->bus->p->bus_notifier,
->> +					     BUS_NOTIFY_DRVBIND_FAILED, dev);
->> +
-> Why can't you just use the notifier for BUS_NOTIFY_UNBIND_DRIVER or
-> BUS_NOTIFY_UNBOUND_DRIVER when something goes wrong in driver
-> initialization?
+Hi Andrew,
 
-Hmmm, you might be right. BUS_NOTIFY_UNBIND_DRIVER event happens before 
-unbinding
-the driver, but BUS_NOTIFY_UNBOUND_DRIVER is called when driver remove 
-has been
-finished, so it can be considered as a symmetrical pair for 
-BUS_NOTIFY_BIND_DRIVER.
-Driver which registered bus notifiers is mainly interested in doing 
-right cleanup,
-so the code executed for IOMMU_GROUP_NOTIFY_UNBOUND_DRIVER and
-IOMMU_GROUP_NOTIFY_DRVBIND_FAILED is same.
+After merging the akpm-current tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-I will remove this additional event and simply add a call to
-BUS_NOTIFY_UNBOUND_DRIVER event when driver probe fails.
+./usr/include/linux/prctl.h:132: found __[us]{8,16,32,64} type without #inc=
+lude <linux/types.h>
+In file included from /usr/include/x86_64-linux-gnu/sys/prctl.h:23:0,
+                 from Documentation/prctl/disable-tsc-test.c:14:
+./usr/include/linux/prctl.h:132:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:133:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:134:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:135:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:136:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:137:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:138:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:139:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:140:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:141:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:142:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:143:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:144:2: error: unknown type name '__u32'
+./usr/include/linux/prctl.h:145:2: error: unknown type name '__u32'
+In file included from /usr/include/x86_64-linux-gnu/sys/prctl.h:23:0,
+                 from Documentation/prctl/disable-tsc-ctxt-sw-stress-test.c=
+:19:
+./usr/include/linux/prctl.h:132:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:133:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:134:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:135:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:136:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:137:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:138:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:139:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:140:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:141:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:142:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:143:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:144:2: error: unknown type name '__u32'
+./usr/include/linux/prctl.h:145:2: error: unknown type name '__u32'
+make[3]: *** [Documentation/prctl/disable-tsc-test] Error 1
+make[3]: *** [Documentation/prctl/disable-tsc-ctxt-sw-stress-test] Error 1
+In file included from /usr/include/x86_64-linux-gnu/sys/prctl.h:23:0,
+                 from Documentation/prctl/disable-tsc-on-off-stress-test.c:=
+19:
+./usr/include/linux/prctl.h:132:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:133:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:134:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:135:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:136:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:137:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:138:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:139:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:140:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:141:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:142:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:143:2: error: unknown type name '__u64'
+./usr/include/linux/prctl.h:144:2: error: unknown type name '__u32'
+./usr/include/linux/prctl.h:145:2: error: unknown type name '__u32'
+make[3]: *** [Documentation/prctl/disable-tsc-on-off-stress-test] Error 1
+make[2]: *** [Documentation/prctl] Error 2
 
-Best regards
--- 
-Marek Szyprowski, PhD
-Samsung R&D Institute Poland
+Caused by commit 802d335c0f7f ("prctl: PR_SET_MM -- introduce
+PR_SET_MM_MAP operation").
 
+I have reverted that commit (and commit c2e04b241d40
+("prctl-pr_set_mm-introduce-pr_set_mm_map-operation-v3-fix") that
+follows it) for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Sig_/hB8BQbDSsyc2nlAvML6icyi
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJT/CqbAAoJEMDTa8Ir7ZwV5QkP/1JZjUlUwe8PtRlOpLvYbk8e
+B+mvt8UbjaXPJSgFM9gEzLAVhXPLlei4HquSCEEbHp3scXPVBQTRE9ZDbgNgnJ6P
+U+Xc3wekv76IPSalu1Wyl9mObzNi4IXFC40ahuJPafFI5pvZnTtHOG2A/KaHtJBJ
+zWs9YLlwuEIhmvs+GKTHOhq9uSsACMgYe3RBoQ5yfKc5zlsWHywmzkzhx+Vi8im2
+lqYgfyWFrmq/YnOzqBtUBsJPOswpEfOy/+gX1DgTr3IwfUZyQVk1LKKZlnExTnKo
+8xvfd/0k/aspIFaxnVLjX9Kq74yqsgBC+cUzfuxzRFyy5VKkAf9v3N9qllBvCV8T
+jTKNP/41o7PdKyPGfYz7LRHNv5IHETXecqkaKiXK7hlMtodajSu3v/2dtwex89/R
+3Z86O6/Q5NmQfwyiEMpqwFmL2Gp4ej+viIruz7DiQZRWC3hYwCmxC+pICcNyfoNw
+o1u+3Eae0GwD3hahCPJmHu7BYbhsHSYdGF/8TOgurAqxWkbZ/5mkJWBFPh48j81a
+uG7/GW8bcPHC1ruo94bHYpGmQLSrPdDb4KZ5aWHZk6VIXAwqhP79+mav3oopV/MQ
+Sg4SnWr6XN/xCYanPYjSx2Aom9VEMTACzxQ65ROwZpP6xHZrdDyO7zbn/xCsoNn/
+n/7jV0GlNje3QUpYpTia
+=lk8d
+-----END PGP SIGNATURE-----
+
+--Sig_/hB8BQbDSsyc2nlAvML6icyi--
