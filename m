@@ -1,81 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933720AbaHZA51 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 20:57:27 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:35849 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933663AbaHZA50 (ORCPT
+	id S1756822AbaHZBBR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 21:01:17 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:39289 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755355AbaHZBBP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 20:57:26 -0400
-Date: Mon, 25 Aug 2014 17:57:22 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Andreea-Cristina Bernat <bernat.ada@gmail.com>, mingo@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kernel: trace_syscalls: Replace rcu_assign_pointer()
- with RCU_INIT_POINTER()
-Message-ID: <20140826005722.GJ2663@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140822142822.GA32391@ada>
- <20140822113758.172eb474@gandalf.local.home>
- <20140825225654.GG2663@linux.vnet.ibm.com>
- <20140825190554.36ebafe7@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140825190554.36ebafe7@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082600-0928-0000-0000-00000452E837
+	Mon, 25 Aug 2014 21:01:15 -0400
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Brendan Gregg <brendan.d.gregg@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v6 net-next 0/6] introduce BPF syscall
+Date: Mon, 25 Aug 2014 18:00:52 -0700
+Message-Id: <1409014858-1410-1-git-send-email-ast@plumgrid.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 07:05:54PM -0400, Steven Rostedt wrote:
-> On Mon, 25 Aug 2014 15:56:54 -0700
-> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> 
-> 
-> > > I guess I can add this. It's a very slow path thus it isn't critical.
-> > > 
-> > > Although, I hate the name. Perhaps we should add another macro called
-> > > RCU_CLEAR_POINTER() or something that just nulls it. That way it
-> > > documents the use. To me, INIT means the pointer is being initialized,
-> > > where in reality it's just being cleared. I guess one could argue that
-> > > the pointer is being "re-initialized".
-> > 
-> > I considered that, but there end up being three separate use cases
-> > for this thing:
-> > 
-> > 1.	NULLing the pointer, as in this case.
-> > 
-> > 2.	Initializing the pointer at a time when no readers have a
-> > 	reference to that pointer.  (In this case, there is presumably
-> > 	a later rcu_assign_pointer() that makes the whole thing visible
-> > 	to readers.)
-> > 
-> > 3.	Rearranging data that is already visible to readers, the usual
-> > 	example being removing an element -- readers can already see
-> > 	the successor in this case.
-> > 
-> > Having three different APIs for identical macros seemed like overkill
-> > to me.  Especially given that people already complain about the RCU
-> > API being too big.  :-(
-> > 
-> 
-> Yeah, understood. But I think CLEAR is better than INIT as it says
-> what it's doing more than what it is for. In all three above, we want
-> to clear the pointer, but in only one case we want to initialize it.
-> 
-> But this is bikeshedding, and not worth the time of this dicussion.
+Hi All,
 
-PLAID!!!  We must paint the bikeshed plaid!
+splitting big set of patches into smaller sets:
 
-> No need to look further. Nothings going on here. Move along people or
-> I'll have to get my pepper spray out.
+1st(this) set - introduces uapi/linux/bpf.h and BPF syscall for maps only
+2nd set will extend BPF syscall with programs and verifier
+3rd set will use eBPF in tracing, add samples and verifier tests
+4th set will have llvm and C examples
 
-;-) ;-) ;-)
+Tested on x64 and i386.
+BPF syscall with maps only is usable, but not very useful until the rest comes
+Build/boot tested on arm and sparc.
+They got new warning 'syscall bpf not implemented'
 
-							Thanx, Paul
+V5->V6:
+- fixed few checkpatch warnings.
+  Few lines are still over 80 char, but fixing them will reduce readability
+- rebased
+
+V5 thread:
+https://lkml.org/lkml/2014/8/24/107
+
+All patches:
+git://git.kernel.org/pub/scm/linux/kernel/git/ast/bpf master
+
+Alexei Starovoitov (6):
+  net: filter: add "load 64-bit immediate" eBPF instruction
+  net: filter: split filter.h and expose eBPF to user space
+  bpf: introduce syscall(BPF, ...) and BPF maps
+  bpf: enable bpf syscall on x64 and i386
+  bpf: add lookup/update/delete/iterate methods to BPF maps
+  bpf: add hashtable type of BPF maps
+
+ Documentation/networking/filter.txt |   79 +++++++-
+ arch/x86/net/bpf_jit_comp.c         |   17 ++
+ arch/x86/syscalls/syscall_32.tbl    |    1 +
+ arch/x86/syscalls/syscall_64.tbl    |    1 +
+ include/linux/bpf.h                 |   50 +++++
+ include/linux/filter.h              |  294 +--------------------------
+ include/linux/syscalls.h            |    3 +-
+ include/uapi/asm-generic/unistd.h   |    4 +-
+ include/uapi/linux/Kbuild           |    1 +
+ include/uapi/linux/bpf.h            |  371 ++++++++++++++++++++++++++++++++++
+ kernel/bpf/Makefile                 |    2 +-
+ kernel/bpf/core.c                   |    5 +
+ kernel/bpf/hashtab.c                |  373 +++++++++++++++++++++++++++++++++++
+ kernel/bpf/syscall.c                |  354 +++++++++++++++++++++++++++++++++
+ kernel/sys_ni.c                     |    3 +
+ lib/test_bpf.c                      |   21 ++
+ 16 files changed, 1282 insertions(+), 297 deletions(-)
+ create mode 100644 include/linux/bpf.h
+ create mode 100644 include/uapi/linux/bpf.h
+ create mode 100644 kernel/bpf/hashtab.c
+ create mode 100644 kernel/bpf/syscall.c
+
+-- 
+1.7.9.5
 
