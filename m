@@ -1,60 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934208AbaHZI7E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 04:59:04 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:54168 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932540AbaHZI7C (ORCPT
+	id S934237AbaHZJAo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 05:00:44 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:3244 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932421AbaHZJAm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 04:59:02 -0400
-Date: Tue, 26 Aug 2014 16:58:53 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Stephan Mueller <smueller@chronox.de>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] DRBG: fix maximum value checks on 32 bit systems
-Message-ID: <20140826085853.GA4646@gondor.apana.org.au>
-References: <20140826161456.7ad100e3@canb.auug.org.au>
- <2984929.nIbTCa5fhe@myon.chronox.de>
- <20140826084343.GA4417@gondor.apana.org.au>
- <2049245.HpByroTSUp@myon.chronox.de>
+	Tue, 26 Aug 2014 05:00:42 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 26 Aug 2014 01:50:41 -0700
+From: Mikko Perttunen <mperttunen@nvidia.com>
+To: <tj@kernel.org>, <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>
+CC: <linux-ide@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Mikko Perttunen <mperttunen@nvidia.com>
+Subject: [PATCH v2] ata: ahci_tegra: Read calibration fuse
+Date: Tue, 26 Aug 2014 12:00:30 +0300
+Message-ID: <1409043630-9674-1-git-send-email-mperttunen@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2049245.HpByroTSUp@myon.chronox.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 10:52:45AM +0200, Stephan Mueller wrote:
-> Am Dienstag, 26. August 2014, 16:43:43 schrieb Herbert Xu:
-> 
-> Hi Herbert,
-> 
-> > On Tue, Aug 26, 2014 at 10:29:45AM +0200, Stephan Mueller wrote:
-> > > The maximum values for additional input string or generated blocks is
-> > > larger than 1<<32. To ensure a sensible value on 32 bit systems, return
-> > > SIZE_MAX on 32 bit systems. This value is lower than the maximum
-> > > allowed values defined in SP800-90A. The standard allow lower maximum
-> > > values, but not larger values.
-> > > 
-> > > SIZE_MAX - 1 is used for drbg_max_addtl to allow
-> > > drbg_healthcheck_sanity to check the enforcement of the variable
-> > > without wrapping.
-> > 
-> > This is really ugly but OK.  However, I'm not sure how the sanity
-> > check ever worked.  It would appear that the drbg_generate call in
-> > drbg_healthcheck_sanity should always fail because you explicitly
-> > set addtl->len to drbg_max_addtl + 1, which should trigger the
-> > "DRBG: additional information string too long" error, no?
-> 
-> That is exactly what the test shall do: the test is intended to check whether 
-> the maximum values are enforced. And it does that by checking whether an error 
-> is returned.
+The original version of the driver did not read the SATA calibration
+fuse to remove the dependency to the fuse driver. The fuse driver
+is now merged, so add this functionality.
 
-OK that makes sense.  Patch applied.  Thanks!
+The calibration fuse contains a 2-bit value used to pick a set
+of calibration values for the SATA pad.
+
+Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+---
+v2: reordered and separated includes
+
+ drivers/ata/ahci_tegra.c | 14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/ata/ahci_tegra.c b/drivers/ata/ahci_tegra.c
+index f1fef74..0329044 100644
+--- a/drivers/ata/ahci_tegra.c
++++ b/drivers/ata/ahci_tegra.c
+@@ -18,14 +18,17 @@
+  */
+ 
+ #include <linux/ahci_platform.h>
+-#include <linux/reset.h>
+ #include <linux/errno.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/of_device.h>
+ #include <linux/platform_device.h>
+ #include <linux/regulator/consumer.h>
++#include <linux/reset.h>
++
++#include <soc/tegra/fuse.h>
+ #include <soc/tegra/pmc.h>
++
+ #include "ahci.h"
+ 
+ #define SATA_CONFIGURATION_0				0x180
+@@ -180,9 +183,12 @@ static int tegra_ahci_controller_init(struct ahci_host_priv *hpriv)
+ 
+ 	/* Pad calibration */
+ 
+-	/* FIXME Always use calibration 0. Change this to read the calibration
+-	 * fuse once the fuse driver has landed. */
+-	val = 0;
++	ret = tegra_fuse_readl(FUSE_SATA_CALIB, &val);
++	if (ret) {
++		dev_err(&tegra->pdev->dev,
++			"failed to read calibration fuse: %d\n", ret);
++		return ret;
++	}
+ 
+ 	calib = tegra124_pad_calibration[val & FUSE_SATA_CALIB_MASK];
+ 
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+1.8.1.5
+
