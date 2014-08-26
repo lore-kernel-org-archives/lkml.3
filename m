@@ -1,277 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758608AbaHZOQx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 10:16:53 -0400
-Received: from regular1.263xmail.com ([211.150.99.133]:52906 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758351AbaHZOQv (ORCPT
+	id S1758614AbaHZORV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 10:17:21 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37140 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758250AbaHZORT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 10:16:51 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: zyw@rock-chips.com
-X-FST-TO: robh+dt@kernel.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: zyw@rock-chips.com
-X-UNIQUE-TAG: <ce957b0750914212adae4ff5964e78b7>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Chris Zhong <zyw@rock-chips.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        sameo@linux.intel.com, lee.jones@linaro.org, lgirdwood@gmail.com,
-        broonie@kernel.org, a.zummo@towertech.it, mturquette@linaro.org
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
-        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
-        xxx@rock-chips.com, dianders@chromium.org, heiko@sntech.de,
-        olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
-        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com,
-        Chris Zhong <zyw@rock-chips.com>
-Subject: [PATCH v6 4/5] clk: RK808: Add clkout driver for RK808
-Date: Tue, 26 Aug 2014 22:16:28 +0800
-Message-Id: <1409062589-12157-1-git-send-email-zyw@rock-chips.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 26 Aug 2014 10:17:19 -0400
+Date: Tue, 26 Aug 2014 15:16:08 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Behan Webster <behanw@converseincode.com>
+Cc: "ard.biesheuvel@linaro.org" <ard.biesheuvel@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "k.khlebnikov@samsung.com" <k.khlebnikov@samsung.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "takahiro.akashi@linaro.org" <takahiro.akashi@linaro.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>
+Subject: Re: [PATCH 0/4] LLVMLinux: Patches to enable the kernel to be
+ compiled with clang/LLVM
+Message-ID: <20140826141608.GT23445@arm.com>
+References: <1406764649-20326-1-git-send-email-behanw@converseincode.com>
+ <20140731103323.GL26853@arm.com>
+ <53DB138F.7070709@converseincode.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53DB138F.7070709@converseincode.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+Hi Behan,
 
----
+On Fri, Aug 01, 2014 at 05:11:59AM +0100, Behan Webster wrote:
+> On 07/31/14 03:33, Will Deacon wrote:
+> > On Thu, Jul 31, 2014 at 12:57:25AM +0100, behanw@converseincode.com wrote:
+> >> From: Behan Webster <behanw@converseincode.com>
+> >>
+> >> This patch set moves from using locally defined named registers to access the
+> >> stack pointer to using a globally defined named register. This allows the code
+> >> to work both with gcc and clang.
+> >>
+> >> The LLVMLinux project aims to fully build the Linux kernel using both gcc and
+> >> clang (the C front end for the LLVM compiler infrastructure project).
+> >>
+> >> Behan Webster (4):
+> >>    arm64: LLVMLinux: Add current_stack_pointer() for arm64
+> >>    arm64: LLVMLinux: Use current_stack_pointer in save_stack_trace_tsk
+> >>    arm64: LLVMLinux: Calculate current_thread_info from
+> >>      current_stack_pointer
+> >>    arm64: LLVMLinux: Use current_stack_pointer in kernel/traps.c
+> > Once Andreas's comments have been addressed:
+> >
+> >    Acked-by: Will Deacon <will.deacon@arm.com>
+> >
+> > Please can you send a new series after the merge window?
+> Pity. I was hoping to get it in this merge window.
+> 
+> However, will resubmit for 3.18.
 
-Changes in v6:
-Adviced by doug
-- use correct argument call of_clk_add_provider in probe
+Any chance of a v2 for this series, please? If you address the comments
+pending for v1, I think it's good to merge.
 
-Changes in v5:
-Adviced by doug
-- add some error checking in probe
-- move "rockchip,rk808.h" into the patch about dt-bindings
-
-Changes in v4:
-Adviced by doug
-- add "clock-output-names" propertiey
-- add a header file "rockchip,rk808.h"
-
-Changes in v3:
-- fix compile err
-
-Changes in v2:
-Adviced by javier.martinez
-- separated from rtc-rk808.
-
- drivers/clk/Kconfig     |    9 +++
- drivers/clk/Makefile    |    1 +
- drivers/clk/clk-rk808.c |  163 +++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 173 insertions(+)
- create mode 100644 drivers/clk/clk-rk808.c
-
-diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-index cfd3af7..84e0590 100644
---- a/drivers/clk/Kconfig
-+++ b/drivers/clk/Kconfig
-@@ -38,6 +38,15 @@ config COMMON_CLK_MAX77686
- 	---help---
- 	  This driver supports Maxim 77686 crystal oscillator clock. 
- 
-+config COMMON_CLK_RK808
-+	tristate "Clock driver for RK808"
-+	depends on MFD_RK808
-+	---help---
-+	  This driver supports RK808 crystal oscillator clock. These
-+	  multi-function devices have two fixed-rate oscillators,
-+	  clocked at 32KHz each. Clkout1 is always on, Clkout2 can off
-+	  by control register.
-+
- config COMMON_CLK_SI5351
- 	tristate "Clock driver for SiLabs 5351A/B/C"
- 	depends on I2C
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index f537a0b..99f53d5 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -28,6 +28,7 @@ obj-$(CONFIG_ARCH_NOMADIK)		+= clk-nomadik.o
- obj-$(CONFIG_ARCH_NSPIRE)		+= clk-nspire.o
- obj-$(CONFIG_COMMON_CLK_PALMAS)		+= clk-palmas.o
- obj-$(CONFIG_CLK_PPC_CORENET)		+= clk-ppc-corenet.o
-+obj-$(CONFIG_COMMON_CLK_RK808)		+= clk-rk808.o
- obj-$(CONFIG_COMMON_CLK_S2MPS11)	+= clk-s2mps11.o
- obj-$(CONFIG_COMMON_CLK_SI5351)		+= clk-si5351.o
- obj-$(CONFIG_COMMON_CLK_SI570)		+= clk-si570.o
-diff --git a/drivers/clk/clk-rk808.c b/drivers/clk/clk-rk808.c
-new file mode 100644
-index 0000000..21f8b54
---- /dev/null
-+++ b/drivers/clk/clk-rk808.c
-@@ -0,0 +1,163 @@
-+/*
-+ * Clkout driver for Rockchip RK808
-+ *
-+ * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
-+ *
-+ * Author: Chris Zhong <zyw@rock-chips.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/clk-provider.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/platform_device.h>
-+#include <linux/mfd/rk808.h>
-+#include <linux/i2c.h>
-+
-+struct rk808_clkout {
-+	struct rk808 *rk808;
-+	struct clk_onecell_data clk_data;
-+	struct clk_hw		clkout1_hw;
-+	struct clk_hw		clkout2_hw;
-+};
-+
-+static unsigned long rk808_clkout_recalc_rate(struct clk_hw *hw,
-+					      unsigned long parent_rate)
-+{
-+	return 32768;
-+}
-+
-+static int rk808_clkout1_is_prepared(struct clk_hw *hw)
-+{
-+	return 1;
-+}
-+
-+static int rk808_clkout2_control(struct clk_hw *hw, bool enable)
-+{
-+	struct rk808_clkout *rk808_clkout = container_of(hw,
-+							 struct rk808_clkout,
-+							 clkout2_hw);
-+	struct rk808 *rk808 = rk808_clkout->rk808;
-+
-+	return regmap_update_bits(rk808->regmap, RK808_CLK32OUT_REG,
-+				  CLK32KOUT2_EN, enable ? CLK32KOUT2_EN : 0);
-+}
-+
-+static int rk808_clkout2_prepare(struct clk_hw *hw)
-+{
-+	return rk808_clkout2_control(hw, 1);
-+}
-+
-+static void rk808_clkout2_unprepare(struct clk_hw *hw)
-+{
-+	rk808_clkout2_control(hw, 0);
-+}
-+
-+static int rk808_clkout2_is_prepared(struct clk_hw *hw)
-+{
-+	struct rk808_clkout *rk808_clkout = container_of(hw,
-+							 struct rk808_clkout,
-+							 clkout2_hw);
-+	struct rk808 *rk808 = rk808_clkout->rk808;
-+	uint32_t val;
-+
-+	int ret = regmap_read(rk808->regmap, RK808_CLK32OUT_REG, &val);
-+
-+	if (ret < 0)
-+		return ret;
-+
-+	return (val & CLK32KOUT2_EN) ? 1 : 0;
-+}
-+
-+static const struct clk_ops rk808_clkout1_ops = {
-+	.is_prepared = rk808_clkout1_is_prepared,
-+	.recalc_rate = rk808_clkout_recalc_rate,
-+};
-+
-+static const struct clk_ops rk808_clkout2_ops = {
-+	.prepare = rk808_clkout2_prepare,
-+	.unprepare = rk808_clkout2_unprepare,
-+	.is_prepared = rk808_clkout2_is_prepared,
-+	.recalc_rate = rk808_clkout_recalc_rate,
-+};
-+
-+static int rk808_clkout_probe(struct platform_device *pdev)
-+{
-+	struct rk808 *rk808 = dev_get_drvdata(pdev->dev.parent);
-+	struct i2c_client *client = rk808->i2c;
-+	struct device_node *node = client->dev.of_node;
-+	struct clk_init_data init = {};
-+	struct clk **clk_table;
-+	struct rk808_clkout *rk808_clkout;
-+
-+	rk808_clkout = devm_kzalloc(&client->dev,
-+				    sizeof(*rk808_clkout), GFP_KERNEL);
-+	if (!rk808_clkout)
-+		return -ENOMEM;
-+
-+	rk808_clkout->rk808 = rk808;
-+
-+	clk_table = devm_kzalloc(&client->dev,
-+				 2*sizeof(struct clk *), GFP_KERNEL);
-+	if (!clk_table)
-+		return -ENOMEM;
-+
-+	init.flags = CLK_IS_ROOT;
-+	init.parent_names = NULL;
-+	init.num_parents = 0;
-+	init.name = "rk808-clkout1";
-+	init.ops = &rk808_clkout1_ops;
-+	rk808_clkout->clkout1_hw.init = &init;
-+
-+	/* optional override of the clockname */
-+	of_property_read_string_index(node, "clock-output-names",
-+				      0, &init.name);
-+
-+	clk_table[0] = devm_clk_register(&client->dev,
-+					 &rk808_clkout->clkout1_hw);
-+	if (IS_ERR(clk_table[0]))
-+		return PTR_ERR(clk_table[0]);
-+
-+	init.name = "rk808-clkout2";
-+	init.ops = &rk808_clkout2_ops;
-+	rk808_clkout->clkout2_hw.init = &init;
-+
-+	/* optional override of the clockname */
-+	of_property_read_string_index(node, "clock-output-names",
-+				      1, &init.name);
-+
-+	clk_table[1] = devm_clk_register(&client->dev,
-+					 &rk808_clkout->clkout2_hw);
-+	if (IS_ERR(clk_table[1]))
-+		return PTR_ERR(clk_table[1]);
-+
-+	rk808_clkout->clk_data.clks = clk_table;
-+	rk808_clkout->clk_data.clk_num = 2;
-+
-+	return of_clk_add_provider(node, of_clk_src_onecell_get,
-+				   &rk808_clkout->clk_data);
-+}
-+
-+static struct platform_driver rk808_clkout_driver = {
-+	.probe = rk808_clkout_probe,
-+	.driver		= {
-+		.name	= "rk808-clkout",
-+		.owner	= THIS_MODULE,
-+	},
-+};
-+
-+module_platform_driver(rk808_clkout_driver);
-+
-+MODULE_DESCRIPTION("Clkout driver for the rk808 series PMICs");
-+MODULE_AUTHOR("Chris Zhong <zyw@rock-chips.com>");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:rk808-clkout");
--- 
-1.7.9.5
-
-
+Will
