@@ -1,171 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757121AbaHZDFM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 23:05:12 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:50011 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755377AbaHZDFK (ORCPT
+	id S1757117AbaHZDHv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 23:07:51 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:41627 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754552AbaHZDHt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 23:05:10 -0400
-From: Scott Yuan <scottzero0@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Scott Yuan <scottzero0@gmail.com>
-Subject: [PATCH] 8250: serial device file is out of order
-Date: Tue, 26 Aug 2014 11:04:57 +0800
-Message-Id: <1409022297-15555-1-git-send-email-scottzero0@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Mon, 25 Aug 2014 23:07:49 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-23-53fbf9ed7d3b
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'Minchan Kim'" <minchan@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, ngupta@vflare.org,
+        "'Jerome Marchand'" <jmarchan@redhat.com>,
+        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>
+References: <000201cfbde2$2ae08710$80a19530$@samsung.com>
+ <20140825003610.GM17372@bbox>
+In-reply-to: <20140825003610.GM17372@bbox>
+Subject: RE: [PATCH v3] zram: add num_discards for discarded pages stat
+Date: Tue, 26 Aug 2014 11:05:47 +0800
+Message-id: <008001cfc0da$de01b0d0$9a051270$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQIqAXr27T8dWW6NRcydERO6c93iPAIE7SYmmx2EuBA=
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupikeLIzCtJLcpLzFFi42I5/e+xgO7bn7+DDXY+M7KYs34Nm8WpP9eZ
+	LC7vmsNmcW/Nf1aLZV/fs1tsaJnFbrH282N2B3aPnbPusntsWtXJ5rHp0yR2jxMzfrN4vN93
+	lc1j56fNrB6fN8kFsEdx2aSk5mSWpRbp2yVwZezacpq94JdBxf7mV2wNjAvUuxg5OSQETCQa
+	3u5khrDFJC7cW8/WxcjFISSwiFHi1srPjBDOD0aJ7wfeglWxCahILO/4zwRiiwioSaw7+IIF
+	pIhZ4AajxM2fx1hBEkICkRIPNz4HK+IU0JL4MHs2WFxYwF3i36o37CA2i4CqxJp9c4DWcXDw
+	ClhKrJ8PNp9XQFDix+R7LCA2s4C6xKR5i5ghbHmJzWveQl2qILHj7GtGiBusJG58amCDqBGX
+	2HjkFssERqFZSEbNQjJqFpJRs5C0LGBkWcUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHEPP
+	pHYwrmywOMQowMGoxMN7I/53sBBrYllxZe4hRgkOZiURXoaHQCHelMTKqtSi/Pii0pzU4kOM
+	0hwsSuK8B1qtA4UE0hNLUrNTUwtSi2CyTBycUg2Ms9aIGOcrmu5qa1NYd+ri0z9LnvJ7bOg9
+	W6fVxWdorfFTf/XZOxE7DVyDvl965rKzRb3gwx5jthaDgvAvD5/9mR3atkFhAsfZrhmP3j5f
+	Z+GmoJlisSlqFle3a9eK8zEXglUzcqzPuYUV8BrcCN+f90G1O8UmNk78Bsudom9pzau6a951
+	ZFoosRRnJBpqMRcVJwIAsIHMJJ0CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On x86 architecture, the configuration of serial device maybe get from ACPI
-DSDT, but the order of DSDT is not mandatory, result as array serial8250_ports
-is out of order. This situation is more obvious in multiple serial port
-mainboard. Sort it by unique id that in DSDT will fix it.
+Hi Minchan,
 
-Signed-off-by: Scott Yuan <scottzero0@gmail.com>
----
- drivers/pnp/pnpacpi/core.c          |  1 +
- drivers/tty/serial/8250/8250_core.c | 40 ++++++++++++++++++++++++++++++++++++-
- drivers/tty/serial/8250/8250_pnp.c  | 12 +++++++++++
- include/linux/pnp.h                 |  1 +
- include/linux/serial_8250.h         |  2 ++
- 5 files changed, 55 insertions(+), 1 deletion(-)
+> -----Original Message-----
+> From: Minchan Kim [mailto:minchan@kernel.org]
+> Sent: Monday, August 25, 2014 8:36 AM
+> To: Chao Yu
+> Cc: linux-kernel@vger.kernel.org; linux-mm@kvack.org; ngupta@vflare.org; 'Jerome Marchand';
+> 'Sergey Senozhatsky'; 'Andrew Morton'
+> Subject: Re: [PATCH v3] zram: add num_discards for discarded pages stat
+> 
+> Hello Chao,
+> 
+> On Fri, Aug 22, 2014 at 04:21:01PM +0800, Chao Yu wrote:
+> > Since we have supported handling discard request in this commit
+> > f4659d8e620d08bd1a84a8aec5d2f5294a242764 (zram: support REQ_DISCARD), zram got
+> > one more chance to free unused memory whenever received discard request. But
+> > without stating for discard request, there is no method for user to know whether
+> > discard request has been handled by zram or how many blocks were discarded by
+> > zram when user wants to know the effect of discard.
+> 
+> My concern is that how much we are able to know the effect of discard
+> exactly with your patch.
+> 
+> The issue I can think of is zram-swap discard.
+> Now, zram handles notification from VM to free duplicated copy between
+> VM-owned memory and zRAM-owned's one so discarding for zram-swap might
+> be pointless overhead but your stat indicates lots of free page discarded
+> without real freeing so that user might think "We should keep enable
+> swap discard for zRAM because the stat indicates it's really good".
 
-diff --git a/drivers/pnp/pnpacpi/core.c b/drivers/pnp/pnpacpi/core.c
-index a5c6cb7..84b518e 100644
---- a/drivers/pnp/pnpacpi/core.c
-+++ b/drivers/pnp/pnpacpi/core.c
-@@ -254,6 +254,7 @@ static int __init pnpacpi_add_device(struct acpi_device *device)
- 		return -ENOMEM;
- 
- 	dev->data = device;
-+	dev->is_acpi = 1;
- 	/* .enabled means the device can decode the resources */
- 	dev->active = device->status.enabled;
- 	if (acpi_has_method(device->handle, "_SRS"))
-diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-index 7a91c6d..0e5ece5 100644
---- a/drivers/tty/serial/8250/8250_core.c
-+++ b/drivers/tty/serial/8250/8250_core.c
-@@ -3221,6 +3221,41 @@ static struct uart_8250_port *serial8250_find_match_or_unused(struct uart_port *
- 	return NULL;
- }
- 
-+static struct uart_8250_port *
-+serial8250_find_match_sorted_port(struct uart_port *port)
-+{
-+	int i, j;
-+	struct uart_8250_port *uart;
-+
-+	uart = container_of(port, struct uart_8250_port, port);
-+
-+	/*
-+	 * We need sorted array serial8250_ports, it is sort by ACPI
-+	 * device unique id, so find an apropriate position to insert.
-+	 */
-+	for (i = 0; i < nr_uarts; i++) {
-+		if (serial8250_ports[i].uid == 0 ||
-+			uart->uid < serial8250_ports[i].uid)
-+			break;
-+	}
-+
-+	/*
-+	 * If current uid that in serial8250_ports is big than port uid,
-+	 * then move 8250 port data.
-+	 */
-+	if (i < nr_uarts - 1 &&
-+		uart->uid < serial8250_ports[i].uid) {
-+		memmove(&serial8250_ports[i+1], &serial8250_ports[i],
-+			(nr_uarts - i - 1) * sizeof(struct uart_8250_port));
-+
-+		/* modify port.line, since data moved */
-+		for (j = i + 1; j < nr_uarts; j++)
-+			serial8250_ports[j].port.line += 1;
-+	}
-+	serial8250_ports[i].uid = uart->uid;
-+	return &serial8250_ports[i];
-+}
-+
- /**
-  *	serial8250_register_8250_port - register a serial port
-  *	@up: serial port template
-@@ -3244,7 +3279,10 @@ int serial8250_register_8250_port(struct uart_8250_port *up)
- 
- 	mutex_lock(&serial_mutex);
- 
--	uart = serial8250_find_match_or_unused(&up->port);
-+	if (up->is_acpi)
-+		uart = serial8250_find_match_sorted_port(&up->port);
-+	else
-+		uart = serial8250_find_match_or_unused(&up->port);
- 	if (uart && uart->port.type != PORT_8250_CIR) {
- 		if (uart->port.dev)
- 			uart_remove_one_port(&serial8250_reg, &uart->port);
-diff --git a/drivers/tty/serial/8250/8250_pnp.c b/drivers/tty/serial/8250/8250_pnp.c
-index 682a2fb..c880ed3 100644
---- a/drivers/tty/serial/8250/8250_pnp.c
-+++ b/drivers/tty/serial/8250/8250_pnp.c
-@@ -15,6 +15,8 @@
- #include <linux/pci.h>
- #include <linux/pnp.h>
- #include <linux/string.h>
-+#include <acpi/acpi.h>
-+#include <acpi/acpi_bus.h>
- #include <linux/kernel.h>
- #include <linux/serial_core.h>
- #include <linux/bitops.h>
-@@ -427,6 +429,8 @@ static int
- serial_pnp_probe(struct pnp_dev *dev, const struct pnp_device_id *dev_id)
- {
- 	struct uart_8250_port uart;
-+	struct acpi_device *acpi_dev;
-+	char *serial_uid;
- 	int ret, line, flags = dev_id->driver_data;
- 
- 	if (flags & UNKNOWN_DEV) {
-@@ -451,6 +455,14 @@ serial_pnp_probe(struct pnp_dev *dev, const struct pnp_device_id *dev_id)
- 	} else
- 		return -ENODEV;
- 
-+	if (dev->is_acpi) {
-+		acpi_dev = dev->data;
-+		serial_uid = acpi_dev->pnp.unique_id;
-+		uart.is_acpi = 1;
-+		if (kstrtoint(serial_uid, 10, &uart.uid))
-+			return -EINVAL;
-+	}
-+
- #ifdef SERIAL_DEBUG_PNP
- 	printk(KERN_DEBUG
- 		"Setup PNP port: port %x, mem 0x%lx, irq %d, type %d\n",
-diff --git a/include/linux/pnp.h b/include/linux/pnp.h
-index 195aafc..d745f14 100644
---- a/include/linux/pnp.h
-+++ b/include/linux/pnp.h
-@@ -245,6 +245,7 @@ struct pnp_dev {
- 	u64 dma_mask;
- 	unsigned int number;		/* used as an index, must be unique */
- 	int status;
-+	unsigned char is_acpi;		/* is acpi device */
- 
- 	struct list_head global_list;	/* node in global list of devices */
- 	struct list_head protocol_list;	/* node in list of device's protocol */
-diff --git a/include/linux/serial_8250.h b/include/linux/serial_8250.h
-index af47a8a..8f1e1bd 100644
---- a/include/linux/serial_8250.h
-+++ b/include/linux/serial_8250.h
-@@ -74,7 +74,9 @@ struct uart_8250_port {
- 	struct list_head	list;		/* ports on this IRQ */
- 	unsigned short		capabilities;	/* port capabilities */
- 	unsigned short		bugs;		/* port bugs */
-+	int			uid;		/* ACPI device unique id */
- 	unsigned int		tx_loadsz;	/* transmit fifo load size */
-+	unsigned char		is_acpi;	/* is acpi device */
- 	unsigned char		acr;
- 	unsigned char		ier;
- 	unsigned char		lcr;
--- 
-1.9.1
+Agreed.
+
+> 
+> In summary, wouldn't it better to have two?
+
+Yeah, I'd like to.
+
+> 
+> num_discards,
+> num_failed_discards?
+
+It's good, but, IMHO, as it's not failed to discard pages due to inside
+error of zRAM, How about show this information more positive by using:
+num_discard_req,
+num_discarded
+
+Then user might think "We can keep on using real-time mode or batch mode
+discard, because our freed pages are increased continuously shew by the
+num_discarded with sending discard reqs each time.
+
+How do you think?
+
+Thanks,
+Yu
+
+> 
+> For it, we should modify zram_free_page has return value.
+> What do other guys think?
+> 
+> >
+> > In this patch, we add num_discards to stat discarded pages, and export it to
+> > sysfs for users.
+> >
+> > * From v1
+> >  * Update zram document to show num_discards in statistics list.
+> >
+> > * From v2
+> >  * Update description of this patch with clear goal.
+> >
+> > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> > ---
+> >  Documentation/ABI/testing/sysfs-block-zram | 10 ++++++++++
+> >  Documentation/blockdev/zram.txt            |  1 +
+> >  drivers/block/zram/zram_drv.c              |  3 +++
+> >  drivers/block/zram/zram_drv.h              |  1 +
+> >  4 files changed, 15 insertions(+)
+> >
+> > diff --git a/Documentation/ABI/testing/sysfs-block-zram
+> b/Documentation/ABI/testing/sysfs-block-zram
+> > index 70ec992..fa8936e 100644
+> > --- a/Documentation/ABI/testing/sysfs-block-zram
+> > +++ b/Documentation/ABI/testing/sysfs-block-zram
+> > @@ -57,6 +57,16 @@ Description:
+> >  		The failed_writes file is read-only and specifies the number of
+> >  		failed writes happened on this device.
+> >
+> > +
+> > +What:		/sys/block/zram<id>/num_discards
+> > +Date:		August 2014
+> > +Contact:	Chao Yu <chao2.yu@samsung.com>
+> > +Description:
+> > +		The num_discards file is read-only and specifies the number of
+> > +		physical blocks which are discarded by this device. These blocks
+> > +		are included in discard request which is sended by filesystem as
+> > +		the blocks are no longer used.
+> > +
+> >  What:		/sys/block/zram<id>/max_comp_streams
+> >  Date:		February 2014
+> >  Contact:	Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> > diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
+> > index 0595c3f..e50e18b 100644
+> > --- a/Documentation/blockdev/zram.txt
+> > +++ b/Documentation/blockdev/zram.txt
+> > @@ -89,6 +89,7 @@ size of the disk when not in use so a huge zram is wasteful.
+> >  		num_writes
+> >  		failed_reads
+> >  		failed_writes
+> > +		num_discards
+> >  		invalid_io
+> >  		notify_free
+> >  		zero_pages
+> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> > index d00831c..904e7a5 100644
+> > --- a/drivers/block/zram/zram_drv.c
+> > +++ b/drivers/block/zram/zram_drv.c
+> > @@ -606,6 +606,7 @@ static void zram_bio_discard(struct zram *zram, u32 index,
+> >  		bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
+> >  		zram_free_page(zram, index);
+> >  		bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
+> > +		atomic64_inc(&zram->stats.num_discards);
+> >  		index++;
+> >  		n -= PAGE_SIZE;
+> >  	}
+> > @@ -866,6 +867,7 @@ ZRAM_ATTR_RO(num_reads);
+> >  ZRAM_ATTR_RO(num_writes);
+> >  ZRAM_ATTR_RO(failed_reads);
+> >  ZRAM_ATTR_RO(failed_writes);
+> > +ZRAM_ATTR_RO(num_discards);
+> >  ZRAM_ATTR_RO(invalid_io);
+> >  ZRAM_ATTR_RO(notify_free);
+> >  ZRAM_ATTR_RO(zero_pages);
+> > @@ -879,6 +881,7 @@ static struct attribute *zram_disk_attrs[] = {
+> >  	&dev_attr_num_writes.attr,
+> >  	&dev_attr_failed_reads.attr,
+> >  	&dev_attr_failed_writes.attr,
+> > +	&dev_attr_num_discards.attr,
+> >  	&dev_attr_invalid_io.attr,
+> >  	&dev_attr_notify_free.attr,
+> >  	&dev_attr_zero_pages.attr,
+> > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+> > index e0f725c..2994aaf 100644
+> > --- a/drivers/block/zram/zram_drv.h
+> > +++ b/drivers/block/zram/zram_drv.h
+> > @@ -86,6 +86,7 @@ struct zram_stats {
+> >  	atomic64_t num_writes;	/* --do-- */
+> >  	atomic64_t failed_reads;	/* can happen when memory is too low */
+> >  	atomic64_t failed_writes;	/* can happen when memory is too low */
+> > +	atomic64_t num_discards;	/* no. of discarded pages */
+> >  	atomic64_t invalid_io;	/* non-page-aligned I/O requests */
+> >  	atomic64_t notify_free;	/* no. of swap slot free notifications */
+> >  	atomic64_t zero_pages;		/* no. of zero filled pages */
+> > --
+> > 2.0.1.474.g72c7794
+> >
+> >
+> > --
+> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > see: http://www.linux-mm.org/ .
+> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+> --
+> Kind regards,
+> Minchan Kim
 
