@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752681AbaHZRVL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 13:21:11 -0400
-Received: from mail-yh0-f42.google.com ([209.85.213.42]:62963 "EHLO
-	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751684AbaHZRVK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 13:21:10 -0400
+	id S1752549AbaHZRZI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 13:25:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59355 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751826AbaHZRZG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 13:25:06 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>, Joe Lawrence <joe.lawrence@stratus.com>
+Cc: <linux-kernel@vger.kernel.org>, Jiri Kosina <jkosina@suse.cz>,
+        Boaz Harrosh <bharrosh@panasas.com>
+Subject: Re: [PATCH v3 0/2] block,scsi: fixup blk_get_request dead queue scenarios
+References: <1404329718-19367-1-git-send-email-joe.lawrence@stratus.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 26 Aug 2014 13:24:54 -0400
+In-Reply-To: <1404329718-19367-1-git-send-email-joe.lawrence@stratus.com> (Joe
+	Lawrence's message of "Wed, 2 Jul 2014 15:35:15 -0400")
+Message-ID: <x49egw36u55.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-X-Originating-IP: [2a02:fe0:c120:a4c0:7e7a:91ff:fe0e:3e2c]
-In-Reply-To: <20140826171425.GQ3347@wotan.suse.de>
-References: <20140826170946.GP3347@wotan.suse.de> <20140826171425.GQ3347@wotan.suse.de>
-From: Tom Gundersen <teg@jklm.no>
-Date: Tue, 26 Aug 2014 19:20:49 +0200
-Message-ID: <CAG-2HqULGgC5ftNKOML4XJZ5v_1b+z0t92nctTh7RB2tniRb9Q@mail.gmail.com>
-Subject: Re: dell rbu driver and FW_LOADER_USER_HELPER
-To: "Luis R. Rodriguez" <mcgrof@suse.com>
-Cc: Abhay Salunke <abhay_salunke@dell.com>,
-        =?UTF-8?Q?Cristian_Rodr=C3=ADguez?= <crrodriguez@opensuse.org>,
-        Takashi Iwai <tiwai@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        systemd Mailing List <systemd-devel@lists.freedesktop.org>,
-        Mario Limonciello <mario_limonciello@dell.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 7:14 PM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
-> On Tue, Aug 26, 2014 at 07:09:46PM +0200, Luis R. Rodriguez wrote:
->> When Christian tried removing the udev firmware loader
->> it was detected that the Dell rbu driver still required
->> use of FW_LOADER_USER_HELPER [0]. This driver needed
->> reworking to not be tied to the firmware loader, curious
->> if anyone has been working on that.
+Joe Lawrence <joe.lawrence@stratus.com> writes:
 
-The rework is now upstream, but not yet released [1].
-
->> Is the current
->> implementation depending on that userspace identifies
->> the required path to the file ? Why can't standard
->> /lib/firmware/ paths be used ?
-
-The dell driver dose not use rely on udev in userspace, nor the
-/lib/firmware path. It has its own userspace component, which just
-happens to reuse some of the infrastructure the udev firmware helper
-used to use. This has now been split up, and as of 3.17 the firmware
-loader can safely be removed from udev.
-
->> [0] http://lists.freedesktop.org/archives/systemd-devel/2014-May/019631.html
+> v2->v3: rebase to 3.16-rc2, consider return values from the
+>         blk_mq_alloc_request leg of the blk_get_request callchain
+>         (noted by Jeff), noted in the second patch changelog.
 >
-> Well abhay_salunke@dell.com bounces. Who at Dell is maintaining this
-> driver now? Maybe Mario can help finding the right person?
+> 	blk_mq_queue_enter may return 0 or errno, which
+>         blk_mq_alloc_request can propogate out via ERR_PTR.
+> 	__blk_mq_alloc_request doesn't include any blk_queue_dying
+> 	checks, so I'm assuming that its failures can be attributed
+>         to -EWOULDBLOCK under !GFP_WAIT conditions.
 >
->   Luis
+> v1->v2: incorporate Jeff's feedback in bsg_map_hdr() and Reviewed-by
+>         tags.
+>
+> Joe Lawrence (2):
+>   block,scsi: verify return pointer from blk_get_request
+>   block,scsi: fixup blk_get_request dead queue scenarios
 
-[1]: <http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=5a1379e8748a5cfa3eb068f812d61bde849ef76c>
+Jens,
+
+Did this patch set fall through the cracks again?
+
+Cheers,
+Jeff
