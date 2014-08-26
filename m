@@ -1,133 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757063AbaHZDdW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 23:33:22 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:56269 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752959AbaHZDdV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 23:33:21 -0400
-From: "xiaofeng.yan" <xiaofeng.yan@huawei.com>
-To: <mingo@redhat.com>, <peterz@infradead.org>, <juri.lelli@arm.com>,
-        <linux-kernel@vger.kernel.org>
-CC: <xiaofeng.yan2012@gmail.com>, "xiaofeng.yan" <xiaofeng.yan@huawei.com>
-Subject: [PATCH v4] sched/deadline: Fix the precision problem in the microsecond range
-Date: Tue, 26 Aug 2014 03:15:41 +0000
-Message-ID: <1409022941-5880-1-git-send-email-xiaofeng.yan@huawei.com>
-X-Mailer: git-send-email 1.8.3.4
+	id S1757154AbaHZDdi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 23:33:38 -0400
+Received: from ozlabs.org ([103.22.144.67]:59618 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757122AbaHZDdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 23:33:33 -0400
+Date: Tue, 26 Aug 2014 13:33:24 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, vyasevich@gmail.com
+Subject: Re: linux-next: build failure after merge of the net tree
+Message-ID: <20140826133324.1f4d472f@canb.auug.org.au>
+In-Reply-To: <20140825.202222.2274651017865689445.davem@davemloft.net>
+References: <20140826120511.5b5dabef@canb.auug.org.au>
+	<20140825.202222.2274651017865689445.davem@davemloft.net>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.241]
-X-CFilter-Loop: Reflected
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/k4q=r_g31y1U8SgX.9M1e7="; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The overrun could happen in function start_hrtick_dl()
-when a task with SCHED_DEADLINE runs in the microsecond range.
-For example, a task with SCHED_DEADLINE has the following parameters
-Task  runtime  deadline  period
- P1   200us     500us    500us
+--Sig_/k4q=r_g31y1U8SgX.9M1e7=
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-The deadline and period from task P1 are less than 1ms.
-In order to achieve microsecond precision, we need to enable HRTICK feature
-by the next command.
+Hi Dave,
 
-PC#echo "HRTICK" > /sys/kernel/debug/sched_features
-PC#trace-cmd record -e sched_switch &
-PC#./schedtool -E -t 200000:500000:500000 -e ./test
-The binary test is in an endless while(1) loop here.
-Some pieces of trace.dat are as follows:
-(Remove some irrelevant information)
-<idle>-0   157.603157: sched_switch: :R ==> 2481:4294967295: test
-test-2481  157.603203: sched_switch:  2481:R ==> 0:120: swapper/2
-<idle>-0   157.605657: sched_switch:  :R ==> 2481:4294967295: test
-test-2481  157.608183: sched_switch:  2481:R ==> 2483:120: trace-cmd
-trace-cmd-2483 157.609656: sched_switch:2483:R==>2481:4294967295: test
+On Mon, 25 Aug 2014 20:22:22 -0700 (PDT) David Miller <davem@davemloft.net>=
+ wrote:
+>
+> Sorry about that, I just pushed the following to fix it:
+>=20
+> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> [PATCH] mvneta: Add missing if_vlan.h include.
 
-We can get a runtime of P1 from the information above.
-runtime = 157.608183 - 157.605657
-runtime = 0.002526(2.526ms)
-The correct runtime should be less than or equal to 200us at some point.
+Thanks.
 
-The problem is caused by a conditional judgment "delta > 10000"
-in function start_hrtick_dl().
-Because no hrtimer start up to control the rest of runtime
-when the reset of runtime is less than 10us.
-So the process will continue to run until tick-period coming.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Move the code with the limit of the least time slice
-from hrtick_start_fair() to hrtick_start() because
-EDF schedule class also need this function in start_hrtick_dl().
+--Sig_/k4q=r_g31y1U8SgX.9M1e7=
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-To fix this problem, we call hrtimer_start() unconditionally in start_hrtick_dl(),
-and make sure schedule slice won't be smaller than 10us in hrtimer_start().
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Signed-off-by: Xiaofeng Yan <xiaofeng.yan@huawei.com>
-Reviewed-by:   Peter Zijlstra <peterz@infradead.org>
-Reviewed-by:   Li Zefan <lizefan@huawei.com>
-Acked-by:      Juri Lelli <juri.lelli@arm.com>
----
- kernel/sched/core.c     |    8 +++++++-
- kernel/sched/deadline.c |    5 +----
- kernel/sched/fair.c     |    8 --------
- 3 files changed, 8 insertions(+), 13 deletions(-)
+iQIcBAEBCAAGBQJT/AAIAAoJEMDTa8Ir7ZwV4igP/iTQBIi5u8kL7myBMbohZcOI
+ZA0ND1iJ2bZPyV6sxTfte9F01SNoFc0+mL13YnaO5ZpjB44OtWba8D7CY4nrYpvf
+uGboAEfHBSr6y2wBSBXs+aK0gggt4sDiIjo05dIcO2Xbb+I3QeGNu9sYj8PV5zi5
+4LkmuQbn3x23BKUNWtucVYoNt10KHBzlxDMOfa9JYlAX9A/hjyQTE6e8e5XJcVj4
+SOpwLtuKPRjCbMRajofQZyljOIVamdcqNRec8YMYoD8v+fZy+8FxhBV1eWTEW6Jf
+ooGqmgQlrN1wTl3c/PyEmYtNRdYxML8e0hA2Uu4CYTLAaC3zBRH2gAmAiWh3YdDD
+yFHnqfMC1HFMuYlkB9HO6OfU+syK3lSk/Utz30cofXuKTam46/D+TDDEmRp8jth0
+cjqceO+cjd3HEX3no07ufV+OyildYJ0WRWJZvZG9pMfuovB9WlJ+LximjnobtNHa
+JnTIt0Grnefrs2WySIZMWVw8OdIE+vjQZ7o5P7myJnSPsO1/FdtE9o53uqOdqHuQ
+xaxc7NwkTLWzK9vxyL+T3oSCCk+OwpwSeMjyMs7r4x+rVApjr56xTQktnxIQL2dZ
+5cRKgdFjbDXgbQK8xX8999VZx8mgQ14G5LqOIitr1/So9q2dcPWQgm448zo+V6+o
+GZgZT7MXGR14zCYl80ef
+=CPJ5
+-----END PGP SIGNATURE-----
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index ec1a286..da2c6f3 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -449,8 +449,14 @@ static void __hrtick_start(void *arg)
- void hrtick_start(struct rq *rq, u64 delay)
- {
- 	struct hrtimer *timer = &rq->hrtick_timer;
--	ktime_t time = ktime_add_ns(timer->base->get_time(), delay);
-+	ktime_t time;
- 
-+	/*
-+	 * Don't schedule slices shorter than 10000ns, that just
-+	 * doesn't make sense and can cause timer DoS.
-+	 */
-+	s64 delta = max_t(s64, delay, 10000LL);
-+	time = ktime_add_ns(timer->base->get_time(), delta);
- 	hrtimer_set_expires(timer, time);
- 
- 	if (rq == this_rq()) {
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index 255ce13..ce52d07 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -997,10 +997,7 @@ static void check_preempt_curr_dl(struct rq *rq, struct task_struct *p,
- #ifdef CONFIG_SCHED_HRTICK
- static void start_hrtick_dl(struct rq *rq, struct task_struct *p)
- {
--	s64 delta = p->dl.dl_runtime - p->dl.runtime;
--
--	if (delta > 10000)
--		hrtick_start(rq, p->dl.runtime);
-+	hrtick_start(rq, p->dl.runtime);
- }
- #endif
- 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index bfa3c86..0d6b3e6 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3892,14 +3892,6 @@ static void hrtick_start_fair(struct rq *rq, struct task_struct *p)
- 				resched_curr(rq);
- 			return;
- 		}
--
--		/*
--		 * Don't schedule slices shorter than 10000ns, that just
--		 * doesn't make sense. Rely on vruntime for fairness.
--		 */
--		if (rq->curr != p)
--			delta = max_t(s64, 10000LL, delta);
--
- 		hrtick_start(rq, delta);
- 	}
- }
--- 
-1.7.9.5
-
+--Sig_/k4q=r_g31y1U8SgX.9M1e7=--
