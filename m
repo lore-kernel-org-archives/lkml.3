@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756842AbaHZAn7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 20:43:59 -0400
-Received: from mail-qg0-f49.google.com ([209.85.192.49]:48497 "EHLO
-	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756818AbaHZAnm (ORCPT
+	id S933717AbaHZAn5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 20:43:57 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:33114 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756816AbaHZAnl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 20:43:42 -0400
+	Mon, 25 Aug 2014 20:43:41 -0400
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: cl@linux-foundation.org, Tejun Heo <tj@kernel.org>,
-        Kent Overstreet <koverstreet@google.com>,
-        Benjamin LaHaise <bcrl@kvack.org>, Li Zefan <lizefan@huawei.com>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Subject: [PATCH 3/3] percpu-refcount: add @gfp to percpu_ref_init()
-Date: Mon, 25 Aug 2014 20:43:32 -0400
-Message-Id: <1409013812-21700-4-git-send-email-tj@kernel.org>
+        Jan Kara <jack@suse.cz>, Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 2/3] proportions: add @gfp to init functions
+Date: Mon, 25 Aug 2014 20:43:31 -0400
+Message-Id: <1409013812-21700-3-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1409013812-21700-1-git-send-email-tj@kernel.org>
 References: <1409013812-21700-1-git-send-email-tj@kernel.org>
@@ -24,134 +22,185 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Percpu allocator now supports allocation mask.  Add @gfp to
-percpu_ref_init() so that !GFP_KERNEL allocation masks can be used
-with percpu_refs too.
+[flex_]proportions init functions so that !GFP_KERNEL allocation masks
+can be used with them too.
 
 This patch doesn't make any functional difference.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Kent Overstreet <koverstreet@google.com>
-Cc: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Nicholas A. Bellinger <nab@linux-iscsi.org>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Peter Zijlstra <peterz@infradead.org>
 ---
- drivers/target/target_core_tpg.c | 3 ++-
- fs/aio.c                         | 4 ++--
- include/linux/percpu-refcount.h  | 3 ++-
- kernel/cgroup.c                  | 6 +++---
- lib/percpu-refcount.c            | 6 ++++--
- 5 files changed, 13 insertions(+), 9 deletions(-)
+ include/linux/flex_proportions.h |  5 +++--
+ include/linux/proportions.h      |  5 +++--
+ lib/flex_proportions.c           |  8 ++++----
+ lib/proportions.c                | 10 +++++-----
+ mm/backing-dev.c                 |  2 +-
+ mm/page-writeback.c              |  2 +-
+ 6 files changed, 17 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/target/target_core_tpg.c b/drivers/target/target_core_tpg.c
-index fddfae6..4ab6da3 100644
---- a/drivers/target/target_core_tpg.c
-+++ b/drivers/target/target_core_tpg.c
-@@ -819,7 +819,8 @@ int core_tpg_add_lun(
- {
- 	int ret;
- 
--	ret = percpu_ref_init(&lun->lun_ref, core_tpg_lun_ref_release);
-+	ret = percpu_ref_init(&lun->lun_ref, core_tpg_lun_ref_release,
-+			      GFP_KERNEL);
- 	if (ret < 0)
- 		return ret;
- 
-diff --git a/fs/aio.c b/fs/aio.c
-index bd7ec2c..93fbcc0f 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -666,10 +666,10 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
- 
- 	INIT_LIST_HEAD(&ctx->active_reqs);
- 
--	if (percpu_ref_init(&ctx->users, free_ioctx_users))
-+	if (percpu_ref_init(&ctx->users, free_ioctx_users, GFP_KERNEL))
- 		goto err;
- 
--	if (percpu_ref_init(&ctx->reqs, free_ioctx_reqs))
-+	if (percpu_ref_init(&ctx->reqs, free_ioctx_reqs, GFP_KERNEL))
- 		goto err;
- 
- 	ctx->cpu = alloc_percpu(struct kioctx_cpu);
-diff --git a/include/linux/percpu-refcount.h b/include/linux/percpu-refcount.h
-index 3dfbf23..ee83251 100644
---- a/include/linux/percpu-refcount.h
-+++ b/include/linux/percpu-refcount.h
-@@ -49,6 +49,7 @@
- #include <linux/kernel.h>
- #include <linux/percpu.h>
- #include <linux/rcupdate.h>
+diff --git a/include/linux/flex_proportions.h b/include/linux/flex_proportions.h
+index 4ebc49f..0d348e0 100644
+--- a/include/linux/flex_proportions.h
++++ b/include/linux/flex_proportions.h
+@@ -10,6 +10,7 @@
+ #include <linux/percpu_counter.h>
+ #include <linux/spinlock.h>
+ #include <linux/seqlock.h>
 +#include <linux/gfp.h>
  
- struct percpu_ref;
- typedef void (percpu_ref_func_t)(struct percpu_ref *);
-@@ -66,7 +67,7 @@ struct percpu_ref {
+ /*
+  * When maximum proportion of some event type is specified, this is the
+@@ -32,7 +33,7 @@ struct fprop_global {
+ 	seqcount_t sequence;
  };
  
- int __must_check percpu_ref_init(struct percpu_ref *ref,
--				 percpu_ref_func_t *release);
-+				 percpu_ref_func_t *release, gfp_t gfp);
- void percpu_ref_reinit(struct percpu_ref *ref);
- void percpu_ref_exit(struct percpu_ref *ref);
- void percpu_ref_kill_and_confirm(struct percpu_ref *ref,
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 7dc8788..589b4d8 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1628,7 +1628,7 @@ static int cgroup_setup_root(struct cgroup_root *root, unsigned int ss_mask)
- 		goto out;
- 	root_cgrp->id = ret;
+-int fprop_global_init(struct fprop_global *p);
++int fprop_global_init(struct fprop_global *p, gfp_t gfp);
+ void fprop_global_destroy(struct fprop_global *p);
+ bool fprop_new_period(struct fprop_global *p, int periods);
  
--	ret = percpu_ref_init(&root_cgrp->self.refcnt, css_release);
-+	ret = percpu_ref_init(&root_cgrp->self.refcnt, css_release, GFP_KERNEL);
- 	if (ret)
- 		goto out;
+@@ -79,7 +80,7 @@ struct fprop_local_percpu {
+ 	raw_spinlock_t lock;	/* Protect period and numerator */
+ };
  
-@@ -4487,7 +4487,7 @@ static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss,
+-int fprop_local_init_percpu(struct fprop_local_percpu *pl);
++int fprop_local_init_percpu(struct fprop_local_percpu *pl, gfp_t gfp);
+ void fprop_local_destroy_percpu(struct fprop_local_percpu *pl);
+ void __fprop_inc_percpu(struct fprop_global *p, struct fprop_local_percpu *pl);
+ void __fprop_inc_percpu_max(struct fprop_global *p, struct fprop_local_percpu *pl,
+diff --git a/include/linux/proportions.h b/include/linux/proportions.h
+index 26a8a4e..00e8e8f 100644
+--- a/include/linux/proportions.h
++++ b/include/linux/proportions.h
+@@ -12,6 +12,7 @@
+ #include <linux/percpu_counter.h>
+ #include <linux/spinlock.h>
+ #include <linux/mutex.h>
++#include <linux/gfp.h>
  
- 	init_and_link_css(css, ss, cgrp);
+ struct prop_global {
+ 	/*
+@@ -40,7 +41,7 @@ struct prop_descriptor {
+ 	struct mutex mutex;		/* serialize the prop_global switch */
+ };
  
--	err = percpu_ref_init(&css->refcnt, css_release);
-+	err = percpu_ref_init(&css->refcnt, css_release, GFP_KERNEL);
- 	if (err)
- 		goto err_free_css;
+-int prop_descriptor_init(struct prop_descriptor *pd, int shift);
++int prop_descriptor_init(struct prop_descriptor *pd, int shift, gfp_t gfp);
+ void prop_change_shift(struct prop_descriptor *pd, int new_shift);
  
-@@ -4555,7 +4555,7 @@ static int cgroup_mkdir(struct kernfs_node *parent_kn, const char *name,
- 		goto out_unlock;
- 	}
+ /*
+@@ -61,7 +62,7 @@ struct prop_local_percpu {
+ 	raw_spinlock_t lock;		/* protect the snapshot state */
+ };
  
--	ret = percpu_ref_init(&cgrp->self.refcnt, css_release);
-+	ret = percpu_ref_init(&cgrp->self.refcnt, css_release, GFP_KERNEL);
- 	if (ret)
- 		goto out_free_cgrp;
- 
-diff --git a/lib/percpu-refcount.c b/lib/percpu-refcount.c
-index fe5a334..ff99032 100644
---- a/lib/percpu-refcount.c
-+++ b/lib/percpu-refcount.c
-@@ -40,6 +40,7 @@ static unsigned __percpu *pcpu_count_ptr(struct percpu_ref *ref)
-  * percpu_ref_init - initialize a percpu refcount
-  * @ref: percpu_ref to initialize
-  * @release: function which will be called when refcount hits 0
-+ * @gfp: allocation mask to use
-  *
-  * Initializes the refcount in single atomic counter mode with a refcount of 1;
-  * analagous to atomic_set(ref, 1).
-@@ -47,11 +48,12 @@ static unsigned __percpu *pcpu_count_ptr(struct percpu_ref *ref)
-  * Note that @release must not sleep - it may potentially be called from RCU
-  * callback context by percpu_ref_kill().
+-int prop_local_init_percpu(struct prop_local_percpu *pl);
++int prop_local_init_percpu(struct prop_local_percpu *pl, gfp_t gfp);
+ void prop_local_destroy_percpu(struct prop_local_percpu *pl);
+ void __prop_inc_percpu(struct prop_descriptor *pd, struct prop_local_percpu *pl);
+ void prop_fraction_percpu(struct prop_descriptor *pd, struct prop_local_percpu *pl,
+diff --git a/lib/flex_proportions.c b/lib/flex_proportions.c
+index b9d026b..8f25652 100644
+--- a/lib/flex_proportions.c
++++ b/lib/flex_proportions.c
+@@ -34,13 +34,13 @@
   */
--int percpu_ref_init(struct percpu_ref *ref, percpu_ref_func_t *release)
-+int percpu_ref_init(struct percpu_ref *ref, percpu_ref_func_t *release,
-+		    gfp_t gfp)
+ #include <linux/flex_proportions.h>
+ 
+-int fprop_global_init(struct fprop_global *p)
++int fprop_global_init(struct fprop_global *p, gfp_t gfp)
  {
- 	atomic_set(&ref->count, 1 + PCPU_COUNT_BIAS);
+ 	int err;
  
--	ref->pcpu_count_ptr = (unsigned long)alloc_percpu(unsigned);
-+	ref->pcpu_count_ptr = (unsigned long)alloc_percpu_gfp(unsigned, gfp);
- 	if (!ref->pcpu_count_ptr)
- 		return -ENOMEM;
+ 	p->period = 0;
+ 	/* Use 1 to avoid dealing with periods with 0 events... */
+-	err = percpu_counter_init(&p->events, 1, GFP_KERNEL);
++	err = percpu_counter_init(&p->events, 1, gfp);
+ 	if (err)
+ 		return err;
+ 	seqcount_init(&p->sequence);
+@@ -168,11 +168,11 @@ void fprop_fraction_single(struct fprop_global *p,
+  */
+ #define PROP_BATCH (8*(1+ilog2(nr_cpu_ids)))
  
+-int fprop_local_init_percpu(struct fprop_local_percpu *pl)
++int fprop_local_init_percpu(struct fprop_local_percpu *pl, gfp_t gfp)
+ {
+ 	int err;
+ 
+-	err = percpu_counter_init(&pl->events, 0, GFP_KERNEL);
++	err = percpu_counter_init(&pl->events, 0, gfp);
+ 	if (err)
+ 		return err;
+ 	pl->period = 0;
+diff --git a/lib/proportions.c b/lib/proportions.c
+index ca95f8d..6f72429 100644
+--- a/lib/proportions.c
++++ b/lib/proportions.c
+@@ -73,7 +73,7 @@
+ #include <linux/proportions.h>
+ #include <linux/rcupdate.h>
+ 
+-int prop_descriptor_init(struct prop_descriptor *pd, int shift)
++int prop_descriptor_init(struct prop_descriptor *pd, int shift, gfp_t gfp)
+ {
+ 	int err;
+ 
+@@ -83,11 +83,11 @@ int prop_descriptor_init(struct prop_descriptor *pd, int shift)
+ 	pd->index = 0;
+ 	pd->pg[0].shift = shift;
+ 	mutex_init(&pd->mutex);
+-	err = percpu_counter_init(&pd->pg[0].events, 0, GFP_KERNEL);
++	err = percpu_counter_init(&pd->pg[0].events, 0, gfp);
+ 	if (err)
+ 		goto out;
+ 
+-	err = percpu_counter_init(&pd->pg[1].events, 0, GFP_KERNEL);
++	err = percpu_counter_init(&pd->pg[1].events, 0, gfp);
+ 	if (err)
+ 		percpu_counter_destroy(&pd->pg[0].events);
+ 
+@@ -188,12 +188,12 @@ prop_adjust_shift(int *pl_shift, unsigned long *pl_period, int new_shift)
+ 
+ #define PROP_BATCH (8*(1+ilog2(nr_cpu_ids)))
+ 
+-int prop_local_init_percpu(struct prop_local_percpu *pl)
++int prop_local_init_percpu(struct prop_local_percpu *pl, gfp_t gfp)
+ {
+ 	raw_spin_lock_init(&pl->lock);
+ 	pl->shift = 0;
+ 	pl->period = 0;
+-	return percpu_counter_init(&pl->events, 0, GFP_KERNEL);
++	return percpu_counter_init(&pl->events, 0, gfp);
+ }
+ 
+ void prop_local_destroy_percpu(struct prop_local_percpu *pl)
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index f19a818..64ec49d 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -470,7 +470,7 @@ int bdi_init(struct backing_dev_info *bdi)
+ 	bdi->write_bandwidth = INIT_BW;
+ 	bdi->avg_write_bandwidth = INIT_BW;
+ 
+-	err = fprop_local_init_percpu(&bdi->completions);
++	err = fprop_local_init_percpu(&bdi->completions, GFP_KERNEL);
+ 
+ 	if (err) {
+ err:
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 91d73ef..5085994 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -1777,7 +1777,7 @@ void __init page_writeback_init(void)
+ 	writeback_set_ratelimit();
+ 	register_cpu_notifier(&ratelimit_nb);
+ 
+-	fprop_global_init(&writeout_completions);
++	fprop_global_init(&writeout_completions, GFP_KERNEL);
+ }
+ 
+ /**
 -- 
 1.9.3
 
