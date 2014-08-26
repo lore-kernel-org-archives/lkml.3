@@ -1,69 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757154AbaHZDdi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 23:33:38 -0400
-Received: from ozlabs.org ([103.22.144.67]:59618 "EHLO ozlabs.org"
+	id S1757119AbaHZDio (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 23:38:44 -0400
+Received: from mga14.intel.com ([192.55.52.115]:57567 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757122AbaHZDdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 23:33:33 -0400
-Date: Tue, 26 Aug 2014 13:33:24 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vyasevich@gmail.com
-Subject: Re: linux-next: build failure after merge of the net tree
-Message-ID: <20140826133324.1f4d472f@canb.auug.org.au>
-In-Reply-To: <20140825.202222.2274651017865689445.davem@davemloft.net>
-References: <20140826120511.5b5dabef@canb.auug.org.au>
-	<20140825.202222.2274651017865689445.davem@davemloft.net>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/k4q=r_g31y1U8SgX.9M1e7="; protocol="application/pgp-signature"
+	id S1755631AbaHZDin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 23:38:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,400,1406617200"; 
+   d="scan'208";a="581646447"
+User-Agent: Microsoft-MacOutlook/14.4.3.140616
+Date: Mon, 25 Aug 2014 20:38:38 -0500
+Subject: Re: [3.17 REGRESSION FIX] Revert "ideapad-laptop: Disable touchpad
+ interface on Yoga models"
+From: Darren Hart <dvhart@infradead.org>
+To: Josh Boyer <jwboyer@fedoraproject.org>,
+        Hans de Goede <hdegoede@redhat.com>
+CC: Matthew Garrett <matthew.garrett@nebula.com>,
+        Corentin Chary <corentin.chary@gmail.com>,
+        GOESSEL Guillaume <g_goessel@outlook.com>,
+        <platform-driver-x86@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Message-ID: <D0214EE1.A54F3%dvhart@linux.intel.com>
+Thread-Topic: [3.17 REGRESSION FIX] Revert "ideapad-laptop: Disable touchpad
+ interface on Yoga models"
+References: <1408960813-12237-1-git-send-email-hdegoede@redhat.com>
+ <CA+5PVA7pEwu4amAn+gH3TS-a6CvsSH=TyE+3k07Uoz9BpcpRMA@mail.gmail.com>
+In-Reply-To: <CA+5PVA7pEwu4amAn+gH3TS-a6CvsSH=TyE+3k07Uoz9BpcpRMA@mail.gmail.com>
+Mime-version: 1.0
+Content-type: text/plain;
+	charset="US-ASCII"
+Content-transfer-encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/k4q=r_g31y1U8SgX.9M1e7=
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Mon, Aug 25, 2014 at 6:44 AM, Josh Boyer <jwboyer@fedoraproject.org>
+wrote:
+> On Mon, Aug 25, 2014 at 6:00 AM, Hans de Goede <hdegoede@redhat.com>
+>wrote:
+>> I've received a bug report from a user that the touchpad control part
+>> of the ideapad-laptop ACPI interface does work for him on his
+>> "Lenovo Yoga 2 13", and that this patch causes a regression for him.
+>>
+>> Since it did not work for me when I had a "Lenovo Yoga 2 11" in my own
+>> hands (loaned from a friend). It seems that this is a bit of hit and
+>>miss.
+>>
+>> Since the result of having a false positive here is worse, then the
+>>minor
+>> annoyance of a false touchpad disabled messages being shown after
+>>suspend /
+>> resume on models (or is it firmware versions?) where the interface does
+>>not
+>> work, simply revert the patch.
+>>
+>> This reverts commit f79a901331a823ae370584b15cd39dd110b95a0a.
 
-Hi Dave,
+Appears to be the right call to me. Please give me a couple of days to get
+trees mirrored and up to speed. I'll provide links to new trees and such
+shortly.
 
-On Mon, 25 Aug 2014 20:22:22 -0700 (PDT) David Miller <davem@davemloft.net>=
- wrote:
+>>
+>> Reported-by: GOESSEL Guillaume <g_goessel@outlook.com>
+>> Signed-off-by: Hans de Goede <hdegoede@redhat.com>
 >
-> Sorry about that, I just pushed the following to fix it:
->=20
-> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> [PATCH] mvneta: Add missing if_vlan.h include.
+> Adding Daren on CC.  He recently agreed to take over the platform
+>drivers.
+>
 
-Thanks.
+Thanks. I'm still sorting out my email situation for this role (apologies
+for the last response to those getting this twice). I'll make that clear
+in the maintainers patch to follow soon.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Thanks,
 
---Sig_/k4q=r_g31y1U8SgX.9M1e7=
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+-- 
+Darren Hart
+Intel Open Source Technology Center
 
-iQIcBAEBCAAGBQJT/AAIAAoJEMDTa8Ir7ZwV4igP/iTQBIi5u8kL7myBMbohZcOI
-ZA0ND1iJ2bZPyV6sxTfte9F01SNoFc0+mL13YnaO5ZpjB44OtWba8D7CY4nrYpvf
-uGboAEfHBSr6y2wBSBXs+aK0gggt4sDiIjo05dIcO2Xbb+I3QeGNu9sYj8PV5zi5
-4LkmuQbn3x23BKUNWtucVYoNt10KHBzlxDMOfa9JYlAX9A/hjyQTE6e8e5XJcVj4
-SOpwLtuKPRjCbMRajofQZyljOIVamdcqNRec8YMYoD8v+fZy+8FxhBV1eWTEW6Jf
-ooGqmgQlrN1wTl3c/PyEmYtNRdYxML8e0hA2Uu4CYTLAaC3zBRH2gAmAiWh3YdDD
-yFHnqfMC1HFMuYlkB9HO6OfU+syK3lSk/Utz30cofXuKTam46/D+TDDEmRp8jth0
-cjqceO+cjd3HEX3no07ufV+OyildYJ0WRWJZvZG9pMfuovB9WlJ+LximjnobtNHa
-JnTIt0Grnefrs2WySIZMWVw8OdIE+vjQZ7o5P7myJnSPsO1/FdtE9o53uqOdqHuQ
-xaxc7NwkTLWzK9vxyL+T3oSCCk+OwpwSeMjyMs7r4x+rVApjr56xTQktnxIQL2dZ
-5cRKgdFjbDXgbQK8xX8999VZx8mgQ14G5LqOIitr1/So9q2dcPWQgm448zo+V6+o
-GZgZT7MXGR14zCYl80ef
-=CPJ5
------END PGP SIGNATURE-----
 
---Sig_/k4q=r_g31y1U8SgX.9M1e7=--
