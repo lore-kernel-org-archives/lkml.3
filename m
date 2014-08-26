@@ -1,290 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703AbaHZQyW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 12:54:22 -0400
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.167]:52164 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752079AbaHZQyT (ORCPT
+	id S1752721AbaHZQyj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 12:54:39 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:37988 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751995AbaHZQyh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 12:54:19 -0400
-X-Env-Sender: Andreas.Werner@men.de
-X-Msg-Ref: server-13.tower-39.messagelabs.com!1409072055!17494042!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Tue, 26 Aug 2014 18:54:16 +0200
-Date: Tue, 26 Aug 2014 19:46:08 +0200
-From: Andreas Werner <andreas.werner@men.de>
-To: <linux-kernel@vger.kernel.org>
-CC: <sameo@linux.intel.com>, <lee.jones@linaro.org>, <wim@iguana.be>,
-        <linux-watchdog@vger.kernel.org>, <cooloney@gmail.com>,
-        <rpurdie@rpsys.net>, <linux-leds@vger.kernel.org>, <jdelvare@suse.de>,
-        <linux@roeck-us.net>, <lm-sensors@lm-sensors.org>,
-        <johannes.thumshirn@men.de>
-Subject: [PATCH v5 2/4] drivers/watchdog/menf21bmc_wdt: introduce MEN
- 14F021P00 BMC Watchdog driver
-Message-ID: <e27d6d2090270fefa46cf793ad47729c1b3f9c17.1409074255.git.andreas.werner@men.de>
-References: <cover.1409074255.git.andreas.werner@men.de>
+	Tue, 26 Aug 2014 12:54:37 -0400
+Message-ID: <53FCBBE2.9040603@arm.com>
+Date: Tue, 26 Aug 2014 17:54:58 +0100
+From: Sudeep Holla <sudeep.holla@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <cover.1409074255.git.andreas.werner@men.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [192.1.1.171]
+To: David Herrmann <dh.herrmann@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Sudeep Holla <sudeep.holla@arm.com>, LKML <linux-kernel@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, Kay Sievers <kay@vrfy.org>
+Subject: Re: [PATCH] drivers: base: add cpu_device_create to support per-cpu
+ devices
+References: <CAPXgP130hg8uwdmSKAAAKZzxncT-VXYYXvmN-ta7wcXQXgXEmw@mail.gmail.com>	<1408706963-23195-1-git-send-email-sudeep.holla@arm.com>	<CANq1E4SJZQeAuXhggdnsjRFKFJD01WEnBpcdPC1pkJiv3WegCA@mail.gmail.com> <CANq1E4Snx_n3XDWXU5PtmLtt31sRqnkKrSRsx2_b=i+6GTLnxw@mail.gmail.com> <53F738B0.5080806@arm.com>
+In-Reply-To: <53F738B0.5080806@arm.com>
+X-OriginalArrivalTime: 26 Aug 2014 16:54:33.0194 (UTC) FILETIME=[6919C4A0:01CFC14E]
+X-MC-Unique: 114082617543510001
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added driver to support the 14F021P00 BMC Watchdog.
-The BMC is a Board Management Controller including watchdog functionality.
+Hi David,
 
-Signed-off-by: Andreas Werner <andreas.werner@men.de>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
----
- drivers/watchdog/Kconfig         |   7 ++
- drivers/watchdog/Makefile        |   1 +
- drivers/watchdog/menf21bmc_wdt.c | 203 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 211 insertions(+)
- create mode 100644 drivers/watchdog/menf21bmc_wdt.c
+On 22/08/14 13:33, Sudeep Holla wrote:
+>
+>
+> On 22/08/14 12:41, David Herrmann wrote:
+>> Hi
+>>
+>> On Fri, Aug 22, 2014 at 1:37 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
+>>> Hi
+>>>
+>>> On Fri, Aug 22, 2014 at 1:29 PM, Sudeep Holla <sudeep.holla@arm.com> wrote:
+>>>> From: Sudeep Holla <sudeep.holla@arm.com>
+>>>>
+>>>> This patch adds a new function to create per-cpu devices.
+>>>> This helps in:
+>>>> 1. reusing the device infrastructure to create any cpu related
+>>>>      attributes and corresponding sysfs instead of creating and
+>>>>      dealing with raw kobjects directly
+>>>> 2. retaining the legacy path(/sys/devices/system/cpu/..) to support
+>>>>      existing sysfs ABI
+>>>> 3. avoiding to create links in the bus directory pointing to the
+>>>>      device as there would be per-cpu instance of these devices with
+>>>>      the same name since dev->bus is not populated to cpu_sysbus on
+>>>>      purpose
+>>>>
+>>>> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+>>>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>>>> ---
+>>>>    drivers/base/cpu.c  | 54 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+>>>>    include/linux/cpu.h |  4 ++++
+>>>>    2 files changed, 58 insertions(+)
+>>>>
+>>>> Hi Greg,
+>>>>
+>>>> Here is the alternate solution I could come up with instead of
+>>>> creating cpu class. cpu_device_create is very similar to
+>>>> device_create_groups_vargs w/o class support, but I could not
+>>>> reuse anything else to avoid creating similar function.
+>>>>
+>>>> Let me know your thoughts/suggestions on this.
+>>>>
+>>>> Regards,
+>>>> Sudeep
+>>>>
+>>>>
+>>>> diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+>>>> index 277a9cfa9040..53f0c4141d05 100644
+>>>> --- a/drivers/base/cpu.c
+>>>> +++ b/drivers/base/cpu.c
+>>>> @@ -363,6 +363,60 @@ struct device *get_cpu_device(unsigned cpu)
+>>>>    }
+>>>>    EXPORT_SYMBOL_GPL(get_cpu_device);
+>>>>
+>>>> +static void device_create_release(struct device *dev)
+>>>> +{
+>>>> +       kfree(dev);
+>>>> +}
+>>>> +
+>>>> +static struct device *
+>>>> +__cpu_device_create(struct device *parent, void *drvdata,
+>>>> +                   const struct attribute_group **groups,
+>>>> +                   const char *fmt, va_list args)
+>>>> +{
+>>>> +       struct device *dev = NULL;
+>>>> +       int retval = -ENODEV;
+>>>> +
+>>>> +       dev = kzalloc(sizeof(*dev), GFP_KERNEL);
+>>>> +       if (!dev) {
+>>>> +               retval = -ENOMEM;
+>>>> +               goto error;
+>>>> +       }
+>>>> +
+>>>> +       device_initialize(dev);
+>>>> +       dev->parent = parent;
+>>>> +       dev->groups = groups;
+>>>> +       dev->release = device_create_release;
+>>>> +       dev_set_drvdata(dev, drvdata);
+>>>> +
+>>>> +       retval = kobject_set_name_vargs(&dev->kobj, fmt, args);
+>>>> +       if (retval)
+>>>> +               goto error;
+>>>> +
+>>>> +       retval = device_add(dev);
+>>>> +       if (retval)
+>>>> +               goto error;
+>>>
+>>> Exactly! As I said, simply setting dev->groups before calling device_add().
+>>>
+>>> However, I really don't understand why we need this as global API.
+>>> Skimming over the other patches, you use cpu_device_create() only in
+>>> one place. Why not hard-code this all there? It is totally OK to do
+>>> device initialization in drivers. All the helpers (like
+>>> device_create(), device_create_with_groups(), and so on) are just
+>>> convenience functions. The driver-core API explicitly allows drivers
+>>> to initialize devices manually.
+>>>
+>>> Nevertheless, this patch looks fine.
+>>
+>> Wait, no. Why don't you set dev->bus to cpu_subsys? Is this thing
+>> supposed to create child-devices of CPUs? Can you describe what your
+>> topology is supposed to look like?
+>>
+>
+> Yes, it's not done on purpose as mentioned in the commit log.
+> E.g.: cacheinfo topology will be as below
+>
+> /sys/devices/system/cpu/cpuX/cache/index0/<attributes>
+> /sys/devices/system/cpu/cpuX/cache/index1/<attributes>
+> ..
+> /sys/devices/system/cpu/cpuX/cache/index<Y/<attributes>
+>
 
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index 76dd541..f96431d 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -95,6 +95,13 @@ config GPIO_WATCHDOG
- 	  If you say yes here you get support for watchdog device
- 	  controlled through GPIO-line.
- 
-+config MENF21BMC_WATCHDOG
-+	tristate "MEN 14F021P00 BMC Watchdog"
-+	depends on MFD_MENF21BMC
-+	select WATCHDOG_CORE
-+	help
-+	  Say Y here to include support for the MEN 14F021P00 BMC Watchdog.
-+
- config WM831X_WATCHDOG
- 	tristate "WM831x watchdog"
- 	depends on MFD_WM831X
-diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-index 468c320..de17014 100644
---- a/drivers/watchdog/Makefile
-+++ b/drivers/watchdog/Makefile
-@@ -178,3 +178,4 @@ obj-$(CONFIG_WM831X_WATCHDOG) += wm831x_wdt.o
- obj-$(CONFIG_WM8350_WATCHDOG) += wm8350_wdt.o
- obj-$(CONFIG_MAX63XX_WATCHDOG) += max63xx_wdt.o
- obj-$(CONFIG_SOFT_WATCHDOG) += softdog.o
-+obj-$(CONFIG_MENF21BMC_WATCHDOG) += menf21bmc_wdt.o
-diff --git a/drivers/watchdog/menf21bmc_wdt.c b/drivers/watchdog/menf21bmc_wdt.c
-new file mode 100644
-index 0000000..604824d
---- /dev/null
-+++ b/drivers/watchdog/menf21bmc_wdt.c
-@@ -0,0 +1,203 @@
-+/*
-+ *  MEN 14F021P00 Board Management Controller (BMC) Watchdog Driver.
-+ *
-+ *  Copyright (C) 2014 MEN Mikro Elektronik Nuernberg GmbH
-+ *
-+ *  This program is free software; you can redistribute  it and/or modify it
-+ *  under  the terms of  the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the  License, or (at your
-+ *  option) any later version.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/device.h>
-+#include <linux/module.h>
-+#include <linux/watchdog.h>
-+#include <linux/platform_device.h>
-+#include <linux/i2c.h>
-+
-+#define DEVNAME "menf21bmc_wdt"
-+
-+#define BMC_CMD_WD_ON		0x11
-+#define BMC_CMD_WD_OFF		0x12
-+#define BMC_CMD_WD_TRIG		0x13
-+#define BMC_CMD_WD_TIME		0x14
-+#define BMC_CMD_WD_STATE	0x17
-+#define BMC_WD_OFF_VAL		0x69
-+#define BMC_CMD_RST_RSN		0x92
-+
-+#define BMC_WD_TIMEOUT_MIN	1	/* in sec */
-+#define BMC_WD_TIMEOUT_MAX	6553	/* in sec */
-+
-+static bool nowayout = WATCHDOG_NOWAYOUT;
-+module_param(nowayout, bool, 0);
-+MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
-+				__MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
-+
-+struct menf21bmc_wdt {
-+	struct watchdog_device wdt;
-+	struct i2c_client *i2c_client;
-+};
-+
-+static int menf21bmc_wdt_set_bootstatus(struct menf21bmc_wdt *data)
-+{
-+	int rst_rsn;
-+
-+	rst_rsn = i2c_smbus_read_byte_data(data->i2c_client, BMC_CMD_RST_RSN);
-+	if (rst_rsn < 0)
-+		return rst_rsn;
-+
-+	if (rst_rsn == 0x02)
-+		data->wdt.bootstatus |= WDIOF_CARDRESET;
-+	else if (rst_rsn == 0x05)
-+		data->wdt.bootstatus |= WDIOF_EXTERN1;
-+	else if (rst_rsn == 0x06)
-+		data->wdt.bootstatus |= WDIOF_EXTERN2;
-+	else if (rst_rsn == 0x0A)
-+		data->wdt.bootstatus |= WDIOF_POWERUNDER;
-+
-+	return 0;
-+}
-+
-+static int menf21bmc_wdt_start(struct watchdog_device *wdt)
-+{
-+	struct menf21bmc_wdt *drv_data = watchdog_get_drvdata(wdt);
-+
-+	return i2c_smbus_write_byte(drv_data->i2c_client, BMC_CMD_WD_ON);
-+}
-+
-+static int menf21bmc_wdt_stop(struct watchdog_device *wdt)
-+{
-+	struct menf21bmc_wdt *drv_data = watchdog_get_drvdata(wdt);
-+
-+	return i2c_smbus_write_byte_data(drv_data->i2c_client,
-+					BMC_CMD_WD_OFF, BMC_WD_OFF_VAL);
-+}
-+
-+static int
-+menf21bmc_wdt_settimeout(struct watchdog_device *wdt, unsigned int timeout)
-+{
-+	int ret;
-+	struct menf21bmc_wdt *drv_data = watchdog_get_drvdata(wdt);
-+
-+	/*
-+	 *  BMC Watchdog does have a resolution of 100ms.
-+	 *  Watchdog API defines the timeout in seconds, so we have to
-+	 *  multiply the value.
-+	 */
-+	ret = i2c_smbus_write_word_data(drv_data->i2c_client,
-+						BMC_CMD_WD_TIME, timeout * 10);
-+	if (ret < 0)
-+		return ret;
-+
-+	wdt->timeout = timeout;
-+
-+	return 0;
-+}
-+
-+static int menf21bmc_wdt_ping(struct watchdog_device *wdt)
-+{
-+	struct menf21bmc_wdt *drv_data = watchdog_get_drvdata(wdt);
-+
-+	return i2c_smbus_write_byte(drv_data->i2c_client, BMC_CMD_WD_TRIG);
-+}
-+
-+static const struct watchdog_info menf21bmc_wdt_info = {
-+	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING,
-+	.identity = DEVNAME,
-+};
-+
-+static const struct watchdog_ops menf21bmc_wdt_ops = {
-+	.owner		= THIS_MODULE,
-+	.start		= menf21bmc_wdt_start,
-+	.stop		= menf21bmc_wdt_stop,
-+	.ping		= menf21bmc_wdt_ping,
-+	.set_timeout	= menf21bmc_wdt_settimeout,
-+};
-+
-+static int menf21bmc_wdt_probe(struct platform_device *pdev)
-+{
-+	int ret, bmc_timeout;
-+	struct menf21bmc_wdt *drv_data;
-+	struct i2c_client *i2c_client = to_i2c_client(pdev->dev.parent);
-+
-+	drv_data = devm_kzalloc(&pdev->dev,
-+				sizeof(struct menf21bmc_wdt), GFP_KERNEL);
-+	if (!drv_data)
-+		return -ENOMEM;
-+
-+	drv_data->wdt.ops = &menf21bmc_wdt_ops;
-+	drv_data->wdt.info = &menf21bmc_wdt_info;
-+	drv_data->wdt.min_timeout = BMC_WD_TIMEOUT_MIN;
-+	drv_data->wdt.max_timeout = BMC_WD_TIMEOUT_MAX;
-+	drv_data->i2c_client = i2c_client;
-+
-+	/*
-+	 * Get the current wdt timeout value from the BMC because
-+	 * the BMC will save the value set before if the system restarts.
-+	 */
-+	bmc_timeout = i2c_smbus_read_word_data(drv_data->i2c_client,
-+							BMC_CMD_WD_TIME);
-+	if (bmc_timeout < 0) {
-+		dev_err(&pdev->dev, "failed to get current WDT timeout\n");
-+		return bmc_timeout;
-+	}
-+
-+	watchdog_init_timeout(&drv_data->wdt, bmc_timeout / 10, &pdev->dev);
-+	watchdog_set_nowayout(&drv_data->wdt, nowayout);
-+	watchdog_set_drvdata(&drv_data->wdt, drv_data);
-+	platform_set_drvdata(pdev, drv_data);
-+
-+	ret = menf21bmc_wdt_set_bootstatus(drv_data);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "failed to set Watchdog bootstatus\n");
-+		return ret;
-+	}
-+
-+	ret = watchdog_register_device(&drv_data->wdt);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to register Watchdog device\n");
-+		return ret;
-+	}
-+
-+	dev_info(&pdev->dev, "MEN 14F021P00 BMC Watchdog device enabled\n");
-+
-+	return 0;
-+}
-+
-+static int menf21bmc_wdt_remove(struct platform_device *pdev)
-+{
-+	struct menf21bmc_wdt *drv_data = platform_get_drvdata(pdev);
-+
-+	dev_warn(&pdev->dev,
-+		"Unregister MEN 14F021P00 BMC Watchdog device, board may reset\n");
-+
-+	watchdog_unregister_device(&drv_data->wdt);
-+
-+	return 0;
-+}
-+
-+static void menf21bmc_wdt_shutdown(struct platform_device *pdev)
-+{
-+	struct menf21bmc_wdt *drv_data = platform_get_drvdata(pdev);
-+
-+	i2c_smbus_write_word_data(drv_data->i2c_client,
-+					BMC_CMD_WD_OFF, BMC_WD_OFF_VAL);
-+}
-+
-+static struct  platform_driver menf21bmc_wdt = {
-+	.driver		= {
-+		.owner = THIS_MODULE,
-+		.name	= DEVNAME,
-+	},
-+	.probe		= menf21bmc_wdt_probe,
-+	.remove		= menf21bmc_wdt_remove,
-+	.shutdown	= menf21bmc_wdt_shutdown,
-+};
-+
-+module_platform_driver(menf21bmc_wdt);
-+
-+MODULE_DESCRIPTION("MEN 14F021P00 BMC Watchdog driver");
-+MODULE_AUTHOR("Andreas Werner <andreas.werner@men.de>");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:menf21bmc_wdt");
--- 
-2.0.4
+Does the above topology looks fine to you ? Since the parent is set
+properly, not setting bus will not cause any issue to the topology.
+
+> In this case 'cache' is cpuX's child and index<0..Y> are children of
+> cache in cpuX. The main problem with per-cpu device is that they have
+> same name for each cpu's instance and when the bus is set to this
+> devices, the driver model tries to create symlink to each of these
+> devices in /sys/bus/cpu/... which fails.
+>
+
+Here is the exact issue, probably kernel dump is easier to explain.
+It fails for second CPU as the sysfs path already exists.
+
+WARNING: CPU: 1 PID: 1 at fs/sysfs/dir.c:31 sysfs_warn_dup+0x51/0x5c()
+sysfs: cannot create duplicate filename '/bus/cpu/devices/cache'
+Modules linked in:
+CPU: 1 PID: 1 Comm: swapper/0 Not tainted 
+3.17.0-rc2-00013-g7956a439b183-dirty #89
+[<c0013c3d>] (unwind_backtrace) from [<c0010581>] (show_stack+0x11/0x14)
+[<c0010581>] (show_stack) from [<c04e9419>] (dump_stack+0x69/0x74)
+[<c04e9419>] (dump_stack) from [<c00204cb>] (warn_slowpath_common+0x5f/0x78)
+[<c00204cb>] (warn_slowpath_common) from [<c0020507>] 
+(warn_slowpath_fmt+0x23/0x2c)
+[<c0020507>] (warn_slowpath_fmt) from [<c013b921>] 
+(sysfs_warn_dup+0x51/0x5c)
+[<c013b921>] (sysfs_warn_dup) from [<c013bb6d>] 
+(sysfs_do_create_link_sd.isra.2+0x91/0x94)
+[<c013bb6d>] (sysfs_do_create_link_sd.isra.2) from [<c031d4f3>] 
+(bus_add_device+0xab/0x134)
+[<c031d4f3>] (bus_add_device) from [<c031c16d>] (device_add+0x2a1/0x3dc)
+[<c031c16d>] (device_add) from [<c031f905>] (cpu_device_create+0x85/0x94)
+
+Hi Greg,
+
+Any suggestions to proceed on this ?
+
+Regards,
+Sudeep
 
