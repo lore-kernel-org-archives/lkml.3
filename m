@@ -1,36 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757552AbaHZMJH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 08:09:07 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:58957 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757684AbaHZMJF (ORCPT
+	id S1757684AbaHZMMU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 08:12:20 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:44519 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754667AbaHZMMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 08:09:05 -0400
-Date: Tue, 26 Aug 2014 08:08:57 -0400
+	Tue, 26 Aug 2014 08:12:19 -0400
+Date: Tue, 26 Aug 2014 08:12:12 -0400
 From: Eduardo Valentin <edubezval@gmail.com>
 To: Wei Ni <wni@nvidia.com>
 Cc: khali@linux-fr.org, linux@roeck-us.net, swarren@wwwdotorg.org,
         lm-sensors@lm-sensors.org, linux-tegra@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Subject: Re: [PATCH v3 3/4] thermal: add more description for thermal-zones
-Message-ID: <20140826120855.GA15219@developer>
+Message-ID: <20140826121210.GB15219@developer>
 References: <1408948188-4181-1-git-send-email-wni@nvidia.com>
  <1408948188-4181-4-git-send-email-wni@nvidia.com>
  <20140825110711.GA12349@developer>
- <53FBF8F9.7070708@nvidia.com>
+ <53FBEE39.2020001@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53FBF8F9.7070708@nvidia.com>
+In-Reply-To: <53FBEE39.2020001@nvidia.com>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tue, Aug 26, 2014 at 11:03:21AM +0800, Wei Ni wrote:
+On Tue, Aug 26, 2014 at 10:17:29AM +0800, Wei Ni wrote:
 > On 08/25/2014 07:07 PM, Eduardo Valentin wrote:
 > > Hello Wei Ni,
 > > 
@@ -61,15 +59,6 @@ On Tue, Aug 26, 2014 at 11:03:21AM +0800, Wei Ni wrote:
 > > 
 > > The description above is specific to Linux kernel implementation
 > > nomenclature. DT description needs to be OS agnostic.
-> 
-> Normally, the user may think a delay of 0 means that software
-> continually polls this zone, but in here it mean no polling. May be it's
-> better to add this description.
-> 
-
-Sure, I am fine adding it. Just please do not use Linux specific
-nomenclature.
-
 > > 
 > >>  - polling-delay-passive: The maximum number of milliseconds to wait
 > >>    Type: unsigned	between polls when performing passive cooling.
@@ -92,6 +81,26 @@ nomenclature.
 > > the binding describes both, cooling-maps and trips, as required
 > > properties. Thus, both needs to be in place to consider the thermal zone
 > > as a proper described zone.
+> 
+> I moved the "trips" and "cooling-maps" to optional property, because if
+> missing these two properties, the thermal zone devices still can be
+> registered, and the driver can work properly, it has the basic function,
+> can read temperature from thermal sysfs, although it doesn't have trips
+> and bind with cooling devices.
+
+
+If a thermal zone is used only for monitoring, then I believe it lost
+its purpose. As  Maybe a different framework shall be used, such as hwmon,
+for instance?
+
+The purpose of a thermal zone is to describe thermal behavior of a
+hardware. As it is mentioned in the thermal.txt file.
+
+
+> 
+> Thanks.
+> Wei.
+> 
 > > 
 > >>  
 > >> -Optional property:
