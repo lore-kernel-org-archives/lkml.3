@@ -1,86 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934344AbaHZJNk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 05:13:40 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33676 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934092AbaHZJNi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 05:13:38 -0400
-Date: Tue, 26 Aug 2014 10:13:34 +0100
-From: Mark Brown <broonie@kernel.org>
-To: James Ban <james.ban.opensource@diasemi.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>,
-        Support Opensource <support.opensource@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>
-Message-ID: <20140826091334.GE17528@sirena.org.uk>
-References: <201408250919.s7P9Jpt4047076@krsrvapps-01.diasemi.com>
+	id S934289AbaHZJP4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 05:15:56 -0400
+Received: from mail-bn1lp0144.outbound.protection.outlook.com ([207.46.163.144]:43587
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933975AbaHZJPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 05:15:53 -0400
+Date: Tue, 26 Aug 2014 17:15:39 +0800
+From: Peter Chen <peter.chen@freescale.com>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, <balbi@ti.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] usb: chipidea: msm: Initialize PHY on reset event
+Message-ID: <20140826091537.GB16758@peterchendt>
+References: <1408969561-6662-1-git-send-email-iivanov@mm-sol.com>
+ <1408969561-6662-2-git-send-email-iivanov@mm-sol.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oiA4dBusuoDXNEPU"
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <201408250919.s7P9Jpt4047076@krsrvapps-01.diasemi.com>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH V1] regulator: DA9211 : support device tree
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <1408969561-6662-2-git-send-email-iivanov@mm-sol.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(51704005)(199003)(24454002)(189002)(110136001)(64706001)(104016003)(21056001)(84676001)(83506001)(107046002)(54356999)(81342001)(47776003)(76176999)(50986999)(20776003)(46102001)(81542001)(46406003)(80022001)(99396002)(106466001)(97756001)(97736001)(85306004)(79102001)(31966008)(77982001)(74502001)(74662001)(76482001)(23726002)(50466002)(33656002)(92566001)(105606002)(92726001)(86362001)(102836001)(26826002)(95666004)(81156004)(87936001)(33716001)(90102001)(85852003)(6806004)(4396001)(44976005)(57986006)(83322001)(19580395003)(68736004)(19580405001)(83072002)(69596002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB572;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03152A99FF
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Peter.Chen@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Aug 25, 2014 at 03:26:01PM +0300, Ivan T. Ivanov wrote:
+> Initialize USB PHY after every Link controller reset
+> 
+> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> ---
+>  drivers/usb/chipidea/ci_hdrc_msm.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/usb/chipidea/ci_hdrc_msm.c b/drivers/usb/chipidea/ci_hdrc_msm.c
+> index 30bdd51..4935ac3 100644
+> --- a/drivers/usb/chipidea/ci_hdrc_msm.c
+> +++ b/drivers/usb/chipidea/ci_hdrc_msm.c
+> @@ -26,6 +26,7 @@ static void ci_hdrc_msm_notify_event(struct ci_hdrc *ci, unsigned event)
+>  		dev_dbg(dev, "CI_HDRC_CONTROLLER_RESET_EVENT received\n");
+>  		writel(0, USB_AHBBURST);
+>  		writel(0, USB_AHBMODE);
+> +		usb_phy_init(ci->transceiver);
+>  		break;
+>  	case CI_HDRC_CONTROLLER_STOPPED_EVENT:
+>  		dev_dbg(dev, "CI_HDRC_CONTROLLER_STOPPED_EVENT received\n");
+> -- 
+> 1.9.1
+> 
 
---oiA4dBusuoDXNEPU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Both have applied, thanks.
 
-On Mon, Aug 25, 2014 at 06:16:56PM +0900, James Ban wrote:
-
-> +* Dialog Semiconductor DA9211/DA9213 Voltage Regulator
-> +
-> +Required properties:
-> +
-> +- compatible:	It should be "dlg,da9211" or "dlg,da9213".
-> +- reg:		the i2c slave address of the regulator. It should be 0x68.
-> +
-> +Any standard regulator properties can be used to configure the
-> +da9211/da9213 DCDC.
-> +
-> +Example 1) DA9211
-> +
-> +	pmic: da9211@68 {
-> +		compatible = "dlg,da9211";
-> +		reg = <0x68>;
-> +		interrupts = <3 27>;
-> +
-> +		regulators {
-
-You need to define what the valid regulators for the device are and
-where their configuration should be specified in the device tree.
-
---oiA4dBusuoDXNEPU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT/E+7AAoJELSic+t+oim9PQMP/ArE0RoeuldDwohPFB1BQHsc
-md428diNwri31rokvrkxQimTNarUVZEuX/gWYhp9zcPwEvUoQkdTq+KQuLFuu2av
-iU55Ze4yhZaYsUluCHKGnM6MUrjfPoxtLZpMjEIj6hYY36+zJ2OPwvFoC47yHHSZ
-Pc4U5MlbNNS63iZQaeUYVVKv2e0p1w7g5o9u/B9SehyzNXOMzb+YmSph3STNOmQV
-RamzplOD7mD2zgoscqVmKoAFUBkVL5/+yq+OkMJfsl5ba57iXlGHmcAkFgAWl+fV
-mIS5SLma/6H9m77K9XHrT4/BnRgiqKPIrwNBuypDimSVlFp79Ok6kBw0tVCVgi6X
-KtmNWaHl+B4LbL88k1RVilCHOrAYz0AM0dm3HqlKmegDUnUWew36QJZJtTkF2QMC
-zbS2Qgncgd6AzS9gB5spxWjbFXN7c7Nf71c4fznAnHD8AloStZH4so6wXpq4wtnW
-30702/SzPOsTt3BCVHldY2CtG2wxYk+aJU7dKvoTTVD7kAjd07pDzYWm3RkpNq9s
-fgttZjL9XExeJMnFcIr5D+4kNQBulvwpt47SyHiHxr2nRck39fzDApJ5XT+1/Vg+
-1mb9BZlHBkwHdflvePJ7defHIOfZxQ9bqma37jPzImcalE3OSGbwUNrE+t5iaT9S
-xStnnkH660IgX+O9XWoY
-=RMBu
------END PGP SIGNATURE-----
-
---oiA4dBusuoDXNEPU--
+-- 
+Best Regards,
+Peter Chen
