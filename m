@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755437AbaHZXE7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 19:04:59 -0400
-Received: from qmta11.emeryville.ca.mail.comcast.net ([76.96.27.211]:44098
-	"EHLO qmta11.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750938AbaHZXE6 (ORCPT
+	id S1755904AbaHZXJB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 19:09:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44665 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754554AbaHZXI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 19:04:58 -0400
-Date: Tue, 26 Aug 2014 18:04:55 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Tejun Heo <htejun@gmail.com>
-cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
-        Mike Travis <travis@sgi.com>
-Subject: Re: percpu: Define this_cpu_cpumask_var_t_ptr
-In-Reply-To: <20140826213735.GS31659@mtj.dyndns.org>
-Message-ID: <alpine.DEB.2.11.1408261803500.15698@gentwo.org>
-References: <alpine.DEB.2.11.1408070959250.28468@gentwo.org> <20140821222212.GA7996@mtj.dyndns.org> <alpine.DEB.2.11.1408212001100.19762@gentwo.org> <20140822164051.GB15713@mtj.dyndns.org> <alpine.DEB.2.11.1408221241340.23099@gentwo.org>
- <20140823171416.GG13540@mtj.dyndns.org> <alpine.DEB.2.11.1408231500430.31459@gentwo.org> <alpine.DEB.2.11.1408261631350.8819@gentwo.org> <20140826213735.GS31659@mtj.dyndns.org>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 26 Aug 2014 19:08:59 -0400
+Date: Tue, 26 Aug 2014 16:08:58 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Konstantin Ryabitsev <mricon@kernel.org>, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Li Zefan <lizefan@huawei.com>
+Subject: [kernel.org PATCH] Li Zefan is now the 3.4 stable maintainer
+Message-ID: <20140826230858.GA29970@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Aug 2014, Tejun Heo wrote:
+Li has agreed to continue to support the 3.4 stable kernel tree until
+September 2016.  Update the releases.html page on kernel.org to reflect
+this.
 
-> Ugh.... include hell. :( Does putting the accessors in percpu.h make
-> any difference?  Given the tricky nature of cpumask_var_t, I think
-> type checking can be pretty useful.
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Then its going to be difficult to find. This is related to the
-cpumark_var_t handling and should be defined close to where it is
-introduced and discussed.
 
->
-> > Regarding naming:
-> >
-> > this_cpu_ptr_cpumask_var()
-> >
-> > is ok?
->
-> Wouldn't this_cpu_cpumask_var_ptr() be a bit more natural?
-
-Ok.
-
+diff --git a/content/releases.rst b/content/releases.rst
+index 4a3327f4ca9e..c71a33f34f1b 100644
+--- a/content/releases.rst
++++ b/content/releases.rst
+@@ -43,7 +43,7 @@ Longterm
+     3.14     Greg Kroah-Hartman   2014-03-30   Aug, 2016
+     3.12     Jiri Slaby           2013-11-03   2016
+     3.10     Greg Kroah-Hartman   2013-06-30   Sep, 2015
+-    3.4      Greg Kroah-Hartman   2012-05-20   Oct, 2014
++    3.4      Li Zefan             2012-05-20   Sep, 2016
+     3.2      Ben Hutchings        2012-01-04   2016
+     2.6.32   Willy Tarreau        2009-12-03   Mid-2015
+     ======== ==================== ============ ==================
