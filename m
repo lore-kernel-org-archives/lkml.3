@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757894AbaHZLK3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 07:10:29 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:62173 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757599AbaHZLHy (ORCPT
+	id S1757606AbaHZLHu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 07:07:50 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:34796 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755724AbaHZLHr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 07:07:54 -0400
+	Tue, 26 Aug 2014 07:07:47 -0400
 From: Vincent Guittot <vincent.guittot@linaro.org>
 To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
         preeti@linux.vnet.ibm.com, linux@arm.linux.org.uk,
@@ -15,9 +15,9 @@ Cc: riel@redhat.com, Morten.Rasmussen@arm.com, efault@gmx.de,
         nicolas.pitre@linaro.org, linaro-kernel@lists.linaro.org,
         daniel.lezcano@linaro.org, dietmar.eggemann@arm.com,
         Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [PATCH v5 05/12] ARM: topology: use new cpu_capacity interface
-Date: Tue, 26 Aug 2014 13:06:48 +0200
-Message-Id: <1409051215-16788-6-git-send-email-vincent.guittot@linaro.org>
+Subject: [PATCH v5 01/12] sched: fix imbalance flag reset
+Date: Tue, 26 Aug 2014 13:06:44 +0200
+Message-Id: <1409051215-16788-2-git-send-email-vincent.guittot@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
 References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
@@ -25,37 +25,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the new arch_scale_cpu_capacity in order to reflect the original capacity
-of a CPU instead of arch_scale_freq_capacity which is more linked to a scaling
-of the capacity linked to the frequency.
+The imbalance flag can stay set whereas there is no imbalance.
 
+Let assume that we have 3 tasks that run on a dual cores /dual cluster system.
+We will have some idle load balance which are triggered during tick.
+Unfortunately, the tick is also used to queue background work so we can reach
+the situation where short work has been queued on a CPU which already runs a
+task. The load balance will detect this imbalance (2 tasks on 1 CPU and an idle
+CPU) and will try to pull the waiting task on the idle CPU. The waiting task is
+a worker thread that is pinned on a CPU so an imbalance due to pinned task is
+detected and the imbalance flag is set.
+Then, we will not be able to clear the flag because we have at most 1 task on
+each CPU but the imbalance flag will trig to useless active load balance
+between the idle CPU and the busy CPU.
+
+We need to reset of the imbalance flag as soon as we have reached a balanced
+state. If all tasks are pinned, we don't consider that as a balanced state and
+let the imbalance flag set.
+
+Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
 ---
- arch/arm/kernel/topology.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/sched/fair.c | 23 +++++++++++++++++++----
+ 1 file changed, 19 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
-index e35d880..89cfdd6 100644
---- a/arch/arm/kernel/topology.c
-+++ b/arch/arm/kernel/topology.c
-@@ -42,7 +42,7 @@
-  */
- static DEFINE_PER_CPU(unsigned long, cpu_scale);
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index d3427a8..085e853 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -6765,10 +6765,8 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+ 		if (sd_parent) {
+ 			int *group_imbalance = &sd_parent->groups->sgc->imbalance;
  
--unsigned long arch_scale_freq_capacity(struct sched_domain *sd, int cpu)
-+unsigned long arch_scale_cpu_capacity(struct sched_domain *sd, int cpu)
- {
- 	return per_cpu(cpu_scale, cpu);
- }
-@@ -166,7 +166,7 @@ static void update_cpu_capacity(unsigned int cpu)
- 	set_capacity_scale(cpu, cpu_capacity(cpu) / middle_capacity);
+-			if ((env.flags & LBF_SOME_PINNED) && env.imbalance > 0) {
++			if ((env.flags & LBF_SOME_PINNED) && env.imbalance > 0)
+ 				*group_imbalance = 1;
+-			} else if (*group_imbalance)
+-				*group_imbalance = 0;
+ 		}
  
- 	printk(KERN_INFO "CPU%u: update cpu_capacity %lu\n",
--		cpu, arch_scale_freq_capacity(NULL, cpu));
-+		cpu, arch_scale_cpu_capacity(NULL, cpu));
- }
+ 		/* All tasks on this runqueue were pinned by CPU affinity */
+@@ -6779,7 +6777,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+ 				env.loop_break = sched_nr_migrate_break;
+ 				goto redo;
+ 			}
+-			goto out_balanced;
++			goto out_all_pinned;
+ 		}
+ 	}
  
- #else
+@@ -6853,6 +6851,23 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+ 	goto out;
+ 
+ out_balanced:
++	/*
++	 * We reach balance although we may have faced some affinity
++	 * constraints. Clear the imbalance flag if it was set.
++	 */
++	if (sd_parent) {
++		int *group_imbalance = &sd_parent->groups->sgc->imbalance;
++
++		if (*group_imbalance)
++			*group_imbalance = 0;
++	}
++
++out_all_pinned:
++	/*
++	 * We reach balance because all tasks are pinned at this level so
++	 * we can't migrate them. Let the imbalance flag set so parent level
++	 * can try to migrate them.
++	 */
+ 	schedstat_inc(sd, lb_balanced[idle]);
+ 
+ 	sd->nr_balance_failed = 0;
 -- 
 1.9.1
 
