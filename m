@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758532AbaHZONi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 10:13:38 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:41922 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758272AbaHZONg (ORCPT
+	id S1758543AbaHZOOC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 10:14:02 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:47107 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754012AbaHZOOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 10:13:36 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-cf-53fc960e89e3
-From: Tomasz Figa <t.figa@samsung.com>
-To: linux-samsung-soc@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>
-Subject: [PATCH] ARM: dts: exynos4x12: Fix pull setting in sd4_width8 pin group
-Date: Tue, 26 Aug 2014 16:13:25 +0200
-Message-id: <1409062405-15215-1-git-send-email-t.figa@samsung.com>
-X-Mailer: git-send-email 2.0.4
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHJMWRmVeSWpSXmKPExsVy+t/xK7p80/4EG7z6YGjRu+Aqm8Wmx9dY
-	LS7vmsNmMeP8PiaLtUfuslusn/GaxYHNY/OSeo++LasYPT5vkgtgjuKySUnNySxLLdK3S+DK
-	WNS0jalgNVvFxgP32RsY57B2MXJySAiYSDx6d4oFwhaTuHBvPVsXIxeHkMBSRondEy4wQjh9
-	TBJLv/xjBqliE1CT+NzwiA3EFhFQlfjctoAdxGYW2MsocWunKogtLOAv0X7oJdhUFqCaa+c/
-	gNXzCjhJTD09lRlim5zEqo37mCYwci9gZFjFKJpamlxQnJSea6hXnJhbXJqXrpecn7uJERIG
-	X3YwLj5mdYhRgINRiYf3Q8nvYCHWxLLiytxDjBIczEoivD+S/gQL8aYkVlalFuXHF5XmpBYf
-	YmTi4JRqYOSYUzll89M7EavFz6c8YFzYucR3rY+0/qP6ddWe51MToj7d5z+31I2hI5td5Gl/
-	4JWulqApOnJf/+140x7n8CLaLcE+xEhXddf9CU8D0hv1duUGzOLLPeow42KAJKsP28MdbCcV
-	w+9J5caHCGwo/6nDFCE4oTUumWupw+X1P394C6frGmzwVmIpzkg01GIuKk4EAGOTcrnhAQAA
+	Tue, 26 Aug 2014 10:14:00 -0400
+Date: Tue, 26 Aug 2014 17:13:50 +0300
+From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+To: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: paulmck@linux.vnet.ibm.com
+Subject: [PATCH] ipv6: ip6_gre: Replace rcu_assign_pointer() with
+ RCU_INIT_POINTER()
+Message-ID: <20140826141350.GA2036@ada>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The group has the samsung,pin-pud property set to 4, which is not a
-correct value. This patch fixes this by replacing it with 3, which is
-the correct value for pull-up.
+According to RCU_INIT_POINTER()'s block comment 3.a, it can be used if
+"3.   The referenced data structure has already been exposed to readers either
+at compile time or via rcu_assign_pointer() -and-
+ a.   You have not made -any- reader-visible changes to this structure since
+then".
 
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+This case fulfills the conditions above because between the rtnl_dereference()
+call and the rcu_assign_pointer() call there is no update of that value.
+Therefore, this patch makes the replacement.
+
+The following Coccinelle semantic patch was used:
+@@
+@@
+
+- rcu_assign_pointer
++ RCU_INIT_POINTER
+  (...,
+(
+ rtnl_dereference(...)
+|
+ rcu_dereference_protected(...)
+) )
+
+Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
 ---
- arch/arm/boot/dts/exynos4x12-pinctrl.dtsi | 2 +-
+ net/ipv6/ip6_gre.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/exynos4x12-pinctrl.dtsi b/arch/arm/boot/dts/exynos4x12-pinctrl.dtsi
-index 927fec6..c141931 100644
---- a/arch/arm/boot/dts/exynos4x12-pinctrl.dtsi
-+++ b/arch/arm/boot/dts/exynos4x12-pinctrl.dtsi
-@@ -691,7 +691,7 @@
- 		sd4_bus8: sd4-bus-width8 {
- 			samsung,pins = "gpk1-3", "gpk1-4", "gpk1-5", "gpk1-6";
- 			samsung,pin-function = <4>;
--			samsung,pin-pud = <4>;
-+			samsung,pin-pud = <3>;
- 			samsung,pin-drv = <3>;
- 		};
+diff --git a/net/ipv6/ip6_gre.c b/net/ipv6/ip6_gre.c
+index 3873181..67dcaca 100644
+--- a/net/ipv6/ip6_gre.c
++++ b/net/ipv6/ip6_gre.c
+@@ -261,7 +261,7 @@ static void ip6gre_tunnel_link(struct ip6gre_net *ign, struct ip6_tnl *t)
+ {
+ 	struct ip6_tnl __rcu **tp = ip6gre_bucket(ign, t);
+ 
+-	rcu_assign_pointer(t->next, rtnl_dereference(*tp));
++	RCU_INIT_POINTER(t->next, rtnl_dereference(*tp));
+ 	rcu_assign_pointer(*tp, t);
+ }
  
 -- 
-2.0.4
+1.9.1
 
