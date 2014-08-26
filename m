@@ -1,125 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751572AbaHZQNt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 12:13:49 -0400
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:62320 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823AbaHZQNr (ORCPT
+	id S1751875AbaHZQUn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 12:20:43 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:49275 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751736AbaHZQUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 12:13:47 -0400
-Message-ID: <53FCB239.90104@bluespec.com>
-Date: Tue, 26 Aug 2014 12:13:45 -0400
-From: Darius Rad <darius@bluespec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.7.0
+	Tue, 26 Aug 2014 12:20:41 -0400
+Date: Tue, 26 Aug 2014 17:20:31 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        sameo@linux.intel.com, lgirdwood@gmail.com, broonie@kernel.org,
+        a.zummo@towertech.it, mturquette@linaro.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
+        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
+        xxx@rock-chips.com, dianders@chromium.org, heiko@sntech.de,
+        olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
+        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com
+Subject: Re: [PATCH v2 2/5] MFD: RK808: Add new mfd driver for RK808
+Message-ID: <20140826162031.GB26707@lee--X1>
+References: <20140820092117.GI4266@lee--X1>
+ <53FA9D1E.8040202@rock-chips.com>
+ <20140826092205.GG9574@lee--X1>
+ <53FC5BD1.7030406@rock-chips.com>
+ <20140826102036.GJ9574@lee--X1>
+ <53FC63EE.6060104@rock-chips.com>
+ <20140826112013.GK9574@lee--X1>
+ <53FC77F0.4030004@rock-chips.com>
+ <20140826122304.GA26707@lee--X1>
+ <53FC7F8A.2050903@rock-chips.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] include/asm-generic/cmpxchg-local.h: perform comparison
- in cmpxchg using appropriate size of data
-References: <53FB5733.4010607@bluespec.com> <22513003.HL2jGO1mLV@wuerfel>
-In-Reply-To: <22513003.HL2jGO1mLV@wuerfel>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53FC7F8A.2050903@rock-chips.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2014 08:33 AM, Arnd Bergmann wrote:
-> On Monday 25 August 2014 11:33:07 Darius Rad wrote:
->> In the generic implementation of cmpxchg, cast the parameters to the size
->> of the data prior to comparison.  Otherwise, it is possible for the
->> comparison to be done incorrectly in the case where the data size is
->> smaller than the architecture register size.
->>
->> For example, on a 64-bit architecture, a 32-bit value is sign extended
->> differently if it is typecast from an int to an unsigned long as compared
->> to being loaded from memory via an unsigned pointer (u32 *).
-> 
-> I don't see the scenario where this applies yet. The function itself
-> only deals with unsigned values, so there should never be any sign extension.
-> 
-> Is this a problem with the caller using a signed type? Does the same
-> code work on architectures that don't use the generic code?
-> 
+On Tue, 26 Aug 2014, Chris Zhong wrote:
 
-Yes, the problem is when the caller uses a signed type (that is also smaller
-than unsigned long).  For example, set_last_pid() in kernel/pid.c passes an
-int.
+[...]
 
-And yes, the same code works without using the generic code.  In my testing,
-simply casting the u32 case comparison makes the code work, whereas
-with the generic code everything in user space gets killed.
+> Well, it might be better to delete the pdata from MFD.
 
+Bingo!  That's what I've been trying to get at.
 
->>  Given that
->> the primary, or possibly only, use of cmpxchg is with 4 and 8 byte values,
->> the incorrect comparison could only occur on 64-bit architectures that make
->> use of the generic cmxchg.
-> 
-> cmpxchg is definitely meant to handle 1 and 2 byte values as well, but it's
-> relatively rare. ARMv6 for instance does not handle 2-byte atomics and only
-> one driver (xen) has had problems because of this.
-> 
-
-Understood.  I noticed that some architectures (e.g., MIPS, Xtensa) only
-implement the 4 and 8 byte varieties, which is why I made that initial
-assumption.
-
-
->> Signed-off-by: Darius Rad <darius@bluespec.com>
->>
->> ---
->> It does not appear that this is relevant to architectures that are in the
->> kernel tree, since the generic cmpxchg is only ever used by some 32-bit
->> architectures.  This does impact the RISC-V architecture that is currently
->> in development.
-> 
-> I guess that means that RISC-V has no mandatory atomic instructions, right?
-> 
-
-Correct.
-
-
->>
->>  include/asm-generic/cmpxchg-local.h |    8 ++++----
->>  1 file changed, 4 insertions(+), 4 deletions(-)
->>
->> --- linux-3.17-rc1.orig/include/asm-generic/cmpxchg-local.h	2014-08-16 12:40:26.000000000 -0400
->> +++ linux-3.17-rc1/include/asm-generic/cmpxchg-local.h	2014-08-22 14:26:59.280746090 -0400
->> @@ -25,19 +25,19 @@ static inline unsigned long __cmpxchg_lo
->>  	raw_local_irq_save(flags);
->>  	switch (size) {
->>  	case 1: prev = *(u8 *)ptr;
->> -		if (prev == old)
->> +		if ((u8)prev == (u8)old)
->>  			*(u8 *)ptr = (u8)new;
->>  		break;
->>  	case 2: prev = *(u16 *)ptr;
->> -		if (prev == old)
->> +		if ((u16)prev == (u16)old)
->>  			*(u16 *)ptr = (u16)new;
->>  		break;
->>  	case 4: prev = *(u32 *)ptr;
->> -		if (prev == old)
->> +		if ((u32)prev == (u32)old)
->>  			*(u32 *)ptr = (u32)new;
->>  		break;
->>  	case 8: prev = *(u64 *)ptr;
->> -		if (prev == old)
->> +		if ((u64)prev == (u64)old)
->>  			*(u64 *)ptr = (u64)new;
->>  		break;
->>  	default:
-> 
-> I can see how the cast of 'old' to a narrower type makes sense, but
-> not 'prev', which we just loaded and zero-extended one line earlier.
-> 
-
-Indeed, I agree that casting 'prev' is not necessary.
-
-
-> 	Arnd
-> 
-
-// darius
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
