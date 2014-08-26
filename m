@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758008AbaHZMfL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 08:35:11 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:34639 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755048AbaHZMeO (ORCPT
+	id S1757874AbaHZMf4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 08:35:56 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:57931 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754979AbaHZMfz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 08:34:14 -0400
-Message-ID: <53FC7EC1.9070401@gmail.com>
-Date: Tue, 26 Aug 2014 08:34:09 -0400
-From: Austin S Hemmelgarn <ahferroin7@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 26 Aug 2014 08:35:55 -0400
 MIME-Version: 1.0
-To: Shea Levy <shea@shealevy.com>, linux-kernel@vger.kernel.org
-Subject: Re: Documentation for init
-References: <20140826054837.GA2766@nixos.hsd1.nh.comcast.net>
-In-Reply-To: <20140826054837.GA2766@nixos.hsd1.nh.comcast.net>
-x-hashcash: 1:21:140826:shea@shealevy.com::93c0d7b7ad30c505874094d05ee02745:a76a90daf2f1fd82
-x-hashcash: 1:21:140826:linux-kernel@vger.kernel.org::eb3b6771290fc0368d9586b5a7385cf7:8285a70f5a104fbc
-x-stampprotocols: hashcash:1:17;mbound:0:10:3000:5000
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+In-Reply-To: <53FC1D68.1000600@st.com>
+References: <1408967442-2724-1-git-send-email-lftan@altera.com>
+	<CAGb2v65fi=D_TQBSospft4T5OrBCj5TwQfgtkX=11M8TWFftYg@mail.gmail.com>
+	<53FB313C.9010808@st.com>
+	<CAOwfj2Oyy8EGxPhgJcgeGPMm3tJ9-fGOh5h7jU8q4_BO=vWrTA@mail.gmail.com>
+	<53FC1D68.1000600@st.com>
+Date: Tue, 26 Aug 2014 07:35:53 -0500
+Message-ID: <CAOwfj2MMJCYyqD9++MpbRZohzBXyX16fJY-FaT+8H2gZyJd9MA@mail.gmail.com>
+Subject: Re: [PATCH] net: stmmac: add dcrs parameter
+From: Vince Bridgers <vbridgers2013@gmail.com>
+To: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
+Cc: Chen-Yu Tsai <wens@csie.org>, Ley Foon Tan <lftan@altera.com>,
+        netdev <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        LeyFoon Tan <lftan.linux@gmail.com>,
+        Vince Bridgers <vbridger@altera.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-08-26 01:48, Shea Levy wrote:
-> Hi all,
-> 
-> Is there any official documentation of the init process? I'm
-> specifically interested in the process state at kernel handoff (argv,
-> envp, open fds, etc.) as well as any special properties pid 1 has
-> (parent of all orphans, anything else?).
-> 
-> Thanks,
-> Shea Levy
-> 
-> P.S. I am not subscribed to LKML, please CC me in responses
-This is following is just my understanding based on what I have seen and
-read, and I may well be totally wrong on some points (if that is the
-case, I would love to know about it, I'm always trying to learn more).
+Hi Peppe,
 
-As far as I can tell, the argv that gets passed to the init process is
-the concatenation of all arguments on the kernel command-line that the
-kernel doesn't recognize or parse.  A lot of LiveCD's make use of this
-to control hardware detection and module loading.  The only open file
-descriptors (i believe, I may be wrong) are 0, 1, and 2, all pointing at
-/dev/console.
+>>
+>> In the Synopsys EMAC case, carrier sense is used to stop transmitting
+>> if no carrier is sensed during a transmission. This is only useful if
+>> the media in use is true half duplex media (like obsolete 10Base2 or
+>> 10Base5). If no one in using true half duplex media, then is it
+>> possible to set this disable by default? If we're not sure, then
+>> having an option feels like the right thing to do.
+>
+>
+> Indeed this is what I had done in the patch.
+>
+> http://git.stlinux.com/?p=stm/linux-sh4-2.6.32.y.git;a=commit;h=b0b863bf65c36dc593f6b7b4b418394fd880dae2
+>
+> Also in case of carrier sense the frame will be dropped in any case
+> later.
+>
+> Let me know if you Acked this patch so I will rebase it on
+> net.git and I send it soon
+>
+> peppe
+>
 
-As for special properties:
- * Parent of all orphans
- * Doesn't have a session ID until it calls setsid() (not certain about
-this one)
- * Calling exit() will cause either a reboot or possibly a panic (I
-think that this is dependent on the argument passed to exit())
- * Not catching a fatal signal will cause a panic (this means that
-sending SIGKILL and SIGABRT to PID 1 will always cause a panic).
- * Has a PPID of 0, only other process like this is kthreadd
- * Becomes the parent of most X programs (almost all of them dissociate
-very quickly from whatever started them.
+Yes, this looks good to me. I don't expect anyone is using 10Base2 or
+10Base5 anymore, so it's ok to disable DCRS by default.
+
+ack
+
+All the best,
+
+Vince
