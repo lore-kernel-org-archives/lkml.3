@@ -1,64 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752086AbaHZQ2Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 12:28:24 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:46420 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751721AbaHZQ2X (ORCPT
+	id S1752106AbaHZQ2k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 12:28:40 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:34465 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823AbaHZQ2i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 12:28:23 -0400
-Date: Tue, 26 Aug 2014 17:28:17 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: linux-kernel@vger.kernel.org, "'Bryan Wu'" <cooloney@gmail.com>
-Subject: Re: [PATCH 17/18] backlight: jornada720: remove 'else' after a return
-Message-ID: <20140826162817.GD26707@lee--X1>
-References: <009301cfc12d$2847ffd0$78d7ff70$%han@samsung.com>
- <00bb01cfc12d$fb662c20$f2328460$%han@samsung.com>
+	Tue, 26 Aug 2014 12:28:38 -0400
+Date: Tue, 26 Aug 2014 09:28:32 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Chris Zhong <zyw@rock-chips.com>, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, sameo@linux.intel.com, lgirdwood@gmail.com,
+        broonie@kernel.org, a.zummo@towertech.it, mturquette@linaro.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
+        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
+        xxx@rock-chips.com, dianders@chromium.org, heiko@sntech.de,
+        olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
+        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com
+Subject: Re: [PATCH v2 2/5] MFD: RK808: Add new mfd driver for RK808
+Message-ID: <20140826162831.GA22842@core.coreip.homeip.net>
+References: <1408505461-24200-1-git-send-email-zyw@rock-chips.com>
+ <20140820092117.GI4266@lee--X1>
+ <53FA9D1E.8040202@rock-chips.com>
+ <20140826092205.GG9574@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <00bb01cfc12d$fb662c20$f2328460$%han@samsung.com>
+In-Reply-To: <20140826092205.GG9574@lee--X1>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Aug 2014, Jingoo Han wrote:
+Hi Lee,
 
-> Fixed the following checkpatch warning.
+On Tue, Aug 26, 2014 at 10:22:05AM +0100, Lee Jones wrote:
+> On Mon, 25 Aug 2014, Chris Zhong wrote:
+> > On 08/20/2014 05:21 PM, Lee Jones wrote:
+> > >On Wed, 20 Aug 2014, Chris Zhong wrote:
+> > >
+> > >>The RK808 chip is a power management IC for multimedia and handheld
+> > >>devices. It contains the following components:
+> > >>
+> > >>- Regulators
+> > >>- RTC
+> > >>
+> > >>The rk808 core driver is registered as a platform driver and provides
+> > >>communication through I2C with the host device for the different
+> > >>components.
+> > >>
+> > >>Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+> > >>---
 > 
->   WARNING: else is not generally useful after a break or return
+> [...]
 > 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> ---
->  drivers/video/backlight/jornada720_lcd.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+> > >>+	rk808->pdata = pdata;
+> > >Remove pdata from 'struct rk808'.  You can obtain it from dev.
+> > 
+> > Can I keep this pdata in rk808, because it is used in the regulator driver.
+> > The one obtain from dev maybe empty.
 > 
-> diff --git a/drivers/video/backlight/jornada720_lcd.c b/drivers/video/backlight/jornada720_lcd.c
-> index 228bc319de19..1cf3d59f1e7f 100644
-> --- a/drivers/video/backlight/jornada720_lcd.c
-> +++ b/drivers/video/backlight/jornada720_lcd.c
-> @@ -30,8 +30,8 @@ static int jornada_lcd_get_power(struct lcd_device *ld)
->  	/* LDD2 in PPC = LCD POWER */
->  	if (PPSR & PPC_LDD2)
->  		return FB_BLANK_UNBLANK;	/* PW ON */
-> -	else
-> -		return FB_BLANK_POWERDOWN;	/* PW OFF */
-> +
-> +	return FB_BLANK_POWERDOWN;	/* PW OFF */
+> If the one in dev is empty, you should populate that instead.
 
-How about:
+No, drivers should not populate platform data in devices - they do not
+own it (unlike drvdata). Platform data should be read-only so that if
+one would unbind and then try to re-bind the driver we'd end up in
+exactly same state as before.
 
-  return PPSR & PPC_LDD2 ? FB_BLANK_UNBLANK : FB_BLANK_POWERDOWN;
+For DT systems we should be allocating platform data separately and make
+sure we clean up after ourselves.
 
->  }
->  
->  static int jornada_lcd_get_contrast(struct lcd_device *ld)
+Thanks.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Dmitry
