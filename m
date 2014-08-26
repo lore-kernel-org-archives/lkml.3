@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072AbaHZWRA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 18:17:00 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:47940 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755557AbaHZWQ6 convert rfc822-to-8bit (ORCPT
+	id S1755804AbaHZW3g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 18:29:36 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57291 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752557AbaHZW3f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 18:16:58 -0400
+	Tue, 26 Aug 2014 18:29:35 -0400
+Date: Wed, 27 Aug 2014 00:29:21 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andi Kleen <andi@firstfloor.org>
+cc: peterz@infradead.org, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        eranian@google.com, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/5] perf, x86: Remove incorrect model number from Haswell
+ perf
+In-Reply-To: <20140826212934.GP4120@two.firstfloor.org>
+Message-ID: <alpine.DEB.2.10.1408270020020.3323@nanos>
+References: <1409006611-30741-1-git-send-email-andi@firstfloor.org> <1409006611-30741-2-git-send-email-andi@firstfloor.org> <alpine.DEB.2.10.1408262325200.3323@nanos> <20140826212934.GP4120@two.firstfloor.org>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQUF4THLRfzbnhK61QHpM2zyox4E8LTmyzVF7PnPdpb7jQ@mail.gmail.com>
-References: <1409089544-24221-1-git-send-email-yinghai@kernel.org>
-	<53FD01D0.8020203@zytor.com>
-	<CAE9FiQUF4THLRfzbnhK61QHpM2zyox4E8LTmyzVF7PnPdpb7jQ@mail.gmail.com>
-Date: Wed, 27 Aug 2014 01:16:57 +0300
-Message-ID: <CAPWNY8WG3E7oZdZDdYsrnGM5pG4kWAKkEq0Eh5Hc_uXJ_8zD5g@mail.gmail.com>
-Subject: Re: [PATCH] x86: only load initrd above 4g on second try
-From: =?UTF-8?Q?Mantas_Mikul=C4=97nas?= <grawity@gmail.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Matt Fleming <matt.fleming@intel.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Anders Darander <anders@chargestorm.se>, linux-efi@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 27, 2014 at 1:05 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Tue, Aug 26, 2014 at 2:53 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 08/26/2014 02:45 PM, Yinghai Lu wrote:
->>> Mantas found that after commit 4bf7111f5016 ("x86/efi: Support initrd
->>> loaded above 4G"), the kernel freezes at the earliest possible moment
->>> when trying to boot via UEFI on Asus laptop.
->>>
->>> There are buggy EFI implementations: with EFI run time, kernel need
->>> to load file with 512bytes alignment when buffer is above 4G.
->>>
->>
->> This makes absolutely zero sense.  Please explain what the actual
->> problem is here.
->
-> The firmware has bug and can use buffer above 4G to read files.
-> and if the file size is 512 bytes alignment, then reading could go through.
->
-> From Mantas:
-> --
-> On Wed, Aug 20, 2014 at 12:05 PM, Mantas Mikulėnas <grawity@gmail.com> wrote:
->>
->> I experimented with some things (like setting chunk size to a few kB
->> to see if it hangs earlier or only at the very end; etc.), and finally
->> found out that it stops freezing if I pad the initrd file to a
->> multiple of 512 bytes :/ That is, 5684268 bytes will freeze, 5684736
->> bytes will not.
->>
->> ...In other words, seems like it cannot read chunks that aren't
->> multiples of 512 into a location above 4 GB. Or something like that..
+On Tue, 26 Aug 2014, Andi Kleen wrote:
 
-Note that I'm mostly clueless about how EFI works (my "debugging" is
-mostly just 'efi_printk()'s to see where it hangs), so take my
-description with a grain of salt...
+> > So what's the point of making the obvious onliner patch
+> > 
+> > -	case 71:
+> > 
+> > into something which reorders the sorted case numbers?
+>  
+> This was a merging mistake. I'll fix it to be a one liner.
+> 
+> > And of course, this patch is missing any explanation WHY 71 is
+> > incorrect and how it got there in the first place.
+> 
+> 71 is a Broadwell, as you would know if you had read the next patch.
 
-In particular, I just realized yesterday that I don't know whether
-it's referring to physical or virtual addresses in the initrd load
-code -- and the laptop only has 4 GB of memory, so the kernel
-shouldn't be using larger physical addresses in the first place.
-(Virtual ones, on the other hand, /would/ mean a weird bug like
-described above.)
+And why on earth do I need to read the next patch to figure out what
+the heck this patch is doing?
 
--- 
-Mantas Mikulėnas <grawity@gmail.com>
+Just because it's written by someone who gives a shit?
+
+Your unwillingness to cooperate and your advisory resistance are
+slowly approaching the Krause level...
+
+Thanks,
+
+	tglx
