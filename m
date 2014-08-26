@@ -1,86 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757372AbaHZJqj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 05:46:39 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33742 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753887AbaHZJqi (ORCPT
+	id S934298AbaHZJre (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 05:47:34 -0400
+Received: from regular1.263xmail.com ([211.150.99.139]:46847 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932262AbaHZJrc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 05:46:38 -0400
-Date: Tue, 26 Aug 2014 10:46:19 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "Arnout Vandecappelle (Essensium/Mind)" <arnout@mind.be>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        David Brown <davidb@codeaurora.org>
-Message-ID: <20140826094619.GG17528@sirena.org.uk>
-References: <1408709666-5927-1-git-send-email-arnout@mind.be>
- <1408721456-8101-1-git-send-email-arnout@mind.be>
- <20140822211247.GB24407@sirena.org.uk>
- <20140826092521.GH9574@lee--X1>
+	Tue, 26 Aug 2014 05:47:32 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: zyw@rock-chips.com
+X-FST-TO: dianders@chromium.org
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: zyw@rock-chips.com
+X-UNIQUE-TAG: <f8c1090dfa5ecd4ff08242a9b424bf57>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+Message-ID: <53FC579C.50507@rock-chips.com>
+Date: Tue, 26 Aug 2014 17:47:08 +0800
+From: Chris Zhong <zyw@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="H+UUbfbeT7dlNqfT"
-Content-Disposition: inline
-In-Reply-To: <20140826092521.GH9574@lee--X1>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2] tps65910: Work around silicon erratum SWCZ010
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Doug Anderson <dianders@chromium.org>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Mike Turquette <mturquette@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        rtc-linux@googlegroups.com, Grant Likely <grant.likely@linaro.org>,
+        Lin Huang <hl@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, zhangqing <zhangqing@rock-chips.com>,
+        xxx <xxx@rock-chips.com>,
+        =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>,
+        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        Dmitry Torokhov <dtor@chromium.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Kever Yang <kever.yang@rock-chips.com>
+Subject: Re: [PATCH v5 3/5] RTC: RK808: add RTC driver for RK808
+References: <1408973668-21436-1-git-send-email-zyw@rock-chips.com> <CAD=FV=VYJvgXXcYkq+vcpZkXZBDbgfRGNyF8GA6MnvMAGaAebQ@mail.gmail.com>
+In-Reply-To: <CAD=FV=VYJvgXXcYkq+vcpZkXZBDbgfRGNyF8GA6MnvMAGaAebQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---H+UUbfbeT7dlNqfT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 08/26/2014 11:22 AM, Doug Anderson wrote:
+>> +       int ret;
+>> >+
+>> >+       /* Has the RTC been programmed? */
+>> >+       ret = regmap_update_bits(rk808->regmap, RK808_RTC_CTRL_REG,
+>> >+                                BIT_RTC_CTRL_REG_RTC_V_OPT_M, 0);
+> Can you explain what you're doing here?  The comment seems wrong since
+> it implies that you're checking something.
+>
+> >From what I can tell from the manual you're setting "RTC_READSEL" to 0
+> which means "Read access directly to dynamic registers.".  That's not
+> clear here, and RTC_V_OPT_M makes no sense to me.
 
-On Tue, Aug 26, 2014 at 10:25:21AM +0100, Lee Jones wrote:
-> On Fri, 22 Aug 2014, Mark Brown wrote:
->=20
-> > On Fri, Aug 22, 2014 at 05:30:56PM +0200, Arnout Vandecappelle (Essensi=
-um/Mind) wrote:
-> > > From http://www.ti.com/lit/pdf/SWCZ010 :
-> > >=20
-> > > Glitch on SDA-SCL not managed correctly by the I2C IP
+RK808 has a shadowed register for saving a "frozen" RTC time.
+When user setting "RTC_READSEL" to 1, the time will save in this 
+shadowed register.
+In this case, user read rtc time register, actually get the time of that 
+moment.
+So, I move it to probe, this bit needn't clear every time
+>> >+       tm->tm_min = bcd2bin(rtc_data[1]) & MINUTES_REG_MAK;
+>> >+       tm->tm_hour = bcd2bin(rtc_data[2]) & HOURS_REG_MSK;
+>> >+       tm->tm_mday = bcd2bin(rtc_data[3]) & DAYS_REG_MSK;
+>> >+       tm->tm_mon = (bcd2bin(rtc_data[4]) & MONTHS_REG_MSK) - 1;
+>> >+       tm->tm_year = (bcd2bin(rtc_data[5]) & YEARS_REG_MSK) + 100;
+>> >+       tm->tm_wday = bcd2bin(rtc_data[6]) & WEEKS_REG_MSK;
+>> >+       dev_dbg(dev, "RTC date/time %4d-%02d-%02d(%d) %02d:%02d:%02d\n",
+>> >+               1900 + tm->tm_year, tm->tm_mon + 1, tm->tm_mday,
+>> >+               tm->tm_wday, tm->tm_hour , tm->tm_min, tm->tm_sec);
+>> >+
+>> >+       return 0;
+>> >+}
+>> >+
+>> >+/*
+>> >+ * Set current time and date in RTC
+>> >+ */
+>> >+static int rk808_rtc_set_time(struct device *dev, struct rtc_time *tm)
+> Make this "const struct rtc_time *tm"
+It will be a warning if add const.
+It should be match
+int (*set_time)(struct device *, struct rtc_time *);
+in rtc.h
+>
+>> +               rk808_rtc_set_time(&pdev->dev, &tm_def);
+>> >+       }
+>> >+
+>> >+       device_init_wakeup(&pdev->dev, 1);
+> You can skip this.  We'll set "wakeup-source" in the device tree.
+> That will set I2C_CLIENT_WAKE.  That will cause the i2c core to call
+> device_init_wakeup() for you.
+If I remove it, wakealarm is disappear, even though I add 
+"wakeup-source" in device tree.
+So, I keep it temporarily
+>
+>> +       if (IS_ERR(rk808_rtc->rtc)) {
+>> >+               ret = PTR_ERR(rk808_rtc->rtc);
+>> >+               return ret;
+>> >+       }
+>> >+
+>> >+       alm_irq  = platform_get_irq(pdev, 0);
+> Are you sure that platform_get_irq() works in this case?  In Javier's
+> in-flight max77802 driver he use regmap_irq_get_virq().
+>
+> ...oh, maybe your way does work!  You've got the rtc_resources to
+> specify things, so that looks good...
+>
+> ...but I tried testing it by doing:
+>
+> cd /sys/class/rtc/rtc0
+> echo +2 > wakealarm
+> sleep 5
+> grep 808 /proc/interrupts
+>
+> ...and I didn't see an interrupt go off.  Any idea why?
+It works well.
 
->  drivers/mfd/tps65910.c | 5 +++++
->  1 file changed, 5 insertions(+)
 
-> > Applied, thanks.
 
-> Eh?
 
-So, this is an example of why it's important to both use subject lines
-matching the pattern for the subsystem and try to select CC lists
-sensibly.  I've dropped the patch.
 
---H+UUbfbeT7dlNqfT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT/FdoAAoJELSic+t+oim9yBcQAJFJYiFktMQRv3Ci3gkIACIu
-FDmZTZpr52Y3ZR2z4iPhrlwxLyukqhfbBwWD/WXL2fxMEq+YgJKOzxOKy9Gsw5X7
-ZvSj3qROxJa7zB/doVlHoVyGdC4jxP+Bhs1M6UBnAHKo1wBnqBtOJCgpVn9kJOzc
-dDIwVHKSo939SuVwGCJqDLbQy6mNzYN2lR2yew8cFmOMKynobnXkoWEJsgAKmyeS
-zRnTgoa9hmD3b/n/6maQ3ClsPeFbkncjUWx4yFKyG1qG3idBCpLE0fhsRB7HWY8k
-q9XJ9pBYYG69ve9CJ6jKXFT2l84NZ07I+2iUB6604Pu8kk/4VaiYMVq8p9HTFK6g
-LDI1IF2ix5K7wS/+Fb99bKT/brnJ8wBzqdDDFDN3TSLohLdwzgd+w67xKLrkgL0Q
-bP+4ZC0xPt8KyVaBx20BwCiF9OsnuFf6nTaUT3wqNuH1EvBJgpOWYchxA8jkqTf8
-AwbmyrDH+hJscaCWYGoCXjs+JM8lev6AUaHtq1rhFnkTz9mKNzHGJFCC9bI00G4Z
-PX1Xvd/PFdDCi3GJthYsmRPu1PRlwgV1elV7inaXtyxZ+KV9Tq3Qs3JOB+VwvPiL
-AIXnm109/nIxavkKD18wgBRio0h9IeZrOcOQTXv9sCH4LUXlTPaYVB4S76Y+e5W0
-a0y6V5bboaLAnOyt3ouE
-=j6ZH
------END PGP SIGNATURE-----
-
---H+UUbfbeT7dlNqfT--
