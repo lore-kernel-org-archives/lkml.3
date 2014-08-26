@@ -1,64 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757874AbaHZMf4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 08:35:56 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:57931 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754979AbaHZMfz (ORCPT
+	id S1757987AbaHZMh4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 08:37:56 -0400
+Received: from regular1.263xmail.com ([211.150.99.134]:44355 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757872AbaHZMhy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 08:35:55 -0400
+	Tue, 26 Aug 2014 08:37:54 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: zyw@rock-chips.com
+X-FST-TO: lee.jones@linaro.org
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: zyw@rock-chips.com
+X-UNIQUE-TAG: <86f3805babd9e1e79643833863b6f9db>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+Message-ID: <53FC7F8A.2050903@rock-chips.com>
+Date: Tue, 26 Aug 2014 20:37:30 +0800
+From: Chris Zhong <zyw@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <53FC1D68.1000600@st.com>
-References: <1408967442-2724-1-git-send-email-lftan@altera.com>
-	<CAGb2v65fi=D_TQBSospft4T5OrBCj5TwQfgtkX=11M8TWFftYg@mail.gmail.com>
-	<53FB313C.9010808@st.com>
-	<CAOwfj2Oyy8EGxPhgJcgeGPMm3tJ9-fGOh5h7jU8q4_BO=vWrTA@mail.gmail.com>
-	<53FC1D68.1000600@st.com>
-Date: Tue, 26 Aug 2014 07:35:53 -0500
-Message-ID: <CAOwfj2MMJCYyqD9++MpbRZohzBXyX16fJY-FaT+8H2gZyJd9MA@mail.gmail.com>
-Subject: Re: [PATCH] net: stmmac: add dcrs parameter
-From: Vince Bridgers <vbridgers2013@gmail.com>
-To: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-Cc: Chen-Yu Tsai <wens@csie.org>, Ley Foon Tan <lftan@altera.com>,
-        netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        LeyFoon Tan <lftan.linux@gmail.com>,
-        Vince Bridgers <vbridger@altera.com>
-Content-Type: text/plain; charset=UTF-8
+To: Lee Jones <lee.jones@linaro.org>
+CC: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        sameo@linux.intel.com, lgirdwood@gmail.com, broonie@kernel.org,
+        a.zummo@towertech.it, mturquette@linaro.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
+        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
+        xxx@rock-chips.com, dianders@chromium.org, heiko@sntech.de,
+        olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
+        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com
+Subject: Re: [PATCH v2 2/5] MFD: RK808: Add new mfd driver for RK808
+References: <1408505461-24200-1-git-send-email-zyw@rock-chips.com> <20140820092117.GI4266@lee--X1> <53FA9D1E.8040202@rock-chips.com> <20140826092205.GG9574@lee--X1> <53FC5BD1.7030406@rock-chips.com> <20140826102036.GJ9574@lee--X1> <53FC63EE.6060104@rock-chips.com> <20140826112013.GK9574@lee--X1> <53FC77F0.4030004@rock-chips.com> <20140826122304.GA26707@lee--X1>
+In-Reply-To: <20140826122304.GA26707@lee--X1>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peppe,
 
+On 08/26/2014 08:23 PM, Lee Jones wrote:
+> On Tue, 26 Aug 2014, Chris Zhong wrote:
+>> On 08/26/2014 07:20 PM, Lee Jones wrote:
+>>> On Tue, 26 Aug 2014, Chris Zhong wrote:
+>>>> On 08/26/2014 06:20 PM, Lee Jones wrote:
+>>>>> On Tue, 26 Aug 2014, Chris Zhong wrote:
+>>>>>> On 08/26/2014 05:22 PM, Lee Jones wrote:
+>>>>>>> On Mon, 25 Aug 2014, Chris Zhong wrote:
+>>>>>>>> On 08/20/2014 05:21 PM, Lee Jones wrote:
+>>>>>>>>> On Wed, 20 Aug 2014, Chris Zhong wrote:
+>>>>>>>>>
+>>>>>>>>>> The RK808 chip is a power management IC for multimedia and handheld
+>>>>>>>>>> devices. It contains the following components:
+>>>>>>>>>>
+>>>>>>>>>> - Regulators
+>>>>>>>>>> - RTC
+>>>>>>>>>>
+>>>>>>>>>> The rk808 core driver is registered as a platform driver and provides
+>>>>>>>>>> communication through I2C with the host device for the different
+>>>>>>>>>> components.
+>>>>>>>>>>
+>>>>>>>>>> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+>>>>>>>>>> ---
+>>>>>>> [...]
+>>>>>>>
+>>>>>>>>>> +	rk808->pdata = pdata;
+>>>>>>>>> Remove pdata from 'struct rk808'.  You can obtain it from dev.
+>>>>>>>> Can I keep this pdata in rk808, because it is used in the regulator driver.
+>>>>>>>> The one obtain from dev maybe empty.
+>>>>>>> If the one in dev is empty, you should populate that instead.
+>>>>>> So, should I malloc a pada, and assign it to client->dev?
+>>>>> If client->dev.pdata is NULL, yes.
+>>>>>
+>>>>> But actually, I have more important questions that need to be answered
+>>>>> first.  Ones which I would normally be able to answer myself if the
+>>>>> patch-set had been sent as one (i.e. threaded) instead of as
+>>>>> individual patches:
+>>>>>
+>>>>> - What are you using pdata for?
+>>>> For save some properties,
+>>>>
+>>>> like "rockchip,system-power-controller" in MFD
+>>>> and some regulator properties in regulator/rk808...
+>>>>
+>>>>> - Where is pdata populated?
+>>>> It is populated in probe in mfd/rk808.c
+>>>>
+>>>> actually, I copy it from tps65910.c
+>>>>
+>>>>
+>>>>> - Where is pdata used?
+>>>> pdata is used in mfd and regulator
+>>> I'm still a little confused.  I see it being populated in the MFD
+>>> driver, then I only see the attributes populated in the MFD driver
+>>> used in the MFD driver and nowhere else?  I do see other attributes
+>>> used in the regulator driver i.e. .of_node[], but these are then used
+>>> only in the regulator driver, thus they shouldn't really be pdata.
+>>>
+>>> Let me put it another way:
+>>>
+>>> struct rk808_board {
+>>> +       int irq;
+>>> +       int irq_base;
+>>> +       int wakeup;
+>>> +       bool pm_off;
+>>> +       struct regulator_init_data *rk808_init_data[rk808_NUM_REGULATORS];
+>>> +       struct device_node *of_node[rk808_NUM_REGULATORS];
+>>> +       int pmic_sleep_gpio;
+>>> +       unsigned int dcdc_slp_voltage[3]; /* buckx_voltage in uV */
+>>> +       unsigned int ldo_slp_voltage[7];
+>>> +};
+>>>
+>>> For each of the above:
+>>>
+>>> - Can it be passed from platform data i.e. arch/<arch>/{plat,mach}-*?
+>>> - Can it use local (not passed from driver to driver) variable instead?
+>>>
+>>> If the answer to the first question is 'no' and/or if the answer to
+>>> the second question is 'yes', then it shouldn't be platform data.
+>> Yes, if we have no dts file, these value can pass from mach-rk***.
 >>
->> In the Synopsys EMAC case, carrier sense is used to stop transmitting
->> if no carrier is sensed during a transmission. This is only useful if
->> the media in use is true half duplex media (like obsolete 10Base2 or
->> 10Base5). If no one in using true half duplex media, then is it
->> possible to set this disable by default? If we're not sure, then
->> having an option feels like the right thing to do.
+>> It can be filled with all user setting of rk808, in a struct.
+>>
+>> the latest struct is:
+>>
+>> struct rk808_board {
+>>
+>>      int wakeup;
+>>
+>>      bool pm_off;
+>>
+>>      struct regulator_init_data *rk808_init_data[RK808_NUM_REGULATORS];
+>>
+>>      struct device_node *of_node[RK808_NUM_REGULATORS];
+>>
+>>      unsigned int dcdc_slp_voltage[3]; /* buckx_voltage in uV */
+>>
+>>      unsigned int ldo_slp_voltage[7];
+>>
+>> };
+> This version looks much more acceptable.
 >
->
-> Indeed this is what I had done in the patch.
->
-> http://git.stlinux.com/?p=stm/linux-sh4-2.6.32.y.git;a=commit;h=b0b863bf65c36dc593f6b7b4b418394fd880dae2
->
-> Also in case of carrier sense the frame will be dropped in any case
-> later.
->
-> Let me know if you Acked this patch so I will rebase it on
-> net.git and I send it soon
->
-> peppe
->
+> Although, I am concerned about of_node[].  Isn't that only populated
+> and used in the regulator driver?
 
-Yes, this looks good to me. I don't expect anyone is using 10Base2 or
-10Base5 anymore, so it's ok to disable DCRS by default.
+Yes, it only used in regulator driver
 
-ack
+Well, it might be better to delete the pdata from MFD.
 
-All the best,
 
-Vince
+
+
+
