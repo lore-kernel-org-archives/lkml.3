@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934648AbaHZKQC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 06:16:02 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:56387 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934453AbaHZKQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 06:16:00 -0400
-Message-ID: <53FC5E40.7020904@ti.com>
-Date: Tue, 26 Aug 2014 15:45:28 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1757455AbaHZKQt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 06:16:49 -0400
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.219]:60119 "EHLO
+	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757359AbaHZKQr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 06:16:47 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWi/zfN1cLnBYfssUIlSFMulEekh1V+4SeDxi+jBPcPGRBxIB/lLRg==
+X-RZG-CLASS-ID: mo00
+Date: Tue, 26 Aug 2014 12:16:40 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: airlied@linux.ie
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drm/cirrus: bind also to qemu-xen-traditional
+Message-ID: <20140826101639.GA12400@aepfle.de>
+References: <1397199383-30186-1-git-send-email-olaf@aepfle.de>
+ <20140612052351.GA25374@aepfle.de>
 MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>, <khilman@deeprootsystems.com>
-CC: <linux@arm.linux.org.uk>, <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] ARM: davinci: board-da850-evm: Add needed regulators
- for tlv320aic3106 codec
-References: <1406546678-797-1-git-send-email-peter.ujfalusi@ti.com> <1406546678-797-2-git-send-email-peter.ujfalusi@ti.com>
-In-Reply-To: <1406546678-797-2-git-send-email-peter.ujfalusi@ti.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140612052351.GA25374@aepfle.de>
+User-Agent: Mutt/1.5.22.rev6346 (2013-10-29)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 28 July 2014 04:54 PM, Peter Ujfalusi wrote:
-> IOVDD: tps65070's dcdc2
-> AVDD and DRVDD: fixed regulator derived from 5V via TPS73701DCQ
-> DVDD: fixed regulator derived from 5V via TPS73701DCQ
+Ping?
+
+On Thu, Jun 12, Olaf Hering wrote:
+
+> Ping?
 > 
-> This patch needed to be able to probe the audio codec.
+> On Fri, Apr 11, Olaf Hering wrote:
 > 
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> ---
->  arch/arm/mach-davinci/board-da850-evm.c | 13 +++++++++++++
-
-Applied both for v3.18 while fixing the following:
-
-CHECK: Please use a blank line after function/struct/union/enum declarations
-#56: FILE: arch/arm/mach-davinci/board-da850-evm.c:845:
- }
-+/* Fixed regulator support */
-
-total: 0 errors, 0 warnings, 1 checks, 37 lines checked
-
-Thanks,
-Sekhar
-
+> > qemu as used by xend/xm toolstack uses a different subvendor id.
+> > Bind the drm driver also to this emulated card.
+> > 
+> > Signed-off-by: Olaf Hering <olaf@aepfle.de>
+> > ---
+> >  drivers/gpu/drm/cirrus/cirrus_drv.c | 2 ++
+> >  1 file changed, 2 insertions(+)
+> > 
+> > diff --git a/drivers/gpu/drm/cirrus/cirrus_drv.c b/drivers/gpu/drm/cirrus/cirrus_drv.c
+> > index 953fc8a..8555548 100644
+> > --- a/drivers/gpu/drm/cirrus/cirrus_drv.c
+> > +++ b/drivers/gpu/drm/cirrus/cirrus_drv.c
+> > @@ -31,6 +31,8 @@ static struct drm_driver driver;
+> >  static DEFINE_PCI_DEVICE_TABLE(pciidlist) = {
+> >  	{ PCI_VENDOR_ID_CIRRUS, PCI_DEVICE_ID_CIRRUS_5446, 0x1af4, 0x1100, 0,
+> >  	  0, 0 },
+> > +	{ PCI_VENDOR_ID_CIRRUS, PCI_DEVICE_ID_CIRRUS_5446, PCI_VENDOR_ID_XEN,
+> > +	  0x0001, 0, 0, 0 },
+> >  	{0,}
+> >  };
+> >  
