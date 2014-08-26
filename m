@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934494AbaHZO54 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 10:57:56 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:45052 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755253AbaHZO5y (ORCPT
+	id S934546AbaHZO6C (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 10:58:02 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:59725 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934467AbaHZO55 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 10:57:54 -0400
+	Tue, 26 Aug 2014 10:57:57 -0400
 From: Thierry Reding <thierry.reding@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Stephen Warren <swarren@wwwdotorg.org>, linux-pci@vger.kernel.org,
         linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/6] PCI: tegra: Implement a proper resource hierarchy
-Date: Tue, 26 Aug 2014 16:57:40 +0200
-Message-Id: <1409065064-17617-3-git-send-email-thierry.reding@gmail.com>
+Subject: [PATCH v2 4/6] PCI: tegra: Fix extended configuration space mapping
+Date: Tue, 26 Aug 2014 16:57:42 +0200
+Message-Id: <1409065064-17617-5-git-send-email-thierry.reding@gmail.com>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <1409065064-17617-1-git-send-email-thierry.reding@gmail.com>
 References: <1409065064-17617-1-git-send-email-thierry.reding@gmail.com>
@@ -21,130 +21,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thierry Reding <treding@nvidia.com>
+From: Peter Daifuku <pdaifuku@nvidia.com>
 
-Currently the resource hierarchy generated from the PCIe host bridge is
-completely flat:
+The 16 chunks of 64 KiB that need to be stitched together to make up the
+configuration space for one bus (1 MiB) are located 24 bits (== 16 MiB)
+apart in physical address space. This is determined by the start of the
+extended register field (bits 24-27) in the physical mapping.
 
-	$ cat /proc/iomem
-	00000000-00000fff : /pcie-controller@00003000/pci@1,0
-	00003000-000037ff : pads
-	00003800-000039ff : afi
-	10000000-1fffffff : cs
-	28000000-28003fff : r8169
-	28004000-28004fff : r8169
-	...
-
-The host bridge driver doesn't request all the resources that are used.
-Windows allocated to each of the root ports aren't tracked, so there is
-no way for resources allocated to individual devices to be matched up
-with the correct parent resource by the PCI core.
-
-This patch addresses this in two steps. It first takes the union of all
-regions associated with the PCIe host bridge (control registers, root
-port registers, configuration space, I/O and prefetchable as well as
-non-prefetchable memory regions) and uses it as the new root of the
-resource hierarchy.
-
-Subsequently, regions are allocated from within this new root resource
-so that the resource tree looks much more like what's expected:
-
-	# cat /proc/iomem
-	00000000-3fffffff : /pcie-controller@00003000
-	  00000000-00000fff : /pcie-controller@00003000/pci@1,0
-	  00003000-000037ff : pads
-	  00003800-000039ff : afi
-	  10000000-1fffffff : cs
-	  20000000-27ffffff : non-prefetchable
-	  28000000-3fffffff : prefetchable
-	    28000000-280fffff : PCI Bus 0000:01
-	      28000000-28003fff : 0000:01:00.0
-	        28000000-28003fff : r8169
-	      28004000-28004fff : 0000:01:00.0
-	        28004000-28004fff : r8169
-	...
-
+Signed-off-by: Peter Daifuku <pdaifuku@nvidia.com>
 Signed-off-by: Thierry Reding <treding@nvidia.com>
 ---
- drivers/pci/host/pci-tegra.c | 32 +++++++++++++++++++++++++++++---
- 1 file changed, 29 insertions(+), 3 deletions(-)
+ drivers/pci/host/pci-tegra.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/pci/host/pci-tegra.c b/drivers/pci/host/pci-tegra.c
-index 0fb0fdb223d5..83fa33e16650 100644
+index bd53b123218b..8264bce77750 100644
 --- a/drivers/pci/host/pci-tegra.c
 +++ b/drivers/pci/host/pci-tegra.c
-@@ -253,6 +253,7 @@ struct tegra_pcie {
- 	struct list_head buses;
- 	struct resource *cs;
+@@ -383,7 +383,7 @@ static struct tegra_pcie_bus *tegra_pcie_bus_alloc(struct tegra_pcie *pcie,
+ 	for (i = 0; i < 16; i++) {
+ 		unsigned long virt = (unsigned long)bus->area->addr +
+ 				     i * SZ_64K;
+-		phys_addr_t phys = cs + i * SZ_1M + busnr * SZ_64K;
++		phys_addr_t phys = cs + i * SZ_16M + busnr * SZ_64K;
  
-+	struct resource all;
- 	struct resource io;
- 	struct resource mem;
- 	struct resource prefetch;
-@@ -626,6 +627,15 @@ DECLARE_PCI_FIXUP_FINAL(PCI_ANY_ID, PCI_ANY_ID, tegra_pcie_relax_enable);
- static int tegra_pcie_setup(int nr, struct pci_sys_data *sys)
- {
- 	struct tegra_pcie *pcie = sys_to_pcie(sys);
-+	int err;
-+
-+	err = devm_request_resource(pcie->dev, &pcie->all, &pcie->mem);
-+	if (err < 0)
-+		return err;
-+
-+	err = devm_request_resource(pcie->dev, &pcie->all, &pcie->prefetch);
-+	if (err)
-+		return err;
- 
- 	pci_add_resource_offset(&sys->resources, &pcie->mem, sys->mem_offset);
- 	pci_add_resource_offset(&sys->resources, &pcie->prefetch,
-@@ -1514,6 +1524,12 @@ static int tegra_pcie_parse_dt(struct tegra_pcie *pcie)
- 	struct resource res;
- 	int err;
- 
-+	memset(&pcie->all, 0, sizeof(pcie->all));
-+	pcie->all.flags = IORESOURCE_MEM;
-+	pcie->all.name = np->full_name;
-+	pcie->all.start = ~0;
-+	pcie->all.end = 0;
-+
- 	if (of_pci_range_parser_init(&parser, np)) {
- 		dev_err(pcie->dev, "missing \"ranges\" property\n");
- 		return -EINVAL;
-@@ -1525,21 +1541,31 @@ static int tegra_pcie_parse_dt(struct tegra_pcie *pcie)
- 		switch (res.flags & IORESOURCE_TYPE_BITS) {
- 		case IORESOURCE_IO:
- 			memcpy(&pcie->io, &res, sizeof(res));
--			pcie->io.name = "I/O";
-+			pcie->io.name = np->full_name;
- 			break;
- 
- 		case IORESOURCE_MEM:
- 			if (res.flags & IORESOURCE_PREFETCH) {
- 				memcpy(&pcie->prefetch, &res, sizeof(res));
--				pcie->prefetch.name = "PREFETCH";
-+				pcie->prefetch.name = "prefetchable";
- 			} else {
- 				memcpy(&pcie->mem, &res, sizeof(res));
--				pcie->mem.name = "MEM";
-+				pcie->mem.name = "non-prefetchable";
- 			}
- 			break;
- 		}
-+
-+		if (res.start <= pcie->all.start)
-+			pcie->all.start = res.start;
-+
-+		if (res.end >= pcie->all.end)
-+			pcie->all.end = res.end;
- 	}
- 
-+	err = devm_request_resource(pcie->dev, &iomem_resource, &pcie->all);
-+	if (err < 0)
-+		return err;
-+
- 	err = of_pci_parse_bus_range(np, &pcie->busn);
- 	if (err < 0) {
- 		dev_err(pcie->dev, "failed to parse ranges property: %d\n",
+ 		err = ioremap_page_range(virt, virt + SZ_64K, phys, prot);
+ 		if (err < 0) {
 -- 
 2.0.4
 
