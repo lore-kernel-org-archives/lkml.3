@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751417AbaHZPir (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 11:38:47 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:51593 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823AbaHZPip (ORCPT
+	id S1751564AbaHZPiz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 11:38:55 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:43038 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751441AbaHZPiy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 11:38:45 -0400
-Message-ID: <53FCAA04.40009@gmail.com>
-Date: Tue, 26 Aug 2014 23:38:44 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Tue, 26 Aug 2014 11:38:54 -0400
+Date: Tue, 26 Aug 2014 11:38:52 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Gavin Guo <gavin.guo@canonical.com>
+cc: linux-usb@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
+        Anthony Wong <anthony.wong@canonical.com>, YK <yk@canonical.com>
+Subject: Re: About the reboot hang issue with EHCI driver on the Baytrail
+ platform
+In-Reply-To: <CA+eFSM3VvSKQ51+9bn0CADOMR9AUU0Xc-viFgHhcniHNN=mNKg@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1408261134290.1434-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
-        david.vrabel@citrix.com
-CC: xen-devel@lists.xenproject.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] drivers/xen/grant-table.c: Be sure of unsigned value never
- comparing with 0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In grow_gnttab_list(), 'i' is 'unsigned int', and 'nr_glist_frames' may
-be 0 because 'nr_grant_frames' may be 0. So 'i' may never be less than
-'nr_glist_frames' in failure processing, which cause infinite looping.
+On Tue, 26 Aug 2014, Gavin Guo wrote:
 
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
----
- drivers/xen/grant-table.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> Hi,
+> 
+> I found that in the Baytrail-m platform if the "USB3.0 Configuration
+> in Pre-OS" is set to Auto in the BIOS, the system will boot with
+> EHCI-enabled. And test reboot 200 times. It sometimes hang in the
+> shutdown process "ehci-pci 0000:00:1d.0: shutdown." I also found that
+> sometimes hang in the booting up process. But it still black screen, I
+> can't see clearly where it hang.
+> 
+> After doing some experiments, I found the following symptoms:
+> 1) Set the "USB3.0 Configuration in Pre-OS" to enable, the 200 times
+> reboot test can pass. Under the condition, lspci can't see the EHCI
+> [8086:0f34] controller.
+> 
+> 2) Build a new kernel without the EHCI driver can also pass the 200
+> times reboot test.
+> 
+> 3) Put "echo -n "0000:00:1d.0" > /sys/bus/pci/drivers/ehci-pci/unbind"
+> in the /etc/rc.local can avoid shutdown hang but sometimes it also
+> hang in the booting up process during the 200 times reboot test.
+> 
+> 4) I also found some messages in dmesg which show "ehci-pci
+> 0000:00:1d.0: port 1 reset error -110."
 
-diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-index c254ae0..be07645 100644
---- a/drivers/xen/grant-table.c
-+++ b/drivers/xen/grant-table.c
-@@ -592,8 +592,8 @@ static int grow_gnttab_list(unsigned int more_frames)
- 	return 0;
- 
- grow_nomem:
--	for ( ; i >= nr_glist_frames; i--)
--		free_page((unsigned long) gnttab_list[i]);
-+	while (i > nr_glist_frames)
-+		free_page((unsigned long) gnttab_list[--i]);
- 	return -ENOMEM;
- }
- 
--- 
-1.9.3
+It sounds like the BIOS is buggy.
+
+> If there is any possibility to disable the EHCI controller in the
+> Baytrail platform because the XHCI covers all the ports connected to
+> EHCI controller.
+
+You can disable the EHCI controller by setting "USB3.0 Configuration in 
+Pre-OS" to enable, as you discovered.
+
+>  And IIRC, there is only one host controller within
+> EHCI and XHCI can be enabled in the Baytrail platform. I'm also trying
+> to find out the kernel parameters to disable the EHCI driver, but
+> currently there is no available one.
+
+It's not a kernel parameter.  You can blacklist the ehci-pci and 
+ehci-hcd modules in /etc/modprobe.d/local.conf.
+
+Or you can turn off CONFIG_USB_EHCI_HCD in your .config and build a 
+kernel with no EHCI support at all.
+
+Alan Stern
+
