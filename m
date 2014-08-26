@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752211AbaHZRIz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 13:08:55 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:40674 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751742AbaHZRIy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 13:08:54 -0400
+	id S1752114AbaHZRO3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 13:14:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49030 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751592AbaHZRO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 13:14:27 -0400
+Date: Tue, 26 Aug 2014 19:14:25 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Abhay Salunke <abhay_salunke@dell.com>
+Cc: Tom Gundersen <teg@jklm.no>, crrodriguez@opensuse.org,
+        Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org,
+        systemd-devel@lists.freedesktop.org,
+        Mario Limonciello <mario_limonciello@dell.com>
+Subject: Re: dell rbu driver and FW_LOADER_USER_HELPER
+Message-ID: <20140826171425.GQ3347@wotan.suse.de>
+References: <20140826170946.GP3347@wotan.suse.de>
 MIME-Version: 1.0
-In-Reply-To: <53FCBBE2.9040603@arm.com>
-References: <CAPXgP130hg8uwdmSKAAAKZzxncT-VXYYXvmN-ta7wcXQXgXEmw@mail.gmail.com>
-	<1408706963-23195-1-git-send-email-sudeep.holla@arm.com>
-	<CANq1E4SJZQeAuXhggdnsjRFKFJD01WEnBpcdPC1pkJiv3WegCA@mail.gmail.com>
-	<CANq1E4Snx_n3XDWXU5PtmLtt31sRqnkKrSRsx2_b=i+6GTLnxw@mail.gmail.com>
-	<53F738B0.5080806@arm.com>
-	<53FCBBE2.9040603@arm.com>
-Date: Tue, 26 Aug 2014 19:08:53 +0200
-Message-ID: <CANq1E4SB-o6TD0ayvLGL_M52b-eCR=MU048+fOmx+_y+apFjSA@mail.gmail.com>
-Subject: Re: [PATCH] drivers: base: add cpu_device_create to support per-cpu devices
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Sudeep Holla <sudeep.holla@arm.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, Kay Sievers <kay@vrfy.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140826170946.GP3347@wotan.suse.de>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Tue, Aug 26, 2014 at 07:09:46PM +0200, Luis R. Rodriguez wrote:
+> When Christian tried removing the udev firmware loader
+> it was detected that the Dell rbu driver still required
+> use of FW_LOADER_USER_HELPER [0]. This driver needed
+> reworking to not be tied to the firmware loader, curious
+> if anyone has been working on that. Is the current
+> implementation depending on that userspace identifies
+> the required path to the file ? Why can't standard
+> /lib/firmware/ paths be used ?
+> 
+> [0] http://lists.freedesktop.org/archives/systemd-devel/2014-May/019631.html
 
-On Tue, Aug 26, 2014 at 6:54 PM, Sudeep Holla <sudeep.holla@arm.com> wrote:
->> Yes, it's not done on purpose as mentioned in the commit log.
->> E.g.: cacheinfo topology will be as below
->>
->> /sys/devices/system/cpu/cpuX/cache/index0/<attributes>
->> /sys/devices/system/cpu/cpuX/cache/index1/<attributes>
->> ..
->> /sys/devices/system/cpu/cpuX/cache/index<Y/<attributes>
->>
->
-> Does the above topology looks fine to you ? Since the parent is set
-> properly, not setting bus will not cause any issue to the topology.
+Well abhay_salunke@dell.com bounces. Who at Dell is maintaining this
+driver now? Maybe Mario can help finding the right person?
 
-Sure, looks fine.
-
-Thanks
-David
+  Luis
