@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757524AbaHZKnU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 06:43:20 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:57640 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754340AbaHZKnS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 06:43:18 -0400
-Message-ID: <53FC64BA.9050603@ti.com>
-Date: Tue, 26 Aug 2014 13:43:06 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1757533AbaHZKpH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 06:45:07 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:52224 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754283AbaHZKpF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 06:45:05 -0400
+Message-ID: <53FC6513.5040800@ahsoftware.de>
+Date: Tue, 26 Aug 2014 12:44:35 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Julia Lawall <julia.lawall@lip6.fr>, Josh Triplett <josh@joshtriplett.org>
-CC: Paul Mackerras <paulus@samba.org>, <kernel-janitors@vger.kernel.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 8/9 v2] video: fbdev: aty: use c99 initializers in structures
-References: <1408792831-25615-1-git-send-email-Julia.Lawall@lip6.fr> <1408792831-25615-9-git-send-email-Julia.Lawall@lip6.fr> <20140823152015.GB2074@thin> <alpine.DEB.2.02.1408231749030.2068@localhost6.localdomain6>
-In-Reply-To: <alpine.DEB.2.02.1408231749030.2068@localhost6.localdomain6>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="bgjeuaQTJCSS9vwLQmkKiTm36j4bdd88j"
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Grant Likely <grant.likely@linaro.org>, Jon Loeliger <jdl@jdl.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH 0/9] dt: dependencies (for deterministic driver initialization
+ order based on the DT)
+References: <20140514141914.446F7C4153D@trevor.secretlab.ca> <20140821140211.GD19293@ulmo.nvidia.com> <53F64624.5000403@ahsoftware.de> <20140822131919.GX21734@leverpostej> <20140825093931.GB2399@ulmo> <E1XLu15-0002DP-6o@jdl.com> <20140825133714.GH4163@ulmo.nvidia.com> <20140826084208.AE5F0C40989@trevor.secretlab.ca> <20140826084922.GG17263@ulmo> <53FC566C.30904@ahsoftware.de> <20140826102503.GC31124@ulmo>
+In-Reply-To: <20140826102503.GC31124@ulmo>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---bgjeuaQTJCSS9vwLQmkKiTm36j4bdd88j
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+Am 26.08.2014 12:25, schrieb Thierry Reding:
+> On Tue, Aug 26, 2014 at 11:42:04AM +0200, Alexander Holler wrote:
 
-Hi,
+>> You need either the type information in the DTB (that's why I've add those
+>> "dependencies" to identify phandles), or you need to know every binding (at
+>> "dependency-resolve-time" to identify phandles. The latter is impracticable
+>> to implement in a generic way (for use with every possible binding).
+>
+> Like I already mentioned, this could be done in drivers who contain that
+> information already anyway. Or parts of it could be done in subsystem-
+> specific callbacks where a generic binding is available.
 
-On 23/08/14 18:50, Julia Lawall wrote:
-> From nobody Sat Aug 23 12:48:19 CEST 2014
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> To: Paul Mackerras <paulus@samba.org>
-> Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,Tomi Valke=
-inen <tomi.valkeinen@ti.com>,linux-fbdev@vger.kernel.org,linux-kernel@vge=
-r.kernel.org
-> Subject: [PATCH 8/9] video: fbdev: aty: use c99 initializers in structu=
-res
->=20
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
->=20
-> Use c99 initializers for structures.
->=20
-> A simplified version of the semantic match that finds this problem is a=
-s
-> follows: (http://coccinelle.lip6.fr/)
+That would end up with almost the same ugly driver-based workarounds as 
+now. It's much better if a driver author only has to define it's 
+prerequisits (in form of dependencies in the dts) and could be sure the 
+driver will only be probed if those are met, than to do that stuff based 
+on a subsystem or even driver level.
 
-This mail had some extra stuff above (From nobody... etc). I cleaned it
-up, hopefully correctly.
+If you add dependency-information to drivers, you have two problems:
 
-I've applied the fbdev patches from this series, 2, 7 and 8, for v3.18.
+- How do you get these information from the driver (remember, currently 
+there is only one initial call, a initcall which might do almost anything)
 
-Thanks!
+- These information might become outdated and you would have to change 
+all drivers. E.g. if the name of a dependency (driver) changes it 
+wouldn't be done with changing the dts (maybe plural), but you would 
+have to change the source of all dependant drivers too.
 
- Tomi
+Regards,
 
-
-
---bgjeuaQTJCSS9vwLQmkKiTm36j4bdd88j
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJT/GS6AAoJEPo9qoy8lh71THkP/i2fdljCBteChMwb8W4CUs3O
-uMnL2adeZoxNotMmSj8ErGfDtdfIVid9iJu4Zw2QSGJ8tvfczOlYPkae7m95VN6X
-LQqcSpcaicG6QXuKL6V2YMjMDdG+ucrzxUdDZ5g67QA377xRqwm512N4Bq8xSQIz
-zPdXqej/6izEWNXw/rtK+doy+JLkqjw2V+EBBjmmKWAniv1hrtZqdmF5aoHhJi6U
-4QSWCoADG5sIYq7AL7dij1lqc873kpg2TnnbuBO8n/b18xQwKm9d30NvJ9GTizHp
-roIAmQQzqfr7rze+KxFZusEvRbabPui6gWdXoE3BnTeeHLSwHSIxNHK2L5MCE2tE
-xag9Dqp9uhbGbtBjG7JxcwihfuVa/tplO471JBtSG1uOeml+D/fQeQ4IqgM1frH4
-qgBQqj5PaxABgNOQ8Km7oEd+wxMXGEoH+nb8HzHmU42szHCsT0OH9Kcc1EOyeR7I
-we4lOBS3RKfbP6V/TGvpy7Uks940UbEY/msvQUzw1/DRnaX0xLKeF3sSeIqaraox
-rFa480NMu9d9eR/R2u9EOUWuYyEA7oNLP1y2JRvtTBic+soOQ5xpgGWdAOV68A28
-4PXX9tUGr36bLo+GOhLGrcAkCulrupAVCOep6JmyUnY93P3yJRZRYID0zG5Ss3OA
-PA3/TneGj+MvB7vtzYzj
-=XqNH
------END PGP SIGNATURE-----
-
---bgjeuaQTJCSS9vwLQmkKiTm36j4bdd88j--
+Alexander Holler
