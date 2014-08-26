@@ -1,61 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752248AbaHZQkW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 12:40:22 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:63366 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890AbaHZQkU (ORCPT
+	id S1752052AbaHZQrO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 12:47:14 -0400
+Received: from regular1.263xmail.com ([211.150.99.131]:45292 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750861AbaHZQrM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 12:40:20 -0400
+	Tue, 26 Aug 2014 12:47:12 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: caesar.wang@rock-chips.com
+X-FST-TO: zyf@rock-chips.com
+X-SENDER-IP: 216.239.45.79
+X-LOGIN-NAME: caesar.wang@rock-chips.com
+X-UNIQUE-TAG: <6be3b7bca8cec711b1947ba8eb70b4dd>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <53FCBA06.90701@rock-chips.com>
+Date: Wed, 27 Aug 2014 00:47:02 +0800
+From: Caesar Wang <caesar.wang@rock-chips.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <20140826080231.GA20565@gmail.com>
-References: <1409014858-1410-1-git-send-email-ast@plumgrid.com>
-	<1409014858-1410-5-git-send-email-ast@plumgrid.com>
-	<20140825205201.10ac5ee3@uryu.home.lan>
-	<CAMEtUuxicvHsEQ59CeG2kmLW0b4TQ9ExfDkKo2kktH-t8x5tBg@mail.gmail.com>
-	<20140826074655.GB19799@gmail.com>
-	<53FC3E9A.1020108@redhat.com>
-	<20140826080231.GA20565@gmail.com>
-Date: Tue, 26 Aug 2014 09:40:18 -0700
-Message-ID: <CAMEtUuyBqTuqdhpmgYHJm2A-sLmmf5JzRaNG-qxTkDiJgMBNVg@mail.gmail.com>
-Subject: Re: [PATCH v6 net-next 4/6] bpf: enable bpf syscall on x64 and i386
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Brendan Gregg <brendan.d.gregg@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>
+CC: rui.zhang@intel.com, rdunlap@infradead.org, cf@rock-chips.com,
+        grant.likely@linaro.org, robh+dt@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, zyw@rock-chips.com, huangtao@rock-chips.com,
+        xjq@rock-chips.com, addy.ke@rock-chips.com, dianders@chromium.org,
+        zhaoyifeng <zyf@rock-chips.com>
+Subject: Re: [PATCH 1/2] dt-bindings: document Rockchip thermal
+References: <1408752934-18318-1-git-send-email-caesar.wang@rock-chips.com> <1408752934-18318-2-git-send-email-caesar.wang@rock-chips.com> <1504889.nDzfjZj9xp@diego>
+In-Reply-To: <1504889.nDzfjZj9xp@diego>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 1:02 AM, Ingo Molnar <mingo@kernel.org> wrote:
+Heiko,
+在 2014/8/24 7:03, Heiko Stübner 写道:
+> Hi Caesar,
 >
->> That said, I think Alexei is referring to the examples et al
->> from the bigger previous proposed patch set.
+> Am Samstag, 23. August 2014, 08:15:33 schrieb Caesar Wang:
+>> This add the necessary binding documentation for the thermal
+>> found on Rockchip SoCs
+>>
+>> Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
+>> Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
+>> ---
+>>   .../bindings/thermal/rockchip-thermal.txt          |   33
+>> ++++++++++++++++++++ 1 file changed, 33 insertions(+)
+>>   create mode 100644
+>> Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+>> b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt new file
+>> mode 100644
+>> index 0000000..b556eae
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+>> @@ -0,0 +1,33 @@
+>> +* Temperature Sensor ADC (TSADC) on rockchip SoCs
+>> +
+>> +Required properties:
+>> +- compatible : "rockchip,rk3288-tsadc"
+>> +- reg : physical base address of the controller and length of memory mapped
+>> +  region.
+>> +- interrupts : The interrupt number to the cpu. The interrupt specifier
+>> format +  depends on the interrupt controller.
+>> +- clocks : Must contain an entry for each entry in clock-names.
+>> +- clock-names : Shall be "tsadc_clk" for the transfer-clock, and
+>> "tsadc_pclk" for +    the peripheral clock.
+>> +Optional properties:
+>> +- clock-frequency : Thermal sensor's clock frequency.
+> see comment in patch2, this should probably use assigned-rate if at all
+> necessary (and the assigned-rate is not necessary to document here)
 >
-> I mean, if all the testing already exists, it should be part of
-> an initial submission and such.
+>
+>> +- pinctrl-names : Should contain only one value - "default".
+>> +- pinctrl-0 : Should contain only one value - &tsadc_int.
+> in general pinctrl settings are just board-specific settings and do not
+> need to be part of the binding documentation.
+> And in this case, are you sure that the tsadc uses some pin as interrupt?
+> Because in the TRM the TS-ADC interrupt is number 69 of the GIC itself
+> and not some pin accessible via pinctrl.
+>
+>
+>> +- passive-temp : Temperature of trip 0.
+>> +- critical-temp : Temperature of trip 1.
+>> +- force-shut-temp : Temperature of force shut down.
+> please use the generic trip-points described in
+> Documentation/devicetree/bindings/thermal/thermal.txt
+> for this, instead of defining new properties
 
-That's what I did. V5 set contains all examples and verifier testsuite:
-https://lkml.org/lkml/2014/8/24/107
-Dave asked to split it up into subsets, since it's too big too review
-at once. which makes sense, so this V6 is only first part and
-the plan was:
-1st(this) set - introduces uapi/linux/bpf.h and BPF syscall for maps only
-2nd set will extend BPF syscall with programs and verifier
-3rd set will use eBPF in tracing, add samples and verifier tests
-4th set will have llvm and C examples
-Each set is around 6-8 patches instead of 29 in V5
+There are have 4 trip-points mode in thermal.txt.
+It's ACTIVE、PASSAIVE、 HOT and  CRITICAL.
+
+Do you have some suggestion for fix it if I need add shut-temp mode ?
+
+- Caesar
+>
+> Heiko
+>
+>> +Example:
+>> +
+>> +tsadc: tsadc@ff280000 {
+>> +	compatible = "rockchip,rk3288-tsadc";
+>> +	reg = <0xff280000 0x100>;
+>> +	interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
+>> +	clock-frequency = <10000>;
+>> +	clocks = <&cru SCLK_TSADC>, <&cru PCLK_TSADC>;
+>> +	clock-names = "tsadc_clk", "tsadc_pclk";
+>> +	pinctrl-names = "default";
+>> +	pinctrl-1 = <&tsadc_int>;
+>> +	passive-temp = <80>;
+>> +	critical-temp = <100>;
+>> +	force-shut-temp = <120>;
+>> +};
+>
+>
+>
+
+-- 
+Best regards,
+Caesar
+
+
