@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756235AbaHZXhi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 19:37:38 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:59108 "HELO
+	id S1756211AbaHZXhh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 19:37:37 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:60808 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755660AbaHZXhA (ORCPT
+	with SMTP id S1755930AbaHZXhB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 19:37:00 -0400
+	Tue, 26 Aug 2014 19:37:01 -0400
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 To: Thomas Gleixner <tglx@linutronix.de>
 Cc: Peter Zijlstra <peterz@infradead.org>,
@@ -14,12 +14,12 @@ Cc: Peter Zijlstra <peterz@infradead.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux PCI <linux-pci@vger.kernel.org>,
         Dmitry Torokhov <dtor@google.com>, Aubrey Li <aubrey.li@intel.com>
-Subject: [PATCH 1/5 v3] PM / sleep: Mechanism for aborting system suspends unconditionally
-Date: Wed, 27 Aug 2014 01:47:47 +0200
-Message-ID: <3280095.tp6RTXXLdN@vostro.rjw.lan>
+Subject: [PATCH 0/5 v3] irq / PM: Suspend-to-idle wakeup interrupts
+Date: Wed, 27 Aug 2014 01:46:23 +0200
+Message-ID: <5320472.coYotHR1d0@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5320472.coYotHR1d0@vostro.rjw.lan>
-References: <26580319.OZP7jvJnA9@vostro.rjw.lan> <5320472.coYotHR1d0@vostro.rjw.lan>
+In-Reply-To: <26580319.OZP7jvJnA9@vostro.rjw.lan>
+References: <26580319.OZP7jvJnA9@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -27,102 +27,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Hi,
 
-It sometimes may be necessary to abort a system suspend in
-progress or wake up the system from suspend-to-idle even if the
-pm_wakeup_event()/pm_stay_awake() mechanism is not enabled.
+On Monday, August 11, 2014 03:56:46 PM Rafael J. Wysocki wrote:
+> Hi,
+> 
+> I thought I'd just refresh the previous patchset, but in the meantime I found
+> a way to avoid adding overhead to note_interrupt(), so I decided to change the
+> approach.
+> 
+> Patch [2/6] fixes the problem with IRQF_NO_SUSPEND and shared interrupts.  The
+> idea is to use wrapper handlers for all irqactions of the shared IRQs where at
+> least one of them has IRQF_NO_SUSPEND set.  Since the wrapper handler is now
+> installed for all irqactions in the given irq_desc, it can track the return
+> codes from the original handlers and "suspend" the IRQ if the interrupt is going
+> to be unhandled eventually.  All described in the changelog.  This is independent
+> of the handling of wakeup interrupts for suspend-to-idle.
+> 
+> Patch [3/6] makes IRQs configured for system wakeup with enable_irq_wake() work
+> for suspend to idle.  It does that by using a (different) wrapper handler for
+> all irqactions in the wakeup irq_descs and that wrapper handler takes care of
+> all the ugly details.  Again, all described in the changelog.
+> 
+> Patches [1/6], [4-5/6] are unmodified and the last one addes documentation.
 
-For this purpose, introduce a new global variable abort_suspend and
-make pm_wakeup_pending() check its value.  Also add routines for
-manipulating that variable.
+It has occured to me recently that trying to address two different issues at
+once in one patchset may be more confusing than it has to be, so the following
+series has one and only one purpose which is to make enable_irq_wake() interrupts
+wake up from suspend-to-idle while avoiding the shared interrupts pain.
 
-This is going to be used in subsequent changes.
+The way it works is that for each IRQD_WAKEUP_STATE IRQ (a) all of the interrupt
+handlers are substituted for by a special "wakeup mode" handler and (b) the
+IRQ is re-enabled right before entering the suspend-to-idle loop.  After a wakeup
+interrupt all is restored to the previous state left by suspend_device_irqs().
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/base/power/wakeup.c |   20 ++++++++++++++++++++
- include/linux/suspend.h     |    4 ++++
- kernel/power/process.c      |    1 +
- 3 files changed, 25 insertions(+)
+The "wakeup mode" handler triggers a system wakeup, disables the IRQ and marks
+it as "suspended" and "pending".
 
-Index: linux-pm/include/linux/suspend.h
-===================================================================
---- linux-pm.orig/include/linux/suspend.h
-+++ linux-pm/include/linux/suspend.h
-@@ -371,6 +371,8 @@ extern int unregister_pm_notifier(struct
- extern bool events_check_enabled;
- 
- extern bool pm_wakeup_pending(void);
-+extern void pm_system_wakeup(void);
-+extern void pm_wakeup_clear(void);
- extern bool pm_get_wakeup_count(unsigned int *count, bool block);
- extern bool pm_save_wakeup_count(unsigned int count);
- extern void pm_wakep_autosleep_enabled(bool set);
-@@ -418,6 +420,8 @@ static inline int unregister_pm_notifier
- #define pm_notifier(fn, pri)	do { (void)(fn); } while (0)
- 
- static inline bool pm_wakeup_pending(void) { return false; }
-+static inline void pm_system_wakeup(void) {}
-+static inline void pm_wakeup_clear(void) {}
- 
- static inline void lock_system_sleep(void) {}
- static inline void unlock_system_sleep(void) {}
-Index: linux-pm/drivers/base/power/wakeup.c
-===================================================================
---- linux-pm.orig/drivers/base/power/wakeup.c
-+++ linux-pm/drivers/base/power/wakeup.c
-@@ -691,6 +691,8 @@ void pm_print_active_wakeup_sources(void
- }
- EXPORT_SYMBOL_GPL(pm_print_active_wakeup_sources);
- 
-+static bool abort_suspend;
-+
- /**
-  * pm_wakeup_pending - Check if power transition in progress should be aborted.
-  *
-@@ -712,6 +714,7 @@ bool pm_wakeup_pending(void)
- 		ret = (cnt != saved_count || inpr > 0);
- 		events_check_enabled = !ret;
- 	}
-+	ret = ret || abort_suspend;
- 	spin_unlock_irqrestore(&events_lock, flags);
- 
- 	if (ret) {
-@@ -722,6 +725,23 @@ bool pm_wakeup_pending(void)
- 	return ret;
- }
- 
-+void pm_system_wakeup(void)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&events_lock, flags);
-+	abort_suspend = true;
-+	spin_unlock_irqrestore(&events_lock, flags);
-+	freeze_wake();
-+}
-+
-+void pm_wakeup_clear(void)
-+{
-+	spin_lock_irq(&events_lock);
-+	abort_suspend = false;
-+	spin_unlock_irq(&events_lock);
-+}
-+
- /**
-  * pm_get_wakeup_count - Read the number of registered wakeup events.
-  * @count: Address to store the value at.
-Index: linux-pm/kernel/power/process.c
-===================================================================
---- linux-pm.orig/kernel/power/process.c
-+++ linux-pm/kernel/power/process.c
-@@ -129,6 +129,7 @@ int freeze_processes(void)
- 	if (!pm_freezing)
- 		atomic_inc(&system_freezing_cnt);
- 
-+	pm_wakeup_clear();
- 	printk("Freezing user space processes ... ");
- 	pm_freezing = true;
- 	error = try_to_freeze_tasks(true);
+To me, all of this is relatively straightforward and the handling of
+IRQF_NO_SUSPEND for shared interrupts, which is a separate problem, can be
+addressed on top of it later (make no mistake, I still think that it should be
+addressed).
+
+The patches are as follows:
+
+[1/5] Mechanism to wake up the system or abort suspend in progress automatically.
+[2/5] Wakeup interrupts support for suspend-to-idle.
+[3/5] Set IRQCHIP_SKIP_SET_WAKE for x86 IOAPIC IRQ chips.
+[4/5] Make PCIe PME wake up from suspend to idle.
+[5/5] Documentation.
+
+Patches [1/5] and [3-4/5] have not been changed since I posted them previously
+and patch [5/5] has been updated to reflect the focus on wakeup (I removed the
+paragraph on IRQF_NO_SUSPEND vs shared interrupts from it).
+
+All tested on MSI Wind.
+
+Rafael
 
