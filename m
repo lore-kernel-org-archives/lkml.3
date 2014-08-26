@@ -1,61 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758029AbaHZMzE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 08:55:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44086 "EHLO mx2.suse.de"
+	id S1758047AbaHZM4Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 08:56:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44109 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757941AbaHZMzA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 08:55:00 -0400
-Message-ID: <53FC83A1.5040000@suse.com>
-Date: Tue, 26 Aug 2014 14:54:57 +0200
-From: Juergen Gross <jgross@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1754794AbaHZM4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 08:56:24 -0400
+Date: Tue, 26 Aug 2014 14:56:20 +0200
+From: Jan Kara <jack@suse.cz>
+To: Patrick Palka <patrick@parcs.ath.cx>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, pmladek@suse.cz,
+        jack@suse.cz, rostedt@goodmis.org
+Subject: Re: [PATCH] Fix faulty logic in the case of recursive printk
+Message-ID: <20140826125620.GJ1581@quack.suse.cz>
+References: <20140826084833.GA1581@quack.suse.cz>
+ <1409052202-9498-1-git-send-email-patrick@parcs.ath.cx>
 MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>, stefan.bader@canonical.com,
-        toshi.kani@hp.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
-        ville.syrjala@linux.intel.com, hpa@zytor.com, x86@kernel.org
-Subject: Re: [Xen-devel] [PATCH 3/3] Support Xen pv-domains using PAT
-References: <1409033783-12136-1-git-send-email-jgross@suse.com> <1409033783-12136-4-git-send-email-jgross@suse.com> <53FC689D.7020507@citrix.com>
-In-Reply-To: <53FC689D.7020507@citrix.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409052202-9498-1-git-send-email-patrick@parcs.ath.cx>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2014 12:59 PM, David Vrabel wrote:
-> On 26/08/14 07:16, Juergen Gross wrote:
->> With the dynamical mapping between cache modes and pgprot values it is now
->> possible to use all cache modes via the Xen hypervisor PAT settings in a
->> pv domain.
->>
->> All to be done is to read the PAT configuration MSR and set up the translation
->> tables accordingly.
-> [...]
->> +void xen_init_cache_types(void)
->> +{
->> +	pat_init_cache_modes();
->> +}
->
-> No need to introduce xen_init_cache_types(), just call
-> pat_init_cache_modes() directly.
+On Tue 26-08-14 07:23:22, Patrick Palka wrote:
+> Thanks for reviewing!  I have put back the call to strlen() and adjusted
+> the commit message accordingly.
+> 
+> Patrick
+> 
+> -- >8 --
+> 
+> We shouldn't set text_len in the code path that detects printk recursion
+> because text_len corresponds to the length of the string inside textbuf.
+> A few lines down from the line
+> 
+>     text_len = strlen(recursion_msg);
+> 
+> is the line
+> 
+>     text_len += vscnprintf(text + text_len, ...);
+> 
+> So if printk detects recursion, it sets text_len to 29 (the length of
+> recursion_msg) and logs an error.  Then the message supplied by the
+> caller of printk is stored inside textbuf but offset by 29 bytes.  This
+> means that the output of the recursive call to printk will contain 29
+> bytes of garbage in front of it.
+> 
+> This defect is caused by commit 458df9fd ("printk: remove separate
+> printk_sched buffers and use printk buf instead") which turned the line
+> 
+>     text_len = vscnprintf(text, ...);
+> 
+> into
+> 
+>     text_len += vscnprintf(text + text_len, ...);
+> 
+> To fix this, this patch avoids setting text_len when logging the printk
+> recursion error.  This patch also marks unlikely() the branch leading
+> up to this code.
+> 
+> Signed-off-by: Patrick Palka <patrick@parcs.ath.cx>
+  The patch looks good. You can add:
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-Indeed. This was a leftover from a previous version.
+  Plus you could also add tags:
+Fixes: 458df9fd4815b47809875d57f42e16401674b621
+CC: stable@vger.kernel.org
 
->
->>   void xen_set_pat(u64 pat)
->>   {
->> -	/* We expect Linux to use a PAT setting of
->> -	 * UC UC- WC WB (ignoring the PAT flag) */
->> -	WARN_ON(pat != 0x0007010600070106ull);
->> +	xen_init_cache_types();
->>   }
->
-> Remove xen_set_pat() and remove the special-cased handling of the PAT
-> MSR from xen_write_msr_safe().
-
-Hmm, why not. Reduces Xen specific handling even more.
-
-
-Juergen
+								Honza
+> ---
+>  kernel/printk/printk.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+> index e04c455..1ce7706 100644
+> --- a/kernel/printk/printk.c
+> +++ b/kernel/printk/printk.c
+> @@ -1665,15 +1665,15 @@ asmlinkage int vprintk_emit(int facility, int level,
+>  	raw_spin_lock(&logbuf_lock);
+>  	logbuf_cpu = this_cpu;
+>  
+> -	if (recursion_bug) {
+> +	if (unlikely(recursion_bug)) {
+>  		static const char recursion_msg[] =
+>  			"BUG: recent printk recursion!";
+>  
+>  		recursion_bug = 0;
+> -		text_len = strlen(recursion_msg);
+>  		/* emit KERN_CRIT message */
+>  		printed_len += log_store(0, 2, LOG_PREFIX|LOG_NEWLINE, 0,
+> -					 NULL, 0, recursion_msg, text_len);
+> +					 NULL, 0, recursion_msg,
+> +					 strlen(recursion_msg));
+>  	}
+>  
+>  	/*
+> -- 
+> 2.1.0
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
