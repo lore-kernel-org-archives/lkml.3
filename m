@@ -1,109 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756916AbaHZCio (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 22:38:44 -0400
-Received: from mga02.intel.com ([134.134.136.20]:30623 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752959AbaHZCim (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 22:38:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,400,1406617200"; 
-   d="scan'208";a="563389601"
-Message-ID: <53FBF328.1080205@linux.intel.com>
-Date: Tue, 26 Aug 2014 10:38:32 +0800
-From: "Li, Aubrey" <aubrey.li@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1757030AbaHZClN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 22:41:13 -0400
+Received: from qmta10.westchester.pa.mail.comcast.net ([76.96.62.17]:35379
+	"EHLO qmta10.westchester.pa.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756938AbaHZClM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 22:41:12 -0400
+Message-ID: <53FBF3C3.90509@gentoo.org>
+Date: Mon, 25 Aug 2014 22:41:07 -0400
+From: Joshua Kinard <kumba@gentoo.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-CC: Len Brown <lenb@kernel.org>, Kumar P Mahesh <mahesh.kumar.p@intel.com>,
-        Alan Cox <alan@linux.intel.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] intel_idle: add idle values for Cherrytrail/Braswell
-References: <1408701508-13636-1-git-send-email-mika.westerberg@linux.intel.com> <1408707540-12393-1-git-send-email-mika.westerberg@linux.intel.com> <53F74E5D.2040108@linux.intel.com> <20140825101200.GH1660@lahna.fi.intel.com>
-In-Reply-To: <20140825101200.GH1660@lahna.fi.intel.com>
-Content-Type: text/plain; charset=UTF-8
+To: David Daney <ddaney.cavm@gmail.com>
+CC: Ralf Baechle <ralf@linux-mips.org>, Max Filippov <jcmvbkbc@gmail.com>,
+        linux-xtensa@linux-xtensa.org, Chris Zankel <chris@zankel.net>,
+        Marc Gauthier <marc@cadence.com>, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>,
+        Steven Hill <Steven.Hill@imgtec.com>
+Subject: Re: [PATCH v4 0/2] mm/highmem: make kmap cache coloring aware
+References: <1406941899-19932-1-git-send-email-jcmvbkbc@gmail.com> <20140825171600.GH25892@linux-mips.org> <53FBCD09.1050003@gentoo.org> <53FBD676.8080307@gmail.com>
+In-Reply-To: <53FBD676.8080307@gmail.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/8/25 18:12, Mika Westerberg wrote:
-> On Fri, Aug 22, 2014 at 10:06:21PM +0800, Li, Aubrey wrote:
->> On 2014/8/22 19:39, Mika Westerberg wrote:
->>> From: Mahesh Kumar P <mahesh.kumar.p@intel.com>
+On 08/25/2014 20:36, David Daney wrote:
+> On 08/25/2014 04:55 PM, Joshua Kinard wrote:
+>> On 08/25/2014 13:16, Ralf Baechle wrote:
+>>> On Sat, Aug 02, 2014 at 05:11:37AM +0400, Max Filippov wrote:
 >>>
->>> Cherrytrail/Braswell is a successor of Intel Baytrail but has slighly
->>> different CPU idle values and latencies.
+>>>> this series adds mapping color control to the generic kmap code, allowing
+>>>> architectures with aliasing VIPT cache to use high memory. There's also
+>>>> use example of this new interface by xtensa.
 >>>
->>> Signed-off-by: Kumar P Mahesh <mahesh.kumar.p@intel.com>
->>> Signed-off-by: Alan Cox <alan@linux.intel.com>
->>> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
->>> ---
->>> I learned from Mahesh that C1e, C4 and S0i2 states are deprecated so those
->>> are now removed.
+>>> I haven't actually ported this to MIPS but it certainly appears to be
+>>> the right framework to get highmem aliases handled on MIPS, too.
+>>>
+>>> Though I still consider increasing PAGE_SIZE to 16k the preferable
+>>> solution because it will entirly do away with cache aliases.
 >>
->> If the platform has ACPI supported, I believe Len wants to see what
->> C-states number exported by ACPI.
+>> Won't setting PAGE_SIZE to 16k break some existing userlands (o32)?  I use a
+>> 4k PAGE_SIZE because the last few times I've tried 16k or 64k, init won't
+>> load (SIGSEGVs or such, which panicks the kernel).
 >>
->> Please boot the machine with "intel_idle.max_cstate=0" to disable
->> intel_idle, then post the output of the following commands
 > 
-> OK, here goes:
+> It isn't supposed to break things.  Using "stock" toolchains should result
+> in executables that will run with any page size.
+> 
+> In the past, some geniuses came up with some linker (ld) patches that, in
+> order to save a few KB of RAM, produced executables that ran only on 4K pages.
+> 
+> There were some equally astute Debian emacs package maintainers that were
+> carrying emacs patches into Debian that would not work on non-4K page size
+> systems.
+> 
+> That said, I think such thinking should be punished.  The punishment should
+> be to not have their software run when we select non-4K page sizes.  The
+> vast majority of prepackaged software runs just fine with a larger page size.
 
-ACPI exposes 0x58 as C6 mwait hint while the patch proposes 0x52 for C6.
-Can you please remove "intel_idle.max_cstate=0" and run "dmesg | grep
-idle" again to see how many C6 supports in CPUID enumeration?
+Well, it does appear to mostly work now w/ 16k PAGE_SIZE.  The Octane booted
+into userland with just a couple of "illegal instruction" errors from 'rm'
+and 'mdadm'.  I wonder if that's tied to a hardcoded PAGE_SIZE somewhere.
+Have to dig around and find something that reproduces the problem on demand.
 
-Thanks,
--Aubrey
+-- 
+Joshua Kinard
+Gentoo/MIPS
+kumba@gentoo.org
+4096R/D25D95E3 2011-03-28
 
-> 
->> dmesg | grep idle
-> 
-> [    0.523624] cpuidle: using governor ladder
-> [    0.528215] cpuidle: using governor menu
-> [   16.649461] intel_idle: disabled
-> [   16.736481] ACPI: acpi_idle registered with cpuidle
-> 
->> grep . /sys/devices/system/cpu/cpu0/cpuidle/*/*
-> 
-> /sys/devices/system/cpu/cpu0/cpuidle/state0/desc:CPUIDLE CORE POLL IDLE
-> /sys/devices/system/cpu/cpu0/cpuidle/state0/disable:0
-> /sys/devices/system/cpu/cpu0/cpuidle/state0/latency:0
-> /sys/devices/system/cpu/cpu0/cpuidle/state0/name:POLL
-> /sys/devices/system/cpu/cpu0/cpuidle/state0/power:4294967295
-> /sys/devices/system/cpu/cpu0/cpuidle/state0/residency:0
-> /sys/devices/system/cpu/cpu0/cpuidle/state0/time:0
-> /sys/devices/system/cpu/cpu0/cpuidle/state0/usage:0
-> /sys/devices/system/cpu/cpu0/cpuidle/state1/desc:ACPI FFH INTEL MWAIT 0x0
-> /sys/devices/system/cpu/cpu0/cpuidle/state1/disable:0
-> /sys/devices/system/cpu/cpu0/cpuidle/state1/latency:1
-> /sys/devices/system/cpu/cpu0/cpuidle/state1/name:C1
-> /sys/devices/system/cpu/cpu0/cpuidle/state1/power:0
-> /sys/devices/system/cpu/cpu0/cpuidle/state1/residency:2
-> /sys/devices/system/cpu/cpu0/cpuidle/state1/time:1255076
-> /sys/devices/system/cpu/cpu0/cpuidle/state1/usage:763
-> /sys/devices/system/cpu/cpu0/cpuidle/state2/desc:ACPI FFH INTEL MWAIT 0x58
-> /sys/devices/system/cpu/cpu0/cpuidle/state2/disable:0
-> /sys/devices/system/cpu/cpu0/cpuidle/state2/latency:500
-> /sys/devices/system/cpu/cpu0/cpuidle/state2/name:C2
-> /sys/devices/system/cpu/cpu0/cpuidle/state2/power:0
-> /sys/devices/system/cpu/cpu0/cpuidle/state2/residency:1000
-> /sys/devices/system/cpu/cpu0/cpuidle/state2/time:1694866
-> /sys/devices/system/cpu/cpu0/cpuidle/state2/usage:639
-> /sys/devices/system/cpu/cpu0/cpuidle/state3/desc:ACPI FFH INTEL MWAIT 0x64
-> /sys/devices/system/cpu/cpu0/cpuidle/state3/disable:0
-> /sys/devices/system/cpu/cpu0/cpuidle/state3/latency:5000
-> /sys/devices/system/cpu/cpu0/cpuidle/state3/name:C3
-> /sys/devices/system/cpu/cpu0/cpuidle/state3/power:0
-> /sys/devices/system/cpu/cpu0/cpuidle/state3/residency:10000
-> /sys/devices/system/cpu/cpu0/cpuidle/state3/time:380547473
-> /sys/devices/system/cpu/cpu0/cpuidle/state3/usage:744
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
+"The past tempts us, the present confuses us, the future frightens us.  And
+our lives slip away, moment by moment, lost in that vast, terrible in-between."
 
+--Emperor Turhan, Centauri Republic
