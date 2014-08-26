@@ -1,100 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933927AbaHZHyU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 03:54:20 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:47192 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752889AbaHZHyS (ORCPT
+	id S933952AbaHZH5H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 03:57:07 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:46509 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932696AbaHZH5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 03:54:18 -0400
-X-Original-SENDERIP: 10.177.222.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Tue, 26 Aug 2014 16:55:11 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjennings@variantweb.net>,
-        Dan Streetman <ddstreet@ieee.org>, ds2horner@gmail.com
-Subject: Re: [PATCH v5 3/4] zram: zram memory size limitation
-Message-ID: <20140826075511.GI11319@bbox>
-References: <1408925156-11733-1-git-send-email-minchan@kernel.org>
- <1408925156-11733-4-git-send-email-minchan@kernel.org>
- <20140826073730.GA1975@js1304-P5Q-DELUXE>
+	Tue, 26 Aug 2014 03:57:05 -0400
+Message-ID: <53FC3DBB.7000407@ahsoftware.de>
+Date: Tue, 26 Aug 2014 09:56:43 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140826073730.GA1975@js1304-P5Q-DELUXE>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jon Loeliger <jdl@jdl.com>, Thierry Reding <thierry.reding@gmail.com>
+CC: Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH 0/9] dt: dependencies (for deterministic driver initialization
+ order based on the DT)
+References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de> <20140514141914.446F7C4153D@trevor.secretlab.ca> <20140821140211.GD19293@ulmo.nvidia.com> <53F64624.5000403@ahsoftware.de> <20140822131919.GX21734@leverpostej> <20140825093931.GB2399@ulmo> <E1XLu15-0002DP-6o@jdl.com>
+In-Reply-To: <E1XLu15-0002DP-6o@jdl.com>
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Joonsoo,
+Am 25.08.2014 15:08, schrieb Jon Loeliger:
+>>
+>
+>> Anyway, instead of going back and forth between "deferred probe is good"
+>> and "deferred probe is bad", how about we do something useful now and
+>> concentrate on how to make use of the information we have in DT with the
+>> goal to reduce the number of cases where deferred probing is required?
+>
+> Good idea.
+>
+> The proposal on the table is to allow the probe code
+> to make a topological sort of the devices based on
+> dependency information either implied, explicitly stated
+> or both.  That is likely a fundamentally correct approach.
+>
+> I believe some of the issues that need to be resolved are:
+>
+>      1) What constitutes a dependency?
 
-On Tue, Aug 26, 2014 at 04:37:30PM +0900, Joonsoo Kim wrote:
-> On Mon, Aug 25, 2014 at 09:05:55AM +0900, Minchan Kim wrote:
-> > @@ -513,6 +540,14 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
-> >  		ret = -ENOMEM;
-> >  		goto out;
-> >  	}
-> > +
-> > +	if (zram->limit_pages &&
-> > +		zs_get_total_pages(meta->mem_pool) > zram->limit_pages) {
-> > +		zs_free(meta->mem_pool, handle);
-> > +		ret = -ENOMEM;
-> > +		goto out;
-> > +	}
-> > +
-> >  	cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_WO);
-> 
-> Hello,
-> 
-> I don't follow up previous discussion, so I could be wrong.
-> Why this enforcement should be here?
-> 
-> I think that this has two problems.
-> 1) alloc/free happens unnecessarilly if we have used memory over the
-> limitation.
+In my patches phandles are used. That works pretty good for almost all 
+DTs. So almost all dependencies are already declared in a DT and almost 
+no changes to the DT are necessary. The only binding I've seen where it 
+doesn't work is remote-endpoint, because that binding isn't a directed 
+dependency. So one of the two places where such a binding occurs needs a 
+"no-dependencies = <phandle>" to avoid circular dependencies which can 
+be solved.
 
-True but firstly, I implemented the logic in zsmalloc, not zram but
-as I described in cover-letter, it's not a requirement of zsmalloc
-but zram so it should be in there. If every user want it in future,
-then we could move the function into zsmalloc. That's what we
-concluded in previous discussion.
+>      2) How is that dependency expressed?
 
-Another idea is we could call zs_get_total_pages right before zs_malloc
-but the problem is we cannot know how many of pages are allocated
-by zsmalloc in advance.
-IOW, zram should be blind on zsmalloc's internal.
+Already there in form of phandles.
 
-About alloc/free cost once if it is over the limit,
-I don't think it's important to consider.
-Do you have any scenario in your mind to consider alloc/free cost
-when the limit is over?
+>      3) How do we add missing dependencies?
 
-> 2) Even if this request doesn't do new allocation, it could be failed
-> due to other's allocation. There is time gap between allocation and
-> free, so legimate user who want to use preallocated zsmalloc memory
-> could also see this condition true and then he will be failed.
+My patches offer the possibility to extend or reduce the list of 
+(automatically generated) dependencies by using "[no-]dependencies = < 
+list of phandles >;"
 
-Yeb, we already discussed that. :)
-Such false positive shouldn't be a severe problem if we can keep a
-promise that zram user cannot exceed mem_limit.
+>      4) Backward compatability problems.
 
-> 
-> Thanks.
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+None in my approach. The DT just includes an additional binding to 
+circumvent the missing but needed type information for phandles.
 
--- 
-Kind regards,
-Minchan Kim
+Regards,
+
+Alexander Holler
