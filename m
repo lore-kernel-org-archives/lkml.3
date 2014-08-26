@@ -1,109 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183AbaHZQ3M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 12:29:12 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:32896 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751848AbaHZQ3K (ORCPT
+	id S1752202AbaHZQ36 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 12:29:58 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:36751 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751848AbaHZQ35 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 12:29:10 -0400
+	Tue, 26 Aug 2014 12:29:57 -0400
+Date: Tue, 26 Aug 2014 17:29:51 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: linux-kernel@vger.kernel.org, "'Bryan Wu'" <cooloney@gmail.com>
+Subject: Re: [PATCH 16/18] backlight: jornada720: remove 'else' after a return
+Message-ID: <20140826162951.GF26707@lee--X1>
+References: <009301cfc12d$2847ffd0$78d7ff70$%han@samsung.com>
+ <00ba01cfc12d$f0202000$d0606000$%han@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <20140826074534.GA19799@gmail.com>
-References: <1409014858-1410-1-git-send-email-ast@plumgrid.com>
-	<1409014858-1410-5-git-send-email-ast@plumgrid.com>
-	<20140825.180718.137768107010295086.davem@davemloft.net>
-	<CAMEtUuy1DXFMABAg2Uup5HtqmiJHw0WR=or-z9CfpVMscrVcVg@mail.gmail.com>
-	<20140826074534.GA19799@gmail.com>
-Date: Tue, 26 Aug 2014 09:29:08 -0700
-Message-ID: <CAMEtUuw_AE8BC+u-2C6_B8UpKh_ryi-DDdUTQ77ZuARqd_dgcw@mail.gmail.com>
-Subject: Re: [PATCH v6 net-next 4/6] bpf: enable bpf syscall on x64 and i386
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: David Miller <davem@davemloft.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Brendan Gregg <brendan.d.gregg@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <00ba01cfc12d$f0202000$d0606000$%han@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 12:45 AM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Alexei Starovoitov <ast@plumgrid.com> wrote:
->
->> On Mon, Aug 25, 2014 at 6:07 PM, David Miller <davem@davemloft.net> wrote:
->> > From: Alexei Starovoitov <ast@plumgrid.com>
->> > Date: Mon, 25 Aug 2014 18:00:56 -0700
->> >
->> >> -
->> >> +asmlinkage long sys_bpf(int cmd, unsigned long arg2, unsigned long arg3,
->> >> +                     unsigned long arg4, unsigned long arg5);
->> >
->> > Please do not add interfaces with opaque types as arguments.
->> >
->> > It is impossible for the compiler to type check the args at
->> > compile time when userspace tries to use this stuff.
->>
->> I share this concern. I went with single BPF syscall, because
->> alternative is 6 syscalls for every command and more
->> syscalls in the future when we'd need to add another command.
->
-> See 'struct perf_event_attr':
->
-> SYSCALL_DEFINE5(perf_event_open,
->                 struct perf_event_attr __user *, attr_uptr,
->                 pid_t, pid, int, cpu, int, group_fd, unsigned long, flags)
->
-> This way we were able to gradually grow to the sophisticated ABI
-> you can find in include/uapi/linux/perf_event.h, without having
-> to touch the syscall interface. (It's not the only method: we
-> also have a handful of ioctls, where that's the most natural
-> interface for a perf event fd.)
+On Tue, 26 Aug 2014, Jingoo Han wrote:
 
-Thanks! that's a good alternative.
-One approach would be to have two bpf syscalls:
-map_fd = bpf_map_create(map_type, nlattr)
-+ bunch of ioctl()s that do lookup/update/delete/...
-prog_fd = bpf_prog_load(prog_type, nlattr)
-but ioctl()s would still do a lot of type casting.
+> Fixed the following checkpatch warning.
+> 
+>   WARNING: else is not generally useful after a break or return
+> 
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> ---
+>  drivers/video/backlight/jornada720_bl.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
 
-so how about single syscall:
-fd = bpf(int cmd, union bpf_attr *attrs, int size)
-union bpf_attr {
-  struct bpf_map_create_attr { /* used by bpf_map_create cmd */
-    __u32 key_size, value_size, ...
-  };
-  struct bpf_map_access_attr { /* by lookup/update/delete/get_next */
-    int map_fd;
-    void __user *key; /* used by all */
-    void __user *value; /* used by lookup/update */
-    void __user *next_key; /* used by get_next */
-  };
-  struct nlattr prog_attr[0]; /* used by bpf_prog_load cmd */
-};
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
-If you prefer I can make prog_load attrs to be explicit struct
-as well, but nlattr feels cleaner, since there can be optional
-sections that are quite large. Like one with 'readonly constants'
-that I'm still working on as part of cleaner strings support.
+> diff --git a/drivers/video/backlight/jornada720_bl.c b/drivers/video/backlight/jornada720_bl.c
+> index 6ce96b4a8796..7e6ff5346892 100644
+> --- a/drivers/video/backlight/jornada720_bl.c
+> +++ b/drivers/video/backlight/jornada720_bl.c
+> @@ -41,11 +41,11 @@ static int jornada_bl_get_brightness(struct backlight_device *bd)
+>  		dev_err(&bd->dev, "get brightness timeout\n");
+>  		jornada_ssp_end();
+>  		return -ETIMEDOUT;
+> -	} else {
+> -		/* exchange txdummy for value */
+> -		ret = jornada_ssp_byte(TXDUMMY);
+>  	}
+>  
+> +	/* exchange txdummy for value */
+> +	ret = jornada_ssp_byte(TXDUMMY);
+> +
+>  	jornada_ssp_end();
+>  
+>  	return BL_MAX_BRIGHT - ret;
 
-Also I think I will change tracing attachment interface.
-Currently write("prog_fd_as_int") -> "/sys/../tracing/events/..."
-does the attachment, but as Andy noticed that may be not
-secure enough if there is fork() somewhere in the process
-that does open() of debugfs and write().
-Looks like another ioctl() like PERF_EVENT_IOC_SET_FILTER_BPF
-on top of perf_event_open() would be cleaner and event->owner
-check can be done easily.
-Can I create kprobe event through perf_event_open() ?
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
