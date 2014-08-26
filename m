@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757376AbaHZHYZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 03:24:25 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:60364 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755391AbaHZHYY convert rfc822-to-8bit (ORCPT
+	id S1757408AbaHZHZC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 03:25:02 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:43191 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755391AbaHZHZA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 03:24:24 -0400
-Date: Tue, 26 Aug 2014 09:24:09 +0200
-From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
-To: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
-Cc: Thierry Reding <thierry.reding@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-pwm@vger.kernel.org, Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <kernel@pengutronix.de>, Arnd Bergmann <arnd@arndb.de>,
-        Tony Prisk <linux@prisktech.co.nz>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv4 0/4] pwm: imx: support output polarity inversion
-Message-ID: <20140826092409.7dea5530@ipc1.ka-ro>
-In-Reply-To: <1408517756-9412-1-git-send-email-LW@KARO-electronics.de>
-References: <1408517756-9412-1-git-send-email-LW@KARO-electronics.de>
-Organization: Ka-Ro electronics GmbH
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 26 Aug 2014 03:25:00 -0400
+Message-ID: <53FC363E.6050604@st.com>
+Date: Tue, 26 Aug 2014 09:24:46 +0200
+From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Ley Foon Tan <lftan@altera.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: <lftan.linux@gmail.com>, Vince Bridgers <vbridger@altera.com>
+Subject: Re: [PATCH] net: stmmac: fix warning from Sparse for socfpga
+References: <1409037076-14775-1-git-send-email-lftan@altera.com>
+In-Reply-To: <1409037076-14775-1-git-send-email-lftan@altera.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.52.138.46]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
+ definitions=2014-08-26_03:2014-08-25,2014-08-26,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 8/26/2014 9:11 AM, Ley Foon Tan wrote:
+> Warning:
+> drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c:122:41:
+> sparse: cast removes address space of expression
+> drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c:122:38:
+> sparse: incorrect type in assignment (different address spaces)
+>
+> Signed-off-by: Ley Foon Tan <lftan@altera.com>
+> ---
+>   drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c | 3 ++-
+>   1 file changed, 2 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c b/drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c
+> index cd613d7..c1addce 100644
+> --- a/drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c
+> +++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c
+> @@ -119,7 +119,8 @@ static int socfpga_dwmac_parse_data(struct socfpga_dwmac *dwmac, struct device *
+>   			return -EINVAL;
+>   		}
+>
+> -		dwmac->splitter_base = (void *)devm_ioremap_resource(dev,
+> +		dwmac->splitter_base =
+> +			(void __iomem *)devm_ioremap_resource(dev,
 
-Lothar Waßmann wrote:
-> This patch series adds support for polarity inversion to the pwm-imx
-> driver. The patches have been tested on i.MX6, i.MX53 and with the
-> ti-ehrpwm.c driver.
-> 
-> Changes wrt. v2:
-> - make the use of '#pwm-cells = <3>' optional, so that the change does
->   not break existing DT blobs as suggested by Arnd Bergmann and Sascha
->   Hauer.
-> 
-> Changes wrt. v3:
-> - implemented the approach suggested by Sascha Hauer 
-> - don't modify struct pwm_ops in the imx_pwm probe function
-> 
-> 
-Any further comments?
-Anyone taking care of these patches?
+I think, no casting should be done:
+
+    dwmac->splitter_base = devm_ioremap_resource(dev, ....
 
 
-Lothar Waßmann
--- 
-___________________________________________________________
+patch should be for net-next
 
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+peppe
 
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
+>   			&res_splitter);
+>   		if (!dwmac->splitter_base) {
+>   			dev_info(dev, "Failed to mapping emac splitter\n");
+>
+
