@@ -1,54 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757993AbaHZMdI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 08:33:08 -0400
-Received: from mga03.intel.com ([143.182.124.21]:31451 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754758AbaHZMdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 08:33:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,404,1406617200"; 
-   d="scan'208";a="472731777"
-Date: Tue, 26 Aug 2014 08:32:42 -0400
-From: Matthew Wilcox <willy@linux.intel.com>
-To: Keith Busch <keith.busch@intel.com>
-Cc: linux-nvme@lists.infradead.org, linux-kernel@vger.kernel.org,
-        axboe@kernel.dk
-Subject: Re: [PATCH] block: Fix dev_t liftime allocations
-Message-ID: <20140826123242.GC3285@linux.intel.com>
-References: <1408999975-9976-1-git-send-email-keith.busch@intel.com>
+	id S1758004AbaHZMdz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 08:33:55 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:60667 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754650AbaHZMdy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 08:33:54 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Darius Rad <darius@bluespec.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] include/asm-generic/cmpxchg-local.h: perform comparison in cmpxchg using appropriate size of data
+Date: Tue, 26 Aug 2014 14:33:48 +0200
+Message-ID: <22513003.HL2jGO1mLV@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <53FB5733.4010607@bluespec.com>
+References: <53FB5733.4010607@bluespec.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408999975-9976-1-git-send-email-keith.busch@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:949pOrHyn41RXfRkMSEs7wGbanPxv1EI5oNHmoDQmUp
+ OYS5FFiHzwwpx5eZ/DkwkVye5gPXw4CQBJI3IDrEsandWefYsa
+ ytq2gd3kiqZjWOTL6oI2SlD0GZHohKulnpv3LGyVvd4qzjcrjS
+ ffDOjhd95aSTFlpNjl5eyvNH6za6Q3VWWKB+6iDuwuyO1RMvnU
+ 8kqWeGNNt5fkr6xpRROJDPkuzQ5W5MUIwxj7JGVMPZ1As4tcsb
+ RSYcSavtqWi+Rqnk+dY+5P/dTi7WoxxwcA2FANYYjhYbVJBwr3
+ V1Bqz7YsjZ9rA8Buj/K24eBrEkgNyKKR2A0i5jpgHCBq8rH2qM
+ 7P95v/LgOf+AazltxOag=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 02:52:55PM -0600, Keith Busch wrote:
-> Since the partition's release may be invoked from call_rcu's soft-irq
-> context, the ext_dev_idr's mutex had to be replaced with a spinlock so
-> as not so sleep.
+On Monday 25 August 2014 11:33:07 Darius Rad wrote:
+> In the generic implementation of cmpxchg, cast the parameters to the size
+> of the data prior to comparison.  Otherwise, it is possible for the
+> comparison to be done incorrectly in the case where the data size is
+> smaller than the architecture register size.
+> 
+> For example, on a 64-bit architecture, a 32-bit value is sign extended
+> differently if it is typecast from an int to an unsigned long as compared
+> to being loaded from memory via an unsigned pointer (u32 *).
 
-> @@ -420,9 +420,9 @@ int blk_alloc_devt(struct hd_struct *part, dev_t *devt)
->  	}
->  
->  	/* allocate ext devt */
-> -	mutex_lock(&ext_devt_mutex);
-> +	spin_lock(&ext_devt_lock);
->  	idx = idr_alloc(&ext_devt_idr, part, 0, NR_EXT_DEVT, GFP_KERNEL);
-> -	mutex_unlock(&ext_devt_mutex);
-> +	spin_unlock(&ext_devt_lock);
+I don't see the scenario where this applies yet. The function itself
+only deals with unsigned values, so there should never be any sign extension.
 
-Can't use GFP_KERNEL if we're protected with a spinlock.  See the comment
-in lib/idr.c about idr_preload:
+Is this a problem with the caller using a signed type? Does the same
+code work on architectures that don't use the generic code?
 
-+	idr_preload(GFP_KERNEL);
--	mutex_lock(&ext_devt_mutex);
-+	spin_lock(&ext_devt_lock);
--	idx = idr_alloc(&ext_devt_idr, part, 0, NR_EXT_DEVT, GFP_KERNEL);
-+	idx = idr_alloc(&ext_devt_idr, part, 0, NR_EXT_DEVT, GFP_NOWAIT);
--	mutex_unlock(&ext_devt_mutex);
-+	spin_unlock(&ext_devt_lock);
+>  Given that
+> the primary, or possibly only, use of cmpxchg is with 4 and 8 byte values,
+> the incorrect comparison could only occur on 64-bit architectures that make
+> use of the generic cmxchg.
 
+cmpxchg is definitely meant to handle 1 and 2 byte values as well, but it's
+relatively rare. ARMv6 for instance does not handle 2-byte atomics and only
+one driver (xen) has had problems because of this.
+
+> Signed-off-by: Darius Rad <darius@bluespec.com>
+> 
+> ---
+> It does not appear that this is relevant to architectures that are in the
+> kernel tree, since the generic cmpxchg is only ever used by some 32-bit
+> architectures.  This does impact the RISC-V architecture that is currently
+> in development.
+
+I guess that means that RISC-V has no mandatory atomic instructions, right?
+
+> 
+>  include/asm-generic/cmpxchg-local.h |    8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> --- linux-3.17-rc1.orig/include/asm-generic/cmpxchg-local.h	2014-08-16 12:40:26.000000000 -0400
+> +++ linux-3.17-rc1/include/asm-generic/cmpxchg-local.h	2014-08-22 14:26:59.280746090 -0400
+> @@ -25,19 +25,19 @@ static inline unsigned long __cmpxchg_lo
+>  	raw_local_irq_save(flags);
+>  	switch (size) {
+>  	case 1: prev = *(u8 *)ptr;
+> -		if (prev == old)
+> +		if ((u8)prev == (u8)old)
+>  			*(u8 *)ptr = (u8)new;
+>  		break;
+>  	case 2: prev = *(u16 *)ptr;
+> -		if (prev == old)
+> +		if ((u16)prev == (u16)old)
+>  			*(u16 *)ptr = (u16)new;
+>  		break;
+>  	case 4: prev = *(u32 *)ptr;
+> -		if (prev == old)
+> +		if ((u32)prev == (u32)old)
+>  			*(u32 *)ptr = (u32)new;
+>  		break;
+>  	case 8: prev = *(u64 *)ptr;
+> -		if (prev == old)
+> +		if ((u64)prev == (u64)old)
+>  			*(u64 *)ptr = (u64)new;
+>  		break;
+>  	default:
+
+I can see how the cast of 'old' to a narrower type makes sense, but
+not 'prev', which we just loaded and zero-extended one line earlier.
+
+	Arnd
