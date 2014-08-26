@@ -1,455 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756006AbaHZNby (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 09:31:54 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:41416 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754925AbaHZNbx (ORCPT
+	id S1758062AbaHZNb6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 09:31:58 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:45007 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757739AbaHZNbz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 09:31:53 -0400
+	Tue, 26 Aug 2014 09:31:55 -0400
 From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
 To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
 Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, alsa-devel@alsa-project.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] sound: pci: ctxfi: prink replacement
-Date: Tue, 26 Aug 2014 19:01:42 +0530
-Message-Id: <1409059903-3922-1-git-send-email-sudipm.mukherjee@gmail.com>
+Subject: [PATCH 2/2] sound: pci: ctxfi: fix broken user-visible string
+Date: Tue, 26 Aug 2014 19:01:43 +0530
+Message-Id: <1409059903-3922-2-git-send-email-sudipm.mukherjee@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1409059903-3922-1-git-send-email-sudipm.mukherjee@gmail.com>
+References: <1409059903-3922-1-git-send-email-sudipm.mukherjee@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-as pr_* macros are more preffered over printk, so printk replaced with corresponding pr_err and pr_alert
-this patch will generate a warning from checkpatch for an unnecessary space before new line and has not been fixed as this patch is only for printk replacement.
+as broken user-visible strings breaks the ability to grep for them , so this patch fixes the broken user-visible strings
 
 Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
 ---
 
-Initially started by copy-paste but as Takashi suggested it was done by a script.
-bash script is as follows :
+ sound/pci/ctxfi/ctatc.c      | 18 +++++++-----------
+ sound/pci/ctxfi/cthw20k1.c   |  3 +--
+ sound/pci/ctxfi/cthw20k2.c   | 11 +++++------
+ sound/pci/ctxfi/ctmixer.c    |  6 ++----
+ sound/pci/ctxfi/ctresource.c | 20 ++++++++------------
+ sound/pci/ctxfi/ctvmem.c     |  6 ++----
+ sound/pci/ctxfi/xfi.c        |  6 ++----
+ 7 files changed, 27 insertions(+), 43 deletions(-)
 
-OLD="printk(KERN_ERR \?"
-OLD1="printk(KERN_ALERT \?"
-NEW="pr_err("
-NEW1="pr_alert("
-TFILE="/tmp/out.tmp.$$"
-for f in *.c
-do
-sed "s/$OLD/$NEW/g" "$f" > $TFILE && mv $TFILE "$f"
-sed "s/$OLD1/$NEW1/g" "$f" > $TFILE && mv $TFILE "$f"
-done
-
- sound/pci/ctxfi/ctamixer.c   |  4 ++--
- sound/pci/ctxfi/ctatc.c      | 20 ++++++++++----------
- sound/pci/ctxfi/ctdaio.c     |  2 +-
- sound/pci/ctxfi/cthw20k1.c   | 10 +++++-----
- sound/pci/ctxfi/cthw20k2.c   | 16 ++++++++--------
- sound/pci/ctxfi/ctmixer.c    |  4 ++--
- sound/pci/ctxfi/ctresource.c | 12 ++++++------
- sound/pci/ctxfi/ctsrc.c      |  4 ++--
- sound/pci/ctxfi/ctvmem.c     |  4 ++--
- sound/pci/ctxfi/xfi.c        |  8 ++++----
- 10 files changed, 42 insertions(+), 42 deletions(-)
-
-diff --git a/sound/pci/ctxfi/ctamixer.c b/sound/pci/ctxfi/ctamixer.c
-index fee35cf..fed6e6a 100644
---- a/sound/pci/ctxfi/ctamixer.c
-+++ b/sound/pci/ctxfi/ctamixer.c
-@@ -258,7 +258,7 @@ static int get_amixer_rsc(struct amixer_mgr *mgr,
- 	}
- 	spin_unlock_irqrestore(&mgr->mgr_lock, flags);
- 	if (err) {
--		printk(KERN_ERR "ctxfi: Can't meet AMIXER resource request!\n");
-+		pr_err("ctxfi: Can't meet AMIXER resource request!\n");
- 		goto error;
- 	}
- 
-@@ -411,7 +411,7 @@ static int get_sum_rsc(struct sum_mgr *mgr,
- 	}
- 	spin_unlock_irqrestore(&mgr->mgr_lock, flags);
- 	if (err) {
--		printk(KERN_ERR "ctxfi: Can't meet SUM resource request!\n");
-+		pr_err("ctxfi: Can't meet SUM resource request!\n");
- 		goto error;
- 	}
- 
 diff --git a/sound/pci/ctxfi/ctatc.c b/sound/pci/ctxfi/ctatc.c
-index af632bd..ce9061a 100644
+index ce9061a..d92a08c 100644
 --- a/sound/pci/ctxfi/ctatc.c
 +++ b/sound/pci/ctxfi/ctatc.c
 @@ -185,7 +185,7 @@ static unsigned int convert_format(snd_pcm_format_t snd_format)
  	case SNDRV_PCM_FORMAT_FLOAT_LE:
  		return SRC_SF_F32;
  	default:
--		printk(KERN_ERR "ctxfi: not recognized snd format is %d \n",
-+		pr_err("ctxfi: not recognized snd format is %d \n",
+-		pr_err("ctxfi: not recognized snd format is %d \n",
++		pr_err("ctxfi: not recognized snd format is %d\n",
  			snd_format);
  		return SRC_SF_S16;
  	}
-@@ -1282,7 +1282,7 @@ static int atc_identify_card(struct ct_atc *atc, unsigned int ssid)
+@@ -1282,8 +1282,7 @@ static int atc_identify_card(struct ct_atc *atc, unsigned int ssid)
  	p = snd_pci_quirk_lookup_id(vendor_id, device_id, list);
  	if (p) {
  		if (p->value < 0) {
--			printk(KERN_ERR "ctxfi: "
-+			pr_err("ctxfi: "
- 			       "Device %04x:%04x is black-listed\n",
+-			pr_err("ctxfi: "
+-			       "Device %04x:%04x is black-listed\n",
++			pr_err("ctxfi: Device %04x:%04x is black-listed\n",
  			       vendor_id, device_id);
  			return -ENOENT;
-@@ -1315,7 +1315,7 @@ int ct_atc_create_alsa_devs(struct ct_atc *atc)
+ 		}
+@@ -1315,8 +1314,7 @@ int ct_atc_create_alsa_devs(struct ct_atc *atc)
  		err = alsa_dev_funcs[i].create(atc, i,
  				alsa_dev_funcs[i].public_name);
  		if (err) {
--			printk(KERN_ERR "ctxfi: "
-+			pr_err("ctxfi: "
- 			       "Creating alsa device %d failed!\n", i);
+-			pr_err("ctxfi: "
+-			       "Creating alsa device %d failed!\n", i);
++			pr_err("ctxfi: Creating alsa device %d failed!\n", i);
  			return err;
  		}
-@@ -1332,7 +1332,7 @@ static int atc_create_hw_devs(struct ct_atc *atc)
- 
- 	err = create_hw_obj(atc->pci, atc->chip_type, atc->model, &hw);
- 	if (err) {
--		printk(KERN_ERR "Failed to create hw obj!!!\n");
-+		pr_err("Failed to create hw obj!!!\n");
- 		return err;
  	}
- 	atc->hw = hw;
-@@ -1351,7 +1351,7 @@ static int atc_create_hw_devs(struct ct_atc *atc)
+@@ -1351,8 +1349,7 @@ static int atc_create_hw_devs(struct ct_atc *atc)
  
  		err = rsc_mgr_funcs[i].create(atc->hw, &atc->rsc_mgrs[i]);
  		if (err) {
--			printk(KERN_ERR "ctxfi: "
-+			pr_err("ctxfi: "
- 			       "Failed to create rsc_mgr %d!!!\n", i);
+-			pr_err("ctxfi: "
+-			       "Failed to create rsc_mgr %d!!!\n", i);
++			pr_err("ctxfi: Failed to create rsc_mgr %d!!!\n", i);
  			return err;
  		}
-@@ -1399,7 +1399,7 @@ static int atc_get_resources(struct ct_atc *atc)
+ 	}
+@@ -1399,8 +1396,8 @@ static int atc_get_resources(struct ct_atc *atc)
  		err = daio_mgr->get_daio(daio_mgr, &da_desc,
  					(struct daio **)&atc->daios[i]);
  		if (err) {
--			printk(KERN_ERR "ctxfi: Failed to get DAIO "
-+			pr_err("ctxfi: Failed to get DAIO "
- 					"resource %d!!!\n", i);
+-			pr_err("ctxfi: Failed to get DAIO "
+-					"resource %d!!!\n", i);
++			pr_err("ctxfi: Failed to get DAIO resource %d!!!\n",
++				i);
  			return err;
  		}
-@@ -1603,7 +1603,7 @@ static int atc_resume(struct ct_atc *atc)
+ 		atc->n_daio++;
+@@ -1603,8 +1600,7 @@ static int atc_resume(struct ct_atc *atc)
  	/* Do hardware resume. */
  	err = atc_hw_resume(atc);
  	if (err < 0) {
--		printk(KERN_ERR "ctxfi: pci_enable_device failed, "
-+		pr_err("ctxfi: pci_enable_device failed, "
- 		       "disabling device\n");
+-		pr_err("ctxfi: pci_enable_device failed, "
+-		       "disabling device\n");
++		pr_err("ctxfi: pci_enable_device failed, disabling device\n");
  		snd_card_disconnect(atc->card);
  		return err;
-@@ -1701,7 +1701,7 @@ int ct_atc_create(struct snd_card *card, struct pci_dev *pci,
- 	/* Find card model */
- 	err = atc_identify_card(atc, ssid);
- 	if (err < 0) {
--		printk(KERN_ERR "ctatc: Card not recognised\n");
-+		pr_err("ctatc: Card not recognised\n");
- 		goto error1;
  	}
- 
-@@ -1717,7 +1717,7 @@ int ct_atc_create(struct snd_card *card, struct pci_dev *pci,
- 
- 	err = ct_mixer_create(atc, (struct ct_mixer **)&atc->mixer);
- 	if (err) {
--		printk(KERN_ERR "ctxfi: Failed to create mixer obj!!!\n");
-+		pr_err("ctxfi: Failed to create mixer obj!!!\n");
- 		goto error1;
- 	}
- 
-@@ -1744,6 +1744,6 @@ int ct_atc_create(struct snd_card *card, struct pci_dev *pci,
- 
- error1:
- 	ct_atc_destroy(atc);
--	printk(KERN_ERR "ctxfi: Something wrong!!!\n");
-+	pr_err("ctxfi: Something wrong!!!\n");
- 	return err;
- }
-diff --git a/sound/pci/ctxfi/ctdaio.c b/sound/pci/ctxfi/ctdaio.c
-index 84f86bf..6f0654e 100644
---- a/sound/pci/ctxfi/ctdaio.c
-+++ b/sound/pci/ctxfi/ctdaio.c
-@@ -541,7 +541,7 @@ static int get_daio_rsc(struct daio_mgr *mgr,
- 	err = daio_mgr_get_rsc(&mgr->mgr, desc->type);
- 	spin_unlock_irqrestore(&mgr->mgr_lock, flags);
- 	if (err) {
--		printk(KERN_ERR "Can't meet DAIO resource request!\n");
-+		pr_err("Can't meet DAIO resource request!\n");
- 		return err;
- 	}
- 
 diff --git a/sound/pci/ctxfi/cthw20k1.c b/sound/pci/ctxfi/cthw20k1.c
-index 6ac40be..782641e 100644
+index 782641e..71d496f 100644
 --- a/sound/pci/ctxfi/cthw20k1.c
 +++ b/sound/pci/ctxfi/cthw20k1.c
-@@ -1268,7 +1268,7 @@ static int hw_trn_init(struct hw *hw, const struct trn_conf *info)
- 
- 	/* Set up device page table */
- 	if ((~0UL) == info->vm_pgt_phys) {
--		printk(KERN_ERR "Wrong device page table page address!\n");
-+		pr_err("Wrong device page table page address!\n");
- 		return -1;
- 	}
- 
-@@ -1327,7 +1327,7 @@ static int hw_pll_init(struct hw *hw, unsigned int rsr)
- 		mdelay(40);
- 	}
- 	if (i >= 3) {
--		printk(KERN_ALERT "PLL initialization failed!!!\n");
-+		pr_alert("PLL initialization failed!!!\n");
- 		return -EBUSY;
- 	}
- 
-@@ -1351,7 +1351,7 @@ static int hw_auto_init(struct hw *hw)
- 			break;
- 	}
- 	if (!get_field(gctl, GCTL_AID)) {
--		printk(KERN_ALERT "Card Auto-init failed!!!\n");
-+		pr_alert("Card Auto-init failed!!!\n");
- 		return -EBUSY;
- 	}
- 
-@@ -1911,7 +1911,7 @@ static int hw_card_start(struct hw *hw)
+@@ -1911,8 +1911,7 @@ static int hw_card_start(struct hw *hw)
  	/* Set DMA transfer mask */
  	if (pci_set_dma_mask(pci, CT_XFI_DMA_MASK) < 0 ||
  	    pci_set_consistent_dma_mask(pci, CT_XFI_DMA_MASK) < 0) {
--		printk(KERN_ERR "architecture does not support PCI "
-+		pr_err("architecture does not support PCI "
- 				"busmaster DMA with mask 0x%llx\n",
+-		pr_err("architecture does not support PCI "
+-				"busmaster DMA with mask 0x%llx\n",
++		pr_err("architecture does not support PCI busmaster DMA with mask 0x%llx\n",
  		       CT_XFI_DMA_MASK);
  		err = -ENXIO;
-@@ -1942,7 +1942,7 @@ static int hw_card_start(struct hw *hw)
- 		err = request_irq(pci->irq, ct_20k1_interrupt, IRQF_SHARED,
- 				  KBUILD_MODNAME, hw);
- 		if (err < 0) {
--			printk(KERN_ERR "XFi: Cannot get irq %d\n", pci->irq);
-+			pr_err("XFi: Cannot get irq %d\n", pci->irq);
- 			goto error2;
- 		}
- 		hw->irq = pci->irq;
+ 		goto error1;
 diff --git a/sound/pci/ctxfi/cthw20k2.c b/sound/pci/ctxfi/cthw20k2.c
-index b143886..8a72fac 100644
+index 8a72fac..df2d8c5 100644
 --- a/sound/pci/ctxfi/cthw20k2.c
 +++ b/sound/pci/ctxfi/cthw20k2.c
-@@ -1187,7 +1187,7 @@ static int hw_daio_init(struct hw *hw, const struct daio_conf *info)
- 		hw_write_20kx(hw, AUDIO_IO_TX_BLRCLK, 0x21212121);
- 		hw_write_20kx(hw, AUDIO_IO_RX_BLRCLK, 0);
- 	} else {
--		printk(KERN_ALERT "ctxfi: ERROR!!! Invalid sampling rate!!!\n");
-+		pr_alert("ctxfi: ERROR!!! Invalid sampling rate!!!\n");
- 		return -EINVAL;
- 	}
- 
-@@ -1246,7 +1246,7 @@ static int hw_trn_init(struct hw *hw, const struct trn_conf *info)
+@@ -1246,8 +1246,7 @@ static int hw_trn_init(struct hw *hw, const struct trn_conf *info)
  
  	/* Set up device page table */
  	if ((~0UL) == info->vm_pgt_phys) {
--		printk(KERN_ALERT "ctxfi: "
-+		pr_alert("ctxfi: "
- 		       "Wrong device page table page address!!!\n");
+-		pr_alert("ctxfi: "
+-		       "Wrong device page table page address!!!\n");
++		pr_alert("ctxfi: Wrong device page table page address!!!\n");
  		return -1;
  	}
-@@ -1352,7 +1352,7 @@ static int hw_pll_init(struct hw *hw, unsigned int rsr)
- 		break;
- 	}
- 	if (i >= 1000) {
--		printk(KERN_ALERT "ctxfi: PLL initialization failed!!!\n");
-+		pr_alert("ctxfi: PLL initialization failed!!!\n");
- 		return -EBUSY;
- 	}
  
-@@ -1376,7 +1376,7 @@ static int hw_auto_init(struct hw *hw)
- 			break;
- 	}
- 	if (!get_field(gctl, GCTL_AID)) {
--		printk(KERN_ALERT "ctxfi: Card Auto-init failed!!!\n");
-+		pr_alert("ctxfi: Card Auto-init failed!!!\n");
- 		return -EBUSY;
- 	}
- 
-@@ -1847,7 +1847,7 @@ static int hw_adc_init(struct hw *hw, const struct adc_conf *info)
- 	/* Initialize I2C */
- 	err = hw20k2_i2c_init(hw, 0x1A, 1, 1);
- 	if (err < 0) {
--		printk(KERN_ALERT "ctxfi: Failure to acquire I2C!!!\n");
-+		pr_alert("ctxfi: Failure to acquire I2C!!!\n");
- 		goto error;
- 	}
- 
-@@ -1890,7 +1890,7 @@ static int hw_adc_init(struct hw *hw, const struct adc_conf *info)
+@@ -1890,8 +1889,8 @@ static int hw_adc_init(struct hw *hw, const struct adc_conf *info)
  		hw20k2_i2c_write(hw, MAKE_WM8775_ADDR(WM8775_MMC, 0x0A),
  						MAKE_WM8775_DATA(0x0A));
  	} else {
--		printk(KERN_ALERT "ctxfi: Invalid master sampling "
-+		pr_alert("ctxfi: Invalid master sampling "
- 				  "rate (msr %d)!!!\n", info->msr);
+-		pr_alert("ctxfi: Invalid master sampling "
+-				  "rate (msr %d)!!!\n", info->msr);
++		pr_alert("ctxfi: Invalid master sampling rate (msr %d)!!!\n",
++			info->msr);
  		err = -EINVAL;
  		goto error;
-@@ -2034,7 +2034,7 @@ static int hw_card_start(struct hw *hw)
+ 	}
+@@ -2034,8 +2033,8 @@ static int hw_card_start(struct hw *hw)
  	/* Set DMA transfer mask */
  	if (pci_set_dma_mask(pci, CT_XFI_DMA_MASK) < 0 ||
  	    pci_set_consistent_dma_mask(pci, CT_XFI_DMA_MASK) < 0) {
--		printk(KERN_ERR "ctxfi: architecture does not support PCI "
-+		pr_err("ctxfi: architecture does not support PCI "
- 		"busmaster DMA with mask 0x%llx\n", CT_XFI_DMA_MASK);
+-		pr_err("ctxfi: architecture does not support PCI "
+-		"busmaster DMA with mask 0x%llx\n", CT_XFI_DMA_MASK);
++		pr_err("ctxfi: architecture does not support PCI busmaster DMA with mask 0x%llx\n",
++			CT_XFI_DMA_MASK);
  		err = -ENXIO;
  		goto error1;
-@@ -2063,7 +2063,7 @@ static int hw_card_start(struct hw *hw)
- 		err = request_irq(pci->irq, ct_20k2_interrupt, IRQF_SHARED,
- 				  KBUILD_MODNAME, hw);
- 		if (err < 0) {
--			printk(KERN_ERR "XFi: Cannot get irq %d\n", pci->irq);
-+			pr_err("XFi: Cannot get irq %d\n", pci->irq);
- 			goto error2;
- 		}
- 		hw->irq = pci->irq;
+ 	}
 diff --git a/sound/pci/ctxfi/ctmixer.c b/sound/pci/ctxfi/ctmixer.c
-index 48fe0e3..8d986e4 100644
+index 8d986e4..017fa91 100644
 --- a/sound/pci/ctxfi/ctmixer.c
 +++ b/sound/pci/ctxfi/ctmixer.c
-@@ -854,7 +854,7 @@ static int ct_mixer_get_resources(struct ct_mixer *mixer)
+@@ -854,8 +854,7 @@ static int ct_mixer_get_resources(struct ct_mixer *mixer)
  	for (i = 0; i < (NUM_CT_SUMS * CHN_NUM); i++) {
  		err = sum_mgr->get_sum(sum_mgr, &sum_desc, &sum);
  		if (err) {
--			printk(KERN_ERR "ctxfi:Failed to get sum resources for "
-+			pr_err("ctxfi:Failed to get sum resources for "
- 					  "front output!\n");
+-			pr_err("ctxfi:Failed to get sum resources for "
+-					  "front output!\n");
++			pr_err("ctxfi:Failed to get sum resources for front output!\n");
  			break;
  		}
-@@ -869,7 +869,7 @@ static int ct_mixer_get_resources(struct ct_mixer *mixer)
+ 		mixer->sums[i] = sum;
+@@ -869,8 +868,7 @@ static int ct_mixer_get_resources(struct ct_mixer *mixer)
  	for (i = 0; i < (NUM_CT_AMIXERS * CHN_NUM); i++) {
  		err = amixer_mgr->get_amixer(amixer_mgr, &am_desc, &amixer);
  		if (err) {
--			printk(KERN_ERR "ctxfi:Failed to get amixer resources "
-+			pr_err("ctxfi:Failed to get amixer resources "
- 			       "for mixer obj!\n");
+-			pr_err("ctxfi:Failed to get amixer resources "
+-			       "for mixer obj!\n");
++			pr_err("ctxfi:Failed to get amixer resources for mixer obj!\n");
  			break;
  		}
+ 		mixer->amixers[i] = amixer;
 diff --git a/sound/pci/ctxfi/ctresource.c b/sound/pci/ctxfi/ctresource.c
-index 7dfaf67..11ac934 100644
+index 11ac934..e49d2be 100644
 --- a/sound/pci/ctxfi/ctresource.c
 +++ b/sound/pci/ctxfi/ctresource.c
-@@ -162,13 +162,13 @@ int rsc_init(struct rsc *rsc, u32 idx, enum RSCTYP type, u32 msr, void *hw)
+@@ -162,14 +162,12 @@ int rsc_init(struct rsc *rsc, u32 idx, enum RSCTYP type, u32 msr, void *hw)
  	case DAIO:
  		break;
  	default:
--		printk(KERN_ERR
-+		pr_err(
- 		       "ctxfi: Invalid resource type value %d!\n", type);
+-		pr_err(
+-		       "ctxfi: Invalid resource type value %d!\n", type);
++		pr_err("ctxfi: Invalid resource type value %d!\n", type);
  		return -EINVAL;
  	}
  
  	if (err) {
--		printk(KERN_ERR
-+		pr_err(
- 		       "ctxfi: Failed to get resource control block!\n");
+-		pr_err(
+-		       "ctxfi: Failed to get resource control block!\n");
++		pr_err("ctxfi: Failed to get resource control block!\n");
  		return err;
  	}
-@@ -192,7 +192,7 @@ int rsc_uninit(struct rsc *rsc)
+ 
+@@ -192,8 +190,8 @@ int rsc_uninit(struct rsc *rsc)
  		case DAIO:
  			break;
  		default:
--			printk(KERN_ERR "ctxfi: "
-+			pr_err("ctxfi: "
- 			       "Invalid resource type value %d!\n", rsc->type);
+-			pr_err("ctxfi: "
+-			       "Invalid resource type value %d!\n", rsc->type);
++			pr_err("ctxfi: Invalid resource type value %d!\n",
++				rsc->type);
  			break;
  		}
-@@ -235,14 +235,14 @@ int rsc_mgr_init(struct rsc_mgr *mgr, enum RSCTYP type,
+ 
+@@ -235,15 +233,13 @@ int rsc_mgr_init(struct rsc_mgr *mgr, enum RSCTYP type,
  	case SUM:
  		break;
  	default:
--		printk(KERN_ERR
-+		pr_err(
- 		       "ctxfi: Invalid resource type value %d!\n", type);
+-		pr_err(
+-		       "ctxfi: Invalid resource type value %d!\n", type);
++		pr_err("ctxfi: Invalid resource type value %d!\n", type);
  		err = -EINVAL;
  		goto error;
  	}
  
  	if (err) {
--		printk(KERN_ERR
-+		pr_err(
- 		       "ctxfi: Failed to get manager control block!\n");
+-		pr_err(
+-		       "ctxfi: Failed to get manager control block!\n");
++		pr_err("ctxfi: Failed to get manager control block!\n");
  		goto error;
  	}
-@@ -286,7 +286,7 @@ int rsc_mgr_uninit(struct rsc_mgr *mgr)
+ 
+@@ -286,8 +282,8 @@ int rsc_mgr_uninit(struct rsc_mgr *mgr)
  		case SUM:
  			break;
  		default:
--			printk(KERN_ERR "ctxfi: "
-+			pr_err("ctxfi: "
- 			       "Invalid resource type value %d!\n", mgr->type);
+-			pr_err("ctxfi: "
+-			       "Invalid resource type value %d!\n", mgr->type);
++			pr_err("ctxfi: Invalid resource type value %d!\n",
++				mgr->type);
  			break;
  		}
-diff --git a/sound/pci/ctxfi/ctsrc.c b/sound/pci/ctxfi/ctsrc.c
-index 6e77e86..19df9b4 100644
---- a/sound/pci/ctxfi/ctsrc.c
-+++ b/sound/pci/ctxfi/ctsrc.c
-@@ -431,7 +431,7 @@ get_src_rsc(struct src_mgr *mgr, const struct src_desc *desc, struct src **rsrc)
- 
- 	spin_unlock_irqrestore(&mgr->mgr_lock, flags);
- 	if (err) {
--		printk(KERN_ERR "ctxfi: Can't meet SRC resource request!\n");
-+		pr_err("ctxfi: Can't meet SRC resource request!\n");
- 		return err;
- 	}
- 
-@@ -739,7 +739,7 @@ static int get_srcimp_rsc(struct srcimp_mgr *mgr,
- 	}
- 	spin_unlock_irqrestore(&mgr->mgr_lock, flags);
- 	if (err) {
--		printk(KERN_ERR "ctxfi: Can't meet SRCIMP resource request!\n");
-+		pr_err("ctxfi: Can't meet SRCIMP resource request!\n");
- 		goto error1;
- 	}
  
 diff --git a/sound/pci/ctxfi/ctvmem.c b/sound/pci/ctxfi/ctvmem.c
-index 6109490..5ea015b 100644
+index 5ea015b..38163f5 100644
 --- a/sound/pci/ctxfi/ctvmem.c
 +++ b/sound/pci/ctxfi/ctvmem.c
-@@ -36,7 +36,7 @@ get_vm_block(struct ct_vm *vm, unsigned int size)
+@@ -36,8 +36,7 @@ get_vm_block(struct ct_vm *vm, unsigned int size)
  
  	size = CT_PAGE_ALIGN(size);
  	if (size > vm->size) {
--		printk(KERN_ERR "ctxfi: Fail! No sufficient device virtual "
-+		pr_err("ctxfi: Fail! No sufficient device virtual "
- 				  "memory space available!\n");
+-		pr_err("ctxfi: Fail! No sufficient device virtual "
+-				  "memory space available!\n");
++		pr_err("ctxfi: Fail! No sufficient device virtual memory space available!\n");
  		return NULL;
  	}
-@@ -132,7 +132,7 @@ ct_vm_map(struct ct_vm *vm, struct snd_pcm_substream *substream, int size)
+ 
+@@ -132,8 +131,7 @@ ct_vm_map(struct ct_vm *vm, struct snd_pcm_substream *substream, int size)
  
  	block = get_vm_block(vm, size);
  	if (block == NULL) {
--		printk(KERN_ERR "ctxfi: No virtual memory block that is big "
-+		pr_err("ctxfi: No virtual memory block that is big "
- 				  "enough to allocate!\n");
+-		pr_err("ctxfi: No virtual memory block that is big "
+-				  "enough to allocate!\n");
++		pr_err("ctxfi: No virtual memory block that is big enough to allocate!\n");
  		return NULL;
  	}
+ 
 diff --git a/sound/pci/ctxfi/xfi.c b/sound/pci/ctxfi/xfi.c
-index 8f8b566..af8c498 100644
+index af8c498..35e85ba 100644
 --- a/sound/pci/ctxfi/xfi.c
 +++ b/sound/pci/ctxfi/xfi.c
-@@ -76,16 +76,16 @@ ct_card_probe(struct pci_dev *pci, const struct pci_device_id *pci_id)
- 	if (err)
- 		return err;
+@@ -78,15 +78,13 @@ ct_card_probe(struct pci_dev *pci, const struct pci_device_id *pci_id)
  	if ((reference_rate != 48000) && (reference_rate != 44100)) {
--		printk(KERN_ERR "ctxfi: Invalid reference_rate value %u!!!\n",
-+		pr_err("ctxfi: Invalid reference_rate value %u!!!\n",
+ 		pr_err("ctxfi: Invalid reference_rate value %u!!!\n",
  		       reference_rate);
--		printk(KERN_ERR "ctxfi: The valid values for reference_rate "
-+		pr_err("ctxfi: The valid values for reference_rate "
- 		       "are 48000 and 44100, Value 48000 is assumed.\n");
+-		pr_err("ctxfi: The valid values for reference_rate "
+-		       "are 48000 and 44100, Value 48000 is assumed.\n");
++		pr_err("ctxfi: The valid values for reference_rate are 48000 and 44100, Value 48000 is assumed.\n");
  		reference_rate = 48000;
  	}
  	if ((multiple != 1) && (multiple != 2) && (multiple != 4)) {
--		printk(KERN_ERR "ctxfi: Invalid multiple value %u!!!\n",
-+		pr_err("ctxfi: Invalid multiple value %u!!!\n",
+ 		pr_err("ctxfi: Invalid multiple value %u!!!\n",
  		       multiple);
--		printk(KERN_ERR "ctxfi: The valid values for multiple are "
-+		pr_err("ctxfi: The valid values for multiple are "
- 		       "1, 2 and 4, Value 2 is assumed.\n");
+-		pr_err("ctxfi: The valid values for multiple are "
+-		       "1, 2 and 4, Value 2 is assumed.\n");
++		pr_err("ctxfi: The valid values for multiple are 1, 2 and 4, Value 2 is assumed.\n");
  		multiple = 2;
  	}
+ 	err = ct_atc_create(card, pci, reference_rate, multiple,
 -- 
 1.8.1.2
 
