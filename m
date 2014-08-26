@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755813AbaHZVhm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 17:37:42 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:41695 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755781AbaHZVhj (ORCPT
+	id S1755567AbaHZVmr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 17:42:47 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:45821 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754175AbaHZVmq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 17:37:39 -0400
-Date: Tue, 26 Aug 2014 17:37:35 -0400
-From: Tejun Heo <htejun@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
-        Mike Travis <travis@sgi.com>
-Subject: Re: percpu: Define this_cpu_cpumask_var_t_ptr
-Message-ID: <20140826213735.GS31659@mtj.dyndns.org>
-References: <alpine.DEB.2.11.1408070959250.28468@gentwo.org>
- <20140821222212.GA7996@mtj.dyndns.org>
- <alpine.DEB.2.11.1408212001100.19762@gentwo.org>
- <20140822164051.GB15713@mtj.dyndns.org>
- <alpine.DEB.2.11.1408221241340.23099@gentwo.org>
- <20140823171416.GG13540@mtj.dyndns.org>
- <alpine.DEB.2.11.1408231500430.31459@gentwo.org>
- <alpine.DEB.2.11.1408261631350.8819@gentwo.org>
+	Tue, 26 Aug 2014 17:42:46 -0400
+Date: Wed, 27 Aug 2014 01:42:43 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH -mm] headers: prctl.h -- Add missing linux/types.h
+Message-ID: <20140826214243.GE8952@moon>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1408261631350.8819@gentwo.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Stephen reported:
 
-On Tue, Aug 26, 2014 at 04:33:28PM -0500, Christoph Lameter wrote:
-> Ok I tried to change it to an inline function. The problem is the
-> cpumask.h is included very early. this_cpu ops require functionality
-> that is not available at that point. I think it cannot be more than a
-> macro unless we define it elsewhere.
+ | After merging the akpm-current tree, today's linux-next build (x86_64
+ | allmodconfig) failed like this:
+ |
+ | ./usr/include/linux/prctl.h:132: found __[us]{8,16,32,64} type without #include <linux/types.h>
+ | In file included from /usr/include/x86_64-linux-gnu/sys/prctl.h:23:0,
+ |                 from Documentation/prctl/disable-tsc-test.c:14:
+ | ./usr/include/linux/prctl.h:132:2: error: unknown type name '__u64'
+ |
 
-Ugh.... include hell. :( Does putting the accessors in percpu.h make
-any difference?  Given the tricky nature of cpumask_var_t, I think
-type checking can be pretty useful.
+Include the header needed.
 
-> Regarding naming:
-> 
-> this_cpu_ptr_cpumask_var()
-> 
-> is ok?
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ include/uapi/linux/prctl.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Wouldn't this_cpu_cpumask_var_ptr() be a bit more natural?
-
-Thanks.
-
--- 
-tejun
+Index: linux-2.6.git/include/uapi/linux/prctl.h
+===================================================================
+--- linux-2.6.git.orig/include/uapi/linux/prctl.h
++++ linux-2.6.git/include/uapi/linux/prctl.h
+@@ -1,6 +1,8 @@
+ #ifndef _LINUX_PRCTL_H
+ #define _LINUX_PRCTL_H
+ 
++#include <linux/types.h>
++
+ /* Values to pass as first argument to prctl() */
+ 
+ #define PR_SET_PDEATHSIG  1  /* Second arg is a signal */
