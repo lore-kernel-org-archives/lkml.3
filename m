@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752572AbaHZQeP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 12:34:15 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:34507 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751742AbaHZQeO (ORCPT
+	id S1752598AbaHZQej (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 12:34:39 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:44006 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751742AbaHZQei (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 12:34:14 -0400
-Date: Tue, 26 Aug 2014 17:34:07 +0100
+	Tue, 26 Aug 2014 12:34:38 -0400
+Date: Tue, 26 Aug 2014 17:34:32 +0100
 From: Lee Jones <lee.jones@linaro.org>
 To: Jingoo Han <jg1.han@samsung.com>
 Cc: linux-kernel@vger.kernel.org, "'Bryan Wu'" <cooloney@gmail.com>
-Subject: Re: [PATCH 09/18] backlight: lm3639: remove unnecessary return
- statements
-Message-ID: <20140826163407.GO26707@lee--X1>
+Subject: Re: [PATCH 08/18] backlight: ld9040: remove 'else' after a return
+Message-ID: <20140826163432.GP26707@lee--X1>
 References: <009301cfc12d$2847ffd0$78d7ff70$%han@samsung.com>
- <00b301cfc12d$a0831cf0$e18956d0$%han@samsung.com>
+ <00b201cfc12d$952babb0$bf830310$%han@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <00b301cfc12d$a0831cf0$e18956d0$%han@samsung.com>
+In-Reply-To: <00b201cfc12d$952babb0$bf830310$%han@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,35 +29,34 @@ On Tue, 26 Aug 2014, Jingoo Han wrote:
 
 > Fixed the following checkpatch warning.
 > 
->   WARNING: void function return statements are not generally useful
+>   WARNING: else is not generally useful after a break or return
 > 
 > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 > ---
->  drivers/video/backlight/lm3639_bl.c | 2 --
->  1 file changed, 2 deletions(-)
+>  drivers/video/backlight/ld9040.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
 
 Acked-by: Lee Jones <lee.jones@linaro.org>
 
-> diff --git a/drivers/video/backlight/lm3639_bl.c b/drivers/video/backlight/lm3639_bl.c
-> index 5f36808d214f..cd50df5807ea 100644
-> --- a/drivers/video/backlight/lm3639_bl.c
-> +++ b/drivers/video/backlight/lm3639_bl.c
-> @@ -254,7 +254,6 @@ static void lm3639_torch_brightness_set(struct led_classdev *cdev,
->  	return;
->  out:
->  	dev_err(pchip->dev, "i2c failed to access register\n");
-> -	return;
->  }
+> diff --git a/drivers/video/backlight/ld9040.c b/drivers/video/backlight/ld9040.c
+> index ccb44e8e4927..f71eaf10c4eb 100644
+> --- a/drivers/video/backlight/ld9040.c
+> +++ b/drivers/video/backlight/ld9040.c
+> @@ -566,11 +566,11 @@ static int ld9040_power_on(struct ld9040 *lcd)
+>  	if (!pd->reset) {
+>  		dev_err(lcd->dev, "reset is NULL.\n");
+>  		return -EINVAL;
+> -	} else {
+> -		pd->reset(lcd->ld);
+> -		msleep(pd->reset_delay);
+>  	}
 >  
->  /* flash */
-> @@ -293,7 +292,6 @@ static void lm3639_flash_brightness_set(struct led_classdev *cdev,
->  	return;
->  out:
->  	dev_err(pchip->dev, "i2c failed to access register\n");
-> -	return;
->  }
->  
->  static const struct regmap_config lm3639_regmap = {
+> +	pd->reset(lcd->ld);
+> +	msleep(pd->reset_delay);
+> +
+>  	ret = ld9040_ldi_init(lcd);
+>  	if (ret) {
+>  		dev_err(lcd->dev, "failed to initialize ldi.\n");
 
 -- 
 Lee Jones
