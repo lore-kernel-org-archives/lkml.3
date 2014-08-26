@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757793AbaHZMFB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 08:05:01 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:58502 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757732AbaHZME6 (ORCPT
+	id S1757833AbaHZMFL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 08:05:11 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:40697 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757803AbaHZMFG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 08:04:58 -0400
-Subject: [RFC PATCH 1/2] libkmod: support lockup module option
+	Tue, 26 Aug 2014 08:05:06 -0400
+Subject: [RFC PATCH 2/2] modprobe: Add --lockup option to make module
+ unremovable
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 To: Rusty Russell <rusty@rustcorp.com.au>,
         Lucas De Marchi <lucas.demarchi@intel.com>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         linux-modules@vger.kernel.org, Josh Poimboeuf <jpoimboe@redhat.com>
-Date: Tue, 26 Aug 2014 12:04:49 +0000
-Message-ID: <20140826120449.8223.6053.stgit@kbuild-fedora.novalocal>
+Date: Tue, 26 Aug 2014 12:04:56 +0000
+Message-ID: <20140826120456.8223.20476.stgit@kbuild-fedora.novalocal>
 In-Reply-To: <20140826120442.8223.80618.stgit@kbuild-fedora.novalocal>
 References: <20140826120442.8223.80618.stgit@kbuild-fedora.novalocal>
 User-Agent: StGit/0.17-dirty
@@ -25,77 +26,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add lockup option support to load an unloadable module.
-Since unloadable module is not removed normally, module refcounting
-is skipped. That will improve multi-core scalability on big machine.
+From: Masami Hiramatsu <masami.hiramatsu@gmail.com>
+
+Add --lockup option for loading to make the module unremovable.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
- libkmod/libkmod-module.c |    3 +++
- libkmod/libkmod.h        |    4 +++-
- libkmod/missing.h        |    4 ++++
- 3 files changed, 10 insertions(+), 1 deletion(-)
+ tools/modprobe.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/libkmod/libkmod-module.c b/libkmod/libkmod-module.c
-index b81b451..557e637 100644
---- a/libkmod/libkmod-module.c
-+++ b/libkmod/libkmod-module.c
-@@ -789,6 +789,7 @@ extern long init_module(const void *mem, unsigned long len, const char *args);
-  * behavior of this function, valid flags are
-  * KMOD_INSERT_FORCE_VERMAGIC: ignore kernel version magic;
-  * KMOD_INSERT_FORCE_MODVERSION: ignore symbol version hashes.
-+ * KMOD_INSERT_LOCKUP_MODULE: make module unloadable.
-  * @options: module's options to pass to Linux Kernel.
-  *
-  * Insert a module in Linux kernel. It opens the file pointed by @mod,
-@@ -830,6 +831,8 @@ KMOD_EXPORT int kmod_module_insert_module(struct kmod_module *mod,
- 			kernel_flags |= MODULE_INIT_IGNORE_VERMAGIC;
- 		if (flags & KMOD_INSERT_FORCE_MODVERSION)
- 			kernel_flags |= MODULE_INIT_IGNORE_MODVERSIONS;
-+		if (flags & KMOD_INSERT_LOCKUP_MODULE)
-+			kernel_flags |= MODULE_INIT_LOCKUP;
+diff --git a/tools/modprobe.c b/tools/modprobe.c
+index 6b34658..768a5bb 100644
+--- a/tools/modprobe.c
++++ b/tools/modprobe.c
+@@ -51,12 +51,13 @@ static int first_time = 0;
+ static int ignore_commands = 0;
+ static int use_blacklist = 0;
+ static int force = 0;
++static int lockup = 0;
+ static int strip_modversion = 0;
+ static int strip_vermagic = 0;
+ static int remove_dependencies = 0;
+ static int quiet_inuse = 0;
  
- 		err = finit_module(kmod_file_get_fd(mod->file), args, kernel_flags);
- 		if (err == 0 || errno != ENOSYS)
-diff --git a/libkmod/libkmod.h b/libkmod/libkmod.h
-index a7ea221..69a3237 100644
---- a/libkmod/libkmod.h
-+++ b/libkmod/libkmod.h
-@@ -143,10 +143,11 @@ enum kmod_remove {
- 	KMOD_REMOVE_NOWAIT = O_NONBLOCK, /* always set */
- };
+-static const char cmdopts_s[] = "arRibfDcnC:d:S:sqvVh";
++static const char cmdopts_s[] = "arRibflDcnC:d:S:sqvVh";
+ static const struct option cmdopts[] = {
+ 	{"all", no_argument, 0, 'a'},
+ 	{"remove", no_argument, 0, 'r'},
+@@ -69,6 +70,7 @@ static const struct option cmdopts[] = {
+ 	{"force", no_argument, 0, 'f'},
+ 	{"force-modversion", no_argument, 0, 2},
+ 	{"force-vermagic", no_argument, 0, 1},
++	{"lockup", no_argument, 0, 'l'},
  
--/* Insertion flags */
-+/* Insertion flags: must be same as KMOD_PROBE_* */
- enum kmod_insert {
- 	KMOD_INSERT_FORCE_VERMAGIC = 0x1,
- 	KMOD_INSERT_FORCE_MODVERSION = 0x2,
-+	KMOD_INSERT_LOCKUP_MODULE = 0x40,
- };
- 
- /* Flags to kmod_module_probe_insert_module() */
-@@ -157,6 +158,7 @@ enum kmod_probe {
- 	KMOD_PROBE_IGNORE_LOADED =		0x00008,
- 	KMOD_PROBE_DRY_RUN =			0x00010,
- 	KMOD_PROBE_FAIL_ON_LOADED =		0x00020,
-+	KMOD_PROBE_LOCKUP_MODULE =		0x00040,
- 
- 	/* codes below can be used in return value, too */
- 	KMOD_PROBE_APPLY_BLACKLIST_ALL =	0x10000,
-diff --git a/libkmod/missing.h b/libkmod/missing.h
-index 8d47af8..c38f588 100644
---- a/libkmod/missing.h
-+++ b/libkmod/missing.h
-@@ -15,6 +15,10 @@
- # define MODULE_INIT_IGNORE_VERMAGIC 2
- #endif
- 
-+#ifndef MODULE_INIT_LOCKUP
-+# define MODULE_INIT_LOCKUP 4
-+#endif
-+
- #ifndef __NR_finit_module
- # define __NR_finit_module -1
- #endif
+ 	{"show-depends", no_argument, 0, 'D'},
+ 	{"showconfig", no_argument, 0, 'c'},
+@@ -116,6 +118,7 @@ static void help(void)
+ 		"\t                            --force-vermagic\n"
+ 		"\t    --force-modversion      Ignore module's version\n"
+ 		"\t    --force-vermagic        Ignore module's version magic\n"
++		"\t-l, --lockup                Make module to unremovable.\n"
+ 		"\n"
+ 		"Query Options:\n"
+ 		"\t-D, --show-depends          Only print module dependencies and exit\n"
+@@ -526,6 +529,8 @@ static int insmod(struct kmod_ctx *ctx, const char *alias,
+ 		flags |= KMOD_PROBE_FORCE_MODVERSION;
+ 	if (strip_vermagic || force)
+ 		flags |= KMOD_PROBE_FORCE_VERMAGIC;
++	if (lockup)
++		flags |= KMOD_PROBE_LOCKUP_MODULE;
+ 	if (ignore_commands)
+ 		flags |= KMOD_PROBE_IGNORE_COMMAND;
+ 	if (ignore_loaded)
+@@ -798,6 +803,9 @@ static int do_modprobe(int argc, char **orig_argv)
+ 		case 1:
+ 			strip_vermagic = 1;
+ 			break;
++		case 'l':
++			lockup = 1;
++			break;
+ 		case 'D':
+ 			ignore_loaded = 1;
+ 			dry_run = 1;
 
 
