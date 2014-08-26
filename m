@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755154AbaHZLhy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 07:37:54 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:46773 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754555AbaHZLhx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 07:37:53 -0400
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-To: Mark Brown <broonie@kernel.org>
-Cc: Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH 1/1] regulator: max77802: set opmode to normal if off is read from hw
-Date: Tue, 26 Aug 2014 13:37:41 +0200
-Message-Id: <1409053061-22568-1-git-send-email-javier.martinez@collabora.co.uk>
-X-Mailer: git-send-email 2.0.1
+	id S1757788AbaHZLic (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 07:38:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9951 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757478AbaHZLib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 07:38:31 -0400
+From: Baoquan He <bhe@redhat.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Cc: Baoquan He <bhe@redhat.com>
+Subject: [PATCH v3] not adding modules range to kcore if it's equal to vmcore range
+Date: Tue, 26 Aug 2014 19:38:25 +0800
+Message-Id: <1409053105-3631-1-git-send-email-bhe@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The max77802 driver reads the default operating mode (opmode)
-set for regulators when enabled from the hardware registers.
+On some ARCHs modules range is eauql to vmalloc range. E.g on i686
+"#define MODULES_VADDR   VMALLOC_START"
+"#define MODULES_END     VMALLOC_END"
+This will cause 2 duplicate program segments in /proc/kcore, and no
+any flag to indicate both of them are different. This is confusing.
 
-But if a regulator is disabled and the system warm restarted,
-the hardware reports OFF as the opmode so the regulator is
-not enabled. Default to operating mode NORMAL if OFF is read
-from the hardware register.
+And usually people who need check the elf header or read the content
+of kcore will check memory ranges. Two program segments which are the
+same completely can't give any help on this.
 
-Reported-by: Yuvaraj Cd <yuvaraj.lkml@gmail.com>
-Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+So in this patch a judgment added to check if modules range is equal
+to or included in vmalloc range completely. If yes, just skip adding
+the modules range. If and only if modules range is not completely
+included in vmalloc range just add it since the part out of vmalloc
+range need be accessible.
+
+Signed-off-by: Baoquan He <bhe@redhat.com>
 ---
+ fs/proc/kcore.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-This patch fixes the issue reported in https://lkml.org/lkml/2014/8/25/69
-
- drivers/regulator/max77802.c | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/regulator/max77802.c b/drivers/regulator/max77802.c
-index ad1caa9..967e109 100644
---- a/drivers/regulator/max77802.c
-+++ b/drivers/regulator/max77802.c
-@@ -540,7 +540,17 @@ static int max77802_pmic_probe(struct platform_device *pdev)
- 		config.of_node = pdata->regulators[i].of_node;
- 
- 		ret = regmap_read(iodev->regmap, regulators[i].enable_reg, &val);
--		max77802->opmode[id] = val >> shift & MAX77802_OPMODE_MASK;
-+		val = val >> shift & MAX77802_OPMODE_MASK;
-+
-+		/*
-+		 * If the regulator is disabled and the system warm rebooted,
-+		 * the hardware reports OFF as the regulator operating mode.
-+		 * Default to operating mode NORMAL in that case.
-+		 */
-+		if (val == MAX77802_OPMODE_OFF)
-+			max77802->opmode[id] = MAX77802_OPMODE_NORMAL;
-+		else
-+			max77802->opmode[id] = val;
- 
- 		rdev = devm_regulator_register(&pdev->dev,
- 					       &regulators[i], &config);
+diff --git a/fs/proc/kcore.c b/fs/proc/kcore.c
+index 6df8d07..a4b7ff1 100644
+--- a/fs/proc/kcore.c
++++ b/fs/proc/kcore.c
+@@ -610,8 +610,11 @@ static void __init proc_kcore_text_init(void)
+ struct kcore_list kcore_modules;
+ static void __init add_modules_range(void)
+ {
+-	kclist_add(&kcore_modules, (void *)MODULES_VADDR,
++	if ( (MODULES_VADDR != VMALLOC_START) &&
++		(MODULES_END <= VMALLOC_END) ) {
++		kclist_add(&kcore_modules, (void *)MODULES_VADDR,
+ 			MODULES_END - MODULES_VADDR, KCORE_VMALLOC);
++	}
+ }
+ #else
+ static void __init add_modules_range(void)
 -- 
-2.0.1
+1.9.0
 
