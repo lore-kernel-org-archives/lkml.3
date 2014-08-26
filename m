@@ -1,184 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721AbaHZQyj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 12:54:39 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:37988 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751995AbaHZQyh convert rfc822-to-8bit (ORCPT
+	id S1752795AbaHZQym (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 12:54:42 -0400
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.151]:34281 "EHLO
+	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752099AbaHZQyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 12:54:37 -0400
-Message-ID: <53FCBBE2.9040603@arm.com>
-Date: Tue, 26 Aug 2014 17:54:58 +0100
-From: Sudeep Holla <sudeep.holla@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 26 Aug 2014 12:54:39 -0400
+X-Env-Sender: Andreas.Werner@men.de
+X-Msg-Ref: server-6.tower-179.messagelabs.com!1409072076!39574783!1
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.3; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Tue, 26 Aug 2014 18:54:37 +0200
+Date: Tue, 26 Aug 2014 19:46:29 +0200
+From: Andreas Werner <andreas.werner@men.de>
+To: <linux-kernel@vger.kernel.org>
+CC: <sameo@linux.intel.com>, <lee.jones@linaro.org>, <wim@iguana.be>,
+        <linux-watchdog@vger.kernel.org>, <cooloney@gmail.com>,
+        <rpurdie@rpsys.net>, <linux-leds@vger.kernel.org>, <jdelvare@suse.de>,
+        <linux@roeck-us.net>, <lm-sensors@lm-sensors.org>,
+        <johannes.thumshirn@men.de>
+Subject: [PATCH v5 3/4] drivers/leds/leds-menf21bmc: introduce MEN 14F021P00
+ BMC LED driver
+Message-ID: <41f51992465aff663d047b9566298f3d702c9add.1409074255.git.andreas.werner@men.de>
+References: <cover.1409074255.git.andreas.werner@men.de>
 MIME-Version: 1.0
-To: David Herrmann <dh.herrmann@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Sudeep Holla <sudeep.holla@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, Kay Sievers <kay@vrfy.org>
-Subject: Re: [PATCH] drivers: base: add cpu_device_create to support per-cpu
- devices
-References: <CAPXgP130hg8uwdmSKAAAKZzxncT-VXYYXvmN-ta7wcXQXgXEmw@mail.gmail.com>	<1408706963-23195-1-git-send-email-sudeep.holla@arm.com>	<CANq1E4SJZQeAuXhggdnsjRFKFJD01WEnBpcdPC1pkJiv3WegCA@mail.gmail.com> <CANq1E4Snx_n3XDWXU5PtmLtt31sRqnkKrSRsx2_b=i+6GTLnxw@mail.gmail.com> <53F738B0.5080806@arm.com>
-In-Reply-To: <53F738B0.5080806@arm.com>
-X-OriginalArrivalTime: 26 Aug 2014 16:54:33.0194 (UTC) FILETIME=[6919C4A0:01CFC14E]
-X-MC-Unique: 114082617543510001
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <cover.1409074255.git.andreas.werner@men.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [192.1.1.171]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+Added driver to support the 14F021P00 BMC LEDs.
+The BMC is a Board Management Controller including four LEDs which
+can be switched on and off.
 
-On 22/08/14 13:33, Sudeep Holla wrote:
->
->
-> On 22/08/14 12:41, David Herrmann wrote:
->> Hi
->>
->> On Fri, Aug 22, 2014 at 1:37 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
->>> Hi
->>>
->>> On Fri, Aug 22, 2014 at 1:29 PM, Sudeep Holla <sudeep.holla@arm.com> wrote:
->>>> From: Sudeep Holla <sudeep.holla@arm.com>
->>>>
->>>> This patch adds a new function to create per-cpu devices.
->>>> This helps in:
->>>> 1. reusing the device infrastructure to create any cpu related
->>>>      attributes and corresponding sysfs instead of creating and
->>>>      dealing with raw kobjects directly
->>>> 2. retaining the legacy path(/sys/devices/system/cpu/..) to support
->>>>      existing sysfs ABI
->>>> 3. avoiding to create links in the bus directory pointing to the
->>>>      device as there would be per-cpu instance of these devices with
->>>>      the same name since dev->bus is not populated to cpu_sysbus on
->>>>      purpose
->>>>
->>>> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
->>>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->>>> ---
->>>>    drivers/base/cpu.c  | 54 +++++++++++++++++++++++++++++++++++++++++++++++++++++
->>>>    include/linux/cpu.h |  4 ++++
->>>>    2 files changed, 58 insertions(+)
->>>>
->>>> Hi Greg,
->>>>
->>>> Here is the alternate solution I could come up with instead of
->>>> creating cpu class. cpu_device_create is very similar to
->>>> device_create_groups_vargs w/o class support, but I could not
->>>> reuse anything else to avoid creating similar function.
->>>>
->>>> Let me know your thoughts/suggestions on this.
->>>>
->>>> Regards,
->>>> Sudeep
->>>>
->>>>
->>>> diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
->>>> index 277a9cfa9040..53f0c4141d05 100644
->>>> --- a/drivers/base/cpu.c
->>>> +++ b/drivers/base/cpu.c
->>>> @@ -363,6 +363,60 @@ struct device *get_cpu_device(unsigned cpu)
->>>>    }
->>>>    EXPORT_SYMBOL_GPL(get_cpu_device);
->>>>
->>>> +static void device_create_release(struct device *dev)
->>>> +{
->>>> +       kfree(dev);
->>>> +}
->>>> +
->>>> +static struct device *
->>>> +__cpu_device_create(struct device *parent, void *drvdata,
->>>> +                   const struct attribute_group **groups,
->>>> +                   const char *fmt, va_list args)
->>>> +{
->>>> +       struct device *dev = NULL;
->>>> +       int retval = -ENODEV;
->>>> +
->>>> +       dev = kzalloc(sizeof(*dev), GFP_KERNEL);
->>>> +       if (!dev) {
->>>> +               retval = -ENOMEM;
->>>> +               goto error;
->>>> +       }
->>>> +
->>>> +       device_initialize(dev);
->>>> +       dev->parent = parent;
->>>> +       dev->groups = groups;
->>>> +       dev->release = device_create_release;
->>>> +       dev_set_drvdata(dev, drvdata);
->>>> +
->>>> +       retval = kobject_set_name_vargs(&dev->kobj, fmt, args);
->>>> +       if (retval)
->>>> +               goto error;
->>>> +
->>>> +       retval = device_add(dev);
->>>> +       if (retval)
->>>> +               goto error;
->>>
->>> Exactly! As I said, simply setting dev->groups before calling device_add().
->>>
->>> However, I really don't understand why we need this as global API.
->>> Skimming over the other patches, you use cpu_device_create() only in
->>> one place. Why not hard-code this all there? It is totally OK to do
->>> device initialization in drivers. All the helpers (like
->>> device_create(), device_create_with_groups(), and so on) are just
->>> convenience functions. The driver-core API explicitly allows drivers
->>> to initialize devices manually.
->>>
->>> Nevertheless, this patch looks fine.
->>
->> Wait, no. Why don't you set dev->bus to cpu_subsys? Is this thing
->> supposed to create child-devices of CPUs? Can you describe what your
->> topology is supposed to look like?
->>
->
-> Yes, it's not done on purpose as mentioned in the commit log.
-> E.g.: cacheinfo topology will be as below
->
-> /sys/devices/system/cpu/cpuX/cache/index0/<attributes>
-> /sys/devices/system/cpu/cpuX/cache/index1/<attributes>
-> ..
-> /sys/devices/system/cpu/cpuX/cache/index<Y/<attributes>
->
+Signed-off-by: Andreas Werner <andreas.werner@men.de>
+---
+ drivers/leds/Kconfig          |   6 ++
+ drivers/leds/Makefile         |   1 +
+ drivers/leds/leds-menf21bmc.c | 131 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 138 insertions(+)
+ create mode 100644 drivers/leds/leds-menf21bmc.c
 
-Does the above topology looks fine to you ? Since the parent is set
-properly, not setting bus will not cause any issue to the topology.
-
-> In this case 'cache' is cpuX's child and index<0..Y> are children of
-> cache in cpuX. The main problem with per-cpu device is that they have
-> same name for each cpu's instance and when the bus is set to this
-> devices, the driver model tries to create symlink to each of these
-> devices in /sys/bus/cpu/... which fails.
->
-
-Here is the exact issue, probably kernel dump is easier to explain.
-It fails for second CPU as the sysfs path already exists.
-
-WARNING: CPU: 1 PID: 1 at fs/sysfs/dir.c:31 sysfs_warn_dup+0x51/0x5c()
-sysfs: cannot create duplicate filename '/bus/cpu/devices/cache'
-Modules linked in:
-CPU: 1 PID: 1 Comm: swapper/0 Not tainted 
-3.17.0-rc2-00013-g7956a439b183-dirty #89
-[<c0013c3d>] (unwind_backtrace) from [<c0010581>] (show_stack+0x11/0x14)
-[<c0010581>] (show_stack) from [<c04e9419>] (dump_stack+0x69/0x74)
-[<c04e9419>] (dump_stack) from [<c00204cb>] (warn_slowpath_common+0x5f/0x78)
-[<c00204cb>] (warn_slowpath_common) from [<c0020507>] 
-(warn_slowpath_fmt+0x23/0x2c)
-[<c0020507>] (warn_slowpath_fmt) from [<c013b921>] 
-(sysfs_warn_dup+0x51/0x5c)
-[<c013b921>] (sysfs_warn_dup) from [<c013bb6d>] 
-(sysfs_do_create_link_sd.isra.2+0x91/0x94)
-[<c013bb6d>] (sysfs_do_create_link_sd.isra.2) from [<c031d4f3>] 
-(bus_add_device+0xab/0x134)
-[<c031d4f3>] (bus_add_device) from [<c031c16d>] (device_add+0x2a1/0x3dc)
-[<c031c16d>] (device_add) from [<c031f905>] (cpu_device_create+0x85/0x94)
-
-Hi Greg,
-
-Any suggestions to proceed on this ?
-
-Regards,
-Sudeep
+diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+index 27cf0cd..d38ff3f 100644
+--- a/drivers/leds/Kconfig
++++ b/drivers/leds/Kconfig
+@@ -458,6 +458,12 @@ config LEDS_OT200
+ 	  This option enables support for the LEDs on the Bachmann OT200.
+ 	  Say Y to enable LEDs on the Bachmann OT200.
+ 
++config LEDS_MENF21BMC
++	tristate "LED support for the MEN 14F021P00 BMC"
++	depends on LEDS_CLASS && MFD_MENF21BMC
++	help
++	  Say Y here to include support for the MEN 14F021P00 BMC LEDs.
++
+ comment "LED driver for blink(1) USB RGB LED is under Special HID drivers (HID_THINGM)"
+ 
+ config LEDS_BLINKM
+diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
+index 3c03666..cadc433 100644
+--- a/drivers/leds/Makefile
++++ b/drivers/leds/Makefile
+@@ -53,6 +53,7 @@ obj-$(CONFIG_LEDS_MAX8997)		+= leds-max8997.o
+ obj-$(CONFIG_LEDS_LM355x)		+= leds-lm355x.o
+ obj-$(CONFIG_LEDS_BLINKM)		+= leds-blinkm.o
+ obj-$(CONFIG_LEDS_VERSATILE)		+= leds-versatile.o
++obj-$(CONFIG_LEDS_MENF21BMC)		+= leds-menf21bmc.o
+ 
+ # LED SPI Drivers
+ obj-$(CONFIG_LEDS_DAC124S085)		+= leds-dac124s085.o
+diff --git a/drivers/leds/leds-menf21bmc.c b/drivers/leds/leds-menf21bmc.c
+new file mode 100644
+index 0000000..4621f72
+--- /dev/null
++++ b/drivers/leds/leds-menf21bmc.c
+@@ -0,0 +1,131 @@
++/*
++ *  MEN 14F021P00 Board Management Controller (BMC) LEDs Driver.
++ *
++ *  This is the core LED driver of the MEN 14F021P00 BMC.
++ *  There are four LEDs available which can be switched on and off.
++ *  STATUS LED, HOT SWAP LED, USER LED 1, USER LED 2
++ *
++ *  Copyright (C) 2014 MEN Mikro Elektronik Nuernberg GmbH
++ *
++ *  This program is free software; you can redistribute  it and/or modify it
++ *  under  the terms of  the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the  License, or (at your
++ *  option) any later version.
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/platform_device.h>
++#include <linux/leds.h>
++#include <linux/i2c.h>
++
++#define BMC_CMD_LED_GET_SET	0xA0
++#define BMC_BIT_LED_STATUS	BIT(0)
++#define BMC_BIT_LED_HOTSWAP	BIT(1)
++#define BMC_BIT_LED_USER1	BIT(2)
++#define BMC_BIT_LED_USER2	BIT(3)
++
++struct menf21bmc_led {
++	struct led_classdev cdev;
++	u8 led_bit;
++	const char *name;
++	struct i2c_client *i2c_client;
++};
++
++static struct menf21bmc_led leds[] = {
++	{
++		.name = "menf21bmc:led_status",
++		.led_bit = BMC_BIT_LED_STATUS,
++	},
++	{
++		.name = "menf21bmc:led_hotswap",
++		.led_bit = BMC_BIT_LED_HOTSWAP,
++	},
++	{
++		.name = "menf21bmc:led_user1",
++		.led_bit = BMC_BIT_LED_USER1,
++	},
++	{
++		.name = "menf21bmc:led_user2",
++		.led_bit = BMC_BIT_LED_USER2,
++	}
++};
++
++static DEFINE_MUTEX(led_lock);
++
++static void
++menf21bmc_led_set(struct led_classdev *led_cdev, enum led_brightness value)
++{
++	int led_val;
++	struct menf21bmc_led *led = container_of(led_cdev,
++					struct menf21bmc_led, cdev);
++
++	mutex_lock(&led_lock);
++	led_val = i2c_smbus_read_byte_data(led->i2c_client,
++						BMC_CMD_LED_GET_SET);
++	if (led_val < 0)
++		goto err_out;
++
++	if (value == LED_OFF)
++		led_val &= ~led->led_bit;
++	else
++		led_val |= led->led_bit;
++
++	i2c_smbus_write_byte_data(led->i2c_client,
++					BMC_CMD_LED_GET_SET, led_val);
++err_out:
++	mutex_unlock(&led_lock);
++}
++
++static int menf21bmc_led_probe(struct platform_device *pdev)
++{
++	int i;
++	int ret;
++	struct i2c_client *i2c_client = to_i2c_client(pdev->dev.parent);
++
++	for (i = 0; i < ARRAY_SIZE(leds); i++) {
++		leds[i].cdev.name = leds[i].name;
++		leds[i].cdev.brightness_set = menf21bmc_led_set;
++		leds[i].i2c_client = i2c_client;
++		ret = led_classdev_register(&pdev->dev, &leds[i].cdev);
++		if (ret < 0)
++			goto err_free_leds;
++	}
++	dev_info(&pdev->dev, "MEN 140F21P00 BMC LED device enabled\n");
++
++	return 0;
++
++err_free_leds:
++	dev_err(&pdev->dev, "failed to register LED device\n");
++
++	for (i = i - 1; i >= 0; i--)
++		led_classdev_unregister(&leds[i].cdev);
++
++	return ret;
++}
++
++static int menf21bmc_led_remove(struct platform_device *pdev)
++{
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(leds); i++)
++		led_classdev_unregister(&leds[i].cdev);
++
++	return 0;
++}
++
++static struct platform_driver menf21bmc_led = {
++	.probe		= menf21bmc_led_probe,
++	.remove		= menf21bmc_led_remove,
++	.driver		= {
++		.name		= "menf21bmc_led",
++		.owner		= THIS_MODULE,
++	},
++};
++
++module_platform_driver(menf21bmc_led);
++
++MODULE_AUTHOR("Andreas Werner <andreas.werner@men.de>");
++MODULE_DESCRIPTION("MEN 14F021P00 BMC led driver");
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("platform:menf21bmc_led");
+-- 
+2.0.4
 
