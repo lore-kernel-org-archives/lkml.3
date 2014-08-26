@@ -1,61 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755755AbaHZXUL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 19:20:11 -0400
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:45837 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754993AbaHZXUI (ORCPT
+	id S1755991AbaHZXYj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 19:24:39 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:38296 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751831AbaHZXYi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 19:20:08 -0400
-Date: Tue, 26 Aug 2014 19:20:01 -0400
-From: Konstantin Ryabitsev <konstantin@linuxfoundation.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>
-Subject: Re: [kernel.org PATCH] Li Zefan is now the 3.4 stable maintainer
-Message-ID: <20140826192001.31403701@nikko.mricon.com>
-In-Reply-To: <20140826230858.GA29970@kroah.com>
-References: <20140826230858.GA29970@kroah.com>
-Organization: The Linux Foundation
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	Tue, 26 Aug 2014 19:24:38 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/K0/ReOQlC+fmt1DZEBam0xk"; protocol="application/pgp-signature"
+In-Reply-To: <1409094682.29189.23.camel@j-VirtualBox>
+References: <1409094682.29189.23.camel@j-VirtualBox>
+From: Paul Turner <pjt@google.com>
+Date: Tue, 26 Aug 2014 16:24:07 -0700
+Message-ID: <CAPM31RJcYakzwo9mByoadw6DGcg5SfYDOdX79NPo08hBP5PGjA@mail.gmail.com>
+Subject: Re: [PATCH v2] sched: Reduce contention in update_cfs_rq_blocked_load
+To: Jason Low <jason.low2@hp.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Ben Segall <bsegall@google.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/K0/ReOQlC+fmt1DZEBam0xk
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Tue, Aug 26, 2014 at 4:11 PM, Jason Low <jason.low2@hp.com> wrote:
+> Based on perf profiles, the update_cfs_rq_blocked_load function constantly
+> shows up as taking up a noticeable % of system run time. This is especially
+> apparent on larger numa systems.
+>
+> Much of the contention is in __update_cfs_rq_tg_load_contrib when we're
+> updating the tg load contribution stats. However, it was noticed that the
+> values often don't get modified by much. In fact, much of the time, they
+> don't get modified at all. However, the update can always get attempted due
+> to force_update.
+>
+> In this patch, we remove the force_update in only the
+> __update_cfs_rq_tg_load_contrib. Thus the tg load contrib stats now get
+> modified only if the delta is large enough (in the current code, they get
+> updated when the delta is larger than 12.5%). This is a way to rate-limit
+> the updates while largely keeping the values accurate.
+>
+> When testing this change with AIM7 workloads, we found that it was able to
+> reduce the overhead of the function by up to a factor of 20x.
 
-On Tue, 26 Aug 2014 16:08:58 -0700, Greg KH wrote:
-> Li has agreed to continue to support the 3.4 stable kernel tree until
-> September 2016.  Update the releases.html page on kernel.org to
-> reflect this.
+Looks reasonable.
 
-Applied and live, thanks.
+>
+> Cc: Yuyang Du <yuyang.du@intel.com>
+> Cc: Waiman Long <Waiman.Long@hp.com>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Mike Galbraith <umgwanakikbuti@gmail.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Aswin Chandramouleeswaran <aswin@hp.com>
+> Cc: Chegu Vinod <chegu_vinod@hp.com>
+> Cc: Scott J Norton <scott.norton@hp.com>
+> Signed-off-by: Jason Low <jason.low2@hp.com>
+> ---
+>  kernel/sched/fair.c |   10 ++++------
+>  1 files changed, 4 insertions(+), 6 deletions(-)
+>
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index fea7d33..7a6e18b 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -2352,8 +2352,7 @@ static inline u64 __synchronize_entity_decay(struct sched_entity *se)
+>  }
+>
+>  #ifdef CONFIG_FAIR_GROUP_SCHED
+> -static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
+> -                                                int force_update)
+> +static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq)
+>  {
+>         struct task_group *tg = cfs_rq->tg;
+>         long tg_contrib;
+> @@ -2361,7 +2360,7 @@ static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
+>         tg_contrib = cfs_rq->runnable_load_avg + cfs_rq->blocked_load_avg;
+>         tg_contrib -= cfs_rq->tg_load_contrib;
+>
+> -       if (force_update || abs(tg_contrib) > cfs_rq->tg_load_contrib / 8) {
 
-Best,
---=20
-Konstantin Ryabitsev
-Linux Foundation Collab Projects
-Montr=C3=A9al, Qu=C3=A9bec
+Another option with slightly higher accuracy would be to increase the
+sensitivity here when force_update == 1.
 
---Sig_/K0/ReOQlC+fmt1DZEBam0xk
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+E.g.:
+    abs(tg_contrib) > cfs_rq->tg_load_contrib / (8 * (1 + force_update))) { ...
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Alternatively we could bound total inaccuracy:
+   int divisor = force_update ? NR_CPUS : 8;
+   if (abs(tg_contrib) > cfs_rq->tg_load_contrib / divisor) { ...
 
-iQEcBAEBCAAGBQJT/RYhAAoJEDZgaZyZ4FVXqyMH/11rbg2EGLV5rD5MZa2lieFx
-dLZ7oc/RI3zLWvDlaxNmFgXcdaIK5gzwurhe26xIcVqXWAOQQZw8OLBImGppiPAZ
-9leuFNefVAFQtaBE8Oj1Eu9Ym6wyXcrM16AvnCP6sGzwGfp3Rk2r/aHLW5L6gn+L
-1PB7yya/ajz4AXXpMCxYbpyZbfAyqXzC3X/wd+QwvpAWRUKDG1djzA6MhUSJwiLv
-xPAJDPzv2D6EZ2dKQu7ESsz4wHE62sc8gIrQbN+iVD7WNoF+CaX+YTJCtIJ2V+Kj
-2cPmTf7XRoUpy4wT+nSMzsUeX37bM5ILtwdIuccyNiw0FtcaJkmWHv/1k8NaJSQ=
-=UMkt
------END PGP SIGNATURE-----
 
---Sig_/K0/ReOQlC+fmt1DZEBam0xk--
+[ And probably rename force_update to want_update ]
+
+
+> +       if (abs(tg_contrib) > cfs_rq->tg_load_contrib / 8) {
+>                 atomic_long_add(tg_contrib, &tg->load_avg);
+>                 cfs_rq->tg_load_contrib += tg_contrib;
+>         }
+> @@ -2436,8 +2435,7 @@ static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
+>         __update_tg_runnable_avg(&rq->avg, &rq->cfs);
+>  }
+>  #else /* CONFIG_FAIR_GROUP_SCHED */
+> -static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
+> -                                                int force_update) {}
+> +static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq) {}
+>  static inline void __update_tg_runnable_avg(struct sched_avg *sa,
+>                                                   struct cfs_rq *cfs_rq) {}
+>  static inline void __update_group_entity_contrib(struct sched_entity *se) {}
+> @@ -2537,7 +2535,7 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
+>                 cfs_rq->last_decay = now;
+>         }
+>
+> -       __update_cfs_rq_tg_load_contrib(cfs_rq, force_update);
+> +       __update_cfs_rq_tg_load_contrib(cfs_rq);
+>  }
+>
+>  /* Add the load generated by se into cfs_rq's child load-average */
+> --
+> 1.7.1
+>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
