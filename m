@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758136AbaHZNBS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 09:01:18 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:65525 "EHLO
+	id S934553AbaHZNBd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 09:01:33 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:8237 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754679AbaHZNBO (ORCPT
+	with ESMTP id S1754679AbaHZNBb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 09:01:14 -0400
-X-AuditID: cbfee691-f79546d0000011a1-9e-53fc8518029e
+	Tue, 26 Aug 2014 09:01:31 -0400
+X-AuditID: cbfee690-f79ce6d00000115a-48-53fc8529644f
 From: Jingoo Han <jg1.han@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: "'Bryan Wu'" <cooloney@gmail.com>, "'Lee Jones'" <lee.jones@linaro.org>,
         "'Jingoo Han'" <jg1.han@samsung.com>
 References: <009301cfc12d$2847ffd0$78d7ff70$%han@samsung.com>
 In-reply-to: <009301cfc12d$2847ffd0$78d7ff70$%han@samsung.com>
-Subject: [PATCH 13/18] backlight: s6e63m0: remove 'else' after a return
-Date: Tue, 26 Aug 2014 22:01:12 +0900
-Message-id: <00b701cfc12d$cff2f910$6fd8eb30$%han@samsung.com>
+Subject: [PATCH 14/18] backlight: tdo24m: add blank line after declarations
+Date: Tue, 26 Aug 2014 22:01:29 +0900
+Message-id: <00b801cfc12d$da62a260$8f27e720$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac/BLSgE1uQ+HizQTQC0PRMOtHkloQAAJ6KQ
+Thread-index: Ac/BLSgE1uQ+HizQTQC0PRMOtHkloQAAKiUw
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAIsWRmVeSWpSXmKPExsVy+t8zA12J1j/BBq9XyVsc3TmRyeLywkus
-	Fve/HmW0uLxrDpsDi8fOWXfZPe5c28Pm0bdlFaPH501yASxRXDYpqTmZZalF+nYJXBnff7Yz
-	FVznqDhxIL+BsY+9i5GTQ0LARGLJlMnMELaYxIV769m6GLk4hASWMUqs2f2BDaZo+9T5rCC2
-	kMAiRon2ZTEQ9m9GiVkNxiA2m4CaxJcvh8GGiggoSGzufQZWzyyQK/F75kpGiHpbifnbVoDF
-	OQXsJJYePgdWLyzgLnH5XzMTiM0ioCqxvXc1mM0LVN/37jcjhC0o8WPyPRaImVoS63ceZ4Kw
-	5SU2r3kL9AAH0J3qEo/+6kKcYCTxadZGZogSEYl9L94xgvwlIbCPXWLdo7lQuwQkvk0+xALR
-	Kyux6QA0HCQlDq64wTIB6Dkkm2ch2TwLyeZZSFYsYGRZxSiaWpBcUJyUXmSqV5yYW1yal66X
-	nJ+7iRESkRN3MN4/YH2IUYCDUYmH90b872Ah1sSy4srcQ4ymQBdNZJYSTc4Hxn1eSbyhsZmR
-	hamJqbGRuaWZkjivjvTPYCGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2MmUec47sWVOqfP5PQ
-	V73akUPZY7Vo3K1T9cI3Z2dP3XXi0RHeDYwcma9PhTEmHS0quLApt7Zj2aT+kycYbb6v4qr8
-	lLjyNvu11p96SptnzRcyOdOR9998WbJlPF9nulDwy9SyKNtDfj5rmHZvUb/hOyNH6N3FT6xN
-	t1UXWbYkZE3Vzdn1tXiJEktxRqKhFnNRcSIA1NkNssMCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFIsWRmVeSWpSXmKPExsVy+t9jAV2J1j/BBhsbZSyO7pzIZHF54SVW
-	i/tfjzJaXN41h82BxWPnrLvsHneu7WHz6NuyitHj8ya5AJaoBkabjNTElNQihdS85PyUzLx0
-	WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCdSgpliTmlQKGAxOJiJX07TBNCQ9x0
-	LWAaI3R9Q4LgeowM0EDCOsaM7z/bmQquc1ScOJDfwNjH3sXIySEhYCKxfep8VghbTOLCvfVs
-	ILaQwCJGifZlMRD2b0aJWQ3GIDabgJrEly+HwXpFBBQkNvc+A+tlFsiV+D1zJSNEva3E/G0r
-	wOKcAnYSSw+fA6sXFnCXuPyvmQnEZhFQldjeuxrM5gWq73v3mxHCFpT4MfkeC8RMLYn1O48z
-	QdjyEpvXvGXuYuQAulNd4tFfXYgTjCQ+zdrIDFEiIrHvxTvGCYxCs5BMmoVk0iwkk2YhaVnA
-	yLKKUTS1ILmgOCk911CvODG3uDQvXS85P3cTIzjen0ntYFzZYHGIUYCDUYmH90b872Ah1sSy
-	4srcQ4wSHMxKIrw/kv4EC/GmJFZWpRblxxeV5qQWH2I0BXp0IrOUaHI+MBXllcQbGpuYGVka
-	mVkYmZibK4nzHmi1DhQSSE8sSc1OTS1ILYLpY+LglGpg7EjcXJ1+ez9n8Ub+hV1x9SpqjNra
-	xzJ3zC5dvdRjyXoLzT12MVxZ3jIy3i23vJjrH+stCr7T8uD5rHsxXwpbgubsKrzLF71j9S2O
-	J8+PiUl+quRetXdWj3Xy/kTT28+fZuvwBVqb3nr0U5OxlDvzunLI0bOXI+9vKI+cOa/3f3ta
-	/JxNe7/OVWIpzkg01GIuKk4EAIsRB4YNAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMIsWRmVeSWpSXmKPExsVy+t8zI12t1j/BBu+OMloc3TmRyeLywkus
+	Fve/ArmXd81hc2Dx2DnrLrvHnWt72Dz6tqxi9Pi8SS6AJYrLJiU1J7MstUjfLoEr49uG90wF
+	a9kqbk2+xdLAOI+1i5GTQ0LAROLNmcOMELaYxIV769m6GLk4hASWMUr0HTkMV/R66SaoxCJG
+	iWlLbzBBOL8ZJV7t3ckMUsUmoCbx5cthdhBbREBBYnPvM7BuZoFcid8zV4KtEBKwlZi/bQVY
+	nFPATmLp4XNg9cIC3hLz+n+D2SwCqhJ3P/eC1fAC1W99+58NwhaU+DH5HgvETC2J9TuPM0HY
+	8hKb17wFuoED6FJ1iUd/dSFOMJKYe3E/I0SJiMS+F+8YQW6WEDjFLvGl/RUTxC4BiW+TD7FA
+	9MpKbDrADPGwpMTBFTdYJjBKzEKyeRaSzbOQbJ6FZMUCRpZVjKKpBckFxUnpRSZ6xYm5xaV5
+	6XrJ+bmbGCFxOWEH470D1ocYBTgYlXh4b8T/DhZiTSwrrsw9xGgKdNFEZinR5Hxg9OeVxBsa
+	mxlZmJqYGhuZW5opifO+lvoZLCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoGxt+esRpZE6iTz
+	j0ey2HgfBGcb8qYuvmYw7Y1dWOMLodlR51zXGPHGFAmprqswfJLXU9yf2vbsc0DozjDbRIdt
+	FjJyHyY3TZTw913D8vq3+uf5K60iRJ0cOfmP2M9eWZkxpeBH7Cx38+fL2Rf4fH++6f3+i+Xp
+	b6v23znItm3lzXe7uDK89lYosRRnJBpqMRcVJwIA4xt5WcYCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLIsWRmVeSWpSXmKPExsVy+t9jAV3N1j/BBg/nWlsc3TmRyeLywkus
+	Fve/HmW0uLxrDpsDi8fOWXfZPe5c28Pm0bdlFaPH501yASxRDYw2GamJKalFCql5yfkpmXnp
+	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUA7lRTKEnNKgUIBicXFSvp2mCaEhrjp
+	WsA0Ruj6hgTB9RgZoIGEdYwZ3za8ZypYy1Zxa/ItlgbGeaxdjJwcEgImEq+XbmKDsMUkLtxb
+	D2RzcQgJLGKUmLb0BhOE85tR4tXencwgVWwCahJfvhxmB7FFBBQkNvc+A5vELJAr8XvmSkYQ
+	W0jAVmL+thVgcU4BO4mlh8+B1QsLeEvM6/8NZrMIqErc/dwLVsMLVL/17X82CFtQ4sfkeywQ
+	M7Uk1u88zgRhy0tsXvMW6AYOoEvVJR791YU4wUhi7sX9jBAlIhL7XrxjnMAoNAvJpFlIJs1C
+	MmkWkpYFjCyrGEVTC5ILipPSc430ihNzi0vz0vWS83M3MYKj/pn0DsZVDRaHGAU4GJV4eG/E
+	/w4WYk0sK67MPcQowcGsJML7I+lPsBBvSmJlVWpRfnxRaU5q8SFGU6BHJzJLiSbnAxNSXkm8
+	obGJmZGlkZmFkYm5uZI478FW60AhgfTEktTs1NSC1CKYPiYOTqkGxga1/3onnm3jf8CfurMh
+	aTcLx6mP969aHT/5hn328eSDrpHqV8U6NTsUpKbvPuwUeSDcsSkzePsCT36TaQfzIwVcOTMW
+	aPyzTby0SqOx4tfJZ+eWP7ypcehpbonMHbdaGZXWDxd3lAUqPgoS5czXnZlx+WbFtOmrb3By
+	G/Z1rn66ZL3ItPnbNyuxFGckGmoxFxUnAgAR7hXsEAMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -57,43 +57,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Fixed the following checkpatch warning.
 
-  WARNING: else is not generally useful after a break or return
+  WARNING: Missing a blank line after declarations
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/backlight/s6e63m0.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/video/backlight/tdo24m.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/video/backlight/s6e63m0.c b/drivers/video/backlight/s6e63m0.c
-index f3a65c8940ed..28bfa127fee4 100644
---- a/drivers/video/backlight/s6e63m0.c
-+++ b/drivers/video/backlight/s6e63m0.c
-@@ -507,19 +507,19 @@ static int s6e63m0_power_on(struct s6e63m0 *lcd)
- 	if (!pd->power_on) {
- 		dev_err(lcd->dev, "power_on is NULL.\n");
- 		return -EINVAL;
--	} else {
--		pd->power_on(lcd->ld, 1);
--		msleep(pd->power_on_delay);
- 	}
- 
-+	pd->power_on(lcd->ld, 1);
-+	msleep(pd->power_on_delay);
+diff --git a/drivers/video/backlight/tdo24m.c b/drivers/video/backlight/tdo24m.c
+index 908016fc5829..30afce33ef2a 100644
+--- a/drivers/video/backlight/tdo24m.c
++++ b/drivers/video/backlight/tdo24m.c
+@@ -300,12 +300,14 @@ static int tdo24m_power(struct tdo24m *lcd, int power)
+ static int tdo24m_set_power(struct lcd_device *ld, int power)
+ {
+ 	struct tdo24m *lcd = lcd_get_data(ld);
 +
- 	if (!pd->reset) {
- 		dev_err(lcd->dev, "reset is NULL.\n");
- 		return -EINVAL;
--	} else {
--		pd->reset(lcd->ld);
--		msleep(pd->reset_delay);
- 	}
+ 	return tdo24m_power(lcd, power);
+ }
  
-+	pd->reset(lcd->ld);
-+	msleep(pd->reset_delay);
+ static int tdo24m_get_power(struct lcd_device *ld)
+ {
+ 	struct tdo24m *lcd = lcd_get_data(ld);
 +
- 	ret = s6e63m0_ldi_init(lcd);
- 	if (ret) {
- 		dev_err(lcd->dev, "failed to initialize ldi.\n");
+ 	return lcd->power;
+ }
+ 
 -- 
 2.0.0
 
