@@ -1,128 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757882AbaHZMWe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 08:22:34 -0400
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:44675 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757856AbaHZMWa (ORCPT
+	id S1757952AbaHZMXQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 08:23:16 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:58512 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757855AbaHZMXO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 08:22:30 -0400
+	Tue, 26 Aug 2014 08:23:14 -0400
+Date: Tue, 26 Aug 2014 13:23:04 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        sameo@linux.intel.com, lgirdwood@gmail.com, broonie@kernel.org,
+        a.zummo@towertech.it, mturquette@linaro.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
+        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
+        xxx@rock-chips.com, dianders@chromium.org, heiko@sntech.de,
+        olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
+        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com
+Subject: Re: [PATCH v2 2/5] MFD: RK808: Add new mfd driver for RK808
+Message-ID: <20140826122304.GA26707@lee--X1>
+References: <1408505461-24200-1-git-send-email-zyw@rock-chips.com>
+ <20140820092117.GI4266@lee--X1>
+ <53FA9D1E.8040202@rock-chips.com>
+ <20140826092205.GG9574@lee--X1>
+ <53FC5BD1.7030406@rock-chips.com>
+ <20140826102036.GJ9574@lee--X1>
+ <53FC63EE.6060104@rock-chips.com>
+ <20140826112013.GK9574@lee--X1>
+ <53FC77F0.4030004@rock-chips.com>
 MIME-Version: 1.0
-In-Reply-To: <20140826075511.GI11319@bbox>
-References: <1408925156-11733-1-git-send-email-minchan@kernel.org>
-	<1408925156-11733-4-git-send-email-minchan@kernel.org>
-	<20140826073730.GA1975@js1304-P5Q-DELUXE>
-	<20140826075511.GI11319@bbox>
-Date: Tue, 26 Aug 2014 08:22:29 -0400
-Message-ID: <CAFdhcLQce05qi2LGP85N=aaQiKz1ArC3Kn+W-s86R58BkjMr3w@mail.gmail.com>
-Subject: Re: [PATCH v5 3/4] zram: zram memory size limitation
-From: David Horner <ds2horner@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjennings@variantweb.net>,
-        Dan Streetman <ddstreet@ieee.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53FC77F0.4030004@rock-chips.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 3:55 AM, Minchan Kim <minchan@kernel.org> wrote:
-> Hey Joonsoo,
->
-> On Tue, Aug 26, 2014 at 04:37:30PM +0900, Joonsoo Kim wrote:
->> On Mon, Aug 25, 2014 at 09:05:55AM +0900, Minchan Kim wrote:
->> > @@ -513,6 +540,14 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->> >             ret = -ENOMEM;
->> >             goto out;
->> >     }
->> > +
->> > +   if (zram->limit_pages &&
->> > +           zs_get_total_pages(meta->mem_pool) > zram->limit_pages) {
->> > +           zs_free(meta->mem_pool, handle);
->> > +           ret = -ENOMEM;
->> > +           goto out;
->> > +   }
->> > +
->> >     cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_WO);
->>
->> Hello,
->>
->> I don't follow up previous discussion, so I could be wrong.
->> Why this enforcement should be here?
->>
->> I think that this has two problems.
->> 1) alloc/free happens unnecessarilly if we have used memory over the
->> limitation.
->
-> True but firstly, I implemented the logic in zsmalloc, not zram but
-> as I described in cover-letter, it's not a requirement of zsmalloc
-> but zram so it should be in there. If every user want it in future,
-> then we could move the function into zsmalloc. That's what we
-> concluded in previous discussion.
->
-> Another idea is we could call zs_get_total_pages right before zs_malloc
-> but the problem is we cannot know how many of pages are allocated
-> by zsmalloc in advance.
-> IOW, zram should be blind on zsmalloc's internal.
->
+On Tue, 26 Aug 2014, Chris Zhong wrote:
+> On 08/26/2014 07:20 PM, Lee Jones wrote:
+> >On Tue, 26 Aug 2014, Chris Zhong wrote:
+> >>On 08/26/2014 06:20 PM, Lee Jones wrote:
+> >>>On Tue, 26 Aug 2014, Chris Zhong wrote:
+> >>>>On 08/26/2014 05:22 PM, Lee Jones wrote:
+> >>>>>On Mon, 25 Aug 2014, Chris Zhong wrote:
+> >>>>>>On 08/20/2014 05:21 PM, Lee Jones wrote:
+> >>>>>>>On Wed, 20 Aug 2014, Chris Zhong wrote:
+> >>>>>>>
+> >>>>>>>>The RK808 chip is a power management IC for multimedia and handheld
+> >>>>>>>>devices. It contains the following components:
+> >>>>>>>>
+> >>>>>>>>- Regulators
+> >>>>>>>>- RTC
+> >>>>>>>>
+> >>>>>>>>The rk808 core driver is registered as a platform driver and provides
+> >>>>>>>>communication through I2C with the host device for the different
+> >>>>>>>>components.
+> >>>>>>>>
+> >>>>>>>>Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+> >>>>>>>>---
+> >>>>>[...]
+> >>>>>
+> >>>>>>>>+	rk808->pdata = pdata;
+> >>>>>>>Remove pdata from 'struct rk808'.  You can obtain it from dev.
+> >>>>>>Can I keep this pdata in rk808, because it is used in the regulator driver.
+> >>>>>>The one obtain from dev maybe empty.
+> >>>>>If the one in dev is empty, you should populate that instead.
+> >>>>So, should I malloc a pada, and assign it to client->dev?
+> >>>If client->dev.pdata is NULL, yes.
+> >>>
+> >>>But actually, I have more important questions that need to be answered
+> >>>first.  Ones which I would normally be able to answer myself if the
+> >>>patch-set had been sent as one (i.e. threaded) instead of as
+> >>>individual patches:
+> >>>
+> >>>- What are you using pdata for?
+> >>For save some properties,
+> >>
+> >>like "rockchip,system-power-controller" in MFD
+> >>and some regulator properties in regulator/rk808...
+> >>
+> >>>- Where is pdata populated?
+> >>It is populated in probe in mfd/rk808.c
+> >>
+> >>actually, I copy it from tps65910.c
+> >>
+> >>
+> >>>- Where is pdata used?
+> >>pdata is used in mfd and regulator
+> >I'm still a little confused.  I see it being populated in the MFD
+> >driver, then I only see the attributes populated in the MFD driver
+> >used in the MFD driver and nowhere else?  I do see other attributes
+> >used in the regulator driver i.e. .of_node[], but these are then used
+> >only in the regulator driver, thus they shouldn't really be pdata.
+> >
+> >Let me put it another way:
+> >
+> >struct rk808_board {
+> >+       int irq;
+> >+       int irq_base;
+> >+       int wakeup;
+> >+       bool pm_off;
+> >+       struct regulator_init_data *rk808_init_data[rk808_NUM_REGULATORS];
+> >+       struct device_node *of_node[rk808_NUM_REGULATORS];
+> >+       int pmic_sleep_gpio;
+> >+       unsigned int dcdc_slp_voltage[3]; /* buckx_voltage in uV */
+> >+       unsigned int ldo_slp_voltage[7];
+> >+};
+> >
+> >For each of the above:
+> >
+> >- Can it be passed from platform data i.e. arch/<arch>/{plat,mach}-*?
+> >- Can it use local (not passed from driver to driver) variable instead?
+> >
+> >If the answer to the first question is 'no' and/or if the answer to
+> >the second question is 'yes', then it shouldn't be platform data.
+> 
+> Yes, if we have no dts file, these value can pass from mach-rk***.
+> 
+> It can be filled with all user setting of rk808, in a struct.
+> 
+> the latest struct is:
+> 
+> struct rk808_board {
+> 
+>     int wakeup;
+> 
+>     bool pm_off;
+> 
+>     struct regulator_init_data *rk808_init_data[RK808_NUM_REGULATORS];
+> 
+>     struct device_node *of_node[RK808_NUM_REGULATORS];
+> 
+>     unsigned int dcdc_slp_voltage[3]; /* buckx_voltage in uV */
+> 
+>     unsigned int ldo_slp_voltage[7];
+> 
+> };
 
-We did however suggest that we could check before hand to see if
-max was already exceeded as an optimization.
-(possibly with a guess on usage but at least using the minimum of 1 page)
-In the contested case, the max may already be exceeded transiently and
-therefore we know this one _could_ fail (it could also pass, but odds
-aren't good).
-As Minchan mentions this was discussed before - but not into great detail.
-Testing should be done to determine possible benefit. And as he also
-mentions, the better place for it may be in zsmalloc, but that
-requires an ABI change.
+This version looks much more acceptable.
 
-Certainly a detailed suggestion could happen on this thread and I'm
-also interested
-in your thoughts, but this patchset should be able to go in as is.
-Memory exhaustion avoidance probably trumps the possible thrashing at
-threshold.
+Although, I am concerned about of_node[].  Isn't that only populated
+and used in the regulator driver?
 
-> About alloc/free cost once if it is over the limit,
-> I don't think it's important to consider.
-> Do you have any scenario in your mind to consider alloc/free cost
-> when the limit is over?
->
->> 2) Even if this request doesn't do new allocation, it could be failed
->> due to other's allocation. There is time gap between allocation and
->> free, so legimate user who want to use preallocated zsmalloc memory
->> could also see this condition true and then he will be failed.
->
-> Yeb, we already discussed that. :)
-> Such false positive shouldn't be a severe problem if we can keep a
-> promise that zram user cannot exceed mem_limit.
->
-
-And we cannot avoid the race, nor can we avoid in a low overhead competitive
-concurrent process transient inconsistent states.
-Different views for different observers.
- They are a consequence of the theory of "Special Computational Relativity".
- I am working on a String Unification Theory of Quantum and General CR in LISP.
- ;-)
-
-
-
->>
->> Thanks.
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
-> --
-> Kind regards,
-> Minchan Kim
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
