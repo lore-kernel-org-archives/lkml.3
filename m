@@ -1,72 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933784AbaHZGx6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 02:53:58 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:39318 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757279AbaHZGx4 (ORCPT
+	id S933878AbaHZG5h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 02:57:37 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:34064 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932349AbaHZG5f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 02:53:56 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: John Spencer <maillist-linux@barfooze.de>
-Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] perf Makefile: default WERROR to off.
-References: <53FB9064.1050000@barfooze.de>
-Date: Tue, 26 Aug 2014 15:53:54 +0900
-In-Reply-To: <53FB9064.1050000@barfooze.de> (John Spencer's message of "Mon,
-	25 Aug 2014 21:37:08 +0200")
-Message-ID: <87oav7bv25.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 26 Aug 2014 02:57:35 -0400
+Date: Tue, 26 Aug 2014 08:57:31 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Andrew Bresticker <abrestic@chromium.org>, linux-tegra@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
+        Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH v2 2/9] mailbox: Add NVIDIA Tegra XUSB mailbox driver
+Message-ID: <20140826065729.GC15573@ulmo>
+References: <1408381705-3623-1-git-send-email-abrestic@chromium.org>
+ <1408381705-3623-3-git-send-email-abrestic@chromium.org>
+ <53FB8820.4010202@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vEao7xgI/oilGqZ+"
+Content-Disposition: inline
+In-Reply-To: <53FB8820.4010202@wwwdotorg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Aug 2014 21:37:08 +0200, John Spencer wrote:
-> From 4a72032828a6784d93f4becf723303a17d723544 Mon Sep 17 00:00:00 2001
-> From: John Spencer <maillist-linux@barfooze.de>
-> Date: Mon, 25 Aug 2014 21:25:43 +0200
-> Subject: [PATCH 2/2] perf Makefile: default WERROR to off.
->
-> Having WERROR on by default breaks build everywhere the author hasn't
-> tested so far; including musl libc which warns about wrong includes.
->
-> The unsuspecting user will think there's something broken and only
-> if he's coureageuous enough to grep the Makefile infrastructure find
-> out that he may be able to get the build working with WERROR=0.
->
-> OTOH with WERROR defaulting to off, anything will work for the user
-> and the maintainer can knowingly use WERROR=1 to do his test builds.
 
-I think it's intentionally turned on to fix any warnings in the first
-place.  But yes, it might miss some non-popular systems tho..
+--vEao7xgI/oilGqZ+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-How many errors/warnings do you see on your system (musl libc?).  Any
-chance to post fixes instead?
+On Mon, Aug 25, 2014 at 01:01:52PM -0600, Stephen Warren wrote:
+> On 08/18/2014 11:08 AM, Andrew Bresticker wrote:
+[...]
+> >+static int tegra_xusb_mbox_probe(struct platform_device *pdev)
+>=20
+> >+	res =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> >+	if (!res)
+> >+		return -ENODEV;
+>=20
+> Should devm_request_mem_region() be called here to claim the region?
+>=20
+> >+	mbox->regs =3D devm_ioremap_nocache(&pdev->dev, res->start,
+> >+					  resource_size(res));
+> >+	if (!mbox->regs)
+> >+		return -ENOMEM;
+>=20
+> Is _nocache required? I don't see other drivers using it. I assume there's
+> nothing special about the mbox registers.
 
-Thanks,
-Namhyung
+Most drivers should be using devm_ioremap_resource() which will use the
+_nocache variant of devm_ioremap() when appropriate. Usually the region
+will not be marked cacheable (IORESOURCE_CACHEABLE) and therefore be
+remapped uncached.
 
+Thierry
 
->
-> Signed-off-by: John Spencer <maillist-linux@barfooze.de>
->
-> ---
->  tools/perf/config/Makefile | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-> index 1f67aa0..b1d639a 100644
-> --- a/tools/perf/config/Makefile
-> +++ b/tools/perf/config/Makefile
-> @@ -102,7 +102,7 @@ ifeq ($(call get-executable,$(BISON)),)
->  endif
->  
->  # Treat warnings as errors unless directed not to
-> -ifneq ($(WERROR),0)
-> +ifeq ($(WERROR),1)
->    CFLAGS += -Werror
->  endif
+--vEao7xgI/oilGqZ+
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT/C/ZAAoJEN0jrNd/PrOh+FEP/iBrDm8It9BvNIgaJPQyAur+
+ITotMb7ok+lntJDe1U5k+zDjUL6oz+V9/VSXXoJ1aVK0yMSlaQh8J1kVyY/ng692
+9v7xlHlvd4wTdvh5yMcR1rXq6t5RYOR9olRTt9Ueu8DLjge3YP+UfDZ88pG611o8
+peGAZ9UmlsiepbAOaqyaeqGWynd7SbNMKDSTtppnviZNJlxfKh3I+JMetYYbYut8
+uBNBRnaOlWqWNoYFoL2DPVk2SRQnndY4v+KuYyh/isFei4yGMtUsHzTk8sHuzqqh
+OyhLjWDk8caodmKEIIABlZiMXQFGkxhwbd+jADOFwO+d9D/oEQFRMw0kZydpy0Ob
+YAZFQSn8/LZHDhwFMv8+u/JClFddUS0nmit1M0/fB2tm8rAc6G810wD816SPPtsg
+IPUZt9DA6YE3rOIuC4oGvl2IzQjDn+cPlWmEJp89r4BzMjlZU9vje7TJ+gCBjlqV
++/tuC/xnrWBpSfZ6rIwVkW0K9xJM/wtjTbZxEfPLvtdmVFjl9rhUEcYDc3P8rIY0
+kAz5M8nGS5L72Vc+C5sq+6u2zmtTpA2KvHoPGCdczMqFxfoovHVYOrdFM8Jbncxy
+1PG6+vo8Ihm4LE8d0Wa+xnJ6OkCpsVQ+5VrJ9rUFlKd1yo8VWtAvpl5oAtIfSwV5
+162sIf1/+ckqFd+bKVSJ
+=4K+c
+-----END PGP SIGNATURE-----
+
+--vEao7xgI/oilGqZ+--
