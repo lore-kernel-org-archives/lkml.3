@@ -1,72 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758190AbaHZNcm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 09:32:42 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:15568
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757781AbaHZNck (ORCPT
+	id S1758202AbaHZNe3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 09:34:29 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:36780 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755082AbaHZNe2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 09:32:40 -0400
-X-IronPort-AV: E=Sophos;i="5.04,404,1406584800"; 
-   d="scan'208";a="76694882"
-Date: Tue, 26 Aug 2014 15:32:38 +0200
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Johannes Berg <johannes@sipsolutions.net>, Hugh Dickins <hughd@google.com>,
-        akpm@linux-foundation.org, Sabrina Dubroca <sd@queasysnail.net>,
-        Valdis.Kletnieks@vt.edu, Vincent Donnefort <vdonnefort@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
-Subject: Re: [PATCHv2][input-led] Defer input led work to workqueue
-Message-ID: <20140826133238.GA28108@type.bordeaux.inria.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Johannes Berg <johannes@sipsolutions.net>,
-	Hugh Dickins <hughd@google.com>, akpm@linux-foundation.org,
-	Sabrina Dubroca <sd@queasysnail.net>, Valdis.Kletnieks@vt.edu,
-	Vincent Donnefort <vdonnefort@gmail.com>,
-	Bryan Wu <cooloney@gmail.com>, linux-leds@vger.kernel.org,
-	linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
-References: <20140826015453.GA5235@type.youpi.perso.aquilenet.fr>
- <20140826091725.GA23293@type.youpi.perso.aquilenet.fr>
- <1409059327.22232.0.camel@jlt4.sipsolutions.net>
- <20140826132410.GD3186@type.bordeaux.inria.fr>
+	Tue, 26 Aug 2014 09:34:28 -0400
+Date: Tue, 26 Aug 2014 19:04:20 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sound: pci: ctxfi: fix broken user-visible string
+Message-ID: <20140826133420.GB21572@sudip-PC>
+References: <1409055734-2777-1-git-send-email-sudipm.mukherjee@gmail.com>
+ <s5hegw35t4r.wl-tiwai@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140826132410.GD3186@type.bordeaux.inria.fr>
-User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
+In-Reply-To: <s5hegw35t4r.wl-tiwai@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Samuel Thibault, le Tue 26 Aug 2014 15:24:10 +0200, a écrit :
-> Johannes Berg, le Tue 26 Aug 2014 15:22:07 +0200, a écrit :
-> > On Tue, 2014-08-26 at 11:17 +0200, Samuel Thibault wrote:
+On Tue, Aug 26, 2014 at 02:32:04PM +0200, Takashi Iwai wrote:
+> At Tue, 26 Aug 2014 17:52:14 +0530,
+> Sudip Mukherjee wrote:
 > > 
-> > > -	led_trigger_event(&vt_led_triggers[led], !!brightness);
-> > > +	vt_led_state[led] = !!brightness;
-> > > +	schedule_work(&vt_led_work[led]);
-> > 
-> > 
-> > > +static int __init input_led_init(void)
-> > > +{
-> > > +	unsigned i;
-> > > +
-> > > +	for (i = 0; i < LED_CNT; i++)
-> > > +		INIT_WORK(&vt_led_work[i], vt_led_cb);
-> > > +
-> > > +	return 0;
-> > > +}
-> > > +
-> > > +static void __exit input_led_exit(void)
-> > > +{
-> > > +}
-> > 
-> > Come to think of it - don't you need to cancel_work_sync() in exit so
-> > the work struct can't be queued while the module is being unloaded?
+> > fixed broken user visible strings
 > 
-> Well, this is never built as a module ATM, so it's not a problem.
+> This text just repeats what the summary line says.  Instead, you
+> should write *why* the patch is needed.  Ditto for the previous
+> patch.
+> 
 
-(but I have changed that for future versions of the whole patch, yes)
+Hi,
+Resent both the patches , and also modified the changelog . Can you please review them again ...
 
-Samuel
+thanks
+sudip
+
+> 
+> 
+> Takashi
