@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016AbaHZTnA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 15:43:00 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:37944 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752639AbaHZTm7 (ORCPT
+	id S1753973AbaHZTuL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 15:50:11 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:55379 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753081AbaHZTuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 15:42:59 -0400
-Message-ID: <53FCE338.1050304@gmail.com>
-Date: Wed, 27 Aug 2014 03:42:48 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Tue, 26 Aug 2014 15:50:09 -0400
+Message-ID: <53FCE4ED.30300@kernel.org>
+Date: Tue, 26 Aug 2014 20:50:05 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>
-CC: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
-        xen-devel@lists.xenproject.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers/xen/grant-table.c: Be sure of unsigned value
- never comparing with 0
-References: <53FCAA04.40009@gmail.com> <53FCBDD2.8040208@citrix.com>
-In-Reply-To: <53FCBDD2.8040208@citrix.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Daniel Baluta <daniel.baluta@intel.com>, linux-iio@vger.kernel.org
+CC: srinivas.pandruvada@linux.intel.com, pmeerw@pmeerw.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] io: accel: kxcjk1013: Remove redundant assignment
+References: <1408692956-11379-1-git-send-email-daniel.baluta@intel.com>
+In-Reply-To: <1408692956-11379-1-git-send-email-daniel.baluta@intel.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2014 01:03 AM, David Vrabel wrote:
-> On 26/08/14 16:38, Chen Gang wrote:
->> In grow_gnttab_list(), 'i' is 'unsigned int', and 'nr_glist_frames' may
->> be 0 because 'nr_grant_frames' may be 0. So 'i' may never be less than
->> 'nr_glist_frames' in failure processing, which cause infinite looping.
+On 22/08/14 08:35, Daniel Baluta wrote:
+> data->range is already set by kxcjk1013_set_range.
 > 
-> nr_grant_frames is at least 1.  See gnttab_init().
+> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
+Applied to the togreg branch of iio.git.  Initially pushed out as testing
+for the autobuilders to play.
+
+Thanks,
+
+Jonathan
+> ---
+>  drivers/iio/accel/kxcjk-1013.c | 3 ---
+>  1 file changed, 3 deletions(-)
 > 
-
-OK, thanks, that sounds reasonable to me, it is not a real wold bug, it
-is my fault.  :-)
-
->> --- a/drivers/xen/grant-table.c
->> +++ b/drivers/xen/grant-table.c
->> @@ -592,8 +592,8 @@ static int grow_gnttab_list(unsigned int more_frames)
->>  	return 0;
->>  
->>  grow_nomem:
->> -	for ( ; i >= nr_glist_frames; i--)
->> -		free_page((unsigned long) gnttab_list[i]);
->> +	while (i > nr_glist_frames)
->> +		free_page((unsigned long) gnttab_list[--i]);
+> diff --git a/drivers/iio/accel/kxcjk-1013.c b/drivers/iio/accel/kxcjk-1013.c
+> index 70a5679..01e86d0 100644
+> --- a/drivers/iio/accel/kxcjk-1013.c
+> +++ b/drivers/iio/accel/kxcjk-1013.c
+> @@ -239,9 +239,6 @@ static int kxcjk1013_chip_init(struct kxcjk1013_data *data)
+>  	if (ret < 0)
+>  		return ret;
+>  
+> -	data->range = KXCJK1013_RANGE_4G;
+> -
+> -
+>  	ret = i2c_smbus_read_byte_data(data->client, KXCJK1013_REG_DATA_CTRL);
+>  	if (ret < 0) {
+>  		dev_err(&data->client->dev, "Error reading reg_data_ctrl\n");
 > 
-> while (i-- > nr_glist_frames)
->     ...
-> 
-> Would have been better.
-> 
-
-OK, thanks, that sounds reasonable to me.
-
-If necessary to send patch v2 (change comments and contents), please
-let me know, and I shall send.
-
-Thanks.
--- 
-Chen Gang
-
-Open share and attitude like air water and life which God blessed
