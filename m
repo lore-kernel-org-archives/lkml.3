@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757646AbaHZLH4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 07:07:56 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:56504 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755724AbaHZLHw (ORCPT
+	id S1757668AbaHZLIB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 07:08:01 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:44468 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757648AbaHZLH6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 07:07:52 -0400
+	Tue, 26 Aug 2014 07:07:58 -0400
 From: Vincent Guittot <vincent.guittot@linaro.org>
 To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
         preeti@linux.vnet.ibm.com, linux@arm.linux.org.uk,
@@ -15,9 +15,9 @@ Cc: riel@redhat.com, Morten.Rasmussen@arm.com, efault@gmx.de,
         nicolas.pitre@linaro.org, linaro-kernel@lists.linaro.org,
         daniel.lezcano@linaro.org, dietmar.eggemann@arm.com,
         Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [PATCH v5 04/12] sched: Allow all archs to set the capacity_orig
-Date: Tue, 26 Aug 2014 13:06:47 +0200
-Message-Id: <1409051215-16788-5-git-send-email-vincent.guittot@linaro.org>
+Subject: [PATCH v5 07/12] sched: test the cpu's capacity in wake affine
+Date: Tue, 26 Aug 2014 13:06:50 +0200
+Message-Id: <1409051215-16788-8-git-send-email-vincent.guittot@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
 References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
@@ -25,73 +25,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-capacity_orig is only changed for system with a SMT sched_domain level in order
-to reflect the lower capacity of CPUs. Heterogenous system also have to reflect an
-original capacity that is different from the default value.
+Currently the task always wakes affine on this_cpu if the latter is idle.
+Before waking up the task on this_cpu, we check that this_cpu capacity is not
+significantly reduced because of RT tasks or irq activity.
 
-Create a more generic function arch_scale_cpu_capacity that can be also used by
-non SMT platform to set capacity_orig.
-
-The weak behavior of arch_scale_cpu_capacity is the previous SMT one in order to
-keep backward compatibility in the use of capacity_orig.
-
-arch_scale_smt_capacity and default_scale_smt_capacity have been removed as
-they were not use elsewhere than in arch_scale_cpu_capacity.
+Use case where the number of irq and/or the time spent under irq is important
+will take benefit of this because the task that is woken up by irq or softirq
+will not use the same CPU than irq (and softirq) but a idle one.
 
 Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
 ---
- kernel/sched/fair.c | 25 ++++++-------------------
- 1 file changed, 6 insertions(+), 19 deletions(-)
+ kernel/sched/fair.c | 19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index b85e9f7..8176bda 100644
+index 17c16cc..18db43e 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -5705,19 +5705,12 @@ unsigned long __weak arch_scale_freq_capacity(struct sched_domain *sd, int cpu)
- 	return default_scale_capacity(sd, cpu);
- }
- 
--static unsigned long default_scale_smt_capacity(struct sched_domain *sd, int cpu)
-+unsigned long __weak arch_scale_cpu_capacity(struct sched_domain *sd, int cpu)
+@@ -4281,6 +4281,7 @@ static int wake_wide(struct task_struct *p)
+ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
  {
--	unsigned long weight = sd->span_weight;
--	unsigned long smt_gain = sd->smt_gain;
-+	if ((sd->flags & SD_SHARE_CPUCAPACITY) && (sd->span_weight > 1))
-+		return sd->smt_gain / sd->span_weight;
+ 	s64 this_load, load;
++	s64 this_eff_load, prev_eff_load;
+ 	int idx, this_cpu, prev_cpu;
+ 	struct task_group *tg;
+ 	unsigned long weight;
+@@ -4324,21 +4325,21 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+ 	 * Otherwise check if either cpus are near enough in load to allow this
+ 	 * task to be woken on this_cpu.
+ 	 */
+-	if (this_load > 0) {
+-		s64 this_eff_load, prev_eff_load;
++	this_eff_load = 100;
++	this_eff_load *= capacity_of(prev_cpu);
++
++	prev_eff_load = 100 + (sd->imbalance_pct - 100) / 2;
++	prev_eff_load *= capacity_of(this_cpu);
  
--	smt_gain /= weight;
--
--	return smt_gain;
--}
--
--unsigned long __weak arch_scale_smt_capacity(struct sched_domain *sd, int cpu)
--{
--	return default_scale_smt_capacity(sd, cpu);
-+	return SCHED_CAPACITY_SCALE;
- }
+-		this_eff_load = 100;
+-		this_eff_load *= capacity_of(prev_cpu);
++	if (this_load > 0) {
+ 		this_eff_load *= this_load +
+ 			effective_load(tg, this_cpu, weight, weight);
  
- static unsigned long scale_rt_capacity(int cpu)
-@@ -5756,18 +5749,12 @@ static unsigned long scale_rt_capacity(int cpu)
+-		prev_eff_load = 100 + (sd->imbalance_pct - 100) / 2;
+-		prev_eff_load *= capacity_of(this_cpu);
+ 		prev_eff_load *= load + effective_load(tg, prev_cpu, 0, weight);
++	}
++
++	balanced = this_eff_load <= prev_eff_load;
  
- static void update_cpu_capacity(struct sched_domain *sd, int cpu)
- {
--	unsigned long weight = sd->span_weight;
- 	unsigned long capacity = SCHED_CAPACITY_SCALE;
- 	struct sched_group *sdg = sd->groups;
+-		balanced = this_eff_load <= prev_eff_load;
+-	} else
+-		balanced = true;
+ 	schedstat_inc(p, se.statistics.nr_wakeups_affine_attempts);
  
--	if ((sd->flags & SD_SHARE_CPUCAPACITY) && weight > 1) {
--		if (sched_feat(ARCH_CAPACITY))
--			capacity *= arch_scale_smt_capacity(sd, cpu);
--		else
--			capacity *= default_scale_smt_capacity(sd, cpu);
-+	capacity *= arch_scale_cpu_capacity(sd, cpu);
- 
--		capacity >>= SCHED_CAPACITY_SHIFT;
--	}
-+	capacity >>= SCHED_CAPACITY_SHIFT;
- 
- 	sdg->sgc->capacity_orig = capacity;
- 
+ 	if (!balanced)
 -- 
 1.9.1
 
