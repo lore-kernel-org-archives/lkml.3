@@ -1,104 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757959AbaHZNy1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 09:54:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29896 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754634AbaHZNyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 09:54:25 -0400
-Date: Tue, 26 Aug 2014 09:54:17 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ulrich Obergfell <uobergfe@redhat.com>,
-        Andrew Jones <drjones@redhat.com>
-Subject: Re: linux-next: build failure after merge of the akpm tree
-Message-ID: <20140826135417.GK49576@redhat.com>
-References: <20140826171818.719c4e6a@canb.auug.org.au>
+	id S1758259AbaHZNys (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 09:54:48 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:18068 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758172AbaHZNyr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 09:54:47 -0400
+Date: Tue, 26 Aug 2014 09:54:44 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Gleb Natapov <gleb@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Davis <jim.epost@gmail.com>,
+        linux-next <linux-next@vger.kernel.org>
+Subject: Re: [PATCH] KVM: Only export kvm_ple_window for x86_64
+Message-ID: <20140826095444.5f2b2423@gandalf.local.home>
+In-Reply-To: <53FC6A15.5090209@redhat.com>
+References: <20140825191035.59673878@gandalf.local.home>
+	<53FC6A15.5090209@redhat.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140826171818.719c4e6a@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 05:18:18PM +1000, Stephen Rothwell wrote:
-> Hi Andrew,
+On Tue, 26 Aug 2014 13:05:57 +0200
+Paolo Bonzini <pbonzini@redhat.com> wrote:
+
+> Il 26/08/2014 01:10, Steven Rostedt ha scritto:
+> > Commit 7b46268d2954 "KVM: trace kvm_ple_window grow/shrink"
+> > Added the tracepoint kvm_ple_window under a #ifdef CONFIG_X86_64 but
+> > left the export for that tracepoint unprotected, which would cause it
+> > to fail to compile when X86_32 is set.
+> > 
+> > Link: http://lkml.kernel.org/p/20140825172204.769ab4e6@gandalf.local.home
+> > 
+> > Reported-by: Jim Davis <jim.epost@gmail.com>
+> > tested-by: Jim Davis <jim.epost@gmail.com>
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 > 
-> After merging the akpm tree, today's linux-next build (sparc64
-> defconfig) failed like this:
+> The current KVM branch should have fixed this already---it leaves the
+> tracepoint outside CONFIG_X86_64, which was the right thing to do in the
+> first place.
 > 
-> kernel/built-in.o: In function `proc_dowatchdog':
-> (.text+0x6a620): undefined reference to `watchdog_hardlockup_detector_is_enabled'
-> kernel/built-in.o: In function `proc_dowatchdog':
-> (.text+0x6a6a8): undefined reference to `watchdog_enable_hardlockup_detector'
-> kernel/built-in.o: In function `proc_dowatchdog':
-> (.text+0x6a79c): undefined reference to `watchdog_enable_hardlockup_detector'
-> 
-> Caused by commit 72355eed4bd7 ("kernel/watchdog.c: control hard lockup
-> detection default").  This build has CONFIG_HAVE_NMI_WATCHDOG=y,
-> CONFIG_HARDLOCKUP_DETECTOR not set.
 
-:-(  I was trying to figure out why touch_nmi_watchdog doesn't break the
-same way until I noticed sparc has its own personal implementation of this
-function (instead of using kernel/watchdog.c's version).
+Fair enough. I was wondering why this was unique to x86_64.
 
-We are going to have to split the include/linux/nmi.h changes out into its
-own #ifdef area.  I am not sure my brain is quite ready to untangle the
-sparc implementation of the watchdog stuff and try to make it use the
-generic one yet.
-
-This patch I believe fixes the compile problem for now.
-
-Not sure the proper way to post this or who to send this too.
-
-------8<------
-From: Don Zickus <dzickus@redhat.com>
-Date: Tue, 26 Aug 2014 09:50:21 -0400
-Subject: [PATCH] watchdog, nmi: Fix compile issues on sparc
-
-Sparc doesn't use HARDLOCKUP_DETECTOR the same way x86 does.  As a result break
-out the new functions
-
-watchdog_hardlockup_detector_is_enabled
-watchdog_enable_hardlockup_detector
-
-into their own #if defined area.  This resolves the compile issue where
-CONFIG_NMI_WATCHDOG=y and CONFIG_HARDLOCKUP_DETECTOR is not set on sparc.
-
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- include/linux/nmi.h |   10 +++++++---
- 1 files changed, 7 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/nmi.h b/include/linux/nmi.h
-index 72aacf4..f82a5bf 100644
---- a/include/linux/nmi.h
-+++ b/include/linux/nmi.h
-@@ -17,14 +17,18 @@
- #if defined(CONFIG_HAVE_NMI_WATCHDOG) || defined(CONFIG_HARDLOCKUP_DETECTOR)
- #include <asm/nmi.h>
- extern void touch_nmi_watchdog(void);
--extern void watchdog_enable_hardlockup_detector(bool val);
--extern bool watchdog_hardlockup_detector_is_enabled(void);
- #else
- static inline void touch_nmi_watchdog(void)
- {
- 	touch_softlockup_watchdog();
- }
--static inline void watchdog_enable_hardlockup_detector(bool)
-+#endif
-+
-+#if defined(CONFIG_HARDLOCKUP_DETECTOR)
-+extern void watchdog_enable_hardlockup_detector(bool val);
-+extern bool watchdog_hardlockup_detector_is_enabled(void);
-+#else
-+static inline void watchdog_enable_hardlockup_detector(bool val)
- {
- }
- static inline bool watchdog_hardlockup_detector_is_enabled(void)
--- 
-1.7.1
-
+-- Steve
