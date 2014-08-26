@@ -1,163 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934052AbaHZHvN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 03:51:13 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:41509 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752889AbaHZHvM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 03:51:12 -0400
-Date: Tue, 26 Aug 2014 13:21:00 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sound: pci: ctxfi: ctatc.c: printk replacement
-Message-ID: <20140826075100.GA1751@sudip-PC>
-References: <1408989412-30805-1-git-send-email-sudipm.mukherjee@gmail.com>
- <s5h8umbu5oi.wl-tiwai@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <s5h8umbu5oi.wl-tiwai@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757313AbaHZHvl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 03:51:41 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:41710 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754581AbaHZHvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 03:51:39 -0400
+Message-ID: <1409039490.5256.75.camel@iivanov-dev>
+Subject: Re: [PATCH] iio: core: Propagate error codes from OF layer to
+ client drivers
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Jonathan Cameron <jic23@kernel.org>, Adam.Thomson.Opensource@diasemi.com,
+        knaack.h@gmx.de, lars@metafoo.de, pmeerw@pmeerw.net,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 26 Aug 2014 10:51:30 +0300
+In-Reply-To: <20140825165430.GB14614@roeck-us.net>
+References: <1408971437-10751-1-git-send-email-iivanov@mm-sol.com>
+	 <53FB5FF7.8020504@kernel.org> <20140825165430.GB14614@roeck-us.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 08:27:09AM +0200, Takashi Iwai wrote:
-> At Mon, 25 Aug 2014 23:26:52 +0530,
-> Sudip Mukherjee wrote:
-> > 
-> > printk replaced ith corresponding pr_err
-> > fixed three broken user-visible strings
-> > fixed a checkpatch warning of space before new line
-> 
-> Fixes are good, but is this the final patch for ctxfi?
-> If you're going to post another one, please fold them into a single
-> patch.  All patches do basically the same job, so splitting patches
-> doesn't help much in such a case.  Patches should be split logically.
-> 
-> Also, if you fix broken strings, better to do it consistently to all
-> targeted strings, instead of picking up random ones.
-> 
-> 
-> thanks,
-> 
-> Takashi
-
 Hi,
-I was posting them separately as i was thinking it will become a big patch. 
-For the broken string , it was actually not random . I did it only for those string that were affected by my patch.
-Anyways, I will send you a complete one for ctxfi.
 
-thanks
-sudip
+On Mon, 2014-08-25 at 09:54 -0700, Guenter Roeck wrote:
+> On Mon, Aug 25, 2014 at 05:10:31PM +0100, Jonathan Cameron wrote:
+> > On 25/08/14 13:57, Ivan T. Ivanov wrote:
+> > > Do not overwrite error codes returned from of_iio_channel_get().
+> > > Error codes are used to distinguish between "io-channel-names"
+> > > not present in DT bindings, property is optional, and IIO channel
+> > > provider driver still not being loaded, defer probe.
+> > > 
+> > > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> > Cc'd Guenter who often takes an interest in this code (and wrote it ;)
+> > 
+> > Mostly seems logical to me, though I don't like the change of
+> > priority in the last bit.  I've also just taken a fix for this
+> > code so there may be some fuzz from that once it's propogated
+> > through to mainline and back to the togreg tree of iio.git
+
+It is propagated, but exactly this patch [1] is causing the troubles :-)
+
+> > 
+> > Thanks,
+> > 
+> > Jonathan
+> > > ---
+> > >  drivers/iio/inkern.c | 24 ++++++++++++------------
+> > >  1 file changed, 12 insertions(+), 12 deletions(-)
+> > > 
+> > > diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
+> > > index c749700..66a6cde 100644
+> > > --- a/drivers/iio/inkern.c
+> > > +++ b/drivers/iio/inkern.c
+> > > @@ -162,7 +162,7 @@ err_free_channel:
+> > >  static struct iio_channel *of_iio_channel_get_by_name(struct device_node *np,
+> > >  						      const char *name)
+> > >  {
+> > > -	struct iio_channel *chan = NULL;
+> > > +	struct iio_channel *chan = ERR_PTR(-ENODEV);
+> > >  
+> > >  	/* Walk up the tree of devices looking for a matching iio channel */
+> > >  	while (np) {
+> > > @@ -183,7 +183,7 @@ static struct iio_channel *of_iio_channel_get_by_name(struct device_node *np,
+> > >  		else if (name && index >= 0) {
+> > >  			pr_err("ERROR: could not get IIO channel %s:%s(%i)\n",
+> > >  				np->full_name, name ? name : "", index);
+> > > -			return NULL;
+> > > +			break;
+> > >  		}
+> > >  
+> > >  		/*
+> > > @@ -193,7 +193,7 @@ static struct iio_channel *of_iio_channel_get_by_name(struct device_node *np,
+> > >  		 */
+> > >  		np = np->parent;
+> > >  		if (np && !of_get_property(np, "io-channel-ranges", NULL))
+> > > -			return NULL;
+> > > +			break;
+> > >  	}
+> > >  
+> > >  	return chan;
+> > > @@ -243,12 +243,12 @@ error_free_chans:
+> > >  static inline struct iio_channel *
+> > >  of_iio_channel_get_by_name(struct device_node *np, const char *name)
+> > >  {
+> > > -	return NULL;
+> > > +	return ERR_PTR(-ENODEV);
+> > >  }
+> > >  
+> > >  static inline struct iio_channel *of_iio_channel_get_all(struct device *dev)
+> > >  {
+> > > -	return NULL;
+> > > +	return ERR_PTR(-ENODEV);
+> > >  }
+> > >  
+> > >  #endif /* CONFIG_OF */
+> > > @@ -312,14 +312,14 @@ struct iio_channel *iio_channel_get(struct device *dev,
+> > >  	const char *name = dev ? dev_name(dev) : NULL;
+> > >  	struct iio_channel *channel;
+> > >  
+> > > -	if (dev) {
+> > > -		channel = of_iio_channel_get_by_name(dev->of_node,
+> > > -						     channel_name);
+> > > -		if (channel != NULL)
+> > > -			return channel;
+> > > -	}
+> > > +	channel = iio_channel_get_sys(name, channel_name);
+> > > +	if (!IS_ERR(channel))
+> > > +		return channel;
+> > > +
+> > > +	if (!dev)
+> > > +		return channel;
+> > >  
+> > > -	return iio_channel_get_sys(name, channel_name);
+> > > +	return of_iio_channel_get_by_name(dev->of_node, channel_name);
+> > >  }
+> > Why reorder the logic?   This makes this patch less obviously
+> > correct for limited obvious gain?
+
+I would like to avoid white listing EPROBE_DEFER error code on return of
+of_get() function.
+
+> > 
+> > Previously the priority was clearly given to device tree bindings
+> > wherease now it is given to board file provided map elements.  It
+> > would be interesting to see boards with both provided, but it is
+> > possible.
+
+I see.
 
 > 
-> > 
-> > 
-> > Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
-> > ---
-> >  sound/pci/ctxfi/ctatc.c | 23 ++++++++++-------------
-> >  1 file changed, 10 insertions(+), 13 deletions(-)
-> > 
-> > diff --git a/sound/pci/ctxfi/ctatc.c b/sound/pci/ctxfi/ctatc.c
-> > index af632bd..41597a8 100644
-> > --- a/sound/pci/ctxfi/ctatc.c
-> > +++ b/sound/pci/ctxfi/ctatc.c
-> > @@ -185,7 +185,7 @@ static unsigned int convert_format(snd_pcm_format_t snd_format)
-> >  	case SNDRV_PCM_FORMAT_FLOAT_LE:
-> >  		return SRC_SF_F32;
-> >  	default:
-> > -		printk(KERN_ERR "ctxfi: not recognized snd format is %d \n",
-> > +		pr_err("ctxfi: not recognized snd format is %d\n",
-> >  			snd_format);
-> >  		return SRC_SF_S16;
-> >  	}
-> > @@ -1282,7 +1282,7 @@ static int atc_identify_card(struct ct_atc *atc, unsigned int ssid)
-> >  	p = snd_pci_quirk_lookup_id(vendor_id, device_id, list);
-> >  	if (p) {
-> >  		if (p->value < 0) {
-> > -			printk(KERN_ERR "ctxfi: "
-> > +			pr_err("ctxfi: "
-> >  			       "Device %04x:%04x is black-listed\n",
-> >  			       vendor_id, device_id);
-> >  			return -ENOENT;
-> > @@ -1315,8 +1315,7 @@ int ct_atc_create_alsa_devs(struct ct_atc *atc)
-> >  		err = alsa_dev_funcs[i].create(atc, i,
-> >  				alsa_dev_funcs[i].public_name);
-> >  		if (err) {
-> > -			printk(KERN_ERR "ctxfi: "
-> > -			       "Creating alsa device %d failed!\n", i);
-> > +			pr_err("ctxfi: Creating alsa device %d failed!\n", i);
-> >  			return err;
-> >  		}
-> >  	}
-> > @@ -1332,7 +1331,7 @@ static int atc_create_hw_devs(struct ct_atc *atc)
-> >  
-> >  	err = create_hw_obj(atc->pci, atc->chip_type, atc->model, &hw);
-> >  	if (err) {
-> > -		printk(KERN_ERR "Failed to create hw obj!!!\n");
-> > +		pr_err("Failed to create hw obj!!!\n");
-> >  		return err;
-> >  	}
-> >  	atc->hw = hw;
-> > @@ -1351,8 +1350,7 @@ static int atc_create_hw_devs(struct ct_atc *atc)
-> >  
-> >  		err = rsc_mgr_funcs[i].create(atc->hw, &atc->rsc_mgrs[i]);
-> >  		if (err) {
-> > -			printk(KERN_ERR "ctxfi: "
-> > -			       "Failed to create rsc_mgr %d!!!\n", i);
-> > +			pr_err("ctxfi: Failed to create rsc_mgr %d!!!\n", i);
-> >  			return err;
-> >  		}
-> >  	}
-> > @@ -1399,7 +1397,7 @@ static int atc_get_resources(struct ct_atc *atc)
-> >  		err = daio_mgr->get_daio(daio_mgr, &da_desc,
-> >  					(struct daio **)&atc->daios[i]);
-> >  		if (err) {
-> > -			printk(KERN_ERR "ctxfi: Failed to get DAIO "
-> > +			pr_err("ctxfi: Failed to get DAIO "
-> >  					"resource %d!!!\n", i);
-> >  			return err;
-> >  		}
-> > @@ -1603,8 +1601,7 @@ static int atc_resume(struct ct_atc *atc)
-> >  	/* Do hardware resume. */
-> >  	err = atc_hw_resume(atc);
-> >  	if (err < 0) {
-> > -		printk(KERN_ERR "ctxfi: pci_enable_device failed, "
-> > -		       "disabling device\n");
-> > +		pr_err("ctxfi: pci_enable_device failed, disabling device\n");
-> >  		snd_card_disconnect(atc->card);
-> >  		return err;
-> >  	}
-> > @@ -1701,7 +1698,7 @@ int ct_atc_create(struct snd_card *card, struct pci_dev *pci,
-> >  	/* Find card model */
-> >  	err = atc_identify_card(atc, ssid);
-> >  	if (err < 0) {
-> > -		printk(KERN_ERR "ctatc: Card not recognised\n");
-> > +		pr_err("ctatc: Card not recognised\n");
-> >  		goto error1;
-> >  	}
-> >  
-> > @@ -1717,7 +1714,7 @@ int ct_atc_create(struct snd_card *card, struct pci_dev *pci,
-> >  
-> >  	err = ct_mixer_create(atc, (struct ct_mixer **)&atc->mixer);
-> >  	if (err) {
-> > -		printk(KERN_ERR "ctxfi: Failed to create mixer obj!!!\n");
-> > +		pr_err("ctxfi: Failed to create mixer obj!!!\n");
-> >  		goto error1;
-> >  	}
-> >  
-> > @@ -1744,6 +1741,6 @@ int ct_atc_create(struct snd_card *card, struct pci_dev *pci,
-> >  
-> >  error1:
-> >  	ct_atc_destroy(atc);
-> > -	printk(KERN_ERR "ctxfi: Something wrong!!!\n");
-> > +	pr_err("ctxfi: Something wrong!!!\n");
-> >  	return err;
-> >  }
-> > -- 
-> > 1.8.1.2
-> > 
+> I am not entirely sure I understand what problem this patch is supposed
+> to fix on top of the patch you just applied, 
+
+Patch [1], Guenter please fix you date, introduce regression. It
+breaks deferred probe mechanism.
+
+> and I am also a bit concerned
+> about reversing the logic. Also, iio_channel_get_sys can return -ENOMEM
+> and -EINVAL besides -ENODEV, all of which is now being ignored 
+
+Yes, and thats why we continue with trying to find channel using OF.
+
+> unless dev is set, and then it is returned unconditionally. 
+
+If dev is not valid there is no point to go and ask OF layer for
+channel, so jut go out with error code from get_sys()
+
+> So instead of ignoring error
+> codes from of_iio_channel_get_by_name, the code now ignores error codes
+> from iio_channel_get_sys under some circumstances (which, coincidentially,
+> does not return -EPROBE_DEFER), and in other circumstances may return an error
+> even if devicetree data exists. Why and how is that better than before ?
+> Seems to me it just introduces a whole number of new failure conditions.
+
+We should not mask error codes from OF layer. EPROBE_DEFER is one of
+them. So instead of checking for them explicitly on return from of_iio_get(),
+I decided that will be future proof if I just reverse the order of functions. 
+
+Another, less intrusive, solution will be if we revert last patch and explicitly
+check for EPROBE_DEFER on of_ by_name() return. How this sounds?
+
+Regards,
+Ivan
+
+
+[1] commit a2c12493ed7e63a18cef33a71686d12ffcd6600e
+Author: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+Date:   Thu Nov 6 12:11:00 2014 +0000
+
+    iio: of_iio_channel_get_by_name() returns non-null pointers for error legs
+ 
+
