@@ -1,116 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752800AbaHZR0i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 13:26:38 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:31696 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751435AbaHZR0d (ORCPT
+	id S1752870AbaHZR1e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 13:27:34 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:54504 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435AbaHZR1c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 13:26:33 -0400
-Message-ID: <53FCC343.1040607@fb.com>
-Date: Tue, 26 Aug 2014 13:26:27 -0400
-From: Chris Mason <clm@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 26 Aug 2014 13:27:32 -0400
+Message-ID: <53FCC37F.2000908@kernel.org>
+Date: Tue, 26 Aug 2014 18:27:27 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>
-Subject: [GIT PULL] Btrfs for rc3
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
- definitions=2014-08-26_07:2014-08-26,2014-08-26,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=5.5143761779064e-10 kscore.compositescore=0
- circleOfTrustscore=28.9261618248808 compositescore=0.998049563855454
- urlsuspect_oldscore=0.998049563855454 suspectscore=2
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=62764
- rbsscore=0.998049563855454 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1408260193
-X-FB-Internal: deliver
+To: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        sanjeev sharma <sanjeevsharmaengg@gmail.com>
+CC: gregkh <gregkh@linuxfoundation.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        devel <devel@driverdev.osuosl.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging:iio: moved platform_data into include/linux/iio
+References: <1408516869-6099-1-git-send-email-sanjeev_sharma@mentor.com>	<53F441FF.9090304@metafoo.de> <CAGUYZuSENkSjoA9U0E8MQKp0a1J3moE8p8NYAzfiZ+BpxND4Aw@mail.gmail.com> <53F4451B.3040209@metafoo.de> <FDC088D3B5555644AE135ED28A7ABDE94DF3CC4B@EU-MBX-04.mgc.mentorg.com> <53FAEF10.7010001@metafoo.de> <FDC088D3B5555644AE135ED28A7ABDE94DF3ECF2@EU-MBX-04.mgc.mentorg.com> <53FB3AF3.6060808@metafoo.de> <FDC088D3B5555644AE135ED28A7ABDE94DF40824@EU-MBX-04.mgc.mentorg.com>
+In-Reply-To: <FDC088D3B5555644AE135ED28A7ABDE94DF40824@EU-MBX-04.mgc.mentorg.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 26/08/14 12:33, Sharma, Sanjeev wrote:
+> -----Original Message-----
+> From: Lars-Peter Clausen [mailto:lars@metafoo.de] 
+> Sent: Monday, August 25, 2014 7:03 PM
+> To: Sharma, Sanjeev; sanjeev sharma
+> Cc: jic23@kernel.org; gregkh; linux-iio@vger.kernel.org; devel; linux-kernel
+> Subject: Re: [PATCH] staging:iio: moved platform_data into include/linux/iio
+> 
+> On 08/25/2014 01:49 PM, Sharma, Sanjeev wrote:
+>> -----Original Message-----
+>> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
+>> Sent: Monday, August 25, 2014 1:39 PM
+>> To: Sharma, Sanjeev; sanjeev sharma
+>> Cc: jic23@kernel.org; gregkh; linux-iio@vger.kernel.org; devel; 
+>> linux-kernel
+>> Subject: Re: [PATCH] staging:iio: moved platform_data into 
+>> include/linux/iio
+>>
+>> On 08/25/2014 09:17 AM, Sharma, Sanjeev wrote:
+>>> Hello Lars,
+>>>
+>>> As per your suggestion Can I move complete Driver out of staging specially SPI ADC Driver.
+>>
+>> Only if they are cleaned up first. All of the drivers that are still in staging do have issues, otherwise we'd already had moved them. A few of them are OK codestyle wise, but do have ABI issues which need to be resolved before they can be moved.
+>>
+>> - Lars
+>>
+>> Where I can find ABI issues which need to be resolved so that these can be looked upon.
+> 
+> Compare the sysfs files and their behavior that the driver registers with what is documented in the IIO ABI spec[1]. If you can't find it in the documentation it either needs to be documented or updated to use the existing ABI correctly. Note that this is not necessarily trivial and may require in-depth knowledge and understanding of the IIO ABI.
+> 
+> You mean to say I shouldn't spent much time here because this is not much important and if this is the case then I think I should look into some area which make more sense.
 
-Please pull our fixes from my for-linus branch:
+I'm not sure Lars meant to put you off particularly, just to emphasis that there is
+(unfortunately), typically a fair bit more to do than simply fix up coding style
+issues and move the drivers out of staging.  Unfortunately IIO evolved a lot so
+whilst it was in staging, so even drivers that were 'almost' ready to go a while
+back are often quite some distance from the ABI and code structure we ended up with.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+If you are interested in working on some of these, there are lots of drivers to
+look at outside staging and the documentation.  Just ask if there is something
+you are unsure how to handle.
 
-The biggest of these comes from Liu Bo, who tracked down a hang
-we've been hitting since moving to kernel workqueues (it's a btrfs bug,
-not in the generic code).  His patch needs backporting to 3.16 and 3.15
-stable, which I'll send once this is in.
+Entirely up to you whether you take this on though!
 
-Otherwise these are assorted fixes.  Most were integrated last week
-during KS, but I wanted to give everyone the chance to test the result,
-so I waited for rc2 to come out before sending.
+Jonathan
 
-Miao Xie (7) commits (+28/-22):
-    Btrfs: fix unzeroed members in fs_devices when creating a fs from seed fs (+3/-0)
-    Btrfs: don't consider the missing device when allocating new chunks (+2/-14)
-    Btrfs: Fix the problem that the replace destroys the seed filesystem (+6/-2)
-    Btrfs: don't write any data into a readonly device when scrub (+11/-0)
-    Btrfs: Fix wrong device size when we are resizing the device (+3/-2)
-    Btrfs: fix put dio bio twice when we submit dio bio fail (+2/-3)
-    Btrfs: fix wrong missing device counter decrease (+1/-1)
-
-Filipe Manana (5) commits (+72/-38):
-    Btrfs: ensure tmpfile inode is always persisted with link count of 0 (+15/-0)
-    Btrfs: race free update of commit root for ro snapshots (+36/-33)
-    Btrfs: clone, don't create invalid hole extent map (+2/-1)
-    Btrfs: don't monopolize a core when evicting inode (+6/-0)
-    Btrfs: fix hole detection during file fsync (+13/-4)
-
-Liu Bo (3) commits (+143/-62):
-    Btrfs: fix task hang under heavy compressed write (+141/-61)
-    Btrfs: fix crash on endio of reading corrupted block (+1/-0)
-    Btrfs: fix regression of btrfs device replace (+1/-1)
-
-Anand Jain (2) commits (+48/-1):
-    Btrfs: device_list_add() should not update list when mounted (+27/-0)
-    btrfs: check generation as replace duplicates devid+uuid (+21/-1)
-
-Qu Wenruo (2) commits (+7/-8):
-    btrfs: Return right extent when fiemap gives unaligned offset and len. (+2/-2)
-    btrfs: Use right extent length when inserting overlap extent map. (+5/-6)
-
-Wang Shilong (2) commits (+4/-1):
-    Btrfs: fix wrong write range for filemap_fdatawrite_range() (+2/-1)
-    Btrfs: fix wrong extent mapping for DirectIO (+2/-0)
-
-Chris Mason (1) commits (+9/-1):
-    Btrfs: fix filemap_flush call in btrfs_file_release
-
-Eric Sandeen (1) commits (+1/-1):
-    btrfs: fix leak in qgroup_subtree_accounting() error path
-
-chandan (1) commits (+1/-2):
-    Btrfs: fill_holes: Fix slot number passed to hole_mergeable() call.
-
-Total: (24) commits
-
- fs/btrfs/async-thread.c  |  44 +++++++++++++++----
- fs/btrfs/async-thread.h  |  28 +++++++++++-
- fs/btrfs/delayed-inode.c |   4 +-
- fs/btrfs/disk-io.c       |  56 +++++++++++++-----------
- fs/btrfs/extent-tree.c   |  23 +++-------
- fs/btrfs/extent_io.c     |   5 ++-
- fs/btrfs/file.c          |  17 +++++---
- fs/btrfs/inode.c         | 109 ++++++++++++++++++++++++++++++++++++++---------
- fs/btrfs/ioctl.c         |  36 +---------------
- fs/btrfs/ordered-data.c  |   1 +
- fs/btrfs/qgroup.c        |   3 +-
- fs/btrfs/raid56.c        |   9 ++--
- fs/btrfs/reada.c         |   3 +-
- fs/btrfs/scrub.c         |  25 ++++++++---
- fs/btrfs/sysfs.c         |   2 +-
- fs/btrfs/tree-log.c      |  17 ++++++--
- fs/btrfs/volumes.c       |  65 +++++++++++++++++++++++++---
- 17 files changed, 312 insertions(+), 135 deletions(-)
+p.s. We did most of the 'easy' moves out of staging a while back!
+> Thanks
+> Sanjeev
+> 
+> Thanks,
+> - Lars
+> 
+> [1]
+> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/ABI/testing/sysfs-bus-iio
+> 
+>>
+>> -Sanjeev
+>>>
+>>> Regards
+>>> Sanjeev Sharma
+>>>
+>>> -----Original Message-----
+>>> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
+>>> Sent: Wednesday, August 20, 2014 12:20 PM
+>>> To: sanjeev sharma
+>>> Cc: Sharma, Sanjeev; jic23@kernel.org; gregkh; 
+>>> linux-iio@vger.kernel.org; devel; linux-kernel
+>>> Subject: Re: [PATCH] staging:iio: moved platform_data into 
+>>> include/linux/iio
+>>>
+>>> On 08/20/2014 08:44 AM, sanjeev sharma wrote:
+>>>> Hi,
+>>>>
+>>>> This was the action item(TO-DO). IMO, it make sense to move into 
+>>>> include/linux/iio because IIO complete subsystem may take some time.
+>>>
+>>> The code that is in staging is not supposed to 'leak' outside of staging. So either you move the driver as a whole out of staging or leave it there, but do not move individual files of the driver out of staging. The action item is for when the driver is moved out of staging.
+>>>
+>>
+>> N     r  y   b X  ǧv ^ )޺{.n +    {  *"  ^n r   z   h    &   G   h 
+>> ( 階 ݢj"   m     z ޖ   f   h   ~ mml==
+>>
+> 
