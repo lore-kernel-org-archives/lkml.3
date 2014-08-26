@@ -1,199 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933908AbaHZH3f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 03:29:35 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:41848 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933874AbaHZH3b (ORCPT
+	id S933934AbaHZH3n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 03:29:43 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:13744 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933874AbaHZH3j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 03:29:31 -0400
-From: kpark3469@gmail.com
-To: linux@arm.linux.org.uk
-Cc: keun-o.park@windriver.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, afzal.mohd.ma@gmail.com
-Subject: [PATCHv2] ARM: debug: uncompress debug support for omap2plus
-Date: Tue, 26 Aug 2014 16:28:59 +0900
-Message-Id: <1409038140-7433-1-git-send-email-kpark3469@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 26 Aug 2014 03:29:39 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 26 Aug 2014 00:19:38 -0700
+Message-ID: <53FC375D.5060206@nvidia.com>
+Date: Tue, 26 Aug 2014 10:29:33 +0300
+From: Mikko Perttunen <mperttunen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: <linux-tegra@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
+        Kishon Vijay Abraham I <kishon@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH v2 4/9] pinctrl: tegra-xusb: Add USB PHY support
+References: <1408381705-3623-1-git-send-email-abrestic@chromium.org> <1408381705-3623-5-git-send-email-abrestic@chromium.org> <53FB8CFE.3090007@wwwdotorg.org>
+In-Reply-To: <53FB8CFE.3090007@wwwdotorg.org>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sahara <keun-o.park@windriver.com>
+On 25/08/14 22:22, Stephen Warren wrote:
+> On 08/18/2014 11:08 AM, Andrew Bresticker wrote:
+>> In addition to the PCIe and SATA PHYs, the XUSB pad controller also
+>> supports 3 UTMI, 2 HSIC, and 2 USB3 PHYs.  Each USB3 PHY uses a single
+>> PCIe or SATA lane and is mapped to one of the three UTMI ports.
+>>
+>> The xHCI controller will also send messages intended for the PHY driver,
+>> so request and listen for messages on the mailbox's PHY channel.
+>
+> I'd like a review from Thierry here as the HW expert.
+>
+> I need an ack from LinusW in order to take this pinctrl patch through
+> the Tegra tree.
+>
+>> diff --git a/drivers/pinctrl/pinctrl-tegra-xusb.c
+>> b/drivers/pinctrl/pinctrl-tegra-xusb.c
+>
+>> +static int usb3_phy_power_on(struct phy *phy)
+>> +{
+>> +    struct tegra_xusb_padctl *padctl = phy_get_drvdata(phy);
+>> +    int port = usb3_phy_to_port(phy);
+>> +    int lane = padctl->usb3_ports[port].lane;
+>> +    u32 value, offset;
+>> +
+>> +    if (!is_pcie_or_sata_lane(lane)) {
+>> +        dev_err(padctl->dev, "USB3 PHY %d mapped to invalid lane: %d\n",
+>> +            port, lane);
+>> +        return -EINVAL;
+>> +    }
+>
+> An aside: This implies that the SATA driver should be talking to this
+> pinctrl driver and explicitly powering on the XUSB pins. However, the
+> SATA driver doesn't depend on this series. I'm a bit confused how that
+> works. Perhaps it's just by accident? Mikko, can you comment?
 
-Since OMAP low-level debug code places data in the .data section,
-The symbol DEBUG_UNCOMPRESS was defined with !DEBUG_OMAP2PLUS_UART.
-This patch removes the part using data section in debug/omap2plus.S,
-so DEBUG_UNCOMPRESS is now available on OMAP system.
+The SATA driver does depend on the pinctrl-tegra-xusb driver to power on 
+the SATA lane. It looks like what this patch does is it adds support for 
+using the SATA pad for USB3, in which case the SATA lane also needs to 
+be powered on. At least that's the understanding I got from a quick read.
 
-Signed-off-by: Sahara <keun-o.park@windriver.com>
-Tested-by: Afzal Mohammed <afzal.mohd.ma@gmail.com> (on am335x beagle
-bone white)
----
- arch/arm/Kconfig.debug             |    3 +-
- arch/arm/include/debug/omap2plus.S |   96 ++++++++++--------------------------
- 2 files changed, 27 insertions(+), 72 deletions(-)
-
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index b11ad54..c0ad3e4 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -1220,8 +1220,7 @@ config DEBUG_UART_8250_FLOW_CONTROL
- config DEBUG_UNCOMPRESS
- 	bool
- 	depends on ARCH_MULTIPLATFORM || ARCH_MSM || PLAT_SAMSUNG
--	default y if DEBUG_LL && !DEBUG_OMAP2PLUS_UART && \
--		     (!DEBUG_TEGRA_UART || !ZBOOT_ROM)
-+	default y if DEBUG_LL && (!DEBUG_TEGRA_UART || !ZBOOT_ROM)
- 	help
- 	  This option influences the normal decompressor output for
- 	  multiplatform kernels.  Normally, multiplatform kernels disable
-diff --git a/arch/arm/include/debug/omap2plus.S b/arch/arm/include/debug/omap2plus.S
-index 6d867ae..0b7ec89 100644
---- a/arch/arm/include/debug/omap2plus.S
-+++ b/arch/arm/include/debug/omap2plus.S
-@@ -58,115 +58,71 @@
- 
- #define UART_OFFSET(addr)	((addr) & 0x00ffffff)
- 
--		.pushsection .data
--omap_uart_phys:	.word	0
--omap_uart_virt:	.word	0
--omap_uart_lsr:	.word	0
--		.popsection
--
- 		.macro	addruart, rp, rv, tmp
- 
--		/* Use omap_uart_phys/virt if already configured */
--10:		adr	\rp, 99f		@ get effective addr of 99f
--		ldr	\rv, [\rp]		@ get absolute addr of 99f
--		sub	\rv, \rv, \rp		@ offset between the two
--		ldr	\rp, [\rp, #4]		@ abs addr of omap_uart_phys
--		sub	\tmp, \rp, \rv		@ make it effective
--		ldr	\rp, [\tmp, #0]		@ omap_uart_phys
--		ldr	\rv, [\tmp, #4]		@ omap_uart_virt
--		cmp	\rp, #0			@ is port configured?
--		cmpne	\rv, #0
--		bne	100f			@ already configured
--
- 		/* Configure the UART offset from the phys/virt base */
--#ifdef CONFIG_DEBUG_OMAP2UART1
-+#if defined(CONFIG_DEBUG_OMAP2UART1)
- 		mov	\rp, #UART_OFFSET(OMAP2_UART1_BASE)	@ omap2/3/4
- 		b	98f
--#endif
--#ifdef CONFIG_DEBUG_OMAP2UART2
-+#elif defined(CONFIG_DEBUG_OMAP2UART2)
- 		mov	\rp, #UART_OFFSET(OMAP2_UART2_BASE)	@ omap2/3/4
- 		b	98f
--#endif
--#ifdef CONFIG_DEBUG_OMAP2UART3
-+#elif defined(CONFIG_DEBUG_OMAP2UART3)
- 		mov	\rp, #UART_OFFSET(OMAP2_UART3_BASE)
- 		b	98f
--#endif
--#ifdef CONFIG_DEBUG_OMAP3UART3
-+#elif defined(CONFIG_DEBUG_OMAP3UART3)
- 		mov	\rp, #UART_OFFSET(OMAP3_UART1_BASE)
- 		add	\rp, \rp, #0x00fb0000
- 		add	\rp, \rp, #0x00006000		@ OMAP3_UART3_BASE
- 		b	98f
--#endif
--#ifdef CONFIG_DEBUG_OMAP4UART3
-+#elif defined(CONFIG_DEBUG_OMAP4UART3)
- 		mov	\rp, #UART_OFFSET(OMAP4_UART3_BASE)
- 		b	98f
--#endif
--#ifdef CONFIG_DEBUG_OMAP3UART4
-+#elif defined(CONFIG_DEBUG_OMAP3UART4)
- 		mov	\rp, #UART_OFFSET(OMAP3_UART1_BASE)
- 		add	\rp, \rp, #0x00fb0000
- 		add	\rp, \rp, #0x00028000		@ OMAP3_UART4_BASE
- 		b	98f
--#endif
--#ifdef CONFIG_DEBUG_OMAP4UART4
-+#elif defined(CONFIG_DEBUG_OMAP4UART4)
- 		mov	\rp, #UART_OFFSET(OMAP4_UART4_BASE)
- 		b	98f
--#endif
--#ifdef CONFIG_DEBUG_TI81XXUART1
-+#elif defined(CONFIG_DEBUG_TI81XXUART1)
- 		mov	\rp, #UART_OFFSET(TI81XX_UART1_BASE)
- 		b	98f
--#endif
--#ifdef CONFIG_DEBUG_TI81XXUART2
-+#elif defined(CONFIG_DEBUG_TI81XXUART2)
- 		mov	\rp, #UART_OFFSET(TI81XX_UART2_BASE)
- 		b	98f
--#endif
--#ifdef CONFIG_DEBUG_TI81XXUART3
-+#elif defined(CONFIG_DEBUG_TI81XXUART3)
- 		mov	\rp, #UART_OFFSET(TI81XX_UART3_BASE)
- 		b	98f
--#endif
--#ifdef CONFIG_DEBUG_AM33XXUART1
-+#elif defined(CONFIG_DEBUG_AM33XXUART1)
- 		ldr	\rp, =AM33XX_UART1_BASE
- 		and	\rp, \rp, #0x00ffffff
- 		b	97f
--#endif
--#ifdef CONFIG_DEBUG_ZOOM_UART
-+#elif defined(CONFIG_DEBUG_ZOOM_UART)
- 		ldr	\rp, =ZOOM_UART_BASE
--		str	\rp, [\tmp, #0]		@ omap_uart_phys
--		ldr	\rp, =ZOOM_UART_VIRT
--		str	\rp, [\tmp, #4]		@ omap_uart_virt
--		mov	\rp, #(UART_LSR << ZOOM_PORT_SHIFT)
--		str	\rp, [\tmp, #8]		@ omap_uart_lsr
-+		ldr	\rv, =ZOOM_UART_VIRT
-+		mov	\tmp, #(UART_LSR << ZOOM_PORT_SHIFT)
-+		b	100f
-+#else
-+#error "Error! No proper debug option is defined."
- #endif
--		b	10b
- 
- 		/* AM33XX: Store both phys and virt address for the uart */
- 97:		add	\rp, \rp, #0x44000000	@ phys base
--		str	\rp, [\tmp, #0]		@ omap_uart_phys
--		sub	\rp, \rp, #0x44000000	@ phys base
--		add	\rp, \rp, #0xf9000000	@ virt base
--		str	\rp, [\tmp, #4]		@ omap_uart_virt
--		mov	\rp, #(UART_LSR << OMAP_PORT_SHIFT)
--		str	\rp, [\tmp, #8]		@ omap_uart_lsr
-+		sub	\rv, \rp, #0x44000000	@ phys base
-+		add	\rv, \rv, #0xf9000000	@ virt base
-+		mov	\tmp, #(UART_LSR << OMAP_PORT_SHIFT)
- 
--		b	10b
-+		b	100f
- 
- 		/* Store both phys and virt address for the uart */
- 98:		add	\rp, \rp, #0x48000000	@ phys base
--		str	\rp, [\tmp, #0]		@ omap_uart_phys
--		sub	\rp, \rp, #0x48000000	@ phys base
--		add	\rp, \rp, #0xfa000000	@ virt base
--		str	\rp, [\tmp, #4]		@ omap_uart_virt
--		mov	\rp, #(UART_LSR << OMAP_PORT_SHIFT)
--		str	\rp, [\tmp, #8]		@ omap_uart_lsr
--
--		b	10b
--
--		.align
--99:		.word	.
--		.word	omap_uart_phys
--		.ltorg
--
--100:		/* Pass the UART_LSR reg address */
--		ldr	\tmp, [\tmp, #8]	@ omap_uart_lsr
-+		sub	\rv, \rp, #0x48000000	@ phys base
-+		add	\rv, \rv, #0xfa000000	@ virt base
-+		mov	\tmp, #(UART_LSR << OMAP_PORT_SHIFT)
-+
-+100:		/* Add the UART_LSR reg address */
- 		add	\rp, \rp, \tmp
- 		add	\rv, \rv, \tmp
- 		.endm
--- 
-1.7.9.5
-
+Mikko
