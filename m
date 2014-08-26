@@ -1,214 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933852AbaHZFKa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 01:10:30 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:34253 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933746AbaHZFK2 (ORCPT
+	id S932525AbaHZFYE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 01:24:04 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:29228 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751336AbaHZFYA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 01:10:28 -0400
-X-Original-SENDERIP: 10.177.222.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Tue, 26 Aug 2014 14:11:16 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, ngupta@vflare.org,
-        "'Jerome Marchand'" <jmarchan@redhat.com>,
-        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>
-Subject: Re: [PATCH v3] zram: add num_discards for discarded pages stat
-Message-ID: <20140826051116.GG11319@bbox>
-References: <000201cfbde2$2ae08710$80a19530$@samsung.com>
- <20140825003610.GM17372@bbox>
- <008001cfc0da$de01b0d0$9a051270$@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <008001cfc0da$de01b0d0$9a051270$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 26 Aug 2014 01:24:00 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-22-53fc19eeb29d
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'Tyler Hicks'" <tyhicks@canonical.com>
+Cc: ecryptfs@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <000001cfa721$57072880$05157980$@samsung.com>
+ <20140725033353.GC8446@boyd>
+In-reply-to: <20140725033353.GC8446@boyd>
+Subject: RE: [PATCH] ecryptfs: avoid to access NULL pointer when write metadata
+ in xattr
+Date: Tue, 26 Aug 2014 13:23:12 +0800
+Message-id: <008401cfc0ed$efd37ab0$cf7a7010$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQC/UCS5j8IuYAKTDmzJjAgW/WYZCwLtkhZYnevKKsA=
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDLMWRmVeSWpSXmKPExsVy+t9jAd13kn+CDbas5bJ4e3c5u8XlXXPY
+	LDbdbGFyYPaY1dDL5vF5k1wAUxSXTUpqTmZZapG+XQJXxp5LkQXntSsWz3rB3MB4T7mLkZND
+	QsBEYuvGKawQtpjEhXvr2boYuTiEBBYxSpyfcBTK+cEocfbsUrAqNgEVieUd/5lAbBEBTYmP
+	k16CxZkFrCSO717NDGILCURILPv1mh3E5gSqaew8wgJiCwtESbx8s5wRxGYRUJX4dWoxmM0r
+	YCnx+esmNghbUOLH5HssEDO1JNbvPM4EYctLbF7zlhniUgWJHWdfM0LcYCWx6M0ZNogacYmN
+	R26xTGAUmoVk1Cwko2YhGTULScsCRpZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMFh/kxq
+	B+PKBotDjAIcjEo8vDfifwcLsSaWFVfmHmKU4GBWEuFleAgU4k1JrKxKLcqPLyrNSS0+xCjN
+	waIkznug1TpQSCA9sSQ1OzW1ILUIJsvEwSnVwCjh9bCxrW1fgb3ZmmU/DnD1ckUpsP4/mvlT
+	KWOBZEGzw8/zxydHsaa8Oq9mwfJJxU+ZJbXG+siZ9M3s83ukD3KktfcbiE3sf8h4a5GphFOm
+	iXbP5pgZlcrGR/p3v+ZmnqInV2O5td7xfv/2JxnvV5ofl4+5eXbeJl/HmTdTOntO8781nKfZ
+	o8RSnJFoqMVcVJwIAJRh8WtvAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 11:05:47AM +0800, Chao Yu wrote:
-> Hi Minchan,
-> 
-> > -----Original Message-----
-> > From: Minchan Kim [mailto:minchan@kernel.org]
-> > Sent: Monday, August 25, 2014 8:36 AM
-> > To: Chao Yu
-> > Cc: linux-kernel@vger.kernel.org; linux-mm@kvack.org; ngupta@vflare.org; 'Jerome Marchand';
-> > 'Sergey Senozhatsky'; 'Andrew Morton'
-> > Subject: Re: [PATCH v3] zram: add num_discards for discarded pages stat
-> > 
-> > Hello Chao,
-> > 
-> > On Fri, Aug 22, 2014 at 04:21:01PM +0800, Chao Yu wrote:
-> > > Since we have supported handling discard request in this commit
-> > > f4659d8e620d08bd1a84a8aec5d2f5294a242764 (zram: support REQ_DISCARD), zram got
-> > > one more chance to free unused memory whenever received discard request. But
-> > > without stating for discard request, there is no method for user to know whether
-> > > discard request has been handled by zram or how many blocks were discarded by
-> > > zram when user wants to know the effect of discard.
-> > 
-> > My concern is that how much we are able to know the effect of discard
-> > exactly with your patch.
-> > 
-> > The issue I can think of is zram-swap discard.
-> > Now, zram handles notification from VM to free duplicated copy between
-> > VM-owned memory and zRAM-owned's one so discarding for zram-swap might
-> > be pointless overhead but your stat indicates lots of free page discarded
-> > without real freeing so that user might think "We should keep enable
-> > swap discard for zRAM because the stat indicates it's really good".
-> 
-> Agreed.
-> 
-> > 
-> > In summary, wouldn't it better to have two?
-> 
-> Yeah, I'd like to.
-> 
-> > 
-> > num_discards,
-> > num_failed_discards?
-> 
-> It's good, but, IMHO, as it's not failed to discard pages due to inside
-> error of zRAM, How about show this information more positive by using:
-> num_discard_req,
-> num_discarded
+Hi Tyler,
 
-Better.
+Sorry to bother you!
 
-> 
-> Then user might think "We can keep on using real-time mode or batch mode
-> discard, because our freed pages are increased continuously shew by the
-> num_discarded with sending discard reqs each time.
-> 
-> How do you think?
+I didn't see any progress of this patch, is there anything wrong
+with this patch? If there is, please let me know.
 
-It's good for your goal and my goal but I will wait Sergey's opinion.
-Sergey, does it make sense to you, too?
+Regards,
+Yu
 
+> -----Original Message-----
+> From: Tyler Hicks [mailto:tyhicks@canonical.com]
+> Sent: Friday, July 25, 2014 11:34 AM
+> To: Chao Yu
+> Cc: ecryptfs@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] ecryptfs: avoid to access NULL pointer when write metadata in xattr
 > 
-> Thanks,
-> Yu
+> Hello and thanks for the patch!
 > 
-> > 
-> > For it, we should modify zram_free_page has return value.
-> > What do other guys think?
-> > 
-> > >
-> > > In this patch, we add num_discards to stat discarded pages, and export it to
-> > > sysfs for users.
-> > >
-> > > * From v1
-> > >  * Update zram document to show num_discards in statistics list.
-> > >
-> > > * From v2
-> > >  * Update description of this patch with clear goal.
-> > >
-> > > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> > > ---
-> > >  Documentation/ABI/testing/sysfs-block-zram | 10 ++++++++++
-> > >  Documentation/blockdev/zram.txt            |  1 +
-> > >  drivers/block/zram/zram_drv.c              |  3 +++
-> > >  drivers/block/zram/zram_drv.h              |  1 +
-> > >  4 files changed, 15 insertions(+)
-> > >
-> > > diff --git a/Documentation/ABI/testing/sysfs-block-zram
-> > b/Documentation/ABI/testing/sysfs-block-zram
-> > > index 70ec992..fa8936e 100644
-> > > --- a/Documentation/ABI/testing/sysfs-block-zram
-> > > +++ b/Documentation/ABI/testing/sysfs-block-zram
-> > > @@ -57,6 +57,16 @@ Description:
-> > >  		The failed_writes file is read-only and specifies the number of
-> > >  		failed writes happened on this device.
-> > >
-> > > +
-> > > +What:		/sys/block/zram<id>/num_discards
-> > > +Date:		August 2014
-> > > +Contact:	Chao Yu <chao2.yu@samsung.com>
-> > > +Description:
-> > > +		The num_discards file is read-only and specifies the number of
-> > > +		physical blocks which are discarded by this device. These blocks
-> > > +		are included in discard request which is sended by filesystem as
-> > > +		the blocks are no longer used.
-> > > +
-> > >  What:		/sys/block/zram<id>/max_comp_streams
-> > >  Date:		February 2014
-> > >  Contact:	Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> > > diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
-> > > index 0595c3f..e50e18b 100644
-> > > --- a/Documentation/blockdev/zram.txt
-> > > +++ b/Documentation/blockdev/zram.txt
-> > > @@ -89,6 +89,7 @@ size of the disk when not in use so a huge zram is wasteful.
-> > >  		num_writes
-> > >  		failed_reads
-> > >  		failed_writes
-> > > +		num_discards
-> > >  		invalid_io
-> > >  		notify_free
-> > >  		zero_pages
-> > > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> > > index d00831c..904e7a5 100644
-> > > --- a/drivers/block/zram/zram_drv.c
-> > > +++ b/drivers/block/zram/zram_drv.c
-> > > @@ -606,6 +606,7 @@ static void zram_bio_discard(struct zram *zram, u32 index,
-> > >  		bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
-> > >  		zram_free_page(zram, index);
-> > >  		bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
-> > > +		atomic64_inc(&zram->stats.num_discards);
-> > >  		index++;
-> > >  		n -= PAGE_SIZE;
-> > >  	}
-> > > @@ -866,6 +867,7 @@ ZRAM_ATTR_RO(num_reads);
-> > >  ZRAM_ATTR_RO(num_writes);
-> > >  ZRAM_ATTR_RO(failed_reads);
-> > >  ZRAM_ATTR_RO(failed_writes);
-> > > +ZRAM_ATTR_RO(num_discards);
-> > >  ZRAM_ATTR_RO(invalid_io);
-> > >  ZRAM_ATTR_RO(notify_free);
-> > >  ZRAM_ATTR_RO(zero_pages);
-> > > @@ -879,6 +881,7 @@ static struct attribute *zram_disk_attrs[] = {
-> > >  	&dev_attr_num_writes.attr,
-> > >  	&dev_attr_failed_reads.attr,
-> > >  	&dev_attr_failed_writes.attr,
-> > > +	&dev_attr_num_discards.attr,
-> > >  	&dev_attr_invalid_io.attr,
-> > >  	&dev_attr_notify_free.attr,
-> > >  	&dev_attr_zero_pages.attr,
-> > > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> > > index e0f725c..2994aaf 100644
-> > > --- a/drivers/block/zram/zram_drv.h
-> > > +++ b/drivers/block/zram/zram_drv.h
-> > > @@ -86,6 +86,7 @@ struct zram_stats {
-> > >  	atomic64_t num_writes;	/* --do-- */
-> > >  	atomic64_t failed_reads;	/* can happen when memory is too low */
-> > >  	atomic64_t failed_writes;	/* can happen when memory is too low */
-> > > +	atomic64_t num_discards;	/* no. of discarded pages */
-> > >  	atomic64_t invalid_io;	/* non-page-aligned I/O requests */
-> > >  	atomic64_t notify_free;	/* no. of swap slot free notifications */
-> > >  	atomic64_t zero_pages;		/* no. of zero filled pages */
-> > > --
-> > > 2.0.1.474.g72c7794
-> > >
-> > >
-> > > --
-> > > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > > see: http://www.linux-mm.org/ .
-> > > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> > 
+> On 2014-07-24 17:25:42, Chao Yu wrote:
+> > https://bugzilla.kernel.org/show_bug.cgi?id=41692
+> 
+> This actually isn't the bug that this patch fixes. It is a different bug
+> (that I don't think exists anymore) and someone happened to test for the
+> bug on a newer kernel and hit the oops that you're fixing here.
+> 
+> >
+> > Christopher Head 2014-06-28 05:26:20 UTC described:
+> > "I tried to reproduce this on 3.12.21. Instead, when I do "echo hello > foo"
+> > in an ecryptfs mount with ecryptfs_xattr specified, I get a kernel crash:
+> >
+> > BUG: unable to handle kernel NULL pointer dereference at           (null)
+> > IP: [<ffffffff8110eb39>] fsstack_copy_attr_all+0x2/0x61
+> > PGD d7840067 PUD b2c3c067 PMD 0
+> > Oops: 0002 [#1] SMP
+> > Modules linked in: nvidia(PO)
+> > CPU: 3 PID: 3566 Comm: bash Tainted: P           O 3.12.21-gentoo-r1 #2
+> > Hardware name: ASUSTek Computer Inc. G60JX/G60JX, BIOS 206 03/15/2010
+> > task: ffff8801948944c0 ti: ffff8800bad70000 task.ti: ffff8800bad70000
+> > RIP: 0010:[<ffffffff8110eb39>]  [<ffffffff8110eb39>] fsstack_copy_attr_all+0x2/0x61
+> > RSP: 0018:ffff8800bad71c10  EFLAGS: 00010246
+> > RAX: 00000000000181a4 RBX: ffff880198648480 RCX: 0000000000000000
+> > RDX: 0000000000000004 RSI: ffff880172010450 RDI: 0000000000000000
+> > RBP: ffff880198490e40 R08: 0000000000000000 R09: 0000000000000000
+> > R10: ffff880172010450 R11: ffffea0002c51e80 R12: 0000000000002000
+> > R13: 000000000000001a R14: 0000000000000000 R15: ffff880198490e40
+> > FS:  00007ff224caa700(0000) GS:ffff88019fcc0000(0000) knlGS:0000000000000000
+> > CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> > CR2: 0000000000000000 CR3: 00000000bb07f000 CR4: 00000000000007e0
+> > Stack:
+> > ffffffff811826e8 ffff8800a39d8000 0000000000000000 000000000000001a
+> > ffff8800a01d0000 ffff8800a39d8000 ffffffff81185fd5 ffffffff81082c2c
+> > 00000001a39d8000 53d0abbc98490e40 0000000000000037 ffff8800a39d8220
+> > Call Trace:
+> > [<ffffffff811826e8>] ? ecryptfs_setxattr+0x40/0x52
+> > [<ffffffff81185fd5>] ? ecryptfs_write_metadata+0x1b3/0x223
+> > [<ffffffff81082c2c>] ? should_resched+0x5/0x23
+> > [<ffffffff8118322b>] ? ecryptfs_initialize_file+0xaf/0xd4
+> > [<ffffffff81183344>] ? ecryptfs_create+0xf4/0x142
+> > [<ffffffff810f8c0d>] ? vfs_create+0x48/0x71
+> > [<ffffffff810f9c86>] ? do_last.isra.68+0x559/0x952
+> > [<ffffffff810f7ce7>] ? link_path_walk+0xbd/0x458
+> > [<ffffffff810fa2a3>] ? path_openat+0x224/0x472
+> > [<ffffffff810fa7bd>] ? do_filp_open+0x2b/0x6f
+> > [<ffffffff81103606>] ? __alloc_fd+0xd6/0xe7
+> > [<ffffffff810ee6ab>] ? do_sys_open+0x65/0xe9
+> > [<ffffffff8157d022>] ? system_call_fastpath+0x16/0x1b
+> > RIP  [<ffffffff8110eb39>] fsstack_copy_attr_all+0x2/0x61
+> > RSP <ffff8800bad71c10>
+> > CR2: 0000000000000000
+> > ---[ end trace df9dba5f1ddb8565 ]---"
+> >
+> > If we create a file when we mount with ecryptfs_xattr_metadata option, we will
+> > encounter a crash in this path:
+> > ->ecryptfs_create
+> >   ->ecryptfs_initialize_file
+> >     ->ecryptfs_write_metadata
+> >       ->ecryptfs_write_metadata_to_xattr
+> >         ->ecryptfs_setxattr
+> >           ->fsstack_copy_attr_all
+> > It's because our dentry->d_inode used in fsstack_copy_attr_all is NULL, and it
+> > will be initialized when ecryptfs_initialize_file finish.
+> >
+> > So we should skip copying attr from lower inode when the value of ->d_inode is
+> > invalid.
+> >
+> > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> > ---
+> 
+> I wrote a patch to fix this bug last week, made the changes necessary to
+> run through all of the eCryptfs tests with the ecryptfs_xattr_metadata
+> mount option, tested the fix, and then forgot to send out the patch.
+> (doh!) But it worked out well because I think I like your patch better.
+> 
+> I moved the innards of ecryptfs_setxattr() into a new function that
+> accepts the lower_dentry and ecryptfs inode as separate arguments. That
+> way it can work regardless of the eCryptfs dentry not yet being
+> d_initialized().
+> 
+> After looking at your patch, I don't think that's necessary. Skipping
+> the fsstack_copy_attr_all() should be fine for brand new eCryptfs
+> inodes since the attr copy just happened in ecryptfs_inode_set().
+> 
+> I'll test your patch and then push it to the eCryptfs -next branch. I'll
+> also update the bug link to point to the specific comment rather than
+> the unrelated bug itself. Thanks!
+> 
+> Tyler
+> 
+> >  fs/ecryptfs/inode.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> > diff --git a/fs/ecryptfs/inode.c b/fs/ecryptfs/inode.c
+> > index e67f9f0..436b7d8 100644
+> > --- a/fs/ecryptfs/inode.c
+> > +++ b/fs/ecryptfs/inode.c
+> > @@ -1037,7 +1037,7 @@ ecryptfs_setxattr(struct dentry *dentry, const char *name, const void
+> *value,
+> >  	}
+> >
+> >  	rc = vfs_setxattr(lower_dentry, name, value, size, flags);
+> > -	if (!rc)
+> > +	if (!rc && dentry->d_inode)
+> >  		fsstack_copy_attr_all(dentry->d_inode, lower_dentry->d_inode);
+> >  out:
+> >  	return rc;
 > > --
-> > Kind regards,
-> > Minchan Kim
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> > 2.0.1.474.g72c7794
+> >
+> >
 
--- 
-Kind regards,
-Minchan Kim
