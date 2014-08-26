@@ -1,76 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756025AbaHZWvP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 18:51:15 -0400
-Received: from mail-bn1blp0181.outbound.protection.outlook.com ([207.46.163.181]:44893
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754972AbaHZWvN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 18:51:13 -0400
-Message-ID: <1409093463.6510.92.camel@snotra.buserror.net>
-Subject: Re: [RESEND] clk: ppc-corenet: Add Freescale ARM-based platforms
- CLK_OF_DECLARE support
-From: Scott Wood <scottwood@freescale.com>
-To: Jingchang Lu <jingchang.lu@freescale.com>
-CC: <mturquette@linaro.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Date: Tue, 26 Aug 2014 17:51:03 -0500
-In-Reply-To: <1408700096-25415-1-git-send-email-jingchang.lu@freescale.com>
-References: <1408700096-25415-1-git-send-email-jingchang.lu@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
+	id S1756065AbaHZWyA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 18:54:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52891 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755000AbaHZWx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 18:53:58 -0400
+Message-ID: <53FD1001.30701@suse.de>
+Date: Wed, 27 Aug 2014 00:53:53 +0200
+From: =?ISO-8859-15?Q?Andreas_F=E4rber?= <afaerber@suse.de>
+Organization: SUSE LINUX Products GmbH
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [2601:2:5800:3f7:9485:8c90:e4c6:b5ea]
-X-ClientProxiedBy: CY1PR0601CA0022.namprd06.prod.outlook.com (25.160.162.32)
- To BY2PR0301MB0725.namprd03.prod.outlook.com (25.160.63.155)
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 03152A99FF
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6009001)(199003)(377424004)(51704005)(189002)(24454002)(85306004)(104166001)(95666004)(105586002)(21056001)(64706001)(47776003)(20776003)(33646002)(101416001)(80022001)(110136001)(23676002)(107046002)(106356001)(74502001)(76176999)(31966008)(50986999)(102836001)(103116003)(42186005)(74662001)(87976001)(19580405001)(90102001)(81342001)(88136002)(99396002)(50226001)(92566001)(4396001)(62966002)(86362001)(81542001)(93916002)(92726001)(19580395003)(46102001)(87286001)(77982001)(89996001)(50466002)(76482001)(77096002)(83072002)(77156001)(85852003)(83322001)(79102001)(3826002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR0301MB0725;H:[IPv6:2601:2:5800:3f7:9485:8c90:e4c6:b5ea];FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-X-OriginatorOrg: freescale.com
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+CC: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>,
+        Olof Johansson <olof@lixom.net>, Nick Dyer <nick.dyer@itdev.co.uk>,
+        Yufeng Shen <miletus@chromium.org>, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Tomasz Figa <tomasz.figa@gmail.com>
+Subject: Re: [PATCH v2 1/3] ARM: dts: Add Peach Pit dts entry for Atmel touchpad
+References: <1409066937-3574-1-git-send-email-javier.martinez@collabora.co.uk> <1409066937-3574-2-git-send-email-javier.martinez@collabora.co.uk>
+In-Reply-To: <1409066937-3574-2-git-send-email-javier.martinez@collabora.co.uk>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-08-22 at 17:34 +0800, Jingchang Lu wrote:
-> Signed-off-by: Jingchang Lu <jingchang.lu@freescale.com>
-> ---
->  drivers/clk/Kconfig           | 7 ++++---
->  drivers/clk/clk-ppc-corenet.c | 5 +++++
->  2 files changed, 9 insertions(+), 3 deletions(-)
+Hi Javier,
+
+Am 26.08.2014 17:28, schrieb Javier Martinez Canillas:
+> From: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
 > 
-> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-> index cfd3af7..8784704 100644
-> --- a/drivers/clk/Kconfig
-> +++ b/drivers/clk/Kconfig
-> @@ -82,11 +82,12 @@ config COMMON_CLK_AXI_CLKGEN
->  	  FPGAs. It is commonly used in Analog Devices' reference designs.
+> The Peach Pit board has an Atmel maXTouch trackpad device.
+> Add the needed Device Tree nodes to support it.
+> 
+> This Device Tree change is based on the Chrome OS 3.8 tree
+> but adapted to use the mainline Atmel maXTouch DT binding.
+> 
+> Signed-off-by: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
+> [javier.martinez: added linux,gpio-keymap property and changed IRQ type]
+> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> ---
+> 
+> Changes since v1:
+>  - Change trackpad IRQ pad function from 0x0 (GPIO input) to 0xf (GPIO IRQ).
+>    suggested by Tomasz Figa.
+>  - Remove BTN_TOOL_* from "linux,gpio-keymap" property since those are set
+>    by input mt core if INPUT_MT_POINTER is set. Suggested by Nick Dyer.
+>  - Use correct values for "linux,gpio-keymap" property. Suggested by Nick Dyer.
+>  - Remove support for Peach Pi board since it uses a different Atmel touchpad
+>    that requires an Atmel object protocol  (T100) not supported by the driver.
+>  - Use IRQ type constants from <dt-bindings/interrupt-controller/irq.h> instead
+>    of magic numbers. Suggested by Andreas Farber.
+> ---
+>  arch/arm/boot/dts/exynos5420-peach-pit.dts | 31 ++++++++++++++++++++++++++++++
+>  1 file changed, 31 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/exynos5420-peach-pit.dts b/arch/arm/boot/dts/exynos5420-peach-pit.dts
+> index 228a6b1..e4f82d5 100644
+> --- a/arch/arm/boot/dts/exynos5420-peach-pit.dts
+> +++ b/arch/arm/boot/dts/exynos5420-peach-pit.dts
+> @@ -11,6 +11,7 @@
+>  /dts-v1/;
+>  #include <dt-bindings/input/input.h>
+>  #include <dt-bindings/gpio/gpio.h>
+> +#include <dt-bindings/interrupt-controller/irq.h>
+>  #include "exynos5420.dtsi"
 >  
->  config CLK_PPC_CORENET
-> -	bool "Clock driver for PowerPC corenet platforms"
-> -	depends on PPC_E500MC && OF
-> +	bool "Clock driver for PowerPC corenet and compatible ARM-based platforms"
-> +	depends on (PPC_E500MC || ARM) && OF
-
-Should the symbol and driver be renamed to something like CLK_FSL_QORIQ?
-
-> diff --git a/drivers/clk/clk-ppc-corenet.c b/drivers/clk/clk-ppc-corenet.c
-> index 8e58edf..7692cac 100644
-> --- a/drivers/clk/clk-ppc-corenet.c
-> +++ b/drivers/clk/clk-ppc-corenet.c
-> @@ -305,3 +305,8 @@ static int __init ppc_corenet_clk_init(void)
->  	return platform_driver_register(&ppc_corenet_clk_driver);
->  }
->  subsys_initcall(ppc_corenet_clk_init);
+>  / {
+> @@ -157,6 +158,29 @@
+>  	};
+>  };
+>  
+> +&hsi2c_8 {
+> +	status = "okay";
+> +	clock-frequency = <333000>;
 > +
-> +CLK_OF_DECLARE(ppc_core_pll_v1, "fsl,qoriq-core-pll-1.0", core_pll_init);
-> +CLK_OF_DECLARE(ppc_core_pll_v2, "fsl,qoriq-core-pll-2.0", core_pll_init);
-> +CLK_OF_DECLARE(ppc_core_mux_v1, "fsl,qoriq-core-mux-1.0", core_mux_init);
-> +CLK_OF_DECLARE(ppc_core_mux_v2, "fsl,qoriq-core-mux-2.0", core_mux_init);
+> +	trackpad@4b {
+> +		compatible="atmel,maxtouch";
+> +		reg=<0x4b>;
+> +		interrupt-parent=<&gpx1>;
+> +		interrupts=<1 IRQ_TYPE_EDGE_FALLING>;
 
-What does this do that the existing platform driver and match table
-don't?  Why is it needed for ARM when PPC didn't need it?
+Nit: Here's a style break (4x spaces around '=' missing).
 
--Scott
+> +		wakeup-source;
+> +		pinctrl-names = "default";
+> +		pinctrl-0 = <&trackpad_irq>;
+> +		linux,gpio-keymap = < KEY_RESERVED
+> +				      KEY_RESERVED
+> +				      0		/* GPIO 0 */
+> +				      0		/* GPIO 1 */
+> +				      0		/* GPIO 2 */
+> +				      BTN_LEFT 	/* GPIO 3 */
+> +				      KEY_RESERVED
+> +				      KEY_RESERVED >;
+> +	};
 
+Coincidentally, I experimentally came up with a very similar DT node for
+Spring the weekend:
 
++	trackpad@4b {
++		compatible = "atmel,maxtouch";
++		reg = <0x4b>;
++		interrupt-parent = <&gpx1>;
++		interrupts = <2 IRQ_TYPE_NONE>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&trackpad_irq>;
++		linux,gpio-keymap = <KEY_RESERVED
++		                     KEY_RESERVED
++		                     KEY_RESERVED
++		                     KEY_RESERVED
++		                     KEY_RESERVED
++		                     BTN_LEFT>;
++		wakeup-source;
++	};
+
+0 == KEY_RESERVED, so you can consistently use it for GPIO 0-2, too. :)
+
+I probably should add the two trailing _RESERVEDs, too?
+
+With my above snippet I got an awful lot of "Interrupt triggered but
+zero messages" warnings (which I simply commented out as quickfix).
+Is that why you are using _EDGE_FALLING? Or pin-function 0xf?
+(In my case the ChromeOS DT had IRQ_TYPE_NONE and pin-function 0x0.)
+
+Regards,
+Andreas
+
+> +};
+> +
+>  &hsi2c_9 {
+>  	status = "okay";
+>  	clock-frequency = <400000>;
+> @@ -249,6 +273,13 @@
+>  		samsung,pin-drv = <0>;
+>  	};
+>  
+> +	trackpad_irq: trackpad-irq {
+> +		samsung,pins = "gpx1-1";
+> +		samsung,pin-function = <0xf>;
+> +		samsung,pin-pud = <0>;
+> +		samsung,pin-drv = <0>;
+> +	};
+> +
+>  	power_key_irq: power-key-irq {
+>  		samsung,pins = "gpx1-2";
+>  		samsung,pin-function = <0>;
+
+-- 
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
+GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
