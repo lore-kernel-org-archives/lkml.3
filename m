@@ -1,50 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934340AbaHZJZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 05:25:27 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:40292 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932407AbaHZJZ0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 05:25:26 -0400
-Date: Tue, 26 Aug 2014 10:25:21 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: "Arnout Vandecappelle (Essensium/Mind)" <arnout@mind.be>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        David Brown <davidb@codeaurora.org>
-Subject: Re: [PATCH v2] tps65910: Work around silicon erratum SWCZ010
-Message-ID: <20140826092521.GH9574@lee--X1>
-References: <1408709666-5927-1-git-send-email-arnout@mind.be>
- <1408721456-8101-1-git-send-email-arnout@mind.be>
- <20140822211247.GB24407@sirena.org.uk>
+	id S934361AbaHZJ06 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 05:26:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39406 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932407AbaHZJ05 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 05:26:57 -0400
+Message-ID: <53FC52DF.2000007@suse.de>
+Date: Tue, 26 Aug 2014 11:26:55 +0200
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: scsi: #define missing include guards
+References: <1408711053-14129-1-git-send-email-linux@rasmusvillemoes.dk>
+In-Reply-To: <1408711053-14129-1-git-send-email-linux@rasmusvillemoes.dk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140822211247.GB24407@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Aug 2014, Mark Brown wrote:
+On 08/22/2014 02:37 PM, Rasmus Villemoes wrote:
+> The four files aha1542.h, aha1740.h, gvp11.h and mvme147.h under
+> drivers/scsi/ contain two-thirds of an include guard, but do not
+> elsewhere.
+>
+> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+> ---
+>   drivers/scsi/aha1542.h | 1 +
+>   drivers/scsi/aha1740.h | 1 +
+>   drivers/scsi/gvp11.h   | 1 +
+>   drivers/scsi/mvme147.h | 1 +
+>   4 files changed, 4 insertions(+)
+>
+> diff --git a/drivers/scsi/aha1542.h b/drivers/scsi/aha1542.h
+> index b871d2b..8f4e07a 100644
+> --- a/drivers/scsi/aha1542.h
+> +++ b/drivers/scsi/aha1542.h
+> @@ -1,4 +1,5 @@
+>   #ifndef _AHA1542_H
+> +#define _AHA1542_H
+>
+>   /* $Id: aha1542.h,v 1.1 1992/07/24 06:27:38 root Exp root $
+>    *
+> diff --git a/drivers/scsi/aha1740.h b/drivers/scsi/aha1740.h
+> index af23fd6..7ea484f 100644
+> --- a/drivers/scsi/aha1740.h
+> +++ b/drivers/scsi/aha1740.h
+> @@ -1,4 +1,5 @@
+>   #ifndef _AHA1740_H
+> +#define _AHA1740_H
+>
+>   /* $Id$
+>    *
+> diff --git a/drivers/scsi/gvp11.h b/drivers/scsi/gvp11.h
+> index 852913c..5aabe90 100644
+> --- a/drivers/scsi/gvp11.h
+> +++ b/drivers/scsi/gvp11.h
+> @@ -1,4 +1,5 @@
+>   #ifndef GVP11_H
+> +#define GVP11_H
+>
+>   /* $Id: gvp11.h,v 1.4 1997/01/19 23:07:12 davem Exp $
+>    *
+> diff --git a/drivers/scsi/mvme147.h b/drivers/scsi/mvme147.h
+> index bfd4566..479e9b4 100644
+> --- a/drivers/scsi/mvme147.h
+> +++ b/drivers/scsi/mvme147.h
+> @@ -1,4 +1,5 @@
+>   #ifndef MVME147_H
+> +#define MVME147_H
+>
+>   /* $Id: mvme147.h,v 1.4 1997/01/19 23:07:10 davem Exp $
+>    *
+>
+Not that it matter much, but:
 
-> On Fri, Aug 22, 2014 at 05:30:56PM +0200, Arnout Vandecappelle (Essensium/Mind) wrote:
-> > From http://www.ti.com/lit/pdf/SWCZ010 :
-> > 
-> > Glitch on SDA-SCL not managed correctly by the I2C IP
+Reviewed-by: Hannes Reinecke <hare@suse.de>
 
- drivers/mfd/tps65910.c | 5 +++++
- 1 file changed, 5 insertions(+)
+Cheers,
 
-> Applied, thanks.
-
-Eh?
-
+Hannes
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org â”‚ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
