@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755884AbaHZWiX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 18:38:23 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:47302 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751316AbaHZWiV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 18:38:21 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-rockchip@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org
-Subject: [PATCH] iio: adc: rockchip_saradc: remove unused variable in probe
-Date: Wed, 27 Aug 2014 00:40:16 +0200
-Message-ID: <2134722.Yfu4MZ4klm@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
+	id S1755963AbaHZWid (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 18:38:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44538 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755894AbaHZWia (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 18:38:30 -0400
+Date: Tue, 26 Aug 2014 15:38:29 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Vinod Koul <vinod.koul@intel.com>, Mark Brown <broonie@kernel.org>,
+        Hein Tibosch <hein_tibosch@yahoo.es>,
+        Russell King <linux@arm.linux.org.uk>, Takashi Iwai <tiwai@suse.de>,
+        Kweh Hock Leong <hock.leong.kweh@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Alan Cox <alan@linux.intel.com>, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1 12/12] serial: 8250_pci: Add PCI IDs for Intel Braswell
+Message-ID: <20140826223829.GA29137@kroah.com>
+References: <1408469363-15901-1-git-send-email-andriy.shevchenko@linux.intel.com>
+ <1408469363-15901-13-git-send-email-andriy.shevchenko@linux.intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408469363-15901-13-git-send-email-andriy.shevchenko@linux.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The rate variable in the probe function of the saradc is a remnant
-of a previous patch iteration. It is unused and thus produces a
-compile time warning. Therefore remove it.
+On Tue, Aug 19, 2014 at 08:29:23PM +0300, Andy Shevchenko wrote:
+> From: Alan Cox <alan@linux.intel.com>
+> 
+> Add new PCI IDs to cover newer Intel SoCs such as Braswell.
+> 
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> ---
+>  drivers/tty/serial/8250/8250_pci.c | 27 +++++++++++++++++++++++++++
+>  1 file changed, 27 insertions(+)
+> 
 
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
----
- drivers/iio/adc/rockchip_saradc.c | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/drivers/iio/adc/rockchip_saradc.c b/drivers/iio/adc/rockchip_saradc.c
-index 1fad964..e074a0b 100644
---- a/drivers/iio/adc/rockchip_saradc.c
-+++ b/drivers/iio/adc/rockchip_saradc.c
-@@ -141,7 +141,6 @@ static int rockchip_saradc_probe(struct platform_device *pdev)
- 	struct resource	*mem;
- 	int ret;
- 	int irq;
--	u32 rate;
- 
- 	if (!np)
- 		return -ENODEV;
--- 
-2.0.1
-
-
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
