@@ -1,253 +1,416 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933722AbaHZEpb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 00:45:31 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:38527 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750796AbaHZEp3 (ORCPT
+	id S933767AbaHZErX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 00:47:23 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:33317 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750731AbaHZErV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 00:45:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140825155738.GA5944@redhat.com>
-References: <1408964064-21447-1-git-send-email-consul.kautuk@gmail.com>
-	<20140825155738.GA5944@redhat.com>
-Date: Tue, 26 Aug 2014 10:15:28 +0530
-Message-ID: <CAFPAmTS5_X1zEQ00vgh0POq_CheY71H+TnJ5uaP5wdWXYiwRtA@mail.gmail.com>
-Subject: Re: [PATCH 1/1] do_exit(): Solve possibility of BUG() due to race
- with try_to_wake_up()
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+	Tue, 26 Aug 2014 00:47:21 -0400
+Date: Mon, 25 Aug 2014 21:45:34 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Peter Feiner <pfeiner@google.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>, Jamie Liu <jamieliu@google.com>,
+        Hugh Dickins <hughd@google.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
-        Ionut Alexa <ionut.m.alexa@gmail.com>,
-        Guillaume Morin <guillaume@morinfr.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kirill Tkhai <tkhai@yandex.ru>
-Content-Type: text/plain; charset=UTF-8
+        Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [PATCH v5] mm: softdirty: enable write notifications on VMAs
+ after VM_SOFTDIRTY cleared
+In-Reply-To: <1408937681-1472-1-git-send-email-pfeiner@google.com>
+Message-ID: <alpine.LSU.2.11.1408252142380.2073@eggly.anvils>
+References: <1408571182-28750-1-git-send-email-pfeiner@google.com> <1408937681-1472-1-git-send-email-pfeiner@google.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry folks,
+On Sun, 24 Aug 2014, Peter Feiner wrote:
 
-I got one thing wrong:
->From some more code review, both __down_common() and
-do_wait_for_common() inspect the signal_pending() only while in
-TASK_RUNNING.
+> For VMAs that don't want write notifications, PTEs created for read
+> faults have their write bit set. If the read fault happens after
+> VM_SOFTDIRTY is cleared, then the PTE's softdirty bit will remain
+> clear after subsequent writes.
 
-So I think that it cannot be possible that this happened on my system
-due to __down_common() and/or wait_for_common().
+Good catch.  Worrying that it's not been noticed until now.
+But I find quite a lot that needs thinking about in the fix.
 
-Which only leaves out the possibility that the BUG() on my embedded
-system happened due to a driver which was trying to implement its own
-sleeping primitive
-by first setting the task state to TASK_INTERRUPTIBLE and then
-checking for signal_pending/signal_pending_state.
-(But this is anyway generally frowned upon and not really acceptable nowadays).
+> 
+> Here's a simple code snippet to demonstrate the bug:
+> 
+>   char* m = mmap(NULL, getpagesize(), PROT_READ | PROT_WRITE,
+>                  MAP_ANONYMOUS | MAP_SHARED, -1, 0);
+>   system("echo 4 > /proc/$PPID/clear_refs"); /* clear VM_SOFTDIRTY */
+>   assert(*m == '\0');     /* new PTE allows write access */
+>   assert(!soft_dirty(x));
+>   *m = 'x';               /* should dirty the page */
+>   assert(soft_dirty(x));  /* fails */
+> 
+> With this patch, write notifications are enabled when VM_SOFTDIRTY is
+> cleared. Furthermore, to avoid unnecessary faults, write
+> notifications are disabled when VM_SOFTDIRTY is reset.
 
-I'll review those drivers for this kind of mistake.
+"reset" is often a synonym for "cleared": "whenever VM_SOFTDIRTY is set"?
+
+> 
+> As a side effect of enabling and disabling write notifications with
+> care, this patch fixes a bug in mprotect where vm_page_prot bits set
+> by drivers were zapped on mprotect. An analogous bug was fixed in mmap
+> by c9d0bf241451a3ab7d02e1652c22b80cd7d93e8f.
 
 
-On Mon, Aug 25, 2014 at 9:27 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 08/25, Kautuk Consul wrote:
->>
->> I encountered a BUG() scenario within do_exit() on an ARM system.
->>
->> The problem is due to a race scenario between do_exit() and try_to_wake_up()
->> on different CPUs due to usage of sleeping primitives such as __down_common
->> and wait_for_common.
->>
->> Race Scenario
->> =============
->>
->> Let us assume there are 2 CPUs A and B execute code in the following order:
->> 1)    CPU A was running in user-mode and enters kernel mode via some
->>       syscall/exception handler.
->> 2)    CPU A sets the current task(t) state to TASK_INTERRUPTIBLE via __down_common
->>       or wait_for_common.
->> 3)    CPU A checks for signal_pending() and returns due to TIF_SIGPENDING
->>       being set in t's threadinfo due to a previous signal(say SIGKILL) being
->>       received on this task t.
->> 4)    CPU A returns returns back to the assembly trap handler and calls
->>       do_work_pending() -> do_signal() -> get_signal() -> do_group_exit()
->>        -> do_exit()
->>       CPU A  has not yet executed the following line of code before the final
->>       call to schedule:
->>     /* causes final put_task_struct in finish_task_switch(). */
->>     tsk->state = TASK_DEAD;
->> 5)    CPU B tries to send a signal to task t (currently executing on CPU A)
->>       and thus enters: signal_wake_up_state() -> wake_up_state() ->
->>                                        try_to_wake_up()
->> 6)    CPU B executes all code in try_to_wake_up() till the call to
->>       ttwu_queue -> ttwu_do_activate -> ttwu_do_wakeup().
->>       CPU B has still not executed the following code in ttwu_do_wakeup():
->>       p->state = TASK_RUNNING;
->> 7)    CPU A executes the following line of code:
->>     /* causes final put_task_struct in finish_task_switch(). */
->>     tsk->state = TASK_DEAD;
->> 8)    CPU B executes the following code in ttwu_do_wakeup():
->>       p->state = TASK_RUNNING;
->> 9)    CPU A continues to the call to do_exit() -> schedule().
->>       Since the tsk->state is TASK_RUNNING, the call to schedule() returns and
->>       do_exit() -> BUG() is hit on CPU A.
->>
->> Alternate Solution
->> ==================
->>
->> An alternate solution would be to simply set the current task state to
->> TASK_RUNNING in __down_common(), wait_for_common() and all other interruptible
->> sleeping primitives in their if(signal_pending/signal_pending_state) conditional
->> blocks.
->>
->> But this change seems to me to be more logical because:
->> i)            This will involve lesser changes to the kernel core code.
->> ii)           Any further sleeping primitives in the kernel also need not suffer from
->>               this kind of race scenario.
->>
->> Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
->> ---
->>  kernel/exit.c |   10 ++++++----
->>  1 file changed, 6 insertions(+), 4 deletions(-)
->>
->> diff --git a/kernel/exit.c b/kernel/exit.c
->> index 32c58f7..69a8231 100644
->> --- a/kernel/exit.c
->> +++ b/kernel/exit.c
->> @@ -824,14 +824,16 @@ void do_exit(long code)
->>        *     (or hypervisor of virtual machine switches to other guest)
->>        *  As a result, we may become TASK_RUNNING after becoming TASK_DEAD
->>        *
->> -      * To avoid it, we have to wait for releasing tsk->pi_lock which
->> -      * is held by try_to_wake_up()
->> +      * To solve this, we have to compete for tsk->pi_lock which is held by
->> +      * try_to_wake_up().
->>        */
->> -     smp_mb();
->> -     raw_spin_unlock_wait(&tsk->pi_lock);
->> +     raw_spin_lock(&tsk->pi_lock);
->>
->>       /* causes final put_task_struct in finish_task_switch(). */
->>       tsk->state = TASK_DEAD;
->> +
->> +     raw_spin_unlock(&tsk->pi_lock);
->> +
->>       tsk->flags |= PF_NOFREEZE;      /* tell freezer to ignore us */
->>       schedule();
->>       BUG();
->> --
->
-> Peter, do you remember another problem with TASK_DEAD we discussed recently?
-> (prev_state == TASK_DEAD detection in finish_task_switch() still looks racy).
->
-> I am starting to think that perhaps we need something like below, what do
-> you all think?
->
-> Oleg.
->
-> --- x/kernel/sched/core.c
-> +++ x/kernel/sched/core.c
-> @@ -2205,9 +2205,10 @@ static void finish_task_switch(struct rq
->         __releases(rq->lock)
->  {
->         struct mm_struct *mm = rq->prev_mm;
-> -       long prev_state;
-> +       struct task_struct *dead = rq->dead;
->
->         rq->prev_mm = NULL;
-> +       rq->dead = NULL;
->
->         /*
->          * A task struct has one reference for the use as "current".
-> @@ -2220,7 +2221,6 @@ static void finish_task_switch(struct rq
->          * be dropped twice.
->          *              Manfred Spraul <manfred@colorfullife.com>
->          */
-> -       prev_state = prev->state;
->         vtime_task_switch(prev);
->         finish_arch_switch(prev);
->         perf_event_task_sched_in(prev, current);
-> @@ -2230,16 +2230,16 @@ static void finish_task_switch(struct rq
->         fire_sched_in_preempt_notifiers(current);
->         if (mm)
->                 mmdrop(mm);
-> -       if (unlikely(prev_state == TASK_DEAD)) {
-> -               if (prev->sched_class->task_dead)
-> -                       prev->sched_class->task_dead(prev);
-> +       if (unlikely(dead)) {
-> +               if (dead->sched_class->task_dead)
-> +                       dead->sched_class->task_dead(dead);
->
->                 /*
->                  * Remove function-return probe instances associated with this
->                  * task and put them back on the free list.
->                  */
-> -               kprobe_flush_task(prev);
-> -               put_task_struct(prev);
-> +               kprobe_flush_task(dead);
-> +               put_task_struct(dead);
->         }
->
->         tick_nohz_task_switch(current);
-> @@ -2770,11 +2770,15 @@ need_resched:
->         smp_mb__before_spinlock();
->         raw_spin_lock_irq(&rq->lock);
->
-> +       if (unlikely(rq->dead))
-> +               goto deactivate;
-> +
->         switch_count = &prev->nivcsw;
->         if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) {
->                 if (unlikely(signal_pending_state(prev->state, prev))) {
->                         prev->state = TASK_RUNNING;
->                 } else {
-> +deactivate:
->                         deactivate_task(rq, prev, DEQUEUE_SLEEP);
->                         prev->on_rq = 0;
->
-> @@ -2826,6 +2830,15 @@ need_resched:
->                 goto need_resched;
+Commit c9d0bf241451 ("mm: uncached vma support with writenotify").
+Adding Magnus to the Cc list: I have some doubt as to whether his
+bugfix is in fact preserved below, and would like him to check.
+
+> 
+> Reported-by: Peter Feiner <pfeiner@google.com>
+> Suggested-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> Reviewed-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> Reviewed-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> Signed-off-by: Peter Feiner <pfeiner@google.com>
+
+I like Kirill's suggestion to approach this via writenotify,
+but find the disable/enable rather confusing (partly because
+enabling writenotify amounts to disabling write access).
+I may be alone in my confusion.
+
+> 
+> ---
+> 
+> v1 -> v2: Instead of checking VM_SOFTDIRTY in the fault handler,
+>           enable write notifications on vm_page_prot when we clear
+>           VM_SOFTDIRTY.
+> 
+> v2 -> v3: * Grab the mmap_sem in write mode if any VMAs have
+>             VM_SOFTDIRTY set. This involved refactoring clear_refs_write
+>             to make it less unwieldy.
+> 
+>           * In mprotect, don't inadvertently disable write notifications on VMAs
+>             that have had VM_SOFTDIRTY cleared
+> 
+>           * The mprotect fix and mmap cleanup that comprised the
+>             second and third patches in v2 were swallowed by the main
+>             patch because of vm_page_prot corner case handling.
+> 
+> v3 -> v4: Handle !defined(CONFIG_MEM_SOFT_DIRTY): old patch would have
+>           enabled write notifications for all VMAs in this case.
+> 
+> v4 -> v5: IS_ENABLED(CONFIG_MEM_SOFT_DIRTY) instead of #ifdef ...
+> ---
+>  fs/proc/task_mmu.c | 113 +++++++++++++++++++++++++++++++++--------------------
+>  include/linux/mm.h |  14 +++++++
+>  mm/mmap.c          |  24 +++++-------
+>  mm/mprotect.c      |   6 +--
+>  4 files changed, 97 insertions(+), 60 deletions(-)
+> 
+> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+> index dfc791c..f5e75c6 100644
+> --- a/fs/proc/task_mmu.c
+> +++ b/fs/proc/task_mmu.c
+> @@ -785,13 +785,80 @@ static int clear_refs_pte_range(pmd_t *pmd, unsigned long addr,
+>  	return 0;
 >  }
->
-> +// called under preempt_disable();
-> +void exit_schedule()
+>  
+> +static int clear_refs(struct mm_struct *mm, enum clear_refs_types type,
+> +                      int write)
 > +{
-> +       // TODO: kill TASK_DEAD, this is only for proc
-> +       current->state = TASK_DEAD;
-> +       task_rq(current)->dead = current;
-> +       __schedule();
+> +	int r = 0;
+> +	struct vm_area_struct *vma;
+> +	struct clear_refs_private cp = {
+> +		.type = type,
+> +	};
+> +	struct mm_walk clear_refs_walk = {
+> +		.pmd_entry = clear_refs_pte_range,
+> +		.mm = mm,
+> +		.private = &cp,
+> +	};
+> +
+> +	if (write)
+> +		down_write(&mm->mmap_sem);
+> +	else
+> +		down_read(&mm->mmap_sem);
+> +
+> +	if (type == CLEAR_REFS_SOFT_DIRTY)
+> +		mmu_notifier_invalidate_range_start(mm, 0, -1);
+> +
+> +	for (vma = mm->mmap; vma; vma = vma->vm_next) {
+> +		cp.vma = vma;
+> +		if (is_vm_hugetlb_page(vma))
+> +			continue;
+> +		/*
+> +		 * Writing 1 to /proc/pid/clear_refs affects all pages.
+> +		 *
+> +		 * Writing 2 to /proc/pid/clear_refs only affects
+> +		 * Anonymous pages.
+> +		 *
+> +		 * Writing 3 to /proc/pid/clear_refs only affects file
+> +		 * mapped pages.
+> +		 *
+> +		 * Writing 4 to /proc/pid/clear_refs affects all pages.
+> +		 */
+> +		if (type == CLEAR_REFS_ANON && vma->vm_file)
+> +			continue;
+> +		if (type == CLEAR_REFS_MAPPED && !vma->vm_file)
+> +			continue;
+> +		if (type == CLEAR_REFS_SOFT_DIRTY &&
+> +		    (vma->vm_flags & VM_SOFTDIRTY)) {
+> +			if (!write) {
+> +				r = -EAGAIN;
+> +				break;
+
+Hmm.  For a long time I thought you were fixing another important bug
+with down_write, since we "always" use down_write to modify vm_flags.
+
+But now I'm realizing that if this is the _only_ place which modifies
+vm_flags with down_read, then it's "probably" safe.  I've a vague
+feeling that this was discussed before - is that so, Cyrill?
+
+It certainly feels fragile to depend on this; but conversely, I don't
+like replacing a long down_read scan by an indefinite down_read scan
+followed by a long down_write scan.
+
+I see that you earlier persuaded yourself that the races are benign
+if you stick with down_read.  I can't confirm or deny that at present:
+seems more important right now to get this mail out to you than think
+through that aspect.
+
+> +			}
+> +			vma->vm_flags &= ~VM_SOFTDIRTY;
+> +			vma_enable_writenotify(vma);
+
+That's an example of how the vma_enable_writenotify() interface
+may be confusing.  I thought for a while that that line was unsafe,
+there being quite other reasons why write protection may be needed;
+then realized it's okay because "enable" is the restrictive one.
+
+> +		}
+> +		walk_page_range(vma->vm_start, vma->vm_end,
+> +				&clear_refs_walk);
+> +	}
+> +
+> +	if (type == CLEAR_REFS_SOFT_DIRTY)
+> +		mmu_notifier_invalidate_range_end(mm, 0, -1);
+> +
+> +	if (!r)
+> +		flush_tlb_mm(mm);
+> +
+> +	if (write)
+> +		up_write(&mm->mmap_sem);
+> +	else
+> +		up_read(&mm->mmap_sem);
+> +
+> +	return r;
 > +}
 > +
->  static inline void sched_submit_work(struct task_struct *tsk)
+>  static ssize_t clear_refs_write(struct file *file, const char __user *buf,
+>  				size_t count, loff_t *ppos)
 >  {
->         if (!tsk->state || tsk_is_pi_blocked(tsk))
-> --- x/kernel/exit.c
-> +++ x/kernel/exit.c
-> @@ -815,25 +815,8 @@ void do_exit(long code)
->                 __this_cpu_add(dirty_throttle_leaks, tsk->nr_dirtied);
->         exit_rcu();
->
-> -       /*
-> -        * The setting of TASK_RUNNING by try_to_wake_up() may be delayed
-> -        * when the following two conditions become true.
-> -        *   - There is race condition of mmap_sem (It is acquired by
-> -        *     exit_mm()), and
-> -        *   - SMI occurs before setting TASK_RUNINNG.
-> -        *     (or hypervisor of virtual machine switches to other guest)
-> -        *  As a result, we may become TASK_RUNNING after becoming TASK_DEAD
-> -        *
-> -        * To avoid it, we have to wait for releasing tsk->pi_lock which
-> -        * is held by try_to_wake_up()
-> -        */
-> -       smp_mb();
-> -       raw_spin_unlock_wait(&tsk->pi_lock);
+>  	struct task_struct *task;
+>  	char buffer[PROC_NUMBUF];
+>  	struct mm_struct *mm;
+> -	struct vm_area_struct *vma;
+>  	enum clear_refs_types type;
+>  	int itype;
+>  	int rv;
+> @@ -820,47 +887,9 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
+>  		return -ESRCH;
+>  	mm = get_task_mm(task);
+>  	if (mm) {
+> -		struct clear_refs_private cp = {
+> -			.type = type,
+> -		};
+> -		struct mm_walk clear_refs_walk = {
+> -			.pmd_entry = clear_refs_pte_range,
+> -			.mm = mm,
+> -			.private = &cp,
+> -		};
+> -		down_read(&mm->mmap_sem);
+> -		if (type == CLEAR_REFS_SOFT_DIRTY)
+> -			mmu_notifier_invalidate_range_start(mm, 0, -1);
+> -		for (vma = mm->mmap; vma; vma = vma->vm_next) {
+> -			cp.vma = vma;
+> -			if (is_vm_hugetlb_page(vma))
+> -				continue;
+> -			/*
+> -			 * Writing 1 to /proc/pid/clear_refs affects all pages.
+> -			 *
+> -			 * Writing 2 to /proc/pid/clear_refs only affects
+> -			 * Anonymous pages.
+> -			 *
+> -			 * Writing 3 to /proc/pid/clear_refs only affects file
+> -			 * mapped pages.
+> -			 *
+> -			 * Writing 4 to /proc/pid/clear_refs affects all pages.
+> -			 */
+> -			if (type == CLEAR_REFS_ANON && vma->vm_file)
+> -				continue;
+> -			if (type == CLEAR_REFS_MAPPED && !vma->vm_file)
+> -				continue;
+> -			if (type == CLEAR_REFS_SOFT_DIRTY) {
+> -				if (vma->vm_flags & VM_SOFTDIRTY)
+> -					vma->vm_flags &= ~VM_SOFTDIRTY;
+> -			}
+> -			walk_page_range(vma->vm_start, vma->vm_end,
+> -					&clear_refs_walk);
+> -		}
+> -		if (type == CLEAR_REFS_SOFT_DIRTY)
+> -			mmu_notifier_invalidate_range_end(mm, 0, -1);
+> -		flush_tlb_mm(mm);
+> -		up_read(&mm->mmap_sem);
+> +		rv = clear_refs(mm, type, 0);
+> +		if (rv)
+> +			clear_refs(mm, type, 1);
+>  		mmput(mm);
+>  	}
+>  	put_task_struct(task);
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index 8981cc8..7979b79 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -1946,6 +1946,20 @@ static inline pgprot_t vm_get_page_prot(unsigned long vm_flags)
+>  }
+>  #endif
+>  
+> +/* Enable write notifications without blowing away special flags. */
+> +static inline void vma_enable_writenotify(struct vm_area_struct *vma)
+> +{
+> +	pgprot_t newprot = vm_get_page_prot(vma->vm_flags & ~VM_SHARED);
+> +	vma->vm_page_prot = pgprot_modify(vma->vm_page_prot, newprot);
+> +}
+> +
+> +/* Disable write notifications without blowing away special flags. */
+> +static inline void vma_disable_writenotify(struct vm_area_struct *vma)
+> +{
+> +	pgprot_t newprot = vm_get_page_prot(vma->vm_flags);
+> +	vma->vm_page_prot = pgprot_modify(vma->vm_page_prot, newprot);
+> +}
+
+As mentioned above, I find that enable and disable confusing.
+Might it be better just to have a vma_set_page_prot(vma), which does
+the "if vma_wants_writenotify(vma) blah; else blah;" internally?
+
+And does what you have there build on any architecture other than
+x86 and tile?  Because pgprot_modify() was only used in mm/mprotect.c
+before, we declare the fallback version there, and so far as I can see,
+only x86 and tile declare the pgprot_modify() they need in a header file.
+
+> +
+>  #ifdef CONFIG_NUMA_BALANCING
+>  unsigned long change_prot_numa(struct vm_area_struct *vma,
+>  			unsigned long start, unsigned long end);
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index c1f2ea4..2963130 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -1470,6 +1470,10 @@ int vma_wants_writenotify(struct vm_area_struct *vma)
+>  	if (vma->vm_ops && vma->vm_ops->page_mkwrite)
+>  		return 1;
+>  
+> +	/* Do we need to track softdirty? */
+> +	if (IS_ENABLED(CONFIG_MEM_SOFT_DIRTY) && !(vm_flags & VM_SOFTDIRTY))
+> +		return 1;
+> +
+>  	/* The open routine did something to the protections already? */
+>  	if (pgprot_val(vma->vm_page_prot) !=
+>  	    pgprot_val(vm_get_page_prot(vm_flags)))
+
+That sets me wondering: have you placed the VM_SOFTDIRTY check in the
+right place in this series of tests?
+
+I think, once pgprot_modify() is correct on all architectures,
+it should be possible to drop that pgprot_val() check from
+vma_wants_writenotify() - which would be a welcome simplification.
+
+But what about the VM_PFNMAP test below it?  If that test was necessary,
+then having your VM_SOFTDIRTY check before it seems dangerous.  But I'm
+hoping we can persuade ourselves that the VM_PFNMAP test was unnecessary,
+and simply delete it.
+
+> @@ -1610,21 +1614,6 @@ munmap_back:
+>  			goto free_vma;
+>  	}
+>  
+> -	if (vma_wants_writenotify(vma)) {
+> -		pgprot_t pprot = vma->vm_page_prot;
 > -
-> -       /* causes final put_task_struct in finish_task_switch(). */
-> -       tsk->state = TASK_DEAD;
->         tsk->flags |= PF_NOFREEZE;      /* tell freezer to ignore us */
-> -       schedule();
-> +       exit_schedule();
->         BUG();
->         /* Avoid "noreturn function does return".  */
->         for (;;)
->
+> -		/* Can vma->vm_page_prot have changed??
+> -		 *
+> -		 * Answer: Yes, drivers may have changed it in their
+> -		 *         f_op->mmap method.
+> -		 *
+> -		 * Ensures that vmas marked as uncached stay that way.
+> -		 */
+> -		vma->vm_page_prot = vm_get_page_prot(vm_flags & ~VM_SHARED);
+> -		if (pgprot_val(pprot) == pgprot_val(pgprot_noncached(pprot)))
+> -			vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+
+So, this is where Magnus's bugfix gets deleted: but I'm afraid that
+with pgprot_modify() properly implemented only on x86 and tile, we
+cannot delete this so easily.
+
+It's going to be tedious and error-prone to devise a proper
+pgprot_modify() for each of N unfamiliar architectures.  I wonder
+if we can take a hint from Magnus's code there, to get a suitable
+default going, which may not be perfect for each, but will avoid
+introducing regression.
+
+Or am I simply confused about the lack of proper pgprot_modify()s?
+
+> -	}
+> -
+>  	vma_link(mm, vma, prev, rb_link, rb_parent);
+>  	/* Once vma denies write, undo our temporary denial count */
+>  	if (file) {
+> @@ -1658,6 +1647,11 @@ out:
+>  	 */
+>  	vma->vm_flags |= VM_SOFTDIRTY;
+>  
+> +	if (vma_wants_writenotify(vma))
+> +		vma_enable_writenotify(vma);
+> +	else
+> +		vma_disable_writenotify(vma);
+> +
+>  	return addr;
+>  
+>  unmap_and_free_vma:
+> diff --git a/mm/mprotect.c b/mm/mprotect.c
+> index c43d557..2dea043 100644
+> --- a/mm/mprotect.c
+> +++ b/mm/mprotect.c
+> @@ -320,12 +320,12 @@ success:
+>  	 * held in write mode.
+>  	 */
+>  	vma->vm_flags = newflags;
+> -	vma->vm_page_prot = pgprot_modify(vma->vm_page_prot,
+> -					  vm_get_page_prot(newflags));
+>  
+>  	if (vma_wants_writenotify(vma)) {
+> -		vma->vm_page_prot = vm_get_page_prot(newflags & ~VM_SHARED);
+> +		vma_enable_writenotify(vma);
+>  		dirty_accountable = 1;
+
+Not an issue coming from your patch, but please take a look at how
+dirty_accountable gets used in change_pte_range(): I suspect we have a
+similar soft-dirty bug there, do you agree?  Or does it work out safely?
+
+> +	} else {
+> +		vma_disable_writenotify(vma);
+>  	}
+>  
+>  	change_protection(vma, start, end, vma->vm_page_prot,
+> -- 
+> 2.1.0.rc2.206.gedb03e5
+
+scripts/checkpatch.pl has a few complaints too.  Personally, I like
+to make very simple functions as brief as possible, ignoring the rule
+about a blank line between declarations and body.  So I like your style,
+but others will disagree: I suppose we should bow to checkpatch there.
+
+Hugh
