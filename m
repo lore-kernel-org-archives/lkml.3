@@ -1,100 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932990AbaHZP25 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 11:28:57 -0400
-Received: from mga11.intel.com ([192.55.52.93]:28311 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752722AbaHZP24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 11:28:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,405,1406617200"; 
-   d="scan'208";a="581902829"
-Message-ID: <1409066845.30155.17.camel@linux.intel.com>
-Subject: Re: [PATCH v1 00/12] dmaengine: dw: remove slave_id, add PCI support
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: dmaengine <dmaengine@vger.kernel.org>
-Cc: Vinod Koul <vinod.koul@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kweh Hock Leong <hock.leong.kweh@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org
-Date: Tue, 26 Aug 2014 18:27:25 +0300
-In-Reply-To: <1408469363-15901-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1408469363-15901-1-git-send-email-andriy.shevchenko@linux.intel.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.5-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758577AbaHZP3c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 11:29:32 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:46937 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755879AbaHZP3a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 11:29:30 -0400
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        afaerber@suse.de, Nick Dyer <nick.dyer@itdev.co.uk>,
+        Yufeng Shen <miletus@chromium.org>, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: [PATCH v2 0/3] Add Atmel maXTouch support for Peach Pit
+Date: Tue, 26 Aug 2014 17:28:54 +0200
+Message-Id: <1409066937-3574-1-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-08-19 at 20:29 +0300, Andy Shevchenko wrote:
-> The patchset is targeting two things:
->  - removal of slave_id which is deprecated (suggested by Arnd Bergmann)
->  - support BayTrail and Braswell SoCs in PCI case
-> 
-> They are tight with each other, thus comes in one series.
-> 
-> The patch set was BAT tested on Braswell and BayTrail machines.
-> 
-> We would like to push this through slave-dma tree, so, Mark, Greg,
-> Hans-Christian, and Haavard, please, Ack them if you have no objections.
+This is a second version of the series that adds support
+for the atmel trackpad found on the Exynos5420 Peach Pit.
+The first version was [0] but I missunderstood the DT
+bindings since I don't have documentation about this hw.
+After the feedback provided by Nick Dyer and Yufeng Shen
+I think understand now how it works and why my earlier
+(wrong) attempt used to work as well.
 
-Greg, gently ping you to get your Ack (or comments) on patches 11/12 and
-12/12.
+I've dropped support for Peach Pi since the Atmel chip
+in that machine uses a different T100 touchscreen object
+instead of the T9 used by the touchpad in Peach Pit. And
+that object is not supported by the Atmel mXT driver yet.
 
-> 
-> Vinod, we would like them to be pushed during this cycle since we have more
-> coming. And it would be nice to have Braswell support in v3.18-rc1.
-> 
-> Alan Cox (1):
->   serial: 8250_pci: Add PCI IDs for Intel Braswell
-> 
-> Andy Shevchenko (9):
->   dmaengine: dw: move dw_dmac.h to where it belongs to
->   avr32: at32ap700x: don't rely on default DMA masters
->   dmaengine: dw: convert dw_dma_slave to use explicit HS interfaces
->   dmaengine: dw: apply both HS interfaces and remove slave_id usage
->   dmaengine: dw: introduce generic filter function
->   dmaengine: dw: move clock operations to platform.c
->   dmaengine: dw: add PCI IDs for Braswell DMAs
->   spi/pxa2xx-pci: remove unnecessary assignment
->   serial: 8250: don't use slave_id of dma_slave_config
-> 
-> Mika Westerberg (2):
->   spi/pxa2xx: Don't use slave_id of dma_slave_config
->   spi/pxa2xx-pci: Add support for Intel Braswell
-> 
->  MAINTAINERS                                     |   2 +-
->  arch/avr32/mach-at32ap/at32ap700x.c             |  19 ++--
->  arch/avr32/mach-at32ap/include/mach/atmel-mci.h |   2 +-
->  drivers/dma/dw/core.c                           |  72 +++++----------
->  drivers/dma/dw/internal.h                       |  28 +-----
->  drivers/dma/dw/pci.c                            |   4 +
->  drivers/dma/dw/platform.c                       |  86 +++++++++---------
->  drivers/dma/dw/regs.h                           |  14 +--
->  drivers/spi/spi-pxa2xx-dma.c                    |  15 +---
->  drivers/spi/spi-pxa2xx-pci.c                    | 102 ++++++++++++++++++----
->  drivers/spi/spi-pxa2xx.c                        |   2 -
->  drivers/tty/serial/8250/8250.h                  |   6 +-
->  drivers/tty/serial/8250/8250_dw.c               |   7 +-
->  drivers/tty/serial/8250/8250_pci.c              |  78 ++++++++++++++---
->  include/linux/dw_dmac.h                         | 111 ------------------------
->  include/linux/platform_data/dma-dw.h            | 109 +++++++++++++++++++++++
->  include/linux/spi/pxa2xx_spi.h                  |   9 +-
->  include/sound/atmel-abdac.h                     |   2 +-
->  include/sound/atmel-ac97c.h                     |   2 +-
->  sound/atmel/abdac.c                             |   2 +-
->  sound/atmel/ac97c.c                             |   2 +-
->  21 files changed, 365 insertions(+), 309 deletions(-)
->  delete mode 100644 include/linux/dw_dmac.h
->  create mode 100644 include/linux/platform_data/dma-dw.h
-> 
+The first patch adds the needed DTS changes to the Peach
+Pit device tree file, the second patch enables the driver
+in the Exynos-specific kernel config and the third patch
+enables the driver on the ARMv7 multi-platform config file.
 
+I chose to build as a module in the later because only some
+multi-platform supported machines have this touchpad device.
 
--- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
+Javier Martinez Canillas (2):
+  ARM: exynos_defconfig: Enable Atmel maXTouch support
+  ARM: multi_v7_defconfig: Enable Atmel maXTouch support
+
+Sjoerd Simons (1):
+  ARM: dts: Add Peach Pit dts entry for Atmel touchpad
+
+ arch/arm/boot/dts/exynos5420-peach-pit.dts | 31 ++++++++++++++++++++++++++++++
+ arch/arm/configs/exynos_defconfig          |  1 +
+ arch/arm/configs/multi_v7_defconfig        |  1 +
+ 3 files changed, 33 insertions(+)
+
+Best regards,
+Javier
+
+[0]: https://lkml.org/lkml/2014/8/6/589
 
