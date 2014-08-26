@@ -1,45 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753449AbaHZSBZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 14:01:25 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:54493 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752714AbaHZSBX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 14:01:23 -0400
-Date: Tue, 26 Aug 2014 14:01:18 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Bryan Wu <cooloney@gmail.com>
-Subject: Re: [PATCH 08/41] drivers/leds: Replace __get_cpu_var use through
- this_cpu_ptr
-Message-ID: <20140826180118.GG31659@mtj.dyndns.org>
-References: <20131203233232.928771708@linux.com>
- <20131203233249.095099597@linux.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131203233249.095099597@linux.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753554AbaHZSB6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 14:01:58 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:53872
+	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753489AbaHZSB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 14:01:57 -0400
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com, sitsofe@gmail.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 0/4] Drivers: hv: vmbus: Eliminate calls to BUG_ON() 
+Date: Tue, 26 Aug 2014 12:05:22 -0700
+Message-Id: <1409079922-16560-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 03, 2013 at 05:32:40PM -0600, Christoph Lameter wrote:
-> Use this_cpu_ptr for the address calculation instead of __get_cpu_var.
-> 
-> Acked-by: Bryan Wu <cooloney@gmail.com>
-> Signed-off-by: Christoph Lameter <cl@linux.com>
+Cleanup the channel management code and eliminate calls to BUG_ON()
 
-Applied to percpu/for-3.18-consistent-ops.  Please let me know if this
-patch should be routed differently.  Note that this patch was to be
-applied to percpu/for-3.17 but delayed due to build issues caused by
-cpumask_var_t.
+K. Y. Srinivasan (4):
+  Drivers: hv: vmbus: Cleanup vmbus_post_msg()
+  Drivers: hv: vmbus: Cleanup vmbus_teardown_gpadl()
+  Drivers: hv: vmbus: Cleanup vmbus_close_internal()
+  Drivers: hv: vmbus: Cleanup vmbus_establish_gpadl()
 
-Thanks.
+ drivers/hv/channel.c    |   48 +++++++++++++++++++++++++++++++---------------
+ drivers/hv/connection.c |   13 +++++++++--
+ 2 files changed, 42 insertions(+), 19 deletions(-)
 
 -- 
-tejun
+1.7.4.1
+
