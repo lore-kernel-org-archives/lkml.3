@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934068AbaHZIMG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 04:12:06 -0400
-Received: from mail-bl2lp0212.outbound.protection.outlook.com ([207.46.163.212]:35422
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932497AbaHZIL7 convert rfc822-to-8bit (ORCPT
+	id S934162AbaHZIMm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 04:12:42 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33507 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933894AbaHZIMj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 04:11:59 -0400
-Message-ID: <1409040709.4167.1.camel@leyfoon-vm>
-Subject: Re: [PATCH] net: stmmac: fix warning from Sparse for socfpga
-From: Ley Foon Tan <lftan@altera.com>
-To: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-CC: <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Vince Bridgers <vbridger@altera.com>
-Date: Tue, 26 Aug 2014 16:11:49 +0800
-In-Reply-To: <53FC3F89.9030406@st.com>
-References: <1409037076-14775-1-git-send-email-lftan@altera.com>
-	 <53FC363E.6050604@st.com>
-	 <CAFiDJ5_LspyDPnXnimZ=TRiZD191XQRvwqgfZSOU-ziu_DUx=Q@mail.gmail.com>
-	 <53FC3F89.9030406@st.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.8.4-0ubuntu1 
+	Tue, 26 Aug 2014 04:12:39 -0400
+Date: Tue, 26 Aug 2014 09:12:31 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org
+Message-ID: <20140826081231.GY17528@sirena.org.uk>
+References: <1408887148-7627-1-git-send-email-lars@metafoo.de>
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(51704005)(199003)(189002)(377424004)(24454002)(46102001)(21056001)(4396001)(97736001)(74502001)(104166001)(85306004)(93886004)(50986999)(31966008)(74662001)(76482001)(95666004)(50226001)(103116003)(77982001)(23676002)(102836001)(77096002)(64706001)(87286001)(76176999)(107046002)(99396002)(50466002)(81342001)(47776003)(80022001)(79102001)(77156001)(106466001)(83322001)(81542001)(105596002)(42186005)(87936001)(44976005)(6806004)(88136002)(86362001)(68736004)(92726001)(92566001)(93916002)(90102001)(89996001)(84676001)(62966002)(33646002)(20776003)(33716001)(83072002)(85852003)(110136001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB043;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 03152A99FF
-Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
- smtp.mailfrom=lftan@altera.com; 
-X-OriginatorOrg: altera.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Vi7KrP2J1YMdfyss"
+Content-Disposition: inline
+In-Reply-To: <1408887148-7627-1-git-send-email-lars@metafoo.de>
+X-Cookie: 98% lean.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regmap: Fix regcache debugfs initialization
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sel, 2014-08-26 at 10:04 +0200, Giuseppe CAVALLARO wrote:
 
-> 
-> >
-> >>
-> >> patch should be for net-next
-> > Do you mean the patch need based on net-next git?
-> 
-> yes I do.
-> 
-> > I'm using linux-next git now.
-> 
-> ok, can you signal it in the subject (e.g.  [PATCH (net-next)]
-> This can help on reviewing and IIRC required by Maintainer too
-Sure, will do it in next revision. 
+--Vi7KrP2J1YMdfyss
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks.
+On Sun, Aug 24, 2014 at 03:32:27PM +0200, Lars-Peter Clausen wrote:
+> Commit 6cfec04bcc05 ("regmap: Separate regmap dev initialization") moved the
+> regmap debugfs initialization after regcache initialization. This means
+> that the regmap debugfs directory is not created yet when the cache
 
-Regards
-Ley Foon
+Applied, thanks.
+
+--Vi7KrP2J1YMdfyss
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT/EFrAAoJELSic+t+oim9tr0QAI9Kb6WefKNv006c2vDo/nN0
+uEmGvtypvxQI7toHHd6ktmECusspTcfYR8kMHswP5KYfO8NSku3vxqZP7ukYcEQB
+K+qHOg1ozMyAHl37LX7cu4a+iw5qvrubFPg+HS/WT7OV/BdEthWSyyiqQT3Yf8lT
+isOztKhlXSHGBArodb3vHAEmnz5qPUrvRyJsuqzov72NcBXDo1laV1R0oqm9sgOs
+Gg/ur90vKOcIO98l5BGPJfsomy5aVx7P3C7tr9n9vIMD/RFi5moBWgRxf4nhTzT9
+R8DeJO/7FM8u3jUFPSYnnC6iw35SpY2cnNUJp1A5RG5KbR8o5B2ux1DOk/9hpYmt
+vCI8TkO5WKokrz2Ju9Po7oupc4BXElvGo2HQ7rpE7Fahzdt5EW8hT1RCq4Zg4o+Q
+LrTPzDSjv1uR/s3o3I6Kc3MXQxOg8GVtlm2vOq6NBcglNofkedTusHN18E7hMRFT
+QXV9pxaaWgiMKk4l6IXSrEYezSsEKdgllB8+dt1cQUcOoxzPiYk6cPZy/tIvNXvh
+6otWfAl2Nwp5OJwzX2y5QYlym6WyKIC7WMb4rTQ1JVGu2ycOUqGLhedbB1Hi9aQm
+X7AKgdMc6rxZeToHT9x+4K1UKJ6NaXn/yMWMAbszyu+sD8W5jvSLk4cbe9SNWGbT
+Ljtouni5cc3rMBMh/iDv
+=pFHf
+-----END PGP SIGNATURE-----
+
+--Vi7KrP2J1YMdfyss--
