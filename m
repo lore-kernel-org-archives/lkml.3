@@ -1,89 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933856AbaHZEmV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 00:42:21 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:42020 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933729AbaHZElo (ORCPT
+	id S933722AbaHZEpb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 00:45:31 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:38527 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796AbaHZEp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 00:41:44 -0400
-X-AuditID: cbfee690-f79ce6d00000115a-e3-53fc1006c2e3
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: sre@kernel.org, dbaryshkov@gmail.com, dwmw2@infradead.org
-Cc: myungjoo.ham@samsung.com, jonghwa3.lee@samsung.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCH 2/2] power: charger-manager: Check charging state right after
- completed initialization
-Date: Tue, 26 Aug 2014 13:41:39 +0900
-Message-id: <1409028099-6081-3-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.0
-In-reply-to: <1409028099-6081-1-git-send-email-cw00.choi@samsung.com>
-References: <1409028099-6081-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDLMWRmVeSWpSXmKPExsWyRsSkUJdN4E+wwbP5IhbXvzxntZj05D2z
-	xcSVk5ktOs8+Yba4vGsOm8Xn3iOMFrcbV7BZnN5d4sDhsXPWXXaPzSu0PDat6mTz6NuyitHj
-	8ya5ANYoLpuU1JzMstQifbsErowtU66yF8zlqrjYvIu5gfE6RxcjJ4eEgInEjg8/mSFsMYkL
-	99azdTFycQgJLGWUuLdmElCCA6xowmFRkBohgUWMEq/7uSBqmpgkbtx6xA6SYBPQktj/4gYb
-	iC0iYCvR8/QgM0gRs8AMRok7X3pZQQYJC2RIbLtsCFLDIqAqsezZKbBeXgEXiUn3OlkgjpCT
-	+LAHYiangKvE5rdb2EBahYBqFh31AhkpITCPXeL/8g52iDkCEt8mH2KBuFNWYtMBqF8kJQ6u
-	uMEygVF4ASPDKkbR1ILkguKk9CITveLE3OLSvHS95PzcTYzAQD/979mEHYz3DlgfYhTgYFTi
-	4b0R/ztYiDWxrLgy9xCjKdCGicxSosn5wHjKK4k3NDYzsjA1MTU2Mrc0UxLnfS31M1hIID2x
-	JDU7NbUgtSi+qDQntfgQIxMHp1QD46SAut1xiuHzFeX2fzfacnBd7/yPktwrD+5fsmOjd/nV
-	vd98Tp+7fZfF+Wz0nXx9jdqaP3f+J5Wtv5KvYNp7zV+E88K+L653+bqvMjG4nGU6P/3Q09/H
-	Tz2TZ9mqLfCyRIn7+2GDkuSzsSorZ81mOrklpszh+ME5oq03jXUEpJfa8P/fOv29rqwSS3FG
-	oqEWc1FxIgA+dSVTbwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGIsWRmVeSWpSXmKPExsVy+t9jAV02gT/BBgtn81pc//Kc1WLSk/fM
-	FhNXTma26Dz7hNni8q45bBafe48wWtxuXMFmcXp3iQOHx85Zd9k9Nq/Q8ti0qpPNo2/LKkaP
-	z5vkAlijGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0y
-	c4BOUVIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jBmbJlylb1gLlfFxeZd
-	zA2M1zm6GDk4JARMJCYcFu1i5AQyxSQu3FvPBmILCSxilHjdz9XFyAVkNzFJ3Lj1iB0kwSag
-	JbH/xQ2wIhEBW4mepweZQYqYBWYwStz50ssKMlRYIENi22VDkBoWAVWJZc9OgfXyCrhITLrX
-	yQKxTE7iwx6ImZwCrhKb325hA2kVAqpZdNRrAiPvAkaGVYyiqQXJBcVJ6blGesWJucWleel6
-	yfm5mxjBcfRMegfjqgaLQ4wCHIxKPLw34n8HC7EmlhVX5h5ilOBgVhLhZXgIFOJNSaysSi3K
-	jy8qzUktPsRoCnTURGYp0eR8YIznlcQbGpuYGVkamRtaGBmbK4nzHmy1DhQSSE8sSc1OTS1I
-	LYLpY+LglGpg1F7r12/zUqDxM8eJQ7utNYP33F28j7PDSVc7d3l0cXxjwZG98mytf/IPNhb4
-	S6y9ksahVHfmTrLNJsXPv05kyUmua9jKlyphr6XqdfxclNmBhUob+OV8r7hacq0Wdjj+Yfk3
-	poYXh9ifqz5lfdW3iH9GuvNLlx1el5e9PbHl2WYthQl/DhVuVmIpzkg01GIuKk4EALfUZzC5	AgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 26 Aug 2014 00:45:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140825155738.GA5944@redhat.com>
+References: <1408964064-21447-1-git-send-email-consul.kautuk@gmail.com>
+	<20140825155738.GA5944@redhat.com>
+Date: Tue, 26 Aug 2014 10:15:28 +0530
+Message-ID: <CAFPAmTS5_X1zEQ00vgh0POq_CheY71H+TnJ5uaP5wdWXYiwRtA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] do_exit(): Solve possibility of BUG() due to race
+ with try_to_wake_up()
+From: Kautuk Consul <consul.kautuk@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
+        Ionut Alexa <ionut.m.alexa@gmail.com>,
+        Guillaume Morin <guillaume@morinfr.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kirill Tkhai <tkhai@yandex.ru>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch check the charging state after completed initialization of charger-
-manager and update current charging state. If charger-manager never check and
-update current charging state, charger-manager would have the mismatch issue
-between real state of cable connection and the charging state of charger-manager
-until first polling time of charger-manager.
+Sorry folks,
 
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Acked-by: Myungjoo Ham <myungjoo.ham@samsung.com>
-Cc: Sebastian Reichel <sre@kernel.org>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
----
- drivers/power/charger-manager.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+I got one thing wrong:
+>From some more code review, both __down_common() and
+do_wait_for_common() inspect the signal_pending() only while in
+TASK_RUNNING.
 
-diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
-index a10fb57..4e560f7 100644
---- a/drivers/power/charger-manager.c
-+++ b/drivers/power/charger-manager.c
-@@ -1839,6 +1839,13 @@ static int charger_manager_probe(struct platform_device *pdev)
- 	device_init_wakeup(&pdev->dev, true);
- 	device_set_wakeup_capable(&pdev->dev, false);
- 
-+	/*
-+	 * Charger-manager have to check the charging state right after
-+	 * tialization of charger-manager and then update current charging
-+	 * state.
-+	 */
-+	cm_monitor();
-+
- 	schedule_work(&setup_polling);
- 
- 	return 0;
--- 
-1.8.0
+So I think that it cannot be possible that this happened on my system
+due to __down_common() and/or wait_for_common().
 
+Which only leaves out the possibility that the BUG() on my embedded
+system happened due to a driver which was trying to implement its own
+sleeping primitive
+by first setting the task state to TASK_INTERRUPTIBLE and then
+checking for signal_pending/signal_pending_state.
+(But this is anyway generally frowned upon and not really acceptable nowadays).
+
+I'll review those drivers for this kind of mistake.
+
+
+On Mon, Aug 25, 2014 at 9:27 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 08/25, Kautuk Consul wrote:
+>>
+>> I encountered a BUG() scenario within do_exit() on an ARM system.
+>>
+>> The problem is due to a race scenario between do_exit() and try_to_wake_up()
+>> on different CPUs due to usage of sleeping primitives such as __down_common
+>> and wait_for_common.
+>>
+>> Race Scenario
+>> =============
+>>
+>> Let us assume there are 2 CPUs A and B execute code in the following order:
+>> 1)    CPU A was running in user-mode and enters kernel mode via some
+>>       syscall/exception handler.
+>> 2)    CPU A sets the current task(t) state to TASK_INTERRUPTIBLE via __down_common
+>>       or wait_for_common.
+>> 3)    CPU A checks for signal_pending() and returns due to TIF_SIGPENDING
+>>       being set in t's threadinfo due to a previous signal(say SIGKILL) being
+>>       received on this task t.
+>> 4)    CPU A returns returns back to the assembly trap handler and calls
+>>       do_work_pending() -> do_signal() -> get_signal() -> do_group_exit()
+>>        -> do_exit()
+>>       CPU A  has not yet executed the following line of code before the final
+>>       call to schedule:
+>>     /* causes final put_task_struct in finish_task_switch(). */
+>>     tsk->state = TASK_DEAD;
+>> 5)    CPU B tries to send a signal to task t (currently executing on CPU A)
+>>       and thus enters: signal_wake_up_state() -> wake_up_state() ->
+>>                                        try_to_wake_up()
+>> 6)    CPU B executes all code in try_to_wake_up() till the call to
+>>       ttwu_queue -> ttwu_do_activate -> ttwu_do_wakeup().
+>>       CPU B has still not executed the following code in ttwu_do_wakeup():
+>>       p->state = TASK_RUNNING;
+>> 7)    CPU A executes the following line of code:
+>>     /* causes final put_task_struct in finish_task_switch(). */
+>>     tsk->state = TASK_DEAD;
+>> 8)    CPU B executes the following code in ttwu_do_wakeup():
+>>       p->state = TASK_RUNNING;
+>> 9)    CPU A continues to the call to do_exit() -> schedule().
+>>       Since the tsk->state is TASK_RUNNING, the call to schedule() returns and
+>>       do_exit() -> BUG() is hit on CPU A.
+>>
+>> Alternate Solution
+>> ==================
+>>
+>> An alternate solution would be to simply set the current task state to
+>> TASK_RUNNING in __down_common(), wait_for_common() and all other interruptible
+>> sleeping primitives in their if(signal_pending/signal_pending_state) conditional
+>> blocks.
+>>
+>> But this change seems to me to be more logical because:
+>> i)            This will involve lesser changes to the kernel core code.
+>> ii)           Any further sleeping primitives in the kernel also need not suffer from
+>>               this kind of race scenario.
+>>
+>> Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
+>> ---
+>>  kernel/exit.c |   10 ++++++----
+>>  1 file changed, 6 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/kernel/exit.c b/kernel/exit.c
+>> index 32c58f7..69a8231 100644
+>> --- a/kernel/exit.c
+>> +++ b/kernel/exit.c
+>> @@ -824,14 +824,16 @@ void do_exit(long code)
+>>        *     (or hypervisor of virtual machine switches to other guest)
+>>        *  As a result, we may become TASK_RUNNING after becoming TASK_DEAD
+>>        *
+>> -      * To avoid it, we have to wait for releasing tsk->pi_lock which
+>> -      * is held by try_to_wake_up()
+>> +      * To solve this, we have to compete for tsk->pi_lock which is held by
+>> +      * try_to_wake_up().
+>>        */
+>> -     smp_mb();
+>> -     raw_spin_unlock_wait(&tsk->pi_lock);
+>> +     raw_spin_lock(&tsk->pi_lock);
+>>
+>>       /* causes final put_task_struct in finish_task_switch(). */
+>>       tsk->state = TASK_DEAD;
+>> +
+>> +     raw_spin_unlock(&tsk->pi_lock);
+>> +
+>>       tsk->flags |= PF_NOFREEZE;      /* tell freezer to ignore us */
+>>       schedule();
+>>       BUG();
+>> --
+>
+> Peter, do you remember another problem with TASK_DEAD we discussed recently?
+> (prev_state == TASK_DEAD detection in finish_task_switch() still looks racy).
+>
+> I am starting to think that perhaps we need something like below, what do
+> you all think?
+>
+> Oleg.
+>
+> --- x/kernel/sched/core.c
+> +++ x/kernel/sched/core.c
+> @@ -2205,9 +2205,10 @@ static void finish_task_switch(struct rq
+>         __releases(rq->lock)
+>  {
+>         struct mm_struct *mm = rq->prev_mm;
+> -       long prev_state;
+> +       struct task_struct *dead = rq->dead;
+>
+>         rq->prev_mm = NULL;
+> +       rq->dead = NULL;
+>
+>         /*
+>          * A task struct has one reference for the use as "current".
+> @@ -2220,7 +2221,6 @@ static void finish_task_switch(struct rq
+>          * be dropped twice.
+>          *              Manfred Spraul <manfred@colorfullife.com>
+>          */
+> -       prev_state = prev->state;
+>         vtime_task_switch(prev);
+>         finish_arch_switch(prev);
+>         perf_event_task_sched_in(prev, current);
+> @@ -2230,16 +2230,16 @@ static void finish_task_switch(struct rq
+>         fire_sched_in_preempt_notifiers(current);
+>         if (mm)
+>                 mmdrop(mm);
+> -       if (unlikely(prev_state == TASK_DEAD)) {
+> -               if (prev->sched_class->task_dead)
+> -                       prev->sched_class->task_dead(prev);
+> +       if (unlikely(dead)) {
+> +               if (dead->sched_class->task_dead)
+> +                       dead->sched_class->task_dead(dead);
+>
+>                 /*
+>                  * Remove function-return probe instances associated with this
+>                  * task and put them back on the free list.
+>                  */
+> -               kprobe_flush_task(prev);
+> -               put_task_struct(prev);
+> +               kprobe_flush_task(dead);
+> +               put_task_struct(dead);
+>         }
+>
+>         tick_nohz_task_switch(current);
+> @@ -2770,11 +2770,15 @@ need_resched:
+>         smp_mb__before_spinlock();
+>         raw_spin_lock_irq(&rq->lock);
+>
+> +       if (unlikely(rq->dead))
+> +               goto deactivate;
+> +
+>         switch_count = &prev->nivcsw;
+>         if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) {
+>                 if (unlikely(signal_pending_state(prev->state, prev))) {
+>                         prev->state = TASK_RUNNING;
+>                 } else {
+> +deactivate:
+>                         deactivate_task(rq, prev, DEQUEUE_SLEEP);
+>                         prev->on_rq = 0;
+>
+> @@ -2826,6 +2830,15 @@ need_resched:
+>                 goto need_resched;
+>  }
+>
+> +// called under preempt_disable();
+> +void exit_schedule()
+> +{
+> +       // TODO: kill TASK_DEAD, this is only for proc
+> +       current->state = TASK_DEAD;
+> +       task_rq(current)->dead = current;
+> +       __schedule();
+> +}
+> +
+>  static inline void sched_submit_work(struct task_struct *tsk)
+>  {
+>         if (!tsk->state || tsk_is_pi_blocked(tsk))
+> --- x/kernel/exit.c
+> +++ x/kernel/exit.c
+> @@ -815,25 +815,8 @@ void do_exit(long code)
+>                 __this_cpu_add(dirty_throttle_leaks, tsk->nr_dirtied);
+>         exit_rcu();
+>
+> -       /*
+> -        * The setting of TASK_RUNNING by try_to_wake_up() may be delayed
+> -        * when the following two conditions become true.
+> -        *   - There is race condition of mmap_sem (It is acquired by
+> -        *     exit_mm()), and
+> -        *   - SMI occurs before setting TASK_RUNINNG.
+> -        *     (or hypervisor of virtual machine switches to other guest)
+> -        *  As a result, we may become TASK_RUNNING after becoming TASK_DEAD
+> -        *
+> -        * To avoid it, we have to wait for releasing tsk->pi_lock which
+> -        * is held by try_to_wake_up()
+> -        */
+> -       smp_mb();
+> -       raw_spin_unlock_wait(&tsk->pi_lock);
+> -
+> -       /* causes final put_task_struct in finish_task_switch(). */
+> -       tsk->state = TASK_DEAD;
+>         tsk->flags |= PF_NOFREEZE;      /* tell freezer to ignore us */
+> -       schedule();
+> +       exit_schedule();
+>         BUG();
+>         /* Avoid "noreturn function does return".  */
+>         for (;;)
+>
