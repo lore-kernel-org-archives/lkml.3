@@ -1,52 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758785AbaHZOYT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 10:24:19 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:47085 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758363AbaHZOYR (ORCPT
+	id S932953AbaHZO1P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 10:27:15 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:45836 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755427AbaHZO1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 10:24:17 -0400
-Message-ID: <53FC988E.8070007@plexistor.com>
-Date: Tue, 26 Aug 2014 17:24:14 +0300
-From: Boaz Harrosh <boaz@plexistor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Tue, 26 Aug 2014 10:27:13 -0400
+Date: Tue, 26 Aug 2014 17:27:02 +0300
+From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+To: davem@davemloft.net, jiri@resnulli.us, hannes@stressinduktion.org,
+        duanj.fnst@cn.fujitsu.com, ebiederm@xmission.com,
+        aruna.hewapathirane@gmail.com, tim.gardner@canonical.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: paulmck@linux.vnet.ibm.com
+Subject: [PATCH] net: core: neighbour: Replace rcu_assign_pointer() with
+ RCU_INIT_POINTER()
+Message-ID: <20140826142702.GA2346@ada>
 MIME-Version: 1.0
-To: Michal Marek <mmarek@suse.cz>, Stable Tree <stable@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-CC: David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH] Makefile: One last adjustment to relative paths
-References: <53FAF8BF.3010008@plexistor.com> <53FB3CE7.9060609@suse.cz>
-In-Reply-To: <53FB3CE7.9060609@suse.cz>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25/2014 04:40 PM, Michal Marek wrote:
-> 
-> So I don't understand why are you getting a message with a relative
-> path. I get an absolute path as expected here:
-> $ mkdir aaa
-> $ make O=aaa defconfig
-> make[1]: Entering directory `/home/mmarek/linux-2.6/aaa'
+According to RCU_INIT_POINTER()'s block comment 3.a, it can be used if
+"3.   The referenced data structure has already been exposed to readers either
+at compile time or via rcu_assign_pointer() -and-
+ a.   You have not made -any- reader-visible changes to this structure since
+then".
 
-OK that was an operator error. You are absolutely right
+These cases fulfill the conditions above because between the
+rcu_dereference_protected() calls and the rcu_assign_pointer() calls there is
+no update of those values.
+Therefore, this patch makes the replacements.
 
-What happened is that my makefile was using
-	make KBUILD_OUTPUT=.build_um -C linux
-and not
-	make O=.build_um -C linux
+The following Coccinelle semantic patch was used:
+@@
+@@
 
-This was done at the time because when building out-of-tree
-modules (I Have some test modules that I build in my project)
-You must use KBUILD_OUTPUT= because O= is used by the external
-module build system.
+- rcu_assign_pointer
++ RCU_INIT_POINTER
+  (...,
+(
+ rtnl_dereference(...)
+|
+ rcu_dereference_protected(...)
+) )
 
-But reverting to use the O= as it should be all is well
-and it works as you say
+Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+---
+ net/core/neighbour.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-Sorry for the noise
-Boaz
+diff --git a/net/core/neighbour.c b/net/core/neighbour.c
+index 32d872e..a193932 100644
+--- a/net/core/neighbour.c
++++ b/net/core/neighbour.c
+@@ -147,7 +147,7 @@ static int neigh_forced_gc(struct neigh_table *tbl)
+ 			write_lock(&n->lock);
+ 			if (atomic_read(&n->refcnt) == 1 &&
+ 			    !(n->nud_state & NUD_PERMANENT)) {
+-				rcu_assign_pointer(*np,
++				RCU_INIT_POINTER(*np,
+ 					rcu_dereference_protected(n->next,
+ 						  lockdep_is_held(&tbl->lock)));
+ 				n->dead = 1;
+@@ -216,7 +216,7 @@ static void neigh_flush_dev(struct neigh_table *tbl, struct net_device *dev)
+ 				np = &n->next;
+ 				continue;
+ 			}
+-			rcu_assign_pointer(*np,
++			RCU_INIT_POINTER(*np,
+ 				   rcu_dereference_protected(n->next,
+ 						lockdep_is_held(&tbl->lock)));
+ 			write_lock(&n->lock);
+@@ -386,7 +386,7 @@ static struct neigh_hash_table *neigh_hash_grow(struct neigh_table *tbl,
+ 			next = rcu_dereference_protected(n->next,
+ 						lockdep_is_held(&tbl->lock));
+ 
+-			rcu_assign_pointer(n->next,
++			RCU_INIT_POINTER(n->next,
+ 					   rcu_dereference_protected(
+ 						new_nht->hash_buckets[hash],
+ 						lockdep_is_held(&tbl->lock)));
+@@ -531,7 +531,7 @@ struct neighbour *__neigh_create(struct neigh_table *tbl, const void *pkey,
+ 	n->dead = 0;
+ 	if (want_ref)
+ 		neigh_hold(n);
+-	rcu_assign_pointer(n->next,
++	RCU_INIT_POINTER(n->next,
+ 			   rcu_dereference_protected(nht->hash_buckets[hash_val],
+ 						     lockdep_is_held(&tbl->lock)));
+ 	rcu_assign_pointer(nht->hash_buckets[hash_val], n);
+@@ -2432,7 +2432,7 @@ void __neigh_for_each_release(struct neigh_table *tbl,
+ 			write_lock(&n->lock);
+ 			release = cb(n);
+ 			if (release) {
+-				rcu_assign_pointer(*np,
++				RCU_INIT_POINTER(*np,
+ 					rcu_dereference_protected(n->next,
+ 						lockdep_is_held(&tbl->lock)));
+ 				n->dead = 1;
+-- 
+1.9.1
 
