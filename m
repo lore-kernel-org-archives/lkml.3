@@ -1,60 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756759AbaHZAQz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 20:16:55 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:37314 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752606AbaHZAQx (ORCPT
+	id S1756796AbaHZAX4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 20:23:56 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:39783 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752606AbaHZAXz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 20:16:53 -0400
-Message-ID: <53FBD1F3.4040003@infradead.org>
-Date: Mon, 25 Aug 2014 17:16:51 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] new page link in SubmittingPatches
-References: <1408989981-31192-1-git-send-email-sudipm.mukherjee@gmail.com>
-In-Reply-To: <1408989981-31192-1-git-send-email-sudipm.mukherjee@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 25 Aug 2014 20:23:55 -0400
+Date: Mon, 25 Aug 2014 17:23:53 -0700 (PDT)
+Message-Id: <20140825.172353.145857012627747535.davem@davemloft.net>
+To: mkubecek@suse.cz
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net v2] net: fix checksum features handling in
+ netif_skb_features()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140825131622.6233CA0BB0@unicorn.suse.cz>
+References: <20140821.163320.476216950054835385.davem@davemloft.net>
+	<20140825131622.6233CA0BB0@unicorn.suse.cz>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 25 Aug 2014 17:23:54 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25/14 11:06, Sudip Mukherjee wrote:
-> new link for - How to piss off a Linux kernel subsystem  maintainer
+From: Michal Kubecek <mkubecek@suse.cz>
+Date: Mon, 25 Aug 2014 15:16:22 +0200 (CEST)
+
+> This is follow-up to
 > 
-> Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
-
-Hi,
-
-I'll apply this patch, but it would really be nice if Greg would make
-one contents/index web page for this so that it wouldn't have to be updated
-just because there is an addition.
-
-Thanks.
-
-> ---
->  Documentation/SubmittingPatches | 1 +
->  1 file changed, 1 insertion(+)
+>   da08143b8520 ("vlan: more careful checksum features handling")
 > 
-> diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
-> index 0a523c9..482c749 100644
-> --- a/Documentation/SubmittingPatches
-> +++ b/Documentation/SubmittingPatches
-> @@ -794,6 +794,7 @@ Greg Kroah-Hartman, "How to piss off a kernel subsystem maintainer".
->    <http://www.kroah.com/log/linux/maintainer-03.html>
->    <http://www.kroah.com/log/linux/maintainer-04.html>
->    <http://www.kroah.com/log/linux/maintainer-05.html>
-> +  <http://www.kroah.com/log/linux/maintainer-06.html>
->  
->  NO!!!! No more huge patch bombs to linux-kernel@vger.kernel.org people!
->    <https://lkml.org/lkml/2005/7/11/336>
+> which introduced more careful feature intersection in vlan code,
+> taking into account that HW_CSUM should be considered superset
+> of IP_CSUM/IPV6_CSUM. The same is needed in netif_skb_features()
+> in order to avoid offloading mismatch warning when vlan is
+> created on top of a bond consisting of slaves supporting IP/IPv6
+> checksumming but not vlan Tx offloading.
 > 
+> Signed-off-by: Michal Kubecek <mkubecek@suse.cz>
 
-
--- 
-~Randy
+Applied and queued up for -stable, thanks.
