@@ -1,134 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757764AbaHZLIf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 07:08:35 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:57811 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757727AbaHZLIc (ORCPT
+	id S1757839AbaHZLJM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 07:09:12 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:50497 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757648AbaHZLIC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 07:08:32 -0400
-Date: Tue, 26 Aug 2014 13:08:28 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: Grant Likely <grant.likely@linaro.org>, Jon Loeliger <jdl@jdl.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 0/9] dt: dependencies (for deterministic driver
- initialization order based on the DT)
-Message-ID: <20140826110827.GA31350@ulmo>
-References: <53F64624.5000403@ahsoftware.de>
- <20140822131919.GX21734@leverpostej>
- <20140825093931.GB2399@ulmo>
- <E1XLu15-0002DP-6o@jdl.com>
- <20140825133714.GH4163@ulmo.nvidia.com>
- <20140826084208.AE5F0C40989@trevor.secretlab.ca>
- <20140826084922.GG17263@ulmo>
- <53FC566C.30904@ahsoftware.de>
- <20140826102503.GC31124@ulmo>
- <53FC6513.5040800@ahsoftware.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wac7ysb48OaltWcw"
-Content-Disposition: inline
-In-Reply-To: <53FC6513.5040800@ahsoftware.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 26 Aug 2014 07:08:02 -0400
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        preeti@linux.vnet.ibm.com, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org
+Cc: riel@redhat.com, Morten.Rasmussen@arm.com, efault@gmx.de,
+        nicolas.pitre@linaro.org, linaro-kernel@lists.linaro.org,
+        daniel.lezcano@linaro.org, dietmar.eggemann@arm.com,
+        Vincent Guittot <vincent.guittot@linaro.org>
+Subject: [PATCH v5 09/12] sched: add usage_load_avg
+Date: Tue, 26 Aug 2014 13:06:52 +0200
+Message-Id: <1409051215-16788-10-git-send-email-vincent.guittot@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
+References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add new statistics which reflect the average time a task is running on the
+CPU and the sum of the tasks' running on a runqueue. The latter is named
+usage_avg_contrib.
 
---wac7ysb48OaltWcw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch is based on the usage metric that was proposed in the 1st
+versions of the per-entity load tracking patchset but that has be removed
+afterward. This version differs from the original one in the sense that it's
+not linked to task_group.
 
-On Tue, Aug 26, 2014 at 12:44:35PM +0200, Alexander Holler wrote:
-> Am 26.08.2014 12:25, schrieb Thierry Reding:
-> >On Tue, Aug 26, 2014 at 11:42:04AM +0200, Alexander Holler wrote:
->=20
-> >>You need either the type information in the DTB (that's why I've add th=
-ose
-> >>"dependencies" to identify phandles), or you need to know every binding=
- (at
-> >>"dependency-resolve-time" to identify phandles. The latter is impractic=
-able
-> >>to implement in a generic way (for use with every possible binding).
-> >
-> >Like I already mentioned, this could be done in drivers who contain that
-> >information already anyway. Or parts of it could be done in subsystem-
-> >specific callbacks where a generic binding is available.
->=20
-> That would end up with almost the same ugly driver-based workarounds as n=
-ow.
-> It's much better if a driver author only has to define it's prerequisits =
-(in
-> form of dependencies in the dts) and could be sure the driver will only be
-> probed if those are met, than to do that stuff based on a subsystem or ev=
-en
-> driver level.
->=20
-> If you add dependency-information to drivers, you have two problems:
+The rq's usage_avg_contrib will be used to check if a rq is overloaded or not
+instead of trying to compute how many task a group of CPUs can handle
 
-We already have all that dependency information in drivers anyway. Each
-driver requests the resources at .probe() time. What I proposed (it was
-really Arnd who proposed it first) is to move that information out of
-code and into some sort of table that could be used by the driver core
-to figure out dependencies.
+Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+---
+ include/linux/sched.h |  4 ++--
+ kernel/sched/fair.c   | 47 ++++++++++++++++++++++++++++++++++++++++++-----
+ kernel/sched/sched.h  |  2 +-
+ 3 files changed, 45 insertions(+), 8 deletions(-)
 
-> - How do you get these information from the driver (remember, currently
-> there is only one initial call, a initcall which might do almost anything)
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 5c2c885..7dfd584 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1073,10 +1073,10 @@ struct sched_avg {
+ 	 * above by 1024/(1-y).  Thus we only need a u32 to store them for all
+ 	 * choices of y < 1-2^(-32)*1024.
+ 	 */
+-	u32 runnable_avg_sum, runnable_avg_period;
++	u32 runnable_avg_sum, runnable_avg_period, running_avg_sum;
+ 	u64 last_runnable_update;
+ 	s64 decay_count;
+-	unsigned long load_avg_contrib;
++	unsigned long load_avg_contrib, usage_avg_contrib;
+ };
+ 
+ #ifdef CONFIG_SCHEDSTATS
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 60ae1ce..1fd2131 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -676,7 +676,7 @@ void init_task_runnable_average(struct task_struct *p)
+ 
+ 	p->se.avg.decay_count = 0;
+ 	slice = sched_slice(task_cfs_rq(p), &p->se) >> 10;
+-	p->se.avg.runnable_avg_sum = slice;
++	p->se.avg.runnable_avg_sum = p->se.avg.running_avg_sum = slice;
+ 	p->se.avg.runnable_avg_period = slice;
+ 	__update_task_entity_contrib(&p->se);
+ }
+@@ -2289,7 +2289,8 @@ static u32 __compute_runnable_contrib(u64 n)
+  */
+ static __always_inline int __update_entity_runnable_avg(u64 now,
+ 							struct sched_avg *sa,
+-							int runnable)
++							int runnable,
++							int running)
+ {
+ 	u64 delta, periods;
+ 	u32 runnable_contrib;
+@@ -2328,6 +2329,8 @@ static __always_inline int __update_entity_runnable_avg(u64 now,
+ 		delta_w = 1024 - delta_w;
+ 		if (runnable)
+ 			sa->runnable_avg_sum += delta_w;
++		if (running)
++			sa->running_avg_sum += delta_w;
+ 		sa->runnable_avg_period += delta_w;
+ 
+ 		delta -= delta_w;
+@@ -2338,6 +2341,8 @@ static __always_inline int __update_entity_runnable_avg(u64 now,
+ 
+ 		sa->runnable_avg_sum = decay_load(sa->runnable_avg_sum,
+ 						  periods + 1);
++		sa->running_avg_sum = decay_load(sa->running_avg_sum,
++						  periods + 1);
+ 		sa->runnable_avg_period = decay_load(sa->runnable_avg_period,
+ 						     periods + 1);
+ 
+@@ -2345,12 +2350,16 @@ static __always_inline int __update_entity_runnable_avg(u64 now,
+ 		runnable_contrib = __compute_runnable_contrib(periods);
+ 		if (runnable)
+ 			sa->runnable_avg_sum += runnable_contrib;
++		if (running)
++			sa->running_avg_sum += runnable_contrib;
+ 		sa->runnable_avg_period += runnable_contrib;
+ 	}
+ 
+ 	/* Remainder of delta accrued against u_0` */
+ 	if (runnable)
+ 		sa->runnable_avg_sum += delta;
++	if (running)
++		sa->running_avg_sum += delta;
+ 	sa->runnable_avg_period += delta;
+ 
+ 	return decayed;
+@@ -2490,6 +2499,27 @@ static long __update_entity_load_avg_contrib(struct sched_entity *se)
+ 	return se->avg.load_avg_contrib - old_contrib;
+ }
+ 
++
++static inline void __update_task_entity_usage(struct sched_entity *se)
++{
++	u32 contrib;
++
++	/* avoid overflowing a 32-bit type w/ SCHED_LOAD_SCALE */
++	contrib = se->avg.running_avg_sum * scale_load_down(SCHED_LOAD_SCALE);
++	contrib /= (se->avg.runnable_avg_period + 1);
++	se->avg.usage_avg_contrib = scale_load(contrib);
++}
++
++static long __update_entity_usage_avg_contrib(struct sched_entity *se)
++{
++	long old_contrib = se->avg.usage_avg_contrib;
++
++	if (entity_is_task(se))
++		__update_task_entity_usage(se);
++
++	return se->avg.usage_avg_contrib - old_contrib;
++}
++
+ static inline void subtract_blocked_load_contrib(struct cfs_rq *cfs_rq,
+ 						 long load_contrib)
+ {
+@@ -2506,7 +2536,7 @@ static inline void update_entity_load_avg(struct sched_entity *se,
+ 					  int update_cfs_rq)
+ {
+ 	struct cfs_rq *cfs_rq = cfs_rq_of(se);
+-	long contrib_delta;
++	long contrib_delta, usage_delta;
+ 	u64 now;
+ 
+ 	/*
+@@ -2518,16 +2548,20 @@ static inline void update_entity_load_avg(struct sched_entity *se,
+ 	else
+ 		now = cfs_rq_clock_task(group_cfs_rq(se));
+ 
+-	if (!__update_entity_runnable_avg(now, &se->avg, se->on_rq))
++	if (!__update_entity_runnable_avg(now, &se->avg, se->on_rq,
++					cfs_rq->curr == se))
+ 		return;
+ 
+ 	contrib_delta = __update_entity_load_avg_contrib(se);
++	usage_delta = __update_entity_usage_avg_contrib(se);
+ 
+ 	if (!update_cfs_rq)
+ 		return;
+ 
+-	if (se->on_rq)
++	if (se->on_rq) {
+ 		cfs_rq->runnable_load_avg += contrib_delta;
++		cfs_rq->usage_load_avg += usage_delta;
++	}
+ 	else
+ 		subtract_blocked_load_contrib(cfs_rq, -contrib_delta);
+ }
+@@ -2604,6 +2638,7 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
+ 	}
+ 
+ 	cfs_rq->runnable_load_avg += se->avg.load_avg_contrib;
++	cfs_rq->usage_load_avg += se->avg.usage_avg_contrib;
+ 	/* we force update consideration on load-balancer moves */
+ 	update_cfs_rq_blocked_load(cfs_rq, !wakeup);
+ }
+@@ -2622,6 +2657,7 @@ static inline void dequeue_entity_load_avg(struct cfs_rq *cfs_rq,
+ 	update_cfs_rq_blocked_load(cfs_rq, !sleep);
+ 
+ 	cfs_rq->runnable_load_avg -= se->avg.load_avg_contrib;
++	cfs_rq->usage_load_avg -= se->avg.usage_avg_contrib;
+ 	if (sleep) {
+ 		cfs_rq->blocked_load_avg += se->avg.load_avg_contrib;
+ 		se->avg.decay_count = atomic64_read(&cfs_rq->decay_counter);
+@@ -2959,6 +2995,7 @@ set_next_entity(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ 		 */
+ 		update_stats_wait_end(cfs_rq, se);
+ 		__dequeue_entity(cfs_rq, se);
++		update_entity_load_avg(se, 1);
+ 	}
+ 
+ 	update_stats_curr_start(cfs_rq, se);
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 7c0a74e..d625fbb 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -340,7 +340,7 @@ struct cfs_rq {
+ 	 * This allows for the description of both thread and group usage (in
+ 	 * the FAIR_GROUP_SCHED case).
+ 	 */
+-	unsigned long runnable_load_avg, blocked_load_avg;
++	unsigned long runnable_load_avg, blocked_load_avg, usage_load_avg;
+ 	atomic64_t decay_counter;
+ 	u64 last_decay;
+ 	atomic_long_t removed_load;
+-- 
+1.9.1
 
-While I don't think it's necessary, that's something that could be
-changed. I mean, we have access to the full source code of this
-operating system, so we can change every aspect of it. If we can't find
-a way to make this work with the current initcall sequence it's always
-an option to extend that sequence so that it meets our needs.
-
-> - These information might become outdated and you would have to change all
-> drivers. E.g. if the name of a dependency (driver) changes it wouldn't be
-> done with changing the dts (maybe plural), but you would have to change t=
-he
-> source of all dependant drivers too.
-
-No. Drivers implement a DT binding. That binding defines what power
-supplies, clocks, pinmux, ... the device needs. Those constitute the
-dependencies. We most certainly don't want to depend on driver names
-since there can be a multitude of different drivers that provide a given
-dependency.
-
-What drivers should provide (and what they already provide today) is the
-name of the property and the index of the cell that they expect to find
-a phandle in as well as the type of the phandle. That's all that's
-necessary, really. Everything else can be derived from that phandle and
-the type.
-
-Thierry
-
---wac7ysb48OaltWcw
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT/GqrAAoJEN0jrNd/PrOhyv8QAKiBbg8DL4/0dYdInmyl8EPD
-dcb92vMSYN9Wbc6guTjtm/YNdB4T1jCyF6RKmWPD+/pgGJ00iKvrnvbqI9O4DTRn
-WIix4j3ihaHYpZYPkLp/ByHf7yg7YXbfPNzoQP5XcVw1htFJcSr/xs5PPI052Iu3
-jglHUdG3sT6Q78k1DmV1oaHNxnKz2MS0fObqz0RAfKJu/7pvkf1N8U/DJrrz9coJ
-LATEkGdm1mY/ww5zDKUPQmih3iN/eq1dDshg0/qM1ki09HUWp+tv91FN1cug+KbT
-mwqCdkGEmXoFDKFOb8bUAjf41qciPdiepHuNFt/55J66+EZgpqJ+hCohevqqpqwX
-jmTgkCT5xbIzaw6HMvtiEcJClmiZ/oiwE4qH03OyshKvlAHH5O72MpN7j+ilxwiO
-J3igNV2ZEzdjsta2Y8SPVxl3g2ahdkyGkA0/yj7EeYsZimAUsORFRBMd3+l8h6oy
-yzMt5rdG45lzT0E0V6TSCoBifRscwZbJrNWeN7Rrc3dfmtmXZTMWD/vKto4N92V8
-Co9Jp85KVLnJcotO4sv0apK/EwKKx4CEy9hNwGqfwZ9K5D46O0CndsARMsXHfW6P
-WuIlZOS3wcjWLHeMDitYTrMC0uE8/JbxnytgUUygWODOyD+UbeFQOx5ogd9b95o4
-ef8EdV0uy0NbvPx5IDbl
-=BvsA
------END PGP SIGNATURE-----
-
---wac7ysb48OaltWcw--
