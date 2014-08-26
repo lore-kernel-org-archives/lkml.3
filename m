@@ -1,107 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757603AbaHZL3A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 07:29:00 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:35073 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754451AbaHZL27 (ORCPT
+	id S1757447AbaHZLcV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 07:32:21 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:36532 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754451AbaHZLcT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 07:28:59 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Cc: =?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: [PATCH] KVM: x86: fix some sparse warnings
-Date: Tue, 26 Aug 2014 13:28:52 +0200
-Message-Id: <1409052532-18008-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
+	Tue, 26 Aug 2014 07:32:19 -0400
+Message-ID: <53FC703F.8040501@suse.cz>
+Date: Tue, 26 Aug 2014 13:32:15 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: David Miller <davem@davemloft.net>
+CC: linux@roeck-us.net, stable@vger.kernel.org, satoru.takeuchi@gmail.com,
+        shuah.kh@samsung.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3.12 000/104] 3.12.27-stable review
+References: <20140820195436.GA22902@roeck-us.net>	<53F5A864.5040206@suse.cz>	<53F8AFEE.2070608@roeck-us.net> <20140823.111035.1932350736810442438.davem@davemloft.net>
+In-Reply-To: <20140823.111035.1932350736810442438.davem@davemloft.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sparse reports the following easily fixed warnings:
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-   arch/x86/kvm/vmx.c:8795:48: sparse: Using plain integer as NULL pointer
-   arch/x86/kvm/vmx.c:2138:5: sparse: symbol vmx_read_l1_tsc was not declared. Should it be static?
-   arch/x86/kvm/vmx.c:6151:48: sparse: Using plain integer as NULL pointer
-   arch/x86/kvm/vmx.c:8851:6: sparse: symbol vmx_sched_in was not declared. Should it be static?
+On 08/23/2014, 08:10 PM, David Miller wrote:
+> From: Guenter Roeck <linux@roeck-us.net> Date: Sat, 23 Aug 2014
+> 08:14:54 -0700
+> 
+>> On 08/21/2014 01:05 AM, Jiri Slaby wrote:
+>>> The last three are just cosmetical in 3.12. And I do not
+>>> immediately see in the rest, how they could improve the state.
+>>> So I am going to remove the add-basic-validations patch from
+>>> 3.12.
+>>> 
+>> 
+>> Build and tests now look good.
+> 
+> I am hugely disappointed in this.
 
-   arch/x86/kvm/svm.c:2162:5: sparse: symbol svm_read_l1_tsc was not declared. Should it be static?
+Yes, me too.
 
-Cc: Radim Krčmář <rkrcmar@redhat.com>
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- arch/x86/kvm/svm.c |  2 +-
- arch/x86/kvm/vmx.c | 12 ++++++------
- 2 files changed, 7 insertions(+), 7 deletions(-)
+> This is why I really do all the backports for each -stable release 
+> myself and I therefore really wish there was more thought put into 
+> when these changes are placed into other trees.
 
-diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-index 1703aab84a6d..7cd230e55118 100644
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -3031,7 +3031,7 @@ static int cr8_write_interception(struct vcpu_svm *svm)
- 	return 0;
- }
- 
--u64 svm_read_l1_tsc(struct kvm_vcpu *vcpu, u64 host_tsc)
-+static u64 svm_read_l1_tsc(struct kvm_vcpu *vcpu, u64 host_tsc)
- {
- 	struct vmcb *vmcb = get_host_vmcb(to_svm(vcpu));
- 	return vmcb->control.tsc_offset +
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 73ba2a265f85..d70550d0bcff 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -2159,7 +2159,7 @@ static u64 guest_read_tsc(void)
-  * Like guest_read_tsc, but always returns L1's notion of the timestamp
-  * counter, even if a nested guest (L2) is currently running.
-  */
--u64 vmx_read_l1_tsc(struct kvm_vcpu *vcpu, u64 host_tsc)
-+static u64 vmx_read_l1_tsc(struct kvm_vcpu *vcpu, u64 host_tsc)
- {
- 	u64 tsc_offset;
- 
-@@ -6246,11 +6246,11 @@ static void free_nested(struct vcpu_vmx *vmx)
- 	/* Unpin physical memory we referred to in current vmcs02 */
- 	if (vmx->nested.apic_access_page) {
- 		nested_release_page(vmx->nested.apic_access_page);
--		vmx->nested.apic_access_page = 0;
-+		vmx->nested.apic_access_page = NULL;
- 	}
- 	if (vmx->nested.virtual_apic_page) {
- 		nested_release_page(vmx->nested.virtual_apic_page);
--		vmx->nested.virtual_apic_page = 0;
-+		vmx->nested.virtual_apic_page = NULL;
- 	}
- 
- 	nested_free_all_saved_vmcss(vmx);
-@@ -8950,11 +8950,11 @@ static void nested_vmx_vmexit(struct kvm_vcpu *vcpu, u32 exit_reason,
- 	/* Unpin physical memory we referred to in vmcs02 */
- 	if (vmx->nested.apic_access_page) {
- 		nested_release_page(vmx->nested.apic_access_page);
--		vmx->nested.apic_access_page = 0;
-+		vmx->nested.apic_access_page = NULL;
- 	}
- 	if (vmx->nested.virtual_apic_page) {
- 		nested_release_page(vmx->nested.virtual_apic_page);
--		vmx->nested.virtual_apic_page = 0;
-+		vmx->nested.virtual_apic_page = NULL;
- 	}
- 
- 	/*
-@@ -9010,7 +9010,7 @@ static int vmx_check_intercept(struct kvm_vcpu *vcpu,
- 	return X86EMUL_CONTINUE;
- }
- 
--void vmx_sched_in(struct kvm_vcpu *vcpu, int cpu)
-+static void vmx_sched_in(struct kvm_vcpu *vcpu, int cpu)
- {
- 	if (ple_gap)
- 		shrink_ple_window(vcpu);
--- 
-1.8.3.1
+If everybody were using the standard stable rules and did not
+introduce a very special patches handling, we would have known what
+stable trees should contain which patches. Not only that everybody is
+confused about the special handling, but fixes for holes happened to
+be missed in the special process several times as of now.
 
+Furthermore, with the special handling and given subtree maintainers
+provide backports only to selected stable trees, we have no way to
+find out what should (not) be applied. Interpolation is only what
+remains for us poor. (Leaving apart the great testing by the guys.)
+
+> Almost all of those sparc64 memory management fixes should not go
+> into anything before v3.13, because all of these fixes are in the
+> context of the page tables encoding PMDs using the PTE layout.
+
+Again, until subtree maintainers distribute their private local
+knowledge somehow, we cannot know.
+
+> If you're just forcing changes you see go into other -stable 
+> submissions into your tree until they compile, and just hoping that
+> a tester will catch any problems, you are absolutely doing it wrong
+> and taking a large amount of value out of the -stable releases.
+
+Actually, like it or not, this is exactly how all stable trees work
+for specific scenarios/hardware. And then, we have the -rc's. If patch
+authors do not bother to reply to the "patch added" mails despite they
+know it is inappropriate, stable maintainers are short of
+possibilities. Unless they are lucky, i.e. maintain a selected stable
+tree, where a subtree maintainer provides them with a set of patches
+for that tree.
+
+thank you,
+- -- 
+js
+suse labs
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT/HA/AAoJEL0lsQQGtHBJAqwP/1iqbPpBmDVA82gijLprtJPt
+O57ELwN9rOYsyfr702eXBm7UVW42T0AroxjAqoNx3MpoXfhXav49KaakAucMp7Sr
+fF4AHUz1ztT//xjhplJqZ/ht3WxwkNfDzliQ31vjFLnMpRyeLHrJeQu4FEk+G5wM
+2NLue5JdG2rHYxYxT5Rzwxg/n0eIXwSHCgt2DydmqhAiIkkigVkD+ajRMzpnmH2y
+QErE3TN5PfKvs0tOjttZGuzCNKPdBfXacZyGe5HuXlg9LQ3TR+mqqWMIX3RUy6np
+i/TCI0aC+MQCsS59YVQaea6GZBC9uFprS+G1lYRlf520Anslrdqw4XNt4m3Y9GdL
+ptdUDTtp2b1bJQIC7PL+T9Nt8Wro1p3q0to1gEW4e8YJLYor0z5E9bDqPBXX/e+x
+fZ9IQsbUa+OjUkjqF+Cp4FWiI5hPzbJBbITiiAhYMjwr5zyaO7dt1higccvaXaIj
+9P3zzqpFgsVQcD6IUC9krW3wJ6Pgba+a9oj+AXwxffAvhHxaR2KSRCzfIMa7rcwk
+Q+wPG31V781h1NHf0q0Wc/3AVacs9WrmGh+MWciUCJUvSQQ+4mTQIoehAGIzF86s
+bljMaVQ1tf4aJpojQ1jltTBbckY2rhuDgs5u5fQDKQn+FKL/IMQ2NIr9xYYy54C0
+MnOIE7FqoMFVJaMAWSC7
+=ueH5
+-----END PGP SIGNATURE-----
