@@ -1,73 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757208AbaHZGPF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 02:15:05 -0400
-Received: from ozlabs.org ([103.22.144.67]:43778 "EHLO ozlabs.org"
+	id S1757234AbaHZGPs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 02:15:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34768 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757160AbaHZGPD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 02:15:03 -0400
-Date: Tue, 26 Aug 2014 16:14:56 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephan Mueller <smueller@chronox.de>
-Subject: linux-next: build warnings after merge of the crypto tree
-Message-ID: <20140826161456.7ad100e3@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/mScB=.PQ7pmFnaV38igKK39"; protocol="application/pgp-signature"
+	id S1757160AbaHZGPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 02:15:47 -0400
+From: Juergen Gross <jgross@suse.com>
+To: stefan.bader@canonical.com, toshi.kani@hp.com,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        konrad.wilk@oracle.com, ville.syrjala@linux.intel.com, hpa@zytor.com,
+        x86@kernel.org
+Cc: Juergen Gross <jgross@suse.com>
+Subject: [PATCH 0/3] x86: Full support of PAT
+Date: Tue, 26 Aug 2014 08:15:00 +0200
+Message-Id: <1409033703-12063-1-git-send-email-jgross@suse.com>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/mScB=.PQ7pmFnaV38igKK39
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+The x86 architecture offers via the PAT (Page Attribute Table) a way to
+specify different caching modes in page table entries. The PAT MSR contains
+8 entries each specifying one of 6 possible cache modes. A pte references one
+of those entries via 3 bits: _PAGE_PAT, _PAGE_PWT and _PAGE_PCD.
 
-Hi Herbert,
+The Linux kernel currently supports only 4 different cache modes. The PAT MSR
+is set up in a way that the setting of _PAGE_PAT in a pte doesn't matter: the
+top 4 entries in the PAT MSR are the same as the 4 lower entries.
 
-After merging the crypto tree, today's linux-next build (powerpc
-ppc44x_defconfig, i386 defconfig and sparc defconfig) produced these
-warnings:
+This results in the kernel not supporting e.g. write-through mode. Especially
+this cache mode would speed up drivers of video cards which now have to use
+uncached accesses.
 
-In file included from crypto/testmgr.c:30:0:
-include/crypto/drbg.h: In function 'drbg_max_addtl':
-include/crypto/drbg.h:157:2: warning: left shift count >=3D width of type
-  return (1UL<<35);
-  ^
-include/crypto/drbg.h: In function 'drbg_max_requests':
-include/crypto/drbg.h:163:2: warning: left shift count >=3D width of type
-  return (1UL<<48);
-  ^
+OTOH some old processors (Pentium) don't support PAT correctly and the Xen
+hypervisor has been using a different PAT MSR configuration for some time now
+and can't change that as this setting is part of the ABI.
 
-Introduced by commit 05c81ccd9087 ("crypto: drbg - remove configuration
-of fixed values").  These are all 32 bit builds.
+This patch set abstracts the cache mode from the pte and introduces tables to
+translate between cache mode and pte bits (the default cache mode "write back"
+is hard-wired to PAT entry 0). The tables are statically initialized with
+values being compatible to old processors and current usage. As soon as the
+PAT MSR is changed (or - in case of Xen - is read at boot time) the tables are
+changed accordingly. Requests of mappings with special cache modes are always
+possible now, in case they are not supported there will be a fallback to a
+compatible but slower mode.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Summing it up, this patch set adds the following features:
+- capability to support WT and WP cache modes on processors with full PAT
+  support
+- processors with no or uncorrect PAT support are still working as today, even
+  if WT or WP cache mode are selected by drivers for some pages
+- reduction of Xen special handling regarding cache mode
 
---Sig_/mScB=.PQ7pmFnaV38igKK39
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+Changes since RFC:
+- renamed functions and variables as suggested by Toshi Kani
+- corrected cache mode bits for WT and WP
+- modified handling of PAT MSR write under Xen as suggested by Jan Beulich
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
 
-iQIcBAEBCAAGBQJT/CXkAAoJEMDTa8Ir7ZwVG50P/0RaeoFZSGZXtzsZ7u4Ke368
-ksvyrc0Z0BsOb844XONL94PML3+4B8FifiOoughQkaLhC4wBMTHfbNjGySrIGoRh
-V8YgZ0+FfLsF8e5D8xOfzJqJlfPcscoYYPENnxbvmBkHHZDJlpBN9MemFap4lFtN
-OuLUwga/1gBxVkkCx6/uSt/a+ZLZFANCwArfHl7Kwszl/1hnPYJjj1aG9P+Fgqab
-KLEDjcQfmepttan6OHa/aEtnVZc0dmS+Gp6vXdUz5Ut0gxYBMXy9LNNcdGX3B51f
-CfxXpqESAlizNnHSwaRjfjmlBGT2f9TZbqphS+EY9VTYbcTGLi6JWYIvqfH4Wxy0
-mf6SpBIbP+MplLgnIHHFM27aZcmHusjhtN1u1sOnXwNX8RPgJN8s2h4iAMB3lVZA
-kPo+wEQykoFAbF8F2nPBrmtFdV56V8pQbQmc5hWNOQKPU5+40HpU3pF2MFKDg19P
-Sb3gf9Ih1UVXPKWpRC+fmVNXbBkheJwfzY17JWBo2fJzlqVXLb/PIphbwkDfc8bM
-Gc7s49p5+1SiWSJ5/P9HjJrkWc+IJq+eJG2vVWgTO6kLwLHG47lMvjTUW1z74y27
-cdNPcShTlU2rqeOBjY81DwJmzwRIlOq/GfwZ6ZEm0Xo/tgYqR2CKWdPf5jl18BLa
-nEmMgWZAouwpWZc5CZY4
-=kJUA
------END PGP SIGNATURE-----
+Juergen Gross (3):
+  x86: Make page cache mode a real type
+  x86: Enable PAT to use cache mode translation tables
+  Support Xen pv-domains using PAT
 
---Sig_/mScB=.PQ7pmFnaV38igKK39--
+ arch/x86/include/asm/cacheflush.h         |  38 ++++---
+ arch/x86/include/asm/fb.h                 |   6 +-
+ arch/x86/include/asm/io.h                 |   2 +-
+ arch/x86/include/asm/pat.h                |   7 +-
+ arch/x86/include/asm/pgtable.h            |  19 ++--
+ arch/x86/include/asm/pgtable_types.h      |  96 ++++++++++++----
+ arch/x86/mm/dump_pagetables.c             |  24 ++--
+ arch/x86/mm/init.c                        |  37 ++++++
+ arch/x86/mm/init_64.c                     |   9 +-
+ arch/x86/mm/iomap_32.c                    |  15 ++-
+ arch/x86/mm/ioremap.c                     |  63 ++++++-----
+ arch/x86/mm/pageattr.c                    |  84 ++++++++------
+ arch/x86/mm/pat.c                         | 180 +++++++++++++++++++-----------
+ arch/x86/mm/pat_internal.h                |  22 ++--
+ arch/x86/mm/pat_rbtree.c                  |   8 +-
+ arch/x86/pci/i386.c                       |   4 +-
+ arch/x86/xen/enlighten.c                  |  11 +-
+ arch/x86/xen/mmu.c                        |  52 +++------
+ arch/x86/xen/xen-ops.h                    |   1 +
+ drivers/video/fbdev/gbefb.c               |   3 +-
+ drivers/video/fbdev/vermilion/vermilion.c |   6 +-
+ include/linux/mm.h                        |   1 +
+ 22 files changed, 431 insertions(+), 257 deletions(-)
+
+-- 
+1.8.4.5
+
