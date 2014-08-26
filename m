@@ -1,55 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751435AbaHZPxz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 11:53:55 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:40318 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823AbaHZPxy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 11:53:54 -0400
-Date: Tue, 26 Aug 2014 19:53:51 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Hugh Dickins <hughd@google.com>, Peter Feiner <pfeiner@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Pavel Emelyanov <xemul@parallels.com>, Jamie Liu <jamieliu@google.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: [PATCH v5] mm: softdirty: enable write notifications on VMAs
- after VM_SOFTDIRTY cleared
-Message-ID: <20140826155351.GC8952@moon>
-References: <1408571182-28750-1-git-send-email-pfeiner@google.com>
- <1408937681-1472-1-git-send-email-pfeiner@google.com>
- <alpine.LSU.2.11.1408252142380.2073@eggly.anvils>
- <20140826064952.GR25918@moon>
- <20140826140419.GA10625@node.dhcp.inet.fi>
- <20140826141914.GA8952@moon>
- <20140826145612.GA11226@node.dhcp.inet.fi>
- <20140826151813.GB8952@moon>
- <20140826154355.GA11464@node.dhcp.inet.fi>
+	id S1751809AbaHZPyR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 11:54:17 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45199 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751607AbaHZPyP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 11:54:15 -0400
+Date: Tue, 26 Aug 2014 10:54:03 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+CC: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: gadget: net2280: Fix invalid handling of Reset irq
+Message-ID: <20140826155403.GE13949@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1409068212-11044-1-git-send-email-ricardo.ribalda@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="VUDLurXRWRKrGuMn"
 Content-Disposition: inline
-In-Reply-To: <20140826154355.GA11464@node.dhcp.inet.fi>
+In-Reply-To: <1409068212-11044-1-git-send-email-ricardo.ribalda@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 06:43:55PM +0300, Kirill A. Shutemov wrote:
-> On Tue, Aug 26, 2014 at 07:18:13PM +0400, Cyrill Gorcunov wrote:
-> > > Basically, it's safe if only soft-dirty is allowed to modify vm_flags
-> > > without down_write(). But why is soft-dirty so special?
-> > 
-> > because how we use this bit, i mean in normal workload this bit won't
-> > be used intensively i think so it's not widespread in kernel code
-> 
-> Weak argument to me.
-> 
-> What about walk through vmas twice: first with down_write() to modify
-> vm_flags and vm_page_prot, then downgrade_write() and do
-> walk_page_range() on every vma?
+--VUDLurXRWRKrGuMn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I still it's undeeded, but for sure using write-lock/downgrade won't hurt,
-so no argues from my side.
+On Tue, Aug 26, 2014 at 05:50:12PM +0200, Ricardo Ribalda Delgado wrote:
+> Without this patch, some hosts keeps restarting indefinitely the target.
+>=20
+> Bug added on ae8e530a7e5d87592cb23996bee7fd6f1eb202ed usb: gadget:
+> net2280: Code Cleanup
+
+this should be just above you Signed-off-by on the form:
+
+Fixes: ae8e530 (usb: gadget: net2280: Code Cleanup)
+
+>=20
+> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+> ---
+>  drivers/usb/gadget/udc/net2280.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/usb/gadget/udc/net2280.c b/drivers/usb/gadget/udc/ne=
+t2280.c
+> index f4eac11..2e95715 100644
+> --- a/drivers/usb/gadget/udc/net2280.c
+> +++ b/drivers/usb/gadget/udc/net2280.c
+> @@ -3320,7 +3320,7 @@ static void handle_stat1_irqs(struct net2280 *dev, =
+u32 stat)
+>  	if (stat & tmp) {
+>  		writel(tmp, &dev->regs->irqstat1);
+>  		if ((((stat & BIT(ROOT_PORT_RESET_INTERRUPT)) &&
+> -				(readl(&dev->usb->usbstat) & mask)) ||
+> +				((readl(&dev->usb->usbstat) & mask) =3D=3D 0)) ||
+>  				((readl(&dev->usb->usbctl) &
+>  					BIT(VBUS_PIN)) =3D=3D 0)) &&
+>  				(dev->gadget.speed !=3D USB_SPEED_UNKNOWN)) {
+> --=20
+> 2.1.0
+>=20
+
+--=20
+balbi
+
+--VUDLurXRWRKrGuMn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT/K2bAAoJEIaOsuA1yqREL+wQAK3WfgC8pNRQZpDklElvp9cS
+2+1SKWW5S9SJ9xg5pPFCj2w8w8qAr+heZ4TL/8ZLy6dVtH5KqQvReh44AVGGeL5K
+Eqrw71ZDbqUP2000ZO5dpZMAdtekxdJFCRMyG3LS2mv23E/R3AWxqaxPwN4apSPG
+5SiRVNCReNKyS7Lvb78mJmklB2nFDA82cfU4hb1BaN/lwwIcib8jmBhHVMK2AOXA
+AsIVykvLaDLsOdpQGuaaZ6BPncnDKuTepOTWk5xttvYu6E8+uEGzb/x8YU2Kml/+
+OOkr3Elq81ls3HHPPtirqz5sbLaoC+lj0I+K6m/DneqBM3M2FJrZuDQqwTgBLF16
+9fzsE/GZxTKCUPfrVvGnx3oxw0W+gswqkplPAld3z/zqbQqtt9AO4gBDx+lfHkWj
+hnee4F80JGP+fPBdCnfXZrNmJ0KY0lsoOiH7zwnqvgFh5QBj7F1wq8BcBclUS8iJ
+gpiKi2G2t75UulvxYu9QQ2l1wAWd8XvZfUKMcdkhbU+z568jzHU7EICWL98J5N5m
+iJfhcbd5CMfH92EjZ/ppuIkkpozf1tmHLQ7USMRKk/MbLkq6lrVAokJrZ/V/yrG3
+rci5SN8aic9+4KySnkvDLMaNmL+G0HpyIb3X/NeQogvouoxLyffnVyBLyVAjcHeh
+kqeHxKFlceZ6WvSRB3hF
+=Mzzx
+-----END PGP SIGNATURE-----
+
+--VUDLurXRWRKrGuMn--
