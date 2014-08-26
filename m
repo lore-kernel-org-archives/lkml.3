@@ -1,143 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757591AbaHZLTc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 07:19:32 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60277 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754200AbaHZLTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 07:19:30 -0400
-Message-ID: <53FC6D36.8000102@ti.com>
-Date: Tue, 26 Aug 2014 14:19:18 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1757617AbaHZLUY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 07:20:24 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:46195 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754200AbaHZLUW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 07:20:22 -0400
+Date: Tue, 26 Aug 2014 12:20:13 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        sameo@linux.intel.com, lgirdwood@gmail.com, broonie@kernel.org,
+        a.zummo@towertech.it, mturquette@linaro.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
+        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
+        xxx@rock-chips.com, dianders@chromium.org, heiko@sntech.de,
+        olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
+        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com
+Subject: Re: [PATCH v2 2/5] MFD: RK808: Add new mfd driver for RK808
+Message-ID: <20140826112013.GK9574@lee--X1>
+References: <1408505461-24200-1-git-send-email-zyw@rock-chips.com>
+ <20140820092117.GI4266@lee--X1>
+ <53FA9D1E.8040202@rock-chips.com>
+ <20140826092205.GG9574@lee--X1>
+ <53FC5BD1.7030406@rock-chips.com>
+ <20140826102036.GJ9574@lee--X1>
+ <53FC63EE.6060104@rock-chips.com>
 MIME-Version: 1.0
-To: Pramod Gurav <pramod.gurav@smartplayin.com>, <linux-fbdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Rob Clark <robdclark@gmail.com>
-Subject: Re: [PATCH] msm: msm_fb: Add remove function for platform driver
- for clean unloading
-References: <1407163433-13528-1-git-send-email-pramod.gurav@smartplayin.com>
-In-Reply-To: <1407163433-13528-1-git-send-email-pramod.gurav@smartplayin.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="CekNernRPhHRFJJ8d4Sn2Ie3F4Lag1TaD"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53FC63EE.6060104@rock-chips.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---CekNernRPhHRFJJ8d4Sn2Ie3F4Lag1TaD
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+On Tue, 26 Aug 2014, Chris Zhong wrote:
+> On 08/26/2014 06:20 PM, Lee Jones wrote:
+> >On Tue, 26 Aug 2014, Chris Zhong wrote:
+> >>On 08/26/2014 05:22 PM, Lee Jones wrote:
+> >>>On Mon, 25 Aug 2014, Chris Zhong wrote:
+> >>>>On 08/20/2014 05:21 PM, Lee Jones wrote:
+> >>>>>On Wed, 20 Aug 2014, Chris Zhong wrote:
+> >>>>>
+> >>>>>>The RK808 chip is a power management IC for multimedia and handheld
+> >>>>>>devices. It contains the following components:
+> >>>>>>
+> >>>>>>- Regulators
+> >>>>>>- RTC
+> >>>>>>
+> >>>>>>The rk808 core driver is registered as a platform driver and provides
+> >>>>>>communication through I2C with the host device for the different
+> >>>>>>components.
+> >>>>>>
+> >>>>>>Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+> >>>>>>---
+> >>>[...]
+> >>>
+> >>>>>>+	rk808->pdata = pdata;
+> >>>>>Remove pdata from 'struct rk808'.  You can obtain it from dev.
+> >>>>Can I keep this pdata in rk808, because it is used in the regulator driver.
+> >>>>The one obtain from dev maybe empty.
+> >>>If the one in dev is empty, you should populate that instead.
+> >>So, should I malloc a pada, and assign it to client->dev?
+> >If client->dev.pdata is NULL, yes.
+> >
+> >But actually, I have more important questions that need to be answered
+> >first.  Ones which I would normally be able to answer myself if the
+> >patch-set had been sent as one (i.e. threaded) instead of as
+> >individual patches:
+> >
+> >- What are you using pdata for?
+> 
+> For save some properties,
+> 
+> like "rockchip,system-power-controller" in MFD
+> and some regulator properties in regulator/rk808...
+> 
+> >- Where is pdata populated?
+> 
+> It is populated in probe in mfd/rk808.c
+> 
+> actually, I copy it from tps65910.c
+> 
+> 
+> >- Where is pdata used?
+> 
+> pdata is used in mfd and regulator
 
-Hi,
+I'm still a little confused.  I see it being populated in the MFD
+driver, then I only see the attributes populated in the MFD driver
+used in the MFD driver and nowhere else?  I do see other attributes
+used in the regulator driver i.e. .of_node[], but these are then used
+only in the regulator driver, thus they shouldn't really be pdata.
 
-On 04/08/14 17:43, Pramod Gurav wrote:
-> This adds a  remove function to platform driver structure so that
-> resources are released when driver is unloaded.
->=20
-> Moved kzalloc to use managed resource and adds a return check if failed=
-=2E
+Let me put it another way:
 
-Please split this patch into two. You change two unrelated things here,
-the unloading and the kzalloc part.
+struct rk808_board {
++       int irq;
++       int irq_base;
++       int wakeup;
++       bool pm_off;
++       struct regulator_init_data *rk808_init_data[rk808_NUM_REGULATORS];
++       struct device_node *of_node[rk808_NUM_REGULATORS];
++       int pmic_sleep_gpio;
++       unsigned int dcdc_slp_voltage[3]; /* buckx_voltage in uV */
++       unsigned int ldo_slp_voltage[7];
++};
 
-> CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-> CC: Tomi Valkeinen <tomi.valkeinen@ti.com>
-> CC: Stephen Boyd <sboyd@codeaurora.org>
-> CC: Jingoo Han <jg1.han@samsung.com>
-> CC: Rob Clark <robdclark@gmail.com>
->=20
-> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
-> ---
->  drivers/video/fbdev/msm/msm_fb.c |   28 +++++++++++++++++++++++++---
->  1 file changed, 25 insertions(+), 3 deletions(-)
->=20
-> diff --git a/drivers/video/fbdev/msm/msm_fb.c b/drivers/video/fbdev/msm=
-/msm_fb.c
-> index 1374803..ac277e2 100644
-> --- a/drivers/video/fbdev/msm/msm_fb.c
-> +++ b/drivers/video/fbdev/msm/msm_fb.c
-> @@ -553,6 +553,7 @@ static int msmfb_probe(struct platform_device *pdev=
-)
->  	fb =3D framebuffer_alloc(sizeof(struct msmfb_info), &pdev->dev);
->  	if (!fb)
->  		return -ENOMEM;
-> +
->  	msmfb =3D fb->par;
->  	msmfb->fb =3D fb;
->  	msmfb->panel =3D panel;
-> @@ -569,8 +570,13 @@ static int msmfb_probe(struct platform_device *pde=
-v)
->  	mutex_init(&msmfb->panel_init_lock);
->  	init_waitqueue_head(&msmfb->frame_wq);
->  	INIT_WORK(&msmfb->resume_work, power_on_panel);
-> -	msmfb->black =3D kzalloc(msmfb->fb->var.bits_per_pixel*msmfb->xres,
-> -			       GFP_KERNEL);
-> +	msmfb->black =3D devm_kzalloc(&pdev->dev,
-> +				    msmfb->fb->var.bits_per_pixel*msmfb->xres,
-> +				    GFP_KERNEL);
-> +	if (!msmfb->black) {
-> +		ret =3D -ENOMEM;
-> +		goto error_register_framebuffer;
-> +	}
-> =20
->  	printk(KERN_INFO "msmfb_probe() installing %d x %d panel\n",
->  	       msmfb->xres, msmfb->yres);
-> @@ -589,6 +595,8 @@ static int msmfb_probe(struct platform_device *pdev=
-)
-> =20
->  	msmfb->sleeping =3D WAKING;
-> =20
-> +	platform_set_drvdata(pdev, msmfb);
-> +
->  	return 0;
-> =20
->  error_register_framebuffer:
-> @@ -598,13 +606,27 @@ error_setup_fbmem:
->  	return ret;
->  }
-> =20
-> +static int msmfb_remove(struct platform_device *pdev)
-> +{
-> +	struct msmfb_info *msmfb =3D NULL;
+For each of the above:
 
-No need to initialize to NULL, msmfb is initialized always below.
+- Can it be passed from platform data i.e. arch/<arch>/{plat,mach}-*?
+- Can it use local (not passed from driver to driver) variable instead?
 
-> +
-> +	msmfb =3D platform_get_drvdata(pdev);
-> +	if (msmfb) {
+If the answer to the first question is 'no' and/or if the answer to
+the second question is 'yes', then it shouldn't be platform data.
 
-Can msmfb ever be NULL here? If I'm not mistaken, remove is only called
-if the probe had succeeded. And if probe had succeeded, the drvdata is
-always set to a proper pointer to msmfb_info.
-
- Tomi
-
-
-
---CekNernRPhHRFJJ8d4Sn2Ie3F4Lag1TaD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJT/G02AAoJEPo9qoy8lh71sgIP/RVtP4PYUlohr2ve74Mwy/JE
-6WrjB0q883nFLJaapssK9RI8AGWA4WdPqXg1lQuI9Y/A3uuNKyIVt4Gf5u9zAz4U
-6fGO0Hicrn2tyEyborZxPEMI8U9PinSY9lV9TF69+dKmY5/h+Y7wZQWMJvtmYRLU
-JAptwsnzfj5UbqsStfDZwq4vKYN2kWOvskaMaSLc5hyHeE7GYC25e1jTDCa1Rg+2
-b0NfbLJ8JnJZk0H6oKXwAjGVuulz9E0nfiYL/3Wi5BPJ7izBxLP/5SmkYCrlvztg
-uK7y5pQTKEEkydjnORRFBjPUpEtQyf9/lmRg3OKB3SYurlh0m+oIlGwdXkhIlyju
-RI8PHq5w7Jdx/xYBMsWY/z+yHCY87DJXmbkb8uCm/omDJxYwlZPXBMdwJ0eUR676
-63eMdKqSIpMjUoTJc0hK8qlRu6yNRbhlCtzSM/RavRQHA3dmbmiCK9QAcnwZGDP+
-5K1A5GRMT2OBQCrXowcetbH8aMu/x7Lvt/A15/p5++Ek+lX9Q9k7qsGD4iWDKXan
-GaZ69Dekfy7GvJJnH2Pee2oiIyOYBotqCvdBJ0BTg18uTEqQSesIJELgHXCbCreH
-WB0c/B72zVF6puPoISjB6WKMK8YDe4Xn4IXbwasdJQPT1turKJkI2ocorJ24zHwt
-BQRFrqmKws5Zn9CrbgXC
-=QkVU
------END PGP SIGNATURE-----
-
---CekNernRPhHRFJJ8d4Sn2Ie3F4Lag1TaD--
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
