@@ -1,88 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934021AbaHZIsi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 04:48:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38668 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932362AbaHZIsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 04:48:36 -0400
-Date: Tue, 26 Aug 2014 10:48:33 +0200
-From: Jan Kara <jack@suse.cz>
-To: Patrick Palka <patrick@parcs.ath.cx>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, pmladek@suse.cz,
-        jack@suse.cz, rostedt@goodmis.org
-Subject: Re: [PATCH] Fix faulty logic in the case of recursive printk
-Message-ID: <20140826084833.GA1581@quack.suse.cz>
-References: <1408896096-16605-1-git-send-email-patrick@parcs.ath.cx>
+	id S934144AbaHZIta (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 04:49:30 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:60762 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934037AbaHZIt1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 04:49:27 -0400
+Date: Tue, 26 Aug 2014 10:49:24 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: Jon Loeliger <jdl@jdl.com>, Mark Rutland <mark.rutland@arm.com>,
+        Alexander Holler <holler@ahsoftware.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH 0/9] dt: dependencies (for deterministic driver
+ initialization order based on the DT)
+Message-ID: <20140826084922.GG17263@ulmo>
+References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>
+ <20140514141914.446F7C4153D@trevor.secretlab.ca>
+ <20140821140211.GD19293@ulmo.nvidia.com>
+ <53F64624.5000403@ahsoftware.de>
+ <20140822131919.GX21734@leverpostej>
+ <20140825093931.GB2399@ulmo>
+ <E1XLu15-0002DP-6o@jdl.com>
+ <20140825133714.GH4163@ulmo.nvidia.com>
+ <20140826084208.AE5F0C40989@trevor.secretlab.ca>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UTZ8bGhNySVQ9LYl"
 Content-Disposition: inline
-In-Reply-To: <1408896096-16605-1-git-send-email-patrick@parcs.ath.cx>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140826084208.AE5F0C40989@trevor.secretlab.ca>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 24-08-14 12:01:36, Patrick Palka wrote:
-> We shouldn't set text_len in the code path that detects printk recursion
-> because text_len corresponds to the length of the string inside textbuf.
-> A few lines down from the line
-> 
->     text_len = strlen(recursion_msg);
-> 
-> is the line
-> 
->     text_len += vscnprintf(text + text_len, ...);
-> 
-> So if printk detects recursion, it sets text_len to 29 and logs an
-> error.  Then the message supplied by the caller of printk is stored
-> inside textbuf but offset by 29 bytes.  This means that the output of
-> the recursive call to printk will contain 29 bytes of garbage in front
-> of it.
-> 
-> This defect is caused by commit 458df9fd ("printk: remove separate
-> printk_sched buffers and use printk buf instead") which turned
-> 
->     text_len = vscnprintf(text + text_len, ...);
-> 
-> into
-> 
->     text_len += vscnprintf(text + text_len, ...);
-> 
-> To fix this, this patch avoids setting text_len when logging the printk
-> recursion error.  This patch also performs a couple of local
-> micro-optimizations (use unlikely() and ARRAY_SIZE()).
-  Thanks for spotting this! Just one nit below:
 
-> Signed-off-by: Patrick Palka <patrick@parcs.ath.cx>
-> ---
->  kernel/printk/printk.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-> index e04c455..c101ec2 100644
-> --- a/kernel/printk/printk.c
-> +++ b/kernel/printk/printk.c
-> @@ -1665,15 +1665,15 @@ asmlinkage int vprintk_emit(int facility, int level,
->  	raw_spin_lock(&logbuf_lock);
->  	logbuf_cpu = this_cpu;
->  
-> -	if (recursion_bug) {
-> +	if (unlikely(recursion_bug)) {
->  		static const char recursion_msg[] =
->  			"BUG: recent printk recursion!";
->  
->  		recursion_bug = 0;
-> -		text_len = strlen(recursion_msg);
->  		/* emit KERN_CRIT message */
->  		printed_len += log_store(0, 2, LOG_PREFIX|LOG_NEWLINE, 0,
-> -					 NULL, 0, recursion_msg, text_len);
-> +					 NULL, 0, recursion_msg,
-> +					 ARRAY_SIZE(recursion_msg) - 1);
-  I'd prefer to keep using strlen(recursion_msg). It is more obvious what
-it does and is more futureproof.
+--UTZ8bGhNySVQ9LYl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+On Tue, Aug 26, 2014 at 09:42:08AM +0100, Grant Likely wrote:
+> On Mon, 25 Aug 2014 15:37:16 +0200, Thierry Reding <thierry.reding@gmail.=
+com> wrote:
+[...]
+> > There are somewhat standardized bindings for the above and especially
+> > for bindings of the type that clocks implement this is trivial. We can
+> > simply iterate over each (phandle, specifier) tuple and check that the
+> > corresponding clock provider can be resolved (which typically means that
+> > it's been registered with the common clock framework).
+> >=20
+> > For regulators (and regulator-like bindings) the problem is somewhat
+> > more difficult because they property names are not standardized. One way
+> > to solve this would be to look for property names with a -supply suffix,
+> > but that could obviously lead to false positives. One alternative that I
+> > think could eliminate this would be to explicitly list dependencies in
+> > drivers. This would allow core code to step through such a list and
+> > resolve the (phandle, specifier) tuples.
+>=20
+> False positives and negatives may not actually be a problem. It is
+> suboptimal, certainly, but it shouldn't outright break the kernel.
+
+There could be cases where some random integer in a cell could be
+interpreted as a phandle and resolve to a struct device_node. I suppose
+it might be unlikely, but not impossible, that the device_node could
+even match a device in the correct subsystem and you'd get a wrong
+dependency. Granted, a wrong dependency may not be catastrophic in that
+it won't lead to a crash, but it could lead to various kinds of
+weirdness and hard to diagnose problems.
+
+Thierry
+
+--UTZ8bGhNySVQ9LYl
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT/EoSAAoJEN0jrNd/PrOhIdgQAJqaVIyBb472+KcPmbk9iH8Z
+vQBg9uMfX66v+zvanycOpe0NCa7JHoxCOCTu5t8XWKd+8md9t0P87xjDKgOP2XZE
+sZSTUpcLrZABWUjwULjNfPdo3osmlMHOfnqL7Mgyi509PGuCMVLW9cpjUJt9W6Vb
+8OahWkFt1h2oZlYYR/EI/TcrbuzyfK6a7oSUOsA0A9YfY4X0xovFkxuhSpFVF+C0
+IxkwPMQZX5/rCxzoPQXBgcn14mYkmRS5Sc+by1PtLKPkvzZnXHpNkRDavEz3Zqv2
+sx1RvMNeGpMJdIajY8XafRniwsTMt7sIRjjcQhrn247hCJyJ/kKjjRgrVeS/r4Ld
+rZ+Ftynq6kZRxQ4ULDZFFry1QZB14Fp8Bx2vAkO6opbeGlLy/wEHFQaQDfv3sfDG
+7yS7q3Vzrj2UBjNp76aqO5IeD3TAlA3O/XyYD9KSgTEezLDPbrOcfELuEhGm3B8+
+UH5xMzx5TvIy8rbNNdSBA5tiIC7r6fDd3+YfQ+N8ZpqMmruD6Qxzr/bD2SU8+ZwL
+p9wR8AA5lFoLYSNVRqsH5liotJt0zTbsZ+UNqPojb2Ai9Fbv4SUKWDPQ5wcZEh/b
+9bBE3cw4/hbjWGlIF2n8jSZysh2+8qPeiRaWdOWxQm3AXK2GU5v96tflz4FRK+DI
+aMnpkwTIRudbJ3m298vR
+=OhnR
+-----END PGP SIGNATURE-----
+
+--UTZ8bGhNySVQ9LYl--
