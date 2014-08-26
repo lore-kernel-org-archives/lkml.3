@@ -1,59 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757656AbaHZLY2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 07:24:28 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33950 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757534AbaHZLYZ (ORCPT
+	id S1757707AbaHZLZa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 07:25:30 -0400
+Received: from mail-ob0-f196.google.com ([209.85.214.196]:61966 "EHLO
+	mail-ob0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757472AbaHZLZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 07:24:25 -0400
-From: Mark Brown <broonie@kernel.org>
-To: Scott Jiang <scott.jiang.linux@gmail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Cc: linux-kernel@vger.kernel.org, Mark Brown <broonie@linaro.org>
-Date: Tue, 26 Aug 2014 12:24:15 +0100
-Message-Id: <1409052255-10601-1-git-send-email-broonie@kernel.org>
-X-Mailer: git-send-email 2.1.0.rc1
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [PATCH] regmap: Fix handling of volatile registers for format_write() chips
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Tue, 26 Aug 2014 07:25:29 -0400
+MIME-Version: 1.0
+Reply-To: mrsnoorhidayah@yahoo.cl
+Date: Tue, 26 Aug 2014 13:25:28 +0200
+X-Google-Sender-Auth: tD0tN4kIZS1N5ZBTPvwg622LBmM
+Message-ID: <CA+rCJqfwL=z3dVGkHP2XLDeGCE7L8+a5C9TibaraZvdya1MJpw@mail.gmail.com>
+Subject: Dear Friend,
+From: "Mrs.Noor Hidayah" <mrsnoorhidayah@yahoo.cl>
+To: undisclosed-recipients:;
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Brown <broonie@linaro.org>
+Dear Friend
 
-A previous over-zealous factorisation of code means that we only treat
-registers as volatile if they are readable. For most devices this is fine
-since normally most registers can be read and volatility implies
-readability but for format_write() devices where there is no readback from
-the hardware and we use volatility to mean simply uncacheability this means
-that we end up treating all registers as cacheble.
+I'm a Gold Merchant Malaysia woman based in Republic of
+Burkina-Faso,My doctor have opened up to me that i have a short period
+of time to live due to ovarian cancer disease, I want to hand over the
+sum of ($750.000.00) in my bank account to you for the help of
+orphanage homes/the needy once in your location to fulfill my wish on
+earth.You will take only 50% of the money and share the rest to
+orphanage homes/the needy once,
 
-A bigger refactoring of the code to clarify this is in order but as a fix
-make a minimal change and only check readability when checking volatility
-if there is no format_write() operation defined for the device.
+The bank is aware of my decision over the fund and awaiting for whom i
+instructed to contact them, it will only cost you for change of
+ownership fee according to the bank, reply urgently to enable me
+forward you my data's now that i have access to internet because i
+don't want the money to go to bank treasury when I'm gone.
 
-Signed-off-by: Mark Brown <broonie@linaro.org>
----
- drivers/base/regmap/regmap.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index bb4502a48be5..44c2df8284d7 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -110,7 +110,7 @@ bool regmap_readable(struct regmap *map, unsigned int reg)
- 
- bool regmap_volatile(struct regmap *map, unsigned int reg)
- {
--	if (!regmap_readable(map, reg))
-+	if (!map->format.format_write && !regmap_readable(map, reg))
- 		return false;
- 
- 	if (map->volatile_reg)
--- 
-2.1.0.rc1
-
+Remain Bless
+Mrs.Noor Hidayah
