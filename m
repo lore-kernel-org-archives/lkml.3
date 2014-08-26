@@ -1,104 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934091AbaHZIhE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 04:37:04 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:57769 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932388AbaHZIg6 (ORCPT
+	id S934122AbaHZIkK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 04:40:10 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:63014 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933892AbaHZIkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 04:36:58 -0400
-Date: Tue, 26 Aug 2014 09:36:50 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Chris Zhong <zyw@rock-chips.com>
-Cc: Doug Anderson <dianders@chromium.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Mike Turquette <mturquette@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        rtc-linux@googlegroups.com, Grant Likely <grant.likely@linaro.org>,
-        Lin Huang <hl@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, zhangqing <zhangqing@rock-chips.com>,
-        xxx <xxx@rock-chips.com>,
-        Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        Dmitry Torokhov <dtor@chromium.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Kever Yang <kever.yang@rock-chips.com>
-Subject: Re: [PATCH v5 2/5] MFD: RK808: Add new mfd driver for RK808
-Message-ID: <20140826083650.GE9574@lee--X1>
-References: <1408973516-21395-1-git-send-email-zyw@rock-chips.com>
- <CAD=FV=Wz1yssGvB05ExPaYxsiizcPRYrfP9OWE+HdoSDKVc_Tw@mail.gmail.com>
- <53FBF6EB.1080002@rock-chips.com>
+	Tue, 26 Aug 2014 04:40:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53FBF6EB.1080002@rock-chips.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Tue, 26 Aug 2014 11:40:04 +0300
+Message-ID: <CAGhpvopFxfu0hNjtAiUnQ0+trL45c5MexiWSx3v9GDNuQqzoxQ@mail.gmail.com>
+Subject: [PATCH] i2c documentation: rename variable "register" to "reg"
+From: =?UTF-8?B?Sm9zw6kgTWFudWVsIEFsYXJjw7NuIFJvbGTDoW4=?= 
+	<jose.alarcon.roldan@gmail.com>
+To: rdunlap@infradead.org, wsa@the-dreams.de
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Aug 2014, Chris Zhong wrote:
-> On 08/26/2014 04:44 AM, Doug Anderson wrote:
-> >On Mon, Aug 25, 2014 at 6:31 AM, Chris Zhong <zyw@rock-chips.com> wrote:
+The example code provided with the i2c device interface documentation
+won't compile since it uses the reserved word "register" to name a
+variable.
 
-[...]
+The compiler fails with this error message:
 
-> >You need a Signed-off-by: Zhang Qing <zhangqing@rock-chips.com>
-> 
-> Done
+ error: expected identifier or '(' before '=' token
+   __u8 register = 0x20; /* Device register to access */
+                 ^
 
-[...]
+Rename the variable "register" to simply "reg"
+in the example code.
 
-> >I think Lee's "Grim" comment here was that prefixing globals with "g_"
-> >is not consistent with the Linux coding style.  Just remove the "g_".
-> 
-> Done
+Signed-off-by: Jose Alarcon Roldan <jose.alarcon.roldan@gmail.com>
+---
+ Documentation/i2c/dev-interface | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-[...]
+diff --git a/Documentation/i2c/dev-interface b/Documentation/i2c/dev-interface
+index 3e742ba..f8b1e50 100644
+--- a/Documentation/i2c/dev-interface
++++ b/Documentation/i2c/dev-interface
+@@ -57,12 +57,12 @@ Well, you are all set up now. You can now use
+SMBus commands or plain
+ I2C to communicate with your device. SMBus commands are preferred if
+ the device supports them. Both are illustrated below.
 
-> >{ RK808_BUCK3_CONFIG_REG, BUCK_ILMIN_MASK,  BUCK_ILMIN_150MA },
-> >
-> >instead of:
-> >
-> >{RK808_BUCK3_CONFIG_REG, BUCK_ILMIN_MASK,  BUCK_ILMIN_150MA},
-> 
-> Done
+-  __u8 register = 0x10; /* Device register to access */
++  __u8 reg = 0x10; /* Device register to access */
+   __s32 res;
+   char buf[10];
 
-[...]
+   /* Using SMBus commands */
+-  res = i2c_smbus_read_word_data(file, register);
++  res = i2c_smbus_read_word_data(file, reg);
+   if (res < 0) {
+     /* ERROR HANDLING: i2c transaction failed */
+   } else {
+@@ -70,8 +70,8 @@ the device supports them. Both are illustrated below.
+   }
 
-> >nit: add spacing so that VB_LO_SEL_3500MV lines up under VB_LO_ACT
-> 
-> Done
-
-[...]
-
-> >I think Lee wanted the above to be:
-> >
-> >        { "rk808", },
-> 
-> Done
-
-[...]
-
-> >I think Lee wanted you to remove ".owner = THIS_MODULE"
-> 
-> Done
-
-[...]
-
-You've just spammed 10(00)'s of people with an email that contains
-zero useful content.
-
+   /* Using I2C Write, equivalent of
+-     i2c_smbus_write_word_data(file, register, 0x6543) */
+-  buf[0] = register;
++     i2c_smbus_write_word_data(file, reg, 0x6543) */
++  buf[0] = reg;
+   buf[1] = 0x43;
+   buf[2] = 0x65;
+   if (write(file, buf, 3) ! =3) {
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.9.1
