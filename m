@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754979AbaHZMqq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 08:46:46 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:33020 "EHLO extserv.mm-sol.com"
+	id S1758027AbaHZMsI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 08:48:08 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:33112 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754540AbaHZMqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 08:46:44 -0400
+	id S1757961AbaHZMsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 08:48:06 -0400
 From: Georgi Djakov <gdjakov@mm-sol.com>
 To: linus.walleij@linaro.org, galak@codeaurora.org,
         bjorn.andersson@sonymobile.com, agross@codeaurora.org
@@ -13,42 +13,135 @@ Cc: robh+dt@kernel.org, mark.rutland@arm.com, grant.likely@linaro.org,
         sboyd@codeaurora.org, iivanov@mm-sol.com, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-arm-msm@vger.kernel.org, Georgi Djakov <gdjakov@mm-sol.com>
-Subject: [PATCH v2 0/3] pinctrl: qcom: Add APQ8084 pinctrl support
-Date: Tue, 26 Aug 2014 15:45:53 +0300
-Message-Id: <1409057156-1201-1-git-send-email-gdjakov@mm-sol.com>
+Subject: [PATCH v2 2/3] dt: Document Qualcomm APQ8084 pinctrl binding
+Date: Tue, 26 Aug 2014 15:45:55 +0300
+Message-Id: <1409057156-1201-3-git-send-email-gdjakov@mm-sol.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1409057156-1201-1-git-send-email-gdjakov@mm-sol.com>
+References: <1409057156-1201-1-git-send-email-gdjakov@mm-sol.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This set of patches adds pinctrl support for the Qualcomm APQ8084 platform.
-The first patch adds the pin definitions. The second patch contains the
-devicetree binding documentation. The last patch adds the DT node.
+Define a new binding for the Qualcomm TLMM (Top-Level Mode Mux) based pin
+controller inside the APQ8084.
 
-Tested on IFC6540 board.
-
-Changes since v1:
- - Updated the total number of pins (suggested by Bjorn Andersson)
- - Added the missing pin info (provided by Andy Gross)
- - Updated groups and functions to be consistent with other pinctrls.
-   (suggested by Andy Gross)
- - Removed unused functions, qdss and test pins. (suggested by Andy Gross)
- - Updated the documentation with the possible functions.
-
-Georgi Djakov (3):
-  pinctrl: qcom: Add APQ8084 pinctrl support
-  dt: Document Qualcomm APQ8084 pinctrl binding
-  ARM: dts: qcom: Add TLMM DT node for APQ8084
-
- .../bindings/pinctrl/qcom,apq8084-pinctrl.txt      |  104 ++
- arch/arm/boot/dts/qcom-apq8084.dtsi                |   10 +
- drivers/pinctrl/qcom/Kconfig                       |    8 +
- drivers/pinctrl/qcom/Makefile                      |    1 +
- drivers/pinctrl/qcom/pinctrl-apq8084.c             | 1243 ++++++++++++++++++++
- 5 files changed, 1366 insertions(+)
+Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
+---
+ .../bindings/pinctrl/qcom,apq8084-pinctrl.txt      |  104 ++++++++++++++++++++
+ 1 file changed, 104 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/pinctrl/qcom,apq8084-pinctrl.txt
- create mode 100644 drivers/pinctrl/qcom/pinctrl-apq8084.c
 
+diff --git a/Documentation/devicetree/bindings/pinctrl/qcom,apq8084-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/qcom,apq8084-pinctrl.txt
+new file mode 100644
+index 0000000..d0d9a8e
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pinctrl/qcom,apq8084-pinctrl.txt
+@@ -0,0 +1,104 @@
++Qualcomm APQ8084 TLMM block
++
++Required properties:
++- compatible: "qcom,apq8084-pinctrl"
++- reg: Should be the base address and length of the TLMM block.
++- interrupts: Should be the parent IRQ of the TLMM block.
++- interrupt-controller: Marks the device node as an interrupt controller.
++- #interrupt-cells: Should be two.
++- gpio-controller: Marks the device node as a GPIO controller.
++- #gpio-cells : Should be two.
++                The first cell is the gpio pin number and the
++                second cell is used for optional parameters.
++
++Please refer to ../gpio/gpio.txt and ../interrupt-controller/interrupts.txt for
++a general description of GPIO and interrupt bindings.
++
++Please refer to pinctrl-bindings.txt in this directory for details of the
++common pinctrl bindings used by client devices, including the meaning of the
++phrase "pin configuration node".
++
++Qualcomm's pin configuration nodes act as a container for an abitrary number of
++subnodes. Each of these subnodes represents some desired configuration for a
++pin, a group, or a list of pins or groups. This configuration can include the
++mux function to select on those pin(s)/group(s), and various pin configuration
++parameters, such as pull-up, drive strength, etc.
++
++The name of each subnode is not important; all subnodes should be enumerated
++and processed purely based on their content.
++
++Each subnode only affects those parameters that are explicitly listed. In
++other words, a subnode that lists a mux function but no pin configuration
++parameters implies no information about any pin configuration parameters.
++Similarly, a pin subnode that describes a pullup parameter implies no
++information about e.g. the mux function.
++
++
++The following generic properties as defined in pinctrl-bindings.txt are valid
++to specify in a pin configuration subnode:
++
++ pins, function, bias-disable, bias-pull-down, bias-pull-up, drive-strength,
++ output-low, output-high.
++
++Non-empty subnodes must specify the 'pins' property.
++Note that not all properties are valid for all pins.
++
++Valid values for pins are:
++  gpio0-gpio146
++    Supports mux, bias and drive-strength
++
++  sdc1_clk, sdc1_cmd, sdc1_data, sdc2_clk, sdc2_cmd, sdc2_data
++    Supports bias and drive-strength
++
++Valid values for function are:
++adsp_ext, audio_ref, blsp_i2c1, blsp_i2c2, blsp_i2c3, blsp_i2c4, blsp_i2c5,
++blsp_i2c6, blsp_i2c7, blsp_i2c8, blsp_i2c9, blsp_i2c10, blsp_i2c11, blsp_i2c12,
++blsp_spi1, blsp_spi2, blsp_spi3, blsp_spi4, blsp_spi5, blsp_spi6, blsp_spi7,
++blsp_spi8, blsp_spi9, blsp_spi10, blsp_spi11, blsp_spi12, blsp_uart1,
++blsp_uart2, blsp_uart3, blsp_uart4, blsp_uart5, blsp_uart6, blsp_uart7,
++blsp_uart8, blsp_uart9, blsp_uart10, blsp_uart11, blsp_uart12, blsp_uim1,
++blsp_uim2, blsp_uim3, blsp_uim4, blsp_uim5, blsp_uim6, blsp_uim7, blsp_uim8,
++blsp_uim9, blsp_uim10, blsp_uim11, blsp_uim12, cam_mclk0, cam_mclk1, cam_mclk2,
++cam_mclk3, cci_async, cci_async_in0, cci_i2c0, cci_i2c1, cci_timer0, cci_timer1,
++cci_timer2, cci_timer3, cci_timer4, edp_hpd, gcc_gp1, gcc_gp2, gcc_gp3, gcc_obt,
++gcc_vtt, gp_mn, gp_pdm0, gp_pdm1, gp_pdm2, gp0_clk, gp1_clk, gpio, hdmi_cec,
++hdmi_ddc, hdmi_dtest, hdmi_hpd, hdmi_rcv, hsic, ldo_en, ldo_update, mdp_vsync,
++pci_e0, pci_e0_n, pci_e0_rst, pci_e1, pci_e1_rst, pci_e1_rst_n, pci_e1_clkreq_n,
++pri_mi2s, qua_mi2s, sata_act, sata_devsleep, sata_devsleep_n, sd_write,
++sdc_emmc_mode, sdc3, sdc4, sec_mi2s, slimbus, spdif_tx, spkr_i2s, spkr_i2s_ws,
++spss_geni, ter_mi2s, tsif1, tsif2, uim, uim_batt_alarm, gpio
++
++Example:
++
++	tlmm: pinctrl@fd510000 {
++		compatible = "qcom,apq8084-pinctrl";
++		reg = <0xfd510000 0x4000>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		interrupt-controller;
++		#interrupt-cells = <2>;
++		interrupts = <0 208 0>;
++
++		pinctrl-names = "default";
++		pinctrl-0 = <&uart2_default>;
++
++		uart2_default: uart2_default {
++			mux {
++				pins = "gpio4", "gpio5";
++				function = "blsp_uart2";
++			};
++
++			tx {
++				pins = "gpio4";
++				drive-strength = <4>;
++				bias-disable;
++			};
++
++
++			rx {
++				pins = "gpio5";
++				drive-strength = <2>;
++				bias-pull-up;
++			};
++		};
++	};
 -- 
 1.7.9.5
 
