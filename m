@@ -1,155 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756065AbaHZWyA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 18:54:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52891 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755000AbaHZWx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 18:53:58 -0400
-Message-ID: <53FD1001.30701@suse.de>
-Date: Wed, 27 Aug 2014 00:53:53 +0200
-From: =?ISO-8859-15?Q?Andreas_F=E4rber?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1756108AbaHZWy5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 18:54:57 -0400
+Received: from mail-bn1blp0189.outbound.protection.outlook.com ([207.46.163.189]:59748
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754972AbaHZWy4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 18:54:56 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Christoph Hellwig <hch@infradead.org>
+CC: "hare@suse.de" <hare@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "jbottomley@parallels.com" <jbottomley@parallels.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>
+Subject: RE: [PATCH 2/2] Drivers: scsi: storvsc: Force discovery of LUNs that
+ may have been removed.
+Thread-Topic: [PATCH 2/2] Drivers: scsi: storvsc: Force discovery of LUNs that
+ may have been removed.
+Thread-Index: AQHPub/3ru/V8HVQikSS8hrqZWq1G5vYOcGAgAtT+GA=
+Date: Tue, 26 Aug 2014 22:54:51 +0000
+Message-ID: <c5da85b38a2a4b26b9a7a7fadc40bcc2@BY2PR0301MB0711.namprd03.prod.outlook.com>
+References: <1408244954-27417-1-git-send-email-kys@microsoft.com>
+ <1408244988-27456-1-git-send-email-kys@microsoft.com>
+ <1408244988-27456-2-git-send-email-kys@microsoft.com>
+ <20140819175431.GA4617@infradead.org>
+In-Reply-To: <20140819175431.GA4617@infradead.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [2001:4898:80e8:ed31::3]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+x-forefront-prvs: 03152A99FF
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(13464003)(199003)(189002)(377454003)(24454002)(51704005)(54094003)(19580395003)(21056001)(83322001)(19580405001)(101416001)(99396002)(76176999)(81342001)(76576001)(74316001)(85852003)(87936001)(83072002)(86362001)(95666004)(106356001)(33646002)(105586002)(64706001)(20776003)(99286002)(106116001)(92566001)(74662001)(31966008)(74502001)(76482001)(85306004)(108616004)(90102001)(77982001)(80022001)(93886004)(77096002)(50986999)(107046002)(110136001)(79102001)(46102001)(4396001)(81542001)(2656002)(54356999)(86612001)(3826002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR0301MB0709;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-CC: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>,
-        Olof Johansson <olof@lixom.net>, Nick Dyer <nick.dyer@itdev.co.uk>,
-        Yufeng Shen <miletus@chromium.org>, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Tomasz Figa <tomasz.figa@gmail.com>
-Subject: Re: [PATCH v2 1/3] ARM: dts: Add Peach Pit dts entry for Atmel touchpad
-References: <1409066937-3574-1-git-send-email-javier.martinez@collabora.co.uk> <1409066937-3574-2-git-send-email-javier.martinez@collabora.co.uk>
-In-Reply-To: <1409066937-3574-2-git-send-email-javier.martinez@collabora.co.uk>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8bit
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Javier,
 
-Am 26.08.2014 17:28, schrieb Javier Martinez Canillas:
-> From: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
+
+> -----Original Message-----
+> From: Christoph Hellwig [mailto:hch@infradead.org]
+> Sent: Tuesday, August 19, 2014 10:55 AM
+> To: KY Srinivasan
+> Cc: hare@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; ohering@suse.com;
+> jbottomley@parallels.com; linux-scsi@vger.kernel.org; Martin K. Petersen
+> Subject: Re: [PATCH 2/2] Drivers: scsi: storvsc: Force discovery of LUNs that
+> may have been removed.
 > 
-> The Peach Pit board has an Atmel maXTouch trackpad device.
-> Add the needed Device Tree nodes to support it.
+> On Sat, Aug 16, 2014 at 08:09:48PM -0700, K. Y. Srinivasan wrote:
+> > The host asks the guest to scan when a LUN is removed or added.
+> > The only way a guest can identify the removed LUN is when an I/O is
+> > attempted on a removed LUN - the SRB status code indicates that the
+> > LUN is invalid. We currently handle this SRB status and remove the device.
+> >
+> > Rather than waiting for an I/O to remove the device, force the
+> > discovery of LUNs that may have been removed prior to discovering LUNs
+> > that may have been added.
 > 
-> This Device Tree change is based on the Chrome OS 3.8 tree
-> but adapted to use the mainline Atmel maXTouch DT binding.
-> 
-> Signed-off-by: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
-> [javier.martinez: added linux,gpio-keymap property and changed IRQ type]
-> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> ---
-> 
-> Changes since v1:
->  - Change trackpad IRQ pad function from 0x0 (GPIO input) to 0xf (GPIO IRQ).
->    suggested by Tomasz Figa.
->  - Remove BTN_TOOL_* from "linux,gpio-keymap" property since those are set
->    by input mt core if INPUT_MT_POINTER is set. Suggested by Nick Dyer.
->  - Use correct values for "linux,gpio-keymap" property. Suggested by Nick Dyer.
->  - Remove support for Peach Pi board since it uses a different Atmel touchpad
->    that requires an Atmel object protocol  (T100) not supported by the driver.
->  - Use IRQ type constants from <dt-bindings/interrupt-controller/irq.h> instead
->    of magic numbers. Suggested by Andreas Farber.
-> ---
->  arch/arm/boot/dts/exynos5420-peach-pit.dts | 31 ++++++++++++++++++++++++++++++
->  1 file changed, 31 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/exynos5420-peach-pit.dts b/arch/arm/boot/dts/exynos5420-peach-pit.dts
-> index 228a6b1..e4f82d5 100644
-> --- a/arch/arm/boot/dts/exynos5420-peach-pit.dts
-> +++ b/arch/arm/boot/dts/exynos5420-peach-pit.dts
-> @@ -11,6 +11,7 @@
->  /dts-v1/;
->  #include <dt-bindings/input/input.h>
->  #include <dt-bindings/gpio/gpio.h>
-> +#include <dt-bindings/interrupt-controller/irq.h>
->  #include "exynos5420.dtsi"
->  
->  / {
-> @@ -157,6 +158,29 @@
->  	};
->  };
->  
-> +&hsi2c_8 {
-> +	status = "okay";
-> +	clock-frequency = <333000>;
-> +
-> +	trackpad@4b {
-> +		compatible="atmel,maxtouch";
-> +		reg=<0x4b>;
-> +		interrupt-parent=<&gpx1>;
-> +		interrupts=<1 IRQ_TYPE_EDGE_FALLING>;
-
-Nit: Here's a style break (4x spaces around '=' missing).
-
-> +		wakeup-source;
-> +		pinctrl-names = "default";
-> +		pinctrl-0 = <&trackpad_irq>;
-> +		linux,gpio-keymap = < KEY_RESERVED
-> +				      KEY_RESERVED
-> +				      0		/* GPIO 0 */
-> +				      0		/* GPIO 1 */
-> +				      0		/* GPIO 2 */
-> +				      BTN_LEFT 	/* GPIO 3 */
-> +				      KEY_RESERVED
-> +				      KEY_RESERVED >;
-> +	};
-
-Coincidentally, I experimentally came up with a very similar DT node for
-Spring the weekend:
-
-+	trackpad@4b {
-+		compatible = "atmel,maxtouch";
-+		reg = <0x4b>;
-+		interrupt-parent = <&gpx1>;
-+		interrupts = <2 IRQ_TYPE_NONE>;
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&trackpad_irq>;
-+		linux,gpio-keymap = <KEY_RESERVED
-+		                     KEY_RESERVED
-+		                     KEY_RESERVED
-+		                     KEY_RESERVED
-+		                     KEY_RESERVED
-+		                     BTN_LEFT>;
-+		wakeup-source;
-+	};
-
-0 == KEY_RESERVED, so you can consistently use it for GPIO 0-2, too. :)
-
-I probably should add the two trailing _RESERVEDs, too?
-
-With my above snippet I got an awful lot of "Interrupt triggered but
-zero messages" warnings (which I simply commented out as quickfix).
-Is that why you are using _EDGE_FALLING? Or pin-function 0xf?
-(In my case the ChromeOS DT had IRQ_TYPE_NONE and pin-function 0x0.)
+> This looks pretty reasonable to me, but I wonder if we should move this up
+> to common code so that it happens for any host rescan triggered by sysfs or
+> other drivers as well.
+Ping. Any decision on if/when this patch may be checked in.
 
 Regards,
-Andreas
 
-> +};
-> +
->  &hsi2c_9 {
->  	status = "okay";
->  	clock-frequency = <400000>;
-> @@ -249,6 +273,13 @@
->  		samsung,pin-drv = <0>;
->  	};
->  
-> +	trackpad_irq: trackpad-irq {
-> +		samsung,pins = "gpx1-1";
-> +		samsung,pin-function = <0xf>;
-> +		samsung,pin-pud = <0>;
-> +		samsung,pin-drv = <0>;
-> +	};
-> +
->  	power_key_irq: power-key-irq {
->  		samsung,pins = "gpx1-2";
->  		samsung,pin-function = <0>;
+K. Y
 
--- 
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
