@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755184AbaHZMlP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 08:41:15 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:41085 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754540AbaHZMlN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 08:41:13 -0400
-Message-ID: <53FC805F.5040807@ti.com>
-Date: Tue, 26 Aug 2014 15:41:03 +0300
+	id S1757879AbaHZMmU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 08:42:20 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:34444 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754794AbaHZMmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 08:42:18 -0400
+Message-ID: <53FC809E.8010706@ti.com>
+Date: Tue, 26 Aug 2014 15:42:06 +0300
 From: Tomi Valkeinen <tomi.valkeinen@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Fabian Frederick <fabf@skynet.be>, <linux-kernel@vger.kernel.org>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Jingoo Han <jg1.han@samsung.com>, <linux-fbdev@vger.kernel.org>
-Subject: Re: [PATCH 1/1] video: vermilion: remove unnecessary break after
- goto
-References: <1404836838-6953-1-git-send-email-fabf@skynet.be>
-In-Reply-To: <1404836838-6953-1-git-send-email-fabf@skynet.be>
+To: Geert Uytterhoeven <geert+renesas@glider.be>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>
+CC: <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Jiri Kosina <trivial@kernel.org>, <linux-fbdev@vger.kernel.org>
+Subject: Re: [PATCH v2 trivial 5/6] video: mx3fb: Update comment for dmaengine_prep_slave_sg()
+ API
+References: <1405095208-14642-1-git-send-email-geert+renesas@glider.be> <1405095208-14642-5-git-send-email-geert+renesas@glider.be>
+In-Reply-To: <1405095208-14642-5-git-send-email-geert+renesas@glider.be>
 Content-Type: multipart/signed; micalg=pgp-sha1;
 	protocol="application/pgp-signature";
-	boundary="7UJuFtT020P8oFaEMoTxmTIhOSO4rH1lL"
+	boundary="Tv1BugU0Rxd7CoEuLpB1wEoxwdC1h3UH2"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---7UJuFtT020P8oFaEMoTxmTIhOSO4rH1lL
+--Tv1BugU0Rxd7CoEuLpB1wEoxwdC1h3UH2
 Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: quoted-printable
 
-On 08/07/14 19:27, Fabian Frederick wrote:
+On 11/07/14 19:13, Geert Uytterhoeven wrote:
+> Commit 16052827d98fbc13c31ebad560af4bd53e2b4dd5 ("dmaengine/dma_slave:
+> introduce inline wrappers") changed the code to use the new API, but fo=
+rgot
+> to update a comment.
+>=20
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
 > Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
 > Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
-> Cc: Jingoo Han <jg1.han@samsung.com>
+> Cc: Jiri Kosina <trivial@kernel.org>
 > Cc: linux-fbdev@vger.kernel.org
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> --
+> v2:
+>   - New
 > ---
->  drivers/video/fbdev/vermilion/vermilion.c | 1 -
->  1 file changed, 1 deletion(-)
+>  drivers/video/fbdev/mx3fb.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 >=20
-> diff --git a/drivers/video/fbdev/vermilion/vermilion.c b/drivers/video/=
-fbdev/vermilion/vermilion.c
-> index 048a666..5f930ae 100644
-> --- a/drivers/video/fbdev/vermilion/vermilion.c
-> +++ b/drivers/video/fbdev/vermilion/vermilion.c
-> @@ -481,7 +481,6 @@ static int vml_pci_probe(struct pci_dev *dev, const=
- struct pci_device_id *id)
->  	default:
->  		err =3D -ENODEV;
->  		goto out_err_1;
-> -		break;
->  	}
+> diff --git a/drivers/video/fbdev/mx3fb.c b/drivers/video/fbdev/mx3fb.c
+> index c645a0a0c341..5e97baf92721 100644
+> --- a/drivers/video/fbdev/mx3fb.c
+> +++ b/drivers/video/fbdev/mx3fb.c
+> @@ -1179,7 +1179,7 @@ static int mx3fb_pan_display(struct fb_var_screen=
+info *var,
 > =20
->  	info =3D &vinfo->info;
+>  	/*
+>  	 * We enable the End of Frame interrupt, which will free a tx-descrip=
+tor,
+> -	 * which we will need for the next device_prep_slave_sg(). The
+> +	 * which we will need for the next dmaengine_prep_slave_sg(). The
+>  	 * IRQ-handler will disable the IRQ again.
+>  	 */
+>  	init_completion(&mx3_fbi->flip_cmpl);
 >=20
 
 Thanks, queued for 3.18.
@@ -62,7 +73,7 @@ Thanks, queued for 3.18.
 
 
 
---7UJuFtT020P8oFaEMoTxmTIhOSO4rH1lL
+--Tv1BugU0Rxd7CoEuLpB1wEoxwdC1h3UH2
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: OpenPGP digital signature
 Content-Disposition: attachment; filename="signature.asc"
@@ -70,19 +81,19 @@ Content-Disposition: attachment; filename="signature.asc"
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJT/IBfAAoJEPo9qoy8lh71sdEP/0Z+UCpOkK+72kYyX84hIoz6
-FETMfIcoPBYsg70BnX9AbjxbFFxx47ByRpp+bzuhScZj37+YalLWwBR6pfomA0i/
-63Kia6jDcHbb6BTPM4llAkL7cs1zE/5LMM2hpXTS16QGDEQKcrPQNy9YqY/+nk4d
-9x6/x5a0mDgqi5eTYv+N0h4VxFgEttdoZiuaLQOsXsTRMHr2pvVgzgb1dyP5M1yW
-lUxc4x1QTPqTEVOjcvgVEJ0L0bcT5h5KCUOo14epYZ8Hd/fTfeMcOq7mkPPeY7Sj
-Wzgx+2QEJVFYb3uJyBpZP5B3VsTTwAa7dadGwyv5YOu8bDzmOIqTLofLFbxZkv+9
-lwXa04XKug/dUWG79yP8puBLXA/0bWpMEx0J5wYb6WLMLd2Z9pEA/H92ZStErI2z
-HFyuHfBcXF0jvfFyNH+3u7jHRuquGktE9gbvA8kerHfDpDS6y4G50ScAm7sLjHAB
-YFYDObKY5jdS8ymBQyq+kQc7AStBmEDJaWqq0RGclMIQb0fUqvdzfm3/mTz6lJ5K
-mf6FrzdG5PyVSEHfMFNUzS/NXajypvzb1ia4XGVkuU1aisHuJIIweKRHsoiUHb/I
-3GGPMe/TB9YGlRAOY3jb0MvLzYoBjP7LD/Bluewl/Vw2qRaJd4kol8M/RG9f+GQu
-OrRnqLXyDGbanb5qrNeo
-=Z0ve
+iQIcBAEBAgAGBQJT/ICeAAoJEPo9qoy8lh718rAP/0ETKzUi3WdSzfEJf1jh5WMN
+NpaNPzZNnvBDWvmGFlOORhto0+LewE6kgIw1A+7ieRt0YZeeRmwUwaW5EISae2/h
+RJC6zQcNuM2tz+vvism6IghfINxT1hxeydfO4yXluLxjU8P5f0+L7u0Omm03pCqW
+92O/hwAJLBbp9TSh+IBiyyE+bHS/4Y6nCd0ZBeDLi0bOv3SRnlAS4hWhFcbQRehj
+EBziFFVXhSZuOAtLCOFD/PDphu0+nUpTdF7fSMNtPJRhpe97tm1Wx8/Ij1WM9HOm
+8KhJayOJGUI1yiCc9HsPbec1CXDdvSsu3GbryrkAGxkRjzwIme/6IF6Omv79TjLu
+2PaFWzGQDG7y35jP4wMj4zNpKDmqiczNfwMrZcbkYqpbdByU1QFK2K6myYYVVtja
+EyVOQErIId0vQ7BD7ief6+Nmov6zVEevXkn4FieXv+Gt+WX+FmFObpR0SWbPK4OD
+09j6szsAl3l8RJXn440NL3gKb834pSWOjhb5eJ8nu4k44Kdt8q3sVvtNAPV6XtqC
+FtwCmxiTggXoMpGUd36u8+hQ0ZuhesZ3eLeJ86mDaqnppCgjeJr81eBbCDq1bVGY
+LMV4WN4PW76CqZ3Sr2838lbVTlz8CpK7EaX+iGI/1MPyBQ850ZDy8P4liqIeKFt2
+6Ym24TenqfpAdH1RB31a
+=1/8O
 -----END PGP SIGNATURE-----
 
---7UJuFtT020P8oFaEMoTxmTIhOSO4rH1lL--
+--Tv1BugU0Rxd7CoEuLpB1wEoxwdC1h3UH2--
