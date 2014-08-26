@@ -1,175 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757009AbaHZGUX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 02:20:23 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:10379 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754412AbaHZGUV (ORCPT
+	id S933774AbaHZGXI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 02:23:08 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:64432 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932150AbaHZGXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 02:20:21 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-47-53fc272354b9
-Message-id: <53FC271A.9080108@samsung.com>
-Date: Tue, 26 Aug 2014 08:20:10 +0200
-From: Andrzej Hajda <a.hajda@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+	Tue, 26 Aug 2014 02:23:06 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-56-53fc27c699ef
+Message-id: <53FC27C5.7030400@samsung.com>
+Date: Tue, 26 Aug 2014 08:23:01 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101
  Thunderbird/31.0
 MIME-version: 1.0
-To: Joonyoung Shim <jy0922.shim@samsung.com>, Inki Dae <inki.dae@samsung.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        dri-devel@lists.freedesktop.org,
-        open list <linux-kernel@vger.kernel.org>,
-        "moderated list:ARM/S5P EXYNOS AR..." 
-	<linux-samsung-soc@vger.kernel.org>
-Subject: Re: [PATCH 14/15] drm/exynos/fimc: simplify buffer queuing
-References: <1408693946-15456-1-git-send-email-a.hajda@samsung.com>
- <1408693946-15456-15-git-send-email-a.hajda@samsung.com>
- <53FC20EC.7070209@samsung.com>
-In-reply-to: <53FC20EC.7070209@samsung.com>
-Content-type: text/plain; charset=windows-1252
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: iommu@lists.linux-foundation.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-mm-sig@lists.linaro.org, Arnd Bergmann <arnd@arndb.de>,
+        Shaik Ameer Basha <shaik.ameer@samsung.com>,
+        Cho KyongHo <pullip.cho@samsung.com>, Joerg Roedel <joro@8bytes.org>,
+        Thierry Reding <treding@nvidia.com>, Olof Johansson <olof@lixom.net>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Rob Herring <robh@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Inki Dae <inki.dae@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH 04/29] drivers: base: add notifier for failed driver bind
+References: <1407235677-26324-1-git-send-email-m.szyprowski@samsung.com>
+ <1407235677-26324-5-git-send-email-m.szyprowski@samsung.com>
+ <20140825200539.GA22076@kroah.com>
+In-reply-to: <20140825200539.GA22076@kroah.com>
+Content-type: text/plain; charset=utf-8; format=flowed
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBLMWRmVeSWpSXmKPExsVy+t/xy7rK6n+CDR7+5bC48vU9m8Wk+xNY
-	LF7cu8hicbbpDbvF5V1z2CxmnN/HZLH2yF12ixmTX7I5cHjc7z7O5NG3ZRWjx+dNcgHMUVw2
-	Kak5mWWpRfp2CVwZ55YtYyv4J1PRtvoqSwPjbPEuRg4OCQETiUVfqroYOYFMMYkL99azdTFy
-	cQgJLGWUeHb3PTOE84lRYuW2D4wgVbwCWhKXO+8yg9gsAqoS/471sYDYbAKaEn8332QDsUUF
-	wiSe/TrIBFEvKPFj8j2wGhEBX4kt/18zggxlFljAJPHtQQdYkbCAs8TaRceYILbNZ5Q42HoJ
-	bBungLbEivdbGEFOZRbQk7h/UQskzCwgL7F5zVvmCYwCs5DsmIVQNQtJ1QJG5lWMoqmlyQXF
-	Sem5hnrFibnFpXnpesn5uZsYIaH9ZQfj4mNWhxgFOBiVeHg/lPwOFmJNLCuuzD3EKMHBrCTC
-	y/AQKMSbklhZlVqUH19UmpNafIiRiYNTqoFRc+tjpbyNs8O+FtiZ2AdrWh/cFCyYuPGw8VQh
-	hm2XVM7dv2a6Uvi1mYdN2Lr5Uzr65ovrPBM6lMLsrLax+WdAuIOw/1GX671bdxuf3LV5rf/F
-	/NWSjvI2ejNdts+2izURly1Z88hY/cxit5dTVKRyen4KWL1bUfiyKCtIrqDW7oHakXdhugFK
-	LMUZiYZazEXFiQAq5uXFSwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBIsWRmVeSWpSXmKPExsVy+t/xK7rH1P8EG8z4bWXxd9IxdovmxevZ
+	LCbdn8BisWC/tUXn7A3sFr0LrrJZnG16w27ROXEJu8WXKw+ZLDY9vsZqcXnXHDaLGef3MVmc
+	uv6ZzeJf70FGizOnL7Fa/N+zg93i8Jt2VosjD3ezW6za9YfR4vZvPgcRjycH5zF5/P41idFj
+	56y77B6zO2ayemxa1cnmsX/uGnaPzUvqPW7/e8zsMfnGckaPKyeaWD16m9+xeWy52s7i0bdl
+	FaPH501yAXxRXDYpqTmZZalF+nYJXBn/D39jL7jAV3H04g62BsY33F2MnBwSAiYS9z60s0DY
+	YhIX7q1n62Lk4hASWMooseL+TlYI5xOjxM3Dl4CqODh4BbQkZv8xBzFZBFQljvzMAellEzCU
+	6HrbxQYSFhWIkjj2NQ8kzCsgKPFj8j2w8SICxhL9Z2exg0xkFrjOKtH0+w0TSEJYwFfi27Xz
+	UKvWMEqsWvqNESTBKaAvMXPmMrAiZgEziS8vD7NC2PISm9e8ZZ7AKDALyZJZSMpmISlbwMi8
+	ilE0tTS5oDgpPddIrzgxt7g0L10vOT93EyMkdr/uYFx6zOoQowAHoxIP74O038FCrIllxZW5
+	hxglOJiVRHgZHgKFeFMSK6tSi/Lji0pzUosPMTJxcEo1MOY2StpynHHvVKrZKHwn00DoTpyG
+	w8LUp0/uTJ29nPOG34S+0HtMH4OfrfJsl+s8Ma/voV/QozYTV+8Xs0Xqjn18G2w0W7VWb/Ge
+	JYveml4JDVr9SyDr/uqnmeZ19ZUuU64HS28sKmZyPCj+TXbL1kbxO+nSohynKzYW5J1c6/5J
+	U9nTLNIkSImlOCPRUIu5qDgRAHLfk627AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2014 07:53 AM, Joonyoung Shim wrote:
-> Hi Andrzej,
->
-> On 08/22/2014 04:52 PM, Andrzej Hajda wrote:
->> The patch removes redundant checks, redundant HW reads
->> and simplifies code.
->>
->> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
+Hello,
+
+On 2014-08-25 22:05, Greg Kroah-Hartman wrote:
+> On Tue, Aug 05, 2014 at 12:47:32PM +0200, Marek Szyprowski wrote:
+>> This patch adds support for getting a notify for failed device driver
+>> bind, so all the items done in BUS_NOTIFY_BIND_DRIVER event can be
+>> cleaned if the driver fails to bind.
+> But doesn't the bus know if the driver fails to bind, so why would a
+> notifier be needed here?  Can't it unwind any problems then?
+
+Some other subsystems (like IOMMU) might register its own notifiers on
+the given bus. Such notifier is called before driver probe
+(BUS_NOTIFY_BIND_DRIVER event), so one can allocate some resources there.
+However there is no way to do the cleanup if the driver fails to bind,
+because no notifier is called in such case.
+
+>> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 >> ---
->>  drivers/gpu/drm/exynos/exynos_drm_fimc.c | 64 ++++++++------------------------
->>  1 file changed, 15 insertions(+), 49 deletions(-)
+>>   drivers/base/dd.c      | 10 +++++++---
+>>   include/linux/device.h |  4 +++-
+>>   2 files changed, 10 insertions(+), 4 deletions(-)
 >>
->> diff --git a/drivers/gpu/drm/exynos/exynos_drm_fimc.c b/drivers/gpu/drm/exynos/exynos_drm_fimc.c
->> index bd6628d..b20078e 100644
->> --- a/drivers/gpu/drm/exynos/exynos_drm_fimc.c
->> +++ b/drivers/gpu/drm/exynos/exynos_drm_fimc.c
->> @@ -1124,67 +1124,34 @@ static int fimc_dst_set_size(struct device *dev, int swap,
->>  	return 0;
->>  }
->>  
->> -static int fimc_dst_get_buf_count(struct fimc_context *ctx)
->> -{
->> -	u32 cfg, buf_num;
->> -
->> -	cfg = fimc_read(ctx, EXYNOS_CIFCNTSEQ);
->> -
->> -	buf_num = hweight32(cfg);
->> -
->> -	DRM_DEBUG_KMS("buf_num[%d]\n", buf_num);
->> -
->> -	return buf_num;
->> -}
->> -
->> -static int fimc_dst_set_buf_seq(struct fimc_context *ctx, u32 buf_id,
->> +static void fimc_dst_set_buf_seq(struct fimc_context *ctx, u32 buf_id,
->>  		enum drm_exynos_ipp_buf_type buf_type)
->>  {
->> -	struct exynos_drm_ippdrv *ippdrv = &ctx->ippdrv;
->> -	bool enable;
->> -	u32 cfg;
->> -	u32 mask = 0x00000001 << buf_id;
->> -	int ret = 0;
->>  	unsigned long flags;
->> +	u32 buf_num;
->> +	u32 cfg;
->>  
->>  	DRM_DEBUG_KMS("buf_id[%d]buf_type[%d]\n", buf_id, buf_type);
->>  
->>  	spin_lock_irqsave(&ctx->lock, flags);
->>  
->> -	/* mask register set */
->>  	cfg = fimc_read(ctx, EXYNOS_CIFCNTSEQ);
->>  
->> -	switch (buf_type) {
->> -	case IPP_BUF_ENQUEUE:
->> -		enable = true;
->> -		break;
->> -	case IPP_BUF_DEQUEUE:
->> -		enable = false;
->> -		break;
->> -	default:
->> -		dev_err(ippdrv->dev, "invalid buf ctrl parameter.\n");
->> -		ret =  -EINVAL;
->> -		goto err_unlock;
->> -	}
->> +	if (buf_type == IPP_BUF_ENQUEUE)
->> +		cfg |= (1 << buf_id);
->> +	else
->> +		cfg &= (1 << buf_id);
-> ~ Missing?
+>> diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+>> index e4ffbcf..541a41f 100644
+>> --- a/drivers/base/dd.c
+>> +++ b/drivers/base/dd.c
+>> @@ -237,10 +237,14 @@ static int driver_sysfs_add(struct device *dev)
+>>   	return ret;
+>>   }
+>>   
+>> -static void driver_sysfs_remove(struct device *dev)
+>> +static void driver_sysfs_remove(struct device *dev, int failed)
+> I _hate_ having functions with a flag that does something different
+> depending on it.  If you _really_ need this, just make the notifier call
+> before calling this function, which should work just fine, right?
 
-Yes, thanks for pointing it out.
+Ok, I will fix this. If I remember correctly I followed the 
+driver_sysfs_add()
+function pattern, which (surprisingly, especially when one considers only
+the function name) also calls the bus notifiers.
 
-Regards
-Andrzej
-
->
->>  
->> -	/* sequence id */
->> -	cfg &= ~mask;
->> -	cfg |= (enable << buf_id);
->>  	fimc_write(ctx, cfg, EXYNOS_CIFCNTSEQ);
->>  
->> -	/* interrupt enable */
->> -	if (buf_type == IPP_BUF_ENQUEUE &&
->> -	    fimc_dst_get_buf_count(ctx) >= FIMC_BUF_START)
->> -		fimc_mask_irq(ctx, true);
->> +	buf_num = hweight32(cfg);
->>  
->> -	/* interrupt disable */
->> -	if (buf_type == IPP_BUF_DEQUEUE &&
->> -	    fimc_dst_get_buf_count(ctx) <= FIMC_BUF_STOP)
->> +	if (buf_type == IPP_BUF_ENQUEUE && buf_num >= FIMC_BUF_START)
->> +		fimc_mask_irq(ctx, true);
->> +	else if (buf_type == IPP_BUF_DEQUEUE && buf_num <= FIMC_BUF_STOP)
->>  		fimc_mask_irq(ctx, false);
->>  
->> -err_unlock:
->>  	spin_unlock_irqrestore(&ctx->lock, flags);
->> -	return ret;
->>  }
->>  
->>  static int fimc_dst_set_addr(struct device *dev,
->> @@ -1242,7 +1209,9 @@ static int fimc_dst_set_addr(struct device *dev,
->>  		break;
->>  	}
->>  
->> -	return fimc_dst_set_buf_seq(ctx, buf_id, buf_type);
->> +	fimc_dst_set_buf_seq(ctx, buf_id, buf_type);
->> +
->> +	return 0;
->>  }
->>  
->>  static struct exynos_drm_ipp_ops fimc_dst_ops = {
->> @@ -1297,10 +1266,7 @@ static irqreturn_t fimc_irq_handler(int irq, void *dev_id)
->>  
->>  	DRM_DEBUG_KMS("buf_id[%d]\n", buf_id);
->>  
->> -	if (fimc_dst_set_buf_seq(ctx, buf_id, IPP_BUF_DEQUEUE) < 0) {
->> -		DRM_ERROR("failed to dequeue.\n");
->> -		return IRQ_HANDLED;
->> -	}
->> +	fimc_dst_set_buf_seq(ctx, buf_id, IPP_BUF_DEQUEUE);
->>  
->>  	event_work->ippdrv = ippdrv;
->>  	event_work->buf_id[EXYNOS_DRM_OPS_DST] = buf_id;
->>
->
+Best regards
+-- 
+Marek Szyprowski, PhD
+Samsung R&D Institute Poland
 
