@@ -1,45 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004AbaHZSC6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 14:02:58 -0400
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:43489 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751954AbaHZSC4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 14:02:56 -0400
-Date: Tue, 26 Aug 2014 14:02:52 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 10/41] staging/zsmalloc: Replace instances of using
- __get_cpu_var for address calculation
-Message-ID: <20140826180252.GI31659@mtj.dyndns.org>
-References: <20131203233232.928771708@linux.com>
- <20131203233250.188934046@linux.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131203233250.188934046@linux.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753792AbaHZSCb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 14:02:31 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:41019
+	"EHLO p3plsmtps2ded02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753625AbaHZSCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 14:02:25 -0400
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com, sitsofe@gmail.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>, <stable@vger.kernel.org>
+Subject: [PATCH 3/4] Drivers: hv: vmbus: Cleanup vmbus_close_internal()
+Date: Tue, 26 Aug 2014 12:05:51 -0700
+Message-Id: <1409079952-16599-3-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1409079952-16599-1-git-send-email-kys@microsoft.com>
+References: <1409079922-16560-1-git-send-email-kys@microsoft.com>
+ <1409079952-16599-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 03, 2013 at 05:32:42PM -0600, Christoph Lameter wrote:
-> Replace the use of __get_cpu_var for address calculation with
-> this_cpu_ptr().
-> 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
+Eliminate calls to BUG_ON() in vmbus_close_internal().
+We have chosen to potentially leak memory, than crash the guest
+in case of failures.
 
-Applied to percpu/for-3.18-consistent-ops.  Please let me know if this
-patch should be routed differently.  Note that this patch was to be
-applied to percpu/for-3.17 but delayed due to build issues caused by
-cpumask_var_t.
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Cc: <stable@vger.kernel.org>
+---
+ drivers/hv/channel.c |   32 +++++++++++++++++++++++++-------
+ 1 files changed, 25 insertions(+), 7 deletions(-)
 
-Thanks.
-
+diff --git a/drivers/hv/channel.c b/drivers/hv/channel.c
+index 0206314..d6c8ea2 100644
+--- a/drivers/hv/channel.c
++++ b/drivers/hv/channel.c
+@@ -479,10 +479,10 @@ static void reset_channel_cb(void *arg)
+ 	channel->onchannel_callback = NULL;
+ }
+ 
+-static void vmbus_close_internal(struct vmbus_channel *channel)
++static int vmbus_close_internal(struct vmbus_channel *channel)
+ {
+ 	struct vmbus_channel_close_channel *msg;
+-	int ret;
++	int ret = 0;
+ 
+ 	channel->state = CHANNEL_OPEN_STATE;
+ 	channel->sc_creation_callback = NULL;
+@@ -502,11 +502,28 @@ static void vmbus_close_internal(struct vmbus_channel *channel)
+ 
+ 	ret = vmbus_post_msg(msg, sizeof(struct vmbus_channel_close_channel));
+ 
+-	BUG_ON(ret != 0);
++	if (ret) {
++		pr_err("Close failed: close post msg return is %d\n", ret);
++		/*
++		 * If we failed to post the close msg,
++		 * it is perhaps better to leak memory.
++		 */
++		goto close_err;
++	}
++
+ 	/* Tear down the gpadl for the channel's ring buffer */
+-	if (channel->ringbuffer_gpadlhandle)
+-		vmbus_teardown_gpadl(channel,
+-					  channel->ringbuffer_gpadlhandle);
++	if (channel->ringbuffer_gpadlhandle) {
++		ret = vmbus_teardown_gpadl(channel,
++					   channel->ringbuffer_gpadlhandle);
++		if (ret) {
++			pr_err("Close failed: teardown gpadl return %d\n", ret);
++			/*
++			 * If we failed to teardown gpadl,
++			 * it is perhaps better to leak memory.
++			 */
++			goto close_err;
++		}
++	}
+ 
+ 	/* Cleanup the ring buffers for this channel */
+ 	hv_ringbuffer_cleanup(&channel->outbound);
+@@ -515,7 +532,8 @@ static void vmbus_close_internal(struct vmbus_channel *channel)
+ 	free_pages((unsigned long)channel->ringbuffer_pages,
+ 		get_order(channel->ringbuffer_pagecount * PAGE_SIZE));
+ 
+-
++close_err:
++	return ret;
+ }
+ 
+ /*
 -- 
-tejun
+1.7.4.1
+
