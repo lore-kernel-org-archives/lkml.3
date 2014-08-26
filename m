@@ -1,76 +1,293 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934763AbaHZKFq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 06:05:46 -0400
-Received: from regular1.263xmail.com ([211.150.99.135]:51005 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934741AbaHZKF2 (ORCPT
+	id S934781AbaHZKFw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 06:05:52 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:63719 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934765AbaHZKFs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 06:05:28 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: zyw@rock-chips.com
-X-FST-TO: lee.jones@linaro.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: zyw@rock-chips.com
-X-UNIQUE-TAG: <832328ad4b7929171360bb73ea30bb4e>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-Message-ID: <53FC5BD1.7030406@rock-chips.com>
-Date: Tue, 26 Aug 2014 18:05:05 +0800
-From: Chris Zhong <zyw@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 26 Aug 2014 06:05:48 -0400
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        sameo@linux.intel.com, lgirdwood@gmail.com, broonie@kernel.org,
-        a.zummo@towertech.it, mturquette@linaro.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
-        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
-        xxx@rock-chips.com, dianders@chromium.org, heiko@sntech.de,
-        olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
-        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com
-Subject: Re: [PATCH v2 2/5] MFD: RK808: Add new mfd driver for RK808
-References: <1408505461-24200-1-git-send-email-zyw@rock-chips.com> <20140820092117.GI4266@lee--X1> <53FA9D1E.8040202@rock-chips.com> <20140826092205.GG9574@lee--X1>
-In-Reply-To: <20140826092205.GG9574@lee--X1>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [217.156.156.35]
+In-Reply-To: <1407800431-21566-4-git-send-email-lauraa@codeaurora.org>
+References: <1407800431-21566-1-git-send-email-lauraa@codeaurora.org>
+	<1407800431-21566-4-git-send-email-lauraa@codeaurora.org>
+Date: Tue, 26 Aug 2014 11:05:47 +0100
+X-Google-Sender-Auth: xNmh30-MxC0wun0jmm3SpN_uCng
+Message-ID: <CAAG0J99=wrz4+c49HeDvL0W9rDZKk2HNLdVtHv4ZJxU4-OjewA@mail.gmail.com>
+Subject: Re: [PATCHv7 3/5] common: dma-mapping: Introduce common remapping functions
+From: James Hogan <james.hogan@imgtec.com>
+To: Laura Abbott <lauraa@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Will Deacon <will.deacon@arm.com>, Russell King <linux@arm.linux.org.uk>,
+        David Riley <davidriley@chromium.org>,
+        ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Ritesh Harjain <ritesh.harjani@gmail.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-next@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 08/26/2014 05:22 PM, Lee Jones wrote:
-> On Mon, 25 Aug 2014, Chris Zhong wrote:
->> On 08/20/2014 05:21 PM, Lee Jones wrote:
->>> On Wed, 20 Aug 2014, Chris Zhong wrote:
->>>
->>>> The RK808 chip is a power management IC for multimedia and handheld
->>>> devices. It contains the following components:
->>>>
->>>> - Regulators
->>>> - RTC
->>>>
->>>> The rk808 core driver is registered as a platform driver and provides
->>>> communication through I2C with the host device for the different
->>>> components.
->>>>
->>>> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
->>>> ---
-> [...]
+On 12 August 2014 00:40, Laura Abbott <lauraa@codeaurora.org> wrote:
 >
->>>> +	rk808->pdata = pdata;
->>> Remove pdata from 'struct rk808'.  You can obtain it from dev.
->> Can I keep this pdata in rk808, because it is used in the regulator driver.
->> The one obtain from dev maybe empty.
-> If the one in dev is empty, you should populate that instead.
+> For architectures without coherent DMA, memory for DMA may
+> need to be remapped with coherent attributes. Factor out
+> the the remapping code from arm and put it in a
+> common location to reduce code duplication.
+>
+> As part of this, the arm APIs are now migrated away from
+> ioremap_page_range to the common APIs which use map_vm_area for remapping.
+> This should be an equivalent change and using map_vm_area is more
+> correct as ioremap_page_range is intended to bring in io addresses
+> into the cpu space and not regular kernel managed memory.
+>
+> Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
+> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
 
-So, should I malloc a pada, and assign it to client->dev?
+This commit in linux-next () breaks the build for metag:
 
+drivers/base/dma-mapping.c: In function ‘dma_common_contiguous_remap’:
+drivers/base/dma-mapping.c:294: error: implicit declaration of
+function ‘dma_common_pages_remap’
+drivers/base/dma-mapping.c:294: warning: assignment makes pointer from
+integer without a cast
+drivers/base/dma-mapping.c: At top level:
+drivers/base/dma-mapping.c:308: error: conflicting types for
+‘dma_common_pages_remap’
+drivers/base/dma-mapping.c:294: error: previous implicit declaration
+of ‘dma_common_pages_remap’ was here
 
+Looks like metag isn't alone either:
 
+$ git grep -L dma-mapping-common arch/*/include/asm/dma-mapping.h
+arch/arc/include/asm/dma-mapping.h
+arch/avr32/include/asm/dma-mapping.h
+arch/blackfin/include/asm/dma-mapping.h
+arch/c6x/include/asm/dma-mapping.h
+arch/cris/include/asm/dma-mapping.h
+arch/frv/include/asm/dma-mapping.h
+arch/m68k/include/asm/dma-mapping.h
+arch/metag/include/asm/dma-mapping.h
+arch/mn10300/include/asm/dma-mapping.h
+arch/parisc/include/asm/dma-mapping.h
+arch/xtensa/include/asm/dma-mapping.h
+
+I've checked a couple of these arches (blackfin, xtensa) which don't
+include dma-mapping-common.h and their builds seem to be broken too.
+
+Cheers
+James
+
+> ---
+>  arch/arm/mm/dma-mapping.c                | 57 +++++---------------------
+>  drivers/base/dma-mapping.c               | 68 ++++++++++++++++++++++++++++++++
+>  include/asm-generic/dma-mapping-common.h |  9 +++++
+>  3 files changed, 86 insertions(+), 48 deletions(-)
+>
+> diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+> index 4c88935..f5190ac 100644
+> --- a/arch/arm/mm/dma-mapping.c
+> +++ b/arch/arm/mm/dma-mapping.c
+> @@ -297,37 +297,19 @@ static void *
+>  __dma_alloc_remap(struct page *page, size_t size, gfp_t gfp, pgprot_t prot,
+>         const void *caller)
+>  {
+> -       struct vm_struct *area;
+> -       unsigned long addr;
+> -
+>         /*
+>          * DMA allocation can be mapped to user space, so lets
+>          * set VM_USERMAP flags too.
+>          */
+> -       area = get_vm_area_caller(size, VM_ARM_DMA_CONSISTENT | VM_USERMAP,
+> -                                 caller);
+> -       if (!area)
+> -               return NULL;
+> -       addr = (unsigned long)area->addr;
+> -       area->phys_addr = __pfn_to_phys(page_to_pfn(page));
+> -
+> -       if (ioremap_page_range(addr, addr + size, area->phys_addr, prot)) {
+> -               vunmap((void *)addr);
+> -               return NULL;
+> -       }
+> -       return (void *)addr;
+> +       return dma_common_contiguous_remap(page, size,
+> +                       VM_ARM_DMA_CONSISTENT | VM_USERMAP,
+> +                       prot, caller);
+>  }
+>
+>  static void __dma_free_remap(void *cpu_addr, size_t size)
+>  {
+> -       unsigned int flags = VM_ARM_DMA_CONSISTENT | VM_USERMAP;
+> -       struct vm_struct *area = find_vm_area(cpu_addr);
+> -       if (!area || (area->flags & flags) != flags) {
+> -               WARN(1, "trying to free invalid coherent area: %p\n", cpu_addr);
+> -               return;
+> -       }
+> -       unmap_kernel_range((unsigned long)cpu_addr, size);
+> -       vunmap(cpu_addr);
+> +       dma_common_free_remap(cpu_addr, size,
+> +                       VM_ARM_DMA_CONSISTENT | VM_USERMAP);
+>  }
+>
+>  #define DEFAULT_DMA_COHERENT_POOL_SIZE SZ_256K
+> @@ -1261,29 +1243,8 @@ static void *
+>  __iommu_alloc_remap(struct page **pages, size_t size, gfp_t gfp, pgprot_t prot,
+>                     const void *caller)
+>  {
+> -       unsigned int i, nr_pages = PAGE_ALIGN(size) >> PAGE_SHIFT;
+> -       struct vm_struct *area;
+> -       unsigned long p;
+> -
+> -       area = get_vm_area_caller(size, VM_ARM_DMA_CONSISTENT | VM_USERMAP,
+> -                                 caller);
+> -       if (!area)
+> -               return NULL;
+> -
+> -       area->pages = pages;
+> -       area->nr_pages = nr_pages;
+> -       p = (unsigned long)area->addr;
+> -
+> -       for (i = 0; i < nr_pages; i++) {
+> -               phys_addr_t phys = __pfn_to_phys(page_to_pfn(pages[i]));
+> -               if (ioremap_page_range(p, p + PAGE_SIZE, phys, prot))
+> -                       goto err;
+> -               p += PAGE_SIZE;
+> -       }
+> -       return area->addr;
+> -err:
+> -       unmap_kernel_range((unsigned long)area->addr, size);
+> -       vunmap(area->addr);
+> +       return dma_common_pages_remap(pages, size,
+> +                       VM_ARM_DMA_CONSISTENT | VM_USERMAP, prot, caller);
+>         return NULL;
+>  }
+>
+> @@ -1491,8 +1452,8 @@ void arm_iommu_free_attrs(struct device *dev, size_t size, void *cpu_addr,
+>         }
+>
+>         if (!dma_get_attr(DMA_ATTR_NO_KERNEL_MAPPING, attrs)) {
+> -               unmap_kernel_range((unsigned long)cpu_addr, size);
+> -               vunmap(cpu_addr);
+> +               dma_common_free_remap(cpu_addr, size,
+> +                       VM_ARM_DMA_CONSISTENT | VM_USERMAP);
+>         }
+>
+>         __iommu_remove_mapping(dev, handle, size);
+> diff --git a/drivers/base/dma-mapping.c b/drivers/base/dma-mapping.c
+> index 6cd08e1..1bc46df 100644
+> --- a/drivers/base/dma-mapping.c
+> +++ b/drivers/base/dma-mapping.c
+> @@ -10,6 +10,8 @@
+>  #include <linux/dma-mapping.h>
+>  #include <linux/export.h>
+>  #include <linux/gfp.h>
+> +#include <linux/slab.h>
+> +#include <linux/vmalloc.h>
+>  #include <asm-generic/dma-coherent.h>
+>
+>  /*
+> @@ -267,3 +269,69 @@ int dma_common_mmap(struct device *dev, struct vm_area_struct *vma,
+>         return ret;
+>  }
+>  EXPORT_SYMBOL(dma_common_mmap);
+> +
+> +/*
+> + * remaps an allocated contiguous region into another vm_area.
+> + * Cannot be used in non-sleeping contexts
+> + */
+> +
+> +void *dma_common_contiguous_remap(struct page *page, size_t size,
+> +                       unsigned long vm_flags,
+> +                       pgprot_t prot, const void *caller)
+> +{
+> +       int i;
+> +       struct page **pages;
+> +       void *ptr;
+> +       unsigned long pfn;
+> +
+> +       pages = kmalloc(sizeof(struct page *) << get_order(size), GFP_KERNEL);
+> +       if (!pages)
+> +               return NULL;
+> +
+> +       for (i = 0, pfn = page_to_pfn(page); i < (size >> PAGE_SHIFT); i++)
+> +               pages[i] = pfn_to_page(pfn + i);
+> +
+> +       ptr = dma_common_pages_remap(pages, size, vm_flags, prot, caller);
+> +
+> +       kfree(pages);
+> +
+> +       return ptr;
+> +}
+> +
+> +/*
+> + * remaps an array of PAGE_SIZE pages into another vm_area
+> + * Cannot be used in non-sleeping contexts
+> + */
+> +void *dma_common_pages_remap(struct page **pages, size_t size,
+> +                       unsigned long vm_flags, pgprot_t prot,
+> +                       const void *caller)
+> +{
+> +       struct vm_struct *area;
+> +
+> +       area = get_vm_area_caller(size, vm_flags, caller);
+> +       if (!area)
+> +               return NULL;
+> +
+> +       if (map_vm_area(area, prot, pages)) {
+> +               vunmap(area->addr);
+> +               return NULL;
+> +       }
+> +
+> +       return area->addr;
+> +}
+> +
+> +/*
+> + * unmaps a range previously mapped by dma_common_*_remap
+> + */
+> +void dma_common_free_remap(void *cpu_addr, size_t size, unsigned long vm_flags)
+> +{
+> +       struct vm_struct *area = find_vm_area(cpu_addr);
+> +
+> +       if (!area || (area->flags & vm_flags) != vm_flags) {
+> +               WARN(1, "trying to free invalid coherent area: %p\n", cpu_addr);
+> +               return;
+> +       }
+> +
+> +       unmap_kernel_range((unsigned long)cpu_addr, size);
+> +       vunmap(cpu_addr);
+> +}
+> diff --git a/include/asm-generic/dma-mapping-common.h b/include/asm-generic/dma-mapping-common.h
+> index de8bf89..a9fd248 100644
+> --- a/include/asm-generic/dma-mapping-common.h
+> +++ b/include/asm-generic/dma-mapping-common.h
+> @@ -179,6 +179,15 @@ dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg,
+>  extern int dma_common_mmap(struct device *dev, struct vm_area_struct *vma,
+>                            void *cpu_addr, dma_addr_t dma_addr, size_t size);
+>
+> +void *dma_common_contiguous_remap(struct page *page, size_t size,
+> +                       unsigned long vm_flags,
+> +                       pgprot_t prot, const void *caller);
+> +
+> +void *dma_common_pages_remap(struct page **pages, size_t size,
+> +                       unsigned long vm_flags, pgprot_t prot,
+> +                       const void *caller);
+> +void dma_common_free_remap(void *cpu_addr, size_t size, unsigned long vm_flags);
+> +
+>  /**
+>   * dma_mmap_attrs - map a coherent DMA allocation into user space
+>   * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
+> --
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
