@@ -1,116 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757295AbaHZGit (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 02:38:49 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59704 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757212AbaHZGir (ORCPT
+	id S1757302AbaHZGjv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 02:39:51 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:33396 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754384AbaHZGjt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 02:38:47 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@kernel.org
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>, stable@vger.kernel.org
-Subject: [PATCH] perf tools: Fix build-id matching on vmlinux
-Date: Tue, 26 Aug 2014 15:38:39 +0900
-Message-Id: <1409035119-24357-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 2.0.0
+	Tue, 26 Aug 2014 02:39:49 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-ab-53fc2bb35f25
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'Jaegeuk Kim'" <jaegeuk@kernel.org>
+Cc: "'Changman Lee'" <cm224.lee@samsung.com>,
+        linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+References: <00c101cfb37c$79a58140$6cf083c0$@samsung.com>
+ <20140821204517.GB85961@jaegeuk-mac02.mot-mobility.com>
+In-reply-to: <20140821204517.GB85961@jaegeuk-mac02.mot-mobility.com>
+Subject: RE: [f2fs-dev][PATCH 3/5] f2fs: add key function to handle inline dir
+Date: Tue, 26 Aug 2014 14:39:03 +0800
+Message-id: <008501cfc0f8$87f31170$97d93450$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQJ+ISZ2VHAtiURznwAL9ejDb7/HxgF2qIvEmnUBZ6A=
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOLMWRmVeSWpSXmKPExsVy+t9jQd0t2n+CDa6uZLW4tq+RyeLJ+lnM
+	FpcWuVtc3jWHzYHFY9OqTjaP3Qs+M3n0bVnF6PF5k1wASxSXTUpqTmZZapG+XQJXxvdFJ9kL
+	pllVrD98m6WB8ZluFyMnh4SAicTT2VuYIWwxiQv31rN1MXJxCAlMZ5RY17GOFcL5wSjx/XI3
+	WBWbgIrE8o7/TCC2iICaRO++KUA2BwezQJHEqhUCIGEhgWKJJ7vWMYLYnAIuEr3TZrN0MbJz
+	CAv4SWwAG8IioCqx7MpRsEZeAUuJBWsjQMK8AoISPybfYwGxmQW0JNbvPM4EYctLbF7zFupK
+	BYkdZ18zQuy3kphyoIEZokZcYuORWywTGIVmIRk1C8moWUhGzULSsoCRZRWjaGpBckFxUnqu
+	oV5xYm5xaV66XnJ+7iZGcPA/k9rBuLLB4hCjAAejEg/vjfjfwUKsiWXFlbmHGCU4mJVEeBke
+	AoV4UxIrq1KL8uOLSnNSiw8xSnOwKInzHmi1DhQSSE8sSc1OTS1ILYLJMnFwSjUwrmhKmSo/
+	gU1qz0ODfV56zlr6XuVKCpqv2pNE3BYGBO+6fqLz04ol+1WcpSyv9R+oaC47yBO96Nxyxbr0
+	2Bdn+f2jjhiuVQi7mL7JObB0y2e9fcxz7s0xKUl5lle/aeKfN3wn7jA4VFx7u+bURC8nOwvB
+	PybVe/WDxbPcmd5tXThtqk2Br9MWJZbijERDLeai4kQAtnbmyHoCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's a problem on finding correct kernel symbols when perf report
-runs on a different kernel.  Although a part of the problem was solved
-by the prior commit 0a7e6d1b6844 ("perf tools: Check recorded kernel
-version when finding vmlinux"), there's a remaining problem still.
+Hi Jaegeuk,
 
-When perf records samples, it synthesizes the kernel map using
-machine__mmap_name() and ref_reloc_sym like "[kernel.kallsyms]_text".
-You can easily see it using 'perf report -D' command.
+> -----Original Message-----
+> From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
+> Sent: Friday, August 22, 2014 4:45 AM
+> To: Chao Yu
+> Cc: Changman Lee; linux-f2fs-devel@lists.sourceforge.net; linux-kernel@vger.kernel.org
+> Subject: Re: [f2fs-dev][PATCH 3/5] f2fs: add key function to handle inline dir
+> 
+> Hi Chao,
+> 
+> On Sat, Aug 09, 2014 at 10:48:20AM +0800, Chao Yu wrote:
+> > Adds Functions to implement inline dir init/lookup/insert/delete/convert ops.
+> >
+> > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> > ---
+> >  fs/f2fs/f2fs.h   |   9 ++
+> >  fs/f2fs/inline.c | 388 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+> >  2 files changed, 397 insertions(+)
+> >
+> > diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+> > index 58c1a49..436a498 100644
+> > --- a/fs/f2fs/f2fs.h
+> > +++ b/fs/f2fs/f2fs.h
+> > @@ -1450,4 +1450,13 @@ int f2fs_convert_inline_data(struct inode *, pgoff_t);
+> >  int f2fs_write_inline_data(struct inode *, struct page *, unsigned int);
+> >  void truncate_inline_data(struct inode *, u64);
+> >  int recover_inline_data(struct inode *, struct page *);
+> > +struct f2fs_dir_entry *find_in_inline_dir(struct inode *, struct qstr *,
+> > +							struct page **);
+> > +struct f2fs_dir_entry *f2fs_parent_inline_dir(struct inode *, struct page **);
+> > +int make_empty_inline_dir(struct inode *inode, struct inode *, struct page *);
+> > +int f2fs_add_inline_entry(struct inode *, const struct qstr *, struct inode *);
+> > +void f2fs_delete_inline_entry(struct f2fs_dir_entry *, struct page *,
+> > +						struct inode *, struct inode *);
+> > +bool f2fs_empty_inline_dir(struct inode *);
+> > +int f2fs_read_inline_dir(struct file *, struct dir_context *);
+> >  #endif
+> > diff --git a/fs/f2fs/inline.c b/fs/f2fs/inline.c
+> > index 5beecce..58d2623 100644
+> > --- a/fs/f2fs/inline.c
+> > +++ b/fs/f2fs/inline.c
+> > @@ -249,3 +249,391 @@ process_inline:
+> >  	}
+> >  	return 0;
+> >  }
+> > +
+> > +struct f2fs_dir_entry *find_in_inline_dir(struct inode *dir,
+> > +				struct qstr *name, struct page **res_page)
+> > +{
+> > +	struct f2fs_sb_info *sbi = F2FS_SB(dir->i_sb);
+> > +	struct page *ipage;
+> > +	struct f2fs_dir_entry *de;
+> > +	f2fs_hash_t namehash;
+> > +	unsigned long bit_pos = 0;
+> > +	struct f2fs_inline_dentry *dentry_blk;
+> > +	const void *dentry_bits;
+> > +
+> > +	ipage = get_node_page(sbi, dir->i_ino);
+> > +	if (IS_ERR(ipage))
+> > +		return NULL;
+> > +
+> > +	namehash = f2fs_dentry_hash(name);
+> > +
+> > +	kmap(ipage);
+> 
+> Don't need kmap for ipage.
 
-After finishing record, it goes through the recorded events to find
-maps/dsos actually used.  And then record build-id info of them.
+Will delete all 'kmap/kunmap' for ipage.
 
-During this process, it needs to load symbols in a dso and it'd call
-dso__load_vmlinux() since the default value of the symbol_conf.try_
-vmlinux_path is true.  However it changes dso->long_name to a real
-path of the vmlinux file (e.g. /lib/modules/3.16.0-rc2+/build/vmlinux)
-if one is running on a custom kernel.
+> 
+> > +	dentry_blk = inline_data_addr(ipage);
+> > +	dentry_bits = &dentry_blk->dentry_bitmap;
+> > +
+> > +	while (bit_pos < NR_INLINE_DENTRY) {
+> > +		if (!test_bit_le(bit_pos, dentry_bits)) {
+> > +			bit_pos++;
+> > +			continue;
+> > +		}
+> > +		de = &dentry_blk->dentry[bit_pos];
+> > +		if (early_match_name(name->len, namehash, de)) {
+> > +			if (!memcmp(dentry_blk->filename[bit_pos],
+> > +							name->name,
+> > +							name->len)) {
+> > +				*res_page = ipage;
+> > +				goto found;
+> > +			}
+> > +		}
+> > +
+> > +		/*
+> > +		 * For the most part, it should be a bug when name_len is zero.
+> > +		 * We stop here for figuring out where the bugs are occurred.
+> > +		 */
+> > +		f2fs_bug_on(!de->name_len);
+> > +
+> > +		bit_pos += GET_DENTRY_SLOTS(le16_to_cpu(de->name_len));
+> > +	}
+> > +
+> > +	de = NULL;
+> > +	kunmap(ipage);
+> 
+> Ditto.
+> 
+> > +found:
+> > +	unlock_page(ipage);
+> > +	return de;
+> > +}
+> > +
+> > +struct f2fs_dir_entry *f2fs_parent_inline_dir(struct inode *dir,
+> > +							struct page **p)
+> > +{
+> > +	struct f2fs_sb_info *sbi = F2FS_SB(dir->i_sb);
+> > +	struct page *ipage;
+> > +	struct f2fs_dir_entry *de;
+> > +	struct f2fs_inline_dentry *dentry_blk;
+> > +
+> > +	ipage = get_node_page(sbi, dir->i_ino);
+> > +	if (IS_ERR(ipage))
+> > +		return NULL;
+> > +
+> > +	kmap(ipage);
+> 
+> Ditto.
+> 
+> > +	dentry_blk = inline_data_addr(ipage);
+> > +	de = &dentry_blk->dentry[1];
+> > +	*p = ipage;
+> > +	unlock_page(ipage);
+> > +	return de;
+> > +}
+> > +
 
-It resulted in that perf report reads the build-id of the vmlinux, but
-cannot use it since it only knows about the [kernel.kallsyms] map.  It
-then falls back to possible vmlinux paths by using the recorded kernel
-version (in case of a recent version) or a running kernel silently
-(which might break the result).  I think it's worth going to the
-stable tree.
+[snip]
 
-I can think of a couple of ways to fix it.  In this patch, I changed
-to use the name of "[kernel.kallsyms]" for the kernel build-id event
-instead of not trying vmlinux paths.  This way we can provide maximum
-info (like annotation) with minimum change IMHO.
+> > +int f2fs_convert_inline_dir(struct inode *dir, struct page *ipage,
+> > +				struct f2fs_inline_dentry *inline_dentry)
+> > +{
+> > +	struct page *page;
+> > +	struct dnode_of_data dn;
+> > +	block_t new_blk_addr;
+> > +	struct f2fs_dentry_block *dentry_blk;
+> > +	struct f2fs_io_info fio = {
+> > +		.type = DATA,
+> > +		.rw = WRITE_SYNC | REQ_PRIO,
+> > +	};
+> > +	int err;
+> > +
+> > +	page = grab_cache_page(dir->i_mapping, 0);
+> > +	if (!page)
+> > +		return -ENOMEM;
+> > +
+> > +	set_new_dnode(&dn, dir, ipage, NULL, 0);
+> > +	err = f2fs_reserve_block(&dn, 0);
+> > +	if (err)
+> > +		goto out;
+> 
+> At a glance, we don't need to care about dentry blocks to sync, since checkpoint
+> handles that.
 
-Before:
+Yeah, agreed. Thanks for reminding me the issue! I got the reason why
+convert_inline_data should sync dentry blocks, but convert_inline_dir
+do not need to care about it from the scenario given from you to
+Huajun Li.
 
-  $ perf record -a usleep 1
+> It needs to consider about checkpoint and f2fs_sync_file.
 
-  $ perf buildid-list
-  00d5ff078efe1d30b8492854f259215fd877ce30 /lib/modules/3.16.0-rc2+/build/vmlinux
-  78186287bba77069a056a5ccbeb14b7fd2ca3a4b /usr/lib64/libc-2.17.so
-  4eadca6cb82e0a85edb87c15b5e3980742514501 /usr/lib64/ld-2.17.so
-  1e272ca30081e81ef41935a630eb2f4c636798b4 /usr/lib64/dri/swrast_dri.so
+If this directory inode is being fsynced, do_checkpoint will be invoked for
+data consistent, is there any special case convert_inline_dir will encounter?
 
-  $ perf buildid-list -H
-  0000000000000000000000000000000000000000 [kernel.kallsyms]
-  78186287bba77069a056a5ccbeb14b7fd2ca3a4b /usr/lib64/libc-2.17.so
-  4eadca6cb82e0a85edb87c15b5e3980742514501 /usr/lib64/ld-2.17.so
-  1e272ca30081e81ef41935a630eb2f4c636798b4 /usr/lib64/dri/swrast_dri.so
-  0000000000000000000000000000000000000000 /tmp/perf-2523.map
+> 
+> The addition and deletion stuffs are almost same as the existing codes.
+> Can we reuse those to avoid potential bugs?
 
-After:
+Yes, it could be, and I tried before, it seems not very clean to me when
+I implement f2fs_{add,delete}_inline_entry inside f2fs_{add,delete}_dentry.
 
-  $ perf record -a usleep 1
+I think it's better to introduce inner function including the same part
+of code between f2fs_add_entry and f2fs_add_inline_entry or between
+f2fs_inline_entry and f2fs_delete_inline_entry.
 
-  $ perf buildid-list
-  00d5ff078efe1d30b8492854f259215fd877ce30 [kernel.kallsyms]
-  78186287bba77069a056a5ccbeb14b7fd2ca3a4b /usr/lib64/libc-2.17.so
-  4eadca6cb82e0a85edb87c15b5e3980742514501 /usr/lib64/ld-2.17.so
-  1e272ca30081e81ef41935a630eb2f4c636798b4 /usr/lib64/dri/swrast_dri.so
+How do you think?
 
-  $ perf buildid-list -H
-  00d5ff078efe1d30b8492854f259215fd877ce30 [kernel.kallsyms]
-  78186287bba77069a056a5ccbeb14b7fd2ca3a4b /usr/lib64/libc-2.17.so
-  4eadca6cb82e0a85edb87c15b5e3980742514501 /usr/lib64/ld-2.17.so
-  1e272ca30081e81ef41935a630eb2f4c636798b4 /usr/lib64/dri/swrast_dri.so
-  0000000000000000000000000000000000000000 /tmp/perf-2523.map
+> 
+> And it'd be better to add inline_dentry mount option separately for now.
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/header.c | 3 +++
- 1 file changed, 3 insertions(+)
+OK.
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 158c787ce0c4..5c4093dee467 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -263,6 +263,9 @@ static int __dsos__write_buildid_table(struct list_head *head,
- 			machine__mmap_name(machine, nm, sizeof(nm));
- 			name = nm;
- 			name_len = strlen(nm) + 1;
-+		} else if (dso__is_vmlinux(pos)) {
-+			name = pos->name;
-+			name_len = strlen(pos->name) + 1;
- 		} else {
- 			name = pos->long_name;
- 			name_len = pos->long_name_len + 1;
--- 
-2.0.0
+Thanks,
+Yu
+
+> 
+> Thanks,
+> 
+> > +
+> > +	f2fs_wait_on_page_writeback(page, DATA);
+> > +	zero_user_segment(page, 0, PAGE_CACHE_SIZE);
+> > +
+> > +	dentry_blk = kmap(page);
+> > +
+> > +	/* copy data from inline dentry block to new dentry block */
+> > +	memcpy(dentry_blk->dentry_bitmap, inline_dentry->dentry_bitmap,
+> > +					INLINE_DENTRY_BITMAP_SIZE);
+> > +	memcpy(dentry_blk->reserved, inline_dentry->reserved,
+> > +					INLINE_RESERVED_SIZE);
+> > +	memcpy(dentry_blk->dentry, inline_dentry->dentry,
+> > +			sizeof(struct f2fs_dir_entry) * NR_INLINE_DENTRY);
+> > +	memcpy(dentry_blk->filename, inline_dentry->filename,
+> > +					NR_INLINE_DENTRY * F2FS_SLOT_LEN);
+> > +
+> > +	kunmap(page);
+> > +	SetPageUptodate(page);
+> > +
+> > +	/* writeback dentry page to make data consistent */
+> > +	set_page_writeback(page);
+> > +	write_data_page(page, &dn, &new_blk_addr, &fio);
+> > +	update_extent_cache(new_blk_addr, &dn);
+> > +	f2fs_wait_on_page_writeback(page, DATA);
+> > +
+> > +	/* clear inline dir and flag after data writeback */
+> > +	zero_user_segment(ipage, INLINE_DATA_OFFSET,
+> > +				 INLINE_DATA_OFFSET + MAX_INLINE_DATA);
+> > +	clear_inode_flag(F2FS_I(dir), FI_INLINE_DATA);
+> > +	stat_dec_inline_inode(dir);
+> > +
+> > +	if (i_size_read(dir) < PAGE_CACHE_SIZE) {
+> > +		i_size_write(dir, PAGE_CACHE_SIZE);
+> > +		set_inode_flag(F2FS_I(dir), FI_UPDATE_DIR);
+> > +	}
+> > +
+> > +	sync_inode_page(&dn);
+> > +out:
+> > +
+> > +	f2fs_put_page(page, 1);
+> > +	return err;
+> > +}
+> > +
+
+[snip]
+
 
