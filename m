@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934617AbaHZNCt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 09:02:49 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:8306 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757998AbaHZNCp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 09:02:45 -0400
-X-AuditID: cbfee68d-f79c46d000000b84-2e-53fc85736feb
-From: Jingoo Han <jg1.han@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: "'Bryan Wu'" <cooloney@gmail.com>, "'Lee Jones'" <lee.jones@linaro.org>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <009301cfc12d$2847ffd0$78d7ff70$%han@samsung.com>
-In-reply-to: <009301cfc12d$2847ffd0$78d7ff70$%han@samsung.com>
-Subject: [PATCH 18/18] backlight: omap1: add blank line after declarations
-Date: Tue, 26 Aug 2014 22:02:43 +0900
-Message-id: <00bc01cfc12e$066bd3e0$13437ba0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac/BLSgE1uQ+HizQTQC0PRMOtHkloQAANPzw
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsVy+t8zA93i1j/BBtsOmVsc3TmRyeLywkus
-	Fve/HmW0uLxrDpsDi8fOWXfZPe5c28Pm0bdlFaPH501yASxRXDYpqTmZZalF+nYJXBknd15j
-	LNjNWtGzcx5LA+MFli5GTg4JAROJs0+vMUPYYhIX7q1n62Lk4hASWMYo0bRqBStM0dy+Q8wQ
-	iemMEj1TPzOCJIQEfjNKbOp0BbHZBNQkvnw5zA5iiwgoSGzufQbWzCyQK/F75kqoeluJ+dsg
-	hnIK2EksPXwOrF5YwEtidtMfJhCbRUBVYu3/hWDX8QLV35+xEsoWlPgx+R4LxEwtifU7jzNB
-	2PISm9e8BTqOA+hQdYlHf3UhTjCS+PfvCdQJIhL7XrxjBLlfQuAYu8SuBaegdglIfJt8iAWi
-	V1Zi0wFoQEhKHFxxg2UCo8QsJJtnIdk8C8nmWUhWLGBkWcUomlqQXFCclF5kqFecmFtcmpeu
-	l5yfu4kREpW9OxhvH7A+xCjAwajEw3sj/newEGtiWXFl7iFGU6CLJjJLiSbnA2M/ryTe0NjM
-	yMLUxNTYyNzSTEmcV1HqZ7CQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGxqU25w0eii0/5H1P
-	mU1IZaaTiHvIiWTRmkidvzYB279/Od+97XIxt+jRCw97at7vOLC4/mXchdsTubRrJBYxTfrw
-	qNLKd8+vz6UNc3Rt8lOrG9TMPbkEt5z+ZXn2fLxJ4MGV7r+yzhk4Gn9nSnpvfbIjZ/v8vktL
-	39lnVnY6poT/z9zpEHpTSomlOCPRUIu5qDgRAIF0U5jFAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDIsWRmVeSWpSXmKPExsVy+t9jQd3i1j/BBrPmmFgc3TmRyeLywkus
-	Fve/HmW0uLxrDpsDi8fOWXfZPe5c28Pm0bdlFaPH501yASxRDYw2GamJKalFCql5yfkpmXnp
-	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUA7lRTKEnNKgUIBicXFSvp2mCaEhrjp
-	WsA0Ruj6hgTB9RgZoIGEdYwZJ3deYyzYzVrRs3MeSwPjBZYuRk4OCQETibl9h5ghbDGJC/fW
-	s3UxcnEICUxnlOiZ+pkRJCEk8JtRYlOnK4jNJqAm8eXLYXYQW0RAQWJz7zNWEJtZIFfi98yV
-	UPW2EvO3rQCLcwrYSSw9fA6sXljAS2J20x8mEJtFQFVi7f+FYEfwAtXfn7ESyhaU+DH5HgvE
-	TC2J9TuPM0HY8hKb17wFOpQD6FB1iUd/dSFOMJL49+8J1AkiEvtevGOcwCg0C8mkWUgmzUIy
-	aRaSlgWMLKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxgmP+mdQOxpUNFocYBTgYlXh4b8T/
-	DhZiTSwrrsw9xCjBwawkwvsj6U+wEG9KYmVValF+fFFpTmrxIUZToEcnMkuJJucD01FeSbyh
-	sYmZkaWRmYWRibm5kjjvgVbrQCGB9MSS1OzU1ILUIpg+Jg5OqQbGiC/ae7c5C//8UrlOrMqG
-	TdKl03jO6vwfzG692XfSJQ+1Tz5X8Nqo9vpRg50Ol031xX1dNyxN7WZcxGexRU/QvcLxnm7r
-	KQH5lgtP/e4vruTs2mdTuum34WUO3zkTN8QF5j/bPS99+Vz96c+vmy56WLIoRsTSeZZhS+a8
-	pS0tfim/9lYfue+mxFKckWioxVxUnAgAyrNQbQ8DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1754994AbaHZNIb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 09:08:31 -0400
+Received: from mail.kernel.org ([198.145.19.201]:46557 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754387AbaHZNIa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 09:08:30 -0400
+Date: Tue, 26 Aug 2014 10:08:20 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Adrian Hunter <adrian.hunter@intel.com>, Borislav Petkov <bp@suse.de>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Jiri Olsa <jolsa@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 10/10] tools lib api: Adopt fdarray class from perf's
+ evlist
+Message-ID: <20140826130820.GA3330@kernel.org>
+References: <1408741190-5123-1-git-send-email-acme@kernel.org>
+ <1408741190-5123-11-git-send-email-acme@kernel.org>
+ <87k35vbsmt.fsf@sejong.aot.lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87k35vbsmt.fsf@sejong.aot.lge.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed the following checkpatch warning.
+Em Tue, Aug 26, 2014 at 04:46:18PM +0900, Namhyung Kim escreveu:
+> Hi Arnaldo,
+> 
+> On Fri, 22 Aug 2014 17:59:50 -0300, Arnaldo Carvalho de Melo wrote:
+> > +int fdarray__add(struct fdarray *fda, int fd)
+> > +{
+> > +	/*
+> > +	 * XXX: 64 is arbitrary, just not to call realloc at each fd.
+> > +	 *	Find a better autogrowing heuristic
+> > +	 */
+> > +	if (fda->nr == fda->nr_alloc &&
+> > +	    fdarray__grow(fda, 64) < 0)
+> > +		return -ENOMEM;
+> > +
+> > +	fcntl(fd, F_SETFL, O_NONBLOCK);
+> > +	fda->entries[fda->nr].fd = fd;
+> > +	fda->entries[fda->nr].events = POLLIN | POLLERR | POLLHUP;
+> > +	fda->nr++;
+> > +	return 0;
+> > +}
+> 
+> To be more generic api, I think it'd be better receiving events from
+> user rather than hard-coding.  Also it might be useful to let user
 
-  WARNING: Missing a blank line after declarations
+Agreed, will do.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/video/backlight/omap1_bl.c | 1 +
- 1 file changed, 1 insertion(+)
+> sets a grow hint (during init?) as well.
 
-diff --git a/drivers/video/backlight/omap1_bl.c b/drivers/video/backlight/omap1_bl.c
-index a0dcd88ac74f..546d94df21d5 100644
---- a/drivers/video/backlight/omap1_bl.c
-+++ b/drivers/video/backlight/omap1_bl.c
-@@ -120,6 +120,7 @@ static int omapbl_update_status(struct backlight_device *dev)
- static int omapbl_get_intensity(struct backlight_device *dev)
- {
- 	struct omap_backlight *bl = bl_get_data(dev);
-+
- 	return bl->current_intensity;
- }
- 
--- 
-2.0.0
+Sure, that can be done as well, and with that, ditch that hard coded
+value.
 
+Thanks,
 
+- Arnaldo
