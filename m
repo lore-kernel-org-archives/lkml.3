@@ -1,200 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934184AbaHZI3O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 04:29:14 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:46733 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934071AbaHZI3K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 04:29:10 -0400
-From: kpark3469@gmail.com
-To: tony@atomide.com
-Cc: linux@arm.linux.org.uk, keun-o.park@windriver.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        afzal.mohd.ma@gmail.com
-Subject: [PATCHv2] ARM: debug: uncompress debug support for omap2plus
-Date: Tue, 26 Aug 2014 17:28:37 +0900
-Message-Id: <1409041717-8673-1-git-send-email-kpark3469@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S934198AbaHZI35 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 04:29:57 -0400
+Received: from mail.eperm.de ([89.247.134.16]:46923 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933895AbaHZI3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 04:29:55 -0400
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] DRBG: fix maximum value checks on 32 bit systems
+Date: Tue, 26 Aug 2014 10:29:45 +0200
+Message-ID: <2984929.nIbTCa5fhe@myon.chronox.de>
+User-Agent: KMail/4.13.3 (Linux/3.15.10-200.fc20.x86_64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <20140826080858.GA4161@gondor.apana.org.au>
+References: <20140826161456.7ad100e3@canb.auug.org.au> <1998203.8HHRdZPLvI@myon.chronox.de> <20140826080858.GA4161@gondor.apana.org.au>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sahara <keun-o.park@windriver.com>
+The maximum values for additional input string or generated blocks is
+larger than 1<<32. To ensure a sensible value on 32 bit systems, return
+SIZE_MAX on 32 bit systems. This value is lower than the maximum
+allowed values defined in SP800-90A. The standard allow lower maximum
+values, but not larger values.
 
-Since OMAP low-level debug code places data in the .data section,
-The symbol DEBUG_UNCOMPRESS was defined with !DEBUG_OMAP2PLUS_UART.
-This patch removes the part using data section in debug/omap2plus.S,
-so DEBUG_UNCOMPRESS is now available on OMAP system.
+SIZE_MAX - 1 is used for drbg_max_addtl to allow
+drbg_healthcheck_sanity to check the enforcement of the variable
+without wrapping.
 
-Signed-off-by: Sahara <keun-o.park@windriver.com>
-Tested-by: Afzal Mohammed <afzal.mohd.ma@gmail.com> (on am335x beagle
-bone white)
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Signed-off-by: Stephan Mueller <smueller@chronox.de>
 ---
- arch/arm/Kconfig.debug             |    3 +-
- arch/arm/include/debug/omap2plus.S |   96 ++++++++++--------------------------
- 2 files changed, 27 insertions(+), 72 deletions(-)
+ include/crypto/drbg.h | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index b11ad54..c0ad3e4 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -1220,8 +1220,7 @@ config DEBUG_UART_8250_FLOW_CONTROL
- config DEBUG_UNCOMPRESS
- 	bool
- 	depends on ARCH_MULTIPLATFORM || ARCH_MSM || PLAT_SAMSUNG
--	default y if DEBUG_LL && !DEBUG_OMAP2PLUS_UART && \
--		     (!DEBUG_TEGRA_UART || !ZBOOT_ROM)
-+	default y if DEBUG_LL && (!DEBUG_TEGRA_UART || !ZBOOT_ROM)
- 	help
- 	  This option influences the normal decompressor output for
- 	  multiplatform kernels.  Normally, multiplatform kernels disable
-diff --git a/arch/arm/include/debug/omap2plus.S b/arch/arm/include/debug/omap2plus.S
-index 6d867ae..0b7ec89 100644
---- a/arch/arm/include/debug/omap2plus.S
-+++ b/arch/arm/include/debug/omap2plus.S
-@@ -58,115 +58,71 @@
- 
- #define UART_OFFSET(addr)	((addr) & 0x00ffffff)
- 
--		.pushsection .data
--omap_uart_phys:	.word	0
--omap_uart_virt:	.word	0
--omap_uart_lsr:	.word	0
--		.popsection
--
- 		.macro	addruart, rp, rv, tmp
- 
--		/* Use omap_uart_phys/virt if already configured */
--10:		adr	\rp, 99f		@ get effective addr of 99f
--		ldr	\rv, [\rp]		@ get absolute addr of 99f
--		sub	\rv, \rv, \rp		@ offset between the two
--		ldr	\rp, [\rp, #4]		@ abs addr of omap_uart_phys
--		sub	\tmp, \rp, \rv		@ make it effective
--		ldr	\rp, [\tmp, #0]		@ omap_uart_phys
--		ldr	\rv, [\tmp, #4]		@ omap_uart_virt
--		cmp	\rp, #0			@ is port configured?
--		cmpne	\rv, #0
--		bne	100f			@ already configured
--
- 		/* Configure the UART offset from the phys/virt base */
--#ifdef CONFIG_DEBUG_OMAP2UART1
-+#if defined(CONFIG_DEBUG_OMAP2UART1)
- 		mov	\rp, #UART_OFFSET(OMAP2_UART1_BASE)	@ omap2/3/4
- 		b	98f
--#endif
--#ifdef CONFIG_DEBUG_OMAP2UART2
-+#elif defined(CONFIG_DEBUG_OMAP2UART2)
- 		mov	\rp, #UART_OFFSET(OMAP2_UART2_BASE)	@ omap2/3/4
- 		b	98f
--#endif
--#ifdef CONFIG_DEBUG_OMAP2UART3
-+#elif defined(CONFIG_DEBUG_OMAP2UART3)
- 		mov	\rp, #UART_OFFSET(OMAP2_UART3_BASE)
- 		b	98f
--#endif
--#ifdef CONFIG_DEBUG_OMAP3UART3
-+#elif defined(CONFIG_DEBUG_OMAP3UART3)
- 		mov	\rp, #UART_OFFSET(OMAP3_UART1_BASE)
- 		add	\rp, \rp, #0x00fb0000
- 		add	\rp, \rp, #0x00006000		@ OMAP3_UART3_BASE
- 		b	98f
--#endif
--#ifdef CONFIG_DEBUG_OMAP4UART3
-+#elif defined(CONFIG_DEBUG_OMAP4UART3)
- 		mov	\rp, #UART_OFFSET(OMAP4_UART3_BASE)
- 		b	98f
--#endif
--#ifdef CONFIG_DEBUG_OMAP3UART4
-+#elif defined(CONFIG_DEBUG_OMAP3UART4)
- 		mov	\rp, #UART_OFFSET(OMAP3_UART1_BASE)
- 		add	\rp, \rp, #0x00fb0000
- 		add	\rp, \rp, #0x00028000		@ OMAP3_UART4_BASE
- 		b	98f
--#endif
--#ifdef CONFIG_DEBUG_OMAP4UART4
-+#elif defined(CONFIG_DEBUG_OMAP4UART4)
- 		mov	\rp, #UART_OFFSET(OMAP4_UART4_BASE)
- 		b	98f
--#endif
--#ifdef CONFIG_DEBUG_TI81XXUART1
-+#elif defined(CONFIG_DEBUG_TI81XXUART1)
- 		mov	\rp, #UART_OFFSET(TI81XX_UART1_BASE)
- 		b	98f
--#endif
--#ifdef CONFIG_DEBUG_TI81XXUART2
-+#elif defined(CONFIG_DEBUG_TI81XXUART2)
- 		mov	\rp, #UART_OFFSET(TI81XX_UART2_BASE)
- 		b	98f
--#endif
--#ifdef CONFIG_DEBUG_TI81XXUART3
-+#elif defined(CONFIG_DEBUG_TI81XXUART3)
- 		mov	\rp, #UART_OFFSET(TI81XX_UART3_BASE)
- 		b	98f
--#endif
--#ifdef CONFIG_DEBUG_AM33XXUART1
-+#elif defined(CONFIG_DEBUG_AM33XXUART1)
- 		ldr	\rp, =AM33XX_UART1_BASE
- 		and	\rp, \rp, #0x00ffffff
- 		b	97f
--#endif
--#ifdef CONFIG_DEBUG_ZOOM_UART
-+#elif defined(CONFIG_DEBUG_ZOOM_UART)
- 		ldr	\rp, =ZOOM_UART_BASE
--		str	\rp, [\tmp, #0]		@ omap_uart_phys
--		ldr	\rp, =ZOOM_UART_VIRT
--		str	\rp, [\tmp, #4]		@ omap_uart_virt
--		mov	\rp, #(UART_LSR << ZOOM_PORT_SHIFT)
--		str	\rp, [\tmp, #8]		@ omap_uart_lsr
-+		ldr	\rv, =ZOOM_UART_VIRT
-+		mov	\tmp, #(UART_LSR << ZOOM_PORT_SHIFT)
-+		b	100f
+diff --git a/include/crypto/drbg.h b/include/crypto/drbg.h
+index 3d8e73a..5186f75 100644
+--- a/include/crypto/drbg.h
++++ b/include/crypto/drbg.h
+@@ -154,13 +154,26 @@ static inline size_t drbg_max_request_bytes(struct drbg_state *drbg)
+ static inline size_t drbg_max_addtl(struct drbg_state *drbg)
+ {
+ 	/* SP800-90A requires 2**35 bytes additional info str / pers str */
++#if (__BITS_PER_LONG == 32)
++	/*
++	 * SP800-90A allows smaller maximum numbers to be returned -- we
++	 * return SIZE_MAX - 1 to allow the verification of the enforcement
++	 * of this value in drbg_healthcheck_sanity.
++	 */
++	return (SIZE_MAX - 1);
 +#else
-+#error "Error! No proper debug option is defined."
- #endif
--		b	10b
+ 	return (1UL<<35);
++#endif
+ }
  
- 		/* AM33XX: Store both phys and virt address for the uart */
- 97:		add	\rp, \rp, #0x44000000	@ phys base
--		str	\rp, [\tmp, #0]		@ omap_uart_phys
--		sub	\rp, \rp, #0x44000000	@ phys base
--		add	\rp, \rp, #0xf9000000	@ virt base
--		str	\rp, [\tmp, #4]		@ omap_uart_virt
--		mov	\rp, #(UART_LSR << OMAP_PORT_SHIFT)
--		str	\rp, [\tmp, #8]		@ omap_uart_lsr
-+		sub	\rv, \rp, #0x44000000	@ phys base
-+		add	\rv, \rv, #0xf9000000	@ virt base
-+		mov	\tmp, #(UART_LSR << OMAP_PORT_SHIFT)
+ static inline size_t drbg_max_requests(struct drbg_state *drbg)
+ {
+ 	/* SP800-90A requires 2**48 maximum requests before reseeding */
++#if (__BITS_PER_LONG == 32)
++	return SIZE_MAX;
++#else
+ 	return (1UL<<48);
++#endif
+ }
  
--		b	10b
-+		b	100f
- 
- 		/* Store both phys and virt address for the uart */
- 98:		add	\rp, \rp, #0x48000000	@ phys base
--		str	\rp, [\tmp, #0]		@ omap_uart_phys
--		sub	\rp, \rp, #0x48000000	@ phys base
--		add	\rp, \rp, #0xfa000000	@ virt base
--		str	\rp, [\tmp, #4]		@ omap_uart_virt
--		mov	\rp, #(UART_LSR << OMAP_PORT_SHIFT)
--		str	\rp, [\tmp, #8]		@ omap_uart_lsr
--
--		b	10b
--
--		.align
--99:		.word	.
--		.word	omap_uart_phys
--		.ltorg
--
--100:		/* Pass the UART_LSR reg address */
--		ldr	\tmp, [\tmp, #8]	@ omap_uart_lsr
-+		sub	\rv, \rp, #0x48000000	@ phys base
-+		add	\rv, \rv, #0xfa000000	@ virt base
-+		mov	\tmp, #(UART_LSR << OMAP_PORT_SHIFT)
-+
-+100:		/* Add the UART_LSR reg address */
- 		add	\rp, \rp, \tmp
- 		add	\rv, \rv, \tmp
- 		.endm
+ /*
 -- 
-1.7.9.5
+1.9.3
+
 
