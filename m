@@ -1,89 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757496AbaHZJ62 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 05:58:28 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33237 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754021AbaHZJ60 (ORCPT
+	id S934105AbaHZKDf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 06:03:35 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:34375 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753960AbaHZKDe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 05:58:26 -0400
-Date: Tue, 26 Aug 2014 10:58:04 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Z Lim <zlim.lnx@gmail.com>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        Alexei Starovoitov <ast@plumgrid.com>, Jiang Liu <liuj97@gmail.com>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [PATCH 00/14] arm64: eBPF JIT compiler
-Message-ID: <20140826095804.GB23445@arm.com>
-References: <1405708100-13604-1-git-send-email-zlim.lnx@gmail.com>
- <20140721091623.GA16122@arm.com>
- <CAMEtUuyC+MykPDO0ghTc=oex7KPLEy=BLRgWBdW+qJY7JXQmDQ@mail.gmail.com>
- <20140723103219.GA1366@localhost>
- <CABg9mcvU44W5AkPLtyswNWdDdF_nnqvLyKqv7RWhpuRRSWDW3A@mail.gmail.com>
+	Tue, 26 Aug 2014 06:03:34 -0400
+Message-ID: <53FC5B23.3000205@ti.com>
+Date: Tue, 26 Aug 2014 13:02:11 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABg9mcvU44W5AkPLtyswNWdDdF_nnqvLyKqv7RWhpuRRSWDW3A@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Pranith Kumar <bobby.prani@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Peter Griffin <peter.griffin@linaro.org>,
+        Alexander Shiyan <shc_work@mail.ru>, Jean Delvare <jdelvare@suse.de>,
+        Kukjin Kim <kgene.kim@samsung.com>, Mark Brown <broonie@linaro.org>,
+        open list:
+	FRAMEBUFFER LAYER <linux-fbdev@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, ;
+Illegal-Object: Syntax error in CC: address found on vger.kernel.org:
+	CC:	;
+			^-missing semicolon to end mail group, extraneous tokens in mailbox, missing end of mailbox
+Subject: Re: [PATCH] powerpc: Fix build error for vga16fb
+References: <1408396422-32658-1-git-send-email-bobby.prani@gmail.com>	<1408396422-32658-2-git-send-email-bobby.prani@gmail.com> <CAMuHMdV_vAPCPh1JdCxtf0iz6haHULUV8t0oYt0jrEAky2WSLw@mail.gmail.com>
+In-Reply-To: <CAMuHMdV_vAPCPh1JdCxtf0iz6haHULUV8t0oYt0jrEAky2WSLw@mail.gmail.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="fmt6LPghKEMtrwj4DQ6Kwfb261RTsbXKf"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Z Lim,
+--fmt6LPghKEMtrwj4DQ6Kwfb261RTsbXKf
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Jul 24, 2014 at 05:55:36AM +0100, Z Lim wrote:
-> On Wed, Jul 23, 2014 at 3:32 AM, Catalin Marinas
-> <catalin.marinas@arm.com> wrote:
-> > On Mon, Jul 21, 2014 at 04:49:29PM +0100, Alexei Starovoitov wrote:
-> >> On Mon, Jul 21, 2014 at 2:16 AM, Will Deacon <will.deacon@arm.com> wrote:
-> >> > On Fri, Jul 18, 2014 at 07:28:06PM +0100, Zi Shen Lim wrote:
-> [...]
-> >> >> This series applies against net-next and is tested working
-> >> >> with lib/test_bpf on ARMv8 Foundation Model.
-> >> >
-> >> > Looks like it works on my Juno board too, so:
-> >> >
-> >> >   Acked-by: Will Deacon <will.deacon@arm.com>
-> >> >
-> >> > for the series.
-> >> >
-> >> > It's a bit late for 3.17 now, so I guess we'll queue this for 3.18 (which
-> >> > also means the dependency on -next isn't an issue). Perhaps you could repost
-> >> > around -rc3?
-> >>
-> >> Thanks for testing! Nice to see it working on real hw.
-> >> I'm not sure why you're proposing a 4+ week delay. The patches
-> >> will rot instead of getting used and tested. Imo it makes sense to
-> >> get them into net-next now for 3.17.
-> >> JIT is disabled by sysctl by default anyway.
-> >
-> > We normally like some patches (especially new functionality) to sit in
-> > linux-next for a while before the mering window (ideally starting with
-> > -rc4 or -rc5). We are at -rc6 already, so getting close to the 3.17
-> > merging window.
-> >
-> > Another aspect is that the arm64/bpf branch depends on the net tree, so
-> > it can't easily go in via the arm64 tree for 3.17 (3.18 would not be a
-> > problem).
-> 
-> Hi Catalin, I take it you prefer this series going through arm64 tree,
-> targeting 3.18, is that right?
-> 
-> I understand your preference to have it sitting in linux-next for a
-> longer period for arm64 material, I'll repost this again after 3.17 so
-> it gets more exposure in linux-next.
+On 19/08/14 00:28, Geert Uytterhoeven wrote:
+> Hi Pranith,
+>=20
+> On Mon, Aug 18, 2014 at 11:13 PM, Pranith Kumar <bobby.prani@gmail.com>=
+ wrote:
+>> Fix a build error caused by
+>>
+>> drivers/built-in.o: In function `vga16fb_probe':
+>> drivers/video/fbdev/vga16fb.c:1326: undefined reference to `vgacon_rem=
+ap_base'
+>> drivers/video/fbdev/vga16fb.c:1326: undefined reference to `vgacon_rem=
+ap_base'
+>> make: *** [vmlinux] Error 1
+>>
+>> This is occuring as vgacon_remap_base is exported only when
+>> CONFIG_VGA_CONSOLE=3Dy. Fix the error by making FB_VBA16 depend on
+>> CONFIG_VGA_CONSOLE.
+>>
+>> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+>> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>> CC: Andrew Morton <akpm@linux-foundation.org>
+>> ---
+>>  drivers/video/fbdev/Kconfig | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/video/fbdev/Kconfig b/drivers/video/fbdev/Kconfig=
 
-Any chance you could post a new version of this, based on a 3.17 -rc,
-please? Whilst your current patches apply, I get a bunch of errors if I try
-to build them.
+>> index e911b9c..09df564 100644
+>> --- a/drivers/video/fbdev/Kconfig
+>> +++ b/drivers/video/fbdev/Kconfig
+>> @@ -547,7 +547,7 @@ config FB_IMSTT
+>>
+>>  config FB_VGA16
+>>         tristate "VGA 16-color graphics support"
+>> -       depends on FB && (X86 || PPC)
+>> +       depends on FB && (X86 || PPC) && CONFIG_VGA_CONSOLE
+>=20
+> The dependency on CONFIG_VGA_CONSOLE only exists on PPC, not on x86.
+> So this is not correct.
+>=20
+> Digging a bit deeper: There's no code left in arch/powerpc that actuall=
+y
+> sets vgacon_remap_base, so it's not gonna work anyway.
+> It seems vga16 support on PPC died with the removal of arch/ppc/.
 
-Cheers,
+Hmm, so I wonder if vga16fb is supposed to work on ppc or not. Pranith's
+follow-up patch disables vga16fb for PPC, which obviously fixes the
+compilation problem, but is that really a correct fix?
 
-Will
+ Tomi
+
+
+
+--fmt6LPghKEMtrwj4DQ6Kwfb261RTsbXKf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT/FsjAAoJEPo9qoy8lh71LJ0P/iagrNPQ9+mBdYt7bSmDX8ka
+5vHlzH6OKUgSKpxuHi5J9u+qp/yCeHAmGyYi8puVTyhpDxDpindD2uw0MGE+3Vmn
+9XdFNAlodTVgsth8hMFYFjG1bedaAhn13ERjMpsWu9qqtsXVf5r6+CN9aUozTjAW
+l3VRuU0tRTy1F2clUcG7FZfagXD2BoQhpk/8YZXiPKLOqIIepiXffANXjQ9+zvvz
+RBkQbLcKYovsRuVC2lmWfs0SIedV9zboLF21CtgZBRzurB5ZDThd6ZjfLG+lAhnN
+Ke3zSUsDM04P0Y7iOZSazGmj+iU0LIH2Uk8ShY9AsZOg9mr0ElmMXzdRyZOgOc0V
+6B2OV2Q5IXw+po+BpfUELhVZhO1KEwWuBnv0y6OqX06tSho1Ka9w0TQ4E6UrACrF
+3ruXWvdF0v4DxzIy4SNU+u7oW1GQOr/xFH/oa6FptBl66QjRkCVN4ciaST/LlmKh
+fn0bGn7yX6kiXdoWFQbOZWX+k1J/6llAOGCTxcxi+f9ikuSgEdaUYOEpTXgjdQle
+K7TBPoMF1sAuvn/LkfwXClYFhLHzZjW8/09KAiaCQc+CHqzV9B6b1auzMVpY8O5X
+fUlfRoht9m3n7E+/hGVL9yzlMJ9ORkWcg/tkaAnbGnvkkmNa0pp9L5DvpX/dlQBg
+jQPeZMn3EmlKrKTzWgeY
+=yFp1
+-----END PGP SIGNATURE-----
+
+--fmt6LPghKEMtrwj4DQ6Kwfb261RTsbXKf--
