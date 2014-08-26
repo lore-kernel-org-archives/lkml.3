@@ -1,134 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758780AbaHZOWV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 10:22:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34584 "EHLO mx1.redhat.com"
+	id S1758643AbaHZOXM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 10:23:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46014 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758374AbaHZOWS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 10:22:18 -0400
-Date: Tue, 26 Aug 2014 10:22:14 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Chai Wen <chaiw.fnst@cn.fujitsu.com>
-Cc: akpm@linux-foundation.org, mingo@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] softlockup: make detector be aware of task switch of
- processes hogging cpu
-Message-ID: <20140826142214.GN49576@redhat.com>
-References: <20140821023051.GO49576@redhat.com>
- <1408599742-21674-1-git-send-email-chaiw.fnst@cn.fujitsu.com>
- <20140822015822.GZ49576@redhat.com>
- <53FC82D2.1020401@cn.fujitsu.com>
+	id S1755966AbaHZOXK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 10:23:10 -0400
+Message-ID: <53FC984B.7040805@suse.de>
+Date: Tue, 26 Aug 2014 16:23:07 +0200
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53FC82D2.1020401@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: dgilbert@interlog.com,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+CC: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        linux-scsi@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
+        linux-kernel@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Christoph Hellwig <hch@lst.de>
+Subject: Re: [RFC PATCH -logging 00/10] scsi/constants: Output continuous
+ error messages on trace
+References: <20140808115004.6768.97014.stgit@yuno-kbuild.novalocal> <53E4CB7B.7020705@interlog.com> <53EAD7CC.8030408@hitachi.com> <53F79FE8.7030406@interlog.com>
+In-Reply-To: <53F79FE8.7030406@interlog.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 08:51:30PM +0800, Chai Wen wrote:
-> On 08/22/2014 09:58 AM, Don Zickus wrote:
-> 
-> > On Thu, Aug 21, 2014 at 01:42:22PM +0800, chai wen wrote:
-> >> For now, soft lockup detector warns once for each case of process softlockup.
-> >> But the thread 'watchdog/n' may not always get the cpu at the time slot between
-> >> the task switch of two processes hogging that cpu to reset soft_watchdog_warn.
-> >>
-> >> An example would be two processes hogging the cpu.  Process A causes the
-> >> softlockup warning and is killed manually by a user.  Process B immediately
-> >> becomes the new process hogging the cpu preventing the softlockup code from
-> >> resetting the soft_watchdog_warn variable.
-> >>
-> >> This case is a false negative of "warn only once for a process", as there may
-> >> be a different process that is going to hog the cpu.  Resolve this by
-> >> saving/checking the task pointer of the hogging process and use that to reset
-> >> soft_watchdog_warn too.
-> >>
-> >> Signed-off-by: chai wen <chaiw.fnst@cn.fujitsu.com>
-> >> Signed-off-by: Don Zickus <dzickus@redhat.com>
-> > 
-> > Acked-by: Don Zickus <dzickus@redhat.com>
-> > 
-> 
-> 
-> Hi Andrew
-> 
-> Sorry for some disturbing.
-> Could you help to check and pick up this little improvement patch ?
-> 
-> I am not sure which MAINTAINER I should talk to, but the original version of
-> this patch is queued to -mm tree by you, so I assume that they are in the charge of you.
-> 
-> 
-> thanks
-> chai wen
+On 08/22/2014 09:54 PM, Douglas Gilbert wrote:
+> On 14-08-12 11:13 PM, Yoshihiro YUNOMAE wrote:
+>> Hi Douglas,
+>>
+>> Thank you for your comment.
+>>
+>> (2014/08/08 22:07), Douglas Gilbert wrote:
+>>> On 14-08-08 01:50 PM, Yoshihiro YUNOMAE wrote:
+>>>> Hi All,
+>>>>
+>>>> This patch set introduces new traceevents in order to output
+>>>> continuous error
+>>>> messages. Current SCSI printk messages in upstream kernel can be
+>>>> divided by and
+>>>> mixed with other messages. Even if each error message has its
+>>>> device id,
+>>>> sometimes we can easily be lost in mixed logs because the message's
+>>>> device id
+>>>> is separated from it's body. To avoid it, I'd like to use
+>>>> traceevents to
+>>>> store error messages into the ftrace or perf buuffer, because
+>>>> traceevents
+>>>> are atomically commited to the buffer.
+>>>>
+>>>> In this patch set, all printk messages are removed based on a local
+>>>> discussion with Hannes, but I think printk messages should be kept
+>>>> because all
+>>>> users don't enable traceevents and rsyslog can store as files.
+>>>>
+>>>> However, if printk of logging branch is kept, the messages are
+>>>> duplicate and
+>>>> it can induce stack overflow by using local buffer(*1).
+>>>>
+>>>>   (*1) https://lkml.org/lkml/2014/5/20/742
+>>>>
+>>>> So, my suggestion is follows:
+>>>>
+>>>> 1) printk
+>>>> Keeps current implemntation of upstream kernel.
+>>>> The messages are divided and can be mixed, but all users can
+>>>> check the
+>>>> error
+>>>> messages without any settings.
+>>>>
+>>>> 2) traceevents
+>>>> To get the complete messages, we can use ftrace or perf (or
+>>>> something
+>>>> on them).
+>>>> Users can always understand correct messages, but they need to
+>>>> set up the
+>>>> tracers.
+>>>>
+>>>> This patch set is based on Hannes' logging branch:
+>>>> http://git.kernel.org/cgit/linux/kernel/git/hare/scsi-devel.git/log/?h=logging
+>>>>
+>>>>
+>>>>
+>>>> [1/10] ~  [6/10]: just cleanup for logging branch
+>>>> [7/10] ~ [10/10]: introduce new traceevents
+>>>>
+>>>> Any comments are welcome!
+>>>
+>>> In sg3_utils there are now string yielding equivalents
+>>> to the sense buffer "print" functions. They take a form
+>>> like this:
+>>>    char * get_sense_str(const unsigned char * sense_buffer,
+>>>                         int sb_len, int blen, char * b);
+>>>
+>>> So this just does the hard work of decoding the sense buffer
+>>> (or saying it is invalid) the result of which it places in
+>>> buffer 'b'. And 'b' is returned (so this function can be in
+>>> the arguments of a driver's printing function).
+>>>
+>>> Adding such string functions would give other parts of the
+>>> SCSI subsystem the capability of tailoring their own
+>>> messages that include sense data information.
+>>>
+>>>
+>>> Existing sense buffer "print" function could be kept and
+>>> implemented using the newer "_str" variants. Would that
+>>> be worth the trouble?
+>>
+>> I have already sent the idea using local buffer on this February,
+>> but it was rejected by James (*1). By using stack region for local
+>> buffer, stack overflow can occur. So, I implemented this feature
+>> to atomically output an error message with device information.
+>>
+>> (*1) https://lkml.org/lkml/2014/5/20/742
+>
+> Hi,
+> In the "_str" variants that I referred to, the caller provides
+> the buffer and its length. The responsibility of the
+> implementation of those "_str" variants is to use that
+> buffer, not exceed it, and make sure that it is null terminated
+> on return.
+>
+> Can't see any inherent threat to the stack size there, and if
+> there is then that is just bad design by the caller.
+>
+> The advantage of the "_str" variants is that the caller can
+> supply context and print/log a more useful message, perhaps
+> including the caller's __func__ . That message could include
+> sense information (perhaps truncated to 128 bytes, say),
+> and be output as a single unit.
+>
+> IMO too many log messages are multi-line and in a noisy,
+> misbehaving system those messages can be interleaved
+> with other "noise" making them difficult to decipher.
+>
+Precisely, and that is what my patchset is trying to address.
 
-Hi Chai,
-
-Sorry about that.  Ingo asked me privately to pick this up and re-post
-with my signoff.  I was converting to a new test env and was going to use this
-patch as an excuse to exercise it.  That is the delay.  Let me get this
-out today.
+I'm currently porting it to core-for-3.18, will be posting it
+for review once it's done.
 
 Cheers,
-Don
 
-> 
-> >> ---
-> >>  kernel/watchdog.c |   16 +++++++++++++++-
-> >>  1 files changed, 15 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-> >> index 0037db6..2e55620 100644
-> >> --- a/kernel/watchdog.c
-> >> +++ b/kernel/watchdog.c
-> >> @@ -42,6 +42,7 @@ static DEFINE_PER_CPU(bool, softlockup_touch_sync);
-> >>  static DEFINE_PER_CPU(bool, soft_watchdog_warn);
-> >>  static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts);
-> >>  static DEFINE_PER_CPU(unsigned long, soft_lockup_hrtimer_cnt);
-> >> +static DEFINE_PER_CPU(struct task_struct *, softlockup_task_ptr_saved);
-> >>  #ifdef CONFIG_HARDLOCKUP_DETECTOR
-> >>  static DEFINE_PER_CPU(bool, hard_watchdog_warn);
-> >>  static DEFINE_PER_CPU(bool, watchdog_nmi_touch);
-> >> @@ -328,8 +329,20 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
-> >>  			return HRTIMER_RESTART;
-> >>  
-> >>  		/* only warn once */
-> >> -		if (__this_cpu_read(soft_watchdog_warn) == true)
-> >> +		if (__this_cpu_read(soft_watchdog_warn) == true) {
-> >> +			/*
-> >> +			 * Handle the case where multiple processes are
-> >> +			 * causing softlockups but the duration is small
-> >> +			 * enough, the softlockup detector can not reset
-> >> +			 * itself in time.  Use task pointers to detect this.
-> >> +			 */
-> >> +			if (__this_cpu_read(softlockup_task_ptr_saved) !=
-> >> +			    current) {
-> >> +				__this_cpu_write(soft_watchdog_warn, false);
-> >> +				__touch_watchdog();
-> >> +			}
-> >>  			return HRTIMER_RESTART;
-> >> +		}
-> >>  
-> >>  		if (softlockup_all_cpu_backtrace) {
-> >>  			/* Prevent multiple soft-lockup reports if one cpu is already
-> >> @@ -345,6 +358,7 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
-> >>  		pr_emerg("BUG: soft lockup - CPU#%d stuck for %us! [%s:%d]\n",
-> >>  			smp_processor_id(), duration,
-> >>  			current->comm, task_pid_nr(current));
-> >> +		__this_cpu_write(softlockup_task_ptr_saved, current);
-> >>  		print_modules();
-> >>  		print_irqtrace_events(current);
-> >>  		if (regs)
-> >> -- 
-> >> 1.7.1
-> >>
-> > .
-> > 
-> 
-> 
-> 
-> -- 
-> Regards
-> 
-> Chai Wen
+Hannes
+-- 
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
