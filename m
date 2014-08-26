@@ -1,146 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934653AbaHZKYM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 06:24:12 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:44406 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934439AbaHZKYJ (ORCPT
+	id S934660AbaHZKYu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 06:24:50 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50991 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754327AbaHZKYt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 06:24:09 -0400
-Date: Tue, 26 Aug 2014 12:24:05 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Alexander Holler <holler@ahsoftware.de>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Jon Loeliger <jdl@jdl.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        =?utf-8?B?U3TDqXBoYW5l?= Marchesin <marcheu@chromium.org>
-Subject: Re: [RFC PATCH 0/9] dt: dependencies (for deterministic driver
- initialization order based on the DT)
-Message-ID: <20140826102404.GB31124@ulmo>
-References: <20140821140211.GD19293@ulmo.nvidia.com>
- <53F64624.5000403@ahsoftware.de>
- <20140822131919.GX21734@leverpostej>
- <20140825093931.GB2399@ulmo>
- <E1XLu15-0002DP-6o@jdl.com>
- <20140825133714.GH4163@ulmo.nvidia.com>
- <20140826084208.AE5F0C40989@trevor.secretlab.ca>
- <20140826084922.GG17263@ulmo>
- <53FC566C.30904@ahsoftware.de>
- <20140826101107.GC32315@leverpostej>
+	Tue, 26 Aug 2014 06:24:49 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <53FC6009.1010308@jp.fujitsu.com>
+Date: Tue, 26 Aug 2014 19:23:05 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="H1spWtNR+x+ondvy"
-Content-Disposition: inline
-In-Reply-To: <20140826101107.GC32315@leverpostej>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Zhang Zhen <zhenzhang.zhang@huawei.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Toshi Kani <toshi.kani@hp.com>,
+        David Rientjes <rientjes@google.com>
+CC: <wangnan0@huawei.com>, <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>
+Subject: Re: [PATCH] memory-hotplug: fix not enough check of valid_zones
+References: <1409046575-11025-1-git-send-email-zhenzhang.zhang@huawei.com> <53FC5A04.9070300@huawei.com>
+In-Reply-To: <53FC5A04.9070300@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2014/08/26 18:57), Zhang Zhen wrote:
+> As Yasuaki Ishimatsu described the check here is not enough
+> if memory has hole as follows:
+>
+> PFN       0x00          0xd0          0xe0          0xf0
+>               +-------------+-------------+-------------+
+> zone type   |   Normal    |     hole    |   Normal    |
+>               +-------------+-------------+-------------+
+> In this case, the check can't guarantee that this is "the last
+> block of memory".
+> The check of ZONE_MOVABLE has the same problem.
+>
+> Change the interface name to valid_zones according to most pepole's
+> suggestion.
+>
+> Sample output of the sysfs files:
+> 	memory0/valid_zones: none
+> 	memory1/valid_zones: DMA32
+> 	memory2/valid_zones: DMA32
+> 	memory3/valid_zones: DMA32
+> 	memory4/valid_zones: Normal
+> 	memory5/valid_zones: Normal
+> 	memory6/valid_zones: Normal Movable
+> 	memory7/valid_zones: Movable Normal
+> 	memory8/valid_zones: Movable
 
---H1spWtNR+x+ondvy
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The patch has two changes:
+  - change sysfs interface name
+  - change check of ZONE_MOVABLE
+So please separate them.
 
-On Tue, Aug 26, 2014 at 11:11:07AM +0100, Mark Rutland wrote:
-> On Tue, Aug 26, 2014 at 10:42:04AM +0100, Alexander Holler wrote:
-> > Am 26.08.2014 10:49, schrieb Thierry Reding:
-> > > On Tue, Aug 26, 2014 at 09:42:08AM +0100, Grant Likely wrote:
-> > >> On Mon, 25 Aug 2014 15:37:16 +0200, Thierry Reding <thierry.reding@g=
-mail.com> wrote:
-> > > [...]
-> > >>> There are somewhat standardized bindings for the above and especial=
-ly
-> > >>> for bindings of the type that clocks implement this is trivial. We =
-can
-> > >>> simply iterate over each (phandle, specifier) tuple and check that =
-the
-> > >>> corresponding clock provider can be resolved (which typically means=
- that
-> > >>> it's been registered with the common clock framework).
-> > >>>
-> > >>> For regulators (and regulator-like bindings) the problem is somewhat
-> > >>> more difficult because they property names are not standardized. On=
-e way
-> > >>> to solve this would be to look for property names with a -supply su=
-ffix,
-> > >>> but that could obviously lead to false positives. One alternative t=
-hat I
-> > >>> think could eliminate this would be to explicitly list dependencies=
- in
-> > >>> drivers. This would allow core code to step through such a list and
-> > >>> resolve the (phandle, specifier) tuples.
-> > >>
-> > >> False positives and negatives may not actually be a problem. It is
-> > >> suboptimal, certainly, but it shouldn't outright break the kernel.
-> > >
-> > > There could be cases where some random integer in a cell could be
-> > > interpreted as a phandle and resolve to a struct device_node. I suppo=
-se
-> > > it might be unlikely, but not impossible, that the device_node could
-> > > even match a device in the correct subsystem and you'd get a wrong
-> > > dependency. Granted, a wrong dependency may not be catastrophic in th=
-at
-> > > it won't lead to a crash, but it could lead to various kinds of
-> > > weirdness and hard to diagnose problems.
-> >=20
-> > You need either the type information in the DTB (that's why I've add=20
-> > those "dependencies" to identify phandles), or you need to know every=
-=20
-> > binding (at "dependency-resolve-time" to identify phandles.
->=20
-> While having type information in the DTB would be fantastic, it's not
-> something we can expect from the systems already in the wild, and I
-> worry how it would interact with bootloaders that modify the DTB (I
-> don't know if any modify properties with phandles).
->=20
-> > The latter is impracticable to implement in a generic way (for use
-> > with every possible binding).
->=20
-> I don't think we necessarily need dependency information for every
-> binding and driver. We only need dependency information where a device
-> has a dependency on another device and we don't currently have an
-> explicit probe ordering guaranteed by Linux.
->=20
-> Where a device driver lacks dependency information and fails to probe,
-> we can fall back to the current deferred probing.
->=20
-> Do we have any worst case example systems / drivers / dts?
+> Signed-off-by: Zhang Zhen <zhenzhang.zhang@huawei.com>
+> ---
+>   Documentation/ABI/testing/sysfs-devices-memory |  8 ++---
+>   Documentation/memory-hotplug.txt               |  4 +--
+>   drivers/base/memory.c                          | 42 ++++++--------------------
+>   3 files changed, 15 insertions(+), 39 deletions(-)
+>
+> diff --git a/Documentation/ABI/testing/sysfs-devices-memory b/Documentation/ABI/testing/sysfs-devices-memory
+> index 2b2a1d7..deef3b5 100644
+> --- a/Documentation/ABI/testing/sysfs-devices-memory
+> +++ b/Documentation/ABI/testing/sysfs-devices-memory
+> @@ -61,13 +61,13 @@ Users:		hotplug memory remove tools
+>   		http://www.ibm.com/developerworks/wikis/display/LinuxP/powerpc-utils
+>
+>
+> -What:           /sys/devices/system/memory/memoryX/zones_online_to
+> +What:           /sys/devices/system/memory/memoryX/valid_zones
+>   Date:           July 2014
+>   Contact:	Zhang Zhen <zhenzhang.zhang@huawei.com>
+>   Description:
+> -		The file /sys/devices/system/memory/memoryX/zones_online_to
+> -		is read-only and is designed to show which zone this memory block can
+> -		be onlined to.
+> +		The file /sys/devices/system/memory/memoryX/valid_zones	is
+> +		read-only and is designed to show which zone this memory
+> +		block can be onlined to.
+>
+>   What:		/sys/devices/system/memoryX/nodeY
+>   Date:		October 2009
+> diff --git a/Documentation/memory-hotplug.txt b/Documentation/memory-hotplug.txt
+> index 5b34e33..947229c 100644
+> --- a/Documentation/memory-hotplug.txt
+> +++ b/Documentation/memory-hotplug.txt
+> @@ -155,7 +155,7 @@ Under each memory block, you can see 4 files:
+>   /sys/devices/system/memory/memoryXXX/phys_device
+>   /sys/devices/system/memory/memoryXXX/state
+>   /sys/devices/system/memory/memoryXXX/removable
+> -/sys/devices/system/memory/memoryXXX/zones_online_to
+> +/sys/devices/system/memory/memoryXXX/valid_zones
+>
+>   'phys_index'      : read-only and contains memory block id, same as XXX.
+>   'state'           : read-write
+> @@ -171,7 +171,7 @@ Under each memory block, you can see 4 files:
+>                       block is removable and a value of 0 indicates that
+>                       it is not removable. A memory block is removable only if
+>                       every section in the block is removable.
+> -'zones_online_to' : read-only: designed to show which zone this memory block
+> +'valid_zones' : read-only: designed to show which zone this memory block
+>   		    can be onlined to.
+>
+>   NOTE:
+> diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+> index ccaf37c..efd456c 100644
+> --- a/drivers/base/memory.c
+> +++ b/drivers/base/memory.c
+> @@ -374,21 +374,7 @@ static ssize_t show_phys_device(struct device *dev,
+>   }
+>
+>   #ifdef CONFIG_MEMORY_HOTREMOVE
+> -static int __zones_online_to(unsigned long end_pfn,
+> -				struct page *first_page, unsigned long nr_pages)
+> -{
+> -	struct zone *zone_next;
+> -
+> -	/* The mem block is the last block of memory. */
+> -	if (!pfn_valid(end_pfn + 1))
+> -		return 1;
+> -	zone_next = page_zone(first_page + nr_pages);
+> -	if (zone_idx(zone_next) == ZONE_MOVABLE)
+> -		return 1;
+> -	return 0;
+> -}
+> -
+> -static ssize_t show_zones_online_to(struct device *dev,
+> +static ssize_t show_valid_zones(struct device *dev,
+>   				struct device_attribute *attr, char *buf)
+>   {
+>   	struct memory_block *mem = to_memory_block(dev);
+> @@ -407,33 +393,23 @@ static ssize_t show_zones_online_to(struct device *dev,
+>
+>   	zone = page_zone(first_page);
+>
+> -#ifdef CONFIG_HIGHMEM
+> -	if (zone_idx(zone) == ZONE_HIGHMEM) {
+> -		if (__zones_online_to(end_pfn, first_page, nr_pages))
+> +	if (zone_idx(zone) == ZONE_MOVABLE - 1) {
+> +		/*The mem block is the last memoryblock of this zone.*/
+> +		if (end_pfn == zone_end_pfn(zone))
+>   			return sprintf(buf, "%s %s\n",
+>   					zone->name, (zone + 1)->name);
+>   	}
+> -#else
+> -	if (zone_idx(zone) == ZONE_NORMAL) {
+> -		if (__zones_online_to(end_pfn, first_page, nr_pages))
+> -			return sprintf(buf, "%s %s\n",
+> -					zone->name, (zone + 1)->name);
+> -	}
+> -#endif
+>
+>   	if (zone_idx(zone) == ZONE_MOVABLE) {
+> -		if (!pfn_valid(start_pfn - nr_pages))
+> -			return sprintf(buf, "%s %s\n",
+> -						zone->name, (zone - 1)->name);
+> -		zone_prev = page_zone(first_page - nr_pages);
+> -		if (zone_idx(zone_prev) != ZONE_MOVABLE)
+> +		/*The mem block is the first memoryblock of ZONE_MOVABLE.*/
 
-Cc'ing St=C3=A9phane who's brought this up not long ago. There seem to be
-cases where display initialization can be delayed up to 5-6 seconds due
-to deferred probing (where the system would otherwise take 5-6 seconds
-to boot).
+> +		if (start_pfn == zone->zone_start_pfn)
+>   			return sprintf(buf, "%s %s\n",
+> -						zone->name, (zone - 1)->name);
+> +					zone->name, (zone - 1)->name);
 
-Thierry
+How about swap zone->name and (zone - 1)->name.
 
---H1spWtNR+x+ondvy
-Content-Type: application/pgp-signature
+If swapping them, sample output of the sysfs files shows as follows:
+  	memory0/valid_zones: none
+  	memory1/valid_zones: DMA32
+  	memory2/valid_zones: DMA32
+  	memory3/valid_zones: DMA32
+  	memory4/valid_zones: Normal
+  	memory5/valid_zones: Normal
+  	memory6/valid_zones: Normal Movable
+  	memory7/valid_zones: Normal Movable
+                              ~~~~~~~~~~~~~~
+  	memory8/valid_zones: Movable
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Thanks,
+Yasuaki Ishimatsu
 
-iQIcBAEBAgAGBQJT/GBEAAoJEN0jrNd/PrOh14sP/RsuC7PKbhImqrAgmzM3Ts6V
-Tt0aMvWqlh8wPqYVGqtwogZTQG3y8WESW7hUCVtFtIjCjvrYAH6yt7jZ956eI4m3
-OJAue0Yt8OI06a7lOLMLA3EWh/BVT0GXeNiCi+WCE641S1hFpS//tC3oEwFZlmtb
-+38CNmFNeGHvAiPlQQOXZ3T6hODII4AeuG+zcoQs0RU1HKPHYsVp172ddnw03vVd
-+nbamP+ljWagw3bDSuuEnyaFnGwJN/opxQOxs4GxNKEzSo11D6lVIClXwKEhuXvK
-XG/Sr9KByRcrDRyn8h3t9wGhaT/3rFm6jlaI+BMVTymVllouq69E6X5FPWdm92zf
-Xd9QyseJkUxLy0cbPkeA5Tx3ohgobJLypz7HD6ihaI0wkSIvARADRjk58pUrOc8k
-szFrQMtI+DZBOGJgNeCUmTmnZfyEyIjuStF6jxOKFmP6J5lIVZNtVc4zKR98O6Im
-p25wMQzljBH0GdqftPX0s1n86VLVigHbjC4gT87Fv8k8mXqpHAiwXeX80Qki42wW
-VKjjdRIOW432D0M39gecako38J65n+8TKKs34ro2c5HoX2ZliYiqiG3JNO7vXLAe
-eW4GypkpS/QlD4BClDLt/FOAGcEfbBMb9ksBvJ24cNbgV9uxHbNVV9wpeEqeXCn0
-Qp6bQFZG/kslf4rvGCOv
-=QBAd
------END PGP SIGNATURE-----
+>   	}
+>
+>   	return sprintf(buf, "%s\n", zone->name);
+>   }
+> -static DEVICE_ATTR(zones_online_to, 0444, show_zones_online_to, NULL);
+> +static DEVICE_ATTR(valid_zones, 0444, show_valid_zones, NULL);
+>   #endif
+>
+>   static DEVICE_ATTR(phys_index, 0444, show_mem_start_phys_index, NULL);
+> @@ -587,7 +563,7 @@ static struct attribute *memory_memblk_attrs[] = {
+>   	&dev_attr_phys_device.attr,
+>   	&dev_attr_removable.attr,
+>   #ifdef CONFIG_MEMORY_HOTREMOVE
+> -	&dev_attr_zones_online_to.attr,
+> +	&dev_attr_valid_zones.attr,
+>   #endif
+>   	NULL
+>   };
+>
 
---H1spWtNR+x+ondvy--
+
