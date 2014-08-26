@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755892AbaHZWBi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 18:01:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57296 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755588AbaHZWBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 18:01:36 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Joe Lawrence <joe.lawrence@stratus.com>, linux-kernel@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>, Boaz Harrosh <bharrosh@panasas.com>
-Subject: Re: [PATCH v3 0/2] block,scsi: fixup blk_get_request dead queue scenarios
-References: <1404329718-19367-1-git-send-email-joe.lawrence@stratus.com>
-	<x49egw36u55.fsf@segfault.boston.devel.redhat.com>
-	<53FCF9DB.6010501@kernel.dk>
-	<x49mwar54ca.fsf@segfault.boston.devel.redhat.com>
-	<53FCFD40.2010903@kernel.dk> <53FCFE01.8080701@kernel.dk>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 26 Aug 2014 18:01:23 -0400
-In-Reply-To: <53FCFE01.8080701@kernel.dk> (Jens Axboe's message of "Tue, 26
-	Aug 2014 15:37:05 -0600")
-Message-ID: <x49iole6hcc.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1755733AbaHZWFx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 18:05:53 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:52952 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754422AbaHZWFv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 18:05:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <53FD01D0.8020203@zytor.com>
+References: <1409089544-24221-1-git-send-email-yinghai@kernel.org>
+	<53FD01D0.8020203@zytor.com>
+Date: Tue, 26 Aug 2014 15:05:50 -0700
+X-Google-Sender-Auth: 9pcT_N6NCLpjC5xpvTl94zEoiEw
+Message-ID: <CAE9FiQUF4THLRfzbnhK61QHpM2zyox4E8LTmyzVF7PnPdpb7jQ@mail.gmail.com>
+Subject: Re: [PATCH] x86: only load initrd above 4g on second try
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Matt Fleming <matt.fleming@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        =?UTF-8?Q?Mantas_Mikul=C4=97nas?= <grawity@gmail.com>,
+        Anders Darander <anders@chargestorm.se>, linux-efi@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jens Axboe <axboe@kernel.dk> writes:
+On Tue, Aug 26, 2014 at 2:53 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 08/26/2014 02:45 PM, Yinghai Lu wrote:
+>> Mantas found that after commit 4bf7111f5016 ("x86/efi: Support initrd
+>> loaded above 4G"), the kernel freezes at the earliest possible moment
+>> when trying to boot via UEFI on Asus laptop.
+>>
+>> There are buggy EFI implementations: with EFI run time, kernel need
+>> to load file with 512bytes alignment when buffer is above 4G.
+>>
+>
+> This makes absolutely zero sense.  Please explain what the actual
+> problem is here.
 
->> I have applied the first one, will look over the second one and hand
->> apply it. Seems the NULL return was completely removed, so we _should_
->> be ok on the IS_ERR() conversion, though that sort of thing always
->> worries me a little bit. A NULL return can quickly show up again, and
->> then they would all fail.
+The firmware has bug and can use buffer above 4G to read files.
+and if the file size is 512 bytes alignment, then reading could go through.
 
-Well, we could guard against that with a BUG_ON in blk_get_request,
-right?
+>From Mantas:
+--
+On Wed, Aug 20, 2014 at 12:05 PM, Mantas Mikulėnas <grawity@gmail.com> wrote:
+>
+> I experimented with some things (like setting chunk size to a few kB
+> to see if it hangs earlier or only at the very end; etc.), and finally
+> found out that it stops freezing if I pad the initrd file to a
+> multiple of 512 bytes :/ That is, 5684268 bytes will freeze, 5684736
+> bytes will not.
+>
+> ...In other words, seems like it cannot read chunks that aren't
+> multiples of 512 into a location above 4 GB. Or something like that..
 
-> Additionally, there's still quite a few places that call
-> blk_get_request() and don't check the error return if __GFP_WAIT is set.
-> Since most of the point of this is to fix segfaulting on queue dead
-> scenarios, why aren't they all converted?
 
-Odd, I thought they all were converted last I checked.  They definitely
-should be.
-
--Jeff
+>From Matt:
+---
+> OK, we're out of options here. Yinghai, we're going to have to revert
+> your patch, 4bf7111f5016 ("x86/efi: Support initrd loaded above 4G")
+>
+> We could conceivably add a boot parameter option to attempt loading
+> inirds above 4G, but we can't turn the feature on by default because of
+> all these buggy EFI implementations - things must work out of the box.
