@@ -1,37 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752522AbaHZQxj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 12:53:39 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:52407 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752447AbaHZQxh (ORCPT
+	id S1752588AbaHZQxp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 12:53:45 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:40426 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752447AbaHZQxm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 12:53:37 -0400
-Message-ID: <53FCBB8F.1040401@wwwdotorg.org>
-Date: Tue, 26 Aug 2014 10:53:35 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Tue, 26 Aug 2014 12:53:42 -0400
+Date: Tue, 26 Aug 2014 17:53:06 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux@openrisc.net" <linux@openrisc.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "shawn.guo@freescale.com" <shawn.guo@freescale.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "tony@atomide.com" <tony@atomide.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "jonas@southpole.se" <jonas@southpole.se>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        "shc_work@mail.ru" <shc_work@mail.ru>,
+        "baohua@kernel.org" <baohua@kernel.org>,
+        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
+        "khilman@linaro.org" <khilman@linaro.org>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        "larry.bassel@linaro.org" <larry.bassel@linaro.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        "stefan.kristiansson@saunalahti.fi" 
+	<stefan.kristiansson@saunalahti.fi>,
+        "vkale@apm.com" <vkale@apm.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>
+Subject: Re: [PATCH v2 25/26] arm64: get rid of handle_IRQ
+Message-ID: <20140826165304.GN16482@arm.com>
+References: <1409047421-27649-1-git-send-email-marc.zyngier@arm.com>
+ <1409047421-27649-26-git-send-email-marc.zyngier@arm.com>
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-CC: linux-pci@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/6] resource: Add device-managed request/release_resource()
-References: <1409065898-26887-1-git-send-email-thierry.reding@gmail.com> <1409065898-26887-2-git-send-email-thierry.reding@gmail.com>
-In-Reply-To: <1409065898-26887-2-git-send-email-thierry.reding@gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409047421-27649-26-git-send-email-marc.zyngier@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2014 09:11 AM, Thierry Reding wrote:
-> From: Thierry Reding <treding@nvidia.com>
->
-> Provide device-managed implementations of the request_resource() and
-> release_resource() functions. Upon failure to request a resource, the
-> new devm_request_resource() function will output an error message for
-> consistent error reporting.
+On Tue, Aug 26, 2014 at 11:03:40AM +0100, Marc Zyngier wrote:
+> All the arm64 irqchip drivers have been converted to handle_domain_irq,
+> making it possible to remove the handle_IRQ stub entierely.
+> 
+> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
 
-The series,
-Tested-by: Stephen Warren <swarren@nvidia.com>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
