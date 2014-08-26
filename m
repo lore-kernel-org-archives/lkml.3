@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757430AbaHZHlL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 03:41:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8403 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757191AbaHZHlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 03:41:09 -0400
-Date: Tue, 26 Aug 2014 15:41:43 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Geoff Levand <geoff@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Eric Biederman <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH 0/5] kexec: minor fixups and enhancements
-Message-ID: <20140826074143.GG11693@darkstar.nay.redhat.com>
-References: <cover.1408731991.git.geoff@infradead.org>
- <20140825165916.GC14379@redhat.com>
+	id S1757442AbaHZHmI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 03:42:08 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:53360 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757247AbaHZHmH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 03:42:07 -0400
+X-Auth-Info: FW0rXY74aU1OSThLxfGSBQ75yxtPMOB0zT8GS64gNh0=
+From: Marek Vasut <marex@denx.de>
+To: Robin Gong <b38343@freescale.com>
+Subject: Re: [PATCH v4] spi: spi-imx: add DMA support
+Date: Tue, 26 Aug 2014 09:26:40 +0200
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
+Cc: broonie@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Frank.Li@freescale.com, shawn.guo@linaro.org
+References: <1408752835-10995-1-git-send-email-b38343@freescale.com> <201408251007.22393.marex@denx.de> <20140826071757.GA32751@Robin-OptiPlex-780>
+In-Reply-To: <20140826071757.GA32751@Robin-OptiPlex-780>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140825165916.GC14379@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201408260926.41038.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25/14 at 12:59pm, Vivek Goyal wrote:
-> On Fri, Aug 22, 2014 at 06:39:47PM +0000, Geoff Levand wrote:
-> > Hi,
+On Tuesday, August 26, 2014 at 09:17:59 AM, Robin Gong wrote:
+> On Mon, Aug 25, 2014 at 10:07:22AM +0200, Marek Vasut wrote:
+> > On Saturday, August 23, 2014 at 02:13:55 AM, Robin Gong wrote:
+> > > After enable DMA
 > > 
-> > Here are a few minor fixups and enhancements for kexec support. 
+> > Please also add a commit message which describes the change, not only
+> > some test results.
 > > 
-> > Patch 3 and 4 that add preprocessor macros for the kimage list flags are
-> > ones that I use in the arm64 kexec support I am working on, so it would
-> > be nice for those to go in.
-> > 
-> > Please consider.
+> > [...]
 > 
-> Hi Geoff,
+>  Ok, I will enrich it in next version.
 > 
-> Does arm64 has secureboot? If yes, then it might make sense to
-> enable the new syscall kexec_file_load() on arm64 instead of trying
-> to make old syscall work first.
+> > > @@ -911,6 +1194,13 @@ static int spi_imx_probe(struct platform_device
+> > > *pdev) goto out_put_per;
+> > > 
+> > >  	spi_imx->spi_clk = clk_get_rate(spi_imx->clk_per);
+> > > 
+> > > +	/*
+> > > +	 * Only validated on i.mx6 now, can remove the constrain if validated
+> > > on +	 * other chips.
+> > > +	 */
+> > 
+> > Given that the check below tests for imx51_ecspi_devtype_data ... does
+> > that mean, that this code was never tested on MX51 and MX53, yet will be
+> > enabled for those chips and might possibly break them ?
+> 
+> Yes, because there is no available mx51 mx53 boards in my hands. But I
+> think it won't bring too much trouble, since they share the same IP.
+> No, the patch won't break current MX51 and MX53, because they didn't enable
+> dma in dts setting,and they will keep use pio mode.
 
-It will save efforts for efi support as well, for the in-kernel loader we do not
-necessary to save the efi physical addresses or runtime ranges to sysfs and
-passing them to 2nd kernel, we can just copy them in kernel.
+Thanks for clearing this up, this was the important piece of information for me. 
+Please put it into the commit message.
 
-Thanks
-Dave
+Best regards,
+Marek Vasut
