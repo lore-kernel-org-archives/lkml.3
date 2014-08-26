@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758183AbaHZNqo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 09:46:44 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:32812 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755163AbaHZNqm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 09:46:42 -0400
-Date: Tue, 26 Aug 2014 16:46:32 +0300
-From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-To: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: paulmck@linux.vnet.ibm.com
-Subject: [PATCH] ipv6: sit: Replace rcu_assign_pointer() with
- RCU_INIT_POINTER()
-Message-ID: <20140826134632.GA1473@ada>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758224AbaHZNsj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 09:48:39 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:37363 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754395AbaHZNsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 09:48:37 -0400
+Message-ID: <1409060908.5256.83.camel@iivanov-dev>
+Subject: Re: [PATCH] iio: core: Propagate error codes from OF layer to
+ client drivers
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Jonathan Cameron <jic23@kernel.org>, Adam.Thomson.Opensource@diasemi.com,
+        knaack.h@gmx.de, lars@metafoo.de, pmeerw@pmeerw.net,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 26 Aug 2014 16:48:28 +0300
+In-Reply-To: <53FC8AB3.2080603@roeck-us.net>
+References: <1408971437-10751-1-git-send-email-iivanov@mm-sol.com>
+		 <53FB5FF7.8020504@kernel.org> <20140825165430.GB14614@roeck-us.net>
+	 <1409039490.5256.75.camel@iivanov-dev> <53FC8AB3.2080603@roeck-us.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to RCU_INIT_POINTER()'s block comment 3.a, it can be used if
-"3.   The referenced data structure has already been exposed to readers either
-at compile time or via rcu_assign_pointer() -and-
- a.   You have not made -any- reader-visible changes to this structure since
-then".
+On Tue, 2014-08-26 at 06:25 -0700, Guenter Roeck wrote:
+> On 08/26/2014 12:51 AM, Ivan T. Ivanov wrote:
+> > Hi,
+> >
+> [ ... ]
+> >
+> > Another, less intrusive, solution will be if we revert last patch and explicitly
+> > check for EPROBE_DEFER on of_ by_name() return. How this sounds?
+> >
+> How is that different to the just accepted patch ?
 
-This case fulfills the conditions above because between the rtnl_dereference()
-call and the rcu_assign_pointer() call there is no update of that value.
-Therefore, this patch makes the replacement.
+You mean this one[1]. I have prepared fix last Friday and forget to
+check again before posting it, sorry. Please ignore my patch.
 
-The following Coccinelle semantic patch was used:
-@@
-@@
+Thanks, 
+Ivan
 
-- rcu_assign_pointer
-+ RCU_INIT_POINTER
-  (...,
-(
- rtnl_dereference(...)
-|
- rcu_dereference_protected(...)
-) )
+[1] iio:inkern: fix overwritten -EPROBE_DEFER in of_iio_channel_get_by_name
 
-Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
----
- net/ipv6/sit.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
-index 4f40817..24c2dba 100644
---- a/net/ipv6/sit.c
-+++ b/net/ipv6/sit.c
-@@ -167,7 +167,7 @@ static void ipip6_tunnel_link(struct sit_net *sitn, struct ip_tunnel *t)
- {
- 	struct ip_tunnel __rcu **tp = ipip6_bucket(sitn, t);
- 
--	rcu_assign_pointer(t->next, rtnl_dereference(*tp));
-+	RCU_INIT_POINTER(t->next, rtnl_dereference(*tp));
- 	rcu_assign_pointer(*tp, t);
- }
- 
--- 
-1.9.1
 
