@@ -1,68 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934341AbaHZJWR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 05:22:17 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:56634 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934117AbaHZJWP (ORCPT
+	id S934340AbaHZJZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 05:25:27 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:40292 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932407AbaHZJZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 05:22:15 -0400
-Date: Tue, 26 Aug 2014 10:22:05 +0100
+	Tue, 26 Aug 2014 05:25:26 -0400
+Date: Tue, 26 Aug 2014 10:25:21 +0100
 From: Lee Jones <lee.jones@linaro.org>
-To: Chris Zhong <zyw@rock-chips.com>
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        sameo@linux.intel.com, lgirdwood@gmail.com, broonie@kernel.org,
-        a.zummo@towertech.it, mturquette@linaro.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
-        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
-        xxx@rock-chips.com, dianders@chromium.org, heiko@sntech.de,
-        olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
-        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com
-Subject: Re: [PATCH v2 2/5] MFD: RK808: Add new mfd driver for RK808
-Message-ID: <20140826092205.GG9574@lee--X1>
-References: <1408505461-24200-1-git-send-email-zyw@rock-chips.com>
- <20140820092117.GI4266@lee--X1>
- <53FA9D1E.8040202@rock-chips.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: "Arnout Vandecappelle (Essensium/Mind)" <arnout@mind.be>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        David Brown <davidb@codeaurora.org>
+Subject: Re: [PATCH v2] tps65910: Work around silicon erratum SWCZ010
+Message-ID: <20140826092521.GH9574@lee--X1>
+References: <1408709666-5927-1-git-send-email-arnout@mind.be>
+ <1408721456-8101-1-git-send-email-arnout@mind.be>
+ <20140822211247.GB24407@sirena.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <53FA9D1E.8040202@rock-chips.com>
+In-Reply-To: <20140822211247.GB24407@sirena.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Aug 2014, Chris Zhong wrote:
-> On 08/20/2014 05:21 PM, Lee Jones wrote:
-> >On Wed, 20 Aug 2014, Chris Zhong wrote:
-> >
-> >>The RK808 chip is a power management IC for multimedia and handheld
-> >>devices. It contains the following components:
-> >>
-> >>- Regulators
-> >>- RTC
-> >>
-> >>The rk808 core driver is registered as a platform driver and provides
-> >>communication through I2C with the host device for the different
-> >>components.
-> >>
-> >>Signed-off-by: Chris Zhong <zyw@rock-chips.com>
-> >>---
+On Fri, 22 Aug 2014, Mark Brown wrote:
 
-[...]
+> On Fri, Aug 22, 2014 at 05:30:56PM +0200, Arnout Vandecappelle (Essensium/Mind) wrote:
+> > From http://www.ti.com/lit/pdf/SWCZ010 :
+> > 
+> > Glitch on SDA-SCL not managed correctly by the I2C IP
 
-> >>+	rk808->pdata = pdata;
-> >Remove pdata from 'struct rk808'.  You can obtain it from dev.
-> 
-> Can I keep this pdata in rk808, because it is used in the regulator driver.
-> The one obtain from dev maybe empty.
+ drivers/mfd/tps65910.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-If the one in dev is empty, you should populate that instead.
+> Applied, thanks.
 
-[...]
+Eh?
 
 -- 
 Lee Jones
