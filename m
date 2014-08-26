@@ -1,44 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755904AbaHZXJB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 19:09:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44665 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754554AbaHZXI7 (ORCPT
+	id S1755957AbaHZXL0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 19:11:26 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:21830 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754907AbaHZXLY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 19:08:59 -0400
-Date: Tue, 26 Aug 2014 16:08:58 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Konstantin Ryabitsev <mricon@kernel.org>, stable@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Li Zefan <lizefan@huawei.com>
-Subject: [kernel.org PATCH] Li Zefan is now the 3.4 stable maintainer
-Message-ID: <20140826230858.GA29970@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 26 Aug 2014 19:11:24 -0400
+Message-ID: <1409094682.29189.23.camel@j-VirtualBox>
+Subject: [PATCH v2] sched: Reduce contention in update_cfs_rq_blocked_load
+From: Jason Low <jason.low2@hp.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Ben Segall <bsegall@google.com>
+Cc: linux-kernel@vger.kernel.org, Jason Low <jason.low2@hp.com>
+Date: Tue, 26 Aug 2014 16:11:22 -0700
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Li has agreed to continue to support the 3.4 stable kernel tree until
-September 2016.  Update the releases.html page on kernel.org to reflect
-this.
+Based on perf profiles, the update_cfs_rq_blocked_load function constantly
+shows up as taking up a noticeable % of system run time. This is especially
+apparent on larger numa systems.
 
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Much of the contention is in __update_cfs_rq_tg_load_contrib when we're
+updating the tg load contribution stats. However, it was noticed that the
+values often don't get modified by much. In fact, much of the time, they
+don't get modified at all. However, the update can always get attempted due
+to force_update.
+
+In this patch, we remove the force_update in only the
+__update_cfs_rq_tg_load_contrib. Thus the tg load contrib stats now get
+modified only if the delta is large enough (in the current code, they get
+updated when the delta is larger than 12.5%). This is a way to rate-limit
+the updates while largely keeping the values accurate.
+
+When testing this change with AIM7 workloads, we found that it was able to
+reduce the overhead of the function by up to a factor of 20x.
+
+Cc: Yuyang Du <yuyang.du@intel.com>
+Cc: Waiman Long <Waiman.Long@hp.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Aswin Chandramouleeswaran <aswin@hp.com>
+Cc: Chegu Vinod <chegu_vinod@hp.com>
+Cc: Scott J Norton <scott.norton@hp.com>
+Signed-off-by: Jason Low <jason.low2@hp.com>
+---
+ kernel/sched/fair.c |   10 ++++------
+ 1 files changed, 4 insertions(+), 6 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index fea7d33..7a6e18b 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2352,8 +2352,7 @@ static inline u64 __synchronize_entity_decay(struct sched_entity *se)
+ }
+ 
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+-static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
+-						 int force_update)
++static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq)
+ {
+ 	struct task_group *tg = cfs_rq->tg;
+ 	long tg_contrib;
+@@ -2361,7 +2360,7 @@ static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
+ 	tg_contrib = cfs_rq->runnable_load_avg + cfs_rq->blocked_load_avg;
+ 	tg_contrib -= cfs_rq->tg_load_contrib;
+ 
+-	if (force_update || abs(tg_contrib) > cfs_rq->tg_load_contrib / 8) {
++	if (abs(tg_contrib) > cfs_rq->tg_load_contrib / 8) {
+ 		atomic_long_add(tg_contrib, &tg->load_avg);
+ 		cfs_rq->tg_load_contrib += tg_contrib;
+ 	}
+@@ -2436,8 +2435,7 @@ static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
+ 	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
+ }
+ #else /* CONFIG_FAIR_GROUP_SCHED */
+-static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
+-						 int force_update) {}
++static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq) {}
+ static inline void __update_tg_runnable_avg(struct sched_avg *sa,
+ 						  struct cfs_rq *cfs_rq) {}
+ static inline void __update_group_entity_contrib(struct sched_entity *se) {}
+@@ -2537,7 +2535,7 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
+ 		cfs_rq->last_decay = now;
+ 	}
+ 
+-	__update_cfs_rq_tg_load_contrib(cfs_rq, force_update);
++	__update_cfs_rq_tg_load_contrib(cfs_rq);
+ }
+ 
+ /* Add the load generated by se into cfs_rq's child load-average */
+-- 
+1.7.1
 
 
-diff --git a/content/releases.rst b/content/releases.rst
-index 4a3327f4ca9e..c71a33f34f1b 100644
---- a/content/releases.rst
-+++ b/content/releases.rst
-@@ -43,7 +43,7 @@ Longterm
-     3.14     Greg Kroah-Hartman   2014-03-30   Aug, 2016
-     3.12     Jiri Slaby           2013-11-03   2016
-     3.10     Greg Kroah-Hartman   2013-06-30   Sep, 2015
--    3.4      Greg Kroah-Hartman   2012-05-20   Oct, 2014
-+    3.4      Li Zefan             2012-05-20   Sep, 2016
-     3.2      Ben Hutchings        2012-01-04   2016
-     2.6.32   Willy Tarreau        2009-12-03   Mid-2015
-     ======== ==================== ============ ==================
+
