@@ -1,86 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935281AbaH0Qhc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 12:37:32 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:35233 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934868AbaH0Qha (ORCPT
+	id S935317AbaH0QiF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 12:38:05 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:57454 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932275AbaH0QiB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 12:37:30 -0400
-Date: Wed, 27 Aug 2014 18:37:28 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andi Kleen <andi@firstfloor.org>, peterz@infradead.org,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/5] perf, x86: Remove incorrect model number from
- Haswell perf
-Message-ID: <20140827163728.GQ4120@two.firstfloor.org>
-References: <1409006611-30741-1-git-send-email-andi@firstfloor.org>
- <1409006611-30741-2-git-send-email-andi@firstfloor.org>
- <alpine.DEB.2.10.1408262325200.3323@nanos>
- <20140826212934.GP4120@two.firstfloor.org>
- <alpine.DEB.2.10.1408270020020.3323@nanos>
- <alpine.DEB.2.10.1408271144580.3323@nanos>
+	Wed, 27 Aug 2014 12:38:01 -0400
+Message-ID: <53FE0966.5020206@wwwdotorg.org>
+Date: Wed, 27 Aug 2014 10:37:58 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1408271144580.3323@nanos>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Alexander Holler <holler@ahsoftware.de>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Grant Likely <grant.likely@linaro.org>
+CC: Mark Rutland <Mark.Rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Jon Loeliger <jdl@jdl.com>, Russell King <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH 0/9] dt: dependencies (for deterministic driver initialization
+ order based on the DT)
+References: <53F64624.5000403@ahsoftware.de> <20140822131919.GX21734@leverpostej> <20140825093931.GB2399@ulmo> <E1XLu15-0002DP-6o@jdl.com> <20140825133714.GH4163@ulmo.nvidia.com> <20140826084208.AE5F0C40989@trevor.secretlab.ca> <20140826084922.GG17263@ulmo> <53FC566C.30904@ahsoftware.de> <20140826101107.GC32315@leverpostej> <20140827103432.64927C409CB@trevor.secretlab.ca> <20140827144403.GB13850@arm.com> <53FE05AE.9000406@wwwdotorg.org> <53FE07BE.7000809@ahsoftware.de>
+In-Reply-To: <53FE07BE.7000809@ahsoftware.de>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 27, 2014 at 11:53:57AM +0200, Thomas Gleixner wrote:
-> On Wed, 27 Aug 2014, Thomas Gleixner wrote:
-> 
-> > On Tue, 26 Aug 2014, Andi Kleen wrote:
-> > 
-> > > > So what's the point of making the obvious onliner patch
-> > > > 
-> > > > -	case 71:
-> > > > 
-> > > > into something which reorders the sorted case numbers?
-> > >  
-> > > This was a merging mistake. I'll fix it to be a one liner.
-> > > 
-> > > > And of course, this patch is missing any explanation WHY 71 is
-> > > > incorrect and how it got there in the first place.
-> > > 
-> > > 71 is a Broadwell, as you would know if you had read the next patch.
-> > 
-> > And why on earth do I need to read the next patch to figure out what
-> > the heck this patch is doing?
-> > 
-> > Just because it's written by someone who gives a shit?
-> > 
-> > Your unwillingness to cooperate and your advisory resistance are
-> > slowly approaching the Krause level...
-> 
-> And after reading the next patch I still can't see that 71 is a
-> broadwell, because the next patch merily adds haswell names to the
-> numbers. Neither of the following patches has the magic 71
-> incorporated. The only model number related to broadwell is 61 in
-> patch 3/5.
+On 08/27/2014 10:30 AM, Alexander Holler wrote:
+> Am 27.08.2014 18:22, schrieb Stephen Warren:
+>> On 08/27/2014 08:44 AM, Catalin Marinas wrote:
+>
+>>> It's not just optimisation but an important feature for new arm64 SoCs.
+>>> Given some Tegra discussions recently, in many cases the machine_desc
+>>> use on arm is primarily to initialise devices in the right order. If we
+>>> can solve this in a more deterministic way (other than deferred
+>>> probing), we avoid the need for a dedicated SoC platform driver (or
+>>> machine_desc) or workarounds like different initcall levels and explicit
+>>> DT parsing.
+>>
+>> A lot of the ordering is SW driver dependencies. I'm not sure how much
+>> of that can accurately be claimed as HW dependencies. As such, I'm not
+>> sure that putting dependencies into DT would be a good idea; it doesn't
+>> feel like HW data, and might well change if we restructure SW. It'd need
+>> some detailed research though.
+>
+> Almost every phandle is a dependency, so the DT is already full with them.
 
-Ok fair enough.
+That's true, but not entirely relevant.
 
-It was true for v1, but not for v2.
+phandles in DT should only be present where there's an obvious HW 
+dependency. It's obvious that, for example, there's a real HW dependency 
+between an IRQ controller and a device that has an IRQ signal fed into 
+the IRQ controller. It makes perfect sense to represent that as a 
+phandle (+args).
 
+However, most of the ordering imposed by the Tegra machine descriptor 
+callbacks is nothing to do with this. It's more that the SW driver for 
+component X needs some low level data (e.g. SKU/fuse information) before 
+it can run. However, there's no real HW dependency between the HW 
+component X and the fuse module. As such, it doesn't make sense to 
+represent such a dependency in DT, using a phandle or by any other means.
 
-> Try again when you figured yourself out what number means what and why
-> 71 is bogus.
+Of course, there are probably cases where we could/should add some more 
+phandles/... and likewise cases where we shouldn't. That's why detailed 
+research is needed.
 
-71 is definitely not a Haswell, but a Broadwell.
-
-However it was removed from the Broadwell patch based on Peter's
-feedback.
-
-So technically the patch is not needed right now because there 
-would be no duplicates (unless 71 was readded), so the compiler
-would not complain.
-
-However it's still incorrect for Haswell, so I maintain removing
-it is the right thing to do.
-
--Andi
+Irrespective though, a new kernel needs to work against an old DT, so 
+always needs to work without any (of these new) dependencies being 
+represented in DT, since they aren't represented there today. So, I 
+think pushing the issue into DT is a non-starter either way, unless we 
+accept yet another ABI-breaking change, in which case we should just 
+give up on any claims of ABI and make everyone's lives simpler.
