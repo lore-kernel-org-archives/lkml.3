@@ -1,56 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965512AbaH0XUJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 19:20:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59295 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965249AbaH0XUI (ORCPT
+	id S965280AbaH0XXc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 19:23:32 -0400
+Received: from qmta06.emeryville.ca.mail.comcast.net ([76.96.30.56]:33595 "EHLO
+	qmta06.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965120AbaH0XXb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 19:20:08 -0400
-Date: Wed, 27 Aug 2014 16:20:06 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mike Travis <travis@sgi.com>
-Cc: mingo@redhat.com, tglx@linutronix.de, hpa@zytor.com, msalter@redhat.com,
-        dyoung@redhat.com, riel@redhat.com, peterz@infradead.org,
-        mgorman@suse.de, linux-kernel@vger.kernel.org, x86@kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 0/2] x86: Speed up ioremap operations
-Message-Id: <20140827162006.580e83d57696b5eba203b18c@linux-foundation.org>
-In-Reply-To: <53FE6690.80608@sgi.com>
-References: <20140827225927.364537333@asylum.americas.sgi.com>
-	<20140827160610.4ef142d28fd7f276efd38a51@linux-foundation.org>
-	<53FE6690.80608@sgi.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Aug 2014 19:23:31 -0400
+Date: Wed, 27 Aug 2014 18:23:28 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+cc: Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
+        Ingo Molnar <mingo@elte.hu>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>
+Subject: Re: [PATCH percpu/for-3.18-consistent-ops] Revert "powerpc: Replace
+ __get_cpu_var uses"
+In-Reply-To: <20140828074937.47020590@canb.auug.org.au>
+Message-ID: <alpine.DEB.2.11.1408271823040.25336@gentwo.org>
+References: <20140827142243.6277eaff@canb.auug.org.au> <20140827152609.GA379@htj.dyndns.org> <alpine.DEB.2.11.1408271055030.17080@gentwo.org> <20140828074937.47020590@canb.auug.org.au>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Aug 2014 16:15:28 -0700 Mike Travis <travis@sgi.com> wrote:
+On Thu, 28 Aug 2014, Stephen Rothwell wrote:
 
-> 
-> > 
-> >> There are two causes for requiring a restart/reload of the drivers.
-> >> First is periodic preventive maintenance (PM) and the second is if
-> >> any of the devices experience a fatal error.  Both of these trigger
-> >> this excessively long delay in bringing the system back up to full
-> >> capability.
-> >>
-> >> The problem was tracked down to a very slow IOREMAP operation and
-> >> the excessively long ioresource lookup to insure that the user is
-> >> not attempting to ioremap RAM.  These patches provide a speed up
-> >> to that function.
-> > 
-> > With what result?
-> > 
-> 
-> Early measurements on our in house lab system (with far fewer cpus
-> and memory) shows about a 60-75% increase.  They have a 31 devices,
-> 3000+ cpus, 10+Tb of memory.  We have 20 devices, 480 cpus, ~2Tb of
-> memory.  I expect their ioresource list to be about 5-10 times longer.
-> [But their system is in production so we have to wait for the next
-> scheduled PM interval before a live test can be done.]
+> > Ok. Once I figure out what went wrong. This went through Feng's build
+> > system and I though he did a powerpc build. So it must be a difference
+> > configuration on powerpc.
+>
+> Were the patches tested on top of v3.17-rc1?  My build was a powerpc
+> ppc64_defconfig.  It is possible that some other change interacted with
+> this, but there are not many other arch/powerpc changes after v3.17-rc1
+> and none seem obvious.
 
-So you expect 1+ hours?  That's still nuts.
+Yes the latest build test by Feng was on rc1.
+
