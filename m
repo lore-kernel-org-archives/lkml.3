@@ -1,254 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493AbaH0H0m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 03:26:42 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:64457 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753257AbaH0H0j (ORCPT
+	id S1753614AbaH0H1Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 03:27:25 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:50500 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752507AbaH0H1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 03:26:39 -0400
-Date: Wed, 27 Aug 2014 08:26:33 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Andreas Werner <andreas.werner@men.de>
-Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com, wim@iguana.be,
-        linux-watchdog@vger.kernel.org, cooloney@gmail.com, rpurdie@rpsys.net,
-        linux-leds@vger.kernel.org, jdelvare@suse.de, linux@roeck-us.net,
-        lm-sensors@lm-sensors.org, johannes.thumshirn@men.de
-Subject: Re: [PATCH v5 1/4] drivers/mfd/menf21bmc: introduce MEN 14F021P00
- BMC MFD Core driver
-Message-ID: <20140827072633.GY26707@lee--X1>
-References: <cover.1409074255.git.andreas.werner@men.de>
- <67faa70de03924edc768002df17b02e47256260c.1409074255.git.andreas.werner@men.de>
+	Wed, 27 Aug 2014 03:27:24 -0400
+X-Original-SENDERIP: 10.177.222.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Wed, 27 Aug 2014 16:28:19 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: David Horner <ds2horner@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
+        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjennings@variantweb.net>,
+        Dan Streetman <ddstreet@ieee.org>
+Subject: Re: [PATCH v5 3/4] zram: zram memory size limitation
+Message-ID: <20140827072819.GK32620@bbox>
+References: <1408925156-11733-1-git-send-email-minchan@kernel.org>
+ <1408925156-11733-4-git-send-email-minchan@kernel.org>
+ <20140826073730.GA1975@js1304-P5Q-DELUXE>
+ <20140826075511.GI11319@bbox>
+ <CAFdhcLQce05qi2LGP85N=aaQiKz1ArC3Kn+W-s86R58BkjMr3w@mail.gmail.com>
+ <20140827012610.GA10198@js1304-P5Q-DELUXE>
+ <20140827025132.GI32620@bbox>
+ <20140827050438.GA13300@js1304-P5Q-DELUXE>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <67faa70de03924edc768002df17b02e47256260c.1409074255.git.andreas.werner@men.de>
+In-Reply-To: <20140827050438.GA13300@js1304-P5Q-DELUXE>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Aug 2014, Andreas Werner wrote:
-> The MEN 14F021P00 Board Management Controller provides an
-> I2C interface to the host to access the feature implemented in the BMC.
-> The BMC is a PIC Microntroller assembled on CPCI Card from MEN Mikroelektronik
-> and on a few Box/Display Computer.
+On Wed, Aug 27, 2014 at 02:04:38PM +0900, Joonsoo Kim wrote:
+> On Wed, Aug 27, 2014 at 11:51:32AM +0900, Minchan Kim wrote:
+> > Hey Joonsoo,
+> > 
+> > On Wed, Aug 27, 2014 at 10:26:11AM +0900, Joonsoo Kim wrote:
+> > > Hello, Minchan and David.
+> > > 
+> > > On Tue, Aug 26, 2014 at 08:22:29AM -0400, David Horner wrote:
+> > > > On Tue, Aug 26, 2014 at 3:55 AM, Minchan Kim <minchan@kernel.org> wrote:
+> > > > > Hey Joonsoo,
+> > > > >
+> > > > > On Tue, Aug 26, 2014 at 04:37:30PM +0900, Joonsoo Kim wrote:
+> > > > >> On Mon, Aug 25, 2014 at 09:05:55AM +0900, Minchan Kim wrote:
+> > > > >> > @@ -513,6 +540,14 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+> > > > >> >             ret = -ENOMEM;
+> > > > >> >             goto out;
+> > > > >> >     }
+> > > > >> > +
+> > > > >> > +   if (zram->limit_pages &&
+> > > > >> > +           zs_get_total_pages(meta->mem_pool) > zram->limit_pages) {
+> > > > >> > +           zs_free(meta->mem_pool, handle);
+> > > > >> > +           ret = -ENOMEM;
+> > > > >> > +           goto out;
+> > > > >> > +   }
+> > > > >> > +
+> > > > >> >     cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_WO);
+> > > > >>
+> > > > >> Hello,
+> > > > >>
+> > > > >> I don't follow up previous discussion, so I could be wrong.
+> > > > >> Why this enforcement should be here?
+> > > > >>
+> > > > >> I think that this has two problems.
+> > > > >> 1) alloc/free happens unnecessarilly if we have used memory over the
+> > > > >> limitation.
+> > > > >
+> > > > > True but firstly, I implemented the logic in zsmalloc, not zram but
+> > > > > as I described in cover-letter, it's not a requirement of zsmalloc
+> > > > > but zram so it should be in there. If every user want it in future,
+> > > > > then we could move the function into zsmalloc. That's what we
+> > > > > concluded in previous discussion.
+> > > 
+> > > Hmm...
+> > > Problem is that we can't avoid these unnecessary overhead in this
+> > > implementation. If we can implement this feature in zram efficiently,
+> > > it's okay. But, I think that current form isn't.
+> > 
+> > 
+> > If we can add it in zsmalloc, it would be more clean and efficient
+> > for zram but as I said, at the moment, I didn't want to put zram's
+> > requirement into zsmalloc because to me, it's weird to enforce max
+> > limit to allocator. It's client's role, I think.
 > 
-> Added MFD Core driver, supporting the I2C communication to the device.
+> AFAIK, many kinds of pools such as thread-pool or memory-pool have
+> their own limit. It's not weird for me.
+
+Actually I don't know what is pool allocator but things you mentioned
+is basically used to gaurantee *new* thread/memory, not limit although
+it would implement limit.
+
+Another question, why do you think zsmalloc is pool allocator?
+IOW, What logic makes you think it's pool allocator?
+
 > 
-> The MFD driver currently supports the following features:
->  	- Watchdog
->  	- LEDs
-> 	- Hwmon (voltage monitoring)
+> > If current implementation is expensive and rather hard to follow,
+> > It would be one reason to move the feature into zsmalloc but
+> > I don't think it makes critical trobule in zram usecase.
+> > See below.
+> > 
+> > But I still open and will wait others's opinion.
+> > If other guys think zsmalloc is better place, I am willing to move
+> > it into zsmalloc.
+> > 
+> > > 
+> > > > >
+> > > > > Another idea is we could call zs_get_total_pages right before zs_malloc
+> > > > > but the problem is we cannot know how many of pages are allocated
+> > > > > by zsmalloc in advance.
+> > > > > IOW, zram should be blind on zsmalloc's internal.
+> > > > >
+> > > > 
+> > > > We did however suggest that we could check before hand to see if
+> > > > max was already exceeded as an optimization.
+> > > > (possibly with a guess on usage but at least using the minimum of 1 page)
+> > > > In the contested case, the max may already be exceeded transiently and
+> > > > therefore we know this one _could_ fail (it could also pass, but odds
+> > > > aren't good).
+> > > > As Minchan mentions this was discussed before - but not into great detail.
+> > > > Testing should be done to determine possible benefit. And as he also
+> > > > mentions, the better place for it may be in zsmalloc, but that
+> > > > requires an ABI change.
+> > > 
+> > > Why we hesitate to change zsmalloc API? It is in-kernel API and there
+> > > are just two users now, zswap and zram. We can change it easily.
+> > > I think that we just need following simple API change in zsmalloc.c.
+> > > 
+> > > zs_zpool_create(gfp_t gfp, struct zpool_ops *zpool_op)
+> > > =>
+> > > zs_zpool_create(unsigned long limit, gfp_t gfp, struct zpool_ops
+> > > *zpool_op)
+> > > 
+> > > It's pool allocator so there is no obstacle for us to limit maximum
+> > > memory usage in zsmalloc. It's a natural idea to limit memory usage
+> > > for pool allocator.
+> > > 
+> > > > Certainly a detailed suggestion could happen on this thread and I'm
+> > > > also interested
+> > > > in your thoughts, but this patchset should be able to go in as is.
+> > > > Memory exhaustion avoidance probably trumps the possible thrashing at
+> > > > threshold.
+> > > > 
+> > > > > About alloc/free cost once if it is over the limit,
+> > > > > I don't think it's important to consider.
+> > > > > Do you have any scenario in your mind to consider alloc/free cost
+> > > > > when the limit is over?
+> > > > >
+> > > > >> 2) Even if this request doesn't do new allocation, it could be failed
+> > > > >> due to other's allocation. There is time gap between allocation and
+> > > > >> free, so legimate user who want to use preallocated zsmalloc memory
+> > > > >> could also see this condition true and then he will be failed.
+> > > > >
+> > > > > Yeb, we already discussed that. :)
+> > > > > Such false positive shouldn't be a severe problem if we can keep a
+> > > > > promise that zram user cannot exceed mem_limit.
+> > > > >
+> > > 
+> > > If we can keep such a promise, why we need to limit memory usage?
+> > > I guess that this limit feature is useful for user who can't keep such promise.
+> > > So, we should assume that this false positive happens frequently.
+> > 
+> > 
+> > The goal is to limit memory usage within some threshold.
+> > so false positive shouldn't be harmful unless it exceeds the threshold.
+> > In addition, If such false positive happens frequently, it means
+> > zram is very trobule so that user would see lots of write fail
+> > message, sometime really slow system if zram is used for swap.
+> > If we protect just one write from the race, how much does it help
+> > this situation? I don't think it's critical problem.
 > 
-> Signed-off-by: Andreas Werner <andreas.werner@men.de>
-> Acked-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  drivers/mfd/Kconfig     |  12 +++++
->  drivers/mfd/Makefile    |   1 +
->  drivers/mfd/menf21bmc.c | 132 ++++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 145 insertions(+)
->  create mode 100644 drivers/mfd/menf21bmc.c
+> If it is just rarely happend event that memory usage exceeds the threshold,
+> why this limit is needed? Could you tell me when this limit is useful
+> with such assumption?
+
+If there is no feature, zram can use up all of memory so it's out of control.
+Although we could control virtual disksize, it's not perfect all the time.
+I expect userspace will have more flexibility to handle memory if zram support
+the feature. For example, system can set the limit very low and if it hit the
+limit and see enough free memory in system, he could increase the limit to
+the hard limit. If it hit the hard limit and other component needs more memory,
+we could decrease the limit and kill old process to get a free memory.
+It's a simple example but it might give more freedom to userspace memory
+manager.
+
 > 
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index b8d9ca0..6a9f101 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -453,6 +453,18 @@ config MFD_MAX8998
->  	  additional drivers must be enabled in order to use the functionality
->  	  of the device.
->  
-> +config MFD_MENF21BMC
-> +	tristate "MEN 14F021P00 Board Management Controller Support"
-> +	depends on I2C
-> +	select MFD_CORE
-> +	help
-> +	  Say yes here to add support for the MEN 14F021P00 BMC
-> +	  which is a Board Management Controller connected to the I2C bus.
-> +	  The device supports multiple sub-devices like LED, HWMON  and WDT.
+> > 
+> > > 
+> > > > And we cannot avoid the race, nor can we avoid in a low overhead competitive
+> > > > concurrent process transient inconsistent states.
+> > > > Different views for different observers.
+> > > >  They are a consequence of the theory of "Special Computational Relativity".
+> > > >  I am working on a String Unification Theory of Quantum and General CR in LISP.
+> > > >  ;-)
+> > > 
+> > > If we move limit logic to zsmalloc, we can avoid the race by commiting
+> > > needed memory size before actual allocation attempt. This commiting makes
+> > > concurrent process serialized so there is no race here. There is
+> > > possibilty to fail to allocate, but I think this is better than alloc
+> > > and free blindlessly depending on inconsistent states.
+> > 
+> > Normally, zsmalloc/zsfree allocates object from existing pool so
+> > it's not big overhead and if someone continue to try writing  once limit is
+> > full, another overhead (vfs, fs, block) would be bigger than zsmalloc
+> > so it's not a problem, I think.
+> 
+> We should do our best, regardless other subsystem does. If there is
+> known possibility to suffer from needless alloc/free, why we ignore
+> it? :)
 
-Nit: Whitespace error.
+Yeb, I'd like to do my best and gap between you and me is just difference
+of which is best.
 
-> +	  This driver provides common support for accessing the devices;
-> +	  additional drivers must be enabled in order to use the
-> +	  functionality of the BMC device.
-> +
->  config EZX_PCAP
->  	bool "Motorola EZXPCAP Support"
->  	depends on SPI_MASTER
-> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-> index 4e2bc25..37bf336 100644
-> --- a/drivers/mfd/Makefile
-> +++ b/drivers/mfd/Makefile
-> @@ -169,6 +169,7 @@ obj-$(CONFIG_MFD_AS3711)	+= as3711.o
->  obj-$(CONFIG_MFD_AS3722)	+= as3722.o
->  obj-$(CONFIG_MFD_STW481X)	+= stw481x.o
->  obj-$(CONFIG_MFD_IPAQ_MICRO)	+= ipaq-micro.o
-> +obj-$(CONFIG_MFD_MENF21BMC)	+= menf21bmc.o
->  
->  intel-soc-pmic-objs		:= intel_soc_pmic_core.o intel_soc_pmic_crc.o
->  obj-$(CONFIG_INTEL_SOC_PMIC)	+= intel-soc-pmic.o
-> diff --git a/drivers/mfd/menf21bmc.c b/drivers/mfd/menf21bmc.c
-> new file mode 100644
-> index 0000000..a6eb03f
-> --- /dev/null
-> +++ b/drivers/mfd/menf21bmc.c
-> @@ -0,0 +1,132 @@
-> +/*
-> + *  MEN 14F021P00 Board Management Controller (BMC) MFD Core Driver.
-> + *
-> + *  Copyright (C) 2014 MEN Mikro Elektronik Nuernberg GmbH
-> + *
-> + *  This program is free software; you can redistribute  it and/or modify it
-> + *  under  the terms of  the GNU General  Public License as published by the
-> + *  Free Software Foundation;  either version 2 of the  License, or (at your
-> + *  option) any later version.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/device.h>
-> +#include <linux/module.h>
-> +#include <linux/i2c.h>
-> +#include <linux/mfd/core.h>
-> +
-> +#define BMC_CMD_WDT_EXIT_PROD	0x18
-> +#define BMC_CMD_WDT_PROD_STAT	0x19
-> +#define BMC_CMD_REV_MAJOR	0x80
-> +#define BMC_CMD_REV_MINOR	0x81
-> +#define BMC_CMD_REV_MAIN	0x82
-> +
-> +static struct mfd_cell menf21bmc_cell[] = {
-> +	{ .name = "menf21bmc_wdt", },
-> +	{ .name = "menf21bmc_led", },
-> +	{ .name = "menf21bmc_hwmon", }
-> +};
-> +
-> +static int menf21bmc_wdt_exit_prod_mode(struct i2c_client *client)
-> +{
-> +	int val, ret;
-> +
-> +	val = i2c_smbus_read_byte_data(client, BMC_CMD_WDT_PROD_STAT);
-> +	if (val < 0)
-> +		return val;
-> +
-> +	/*
-> +	 * Production mode should be not active after delivery of the Board.
-> +	 * To be sure we check it, inform the user and exit the mode
-> +	 * if active.
-> +	 */
-> +	if (val == 0x00) {
-> +		dev_info(&client->dev,
-> +			"BMC in production mode. Exit production mode\n");
-> +
-> +		ret = i2c_smbus_write_byte(client, BMC_CMD_WDT_EXIT_PROD);
-> +		if (ret < 0)
-> +			return ret;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int
-> +menf21bmc_probe(struct i2c_client *client, const struct i2c_device_id *ids)
-> +{
-> +	int ret;
-> +	int rev_major, rev_minor, rev_main;
-
-Really small nit (as you have to fix the whitespace err anyway):
-  Can you change the order of the two lines above please?
-
-> +	ret = i2c_check_functionality(client->adapter,
-> +				      I2C_FUNC_SMBUS_BYTE_DATA |
-> +				      I2C_FUNC_SMBUS_WORD_DATA |
-> +				      I2C_FUNC_SMBUS_BYTE);
-> +	if (!ret)
-> +		return -ENODEV;
-> +
-> +	rev_major = i2c_smbus_read_word_data(client, BMC_CMD_REV_MAJOR);
-> +	if (rev_major < 0) {
-> +		dev_err(&client->dev, "failed to get BMC major revision\n");
-> +		return rev_major;
-> +	}
-> +
-> +	rev_minor = i2c_smbus_read_word_data(client, BMC_CMD_REV_MINOR);
-> +	if (rev_minor < 0) {
-> +		dev_err(&client->dev, "failed to get BMC minor revision\n");
-> +		return rev_minor;
-> +	}
-> +
-> +	rev_main = i2c_smbus_read_word_data(client, BMC_CMD_REV_MAIN);
-> +	if (rev_main < 0) {
-> +		dev_err(&client->dev, "failed to get BMC main revision\n");
-> +		return rev_main;
-> +	}
-> +
-> +	dev_info(&client->dev, "FW Revision: %02d.%02d.%02d\n",
-> +					rev_major, rev_minor, rev_main);
-
-You enforced a 'line > 80 chars' warning in your other driver just so
-you can 'do the right thing' and line up against the '('. :)
-
-Can you do that here please?
-
-> +	/*
-> +	 * We have to exit the Production Mode of the BMC to activate the
-> +	 * Watchdog functionality and the BIOS life sign monitoring.
-> +	 */
-> +	ret = menf21bmc_wdt_exit_prod_mode(client);
-> +	if (ret < 0) {
-> +		dev_err(&client->dev, "failed to leave production mode\n");
-> +		return ret;
-> +	}
-> +
-> +	ret = mfd_add_devices(&client->dev, 0, menf21bmc_cell,
-> +				ARRAY_SIZE(menf21bmc_cell), NULL, 0, NULL);
-
-Line up to to '('.
-
-> +	if (ret < 0) {
-> +		dev_err(&client->dev, "failed to add BMC sub-devices\n");
-> +		return ret;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int menf21bmc_remove(struct i2c_client *client)
-> +{
-> +	mfd_remove_devices(&client->dev);
-> +	return 0;
-> +}
-> +
-> +static const struct i2c_device_id menf21bmc_id_table[] = {
-> +	{ "menf21bmc", 0 },
-
-The second attribute is unused in this driver, please remove it.
-
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(i2c, menf21bmc_id_table);
-> +
-> +static struct i2c_driver menf21bmc_driver = {
-> +	.driver.name	= "menf21bmc",
-> +	.id_table	= menf21bmc_id_table,
-> +	.probe		= menf21bmc_probe,
-> +	.remove		= menf21bmc_remove,
-> +};
-
-No DT support?
-
-> +module_i2c_driver(menf21bmc_driver);
-> +
-> +MODULE_DESCRIPTION("MEN 14F021P00 BMC mfd core driver");
-
-s/mfd/MFD
-
-> +MODULE_AUTHOR("Andreas Werner <andreas.werner@men.de>");
-> +MODULE_LICENSE("GPL v2");
+> 
+> Thanks.
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Kind regards,
+Minchan Kim
