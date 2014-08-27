@@ -1,67 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757317AbaH0LGz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 07:06:55 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35848 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754967AbaH0LGy (ORCPT
+	id S1757357AbaH0LHV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 07:07:21 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:11183 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754256AbaH0LHT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 07:06:54 -0400
-Date: Wed, 27 Aug 2014 12:06:39 +0100
-From: Mark Brown <broonie@kernel.org>
-To: James Ban <james.ban.opensource@diasemi.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>,
-        Support Opensource <support.opensource@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>
-Message-ID: <20140827110639.GA17528@sirena.org.uk>
-References: <201408270426.s7R4Q6Ov001133@krsrvapps-01.diasemi.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OA5iH8ls5MwRf9my"
-Content-Disposition: inline
-In-Reply-To: <201408270426.s7R4Q6Ov001133@krsrvapps-01.diasemi.com>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH V2] regulator: DA9211 : support device tree
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Wed, 27 Aug 2014 07:07:19 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-4d-53fdbbe3616f
+From: Andrzej Hajda <a.hajda@samsung.com>
+To: Inki Dae <inki.dae@samsung.com>
+Cc: Andrzej Hajda <a.hajda@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org (open list),
+        linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...)
+Subject: [PATCH v2 14/15] drm/exynos/fimc: simplify buffer queuing
+Date: Wed, 27 Aug 2014 13:07:03 +0200
+Message-id: <1409137623-20936-1-git-send-email-a.hajda@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1408693946-15456-15-git-send-email-a.hajda@samsung.com>
+References: <1408693946-15456-15-git-send-email-a.hajda@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKJMWRmVeSWpSXmKPExsVy+t/xK7qPd/8NNri2zsri1rpzrBZXvr5n
+	s5h0fwKLxYt7F1kszja9Ybe4vGsOm8WM8/uYLNYeuctuMWPySzYHTo/73ceZPPq2rGL0+LxJ
+	LoA5issmJTUnsyy1SN8ugSujq62bvWCeZMXpXy9ZGhjPiXQxcnBICJhI3JjD38XICWSKSVy4
+	t54NxBYSWMoo8fJfVRcjF5DdxyTxurOLHSTBJqAp8XfzTbAiEQFliVX72tlBipgFPjJJXFn6
+	hhkkISzgJDF9wVmwBhYBVYmp99eygti8As4SP6dPYoHYJidx8thksDingKvEsT/H2SE2u0g8
+	XLSMeQIj7wJGhlWMoqmlyQXFSem5hnrFibnFpXnpesn5uZsYIUH1ZQfj4mNWhxgFOBiVeHgZ
+	1v8JFmJNLCuuzD3EKMHBrCTCy779b7AQb0piZVVqUX58UWlOavEhRiYOTqkGRrsdrr5i1SE1
+	rfx3a1yWMTvoZubcMDtlqbhLf1aBxk6GWE6HRc7ustLfT77o387KIR4Vu3S29eUYpbBHOc8q
+	c3/vcVy7KvS36oz+wFvns4/ekfii6H8paP4UucbsfZmnmR5FbUs4I7dom8gz+RT3NcV2dV+e
+	Ze9izjj/p9yk8v1242fXdmaVK7EUZyQaajEXFScCABVIiREIAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The patch removes redundant checks, redundant HW reads
+and simplifies code.
 
---OA5iH8ls5MwRf9my
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
+---
+v2:
+- fixed bit cleaning operation
+---
+ drivers/gpu/drm/exynos/exynos_drm_fimc.c | 64 ++++++++------------------------
+ 1 file changed, 15 insertions(+), 49 deletions(-)
 
-On Wed, Aug 27, 2014 at 11:47:07AM +0900, James Ban wrote:
-> This is a patch for supporting device tree of DA9211/DA9213.
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_fimc.c b/drivers/gpu/drm/exynos/exynos_drm_fimc.c
+index 62ba033..59ba8bb 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_fimc.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_fimc.c
+@@ -1126,67 +1126,34 @@ static int fimc_dst_set_size(struct device *dev, int swap,
+ 	return 0;
+ }
+ 
+-static int fimc_dst_get_buf_count(struct fimc_context *ctx)
+-{
+-	u32 cfg, buf_num;
+-
+-	cfg = fimc_read(ctx, EXYNOS_CIFCNTSEQ);
+-
+-	buf_num = hweight32(cfg);
+-
+-	DRM_DEBUG_KMS("buf_num[%d]\n", buf_num);
+-
+-	return buf_num;
+-}
+-
+-static int fimc_dst_set_buf_seq(struct fimc_context *ctx, u32 buf_id,
++static void fimc_dst_set_buf_seq(struct fimc_context *ctx, u32 buf_id,
+ 		enum drm_exynos_ipp_buf_type buf_type)
+ {
+-	struct exynos_drm_ippdrv *ippdrv = &ctx->ippdrv;
+-	bool enable;
+-	u32 cfg;
+-	u32 mask = 0x00000001 << buf_id;
+-	int ret = 0;
+ 	unsigned long flags;
++	u32 buf_num;
++	u32 cfg;
+ 
+ 	DRM_DEBUG_KMS("buf_id[%d]buf_type[%d]\n", buf_id, buf_type);
+ 
+ 	spin_lock_irqsave(&ctx->lock, flags);
+ 
+-	/* mask register set */
+ 	cfg = fimc_read(ctx, EXYNOS_CIFCNTSEQ);
+ 
+-	switch (buf_type) {
+-	case IPP_BUF_ENQUEUE:
+-		enable = true;
+-		break;
+-	case IPP_BUF_DEQUEUE:
+-		enable = false;
+-		break;
+-	default:
+-		dev_err(ippdrv->dev, "invalid buf ctrl parameter.\n");
+-		ret =  -EINVAL;
+-		goto err_unlock;
+-	}
++	if (buf_type == IPP_BUF_ENQUEUE)
++		cfg |= (1 << buf_id);
++	else
++		cfg &= ~(1 << buf_id);
+ 
+-	/* sequence id */
+-	cfg &= ~mask;
+-	cfg |= (enable << buf_id);
+ 	fimc_write(ctx, cfg, EXYNOS_CIFCNTSEQ);
+ 
+-	/* interrupt enable */
+-	if (buf_type == IPP_BUF_ENQUEUE &&
+-	    fimc_dst_get_buf_count(ctx) >= FIMC_BUF_START)
+-		fimc_mask_irq(ctx, true);
++	buf_num = hweight32(cfg);
+ 
+-	/* interrupt disable */
+-	if (buf_type == IPP_BUF_DEQUEUE &&
+-	    fimc_dst_get_buf_count(ctx) <= FIMC_BUF_STOP)
++	if (buf_type == IPP_BUF_ENQUEUE && buf_num >= FIMC_BUF_START)
++		fimc_mask_irq(ctx, true);
++	else if (buf_type == IPP_BUF_DEQUEUE && buf_num <= FIMC_BUF_STOP)
+ 		fimc_mask_irq(ctx, false);
+ 
+-err_unlock:
+ 	spin_unlock_irqrestore(&ctx->lock, flags);
+-	return ret;
+ }
+ 
+ static int fimc_dst_set_addr(struct device *dev,
+@@ -1244,7 +1211,9 @@ static int fimc_dst_set_addr(struct device *dev,
+ 		break;
+ 	}
+ 
+-	return fimc_dst_set_buf_seq(ctx, buf_id, buf_type);
++	fimc_dst_set_buf_seq(ctx, buf_id, buf_type);
++
++	return 0;
+ }
+ 
+ static struct exynos_drm_ipp_ops fimc_dst_ops = {
+@@ -1299,10 +1268,7 @@ static irqreturn_t fimc_irq_handler(int irq, void *dev_id)
+ 
+ 	DRM_DEBUG_KMS("buf_id[%d]\n", buf_id);
+ 
+-	if (fimc_dst_set_buf_seq(ctx, buf_id, IPP_BUF_DEQUEUE) < 0) {
+-		DRM_ERROR("failed to dequeue.\n");
+-		return IRQ_HANDLED;
+-	}
++	fimc_dst_set_buf_seq(ctx, buf_id, IPP_BUF_DEQUEUE);
+ 
+ 	event_work->ippdrv = ippdrv;
+ 	event_work->buf_id[EXYNOS_DRM_OPS_DST] = buf_id;
+-- 
+1.9.1
 
-Applied, thanks.
-
---OA5iH8ls5MwRf9my
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT/bu8AAoJELSic+t+oim9FUYQAJXX9nDsaA3kBAHvyVtlodRy
-YoFbmsfmb9/NWoIGCILkHROvG7h0hoTt2tQTAMG4jTVxq5ybyLu9vk22DpPaPF+6
-gUM5AptyQHBIwxHuwIYefd3OO8TvPlGXucCwq57q7QP6ecmiWRSa2gJIkqIquqHd
-E/KbKc24rGsKZeMO/iMo3JJBi+3Uafh84QlO6jnesmWPj02+saYZnWE8x8MEQSOy
-IEXZJKlv9WAD2VOhgoMlTRAwz18qWc56hUABDfQqpSMYQ7i6nfEWYCCHMBUFWqnf
-msgg2KXBG14sf9b0dn3rCSkPCOWBWY0gtp0wetJICNlHm1S4rsO27futxVszN2Az
-DaMuhiczQWX6uHwEHfOZCl2B93LBU9S8eFaUP9VZ0ZY3CFtNyUJdVmDYZCcuU3vT
-5t8i2ZvUPZxNKyw+9qWFlld8MLm9Etzw0u08DSPkmFK8tMamOC0SmeyabJv+5JjJ
-Xd4g8Tu5BMrySOgTdhoCfmKDY5UCTuu7Qg7N1rJ5i6+eAuatvBGDUOW8CbD2fnPJ
-8HjZ76ImgEuuXMrptyvJzuRxHm4B4a9BzVa3k5APcep+AIWRxgrAnb9Ey74uutZR
-OZTWA82TZA005oZM12l4MYHP56F3w6YhhcnjAAdJMlpDWrib7mEhTil6hqJZUWxu
-0uyiE8HDo9W/P+ht80g1
-=JpG9
------END PGP SIGNATURE-----
-
---OA5iH8ls5MwRf9my--
