@@ -1,136 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965178AbaH0Unj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 16:43:39 -0400
-Received: from mail-yk0-f182.google.com ([209.85.160.182]:39330 "EHLO
-	mail-yk0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964892AbaH0Unh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 16:43:37 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org (open list:READ-COPY UPDATE...)
-Cc: amit.shah@redhat.com
-Subject: [PATCH] rcu: Make nocb leader kthreads process pending callbacks after spawning
-Date: Wed, 27 Aug 2014 16:43:40 -0400
-Message-Id: <1409172220-2804-1-git-send-email-bobby.prani@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S965187AbaH0Uo1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 16:44:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50605 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964892AbaH0Uo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 16:44:26 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20140827185138.GA12487@redhat.com>
+References: <20140827185138.GA12487@redhat.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH 0/4] x86, fpu: copy_process's FPU paths cleanups
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 27 Aug 2014 13:43:14 -0700
+To: Oleg Nesterov <oleg@redhat.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Suresh Siddha <sbsiddha@gmail.com>
+CC: Bean Anderson <bean@azulsystems.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <acea7803-1ed3-437e-9f4c-df8dd56feef8@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The nocb callbacks generated before the nocb kthreads are spawned are
-enqueued in the nocb queue for later processing. Commit fbce7497ee5af ("rcu:
-Parallelize and economize NOCB kthread wakeups") introduced nocb leader kthreads
-which checked the nocb_leader_wake flag to see if there were any such pending
-callbacks. A case was reported in which newly spawned leader kthreads were not
-processing the pending callbacks as this flag was not set, which led to a boot
-hang.
+Oleg, this is unacceptable.
 
-The following commit ensures that the newly spawned nocb kthreads process the
-pending callbacks by allowing the kthreads to run immediately after spawning
-instead of waiting. This is done by inverting the logic of nocb_leader_wake
-tests to nocb_leader_sleep which allows us to use the default initialization of
-this flag to 0 to let the kthreads run.
+Last week was Kernel Summit and that was right on the heels of a merge window.  We are backlogged like crazy and being rude doesn't help one iota.
 
-Reported-by: Amit Shah <amit.shah@redhat.com>
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-Link: http://www.spinics.net/lists/kernel/msg1802899.html
----
- kernel/rcu/tree.h        |  2 +-
- kernel/rcu/tree_plugin.h | 24 ++++++++++++------------
- 2 files changed, 13 insertions(+), 13 deletions(-)
+On August 27, 2014 11:51:38 AM PDT, Oleg Nesterov <oleg@redhat.com> wrote:
+>Hello,
+>
+>Who can review this? And where should I send FPU changes?
+>
+>And it seems that nobody cares about 2 fixes I sent before.
+>Linus, I understand that you won't take them into v3.17, but
+>perhaps you can ack/nack them explicitly? It seems that nobody
+>can do this.
+>
+>Oleg.
+>
+> arch/x86/include/asm/fpu-internal.h |    2 +-
+> arch/x86/kernel/process.c           |   16 +++++++++-------
+> arch/x86/kernel/process_32.c        |    2 --
+> arch/x86/kernel/process_64.c        |    1 -
+> 4 files changed, 10 insertions(+), 11 deletions(-)
 
-diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
-index 83a7d1c..ffedcb9 100644
---- a/kernel/rcu/tree.h
-+++ b/kernel/rcu/tree.h
-@@ -358,7 +358,7 @@ struct rcu_data {
- 	struct rcu_head **nocb_gp_tail;
- 	long nocb_gp_count;
- 	long nocb_gp_count_lazy;
--	bool nocb_leader_wake;		/* Is the nocb leader thread awake? */
-+	bool nocb_leader_sleep;		/* Is the nocb leader thread asleep? */
- 	struct rcu_data *nocb_next_follower;
- 					/* Next follower in wakeup chain. */
- 
-diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index 5780f6d..28d6763 100644
---- a/kernel/rcu/tree_plugin.h
-+++ b/kernel/rcu/tree_plugin.h
-@@ -2041,9 +2041,9 @@ static void wake_nocb_leader(struct rcu_data *rdp, bool force)
- 
- 	if (!ACCESS_ONCE(rdp_leader->nocb_kthread))
- 		return;
--	if (!ACCESS_ONCE(rdp_leader->nocb_leader_wake) || force) {
-+	if (ACCESS_ONCE(rdp_leader->nocb_leader_sleep) || force) {
- 		/* Prior smp_mb__after_atomic() orders against prior enqueue. */
--		ACCESS_ONCE(rdp_leader->nocb_leader_wake) = true;
-+		ACCESS_ONCE(rdp_leader->nocb_leader_sleep) = false;
- 		wake_up(&rdp_leader->nocb_wq);
- 	}
- }
-@@ -2071,7 +2071,7 @@ static void __call_rcu_nocb_enqueue(struct rcu_data *rdp,
- 	ACCESS_ONCE(*old_rhpp) = rhp;
- 	atomic_long_add(rhcount, &rdp->nocb_q_count);
- 	atomic_long_add(rhcount_lazy, &rdp->nocb_q_count_lazy);
--	smp_mb__after_atomic(); /* Store *old_rhpp before _wake test. */
-+	smp_mb__after_atomic(); /* Store *old_rhpp before _sleep test. */
- 
- 	/* If we are not being polled and there is a kthread, awaken it ... */
- 	t = ACCESS_ONCE(rdp->nocb_kthread);
-@@ -2239,7 +2239,7 @@ wait_again:
- 	if (!rcu_nocb_poll) {
- 		trace_rcu_nocb_wake(my_rdp->rsp->name, my_rdp->cpu, "Sleep");
- 		wait_event_interruptible(my_rdp->nocb_wq,
--					 ACCESS_ONCE(my_rdp->nocb_leader_wake));
-+				!ACCESS_ONCE(my_rdp->nocb_leader_sleep));
- 		/* Memory barrier handled by smp_mb() calls below and repoll. */
- 	} else if (firsttime) {
- 		firsttime = false; /* Don't drown trace log with "Poll"! */
-@@ -2278,12 +2278,12 @@ wait_again:
- 		schedule_timeout_interruptible(1);
- 
- 		/* Rescan in case we were a victim of memory ordering. */
--		my_rdp->nocb_leader_wake = false;
--		smp_mb();  /* Ensure _wake false before scan. */
-+		my_rdp->nocb_leader_sleep = true;
-+		smp_mb();  /* Ensure _sleep true before scan. */
- 		for (rdp = my_rdp; rdp; rdp = rdp->nocb_next_follower)
- 			if (ACCESS_ONCE(rdp->nocb_head)) {
- 				/* Found CB, so short-circuit next wait. */
--				my_rdp->nocb_leader_wake = true;
-+				my_rdp->nocb_leader_sleep = false;
- 				break;
- 			}
- 		goto wait_again;
-@@ -2293,17 +2293,17 @@ wait_again:
- 	rcu_nocb_wait_gp(my_rdp);
- 
- 	/*
--	 * We left ->nocb_leader_wake set to reduce cache thrashing.
--	 * We clear it now, but recheck for new callbacks while
-+	 * We left ->nocb_leader_sleep unset to reduce cache thrashing.
-+	 * We set it now, but recheck for new callbacks while
- 	 * traversing our follower list.
- 	 */
--	my_rdp->nocb_leader_wake = false;
--	smp_mb(); /* Ensure _wake false before scan of ->nocb_head. */
-+	my_rdp->nocb_leader_sleep = true;
-+	smp_mb(); /* Ensure _sleep true before scan of ->nocb_head. */
- 
- 	/* Each pass through the following loop wakes a follower, if needed. */
- 	for (rdp = my_rdp; rdp; rdp = rdp->nocb_next_follower) {
- 		if (ACCESS_ONCE(rdp->nocb_head))
--			my_rdp->nocb_leader_wake = true; /* No need to wait. */
-+			my_rdp->nocb_leader_sleep = false;/* No need to sleep.*/
- 		if (!rdp->nocb_gp_head)
- 			continue; /* No CBs, so no need to wake follower. */
- 
 -- 
-1.9.1
-
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
