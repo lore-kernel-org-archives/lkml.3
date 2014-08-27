@@ -1,157 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932291AbaH0CcC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 22:32:02 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:38485 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756753AbaH0CbI (ORCPT
+	id S932363AbaH0CcJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 22:32:09 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:6285 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932294AbaH0CcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 22:31:08 -0400
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Brendan Gregg <brendan.d.gregg@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RFC v7 net-next 26/28] samples: bpf: eBPF example in C
-Date: Tue, 26 Aug 2014 19:29:40 -0700
-Message-Id: <1409106582-10095-27-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1409106582-10095-1-git-send-email-ast@plumgrid.com>
-References: <1409106582-10095-1-git-send-email-ast@plumgrid.com>
+	Tue, 26 Aug 2014 22:32:05 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 26 Aug 2014 19:17:50 -0700
+Message-ID: <53FD431B.40501@nvidia.com>
+Date: Wed, 27 Aug 2014 10:31:55 +0800
+From: Wei Ni <wni@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Eduardo Valentin <edubezval@gmail.com>
+CC: <khali@linux-fr.org>, <linux@roeck-us.net>, <swarren@wwwdotorg.org>,
+        <lm-sensors@lm-sensors.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 3/4] thermal: add more description for thermal-zones
+References: <1408948188-4181-1-git-send-email-wni@nvidia.com> <1408948188-4181-4-git-send-email-wni@nvidia.com> <20140825110711.GA12349@developer> <53FBF8F9.7070708@nvidia.com> <20140826120855.GA15219@developer>
+In-Reply-To: <20140826120855.GA15219@developer>
+X-Originating-IP: [10.19.224.131]
+X-ClientProxiedBy: HKMAIL101.nvidia.com (10.18.16.10) To
+ HKMAIL101.nvidia.com (10.18.16.10)
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ex1_kern.c - C program which will be compiled into eBPF
-to filter netif_receive_skb events on skb->dev->name == "lo"
+On 08/26/2014 08:08 PM, Eduardo Valentin wrote:
+> Hi,
+> 
+> On Tue, Aug 26, 2014 at 11:03:21AM +0800, Wei Ni wrote:
+>> On 08/25/2014 07:07 PM, Eduardo Valentin wrote:
+>>> Hello Wei Ni,
+>>>
+>>> On Mon, Aug 25, 2014 at 02:29:47PM +0800, Wei Ni wrote:
+>>>> Add more description for the "polling-delay" property.
+>>>> Set "trips" and "cooling maps" as optional property, because
+>>>> if missing these two sub-nodes, the thermal zone device still
+>>>> work properly.
+>>>>
+>>>> Signed-off-by: Wei Ni <wni@nvidia.com>
+>>>> ---
+>>>>  Documentation/devicetree/bindings/thermal/thermal.txt | 10 ++++++----
+>>>>  1 file changed, 6 insertions(+), 4 deletions(-)
+>>>>
+>>>> diff --git a/Documentation/devicetree/bindings/thermal/thermal.txt b/Documentation/devicetree/bindings/thermal/thermal.txt
+>>>> index f5db6b7..e3d3ed9 100644
+>>>> --- a/Documentation/devicetree/bindings/thermal/thermal.txt
+>>>> +++ b/Documentation/devicetree/bindings/thermal/thermal.txt
+>>>> @@ -136,8 +136,8 @@ containing trip nodes and one sub-node containing all the zone cooling maps.
+>>>>  
+>>>>  Required properties:
+>>>>  - polling-delay:	The maximum number of milliseconds to wait between polls
+>>>> -  Type: unsigned	when checking this thermal zone.
+>>>> -  Size: one cell
+>>>> +  Type: unsigned	when checking this thermal zone. If this value is 0, the
+>>>> +  Size: one cell	driver will not run polling queue, but just cancel it.
+>>>>  
+>>>
+>>> The description above is specific to Linux kernel implementation
+>>> nomenclature. DT description needs to be OS agnostic.
+>>
+>> Normally, the user may think a delay of 0 means that software
+>> continually polls this zone, but in here it mean no polling. May be it's
+>> better to add this description.
+>>
+> 
+> Sure, I am fine adding it. Just please do not use Linux specific
+> nomenclature.
 
-ex1_user.c - corresponding user space component that
-forever reads /sys/.../trace_pipe
+Yes, you are right, I will just add "Cancel the polling if the delay is 0".
 
-Usage:
-$ sudo ex1
+Wei.
 
-should see:
-writing bpf-4 -> /sys/kernel/debug/tracing/events/net/netif_receive_skb/filter
-  ping-25476 [001] ..s3  5639.718218: __netif_receive_skb_core: skb 4d51700 dev b9e6000
-  ping-25476 [001] ..s3  5639.718262: __netif_receive_skb_core: skb 4d51400 dev b9e6000
-
-  ping-25476 [002] ..s3  5640.716233: __netif_receive_skb_core: skb 5d06500 dev b9e6000
-  ping-25476 [002] ..s3  5640.716272: __netif_receive_skb_core: skb 5d06300 dev b9e6000
-
-Ctrl-C at any time, kernel will auto cleanup
-
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
----
- samples/bpf/Makefile   |   15 +++++++++++++--
- samples/bpf/ex1_kern.c |   27 +++++++++++++++++++++++++++
- samples/bpf/ex1_user.c |   24 ++++++++++++++++++++++++
- 3 files changed, 64 insertions(+), 2 deletions(-)
- create mode 100644 samples/bpf/ex1_kern.c
- create mode 100644 samples/bpf/ex1_user.c
-
-diff --git a/samples/bpf/Makefile b/samples/bpf/Makefile
-index 7264ba51d496..7ce9e6b0d3d0 100644
---- a/samples/bpf/Makefile
-+++ b/samples/bpf/Makefile
-@@ -2,12 +2,23 @@
- obj- := dummy.o
- 
- # List of programs to build
--hostprogs-y := dropmon test_verifier
-+hostprogs-y := dropmon test_verifier ex1
- 
- dropmon-objs := dropmon.o libbpf.o
- test_verifier-objs := test_verifier.o libbpf.o
-+ex1-objs := bpf_load.o libbpf.o ex1_user.o
- 
- # Tell kbuild to always build the programs
--always := $(hostprogs-y)
-+always := $(hostprogs-y) ex1_kern.o
- 
- HOSTCFLAGS += -I$(objtree)/usr/include
-+
-+HOSTCFLAGS_bpf_load.o += -I$(objtree)/usr/include -Wno-unused-variable
-+HOSTLOADLIBES_ex1 += -lelf
-+
-+LLC=$(srctree)/tools/bpf/llvm/bld/Debug+Asserts/bin/llc
-+
-+%.o: %.c
-+	clang $(NOSTDINC_FLAGS) $(LINUXINCLUDE) $(EXTRA_CFLAGS) \
-+		-D__KERNEL__ -Wno-unused-value -Wno-pointer-sign \
-+		-O2 -emit-llvm -c $< -o -| $(LLC) -o $@
-diff --git a/samples/bpf/ex1_kern.c b/samples/bpf/ex1_kern.c
-new file mode 100644
-index 000000000000..05a06cccaadb
---- /dev/null
-+++ b/samples/bpf/ex1_kern.c
-@@ -0,0 +1,27 @@
-+#include <linux/skbuff.h>
-+#include <linux/netdevice.h>
-+#include <uapi/linux/bpf.h>
-+#include <trace/bpf_trace.h>
-+#include "bpf_helpers.h"
-+
-+SEC("events/net/netif_receive_skb")
-+int bpf_prog1(struct bpf_context *ctx)
-+{
-+	/*
-+	 * attaches to /sys/kernel/debug/tracing/events/net/netif_receive_skb
-+	 * prints events for loobpack device only
-+	 */
-+	char devname[] = "lo";
-+	struct net_device *dev;
-+	struct sk_buff *skb = 0;
-+
-+	skb = (struct sk_buff *) ctx->arg1;
-+	dev = bpf_fetch_ptr(&skb->dev);
-+	if (bpf_memcmp(dev->name, devname, 2) == 0) {
-+		char fmt[] = "skb %x dev %x\n";
-+		bpf_printk(fmt, sizeof(fmt), skb, dev);
-+	}
-+	return 0;
-+}
-+
-+char license[] SEC("license") = "GPL";
-diff --git a/samples/bpf/ex1_user.c b/samples/bpf/ex1_user.c
-new file mode 100644
-index 000000000000..e85c1b483f57
---- /dev/null
-+++ b/samples/bpf/ex1_user.c
-@@ -0,0 +1,24 @@
-+#include <stdio.h>
-+#include <linux/bpf.h>
-+#include "libbpf.h"
-+#include "bpf_load.h"
-+
-+int main(int ac, char **argv)
-+{
-+	FILE *f;
-+	char filename[256];
-+
-+	snprintf(filename, sizeof(filename), "%s_kern.o", argv[0]);
-+
-+	if (load_bpf_file(filename)) {
-+		printf("%s", bpf_log_buf);
-+		return 1;
-+	}
-+
-+	f = popen("ping -c5 localhost", "r");
-+	(void) f;
-+
-+	read_trace_pipe();
-+
-+	return 0;
-+}
--- 
-1.7.9.5
+> 
+>>>
+>>>>  - polling-delay-passive: The maximum number of milliseconds to wait
+>>>>    Type: unsigned	between polls when performing passive cooling.
+>>>> @@ -148,14 +148,16 @@ Required properties:
+>>>>    phandles + sensor
+>>>>    specifier
+>>>>  
+>>>> +Optional property:
+>>>>  - trips:		A sub-node which is a container of only trip point nodes
+>>>>    Type: sub-node	required to describe the thermal zone.
+>>>>  
+>>>>  - cooling-maps:		A sub-node which is a container of only cooling device
+>>>>    Type: sub-node	map nodes, used to describe the relation between trips
+>>>> -			and cooling devices.
+>>>> +			and cooling devices. If missing the "trips" property,
+>>>> +			This sub-node will not be parsed, because no trips can
+>>>> +			be bound to cooling devices.
+>>>
+>>> Do you mean if the thermal zone misses the "trips" property? Actually,
+>>> the binding describes both, cooling-maps and trips, as required
+>>> properties. Thus, both needs to be in place to consider the thermal zone
+>>> as a proper described zone.
+>>>
+>>>>  
+>>>> -Optional property:
+>>>>  - coefficients:		An array of integers (one signed cell) containing
+>>>>    Type: array		coefficients to compose a linear relation between
+>>>>    Elem size: one cell	the sensors listed in the thermal-sensors property.
+>>>> -- 
+>>>> 1.8.1.5
+>>>>
+>>
 
