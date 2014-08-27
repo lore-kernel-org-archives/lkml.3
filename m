@@ -1,43 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933053AbaH0Hio (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 03:38:44 -0400
-Received: from mail.emea.novell.com ([130.57.118.101]:37627 "EHLO
-	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754731AbaH0Hih convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Wed, 27 Aug 2014 03:38:37 -0400
-Message-Id: <53FDA71B020000780002DF2E@mail.emea.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 14.0.1 
-Date: Wed, 27 Aug 2014 08:38:35 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Dexuan Cui" <decui@microsoft.com>
-Cc: "jeremy@goop.org" <jeremy@goop.org>, "KY Srinivasan" <kys@microsoft.com>,
-        "chrisw@sous-sol.org" <chrisw@sous-sol.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: sync_set_bit() vs set_bit()  -- what's the difference?
-References: <EE124450C0AAF944A40DD71E61F878C99639F3@SINEX14MBXC419.southpacific.corp.microsoft.com>
-In-Reply-To: <EE124450C0AAF944A40DD71E61F878C99639F3@SINEX14MBXC419.southpacific.corp.microsoft.com>
+	id S1753310AbaH0Hnu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 03:43:50 -0400
+Received: from mga03.intel.com ([143.182.124.21]:42649 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751524AbaH0Hns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 03:43:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,409,1406617200"; 
+   d="scan'208";a="473074130"
+Message-ID: <1409125313.8085.22.camel@rzhang1-toshiba>
+Subject: Re: [GIT PULL] thermal soc changes
+From: Zhang Rui <rui.zhang@intel.com>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 27 Aug 2014 15:41:53 +0800
+In-Reply-To: <1408711592-8917-1-git-send-email-edubezval@gmail.com>
+References: <1408711592-8917-1-git-send-email-edubezval@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 27.08.14 at 09:30, <decui@microsoft.com> wrote:
-> I'm curious about the difference. :-)
+On Fri, 2014-08-22 at 08:46 -0400, Eduardo Valentin wrote:
+> Hello Rui,
 > 
-> sync_set_bit() is only used in drivers/hv/ and drivers/xen/ while set_bit() 
-> is used in all other places. What makes hv/xen special?
+> Please pull these changes. Here we have three new features: IMX driver has
+> now support to i.mx6sx, the of-thermal now if aware of disabled thermal zones
+> in DT, and we shall have tracing support on thermal framework.
+> 
+> The following changes since commit 47d104ba5879790c7c91c3390b0b08399e168efe:
+> 
+>   Merge branches 'exynos-fix', 'for-rc', 'int3403-fix', 'misc', 'rcar-thermal' and 'sti-thermal' of .git into next (2014-07-22 10:13:00 +0800)
+> 
+> are available in the git repository at:
+> 
+> 
+>   https://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git 
+> 
 
-I guess this would really want to be used by anything communicating
-with a hypervisor or a remote driver: set_bit() gets its LOCK prefix
-discarded when the local kernel determines it runs on a single CPU
-only. Obviously having knowledge of the CPU count inside a VM does
-not imply anything about the number of CPUs available to the host,
-i.e. stripping LOCK prefixes in that case would be unsafe.
+I suppose you mean
+http://git.kernel.org/pub/scm/linux/kernel/git/evalenti/linux-soc-thermal.git next branch. And I've pulled those changes in your next branch.
 
-Jan
+thanks,
+rui
+> for you to fetch changes up to 3c94f17e72a7bcf689756da100b6051e535c45f4:
+> 
+>   Thermal: imx: add i.mx6sx thermal support (2014-08-09 10:29:30 -0400)
+> 
+> ----------------------------------------------------------------
+> Anson Huang (1):
+>       Thermal: imx: add i.mx6sx thermal support
+> 
+> Laxman Dewangan (1):
+>       thermal: add support to disable thermal zone from DTS
+> 
+> Punit Agrawal (3):
+>       thermal: trace: Trace temperature changes
+>       thermal: trace: Trace when a cooling device's state is updated
+>       thermal: trace: Trace when temperature is above a trip point
+> 
+>  .../devicetree/bindings/thermal/imx-thermal.txt    |  5 +-
+>  drivers/thermal/fair_share.c                       | 12 +++
+>  drivers/thermal/imx_thermal.c                      | 91 ++++++++++++++++++----
+>  drivers/thermal/of-thermal.c                       | 12 +++
+>  drivers/thermal/step_wise.c                        |  5 +-
+>  drivers/thermal/thermal_core.c                     |  7 ++
+>  include/trace/events/thermal.h                     | 83 ++++++++++++++++++++
+>  7 files changed, 200 insertions(+), 15 deletions(-)
+>  create mode 100644 include/trace/events/thermal.h
+> 
+> 
+>  BR,
+> 
+>  Eduardo Valentin
+
 
