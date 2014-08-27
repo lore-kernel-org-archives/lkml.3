@@ -1,117 +1,324 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964883AbaH0S6Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 14:58:16 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:50343 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933833AbaH0S6P (ORCPT
+	id S1756758AbaH0TBo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 15:01:44 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:54164 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753558AbaH0TBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 14:58:15 -0400
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Tero Kristo <t-kristo@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Keerthy <j-keerthy@ti.com>,
-        =?utf-8?Q?Beno=C3=AEt?= Cousson <bcousson@baylibre.com>
-Subject: Re: [PATCH 07/10] ARM: OMAP5 / DRA7: Enable CPU RET on suspend
-Organization: Deep Root Systems, LLC
-References: <1408716154-26101-1-git-send-email-nm@ti.com>
-	<1408716154-26101-8-git-send-email-nm@ti.com>
-Date: Wed, 27 Aug 2014 11:58:09 -0700
-In-Reply-To: <1408716154-26101-8-git-send-email-nm@ti.com> (Nishanth Menon's
-	message of "Fri, 22 Aug 2014 09:02:31 -0500")
-Message-ID: <7hbnr5dake.fsf@paris.lan>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Wed, 27 Aug 2014 15:01:42 -0400
+Date: Wed, 27 Aug 2014 12:01:35 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Beniamino Galvani <b.galvani@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Wim Van Sebroeck <wim@iguana.be>,
+        linux-watchdog@vger.kernel.org, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Carlo Caione <carlo@caione.org>
+Subject: Re: [PATCH 3/4] watchdog: add driver for Ricoh RN5T618 watchdog
+Message-ID: <20140827190135.GA18849@roeck-us.net>
+References: <1409091237-16722-1-git-send-email-b.galvani@gmail.com>
+ <1409091237-16722-4-git-send-email-b.galvani@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409091237-16722-4-git-send-email-b.galvani@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nishanth Menon <nm@ti.com> writes:
-
-> From: Rajendra Nayak <rnayak@ti.com>
->
-> On OMAP5 / DRA7, prevent a CPU powerdomain OFF and resulting MPU OSWR
-> and instead attempt a CPU RET and side effect, MPU RET in suspend.
->
-> Signed-off-by: Rajendra Nayak <rnayak@ti.com>
-> [nm@ti.com: update to do save_state only on DRA7]
-> Signed-off-by: Nishanth Menon <nm@ti.com>
+On Wed, Aug 27, 2014 at 12:13:56AM +0200, Beniamino Galvani wrote:
+> This adds a driver for the watchdog timer available in Ricoh RN5T618
+> PMIC. The device supports a programmable expiration time of 1, 8, 32
+> or 128 seconds.
+> 
+> Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
 > ---
->  arch/arm/mach-omap2/omap-mpuss-lowpower.c |    4 ++++
->  arch/arm/mach-omap2/omap-wakeupgen.c      |    2 +-
->  arch/arm/mach-omap2/pm44xx.c              |    9 +++++++--
->  3 files changed, 12 insertions(+), 3 deletions(-)
->
-> diff --git a/arch/arm/mach-omap2/omap-mpuss-lowpower.c b/arch/arm/mach-omap2/omap-mpuss-lowpower.c
-> index 207fce2..0d640eb 100644
-> --- a/arch/arm/mach-omap2/omap-mpuss-lowpower.c
-> +++ b/arch/arm/mach-omap2/omap-mpuss-lowpower.c
-> @@ -242,6 +242,10 @@ int omap4_enter_lowpower(unsigned int cpu, unsigned int power_state)
->  		save_state = 1;
->  		break;
->  	case PWRDM_POWER_RET:
-> +		if (soc_is_omap54xx() || soc_is_dra7xx()) {
-
-Aren't we trying to get away from these soc_* checks for anything other
-than init code?
-
-Kevin
-
-> +			save_state = 0;
-> +			break;
-> +		}
->  	default:
->  		/*
->  		 * CPUx CSWR is invalid hardware state. Also CPUx OSWR
-> diff --git a/arch/arm/mach-omap2/omap-wakeupgen.c b/arch/arm/mach-omap2/omap-wakeupgen.c
-> index e844e16..87c1c0d 100644
-> --- a/arch/arm/mach-omap2/omap-wakeupgen.c
-> +++ b/arch/arm/mach-omap2/omap-wakeupgen.c
-> @@ -381,7 +381,7 @@ static struct notifier_block irq_notifier_block = {
->  static void __init irq_pm_init(void)
->  {
->  	/* FIXME: Remove this when MPU OSWR support is added */
-> -	if (!soc_is_omap54xx())
-> +	if (!soc_is_omap54xx() && !soc_is_dra7xx())
->  		cpu_pm_register_notifier(&irq_notifier_block);
->  }
->  #else
-> diff --git a/arch/arm/mach-omap2/pm44xx.c b/arch/arm/mach-omap2/pm44xx.c
-> index b6f243d..c063833 100644
-> --- a/arch/arm/mach-omap2/pm44xx.c
-> +++ b/arch/arm/mach-omap2/pm44xx.c
-> @@ -36,6 +36,8 @@ struct power_state {
->  	struct list_head node;
->  };
+>  drivers/watchdog/Kconfig       |   11 +++
+>  drivers/watchdog/Makefile      |    1 +
+>  drivers/watchdog/rn5t618_wdt.c |  196 ++++++++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/rn5t618.h    |    4 +
+>  4 files changed, 212 insertions(+)
+>  create mode 100644 drivers/watchdog/rn5t618_wdt.c
+> 
+> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> index f57312f..9eba6af 100644
+> --- a/drivers/watchdog/Kconfig
+> +++ b/drivers/watchdog/Kconfig
+> @@ -309,6 +309,17 @@ config ORION_WATCHDOG
+>  	  To compile this driver as a module, choose M here: the
+>  	  module will be called orion_wdt.
 >  
-> +static u32 cpu_suspend_state = PWRDM_POWER_OFF;
+> +config RN5T618_WATCHDOG
+> +	tristate "Ricoh RN5T618 watchdog"
+> +	depends on MFD_RN5T618
+> +	select WATCHDOG_CORE
+> +	help
+> +	  If you say yes here you get support for watchdog on the Ricoh
+> +	  RN5T618 PMIC.
 > +
->  static LIST_HEAD(pwrst_list);
->  
->  #ifdef CONFIG_SUSPEND
-> @@ -66,7 +68,7 @@ static int omap4_pm_suspend(void)
->  	 * domain CSWR is not supported by hardware.
->  	 * More details can be found in OMAP4430 TRM section 4.3.4.2.
->  	 */
-> -	omap4_enter_lowpower(cpu_id, PWRDM_POWER_OFF);
-> +	omap4_enter_lowpower(cpu_id, cpu_suspend_state);
->  
->  	/* Restore next powerdomain state */
->  	list_for_each_entry(pwrst, &pwrst_list, node) {
-> @@ -112,8 +114,11 @@ static int __init pwrdms_setup(struct powerdomain *pwrdm, void *unused)
->  	 * through hotplug path and CPU0 explicitly programmed
->  	 * further down in the code path
->  	 */
-> -	if (!strncmp(pwrdm->name, "cpu", 3))
-> +	if (!strncmp(pwrdm->name, "cpu", 3)) {
-> +		if (soc_is_omap54xx() || soc_is_dra7xx())
-> +			cpu_suspend_state = PWRDM_POWER_RET;
->  		return 0;
+> +	  This driver can also be built as a module.  If so, the module
+> +	  will be called rn5t618_wdt.
+> +
+>  config SUNXI_WATCHDOG
+>  	tristate "Allwinner SoCs watchdog support"
+>  	depends on ARCH_SUNXI
+> diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+> index 468c320..0afa343 100644
+> --- a/drivers/watchdog/Makefile
+> +++ b/drivers/watchdog/Makefile
+> @@ -47,6 +47,7 @@ obj-$(CONFIG_IOP_WATCHDOG) += iop_wdt.o
+>  obj-$(CONFIG_DAVINCI_WATCHDOG) += davinci_wdt.o
+>  obj-$(CONFIG_ORION_WATCHDOG) += orion_wdt.o
+>  obj-$(CONFIG_SUNXI_WATCHDOG) += sunxi_wdt.o
+> +obj-$(CONFIG_RN5T618_WATCHDOG) += rn5t618_wdt.o
+>  obj-$(CONFIG_COH901327_WATCHDOG) += coh901327_wdt.o
+>  obj-$(CONFIG_STMP3XXX_RTC_WATCHDOG) += stmp3xxx_rtc_wdt.o
+>  obj-$(CONFIG_NUC900_WATCHDOG) += nuc900_wdt.o
+> diff --git a/drivers/watchdog/rn5t618_wdt.c b/drivers/watchdog/rn5t618_wdt.c
+> new file mode 100644
+> index 0000000..3a76ad7
+> --- /dev/null
+> +++ b/drivers/watchdog/rn5t618_wdt.c
+> @@ -0,0 +1,196 @@
+> +/*
+> + * Watchdog driver for Ricoh RN5T618 PMIC
+> + *
+> + * Copyright (C) 2014 Beniamino Galvani <b.galvani@gmail.com>
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * version 2 as published by the Free Software Foundation.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program. If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +
+> +#include <linux/device.h>
+> +#include <linux/mfd/rn5t618.h>
+> +#include <linux/module.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/watchdog.h>
+> +
+> +#define DRIVER_NAME "rn5t618-wdt"
+> +
+> +static bool nowayout = WATCHDOG_NOWAYOUT;
+> +static unsigned int heartbeat = -1;
+
+I'd be surprised if this doesn't cause a compiler warning.
+Why not just initialize the variable with 0 ?
+
+> +
+> +module_param(heartbeat, int, 0);
+> +MODULE_PARM_DESC(heartbeat, "Initial watchdog heartbeat in seconds");
+> +
+> +module_param(nowayout, bool, 0);
+> +MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
+> +		 __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
+> +
+> +struct rn5t618_wdt {
+> +	struct watchdog_device wdt_dev;
+> +	struct rn5t618 *rn5t618;
+> +};
+> +
+> +/*
+> + * This array encodes the values of WDOGTIM field for the supported
+> + * watchdog expiration times. If the watchdog is not accessed before
+> + * the timer expiration, the PMU generates an interrupt and if the CPU
+> + * doesn't clear it within one second the system is restarted.
+> + */
+> +static const struct {
+> +	u8 reg_val;
+> +	int time;
+> +} rn5t618_wdt_map[] = {
+> +	{ 0, 1 },
+> +	{ 1, 8 },
+> +	{ 2, 32 },
+> +	{ 3, 128 },
+> +};
+> +
+> +static int rn5t618_wdt_set_timeout(struct watchdog_device *wdt_dev,
+> +				   unsigned int timeout)
+> +{
+> +	struct rn5t618_wdt *wdt = watchdog_get_drvdata(wdt_dev);
+> +	int ret, i;
+> +
+> +	for (i = 0; i < ARRAY_SIZE(rn5t618_wdt_map); i++) {
+> +		if (rn5t618_wdt_map[i].time + 1 >= timeout)
+> +			break;
 > +	}
+> +
+> +	if (i == ARRAY_SIZE(rn5t618_wdt_map))
+> +		ret = -EINVAL;
+
+Can you simplify this a bit ? If you use
+
+	if (i == ARRAY_SIZE(rn5t618_wdt_map))
+		return -EINVAL;
+
+> +	else
+
+You can drop this else statement.
+
+Thanks,
+Guenter
+
+> +		ret = regmap_update_bits(wdt->rn5t618->regmap, RN5T618_WATCHDOG,
+> +					 RN5T618_WATCHDOG_WDOGTIM_M,
+> +					 rn5t618_wdt_map[i].reg_val);
+> +	if (!ret)
+> +		wdt_dev->timeout = rn5t618_wdt_map[i].time;
+> +
+> +	return ret;
+> +}
+> +
+> +static int rn5t618_wdt_start(struct watchdog_device *wdt_dev)
+> +{
+> +	struct rn5t618_wdt *wdt = watchdog_get_drvdata(wdt_dev);
+> +	int ret;
+> +
+> +	ret = rn5t618_wdt_set_timeout(wdt_dev, wdt_dev->timeout);
+> +	if (ret)
+> +		return ret;
+> +
+> +	/* enable repower-on */
+> +	ret = regmap_update_bits(wdt->rn5t618->regmap, RN5T618_REPCNT,
+> +				 RN5T618_REPCNT_REPWRON,
+> +				 RN5T618_REPCNT_REPWRON);
+> +	if (ret)
+> +		return ret;
+> +
+> +	/* enable watchdog */
+> +	ret = regmap_update_bits(wdt->rn5t618->regmap, RN5T618_WATCHDOG,
+> +				 RN5T618_WATCHDOG_WDOGEN,
+> +				 RN5T618_WATCHDOG_WDOGEN);
+> +	if (ret)
+> +		return ret;
+> +
+> +	/* enable watchdog interrupt */
+> +	return regmap_update_bits(wdt->rn5t618->regmap, RN5T618_PWRIREN,
+> +				  RN5T618_PWRIRQ_IR_WDOG,
+> +				  RN5T618_PWRIRQ_IR_WDOG);
+> +}
+> +
+> +static int rn5t618_wdt_stop(struct watchdog_device *wdt_dev)
+> +{
+> +	struct rn5t618_wdt *wdt = watchdog_get_drvdata(wdt_dev);
+> +
+> +	return regmap_update_bits(wdt->rn5t618->regmap, RN5T618_WATCHDOG,
+> +				  RN5T618_WATCHDOG_WDOGEN, 0);
+> +}
+> +
+> +static int rn5t618_wdt_ping(struct watchdog_device *wdt_dev)
+> +{
+> +	struct rn5t618_wdt *wdt = watchdog_get_drvdata(wdt_dev);
+> +	unsigned int val;
+> +	int ret;
+> +
+> +	/* The counter is restarted after a R/W access to watchdog register */
+> +	ret = regmap_read(wdt->rn5t618->regmap, RN5T618_WATCHDOG, &val);
+> +	if (ret)
+> +		return ret;
+> +
+> +	ret = regmap_write(wdt->rn5t618->regmap, RN5T618_WATCHDOG, val);
+> +	if (ret)
+> +		return ret;
+> +
+> +	/* Clear pending watchdog interrupt */
+> +	return regmap_update_bits(wdt->rn5t618->regmap, RN5T618_PWRIRQ,
+> +				  RN5T618_PWRIRQ_IR_WDOG, 0);
+> +}
+> +
+> +static struct watchdog_info rn5t618_wdt_info = {
+> +	.options	= WDIOF_SETTIMEOUT | WDIOF_MAGICCLOSE |
+> +			  WDIOF_KEEPALIVEPING,
+> +	.identity	= DRIVER_NAME,
+> +};
+> +
+> +static struct watchdog_ops rn5t618_wdt_ops = {
+> +	.owner          = THIS_MODULE,
+> +	.start          = rn5t618_wdt_start,
+> +	.stop           = rn5t618_wdt_stop,
+> +	.ping           = rn5t618_wdt_ping,
+> +	.set_timeout    = rn5t618_wdt_set_timeout,
+> +};
+> +
+> +static int rn5t618_wdt_probe(struct platform_device *pdev)
+> +{
+> +	struct rn5t618 *rn5t618 = dev_get_drvdata(pdev->dev.parent);
+> +	struct rn5t618_wdt *wdt;
+> +	int min_timeout, max_timeout;
+> +
+> +	wdt = devm_kzalloc(&pdev->dev, sizeof(struct rn5t618_wdt), GFP_KERNEL);
+> +	if (!wdt)
+> +		return -ENOMEM;
+> +
+> +	min_timeout = rn5t618_wdt_map[0].time;
+> +	max_timeout = rn5t618_wdt_map[ARRAY_SIZE(rn5t618_wdt_map) - 1].time;
+> +
+> +	wdt->rn5t618 = rn5t618;
+> +	wdt->wdt_dev.info = &rn5t618_wdt_info;
+> +	wdt->wdt_dev.ops = &rn5t618_wdt_ops;
+> +	wdt->wdt_dev.min_timeout = min_timeout;
+> +	wdt->wdt_dev.max_timeout = max_timeout;
+> +	wdt->wdt_dev.timeout = max_timeout;
+> +	wdt->wdt_dev.parent = &pdev->dev;
+> +
+> +	watchdog_set_drvdata(&wdt->wdt_dev, wdt);
+> +	watchdog_init_timeout(&wdt->wdt_dev, heartbeat, &pdev->dev);
+> +	watchdog_set_nowayout(&wdt->wdt_dev, nowayout);
+> +
+> +	return watchdog_register_device(&wdt->wdt_dev);
+> +}
+> +
+> +static int rn5t618_wdt_remove(struct platform_device *pdev)
+> +{
+> +	struct watchdog_device *wdt_dev = platform_get_drvdata(pdev);
+> +
+> +	watchdog_unregister_device(wdt_dev);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver rn5t618_wdt_driver = {
+> +	.probe = rn5t618_wdt_probe,
+> +	.remove = rn5t618_wdt_remove,
+> +	.driver = {
+> +		.name	= DRIVER_NAME,
+> +	},
+> +};
+> +
+> +module_platform_driver(rn5t618_wdt_driver);
+> +
+> +MODULE_AUTHOR("Beniamino Galvani <b.galvani@gmail.com>");
+> +MODULE_DESCRIPTION("RN5T618 watchdog driver");
+> +MODULE_LICENSE("GPL v2");
+> diff --git a/include/linux/mfd/rn5t618.h b/include/linux/mfd/rn5t618.h
+> index e3571d1..c72d534 100644
+> --- a/include/linux/mfd/rn5t618.h
+> +++ b/include/linux/mfd/rn5t618.h
+> @@ -202,6 +202,10 @@
 >  
->  	pwrst = kmalloc(sizeof(struct power_state), GFP_ATOMIC);
->  	if (!pwrst)
+>  #define RN5T618_REPCNT_REPWRON		BIT(0)
+>  #define RN5T618_SLPCNT_SWPWROFF		BIT(0)
+> +#define RN5T618_WATCHDOG_WDOGEN		BIT(2)
+> +#define RN5T618_WATCHDOG_WDOGTIM_M	(BIT(0) | BIT(1))
+> +#define RN5T618_WATCHDOG_WDOGTIM_S	0
+> +#define RN5T618_PWRIRQ_IR_WDOG		BIT(6)
+>  
+>  enum {
+>  	RN5T618_DCDC1,
+> -- 
+> 1.7.10.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
