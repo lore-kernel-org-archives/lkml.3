@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932615AbaH0Ceq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 22:34:46 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:43784 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757833AbaH0Cas (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758008AbaH0Cas (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 26 Aug 2014 22:30:48 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:39201 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757840AbaH0Cak (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 22:30:40 -0400
 From: Alexei Starovoitov <ast@plumgrid.com>
 To: "David S. Miller" <davem@davemloft.net>
 Cc: Ingo Molnar <mingo@kernel.org>,
@@ -21,9 +21,9 @@ Cc: Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RFC v7 net-next 19/28] tracing: allow eBPF programs to be attached to kprobe/kretprobe
-Date: Tue, 26 Aug 2014 19:29:33 -0700
-Message-Id: <1409106582-10095-20-git-send-email-ast@plumgrid.com>
+Subject: [PATCH RFC v7 net-next 16/28] bpf: split eBPF out of NET
+Date: Tue, 26 Aug 2014 19:29:30 -0700
+Message-Id: <1409106582-10095-17-git-send-email-ast@plumgrid.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1409106582-10095-1-git-send-email-ast@plumgrid.com>
 References: <1409106582-10095-1-git-send-email-ast@plumgrid.com>
@@ -31,64 +31,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+let eBPF have its own CONFIG_BPF, so that tracing and other subsystems don't
+need to depend on all of NET
+
 Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 ---
- kernel/trace/trace_kprobe.c |   28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
+ arch/Kconfig      |    3 +++
+ kernel/Makefile   |    2 +-
+ kernel/bpf/core.c |   12 ++++++++++++
+ net/Kconfig       |    1 +
+ 4 files changed, 17 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 282f6e4e5539..b6db92207c99 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -19,6 +19,7 @@
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 0eae9df35b88..80a72f6f6b60 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -333,6 +333,9 @@ config SECCOMP_FILTER
  
- #include <linux/module.h>
- #include <linux/uaccess.h>
-+#include <trace/bpf_trace.h>
+ 	  See Documentation/prctl/seccomp_filter.txt for details.
  
- #include "trace_probe.h"
- 
-@@ -930,6 +931,22 @@ __kprobe_trace_func(struct trace_kprobe *tk, struct pt_regs *regs,
- 	if (ftrace_trigger_soft_disabled(ftrace_file))
- 		return;
- 
-+	if (call->flags & TRACE_EVENT_FL_BPF) {
-+		struct bpf_context ctx = {};
-+		unsigned long args[3];
-+		/* get first 3 arguments of the function. x64 syscall ABI uses
-+		 * the same 3 registers as x64 calling convention.
-+		 * todo: implement it cleanly via arch specific
-+		 * regs_get_argument_nth() helper
-+		 */
-+		syscall_get_arguments(current, regs, 0, 3, args);
-+		ctx.arg1 = args[0];
-+		ctx.arg2 = args[1];
-+		ctx.arg3 = args[2];
-+		trace_filter_call_bpf(ftrace_file->filter, &ctx);
-+		return;
-+	}
++config BPF
++	boolean
 +
- 	local_save_flags(irq_flags);
- 	pc = preempt_count();
+ config HAVE_CC_STACKPROTECTOR
+ 	bool
+ 	help
+diff --git a/kernel/Makefile b/kernel/Makefile
+index dc5c77544fd6..17ea6d4a9a24 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -86,7 +86,7 @@ obj-$(CONFIG_RING_BUFFER) += trace/
+ obj-$(CONFIG_TRACEPOINTS) += trace/
+ obj-$(CONFIG_IRQ_WORK) += irq_work.o
+ obj-$(CONFIG_CPU_PM) += cpu_pm.o
+-obj-$(CONFIG_NET) += bpf/
++obj-$(CONFIG_BPF) += bpf/
  
-@@ -978,6 +995,17 @@ __kretprobe_trace_func(struct trace_kprobe *tk, struct kretprobe_instance *ri,
- 	if (ftrace_trigger_soft_disabled(ftrace_file))
- 		return;
+ obj-$(CONFIG_PERF_EVENTS) += events/
  
-+	if (call->flags & TRACE_EVENT_FL_BPF) {
-+		struct bpf_context ctx = {};
-+		/* assume that register used to return a value from syscall is
-+		 * the same as register used to return a value from a function
-+		 * todo: provide arch specific helper
-+		 */
-+		ctx.ret = syscall_get_return_value(current, regs);
-+		trace_filter_call_bpf(ftrace_file->filter, &ctx);
-+		return;
-+	}
+diff --git a/kernel/bpf/core.c b/kernel/bpf/core.c
+index 0434c2170f2b..c17ba0ef3dcf 100644
+--- a/kernel/bpf/core.c
++++ b/kernel/bpf/core.c
+@@ -537,3 +537,15 @@ void bpf_prog_free(struct bpf_prog *fp)
+ 	bpf_jit_free(fp);
+ }
+ EXPORT_SYMBOL_GPL(bpf_prog_free);
 +
- 	local_save_flags(irq_flags);
- 	pc = preempt_count();
- 
++/* To emulate LD_ABS/LD_IND instructions __sk_run_filter() may call
++ * skb_copy_bits(), so provide a weak definition for it in NET-less config.
++ * seccomp_check_filter() verifies that seccomp filters are not using
++ * LD_ABS/LD_IND instructions. Other BPF users (like tracing filters)
++ * must not use these instructions unless ctx==skb
++ */
++int __weak skb_copy_bits(const struct sk_buff *skb, int offset, void *to,
++			 int len)
++{
++	return -EFAULT;
++}
+diff --git a/net/Kconfig b/net/Kconfig
+index 4051fdfa4367..9a99e16d6f28 100644
+--- a/net/Kconfig
++++ b/net/Kconfig
+@@ -6,6 +6,7 @@ menuconfig NET
+ 	bool "Networking support"
+ 	select NLATTR
+ 	select GENERIC_NET_UTILS
++	select BPF
+ 	---help---
+ 	  Unless you really know what you are doing, you should say Y here.
+ 	  The reason is that some programs need kernel networking support even
 -- 
 1.7.9.5
 
