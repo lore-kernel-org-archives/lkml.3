@@ -1,74 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935232AbaH0QhT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 12:37:19 -0400
-Received: from smtprelay0170.hostedemail.com ([216.40.44.170]:38795 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934868AbaH0QhR (ORCPT
+	id S935281AbaH0Qhc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 12:37:32 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:35233 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934868AbaH0Qha (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 12:37:17 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3865:3866:3868:3870:3874:4250:4321:4823:5007:6119:6120:7652:7901:7904:10004:10400:10848:11232:11658:11914:12043:12294:12517:12519:12555:12740:13019:13069:13311:13357:21067:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: chain27_3f4d528e03d4a
-X-Filterd-Recvd-Size: 2306
-Message-ID: <1409157433.25751.7.camel@joe-AO725>
-Subject: Re: [PATCH resend] checkpatch: Enable whitespace checks for DTS
- files
-From: Joe Perches <joe@perches.com>
-To: Geert Uytterhoeven <geert+renesas@glider.be>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Whitcroft <apw@canonical.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 27 Aug 2014 09:37:13 -0700
-In-Reply-To: <1409152106-9424-1-git-send-email-geert+renesas@glider.be>
-References: <1409152106-9424-1-git-send-email-geert+renesas@glider.be>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Aug 2014 12:37:30 -0400
+Date: Wed, 27 Aug 2014 18:37:28 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andi Kleen <andi@firstfloor.org>, peterz@infradead.org,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/5] perf, x86: Remove incorrect model number from
+ Haswell perf
+Message-ID: <20140827163728.GQ4120@two.firstfloor.org>
+References: <1409006611-30741-1-git-send-email-andi@firstfloor.org>
+ <1409006611-30741-2-git-send-email-andi@firstfloor.org>
+ <alpine.DEB.2.10.1408262325200.3323@nanos>
+ <20140826212934.GP4120@two.firstfloor.org>
+ <alpine.DEB.2.10.1408270020020.3323@nanos>
+ <alpine.DEB.2.10.1408271144580.3323@nanos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1408271144580.3323@nanos>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(adding Andrew Morton)
-
-On Wed, 2014-08-27 at 17:08 +0200, Geert Uytterhoeven wrote:
-> When run on *.dtsi or *.dts files, the whitespace checks were skipped,
-> while they are valid for DTS files.  Hence stop skipping them.
+On Wed, Aug 27, 2014 at 11:53:57AM +0200, Thomas Gleixner wrote:
+> On Wed, 27 Aug 2014, Thomas Gleixner wrote:
 > 
-> I ran checkpatch on all in-tree DTS files, and didn't notice any error or
-> warning messages that are inappropriate for DTS files.
+> > On Tue, 26 Aug 2014, Andi Kleen wrote:
+> > 
+> > > > So what's the point of making the obvious onliner patch
+> > > > 
+> > > > -	case 71:
+> > > > 
+> > > > into something which reorders the sorted case numbers?
+> > >  
+> > > This was a merging mistake. I'll fix it to be a one liner.
+> > > 
+> > > > And of course, this patch is missing any explanation WHY 71 is
+> > > > incorrect and how it got there in the first place.
+> > > 
+> > > 71 is a Broadwell, as you would know if you had read the next patch.
+> > 
+> > And why on earth do I need to read the next patch to figure out what
+> > the heck this patch is doing?
+> > 
+> > Just because it's written by someone who gives a shit?
+> > 
+> > Your unwillingness to cooperate and your advisory resistance are
+> > slowly approaching the Krause level...
 > 
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+> And after reading the next patch I still can't see that 71 is a
+> broadwell, because the next patch merily adds haswell names to the
+> numbers. Neither of the following patches has the magic 71
+> incorporated. The only model number related to broadwell is 61 in
+> patch 3/5.
 
-Acked-by: Joe Perches <joe@perches.com>
+Ok fair enough.
 
-> ---
->  scripts/checkpatch.pl | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index 31a731e06f50..ded90b6d7e17 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -2338,7 +2338,7 @@ sub process {
->  		}
->  
->  # check we are in a valid source file if not then ignore this hunk
-> -		next if ($realfile !~ /\.(h|c|s|S|pl|sh)$/);
-> +		next if ($realfile !~ /\.(h|c|s|S|pl|sh|dtsi|dts)$/);
->  
->  #line length limit
->  		if ($line =~ /^\+/ && $prevrawline !~ /\/\*\*/ &&
-> @@ -2399,7 +2399,7 @@ sub process {
->  		}
->  
->  # check we are in a valid source file C or perl if not then ignore this hunk
-> -		next if ($realfile !~ /\.(h|c|pl)$/);
-> +		next if ($realfile !~ /\.(h|c|pl|dtsi|dts)$/);
->  
->  # at the beginning of a line any tabs must come first and anything
->  # more than 8 must use tabs.
+It was true for v1, but not for v2.
 
 
+> Try again when you figured yourself out what number means what and why
+> 71 is bogus.
 
+71 is definitely not a Haswell, but a Broadwell.
+
+However it was removed from the Broadwell patch based on Peter's
+feedback.
+
+So technically the patch is not needed right now because there 
+would be no duplicates (unless 71 was readded), so the compiler
+would not complain.
+
+However it's still incorrect for Haswell, so I maintain removing
+it is the right thing to do.
+
+-Andi
