@@ -1,137 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935206AbaH0PVY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 11:21:24 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:37708 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934523AbaH0PVM (ORCPT
+	id S935132AbaH0PUi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 11:20:38 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:39139 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935105AbaH0PUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 11:21:12 -0400
-Message-ID: <53FDF74E.6000201@linaro.org>
-Date: Wed, 27 Aug 2014 17:20:46 +0200
-From: Eric Auger <eric.auger@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: eric.auger@st.com, christoffer.dall@linaro.org, marc.zyngier@arm.com,
-        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
-        kvm@vger.kernel.org, joel.schopp@amd.com, kim.phillips@freescale.com,
-        linux-kernel@vger.kernel.org, patches@linaro.org, will.deacon@arm.com,
-        a.motakis@virtualopensystems.com, a.rigo@virtualopensystems.com,
-        john.liuli@huawei.com
-Subject: Re: [RFC 5/9] VFIO: Extend external user API
-References: <1408973264-30384-1-git-send-email-eric.auger@linaro.org>	 <1408973264-30384-6-git-send-email-eric.auger@linaro.org> <1409079734.2906.129.camel@ul30vt.home>
-In-Reply-To: <1409079734.2906.129.camel@ul30vt.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Aug 2014 11:20:31 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-ef-53fdf73c2740
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        devicetree@vger.kernel.org
+Subject: [PATCH v4 7/8] devicetree: mfd: max14577: Add device tree bindings
+ document
+Date: Wed, 27 Aug 2014 17:20:13 +0200
+Message-id: <1409152814-17302-8-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1409152814-17302-1-git-send-email-k.kozlowski@samsung.com>
+References: <1409152814-17302-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFLMWRmVeSWpSXmKPExsVy+t/xy7o23/8GG7TOlbPYOGM9q8XUh0/Y
+	LCY9ec9sMf/IOVaLiSsnM1v0v1nIanHu1UpGi9cvDC3ONr1ht7j/9SijxbcrHUwWm793sFlc
+	3jWHzeJz7xFGi7VH7rJbLL1+kcliwvS1LBate4+wW5zuZrU4vbvEQcRjzbw1jB6X+3qZPHbO
+	usvusXL5FzaPzSu0PDat6mTzuHNtD5vHvJOBHn1bVjF6fN4kF8AVxWWTkpqTWZZapG+XwJWx
+	dNdN1oLVqhUdC9cwNTDOkuti5OSQEDCRuPNgFQuELSZx4d56ti5GLg4hgaWMEq3HZ7JCOH1M
+	EqfezWcGqWITMJbYvHwJG4gtIrCASeLiulyQImaBF8wSj9buBisSFgiT6Fq5CqyIRUBV4vuU
+	GUCTODh4Bdwl7r93gtgmJ3Hy2GRWEJtTwEPiZe8FJpASIaCSu/P4JzDyLmBkWMUomlqaXFCc
+	lJ5rpFecmFtcmpeul5yfu4kREv5fdzAuPWZ1iFGAg1GJh1fh9J9gIdbEsuLK3EOMEhzMSiK8
+	ZQf+BgvxpiRWVqUW5ccXleakFh9iZOLglGpgzPx0rm2qqaxMQ9xDi+Y3T79UnHdewPP+pZje
+	QZ6nEXMZHTTXzJqnkLZ+oxWv5dqlp/cotc15fe/Go4joMMafsyfWOM2RlV4s8enq39ILm/ga
+	eq2S/O3N3Fi1JK3kz0u1zZpfmiT/nOeC4bZfK1dGJJXO4frQx5P7XnnGmsi2Q9tfeTTE1ft/
+	UWIpzkg01GIuKk4EAFsgeKpdAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2014 09:02 PM, Alex Williamson wrote:
-> On Mon, 2014-08-25 at 15:27 +0200, Eric Auger wrote:
->> New functions are added to be called from ARM KVM-VFIO device.
->>
->> - vfio_device_get_external_user enables to get a vfio device from
->>   its fd
->> - vfio_device_put_external_user puts the vfio device
->> - vfio_external_get_type enables to retrieve the type of the device
->>   (PCI or platform)
->> - vfio_external_get_base_device enables to get the
->>   struct device*, useful to access the platform_device
->>
->> Signed-off-by: Eric Auger <eric.auger@linaro.org>
->> ---
->>  drivers/vfio/vfio.c  | 35 +++++++++++++++++++++++++++++++++++
->>  include/linux/vfio.h |  4 ++++
->>  2 files changed, 39 insertions(+)
->>
->> diff --git a/drivers/vfio/vfio.c b/drivers/vfio/vfio.c
->> index 8e84471..c93b9e4 100644
->> --- a/drivers/vfio/vfio.c
->> +++ b/drivers/vfio/vfio.c
->> @@ -1401,6 +1401,41 @@ void vfio_group_put_external_user(struct vfio_group *group)
->>  }
->>  EXPORT_SYMBOL_GPL(vfio_group_put_external_user);
->>  
->> +struct vfio_device *vfio_device_get_external_user(struct file *filep)
->> +{
->> +	struct vfio_device *vdev = filep->private_data;
->> +
->> +	if (filep->f_op != &vfio_device_fops)
->> +		return ERR_PTR(-EINVAL);
->> +
->> +	vfio_device_get(vdev);
->> +	return vdev;
->> +}
->> +EXPORT_SYMBOL_GPL(vfio_device_get_external_user);
->> +
->> +void vfio_device_put_external_user(struct vfio_device *vdev)
->> +{
->> +	vfio_device_put(vdev);
->> +}
->> +EXPORT_SYMBOL_GPL(vfio_device_put_external_user);
->> +
->> +int vfio_external_get_type(struct vfio_device *vdev)
->> +{
->> +	if (!strcmp(vdev->ops->name,  "vfio-platform"))
->> +		return VFIO_DEVICE_FLAGS_PLATFORM;
->> +	else if (!strcmp(vdev->ops->name,  "vfio-pci"))
->> +		return VFIO_DEVICE_FLAGS_PCI;
->> +	else
->> +		return -EINVAL;
->> +}
->> +EXPORT_SYMBOL_GPL(vfio_external_get_type);
-> 
-> Returning the bit of the flag we use in get_device_info looks rather
-> sloppy here.  Should we define a new enum for use with this?  Actually,
-> is this interface even necessary?  If we can get the struct device then
-> we can get the bus_type and keep vfio out of this.
+Add document describing device tree bindings for MAX14577 MFD
+drivers: MFD core, extcon, regulator and charger.
 
-thanks for the nit. I will try to get rid of it using it.
-> 
-> For both of these last two, I like to use the convention that where
-> there is a "get" there is a matching "put".  These aren't reference
-> counting anything, so let's not use get in the name.
+Both MAX14577 and MAX77836 chipsets are documented.
 
-I will rename.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: devicetree@vger.kernel.org
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+---
+ Documentation/devicetree/bindings/mfd/max14577.txt | 146 +++++++++++++++++++++
+ 1 file changed, 146 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/max14577.txt
 
-Thanks
-
-Eric
-> 
->> +
->> +struct device *vfio_external_get_base_device(struct vfio_device *vdev)
->> +{
->> +	return vdev->dev;
->> +}
->> +EXPORT_SYMBOL_GPL(vfio_external_get_base_device);
->> +
-> 
-> Looks almost too simple, but reviewing the object lifecycles, this all
-> looks safe.  Thanks,
-> 
-> Alex
-> 
->>  int vfio_external_user_iommu_id(struct vfio_group *group)
->>  {
->>  	return iommu_group_id(group->iommu_group);
->> diff --git a/include/linux/vfio.h b/include/linux/vfio.h
->> index ffe04ed..19e98eb 100644
->> --- a/include/linux/vfio.h
->> +++ b/include/linux/vfio.h
->> @@ -99,6 +99,10 @@ extern void vfio_group_put_external_user(struct vfio_group *group);
->>  extern int vfio_external_user_iommu_id(struct vfio_group *group);
->>  extern long vfio_external_check_extension(struct vfio_group *group,
->>  					  unsigned long arg);
->> +extern struct vfio_device *vfio_device_get_external_user(struct file *filep);
->> +extern void vfio_device_put_external_user(struct vfio_device *vdev);
->> +extern int vfio_external_get_type(struct vfio_device *vdev);
->> +extern struct device *vfio_external_get_base_device(struct vfio_device *vdev);
->>  
->>  struct pci_dev;
->>  #ifdef CONFIG_EEH
-> 
-> 
-> 
+diff --git a/Documentation/devicetree/bindings/mfd/max14577.txt b/Documentation/devicetree/bindings/mfd/max14577.txt
+new file mode 100644
+index 000000000000..236264c10b92
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/max14577.txt
+@@ -0,0 +1,146 @@
++Maxim MAX14577/77836 Multi-Function Device
++
++MAX14577 is a Multi-Function Device with Micro-USB Interface Circuit, Li+
++Battery Charger and SFOUT LDO output for powering USB devices. It is
++interfaced to host controller using I2C.
++
++MAX77836 additionally contains PMIC (with two LDO regulators) and Fuel Gauge.
++
++
++Required properties:
++- compatible : Must be "maxim,max14577" or "maxim,max77836".
++- reg : I2C slave address for the max14577 chip (0x25 for max14577/max77836)
++- interrupts : IRQ line for the chip.
++- interrupt-parent :  The parent interrupt controller.
++
++
++Required nodes:
++ - charger :
++	Node for configuring the charger driver.
++	Required properties:
++		- compatible : "maxim,max14577-charger"
++			or "maxim,max77836-charger"
++		- maxim,fast-charge-uamp : Current in uA for Fast Charge;
++			Valid values:
++			- for max14577: 90000 - 950000;
++			- for max77836: 45000 - 475000;
++		- maxim,eoc-uamp : Current in uA for End-Of-Charge mode;
++			Valid values:
++			- for max14577: 50000 - 200000;
++			- for max77836: 5000 - 100000;
++		- maxim,ovp-uvolt : OverVoltage Protection Threshold in uV;
++			In an overvoltage condition, INT asserts and charging
++			stops. Valid values:
++			- 6000000, 6500000, 7000000, 7500000;
++		- maxim,constant-uvolt : Battery Constant Voltage in uV;
++			Valid values:
++			- 4000000 - 4280000 (step by 20000);
++			- 4350000;
++
++
++Optional nodes:
++- max14577-muic/max77836-muic :
++	Node used only by extcon consumers.
++	Required properties:
++		- compatible : "maxim,max14577-muic" or "maxim,max77836-muic"
++
++- regulators :
++	Required properties:
++		- compatible : "maxim,max14577-regulator"
++			or "maxim,max77836-regulator"
++
++	May contain a sub-node per regulator from the list below. Each
++	sub-node should contain the constraints and initialization information
++	for that regulator. See regulator.txt for a description of standard
++	properties for these sub-nodes.
++
++	List of valid regulator names:
++	- for max14577: CHARGER, SAFEOUT.
++	- for max77836: CHARGER, SAFEOUT, LDO1, LDO2.
++
++	The SAFEOUT is a fixed voltage regulator so there is no need to specify
++	voltages for it.
++
++
++Example:
++
++#include <dt-bindings/interrupt-controller/irq.h>
++
++max14577@25 {
++	compatible = "maxim,max14577";
++	reg = <0x25>;
++	interrupt-parent = <&gpx1>;
++	interrupts = <5 IRQ_TYPE_NONE>;
++
++	muic: max14577-muic {
++		compatible = "maxim,max14577-muic";
++	};
++
++	regulators {
++		compatible = "maxim,max14577-regulator";
++
++		SAFEOUT {
++			regulator-name = "SAFEOUT";
++		};
++		CHARGER {
++			regulator-name = "CHARGER";
++			regulator-min-microamp = <90000>;
++			regulator-max-microamp = <950000>;
++			regulator-boot-on;
++		};
++	};
++
++	charger {
++		compatible = "maxim,max14577-charger";
++
++		maxim,constant-uvolt = <4350000>;
++		maxim,fast-charge-uamp = <450000>;
++		maxim,eoc-uamp = <50000>;
++		maxim,ovp-uvolt = <6500000>;
++	};
++};
++
++
++max77836@25 {
++	compatible = "maxim,max77836";
++	reg = <0x25>;
++	interrupt-parent = <&gpx1>;
++	interrupts = <5 IRQ_TYPE_NONE>;
++
++	muic: max77836-muic {
++		compatible = "maxim,max77836-muic";
++	};
++
++	regulators {
++		compatible = "maxim,max77836-regulator";
++
++		SAFEOUT {
++			regulator-name = "SAFEOUT";
++		};
++		CHARGER {
++			regulator-name = "CHARGER";
++			regulator-min-microamp = <90000>;
++			regulator-max-microamp = <950000>;
++			regulator-boot-on;
++		};
++		LDO1 {
++			regulator-name = "LDO1";
++			regulator-min-microvolt = <2700000>;
++			regulator-max-microvolt = <2700000>;
++		};
++		LDO2 {
++			regulator-name = "LDO2";
++			regulator-min-microvolt = <800000>;
++			regulator-max-microvolt = <3950000>;
++		};
++	};
++
++	charger {
++		compatible = "maxim,max77836-charger";
++
++		maxim,constant-uvolt = <4350000>;
++		maxim,fast-charge-uamp = <225000>;
++		maxim,eoc-uamp = <7500>;
++		maxim,ovp-uvolt = <6500000>;
++	};
++};
+-- 
+1.9.1
 
