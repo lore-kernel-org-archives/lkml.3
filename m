@@ -1,139 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756864AbaH0COZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 22:14:25 -0400
-Received: from mail-yk0-f173.google.com ([209.85.160.173]:64537 "EHLO
-	mail-yk0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756378AbaH0COW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 22:14:22 -0400
-MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:157d:1c6c:caf9:79ec:cfa9]
-In-Reply-To: <1409096705-24290-2-git-send-email-davidriley@chromium.org>
-References: <1409096705-24290-1-git-send-email-davidriley@chromium.org>
-	<1409096705-24290-2-git-send-email-davidriley@chromium.org>
-Date: Tue, 26 Aug 2014 19:14:21 -0700
-Message-ID: <CAOesGMhWvWhmp5GeznnveVupK+D5b2peF8bAC0jKFjxeR54cew@mail.gmail.com>
-Subject: Re: [PATCH v1 1/1] power: Add simple gpio-restart driver
-From: Olof Johansson <olof@lixom.net>
-To: David Riley <davidriley@chromium.org>
-Cc: Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Guenter Roeck <linux@roeck-us.net>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Anton Vorontsov <anton@enomsg.org>,
-        Marc Carino <marc.ceeeee@gmail.com>, Anders Berg <anders.berg@lsi.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Jamie Lentin <jm@lentin.co.uk>, Doug Anderson <dianders@chromium.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	id S1756788AbaH0CTa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 22:19:30 -0400
+Received: from mail-bl2lp0211.outbound.protection.outlook.com ([207.46.163.211]:40448
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755194AbaH0CT3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 22:19:29 -0400
+From: Jingchang Lu <jingchang.lu@freescale.com>
+To: Scott Wood <scottwood@freescale.com>
+CC: "mturquette@linaro.org" <mturquette@linaro.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [RESEND] clk: ppc-corenet: Add Freescale ARM-based platforms
+ CLK_OF_DECLARE support
+Thread-Topic: [RESEND] clk: ppc-corenet: Add Freescale ARM-based platforms
+ CLK_OF_DECLARE support
+Thread-Index: AQHPvfNVs2TWqmkiQk6JTABVnWcu25vjhIaAgAAsoIA=
+Date: Wed, 27 Aug 2014 02:19:10 +0000
+Message-ID: <164af7b3be3747a0be3fe3a6cf83d3b1@BL2PR03MB467.namprd03.prod.outlook.com>
+References: <1408700096-25415-1-git-send-email-jingchang.lu@freescale.com>
+ <1409093463.6510.92.camel@snotra.buserror.net>
+In-Reply-To: <1409093463.6510.92.camel@snotra.buserror.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [123.151.195.49]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+x-forefront-prvs: 0316567485
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(377454003)(51704005)(24454002)(13464003)(377424004)(189002)(199003)(54356999)(81542001)(105586002)(2656002)(20776003)(106356001)(50986999)(106116001)(74316001)(99286002)(95666004)(108616004)(64706001)(76176999)(110136001)(21056001)(77982001)(76576001)(101416001)(81342001)(107046002)(85306004)(79102001)(87936001)(33646002)(99396002)(80022001)(90102001)(46102001)(86362001)(19580405001)(92566001)(19580395003)(31966008)(74662001)(85852003)(76482001)(66066001)(83322001)(83072002)(74502001)(4396001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR0301MB0728;H:BL2PR03MB467.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7R2JoRn006585
 
-Hi,
-
-
-
-On Tue, Aug 26, 2014 at 4:45 PM, David Riley <davidriley@chromium.org> wrote:
-> This driver registers a restart handler to set a GPIO line high/low
-> to reset a board based on devicetree bindings.
+>-----Original Message-----
+>From: Wood Scott-B07421
+>Sent: Wednesday, August 27, 2014 6:51 AM
+>To: Lu Jingchang-B35083
+>Cc: mturquette@linaro.org; linuxppc-dev@lists.ozlabs.org; linux-
+>kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org
+>Subject: Re: [RESEND] clk: ppc-corenet: Add Freescale ARM-based platforms
+>CLK_OF_DECLARE support
 >
-> Signed-off-by: David Riley <davidriley@chromium.org>
-> ---
->  .../devicetree/bindings/gpio/gpio-restart.txt      |  48 +++++++
->  drivers/power/reset/Kconfig                        |   8 ++
->  drivers/power/reset/Makefile                       |   1 +
->  drivers/power/reset/gpio-restart.c                 | 142 +++++++++++++++++++++
->  4 files changed, 199 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/gpio/gpio-restart.txt
->  create mode 100644 drivers/power/reset/gpio-restart.c
+>On Fri, 2014-08-22 at 17:34 +0800, Jingchang Lu wrote:
+>> Signed-off-by: Jingchang Lu <jingchang.lu@freescale.com>
+>> ---
+>>  drivers/clk/Kconfig           | 7 ++++---
+>>  drivers/clk/clk-ppc-corenet.c | 5 +++++
+>>  2 files changed, 9 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+>> index cfd3af7..8784704 100644
+>> --- a/drivers/clk/Kconfig
+>> +++ b/drivers/clk/Kconfig
+>> @@ -82,11 +82,12 @@ config COMMON_CLK_AXI_CLKGEN
+>>  	  FPGAs. It is commonly used in Analog Devices' reference designs.
+>>
+>>  config CLK_PPC_CORENET
+>> -	bool "Clock driver for PowerPC corenet platforms"
+>> -	depends on PPC_E500MC && OF
+>> +	bool "Clock driver for PowerPC corenet and compatible ARM-based
+>platforms"
+>> +	depends on (PPC_E500MC || ARM) && OF
 >
-> diff --git a/Documentation/devicetree/bindings/gpio/gpio-restart.txt b/Documentation/devicetree/bindings/gpio/gpio-restart.txt
-> new file mode 100644
-> index 0000000..7cd58788
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/gpio/gpio-restart.txt
-> @@ -0,0 +1,48 @@
-> +Driver a GPIO line that can be used to restart the system as a
-> +restart handler.
-> +
-> +The driver supports both level triggered and edge triggered power off.
-> +At driver load time, the driver will request the given gpio line and
-> +install a restart handler. If the optional properties 'input' is
-> +not found, the GPIO line will be driven in the inactive state.
-> +Otherwise its configured as an input.
-> +
-> +When do_kernel_restart is called the various restart handlers will be tried
-> +in order.
+>Should the symbol and driver be renamed to something like CLK_FSL_QORIQ?
+>
+This name is better for sharing on ARM and PowerPC, I will rename them. Thanks.
 
-The above sentence documents the kernel behavior, not the hardware
-description/binding.
-
-> +The gpio is configured as an output, and drive active, so
-> +triggering a level triggered power off condition. This will also cause an
-> +inactive->active edge condition, so triggering positive edge triggered
-> +power off.
-
-> + After a delay of 100ms, the GPIO is set to inactive, thus
-> +causing an active->inactive edge, triggering negative edge triggered power
-> +off. After another 100ms delay the GPIO is driver active again. If the
-> +power is still on and the CPU still running after a 3000ms delay, a
-> +WARN_ON(1) is emitted.
-
-It's possible that this behavior is inadequate for some hardware in
-the future -- if so they can amend the binding (i.e. this comment is
-an attempt at preemptive bikeshed avoidance :)
-
-> +
-> +Required properties:
-> +- compatible : should be "gpio-restart".
-> +- gpios : The GPIO to set high/low, see "gpios property" in
-> +  Documentation/devicetree/bindings/gpio/gpio.txt. If the pin should be
-> +  low to power down the board set it to "Active Low", otherwise set
-> +  gpio to "Active High".
-> +
-> +Optional properties:
-> +- input : Initially configure the GPIO line as an input. Only reconfigure
-> +  it to an output when the machine_restart function is called. If this optional
-> +  property is not specified, the GPIO is initialized as an output in its
-> +  inactive state.
-
-Isn't this the same as configuring the pin as tristate? I think that
-should probably be controlled by pinmux setup instead?
-
-> +- priority : A priority ranging from 0 to 255 (default 128) according to
-> +  the following guidelines:
-> +       0:      Restart handler of last resort, with limited restart
-> +               capabilities
-> +       128:    Default restart handler; use if no other restart handler is
-> +               expected to be available, and/or if restart functionality is
-> +               sufficient to restart the entire system
-> +       255:    Highest priority restart handler, will preempt all other
-> +               restart handlers
-
-This is sort of leaking linux implementation, but it's also a useful
-feature to have in the description. It seems sane enough to me to use.
-
-> +
-> +Examples:
-> +
-> +gpio-restart {
-> +       compatible = "gpio-restart";
-> +       gpios = <&gpio 4 0>;
-> +       priority = /bits/ 8 <200>;
-
-I think it makes sense to just have this as a regular cell instead of
-doing an 8-bit value -- it's how we normally handle these elsewhere.
+>> diff --git a/drivers/clk/clk-ppc-corenet.c b/drivers/clk/clk-ppc-
+>corenet.c
+>> index 8e58edf..7692cac 100644
+>> --- a/drivers/clk/clk-ppc-corenet.c
+>> +++ b/drivers/clk/clk-ppc-corenet.c
+>> @@ -305,3 +305,8 @@ static int __init ppc_corenet_clk_init(void)
+>>  	return platform_driver_register(&ppc_corenet_clk_driver);
+>>  }
+>>  subsys_initcall(ppc_corenet_clk_init);
+>> +
+>> +CLK_OF_DECLARE(ppc_core_pll_v1, "fsl,qoriq-core-pll-1.0",
+>core_pll_init);
+>> +CLK_OF_DECLARE(ppc_core_pll_v2, "fsl,qoriq-core-pll-2.0",
+>core_pll_init);
+>> +CLK_OF_DECLARE(ppc_core_mux_v1, "fsl,qoriq-core-mux-1.0",
+>core_mux_init);
+>> +CLK_OF_DECLARE(ppc_core_mux_v2, "fsl,qoriq-core-mux-2.0",
+>core_mux_init);
+>
+>What does this do that the existing platform driver and match table
+>don't?  Why is it needed for ARM when PPC didn't need it?
+>
+>-Scott
+>
+Common clk init on ARM platform is initialized earlier via of_clk_init() instead of
+driver probe method, the of_clk_init will walk a __clk_of_table to init each clk provider
+in the table, the CLK_OF_DECLARE() macro puts a supported clk in the __clk_of_table for
+it initializing on starup, and the clk system has added some common clk such as "fixed-clk"
+to this table already.
+So here I add our specific clk init declaration to consist this framework, and the driver
+probe function will not be needed on ARM.
 
 
--Olof
+
+Best Regards,
+Jingchang
+
+
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
