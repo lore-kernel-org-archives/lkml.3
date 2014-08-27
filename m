@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932303AbaH0BLU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 21:11:20 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:23224 "EHLO
+	id S932359AbaH0BLr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 21:11:47 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:23313 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932222AbaH0BLQ (ORCPT
+	with ESMTP id S932310AbaH0BLo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 21:11:16 -0400
-X-AuditID: cbfee68e-f79536d000000fd1-b6-53fd3032638f
+	Tue, 26 Aug 2014 21:11:44 -0400
+X-AuditID: cbfee691-f79546d0000011a1-ad-53fd304594c5
 From: Jingoo Han <jg1.han@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: "'Bryan Wu'" <cooloney@gmail.com>, "'Lee Jones'" <lee.jones@linaro.org>,
         "'Jingoo Han'" <jg1.han@samsung.com>
 References: <004301cfc193$69c1de20$3d459a60$%han@samsung.com>
 In-reply-to: <004301cfc193$69c1de20$3d459a60$%han@samsung.com>
-Subject: [PATCH V2 06/18] backlight: cr_bllcd: add blank line after declarations
-Date: Wed, 27 Aug 2014 10:11:14 +0900
-Message-id: <004a01cfc193$cc247b90$646d72b0$%han@samsung.com>
+Subject: [PATCH V2 07/18] backlight: ili922x: remove 'else' after a return
+Date: Wed, 27 Aug 2014 10:11:33 +0900
+Message-id: <004b01cfc193$d7430280$85c90780$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac/Bk2mhX0elbPeNSwiBLjt5Esz7eAAAFh/g
+Thread-index: Ac/Bk2mhX0elbPeNSwiBLjt5Esz7eAAAGN3w
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAIsWRmVeSWpSXmKPExsVy+t8zY10jg7/BBgc+WFoc3TmRyeLywkus
-	Fve/HmW0uLxrDpsDi8fOWXfZPe5c28Pm0bdlFaPH501yASxRXDYpqTmZZalF+nYJXBmf53az
-	FLxiq9h+lb2B8TNrFyMnh4SAicSZ1qNQtpjEhXvr2UBsIYFljBJLt5bB1Gw99paxi5ELKD6d
-	UWL65vvMEM5vRon1S2+CdbMJqEl8+XKYHcQWEVCQ2Nz7DCzOLJAr8XvmSkaIqbYSlxeuZQKx
-	OQXsJGZ/mA5WLywQIHH871+wehYBVYk/E1eB2bxA9Z/uH2OCsAUlfky+xwIxU0ti/c7jTBC2
-	vMTmNW+BDuIAulRd4tFfXRBTRMBI4sZxbogKEYl9L96B3S8hcIxdomf/DahVAhLfJh9igWiV
-	ldh0gBniX0mJgytusExglJiFZPEsJItnIVk8C8mKBYwsqxhFUwuSC4qT0ouM9IoTc4tL89L1
-	kvNzNzFCIrJvB+PNA9aHGAU4GJV4eD8s+BMsxJpYVlyZe4jRFOiiicxSosn5wLjPK4k3NDYz
-	sjA1MTU2Mrc0UxLnTZD6GSwkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBMalzo3T+tp0e+6Yb
-	z2HIFrxnUHhR/YpB+gGLp0EfpdTsH69k2qZUzDrp8+eNmc7/9/pEqeq9KdQWc905Ufnn8rdV
-	ftvvzmyvTWuWiFtelnK7wnDbU7NX+jlrXptxdBlflRYQd/a5su2MjRfjg6uHVOME6o5+FS5m
-	TylsLCh4tGRSguXj732PlFiKMxINtZiLihMB3uinTMMCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNIsWRmVeSWpSXmKPExsVy+t9jQV0jg7/BBpPmmFkc3TmRyeLywkus
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrIIsWRmVeSWpSXmKPExsVy+t8zfV1Xg7/BBrNa5S2O7pzIZHF54SVW
+	i/tfjzJaXN41h82BxWPnrLvsHneu7WHz6NuyitHj8ya5AJYoLpuU1JzMstQifbsErozDV64x
+	FyzhrPjyML2B8Rh7FyMnh4SAicTxNUdZIWwxiQv31rN1MXJxCAksY5T4s+sOXNGr/l2sEInp
+	jBJTVp5ghnB+M0osmXwTrIpNQE3iy5fDYLaIgILE5t5nYGOZBXIlfs9cyQhiCwnYSlxeuJYJ
+	xOYUsJOY/WE6WL2wgJfE98OLWEBsFgFViRUb5jCD2LxA9YemL2SCsAUlfky+xwIxU0ti/c7j
+	TBC2vMTmNW+B6jmALlWXePRXF+IEI4lJN3+wQ5SISOx78Y4R4plT7BJt++MgVglIfJt8iAWi
+	VVZi0wFmiBJJiYMrbrBMYJSYhWTxLCSLZyFZPAvJhgWMLKsYRVMLkguKk9KLTPWKE3OLS/PS
+	9ZLzczcxQmJy4g7G+wesDzEKcDAq8fB+WPAnWIg1say4MvcQoynQRROZpUST84GRn1cSb2hs
+	ZmRhamJqbGRuaaYkzqsj/TNYSCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA6PlbBOf41Kzmswm
+	JqTylT5sYF7t/PnRDkFb9Z5OwTBJKcnTih2GYfuvezHNDGHpfj3Dr/vbNfPZdx8UXOMsfPez
+	Z37d1kWx21/Ku51pCg16sLXgoYp3Sbrdkk0/Ojkz5sudjxQPz73zYFZa6VXfUznbbyWY+jyT
+	W75lSXZtSQHH/OibBto5bUosxRmJhlrMRcWJADLhe9TEAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDIsWRmVeSWpSXmKPExsVy+t9jQV1Xg7/BBhvXSFsc3TmRyeLywkus
 	Fve/HmW0uLxrDpsDi8fOWXfZPe5c28Pm0bdlFaPH501yASxRDYw2GamJKalFCql5yfkpmXnp
 	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUA7lRTKEnNKgUIBicXFSvp2mCaEhrjp
-	WsA0Ruj6hgTB9RgZoIGEdYwZn+d2sxS8YqvYfpW9gfEzaxcjJ4eEgInE1mNvGSFsMYkL99az
-	dTFycQgJTGeUmL75PjOE85tRYv3Sm2AdbAJqEl++HGYHsUUEFCQ29z4DizML5Er8nrkSbJKQ
-	gK3E5YVrmUBsTgE7idkfpoPVCwsESBz/+xesnkVAVeLPxFVgNi9Q/af7x5ggbEGJH5PvsUDM
-	1JJYv/M4E4QtL7F5zVuggziALlWXePRXF8QUETCSuHGcG6JCRGLfi3eMExiFZiEZNAvJoFlI
-	Bs1C0rKAkWUVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnDEP5PewbiqweIQowAHoxIP74cF
-	f4KFWBPLiitzDzFKcDArifAmK/wNFuJNSaysSi3Kjy8qzUktPsRoCvTnRGYp0eR8YDLKK4k3
-	NDYxM7I0MrMwMjE3VxLnPdhqHSgkkJ5YkpqdmlqQWgTTx8TBKdXAuHX7vYT+vka5rc/T9tab
-	fnTZdusOm7CT/XfmvS8VoyfOX+ircDN6q1aUefKVdQpdKs1zVfIDj19pPr73p/eW0IrwmXZK
-	MgInXrOpeQX6FC2Vyj1Qydd6uV1vZrJJNFf01lZuluKbvbGnrFedq1y9d47QyRvub98c13u3
-	IDjBzDh8e+wi3ZeSSizFGYmGWsxFxYkAXtEpjw4DAAA=
+	WsA0Ruj6hgTB9RgZoIGEdYwZh69cYy5Ywlnx5WF6A+Mx9i5GTg4JAROJV/27WCFsMYkL99az
+	dTFycQgJTGeUmLLyBDOE85tRYsnkm2AdbAJqEl++HAazRQQUJDb3PgPrZhbIlfg9cyUjiC0k
+	YCtxeeFaJhCbU8BOYvaH6WD1wgJeEt8PL2IBsVkEVCVWbJjDDGLzAtUfmr6QCcIWlPgx+R4L
+	xEwtifU7jzNB2PISm9e8BarnALpUXeLRX12IE4wkJt38wQ5RIiKx78U7xgmMQrOQTJqFZNIs
+	JJNmIWlZwMiyilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM45p9J72Bc1WBxiFGAg1GJh/fD
+	gj/BQqyJZcWVuYcYJTiYlUR4kxX+BgvxpiRWVqUW5ccXleakFh9iNAV6dCKzlGhyPjAd5ZXE
+	GxqbmBlZGplZGJmYmyuJ8x5stQ4UEkhPLEnNTk0tSC2C6WPi4JRqYOypmC/wdl7pGU+hu882
+	ONde+qDqrW0ZLKLTq5Hhv7gzSuFJw+1JDunXrTyY6m/4C4iltnfX3n6Yo9VxcIvp+rB1W7bZ
+	PNwwQ+p6wfHKUg3lC99WbFM/wPDWLf2E7JL78z5Wr7sU+HH1ptn8vNtuL977Z85hy12r9A7U
+	a6xsOrw2s3fye8Oou0FKLMUZiYZazEXFiQA0kTfrDwMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -57,26 +57,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Fixed the following checkpatch warning.
 
-  WARNING: Missing a blank line after declarations
+  WARNING: else is not generally useful after a break or return
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 Acked-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/video/backlight/cr_bllcd.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/video/backlight/ili922x.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/video/backlight/cr_bllcd.c b/drivers/video/backlight/cr_bllcd.c
-index f3fed9ef745f..3e3880fc8c8e 100644
---- a/drivers/video/backlight/cr_bllcd.c
-+++ b/drivers/video/backlight/cr_bllcd.c
-@@ -235,6 +235,7 @@ static int cr_backlight_probe(struct platform_device *pdev)
- static int cr_backlight_remove(struct platform_device *pdev)
- {
- 	struct cr_panel *crp = platform_get_drvdata(pdev);
+diff --git a/drivers/video/backlight/ili922x.c b/drivers/video/backlight/ili922x.c
+index ea67fe199e34..e7f0890cc211 100644
+--- a/drivers/video/backlight/ili922x.c
++++ b/drivers/video/backlight/ili922x.c
+@@ -495,17 +495,18 @@ static int ili922x_probe(struct spi_device *spi)
+ 			"no LCD found: Chip ID 0x%x, ret %d\n",
+ 			reg, ret);
+ 		return -ENODEV;
+-	} else {
+-		dev_info(&spi->dev, "ILI%x found, SPI freq %d, mode %d\n",
+-			 reg, spi->max_speed_hz, spi->mode);
+ 	}
+ 
++	dev_info(&spi->dev, "ILI%x found, SPI freq %d, mode %d\n",
++		 reg, spi->max_speed_hz, spi->mode);
 +
- 	crp->cr_backlight_device->props.power = FB_BLANK_POWERDOWN;
- 	crp->cr_backlight_device->props.brightness = 0;
- 	crp->cr_backlight_device->props.max_brightness = 0;
+ 	ret = ili922x_read_status(spi, &reg);
+ 	if (ret) {
+ 		dev_err(&spi->dev, "reading RS failed...\n");
+ 		return ret;
+-	} else
+-		dev_dbg(&spi->dev, "status: 0x%x\n", reg);
++	}
++
++	dev_dbg(&spi->dev, "status: 0x%x\n", reg);
+ 
+ 	ili922x_display_init(spi);
+ 
 -- 
 2.0.0
 
