@@ -1,159 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934987AbaH0PPW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 11:15:22 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:53716 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934344AbaH0PPS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 11:15:18 -0400
-Date: Wed, 27 Aug 2014 17:15:10 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: kpark3469@gmail.com
-Cc: akpm@linux-foundation.org, keun-o.park@windriver.com, hpa@zytor.com,
-        rafael.j.wysocki@intel.com, peterz@infradead.org,
-        rusty@rustcorp.com.au, kirill.shutemov@linux.intel.com,
-        oleg@redhat.com, prarit@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] earlyprintk: re-enable earlyprintk calling early_param
-Message-ID: <20140827151504.GA22824@ulmo>
-References: <1408011216-8621-1-git-send-email-kpark3469@gmail.com>
+	id S935062AbaH0PRt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 11:17:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13313 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933852AbaH0PRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 11:17:45 -0400
+Date: Wed, 27 Aug 2014 11:17:01 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, linux-audit@redhat.com,
+        Linux API <linux-api@vger.kernel.org>, netdev <netdev@vger.kernel.org>
+Subject: Re: [PATCH V4 3/8] namespaces: expose ns instance serial numbers in
+ proc
+Message-ID: <20140827151701.GO20529@madcap2.tricolour.ca>
+References: <cd6cd0622ce677b639afae18a69ff79c72490bab.1408581429.git.rgb@redhat.com>
+ <CALCETrUnzG1V8w+H9ctAJP+Hvo8LQax=dhLG4bBpBKmVi+C1cQ@mail.gmail.com>
+ <20140822015803.GG20529@madcap2.tricolour.ca>
+ <CALCETrUkFD0iNi1SV_6ypN5Kf4GYybT5tzjRjRQuLzT9iBnQAg@mail.gmail.com>
+ <53FB3A86.2060203@6wind.com>
+ <CALCETrW1Lv0qeccMjNHSEzgtiaNN3NgJVR1dFjjR_dw5KVVnqA@mail.gmail.com>
+ <53FB59A3.5030804@6wind.com>
+ <CALCETrWHrWhm89B5s=pLt_9eTx3ZF8ifA6y6CwknWaWU7dp=sQ@mail.gmail.com>
+ <53FB673F.8070200@6wind.com>
+ <CALCETrVVQ2Ugesq8zWK_gmj46Zr6mFL2Riyf=Lrdqy8ze3YfPA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="h31gzZEtNLTqOjlF"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1408011216-8621-1-git-send-email-kpark3469@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CALCETrVVQ2Ugesq8zWK_gmj46Zr6mFL2Riyf=Lrdqy8ze3YfPA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 14/08/25, Andy Lutomirski wrote:
+> On Mon, Aug 25, 2014 at 9:41 AM, Nicolas Dichtel
+> <nicolas.dichtel@6wind.com> wrote:
+> > Le 25/08/2014 18:13, Andy Lutomirski a écrit :
+> >
+> >> On Mon, Aug 25, 2014 at 8:43 AM, Nicolas Dichtel
+> >> <nicolas.dichtel@6wind.com> wrote:
+> >>>
+> >>> Le 25/08/2014 16:04, Andy Lutomirski a écrit :
+> >>>
+> >>>> On Aug 25, 2014 6:30 AM, "Nicolas Dichtel" <nicolas.dichtel@6wind.com>
+> >>>> wrote:
+> >>>>>>
+> >>>>>>
+> >>>>>> CRIU wants to save the complete state of a namespace and then restore
+> >>>>>> it.  For that to work, any information exposed to things in the
+> >>>>>> namespace *cannot* be globally unique or unique per boot, since CRIU
+> >>>>>> needs to arrange for that information to match whatever it was when
+> >>>>>> CRIU saved it.
+> >>>>>
+> >>>>>
+> >>>>>
+> >>>>> How are ifindex of network devices managed? These ifindexes are unique
+> >>>>> per boot,
+> >>>>> thus can change depending on the order in which netdev are created.
+> >>>>> These ifindexes are unique per boot and exposed to userspace ...
+> >>>>>
+> >>>>
+> >>>> This does not appear to be true.
+> >>>>
+> >>>> $ sudo unshare --net
+> >>>> # ip link add veth0 type veth peer name veth1
+> >>>> # ip link
+> >>>> 1: lo: <LOOPBACK> mtu 65536 qdisc noop state DOWN mode DEFAULT group
+> >>>> default
+> >>>>       link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+> >>>> 2: veth1: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode
+> >>>> DEFAULT group default qlen 1000
+> >>>>       link/ether 06:0d:59:c7:a6:a8 brd ff:ff:ff:ff:ff:ff
+> >>>> 3: veth0: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode
+> >>>> DEFAULT group default qlen 1000
+> >>>>       link/ether b2:5c:8b:f2:12:28 brd ff:ff:ff:ff:ff:ff
+> >>>> # logout
+> >>>> $ ip link
+> >>>> 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN
+> >>>>       link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+> >>>> 3: em1: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc pfifo_fast
+> >>>> state DOWN qlen 1000
+> >>>>
+> >>> I've probably misunderstood what you're trying to say. ifindexes are
+> >>> unique
+> >>> per
+> >>> boot and per netns.
+> >>
+> >>
+> >> I think we both misunderstood each other.  The ifindexes are unique
+> >> *per netns*, which means that, if you're unprivileged in a netns,
+> >> global information doesn't leak to you.  I think this is good.
+> >
+> > Ok, I agree. I think audit daemons are always running under privileged
+> > users.
+> >
+> >
+> >>
+> >>>>
+> >>>> Let me try again, with emphasis in the right place.
+> >>>>
+> >>>> I think that *code running in a namespace* has no business even
+> >>>> knowing a unique identity of *that namespace* from the perspective of
+> >>>> the host.
+> >>>>
+> >>>> In your example, if there's a veth device between netns A and netns B,
+> >>>> then code *in netns A* has no business knowing the identity of its
+> >>>> veth peer if its peer (B) is a sibling or ancestor.  It also IMO has
+> >>>> no business knowing the identity of its own netns (A) other than as
+> >>>> "my netns".
+> >>>
+> >>>
+> >>> I do not agree (see the example below).
+> >>>
+> >>>
+> >>>>
+> >>>> If A and B are siblings, then their parent needs to know where that
+> >>>> veth device goes, but I think this is already the case to a sufficient
+> >>>> extent today.
+> >>>
+> >>>
+> >>> I'm not aware of a hierarchy between netns. A daemon should be able to
+> >>> got the full network configuration, even if it's started when this
+> >>> configuration
+> >>> is already applied, ie even if it doesn't know what happen before it
+> >>> starts.
+> >>>
+> >>
+> >> I don't know exactly which namespaces have an explicit hierarchy, but
+> >> there is certainly a hierarchy of *user* namespaces, and network
+> >> namespaces live in user namespaces, so they at least have somewhat of
+> >> a hierarchy.
+> >>
+> >>>
+> >>>>
+> >>>> I feel like this discussion is falling into a common trap of new API
+> >>>> discussions.  Can one of you who wants this API please articulate,
+> >>>> with a reasonably precise example, what it is that you want to do, why
+> >>>> you can't easily do it already, and how this API helps?  I currently
+> >>>> understand how the API creates problems, but I don't understand how it
+> >>>> solves any problems, and I will NAK it (and I suspect that Eric will,
+> >>>> too, which is pretty much fatal) unless that changes.
+> >>>
+> >>>
+> >>> What I'm trying to solve is to have full info in netlink messages sent by
+> >>> the
+> >>> kernel, thus beeing able to identify a peer netns (and this is close from
+> >>> what
+> >>> audit guys are trying to have). Theorically, messages sent by the kernel
+> >>> can
+> >>> be
+> >>> reused as is to have the same configuration. This is not the case with
+> >>> x-netns
+> >>> devices. Here is an example, with ip tunnels:
+> >>>
+> >>> $ ip netns add 1
+> >>> $ ip link add ipip1 type ipip remote 10.16.0.121 local 10.16.0.249 dev
+> >>> eth0
+> >>> $ ip -d link ls ipip1
+> >>> 8: ipip1@eth0: <POINTOPOINT,NOARP> mtu 1480 qdisc noop state DOWN mode
+> >>> DEFAULT group default
+> >>>      link/ipip 10.16.0.249 peer 10.16.0.121 promiscuity 0
+> >>>      ipip remote 10.16.0.121 local 10.16.0.249 dev eth0 ttl inherit
+> >>> pmtudisc
+> >>> $ ip link set ipip1 netns 1
+> >>> $ ip netns exec 1 ip -d link ls ipip1
+> >>> 8: ipip1@tunl0: <POINTOPOINT,NOARP,M-DOWN> mtu 1480 qdisc noop state DOWN
+> >>> mode DEFAULT group default
+> >>>      link/ipip 10.16.0.249 peer 10.16.0.121 promiscuity 0
+> >>>      ipip remote 10.16.0.121 local 10.16.0.249 dev tunl0 ttl inherit
+> >>> pmtudisc
+> >>>
+> >>> Now informations got with 'ip link' are wrong and incomplete:
+> >>>   - the link dev is now tunl0 instead of eth0, because we only got an
+> >>> ifindex
+> >>>     from the kernel without any netns informations.
+> >>>   - the encapsulation addresses are not part of this netns but the user
+> >>> doesn't
+> >>>     known that (still because netns info is missing). These IPv4
+> >>> addresses
+> >>> may
+> >>>     exist into this netns.
+> >>>   - it's not possible to create the same netdevice with these infos.
+> >>>
+> >>
+> >> Aha.  That's a genuine problem.
+> >>
+> >> Perhaps we need a concept of which netnses should be able to see each
+> >> other.
+> >
+> > Yes, I agree. This is not required for all netns, only a subset of netns
+> > should
+> >
+> > be able to see each other.
+> >
+> >>
+> >> I think I would be okay with a somewhat different outcome from your
+> >> example:
+> >>
+> >> $ ip netns exec 1 ip -d link ls ipip1
+> >> 8: ipip1@[unknown device in another namespace]:
+> >> <POINTOPOINT,NOARP,M-DOWN> mtu 1480 qdisc noop state DOWN
+> >>
+> >> I think this outcome is mandatory if netns 1 lives in a subsidiary
+> >> user namespace.
+> >
+> > Yes.
+> >
+> >
+> >>
+> >> Certainly, if you do the 'ip link' in the original namespace, I agree
+> >> that this should work.
+> >
+> > And yes :)
+> >
+> > I will update my previous proposal
+> > (http://thread.gmane.org/gmane.linux.network/315933/focus=321753)
+> > to allow to get an id for a peer netns only when the user namespace is the
+> > same.
+> 
+> I think it should work if the peer userns is the same or a descendent.
+> I also wonder whether the peer's ifindex should be suppressed if peer
+> userns is not the same or a descendent.
+> 
+> Now you just have to get Eric to be happy with the id allocation. :)
+> This may be nontrivial.
+> 
+> >> For most namespace types, this all works transparently, since
+> >> everything has an real identity all the way up the hierarchy.  Network
+> >> namespaces are different.
+> >>
+> >> I don't think that exposing serial numbers in /proc is a good
+> >> solution, both for the reasons already described and because I don't
+> >> think that iproute2 should need to muck around with /proc to function
+> >
+> > A netlink API is probably enough. But it will help only for the network
+> > problem, not for audit. I was hoping to find a common solution.
+> 
+> I still don't understand why audit needs anything beyond the audit
+> part of this patch set.  I have no problem with audit seeing that
+> migrated/restored namespaces are really brand-new namespaces, as long
+> as the code in those namespaces isn't exposed to it.
 
---h31gzZEtNLTqOjlF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ok, I'm starting to get this...  Perhaps /proc wasn't the best place to
+expose this.  Audit or an audit aggregator is the only one that needs to
+know any of this information.  This could be accomplished with
+CAP_AUDIT_CONTROL and a new netlink audit message type to fetch
+individual or all namespace IDs for a particular PID via auditctl, or by
+having a CAP_AUDIT_WRITE-capable application pull the trigger to simply
+dump that information to the log.
 
-On Thu, Aug 14, 2014 at 07:13:36PM +0900, kpark3469@gmail.com wrote:
-> From: Sahara <keun-o.park@windriver.com>
->=20
-> Although there are many obs_kernel_param and its names are
-> earlyprintk and also EARLY_PRINTK is also enabled, we could not
-> see the early_printk output properly until now. This patch
-> considers earlycon as well as earlyprintk.
->=20
-> Signed-off-by: Sahara <keun-o.park@windriver.com>
-> ---
->  init/main.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
->=20
-> diff --git a/init/main.c b/init/main.c
-> index bb1aed9..235d248 100644
-> --- a/init/main.c
-> +++ b/init/main.c
-> @@ -426,7 +426,8 @@ static int __init do_early_param(char *param, char *v=
-al, const char *unused)
->  	for (p =3D __setup_start; p < __setup_end; p++) {
->  		if ((p->early && parameq(param, p->str)) ||
->  		    (strcmp(param, "console") =3D=3D 0 &&
-> -		     strcmp(p->str, "earlycon") =3D=3D 0)
-> +		     ((strcmp(p->str, "earlycon") =3D=3D 0) ||
-> +		     (strcmp(p->str, "earlyprintk") =3D=3D 0)))
->  		) {
->  			if (p->setup_func(val) !=3D 0)
->  				pr_warn("Malformed early option '%s'\n", param);
+> >> correctly.  Eric, any clever ideas here?  Do we need fancier netlink
+> >> messages for this?
+> >>
+> >> --Andy
+> 
+> Andy Lutomirski
 
-It seems like this patch causes the following warning for me during
-boot:
+- RGB
 
-[    0.000000] Booting Linux on physical CPU 0x0
-[    0.000000] Initializing cgroup subsys cpu
-[    0.000000] Initializing cgroup subsys cpuacct
-[    0.000000] Linux version 3.17.0-rc2-next-20140827 (thierry.reding@ulmo)=
- (gcc version 4.9.0 (GCC) ) #18 SMP PREEMPT Wed Aug 27 17:08:12 CEST 2014
-[    0.000000] CPU: ARMv7 Processor [413fc0f3] revision 3 (ARMv7), cr=3D10c=
-5387d
-[    0.000000] CPU: PIPT / VIPT nonaliasing data cache, PIPT instruction ca=
-che
-[    0.000000] Machine model: NVIDIA Tegra124 Jetson TK1
-[    0.000000] bootconsole [earlycon0] enabled
-[    0.000000] debug: ignoring loglevel setting.
-[    0.000000] ------------[ cut here ]------------
-[    0.000000] WARNING: CPU: 0 PID: 0 at /home/thierry.reding/src/kernel/li=
-nux-work.git/kernel/printk/printk.c:2402 register_console+0x60/0x37c()
-[    0.000000] console 'earlycon0' already registered
-[    0.000000] Modules linked in:
-[    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted 3.17.0-rc2-next-2014=
-0827 #18
-[    0.000000] [<c0015fec>] (unwind_backtrace) from [<c0011aac>] (show_stac=
-k+0x10/0x14)
-[    0.000000] [<c0011aac>] (show_stack) from [<c062b700>] (dump_stack+0x98=
-/0xd8)
-[    0.000000] [<c062b700>] (dump_stack) from [<c0025ba0>] (warn_slowpath_c=
-ommon+0x70/0x8c)
-[    0.000000] [<c0025ba0>] (warn_slowpath_common) from [<c0025bec>] (warn_=
-slowpath_fmt+0x30/0x40)
-[    0.000000] [<c0025bec>] (warn_slowpath_fmt) from [<c00639b8>] (register=
-_console+0x60/0x37c)
-[    0.000000] [<c00639b8>] (register_console) from [<c0883870>] (setup_ear=
-ly_printk+0x20/0x28)
-[    0.000000] [<c0883870>] (setup_early_printk) from [<c087f43c>] (do_earl=
-y_param+0x6c/0xd0)
-[    0.000000] [<c087f43c>] (do_early_param) from [<c003cba0>] (parse_args+=
-0x238/0x3d0)
-[    0.000000] [<c003cba0>] (parse_args) from [<c087f814>] (parse_early_opt=
-ions+0x38/0x40)
-[    0.000000] [<c087f814>] (parse_early_options) from [<c087f84c>] (parse_=
-early_param+0x30/0x40)
-[    0.000000] [<c087f84c>] (parse_early_param) from [<c088206c>] (setup_ar=
-ch+0x4b4/0x974)
-[    0.000000] [<c088206c>] (setup_arch) from [<c087f8f8>] (start_kernel+0x=
-98/0x3a8)
-[    0.000000] [<c087f8f8>] (start_kernel) from [<80008074>] (0x80008074)
-[    0.000000] ---[ end trace cb88537fdc8fa200 ]---
-[    0.000000] cma: Reserved 128 MiB at a7800000
-[    0.000000] Memory policy: Data cache writealloc
-[    0.000000] On node 0 totalpages: 524032
-[    0.000000] free_area_init_node: node 0, pgdat c091cc00, node_mem_map e6=
-7b7000
-[    0.000000]   Normal zone: 1520 pages used for memmap
-[    0.000000]   Normal zone: 0 pages reserved
-[    0.000000]   Normal zone: 194560 pages, LIFO batch:31
-[    0.000000]   HighMem zone: 2574 pages used for memmap
-[    0.000000]   HighMem zone: 329472 pages, LIFO batch:31
-[    0.000000] PERCPU: Embedded 8 pages/cpu @e6767000 s8832 r8192 d15744 u3=
-2768
-[    0.000000] pcpu-alloc: s8832 r8192 d15744 u32768 alloc=3D8*4096
-[    0.000000] pcpu-alloc: [0] 0 [0] 1 [0] 2 [0] 3
-[    0.000000] Built 1 zonelists in Zone order, mobility grouping on.  Tota=
-l pages: 522512
-[    0.000000] Kernel command line: console=3DttyS0,115200n8 ignore_logleve=
-l rootwait ro earlyprintk ip=3D:::::eth0:dhcp root=3D/dev/nfs nfsroot=3D192=
-=2E168.69.100:/srv/nfs/tegra124 drm.debug=3D0xf cma=3D128M
-
-Reverting the patch eliminates the warning. earlyprintk does work fine
-for me without this patch.
-
-Thierry
-
---h31gzZEtNLTqOjlF
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT/fX4AAoJEN0jrNd/PrOhNgwP/A+ASlBprmyMtn/KgNxW8V1K
-g4pvZneFk7XwsW0ILWCxlnwdAFcqnhQSej9N+Nbk8qEG/jV7IrpFCzAsEfpi8DUf
-OXtdNOL0oZIXRNOMuprmxsuezZhVoHLF70yCZHQyt6WEEMTX6B7+n4gA88S2ZaNB
-vgOIieLsXNOawoXIQUfoUyOIa0ipwUX3GAiAhUdhZHf9dONmrI4XQSZHe3fAZuJE
-d0L40K70JGgRnxBqYguR50K0UqZ7yhOTfzFlRbUnFMbICZKz0x5f/UpC6XeSgJKi
-UDPNtdbLcHKrFKQqeACi93Sj1FJS1srzvinpoMsnofexkR1X+PT5HBzw9WfOY5nH
-vofXjJ/nLNchis3GP9uW4QUCK7LVNyp6+4eIIPpIUqKf614SU8cvTA7U847ynSBZ
-F/VsOnXfDinuz715ihEsuwfWhUHIxrxFTRHrRrVa4WTqtEOAJQjZta2UOSW+/2j0
-nlTgr1M8Rpqu/NOEnHdFtbp/edvMSulRujIr2buNJ86KhgwZszNV1xcEyH/RlSnY
-JlxGkXm7irfrcjkfr6/E1V5kUjlntXPy3BfIJ5dHjTOGUhVqYzOBz8U5mPuuxEs+
-ZMN17KOkHl2JYIGaTT/4TGTAEalVgxWsRYep8w1VQM2FRnr8qnEkndrqiUt2U8cQ
-rRpTzSFnwUNrtZlzvmeA
-=95fF
------END PGP SIGNATURE-----
-
---h31gzZEtNLTqOjlF--
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
