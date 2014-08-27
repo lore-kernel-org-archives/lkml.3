@@ -1,104 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965177AbaH0UiZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 16:38:25 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:55438 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965019AbaH0UiW convert rfc822-to-8bit (ORCPT
+	id S965153AbaH0Ulv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 16:41:51 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:59192 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964892AbaH0Ult (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 16:38:22 -0400
+	Wed, 27 Aug 2014 16:41:49 -0400
+Message-ID: <53FE4286.3050305@gmail.com>
+Date: Wed, 27 Aug 2014 22:41:42 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <53FE3FE2.7030709@infradead.org>
-References: <CAGhpvoqrFQn7z942jUr2T8D1tuzS_irTqwmUynnqG55SVe3CqA@mail.gmail.com>
-	<CAGhpvopiH4MWaRCDsZeOcfznW7qccQ3bM-bnMLm7fhJGdbnfkA@mail.gmail.com>
-	<53FE3FE2.7030709@infradead.org>
-Date: Wed, 27 Aug 2014 23:38:21 +0300
-Message-ID: <CAGhpvoq4t+bqtWTqfCH-scSZ6iHxOOAE9kEfHt0H=Dyc8=tvyQ@mail.gmail.com>
-Subject: Re: [PATCH v3] i2c documentation: rename variable "register" to "reg"
-From: =?UTF-8?B?Sm9zw6kgTWFudWVsIEFsYXJjw7NuIFJvbGTDoW4=?= 
-	<jose.alarcon.roldan@gmail.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: wsa@the-dreams.de, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Mark Brown <broonie@kernel.org>
+CC: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] regulator: max77802: set opmode to normal if off
+ is read from hw
+References: <1409053061-22568-1-git-send-email-javier.martinez@collabora.co.uk> <53FE2446.3040402@gmail.com> <20140827183733.GN17528@sirena.org.uk> <53FE25EB.7060702@gmail.com> <20140827184705.GO17528@sirena.org.uk> <53FE2901.50508@gmail.com> <20140827191526.GS17528@sirena.org.uk> <53FE2F9E.80501@gmail.com> <20140827194411.GU17528@sirena.org.uk> <53FE387F.3030302@gmail.com> <20140827202554.GW17528@sirena.org.uk>
+In-Reply-To: <20140827202554.GW17528@sirena.org.uk>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gmail. I just had a look at Documentation/email-clients.txt I thought
-that selected unformatted text mode would be enough, but obviously it
-wasn't. My bad :-(
+On 27.08.2014 22:25, Mark Brown wrote:
+> On Wed, Aug 27, 2014 at 09:58:55PM +0200, Tomasz Figa wrote:
+>> On 27.08.2014 21:44, Mark Brown wrote:
+> 
+>>> The point is that if anything was setting the mode to something other
+>>> than normal it was almost certainly a previously running copy of Linux
+>>> and one would expect that if the mode does need to be changed the new
+>>> copy will be doing that anyway.  It's rare enough to need to actively
+>>> manage modes in the first place.
+> 
+>> From what I know based on my experience with Samsung boards we used, the
+>> opmodes of regulators are preconfigured by board bootloader to certain
+>> values based on power design of the board (i.e. there is no need to keep
+>> a regulator in full power mode, if on given board only a little fraction
+>> of it is needed).
+> 
+> Well, presumably the bootloader is going to run again even for a warm
+> reboot?
 
-Will be more careful next time I send a patch. I will use something else.
+This is strange, but apparently it's not the case for the hardware which
+this patch is supposed to fix or at least this is how I understood it.
 
---
-Jose
+> 
+>> Now Linux should not change this mode (excluding cases when the values
+>> in the bootloader are wrong - they happen unfortunately), so I'm not
+>> getting why you say that it is Linux which changes the mode to something
+>> other than normal. Linux should only toggle between the value resulting
+>> from power design and off.
+> 
+> It's not in general true that Linux should never change the mode (the
+> main case for toggling modes is usually going between an idle/suspend
+> state and active state)
 
+I believe this is yet another reason why we should have a way to specify
+opmodes in DT, now not only active but also suspend/idle opmodes.
 
+However on many PMICs this is a bit more complicated. There are opmodes
+such as
 
-2014-08-27 23:30 GMT+03:00 Randy Dunlap <rdunlap@infradead.org>:
-> On 08/27/14 12:57, José Manuel Alarcón Roldán wrote:
->> 2014-08-27 22:54 GMT+03:00 José Manuel Alarcón Roldán
->> <jose.alarcon.roldan@gmail.com>:
->>> The example code provided with the i2c device interface documentation
->>> won't compile since it uses the reserved word "register" to name a
->>> variable.
->>>
->>> The compiler fails with this error message:
->>>
->>>  error: expected identifier or '(' before '=' token
->>>    __u8 register = 0x20; /* Device register to access */
->>>                  ^
->>>
->>> Rename the variable "register" to simply "reg"
->>> in the example code.
->>>
->>> Signed-off-by: Jose Alarcon Roldan <jose.alarcon.roldan@gmail.com>
->>> ---
->>>  Documentation/i2c/dev-interface | 10 +++++-----
->>>  1 file changed, 5 insertions(+), 5 deletions(-)
->>>
->>> diff --git a/Documentation/i2c/dev-interface b/Documentation/i2c/dev-interface
->>> index 3e742ba..2ac78ae 100644
->>> --- a/Documentation/i2c/dev-interface
->>> +++ b/Documentation/i2c/dev-interface
->>> @@ -57,12 +57,12 @@ Well, you are all set up now. You can now use
->>> SMBus commands or plain
->>>  I2C to communicate with your device. SMBus commands are preferred if
->>>  the device supports them. Both are illustrated below.
->>>
->>> -  __u8 register = 0x10; /* Device register to access */
->>> +  __u8 reg = 0x10; /* Device register to access */
->>>    __s32 res;
->>>    char buf[10];
->>>
->>>    /* Using SMBus commands */
->>> -  res = i2c_smbus_read_word_data(file, register);
->>> +  res = i2c_smbus_read_word_data(file, reg);
->>>    if (res < 0) {
->>>      /* ERROR HANDLING: i2c transaction failed */
->>>    } else {
->>> @@ -70,11 +70,11 @@ the device supports them. Both are illustrated below.
->>>    }
->>>
->>>    /* Using I2C Write, equivalent of
->>> -     i2c_smbus_write_word_data(file, register, 0x6543) */
->>> -  buf[0] = register;
->>> +     i2c_smbus_write_word_data(file, reg, 0x6543) */
->>> +  buf[0] = reg;
->>>    buf[1] = 0x43;
->>>    buf[2] = 0x65;
->>> -  if (write(file, buf, 3) ! =3) {
->>> +  if (write(file, buf, 3) != 3) {
->>>      /* ERROR HANDLING: i2c transaction failed */
->>>    }
->>>
->>> --
->>> 1.9.1
->>
->> Again something went wrong. Sorry about that :-(
->
-> What email client are you using?
->
-> --
-> ~Randy
+1) Regulator powered off.
+2) Regulator powered off if certain pin is active, regulator powered
+   on otherwise.
+3) Regulator powered on.
+
+some of them might also have more interesting combinations, e.g.
+
+4) Regulator powered off if certain pin is active, regulator powered on
+   in low power mode otherwise.
+5) Regulator powered on in lower power mode if certain pin is active,
+   regulator powered on in full power mode otherwise.
+
+They all go to the same opmode field, as "off", "low power", "normal"
+mentioned earlier in this thread.
+
+> and for practical purposes bootloader and
+> hardware defaults tend to be the same.
+
+Not on the boards I worked with. At least when it's just about the
+difference between normal and low power modes. I believe the hardware
+will always default to normal just to be safe, so to optimize power on
+the board, the bootloader will switch those which don't need full power
+to low power mode.
+
+I believe we shouldn't even rely on the bootloader here, as we all know
+that often all you can expect from them is to load and jump to your
+kernel and even some of them can't do this properly...
+
+> You're talking about the case
+> where the bootloader does set something but avoids doing so on warm
+> reboots only here.
+
+>From Javier's description I understood this is the case for the board
+for which he develops.
+
+> 
+> Besides, even if we did have a way of specifying modes in DT (with all
+> the problems that brings) we still have to pick a default if that's not
+> used).
+
+Sure we do and we can define the binding to default to something (e.g.
+normal mode) if respective property is not present. Btw. the issue with
+opmode also affects other PMIC chips such as Samsung S5M ones.
+
+Best regards,
+Tomasz
