@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756809AbaH0RHU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 13:07:20 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:43696 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934904AbaH0RHS (ORCPT
+	id S935304AbaH0RIc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 13:08:32 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:47105 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934929AbaH0RIa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 13:07:18 -0400
+	Wed, 27 Aug 2014 13:08:30 -0400
+Date: Wed, 27 Aug 2014 10:08:24 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <pranith@gatech.edu>
+Cc: Amit Shah <amit.shah@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Howells <dhowells@redhat.com>,
+        Eric Dumazet <edumazet@google.com>, dvhart@linux.intel.com,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, Silas Boyd-Wickizer <sbw@mit.edu>
+Subject: Re: [PATCH tip/core/rcu 1/2] rcu: Parallelize and economize NOCB
+ kthread wakeups
+Message-ID: <20140827170824.GB2663@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CAJhHMCC6XUo0erp6mPyjiz5614DQq_+gfVaLR5s9YZkP=jPVCw@mail.gmail.com>
+ <20140827044350.GD13052@grmbl.mre>
+ <20140827162113.GA2663@linux.vnet.ibm.com>
+ <CAJhHMCBhhObL9hb9P_BCLBiVxn5z5MHawk=Xs=VMx2EqpnzUHA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1408271035351.1460-100000@iolanthe.rowland.org>
-References: <CA+eFSM25V2_kKT7EBfPmahTknQu3jMS3+4PC_Af6C+1eHrFhWg@mail.gmail.com>
-	<Pine.LNX.4.44L0.1408271035351.1460-100000@iolanthe.rowland.org>
-Date: Thu, 28 Aug 2014 01:07:16 +0800
-Message-ID: <CA+eFSM1qokxsArUSOwSY8wd-VG_0JYT-pwRhu9-YgZkOccXkDg@mail.gmail.com>
-Subject: Re: About the reboot hang issue with EHCI driver on the Baytrail platform
-From: Gavin Guo <gavin.guo@canonical.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-usb@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
-        Anthony Wong <anthony.wong@canonical.com>, YK <yk@canonical.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJhHMCBhhObL9hb9P_BCLBiVxn5z5MHawk=Xs=VMx2EqpnzUHA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14082717-1542-0000-0000-000004565541
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+On Wed, Aug 27, 2014 at 12:43:01PM -0400, Pranith Kumar wrote:
+> On Wed, Aug 27, 2014 at 12:21 PM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > On Wed, Aug 27, 2014 at 10:13:50AM +0530, Amit Shah wrote:
+> 
+> >>
+> >> Yes, this patch helps my case as well.
+> >
+> > Very good!!!
+> >
+> > Pranith, I can take this patch, but would you be willing to invert
+> > the sense of ->nocb_leader_wake (e.g., call it ->nocb_leader_sleep or
+> > some such)?  This field is only used in eight places in the source code.
+> >
+> > The idea is that inverting the sense of the field allows the normal C
+> > initialization of zero to properly initialize this field, plus it gets
+> > rid of a few lines of code.
+> 
+> Sure, that is indeed a good idea. I will send a new patch.
 
-On Wed, Aug 27, 2014 at 10:38 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Wed, 27 Aug 2014, Gavin Guo wrote:
->
->> > Still, why not use the BIOS setting to disable EHCI?
->>
->> It's hardware enablement policy. By default, we can't change the BIOS
->> setting to make the bug disappear until we find out the bug is due to
->> BIOS's bug. Add kernel parameters is the temporary solution for the
->> platform can ship. And if the bug is from kernel, we need to send
->> patches to upstream and pull back to Ubuntu kernel or send to Ubuntu
->> Kernel directly if it's a trivial solution like adding device id.
->> However, as you said, in this case about the bug the root may be from
->> BIOS code. So, we can coordinate with the OEM BIOS team to modify the
->> default BIOS setting.
->
-> There is no doubt that the BIOS is buggy.  Your log contains this line:
->
-> [    2.804205] pci 0000:00:1d.0: EHCI: BIOS handoff failed (BIOS bug?) 01010001
->
-> The only way that can happen is if the BIOS isn't working right.
-> However, this may be a different bug from the crashes you've been
-> seeing.
+Very good, looking forward to seeing it!
 
-Thanks for your comments. I really appreciate your support.
+							Thanx, Paul
 
-Gavin Guo
-
->
-> Alan Stern
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
