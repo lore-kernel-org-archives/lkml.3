@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932307AbaH0IZy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 04:25:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58705 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751986AbaH0IZv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 04:25:51 -0400
-Date: Wed, 27 Aug 2014 10:25:48 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] HID: picolcd: sanity check report size in raw_event()
- callback
-In-Reply-To: <20140827101311.098f3fd1@pluto>
-Message-ID: <alpine.LNX.2.00.1408271025040.2992@pobox.suse.cz>
-References: <alpine.LNX.2.00.1408270911130.2992@pobox.suse.cz> <alpine.LNX.2.00.1408270912310.2992@pobox.suse.cz> <20140827101311.098f3fd1@pluto>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755335AbaH0IgW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 04:36:22 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:1345 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751524AbaH0IgT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 04:36:19 -0400
+Message-ID: <53FD987B.50601@atmel.com>
+Date: Wed, 27 Aug 2014 10:36:11 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Josh Wu <josh.wu@atmel.com>, <linux-kernel@vger.kernel.org>,
+        <linux-iio@vger.kernel.org>, <jic23@kernel.org>,
+        <maxime.ripard@free-electrons.com>
+CC: <alexandre.belloni@free-electrons.com>
+Subject: Re: [PATCH] iio: adc: at91: make the function handle_adc_eoc_trigger()
+ static
+References: <1409128271-14856-1-git-send-email-josh.wu@atmel.com>
+In-Reply-To: <1409128271-14856-1-git-send-email-josh.wu@atmel.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Aug 2014, Bruno Prémont wrote:
-
-> > The report passed to us from transport driver could potentially be 
-> > arbitrarily large, therefore we better sanity-check it so that raw_data 
-> > that we hold in picolcd_pending structure are always kept within proper 
-> > bounds.
-> > 
-> > Cc: stable@vger.kernel.org
-> > Reported-by: Steven Vittitoe <scvitti@google.com>
-> > Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+On 27/08/2014 10:31, Josh Wu :
+> The handle_adc_eoc_trigger() in only used in at91_adc.c. So make it
+> static.
 > 
-> Acked-by: Bruno Prémont <bonbons@linux-vserver.org>
+> Signed-off-by: Josh Wu <josh.wu@atmel.com>
 
-Thanks.
+Absolutely.
 
-> > ---
-> >  drivers/hid/hid-picolcd_core.c | 6 ++++++
-> >  1 file changed, 6 insertions(+)
-> > 
-> > diff --git a/drivers/hid/hid-picolcd_core.c b/drivers/hid/hid-picolcd_core.c
-> > index acbb0210..020df3c 100644
-> > --- a/drivers/hid/hid-picolcd_core.c
-> > +++ b/drivers/hid/hid-picolcd_core.c
-> > @@ -350,6 +350,12 @@ static int picolcd_raw_event(struct hid_device *hdev,
-> >  	if (!data)
-> >  		return 1;
-> >  
-> > +	if (size > 64) {
-> > +		hid_warn(hdev, "invalid size value (%d) for picolcd raw event\n",
-> > +				size);
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+
+Thanks, bye.
+
+> ---
+>  drivers/iio/adc/at91_adc.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> Is it worth adding report->id to this hid_warn()?
+> diff --git a/drivers/iio/adc/at91_adc.c b/drivers/iio/adc/at91_adc.c
+> index 772e869..7807e0e 100644
+> --- a/drivers/iio/adc/at91_adc.c
+> +++ b/drivers/iio/adc/at91_adc.c
+> @@ -266,7 +266,7 @@ static irqreturn_t at91_adc_trigger_handler(int irq, void *p)
+>  }
+>  
+>  /* Handler for classic adc channel eoc trigger */
+> -void handle_adc_eoc_trigger(int irq, struct iio_dev *idev)
+> +static void handle_adc_eoc_trigger(int irq, struct iio_dev *idev)
+>  {
+>  	struct at91_adc_state *st = iio_priv(idev);
+>  
 > 
-> A valid device is not expected to ever send >64 bytes reports but in
-> case a firmware update would do so it would help to know for which
-> report it was.
 
-It definitely wouldn't hurt. Pull request with the original patch is now 
-on its way to Linus though, so let's do this as a followup patch on top 
-once this is merged.
 
 -- 
-Jiri Kosina
-SUSE Labs
+Nicolas Ferre
