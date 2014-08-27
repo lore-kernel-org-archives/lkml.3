@@ -1,81 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965618AbaH0X3f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 19:29:35 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:60018 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S965495AbaH0X3c (ORCPT
+	id S936036AbaH0X36 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 19:29:58 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:38122 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965431AbaH0X2Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 19:29:32 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Dirk Brandewie <dirk.brandewie@gmail.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] cpufreq: intel_pstate: Add CPU ID for Braswell processor
-Date: Thu, 28 Aug 2014 01:48:42 +0200
-Message-ID: <1489037.zFJ48ZYqaQ@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <53FE0BB1.9060201@gmail.com>
-References: <1408701944-14734-1-git-send-email-mika.westerberg@linux.intel.com> <CAKohpo=7CyRT7szhJAQXjRfBFyw_6LuHSdVS39z=899T0eBoMg@mail.gmail.com> <53FE0BB1.9060201@gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Wed, 27 Aug 2014 19:28:16 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+r79ObpvZNAK+eduh6muSr
+From: Tony Lindgren <tony@atomide.com>
+To: kishon@ti.com
+Cc: balbi@ti.com, linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Subject: [PATCH 2/5] usb: phy: twl4030-usb: Simplify phy init to use runtime PM
+Date: Wed, 27 Aug 2014 16:28:08 -0700
+Message-Id: <1409182091-31191-3-git-send-email-tony@atomide.com>
+X-Mailer: git-send-email 1.8.1.1
+In-Reply-To: <1409182091-31191-1-git-send-email-tony@atomide.com>
+References: <1409182091-31191-1-git-send-email-tony@atomide.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, August 27, 2014 09:47:45 AM Dirk Brandewie wrote:
-> On 08/22/2014 03:19 AM, Viresh Kumar wrote:
-> > On 22 August 2014 15:35, Mika Westerberg
-> > <mika.westerberg@linux.intel.com> wrote:
-> >> This is pretty much the same as Intel Baytrail, only the CPU ID is
-> >> different. Add the new ID to the supported CPU list.
-> >>
-> >> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> >> Cc: Dirk Brandewie <dirk.j.brandewie@intel.com>
-> >
-> > Dirk might be away on holidays..
-> 
-> Yes Sorry
-> 
-> Acked-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+We can now let the interrupt and delayed work do all that's
+needed with runtime PM.
 
-Queued up for 3.17-rc3, thanks!
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+---
+ drivers/phy/phy-twl4030-usb.c | 20 +++-----------------
+ 1 file changed, 3 insertions(+), 17 deletions(-)
 
-> 
-> >
-> >> ---
-> >>   drivers/cpufreq/intel_pstate.c | 1 +
-> >>   1 file changed, 1 insertion(+)
-> >>
-> >> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-> >> index c5eac949760d..a3cf8994160b 100644
-> >> --- a/drivers/cpufreq/intel_pstate.c
-> >> +++ b/drivers/cpufreq/intel_pstate.c
-> >> @@ -660,6 +660,7 @@ static const struct x86_cpu_id intel_pstate_cpu_ids[] = {
-> >>          ICPU(0x3f, core_params),
-> >>          ICPU(0x45, core_params),
-> >>          ICPU(0x46, core_params),
-> >> +       ICPU(0x4c, byt_params),
-> >>          ICPU(0x4f, core_params),
-> >>          ICPU(0x56, core_params),
-> >>          {}
-> >
-> > Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+diff --git a/drivers/phy/phy-twl4030-usb.c b/drivers/phy/phy-twl4030-usb.c
+index bc28ecc..a292db0 100644
+--- a/drivers/phy/phy-twl4030-usb.c
++++ b/drivers/phy/phy-twl4030-usb.c
+@@ -471,16 +471,8 @@ static int twl4030_phy_power_on(struct phy *phy)
+ 	twl4030_usb_set_mode(twl, twl->usb_mode);
+ 	if (twl->usb_mode == T2_USB_MODE_ULPI)
+ 		twl4030_i2c_access(twl, 0);
++	schedule_delayed_work(&twl->id_workaround_work, 0);
+ 
+-	/*
+-	 * XXX When VBUS gets driven after musb goes to A mode,
+-	 * ID_PRES related interrupts no longer arrive, why?
+-	 * Register itself is updated fine though, so we must poll.
+-	 */
+-	if (twl->linkstat == OMAP_MUSB_ID_GROUND) {
+-		cancel_delayed_work(&twl->id_workaround_work);
+-		schedule_delayed_work(&twl->id_workaround_work, HZ);
+-	}
+ 	return 0;
+ }
+ 
+@@ -612,16 +604,9 @@ static void twl4030_id_workaround_work(struct work_struct *work)
+ static int twl4030_phy_init(struct phy *phy)
+ {
+ 	struct twl4030_usb *twl = phy_get_drvdata(phy);
+-	enum omap_musb_vbus_id_status status;
+ 
+ 	pm_runtime_get_sync(twl->dev);
+-	status = twl4030_usb_linkstat(twl);
+-	twl->linkstat = status;
+-
+-	if (status == OMAP_MUSB_ID_GROUND || status == OMAP_MUSB_VBUS_VALID)
+-		omap_musb_mailbox(twl->linkstat);
+-
+-	sysfs_notify(&twl->dev->kobj, NULL, "vbus");
++	schedule_delayed_work(&twl->id_workaround_work, 0);
+ 	pm_runtime_mark_last_busy(twl->dev);
+ 	pm_runtime_put_autosuspend(twl->dev);
+ 
+@@ -698,6 +683,7 @@ static int twl4030_usb_probe(struct platform_device *pdev)
+ 	twl->dev		= &pdev->dev;
+ 	twl->irq		= platform_get_irq(pdev, 0);
+ 	twl->vbus_supplied	= false;
++	twl->linkstat		= -EINVAL;
+ 	twl->asleep		= 1;
+ 	twl->linkstat		= OMAP_MUSB_UNKNOWN;
+ 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.1.1
+
