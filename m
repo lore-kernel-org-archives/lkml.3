@@ -1,69 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935153AbaH0Qru (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 12:47:50 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:64475 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933914AbaH0Qrs (ORCPT
+	id S1756297AbaH0Q7c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 12:59:32 -0400
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.109]:49094 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750908AbaH0Q7a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 12:47:48 -0400
-Message-ID: <53FE0BB1.9060201@gmail.com>
-Date: Wed, 27 Aug 2014 09:47:45 -0700
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 27 Aug 2014 12:59:30 -0400
+X-Env-Sender: Andreas.Werner@men.de
+X-Msg-Ref: server-16.tower-194.messagelabs.com!1409158766!19294131!1
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.3; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Wed, 27 Aug 2014 18:59:27 +0200
+Date: Wed, 27 Aug 2014 19:51:23 +0200
+From: Andreas Werner <andreas.werner@men.de>
+To: <linux-kernel@vger.kernel.org>
+CC: <sameo@linux.intel.com>, <lee.jones@linaro.org>, <linux@roeck-us.net>,
+        <lm-sensors@lm-sensors.org>, <wim@iguana.be>,
+        <linux-watchdog@vger.kernel.org>, <cooloney@gmail.com>,
+        <rpurdie@rpsys.net>, <linux-leds@vger.kernel.org>
+Subject: [PATCH v6 0/4] Introduce MEN 14F021P00 BMC driver series
+Message-ID: <cover.1409161615.git.andreas.werner@men.de>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-CC: dirk.brandewie@gmail.com, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] cpufreq: intel_pstate: Add CPU ID for Braswell processor
-References: <1408701944-14734-1-git-send-email-mika.westerberg@linux.intel.com> <CAKohpo=7CyRT7szhJAQXjRfBFyw_6LuHSdVS39z=899T0eBoMg@mail.gmail.com>
-In-Reply-To: <CAKohpo=7CyRT7szhJAQXjRfBFyw_6LuHSdVS39z=899T0eBoMg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [192.1.1.171]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2014 03:19 AM, Viresh Kumar wrote:
-> On 22 August 2014 15:35, Mika Westerberg
-> <mika.westerberg@linux.intel.com> wrote:
->> This is pretty much the same as Intel Baytrail, only the CPU ID is
->> different. Add the new ID to the supported CPU list.
->>
->> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
->> Cc: Dirk Brandewie <dirk.j.brandewie@intel.com>
->
-> Dirk might be away on holidays..
+This patch set add support for the MEN 14F021P00 Board Management called BMC.
 
-Yes Sorry
+The BMC is a PIC Mikrocontroller which assembled on almost all of our
+3U Compact PCI CPU board and a few Box PCs.
+main part of the BMC is to start and monitor the board, but there are a
+lot more features which can be accessed using an I2C Host interface
 
-Acked-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Features supported in this Patchset:
+        - Watchdog
+        - LEDs
+        - HWMON
 
->
->> ---
->>   drivers/cpufreq/intel_pstate.c | 1 +
->>   1 file changed, 1 insertion(+)
->>
->> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
->> index c5eac949760d..a3cf8994160b 100644
->> --- a/drivers/cpufreq/intel_pstate.c
->> +++ b/drivers/cpufreq/intel_pstate.c
->> @@ -660,6 +660,7 @@ static const struct x86_cpu_id intel_pstate_cpu_ids[] = {
->>          ICPU(0x3f, core_params),
->>          ICPU(0x45, core_params),
->>          ICPU(0x46, core_params),
->> +       ICPU(0x4c, byt_params),
->>          ICPU(0x4f, core_params),
->>          ICPU(0x56, core_params),
->>          {}
->
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+The Patchset includes a MFD Core driver, Watchdog, hwmon  and LEDs driver.
+
+Changes in v6:
+	- fixed some style issues (80 chars, whitespaces, alignment)
+	- fixed error handling in update function of hwmon slave
+	- fixed whitespace error in hwmon documentation
+	- added module name in each of the Kconfigs
+
+Changes in v5:
+        - fixed I2C dependency in MFD Kconfig
+        - added correct error handling in update function of the hwmon slave
+          (Use of ERR_PTR)
+        - add ATTRIBUTE_GROUP Macro in hwmon slave
+          and deleted platform_set_drvdata
+
+Changes in v4:
+        - fixed some style issues
+        - fixed GPL license version
+        - added hwmon voltage monitoring slave driver
+
+Changes in v3:
+        - deleted i2c_smbus wrapper functions and use native one
+        - some cosmentics and variable renaming to be more clear
+        - renamed "leave production" mode to "exit production mode"
+
+Changes in v2:
+        - changed i2c_smbus_read wrapper function to return both, value
+          and error.
+        - moved "leave production mode" from Watchdog driver to mfd core.
+        - fixed some return values in the watchdog driver to return the original
+          error value instead of -EIO.
+
+Andreas Werner (4):
+  drivers/mfd/menf21bmc: introduce MEN 14F021P00 BMC MFD Core driver
+  drivers/watchdog/menf21bmc_wdt: introduce MEN 14F021P00 BMC Watchdog
+    driver
+  drivers/leds/leds-menf21bmc: introduce MEN 14F021P00 BMC LED driver
+  drivers/hwmon/menf21bmc_hwmon: introduce MEN14F021P00 BMC HWMON driver
+
+ Documentation/hwmon/menf21bmc    |  50 +++++++++
+ drivers/hwmon/Kconfig            |  10 ++
+ drivers/hwmon/Makefile           |   1 +
+ drivers/hwmon/menf21bmc_hwmon.c  | 230 +++++++++++++++++++++++++++++++++++++++
+ drivers/leds/Kconfig             |   9 ++
+ drivers/leds/Makefile            |   1 +
+ drivers/leds/leds-menf21bmc.c    | 131 ++++++++++++++++++++++
+ drivers/mfd/Kconfig              |  15 +++
+ drivers/mfd/Makefile             |   1 +
+ drivers/mfd/menf21bmc.c          | 132 ++++++++++++++++++++++
+ drivers/watchdog/Kconfig         |  10 ++
+ drivers/watchdog/Makefile        |   1 +
+ drivers/watchdog/menf21bmc_wdt.c | 203 ++++++++++++++++++++++++++++++++++
+ 13 files changed, 794 insertions(+)
+ create mode 100644 Documentation/hwmon/menf21bmc
+ create mode 100644 drivers/hwmon/menf21bmc_hwmon.c
+ create mode 100644 drivers/leds/leds-menf21bmc.c
+ create mode 100644 drivers/mfd/menf21bmc.c
+ create mode 100644 drivers/watchdog/menf21bmc_wdt.c
+
+-- 
+2.0.4
 
