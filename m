@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935898AbaH0VWZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 17:22:25 -0400
-Received: from qmta11.emeryville.ca.mail.comcast.net ([76.96.27.211]:38808
-	"EHLO qmta11.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932146AbaH0VWX (ORCPT
+	id S935942AbaH0VYy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 17:24:54 -0400
+Received: from www.linutronix.de ([62.245.132.108]:36213 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932146AbaH0VYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 17:22:23 -0400
-Date: Wed, 27 Aug 2014 16:22:20 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        willy@linux.intel.com
-Subject: Re: [PATCH v10 00/21] Support ext4 on NV-DIMMs
-In-Reply-To: <20140827130613.c8f6790093d279a447196f17@linux-foundation.org>
-Message-ID: <alpine.DEB.2.11.1408271616070.17080@gentwo.org>
-References: <cover.1409110741.git.matthew.r.wilcox@intel.com> <20140827130613.c8f6790093d279a447196f17@linux-foundation.org>
+	Wed, 27 Aug 2014 17:24:52 -0400
+Date: Wed, 27 Aug 2014 23:24:15 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Mikulas Patocka <mpatocka@redhat.com>
+cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        linux-kernel@vger.kernel.org
+Subject: Re: HT1000 SATA broken by "x86, irq, ACPI: Use common irqdomain map
+ interface to program IOAPIC pins"
+In-Reply-To: <alpine.LRH.2.02.1408271657300.17705@file01.intranet.prod.int.rdu2.redhat.com>
+Message-ID: <alpine.DEB.2.10.1408272322130.3323@nanos>
+References: <alpine.LRH.2.02.1408271657300.17705@file01.intranet.prod.int.rdu2.redhat.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Aug 2014, Andrew Morton wrote:
+On Wed, 27 Aug 2014, Mikulas Patocka wrote:
 
-> Sat down to read all this but I'm finding it rather unwieldy - it's
-> just a great blob of code.  Is there some overall
-> what-it-does-and-how-it-does-it roadmap?
+> Hi
+> 
+> The patch d7b830013f59cf586c1cec3caa1ce7156da59a13, committed to 3.17-rc1, 
+> breaks the SATA controller (sata_svw driver) on HT1000 ServerWorks 
+> chipset. The other drivers work correctly.
+> 
+> With the patch d7b830013f59cf586c1cec3caa1ce7156da59a13, the SATA 
+> controller times out after every command with lost interrupt.
+> 
+> With the patch 16ee7b3dcc56be14b9a813612cff2cc2339cdced, the SATA driver 
+> can't be loaded at all, it fails with:
+> sata_svw 0000:01:0e.0: version 2.3
+> Failed to set pin attr for GSI11
+> sata_svw 0000:01:0e.0: PCI INT A: failed to register GSI
+> sata_svw: probe of 0000:01:0e.0 failed with error -1
 
-Matthew gave a talk about DAX at the kernel summit. Its a great feature
-because this is another piece of the bare metal hardware technology that
-is being improved by him.
+Can you please pull 
 
-> Some explanation of why one would use ext4 instead of, say,
-> suitably-modified ramfs/tmpfs/rd/etc?
+    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86/urgent
 
-The NVDIMM contents survive reboot and therefore ramfs and friends wont
-work with it.
+into your tree and check whether this solves the issues?
 
-> Performance testing results?
+Thanks,
 
-This is obviously avoiding kernel buffering and therefore decreasing
-kernel overhead for non volatile memory. Avoids useless duplication of
-data from the non volatile memory into regular ram and allows direct
-access to non volatile memory from user space in a controlled fashion.
-
-I think this should be a priority item.
-
-
+	tglx
