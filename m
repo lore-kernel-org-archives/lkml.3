@@ -1,138 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935661AbaH0S0m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 14:26:42 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:45343 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935565AbaH0S0k (ORCPT
+	id S935666AbaH0S1o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 14:27:44 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:40910 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935020AbaH0S1m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 14:26:40 -0400
+	Wed, 27 Aug 2014 14:27:42 -0400
+From: Kevin Hilman <khilman@deeprootsystems.com>
+To: Nishanth Menon <nm@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, Tero Kristo <t-kristo@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Keerthy <j-keerthy@ti.com>,
+        =?utf-8?Q?Beno=C3=AEt?= Cousson <bcousson@baylibre.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Re: [PATCH 4/7] ARM: OMAP2+: powerdomain: introduce logic for finding valid power domain
+Organization: Deep Root Systems, LLC
+References: <1408715373-25791-1-git-send-email-nm@ti.com>
+	<1408715373-25791-5-git-send-email-nm@ti.com>
+Date: Wed, 27 Aug 2014 11:27:38 -0700
+In-Reply-To: <1408715373-25791-5-git-send-email-nm@ti.com> (Nishanth Menon's
+	message of "Fri, 22 Aug 2014 08:49:30 -0500")
+Message-ID: <7h1ts1eqjp.fsf@paris.lan>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CAMEtUuw1n1HzAeyKFj9=nGq7RKZq7TADS-6M_BkHbTsWJ_Gm-Q@mail.gmail.com>
-References: <1409106582-10095-1-git-send-email-ast@plumgrid.com>
- <CALCETrX2MzNxQ1ogt+Qx8iPjUe+z0gN6ZLwu9nAcZzTN+D+iYw@mail.gmail.com>
- <CAMEtUuwYqJVUuZxPBKy57NonWF+X_5vkNx4uSEx_d=-xBka1Kg@mail.gmail.com>
- <CALCETrWs9GRufGKxAoV628bh1f3HObkxNQuW3tYRt2rFwNAbxA@mail.gmail.com> <CAMEtUuw1n1HzAeyKFj9=nGq7RKZq7TADS-6M_BkHbTsWJ_Gm-Q@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 27 Aug 2014 11:26:18 -0700
-Message-ID: <CALCETrXAfZJTsF2nPFw55rHkfbNXKQuF8Frnq3e1wHEoGxLM4w@mail.gmail.com>
-Subject: Re: [PATCH RFC v7 net-next 00/28] BPF syscall
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: Daniel Borkmann <dborkman@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chema Gonzalez <chema@google.com>, Namhyung Kim <namhyung@kernel.org>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Brendan Gregg <brendan.d.gregg@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 9:57 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-> On Tue, Aug 26, 2014 at 9:49 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On Tue, Aug 26, 2014 at 9:35 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
->>> On Tue, Aug 26, 2014 at 8:56 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>> On Aug 26, 2014 7:29 PM, "Alexei Starovoitov" <ast@plumgrid.com> wrote:
->>>>>
->>>>> Hi Ingo, David,
->>>>>
->>>>> posting whole thing again as RFC to get feedback on syscall only.
->>>>> If syscall bpf(int cmd, union bpf_attr *attr, unsigned int size) is ok,
->>>>> I'll split them into small chunks as requested and will repost without RFC.
->>>>
->>>> IMO it's much easier to review a syscall if we just look at a
->>>> specification of what it does.  The code is, in some sense, secondary.
->>>
->>> 'specification of what it does'... hmm, you mean beyond what's
->>> there in commit logs and in Documentation/networking/filter.txt ?
->>> Aren't samples at the end give an idea on 'what it does'?
->>> I'm happy to add 'specification', I just don't understand yet what
->>> it suppose to talk about beyond what's already written.
->>> I understand that the patches are missing explanation on 'why'
->>> the syscall is being added, but I don't think it's what you're asking...
->>
->> I mean a hopefully short document that defines what the syscall does.
->> It should be precise enough that one could, in principle, implement
->> the syscall just by reading the document and that one could use the
->> syscall just by reading the document.
->>
->> Given that there's a whole instruction set to go with it, it may end
->> up being moderately complicated or saying things like "see this other
->> thing for a description of the instruction set" and "there are some
->> extensible sets of functions you can call with it".
->
-> I'm still lost.
->
-> Here is the quote from Documentation/networking/filter.txt
-> "
-> 'maps' is a generic storage of different types for sharing data between kernel
-> and userspace.
->
-> The maps are accessed from user space via BPF syscall,
-> which has commands:
-> - create a map with given type and attributes
->   map_fd = bpf(BPF_MAP_CREATE, union bpf_attr *attr, u32 size)
->   using attr->map_type, attr->key_size, attr->value_size, attr->max_entries
->   returns process-local file descriptor or negative error
->
-> - lookup key in a given map
->   err = bpf(BPF_MAP_LOOKUP_ELEM, union bpf_attr *attr, u32 size)
->   using attr->map_fd, attr->key, attr->value
->   returns zero and stores found elem into value or negative error
->
-> - create or update key/value pair in a given map
->   err = bpf(BPF_MAP_UPDATE_ELEM, union bpf_attr *attr, u32 size)
->   using attr->map_fd, attr->key, attr->value
->   returns zero or negative error
->
-> - find and delete element by key in a given map
->   err = bpf(BPF_MAP_DELETE_ELEM, union bpf_attr *attr, u32 size)
->   using attr->map_fd, attr->key
->
-> - to delete map: close(fd)
->   Exiting process will delete maps automatically
->
-> userspace programs uses this API to create/populate/read
-> maps that eBPF programs are concurrently updating.
-> "
-> and more in commit log:
-> "
-> - load eBPF program
->   fd = bpf(BPF_PROG_LOAD, union bpf_attr *attr, u32 size)
->
->   where 'attr' is
->   struct {
->       enum bpf_prog_type prog_type;
->       __u32 insn_cnt;
->       struct bpf_insn __user *insns;
->       const char __user *license;
->   };
->   insns - array of eBPF instructions
->   license - must be GPL compatible to call helper functions marked gpl_only
->
-> - unload eBPF program
->   close(fd)
-> "
->
-> Isn't it short and describes what it does?
-> Do you want me to describe what eBPF program can do?
+Nishanth Menon <nm@ti.com> writes:
 
-The problem is that everyone needs to dig around a very long patch
-series to find it.  Since you're asking for a review of a syscall, it
-would be nice to have everything needed to review whether the syscall
-is a good idea in its present form in one place and to keep the amount
-of email under control.
+> powerdomain configuration in OMAP is done using PWRSTCTRL register for
+> each power domain. However, PRCM lets us write any value we'd like to
+> the logic and power domain target states, however the SoC integration
+> tends to actually function only at a few discrete states. These valid
+> states are already in our powerdomains_xxx_data.c file.
+>
+> So, provide a function to easily query valid low power state that the
+> power domain is allowed to go to.
+>
+> Based on work originally done by Jean Pihet <j-pihet@ti.com>
+> https://patchwork.kernel.org/patch/1325091/ . There is no attempt to
+> create a new powerdomain solution here, except fixing issues seen
+> attempting invalid programming attempts. Future consolidation to the
+> generic powerdomain framework should consider this requirement as
+> well.
+>
+> Similar solutions have been done in product kernels in the past such
+> as:
+> https://android.googlesource.com/kernel/omap.git/+blame/android-omap-panda-3.0/arch/arm/mach-omap2/pm44xx.c
+>
+> Signed-off-by: Nishanth Menon <nm@ti.com>
+> ---
 
---Andy
+nit: this is part of a fixes series, but it's more of a new feature.
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+That being said, the feature is needed and looks OK, except for...
+
+> +up_search:
+> +	/* OK, no deeper ones, can we get a higher match? */
+> +	new_pwrst = req_state + 1;
+> +	while (!(pwrdm_states & BIT(new_pwrst))) {
+> +		/* BUG if we have messed up database */
+> +		BUG_ON(new_pwrst > PWRDM_POWER_ON);
+
+I don't think this is BUG() worthy, and should have a saner way to recover.
+
+Kevin
