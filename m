@@ -1,74 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756808AbaH0HIl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 03:08:41 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35416 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421AbaH0HIj (ORCPT
+	id S1753076AbaH0HKw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 03:10:52 -0400
+Received: from mail-bl2lp0210.outbound.protection.outlook.com ([207.46.163.210]:19376
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751848AbaH0HKv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 03:08:39 -0400
-Date: Wed, 27 Aug 2014 08:08:26 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Beniamino Galvani <b.galvani@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Wim Van Sebroeck <wim@iguana.be>,
-        linux-watchdog@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Carlo Caione <carlo@caione.org>
-Message-ID: <20140827070826.GP17528@sirena.org.uk>
-References: <1409091237-16722-1-git-send-email-b.galvani@gmail.com>
- <1409091237-16722-5-git-send-email-b.galvani@gmail.com>
+	Wed, 27 Aug 2014 03:10:51 -0400
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Mark Brown <broonie@kernel.org>, Nicolin Chen <nicoleotsuka@gmail.com>
+CC: Mark Rutland <mark.rutland@arm.com>, "timur@tabi.org" <timur@tabi.org>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] ASoC: fsl-sai: using 'lsb-first' property instead of
+ 'big-endian-data'.
+Thread-Topic: [PATCH] ASoC: fsl-sai: using 'lsb-first' property instead of
+ 'big-endian-data'.
+Thread-Index: AQHPwDUK14r1GsQH/EGJmKvgOz4mE5vimQ4AgAEbmICAAFJHAIAAA0wAgAABItA=
+Date: Wed, 27 Aug 2014 07:10:35 +0000
+Message-ID: <b4efadd81cae4b66ad484866bb56df40@BY2PR0301MB0613.namprd03.prod.outlook.com>
+References: <1408950961-19177-1-git-send-email-Li.Xiubo@freescale.com>
+ <20140826090426.GA31558@leverpostej>
+ <cf0e029ae99d4b48a432e5c1669ddc15@BY2PR0301MB0613.namprd03.prod.outlook.com>
+ <CAGoOwPSTJaT0UA4yaYR0x49C8UHbmKAR8PzUfV9ZWVW5XBfV5w@mail.gmail.com>
+ <20140827070544.GO17528@sirena.org.uk>
+In-Reply-To: <20140827070544.GO17528@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [123.151.195.49]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+x-forefront-prvs: 0316567485
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(199003)(189002)(164054003)(24454002)(51704005)(46102001)(66066001)(80022001)(20776003)(64706001)(76576001)(108616004)(230783001)(93886004)(33646002)(85306004)(81542001)(4396001)(81342001)(90102001)(95666004)(2656002)(54356999)(74316001)(76176999)(86362001)(50986999)(106356001)(101416001)(99286002)(83322001)(107046002)(106116001)(99396002)(105586002)(79102001)(77982001)(83072002)(87936001)(76482001)(77096002)(74502001)(74662001)(31966008)(21056001)(92566001)(85852003);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR0301MB0615;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="U0u+fYXQgj+TwTlT"
-Content-Disposition: inline
-In-Reply-To: <1409091237-16722-5-git-send-email-b.galvani@gmail.com>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 4/4] mfd: rn5t618: document device tree bindings
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> Subject: Re: [PATCH] ASoC: fsl-sai: using 'lsb-first' property instead of
+> 'big-endian-data'.
+> 
+> On Tue, Aug 26, 2014 at 11:53:56PM -0700, Nicolin Chen wrote:
+> 
+> > That's why I suggested previously: mention it in the commit comment.
+> 
+> > People will have no idea about what's the exact reason for this change.
+> > Any functional enhancement? Or a bug fix(more likely for this one).
+> > I'm not sure what I described in the previous mail is correct or not.
+> > But you probably should have added it into the commit comments.
+> 
+> Right, this is a good idea - make sure people can understand what the
+> goal of the change is.
+> 
 
---U0u+fYXQgj+TwTlT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Okay, I will add this.
 
-On Wed, Aug 27, 2014 at 12:13:57AM +0200, Beniamino Galvani wrote:
-> This adds the device tree bindings documentation for Ricoh RN5T618.
+Thanks,
 
-Reviwed-by: Mark Brown <broonie@linaro.org>
-
---U0u+fYXQgj+TwTlT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT/YPnAAoJELSic+t+oim9MwAP/RzNc6KnqhRzLiMqYnbx4jC7
-tszSrfdesKDpy/zscgShMKgZjeOFDwbQ204KjjnAaTB1wj7mORYIGRxQf+UivH1P
-odV19lAu6P7O3AxNz7zb2tinyr9z1Ms+gqxoN/L/FPtVuBGABwW2GJ8JlmE7ehKQ
-BvQY6U3yJusBTfsAgSXb+e5C5mNIp+YV3uA7XGSjjHD++gngEsFq8HcSL9eURpNY
-RlCaBboIO+MqJ/hWtWf3wUaTt9rY6vg5XlIDxQvIscku4DZx/o4lJOBMqB7UVtYe
-xdLMN/Cny2mWWkjgkT1IxCNFQ8osCYWbmPiHlxJymYArD8UaFmtK3LvNSBC27VjJ
-i5F9qM+W0TfXej0+NrHhJmq4Mv6K3UJiDwdDpEyxSauVdQutDAkhsZ/UVlM0u7tR
-so1HfKh//CvsFR7ImMj+1y2ZC4+Kx172t2yjaWQXLCvnWQz4RVsC0fbBmPndw2yz
-b/2OqalXkMr3IOZNWO53Bj4J0+FYzZNIvZKA3PCQbi+mjUTGf/q/D5c9CzoiqImb
-fmklufTNbncCAQgNjRq8O/C/aFEJjqYWrVr1v9+xR6BAA/duCmkV2yUAyGSgrTlm
-6XPROOTqWQChRe589hqwA/zarYCTia9bcm8psCaPd+AdZ+WHj+y8EkJOnFy6Y2kj
-hoIylNRT5xi97H5dyTVk
-=AUjw
------END PGP SIGNATURE-----
-
---U0u+fYXQgj+TwTlT--
+BRs
+Xiubo
