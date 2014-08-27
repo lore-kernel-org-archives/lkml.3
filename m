@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934167AbaH0KcI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 06:32:08 -0400
+	id S934301AbaH0Kc1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 06:32:27 -0400
 Received: from mga01.intel.com ([192.55.52.88]:48845 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933374AbaH0KcG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 06:32:06 -0400
+	id S934198AbaH0KcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 06:32:14 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="377572621"
+   d="scan'208";a="377572687"
 From: Kweh Hock Leong <hock.leong.kweh@intel.com>
 To: "David S. Miller" <davem@davemloft.net>,
         Giuseppe Cavallaro <peppe.cavallaro@st.com>
 Cc: netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
         Ong Boon Leong <boon.leong.ong@intel.com>,
         Kweh Hock Leong <hock.leong.kweh@intel.com>
-Subject: [PATCH 2/4] net: stmmac: better code manageability with platform data struct
-Date: Wed, 27 Aug 2014 18:32:27 +0800
-Message-Id: <5e2bc080db54008e97018dcfbfef0c315805bd67.1409123378.git.hock.leong.kweh@intel.com>
+Subject: [PATCH 4/4] net: stmmac: add MSI support for Intel Quark X1000
+Date: Wed, 27 Aug 2014 18:32:29 +0800
+Message-Id: <74a87a84666e45fe8744556c6964248c9f01f10d.1409123378.git.hock.leong.kweh@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <cover.1409123378.git.hock.leong.kweh@intel.com>
 References: <cover.1409123378.git.hock.leong.kweh@intel.com>
@@ -29,121 +29,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
 
-Introduce additional struct to hold platform info for pci device. It
-is used to store features that are supported by specific chip vendor.
-This code change helps to expand further to support more platform
-vendors and this implementation promotes better code manageability
-and keep code base clean. In addition, this patch adds mcast & ucast
-filter configuration in pci driver.
+In Intel Quark SoC X1000, both of the Ethernet controllers support
+MSI interrupt handling. This patch enables them to use MSI interrupt
+servicing in stmmac_pci for Intel Quark X1000.
 
 Signed-off-by: Kweh, Hock Leong <hock.leong.kweh@intel.com>
 Reviewed-by: Ong, Boon Leong <boon.leong.ong@intel.com>
 ---
- drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c |   76 +++++++++++++++++-----
- 1 file changed, 60 insertions(+), 16 deletions(-)
+ drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c |   19 +++++++++++++++----
+ 1 file changed, 15 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c
-index 9d98935..40290da 100644
+index 81e48f4..36e36d5 100644
 --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c
 +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c
-@@ -28,20 +28,63 @@
+@@ -52,6 +52,7 @@ struct platform_data {
+ 	int fixed_burst;
+ 	int burst_len;
+ 	void (*rt_config)(int chip_id, struct pci_dev *pdev);
++	int support_msi;
+ };
  
- static int instance_id = 1;
+ static struct platform_data platform_info[] = {
+@@ -69,6 +70,7 @@ static struct platform_data platform_info[] = {
+ 		.fixed_burst = 0,
+ 		.burst_len = DMA_AXI_BLEN_256,
+ 		.rt_config = NULL,
++		.support_msi = 0,
+ 	},
+ 	[CHIP_QUARK_X1000] = {
+ 		.phy_addr = 1,
+@@ -84,6 +86,7 @@ static struct platform_data platform_info[] = {
+ 		.fixed_burst = 1,
+ 		.burst_len = DMA_AXI_BLEN_256,
+ 		.rt_config = &quark_run_time_config,
++		.support_msi = 1,
+ 	},
+ };
  
--static void stmmac_default_data(struct plat_stmmacenet_data *plat_dat)
-+enum chip {
-+	CHIP_STMICRO = 0,
-+};
-+
-+/* A struct for platform specific information which will be
-+ * used in stmmac_default_data function for initialization
-+ */
-+struct platform_data {
-+	int phy_addr;
-+	int interface;
-+	int clk_csr;
-+	int has_gmac;
-+	int force_sf_dma_mode;
-+	int multicast_filter_bins;
-+	int unicast_filter_entries;
-+	int (*phy_reset)(void *priv);
-+	unsigned int phy_mask;
-+	int pbl;
-+	int burst_len;
-+};
-+
-+static struct platform_data platform_info[] = {
-+	[CHIP_STMICRO] = {
-+		.phy_addr = 0,
-+		.interface = PHY_INTERFACE_MODE_GMII,
-+		.clk_csr = 2,
-+		.has_gmac = 1,
-+		.force_sf_dma_mode = 1,
-+		.multicast_filter_bins = HASH_TABLE_SIZE,
-+		.unicast_filter_entries = 1,
-+		.phy_reset = NULL,
-+		.phy_mask = 0,
-+		.pbl = 32,
-+		.burst_len = DMA_AXI_BLEN_256,
-+	},
-+};
-+
-+static void stmmac_default_data(struct plat_stmmacenet_data *plat,
-+				int chip_id)
- {
--	plat_dat->bus_id = instance_id++;
--	plat_dat->phy_addr = 0;
--	plat_dat->interface = PHY_INTERFACE_MODE_GMII;
--	plat_dat->clk_csr = 2;	/* clk_csr_i = 20-35MHz & MDC = clk_csr_i/16 */
--	plat_dat->has_gmac = 1;
--	plat_dat->force_sf_dma_mode = 1;
--
--	plat_dat->mdio_bus_data->phy_reset = NULL;
--	plat_dat->mdio_bus_data->phy_mask = 0;
--
--	plat_dat->dma_cfg->pbl = 32;
--	plat_dat->dma_cfg->burst_len = DMA_AXI_BLEN_256;
-+	struct platform_data *chip_plat_dat = &platform_info[chip_id];
-+
-+	plat->bus_id = instance_id++;
-+	plat->phy_addr = chip_plat_dat->phy_addr;
-+	plat->interface = chip_plat_dat->interface;
-+	/* clk_csr_i = 20-35MHz & MDC = clk_csr_i/16 */
-+	plat->clk_csr = chip_plat_dat->clk_csr;
-+	plat->has_gmac = chip_plat_dat->has_gmac;
-+	plat->force_sf_dma_mode = chip_plat_dat->force_sf_dma_mode;
-+	plat->multicast_filter_bins = chip_plat_dat->multicast_filter_bins;
-+	plat->unicast_filter_entries = chip_plat_dat->unicast_filter_entries;
-+
-+	plat->mdio_bus_data->phy_reset = chip_plat_dat->phy_reset;
-+	plat->mdio_bus_data->phy_mask = chip_plat_dat->phy_mask;
-+
-+	plat->dma_cfg->pbl = chip_plat_dat->pbl;
-+	plat->dma_cfg->burst_len = chip_plat_dat->burst_len;
- }
- 
- /**
-@@ -115,7 +158,7 @@ static int stmmac_pci_probe(struct pci_dev *pdev,
- 		goto err_out;
+@@ -211,7 +214,7 @@ static int stmmac_pci_probe(struct pci_dev *pdev,
+ 	plat_dat = devm_kzalloc(&pdev->dev, sizeof(*plat_dat), GFP_KERNEL);
+ 	if (!plat_dat) {
+ 		ret = -ENOMEM;
+-		goto err_out;
++		goto err_out_alloc_failed;
  	}
  
--	stmmac_default_data(plat_dat);
-+	stmmac_default_data(plat_dat, id->driver_data);
+ 	plat_dat->mdio_bus_data = devm_kzalloc(&pdev->dev,
+@@ -219,7 +222,7 @@ static int stmmac_pci_probe(struct pci_dev *pdev,
+ 				    GFP_KERNEL);
+ 	if (!plat_dat->mdio_bus_data) {
+ 		ret = -ENOMEM;
+-		goto err_out;
++		goto err_out_alloc_failed;
+ 	}
+ 
+ 	plat_dat->dma_cfg = devm_kzalloc(&pdev->dev,
+@@ -227,12 +230,15 @@ static int stmmac_pci_probe(struct pci_dev *pdev,
+ 				    GFP_KERNEL);
+ 	if (!plat_dat->dma_cfg) {
+ 		ret = -ENOMEM;
+-		goto err_out;
++		goto err_out_alloc_failed;
+ 	}
+ 
+ 	ret = stmmac_default_data(plat_dat, id->driver_data, pdev);
+ 	if (ret)
+-		goto err_out;
++		goto err_out_alloc_failed;
++
++	if (platform_info[id->driver_data].support_msi)
++		pci_enable_msi(pdev);
  
  	priv = stmmac_dvr_probe(&pdev->dev, plat_dat, addr);
  	if (IS_ERR(priv)) {
-@@ -189,8 +232,9 @@ static int stmmac_pci_resume(struct pci_dev *pdev)
- #define STMMAC_DEVICE_ID 0x1108
+@@ -250,6 +256,9 @@ static int stmmac_pci_probe(struct pci_dev *pdev,
+ 	return 0;
  
- static const struct pci_device_id stmmac_id_table[] = {
--	{PCI_DEVICE(STMMAC_VENDOR_ID, STMMAC_DEVICE_ID)},
--	{PCI_DEVICE(PCI_VENDOR_ID_STMICRO, PCI_DEVICE_ID_STMICRO_MAC)},
-+	{PCI_DEVICE(STMMAC_VENDOR_ID, STMMAC_DEVICE_ID), PCI_ANY_ID,
-+			PCI_ANY_ID, CHIP_STMICRO},
-+	{PCI_VDEVICE(STMICRO, PCI_DEVICE_ID_STMICRO_MAC), CHIP_STMICRO},
- 	{}
- };
+ err_out:
++	if (platform_info[id->driver_data].support_msi)
++		pci_disable_msi(pdev);
++err_out_alloc_failed:
+ 	pci_clear_master(pdev);
+ err_out_map_failed:
+ 	pci_release_regions(pdev);
+@@ -273,6 +282,8 @@ static void stmmac_pci_remove(struct pci_dev *pdev)
  
+ 	stmmac_dvr_remove(ndev);
+ 
++	if (pci_dev_msi_enabled(pdev))
++		pci_disable_msi(pdev);
+ 	pci_iounmap(pdev, priv->ioaddr);
+ 	pci_release_regions(pdev);
+ 	pci_disable_device(pdev);
 -- 
 1.7.9.5
 
