@@ -1,215 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965160AbaH0Uhk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 16:37:40 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:57821 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965146AbaH0Uhh (ORCPT
+	id S965177AbaH0UiZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 16:38:25 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:55438 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965019AbaH0UiW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 16:37:37 -0400
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Brendan Gregg <brendan.d.gregg@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v8 net-next 2/2] net: filter: split filter.h and expose eBPF to user space
-Date: Wed, 27 Aug 2014 13:37:13 -0700
-Message-Id: <1409171833-6979-3-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1409171833-6979-1-git-send-email-ast@plumgrid.com>
-References: <1409171833-6979-1-git-send-email-ast@plumgrid.com>
+	Wed, 27 Aug 2014 16:38:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <53FE3FE2.7030709@infradead.org>
+References: <CAGhpvoqrFQn7z942jUr2T8D1tuzS_irTqwmUynnqG55SVe3CqA@mail.gmail.com>
+	<CAGhpvopiH4MWaRCDsZeOcfznW7qccQ3bM-bnMLm7fhJGdbnfkA@mail.gmail.com>
+	<53FE3FE2.7030709@infradead.org>
+Date: Wed, 27 Aug 2014 23:38:21 +0300
+Message-ID: <CAGhpvoq4t+bqtWTqfCH-scSZ6iHxOOAE9kEfHt0H=Dyc8=tvyQ@mail.gmail.com>
+Subject: Re: [PATCH v3] i2c documentation: rename variable "register" to "reg"
+From: =?UTF-8?B?Sm9zw6kgTWFudWVsIEFsYXJjw7NuIFJvbGTDoW4=?= 
+	<jose.alarcon.roldan@gmail.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: wsa@the-dreams.de, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-allow user space to generate eBPF programs
+Gmail. I just had a look at Documentation/email-clients.txt I thought
+that selected unformatted text mode would be enough, but obviously it
+wasn't. My bad :-(
 
-uapi/linux/bpf.h: eBPF instruction set definition
+Will be more careful next time I send a patch. I will use something else.
 
-linux/filter.h: the rest
+--
+Jose
 
-This patch only moves macro definitions, but practically it freezes existing
-eBPF instruction set, though new instructions can still be added in the future.
 
-These eBPF definitions cannot go into uapi/linux/filter.h, since the names
-may conflict with existing applications.
 
-Full eBPF ISA description is in Documentation/networking/filter.txt
-
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
----
- include/linux/filter.h    |   56 +-------------------------------------
- include/uapi/linux/Kbuild |    1 +
- include/uapi/linux/bpf.h  |   65 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 67 insertions(+), 55 deletions(-)
- create mode 100644 include/uapi/linux/bpf.h
-
-diff --git a/include/linux/filter.h b/include/linux/filter.h
-index f3262b598262..3150666cd4b9 100644
---- a/include/linux/filter.h
-+++ b/include/linux/filter.h
-@@ -9,53 +9,7 @@
- #include <linux/skbuff.h>
- #include <linux/workqueue.h>
- #include <uapi/linux/filter.h>
--
--/* Internally used and optimized filter representation with extended
-- * instruction set based on top of classic BPF.
-- */
--
--/* instruction classes */
--#define BPF_ALU64	0x07	/* alu mode in double word width */
--
--/* ld/ldx fields */
--#define BPF_DW		0x18	/* double word */
--#define BPF_XADD	0xc0	/* exclusive add */
--
--/* alu/jmp fields */
--#define BPF_MOV		0xb0	/* mov reg to reg */
--#define BPF_ARSH	0xc0	/* sign extending arithmetic shift right */
--
--/* change endianness of a register */
--#define BPF_END		0xd0	/* flags for endianness conversion: */
--#define BPF_TO_LE	0x00	/* convert to little-endian */
--#define BPF_TO_BE	0x08	/* convert to big-endian */
--#define BPF_FROM_LE	BPF_TO_LE
--#define BPF_FROM_BE	BPF_TO_BE
--
--#define BPF_JNE		0x50	/* jump != */
--#define BPF_JSGT	0x60	/* SGT is signed '>', GT in x86 */
--#define BPF_JSGE	0x70	/* SGE is signed '>=', GE in x86 */
--#define BPF_CALL	0x80	/* function call */
--#define BPF_EXIT	0x90	/* function return */
--
--/* Register numbers */
--enum {
--	BPF_REG_0 = 0,
--	BPF_REG_1,
--	BPF_REG_2,
--	BPF_REG_3,
--	BPF_REG_4,
--	BPF_REG_5,
--	BPF_REG_6,
--	BPF_REG_7,
--	BPF_REG_8,
--	BPF_REG_9,
--	BPF_REG_10,
--	__MAX_BPF_REG,
--};
--
--/* BPF has 10 general purpose 64-bit registers and stack frame. */
--#define MAX_BPF_REG	__MAX_BPF_REG
-+#include <uapi/linux/bpf.h>
- 
- /* ArgX, context and stack frame pointer register positions. Note,
-  * Arg1, Arg2, Arg3, etc are used as argument mappings of function
-@@ -317,14 +271,6 @@ enum {
- #define SK_RUN_FILTER(filter, ctx) \
- 	(*filter->prog->bpf_func)(ctx, filter->prog->insnsi)
- 
--struct bpf_insn {
--	__u8	code;		/* opcode */
--	__u8	dst_reg:4;	/* dest register */
--	__u8	src_reg:4;	/* source register */
--	__s16	off;		/* signed offset */
--	__s32	imm;		/* signed immediate constant */
--};
--
- #ifdef CONFIG_COMPAT
- /* A struct sock_filter is architecture independent. */
- struct compat_sock_fprog {
-diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
-index 24e9033f8b3f..fb3f7b675229 100644
---- a/include/uapi/linux/Kbuild
-+++ b/include/uapi/linux/Kbuild
-@@ -67,6 +67,7 @@ header-y += bfs_fs.h
- header-y += binfmts.h
- header-y += blkpg.h
- header-y += blktrace_api.h
-+header-y += bpf.h
- header-y += bpqether.h
- header-y += bsg.h
- header-y += btrfs.h
-diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
-new file mode 100644
-index 000000000000..479ed0b6be16
---- /dev/null
-+++ b/include/uapi/linux/bpf.h
-@@ -0,0 +1,65 @@
-+/* Copyright (c) 2011-2014 PLUMgrid, http://plumgrid.com
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of version 2 of the GNU General Public
-+ * License as published by the Free Software Foundation.
-+ */
-+#ifndef _UAPI__LINUX_BPF_H__
-+#define _UAPI__LINUX_BPF_H__
-+
-+#include <linux/types.h>
-+
-+/* Extended instruction set based on top of classic BPF */
-+
-+/* instruction classes */
-+#define BPF_ALU64	0x07	/* alu mode in double word width */
-+
-+/* ld/ldx fields */
-+#define BPF_DW		0x18	/* double word */
-+#define BPF_XADD	0xc0	/* exclusive add */
-+
-+/* alu/jmp fields */
-+#define BPF_MOV		0xb0	/* mov reg to reg */
-+#define BPF_ARSH	0xc0	/* sign extending arithmetic shift right */
-+
-+/* change endianness of a register */
-+#define BPF_END		0xd0	/* flags for endianness conversion: */
-+#define BPF_TO_LE	0x00	/* convert to little-endian */
-+#define BPF_TO_BE	0x08	/* convert to big-endian */
-+#define BPF_FROM_LE	BPF_TO_LE
-+#define BPF_FROM_BE	BPF_TO_BE
-+
-+#define BPF_JNE		0x50	/* jump != */
-+#define BPF_JSGT	0x60	/* SGT is signed '>', GT in x86 */
-+#define BPF_JSGE	0x70	/* SGE is signed '>=', GE in x86 */
-+#define BPF_CALL	0x80	/* function call */
-+#define BPF_EXIT	0x90	/* function return */
-+
-+/* Register numbers */
-+enum {
-+	BPF_REG_0 = 0,
-+	BPF_REG_1,
-+	BPF_REG_2,
-+	BPF_REG_3,
-+	BPF_REG_4,
-+	BPF_REG_5,
-+	BPF_REG_6,
-+	BPF_REG_7,
-+	BPF_REG_8,
-+	BPF_REG_9,
-+	BPF_REG_10,
-+	__MAX_BPF_REG,
-+};
-+
-+/* BPF has 10 general purpose 64-bit registers and stack frame. */
-+#define MAX_BPF_REG	__MAX_BPF_REG
-+
-+struct bpf_insn {
-+	__u8	code;		/* opcode */
-+	__u8	dst_reg:4;	/* dest register */
-+	__u8	src_reg:4;	/* source register */
-+	__s16	off;		/* signed offset */
-+	__s32	imm;		/* signed immediate constant */
-+};
-+
-+#endif /* _UAPI__LINUX_BPF_H__ */
--- 
-1.7.9.5
-
+2014-08-27 23:30 GMT+03:00 Randy Dunlap <rdunlap@infradead.org>:
+> On 08/27/14 12:57, José Manuel Alarcón Roldán wrote:
+>> 2014-08-27 22:54 GMT+03:00 José Manuel Alarcón Roldán
+>> <jose.alarcon.roldan@gmail.com>:
+>>> The example code provided with the i2c device interface documentation
+>>> won't compile since it uses the reserved word "register" to name a
+>>> variable.
+>>>
+>>> The compiler fails with this error message:
+>>>
+>>>  error: expected identifier or '(' before '=' token
+>>>    __u8 register = 0x20; /* Device register to access */
+>>>                  ^
+>>>
+>>> Rename the variable "register" to simply "reg"
+>>> in the example code.
+>>>
+>>> Signed-off-by: Jose Alarcon Roldan <jose.alarcon.roldan@gmail.com>
+>>> ---
+>>>  Documentation/i2c/dev-interface | 10 +++++-----
+>>>  1 file changed, 5 insertions(+), 5 deletions(-)
+>>>
+>>> diff --git a/Documentation/i2c/dev-interface b/Documentation/i2c/dev-interface
+>>> index 3e742ba..2ac78ae 100644
+>>> --- a/Documentation/i2c/dev-interface
+>>> +++ b/Documentation/i2c/dev-interface
+>>> @@ -57,12 +57,12 @@ Well, you are all set up now. You can now use
+>>> SMBus commands or plain
+>>>  I2C to communicate with your device. SMBus commands are preferred if
+>>>  the device supports them. Both are illustrated below.
+>>>
+>>> -  __u8 register = 0x10; /* Device register to access */
+>>> +  __u8 reg = 0x10; /* Device register to access */
+>>>    __s32 res;
+>>>    char buf[10];
+>>>
+>>>    /* Using SMBus commands */
+>>> -  res = i2c_smbus_read_word_data(file, register);
+>>> +  res = i2c_smbus_read_word_data(file, reg);
+>>>    if (res < 0) {
+>>>      /* ERROR HANDLING: i2c transaction failed */
+>>>    } else {
+>>> @@ -70,11 +70,11 @@ the device supports them. Both are illustrated below.
+>>>    }
+>>>
+>>>    /* Using I2C Write, equivalent of
+>>> -     i2c_smbus_write_word_data(file, register, 0x6543) */
+>>> -  buf[0] = register;
+>>> +     i2c_smbus_write_word_data(file, reg, 0x6543) */
+>>> +  buf[0] = reg;
+>>>    buf[1] = 0x43;
+>>>    buf[2] = 0x65;
+>>> -  if (write(file, buf, 3) ! =3) {
+>>> +  if (write(file, buf, 3) != 3) {
+>>>      /* ERROR HANDLING: i2c transaction failed */
+>>>    }
+>>>
+>>> --
+>>> 1.9.1
+>>
+>> Again something went wrong. Sorry about that :-(
+>
+> What email client are you using?
+>
+> --
+> ~Randy
