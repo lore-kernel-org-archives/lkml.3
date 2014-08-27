@@ -1,77 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965552AbaH0Xdl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 19:33:41 -0400
-Received: from mail-by2lp0237.outbound.protection.outlook.com ([207.46.163.237]:39808
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S964814AbaH0Xdk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 19:33:40 -0400
-Message-ID: <1409182412.6510.129.camel@snotra.buserror.net>
-Subject: Re: [RESEND] clk: ppc-corenet: Add Freescale ARM-based platforms
- CLK_OF_DECLARE support
-From: Scott Wood <scottwood@freescale.com>
-To: Lu Jingchang-B35083 <jingchang.lu@freescale.com>
-CC: "mturquette@linaro.org" <mturquette@linaro.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Wed, 27 Aug 2014 18:33:32 -0500
-In-Reply-To: <164af7b3be3747a0be3fe3a6cf83d3b1@BL2PR03MB467.namprd03.prod.outlook.com>
-References: <1408700096-25415-1-git-send-email-jingchang.lu@freescale.com>
-	 <1409093463.6510.92.camel@snotra.buserror.net>
-	 <164af7b3be3747a0be3fe3a6cf83d3b1@BL2PR03MB467.namprd03.prod.outlook.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-MIME-Version: 1.0
+	id S965585AbaH0Xdr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 19:33:47 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:41807 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964814AbaH0Xdo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 19:33:44 -0400
+Date: Wed, 27 Aug 2014 16:33:43 -0700 (PDT)
+Message-Id: <20140827.163343.715764078341662382.davem@davemloft.net>
+To: lftan@altera.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lftan.linux@gmail.com, peppe.cavallaro@st.com, vbridger@altera.com
+Subject: Re: [PATCH] net: stmmac: fix warning from Sparse for socfpga
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1409037076-14775-1-git-send-email-lftan@altera.com>
+References: <1409037076-14775-1-git-send-email-lftan@altera.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [2601:2:5800:3f7:8934:4690:1c77:4b20]
-X-ClientProxiedBy: BLUPR05CA0082.namprd05.prod.outlook.com (10.141.20.52) To
- BY2PR0301MB0726.namprd03.prod.outlook.com (25.160.63.16)
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 0316567485
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6009001)(199003)(24454002)(51704005)(377424004)(189002)(13464003)(377454003)(64706001)(110136001)(99396002)(107046002)(101416001)(77156001)(33646002)(21056001)(76176999)(46102001)(20776003)(81542001)(50986999)(81342001)(80022001)(85306004)(47776003)(106356001)(74502001)(62966002)(74662001)(77982001)(31966008)(76482001)(23676002)(50466002)(104166001)(92726001)(92566001)(77096002)(87976001)(79102001)(89996001)(87286001)(95666004)(105586002)(86362001)(42186005)(103116003)(83322001)(83072002)(50226001)(19580405001)(102836001)(85852003)(90102001)(19580395003)(88136002)(93916002)(4396001)(99106002)(3826002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR0301MB0726;H:[IPv6:2601:2:5800:3f7:8934:4690:1c77:4b20];FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-X-OriginatorOrg: freescale.com
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 27 Aug 2014 16:33:44 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-08-26 at 21:19 -0500, Lu Jingchang-B35083 wrote:
-> >-----Original Message-----
-> >From: Wood Scott-B07421
-> >Sent: Wednesday, August 27, 2014 6:51 AM
-> >To: Lu Jingchang-B35083
-> >Cc: mturquette@linaro.org; linuxppc-dev@lists.ozlabs.org; linux-
-> >kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org
-> >Subject: Re: [RESEND] clk: ppc-corenet: Add Freescale ARM-based platforms
-> >CLK_OF_DECLARE support
-> >
-> >On Fri, 2014-08-22 at 17:34 +0800, Jingchang Lu wrote:
-> >> +CLK_OF_DECLARE(ppc_core_pll_v1, "fsl,qoriq-core-pll-1.0",
-> >core_pll_init);
-> >> +CLK_OF_DECLARE(ppc_core_pll_v2, "fsl,qoriq-core-pll-2.0",
-> >core_pll_init);
-> >> +CLK_OF_DECLARE(ppc_core_mux_v1, "fsl,qoriq-core-mux-1.0",
-> >core_mux_init);
-> >> +CLK_OF_DECLARE(ppc_core_mux_v2, "fsl,qoriq-core-mux-2.0",
-> >core_mux_init);
-> >
-> >What does this do that the existing platform driver and match table
-> >don't?  Why is it needed for ARM when PPC didn't need it?
-> >
-> >-Scott
-> >
-> Common clk init on ARM platform is initialized earlier via of_clk_init() instead of
-> driver probe method, the of_clk_init will walk a __clk_of_table to init each clk provider
-> in the table, the CLK_OF_DECLARE() macro puts a supported clk in the __clk_of_table for
-> it initializing on starup, and the clk system has added some common clk such as "fixed-clk"
-> to this table already.
-> So here I add our specific clk init declaration to consist this framework, and the driver
-> probe function will not be needed on ARM.
+From: Ley Foon Tan <lftan@altera.com>
+Date: Tue, 26 Aug 2014 15:11:16 +0800
 
-OK... Is there any reason why the new method won't work on PPC?
+> @@ -119,7 +119,8 @@ static int socfpga_dwmac_parse_data(struct socfpga_dwmac *dwmac, struct device *
+>  			return -EINVAL;
+>  		}
+>  
+> -		dwmac->splitter_base = (void *)devm_ioremap_resource(dev,
+> +		dwmac->splitter_base =
+> +			(void __iomem *)devm_ioremap_resource(dev,
+>  			&res_splitter);
 
--Scott
+Please either put this entire call on one line (it'll only be slightly
+over 80 columns, which is fine), or indent it properly.
 
+And by properly I meant that the second and subsequent lines of a function
+call must be indented precisely to the first column after the openning
+parenthesis of the function call on the first line.  You must use the
+appropriate number of TAB and SPACE characters necessary to do so.
 
+If it is indented using only TAB characters, it is very likely that you
+are doing it wrong.
+
+Thanks.
