@@ -1,62 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934344AbaH0NOY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 09:14:24 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:37313 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933270AbaH0NOW (ORCPT
+	id S934437AbaH0NPX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 09:15:23 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:34978 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933270AbaH0NPV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 09:14:22 -0400
+	Wed, 27 Aug 2014 09:15:21 -0400
+Date: Wed, 27 Aug 2014 16:15:13 +0300
+From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+To: axboe@kernel.dk, linux-kernel@vger.kernel.org
+Cc: paulmck@linux.vnet.ibm.com
+Subject: [PATCH] block: genhd: Replace rcu_assign_pointer() with
+ RCU_INIT_POINTER()
+Message-ID: <20140827131513.GA31290@ada>
 MIME-Version: 1.0
-In-Reply-To: <20140819211704.GS24407@sirena.org.uk>
-References: <1408466947-26593-1-git-send-email-swarren@wwwdotorg.org>
-	<20140819211704.GS24407@sirena.org.uk>
-Date: Wed, 27 Aug 2014 15:14:21 +0200
-X-Google-Sender-Auth: ZFB9RY9pTUbTj3jyoku0LZNAboU
-Message-ID: <CAMuHMdW1Ev9uTnWXTQxE0S+1SX2ahA7hFjHvb6JC5iRzgLJGFw@mail.gmail.com>
-Subject: Re: [PATCH V2] regmap: of_regmap_get_endian() cleanup
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <treding@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Next <linux-next@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>, Xiubo Li <Li.Xiubo@freescale.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+According to RCU_INIT_POINTER()'s block comment 3.a, it can be used if
+"3.   The referenced data structure has already been exposed to readers either
+at compile time or via rcu_assign_pointer() -and-
+ a.   You have not made -any- reader-visible changes to this structure since
+then".
 
-On Tue, Aug 19, 2014 at 11:17 PM, Mark Brown <broonie@kernel.org> wrote:
-> On Tue, Aug 19, 2014 at 10:49:07AM -0600, Stephen Warren wrote:
->> From: Stephen Warren <swarren@nvidia.com>
->>
->> Commit d647c199510c ("regmap: add DT endianness binding support") had
->> some issues. Commit ba1b53feb8ca ("regmap: Fix DT endianess parsing
->> logic") fixed the main problem. This patch fixes the other.
->
-> Applied, thanks.
+This case fulfills the conditions above because between the rcu_dereference()
+call and the rcu_assign_pointer() call there is no update of the "part"
+variable.
+Therefore, this patch makes the replacement.
 
-Doh, wish I'd seen this thread earlier...
+The following Coccinelle semantic patch was used:
+@@
+identifier v;
+@@
 
-This morning I was greeted by some crashes, as your spi/for-next branch
-has just pulled in spi/topic/fsl-dspi, which contains regmap/dt-endian, but
-not the fixes :-(
+v = rcu_dereference(...);
+... when != rcu_dereference(...);
+    when != v = ...;
+    when != (<+...v...+>)++;
+    when != \(memcpy\|memset\)(...);
+(
+- rcu_assign_pointer
++ RCU_INIT_POINTER
+  (..., v);
+|
+ if(...) {
+... when != v = ...;
+- rcu_assign_pointer
++ RCU_INIT_POINTER
+  (..., v);
+... when any
+ }
+)
 
-You may want to pull those in, too.
+Because there are cases where between a “rcu_dereference()” call and a
+“rcu_assign_pointer()” call might be updates of the value that interests
+us, the Coccinelle semantic patch ignores them and replaces with
+"RCU_INIT_POINTER()" only when the update is not happening.
 
-Thanks!
+Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+---
+ block/genhd.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Gr{oetje,eeting}s,
+diff --git a/block/genhd.c b/block/genhd.c
+index 3aec057..f7e29d8 100644
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -228,7 +228,7 @@ struct hd_struct *disk_map_sector_rcu(struct gendisk *disk, sector_t sector)
+ 		part = rcu_dereference(ptbl->part[i]);
+ 
+ 		if (part && sector_in_part(part, sector)) {
+-			rcu_assign_pointer(ptbl->last_lookup, part);
++			RCU_INIT_POINTER(ptbl->last_lookup, part);
+ 			return part;
+ 		}
+ 	}
+-- 
+1.9.1
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
