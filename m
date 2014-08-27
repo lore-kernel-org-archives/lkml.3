@@ -1,134 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756882AbaH0Cyw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 22:54:52 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:10918 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751473AbaH0Cyu (ORCPT
+	id S1756527AbaH0DER (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 23:04:17 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:37629 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751240AbaH0DEP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 22:54:50 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 26 Aug 2014 19:40:35 -0700
-Message-ID: <53FD484F.7030504@nvidia.com>
-Date: Wed, 27 Aug 2014 10:54:07 +0800
-From: Wei Ni <wni@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Eduardo Valentin <edubezval@gmail.com>
-CC: <khali@linux-fr.org>, <linux@roeck-us.net>, <swarren@wwwdotorg.org>,
-        <lm-sensors@lm-sensors.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 3/4] thermal: add more description for thermal-zones
-References: <1408948188-4181-1-git-send-email-wni@nvidia.com> <1408948188-4181-4-git-send-email-wni@nvidia.com> <20140825110711.GA12349@developer> <53FBEE39.2020001@nvidia.com> <20140826121210.GB15219@developer>
-In-Reply-To: <20140826121210.GB15219@developer>
-X-Originating-IP: [10.19.224.131]
-X-ClientProxiedBy: HKMAIL101.nvidia.com (10.18.16.10) To
- HKMAIL101.nvidia.com (10.18.16.10)
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Aug 2014 23:04:15 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-8b-53fd4aac07e9
+From: Chao Yu <chao2.yu@samsung.com>
+To: minchan@kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, ngupta@vflare.org,
+        "'Jerome Marchand'" <jmarchan@redhat.com>,
+        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>
+Subject: [PATCH v4] zram: add num_{discard_req, discarded} for discard stat
+Date: Wed, 27 Aug 2014 11:02:51 +0800
+Message-id: <000401cfc1a3$938f3620$baada260$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac/BoXYi4D/n5CU8QFuLBLOZDO/zfA==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrILMWRmVeSWpSXmKPExsVy+t9jAd21Xn+DDebfZbKYs34Nm8WpP9eZ
+	LC7vmsNmcW/Nf1aLZV/fs1tsaJnFbrH282N2B3aPnbPusntsWtXJ5rHp0yR2jxMzfrN4vN93
+	lc1j56fNrB6fN8kFsEdx2aSk5mSWpRbp2yVwZfy7/pGxoEOvYu7M6awNjNPVuhg5OSQETCTu
+	tG1mh7DFJC7cW8/WxcjFISSwiFHi5fmNrCAJIYEfjBKLml1AbDYBFYnlHf+ZQGwRoIbHX36w
+	gzQwC9xglLj58xhYg7CAt8TFPavZQGwWAVWJ1lvXweK8ApYSM66+ZoOwBSV+TL7HAmIzC2hJ
+	bN7WxAphy0tsXvOWGeIiBYkdZ18zdjFyAC3Tk5hxsgyiRFxi45FbLBMYBWYhmTQLyaRZSCbN
+	QtKygJFlFaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZwRDyT3sG4qsHiEKMAB6MSD++HBX+C
+	hVgTy4orcw8xSnAwK4nwZhr/DRbiTUmsrEotyo8vKs1JLT7EKM3BoiTOe7DVOlBIID2xJDU7
+	NbUgtQgmy8TBKdXAqLRNbelMmy+JGjua+Y30yliPPK0v1yzse8e8U9/86v0XnOtEtK2XS16u
+	fxAkHJzrdN9iz4mw7dOX/LuUZBU37YOgtFbg6Xin1g8XNnxx4dV4l8Um4xsnkpSVMV+fJdf2
+	9P5j72as/v724PX4pZ77HE4Lnm5hVyvfXC2wYu+pY0pT9nkULPutqcRSnJFoqMVcVJwIALBE
+	NbyEAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2014 08:12 PM, Eduardo Valentin wrote:
-> On Tue, Aug 26, 2014 at 10:17:29AM +0800, Wei Ni wrote:
->> On 08/25/2014 07:07 PM, Eduardo Valentin wrote:
->>> Hello Wei Ni,
->>>
->>> On Mon, Aug 25, 2014 at 02:29:47PM +0800, Wei Ni wrote:
->>>> Add more description for the "polling-delay" property.
->>>> Set "trips" and "cooling maps" as optional property, because
->>>> if missing these two sub-nodes, the thermal zone device still
->>>> work properly.
->>>>
->>>> Signed-off-by: Wei Ni <wni@nvidia.com>
->>>> ---
->>>>  Documentation/devicetree/bindings/thermal/thermal.txt | 10 ++++++----
->>>>  1 file changed, 6 insertions(+), 4 deletions(-)
->>>>
->>>> diff --git a/Documentation/devicetree/bindings/thermal/thermal.txt b/Documentation/devicetree/bindings/thermal/thermal.txt
->>>> index f5db6b7..e3d3ed9 100644
->>>> --- a/Documentation/devicetree/bindings/thermal/thermal.txt
->>>> +++ b/Documentation/devicetree/bindings/thermal/thermal.txt
->>>> @@ -136,8 +136,8 @@ containing trip nodes and one sub-node containing all the zone cooling maps.
->>>>  
->>>>  Required properties:
->>>>  - polling-delay:	The maximum number of milliseconds to wait between polls
->>>> -  Type: unsigned	when checking this thermal zone.
->>>> -  Size: one cell
->>>> +  Type: unsigned	when checking this thermal zone. If this value is 0, the
->>>> +  Size: one cell	driver will not run polling queue, but just cancel it.
->>>>  
->>>
->>> The description above is specific to Linux kernel implementation
->>> nomenclature. DT description needs to be OS agnostic.
->>>
->>>>  - polling-delay-passive: The maximum number of milliseconds to wait
->>>>    Type: unsigned	between polls when performing passive cooling.
->>>> @@ -148,14 +148,16 @@ Required properties:
->>>>    phandles + sensor
->>>>    specifier
->>>>  
->>>> +Optional property:
->>>>  - trips:		A sub-node which is a container of only trip point nodes
->>>>    Type: sub-node	required to describe the thermal zone.
->>>>  
->>>>  - cooling-maps:		A sub-node which is a container of only cooling device
->>>>    Type: sub-node	map nodes, used to describe the relation between trips
->>>> -			and cooling devices.
->>>> +			and cooling devices. If missing the "trips" property,
->>>> +			This sub-node will not be parsed, because no trips can
->>>> +			be bound to cooling devices.
->>>
->>> Do you mean if the thermal zone misses the "trips" property? Actually,
->>> the binding describes both, cooling-maps and trips, as required
->>> properties. Thus, both needs to be in place to consider the thermal zone
->>> as a proper described zone.
->>
->> I moved the "trips" and "cooling-maps" to optional property, because if
->> missing these two properties, the thermal zone devices still can be
->> registered, and the driver can work properly, it has the basic function,
->> can read temperature from thermal sysfs, although it doesn't have trips
->> and bind with cooling devices.
-> 
-> 
-> If a thermal zone is used only for monitoring, then I believe it lost
-> its purpose. As  Maybe a different framework shall be used, such as hwmon,
-> for instance?
+Since we have supported handling discard request in this commit
+f4659d8e620d08bd1a84a8aec5d2f5294a242764 (zram: support REQ_DISCARD), zram got
+one more chance to free unused memory whenever received discard request. But
+without stating for discard request, there is no method for user to know whether
+discard request has been handled by zram or how many blocks were discarded by
+zram when user wants to know the effect of discard.
 
-Yes, if we only use it for monitoring, we can use hwmon. But we have
-more functions base on these two thermal zone devices. We have a
-skin-temperature driver, which used nct1008's remote and local
-temperatures to estimator the skin temperature. As you know the thermal
-framework is more powerful, the remote/local sensors can be register as
-thermal zone, then the skin-temp driver can use thermal_zone_get_temp()
-to read their temperatures and then estimator skin's temp. We also will
-set trips and cooling devices for this skin-temp.
+In this patch, we add num_discard_req to stat discard request and add
+num_discarded to stat real discarded blocks, and export them to sysfs for users.
 
-Wei.
+* From v1
+ * Update zram document to show num_discards in statistics list.
 
-> 
-> The purpose of a thermal zone is to describe thermal behavior of a
-> hardware. As it is mentioned in the thermal.txt file.
-> 
-> 
->>
->> Thanks.
->> Wei.
->>
->>>
->>>>  
->>>> -Optional property:
->>>>  - coefficients:		An array of integers (one signed cell) containing
->>>>    Type: array		coefficients to compose a linear relation between
->>>>    Elem size: one cell	the sensors listed in the thermal-sensors property.
->>>> -- 
->>>> 1.8.1.5
->>>>
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+* From v2
+ * Update description of this patch with clear goal.
+
+* From v3
+ * Stat discard request and discarded pages separately as "previous stat
+   indicates lots of free page discarded without real freeing, so the stat makes
+   our user's misunderstanding" pointed out by Minchan Kim.
+
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ Documentation/ABI/testing/sysfs-block-zram | 17 +++++++++++++++++
+ Documentation/blockdev/zram.txt            |  2 ++
+ drivers/block/zram/zram_drv.c              | 17 ++++++++++++++---
+ drivers/block/zram/zram_drv.h              |  2 ++
+ 4 files changed, 35 insertions(+), 3 deletions(-)
+
+diff --git a/Documentation/ABI/testing/sysfs-block-zram b/Documentation/ABI/testing/sysfs-block-zram
+index 70ec992..805fb11 100644
+--- a/Documentation/ABI/testing/sysfs-block-zram
++++ b/Documentation/ABI/testing/sysfs-block-zram
+@@ -57,6 +57,23 @@ Description:
+ 		The failed_writes file is read-only and specifies the number of
+ 		failed writes happened on this device.
+ 
++What:		/sys/block/zram<id>/num_discard_req
++Date:		August 2014
++Contact:	Chao Yu <chao2.yu@samsung.com>
++Description:
++		The num_discard_req file is read-only and specifies the number
++		of requests received by this device. These requests are sent by
++		swap layer or filesystem when they want to free blocks which are
++		no longer used.
++
++What:		/sys/block/zram<id>/num_discarded
++Date:		August 2014
++Contact:	Chao Yu <chao2.yu@samsung.com>
++Description:
++		The num_discarded file is read-only and specifies the number of
++		real discarded blocks (pages which are really freed) in this
++		device after discard request is sent to this device.
++
+ What:		/sys/block/zram<id>/max_comp_streams
+ Date:		February 2014
+ Contact:	Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
+index 0595c3f..f9c1e41 100644
+--- a/Documentation/blockdev/zram.txt
++++ b/Documentation/blockdev/zram.txt
+@@ -89,6 +89,8 @@ size of the disk when not in use so a huge zram is wasteful.
+ 		num_writes
+ 		failed_reads
+ 		failed_writes
++		num_discard_req
++		num_discarded
+ 		invalid_io
+ 		notify_free
+ 		zero_pages
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index d00831c..1d012e8 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -322,7 +322,7 @@ static void handle_zero_page(struct bio_vec *bvec)
+  * caller should hold this table index entry's bit_spinlock to
+  * indicate this index entry is accessing.
+  */
+-static void zram_free_page(struct zram *zram, size_t index)
++static bool zram_free_page(struct zram *zram, size_t index)
+ {
+ 	struct zram_meta *meta = zram->meta;
+ 	unsigned long handle = meta->table[index].handle;
+@@ -336,7 +336,7 @@ static void zram_free_page(struct zram *zram, size_t index)
+ 			zram_clear_flag(meta, index, ZRAM_ZERO);
+ 			atomic64_dec(&zram->stats.zero_pages);
+ 		}
+-		return;
++		return false;
+ 	}
+ 
+ 	zs_free(meta->mem_pool, handle);
+@@ -347,6 +347,7 @@ static void zram_free_page(struct zram *zram, size_t index)
+ 
+ 	meta->table[index].handle = 0;
+ 	zram_set_obj_size(meta, index, 0);
++	return true;
+ }
+ 
+ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
+@@ -603,12 +604,18 @@ static void zram_bio_discard(struct zram *zram, u32 index,
+ 	}
+ 
+ 	while (n >= PAGE_SIZE) {
++		bool discarded;
++
+ 		bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
+-		zram_free_page(zram, index);
++		discarded = zram_free_page(zram, index);
+ 		bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
++		if (discarded)
++			atomic64_inc(&zram->stats.num_discarded);
+ 		index++;
+ 		n -= PAGE_SIZE;
+ 	}
++
++	atomic64_inc(&zram->stats.num_discard_req);
+ }
+ 
+ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+@@ -866,6 +873,8 @@ ZRAM_ATTR_RO(num_reads);
+ ZRAM_ATTR_RO(num_writes);
+ ZRAM_ATTR_RO(failed_reads);
+ ZRAM_ATTR_RO(failed_writes);
++ZRAM_ATTR_RO(num_discard_req);
++ZRAM_ATTR_RO(num_discarded);
+ ZRAM_ATTR_RO(invalid_io);
+ ZRAM_ATTR_RO(notify_free);
+ ZRAM_ATTR_RO(zero_pages);
+@@ -879,6 +888,8 @@ static struct attribute *zram_disk_attrs[] = {
+ 	&dev_attr_num_writes.attr,
+ 	&dev_attr_failed_reads.attr,
+ 	&dev_attr_failed_writes.attr,
++	&dev_attr_num_discard_req.attr,
++	&dev_attr_num_discarded.attr,
+ 	&dev_attr_invalid_io.attr,
+ 	&dev_attr_notify_free.attr,
+ 	&dev_attr_zero_pages.attr,
+diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+index e0f725c..49f91aa 100644
+--- a/drivers/block/zram/zram_drv.h
++++ b/drivers/block/zram/zram_drv.h
+@@ -86,6 +86,8 @@ struct zram_stats {
+ 	atomic64_t num_writes;	/* --do-- */
+ 	atomic64_t failed_reads;	/* can happen when memory is too low */
+ 	atomic64_t failed_writes;	/* can happen when memory is too low */
++	atomic64_t num_discard_req;	/* no. of discard req */
++	atomic64_t num_discarded;	/* no. of discarded pages */
+ 	atomic64_t invalid_io;	/* non-page-aligned I/O requests */
+ 	atomic64_t notify_free;	/* no. of swap slot free notifications */
+ 	atomic64_t zero_pages;		/* no. of zero filled pages */
+-- 
+2.0.1.474.g72c7794
+
 
