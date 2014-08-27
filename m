@@ -1,84 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964906AbaH0Tas (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 15:30:48 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60007 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935182AbaH0Taq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 15:30:46 -0400
-Date: Wed, 27 Aug 2014 14:30:28 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Michal Sojka <sojka@merica.cz>, <linux-usb@vger.kernel.org>,
-        Bryan Wu <cooloney@gmail.com>, Felipe Balbi <balbi@ti.com>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <michal.vokac@comap.cz>
-Subject: Re: [PATCH v3 2/2] usb: Add LED triggers for USB activity
-Message-ID: <20140827193028.GK6347@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <CAK5ve-Jz7=7uZ3_Qg2bAH9BiGRZ36k-Oj9TNZ-_nAvaq6LGbjA@mail.gmail.com>
- <1409144625-25274-1-git-send-email-sojka@merica.cz>
- <1409144625-25274-3-git-send-email-sojka@merica.cz>
- <20140827192751.GC9620@kroah.com>
+	id S964933AbaH0Tdu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 15:33:50 -0400
+Received: from mail-by2lp0243.outbound.protection.outlook.com ([207.46.163.243]:50676
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750804AbaH0Tds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 15:33:48 -0400
+Message-ID: <53FE328F.5040204@caviumnetworks.com>
+Date: Wed, 27 Aug 2014 12:33:35 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="vbzKE9fGfpHIBC6T"
-Content-Disposition: inline
-In-Reply-To: <20140827192751.GC9620@kroah.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Andrew Bresticker <abrestic@chromium.org>
+CC: Jonas Gorski <jogo@openwrt.org>, Geert Uytterhoeven <geert@linux-m68k.org>,
+        Olof Johansson <olof@lixom.net>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Kumar Gala <galak@codeaurora.org>, Ralf Baechle <ralf@linux-mips.org>,
+        David Daney <david.daney@cavium.com>, Rob Herring <robh+dt@kernel.org>,
+        Linux-MIPS <linux-mips@linux-mips.org>,
+        Qais Yousef <qais.yousef@imgtec.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, John Crispin <blogic@openwrt.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Jayachandran C <jchandra@broadcom.com>,
+        Paul Burton <paul.burton@imgtec.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 0/7] MIPS: Move device-tree files to a common location
+References: <1408651466-8334-1-git-send-email-abrestic@chromium.org> <CAGVrzcZobuL4z0WNX+Sz4p_uwaPL-S5yvEmgRUwZPJi4+qq0tg@mail.gmail.com> <CAL1qeaGb-o0P7x4nZPJ+dGfoSKz+2ANrB0gGrBi19TtPxVTAZQ@mail.gmail.com> <20140823063113.GC23715@localhost> <CAMuHMdXudu0kuOkKN8JCrWZSrQ4awKHhHU0E2ss++ProP0rteQ@mail.gmail.com> <CAOiHx=mZPt=p_jw4fyEqgniJvqunQ86ro_Run5ZtD1zLYWzmqA@mail.gmail.com> <CAL1qeaFTw=0XMEkag1Z8C4jKkWnwBeGJLYxHGiYfKXBk-9o0Yw@mail.gmail.com>
+In-Reply-To: <CAL1qeaFTw=0XMEkag1Z8C4jKkWnwBeGJLYxHGiYfKXBk-9o0Yw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [64.2.3.195]
+X-ClientProxiedBy: BLUPR07CA081.namprd07.prod.outlook.com (25.160.24.36) To
+ DM2PR07MB589.namprd07.prod.outlook.com (10.141.176.139)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0316567485
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6009001)(24454002)(199003)(479174003)(189002)(377454003)(105586002)(90102001)(93886004)(85306004)(64126003)(106356001)(83072002)(81156004)(85852003)(92726001)(92566001)(74662001)(76482001)(74502001)(87976001)(95666004)(31966008)(110136001)(23676002)(83506001)(107046002)(50466002)(76176999)(59896002)(50986999)(101416001)(81342001)(19580405001)(47776003)(20776003)(19580395003)(79102001)(64706001)(83322001)(69596002)(36756003)(87266999)(54356999)(65816999)(80316001)(33656002)(66066001)(65806001)(77096002)(53416004)(4396001)(21056001)(81542001)(99396002)(80022001)(65956001)(42186005)(46102001)(102836001)(77982001);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR07MB589;H:dl.caveonetworks.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+X-OriginatorOrg: caviumnetworks.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---vbzKE9fGfpHIBC6T
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 08/27/2014 11:30 AM, Andrew Bresticker wrote:
+> On Mon, Aug 25, 2014 at 8:17 AM, Jonas Gorski <jogo@openwrt.org> wrote:
+>> On Sat, Aug 23, 2014 at 9:50 PM, Geert Uytterhoeven
+>> <geert@linux-m68k.org> wrote:
+>>> On Sat, Aug 23, 2014 at 8:31 AM, Olof Johansson <olof@lixom.net> wrote:
+>>>>>> arch/arm/boot/dts/<vendor>/
+>>>>>>
+>>>>>> Is this something we should do for the MIPS and update the other architectures
+>>>>>> to follow that scheme?
+>>>>>
+>>>>> I recall reading that as well and that it would be adopted for ARM64,
+>>>>> but that hasn't seemed to have happened.  Perhaps Olof (CC'ed) will no
+>>>>> more.
+>>>>
+>>>> Yeah, I highly recommend having a directory per vendor. We didn't on ARM,
+>>>> and the amount of files in that directory is becoming pretty
+>>>> insane. Moving to a subdirectory structure later gets messy which is
+>>>> why we've been holding off on it.
+>>>
+>>> It would mean we can change our scripts to operate on "interesting"
+>>> DTS files from
+>>>
+>>>       do-something-with $(git grep -l $vendor, -- arch/arm/boot/dts)
+>>>
+>>> to
+>>>
+>>>      do-something-with arch/arm/boot/dts/$vendor/*
+>>>
+>>> which is easier to type...
+>>
+>> Btw, do you mean chip-vendor or device-vendor with vendor?
+>> Device-vendor could get a bit messy on the source part as the router
+>> manufacturers tend to switch them quite often. E.g. d-link used arm,
+>> mips and ubi32 chips from marvell, ubicom, broadcom, atheros, realtek
+>> and ralink for their dir-615 router, happily switching back and forth.
+>> There are 14 known different hardware revisions of it where the chip
+>> differed from the previous one.
+>
+> I'm going to assume it means chip/SoC vendor.  That would result in
+> the following structure (I think):
+>
+> Octeon -> cavium/
 
-On Wed, Aug 27, 2014 at 12:27:51PM -0700, Greg Kroah-Hartman wrote:
-> On Wed, Aug 27, 2014 at 03:03:45PM +0200, Michal Sojka wrote:
-> > With this patch, USB activity can be signaled by blinking a LED. There
-> > are two triggers, one for activity on USB host and one for USB gadget.
-> >=20
-> > Both trigger should work with all host/device controllers. Tested only
-> > with musb.
-> >=20
-> > Signed-off-by: Michal Sojka <sojka@merica.cz>
-> > ---
-> >  drivers/usb/Kconfig                           | 11 ++++++
-> >  drivers/usb/common/Makefile                   |  5 ++-
-> >  drivers/usb/common/{usb-common.c =3D> common.c} |  0
->=20
-> I don't mind renaming files, but don't "hide" it in this patch, do it in
-> a separate patch please, and then base your next patch on this one.
+To match the state of the art naming we have in other MIPS related 
+directories, it should probably be "cavium-octeon/" (See 
+arch/mips/cavium-octeon, and arch/mips/include/asm/mach-cavium-octeon)
 
-+1
-
-yeah, this prevents us from reviewing the actual changes
-
---=20
-balbi
-
---vbzKE9fGfpHIBC6T
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJT/jHUAAoJEIaOsuA1yqRELvwP/2YWPd4SVfvcirFSpKgJDei4
-zvqRKSqVPZjE9TKHsXTbIXIQHpGlfQLaa9aie5GJ8ccHHQoQttygG89aT7g7MVPm
-8dAdJ20pnadEU2RFW+q0Kqq7c5mP0FiKq4OyxXetAjLV7QkR4HnCF6AUPtmccu6t
-gVzbxXCh++toh/Ia3pO3GWZZQYwQrgLoVPhhI3KwsJ0xNOBLovNNWeDU9cLs79/b
-pWT8MQECDqiqzYdSaq5+gTliVFMvP3xYnK5AKLMVwylKRxbqux2qXLmY6Z6bthA7
-KFyd+7GkWbzhVIIKIidsCM3cWr9Zz3TKoZS/3Yw1WqN0VxmqcX7drPXlkp+VovEe
-k/D8cLQrmiRdK6WnqR+qlfV50KgU4c1UEra1UnNaLLMqKnTmeMzBrrX8OSJjG0Ch
-s1+EhtFSPK81vb7pIPMVKS8RjBRLDCnHseJa6/4YsazmcefTYko+rKClfN+oTPC2
-P6EkKB2td7WQ96mG7nsfl9PhNs2no6sA0SmOQOcHxHXYg3X0QvmoBlb190ohlIeG
-L1zM/Fqg8VbkA2Hs2fWrRZiPC4O3t+UrUoMge0RQkC656Sykw+yekICsn7x1OeQg
-v48+B7aklBWxkNNFZ3GOPCn4BaQevle1DYNdkCeG1P9qU1Weou6F/8KHHJ09KLfV
-I2DL0JTgzhOnATiVvjB5
-=5L0W
------END PGP SIGNATURE-----
-
---vbzKE9fGfpHIBC6T--
+David Daney
