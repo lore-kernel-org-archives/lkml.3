@@ -1,121 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964919AbaH0Pdx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 11:33:53 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:63176 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934998AbaH0Pdu (ORCPT
+	id S935451AbaH0Pef (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 11:34:35 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:26625 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934491AbaH0PU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 11:33:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <CALYGNiN-SHr6YJ53_deizb1VoXTBzD7dn8hcwqd4zLjx6utCDw@mail.gmail.com>
-References: <20140722153623.25088.37742.stgit@buzz>
-	<20140728181224.GN15536@arm.com>
-	<CALYGNiNrK1d32ecz4rw0sgn0GyN-M6hTBuTLGQV53Z4Br-bpYQ@mail.gmail.com>
-	<20140728184741.GT15536@arm.com>
-	<CALYGNiOd+Dy-2q_woZ9UDbMO24q58jN1Nsq7E8cJMMg_YBK9pA@mail.gmail.com>
-	<CABb+yY17Y18oAivi_VxPJqDEGLTbEy_PfsdeK9jXWZ0iV3vZ=w@mail.gmail.com>
-	<CALYGNiN-SHr6YJ53_deizb1VoXTBzD7dn8hcwqd4zLjx6utCDw@mail.gmail.com>
-Date: Wed, 27 Aug 2014 19:33:49 +0400
-Message-ID: <CALYGNiP3J15OGBe2Kn7=0x+F5GnZ2LO4j6+7=RtS4WWT4Pyfzw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] ARM: LPAE: load upper bits of early TTBR0/TTBR1
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: Jassi Brar <jassisinghbrar@gmail.com>
-Cc: Will Deacon <will.deacon@arm.com>,
-        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vitaly Andrianov <vitalya@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 27 Aug 2014 11:20:27 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-dc-53fdf738e3c3
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH v4 2/8] mfd: max14577: Map charger device to its own of_node
+Date: Wed, 27 Aug 2014 17:20:08 +0200
+Message-id: <1409152814-17302-3-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1409152814-17302-1-git-send-email-k.kozlowski@samsung.com>
+References: <1409152814-17302-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsVy+t/xy7oW3/8GG0x4I2axccZ6VoupD5+w
+	WUx68p7ZYuLKycwW/W8Wslqce7WS0eL1C0OLs01v2C3ufz3KaPHtSgeTxebvHWwWl3fNYbP4
+	3HuE0WLtkbvsFkuvX2SymDB9LYtF694j7Banu1ktTu8ucRD2WDNvDaPH5b5eJo+ds+6ye6xc
+	/oXNY/MKLY9NqzrZPO5c28PmMe9koEffllWMHp83yQVwRXHZpKTmZJalFunbJXBlzL7RwVJw
+	mL3i3cuTbA2M89i6GDk5JARMJH53PYSyxSQu3FsPZHNxCAksZZS4uOIsE4TTxySx8sVVRpAq
+	NgFjic3Ll4B1iAgsYJK4uC4XxGYWOMMsMXU1B4gtLOAjcaptETuIzSKgKvGydxkziM0r4C4x
+	5eBPFohtchInj01mBbE5BTyAai4ALeMAWuYucXce/wRG3gWMDKsYRVNLkwuKk9JzjfSKE3OL
+	S/PS9ZLzczcxQoL+6w7GpcesDjEKcDAq8fAqnP4TLMSaWFZcmXuIUYKDWUmEt+zA32Ah3pTE
+	yqrUovz4otKc1OJDjEwcnFINjNp/5VezNwnaq4sasRTyXFx2oGpXe/TRFUlbXxU9sdn9db4c
+	8/HNf343dlTfNvL9Lsf4Z8aN13Xp9c6OP/wuy07ICPVS+H27I1Zv5Zz+h+v+/DI1yJ19i6uL
+	PW/xO5bVgY79f7jSpTL2rTJSnCCwYWLkVOmjvZcrsixnHVyn/NxTvbf4bP/KMiWW4oxEQy3m
+	ouJEAMlAK1pYAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 27, 2014 at 7:31 PM, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
-> On Wed, Aug 27, 2014 at 7:26 PM, Jassi Brar <jassisinghbrar@gmail.com> wrote:
->> On Tue, Jul 29, 2014 at 5:59 PM, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
->>> On Mon, Jul 28, 2014 at 10:47 PM, Will Deacon <will.deacon@arm.com> wrote:
->>>> On Mon, Jul 28, 2014 at 07:40:58PM +0100, Konstantin Khlebnikov wrote:
->>>>> On Mon, Jul 28, 2014 at 10:12 PM, Will Deacon <will.deacon@arm.com> wrote:
->>>>> > On Tue, Jul 22, 2014 at 04:36:23PM +0100, Konstantin Khlebnikov wrote:
->>>>> >> This patch fixes booting when idmap pgd lays above 4gb. Commit
->>>>> >> 4756dcbfd37 mostly had fixed this, but it'd failed to load upper bits.
->>>>> >>
->>>>> >> Also this fixes adding TTBR1_OFFSET to TTRR1: if lower part overflows
->>>>> >> carry flag must be added to the upper part.
->>>>> >>
->>>>> >> Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
->>>>> >> Cc: Cyril Chemparathy <cyril@ti.com>
->>>>> >> Cc: Vitaly Andrianov <vitalya@ti.com>
->>>>> >> ---
->>>>> >>  arch/arm/mm/proc-v7-3level.S |    7 +++----
->>>>> >>  1 file changed, 3 insertions(+), 4 deletions(-)
->>>>> >>
->>>>> >> diff --git a/arch/arm/mm/proc-v7-3level.S b/arch/arm/mm/proc-v7-3level.S
->>>>> >> index 22e3ad6..f0481dd 100644
->>>>> >> --- a/arch/arm/mm/proc-v7-3level.S
->>>>> >> +++ b/arch/arm/mm/proc-v7-3level.S
->>>>> >> @@ -140,12 +140,11 @@ ENDPROC(cpu_v7_set_pte_ext)
->>>>> >>       mov     \tmp, \ttbr1, lsr #(32 - ARCH_PGD_SHIFT)        @ upper bits
->>>>> >>       mov     \ttbr1, \ttbr1, lsl #ARCH_PGD_SHIFT             @ lower bits
->>>>> >>       addls   \ttbr1, \ttbr1, #TTBR1_OFFSET
->>>>> >> -     mcrr    p15, 1, \ttbr1, \zero, c2                       @ load TTBR1
->>>>> >> +     adcls   \tmp, \tmp, #0
->>>>> >> +     mcrr    p15, 1, \ttbr1, \tmp, c2                        @ load TTBR1
->>>>> >>       mov     \tmp, \ttbr0, lsr #(32 - ARCH_PGD_SHIFT)        @ upper bits
->>>>> >>       mov     \ttbr0, \ttbr0, lsl #ARCH_PGD_SHIFT             @ lower bits
->>>>> >> -     mcrr    p15, 0, \ttbr0, \zero, c2                       @ load TTBR0
->>>>> >> -     mcrr    p15, 1, \ttbr1, \zero, c2                       @ load TTBR1
->>>>> >> -     mcrr    p15, 0, \ttbr0, \zero, c2                       @ load TTBR0
->>>>> >> +     mcrr    p15, 0, \ttbr0, \tmp, c2                        @ load TTBR0
->>>>> >
->>>>> > I must admit, the code you are removing here looks really strange. Was there
->>>>> > a badly resolved conflict somewhere along the way? It would be nice to see
->>>>> > if your fix (which seems ok to me) was actually present in the mailing list
->>>>> > posting of the patch that ended in the above mess.
->>>>>
->>>>> Nope, no merge conflicts, source in original patch
->>>>> https://lkml.org/lkml/2012/9/11/346
->>>>>
->>>>> That mess completely harmless, this code is used only once on boot.
->>>>> I don't have that email, so replying isn't trivial for me.
->>>>
->>>> How bizarre. Also, Cyril doesn't work for TI anymore (his email is
->>>> bouncing), so it's tricky to know what he meant here.
->>>>
->>>> Your patch looks better than what we currently have though. Have you managed
->>>> to test it on a keystone platform (I don't have one)?
->>>
->>> No, I don't have it too. As well as I don't have direct access to the
->>> platform where
->>> problem was found. I've debugged this in patched qemu.
->>>
->> It seems the patch wasn't tested on any real platform, I did on my
->> CA15 based platform - it breaks boot. Simply reverting the patch gets
->> it going again. I am happy to try any fix.
->>
->
-> Please try to remove adcls line.
-> Seems like this affects only systems where PHYS_OFFSET == PAGE_OFFSET.
->
-> --- a/arch/arm/mm/proc-v7-3level.S
-> +++ b/arch/arm/mm/proc-v7-3level.S
-> @@ -146,7 +146,6 @@ ENDPROC(cpu_v7_set_pte_ext)
->         mov     \tmp, \ttbr1, lsr #(32 - ARCH_PGD_SHIFT)        @ upper bits
->         mov     \ttbr1, \ttbr1, lsl #ARCH_PGD_SHIFT             @ lower bits
->         addls   \ttbr1, \ttbr1, #TTBR1_OFFSET
-> -       adcls   \tmp, \tmp, #0
->         mcrr    p15, 1, \ttbr1, \tmp, c2                        @ load TTBR1
->         mov     \tmp, \ttbr0, lsr #(32 - ARCH_PGD_SHIFT)        @ upper bits
->         mov     \ttbr0, \ttbr0, lsl #ARCH_PGD_SHIFT             @ lower bits
->
->
+Add a "maxim,max14577-charger" of_compatible to the mfd_cell so the
+MFD child device (the charger) will have its own of_node set. This will
+be used by the max14577 charger driver in next patches to obtain battery
+configuration from DTS.
 
-...
-I've dropped cyril@ti.com from CC, his email address is dead.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ drivers/mfd/max14577.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
+diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
+index 4a5e885383f8..6599407b5624 100644
+--- a/drivers/mfd/max14577.c
++++ b/drivers/mfd/max14577.c
+@@ -35,7 +35,10 @@ static const struct mfd_cell max14577_devs[] = {
+ 		.name = "max14577-regulator",
+ 		.of_compatible = "maxim,max14577-regulator",
+ 	},
+-	{ .name = "max14577-charger", },
++	{
++		.name = "max14577-charger",
++		.of_compatible = "maxim,max14577-charger",
++	},
+ };
+ 
+ static const struct mfd_cell max77836_devs[] = {
+-- 
+1.9.1
 
->> Thanks
->> Jassi
