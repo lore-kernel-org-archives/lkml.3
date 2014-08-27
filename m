@@ -1,43 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935238AbaH0Rrt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 13:47:49 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:38853 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754678AbaH0Rrs (ORCPT
+	id S1756781AbaH0Rty (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 13:49:54 -0400
+Received: from canaima.inia.gob.ve ([190.202.124.227]:43847 "EHLO
+	canaima.inia.gob.ve" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750909AbaH0Rtx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 13:47:48 -0400
-Date: Wed, 27 Aug 2014 10:47:46 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Luis Henriques <luis.henriques@canonical.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
-        tj@kernel.org
-Subject: Re: [PATCH v3 part1 0/4] Fix SG_IO ambiguity between READ SUBCHANNEL
- and UNMAP (and other similar cases)
-Message-ID: <20140827174746.GA18373@infradead.org>
-References: <1369317503-4095-1-git-send-email-pbonzini@redhat.com>
- <20140827093437.GA10937@hercules>
- <53FDAE65.3080208@redhat.com>
- <20140827120806.GF10937@hercules>
+	Wed, 27 Aug 2014 13:49:53 -0400
+Date: Wed, 27 Aug 2014 17:51:25 +0000
+Message-ID: <20140827175125.Horde.qqfyzsHiQ8lebprILvCfow1@correo.inia.gob.ve>
+From: Annie Smith <anniesmith@charity.org>
+Subject: Please Help
+Reply-to: as8114648@gmail.com
+User-Agent: Internet Messaging Program (IMP) H5 (6.0.2)
+Content-Type: text/plain; charset=UTF-8; format=flowed; DelSp=Yes
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140827120806.GF10937@hercules>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 27, 2014 at 01:08:06PM +0100, Luis Henriques wrote:
-> Thanks a lot for the update, Paolo.
-> 
-> This is what I was actually expecting, although it's somewhat
-> surprising, taking into account this is a security issue :-)
+I am Annie Smith I have only about a few months to live and I want you  
+to Distribute my funds of Eighty Million dollars $80,000,000(united  
+states dollars) to charities
 
-The right fix is to get rid of all the whitelisting BS and just allow
-SG_IO if capable, not based on ownership checks.
 
-With this all the problems with trying to work around the different commands
-sets are gone.
+
+
