@@ -1,74 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934889AbaH0OHk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 10:07:40 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:57506 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933583AbaH0OHg (ORCPT
+	id S934795AbaH0OLf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 10:11:35 -0400
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:61453 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933802AbaH0OLe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 10:07:36 -0400
-Message-ID: <53FDE621.2050009@kernel.dk>
-Date: Wed, 27 Aug 2014 08:07:29 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Wed, 27 Aug 2014 10:11:34 -0400
+Date: Wed, 27 Aug 2014 15:11:27 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Guodong Xu <guodong.xu@linaro.org>
+Cc: sameo@linux.intel.com, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, linux@arm.linux.org.uk, grant.likely@linaro.org,
+        khilman@linaro.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        zhangnian@huawei.com
+Subject: Re: [PATCH 2/3] mfd: Add hi6421 PMIC core driver
+Message-ID: <20140827141127.GA24579@lee--X1>
+References: <1408973982-2072-1-git-send-email-guodong.xu@linaro.org>
+ <1408973982-2072-3-git-send-email-guodong.xu@linaro.org>
 MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: Joe Lawrence <joe.lawrence@stratus.com>, linux-kernel@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>, Boaz Harrosh <bharrosh@panasas.com>
-Subject: Re: [PATCH v3 0/2] block,scsi: fixup blk_get_request dead queue scenarios
-References: <1404329718-19367-1-git-send-email-joe.lawrence@stratus.com>	<x49egw36u55.fsf@segfault.boston.devel.redhat.com>	<53FCF9DB.6010501@kernel.dk>	<x49mwar54ca.fsf@segfault.boston.devel.redhat.com>	<53FCFD40.2010903@kernel.dk> <53FCFE01.8080701@kernel.dk> <x49iole6hcc.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x49iole6hcc.fsf@segfault.boston.devel.redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1408973982-2072-3-git-send-email-guodong.xu@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2014 04:01 PM, Jeff Moyer wrote:
-> Jens Axboe <axboe@kernel.dk> writes:
+> This adds driver to support HiSilicon Hi6421 PMIC. Hi6421 includes multi-
+> functions, such as regulators, codec, ADCs, Coulomb counter, etc.
+> This driver includes core APIs _only_.
 > 
->>> I have applied the first one, will look over the second one and hand
->>> apply it. Seems the NULL return was completely removed, so we _should_
->>> be ok on the IS_ERR() conversion, though that sort of thing always
->>> worries me a little bit. A NULL return can quickly show up again, and
->>> then they would all fail.
+> Drivers for individul components, like voltage regulators, are
+> implemented in corresponding driver directories and files.
 > 
-> Well, we could guard against that with a BUG_ON in blk_get_request,
-> right?
-
-Yes, that might be a good idea.
-
->> Additionally, there's still quite a few places that call
->> blk_get_request() and don't check the error return if __GFP_WAIT is set.
->> Since most of the point of this is to fix segfaulting on queue dead
->> scenarios, why aren't they all converted?
+> Registers in Hi6421 are memory mapped, so using regmap-mmio API.
 > 
-> Odd, I thought they all were converted last I checked.  They definitely
-> should be.
+> Signed-off-by: Guodong Xu <guodong.xu@linaro.org>
+> ---
 
-drivers/ide/ide-park:issue_park_cmd() (patch oddly converts just the one?!)
-drivers/ide/ide-pm.c:generic_ide_suspend()
-drivers/ide/ide-pm.c:generic_ide_resume()
-drivers/ide/ide-cd.c:ide_cd_queue_pc()
-drivers/ide/ide-atapi.c:ide_queue_pc_tail()
-drivers/ide/ide-ioctls.c:ide_cmd_ioctl()
-drivers/ide/ide-ioctls.c:generic_drive_reset()
-drivers/ide/ide-taskfile.c:ide_raw_taskfile()
-drivers/ide/ide-tape.c:idetape_queue_rw_tail()
-drivers/ide/ide-cd_ioctls.c:ide_cdrom_reset()
-drivers/ide/ide-disk.c:set_multcount()
-drivers/ide/ide-devsets.c:ide_devset_execute()
+The patch is missing version information normally indicated to in the
+£SUBJECT line with a full description added here.  This looks like a
+first submission, but we both know that it's not. 
 
-Why only one location in ide-park.c was converted and the rest of IDE
-left untouched, I don't know. But there are definitely lots of them left
-in there.
+>  drivers/mfd/Kconfig             |  13 +++++
+>  drivers/mfd/Makefile            |   1 +
+>  drivers/mfd/hi6421-pmic-core.c  | 112 ++++++++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/hi6421-pmic.h |  42 +++++++++++++++
+>  4 files changed, 168 insertions(+)
+>  create mode 100644 drivers/mfd/hi6421-pmic-core.c
+>  create mode 100644 include/linux/mfd/hi6421-pmic.h
 
-There's also a bug in osd_initiator.c, _init_blk_request(). We jump to
-'out' for IS_ERR(req), which attempts to print or->request, which hasn't
-been assigned yet. This is my primary concern with this patch, basically
-every single of these call sites must be verified or it will do more
-harm than good. Have they been?
+[...]
+
+> diff --git a/drivers/mfd/hi6421-pmic-core.c b/drivers/mfd/hi6421-pmic-core.c
+> new file mode 100644
+> index 0000000..c6cba8f
+> --- /dev/null
+> +++ b/drivers/mfd/hi6421-pmic-core.c
+> @@ -0,0 +1,112 @@
+
+[...]
+
+> +#include <linux/device.h>
+> +#include <linux/err.h>
+> +#include <linux/mfd/core.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/regmap.h>
+> +#include <linux/mfd/hi6421-pmic.h>
+> +
+> +static struct of_device_id of_hi6421_pmic_match_tbl[] = {
+> +	{ .compatible = "hisilicon,hi6421-pmic", },
+> +	{ },
+> +};
+
+Unless you're going to use this to of_match() on in future, this
+should be down by the definition of 'struct platform_driver'.
+
+> +static int hi6421_pmic_probe(struct platform_device *pdev)
+> +{
+
+[...]
+
+> +	/* set over-current protection debounce 8ms */
+> +	regmap_update_bits(pmic->regmap, HI6421_OCP_DEB_CTRL_REG,
+> +		(HI6421_OCP_DEB_SEL_MASK | HI6421_OCP_EN_DEBOUNCE_MASK |
+> +		 HI6421_OCP_AUTO_STOP_MASK),
+> +		(HI6421_OCP_DEB_SEL_8MS | HI6421_OCP_EN_DEBOUNCE_ENABLE));
+
+These might read a little better stacked and aligned.
+
+> +	pmic->dev = &pdev->dev;
+
+Can't you retrieve this via dev->parent?
 
 -- 
-Jens Axboe
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
