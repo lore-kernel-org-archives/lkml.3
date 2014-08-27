@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965044AbaH0VLN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 17:11:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57096 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933809AbaH0VLK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 17:11:10 -0400
-Date: Wed, 27 Aug 2014 14:11:09 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: gadget: net2280: Remove pci_class from PCI_TABLE
-Message-ID: <20140827211109.GA26897@kroah.com>
-References: <1409144429-23723-1-git-send-email-ricardo.ribalda@gmail.com>
- <20140827192547.GB9620@kroah.com>
- <CAPybu_1-pgEc5cwRPggm60UHKCceQZGAiyzjGqOhDZJedbkE8w@mail.gmail.com>
- <20140827202204.GA13047@kroah.com>
- <CAPybu_1GRUTvatLeyst_M+0g0k8e=1z+F11eEyHkBonvYespCg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPybu_1GRUTvatLeyst_M+0g0k8e=1z+F11eEyHkBonvYespCg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S935819AbaH0VM2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 17:12:28 -0400
+Received: from mga14.intel.com ([192.55.52.115]:43590 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932150AbaH0VM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 17:12:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="377843119"
+From: Ross Zwisler <ross.zwisler@linux.intel.com>
+To: Jens Axboe <axboe@kernel.dk>, Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Boaz Harrosh <boaz@plexistor.com>, Nick Piggin <npiggin@kernel.dk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-nvdimm@ml01.01.org
+Cc: Ross Zwisler <ross.zwisler@linux.intel.com>
+Subject: [PATCH 0/4] Add persistent memory driver
+Date: Wed, 27 Aug 2014 15:11:58 -0600
+Message-Id: <1409173922-7484-1-git-send-email-ross.zwisler@linux.intel.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 27, 2014 at 11:03:00PM +0200, Ricardo Ribalda Delgado wrote:
-> Hello Greg
-> 
-> >>
-> >> Not many drivers define the pci interface and there is no other driver
-> >> that has the same vendor  and product id. Therefore I see no hurt in
-> >> adding both patches, one to make the driver broader, and another to
-> >> fix pci-sysfs.
-> >>
-> >> Also, the change on pci-sysfs might affect more stuff and therefore
-> >> take longer to be applied.
-> >
-> > As we have been printing the value to userspace in this way for well
-> > over a decade now, and nothing has changed, I say it's a userspace bug
-> > that you should fix instead.  Don't work around broken user programs in
-> > the kernel by changing something that has been stable for 10+ years.
-> >
-> > Ok, sorry, not 10+ years, the commit was written May of 2005, so 9
-> > years.
-> >
-> > Fix your module loading code please.
-> 
-> On the other thread ( https://lkml.org/lkml/2014/8/27/242 ) we have
-> agreed about fixing this thing on pci-sysfs.c .
-> 
-> Still I think that there is no good reason to add the pci interface to
-> the pci_table on this driver. Therefore I consider that this patch is
-> still valid.
-> 
-> What do you think. This patch is NACK?
+PMEM is a modified version of the Block RAM Driver, BRD. The major difference
+is that BRD allocates its backing store pages from the page cache, whereas
+PMEM uses reserved memory that has been ioremapped.
 
-Yeah, I don't think this patch is needed as it properly sets the class
-of the device to be matched against, so it should not be necessary at
-all.
+One benefit of this approach is that there is a direct mapping between
+filesystem block numbers and virtual addresses.  In PMEM, filesystem blocks N,
+N+1, N+2, etc. will all be adjacent in the virtual memory space. This property
+allows us to set up PMD mappings (2 MiB) for DAX.
 
-thanks,
+This patch set is builds upon the work that Matthew Wilcox has been doing for
+DAX:
 
-greg k-h
+https://lkml.org/lkml/2014/8/27/31
+
+Specifically, my implementation of pmem_direct_access() in patch 4/4 uses API
+enhancements introduced in Matthew's DAX patch v10 02/21:
+
+https://lkml.org/lkml/2014/8/27/48
+
+Ross Zwisler (4):
+  pmem: Initial version of persistent memory driver
+  pmem: Add support for getgeo()
+  pmem: Add support for rw_page()
+  pmem: Add support for direct_access()
+
+ MAINTAINERS            |   6 +
+ drivers/block/Kconfig  |  41 ++++++
+ drivers/block/Makefile |   1 +
+ drivers/block/pmem.c   | 375 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 423 insertions(+)
+ create mode 100644 drivers/block/pmem.c
+
+-- 
+1.9.3
+
