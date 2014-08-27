@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935333AbaH0QKT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 12:10:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39394 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935294AbaH0QKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 12:10:17 -0400
-Message-ID: <53FE02E6.3030302@suse.de>
-Date: Wed, 27 Aug 2014 18:10:14 +0200
-From: =?ISO-8859-15?Q?Andreas_F=E4rber?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S935384AbaH0QLD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 12:11:03 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:59710 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935137AbaH0QLA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 12:11:00 -0400
 MIME-Version: 1.0
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>
-CC: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] ARM: exynos_defconfig: Enable Control Groups support
-References: <1409137341-20516-1-git-send-email-javier.martinez@collabora.co.uk>
-In-Reply-To: <1409137341-20516-1-git-send-email-javier.martinez@collabora.co.uk>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <53FDF8D9.60103@intel.com>
+References: <1409068061-10855-1-git-send-email-ricardo.ribalda@gmail.com>
+ <53FDEA48.9030301@intel.com> <CAPybu_1Tzik3yegY2rrXKd7ii1Bzn-ep-gXG5MDZ-rJ2D71-Rw@mail.gmail.com>
+ <53FDF8D9.60103@intel.com>
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Wed, 27 Aug 2014 18:10:40 +0200
+Message-ID: <CAPybu_363MD6bFesB44JkkjJYyi+B8KFG9Q1s6aeKNmvvNCz=A@mail.gmail.com>
+Subject: Re: [PATCH] xhci-ring: Fix Null pointer dereference
+To: Mathias Nyman <mathias.nyman@intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 27.08.2014 13:02, schrieb Javier Martinez Canillas:
-> systemd needs control groups support to be enabled in the
-> kernel so let's enable it by default since is quite likely
-> that a user-space with systemd will be used.
-> 
-> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> ---
->  arch/arm/configs/exynos_defconfig | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/arch/arm/configs/exynos_defconfig b/arch/arm/configs/exynos_defconfig
-> index 676c744..590abde 100644
-> --- a/arch/arm/configs/exynos_defconfig
-> +++ b/arch/arm/configs/exynos_defconfig
-> @@ -1,6 +1,7 @@
->  CONFIG_SYSVIPC=y
->  CONFIG_NO_HZ=y
->  CONFIG_HIGH_RES_TIMERS=y
-> +CONFIG_CGROUPS=y
->  CONFIG_BLK_DEV_INITRD=y
->  CONFIG_KALLSYMS_ALL=y
->  CONFIG_MODULES=y
+Perhaps we could apply both patches to current tree and backport mine
+to older kernels?
 
-CONFIG_FHANDLE=y is also needed for systemd to get a serial console.
-multi_v7 has that already.
+On Wed, Aug 27, 2014 at 5:27 PM, Mathias Nyman <mathias.nyman@intel.com> wrote:
+> On 08/27/2014 05:14 PM, Ricardo Ribalda Delgado wrote:
+>> At least I have seen the issue on Debian 3.14 and 3.16. Is your patch
+>> going to be backported to linux-stable? The computer crashes very very
+>> badly
+>>
+>
+> Yes, it is, but it might need some additional work as it won't apply cleanly on older versions
+>
+> http://marc.info/?l=linux-usb&m=140913688327011&w=2
+>
+> -Mathias
 
-Regards,
-Andreas
+
 
 -- 
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
+Ricardo Ribalda
