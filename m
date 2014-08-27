@@ -1,90 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935662AbaH0TVa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 15:21:30 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:52946 "EHLO mail.mev.co.uk"
+	id S935709AbaH0TXa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 15:23:30 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:58684 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933812AbaH0TV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 15:21:28 -0400
-From: Ian Abbott <abbotti@mev.co.uk>
-To: devel@linuxdriverproject.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        linux-kernel@vger.kernel.org, Ian Abbott <abbotti@mev.co.uk>
-Subject: [PATCH] staging: comedi: Kconfig: make COMEDI_BOND select COMEDI_KCOMEDILIB
-Date: Wed, 27 Aug 2014 20:19:32 +0100
-Message-Id: <1409167172-987-1-git-send-email-abbotti@mev.co.uk>
-X-Mailer: git-send-email 2.1.0
+	id S935182AbaH0TX2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 15:23:28 -0400
+Date: Wed, 27 Aug 2014 14:23:12 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+CC: Kukjin Kim <kgene.kim@samsung.com>, Felipe Balbi <balbi@ti.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Kamil Debski <k.debski@samsung.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Mark Brown <broonie@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        <linux-samsung-soc@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/5] usb: phy: samsung: remove old USB PHY code
+Message-ID: <20140827192312.GH6347@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1408726745-31135-1-git-send-email-b.zolnierkie@samsung.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bygAmIonOAIqBxQB"
+Content-Disposition: inline
+In-Reply-To: <1408726745-31135-1-git-send-email-b.zolnierkie@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, to select the "comedi_bond" driver, the "kcomedilib" support
-has to be selected first.  It seems more natural to allow the
-"comedi_bond" driver to be selected on its own and to automatically
-select the "kcomedilib" module as a result of that.  Change the
-dependency/select relationship between the two configuration options to
-do that.
+--bygAmIonOAIqBxQB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Also, make "kcomedilib" a module that can be selected independently,
-perhaps for use by out-of-tree modules, although it is not terribly
-useful for anything other than "comedi_bond" currently.
+Hi,
 
-Also, improve the help text for the config options.
+On Fri, Aug 22, 2014 at 06:59:00PM +0200, Bartlomiej Zolnierkiewicz wrote:
+> Hi,
+>=20
+> This patch series removes the old Samsung USB PHY drivers that
+> got replaced by the new ones using the generic PHY layer.
+>=20
+> Depends on:
+> - v3.17-rc1 branch of Linus' kernel
+>=20
+> Changes since v1 (https://lkml.org/lkml/2014/8/14/241):
+> - rebased on v3.17-rc1 kernel
+> - added Acked-by-s from Kishon Vijay Abraham I
+> - added Reviewed-by-s from Vivek Gautam and Jingoo Han
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
----
- drivers/staging/comedi/Kconfig | 25 ++++++++++++++++++-------
- 1 file changed, 18 insertions(+), 7 deletions(-)
+So, everybody agrees that there will be no regressions, right ? I'll
+merge this on my testing/next.
 
-diff --git a/drivers/staging/comedi/Kconfig b/drivers/staging/comedi/Kconfig
-index 7d6cebc..c18e6e9 100644
---- a/drivers/staging/comedi/Kconfig
-+++ b/drivers/staging/comedi/Kconfig
-@@ -42,18 +42,15 @@ menuconfig COMEDI_MISC_DRIVERS
- 
- if COMEDI_MISC_DRIVERS
- 
--config COMEDI_KCOMEDILIB
--	tristate "Comedi kcomedilib"
--	---help---
--	  Build the kcomedilib
--
- config COMEDI_BOND
--	tristate "Device bonding support"
--	depends on COMEDI_KCOMEDILIB
-+	tristate "Comedi device bonding support"
-+	select COMEDI_KCOMEDILIB
- 	---help---
- 	  Enable support for a driver to 'bond' (merge) multiple subdevices
- 	  from multiple devices together as one.
- 
-+	  Currently, it only handles digital I/O subdevices.
-+
- 	  To compile this driver as a module, choose M here: the module will be
- 	  called comedi_bond.
- 
-@@ -1272,6 +1269,20 @@ config COMEDI_8255
- 	  To compile this driver as a module, choose M here: the module will be
- 	  called 8255.
- 
-+config COMEDI_KCOMEDILIB
-+	tristate "Comedi kcomedilib"
-+	---help---
-+	  Build the kcomedilib.
-+
-+	  This is a kernel module used to open and manipulate Comedi devices
-+	  from within kernel code.  It is currently only used by the
-+	  comedi_bond driver, and it's functionality has been stripped
-+	  down to the needs of that driver, so is currently not very useful
-+	  for anything else.
-+
-+	  To compile kcomedilib as a module, choose M here: the module will be
-+	  called kcomedilib.
-+
- config COMEDI_FC
- 	tristate
- 
--- 
-2.1.0
+--=20
+balbi
 
+--bygAmIonOAIqBxQB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT/jAgAAoJEIaOsuA1yqREMPkP/AoInxTvy7cl3Q90yb+c+uc2
+Qqs0FQd81qQyRJHfzuqPyBZJCbsydBfMQxh6Kz7QEHdoWJD101YRYO5tVBuh93kO
+mHtCMy0TOiReJg+S7m/X0KiTteGYu2X5fB7YvNjMli+QIM/wqTV5xWDrK9+ZtBxo
+XW7oywMBgCzcVGGO8yixT98ZrmlshPOFeAefMQM9CGp6GT+rVQH8gVVBjXpjegmP
+IpCxpyLCWQZPIK9TmbluaLvsBVK74ZxPDLdMLdLl681F0nYYFg/WkcZfWo6OyPx2
+5qwSjDIgxvM7Wgy12s4Jhe4vK/L3X3mWGFJ2aofJZJPA1d9w51qMoxrpClhfRNKK
+uBQ2imbTkZJ880zdeG/dxabmR7Q9v2RPkiy1jf/HVSV8ZPPKNODl2vLVucZJcZhk
+rULmGGriPdOofLofIKKBEavL0Wrz6WmBQwBNW4T0a1jKFhs5mp47v8uYr/Rvkne/
+MHAs7M841p7CRatNHykl6HZsA2E2DfdxcyUpR0AgvQ2up4jWDzISCN69eQhhw3z/
+kZo/kxFece7lLDw8OqtCV+q9Te8Lagcol5ogL8VQBXm3SY3bfLIA2GhZEcewBeVl
+yyoPZkvc0ZQ9OoJDCRZtSSSnlKQqbs+DFRguORvuQJ7OdEb7dzYodKeEXTsKRadz
+HxjklGMmWK448/nUnw+Z
+=QB+n
+-----END PGP SIGNATURE-----
+
+--bygAmIonOAIqBxQB--
