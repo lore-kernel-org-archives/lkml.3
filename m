@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965478AbaH0XlX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 19:41:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59527 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965316AbaH0XlW (ORCPT
+	id S965491AbaH0XnL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 19:43:11 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:56774 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964814AbaH0XnJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 19:41:22 -0400
-Date: Wed, 27 Aug 2014 16:41:21 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] pci/pci-sysfs: Set pci interface in uppercase
-Message-ID: <20140827234121.GA12195@kroah.com>
-References: <1409144277-23379-1-git-send-email-ricardo.ribalda@gmail.com>
- <20140827202301.GA13800@kroah.com>
- <20140827205129.GA25227@kroah.com>
- <CAPybu_2p0UroO=WwUOC3LybPq0HQymoD50v6-6gA+aVweveOHw@mail.gmail.com>
- <20140827210405.GA26372@kroah.com>
- <CAPybu_2p6+VXj0s+yWGRvTO-1W-=rkhCBVKFHqa25joEO+Q3zA@mail.gmail.com>
+	Wed, 27 Aug 2014 19:43:09 -0400
+Date: Thu, 28 Aug 2014 07:43:01 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: Johan Hovold <johan@kernel.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>, gregkh@linuxfoundation.org,
+        jhovold@gmail.com, andi@lisas.de, dforsi@gmail.com,
+        gnomes@lxorguk.ukuu.org.uk, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7] usb:serial:pl2303: add GPIOs interface on PL2303
+Message-ID: <20140827234301.GB418@localhost.localdomain>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
+	Johan Hovold <johan@kernel.org>,
+	Linus Walleij <linus.walleij@linaro.org>,
+	gregkh@linuxfoundation.org, jhovold@gmail.com, andi@lisas.de,
+	dforsi@gmail.com, gnomes@lxorguk.ukuu.org.uk,
+	linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20140809052828.GA28307@udknight>
+ <20140812144625.GB9799@localhost>
+ <20140817020536.GA2509@localhost.localdomain>
+ <20140818100720.GF31755@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAPybu_2p6+VXj0s+yWGRvTO-1W-=rkhCBVKFHqa25joEO+Q3zA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140818100720.GF31755@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 27, 2014 at 11:10:42PM +0200, Ricardo Ribalda Delgado wrote:
-> Hello Greg
+On Mon, Aug 18, 2014 at 12:07:20PM +0200, Johan Hovold wrote:
+> On Sun, Aug 17, 2014 at 10:05:36AM +0800, Wang YanQing wrote:
+> > Hi Johan Hovold.
+> > 
+> > Another two questions.
+> > 	
+> > On Tue, Aug 12, 2014 at 04:46:25PM +0200, Johan Hovold wrote:
+> > > 
+> > > > +	int (*gpio_startup)(struct usb_serial *serial);
+> > > > +	void (*gpio_release)(struct usb_serial *serial);
+> > > 
+> > > This isn't the right place for this abstraction. Most of the setup code
+> > > would be common for any device type with GPIOs.
+> > 
+> > I assume you mean any pl2303 variant, not any device type, because
+> > no device in drivers/gpio has common setup code except many of them
+> > use struct gpio_chip.
 > 
-> On Wed, Aug 27, 2014 at 11:04 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Wed, Aug 27, 2014 at 10:56:57PM +0200, Ricardo Ribalda Delgado wrote:
-> >> No worries,
-> >>
-> >> I have to mark for stable it or Bjorn? It it is me, how :) ?
-> >
-> > Bjorn can when he applies it, for details on the process, see the kernel
-> > file Documentation/stable_kernel_rules.txt
-> >
-> >> ps: For other people reading this thread, the kmod/modprobe is in
-> >> http://anonscm.debian.org/cgit/users/md/kmod.git/tree/libkmod/libkmod-index.c
-> >> and handles all the modalias as strings without differing the type.
-> >
-> > That sounds wrong, and odds are, will cause more problems over time.
-> > These are hex values, not strings :(
-> 
-> I totally see your point, but I disagree on the method.
-> 
-> I think is our resposibility (modalias/file2alias) to provide a
-> matcheable string, otherwise modprobe should be aware of all the types
-> (pci, usb, spi, vmbus.....)
-> 
-> As we keep adding types, and they don't follow any standard, we would
-> be adding a dependecy between kmod and the kernel, and duplicating
-> code.  That is bad systemwise
-> 
-> Maybe the code on kmod should not be case sensitive, that is all :)
+> Yes, pl2303 type/variant. Specifically, much of the setup code will be
+> identical even if say the number of gpio differ (2 or 4) depending on
+> type.
 
-But this is a class field, which is a bit field, so it can't be compared
-with a string compare, as it's a numerical value, not a string...
+Yes, indeed unless I know how to make kernel could distinguish those two
+types, this patch willn't be fit for mergence.
 
-So maybe kmod needs to be fixed up?
+And I don't have free time recent, I need more time to prepare this patch, or could you
+figure out how to distinguish them?
 
-thanks,
-
-greg k-h
+Thanks.
