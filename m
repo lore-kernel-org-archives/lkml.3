@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934065AbaH0NNR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 09:13:17 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:50697 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933270AbaH0NNQ (ORCPT
+	id S934344AbaH0NOY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 09:14:24 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:37313 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933270AbaH0NOW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 09:13:16 -0400
-Date: Wed, 27 Aug 2014 18:42:45 +0530
-From: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        preeti@linux.vnet.ibm.com, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, riel@redhat.com,
-        Morten.Rasmussen@arm.com, efault@gmx.de, nicolas.pitre@linaro.org,
-        linaro-kernel@lists.linaro.org, daniel.lezcano@linaro.org,
-        dietmar.eggemann@arm.com
-Subject: Re: [PATCH v5 04/12] sched: Allow all archs to set the capacity_orig
-Message-ID: <20140827131208.GB13808@linux.vnet.ibm.com>
-Reply-To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
- <1409051215-16788-5-git-send-email-vincent.guittot@linaro.org>
+	Wed, 27 Aug 2014 09:14:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1409051215-16788-5-git-send-email-vincent.guittot@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082713-0013-0000-0000-000000285F5A
+In-Reply-To: <20140819211704.GS24407@sirena.org.uk>
+References: <1408466947-26593-1-git-send-email-swarren@wwwdotorg.org>
+	<20140819211704.GS24407@sirena.org.uk>
+Date: Wed, 27 Aug 2014 15:14:21 +0200
+X-Google-Sender-Auth: ZFB9RY9pTUbTj3jyoku0LZNAboU
+Message-ID: <CAMuHMdW1Ev9uTnWXTQxE0S+1SX2ahA7hFjHvb6JC5iRzgLJGFw@mail.gmail.com>
+Subject: Re: [PATCH V2] regmap: of_regmap_get_endian() cleanup
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <treding@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Next <linux-next@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>, Xiubo Li <Li.Xiubo@freescale.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Vincent Guittot <vincent.guittot@linaro.org> [2014-08-26 13:06:47]:
+Hi Mark,
 
-> capacity_orig is only changed for system with a SMT sched_domain level in order
-> to reflect the lower capacity of CPUs. Heterogenous system also have to reflect an
-> original capacity that is different from the default value.
-> 
-> Create a more generic function arch_scale_cpu_capacity that can be also used by
-> non SMT platform to set capacity_orig.
-> 
-> The weak behavior of arch_scale_cpu_capacity is the previous SMT one in order to
-> keep backward compatibility in the use of capacity_orig.
-> 
-> arch_scale_smt_capacity and default_scale_smt_capacity have been removed as
-> they were not use elsewhere than in arch_scale_cpu_capacity.
-> 
-> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+On Tue, Aug 19, 2014 at 11:17 PM, Mark Brown <broonie@kernel.org> wrote:
+> On Tue, Aug 19, 2014 at 10:49:07AM -0600, Stephen Warren wrote:
+>> From: Stephen Warren <swarren@nvidia.com>
+>>
+>> Commit d647c199510c ("regmap: add DT endianness binding support") had
+>> some issues. Commit ba1b53feb8ca ("regmap: Fix DT endianess parsing
+>> logic") fixed the main problem. This patch fixes the other.
+>
+> Applied, thanks.
 
-Reviewed-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Doh, wish I'd seen this thread earlier...
 
+This morning I was greeted by some crashes, as your spi/for-next branch
+has just pulled in spi/topic/fsl-dspi, which contains regmap/dt-endian, but
+not the fixes :-(
+
+You may want to pull those in, too.
+
+Thanks!
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
