@@ -1,523 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934760AbaH0OB2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 10:01:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16250 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933802AbaH0OB1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 10:01:27 -0400
-Message-ID: <53FDE490.1070201@redhat.com>
-Date: Wed, 27 Aug 2014 16:00:48 +0200
-From: Tomas Henzl <thenzl@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Ching Huang <ching2048@areca.com.tw>, hch@infradead.org,
-        jbottomley@parallels.com, dan.carpenter@oracle.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 16/17] arcmsr: support new adapter ARC12x4 series
-References: <1408433122.4748.73.camel@Centos6.3-64>
-In-Reply-To: <1408433122.4748.73.camel@Centos6.3-64>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S934840AbaH0OBg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 10:01:36 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:34881 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933802AbaH0OBd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 10:01:33 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f5-b7f776d000003e54-22-53fde4bb231e
+Content-transfer-encoding: 8BIT
+Message-id: <1409148089.25748.5.camel@AMDC1943>
+Subject: Re: [RESEND PATCH v3 1/6] charger: max14577: Add support for MAX77836
+ charger
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, linux-pm@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Anton Vorontsov <anton@enomsg.org>
+Date: Wed, 27 Aug 2014 16:01:29 +0200
+In-reply-to: <20140827135218.GG6364@lee--X1>
+References: <1409146282-25075-1-git-send-email-k.kozlowski@samsung.com>
+ <1409146282-25075-2-git-send-email-k.kozlowski@samsung.com>
+ <20140827135218.GG6364@lee--X1>
+X-Mailer: Evolution 3.10.4-0ubuntu2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIIsWRmVeSWpSXmKPExsVy+t/xK7q7n/wNNvjRzG1xcKumxcYZ61kt
+	pj58wmYx6cl7ZouJKyczW/S/Wchqce7VSkaLs01v2C3ufz3KaPHtSgeTxebvHWwWl3fNYbP4
+	3HuE0WLtkbvsFkuvX2SymDB9LYtF694j7Banu1ktTu8ucRD2WDNvDaPH5b5eJo8J/Z8YPXbO
+	usvusXL5FzaPzSu0PDat6mTzuHNtD5vHvJOBHn1bVjF6fN4kF8AdxWWTkpqTWZZapG+XwJWx
+	oP0RS8E/3orH966yNzBO5O5i5OSQEDCROPxsGzuELSZx4d56ti5GLg4hgaWMEoc6f4AleAUE
+	JX5MvsfSxcjBwSwgL3HkUjZImFlAXWLSvEXMEPWfGSXmHDjPCFGvL3Gn4zYbiC0sECHx5P4t
+	JhCbTcBYYvPyJWwgc0QEVCTOvTEH6WUW2Msq8ab7IFgvi4CqxPGuDWC9nAI6Elsm74Q6aDmj
+	xIvLC5lAmiUElCUa+90mMArMQnLeLITzZiE5bwEj8ypG0dTS5ILipPRcI73ixNzi0rx0veT8
+	3E2MkGj8uoNx6TGrQ4wCHIxKPLwKp/8EC7EmlhVX5h5ilOBgVhLhLTvwN1iINyWxsiq1KD++
+	qDQntfgQIxMHp1QDY4nv6nsNs1q1Oy7bz0szmNOh1PfMNbbj8pvdEzPLCyQ/T2Catv9a1cvT
+	ccwS9qLFPvF/fQvMFxV2PhL8cPGnutsG3Uyf7t7gowtizuutkz9Yta3E3+GkUNEyX/kzWpe7
+	rqrUOD2oX3Ouos3i6KqLuTnroj3/vw3jbOTXctjHLSewJK6GbUOgEktxRqKhFnNRcSIA2TYZ
+	X6QCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/19/2014 09:25 AM, Ching Huang wrote:
-> From: Ching Huang <ching2048@areca.com.tw>
->
-> Add code for supporting Areca new Raid adapter ARC12x4 series.
->
-> Signed-off-by: Ching Huang <ching2048@areca.com.tw>
-> ---
+On śro, 2014-08-27 at 14:52 +0100, Lee Jones wrote:
+> On Wed, 27 Aug 2014, Krzysztof Kozlowski wrote:
+> 
+> > Add support for MAX77836 charger to the max14577 driver. The MAX77836
+> > charger is almost the same as 14577 model except:
+> >  - No dead-battery detection;
+> >  - Support for special charger (like in MAX77693);
+> >  - Support for DX over-voltage protection (like in MAX77693);
+> >  - Lower values of charging current (two times lower current for
+> >    slow/fast charge, much lower EOC current);
+> >  - Slightly different values in ChgTyp field of STATUS2 register. On
+> >    MAX14577 0x6 is reserved and 0x7 dead battery. On the MAX77836 the
+> >    0x6 means special charger and 0x7 is reserved. Regardless of these
+> >    differences the driver maps them to one enum max14577_muic_charger_type.
+> > 
+> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> > Cc: Anton Vorontsov <anton@enomsg.org>
+> > Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+> > Cc: David Woodhouse <dwmw2@infradead.org>
+> > Acked-by: Lee Jones <lee.jones@linaro.org>
+> > ---
+> >  drivers/power/Kconfig                |  4 +-
+> >  drivers/power/max14577_charger.c     | 77 +++++++++++++++++++++++++++++-------
+> >  include/linux/mfd/max14577-private.h | 54 ++++++++++++++++++-------
+> 
+> Not quite so important here, but better to break these out too.  We
+> can arrange ourselves to that the set can go in together.  Just make
+> sure it's bisectable.
 
-Hi Ching,
-please look at the comments below -
+Are you sure? This will result in a patch which adds some
+code/symbols/defines used only by next (future) patch. Independent apply
+of such patch still won't make any sense because there won't be any user
+of this code.
 
->  }
-> @@ -1039,7 +1147,60 @@ static void arcmsr_done4abort_postqueue(
->  			error = (flag_ccb & ARCMSR_CCBREPLY_FLAG_ERROR_MODE1) ? true : false;
->  			arcmsr_drain_donequeue(acb, pCCB, error);
->  		}
-> -	}
-> +		}
-> +		break;
-> +	case ACB_ADAPTER_TYPE_D: {
-> +		struct MessageUnit_D  *pmu = acb->pmuD;
-> +		uint32_t ccb_cdb_phy, outbound_write_pointer;
-> +		uint32_t doneq_index, index_stripped, addressLow, residual;
-> +		bool error;
-> +		struct CommandControlBlock *pCCB;
 
-I have noticed this^ in this driver already before. Sometimes it makes sense
-when a variable is declared in a 'case' block but often it is just
-a waste of space. In this function this is the third 'bool error' declared.
-Is there a reason for this style (this function is not the worst case) ?
+Best regards,
+Krzysztof
 
-> +		outbound_write_pointer = pmu->done_qbuffer[0].addressLow + 1;
-> +		doneq_index = pmu->doneq_index;
-> +		residual = atomic_read(&acb->ccboutstandingcount);
-> +		for (i = 0; i < residual; i++) {
-> +			while ((doneq_index & 0xFFF) !=
-> +				(outbound_write_pointer & 0xFFF)) {
-> +				if (doneq_index & 0x4000) {
-> +					index_stripped = doneq_index & 0xFFF;
-> +					index_stripped += 1;
-> +					index_stripped %=
-> +						ARCMSR_MAX_ARC1214_DONEQUEUE;
-> +					pmu->doneq_index = index_stripped ?
-> +						(index_stripped | 0x4000) :
-> +						(index_stripped + 1);
-> +				} else {
-> +					index_stripped = doneq_index;
-> +					index_stripped += 1;
-> +					index_stripped %=
-> +						ARCMSR_MAX_ARC1214_DONEQUEUE;
-> +					pmu->doneq_index = index_stripped ?
-> +						index_stripped :
-> +						((index_stripped | 0x4000) + 1);
-> +				}
-> +				doneq_index = pmu->doneq_index;
-> +				addressLow = pmu->done_qbuffer[doneq_index &
-> +					0xFFF].addressLow;
-> +				ccb_cdb_phy = (addressLow & 0xFFFFFFF0);
-> +				pARCMSR_CDB = (struct  ARCMSR_CDB *)
-> +					(acb->vir2phy_offset + ccb_cdb_phy);
-> +				pCCB = container_of(pARCMSR_CDB,
-> +					struct CommandControlBlock, arcmsr_cdb);
-> +				error = (addressLow &
-> +					ARCMSR_CCBREPLY_FLAG_ERROR_MODE1) ?
-> +					true : false;
-> +				arcmsr_drain_donequeue(acb, pCCB, error);
-> +				writel(doneq_index, pmu->outboundlist_read_pointer);
-> +			}
-> +			mdelay(10);
-> +			outbound_write_pointer =
-> +				pmu->done_qbuffer[0].addressLow + 1;
-> +			doneq_index = pmu->doneq_index;
-> +		}
-> +		pmu->postq_index = 0;
-> +		pmu->doneq_index = 0x40FF;
-> +		}
-> +		break;
->  	}
->  }
-...
-
->
->  
-> @@ -1256,6 +1424,38 @@ static void arcmsr_post_ccb(struct Adapt
->  			writel(ccb_post_stamp, &phbcmu->inbound_queueport_low);
->  		}
->  		}
-> +		break;
-> +	case ACB_ADAPTER_TYPE_D: {
-> +		struct MessageUnit_D  *pmu = acb->pmuD;
-> +		u16 index_stripped;
-> +		u16 postq_index;
-> +		unsigned long flags;
-> +		struct InBound_SRB *pinbound_srb;
-> +
-> +		spin_lock_irqsave(&acb->postq_lock, flags);
-> +		postq_index = pmu->postq_index;
-> +		pinbound_srb = (struct InBound_SRB *)&(pmu->post_qbuffer[postq_index & 0xFF]);
-> +		pinbound_srb->addressHigh = dma_addr_hi32(cdb_phyaddr);
-> +		pinbound_srb->addressLow = dma_addr_lo32(cdb_phyaddr);
-> +		pinbound_srb->length = ccb->arc_cdb_size >> 2;
-> +		arcmsr_cdb->msgContext = dma_addr_lo32(cdb_phyaddr);
-> +		if (postq_index & 0x4000) {
-> +			index_stripped = postq_index & 0xFF;
-> +			index_stripped += 1;
-> +			index_stripped %= ARCMSR_MAX_ARC1214_POSTQUEUE;
-> +			pmu->postq_index = index_stripped ?
-> +				(index_stripped | 0x4000) : index_stripped;
-> +		} else {
-> +			index_stripped = postq_index;
-> +			index_stripped += 1;
-> +			index_stripped %= ARCMSR_MAX_ARC1214_POSTQUEUE;
-> +			pmu->postq_index = index_stripped ? index_stripped :
-> +				(index_stripped | 0x4000);
-> +		}
-
-The code above could be a bit easier -
-		
-		arcmsr_cdb->msgContext = dma_addr_lo32(cdb_phyaddr);
-                index_stripped = postq_index + 1;
-                index_stripped &= (ARCMSR_MAX_ARC1214_POSTQUEUE - 1);
-
-                if (postq_index & 0x4000)
-                        pmu->postq_index = index_stripped ?
-                                (index_stripped | 0x4000) : index_stripped;
-                else
-                        pmu->postq_index = index_stripped ?
-                                 index_stripped : (index_stripped | 0x4000);
-or am I wrong? This is repeated in the code many times
- 
-
-> +		writel(postq_index, pmu->inboundlist_write_pointer);
-> +		spin_unlock_irqrestore(&acb->postq_lock, flags);
-> +		break;
-> +		}
->  	}
->  }
->  
-...
-> +static int arcmsr_hbaD_polling_ccbdone(struct AdapterControlBlock *acb,
-> +				struct CommandControlBlock *poll_ccb)
-> +{
-> +	bool error;
-> +	uint32_t poll_ccb_done = 0, poll_count = 0, flag_ccb, ccb_cdb_phy;
-> +	int rtn, doneq_index, index_stripped, outbound_write_pointer;
-> +	unsigned long flags;
-> +	struct ARCMSR_CDB *arcmsr_cdb;
-> +	struct CommandControlBlock *pCCB;
-> +	struct MessageUnit_D *pmu = acb->pmuD;
-> +
-> +polling_hbaD_ccb_retry:
-> +	poll_count++;
-> +	while (1) {
-> +		outbound_write_pointer = pmu->done_qbuffer[0].addressLow + 1;
-> +		doneq_index = pmu->doneq_index;
-
-You seem to protect the doneq with a spinlock on some other places, arcmsr_hbaD_postqueue_isr
-and below in this function. Why not here, is it intentional? 
-
-> +		if ((outbound_write_pointer & 0xFFF) == (doneq_index & 0xFFF)) {
-> +			if (poll_ccb_done) {
-> +				rtn = SUCCESS;
-> +				break;
-> +			} else {
-> +				msleep(25);
-> +				if (poll_count > 40) {
-> +					rtn = FAILED;
-> +					break;
-> +				}
-> +				goto polling_hbaD_ccb_retry;
-> +			}
-> +		}
-> +		spin_lock_irqsave(&acb->doneq_lock, flags);
-> +		if (doneq_index & 0x4000) {
-> +			index_stripped = doneq_index & 0xFFF;
-> +			index_stripped += 1;
-> +			index_stripped %= ARCMSR_MAX_ARC1214_DONEQUEUE;
-> +			pmu->doneq_index = index_stripped ?
-> +				(index_stripped | 0x4000) :
-> +				(index_stripped + 1);
-> +		} else {
-> +			index_stripped = doneq_index;
-> +			index_stripped += 1;
-> +			index_stripped %= ARCMSR_MAX_ARC1214_DONEQUEUE;
-> +			pmu->doneq_index = index_stripped ? index_stripped :
-> +				((index_stripped | 0x4000) + 1);
-> +		}
-> +		spin_unlock_irqrestore(&acb->doneq_lock, flags);
-> +		doneq_index = pmu->doneq_index;
-> +		flag_ccb = pmu->done_qbuffer[doneq_index & 0xFFF].addressLow;
-> +		ccb_cdb_phy = (flag_ccb & 0xFFFFFFF0);
-> +		arcmsr_cdb = (struct ARCMSR_CDB *)(acb->vir2phy_offset +
-> +			ccb_cdb_phy);
-> +		pCCB = container_of(arcmsr_cdb, struct CommandControlBlock,
-> +			arcmsr_cdb);
-> +		poll_ccb_done |= (pCCB == poll_ccb) ? 1 : 0;
-> +		if ((pCCB->acb != acb) ||
-> +			(pCCB->startdone != ARCMSR_CCB_START)) {
-> +			if (pCCB->startdone == ARCMSR_CCB_ABORTED) {
-> +				pr_notice("arcmsr%d: scsi id = %d "
-> +					"lun = %d ccb = '0x%p' poll command "
-> +					"abort successfully\n"
-> +					, acb->host->host_no
-> +					, pCCB->pcmd->device->id
-> +					, (u32)pCCB->pcmd->device->lun
-> +					, pCCB);
-> +				pCCB->pcmd->result = DID_ABORT << 16;
-> +				arcmsr_ccb_complete(pCCB);
-> +				continue;
-> +			}
-> +			pr_notice("arcmsr%d: polling an illegal "
-> +				"ccb command done ccb = '0x%p' "
-> +				"ccboutstandingcount = %d\n"
-> +				, acb->host->host_no
-> +				, pCCB
-> +				, atomic_read(&acb->ccboutstandingcount));
-> +			continue;
-> +		}
-> +		error = (flag_ccb & ARCMSR_CCBREPLY_FLAG_ERROR_MODE1)
-> +			? true : false;
-> +		arcmsr_report_ccb_state(acb, pCCB, error);
-> +	}
-> +	return rtn;
-> +}
-> +
->  static int arcmsr_polling_ccbdone(struct AdapterControlBlock *acb,
->  					struct CommandControlBlock *poll_ccb)
->  {
-> @@ -2711,6 +3280,10 @@ static int arcmsr_polling_ccbdone(struct
->  	case ACB_ADAPTER_TYPE_C: {
->  		rtn = arcmsr_hbaC_polling_ccbdone(acb, poll_ccb);
->  		}
-> +		break;
-> +	case ACB_ADAPTER_TYPE_D:
-> +		rtn = arcmsr_hbaD_polling_ccbdone(acb, poll_ccb);
-> +		break;
->  	}
->  	return rtn;
->  }
-> @@ -2728,6 +3301,7 @@ static int arcmsr_iop_confirm(struct Ada
->  	*/
->  	switch (acb->adapter_type) {
->  		case ACB_ADAPTER_TYPE_B:
-> +		case ACB_ADAPTER_TYPE_D:
->  			dma_coherent_handle = acb->dma_coherent_handle2;
->  			break;
->  		default:
-> @@ -2817,6 +3391,27 @@ static int arcmsr_iop_confirm(struct Ada
->  			}
->  		}
->  		}
-> +		break;
-> +	case ACB_ADAPTER_TYPE_D: {
-> +		uint32_t __iomem *rwbuffer;
-> +		struct MessageUnit_D *reg = acb->pmuD;
-> +		reg->postq_index = 0;
-> +		reg->doneq_index = 0;
-> +		rwbuffer = reg->msgcode_rwbuffer;
-> +		writel(ARCMSR_SIGNATURE_SET_CONFIG, rwbuffer++);
-> +		writel(cdb_phyaddr_hi32, rwbuffer++);
-> +		writel(cdb_phyaddr, rwbuffer++);
-> +		writel(cdb_phyaddr + (ARCMSR_MAX_ARC1214_POSTQUEUE *
-> +			sizeof(struct InBound_SRB)), rwbuffer++);
-> +		writel(0x100, rwbuffer);
-> +		writel(ARCMSR_INBOUND_MESG0_SET_CONFIG, reg->inbound_msgaddr0);
-> +		if (!arcmsr_hbaD_wait_msgint_ready(acb)) {
-> +			pr_notice("arcmsr%d: 'set command Q window' timeout\n",
-> +				acb->host->host_no);
-> +			return 1;
-> +		}
-> +		}
-> +		break;
->  	}
->  	return 0;
->  }
-> @@ -2848,6 +3443,15 @@ static void arcmsr_wait_firmware_ready(s
->  			firmware_state = readl(&reg->outbound_msgaddr1);
->  		} while ((firmware_state & ARCMSR_HBCMU_MESSAGE_FIRMWARE_OK) == 0);
->  		}
-> +		break;
-> +	case ACB_ADAPTER_TYPE_D: {
-> +		struct MessageUnit_D *reg = acb->pmuD;
-> +		do {
-> +			firmware_state = readl(reg->outbound_msgaddr1);
-> +		} while ((firmware_state &
-> +			ARCMSR_ARC1214_MESSAGE_FIRMWARE_OK) == 0);
-> +		}
-> +		break;
->  	}
->  }
->  
-> @@ -2918,6 +3522,35 @@ static void arcmsr_hbaC_request_device_m
->  	return;
->  }
->  
-> +static void arcmsr_hbaD_request_device_map(struct AdapterControlBlock *acb)
-> +{
-> +	struct MessageUnit_D *reg = acb->pmuD;
-> +
-> +	if (unlikely(atomic_read(&acb->rq_map_token) == 0) ||
-> +		((acb->acb_flags & ACB_F_BUS_RESET) != 0) ||
-> +		((acb->acb_flags & ACB_F_ABORT) != 0)) {
-> +		mod_timer(&acb->eternal_timer,
-> +			jiffies + msecs_to_jiffies(6 * HZ));
-> +	} else {
-> +		acb->fw_flag = FW_NORMAL;
-> +		if (atomic_read(&acb->ante_token_value) ==
-> +			atomic_read(&acb->rq_map_token)) {
-> +			atomic_set(&acb->rq_map_token, 16);
-> +		}
-> +		atomic_set(&acb->ante_token_value,
-> +			atomic_read(&acb->rq_map_token));
-> +		if (atomic_dec_and_test(&acb->rq_map_token)) {
-> +			mod_timer(&acb->eternal_timer, jiffies +
-> +				msecs_to_jiffies(6 * HZ));
-> +			return;
-> +		}
-> +		writel(ARCMSR_INBOUND_MESG0_GET_CONFIG,
-> +			reg->inbound_msgaddr0);
-> +		mod_timer(&acb->eternal_timer, jiffies +
-> +			msecs_to_jiffies(6 * HZ));
-> +	}
-> +}
-> +
->  static void arcmsr_request_device_map(unsigned long pacb)
->  {
->  	struct AdapterControlBlock *acb = (struct AdapterControlBlock *)pacb;
-> @@ -2933,6 +3566,10 @@ static void arcmsr_request_device_map(un
->  		case ACB_ADAPTER_TYPE_C: {
->  			arcmsr_hbaC_request_device_map(acb);
->  		}
-> +		break;
-> +		case ACB_ADAPTER_TYPE_D:
-> +			arcmsr_hbaD_request_device_map(acb);
-> +		break;
->  	}
->  }
->  
-> @@ -2970,6 +3607,19 @@ static void arcmsr_hbaC_start_bgrb(struc
->  	}
->  	return;
->  }
-> +
-> +static void arcmsr_hbaD_start_bgrb(struct AdapterControlBlock *pACB)
-> +{
-> +	struct MessageUnit_D *pmu = pACB->pmuD;
-> +
-> +	pACB->acb_flags |= ACB_F_MSG_START_BGRB;
-> +	writel(ARCMSR_INBOUND_MESG0_START_BGRB, pmu->inbound_msgaddr0);
-> +	if (!arcmsr_hbaD_wait_msgint_ready(pACB)) {
-> +		pr_notice("arcmsr%d: wait 'start adapter "
-> +			"background rebulid' timeout\n", pACB->host->host_no);
-> +	}
-> +}
-> +
->  static void arcmsr_start_adapter_bgrb(struct AdapterControlBlock *acb)
->  {
->  	switch (acb->adapter_type) {
-> @@ -2981,6 +3631,10 @@ static void arcmsr_start_adapter_bgrb(st
->  		break;
->  	case ACB_ADAPTER_TYPE_C:
->  		arcmsr_hbaC_start_bgrb(acb);
-> +		break;
-> +	case ACB_ADAPTER_TYPE_D:
-> +		arcmsr_hbaD_start_bgrb(acb);
-> +		break;
->  	}
->  }
->  
-> @@ -3026,6 +3680,29 @@ static void arcmsr_clear_doorbell_queue_
->  				break;
->  		}
->  		}
-> +		break;
-> +	case ACB_ADAPTER_TYPE_D: {
-> +		struct MessageUnit_D *reg = acb->pmuD;
-> +		uint32_t outbound_doorbell, i;
-> +		/* empty doorbell Qbuffer if door bell ringed */
-> +		outbound_doorbell = readl(reg->outbound_doorbell);
-> +		writel(outbound_doorbell, reg->outbound_doorbell);
-> +		writel(ARCMSR_ARC1214_DRV2IOP_DATA_OUT_READ,
-> +			reg->inbound_doorbell);
-> +		for (i = 0; i < 200; i++) {
-> +			msleep(20);
-> +			outbound_doorbell = readl(reg->outbound_doorbell);
-> +			if (outbound_doorbell &
-> +				ARCMSR_ARC1214_IOP2DRV_DATA_WRITE_OK) {
-> +				writel(outbound_doorbell,
-> +					reg->outbound_doorbell);
-> +				writel(ARCMSR_ARC1214_DRV2IOP_DATA_OUT_READ,
-> +					reg->inbound_doorbell);
-> +			} else
-> +				break;
-> +		}
-> +		}
-> +		break;
->  	}
->  }
->  
-> @@ -3056,6 +3733,7 @@ static void arcmsr_hardware_reset(struct
->  	int i, count = 0;
->  	struct MessageUnit_A __iomem *pmuA = acb->pmuA;
->  	struct MessageUnit_C __iomem *pmuC = acb->pmuC;
-> +	struct MessageUnit_D *pmuD = acb->pmuD;
->  
->  	/* backup pci config data */
->  	printk(KERN_NOTICE "arcmsr%d: executing hw bus reset .....\n", acb->host->host_no);
-> @@ -3076,6 +3754,8 @@ static void arcmsr_hardware_reset(struct
->  			writel(0xD, &pmuC->write_sequence);
->  		} while (((readl(&pmuC->host_diagnostic) & ARCMSR_ARC1880_DiagWrite_ENABLE) == 0) && (count < 5));
->  		writel(ARCMSR_ARC1880_RESET_ADAPTER, &pmuC->host_diagnostic);
-> +	} else if ((acb->dev_id == 0x1214)) {
-> +		writel(0x20, pmuD->reset_request);
->  	} else {
->  		pci_write_config_byte(acb->pdev, 0x84, 0x20);
->  	}
-> @@ -3272,6 +3952,66 @@ sleep:
->  			}
->  			break;
->  		}
-> +		case ACB_ADAPTER_TYPE_D: {
-> +			if (acb->acb_flags & ACB_F_BUS_RESET) {
-> +				long timeout;
-> +				pr_notice("arcmsr: there is an bus reset"
-> +					" eh proceeding.......\n");
-> +				timeout = wait_event_timeout(wait_q, (acb->acb_flags
-> +					& ACB_F_BUS_RESET) == 0, 220 * HZ);
-> +				if (timeout)
-> +					return SUCCESS;
-> +			}
-> +			acb->acb_flags |= ACB_F_BUS_RESET;
-> +			if (!arcmsr_iop_reset(acb)) {
-> +				struct MessageUnit_D *reg;
-> +				reg = acb->pmuD;
-> +				arcmsr_hardware_reset(acb);
-> +				acb->acb_flags &= ~ACB_F_IOP_INITED;
-> +			nap:
-> +				ssleep(ARCMSR_SLEEPTIME);
-> +				if ((readl(reg->sample_at_reset) & 0x80) != 0) {
-> +					pr_err("arcmsr%d: waiting for "
-> +						"hw bus reset return, retry=%d\n",
-> +						acb->host->host_no, retry_count);
-> +					if (retry_count > ARCMSR_RETRYCOUNT) {
-> +						acb->fw_flag = FW_DEADLOCK;
-> +						pr_err("arcmsr%d: waiting for hw bus"
-> +							" reset return, "
-> +							"RETRY TERMINATED!!\n",
-> +							acb->host->host_no);
-> +						return FAILED;
-> +					}
-> +					retry_count++;
-> +					goto nap;
-> +				}
-> +				acb->acb_flags |= ACB_F_IOP_INITED;
-> +				/* disable all outbound interrupt */
-> +				intmask_org = arcmsr_disable_outbound_ints(acb);
-> +				arcmsr_get_firmware_spec(acb);
-> +				arcmsr_start_adapter_bgrb(acb);
-> +				arcmsr_clear_doorbell_queue_buffer(acb);
-> +				arcmsr_enable_outbound_ints(acb, intmask_org);
-> +				atomic_set(&acb->rq_map_token, 16);
-> +				atomic_set(&acb->ante_token_value, 16);
-> +				acb->fw_flag = FW_NORMAL;
-> +				mod_timer(&acb->eternal_timer,
-> +					jiffies + msecs_to_jiffies(6 * HZ));
-> +				acb->acb_flags &= ~ACB_F_BUS_RESET;
-> +				rtn = SUCCESS;
-> +				pr_err("arcmsr: scsi bus reset "
-> +					"eh returns with success\n");
-> +			} else {
-> +				acb->acb_flags &= ~ACB_F_BUS_RESET;
-> +				atomic_set(&acb->rq_map_token, 16);
-> +				atomic_set(&acb->ante_token_value, 16);
-> +				acb->fw_flag = FW_NORMAL;
-> +				mod_timer(&acb->eternal_timer,
-> +					jiffies + msecs_to_jiffies(6 * HZ));
-> +				rtn = SUCCESS;
-> +			}
-> +			break;
-> +		}
->  	}
->  	return rtn;
->  }
-> @@ -3348,6 +4088,7 @@ static const char *arcmsr_info(struct Sc
->  	case PCI_DEVICE_ID_ARECA_1280:
->  		type = "SATA";
->  		break;
-> +	case PCI_DEVICE_ID_ARECA_1214:
->  	case PCI_DEVICE_ID_ARECA_1380:
->  	case PCI_DEVICE_ID_ARECA_1381:
->  	case PCI_DEVICE_ID_ARECA_1680:
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
