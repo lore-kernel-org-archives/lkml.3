@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965592AbaH0X22 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 19:28:28 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:38196 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964948AbaH0X2T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S965558AbaH0X2T (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 27 Aug 2014 19:28:19 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:38099 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964948AbaH0X2P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 19:28:15 -0400
 X-Mail-Handler: Dyn Standard SMTP by Dyn
 X-Originating-IP: 99.127.230.128
 X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+mcVwH++BF0NHfcKQQkzmq
+X-MHO-User: U2FsdGVkX19ZTHIf5/nrJdv2kCeOv9+Y
 From: Tony Lindgren <tony@atomide.com>
 To: kishon@ti.com
 Cc: balbi@ti.com, linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
         linux-omap@vger.kernel.org
-Subject: [PATCH 5/5] usb: phy: twl4030-usb: Use mutex instead of spinlock for protecting the data
-Date: Wed, 27 Aug 2014 16:28:11 -0700
-Message-Id: <1409182091-31191-6-git-send-email-tony@atomide.com>
+Subject: [PATCH 1/5] usb: phy: twl4030-usb: Remove unused irq_enabled
+Date: Wed, 27 Aug 2014 16:28:07 -0700
+Message-Id: <1409182091-31191-2-git-send-email-tony@atomide.com>
 X-Mailer: git-send-email 1.8.1.1
 In-Reply-To: <1409182091-31191-1-git-send-email-tony@atomide.com>
 References: <1409182091-31191-1-git-send-email-tony@atomide.com>
@@ -25,80 +25,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We're using threaded irq on a I2C bus and we're sleeping in
-twl4030_usb_irq() as it calls twl4030_usb_linkstat() which
-calls the i2c functions. If we ever need to lock for longer
-I2C transaction sequences a mutex will allow us to do that
-easily.
+It's not being used any longer.
 
 Signed-off-by: Tony Lindgren <tony@atomide.com>
 ---
- drivers/phy/phy-twl4030-usb.c | 16 +++++++---------
- 1 file changed, 7 insertions(+), 9 deletions(-)
+ drivers/phy/phy-twl4030-usb.c     | 2 --
+ drivers/usb/phy/phy-twl6030-usb.c | 2 --
+ 2 files changed, 4 deletions(-)
 
 diff --git a/drivers/phy/phy-twl4030-usb.c b/drivers/phy/phy-twl4030-usb.c
-index 24ff3c6..1e0e2d1 100644
+index 9cd33a4..bc28ecc 100644
 --- a/drivers/phy/phy-twl4030-usb.c
 +++ b/drivers/phy/phy-twl4030-usb.c
-@@ -28,7 +28,6 @@
- #include <linux/init.h>
- #include <linux/interrupt.h>
- #include <linux/platform_device.h>
--#include <linux/spinlock.h>
- #include <linux/workqueue.h>
- #include <linux/io.h>
- #include <linux/delay.h>
-@@ -155,7 +154,7 @@ struct twl4030_usb {
- 	struct regulator	*usb3v1;
+@@ -164,7 +164,6 @@ struct twl4030_usb {
+ 	enum omap_musb_vbus_id_status linkstat;
+ 	bool			vbus_supplied;
+ 	u8			asleep;
+-	bool			irq_enabled;
  
- 	/* for vbus reporting with irqs disabled */
--	spinlock_t		lock;
-+	struct mutex		lock;
+ 	struct delayed_work	id_workaround_work;
+ };
+@@ -755,7 +754,6 @@ static int twl4030_usb_probe(struct platform_device *pdev)
+ 	 * set_host() and/or set_peripheral() ... OTG_capable boards
+ 	 * need both handles, otherwise just one suffices.
+ 	 */
+-	twl->irq_enabled = true;
+ 	status = devm_request_threaded_irq(twl->dev, twl->irq, NULL,
+ 			twl4030_usb_irq, IRQF_TRIGGER_FALLING |
+ 			IRQF_TRIGGER_RISING | IRQF_ONESHOT, "twl4030_usb", twl);
+diff --git a/drivers/usb/phy/phy-twl6030-usb.c b/drivers/usb/phy/phy-twl6030-usb.c
+index 04778cf..44ea082 100644
+--- a/drivers/usb/phy/phy-twl6030-usb.c
++++ b/drivers/usb/phy/phy-twl6030-usb.c
+@@ -104,7 +104,6 @@ struct twl6030_usb {
+ 	int			irq2;
+ 	enum omap_musb_vbus_id_status linkstat;
+ 	u8			asleep;
+-	bool			irq_enabled;
+ 	bool			vbus_enable;
+ 	const char		*regulator;
+ };
+@@ -373,7 +372,6 @@ static int twl6030_usb_probe(struct platform_device *pdev)
  
- 	/* pin configuration */
- 	enum twl4030_usb_mode	usb_mode;
-@@ -516,13 +515,12 @@ static ssize_t twl4030_usb_vbus_show(struct device *dev,
- 		struct device_attribute *attr, char *buf)
- {
- 	struct twl4030_usb *twl = dev_get_drvdata(dev);
--	unsigned long flags;
- 	int ret = -EINVAL;
+ 	INIT_WORK(&twl->set_vbus_work, otg_set_vbus_work);
  
--	spin_lock_irqsave(&twl->lock, flags);
-+	mutex_lock(&twl->lock);
- 	ret = sprintf(buf, "%s\n",
- 			twl->vbus_supplied ? "on" : "off");
--	spin_unlock_irqrestore(&twl->lock, flags);
-+	mutex_unlock(&twl->lock);
- 
- 	return ret;
- }
-@@ -536,12 +534,12 @@ static irqreturn_t twl4030_usb_irq(int irq, void *_twl)
- 
- 	status = twl4030_usb_linkstat(twl);
- 
--	spin_lock_irq(&twl->lock);
-+	mutex_lock(&twl->lock);
- 	if (status >= 0 && status != twl->linkstat) {
- 		twl->linkstat = status;
- 		status_changed = true;
- 	}
--	spin_unlock_irq(&twl->lock);
-+	mutex_unlock(&twl->lock);
- 
- 	if (status_changed) {
- 		/* FIXME add a set_power() method so that B-devices can
-@@ -695,8 +693,8 @@ static int twl4030_usb_probe(struct platform_device *pdev)
- 	if (IS_ERR(phy_provider))
- 		return PTR_ERR(phy_provider);
- 
--	/* init spinlock for workqueue */
--	spin_lock_init(&twl->lock);
-+	/* init mutex for workqueue */
-+	mutex_init(&twl->lock);
- 
- 	INIT_DELAYED_WORK(&twl->id_workaround_work, twl4030_id_workaround_work);
- 
+-	twl->irq_enabled = true;
+ 	status = request_threaded_irq(twl->irq1, NULL, twl6030_usbotg_irq,
+ 			IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING | IRQF_ONESHOT,
+ 			"twl6030_usb", twl);
 -- 
 1.8.1.1
 
