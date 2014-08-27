@@ -1,82 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935589AbaH0R4I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 13:56:08 -0400
-Received: from tetsuo.zabbo.net ([50.193.208.193]:42501 "EHLO tetsuo.zabbo.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751081AbaH0R4G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 13:56:06 -0400
-Date: Wed, 27 Aug 2014 10:56:05 -0700
-From: Zach Brown <zab@zabbo.net>
-To: Maxim Patlasov <mpatlasov@parallels.com>
-Cc: Benjamin LaHaise <bcrl@kvack.org>, Ming Lei <ming.lei@canonical.com>,
-        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Kent Overstreet <kmo@daterainc.com>,
-        open list:
-	AIO <linux-aio@kvack.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Dave Chinner <david@fromorbit.com>, ;
-Illegal-Object: Syntax error in Cc: address found on vger.kernel.org:
-	Cc:	;
-			^-missing semicolon to end mail group, extraneous tokens in mailbox, missing end of mailbox
-Subject: Re: [PATCH v1 5/9] block: loop: convert to blk-mq
-Message-ID: <20140827175605.GE12827@lenny.home.zabbo.net>
-References: <53EE3966.60609@kernel.dk>
- <CACVXFVO+3SHy0=zESJqG3ZB68AZaeK5_QK2CVmZWzZ7oBWDGwg@mail.gmail.com>
- <53F0EAEC.9040505@kernel.dk>
- <CACVXFVO3CrD2CoHiBOZ8GNMXrT2pJ=t2BzmAHksqRTmgrpsaaQ@mail.gmail.com>
- <CACVXFVN6W-AAQ6g4LXHOyvMzU+EAmj_YYBEuYRnoSB+VqCJg8A@mail.gmail.com>
- <53F3B89D.6070703@kernel.dk>
- <CACVXFVOR0mzMWo+iPtU8jUvYgH+non=hQ0XaP0Z1Fu0qiSbJNA@mail.gmail.com>
- <53FE029B.1030200@parallels.com>
- <20140827162955.GF4827@kvack.org>
- <53FE1328.2040607@parallels.com>
+	id S935614AbaH0R4Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 13:56:24 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:34700 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935549AbaH0R4V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 13:56:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53FE1328.2040607@parallels.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140827014300.GA29512@earth.universe>
+References: <1409096705-24290-1-git-send-email-davidriley@chromium.org>
+	<1409096705-24290-2-git-send-email-davidriley@chromium.org>
+	<20140827014300.GA29512@earth.universe>
+Date: Wed, 27 Aug 2014 10:56:20 -0700
+Message-ID: <CAASgrz3ArGUJnPVvBcm2Hm0gwcUPYt2504M3t-3M5=c2DmKotA@mail.gmail.com>
+Subject: Re: [PATCH v1 1/1] power: Add simple gpio-restart driver
+From: David Riley <davidriley@google.com>
+To: Sebastian Reichel <sre@kernel.org>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Guenter Roeck <linux@roeck-us.net>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Anton Vorontsov <anton@enomsg.org>,
+        Marc Carino <marc.ceeeee@gmail.com>, Anders Berg <anders.berg@lsi.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Jamie Lentin <jm@lentin.co.uk>, Doug Anderson <dianders@chromium.org>,
+        devicetree@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-pm@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 27, 2014 at 09:19:36PM +0400, Maxim Patlasov wrote:
-> On 08/27/2014 08:29 PM, Benjamin LaHaise wrote:
-> >On Wed, Aug 27, 2014 at 08:08:59PM +0400, Maxim Patlasov wrote:
-> >...
-> >>1) /dev/loop0 of 3.17.0-rc1 with Ming's patches applied -- 11K iops
-> >>2) the same as above, but call loop_queue_work() directly from
-> >>loop_queue_rq() -- 270K iops
-> >>3) /dev/nullb0 of 3.17.0-rc1 -- 380K iops
-> >>
-> >>Taking into account so big difference (11K vs. 270K), would it be worthy
-> >>to implement pure non-blocking version of aio_kernel_submit() returning
-> >>error if blocking needed? Then loop driver (or any other in-kernel user)
-> >>might firstly try that non-blocking submit as fast-path, and, only if
-> >>it's failed, fall back to queueing.
-> >What filesystem is the backing file for loop0 on?  O_DIRECT access as
-> >Ming's patches use should be non-blocking, and if not, that's something
-> >to fix.
-> 
-> I used loop0 directly on top of null_blk driver (because my goal was to
-> measure the overhead of processing requests in a separate thread).
+Hi Sebastian,
 
-The relative overhead while doing nothing else.  While zooming way down
-in to micro benchmarks is fun and all, testing on an fs on brd might be
-more representitive and so more compelling.
+Thanks for the feedback.
 
-(And you might start to stumble into the terrifying territory of
-stacking fs write paths under fs write paths.. turn on lockdep! :))
+On Tue, Aug 26, 2014 at 6:43 PM, Sebastian Reichel <sre@kernel.org> wrote:
+> Hi David,
+>
+> On Tue, Aug 26, 2014 at 04:45:05PM -0700, David Riley wrote:
+>> This driver registers a restart handler to set a GPIO line high/low
+>> to reset a board based on devicetree bindings.
+>
+> Driver looks fine to me. I have some comments about the
+> Documentation, though:
+>
+>> [...]
+>> diff --git a/Documentation/devicetree/bindings/gpio/gpio-restart.txt b/Documentation/devicetree/bindings/gpio/gpio-restart.txt
+>> new file mode 100644
+>> index 0000000..7cd58788
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/gpio/gpio-restart.txt
+>> @@ -0,0 +1,48 @@
+>> +Driver a GPIO line that can be used to restart the system as a
+>> +restart handler.
+>
+> Please fix the Typo (first word).
 
-> In case of real-life filesystems, e.g. ext4, aio_kernel_submit() may easily
-> block on something like bh_submit_read(), when fs reads file metadata to
-> calculate the offset on block device by position in the file.
+Fixed.
 
-Yeah, there are a lot of rare potential blocking points throughout the
-fs aio submission paths.   In practice (aio+dio+block fs), I think
-submission tends to block waiting for congested block queues most often.
+>
+>> [...]
+>> +
+>> +The driver supports both level triggered and edge triggered power off.
+>> +At driver load time, the driver will request the given gpio line and
+>> +install a restart handler.
+>
+> The wording is too driver centric IMHO. You are supposed to document
+> the binding in a generic way. Maybe start with something like:
+>
+> "This binding supports level and edge triggered reset."
+>
+> (power off is the wrong word, since there is already gpio-poweroff).
 
-- z
+I've cleaned this up for v2.
+
+>> +If the optional properties 'input' is +not found, the GPIO line
+>> +will be driven in the inactive state. Otherwise its configured
+>> +as an input.
+>
+> What is this needed for?
+
+This allows other hardware to be attached to the same line to reset
+the system.  Carried forward from the gpio-poweroff implementation I
+based this on.
+
+>> +When do_kernel_restart is called the various restart handlers will be tried
+>> +in order.  The gpio is configured as an output, and drive active, so
+>> +triggering a level triggered power off condition. This will also cause an
+>> +inactive->active edge condition, so triggering positive edge triggered
+>> +power off. After a delay of 100ms, the GPIO is set to inactive, thus
+>> +causing an active->inactive edge, triggering negative edge triggered power
+>> +off. After another 100ms delay the GPIO is driver active again. If the
+>> +power is still on and the CPU still running after a 3000ms delay, a
+>> +WARN_ON(1) is emitted.
+>
+> I really appreciate the description of the driver (it made it easier
+> to review it :)), but Documentation/devicetree should avoid
+> Linuxisms. In other words: this is the wrong location for the
+> description.
+
+I've cleaned this up as well and made the explicit delays configurable.
+
+>
+>> +Required properties:
+>> +- compatible : should be "gpio-restart".
+>> +- gpios : The GPIO to set high/low, see "gpios property" in
+>> +  Documentation/devicetree/bindings/gpio/gpio.txt. If the pin should be
+>> +  low to power down the board set it to "Active Low", otherwise set
+>> +  gpio to "Active High".
+>> +
+>> +Optional properties:
+>> +- input : Initially configure the GPIO line as an input. Only reconfigure
+>> +  it to an output when the machine_restart function is called. If this optional
+>> +  property is not specified, the GPIO is initialized as an output in its
+>> +  inactive state.
+>> +- priority : A priority ranging from 0 to 255 (default 128) according to
+>> +  the following guidelines:
+>> +     0:      Restart handler of last resort, with limited restart
+>> +             capabilities
+>> +     128:    Default restart handler; use if no other restart handler is
+>> +             expected to be available, and/or if restart functionality is
+>> +             sufficient to restart the entire system
+>> +     255:    Highest priority restart handler, will preempt all other
+>> +             restart handlers
+>
+> You should add a short information about the property type here
+> (e.g. "8 bit integer" for priority).
+
+As per Olof's comments I've just changed this to be a regular cell for
+consistency with other bindings and will handle the range checking
+internally.
+
+>
+>> +Examples:
+>> +
+>> +gpio-restart {
+>> +     compatible = "gpio-restart";
+>> +     gpios = <&gpio 4 0>;
+>> +     priority = /bits/ 8 <200>;
+>> +};
+>> [...]
+>
+> -- Sebastian
