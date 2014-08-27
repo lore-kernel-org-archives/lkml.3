@@ -1,252 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756932AbaH0SfL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 14:35:11 -0400
-Received: from cmexedge1.ext.emulex.com ([138.239.224.99]:46338 "EHLO
-	CMEXEDGE1.ext.emulex.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756862AbaH0SfJ (ORCPT
+	id S935604AbaH0Sfs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 14:35:48 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:45786 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932383AbaH0Sfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 14:35:09 -0400
-Message-ID: <53FE24C3.6080708@emulex.com>
-Date: Wed, 27 Aug 2014 14:34:43 -0400
-From: James Smart <james.smart@emulex.com>
-Reply-To: <james.smart@emulex.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	Wed, 27 Aug 2014 14:35:46 -0400
 MIME-Version: 1.0
-To: Mike Qiu <qiudayu@linux.vnet.ibm.com>
-CC: <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <JBottomley@parallels.com>
-Subject: Re: [PATCH] lpfc: Avoid to disable pci_dev twice
-References: <1405578751-14164-1-git-send-email-qiudayu@linux.vnet.ibm.com> <53DAF88C.50008@linux.vnet.ibm.com>
-In-Reply-To: <53DAF88C.50008@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <7h1ts1eqjp.fsf@paris.lan>
+References: <1408715373-25791-1-git-send-email-nm@ti.com>
+	<1408715373-25791-5-git-send-email-nm@ti.com>
+	<7h1ts1eqjp.fsf@paris.lan>
+Date: Wed, 27 Aug 2014 13:35:46 -0500
+X-Google-Sender-Auth: gAZ4qGLvENiQuH2TQUZ9Dw5-_GI
+Message-ID: <CAGo_u6rVNsmeuuaTre87eThh3_uo_1aWBgsW+ixiRtif=tnjLA@mail.gmail.com>
+Subject: Re: [PATCH 4/7] ARM: OMAP2+: powerdomain: introduce logic for finding
+ valid power domain
+From: Nishanth Menon <nm@ti.com>
+To: Kevin Hilman <khilman@deeprootsystems.com>
+Cc: Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>,
+        Keerthy <j-keerthy@ti.com>, lkml <linux-kernel@vger.kernel.org>,
+        Tero Kristo <t-kristo@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        =?UTF-8?Q?Beno=C3=AEt_Cousson?= <bcousson@baylibre.com>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike,
-
-Can you confirm - the "nulls" this patch correct are because the 
-probe_one and error_detect threads are running concurrently, thus battling ?
-
-If so - this fix looks insufficient and we should rework it.
-
-Q: why are they allowed to run concurrently ?  I could see this solved 
-at the platform level to let probe_one finish before error_detect is 
-called (and therefore stating error_detect only makes sense to call if 
-probe_one was successful). It's also a much driver-friendly solution. I 
-could see other drivers have much the same issue with concurrency and 
-data structure teardown - and if locks aren't allowed in the 
-error-detect path... it's not good.
-
--- james s
-
-
-
-On 7/31/2014 10:16 PM, Mike Qiu wrote:
-> On 07/17/2014 02:32 PM, Mike Qiu wrote:
+On Wed, Aug 27, 2014 at 1:27 PM, Kevin Hilman
+<khilman@deeprootsystems.com> wrote:
+> Nishanth Menon <nm@ti.com> writes:
 >
->
-> Hi, all
->
-> How about this patch ?
->
-> Any idea ?
->
->> In IBM Power servers, when hardware error occurs during probe
->> state, EEH subsystem will call driver's error_detected interface,
->> which will call pci_disable_device(). But driver's probe function also
->> call pci_disable_device() in this situation.
+>> powerdomain configuration in OMAP is done using PWRSTCTRL register for
+>> each power domain. However, PRCM lets us write any value we'd like to
+>> the logic and power domain target states, however the SoC integration
+>> tends to actually function only at a few discrete states. These valid
+>> states are already in our powerdomains_xxx_data.c file.
 >>
->> So pci_dev will be disabled twice:
+>> So, provide a function to easily query valid low power state that the
+>> power domain is allowed to go to.
 >>
->> Device lpfc disabling already-disabled device
->> ------------[ cut here ]------------
->> WARNING: at drivers/pci/pci.c:1407
->> CPU: 0 PID: 8744 Comm: kworker/0:0 Tainted: G        W 
->> 3.10.42-2002.pkvm2_1_1.6.ppc64 #1
->> Workqueue: events .work_for_cpu_fn
->> task: c00000274e3f5400 ti: c0000027d3958000 task.ti: c0000027d3958000
->> NIP: c000000000471b8c LR: c000000000471b88 CTR: c00000000043ebe0
->> REGS: c0000027d395b650 TRAP: 0700   Tainted: G        W 
->> (3.10.42-2002.pkvm2_1_1.6.ppc64)
->> MSR: 9000000100029032 <SF,HV,EE,ME,IR,DR,RI>  CR: 28b52b44  XER: 
->> 20000000
->> CFAR: c000000000879ab8 SOFTE: 1
->> ...
->> NIP .pci_disable_device+0xcc/0xe0
->> LR  .pci_disable_device+0xc8/0xe0
->> Call Trace:
->> .pci_disable_device+0xc8/0xe0 (unreliable)
->> .lpfc_disable_pci_dev+0x50/0x80 [lpfc]
->> .lpfc_pci_probe_one+0x870/0x21a0 [lpfc]
->> .local_pci_probe+0x68/0xb0
->> .work_for_cpu_fn+0x38/0x60
->> .process_one_work+0x1a4/0x4d0
->> .worker_thread+0x37c/0x490
->> .kthread+0xf0/0x100
->> .ret_from_kernel_thread+0x5c/0x80
+>> Based on work originally done by Jean Pihet <j-pihet@ti.com>
+>> https://patchwork.kernel.org/patch/1325091/ . There is no attempt to
+>> create a new powerdomain solution here, except fixing issues seen
+>> attempting invalid programming attempts. Future consolidation to the
+>> generic powerdomain framework should consider this requirement as
+>> well.
 >>
->> Signed-off-by: Mike Qiu <qiudayu@linux.vnet.ibm.com>
+>> Similar solutions have been done in product kernels in the past such
+>> as:
+>> https://android.googlesource.com/kernel/omap.git/+blame/android-omap-panda-3.0/arch/arm/mach-omap2/pm44xx.c
+>>
+>> Signed-off-by: Nishanth Menon <nm@ti.com>
 >> ---
->>   drivers/scsi/lpfc/lpfc.h      |  1 +
->>   drivers/scsi/lpfc/lpfc_init.c | 59 
->> +++++++++++++++++++++++++++++++++++++++----
->>   2 files changed, 55 insertions(+), 5 deletions(-)
->>
->> diff --git a/drivers/scsi/lpfc/lpfc.h b/drivers/scsi/lpfc/lpfc.h
->> index 434e903..0c7bad9 100644
->> --- a/drivers/scsi/lpfc/lpfc.h
->> +++ b/drivers/scsi/lpfc/lpfc.h
->> @@ -813,6 +813,7 @@ struct lpfc_hba {
->>   #define VPD_MASK            0xf         /* mask for any vpd data */
->>
->>       uint8_t soft_wwn_enable;
->> +    uint8_t probe_done;
->>
->>       struct timer_list fcp_poll_timer;
->>       struct timer_list eratt_poll;
->> diff --git a/drivers/scsi/lpfc/lpfc_init.c 
->> b/drivers/scsi/lpfc/lpfc_init.c
->> index 06f9a5b..c2e67ae 100644
->> --- a/drivers/scsi/lpfc/lpfc_init.c
->> +++ b/drivers/scsi/lpfc/lpfc_init.c
->> @@ -9519,6 +9519,9 @@ lpfc_pci_probe_one_s3(struct pci_dev *pdev, 
->> const struct pci_device_id *pid)
->>           }
->>       }
->>
->> +    /* Set the probe flag */
->> +    phba->probe_done = 1;
->> +
->>       /* Perform post initialization setup */
->>       lpfc_post_init_setup(phba);
->>
->> @@ -9795,6 +9798,9 @@ lpfc_sli_prep_dev_for_recover(struct lpfc_hba 
->> *phba)
->>   static void
->>   lpfc_sli_prep_dev_for_reset(struct lpfc_hba *phba)
->>   {
->> +    if (phba)
->> +        return;
->> +
->>       lpfc_printf_log(phba, KERN_ERR, LOG_INIT,
->>               "2710 PCI channel disable preparing for reset\n");
->>
->> @@ -9812,7 +9818,8 @@ lpfc_sli_prep_dev_for_reset(struct lpfc_hba *phba)
->>
->>       /* Disable interrupt and pci device */
->>       lpfc_sli_disable_intr(phba);
->> -    pci_disable_device(phba->pcidev);
->> +    if (phba->probe_done && phba->pcidev)
->> +        pci_disable_device(phba->pcidev);
->>   }
->>
->>   /**
->> @@ -10282,6 +10289,9 @@ lpfc_pci_probe_one_s4(struct pci_dev *pdev, 
->> const struct pci_device_id *pid)
->>           goto out_disable_intr;
->>       }
->>
->> +    /* Set probe_done flag */
->> +    phba->probe_done = 1;
->> +
->>       /* Log the current active interrupt mode */
->>       phba->intr_mode = intr_mode;
->>       lpfc_log_intr_mode(phba, intr_mode);
->> @@ -10544,6 +10554,9 @@ lpfc_sli4_prep_dev_for_recover(struct 
->> lpfc_hba *phba)
->>   static void
->>   lpfc_sli4_prep_dev_for_reset(struct lpfc_hba *phba)
->>   {
->> +    if (!phba)
->> +        return;
->> +
->>       lpfc_printf_log(phba, KERN_ERR, LOG_INIT,
->>               "2826 PCI channel disable preparing for reset\n");
->>
->> @@ -10562,7 +10575,9 @@ lpfc_sli4_prep_dev_for_reset(struct lpfc_hba 
->> *phba)
->>       /* Disable interrupt and pci device */
->>       lpfc_sli4_disable_intr(phba);
->>       lpfc_sli4_queue_destroy(phba);
->> -    pci_disable_device(phba->pcidev);
->> +
->> +    if (phba->probe_done && phba->pcidev)
->> +        pci_disable_device(phba->pcidev);
->>   }
->>
->>   /**
->> @@ -10893,9 +10908,21 @@ static pci_ers_result_t
->>   lpfc_io_error_detected(struct pci_dev *pdev, pci_channel_state_t 
->> state)
->>   {
->>       struct Scsi_Host *shost = pci_get_drvdata(pdev);
->> -    struct lpfc_hba *phba = ((struct lpfc_vport 
->> *)shost->hostdata)->phba;
->> +    struct lpfc_hba *phba;
->>       pci_ers_result_t rc = PCI_ERS_RESULT_DISCONNECT;
->>
->> +    if (!shost)
->> +        /* Run here means it may during probe state and
->> +         * Scsi_Host has not been created and We can do nothing
->> +         * in this state so call for hotplug*/
->> +        return PCI_ERS_RESULT_NONE;
->> +
->> +    phba = ((struct lpfc_vport *)shost->hostdata)->phba;
->> +
->> +    if (!phba || !phba->probe_done)
->> +        /* Run here means it may during probe state */
->> +        return PCI_ERS_RESULT_NONE;
->> +
->>       switch (phba->pci_dev_grp) {
->>       case LPFC_PCI_DEV_LP:
->>           rc = lpfc_io_error_detected_s3(pdev, state);
->> @@ -10930,9 +10957,20 @@ static pci_ers_result_t
->>   lpfc_io_slot_reset(struct pci_dev *pdev)
->>   {
->>       struct Scsi_Host *shost = pci_get_drvdata(pdev);
->> -    struct lpfc_hba *phba = ((struct lpfc_vport 
->> *)shost->hostdata)->phba;
->> +    struct lpfc_hba *phba;
->>       pci_ers_result_t rc = PCI_ERS_RESULT_DISCONNECT;
->>
->> +    if (!shost)
->> +        /* Run here means it may during probe state and
->> +         * Scsi_Host has not been created */
->> +        return PCI_ERS_RESULT_NONE;
->> +
->> +    phba = ((struct lpfc_vport *)shost->hostdata)->phba;
->> +
->> +    if (!phba || !phba->probe_done)
->> +        /* Run here means it may during probe state */
->> +        return PCI_ERS_RESULT_NONE;
->> +
->>       switch (phba->pci_dev_grp) {
->>       case LPFC_PCI_DEV_LP:
->>           rc = lpfc_io_slot_reset_s3(pdev);
->> @@ -10963,7 +11001,18 @@ static void
->>   lpfc_io_resume(struct pci_dev *pdev)
->>   {
->>       struct Scsi_Host *shost = pci_get_drvdata(pdev);
->> -    struct lpfc_hba *phba = ((struct lpfc_vport 
->> *)shost->hostdata)->phba;
->> +    struct lpfc_hba *phba;
->> +
->> +    if (!shost)
->> +        /* Run here means it may during probe state and
->> +         * Scsi_Host has not been created */
->> +        return;
->> +
->> +    phba = ((struct lpfc_vport *)shost->hostdata)->phba;
->> +
->> +    if (!phba || !phba->probe_done)
->> +        /* Run here means it may during probe state */
->> +        return;
->>
->>       switch (phba->pci_dev_grp) {
->>       case LPFC_PCI_DEV_LP:
 >
+> nit: this is part of a fixes series, but it's more of a new feature.
 >
+> That being said, the feature is needed and looks OK, except for...
+>
+>> +up_search:
+>> +     /* OK, no deeper ones, can we get a higher match? */
+>> +     new_pwrst = req_state + 1;
+>> +     while (!(pwrdm_states & BIT(new_pwrst))) {
+>> +             /* BUG if we have messed up database */
+>> +             BUG_ON(new_pwrst > PWRDM_POWER_ON);
+>
+> I don't think this is BUG() worthy, and should have a saner way to recover.
 
+it is not even a legal value to have a power state higher than ON. I
+mean, yeah, we can do
+if (new_pwrst > PWRDM_POWER_ON) {
+         pr_debug("powerdomain: %s: fix my powerdomain max to ON\n",
+pwrdm->name);
+         return PWRDM_POWER_ON;
+}
+
+if that is your suggestion here, personally, I would use a WARN at least here..
+
+-- 
+---
+Regards,
+Nishanth Menon
