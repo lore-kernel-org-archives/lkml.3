@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932802AbaH0Eai (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 00:30:38 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:43483 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050AbaH0E3y (ORCPT
+	id S932692AbaH0E3x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 00:29:53 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:50847 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751050AbaH0E3t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 00:29:54 -0400
+	Wed, 27 Aug 2014 00:29:49 -0400
 From: behanw@converseincode.com
 To: ard.biesheuvel@linaro.org, catalin.marinas@arm.com,
         cl@linux-foundation.org, jays.lee@samsung.com,
@@ -15,51 +15,51 @@ To: ard.biesheuvel@linaro.org, catalin.marinas@arm.com,
         tj@kernel.org, will.deacon@arm.com
 Cc: christoffer.dall@linaro.org, kgene.kim@samsung.com, khilman@linaro.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        sungjinn.chung@samsung.com, Mark Charlebois <charlebm@gmail.com>,
-        Behan Webster <behanw@converseincode.com>
-Subject: [PATCH V2 5/6] arm64: LLVMLinux: Use global stack register variable for aarch64
-Date: Tue, 26 Aug 2014 21:29:33 -0700
-Message-Id: <1409113774-3172-6-git-send-email-behanw@converseincode.com>
+        sungjinn.chung@samsung.com, Behan Webster <behanw@converseincode.com>,
+        Mark Charlebois <charlebm@gmail.com>
+Subject: [PATCH V2 3/6] arm64: LLVMLinux: Calculate current_thread_info from current_stack_pointer
+Date: Tue, 26 Aug 2014 21:29:31 -0700
+Message-Id: <1409113774-3172-4-git-send-email-behanw@converseincode.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1409113774-3172-1-git-send-email-behanw@converseincode.com>
 References: <20140826141608.GT23445@arm.com>
  <1409113774-3172-1-git-send-email-behanw@converseincode.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Charlebois <charlebm@gmail.com>
+From: Behan Webster <behanw@converseincode.com>
 
-To support both Clang and GCC, use the global stack register variable vs
-a local register variable.
+Use the global current_stack_pointer to get the value of the stack pointer.
+This change supports being able to compile the kernel with both gcc and clang.
 
-Author: Mark Charlebois <charlebm@gmail.com>
-Signed-off-by: Mark Charlebois <charlebm@gmail.com>
 Signed-off-by: Behan Webster <behanw@converseincode.com>
+Signed-off-by: Mark Charlebois <charlebm@gmail.com>
+Reviewed-by: Jan-Simon Möller <dl9pf@gmx.de>
+Reviewed-by: Olof Johansson <olof@lixom.net>
+Acked-by: Will Deacon <will.deacon@arm.com>
 ---
- arch/arm64/include/asm/percpu.h | 4 ++--
+ arch/arm64/include/asm/thread_info.h | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm64/include/asm/percpu.h b/arch/arm64/include/asm/percpu.h
-index 453a179..5279e57 100644
---- a/arch/arm64/include/asm/percpu.h
-+++ b/arch/arm64/include/asm/percpu.h
-@@ -26,13 +26,13 @@ static inline void set_my_cpu_offset(unsigned long off)
- static inline unsigned long __my_cpu_offset(void)
+diff --git a/arch/arm64/include/asm/thread_info.h b/arch/arm64/include/asm/thread_info.h
+index 356e037..459bf8e 100644
+--- a/arch/arm64/include/asm/thread_info.h
++++ b/arch/arm64/include/asm/thread_info.h
+@@ -80,8 +80,8 @@ static inline struct thread_info *current_thread_info(void) __attribute_const__;
+ 
+ static inline struct thread_info *current_thread_info(void)
  {
- 	unsigned long off;
--	register unsigned long *sp asm ("sp");
- 
- 	/*
- 	 * We want to allow caching the value, so avoid using volatile and
- 	 * instead use a fake stack read to hazard against barrier().
- 	 */
--	asm("mrs %0, tpidr_el1" : "=r" (off) : "Q" (*sp));
-+	asm("mrs %0, tpidr_el1" : "=r" (off) :
-+		"Q" (*(const unsigned long *)current_stack_pointer));
- 
- 	return off;
+-	register unsigned long sp asm ("sp");
+-	return (struct thread_info *)(sp & ~(THREAD_SIZE - 1));
++	return (struct thread_info *)
++		(current_stack_pointer & ~(THREAD_SIZE - 1));
  }
+ 
+ #define thread_saved_pc(tsk)	\
 -- 
 1.9.1
 
