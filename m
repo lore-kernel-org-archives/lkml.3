@@ -1,723 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758307AbaH0Cky (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 22:40:54 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:37562 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756589AbaH0CaA (ORCPT
+	id S1758417AbaH0ClI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 22:41:08 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:50299 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758152AbaH0Ckw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 22:30:00 -0400
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Brendan Gregg <brendan.d.gregg@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RFC v7 net-next 02/28] net: filter: split filter.h and expose eBPF to user space
-Date: Tue, 26 Aug 2014 19:29:16 -0700
-Message-Id: <1409106582-10095-3-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1409106582-10095-1-git-send-email-ast@plumgrid.com>
-References: <1409106582-10095-1-git-send-email-ast@plumgrid.com>
+	Tue, 26 Aug 2014 22:40:52 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53FD452F.7050609@roeck-us.net>
+Date: Tue, 26 Aug 2014 19:40:47 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: David Riley <davidriley@chromium.org>, Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Anton Vorontsov <anton@enomsg.org>,
+        Marc Carino <marc.ceeeee@gmail.com>, Anders Berg <anders.berg@lsi.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Jamie Lentin <jm@lentin.co.uk>, Doug Anderson <dianders@chromium.org>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH v1 1/1] power: Add simple gpio-restart driver
+References: <1409096705-24290-1-git-send-email-davidriley@chromium.org> <1409096705-24290-2-git-send-email-davidriley@chromium.org>
+In-Reply-To: <1409096705-24290-2-git-send-email-davidriley@chromium.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-eBPF can be used from user space.
+On 08/26/2014 04:45 PM, David Riley wrote:
+> This driver registers a restart handler to set a GPIO line high/low
+> to reset a board based on devicetree bindings.
+>
+> Signed-off-by: David Riley <davidriley@chromium.org>
+> ---
+>   .../devicetree/bindings/gpio/gpio-restart.txt      |  48 +++++++
+>   drivers/power/reset/Kconfig                        |   8 ++
+>   drivers/power/reset/Makefile                       |   1 +
+>   drivers/power/reset/gpio-restart.c                 | 142 +++++++++++++++++++++
+>   4 files changed, 199 insertions(+)
+>   create mode 100644 Documentation/devicetree/bindings/gpio/gpio-restart.txt
+>   create mode 100644 drivers/power/reset/gpio-restart.c
+>
+> diff --git a/Documentation/devicetree/bindings/gpio/gpio-restart.txt b/Documentation/devicetree/bindings/gpio/gpio-restart.txt
+> new file mode 100644
+> index 0000000..7cd58788
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/gpio/gpio-restart.txt
+> @@ -0,0 +1,48 @@
+> +Driver a GPIO line that can be used to restart the system as a
+> +restart handler.
+> +
+> +The driver supports both level triggered and edge triggered power off.
+> +At driver load time, the driver will request the given gpio line and
+> +install a restart handler. If the optional properties 'input' is
+> +not found, the GPIO line will be driven in the inactive state.
+> +Otherwise its configured as an input.
+> +
+> +When do_kernel_restart is called the various restart handlers will be tried
+> +in order.  The gpio is configured as an output, and drive active, so
+> +triggering a level triggered power off condition. This will also cause an
+> +inactive->active edge condition, so triggering positive edge triggered
+> +power off. After a delay of 100ms, the GPIO is set to inactive, thus
+> +causing an active->inactive edge, triggering negative edge triggered power
+> +off. After another 100ms delay the GPIO is driver active again. If the
+> +power is still on and the CPU still running after a 3000ms delay, a
+> +WARN_ON(1) is emitted.
+> +
+> +Required properties:
+> +- compatible : should be "gpio-restart".
+> +- gpios : The GPIO to set high/low, see "gpios property" in
+> +  Documentation/devicetree/bindings/gpio/gpio.txt. If the pin should be
+> +  low to power down the board set it to "Active Low", otherwise set
+> +  gpio to "Active High".
+> +
+> +Optional properties:
+> +- input : Initially configure the GPIO line as an input. Only reconfigure
+> +  it to an output when the machine_restart function is called. If this optional
+> +  property is not specified, the GPIO is initialized as an output in its
+> +  inactive state.
 
-uapi/linux/bpf.h: eBPF instruction set definition
+Maybe describe this as open source ?
 
-linux/filter.h: the rest
+> +- priority : A priority ranging from 0 to 255 (default 128) according to
+> +  the following guidelines:
+> +	0:	Restart handler of last resort, with limited restart
+> +		capabilities
+> +	128:	Default restart handler; use if no other restart handler is
+> +		expected to be available, and/or if restart functionality is
+> +		sufficient to restart the entire system
+> +	255:	Highest priority restart handler, will preempt all other
+> +		restart handlers
+> +
+> +Examples:
+> +
+> +gpio-restart {
+> +	compatible = "gpio-restart";
+> +	gpios = <&gpio 4 0>;
+> +	priority = /bits/ 8 <200>;
+> +};
+> diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
+> index ca41523..f07e26c 100644
+> --- a/drivers/power/reset/Kconfig
+> +++ b/drivers/power/reset/Kconfig
+> @@ -39,6 +39,14 @@ config POWER_RESET_GPIO
+>   	  If your board needs a GPIO high/low to power down, say Y and
+>   	  create a binding in your devicetree.
+>
+> +config POWER_RESET_GPIO_RESTART
+> +	bool "GPIO restart driver"
+> +	depends on OF_GPIO && POWER_RESET
+> +	help
+> +	  This driver supports restarting your board via a GPIO line.
+> +	  If your board needs a GPIO high/low to restart, say Y and
+> +	  create a binding in your devicetree.
+> +
+>   config POWER_RESET_HISI
+>   	bool "Hisilicon power-off driver"
+>   	depends on POWER_RESET && ARCH_HISI
+> diff --git a/drivers/power/reset/Makefile b/drivers/power/reset/Makefile
+> index a42e70e..199cb6e 100644
+> --- a/drivers/power/reset/Makefile
+> +++ b/drivers/power/reset/Makefile
+> @@ -2,6 +2,7 @@ obj-$(CONFIG_POWER_RESET_AS3722) += as3722-poweroff.o
+>   obj-$(CONFIG_POWER_RESET_AXXIA) += axxia-reset.o
+>   obj-$(CONFIG_POWER_RESET_BRCMSTB) += brcmstb-reboot.o
+>   obj-$(CONFIG_POWER_RESET_GPIO) += gpio-poweroff.o
+> +obj-$(CONFIG_POWER_RESET_GPIO_RESTART) += gpio-restart.o
+>   obj-$(CONFIG_POWER_RESET_HISI) += hisi-reboot.o
+>   obj-$(CONFIG_POWER_RESET_MSM) += msm-poweroff.o
+>   obj-$(CONFIG_POWER_RESET_QNAP) += qnap-poweroff.o
+> diff --git a/drivers/power/reset/gpio-restart.c b/drivers/power/reset/gpio-restart.c
+> new file mode 100644
+> index 0000000..2cbff64
+> --- /dev/null
+> +++ b/drivers/power/reset/gpio-restart.c
+> @@ -0,0 +1,142 @@
+> +/*
+> + * Toggles a GPIO pin to restart a device
+> + *
+> + * Copyright (C) 2014 Google, Inc.
+> + *
+> + * This software is licensed under the terms of the GNU General Public
+> + * License version 2, as published by the Free Software Foundation, and
+> + * may be copied, distributed, and modified under those terms.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * Based on the gpio-poweroff driver.
+> + */
+> +#include <linux/reboot.h>
+> +#include <linux/kernel.h>
+> +#include <linux/init.h>
+> +#include <linux/delay.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/gpio/consumer.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/module.h>
+> +
+> +struct gpio_restart {
+> +	struct gpio_desc *reset_gpio;
+> +	struct notifier_block restart_handler;
+> +};
+> +
+> +static int gpio_restart_notify(struct notifier_block *this,
+> +				unsigned long mode, void *cmd)
+> +{
+> +	struct gpio_restart *gpio_restart =
+> +		container_of(this, struct gpio_restart, restart_handler);
+> +
+> +	BUG_ON(!gpio_restart->reset_gpio);
+> +
+Is this really necessary ? First, it can't really happen,
+but if it happens anyway I am not sure if there might be
+a possibility for recursiveness. After all, this is called
+from machine_restart().
 
-This patch only moves macro definitions, but practically it freezes existing
-eBPF instruction set, though new instructions can still be added in the future.
+> +	/* drive it active, also inactive->active edge */
+> +	gpiod_direction_output(gpio_restart->reset_gpio, 1);
+> +	mdelay(100);
+> +
+> +	/* drive inactive, also active->inactive edge */
+> +	gpiod_set_value(gpio_restart->reset_gpio, 0);
+> +	mdelay(100);
+> +
+> +	/* drive it active, also inactive->active edge */
+> +	gpiod_set_value(gpio_restart->reset_gpio, 1);
+> +
+> +	/* give it some time */
+> +	mdelay(3000);
+> +
+Should those delays be parameters ?
 
-These eBPF definitions cannot go into uapi/linux/filter.h, since the names
-may conflict with existing applications.
+> +	WARN_ON(1);
+> +
+> +	return NOTIFY_DONE;
+> +}
+> +
+> +static int gpio_restart_probe(struct platform_device *pdev)
+> +{
+> +	struct gpio_restart *gpio_restart;
+> +	bool input = false;
+> +	u8 priority;
+> +	int ret;
+> +
+> +	gpio_restart = devm_kzalloc(&pdev->dev, sizeof(*gpio_restart),
+> +			GFP_KERNEL);
+> +	if (!gpio_restart)
+> +		return -ENOMEM;
+> +
+> +	gpio_restart->reset_gpio = devm_gpiod_get(&pdev->dev, NULL);
+> +	if (IS_ERR(gpio_restart->reset_gpio))
+> +		return PTR_ERR(gpio_restart->reset_gpio);
+> +
+There is now a flags parameter to devm_gpiod_get which should help
+handling input/output with a single call.
 
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
----
- include/linux/filter.h    |  312 +------------------------------------------
- include/uapi/linux/Kbuild |    1 +
- include/uapi/linux/bpf.h  |  321 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 323 insertions(+), 311 deletions(-)
- create mode 100644 include/uapi/linux/bpf.h
-
-diff --git a/include/linux/filter.h b/include/linux/filter.h
-index f3262b598262..f04793474d16 100644
---- a/include/linux/filter.h
-+++ b/include/linux/filter.h
-@@ -9,322 +9,12 @@
- #include <linux/skbuff.h>
- #include <linux/workqueue.h>
- #include <uapi/linux/filter.h>
--
--/* Internally used and optimized filter representation with extended
-- * instruction set based on top of classic BPF.
-- */
--
--/* instruction classes */
--#define BPF_ALU64	0x07	/* alu mode in double word width */
--
--/* ld/ldx fields */
--#define BPF_DW		0x18	/* double word */
--#define BPF_XADD	0xc0	/* exclusive add */
--
--/* alu/jmp fields */
--#define BPF_MOV		0xb0	/* mov reg to reg */
--#define BPF_ARSH	0xc0	/* sign extending arithmetic shift right */
--
--/* change endianness of a register */
--#define BPF_END		0xd0	/* flags for endianness conversion: */
--#define BPF_TO_LE	0x00	/* convert to little-endian */
--#define BPF_TO_BE	0x08	/* convert to big-endian */
--#define BPF_FROM_LE	BPF_TO_LE
--#define BPF_FROM_BE	BPF_TO_BE
--
--#define BPF_JNE		0x50	/* jump != */
--#define BPF_JSGT	0x60	/* SGT is signed '>', GT in x86 */
--#define BPF_JSGE	0x70	/* SGE is signed '>=', GE in x86 */
--#define BPF_CALL	0x80	/* function call */
--#define BPF_EXIT	0x90	/* function return */
--
--/* Register numbers */
--enum {
--	BPF_REG_0 = 0,
--	BPF_REG_1,
--	BPF_REG_2,
--	BPF_REG_3,
--	BPF_REG_4,
--	BPF_REG_5,
--	BPF_REG_6,
--	BPF_REG_7,
--	BPF_REG_8,
--	BPF_REG_9,
--	BPF_REG_10,
--	__MAX_BPF_REG,
--};
--
--/* BPF has 10 general purpose 64-bit registers and stack frame. */
--#define MAX_BPF_REG	__MAX_BPF_REG
--
--/* ArgX, context and stack frame pointer register positions. Note,
-- * Arg1, Arg2, Arg3, etc are used as argument mappings of function
-- * calls in BPF_CALL instruction.
-- */
--#define BPF_REG_ARG1	BPF_REG_1
--#define BPF_REG_ARG2	BPF_REG_2
--#define BPF_REG_ARG3	BPF_REG_3
--#define BPF_REG_ARG4	BPF_REG_4
--#define BPF_REG_ARG5	BPF_REG_5
--#define BPF_REG_CTX	BPF_REG_6
--#define BPF_REG_FP	BPF_REG_10
--
--/* Additional register mappings for converted user programs. */
--#define BPF_REG_A	BPF_REG_0
--#define BPF_REG_X	BPF_REG_7
--#define BPF_REG_TMP	BPF_REG_8
--
--/* BPF program can access up to 512 bytes of stack space. */
--#define MAX_BPF_STACK	512
--
--/* Helper macros for filter block array initializers. */
--
--/* ALU ops on registers, bpf_add|sub|...: dst_reg += src_reg */
--
--#define BPF_ALU64_REG(OP, DST, SRC)				\
--	((struct bpf_insn) {					\
--		.code  = BPF_ALU64 | BPF_OP(OP) | BPF_X,	\
--		.dst_reg = DST,					\
--		.src_reg = SRC,					\
--		.off   = 0,					\
--		.imm   = 0 })
--
--#define BPF_ALU32_REG(OP, DST, SRC)				\
--	((struct bpf_insn) {					\
--		.code  = BPF_ALU | BPF_OP(OP) | BPF_X,		\
--		.dst_reg = DST,					\
--		.src_reg = SRC,					\
--		.off   = 0,					\
--		.imm   = 0 })
--
--/* ALU ops on immediates, bpf_add|sub|...: dst_reg += imm32 */
--
--#define BPF_ALU64_IMM(OP, DST, IMM)				\
--	((struct bpf_insn) {					\
--		.code  = BPF_ALU64 | BPF_OP(OP) | BPF_K,	\
--		.dst_reg = DST,					\
--		.src_reg = 0,					\
--		.off   = 0,					\
--		.imm   = IMM })
--
--#define BPF_ALU32_IMM(OP, DST, IMM)				\
--	((struct bpf_insn) {					\
--		.code  = BPF_ALU | BPF_OP(OP) | BPF_K,		\
--		.dst_reg = DST,					\
--		.src_reg = 0,					\
--		.off   = 0,					\
--		.imm   = IMM })
--
--/* Endianess conversion, cpu_to_{l,b}e(), {l,b}e_to_cpu() */
--
--#define BPF_ENDIAN(TYPE, DST, LEN)				\
--	((struct bpf_insn) {					\
--		.code  = BPF_ALU | BPF_END | BPF_SRC(TYPE),	\
--		.dst_reg = DST,					\
--		.src_reg = 0,					\
--		.off   = 0,					\
--		.imm   = LEN })
--
--/* Short form of mov, dst_reg = src_reg */
--
--#define BPF_MOV64_REG(DST, SRC)					\
--	((struct bpf_insn) {					\
--		.code  = BPF_ALU64 | BPF_MOV | BPF_X,		\
--		.dst_reg = DST,					\
--		.src_reg = SRC,					\
--		.off   = 0,					\
--		.imm   = 0 })
--
--#define BPF_MOV32_REG(DST, SRC)					\
--	((struct bpf_insn) {					\
--		.code  = BPF_ALU | BPF_MOV | BPF_X,		\
--		.dst_reg = DST,					\
--		.src_reg = SRC,					\
--		.off   = 0,					\
--		.imm   = 0 })
--
--/* Short form of mov, dst_reg = imm32 */
--
--#define BPF_MOV64_IMM(DST, IMM)					\
--	((struct bpf_insn) {					\
--		.code  = BPF_ALU64 | BPF_MOV | BPF_K,		\
--		.dst_reg = DST,					\
--		.src_reg = 0,					\
--		.off   = 0,					\
--		.imm   = IMM })
--
--#define BPF_MOV32_IMM(DST, IMM)					\
--	((struct bpf_insn) {					\
--		.code  = BPF_ALU | BPF_MOV | BPF_K,		\
--		.dst_reg = DST,					\
--		.src_reg = 0,					\
--		.off   = 0,					\
--		.imm   = IMM })
--
--/* BPF_LD_IMM64 macro encodes single 'load 64-bit immediate' insn */
--#define BPF_LD_IMM64(DST, IMM)					\
--	BPF_LD_IMM64_RAW(DST, 0, IMM)
--
--#define BPF_LD_IMM64_RAW(DST, SRC, IMM)				\
--	((struct bpf_insn) {					\
--		.code  = BPF_LD | BPF_DW | BPF_IMM,		\
--		.dst_reg = DST,					\
--		.src_reg = SRC,					\
--		.off   = 0,					\
--		.imm   = (__u32) (IMM) }),			\
--	((struct bpf_insn) {					\
--		.code  = 0, /* zero is reserved opcode */	\
--		.dst_reg = 0,					\
--		.src_reg = 0,					\
--		.off   = 0,					\
--		.imm   = ((__u64) (IMM)) >> 32 })
--
--/* Short form of mov based on type, BPF_X: dst_reg = src_reg, BPF_K: dst_reg = imm32 */
--
--#define BPF_MOV64_RAW(TYPE, DST, SRC, IMM)			\
--	((struct bpf_insn) {					\
--		.code  = BPF_ALU64 | BPF_MOV | BPF_SRC(TYPE),	\
--		.dst_reg = DST,					\
--		.src_reg = SRC,					\
--		.off   = 0,					\
--		.imm   = IMM })
--
--#define BPF_MOV32_RAW(TYPE, DST, SRC, IMM)			\
--	((struct bpf_insn) {					\
--		.code  = BPF_ALU | BPF_MOV | BPF_SRC(TYPE),	\
--		.dst_reg = DST,					\
--		.src_reg = SRC,					\
--		.off   = 0,					\
--		.imm   = IMM })
--
--/* Direct packet access, R0 = *(uint *) (skb->data + imm32) */
--
--#define BPF_LD_ABS(SIZE, IMM)					\
--	((struct bpf_insn) {					\
--		.code  = BPF_LD | BPF_SIZE(SIZE) | BPF_ABS,	\
--		.dst_reg = 0,					\
--		.src_reg = 0,					\
--		.off   = 0,					\
--		.imm   = IMM })
--
--/* Indirect packet access, R0 = *(uint *) (skb->data + src_reg + imm32) */
--
--#define BPF_LD_IND(SIZE, SRC, IMM)				\
--	((struct bpf_insn) {					\
--		.code  = BPF_LD | BPF_SIZE(SIZE) | BPF_IND,	\
--		.dst_reg = 0,					\
--		.src_reg = SRC,					\
--		.off   = 0,					\
--		.imm   = IMM })
--
--/* Memory load, dst_reg = *(uint *) (src_reg + off16) */
--
--#define BPF_LDX_MEM(SIZE, DST, SRC, OFF)			\
--	((struct bpf_insn) {					\
--		.code  = BPF_LDX | BPF_SIZE(SIZE) | BPF_MEM,	\
--		.dst_reg = DST,					\
--		.src_reg = SRC,					\
--		.off   = OFF,					\
--		.imm   = 0 })
--
--/* Memory store, *(uint *) (dst_reg + off16) = src_reg */
--
--#define BPF_STX_MEM(SIZE, DST, SRC, OFF)			\
--	((struct bpf_insn) {					\
--		.code  = BPF_STX | BPF_SIZE(SIZE) | BPF_MEM,	\
--		.dst_reg = DST,					\
--		.src_reg = SRC,					\
--		.off   = OFF,					\
--		.imm   = 0 })
--
--/* Memory store, *(uint *) (dst_reg + off16) = imm32 */
--
--#define BPF_ST_MEM(SIZE, DST, OFF, IMM)				\
--	((struct bpf_insn) {					\
--		.code  = BPF_ST | BPF_SIZE(SIZE) | BPF_MEM,	\
--		.dst_reg = DST,					\
--		.src_reg = 0,					\
--		.off   = OFF,					\
--		.imm   = IMM })
--
--/* Conditional jumps against registers, if (dst_reg 'op' src_reg) goto pc + off16 */
--
--#define BPF_JMP_REG(OP, DST, SRC, OFF)				\
--	((struct bpf_insn) {					\
--		.code  = BPF_JMP | BPF_OP(OP) | BPF_X,		\
--		.dst_reg = DST,					\
--		.src_reg = SRC,					\
--		.off   = OFF,					\
--		.imm   = 0 })
--
--/* Conditional jumps against immediates, if (dst_reg 'op' imm32) goto pc + off16 */
--
--#define BPF_JMP_IMM(OP, DST, IMM, OFF)				\
--	((struct bpf_insn) {					\
--		.code  = BPF_JMP | BPF_OP(OP) | BPF_K,		\
--		.dst_reg = DST,					\
--		.src_reg = 0,					\
--		.off   = OFF,					\
--		.imm   = IMM })
--
--/* Function call */
--
--#define BPF_EMIT_CALL(FUNC)					\
--	((struct bpf_insn) {					\
--		.code  = BPF_JMP | BPF_CALL,			\
--		.dst_reg = 0,					\
--		.src_reg = 0,					\
--		.off   = 0,					\
--		.imm   = ((FUNC) - __bpf_call_base) })
--
--/* Raw code statement block */
--
--#define BPF_RAW_INSN(CODE, DST, SRC, OFF, IMM)			\
--	((struct bpf_insn) {					\
--		.code  = CODE,					\
--		.dst_reg = DST,					\
--		.src_reg = SRC,					\
--		.off   = OFF,					\
--		.imm   = IMM })
--
--/* Program exit */
--
--#define BPF_EXIT_INSN()						\
--	((struct bpf_insn) {					\
--		.code  = BPF_JMP | BPF_EXIT,			\
--		.dst_reg = 0,					\
--		.src_reg = 0,					\
--		.off   = 0,					\
--		.imm   = 0 })
--
--#define bytes_to_bpf_size(bytes)				\
--({								\
--	int bpf_size = -EINVAL;					\
--								\
--	if (bytes == sizeof(u8))				\
--		bpf_size = BPF_B;				\
--	else if (bytes == sizeof(u16))				\
--		bpf_size = BPF_H;				\
--	else if (bytes == sizeof(u32))				\
--		bpf_size = BPF_W;				\
--	else if (bytes == sizeof(u64))				\
--		bpf_size = BPF_DW;				\
--								\
--	bpf_size;						\
--})
-+#include <uapi/linux/bpf.h>
- 
- /* Macro to invoke filter function. */
- #define SK_RUN_FILTER(filter, ctx) \
- 	(*filter->prog->bpf_func)(ctx, filter->prog->insnsi)
- 
--struct bpf_insn {
--	__u8	code;		/* opcode */
--	__u8	dst_reg:4;	/* dest register */
--	__u8	src_reg:4;	/* source register */
--	__s16	off;		/* signed offset */
--	__s32	imm;		/* signed immediate constant */
--};
--
- #ifdef CONFIG_COMPAT
- /* A struct sock_filter is architecture independent. */
- struct compat_sock_fprog {
-diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
-index 24e9033f8b3f..fb3f7b675229 100644
---- a/include/uapi/linux/Kbuild
-+++ b/include/uapi/linux/Kbuild
-@@ -67,6 +67,7 @@ header-y += bfs_fs.h
- header-y += binfmts.h
- header-y += blkpg.h
- header-y += blktrace_api.h
-+header-y += bpf.h
- header-y += bpqether.h
- header-y += bsg.h
- header-y += btrfs.h
-diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
-new file mode 100644
-index 000000000000..45a09b46c578
---- /dev/null
-+++ b/include/uapi/linux/bpf.h
-@@ -0,0 +1,321 @@
-+/* Copyright (c) 2011-2014 PLUMgrid, http://plumgrid.com
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of version 2 of the GNU General Public
-+ * License as published by the Free Software Foundation.
-+ */
-+#ifndef _UAPI__LINUX_BPF_H__
-+#define _UAPI__LINUX_BPF_H__
-+
-+#include <linux/types.h>
-+
-+/* Extended instruction set based on top of classic BPF */
-+
-+/* instruction classes */
-+#define BPF_ALU64	0x07	/* alu mode in double word width */
-+
-+/* ld/ldx fields */
-+#define BPF_DW		0x18	/* double word */
-+#define BPF_XADD	0xc0	/* exclusive add */
-+
-+/* alu/jmp fields */
-+#define BPF_MOV		0xb0	/* mov reg to reg */
-+#define BPF_ARSH	0xc0	/* sign extending arithmetic shift right */
-+
-+/* change endianness of a register */
-+#define BPF_END		0xd0	/* flags for endianness conversion: */
-+#define BPF_TO_LE	0x00	/* convert to little-endian */
-+#define BPF_TO_BE	0x08	/* convert to big-endian */
-+#define BPF_FROM_LE	BPF_TO_LE
-+#define BPF_FROM_BE	BPF_TO_BE
-+
-+#define BPF_JNE		0x50	/* jump != */
-+#define BPF_JSGT	0x60	/* SGT is signed '>', GT in x86 */
-+#define BPF_JSGE	0x70	/* SGE is signed '>=', GE in x86 */
-+#define BPF_CALL	0x80	/* function call */
-+#define BPF_EXIT	0x90	/* function return */
-+
-+/* Register numbers */
-+enum {
-+	BPF_REG_0 = 0,
-+	BPF_REG_1,
-+	BPF_REG_2,
-+	BPF_REG_3,
-+	BPF_REG_4,
-+	BPF_REG_5,
-+	BPF_REG_6,
-+	BPF_REG_7,
-+	BPF_REG_8,
-+	BPF_REG_9,
-+	BPF_REG_10,
-+	__MAX_BPF_REG,
-+};
-+
-+/* BPF has 10 general purpose 64-bit registers and stack frame. */
-+#define MAX_BPF_REG	__MAX_BPF_REG
-+
-+/* ArgX, context and stack frame pointer register positions. Note,
-+ * Arg1, Arg2, Arg3, etc are used as argument mappings of function
-+ * calls in BPF_CALL instruction.
-+ */
-+#define BPF_REG_ARG1	BPF_REG_1
-+#define BPF_REG_ARG2	BPF_REG_2
-+#define BPF_REG_ARG3	BPF_REG_3
-+#define BPF_REG_ARG4	BPF_REG_4
-+#define BPF_REG_ARG5	BPF_REG_5
-+#define BPF_REG_CTX	BPF_REG_6
-+#define BPF_REG_FP	BPF_REG_10
-+
-+/* Additional register mappings for converted user programs. */
-+#define BPF_REG_A	BPF_REG_0
-+#define BPF_REG_X	BPF_REG_7
-+#define BPF_REG_TMP	BPF_REG_8
-+
-+/* BPF program can access up to 512 bytes of stack space. */
-+#define MAX_BPF_STACK	512
-+
-+/* Helper macros for filter block array initializers. */
-+
-+/* ALU ops on registers, bpf_add|sub|...: dst_reg += src_reg */
-+
-+#define BPF_ALU64_REG(OP, DST, SRC)				\
-+	((struct bpf_insn) {					\
-+		.code  = BPF_ALU64 | BPF_OP(OP) | BPF_X,	\
-+		.dst_reg = DST,					\
-+		.src_reg = SRC,					\
-+		.off   = 0,					\
-+		.imm   = 0 })
-+
-+#define BPF_ALU32_REG(OP, DST, SRC)				\
-+	((struct bpf_insn) {					\
-+		.code  = BPF_ALU | BPF_OP(OP) | BPF_X,		\
-+		.dst_reg = DST,					\
-+		.src_reg = SRC,					\
-+		.off   = 0,					\
-+		.imm   = 0 })
-+
-+/* ALU ops on immediates, bpf_add|sub|...: dst_reg += imm32 */
-+
-+#define BPF_ALU64_IMM(OP, DST, IMM)				\
-+	((struct bpf_insn) {					\
-+		.code  = BPF_ALU64 | BPF_OP(OP) | BPF_K,	\
-+		.dst_reg = DST,					\
-+		.src_reg = 0,					\
-+		.off   = 0,					\
-+		.imm   = IMM })
-+
-+#define BPF_ALU32_IMM(OP, DST, IMM)				\
-+	((struct bpf_insn) {					\
-+		.code  = BPF_ALU | BPF_OP(OP) | BPF_K,		\
-+		.dst_reg = DST,					\
-+		.src_reg = 0,					\
-+		.off   = 0,					\
-+		.imm   = IMM })
-+
-+/* Endianess conversion, cpu_to_{l,b}e(), {l,b}e_to_cpu() */
-+
-+#define BPF_ENDIAN(TYPE, DST, LEN)				\
-+	((struct bpf_insn) {					\
-+		.code  = BPF_ALU | BPF_END | BPF_SRC(TYPE),	\
-+		.dst_reg = DST,					\
-+		.src_reg = 0,					\
-+		.off   = 0,					\
-+		.imm   = LEN })
-+
-+/* Short form of mov, dst_reg = src_reg */
-+
-+#define BPF_MOV64_REG(DST, SRC)					\
-+	((struct bpf_insn) {					\
-+		.code  = BPF_ALU64 | BPF_MOV | BPF_X,		\
-+		.dst_reg = DST,					\
-+		.src_reg = SRC,					\
-+		.off   = 0,					\
-+		.imm   = 0 })
-+
-+#define BPF_MOV32_REG(DST, SRC)					\
-+	((struct bpf_insn) {					\
-+		.code  = BPF_ALU | BPF_MOV | BPF_X,		\
-+		.dst_reg = DST,					\
-+		.src_reg = SRC,					\
-+		.off   = 0,					\
-+		.imm   = 0 })
-+
-+/* Short form of mov, dst_reg = imm32 */
-+
-+#define BPF_MOV64_IMM(DST, IMM)					\
-+	((struct bpf_insn) {					\
-+		.code  = BPF_ALU64 | BPF_MOV | BPF_K,		\
-+		.dst_reg = DST,					\
-+		.src_reg = 0,					\
-+		.off   = 0,					\
-+		.imm   = IMM })
-+
-+#define BPF_MOV32_IMM(DST, IMM)					\
-+	((struct bpf_insn) {					\
-+		.code  = BPF_ALU | BPF_MOV | BPF_K,		\
-+		.dst_reg = DST,					\
-+		.src_reg = 0,					\
-+		.off   = 0,					\
-+		.imm   = IMM })
-+
-+/* BPF_LD_IMM64 macro encodes single 'load 64-bit immediate' insn */
-+#define BPF_LD_IMM64(DST, IMM)					\
-+	BPF_LD_IMM64_RAW(DST, 0, IMM)
-+
-+#define BPF_LD_IMM64_RAW(DST, SRC, IMM)				\
-+	((struct bpf_insn) {					\
-+		.code  = BPF_LD | BPF_DW | BPF_IMM,		\
-+		.dst_reg = DST,					\
-+		.src_reg = SRC,					\
-+		.off   = 0,					\
-+		.imm   = (__u32) (IMM) }),			\
-+	((struct bpf_insn) {					\
-+		.code  = 0, /* zero is reserved opcode */	\
-+		.dst_reg = 0,					\
-+		.src_reg = 0,					\
-+		.off   = 0,					\
-+		.imm   = ((__u64) (IMM)) >> 32 })
-+
-+/* Short form of mov based on type, BPF_X: dst_reg = src_reg, BPF_K: dst_reg = imm32 */
-+
-+#define BPF_MOV64_RAW(TYPE, DST, SRC, IMM)			\
-+	((struct bpf_insn) {					\
-+		.code  = BPF_ALU64 | BPF_MOV | BPF_SRC(TYPE),	\
-+		.dst_reg = DST,					\
-+		.src_reg = SRC,					\
-+		.off   = 0,					\
-+		.imm   = IMM })
-+
-+#define BPF_MOV32_RAW(TYPE, DST, SRC, IMM)			\
-+	((struct bpf_insn) {					\
-+		.code  = BPF_ALU | BPF_MOV | BPF_SRC(TYPE),	\
-+		.dst_reg = DST,					\
-+		.src_reg = SRC,					\
-+		.off   = 0,					\
-+		.imm   = IMM })
-+
-+/* Direct packet access, R0 = *(uint *) (skb->data + imm32) */
-+
-+#define BPF_LD_ABS(SIZE, IMM)					\
-+	((struct bpf_insn) {					\
-+		.code  = BPF_LD | BPF_SIZE(SIZE) | BPF_ABS,	\
-+		.dst_reg = 0,					\
-+		.src_reg = 0,					\
-+		.off   = 0,					\
-+		.imm   = IMM })
-+
-+/* Indirect packet access, R0 = *(uint *) (skb->data + src_reg + imm32) */
-+
-+#define BPF_LD_IND(SIZE, SRC, IMM)				\
-+	((struct bpf_insn) {					\
-+		.code  = BPF_LD | BPF_SIZE(SIZE) | BPF_IND,	\
-+		.dst_reg = 0,					\
-+		.src_reg = SRC,					\
-+		.off   = 0,					\
-+		.imm   = IMM })
-+
-+/* Memory load, dst_reg = *(uint *) (src_reg + off16) */
-+
-+#define BPF_LDX_MEM(SIZE, DST, SRC, OFF)			\
-+	((struct bpf_insn) {					\
-+		.code  = BPF_LDX | BPF_SIZE(SIZE) | BPF_MEM,	\
-+		.dst_reg = DST,					\
-+		.src_reg = SRC,					\
-+		.off   = OFF,					\
-+		.imm   = 0 })
-+
-+/* Memory store, *(uint *) (dst_reg + off16) = src_reg */
-+
-+#define BPF_STX_MEM(SIZE, DST, SRC, OFF)			\
-+	((struct bpf_insn) {					\
-+		.code  = BPF_STX | BPF_SIZE(SIZE) | BPF_MEM,	\
-+		.dst_reg = DST,					\
-+		.src_reg = SRC,					\
-+		.off   = OFF,					\
-+		.imm   = 0 })
-+
-+/* Memory store, *(uint *) (dst_reg + off16) = imm32 */
-+
-+#define BPF_ST_MEM(SIZE, DST, OFF, IMM)				\
-+	((struct bpf_insn) {					\
-+		.code  = BPF_ST | BPF_SIZE(SIZE) | BPF_MEM,	\
-+		.dst_reg = DST,					\
-+		.src_reg = 0,					\
-+		.off   = OFF,					\
-+		.imm   = IMM })
-+
-+/* Conditional jumps against registers, if (dst_reg 'op' src_reg) goto pc + off16 */
-+
-+#define BPF_JMP_REG(OP, DST, SRC, OFF)				\
-+	((struct bpf_insn) {					\
-+		.code  = BPF_JMP | BPF_OP(OP) | BPF_X,		\
-+		.dst_reg = DST,					\
-+		.src_reg = SRC,					\
-+		.off   = OFF,					\
-+		.imm   = 0 })
-+
-+/* Conditional jumps against immediates, if (dst_reg 'op' imm32) goto pc + off16 */
-+
-+#define BPF_JMP_IMM(OP, DST, IMM, OFF)				\
-+	((struct bpf_insn) {					\
-+		.code  = BPF_JMP | BPF_OP(OP) | BPF_K,		\
-+		.dst_reg = DST,					\
-+		.src_reg = 0,					\
-+		.off   = OFF,					\
-+		.imm   = IMM })
-+
-+/* Function call */
-+
-+#define BPF_EMIT_CALL(FUNC)					\
-+	((struct bpf_insn) {					\
-+		.code  = BPF_JMP | BPF_CALL,			\
-+		.dst_reg = 0,					\
-+		.src_reg = 0,					\
-+		.off   = 0,					\
-+		.imm   = ((FUNC) - __bpf_call_base) })
-+
-+/* Raw code statement block */
-+
-+#define BPF_RAW_INSN(CODE, DST, SRC, OFF, IMM)			\
-+	((struct bpf_insn) {					\
-+		.code  = CODE,					\
-+		.dst_reg = DST,					\
-+		.src_reg = SRC,					\
-+		.off   = OFF,					\
-+		.imm   = IMM })
-+
-+/* Program exit */
-+
-+#define BPF_EXIT_INSN()						\
-+	((struct bpf_insn) {					\
-+		.code  = BPF_JMP | BPF_EXIT,			\
-+		.dst_reg = 0,					\
-+		.src_reg = 0,					\
-+		.off   = 0,					\
-+		.imm   = 0 })
-+
-+#define bytes_to_bpf_size(bytes)				\
-+({								\
-+	int bpf_size = -EINVAL;					\
-+								\
-+	if (bytes == sizeof(u8))				\
-+		bpf_size = BPF_B;				\
-+	else if (bytes == sizeof(u16))				\
-+		bpf_size = BPF_H;				\
-+	else if (bytes == sizeof(u32))				\
-+		bpf_size = BPF_W;				\
-+	else if (bytes == sizeof(u64))				\
-+		bpf_size = BPF_DW;				\
-+								\
-+	bpf_size;						\
-+})
-+
-+struct bpf_insn {
-+	__u8	code;		/* opcode */
-+	__u8	dst_reg:4;	/* dest register */
-+	__u8	src_reg:4;	/* source register */
-+	__s16	off;		/* signed offset */
-+	__s32	imm;		/* signed immediate constant */
-+};
-+
-+#endif /* _UAPI__LINUX_BPF_H__ */
--- 
-1.7.9.5
+> +	gpio_restart->restart_handler.notifier_call = gpio_restart_notify;
+> +	gpio_restart->restart_handler.priority = 128;
+> +
+> +	platform_set_drvdata(pdev, gpio_restart);
+> +
+> +	input = of_property_read_bool(pdev->dev.of_node, "input");
+> +	if (input) {
+> +		if (gpiod_direction_input(gpio_restart->reset_gpio)) {
+> +			dev_err(&pdev->dev,
+> +				"Could not set direction of reset GPIO to input\n");
+> +			return -ENODEV;
+> +		}
+> +	} else {
+> +		if (gpiod_direction_output(gpio_restart->reset_gpio, 0)) {
+> +			dev_err(&pdev->dev,
+> +				"Could not set direction of reset GPIO\n");
+> +			return -ENODEV;
+> +		}
+> +	}
+> +
+> +	if (!of_property_read_u8(pdev->dev.of_node, "priority", &priority))
+> +		gpio_restart->restart_handler.priority = priority;
+> +
+> +	ret = register_restart_handler(&gpio_restart->restart_handler);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "%s: cannot register restart handler, %d\n",
+> +				__func__, ret);
+> +		return -ENODEV;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int gpio_restart_remove(struct platform_device *pdev)
+> +{
+> +	struct gpio_restart *gpio_restart = platform_get_drvdata(pdev);
+> +	int ret;
+> +
+> +	ret = unregister_restart_handler(&gpio_restart->restart_handler);
+> +	if (ret) {
+> +		dev_err(&pdev->dev,
+> +				"%s: cannot unregister restart handler, %d\n",
+> +				__func__, ret);
+> +		return -ENODEV;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct of_device_id of_gpio_restart_match[] = {
+> +	{ .compatible = "gpio-restart", },
+> +	{},
+> +};
+> +
+> +static struct platform_driver gpio_restart_driver = {
+> +	.probe = gpio_restart_probe,
+> +	.remove = gpio_restart_remove,
+> +	.driver = {
+> +		.name = "restart-gpio",
+> +		.owner = THIS_MODULE,
+> +		.of_match_table = of_gpio_restart_match,
+> +	},
+> +};
+> +
+> +module_platform_driver(gpio_restart_driver);
+> +
+> +MODULE_AUTHOR("David Riley <davidriley@chromium.org>");
+> +MODULE_DESCRIPTION("GPIO restart driver");
+> +MODULE_LICENSE("GPL");
+>
 
