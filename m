@@ -1,142 +1,364 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934696AbaH0Nca (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 09:32:30 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:47807 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934676AbaH0Nc1 (ORCPT
+	id S934734AbaH0NdW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 09:33:22 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:32943 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933774AbaH0Nbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 09:32:27 -0400
-Date: Wed, 27 Aug 2014 09:32:18 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Wei Ni <wni@nvidia.com>
-Cc: khali@linux-fr.org, linux@roeck-us.net, swarren@wwwdotorg.org,
-        lm-sensors@lm-sensors.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 3/4] thermal: add more description for thermal-zones
-Message-ID: <20140827133217.GB15875@developer>
-References: <1408948188-4181-1-git-send-email-wni@nvidia.com>
- <1408948188-4181-4-git-send-email-wni@nvidia.com>
- <20140825110711.GA12349@developer>
- <53FBEE39.2020001@nvidia.com>
- <20140826121210.GB15219@developer>
- <53FD484F.7030504@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53FD484F.7030504@nvidia.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Wed, 27 Aug 2014 09:31:35 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-b5-53fdddb40504
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, linux-pm@vger.kernel.org
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [RESEND PATCH v3 2/6] regulator/mfd: max14577: Export symbols for
+ calculating charger current
+Date: Wed, 27 Aug 2014 15:31:18 +0200
+Message-id: <1409146282-25075-3-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1409146282-25075-1-git-send-email-k.kozlowski@samsung.com>
+References: <1409146282-25075-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBLMWRmVeSWpSXmKPExsVy+t/xq7pb7v4NNni1gsVi44z1rBZTHz5h
+	s5j05D2zxcSVk5kt+t8sZLU492olo8XrF4YWZ5vesFvc/3qU0eLblQ4mi83fO9gsLu+aw2bx
+	ufcIo8XaI3fZLZZev8hkMWH6WhaL1r1H2C1Od7NanN5d4iDssWbeGkaPy329TB47Z91l91i5
+	/Aubx+YVWh6bVnWyedy5tofNY97JQI++LasYPT5vkgvgiuKySUnNySxLLdK3S+DK2HnyLFvB
+	1oSKXz8WsDcwfg3oYuTkkBAwkdjfcYsVwhaTuHBvPVsXIxeHkMBSRomfRz8yQjh9TBLTzjYw
+	glSxCRhLbF6+BKxKROAao8SVhrlgDrPANBaJf3c7mECqhAUyJBpvtYB1sAioSizt/8UOYvMK
+	uEscbe1hhNgnJ3Hy2GSw3ZwCHhJrb74B6xUCqrn1ZCLbBEbeBYwMqxhFU0uTC4qT0nMN9YoT
+	c4tL89L1kvNzNzFCQv/LDsbFx6wOMQpwMCrx8DKs/xMsxJpYVlyZe4hRgoNZSYS37MDfYCHe
+	lMTKqtSi/Pii0pzU4kOMTBycUg2Mq1NtOifva2zNEtftvMGf8tJgu8SJwwyuF8uuJ/5YNfcT
+	x90XNy5uUao5IxHgG+O/+nOdQIBjTGqxk0LE2wwD4QTH98n6F9rU7S/k/o1+9KtcxZzlYuYa
+	v6sfgzOWKrRft50qyTTjYWBTUkZ/fHkCx98T247znuhtWZebdUNAaCv31NMhzUxKLMUZiYZa
+	zEXFiQC26vR3WwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Wei,
+This patch prepares for changing the max14577 charger driver to allow
+configuring battery-dependent settings from DTS.
 
-On Wed, Aug 27, 2014 at 10:54:07AM +0800, Wei Ni wrote:
-> On 08/26/2014 08:12 PM, Eduardo Valentin wrote:
-> > On Tue, Aug 26, 2014 at 10:17:29AM +0800, Wei Ni wrote:
-> >> On 08/25/2014 07:07 PM, Eduardo Valentin wrote:
-> >>> Hello Wei Ni,
-> >>>
-> >>> On Mon, Aug 25, 2014 at 02:29:47PM +0800, Wei Ni wrote:
-> >>>> Add more description for the "polling-delay" property.
-> >>>> Set "trips" and "cooling maps" as optional property, because
-> >>>> if missing these two sub-nodes, the thermal zone device still
-> >>>> work properly.
-> >>>>
-> >>>> Signed-off-by: Wei Ni <wni@nvidia.com>
-> >>>> ---
-> >>>>  Documentation/devicetree/bindings/thermal/thermal.txt | 10 ++++++----
-> >>>>  1 file changed, 6 insertions(+), 4 deletions(-)
-> >>>>
-> >>>> diff --git a/Documentation/devicetree/bindings/thermal/thermal.txt b/Documentation/devicetree/bindings/thermal/thermal.txt
-> >>>> index f5db6b7..e3d3ed9 100644
-> >>>> --- a/Documentation/devicetree/bindings/thermal/thermal.txt
-> >>>> +++ b/Documentation/devicetree/bindings/thermal/thermal.txt
-> >>>> @@ -136,8 +136,8 @@ containing trip nodes and one sub-node containing all the zone cooling maps.
-> >>>>  
-> >>>>  Required properties:
-> >>>>  - polling-delay:	The maximum number of milliseconds to wait between polls
-> >>>> -  Type: unsigned	when checking this thermal zone.
-> >>>> -  Size: one cell
-> >>>> +  Type: unsigned	when checking this thermal zone. If this value is 0, the
-> >>>> +  Size: one cell	driver will not run polling queue, but just cancel it.
-> >>>>  
-> >>>
-> >>> The description above is specific to Linux kernel implementation
-> >>> nomenclature. DT description needs to be OS agnostic.
-> >>>
-> >>>>  - polling-delay-passive: The maximum number of milliseconds to wait
-> >>>>    Type: unsigned	between polls when performing passive cooling.
-> >>>> @@ -148,14 +148,16 @@ Required properties:
-> >>>>    phandles + sensor
-> >>>>    specifier
-> >>>>  
-> >>>> +Optional property:
-> >>>>  - trips:		A sub-node which is a container of only trip point nodes
-> >>>>    Type: sub-node	required to describe the thermal zone.
-> >>>>  
-> >>>>  - cooling-maps:		A sub-node which is a container of only cooling device
-> >>>>    Type: sub-node	map nodes, used to describe the relation between trips
-> >>>> -			and cooling devices.
-> >>>> +			and cooling devices. If missing the "trips" property,
-> >>>> +			This sub-node will not be parsed, because no trips can
-> >>>> +			be bound to cooling devices.
-> >>>
-> >>> Do you mean if the thermal zone misses the "trips" property? Actually,
-> >>> the binding describes both, cooling-maps and trips, as required
-> >>> properties. Thus, both needs to be in place to consider the thermal zone
-> >>> as a proper described zone.
-> >>
-> >> I moved the "trips" and "cooling-maps" to optional property, because if
-> >> missing these two properties, the thermal zone devices still can be
-> >> registered, and the driver can work properly, it has the basic function,
-> >> can read temperature from thermal sysfs, although it doesn't have trips
-> >> and bind with cooling devices.
-> > 
-> > 
-> > If a thermal zone is used only for monitoring, then I believe it lost
-> > its purpose. As  Maybe a different framework shall be used, such as hwmon,
-> > for instance?
-> 
-> Yes, if we only use it for monitoring, we can use hwmon. But we have
-> more functions base on these two thermal zone devices. We have a
-> skin-temperature driver, which used nct1008's remote and local
-> temperatures to estimator the skin temperature. As you know the thermal
-> framework is more powerful, the remote/local sensors can be register as
-> thermal zone, then the skin-temp driver can use thermal_zone_get_temp()
-> to read their temperatures and then estimator skin's temp. We also will
-> set trips and cooling devices for this skin-temp.
+The patch moves from regulator driver to MFD core driver and exports:
+ - function for calculating register value for charger's current;
+ - table of limits for chargers (MAX14577, MAX77836).
 
-In this case, don't you think it would make sense to create a thermal
-zone for the skin temperature and add the required sensors (including
-the nct1008) in it?
+Previously they were used only by the max14577 regulator driver. In next
+patch the charger driver will use them as well. Exporting them will
+reduce unnecessary code duplication.
 
-> 
-> Wei.
-> 
-> > 
-> > The purpose of a thermal zone is to describe thermal behavior of a
-> > hardware. As it is mentioned in the thermal.txt file.
-> > 
-> > 
-> >>
-> >> Thanks.
-> >> Wei.
-> >>
-> >>>
-> >>>>  
-> >>>> -Optional property:
-> >>>>  - coefficients:		An array of integers (one signed cell) containing
-> >>>>    Type: array		coefficients to compose a linear relation between
-> >>>>    Elem size: one cell	the sensors listed in the thermal-sensors property.
-> >>>> -- 
-> >>>> 1.8.1.5
-> >>>>
-> >>
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > 
-> 
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Acked-by: Mark Brown <broonie@linaro.org>
+Acked-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/mfd/max14577.c               | 95 ++++++++++++++++++++++++++++++++++++
+ drivers/regulator/max14577.c         | 80 ++----------------------------
+ include/linux/mfd/max14577-private.h | 22 ++++-----
+ include/linux/mfd/max14577.h         | 23 +++++++++
+ 4 files changed, 133 insertions(+), 87 deletions(-)
+
+diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
+index 4a5e885383f8..e6f25aa0ded8 100644
+--- a/drivers/mfd/max14577.c
++++ b/drivers/mfd/max14577.c
+@@ -26,6 +26,87 @@
+ #include <linux/mfd/max14577.h>
+ #include <linux/mfd/max14577-private.h>
+ 
++/*
++ * Table of valid charger currents for different Maxim chipsets.
++ * It is placed here because it is used by both charger and regulator driver.
++ */
++const struct maxim_charger_current maxim_charger_currents[] = {
++	[MAXIM_DEVICE_TYPE_UNKNOWN] = { 0, 0, 0, 0 },
++	[MAXIM_DEVICE_TYPE_MAX14577] = {
++		.min		= MAX14577_CHARGER_CURRENT_LIMIT_MIN,
++		.high_start	= MAX14577_CHARGER_CURRENT_LIMIT_HIGH_START,
++		.high_step	= MAX14577_CHARGER_CURRENT_LIMIT_HIGH_STEP,
++		.max		= MAX14577_CHARGER_CURRENT_LIMIT_MAX,
++	},
++	[MAXIM_DEVICE_TYPE_MAX77836] = {
++		.min		= MAX77836_CHARGER_CURRENT_LIMIT_MIN,
++		.high_start	= MAX77836_CHARGER_CURRENT_LIMIT_HIGH_START,
++		.high_step	= MAX77836_CHARGER_CURRENT_LIMIT_HIGH_STEP,
++		.max		= MAX77836_CHARGER_CURRENT_LIMIT_MAX,
++	},
++};
++EXPORT_SYMBOL_GPL(maxim_charger_currents);
++
++/*
++ * maxim_charger_calc_reg_current - Calculate register value for current
++ * @limits:	constraints for charger, matching the MBCICHWRC register
++ * @min_ua:	minimal requested current, micro Amps
++ * @max_ua:	maximum requested current, micro Amps
++ * @dst:	destination to store calculated register value
++ *
++ * Calculates the value of MBCICHWRC (Fast Battery Charge Current) register
++ * for given current and stores it under pointed 'dst'. The stored value
++ * combines low bit (MBCICHWRCL) and high bits (MBCICHWRCH). It is also
++ * properly shifted.
++ *
++ * The calculated register value matches the current which:
++ *  - is always between <limits.min, limits.max>;
++ *  - is always less or equal to max_ua;
++ *  - is the highest possible value;
++ *  - may be lower than min_ua.
++ *
++ * On success returns 0. On error returns -EINVAL (requested min/max current
++ * is outside of given charger limits) and 'dst' is not set.
++ */
++int maxim_charger_calc_reg_current(const struct maxim_charger_current *limits,
++		unsigned int min_ua, unsigned int max_ua, u8 *dst)
++{
++	unsigned int current_bits = 0xf;
++
++	if (min_ua > max_ua)
++		return -EINVAL;
++
++	if (min_ua > limits->max || max_ua < limits->min)
++		return -EINVAL;
++
++	if (max_ua < limits->high_start) {
++		/*
++		 * Less than high_start, so set the minimal current
++		 * (turn Low Bit off, 0 as high bits).
++		 */
++		*dst = 0x0;
++		return 0;
++	}
++
++	/* max_ua is in range: <high_start, infinite>, cut it to limits.max */
++	max_ua = min(limits->max, max_ua);
++	max_ua -= limits->high_start;
++	/*
++	 * There is no risk of overflow 'max_ua' here because:
++	 *  - max_ua >= limits.high_start
++	 *  - BUILD_BUG checks that 'limits' are: max >= high_start + high_step
++	 */
++	current_bits = max_ua / limits->high_step;
++
++	/* Turn Low Bit on (use range <limits.high_start, limits.max>) ... */
++	*dst = 0x1 << CHGCTRL4_MBCICHWRCL_SHIFT;
++	/* and set proper High Bits */
++	*dst |= current_bits << CHGCTRL4_MBCICHWRCH_SHIFT;
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(maxim_charger_calc_reg_current);
++
+ static const struct mfd_cell max14577_devs[] = {
+ 	{
+ 		.name = "max14577-muic",
+@@ -463,6 +544,20 @@ static int __init max14577_i2c_init(void)
+ 	BUILD_BUG_ON(ARRAY_SIZE(max14577_i2c_id) != MAXIM_DEVICE_TYPE_NUM);
+ 	BUILD_BUG_ON(ARRAY_SIZE(max14577_dt_match) != MAXIM_DEVICE_TYPE_NUM);
+ 
++	/* Valid charger current values must be provided for each chipset */
++	BUILD_BUG_ON(ARRAY_SIZE(maxim_charger_currents) != MAXIM_DEVICE_TYPE_NUM);
++
++	/* Check for valid values for charger */
++	BUILD_BUG_ON(MAX14577_CHARGER_CURRENT_LIMIT_HIGH_START +
++			MAX14577_CHARGER_CURRENT_LIMIT_HIGH_STEP * 0xf !=
++			MAX14577_CHARGER_CURRENT_LIMIT_MAX);
++	BUILD_BUG_ON(MAX14577_CHARGER_CURRENT_LIMIT_HIGH_STEP == 0);
++
++	BUILD_BUG_ON(MAX77836_CHARGER_CURRENT_LIMIT_HIGH_START +
++			MAX77836_CHARGER_CURRENT_LIMIT_HIGH_STEP * 0xf !=
++			MAX77836_CHARGER_CURRENT_LIMIT_MAX);
++	BUILD_BUG_ON(MAX77836_CHARGER_CURRENT_LIMIT_HIGH_STEP == 0);
++
+ 	return i2c_add_driver(&max14577_i2c_driver);
+ }
+ subsys_initcall(max14577_i2c_init);
+diff --git a/drivers/regulator/max14577.c b/drivers/regulator/max14577.c
+index 5d9c605cf534..0ff5a20ac958 100644
+--- a/drivers/regulator/max14577.c
++++ b/drivers/regulator/max14577.c
+@@ -22,42 +22,6 @@
+ #include <linux/mfd/max14577-private.h>
+ #include <linux/regulator/of_regulator.h>
+ 
+-/*
+- * Valid limits of current for max14577 and max77836 chargers.
+- * They must correspond to MBCICHWRCL and MBCICHWRCH fields in CHGCTRL4
+- * register for given chipset.
+- */
+-struct maxim_charger_current {
+-	/* Minimal current, set in CHGCTRL4/MBCICHWRCL, uA */
+-	unsigned int min;
+-	/*
+-	 * Minimal current when high setting is active,
+-	 * set in CHGCTRL4/MBCICHWRCH, uA
+-	 */
+-	unsigned int high_start;
+-	/* Value of one step in high setting, uA */
+-	unsigned int high_step;
+-	/* Maximum current of high setting, uA */
+-	unsigned int max;
+-};
+-
+-/* Table of valid charger currents for different Maxim chipsets */
+-static const struct maxim_charger_current maxim_charger_currents[] = {
+-	[MAXIM_DEVICE_TYPE_UNKNOWN] = { 0, 0, 0, 0 },
+-	[MAXIM_DEVICE_TYPE_MAX14577] = {
+-		.min		= MAX14577_REGULATOR_CURRENT_LIMIT_MIN,
+-		.high_start	= MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_START,
+-		.high_step	= MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_STEP,
+-		.max		= MAX14577_REGULATOR_CURRENT_LIMIT_MAX,
+-	},
+-	[MAXIM_DEVICE_TYPE_MAX77836] = {
+-		.min		= MAX77836_REGULATOR_CURRENT_LIMIT_MIN,
+-		.high_start	= MAX77836_REGULATOR_CURRENT_LIMIT_HIGH_START,
+-		.high_step	= MAX77836_REGULATOR_CURRENT_LIMIT_HIGH_STEP,
+-		.max		= MAX77836_REGULATOR_CURRENT_LIMIT_MAX,
+-	},
+-};
+-
+ static int max14577_reg_is_enabled(struct regulator_dev *rdev)
+ {
+ 	int rid = rdev_get_id(rdev);
+@@ -103,8 +67,8 @@ static int max14577_reg_get_current_limit(struct regulator_dev *rdev)
+ static int max14577_reg_set_current_limit(struct regulator_dev *rdev,
+ 		int min_uA, int max_uA)
+ {
+-	int i, current_bits = 0xf;
+ 	u8 reg_data;
++	int ret;
+ 	struct max14577 *max14577 = rdev_get_drvdata(rdev);
+ 	const struct maxim_charger_current *limits =
+ 		&maxim_charger_currents[max14577->dev_type];
+@@ -112,35 +76,9 @@ static int max14577_reg_set_current_limit(struct regulator_dev *rdev,
+ 	if (rdev_get_id(rdev) != MAX14577_CHARGER)
+ 		return -EINVAL;
+ 
+-	if (min_uA > limits->max || max_uA < limits->min)
+-		return -EINVAL;
+-
+-	if (max_uA < limits->high_start) {
+-		/*
+-		 * Less than high_start,
+-		 * so set the minimal current (turn only Low Bit off)
+-		 */
+-		u8 reg_data = 0x0 << CHGCTRL4_MBCICHWRCL_SHIFT;
+-		return max14577_update_reg(rdev->regmap,
+-				MAX14577_CHG_REG_CHG_CTRL4,
+-				CHGCTRL4_MBCICHWRCL_MASK, reg_data);
+-	}
+-
+-	/*
+-	 * max_uA is in range: <high_start, inifinite>, so search for
+-	 * valid current starting from maximum current.
+-	 */
+-	for (i = limits->max; i >= limits->high_start; i -= limits->high_step) {
+-		if (i <= max_uA)
+-			break;
+-		current_bits--;
+-	}
+-	BUG_ON(current_bits < 0); /* Cannot happen */
+-
+-	/* Turn Low Bit on (use range high_start-max)... */
+-	reg_data = 0x1 << CHGCTRL4_MBCICHWRCL_SHIFT;
+-	/* and set proper High Bits */
+-	reg_data |= current_bits << CHGCTRL4_MBCICHWRCH_SHIFT;
++	ret = maxim_charger_calc_reg_current(limits, min_uA, max_uA, &reg_data);
++	if (ret)
++		return ret;
+ 
+ 	return max14577_update_reg(rdev->regmap, MAX14577_CHG_REG_CHG_CTRL4,
+ 			CHGCTRL4_MBCICHWRCL_MASK | CHGCTRL4_MBCICHWRCH_MASK,
+@@ -442,16 +380,6 @@ static struct platform_driver max14577_regulator_driver = {
+ 
+ static int __init max14577_regulator_init(void)
+ {
+-	/* Check for valid values for charger */
+-	BUILD_BUG_ON(MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_START +
+-			MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_STEP * 0xf !=
+-			MAX14577_REGULATOR_CURRENT_LIMIT_MAX);
+-	BUILD_BUG_ON(MAX77836_REGULATOR_CURRENT_LIMIT_HIGH_START +
+-			MAX77836_REGULATOR_CURRENT_LIMIT_HIGH_STEP * 0xf !=
+-			MAX77836_REGULATOR_CURRENT_LIMIT_MAX);
+-	/* Valid charger current values must be provided for each chipset */
+-	BUILD_BUG_ON(ARRAY_SIZE(maxim_charger_currents) != MAXIM_DEVICE_TYPE_NUM);
+-
+ 	BUILD_BUG_ON(ARRAY_SIZE(max14577_supported_regulators) != MAX14577_REGULATOR_NUM);
+ 	BUILD_BUG_ON(ARRAY_SIZE(max77836_supported_regulators) != MAX77836_REGULATOR_NUM);
+ 
+diff --git a/include/linux/mfd/max14577-private.h b/include/linux/mfd/max14577-private.h
+index d6f321699b89..7d514839c764 100644
+--- a/include/linux/mfd/max14577-private.h
++++ b/include/linux/mfd/max14577-private.h
+@@ -281,17 +281,17 @@ enum max14577_charger_reg {
+ #define CHGCTRL7_OTPCGHCVS_SHIFT	0
+ #define CHGCTRL7_OTPCGHCVS_MASK		(0x3 << CHGCTRL7_OTPCGHCVS_SHIFT)
+ 
+-/* MAX14577 regulator current limits (as in CHGCTRL4 register), uA */
+-#define MAX14577_REGULATOR_CURRENT_LIMIT_MIN		 90000
+-#define MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_START	200000
+-#define MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_STEP	 50000
+-#define MAX14577_REGULATOR_CURRENT_LIMIT_MAX		950000
+-
+-/* MAX77836 regulator current limits (as in CHGCTRL4 register), uA */
+-#define MAX77836_REGULATOR_CURRENT_LIMIT_MIN		 45000
+-#define MAX77836_REGULATOR_CURRENT_LIMIT_HIGH_START	100000
+-#define MAX77836_REGULATOR_CURRENT_LIMIT_HIGH_STEP	 25000
+-#define MAX77836_REGULATOR_CURRENT_LIMIT_MAX		475000
++/* MAX14577 charger current limits (as in CHGCTRL4 register), uA */
++#define MAX14577_CHARGER_CURRENT_LIMIT_MIN		 90000U
++#define MAX14577_CHARGER_CURRENT_LIMIT_HIGH_START	200000U
++#define MAX14577_CHARGER_CURRENT_LIMIT_HIGH_STEP	 50000U
++#define MAX14577_CHARGER_CURRENT_LIMIT_MAX		950000U
++
++/* MAX77836 charger current limits (as in CHGCTRL4 register), uA */
++#define MAX77836_CHARGER_CURRENT_LIMIT_MIN		 45000U
++#define MAX77836_CHARGER_CURRENT_LIMIT_HIGH_START	100000U
++#define MAX77836_CHARGER_CURRENT_LIMIT_HIGH_STEP	 25000U
++#define MAX77836_CHARGER_CURRENT_LIMIT_MAX		475000U
+ 
+ /* MAX14577 regulator SFOUT LDO voltage, fixed, uV */
+ #define MAX14577_REGULATOR_SAFEOUT_VOLTAGE		4900000
+diff --git a/include/linux/mfd/max14577.h b/include/linux/mfd/max14577.h
+index c83fbed1c7b6..3c098d57b1d1 100644
+--- a/include/linux/mfd/max14577.h
++++ b/include/linux/mfd/max14577.h
+@@ -74,4 +74,27 @@ struct max14577_platform_data {
+ 	struct max14577_regulator_platform_data *regulators;
+ };
+ 
++/*
++ * Valid limits of current for max14577 and max77836 chargers.
++ * They must correspond to MBCICHWRCL and MBCICHWRCH fields in CHGCTRL4
++ * register for given chipset.
++ */
++struct maxim_charger_current {
++	/* Minimal current, set in CHGCTRL4/MBCICHWRCL, uA */
++	unsigned int min;
++	/*
++	 * Minimal current when high setting is active,
++	 * set in CHGCTRL4/MBCICHWRCH, uA
++	 */
++	unsigned int high_start;
++	/* Value of one step in high setting, uA */
++	unsigned int high_step;
++	/* Maximum current of high setting, uA */
++	unsigned int max;
++};
++
++extern const struct maxim_charger_current maxim_charger_currents[];
++extern int maxim_charger_calc_reg_current(const struct maxim_charger_current *limits,
++		unsigned int min_ua, unsigned int max_ua, u8 *dst);
++
+ #endif /* __MAX14577_H__ */
+-- 
+1.9.1
+
