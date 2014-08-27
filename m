@@ -1,87 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756782AbaH0L1U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 07:27:20 -0400
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:64984 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755814AbaH0L1S (ORCPT
+	id S1757234AbaH0LaG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 07:30:06 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:36800 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756769AbaH0LaD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 07:27:18 -0400
-Date: Wed, 27 Aug 2014 12:27:09 +0100
+	Wed, 27 Aug 2014 07:30:03 -0400
+Date: Wed, 27 Aug 2014 12:29:56 +0100
 From: Lee Jones <lee.jones@linaro.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Chris Zhong <zyw@rock-chips.com>, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, sameo@linux.intel.com, lgirdwood@gmail.com,
-        broonie@kernel.org, a.zummo@towertech.it, mturquette@linaro.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
-        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
-        xxx@rock-chips.com, dianders@chromium.org, heiko@sntech.de,
-        olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
-        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com
-Subject: Re: [PATCH v2 2/5] MFD: RK808: Add new mfd driver for RK808
-Message-ID: <20140827112709.GB6364@lee--X1>
-References: <1408505461-24200-1-git-send-email-zyw@rock-chips.com>
- <20140820092117.GI4266@lee--X1>
- <53FA9D1E.8040202@rock-chips.com>
- <20140826092205.GG9574@lee--X1>
- <20140826162831.GA22842@core.coreip.homeip.net>
+To: Andreas Werner <andreas.werner@men.de>
+Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com, wim@iguana.be,
+        linux-watchdog@vger.kernel.org, cooloney@gmail.com, rpurdie@rpsys.net,
+        linux-leds@vger.kernel.org, jdelvare@suse.de, linux@roeck-us.net,
+        lm-sensors@lm-sensors.org, johannes.thumshirn@men.de
+Subject: Re: [PATCH v5 1/4] drivers/mfd/menf21bmc: introduce MEN 14F021P00
+ BMC MFD Core driver
+Message-ID: <20140827112956.GC6364@lee--X1>
+References: <cover.1409074255.git.andreas.werner@men.de>
+ <67faa70de03924edc768002df17b02e47256260c.1409074255.git.andreas.werner@men.de>
+ <20140827072633.GY26707@lee--X1>
+ <20140827105204.GA2083@awelinux>
+ <20140827110142.GA6364@lee--X1>
+ <20140827120054.GA27232@awelinux>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140826162831.GA22842@core.coreip.homeip.net>
+In-Reply-To: <20140827120054.GA27232@awelinux>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Aug 2014, Dmitry Torokhov wrote:
-> On Tue, Aug 26, 2014 at 10:22:05AM +0100, Lee Jones wrote:
-> > On Mon, 25 Aug 2014, Chris Zhong wrote:
-> > > On 08/20/2014 05:21 PM, Lee Jones wrote:
-> > > >On Wed, 20 Aug 2014, Chris Zhong wrote:
-> > > >
-> > > >>The RK808 chip is a power management IC for multimedia and handheld
-> > > >>devices. It contains the following components:
-> > > >>
-> > > >>- Regulators
-> > > >>- RTC
-> > > >>
-> > > >>The rk808 core driver is registered as a platform driver and provides
-> > > >>communication through I2C with the host device for the different
-> > > >>components.
-> > > >>
-> > > >>Signed-off-by: Chris Zhong <zyw@rock-chips.com>
-> > > >>---
-> > 
-> > [...]
-> > 
-> > > >>+	rk808->pdata = pdata;
-> > > >Remove pdata from 'struct rk808'.  You can obtain it from dev.
+On Wed, 27 Aug 2014, Andreas Werner wrote:
+
+> On Wed, Aug 27, 2014 at 12:01:42PM +0100, Lee Jones wrote:
+> > On Wed, 27 Aug 2014, Andreas Werner wrote:
+> > > On Wed, Aug 27, 2014 at 08:26:33AM +0100, Lee Jones wrote:
+> > > > On Tue, 26 Aug 2014, Andreas Werner wrote:
+> > > > > The MEN 14F021P00 Board Management Controller provides an
+> > > > > I2C interface to the host to access the feature implemented in the BMC.
+> > > > > The BMC is a PIC Microntroller assembled on CPCI Card from MEN Mikroelektronik
+> > > > > and on a few Box/Display Computer.
+> > > > > 
+> > > > > Added MFD Core driver, supporting the I2C communication to the device.
+> > > > > 
+> > > > > The MFD driver currently supports the following features:
+> > > > >  	- Watchdog
+> > > > >  	- LEDs
+> > > > > 	- Hwmon (voltage monitoring)
+> > > > > 
+> > > > > Signed-off-by: Andreas Werner <andreas.werner@men.de>
+> > > > > Acked-by: Lee Jones <lee.jones@linaro.org>
+> > > > > ---
+> > > > >  drivers/mfd/Kconfig     |  12 +++++
+> > > > >  drivers/mfd/Makefile    |   1 +
+> > > > >  drivers/mfd/menf21bmc.c | 132 ++++++++++++++++++++++++++++++++++++++++++++++++
+> > > > >  3 files changed, 145 insertions(+)
+> > > > >  create mode 100644 drivers/mfd/menf21bmc.c
+> > > > > 
+> > > > > diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> > > > > index b8d9ca0..6a9f101 100644
+> > > > > --- a/drivers/mfd/Kconfig
+> > > > > +++ b/drivers/mfd/Kconfig
+> > > > > @@ -453,6 +453,18 @@ config MFD_MAX8998
+> > > > >  	  additional drivers must be enabled in order to use the functionality
+> > > > >  	  of the device.
+> > > > >  
+> > > > > +config MFD_MENF21BMC
+> > > > > +	tristate "MEN 14F021P00 Board Management Controller Support"
+> > > > > +	depends on I2C
+> > > > > +	select MFD_CORE
+> > > > > +	help
+> > > > > +	  Say yes here to add support for the MEN 14F021P00 BMC
+> > > > > +	  which is a Board Management Controller connected to the I2C bus.
+> > > > > +	  The device supports multiple sub-devices like LED, HWMON  and WDT.
+> > > > 
+> > > > Nit: Whitespace error.
+> > > > 
 > > > 
-> > > Can I keep this pdata in rk808, because it is used in the regulator driver.
-> > > The one obtain from dev maybe empty.
+> > > I run checkpatch but did not find any whitespace error.
+> > > Where is it?
 > > 
-> > If the one in dev is empty, you should populate that instead.
+> > After 'HWMON'.
+> >
 > 
-> No, drivers should not populate platform data in devices - they do not
-> own it (unlike drvdata). Platform data should be read-only so that if
-> one would unbind and then try to re-bind the driver we'd end up in
-> exactly same state as before.
+> Ah ok.
+>  
+> > > > > +MODULE_DEVICE_TABLE(i2c, menf21bmc_id_table);
+> > > > > +
+> > > > > +static struct i2c_driver menf21bmc_driver = {
+> > > > > +	.driver.name	= "menf21bmc",
+> > > > > +	.id_table	= menf21bmc_id_table,
+> > > > > +	.probe		= menf21bmc_probe,
+> > > > > +	.remove		= menf21bmc_remove,
+> > > > > +};
+> > > > 
+> > > > No DT support?
+> > > > 
+> > > 
+> > > No not at the moment because it is used only on x86 system.
+> > 
+> > Ah okay.  Shouldn't the Kconfig depend on X86 then?  What about ACPI?
+> 
+> Yes and no. Could be also instantiated manually withouth DT. (e.g. i2c sysfs)
+> So for me it is better to not depend on x86 to have the possibility to use
+> the driver without DT on another arch.
+> ACPI is no option because there are a lot boards out without
+> the BMC in ACPI Table.
+> 
+> I think i will implement DT support if we have on board which is not x86.
 
-Right.
+Very well.
 
-I guess this point is moot now, as my other point about pdata not
-actually being required has been accecpted.  But, when I say "you
-can obtain it from dev" I meant via dev_get_platdata(dev), rather than
-dev_get_platdata(dev->parent).  So if this 'pdata' has to go somewhere,
-rather than sticking it in the MFD's (parent) platform_data, the
-.platform_data attribute in 'struct mfd_cell' should be used.
-
-> For DT systems we should be allocating platform data separately and make
-> sure we clean up after ourselves.
+> > > > > +module_i2c_driver(menf21bmc_driver);
+> > > > > +
+> > > > > +MODULE_DESCRIPTION("MEN 14F021P00 BMC mfd core driver");
+> > > > 
+> > > > s/mfd/MFD
+> > > > 
+> > > > > +MODULE_AUTHOR("Andreas Werner <andreas.werner@men.de>");
+> > > > > +MODULE_LICENSE("GPL v2");
+> > > > 
+> > 
 
 -- 
 Lee Jones
