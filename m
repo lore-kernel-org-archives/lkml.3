@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933700AbaH0K2O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 06:28:14 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:12634 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933323AbaH0K2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 06:28:13 -0400
-X-IronPort-AV: E=Sophos;i="5.04,409,1406592000"; 
-   d="scan'208";a="165566990"
-Message-ID: <53FDB2BA.8080506@citrix.com>
-Date: Wed, 27 Aug 2014 11:28:10 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1756637AbaH0Kap (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 06:30:45 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:56488 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756002AbaH0Kan (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 06:30:43 -0400
+Date: Wed, 27 Aug 2014 11:30:38 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Harald Hoyer <harald@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
+Subject: Re: [PATCH V2] efi_high_alloc: use EFI_ALLOCATE_MAX_ADDRESS
+Message-ID: <20140827103038.GB28116@console-pimps.org>
+References: <1408715303-2215-1-git-send-email-harald@redhat.com>
+ <1408967732-2381-1-git-send-email-harald@redhat.com>
+ <20140825130724.GT29733@console-pimps.org>
+ <53FB4952.1090104@redhat.com>
 MIME-Version: 1.0
-To: Matt Rushton <mvrushton@gmail.com>, <konrad.wilk@oracle.com>,
-        <boris.ostrovsky@oracle.com>
-CC: <msw@amazon.com>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xensource.com>, Matt Rushton <mrushton@amazon.com>
-Subject: Re: [PATCH v3 2/2] xen/setup: Remap Xen Identity Mapped RAM
-References: <1407778441-26604-1-git-send-email-mrushton@amazon.com> <1407778441-26604-2-git-send-email-mrushton@amazon.com>
-In-Reply-To: <1407778441-26604-2-git-send-email-mrushton@amazon.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53FB4952.1090104@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/14 18:34, Matt Rushton wrote:
-> Instead of ballooning up and down dom0 memory this remaps the existing mfns
-> that were replaced by the identity map. The reason for this is that the
-> existing implementation ballooned memory up and and down which caused dom0
-> to have discontiguous pages. In some cases this resulted in the use of bounce
-> buffers which reduced network I/O performance significantly. This change will
-> honor the existing order of the pages with the exception of some boundary
-> conditions.
+On Mon, 25 Aug, at 04:33:54PM, Harald Hoyer wrote:
+> 
+> So is that ok, if other callers of efi_high_alloc() get an address >
+> 4GB?
 
-Applied to devel/for-linus-3.18.
+Yeah, the issue at hand is that some x86 EFI firmware cannot perform a
+file read into a buffer above 4G. The actual allocation works fine.
 
-Patch #1 is already present in 3.17-rc1.
+If other callers want a high address buffer, they're not going to hit
+that issue. We've no reason to believe that this bug affects arm64 at
+all, for instance.
 
-Thanks.
+Working around this problem in efi_high_alloc() gives the impression
+that there's something wrong with AllocatePages(), which isn't the case.
 
-David
+> Will the buggy EFI implementation work with the usage of the other
+> caller's allocated memory? Or will they run into the same issues as
+> the initramfs loader?
+
+Based on the information we've gathered so far, there's no reason to
+believe other callers will hit the same issue as the file reading code.
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
