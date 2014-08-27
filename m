@@ -1,73 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965296AbaH0VNS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 17:13:18 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:51143 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965267AbaH0VNO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 17:13:14 -0400
-Date: Wed, 27 Aug 2014 23:12:37 +0200
-From: Beniamino Galvani <b.galvani@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Carlo Caione <carlo@caione.org>
-Subject: Re: [PATCH 1/4] mfd: Add Ricoh RN5T618 PMIC core driver
-Message-ID: <20140827211237.GA24921@gmail.com>
-References: <1409091237-16722-1-git-send-email-b.galvani@gmail.com>
- <1409091237-16722-2-git-send-email-b.galvani@gmail.com>
- <20140827075614.GZ26707@lee--X1>
+	id S965402AbaH0VN2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 17:13:28 -0400
+Received: from mga11.intel.com ([192.55.52.93]:44124 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965256AbaH0VNX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 17:13:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,414,1406617200"; 
+   d="scan'208";a="582576488"
+Date: Wed, 27 Aug 2014 17:12:50 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v10 00/21] Support ext4 on NV-DIMMs
+Message-ID: <20140827211250.GH3285@linux.intel.com>
+References: <cover.1409110741.git.matthew.r.wilcox@intel.com>
+ <20140827130613.c8f6790093d279a447196f17@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140827075614.GZ26707@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140827130613.c8f6790093d279a447196f17@linux-foundation.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 27, 2014 at 08:56:14AM +0100, Lee Jones wrote:
-[...]
-> > diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> > index 8d5fad2..fae8c5b 100644
-> > --- a/drivers/mfd/Kconfig
-> > +++ b/drivers/mfd/Kconfig
-> > @@ -582,6 +582,17 @@ config MFD_RC5T583
-> >  	  Additional drivers must be enabled in order to use the
-> >  	  different functionality of the device.
-> >  
-> > +config MFD_RN5T618
-> > +	bool "Ricoh RN5T5618 PMIC"
+On Wed, Aug 27, 2014 at 01:06:13PM -0700, Andrew Morton wrote:
+> On Tue, 26 Aug 2014 23:45:20 -0400 Matthew Wilcox <matthew.r.wilcox@intel.com> wrote:
 > 
-> Shouldn't this be tristate?
+> > One of the primary uses for NV-DIMMs is to expose them as a block device
+> > and use a filesystem to store files on the NV-DIMM.  While that works,
+> > it currently wastes memory and CPU time buffering the files in the page
+> > cache.  We have support in ext2 for bypassing the page cache, but it
+> > has some races which are unfixable in the current design.  This series
+> > of patches rewrite the underlying support, and add support for direct
+> > access to ext4.
+> 
+> Sat down to read all this but I'm finding it rather unwieldy - it's
+> just a great blob of code.  Is there some overall
+> what-it-does-and-how-it-does-it roadmap?
 
-Yes, I suppose the driver would work also as a module, I only have to
-uninstall the pm_power_off hook on module removal.
+The overall goal is to map persistent memory / NV-DIMMs directly to
+userspace.  We have that functionality in the XIP code, but the way
+it's structured is unsuitable for filesystems like ext4 & XFS, and
+it has some pretty ugly races.
 
-> > +++ b/drivers/mfd/rn5t618.c
-> > @@ -0,0 +1,129 @@
-> 
-> [...]
-> 
-> > +static int rn5t618_i2c_probe(struct i2c_client *i2c,
-> > +			     const struct i2c_device_id *id)
-> > +{
-> 
-> [...]
-> 
-> > +	dev_info(&i2c->dev, "RN5T618 MFD driver loaded");
-> 
-> Can you remove this line?  We normally only print things when
-> information is gathered from a chip i.e. version information and the
-> like.
+Patches 1 & 3 are simply bug-fixes.  They should go in regardless of
+the merits of anything else in this series.
 
-I will remove it, thanks.
+Patch 2 changes the API for the direct_access block_device_operation so
+it can report more than a single page at a time.  As the series evolved,
+this work also included moving support for partitioning into the VFS
+where it belongs, handling various error cases in the VFS and so on.
 
-Beniamino
+Patch 4 is an optimisation.  It's poor form to make userspace take two
+faults for the same dereference.
+
+Patch 5 gives us a VFS flag for the DAX property, which lets us get rid of
+the get_xip_mem() method later on.
+
+Patch 6 is also prep work; Al Viro liked it enough that it's now in
+his tree.
+
+The new DAX code is then dribbled in over patches 7-11, split up by
+functional area.  At each stage, the ext2-xip code is converted over to
+the new DAX code.
+
+Patches 12-18 delete the remnants of the old XIP code, and fix the things
+in ext2 that Jan didn't like when he reviewed them for ext4 :-)
+
+Patches 19 & 20 are the work to make ext4 use DAX.
+
+Patch 21 is some final cleanup of references to the old XIP code, renaming
+it all to DAX.
+
+> Some explanation of why one would use ext4 instead of, say,
+> suitably-modified ramfs/tmpfs/rd/etc?
+
+ramfs and tmpfs really rely on the page cache.  They're not exactly
+built for permanence either.  brd also relies on the page cache, and
+there's a clear desire to use a filesystem instead of a block device
+for all the usual reasons of access permissions, grow/shrink, etc.
+
+Some people might want to use XFS instead of ext4.  We're starting with
+ext4, but we've been keeping an eye on what other filesystems might want
+to use.  btrfs isn't going to use the DAX code, but some of the other
+pieces will probably come in handy.
+
+There are also at least three people working on their own filesystems
+specially designed for persistent memory.  I wish them all the best
+... but I'd like to get this infrastructure into place.
+
+> Performance testing results?
+
+I haven't been running any performance tests.  What sort of performance
+tests would be interesting for you to see?
+
+> Carsten Otte wrote filemap_xip.c and may be a useful reviewer of this
+> work.
+
+I cc'd him on some earlier versions and didn't hear anything back.  It felt
+rude to keep plying him with 20+ patches every month.
+
+> All the patch subjects violate Documentation/SubmittingPatches
+> section 15 ;)
+
+errr ... which bit?  I used git format-patch to create them.
+
