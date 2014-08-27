@@ -1,52 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935874AbaH0V3s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 17:29:48 -0400
-Received: from mga09.intel.com ([134.134.136.24]:61549 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932146AbaH0V3r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 17:29:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,414,1406617200"; 
-   d="scan'208";a="594217497"
-From: James Ralston <james.d.ralston@intel.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: James Ralston <james.d.ralston@intel.com>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] ahci: Add Device IDs for Intel 9 Series PCH
-Date: Wed, 27 Aug 2014 14:29:07 -0700
-Message-Id: <1409174947-4684-1-git-send-email-james.d.ralston@intel.com>
-X-Mailer: git-send-email 1.8.3.1
+	id S935957AbaH0Va6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 17:30:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57358 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932146AbaH0Va4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 17:30:56 -0400
+Date: Wed, 27 Aug 2014 14:30:55 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        willy@linux.intel.com
+Subject: Re: [PATCH v10 00/21] Support ext4 on NV-DIMMs
+Message-Id: <20140827143055.5210c5fb9696e460b456eb26@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.11.1408271616070.17080@gentwo.org>
+References: <cover.1409110741.git.matthew.r.wilcox@intel.com>
+	<20140827130613.c8f6790093d279a447196f17@linux-foundation.org>
+	<alpine.DEB.2.11.1408271616070.17080@gentwo.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the AHCI mode SATA Device IDs for the Intel 9 Series PCH.
+On Wed, 27 Aug 2014 16:22:20 -0500 (CDT) Christoph Lameter <cl@linux.com> wrote:
 
-Signed-off-by: James Ralston <james.d.ralston@intel.com>
----
- drivers/ata/ahci.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+> > Some explanation of why one would use ext4 instead of, say,
+> > suitably-modified ramfs/tmpfs/rd/etc?
+> 
+> The NVDIMM contents survive reboot and therefore ramfs and friends wont
+> work with it.
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index a29f801..bca3d64 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -305,6 +305,14 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 	{ PCI_VDEVICE(INTEL, 0x9c85), board_ahci }, /* Wildcat Point-LP RAID */
- 	{ PCI_VDEVICE(INTEL, 0x9c87), board_ahci }, /* Wildcat Point-LP RAID */
- 	{ PCI_VDEVICE(INTEL, 0x9c8f), board_ahci }, /* Wildcat Point-LP RAID */
-+	{ PCI_VDEVICE(INTEL, 0x8c82), board_ahci }, /* 9 Series AHCI */
-+	{ PCI_VDEVICE(INTEL, 0x8c83), board_ahci }, /* 9 Series AHCI */
-+	{ PCI_VDEVICE(INTEL, 0x8c84), board_ahci }, /* 9 Series RAID */
-+	{ PCI_VDEVICE(INTEL, 0x8c85), board_ahci }, /* 9 Series RAID */
-+	{ PCI_VDEVICE(INTEL, 0x8c86), board_ahci }, /* 9 Series RAID */
-+	{ PCI_VDEVICE(INTEL, 0x8c87), board_ahci }, /* 9 Series RAID */
-+	{ PCI_VDEVICE(INTEL, 0x8c8e), board_ahci }, /* 9 Series RAID */
-+	{ PCI_VDEVICE(INTEL, 0x8c8f), board_ahci }, /* 9 Series RAID */
- 
- 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
- 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
--- 
-1.8.3.1
+See "suitably modified".  Presumably this type of memory would need to
+come from a particular page allocator zone.  ramfs would be unweildy
+due to its use to dentry/inode caches, but rd/etc should be feasible.
+
+I dunno, I'm not proposing implementations - I'm asking obvious
+questions.  Stuff which should have been addressed in the changelogs
+before one even starts to read the code...
 
