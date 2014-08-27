@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964944AbaH0Sb3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 14:31:29 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:51341 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935181AbaH0Sb0 (ORCPT
+	id S1756797AbaH0Scq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 14:32:46 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:40200 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753558AbaH0Sco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 14:31:26 -0400
+	Wed, 27 Aug 2014 14:32:44 -0400
+Message-ID: <53FE2446.3040402@gmail.com>
+Date: Wed, 27 Aug 2014 20:32:38 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Date: Wed, 27 Aug 2014 21:31:25 +0300
-Message-ID: <CA+ydwtoj-4cBeZZYomWf9ZeSxrwvDYbNpxbVQMA7tkUF5XM_9g@mail.gmail.com>
-Subject: drm_ioctl & WARNING at arch/x86/mm/ioremap.c:98
-From: Tommi Rantala <tt.rantala@gmail.com>
-To: dri-devel@lists.freedesktop.org
-Cc: LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Mark Brown <broonie@kernel.org>
+CC: Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] regulator: max77802: set opmode to normal if off
+ is read from hw
+References: <1409053061-22568-1-git-send-email-javier.martinez@collabora.co.uk>
+In-Reply-To: <1409053061-22568-1-git-send-email-javier.martinez@collabora.co.uk>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 26.08.2014 13:37, Javier Martinez Canillas wrote:
+> +		/*
+> +		 * If the regulator is disabled and the system warm rebooted,
+> +		 * the hardware reports OFF as the regulator operating mode.
+> +		 * Default to operating mode NORMAL in that case.
+> +		 */
+> +		if (val == MAX77802_OPMODE_OFF)
+> +			max77802->opmode[id] = MAX77802_OPMODE_NORMAL;
+> +		else
+> +			max77802->opmode[id] = val;
 
-Got this warning while fuzzing v3.17-rc2-40-gff0c57a with Trinity. Was
-running as root in qemu.
+I might be missing something, but I believe I see a flaw here. If after
+a cold boot opmode is something else than OFF or NORMAL, the kernel
+starts, turns the regulator off and does warm reboot, the setting is
+lost and the regulator is switched to NORMAL mode.
 
-Tommi
-
-
-ioremap: invalid physical address 4000000000004000
-------------[ cut here ]------------
-WARNING: CPU: 0 PID: 2887 at arch/x86/mm/ioremap.c:98
-__ioremap_caller+0x7a/0x2e0()
-CPU: 0 PID: 2887 Comm: trinity-c6 Not tainted 3.17.0-rc2+ #29
-Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
- 0000000000000009 ffff880036ee7c90 ffffffff8238ba09 0000000000000000
- ffff880036ee7cc8 ffffffff8113c603 0000000000000000 4000000000004000
- 4000000000008000 ffffffff81747c7d 0000000000000010 ffff880036ee7cd8
-Call Trace:
- [<ffffffff8238ba09>] dump_stack+0x4d/0x66
- [<ffffffff8113c603>] warn_slowpath_common+0x73/0x90
- [<ffffffff81747c7d>] ? drm_addmap_core+0x1dd/0x600
- [<ffffffff8113c6f5>] warn_slowpath_null+0x15/0x20
- [<ffffffff810aebaa>] __ioremap_caller+0x7a/0x2e0
- [<ffffffff8237ec03>] ? kmemleak_alloc+0x23/0x50
- [<ffffffff8126ced9>] ? kmem_cache_alloc_trace+0x119/0x290
- [<ffffffff81747adb>] ? drm_addmap_core+0x3b/0x600
- [<ffffffff810aee62>] ioremap_nocache+0x12/0x20
- [<ffffffff81747c7d>] drm_addmap_core+0x1dd/0x600
- [<ffffffff817486c5>] drm_addmap_ioctl+0x45/0x70
- [<ffffffff8174d6fe>] drm_ioctl+0x3fe/0x640
- [<ffffffff81748680>] ? drm_addmap+0x30/0x30
- [<ffffffff815aa790>] ? avc_has_perm+0x20/0x2f0
- [<ffffffff81170bb8>] ? sched_clock_cpu+0xa8/0xf0
- [<ffffffff812922f0>] do_vfs_ioctl+0x4d0/0x510
- [<ffffffff815acf15>] ? selinux_file_ioctl+0xf5/0x100
- [<ffffffff8129237e>] SyS_ioctl+0x4e/0x80
- [<ffffffff823a47a9>] system_call_fastpath+0x16/0x1b
----[ end trace c988df0287baa491 ]---
+Best regards,
+Tomasz
