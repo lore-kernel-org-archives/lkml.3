@@ -1,124 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965470AbaH0XdM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 19:33:12 -0400
-Received: from mga02.intel.com ([134.134.136.20]:63754 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964814AbaH0XdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 19:33:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,414,1406617200"; 
-   d="scan'208";a="564447259"
-Message-ID: <1409182369.27939.9.camel@schen9-desk2.jf.intel.com>
-Subject: Re: [PATCH v2] sched: Reduce contention in
- update_cfs_rq_blocked_load
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Jason Low <jason.low2@hp.com>
-Cc: Paul Turner <pjt@google.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Ben Segall <bsegall@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 27 Aug 2014 16:32:49 -0700
-In-Reply-To: <1409160893.31379.24.camel@j-VirtualBox>
-References: <1409094682.29189.23.camel@j-VirtualBox>
-	 <CAPM31RJcYakzwo9mByoadw6DGcg5SfYDOdX79NPo08hBP5PGjA@mail.gmail.com>
-	 <1409160893.31379.24.camel@j-VirtualBox>
+	id S965552AbaH0Xdl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 19:33:41 -0400
+Received: from mail-by2lp0237.outbound.protection.outlook.com ([207.46.163.237]:39808
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S964814AbaH0Xdk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 19:33:40 -0400
+Message-ID: <1409182412.6510.129.camel@snotra.buserror.net>
+Subject: Re: [RESEND] clk: ppc-corenet: Add Freescale ARM-based platforms
+ CLK_OF_DECLARE support
+From: Scott Wood <scottwood@freescale.com>
+To: Lu Jingchang-B35083 <jingchang.lu@freescale.com>
+CC: "mturquette@linaro.org" <mturquette@linaro.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Wed, 27 Aug 2014 18:33:32 -0500
+In-Reply-To: <164af7b3be3747a0be3fe3a6cf83d3b1@BL2PR03MB467.namprd03.prod.outlook.com>
+References: <1408700096-25415-1-git-send-email-jingchang.lu@freescale.com>
+	 <1409093463.6510.92.camel@snotra.buserror.net>
+	 <164af7b3be3747a0be3fe3a6cf83d3b1@BL2PR03MB467.namprd03.prod.outlook.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [2601:2:5800:3f7:8934:4690:1c77:4b20]
+X-ClientProxiedBy: BLUPR05CA0082.namprd05.prod.outlook.com (10.141.20.52) To
+ BY2PR0301MB0726.namprd03.prod.outlook.com (25.160.63.16)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0316567485
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6009001)(199003)(24454002)(51704005)(377424004)(189002)(13464003)(377454003)(64706001)(110136001)(99396002)(107046002)(101416001)(77156001)(33646002)(21056001)(76176999)(46102001)(20776003)(81542001)(50986999)(81342001)(80022001)(85306004)(47776003)(106356001)(74502001)(62966002)(74662001)(77982001)(31966008)(76482001)(23676002)(50466002)(104166001)(92726001)(92566001)(77096002)(87976001)(79102001)(89996001)(87286001)(95666004)(105586002)(86362001)(42186005)(103116003)(83322001)(83072002)(50226001)(19580405001)(102836001)(85852003)(90102001)(19580395003)(88136002)(93916002)(4396001)(99106002)(3826002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR0301MB0726;H:[IPv6:2601:2:5800:3f7:8934:4690:1c77:4b20];FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-08-27 at 10:34 -0700, Jason Low wrote:
-> On Tue, 2014-08-26 at 16:24 -0700, Paul Turner wrote:
-> > On Tue, Aug 26, 2014 at 4:11 PM, Jason Low <jason.low2@hp.com> wrote:
-> > > Based on perf profiles, the update_cfs_rq_blocked_load function constantly
-> > > shows up as taking up a noticeable % of system run time. This is especially
-> > > apparent on larger numa systems.
-> > >
-> > > Much of the contention is in __update_cfs_rq_tg_load_contrib when we're
-> > > updating the tg load contribution stats. However, it was noticed that the
-> > > values often don't get modified by much. In fact, much of the time, they
-> > > don't get modified at all. However, the update can always get attempted due
-> > > to force_update.
-> > >
-> > > In this patch, we remove the force_update in only the
-> > > __update_cfs_rq_tg_load_contrib. Thus the tg load contrib stats now get
-> > > modified only if the delta is large enough (in the current code, they get
-> > > updated when the delta is larger than 12.5%). This is a way to rate-limit
-> > > the updates while largely keeping the values accurate.
-> > >
-> > > When testing this change with AIM7 workloads, we found that it was able to
-> > > reduce the overhead of the function by up to a factor of 20x.
-> > 
-> > Looks reasonable.
-> > 
-> > >
-> > > Cc: Yuyang Du <yuyang.du@intel.com>
-> > > Cc: Waiman Long <Waiman.Long@hp.com>
-> > > Cc: Mel Gorman <mgorman@suse.de>
-> > > Cc: Mike Galbraith <umgwanakikbuti@gmail.com>
-> > > Cc: Rik van Riel <riel@redhat.com>
-> > > Cc: Aswin Chandramouleeswaran <aswin@hp.com>
-> > > Cc: Chegu Vinod <chegu_vinod@hp.com>
-> > > Cc: Scott J Norton <scott.norton@hp.com>
-> > > Signed-off-by: Jason Low <jason.low2@hp.com>
-> > > ---
-> > >  kernel/sched/fair.c |   10 ++++------
-> > >  1 files changed, 4 insertions(+), 6 deletions(-)
-> > >
-> > > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> > > index fea7d33..7a6e18b 100644
-> > > --- a/kernel/sched/fair.c
-> > > +++ b/kernel/sched/fair.c
-> > > @@ -2352,8 +2352,7 @@ static inline u64 __synchronize_entity_decay(struct sched_entity *se)
-> > >  }
-> > >
-> > >  #ifdef CONFIG_FAIR_GROUP_SCHED
-> > > -static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
-> > > -                                                int force_update)
-> > > +static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq)
-> > >  {
-> > >         struct task_group *tg = cfs_rq->tg;
-> > >         long tg_contrib;
-> > > @@ -2361,7 +2360,7 @@ static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
-> > >         tg_contrib = cfs_rq->runnable_load_avg + cfs_rq->blocked_load_avg;
-> > >         tg_contrib -= cfs_rq->tg_load_contrib;
-> > >
-> > > -       if (force_update || abs(tg_contrib) > cfs_rq->tg_load_contrib / 8) {
-> > 
-> > Another option with slightly higher accuracy would be to increase the
-> > sensitivity here when force_update == 1.
-> > 
-> > E.g.:
-> >     abs(tg_contrib) > cfs_rq->tg_load_contrib / (8 * (1 + force_update))) { ...
-> > 
-> > Alternatively we could bound total inaccuracy:
-> >    int divisor = force_update ? NR_CPUS : 8;
-> >    if (abs(tg_contrib) > cfs_rq->tg_load_contrib / divisor) { ...
-> > 
-> > 
-> > [ And probably rename force_update to want_update ]
-> 
-> Out of the 2 additional options, I think the first one is better. The
-> other option of using NR_CPUS looks like we're increasing the update
-> rate as the system gets larger, and its the larger systems that are
-> typically more affected by the contention.
+On Tue, 2014-08-26 at 21:19 -0500, Lu Jingchang-B35083 wrote:
+> >-----Original Message-----
+> >From: Wood Scott-B07421
+> >Sent: Wednesday, August 27, 2014 6:51 AM
+> >To: Lu Jingchang-B35083
+> >Cc: mturquette@linaro.org; linuxppc-dev@lists.ozlabs.org; linux-
+> >kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org
+> >Subject: Re: [RESEND] clk: ppc-corenet: Add Freescale ARM-based platforms
+> >CLK_OF_DECLARE support
+> >
+> >On Fri, 2014-08-22 at 17:34 +0800, Jingchang Lu wrote:
+> >> +CLK_OF_DECLARE(ppc_core_pll_v1, "fsl,qoriq-core-pll-1.0",
+> >core_pll_init);
+> >> +CLK_OF_DECLARE(ppc_core_pll_v2, "fsl,qoriq-core-pll-2.0",
+> >core_pll_init);
+> >> +CLK_OF_DECLARE(ppc_core_mux_v1, "fsl,qoriq-core-mux-1.0",
+> >core_mux_init);
+> >> +CLK_OF_DECLARE(ppc_core_mux_v2, "fsl,qoriq-core-mux-2.0",
+> >core_mux_init);
+> >
+> >What does this do that the existing platform driver and match table
+> >don't?  Why is it needed for ARM when PPC didn't need it?
+> >
+> >-Scott
+> >
+> Common clk init on ARM platform is initialized earlier via of_clk_init() instead of
+> driver probe method, the of_clk_init will walk a __clk_of_table to init each clk provider
+> in the table, the CLK_OF_DECLARE() macro puts a supported clk in the __clk_of_table for
+> it initializing on starup, and the clk system has added some common clk such as "fixed-clk"
+> to this table already.
+> So here I add our specific clk init declaration to consist this framework, and the driver
+> probe function will not be needed on ARM.
 
-Probably num_present_cpus() will be better than NR_CPUS, which can
-be much larger than the actual cpus present.
+OK... Is there any reason why the new method won't work on PPC?
 
-> 
-> Do you prefer either of the 2 other options over this v2 patch? If so, I
-> can test and send out a new patch, otherwise, I'll keep this current v2
-> patch.
+-Scott
 
-If there are multiple non-forced updates, option 1's error seems to
-accumulate and non-bounded as we do not actually update?  
-Is this a concern?
-
-Thanks.
-
-Tim
 
