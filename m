@@ -1,65 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565AbaH0IFN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 04:05:13 -0400
-Received: from mga09.intel.com ([134.134.136.24]:52734 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751524AbaH0IFG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 04:05:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,409,1406617200"; 
-   d="scan'208";a="593878323"
-Date: Wed, 27 Aug 2014 11:04:42 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        x86@kernel.org, Prarit Bhargava <prarit@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [Bugfix] x86, irq: Fix bug in setting IOAPIC pin attributes
-Message-ID: <20140827080238.GH1785@lahna.fi.intel.com>
-References: <20140826095221.GO1660@lahna.fi.intel.com>
- <1409118795-17046-1-git-send-email-jiang.liu@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409118795-17046-1-git-send-email-jiang.liu@linux.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S932428AbaH0IJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 04:09:27 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:48850 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751721AbaH0IJW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 04:09:22 -0400
+From: matwey@sai.msu.ru
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, linux-parport@lists.infradead.org,
+        hsommer@eso.org, matwey.kornilov@gmail.com,
+        "Matwey V. Kornilov" <matwey@sai.msu.ru>
+Subject: [PATCHv5 1/2] parport: parport_pc: Introduce intel_bug_present function.
+Date: Wed, 27 Aug 2014 12:07:43 +0400
+Message-Id: <1409126864-2615-2-git-send-email-matwey@sai.msu.ru>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1409126864-2615-1-git-send-email-matwey@sai.msu.ru>
+References: <1409126864-2615-1-git-send-email-matwey@sai.msu.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 27, 2014 at 01:53:11PM +0800, Jiang Liu wrote:
-> Commit 15a3c7cc9154321fc3 "x86, irq: Introduce two helper functions
-> to support irqdomain map operation" breaks LPSS ACPI enumerated
-> devices.
-> 
-> On startup, IOAPIC driver preallocates IRQ descriptors and programs
-> IOAPIC pins with default level and polarity attributes for all legacy
-> IRQs. Later legacy IRQ users may fail to set IOAPIC pin attributes
-> if the requested attributes conflicts with the default IOAPIC pin
-> attributes. So change mp_irqdomain_map() to allow the first legacy IRQ
-> user to reprogram IOAPIC pin with different attributes.
-> 
-> Reported-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> ---
-> Hi Mika,
-> 	We have a plan to kill function mp_set_gsi_attr() later, so
-> I have slightly modified your changes. Could you please help to test
-> it again?
+From: "Matwey V. Kornilov" <matwey@sai.msu.ru>
 
-Works fine here, thanks!
+Put the code to check present of the Intel bug from parport_EPP_supported
+into new intel_bug_present function. The later also return ECR register
+to the state it has before function call.
 
-Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Matwey V. Kornilov <matwey@sai.msu.ru>
+---
+ drivers/parport/parport_pc.c | 38 ++++++++++++++++++++++++++------------
+ 1 file changed, 26 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/parport/parport_pc.c b/drivers/parport/parport_pc.c
+index 76ee775..fedc06b 100644
+--- a/drivers/parport/parport_pc.c
++++ b/drivers/parport/parport_pc.c
+@@ -1702,6 +1702,30 @@ static int parport_ECP_supported(struct parport *pb)
+ }
+ #endif
+ 
++static int intel_bug_present(struct parport *pb)
++{
++	const struct parport_pc_private *priv = pb->private_data;
++	int bug_present = 0;
++
++	if (priv->ecr) {
++		/* store value of ECR */
++		unsigned char ecr = inb(ECONTROL(pb));
++		unsigned char i;
++		for (i = 0x00; i < 0x80; i += 0x20) {
++			ECR_WRITE(pb, i);
++			if (clear_epp_timeout(pb)) {
++				/* Phony EPP in ECP. */
++				bug_present = 1;
++				break;
++			}
++		}
++		/* return ECR into the inital state */
++		ECR_WRITE(pb, ecr);
++	}
++
++	return bug_present;
++}
++
+ static int parport_ECPPS2_supported(struct parport *pb)
+ {
+ 	const struct parport_pc_private *priv = pb->private_data;
+@@ -1722,8 +1746,6 @@ static int parport_ECPPS2_supported(struct parport *pb)
+ 
+ static int parport_EPP_supported(struct parport *pb)
+ {
+-	const struct parport_pc_private *priv = pb->private_data;
+-
+ 	/*
+ 	 * Theory:
+ 	 *	Bit 0 of STR is the EPP timeout bit, this bit is 0
+@@ -1742,16 +1764,8 @@ static int parport_EPP_supported(struct parport *pb)
+ 		return 0;  /* No way to clear timeout */
+ 
+ 	/* Check for Intel bug. */
+-	if (priv->ecr) {
+-		unsigned char i;
+-		for (i = 0x00; i < 0x80; i += 0x20) {
+-			ECR_WRITE(pb, i);
+-			if (clear_epp_timeout(pb)) {
+-				/* Phony EPP in ECP. */
+-				return 0;
+-			}
+-		}
+-	}
++	if (intel_bug_present(pb))
++		return 0;
+ 
+ 	pb->modes |= PARPORT_MODE_EPP;
+ 
+-- 
+1.8.1.4
+
