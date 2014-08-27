@@ -1,113 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965527AbaH0XZm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 19:25:42 -0400
-Received: from relay1.sgi.com ([192.48.180.66]:47686 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965255AbaH0XZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 19:25:40 -0400
-Message-ID: <53FE68E4.4090902@sgi.com>
-Date: Wed, 27 Aug 2014 16:25:24 -0700
-From: Mike Travis <travis@sgi.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: mingo@redhat.com, tglx@linutronix.de, hpa@zytor.com, msalter@redhat.com,
-        dyoung@redhat.com, riel@redhat.com, peterz@infradead.org,
-        mgorman@suse.de, linux-kernel@vger.kernel.org, x86@kernel.org,
-        linux-mm@kvack.org, Alex Thorlton <athorlton@sgi.com>
-Subject: Re: [PATCH 1/2] x86: Optimize resource lookups for ioremap
-References: <20140827225927.364537333@asylum.americas.sgi.com>	<20140827225927.602319674@asylum.americas.sgi.com>	<20140827160515.c59f1c191fde5f788a7c42f6@linux-foundation.org>	<53FE6515.6050102@sgi.com> <20140827161854.0619a04653b336d3adc755f3@linux-foundation.org>
-In-Reply-To: <20140827161854.0619a04653b336d3adc755f3@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S965344AbaH0X2U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 19:28:20 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:38140 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965528AbaH0X2R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 19:28:17 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+YsWwoFoPQEQu/Qhs4muQe
+From: Tony Lindgren <tony@atomide.com>
+To: kishon@ti.com
+Cc: balbi@ti.com, linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Subject: [PATCH 3/5] usb: phy: twl4030-usb: Move code from twl4030_phy_power to the runtime PM calls
+Date: Wed, 27 Aug 2014 16:28:09 -0700
+Message-Id: <1409182091-31191-4-git-send-email-tony@atomide.com>
+X-Mailer: git-send-email 1.8.1.1
+In-Reply-To: <1409182091-31191-1-git-send-email-tony@atomide.com>
+References: <1409182091-31191-1-git-send-email-tony@atomide.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We don't need twl4030_phy_power() any longer now that we have
+the runtime PM calls. Let's get rid of it as it's confusing.
+No functional changes, just move the code and use res instead
+of ret as we are not returning that value.
 
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+---
+ drivers/phy/phy-twl4030-usb.c | 72 +++++++++++++++++++------------------------
+ 1 file changed, 31 insertions(+), 41 deletions(-)
 
-On 8/27/2014 4:18 PM, Andrew Morton wrote:
-> On Wed, 27 Aug 2014 16:09:09 -0700 Mike Travis <travis@sgi.com> wrote:
-> 
->>
->>>>
->>>> ...
->>>>
->>>> --- linux.orig/kernel/resource.c
->>>> +++ linux/kernel/resource.c
->>>> @@ -494,6 +494,43 @@ int __weak page_is_ram(unsigned long pfn
->>>>  }
->>>>  EXPORT_SYMBOL_GPL(page_is_ram);
->>>>  
->>>> +/*
->>>> + * Search for a resouce entry that fully contains the specified region.
->>>> + * If found, return 1 if it is RAM, 0 if not.
->>>> + * If not found, or region is not fully contained, return -1
->>>> + *
->>>> + * Used by the ioremap functions to insure user not remapping RAM and is as
->>>> + * vast speed up over walking through the resource table page by page.
->>>> + */
->>>> +int __weak region_is_ram(resource_size_t start, unsigned long size)
->>>> +{
->>>> +	struct resource *p;
->>>> +	resource_size_t end = start + size - 1;
->>>> +	int flags = IORESOURCE_MEM | IORESOURCE_BUSY;
->>>> +	const char *name = "System RAM";
->>>> +	int ret = -1;
->>>> +
->>>> +	read_lock(&resource_lock);
->>>> +	for (p = iomem_resource.child; p ; p = p->sibling) {
->>>> +		if (end < p->start)
->>>> +			continue;
->>>> +
->>>> +		if (p->start <= start && end <= p->end) {
->>>> +			/* resource fully contains region */
->>>> +			if ((p->flags != flags) || strcmp(p->name, name))
->>>> +				ret = 0;
->>>> +			else
->>>> +				ret = 1;
->>>> +			break;
->>>> +		}
->>>> +		if (p->end < start)
->>>> +			break;	/* not found */
->>>> +	}
->>>> +	read_unlock(&resource_lock);
->>>> +	return ret;
->>>> +}
->>>> +EXPORT_SYMBOL_GPL(region_is_ram);
->>>
->>> Exporting a __weak symbol is strange.  I guess it works, but neither
->>> the __weak nor the export are actually needed?
->>>
->>
->> I mainly used 'weak' and export because that was what the page_is_ram
->> function was using.  Most likely this won't be used anywhere else but
->> I wasn't sure.  I can certainly remove the weak and export, at least
->> until it's actually needed?
-> 
-> Several architectures implement custom page_is_ram(), so they need the
-> __weak.  region_is_ram() needs neither so yes, they should be removed.
-
-Okay.
-> 
-> <looks at the code>
-> 
-> Doing strcmp("System RAM") is rather a hack.  Is there nothing in
-> resource.flags which can be used?  Or added otherwise?
-
-I agree except this mimics the page_is_ram function:
-
-        while ((res.start < res.end) &&
-                (find_next_iomem_res(&res, "System RAM", true) >= 0)) {
-
-So it passes the same literal string which then find_next does the
-same strcmp on it:
-
-                if (p->flags != res->flags)
-                        continue;
-                if (name && strcmp(p->name, name))
-                        continue;
-
-I should add back in the check to insure name is not NULL.
+diff --git a/drivers/phy/phy-twl4030-usb.c b/drivers/phy/phy-twl4030-usb.c
+index a292db0..519cc90 100644
+--- a/drivers/phy/phy-twl4030-usb.c
++++ b/drivers/phy/phy-twl4030-usb.c
+@@ -383,45 +383,6 @@ static void __twl4030_phy_power(struct twl4030_usb *twl, int on)
+ 	WARN_ON(twl4030_usb_write_verify(twl, PHY_PWR_CTRL, pwr) < 0);
+ }
+ 
+-static void twl4030_phy_power(struct twl4030_usb *twl, int on)
+-{
+-	int ret;
+-
+-	if (on) {
+-		ret = regulator_enable(twl->usb3v1);
+-		if (ret)
+-			dev_err(twl->dev, "Failed to enable usb3v1\n");
+-
+-		ret = regulator_enable(twl->usb1v8);
+-		if (ret)
+-			dev_err(twl->dev, "Failed to enable usb1v8\n");
+-
+-		/*
+-		 * Disabling usb3v1 regulator (= writing 0 to VUSB3V1_DEV_GRP
+-		 * in twl4030) resets the VUSB_DEDICATED2 register. This reset
+-		 * enables VUSB3V1_SLEEP bit that remaps usb3v1 ACTIVE state to
+-		 * SLEEP. We work around this by clearing the bit after usv3v1
+-		 * is re-activated. This ensures that VUSB3V1 is really active.
+-		 */
+-		twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0, VUSB_DEDICATED2);
+-
+-		ret = regulator_enable(twl->usb1v5);
+-		if (ret)
+-			dev_err(twl->dev, "Failed to enable usb1v5\n");
+-
+-		__twl4030_phy_power(twl, 1);
+-		twl4030_usb_write(twl, PHY_CLK_CTRL,
+-				  twl4030_usb_read(twl, PHY_CLK_CTRL) |
+-					(PHY_CLK_CTRL_CLOCKGATING_EN |
+-						PHY_CLK_CTRL_CLK32K_EN));
+-	} else {
+-		__twl4030_phy_power(twl, 0);
+-		regulator_disable(twl->usb1v5);
+-		regulator_disable(twl->usb1v8);
+-		regulator_disable(twl->usb3v1);
+-	}
+-}
+-
+ static int twl4030_usb_runtime_suspend(struct device *dev)
+ {
+ 	struct twl4030_usb *twl = dev_get_drvdata(dev);
+@@ -430,7 +391,10 @@ static int twl4030_usb_runtime_suspend(struct device *dev)
+ 	if (twl->asleep)
+ 		return 0;
+ 
+-	twl4030_phy_power(twl, 0);
++	__twl4030_phy_power(twl, 0);
++	regulator_disable(twl->usb1v5);
++	regulator_disable(twl->usb1v8);
++	regulator_disable(twl->usb3v1);
+ 	twl->asleep = 1;
+ 
+ 	return 0;
+@@ -439,12 +403,38 @@ static int twl4030_usb_runtime_suspend(struct device *dev)
+ static int twl4030_usb_runtime_resume(struct device *dev)
+ {
+ 	struct twl4030_usb *twl = dev_get_drvdata(dev);
++	int res;
+ 
+ 	dev_dbg(twl->dev, "%s\n", __func__);
+ 	if (!twl->asleep)
+ 		return 0;
+ 
+-	twl4030_phy_power(twl, 1);
++	res = regulator_enable(twl->usb3v1);
++	if (res)
++		dev_err(twl->dev, "Failed to enable usb3v1\n");
++
++	res = regulator_enable(twl->usb1v8);
++	if (res)
++		dev_err(twl->dev, "Failed to enable usb1v8\n");
++
++	/*
++	 * Disabling usb3v1 regulator (= writing 0 to VUSB3V1_DEV_GRP
++	 * in twl4030) resets the VUSB_DEDICATED2 register. This reset
++	 * enables VUSB3V1_SLEEP bit that remaps usb3v1 ACTIVE state to
++	 * SLEEP. We work around this by clearing the bit after usv3v1
++	 * is re-activated. This ensures that VUSB3V1 is really active.
++	 */
++	twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0, VUSB_DEDICATED2);
++
++	res = regulator_enable(twl->usb1v5);
++	if (res)
++		dev_err(twl->dev, "Failed to enable usb1v5\n");
++
++	__twl4030_phy_power(twl, 1);
++	twl4030_usb_write(twl, PHY_CLK_CTRL,
++			  twl4030_usb_read(twl, PHY_CLK_CTRL) |
++			  (PHY_CLK_CTRL_CLOCKGATING_EN |
++			   PHY_CLK_CTRL_CLK32K_EN));
+ 	twl->asleep = 0;
+ 
+ 	return 0;
+-- 
+1.8.1.1
 
