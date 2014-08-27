@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965399AbaH0VJq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 17:09:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39933 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933809AbaH0VJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 17:09:43 -0400
-Date: Wed, 27 Aug 2014 16:09:28 -0500
-From: Clark Williams <williams@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Subject: [PATCH RT]  rt: add rwsem_is_contended() definition to rwsem_rt.h
-Message-ID: <20140827160928.6f323642@sluggy>
-Organization: Red Hat, Inc
+	id S964951AbaH0VLG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 17:11:06 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:34548 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933809AbaH0VLD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 17:11:03 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/Chg.jXDUw.DpAsyvoMAecDr"; protocol="application/pgp-signature"
+In-Reply-To: <20140827210405.GA26372@kroah.com>
+References: <1409144277-23379-1-git-send-email-ricardo.ribalda@gmail.com>
+ <20140827202301.GA13800@kroah.com> <20140827205129.GA25227@kroah.com>
+ <CAPybu_2p0UroO=WwUOC3LybPq0HQymoD50v6-6gA+aVweveOHw@mail.gmail.com> <20140827210405.GA26372@kroah.com>
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Wed, 27 Aug 2014 23:10:42 +0200
+Message-ID: <CAPybu_2p6+VXj0s+yWGRvTO-1W-=rkhCBVKFHqa25joEO+Q3zA@mail.gmail.com>
+Subject: Re: [PATCH] pci/pci-sysfs: Set pci interface in uppercase
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Chg.jXDUw.DpAsyvoMAecDr
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hello Greg
 
-Thomas,
+On Wed, Aug 27, 2014 at 11:04 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Wed, Aug 27, 2014 at 10:56:57PM +0200, Ricardo Ribalda Delgado wrote:
+>> No worries,
+>>
+>> I have to mark for stable it or Bjorn? It it is me, how :) ?
+>
+> Bjorn can when he applies it, for details on the process, see the kernel
+> file Documentation/stable_kernel_rules.txt
+>
+>> ps: For other people reading this thread, the kmod/modprobe is in
+>> http://anonscm.debian.org/cgit/users/md/kmod.git/tree/libkmod/libkmod-index.c
+>> and handles all the modalias as strings without differing the type.
+>
+> That sounds wrong, and odds are, will cause more problems over time.
+> These are hex values, not strings :(
 
-The latest btrfs code uses rwsem_is_contended() in the function
-caching_thread(). On RT systems, include/linux/rwsem.h is replaced with
-include/linux/rwsem_rt.h which does not provide a definition for
-rwsem_is_contended().  This commit provides a definition that should
-work on RT (where the lock is actually an rt_mutex).
+I totally see your point, but I disagree on the method.
 
-Signed-off-by: Clark Williams <williams@redhat.com>
----
- include/linux/rwsem_rt.h | 5 +++++
- 1 file changed, 5 insertions(+)
+I think is our resposibility (modalias/file2alias) to provide a
+matcheable string, otherwise modprobe should be aware of all the types
+(pci, usb, spi, vmbus.....)
 
-diff --git a/include/linux/rwsem_rt.h b/include/linux/rwsem_rt.h
-index e94d945c5844..77035d7abc04 100644
---- a/include/linux/rwsem_rt.h
-+++ b/include/linux/rwsem_rt.h
-@@ -125,4 +125,9 @@ static inline void down_write_nest_lock(struct rw_semap=
-hore *sem,
-        rt_down_write_nested_lock(sem, NULL);
- }
- #endif
-+
-+static inline int rwsem_is_contended(struct rw_semaphore *sem)
-+{
-+       return !plist_head_empty(&sem->lock.wait_list);
-+}
- #endif
+As we keep adding types, and they don't follow any standard, we would
+be adding a dependecy between kmod and the kernel, and duplicating
+code.  That is bad systemwise
 
---Sig_/Chg.jXDUw.DpAsyvoMAecDr
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+Maybe the code on kmod should not be case sensitive, that is all :)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+>
+> thanks,
+>
+> greg k-h
 
-iQIcBAEBAgAGBQJT/kkOAAoJEEersVlSw9NzDfkP/jJcV92Q9WGZysW6639FRuae
-C0jx7hf5cmXbjfFdpIfPwF/Av6k09gfxIBnZi4Bgrjc9AyI3OYTwx7pMYXg0g9dg
-s7aPHQhONb0qpzhdbN5Y58nYi7qXGPPhCvY5pH8OZsB8gVXcEu2rHAqWl8nsrMJC
-zIfB5eUzXOsJEYZ0FoFvpCYgDwqNBZN28HFBMT7ceqKlkzYvMGzwYT+SkeV9RpoG
-lKFD2dhnoTbTF4fYzgTp/kocF/kxdv671ZR028MYzCewnMG1G8qC37/3SPSbbqnb
-u7S/lTcP447xiwlW0Ldw8QELO3OhzvWkQrP7E9RID/I2lqoSSjUESe4VT2D4uRxN
-H+NWzY5025kioSuoGqinqZAbfeWulQ9a6yWnFyOGrlFH7YxtcI+o2SchPnXlR0RR
-Ax76MrmX0PBb4mpOauwwdEjT6aI9njtguWXm1ce2oNMXfZmlW63GeYFj7hwYUf3w
-AOdHOTxweauWFavoiLdYef2kGqxHCs2SE5LxR7grgkGUIwo/SA2QxvzOdyaeMVkI
-6VrjmzIyNrY8i6FIPJkptqbdQWhMFGTTvXfuAvQMJMReoVLevnoyVXI1zFMDdk0f
-M4ziZeKFPrQVSelwDor/cdYEsLtln7wVO1oY+ZtVClUxWQlq0EuN74lUj/gxEDvD
-jvsyNIWO6H9p460pIvae
-=SDKB
------END PGP SIGNATURE-----
+Thanks
 
---Sig_/Chg.jXDUw.DpAsyvoMAecDr--
+
+
+-- 
+Ricardo Ribalda
