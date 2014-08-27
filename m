@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935147AbaH0PUl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 11:20:41 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:24390 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934523AbaH0PUb (ORCPT
+	id S935102AbaH0PU3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 11:20:29 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:42766 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934523AbaH0PUZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 11:20:31 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-f1-53fdf73dc558
+	Wed, 27 Aug 2014 11:20:25 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-d9-53fdf737e054
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Sebastian Reichel <sre@kernel.org>,
         Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
@@ -24,60 +24,146 @@ Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v4 8/8] Documentation: charger: max14577: Document exported
- sysfs entry
-Date: Wed, 27 Aug 2014 17:20:14 +0200
-Message-id: <1409152814-17302-9-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH v4 1/8] mfd: max14577: Add defines for MAX77836 charger
+Date: Wed, 27 Aug 2014 17:20:07 +0200
+Message-id: <1409152814-17302-2-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1409152814-17302-1-git-send-email-k.kozlowski@samsung.com>
 References: <1409152814-17302-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t/xy7q23/8GG+ycIGCxccZ6VoupD5+w
-	WUx68p7ZYuLKycwW/W8Wslqce7WS0eL1C0OLs01v2C3ufz3KaPHtSgeTxebvHWwWl3fNYbP4
-	3HuE0WLtkbvsFkuvX2SymDB9LYtF694j7Banu1ktTu8ucRD2WDNvDaPH5b5eJo+ds+6ye6xc
-	/oXNY/MKLY9NqzrZPO5c28PmMe9koEffllWMHp83yQVwRXHZpKTmZJalFunbJXBlnJ3PVfCU
-	s+L/0znsDYxzOLoYOTkkBEwkFl+eyQJhi0lcuLeerYuRi0NIYCmjxJQv/6GcPiaJ7s8vGEGq
-	2ASMJTYvX8IGYosILGCSuLguF8RmFjjDLDF1NdhUYYFIiUen1rCD2CwCqhIf2x6B1fMKuEsc
-	P7CBCWKbnMTJY5NZQWxOAQ+Jl70XgOIcQMvcJe7O45/AyLuAkWEVo2hqaXJBcVJ6rpFecWJu
-	cWleul5yfu4mRkjIf93BuPSY1SFGAQ5GJR5ehdN/goVYE8uKK3MPMUpwMCuJ8JYd+BssxJuS
-	WFmVWpQfX1Sak1p8iJGJg1OqgZFth/Ix9YsXNzMGZEvWbl5rNq3gSveaSK1fcQtCru1tyurZ
-	c+Lw/GW2cv4fKkxLwjIu+jg4VYQ5arq5NQjZtWm/O7K8NHzXgcKHjHYVSqvu//Gwl6rx+3Tu
-	wqcX5Vk+XH/n6EjGsi2++7Z8tc/z61JXFk66qnTEIfbT8bjyGBOzhJVvr60JEFJiKc5INNRi
-	LipOBACwIKjkVwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsVy+t/xy7rm3/8GG3TuV7XYOGM9q8XUh0/Y
+	LCY9ec9sMXHlZGaL/jcLWS3OvVrJaPH6haHF2aY37Bb3vx5ltPh2pYPJYvP3DjaLy7vmsFl8
+	7j3CaLH2yF12i6XXLzJZTJi+lsWide8RdovT3awWp3eXOAh7rJm3htHjcl8vk8fOWXfZPVYu
+	/8LmsXmFlsemVZ1sHneu7WHzmHcy0KNvyypGj8+b5AK4orhsUlJzMstSi/TtErgypn44yFLw
+	Vb1i4o/prA2Mh5S6GDk5JARMJL4c+cQIYYtJXLi3nq2LkYtDSGApo8TTQ6tYIZw+JollvdNZ
+	QarYBIwlNi9fwgZiiwgsYJK4uC4XxGYWOMMsMXU1B4gtLOAucePxPBYQm0VAVeLVpVnsIDYv
+	UPzFzZlsENvkJE4emww2k1PAQ+Jl7wWmLkYOoGXuEnfn8U9g5F3AyLCKUTS1NLmgOCk910iv
+	ODG3uDQvXS85P3cTIyTov+5gXHrM6hCjAAejEg+vwuk/wUKsiWXFlbmHGCU4mJVEeMsO/A0W
+	4k1JrKxKLcqPLyrNSS0+xMjEwSnVwLig6EKNidCsuPiZsasahQVnXni82Dh/5sNF11PuFy4Q
+	XbcsxJLX6+7WtkVr7aY1htpwzyh5yPrk1ZmfaiWT/zL5MG89r23Hfy9gV5h5qbhL2fX1kryr
+	SmU3/q26+X8h14yejVJM+yZOY2AsU+pmSEr2bQj/I6685tR3zuV9HXv8ZVra4qacjldiKc5I
+	NNRiLipOBAAUcyz4WAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the 'fast charge timer' setting exported by max14577 driver
-through sysfs entry.
+Prepare for adding support for MAX77836 charger to the max14577 charger
+driver by adding necessary new defines and prefixes to existing ones.
+
+The MAX77836 uses slightly different values for ChgTyp field of STATUS2
+register. On the MAX14577 value of 0x6 is reserved and 0x7 dead battery.
+On the MAX77836 the opposite:
+ - 0x6 means special charger,
+ - 0x7 is reserved.
+Regardless of these differences use one common enum
+max14577_muic_charger_type.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Cc: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- Documentation/ABI/testing/sysfs-class-power | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ include/linux/mfd/max14577-private.h | 54 ++++++++++++++++++++++++++----------
+ 1 file changed, 40 insertions(+), 14 deletions(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-class-power b/Documentation/ABI/testing/sysfs-class-power
-index 78c7baca3587..83ee67ebf0e9 100644
---- a/Documentation/ABI/testing/sysfs-class-power
-+++ b/Documentation/ABI/testing/sysfs-class-power
-@@ -18,3 +18,17 @@ Description:
- 		This file is writeable and can be used to set the assumed
- 		battery 'full level'. As batteries age, this value has to be
- 		amended over time.
-+
-+What:		/sys/class/power_supply/max14577-charger/device/fast_charge_timer
-+Date:		July 2014
-+KernelVersion:	3.17.0
-+Contact:	Krzysztof Kozlowski <k.kozlowski@samsung.com>
-+Description:
-+		This entry shows and sets the maximum time the max14577
-+		charger operates in fast-charge mode. When the timer expires
-+		the device will terminate fast-charge mode (charging current
-+		will drop to 0 A) and will trigger interrupt.
-+
-+		Valid values:
-+		- 5, 6 or 7 (hours),
-+		- 0: disabled.
+diff --git a/include/linux/mfd/max14577-private.h b/include/linux/mfd/max14577-private.h
+index 499253604026..d6f321699b89 100644
+--- a/include/linux/mfd/max14577-private.h
++++ b/include/linux/mfd/max14577-private.h
+@@ -72,15 +72,33 @@ enum max14577_muic_reg {
+ 	MAX14577_MUIC_REG_END,
+ };
+ 
++/*
++ * Combined charger types for max14577 and max77836.
++ *
++ * On max14577 three lower bits map to STATUS2/CHGTYP field.
++ * However the max77836 has different two last values of STATUS2/CHGTYP.
++ * To indicate the difference enum has two additional values for max77836.
++ * These values are just a register value bitwise OR with 0x8.
++ */
+ enum max14577_muic_charger_type {
+-	MAX14577_CHARGER_TYPE_NONE = 0,
+-	MAX14577_CHARGER_TYPE_USB,
+-	MAX14577_CHARGER_TYPE_DOWNSTREAM_PORT,
+-	MAX14577_CHARGER_TYPE_DEDICATED_CHG,
+-	MAX14577_CHARGER_TYPE_SPECIAL_500MA,
+-	MAX14577_CHARGER_TYPE_SPECIAL_1A,
+-	MAX14577_CHARGER_TYPE_RESERVED,
+-	MAX14577_CHARGER_TYPE_DEAD_BATTERY = 7,
++	MAX14577_CHARGER_TYPE_NONE		= 0x0,
++	MAX14577_CHARGER_TYPE_USB		= 0x1,
++	MAX14577_CHARGER_TYPE_DOWNSTREAM_PORT	= 0x2,
++	MAX14577_CHARGER_TYPE_DEDICATED_CHG	= 0x3,
++	MAX14577_CHARGER_TYPE_SPECIAL_500MA	= 0x4,
++	/* Special 1A or 2A charger */
++	MAX14577_CHARGER_TYPE_SPECIAL_1A	= 0x5,
++	/* max14577: reserved, used on max77836 */
++	MAX14577_CHARGER_TYPE_RESERVED		= 0x6,
++	/* max14577: dead-battery charing with maximum current 100mA */
++	MAX14577_CHARGER_TYPE_DEAD_BATTERY	= 0x7,
++	/*
++	 * max77836: special charger (bias on D+/D-),
++	 * matches register value of 0x6
++	 */
++	MAX77836_CHARGER_TYPE_SPECIAL_BIAS	= 0xe,
++	/* max77836: reserved, register value 0x7 */
++	MAX77836_CHARGER_TYPE_RESERVED		= 0xf,
+ };
+ 
+ /* MAX14577 interrupts */
+@@ -121,13 +139,15 @@ enum max14577_muic_charger_type {
+ #define STATUS2_CHGTYP_SHIFT		0
+ #define STATUS2_CHGDETRUN_SHIFT		3
+ #define STATUS2_DCDTMR_SHIFT		4
+-#define STATUS2_DBCHG_SHIFT		5
++#define MAX14577_STATUS2_DBCHG_SHIFT	5
++#define MAX77836_STATUS2_DXOVP_SHIFT	5
+ #define STATUS2_VBVOLT_SHIFT		6
+ #define MAX77836_STATUS2_VIDRM_SHIFT	7
+ #define STATUS2_CHGTYP_MASK		(0x7 << STATUS2_CHGTYP_SHIFT)
+ #define STATUS2_CHGDETRUN_MASK		BIT(STATUS2_CHGDETRUN_SHIFT)
+ #define STATUS2_DCDTMR_MASK		BIT(STATUS2_DCDTMR_SHIFT)
+-#define STATUS2_DBCHG_MASK		BIT(STATUS2_DBCHG_SHIFT)
++#define MAX14577_STATUS2_DBCHG_MASK	BIT(MAX14577_STATUS2_DBCHG_SHIFT)
++#define MAX77836_STATUS2_DXOVP_MASK	BIT(MAX77836_STATUS2_DXOVP_SHIFT)
+ #define STATUS2_VBVOLT_MASK		BIT(STATUS2_VBVOLT_SHIFT)
+ #define MAX77836_STATUS2_VIDRM_MASK	BIT(MAX77836_STATUS2_VIDRM_SHIFT)
+ 
+@@ -177,9 +197,11 @@ enum max14577_muic_charger_type {
+ #define CTRL3_JIGSET_SHIFT		0
+ #define CTRL3_BOOTSET_SHIFT		2
+ #define CTRL3_ADCDBSET_SHIFT		4
++#define CTRL3_WBTH_SHIFT		6
+ #define CTRL3_JIGSET_MASK		(0x3 << CTRL3_JIGSET_SHIFT)
+ #define CTRL3_BOOTSET_MASK		(0x3 << CTRL3_BOOTSET_SHIFT)
+ #define CTRL3_ADCDBSET_MASK		(0x3 << CTRL3_ADCDBSET_SHIFT)
++#define CTRL3_WBTH_MASK			(0x3 << CTRL3_WBTH_SHIFT)
+ 
+ /* Slave addr = 0x4A: Charger */
+ enum max14577_charger_reg {
+@@ -210,16 +232,20 @@ enum max14577_charger_reg {
+ #define CDETCTRL1_CHGTYPMAN_SHIFT	1
+ #define CDETCTRL1_DCDEN_SHIFT		2
+ #define CDETCTRL1_DCD2SCT_SHIFT		3
+-#define CDETCTRL1_DCHKTM_SHIFT		4
+-#define CDETCTRL1_DBEXIT_SHIFT		5
++#define MAX14577_CDETCTRL1_DCHKTM_SHIFT	4
++#define MAX77836_CDETCTRL1_CDLY_SHIFT	4
++#define MAX14577_CDETCTRL1_DBEXIT_SHIFT	5
++#define MAX77836_CDETCTRL1_DCDCPL_SHIFT	5
+ #define CDETCTRL1_DBIDLE_SHIFT		6
+ #define CDETCTRL1_CDPDET_SHIFT		7
+ #define CDETCTRL1_CHGDETEN_MASK		BIT(CDETCTRL1_CHGDETEN_SHIFT)
+ #define CDETCTRL1_CHGTYPMAN_MASK	BIT(CDETCTRL1_CHGTYPMAN_SHIFT)
+ #define CDETCTRL1_DCDEN_MASK		BIT(CDETCTRL1_DCDEN_SHIFT)
+ #define CDETCTRL1_DCD2SCT_MASK		BIT(CDETCTRL1_DCD2SCT_SHIFT)
+-#define CDETCTRL1_DCHKTM_MASK		BIT(CDETCTRL1_DCHKTM_SHIFT)
+-#define CDETCTRL1_DBEXIT_MASK		BIT(CDETCTRL1_DBEXIT_SHIFT)
++#define MAX14577_CDETCTRL1_DCHKTM_MASK	BIT(MAX14577_CDETCTRL1_DCHKTM_SHIFT)
++#define MAX77836_CDETCTRL1_CDDLY_MASK	BIT(MAX77836_CDETCTRL1_CDDLY_SHIFT)
++#define MAX14577_CDETCTRL1_DBEXIT_MASK	BIT(MAX14577_CDETCTRL1_DBEXIT_SHIFT)
++#define MAX77836_CDETCTRL1_DCDCPL_MASK	BIT(MAX77836_CDETCTRL1_DCDCPL_SHIFT)
+ #define CDETCTRL1_DBIDLE_MASK		BIT(CDETCTRL1_DBIDLE_SHIFT)
+ #define CDETCTRL1_CDPDET_MASK		BIT(CDETCTRL1_CDPDET_SHIFT)
+ 
 -- 
 1.9.1
 
