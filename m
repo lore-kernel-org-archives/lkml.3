@@ -1,271 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935062AbaH0PRt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 11:17:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13313 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933852AbaH0PRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 11:17:45 -0400
-Date: Wed, 27 Aug 2014 11:17:01 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, linux-audit@redhat.com,
-        Linux API <linux-api@vger.kernel.org>, netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH V4 3/8] namespaces: expose ns instance serial numbers in
- proc
-Message-ID: <20140827151701.GO20529@madcap2.tricolour.ca>
-References: <cd6cd0622ce677b639afae18a69ff79c72490bab.1408581429.git.rgb@redhat.com>
- <CALCETrUnzG1V8w+H9ctAJP+Hvo8LQax=dhLG4bBpBKmVi+C1cQ@mail.gmail.com>
- <20140822015803.GG20529@madcap2.tricolour.ca>
- <CALCETrUkFD0iNi1SV_6ypN5Kf4GYybT5tzjRjRQuLzT9iBnQAg@mail.gmail.com>
- <53FB3A86.2060203@6wind.com>
- <CALCETrW1Lv0qeccMjNHSEzgtiaNN3NgJVR1dFjjR_dw5KVVnqA@mail.gmail.com>
- <53FB59A3.5030804@6wind.com>
- <CALCETrWHrWhm89B5s=pLt_9eTx3ZF8ifA6y6CwknWaWU7dp=sQ@mail.gmail.com>
- <53FB673F.8070200@6wind.com>
- <CALCETrVVQ2Ugesq8zWK_gmj46Zr6mFL2Riyf=Lrdqy8ze3YfPA@mail.gmail.com>
+	id S935078AbaH0PT1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 11:19:27 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:45500 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934523AbaH0PTZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 11:19:25 -0400
+Message-ID: <53FDF6E4.7090203@linaro.org>
+Date: Wed, 27 Aug 2014 17:19:00 +0200
+From: Eric Auger <eric.auger@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CALCETrVVQ2Ugesq8zWK_gmj46Zr6mFL2Riyf=Lrdqy8ze3YfPA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: eric.auger@st.com, christoffer.dall@linaro.org, marc.zyngier@arm.com,
+        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
+        kvm@vger.kernel.org, joel.schopp@amd.com, kim.phillips@freescale.com,
+        linux-kernel@vger.kernel.org, patches@linaro.org, will.deacon@arm.com,
+        a.motakis@virtualopensystems.com, a.rigo@virtualopensystems.com,
+        john.liuli@huawei.com
+Subject: Re: [RFC 4/9] KVM: KVM-VFIO: update user API to program forwarded
+ IRQ
+References: <1408973264-30384-1-git-send-email-eric.auger@linaro.org>	 <1408973264-30384-5-git-send-email-eric.auger@linaro.org> <1409079715.2906.127.camel@ul30vt.home>
+In-Reply-To: <1409079715.2906.127.camel@ul30vt.home>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/08/25, Andy Lutomirski wrote:
-> On Mon, Aug 25, 2014 at 9:41 AM, Nicolas Dichtel
-> <nicolas.dichtel@6wind.com> wrote:
-> > Le 25/08/2014 18:13, Andy Lutomirski a écrit :
-> >
-> >> On Mon, Aug 25, 2014 at 8:43 AM, Nicolas Dichtel
-> >> <nicolas.dichtel@6wind.com> wrote:
-> >>>
-> >>> Le 25/08/2014 16:04, Andy Lutomirski a écrit :
-> >>>
-> >>>> On Aug 25, 2014 6:30 AM, "Nicolas Dichtel" <nicolas.dichtel@6wind.com>
-> >>>> wrote:
-> >>>>>>
-> >>>>>>
-> >>>>>> CRIU wants to save the complete state of a namespace and then restore
-> >>>>>> it.  For that to work, any information exposed to things in the
-> >>>>>> namespace *cannot* be globally unique or unique per boot, since CRIU
-> >>>>>> needs to arrange for that information to match whatever it was when
-> >>>>>> CRIU saved it.
-> >>>>>
-> >>>>>
-> >>>>>
-> >>>>> How are ifindex of network devices managed? These ifindexes are unique
-> >>>>> per boot,
-> >>>>> thus can change depending on the order in which netdev are created.
-> >>>>> These ifindexes are unique per boot and exposed to userspace ...
-> >>>>>
-> >>>>
-> >>>> This does not appear to be true.
-> >>>>
-> >>>> $ sudo unshare --net
-> >>>> # ip link add veth0 type veth peer name veth1
-> >>>> # ip link
-> >>>> 1: lo: <LOOPBACK> mtu 65536 qdisc noop state DOWN mode DEFAULT group
-> >>>> default
-> >>>>       link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
-> >>>> 2: veth1: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode
-> >>>> DEFAULT group default qlen 1000
-> >>>>       link/ether 06:0d:59:c7:a6:a8 brd ff:ff:ff:ff:ff:ff
-> >>>> 3: veth0: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode
-> >>>> DEFAULT group default qlen 1000
-> >>>>       link/ether b2:5c:8b:f2:12:28 brd ff:ff:ff:ff:ff:ff
-> >>>> # logout
-> >>>> $ ip link
-> >>>> 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN
-> >>>>       link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
-> >>>> 3: em1: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc pfifo_fast
-> >>>> state DOWN qlen 1000
-> >>>>
-> >>> I've probably misunderstood what you're trying to say. ifindexes are
-> >>> unique
-> >>> per
-> >>> boot and per netns.
-> >>
-> >>
-> >> I think we both misunderstood each other.  The ifindexes are unique
-> >> *per netns*, which means that, if you're unprivileged in a netns,
-> >> global information doesn't leak to you.  I think this is good.
-> >
-> > Ok, I agree. I think audit daemons are always running under privileged
-> > users.
-> >
-> >
-> >>
-> >>>>
-> >>>> Let me try again, with emphasis in the right place.
-> >>>>
-> >>>> I think that *code running in a namespace* has no business even
-> >>>> knowing a unique identity of *that namespace* from the perspective of
-> >>>> the host.
-> >>>>
-> >>>> In your example, if there's a veth device between netns A and netns B,
-> >>>> then code *in netns A* has no business knowing the identity of its
-> >>>> veth peer if its peer (B) is a sibling or ancestor.  It also IMO has
-> >>>> no business knowing the identity of its own netns (A) other than as
-> >>>> "my netns".
-> >>>
-> >>>
-> >>> I do not agree (see the example below).
-> >>>
-> >>>
-> >>>>
-> >>>> If A and B are siblings, then their parent needs to know where that
-> >>>> veth device goes, but I think this is already the case to a sufficient
-> >>>> extent today.
-> >>>
-> >>>
-> >>> I'm not aware of a hierarchy between netns. A daemon should be able to
-> >>> got the full network configuration, even if it's started when this
-> >>> configuration
-> >>> is already applied, ie even if it doesn't know what happen before it
-> >>> starts.
-> >>>
-> >>
-> >> I don't know exactly which namespaces have an explicit hierarchy, but
-> >> there is certainly a hierarchy of *user* namespaces, and network
-> >> namespaces live in user namespaces, so they at least have somewhat of
-> >> a hierarchy.
-> >>
-> >>>
-> >>>>
-> >>>> I feel like this discussion is falling into a common trap of new API
-> >>>> discussions.  Can one of you who wants this API please articulate,
-> >>>> with a reasonably precise example, what it is that you want to do, why
-> >>>> you can't easily do it already, and how this API helps?  I currently
-> >>>> understand how the API creates problems, but I don't understand how it
-> >>>> solves any problems, and I will NAK it (and I suspect that Eric will,
-> >>>> too, which is pretty much fatal) unless that changes.
-> >>>
-> >>>
-> >>> What I'm trying to solve is to have full info in netlink messages sent by
-> >>> the
-> >>> kernel, thus beeing able to identify a peer netns (and this is close from
-> >>> what
-> >>> audit guys are trying to have). Theorically, messages sent by the kernel
-> >>> can
-> >>> be
-> >>> reused as is to have the same configuration. This is not the case with
-> >>> x-netns
-> >>> devices. Here is an example, with ip tunnels:
-> >>>
-> >>> $ ip netns add 1
-> >>> $ ip link add ipip1 type ipip remote 10.16.0.121 local 10.16.0.249 dev
-> >>> eth0
-> >>> $ ip -d link ls ipip1
-> >>> 8: ipip1@eth0: <POINTOPOINT,NOARP> mtu 1480 qdisc noop state DOWN mode
-> >>> DEFAULT group default
-> >>>      link/ipip 10.16.0.249 peer 10.16.0.121 promiscuity 0
-> >>>      ipip remote 10.16.0.121 local 10.16.0.249 dev eth0 ttl inherit
-> >>> pmtudisc
-> >>> $ ip link set ipip1 netns 1
-> >>> $ ip netns exec 1 ip -d link ls ipip1
-> >>> 8: ipip1@tunl0: <POINTOPOINT,NOARP,M-DOWN> mtu 1480 qdisc noop state DOWN
-> >>> mode DEFAULT group default
-> >>>      link/ipip 10.16.0.249 peer 10.16.0.121 promiscuity 0
-> >>>      ipip remote 10.16.0.121 local 10.16.0.249 dev tunl0 ttl inherit
-> >>> pmtudisc
-> >>>
-> >>> Now informations got with 'ip link' are wrong and incomplete:
-> >>>   - the link dev is now tunl0 instead of eth0, because we only got an
-> >>> ifindex
-> >>>     from the kernel without any netns informations.
-> >>>   - the encapsulation addresses are not part of this netns but the user
-> >>> doesn't
-> >>>     known that (still because netns info is missing). These IPv4
-> >>> addresses
-> >>> may
-> >>>     exist into this netns.
-> >>>   - it's not possible to create the same netdevice with these infos.
-> >>>
-> >>
-> >> Aha.  That's a genuine problem.
-> >>
-> >> Perhaps we need a concept of which netnses should be able to see each
-> >> other.
-> >
-> > Yes, I agree. This is not required for all netns, only a subset of netns
-> > should
-> >
-> > be able to see each other.
-> >
-> >>
-> >> I think I would be okay with a somewhat different outcome from your
-> >> example:
-> >>
-> >> $ ip netns exec 1 ip -d link ls ipip1
-> >> 8: ipip1@[unknown device in another namespace]:
-> >> <POINTOPOINT,NOARP,M-DOWN> mtu 1480 qdisc noop state DOWN
-> >>
-> >> I think this outcome is mandatory if netns 1 lives in a subsidiary
-> >> user namespace.
-> >
-> > Yes.
-> >
-> >
-> >>
-> >> Certainly, if you do the 'ip link' in the original namespace, I agree
-> >> that this should work.
-> >
-> > And yes :)
-> >
-> > I will update my previous proposal
-> > (http://thread.gmane.org/gmane.linux.network/315933/focus=321753)
-> > to allow to get an id for a peer netns only when the user namespace is the
-> > same.
+On 08/26/2014 09:01 PM, Alex Williamson wrote:
+> On Mon, 2014-08-25 at 15:27 +0200, Eric Auger wrote:
+>> add new device group commands:
+>> - KVM_DEV_VFIO_DEVICE_ASSIGN_IRQ and
+>>   KVM_DEV_VFIO_DEVICE_DEASSIGN_IRQ
+>>
+>> which enable to turn forwarded IRQ mode on/off.
+>>
+>> Signed-off-by: Eric Auger <eric.auger@linaro.org>
+>> ---
+>>  Documentation/virtual/kvm/devices/vfio.txt | 25 +++++++++++++++++++++++++
+>>  arch/arm/include/uapi/asm/kvm.h            |  6 ++++++
+>>  include/uapi/linux/kvm.h                   |  3 +++
+>>  3 files changed, 34 insertions(+)
+>>
+>> diff --git a/Documentation/virtual/kvm/devices/vfio.txt b/Documentation/virtual/kvm/devices/vfio.txt
+>> index ef51740..c8b3fa1 100644
+>> --- a/Documentation/virtual/kvm/devices/vfio.txt
+>> +++ b/Documentation/virtual/kvm/devices/vfio.txt
+>> @@ -13,6 +13,7 @@ VFIO-group is held by KVM.
+>>  
+>>  Groups:
+>>    KVM_DEV_VFIO_GROUP
+>> +  KVM_DEV_VFIO_DEVICE
+>>  
+>>  KVM_DEV_VFIO_GROUP attributes:
+>>    KVM_DEV_VFIO_GROUP_ADD: Add a VFIO group to VFIO-KVM device tracking
+>> @@ -20,3 +21,27 @@ KVM_DEV_VFIO_GROUP attributes:
+>>  
+>>  For each, kvm_device_attr.addr points to an int32_t file descriptor
+>>  for the VFIO group.
+>> +
+>> +KVM_DEV_VFIO_DEVICE attributes:
+>> +  KVM_DEV_VFIO_DEVICE_ASSIGN_IRQ
+>> +  KVM_DEV_VFIO_DEVICE_DEASSIGN_IRQ
+>> +
+>> +For each, kvm_device_attr.addr points to an kvm_arch_forwarded_irq.
+>> +This user API makes possible to create a special IRQ handling mode,
+>> +currently supported only on ARM, where KVM and a VFIO platform driver
+>> +collaborate to improve IRQ handling performance.
+>> +fd represents the file descriptor of a valid VFIO device whose physical
+>> +IRQ, referenced by its irq_index is injected to the VM guest_irq.
+>> +
+>> +On ASSIGN_IRQ, KVM-VFIO device programs:
+>> +- the host, to not complete the physical IRQ itself.
+>> +- the GIC, to automatically complete the physical IRQ when the guest
+>> +  completes the virtual IRQ
+>> +This avoid trapping the end-of-interrupt for level sensitive IRQ.
+>> +
+>> +On DEASSIGN_IRQ, one come back to the mode where the host completes the
+>> +physical IRQ and the guest only completes the virtual IRQ.
+>> +
+>> +It is up to the caller of this API to get the assurance the IRQ is not
+>> +outstanding when the ASSIGN/DEASSIGN is called. This could lead to some
+>> +inconsistency on who is going to complete the IRQ.
 > 
-> I think it should work if the peer userns is the same or a descendent.
-> I also wonder whether the peer's ifindex should be suppressed if peer
-> userns is not the same or a descendent.
-> 
-> Now you just have to get Eric to be happy with the id allocation. :)
-> This may be nontrivial.
-> 
-> >> For most namespace types, this all works transparently, since
-> >> everything has an real identity all the way up the hierarchy.  Network
-> >> namespaces are different.
-> >>
-> >> I don't think that exposing serial numbers in /proc is a good
-> >> solution, both for the reasons already described and because I don't
-> >> think that iproute2 should need to muck around with /proc to function
-> >
-> > A netlink API is probably enough. But it will help only for the network
-> > problem, not for audit. I was hoping to find a common solution.
-> 
-> I still don't understand why audit needs anything beyond the audit
-> part of this patch set.  I have no problem with audit seeing that
-> migrated/restored namespaces are really brand-new namespaces, as long
-> as the code in those namespaces isn't exposed to it.
+> Why not call these FORWARD/UNFORWARD or something since the operation
+> isn't really doing anything with assignment of the IRQ.  The IRQ is
+> already "assigned", we're modifying the behavior.
 
-Ok, I'm starting to get this...  Perhaps /proc wasn't the best place to
-expose this.  Audit or an audit aggregator is the only one that needs to
-know any of this information.  This could be accomplished with
-CAP_AUDIT_CONTROL and a new netlink audit message type to fetch
-individual or all namespace IDs for a particular PID via auditctl, or by
-having a CAP_AUDIT_WRITE-capable application pull the trigger to simply
-dump that information to the log.
+Sure I will change the name.
 
-> >> correctly.  Eric, any clever ideas here?  Do we need fancier netlink
-> >> messages for this?
-> >>
-> >> --Andy
 > 
-> Andy Lutomirski
+>> diff --git a/arch/arm/include/uapi/asm/kvm.h b/arch/arm/include/uapi/asm/kvm.h
+>> index 3034c66..1920b33 100644
+>> --- a/arch/arm/include/uapi/asm/kvm.h
+>> +++ b/arch/arm/include/uapi/asm/kvm.h
+>> @@ -109,6 +109,12 @@ struct kvm_sync_regs {
+>>  struct kvm_arch_memory_slot {
+>>  };
+>>  
+>> +struct kvm_arch_forwarded_irq {
+>> +	__u32 fd; /* file desciptor of the VFIO device */
+>> +	__u32 irq_index; /* platform device index of the IRQ */
+> 
+> The vfio-platform device IRQ index?  ARM is the only implementation we
+> have of this, but to keep it generic maybe the comment should read "vfio
+> device IRQ index".
 
-- RGB
+I will replace by vfio device IRQ index.
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+> 
+>> +	__u32 guest_irq; /* virtual IRQ number */
+> 
+> This would be a GSI or similar concept if we were on x86.
+
+ok for GSI now this naming seems better understood by the ARM community
+too;-)
+
+  I'm a little
+> confused that were using an arch structure here rather than trying to
+> keep the kvm-vfio device interface neutral.
+
+I will move much more things on the generic side then then assuming that
+someone in the future may use such functionality. Actually the only ARM
+specific implementation is the GIC interrupt controller programming. As
+far as I see the rest is generic, in terms of API.
+
+Thanks
+
+Eric
+
+  Maybe it makes sense, I'm
+> not sure.  Thanks,
+> 
+> Alex
+> 
+>> +};
+>> +
+>>  /* If you need to interpret the index values, here is the key: */
+>>  #define KVM_REG_ARM_COPROC_MASK		0x000000000FFF0000
+>>  #define KVM_REG_ARM_COPROC_SHIFT	16
+>> diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
+>> index cf3a2ff..b149ba8 100644
+>> --- a/include/uapi/linux/kvm.h
+>> +++ b/include/uapi/linux/kvm.h
+>> @@ -954,6 +954,9 @@ struct kvm_device_attr {
+>>  #define  KVM_DEV_VFIO_GROUP			1
+>>  #define   KVM_DEV_VFIO_GROUP_ADD			1
+>>  #define   KVM_DEV_VFIO_GROUP_DEL			2
+>> +#define  KVM_DEV_VFIO_DEVICE			2
+>> +#define   KVM_DEV_VFIO_DEVICE_ASSIGN_IRQ			1
+>> +#define   KVM_DEV_VFIO_DEVICE_DEASSIGN_IRQ			2
+>>  #define KVM_DEV_TYPE_ARM_VGIC_V2	5
+>>  #define KVM_DEV_TYPE_FLIC		6
+>>  
+> 
+> 
+> 
+
