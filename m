@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935739AbaH0TXl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 15:23:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55756 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935182AbaH0TXk (ORCPT
+	id S935770AbaH0TYT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 15:24:19 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:58901 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935744AbaH0TYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 15:23:40 -0400
-Date: Wed, 27 Aug 2014 12:23:39 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Roger Quadros <rogerq@ti.com>
-Cc: stern@rowland.harvard.edu, balbi@ti.com, ming.lei@canonical.com,
-        mwelling@emacinc.com, stefan@herbrechtsmeier.net,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "[3.8+]" <stable@vger.kernel.org>
-Subject: Re: [PATCH v2] usb: hub: Prevent hub autosuspend if
- usbcore.autosuspend is -1
-Message-ID: <20140827192339.GA9620@kroah.com>
-References: <1407145486-14013-1-git-send-email-rogerq@ti.com>
- <53FDCADE.3040601@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53FDCADE.3040601@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 27 Aug 2014 15:24:17 -0400
+From: David Riley <davidriley@chromium.org>
+To: Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Cc: Guenter Roeck <linux@roeck-us.net>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        David Riley <davidriley@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
+        Anton Vorontsov <anton@enomsg.org>,
+        Marc Carino <marc.ceeeee@gmail.com>, Anders Berg <anders.berg@lsi.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Jamie Lentin <jm@lentin.co.uk>, Doug Anderson <dianders@chromium.org>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: [PATCH v2 0/1] gpio-restart restart handler
+Date: Wed, 27 Aug 2014 12:23:50 -0700
+Message-Id: <1409167431-21155-1-git-send-email-davidriley@chromium.org>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 27, 2014 at 03:11:10PM +0300, Roger Quadros wrote:
-> If user specifies that USB autosuspend must be disabled by module
-> parameter "usbcore.autosuspend=-1" then we must prevent
-> autosuspend of USB hub devices as well.
-> 
-> commit 596d789a211d introduced in v3.8 changed the original behaivour
-> and stopped respecting the usbcore.autosuspend parameter for hubs.
-> 
-> Fixes: 596d789a211d "USB: set hub's default autosuspend delay as 0"
-> 
-> Cc: [3.8+] <stable@vger.kernel.org>
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> ---
->  drivers/usb/core/hub.c | 8 +++++++-
->  1 file changed, 7 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-> index 8a4dcbc..59b599d 100644
-> --- a/drivers/usb/core/hub.c
-> +++ b/drivers/usb/core/hub.c
-> @@ -1728,8 +1728,14 @@ static int hub_probe(struct usb_interface *intf, const struct usb_device_id *id)
->  	 * - Change autosuspend delay of hub can avoid unnecessary auto
->  	 *   suspend timer for hub, also may decrease power consumption
->  	 *   of USB bus.
-> +	 *
-> +	 * - If user has indicated to prevent autosuspend by passing
-> +	 *   usbcore.autosuspend = -1 then keep autosuspend disabled.
->  	 */
-> -	pm_runtime_set_autosuspend_delay(&hdev->dev, 0);
-> +#ifdef CONFIG_PM_RUNTIME
-> +	if (hdev->dev.power.autosuspend_delay >= 0)
-> +		pm_runtime_set_autosuspend_delay(&hdev->dev, 0);
-> +#endif
->  
->  	/*
->  	 * Hubs have proper suspend/resume support, except for root hubs
+This driver builds upon Guenter Roeck's kernel restart handler patchset
+to add a driver which registers a GPIO-based restart handler which restarts
+the system by toggling a GPIO.
 
-Sorry, but can I have a patch that just adds the #ifdef as I already
-have your original one in my tree.
+Changes are based off 3.17-rc2 with the following patches from v7 of 
+Guenter's patchset:
+https://patchwork.kernel.org/patch/4746721/
+https://patchwork.kernel.org/patch/4746731/
+https://patchwork.kernel.org/patch/4747011/
+https://patchwork.kernel.org/patch/4746741/
+https://patchwork.kernel.org/patch/4746861/
 
-thanks,
+Changes since v1:
+v2:
+	- Updated devicetree binding to make it less kernel specific
+	- Changed priority property from u8 type to standard u32
+	- Rename input property to open-source
+	- Made delays configurable from binding
+	- Removed unneeded BUG_ON
+	- Used devm_gpiod_get flags parameter to configure initial direction
 
-greg k-h
+David Riley (1):
+  power: Add simple gpio-restart driver
+
+ .../devicetree/bindings/gpio/gpio-restart.txt      |  54 ++++++++
+ drivers/power/reset/Kconfig                        |   8 ++
+ drivers/power/reset/Makefile                       |   1 +
+ drivers/power/reset/gpio-restart.c                 | 149 +++++++++++++++++++++
+ 4 files changed, 212 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio-restart.txt
+ create mode 100644 drivers/power/reset/gpio-restart.c
+
+-- 
+2.0.0
+
