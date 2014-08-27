@@ -1,1023 +1,339 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935522AbaH0P0T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 11:26:19 -0400
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:57757 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935034AbaH0P0O (ORCPT
+	id S935531AbaH0P1U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 11:27:20 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:62643 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934861AbaH0P1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 11:26:14 -0400
-Date: Wed, 27 Aug 2014 11:26:09 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>
-Subject: [PATCH percpu/for-3.18-consistent-ops] Revert "powerpc: Replace
- __get_cpu_var uses"
-Message-ID: <20140827152609.GA379@htj.dyndns.org>
-References: <20140827142243.6277eaff@canb.auug.org.au>
+	Wed, 27 Aug 2014 11:27:16 -0400
+Message-ID: <53FDF8CF.9080302@plexistor.com>
+Date: Wed, 27 Aug 2014 18:27:11 +0300
+From: Boaz Harrosh <boaz@plexistor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140827142243.6277eaff@canb.auug.org.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jens Axboe <axboe@fb.com>, Matthew Wilcox <willy@linux.intel.com>,
+        Dmitry Monakhov <dmonakhov@openvz.org>
+CC: Ross Zwisler <ross.zwisler@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH 2/5] Change direct_access calling convention
+References: <53FDF7AD.5000709@plexistor.com>
+In-Reply-To: <53FDF7AD.5000709@plexistor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 23f66e2d661b4d3226d16e25910a9e9472ce2410 Mon Sep 17 00:00:00 2001
-From: Tejun Heo <tj@kernel.org>
-Date: Wed, 27 Aug 2014 11:18:29 -0400
+From: Matthew Wilcox <matthew.r.wilcox@intel.com>
 
-This reverts commit 5828f666c069af74e00db21559f1535103c9f79a due to
-build failure after merging with pending powerpc changes.
+In order to support accesses to larger chunks of memory, pass in a
+'size' parameter (counted in bytes), and return the amount available at
+that address.
 
-Link: http://lkml.kernel.org/g/20140827142243.6277eaff@canb.auug.org.au
+Add a new helper function, bdev_direct_access(), to handle common
+functionality including partition handling, checking the length requested
+is positive, checking for the sector being page-aligned, and checking
+the length of the request does not pass the end of the partition.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Christoph Lameter <cl@linux-foundation.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Reviewed-by: Jan Kara <jack@suse.cz>
+Reviewed-by: Boaz Harrosh <boaz@plexistor.com>
 ---
-Chrisoph, let's route the updated patch through powerpc tree.
+ Documentation/filesystems/xip.txt | 15 +++++++++------
+ arch/powerpc/sysdev/axonram.c     | 17 ++++-------------
+ drivers/block/brd.c               | 12 +++++-------
+ drivers/s390/block/dcssblk.c      | 21 +++++++++-----------
+ fs/block_dev.c                    | 40 +++++++++++++++++++++++++++++++++++++++
+ fs/ext2/xip.c                     | 31 +++++++++++++-----------------
+ include/linux/blkdev.h            |  6 ++++--
+ 7 files changed, 84 insertions(+), 58 deletions(-)
 
-Thanks.
-
- arch/powerpc/include/asm/hardirq.h                |  4 +---
- arch/powerpc/include/asm/tlbflush.h               |  4 ++--
- arch/powerpc/include/asm/xics.h                   |  8 ++++----
- arch/powerpc/kernel/dbell.c                       |  2 +-
- arch/powerpc/kernel/hw_breakpoint.c               |  6 +++---
- arch/powerpc/kernel/iommu.c                       |  2 +-
- arch/powerpc/kernel/irq.c                         |  4 ++--
- arch/powerpc/kernel/kgdb.c                        |  2 +-
- arch/powerpc/kernel/kprobes.c                     |  6 +++---
- arch/powerpc/kernel/mce.c                         | 24 +++++++++++------------
- arch/powerpc/kernel/process.c                     | 10 +++++-----
- arch/powerpc/kernel/smp.c                         |  6 +++---
- arch/powerpc/kernel/sysfs.c                       |  4 ++--
- arch/powerpc/kernel/time.c                        | 22 ++++++++++-----------
- arch/powerpc/kernel/traps.c                       |  8 ++++----
- arch/powerpc/kvm/e500.c                           | 14 ++++++-------
- arch/powerpc/kvm/e500mc.c                         |  4 ++--
- arch/powerpc/mm/hash_native_64.c                  |  2 +-
- arch/powerpc/mm/hash_utils_64.c                   |  2 +-
- arch/powerpc/mm/hugetlbpage-book3e.c              |  6 +++---
- arch/powerpc/mm/hugetlbpage.c                     |  2 +-
- arch/powerpc/perf/core-book3s.c                   | 22 ++++++++++-----------
- arch/powerpc/perf/core-fsl-emb.c                  |  6 +++---
- arch/powerpc/platforms/cell/interrupt.c           |  6 +++---
- arch/powerpc/platforms/powernv/opal-tracepoints.c |  4 ++--
- arch/powerpc/platforms/ps3/interrupt.c            |  2 +-
- arch/powerpc/platforms/pseries/dtl.c              |  2 +-
- arch/powerpc/platforms/pseries/hvCall_inst.c      |  4 ++--
- arch/powerpc/platforms/pseries/iommu.c            |  8 ++++----
- arch/powerpc/platforms/pseries/lpar.c             |  6 +++---
- arch/powerpc/platforms/pseries/ras.c              |  4 ++--
- arch/powerpc/sysdev/xics/xics-common.c            |  2 +-
- 32 files changed, 103 insertions(+), 105 deletions(-)
-
-diff --git a/arch/powerpc/include/asm/hardirq.h b/arch/powerpc/include/asm/hardirq.h
-index 8d907ba..1bbb301 100644
---- a/arch/powerpc/include/asm/hardirq.h
-+++ b/arch/powerpc/include/asm/hardirq.h
-@@ -21,9 +21,7 @@ DECLARE_PER_CPU_SHARED_ALIGNED(irq_cpustat_t, irq_stat);
+diff --git a/Documentation/filesystems/xip.txt b/Documentation/filesystems/xip.txt
+index 0466ee5..b774729 100644
+--- a/Documentation/filesystems/xip.txt
++++ b/Documentation/filesystems/xip.txt
+@@ -28,12 +28,15 @@ Implementation
+ Execute-in-place is implemented in three steps: block device operation,
+ address space operation, and file operations.
  
- #define __ARCH_IRQ_STAT
+-A block device operation named direct_access is used to retrieve a
+-reference (pointer) to a block on-disk. The reference is supposed to be
+-cpu-addressable, physical address and remain valid until the release operation
+-is performed. A struct block_device reference is used to address the device,
+-and a sector_t argument is used to identify the individual block. As an
+-alternative, memory technology devices can be used for this.
++A block device operation named direct_access is used to translate the
++block device sector number to a page frame number (pfn) that identifies
++the physical page for the memory.  It also returns a kernel virtual
++address that can be used to access the memory.
++
++The direct_access method takes a 'size' parameter that indicates the
++number of bytes being requested.  The function should return the number
++of bytes that can be contiguously accessed at that offset.  It may also
++return a negative errno if an error occurs.
  
--#define local_softirq_pending()	__this_cpu_read(irq_stat.__softirq_pending)
--#define set_softirq_pending(x) __this_cpu_write(irq_stat._softirq_pending, (x))
--#define or_softirq_pending(x) __this_cpu_or(irq_stat._softirq_pending, (x))
-+#define local_softirq_pending()	__get_cpu_var(irq_stat).__softirq_pending
- 
- static inline void ack_bad_irq(unsigned int irq)
- {
-diff --git a/arch/powerpc/include/asm/tlbflush.h b/arch/powerpc/include/asm/tlbflush.h
-index cd7c271..2def01ed 100644
---- a/arch/powerpc/include/asm/tlbflush.h
-+++ b/arch/powerpc/include/asm/tlbflush.h
-@@ -107,14 +107,14 @@ extern void __flush_tlb_pending(struct ppc64_tlb_batch *batch);
- 
- static inline void arch_enter_lazy_mmu_mode(void)
- {
--	struct ppc64_tlb_batch *batch = this_cpu_ptr(&ppc64_tlb_batch);
-+	struct ppc64_tlb_batch *batch = &__get_cpu_var(ppc64_tlb_batch);
- 
- 	batch->active = 1;
- }
- 
- static inline void arch_leave_lazy_mmu_mode(void)
- {
--	struct ppc64_tlb_batch *batch = this_cpu_ptr(&ppc64_tlb_batch);
-+	struct ppc64_tlb_batch *batch = &__get_cpu_var(ppc64_tlb_batch);
- 
- 	if (batch->index)
- 		__flush_tlb_pending(batch);
-diff --git a/arch/powerpc/include/asm/xics.h b/arch/powerpc/include/asm/xics.h
-index 5007ad0..282d43a 100644
---- a/arch/powerpc/include/asm/xics.h
-+++ b/arch/powerpc/include/asm/xics.h
-@@ -97,7 +97,7 @@ DECLARE_PER_CPU(struct xics_cppr, xics_cppr);
- 
- static inline void xics_push_cppr(unsigned int vec)
- {
--	struct xics_cppr *os_cppr = this_cpu_ptr(&xics_cppr);
-+	struct xics_cppr *os_cppr = &__get_cpu_var(xics_cppr);
- 
- 	if (WARN_ON(os_cppr->index >= MAX_NUM_PRIORITIES - 1))
- 		return;
-@@ -110,7 +110,7 @@ static inline void xics_push_cppr(unsigned int vec)
- 
- static inline unsigned char xics_pop_cppr(void)
- {
--	struct xics_cppr *os_cppr = this_cpu_ptr(&xics_cppr);
-+	struct xics_cppr *os_cppr = &__get_cpu_var(xics_cppr);
- 
- 	if (WARN_ON(os_cppr->index < 1))
- 		return LOWEST_PRIORITY;
-@@ -120,7 +120,7 @@ static inline unsigned char xics_pop_cppr(void)
- 
- static inline void xics_set_base_cppr(unsigned char cppr)
- {
--	struct xics_cppr *os_cppr = this_cpu_ptr(&xics_cppr);
-+	struct xics_cppr *os_cppr = &__get_cpu_var(xics_cppr);
- 
- 	/* we only really want to set the priority when there's
- 	 * just one cppr value on the stack
-@@ -132,7 +132,7 @@ static inline void xics_set_base_cppr(unsigned char cppr)
- 
- static inline unsigned char xics_cppr_top(void)
- {
--	struct xics_cppr *os_cppr = this_cpu_ptr(&xics_cppr);
-+	struct xics_cppr *os_cppr = &__get_cpu_var(xics_cppr);
- 	
- 	return os_cppr->stack[os_cppr->index];
- }
-diff --git a/arch/powerpc/kernel/dbell.c b/arch/powerpc/kernel/dbell.c
-index f421781..d55c76c 100644
---- a/arch/powerpc/kernel/dbell.c
-+++ b/arch/powerpc/kernel/dbell.c
-@@ -41,7 +41,7 @@ void doorbell_exception(struct pt_regs *regs)
- 
- 	may_hard_irq_enable();
- 
--	__this_cpu_inc(irq_stat.doorbell_irqs);
-+	__get_cpu_var(irq_stat).doorbell_irqs++;
- 
- 	smp_ipi_demux();
- 
-diff --git a/arch/powerpc/kernel/hw_breakpoint.c b/arch/powerpc/kernel/hw_breakpoint.c
-index b62f90e..0bb5918 100644
---- a/arch/powerpc/kernel/hw_breakpoint.c
-+++ b/arch/powerpc/kernel/hw_breakpoint.c
-@@ -63,7 +63,7 @@ int hw_breakpoint_slots(int type)
- int arch_install_hw_breakpoint(struct perf_event *bp)
- {
- 	struct arch_hw_breakpoint *info = counter_arch_bp(bp);
--	struct perf_event **slot = this_cpu_ptr(&bp_per_reg);
-+	struct perf_event **slot = &__get_cpu_var(bp_per_reg);
- 
- 	*slot = bp;
- 
-@@ -88,7 +88,7 @@ int arch_install_hw_breakpoint(struct perf_event *bp)
+ The block device operation is optional, these block devices support it as of
+ today:
+diff --git a/arch/powerpc/sysdev/axonram.c b/arch/powerpc/sysdev/axonram.c
+index 830edc8..8709b9f 100644
+--- a/arch/powerpc/sysdev/axonram.c
++++ b/arch/powerpc/sysdev/axonram.c
+@@ -139,26 +139,17 @@ axon_ram_make_request(struct request_queue *queue, struct bio *bio)
+  * axon_ram_direct_access - direct_access() method for block device
+  * @device, @sector, @data: see block_device_operations method
   */
- void arch_uninstall_hw_breakpoint(struct perf_event *bp)
+-static int
++static long
+ axon_ram_direct_access(struct block_device *device, sector_t sector,
+-		       void **kaddr, unsigned long *pfn)
++		       void **kaddr, unsigned long *pfn, long size)
  {
--	struct perf_event **slot = this_cpu_ptr(&bp_per_reg);
-+	struct perf_event **slot = &__get_cpu_var(bp_per_reg);
+ 	struct axon_ram_bank *bank = device->bd_disk->private_data;
+-	loff_t offset;
+-
+-	offset = sector;
+-	if (device->bd_part != NULL)
+-		offset += device->bd_part->start_sect;
+-	offset <<= AXON_RAM_SECTOR_SHIFT;
+-	if (offset >= bank->size) {
+-		dev_err(&bank->device->dev, "Access outside of address space\n");
+-		return -ERANGE;
+-	}
++	loff_t offset = (loff_t)sector << AXON_RAM_SECTOR_SHIFT;
  
- 	if (*slot != bp) {
- 		WARN_ONCE(1, "Can't find the breakpoint");
-@@ -226,7 +226,7 @@ int __kprobes hw_breakpoint_handler(struct die_args *args)
- 	 */
- 	rcu_read_lock();
+ 	*kaddr = (void *)(bank->ph_addr + offset);
+ 	*pfn = virt_to_phys(*kaddr) >> PAGE_SHIFT;
  
--	bp = __this_cpu_read(bp_per_reg);
-+	bp = __get_cpu_var(bp_per_reg);
- 	if (!bp)
- 		goto out;
- 	info = counter_arch_bp(bp);
-diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
-index 71e60bf..a10642a 100644
---- a/arch/powerpc/kernel/iommu.c
-+++ b/arch/powerpc/kernel/iommu.c
-@@ -208,7 +208,7 @@ static unsigned long iommu_range_alloc(struct device *dev,
- 	 * We don't need to disable preemption here because any CPU can
- 	 * safely use any IOMMU pool.
- 	 */
--	pool_nr = __this_cpu_read(iommu_pool_hash) & (tbl->nr_pools - 1);
-+	pool_nr = __raw_get_cpu_var(iommu_pool_hash) & (tbl->nr_pools - 1);
- 
- 	if (largealloc)
- 		pool = &(tbl->large_pool);
-diff --git a/arch/powerpc/kernel/irq.c b/arch/powerpc/kernel/irq.c
-index 74d40c6..4c5891d 100644
---- a/arch/powerpc/kernel/irq.c
-+++ b/arch/powerpc/kernel/irq.c
-@@ -114,7 +114,7 @@ static inline notrace void set_soft_enabled(unsigned long enable)
- static inline notrace int decrementer_check_overflow(void)
- {
-  	u64 now = get_tb_or_rtc();
--	u64 *next_tb = this_cpu_ptr(&decrementers_next_tb);
-+ 	u64 *next_tb = &__get_cpu_var(decrementers_next_tb);
-  
- 	return now >= *next_tb;
- }
-@@ -499,7 +499,7 @@ void __do_irq(struct pt_regs *regs)
- 
- 	/* And finally process it */
- 	if (unlikely(irq == NO_IRQ))
--		__this_cpu_inc(irq_stat.spurious_irqs);
-+		__get_cpu_var(irq_stat).spurious_irqs++;
- 	else
- 		generic_handle_irq(irq);
- 
-diff --git a/arch/powerpc/kernel/kgdb.c b/arch/powerpc/kernel/kgdb.c
-index e77c3cc..85046573 100644
---- a/arch/powerpc/kernel/kgdb.c
-+++ b/arch/powerpc/kernel/kgdb.c
-@@ -155,7 +155,7 @@ static int kgdb_singlestep(struct pt_regs *regs)
- {
- 	struct thread_info *thread_info, *exception_thread_info;
- 	struct thread_info *backup_current_thread_info =
--		this_cpu_ptr(&kgdb_thread_info);
-+		&__get_cpu_var(kgdb_thread_info);
- 
- 	if (user_mode(regs))
- 		return 0;
-diff --git a/arch/powerpc/kernel/kprobes.c b/arch/powerpc/kernel/kprobes.c
-index 7c053f2..2f72af8 100644
---- a/arch/powerpc/kernel/kprobes.c
-+++ b/arch/powerpc/kernel/kprobes.c
-@@ -119,7 +119,7 @@ static void __kprobes save_previous_kprobe(struct kprobe_ctlblk *kcb)
- 
- static void __kprobes restore_previous_kprobe(struct kprobe_ctlblk *kcb)
- {
--	__this_cpu_write(current_kprobe, kcb->prev_kprobe.kp);
-+	__get_cpu_var(current_kprobe) = kcb->prev_kprobe.kp;
- 	kcb->kprobe_status = kcb->prev_kprobe.status;
- 	kcb->kprobe_saved_msr = kcb->prev_kprobe.saved_msr;
- }
-@@ -127,7 +127,7 @@ static void __kprobes restore_previous_kprobe(struct kprobe_ctlblk *kcb)
- static void __kprobes set_current_kprobe(struct kprobe *p, struct pt_regs *regs,
- 				struct kprobe_ctlblk *kcb)
- {
--	__this_cpu_write(current_kprobe, p);
-+	__get_cpu_var(current_kprobe) = p;
- 	kcb->kprobe_saved_msr = regs->msr;
+-	return 0;
++	return bank->size - offset;
  }
  
-@@ -192,7 +192,7 @@ static int __kprobes kprobe_handler(struct pt_regs *regs)
- 				ret = 1;
- 				goto no_kprobe;
- 			}
--			p = __this_cpu_read(current_kprobe);
-+			p = __get_cpu_var(current_kprobe);
- 			if (p->break_handler && p->break_handler(p, regs)) {
- 				goto ss_probe;
- 			}
-diff --git a/arch/powerpc/kernel/mce.c b/arch/powerpc/kernel/mce.c
-index 15c99b6..a7fd4cb 100644
---- a/arch/powerpc/kernel/mce.c
-+++ b/arch/powerpc/kernel/mce.c
-@@ -73,8 +73,8 @@ void save_mce_event(struct pt_regs *regs, long handled,
- 		    uint64_t nip, uint64_t addr)
- {
- 	uint64_t srr1;
--	int index = __this_cpu_inc_return(mce_nest_count);
--	struct machine_check_event *mce = this_cpu_ptr(&mce_event[index]);
-+	int index = __get_cpu_var(mce_nest_count)++;
-+	struct machine_check_event *mce = &__get_cpu_var(mce_event[index]);
- 
- 	/*
- 	 * Return if we don't have enough space to log mce event.
-@@ -143,7 +143,7 @@ void save_mce_event(struct pt_regs *regs, long handled,
-  */
- int get_mce_event(struct machine_check_event *mce, bool release)
- {
--	int index = __this_cpu_read(mce_nest_count) - 1;
-+	int index = __get_cpu_var(mce_nest_count) - 1;
- 	struct machine_check_event *mc_evt;
- 	int ret = 0;
- 
-@@ -153,7 +153,7 @@ int get_mce_event(struct machine_check_event *mce, bool release)
- 
- 	/* Check if we have MCE info to process. */
- 	if (index < MAX_MC_EVT) {
--		mc_evt = this_cpu_ptr(&mce_event[index]);
-+		mc_evt = &__get_cpu_var(mce_event[index]);
- 		/* Copy the event structure and release the original */
- 		if (mce)
- 			*mce = *mc_evt;
-@@ -163,7 +163,7 @@ int get_mce_event(struct machine_check_event *mce, bool release)
- 	}
- 	/* Decrement the count to free the slot. */
- 	if (release)
--		__this_cpu_dec(mce_nest_count);
-+		__get_cpu_var(mce_nest_count)--;
- 
- 	return ret;
- }
-@@ -184,13 +184,13 @@ void machine_check_queue_event(void)
- 	if (!get_mce_event(&evt, MCE_EVENT_RELEASE))
- 		return;
- 
--	index = __this_cpu_inc_return(mce_queue_count);
-+	index = __get_cpu_var(mce_queue_count)++;
- 	/* If queue is full, just return for now. */
- 	if (index >= MAX_MC_EVT) {
--		__this_cpu_dec(mce_queue_count);
-+		__get_cpu_var(mce_queue_count)--;
- 		return;
- 	}
--	memcpy(this_cpu_ptr(&mce_event_queue[index]), &evt, sizeof(evt));
-+	__get_cpu_var(mce_event_queue[index]) = evt;
- 
- 	/* Queue irq work to process this event later. */
- 	irq_work_queue(&mce_event_process_work);
-@@ -208,11 +208,11 @@ static void machine_check_process_queued_event(struct irq_work *work)
- 	 * For now just print it to console.
- 	 * TODO: log this error event to FSP or nvram.
- 	 */
--	while (__this_cpu_read(mce_queue_count) > 0) {
--		index = __this_cpu_read(mce_queue_count) - 1;
-+	while (__get_cpu_var(mce_queue_count) > 0) {
-+		index = __get_cpu_var(mce_queue_count) - 1;
- 		machine_check_print_event_info(
--				this_cpu_ptr(&mce_event_queue[index]));
--		__this_cpu_dec(mce_queue_count);
-+				&__get_cpu_var(mce_event_queue[index]));
-+		__get_cpu_var(mce_queue_count)--;
- 	}
+ static const struct block_device_operations axon_ram_devops = {
+diff --git a/drivers/block/brd.c b/drivers/block/brd.c
+index 3598110..78fe510 100644
+--- a/drivers/block/brd.c
++++ b/drivers/block/brd.c
+@@ -370,25 +370,23 @@ static int brd_rw_page(struct block_device *bdev, sector_t sector,
  }
  
-diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
-index 2df2f29..bf44ae9 100644
---- a/arch/powerpc/kernel/process.c
-+++ b/arch/powerpc/kernel/process.c
-@@ -498,7 +498,7 @@ static inline int set_dawr(struct arch_hw_breakpoint *brk)
- 
- void __set_breakpoint(struct arch_hw_breakpoint *brk)
+ #ifdef CONFIG_BLK_DEV_XIP
+-static int brd_direct_access(struct block_device *bdev, sector_t sector,
+-			void **kaddr, unsigned long *pfn)
++static long brd_direct_access(struct block_device *bdev, sector_t sector,
++			void **kaddr, unsigned long *pfn, long size)
  {
--	__this_cpu_write(current_brk, *brk);
-+	__get_cpu_var(current_brk) = *brk;
+ 	struct brd_device *brd = bdev->bd_disk->private_data;
+ 	struct page *page;
  
- 	if (cpu_has_feature(CPU_FTR_DAWR))
- 		set_dawr(brk);
-@@ -841,7 +841,7 @@ struct task_struct *__switch_to(struct task_struct *prev,
-  * schedule DABR
-  */
- #ifndef CONFIG_HAVE_HW_BREAKPOINT
--	if (unlikely(!hw_brk_match(this_cpu_ptr(&current_brk), &new->thread.hw_brk)))
-+	if (unlikely(!hw_brk_match(&__get_cpu_var(current_brk), &new->thread.hw_brk)))
- 		__set_breakpoint(&new->thread.hw_brk);
- #endif /* CONFIG_HAVE_HW_BREAKPOINT */
+ 	if (!brd)
+ 		return -ENODEV;
+-	if (sector & (PAGE_SECTORS-1))
+-		return -EINVAL;
+-	if (sector + PAGE_SECTORS > get_capacity(bdev->bd_disk))
+-		return -ERANGE;
+ 	page = brd_insert_page(brd, sector);
+ 	if (!page)
+ 		return -ENOSPC;
+ 	*kaddr = page_address(page);
+ 	*pfn = page_to_pfn(page);
+ 
+-	return 0;
++	/* If size > PAGE_SIZE, we could look to see if the next page in the
++	 * file happens to be mapped to the next page of physical RAM */
++	return PAGE_SIZE;
+ }
  #endif
-@@ -855,7 +855,7 @@ struct task_struct *__switch_to(struct task_struct *prev,
- 	 * Collect processor utilization data per process
- 	 */
- 	if (firmware_has_feature(FW_FEATURE_SPLPAR)) {
--		struct cpu_usage *cu = this_cpu_ptr(&cpu_usage_array);
-+		struct cpu_usage *cu = &__get_cpu_var(cpu_usage_array);
- 		long unsigned start_tb, current_tb;
- 		start_tb = old_thread->start_tb;
- 		cu->current_tb = current_tb = mfspr(SPRN_PURR);
-@@ -865,7 +865,7 @@ struct task_struct *__switch_to(struct task_struct *prev,
- #endif /* CONFIG_PPC64 */
  
- #ifdef CONFIG_PPC_BOOK3S_64
--	batch = this_cpu_ptr(&ppc64_tlb_batch);
-+	batch = &__get_cpu_var(ppc64_tlb_batch);
- 	if (batch->active) {
- 		current_thread_info()->local_flags |= _TLF_LAZY_MMU;
- 		if (batch->index)
-@@ -888,7 +888,7 @@ struct task_struct *__switch_to(struct task_struct *prev,
- #ifdef CONFIG_PPC_BOOK3S_64
- 	if (current_thread_info()->local_flags & _TLF_LAZY_MMU) {
- 		current_thread_info()->local_flags &= ~_TLF_LAZY_MMU;
--		batch = this_cpu_ptr(&ppc64_tlb_batch);
-+		batch = &__get_cpu_var(ppc64_tlb_batch);
- 		batch->active = 1;
- 	}
- #endif /* CONFIG_PPC_BOOK3S_64 */
-diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
-index 60391a5..a0738af 100644
---- a/arch/powerpc/kernel/smp.c
-+++ b/arch/powerpc/kernel/smp.c
-@@ -242,7 +242,7 @@ void smp_muxed_ipi_message_pass(int cpu, int msg)
+diff --git a/drivers/s390/block/dcssblk.c b/drivers/s390/block/dcssblk.c
+index 0f47175..96bc411 100644
+--- a/drivers/s390/block/dcssblk.c
++++ b/drivers/s390/block/dcssblk.c
+@@ -28,8 +28,8 @@
+ static int dcssblk_open(struct block_device *bdev, fmode_t mode);
+ static void dcssblk_release(struct gendisk *disk, fmode_t mode);
+ static void dcssblk_make_request(struct request_queue *q, struct bio *bio);
+-static int dcssblk_direct_access(struct block_device *bdev, sector_t secnum,
+-				 void **kaddr, unsigned long *pfn);
++static long dcssblk_direct_access(struct block_device *bdev, sector_t secnum,
++				 void **kaddr, unsigned long *pfn, long size);
  
- irqreturn_t smp_ipi_demux(void)
- {
--	struct cpu_messages *info = this_cpu_ptr(&ipi_message);
-+	struct cpu_messages *info = &__get_cpu_var(ipi_message);
- 	unsigned int all;
+ static char dcssblk_segments[DCSSBLK_PARM_LEN] = "\0";
  
- 	mb();	/* order any irq clear */
-@@ -438,9 +438,9 @@ void generic_mach_cpu_die(void)
- 	idle_task_exit();
- 	cpu = smp_processor_id();
- 	printk(KERN_DEBUG "CPU%d offline\n", cpu);
--	__this_cpu_write(cpu_state, CPU_DEAD);
-+	__get_cpu_var(cpu_state) = CPU_DEAD;
- 	smp_wmb();
--	while (__this_cpu_read(cpu_state) != CPU_UP_PREPARE)
-+	while (__get_cpu_var(cpu_state) != CPU_UP_PREPARE)
- 		cpu_relax();
+@@ -866,25 +866,22 @@ fail:
+ 	bio_io_error(bio);
  }
  
-diff --git a/arch/powerpc/kernel/sysfs.c b/arch/powerpc/kernel/sysfs.c
-index fa1fd8a..67fd2fd 100644
---- a/arch/powerpc/kernel/sysfs.c
-+++ b/arch/powerpc/kernel/sysfs.c
-@@ -394,10 +394,10 @@ void ppc_enable_pmcs(void)
- 	ppc_set_pmu_inuse(1);
- 
- 	/* Only need to enable them once */
--	if (__this_cpu_read(pmcs_enabled))
-+	if (__get_cpu_var(pmcs_enabled))
- 		return;
- 
--	__this_cpu_write(pmcs_enabled, 1);
-+	__get_cpu_var(pmcs_enabled) = 1;
- 
- 	if (ppc_md.enable_pmcs)
- 		ppc_md.enable_pmcs();
-diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
-index 4769e5b..368ab37 100644
---- a/arch/powerpc/kernel/time.c
-+++ b/arch/powerpc/kernel/time.c
-@@ -458,9 +458,9 @@ static inline void clear_irq_work_pending(void)
- 
- DEFINE_PER_CPU(u8, irq_work_pending);
- 
--#define set_irq_work_pending_flag()	__this_cpu_write(irq_work_pending, 1)
--#define test_irq_work_pending()		__this_cpu_read(irq_work_pending)
--#define clear_irq_work_pending()	__this_cpu_write(irq_work_pending, 0)
-+#define set_irq_work_pending_flag()	__get_cpu_var(irq_work_pending) = 1
-+#define test_irq_work_pending()		__get_cpu_var(irq_work_pending)
-+#define clear_irq_work_pending()	__get_cpu_var(irq_work_pending) = 0
- 
- #endif /* 32 vs 64 bit */
- 
-@@ -482,8 +482,8 @@ void arch_irq_work_raise(void)
- void __timer_interrupt(void)
+-static int
++static long
+ dcssblk_direct_access (struct block_device *bdev, sector_t secnum,
+-			void **kaddr, unsigned long *pfn)
++			void **kaddr, unsigned long *pfn, long size)
  {
- 	struct pt_regs *regs = get_irq_regs();
--	u64 *next_tb = this_cpu_ptr(&decrementers_next_tb);
--	struct clock_event_device *evt = this_cpu_ptr(&decrementers);
-+	u64 *next_tb = &__get_cpu_var(decrementers_next_tb);
-+	struct clock_event_device *evt = &__get_cpu_var(decrementers);
- 	u64 now;
+ 	struct dcssblk_dev_info *dev_info;
+-	unsigned long pgoff;
++	unsigned long offset, dev_sz;
  
- 	trace_timer_interrupt_entry(regs);
-@@ -498,7 +498,7 @@ void __timer_interrupt(void)
- 		*next_tb = ~(u64)0;
- 		if (evt->event_handler)
- 			evt->event_handler(evt);
--		__this_cpu_inc(irq_stat.timer_irqs_event);
-+		__get_cpu_var(irq_stat).timer_irqs_event++;
- 	} else {
- 		now = *next_tb - now;
- 		if (now <= DECREMENTER_MAX)
-@@ -506,13 +506,13 @@ void __timer_interrupt(void)
- 		/* We may have raced with new irq work */
- 		if (test_irq_work_pending())
- 			set_dec(1);
--		__this_cpu_inc(irq_stat.timer_irqs_others);
-+		__get_cpu_var(irq_stat).timer_irqs_others++;
- 	}
+ 	dev_info = bdev->bd_disk->private_data;
+ 	if (!dev_info)
+ 		return -ENODEV;
+-	if (secnum % (PAGE_SIZE/512))
+-		return -EINVAL;
+-	pgoff = secnum / (PAGE_SIZE / 512);
+-	if ((pgoff+1)*PAGE_SIZE-1 > dev_info->end - dev_info->start)
+-		return -ERANGE;
+-	*kaddr = (void *) (dev_info->start+pgoff*PAGE_SIZE);
++	dev_sz = dev_info->end - dev_info->start;
++	offset = secnum * 512;
++	*kaddr = (void *) (dev_info->start + offset);
+ 	*pfn = virt_to_phys(*kaddr) >> PAGE_SHIFT;
  
- #ifdef CONFIG_PPC64
- 	/* collect purr register values often, for accurate calculations */
- 	if (firmware_has_feature(FW_FEATURE_SPLPAR)) {
--		struct cpu_usage *cu = this_cpu_ptr(&cpu_usage_array);
-+		struct cpu_usage *cu = &__get_cpu_var(cpu_usage_array);
- 		cu->current_tb = mfspr(SPRN_PURR);
- 	}
- #endif
-@@ -527,7 +527,7 @@ void __timer_interrupt(void)
- void timer_interrupt(struct pt_regs * regs)
- {
- 	struct pt_regs *old_regs;
--	u64 *next_tb = this_cpu_ptr(&decrementers_next_tb);
-+	u64 *next_tb = &__get_cpu_var(decrementers_next_tb);
- 
- 	/* Ensure a positive value is written to the decrementer, or else
- 	 * some CPUs will continue to take decrementer exceptions.
-@@ -813,7 +813,7 @@ static void __init clocksource_init(void)
- static int decrementer_set_next_event(unsigned long evt,
- 				      struct clock_event_device *dev)
- {
--	__this_cpu_write(decrementers_next_tb, get_tb_or_rtc() + evt);
-+	__get_cpu_var(decrementers_next_tb) = get_tb_or_rtc() + evt;
- 	set_dec(evt);
- 
- 	/* We may have raced with new irq work */
-@@ -833,7 +833,7 @@ static void decrementer_set_mode(enum clock_event_mode mode,
- /* Interrupt handler for the timer broadcast IPI */
- void tick_broadcast_ipi_handler(void)
- {
--	u64 *next_tb = this_cpu_ptr(&decrementers_next_tb);
-+	u64 *next_tb = &__get_cpu_var(decrementers_next_tb);
- 
- 	*next_tb = get_tb_or_rtc();
- 	__timer_interrupt();
-diff --git a/arch/powerpc/kernel/traps.c b/arch/powerpc/kernel/traps.c
-index e6595b7..0dc43f9 100644
---- a/arch/powerpc/kernel/traps.c
-+++ b/arch/powerpc/kernel/traps.c
-@@ -295,7 +295,7 @@ long machine_check_early(struct pt_regs *regs)
- {
- 	long handled = 0;
- 
--	__this_cpu_inc(irq_stat.mce_exceptions);
-+	__get_cpu_var(irq_stat).mce_exceptions++;
- 
- 	if (cur_cpu_spec && cur_cpu_spec->machine_check_early)
- 		handled = cur_cpu_spec->machine_check_early(regs);
-@@ -304,7 +304,7 @@ long machine_check_early(struct pt_regs *regs)
- 
- long hmi_exception_realmode(struct pt_regs *regs)
- {
--	__this_cpu_inc(irq_stat.hmi_exceptions);
-+	__get_cpu_var(irq_stat).hmi_exceptions++;
- 
- 	if (ppc_md.hmi_exception_early)
- 		ppc_md.hmi_exception_early(regs);
-@@ -700,7 +700,7 @@ void machine_check_exception(struct pt_regs *regs)
- 	enum ctx_state prev_state = exception_enter();
- 	int recover = 0;
- 
--	__this_cpu_inc(irq_stat.mce_exceptions);
-+	__get_cpu_var(irq_stat).mce_exceptions++;
- 
- 	/* See if any machine dependent calls. In theory, we would want
- 	 * to call the CPU first, and call the ppc_md. one if the CPU
-@@ -1519,7 +1519,7 @@ void vsx_unavailable_tm(struct pt_regs *regs)
- 
- void performance_monitor_exception(struct pt_regs *regs)
- {
--	__this_cpu_inc(irq_stat.pmu_irqs);
-+	__get_cpu_var(irq_stat).pmu_irqs++;
- 
- 	perf_irq(regs);
- }
-diff --git a/arch/powerpc/kvm/e500.c b/arch/powerpc/kvm/e500.c
-index 1609584..2e02ed8 100644
---- a/arch/powerpc/kvm/e500.c
-+++ b/arch/powerpc/kvm/e500.c
-@@ -76,11 +76,11 @@ static inline int local_sid_setup_one(struct id *entry)
- 	unsigned long sid;
- 	int ret = -1;
- 
--	sid = __this_cpu_inc_return(pcpu_last_used_sid);
-+	sid = ++(__get_cpu_var(pcpu_last_used_sid));
- 	if (sid < NUM_TIDS) {
--		__this_cpu_write(pcpu_sids)entry[sid], entry);
-+		__get_cpu_var(pcpu_sids).entry[sid] = entry;
- 		entry->val = sid;
--		entry->pentry = this_cpu_ptr(&pcpu_sids.entry[sid]);
-+		entry->pentry = &__get_cpu_var(pcpu_sids).entry[sid];
- 		ret = sid;
- 	}
- 
-@@ -108,8 +108,8 @@ static inline int local_sid_setup_one(struct id *entry)
- static inline int local_sid_lookup(struct id *entry)
- {
- 	if (entry && entry->val != 0 &&
--	    __this_cpu_read(pcpu_sids.entry[entry->val]) == entry &&
--	    entry->pentry == this_cpu_ptr(&pcpu_sids.entry[entry->val]))
-+	    __get_cpu_var(pcpu_sids).entry[entry->val] == entry &&
-+	    entry->pentry == &__get_cpu_var(pcpu_sids).entry[entry->val])
- 		return entry->val;
- 	return -1;
- }
-@@ -117,8 +117,8 @@ static inline int local_sid_lookup(struct id *entry)
- /* Invalidate all id mappings on local core -- call with preempt disabled */
- static inline void local_sid_destroy_all(void)
- {
--	__this_cpu_write(pcpu_last_used_sid, 0);
--	memset(this_cpu_ptr(&pcpu_sids), 0, sizeof(pcpu_sids));
-+	__get_cpu_var(pcpu_last_used_sid) = 0;
-+	memset(&__get_cpu_var(pcpu_sids), 0, sizeof(__get_cpu_var(pcpu_sids)));
+-	return 0;
++	return dev_sz - offset;
  }
  
- static void *kvmppc_e500_id_table_alloc(struct kvmppc_vcpu_e500 *vcpu_e500)
-diff --git a/arch/powerpc/kvm/e500mc.c b/arch/powerpc/kvm/e500mc.c
-index 6ef54e5..164bad2 100644
---- a/arch/powerpc/kvm/e500mc.c
-+++ b/arch/powerpc/kvm/e500mc.c
-@@ -141,9 +141,9 @@ static void kvmppc_core_vcpu_load_e500mc(struct kvm_vcpu *vcpu, int cpu)
- 	mtspr(SPRN_GESR, vcpu->arch.shared->esr);
- 
- 	if (vcpu->arch.oldpir != mfspr(SPRN_PIR) ||
--	    __this_cpu_read(last_vcpu_of_lpid[vcpu->kvm->arch.lpid]) != vcpu) {
-+	    __get_cpu_var(last_vcpu_of_lpid)[vcpu->kvm->arch.lpid] != vcpu) {
- 		kvmppc_e500_tlbil_all(vcpu_e500);
--		__this_cpu_write(last_vcpu_of_lpid[vcpu->kvm->arch.lpid], vcpu);
-+		__get_cpu_var(last_vcpu_of_lpid)[vcpu->kvm->arch.lpid] = vcpu;
- 	}
- 
- 	kvmppc_load_guest_fp(vcpu);
-diff --git a/arch/powerpc/mm/hash_native_64.c b/arch/powerpc/mm/hash_native_64.c
-index 504a16f..afc0a82 100644
---- a/arch/powerpc/mm/hash_native_64.c
-+++ b/arch/powerpc/mm/hash_native_64.c
-@@ -625,7 +625,7 @@ static void native_flush_hash_range(unsigned long number, int local)
- 	unsigned long want_v;
- 	unsigned long flags;
- 	real_pte_t pte;
--	struct ppc64_tlb_batch *batch = this_cpu_ptr(&ppc64_tlb_batch);
-+	struct ppc64_tlb_batch *batch = &__get_cpu_var(ppc64_tlb_batch);
- 	unsigned long psize = batch->psize;
- 	int ssize = batch->ssize;
- 	int i;
-diff --git a/arch/powerpc/mm/hash_utils_64.c b/arch/powerpc/mm/hash_utils_64.c
-index 060d51f..daee7f4 100644
---- a/arch/powerpc/mm/hash_utils_64.c
-+++ b/arch/powerpc/mm/hash_utils_64.c
-@@ -1314,7 +1314,7 @@ void flush_hash_range(unsigned long number, int local)
- 	else {
- 		int i;
- 		struct ppc64_tlb_batch *batch =
--			this_cpu_ptr(&ppc64_tlb_batch);
-+			&__get_cpu_var(ppc64_tlb_batch);
- 
- 		for (i = 0; i < number; i++)
- 			flush_hash_page(batch->vpn[i], batch->pte[i],
-diff --git a/arch/powerpc/mm/hugetlbpage-book3e.c b/arch/powerpc/mm/hugetlbpage-book3e.c
-index ba47aaf..5e4ee25 100644
---- a/arch/powerpc/mm/hugetlbpage-book3e.c
-+++ b/arch/powerpc/mm/hugetlbpage-book3e.c
-@@ -33,13 +33,13 @@ static inline int tlb1_next(void)
- 
- 	ncams = mfspr(SPRN_TLB1CFG) & TLBnCFG_N_ENTRY;
- 
--	index = this_cpu_read(next_tlbcam_idx);
-+	index = __get_cpu_var(next_tlbcam_idx);
- 
- 	/* Just round-robin the entries and wrap when we hit the end */
- 	if (unlikely(index == ncams - 1))
--		__this_cpu_write(next_tlbcam_idx, tlbcam_index);
-+		__get_cpu_var(next_tlbcam_idx) = tlbcam_index;
- 	else
--		__this_cpu_inc(next_tlbcam_idx);
-+		__get_cpu_var(next_tlbcam_idx)++;
- 
- 	return index;
+ static void
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index 6d72746..ffe0761 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -427,6 +427,46 @@ int bdev_write_page(struct block_device *bdev, sector_t sector,
  }
-diff --git a/arch/powerpc/mm/hugetlbpage.c b/arch/powerpc/mm/hugetlbpage.c
-index 8aa04f0..7e70ae9 100644
---- a/arch/powerpc/mm/hugetlbpage.c
-+++ b/arch/powerpc/mm/hugetlbpage.c
-@@ -462,7 +462,7 @@ static void hugepd_free(struct mmu_gather *tlb, void *hugepte)
- {
- 	struct hugepd_freelist **batchp;
+ EXPORT_SYMBOL_GPL(bdev_write_page);
  
--	batchp = this_cpu_ptr(&hugepd_freelist_cur);
-+	batchp = &get_cpu_var(hugepd_freelist_cur);
- 
- 	if (atomic_read(&tlb->mm->mm_users) < 2 ||
- 	    cpumask_equal(mm_cpumask(tlb->mm),
-diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
-index 690f9c7..b7cd00b 100644
---- a/arch/powerpc/perf/core-book3s.c
-+++ b/arch/powerpc/perf/core-book3s.c
-@@ -339,7 +339,7 @@ static void power_pmu_bhrb_reset(void)
- 
- static void power_pmu_bhrb_enable(struct perf_event *event)
- {
--	struct cpu_hw_events *cpuhw = this_cpu_ptr(&cpu_hw_events);
-+	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
- 
- 	if (!ppmu->bhrb_nr)
- 		return;
-@@ -354,7 +354,7 @@ static void power_pmu_bhrb_enable(struct perf_event *event)
- 
- static void power_pmu_bhrb_disable(struct perf_event *event)
- {
--	struct cpu_hw_events *cpuhw = this_cpu_ptr(&cpu_hw_events);
-+	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
- 
- 	if (!ppmu->bhrb_nr)
- 		return;
-@@ -1144,7 +1144,7 @@ static void power_pmu_disable(struct pmu *pmu)
- 	if (!ppmu)
- 		return;
- 	local_irq_save(flags);
--	cpuhw = this_cpu_ptr(&cpu_hw_events);
-+	cpuhw = &__get_cpu_var(cpu_hw_events);
- 
- 	if (!cpuhw->disabled) {
- 		/*
-@@ -1211,7 +1211,7 @@ static void power_pmu_enable(struct pmu *pmu)
- 		return;
- 	local_irq_save(flags);
- 
--	cpuhw = this_cpu_ptr(&cpu_hw_events);
-+	cpuhw = &__get_cpu_var(cpu_hw_events);
- 	if (!cpuhw->disabled)
- 		goto out;
- 
-@@ -1403,7 +1403,7 @@ static int power_pmu_add(struct perf_event *event, int ef_flags)
- 	 * Add the event to the list (if there is room)
- 	 * and check whether the total set is still feasible.
- 	 */
--	cpuhw = this_cpu_ptr(&cpu_hw_events);
-+	cpuhw = &__get_cpu_var(cpu_hw_events);
- 	n0 = cpuhw->n_events;
- 	if (n0 >= ppmu->n_counter)
- 		goto out;
-@@ -1469,7 +1469,7 @@ static void power_pmu_del(struct perf_event *event, int ef_flags)
- 
- 	power_pmu_read(event);
- 
--	cpuhw = this_cpu_ptr(&cpu_hw_events);
-+	cpuhw = &__get_cpu_var(cpu_hw_events);
- 	for (i = 0; i < cpuhw->n_events; ++i) {
- 		if (event == cpuhw->event[i]) {
- 			while (++i < cpuhw->n_events) {
-@@ -1575,7 +1575,7 @@ static void power_pmu_stop(struct perf_event *event, int ef_flags)
++/**
++ * bdev_direct_access() - Get the address for directly-accessibly memory
++ * @bdev: The device containing the memory
++ * @sector: The offset within the device
++ * @addr: Where to put the address of the memory
++ * @pfn: The Page Frame Number for the memory
++ * @size: The number of bytes requested
++ *
++ * If a block device is made up of directly addressable memory, this function
++ * will tell the caller the PFN and the address of the memory.  The address
++ * may be directly dereferenced within the kernel without the need to call
++ * ioremap(), kmap() or similar.  The PFN is suitable for inserting into
++ * page tables.
++ *
++ * Return: negative errno if an error occurs, otherwise the number of bytes
++ * accessible at this address.
++ */
++long bdev_direct_access(struct block_device *bdev, sector_t sector,
++			void **addr, unsigned long *pfn, long size)
++{
++	long avail;
++	const struct block_device_operations *ops = bdev->bd_disk->fops;
++
++	if (size < 0)
++		return size;
++	if (!ops->direct_access)
++		return -EOPNOTSUPP;
++	if ((sector + DIV_ROUND_UP(size, 512)) >
++					part_nr_sects_read(bdev->bd_part))
++		return -ERANGE;
++	sector += get_start_sect(bdev);
++	if (sector % (PAGE_SIZE / 512))
++		return -EINVAL;
++	avail = ops->direct_access(bdev, sector, addr, pfn, size);
++	if (!avail)
++		return -ERANGE;
++	return min(avail, size);
++}
++EXPORT_SYMBOL_GPL(bdev_direct_access);
++
+ /*
+  * pseudo-fs
   */
- void power_pmu_start_txn(struct pmu *pmu)
+diff --git a/fs/ext2/xip.c b/fs/ext2/xip.c
+index e98171a..bbc5fec 100644
+--- a/fs/ext2/xip.c
++++ b/fs/ext2/xip.c
+@@ -13,18 +13,12 @@
+ #include "ext2.h"
+ #include "xip.h"
+ 
+-static inline int
+-__inode_direct_access(struct inode *inode, sector_t block,
+-		      void **kaddr, unsigned long *pfn)
++static inline long __inode_direct_access(struct inode *inode, sector_t block,
++				void **kaddr, unsigned long *pfn, long size)
  {
--	struct cpu_hw_events *cpuhw = this_cpu_ptr(&cpu_hw_events);
-+	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
- 
- 	perf_pmu_disable(pmu);
- 	cpuhw->group_flag |= PERF_EVENT_TXN;
-@@ -1589,7 +1589,7 @@ void power_pmu_start_txn(struct pmu *pmu)
-  */
- void power_pmu_cancel_txn(struct pmu *pmu)
- {
--	struct cpu_hw_events *cpuhw = this_cpu_ptr(&cpu_hw_events);
-+	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
- 
- 	cpuhw->group_flag &= ~PERF_EVENT_TXN;
- 	perf_pmu_enable(pmu);
-@@ -1607,7 +1607,7 @@ int power_pmu_commit_txn(struct pmu *pmu)
- 
- 	if (!ppmu)
- 		return -EAGAIN;
--	cpuhw = this_cpu_ptr(&cpu_hw_events);
-+	cpuhw = &__get_cpu_var(cpu_hw_events);
- 	n = cpuhw->n_events;
- 	if (check_excludes(cpuhw->event, cpuhw->flags, 0, n))
- 		return -EAGAIN;
-@@ -1964,7 +1964,7 @@ static void record_and_restart(struct perf_event *event, unsigned long val,
- 
- 		if (event->attr.sample_type & PERF_SAMPLE_BRANCH_STACK) {
- 			struct cpu_hw_events *cpuhw;
--			cpuhw = this_cpu_ptr(&cpu_hw_events);
-+			cpuhw = &__get_cpu_var(cpu_hw_events);
- 			power_pmu_bhrb_read(cpuhw);
- 			data.br_stack = &cpuhw->bhrb_stack;
- 		}
-@@ -2037,7 +2037,7 @@ static bool pmc_overflow(unsigned long val)
- static void perf_event_interrupt(struct pt_regs *regs)
- {
- 	int i, j;
--	struct cpu_hw_events *cpuhw = this_cpu_ptr(&cpu_hw_events);
-+	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
- 	struct perf_event *event;
- 	unsigned long val[8];
- 	int found, active;
-diff --git a/arch/powerpc/perf/core-fsl-emb.c b/arch/powerpc/perf/core-fsl-emb.c
-index 4acaea0..d35ae52 100644
---- a/arch/powerpc/perf/core-fsl-emb.c
-+++ b/arch/powerpc/perf/core-fsl-emb.c
-@@ -210,7 +210,7 @@ static void fsl_emb_pmu_disable(struct pmu *pmu)
- 	unsigned long flags;
- 
- 	local_irq_save(flags);
--	cpuhw = this_cpu_ptr(&cpu_hw_events);
-+	cpuhw = &__get_cpu_var(cpu_hw_events);
- 
- 	if (!cpuhw->disabled) {
- 		cpuhw->disabled = 1;
-@@ -249,7 +249,7 @@ static void fsl_emb_pmu_enable(struct pmu *pmu)
- 	unsigned long flags;
- 
- 	local_irq_save(flags);
--	cpuhw = this_cpu_ptr(&cpu_hw_events);
-+	cpuhw = &__get_cpu_var(cpu_hw_events);
- 	if (!cpuhw->disabled)
- 		goto out;
- 
-@@ -653,7 +653,7 @@ static void record_and_restart(struct perf_event *event, unsigned long val,
- static void perf_event_interrupt(struct pt_regs *regs)
- {
- 	int i;
--	struct cpu_hw_events *cpuhw = this_cpu_ptr(&cpu_hw_events);
-+	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
- 	struct perf_event *event;
- 	unsigned long val;
- 	int found = 0;
-diff --git a/arch/powerpc/platforms/cell/interrupt.c b/arch/powerpc/platforms/cell/interrupt.c
-index 4c11421..8a106b4 100644
---- a/arch/powerpc/platforms/cell/interrupt.c
-+++ b/arch/powerpc/platforms/cell/interrupt.c
-@@ -82,7 +82,7 @@ static void iic_unmask(struct irq_data *d)
- 
- static void iic_eoi(struct irq_data *d)
- {
--	struct iic *iic = this_cpu_ptr(&cpu_iic);
-+	struct iic *iic = &__get_cpu_var(cpu_iic);
- 	out_be64(&iic->regs->prio, iic->eoi_stack[--iic->eoi_ptr]);
- 	BUG_ON(iic->eoi_ptr < 0);
- }
-@@ -148,7 +148,7 @@ static unsigned int iic_get_irq(void)
- 	struct iic *iic;
- 	unsigned int virq;
- 
--	iic = this_cpu_ptr(&cpu_iic);
-+	iic = &__get_cpu_var(cpu_iic);
- 	*(unsigned long *) &pending =
- 		in_be64((u64 __iomem *) &iic->regs->pending_destr);
- 	if (!(pending.flags & CBE_IIC_IRQ_VALID))
-@@ -163,7 +163,7 @@ static unsigned int iic_get_irq(void)
- 
- void iic_setup_cpu(void)
- {
--	out_be64(this_cpu_ptr(&cpu_iic.regs->prio), 0xff);
-+	out_be64(&__get_cpu_var(cpu_iic).regs->prio, 0xff);
+ 	struct block_device *bdev = inode->i_sb->s_bdev;
+-	const struct block_device_operations *ops = bdev->bd_disk->fops;
+-	sector_t sector;
+-
+-	sector = block * (PAGE_SIZE / 512); /* ext2 block to bdev sector */
+-
+-	BUG_ON(!ops->direct_access);
+-	return ops->direct_access(bdev, sector, kaddr, pfn);
++	sector_t sector = block * (PAGE_SIZE / 512);
++	return bdev_direct_access(bdev, sector, kaddr, pfn, size);
  }
  
- u8 iic_get_target_id(int cpu)
-diff --git a/arch/powerpc/platforms/powernv/opal-tracepoints.c b/arch/powerpc/platforms/powernv/opal-tracepoints.c
-index 9527e2a..d8a000a 100644
---- a/arch/powerpc/platforms/powernv/opal-tracepoints.c
-+++ b/arch/powerpc/platforms/powernv/opal-tracepoints.c
-@@ -48,7 +48,7 @@ void __trace_opal_entry(unsigned long opcode, unsigned long *args)
- 
- 	local_irq_save(flags);
- 
--	depth = this_cpu_ptr(&opal_trace_depth);
-+	depth = &__get_cpu_var(opal_trace_depth);
- 
- 	if (*depth)
- 		goto out;
-@@ -69,7 +69,7 @@ void __trace_opal_exit(long opcode, unsigned long retval)
- 
- 	local_irq_save(flags);
- 
--	depth = this_cpu_ptr(&opal_trace_depth);
-+	depth = &__get_cpu_var(opal_trace_depth);
- 
- 	if (*depth)
- 		goto out;
-diff --git a/arch/powerpc/platforms/ps3/interrupt.c b/arch/powerpc/platforms/ps3/interrupt.c
-index a6c42f3..5f3b232 100644
---- a/arch/powerpc/platforms/ps3/interrupt.c
-+++ b/arch/powerpc/platforms/ps3/interrupt.c
-@@ -711,7 +711,7 @@ void __init ps3_register_ipi_irq(unsigned int cpu, unsigned int virq)
- 
- static unsigned int ps3_get_irq(void)
+ static inline int
+@@ -53,12 +47,13 @@ ext2_clear_xip_target(struct inode *inode, sector_t block)
  {
--	struct ps3_private *pd = this_cpu_ptr(&ps3_private);
-+	struct ps3_private *pd = &__get_cpu_var(ps3_private);
- 	u64 x = (pd->bmp.status & pd->bmp.mask);
- 	unsigned int plug;
+ 	void *kaddr;
+ 	unsigned long pfn;
+-	int rc;
++	long size;
  
-diff --git a/arch/powerpc/platforms/pseries/dtl.c b/arch/powerpc/platforms/pseries/dtl.c
-index 39049e4..1062f71 100644
---- a/arch/powerpc/platforms/pseries/dtl.c
-+++ b/arch/powerpc/platforms/pseries/dtl.c
-@@ -75,7 +75,7 @@ static atomic_t dtl_count;
-  */
- static void consume_dtle(struct dtl_entry *dtle, u64 index)
- {
--	struct dtl_ring *dtlr = this_cpu_ptr(&dtl_rings);
-+	struct dtl_ring *dtlr = &__get_cpu_var(dtl_rings);
- 	struct dtl_entry *wp = dtlr->write_ptr;
- 	struct lppaca *vpa = local_paca->lppaca_ptr;
- 
-diff --git a/arch/powerpc/platforms/pseries/hvCall_inst.c b/arch/powerpc/platforms/pseries/hvCall_inst.c
-index f02ec3a..4575f0c 100644
---- a/arch/powerpc/platforms/pseries/hvCall_inst.c
-+++ b/arch/powerpc/platforms/pseries/hvCall_inst.c
-@@ -110,7 +110,7 @@ static void probe_hcall_entry(void *ignored, unsigned long opcode, unsigned long
- 	if (opcode > MAX_HCALL_OPCODE)
- 		return;
- 
--	h = this_cpu_ptr(&hcall_stats[opcode / 4]);
-+	h = &__get_cpu_var(hcall_stats)[opcode / 4];
- 	h->tb_start = mftb();
- 	h->purr_start = mfspr(SPRN_PURR);
+-	rc = __inode_direct_access(inode, block, &kaddr, &pfn);
+-	if (!rc)
+-		clear_page(kaddr);
+-	return rc;
++	size = __inode_direct_access(inode, block, &kaddr, &pfn, PAGE_SIZE);
++	if (size < 0)
++		return size;
++	clear_page(kaddr);
++	return 0;
  }
-@@ -123,7 +123,7 @@ static void probe_hcall_exit(void *ignored, unsigned long opcode, unsigned long
- 	if (opcode > MAX_HCALL_OPCODE)
- 		return;
  
--	h = this_cpu_ptr(&hcall_stats[opcode / 4]);
-+	h = &__get_cpu_var(hcall_stats)[opcode / 4];
- 	h->num_calls++;
- 	h->tb_total += mftb() - h->tb_start;
- 	h->purr_total += mfspr(SPRN_PURR) - h->purr_start;
-diff --git a/arch/powerpc/platforms/pseries/iommu.c b/arch/powerpc/platforms/pseries/iommu.c
-index 8c355ed..4642d6a 100644
---- a/arch/powerpc/platforms/pseries/iommu.c
-+++ b/arch/powerpc/platforms/pseries/iommu.c
-@@ -200,7 +200,7 @@ static int tce_buildmulti_pSeriesLP(struct iommu_table *tbl, long tcenum,
- 
- 	local_irq_save(flags);	/* to protect tcep and the page behind it */
- 
--	tcep = __this_cpu_read(tce_page);
-+	tcep = __get_cpu_var(tce_page);
- 
- 	/* This is safe to do since interrupts are off when we're called
- 	 * from iommu_alloc{,_sg}()
-@@ -213,7 +213,7 @@ static int tce_buildmulti_pSeriesLP(struct iommu_table *tbl, long tcenum,
- 			return tce_build_pSeriesLP(tbl, tcenum, npages, uaddr,
- 					    direction, attrs);
- 		}
--		__this_cpu_write(tce_page, tcep);
-+		__get_cpu_var(tce_page) = tcep;
- 	}
- 
- 	rpn = __pa(uaddr) >> TCE_SHIFT;
-@@ -399,7 +399,7 @@ static int tce_setrange_multi_pSeriesLP(unsigned long start_pfn,
- 	long l, limit;
- 
- 	local_irq_disable();	/* to protect tcep and the page behind it */
--	tcep = __this_cpu_read(tce_page);
-+	tcep = __get_cpu_var(tce_page);
- 
- 	if (!tcep) {
- 		tcep = (__be64 *)__get_free_page(GFP_ATOMIC);
-@@ -407,7 +407,7 @@ static int tce_setrange_multi_pSeriesLP(unsigned long start_pfn,
- 			local_irq_enable();
- 			return -ENOMEM;
- 		}
--		__this_cpu_write(tce_page, tcep);
-+		__get_cpu_var(tce_page) = tcep;
- 	}
- 
- 	proto_tce = TCE_PCI_READ | TCE_PCI_WRITE;
-diff --git a/arch/powerpc/platforms/pseries/lpar.c b/arch/powerpc/platforms/pseries/lpar.c
-index 56df72d..34e6423 100644
---- a/arch/powerpc/platforms/pseries/lpar.c
-+++ b/arch/powerpc/platforms/pseries/lpar.c
-@@ -507,7 +507,7 @@ static void pSeries_lpar_flush_hash_range(unsigned long number, int local)
- 	unsigned long vpn;
- 	unsigned long i, pix, rc;
- 	unsigned long flags = 0;
--	struct ppc64_tlb_batch *batch = this_cpu_ptr(&ppc64_tlb_batch);
-+	struct ppc64_tlb_batch *batch = &__get_cpu_var(ppc64_tlb_batch);
- 	int lock_tlbie = !mmu_has_feature(MMU_FTR_LOCKLESS_TLBIE);
- 	unsigned long param[9];
- 	unsigned long hash, index, shift, hidx, slot;
-@@ -697,7 +697,7 @@ void __trace_hcall_entry(unsigned long opcode, unsigned long *args)
- 
- 	local_irq_save(flags);
- 
--	depth = this_cpu_ptr(&hcall_trace_depth);
-+	depth = &__get_cpu_var(hcall_trace_depth);
- 
- 	if (*depth)
- 		goto out;
-@@ -722,7 +722,7 @@ void __trace_hcall_exit(long opcode, unsigned long retval,
- 
- 	local_irq_save(flags);
- 
--	depth = this_cpu_ptr(&hcall_trace_depth);
-+	depth = &__get_cpu_var(hcall_trace_depth);
- 
- 	if (*depth)
- 		goto out;
-diff --git a/arch/powerpc/platforms/pseries/ras.c b/arch/powerpc/platforms/pseries/ras.c
-index 179a69f..dff05b9 100644
---- a/arch/powerpc/platforms/pseries/ras.c
-+++ b/arch/powerpc/platforms/pseries/ras.c
-@@ -302,8 +302,8 @@ static struct rtas_error_log *fwnmi_get_errinfo(struct pt_regs *regs)
- 	/* If it isn't an extended log we can use the per cpu 64bit buffer */
- 	h = (struct rtas_error_log *)&savep[1];
- 	if (!rtas_error_extended(h)) {
--		memcpy(this_cpu_ptr(&mce_data_buf), h, sizeof(__u64));
--		errhdr = (struct rtas_error_log *)this_cpu_ptr(&mce_data_buf);
-+		memcpy(&__get_cpu_var(mce_data_buf), h, sizeof(__u64));
-+		errhdr = (struct rtas_error_log *)&__get_cpu_var(mce_data_buf);
- 	} else {
- 		int len, error_log_length;
- 
-diff --git a/arch/powerpc/sysdev/xics/xics-common.c b/arch/powerpc/sysdev/xics/xics-common.c
-index 365249c..fe0cca4 100644
---- a/arch/powerpc/sysdev/xics/xics-common.c
-+++ b/arch/powerpc/sysdev/xics/xics-common.c
-@@ -155,7 +155,7 @@ int __init xics_smp_probe(void)
- 
- void xics_teardown_cpu(void)
+ void ext2_xip_verify_sb(struct super_block *sb)
+@@ -77,7 +72,7 @@ void ext2_xip_verify_sb(struct super_block *sb)
+ int ext2_get_xip_mem(struct address_space *mapping, pgoff_t pgoff, int create,
+ 				void **kmem, unsigned long *pfn)
  {
--	struct xics_cppr *os_cppr = this_cpu_ptr(&xics_cppr);
-+	struct xics_cppr *os_cppr = &__get_cpu_var(xics_cppr);
+-	int rc;
++	long rc;
+ 	sector_t block;
  
- 	/*
- 	 * we have to reset the cppr index to 0 because we're
+ 	/* first, retrieve the sector number */
+@@ -86,6 +81,6 @@ int ext2_get_xip_mem(struct address_space *mapping, pgoff_t pgoff, int create,
+ 		return rc;
+ 
+ 	/* retrieve address of the target data */
+-	rc = __inode_direct_access(mapping->host, block, kmem, pfn);
+-	return rc;
++	rc = __inode_direct_access(mapping->host, block, kmem, pfn, PAGE_SIZE);
++	return (rc < 0) ? rc : 0;
+ }
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 518b465..ac25166 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -1615,8 +1615,8 @@ struct block_device_operations {
+ 	int (*rw_page)(struct block_device *, sector_t, struct page *, int rw);
+ 	int (*ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
+ 	int (*compat_ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
+-	int (*direct_access) (struct block_device *, sector_t,
+-						void **, unsigned long *);
++	long (*direct_access)(struct block_device *, sector_t,
++					void **, unsigned long *pfn, long size);
+ 	unsigned int (*check_events) (struct gendisk *disk,
+ 				      unsigned int clearing);
+ 	/* ->media_changed() is DEPRECATED, use ->check_events() instead */
+@@ -1634,6 +1634,8 @@ extern int __blkdev_driver_ioctl(struct block_device *, fmode_t, unsigned int,
+ extern int bdev_read_page(struct block_device *, sector_t, struct page *);
+ extern int bdev_write_page(struct block_device *, sector_t, struct page *,
+ 						struct writeback_control *);
++extern long bdev_direct_access(struct block_device *, sector_t, void **addr,
++						unsigned long *pfn, long size);
+ #else /* CONFIG_BLOCK */
+ 
+ struct block_device;
 -- 
 1.9.3
+
 
