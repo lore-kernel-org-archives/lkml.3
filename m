@@ -1,291 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935281AbaH0RFw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 13:05:52 -0400
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.149]:21631 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935246AbaH0RFu (ORCPT
+	id S1756809AbaH0RHU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 13:07:20 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:43696 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934904AbaH0RHS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 13:05:50 -0400
-X-Env-Sender: Andreas.Werner@men.de
-X-Msg-Ref: server-9.tower-178.messagelabs.com!1409158809!35899903!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Wed, 27 Aug 2014 19:00:10 +0200
-Date: Wed, 27 Aug 2014 19:52:06 +0200
-From: Andreas Werner <andreas.werner@men.de>
-To: <linux-kernel@vger.kernel.org>
-CC: <sameo@linux.intel.com>, <lee.jones@linaro.org>, <linux@roeck-us.net>,
-        <lm-sensors@lm-sensors.org>, <wim@iguana.be>,
-        <linux-watchdog@vger.kernel.org>, <cooloney@gmail.com>,
-        <rpurdie@rpsys.net>, <linux-leds@vger.kernel.org>
-Subject: [PATCH v6 2/4] drivers/watchdog/menf21bmc_wdt: introduce MEN
- 14F021P00 BMC Watchdog driver
-Message-ID: <f21b275c79866e0aa9bbc59e195ae5424e538300.1409161615.git.andreas.werner@men.de>
-References: <cover.1409161615.git.andreas.werner@men.de>
+	Wed, 27 Aug 2014 13:07:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <cover.1409161615.git.andreas.werner@men.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [192.1.1.171]
+In-Reply-To: <Pine.LNX.4.44L0.1408271035351.1460-100000@iolanthe.rowland.org>
+References: <CA+eFSM25V2_kKT7EBfPmahTknQu3jMS3+4PC_Af6C+1eHrFhWg@mail.gmail.com>
+	<Pine.LNX.4.44L0.1408271035351.1460-100000@iolanthe.rowland.org>
+Date: Thu, 28 Aug 2014 01:07:16 +0800
+Message-ID: <CA+eFSM1qokxsArUSOwSY8wd-VG_0JYT-pwRhu9-YgZkOccXkDg@mail.gmail.com>
+Subject: Re: About the reboot hang issue with EHCI driver on the Baytrail platform
+From: Gavin Guo <gavin.guo@canonical.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-usb@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
+        Anthony Wong <anthony.wong@canonical.com>, YK <yk@canonical.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added driver to support the 14F021P00 BMC Watchdog.
-The BMC is a Board Management Controller including watchdog functionality.
+Hi Alan,
 
-Signed-off-by: Andreas Werner <andreas.werner@men.de>
----
- drivers/watchdog/Kconfig         |  10 ++
- drivers/watchdog/Makefile        |   1 +
- drivers/watchdog/menf21bmc_wdt.c | 203 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 214 insertions(+)
- create mode 100644 drivers/watchdog/menf21bmc_wdt.c
+On Wed, Aug 27, 2014 at 10:38 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Wed, 27 Aug 2014, Gavin Guo wrote:
+>
+>> > Still, why not use the BIOS setting to disable EHCI?
+>>
+>> It's hardware enablement policy. By default, we can't change the BIOS
+>> setting to make the bug disappear until we find out the bug is due to
+>> BIOS's bug. Add kernel parameters is the temporary solution for the
+>> platform can ship. And if the bug is from kernel, we need to send
+>> patches to upstream and pull back to Ubuntu kernel or send to Ubuntu
+>> Kernel directly if it's a trivial solution like adding device id.
+>> However, as you said, in this case about the bug the root may be from
+>> BIOS code. So, we can coordinate with the OEM BIOS team to modify the
+>> default BIOS setting.
+>
+> There is no doubt that the BIOS is buggy.  Your log contains this line:
+>
+> [    2.804205] pci 0000:00:1d.0: EHCI: BIOS handoff failed (BIOS bug?) 01010001
+>
+> The only way that can happen is if the BIOS isn't working right.
+> However, this may be a different bug from the crashes you've been
+> seeing.
 
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index 76dd541..96d72c2 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -95,6 +95,16 @@ config GPIO_WATCHDOG
- 	  If you say yes here you get support for watchdog device
- 	  controlled through GPIO-line.
- 
-+config MENF21BMC_WATCHDOG
-+	tristate "MEN 14F021P00 BMC Watchdog"
-+	depends on MFD_MENF21BMC
-+	select WATCHDOG_CORE
-+	help
-+	  Say Y here to include support for the MEN 14F021P00 BMC Watchdog.
-+
-+	  This driver can also be built as a module. If so the module
-+	  will be called menf21bmc_wdt.
-+
- config WM831X_WATCHDOG
- 	tristate "WM831x watchdog"
- 	depends on MFD_WM831X
-diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-index 468c320..de17014 100644
---- a/drivers/watchdog/Makefile
-+++ b/drivers/watchdog/Makefile
-@@ -178,3 +178,4 @@ obj-$(CONFIG_WM831X_WATCHDOG) += wm831x_wdt.o
- obj-$(CONFIG_WM8350_WATCHDOG) += wm8350_wdt.o
- obj-$(CONFIG_MAX63XX_WATCHDOG) += max63xx_wdt.o
- obj-$(CONFIG_SOFT_WATCHDOG) += softdog.o
-+obj-$(CONFIG_MENF21BMC_WATCHDOG) += menf21bmc_wdt.o
-diff --git a/drivers/watchdog/menf21bmc_wdt.c b/drivers/watchdog/menf21bmc_wdt.c
-new file mode 100644
-index 0000000..2042874
---- /dev/null
-+++ b/drivers/watchdog/menf21bmc_wdt.c
-@@ -0,0 +1,203 @@
-+/*
-+ *  MEN 14F021P00 Board Management Controller (BMC) Watchdog Driver.
-+ *
-+ *  Copyright (C) 2014 MEN Mikro Elektronik Nuernberg GmbH
-+ *
-+ *  This program is free software; you can redistribute  it and/or modify it
-+ *  under  the terms of  the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the  License, or (at your
-+ *  option) any later version.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/device.h>
-+#include <linux/module.h>
-+#include <linux/watchdog.h>
-+#include <linux/platform_device.h>
-+#include <linux/i2c.h>
-+
-+#define DEVNAME "menf21bmc_wdt"
-+
-+#define BMC_CMD_WD_ON		0x11
-+#define BMC_CMD_WD_OFF		0x12
-+#define BMC_CMD_WD_TRIG		0x13
-+#define BMC_CMD_WD_TIME		0x14
-+#define BMC_CMD_WD_STATE	0x17
-+#define BMC_WD_OFF_VAL		0x69
-+#define BMC_CMD_RST_RSN		0x92
-+
-+#define BMC_WD_TIMEOUT_MIN	1	/* in sec */
-+#define BMC_WD_TIMEOUT_MAX	6553	/* in sec */
-+
-+static bool nowayout = WATCHDOG_NOWAYOUT;
-+module_param(nowayout, bool, 0);
-+MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
-+				__MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
-+
-+struct menf21bmc_wdt {
-+	struct watchdog_device wdt;
-+	struct i2c_client *i2c_client;
-+};
-+
-+static int menf21bmc_wdt_set_bootstatus(struct menf21bmc_wdt *data)
-+{
-+	int rst_rsn;
-+
-+	rst_rsn = i2c_smbus_read_byte_data(data->i2c_client, BMC_CMD_RST_RSN);
-+	if (rst_rsn < 0)
-+		return rst_rsn;
-+
-+	if (rst_rsn == 0x02)
-+		data->wdt.bootstatus |= WDIOF_CARDRESET;
-+	else if (rst_rsn == 0x05)
-+		data->wdt.bootstatus |= WDIOF_EXTERN1;
-+	else if (rst_rsn == 0x06)
-+		data->wdt.bootstatus |= WDIOF_EXTERN2;
-+	else if (rst_rsn == 0x0A)
-+		data->wdt.bootstatus |= WDIOF_POWERUNDER;
-+
-+	return 0;
-+}
-+
-+static int menf21bmc_wdt_start(struct watchdog_device *wdt)
-+{
-+	struct menf21bmc_wdt *drv_data = watchdog_get_drvdata(wdt);
-+
-+	return i2c_smbus_write_byte(drv_data->i2c_client, BMC_CMD_WD_ON);
-+}
-+
-+static int menf21bmc_wdt_stop(struct watchdog_device *wdt)
-+{
-+	struct menf21bmc_wdt *drv_data = watchdog_get_drvdata(wdt);
-+
-+	return i2c_smbus_write_byte_data(drv_data->i2c_client,
-+					 BMC_CMD_WD_OFF, BMC_WD_OFF_VAL);
-+}
-+
-+static int
-+menf21bmc_wdt_settimeout(struct watchdog_device *wdt, unsigned int timeout)
-+{
-+	int ret;
-+	struct menf21bmc_wdt *drv_data = watchdog_get_drvdata(wdt);
-+
-+	/*
-+	 *  BMC Watchdog does have a resolution of 100ms.
-+	 *  Watchdog API defines the timeout in seconds, so we have to
-+	 *  multiply the value.
-+	 */
-+	ret = i2c_smbus_write_word_data(drv_data->i2c_client,
-+					BMC_CMD_WD_TIME, timeout * 10);
-+	if (ret < 0)
-+		return ret;
-+
-+	wdt->timeout = timeout;
-+
-+	return 0;
-+}
-+
-+static int menf21bmc_wdt_ping(struct watchdog_device *wdt)
-+{
-+	struct menf21bmc_wdt *drv_data = watchdog_get_drvdata(wdt);
-+
-+	return i2c_smbus_write_byte(drv_data->i2c_client, BMC_CMD_WD_TRIG);
-+}
-+
-+static const struct watchdog_info menf21bmc_wdt_info = {
-+	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING,
-+	.identity = DEVNAME,
-+};
-+
-+static const struct watchdog_ops menf21bmc_wdt_ops = {
-+	.owner		= THIS_MODULE,
-+	.start		= menf21bmc_wdt_start,
-+	.stop		= menf21bmc_wdt_stop,
-+	.ping		= menf21bmc_wdt_ping,
-+	.set_timeout	= menf21bmc_wdt_settimeout,
-+};
-+
-+static int menf21bmc_wdt_probe(struct platform_device *pdev)
-+{
-+	int ret, bmc_timeout;
-+	struct menf21bmc_wdt *drv_data;
-+	struct i2c_client *i2c_client = to_i2c_client(pdev->dev.parent);
-+
-+	drv_data = devm_kzalloc(&pdev->dev,
-+				sizeof(struct menf21bmc_wdt), GFP_KERNEL);
-+	if (!drv_data)
-+		return -ENOMEM;
-+
-+	drv_data->wdt.ops = &menf21bmc_wdt_ops;
-+	drv_data->wdt.info = &menf21bmc_wdt_info;
-+	drv_data->wdt.min_timeout = BMC_WD_TIMEOUT_MIN;
-+	drv_data->wdt.max_timeout = BMC_WD_TIMEOUT_MAX;
-+	drv_data->i2c_client = i2c_client;
-+
-+	/*
-+	 * Get the current wdt timeout value from the BMC because
-+	 * the BMC will save the value set before if the system restarts.
-+	 */
-+	bmc_timeout = i2c_smbus_read_word_data(drv_data->i2c_client,
-+					       BMC_CMD_WD_TIME);
-+	if (bmc_timeout < 0) {
-+		dev_err(&pdev->dev, "failed to get current WDT timeout\n");
-+		return bmc_timeout;
-+	}
-+
-+	watchdog_init_timeout(&drv_data->wdt, bmc_timeout / 10, &pdev->dev);
-+	watchdog_set_nowayout(&drv_data->wdt, nowayout);
-+	watchdog_set_drvdata(&drv_data->wdt, drv_data);
-+	platform_set_drvdata(pdev, drv_data);
-+
-+	ret = menf21bmc_wdt_set_bootstatus(drv_data);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "failed to set Watchdog bootstatus\n");
-+		return ret;
-+	}
-+
-+	ret = watchdog_register_device(&drv_data->wdt);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to register Watchdog device\n");
-+		return ret;
-+	}
-+
-+	dev_info(&pdev->dev, "MEN 14F021P00 BMC Watchdog device enabled\n");
-+
-+	return 0;
-+}
-+
-+static int menf21bmc_wdt_remove(struct platform_device *pdev)
-+{
-+	struct menf21bmc_wdt *drv_data = platform_get_drvdata(pdev);
-+
-+	dev_warn(&pdev->dev,
-+		 "Unregister MEN 14F021P00 BMC Watchdog device, board may reset\n");
-+
-+	watchdog_unregister_device(&drv_data->wdt);
-+
-+	return 0;
-+}
-+
-+static void menf21bmc_wdt_shutdown(struct platform_device *pdev)
-+{
-+	struct menf21bmc_wdt *drv_data = platform_get_drvdata(pdev);
-+
-+	i2c_smbus_write_word_data(drv_data->i2c_client,
-+				  BMC_CMD_WD_OFF, BMC_WD_OFF_VAL);
-+}
-+
-+static struct  platform_driver menf21bmc_wdt = {
-+	.driver		= {
-+		.owner = THIS_MODULE,
-+		.name	= DEVNAME,
-+	},
-+	.probe		= menf21bmc_wdt_probe,
-+	.remove		= menf21bmc_wdt_remove,
-+	.shutdown	= menf21bmc_wdt_shutdown,
-+};
-+
-+module_platform_driver(menf21bmc_wdt);
-+
-+MODULE_DESCRIPTION("MEN 14F021P00 BMC Watchdog driver");
-+MODULE_AUTHOR("Andreas Werner <andreas.werner@men.de>");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:menf21bmc_wdt");
--- 
-2.0.4
+Thanks for your comments. I really appreciate your support.
 
+Gavin Guo
+
+>
+> Alan Stern
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
