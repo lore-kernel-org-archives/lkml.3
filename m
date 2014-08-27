@@ -1,253 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935458AbaH0R35 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 13:29:57 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:63589 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934674AbaH0R3z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 13:29:55 -0400
-From: mathieu.poirier@linaro.org
-To: afaerber@suse.de, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, mathieu.poirier@linaro.org
-Subject: [PATCH v5] coresight: bindings for coresight drivers
-Date: Wed, 27 Aug 2014 11:29:28 -0600
-Message-Id: <1409160568-7401-1-git-send-email-mathieu.poirier@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	id S935465AbaH0Rb5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 13:31:57 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:57288 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933914AbaH0Rb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 13:31:56 -0400
+Date: Wed, 27 Aug 2014 11:31:42 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Scot Doyle <lkml14@scotdoyle.com>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>,
+        Stefan Berger <stefanb@linux.vnet.ibm.com>,
+        Luigi Semenzato <semenzato@google.com>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v2] tpm_tis: verify interrupt during init
+Message-ID: <20140827173142.GA11183@obsidianresearch.com>
+References: <alpine.LNX.2.11.1408220043560.1360@localhost.localdomain>
+ <20140822160626.GA8477@obsidianresearch.com>
+ <alpine.LNX.2.11.1408221924070.1046@localhost.localdomain>
+ <20140822203241.GB1733@obsidianresearch.com>
+ <alpine.LNX.2.11.1408250629110.1207@localhost.localdomain>
+ <20140825182414.GB1298@obsidianresearch.com>
+ <alpine.LNX.2.11.1408270410190.701@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.11.1408270410190.701@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathieu Poirier <mathieu.poirier@linaro.org>
+On Wed, Aug 27, 2014 at 04:31:56AM +0000, Scot Doyle wrote:
+> > I think you'll have to directly test in the tis driver if the
+> > interrupt is working.
+> >
+> > The ordering in the TIS driver is wrong, interrupts should be turned
+> > on before any TPM commands are issued. This is what other drivers are
+> > doing.
+> >
+> > If you fix this, tis can then just count interrupts recieved and check
+> > if that is 0 to detect failure and then turn them off.
+> 
+> How about something like this?
+> 
+> It doesn't enable stock SeaBIOS machines to suspend/resume before the 30 
+> second interrupt timeout, unless using interrupts=0 or force=1.
 
-Coresight IP blocks allow for the support of HW assisted tracing
-on ARM SoCs.  Bindings for the currently available blocks are
-presented herein.
+? Can you explain that a bit more? interrupts should be detected off
+by suspend/resume time, surely?
 
-Signed-off-by: Pratik Patel <pratikp@codeaurora.org>
-Signed-off-by: Panchaxari Prasannamurthy <panchaxari.prasannamurthy@linaro.org>
-Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
----
-Changes for V5:
-   - Reformatted binding specification to improve readability.
-   - Fixed node specification in example.
+> +static bool interrupted = false;
+> +
 
- .../devicetree/bindings/arm/coresight.txt          | 203 +++++++++++++++++++++
- 1 file changed, 203 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/coresight.txt
+This needs to be stored in the private data.
 
-diff --git a/Documentation/devicetree/bindings/arm/coresight.txt b/Documentation/devicetree/bindings/arm/coresight.txt
-new file mode 100644
-index 0000000..96dd947
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/coresight.txt
-@@ -0,0 +1,203 @@
-+* CoreSight Components:
-+
-+CoreSight components are compliant with the ARM CoreSight architecture
-+specification and can be connected in various topologies to suit a particular
-+SoCs tracing needs. These trace components can generally be classified as sinks,
-+links and sources. Trace data produced by one or more sources flows through the
-+intermediate links connecting the source to the currently selected sink. Each
-+CoreSight component device should use these properties to describe its hardware
-+characteristcs.
-+
-+* Required properties for all components *except* non-configurable replicators:
-+
-+	* compatible: These have to be supplemented with "arm,primecell" as
-+	  drivers are using the AMBA bus interface.  Possible values include:
-+		- "arm,coresight-etb10", "arm,primecell";
-+		- "arm,coresight-tpiu", "arm,primecell";
-+		- "arm,coresight-tmc", "arm,primecell";
-+		- "arm,coresight-funnel", "arm,primecell";
-+		- "arm,coresight-etm3x", "arm,primecell";
-+
-+	* reg: physical base address and length of the register
-+	  set(s) of the component.
-+
-+	* clocks: the clock associated to this component.
-+
-+	* clock-names: the name of the clock as referenced by the code.
-+	  Since we are using the AMBA framework, the name should be
-+	  "apb_pclk".
-+
-+	* port or ports: The representation of the component's port
-+	  layout using the generic DT graph presentation found in
-+	  "bindings/graph.txt".
-+
-+* Required properties for devices that don't show up on the AMBA bus, such as
-+  non-configurable replicators:
-+
-+	* compatible: Currently supported value is (note the absence of the
-+	  AMBA markee):
-+		- "arm,coresight-replicator"
-+
-+	* id: a unique number that will identify this replicator.
-+
-+	* port or ports: same as above.
-+
-+* Optional properties for ETM/PTMs:
-+
-+	* arm,cp14: must be present if the system accesses ETM/PTM management registers
-+	  via co-processor 14.
-+
-+	* cpu: the cpu phandle this ETM/PTM is affined to. When omitted the source is
-+	  considered to belong to CPU0.
-+
-+* Optional property for TMC:
-+
-+	* arm,buffer-size: size of contiguous buffer space for TMC ETR
-+	 (embedded trace router)
-+
-+
-+Example:
-+
-+1. Sinks
-+	etb@0,20010000 {
-+		compatible = "arm,coresight-etb10", "arm,primecell";
-+		reg = <0 0x20010000 0 0x1000>;
-+
-+		coresight-default-sink;
-+		clocks = <&oscclk6a>;
-+		clock-names = "apb_pclk";
-+		port {
-+			etb_in_port: endpoint@0 {
-+				slave-mode;
-+				remote-endpoint = <&replicator_out_port0>;
-+			};
-+		};
-+	};
-+
-+	tpiu@0,20030000 {
-+		compatible = "arm,coresight-tpiu", "arm,primecell";
-+		reg = <0 0x20030000 0 0x1000>;
-+
-+		clocks = <&oscclk6a>;
-+		clock-names = "apb_pclk";
-+		port {
-+			tpiu_in_port: endpoint@0 {
-+				slave-mode;
-+				remote-endpoint = <&replicator_out_port1>;
-+			};
-+		};
-+	};
-+
-+2. Links
-+	replicator {
-+		/* non-configurable replicators don't show up on the
-+		 * AMBA bus.  As such no need to add "arm,primecell".
-+		 */
-+		compatible = "arm,coresight-replicator";
-+		/* this will show up in debugfs as "0.replicator" */
-+		id = <0>;
-+
-+		ports {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+
-+			/* replicator output ports */
-+			port@0 {
-+				reg = <0>;
-+				replicator_out_port0: endpoint {
-+					remote-endpoint = <&etb_in_port>;
-+				};
-+			};
-+
-+			port@1 {
-+				reg = <1>;
-+				replicator_out_port1: endpoint {
-+					remote-endpoint = <&tpiu_in_port>;
-+				};
-+			};
-+
-+			/* replicator input port */
-+			port@2 {
-+				reg = <0>;
-+				replicator_in_port0: endpoint {
-+					slave-mode;
-+					remote-endpoint = <&funnel_out_port0>;
-+				};
-+			};
-+		};
-+	};
-+
-+	funnel@0,20040000 {
-+		compatible = "arm,coresight-funnel", "arm,primecell";
-+		reg = <0 0x20040000 0 0x1000>;
-+
-+		clocks = <&oscclk6a>;
-+		clock-names = "apb_pclk";
-+		ports {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+
-+			/* funnel output port */
-+			port@0 {
-+				reg = <0>;
-+				funnel_out_port0: endpoint {
-+					remote-endpoint = <&replicator_in_port0>;
-+				};
-+			};
-+
-+			/* funnel input ports */
-+			port@1 {
-+				reg = <0>;
-+				funnel_in_port0: endpoint {
-+					slave-mode;
-+					remote-endpoint = <&ptm0_out_port>;
-+				};
-+			};
-+
-+			port@2 {
-+				reg = <1>;
-+				funnel_in_port1: endpoint {
-+					slave-mode;
-+					remote-endpoint = <&ptm1_out_port>;
-+				};
-+			};
-+
-+			port@3 {
-+				reg = <2>;
-+				funnel_in_port2: endpoint {
-+					slave-mode;
-+					remote-endpoint = <&etm0_out_port>;
-+				};
-+			};
-+
-+		};
-+	};
-+
-+3. Sources
-+	ptm@0,2201c000 {
-+		compatible = "arm,coresight-etm3x", "arm,primecell";
-+		reg = <0 0x2201c000 0 0x1000>;
-+
-+		cpu = <&cpu0>;
-+		clocks = <&oscclk6a>;
-+		clock-names = "apb_pclk";
-+		port {
-+			ptm0_out_port: endpoint {
-+				remote-endpoint = <&funnel_in_port0>;
-+			};
-+		};
-+	};
-+
-+	ptm@0,2201d000 {
-+		compatible = "arm,coresight-etm3x", "arm,primecell";
-+		reg = <0 0x2201d000 0 0x1000>;
-+
-+		cpu = <&cpu1>;
-+		clocks = <&oscclk6a>;
-+		clock-names = "apb_pclk";
-+		port {
-+			ptm1_out_port: endpoint {
-+				remote-endpoint = <&funnel_in_port1>;
-+			};
-+		};
-+	};
--- 
-1.9.1
+>  static irqreturn_t tis_int_handler(int dummy, void *dev_id)
+>  {
+>  	struct tpm_chip *chip = dev_id;
+> @@ -511,6 +513,8 @@ static irqreturn_t tis_int_handler(int dummy, void *dev_id)
+>  		for (i = 0; i < 5; i++)
+>  			if (check_locality(chip, i) >= 0)
+>  				break;
+> +	if (interrupt & TPM_INTF_CMD_READY_INT)
+> +		interrupted = true;
 
+Hmm, I'd think any interrupt will do for this purpose, drop the if?
+
+> -	if (tpm_do_selftest(chip)) {
+> -		dev_err(dev, "TPM self test failed\n");
+> -		rc = -ENODEV;
+> -		goto out_err;
+> -	}
+
+Move gettimeout too
+
+> -	if (chip->vendor.irq) {
+> +	if (interrupts && chip->vendor.irq) {
+
+Unrelated? Looks unnecessary:
+
+        if (!interrupts) {
+                irq = 0;
+
+        chip->vendor.irq = irq;
+
+        if (chip->vendor.irq) {
+
+> +	/* Test interrupt and/or prepare for later save state */
+> +	interrupted = false;
+> +	if (tpm_do_selftest(chip)) {
+
+As you pointed out before, the commands don't actually fail if
+interrupts are not enabled, they just take a longer time to complete.
+
+So this should just be:
+
+if (!tpm_get_timeouts(chip))
+   goto ..failed..;
+
+if (!dev->interrupts) {
+			/* Turn off interrupt */
+			iowrite32(intmask,
+				  chip->vendor.iobase +
+				  TPM_INT_ENABLE(chip->vendor.locality));
+			free_irq(chip->vendor.irq, chip);
+			chip->vendor.irq = 0;
+dev_err(dev, FIRMWARE_BUG "TPM interrupt is not working, polling instead\n");
+
+// No retry needed, the command completed already.
+}
+
+Jason
