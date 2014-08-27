@@ -1,110 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757533AbaH0Lbo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 07:31:44 -0400
-Received: from mail-bn1blp0190.outbound.protection.outlook.com ([207.46.163.190]:18046
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755973AbaH0Lbm convert rfc822-to-8bit (ORCPT
+	id S933339AbaH0L6l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 07:58:41 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35922 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932079AbaH0L6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 07:31:42 -0400
-From: Dexuan Cui <decui@microsoft.com>
-To: Sitsofe Wheeler <sitsofe@gmail.com>
-CC: KY Srinivasan <kys@microsoft.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PANIC, hyperv] BUG: unable to handle kernel paging request at
- ffff880077800004 (hv_ringbuffer_write)
-Thread-Topic: [PANIC, hyperv] BUG: unable to handle kernel paging request at
- ffff880077800004 (hv_ringbuffer_write)
-Thread-Index: AQHPvFjgvav2zR0lYke3SB9WxJlS05vhXWzggABBfwCAAQnBQIABpkoAgAAIh7A=
-Date: Wed, 27 Aug 2014 11:30:54 +0000
-Message-ID: <EE124450C0AAF944A40DD71E61F878C996493E@SINEX14MBXC419.southpacific.corp.microsoft.com>
-References: <20140820092630.GA1478@sucs.org>
- <EE124450C0AAF944A40DD71E61F878C994F314@SINEX14MBXC417.southpacific.corp.microsoft.com>
- <20140825174132.GA17681@sucs.org>
- <EE124450C0AAF944A40DD71E61F878C995E93E@SINEX14MBXC419.southpacific.corp.microsoft.com>
- <20140827104408.GC1827@sucs.org>
-In-Reply-To: <20140827104408.GC1827@sucs.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.168.3.97]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 27 Aug 2014 07:58:40 -0400
+Date: Wed, 27 Aug 2014 12:58:19 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lgirdwood@gmail.com>
+Message-ID: <20140827115819.GB17528@sirena.org.uk>
+References: <1409061793-10495-1-git-send-email-jarkko.nikula@linux.intel.com>
+ <1409061793-10495-2-git-send-email-jarkko.nikula@linux.intel.com>
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(24454002)(199003)(189002)(13464003)(51704005)(164054003)(51914003)(81156004)(46406003)(106116001)(107046002)(54356999)(77982001)(26826002)(77096002)(93886004)(85306004)(85852003)(97736001)(110136001)(79102001)(33656002)(95666004)(106466001)(4396001)(15975445006)(1411001)(99396002)(47776003)(20776003)(16796002)(74502001)(74662001)(68736004)(23726002)(81342001)(83322001)(76176999)(50466002)(15202345003)(84676001)(92726001)(92566001)(55846006)(87936001)(83072002)(97756001)(86612001)(31966008)(69596002)(64706001)(44976005)(81542001)(86362001)(19580395003)(6806004)(80022001)(90102001)(21056001)(46102001)(2656002)(50986999)(76482001);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR0301MB0721;H:mail.microsoft.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
- (Engineering ONLY)
-X-Forefront-PRVS: 0316567485
-Authentication-Results: spf=pass (sender IP is 131.107.125.37)
- smtp.mailfrom=decui@microsoft.com; 
-X-OriginatorOrg: microsoft.onmicrosoft.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="My//7p6P0WSQXrfY"
+Content-Disposition: inline
+In-Reply-To: <1409061793-10495-2-git-send-email-jarkko.nikula@linux.intel.com>
+X-Cookie: 98% lean.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] regmap: cache: Fix regcache_sync_block for
+ non-autoincrementing devices
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Sitsofe Wheeler
-> On Tue, Aug 26, 2014 at 10:30:54AM +0000, Dexuan Cui wrote:
-> 
-> > Actually I found the direct cause of the panic: sometimes
-> > vmbus_post_msg() can return 4 (HV_STATUS_INVALID_ALIGNMENT), but
-> > vmbus_open() doesn't propagate this error to the caller
-> > synthvid_connect_vsp(), and vmbus_open() " goto error1"  and frees the
-> > ringbuffer! So later the access to ring_buffer->read_index is caught
-> > by CONFIG_DEBUG_PAGEALLOC.
-> >
-> > I don't see any "invalid alignment" here... and I can't explain why
-> > vcpus=4 seems OK... Debugging WIP.
-I think I found out why we got HV_STATUS_INVALID_ALIGNMENT:
-according to Hypervisor Top Level Functional Specification(available at
-http://blogs.msdn.com/b/virtual_pc_guy/archive/2014/02/17/updated-hypervisor-top-level-functional-specification.aspx),
-do_hypercall() fails due to HV_STATUS_INVALID_ALIGNMENT, if "the
-specified input or output GPA pointer is not aligned to 8 bytes",
-or, "the specified input or output parameter lists spans pages".
-Here the 'input' can rarely across the page boundary, especially when 
-CONFIG_DEBUG_PAGEALLOC is on.
 
-I'm making a patch for this. 
+--My//7p6P0WSQXrfY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> >
-> > BTW, please try the attached patch.  With it, the VM doesn't panic in
-> > my side with vcpus=1 and can boot to shell prompt(looks the boot-up is
-> > very slow. I have to wait for several minutes...)
-> 
-> A quick tip: inline patches tend to be better than attachments on LKML.
-> This is because if the mimetype of the attachment is something like
-> octet/stream then various tools (e.g.
-> https://lkml.org/lkml/2014/8/26/271 and
-> https://patchwork.kernel.org/project/LKML/list/?submitter=100981 ) won't
-> archive/extract the patch...
-OK, thanks for the reminder! 
-I'll use inline patches(I hope my mail client has been configured to be smart
-enough to not "auto-format" my inline patches...).
+On Tue, Aug 26, 2014 at 05:03:12PM +0300, Jarkko Nikula wrote:
+> Commit 75a5f89f635c ("regmap: cache: Write consecutive registers in a sin=
+gle
+> block write") expected that autoincrementing writes are supported if
+> hardware has a register format which can support raw writes.
+>=20
+> This is not necessarily true and thus for instance rbtree sync can fail w=
+hen
+> there is need to sync multiple consecutive registers but block write to
+> device fails due not supported autoincrementing writes.
+>=20
+> Fix this by spliting raw block sync to series of single register writes f=
+or
+> devices that don't support autoincrementing writes.
 
-> I rebased your patch on top of the K.Y.'s "Drivers: hv: vmbus: Eliminate
-> calls to BUG_ON()" patch set (see below). The combination no longer
-> triggers the bug and it doesn't take too long to boot but the network
-> interface fails to work (which I believe is .
-the sentence is accidently trimmed here? :-)
+This seems like the wrong place for this - we already have a one
+register at a time mechanism for syncing the registers, making the block
+write scheme able to do it as well is rather missing the point.  Better
+to move the check into sync_block() instead.
 
-> 
-> Rebased vmbus open fixes patch.
-The patch doesn't resolve all the issues.
+--My//7p6P0WSQXrfY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> Boot dmesg output (there's no line that mentions retries). The
-> framebuffer window also didn't resize itself:
-> 
-> [    7.848030] hv_vmbus: registering driver hyperv_fb
-> [    7.859759] hyperv_fb: Unable to open vmbus channel
-> [    7.871812] hyperv_fb: Unable to connect to VSP
-We still see hyperv_fb can't work.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Thanks,
--- Dexuan
+iQIcBAEBAgAGBQJT/cfXAAoJELSic+t+oim90YIP/2UPwpb/Ixw/jW2jpWwi37wY
+L6ZdhPZAxhWi2zdqLpRHKz3CDG5PEDMB09YF00GAuebJNe+OWokodrZCpFpNO2MV
+xsSgO6+pAbEMtfUe9qY/MV5KJsN+CE+VUz2IGFCH15kiUgCCjv9d0eNI+xEabhIB
+Fxlyio660TU9xeOWZvzMJtEIJMZxvapts1gziqpB44DyX2/zU5pMHmzBZeTVz5uj
+BOvwen85AIqqQ61MgEqc/GQEi4s+CTscudZfHumOUdbUAabVnIrpYGTCnwbNG5UO
+EOx8W8VSGgcDOJIWYE6b50Y1XmlyYCRJEEBRFpGXw4L1cJAK/6B83/iAHXEmTV7h
+R7n6Q/L4BD+G4a2B3URzyxXcfsd04njbRhMsS+yVeynMljWyoRwBfbxSH2yBIt+B
+Nv5REOG3Di1ahUxE6a/l+sqzrrDiV7v/uPxfcqWvQyxoNsR3BQoq2UH22D4PXlQc
+YjHBxJO4mdnsjhes0EkQew+DTzsym48/bKbxDChVt3NAlqt4FCMl99C4BqjpR+Nb
+qfYMPVjNzR2arhDhgI6/7xNKtGVyHc2GOVk5fvXd7boRBs1SWHOrIpUegF+XVbPQ
+lz0L2BCoiRScJ4It7037YKi0NVp276BO7jJjpUldf6bF1OrYePisXBIWvgRExEvt
++UvWDBz5x6akze3MHRUr
+=r74Z
+-----END PGP SIGNATURE-----
+
+--My//7p6P0WSQXrfY--
