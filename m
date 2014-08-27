@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933501AbaH0EkQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 00:40:16 -0400
-Received: from mga14.intel.com ([192.55.52.115]:8500 "EHLO mga14.intel.com"
+	id S933053AbaH0EkO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 00:40:14 -0400
+Received: from mga03.intel.com ([143.182.124.21]:44456 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932698AbaH0Eed (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932713AbaH0Eed (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 27 Aug 2014 00:34:33 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="377469232"
+X-IronPort-AV: E=Sophos;i="5.04,408,1406617200"; 
+   d="scan'208";a="473028952"
 From: Matthew Wilcox <matthew.r.wilcox@intel.com>
 To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
 Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com
-Subject: [PATCH v10 03/21] Fix XIP fault vs truncate race
-Date: Tue, 26 Aug 2014 23:45:23 -0400
-Message-Id: <5ab44810d012796b3df4e8262691bc998f99f5d6.1409110741.git.matthew.r.wilcox@intel.com>
+Subject: [PATCH v10 10/21] Replace xip_truncate_page with dax_truncate_page
+Date: Tue, 26 Aug 2014 23:45:30 -0400
+Message-Id: <1539535b532d413d1030dc16e8684979b7c45889.1409110741.git.matthew.r.wilcox@intel.com>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <cover.1409110741.git.matthew.r.wilcox@intel.com>
 References: <cover.1409110741.git.matthew.r.wilcox@intel.com>
@@ -25,79 +25,152 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pagecache faults recheck i_size after taking the page lock to ensure that
-the fault didn't race against a truncate.  We don't have a page to lock
-in the XIP case, so use the i_mmap_mutex instead.  It is locked in the
-truncate path in unmap_mapping_range() after updating i_size.  So while
-we hold it in the fault path, we are guaranteed that either i_size has
-already been updated in the truncate path, or that the truncate will
-subsequently call zap_page_range_single() and so remove the mapping we
-have just inserted.
-
-There is a window of time in which i_size has been reduced and the
-thread has a mapping to a page which will be removed from the file,
-but this is harmless as the page will not be allocated to a different
-purpose before the thread's access to it is revoked.
+It takes a get_block parameter just like nobh_truncate_page() and
+block_truncate_page()
 
 Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Reviewed-by: Jan Kara <jack@suse.cz>
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- mm/filemap_xip.c | 24 ++++++++++++++++++++++--
- 1 file changed, 22 insertions(+), 2 deletions(-)
+ fs/dax.c           | 44 ++++++++++++++++++++++++++++++++++++++++++++
+ fs/ext2/inode.c    |  2 +-
+ include/linux/fs.h |  4 ++--
+ mm/filemap_xip.c   | 40 ----------------------------------------
+ 4 files changed, 47 insertions(+), 43 deletions(-)
 
+diff --git a/fs/dax.c b/fs/dax.c
+index f134078..d54f7d3 100644
+--- a/fs/dax.c
++++ b/fs/dax.c
+@@ -443,3 +443,47 @@ int dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
+ 	return result;
+ }
+ EXPORT_SYMBOL_GPL(dax_fault);
++
++/**
++ * dax_truncate_page - handle a partial page being truncated in a DAX file
++ * @inode: The file being truncated
++ * @from: The file offset that is being truncated to
++ * @get_block: The filesystem method used to translate file offsets to blocks
++ *
++ * Similar to block_truncate_page(), this function can be called by a
++ * filesystem when it is truncating an DAX file to handle the partial page.
++ *
++ * We work in terms of PAGE_CACHE_SIZE here for commonality with
++ * block_truncate_page(), but we could go down to PAGE_SIZE if the filesystem
++ * took care of disposing of the unnecessary blocks.  Even if the filesystem
++ * block size is smaller than PAGE_SIZE, we have to zero the rest of the page
++ * since the file might be mmaped.
++ */
++int dax_truncate_page(struct inode *inode, loff_t from, get_block_t get_block)
++{
++	struct buffer_head bh;
++	pgoff_t index = from >> PAGE_CACHE_SHIFT;
++	unsigned offset = from & (PAGE_CACHE_SIZE-1);
++	unsigned length = PAGE_CACHE_ALIGN(from) - from;
++	int err;
++
++	/* Block boundary? Nothing to do */
++	if (!length)
++		return 0;
++
++	memset(&bh, 0, sizeof(bh));
++	bh.b_size = PAGE_CACHE_SIZE;
++	err = get_block(inode, index, &bh, 0);
++	if (err < 0)
++		return err;
++	if (buffer_written(&bh)) {
++		void *addr;
++		err = dax_get_addr(&bh, &addr, inode->i_blkbits);
++		if (err < 0)
++			return err;
++		memset(addr + offset, 0, length);
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(dax_truncate_page);
+diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
+index 52978b8..5ac0a34 100644
+--- a/fs/ext2/inode.c
++++ b/fs/ext2/inode.c
+@@ -1210,7 +1210,7 @@ static int ext2_setsize(struct inode *inode, loff_t newsize)
+ 	inode_dio_wait(inode);
+ 
+ 	if (IS_DAX(inode))
+-		error = xip_truncate_page(inode->i_mapping, newsize);
++		error = dax_truncate_page(inode, newsize, ext2_get_block);
+ 	else if (test_opt(inode->i_sb, NOBH))
+ 		error = nobh_truncate_page(inode->i_mapping,
+ 				newsize, ext2_get_block);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 338f04b..eee848d 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2492,7 +2492,7 @@ extern int nonseekable_open(struct inode * inode, struct file * filp);
+ 
+ #ifdef CONFIG_FS_XIP
+ int dax_clear_blocks(struct inode *, sector_t block, long size);
+-extern int xip_truncate_page(struct address_space *mapping, loff_t from);
++int dax_truncate_page(struct inode *, loff_t from, get_block_t);
+ ssize_t dax_do_io(int rw, struct kiocb *, struct inode *, struct iov_iter *,
+ 		loff_t, get_block_t, dio_iodone_t, int flags);
+ int dax_fault(struct vm_area_struct *, struct vm_fault *, get_block_t);
+@@ -2503,7 +2503,7 @@ static inline int dax_clear_blocks(struct inode *i, sector_t blk, long sz)
+ 	return 0;
+ }
+ 
+-static inline int xip_truncate_page(struct address_space *mapping, loff_t from)
++static inline int dax_truncate_page(struct inode *i, loff_t frm, get_block_t gb)
+ {
+ 	return 0;
+ }
 diff --git a/mm/filemap_xip.c b/mm/filemap_xip.c
-index d8d9fe3..c8d23e9 100644
+index 9dd45f3..6316578 100644
 --- a/mm/filemap_xip.c
 +++ b/mm/filemap_xip.c
-@@ -260,8 +260,17 @@ again:
- 		__xip_unmap(mapping, vmf->pgoff);
+@@ -21,43 +21,3 @@
+ #include <asm/tlbflush.h>
+ #include <asm/io.h>
  
- found:
-+		/* We must recheck i_size under i_mmap_mutex */
-+		mutex_lock(&mapping->i_mmap_mutex);
-+		size = (i_size_read(inode) + PAGE_CACHE_SIZE - 1) >>
-+							PAGE_CACHE_SHIFT;
-+		if (unlikely(vmf->pgoff >= size)) {
-+			mutex_unlock(&mapping->i_mmap_mutex);
-+			return VM_FAULT_SIGBUS;
-+		}
- 		err = vm_insert_mixed(vma, (unsigned long)vmf->virtual_address,
- 							xip_pfn);
-+		mutex_unlock(&mapping->i_mmap_mutex);
- 		if (err == -ENOMEM)
- 			return VM_FAULT_OOM;
- 		/*
-@@ -285,16 +294,27 @@ found:
- 		}
- 		if (error != -ENODATA)
- 			goto out;
-+
-+		/* We must recheck i_size under i_mmap_mutex */
-+		mutex_lock(&mapping->i_mmap_mutex);
-+		size = (i_size_read(inode) + PAGE_CACHE_SIZE - 1) >>
-+							PAGE_CACHE_SHIFT;
-+		if (unlikely(vmf->pgoff >= size)) {
-+			ret = VM_FAULT_SIGBUS;
-+			goto unlock;
-+		}
- 		/* not shared and writable, use xip_sparse_page() */
- 		page = xip_sparse_page();
- 		if (!page)
--			goto out;
-+			goto unlock;
- 		err = vm_insert_page(vma, (unsigned long)vmf->virtual_address,
- 							page);
- 		if (err == -ENOMEM)
--			goto out;
-+			goto unlock;
- 
- 		ret = VM_FAULT_NOPAGE;
-+unlock:
-+		mutex_unlock(&mapping->i_mmap_mutex);
- out:
- 		write_seqcount_end(&xip_sparse_seq);
- 		mutex_unlock(&xip_sparse_mutex);
+-/*
+- * truncate a page used for execute in place
+- * functionality is analog to block_truncate_page but does use get_xip_mem
+- * to get the page instead of page cache
+- */
+-int
+-xip_truncate_page(struct address_space *mapping, loff_t from)
+-{
+-	pgoff_t index = from >> PAGE_CACHE_SHIFT;
+-	unsigned offset = from & (PAGE_CACHE_SIZE-1);
+-	unsigned blocksize;
+-	unsigned length;
+-	void *xip_mem;
+-	unsigned long xip_pfn;
+-	int err;
+-
+-	BUG_ON(!mapping->a_ops->get_xip_mem);
+-
+-	blocksize = 1 << mapping->host->i_blkbits;
+-	length = offset & (blocksize - 1);
+-
+-	/* Block boundary? Nothing to do */
+-	if (!length)
+-		return 0;
+-
+-	length = blocksize - length;
+-
+-	err = mapping->a_ops->get_xip_mem(mapping, index, 0,
+-						&xip_mem, &xip_pfn);
+-	if (unlikely(err)) {
+-		if (err == -ENODATA)
+-			/* Hole? No need to truncate */
+-			return 0;
+-		else
+-			return err;
+-	}
+-	memset(xip_mem + offset, 0, length);
+-	return 0;
+-}
+-EXPORT_SYMBOL_GPL(xip_truncate_page);
 -- 
 2.0.0
 
