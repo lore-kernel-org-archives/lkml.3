@@ -1,146 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933068AbaH0Ef3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 00:35:29 -0400
-Received: from mga02.intel.com ([134.134.136.20]:37328 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932430AbaH0EfF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 00:35:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,408,1406617200"; 
-   d="scan'208";a="563955292"
-From: Matthew Wilcox <matthew.r.wilcox@intel.com>
-To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com,
-        Ross Zwisler <ross.zwisler@linux.intel.com>
-Subject: [PATCH v10 19/21] xip: Add xip_zero_page_range
-Date: Tue, 26 Aug 2014 23:45:39 -0400
-Message-Id: <80c8efc903971eb3a338f262fbd3ef135db63eb0.1409110741.git.matthew.r.wilcox@intel.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <cover.1409110741.git.matthew.r.wilcox@intel.com>
-References: <cover.1409110741.git.matthew.r.wilcox@intel.com>
-In-Reply-To: <cover.1409110741.git.matthew.r.wilcox@intel.com>
-References: <cover.1409110741.git.matthew.r.wilcox@intel.com>
+	id S933089AbaH0Efu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 00:35:50 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:41080 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932605AbaH0Ef2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 00:35:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <CALCETrX2MzNxQ1ogt+Qx8iPjUe+z0gN6ZLwu9nAcZzTN+D+iYw@mail.gmail.com>
+References: <1409106582-10095-1-git-send-email-ast@plumgrid.com>
+	<CALCETrX2MzNxQ1ogt+Qx8iPjUe+z0gN6ZLwu9nAcZzTN+D+iYw@mail.gmail.com>
+Date: Tue, 26 Aug 2014 21:35:26 -0700
+Message-ID: <CAMEtUuwYqJVUuZxPBKy57NonWF+X_5vkNx4uSEx_d=-xBka1Kg@mail.gmail.com>
+Subject: Re: [PATCH RFC v7 net-next 00/28] BPF syscall
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Daniel Borkmann <dborkman@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chema Gonzalez <chema@google.com>, Namhyung Kim <namhyung@kernel.org>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Brendan Gregg <brendan.d.gregg@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This new function allows us to support hole-punch for XIP files by zeroing
-a partial page, as opposed to the xip_truncate_page() function which can
-only truncate to the end of the page.  Reimplement xip_truncate_page() as
-a macro that calls xip_zero_page_range().
+On Tue, Aug 26, 2014 at 8:56 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Aug 26, 2014 7:29 PM, "Alexei Starovoitov" <ast@plumgrid.com> wrote:
+>>
+>> Hi Ingo, David,
+>>
+>> posting whole thing again as RFC to get feedback on syscall only.
+>> If syscall bpf(int cmd, union bpf_attr *attr, unsigned int size) is ok,
+>> I'll split them into small chunks as requested and will repost without RFC.
+>
+> IMO it's much easier to review a syscall if we just look at a
+> specification of what it does.  The code is, in some sense, secondary.
 
-Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
-[ported to 3.13-rc2]
-Signed-off-by: Ross Zwisler <ross.zwisler@linux.intel.com>
----
- Documentation/filesystems/dax.txt |  1 +
- fs/dax.c                          | 20 ++++++++++++++------
- include/linux/fs.h                |  9 ++++++++-
- 3 files changed, 23 insertions(+), 7 deletions(-)
-
-diff --git a/Documentation/filesystems/dax.txt b/Documentation/filesystems/dax.txt
-index 635adaa..ebcd97f 100644
---- a/Documentation/filesystems/dax.txt
-+++ b/Documentation/filesystems/dax.txt
-@@ -62,6 +62,7 @@ Filesystem support consists of
-   for fault and page_mkwrite (which should probably call dax_fault() and
-   dax_mkwrite(), passing the appropriate get_block() callback)
- - calling dax_truncate_page() instead of block_truncate_page() for DAX files
-+- calling dax_zero_page_range() instead of zero_user() for DAX files
- - ensuring that there is sufficient locking between reads, writes,
-   truncates and page faults
- 
-diff --git a/fs/dax.c b/fs/dax.c
-index d54f7d3..96c4fed 100644
---- a/fs/dax.c
-+++ b/fs/dax.c
-@@ -445,13 +445,16 @@ int dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
- EXPORT_SYMBOL_GPL(dax_fault);
- 
- /**
-- * dax_truncate_page - handle a partial page being truncated in a DAX file
-+ * dax_zero_page_range - zero a range within a page of a DAX file
-  * @inode: The file being truncated
-  * @from: The file offset that is being truncated to
-+ * @length: The number of bytes to zero
-  * @get_block: The filesystem method used to translate file offsets to blocks
-  *
-- * Similar to block_truncate_page(), this function can be called by a
-- * filesystem when it is truncating an DAX file to handle the partial page.
-+ * This function can be called by a filesystem when it is zeroing part of a
-+ * page in a DAX file.  This is intended for hole-punch operations.  If
-+ * you are truncating a file, the helper function dax_truncate_page() may be
-+ * more convenient.
-  *
-  * We work in terms of PAGE_CACHE_SIZE here for commonality with
-  * block_truncate_page(), but we could go down to PAGE_SIZE if the filesystem
-@@ -459,12 +462,12 @@ EXPORT_SYMBOL_GPL(dax_fault);
-  * block size is smaller than PAGE_SIZE, we have to zero the rest of the page
-  * since the file might be mmaped.
-  */
--int dax_truncate_page(struct inode *inode, loff_t from, get_block_t get_block)
-+int dax_zero_page_range(struct inode *inode, loff_t from, unsigned length,
-+							get_block_t get_block)
- {
- 	struct buffer_head bh;
- 	pgoff_t index = from >> PAGE_CACHE_SHIFT;
- 	unsigned offset = from & (PAGE_CACHE_SIZE-1);
--	unsigned length = PAGE_CACHE_ALIGN(from) - from;
- 	int err;
- 
- 	/* Block boundary? Nothing to do */
-@@ -481,9 +484,14 @@ int dax_truncate_page(struct inode *inode, loff_t from, get_block_t get_block)
- 		err = dax_get_addr(&bh, &addr, inode->i_blkbits);
- 		if (err < 0)
- 			return err;
-+		/*
-+		 * ext4 sometimes asks to zero past the end of a block.  It
-+		 * really just wants to zero to the end of the block.
-+		 */
-+		length = min_t(unsigned, length, PAGE_CACHE_SIZE - offset);
- 		memset(addr + offset, 0, length);
- 	}
- 
- 	return 0;
- }
--EXPORT_SYMBOL_GPL(dax_truncate_page);
-+EXPORT_SYMBOL_GPL(dax_zero_page_range);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index e6b48cc..b0078df 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2490,6 +2490,7 @@ extern int nonseekable_open(struct inode * inode, struct file * filp);
- 
- #ifdef CONFIG_FS_DAX
- int dax_clear_blocks(struct inode *, sector_t block, long size);
-+int dax_zero_page_range(struct inode *, loff_t from, unsigned len, get_block_t);
- int dax_truncate_page(struct inode *, loff_t from, get_block_t);
- ssize_t dax_do_io(int rw, struct kiocb *, struct inode *, struct iov_iter *,
- 		loff_t, get_block_t, dio_iodone_t, int flags);
-@@ -2501,7 +2502,8 @@ static inline int dax_clear_blocks(struct inode *i, sector_t blk, long sz)
- 	return 0;
- }
- 
--static inline int dax_truncate_page(struct inode *i, loff_t frm, get_block_t gb)
-+static inline int dax_zero_page_range(struct inode *inode, loff_t from,
-+						unsigned len, get_block_t gb)
- {
- 	return 0;
- }
-@@ -2514,6 +2516,11 @@ static inline ssize_t dax_do_io(int rw, struct kiocb *iocb,
- }
- #endif
- 
-+/* Can't be a function because PAGE_CACHE_SIZE is defined in pagemap.h */
-+#define dax_truncate_page(inode, from, get_block)	\
-+	dax_zero_page_range(inode, from, PAGE_CACHE_SIZE, get_block)
-+
-+
- #ifdef CONFIG_BLOCK
- typedef void (dio_submit_t)(int rw, struct bio *bio, struct inode *inode,
- 			    loff_t file_offset);
--- 
-2.0.0
-
+'specification of what it does'... hmm, you mean beyond what's
+there in commit logs and in Documentation/networking/filter.txt ?
+Aren't samples at the end give an idea on 'what it does'?
+I'm happy to add 'specification', I just don't understand yet what
+it suppose to talk about beyond what's already written.
+I understand that the patches are missing explanation on 'why'
+the syscall is being added, but I don't think it's what you're asking...
