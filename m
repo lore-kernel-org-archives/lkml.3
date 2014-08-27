@@ -1,83 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935258AbaH0Ppy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 11:45:54 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:52552 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934523AbaH0Ppw (ORCPT
+	id S935248AbaH0Puu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 11:50:50 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:33692 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935001AbaH0Put (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 11:45:52 -0400
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: Boaz Harrosh <boaz@plexistor.com>, Jens Axboe <axboe@fb.com>,
-        Matthew Wilcox <willy@linux.intel.com>
-Cc: Ross Zwisler <ross.zwisler@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCHSET 0/5 v2] brd: partition fixes
-In-Reply-To: <53FDF7AD.5000709@plexistor.com>
-References: <53FDF7AD.5000709@plexistor.com>
-User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
-Date: Wed, 27 Aug 2014 19:45:48 +0400
-Message-ID: <87wq9u7x77.fsf@openvz.org>
+	Wed, 27 Aug 2014 11:50:49 -0400
+Message-ID: <53FDFE54.6050600@gmail.com>
+Date: Wed, 27 Aug 2014 18:50:44 +0300
+From: Boaz Harrosh <openosd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Jens Axboe <axboe@kernel.dk>, Jeff Moyer <jmoyer@redhat.com>
+CC: Joe Lawrence <joe.lawrence@stratus.com>, linux-kernel@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>, Boaz Harrosh <bharrosh@panasas.com>
+Subject: Re: [PATCH v3 0/2] block,scsi: fixup blk_get_request dead queue scenarios
+References: <1404329718-19367-1-git-send-email-joe.lawrence@stratus.com>	<x49egw36u55.fsf@segfault.boston.devel.redhat.com>	<53FCF9DB.6010501@kernel.dk>	<x49mwar54ca.fsf@segfault.boston.devel.redhat.com>	<53FCFD40.2010903@kernel.dk> <53FCFE01.8080701@kernel.dk> <x49iole6hcc.fsf@segfault.boston.devel.redhat.com> <53FDE621.2050009@kernel.dk>
+In-Reply-To: <53FDE621.2050009@kernel.dk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Aug 2014 18:22:21 +0300, Boaz Harrosh <boaz@plexistor.com> wrote:
-> Jens Hi
-> 
-> What do you intend to do with these fixes? These are real bugs on devices
-> shipped for a while now. I think they need to go into current 3.17-rcX Kernel.
-> 
-> If not then lets please put them in for-next
-> [This set is for linux-block.git/for-next, tell me if you need one ontop
->  of for-linus]
-> 
-It looks like I've missed your context. Please elaborate your use-case
-> [v2]
-> Based on Jens's linux-next [30e996a] incorporating the brd patch by Dmitry Monakhov.
-> Dmitry has introduced a new part_show parameter, this parameter is now
-> removed
-  In which commit or kernel-tree this parameter was removed?
-> and we always "part_show=1".
-> Scripts that did part_show=1 will work just the same but will display a
-> message in logs. This is harmless. (And scripts can be modified to
-> remove this parameter)
-  Which script are you talking about? Why you want use it?
+On 08/27/2014 05:07 PM, Jens Axboe wrote:
+> On 08/26/2014 04:01 PM, Jeff Moyer wrote:
+>> Jens Axboe <axboe@kernel.dk> writes:
+<>
+> There's also a bug in osd_initiator.c, _init_blk_request(). We jump to
+> 'out' for IS_ERR(req), which attempts to print or->request, which hasn't
+> been assigned yet. 
 
+You mean this code:
+	req = _make_request(q, has_out, has_out ? &or->out : &or->in, flags);
+	if (IS_ERR(req)) {
+		ret = PTR_ERR(req);
+		goto out;
+	}
+
+	or->request = req;
+
+But _make_request used to already return -ENOMEM as a pointer in req
+So if this is a bug it was not introduced by this patch.
+
+And it is not a bug at all the print prints the pointer. The all of
+this code assumes osd_request was allocated ZERO set. the print of %p
+is fine with NULLs (and any number for that matter)
+
+> This is my primary concern with this patch, basically
+> every single of these call sites must be verified or it will do more
+> harm than good. Have they been?
 > 
-> [v1]
-> Current situation is that any attempt to use partitions with brd device would
-> create the partition but then any use will trash the data.
-> 
-> See: http://www.spinics.net/lists/linux-scsi/msg76737.html
-> 
-> So these patches fixes up all the problems we saw with the code, but not sacrificing
-> any of the old fixtures. See [patch 4/5] for more explanations.
-> 
-> list of patches:
-> [PATCH 1/5] axonram: Fix bug in direct_access
-> [PATCH 2/5] Change direct_access calling convention
-> 
->     These are Matthew's patches from the DAX series which fixes the interface to
->     direct_access taking into account the partition offset. It must be applied
->     here for partitions to work with direct_access() API.
-> 
-> [PATCH 3/5] brd: Add getgeo to block ops
-> 
->     This one is needed by fdisk, otherwise it just asks extra questions
-> 
-> [PATCH 4/5] brd: Fix all partitions BUGs
-> [PATCH 5/5] brd: Request from fdisk 4k alignment
-> 
-> Thanks
-> Boaz
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
+I have reviewed this patch for osd part, it is fine
+
+Thanks
+Boaz
+
