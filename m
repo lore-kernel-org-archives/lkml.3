@@ -1,101 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935560AbaH0P2e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 11:28:34 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:51230 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935082AbaH0P2a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 11:28:30 -0400
-Message-ID: <53FDF919.6020006@plexistor.com>
-Date: Wed, 27 Aug 2014 18:28:25 +0300
-From: Boaz Harrosh <boaz@plexistor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Jens Axboe <axboe@fb.com>, Matthew Wilcox <willy@linux.intel.com>,
-        Dmitry Monakhov <dmonakhov@openvz.org>
-CC: Ross Zwisler <ross.zwisler@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: [PATCH 3/5] brd: Add getgeo to block ops
-References: <53FDF7AD.5000709@plexistor.com>
-In-Reply-To: <53FDF7AD.5000709@plexistor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S935304AbaH0PWc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 11:22:32 -0400
+Received: from david.siemens.de ([192.35.17.14]:39540 "EHLO david.siemens.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935242AbaH0PWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 11:22:21 -0400
+From: Jan Kiszka <jan.kiszka@siemens.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
+        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
+        Borislav Petkov <bp@suse.de>,
+        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
+Subject: [PATCH v9 02/23] scripts/gdb: Add cache for type objects
+Date: Wed, 27 Aug 2014 17:21:17 +0200
+Message-Id: <c857c0439f08da6290b01f60556bc3d43a7f51d0.1409152897.git.jan.kiszka@siemens.com>
+X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
+In-Reply-To: <cover.1409152897.git.jan.kiszka@siemens.com>
+References: <cover.1409152897.git.jan.kiszka@siemens.com>
+In-Reply-To: <cover.1409152897.git.jan.kiszka@siemens.com>
+References: <cover.1409152897.git.jan.kiszka@siemens.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Boaz Harrosh <boaz@plexistor.com>
+Type lookups are very slow in gdb-python which is often noticeable when
+iterating over a number of objects. Introduce the helper class
+CachedType that keeps a reference to a gdb.Type object but also
+refreshes it after an object file has been loaded.
 
-Some programs like fdisk, require HDIO_GETGEO to work, which requires we
-implement getgeo.
-
-We set all hd_geometry members to 1, because this way fdisk
-math will not try its crazy geometry math and get stuff totally wrong.
-
-I was trying to get some values that will make fdisk Want to align
-first sector on 4K (like 8, 16, 20, ... sectors) but nothing worked,
-I searched the net the math is not your regular simple multiplication
-at all.
-
-If you managed to get these please tell me. I would love to solve
-this.
-
-But for now we use 4k physical sectors for fixing fdisk alignment
-issues, and setting these here to something that will not make
-fdisk serve us with crazy numbers.
-
-Signed-off-by: Boaz Harrosh <boaz@plexistor.com>
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- drivers/block/brd.c | 19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+ scripts/gdb/linux/utils.py | 34 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
+ create mode 100644 scripts/gdb/linux/utils.py
 
-diff --git a/drivers/block/brd.c b/drivers/block/brd.c
-index 78fe510..f841d9e 100644
---- a/drivers/block/brd.c
-+++ b/drivers/block/brd.c
-@@ -19,6 +19,7 @@
- #include <linux/radix-tree.h>
- #include <linux/fs.h>
- #include <linux/slab.h>
-+#include <linux/hdreg.h>
- 
- #include <asm/uaccess.h>
- 
-@@ -424,6 +425,23 @@ static int brd_ioctl(struct block_device *bdev, fmode_t mode,
- 	return error;
- }
- 
-+static int brd_getgeo(struct block_device *bd, struct hd_geometry *geo)
-+{
-+	/* Just tell fdisk to get out of the way. The math here is so
-+	 * convoluted and does not make any sense at all. With all 1s
-+	 * The math just gets out of the way.
-+	 * NOTE: I was trying to get some values that will make fdisk
-+	 * Want to align first sector on 4K (like 8, 16, 20, ... sectors) but
-+	 * nothing worked, I searched the net the math is not your regular
-+	 * simple multiplication at all. If you managed to get these please
-+	 * fix here. For now we use 4k physical sectors for this
-+	 */
-+	geo->heads = 1;
-+	geo->sectors = 1;
-+	geo->cylinders = 1;
-+	return 0;
-+}
+diff --git a/scripts/gdb/linux/utils.py b/scripts/gdb/linux/utils.py
+new file mode 100644
+index 0000000..f883611
+--- /dev/null
++++ b/scripts/gdb/linux/utils.py
+@@ -0,0 +1,34 @@
++#
++# gdb helper commands and functions for Linux kernel debugging
++#
++#  common utilities
++#
++# Copyright (c) Siemens AG, 2011-2013
++#
++# Authors:
++#  Jan Kiszka <jan.kiszka@siemens.com>
++#
++# This work is licensed under the terms of the GNU GPL version 2.
++#
 +
- static const struct block_device_operations brd_fops = {
- 	.owner =		THIS_MODULE,
- 	.rw_page =		brd_rw_page,
-@@ -431,6 +449,7 @@ static const struct block_device_operations brd_fops = {
- #ifdef CONFIG_BLK_DEV_XIP
- 	.direct_access =	brd_direct_access,
- #endif
-+	.getgeo =		brd_getgeo,
- };
- 
- /*
++import gdb
++
++
++class CachedType:
++    def __init__(self, name):
++        self._type = None
++        self._name = name
++
++    def _new_objfile_handler(self, event):
++        self._type = None
++        gdb.events.new_objfile.disconnect(self._new_objfile_handler)
++
++    def get_type(self):
++        if self._type is None:
++            self._type = gdb.lookup_type(self._name)
++            if self._type is None:
++                raise gdb.GdbError(
++                    "cannot resolve type '{0}'".format(self._name))
++            if hasattr(gdb, 'events') and hasattr(gdb.events, 'new_objfile'):
++                gdb.events.new_objfile.connect(self._new_objfile_handler)
++        return self._type
 -- 
-1.9.3
-
+1.8.1.1.298.ge7eed54
 
