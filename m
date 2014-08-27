@@ -1,210 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755604AbaH0Ikn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 04:40:43 -0400
-Received: from mail.aswsp.com ([193.34.35.150]:63480 "EHLO mail.aswsp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752705AbaH0Ikj convert rfc822-to-8bit (ORCPT
+	id S1754163AbaH0ItM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 04:49:12 -0400
+Received: from outrelay07.libero.it ([212.52.84.111]:45380 "EHLO
+	outrelay07.libero.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752220AbaH0ItJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 04:40:39 -0400
-Date: Wed, 27 Aug 2014 10:40:59 +0200
-From: Matthieu CASTET <matthieu.castet@parrot.com>
-To: <linux-scsi@vger.kernel.org>
-CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        TARUISI Hiroaki <taruishi.hiroak@jp.fujitsu.com>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: Re: Buffer I/O error after s2ram with usb storage
-Message-ID: <20140827104059.3a4bed94@parrot.com>
-In-Reply-To: <20140428150139.0e10dfd9@parrot.com>
-References: <20140422160115.46d8d2bf@parrot.com>
-	<20140428150139.0e10dfd9@parrot.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	Wed, 27 Aug 2014 04:49:09 -0400
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A0C0205.53FD9B7F.0176,ss=1,re=0.000,fgs=0
+X-libjamoibt: 1823
+Message-ID: <53FD9CF6.4030803@inwind.it>
+Date: Wed, 27 Aug 2014 10:55:18 +0200
+From: Goffredo Baroncelli <kreijack@inwind.it>
+Reply-To: kreijack@inwind.it
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [46.218.109.88]
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Goffredo Baroncelli <kreijack@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jean Delvare <jdelvare@suse.de>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: Re: [PATCH][v5] therm_windtunnel does not work properly on PowerMac
+ G4
+References: <1407567003-18332-1-git-send-email-kreijack@inwind.it>
+In-Reply-To: <1407567003-18332-1-git-send-email-kreijack@inwind.it>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping
+Hi Benjamin,
 
-I have got also a problem with a usb sdcard reader (without power cut
-during suspend)
+do you have any feedback about this ? Do you think that it would be possible 
+to include these patches in a next pull-for-linus ?
 
-[ 1073.606668] PM: Entering mem sleep
-[ 1073.606742] Suspending console(s) (use no_console_suspend to debug)
-[ 1073.607146] sd 1:0:0:0: [sda] Synchronizing SCSI cache
-[ 1073.639076] sd 1:0:0:0: [sda] Stopping disk
-[ 1074.186688] PM: suspend of devices complete after 580.127 msecs
-[...]
-[ 1075.265183] PM: resume of devices complete after 615.990 msecs
-[ 1075.265627] PM: Finishing wakeup.
-[ 1075.265630] Restarting tasks ... 
-[...]
-[ 1203.404593] EXT4-fs error (device sdb6): ext4_mb_generate_buddy:756: group 6, 29065 clusters in bitmap, 32768 in gd; block bitmap corrupt. 
-[ 1203.404628] EXT4-fs error (device sdb6): ext4_mb_generate_buddy:756: group 5, 1601 clusters in bitmap, 32321 in gd; block bitmap corrupt.
-[ 1203.404648] EXT4-fs error (device sdb6): ext4_mb_generate_buddy:756: group 4, 0 clusters in bitmap, 32768 in gd; block bitmap corrupt.
-[ 1203.404667] EXT4-fs error (device sdb6): ext4_mb_generate_buddy:756: group 3, 1601 clusters in bitmap, 32321 in gd; block bitmap corrupt.
-[ 1203.404686] EXT4-fs error (device sdb6): ext4_mb_generate_buddy:756: group 2, 0 clusters in bitmap, 32768 in gd; block bitmap corrupt.
-[ 1203.404705] EXT4-fs error (device sdb6): ext4_mb_generate_buddy:756: group 1, 1600 clusters in bitmap, 32321 in gd; block bitmap corrupt.
-[ 1203.404726] JBD2: Spotted dirty metadata buffer (dev = sdb6, blocknr = 0). There's a risk of filesystem corruption in case of system crash.
-[ 1204.141482] sd 8:0:0:0: [sdb] Media Changed
-[ 1204.141490] sd 8:0:0:0: [sdb]
-[ 1204.141494] Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
-[ 1204.141497] sd 8:0:0:0: [sdb]
-[ 1204.141499] Sense Key : Unit Attention [current]
-[ 1204.141504] Info fld=0x0
-[ 1204.141506] sd 8:0:0:0: [sdb]
-[ 1204.141510] Add. Sense: Not ready to ready change, medium may have changed
-[ 1204.141514] sd 8:0:0:0: [sdb] CDB:
-[ 1204.141516] Read(10): 28 00 00 0a 75 f8 00 00 08 00
-[ 1204.141526] end_request: I/O error, dev sdb, sector 685560
+Let me know, if you want other changes.
 
+BR
+G.Baroncelli
 
-
-Le Mon, 28 Apr 2014 15:01:39 +0200,
-Matthieu CASTET <matthieu.castet@parrot.com> a écrit :
-
-> Hi,
+On 08/09/2014 08:49 AM, Goffredo Baroncelli wrote:
+> Hi All,
 > 
-> any news on this.
+> On a PowerMac G4 I noticed that between the kernel v3.2 and v3.14 I lost
+> the fan management.
 > 
-> Matthieu CASTET
+> I found on internet other references to this kind of problem [2]
 > 
-> Le Tue, 22 Apr 2014 16:01:15 +0200,
-> Matthieu CASTET <matthieu.castet@parrot.com> a écrit :
 > 
-> > Hi,
-> > 
-> > while playing with suspend to ram I found a strange behavior with usb
-> > key.
-> > 
-> > This can be easily reproduced by doing :
-> > - plug a usb key
-> > - start to read the usb key : "cat /dev/sdx > /dev/null"
-> > - go to suspend : "echo mem > /sys/power/state"
-> > - while in suspend, unplug and replug the usb key (simulate usb power
-> > loss for computer that keep power)
-> > - exit suspend
-> > - there is read error on the usb key
-> > 
-> > 
-> > Because the power was cut during s2ram, the usb stack reset the device
-> > <1>.
-> > When new data transfer are done, we got a UNIT_ATTENTION from the
-> > device <2> and IO error are returned to user space application.
-> > 
-> > After some investigation it seems some (all on the 3 I tested) usb key
-> > report as removable, and scsi layer abort the transfer in case of
-> > UNIT_ATTENTION <3>.
-> > 
-> > The usb storage driver call scsi_report_bus_reset after device reset,
-> > but because of commit dfcf7775 <4>, we don't ignore unit attention if
-> > "sshdr.asc == 0x28 && sshdr.ascq == 0x00" ("Not-ready to ready").
-> > 
-> > If dfcf7775 is reverted there is no more Buffer I/O error.
-> > 
-> > Is that possible to find a way to restore the behavior before dfcf7775
-> > commit (no Buffer I/O error after device reset) after a suspend to ram ?
-> > 
-> > 
-> > Matthieu CASTET
-> > 
-> > PS : the same error happen if sg_reset -b /dev/sdx is used on the
-> > device.
-> > 
-> > 
-> > <1>
-> > [  117.070255] usb 2-1.4: reset high-speed USB device number 3 using
-> > ehci-pci [...]
-> > [  117.543922] Restarting tasks ... done.
-> > [  117.548390] video LNXVIDEO:01: Restoring backlight state
-> > <2>
-> > [  117.549179] sd 6:0:0:0: [sdb] Media Changed
-> > [  117.549184] sd 6:0:0:0: [sdb]  
-> > [  117.549187] Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
-> > [  117.549189] sd 6:0:0:0: [sdb]  
-> > [  117.549191] Sense Key : Unit Attention [current] 
-> > [  117.549195] Info fld=0x0
-> > [  117.549197] sd 6:0:0:0: [sdb]  
-> > [  117.549201] Add. Sense: Not ready to ready change, medium may have
-> > changed [  117.549203] sd 6:0:0:0: [sdb] CDB: 
-> > [  117.549205] Read(10): 28 00 00 02 c9 00 00 00 f0 00
-> > [  117.549212] end_request: I/O error, dev sdb, sector 182528
-> > [  117.549218] Buffer I/O error on device sdb1, logical block 22560
-> > [  117.549225] Buffer I/O error on device sdb1, logical block 22561
-> > [  117.549228] Buffer I/O error on device sdb1, logical block 22562
-> > [  117.549231] Buffer I/O error on device sdb1, logical block 22563
-> > [  117.549233] Buffer I/O error on device sdb1, logical block 22564
-> > [  117.549235] Buffer I/O error on device sdb1, logical block 22565
-> > [  117.549238] Buffer I/O error on device sdb1, logical block 22566
-> > [  117.549240] Buffer I/O error on device sdb1, logical block 22567
-> > [  117.549243] Buffer I/O error on device sdb1, logical block 22568
-> > [  117.549245] Buffer I/O error on device sdb1, logical block 22569
-> > [  117.809462] sd 6:0:0:0: [sdb] No Caching mode page found
-> > [  117.809470] sd 6:0:0:0: [sdb] Assuming drive cache: write through
-> > [  117.812696] sd 6:0:0:0: [sdb] No Caching mode page found
-> > [  117.812703] sd 6:0:0:0: [sdb] Assuming drive cache: write through
-> > [  117.813688]  sdb: sdb1
-> > 
-> > 
-> > <3>
-> >         case UNIT_ATTENTION:
-> >             if (cmd->device->removable) {
-> >                 /* Detected disc change.  Set a bit
-> >                  * and quietly refuse further access.
-> >                  */
-> >                 cmd->device->changed = 1;
-> >                 description = "Media Changed";
-> >                 action = ACTION_FAIL;
-> >             } else {
-> >                 /* Must have been a power glitch, or a
-> >                  * bus reset.  Could not have been a
-> >                  * media change, so we just retry the
-> >                  * command and see what happens.
-> >                  */
-> >                 action = ACTION_RETRY;
-> >             }
-> > 
-> > <4>
-> > commit dfcf7775815504d13a1d273073810058caf84b9d
-> > Author: TARUISI Hiroaki <taruishi.hiroak@jp.fujitsu.com>
-> > Date:   Thu Aug 11 20:25:20 2011 +0900
-> > 
-> >     [SCSI] Fix out of spec CD-ROM problem with media change
-> >     
-> >     Some CD-ROMs fail to report a media change correctly.  The specific
-> >     one for this patch simply fails to respond to commands, then gives a
-> >     UNIT ATTENTION after being reset which returns ASC/ASCQ 28/00.  This
-> >     is out of spec behaviour, but add a check in the eat CC/UA on reset
-> >     path to catch this case so the CD-ROM will function somewhat properly.
-> >     
-> >     [jejb: fixed up white space and accepted without signoff]
-> >     Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-> > 
-> > diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
-> > index a4b9cdb..dc6131e 100644
-> > --- a/drivers/scsi/scsi_error.c
-> > +++ b/drivers/scsi/scsi_error.c
-> > @@ -293,8 +293,16 @@ static int scsi_check_sense(struct scsi_cmnd *scmd)
-> >                  * so that we can deal with it there.
-> >                  */
-> >                 if (scmd->device->expecting_cc_ua) {
-> > -                       scmd->device->expecting_cc_ua = 0;
-> > -                       return NEEDS_RETRY;
-> > +                       /*
-> > +                        * Because some device does not queue unit
-> > +                        * attentions correctly, we carefully check
-> > +                        * additional sense code and qualifier so as
-> > +                        * not to squash media change unit attention.
-> > +                        */
-> > +                       if (sshdr.asc != 0x28 || sshdr.ascq != 0x00) {
-> > +                               scmd->device->expecting_cc_ua = 0;
-> > +                               return NEEDS_RETRY;
-> > +                       }
-> >                 }
-> >                 /*
-> >                  * if the device is in the process of becoming ready, we
+> **How reproduce:
+> - booting with the kernel 3.2, the fan is "quite" silent.
+> The module therm_windtunnel is loaded and in the log there are  
+> lines like:
+> 
+> 	[ 1342.614956] CPU-temp: 58.7 C, Case: 33.7 C,  Fan: 5 (tuned +0)
+> 	[ 1390.637793] CPU-temp: 58.6 C, Case: 33.6 C,  Fan: 5
+> 
+> I had also access to the temperature via the sysfs files:
+> /sys/devices/temperature/case_temperature  
+> /sys/devices/temperature/cpu_temperature
+> 
+> 
+> - booting with the kernel 3.14, the fan is very loud. The module 
+> therm_windtunnel is not loaded. In the log there aren't any message
+> related to the temperature. The sysfs entries don't exist.
+> 
+> 
+> ** Analysis 
+> In these Apple machines the module i2c-powermac requires the
+> i2c drivers provided by the module therm_windtunnel.
+> 
+> Between the kernel v3.2 and v3.14 [1] some patches changed the 
+> driver name requested by the i2c-powermac module, 
+> so the therm_windtunnel modules is not instantiated anymore.
+> 
+> 
+> ** Proposed solution
+> In the following emails I sent you 5 patches to solve this 
+> problem (tested on my PowerMac G4). Only the first two are strictly
+> related to the problem, the others three may be skipped.
+> 
+> 1) change the driver name
+> 	therm_ds1775 -> MAC,ds1775
+>         therm_adm1030 -> MAC,adm1030
+> so the i2c driver are instantiated by i2c-powermac
+> 
+> 2) remove the (unused) method do_attach from the i2c-driver
+> 
+> 3) add a parameter to the therm_windtunnel module 
+> to control the kernel log message 
+> 
+> 4) export the fan speed via sysfs
+> 
+> 5) export the temperature via the hwmon subsistem
+> 
+> The patch 1) solve the problem. The patch 2) is a small cleanup.
+> The patch 3) allow a better control of the log in dmesg.
+> The patch 4) is copyied from the Bryan Christianson's patch (see
+> debian bug #741663)
+> The patch 5) export the temperatures via hwmon, a more standard 
+> interface. I also added the internal sensor of the adm1030, which 
+> I called "Case2", because it measure the same temperature /+/- 1C) 
+> of the "Case" sensor.
+> 
+> I have to highlight that I tried to export also the fan speed,
+> but I was unable to get it, without affecting the fan speed:
+> when I set the bit 2 (TACH 1 En) of the register 0x1 
+> (Configuration 2), it seemed that the speed every 4/5s dropped,
+> then it raised quickly....
+> I didn't perform other test to avoid damages.
+> 
+> Could you be so kindly to apply these patches ?
+> 
+> PS:
+> I am not LKML subscriber, so please put me in CC in case of reply.
+> 
+> BR
+> G.Baroncelli
+> 
+> Changelog:
+> v1: 2014/07/30
+> 	- first issue
+> v2: 2014/08/01
+
+
+
+
+
+
+
+> 	- protect with a mutex the check before starting the fan 
+> 	  daemon (to protect from parallel drivers instantation)
+> 	- reduce the number of module parameters to 1 as suggested by 
+>           Jean Delvare
+> 	- export the fan speed via sysfs
+> v3: 2014/08/06
+> 	- export the temperatures via hwmon
+> 	- export the internal temperature sensor of the adm1030
+> 	- little cleanup due to the suggestion of checkpatch.pl (
+> 	  and Jean Delvare)
+> 	- removed the "(tune +0)" in the log.
+> v4: 2014/08/07
+> 	- accepted some small cleanup suggestions from Jean Delvare
+> 	- replaced SENSOR_DEVICE_ATTR with DEVICE_ATTR, and
+> 	  added ATTRIBUTE_GROUPS() use
+> v5: 2014/08/09
+> 	- hanlde the return error of 
+> 	  hwmon_device_register_with_groups() with IS_ERR() "macro"
+> 	- better explanation about the source of patch #4
+> 
+> [1] I think that the guilty commit is 
+> commit 81e5d8646ff6bf323dddcf172aa3cef84468fa12
+> Author: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Date:   Wed Apr 18 22:16:42 2012 +0000
+>     i2c/powermac: Register i2c devices from device-tree
+> 
+>     This causes i2c-powermac to register i2c devices exposed in the
+>     device-tree, enabling new-style probing of devices.
+> 
+>     Note that we prefix the IDs with "MAC," in order to prevent the
+>     generic drivers from matching. This is done on purpose as we only
+>     want drivers specifically tested/designed to operate on powermacs
+>     to match.
+> 
+>     This removes the special case we had for the AMS driver, and updates
+>     the driver's match table instead.
+> 
+>     Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> 
+> [2] There is the debian bug #741663 which highlight the same problem. In
+> the bug discussion there is a patch like the my ones.
+> 
+> See also
+> https://lists.ozlabs.org/pipermail/linuxppc-dev/2012-July/099561.html
 > 
 
+
+-- 
+gpg @keyserver.linux.it: Goffredo Baroncelli (kreijackATinwind.it>
+Key fingerprint BBF5 1610 0B64 DAC6 5F7D  17B2 0EDA 9B37 8B82 E0B5
