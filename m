@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933129AbaH0EgI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 00:36:08 -0400
+	id S933148AbaH0Egl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 00:36:41 -0400
 Received: from mga03.intel.com ([143.182.124.21]:44509 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932962AbaH0EfE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 00:35:04 -0400
+	id S932950AbaH0EfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 00:35:03 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,408,1406617200"; 
-   d="scan'208";a="473028955"
+   d="scan'208";a="473028964"
 From: Matthew Wilcox <matthew.r.wilcox@intel.com>
 To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
 Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com
-Subject: [PATCH v10 04/21] Allow page fault handlers to perform the COW
-Date: Tue, 26 Aug 2014 23:45:24 -0400
-Message-Id: <0a73e91d6815936bc748b4be3b71fc8a3cdff898.1409110741.git.matthew.r.wilcox@intel.com>
+Subject: [PATCH v10 14/21] ext2: Remove ext2_use_xip
+Date: Tue, 26 Aug 2014 23:45:34 -0400
+Message-Id: <c89aa9da08f3682898566b6b50331b42823426eb.1409110741.git.matthew.r.wilcox@intel.com>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <cover.1409110741.git.matthew.r.wilcox@intel.com>
 References: <cover.1409110741.git.matthew.r.wilcox@intel.com>
@@ -25,140 +25,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently COW of an XIP file is done by first bringing in a read-only
-mapping, then retrying the fault and copying the page.  It is much more
-efficient to tell the fault handler that a COW is being attempted (by
-passing in the pre-allocated page in the vm_fault structure), and allow
-the handler to perform the COW operation itself.
-
-The handler cannot insert the page itself if there is already a read-only
-mapping at that address, so allow the handler to return VM_FAULT_LOCKED
-and set the fault_page to be NULL.  This indicates to the MM code that
-the i_mmap_mutex is held instead of the page lock.
+Replace ext2_use_xip() with test_opt(XIP) which expands to the same code
 
 Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- include/linux/mm.h |  1 +
- mm/memory.c        | 33 ++++++++++++++++++++++++---------
- 2 files changed, 25 insertions(+), 9 deletions(-)
+ fs/ext2/ext2.h  | 4 ++++
+ fs/ext2/inode.c | 2 +-
+ fs/ext2/namei.c | 4 ++--
+ 3 files changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 8981cc8..0a47817 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -208,6 +208,7 @@ struct vm_fault {
- 	pgoff_t pgoff;			/* Logical page offset based on vma */
- 	void __user *virtual_address;	/* Faulting virtual address */
+diff --git a/fs/ext2/ext2.h b/fs/ext2/ext2.h
+index d9a17d0..5ecf570 100644
+--- a/fs/ext2/ext2.h
++++ b/fs/ext2/ext2.h
+@@ -380,7 +380,11 @@ struct ext2_inode {
+ #define EXT2_MOUNT_NO_UID32		0x000200  /* Disable 32-bit UIDs */
+ #define EXT2_MOUNT_XATTR_USER		0x004000  /* Extended user attributes */
+ #define EXT2_MOUNT_POSIX_ACL		0x008000  /* POSIX Access Control Lists */
++#ifdef CONFIG_FS_XIP
+ #define EXT2_MOUNT_XIP			0x010000  /* Execute in place */
++#else
++#define EXT2_MOUNT_XIP			0
++#endif
+ #define EXT2_MOUNT_USRQUOTA		0x020000  /* user quota */
+ #define EXT2_MOUNT_GRPQUOTA		0x040000  /* group quota */
+ #define EXT2_MOUNT_RESERVATION		0x080000  /* Preallocation */
+diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
+index 59d6c7d..cba3833 100644
+--- a/fs/ext2/inode.c
++++ b/fs/ext2/inode.c
+@@ -1394,7 +1394,7 @@ struct inode *ext2_iget (struct super_block *sb, unsigned long ino)
  
-+	struct page *cow_page;		/* Handler may choose to COW */
- 	struct page *page;		/* ->fault handlers should return a
- 					 * page here, unless VM_FAULT_NOPAGE
- 					 * is set (which is also implied by
-diff --git a/mm/memory.c b/mm/memory.c
-index adeac30..3368785 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2000,6 +2000,7 @@ static int do_page_mkwrite(struct vm_area_struct *vma, struct page *page,
- 	vmf.pgoff = page->index;
- 	vmf.flags = FAULT_FLAG_WRITE|FAULT_FLAG_MKWRITE;
- 	vmf.page = page;
-+	vmf.cow_page = NULL;
+ 	if (S_ISREG(inode->i_mode)) {
+ 		inode->i_op = &ext2_file_inode_operations;
+-		if (ext2_use_xip(inode->i_sb)) {
++		if (test_opt(inode->i_sb, XIP)) {
+ 			inode->i_mapping->a_ops = &ext2_aops_xip;
+ 			inode->i_fop = &ext2_xip_file_operations;
+ 		} else if (test_opt(inode->i_sb, NOBH)) {
+diff --git a/fs/ext2/namei.c b/fs/ext2/namei.c
+index c268d0a..846c356 100644
+--- a/fs/ext2/namei.c
++++ b/fs/ext2/namei.c
+@@ -105,7 +105,7 @@ static int ext2_create (struct inode * dir, struct dentry * dentry, umode_t mode
+ 		return PTR_ERR(inode);
  
- 	ret = vma->vm_ops->page_mkwrite(vma, &vmf);
- 	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE)))
-@@ -2698,7 +2699,8 @@ oom:
-  * See filemap_fault() and __lock_page_retry().
-  */
- static int __do_fault(struct vm_area_struct *vma, unsigned long address,
--		pgoff_t pgoff, unsigned int flags, struct page **page)
-+			pgoff_t pgoff, unsigned int flags,
-+			struct page *cow_page, struct page **page)
- {
- 	struct vm_fault vmf;
- 	int ret;
-@@ -2707,10 +2709,13 @@ static int __do_fault(struct vm_area_struct *vma, unsigned long address,
- 	vmf.pgoff = pgoff;
- 	vmf.flags = flags;
- 	vmf.page = NULL;
-+	vmf.cow_page = cow_page;
+ 	inode->i_op = &ext2_file_inode_operations;
+-	if (ext2_use_xip(inode->i_sb)) {
++	if (test_opt(inode->i_sb, XIP)) {
+ 		inode->i_mapping->a_ops = &ext2_aops_xip;
+ 		inode->i_fop = &ext2_xip_file_operations;
+ 	} else if (test_opt(inode->i_sb, NOBH)) {
+@@ -126,7 +126,7 @@ static int ext2_tmpfile(struct inode *dir, struct dentry *dentry, umode_t mode)
+ 		return PTR_ERR(inode);
  
- 	ret = vma->vm_ops->fault(vma, &vmf);
- 	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE | VM_FAULT_RETRY)))
- 		return ret;
-+	if (!vmf.page)
-+		goto out;
- 
- 	if (unlikely(PageHWPoison(vmf.page))) {
- 		if (ret & VM_FAULT_LOCKED)
-@@ -2724,6 +2729,7 @@ static int __do_fault(struct vm_area_struct *vma, unsigned long address,
- 	else
- 		VM_BUG_ON_PAGE(!PageLocked(vmf.page), vmf.page);
- 
-+ out:
- 	*page = vmf.page;
- 	return ret;
- }
-@@ -2897,7 +2903,7 @@ static int do_read_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 		pte_unmap_unlock(pte, ptl);
- 	}
- 
--	ret = __do_fault(vma, address, pgoff, flags, &fault_page);
-+	ret = __do_fault(vma, address, pgoff, flags, NULL, &fault_page);
- 	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE | VM_FAULT_RETRY)))
- 		return ret;
- 
-@@ -2937,26 +2943,35 @@ static int do_cow_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 		return VM_FAULT_OOM;
- 	}
- 
--	ret = __do_fault(vma, address, pgoff, flags, &fault_page);
-+	ret = __do_fault(vma, address, pgoff, flags, new_page, &fault_page);
- 	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE | VM_FAULT_RETRY)))
- 		goto uncharge_out;
- 
--	copy_user_highpage(new_page, fault_page, address, vma);
-+	if (fault_page)
-+		copy_user_highpage(new_page, fault_page, address, vma);
- 	__SetPageUptodate(new_page);
- 
- 	pte = pte_offset_map_lock(mm, pmd, address, &ptl);
- 	if (unlikely(!pte_same(*pte, orig_pte))) {
- 		pte_unmap_unlock(pte, ptl);
--		unlock_page(fault_page);
--		page_cache_release(fault_page);
-+		if (fault_page) {
-+			unlock_page(fault_page);
-+			page_cache_release(fault_page);
-+		} else {
-+			mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
-+		}
- 		goto uncharge_out;
- 	}
- 	do_set_pte(vma, address, new_page, pte, true, true);
- 	mem_cgroup_commit_charge(new_page, memcg, false);
- 	lru_cache_add_active_or_unevictable(new_page, vma);
- 	pte_unmap_unlock(pte, ptl);
--	unlock_page(fault_page);
--	page_cache_release(fault_page);
-+	if (fault_page) {
-+		unlock_page(fault_page);
-+		page_cache_release(fault_page);
-+	} else {
-+		mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
-+	}
- 	return ret;
- uncharge_out:
- 	mem_cgroup_cancel_charge(new_page, memcg);
-@@ -2975,7 +2990,7 @@ static int do_shared_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	int dirtied = 0;
- 	int ret, tmp;
- 
--	ret = __do_fault(vma, address, pgoff, flags, &fault_page);
-+	ret = __do_fault(vma, address, pgoff, flags, NULL, &fault_page);
- 	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE | VM_FAULT_RETRY)))
- 		return ret;
- 
+ 	inode->i_op = &ext2_file_inode_operations;
+-	if (ext2_use_xip(inode->i_sb)) {
++	if (test_opt(inode->i_sb, XIP)) {
+ 		inode->i_mapping->a_ops = &ext2_aops_xip;
+ 		inode->i_fop = &ext2_xip_file_operations;
+ 	} else if (test_opt(inode->i_sb, NOBH)) {
 -- 
 2.0.0
 
