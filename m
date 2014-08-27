@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932692AbaH0E3x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 00:29:53 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:50847 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050AbaH0E3t (ORCPT
+	id S932849AbaH0EbD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 00:31:03 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:34277 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751123AbaH0E3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 00:29:49 -0400
+	Wed, 27 Aug 2014 00:29:46 -0400
 From: behanw@converseincode.com
 To: ard.biesheuvel@linaro.org, catalin.marinas@arm.com,
         cl@linux-foundation.org, jays.lee@samsung.com,
@@ -17,9 +17,9 @@ Cc: christoffer.dall@linaro.org, kgene.kim@samsung.com, khilman@linaro.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         sungjinn.chung@samsung.com, Behan Webster <behanw@converseincode.com>,
         Mark Charlebois <charlebm@gmail.com>
-Subject: [PATCH V2 3/6] arm64: LLVMLinux: Calculate current_thread_info from current_stack_pointer
-Date: Tue, 26 Aug 2014 21:29:31 -0700
-Message-Id: <1409113774-3172-4-git-send-email-behanw@converseincode.com>
+Subject: [PATCH V2 2/6] arm64: LLVMLinux: Use current_stack_pointer in save_stack_trace_tsk
+Date: Tue, 26 Aug 2014 21:29:30 -0700
+Message-Id: <1409113774-3172-3-git-send-email-behanw@converseincode.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1409113774-3172-1-git-send-email-behanw@converseincode.com>
 References: <20140826141608.GT23445@arm.com>
@@ -42,24 +42,25 @@ Reviewed-by: Jan-Simon Möller <dl9pf@gmx.de>
 Reviewed-by: Olof Johansson <olof@lixom.net>
 Acked-by: Will Deacon <will.deacon@arm.com>
 ---
- arch/arm64/include/asm/thread_info.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/arm64/kernel/stacktrace.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/arch/arm64/include/asm/thread_info.h b/arch/arm64/include/asm/thread_info.h
-index 356e037..459bf8e 100644
---- a/arch/arm64/include/asm/thread_info.h
-+++ b/arch/arm64/include/asm/thread_info.h
-@@ -80,8 +80,8 @@ static inline struct thread_info *current_thread_info(void) __attribute_const__;
+diff --git a/arch/arm64/kernel/stacktrace.c b/arch/arm64/kernel/stacktrace.c
+index 55437ba..407991b 100644
+--- a/arch/arm64/kernel/stacktrace.c
++++ b/arch/arm64/kernel/stacktrace.c
+@@ -111,10 +111,9 @@ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
+ 		frame.sp = thread_saved_sp(tsk);
+ 		frame.pc = thread_saved_pc(tsk);
+ 	} else {
+-		register unsigned long current_sp asm("sp");
+ 		data.no_sched_functions = 0;
+ 		frame.fp = (unsigned long)__builtin_frame_address(0);
+-		frame.sp = current_sp;
++		frame.sp = current_stack_pointer;
+ 		frame.pc = (unsigned long)save_stack_trace_tsk;
+ 	}
  
- static inline struct thread_info *current_thread_info(void)
- {
--	register unsigned long sp asm ("sp");
--	return (struct thread_info *)(sp & ~(THREAD_SIZE - 1));
-+	return (struct thread_info *)
-+		(current_stack_pointer & ~(THREAD_SIZE - 1));
- }
- 
- #define thread_saved_pc(tsk)	\
 -- 
 1.9.1
 
