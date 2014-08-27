@@ -1,72 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964837AbaH0SYz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 14:24:55 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:45873 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935646AbaH0SYv (ORCPT
+	id S935661AbaH0S0m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 14:26:42 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:45343 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935565AbaH0S0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 14:24:51 -0400
+	Wed, 27 Aug 2014 14:26:40 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140730060619.GC19933@codeaurora.org>
-References: <53D788A7.4020303@mm-sol.com>
-	<3794875.CZFbAag5Sv@wuerfel>
-	<53D7AA72.6010309@mm-sol.com>
-	<20140729234522.E9FF1C40738@trevor.secretlab.ca>
-	<53D84558.7060406@codeaurora.org>
-	<CAL_JsqJjH0OH+X=fzwqAPeWarjoLev7v6Nv_QhAa+nZyztMnFA@mail.gmail.com>
-	<20140730060619.GC19933@codeaurora.org>
-Date: Wed, 27 Aug 2014 11:24:49 -0700
-Message-ID: <CAJAp7OhoRQ1eWack1e=OL0cS4Fxmgxc7OWeNxcj1qt7Q-x-sQA@mail.gmail.com>
-Subject: Re: use IORESOURCE_REG resource type for non-translatable addresses
- in DT
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Stanimir Varbanov <svarbanov@mm-sol.com>,
-        Arnd Bergmann <arnd@arndb.de>, Rob Herring <rob.herring@linaro.org>,
-        Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+In-Reply-To: <CAMEtUuw1n1HzAeyKFj9=nGq7RKZq7TADS-6M_BkHbTsWJ_Gm-Q@mail.gmail.com>
+References: <1409106582-10095-1-git-send-email-ast@plumgrid.com>
+ <CALCETrX2MzNxQ1ogt+Qx8iPjUe+z0gN6ZLwu9nAcZzTN+D+iYw@mail.gmail.com>
+ <CAMEtUuwYqJVUuZxPBKy57NonWF+X_5vkNx4uSEx_d=-xBka1Kg@mail.gmail.com>
+ <CALCETrWs9GRufGKxAoV628bh1f3HObkxNQuW3tYRt2rFwNAbxA@mail.gmail.com> <CAMEtUuw1n1HzAeyKFj9=nGq7RKZq7TADS-6M_BkHbTsWJ_Gm-Q@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 27 Aug 2014 11:26:18 -0700
+Message-ID: <CALCETrXAfZJTsF2nPFw55rHkfbNXKQuF8Frnq3e1wHEoGxLM4w@mail.gmail.com>
+Subject: Re: [PATCH RFC v7 net-next 00/28] BPF syscall
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: Daniel Borkmann <dborkman@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chema Gonzalez <chema@google.com>, Namhyung Kim <namhyung@kernel.org>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Brown <broonie@linaro.org>
+        Brendan Gregg <brendan.d.gregg@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 11:06 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> On 07/29, Rob Herring wrote:
-[..]
+On Tue, Aug 26, 2014 at 9:57 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+> On Tue, Aug 26, 2014 at 9:49 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On Tue, Aug 26, 2014 at 9:35 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>>> On Tue, Aug 26, 2014 at 8:56 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>>> On Aug 26, 2014 7:29 PM, "Alexei Starovoitov" <ast@plumgrid.com> wrote:
+>>>>>
+>>>>> Hi Ingo, David,
+>>>>>
+>>>>> posting whole thing again as RFC to get feedback on syscall only.
+>>>>> If syscall bpf(int cmd, union bpf_attr *attr, unsigned int size) is ok,
+>>>>> I'll split them into small chunks as requested and will repost without RFC.
+>>>>
+>>>> IMO it's much easier to review a syscall if we just look at a
+>>>> specification of what it does.  The code is, in some sense, secondary.
+>>>
+>>> 'specification of what it does'... hmm, you mean beyond what's
+>>> there in commit logs and in Documentation/networking/filter.txt ?
+>>> Aren't samples at the end give an idea on 'what it does'?
+>>> I'm happy to add 'specification', I just don't understand yet what
+>>> it suppose to talk about beyond what's already written.
+>>> I understand that the patches are missing explanation on 'why'
+>>> the syscall is being added, but I don't think it's what you're asking...
 >>
->> You might as well do of_property_read_u32 in the below example.
+>> I mean a hopefully short document that defines what the syscall does.
+>> It should be precise enough that one could, in principle, implement
+>> the syscall just by reading the document and that one could use the
+>> syscall just by reading the document.
 >>
+>> Given that there's a whole instruction set to go with it, it may end
+>> up being moderately complicated or saying things like "see this other
+>> thing for a description of the instruction set" and "there are some
+>> extensible sets of functions you can call with it".
 >
-> Fair enough. The example is probably too simple. Things are
-> sometimes slightly more complicated and a simple
-> of_property_read_u32() isn't going to work in the case of
-> multiple reg values or when reg-names is in play.
+> I'm still lost.
 >
+> Here is the quote from Documentation/networking/filter.txt
+> "
+> 'maps' is a generic storage of different types for sharing data between kernel
+> and userspace.
+>
+> The maps are accessed from user space via BPF syscall,
+> which has commands:
+> - create a map with given type and attributes
+>   map_fd = bpf(BPF_MAP_CREATE, union bpf_attr *attr, u32 size)
+>   using attr->map_type, attr->key_size, attr->value_size, attr->max_entries
+>   returns process-local file descriptor or negative error
+>
+> - lookup key in a given map
+>   err = bpf(BPF_MAP_LOOKUP_ELEM, union bpf_attr *attr, u32 size)
+>   using attr->map_fd, attr->key, attr->value
+>   returns zero and stores found elem into value or negative error
+>
+> - create or update key/value pair in a given map
+>   err = bpf(BPF_MAP_UPDATE_ELEM, union bpf_attr *attr, u32 size)
+>   using attr->map_fd, attr->key, attr->value
+>   returns zero or negative error
+>
+> - find and delete element by key in a given map
+>   err = bpf(BPF_MAP_DELETE_ELEM, union bpf_attr *attr, u32 size)
+>   using attr->map_fd, attr->key
+>
+> - to delete map: close(fd)
+>   Exiting process will delete maps automatically
+>
+> userspace programs uses this API to create/populate/read
+> maps that eBPF programs are concurrently updating.
+> "
+> and more in commit log:
+> "
+> - load eBPF program
+>   fd = bpf(BPF_PROG_LOAD, union bpf_attr *attr, u32 size)
+>
+>   where 'attr' is
+>   struct {
+>       enum bpf_prog_type prog_type;
+>       __u32 insn_cnt;
+>       struct bpf_insn __user *insns;
+>       const char __user *license;
+>   };
+>   insns - array of eBPF instructions
+>   license - must be GPL compatible to call helper functions marked gpl_only
+>
+> - unload eBPF program
+>   close(fd)
+> "
+>
+> Isn't it short and describes what it does?
+> Do you want me to describe what eBPF program can do?
 
-But do we have such cases in the Qualcomm PMICs?
+The problem is that everyone needs to dig around a very long patch
+series to find it.  Since you're asking for a review of a syscall, it
+would be nice to have everything needed to review whether the syscall
+is a good idea in its present form in one place and to keep the amount
+of email under control.
 
-The only case I've hit so far is for gpios and mpps, where it feels
-like reg should be base, size and not simply base reg of first gpio -
-but that's a different thing.
+--Andy
 
-Also, so far it seems like most drivers just code the base address in
-the driver, as we have very specific compatibles.
-
-
-How about we stop trying so hard to make this "perfect" and just merge
-something close to Josh's original proposal and ignore this problem?
-Currently all we're doing is delaying any possibility of getting
-drivers for the individual blocks merged.
-If we have the dt bindings require the reg to be there, we can discuss
-and change this all we want later!
-
-Regards,
-Bjorn
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
