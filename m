@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935713AbaH0SjZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 14:39:25 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:35280 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935700AbaH0SjV (ORCPT
+	id S935725AbaH0Sjv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 14:39:51 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:33274 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935198AbaH0Sjt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 14:39:21 -0400
-From: Florian Fainelli <f.fainelli@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, jason@lakedaemon.net,
-        Florian Fainelli <f.fainelli@gmail.com>
-Subject: [PATCH v3] genirq: warn on inconstent flags and flow handler
-Date: Wed, 27 Aug 2014 11:38:45 -0700
-Message-Id: <1409164725-25901-1-git-send-email-f.fainelli@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 27 Aug 2014 14:39:49 -0400
+Message-ID: <53FE25EB.7060702@gmail.com>
+Date: Wed, 27 Aug 2014 20:39:39 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>
+CC: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] regulator: max77802: set opmode to normal if off
+ is read from hw
+References: <1409053061-22568-1-git-send-email-javier.martinez@collabora.co.uk> <53FE2446.3040402@gmail.com> <20140827183733.GN17528@sirena.org.uk>
+In-Reply-To: <20140827183733.GN17528@sirena.org.uk>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is currently possible for a generic irq chip driver to set IRQ_LEVEL
-and have its irq flow handler be handle_edge_irq. Setting IRQ_LEVEL in
-such a case does not make sense, and will actually prevent e.g: the
-software resend logic from kicking, and potential other problems too.
+On 27.08.2014 20:37, Mark Brown wrote:
+> On Wed, Aug 27, 2014 at 08:32:38PM +0200, Tomasz Figa wrote:
+>> On 26.08.2014 13:37, Javier Martinez Canillas wrote:
+> 
+>>> +		/*
+>>> +		 * If the regulator is disabled and the system warm rebooted,
+>>> +		 * the hardware reports OFF as the regulator operating mode.
+>>> +		 * Default to operating mode NORMAL in that case.
+>>> +		 */
+>>> +		if (val == MAX77802_OPMODE_OFF)
+>>> +			max77802->opmode[id] = MAX77802_OPMODE_NORMAL;
+>>> +		else
+>>> +			max77802->opmode[id] = val;
+> 
+>> I might be missing something, but I believe I see a flaw here. If after
+>> a cold boot opmode is something else than OFF or NORMAL, the kernel
+>> starts, turns the regulator off and does warm reboot, the setting is
+>> lost and the regulator is switched to NORMAL mode.
+> 
+> That's essentially the situation the patch is trying to fix - if we boot
+> and the regulator is off there's no way to figure out what the operating
+> mode would have been so we have to pick something.  If you've got an
+> idea for something better to do...
+> 
 
-Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
----
-Changes in v3:
-- replaced BUG_ON() with WARN_ON(), essentially making it similar to v1
-
-Changes in v2:
-- replaced WARN_ON() with BUG_ON()
-
- kernel/irq/chip.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index a2b28a2fd7b1..939ae1283ec9 100644
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -749,8 +749,13 @@ void irq_modify_status(unsigned int irq, unsigned long clr, unsigned long set)
- 		irqd_set(&desc->irq_data, IRQD_PER_CPU);
- 	if (irq_settings_can_move_pcntxt(desc))
- 		irqd_set(&desc->irq_data, IRQD_MOVE_PCNTXT);
--	if (irq_settings_is_level(desc))
-+	if (irq_settings_is_level(desc)) {
-+		/* Setting IRQD_LEVEL does not make sense on non-level
-+		 * sensitive interrupts
-+		 */
-+		WARN_ON(desc->handle_irq != handle_level_irq);
- 		irqd_set(&desc->irq_data, IRQD_LEVEL);
-+	}
- 
- 	irqd_set(&desc->irq_data, irq_settings_get_trigger_mask(desc));
- 
--- 
-1.9.1
-
+Probably the only way to correctly handle this is to specify the right
+operating mode in DT (after defining a binding for it).
