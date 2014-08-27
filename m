@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933334AbaH0Jah (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 05:30:37 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:52581 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754967AbaH0Jaf (ORCPT
+	id S1756061AbaH0JcR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 05:32:17 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43089 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754256AbaH0JcP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 05:30:35 -0400
-X-Original-SENDERIP: 10.177.226.38
-X-Original-MAILFROM: byungchul.park@lge.com
-From: byungchul.park@lge.com
-To: will.deacon@arm.com
-Cc: sudeep.holla@arm.com, catalin.marinas@arm.com,
-        linux-kernel@vger.kernel.org, Byungchul Park <byungchul.park@lge.com>
-Subject: [PATCH 2/2] arm64: take onlined cpus into account when setting irq affinity in migrate_one_irq
-Date: Wed, 27 Aug 2014 18:30:32 +0900
-Message-Id: <1409131832-11317-1-git-send-email-byungchul.park@lge.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 27 Aug 2014 05:32:15 -0400
+Date: Wed, 27 Aug 2014 11:32:13 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Janek Kozicki <janek_listy@wp.pl>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [HELP (not patch)] Re: Resume from hibernation fails 40% of
+ time, kernel 3.16.0 (64GB of RAM, 32 Xeon E5-2687W cores)
+Message-ID: <20140827093213.GA30622@amd>
+References: <20140804185644.05a56986@absurd>
+ <20140804232447.5094b23e@absurd>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140804232447.5094b23e@absurd>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Byungchul Park <byungchul.park@lge.com>
+On Mon 2014-08-04 23:24:47, Janek Kozicki wrote:
+> I see that this list is extremely busy, I thought this is the
+> place to go asking for help in debugging hibernation. If that's not
+> the right place, please tell me where should I go. If that's the
+> right place, please get me started. First - how can I retrieve some
+> useful logs from failed resume attempts?
 
-This patch ensures that the cpu being offlined is not present in the affinity mask.
+You want to cc rjw.
 
-Signed-off-by: Byungchul Park <byungchul.park@lge.com>
----
- arch/arm64/kernel/irq.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+> > The failure was always a reboot after resume had almost succeeded. In
+> > cases when there was a success there was a ---[cut here]--- part
+> > which is in the attachment. All of my successes are included in the
+> > attachments (please note that method had 0 success rate, so no
+> > success logs are attached for it).
 
-diff --git a/arch/arm64/kernel/irq.c b/arch/arm64/kernel/irq.c
-index 473e5db..0c7b79e 100644
---- a/arch/arm64/kernel/irq.c
-+++ b/arch/arm64/kernel/irq.c
-@@ -87,6 +87,7 @@ static bool migrate_one_irq(struct irq_desc *desc)
- {
- 	struct irq_data *d = irq_desc_get_irq_data(desc);
- 	const struct cpumask *affinity = d->affinity;
-+	struct cpumask tmp_affinity;
- 	struct irq_chip *c;
- 	bool ret = false;
- 
-@@ -100,6 +101,14 @@ static bool migrate_one_irq(struct irq_desc *desc)
- 	if (cpumask_any_and(affinity, cpu_online_mask) >= nr_cpu_ids) {
- 		affinity = cpu_online_mask;
- 		ret = true;
-+	} else {
-+		/*
-+		 * when using forced irq_set_affinity we must ensure that the cpu
-+		 * being offlined is not present in the affinity mask, it may be
-+		 * selected as the target CPU otherwise
-+		 */
-+		cpumask_and(&tmp_affinity, affinity, cpu_online_mask);
-+		affinity = &tmp_affinity;
- 	}
- 
- 	c = irq_data_get_irq_chip(d);
+Usually trying with minimum set of drivers loaded is useful debug
+technique. Plus there are some debugging hints in Documentation/.
+
+									Pavel
 -- 
-1.7.9.5
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
