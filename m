@@ -1,84 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756566AbaH0Afd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 20:35:33 -0400
-Received: from mail-bl2lp0209.outbound.protection.outlook.com ([207.46.163.209]:25228
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756225AbaH0Afb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 20:35:31 -0400
-Date: Tue, 26 Aug 2014 17:35:07 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
-        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH] PM / sleep: Fix racing timers
-References: <1408568109-30297-1-git-send-email-soren.brinkmann@xilinx.com>
- <19851825.qu8r5WDRRO@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <19851825.qu8r5WDRRO@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-20902.005
-X-TM-AS-Result: No--19.168-5.0-31-1
-X-imss-scan-details: No--19.168-5.0-31-1
-Message-ID: <64c2b0ef-39e9-4194-aec1-8026b7fbe272@BY2FFO11FD014.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(199003)(377424004)(24454002)(189002)(377454003)(164054003)(51704005)(77982001)(81542001)(110136001)(104016003)(107046002)(64706001)(46102001)(106466001)(79102001)(81342001)(47776003)(83506001)(85202003)(20776003)(4396001)(85306004)(95666004)(53416004)(23676002)(87936001)(85182001)(92566001)(21056001)(77096002)(90102001)(92726001)(99396002)(31966008)(1496007)(74662001)(74502001)(80022001)(44976005)(83322001)(86362001)(85852003)(31696002)(83072002)(74316001)(76176999)(76482001)(50986999)(6806004)(50466002)(70736001)(54356999)(102836001)(107986001);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB045;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 0316567485
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
-X-OriginatorOrg: xilinx.com
+	id S932138AbaH0AiC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 20:38:02 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:34151 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755739AbaH0AiA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 20:38:00 -0400
+X-AuditID: cbfee690-f79ce6d00000115a-43-53fd28662cb5
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Lee Jones'" <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org, "'Bryan Wu'" <cooloney@gmail.com>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <009301cfc12d$2847ffd0$78d7ff70$%han@samsung.com>
+ <00bb01cfc12d$fb662c20$f2328460$%han@samsung.com>
+ <20140826162817.GD26707@lee--X1>
+In-reply-to: <20140826162817.GD26707@lee--X1>
+Subject: Re: [PATCH 17/18] backlight: jornada720: remove 'else' after a return
+Date: Wed, 27 Aug 2014 09:37:58 +0900
+Message-id: <004201cfc18f$269c5f20$73d51d60$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac/BSsJibDWf1SViTJuns+sb1LGLSgARDzcg
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMIsWRmVeSWpSXmKPExsVy+t8zI900jb/BBr0zDS2O7pzIZHF54SVW
+	i/tfjzJaXN41h82BxWPnrLvsHneu7WHz6NuyitHj8ya5AJYoLpuU1JzMstQifbsEroyumfvZ
+	Cxq4K942b2JqYHzA0cXIySEhYCKxs3MdI4QtJnHh3nq2LkYuDiGBZYwSp9a/ZoQpenyvmxki
+	sYhR4v+CH4wQzm9GiQl/25lAqtgE1CS+fDnMDmKLANk398wCizMLpEus2nuHBaJhCqNE388Z
+	rCAJTgFdiZ4lm8FWCAv4SRxetIUZxGYRUJWYuekfWJxXwFbi1rMOdghbUOLH5HssEEPVJSbN
+	W8QMYWtLPHl3AWgmB9Cp6hKP/uqCmCICRhJNc40gKkQk9r14B3azhMApdom5F/6wQqwSkPg2
+	+RALRKusxKYDzBAPS0ocXHGDZQKjxCwki2chWTwLyeJZSFYsYGRZxSiaWpBcUJyUXmSiV5yY
+	W1yal66XnJ+7iRESlxN2MN47YH2IUYCDUYmH98OCP8FCrIllxZW5hxhNgS6ayCwlmpwPjP68
+	knhDYzMjC1MTU2Mjc0szJXHe11I/g4UE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUw1m6x3Go2
+	1ebBVOV72WvuVf7b8EK3sPvha6mPLYs/a93dHK0mdUsq1tLE3aLVd+3pzgWbpwQmL9QriP9m
+	nvR20iLx1BzDrznX9b/kbu00fmRXlx0kX+q+oZEj+2zEzajcC5MzzeY/fbDOnTtY755Vrwzn
+	w49/z+/79eegt36EgPybbGYv5XkdSizFGYmGWsxFxYkAxYCMSMYCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLIsWRmVeSWpSXmKPExsVy+t9jAd00jb/BBkv36Voc3TmRyeLywkus
+	Fve/HmW0uLxrDpsDi8fOWXfZPe5c28Pm0bdlFaPH501yASxRDYw2GamJKalFCql5yfkpmXnp
+	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUA7lRTKEnNKgUIBicXFSvp2mCaEhrjp
+	WsA0Ruj6hgTB9RgZoIGEdYwZXTP3sxc0cFe8bd7E1MD4gKOLkZNDQsBE4vG9bmYIW0ziwr31
+	bF2MXBxCAosYJf4v+MEI4fxmlJjwt50JpIpNQE3iy5fD7CC2CJB9c88ssDizQLrEqr13WCAa
+	pjBK9P2cwQqS4BTQlehZspkRxBYW8JM4vGgL2DoWAVWJmZv+gcV5BWwlbj3rYIewBSV+TL7H
+	AjFUXWLSvEXMELa2xJN3F4BmcgCdqi7x6K8uiCkiYCTRNNcIokJEYt+Ld4wTGIVmIRk0C8mg
+	WUgGzULSsoCRZRWjaGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcNQ/k97BuKrB4hCjAAejEg/v
+	hwV/goVYE8uKK3MPMUpwMCuJ8CYr/A0W4k1JrKxKLcqPLyrNSS0+xGgK9OdEZinR5HxgQsor
+	iTc0NjEzsjQyszAyMTdXEuc92GodKCSQnliSmp2aWpBaBNPHxMEp1cCo53n3q7HfJcOPfYUn
+	Npx2mqPdcOnVd7U8H+5cnZ3JnVd4y+2ul35ckjLjw3OZrOcT2bh37dQvjEx4bWa3gH3mZiHJ
+	aLZ0T8dfZR48+qf+/2iZ9FnXRzxPxdvE4/y7N0FZiafrYs1DQ+QU3sxhSV14+fS9JyXcbydf
+	73L9bJRdyh1yR7hfe5USS3FGoqEWc1FxIgAxZOEsEAMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-08-27 at 02:32AM +0200, Rafael J. Wysocki wrote:
-> Hi,
+On Wednesday, August 27, 2014 1:28 AM, Lee Jones wrote:
+> On Tue, 26 Aug 2014, Jingoo Han wrote:
 > 
-> Sorry for being somewhat slow to respond to this, but I'm not sure if the
-> approach here is the right one.
+> > Fixed the following checkpatch warning.
+> >
+> >   WARNING: else is not generally useful after a break or return
+> >
+> > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> > ---
+> >  drivers/video/backlight/jornada720_lcd.c | 4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/drivers/video/backlight/jornada720_lcd.c b/drivers/video/backlight/jornada720_lcd.c
+> > index 228bc319de19..1cf3d59f1e7f 100644
+> > --- a/drivers/video/backlight/jornada720_lcd.c
+> > +++ b/drivers/video/backlight/jornada720_lcd.c
+> > @@ -30,8 +30,8 @@ static int jornada_lcd_get_power(struct lcd_device *ld)
+> >  	/* LDD2 in PPC = LCD POWER */
+> >  	if (PPSR & PPC_LDD2)
+> >  		return FB_BLANK_UNBLANK;	/* PW ON */
+> > -	else
+> > -		return FB_BLANK_POWERDOWN;	/* PW OFF */
+> > +
+> > +	return FB_BLANK_POWERDOWN;	/* PW OFF */
 > 
-> On Wednesday, August 20, 2014 01:55:09 PM Soren Brinkmann wrote:
-> > On platforms that do not power off during suspend, successfully entering
-> > suspend races with timers.
-> > 
-> > The race happening in a couple of location is:
-> > 
-> >   1. disable IRQs   		(e.g. arch_suspend_disable_irqs())
-> >      ...
-> >   2. syscore_suspend()
-> >       -> timekeeping_suspend()
-> >        -> clockevents_notify(SUSPEND)
-> >         -> tick_suspend()   	(timers are turned off here)
-> >      ...
-> >   3. wfi            		(wait for wake-IRQ here)
-> > 
-> > Between steps 1 and 2 the timers can still generate interrupts that are
-> > not handled and stay pending until step 3. That pending IRQ causes an
-> > immediate - spurious - wake.
+> How about:
 > 
-> Well, the problem here is that the platform is not supposed to re-enable
-> interrupts after syscore_suspend().  Of course, some platforms do that, because
-> they don't really support system sleep and try to emulate it with something
-> along the lines of suspend-to-idle.
+>   return PPSR & PPC_LDD2 ? FB_BLANK_UNBLANK : FB_BLANK_POWERDOWN;
 
-No, IRQs are not enabled after syscore-suspend. But the wait for
-interrupt state on ARM is left even with IRQs disabled. It will prevent
-the core from taking the exception, but it will "wake" it up. So, my
-impressions was that the core is the appropriate location to fix this. I
-wouldn't know where else to do it.
+OK, it looks good.
+Thank you for your suggestion!
 
-It is certainly an issue caused by this probably non-standard suspend
-state, but if we accept this implementation as a valid suspend
-implementation, I'd say it's a core issue.
+Best regards,
+Jingoo Han
 
-	Thanks,
-	Sören
+> 
+> >  }
+> >
+> >  static int jornada_lcd_get_contrast(struct lcd_device *ld)
+> 
+> --
+> Lee Jones
+> Linaro STMicroelectronics Landing Team Lead
+> Linaro.org │ Open source software for ARM SoCs
+> Follow Linaro: Facebook | Twitter | Blog
+
