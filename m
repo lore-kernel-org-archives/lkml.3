@@ -1,39 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965155AbaH0WVA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 18:21:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52100 "EHLO mail.zytor.com"
+	id S965197AbaH0WVj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 18:21:39 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:44230
+	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932246AbaH0WU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 18:20:59 -0400
-Message-ID: <53FE59B8.5080401@zytor.com>
-Date: Wed, 27 Aug 2014 15:20:40 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: "David E. Box" <david.e.box@linux.intel.com>, tglx@linutronix.de,
-        mingo@redhat.com
-CC: x86@kernel.org, linux-kernel@vger.kernel.org, alan@linux.intel.com
-Subject: Re: [PATCH 2/2] x86: iosf: Add debugfs support
-References: <1409175640-32426-1-git-send-email-david.e.box@linux.intel.com> <1409175640-32426-3-git-send-email-david.e.box@linux.intel.com>
-In-Reply-To: <1409175640-32426-3-git-send-email-david.e.box@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S965168AbaH0WVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 18:21:38 -0400
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com, sitsofe@gmail.com, decui@microsoft.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH V2 0/5] Drivers: hv: vmbus: Eliminate calls to BUG_ON() 
+Date: Wed, 27 Aug 2014 16:25:05 -0700
+Message-Id: <1409181905-23254-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2014 02:40 PM, David E. Box wrote:
-> Allows access to the iosf sideband through debugfs.
+Cleanup the channel management code and eliminate calls to BUG_ON().
+Also fix an error propagation bug in vmbus_open().
 
-This would break if compiled without CONFIG_DEBUGFS support, which is
-often a requirement for security reasons.
+In this version of the patch-set, I have addressed comments from
+Dan Carpenter.
 
-Please conditionalize this code, and if practical move it to a separate
-.c file.
+K. Y. Srinivasan (5):
+  Drivers: hv: vmbus: Cleanup vmbus_post_msg()
+  Drivers: hv: vmbus: Cleanup vmbus_teardown_gpadl()
+  Drivers: hv: vmbus: Cleanup vmbus_close_internal()
+  Drivers: hv: vmbus: Cleanup vmbus_establish_gpadl()
+  Drivers: hv: vmbus: Fix a bug in vmbus_open()
 
-Most drivers also have separate config options to enable their specific
-debugfs options.
+ drivers/hv/channel.c    |   49 +++++++++++++++++++++++++++++++---------------
+ drivers/hv/connection.c |   17 ++++++++++++---
+ 2 files changed, 46 insertions(+), 20 deletions(-)
 
-	-hpa
+-- 
+1.7.4.1
 
