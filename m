@@ -1,75 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935569AbaH0TUy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 15:20:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55688 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933812AbaH0TUw (ORCPT
+	id S935617AbaH0TVK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 15:21:10 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:33265 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933812AbaH0TVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 15:20:52 -0400
-Date: Wed, 27 Aug 2014 12:20:52 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Roger Quadros <rogerq@ti.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, balbi@ti.com,
-        ming.lei@canonical.com, mwelling@emacinc.com,
-        stefan@herbrechtsmeier.net, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "[3.8+]" <stable@vger.kernel.org>
-Subject: Re: [PATCH] usb: hub: Prevent hub autosuspend if usbcore.autosuspend
- is -1
-Message-ID: <20140827192052.GB8732@kroah.com>
-References: <Pine.LNX.4.44L0.1408041006530.1169-100000@iolanthe.rowland.org>
- <53FDB37C.8030707@ti.com>
+	Wed, 27 Aug 2014 15:21:08 -0400
+Message-ID: <53FE2F9E.80501@gmail.com>
+Date: Wed, 27 Aug 2014 21:21:02 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53FDB37C.8030707@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Mark Brown <broonie@kernel.org>
+CC: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] regulator: max77802: set opmode to normal if off
+ is read from hw
+References: <1409053061-22568-1-git-send-email-javier.martinez@collabora.co.uk> <53FE2446.3040402@gmail.com> <20140827183733.GN17528@sirena.org.uk> <53FE25EB.7060702@gmail.com> <20140827184705.GO17528@sirena.org.uk> <53FE2901.50508@gmail.com> <20140827191526.GS17528@sirena.org.uk>
+In-Reply-To: <20140827191526.GS17528@sirena.org.uk>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 27, 2014 at 01:31:24PM +0300, Roger Quadros wrote:
-> On 08/04/2014 05:07 PM, Alan Stern wrote:
-> > On Mon, 4 Aug 2014, Roger Quadros wrote:
-> > 
-> >> If user specifies that USB autosuspend must be disabled by module
-> >> parameter "usbcore.autosuspend=-1" then we must prevent
-> >> autosuspend of USB hub devices as well.
-> >>
-> >> commit 596d789a211d introduced in v3.8 changed the original behaivour
-> >> and stopped respecting the usbcore.autosuspend parameter for hubs.
-> >>
-> >> Fixes: 596d789a211d "USB: set hub's default autosuspend delay as 0"
-> >>
-> >> Cc: [3.8+] <stable@vger.kernel.org>
-> >> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> > 
-> > Acked-by: Alan Stern <stern@rowland.harvard.edu>
-> > 
+On 27.08.2014 21:15, Mark Brown wrote:
+> On Wed, Aug 27, 2014 at 08:52:49PM +0200, Tomasz Figa wrote:
+>> On 27.08.2014 20:47, Mark Brown wrote:
 > 
-> Just noticed the below error by the Intel's build script
+>>> I'm not convinced that's worth it - chances are that if anything changed
+>>> the mode it was a previously running Linux which will most likely be
+>>> doing the same things when it starts running anyway.
 > 
-> > tree:   git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git usb-linus
-> > head:   039368901ad0a6476c7ecf0cfe4f84d735e30135
-> > commit: bdd405d2a5287bdb9b04670ea255e1f122138e66 [19/20] usb: hub: Prevent hub autosuspend if usbcore.autosuspend is -1
-> > config: make ARCH=sparc64 defconfig
-> > 
-> > All error/warnings:
-> > 
-> >    drivers/usb/core/hub.c: In function 'hub_probe':
-> >>> drivers/usb/core/hub.c:1735:21: error: 'struct dev_pm_info' has no member named 'autosuspend_delay'
-> >      if (hdev->dev.power.autosuspend_delay >= 0)
-> >                         ^
+>> The previously running Linux would have changed the opmode accidentally,
+>> due to hardware design of PMIC chip, which doesn't allow powering off a
+>> regulator in other way than setting opmode to OFF.
 > 
-> Seems like the "if" has to be placed within a #ifdef CONFIG_PM_RUNTIME.
+>> If you provide the "active" opmode to that Linux, after a warm reboot it
+>> will be able to power on such regulator to correct opmode, without
+>> defaulting it incorrectly to NORMAL.
 > 
-> Greg,
+> This is in the scenario where the previously running Linux changed the
+> mode to something other than normal and where the freshly booted Linux
+> can't figure out how to do that when it needs to.  I'm not sure how
+> plausible that scenario is, or that real systems would handle it
+> robustly.
 > 
-> Should I send a v2 of this patch or a fix on top of your usb-linus branch?
 
-Please send a fix-on-top, as I already have your patch applied, and
-can't remove it.
+I'm not sure I'm getting your point.
 
-thanks,
+If the only thing Linux can do is read back the opmode from PMIC
+registers, it doesn't explicitly set it to something other, but rather
+reuses what was set by something before it (or, after this patch,
+defaults to NORMAL if it's OFF), i.e. the low level firmware or Linux.
 
-greg k-h
+However the information about original setting is lost whenever Linux
+turns the regulator off and performs a warm reboot, which I believe
+would be a quite common scenario.
+
+Best regards,
+Tomasz
