@@ -1,181 +1,530 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934883AbaH0OPV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 10:15:21 -0400
-Received: from mail-bl2lp0208.outbound.protection.outlook.com ([207.46.163.208]:56952
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S934726AbaH0OPT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 10:15:19 -0400
-From: Dexuan Cui <decui@microsoft.com>
-To: Sitsofe Wheeler <sitsofe@gmail.com>
-CC: KY Srinivasan <kys@microsoft.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PANIC, hyperv] BUG: unable to handle kernel paging request at
- ffff880077800004 (hv_ringbuffer_write)
-Thread-Topic: [PANIC, hyperv] BUG: unable to handle kernel paging request at
- ffff880077800004 (hv_ringbuffer_write)
-Thread-Index: AQHPvFjgvav2zR0lYke3SB9WxJlS05vhXWzggABBfwCAAQnBQIABpkoAgAAIh7CAABEjgIAAHqJw
-Date: Wed, 27 Aug 2014 14:14:02 +0000
-Message-ID: <EE124450C0AAF944A40DD71E61F878C9965238@SINEX14MBXC419.southpacific.corp.microsoft.com>
-References: <20140820092630.GA1478@sucs.org>
- <EE124450C0AAF944A40DD71E61F878C994F314@SINEX14MBXC417.southpacific.corp.microsoft.com>
- <20140825174132.GA17681@sucs.org>
- <EE124450C0AAF944A40DD71E61F878C995E93E@SINEX14MBXC419.southpacific.corp.microsoft.com>
- <20140827104408.GC1827@sucs.org>
- <EE124450C0AAF944A40DD71E61F878C996493E@SINEX14MBXC419.southpacific.corp.microsoft.com>
- <20140827121559.GA14286@sucs.org>
-In-Reply-To: <20140827121559.GA14286@sucs.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.168.3.97]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S934932AbaH0OPc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 10:15:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36728 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934741AbaH0OPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 10:15:20 -0400
+Message-ID: <53FDE7F6.5030308@suse.de>
+Date: Wed, 27 Aug 2014 16:15:18 +0200
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(41574002)(13464003)(199003)(189002)(377454003)(51704005)(15975445006)(90102001)(23726002)(97736001)(97756001)(92566001)(86612001)(99396002)(68736004)(44976005)(83322001)(92726001)(76482001)(1411001)(74502001)(6806004)(31966008)(85852003)(19580395003)(16796002)(83072002)(69596002)(46102001)(46406003)(86362001)(4396001)(74662001)(20776003)(95666004)(2656002)(50466002)(54356999)(84676001)(106116001)(81542001)(77096002)(55846006)(81342001)(110136001)(26826002)(33656002)(87936001)(47776003)(50986999)(80022001)(76176999)(107046002)(85306004)(106466001)(21056001)(79102001)(77982001)(93886004)(81156004)(64706001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB190;H:mail.microsoft.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;UriScan:;
-X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
- (Engineering ONLY)
-X-Forefront-PRVS: 0316567485
-Authentication-Results: spf=pass (sender IP is 131.107.125.37)
- smtp.mailfrom=decui@microsoft.com; 
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;
-X-OriginatorOrg: microsoft.onmicrosoft.com
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+CC: linux-scsi@vger.kernel.org,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        yrl.pp-manager.tt@hitachi.com, linux-kernel@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Doug Gilbert <dgilbert@interlog.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christoph Hellwig <hch@lst.de>
+Subject: Re: [RFC PATCH 08/10] scsi/trace: Use scsi_print_sense trace point
+ instead of printk
+References: <20140808115004.6768.97014.stgit@yuno-kbuild.novalocal> <20140808115025.6768.70331.stgit@yuno-kbuild.novalocal>
+In-Reply-To: <20140808115025.6768.70331.stgit@yuno-kbuild.novalocal>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Sitsofe Wheeler
-> Sent: Wednesday, August 27, 2014 20:16 PM
-> 
-> > do_hypercall() fails due to HV_STATUS_INVALID_ALIGNMENT, if "the
-> > specified input or output GPA pointer is not aligned to 8 bytes",
-> > or, "the specified input or output parameter lists spans pages".
-> > Here the 'input' can rarely across the page boundary, especially when
-> > CONFIG_DEBUG_PAGEALLOC is on.
-> 
-> It can also be returned when "The input or output GPA pointer is not within
-> the bounds of the GPA space." but I'm guessing that's not the case here?
-Hi Sitsofe,
-I think you're correct. 
+On 08/08/2014 01:50 PM, Yoshihiro YUNOMAE wrote:
+> Previous sense messages can be mixed into other sense messages,
+> because continuous printk (KERN_CONT) was used. To avoid the problem,
+> patch d87f3a6f51 introduced a local buffer in Hannes's baranch (*1).
+> But using local buffers can induce stack overflow, so we want to solve the
+> problem without local buffer if possible.
+>
+> trace_seq_printf can add log messages without local buffer, so we use it.
+>
+> (*1) http://git.kernel.org/cgit/linux/kernel/git/hare/scsi-devel.git/log/?h=logging
+>
+> - Result examples
+>
+> <Before> (printk)
+> sd 2:0:0:0: [sda] Sense Key : Medium Error [current]
+>
+> <After> (ftrace)
+> scsi_print_sense: host_no=2 channel=0 id=0 lun=0 [sda] Sense Key (Medium Error [current])
+>
+> Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+> Cc: Hannes Reinecke <hare@suse.de>
+> Cc: Doug Gilbert <dgilbert@interlog.com>
+> Cc: Martin K. Petersen <martin.petersen@oracle.com>
+> Cc: Christoph Hellwig <hch@lst.de>
+> Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+> Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> ---
+>   drivers/scsi/constants.c    |  145 ++-----------------------------------------
+>   drivers/scsi/scsi_trace.c   |  140 ++++++++++++++++++++++++++++++++++++++++--
+>   include/scsi/scsi_eh.h      |    7 ++
+>   include/trace/events/scsi.h |   48 ++++++++++++++
+>   4 files changed, 195 insertions(+), 145 deletions(-)
+>
+> diff --git a/drivers/scsi/constants.c b/drivers/scsi/constants.c
+> index f7b7f32..85b75c8 100644
+> --- a/drivers/scsi/constants.c
+> +++ b/drivers/scsi/constants.c
+> @@ -19,7 +19,7 @@
+>   #include <scsi/scsi_eh.h>
+>   #include <scsi/scsi_dbg.h>
+>
+> -
+> +#include <trace/events/scsi.h>
+>
+>   /* Commands with service actions that change the command name */
+>   #define SERVICE_ACTION_IN_12 0xab
+> @@ -1267,58 +1267,8 @@ static const struct error_info2 additional2[] =
+>   	{0x70, 0x00, 0xff, "Decompression exception short algorithm id of %x"},
+>   	{0, 0, 0, NULL}
+>   };
+> -
+> -/* description of the sense key values */
+> -static const char * const snstext[] = {
+> -	"No Sense",	    /* 0: There is no sense information */
+> -	"Recovered Error",  /* 1: The last command completed successfully
+> -				  but used error correction */
+> -	"Not Ready",	    /* 2: The addressed target is not ready */
+> -	"Medium Error",	    /* 3: Data error detected on the medium */
+> -	"Hardware Error",   /* 4: Controller or device failure */
+> -	"Illegal Request",  /* 5: Error in request */
+> -	"Unit Attention",   /* 6: Removable medium was changed, or
+> -				  the target has been reset, or ... */
+> -	"Data Protect",	    /* 7: Access to the data is blocked */
+> -	"Blank Check",	    /* 8: Reached unexpected written or unwritten
+> -				  region of the medium */
+> -	"Vendor Specific(9)",
+> -	"Copy Aborted",	    /* A: COPY or COMPARE was aborted */
+> -	"Aborted Command",  /* B: The target aborted the command */
+> -	"Equal",	    /* C: A SEARCH DATA command found data equal,
+> -				  reserved in SPC-4 rev 36 */
+> -	"Volume Overflow",  /* D: Medium full with still data to be written */
+> -	"Miscompare",	    /* E: Source data and data on the medium
+> -				  do not agree */
+> -	"Completed",	    /* F: command completed sense data reported,
+> -				  may occur for successful command */
+> -};
+> -#else
+> -static const char * const snstext[] = {
+> -	"0x0", "0x1", "0x2", "0x3", "0x4", "0x5", "0x6", "0x7",
+> -	"0x8", "0x9", "0xa", "0xb", "0xc", "0xd", "0xe", "0xf",
+> -};
+>   #endif
+>
+> -/* Get sense key string or NULL if not available */
+> -const char *
+> -scsi_sense_key_string(unsigned char key) {
+> -	return snstext[key & 0xf];
+> -}
+> -EXPORT_SYMBOL(scsi_sense_key_string);
+> -
+> -const char *
+> -scsi_sense_type_string(struct scsi_sense_hdr *sshdr)
+> -{
+> -	return scsi_sense_is_deferred(sshdr) ? "[deferred]" : "[current]";
+> -}
+> -
+> -const char *
+> -scsi_sense_format_string(struct scsi_sense_hdr *sshdr)
+> -{
+> -	return sshdr->response_code >= 0x72 ? "[descriptor]" : "";
+> -}
+> -
+>   /*
+>    * Get additional sense code string or NULL if not available.
+>    * This string may contain a "%x" and should be printed with ascq as arg.
+> @@ -1375,105 +1325,22 @@ void
+>   scsi_print_sense_hdr(struct scsi_device *sdev, const char *name,
+>   		     struct scsi_sense_hdr *sshdr)
+>   {
+> -	sdev_printk(KERN_INFO, sdev, "[%s] Sense Key : %s %s%s\n", name,
+> -		    scsi_sense_key_string(sshdr->sense_key),
+> -		    scsi_sense_type_string(sshdr),
+> -		    scsi_sense_format_string(sshdr));
+> +	trace_scsi_print_sense(sdev, name, sshdr, NULL, 0, 0);
+>   	scsi_show_extd_sense(sdev, name, sshdr->asc, sshdr->ascq);
+>   }
+>   EXPORT_SYMBOL(scsi_print_sense_hdr);
+>
+> -static void
+> -scsi_dump_sense_buffer(struct scsi_device *sdev, const char *prefix,
+> -		       const unsigned char *sense_buffer, int sense_len)
+> -{
+> -	char linebuf[128];
+> -	int i, linelen, remaining;
+> -
+> -	if (sense_len < 32)
+> -		sense_len = 32;
+> -
+> -	remaining = sense_len;
+> -	for (i = 0; i < sense_len; i += 16) {
+> -		linelen = min(remaining, 16);
+> -		remaining -= 16;
+> -
+> -		hex_dump_to_buffer(sense_buffer + i, linelen, 16, 1,
+> -				   linebuf, sizeof(linebuf), false);
+> -	}
+> -	sdev_printk(KERN_INFO, sdev,
+> -		    "[%s] Unrecognized sense data (in hex): %s",
+> -		    prefix, linebuf);
+> -}
+> -
+> -static void
+> -scsi_decode_sense_extras(struct scsi_device *sdev, const char *name,
+> -			 const unsigned char *sense_buffer, int sense_len)
+> -{
+> -	int res, sense_flags = 0, fixed_valid = 0;
+> -	u64 info = 0;
+> -	char buff[80];
+> -	int blen;
+> -
+> -	if ((sense_buffer[0] & 0x80) < 0x72) {
+> -		/* decode extras for "fixed" format */
+> -		fixed_valid = sense_buffer[0] & 0x80;
+> -		info = get_unaligned_be32(&sense_buffer[3]);
+> -		sense_flags = sense_buffer[2];
+> -	} else if (sense_buffer[7] > 0) {
+> -		const u8 *ucp;
+> -
+> -		/* descriptor format with sense descriptors */
+> -		ucp = scsi_sense_desc_find(sense_buffer, sense_len, 0);
+> -		if (ucp) {
+> -			fixed_valid = ucp[2] & 0x80;
+> -			if (fixed_valid)
+> -				info = get_unaligned_be64(&ucp[4]);
+> -		}
+> -		ucp = scsi_sense_desc_find(sense_buffer, sense_len, 4);
+> -		if (ucp)
+> -			sense_flags |= ucp[3] & 0xe0;
+> -	}
+> -
+> -	if (!sense_flags && !fixed_valid)
+> -		return;
+> -
+> -	res = 0;
+> -	memset(buff, 0, sizeof(buff));
+> -	blen = sizeof(buff) - 1;
+> -	if (fixed_valid)
+> -		res += snprintf(buff + res, blen - res,
+> -				"Info fld=0x%llx, ", info);
+> -	if (sense_flags)
+> -		res += snprintf(buff + res, blen - res, "%s%s%s",
+> -				sense_flags & SENSE_FMK ? "FMK, " : "",
+> -				sense_flags & SENSE_EOM ? "EOM, " : "",
+> -				sense_flags & SENSE_ILI ? "ILI, " : "");
+> -	if (res) {
+> -		res -= 2;
+> -		buff[res] = '\0';
+> -	}
+> -
+> -	sdev_printk(KERN_INFO, sdev, "[%s] %s\n", name, buff);
+> -}
+> -
+>   /* Normalize and print sense buffer with name prefix */
+>   void __scsi_print_sense(struct scsi_device *sdev, const char *name,
+>   			const unsigned char *sense_buffer, int sense_len)
+>   {
+>   	struct scsi_sense_hdr sshdr;
+> +	int raw;
+>
+> -	if (!scsi_normalize_sense(sense_buffer, sense_len, &sshdr)) {
+> -		/* this may be SCSI-1 sense data */
+> -		scsi_dump_sense_buffer(sdev, name, sense_buffer, sense_len);
+> -		return;
+> -	}
+> +	raw = !scsi_normalize_sense(sense_buffer, sense_len, &sshdr);
+>
+> -	sdev_printk(KERN_INFO, sdev, "[%s] Sense Key : %s %s%s\n", name,
+> -	       scsi_sense_key_string(sshdr.sense_key),
+> -	       scsi_sense_type_string(&sshdr),
+> -	       scsi_sense_format_string(&sshdr));
+> -	scsi_decode_sense_extras(sdev, name, sense_buffer, sense_len);
+> +	trace_scsi_print_sense(sdev, name, &sshdr, sense_buffer, sense_len,
+> +			       raw);
+>   	scsi_show_extd_sense(sdev, name, sshdr.asc, sshdr.ascq);
+>   }
+>   EXPORT_SYMBOL(__scsi_print_sense);
+> diff --git a/drivers/scsi/scsi_trace.c b/drivers/scsi/scsi_trace.c
+> index 6ffbc40..2ecb1dc 100644
+> --- a/drivers/scsi/scsi_trace.c
+> +++ b/drivers/scsi/scsi_trace.c
+> @@ -17,15 +17,16 @@
+>    */
+>   #include <linux/kernel.h>
+>   #include <linux/trace_seq.h>
+> +#include <asm/unaligned.h>
+>   #include <trace/events/scsi.h>
+>
+>   #include <scsi/scsi_dbg.h>
+> +#include <scsi/scsi_eh.h>
+>
+>   #define SERVICE_ACTION16(cdb) (cdb[1] & 0x1f)
+>   #define SERVICE_ACTION32(cdb) ((cdb[8] << 8) | cdb[9])
+>
+> -static const char *
+> -scsi_trace_misc(struct trace_seq *, unsigned char *, int);
+> +static const char *scsi_trace_misc(struct trace_seq *);
+>
+>   static const char *
+>   scsi_trace_rw6(struct trace_seq *p, unsigned char *cdb, int len)
+> @@ -242,12 +243,12 @@ scsi_trace_varlen(struct trace_seq *p, unsigned char *cdb, int len)
+>   	case WRITE_SAME_32:
+>   		return scsi_trace_rw32(p, cdb, len);
+>   	default:
+> -		return scsi_trace_misc(p, cdb, len);
+> +		return scsi_trace_misc(p);
+>   	}
+>   }
+>
+>   static const char *
+> -scsi_trace_misc(struct trace_seq *p, unsigned char *cdb, int len)
+> +scsi_trace_misc(struct trace_seq *p)
+>   {
+>   	const char *ret = p->buffer + p->len;
+>
+> @@ -285,10 +286,139 @@ scsi_trace_parse_cdb(struct trace_seq *p, unsigned char *cdb, int len)
+>   	case VARIABLE_LENGTH_CMD:
+>   		return scsi_trace_varlen(p, cdb, len);
+>   	default:
+> -		return scsi_trace_misc(p, cdb, len);
+> +		return scsi_trace_misc(p);
+>   	}
+>   }
+>
+> +#ifdef CONFIG_SCSI_CONSTANTS
+> +/* description of the sense key values */
+> +static const char * const snstext[] = {
+> +	"No Sense",	    /* 0: There is no sense information */
+> +	"Recovered Error",  /* 1: The last command completed successfully
+> +				  but used error correction */
+> +	"Not Ready",	    /* 2: The addressed target is not ready */
+> +	"Medium Error",	    /* 3: Data error detected on the medium */
+> +	"Hardware Error",   /* 4: Controller or device failure */
+> +	"Illegal Request",  /* 5: Error in request */
+> +	"Unit Attention",   /* 6: Removable medium was changed, or
+> +				  the target has been reset, or ... */
+> +	"Data Protect",	    /* 7: Access to the data is blocked */
+> +	"Blank Check",	    /* 8: Reached unexpected written or unwritten
+> +				  region of the medium */
+> +	"Vendor Specific(9)",
+> +	"Copy Aborted",	    /* A: COPY or COMPARE was aborted */
+> +	"Aborted Command",  /* B: The target aborted the command */
+> +	"Equal",	    /* C: A SEARCH DATA command found data equal,
+> +				  reserved in SPC-4 rev 36 */
+> +	"Volume Overflow",  /* D: Medium full with still data to be written */
+> +	"Miscompare",	    /* E: Source data and data on the medium
+> +				  do not agree */
+> +	"Completed",	    /* F: command completed sense data reported,
+> +				  may occur for successful command */
+> +};
+> +#else
+> +static const char * const snstext[] = {
+> +	"0x0", "0x1", "0x2", "0x3", "0x4", "0x5", "0x6", "0x7",
+> +	"0x8", "0x9", "0xa", "0xb", "0xc", "0xd", "0xe", "0xf",
+> +};
+> +#endif
+> +
+> +/* Get sense key string or NULL if not available */
+> +const char *
+> +scsi_sense_key_string(unsigned char key) {
+> +	return snstext[key & 0xf];
+> +}
+> +EXPORT_SYMBOL(scsi_sense_key_string);
+> +
+> +static const char *
+> +scsi_sense_type_string(u8 res_code)
+> +{
+> +	return __scsi_sense_is_deferred(res_code) ? "[deferred]" : "[current]";
+> +}
+> +
+> +static const char *
+> +scsi_sense_format_string(u8 res_code)
+> +{
+> +	return res_code >= 0x72 ? "[descriptor]" : "";
+> +}
+> +
+> +static const char *
+> +scsi_dump_sense_buffer(struct trace_seq *p, const unsigned char *buf, int len)
+> +{
+> +	const char *ret = p->buffer + p->len;
+> +	int i;
+> +
+> +	if (!buf || !len)
+> +		return scsi_trace_misc(p);
+> +
+> +	if (len < 32)
+> +		len = 32;
+> +
+> +	trace_seq_printf(p, "Unrecognized sense data (in hex)");
+> +	for (i = 0; i < len; i += 16)
+> +		trace_seq_printf(p, " %02x", buf[i]);
+> +
+> +	trace_seq_putc(p, 0);
+> +	return ret;
+> +}
+> +
+> +const char *
+> +scsi_trace_decode_sense_extras(struct trace_seq *p, u8 sense_key, u8 res_code,
+> +			       const unsigned char *buf, int len, int raw)
+> +{
+> +	const char *ret = p->buffer + p->len;
+> +	int sense_flags = 0, fixed_valid = 0;
+> +	u64 info = 0;
+> +
+> +	if (raw)
+> +		/* this may be SCSI-1 sense data */
+> +		return scsi_dump_sense_buffer(p, buf, len);
+> +
+> +	trace_seq_printf(p, "Sense Key (%s %s%s",
+> +			 scsi_sense_key_string(sense_key),
+> +			 scsi_sense_type_string(res_code),
+> +			 scsi_sense_format_string(res_code));
+> +
+> +	if (!buf || !len)
+> +		goto out;
+> +
+> +	if ((buf[0] & 0x80) < 0x72) {
+> +		/* decode extras for "fixed" format */
+> +		fixed_valid = buf[0] & 0x80;
+> +		info = get_unaligned_be32(&buf[3]);
+> +		sense_flags = buf[2];
+> +	} else if (buf[7] > 0) {
+> +		const u8 *ucp;
+> +
+> +		/* descriptor format with sense descriptors */
+> +		ucp = scsi_sense_desc_find(buf, len, 0);
+> +		if (ucp) {
+> +			fixed_valid = ucp[2] & 0x80;
+> +			if (fixed_valid)
+> +				info = get_unaligned_be64(&ucp[4]);
+> +		}
+> +		ucp = scsi_sense_desc_find(buf, len, 4);
+> +		if (ucp)
+> +			sense_flags |= ucp[3] & 0xe0;
+> +	}
+> +
+> +	if (!sense_flags && !fixed_valid)
+> +		goto out;
+> +
+> +	if (fixed_valid)
+> +		trace_seq_printf(p, " Info fld=0x%llx", info);
+> +	if (sense_flags)
+> +		trace_seq_printf(p, " %s%s%s",
+> +				sense_flags & SENSE_FMK ? "FMK" : "",
+> +				sense_flags & SENSE_EOM ? "EOM" : "",
+> +				sense_flags & SENSE_ILI ? "ILI" : "");
+> +
+> +out:
+> +	trace_seq_printf(p, ")");
+> +	trace_seq_putc(p, 0);
+> +	return ret;
+> +}
+> +
+>   void scsi_show_result(struct scsi_device *sdev, const char *name, int result)
+>   {
+>   	trace_scsi_show_result(sdev, name, result);
+> diff --git a/include/scsi/scsi_eh.h b/include/scsi/scsi_eh.h
+> index 06a8790..0e6d28c 100644
+> --- a/include/scsi/scsi_eh.h
+> +++ b/include/scsi/scsi_eh.h
+> @@ -47,9 +47,14 @@ extern int scsi_normalize_sense(const u8 *sense_buffer, int sb_len,
+>   extern int scsi_command_normalize_sense(struct scsi_cmnd *cmd,
+>   		struct scsi_sense_hdr *sshdr);
+>
+> +static inline int __scsi_sense_is_deferred(u8 response_code)
+> +{
+> +	return ((response_code >= 0x70) && (response_code & 1));
+> +}
+> +
+>   static inline int scsi_sense_is_deferred(struct scsi_sense_hdr *sshdr)
+>   {
+> -	return ((sshdr->response_code >= 0x70) && (sshdr->response_code & 1));
+> +	return __scsi_sense_is_deferred(sshdr->response_code);
+>   }
+>
+>   extern const u8 * scsi_sense_desc_find(const u8 * sense_buffer, int sb_len,
+> diff --git a/include/trace/events/scsi.h b/include/trace/events/scsi.h
+> index 0675195..572aa65 100644
+> --- a/include/trace/events/scsi.h
+> +++ b/include/trace/events/scsi.h
+> @@ -395,6 +395,54 @@ TRACE_EVENT(scsi_show_result,
+>   		  show_hostbyte_name(host_byte(__entry->result)))
+>   );
+>
+> +const char *scsi_trace_decode_sense_extras(struct trace_seq*, u8, u8,
+> +					   const unsigned char*, int, int);
+> +#define __decode_extras(sense_key, res_code, buf, len, raw) \
+> +	scsi_trace_decode_sense_extras(p, sense_key, res_code, buf, len, raw)
+> +
+> +TRACE_EVENT(scsi_print_sense,
+> +
+> +	TP_PROTO(struct scsi_device *sdev, const char *devname,
+> +		 struct scsi_sense_hdr *sshdr,
+> +		 const unsigned char *sense_buffer, int sense_len, int raw),
+> +
+> +	TP_ARGS(sdev, devname, sshdr, sense_buffer, sense_len, raw),
+> +
+> +	TP_STRUCT__entry(
+> +		__field( unsigned int,		host_no		)
+> +		__field( unsigned int,		channel		)
+> +		__field( unsigned int,		id		)
+> +		__field( unsigned int,		lun		)
+> +		__string(devname,		devname		)
+> +		__field( u8,			sense_key	)
+> +		__field( u8,			res_code	)
+> +		__dynamic_array(unsigned char,	sense_buffer, sense_len)
+> +		__field( u8,			asc		)
+> +		__field( u8,			ascq		)
+> +		__field( int,			sense_len	)
+> +		__field( int,			raw		)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->host_no	= sdev->host->host_no;
+> +		__entry->channel	= sdev->channel;
+> +		__entry->id		= sdev->id;
+> +		__entry->lun		= sdev->lun;
+> +		__assign_str(devname, devname);
+> +		__entry->sense_key	= sshdr->sense_key;
+> +		__entry->res_code	= sshdr->response_code;
+> +		memcpy(__get_dynamic_array(sense_buffer), sense_buffer,
+> +		       sense_len);
+> +		__entry->sense_len	= sense_len;
+> +		__entry->raw		= raw;
+> +	),
+> +
+> +	TP_printk("host_no=%u channel=%u id=%u lun=%u [%s] %s",
+> +		  __entry->host_no, __entry->channel, __entry->id, __entry->lun,
+> +		  __get_str(devname), __decode_extras(__entry->sense_key,
+> +		  __entry->res_code, __get_dynamic_array(sense_buffer),
+> +		  __entry->sense_len,  __entry->raw))
+> +);
+>   #endif /*  _TRACE_SCSI_H */
+>
+>   /* This part must be outside protection */
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+Same here:
+Please use the functions from constants.c and delete the 
+functionality from scsi_trace.
 
-> > I'm making a patch for this.
-Please see the end of the mail for the inline patch and try it.
-(the patch hasn't been rebased against KY's patchset)
+And we should remove the code to interpret any sense code extras.
+But other than that having trace points for sense code printing is a 
+really good idea.
+Care to send this as a separate patch?
 
-> Thanks! Could these alignment problems have been the cause of all sorts
-> of intermittent errors like https://lkml.org/lkml/2014/7/11/870 (which
-> was caused by support being added for a bigger receive buffer)?
-Probably, let's try the patch first. :-)
+Cheers,
 
-> > > I rebased your patch on top of the K.Y.'s "Drivers: hv: vmbus: Eliminate
-> > > calls to BUG_ON()" patch set (see below). The combination no longer
-> > > triggers the bug and it doesn't take too long to boot but the network
-> > > interface fails to work (which I believe is .
-> > the sentence is accidently trimmed here? :-)
-> 
-> *Cough* That bit in brackets shouldn't be there. I've been unable to
-> link that stacktrace to an existing issue (I thought it might have been
-> https://lkml.org/lkml/2014/8/19/227 but that seems unlikely).
-I'm not 100% sure either.
-
-> 
-> > > Boot dmesg output (there's no line that mentions retries). The
-> > > framebuffer window also didn't resize itself:
-> > >
-> > > [    7.848030] hv_vmbus: registering driver hyperv_fb
-> > > [    7.859759] hyperv_fb: Unable to open vmbus channel
-> > > [    7.871812] hyperv_fb: Unable to connect to VSP
-> > We still see hyperv_fb can't work.
-> 
-> How come things didn't work even though the retries message (which is
-> presumably printed if we exceed 10 attempts) was never printed?
-the "10 attempts" doesn't handle HV_STATUS_INVALID_ALIGNMENT.
-
-BTW, with the patch below, hyperv_fb can work now, BUT, *occasionally*,
-storvsc_probe() -> ... -> vmbus_open() -> can fail due to
-HV_STATUS_INVALID_ALIGNMENT...
-
-
-diff --git a/drivers/hv/channel.c b/drivers/hv/channel.c
-index 531a593..f5283a0 100644
---- a/drivers/hv/channel.c
-+++ b/drivers/hv/channel.c
-@@ -165,8 +165,10 @@ int vmbus_open(struct vmbus_channel *newchannel, u32 send_ringbuffer_size,
- 	ret = vmbus_post_msg(open_msg,
- 			       sizeof(struct vmbus_channel_open_channel));
- 
--	if (ret != 0)
-+	if (ret != 0) {
-+		err = ret;
- 		goto error1;
-+	}
- 
- 	t = wait_for_completion_timeout(&open_info->waitevent, 5*HZ);
- 	if (t == 0) {
-diff --git a/drivers/hv/hv.c b/drivers/hv/hv.c
-index edfc848..8366394 100644
---- a/drivers/hv/hv.c
-+++ b/drivers/hv/hv.c
-@@ -223,6 +223,9 @@ int hv_post_message(union hv_connection_id connection_id,
- 	};
- 
- 	struct hv_input_post_message *aligned_msg;
-+	unsigned long alighed_msg_start, alighed_msg_end;
-+	bool need_free_aligned_msg = false;
-+
- 	u16 status;
- 	unsigned long addr;
- 
-@@ -233,9 +236,30 @@ int hv_post_message(union hv_connection_id connection_id,
- 	if (!addr)
- 		return -ENOMEM;
- 
-+	/*
-+	 * According to Hypervisor Top Level Functional Specification,
-+	 * do_hypercall() fails due to HV_STATUS_INVALID_ALIGNMENT, if "the
-+	 * specified input or output GPA pointer is not aligned to 8 bytes",
-+	 * or, "the specified input or output parameter lists spans pages".
-+	 */
- 	aligned_msg = (struct hv_input_post_message *)
- 			(ALIGN(addr, HV_HYPERCALL_PARAM_ALIGN));
- 
-+	alighed_msg_start = (unsigned long)aligned_msg;
-+	alighed_msg_end = (unsigned long)&aligned_msg->payload +
-+			  payload_size - 1;
-+
-+	if ((alighed_msg_start >> PAGE_SHIFT) !=
-+	    (alighed_msg_end >> PAGE_SHIFT)) {
-+		aligned_msg = (struct hv_input_post_message *)
-+				__get_free_page(GFP_ATOMIC);
-+		if (!aligned_msg) {
-+			status = -ENOMEM;
-+			goto out;
-+		}
-+		need_free_aligned_msg = true;
-+	}
-+
- 	aligned_msg->connectionid = connection_id;
- 	aligned_msg->message_type = message_type;
- 	aligned_msg->payload_size = payload_size;
-@@ -244,6 +268,11 @@ int hv_post_message(union hv_connection_id connection_id,
- 	status = do_hypercall(HVCALL_POST_MESSAGE, aligned_msg, NULL)
- 		& 0xFFFF;
- 
-+	WARN(status == HV_STATUS_INVALID_ALIGNMENT,
-+		"status = %d\n", status);
-+	if (need_free_aligned_msg)
-+		free_page((unsigned long)aligned_msg);
-+out:
- 	kfree((void *)addr);
- 
- 	return status;
-
+Hannes
+-- 
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
