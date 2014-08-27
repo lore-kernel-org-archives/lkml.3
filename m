@@ -1,154 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756614AbaH0BhE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 21:37:04 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:3632 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752295AbaH0BhB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 21:37:01 -0400
-X-IronPort-AV: E=Sophos;i="5.04,408,1406563200"; 
-   d="scan'208";a="35115377"
-Message-ID: <53FD356D.6050507@cn.fujitsu.com>
-Date: Wed, 27 Aug 2014 09:33:33 +0800
-From: Chai Wen <chaiw.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	id S1756490AbaH0BnJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 21:43:09 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47057 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752295AbaH0BnH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 21:43:07 -0400
+Date: Wed, 27 Aug 2014 03:43:00 +0200
+From: Sebastian Reichel <sre@kernel.org>
+To: David Riley <davidriley@chromium.org>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Guenter Roeck <linux@roeck-us.net>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Anton Vorontsov <anton@enomsg.org>,
+        Marc Carino <marc.ceeeee@gmail.com>, Anders Berg <anders.berg@lsi.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Jamie Lentin <jm@lentin.co.uk>, Doug Anderson <dianders@chromium.org>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH v1 1/1] power: Add simple gpio-restart driver
+Message-ID: <20140827014300.GA29512@earth.universe>
+References: <1409096705-24290-1-git-send-email-davidriley@chromium.org>
+ <1409096705-24290-2-git-send-email-davidriley@chromium.org>
 MIME-Version: 1.0
-To: Don Zickus <dzickus@redhat.com>
-CC: <akpm@linux-foundation.org>, <mingo@redhat.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] softlockup: make detector be aware of task switch of
- processes hogging cpu
-References: <20140821023051.GO49576@redhat.com> <1408599742-21674-1-git-send-email-chaiw.fnst@cn.fujitsu.com> <20140822015822.GZ49576@redhat.com> <53FC82D2.1020401@cn.fujitsu.com> <20140826142214.GN49576@redhat.com>
-In-Reply-To: <20140826142214.GN49576@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [10.167.226.161]
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="GvXjxJ+pjyke8COw"
+Content-Disposition: inline
+In-Reply-To: <1409096705-24290-2-git-send-email-davidriley@chromium.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2014 10:22 PM, Don Zickus wrote:
 
-> On Tue, Aug 26, 2014 at 08:51:30PM +0800, Chai Wen wrote:
->> On 08/22/2014 09:58 AM, Don Zickus wrote:
->>
->>> On Thu, Aug 21, 2014 at 01:42:22PM +0800, chai wen wrote:
->>>> For now, soft lockup detector warns once for each case of process softlockup.
->>>> But the thread 'watchdog/n' may not always get the cpu at the time slot between
->>>> the task switch of two processes hogging that cpu to reset soft_watchdog_warn.
->>>>
->>>> An example would be two processes hogging the cpu.  Process A causes the
->>>> softlockup warning and is killed manually by a user.  Process B immediately
->>>> becomes the new process hogging the cpu preventing the softlockup code from
->>>> resetting the soft_watchdog_warn variable.
->>>>
->>>> This case is a false negative of "warn only once for a process", as there may
->>>> be a different process that is going to hog the cpu.  Resolve this by
->>>> saving/checking the task pointer of the hogging process and use that to reset
->>>> soft_watchdog_warn too.
->>>>
->>>> Signed-off-by: chai wen <chaiw.fnst@cn.fujitsu.com>
->>>> Signed-off-by: Don Zickus <dzickus@redhat.com>
->>>
->>> Acked-by: Don Zickus <dzickus@redhat.com>
->>>
->>
->>
->> Hi Andrew
->>
->> Sorry for some disturbing.
->> Could you help to check and pick up this little improvement patch ?
->>
->> I am not sure which MAINTAINER I should talk to, but the original version of
->> this patch is queued to -mm tree by you, so I assume that they are in the charge of you.
->>
->>
->> thanks
->> chai wen
-> 
-> Hi Chai,
-> 
-> Sorry about that.  Ingo asked me privately to pick this up and re-post
-> with my signoff.  I was converting to a new test env and was going to use this
-> patch as an excuse to exercise it.  That is the delay.  Let me get this
-> out today.
-> 
+--GvXjxJ+pjyke8COw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+Hi David,
 
-OK， It is kind of you to do that, thanks for your work. :)
+On Tue, Aug 26, 2014 at 04:45:05PM -0700, David Riley wrote:
+> This driver registers a restart handler to set a GPIO line high/low
+> to reset a board based on devicetree bindings.
 
-thanks
-chai wen
+Driver looks fine to me. I have some comments about the
+Documentation, though:
 
-> Cheers,
-> Don
-> 
->>
->>>> ---
->>>>  kernel/watchdog.c |   16 +++++++++++++++-
->>>>  1 files changed, 15 insertions(+), 1 deletions(-)
->>>>
->>>> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
->>>> index 0037db6..2e55620 100644
->>>> --- a/kernel/watchdog.c
->>>> +++ b/kernel/watchdog.c
->>>> @@ -42,6 +42,7 @@ static DEFINE_PER_CPU(bool, softlockup_touch_sync);
->>>>  static DEFINE_PER_CPU(bool, soft_watchdog_warn);
->>>>  static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts);
->>>>  static DEFINE_PER_CPU(unsigned long, soft_lockup_hrtimer_cnt);
->>>> +static DEFINE_PER_CPU(struct task_struct *, softlockup_task_ptr_saved);
->>>>  #ifdef CONFIG_HARDLOCKUP_DETECTOR
->>>>  static DEFINE_PER_CPU(bool, hard_watchdog_warn);
->>>>  static DEFINE_PER_CPU(bool, watchdog_nmi_touch);
->>>> @@ -328,8 +329,20 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
->>>>  			return HRTIMER_RESTART;
->>>>  
->>>>  		/* only warn once */
->>>> -		if (__this_cpu_read(soft_watchdog_warn) == true)
->>>> +		if (__this_cpu_read(soft_watchdog_warn) == true) {
->>>> +			/*
->>>> +			 * Handle the case where multiple processes are
->>>> +			 * causing softlockups but the duration is small
->>>> +			 * enough, the softlockup detector can not reset
->>>> +			 * itself in time.  Use task pointers to detect this.
->>>> +			 */
->>>> +			if (__this_cpu_read(softlockup_task_ptr_saved) !=
->>>> +			    current) {
->>>> +				__this_cpu_write(soft_watchdog_warn, false);
->>>> +				__touch_watchdog();
->>>> +			}
->>>>  			return HRTIMER_RESTART;
->>>> +		}
->>>>  
->>>>  		if (softlockup_all_cpu_backtrace) {
->>>>  			/* Prevent multiple soft-lockup reports if one cpu is already
->>>> @@ -345,6 +358,7 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
->>>>  		pr_emerg("BUG: soft lockup - CPU#%d stuck for %us! [%s:%d]\n",
->>>>  			smp_processor_id(), duration,
->>>>  			current->comm, task_pid_nr(current));
->>>> +		__this_cpu_write(softlockup_task_ptr_saved, current);
->>>>  		print_modules();
->>>>  		print_irqtrace_events(current);
->>>>  		if (regs)
->>>> -- 
->>>> 1.7.1
->>>>
->>> .
->>>
->>
->>
->>
->> -- 
->> Regards
->>
->> Chai Wen
-> .
-> 
+> [...]
+> diff --git a/Documentation/devicetree/bindings/gpio/gpio-restart.txt b/Documentation/devicetree/bindings/gpio/gpio-restart.txt
+> new file mode 100644
+> index 0000000..7cd58788
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/gpio/gpio-restart.txt
+> @@ -0,0 +1,48 @@
+> +Driver a GPIO line that can be used to restart the system as a
+> +restart handler.
 
+Please fix the Typo (first word).
 
+> [...]
+> +
+> +The driver supports both level triggered and edge triggered power off.
+> +At driver load time, the driver will request the given gpio line and
+> +install a restart handler.
 
--- 
-Regards
+The wording is too driver centric IMHO. You are supposed to document
+the binding in a generic way. Maybe start with something like:
 
-Chai Wen
+"This binding supports level and edge triggered reset."
+
+(power off is the wrong word, since there is already gpio-poweroff).
+
+> +If the optional properties 'input' is +not found, the GPIO line
+> +will be driven in the inactive state. Otherwise its configured
+> +as an input.
+
+What is this needed for?
+
+> +When do_kernel_restart is called the various restart handlers will be tried
+> +in order.  The gpio is configured as an output, and drive active, so
+> +triggering a level triggered power off condition. This will also cause an
+> +inactive->active edge condition, so triggering positive edge triggered
+> +power off. After a delay of 100ms, the GPIO is set to inactive, thus
+> +causing an active->inactive edge, triggering negative edge triggered power
+> +off. After another 100ms delay the GPIO is driver active again. If the
+> +power is still on and the CPU still running after a 3000ms delay, a
+> +WARN_ON(1) is emitted.
+
+I really appreciate the description of the driver (it made it easier
+to review it :)), but Documentation/devicetree should avoid
+Linuxisms. In other words: this is the wrong location for the
+description.
+
+> +Required properties:
+> +- compatible : should be "gpio-restart".
+> +- gpios : The GPIO to set high/low, see "gpios property" in
+> +  Documentation/devicetree/bindings/gpio/gpio.txt. If the pin should be
+> +  low to power down the board set it to "Active Low", otherwise set
+> +  gpio to "Active High".
+> +
+> +Optional properties:
+> +- input : Initially configure the GPIO line as an input. Only reconfigure
+> +  it to an output when the machine_restart function is called. If this optional
+> +  property is not specified, the GPIO is initialized as an output in its
+> +  inactive state.
+> +- priority : A priority ranging from 0 to 255 (default 128) according to
+> +  the following guidelines:
+> +	0:	Restart handler of last resort, with limited restart
+> +		capabilities
+> +	128:	Default restart handler; use if no other restart handler is
+> +		expected to be available, and/or if restart functionality is
+> +		sufficient to restart the entire system
+> +	255:	Highest priority restart handler, will preempt all other
+> +		restart handlers
+
+You should add a short information about the property type here
+(e.g. "8 bit integer" for priority).
+
+> +Examples:
+> +
+> +gpio-restart {
+> +	compatible = "gpio-restart";
+> +	gpios = <&gpio 4 0>;
+> +	priority = /bits/ 8 <200>;
+> +};
+> [...]
+
+-- Sebastian
+
+--GvXjxJ+pjyke8COw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJT/TekAAoJENju1/PIO/qanrQQAKPg8+Qi5oPDFni3AZxhonI+
+zrY+JR1rwRC0mdk9vNvbuyn3dscv8CJdlCVYcOEX/YB/x4216PfHrcw4kc0j4qjP
+2dOPawDHLtGqW9BVLTQLh7iNHeEy0BpDbs0Aw0UDpNPBgirajSWsJcaKNbxnwovr
+MtRvC07GtNZbIRR9xv9Ss4+S0a/kqrZY0GjseVL2GZf7ZoIo+I+Rjg30n4SGhgHJ
+p8KCNfcaeDnF/NHBW/GRFfhtw+19t8It+CCd+bo5x9iELpe6dTzYJbw++gyVz6fP
++8iFwTANhBfNn5gEifYV8LP8nyOLU7EaSXp64nIHB9mdckReuPoFl5789Ny6QTyF
+T5m6oWPrELnIJHBQL4MVDPTQ0dJkRD0fykrM69MRBtqt+otrxWcpb+LE/uxr/Zp9
+64cjwi3lzam2Ph/ktNctG39juO0Ig+3i11Q2rmxMQWzLbQSYIeuhyB+sEK/rxpCI
+MnlrFp0+ZTjeYFRNRHKP0Wr4Ec9f6hm/WhL/ry+ka54txad8whm+zagVyJaAlJwd
+i75YhfpPnx+ZI2YyzPeGJYxwVlSQsuTFT3JAvCg94UaAO7zwVz7J6/vq62nr6W2V
+o2BnR3Vnpi7jbQmWEdGgK7h1TOx6mLjlx7LBOSx8gBLEHWIt48DtQfFvsMQya6DH
+f1nwkNggeV7gNGFZ/G01
+=oWqb
+-----END PGP SIGNATURE-----
+
+--GvXjxJ+pjyke8COw--
