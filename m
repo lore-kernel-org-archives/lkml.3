@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965084AbaH0V1w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 17:27:52 -0400
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:50212 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932146AbaH0V1u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 17:27:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAOesGMjK65Rc-K0fyFUUJLw6huLT82E-nqJwZO4PqhgopF96Ow@mail.gmail.com>
-References: <1409173419-13076-1-git-send-email-sonnyrao@chromium.org> <CAOesGMjK65Rc-K0fyFUUJLw6huLT82E-nqJwZO4PqhgopF96Ow@mail.gmail.com>
-From: Sonny Rao <sonnyrao@chromium.org>
-Date: Wed, 27 Aug 2014 14:27:28 -0700
-X-Google-Sender-Auth: YNY-_vZJWJVc72Y1ZTBv6Syu1Qk
-Message-ID: <CAPz6YkWAPtuy4sAuAK9GtpDgfGsccxeS+pqqe_t_R818Jt01qA@mail.gmail.com>
-Subject: Re: [PATCH] clocksource: arch_timer: Fix code to use physical timers
- when requested
-To: Olof Johansson <olof@lixom.net>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+	id S935874AbaH0V3s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 17:29:48 -0400
+Received: from mga09.intel.com ([134.134.136.24]:61549 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932146AbaH0V3r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 17:29:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,414,1406617200"; 
+   d="scan'208";a="594217497"
+From: James Ralston <james.d.ralston@intel.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: James Ralston <james.d.ralston@intel.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] ahci: Add Device IDs for Intel 9 Series PCH
+Date: Wed, 27 Aug 2014 14:29:07 -0700
+Message-Id: <1409174947-4684-1-git-send-email-james.d.ralston@intel.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 27, 2014 at 2:19 PM, Olof Johansson <olof@lixom.net> wrote:
-> On Wed, Aug 27, 2014 at 2:03 PM, Sonny Rao <sonnyrao@chromium.org> wrote:
->> This is a bug fix for using physical arch timers when
->> the arch_timer_use_virtual boolean is false.  It restores the
->> arch_counter_get_cntpct() function after removal in
->>
->> 0d651e4e "clocksource: arch_timer: use virtual counters"
->>
->> and completes the implementation of memory mapped access for physical
->> timers, so if a system is trying to use physical timers, it will
->> function properly.
->>
->> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
->
-> Acked-by: Olof Johansson <olof@lixom.net>
->
-> This should have a:
->
-> Fixes: 0d651e4e65e9 ("clocksource: arch_timer: use virtual counters")
->
-> tag too, and possibly cc stable?
+This patch adds the AHCI mode SATA Device IDs for the Intel 9 Series PCH.
 
-Ok, as far as stable goes, this patch wouldn't apply cleanly going all
-the way back to  0d651e4e65e9
-As-is, it would need to go after 220069945b29 "clocksource:
-arch_timer: Add support for memory mapped timers" and there would need
-to be another, simpler, version that went between those two commits.
+Signed-off-by: James Ralston <james.d.ralston@intel.com>
+---
+ drivers/ata/ahci.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-So, I'm not sure what to do in this situation regarding stable?
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index a29f801..bca3d64 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -305,6 +305,14 @@ static const struct pci_device_id ahci_pci_tbl[] = {
+ 	{ PCI_VDEVICE(INTEL, 0x9c85), board_ahci }, /* Wildcat Point-LP RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x9c87), board_ahci }, /* Wildcat Point-LP RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x9c8f), board_ahci }, /* Wildcat Point-LP RAID */
++	{ PCI_VDEVICE(INTEL, 0x8c82), board_ahci }, /* 9 Series AHCI */
++	{ PCI_VDEVICE(INTEL, 0x8c83), board_ahci }, /* 9 Series AHCI */
++	{ PCI_VDEVICE(INTEL, 0x8c84), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0x8c85), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0x8c86), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0x8c87), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0x8c8e), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0x8c8f), board_ahci }, /* 9 Series RAID */
+ 
+ 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
+ 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
+-- 
+1.8.3.1
 
->
->
-> -Olof
