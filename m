@@ -1,87 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933339AbaH0Jdw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 05:33:52 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:27537 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932693AbaH0Jdu (ORCPT
+	id S1756168AbaH0Jen (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 05:34:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42436 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754808AbaH0Jel (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 05:33:50 -0400
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap\@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux\@openrisc.net" <linux@openrisc.net>,
-        "linux\@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "shawn.guo\@freescale.com" <shawn.guo@freescale.com>,
-        "kernel\@pengutronix.de" <kernel@pengutronix.de>,
-        "tony\@atomide.com" <tony@atomide.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "jonas\@southpole.se" <jonas@southpole.se>,
-        "jason\@lakedaemon.net" <jason@lakedaemon.net>,
-        "shc_work\@mail.ru" <shc_work@mail.ru>,
-        "baohua\@kernel.org" <baohua@kernel.org>,
-        "maxime.ripard\@free-electrons.com" 
-	<maxime.ripard@free-electrons.com>,
-        "khilman\@linaro.org" <khilman@linaro.org>,
-        "sboyd\@codeaurora.org" <sboyd@codeaurora.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        "larry.bassel\@linaro.org" <larry.bassel@linaro.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        "stefan.kristiansson\@saunalahti.fi" 
-	<stefan.kristiansson@saunalahti.fi>,
-        "vkale\@apm.com" <vkale@apm.com>,
-        "schwidefsky\@de.ibm.com" <schwidefsky@de.ibm.com>
-Subject: Re: [PATCH v2 00/26] genirq: fix use of irq_find_mapping outside of legal RCU context
-In-Reply-To: <alpine.DEB.2.10.1408262333420.3323@nanos> (Thomas Gleixner's
-	message of "Tue, 26 Aug 2014 22:34:51 +0100")
-Organization: ARM Ltd
-References: <1409047421-27649-1-git-send-email-marc.zyngier@arm.com>
-	<alpine.DEB.2.10.1408262333420.3323@nanos>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-Date: Wed, 27 Aug 2014 10:33:44 +0100
-Message-ID: <87y4uap98n.fsf@approximate.cambridge.arm.com>
+	Wed, 27 Aug 2014 05:34:41 -0400
+Date: Wed, 27 Aug 2014 10:34:37 +0100
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, tj@kernel.org
+Subject: Re: [PATCH v3 part1 0/4] Fix SG_IO ambiguity between READ SUBCHANNEL
+ and UNMAP (and other similar cases)
+Message-ID: <20140827093437.GA10937@hercules>
+References: <1369317503-4095-1-git-send-email-pbonzini@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1369317503-4095-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
-
-On Tue, Aug 26 2014 at 10:34:51 pm BST, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Tue, 26 Aug 2014, Marc Zyngier wrote:
+On Thu, May 23, 2013 at 03:58:19PM +0200, Paolo Bonzini wrote:
+> The SG_IO ioctl's command whitelist is designed for MMC devices (roughly,
+> "play/burn CDs without requiring root") but some opcodes overlap across SCSI
+> device classes and have different meanings for different classes.
+> 
+> To fix this, use different bitmaps for the various device classes.
+> This is CVE-2012-4542.
 >
->> A number of irqchip drivers are directly calling irq_find_mapping,
->> which may use a rcu_read_lock call when walking the radix tree.
->> 
->> Turns out that if you hit that point with CONFIG_PROVE_RCU enabled,
->> the kernel will shout at you, as using RCU in this context may be
->> illegal (specially if coming from the idle state, where RCU would be
->> in a quiescent state).
->> 
->> A possible fix would be to wrap calls to irq_find_mapping into a
->> RCU_NONIDLE macro, but that really looks ugly.
->> 
->> This patch series introduce another generic IRQ entry point
->> (handle_domain_irq), which has the exact same behaviour as handle_IRQ
->> (as defined on arm, arm64 and openrisc), except that it also takes a
->> irq_domain pointer. This allows the logical IRQ lookup to be done
->> inside the irq_{enter,exit} section, which contains a
->> rcu_irq_{enter,exit}, making it safe.
->
-> Looks good. Should this be routed to the genirq tree?
 
-I'm happy for you to take this series, provided the architecture
-maintainers agree on it (I'm still to hear from the openrisc guys, and
-their mailing-list seems to positively hate my guts).
+Sorry for bringing this old issue again, but I was wondering what
+happen to this fix.
 
-Thanks,
+Cheers,
+--
+Luís
 
-	M.
--- 
-Jazz is not dead. It just smells funny.
+> v2->v3: patches are now split differently, according to Tejun's indications;
+> 	added conflict on operation code A4h.
+> 
+> Paolo Bonzini (4):
+>   sg_io: pass request_queue to blk_verify_command
+>   sg_io: prepare to introduce per-class command filters
+>   sg_io: use different default filters for each device class
+>   sg_io: resolve conflicts between commands assigned to multiple classes
+>     (CVE-2012-4542)
+> 
+>  block/bsg.c              |   2 +-
+>  block/scsi_ioctl.c       | 193 +++++++++++++++++++++++++++--------------------
+>  drivers/scsi/scsi_scan.c |   2 +
+>  drivers/scsi/sg.c        |   3 +-
+>  include/linux/blkdev.h   |   5 +-
+>  5 files changed, 118 insertions(+), 87 deletions(-)
+> 
+> -- 
+> 1.8.1.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
