@@ -1,111 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935812AbaH0UWr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 16:22:47 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:51914 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935598AbaH0UWq (ORCPT
+	id S935855AbaH0UXE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 16:23:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56114 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935598AbaH0UXC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 16:22:46 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Nishanth Menon <nm@ti.com>, Paul Walmsley <paul@pwsan.com>,
-        Tony Lindgren <tony@atomide.com>, Keerthy <j-keerthy@ti.com>,
-        <daniel.lezcano@linaro.org>, lkml <linux-kernel@vger.kernel.org>,
-        Tero Kristo <t-kristo@ti.com>,
-        =?utf-8?Q?Beno=C3=AEt?= Cousson <bcousson@baylibre.com>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 08/10] ARM: OMAP5/DRA7: PM: cpuidle MPU CSWR support
-References: <1408716154-26101-1-git-send-email-nm@ti.com>
-	<1408716154-26101-9-git-send-email-nm@ti.com>
-	<7hvbpdbvb1.fsf@paris.lan>
-	<CAGo_u6o7vAf=syzDTyxh0-kOhmzAmtdG_ardgFgoPQofrGdxUQ@mail.gmail.com>
-	<53FE3477.2020207@ti.com>
-Date: Wed, 27 Aug 2014 13:22:43 -0700
-In-Reply-To: <53FE3477.2020207@ti.com> (Santosh Shilimkar's message of "Wed,
-	27 Aug 2014 15:41:43 -0400")
-Message-ID: <7hegw1bs30.fsf@paris.lan>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Wed, 27 Aug 2014 16:23:02 -0400
+Date: Wed, 27 Aug 2014 13:23:01 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pci/pci-sysfs: Set pci interface in uppercase
+Message-ID: <20140827202301.GA13800@kroah.com>
+References: <1409144277-23379-1-git-send-email-ricardo.ribalda@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409144277-23379-1-git-send-email-ricardo.ribalda@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Santosh Shilimkar <santosh.shilimkar@ti.com> writes:
+On Wed, Aug 27, 2014 at 02:57:57PM +0200, Ricardo Ribalda Delgado wrote:
+> There is a missmatch between the way file2alias generates the modalias
+> and the way the pci driver generates it.
+> 
+> Some implementations of modprobe will fail to load the driver for a pci
+> device automatically when the pci interface is defined on the driver. As
+> one will be in uppercase and the other in lowercase.
+> 
+> Fortunatelly not many drivers define this.
+> 
+> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+> ---
+>  drivers/pci/pci-sysfs.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+> index 9ff0a90..76ef791 100644
+> --- a/drivers/pci/pci-sysfs.c
+> +++ b/drivers/pci/pci-sysfs.c
+> @@ -177,7 +177,7 @@ static ssize_t modalias_show(struct device *dev, struct device_attribute *attr,
+>  {
+>  	struct pci_dev *pci_dev = to_pci_dev(dev);
+>  
+> -	return sprintf(buf, "pci:v%08Xd%08Xsv%08Xsd%08Xbc%02Xsc%02Xi%02x\n",
+> +	return sprintf(buf, "pci:v%08Xd%08Xsv%08Xsd%08Xbc%02Xsc%02Xi%02X\n",
+>  		       pci_dev->vendor, pci_dev->device,
+>  		       pci_dev->subsystem_vendor, pci_dev->subsystem_device,
+>  		       (u8)(pci_dev->class >> 16), (u8)(pci_dev->class >> 8),
 
-> On Wednesday 27 August 2014 03:35 PM, Nishanth Menon wrote:
->> On Wed, Aug 27, 2014 at 2:13 PM, Kevin Hilman
->> <khilman@deeprootsystems.com> wrote:
->>> + Daniel (cpuidle maintainer)
->> [...]
->>>> +static int omap_enter_idle_smp(struct cpuidle_device *dev,
->>>> +                            struct cpuidle_driver *drv,
->>>> +                            int index)
->>>> +{
->>>> +     struct idle_statedata *cx = state_ptr + index;
->>>> +     unsigned long flag;
->>>> +
->>>> +     raw_spin_lock_irqsave(&mpu_lock, flag);
->>>> +     cx->mpu_state_vote++;
->>>> +     if (cx->mpu_state_vote == num_online_cpus()) {
->>>> +             pwrdm_set_logic_retst(mpu_pd, cx->mpu_logic_state);
->>>> +             omap_set_pwrdm_state(mpu_pd, cx->mpu_state);
->>>> +     }
->>>> +     raw_spin_unlock_irqrestore(&mpu_lock, flag);
->>>> +
->>>> +     omap4_enter_lowpower(dev->cpu, cx->cpu_state);
->>>> +
->>>> +     raw_spin_lock_irqsave(&mpu_lock, flag);
->>>> +     if (cx->mpu_state_vote == num_online_cpus())
->>>> +             omap_set_pwrdm_state(mpu_pd, PWRDM_POWER_ON);
->>>> +     cx->mpu_state_vote--;
->>>> +     raw_spin_unlock_irqrestore(&mpu_lock, flag);
->>>> +
->>>> +     return index;
->>>> +}
->>>
->>> Hmm, maybe OMAP5/DRA7 CPUidle driver should be a new one based on MCPM?
->> 
->> Trying to understand benefit of MCPM here - at least without a deeper
->> understanding of mcpm infrastructure benefits (first look seemed a
->> little heavy for OMAP5/DRA7 needs).
->> 
->> Neither DRA7/OMAP5 are multi-cluster, the SoCs are not targetted for
->> "OFF" of CPU1/0, we have mercury hardware to help with context and
->> sync issues.
->> 
->> Being able to reuse most of existing OMAP4 infrastructure code is
->> useful as well to leave the existing omap4 framework as being lighter
->> in complexity -esp in a cpuidle like hot path?
->> 
->> The spin_lock is only for the programming of MPU power domain in a
->> consistent manner - I suppose might have been the trigger for
->> proposing mcpm?
->> 
-> Mostly not....
->
-> I think this is coming because last time Nicolas Pitre tried to convert
-> the OMAP CPUIdle into MCPM but because of various ordering requirements,
-> OMAP wasn't suitable and then the plan was dropped later.
->
-> Just to make clear, OMAP OMAP5/DRA7 as well the ordering requirement
-> remains the same for deeper states. Its just the mercury retention state
-> which we are able to enter without ordering requirements and hence
-> the voting scheme.
+As said in the other thread about this issue, no, this code has been
+here for over 9 years just fine.  Please fix your userspace code that is
+trying to compare hex values as a string and not a numeric value, that
+is the stuff that is wrong, not the kernel.
 
-Ah, OK.  This is the part that I'm missing.  So for deeper states you'll
-need to be using omap_enter_idle_coupled()
+thanks,
 
-> Hope this clarifies to you as well as Kevin just in case he missed the
-> part of the deeper C-states requirements.
-
-Yes, thanks for clarifying.
-
-That being said, I think MCPM can now do essentially what the coupled
-states code is doing. Even so, that's probably not a reason to hold up
-this patch, but Daniel gets to make that call.
-
-Kevin
+greg k-h
