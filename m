@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932554AbaH0CeS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 22:34:18 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:58865 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758062AbaH0Cav (ORCPT
+	id S932615AbaH0Ceq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 22:34:46 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:43784 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757833AbaH0Cas (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 22:30:51 -0400
+	Tue, 26 Aug 2014 22:30:48 -0400
 From: Alexei Starovoitov <ast@plumgrid.com>
 To: "David S. Miller" <davem@davemloft.net>
 Cc: Ingo Molnar <mingo@kernel.org>,
@@ -21,9 +21,9 @@ Cc: Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RFC v7 net-next 20/28] tracing: allow eBPF programs to call ktime_get_ns() and get_current()
-Date: Tue, 26 Aug 2014 19:29:34 -0700
-Message-Id: <1409106582-10095-21-git-send-email-ast@plumgrid.com>
+Subject: [PATCH RFC v7 net-next 19/28] tracing: allow eBPF programs to be attached to kprobe/kretprobe
+Date: Tue, 26 Aug 2014 19:29:33 -0700
+Message-Id: <1409106582-10095-20-git-send-email-ast@plumgrid.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1409106582-10095-1-git-send-email-ast@plumgrid.com>
 References: <1409106582-10095-1-git-send-email-ast@plumgrid.com>
@@ -33,61 +33,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 ---
- include/uapi/linux/bpf.h |    2 ++
- kernel/trace/bpf_trace.c |   20 ++++++++++++++++++++
- 2 files changed, 22 insertions(+)
+ kernel/trace/trace_kprobe.c |   28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
 
-diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
-index 1ec3d293d14e..e14e147c8899 100644
---- a/include/uapi/linux/bpf.h
-+++ b/include/uapi/linux/bpf.h
-@@ -431,6 +431,8 @@ enum bpf_func_id {
- 	BPF_FUNC_memcmp,          /* int bpf_memcmp(void *unsafe_ptr, void *safe_ptr, int size) */
- 	BPF_FUNC_dump_stack,      /* void bpf_dump_stack(void) */
- 	BPF_FUNC_printk,          /* int bpf_printk(const char *fmt, int fmt_size, ...) */
-+	BPF_FUNC_ktime_get_ns,    /* u64 bpf_ktime_get_ns(void) */
-+	BPF_FUNC_get_current,     /* struct task_struct *bpf_get_current(void) */
- 	__BPF_FUNC_MAX_ID,
- };
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index 282f6e4e5539..b6db92207c99 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -19,6 +19,7 @@
  
-diff --git a/kernel/trace/bpf_trace.c b/kernel/trace/bpf_trace.c
-index ff98be5a24d6..a98e13e1131b 100644
---- a/kernel/trace/bpf_trace.c
-+++ b/kernel/trace/bpf_trace.c
-@@ -114,6 +114,16 @@ static u64 bpf_printk(u64 r1, u64 fmt_size, u64 r3, u64 r4, u64 r5)
- 			      mod_l[2] ? r5 : (u32) r5);
- }
+ #include <linux/module.h>
+ #include <linux/uaccess.h>
++#include <trace/bpf_trace.h>
  
-+static u64 bpf_ktime_get_ns(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5)
-+{
-+	return ktime_get_ns();
-+}
+ #include "trace_probe.h"
+ 
+@@ -930,6 +931,22 @@ __kprobe_trace_func(struct trace_kprobe *tk, struct pt_regs *regs,
+ 	if (ftrace_trigger_soft_disabled(ftrace_file))
+ 		return;
+ 
++	if (call->flags & TRACE_EVENT_FL_BPF) {
++		struct bpf_context ctx = {};
++		unsigned long args[3];
++		/* get first 3 arguments of the function. x64 syscall ABI uses
++		 * the same 3 registers as x64 calling convention.
++		 * todo: implement it cleanly via arch specific
++		 * regs_get_argument_nth() helper
++		 */
++		syscall_get_arguments(current, regs, 0, 3, args);
++		ctx.arg1 = args[0];
++		ctx.arg2 = args[1];
++		ctx.arg3 = args[2];
++		trace_filter_call_bpf(ftrace_file->filter, &ctx);
++		return;
++	}
 +
-+static u64 bpf_get_current(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5)
-+{
-+	return (u64) (long) current;
-+}
-+
- static struct bpf_func_proto tracing_filter_funcs[] = {
- #define FETCH(SIZE)				\
- 	[BPF_FUNC_fetch_##SIZE] = {		\
-@@ -169,6 +179,16 @@ static struct bpf_func_proto tracing_filter_funcs[] = {
- 		.arg1_type = ARG_CONST_MAP_PTR,
- 		.arg2_type = ARG_PTR_TO_MAP_KEY,
- 	},
-+	[BPF_FUNC_ktime_get_ns] = {
-+		.func = bpf_ktime_get_ns,
-+		.gpl_only = true,
-+		.ret_type = RET_INTEGER,
-+	},
-+	[BPF_FUNC_get_current] = {
-+		.func = bpf_get_current,
-+		.gpl_only = true,
-+		.ret_type = RET_INTEGER,
-+	},
- };
+ 	local_save_flags(irq_flags);
+ 	pc = preempt_count();
  
- static const struct bpf_func_proto *tracing_filter_func_proto(enum bpf_func_id func_id)
+@@ -978,6 +995,17 @@ __kretprobe_trace_func(struct trace_kprobe *tk, struct kretprobe_instance *ri,
+ 	if (ftrace_trigger_soft_disabled(ftrace_file))
+ 		return;
+ 
++	if (call->flags & TRACE_EVENT_FL_BPF) {
++		struct bpf_context ctx = {};
++		/* assume that register used to return a value from syscall is
++		 * the same as register used to return a value from a function
++		 * todo: provide arch specific helper
++		 */
++		ctx.ret = syscall_get_return_value(current, regs);
++		trace_filter_call_bpf(ftrace_file->filter, &ctx);
++		return;
++	}
++
+ 	local_save_flags(irq_flags);
+ 	pc = preempt_count();
+ 
 -- 
 1.7.9.5
 
