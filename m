@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935773AbaH0SvL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 14:51:11 -0400
-Received: from www.linutronix.de ([62.245.132.108]:35313 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935147AbaH0SvJ (ORCPT
+	id S964849AbaH0Swz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 14:52:55 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:54201 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935656AbaH0Swy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 14:51:09 -0400
-Date: Wed, 27 Aug 2014 20:50:55 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andi Kleen <andi@firstfloor.org>
-cc: peterz@infradead.org, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        eranian@google.com, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/5] perf, x86: Remove incorrect model number from Haswell
- perf
-In-Reply-To: <20140827163728.GQ4120@two.firstfloor.org>
-Message-ID: <alpine.DEB.2.10.1408272047360.3323@nanos>
-References: <1409006611-30741-1-git-send-email-andi@firstfloor.org> <1409006611-30741-2-git-send-email-andi@firstfloor.org> <alpine.DEB.2.10.1408262325200.3323@nanos> <20140826212934.GP4120@two.firstfloor.org> <alpine.DEB.2.10.1408270020020.3323@nanos>
- <alpine.DEB.2.10.1408271144580.3323@nanos> <20140827163728.GQ4120@two.firstfloor.org>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Wed, 27 Aug 2014 14:52:54 -0400
+Message-ID: <53FE2901.50508@gmail.com>
+Date: Wed, 27 Aug 2014 20:52:49 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Mark Brown <broonie@kernel.org>
+CC: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] regulator: max77802: set opmode to normal if off
+ is read from hw
+References: <1409053061-22568-1-git-send-email-javier.martinez@collabora.co.uk> <53FE2446.3040402@gmail.com> <20140827183733.GN17528@sirena.org.uk> <53FE25EB.7060702@gmail.com> <20140827184705.GO17528@sirena.org.uk>
+In-Reply-To: <20140827184705.GO17528@sirena.org.uk>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Aug 2014, Andi Kleen wrote:
-> On Wed, Aug 27, 2014 at 11:53:57AM +0200, Thomas Gleixner wrote:
-> > Try again when you figured yourself out what number means what and why
-> > 71 is bogus.
+On 27.08.2014 20:47, Mark Brown wrote:
+> On Wed, Aug 27, 2014 at 08:39:39PM +0200, Tomasz Figa wrote:
+>> On 27.08.2014 20:37, Mark Brown wrote:
 > 
-> 71 is definitely not a Haswell, but a Broadwell.
-
-Fine. So the changelog should tell so.
- 
-> However it was removed from the Broadwell patch based on Peter's
-> feedback.
+>>> That's essentially the situation the patch is trying to fix - if we boot
+>>> and the regulator is off there's no way to figure out what the operating
+>>> mode would have been so we have to pick something.  If you've got an
+>>> idea for something better to do...
 > 
-> So technically the patch is not needed right now because there 
-> would be no duplicates (unless 71 was readded), so the compiler
-> would not complain.
+>> Probably the only way to correctly handle this is to specify the right
+>> operating mode in DT (after defining a binding for it).
+> 
+> I'm not convinced that's worth it - chances are that if anything changed
+> the mode it was a previously running Linux which will most likely be
+> doing the same things when it starts running anyway.
+> 
 
-It's very well technically needed simply because its not a haswell and
-if it's run on real model 71 hardware we'll get some interesting stuff
-to debug.
- 
-> However it's still incorrect for Haswell, so I maintain removing
-> it is the right thing to do.
+The previously running Linux would have changed the opmode accidentally,
+due to hardware design of PMIC chip, which doesn't allow powering off a
+regulator in other way than setting opmode to OFF.
 
-I did not argue against the removal itself. That's fine and obviously
-correct if model 71 is not a haswell. All I want is a proper patch (1
-line) and a proper changelog explaining WHY this is the right thing to
-do.
-
-Thanks,
-
-	tglx
-
+If you provide the "active" opmode to that Linux, after a warm reboot it
+will be able to power on such regulator to correct opmode, without
+defaulting it incorrectly to NORMAL.
