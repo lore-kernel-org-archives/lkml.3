@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934805AbaH0N6t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 09:58:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36349 "EHLO mx2.suse.de"
+	id S934819AbaH0N7S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 09:59:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36363 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933916AbaH0N6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 09:58:47 -0400
-Message-ID: <53FDE416.1040801@suse.de>
-Date: Wed, 27 Aug 2014 15:58:46 +0200
+	id S933916AbaH0N7Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 09:59:16 -0400
+Message-ID: <53FDE433.5070409@suse.de>
+Date: Wed, 27 Aug 2014 15:59:15 +0200
 From: Hannes Reinecke <hare@suse.de>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
@@ -20,9 +20,9 @@ CC: linux-scsi@vger.kernel.org,
         Doug Gilbert <dgilbert@interlog.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Christoph Hellwig <hch@lst.de>
-Subject: Re: [RFC PATCH 03/10] scsi/constants: Cleanup printk message in __scsi_print_command()
-References: <20140808115004.6768.97014.stgit@yuno-kbuild.novalocal> <20140808115012.6768.44952.stgit@yuno-kbuild.novalocal>
-In-Reply-To: <20140808115012.6768.44952.stgit@yuno-kbuild.novalocal>
+Subject: Re: [RFC PATCH 04/10] scsi/constants: Cleanup printk message in scsi_dump_sense_buffer()
+References: <20140808115004.6768.97014.stgit@yuno-kbuild.novalocal> <20140808115014.6768.44632.stgit@yuno-kbuild.novalocal>
+In-Reply-To: <20140808115014.6768.44632.stgit@yuno-kbuild.novalocal>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,8 +30,9 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 08/08/2014 01:50 PM, Yoshihiro YUNOMAE wrote:
-> All bytes in CDB should be output after linebuf is filled because
-> "[%s] CDB: %s\n" message is output many times in loop.
+> Unrecognized sense data should be output after linebuf is filled because
+> "[%s] Unrecognized sense data (in hex): %s" message is output many times in
+> loop.
 >
 > Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
 > Cc: Hannes Reinecke <hare@suse.de>
@@ -42,23 +43,53 @@ On 08/08/2014 01:50 PM, Yoshihiro YUNOMAE wrote:
 > Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
 > Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 > ---
->   drivers/scsi/constants.c |    3 +--
->   1 file changed, 1 insertion(+), 2 deletions(-)
+>   drivers/scsi/constants.c |   13 +++++--------
+>   1 file changed, 5 insertions(+), 8 deletions(-)
 >
 > diff --git a/drivers/scsi/constants.c b/drivers/scsi/constants.c
-> index 9c38b8d..5956d4d 100644
+> index 5956d4d..6fad6b4 100644
 > --- a/drivers/scsi/constants.c
 > +++ b/drivers/scsi/constants.c
-> @@ -413,9 +413,8 @@ void __scsi_print_command(struct scsi_device *sdev, const char *prefix,
+> @@ -1385,16 +1385,13 @@ EXPORT_SYMBOL(scsi_print_sense_hdr);
 >
->   		hex_dump_to_buffer(cdb + i, linelen, 16, 1,
+>   static void
+>   scsi_dump_sense_buffer(struct scsi_device *sdev, const char *prefix,
+> -		       const unsigned char *sense_buffer, int sense_len,
+> -		       struct scsi_sense_hdr *sshdr)
+> +		       const unsigned char *sense_buffer, int sense_len)
+>   {
+>   	char linebuf[128];
+>   	int i, linelen, remaining;
+>
+>   	if (sense_len < 32)
+>   		sense_len = 32;
+> -	sdev_printk(KERN_INFO, sdev,
+> -		    "[%s] Unrecognized sense data (in hex):", prefix);
+>
+>   	remaining = sense_len;
+>   	for (i = 0; i < sense_len; i += 16) {
+> @@ -1403,9 +1400,10 @@ scsi_dump_sense_buffer(struct scsi_device *sdev, const char *prefix,
+>
+>   		hex_dump_to_buffer(sense_buffer + i, linelen, 16, 1,
 >   				   linebuf, sizeof(linebuf), false);
-> -		sdev_printk(KERN_INFO, sdev, "[%s] CDB: %s\n",
+> -		sdev_printk(KERN_INFO, sdev, "[%s] Sense: %s\n",
 > -			    prefix, linebuf);
 >   	}
-> +	sdev_printk(KERN_INFO, sdev, "[%s] CDB: %s\n", prefix, linebuf);
+> +	sdev_printk(KERN_INFO, sdev,
+> +		    "[%s] Unrecognized sense data (in hex): %s",
+> +		    prefix, linebuf);
 >   }
->   EXPORT_SYMBOL(__scsi_print_command);
+>
+>   static void
+> @@ -1467,8 +1465,7 @@ void __scsi_print_sense(struct scsi_device *sdev, const char *name,
+>
+>   	if (!scsi_normalize_sense(sense_buffer, sense_len, &sshdr)) {
+>   		/* this may be SCSI-1 sense data */
+> -		scsi_dump_sense_buffer(sdev, name, sense_buffer,
+> -				       sense_len, &sshdr);
+> +		scsi_dump_sense_buffer(sdev, name, sense_buffer, sense_len);
+>   		return;
+>   	}
 >
 >
 > --
