@@ -1,108 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932980AbaH0JdQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 05:33:16 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:64526 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755202AbaH0JdN (ORCPT
+	id S933339AbaH0Jdw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 05:33:52 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:27537 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932693AbaH0Jdu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 05:33:13 -0400
-Date: Wed, 27 Aug 2014 10:33:05 +0100
-From: Sitsofe Wheeler <sitsofe@gmail.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jason Wang <jasowang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: Re: [hyperv] BUG at drivers/hv/channel.c:462 while changing MTU
-Message-ID: <20140827093305.GB1827@sucs.org>
-References: <20140819123655.GC12160@sucs.org>
- <20140825093648.GB5046@mwanda>
- <20140825214303.GA32390@sucs.org>
- <d282e41ecdb54a2ab3012a3471f649f3@BY2PR0301MB0711.namprd03.prod.outlook.com>
+	Wed, 27 Aug 2014 05:33:50 -0400
+From: Marc Zyngier <marc.zyngier@arm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap\@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux\@openrisc.net" <linux@openrisc.net>,
+        "linux\@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "shawn.guo\@freescale.com" <shawn.guo@freescale.com>,
+        "kernel\@pengutronix.de" <kernel@pengutronix.de>,
+        "tony\@atomide.com" <tony@atomide.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "jonas\@southpole.se" <jonas@southpole.se>,
+        "jason\@lakedaemon.net" <jason@lakedaemon.net>,
+        "shc_work\@mail.ru" <shc_work@mail.ru>,
+        "baohua\@kernel.org" <baohua@kernel.org>,
+        "maxime.ripard\@free-electrons.com" 
+	<maxime.ripard@free-electrons.com>,
+        "khilman\@linaro.org" <khilman@linaro.org>,
+        "sboyd\@codeaurora.org" <sboyd@codeaurora.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        "larry.bassel\@linaro.org" <larry.bassel@linaro.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        "stefan.kristiansson\@saunalahti.fi" 
+	<stefan.kristiansson@saunalahti.fi>,
+        "vkale\@apm.com" <vkale@apm.com>,
+        "schwidefsky\@de.ibm.com" <schwidefsky@de.ibm.com>
+Subject: Re: [PATCH v2 00/26] genirq: fix use of irq_find_mapping outside of legal RCU context
+In-Reply-To: <alpine.DEB.2.10.1408262333420.3323@nanos> (Thomas Gleixner's
+	message of "Tue, 26 Aug 2014 22:34:51 +0100")
+Organization: ARM Ltd
+References: <1409047421-27649-1-git-send-email-marc.zyngier@arm.com>
+	<alpine.DEB.2.10.1408262333420.3323@nanos>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+Date: Wed, 27 Aug 2014 10:33:44 +0100
+Message-ID: <87y4uap98n.fsf@approximate.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <d282e41ecdb54a2ab3012a3471f649f3@BY2PR0301MB0711.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 09:48:31PM +0000, KY Srinivasan wrote:
-> 
-> > There is also a case of the BUG_ON at line 460 being hit (from
-> > https://lkml.org/lkml/2014/8/19/708 ):
-> > 
-> > 457        ret = vmbus_post_msg(msg,
-> > 458                                       sizeof(struct vmbus_channel_gpadl_teardown));
-> > 459
-> > 460        BUG_ON(ret != 0);
-> 
-> I will take care of all BUG_ON() instances in channel.c
+Hi Thomas,
 
-Running a kernel patched with "Drivers: hv: vmbus: Eliminate calls to
-BUG_ON()" boots but repeatedly changing the MTU with the following script now
-results in a GPF in netvsc_open:
+On Tue, Aug 26 2014 at 10:34:51 pm BST, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Tue, 26 Aug 2014, Marc Zyngier wrote:
+>
+>> A number of irqchip drivers are directly calling irq_find_mapping,
+>> which may use a rcu_read_lock call when walking the radix tree.
+>> 
+>> Turns out that if you hit that point with CONFIG_PROVE_RCU enabled,
+>> the kernel will shout at you, as using RCU in this context may be
+>> illegal (specially if coming from the idle state, where RCU would be
+>> in a quiescent state).
+>> 
+>> A possible fix would be to wrap calls to irq_find_mapping into a
+>> RCU_NONIDLE macro, but that really looks ugly.
+>> 
+>> This patch series introduce another generic IRQ entry point
+>> (handle_domain_irq), which has the exact same behaviour as handle_IRQ
+>> (as defined on arm, arm64 and openrisc), except that it also takes a
+>> irq_domain pointer. This allows the logical IRQ lookup to be done
+>> inside the irq_{enter,exit} section, which contains a
+>> rcu_irq_{enter,exit}, making it safe.
+>
+> Looks good. Should this be routed to the genirq tree?
 
-dev=eth1; while true; do ifconfig eth1 down; ifconfig eth1 mtu 1500; ifconfig eth1 up; ifconfig eth1 mtu 9000; done
+I'm happy for you to take this series, provided the architecture
+maintainers agree on it (I'm still to hear from the openrisc guys, and
+their mailing-list seems to positively hate my guts).
 
-[   58.031328] hv_netvsc vmbus_0_15: net device safe to remove
-[   58.083975] hv_netvsc: hv_netvsc channel opened successfully
-[   58.973625] hv_netvsc vmbus_0_15: Send section size: 6144, Section count:2560
-[   59.030456] hv_netvsc vmbus_0_15: Device MAC 00:15:5d:6f:02:a5 link state up
-[   59.142723] hv_netvsc vmbus_0_15: net device safe to remove
-[   59.184701] hv_netvsc: hv_netvsc channel opened successfully
-[   59.867690] hv_netvsc vmbus_0_15: Send section size: 6144, Section count:2560
-[   59.919317] hv_netvsc vmbus_0_15: Device MAC 00:15:5d:6f:02:a5 link state up
-[   59.988054] hv_netvsc vmbus_0_15 eth1: unable to teardown receive buffer's gpadl
-[   60.038752] hv_netvsc vmbus_0_15: net device safe to remove
-[   60.070163] hv_vmbus: Close failed: close post msg return is 4
-[   60.121381] hv_vmbus: Close failed: close post msg return is 4
-[   60.157974] hv_vmbus: Close failed: close post msg return is 4
-[   60.190205] hv_vmbus: Close failed: close post msg return is 4
-[   60.232070] hv_vmbus: Close failed: close post msg return is 4
-[   65.275820] hv_netvsc vmbus_0_15 eth1: unable to open channel: -110
-[   65.325009] general protection fault: 0000 [#1] SMP
-[   65.356804] CPU: 7 PID: 852 Comm: ifconfig Not tainted 3.17.0-rc1.x86_64-dirty #127
-[   65.356804] Hardware name: Microsoft Corporation Virtual Machine/Virtual Machine, BIOS 090006  05/23/2012
-[   65.356804] task: ffff8800f268b9f0 ti: ffff8800eed38000 task.ti: ffff8800eed38000
-[   65.356804] RIP: 0010:[<ffffffff814e9fff>]  [<ffffffff814e9fff>] rndis_filter_open+0x1f/0x60
-[   65.356804] RSP: 0018:ffff8800eed3bd28  EFLAGS: 00010246
-[   65.356804] RAX: 0000000000000000 RBX: 6b6b6b6b6b6b6b6b RCX: 0000000000000006
-[   65.356804] RDX: 0000000000000006 RSI: ffff8800f268c130 RDI: ffff8801fbb8d480
-[   65.356804] RBP: ffff8800eed3bd30 R08: 0000000000000000 R09: 0000000000000000
-[   65.356804] R10: 0000000000000001 R11: 0000000000000001 R12: ffff8801fbb8d480
-[   65.356804] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000001
-[   65.356804] FS:  00007fdfdbf94740(0000) GS:ffff880207ce0000(0000) knlGS:0000000000000000
-[   65.356804] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[   65.356804] CR2: 00007fdfdc1b51c4 CR3: 00000000ec53b000 CR4: 00000000000406e0
-[   65.356804] Stack:
-[   65.356804]  ffff8800f1021160 ffff8800eed3bd58 ffffffff814e6515 ffff8800f1021160
-[   65.356804]  ffffffff8188f980 0000000000000000 ffff8800eed3bd80 ffffffff815d0998
-[   65.356804]  ffff8800f1021160 ffff8800f1021160 0000000000001043 ffff8800eed3bdb8
-[   65.356804] Call Trace:
-[   65.356804]  [<ffffffff814e6515>] netvsc_open+0x25/0xb0
-[   65.356804]  [<ffffffff815d0998>] __dev_open+0x98/0x110
-[   65.356804]  [<ffffffff815d0c99>] __dev_change_flags+0xb9/0x160
-[   65.356804]  [<ffffffff815d0d69>] dev_change_flags+0x29/0x60
-[   65.356804]  [<ffffffff81641b6b>] devinet_ioctl+0x31b/0x6f0
-[   65.356804]  [<ffffffff81642c4d>] inet_ioctl+0x6d/0xa0
-[   65.356804]  [<ffffffff815b27c0>] sock_ioctl+0x1e0/0x210
-[   65.356804]  [<ffffffff811d4dc0>] do_vfs_ioctl+0x4d0/0x510
-[   65.356804]  [<ffffffff816a2d55>] ? sysret_check+0x22/0x5d
-[   65.356804]  [<ffffffff810b976d>] ? trace_hardirqs_on_caller+0x17d/0x210
-[   65.356804]  [<ffffffff811d4e53>] SyS_ioctl+0x53/0x90
-[   65.356804]  [<ffffffff816a2d29>] system_call_fastpath+0x16/0x1b
-[   65.356804] Code: 41 5e 41 5f 5d c3 66 0f 1f 44 00 00 66 66 66 66 90 48 8b 87 20 01 00 00 48 85 c0 74 2f 55 48 89 e5 53 48 8b 98 40 02 00 00 31 c0 <83> 7b 08 02 75 2b be 0d 00 00 00 48 89 df e8 9e f9 ff ff 85 c0
-[   65.356804] RIP  [<ffffffff814e9fff>] rndis_filter_open+0x1f/0x60
-[   65.356804]  RSP <ffff8800eed3bd28>
-[   66.789324] ---[ end trace 1b6075f9340eb5bc ]---
+Thanks,
 
+	M.
 -- 
-Sitsofe | http://sucs.org/~sits/
+Jazz is not dead. It just smells funny.
