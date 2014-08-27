@@ -1,60 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936113AbaH0XFF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 19:05:05 -0400
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:38931 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935682AbaH0XFD (ORCPT
+	id S936130AbaH0XFV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 19:05:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58866 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932305AbaH0XFR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 19:05:03 -0400
-Date: Thu, 28 Aug 2014 00:04:40 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Christoph Lameter <cl@linux.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, willy@linux.intel.com
-Subject: Re: [PATCH v10 00/21] Support ext4 on NV-DIMMs
-Message-ID: <20140828000440.5d9f5bff@alan.etchedpixels.co.uk>
-In-Reply-To: <20140827143055.5210c5fb9696e460b456eb26@linux-foundation.org>
-References: <cover.1409110741.git.matthew.r.wilcox@intel.com>
-	<20140827130613.c8f6790093d279a447196f17@linux-foundation.org>
-	<alpine.DEB.2.11.1408271616070.17080@gentwo.org>
-	<20140827143055.5210c5fb9696e460b456eb26@linux-foundation.org>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
+	Wed, 27 Aug 2014 19:05:17 -0400
+Date: Wed, 27 Aug 2014 16:05:15 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mike Travis <travis@sgi.com>
+Cc: mingo@redhat.com, tglx@linutronix.de, hpa@zytor.com, msalter@redhat.com,
+        dyoung@redhat.com, riel@redhat.com, peterz@infradead.org,
+        mgorman@suse.de, linux-kernel@vger.kernel.org, x86@kernel.org,
+        linux-mm@kvack.org, Alex Thorlton <athorlton@sgi.com>
+Subject: Re: [PATCH 1/2] x86: Optimize resource lookups for ioremap
+Message-Id: <20140827160515.c59f1c191fde5f788a7c42f6@linux-foundation.org>
+In-Reply-To: <20140827225927.602319674@asylum.americas.sgi.com>
+References: <20140827225927.364537333@asylum.americas.sgi.com>
+	<20140827225927.602319674@asylum.americas.sgi.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Aug 2014 14:30:55 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
+On Wed, 27 Aug 2014 17:59:28 -0500 Mike Travis <travis@sgi.com> wrote:
 
-> On Wed, 27 Aug 2014 16:22:20 -0500 (CDT) Christoph Lameter <cl@linux.com> wrote:
+> Since the ioremap operation is verifying that the specified address range
+> is NOT RAM, it will search the entire ioresource list if the condition
+> is true.  To make matters worse, it does this one 4k page at a time.
+> For a 128M BAR region this is 32 passes to determine the entire region
+> does not contain any RAM addresses.
 > 
-> > > Some explanation of why one would use ext4 instead of, say,
-> > > suitably-modified ramfs/tmpfs/rd/etc?
-> > 
-> > The NVDIMM contents survive reboot and therefore ramfs and friends wont
-> > work with it.
+> This patch provides another resource lookup function, region_is_ram,
+> that searches for the entire region specified, verifying that it is
+> completely contained within the resource region.  If it is found, then
+> it is checked to be RAM or not, within a single pass.
 > 
-> See "suitably modified".  Presumably this type of memory would need to
-> come from a particular page allocator zone.  ramfs would be unweildy
-> due to its use to dentry/inode caches, but rd/etc should be feasible.
+> The return result reflects if it was found or not (-1), and whether it is
+> RAM (1) or not (0).  This allows the caller to fallback to the previous
+> page by page search if it was not found.
+> 
+> ...
+>
+> --- linux.orig/kernel/resource.c
+> +++ linux/kernel/resource.c
+> @@ -494,6 +494,43 @@ int __weak page_is_ram(unsigned long pfn
+>  }
+>  EXPORT_SYMBOL_GPL(page_is_ram);
+>  
+> +/*
+> + * Search for a resouce entry that fully contains the specified region.
+> + * If found, return 1 if it is RAM, 0 if not.
+> + * If not found, or region is not fully contained, return -1
+> + *
+> + * Used by the ioremap functions to insure user not remapping RAM and is as
+> + * vast speed up over walking through the resource table page by page.
+> + */
+> +int __weak region_is_ram(resource_size_t start, unsigned long size)
+> +{
+> +	struct resource *p;
+> +	resource_size_t end = start + size - 1;
+> +	int flags = IORESOURCE_MEM | IORESOURCE_BUSY;
+> +	const char *name = "System RAM";
+> +	int ret = -1;
+> +
+> +	read_lock(&resource_lock);
+> +	for (p = iomem_resource.child; p ; p = p->sibling) {
+> +		if (end < p->start)
+> +			continue;
+> +
+> +		if (p->start <= start && end <= p->end) {
+> +			/* resource fully contains region */
+> +			if ((p->flags != flags) || strcmp(p->name, name))
+> +				ret = 0;
+> +			else
+> +				ret = 1;
+> +			break;
+> +		}
+> +		if (p->end < start)
+> +			break;	/* not found */
+> +	}
+> +	read_unlock(&resource_lock);
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(region_is_ram);
 
-If you took one of the existing ramfs types you would then need to
+Exporting a __weak symbol is strange.  I guess it works, but neither
+the __weak nor the export are actually needed?
 
-- make it persistent in its storage, and put all the objects in the store
-- add journalling for failures mid transaction. Your dimm may retain its
-  bits but if your CPU reset mid fs operation its got to be recovered
-- write an fsck tool for it
-- validate it
-
-at which point it's probably turned into ext4 8)
-
-It's persistent but that doesn't solve the 'my box crashed' problem. 
-
-Alan
