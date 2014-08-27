@@ -1,67 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965218AbaH0VEJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 17:04:09 -0400
-Received: from mga11.intel.com ([192.55.52.93]:50492 "EHLO mga11.intel.com"
+	id S935942AbaH0VJU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 17:09:20 -0400
+Received: from canardo.mork.no ([148.122.252.1]:41203 "EHLO canardo.mork.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965200AbaH0VEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 17:04:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,413,1406617200"; 
-   d="scan'208";a="473310998"
-From: Andi Kleen <andi@firstfloor.org>
-To: peterz@infradead.org
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
-        tglx@linutronix.de, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 5/5] perf, x86: Use Broadwell cache event list for Haswell
-Date: Wed, 27 Aug 2014 14:03:57 -0700
-Message-Id: <1409173437-3041-6-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1409173437-3041-1-git-send-email-andi@firstfloor.org>
-References: <1409173437-3041-1-git-send-email-andi@firstfloor.org>
+	id S933809AbaH0VJR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 17:09:17 -0400
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: gadget: net2280: Remove pci_class from PCI_TABLE
+Organization: m
+References: <1409144429-23723-1-git-send-email-ricardo.ribalda@gmail.com>
+	<20140827192547.GB9620@kroah.com>
+	<CAPybu_1-pgEc5cwRPggm60UHKCceQZGAiyzjGqOhDZJedbkE8w@mail.gmail.com>
+	<20140827202204.GA13047@kroah.com>
+Date: Wed, 27 Aug 2014 23:09:08 +0200
+In-Reply-To: <20140827202204.GA13047@kroah.com> (Greg Kroah-Hartman's message
+	of "Wed, 27 Aug 2014 13:22:04 -0700")
+Message-ID: <87a96p7i8b.fsf@nemi.mork.no>
+User-Agent: Gnus/5.130011 (Ma Gnus v0.11) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
+> On Wed, Aug 27, 2014 at 09:39:43PM +0200, Ricardo Ribalda Delgado wrote:
+>> 
+>> return sprintf(buf, "pci:v%08Xd%08Xsv%08Xsd%08Xbc%02Xsc%02Xi%02x\n",
 
-Use the newly added Broadwell cache event list for Haswell too.
-All Haswell and Broadwell events and offcore masks used in these lists
-are identical.
+That final 'x' does look like a typo, doesn't it?  We are otherwise
+consistently using upper-case hex digits for field values and lower case
+letter for field names.  But it looks like it has been like that since
+the beginning, so it might be difficult to fix...
 
-However Haswell is very different from the Sandy Bridge
-list that was used previously. That fixes a wide range of mis-counting
-cache events.
+> No, the root cause of the problem is a userspace tool looking at a hex
+> value as a string and not a number.  It doesn't matter if we print it in
+> upper or lower case, it's a digit, not a string.  Do the numeric
+> compare, not a string compare.
 
-The node events are now only for retired memory events, so prefetching
-and speculative memory accesses are not included. They are PEBS
-capable now, which makes it much easier to sample for them, plus it's
-possible to create address maps with -d.
+Now I don't really know much about the history here, but the format of
+module aliases, using wildcards, seem to suggest a string match to me.
+Do you really mean that these strings should be parsed into field names
++ values before matching?  If that was the intention then surely we
+would have exported the fields one-by-one as separate sysfs attributes?
+Ref the "one value per file" policy.
 
-The prefetch events are gone now. They way the hardware counts
-them is very misleading (some prefetches included, others not), so
-it seemed best to leave them out.
+>> Not many drivers define the pci interface and there is no other driver
+>> that has the same vendor  and product id. Therefore I see no hurt in
+>> adding both patches, one to make the driver broader, and another to
+>> fix pci-sysfs.
+>> 
+>> Also, the change on pci-sysfs might affect more stuff and therefore
+>> take longer to be applied.
+>
+> As we have been printing the value to userspace in this way for well
+> over a decade now, and nothing has changed, I say it's a userspace bug
+> that you should fix instead.  Don't work around broken user programs in
+> the kernel by changing something that has been stable for 10+ years.
+>
+> Ok, sorry, not 10+ years, the commit was written May of 2005, so 9
+> years.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/kernel/cpu/perf_event_intel.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+well, just looking at a few common PCI devices on my PCs I wonder if the
+reason this hasn't been a problem is because there are _very_ few PCI
+programming interfaces using anything by 0-9 digits.  One?  Looking at the
+modules built by Debian I can only find one udc module matching on any
+hex value:
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 077205f..55975ff 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -2692,8 +2692,8 @@ __init int intel_pmu_init(void)
- 	case 69: /* 22nm Haswell ULT */
- 	case 70: /* 22nm Haswell Client */
- 		x86_pmu.late_ack = true;
--		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids, sizeof(hw_cache_event_ids));
--		memcpy(hw_cache_extra_regs, snb_hw_cache_extra_regs, sizeof(hw_cache_extra_regs));
-+		memcpy(hw_cache_event_ids, bdw_hw_cache_event_ids, sizeof(hw_cache_event_ids));
-+		memcpy(hw_cache_extra_regs, bdw_hw_cache_extra_regs, sizeof(hw_cache_extra_regs));
- 
- 		intel_pmu_lbr_init_snb();
- 
--- 
-1.9.3
+ bjorn@nemi:~$  grep pci: /lib/modules/3.16-trunk-amd64/modules.alias|egrep "i[A-F]"
+ alias pci:v000010DBd00008808sv*sd*bc0Csc03iFE* pch_udc
+ alias pci:v000010DBd0000801Dsv*sd*bc0Csc03iFE* pch_udc
+ alias pci:v00008086d00008808sv*sd*bc0Csc03iFE* pch_udc
 
+This makes me wonder if this is exclusively a problem for PCI UDCs,
+which tend to be pretty rare devices?
+
+
+Bjørn
