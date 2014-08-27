@@ -1,27 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936097AbaH0Wdu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 18:33:50 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:31875 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932305AbaH0Wdt (ORCPT
+	id S936030AbaH0Wkk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 18:40:40 -0400
+Received: from mail-wg0-f66.google.com ([74.125.82.66]:65217 "EHLO
+	mail-wg0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932603AbaH0Wkj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 18:33:49 -0400
-From: Mukesh Rathor <mukesh.rathor@oracle.com>
-To: boris.ostrovsky@oracle.com, david.vrabel@citrix.com
-Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
-Subject: [V1 PATCH 0/2] Linux PVH: set EFER bits..
-Date: Wed, 27 Aug 2014 15:33:33 -0700
-Message-Id: <1409178815-2026-1-git-send-email-mukesh.rathor@oracle.com>
-X-Mailer: git-send-email 1.8.3.1
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Wed, 27 Aug 2014 18:40:39 -0400
+MIME-Version: 1.0
+Reply-To: money_02gram@foxmail.com
+Date: Wed, 27 Aug 2014 23:40:35 +0100
+Message-ID: <CAJ1axV0U+b5XJHTsW6jXMoELF2wQnFnK0xWeEDp8ZDDr2sW1ng@mail.gmail.com>
+Subject: ATTENTION: CONTACT MONEY GRAM REMMITTING OFFICE
+From: Maida Ahmed_13 <maidaa13@bfischool.org>
+To: undisclosed-recipients:;
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resending with comments fixed up. Please note, these are no longer
-AMD only, but address existing broken boot and broken NX on intel.
+WE THE MONEY GRAM URGENT REMMITTING OFFICE HAVE SENT YOUR FULL
+COMPENSATION PAYMENT OF $1.5million USD TO YOU THROUGH
+MONEY GRAM,YOU WILL BE RECEIVING $4,500.00USD PER DAY.NOW WE HAVE SEND
+THE FIRST PAYMENT TO YOU.SO CONTACT OUR DIRECTOR Mr.Mahugnon E. Metonwaho
+AND ASK HIM TO GIVE YOU THE MONEY GRAM PAYMENT INFORMATION SO THAT YOU
+CAN BE ABLE TO PICK UP YOUR FUNDS THROUGH MONEY GRAM WITHOUT ANY
+PROBLEM.
 
-thanks
-mukesh
+HERE IS THE CONTACT INFORMATION OF MONEY GRAM DIRECTOR
+GENERAL. Mr.Mahugnon E. Metonwaho EMAIL ADRESS (money_02gram@foxmail.com)
 
+TELL (+229) 68550986 THEN CONTACT HIM WITH YOUR FULL INFORMATION.
+OFFCE TEL( 229) 68620380
+
+Your Name:========
+
+Country:======
+
+Phone No:========
+
+Address/City:==========
+
+Age/Sex:==========
+
+CALL OR EMAIL HIM NOW SO THAT HE CAN PROVIDE THE MONEY GRAM
+INFORMATION TO YOU AS URGENT AS YOU CAN.
+THANKS AND GOD BLESSING YOU
+
+Sincerely.
+Mrs Ibrahim Aishat.
