@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936053AbaH0Xhg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 19:37:36 -0400
-Received: from qmta08.emeryville.ca.mail.comcast.net ([76.96.30.80]:58842 "EHLO
-	qmta08.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935743AbaH0Xhf (ORCPT
+	id S965317AbaH0Xht (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 19:37:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59402 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935743AbaH0Xhr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 19:37:35 -0400
-Date: Wed, 27 Aug 2014 18:37:33 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] mm/slab: use percpu allocator for cpu cache
-In-Reply-To: <1408608675-20420-1-git-send-email-iamjoonsoo.kim@lge.com>
-Message-ID: <alpine.DEB.2.11.1408271827010.26560@gentwo.org>
-References: <1408608675-20420-1-git-send-email-iamjoonsoo.kim@lge.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 27 Aug 2014 19:37:47 -0400
+Date: Wed, 27 Aug 2014 16:37:45 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mike Travis <travis@sgi.com>
+Cc: mingo@redhat.com, tglx@linutronix.de, hpa@zytor.com, msalter@redhat.com,
+        dyoung@redhat.com, riel@redhat.com, peterz@infradead.org,
+        mgorman@suse.de, linux-kernel@vger.kernel.org, x86@kernel.org,
+        linux-mm@kvack.org, Alex Thorlton <athorlton@sgi.com>
+Subject: Re: [PATCH 1/2] x86: Optimize resource lookups for ioremap
+Message-Id: <20140827163745.774e9b5c591e8f9cf7542a4d@linux-foundation.org>
+In-Reply-To: <53FE68E4.4090902@sgi.com>
+References: <20140827225927.364537333@asylum.americas.sgi.com>
+	<20140827225927.602319674@asylum.americas.sgi.com>
+	<20140827160515.c59f1c191fde5f788a7c42f6@linux-foundation.org>
+	<53FE6515.6050102@sgi.com>
+	<20140827161854.0619a04653b336d3adc755f3@linux-foundation.org>
+	<53FE68E4.4090902@sgi.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One minor nit. Otherwise
+On Wed, 27 Aug 2014 16:25:24 -0700 Mike Travis <travis@sgi.com> wrote:
 
-Acked-by: Christoph Lameter <cl@linux.com>
+> > 
+> > <looks at the code>
+> > 
+> > Doing strcmp("System RAM") is rather a hack.  Is there nothing in
+> > resource.flags which can be used?  Or added otherwise?
+> 
+> I agree except this mimics the page_is_ram function:
+> 
+>         while ((res.start < res.end) &&
+>                 (find_next_iomem_res(&res, "System RAM", true) >= 0)) {
 
-On Thu, 21 Aug 2014, Joonsoo Kim wrote:
+Yeah.  Sigh.
 
-> @@ -2041,56 +1982,63 @@ static size_t calculate_slab_order(struct kmem_cache *cachep,
->  	return left_over;
->  }
->
-> +static int alloc_kmem_cache_cpus(struct kmem_cache *cachep, int entries,
-> +				int batchcount)
-> +{
-> +	cachep->cpu_cache = __alloc_kmem_cache_cpus(cachep, entries,
-> +							batchcount);
-> +	if (!cachep->cpu_cache)
-> +		return 1;
-> +
-> +	return 0;
-> +}
+> So it passes the same literal string which then find_next does the
+> same strcmp on it:
+> 
+>                 if (p->flags != res->flags)
+>                         continue;
+>                 if (name && strcmp(p->name, name))
+>                         continue;
+> 
+> I should add back in the check to insure name is not NULL.
 
-Do we really need this trivial function? It doesnt do anything useful as
-far as I can tell.
+If we're still at 1+ hours then little bodges like this are nowhere
+near sufficient and sterner stuff will be needed.
+
+Do we actually need the test?  My googling turns up zero instances of
+anyone reporting the "ioremap on RAM pfn" warning.
+
+Where's the rest of the time being spent?
