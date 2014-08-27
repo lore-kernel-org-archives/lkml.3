@@ -1,92 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935946AbaH0VCP (ORCPT <rfc822;w@1wt.eu>);
+	id S964979AbaH0VCS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 17:02:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34730 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935499AbaH0VCP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 27 Aug 2014 17:02:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56496 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935499AbaH0VCM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 17:02:12 -0400
-Date: Wed, 27 Aug 2014 14:02:12 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Roger Quadros <rogerq@ti.com>
-Cc: stern@rowland.harvard.edu, balbi@ti.com, ming.lei@canonical.com,
-        mwelling@emacinc.com, stefan@herbrechtsmeier.net,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "[3.8+]" <stable@vger.kernel.org>
-Subject: Re: [PATCH v2] usb: hub: Prevent hub autosuspend if
- usbcore.autosuspend is -1
-Message-ID: <20140827210212.GA25562@kroah.com>
-References: <1407145486-14013-1-git-send-email-rogerq@ti.com>
- <53FDCADE.3040601@ti.com>
- <20140827192339.GA9620@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140827192339.GA9620@kroah.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Message-ID: <1409173278.9919.29.camel@deneb.redhat.com>
+Subject: Re: [PATCHv7 3/5] common: dma-mapping: Introduce common remapping
+ functions
+From: Mark Salter <msalter@redhat.com>
+To: Laura Abbott <lauraa@codeaurora.org>
+Cc: James Hogan <james.hogan@imgtec.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Will Deacon <will.deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Thierry Reding <thierry.reding@gmail.com>, linux-next@vger.kernel.org,
+        Ritesh Harjain <ritesh.harjani@gmail.com>,
+        David Riley <davidriley@chromium.org>,
+        ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Date: Wed, 27 Aug 2014 17:01:18 -0400
+In-Reply-To: <53FCBCC3.5040901@codeaurora.org>
+References: <1407800431-21566-1-git-send-email-lauraa@codeaurora.org>
+		<1407800431-21566-4-git-send-email-lauraa@codeaurora.org>
+	 <CAAG0J99=wrz4+c49HeDvL0W9rDZKk2HNLdVtHv4ZJxU4-OjewA@mail.gmail.com>
+	 <53FCBCC3.5040901@codeaurora.org>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 27, 2014 at 12:23:39PM -0700, Greg KH wrote:
-> On Wed, Aug 27, 2014 at 03:11:10PM +0300, Roger Quadros wrote:
-> > If user specifies that USB autosuspend must be disabled by module
-> > parameter "usbcore.autosuspend=-1" then we must prevent
-> > autosuspend of USB hub devices as well.
+On Tue, 2014-08-26 at 09:58 -0700, Laura Abbott wrote:
+> On 8/26/2014 3:05 AM, James Hogan wrote:
+> > On 12 August 2014 00:40, Laura Abbott <lauraa@codeaurora.org> wrote:
+> >>
+> >> For architectures without coherent DMA, memory for DMA may
+> >> need to be remapped with coherent attributes. Factor out
+> >> the the remapping code from arm and put it in a
+> >> common location to reduce code duplication.
+> >>
+> >> As part of this, the arm APIs are now migrated away from
+> >> ioremap_page_range to the common APIs which use map_vm_area for remapping.
+> >> This should be an equivalent change and using map_vm_area is more
+> >> correct as ioremap_page_range is intended to bring in io addresses
+> >> into the cpu space and not regular kernel managed memory.
+> >>
+> >> Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
+> >> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
 > > 
-> > commit 596d789a211d introduced in v3.8 changed the original behaivour
-> > and stopped respecting the usbcore.autosuspend parameter for hubs.
+> > This commit in linux-next () breaks the build for metag:
 > > 
-> > Fixes: 596d789a211d "USB: set hub's default autosuspend delay as 0"
+> > drivers/base/dma-mapping.c: In function ‘dma_common_contiguous_remap’:
+> > drivers/base/dma-mapping.c:294: error: implicit declaration of
+> > function ‘dma_common_pages_remap’
+> > drivers/base/dma-mapping.c:294: warning: assignment makes pointer from
+> > integer without a cast
+> > drivers/base/dma-mapping.c: At top level:
+> > drivers/base/dma-mapping.c:308: error: conflicting types for
+> > ‘dma_common_pages_remap’
+> > drivers/base/dma-mapping.c:294: error: previous implicit declaration
+> > of ‘dma_common_pages_remap’ was here
 > > 
-> > Cc: [3.8+] <stable@vger.kernel.org>
-> > Signed-off-by: Roger Quadros <rogerq@ti.com>
-> > ---
-> >  drivers/usb/core/hub.c | 8 +++++++-
-> >  1 file changed, 7 insertions(+), 1 deletion(-)
+> > Looks like metag isn't alone either:
 > > 
-> > diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-> > index 8a4dcbc..59b599d 100644
-> > --- a/drivers/usb/core/hub.c
-> > +++ b/drivers/usb/core/hub.c
-> > @@ -1728,8 +1728,14 @@ static int hub_probe(struct usb_interface *intf, const struct usb_device_id *id)
-> >  	 * - Change autosuspend delay of hub can avoid unnecessary auto
-> >  	 *   suspend timer for hub, also may decrease power consumption
-> >  	 *   of USB bus.
-> > +	 *
-> > +	 * - If user has indicated to prevent autosuspend by passing
-> > +	 *   usbcore.autosuspend = -1 then keep autosuspend disabled.
-> >  	 */
-> > -	pm_runtime_set_autosuspend_delay(&hdev->dev, 0);
-> > +#ifdef CONFIG_PM_RUNTIME
-> > +	if (hdev->dev.power.autosuspend_delay >= 0)
-> > +		pm_runtime_set_autosuspend_delay(&hdev->dev, 0);
-> > +#endif
-> >  
-> >  	/*
-> >  	 * Hubs have proper suspend/resume support, except for root hubs
+> > $ git grep -L dma-mapping-common arch/*/include/asm/dma-mapping.h
+> > arch/arc/include/asm/dma-mapping.h
+> > arch/avr32/include/asm/dma-mapping.h
+> > arch/blackfin/include/asm/dma-mapping.h
+> > arch/c6x/include/asm/dma-mapping.h
+> > arch/cris/include/asm/dma-mapping.h
+> > arch/frv/include/asm/dma-mapping.h
+> > arch/m68k/include/asm/dma-mapping.h
+> > arch/metag/include/asm/dma-mapping.h
+> > arch/mn10300/include/asm/dma-mapping.h
+> > arch/parisc/include/asm/dma-mapping.h
+> > arch/xtensa/include/asm/dma-mapping.h
+> > 
+> > I've checked a couple of these arches (blackfin, xtensa) which don't
+> > include dma-mapping-common.h and their builds seem to be broken too.
+> > 
+> > Cheers
+> > James
+> > 
 > 
-> Sorry, but can I have a patch that just adds the #ifdef as I already
-> have your original one in my tree.
+> Thanks for the report. Would you mind giving the following patch
+> a test (this is theoretical only but I think it should work)
 
-This should be all that is needed, right?
+There's a further problem with c6x (no  MMU):
 
----------
+drivers/built-in.o: In function `dma_common_pages_remap':
+(.text+0x220c4): undefined reference to `get_vm_area_caller'
+drivers/built-in.o: In function `dma_common_pages_remap':
+(.text+0x22108): undefined reference to `map_vm_area'
+drivers/built-in.o: In function `dma_common_free_remap':
+(.text+0x22278): undefined reference to `find_vm_area'
 
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 003cb6b1a6bf..46f5161c7891 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1732,8 +1732,10 @@ static int hub_probe(struct usb_interface *intf, const struct usb_device_id *id)
- 	 * - If user has indicated to prevent autosuspend by passing
- 	 *   usbcore.autosuspend = -1 then keep autosuspend disabled.
- 	 */
-+#ifdef CONFIG_PM_RUNTIME
- 	if (hdev->dev.power.autosuspend_delay >= 0)
- 		pm_runtime_set_autosuspend_delay(&hdev->dev, 0);
-+#endif
- 
- 	/*
- 	 * Hubs have proper suspend/resume support, except for root hubs
+
