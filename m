@@ -1,380 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933047AbaH0EfG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 00:35:06 -0400
-Received: from mga01.intel.com ([192.55.52.88]:56535 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932942AbaH0EfC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 00:35:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,408,1406617200"; 
-   d="scan'208";a="590397312"
-From: Matthew Wilcox <matthew.r.wilcox@intel.com>
-To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Cc: Matthew Wilcox <willy@linux.intel.com>
-Subject: [PATCH v10 06/21] Add copy_to_iter(), copy_from_iter() and iov_iter_zero()
-Date: Tue, 26 Aug 2014 23:45:26 -0400
-Message-Id: <00ef35c57f3276dff8ea8b101fb44fbd36aa6edd.1409110741.git.matthew.r.wilcox@intel.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <cover.1409110741.git.matthew.r.wilcox@intel.com>
-References: <cover.1409110741.git.matthew.r.wilcox@intel.com>
-In-Reply-To: <cover.1409110741.git.matthew.r.wilcox@intel.com>
-References: <cover.1409110741.git.matthew.r.wilcox@intel.com>
+	id S933006AbaH0EfE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 00:35:04 -0400
+Received: from mx1.scotdoyle.com ([23.226.141.211]:50815 "EHLO
+	mx1.scotdoyle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932430AbaH0Ee7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 00:34:59 -0400
+Date: Wed, 27 Aug 2014 04:31:56 +0000 (UTC)
+From: Scot Doyle <lkml14@scotdoyle.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>,
+        Stefan Berger <stefanb@linux.vnet.ibm.com>,
+        Luigi Semenzato <semenzato@google.com>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [RFC PATCH v2] tpm_tis: verify interrupt during init
+In-Reply-To: <20140825182414.GB1298@obsidianresearch.com>
+Message-ID: <alpine.LNX.2.11.1408270410190.701@localhost.localdomain>
+References: <alpine.LNX.2.11.1408220043560.1360@localhost.localdomain> <20140822160626.GA8477@obsidianresearch.com> <alpine.LNX.2.11.1408221924070.1046@localhost.localdomain> <20140822203241.GB1733@obsidianresearch.com> <alpine.LNX.2.11.1408250629110.1207@localhost.localdomain>
+ <20140825182414.GB1298@obsidianresearch.com>
+User-Agent: Alpine 2.11 (LNX 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matthew Wilcox <willy@linux.intel.com>
+On Mon, 25 Aug 2014, Jason Gunthorpe wrote:
+> On Mon, Aug 25, 2014, Scot Doyle wrote:
+>> 3. Custom SeaBIOS. Blacklist the tpm_tis module so that it doesn't load
+>>    and therefore doesn't issue startup(clear) to the TPM chip.
+>
+> It seems to me at least in this case you should be able to get rid of
+> the IRQ entry, people are going to be flashing the custom SeaBIOS
+> anyhow.
 
-For DAX, we want to be able to copy between iovecs and kernel addresses
-that don't necessarily have a struct page.  This is a fairly simple
-rearrangement for bvec iters to kmap the pages outside and pass them in,
-but for user iovecs it gets more complicated because we might try various
-different ways to kmap the memory.  Duplicating the existing logic works
-out best in this case.
+The person building many of these custom SeaBIOS packages has removed the
+TPM section from the DSDT, so this may be addressed.
 
-We need to be able to write zeroes to an iovec for reads from unwritten
-ranges in a file.  This is performed by the new iov_iter_zero() function,
-again patterned after the existing code that handles iovec iterators.
 
-Signed-off-by: Matthew Wilcox <willy@linux.intel.com>
+On Mon, 25 Aug 2014, Jason Gunthorpe wrote:
+> I think you'll have to directly test in the tis driver if the
+> interrupt is working.
+>
+> The ordering in the TIS driver is wrong, interrupts should be turned
+> on before any TPM commands are issued. This is what other drivers are
+> doing.
+>
+> If you fix this, tis can then just count interrupts recieved and check
+> if that is 0 to detect failure and then turn them off.
+
+How about something like this?
+
+It doesn't enable stock SeaBIOS machines to suspend/resume before the 30 
+second interrupt timeout, unless using interrupts=0 or force=1.
+
 ---
- include/linux/uio.h |   3 +
- mm/iov_iter.c       | 237 ++++++++++++++++++++++++++++++++++++++++++++++++----
- 2 files changed, 226 insertions(+), 14 deletions(-)
 
-diff --git a/include/linux/uio.h b/include/linux/uio.h
-index 48d64e6..1863ddd 100644
---- a/include/linux/uio.h
-+++ b/include/linux/uio.h
-@@ -80,6 +80,9 @@ size_t copy_page_to_iter(struct page *page, size_t offset, size_t bytes,
- 			 struct iov_iter *i);
- size_t copy_page_from_iter(struct page *page, size_t offset, size_t bytes,
- 			 struct iov_iter *i);
-+size_t copy_to_iter(void *addr, size_t bytes, struct iov_iter *i);
-+size_t copy_from_iter(void *addr, size_t bytes, struct iov_iter *i);
-+size_t iov_iter_zero(size_t bytes, struct iov_iter *);
- unsigned long iov_iter_alignment(const struct iov_iter *i);
- void iov_iter_init(struct iov_iter *i, int direction, const struct iovec *iov,
- 			unsigned long nr_segs, size_t count);
-diff --git a/mm/iov_iter.c b/mm/iov_iter.c
-index ab88dc0..d481fd8 100644
---- a/mm/iov_iter.c
-+++ b/mm/iov_iter.c
-@@ -4,6 +4,96 @@
- #include <linux/slab.h>
- #include <linux/vmalloc.h>
- 
-+static size_t copy_to_iter_iovec(void *from, size_t bytes, struct iov_iter *i)
-+{
-+	size_t skip, copy, left, wanted;
-+	const struct iovec *iov;
-+	char __user *buf;
-+
-+	if (unlikely(bytes > i->count))
-+		bytes = i->count;
-+
-+	if (unlikely(!bytes))
-+		return 0;
-+
-+	wanted = bytes;
-+	iov = i->iov;
-+	skip = i->iov_offset;
-+	buf = iov->iov_base + skip;
-+	copy = min(bytes, iov->iov_len - skip);
-+
-+	left = __copy_to_user(buf, from, copy);
-+	copy -= left;
-+	skip += copy;
-+	from += copy;
-+	bytes -= copy;
-+	while (unlikely(!left && bytes)) {
-+		iov++;
-+		buf = iov->iov_base;
-+		copy = min(bytes, iov->iov_len);
-+		left = __copy_to_user(buf, from, copy);
-+		copy -= left;
-+		skip = copy;
-+		from += copy;
-+		bytes -= copy;
-+	}
-+
-+	if (skip == iov->iov_len) {
-+		iov++;
-+		skip = 0;
-+	}
-+	i->count -= wanted - bytes;
-+	i->nr_segs -= iov - i->iov;
-+	i->iov = iov;
-+	i->iov_offset = skip;
-+	return wanted - bytes;
-+}
-+
-+static size_t copy_from_iter_iovec(void *to, size_t bytes, struct iov_iter *i)
-+{
-+	size_t skip, copy, left, wanted;
-+	const struct iovec *iov;
-+	char __user *buf;
-+
-+	if (unlikely(bytes > i->count))
-+		bytes = i->count;
-+
-+	if (unlikely(!bytes))
-+		return 0;
-+
-+	wanted = bytes;
-+	iov = i->iov;
-+	skip = i->iov_offset;
-+	buf = iov->iov_base + skip;
-+	copy = min(bytes, iov->iov_len - skip);
-+
-+	left = __copy_from_user(to, buf, copy);
-+	copy -= left;
-+	skip += copy;
-+	to += copy;
-+	bytes -= copy;
-+	while (unlikely(!left && bytes)) {
-+		iov++;
-+		buf = iov->iov_base;
-+		copy = min(bytes, iov->iov_len);
-+		left = __copy_from_user(to, buf, copy);
-+		copy -= left;
-+		skip = copy;
-+		to += copy;
-+		bytes -= copy;
-+	}
-+
-+	if (skip == iov->iov_len) {
-+		iov++;
-+		skip = 0;
-+	}
-+	i->count -= wanted - bytes;
-+	i->nr_segs -= iov - i->iov;
-+	i->iov = iov;
-+	i->iov_offset = skip;
-+	return wanted - bytes;
-+}
-+
- static size_t copy_page_to_iter_iovec(struct page *page, size_t offset, size_t bytes,
- 			 struct iov_iter *i)
- {
-@@ -166,6 +256,50 @@ done:
- 	return wanted - bytes;
+diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
+index 2c46734..ae701d8 100644
+--- a/drivers/char/tpm/tpm_tis.c
++++ b/drivers/char/tpm/tpm_tis.c
+@@ -493,6 +493,8 @@ static irqreturn_t tis_int_probe(int irq, void *dev_id)
+ 	return IRQ_HANDLED;
  }
- 
-+static size_t zero_iovec(size_t bytes, struct iov_iter *i)
-+{
-+	size_t skip, copy, left, wanted;
-+	const struct iovec *iov;
-+	char __user *buf;
+
++static bool interrupted = false;
 +
-+	if (unlikely(bytes > i->count))
-+		bytes = i->count;
-+
-+	if (unlikely(!bytes))
-+		return 0;
-+
-+	wanted = bytes;
-+	iov = i->iov;
-+	skip = i->iov_offset;
-+	buf = iov->iov_base + skip;
-+	copy = min(bytes, iov->iov_len - skip);
-+
-+	left = __clear_user(buf, copy);
-+	copy -= left;
-+	skip += copy;
-+	bytes -= copy;
-+
-+	while (unlikely(!left && bytes)) {
-+		iov++;
-+		buf = iov->iov_base;
-+		copy = min(bytes, iov->iov_len);
-+		left = __clear_user(buf, copy);
-+		copy -= left;
-+		skip = copy;
-+		bytes -= copy;
-+	}
-+
-+	if (skip == iov->iov_len) {
-+		iov++;
-+		skip = 0;
-+	}
-+	i->count -= wanted - bytes;
-+	i->nr_segs -= iov - i->iov;
-+	i->iov = iov;
-+	i->iov_offset = skip;
-+	return wanted - bytes;
-+}
-+
- static size_t __iovec_copy_from_user_inatomic(char *vaddr,
- 			const struct iovec *iov, size_t base, size_t bytes)
+ static irqreturn_t tis_int_handler(int dummy, void *dev_id)
  {
-@@ -412,12 +546,17 @@ static void memcpy_to_page(struct page *page, size_t offset, char *from, size_t
- 	kunmap_atomic(to);
- }
- 
--static size_t copy_page_to_iter_bvec(struct page *page, size_t offset, size_t bytes,
--			 struct iov_iter *i)
-+static void memzero_page(struct page *page, size_t offset, size_t len)
-+{
-+	char *addr = kmap_atomic(page);
-+	memset(addr + offset, 0, len);
-+	kunmap_atomic(addr);
-+}
-+
-+static size_t copy_to_iter_bvec(void *from, size_t bytes, struct iov_iter *i)
- {
- 	size_t skip, copy, wanted;
- 	const struct bio_vec *bvec;
--	void *kaddr, *from;
- 
- 	if (unlikely(bytes > i->count))
- 		bytes = i->count;
-@@ -430,8 +569,6 @@ static size_t copy_page_to_iter_bvec(struct page *page, size_t offset, size_t by
- 	skip = i->iov_offset;
- 	copy = min_t(size_t, bytes, bvec->bv_len - skip);
- 
--	kaddr = kmap_atomic(page);
--	from = kaddr + offset;
- 	memcpy_to_page(bvec->bv_page, skip + bvec->bv_offset, from, copy);
- 	skip += copy;
- 	from += copy;
-@@ -444,7 +581,6 @@ static size_t copy_page_to_iter_bvec(struct page *page, size_t offset, size_t by
- 		from += copy;
- 		bytes -= copy;
+ 	struct tpm_chip *chip = dev_id;
+@@ -511,6 +513,8 @@ static irqreturn_t tis_int_handler(int dummy, void *dev_id)
+ 		for (i = 0; i < 5; i++)
+ 			if (check_locality(chip, i) >= 0)
+ 				break;
++	if (interrupt & TPM_INTF_CMD_READY_INT)
++		interrupted = true;
+ 	if (interrupt &
+ 	    (TPM_INTF_LOCALITY_CHANGE_INT | TPM_INTF_STS_VALID_INT |
+ 	     TPM_INTF_CMD_READY_INT))
+@@ -612,12 +616,6 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
+ 		goto out_err;
  	}
--	kunmap_atomic(kaddr);
- 	if (skip == bvec->bv_len) {
- 		bvec++;
- 		skip = 0;
-@@ -456,12 +592,10 @@ static size_t copy_page_to_iter_bvec(struct page *page, size_t offset, size_t by
- 	return wanted - bytes;
- }
- 
--static size_t copy_page_from_iter_bvec(struct page *page, size_t offset, size_t bytes,
--			 struct iov_iter *i)
-+static size_t copy_from_iter_bvec(void *to, size_t bytes, struct iov_iter *i)
- {
- 	size_t skip, copy, wanted;
- 	const struct bio_vec *bvec;
--	void *kaddr, *to;
- 
- 	if (unlikely(bytes > i->count))
- 		bytes = i->count;
-@@ -473,10 +607,6 @@ static size_t copy_page_from_iter_bvec(struct page *page, size_t offset, size_t
- 	bvec = i->bvec;
- 	skip = i->iov_offset;
- 
--	kaddr = kmap_atomic(page);
+
+-	if (tpm_do_selftest(chip)) {
+-		dev_err(dev, "TPM self test failed\n");
+-		rc = -ENODEV;
+-		goto out_err;
+-	}
 -
--	to = kaddr + offset;
--
- 	copy = min(bytes, bvec->bv_len - skip);
- 
- 	memcpy_from_page(to, bvec->bv_page, bvec->bv_offset + skip, copy);
-@@ -493,7 +623,6 @@ static size_t copy_page_from_iter_bvec(struct page *page, size_t offset, size_t
- 		to += copy;
- 		bytes -= copy;
+ 	/* INTERRUPT Setup */
+ 	init_waitqueue_head(&chip->vendor.read_queue);
+ 	init_waitqueue_head(&chip->vendor.int_queue);
+@@ -693,7 +691,7 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
+ 			free_irq(i, chip);
+ 		}
  	}
--	kunmap_atomic(kaddr);
- 	if (skip == bvec->bv_len) {
- 		bvec++;
- 		skip = 0;
-@@ -505,6 +634,61 @@ static size_t copy_page_from_iter_bvec(struct page *page, size_t offset, size_t
- 	return wanted;
- }
- 
-+static size_t copy_page_to_iter_bvec(struct page *page, size_t offset,
-+					size_t bytes, struct iov_iter *i)
-+{
-+	void *kaddr = kmap_atomic(page);
-+	size_t wanted = copy_to_iter_bvec(kaddr + offset, bytes, i);
-+	kunmap_atomic(kaddr);
-+	return wanted;
-+}
+-	if (chip->vendor.irq) {
++	if (interrupts && chip->vendor.irq) {
+ 		iowrite8(chip->vendor.irq,
+ 			 chip->vendor.iobase +
+ 			 TPM_INT_VECTOR(chip->vendor.locality));
+@@ -719,6 +717,32 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
+ 		}
+ 	}
+
++	/* Test interrupt and/or prepare for later save state */
++	interrupted = false;
++	if (tpm_do_selftest(chip)) {
++		if (!interrupts || interrupted) {
++			dev_err(dev, "TPM self test failed\n");
++			rc = -ENODEV;
++			goto out_err;
++		} else {
++			/* Turn off interrupt */
++			iowrite32(intmask,
++				  chip->vendor.iobase +
++				  TPM_INT_ENABLE(chip->vendor.locality));
++			free_irq(chip->vendor.irq, chip);
 +
-+static size_t copy_page_from_iter_bvec(struct page *page, size_t offset,
-+					size_t bytes, struct iov_iter *i)
-+{
-+	void *kaddr = kmap_atomic(page);
-+	size_t wanted = copy_from_iter_bvec(kaddr + offset, bytes, i);
-+	kunmap_atomic(kaddr);
-+	return wanted;
-+}
-+
-+static size_t zero_bvec(size_t bytes, struct iov_iter *i)
-+{
-+	size_t skip, copy, wanted;
-+	const struct bio_vec *bvec;
-+
-+	if (unlikely(bytes > i->count))
-+		bytes = i->count;
-+
-+	if (unlikely(!bytes))
-+		return 0;
-+
-+	wanted = bytes;
-+	bvec = i->bvec;
-+	skip = i->iov_offset;
-+	copy = min_t(size_t, bytes, bvec->bv_len - skip);
-+
-+	memzero_page(bvec->bv_page, skip + bvec->bv_offset, copy);
-+	skip += copy;
-+	bytes -= copy;
-+	while (bytes) {
-+		bvec++;
-+		copy = min(bytes, (size_t)bvec->bv_len);
-+		memzero_page(bvec->bv_page, bvec->bv_offset, copy);
-+		skip = copy;
-+		bytes -= copy;
++			/* Retry in polling mode */
++			chip->vendor.irq = 0;
++			if (tpm_do_selftest(chip)) {
++				dev_err(dev, "TPM self test failed\n");
++				rc = -ENODEV;
++				goto out_err;
++			} else {
++				dev_err(dev, "ACPI DSDT entry incorrect, polling instead\n");
++			}
++		}
 +	}
-+	if (skip == bvec->bv_len) {
-+		bvec++;
-+		skip = 0;
-+	}
-+	i->count -= wanted - bytes;
-+	i->nr_segs -= bvec - i->bvec;
-+	i->bvec = bvec;
-+	i->iov_offset = skip;
-+	return wanted - bytes;
-+}
 +
- static size_t copy_from_user_bvec(struct page *page,
- 		struct iov_iter *i, unsigned long offset, size_t bytes)
- {
-@@ -668,6 +852,31 @@ size_t copy_page_from_iter(struct page *page, size_t offset, size_t bytes,
- }
- EXPORT_SYMBOL(copy_page_from_iter);
- 
-+size_t copy_to_iter(void *addr, size_t bytes, struct iov_iter *i)
-+{
-+	if (i->type & ITER_BVEC)
-+		return copy_to_iter_bvec(addr, bytes, i);
-+	else
-+		return copy_to_iter_iovec(addr, bytes, i);
-+}
-+
-+size_t copy_from_iter(void *addr, size_t bytes, struct iov_iter *i)
-+{
-+	if (i->type & ITER_BVEC)
-+		return copy_from_iter_bvec(addr, bytes, i);
-+	else
-+		return copy_from_iter_iovec(addr, bytes, i);
-+}
-+
-+size_t iov_iter_zero(size_t bytes, struct iov_iter *i)
-+{
-+	if (i->type & ITER_BVEC) {
-+		return zero_bvec(bytes, i);
-+	} else {
-+		return zero_iovec(bytes, i);
-+	}
-+}
-+
- size_t iov_iter_copy_from_user_atomic(struct page *page,
- 		struct iov_iter *i, unsigned long offset, size_t bytes)
- {
--- 
-2.0.0
+ 	INIT_LIST_HEAD(&chip->vendor.list);
+ 	mutex_lock(&tis_lock);
+ 	list_add(&chip->vendor.list, &tis_chips);
 
