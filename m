@@ -1,149 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965588AbaH0X6V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 19:58:21 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43647 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965555AbaH0X6Q (ORCPT
+	id S965611AbaH0X7G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 19:59:06 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:51188 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965385AbaH0X7D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 19:58:16 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <53FE705F.1050505@jp.fujitsu.com>
-Date: Thu, 28 Aug 2014 08:57:19 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Zhang Zhen <zhenzhang.zhang@huawei.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Dave Hansen <dave.hansen@intel.com>, Toshi Kani <toshi.kani@hp.com>
-CC: <wangnan0@huawei.com>, Linux MM <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] memory-hotplug: rename zones_online_to to valid_zones
-References: <1409124238-18635-1-git-send-email-zhenzhang.zhang@huawei.com> <53FDBDF0.5000200@huawei.com> <53FDBE6B.8070100@huawei.com>
-In-Reply-To: <53FDBE6B.8070100@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
-X-TM-AS-MML: No
+	Wed, 27 Aug 2014 19:59:03 -0400
+X-AuditID: cbfee68f-f797f6d000001173-07-53fe70c21f7e
+Message-id: <53FE70C4.9020501@samsung.com>
+Date: Thu, 28 Aug 2014 08:59:00 +0900
+From: Joonyoung Shim <jy0922.shim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101
+ Thunderbird/31.0
+MIME-version: 1.0
+To: Andrzej Hajda <a.hajda@samsung.com>, Inki Dae <inki.dae@samsung.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        dri-devel@lists.freedesktop.org,
+        open list <linux-kernel@vger.kernel.org>,
+        "moderated list:ARM/S5P EXYNOS AR..." 
+	<linux-samsung-soc@vger.kernel.org>,
+        Joonyoung Shim <jy0922.shim@samsung.com>
+Subject: Re: [PATCH 06/15] drm/exynos/ipp: free partially allocated resources
+ on error
+References: <1408693946-15456-1-git-send-email-a.hajda@samsung.com>
+ <1408693946-15456-7-git-send-email-a.hajda@samsung.com>
+ <53FC1460.5090000@samsung.com> <53FDB297.7070400@samsung.com>
+In-reply-to: <53FDB297.7070400@samsung.com>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrIIsWRmVeSWpSXmKPExsWyRsSkUPdQwb9ggxdbFCxurTvHanHl63s2
+	i0n3J7BYvLh3kcXibNMbdovLu+awWcw4v4/JYu2Ru+wWMya/ZHPg9LjffZzJo2/LKkaPz5vk
+	ApijuGxSUnMyy1KL9O0SuDJatzcwFhyUrXh21aWB8aF4FyMnh4SAicTryxOYIGwxiQv31rN1
+	MXJxCAksZZS4Me8VE0zR1J5DzBCJ6YwSi4/3sYAkhAReMUocaw4CsXkFtCQunJvHCmKzCKhK
+	bFu7nw3EZhPQk7iz7TjYIFGBEIk3x9vZIeoFJX5Mvgc2R0TAQ2L+mz3MIDazwBkmia/rdUFs
+	YYEIib8nj7NALN7LKLFlDcQgTgFtie7VbUANHEANehL3L2pB9MpLbF7zFuxQCYFT7BJ3dnxn
+	gjhIQOLb5EMsIPUSArISmw4wQzwmKXFwxQ2WCYxis5CcNAth6iwkUxcwMq9iFE0tSC4oTkov
+	MtYrTswtLs1L10vOz93ECIy50/+e9e9gvHvA+hCjAAejEg+vQ9y/YCHWxLLiytxDjKZAR0xk
+	lhJNzgdGdl5JvKGxmZGFqYmpsZG5pZmSOO9CqZ/BQgLpiSWp2ampBalF8UWlOanFhxiZODil
+	GhiPGy/P6/5pefJW/8TP+QlBesLu5uudWHcmbqyJCrVwv+Q6P+24w54trPqmb6UVKoszf0ow
+	c5z0/X/oL5swy79jvy4c0sueFblP+vu/KTeUmLSqXxmH74vdJsCxqu73l8dpvEuvZN5wazx/
+	nnnxjg8L4rKzP//VcnTbGxK6XHXFr1hmC8Xep3FKLMUZiYZazEXFiQD3pNw6tAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNIsWRmVeSWpSXmKPExsVy+t9jQd1DBf+CDd5PF7e4te4cq8WVr+/Z
+	LCbdn8Bi8eLeRRaLs01v2C0u75rDZjHj/D4mi7VH7rJbzJj8ks2B0+N+93Emj74tqxg9Pm+S
+	C2COamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAG6
+	Q0mhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMOY0bq9gbHgoGzFs6suDYwP
+	xbsYOTkkBEwkpvYcYoawxSQu3FvP1sXIxSEkMJ1RYvHxPhaQhJDAK0aJY81BIDavgJbEhXPz
+	WEFsFgFViW1r97OB2GwCehJ3th1nArFFBUIk3hxvZ4eoF5T4Mfke2BwRAQ+J+W/2gC1jFjjD
+	JPF1vS6ILSwQIfH35HEWiMV7GSW2rIEYxCmgLdG9ug2ogQOoQU/i/kUtiF55ic1r3jJPYBSY
+	hWTFLISqWUiqFjAyr2IUTS1ILihOSs810itOzC0uzUvXS87P3cQIjuhn0jsYVzVYHGIU4GBU
+	4uF1iPsXLMSaWFZcmXuIUYKDWUmENx0kxJuSWFmVWpQfX1Sak1p8iNEUGAATmaVEk/OBySav
+	JN7Q2MTMyNLI3NDCyNhcSZz3YKt1oJBAemJJanZqakFqEUwfEwenVANjSGNDdkz1Gykt9d/1
+	Igw3H+XJlb9p1DeWTMppWbYn69RqZnb1hslSDg4ulUGWQR9ZKw5kTOve38ZQ07Rp5Tz5XUuD
+	FTP+vo9xWfPlT/LbRZsenmVf5X1c94Gh1S/u3cFlvKvtLuit5OO4VWQ2f89VfZ+S1hP+lS11
+	nRZ71WOvR9sl7sv7tVaJpTgj0VCLuag4EQCMHZY8/gIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/08/27 20:18), Zhang Zhen wrote:
-> Rename the interface to valid_zones according to most pepole's
-> suggestion.
->
-> Sample output of the sysfs files:
-> 	memory0/valid_zones: none
-> 	memory1/valid_zones: DMA32
-> 	memory2/valid_zones: DMA32
-> 	memory3/valid_zones: DMA32
-> 	memory4/valid_zones: Normal
-> 	memory5/valid_zones: Normal
-> 	memory6/valid_zones: Normal Movable
-> 	memory7/valid_zones: Movable Normal
-> 	memory8/valid_zones: Movable
->
-> Signed-off-by: Zhang Zhen <zhenzhang.zhang@huawei.com>
+Hi,
 
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+On 08/27/2014 07:27 PM, Andrzej Hajda wrote:
+> On 08/26/2014 07:00 AM, Joonyoung Shim wrote:
+>> Hi Andrzej,
+>>
+>> On 08/22/2014 04:52 PM, Andrzej Hajda wrote:
+>>> In case of allocation errors some already allocated buffers
+>>> were not freed. The patch fixes it.
+>>>
+>>> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
+>>> ---
+>>>  drivers/gpu/drm/exynos/exynos_drm_ipp.c | 68 ++++++++++++++++-----------------
+>>>  1 file changed, 33 insertions(+), 35 deletions(-)
+>>>
+>>> diff --git a/drivers/gpu/drm/exynos/exynos_drm_ipp.c b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
+>>> index 060a198..728f3b9 100644
+>>> --- a/drivers/gpu/drm/exynos/exynos_drm_ipp.c
+>>> +++ b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
+>>> @@ -599,6 +599,37 @@ static int ipp_set_mem_node(struct exynos_drm_ippdrv *ippdrv,
+>>>  	return ret;
+>>>  }
+>>>  
+>>> +static int ipp_put_mem_node(struct drm_device *drm_dev,
+>>> +		struct drm_exynos_ipp_cmd_node *c_node,
+>>> +		struct drm_exynos_ipp_mem_node *m_node)
+>>> +{
+>>> +	int i;
+>>> +
+>>> +	DRM_DEBUG_KMS("node[0x%x]\n", (int)m_node);
+>>> +
+>>> +	if (!m_node) {
+>>> +		DRM_ERROR("invalid dequeue node.\n");
+>>> +		return -EFAULT;
+>>> +	}
+>>> +
+>>> +	DRM_DEBUG_KMS("ops_id[%d]\n", m_node->ops_id);
+>>> +
+>>> +	/* put gem buffer */
+>>> +	for_each_ipp_planar(i) {
+>>> +		unsigned long handle = m_node->buf_info.handles[i];
+>>> +		if (handle)
+>>> +			exynos_drm_gem_put_dma_addr(drm_dev, handle,
+>>> +							c_node->filp);
+>>> +	}
+>>> +
+>>> +	/* conditionally remove from queue */
+>>> +	if (m_node->list.next)
+>> How about do INIT_LIST_HEAD for list in ipp_get_mem_node()?
+> 
+> I am not sure if it is better. For sure it adds unnecessary
+> initialization sequence.
 
-Thanks,
-Yasuaki Ishimatsu
+In other words, this NULL checking is unnecessary if you initialize the
+list_head by INIT_LIST_HEAD.
 
-> ---
->   Documentation/ABI/testing/sysfs-devices-memory |  8 ++++----
->   Documentation/memory-hotplug.txt               | 13 ++++++++++---
->   drivers/base/memory.c                          |  6 +++---
->   3 files changed, 17 insertions(+), 10 deletions(-)
->
-> diff --git a/Documentation/ABI/testing/sysfs-devices-memory b/Documentation/ABI/testing/sysfs-devices-memory
-> index 2b2a1d7..deef3b5 100644
-> --- a/Documentation/ABI/testing/sysfs-devices-memory
-> +++ b/Documentation/ABI/testing/sysfs-devices-memory
-> @@ -61,13 +61,13 @@ Users:		hotplug memory remove tools
->   		http://www.ibm.com/developerworks/wikis/display/LinuxP/powerpc-utils
->
->
-> -What:           /sys/devices/system/memory/memoryX/zones_online_to
-> +What:           /sys/devices/system/memory/memoryX/valid_zones
->   Date:           July 2014
->   Contact:	Zhang Zhen <zhenzhang.zhang@huawei.com>
->   Description:
-> -		The file /sys/devices/system/memory/memoryX/zones_online_to
-> -		is read-only and is designed to show which zone this memory block can
-> -		be onlined to.
-> +		The file /sys/devices/system/memory/memoryX/valid_zones	is
-> +		read-only and is designed to show which zone this memory
-> +		block can be onlined to.
->
->   What:		/sys/devices/system/memoryX/nodeY
->   Date:		October 2009
-> diff --git a/Documentation/memory-hotplug.txt b/Documentation/memory-hotplug.txt
-> index 5b34e33..93a25ef 100644
-> --- a/Documentation/memory-hotplug.txt
-> +++ b/Documentation/memory-hotplug.txt
-> @@ -155,7 +155,7 @@ Under each memory block, you can see 4 files:
->   /sys/devices/system/memory/memoryXXX/phys_device
->   /sys/devices/system/memory/memoryXXX/state
->   /sys/devices/system/memory/memoryXXX/removable
-> -/sys/devices/system/memory/memoryXXX/zones_online_to
-> +/sys/devices/system/memory/memoryXXX/valid_zones
->
->   'phys_index'      : read-only and contains memory block id, same as XXX.
->   'state'           : read-write
-> @@ -171,8 +171,15 @@ Under each memory block, you can see 4 files:
->                       block is removable and a value of 0 indicates that
->                       it is not removable. A memory block is removable only if
->                       every section in the block is removable.
-> -'zones_online_to' : read-only: designed to show which zone this memory block
-> -		    can be onlined to.
-> +'valid_zones'     : read-only: designed to show which zones this memory block
-> +		    can be onlined to.
-> +		    The first column shows it's default zone.
-> +		    "memory6/valid_zones: Normal Movable" shows this memoryblock
-> +		    can be onlined to ZONE_NORMAL by default and to ZONE_MOVABLE
-> +		    by online_movable.
-> +		    "memory7/valid_zones: Movable Normal" shows this memoryblock
-> +		    can be onlined to ZONE_MOVABLE by default and to ZONE_NORMAL
-> +		    by online_kernel.
->
->   NOTE:
->     These directories/files appear after physical memory hotplug phase.
-> diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-> index 0fc1d25..efd456c 100644
-> --- a/drivers/base/memory.c
-> +++ b/drivers/base/memory.c
-> @@ -374,7 +374,7 @@ static ssize_t show_phys_device(struct device *dev,
->   }
->
->   #ifdef CONFIG_MEMORY_HOTREMOVE
-> -static ssize_t show_zones_online_to(struct device *dev,
-> +static ssize_t show_valid_zones(struct device *dev,
->   				struct device_attribute *attr, char *buf)
->   {
->   	struct memory_block *mem = to_memory_block(dev);
-> @@ -409,7 +409,7 @@ static ssize_t show_zones_online_to(struct device *dev,
->
->   	return sprintf(buf, "%s\n", zone->name);
->   }
-> -static DEVICE_ATTR(zones_online_to, 0444, show_zones_online_to, NULL);
-> +static DEVICE_ATTR(valid_zones, 0444, show_valid_zones, NULL);
->   #endif
->
->   static DEVICE_ATTR(phys_index, 0444, show_mem_start_phys_index, NULL);
-> @@ -563,7 +563,7 @@ static struct attribute *memory_memblk_attrs[] = {
->   	&dev_attr_phys_device.attr,
->   	&dev_attr_removable.attr,
->   #ifdef CONFIG_MEMORY_HOTREMOVE
-> -	&dev_attr_zones_online_to.attr,
-> +	&dev_attr_valid_zones.attr,
->   #endif
->   	NULL
->   };
-> -- 1.8.1.4
->
+> Maybe adding list_is_initialized inline function to list.h would be the
+> best solution.
 
+There is just list_empty and we can't know whether list is initialized
+or not. I recommend to use initialized list_head.
+
+Thanks.
+
+> 
+> Regards
+> Andrzej
+> 
+>>
+>>> +		list_del(&m_node->list);
+>>> +	kfree(m_node);
+>>> +
+>>> +	return 0;
+>>> +}
+>>> +
+>>>  static struct drm_exynos_ipp_mem_node
+>>>  		*ipp_get_mem_node(struct drm_device *drm_dev,
+>>>  		struct drm_file *file,
+>>> @@ -634,7 +665,8 @@ static struct drm_exynos_ipp_mem_node
+>>>  					qbuf->handle[i], file);
+>>>  			if (IS_ERR(addr)) {
+>>>  				DRM_ERROR("failed to get addr.\n");
+>>> -				goto err_clear;
+>>> +				ipp_put_mem_node(drm_dev, c_node, m_node);
+>>> +				return ERR_PTR(-EFAULT);
+>>>  			}
+>>>  
+>>>  			buf_info->handles[i] = qbuf->handle[i];
+>>> @@ -649,40 +681,6 @@ static struct drm_exynos_ipp_mem_node
+>>>  	mutex_unlock(&c_node->mem_lock);
+>>>  
+>>>  	return m_node;
+>>> -
+>>> -err_clear:
+>>> -	kfree(m_node);
+>>> -	return ERR_PTR(-EFAULT);
+>>> -}
+>>> -
+>>> -static int ipp_put_mem_node(struct drm_device *drm_dev,
+>>> -		struct drm_exynos_ipp_cmd_node *c_node,
+>>> -		struct drm_exynos_ipp_mem_node *m_node)
+>>> -{
+>>> -	int i;
+>>> -
+>>> -	DRM_DEBUG_KMS("node[0x%x]\n", (int)m_node);
+>>> -
+>>> -	if (!m_node) {
+>>> -		DRM_ERROR("invalid dequeue node.\n");
+>>> -		return -EFAULT;
+>>> -	}
+>>> -
+>>> -	DRM_DEBUG_KMS("ops_id[%d]\n", m_node->ops_id);
+>>> -
+>>> -	/* put gem buffer */
+>>> -	for_each_ipp_planar(i) {
+>>> -		unsigned long handle = m_node->buf_info.handles[i];
+>>> -		if (handle)
+>>> -			exynos_drm_gem_put_dma_addr(drm_dev, handle,
+>>> -							c_node->filp);
+>>> -	}
+>>> -
+>>> -	/* delete list in queue */
+>>> -	list_del(&m_node->list);
+>>> -	kfree(m_node);
+>>> -
+>>> -	return 0;
+>>>  }
+>>>  
+>>>  static void ipp_free_event(struct drm_pending_event *event)
+>>>
+>>
+> 
+> 
 
