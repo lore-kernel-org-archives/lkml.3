@@ -1,312 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965113AbaH0U1T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 16:27:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54628 "EHLO mx1.redhat.com"
+	id S965093AbaH0UaR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 16:30:17 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:59994 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964890AbaH0U1R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 16:27:17 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Dan Aloni <dan@kernelim.com>
-Cc: Benjamin LaHaise <bcrl@kvack.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, security@kernel.org,
-        linux-aio@kvack.org, linux-kernel@vger.kernel.org,
-        Mateusz Guzik <mguzik@redhat.com>, Petr Matousek <pmatouse@redhat.com>,
-        Kent Overstreet <kmo@daterainc.com>, stable@vger.kernel.org
-Subject: Re: Revert "aio: fix aio request leak when events are reaped by user space"
-References: <f8567a3845ac05bb28f3c1b478ef752762bd39ef.1403632276.git.bcrl@kvack.org>
-	<20140819163733.GA10132@gmail.com> <20140819165404.GD13858@kvack.org>
-	<20140819171426.GA11811@gmail.com> <20140820004651.GJ13858@kvack.org>
-	<20140822160111.GD20391@kvack.org> <20140822161502.GA30392@gmail.com>
-	<20140822162630.GF20391@kvack.org> <20140822185110.GA2333@gmail.com>
-	<20140824180531.GC4376@kvack.org> <20140824184821.GA5449@gmail.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 27 Aug 2014 16:26:37 -0400
-In-Reply-To: <20140824184821.GA5449@gmail.com> (Dan Aloni's message of "Sun,
-	24 Aug 2014 21:48:21 +0300")
-Message-ID: <x49oav51xxe.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S964975AbaH0UaP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 16:30:15 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        sameo@linux.intel.com, lee.jones@linaro.org, lgirdwood@gmail.com,
+        broonie@kernel.org, a.zummo@towertech.it, mturquette@linaro.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
+        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
+        xxx@rock-chips.com, dianders@chromium.org, olof@lixom.net,
+        sonnyrao@chromium.org, dtor@chromium.org,
+        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com
+Subject: Re: [PATCH v6 2/5] MFD: RK808: Add new mfd driver for RK808
+Date: Wed, 27 Aug 2014 21:53:55 +0200
+Message-ID: <3801360.yPqDYLVpxz@diego>
+User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <1409062444-12019-1-git-send-email-zyw@rock-chips.com>
+References: <1409062444-12019-1-git-send-email-zyw@rock-chips.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dan Aloni <dan@kernelim.com> writes:
+Hi Chris,
 
-> I like your extension to the test program. I have a suggestion for
-> the integration inside libaio's harness, since the original issue
-> depended on the size of the ring buffer, let's have max_ios be picked
-> from {ring->nr + 1, ring->nr - 1, ring->nr}*{1,2,3,4} for the various
-> test cases. I guess Jeff who is maintaining it will have some ideas
-> too.
+Am Dienstag, 26. August 2014, 22:14:04 schrieb Chris Zhong:
+> The RK808 chip is a power management IC for multimedia and handheld
+> devices. It contains the following components:
+> 
+> - Regulators
+> - RTC
+> - Clkout
+> 
+> The RK808 core driver is registered as a platform driver and provides
+> communication through I2C with the host device for the different
+> components.
+> 
+> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+> Signed-off-by: Zhang Qing <zhangqing@rock-chips.com>
+> 
+> ---
 
-I can't think of anything in addition to what you've mentioned.
-Attached is a version that I've tested.  The only modifications were to
-make it work with the libaio test harness.  If you have time to review
-it, that would be great.  I've tested it on both working and failing
-kernels.
+when testing this with Dougs dts integration I got irq errors like the
+following:
 
-Cheers,
-Jeff
+INT_STS_REG1: 0x0
+INT_STS_MSK_REG1: 0x0
+INT_STS_REG2: 0x1
+INT_STS_MSK_REG2: 0x0
+random: nonblocking pool is initialized
+irq 192: nobody cared (try booting with the "irqpoll" option)
+CPU: 0 PID: 40 Comm: irq/192-rk808 Not tainted 3.17.0-rc1+ #1015
+[<c001461c>] (unwind_backtrace) from [<c0011190>] (show_stack+0x10/0x14)
+[<c0011190>] (show_stack) from [<c03e3e04>] (dump_stack+0x6c/0x84)
+[<c03e3e04>] (dump_stack) from [<c00508e4>] (__report_bad_irq+0x28/0xb8)
+[<c00508e4>] (__report_bad_irq) from [<c0050de4>] (note_interrupt+0x1e8/0x28c)
+[<c0050de4>] (note_interrupt) from [<c004ebdc>] (handle_irq_event_percpu+0x104/0x120)
+[<c004ebdc>] (handle_irq_event_percpu) from [<c004ec3c>] (handle_irq_event+0x44/0x64)
+[<c004ec3c>] (handle_irq_event) from [<c0051910>] (handle_level_irq+0xd4/0x11c)
+[<c0051910>] (handle_level_irq) from [<c004e5a8>] (generic_handle_irq+0x20/0x30)
+[<c004e5a8>] (generic_handle_irq) from [<c01ba490>] (rockchip_irq_demux+0x190/0x228)
+[<c01ba490>] (rockchip_irq_demux) from [<c004e5a8>] (generic_handle_irq+0x20/0x30)
+[<c004e5a8>] (generic_handle_irq) from [<c000f060>] (handle_IRQ+0x68/0x90)
+[<c000f060>] (handle_IRQ) from [<c000858c>] (gic_handle_irq+0x3c/0x60)
+[<c000858c>] (gic_handle_irq) from [<c0011bc0>] (__irq_svc+0x40/0x50)
+Exception stack(0xee31bed8 to 0xee31bf20)
+bec0:                                                       ee093518 f005e000
+bee0: 00000010 000093e9 ee1fe880 ee2f98c0 ee1fe880 ee2f98e0 c004f6f0 00000000
+bf00: 00000000 00000000 c03eb6d0 ee31bf20 c00522dc c004f628 60000113 ffffffff
+[<c0011bc0>] (__irq_svc) from [<c004f628>] (irq_finalize_oneshot+0xd4/0xf0)
+[<c004f628>] (irq_finalize_oneshot) from [<c004f71c>] (irq_thread_fn+0x2c/0x34)
+[<c004f71c>] (irq_thread_fn) from [<c004f844>] (irq_thread+0xc4/0x148)
+[<c004f844>] (irq_thread) from [<c0035524>] (kthread+0xdc/0xf0)
+[<c0035524>] (kthread) from [<c000e7f8>] (ret_from_fork+0x14/0x3c)
+handlers:
+[<c004ec5c>] irq_default_primary_handler threaded [<c021cc7c>] regmap_irq_thread
+Disabling IRQ #192
 
-/*
- * aio-test-ring-buffer-overflow.c
- *
- * Copyright (C) 2014, Dan Aloni, Kernelim Ltd.
- * Copyright (C) 2014, Benjamin LaHaise <bcrl@kvack.org>.
- * Copyright (C) 2014, Jeff Moyer <jmoyer@redhat.com>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- */
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE 1
-#endif
-#include <assert.h>
-#include <errno.h>
-#include <libaio.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/param.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/uio.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/wait.h>
 
-const int max_events = 32;
-const int io_size = 0x1000;
-struct iocb *io;
-struct iocb **iops;
-struct iovec *iovecs;
-struct io_event *events;
-char *data;
+As you can see there was already a PLUG_IN_INT pending, which stalled the
+system till the irq got deactivated after 100000 iterations:
 
-long submitted = 0;
-long completed = 0;
-long pending = 0;
+           CPU0       
+[...]
+ 92:     600231       GIC  92  ff650000.i2c
+192:     100001  rockchip_gpio_irq   4  rk808
 
-#define SYS_IO_GETEVENTS 0
-#define USER_GETEVENTS 1
 
-static volatile sig_atomic_t done = 0;
+I fixed it up with the following:
 
-struct aio_ring {
-	unsigned	id;	/* kernel internal index number */
-	unsigned	nr;	/* number of io_events */
-	volatile unsigned	head;
-	volatile unsigned	tail;
+------------ 8< ---------------
+diff --git a/drivers/mfd/rk808.c b/drivers/mfd/rk808.c
+index f0d6518..1c25be7 100644
+--- a/drivers/mfd/rk808.c
++++ b/drivers/mfd/rk808.c
+@@ -61,8 +61,14 @@ static const struct rk808_reg_data pre_init_reg[] = {
+ 	{ RK808_BUCK2_CONFIG_REG, BUCK2_RATE_MASK,  BUCK_ILMIN_200MA },
+ 	{ RK808_VB_MON_REG,       MASK_ALL,         VB_LO_ACT |
+ 						    VB_LO_SEL_3500MV },
+-	{ RK808_INT_STS_REG1,     MASK_NONE,        0 },
+-	{ RK808_INT_STS_REG2,     MASK_NONE,        0 },
++
++	/* ack any pending interrupts */
++	{ RK808_INT_STS_REG1,     INT_STS_REG1_MASK, INT_STS_REG1_MASK },
++	{ RK808_INT_STS_REG2,     INT_STS_REG2_MASK, INT_STS_REG2_MASK },
++
++	/* mask all interrupts */
++	{ RK808_INT_STS_MSK_REG1, INT_STS_REG1_MASK, INT_STS_REG1_MASK },
++	{ RK808_INT_STS_MSK_REG2, INT_STS_REG2_MASK, INT_STS_REG2_MASK },
+ };
+ 
+ static const struct regmap_irq rk808_irqs[] = {
+diff --git a/include/linux/mfd/rk808.h b/include/linux/mfd/rk808.h
+index 7af1952..8f8e48c 100644
+--- a/include/linux/mfd/rk808.h
++++ b/include/linux/mfd/rk808.h
+@@ -156,6 +156,8 @@ enum rk808_reg {
+ #define BUCK2_RATE_MASK		(3 << 3)
+ #define MASK_ALL	0xff
+ #define MASK_NONE	0
++#define INT_STS_REG1_MASK	0x7f
++#define INT_STS_REG2_MASK	0x3
+ 
+ #define SWITCH2_EN	BIT(6)
+ #define SWITCH1_EN	BIT(5)
+------------ 8< ---------------
 
-	unsigned	magic;
-	unsigned	compat_features;
-	unsigned	incompat_features;
-	unsigned	header_length;	/* size of aio_ring */
+On startup I guess all pending irqs should be acked and also masked, as we normally
+don't want to handle interrupts that happened way in the past and they
+will get unmasked on their own, when one of them gets requested by the rtc
+for example.
 
-	struct io_event io_events[0];
-};
 
-int get_ring_size(int nr_events)
-{
-	io_context_t ctx;
-	int ret, ring_size;
-	struct aio_ring *ring;
+Heiko
 
-	memset(&ctx, 0, sizeof(ctx));
-	ret = io_setup(nr_events, &ctx);
-	assert(!ret);
-
-	ring = (void *)ctx;
-	ring_size = ring->nr;
-
-	ret = io_destroy(ctx);
-	assert(!ret);
-
-	return ring_size;
-}
-
-int user_getevents(io_context_t ctx, int nr_events, struct io_event *event)
-{
-	struct aio_ring *ring = (void *)ctx;
-	int completed = 0;
-	while ((completed < nr_events) && (ring->head != ring->tail)) {
-		unsigned new_head = ring->head;
-		*event = ring->io_events[new_head];
-		new_head += 1;
-		new_head %= ring->nr;
-		ring->head = new_head;
-		completed++;
-	}
-	return completed;
-}
-
-void prune(io_context_t io_ctx, int max_ios, int getevents_type)
-{
-	int ret;
-
-	if (getevents_type == USER_GETEVENTS)
-        	ret = user_getevents(io_ctx, max_ios, events);
-	else
-        	ret = io_getevents(io_ctx, pending, max_ios, events, NULL);
-	if (ret > 0) {
-		printf("Completed: %d\n", ret);
-		completed += ret;
-		pending -= ret;
-	}
-}
-
-void run_test(int max_ios, int getevents_type)
-{
-	int fd, ret;
-	long i, to_submit;
-	struct iocb **iocb_sub;
-	io_context_t io_ctx;
-	const char *filename = "testfile";
-
-	memset(&io_ctx, 0, sizeof(io_ctx));
-	ret = io_setup(max_events, &io_ctx);
-	assert(!ret);
-
-	io = calloc(max_ios, sizeof(*io));
-	iops = calloc(max_ios, sizeof(*iops));
-	iovecs = calloc(max_ios, sizeof(*iovecs));
-	events = calloc(max_ios, sizeof(*events));
-
-	unlink(filename);
-	fd = open(filename, O_CREAT | O_RDWR | O_DIRECT, 0644);
-	assert(fd >= 0);
-
-	ret = ftruncate(fd, max_ios * io_size);
-	assert(!ret);
-
-	data = mmap(NULL, io_size * max_ios, PROT_READ | PROT_WRITE,
-		    MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-	assert(data != MAP_FAILED);
-
-	for (i = 0; i < max_ios; i++) {
-		iops[i] = &io[i];
-		io[i].data = io;
-		iovecs[i].iov_base = &data[io_size * i];
-		iovecs[i].iov_len = io_size;
-		io_prep_preadv(&io[i], fd, &iovecs[i], 1, 0);
-	}
-
-	submitted = completed = pending = 0;
-
-	to_submit = max_ios;
-	iocb_sub = iops;
-
-	while (submitted < max_ios) {
-		printf("Submitting: %ld\n", to_submit);
-
-		ret = io_submit(io_ctx, to_submit, iocb_sub);
-		if (ret >= 0) {
-			printf("Submitted: %d\n", ret);
-			submitted += ret;
-			iocb_sub += ret;
-			pending += ret;
-			to_submit -= ret;
-		} else {
-			if (ret == -EAGAIN) {
-				printf("Submitted too much, that's okay\n");
-				prune(io_ctx, max_ios, getevents_type);
-			}
-		}
-	}
-
-	prune(io_ctx, max_ios, getevents_type);
-	io_destroy(io_ctx);
-	close(fd);
-	ret = munmap(data, io_size * max_ios);
-	assert(!ret);
-
-	printf("Verifying...\n");
-
-	assert(completed == submitted);
-
-	printf("OK\n");
-}
-
-void run_child(void)
-{
-	int ring_size;
-
-	ring_size = get_ring_size(max_events);
-
-	run_test(ring_size-1, SYS_IO_GETEVENTS);
-	run_test(ring_size, SYS_IO_GETEVENTS);
-	run_test(ring_size+1, SYS_IO_GETEVENTS);
-	run_test(ring_size*2, SYS_IO_GETEVENTS);
-	run_test(ring_size*4, SYS_IO_GETEVENTS);
-
-	run_test(ring_size-1, USER_GETEVENTS);
-	run_test(ring_size, USER_GETEVENTS);
-	run_test(ring_size+1, USER_GETEVENTS);
-	run_test(ring_size*2, USER_GETEVENTS);
-	run_test(ring_size*4, USER_GETEVENTS);
-
-	exit(0);
-}
-
-void sighandler(int signo)
-{
-	assert(signo == SIGCHLD);
-	done = 1;
-}
-
-int test_main(void)
-{
-	unsigned int ret;
-	sighandler_t oldhandler;
-	pid_t child;
-
-	switch (child = fork()) {
-	case 0: /* child */
-		run_child();
-		break;
-	case -1:
-		perror("fork");
-		exit(1);
-	default:
-		oldhandler = signal(SIGCHLD, sighandler);
-		assert(oldhandler != SIG_ERR);
-		break;
-	}
-
-	ret = sleep(10);
-	if (ret != 0) {
-		pid_t pid;
-		int status;
-
-		assert(done);
-
-		pid = wait(&status);
-		if (pid != child) {
-			perror("wait");
-			exit(1);
-		}
-
-		return WEXITSTATUS(status);
-	}
-
-	return 1; /* failed */
-}
-/*
- * Local Variables:
- *  mode: c
- *  c-basic-offset: 8
- * End:
- */
