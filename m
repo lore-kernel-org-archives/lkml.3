@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935422AbaH0PYP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 11:24:15 -0400
-Received: from thoth.sbs.de ([192.35.17.2]:40373 "EHLO thoth.sbs.de"
+	id S935414AbaH0PXx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 11:23:53 -0400
+Received: from thoth.sbs.de ([192.35.17.2]:40383 "EHLO thoth.sbs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935307AbaH0PWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S935316AbaH0PWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 27 Aug 2014 11:22:34 -0400
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Thomas Gleixner <tglx@linutronix.de>,
@@ -14,12 +14,10 @@ Cc: Jason Wessel <jason.wessel@windriver.com>,
         kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@suse.de>,
-        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
-        Daniel Thompson <daniel.thompson@linaro.org>,
-        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
-Subject: [PATCH v9 23/23] scripts/gdb: Ignore byte-compiled python files
-Date: Wed, 27 Aug 2014 17:21:38 +0200
-Message-Id: <0cd72dfec1784fa6ec081144467fd8b9f07ed300.1409152897.git.jan.kiszka@siemens.com>
+        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
+Subject: [PATCH v9 16/23] scripts/gdb: Add get_gdbserver_type helper
+Date: Wed, 27 Aug 2014 17:21:31 +0200
+Message-Id: <7e809b29acae84af9c0cbbc3850346b4cb9bb681.1409152897.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
 In-Reply-To: <cover.1409152897.git.jan.kiszka@siemens.com>
 References: <cover.1409152897.git.jan.kiszka@siemens.com>
@@ -29,55 +27,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel Thompson <daniel.thompson@linaro.org>
+This helper probes the type of the gdb server. Supported are QEMU and
+KGDB so far. Knowledge about the gdb server is required e.g. to retrieve
+the current CPU or current task.
 
-Using the gdb scripts leaves byte-compiled python files in the scripts/
-directory. These should be ignored by git and cleaned up by mrproper.
-
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- .gitignore                   | 1 +
- Makefile                     | 2 +-
- scripts/gdb/linux/.gitignore | 2 ++
- 3 files changed, 4 insertions(+), 1 deletion(-)
- create mode 100644 scripts/gdb/linux/.gitignore
+ scripts/gdb/linux/utils.py | 35 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
 
-diff --git a/.gitignore b/.gitignore
-index e213b27..17d4457 100644
---- a/.gitignore
-+++ b/.gitignore
-@@ -43,6 +43,7 @@ Module.symvers
- /TAGS
- /linux
- /vmlinux
-+/vmlinux-gdb.py
- /vmlinuz
- /System.map
- /Module.markers
-diff --git a/Makefile b/Makefile
-index 6cddc6f..d319e25 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1171,7 +1171,7 @@ MRPROPER_FILES += .config .config.old .version .old_version $(version_h) \
- 		  signing_key.priv signing_key.x509 x509.genkey		\
- 		  extra_certificates signing_key.x509.keyid		\
- 		  signing_key.x509.signer include/linux/version.h	\
--		  vmlinux-gdb.py
-+		  vmlinux-gdb.py scripts/gdb/linux/*.py[co]
- 
- # clean - Delete most, but leave enough to build external modules
- #
-diff --git a/scripts/gdb/linux/.gitignore b/scripts/gdb/linux/.gitignore
-new file mode 100644
-index 0000000..52e4e61
---- /dev/null
-+++ b/scripts/gdb/linux/.gitignore
-@@ -0,0 +1,2 @@
-+*.pyc
-+*.pyo
+diff --git a/scripts/gdb/linux/utils.py b/scripts/gdb/linux/utils.py
+index 71ee48c..a4a1640 100644
+--- a/scripts/gdb/linux/utils.py
++++ b/scripts/gdb/linux/utils.py
+@@ -119,3 +119,38 @@ def is_target_arch(arch):
+         if target_arch is None:
+             target_arch = gdb.execute("show architecture", to_string=True)
+         return arch in target_arch
++
++
++GDBSERVER_QEMU = 0
++GDBSERVER_KGDB = 1
++gdbserver_type = None
++
++
++def get_gdbserver_type():
++    def exit_handler(event):
++        global gdbserver_type
++        gdbserver_type = None
++        gdb.events.exited.disconnect(exit_handler)
++
++    def probe_qemu():
++        try:
++            return gdb.execute("monitor info version", to_string=True) != ""
++        except:
++            return False
++
++    def probe_kgdb():
++        try:
++            thread_info = gdb.execute("info thread 2", to_string=True)
++            return "shadowCPU0" in thread_info
++        except:
++            return False
++
++    global gdbserver_type
++    if gdbserver_type is None:
++        if probe_qemu():
++            gdbserver_type = GDBSERVER_QEMU
++        elif probe_kgdb():
++            gdbserver_type = GDBSERVER_KGDB
++        if not gdbserver_type is None and hasattr(gdb, 'events'):
++            gdb.events.exited.connect(exit_handler)
++    return gdbserver_type
 -- 
 1.8.1.1.298.ge7eed54
 
