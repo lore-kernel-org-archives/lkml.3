@@ -1,597 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934425AbaH0NHl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 09:07:41 -0400
-Received: from relay.felk.cvut.cz ([147.32.80.7]:50413 "EHLO
-	relay.felk.cvut.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933257AbaH0NHh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 09:07:37 -0400
-From: Michal Sojka <sojka@merica.cz>
-To: linux-usb@vger.kernel.org
-Cc: Michal Sojka <sojka@merica.cz>, Bryan Wu <cooloney@gmail.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, michal.vokac@comap.cz
-Subject: [PATCH v3 1/2] usb: gadget: Refactor request completion
-Date: Wed, 27 Aug 2014 15:03:44 +0200
-Message-Id: <1409144625-25274-2-git-send-email-sojka@merica.cz>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1409144625-25274-1-git-send-email-sojka@merica.cz>
-References: <CAK5ve-Jz7=7uZ3_Qg2bAH9BiGRZ36k-Oj9TNZ-_nAvaq6LGbjA@mail.gmail.com>
- <1409144625-25274-1-git-send-email-sojka@merica.cz>
-X-FELK-MailScanner-Information: 
-X-MailScanner-ID: s7RD6RJh068108
-X-FELK-MailScanner: Found to be clean
-X-FELK-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
-	score=-0.498, required 6, autolearn=not spam, BAYES_00 -0.50,
-	HEADER_FROM_DIFFERENT_DOMAINS 0.00, RP_MATCHES_RCVD 0.00)
-X-FELK-MailScanner-From: sojkam1@fel.cvut.cz
-X-FELK-MailScanner-Watermark: 1409749589.81414@cuDJZNpX6hAPMHVcd/I94Q
+	id S933852AbaH0NLz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 09:11:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35275 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933467AbaH0NLx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 09:11:53 -0400
+Message-ID: <53FDD914.5090208@suse.de>
+Date: Wed, 27 Aug 2014 15:11:48 +0200
+From: =?ISO-8859-15?Q?Andreas_F=E4rber?= <afaerber@suse.de>
+Organization: SUSE LINUX Products GmbH
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+CC: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>,
+        Olof Johansson <olof@lixom.net>, Nick Dyer <nick.dyer@itdev.co.uk>,
+        Yufeng Shen <miletus@chromium.org>, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Tomasz Figa <tomasz.figa@gmail.com>
+Subject: Re: [PATCH v2 1/3] ARM: dts: Add Peach Pit dts entry for Atmel touchpad
+References: <1409066937-3574-1-git-send-email-javier.martinez@collabora.co.uk> <1409066937-3574-2-git-send-email-javier.martinez@collabora.co.uk> <53FD1001.30701@suse.de> <53FD8528.7090504@collabora.co.uk>
+In-Reply-To: <53FD8528.7090504@collabora.co.uk>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All USB peripheral controller drivers called completion routines
-directly. This patch moves the completion call from drivers to
-usb_gadget_giveback_request(), in order to have a place where common
-functionality can be added.
+Hi Javier,
 
-All places in drivers/usb/ matching "[-.]complete(" were replaced with a
-call to usb_gadget_giveback_request(). This was compile-tested with all
-ARM drivers enabled and runtime-tested for musb.
+Am 27.08.2014 09:13, schrieb Javier Martinez Canillas:
+> On 08/27/2014 12:53 AM, Andreas Färber wrote:
+>>>  
+>>> +&hsi2c_8 {
+>>> +	status = "okay";
+>>> +	clock-frequency = <333000>;
+>>> +
+>>> +	trackpad@4b {
+>>> +		compatible="atmel,maxtouch";
+>>> +		reg=<0x4b>;
+>>> +		interrupt-parent=<&gpx1>;
+>>> +		interrupts=<1 IRQ_TYPE_EDGE_FALLING>;
+>>
+>> Nit: Here's a style break (4x spaces around '=' missing).
+>>
+> 
+> True, these bits were copied from the downstream Chrome OS verbatim and
+> the missing space around '=' was there, I missed that when reviewing.
+> 
+> I'll re-spin and fix those style issues.
+> 
+>>> +		wakeup-source;
+>>> +		pinctrl-names = "default";
+>>> +		pinctrl-0 = <&trackpad_irq>;
+>>> +		linux,gpio-keymap = < KEY_RESERVED
+>>> +				      KEY_RESERVED
+>>> +				      0		/* GPIO 0 */
+>>> +				      0		/* GPIO 1 */
+>>> +				      0		/* GPIO 2 */
+>>> +				      BTN_LEFT 	/* GPIO 3 */
+>>> +				      KEY_RESERVED
+>>> +				      KEY_RESERVED >;
+>>> +	};
+>>
+>> Coincidentally, I experimentally came up with a very similar DT node for
+>> Spring the weekend:
+>>
+>> +	trackpad@4b {
+>> +		compatible = "atmel,maxtouch";
+>> +		reg = <0x4b>;
+>> +		interrupt-parent = <&gpx1>;
+>> +		interrupts = <2 IRQ_TYPE_NONE>;
+>> +		pinctrl-names = "default";
+>> +		pinctrl-0 = <&trackpad_irq>;
+>> +		linux,gpio-keymap = <KEY_RESERVED
+>> +		                     KEY_RESERVED
+>> +		                     KEY_RESERVED
+>> +		                     KEY_RESERVED
+>> +		                     KEY_RESERVED
+>> +		                     BTN_LEFT>;
+>> +		wakeup-source;
+>> +	};
+>>
+>> 0 == KEY_RESERVED, so you can consistently use it for GPIO 0-2, too. :)
+>>
+> 
+> I know that the value of KEY_RESERVED is 0 but I didn't use KEY_RESERVED
+> for the GPIO on purpose.
+> 
+> What I understood is that the SPT_GPIOPWN_T19 object sends messages using
+> a status byte so you have a maximum of 8 GPIO but not every maXTouch
+> devices use all of them. So in the particular case of the device in the
+> Peach Pit, from the 8 possible GPIO only 4 can be used and these are pins
+> 2-5. So in theory you could connect 3 more GPIO in case you had more
+> buttons (e.g: BTN_RIGHT, BTN_MIDDLE) but only 1 is used since the
+> Chromebook just have BTN_LEFT.
 
-Signed-off-by: Michal Sojka <sojka@merica.cz>
----
- drivers/usb/chipidea/udc.c              |  6 +++---
- drivers/usb/dwc2/gadget.c               |  6 +++---
- drivers/usb/dwc3/gadget.c               |  2 +-
- drivers/usb/gadget/udc/amd5536udc.c     |  2 +-
- drivers/usb/gadget/udc/at91_udc.c       |  2 +-
- drivers/usb/gadget/udc/atmel_usba_udc.c |  4 ++--
- drivers/usb/gadget/udc/bcm63xx_udc.c    |  2 +-
- drivers/usb/gadget/udc/dummy_hcd.c      | 10 +++++-----
- drivers/usb/gadget/udc/fotg210-udc.c    |  2 +-
- drivers/usb/gadget/udc/fsl_qe_udc.c     |  6 +-----
- drivers/usb/gadget/udc/fsl_udc_core.c   |  6 ++----
- drivers/usb/gadget/udc/fusb300_udc.c    |  2 +-
- drivers/usb/gadget/udc/goku_udc.c       |  2 +-
- drivers/usb/gadget/udc/gr_udc.c         |  2 +-
- drivers/usb/gadget/udc/lpc32xx_udc.c    |  2 +-
- drivers/usb/gadget/udc/m66592-udc.c     |  2 +-
- drivers/usb/gadget/udc/mv_u3d_core.c    |  8 ++------
- drivers/usb/gadget/udc/mv_udc_core.c    |  8 ++------
- drivers/usb/gadget/udc/net2272.c        |  2 +-
- drivers/usb/gadget/udc/net2280.c        |  2 +-
- drivers/usb/gadget/udc/omap_udc.c       |  2 +-
- drivers/usb/gadget/udc/pch_udc.c        |  2 +-
- drivers/usb/gadget/udc/pxa25x_udc.c     |  2 +-
- drivers/usb/gadget/udc/pxa27x_udc.c     |  2 +-
- drivers/usb/gadget/udc/r8a66597-udc.c   |  2 +-
- drivers/usb/gadget/udc/s3c-hsudc.c      |  3 +--
- drivers/usb/gadget/udc/s3c2410_udc.c    |  2 +-
- drivers/usb/gadget/udc/udc-core.c       |  9 +++++++++
- drivers/usb/musb/musb_gadget.c          |  2 +-
- drivers/usb/renesas_usbhs/mod_gadget.c  |  2 +-
- include/linux/usb/gadget.h              |  8 ++++++++
- 31 files changed, 58 insertions(+), 56 deletions(-)
+FWIW when I press to the bottom right of my touchpad, I do get
+right-click functionality even with just BTN_LEFT specified in the
+keymap. Magic. :)
 
-diff --git a/drivers/usb/chipidea/udc.c b/drivers/usb/chipidea/udc.c
-index b8125aa..0444d3f 100644
---- a/drivers/usb/chipidea/udc.c
-+++ b/drivers/usb/chipidea/udc.c
-@@ -627,7 +627,7 @@ __acquires(hwep->lock)
- 
- 		if (hwreq->req.complete != NULL) {
- 			spin_unlock(hwep->lock);
--			hwreq->req.complete(&hwep->ep, &hwreq->req);
-+			usb_gadget_giveback_request(&hwep->ep, &hwreq->req);
- 			spin_lock(hwep->lock);
- 		}
- 	}
-@@ -922,7 +922,7 @@ __acquires(hwep->lock)
- 			if ((hwep->type == USB_ENDPOINT_XFER_CONTROL) &&
- 					hwreq->req.length)
- 				hweptemp = hwep->ci->ep0in;
--			hwreq->req.complete(&hweptemp->ep, &hwreq->req);
-+			usb_gadget_giveback_request(&hweptemp->ep, &hwreq->req);
- 			spin_lock(hwep->lock);
- 		}
- 	}
-@@ -1347,7 +1347,7 @@ static int ep_dequeue(struct usb_ep *ep, struct usb_request *req)
- 
- 	if (hwreq->req.complete != NULL) {
- 		spin_unlock(hwep->lock);
--		hwreq->req.complete(&hwep->ep, &hwreq->req);
-+		usb_gadget_giveback_request(&hwep->ep, &hwreq->req);
- 		spin_lock(hwep->lock);
- 	}
- 
-diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
-index 0ba9c33..5a524a6 100644
---- a/drivers/usb/dwc2/gadget.c
-+++ b/drivers/usb/dwc2/gadget.c
-@@ -987,8 +987,8 @@ static int s3c_hsotg_process_req_feature(struct s3c_hsotg *hsotg,
- 					hs_req = ep->req;
- 					ep->req = NULL;
- 					list_del_init(&hs_req->queue);
--					hs_req->req.complete(&ep->ep,
--							     &hs_req->req);
-+					usb_gadget_giveback_request(&ep->ep,
-+								    &hs_req->req);
- 				}
- 
- 				/* If we have pending request, then start it */
-@@ -1245,7 +1245,7 @@ static void s3c_hsotg_complete_request(struct s3c_hsotg *hsotg,
- 
- 	if (hs_req->req.complete) {
- 		spin_unlock(&hsotg->lock);
--		hs_req->req.complete(&hs_ep->ep, &hs_req->req);
-+		usb_gadget_giveback_request(&hs_ep->ep, &hs_req->req);
- 		spin_lock(&hsotg->lock);
- 	}
- 
-diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
-index 349cacc..b4b7a6b 100644
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -268,7 +268,7 @@ void dwc3_gadget_giveback(struct dwc3_ep *dep, struct dwc3_request *req,
- 			req->request.length, status);
- 
- 	spin_unlock(&dwc->lock);
--	req->request.complete(&dep->endpoint, &req->request);
-+	usb_gadget_giveback_request(&dep->endpoint, &req->request);
- 	spin_lock(&dwc->lock);
- }
- 
-diff --git a/drivers/usb/gadget/udc/amd5536udc.c b/drivers/usb/gadget/udc/amd5536udc.c
-index 41b062e..3b9d138 100644
---- a/drivers/usb/gadget/udc/amd5536udc.c
-+++ b/drivers/usb/gadget/udc/amd5536udc.c
-@@ -841,7 +841,7 @@ __acquires(ep->dev->lock)
- 		&req->req, req->req.length, ep->ep.name, sts);
- 
- 	spin_unlock(&dev->lock);
--	req->req.complete(&ep->ep, &req->req);
-+	usb_gadget_giveback_request(&ep->ep, &req->req);
- 	spin_lock(&dev->lock);
- 	ep->halted = halted;
- }
-diff --git a/drivers/usb/gadget/udc/at91_udc.c b/drivers/usb/gadget/udc/at91_udc.c
-index cfd18bc..9968f53 100644
---- a/drivers/usb/gadget/udc/at91_udc.c
-+++ b/drivers/usb/gadget/udc/at91_udc.c
-@@ -267,7 +267,7 @@ static void done(struct at91_ep *ep, struct at91_request *req, int status)
- 
- 	ep->stopped = 1;
- 	spin_unlock(&udc->lock);
--	req->req.complete(&ep->ep, &req->req);
-+	usb_gadget_giveback_request(&ep->ep, &req->req);
- 	spin_lock(&udc->lock);
- 	ep->stopped = stopped;
- 
-diff --git a/drivers/usb/gadget/udc/atmel_usba_udc.c b/drivers/usb/gadget/udc/atmel_usba_udc.c
-index 906e65f..e96032f 100644
---- a/drivers/usb/gadget/udc/atmel_usba_udc.c
-+++ b/drivers/usb/gadget/udc/atmel_usba_udc.c
-@@ -463,7 +463,7 @@ static void receive_data(struct usba_ep *ep)
- 			list_del_init(&req->queue);
- 			usba_ep_writel(ep, CTL_DIS, USBA_RX_BK_RDY);
- 			spin_unlock(&udc->lock);
--			req->req.complete(&ep->ep, &req->req);
-+			usb_gadget_giveback_request(&ep->ep, &req->req);
- 			spin_lock(&udc->lock);
- 		}
- 
-@@ -495,7 +495,7 @@ request_complete(struct usba_ep *ep, struct usba_request *req, int status)
- 		ep->ep.name, req, req->req.status, req->req.actual);
- 
- 	spin_unlock(&udc->lock);
--	req->req.complete(&ep->ep, &req->req);
-+	usb_gadget_giveback_request(&ep->ep, &req->req);
- 	spin_lock(&udc->lock);
- }
- 
-diff --git a/drivers/usb/gadget/udc/bcm63xx_udc.c b/drivers/usb/gadget/udc/bcm63xx_udc.c
-index e969eb8..2235b88 100644
---- a/drivers/usb/gadget/udc/bcm63xx_udc.c
-+++ b/drivers/usb/gadget/udc/bcm63xx_udc.c
-@@ -1088,7 +1088,7 @@ static int bcm63xx_ep_disable(struct usb_ep *ep)
- 			breq->req.status = -ESHUTDOWN;
- 
- 			spin_unlock_irqrestore(&udc->lock, flags);
--			breq->req.complete(&iudma->bep->ep, &breq->req);
-+			usb_gadget_giveback_request(&iudma->bep->ep, &breq->req);
- 			spin_lock_irqsave(&udc->lock, flags);
- 		}
- 	}
-diff --git a/drivers/usb/gadget/udc/dummy_hcd.c b/drivers/usb/gadget/udc/dummy_hcd.c
-index 2b54955..81dc595 100644
---- a/drivers/usb/gadget/udc/dummy_hcd.c
-+++ b/drivers/usb/gadget/udc/dummy_hcd.c
-@@ -258,7 +258,7 @@ static void nuke(struct dummy *dum, struct dummy_ep *ep)
- 		req->req.status = -ESHUTDOWN;
- 
- 		spin_unlock(&dum->lock);
--		req->req.complete(&ep->ep, &req->req);
-+		usb_gadget_giveback_request(&ep->ep, &req->req);
- 		spin_lock(&dum->lock);
- 	}
- }
-@@ -658,7 +658,7 @@ static int dummy_queue(struct usb_ep *_ep, struct usb_request *_req,
- 		spin_unlock(&dum->lock);
- 		_req->actual = _req->length;
- 		_req->status = 0;
--		_req->complete(_ep, _req);
-+		usb_gadget_giveback_request(_ep, _req);
- 		spin_lock(&dum->lock);
- 	}  else
- 		list_add_tail(&req->queue, &ep->queue);
-@@ -702,7 +702,7 @@ static int dummy_dequeue(struct usb_ep *_ep, struct usb_request *_req)
- 		dev_dbg(udc_dev(dum),
- 				"dequeued req %p from %s, len %d buf %p\n",
- 				req, _ep->name, _req->length, _req->buf);
--		_req->complete(_ep, _req);
-+		usb_gadget_giveback_request(_ep, _req);
- 	}
- 	local_irq_restore(flags);
- 	return retval;
-@@ -1385,7 +1385,7 @@ top:
- 			list_del_init(&req->queue);
- 
- 			spin_unlock(&dum->lock);
--			req->req.complete(&ep->ep, &req->req);
-+			usb_gadget_giveback_request(&ep->ep, &req->req);
- 			spin_lock(&dum->lock);
- 
- 			/* requests might have been unlinked... */
-@@ -1761,7 +1761,7 @@ restart:
- 						req);
- 
- 				spin_unlock(&dum->lock);
--				req->req.complete(&ep->ep, &req->req);
-+				usb_gadget_giveback_request(&ep->ep, &req->req);
- 				spin_lock(&dum->lock);
- 				ep->already_seen = 0;
- 				goto restart;
-diff --git a/drivers/usb/gadget/udc/fotg210-udc.c b/drivers/usb/gadget/udc/fotg210-udc.c
-index e143d69..1d31592 100644
---- a/drivers/usb/gadget/udc/fotg210-udc.c
-+++ b/drivers/usb/gadget/udc/fotg210-udc.c
-@@ -70,7 +70,7 @@ static void fotg210_done(struct fotg210_ep *ep, struct fotg210_request *req,
- 		req->req.status = status;
- 
- 	spin_unlock(&ep->fotg210->lock);
--	req->req.complete(&ep->ep, &req->req);
-+	usb_gadget_giveback_request(&ep->ep, &req->req);
- 	spin_lock(&ep->fotg210->lock);
- 
- 	if (ep->epnum) {
-diff --git a/drivers/usb/gadget/udc/fsl_qe_udc.c b/drivers/usb/gadget/udc/fsl_qe_udc.c
-index 7324308..dd18ea3 100644
---- a/drivers/usb/gadget/udc/fsl_qe_udc.c
-+++ b/drivers/usb/gadget/udc/fsl_qe_udc.c
-@@ -118,10 +118,7 @@ static void done(struct qe_ep *ep, struct qe_req *req, int status)
- 	ep->stopped = 1;
- 	spin_unlock(&udc->lock);
- 
--	/* this complete() should a func implemented by gadget layer,
--	 * eg fsg->bulk_in_complete() */
--	if (req->req.complete)
--		req->req.complete(&ep->ep, &req->req);
-+	usb_gadget_giveback_request(&ep->ep, &req->req);
- 
- 	spin_lock(&udc->lock);
- 
-@@ -2728,4 +2725,3 @@ module_platform_driver(udc_driver);
- MODULE_DESCRIPTION(DRIVER_DESC);
- MODULE_AUTHOR(DRIVER_AUTHOR);
- MODULE_LICENSE("GPL");
--
-diff --git a/drivers/usb/gadget/udc/fsl_udc_core.c b/drivers/usb/gadget/udc/fsl_udc_core.c
-index 75b23ea..c362079 100644
---- a/drivers/usb/gadget/udc/fsl_udc_core.c
-+++ b/drivers/usb/gadget/udc/fsl_udc_core.c
-@@ -197,10 +197,8 @@ __acquires(ep->udc->lock)
- 	ep->stopped = 1;
- 
- 	spin_unlock(&ep->udc->lock);
--	/* complete() is from gadget layer,
--	 * eg fsg->bulk_in_complete() */
--	if (req->req.complete)
--		req->req.complete(&ep->ep, &req->req);
-+
-+	usb_gadget_giveback_request(&ep->ep, &req->req);
- 
- 	spin_lock(&ep->udc->lock);
- 	ep->stopped = stopped;
-diff --git a/drivers/usb/gadget/udc/fusb300_udc.c b/drivers/usb/gadget/udc/fusb300_udc.c
-index d40255f..d52687d 100644
---- a/drivers/usb/gadget/udc/fusb300_udc.c
-+++ b/drivers/usb/gadget/udc/fusb300_udc.c
-@@ -876,7 +876,7 @@ static void done(struct fusb300_ep *ep, struct fusb300_request *req,
- 		req->req.status = status;
- 
- 	spin_unlock(&ep->fusb300->lock);
--	req->req.complete(&ep->ep, &req->req);
-+	usb_gadget_giveback_request(&ep->ep, &req->req);
- 	spin_lock(&ep->fusb300->lock);
- 
- 	if (ep->epnum) {
-diff --git a/drivers/usb/gadget/udc/goku_udc.c b/drivers/usb/gadget/udc/goku_udc.c
-index 6c85839..bf9c5ef 100644
---- a/drivers/usb/gadget/udc/goku_udc.c
-+++ b/drivers/usb/gadget/udc/goku_udc.c
-@@ -320,7 +320,7 @@ done(struct goku_ep *ep, struct goku_request *req, int status)
- 	/* don't modify queue heads during completion callback */
- 	ep->stopped = 1;
- 	spin_unlock(&dev->lock);
--	req->req.complete(&ep->ep, &req->req);
-+	usb_gadget_giveback_request(&ep->ep, &req->req);
- 	spin_lock(&dev->lock);
- 	ep->stopped = stopped;
- }
-diff --git a/drivers/usb/gadget/udc/gr_udc.c b/drivers/usb/gadget/udc/gr_udc.c
-index 08df5c4..924533b 100644
---- a/drivers/usb/gadget/udc/gr_udc.c
-+++ b/drivers/usb/gadget/udc/gr_udc.c
-@@ -339,7 +339,7 @@ static void gr_finish_request(struct gr_ep *ep, struct gr_request *req,
- 	} else if (req->req.complete) {
- 		spin_unlock(&dev->lock);
- 
--		req->req.complete(&ep->ep, &req->req);
-+		usb_gadget_giveback_request(&ep->ep, &req->req);
- 
- 		spin_lock(&dev->lock);
- 	}
-diff --git a/drivers/usb/gadget/udc/lpc32xx_udc.c b/drivers/usb/gadget/udc/lpc32xx_udc.c
-index 1629ad7..feab0ba 100644
---- a/drivers/usb/gadget/udc/lpc32xx_udc.c
-+++ b/drivers/usb/gadget/udc/lpc32xx_udc.c
-@@ -1479,7 +1479,7 @@ static void done(struct lpc32xx_ep *ep, struct lpc32xx_request *req, int status)
- 
- 	ep->req_pending = 0;
- 	spin_unlock(&udc->lock);
--	req->req.complete(&ep->ep, &req->req);
-+	usb_gadget_giveback_request(&ep->ep, &req->req);
- 	spin_lock(&udc->lock);
- }
- 
-diff --git a/drivers/usb/gadget/udc/m66592-udc.c b/drivers/usb/gadget/udc/m66592-udc.c
-index de88d33..8985656 100644
---- a/drivers/usb/gadget/udc/m66592-udc.c
-+++ b/drivers/usb/gadget/udc/m66592-udc.c
-@@ -729,7 +729,7 @@ __acquires(m66592->lock)
- 		restart = 1;
- 
- 	spin_unlock(&ep->m66592->lock);
--	req->req.complete(&ep->ep, &req->req);
-+	usb_gadget_giveback_request(&ep->ep, &req->req);
- 	spin_lock(&ep->m66592->lock);
- 
- 	if (restart) {
-diff --git a/drivers/usb/gadget/udc/mv_u3d_core.c b/drivers/usb/gadget/udc/mv_u3d_core.c
-index 1624871..046a1f8 100644
---- a/drivers/usb/gadget/udc/mv_u3d_core.c
-+++ b/drivers/usb/gadget/udc/mv_u3d_core.c
-@@ -222,12 +222,8 @@ void mv_u3d_done(struct mv_u3d_ep *ep, struct mv_u3d_req *req, int status)
- 	}
- 
- 	spin_unlock(&ep->u3d->lock);
--	/*
--	 * complete() is from gadget layer,
--	 * eg fsg->bulk_in_complete()
--	 */
--	if (req->req.complete)
--		req->req.complete(&ep->ep, &req->req);
-+
-+	usb_gadget_giveback_request(&ep->ep, &req->req);
- 
- 	spin_lock(&ep->u3d->lock);
- }
-diff --git a/drivers/usb/gadget/udc/mv_udc_core.c b/drivers/usb/gadget/udc/mv_udc_core.c
-index 040fb16..3c5db80 100644
---- a/drivers/usb/gadget/udc/mv_udc_core.c
-+++ b/drivers/usb/gadget/udc/mv_udc_core.c
-@@ -248,12 +248,8 @@ static void done(struct mv_ep *ep, struct mv_req *req, int status)
- 	ep->stopped = 1;
- 
- 	spin_unlock(&ep->udc->lock);
--	/*
--	 * complete() is from gadget layer,
--	 * eg fsg->bulk_in_complete()
--	 */
--	if (req->req.complete)
--		req->req.complete(&ep->ep, &req->req);
-+
-+	usb_gadget_giveback_request(&ep->ep, &req->req);
- 
- 	spin_lock(&ep->udc->lock);
- 	ep->stopped = stopped;
-diff --git a/drivers/usb/gadget/udc/net2272.c b/drivers/usb/gadget/udc/net2272.c
-index 059cfe5..84d7162 100644
---- a/drivers/usb/gadget/udc/net2272.c
-+++ b/drivers/usb/gadget/udc/net2272.c
-@@ -394,7 +394,7 @@ net2272_done(struct net2272_ep *ep, struct net2272_request *req, int status)
- 	/* don't modify queue heads during completion callback */
- 	ep->stopped = 1;
- 	spin_unlock(&dev->lock);
--	req->req.complete(&ep->ep, &req->req);
-+	usb_gadget_giveback_request(&ep->ep, &req->req);
- 	spin_lock(&dev->lock);
- 	ep->stopped = stopped;
- }
-diff --git a/drivers/usb/gadget/udc/net2280.c b/drivers/usb/gadget/udc/net2280.c
-index f4eac11..2cda166 100644
---- a/drivers/usb/gadget/udc/net2280.c
-+++ b/drivers/usb/gadget/udc/net2280.c
-@@ -928,7 +928,7 @@ done(struct net2280_ep *ep, struct net2280_request *req, int status)
- 	/* don't modify queue heads during completion callback */
- 	ep->stopped = 1;
- 	spin_unlock(&dev->lock);
--	req->req.complete(&ep->ep, &req->req);
-+	usb_gadget_giveback_request(&ep->ep, &req->req);
- 	spin_lock(&dev->lock);
- 	ep->stopped = stopped;
- }
-diff --git a/drivers/usb/gadget/udc/omap_udc.c b/drivers/usb/gadget/udc/omap_udc.c
-index e731373..dcdfea4 100644
---- a/drivers/usb/gadget/udc/omap_udc.c
-+++ b/drivers/usb/gadget/udc/omap_udc.c
-@@ -315,7 +315,7 @@ done(struct omap_ep *ep, struct omap_req *req, int status)
- 	/* don't modify queue heads during completion callback */
- 	ep->stopped = 1;
- 	spin_unlock(&ep->udc->lock);
--	req->req.complete(&ep->ep, &req->req);
-+	usb_gadget_giveback_request(&ep->ep, &req->req);
- 	spin_lock(&ep->udc->lock);
- 	ep->stopped = stopped;
- }
-diff --git a/drivers/usb/gadget/udc/pch_udc.c b/drivers/usb/gadget/udc/pch_udc.c
-index eb8c3be..0b69b32 100644
---- a/drivers/usb/gadget/udc/pch_udc.c
-+++ b/drivers/usb/gadget/udc/pch_udc.c
-@@ -1486,7 +1486,7 @@ static void complete_req(struct pch_udc_ep *ep, struct pch_udc_request *req,
- 	spin_unlock(&dev->lock);
- 	if (!ep->in)
- 		pch_udc_ep_clear_rrdy(ep);
--	req->req.complete(&ep->ep, &req->req);
-+	usb_gadget_giveback_request(&ep->ep, &req->req);
- 	spin_lock(&dev->lock);
- 	ep->halted = halted;
- }
-diff --git a/drivers/usb/gadget/udc/pxa25x_udc.c b/drivers/usb/gadget/udc/pxa25x_udc.c
-index 251e4d5..42f7eeb 100644
---- a/drivers/usb/gadget/udc/pxa25x_udc.c
-+++ b/drivers/usb/gadget/udc/pxa25x_udc.c
-@@ -347,7 +347,7 @@ static void done(struct pxa25x_ep *ep, struct pxa25x_request *req, int status)
- 
- 	/* don't modify queue heads during completion callback */
- 	ep->stopped = 1;
--	req->req.complete(&ep->ep, &req->req);
-+	usb_gadget_giveback_request(&ep->ep, &req->req);
- 	ep->stopped = stopped;
- }
- 
-diff --git a/drivers/usb/gadget/udc/pxa27x_udc.c b/drivers/usb/gadget/udc/pxa27x_udc.c
-index 597d39f..4868369 100644
---- a/drivers/usb/gadget/udc/pxa27x_udc.c
-+++ b/drivers/usb/gadget/udc/pxa27x_udc.c
-@@ -758,7 +758,7 @@ static void req_done(struct pxa_ep *ep, struct pxa27x_request *req, int status,
- 	if (pflags)
- 		spin_unlock_irqrestore(&ep->lock, *pflags);
- 	local_irq_save(flags);
--	req->req.complete(&req->udc_usb_ep->usb_ep, &req->req);
-+	usb_gadget_giveback_request(&req->udc_usb_ep->usb_ep, &req->req);
- 	local_irq_restore(flags);
- 	if (pflags)
- 		spin_lock_irqsave(&ep->lock, *pflags);
-diff --git a/drivers/usb/gadget/udc/r8a66597-udc.c b/drivers/usb/gadget/udc/r8a66597-udc.c
-index 4600842..0ec09a4 100644
---- a/drivers/usb/gadget/udc/r8a66597-udc.c
-+++ b/drivers/usb/gadget/udc/r8a66597-udc.c
-@@ -925,7 +925,7 @@ __acquires(r8a66597->lock)
- 		sudmac_free_channel(ep->r8a66597, ep, req);
- 
- 	spin_unlock(&ep->r8a66597->lock);
--	req->req.complete(&ep->ep, &req->req);
-+	usb_gadget_giveback_request(&ep->ep, &req->req);
- 	spin_lock(&ep->r8a66597->lock);
- 
- 	if (restart) {
-diff --git a/drivers/usb/gadget/udc/s3c-hsudc.c b/drivers/usb/gadget/udc/s3c-hsudc.c
-index 10c6a12..dfbf557 100644
---- a/drivers/usb/gadget/udc/s3c-hsudc.c
-+++ b/drivers/usb/gadget/udc/s3c-hsudc.c
-@@ -258,8 +258,7 @@ static void s3c_hsudc_complete_request(struct s3c_hsudc_ep *hsep,
- 
- 	hsep->stopped = 1;
- 	spin_unlock(&hsudc->lock);
--	if (hsreq->req.complete != NULL)
--		hsreq->req.complete(&hsep->ep, &hsreq->req);
-+	usb_gadget_giveback_request(&hsep->ep, &hsreq->req);
- 	spin_lock(&hsudc->lock);
- 	hsep->stopped = stopped;
- }
-diff --git a/drivers/usb/gadget/udc/s3c2410_udc.c b/drivers/usb/gadget/udc/s3c2410_udc.c
-index 357b58e..ff423d1 100644
---- a/drivers/usb/gadget/udc/s3c2410_udc.c
-+++ b/drivers/usb/gadget/udc/s3c2410_udc.c
-@@ -272,7 +272,7 @@ static void s3c2410_udc_done(struct s3c2410_ep *ep,
- 		status = req->req.status;
- 
- 	ep->halted = 1;
--	req->req.complete(&ep->ep, &req->req);
-+	usb_gadget_giveback_request(&ep->ep, &req->req);
- 	ep->halted = halted;
- }
- 
-diff --git a/drivers/usb/gadget/udc/udc-core.c b/drivers/usb/gadget/udc/udc-core.c
-index b0d9817..2eb0ae4 100644
---- a/drivers/usb/gadget/udc/udc-core.c
-+++ b/drivers/usb/gadget/udc/udc-core.c
-@@ -102,6 +102,15 @@ void usb_gadget_unmap_request(struct usb_gadget *gadget,
- }
- EXPORT_SYMBOL_GPL(usb_gadget_unmap_request);
- 
-+void usb_gadget_giveback_request(struct usb_ep *ep,
-+		struct usb_request *req)
-+{
-+	/* complete() is from gadget layer,
-+	 * eg fsg->bulk_in_complete() */
-+	if (req->complete)
-+		req->complete(ep, req);
-+}
-+EXPORT_SYMBOL_GPL(usb_gadget_giveback_request);
- #endif	/* CONFIG_HAS_DMA */
- 
- /* ------------------------------------------------------------------------- */
-diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
-index d4aa779..24c8c02 100644
---- a/drivers/usb/musb/musb_gadget.c
-+++ b/drivers/usb/musb/musb_gadget.c
-@@ -176,7 +176,7 @@ __acquires(ep->musb->lock)
- 				ep->end_point.name, request,
- 				req->request.actual, req->request.length,
- 				request->status);
--	req->request.complete(&req->ep->end_point, &req->request);
-+	usb_gadget_giveback_request(&req->ep->end_point, &req->request);
- 	spin_lock(&musb->lock);
- 	ep->busy = busy;
- }
-diff --git a/drivers/usb/renesas_usbhs/mod_gadget.c b/drivers/usb/renesas_usbhs/mod_gadget.c
-index 04e6505..2d17c10 100644
---- a/drivers/usb/renesas_usbhs/mod_gadget.c
-+++ b/drivers/usb/renesas_usbhs/mod_gadget.c
-@@ -129,7 +129,7 @@ static void usbhsg_queue_pop(struct usbhsg_uep *uep,
- 	dev_dbg(dev, "pipe %d : queue pop\n", usbhs_pipe_number(pipe));
- 
- 	ureq->req.status = status;
--	ureq->req.complete(&uep->ep, &ureq->req);
-+	usb_gadget_giveback_request(&uep->ep, &ureq->req);
- }
- 
- static void usbhsg_queue_done(struct usbhs_priv *priv, struct usbhs_pkt *pkt)
-diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
-index c3a6185..f795e95 100644
---- a/include/linux/usb/gadget.h
-+++ b/include/linux/usb/gadget.h
-@@ -1013,6 +1013,14 @@ extern void usb_gadget_set_state(struct usb_gadget *gadget,
- 
- /*-------------------------------------------------------------------------*/
- 
-+/* utility to give requests back to the gadget layer */
-+
-+extern void usb_gadget_giveback_request(struct usb_ep *ep,
-+		struct usb_request *req);
-+
-+
-+/*-------------------------------------------------------------------------*/
-+
- /* utility wrapping a simple endpoint selection policy */
- 
- extern struct usb_ep *usb_ep_autoconfig(struct usb_gadget *,
+> Nick sent a patch [0] that extend the atmel touchpad DT binding and the
+> doc says "Use KEY_RESERVED for unused padding values". But is not clear
+> what value you should use for GPIO that are actually supported by the
+> device but have no keycode associated.
+> 
+> So by using 0 instead of KEY_RESERVED I wanted to document that pins 2-4
+> are actually supported and not reserved by the device but there is no
+> keycode associated with that GPIO.
+
+You already documented that via comments though.
+
+> If there was a BTN_NONE or KEY_UNUSED it would had been better but I think
+> that making a distinction between these two cases (reserved pin vs GPIO
+> available but not used) is useful.
+
+Maybe Nick can comment here.
+
+>> I probably should add the two trailing _RESERVEDs, too?
+>>
+> 
+> I see that is used for properties that are arrays, for example
+> "linux,keymap" in Documentation/devicetree/bindings/input/matrix-keymap.txt.
+
+That does not answer my question: Do all maxTouch touchpads (or
+specifically that in Spring) need eight entries, padded with said
+KEY_RESERVED? In my experiments using just six entries (i.e., until the
+non-zero entry) worked okay - so does this T19 message have specifically
+eight bits? Tegra used just four entries iirc.
+
+>> With my above snippet I got an awful lot of "Interrupt triggered but
+>> zero messages" warnings (which I simply commented out as quickfix).
+>> Is that why you are using _EDGE_FALLING? Or pin-function 0xf?
+>> (In my case the ChromeOS DT had IRQ_TYPE_NONE and pin-function 0x0.)
+>>
+> 
+> These are two separate but related things:
+> 
+> a) IRQF_TRIGGER_FALLING:
+> 
+> Yes, the Chrome OS DT for Peach Pit also has IRQ_TYPE_NONE but the DTS is
+> not correct.
+> 
+> If you look at the Chrome OS atmel driver
+> (drivers/input/touchscreen/atmel_mxt_ts.c), it passes IRQF_TRIGGER_FALLING
+> to request_threaded_irq():
+> 
+> /* Default to falling edge if no platform data provided */
+> irqflags = data->pdata ? data->pdata->irqflags : IRQF_TRIGGER_FALLING;
+> error = request_threaded_irq(client->irq, NULL, mxt_interrupt,
+> 			     irqflags | IRQF_ONESHOT,
+> 			     client->name, data);
+> 
+> The above code is wrong since is overwriting the edge/level type flags set
+> by OF when parsing the "interrupts" property so you have to use the
+> expected IRQ flags in your DTS.
+> 
+> b) pin-function 0xf instead of 0x0:
+> 
+> The pin-function 0x0 is GPIO input while 0xf is GPIO IRQ. Usually on other
+> SoCs to use a GPIO IRQ you just configure the pad as GPIO input and then
+> enable the pin as an interrupt but on Exynos SoC these are really two
+> different functions. So if you configure the pin as GPIO input and this
+> happens after the pin is configured as GPIO IRQ, interrupts are not triggered.
+> 
+> I faced that issue before [1] and was solved with Tomasz's commit:
+> 
+> f6a8249 pinctrl: exynos: Lock GPIOs as interrupts when used as EINTs
+> 
+> which changes the pinctrl-exynos driver to setup a pin as GPIO IRQ on
+> .irq_request_resources instead of .irq_set_type. So, with that patch even
+> when pin-function re-configures the function to GPIO input, is then
+> configured as GPIO IRQ when request_threaded_irq() is called.
+> 
+> So probably is working for you just because you tested on linux-next that
+> already has Tomasz's changes but still the correct thing to do is to setup
+> the pin as 0xf. This change probably is needed on other pins used as GPIO
+> IRQ that are using 0x0 now.
+> 
+> Sorry, the email became longer than I wanted but I hope is helpful to you.
+
+Thanks for the explanations, I'll test those settings on Spring then.
+
+Could you point me to what ChromeOS tree and branch I should be looking
+at? For instance, the linux-next.git chromeos-3.8 branch did not have
+any DT for Spring. Therefore my series is based on /proc/device-tree
+rather than any ChromeOS source code.
+
+Thanks,
+Andreas
+
 -- 
-2.1.0
-
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
+GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
