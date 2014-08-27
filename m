@@ -1,80 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965248AbaH0VNI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 17:13:08 -0400
-Received: from mga11.intel.com ([192.55.52.93]:44031 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935855AbaH0VNF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 17:13:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="377843183"
-From: Ross Zwisler <ross.zwisler@linux.intel.com>
-To: Jens Axboe <axboe@kernel.dk>, Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Boaz Harrosh <boaz@plexistor.com>, Nick Piggin <npiggin@kernel.dk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-nvdimm@ml01.01.org
-Cc: Ross Zwisler <ross.zwisler@linux.intel.com>
-Subject: [PATCH 4/4] pmem: Add support for direct_access()
-Date: Wed, 27 Aug 2014 15:12:02 -0600
-Message-Id: <1409173922-7484-5-git-send-email-ross.zwisler@linux.intel.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1409173922-7484-1-git-send-email-ross.zwisler@linux.intel.com>
-References: <1409173922-7484-1-git-send-email-ross.zwisler@linux.intel.com>
+	id S965296AbaH0VNS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 17:13:18 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:51143 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965267AbaH0VNO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 17:13:14 -0400
+Date: Wed, 27 Aug 2014 23:12:37 +0200
+From: Beniamino Galvani <b.galvani@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
+        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Carlo Caione <carlo@caione.org>
+Subject: Re: [PATCH 1/4] mfd: Add Ricoh RN5T618 PMIC core driver
+Message-ID: <20140827211237.GA24921@gmail.com>
+References: <1409091237-16722-1-git-send-email-b.galvani@gmail.com>
+ <1409091237-16722-2-git-send-email-b.galvani@gmail.com>
+ <20140827075614.GZ26707@lee--X1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140827075614.GZ26707@lee--X1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Ross Zwisler <ross.zwisler@linux.intel.com>
----
- drivers/block/pmem.c | 24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+On Wed, Aug 27, 2014 at 08:56:14AM +0100, Lee Jones wrote:
+[...]
+> > diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> > index 8d5fad2..fae8c5b 100644
+> > --- a/drivers/mfd/Kconfig
+> > +++ b/drivers/mfd/Kconfig
+> > @@ -582,6 +582,17 @@ config MFD_RC5T583
+> >  	  Additional drivers must be enabled in order to use the
+> >  	  different functionality of the device.
+> >  
+> > +config MFD_RN5T618
+> > +	bool "Ricoh RN5T5618 PMIC"
+> 
+> Shouldn't this be tristate?
 
-diff --git a/drivers/block/pmem.c b/drivers/block/pmem.c
-index 0be3669..d63bc96 100644
---- a/drivers/block/pmem.c
-+++ b/drivers/block/pmem.c
-@@ -74,6 +74,15 @@ static void *pmem_lookup_pg_addr(struct pmem_device *pmem, sector_t sector)
- 	return pmem->virt_addr + offset;
- }
- 
-+/* sector must be page aligned */
-+static unsigned long pmem_lookup_pfn(struct pmem_device *pmem, sector_t sector)
-+{
-+	size_t page_offset = sector >> PAGE_SECTORS_SHIFT;
-+
-+	BUG_ON(sector & (PAGE_SECTORS - 1));
-+	return (pmem->phys_addr >> PAGE_SHIFT) + page_offset;
-+}
-+
- /*
-  * sector is not required to be page aligned.
-  * n is at most a single page, but could be less.
-@@ -193,9 +202,24 @@ static int pmem_rw_page(struct block_device *bdev, sector_t sector,
- 	return 0;
- }
- 
-+static long pmem_direct_access(struct block_device *bdev, sector_t sector,
-+			      void **kaddr, unsigned long *pfn, long size)
-+{
-+	struct pmem_device *pmem = bdev->bd_disk->private_data;
-+
-+	if (!pmem)
-+		return -ENODEV;
-+
-+	*kaddr = pmem_lookup_pg_addr(pmem, sector);
-+	*pfn = pmem_lookup_pfn(pmem, sector);
-+
-+	return pmem->size - (sector * 512);
-+}
-+
- static const struct block_device_operations pmem_fops = {
- 	.owner =		THIS_MODULE,
- 	.rw_page =		pmem_rw_page,
-+	.direct_access =	pmem_direct_access,
- 	.getgeo =		pmem_getgeo,
- };
- 
--- 
-1.9.3
+Yes, I suppose the driver would work also as a module, I only have to
+uninstall the pm_power_off hook on module removal.
 
+> > +++ b/drivers/mfd/rn5t618.c
+> > @@ -0,0 +1,129 @@
+> 
+> [...]
+> 
+> > +static int rn5t618_i2c_probe(struct i2c_client *i2c,
+> > +			     const struct i2c_device_id *id)
+> > +{
+> 
+> [...]
+> 
+> > +	dev_info(&i2c->dev, "RN5T618 MFD driver loaded");
+> 
+> Can you remove this line?  We normally only print things when
+> information is gathered from a chip i.e. version information and the
+> like.
+
+I will remove it, thanks.
+
+Beniamino
