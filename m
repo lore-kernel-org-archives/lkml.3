@@ -1,119 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756568AbaH0KAv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 06:00:51 -0400
-Received: from mail1.bemta14.messagelabs.com ([193.109.254.113]:53843 "EHLO
-	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755908AbaH0KAt (ORCPT
+	id S1756681AbaH0KBB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 06:01:01 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:39900 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756602AbaH0KA6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 06:00:49 -0400
-X-Env-Sender: Andreas.Werner@men.de
-X-Msg-Ref: server-10.tower-193.messagelabs.com!1409133616!14275228!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Wed, 27 Aug 2014 12:00:18 +0200
-Date: Wed, 27 Aug 2014 12:52:05 +0200
-From: Andreas Werner <andreas.werner@men.de>
-To: Lee Jones <lee.jones@linaro.org>
-CC: Andreas Werner <andreas.werner@men.de>, <linux-kernel@vger.kernel.org>,
-        <sameo@linux.intel.com>, <wim@iguana.be>,
-        <linux-watchdog@vger.kernel.org>, <cooloney@gmail.com>,
-        <rpurdie@rpsys.net>, <linux-leds@vger.kernel.org>, <jdelvare@suse.de>,
-        <linux@roeck-us.net>, <lm-sensors@lm-sensors.org>,
-        <johannes.thumshirn@men.de>
-Subject: Re: [PATCH v5 1/4] drivers/mfd/menf21bmc: introduce MEN 14F021P00
- BMC MFD Core driver
-Message-ID: <20140827105204.GA2083@awelinux>
-References: <cover.1409074255.git.andreas.werner@men.de>
- <67faa70de03924edc768002df17b02e47256260c.1409074255.git.andreas.werner@men.de>
- <20140827072633.GY26707@lee--X1>
+	Wed, 27 Aug 2014 06:00:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140827072633.GY26707@lee--X1>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [192.1.1.171]
+In-Reply-To: <53FC629A.2050101@ti.com>
+References: <20140516093123.GA17245@devel.8.8.4.4>
+	<53FC629A.2050101@ti.com>
+Date: Wed, 27 Aug 2014 19:00:58 +0900
+Message-ID: <CAHb8M2C4FygA5k9bPbuoJTv1EWZ-iGZrD7X7jrHoVqH=_L-_+Q@mail.gmail.com>
+Subject: Re: [PATCH V2] video : remove redundant error check
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Antonino Daplas <adaplas@gmail.com>, jg1.han@samsung.com,
+        laurent.pinchart@ideasonboard.com, Rob Clark <robdclark@gmail.com>,
+        daniel.vetter@ffwll.ch, Julia Lawall <Julia.Lawall@lip6.fr>,
+        linux-fbdev@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 27, 2014 at 08:26:33AM +0100, Lee Jones wrote:
-> On Tue, 26 Aug 2014, Andreas Werner wrote:
-> > The MEN 14F021P00 Board Management Controller provides an
-> > I2C interface to the host to access the feature implemented in the BMC.
-> > The BMC is a PIC Microntroller assembled on CPCI Card from MEN Mikroelektronik
-> > and on a few Box/Display Computer.
-> > 
-> > Added MFD Core driver, supporting the I2C communication to the device.
-> > 
-> > The MFD driver currently supports the following features:
-> >  	- Watchdog
-> >  	- LEDs
-> > 	- Hwmon (voltage monitoring)
-> > 
-> > Signed-off-by: Andreas Werner <andreas.werner@men.de>
-> > Acked-by: Lee Jones <lee.jones@linaro.org>
-> > ---
-> >  drivers/mfd/Kconfig     |  12 +++++
-> >  drivers/mfd/Makefile    |   1 +
-> >  drivers/mfd/menf21bmc.c | 132 ++++++++++++++++++++++++++++++++++++++++++++++++
-> >  3 files changed, 145 insertions(+)
-> >  create mode 100644 drivers/mfd/menf21bmc.c
-> > 
-> > diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> > index b8d9ca0..6a9f101 100644
-> > --- a/drivers/mfd/Kconfig
-> > +++ b/drivers/mfd/Kconfig
-> > @@ -453,6 +453,18 @@ config MFD_MAX8998
-> >  	  additional drivers must be enabled in order to use the functionality
-> >  	  of the device.
-> >  
-> > +config MFD_MENF21BMC
-> > +	tristate "MEN 14F021P00 Board Management Controller Support"
-> > +	depends on I2C
-> > +	select MFD_CORE
-> > +	help
-> > +	  Say yes here to add support for the MEN 14F021P00 BMC
-> > +	  which is a Board Management Controller connected to the I2C bus.
-> > +	  The device supports multiple sub-devices like LED, HWMON  and WDT.
-> 
-> Nit: Whitespace error.
-> 
+Hi,
 
-I run checkpatch but did not find any whitespace error.
-Where is it?
+2014-08-26 19:34 GMT+09:00 Tomi Valkeinen <tomi.valkeinen@ti.com>:
+> On 16/05/14 12:31, Daeseok Youn wrote:
+>> It doesn't need to check "err" for printing info.
+>> And also use pr_info instead of printk.
+>>
+>> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+>> ---
+>> V2: removes unneeded lines for sending a patch
+>>
+>>  drivers/video/fbdev/i810/i810_main.c |    7 +++----
+>>  1 files changed, 3 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/video/fbdev/i810/i810_main.c b/drivers/video/fbdev/i810/i810_main.c
+>> index bb674e4..15cb397 100644
+>> --- a/drivers/video/fbdev/i810/i810_main.c
+>> +++ b/drivers/video/fbdev/i810/i810_main.c
+>> @@ -1910,13 +1910,12 @@ static void i810fb_find_init_mode(struct fb_info *info)
+>>
+>>       for (i = 0; i < par->ddc_num + 1; i++) {
+>>               err = i810_probe_i2c_connector(info, &par->edid, i);
+>> -             if (!err)
+>> +             if (!err) {
+>> +                     pr_info("i810fb_init_pci: DDC probe successful\n");
+>>                       break;
+>> +             }
+>>       }
+>>
+>> -     if (!err)
+>> -             printk("i810fb_init_pci: DDC probe successful\n");
+>> -
+>>       fb_edid_to_monspecs(par->edid, specs);
+>>
+>>       if (specs->modedb == NULL)
+>>
+>
+> I don't know... I think I personally like more the original version. In
+> fact, the whole print looks quite useless to me, or at least it should
+> be a debug print.
+Yes. this patch doesn't need.
 
-...
+Thanks for review.
 
-> > +MODULE_DEVICE_TABLE(i2c, menf21bmc_id_table);
-> > +
-> > +static struct i2c_driver menf21bmc_driver = {
-> > +	.driver.name	= "menf21bmc",
-> > +	.id_table	= menf21bmc_id_table,
-> > +	.probe		= menf21bmc_probe,
-> > +	.remove		= menf21bmc_remove,
-> > +};
-> 
-> No DT support?
-> 
-
-No not at the moment because it is used only on x86 system.
-
-> > +module_i2c_driver(menf21bmc_driver);
-> > +
-> > +MODULE_DESCRIPTION("MEN 14F021P00 BMC mfd core driver");
-> 
-> s/mfd/MFD
-> 
-> > +MODULE_AUTHOR("Andreas Werner <andreas.werner@men.de>");
-> > +MODULE_LICENSE("GPL v2");
-> 
-> -- 
-> Lee Jones
-> Linaro STMicroelectronics Landing Team Lead
-> Linaro.org │ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
+regards,
+Daeseok Youn.
+>
+>  Tomi
+>
+>
