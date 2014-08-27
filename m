@@ -1,48 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935477AbaH0TPL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 15:15:11 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:53677 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755657AbaH0TPJ (ORCPT
+	id S964832AbaH0TPa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 15:15:30 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:44181 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935490AbaH0TP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 15:15:09 -0400
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Tero Kristo <t-kristo@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Keerthy <j-keerthy@ti.com>,
-        =?utf-8?Q?Beno=C3=AEt?= Cousson <bcousson@baylibre.com>,
-        daniel.lezcano@linaro.org
-Subject: Re: [PATCH 00/10] ARM: OMAP5 / DRA7: Add framework for suspend and cpuidle
-Organization: Deep Root Systems, LLC
-References: <1408716154-26101-1-git-send-email-nm@ti.com>
-Date: Wed, 27 Aug 2014 12:15:06 -0700
-In-Reply-To: <1408716154-26101-1-git-send-email-nm@ti.com> (Nishanth Menon's
-	message of "Fri, 22 Aug 2014 09:02:24 -0500")
-Message-ID: <7htx4xbv7p.fsf@paris.lan>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Wed, 27 Aug 2014 15:15:26 -0400
+Date: Wed, 27 Aug 2014 14:15:07 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Kiran Kumar Raparthy <kiran.kumar@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, Todd Poynor <toddpoynor@google.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [RFC 2/2] usb: otg: Temporarily hold wakeupsource on charger and
+ disconnect events
+Message-ID: <20140827191507.GE6347@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1408701000-8555-1-git-send-email-kiran.kumar@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="10jrOL3x2xqLmOsH"
+Content-Disposition: inline
+In-Reply-To: <1408701000-8555-1-git-send-email-kiran.kumar@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nishanth Menon <nm@ti.com> writes:
+--10jrOL3x2xqLmOsH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> The following series are various fixes and improvements for
-> supporting suspend-to-ram. This depends on the following for basic functionality:
-> series 1/6 where powerdomain fixes were involved.
+On Fri, Aug 22, 2014 at 03:20:00PM +0530, Kiran Kumar Raparthy wrote:
+> From: Todd Poynor <toddpoynor@google.com>
+>=20
+> usb: otg: Temporarily hold wakeupsource on charger and disconnect events
+>=20
+> Allow other parts of the system to react to the charger connect/disconnect
+> event without allowing the system to suspend before the other parts can p=
+rocess
+> the event. This wakeup_source times out after 2 seconds; if nobody else h=
+olds a
+> wakeup_source by that time then the device can sleep.
+>=20
+> This patch also refactoras the logic of wakeupsource_init,otg_notificatio=
+ns and
+> handle event funtions
 
-I had a look through this series, and it looks good overall.  I think Daniel
-needs to weigh in on the CPUidle driver, otherwise.
+refactoring should be in another patch.
 
-Reviewed-by: Kevin Hilman <khilman@linaro.org>
+> This is one of the number of patches from the Android AOSP tegra.git tree,
+> which is used on Android devices. so I wanted to submit it for
+> review to see if it should go upstream.
 
-I also tested on omap5uevm with the pm_debug/wakeup_timer_seconds patch.
+this paragraph doesn't need to be in commit log.
 
-Tested-by: Kevin Hilman <khilman@linaro.org>
+--=20
+balbi
 
-Kevin
+--10jrOL3x2xqLmOsH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT/i47AAoJEIaOsuA1yqREiM4P/1Q0K54pYscGKv/JG7rDbemv
+a7pvLSxd5BMMtdo2jDnz9fWGBW5My2AmWR6EkhgAok5KZGrHnk6EkMrPnNEh0vK8
+m5tO1T4f+MOMuZgxvsR5wndo8NqHGMwsqvFEqQXFXPYBMQhQIyzkImqZR3DW22pN
+1tYUi1RRnHDE4fp98HzJBy4vsqzrH5HllNfOcH1HdJgNsn/3IUnyUCLtoyPxesHo
+DMGYs+kQKpiQrQ+tGZa1N39Z115Q7rvhcD6Ro8V1bLre5jlHN3a9Jvn7ThrGJ+WT
+74yYPCYjiN1CMixAQubJcsNocFO4OtIj8A1iWF3DUSkdkLi+HTy5r8Uf3Wn45LDx
+kkp2kV6FbYY//q0Ke0PD6I/jVvDx0XOm5kiANve4eGKs2f/8OMDWwWuvmRGKK86t
+j0U1AumxNjxHZTEDSjuhJdeIGRNLODTaaGTKtgVH4R2lKW9h0NgSALftslqFBhsp
+ic2ARubNYdAQehC+zm9odcevxQN/o+miqT6bF+URF/qoEBP5OpwOwRQSgfnxY4uM
+1u8+K/X4z1+jfj2vdjk8gm+wFa3IjvrgCHTYKnj5kwg2ux7NHwm1a3Re591R71/5
+bm8X5ygBAvlTZjRtXPlJuc1GZQmFvKkB6lLTTCfZoliL1m/2kvItQcIMm7D+av/e
+hO8lwQYHE5pXhBJ0DHCf
+=q4i+
+-----END PGP SIGNATURE-----
+
+--10jrOL3x2xqLmOsH--
