@@ -1,86 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934437AbaH0NPX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 09:15:23 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:34978 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933270AbaH0NPV (ORCPT
+	id S934523AbaH0NPs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 09:15:48 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:22630 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934440AbaH0NPr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 09:15:21 -0400
-Date: Wed, 27 Aug 2014 16:15:13 +0300
-From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-To: axboe@kernel.dk, linux-kernel@vger.kernel.org
-Cc: paulmck@linux.vnet.ibm.com
-Subject: [PATCH] block: genhd: Replace rcu_assign_pointer() with
- RCU_INIT_POINTER()
-Message-ID: <20140827131513.GA31290@ada>
+	Wed, 27 Aug 2014 09:15:47 -0400
+From: Wang Nan <wangnan0@huawei.com>
+To: Russell King <linux@arm.linux.org.uk>,
+        "David A. Long" <dave.long@linaro.org>, Jon Medhurst <tixy@linaro.org>,
+        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        "Ananth N Mavinakayanahalli" <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Will Deacon <will.deacon@arm.com>
+CC: Wang Nan <wangnan0@huawei.com>, Pei Feiyue <peifeiyue@huawei.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH v5 0/3] kprobes: arm: enable OPTPROBES for ARM 32
+Date: Wed, 27 Aug 2014 21:02:29 +0800
+Message-ID: <1409144552-12751-1-git-send-email-wangnan0@huawei.com>
+X-Mailer: git-send-email 1.8.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to RCU_INIT_POINTER()'s block comment 3.a, it can be used if
-"3.   The referenced data structure has already been exposed to readers either
-at compile time or via rcu_assign_pointer() -and-
- a.   You have not made -any- reader-visible changes to this structure since
-then".
+Following 3 patches are the 5th version of kprobe optimization for arm.
+The main difference is disallowing optimize stack store instructions,
+such as "str r0, [sp]" and "push {r0 - r4}".
 
-This case fulfills the conditions above because between the rcu_dereference()
-call and the rcu_assign_pointer() call there is no update of the "part"
-variable.
-Therefore, this patch makes the replacement.
+The first patch improve arm instruction decoder to detect such
+instructions, following 2 patches make it unoptimizable.
 
-The following Coccinelle semantic patch was used:
-@@
-identifier v;
-@@
+Wang Nan (3):
+  ARM: probes: check stack operation when decoding
+  kprobes: copy ainsn after alloc aggr kprobe
+  kprobes: arm: enable OPTPROBES for ARM 32
 
-v = rcu_dereference(...);
-... when != rcu_dereference(...);
-    when != v = ...;
-    when != (<+...v...+>)++;
-    when != \(memcpy\|memset\)(...);
-(
-- rcu_assign_pointer
-+ RCU_INIT_POINTER
-  (..., v);
-|
- if(...) {
-... when != v = ...;
-- rcu_assign_pointer
-+ RCU_INIT_POINTER
-  (..., v);
-... when any
- }
-)
+ arch/arm/Kconfig                 |   1 +
+ arch/arm/include/asm/kprobes.h   |  28 +++++
+ arch/arm/include/asm/probes.h    |   1 +
+ arch/arm/kernel/Makefile         |   3 +-
+ arch/arm/kernel/kprobes-common.c |   4 +
+ arch/arm/kernel/kprobes-opt.c    | 259 +++++++++++++++++++++++++++++++++++++++
+ arch/arm/kernel/probes-arm.c     |   4 +-
+ arch/arm/kernel/probes-thumb.c   |   6 +-
+ arch/arm/kernel/probes.c         |  20 ++-
+ arch/arm/kernel/probes.h         |   6 +
+ kernel/kprobes.c                 |   7 +-
+ 11 files changed, 330 insertions(+), 9 deletions(-)
+ create mode 100644 arch/arm/kernel/kprobes-opt.c
 
-Because there are cases where between a “rcu_dereference()” call and a
-“rcu_assign_pointer()” call might be updates of the value that interests
-us, the Coccinelle semantic patch ignores them and replaces with
-"RCU_INIT_POINTER()" only when the update is not happening.
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: "David A. Long" <dave.long@linaro.org> 
+Cc: Jon Medhurst <tixy@linaro.org>
+Cc: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+Cc: Ben Dooks <ben.dooks@codethink.co.uk>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Will Deacon <will.deacon@arm.com>
 
-Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
----
- block/genhd.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/block/genhd.c b/block/genhd.c
-index 3aec057..f7e29d8 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -228,7 +228,7 @@ struct hd_struct *disk_map_sector_rcu(struct gendisk *disk, sector_t sector)
- 		part = rcu_dereference(ptbl->part[i]);
- 
- 		if (part && sector_in_part(part, sector)) {
--			rcu_assign_pointer(ptbl->last_lookup, part);
-+			RCU_INIT_POINTER(ptbl->last_lookup, part);
- 			return part;
- 		}
- 	}
 -- 
-1.9.1
+1.8.4
 
