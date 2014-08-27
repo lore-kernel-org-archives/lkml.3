@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934878AbaH0OHR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 10:07:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36514 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933583AbaH0OHO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 10:07:14 -0400
-Message-ID: <53FDE610.5070309@suse.de>
-Date: Wed, 27 Aug 2014 16:07:12 +0200
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S934889AbaH0OHk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 10:07:40 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:57506 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933583AbaH0OHg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 10:07:36 -0400
+Message-ID: <53FDE621.2050009@kernel.dk>
+Date: Wed, 27 Aug 2014 08:07:29 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-CC: linux-scsi@vger.kernel.org,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        yrl.pp-manager.tt@hitachi.com, linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Doug Gilbert <dgilbert@interlog.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Christoph Hellwig <hch@lst.de>
-Subject: Re: [RFC PATCH 06/10] scsi/sd: Delete extra scsi_show_extd_sense()
- in sd_print_sense_hdr()
-References: <20140808115004.6768.97014.stgit@yuno-kbuild.novalocal> <20140808115019.6768.99063.stgit@yuno-kbuild.novalocal>
-In-Reply-To: <20140808115019.6768.99063.stgit@yuno-kbuild.novalocal>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Jeff Moyer <jmoyer@redhat.com>
+CC: Joe Lawrence <joe.lawrence@stratus.com>, linux-kernel@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>, Boaz Harrosh <bharrosh@panasas.com>
+Subject: Re: [PATCH v3 0/2] block,scsi: fixup blk_get_request dead queue scenarios
+References: <1404329718-19367-1-git-send-email-joe.lawrence@stratus.com>	<x49egw36u55.fsf@segfault.boston.devel.redhat.com>	<53FCF9DB.6010501@kernel.dk>	<x49mwar54ca.fsf@segfault.boston.devel.redhat.com>	<53FCFD40.2010903@kernel.dk> <53FCFE01.8080701@kernel.dk> <x49iole6hcc.fsf@segfault.boston.devel.redhat.com>
+In-Reply-To: <x49iole6hcc.fsf@segfault.boston.devel.redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2014 01:50 PM, Yoshihiro YUNOMAE wrote:
-> sd_print_sense_hdr() calls scsi_show_extd_sense(),
-> but scsi_print_sense_hdr() also calls scsi_show_extd_sense().
-> We can get same result, so we delete it.
->
-> Note:
-> Calling scsi_show_extd_sense() is introduced in fdd8b297.
->
-> Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-> Cc: Hannes Reinecke <hare@suse.de>
-> Cc: Doug Gilbert <dgilbert@interlog.com>
-> Cc: Martin K. Petersen <martin.petersen@oracle.com>
-> Cc: Christoph Hellwig <hch@lst.de>
-> Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-> Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> ---
->   drivers/scsi/sd.c |    2 --
->   1 file changed, 2 deletions(-)
->
-> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-> index 8d7204a..22dd214 100644
-> --- a/drivers/scsi/sd.c
-> +++ b/drivers/scsi/sd.c
-> @@ -3286,8 +3286,6 @@ static void sd_print_sense_hdr(struct scsi_disk *sdkp,
->   			       struct scsi_sense_hdr *sshdr)
->   {
->   	scsi_print_sense_hdr(sdkp->device, sdkp->disk->disk_name, sshdr);
-> -	scsi_show_extd_sense(sdkp->device, sdkp->disk->disk_name,
-> -			     sshdr->asc, sshdr->ascq);
->   }
->
->   static void sd_print_result(struct scsi_disk *sdkp, int result)
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-A similar patch has been applied to my scsi-logging tree.
+On 08/26/2014 04:01 PM, Jeff Moyer wrote:
+> Jens Axboe <axboe@kernel.dk> writes:
+> 
+>>> I have applied the first one, will look over the second one and hand
+>>> apply it. Seems the NULL return was completely removed, so we _should_
+>>> be ok on the IS_ERR() conversion, though that sort of thing always
+>>> worries me a little bit. A NULL return can quickly show up again, and
+>>> then they would all fail.
+> 
+> Well, we could guard against that with a BUG_ON in blk_get_request,
+> right?
 
-Cheers,
+Yes, that might be a good idea.
 
-Hannes
+>> Additionally, there's still quite a few places that call
+>> blk_get_request() and don't check the error return if __GFP_WAIT is set.
+>> Since most of the point of this is to fix segfaulting on queue dead
+>> scenarios, why aren't they all converted?
+> 
+> Odd, I thought they all were converted last I checked.  They definitely
+> should be.
+
+drivers/ide/ide-park:issue_park_cmd() (patch oddly converts just the one?!)
+drivers/ide/ide-pm.c:generic_ide_suspend()
+drivers/ide/ide-pm.c:generic_ide_resume()
+drivers/ide/ide-cd.c:ide_cd_queue_pc()
+drivers/ide/ide-atapi.c:ide_queue_pc_tail()
+drivers/ide/ide-ioctls.c:ide_cmd_ioctl()
+drivers/ide/ide-ioctls.c:generic_drive_reset()
+drivers/ide/ide-taskfile.c:ide_raw_taskfile()
+drivers/ide/ide-tape.c:idetape_queue_rw_tail()
+drivers/ide/ide-cd_ioctls.c:ide_cdrom_reset()
+drivers/ide/ide-disk.c:set_multcount()
+drivers/ide/ide-devsets.c:ide_devset_execute()
+
+Why only one location in ide-park.c was converted and the rest of IDE
+left untouched, I don't know. But there are definitely lots of them left
+in there.
+
+There's also a bug in osd_initiator.c, _init_blk_request(). We jump to
+'out' for IS_ERR(req), which attempts to print or->request, which hasn't
+been assigned yet. This is my primary concern with this patch, basically
+every single of these call sites must be verified or it will do more
+harm than good. Have they been?
+
 -- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+Jens Axboe
+
