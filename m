@@ -1,54 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965519AbaH0XY2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 19:24:28 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:37795 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965120AbaH0XY1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 19:24:27 -0400
-Date: Wed, 27 Aug 2014 16:24:22 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>,
-        Amit Shah <amit.shah@redhat.com>
-Subject: Re: [PATCH] rcu: Make nocb leader kthreads process pending callbacks
- after spawning
-Message-ID: <20140827232422.GQ2663@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1409172220-2804-1-git-send-email-bobby.prani@gmail.com>
- <20140827214706.GO2663@linux.vnet.ibm.com>
- <CAJhHMCB2bCYXkE6yrygKx=k46n4SN+iDtJR+N14CcYu5LRFLEQ@mail.gmail.com>
+	id S965527AbaH0XZm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 19:25:42 -0400
+Received: from relay1.sgi.com ([192.48.180.66]:47686 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965255AbaH0XZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 19:25:40 -0400
+Message-ID: <53FE68E4.4090902@sgi.com>
+Date: Wed, 27 Aug 2014 16:25:24 -0700
+From: Mike Travis <travis@sgi.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJhHMCB2bCYXkE6yrygKx=k46n4SN+iDtJR+N14CcYu5LRFLEQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082723-7164-0000-0000-0000042547A0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: mingo@redhat.com, tglx@linutronix.de, hpa@zytor.com, msalter@redhat.com,
+        dyoung@redhat.com, riel@redhat.com, peterz@infradead.org,
+        mgorman@suse.de, linux-kernel@vger.kernel.org, x86@kernel.org,
+        linux-mm@kvack.org, Alex Thorlton <athorlton@sgi.com>
+Subject: Re: [PATCH 1/2] x86: Optimize resource lookups for ioremap
+References: <20140827225927.364537333@asylum.americas.sgi.com>	<20140827225927.602319674@asylum.americas.sgi.com>	<20140827160515.c59f1c191fde5f788a7c42f6@linux-foundation.org>	<53FE6515.6050102@sgi.com> <20140827161854.0619a04653b336d3adc755f3@linux-foundation.org>
+In-Reply-To: <20140827161854.0619a04653b336d3adc755f3@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 27, 2014 at 07:08:37PM -0400, Pranith Kumar wrote:
-> On Wed, Aug 27, 2014 at 5:47 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> >
-> > Thank you, Pranith, queued.  I have also backported to v3.17-rc2,
-> > and am testing both.  A sneak preview of the backport is shown below,
-> > please let me know if you see any problems with it.  (The reason for
-> > the backport is to submit to 3.17 as a fix for a regression.)
+
+
+On 8/27/2014 4:18 PM, Andrew Morton wrote:
+> On Wed, 27 Aug 2014 16:09:09 -0700 Mike Travis <travis@sgi.com> wrote:
 > 
-> Looks good to me!
+>>
+>>>>
+>>>> ...
+>>>>
+>>>> --- linux.orig/kernel/resource.c
+>>>> +++ linux/kernel/resource.c
+>>>> @@ -494,6 +494,43 @@ int __weak page_is_ram(unsigned long pfn
+>>>>  }
+>>>>  EXPORT_SYMBOL_GPL(page_is_ram);
+>>>>  
+>>>> +/*
+>>>> + * Search for a resouce entry that fully contains the specified region.
+>>>> + * If found, return 1 if it is RAM, 0 if not.
+>>>> + * If not found, or region is not fully contained, return -1
+>>>> + *
+>>>> + * Used by the ioremap functions to insure user not remapping RAM and is as
+>>>> + * vast speed up over walking through the resource table page by page.
+>>>> + */
+>>>> +int __weak region_is_ram(resource_size_t start, unsigned long size)
+>>>> +{
+>>>> +	struct resource *p;
+>>>> +	resource_size_t end = start + size - 1;
+>>>> +	int flags = IORESOURCE_MEM | IORESOURCE_BUSY;
+>>>> +	const char *name = "System RAM";
+>>>> +	int ret = -1;
+>>>> +
+>>>> +	read_lock(&resource_lock);
+>>>> +	for (p = iomem_resource.child; p ; p = p->sibling) {
+>>>> +		if (end < p->start)
+>>>> +			continue;
+>>>> +
+>>>> +		if (p->start <= start && end <= p->end) {
+>>>> +			/* resource fully contains region */
+>>>> +			if ((p->flags != flags) || strcmp(p->name, name))
+>>>> +				ret = 0;
+>>>> +			else
+>>>> +				ret = 1;
+>>>> +			break;
+>>>> +		}
+>>>> +		if (p->end < start)
+>>>> +			break;	/* not found */
+>>>> +	}
+>>>> +	read_unlock(&resource_lock);
+>>>> +	return ret;
+>>>> +}
+>>>> +EXPORT_SYMBOL_GPL(region_is_ram);
+>>>
+>>> Exporting a __weak symbol is strange.  I guess it works, but neither
+>>> the __weak nor the export are actually needed?
+>>>
+>>
+>> I mainly used 'weak' and export because that was what the page_is_ram
+>> function was using.  Most likely this won't be used anywhere else but
+>> I wasn't sure.  I can certainly remove the weak and export, at least
+>> until it's actually needed?
+> 
+> Several architectures implement custom page_is_ram(), so they need the
+> __weak.  region_is_ram() needs neither so yes, they should be removed.
 
-And both versions pass short rcutorture tests.
+Okay.
+> 
+> <looks at the code>
+> 
+> Doing strcmp("System RAM") is rather a hack.  Is there nothing in
+> resource.flags which can be used?  Or added otherwise?
 
-Amit, could you please try running your test with the backported
-version of the patch?  One more time?
+I agree except this mimics the page_is_ram function:
 
-							Thanx, Paul
+        while ((res.start < res.end) &&
+                (find_next_iomem_res(&res, "System RAM", true) >= 0)) {
+
+So it passes the same literal string which then find_next does the
+same strcmp on it:
+
+                if (p->flags != res->flags)
+                        continue;
+                if (name && strcmp(p->name, name))
+                        continue;
+
+I should add back in the check to insure name is not NULL.
 
