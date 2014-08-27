@@ -1,207 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756857AbaH0Sed (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 14:34:33 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:47046 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756839AbaH0Seb convert rfc822-to-8bit (ORCPT
+	id S1756932AbaH0SfL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 14:35:11 -0400
+Received: from cmexedge1.ext.emulex.com ([138.239.224.99]:46338 "EHLO
+	CMEXEDGE1.ext.emulex.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756862AbaH0SfJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 14:34:31 -0400
+	Wed, 27 Aug 2014 14:35:09 -0400
+Message-ID: <53FE24C3.6080708@emulex.com>
+Date: Wed, 27 Aug 2014 14:34:43 -0400
+From: James Smart <james.smart@emulex.com>
+Reply-To: <james.smart@emulex.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <53EAAC95.7080301@linaro.org>
-References: <53EAAC95.7080301@linaro.org>
-Date: Wed, 27 Aug 2014 11:34:30 -0700
-Message-ID: <CALAqxLWvSn2_6dakGiQ4VEtYHH2Dt7BL0pn5XHgLWOV4ePqhBw@mail.gmail.com>
-Subject: Re: (Resend) 2038 Kernel Summit Discussion Fodder
-From: John Stultz <john.stultz@linaro.org>
-To: ksummit-discuss@lists.linuxfoundation.org
-Cc: lkml <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "Joseph S. Myers" <joseph@codesourcery.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Mike Qiu <qiudayu@linux.vnet.ibm.com>
+CC: <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <JBottomley@parallels.com>
+Subject: Re: [PATCH] lpfc: Avoid to disable pci_dev twice
+References: <1405578751-14164-1-git-send-email-qiudayu@linux.vnet.ibm.com> <53DAF88C.50008@linux.vnet.ibm.com>
+In-Reply-To: <53DAF88C.50008@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 5:08 PM, John Stultz <john.stultz@linaro.org> wrote:
-> So what I’d like to cover in this mail, are some discussion starters around
-> ABI modifications that I think we should discuss at Kernel Summit, in order
-> to make sure we have a clear path forward, as what we decide for the ABI
-> modifications, has large impacts on how we help ensure userspace is correct
-> or not.
->
->
-> From discussions so far, it seems the preferred change to the userspace
-> interface is what I’ll call the “Large File” method, as it follows the
-> approach used for large file support:
->
-> Create new 64bit time_t/timespec/timeval/etc variants for syscalls, while
-> preserving existing interfaces. This has some complexity around IOCTLs, but
-> that can mostly be handled by creating new ioctl numbers while preserving
-> the old ones. Since we’re only modifying time types, we’ll also need to add
-> compat versions for many of these syscalls for 64bit native systems.
->
-> Libc then introduces versioned symbols, and a new compile options to allow
-> applications to be built for “large time”. New and old applications could
-> then share the same libc.
->
-> The benefits of this approach is is simply and minimally extends the
-> current 32 bit environment, without any effect on existing applications
-> which continue to work. Most of the complexity is in the libc library and
-> its build environment.
->
-> The downsides to this approach is that as it follows the large-file
-> approach, it has many of the same problems as large-file support, in that
-> the transition to large-file has been slow and is still ongoing. Also,
-> since this solution focuses on libc, there is also the problem of existing
-> 3rd party libraries, which have no way of knowing which sized time is being
-> used, will break. So all libraries that do anything with time will then
-> have to implement their own versioned interfaces. This approach also makes
-> it a little more difficult to audit that a system is 2038 safe, without
-> running it and looking for issues.
->
->
-> A potential alternative I’d like to also propose is the “Libc Version Bump”
-> approach.
->
-> Basically this is the same as the above, where the kernel provides both
-> legacy and new time_t related interfaces. However, the libc would make a
-> version break, migrating to using 64bit time_t types and syscalls. Legacy
-> applications would still work using the old glibc version, but this would
-> provide a stronger line in the sand between 2038 safe and unsafe
-> applications and libraries, making it easier to avoid mixing the two.
-> NetBSD developers discussed this same approach back in 2008 here:
-> https://mail-index.netbsd.org/tech-userlevel/2008/03/22/msg000231.html
->
-> The downsides here is, for legacy application support, one would have to
-> have all the requisite legacy libraries also installed, which will add a
-> burden to distro vendors. However, this extra storage overhead would likely
-> be a positive motivator to get applications rebuilt and migrated to new
-> version. Additionally, for 3rd party libraries built against the new libc
-> version, the libraries may need to do a version bump themselves, in order
-> to be able to co-exist with versions built against the previous libc. This
-> approach also assumes that libraries that use time_t related values would
-> have a libc dependency.
->
-> A more aggressive version of the previous proposal is what I’m calling the
-> “New Virtual-Architecture” approach, basically extending the versioning
-> control from the linker down into the kernel as well.  It would be adding a
-> new “virtual-architecture” to the kernel, not entirely unlike how x32 is
-> supported on x86_64 systems.  We would create entirely new ABI and
-> architecture name in the kernel (think something like “armllt” or
-> “i386llt”). We would preserve compatibility for legacy applications via
-> personalities, similar mechanism as the compat_ interface used to support
-> 32bit applications on 64bit kernels. In this case, we wouldn’t introduce
-> new 64 bit syscalls in the kernel, as the existing interfaces would just be
-> typed correctly for our new virtual architecture, but we would have
-> duplicate syscall interfaces via the compat interfaces. The extra
-> complexity would also be that we would have to support new 32bit compat
-> environment on 64bit systems. Userspace would be completely rebuilt to
-> support the new -llt architecture, and compatibility for legacy
-> applications would be done via the same multiarch packaging as is done now
-> for running 32bit applications on 64bit systems.
->
-> The pros for this case is that it would be very easy to audit that
-> applications have migrated to the new 64bit time_t ABI. Additionally since
-> we know which type the application is in the kernel, it would make
-> problematic compatability areas like IOCTLS easier to deal with utilizing a
-> flag in the task structure.
->
-> The downsides here are many. The distros will probably hate this idea, as
-> it requires rebuilding the world, and maintaining another legacy
-> architecture support. I’m also not completely sure how robust multi-arch
-> packaging is in the face of having to handle 3-4 architectures on one
-> system. On the kernel side, it also adds more complexity, where we have to
-> add even more complex compat support for 64bit systems to handle all the
-> various 32bit applications possible.
->
-> That said the practical reality isn't much further from the the “Libc
-> Version Bump” approach, since legacy support will need legacy versions of
-> all dependent libraries there a well. Similarly the additional storage
-> required to support legacy applications is a positive motivator to get
-> folks to move away from unsafe legacy applications. I also personally like
-> the clarity the new virtual architecture brings, and that it would allow a
-> kernel option to disable 2038-unsafe legacy support.
->
-> With any of these approaches, we still have quite a bit of work to just get
-> the kernel in-shape internally. And with the exception of the “virtual
-> arch” approach, the changes on the kernel side are basically the same. The
-> big thing we probably want to avoid is requiring any sort of flagday for
-> distros, and instead allowing them each to migrate to the new solution
-> individually (but hopefully not taking too long). Even so, I think having a
-> clear vision for how userspace will make this transition is important, so
-> hopefully during the Kernel Summit discussion we can come to consensus on
-> what approach to take moving forward.
+Mike,
 
-So I just wanted to send a (late) follow up here to summarize my
-recollection of the discussion from the Kernel Summit workshop
-session. Since there wasn't representation from the userspace world,
-there was only a brief 30 minute session to try to get feedback on the
-above proposals, and have a bit of open discussion to allow for folks
-to air any ideas that hadn't already been proposed.
+Can you confirm - the "nulls" this patch correct are because the 
+probe_one and error_detect threads are running concurrently, thus battling ?
 
-To start, I expresses what I felt to be the need for whatever solution
-we choose, it should ideally be easy to audit in order for folks to be
-able to validate that a system has or has not been updated to use
-64bit time.  The counterpoint raised is that userspace may still do
-problematic things like storing timestamps on disk or elsewhere in
-32bit structures, so the value of any trivial auditing may not be that
-great.
+If so - this fix looks insufficient and we should rework it.
 
->From the discussion on the list, the "libc version bump" approach is
-unlikely, and consensus in the session is that it would be a userspace
-decision anyway. The "virtual architecture" approach, didn't seem to
-have many fans either. Linus cut through the discussion with the
-request that we not over-design this, just provide the 64bit
-interfaces and let userspace do what it wants. So that resolved my
-main open questions, and gave a clear way forward from the kernel's
-perspective, with userland (or atleast glibc) likely taking the
-"large-file style" approach.
+Q: why are they allowed to run concurrently ?  I could see this solved 
+at the platform level to let probe_one finish before error_detect is 
+called (and therefore stating error_detect only makes sense to call if 
+probe_one was successful). It's also a much driver-friendly solution. I 
+could see other drivers have much the same issue with concurrency and 
+data structure teardown - and if locks aren't allowed in the 
+error-detect path... it's not good.
 
-There was also some pre-discussion before the sessions started around
-why we don't just change time_t to be unsigned. From the kernel's
-point of view this would be mostly fine, since dates before 1970 are
-not considered valid for any internal uses (with the exception of some
-filesystem timestamps). However, the problem with this approach is
-that userspace may want to handle dates prior to 1970, so this would
-eliminate that possibility. And removing the sign could cause problems
-with existing comparison logic. There is also the fact that having the
-same time unit range on 32bit and 64bit systems avoids complicating
-how timestamps are interpreted between architectures, where as having
-it be unsigned on 32bit but signed on 64bit would likely cause
-confusion. It is quite likely that using unsigned timestamps will be a
-useful solution for cases where timestamps cannot be converted to
-64bits, but from the kernel perspective if we are going to change the
-abi, we should probably go all the way to 64bits. There seemed to be
-no disagreement here.
+-- james s
 
-For the rest of the session, I opened it up for further thoughts or
-ideas. While there wasn't any new proposals, there was a question as
-to if anyone will really be running 32bit hardware in 2038, which made
-some folks point out that as systems get smaller there are likely to
-be tiny embedded platforms using Linux. The point that these systems
-are likely never to be updated brought out a discussion as to if 2038
-is even the least of our worries, given the security issues around
-these abandoned systems. Debate of the risks of light-bulb hacks
-ensued. This also raised an interesting but further tangential point
-that apparently there is talk of legislative enforced obsolescence on
-devices that don't get updates.
 
-<sarcasm> So clearly the solution is to simply make it illegal to hit
-any 2038 issue. Then there's nothing to worry about. :) </sarcasm>
 
-So that's everything I recall. It was a fairly short session. I'm
-hoping Thomas will be able to have a similar session with more
-userspace representation at Plumbers, but given the attendance caps
-were hit early, I'm suspecting will have to have continued discussions
-on the list and wherever we can next year.
+On 7/31/2014 10:16 PM, Mike Qiu wrote:
+> On 07/17/2014 02:32 PM, Mike Qiu wrote:
+>
+>
+> Hi, all
+>
+> How about this patch ?
+>
+> Any idea ?
+>
+>> In IBM Power servers, when hardware error occurs during probe
+>> state, EEH subsystem will call driver's error_detected interface,
+>> which will call pci_disable_device(). But driver's probe function also
+>> call pci_disable_device() in this situation.
+>>
+>> So pci_dev will be disabled twice:
+>>
+>> Device lpfc disabling already-disabled device
+>> ------------[ cut here ]------------
+>> WARNING: at drivers/pci/pci.c:1407
+>> CPU: 0 PID: 8744 Comm: kworker/0:0 Tainted: G        W 
+>> 3.10.42-2002.pkvm2_1_1.6.ppc64 #1
+>> Workqueue: events .work_for_cpu_fn
+>> task: c00000274e3f5400 ti: c0000027d3958000 task.ti: c0000027d3958000
+>> NIP: c000000000471b8c LR: c000000000471b88 CTR: c00000000043ebe0
+>> REGS: c0000027d395b650 TRAP: 0700   Tainted: G        W 
+>> (3.10.42-2002.pkvm2_1_1.6.ppc64)
+>> MSR: 9000000100029032 <SF,HV,EE,ME,IR,DR,RI>  CR: 28b52b44  XER: 
+>> 20000000
+>> CFAR: c000000000879ab8 SOFTE: 1
+>> ...
+>> NIP .pci_disable_device+0xcc/0xe0
+>> LR  .pci_disable_device+0xc8/0xe0
+>> Call Trace:
+>> .pci_disable_device+0xc8/0xe0 (unreliable)
+>> .lpfc_disable_pci_dev+0x50/0x80 [lpfc]
+>> .lpfc_pci_probe_one+0x870/0x21a0 [lpfc]
+>> .local_pci_probe+0x68/0xb0
+>> .work_for_cpu_fn+0x38/0x60
+>> .process_one_work+0x1a4/0x4d0
+>> .worker_thread+0x37c/0x490
+>> .kthread+0xf0/0x100
+>> .ret_from_kernel_thread+0x5c/0x80
+>>
+>> Signed-off-by: Mike Qiu <qiudayu@linux.vnet.ibm.com>
+>> ---
+>>   drivers/scsi/lpfc/lpfc.h      |  1 +
+>>   drivers/scsi/lpfc/lpfc_init.c | 59 
+>> +++++++++++++++++++++++++++++++++++++++----
+>>   2 files changed, 55 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/drivers/scsi/lpfc/lpfc.h b/drivers/scsi/lpfc/lpfc.h
+>> index 434e903..0c7bad9 100644
+>> --- a/drivers/scsi/lpfc/lpfc.h
+>> +++ b/drivers/scsi/lpfc/lpfc.h
+>> @@ -813,6 +813,7 @@ struct lpfc_hba {
+>>   #define VPD_MASK            0xf         /* mask for any vpd data */
+>>
+>>       uint8_t soft_wwn_enable;
+>> +    uint8_t probe_done;
+>>
+>>       struct timer_list fcp_poll_timer;
+>>       struct timer_list eratt_poll;
+>> diff --git a/drivers/scsi/lpfc/lpfc_init.c 
+>> b/drivers/scsi/lpfc/lpfc_init.c
+>> index 06f9a5b..c2e67ae 100644
+>> --- a/drivers/scsi/lpfc/lpfc_init.c
+>> +++ b/drivers/scsi/lpfc/lpfc_init.c
+>> @@ -9519,6 +9519,9 @@ lpfc_pci_probe_one_s3(struct pci_dev *pdev, 
+>> const struct pci_device_id *pid)
+>>           }
+>>       }
+>>
+>> +    /* Set the probe flag */
+>> +    phba->probe_done = 1;
+>> +
+>>       /* Perform post initialization setup */
+>>       lpfc_post_init_setup(phba);
+>>
+>> @@ -9795,6 +9798,9 @@ lpfc_sli_prep_dev_for_recover(struct lpfc_hba 
+>> *phba)
+>>   static void
+>>   lpfc_sli_prep_dev_for_reset(struct lpfc_hba *phba)
+>>   {
+>> +    if (phba)
+>> +        return;
+>> +
+>>       lpfc_printf_log(phba, KERN_ERR, LOG_INIT,
+>>               "2710 PCI channel disable preparing for reset\n");
+>>
+>> @@ -9812,7 +9818,8 @@ lpfc_sli_prep_dev_for_reset(struct lpfc_hba *phba)
+>>
+>>       /* Disable interrupt and pci device */
+>>       lpfc_sli_disable_intr(phba);
+>> -    pci_disable_device(phba->pcidev);
+>> +    if (phba->probe_done && phba->pcidev)
+>> +        pci_disable_device(phba->pcidev);
+>>   }
+>>
+>>   /**
+>> @@ -10282,6 +10289,9 @@ lpfc_pci_probe_one_s4(struct pci_dev *pdev, 
+>> const struct pci_device_id *pid)
+>>           goto out_disable_intr;
+>>       }
+>>
+>> +    /* Set probe_done flag */
+>> +    phba->probe_done = 1;
+>> +
+>>       /* Log the current active interrupt mode */
+>>       phba->intr_mode = intr_mode;
+>>       lpfc_log_intr_mode(phba, intr_mode);
+>> @@ -10544,6 +10554,9 @@ lpfc_sli4_prep_dev_for_recover(struct 
+>> lpfc_hba *phba)
+>>   static void
+>>   lpfc_sli4_prep_dev_for_reset(struct lpfc_hba *phba)
+>>   {
+>> +    if (!phba)
+>> +        return;
+>> +
+>>       lpfc_printf_log(phba, KERN_ERR, LOG_INIT,
+>>               "2826 PCI channel disable preparing for reset\n");
+>>
+>> @@ -10562,7 +10575,9 @@ lpfc_sli4_prep_dev_for_reset(struct lpfc_hba 
+>> *phba)
+>>       /* Disable interrupt and pci device */
+>>       lpfc_sli4_disable_intr(phba);
+>>       lpfc_sli4_queue_destroy(phba);
+>> -    pci_disable_device(phba->pcidev);
+>> +
+>> +    if (phba->probe_done && phba->pcidev)
+>> +        pci_disable_device(phba->pcidev);
+>>   }
+>>
+>>   /**
+>> @@ -10893,9 +10908,21 @@ static pci_ers_result_t
+>>   lpfc_io_error_detected(struct pci_dev *pdev, pci_channel_state_t 
+>> state)
+>>   {
+>>       struct Scsi_Host *shost = pci_get_drvdata(pdev);
+>> -    struct lpfc_hba *phba = ((struct lpfc_vport 
+>> *)shost->hostdata)->phba;
+>> +    struct lpfc_hba *phba;
+>>       pci_ers_result_t rc = PCI_ERS_RESULT_DISCONNECT;
+>>
+>> +    if (!shost)
+>> +        /* Run here means it may during probe state and
+>> +         * Scsi_Host has not been created and We can do nothing
+>> +         * in this state so call for hotplug*/
+>> +        return PCI_ERS_RESULT_NONE;
+>> +
+>> +    phba = ((struct lpfc_vport *)shost->hostdata)->phba;
+>> +
+>> +    if (!phba || !phba->probe_done)
+>> +        /* Run here means it may during probe state */
+>> +        return PCI_ERS_RESULT_NONE;
+>> +
+>>       switch (phba->pci_dev_grp) {
+>>       case LPFC_PCI_DEV_LP:
+>>           rc = lpfc_io_error_detected_s3(pdev, state);
+>> @@ -10930,9 +10957,20 @@ static pci_ers_result_t
+>>   lpfc_io_slot_reset(struct pci_dev *pdev)
+>>   {
+>>       struct Scsi_Host *shost = pci_get_drvdata(pdev);
+>> -    struct lpfc_hba *phba = ((struct lpfc_vport 
+>> *)shost->hostdata)->phba;
+>> +    struct lpfc_hba *phba;
+>>       pci_ers_result_t rc = PCI_ERS_RESULT_DISCONNECT;
+>>
+>> +    if (!shost)
+>> +        /* Run here means it may during probe state and
+>> +         * Scsi_Host has not been created */
+>> +        return PCI_ERS_RESULT_NONE;
+>> +
+>> +    phba = ((struct lpfc_vport *)shost->hostdata)->phba;
+>> +
+>> +    if (!phba || !phba->probe_done)
+>> +        /* Run here means it may during probe state */
+>> +        return PCI_ERS_RESULT_NONE;
+>> +
+>>       switch (phba->pci_dev_grp) {
+>>       case LPFC_PCI_DEV_LP:
+>>           rc = lpfc_io_slot_reset_s3(pdev);
+>> @@ -10963,7 +11001,18 @@ static void
+>>   lpfc_io_resume(struct pci_dev *pdev)
+>>   {
+>>       struct Scsi_Host *shost = pci_get_drvdata(pdev);
+>> -    struct lpfc_hba *phba = ((struct lpfc_vport 
+>> *)shost->hostdata)->phba;
+>> +    struct lpfc_hba *phba;
+>> +
+>> +    if (!shost)
+>> +        /* Run here means it may during probe state and
+>> +         * Scsi_Host has not been created */
+>> +        return;
+>> +
+>> +    phba = ((struct lpfc_vport *)shost->hostdata)->phba;
+>> +
+>> +    if (!phba || !phba->probe_done)
+>> +        /* Run here means it may during probe state */
+>> +        return;
+>>
+>>       switch (phba->pci_dev_grp) {
+>>       case LPFC_PCI_DEV_LP:
+>
+>
 
-I'll be continuing to work (along with Arnd and others) on getting the
-kernel internals migrated to 64bit time, and then eventually exporting
-64bit syscalls for userspace to use. Further discussion, feedback and
-help is of course welcome!
-
-thanks
--john
