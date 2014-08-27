@@ -1,432 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752290AbaH0HGS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 03:06:18 -0400
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.142]:12999 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750965AbaH0HGQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 03:06:16 -0400
-X-Env-Sender: Andreas.Werner@men.de
-X-Msg-Ref: server-13.tower-179.messagelabs.com!1409123172!38525125!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Wed, 27 Aug 2014 09:06:13 +0200
-Date: Wed, 27 Aug 2014 09:58:08 +0200
-From: Andreas Werner <andreas.werner@men.de>
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Andreas Werner <andreas.werner@men.de>, <linux-kernel@vger.kernel.org>,
-        <sameo@linux.intel.com>, <lee.jones@linaro.org>, <wim@iguana.be>,
-        <linux-watchdog@vger.kernel.org>, <cooloney@gmail.com>,
-        <rpurdie@rpsys.net>, <linux-leds@vger.kernel.org>, <jdelvare@suse.de>,
-        <lm-sensors@lm-sensors.org>, <johannes.thumshirn@men.de>
-Subject: Re: [PATCH v5 4/4] drivers/hwmon/menf21bmc_hwmon: introduce
- MEN14F021P00 BMC HWMON driver
-Message-ID: <20140827075806.GA1876@awelinux>
-References: <cover.1409074255.git.andreas.werner@men.de>
- <35eb5fcf2fd6efd96810831eb4649a458dbdeec9.1409074255.git.andreas.werner@men.de>
- <20140826171541.GA12190@roeck-us.net>
+	id S1752674AbaH0HH6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 03:07:58 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39885 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751607AbaH0HH4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 03:07:56 -0400
+Message-ID: <53FD83B4.1030507@zytor.com>
+Date: Wed, 27 Aug 2014 00:07:32 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140826171541.GA12190@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [192.1.1.171]
+To: Paolo Bonzini <pbonzini@redhat.com>, Andy Lutomirski <luto@amacapital.net>
+CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Kees Cook <keescook@chromium.org>,
+        kvm list <kvm@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Gleb Natapov <gleb@kernel.org>, Andrew Honig <ahonig@google.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>, X86 ML <x86@kernel.org>,
+        Bandan Das <bsd@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Alok Kataria <akataria@vmware.com>,
+        virtualization@lists.linux-foundation.org
+Subject: Re: GET_RNG_SEED hypercall ABI? (Re: [PATCH v5 0/5] random,x86,kvm:
+ Rework arch RNG seeds and get some from kvm)
+References: <CALCETrV5U61C-gkikZtddd5RtZWFVRpkjVk69B+ymvy=xauLaQ@mail.gmail.com> <53FD81F5.6030701@redhat.com>
+In-Reply-To: <53FD81F5.6030701@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 10:15:41AM -0700, Guenter Roeck wrote:
-> On Tue, Aug 26, 2014 at 07:46:53PM +0200, Andreas Werner wrote:
-> > Added driver to support the 14F021P00 BMC Hardware Monitoring.
-> > The BMC is a Board Management Controller including monitoring of the
-> > board voltages.
-> > 
-> > Signed-off-by: Andreas Werner <andreas.werner@men.de>
+On 08/27/2014 12:00 AM, Paolo Bonzini wrote:
+> Il 27/08/2014 01:58, Andy Lutomirski ha scritto:
+>> hpa pointed out that the ABI that I chose (an MSR from the KVM range
+>> and a KVM cpuid bit) is unnecessarily KVM-specific.  It would be nice
+>> to allocate an MSR that everyone involved can agree on and, rather
+>> than relying on a cpuid bit, just have the guest probe for the MSR.
+>>
+>> This leads to a few questions:
+>>
+>> 1. How do we allocate an MSR?  (For background, this would be an MSR
+>> that either returns 64 bits of best-effort cryptographically secure
+>> random data or fails with #GP.)
 > 
-> Hi Andreas,
-> 
-> Couple of additional comments below. Sorry I didn't notice earlier.
-> 
-> Guenter
-> 
-> > ---
-> >  Documentation/hwmon/menf21bmc   |  49 +++++++++
-> >  drivers/hwmon/Kconfig           |   7 ++
-> >  drivers/hwmon/Makefile          |   1 +
-> >  drivers/hwmon/menf21bmc_hwmon.c | 230 ++++++++++++++++++++++++++++++++++++++++
-> >  4 files changed, 287 insertions(+)
-> >  create mode 100644 Documentation/hwmon/menf21bmc
-> >  create mode 100644 drivers/hwmon/menf21bmc_hwmon.c
-> > 
-> > diff --git a/Documentation/hwmon/menf21bmc b/Documentation/hwmon/menf21bmc
-> > new file mode 100644
-> > index 0000000..22b6840
-> > --- /dev/null
-> > +++ b/Documentation/hwmon/menf21bmc
-> > @@ -0,0 +1,49 @@
-> > +Kernel driver menf21bmc_hwmon
-> > +=============================
-> > +
-> > +Supported chips:
-> > +	* MEN 14F021P00
-> > +	  Prefix: 'menf21bmc_hwmon'
-> > +	  Adresses scanned: -
-> > +
-> > +Author: Andreas Werner <andreas.werner@men.de>
-> > +
-> > +Description
-> > +-----------
-> > +
-> > +The menf21bmc is a Board Management Controller (BMC) which provides an I2C
-> > +interface to the host to access the features implemented in the BMC.
-> > +
-> > +This driver gives access to the voltage monitoring feature of the main
-> > +voltages of the board.
-> > +The voltage sensors are connected to the ADC inputs of the BMC which is
-> > +a PIC16F917 Mikrocontroller.
-> > +
-> > +Usage Notes
-> > +-----------
-> > +
-> > +This driver does not auto-detect devices. You will have to instantiate the
-> > +devices explicitly. Please see Documentation/i2c/instantiating-devices for
-> > +details.
-> > +
-> > +Sysfs entries
-> > +-------------
-> > +
-> > +The following attributes are supported. All attributes are read only
-> > +The Limits are read once by the driver.
-> > +
-> > +in0_input	+3.3V input voltage
-> > +in1_input	+5.0V input voltage
-> > +in2_input	+12.0V input voltage
-> > +in3_input	+5V Standby input voltage
-> > +in4_input	VBAT (on board battery)
-> > +
-> > +in[0-4]_min	Minimum voltage limit
-> > +in[0-4]_max	Maximum voltage limit
-> > +
-> > +in0_label	"MON_3_3V"
-> > +in1_label	"MON_5V"
-> > +in2_label	"MON_12V"
-> > +in3_label	"5V_STANDBY"
-> > +in4_label	"VBAT"
-> > +
-> 
-> The empty line adds a whitespace error when applying the patch.
->
+> Ask Intel? :)
 
-OK, will delete the line.
- 
-> > diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-> > index 37908ff..db3a6eb 100644
-> > --- a/drivers/hwmon/Kconfig
-> > +++ b/drivers/hwmon/Kconfig
-> > @@ -828,6 +828,13 @@ config SENSORS_MCP3021
-> >  	  This driver can also be built as a module.  If so, the module
-> >  	  will be called mcp3021.
-> >  
-> > +config SENSORS_MENF21BMC_HWMON
-> > +	tristate "MEN 14F021P00 BMC Hardware Monitoring"
-> > +	depends on MFD_MENF21BMC
-> > +	help
-> > +	  Say Y here to include support for the MEN 14F021P00 BMC
-> > +	  hardware monitoring.
-> > +
-> It is customary to add a note describing how the module is called
-> if the driver is built as module.
-> 
+I'm going to poke around internally.  Intel might as a matter of policy
+be reluctant to assign an MSR index specifically for software use, but
+I'll try to find out.
 
-OK i just write a line which describes the module name.
+	-hpa
 
-> >  config SENSORS_ADCXX
-> >  	tristate "National Semiconductor ADCxxxSxxx"
-> >  	depends on SPI_MASTER
-> > diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-> > index 1362382..56ab872 100644
-> > --- a/drivers/hwmon/Makefile
-> > +++ b/drivers/hwmon/Makefile
-> > @@ -114,6 +114,7 @@ obj-$(CONFIG_SENSORS_MAX6650)	+= max6650.o
-> >  obj-$(CONFIG_SENSORS_MAX6697)	+= max6697.o
-> >  obj-$(CONFIG_SENSORS_MC13783_ADC)+= mc13783-adc.o
-> >  obj-$(CONFIG_SENSORS_MCP3021)	+= mcp3021.o
-> > +obj-$(CONFIG_SENSORS_MENF21BMC_HWMON) += menf21bmc_hwmon.o
-> >  obj-$(CONFIG_SENSORS_NCT6683)	+= nct6683.o
-> >  obj-$(CONFIG_SENSORS_NCT6775)	+= nct6775.o
-> >  obj-$(CONFIG_SENSORS_NTC_THERMISTOR)	+= ntc_thermistor.o
-> > diff --git a/drivers/hwmon/menf21bmc_hwmon.c b/drivers/hwmon/menf21bmc_hwmon.c
-> > new file mode 100644
-> > index 0000000..2eaec6a
-> > --- /dev/null
-> > +++ b/drivers/hwmon/menf21bmc_hwmon.c
-> > @@ -0,0 +1,230 @@
-> > +/*
-> > + *  MEN 14F021P00 Board Management Controller (BMC) hwmon driver.
-> > + *
-> > + *  This is the core hwmon driver of the MEN 14F021P00 BMC.
-> > + *  The BMC monitors the board voltages which can be access with this
-> > + *  driver through sysfs.
-> > + *
-> > + *  Copyright (C) 2014 MEN Mikro Elektronik Nuernberg GmbH
-> > + *
-> > + *  This program is free software; you can redistribute  it and/or modify it
-> > + *  under  the terms of  the GNU General  Public License as published by the
-> > + *  Free Software Foundation;  either version 2 of the  License, or (at your
-> > + *  option) any later version.
-> > + */
-> > +
-> > +#include <linux/module.h>
-> > +#include <linux/kernel.h>
-> > +#include <linux/platform_device.h>
-> > +#include <linux/hwmon.h>
-> > +#include <linux/hwmon-sysfs.h>
-> > +#include <linux/jiffies.h>
-> > +#include <linux/slab.h>
-> > +#include <linux/i2c.h>
-> > +
-> > +#define DRV_NAME  "menf21bmc_hwmon"
-> > +
-> > +#define BMC_VOLT_COUNT	5
-> > +#define MENF21BMC_V33	0
-> > +#define MENF21BMC_V5	1
-> > +#define MENF21BMC_V12	2
-> > +#define MENF21BMC_V5_SB	3
-> > +#define MENF21BMC_VBAT	4
-> > +
-> > +#define IDX_TO_VOLT_MIN_CMD(idx) (0x40 + idx)
-> > +#define IDX_TO_VOLT_MAX_CMD(idx) (0x50 + idx)
-> > +#define IDX_TO_VOLT_INP_CMD(idx) (0x60 + idx)
-> > +
-> > +struct menf21bmc_hwmon {
-> > +	char valid;
-> 
-> Please use bool (and true / false to set it). char doesn't
-> save anything and may actually increase code size depending
-> on the architecture.
-> 
-
-Ok.
-
-> > +	struct i2c_client *i2c_client;
-> > +	unsigned long last_update;
-> > +	u16 in_val[BMC_VOLT_COUNT];
-> > +	u16 in_min[BMC_VOLT_COUNT];
-> > +	u16 in_max[BMC_VOLT_COUNT];
-> > +};
-> > +
-> > +static const char *const input_names[] = {
-> > +	[MENF21BMC_V33]		= "MON_3_3V",
-> > +	[MENF21BMC_V5]		= "MON_5V",
-> > +	[MENF21BMC_V12]		= "MON_12V",
-> > +	[MENF21BMC_V5_SB]	= "5V_STANDBY",
-> > +	[MENF21BMC_VBAT]	= "VBAT"
-> > +};
-> > +
-> > +static struct menf21bmc_hwmon *menf21bmc_hwmon_update(struct device *dev)
-> > +{
-> > +	int i;
-> > +	uint16_t val;
-> 
-> That doesn't work well with the checks against < 0.
-> Please compile with W=1 to find all instances of this problem
-> (there is another one below).
-> 
-
-Argh, hate myself.
-
-> > +	struct menf21bmc_hwmon *drv_data = dev_get_drvdata(dev);
-> > +	struct menf21bmc_hwmon *data_ret = drv_data;
-> > +
-> > +	if (time_after(jiffies, drv_data->last_update + HZ) || !drv_data->valid) {
-> 
-> Line over 80 characters.
-> 
-
-Yes, checkpatch gave me a warning, but a thought it is better so let
-it as it is instead of split the "if" line.
-But it is no problem to change that.
-
-> > +		for (i = 0; i < BMC_VOLT_COUNT; i++) {
-> > +			val = i2c_smbus_read_word_data(drv_data->i2c_client,
-> > +						       IDX_TO_VOLT_INP_CMD(i));
-> > +			if (val < 0) {
-> > +				data_ret = ERR_PTR(val);
-> > +				goto abort;
-> > +			}
-> > +			drv_data->in_val[i] = val;
-> > +		}
-> > +		drv_data->last_update = jiffies;
-> > +		drv_data->valid = 1;
-> > +	}
-> > +abort:
-> > +	return data_ret;
-> > +}
-> > +
-> > +static int menf21bmc_hwmon_get_volt_limits(struct menf21bmc_hwmon *drv_data)
-> > +{
-> > +	int i;
-> > +	uint16_t val;
-> > +
-> > +	for (i = 0; i < BMC_VOLT_COUNT; i++) {
-> > +		val = i2c_smbus_read_word_data(drv_data->i2c_client,
-> > +					       IDX_TO_VOLT_MIN_CMD(i));
-> > +		if (val < 0)
-> > +			return val;
-> > +
-> > +		drv_data->in_min[i] = val;
-> > +
-> > +		val = i2c_smbus_read_word_data(drv_data->i2c_client,
-> > +					       IDX_TO_VOLT_MAX_CMD(i));
-> > +		if (val < 0)
-> > +			return val;
-> > +
-> > +		drv_data->in_max[i] = val;
-> > +	}
-> > +	return 0;
-> > +}
-> > +
-> > +static ssize_t
-> > +show_label(struct device *dev, struct device_attribute *devattr, char *buf)
-> > +{
-> > +	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
-> > +
-> > +	return sprintf(buf, "%s\n", input_names[attr->index]);
-> > +}
-> > +
-> > +static ssize_t
-> > +show_in(struct device *dev, struct device_attribute *devattr, char *buf)
-> > +{
-> > +	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
-> > +	struct menf21bmc_hwmon *drv_data = menf21bmc_hwmon_update(dev);
-> > +
-> > +	if (IS_ERR(drv_data))
-> > +		return PTR_ERR(drv_data);
-> > +
-> > +	return sprintf(buf, "%d\n", drv_data->in_val[attr->index]);
-> > +}
-> > +
-> > +static ssize_t
-> > +show_min(struct device *dev, struct device_attribute *devattr, char *buf)
-> > +{
-> > +	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
-> > +	struct menf21bmc_hwmon *drv_data = dev_get_drvdata(dev);
-> > +
-> > +	return sprintf(buf, "%d\n", drv_data->in_min[attr->index]);
-> > +}
-> > +
-> > +static ssize_t
-> > +show_max(struct device *dev, struct device_attribute *devattr, char *buf)
-> > +{
-> > +	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
-> > +	struct menf21bmc_hwmon *drv_data = dev_get_drvdata(dev);
-> > +
-> > +	return sprintf(buf, "%d\n", drv_data->in_max[attr->index]);
-> > +}
-> > +
-> > +#define create_voltage_sysfs(idx)			\
-> > +static SENSOR_DEVICE_ATTR(in##idx##_input, S_IRUGO,	\
-> > +			show_in, NULL, idx);		\
-> > +static SENSOR_DEVICE_ATTR(in##idx##_min, S_IRUGO,	\
-> > +			show_min, NULL, idx);		\
-> > +static SENSOR_DEVICE_ATTR(in##idx##_max, S_IRUGO,	\
-> > +			show_max, NULL, idx);		\
-> > +static SENSOR_DEVICE_ATTR(in##idx##_label, S_IRUGO,	\
-> > +			show_label, NULL, idx);
-> > +
-> > +create_voltage_sysfs(0);
-> > +create_voltage_sysfs(1);
-> > +create_voltage_sysfs(2);
-> > +create_voltage_sysfs(3);
-> > +create_voltage_sysfs(4);
-> > +
-> > +static struct attribute *menf21bmc_hwmon_attrs[] = {
-> > +	&sensor_dev_attr_in0_input.dev_attr.attr,
-> > +	&sensor_dev_attr_in0_min.dev_attr.attr,
-> > +	&sensor_dev_attr_in0_max.dev_attr.attr,
-> > +	&sensor_dev_attr_in0_label.dev_attr.attr,
-> > +
-> > +	&sensor_dev_attr_in1_input.dev_attr.attr,
-> > +	&sensor_dev_attr_in1_min.dev_attr.attr,
-> > +	&sensor_dev_attr_in1_max.dev_attr.attr,
-> > +	&sensor_dev_attr_in1_label.dev_attr.attr,
-> > +
-> > +	&sensor_dev_attr_in2_input.dev_attr.attr,
-> > +	&sensor_dev_attr_in2_min.dev_attr.attr,
-> > +	&sensor_dev_attr_in2_max.dev_attr.attr,
-> > +	&sensor_dev_attr_in2_label.dev_attr.attr,
-> > +
-> > +	&sensor_dev_attr_in3_input.dev_attr.attr,
-> > +	&sensor_dev_attr_in3_min.dev_attr.attr,
-> > +	&sensor_dev_attr_in3_max.dev_attr.attr,
-> > +	&sensor_dev_attr_in3_label.dev_attr.attr,
-> > +
-> > +	&sensor_dev_attr_in4_input.dev_attr.attr,
-> > +	&sensor_dev_attr_in4_min.dev_attr.attr,
-> > +	&sensor_dev_attr_in4_max.dev_attr.attr,
-> > +	&sensor_dev_attr_in4_label.dev_attr.attr,
-> > +	NULL
-> > +};
-> > +
-> > +ATTRIBUTE_GROUPS(menf21bmc_hwmon);
-> > +
-> > +static int menf21bmc_hwmon_probe(struct platform_device *pdev)
-> > +{
-> > +	int ret;
-> > +	struct menf21bmc_hwmon *drv_data;
-> > +	struct i2c_client *i2c_client = to_i2c_client(pdev->dev.parent);
-> > +	struct device *hwmon_dev;
-> > +
-> > +	drv_data = devm_kzalloc(&pdev->dev, sizeof(struct menf21bmc_hwmon),
-> > +				GFP_KERNEL);
-> > +	if (!drv_data)
-> > +		return -ENOMEM;
-> > +
-> > +	drv_data->i2c_client = i2c_client;
-> > +
-> > +	ret = menf21bmc_hwmon_get_volt_limits(drv_data);
-> > +	if (ret) {
-> > +		dev_err(&pdev->dev, "failed to read sensor limits");
-> > +		return ret;
-> > +	}
-> > +
-> > +	hwmon_dev = devm_hwmon_device_register_with_groups(&pdev->dev,
-> > +							   "menf21bmc", drv_data,
-> > +							   menf21bmc_hwmon_groups);
-> 
-> Line over 80 characters. Just use less indentation for the continuation lines.
-> 
-
-Same as above, checkpatch gave me a warning. I just wanted to align it to the "("
-but no problem to change that.
-
-> > +	if (IS_ERR(hwmon_dev))
-> > +		return PTR_ERR(hwmon_dev);
-> > +
-> > +	dev_info(&pdev->dev, "MEN 14F021P00 BMC hwmon device enabled");
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static struct platform_driver menf21bmc_hwmon = {
-> > +	.probe		= menf21bmc_hwmon_probe,
-> > +	.driver		= {
-> > +		.name		= DRV_NAME,
-> > +		.owner		= THIS_MODULE,
-> > +	},
-> > +};
-> > +
-> > +module_platform_driver(menf21bmc_hwmon);
-> > +
-> > +MODULE_AUTHOR("Andreas Werner <andreas.werner@men.de>");
-> > +MODULE_DESCRIPTION("MEN 14F021P00 BMC hwmon");
-> > +MODULE_LICENSE("GPL v2");
-> > +MODULE_ALIAS("platform:menf21bmc_hwmon");
-> > -- 
-> > 2.0.4
-> > 
-> > 
