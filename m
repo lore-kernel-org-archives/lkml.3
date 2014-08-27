@@ -1,182 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934613AbaH0Njj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 09:39:39 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:53501 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933757AbaH0Njh convert rfc822-to-8bit (ORCPT
+	id S934682AbaH0Njs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 09:39:48 -0400
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:34127 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933757AbaH0Njp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 09:39:37 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH 2/2] pinctrl: qcom: Add support for reset for apq8064
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1409077867-9446-2-git-send-email-pramod.gurav@smartplayin.com>
-Date: Wed, 27 Aug 2014 08:39:32 -0500
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Andy Gross <agross@codeaurora.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <53BA5DC2-68CB-4B61-A090-E8415EEBCF44@codeaurora.org>
-References: <1409077867-9446-1-git-send-email-pramod.gurav@smartplayin.com> <1409077867-9446-2-git-send-email-pramod.gurav@smartplayin.com>
-To: Pramod Gurav <pramod.gurav@smartplayin.com>
-X-Mailer: Apple Mail (2.1878.6)
+	Wed, 27 Aug 2014 09:39:45 -0400
+Date: Wed, 27 Aug 2014 14:39:36 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        sameo@linux.intel.com, lgirdwood@gmail.com, broonie@kernel.org,
+        a.zummo@towertech.it, mturquette@linaro.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
+        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
+        xxx@rock-chips.com, dianders@chromium.org, heiko@sntech.de,
+        olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
+        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com
+Subject: Re: [PATCH v6 2/5] MFD: RK808: Add new mfd driver for RK808
+Message-ID: <20140827133936.GD6364@lee--X1>
+References: <1409062444-12019-1-git-send-email-zyw@rock-chips.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1409062444-12019-1-git-send-email-zyw@rock-chips.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 26 Aug 2014, Chris Zhong wrote:
 
-On Aug 26, 2014, at 1:31 PM, Pramod Gurav <pramod.gurav@smartplayin.com> wrote:
-
-> This patch adds support for reset functions to reboot the boards
-> with soc apq8064.
+> The RK808 chip is a power management IC for multimedia and handheld
+> devices. It contains the following components:
 > 
-> CC: Linus Walleij <linus.walleij@linaro.org>
-> CC: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-> CC: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> CC: Stephen Boyd <sboyd@codeaurora.org>
-> CC: Andy Gross <agross@codeaurora.org>
-> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+> - Regulators
+> - RTC
+> - Clkout
+> 
+> The RK808 core driver is registered as a platform driver and provides
+> communication through I2C with the host device for the different
+> components.
+> 
+> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+> Signed-off-by: Zhang Qing <zhangqing@rock-chips.com>
+> 
 > ---
-> drivers/pinctrl/qcom/pinctrl-apq8064.c |    7 +++++-
-> drivers/pinctrl/qcom/pinctrl-msm.c     |   36 ++++++++++++++++++++++++++++++++
-> 2 files changed, 42 insertions(+), 1 deletions(-)
 > 
-> diff --git a/drivers/pinctrl/qcom/pinctrl-apq8064.c b/drivers/pinctrl/qcom/pinctrl-apq8064.c
-> index feb6f15..ef1263c 100644
-> --- a/drivers/pinctrl/qcom/pinctrl-apq8064.c
-> +++ b/drivers/pinctrl/qcom/pinctrl-apq8064.c
-> @@ -324,6 +324,7 @@ enum apq8064_functions {
-> 	APQ_MUX_tsif1,
-> 	APQ_MUX_tsif2,
-> 	APQ_MUX_usb2_hsic,
-> +	APQ_MUX_ps_hold,
-> 	APQ_MUX_NA,
-> };
+> Changes in v6:
+> Adviced by Lee Jones in v2
+> - rk808_i2c_client instead of g_rk808
+> - remove pdata form struct rk808
 > 
-> @@ -351,6 +352,9 @@ static const char * const gpio_groups[] = {
-> 	"gpio78", "gpio79", "gpio80", "gpio81", "gpio82", "gpio83", "gpio84",
-> 	"gpio85", "gpio86", "gpio87", "gpio88", "gpio89"
-> };
-> +static const char * const ps_hold_groups[] = {
-> +	"gpio78"
-> +};
-> static const char * const gsbi1_groups[] = {
-> 	"gpio18", "gpio19", "gpio20", "gpio21"
-> };
-> @@ -477,6 +481,7 @@ static const struct msm_function apq8064_functions[] = {
-> 	FUNCTION(tsif1),
-> 	FUNCTION(tsif2),
-> 	FUNCTION(usb2_hsic),
-> +	FUNCTION(ps_hold),
-> };
+> Changes in v5: None
+> Changes in v4:
+> Adviced by Lee Jones in v2
+> - modify the description in Kconfig
+> - remove some unnecessary header files
+> - remove dev from struct rk808
+> - use enum for define RK808_ID...
 > 
-> static const struct msm_pingroup apq8064_groups[] = {
-> @@ -558,7 +563,7 @@ static const struct msm_pingroup apq8064_groups[] = {
-> 	PINGROUP(75, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
-> 	PINGROUP(76, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
-> 	PINGROUP(77, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
-> -	PINGROUP(78, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
-> +	PINGROUP(78, ps_hold, NA, NA, NA, NA, NA, NA, NA, NA, NA),
-> 	PINGROUP(79, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
-> 	PINGROUP(80, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
-> 	PINGROUP(81, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
-> diff --git a/drivers/pinctrl/qcom/pinctrl-msm.c b/drivers/pinctrl/qcom/pinctrl-msm.c
-> index 2738108..f4e4f8f 100644
-> --- a/drivers/pinctrl/qcom/pinctrl-msm.c
-> +++ b/drivers/pinctrl/qcom/pinctrl-msm.c
-> @@ -12,6 +12,7 @@
->  * GNU General Public License for more details.
->  */
+> Changes in v3:
+> - fix compile err
 > 
-> +#include <linux/delay.h>
-> #include <linux/err.h>
-> #include <linux/io.h>
-> #include <linux/module.h>
-> @@ -27,12 +28,17 @@
-> #include <linux/interrupt.h>
-> #include <linux/spinlock.h>
+> Changes in v2:
+> Adviced by Mark Browm:
+> - use defines for register setting value
+> - remove rtc alarm disable in shutdown
+> - remove while(1) in shutdown
+> - remove read 0x2f in probe
 > 
-> +#include <asm/system_misc.h>
-> +
-> #include "../core.h"
-> #include "../pinconf.h"
-> #include "pinctrl-msm.h"
-> #include "../pinctrl-utils.h"
-> 
-> #define MAX_NR_GPIO 300
-> +#define PS_HOLD_OFFSET 0x820
-> +
-> +static void __iomem *msm_ps_hold;
-> 
-> /**
->  * struct msm_pinctrl - state for a pinctrl-msm device
-> @@ -848,10 +854,31 @@ static int msm_gpio_init(struct msm_pinctrl *pctrl)
-> 	return 0;
-> }
-> 
-> +static void qcom_reset(enum reboot_mode reboot_mode, const char *cmd)
+>  drivers/mfd/Kconfig       |   13 +++
+>  drivers/mfd/Makefile      |    1 +
+>  drivers/mfd/rk808.c       |  257 +++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/rk808.h |  202 +++++++++++++++++++++++++++++++++++
+>  4 files changed, 473 insertions(+)
+>  create mode 100644 drivers/mfd/rk808.c
+>  create mode 100644 include/linux/mfd/rk808.h
+
+[...]
+
+> diff --git a/drivers/mfd/rk808.c b/drivers/mfd/rk808.c
+> new file mode 100644
+> index 0000000..f0d6518
+> --- /dev/null
+> +++ b/drivers/mfd/rk808.c
+
+[...]
+
+> +static int rk808_probe(struct i2c_client *client,
+> +		       const struct i2c_device_id *id)
 > +{
-> +	writel(0, msm_ps_hold);
-> +	mdelay(10000);
-> +}
+> +	int ret;
+> +	int pm_off = 0;
+> +	struct rk808 *rk808;
+> +	struct device_node *np = client->dev.of_node;
+
+Are you prepared for np == NULL?
+
+> +	pm_off = of_property_read_bool(np,
+> +				       "rockchip,system-power-controller");
+
+Rather than have this floating up here, can you put it down where it
+is used?
+
+> +	rk808 = devm_kzalloc(&client->dev, sizeof(*rk808), GFP_KERNEL);
+> +	if (!rk808)
+> +		return -ENOMEM;
 > +
-> +const struct msm_function
-> +*find_pshold_function(const struct msm_function *functions,
-> +					unsigned nfunctions, const char *name)
-> +{
-> +	int i = 0;
-> +	const struct msm_function *func;
+> +	rk808->i2c = client;
+> +	i2c_set_clientdata(client, rk808);
+
+I tend to like drive data set at the last moment.  Usually just
+before mfd_add_devices().
+
+> +	rk808->regmap = devm_regmap_init_i2c(client, &rk808_regmap_config);
+> +	if (IS_ERR(rk808->regmap)) {
+> +		dev_err(&client->dev, "regmap initialization failed\n");
+> +		return PTR_ERR(rk808->regmap);
+> +	}
 > +
-> +	for (func = functions; i <= nfunctions; func++, i++)
-> +		if (!strcmp(func->name, name))
-> +			return func;
-> +
-> +	return NULL;
-> +}
-> +
-> int msm_pinctrl_probe(struct platform_device *pdev,
-> 		      const struct msm_pinctrl_soc_data *soc_data)
-> {
-> 	struct msm_pinctrl *pctrl;
-> +	const struct msm_function *func;
-> 	struct resource *res;
-> 	int ret;
-> 
-> @@ -871,6 +898,15 @@ int msm_pinctrl_probe(struct platform_device *pdev,
-> 	if (IS_ERR(pctrl->regs))
-> 		return PTR_ERR(pctrl->regs);
-> 
-> +#ifdef CONFIG_ARM
-> +	func = find_pshold_function(soc_data->functions,
-> +					soc_data->nfunctions, "ps_hold");
-> +	if (func) {
-> +		dev_dbg(&pdev->dev, "Found Function %s\n", func->name);
-> +		msm_ps_hold = pctrl->regs + PS_HOLD_OFFSET;
-> +		arm_pm_restart = qcom_reset;
+> +	ret = rk808_pre_init(rk808);
+> +	if (ret)
+> +		return ret;
+
+Does this need to be a seperate function?  It's only one call to
+egmap_update_bits() and is not reused.
+
+> +	if (!client->irq) {
+> +		dev_err(&client->dev, "No interrupt support, no core IRQ\n");
+> +		return -EINVAL;
 > +	}
 
-If we keep this we probably should add something like:
+If this is a show stopper, perhaps you should test for it higher up
+before allocating anything else?
 
-#else
-#error “not supported on this arch"
+> +	ret = regmap_add_irq_chip(rk808->regmap, client->irq,
+> +				  IRQF_ONESHOT, -1,
+> +				  &rk808_irq_chip, &rk808->irq_data);
+> +	if (ret) {
+> +		dev_err(&client->dev, "Failed to add irq_chip %d\n", ret);
+> +		return ret;
+> +	}
+> +
+> +	ret = mfd_add_devices(&client->dev, -1,
+> +			      rk808s, ARRAY_SIZE(rk808s),
+> +			      NULL, 0, regmap_irq_get_domain(rk808->irq_data));
+> +	if (ret) {
+> +		dev_err(&client->dev, "failed to add MFD devices %d\n", ret);
+> +		goto err_irq;
+> +	}
+> +
+> +	if (pm_off && !pm_power_off) {
+> +		rk808_i2c_client = client;
+> +		pm_power_off = rk808_device_shutdown;
+> +	}
+> +
+> +	return 0;
+> +
+> +err_irq:
+> +	regmap_del_irq_chip(client->irq, rk808->irq_data);
+> +	return ret;
+> +}
+> +
+> +static int rk808_remove(struct i2c_client *client)
+> +{
+> +	struct rk808 *rk808 = i2c_get_clientdata(client);
+> +
+> +	regmap_del_irq_chip(client->irq, rk808->irq_data);
+> +	mfd_remove_devices(&client->dev);
+> +	pm_power_off = NULL;
 
-> +#endif
-> 	pctrl->irq = platform_get_irq(pdev, 0);
-> 	if (pctrl->irq < 0) {
-> 		dev_err(&pdev->dev, "No interrupt defined for msmgpio\n");
-> -- 
-> 1.7.0.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+'\n' here.  No need to squash everything together.
+
+> +	return 0;
+> +}
+> +
+> +static struct of_device_id rk808_of_match[] = {
+> +	{ .compatible = "rockchip,rk808" },
+> +};
+> +MODULE_DEVICE_TABLE(of, rk808_of_match);
+> +
+> +static const struct i2c_device_id rk808_ids[] = {
+> +	 { "rk808" },
+> +};
+> +
+> +MODULE_DEVICE_TABLE(i2c, rk808_ids);
+
+My OCD senses are tingling.  Either have a blank line above the calls
+to MODULE_DEVICE_TABLE() or don't.
+
+> +static struct i2c_driver rk808_i2c_driver = {
+> +	.driver = {
+> +		.name = "rk808",
+> +		.of_match_table = of_match_ptr(rk808_of_match),
+> +	},
+> +	.probe    = rk808_probe,
+> +	.remove   = rk808_remove,
+> +	.id_table = rk808_ids,
+> +};
+> +
+> +module_i2c_driver(rk808_i2c_driver);
+> +
+> +MODULE_LICENSE("GPL");
+> +MODULE_AUTHOR("Chris Zhong <zyw@rock-chips.com>");
+> +MODULE_AUTHOR("Zhang Qing <zhangqing@rock-chips.com>");
+> +MODULE_DESCRIPTION("RK808 PMIC driver");
+> diff --git a/include/linux/mfd/rk808.h b/include/linux/mfd/rk808.h
+> new file mode 100644
+> index 0000000..7af1952
+> --- /dev/null
+> +++ b/include/linux/mfd/rk808.h
+> @@ -0,0 +1,202 @@
+
+[...]
+
+> +struct rk808_board {
+> +	struct regulator_init_data *rk808_init_data[RK808_NUM_REGULATORS];
+> +	struct device_node *of_node[RK808_NUM_REGULATORS];
+> +};
+
+This is only used in the regulator driver.  Do you have a regulator
+specific header file that you can define it in instead?
+
+> +struct rk808 {
+> +	struct i2c_client *i2c;
+> +	struct regmap_irq_chip_data *irq_data;
+> +	struct regmap *regmap;
+> +};
+> +#endif /* __LINUX_REGULATOR_rk808_H */
 
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org â”‚ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
