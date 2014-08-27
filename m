@@ -1,120 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932903AbaH0Eem (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 00:34:42 -0400
-Received: from mga14.intel.com ([192.55.52.115]:8500 "EHLO mga14.intel.com"
+	id S932929AbaH0Eey (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 00:34:54 -0400
+Received: from mga11.intel.com ([192.55.52.93]:16876 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932831AbaH0Eeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 00:34:36 -0400
+	id S932430AbaH0Eel (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 00:34:41 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="377469235"
+X-IronPort-AV: E=Sophos;i="5.04,408,1406617200"; 
+   d="scan'208";a="582194145"
 From: Matthew Wilcox <matthew.r.wilcox@intel.com>
 To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
 Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com
-Subject: [PATCH v10 05/21] Introduce IS_DAX(inode)
-Date: Tue, 26 Aug 2014 23:45:25 -0400
-Message-Id: <4dcc92db5c551df5efaefb37fecc1eccdd12a8d6.1409110741.git.matthew.r.wilcox@intel.com>
+Subject: [PATCH v10 00/21] Support ext4 on NV-DIMMs
+Date: Tue, 26 Aug 2014 23:45:20 -0400
+Message-Id: <cover.1409110741.git.matthew.r.wilcox@intel.com>
 X-Mailer: git-send-email 2.0.0
-In-Reply-To: <cover.1409110741.git.matthew.r.wilcox@intel.com>
-References: <cover.1409110741.git.matthew.r.wilcox@intel.com>
-In-Reply-To: <cover.1409110741.git.matthew.r.wilcox@intel.com>
-References: <cover.1409110741.git.matthew.r.wilcox@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use an inode flag to tag inodes which should avoid using the page cache.
-Convert ext2 to use it instead of mapping_is_xip().
+One of the primary uses for NV-DIMMs is to expose them as a block device
+and use a filesystem to store files on the NV-DIMM.  While that works,
+it currently wastes memory and CPU time buffering the files in the page
+cache.  We have support in ext2 for bypassing the page cache, but it
+has some races which are unfixable in the current design.  This series
+of patches rewrite the underlying support, and add support for direct
+access to ext4.
 
-Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Reviewed-by: Jan Kara <jack@suse.cz>
----
- fs/ext2/inode.c    | 9 ++++++---
- fs/ext2/xip.h      | 2 --
- include/linux/fs.h | 6 ++++++
- 3 files changed, 12 insertions(+), 5 deletions(-)
+Note that patch 6/21 has been included in
+https://git.kernel.org/cgit/linux/kernel/git/viro/vfs.git/log/?h=for-next-candidate
 
-diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
-index 36d35c3..0cb0448 100644
---- a/fs/ext2/inode.c
-+++ b/fs/ext2/inode.c
-@@ -731,7 +731,7 @@ static int ext2_get_blocks(struct inode *inode,
- 		goto cleanup;
- 	}
- 
--	if (ext2_use_xip(inode->i_sb)) {
-+	if (IS_DAX(inode)) {
- 		/*
- 		 * we need to clear the block
- 		 */
-@@ -1201,7 +1201,7 @@ static int ext2_setsize(struct inode *inode, loff_t newsize)
- 
- 	inode_dio_wait(inode);
- 
--	if (mapping_is_xip(inode->i_mapping))
-+	if (IS_DAX(inode))
- 		error = xip_truncate_page(inode->i_mapping, newsize);
- 	else if (test_opt(inode->i_sb, NOBH))
- 		error = nobh_truncate_page(inode->i_mapping,
-@@ -1273,7 +1273,8 @@ void ext2_set_inode_flags(struct inode *inode)
- {
- 	unsigned int flags = EXT2_I(inode)->i_flags;
- 
--	inode->i_flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC);
-+	inode->i_flags &= ~(S_SYNC | S_APPEND | S_IMMUTABLE | S_NOATIME |
-+				S_DIRSYNC | S_DAX);
- 	if (flags & EXT2_SYNC_FL)
- 		inode->i_flags |= S_SYNC;
- 	if (flags & EXT2_APPEND_FL)
-@@ -1284,6 +1285,8 @@ void ext2_set_inode_flags(struct inode *inode)
- 		inode->i_flags |= S_NOATIME;
- 	if (flags & EXT2_DIRSYNC_FL)
- 		inode->i_flags |= S_DIRSYNC;
-+	if (test_opt(inode->i_sb, XIP))
-+		inode->i_flags |= S_DAX;
- }
- 
- /* Propagate flags from i_flags to EXT2_I(inode)->i_flags */
-diff --git a/fs/ext2/xip.h b/fs/ext2/xip.h
-index 18b34d2..29be737 100644
---- a/fs/ext2/xip.h
-+++ b/fs/ext2/xip.h
-@@ -16,9 +16,7 @@ static inline int ext2_use_xip (struct super_block *sb)
- }
- int ext2_get_xip_mem(struct address_space *, pgoff_t, int,
- 				void **, unsigned long *);
--#define mapping_is_xip(map) unlikely(map->a_ops->get_xip_mem)
- #else
--#define mapping_is_xip(map)			0
- #define ext2_xip_verify_sb(sb)			do { } while (0)
- #define ext2_use_xip(sb)			0
- #define ext2_clear_xip_target(inode, chain)	0
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 9418772..e99e5c4 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1605,6 +1605,7 @@ struct super_operations {
- #define S_IMA		1024	/* Inode has an associated IMA struct */
- #define S_AUTOMOUNT	2048	/* Automount/referral quasi-directory */
- #define S_NOSEC		4096	/* no suid or xattr security attributes */
-+#define S_DAX		8192	/* Direct Access, avoiding the page cache */
- 
- /*
-  * Note that nosuid etc flags are inode-specific: setting some file-system
-@@ -1642,6 +1643,11 @@ struct super_operations {
- #define IS_IMA(inode)		((inode)->i_flags & S_IMA)
- #define IS_AUTOMOUNT(inode)	((inode)->i_flags & S_AUTOMOUNT)
- #define IS_NOSEC(inode)		((inode)->i_flags & S_NOSEC)
-+#ifdef CONFIG_FS_XIP
-+#define IS_DAX(inode)		((inode)->i_flags & S_DAX)
-+#else
-+#define IS_DAX(inode)		0
-+#endif
- 
- /*
-  * Inode state bits.  Protected by inode->i_lock
+This iteration of the patchset rebases to 3.17-rc2, changes the page fault
+locking, fixes a couple of bugs and makes a few other minor changes.
+
+ - Move the calculation of the maximum size available at the requested
+   location from the ->direct_access implementations to bdev_direct_access()
+ - Fix a comment typo (Ross Zwisler)
+ - Check that the requested length is positive in bdev_direct_access().  If
+   it is not, assume that it's an errno, and just return it.
+ - Fix some whitespace issues flagged by checkpatch
+ - Added the Acked-by responses from Kirill that I forget in the last round
+ - Added myself to MAINTAINERS for DAX
+ - Fixed compilation with !CONFIG_DAX (Vishal Verma)
+ - Revert the locking in the page fault handler back to an earlier version.
+   If we hit the race that we were trying to protect against, we will leave
+   blocks allocated past the end of the file.  They will be removed on file
+   removal, the next truncate, or fsck.
+
+
+Matthew Wilcox (20):
+  axonram: Fix bug in direct_access
+  Change direct_access calling convention
+  Fix XIP fault vs truncate race
+  Allow page fault handlers to perform the COW
+  Introduce IS_DAX(inode)
+  Add copy_to_iter(), copy_from_iter() and iov_iter_zero()
+  Replace XIP read and write with DAX I/O
+  Replace ext2_clear_xip_target with dax_clear_blocks
+  Replace the XIP page fault handler with the DAX page fault handler
+  Replace xip_truncate_page with dax_truncate_page
+  Replace XIP documentation with DAX documentation
+  Remove get_xip_mem
+  ext2: Remove ext2_xip_verify_sb()
+  ext2: Remove ext2_use_xip
+  ext2: Remove xip.c and xip.h
+  Remove CONFIG_EXT2_FS_XIP and rename CONFIG_FS_XIP to CONFIG_FS_DAX
+  ext2: Remove ext2_aops_xip
+  Get rid of most mentions of XIP in ext2
+  xip: Add xip_zero_page_range
+  brd: Rename XIP to DAX
+
+Ross Zwisler (1):
+  ext4: Add DAX functionality
+
+ Documentation/filesystems/Locking  |   3 -
+ Documentation/filesystems/dax.txt  |  91 +++++++
+ Documentation/filesystems/ext4.txt |   2 +
+ Documentation/filesystems/xip.txt  |  68 -----
+ MAINTAINERS                        |   6 +
+ arch/powerpc/sysdev/axonram.c      |  19 +-
+ drivers/block/Kconfig              |  13 +-
+ drivers/block/brd.c                |  26 +-
+ drivers/s390/block/dcssblk.c       |  21 +-
+ fs/Kconfig                         |  21 +-
+ fs/Makefile                        |   1 +
+ fs/block_dev.c                     |  40 +++
+ fs/dax.c                           | 497 +++++++++++++++++++++++++++++++++++++
+ fs/exofs/inode.c                   |   1 -
+ fs/ext2/Kconfig                    |  11 -
+ fs/ext2/Makefile                   |   1 -
+ fs/ext2/ext2.h                     |  10 +-
+ fs/ext2/file.c                     |  45 +++-
+ fs/ext2/inode.c                    |  38 +--
+ fs/ext2/namei.c                    |  13 +-
+ fs/ext2/super.c                    |  53 ++--
+ fs/ext2/xip.c                      |  91 -------
+ fs/ext2/xip.h                      |  26 --
+ fs/ext4/ext4.h                     |   6 +
+ fs/ext4/file.c                     |  49 +++-
+ fs/ext4/indirect.c                 |  18 +-
+ fs/ext4/inode.c                    |  51 ++--
+ fs/ext4/namei.c                    |  10 +-
+ fs/ext4/super.c                    |  39 ++-
+ fs/open.c                          |   5 +-
+ include/linux/blkdev.h             |   6 +-
+ include/linux/fs.h                 |  49 +++-
+ include/linux/mm.h                 |   1 +
+ include/linux/uio.h                |   3 +
+ mm/Makefile                        |   1 -
+ mm/fadvise.c                       |   6 +-
+ mm/filemap.c                       |   6 +-
+ mm/filemap_xip.c                   | 483 -----------------------------------
+ mm/iov_iter.c                      | 237 ++++++++++++++++--
+ mm/madvise.c                       |   2 +-
+ mm/memory.c                        |  33 ++-
+ 41 files changed, 1229 insertions(+), 873 deletions(-)
+ create mode 100644 Documentation/filesystems/dax.txt
+ delete mode 100644 Documentation/filesystems/xip.txt
+ create mode 100644 fs/dax.c
+ delete mode 100644 fs/ext2/xip.c
+ delete mode 100644 fs/ext2/xip.h
+ delete mode 100644 mm/filemap_xip.c
+
 -- 
 2.0.0
 
