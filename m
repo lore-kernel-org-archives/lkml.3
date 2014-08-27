@@ -1,274 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935363AbaH0Pay (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 11:30:54 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:35031 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935054AbaH0Pac (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 11:30:32 -0400
-Message-ID: <53FDF992.5050202@plexistor.com>
-Date: Wed, 27 Aug 2014 18:30:26 +0300
-From: Boaz Harrosh <boaz@plexistor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Jens Axboe <axboe@fb.com>, Matthew Wilcox <willy@linux.intel.com>,
-        Dmitry Monakhov <dmonakhov@openvz.org>
-CC: Ross Zwisler <ross.zwisler@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: [PATCH 4/5] brd: Fix all partitions BUGs
-References: <53FDF7AD.5000709@plexistor.com>
-In-Reply-To: <53FDF7AD.5000709@plexistor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S964843AbaH0PbS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 11:31:18 -0400
+Received: from david.siemens.de ([192.35.17.14]:39482 "EHLO david.siemens.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935216AbaH0PWP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 11:22:15 -0400
+From: Jan Kiszka <jan.kiszka@siemens.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
+        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
+        Borislav Petkov <bp@suse.de>,
+        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
+Subject: [PATCH v9 17/23] scripts/gdb: Add internal helper and convenience function for per-cpu lookup
+Date: Wed, 27 Aug 2014 17:21:32 +0200
+Message-Id: <e9da1aec72a8d874f7190d8faf491ec095980bd0.1409152897.git.jan.kiszka@siemens.com>
+X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
+In-Reply-To: <cover.1409152897.git.jan.kiszka@siemens.com>
+References: <cover.1409152897.git.jan.kiszka@siemens.com>
+In-Reply-To: <cover.1409152897.git.jan.kiszka@siemens.com>
+References: <cover.1409152897.git.jan.kiszka@siemens.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Boaz Harrosh <boaz@plexistor.com>
+This function allows to obtain a per-cpu variable, either of the current
+or an explicitly specified CPU.
 
-This patch fixes up brd's partitions scheme, now enjoying all worlds.
+Note: sparc64 version is untested.
 
-The MAIN fix here is that currently, if one fdisks some partitions,
-a BAD bug will make all partitions point to the same start-end sector
-ie: 0 - brd_size And an mkfs of any partition would trash the partition
-table and the other partition.
-
-Another fix is that "mount -U uuid" will not work if show_part was not
-specified, because of the GENHD_FL_SUPPRESS_PARTITION_INFO flag.
-We now always load without it and remove the show_part parameter.
-
-So NOW the logic goes like this:
-* max_part - Just says how many minors to reserve between devices
-  But in any way, there can be as many partition as requested.
-  If minors between devices ends, then dynamic 259-major ids will
-  be allocated on the fly.
-  The default is now max_part=1, which means all partitions devt
-  will be from the dynamic major-range.
-  (If persistent partition minors is needed use max_part=)
-
-* Creation of new devices on the fly still/always work:
-  mknod /path/devnod b 1 X
-  fdisk -l /path/devnod
-  Will create a new device if (X / max_part) was not already
-  created before. (Just as before)
-
-  partitions on the dynamically created device will work as well
-  Same logic applies with minors as with the pre-created ones.
-
-TODO: dynamic grow of device size, maybe through sysfs. So each
-      device can have it's own size.
-
-CC: Dmitry Monakhov <dmonakhov@openvz.org>
-Tested-by: Ross Zwisler <ross.zwisler@linux.intel.com>
-Signed-off-by: Boaz Harrosh <boaz@plexistor.com>
+CC: "David S. Miller" <davem@davemloft.net>
+CC: sparclinux@vger.kernel.org
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- drivers/block/brd.c | 100 ++++++++++++++++++++--------------------------------
- 1 file changed, 38 insertions(+), 62 deletions(-)
+ scripts/gdb/linux/cpus.py  | 68 ++++++++++++++++++++++++++++++++++++++++++++++
+ scripts/gdb/vmlinux-gdb.py |  1 +
+ 2 files changed, 69 insertions(+)
+ create mode 100644 scripts/gdb/linux/cpus.py
 
-diff --git a/drivers/block/brd.c b/drivers/block/brd.c
-index f841d9e..83e3d22 100644
---- a/drivers/block/brd.c
-+++ b/drivers/block/brd.c
-@@ -455,19 +455,18 @@ static const struct block_device_operations brd_fops = {
- /*
-  * And now the modules code and kernel interface.
-  */
--static int rd_nr;
--int rd_size = CONFIG_BLK_DEV_RAM_SIZE;
--static int max_part;
--static int part_shift;
--static int part_show = 0;
-+static int rd_nr = CONFIG_BLK_DEV_RAM_COUNT;
- module_param(rd_nr, int, S_IRUGO);
- MODULE_PARM_DESC(rd_nr, "Maximum number of brd devices");
+diff --git a/scripts/gdb/linux/cpus.py b/scripts/gdb/linux/cpus.py
+new file mode 100644
+index 0000000..18337e0
+--- /dev/null
++++ b/scripts/gdb/linux/cpus.py
+@@ -0,0 +1,68 @@
++#
++# gdb helper commands and functions for Linux kernel debugging
++#
++#  per-cpu tools
++#
++# Copyright (c) Siemens AG, 2011-2013
++#
++# Authors:
++#  Jan Kiszka <jan.kiszka@siemens.com>
++#
++# This work is licensed under the terms of the GNU GPL version 2.
++#
 +
-+int rd_size = CONFIG_BLK_DEV_RAM_SIZE;
- module_param(rd_size, int, S_IRUGO);
- MODULE_PARM_DESC(rd_size, "Size of each RAM disk in kbytes.");
++import gdb
 +
-+static int max_part = 1;
- module_param(max_part, int, S_IRUGO);
--MODULE_PARM_DESC(max_part, "Maximum number of partitions per RAM disk");
--module_param(part_show, int, S_IRUGO);
--MODULE_PARM_DESC(part_show, "Control RAM disk visibility in /proc/partitions");
-+MODULE_PARM_DESC(max_part, "Num Minors to reserve between devices");
++from linux import tasks, utils
 +
- MODULE_LICENSE("GPL");
- MODULE_ALIAS_BLOCKDEV_MAJOR(RAMDISK_MAJOR);
- MODULE_ALIAS("rd");
-@@ -513,16 +512,15 @@ static struct brd_device *brd_alloc(int i)
- 	brd->brd_queue->limits.discard_zeroes_data = 1;
- 	queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, brd->brd_queue);
- 
--	disk = brd->brd_disk = alloc_disk(1 << part_shift);
-+	disk = brd->brd_disk = alloc_disk(max_part);
- 	if (!disk)
- 		goto out_free_queue;
- 	disk->major		= RAMDISK_MAJOR;
--	disk->first_minor	= i << part_shift;
-+	disk->first_minor	= i * max_part;
- 	disk->fops		= &brd_fops;
- 	disk->private_data	= brd;
- 	disk->queue		= brd->brd_queue;
--	if (!part_show)
--		disk->flags |= GENHD_FL_SUPPRESS_PARTITION_INFO;
-+	disk->flags		= GENHD_FL_EXT_DEVT;
- 	sprintf(disk->disk_name, "ram%d", i);
- 	set_capacity(disk, rd_size * 2);
- 
-@@ -544,10 +542,11 @@ static void brd_free(struct brd_device *brd)
- 	kfree(brd);
- }
- 
--static struct brd_device *brd_init_one(int i)
-+static struct brd_device *brd_init_one(int i, bool *new)
- {
- 	struct brd_device *brd;
- 
-+	*new = false;
- 	list_for_each_entry(brd, &brd_devices, brd_list) {
- 		if (brd->brd_number == i)
- 			goto out;
-@@ -558,6 +557,7 @@ static struct brd_device *brd_init_one(int i)
- 		add_disk(brd->brd_disk);
- 		list_add_tail(&brd->brd_list, &brd_devices);
- 	}
-+	*new = true;
- out:
- 	return brd;
- }
-@@ -573,70 +573,46 @@ static struct kobject *brd_probe(dev_t dev, int *part, void *data)
- {
- 	struct brd_device *brd;
- 	struct kobject *kobj;
-+	bool new;
- 
- 	mutex_lock(&brd_devices_mutex);
--	brd = brd_init_one(MINOR(dev) >> part_shift);
-+	brd = brd_init_one(MINOR(dev) / max_part, &new);
- 	kobj = brd ? get_disk(brd->brd_disk) : NULL;
- 	mutex_unlock(&brd_devices_mutex);
- 
--	*part = 0;
-+	if (new)
-+		*part = 0;
 +
- 	return kobj;
- }
- 
- static int __init brd_init(void)
- {
--	int i, nr;
--	unsigned long range;
- 	struct brd_device *brd, *next;
-+	int i;
- 
- 	/*
- 	 * brd module now has a feature to instantiate underlying device
- 	 * structure on-demand, provided that there is an access dev node.
--	 * However, this will not work well with user space tool that doesn't
--	 * know about such "feature".  In order to not break any existing
--	 * tool, we do the following:
- 	 *
--	 * (1) if rd_nr is specified, create that many upfront, and this
--	 *     also becomes a hard limit.
--	 * (2) if rd_nr is not specified, create CONFIG_BLK_DEV_RAM_COUNT
--	 *     (default 16) rd device on module load, user can further
--	 *     extend brd device by create dev node themselves and have
--	 *     kernel automatically instantiate actual device on-demand.
-+	 * (1) if rd_nr is specified, create that many upfront. else
-+	 *     it defaults to CONFIG_BLK_DEV_RAM_COUNT
-+	 * (2) User can further extend brd devices by create dev node themselves
-+	 *     and have kernel automatically instantiate actual device
-+	 *     on-demand. Example:
-+	 *		mknod /path/devnod_name b 1 X	# 1 is the rd major
-+	 *		fdisk -l /path/devnod_name
-+	 *	If (X / max_part) was not already created it will be created
-+	 *	dynamically.
- 	 */
- 
--	part_shift = 0;
--	if (max_part > 0) {
--		part_shift = fls(max_part);
--
--		/*
--		 * Adjust max_part according to part_shift as it is exported
--		 * to user space so that user can decide correct minor number
--		 * if [s]he want to create more devices.
--		 *
--		 * Note that -1 is required because partition 0 is reserved
--		 * for the whole disk.
--		 */
--		max_part = (1UL << part_shift) - 1;
--	}
--
--	if ((1UL << part_shift) > DISK_MAX_PARTS)
--		return -EINVAL;
--
--	if (rd_nr > 1UL << (MINORBITS - part_shift))
--		return -EINVAL;
--
--	if (rd_nr) {
--		nr = rd_nr;
--		range = rd_nr << part_shift;
--	} else {
--		nr = CONFIG_BLK_DEV_RAM_COUNT;
--		range = 1UL << MINORBITS;
--	}
--
- 	if (register_blkdev(RAMDISK_MAJOR, "ramdisk"))
- 		return -EIO;
- 
--	for (i = 0; i < nr; i++) {
-+	if (unlikely(!max_part))
-+		max_part = 1;
++MAX_CPUS = 4096
 +
-+	for (i = 0; i < rd_nr; i++) {
- 		brd = brd_alloc(i);
- 		if (!brd)
- 			goto out_free;
-@@ -648,10 +624,10 @@ static int __init brd_init(void)
- 	list_for_each_entry(brd, &brd_devices, brd_list)
- 		add_disk(brd->brd_disk);
- 
--	blk_register_region(MKDEV(RAMDISK_MAJOR, 0), range,
-+	blk_register_region(MKDEV(RAMDISK_MAJOR, 0), 1UL << MINORBITS,
- 				  THIS_MODULE, brd_probe, NULL, NULL);
- 
--	printk(KERN_INFO "brd: module loaded\n");
-+	pr_info("brd: module loaded\n");
- 	return 0;
- 
- out_free:
-@@ -661,21 +637,21 @@ out_free:
- 	}
- 	unregister_blkdev(RAMDISK_MAJOR, "ramdisk");
- 
-+	pr_info("brd: module NOT loaded !!!\n");
- 	return -ENOMEM;
- }
- 
- static void __exit brd_exit(void)
- {
--	unsigned long range;
- 	struct brd_device *brd, *next;
- 
--	range = rd_nr ? rd_nr << part_shift : 1UL << MINORBITS;
--
- 	list_for_each_entry_safe(brd, next, &brd_devices, brd_list)
- 		brd_del_one(brd);
- 
--	blk_unregister_region(MKDEV(RAMDISK_MAJOR, 0), range);
-+	blk_unregister_region(MKDEV(RAMDISK_MAJOR, 0), 1UL << MINORBITS);
- 	unregister_blkdev(RAMDISK_MAJOR, "ramdisk");
 +
-+	pr_info("brd: module unloaded\n");
- }
- 
- module_init(brd_init);
++def get_current_cpu():
++    if utils.get_gdbserver_type() == utils.GDBSERVER_QEMU:
++        return gdb.selected_thread().num - 1
++    elif utils.get_gdbserver_type() == utils.GDBSERVER_KGDB:
++        tid = gdb.selected_thread().ptid[2]
++        if tid > (0x100000000 - MAX_CPUS - 2):
++            return 0x100000000 - tid - 2
++        else:
++            return tasks.get_thread_info(tasks.get_task_by_pid(tid))['cpu']
++    else:
++        raise gdb.GdbError("Sorry, obtaining the current CPU is not yet "
++                           "supported with this gdb server.")
++
++
++def per_cpu(var_ptr, cpu):
++    if cpu == -1:
++        cpu = get_current_cpu()
++    if utils.is_target_arch("sparc:v9"):
++        offset = gdb.parse_and_eval(
++            "trap_block[{0}].__per_cpu_base".format(str(cpu)))
++    else:
++        try:
++            offset = gdb.parse_and_eval(
++                "__per_cpu_offset[{0}]".format(str(cpu)))
++        except gdb.error:
++            # !CONFIG_SMP case
++            offset = 0
++    pointer = var_ptr.cast(utils.get_long_type()) + offset
++    return pointer.cast(var_ptr.type).dereference()
++
++
++class PerCpu(gdb.Function):
++    """Return per-cpu variable.
++
++$lx_per_cpu("VAR"[, CPU]): Return the per-cpu variable called VAR for the
++given CPU number. If CPU is omitted, the CPU of the current context is used.
++Note that VAR has to be quoted as string."""
++
++    def __init__(self):
++        super(PerCpu, self).__init__("lx_per_cpu")
++
++    def invoke(self, var_name, cpu=-1):
++        var_ptr = gdb.parse_and_eval("&" + var_name.string())
++        return per_cpu(var_ptr, cpu)
++
++
++PerCpu()
+diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
+index 4d7eb2c..4848928 100644
+--- a/scripts/gdb/vmlinux-gdb.py
++++ b/scripts/gdb/vmlinux-gdb.py
+@@ -27,3 +27,4 @@ else:
+     import linux.modules
+     import linux.dmesg
+     import linux.tasks
++    import linux.cpus
 -- 
-1.9.3
-
+1.8.1.1.298.ge7eed54
 
