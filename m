@@ -1,111 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935464AbaH0PxA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 11:53:00 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:22866 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935357AbaH0Pw5 (ORCPT
+	id S935129AbaH0PzN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 11:55:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44343 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934964AbaH0PzL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 11:52:57 -0400
-Subject: [PATCH 2/2] fs: clarify rate limit suppressed buffer I/O errors
-To: axboe@kernel.dk, webbnh@hp.com, linux-kernel@vger.kernel.org,
-        relliott@beardog.cce.hp.com, linux-fsdevel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, elliott@hp.com, scameron@beardog.cce.hp.com
-From: Robert Elliott <elliott@hp.com>
-Date: Wed, 27 Aug 2014 10:52:05 -0500
-Message-ID: <20140827155205.32144.32960.stgit@beardog.cce.hp.com>
-In-Reply-To: <20140827155036.32144.56190.stgit@beardog.cce.hp.com>
-References: <20140827155036.32144.56190.stgit@beardog.cce.hp.com>
-User-Agent: StGit/0.15
+	Wed, 27 Aug 2014 11:55:11 -0400
+Date: Wed, 27 Aug 2014 16:54:56 +0100
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Shuah Khan <shuah.kh@samsung.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH v2 1/4] ftracetest: Initial commit for ftracetest
+Message-ID: <20140827155456.GH10937@hercules>
+References: <20140826111511.5711.28493.stgit@kbuild-fedora.novalocal>
+ <20140826111518.5711.71441.stgit@kbuild-fedora.novalocal>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140826111518.5711.71441.stgit@kbuild-fedora.novalocal>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When quiet_error applies rate limiting to buffer_io_error calls, what the
-they apply to is unclear because the name is so generic, particularly
-if the messages are interleaved with others:
+Hi,
 
-[ 1936.063572] quiet_error: 664293 callbacks suppressed
-[ 1936.065297] Buffer I/O error on dev sdr, logical block 257429952, lost async page write
-[ 1936.067814] Buffer I/O error on dev sdr, logical block 257429953, lost async page write
+Not really a complete review, but just 2 comments on this script:
 
-Also, the function uses printk_ratelimit(), although printk.h includes a
-comment advising "Please don't use... Instead use printk_ratelimited()."
+On Tue, Aug 26, 2014 at 11:15:18AM +0000, Masami Hiramatsu wrote:
+...
+> +prlog() { # messages
+> +  echo $@ | tee -a $LOG_FILE
+> +}
+> +catlog() { #file
+> +  cat $1 | tee -a $LOG_FILE
+> +}
+> +
+> +# Testcase management
+> +PASSED_CASES=
+> +FAILED_CASES=
+> +CASENO=0
+> +testcase() { # testfile
+> +  CASENO=$((CASENO+1))
+> +  prlog -n "[$CASENO]"`grep "^#[ \t]*description:" $1 | cut -f2 -d:`
+> +}
+> +failed() {
+> +  prlog -e "\t[FAIL]"
+> +  FAILED_CASES="$FAILED_CASES $CASENO"
+> +}
+> +passed() {
+> +  prlog -e "\t[PASS]"
+> +  PASSED_CASES="$PASSED_CASES $CASENO"
+> +}
 
-Change buffer_io_error to check the BH_Quiet bit itself, drop the
-printk_ratelimit call, and print using printk_ratelimited.
+What I see here is a '-e' being echo'ed and not really a '-e' switch
+being used to 'echo'.  (Also, I'm not sure if this is a standard
+switch...).
 
-This makes the messages look like:
+This applies to all the other 'prlog -e'.
 
-[  387.208839] buffer_io_error: 676394 callbacks suppressed
-[  387.210693] Buffer I/O error on dev sdr, logical block 211291776, lost async page write
-[  387.213432] Buffer I/O error on dev sdr, logical block 211291777, lost async page write
+> +
+> +
+> +# Run one test case
+> +run_test() { # testfile
+> +  local testname=`basename $1`
+> +  local testlog=`mktemp --tmpdir=$LOG_DIR ${testname}-XXXXXX.log`
+> +  testcase $1
+> +  echo "execute: "$1 > $testlog
+> +  (cd $TRACING_DIR; set -x ; source $t) >> $testlog 2>&1
+> +  ret=$?
 
-Signed-off-by: Robert Elliott <elliott@hp.com>
-Reviewed-by: Webb Scales <webbnh@hp.com>
----
- fs/buffer.c |   23 +++++++----------------
- 1 files changed, 7 insertions(+), 16 deletions(-)
+I believe the usage of 'source' is a bashism, and '.' should be used
+instead.  In my environment, 'source' results in ret=127.  Replacing
+it by '.' fixes it.
 
-diff --git a/fs/buffer.c b/fs/buffer.c
-index c6cb0ee..3710a68 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -128,19 +128,13 @@ __clear_page_buffers(struct page *page)
- 	page_cache_release(page);
- }
- 
--
--static int quiet_error(struct buffer_head *bh)
--{
--	if (!test_bit(BH_Quiet, &bh->b_state) && printk_ratelimit())
--		return 0;
--	return 1;
--}
--
--
- static void buffer_io_error(struct buffer_head *bh, char *msg)
- {
- 	char b[BDEVNAME_SIZE];
--	printk(KERN_ERR "Buffer I/O error on dev %s, logical block %llu%s\n",
-+
-+	if (!test_bit(BH_Quiet, &bh->b_state))
-+		printk_ratelimited(KERN_ERR
-+			"Buffer I/O error on dev %s, logical block %llu%s\n",
- 			bdevname(bh->b_bdev, b),
- 			(unsigned long long)bh->b_blocknr, msg);
- }
-@@ -180,8 +174,7 @@ void end_buffer_write_sync(struct buffer_head *bh, int uptodate)
- 	if (uptodate) {
- 		set_buffer_uptodate(bh);
- 	} else {
--		if (!quiet_error(bh))
--			buffer_io_error(bh, ", lost sync page write");
-+		buffer_io_error(bh, ", lost sync page write");
- 		set_buffer_write_io_error(bh);
- 		clear_buffer_uptodate(bh);
- 	}
-@@ -298,8 +291,7 @@ static void end_buffer_async_read(struct buffer_head *bh, int uptodate)
- 		set_buffer_uptodate(bh);
- 	} else {
- 		clear_buffer_uptodate(bh);
--		if (!quiet_error(bh))
--			buffer_io_error(bh, ", async page read");
-+		buffer_io_error(bh, ", async page read");
- 		SetPageError(page);
- 	}
- 
-@@ -358,8 +350,7 @@ void end_buffer_async_write(struct buffer_head *bh, int uptodate)
- 	if (uptodate) {
- 		set_buffer_uptodate(bh);
- 	} else {
--		if (!quiet_error(bh))
--			buffer_io_error(bh, ", lost async page write");
-+		buffer_io_error(bh, ", lost async page write");
- 		set_bit(AS_EIO, &page->mapping->flags);
- 		set_buffer_write_io_error(bh);
- 		clear_buffer_uptodate(bh);
-
+Cheers,
+--
+Luís
