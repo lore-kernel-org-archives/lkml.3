@@ -1,77 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965080AbaH0Ugp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 16:36:45 -0400
-Received: from regular1.263xmail.com ([211.150.99.138]:33984 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751111AbaH0Ugm (ORCPT
+	id S965117AbaH0Uhc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 16:37:32 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:40692 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933284AbaH0Uha (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 16:36:42 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: caesar.wang@rock-chips.com
-X-FST-TO: zyf@rock-chips.com
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: caesar.wang@rock-chips.com
-X-UNIQUE-TAG: <08d5e67b60108c564473209b002cf965>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <53FE4153.3080601@rock-chips.com>
-Date: Thu, 28 Aug 2014 04:36:35 +0800
-From: Caesar Wang <caesar.wang@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com,
-        grant.likely@linaro.org, robh+dt@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, huangtao@rock-chips.com, cf@rock-chips.com,
-        dianders@chromium.org, dtor@chromium.org, zyw@rock-chips.com,
-        addy.ke@rock-chips.com, zhaoyifeng <zyf@rock-chips.com>
-Subject: Re: [PATCH v2 2/2] dt-bindings: document Rockchip thermal
-References: <1409096503-7081-1-git-send-email-caesar.wang@rock-chips.com> <1409096503-7081-3-git-send-email-caesar.wang@rock-chips.com> <5911166.ElkaNhDZrP@wuerfel>
-In-Reply-To: <5911166.ElkaNhDZrP@wuerfel>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Wed, 27 Aug 2014 16:37:30 -0400
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Brendan Gregg <brendan.d.gregg@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v8 net-next 0/2] load imm64 insn and uapi/linux/bpf.h
+Date: Wed, 27 Aug 2014 13:37:11 -0700
+Message-Id: <1409171833-6979-1-git-send-email-ast@plumgrid.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd,
+Hi David,
 
+I've been thinking on the minimum first patch set.
+Came up with the following two:
 
-在 2014年08月28日 04:17, Arnd Bergmann 写道:
-> On Wednesday 27 August 2014 07:41:43 Caesar Wang wrote:
->> +- clock-names : Shall be "tsadc_clk" for the transfer-clock, and "tsadc_pclk" for
->> +    the peripheral clock.
->>
-> Why not just name them "clk" and "pclk"? The "tsadc" part seems highly redundant.
->
-> Alternatively, how about "transfer" and "peripheral"?
+1st patch adds 'load 64-bit immediate' instruction which by itself
+is harmless and used to load constants only. In the future we may
+add pseudo variants of this insn, so user space can request
+internal kernel pointer. More detailed explanation in the commit log.
 
-It seems  nappropriate description.
+2nd patch exposed eBPF ISA to user space. It moves 55 lines from
+filter.h into uapi/linux/bpf.h
+Though there is no way currently to load eBPF programs from user
+space, this patch shows the intent that eventually it will be possible.
+The main goal here is to unblock LLVM upstreaming process.
+Once these two are in, I can start posting LLVM RFCs to llvmdev list
+and getting compiler bits in, so by the time bpf syscall and verifier
+are in, we may have LLVM backend upstreamed as well.
+LLVM wouldn't care what eBPF is used for, whether syscall is used
+or some other mechanism. It just compiles C into eBPF ISA.
+So these two patches are sufficient to start LLVM upstreaming.
 
-But,I will fix  as the following:
+All,
+why do we need all of these?
+Same reason why we're still using classic BPF and keep trying to extend it.
+There are places in kernel where safe dynamic programs are mandatory.
+network traffic capture needs in-kernel filtering,
+seccomp needs safe mini programs to sandbox applications,
+tracing needs them to filter events and so on.
 
--clock-names ： Shall be "tsadc" for the converter-clock, and "apb_pclk" for
-               the peripheral clock.
+Few LWN articles that explain things way better than my commit logs:
+http://lwn.net/Articles/599755/
+http://lwn.net/Articles/603983/
+http://lwn.net/Articles/606089/
+http://lwn.net/Articles/575531/
 
-Thanks!
+The first target for eBPF is to have dtrace equivalent that can be
+used in _production_. Safety of programs is paramount.
+Just like performance. eBPF programs in tracing should not affect 
+performance of production severs, so huge effort on optimizing last bit.
 
+ebpf+tracing, ebpf+seccomp, ebpf+sockets are the most obvious use cases.
+ebpf+ovs is the one we use in large kvm hypervisors.
+40Gbps of traffic are going through these programs, so performance
+and safety are vital. Performance implications ruling out run-time checks
+in critical path, so verifier is large mainly because it needs to do
+all the checks during static analysis.
 
+I think next patch set will include syscall shell with minimal functionality,
+syscall doc and simple test.
 
->
-> 	Arnd
->
->
->
+Alexei Starovoitov (2):
+  net: filter: add "load 64-bit immediate" eBPF instruction
+  net: filter: split filter.h and expose eBPF to user space
+
+ Documentation/networking/filter.txt |    8 +++-
+ arch/x86/net/bpf_jit_comp.c         |   17 ++++++++
+ include/linux/filter.h              |   74 +++++++++--------------------------
+ include/uapi/linux/Kbuild           |    1 +
+ include/uapi/linux/bpf.h            |   65 ++++++++++++++++++++++++++++++
+ kernel/bpf/core.c                   |    5 +++
+ lib/test_bpf.c                      |   21 ++++++++++
+ 7 files changed, 135 insertions(+), 56 deletions(-)
+ create mode 100644 include/uapi/linux/bpf.h
 
 -- 
-Best regards,
-Caesar
-
+1.7.9.5
 
