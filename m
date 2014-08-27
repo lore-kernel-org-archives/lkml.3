@@ -1,175 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934884AbaH0PLW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 11:11:22 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:45938 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933786AbaH0PLU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 11:11:20 -0400
-Message-ID: <53FDF4FF.1060809@linaro.org>
-Date: Wed, 27 Aug 2014 17:10:55 +0200
-From: Eric Auger <eric.auger@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: eric.auger@st.com, christoffer.dall@linaro.org, marc.zyngier@arm.com,
-        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
-        kvm@vger.kernel.org, joel.schopp@amd.com, kim.phillips@freescale.com,
-        linux-kernel@vger.kernel.org, patches@linaro.org, will.deacon@arm.com,
-        a.motakis@virtualopensystems.com, a.rigo@virtualopensystems.com,
-        john.liuli@huawei.com
-Subject: Re: [RFC 0/9] KVM-VFIO IRQ forward control
-References: <1408973264-30384-1-git-send-email-eric.auger@linaro.org> <1409075342.2906.96.camel@ul30vt.home>
-In-Reply-To: <1409075342.2906.96.camel@ul30vt.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S934955AbaH0PPL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 11:15:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41409 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934344AbaH0PPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 11:15:08 -0400
+From: WANG Chao <chaowang@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        linux-mm@kvack.org (open list:SLAB ALLOCATOR),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] mm, slub: do not add duplicate sysfs
+Date: Wed, 27 Aug 2014 23:14:48 +0800
+Message-Id: <1409152488-21227-1-git-send-email-chaowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2014 07:49 PM, Alex Williamson wrote:
-> On Mon, 2014-08-25 at 15:27 +0200, Eric Auger wrote:
->> This RFC proposes an integration of "ARM: Forwarding physical
->> interrupts to a guest VM" (http://lwn.net/Articles/603514/) in
->> KVM.
->>
->> It enables to transform a VFIO platform driver IRQ into a forwarded
->> IRQ. The direct benefit is that, for a level sensitive IRQ, a VM
->> switch can be avoided on guest virtual IRQ completion. Before this
->> patch, a maintenance IRQ was triggered on the virtual IRQ completion.
->>
->> When the IRQ is forwarded, the VFIO platform driver does not need to
->> disable the IRQ anymore. Indeed when returning from the IRQ handler
->> the IRQ is not deactivated. Only its priority is lowered. This means
->> the same IRQ cannot hit before the guest completes the virtual IRQ
->> and the GIC automatically deactivates the corresponding physical IRQ.
->>
->> Besides, the injection still is based on irqfd triggering. The only
->> impact on irqfd process is resamplefd is not called anymore on
->> virtual IRQ completion since this latter becomes "transparent".
->>
->> The current integration is based on an extension of the KVM-VFIO
->> device, previously used by KVM to interact with VFIO groups. The
->> patch serie now enables KVM to directly interact with a VFIO
->> platform device. The VFIO external API was extended for that purpose.
->>
->> Th KVM-VFIO device can get/put the vfio platform device, check its
->> integrity and type, get the IRQ number associated to an IRQ index.
->>
->> The KVM-VFIO is extended with an architecture specific implementation.
->> IRQ forward control is implemented in the ARM specific part.
->>
->> from a user point of view, the functionality is provided through new
->> KVM-VFIO device commands, KVM_DEV_VFIO_DEVICE_(DE)ASSIGN_IRQ
->> and the capability can be checked with KVM_HAS_DEVICE_ATTR.
->> Assignment can only be changed when the physical IRQ is not active.
->> It is the responsability of the user to do this check.
->>
->> This patch serie has the following dependencies:
->> - "ARM: Forwarding physical interrupts to a guest VM"
->>   (http://lwn.net/Articles/603514/) in
->> - [PATCH v2] irqfd for ARM
->>   which itself depends on
->>   - arm/arm64: KVM: Various VGIC cleanups and improvements
->>     http://lists.infradead.org/pipermail/linux-arm-kernel/2014-June/263685.html
->> - and obviously the VFIO platform driver serie:
->>   [RFC PATCH v6 00/20] VFIO support for platform devices on ARM
->>   https://www.mail-archive.com/kvm@vger.kernel.org/msg103247.html
->>
->> Integrated pieces can be found at
->> git://git.linaro.org/people/eric.auger/linux.git
->> on branch 3.17rc1_forward_integ_v0
->>
->> This was was tested on Calxeda Miday, assigning the xgmac main IRQ.
-> 
-> Presumably this optimization should provide lower interrupt exit latency
-> and lower CPU overhead since we avoid the entire EOI path of the
-> resampler.  Does it?  It seems like there should be a measurable
-> improvement with something like netperf TCP_RR with this series.
-> Thanks,
+Mergeable slab can be changed to unmergeable after tuning its sysfs
+interface, for example echo 1 > trace. But the sysfs kobject with the unique
+name will be still there.
 
-Hi Alex,
+When creating a new mergeable slab, the following warning will happen:
 
-I will publish some performance figures soon. I am currently missing a
-second node to run netserver.
+(hello.ko is a trivial module to simply create a mergeable slab)
 
-My preliminary understanding is perf improvement will come from
-1) reduction of EOI latency
-2) potential saving of VM switches,
+[  408.915029] ------------[ cut here ]------------
+[  408.919641] WARNING: CPU: 3 PID: 2766 at fs/sysfs/dir.c:31 sysfs_warn_dup+0x64/0x80()
+[  408.927449] sysfs: cannot create duplicate filename '/kernel/slab/:t-0000048'
+[  408.934563] Modules linked in: hello(O+) ipt_MASQUERADE iptable_nat nf_nat_ipv4 nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack xt_CHECKSUM iptable_mangle tun bridge stpi
+[  408.980823] CPU: 3 PID: 2766 Comm: modprobe Tainted: G           O 3.17.0-rc1 #22
+[  408.988981] Hardware name: Dell Inc. OptiPlex 760 /0M860N, BIOS A12 05/23/2011
+[  408.997571]  0000000000000009 ffff8801a053ba40 ffffffff816c560e ffff8801a053ba88
+[  409.004994]  ffff8801a053ba78 ffffffff810bbb2d ffff8800b6b6d000 ffff8800b65bc580
+[  409.012414]  ffff8801a04260f0 0000000000000000 ffff880035d58b78 ffff8801a053bad8
+[  409.019839] Call Trace:
+[  409.022290]  [<ffffffff816c560e>] dump_stack+0x45/0x56
+[  409.027418]  [<ffffffff810bbb2d>] warn_slowpath_common+0x7d/0xa0
+[  409.033415]  [<ffffffff810bbb9c>] warn_slowpath_fmt+0x4c/0x50
+[  409.039156]  [<ffffffff81273588>] ? kernfs_path+0x48/0x60
+[  409.044546]  [<ffffffff81276bd4>] sysfs_warn_dup+0x64/0x80
+[  409.050027]  [<ffffffff81276c7e>] sysfs_create_dir_ns+0x8e/0xa0
+[  409.055938]  [<ffffffff81362f2f>] kobject_add_internal+0xbf/0x3f0
+[  409.062019]  [<ffffffff81363610>] kobject_init_and_add+0x60/0x80
+[  409.068016]  [<ffffffff811f2836>] ? sysfs_slab_add+0x146/0x200
+[  409.073845]  [<ffffffff811f2771>] sysfs_slab_add+0x81/0x200
+[  409.079409]  [<ffffffff811f518b>] __kmem_cache_create+0x51b/0x860
+[  409.085494]  [<ffffffffc0094000>] ? 0xffffffffc0094000
+[  409.090627]  [<ffffffff816c22ef>] ? printk+0x67/0x69
+[  409.095584]  [<ffffffff811f45d2>] ? kmem_cache_alloc+0x1c2/0x1f0
+[  409.101581]  [<ffffffff811bf3bb>] ? do_kmem_cache_create+0x3b/0xf0
+[  409.107752]  [<ffffffff811bf42b>] do_kmem_cache_create+0xab/0xf0
+[  409.113749]  [<ffffffff811bf622>] kmem_cache_create+0x1b2/0x2a0
+[  409.119661]  [<ffffffff8136fa5e>] ? kasprintf+0x3e/0x40
+[  409.124881]  [<ffffffffc0094000>] ? 0xffffffffc0094000
+[  409.130019]  [<ffffffffc009403a>] init_hello+0x3a/0x1000 [hello]
+[  409.136019]  [<ffffffff8100212c>] do_one_initcall+0xbc/0x1f0
+[  409.141671]  [<ffffffff811da2c2>] ? __vunmap+0xb2/0x100
+[  409.146891]  [<ffffffff8112e12e>] load_module+0x1e4e/0x25e0
+[  409.152455]  [<ffffffff81129f40>] ? store_uevent+0x40/0x40
+[  409.157934]  [<ffffffff8112aa31>] ? copy_module_from_fd.isra.47+0x121/0x180
+[  409.164884]  [<ffffffff8112ea36>] SyS_finit_module+0x86/0xb0
+[  409.170539]  [<ffffffff816cbba9>] system_call_fastpath+0x16/0x1b
+[  409.176533] ---[ end trace c8eef8076cd27e36 ]---
 
-with 2) depending on  thephysical IRQ rate.
+Now if a unique is taken, we suffix it with an index, for example,
+/sys/kernel/slab/:t-0000048 is already there, but not mergeable. We create
+another unique name with index suffix, /sys/kernel/slab/:t-0000048-1, if
+this one is taken too, we increase the index value each time, :t-0000048-2,
+:t-0000048-3 ... until we find one.
 
-VERY HIGH RATE:
-Without the patch (traditional irqfd on ARM with maintenance IRQ):
-guest completes the vIRQ -> maintenance IRQ handler -> guest->host VM
-switch -> resamplefd trigger (virqfd) -> enable physical IRQ -> new
-physical IRQ hits -> VFIO handler -> fd trigger -> injection in guest ->
-host->guest VM switch
+Signed-off-by: WANG Chao <chaowang@redhat.com>
+---
+ mm/slub.c | 34 ++++++++++++++++++++++++++++++++--
+ 1 file changed, 32 insertions(+), 2 deletions(-)
 
-with the patch
-guest completes the vIRQ -> GIC completes the physical IRQ -> new
-physical IRQ hits -> guest->host VM switch -> VFIO handler -> fd trigger
--> injection in guest -> host->guest VM switch
-
-=> Same number of VM switches
-
-SLOWER RATE:
-Without the patch:
-guest completes the vIRQ -> maintenance IRQ handler -> guest->host VM
-switch -> resamplefd trigger (virqfd) -> enable physical IRQ
-[host ..]
-host->guest VM switch
-[guest ..]
-physical IRQ hits -> guest->host VM switch -> VFIO handler -> fd trigger
--> injection in guest -> host->guest VM switch
-
-With that patch:
-guest completes the vIRQ -> GIC completes the physical IRQ
-[guest ..]
-physical IRQ hits -> guest->host VM switch -> VFIO handler -> fd trigger
--> injection in guest -> host->guest VM switch
-
-Hence less VM switches with that patch. But it is also related to
-scheduling, relative load of host/guest...
-
-Any comment welcome!
-
-Best Regards
-
-Eric
-> 
-> Alex
-> 
->> Eric Auger (9):
->>   KVM: ARM: VGIC: fix multiple injection of level sensitive forwarded
->>     IRQ
->>   KVM: ARM: VGIC: add forwarded irq rbtree lock
->>   VFIO: platform: handler tests whether the IRQ is forwarded
->>   KVM: KVM-VFIO: update user API to program forwarded IRQ
->>   VFIO: Extend external user API
->>   KVM: KVM-VFIO: allow arch specific implementation
->>   KVM: KVM-VFIO: add new VFIO external API hooks
->>   KVM: KVM-VFIO: add kvm_vfio_arch_data and accessors
->>   KVM: KVM_VFIO: ARM: implement irq forwarding control
->>
->>  Documentation/virtual/kvm/devices/vfio.txt |  25 ++
->>  arch/arm/include/asm/kvm_host.h            |  16 +
->>  arch/arm/include/uapi/asm/kvm.h            |   6 +
->>  arch/arm/kvm/Makefile                      |   2 +-
->>  arch/arm/kvm/kvm_vfio_arm.c                | 599 +++++++++++++++++++++++++++++
->>  drivers/vfio/platform/vfio_platform_irq.c  |   7 +-
->>  drivers/vfio/vfio.c                        |  35 ++
->>  include/kvm/arm_vgic.h                     |   1 +
->>  include/linux/kvm_host.h                   |  30 ++
->>  include/linux/vfio.h                       |   4 +
->>  include/uapi/linux/kvm.h                   |   3 +
->>  virt/kvm/arm/vgic.c                        |  55 ++-
->>  virt/kvm/vfio.c                            |  92 +++++
->>  13 files changed, 862 insertions(+), 13 deletions(-)
->>  create mode 100644 arch/arm/kvm/kvm_vfio_arm.c
->>
-> 
-> 
-> 
+diff --git a/mm/slub.c b/mm/slub.c
+index 3e8afcc..8b4944e 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -5099,9 +5099,9 @@ static inline struct kset *cache_kset(struct kmem_cache *s)
+ 
+ /* Create a unique string id for a slab cache:
+  *
+- * Format	:[flags-]size
++ * Format	:[flags-]size[-index]
+  */
+-static char *create_unique_id(struct kmem_cache *s)
++static char *__create_unique_id(struct kmem_cache *s, int index)
+ {
+ 	char *name = kmalloc(ID_STR_LENGTH, GFP_KERNEL);
+ 	char *p = name;
+@@ -5127,11 +5127,41 @@ static char *create_unique_id(struct kmem_cache *s)
+ 	if (p != name + 1)
+ 		*p++ = '-';
+ 	p += sprintf(p, "%07d", s->size);
++	if (index)
++		p += sprintf(p, "-%d", index);
+ 
+ 	BUG_ON(p > name + ID_STR_LENGTH - 1);
+ 	return name;
+ }
+ 
++static char *create_unique_id(struct kmem_cache *s)
++{
++	char *name;
++	struct kmem_cache *k;
++	int index, unique;
++
++
++	for (index = 0, unique = 0; !unique; index++) {
++		name = __create_unique_id(s, index);
++		unique = 1;
++
++		/*
++		 * Walk through slab_caches to see if name is taken.
++		 * It happens when mergeables becomes unmergeables.
++		 */
++		list_for_each_entry(k, &slab_caches, list) {
++			if (!k->kobj.name)
++				continue;
++
++			if (!strcmp(k->kobj.name, name)) {
++				unique = 0;
++				break;
++			}
++		}
++	}
++	return name;
++}
++
+ static int sysfs_slab_add(struct kmem_cache *s)
+ {
+ 	int err;
+-- 
+1.9.3
 
