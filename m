@@ -1,71 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579AbaH0BDg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 21:03:36 -0400
-Received: from ozlabs.org ([103.22.144.67]:50118 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751799AbaH0BDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 21:03:35 -0400
-Date: Wed, 27 Aug 2014 11:03:22 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Roger Quadros <rogerq@ti.com>, Michael Welling <mwelling@emacinc.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: linux-next: build failure after merge of the usb.current tree
-Message-ID: <20140827110322.5f8a7742@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/9j_3kwmnoE49b=if.2x1x=p"; protocol="application/pgp-signature"
+	id S1756006AbaH0BId (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 21:08:33 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:32134 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753836AbaH0BIc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 21:08:32 -0400
+X-AuditID: cbfee68f-f797f6d000001173-97-53fd2f8ddae6
+From: Jingoo Han <jg1.han@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: "'Bryan Wu'" <cooloney@gmail.com>, "'Lee Jones'" <lee.jones@linaro.org>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH V2 00/18] backlight: fix checkpatch warnings
+Date: Wed, 27 Aug 2014 10:08:29 +0900
+Message-id: <004301cfc193$69c1de20$3d459a60$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac/Bk2mhX0elbPeNSwiBLjt5Esz7eA==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBIsWRmVeSWpSXmKPExsVy+t8zfd1e/b/BBkv2GFgc3TmRyeLywkus
+	Fve/HmW0uLxrDpsDi8fOWXfZPe5c28Pm0bdlFaPH501yASxRXDYpqTmZZalF+nYJXBn3/69n
+	LNgmUnH36T/GBsad/F2MHBwSAiYSE5pMuhg5gUwxiQv31rN1MXJxCAksY5Q41viWFSJhIvFo
+	12ZGiMQiRoktrfuhqn4zSlyb+pENpIpNQE3iy5fD7CC2iICCxObeZ2DdzAK5Er9nrmQEsYUF
+	bCTaf21lBtnMIqAq0bosFMTkFbCVuPuAGaSCV0BQ4sfkeywQnVoS63ceZ4Kw5SU2r3nLDHGz
+	usSjv7oQi/Qkri1ewA5RIiKx78U7sDMlBDaxS2zv6gC7gEVAQOLb5EMsEL2yEpsOMEO8JSlx
+	cMUNlgmMYrOQbJ6FZPMsJJtnIVmxgJFlFaNoakFyQXFSepGxXnFibnFpXrpecn7uJkZIhPXv
+	YLx7wPoQowAHoxIP74cFf4KFWBPLiitzDzGaAl00kVlKNDkfGMd5JfGGxmZGFqYmpsZG5pZm
+	SuK8C6V+BgsJpCeWpGanphakFsUXleakFh9iZOLglGpg3PChrp35MZ/dCVYPwfiYqNrI3tun
+	EmfsDohos896NWMHX7ND9l7ean8n3m+mEd9flZ2RE/X92hv0t+JwWJhvXMKvxybiV/emy51K
+	uzurwdv3ykZW/jOaj10mJ8ktzzW8u1DhSf3OxfUymgpHPLPmr9nKpn0gkNHj5L4Uxg3MZk//
+	B7WZWVspsRRnJBpqMRcVJwIARPBYXqsCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMIsWRmVeSWpSXmKPExsVy+t9jAd1e/b/BBm836lgc3TmRyeLywkus
+	Fve/HmW0uLxrDpsDi8fOWXfZPe5c28Pm0bdlFaPH501yASxRDYw2GamJKalFCql5yfkpmXnp
+	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUA7lRTKEnNKgUIBicXFSvp2mCaEhrjp
+	WsA0Ruj6hgTB9RgZoIGEdYwZ9/+vZyzYJlJx9+k/xgbGnfxdjJwcEgImEo92bWaEsMUkLtxb
+	z9bFyMUhJLCIUWJL634o5zejxLWpH9lAqtgE1CS+fDnMDmKLCChIbO59xgpiMwvkSvyeuRJs
+	krCAjUT7r63MXYwcHCwCqhKty0JBTF4BW4m7D5hBKngFBCV+TL7HAtGpJbF+53EmCFteYvOa
+	t2CdEgLqEo/+6kIs0pO4tngBO0SJiMS+F+8YJzAKzEIyaRaSSbOQTJqFpGUBI8sqRtHUguSC
+	4qT0XEO94sTc4tK8dL3k/NxNjOAIfia1g3Flg8UhRgEORiUe3o8L/gQLsSaWFVfmHmKU4GBW
+	EuFNVvgbLMSbklhZlVqUH19UmpNafIjRFOjNicxSosn5wOSSVxJvaGxiZmRpZGZhZGJuriTO
+	e6DVOlBIID2xJDU7NbUgtQimj4mDU6qBse0K80kOljcrOlr8F2yxEY1zzy62SFgkodmStKtg
+	Jde7i/9iTlxafUV4lUvedi63KepKh6YXTLSfJPjtr86PWUYLerR+b9g04TTjHaUtEx8dyl95
+	gjd+D9+x3IgY10Tn1NWiCz6fOrx7yfr1JqViz0uEa9ayfS7I2PKjRkMlWpRvlYjXgglhkUos
+	xRmJhlrMRcWJAMprYPP2AgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/9j_3kwmnoE49b=if.2x1x=p
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+This patchset fixes checkpatch warnings as follows.
+There is no functional change.
 
-Hi Greg,
+   WARNING: Missing a blank line after declarations
+   WARNING: else is not generally useful after a break or return
+   WARNING: void function return statements are not generally useful
 
-After merging the usb.current tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+Changes for V2
+- Added Lee Jones's Acked-by for 1~18th patches, except for 17th patch.
+- Fixed 17th patch, per Lee Jones's feedback.
+   
+Jingoo Han (18)
+      backlight: adp5520: add blank line after declarations
+      backlight: adp8860: add blank line after declarations
+      backlight: adp8870: add blank line after declarations
+      backlight: ams369fg06: remove 'else' after a return
+      backlight: corgi_lcd: add blank line after declarations
+      backlight: cr_bllcd: add blank line after declarations
+      backlight: ili922x: remove 'else' after a return
+      backlight: ld9040: remove 'else' after a return
+      backlight: lm3639: remove unnecessary return statements
+      backlight: lms501kf03: remove 'else' after a return
+      backlight: lp855x: add blank line after declarations
+      backlight: pcf50633: add blank line after declarations
+      backlight: s6e63m0: remove 'else' after a return
+      backlight: tdo24m: add blank line after declarations
+      backlight: wm831x_bl: add blank line after declarations
+      backlight: jornada720: remove 'else' after a return
+      backlight: jornada720: remove 'else' after a return
+      backlight: omap1: add blank line after declarations
+   
+---
+ drivers/video/backlight/adp5520_bl.c         |  1 +
+ drivers/video/backlight/adp8860_bl.c         |  3 +++
+ drivers/video/backlight/adp8870_bl.c         |  4 ++++
+ drivers/video/backlight/ams369fg06.c         |  6 +++---
+ drivers/video/backlight/corgi_lcd.c          |  1 +
+ drivers/video/backlight/cr_bllcd.c           |  1 +
+ drivers/video/backlight/ili922x.c            | 11 ++++++-----
+ drivers/video/backlight/jornada720_bl.c      |  6 +++---
+ drivers/video/backlight/jornada720_lcd.c     |  6 +-----
+ drivers/video/backlight/ld9040.c             |  6 +++---
+ drivers/video/backlight/lm3639_bl.c          |  2 --
+ drivers/video/backlight/lms501kf03.c         | 12 ++++++------
+ drivers/video/backlight/lp855x_bl.c          |  2 ++
+ drivers/video/backlight/omap1_bl.c           |  1 +
+ drivers/video/backlight/pcf50633-backlight.c |  1 +
+ drivers/video/backlight/s6e63m0.c            | 12 ++++++------
+ drivers/video/backlight/tdo24m.c             |  2 ++
+ drivers/video/backlight/wm831x_bl.c          |  1 +
+ 18 files changed, 45 insertions(+), 33 deletions(-)
 
-drivers/usb/core/hub.c: In function 'hub_probe':
-drivers/usb/core/hub.c:1735:21: error: 'struct dev_pm_info' has no member n=
-amed 'autosuspend_delay'
-  if (hdev->dev.power.autosuspend_delay >=3D 0)
-                     ^
 
-Caused by commit bdd405d2a528 ("usb: hub: Prevent hub autosuspend if
-usbcore.autosuspend is -1").  CONFIG_PM_RUNTIME is not set in this
-build.
-
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/9j_3kwmnoE49b=if.2x1x=p
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJT/S5fAAoJEMDTa8Ir7ZwV/VgQAJA0eXHY6zg3QvFK+0rRCAwH
-Q01+/m9AsBdXhNo5DjcuqTllCgLAH+cKw1D39E53UATTimYwa1EQBdWrjYqrdB0W
-TiMiFkOcl9l8Aalri4AHj5h5LUTdlYH2uuaVdw/IvCWUwhtIuRtQmlsL/B9PTJPA
-f7hvdz7Zy6+l1ywC3ZgGXsKHxMzm4Uldbrm1U5q8BltmbUthM6uvl5DTpDj5Rbm1
-FHDajofbyxW++hE/29Fk+A3ZFuLZGrv3Ta0YTaTIvzq0V5xXIfalz04oAd4Ur46M
-JOhpR9MAhkB1AoTcXLh7o0nHtPJbiOdlQu5wmN/CLSAWFO/XIkht47/050ItNu6U
-kOwUqFjIpaCn27bt3VwoGKYjcBBDtl/DxRSbBkkRyqhbWzBI8N8zg97J8MUhWXLq
-KUe5P+oGCv47d2DdRtSwTCCG1bROGGBjTTuhVMG2MDObuAODj9GF7/ZYMc8AxPoW
-MG8JM4/x+OhDcGnWpyA/hkvrtdJxwUoH8Sz/YueAZJHk5hTje78t8T9SNdzvGFHP
-6TDu7C9mPRE7PU0Hp4+kRux3eHAEjpmzEewslw0a5aYj44YRFBWSBHQH7SXHM9l/
-QNJYiQ0cWrJFlQIb3c6wpS5niubLOUX3IFBvQ88eFVLfs9X+YFRccnmkUFNxUrVu
-UkDpnUo4cQ6HUXbACgk4
-=7lQC
------END PGP SIGNATURE-----
-
---Sig_/9j_3kwmnoE49b=if.2x1x=p--
