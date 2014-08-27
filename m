@@ -1,123 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936076AbaH0WoX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 18:44:23 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:64538 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936051AbaH0WoV (ORCPT
+	id S936061AbaH0W5q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 18:57:46 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:56142 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935948AbaH0W5p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 18:44:21 -0400
+	Wed, 27 Aug 2014 18:57:45 -0400
+Date: Wed, 27 Aug 2014 23:57:39 +0100
+From: Sitsofe Wheeler <sitsofe@gmail.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Dexuan Cui <decui@microsoft.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PANIC, hyperv] BUG: unable to handle kernel paging request at
+ ffff880077800004 (hv_ringbuffer_write)
+Message-ID: <20140827225739.GA24590@sucs.org>
+References: <20140820092630.GA1478@sucs.org>
+ <EE124450C0AAF944A40DD71E61F878C994F314@SINEX14MBXC417.southpacific.corp.microsoft.com>
+ <20140825174132.GA17681@sucs.org>
+ <EE124450C0AAF944A40DD71E61F878C995E93E@SINEX14MBXC419.southpacific.corp.microsoft.com>
+ <20140827104408.GC1827@sucs.org>
+ <EE124450C0AAF944A40DD71E61F878C996493E@SINEX14MBXC419.southpacific.corp.microsoft.com>
+ <20140827121559.GA14286@sucs.org>
+ <EE124450C0AAF944A40DD71E61F878C9965238@SINEX14MBXC419.southpacific.corp.microsoft.com>
+ <20140827161900.GA25326@sucs.org>
+ <51ae44fcae424365a6d78f3597175d77@BY2PR0301MB0711.namprd03.prod.outlook.com>
 MIME-Version: 1.0
-X-Originating-IP: [95.23.61.81]
-In-Reply-To: <53FE47A9.1020701@gmail.com>
-References: <1409053061-22568-1-git-send-email-javier.martinez@collabora.co.uk>
-	<53FE2446.3040402@gmail.com>
-	<20140827183733.GN17528@sirena.org.uk>
-	<53FE25EB.7060702@gmail.com>
-	<20140827184705.GO17528@sirena.org.uk>
-	<53FE2901.50508@gmail.com>
-	<20140827191526.GS17528@sirena.org.uk>
-	<53FE2F9E.80501@gmail.com>
-	<20140827194411.GU17528@sirena.org.uk>
-	<53FE387F.3030302@gmail.com>
-	<20140827202554.GW17528@sirena.org.uk>
-	<53FE4286.3050305@gmail.com>
-	<53FE47A9.1020701@gmail.com>
-Date: Thu, 28 Aug 2014 00:44:18 +0200
-Message-ID: <CABxcv=k2PH-BksYyWirAoL=DiVuy+O=Y1c+pMO=EK58XNKMsFw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] regulator: max77802: set opmode to normal if off is
- read from hw
-From: Javier Martinez Canillas <javier@dowhile0.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Mark Brown <broonie@kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51ae44fcae424365a6d78f3597175d77@BY2PR0301MB0711.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Tomasz and Mark,
+On Wed, Aug 27, 2014 at 06:45:55PM +0000, KY Srinivasan wrote:
+> 
+> > -----Original Message-----
+> > From: Sitsofe Wheeler [mailto:sitsofe@gmail.com]
+> > Sent: Wednesday, August 27, 2014 9:19 AM
+> > 
+> > > BTW, with the patch below, hyperv_fb can work now, BUT,
+> > > *occasionally*,
+> > > storvsc_probe() -> ... -> vmbus_open() -> can fail due to
+> > > HV_STATUS_INVALID_ALIGNMENT...
+> > 
+> > I applied your new patch on top of KY's pieces (it applied cleanly)
+> > and while it doesn't blow up, one warning is printed out and the UP
+> > boot seemed to stall after input: TPPS/2 message (but pressing
+> > ctrl-alt-delete allows the system to reboot cleanly).
+> 
+> First let me thank you guys for looking into this issue. Looking at
+> your dmesg, it looked like storvsc probe failed as Dexuan had seen.
+> Since the failure appears to be alignment related, perhaps we could
+> test with allocating a page all the time (and getting rid of the
+> kmalloc). Sitsofe, here is a patch based on Dexuan's patch. If this
+> works, I will probably minimize failure cases by pre-allocating
+> per-cpu pages for this.:
 
-Sorry for not answering before but I'm on vacations until Sep, 5 and I
-have limited access to my email.
+After some modifications to apply on top of your previous patches
+applying this latest patch has cured the issues surrounding hyperv_fb
+issues on boot. The only issue seen on boot now is similar to
+https://lkml.org/lkml/2014/8/19/227 ...
 
-On Wed, Aug 27, 2014 at 11:03 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
->>>> From what I know based on my experience with Samsung boards we used, the
->>>> opmodes of regulators are preconfigured by board bootloader to certain
->>>> values based on power design of the board (i.e. there is no need to keep
->>>> a regulator in full power mode, if on given board only a little fraction
->>>> of it is needed).
->>>
+How come previous alignment efforts weren't working out?
 
-This is the case for Chromebooks as well but the solution implemented
-in the downstream Chrome OS 3.8 kernel is what Tomasz suggested
-before, the max77802/686 PMIC regulator driver has a DT binding that
-allows to define the initial opmode for each regulator:
-
-Required properties for each regulator:
-- regulator-op-mode : Regulator operating mode, the meaning is regulator-
-     dependent. Valid values are 0-3.
-
->>> Well, presumably the bootloader is going to run again even for a warm
->>> reboot?
->>
->> This is strange, but apparently it's not the case for the hardware which
->> this patch is supposed to fix or at least this is how I understood it.
->>
->
-> OK, I just realized that Javier's problem might be caused by the fact
-> that the bootloader he use doesn't change the regulators from defaults
-> at all. In this case this patch is just fine.
->
-
-Yes, AFAIK the bootloader (none of them because Chromebooks use two
-chained U-boots) change the regulators default opmode so once is set
-to OFF on .disable, that value is preserved on warm reboot. This made
-sense with the Chrome OS kernel since the kernel always set the opmode
-defined in the "regulator-op-mode" DT property and did not relied on
-the bootloader to set the most efficient default opmode.
-
-As Tomasz said this issue also affects other PMICs, for example a
-similar DT binding was proposed [0] for the max77686 PMIC which is
-very similar to the max77802. Doug even suggested in that thread a
-more generic DT binding that could be part of the regulator core.
-
-At the end that DT binding was not merged and the max77686 driver just
-sets the default operating mode for all regulators to NORMAL and does
-not even read the value reported by the hardware registers. So in that
-regard the max77802 driver (even after this patch) does better since
-at least respects the default opmode read from the hardware register
-if is not OFF.
-
-Also, other drivers have customs operating mode DT properties, please
-take a look at Documentation/devicetree/bindings/regulator/s5m8767-regulator.txt:
-
-The above regulator entries are defined in regulator bindings documentation
-except these properties:
-        - op_mode: describes the different operating modes of the LDO's with
-                power mode change in SOC. The different possible values are,
-                0 - always off mode
-                1 - on in normal mode
-                2 - low power mode
-                3 - suspend mode
-
-This is not a great binding IMHO since not only uses a quite generic
-"op_mode" for property that is driver specific ("s5m8767,op-mode" or
-something would had been better) but also this seems to be a general
-issue for many platforms so if we don't try to solve this with a
-generic approach, each driver author will try to solve it in its own
-way.
-
-> Best regards,
-> Tomasz
-> --
-
-Best regards,
-Javier
-
-[0]: https://patchwork.kernel.org/patch/1855331/
+-- 
+Sitsofe | http://sucs.org/~sits/
