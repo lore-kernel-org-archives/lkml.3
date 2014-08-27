@@ -1,66 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756521AbaH0BYZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 21:24:25 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:48591 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755804AbaH0BYY (ORCPT
+	id S1756657AbaH0BZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 21:25:56 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:42143 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756478AbaH0BZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 21:24:24 -0400
+	Tue, 26 Aug 2014 21:25:55 -0400
+X-Original-SENDERIP: 10.177.222.131
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Wed, 27 Aug 2014 10:26:11 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: David Horner <ds2horner@gmail.com>
+Cc: Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
+        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjennings@variantweb.net>,
+        Dan Streetman <ddstreet@ieee.org>
+Subject: Re: [PATCH v5 3/4] zram: zram memory size limitation
+Message-ID: <20140827012610.GA10198@js1304-P5Q-DELUXE>
+References: <1408925156-11733-1-git-send-email-minchan@kernel.org>
+ <1408925156-11733-4-git-send-email-minchan@kernel.org>
+ <20140826073730.GA1975@js1304-P5Q-DELUXE>
+ <20140826075511.GI11319@bbox>
+ <CAFdhcLQce05qi2LGP85N=aaQiKz1ArC3Kn+W-s86R58BkjMr3w@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <53FC5DCF.4060202@st.com>
-References: <1409046479-18546-1-git-send-email-lftan@altera.com>
-	<53FC5DCF.4060202@st.com>
-Date: Wed, 27 Aug 2014 09:24:22 +0800
-X-Google-Sender-Auth: CE703U2kyCvgaWBzPr9eAvufF1s
-Message-ID: <CAFiDJ5-S40ve--sg_2sskx2BBm7zmZdmDmNpyMeXnHcVdrx8ag@mail.gmail.com>
-Subject: Re: [PATCH (net-next) v2] net: stmmac: fix warning from Sparse for socfpga
-From: Ley Foon Tan <lftan@altera.com>
-To: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-Cc: netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Vince Bridgers <vbridger@altera.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFdhcLQce05qi2LGP85N=aaQiKz1ArC3Kn+W-s86R58BkjMr3w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 6:13 PM, Giuseppe CAVALLARO
-<peppe.cavallaro@st.com> wrote:
-> On 8/26/2014 11:47 AM, Ley Foon Tan wrote:
->>
->> Warning:
->> drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c:122:41:
->> sparse: cast removes address space of expression
->> drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c:122:38:
->> sparse: incorrect type in assignment (different address spaces)
->>
->> Signed-off-by: Ley Foon Tan <lftan@altera.com>
->> ---
->>   drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c | 2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c
->> b/drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c
->> index cd613d7..ff54a1f 100644
->> --- a/drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c
->> +++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c
->> @@ -119,7 +119,7 @@ static int socfpga_dwmac_parse_data(struct
->> socfpga_dwmac *dwmac, struct device *
->>                         return -EINVAL;
->>                 }
->>
->> -               dwmac->splitter_base = (void *)devm_ioremap_resource(dev,
->> +               dwmac->splitter_base = devm_ioremap_resource(dev,
->>                         &res_splitter);
->
->
-> can the ioremap call stay in a single line ? or pls review indent looks
-> NOK
+Hello, Minchan and David.
 
-It will has "line over 80 characters" if it is one line code.
-BTW, this patch passed "checkpatch.pl" script.
-Let me know if think indent is not okay.
+On Tue, Aug 26, 2014 at 08:22:29AM -0400, David Horner wrote:
+> On Tue, Aug 26, 2014 at 3:55 AM, Minchan Kim <minchan@kernel.org> wrote:
+> > Hey Joonsoo,
+> >
+> > On Tue, Aug 26, 2014 at 04:37:30PM +0900, Joonsoo Kim wrote:
+> >> On Mon, Aug 25, 2014 at 09:05:55AM +0900, Minchan Kim wrote:
+> >> > @@ -513,6 +540,14 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+> >> >             ret = -ENOMEM;
+> >> >             goto out;
+> >> >     }
+> >> > +
+> >> > +   if (zram->limit_pages &&
+> >> > +           zs_get_total_pages(meta->mem_pool) > zram->limit_pages) {
+> >> > +           zs_free(meta->mem_pool, handle);
+> >> > +           ret = -ENOMEM;
+> >> > +           goto out;
+> >> > +   }
+> >> > +
+> >> >     cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_WO);
+> >>
+> >> Hello,
+> >>
+> >> I don't follow up previous discussion, so I could be wrong.
+> >> Why this enforcement should be here?
+> >>
+> >> I think that this has two problems.
+> >> 1) alloc/free happens unnecessarilly if we have used memory over the
+> >> limitation.
+> >
+> > True but firstly, I implemented the logic in zsmalloc, not zram but
+> > as I described in cover-letter, it's not a requirement of zsmalloc
+> > but zram so it should be in there. If every user want it in future,
+> > then we could move the function into zsmalloc. That's what we
+> > concluded in previous discussion.
+
+Hmm...
+Problem is that we can't avoid these unnecessary overhead in this
+implementation. If we can implement this feature in zram efficiently,
+it's okay. But, I think that current form isn't.
+
+> >
+> > Another idea is we could call zs_get_total_pages right before zs_malloc
+> > but the problem is we cannot know how many of pages are allocated
+> > by zsmalloc in advance.
+> > IOW, zram should be blind on zsmalloc's internal.
+> >
+> 
+> We did however suggest that we could check before hand to see if
+> max was already exceeded as an optimization.
+> (possibly with a guess on usage but at least using the minimum of 1 page)
+> In the contested case, the max may already be exceeded transiently and
+> therefore we know this one _could_ fail (it could also pass, but odds
+> aren't good).
+> As Minchan mentions this was discussed before - but not into great detail.
+> Testing should be done to determine possible benefit. And as he also
+> mentions, the better place for it may be in zsmalloc, but that
+> requires an ABI change.
+
+Why we hesitate to change zsmalloc API? It is in-kernel API and there
+are just two users now, zswap and zram. We can change it easily.
+I think that we just need following simple API change in zsmalloc.c.
+
+zs_zpool_create(gfp_t gfp, struct zpool_ops *zpool_op)
+=>
+zs_zpool_create(unsigned long limit, gfp_t gfp, struct zpool_ops
+*zpool_op)
+
+It's pool allocator so there is no obstacle for us to limit maximum
+memory usage in zsmalloc. It's a natural idea to limit memory usage
+for pool allocator.
+
+> Certainly a detailed suggestion could happen on this thread and I'm
+> also interested
+> in your thoughts, but this patchset should be able to go in as is.
+> Memory exhaustion avoidance probably trumps the possible thrashing at
+> threshold.
+> 
+> > About alloc/free cost once if it is over the limit,
+> > I don't think it's important to consider.
+> > Do you have any scenario in your mind to consider alloc/free cost
+> > when the limit is over?
+> >
+> >> 2) Even if this request doesn't do new allocation, it could be failed
+> >> due to other's allocation. There is time gap between allocation and
+> >> free, so legimate user who want to use preallocated zsmalloc memory
+> >> could also see this condition true and then he will be failed.
+> >
+> > Yeb, we already discussed that. :)
+> > Such false positive shouldn't be a severe problem if we can keep a
+> > promise that zram user cannot exceed mem_limit.
+> >
+
+If we can keep such a promise, why we need to limit memory usage?
+I guess that this limit feature is useful for user who can't keep such promise.
+So, we should assume that this false positive happens frequently.
+
+> And we cannot avoid the race, nor can we avoid in a low overhead competitive
+> concurrent process transient inconsistent states.
+> Different views for different observers.
+>  They are a consequence of the theory of "Special Computational Relativity".
+>  I am working on a String Unification Theory of Quantum and General CR in LISP.
+>  ;-)
+
+If we move limit logic to zsmalloc, we can avoid the race by commiting
+needed memory size before actual allocation attempt. This commiting makes
+concurrent process serialized so there is no race here. There is
+possibilty to fail to allocate, but I think this is better than alloc
+and free blindlessly depending on inconsistent states.
 
 Thanks.
