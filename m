@@ -1,102 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965337AbaH0VHd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 17:07:33 -0400
-Received: from mail-lb0-f202.google.com ([209.85.217.202]:51097 "EHLO
-	mail-lb0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965257AbaH0VEP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S965264AbaH0VEP (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 27 Aug 2014 17:04:15 -0400
-X-Greylist: delayed 321 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Aug 2014 17:04:15 EDT
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Robert Baldyga <r.baldyga@samsung.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Michal Nazarewicz <mina86@mina86.com>
-Subject: [PATCH 2/5] tools: ffs-test: convert to new descriptor format
-Date: Wed, 27 Aug 2014 22:58:46 +0200
-Message-Id: <1409173129-19603-3-git-send-email-mina86@mina86.com>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1409173129-19603-1-git-send-email-mina86@mina86.com>
-References: <1409173129-19603-1-git-send-email-mina86@mina86.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Received: from mga01.intel.com ([192.55.52.88]:39546 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965197AbaH0VEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 17:04:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="377839690"
+From: Andi Kleen <andi@firstfloor.org>
+To: peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
+        tglx@linutronix.de, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 1/5] perf, x86: Remove incorrect model number from Haswell perf
+Date: Wed, 27 Aug 2014 14:03:53 -0700
+Message-Id: <1409173437-3041-2-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1409173437-3041-1-git-send-email-andi@firstfloor.org>
+References: <1409173437-3041-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit [ac8dde11: “Add flags to descriptors block”] functionfs
-supports a new, more powerful and extensible, descriptor format.
-Since ffs-test is probably the first thing users of the functionfs
-interface see when they start writing functionfs user space daemons,
-convert it to use the new format thus promoting it.
+From: Andi Kleen <ak@linux.intel.com>
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+71 is a Broadwell, not a Haswell. The model number was added
+by mistake earlier.
+
+Remove it for now, until it can be re-added later with
+real Broadwell support.
+
+In practice it does not cause a lot of issues because the Broadwell
+PMU is very similar to Haswell, but some details were wrong,
+and it's better to handle it correctly.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- include/uapi/linux/usb/functionfs.h |  2 +-
- tools/usb/ffs-test.c                | 14 +++++++++-----
- 2 files changed, 10 insertions(+), 6 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/include/uapi/linux/usb/functionfs.h b/include/uapi/linux/usb/functionfs.h
-index 3ca03de..6d2a16b 100644
---- a/include/uapi/linux/usb/functionfs.h
-+++ b/include/uapi/linux/usb/functionfs.h
-@@ -102,7 +102,7 @@ struct usb_ext_prop_desc {
-  * structure.  Any flags that are not recognised cause the whole block to be
-  * rejected with -ENOSYS.
-  *
-- * Legacy descriptors format:
-+ * Legacy descriptors format (deprecated as of 3.14):
-  *
-  * | off | name      | type         | description                          |
-  * |-----+-----------+--------------+--------------------------------------|
-diff --git a/tools/usb/ffs-test.c b/tools/usb/ffs-test.c
-index a87e99f..708d317 100644
---- a/tools/usb/ffs-test.c
-+++ b/tools/usb/ffs-test.c
-@@ -1,5 +1,5 @@
- /*
-- * ffs-test.c.c -- user mode filesystem api for usb composite function
-+ * ffs-test.c -- user mode filesystem api for usb composite function
-  *
-  * Copyright (C) 2010 Samsung Electronics
-  *                    Author: Michal Nazarewicz <mina86@mina86.com>
-@@ -106,7 +106,9 @@ static void _msg(unsigned level, const char *fmt, ...)
- /******************** Descriptors and Strings *******************************/
- 
- static const struct {
--	struct usb_functionfs_descs_head header;
-+	struct usb_functionfs_descs_head_v2 header;
-+	__le32 fs_count;
-+	__le32 hs_count;
- 	struct {
- 		struct usb_interface_descriptor intf;
- 		struct usb_endpoint_descriptor_no_audio sink;
-@@ -114,11 +116,12 @@ static const struct {
- 	} __attribute__((packed)) fs_descs, hs_descs;
- } __attribute__((packed)) descriptors = {
- 	.header = {
--		.magic = cpu_to_le32(FUNCTIONFS_DESCRIPTORS_MAGIC),
-+		.magic = cpu_to_le32(FUNCTIONFS_DESCRIPTORS_MAGIC_V2),
-+		.flags = cpu_to_le32(FUNCTIONFS_HAS_FS_DESC |
-+				     FUNCTIONFS_HAS_HS_DESC),
- 		.length = cpu_to_le32(sizeof descriptors),
--		.fs_count = cpu_to_le32(3),
--		.hs_count = cpu_to_le32(3),
- 	},
-+	.fs_count = cpu_to_le32(3),
- 	.fs_descs = {
- 		.intf = {
- 			.bLength = sizeof descriptors.fs_descs.intf,
-@@ -142,6 +145,7 @@ static const struct {
- 			/* .wMaxPacketSize = autoconfiguration (kernel) */
- 		},
- 	},
-+	.hs_count = cpu_to_le32(3),
- 	.hs_descs = {
- 		.intf = {
- 			.bLength = sizeof descriptors.fs_descs.intf,
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 89bc750..f962e26 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -2544,7 +2544,6 @@ __init int intel_pmu_init(void)
+ 	case 63:
+ 	case 69:
+ 	case 70:
+-	case 71:
+ 		x86_pmu.late_ack = true;
+ 		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids, sizeof(hw_cache_event_ids));
+ 		memcpy(hw_cache_extra_regs, snb_hw_cache_extra_regs, sizeof(hw_cache_extra_regs));
 -- 
-2.1.0.rc2.206.gedb03e5
+1.9.3
 
