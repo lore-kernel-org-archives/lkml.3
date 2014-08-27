@@ -1,52 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935682AbaH0S5k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 14:57:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57677 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933833AbaH0S5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 14:57:39 -0400
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH] drm: Test for PCI root bus to avoid NULL pointer dereference
-To: airlied@linux.ie, dri-devel@lists.freedesktop.org
-Cc: linux-kernel@vger.kernel.org, alex.williamson@redhat.com
-Date: Wed, 27 Aug 2014 12:57:33 -0600
-Message-ID: <20140827185651.29388.16082.stgit@gimli.home>
-User-Agent: StGIT/0.14.3
+	id S964883AbaH0S6Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 14:58:16 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:50343 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933833AbaH0S6P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 14:58:15 -0400
+From: Kevin Hilman <khilman@deeprootsystems.com>
+To: Nishanth Menon <nm@ti.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Tero Kristo <t-kristo@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Keerthy <j-keerthy@ti.com>,
+        =?utf-8?Q?Beno=C3=AEt?= Cousson <bcousson@baylibre.com>
+Subject: Re: [PATCH 07/10] ARM: OMAP5 / DRA7: Enable CPU RET on suspend
+Organization: Deep Root Systems, LLC
+References: <1408716154-26101-1-git-send-email-nm@ti.com>
+	<1408716154-26101-8-git-send-email-nm@ti.com>
+Date: Wed, 27 Aug 2014 11:58:09 -0700
+In-Reply-To: <1408716154-26101-8-git-send-email-nm@ti.com> (Nishanth Menon's
+	message of "Fri, 22 Aug 2014 09:02:31 -0500")
+Message-ID: <7hbnr5dake.fsf@paris.lan>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we have a GPU on the PCI root bus that calls
-drm_pcie_get_speed_cap_mask() we end up with a NULL pointer
-dereference since pdev->bus->self is NULL.  We already protect
-against callers passing non-PCI devices, so let's also catch this
-case and return -EINVAL.
+Nishanth Menon <nm@ti.com> writes:
 
-Root complex graphics are not terribly likely outside of IGD, but
-when we assign a standard plugin GPU to a virtual machine, our
-assumption that we have a parent device quickly becomes invalid.
+> From: Rajendra Nayak <rnayak@ti.com>
+>
+> On OMAP5 / DRA7, prevent a CPU powerdomain OFF and resulting MPU OSWR
+> and instead attempt a CPU RET and side effect, MPU RET in suspend.
+>
+> Signed-off-by: Rajendra Nayak <rnayak@ti.com>
+> [nm@ti.com: update to do save_state only on DRA7]
+> Signed-off-by: Nishanth Menon <nm@ti.com>
+> ---
+>  arch/arm/mach-omap2/omap-mpuss-lowpower.c |    4 ++++
+>  arch/arm/mach-omap2/omap-wakeupgen.c      |    2 +-
+>  arch/arm/mach-omap2/pm44xx.c              |    9 +++++++--
+>  3 files changed, 12 insertions(+), 3 deletions(-)
+>
+> diff --git a/arch/arm/mach-omap2/omap-mpuss-lowpower.c b/arch/arm/mach-omap2/omap-mpuss-lowpower.c
+> index 207fce2..0d640eb 100644
+> --- a/arch/arm/mach-omap2/omap-mpuss-lowpower.c
+> +++ b/arch/arm/mach-omap2/omap-mpuss-lowpower.c
+> @@ -242,6 +242,10 @@ int omap4_enter_lowpower(unsigned int cpu, unsigned int power_state)
+>  		save_state = 1;
+>  		break;
+>  	case PWRDM_POWER_RET:
+> +		if (soc_is_omap54xx() || soc_is_dra7xx()) {
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
+Aren't we trying to get away from these soc_* checks for anything other
+than init code?
 
- drivers/gpu/drm/drm_pci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Kevin
 
-diff --git a/drivers/gpu/drm/drm_pci.c b/drivers/gpu/drm/drm_pci.c
-index 020cfd9..411e806 100644
---- a/drivers/gpu/drm/drm_pci.c
-+++ b/drivers/gpu/drm/drm_pci.c
-@@ -390,7 +390,7 @@ int drm_pcie_get_speed_cap_mask(struct drm_device *dev, u32 *mask)
- 	u32 lnkcap, lnkcap2;
- 
- 	*mask = 0;
--	if (!dev->pdev)
-+	if (!dev->pdev || pci_is_root_bus(dev->pdev->bus))
- 		return -EINVAL;
- 
- 	root = dev->pdev->bus->self;
-
+> +			save_state = 0;
+> +			break;
+> +		}
+>  	default:
+>  		/*
+>  		 * CPUx CSWR is invalid hardware state. Also CPUx OSWR
+> diff --git a/arch/arm/mach-omap2/omap-wakeupgen.c b/arch/arm/mach-omap2/omap-wakeupgen.c
+> index e844e16..87c1c0d 100644
+> --- a/arch/arm/mach-omap2/omap-wakeupgen.c
+> +++ b/arch/arm/mach-omap2/omap-wakeupgen.c
+> @@ -381,7 +381,7 @@ static struct notifier_block irq_notifier_block = {
+>  static void __init irq_pm_init(void)
+>  {
+>  	/* FIXME: Remove this when MPU OSWR support is added */
+> -	if (!soc_is_omap54xx())
+> +	if (!soc_is_omap54xx() && !soc_is_dra7xx())
+>  		cpu_pm_register_notifier(&irq_notifier_block);
+>  }
+>  #else
+> diff --git a/arch/arm/mach-omap2/pm44xx.c b/arch/arm/mach-omap2/pm44xx.c
+> index b6f243d..c063833 100644
+> --- a/arch/arm/mach-omap2/pm44xx.c
+> +++ b/arch/arm/mach-omap2/pm44xx.c
+> @@ -36,6 +36,8 @@ struct power_state {
+>  	struct list_head node;
+>  };
+>  
+> +static u32 cpu_suspend_state = PWRDM_POWER_OFF;
+> +
+>  static LIST_HEAD(pwrst_list);
+>  
+>  #ifdef CONFIG_SUSPEND
+> @@ -66,7 +68,7 @@ static int omap4_pm_suspend(void)
+>  	 * domain CSWR is not supported by hardware.
+>  	 * More details can be found in OMAP4430 TRM section 4.3.4.2.
+>  	 */
+> -	omap4_enter_lowpower(cpu_id, PWRDM_POWER_OFF);
+> +	omap4_enter_lowpower(cpu_id, cpu_suspend_state);
+>  
+>  	/* Restore next powerdomain state */
+>  	list_for_each_entry(pwrst, &pwrst_list, node) {
+> @@ -112,8 +114,11 @@ static int __init pwrdms_setup(struct powerdomain *pwrdm, void *unused)
+>  	 * through hotplug path and CPU0 explicitly programmed
+>  	 * further down in the code path
+>  	 */
+> -	if (!strncmp(pwrdm->name, "cpu", 3))
+> +	if (!strncmp(pwrdm->name, "cpu", 3)) {
+> +		if (soc_is_omap54xx() || soc_is_dra7xx())
+> +			cpu_suspend_state = PWRDM_POWER_RET;
+>  		return 0;
+> +	}
+>  
+>  	pwrst = kmalloc(sizeof(struct power_state), GFP_ATOMIC);
+>  	if (!pwrst)
