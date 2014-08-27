@@ -1,113 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965036AbaH0Tpa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 15:45:30 -0400
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:52078 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751044AbaH0Tp3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 15:45:29 -0400
+	id S965054AbaH0Tpt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 15:45:49 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:59523 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964894AbaH0Tpr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 15:45:47 -0400
+Message-ID: <53FE3551.2080806@ti.com>
+Date: Wed, 27 Aug 2014 14:45:21 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <53FE330F.8070601@infradead.org>
-References: <CAGhpvooRXZTsWL58hFReD0b+2Wf-iRmW_b-uV+aihpRNVWj1WA@mail.gmail.com>
-	<53FE330F.8070601@infradead.org>
-Date: Wed, 27 Aug 2014 22:45:25 +0300
-Message-ID: <CAGhpvoq5X2s8oFPuJsJWwmkyQKFb+kLAkgiW81eDwkTRdwmUSg@mail.gmail.com>
-Subject: Re: [PATCH v2] i2c documentation: rename variable "register" to "reg"
-From: =?UTF-8?B?Sm9zw6kgTWFudWVsIEFsYXJjw7NuIFJvbGTDoW4=?= 
-	<jose.alarcon.roldan@gmail.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: wsa@the-dreams.de, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tony Lindgren <tony@atomide.com>
+CC: Kevin Hilman <khilman@deeprootsystems.com>, Tero Kristo <t-kristo@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Keerthy <j-keerthy@ti.com>,
+        =?windows-1252?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>
+Subject: Re: [PATCH 07/10] ARM: OMAP5 / DRA7: Enable CPU RET on suspend
+References: <1408716154-26101-1-git-send-email-nm@ti.com> <1408716154-26101-8-git-send-email-nm@ti.com> <7hbnr5dake.fsf@paris.lan> <53FE2BF2.3020006@ti.com> <20140827194156.GE16006@atomide.com> <53FE34D7.7040004@ti.com>
+In-Reply-To: <53FE34D7.7040004@ti.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-08-27 22:35 GMT+03:00 Randy Dunlap <rdunlap@infradead.org>:
-> On 08/27/14 11:12, José Manuel Alarcón Roldán wrote:
->> The example code provided with the i2c device interface documentation
->> won't compile since it uses the reserved word "register" to name a
->> variable.
+On 08/27/2014 02:43 PM, Santosh Shilimkar wrote:
+> On Wednesday 27 August 2014 03:41 PM, Tony Lindgren wrote:
+>> * Nishanth Menon <nm@ti.com> [140827 12:05]:
+>>> On 08/27/2014 01:58 PM, Kevin Hilman wrote:
+>>>> Nishanth Menon <nm@ti.com> writes:
+>>>>
+>>>>> From: Rajendra Nayak <rnayak@ti.com>
+>>>>>
+>>>>> On OMAP5 / DRA7, prevent a CPU powerdomain OFF and resulting MPU OSWR
+>>>>> and instead attempt a CPU RET and side effect, MPU RET in suspend.
+>>>>>
+>>>>> Signed-off-by: Rajendra Nayak <rnayak@ti.com>
+>>>>> [nm@ti.com: update to do save_state only on DRA7]
+>>>>> Signed-off-by: Nishanth Menon <nm@ti.com>
+>>>>> ---
+>>>>>  arch/arm/mach-omap2/omap-mpuss-lowpower.c |    4 ++++
+>>>>>  arch/arm/mach-omap2/omap-wakeupgen.c      |    2 +-
+>>>>>  arch/arm/mach-omap2/pm44xx.c              |    9 +++++++--
+>>>>>  3 files changed, 12 insertions(+), 3 deletions(-)
+>>>>>
+>>>>> diff --git a/arch/arm/mach-omap2/omap-mpuss-lowpower.c b/arch/arm/mach-omap2/omap-mpuss-lowpower.c
+>>>>> index 207fce2..0d640eb 100644
+>>>>> --- a/arch/arm/mach-omap2/omap-mpuss-lowpower.c
+>>>>> +++ b/arch/arm/mach-omap2/omap-mpuss-lowpower.c
+>>>>> @@ -242,6 +242,10 @@ int omap4_enter_lowpower(unsigned int cpu, unsigned int power_state)
+>>>>>  		save_state = 1;
+>>>>>  		break;
+>>>>>  	case PWRDM_POWER_RET:
+>>>>> +		if (soc_is_omap54xx() || soc_is_dra7xx()) {
+>>>>
+>>>> Aren't we trying to get away from these soc_* checks for anything other
+>>>> than init code?
+>>>
+>>> I would expect that to take place in stages as part of which the next
+>>> level of cleanup is to move PRM into drivers. Currently our wakeupgen,
+>>> prm code does have quiet a few needs of dealing with soc_is checks
+>>> primarily from having to re-architect code in two different directions
+>>> - we want to move into just one direction eventually - to prm drivers
+>>> and as less code in mach-omap2 which is already in the works.
 >>
->> The compiler fails with this error message:
+>> Why don't you just set some flag at init time based on the
+>> soc_is check and then test that here? That limits the use of
+>> soc_is to init code only which makes it easier to phase it
+>> out completely eventually.
 >>
->>  error: expected identifier or '(' before '=' token
->>    __u8 register = 0x20; /* Device register to access */
->>                  ^
->>
->> Rename the variable "register" to simply "reg"
->> in the example code.
->>
->> Another couple of typos has been fixed as well.
->>
->>
->> Signed-off-by: Jose Alarcon Roldan <jose.alarcon.roldan@gmail.com>
->> ---
->>  Documentation/i2c/dev-interface | 10 +++++-----
->>  1 file changed, 5 insertions(+), 5 deletions(-)
->>
->> diff --git a/Documentation/i2c/dev-interface b/Documentation/i2c/dev-interface
->> index 3e742ba..744ce70 100644
->> --- a/Documentation/i2c/dev-interface
->> +++ b/Documentation/i2c/dev-interface
->> @@ -57,12 +57,12 @@ Well, you are all set up now. You can now use
->> SMBus commands or plain
->
-> The 2 lines above should have been on one line.  Looks like your mail client is
-> splitting lines where they shouldn't be split.  Some clients have config
-> options for that...   (I fixed it in your patch.)
-> Please see if Documentation/email-clients.txt can help you any.
->
->>  I2C to communicate with your device. SMBus commands are preferred if
->>  the device supports them. Both are illustrated below.
->>
->> -  __u8 register = 0x10; /* Device register to access */
->> +  __u8 reg = 0x10; /* Device register to access */
->>    __s32 res;
->>    char buf[10];
->>
->>    /* Using SMBus commands */
->> -  res = i2c_smbus_read_word_data(file, register);
->> +  res = i2c_smbus_read_word_data(file, reg);
->>    if (res < 0) {
->>      /* ERROR HANDLING: i2c transaction failed */
->>    } else {
->> @@ -70,11 +70,11 @@ the device supports them. Both are illustrated below.
->>    }
->>
->>    /* Using I2C Write, equivalent of
->
-> The line above should end with a space character as in the current source file
-> that is being patched.  Maybe your email client stripped it.  Please fix your
-> email client for future patches.
->
->> -     i2c_smbus_write_word_data(file, register, 0x6543) */
->> -  buf[0] = register;
->> +  i2c_smbus_write_word_data(file, reg, 0x6543) */
->
-> The line above should be indented more since it is a continuation
-> of the comment above it.  I fixed that.
->
->> +  buf[0] = reg;
->>    buf[1] = 0x43;
->>    buf[2] = 0x65;
->> -  if (write(file, buf, 3) ! =3) {
->> +  if (write(file, buf, 3) != 3) {
->>      /* ERROR HANDLING: i2c transaction failed */
->>    }
->>
->
-> Patch applied.  Or would you like to see if you can send the patch
-> with all of these minor annoying problems fixed?
+> Indeed. Infact the version of the code I tried posting last year was
+> using a flag which was initialised during init. Same can be
+> done her.
 
-Thanks Randy for your comments. I will send a new patch.
-
-Hope to get it right this time :-)
+OK. will try something along that line in the next rev.
 
 
->
-> Thanks.
->
-> --
-> ~Randy
+-- 
+Regards,
+Nishanth Menon
