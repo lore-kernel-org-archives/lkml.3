@@ -1,98 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932825AbaH0FvA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 01:51:00 -0400
-Received: from mga01.intel.com ([192.55.52.88]:42749 "EHLO mga01.intel.com"
+	id S932910AbaH0FwY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 01:52:24 -0400
+Received: from mga03.intel.com ([143.182.124.21]:56159 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754865AbaH0Fu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 01:50:58 -0400
+	id S1756560AbaH0FwX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 01:52:23 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,408,1406617200"; 
-   d="scan'208";a="582213711"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        x86@kernel.org, Jiang Liu <jiang.liu@linux.intel.com>,
-        Prarit Bhargava <prarit@redhat.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
-Subject: [Bugfix] x86, irq: Fix bug in setting IOAPIC pin attributes
-Date: Wed, 27 Aug 2014 13:53:11 +0800
-Message-Id: <1409118795-17046-1-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20140826095221.GO1660@lahna.fi.intel.com>
-References: <20140826095221.GO1660@lahna.fi.intel.com>
+X-IronPort-AV: E=Sophos;i="5.04,409,1406617200"; 
+   d="scan'208";a="473044301"
+Message-ID: <53FD7210.606@linux.intel.com>
+Date: Wed, 27 Aug 2014 08:52:16 +0300
+From: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: Takashi Iwai <tiwai@suse.de>
+CC: alsa-devel@alsa-project.org, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>
+Subject: Re: [alsa-devel] [PATCH 1/2] regmap: cache: Fix regcache_sync_block
+ for	non-autoincrementing devices
+References: <1409061793-10495-1-git-send-email-jarkko.nikula@linux.intel.com>	<1409061793-10495-2-git-send-email-jarkko.nikula@linux.intel.com> <s5hk35vpc18.wl-tiwai@suse.de>
+In-Reply-To: <s5hk35vpc18.wl-tiwai@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 15a3c7cc9154321fc3 "x86, irq: Introduce two helper functions
-to support irqdomain map operation" breaks LPSS ACPI enumerated
-devices.
+On 08/26/2014 05:21 PM, Takashi Iwai wrote:
+> At Tue, 26 Aug 2014 17:03:12 +0300,
+> Jarkko Nikula wrote:
+>> Commit 75a5f89f635c ("regmap: cache: Write consecutive registers in a single
+>> block write") expected that autoincrementing writes are supported if
+>> hardware has a register format which can support raw writes.
+>>
+>> This is not necessarily true and thus for instance rbtree sync can fail when
+>> there is need to sync multiple consecutive registers but block write to
+>> device fails due not supported autoincrementing writes.
+>>
+>> Fix this by spliting raw block sync to series of single register writes for
+>> devices that don't support autoincrementing writes.
+> Wouldn't it suffice to correct regmap_can_raw_write() to return false
+> if map->use_single_rw is set?
+>
+I don't know. I was thinking that also but was unsure about it since 
+regcache_sync_block_raw() and regcache_sync_block_single() code paths 
+use different regmap write functions. regcache_sync_block_raw() ends up 
+calling _regmap_raw_write() which takes care of page select operation 
+when needed and regcache_sync_block_single() uses _regmap_write() which 
+doesn't.
 
-On startup, IOAPIC driver preallocates IRQ descriptors and programs
-IOAPIC pins with default level and polarity attributes for all legacy
-IRQs. Later legacy IRQ users may fail to set IOAPIC pin attributes
-if the requested attributes conflicts with the default IOAPIC pin
-attributes. So change mp_irqdomain_map() to allow the first legacy IRQ
-user to reprogram IOAPIC pin with different attributes.
+Which makes me thinking should the regcache_sync_block_single() also use 
+_regmap_raw_write() in order to take care of page selects?
 
-Reported-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
-Hi Mika,
-	We have a plan to kill function mp_set_gsi_attr() later, so
-I have slightly modified your changes. Could you please help to test
-it again?
-Regards!
-Gerry
----
- arch/x86/kernel/apic/io_apic.c |   15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
-
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 29290f554e79..40a4aa3f4061 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1070,6 +1070,11 @@ static int mp_map_pin_to_irq(u32 gsi, int idx, int ioapic, int pin,
- 	}
- 
- 	if (flags & IOAPIC_MAP_ALLOC) {
-+		/* special handling for legacy IRQs */
-+		if (irq < nr_legacy_irqs() && info->count == 1 &&
-+		    mp_irqdomain_map(domain, irq, pin) != 0)
-+			irq = -1;
-+
- 		if (irq > 0)
- 			info->count++;
- 		else if (info->count == 0)
-@@ -3896,7 +3901,15 @@ int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
- 			info->polarity = 1;
- 		}
- 		info->node = NUMA_NO_NODE;
--		info->set = 1;
-+
-+		/*
-+		 * setup_IO_APIC_irqs() programs all legacy IRQs with default
-+		 * trigger and polarity attributes. Don't set the flag for that
-+		 * case so the first legacy IRQ user could reprogram the pin
-+		 * with real trigger and polarity attributes.
-+		 */
-+		if (virq >= nr_legacy_irqs() || info->count)
-+			info->set = 1;
- 	}
- 	set_io_apic_irq_attr(&attr, ioapic, hwirq, info->trigger,
- 			     info->polarity);
 -- 
-1.7.10.4
-
+Jarkko
