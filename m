@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935334AbaH0Q37 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 12:29:59 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:39475 "EHLO kanga.kvack.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933798AbaH0Q35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 12:29:57 -0400
-Date: Wed, 27 Aug 2014 12:29:55 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Maxim Patlasov <mpatlasov@parallels.com>
-Cc: Ming Lei <ming.lei@canonical.com>, Jens Axboe <axboe@kernel.dk>,
-        Christoph Hellwig <hch@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>, Zach Brown <zab@zabbo.net>,
-        Kent Overstreet <kmo@daterainc.com>,
-        open list:
-	AIO <linux-aio@kvack.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Dave Chinner <david@fromorbit.com>, ;
-Illegal-Object: Syntax error in Cc: address found on vger.kernel.org:
-	Cc:	;
-			^-missing semicolon to end mail group, extraneous tokens in mailbox, missing end of mailbox
-Subject: Re: [PATCH v1 5/9] block: loop: convert to blk-mq
-Message-ID: <20140827162955.GF4827@kvack.org>
-References: <20140815163111.GA16652@infradead.org> <53EE370D.1060106@kernel.dk> <53EE3966.60609@kernel.dk> <CACVXFVO+3SHy0=zESJqG3ZB68AZaeK5_QK2CVmZWzZ7oBWDGwg@mail.gmail.com> <53F0EAEC.9040505@kernel.dk> <CACVXFVO3CrD2CoHiBOZ8GNMXrT2pJ=t2BzmAHksqRTmgrpsaaQ@mail.gmail.com> <CACVXFVN6W-AAQ6g4LXHOyvMzU+EAmj_YYBEuYRnoSB+VqCJg8A@mail.gmail.com> <53F3B89D.6070703@kernel.dk> <CACVXFVOR0mzMWo+iPtU8jUvYgH+non=hQ0XaP0Z1Fu0qiSbJNA@mail.gmail.com> <53FE029B.1030200@parallels.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53FE029B.1030200@parallels.com>
-User-Agent: Mutt/1.4.2.2i
+	id S935215AbaH0Qbn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 12:31:43 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:44314 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933769AbaH0Qbl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 12:31:41 -0400
+Message-ID: <53FE07BE.7000809@ahsoftware.de>
+Date: Wed, 27 Aug 2014 18:30:54 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Grant Likely <grant.likely@linaro.org>
+CC: Mark Rutland <Mark.Rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Jon Loeliger <jdl@jdl.com>, Russell King <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH 0/9] dt: dependencies (for deterministic driver initialization
+ order based on the DT)
+References: <53F64624.5000403@ahsoftware.de> <20140822131919.GX21734@leverpostej> <20140825093931.GB2399@ulmo> <E1XLu15-0002DP-6o@jdl.com> <20140825133714.GH4163@ulmo.nvidia.com> <20140826084208.AE5F0C40989@trevor.secretlab.ca> <20140826084922.GG17263@ulmo> <53FC566C.30904@ahsoftware.de> <20140826101107.GC32315@leverpostej> <20140827103432.64927C409CB@trevor.secretlab.ca> <20140827144403.GB13850@arm.com> <53FE05AE.9000406@wwwdotorg.org>
+In-Reply-To: <53FE05AE.9000406@wwwdotorg.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 27, 2014 at 08:08:59PM +0400, Maxim Patlasov wrote:
-...
-> 1) /dev/loop0 of 3.17.0-rc1 with Ming's patches applied -- 11K iops
-> 2) the same as above, but call loop_queue_work() directly from 
-> loop_queue_rq() -- 270K iops
-> 3) /dev/nullb0 of 3.17.0-rc1 -- 380K iops
-> 
-> Taking into account so big difference (11K vs. 270K), would it be worthy 
-> to implement pure non-blocking version of aio_kernel_submit() returning 
-> error if blocking needed? Then loop driver (or any other in-kernel user) 
-> might firstly try that non-blocking submit as fast-path, and, only if 
-> it's failed, fall back to queueing.
+Am 27.08.2014 18:22, schrieb Stephen Warren:
+> On 08/27/2014 08:44 AM, Catalin Marinas wrote:
 
-What filesystem is the backing file for loop0 on?  O_DIRECT access as 
-Ming's patches use should be non-blocking, and if not, that's something 
-to fix.
+>> It's not just optimisation but an important feature for new arm64 SoCs.
+>> Given some Tegra discussions recently, in many cases the machine_desc
+>> use on arm is primarily to initialise devices in the right order. If we
+>> can solve this in a more deterministic way (other than deferred
+>> probing), we avoid the need for a dedicated SoC platform driver (or
+>> machine_desc) or workarounds like different initcall levels and explicit
+>> DT parsing.
+>
+> A lot of the ordering is SW driver dependencies. I'm not sure how much
+> of that can accurately be claimed as HW dependencies. As such, I'm not
+> sure that putting dependencies into DT would be a good idea; it doesn't
+> feel like HW data, and might well change if we restructure SW. It'd need
+> some detailed research though.
 
-		-ben
--- 
-"Thought is the essence of where you are now."
+Almost every phandle is a dependency, so the DT is already full with them.
