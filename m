@@ -1,114 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934003AbaH0KSK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 06:18:10 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:50793 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933624AbaH0KQx (ORCPT
+	id S933607AbaH0KWO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 06:22:14 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:49271 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755288AbaH0KWM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 06:16:53 -0400
-X-IronPort-AV: E=Sophos;i="5.04,409,1406563200"; 
-   d="scan'208";a="35139142"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: <gleb@kernel.org>, <mtosatti@redhat.com>, <nadav.amit@gmail.com>,
-        <jan.kiszka@web.de>
-CC: <kvm@vger.kernel.org>, <laijs@cn.fujitsu.com>,
-        <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
-        <linux-kernel@vger.kernel.org>, <tangchen@cn.fujitsu.com>
-Subject: [PATCH v4 3/6] kvm: Make init_rmode_identity_map() return 0 on success.
-Date: Wed, 27 Aug 2014 18:17:38 +0800
-Message-ID: <1409134661-27916-4-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1409134661-27916-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1409134661-27916-1-git-send-email-tangchen@cn.fujitsu.com>
+	Wed, 27 Aug 2014 06:22:12 -0400
+Message-ID: <53FDB27B.7040001@gmail.com>
+Date: Wed, 27 Aug 2014 18:27:07 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.71]
+To: David Vrabel <david.vrabel@citrix.com>
+CC: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
+        xen-devel@lists.xenproject.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers/xen/grant-table.c: Be sure of unsigned value
+ never comparing with 0
+References: <53FCAA04.40009@gmail.com> <53FCBDD2.8040208@citrix.com> <53FCE338.1050304@gmail.com> <53FDADA5.6070802@citrix.com>
+In-Reply-To: <53FDADA5.6070802@citrix.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In init_rmode_identity_map(), there two variables indicating the return
-value, r and ret, and it return 0 on error, 1 on success. The function
-is only called by vmx_create_vcpu(), and r is redundant.
+On 8/27/14 18:06, David Vrabel wrote:
+> 
+> Applied to devel/for-linus-3.18 with this description:
+> 
+>     xen/grant-table: refactor error cleanup in grow_gnttab_list()
+> 
+>     The cleanup loop in grow_gnttab_list() is safe from the underflow of
+>     the unsigned 'i' since nr_glist_frames is >= 1, but refactor it
+>     anyway.
+> 
 
-This patch removes the redundant variable r, and make init_rmode_identity_map()
-return 0 on success, -errno on failure.
+OK, thank you very much for your encouragement! And next, I shall try to
+provide another patches for Xen (hope I can finish within this month).
+And I should be more careful about the patches which I shall send.
 
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
----
- arch/x86/kvm/vmx.c | 25 +++++++++++--------------
- 1 file changed, 11 insertions(+), 14 deletions(-)
+Also I want to consult: "Is there a common test for Xen"? If there is,
+please let me know, and I should try to perform the common test before
+send any patches.
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 953d529..63c4c3e 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -3939,45 +3939,42 @@ out:
- 
- static int init_rmode_identity_map(struct kvm *kvm)
- {
--	int i, idx, r, ret = 0;
-+	int i, idx, ret = 0;
- 	pfn_t identity_map_pfn;
- 	u32 tmp;
- 
- 	if (!enable_ept)
--		return 1;
-+		return 0;
- 
- 	/* Protect kvm->arch.ept_identity_pagetable_done. */
- 	mutex_lock(&kvm->slots_lock);
- 
--	if (likely(kvm->arch.ept_identity_pagetable_done)) {
--		ret = 1;
-+	if (likely(kvm->arch.ept_identity_pagetable_done))
- 		goto out2;
--	}
- 
- 	identity_map_pfn = kvm->arch.ept_identity_map_addr >> PAGE_SHIFT;
- 
--	r = alloc_identity_pagetable(kvm);
--	if (r)
-+	ret = alloc_identity_pagetable(kvm);
-+	if (ret)
- 		goto out2;
- 
- 	idx = srcu_read_lock(&kvm->srcu);
--	r = kvm_clear_guest_page(kvm, identity_map_pfn, 0, PAGE_SIZE);
--	if (r < 0)
-+	ret = kvm_clear_guest_page(kvm, identity_map_pfn, 0, PAGE_SIZE);
-+	if (ret)
- 		goto out;
- 	/* Set up identity-mapping pagetable for EPT in real mode */
- 	for (i = 0; i < PT32_ENT_PER_PAGE; i++) {
- 		tmp = (i << 22) + (_PAGE_PRESENT | _PAGE_RW | _PAGE_USER |
- 			_PAGE_ACCESSED | _PAGE_DIRTY | _PAGE_PSE);
--		r = kvm_write_guest_page(kvm, identity_map_pfn,
-+		ret = kvm_write_guest_page(kvm, identity_map_pfn,
- 				&tmp, i * sizeof(tmp), sizeof(tmp));
--		if (r < 0)
-+		if (ret)
- 			goto out;
- 	}
- 	kvm->arch.ept_identity_pagetable_done = true;
--	ret = 1;
-+
- out:
- 	srcu_read_unlock(&kvm->srcu, idx);
--
- out2:
- 	mutex_unlock(&kvm->slots_lock);
- 	return ret;
-@@ -7645,7 +7642,7 @@ static struct kvm_vcpu *vmx_create_vcpu(struct kvm *kvm, unsigned int id)
- 			kvm->arch.ept_identity_map_addr =
- 				VMX_EPT_IDENTITY_PAGETABLE_ADDR;
- 		err = -ENOMEM;
--		if (!init_rmode_identity_map(kvm))
-+		if (init_rmode_identity_map(kvm))
- 			goto free_vmcs;
- 	}
- 
+Welcome any additional ideas, suggestions, and completions.
+
+Thanks.
 -- 
-1.8.3.1
+Chen Gang
 
+Open, share, and attitude like air, water, and life which God blessed
