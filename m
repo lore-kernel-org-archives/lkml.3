@@ -1,106 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964832AbaH0SOV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 14:14:21 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:54630 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935516AbaH0SOS (ORCPT
+	id S935538AbaH0ST2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 14:19:28 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:44212 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932413AbaH0ST0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 14:14:18 -0400
-Date: Wed, 27 Aug 2014 11:14:13 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: David Riley <davidriley@google.com>
-Cc: Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
+	Wed, 27 Aug 2014 14:19:26 -0400
+Message-ID: <53FE2129.6080305@wwwdotorg.org>
+Date: Wed, 27 Aug 2014 12:19:21 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Andrew Bresticker <abrestic@chromium.org>
+CC: Jassi Brar <jassisinghbrar@gmail.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
         Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Anton Vorontsov <anton@enomsg.org>,
-        Marc Carino <marc.ceeeee@gmail.com>, Anders Berg <anders.berg@lsi.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Jamie Lentin <jm@lentin.co.uk>, Doug Anderson <dianders@chromium.org>,
-        devicetree@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH v1 1/1] power: Add simple gpio-restart driver
-Message-ID: <20140827181413.GA2198@roeck-us.net>
-References: <1409096705-24290-1-git-send-email-davidriley@chromium.org>
- <1409096705-24290-2-git-send-email-davidriley@chromium.org>
- <20140827014300.GA29512@earth.universe>
- <CAASgrz3ArGUJnPVvBcm2Hm0gwcUPYt2504M3t-3M5=c2DmKotA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAASgrz3ArGUJnPVvBcm2Hm0gwcUPYt2504M3t-3M5=c2DmKotA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH v2 2/9] mailbox: Add NVIDIA Tegra XUSB mailbox driver
+References: <1408381705-3623-1-git-send-email-abrestic@chromium.org>	<1408381705-3623-3-git-send-email-abrestic@chromium.org>	<53FB8820.4010202@wwwdotorg.org>	<CAL1qeaERHeKKNpqh9qHOppgT7ymvntisdjVvZheP78U6NaPz-A@mail.gmail.com>	<53FE1A7A.4010906@wwwdotorg.org> <CAL1qeaGPr=BeYL1-=ddRL7rSuvYdQcd6vCEEHDrNA-KYst6bnw@mail.gmail.com>
+In-Reply-To: <CAL1qeaGPr=BeYL1-=ddRL7rSuvYdQcd6vCEEHDrNA-KYst6bnw@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 27, 2014 at 10:56:20AM -0700, David Riley wrote:
-> Hi Sebastian,
-> 
-> Thanks for the feedback.
-> 
-> On Tue, Aug 26, 2014 at 6:43 PM, Sebastian Reichel <sre@kernel.org> wrote:
-> > Hi David,
-> >
-> > On Tue, Aug 26, 2014 at 04:45:05PM -0700, David Riley wrote:
-> >> This driver registers a restart handler to set a GPIO line high/low
-> >> to reset a board based on devicetree bindings.
-> >
-> > Driver looks fine to me. I have some comments about the
-> > Documentation, though:
-> >
-> >> [...]
-> >> diff --git a/Documentation/devicetree/bindings/gpio/gpio-restart.txt b/Documentation/devicetree/bindings/gpio/gpio-restart.txt
-> >> new file mode 100644
-> >> index 0000000..7cd58788
-> >> --- /dev/null
-> >> +++ b/Documentation/devicetree/bindings/gpio/gpio-restart.txt
-> >> @@ -0,0 +1,48 @@
-> >> +Driver a GPIO line that can be used to restart the system as a
-> >> +restart handler.
-> >
-> > Please fix the Typo (first word).
-> 
-> Fixed.
-> 
-> >
-> >> [...]
-> >> +
-> >> +The driver supports both level triggered and edge triggered power off.
-> >> +At driver load time, the driver will request the given gpio line and
-> >> +install a restart handler.
-> >
-> > The wording is too driver centric IMHO. You are supposed to document
-> > the binding in a generic way. Maybe start with something like:
-> >
-> > "This binding supports level and edge triggered reset."
-> >
-> > (power off is the wrong word, since there is already gpio-poweroff).
-> 
-> I've cleaned this up for v2.
-> 
-> >> +If the optional properties 'input' is +not found, the GPIO line
-> >> +will be driven in the inactive state. Otherwise its configured
-> >> +as an input.
-> >
-> > What is this needed for?
-> 
-> This allows other hardware to be attached to the same line to reset
-> the system.  Carried forward from the gpio-poweroff implementation I
-> based this on.
-> 
-Maybe rephrase; the point isn't really that it is configured as input but
-that it is an open source pin unless actively driven to reset the system.
-That linux models the pin as input is really an implementation detail.
+On 08/27/2014 12:13 PM, Andrew Bresticker wrote:
+> On Wed, Aug 27, 2014 at 10:50 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> On 08/27/2014 11:38 AM, Andrew Bresticker wrote:
+>>>
+>>> On Mon, Aug 25, 2014 at 12:01 PM, Stephen Warren <swarren@wwwdotorg.org>
+>>> wrote:
+>>>>
+>>>> On 08/18/2014 11:08 AM, Andrew Bresticker wrote:
+>>>>>
+>>>>> +static int tegra_xusb_mbox_probe(struct platform_device *pdev)
+>>>>
+>>>>
+>>>>
+>>>>> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>>>>>
+>>>>> +       if (!res)
+>>>>> +               return -ENODEV;
+>>>>
+>>>>
+>>>>
+>>>> Should devm_request_mem_region() be called here to claim the region?
+>>>
+>>>
+>>> No, the xHCI host driver also needs to map these registers, so they
+>>> cannot be mapped exclusively here.
+>>
+>>
+>> That's unfortunate. Having multiple drivers with overlapping register
+>> regions is not a good idea. Can we instead have a top-level driver map all
+>> the IO regions, then instantiate the various different sub-components
+>> internally, and divide up the address space. Probably via MFD or similar.
+>> That would prevent multiple drivers from touching the same register region.
+>
+> Perhaps I'm misunderstanding, but I don't see how MFD would prevent us
+> from having to map this register space in two different locations -
+> the XUSB FPCI address space cannot be divided cleanly between host and
+> mailbox registers.  Or are you saying that there should be a separate
+> device driver that exposes an API for accessing this register space,
+> like the Tegra fuse or PMC drivers?
 
-Thanks,
-Guenter
+With MFD, there's typically a top-level driver for the HW module (or 
+register space) that gets instantiated by the DT node. This driver then 
+instantiates all the different sub-drivers that use that register space, 
+and provides APIs for the sub-drivers to access the registers (either 
+custom APIs or more recently by passing a regmap object down to the 
+sub-drivers).
+
+This top-level driver is the only driver that maps the space, and can 
+manage sharing the space between the various sub-drivers.
+
+That said, I haven't noticed many MFD drivers for MMIO devices. I 
+certainly have seen multiple different drivers just re-mapping shared 
+registers for themselves. It is simpler and does work. However, people 
+usually mutter about it when it happens, since it's not clear which 
+drivers are using what from the IO mapping registry. Using MFD or 
+similar would allow the sharing to work in a clean fashion.
