@@ -1,66 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754254AbaH0Hgh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 03:36:37 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:53778 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753395AbaH0Hgc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 03:36:32 -0400
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Grant Likely <grant.likely@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Subject: [PATCH/RFC 2/2] lib: string: Make all calls to strnicmp into calls to strncasecmp
-Date: Wed, 27 Aug 2014 09:36:02 +0200
-Message-Id: <1409124962-11527-3-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1409124962-11527-1-git-send-email-linux@rasmusvillemoes.dk>
-References: <1409124962-11527-1-git-send-email-linux@rasmusvillemoes.dk>
+	id S932579AbaH0Hic (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 03:38:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58037 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932079AbaH0Hib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 03:38:31 -0400
+Message-ID: <53FD8AF1.8010608@suse.com>
+Date: Wed, 27 Aug 2014 09:38:25 +0200
+From: =?ISO-8859-1?Q?J=FCrgen_Gro=DF?= <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Dexuan Cui <decui@microsoft.com>, KY Srinivasan <kys@microsoft.com>,
+        "chrisw@sous-sol.org" <chrisw@sous-sol.org>,
+        "jeremy@goop.org" <jeremy@goop.org>, Jan Beulich <JBeulich@suse.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: sync_set_bit() vs set_bit()  -- what's the difference?
+References: <EE124450C0AAF944A40DD71E61F878C99639F3@SINEX14MBXC419.southpacific.corp.microsoft.com>
+In-Reply-To: <EE124450C0AAF944A40DD71E61F878C99639F3@SINEX14MBXC419.southpacific.corp.microsoft.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The previous patch made strnicmp into a wrapper for strncasecmp. This
-patch makes all in-tree users of strnicmp call strncasecmp directly,
-while still making sure that the strnicmp symbol can be used by
-out-of-tree modules. It should be considered a temporary hack until
-all in-tree callers have been converted.
+On 08/27/2014 09:30 AM, Dexuan Cui wrote:
+> I'm curious about the difference. :-)
+>
+> sync_set_bit() is only used in drivers/hv/ and drivers/xen/ while set_bit() is used in all other places. What makes hv/xen special?
 
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
----
- include/linux/string.h | 2 +-
- lib/string.c           | 1 +
- 2 files changed, 2 insertions(+), 1 deletion(-)
+In set_bit() the "lock" prefix will be dropped if only one processor is
+present. sync_set_bit() is always attributed with "lock".
 
-diff --git a/include/linux/string.h b/include/linux/string.h
-index d36977e..e6edfe5 100644
---- a/include/linux/string.h
-+++ b/include/linux/string.h
-@@ -41,7 +41,7 @@ extern int strcmp(const char *,const char *);
- extern int strncmp(const char *,const char *,__kernel_size_t);
- #endif
- #ifndef __HAVE_ARCH_STRNICMP
--extern int strnicmp(const char *, const char *, __kernel_size_t);
-+#define strnicmp strncasecmp
- #endif
- #ifndef __HAVE_ARCH_STRCASECMP
- extern int strcasecmp(const char *s1, const char *s2);
-diff --git a/lib/string.c b/lib/string.c
-index 92c33e1..d171554 100644
---- a/lib/string.c
-+++ b/lib/string.c
-@@ -59,6 +59,7 @@ int strncasecmp(const char *s1, const char *s2, size_t len)
- EXPORT_SYMBOL(strncasecmp);
- #endif
- #ifndef __HAVE_ARCH_STRNICMP
-+#undef strnicmp
- int strnicmp(const char *s1, const char *s2, size_t len)
- {
- 	return strncasecmp(s1, s2, len);
--- 
-2.0.4
+xen and hv might require "lock" semantics even if the current OS is
+running on only one processor, as syncing with other processors running
+other OS's might be necessary.
+
+Juergen
 
