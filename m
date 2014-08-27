@@ -1,80 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816AbaH0HZo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 03:25:44 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35449 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751085AbaH0HZm (ORCPT
+	id S1753493AbaH0H0m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 03:26:42 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:64457 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753257AbaH0H0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 03:25:42 -0400
-Date: Wed, 27 Aug 2014 08:25:25 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Beniamino Galvani <b.galvani@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Wim Van Sebroeck <wim@iguana.be>,
-        linux-watchdog@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Carlo Caione <carlo@caione.org>
-Message-ID: <20140827072525.GR17528@sirena.org.uk>
-References: <1409091237-16722-1-git-send-email-b.galvani@gmail.com>
- <1409091237-16722-3-git-send-email-b.galvani@gmail.com>
+	Wed, 27 Aug 2014 03:26:39 -0400
+Date: Wed, 27 Aug 2014 08:26:33 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Andreas Werner <andreas.werner@men.de>
+Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com, wim@iguana.be,
+        linux-watchdog@vger.kernel.org, cooloney@gmail.com, rpurdie@rpsys.net,
+        linux-leds@vger.kernel.org, jdelvare@suse.de, linux@roeck-us.net,
+        lm-sensors@lm-sensors.org, johannes.thumshirn@men.de
+Subject: Re: [PATCH v5 1/4] drivers/mfd/menf21bmc: introduce MEN 14F021P00
+ BMC MFD Core driver
+Message-ID: <20140827072633.GY26707@lee--X1>
+References: <cover.1409074255.git.andreas.werner@men.de>
+ <67faa70de03924edc768002df17b02e47256260c.1409074255.git.andreas.werner@men.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="u1od66ChgEppm9WP"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1409091237-16722-3-git-send-email-b.galvani@gmail.com>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/4] regulator: add driver for Ricoh RN5T618 regulators
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <67faa70de03924edc768002df17b02e47256260c.1409074255.git.andreas.werner@men.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 26 Aug 2014, Andreas Werner wrote:
+> The MEN 14F021P00 Board Management Controller provides an
+> I2C interface to the host to access the feature implemented in the BMC.
+> The BMC is a PIC Microntroller assembled on CPCI Card from MEN Mikroelektronik
+> and on a few Box/Display Computer.
+> 
+> Added MFD Core driver, supporting the I2C communication to the device.
+> 
+> The MFD driver currently supports the following features:
+>  	- Watchdog
+>  	- LEDs
+> 	- Hwmon (voltage monitoring)
+> 
+> Signed-off-by: Andreas Werner <andreas.werner@men.de>
+> Acked-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  drivers/mfd/Kconfig     |  12 +++++
+>  drivers/mfd/Makefile    |   1 +
+>  drivers/mfd/menf21bmc.c | 132 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 145 insertions(+)
+>  create mode 100644 drivers/mfd/menf21bmc.c
+> 
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index b8d9ca0..6a9f101 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -453,6 +453,18 @@ config MFD_MAX8998
+>  	  additional drivers must be enabled in order to use the functionality
+>  	  of the device.
+>  
+> +config MFD_MENF21BMC
+> +	tristate "MEN 14F021P00 Board Management Controller Support"
+> +	depends on I2C
+> +	select MFD_CORE
+> +	help
+> +	  Say yes here to add support for the MEN 14F021P00 BMC
+> +	  which is a Board Management Controller connected to the I2C bus.
+> +	  The device supports multiple sub-devices like LED, HWMON  and WDT.
 
---u1od66ChgEppm9WP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Nit: Whitespace error.
 
-On Wed, Aug 27, 2014 at 12:13:55AM +0200, Beniamino Galvani wrote:
-> This driver supports the 3 DCDC and 7 LDO regulators available on
-> Ricoh RN5T618 PMIC.
+> +	  This driver provides common support for accessing the devices;
+> +	  additional drivers must be enabled in order to use the
+> +	  functionality of the BMC device.
+> +
+>  config EZX_PCAP
+>  	bool "Motorola EZXPCAP Support"
+>  	depends on SPI_MASTER
+> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> index 4e2bc25..37bf336 100644
+> --- a/drivers/mfd/Makefile
+> +++ b/drivers/mfd/Makefile
+> @@ -169,6 +169,7 @@ obj-$(CONFIG_MFD_AS3711)	+= as3711.o
+>  obj-$(CONFIG_MFD_AS3722)	+= as3722.o
+>  obj-$(CONFIG_MFD_STW481X)	+= stw481x.o
+>  obj-$(CONFIG_MFD_IPAQ_MICRO)	+= ipaq-micro.o
+> +obj-$(CONFIG_MFD_MENF21BMC)	+= menf21bmc.o
+>  
+>  intel-soc-pmic-objs		:= intel_soc_pmic_core.o intel_soc_pmic_crc.o
+>  obj-$(CONFIG_INTEL_SOC_PMIC)	+= intel-soc-pmic.o
+> diff --git a/drivers/mfd/menf21bmc.c b/drivers/mfd/menf21bmc.c
+> new file mode 100644
+> index 0000000..a6eb03f
+> --- /dev/null
+> +++ b/drivers/mfd/menf21bmc.c
+> @@ -0,0 +1,132 @@
+> +/*
+> + *  MEN 14F021P00 Board Management Controller (BMC) MFD Core Driver.
+> + *
+> + *  Copyright (C) 2014 MEN Mikro Elektronik Nuernberg GmbH
+> + *
+> + *  This program is free software; you can redistribute  it and/or modify it
+> + *  under  the terms of  the GNU General  Public License as published by the
+> + *  Free Software Foundation;  either version 2 of the  License, or (at your
+> + *  option) any later version.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/device.h>
+> +#include <linux/module.h>
+> +#include <linux/i2c.h>
+> +#include <linux/mfd/core.h>
+> +
+> +#define BMC_CMD_WDT_EXIT_PROD	0x18
+> +#define BMC_CMD_WDT_PROD_STAT	0x19
+> +#define BMC_CMD_REV_MAJOR	0x80
+> +#define BMC_CMD_REV_MINOR	0x81
+> +#define BMC_CMD_REV_MAIN	0x82
+> +
+> +static struct mfd_cell menf21bmc_cell[] = {
+> +	{ .name = "menf21bmc_wdt", },
+> +	{ .name = "menf21bmc_led", },
+> +	{ .name = "menf21bmc_hwmon", }
+> +};
+> +
+> +static int menf21bmc_wdt_exit_prod_mode(struct i2c_client *client)
+> +{
+> +	int val, ret;
+> +
+> +	val = i2c_smbus_read_byte_data(client, BMC_CMD_WDT_PROD_STAT);
+> +	if (val < 0)
+> +		return val;
+> +
+> +	/*
+> +	 * Production mode should be not active after delivery of the Board.
+> +	 * To be sure we check it, inform the user and exit the mode
+> +	 * if active.
+> +	 */
+> +	if (val == 0x00) {
+> +		dev_info(&client->dev,
+> +			"BMC in production mode. Exit production mode\n");
+> +
+> +		ret = i2c_smbus_write_byte(client, BMC_CMD_WDT_EXIT_PROD);
+> +		if (ret < 0)
+> +			return ret;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int
+> +menf21bmc_probe(struct i2c_client *client, const struct i2c_device_id *ids)
+> +{
+> +	int ret;
+> +	int rev_major, rev_minor, rev_main;
 
->  drivers/regulator/rn5t618-regulator.c |  143 +++++++++++++++++++++++++++++++++
->  include/linux/mfd/rn5t618.h           |   14 ++++
+Really small nit (as you have to fix the whitespace err anyway):
+  Can you change the order of the two lines above please?
 
-This is fine but I can't apply it since you're patching the MFD header
-which you added in the first patch.  It'd be better to include those
-changes in the first patch, making the second patch independant.
+> +	ret = i2c_check_functionality(client->adapter,
+> +				      I2C_FUNC_SMBUS_BYTE_DATA |
+> +				      I2C_FUNC_SMBUS_WORD_DATA |
+> +				      I2C_FUNC_SMBUS_BYTE);
+> +	if (!ret)
+> +		return -ENODEV;
+> +
+> +	rev_major = i2c_smbus_read_word_data(client, BMC_CMD_REV_MAJOR);
+> +	if (rev_major < 0) {
+> +		dev_err(&client->dev, "failed to get BMC major revision\n");
+> +		return rev_major;
+> +	}
+> +
+> +	rev_minor = i2c_smbus_read_word_data(client, BMC_CMD_REV_MINOR);
+> +	if (rev_minor < 0) {
+> +		dev_err(&client->dev, "failed to get BMC minor revision\n");
+> +		return rev_minor;
+> +	}
+> +
+> +	rev_main = i2c_smbus_read_word_data(client, BMC_CMD_REV_MAIN);
+> +	if (rev_main < 0) {
+> +		dev_err(&client->dev, "failed to get BMC main revision\n");
+> +		return rev_main;
+> +	}
+> +
+> +	dev_info(&client->dev, "FW Revision: %02d.%02d.%02d\n",
+> +					rev_major, rev_minor, rev_main);
 
---u1od66ChgEppm9WP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+You enforced a 'line > 80 chars' warning in your other driver just so
+you can 'do the right thing' and line up against the '('. :)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Can you do that here please?
 
-iQIcBAEBAgAGBQJT/YfhAAoJELSic+t+oim9VUMQAJ5PilvsShTs6PycuR9zTE8V
-cD/MTuo0RGBCyn00HMiE61CfZiwPZaQtzzKOS/52eU65uc/gfZDXLkqVF4niUUOm
-zARbBwdBlHnIx48rHs2g/gwg6A7zQG6Wud+m+0OsDnSPwy2z5mjwRckx/P/pZAin
-VJaU2BlRBjIyvzyTJd21CsENAC3Z2mVWP5Xd0sCcoGlGZzSqNGvhxBp2jsMeJ+hQ
-YoEIbrMwKt6d0Wl7H7KslY5YWRDZ+aGIgMaYAa5fNrWA8dBg/fGjPUkrVUNVyMVx
-5GPknhnBqngl1GR7mnRwAuZZ9Ndu3EDBVcVNMDawtmLHA0l42xJqyAMqlbgn+u5n
-xbmN/aSv4MLgTixAX44T+LvX3vvptBgaFFhFUoAeeULOvym0xozXO8R/C+cj/8we
-Cf3Rj8bnQV03T3WH41++D7po6C8tMSyQl5C8z2oES3abZzy80HVYnW5BzXab1PnR
-hfLSp7W/KDLyObFXf33aOh/W4rmywPJc58I3M0T2P84rzCYtWFWh8eTuv4zuS1KH
-hzVDq2/pSTUJu4IA5yJPKz5E6Q6hshDeJCVYb6mAXk59zqgAF4dnXue5HyngjvcV
-z3xvZr+T65DwTDHY38jPXVIuIo8lOl7QZN1XYtu+ku5iTiHb3glMRT0MnOh2OwXK
-zY33P6OWWM0MNhrRCylE
-=pe5C
------END PGP SIGNATURE-----
+> +	/*
+> +	 * We have to exit the Production Mode of the BMC to activate the
+> +	 * Watchdog functionality and the BIOS life sign monitoring.
+> +	 */
+> +	ret = menf21bmc_wdt_exit_prod_mode(client);
+> +	if (ret < 0) {
+> +		dev_err(&client->dev, "failed to leave production mode\n");
+> +		return ret;
+> +	}
+> +
+> +	ret = mfd_add_devices(&client->dev, 0, menf21bmc_cell,
+> +				ARRAY_SIZE(menf21bmc_cell), NULL, 0, NULL);
 
---u1od66ChgEppm9WP--
+Line up to to '('.
+
+> +	if (ret < 0) {
+> +		dev_err(&client->dev, "failed to add BMC sub-devices\n");
+> +		return ret;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int menf21bmc_remove(struct i2c_client *client)
+> +{
+> +	mfd_remove_devices(&client->dev);
+> +	return 0;
+> +}
+> +
+> +static const struct i2c_device_id menf21bmc_id_table[] = {
+> +	{ "menf21bmc", 0 },
+
+The second attribute is unused in this driver, please remove it.
+
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(i2c, menf21bmc_id_table);
+> +
+> +static struct i2c_driver menf21bmc_driver = {
+> +	.driver.name	= "menf21bmc",
+> +	.id_table	= menf21bmc_id_table,
+> +	.probe		= menf21bmc_probe,
+> +	.remove		= menf21bmc_remove,
+> +};
+
+No DT support?
+
+> +module_i2c_driver(menf21bmc_driver);
+> +
+> +MODULE_DESCRIPTION("MEN 14F021P00 BMC mfd core driver");
+
+s/mfd/MFD
+
+> +MODULE_AUTHOR("Andreas Werner <andreas.werner@men.de>");
+> +MODULE_LICENSE("GPL v2");
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
