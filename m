@@ -1,123 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935371AbaH0PWs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 11:22:48 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33896 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934734AbaH0PWo (ORCPT
+	id S935389AbaH0PW4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 11:22:56 -0400
+Received: from goliath.siemens.de ([192.35.17.28]:33942 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934734AbaH0PWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 11:22:44 -0400
-Date: Wed, 27 Aug 2014 17:22:05 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mark Rutland <mark.rutland@arm.com>
-cc: Marc Zyngier <marc.zyngier@arm.com>,
-        =?ISO-8859-15?Q?Jan_L=FCbbe?= <jlu@pengutronix.de>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        "Joe.C" <srv_yingjoe.chen@mediatek.com>,
-        "yh.chen@mediatek.com" <yh.chen@mediatek.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "nathan.chung@mediatek.com" <nathan.chung@mediatek.com>,
-        "Joe.C" <yingjoe.chen@mediatek.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Jason Cooper <jason@lakedaemon.net>,
-        "yingjoe.chen@gmail.com" <yingjoe.chen@gmail.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Herring <robh+dt@kernel.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        "eddie.huang@mediatek.com" <eddie.huang@mediatek.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "srv_heupstream@mediatek.com" <srv_heupstream@mediatek.com>,
-        "hc.yen@mediatek.com" <hc.yen@mediatek.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jonas Jensen <jonas.jensen@gmail.com>,
-        Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>,
-        Jiang Liu <jiang.liu@linux.intel.com>
-Subject: Re: [RESEND PATCH v2 1/4] irqchip: gic: Change irq type check when
- extension is present
-In-Reply-To: <20140827142935.GA9490@leverpostej>
-Message-ID: <alpine.DEB.2.10.1408271657310.3323@nanos>
-References: <1407895884-18131-1-git-send-email-srv_yingjoe.chen@mediatek.com> <1407895884-18131-2-git-send-email-srv_yingjoe.chen@mediatek.com> <53F724F5.3040004@arm.com> <1409133344.25382.37.camel@coredoba.hi.pengutronix.de> <53FDB4B3.6000400@arm.com>
- <alpine.DEB.2.10.1408271347210.3323@nanos> <87ppfmoxxz.fsf@approximate.cambridge.arm.com> <20140827142935.GA9490@leverpostej>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 27 Aug 2014 11:22:52 -0400
+From: Jan Kiszka <jan.kiszka@siemens.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
+        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
+        Borislav Petkov <bp@suse.de>,
+        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
+        Daniel Thompson <daniel.thompson@linaro.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Fenghua Yu <fenghua.yu@intel.com>, Kay Sievers <kay@vrfy.org>,
+        linux-doc@vger.kernel.org, linux-ia64@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        Pantelis Koukousoulas <pktoss@gmail.com>,
+        Rob Landley <rob@landley.net>, Rusty Russell <rusty@rustcorp.com.au>,
+        sparclinux@vger.kernel.org, Tony Luck <tony.luck@intel.com>
+Subject: [PATCH v9 00/23] Add gdb python scripts as kernel debugging helpers
+Date: Wed, 27 Aug 2014 17:21:15 +0200
+Message-Id: <cover.1409152897.git.jan.kiszka@siemens.com>
+X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Aug 2014, Mark Rutland wrote:
-> On Wed, Aug 27, 2014 at 02:37:44PM +0100, Marc Zyngier wrote:
-> > We need to work out how to drive the whole stacking from a DT
-> > perspective: Mark, any idea?
-> 
-> Describing the lines the magic irqchip has to its parent irqchip is
-> simple, the standard interrupts property can handle that:
-> 
-> parent: parent {
-> 	...
-> 	#interrupt-cells = <1>;
-> };
-> 
-> magic {
-> 	...
-> 	interrupt-parent = <&parent>;
-> 	interrupts = <3>, <6>, <17>, <2>;
-> 	#interrupt-cells = <1>;
-> };
-> 
-> The harder part is describing the configuration of each interrupt to the
-> magic irqchip (e.g. edge vs level triggered), which is inseparable form
-> the line identifier in the interrupt-specifier.
+Another refresh of this feature series. Changes since v8:
+ - Ignore byte-compiled python files [Daniel Thompson]
+ - rebase over recent Linux version, resolving a trivial conflict
 
-Do we really need to decribe that at the this level?
+See http://lkml.indiana.edu/hypermail/linux/kernel/1210.0/01598.html for
+the original description and
 
-You have the parent ARMGIC and the maGIC with a specified (or even
-dynamic) routing of the maGIC lines to the ARMGIC.
+    git://git.kiszka.org/linux.git queues/gdb-scripts
 
-Now the device which uses a maGIC interrupt specifies the interrupt
-type at the maGIC.
+for the latest version.
 
-So the type setter function of the maGIC configures the maGIC hardware
-in such a way that the output to the ARMGIC results in a type which
-the ARMGIC can handle and calls the type setter function of the maGIC
-with that type.
+Note that there is apparently some issue with gdb 7.8 and newer that
+prevents lx-symbols from working here [1]. 7.7 is still fine, though.
 
-I don't think you need to decribe this in the magic/parent relation
-ship at all. maGIC should know what kind of output it can provide to
-ARMGIC so that should just work, unless I'm missing something.
+Jan
 
-> If there interrupts don't share the same configuration then I'm not sure
-> how we describe that in the DT. That's especially problematic if the
-> assignment of parent line is dynamic (as with the crossbar iirc).
+[1] http://thread.gmane.org/gmane.comp.gdb.devel/34898
 
-Why is this an issue?
+CC: Daniel Thompson <daniel.thompson@linaro.org>
+CC: "David S. Miller" <davem@davemloft.net>
+CC: Fenghua Yu <fenghua.yu@intel.com>
+CC: Kay Sievers <kay@vrfy.org>
+CC: linux-doc@vger.kernel.org
+CC: linux-ia64@vger.kernel.org
+Cc: linux-kbuild@vger.kernel.org
+CC: linux-kbuild@vger.kernel.org
+Cc: Michal Marek <mmarek@suse.cz>
+CC: Michal Marek <mmarek@suse.cz>
+CC: Pantelis Koukousoulas <pktoss@gmail.com>
+CC: Rob Landley <rob@landley.net>
+CC: Rusty Russell <rusty@rustcorp.com.au>
+CC: sparclinux@vger.kernel.org
+CC: Tony Luck <tony.luck@intel.com>
 
-There are two ways to solve that:
+Daniel Thompson (1):
+  scripts/gdb: Ignore byte-compiled python files
 
-1) You can do a fully dynamic allocation at the parent level, which of
-   course requires that the whole parent range is dynamically
-   managed. That's what we are planning for the MSI/Remap/Vector
-   stacking
+Jan Kiszka (21):
+  scripts/gdb: Add infrastructure
+  scripts/gdb: Add cache for type objects
+  scripts/gdb: Add container_of helper and convenience function
+  scripts/gdb: Add module iteration class
+  scripts/gdb: Add lx-symbols command
+  module: Do not inline do_init_module
+  scripts/gdb: Add automatic symbol reloading on module insertion
+  scripts/gdb: Add internal helper and convenience function to look up a
+    module
+  scripts/gdb: Add get_target_endianness helper
+  scripts/gdb: Add read_u16/32/64 helpers
+  scripts/gdb: Add lx-dmesg command
+  scripts/gdb: Add task iteration class
+  scripts/gdb: Add helper and convenience function to look up tasks
+  scripts/gdb: Add is_target_arch helper
+  scripts/gdb: Add internal helper and convenience function to retrieve
+    thread_info
+  scripts/gdb: Add get_gdbserver_type helper
+  scripts/gdb: Add internal helper and convenience function for per-cpu
+    lookup
+  scripts/gdb: Add lx_current convenience function
+  scripts/gdb: Add class to iterate over CPU masks
+  scripts/gdb: Add lx-lsmod command
+  scripts/gdb: Add basic documentation
 
-2) You define the irq lines at the parent which are available for
-   dynamic stacking and let the allocation code hand one out.
+Pantelis Koukousoulas (1):
+  scripts/gdb: Port to python3 / gdb7.7
 
-3) You tell the maGIC controller which lines of the parent are
-   available for it, so it can only stack onto those lines and instead
-   of letting the parent allocate a free one, the maGIC needs to map
-   its stuff to one of those ARMGIC lines.
+ .gitignore                             |   1 +
+ Documentation/gdb-kernel-debugging.txt | 160 +++++++++++++++++++++++++++++++
+ Makefile                               |   6 +-
+ kernel/module.c                        |   9 +-
+ lib/Kconfig.debug                      |  11 +++
+ scripts/Makefile                       |   3 +-
+ scripts/gdb/Makefile                   |   1 +
+ scripts/gdb/linux/.gitignore           |   2 +
+ scripts/gdb/linux/Makefile             |  11 +++
+ scripts/gdb/linux/__init__.py          |   0
+ scripts/gdb/linux/cpus.py              | 142 ++++++++++++++++++++++++++++
+ scripts/gdb/linux/dmesg.py             |  65 +++++++++++++
+ scripts/gdb/linux/modules.py           | 114 ++++++++++++++++++++++
+ scripts/gdb/linux/symbols.py           | 166 +++++++++++++++++++++++++++++++++
+ scripts/gdb/linux/tasks.py             | 110 ++++++++++++++++++++++
+ scripts/gdb/linux/utils.py             | 156 +++++++++++++++++++++++++++++++
+ scripts/gdb/vmlinux-gdb.py             |  30 ++++++
+ 17 files changed, 983 insertions(+), 4 deletions(-)
+ create mode 100644 Documentation/gdb-kernel-debugging.txt
+ create mode 100644 scripts/gdb/Makefile
+ create mode 100644 scripts/gdb/linux/.gitignore
+ create mode 100644 scripts/gdb/linux/Makefile
+ create mode 100644 scripts/gdb/linux/__init__.py
+ create mode 100644 scripts/gdb/linux/cpus.py
+ create mode 100644 scripts/gdb/linux/dmesg.py
+ create mode 100644 scripts/gdb/linux/modules.py
+ create mode 100644 scripts/gdb/linux/symbols.py
+ create mode 100644 scripts/gdb/linux/tasks.py
+ create mode 100644 scripts/gdb/linux/utils.py
+ create mode 100644 scripts/gdb/vmlinux-gdb.py
 
-Which one to chose depends on the particular maGIC incarnation, but
-its not a big issue to select one ...
-
-Thanks,
-
-	tglx
-
+-- 
+1.8.1.1.298.ge7eed54
 
