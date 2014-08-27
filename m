@@ -1,91 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935545AbaH0P11 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 11:27:27 -0400
-Received: from david.siemens.de ([192.35.17.14]:41808 "EHLO david.siemens.de"
+	id S964803AbaH0P1c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 11:27:32 -0400
+Received: from mblankhorst.nl ([141.105.120.124]:58668 "EHLO mblankhorst.nl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934861AbaH0P1X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 11:27:23 -0400
-From: Jan Kiszka <jan.kiszka@siemens.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
-        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
-        Borislav Petkov <bp@suse.de>,
-        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-ia64@vger.kernel.org
-Subject: [PATCH v9 15/23] scripts/gdb: Add internal helper and convenience function to retrieve thread_info
-Date: Wed, 27 Aug 2014 17:21:30 +0200
-Message-Id: <02c6115ad9be1d673dd7d74aa24ff4a5262b99d0.1409152897.git.jan.kiszka@siemens.com>
-X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
-In-Reply-To: <cover.1409152897.git.jan.kiszka@siemens.com>
-References: <cover.1409152897.git.jan.kiszka@siemens.com>
-In-Reply-To: <cover.1409152897.git.jan.kiszka@siemens.com>
-References: <cover.1409152897.git.jan.kiszka@siemens.com>
+	id S935535AbaH0P10 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 11:27:26 -0400
+Message-ID: <53FDF8DB.6050703@canonical.com>
+Date: Wed, 27 Aug 2014 17:27:23 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Rob Clark <robdclark@gmail.com>, linux-kernel@vger.kernel.org
+CC: Daniel Vetter <daniel@ffwll.ch>, dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] ww-mutex: clarify help text for DEBUG_WW_MUTEX_SLOWPATH
+References: <1409152766-31320-1-git-send-email-robdclark@gmail.com>
+In-Reply-To: <1409152766-31320-1-git-send-email-robdclark@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the internal helper get_thread_info that calculates the thread_info
-from a given task variable. Also export this service as a convenience
-function.
+Acked-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 
-Note: ia64 version is untested.
-
-CC: Tony Luck <tony.luck@intel.com>
-CC: Fenghua Yu <fenghua.yu@intel.com>
-CC: linux-ia64@vger.kernel.org
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
----
- scripts/gdb/linux/tasks.py | 35 +++++++++++++++++++++++++++++++++++
- 1 file changed, 35 insertions(+)
-
-diff --git a/scripts/gdb/linux/tasks.py b/scripts/gdb/linux/tasks.py
-index 13bb97c..63cd6c5 100644
---- a/scripts/gdb/linux/tasks.py
-+++ b/scripts/gdb/linux/tasks.py
-@@ -71,3 +71,38 @@ return that task_struct variable which PID matches."""
- 
- 
- LxTaskByPidFunc()
-+
-+
-+thread_info_type = utils.CachedType("struct thread_info")
-+
-+ia64_task_size = None
-+
-+
-+def get_thread_info(task):
-+    global thread_info_type
-+    thread_info_ptr_type = thread_info_type.get_type().pointer()
-+    if utils.is_target_arch("ia64"):
-+        global ia64_task_size
-+        if ia64_task_size is None:
-+            ia64_task_size = gdb.parse_and_eval("sizeof(struct task_struct)")
-+        thread_info_addr = task.address + ia64_task_size
-+        thread_info = thread_info_addr.cast(thread_info_ptr_type)
-+    else:
-+        thread_info = task['stack'].cast(thread_info_ptr_type)
-+    return thread_info.dereference()
-+
-+
-+class LxThreadInfoFunc (gdb.Function):
-+    """Calculate Linux thread_info from task variable.
-+
-+$lx_thread_info(TASK): Given TASK, return the corresponding thread_info
-+variable."""
-+
-+    def __init__(self):
-+        super(LxThreadInfoFunc, self).__init__("lx_thread_info")
-+
-+    def invoke(self, task):
-+        return get_thread_info(task)
-+
-+
-+LxThreadInfoFunc()
--- 
-1.8.1.1.298.ge7eed54
-
+On 27-08-14 17:19, Rob Clark wrote:
+> We really don't want distro's enabling this in their kernels.  Try and
+> make that more clear.
+> 
+> Signed-off-by: Rob Clark <robdclark@gmail.com>
+> ---
+>  lib/Kconfig.debug | 4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+> index 07c2832..1b233fc 100644
+> --- a/lib/Kconfig.debug
+> +++ b/lib/Kconfig.debug
+> @@ -892,6 +892,10 @@ config DEBUG_WW_MUTEX_SLOWPATH
+>  	 the full mutex checks enabled with (CONFIG_PROVE_LOCKING) this
+>  	 will test all possible w/w mutex interface abuse with the
+>  	 exception of simply not acquiring all the required locks.
+> +	 Note that this feature can introduce significant overhead, so
+> +	 it really should not be enabled in a production or distro kernel,
+> +	 even a debug kernel.  If you are a driver writer, enable it.  If
+> +	 you are a distro, do not.
+>  
+>  config DEBUG_LOCK_ALLOC
+>  	bool "Lock debugging: detect incorrect freeing of live locks"
+> 
