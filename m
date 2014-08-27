@@ -1,162 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936041AbaH0VrN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 17:47:13 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:38118 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932246AbaH0VrL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 17:47:11 -0400
-Date: Wed, 27 Aug 2014 14:47:06 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>,
-        amit.shah@redhat.com
-Subject: Re: [PATCH] rcu: Make nocb leader kthreads process pending callbacks
- after spawning
-Message-ID: <20140827214706.GO2663@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1409172220-2804-1-git-send-email-bobby.prani@gmail.com>
+	id S965033AbaH0VsJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 17:48:09 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:49787 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932246AbaH0VsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 17:48:07 -0400
+Date: Wed, 27 Aug 2014 15:47:43 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Scot Doyle <lkml14@scotdoyle.com>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>,
+        Stefan Berger <stefanb@linux.vnet.ibm.com>,
+        Luigi Semenzato <semenzato@google.com>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v3] tpm_tis: verify interrupt during init
+Message-ID: <20140827214743.GC11183@obsidianresearch.com>
+References: <alpine.LNX.2.11.1408220043560.1360@localhost.localdomain>
+ <20140822160626.GA8477@obsidianresearch.com>
+ <alpine.LNX.2.11.1408221924070.1046@localhost.localdomain>
+ <20140822203241.GB1733@obsidianresearch.com>
+ <alpine.LNX.2.11.1408250629110.1207@localhost.localdomain>
+ <20140825182414.GB1298@obsidianresearch.com>
+ <alpine.LNX.2.11.1408270410190.701@localhost.localdomain>
+ <20140827173142.GA11183@obsidianresearch.com>
+ <alpine.LNX.2.11.1408271755470.4371@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1409172220-2804-1-git-send-email-bobby.prani@gmail.com>
+In-Reply-To: <alpine.LNX.2.11.1408271755470.4371@localhost.localdomain>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082721-7164-0000-0000-00000424D9A4
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 27, 2014 at 04:43:40PM -0400, Pranith Kumar wrote:
-> The nocb callbacks generated before the nocb kthreads are spawned are
-> enqueued in the nocb queue for later processing. Commit fbce7497ee5af ("rcu:
-> Parallelize and economize NOCB kthread wakeups") introduced nocb leader kthreads
-> which checked the nocb_leader_wake flag to see if there were any such pending
-> callbacks. A case was reported in which newly spawned leader kthreads were not
-> processing the pending callbacks as this flag was not set, which led to a boot
-> hang.
+On Wed, Aug 27, 2014 at 09:32:10PM +0000, Scot Doyle wrote:
+
+> If suspend/resume occur before falling back to polling mode (within 30 
+> seconds after module load), then the machine freezes on resume because 
+> the module is waiting on the interrupts.
+
+Okay, this is just a specific case of the broader TPM bug: the tpm
+driver is registered with the system before it is actually ready to
+drive the TPM.
+ 
+> >> -    if (tpm_do_selftest(chip)) {
+> >> -            dev_err(dev, "TPM self test failed\n");
+> >> -            rc = -ENODEV;
+> >> -            goto out_err;
+> >> -    }
+> >
+> > Move gettimeout too
 > 
-> The following commit ensures that the newly spawned nocb kthreads process the
-> pending callbacks by allowing the kthreads to run immediately after spawning
-> instead of waiting. This is done by inverting the logic of nocb_leader_wake
-> tests to nocb_leader_sleep which allows us to use the default initialization of
-> this flag to 0 to let the kthreads run.
+> Can it be moved? It sends startup(clear) if the TPM isn't yet operational.
+
+To move it means we have to understand why you are getting timeouts:
+
+[   33.247720] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
+[   33.247731] tpm_tis 00:08: [Hardware Error]: TPM command timed out during continue self test
+
+I had thought based on your other patch that these should not happen
+since the raw register is polled after the timer expires?
+
+What is going on here? Do you still have that other patch applied?
+
 > 
-> Reported-by: Amit Shah <amit.shah@redhat.com>
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-> Link: http://www.spinics.net/lists/kernel/msg1802899.html
+> >> -    if (chip->vendor.irq) {
+> >> +    if (interrupts && chip->vendor.irq) {
+> >
+> > Unrelated? Looks unnecessary:
+> >
+> >        if (!interrupts) {
+> >                irq = 0;
+> >
+> >        chip->vendor.irq = irq;
+> >
+> >        if (chip->vendor.irq) {
+> 
+> Setting chip->vendor.irq would erase any we just found in probing?
 
-Thank you, Pranith, queued.  I have also backported to v3.17-rc2,
-and am testing both.  A sneak preview of the backport is shown below,
-please let me know if you see any problems with it.  (The reason for
-the backport is to submit to 3.17 as a fix for a regression.)
+Sorry, I ment the code I clipped is already present in the driver, in
+that order, so the change is a NOP.
 
-							Thanx, Paul
+> Right, the TPM commands don't fail, but tpm_get_timeouts does. I've 
+> simplified the section in this version.
 
-------------------------------------------------------------------------
+I'm not quite sure what that means, but..
 
-rcu: Make nocb leader kthreads process pending callbacks after spawning
+The reason you want to use tpm_get_timeouts to test the IRQ is because
+it has a very short timeout. self test has one of the longest
+timeouts, so it is not the best choice.
 
-The nocb callbacks generated before the nocb kthreads are spawned are
-enqueued in the nocb queue for later processing. Commit fbce7497ee5af ("rcu:
-Parallelize and economize NOCB kthread wakeups") introduced nocb leader kthreads
-which checked the nocb_leader_wake flag to see if there were any such pending
-callbacks. A case was reported in which newly spawned leader kthreads were not
-processing the pending callbacks as this flag was not set, which led to a boot
-hang.
+What I was hoping to see, is that get_timeouts would hit the timer, do
+the final read of the completion register, complete normally, then the
+tis driver would see successful completion with no IRQ and turn them
+off.
 
-The following commit ensures that the newly spawned nocb kthreads process the
-pending callbacks by allowing the kthreads to run immediately after spawning
-instead of waiting. This is done by inverting the logic of nocb_leader_wake
-tests to nocb_leader_sleep which allows us to use the default initialization of
-this flag to 0 to let the kthreads run.
+Is that doable?
 
-Reported-by: Amit Shah <amit.shah@redhat.com>
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-Link: http://www.spinics.net/lists/kernel/msg1802899.html
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
+> index e4d0888..6747a47 100644
+> +++ b/drivers/char/tpm/tpm.h
+> @@ -69,6 +69,7 @@ struct tpm_vendor_specific {
+> 
+>  	int irq;
+>  	int probed_irq;
+> +	bool int_received;
 
-diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
-index 71e64c718f75..6a86eb7bac45 100644
---- a/kernel/rcu/tree.h
-+++ b/kernel/rcu/tree.h
-@@ -358,7 +358,7 @@ struct rcu_data {
- 	struct rcu_head **nocb_gp_tail;
- 	long nocb_gp_count;
- 	long nocb_gp_count_lazy;
--	bool nocb_leader_wake;		/* Is the nocb leader thread awake? */
-+	bool nocb_leader_sleep;		/* Is the nocb leader thread asleep? */
- 	struct rcu_data *nocb_next_follower;
- 					/* Next follower in wakeup chain. */
- 
-diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index 00dc411e9676..a7997e272564 100644
---- a/kernel/rcu/tree_plugin.h
-+++ b/kernel/rcu/tree_plugin.h
-@@ -2074,9 +2074,9 @@ static void wake_nocb_leader(struct rcu_data *rdp, bool force)
- 
- 	if (!ACCESS_ONCE(rdp_leader->nocb_kthread))
- 		return;
--	if (!ACCESS_ONCE(rdp_leader->nocb_leader_wake) || force) {
-+	if (ACCESS_ONCE(rdp_leader->nocb_leader_sleep) || force) {
- 		/* Prior xchg orders against prior callback enqueue. */
--		ACCESS_ONCE(rdp_leader->nocb_leader_wake) = true;
-+		ACCESS_ONCE(rdp_leader->nocb_leader_sleep) = false;
- 		wake_up(&rdp_leader->nocb_wq);
- 	}
- }
-@@ -2253,7 +2253,7 @@ wait_again:
- 	if (!rcu_nocb_poll) {
- 		trace_rcu_nocb_wake(my_rdp->rsp->name, my_rdp->cpu, "Sleep");
- 		wait_event_interruptible(my_rdp->nocb_wq,
--					 ACCESS_ONCE(my_rdp->nocb_leader_wake));
-+				!ACCESS_ONCE(my_rdp->nocb_leader_sleep));
- 		/* Memory barrier handled by smp_mb() calls below and repoll. */
- 	} else if (firsttime) {
- 		firsttime = false; /* Don't drown trace log with "Poll"! */
-@@ -2292,12 +2292,12 @@ wait_again:
- 		schedule_timeout_interruptible(1);
- 
- 		/* Rescan in case we were a victim of memory ordering. */
--		my_rdp->nocb_leader_wake = false;
--		smp_mb();  /* Ensure _wake false before scan. */
-+		my_rdp->nocb_leader_sleep = true;
-+		smp_mb();  /* Ensure _sleep true before scan. */
- 		for (rdp = my_rdp; rdp; rdp = rdp->nocb_next_follower)
- 			if (ACCESS_ONCE(rdp->nocb_head)) {
- 				/* Found CB, so short-circuit next wait. */
--				my_rdp->nocb_leader_wake = true;
-+				my_rdp->nocb_leader_sleep = false;
- 				break;
- 			}
- 		goto wait_again;
-@@ -2307,17 +2307,17 @@ wait_again:
- 	rcu_nocb_wait_gp(my_rdp);
- 
- 	/*
--	 * We left ->nocb_leader_wake set to reduce cache thrashing.
--	 * We clear it now, but recheck for new callbacks while
-+	 * We left ->nocb_leader_sleep unset to reduce cache thrashing.
-+	 * We set it now, but recheck for new callbacks while
- 	 * traversing our follower list.
- 	 */
--	my_rdp->nocb_leader_wake = false;
--	smp_mb(); /* Ensure _wake false before scan of ->nocb_head. */
-+	my_rdp->nocb_leader_sleep = true;
-+	smp_mb(); /* Ensure _sleep true before scan of ->nocb_head. */
- 
- 	/* Each pass through the following loop wakes a follower, if needed. */
- 	for (rdp = my_rdp; rdp; rdp = rdp->nocb_next_follower) {
- 		if (ACCESS_ONCE(rdp->nocb_head))
--			my_rdp->nocb_leader_wake = true; /* No need to wait. */
-+			my_rdp->nocb_leader_sleep = false;/* No need to sleep.*/
- 		if (!rdp->nocb_gp_head)
- 			continue; /* No CBs, so no need to wake follower. */
- 
+Ugh, yes, right, tis doesn't have its own driver private structure
+yet.
 
+Please add a comment 'FIXME: belongs in tpm_tis driver private data'
+
+Or, better, add a driver private structure to hold this data.
+
+Jason
