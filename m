@@ -1,396 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932723AbaH0E5w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 00:57:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64037 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932375AbaH0E5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 00:57:49 -0400
-Message-ID: <53FD6542.10708@redhat.com>
-Date: Wed, 27 Aug 2014 12:57:38 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S932831AbaH0E6E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 00:58:04 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:58032 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932241AbaH0E6B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 00:58:01 -0400
+Date: Wed, 27 Aug 2014 10:27:47 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Joe Perches <joe@perches.com>, Zhang Rui <rui.zhang@intel.com>,
+        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] acpi: fan.c: printk replacement
+Message-ID: <20140827045747.GA3309@sudip-PC>
+References: <1408709001-3272-1-git-send-email-sudipm.mukherjee@gmail.com>
+ <8052272.VnRivAuOcQ@vostro.rjw.lan>
+ <1409086742.20683.75.camel@joe-AO725>
+ <4713016.Cq5xvW8zIj@vostro.rjw.lan>
 MIME-Version: 1.0
-To: Hengjinxiao <hjxiaohust@gmail.com>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
-CC: mst@redhat.com, rusty@rustcorp.com.au, famz@redhat.com
-Subject: Re: [PATCH 1/1] add selftest for virtio-net
-References: <1409103921-2879-1-git-send-email-hjxiaohust@gmail.com>
-In-Reply-To: <1409103921-2879-1-git-send-email-hjxiaohust@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4713016.Cq5xvW8zIj@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2014 09:45 AM, Hengjinxiao wrote:
-> Selftest is an important part of network driver, this patch adds selftest for
-> virtio-net, including loopback test, negotiate test and reset test. Loopback 
-> test checks whether virtio-net can send and receive packets normally. Negotiate test
-> executes feature negotiation between virtio-net driver in Guest OS and virtio-net 
-> device in Host OS. Reset test resets virtio-net.
+On Tue, Aug 26, 2014 at 11:22:12PM +0200, Rafael J. Wysocki wrote:
+> On Tuesday, August 26, 2014 01:59:02 PM Joe Perches wrote:
+> > On Tue, 2014-08-26 at 23:02 +0200, Rafael J. Wysocki wrote:
+> > > On Tuesday, August 26, 2014 09:00:39 PM Sudip Mukherjee wrote:
+> > > > On Tue, Aug 26, 2014 at 12:45:20AM +0200, Rafael J. Wysocki wrote:
+> > > > > On Friday, August 22, 2014 05:33:21 PM Sudip Mukherjee wrote:
+> > > > > > printk replaced with corresponding dev_err and dev_info
+> > > > > > fixed one broken user-visible string
+> > > > > > multiine comment edited for correct commenting style
+> > > > > > asm/uaccess.h replaced with linux/uaccess.h
+> > > > > > 
+> > > > > > Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+> > > > > > ---
+> > > > > >  drivers/acpi/fan.c | 18 +++++++++---------
+> > > > > >  1 file changed, 9 insertions(+), 9 deletions(-)
+> > > > > > 
+> > > > > > diff --git a/drivers/acpi/fan.c b/drivers/acpi/fan.c
+> > > > > > index 8acf53e..7900d55 100644
+> > > > > > --- a/drivers/acpi/fan.c
+> > > > > > +++ b/drivers/acpi/fan.c
+> > > > > > @@ -27,7 +27,7 @@
+> > > > > >  #include <linux/module.h>
+> > > > > >  #include <linux/init.h>
+> > > > > >  #include <linux/types.h>
+> > > > > > -#include <asm/uaccess.h>
+> > > > > > +#include <linux/uaccess.h>
+> > > > > >  #include <linux/thermal.h>
+> > > > > >  #include <linux/acpi.h>
+> > > > > >  
+> > > > > > @@ -127,8 +127,9 @@ static const struct thermal_cooling_device_ops fan_cooling_ops = {
+> > > > > >  };
+> > > > > >  
+> > > > > >  /* --------------------------------------------------------------------------
+> > > > > > -                                 Driver Interface
+> > > > > > -   -------------------------------------------------------------------------- */
+> > > > > > + *                               Driver Interface
+> > > > > > + * --------------------------------------------------------------------------
+> > > > > > +*/
+> > > > > >  
+> > > > > >  static int acpi_fan_add(struct acpi_device *device)
+> > > > > >  {
+> > > > > > @@ -143,7 +144,7 @@ static int acpi_fan_add(struct acpi_device *device)
+> > > > > >  
+> > > > > >  	result = acpi_bus_update_power(device->handle, NULL);
+> > > > > >  	if (result) {
+> > > > > > -		printk(KERN_ERR PREFIX "Setting initial power state\n");
+> > > > > > +		dev_err(&device->dev, PREFIX "Setting initial power state\n");
+> > > > > 
+> > > > > While at it, please define a proper pr_fmt() for this file and get rid of PREFIX
+> > > > > too.
+> > > > > 
+> > > > > Otherwise I don't see a compelling reason to apply this.
+> > > > > 
+> > > > 
+> > > > Hi,
+> > > > Since in the patch I am not using any pr_* , so I am unable to understand why
+> > > > you are asking for a proper pr_fmt().
+> > > 
+> > > Never mind, I was confused somehow, not exactly sure why.  Sorry about that.
+> > > 
+> > > > I can get rid of the PREFIX . Then should I use pr_* in the patch instead of dev_* ? 
+> > > > My understanding was dev_* is more preffered than pr_*.
+> > > > waiting for your suggestion on this.
+> > > 
+> > > Well, that really depends on the particular case.  It really is better to use
+> > > dev_err() here, but then PREFIX with it is not really useful, so please just
+> > > drop PREFIX from the new messages.
+> > 
+> > PREFIX is "ACPI: " so I think the idea is
+> > to be able to grep for that.
+> 
+> I'm not sure how useful that is in this particular case.  You can grep for "power
+> state" istead just fine ...
+> 
+> Rafael
+> 
 
-Thanks for the patch. Feature negotiation part brings some complicity
-and need more through. And this could be extended for CVE regression in
-the future. And you probably also need to send a patch of virtio spec to
-implement the loop back mode.
+Then there is one more printk which prints fan state is on or off :
 
-See comments inline.
->
-> Signed-off-by: Hengjinxiao <hjxiaohust@gmail.com>
->
-> ---
->  drivers/net/virtio_net.c        | 233 +++++++++++++++++++++++++++++++++++++++-
->  include/uapi/linux/virtio_net.h |   9 ++
->  2 files changed, 241 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index 59caa06..f83f6e4 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -28,6 +28,7 @@
->  #include <linux/cpu.h>
->  #include <linux/average.h>
->  #include <net/busy_poll.h>
-> +#include <linux/pci.h>
->  
->  static int napi_weight = NAPI_POLL_WEIGHT;
->  module_param(napi_weight, int, 0444);
-> @@ -51,6 +52,23 @@ module_param(gso, bool, 0444);
->  #define MERGEABLE_BUFFER_ALIGN max(L1_CACHE_BYTES, 256)
->  
->  #define VIRTNET_DRIVER_VERSION "1.0.0"
-> +#define __VIRTNET_TESTING  0
-> +
+>dev_info(&device->dev, PREFIX "%s [%s] (%s)\n",
+>	  acpi_device_name(device), acpi_device_bid(device),
+>              !device->power.state ? "on" : "off");
 
-Why need this marco?
-> +enum {
-> +	VIRTNET_LOOPBACK_TEST,
-> +	VIRTNET_FEATURE_NEG_TEST,
-> +	VIRTNET_RESET_TEST,
-> +};
-> +
-> +static const struct {
-> +	const char string[ETH_GSTRING_LEN];
-> +} virtnet_gstrings_test[] = {
-> +	[VIRTNET_LOOPBACK_TEST]	= { "loopback test   (offline)" },
-> +	[VIRTNET_FEATURE_NEG_TEST]	= { "negotiate test  (offline)" },
-> +	[VIRTNET_RESET_TEST]	= { "reset test     (offline)" },
-> +};
-> +
-> +#define VIRTNET_NUM_TEST	ARRAY_SIZE(virtnet_gstrings_test)
->  
->  struct virtnet_stats {
->  	struct u64_stats_sync tx_syncp;
-> @@ -104,6 +122,8 @@ struct virtnet_info {
->  	struct send_queue *sq;
->  	struct receive_queue *rq;
->  	unsigned int status;
-> +	unsigned long flags;
-> +	atomic_t lb_count;
->  
->  	/* Max # of queue pairs supported by the device */
->  	u16 max_queue_pairs;
-> @@ -436,6 +456,19 @@ err_buf:
->  	return NULL;
->  }
->  
-> +void virtnet_check_lb_frame(struct virtnet_info *vi,
-> +				   struct sk_buff *skb)
-> +{
-> +	unsigned int frame_size = skb->len;
-> +
-> +	if (*(skb->data + 3) == 0xFF) {
-> +		if ((*(skb->data + frame_size / 2 + 10) == 0xBE) &&
-> +		   (*(skb->data + frame_size / 2 + 12) == 0xAF)) {
-> +			atomic_dec(&vi->lb_count);
-> +		}
-> +	}
-> +}
-> +
->  static void receive_buf(struct receive_queue *rq, void *buf, unsigned int len)
->  {
->  	struct virtnet_info *vi = rq->vq->vdev->priv;
-> @@ -485,7 +518,12 @@ static void receive_buf(struct receive_queue *rq, void *buf, unsigned int len)
->  	} else if (hdr->hdr.flags & VIRTIO_NET_HDR_F_DATA_VALID) {
->  		skb->ip_summed = CHECKSUM_UNNECESSARY;
->  	}
-> -
-> +	/* loopback self test for ethtool */
-> +	if (test_bit(__VIRTNET_TESTING, &vi->flags)) {
-> +		virtnet_check_lb_frame(vi, skb);
-> +		dev_kfree_skb_any(skb);
-> +		return;
-> +	}
+So if we drop the PREFIX and if some one wants to grep for this fan on/off , then how to do that ..
+after removing PREFIX , in dmesg I am getting it as :
+[    2.056204] fan PNP0C0B:00: Fan [FAN0] (off)
+[    2.056225] fan PNP0C0B:01: Fan [FAN1] (off)
+[    2.056245] fan PNP0C0B:02: Fan [FAN2] (off)
+[    2.056263] fan PNP0C0B:03: Fan [FAN3] (off)
+[    2.056283] fan PNP0C0B:04: Fan [FAN4] (off)
 
-Not sure it's a good choice for adding such in fast path. We may need a
-test specific rx interrupt handler (and disable NAPI) for this.
->  	skb->protocol = eth_type_trans(skb, dev);
->  	pr_debug("Receiving skb proto 0x%04x len %i type %i\n",
->  		 ntohs(skb->protocol), skb->len, skb->pkt_type);
-> @@ -813,6 +851,9 @@ static int virtnet_open(struct net_device *dev)
->  {
->  	struct virtnet_info *vi = netdev_priv(dev);
->  	int i;
-> +	/* disallow open during test */
-> +	if (test_bit(__VIRTNET_TESTING, &vi->flags))
-> +		return -EBUSY;
->  
->  	for (i = 0; i < vi->max_queue_pairs; i++) {
->  		if (i < vi->curr_queue_pairs)
-> @@ -1363,12 +1404,158 @@ static void virtnet_get_channels(struct net_device *dev,
->  	channels->other_count = 0;
->  }
->  
-> +static int virtnet_reset(struct virtnet_info *vi);
-> +
-> +static void virtnet_create_lb_frame(struct sk_buff *skb,
-> +					unsigned int frame_size)
-> +{
-> +	memset(skb->data, 0xFF, frame_size);
-> +	frame_size &= ~1;
-> +	memset(&skb->data[frame_size / 2], 0xAA, frame_size / 2 - 1);
-> +	memset(&skb->data[frame_size / 2 + 10], 0xBE, 1);
-> +	memset(&skb->data[frame_size / 2 + 12], 0xAF, 1);
-> +}
-> +
-> +static int virtnet_start_loopback(struct virtnet_info *vi)
-> +{
-> +	if (!virtnet_send_command(vi, VIRTIO_NET_CTRL_LOOPBACK,
-> +				  VIRTIO_NET_CTRL_LOOPBACK_SET, NULL, NULL)) {
-> +		dev_warn(&vi->dev->dev, "Failed to set loopback.\n");
-> +		return -EINVAL;
-> +	}
-> +	return 0;
 
-You may need to test the feature bit of loop back first and report the
-card does not support loop back in some way.
-> +}
-> +
-> +static int virtnet_run_loopback_test(struct virtnet_info *vi)
-> +{
-> +	int i;
-> +	netdev_tx_t rc;
-> +	struct sk_buff *skb;
-> +	unsigned int size = GOOD_COPY_LEN;
-> +
-> +	for (i = 0; i < 100; i++) {
-> +		skb = netdev_alloc_skb(vi->dev, size);
-> +		if (!skb)
-> +			return -ENOMEM;
-> +
-> +		skb->queue_mapping = 0;
-> +		skb_put(skb, size);
-> +		virtnet_create_lb_frame(skb, size);
-> +		rc = start_xmit(skb, vi->dev);
-
-virtio_net does not use tx interrupt to free old xmit skbs. It poll tx
-completion only during xmit_skb(). So at least the last skb is leaked
-since it was not freed. A possible solution is using tx interrupt here.
-> +		if (rc != NETDEV_TX_OK)
-> +			return -EPIPE;
-
-It looks to me that start_xmit() never return other value than NETDEV_TX_OK.
-> +		atomic_inc(&vi->lb_count);
-> +	}
-> +	/* Give queue time to settle before testing results. */
-> +	msleep(20);
-
-Need to make sure this value is also ok for qemu. ixgbe use 200 to 64
-packets.
-> +	return atomic_read(&vi->lb_count) ? -EIO : 0;
-> +}
-> +
-> +static int virtnet_stop_loopback(struct virtnet_info *vi)
-> +{
-> +	if (!virtnet_send_command(vi, VIRTIO_NET_CTRL_LOOPBACK,
-> +				  VIRTIO_NET_CTRL_LOOPBACK_UNSET, NULL, NULL)) {
-> +		dev_warn(&vi->dev->dev, "Failed to unset loopback.\n");
-> +		return -EINVAL;
-> +	}
-> +	return 0;
-> +}
-> +
-> +static int virtnet_loopback_test(struct virtnet_info *vi, u64 *data)
-> +{
-> +	*data = virtnet_start_loopback(vi);
-> +	if (*data)
-> +		goto out;
-> +	*data = virtnet_run_loopback_test(vi);
-> +	if (*data)
-
-Do we need to stop loopback here?
-> +		goto out;
-> +	*data = virtnet_stop_loopback(vi);
-> +out:
-> +	return *data;
-> +}
-> +
-> +static void virtnet_feature_neg_test(struct virtnet_info *vi)
-> +{
-> +	struct virtio_device *dev = vi->vdev;
-> +	struct virtio_driver *drv = drv_to_virtio(dev->dev.driver);
-> +	int i;
-> +	u32 device_features;
-> +
-> +	/* Figure out what features the device supports. */
-> +	device_features = dev->config->get_features(dev);
-> +
-> +	/* Features supported by both device and driver into dev->features. */
-> +	memset(dev->features, 0, sizeof(dev->features));
-> +	for (i = 0; i < drv->feature_table_size; i++) {
-> +		unsigned int f = drv->feature_table[i];
-> +
-> +		BUG_ON(f >= 32);
-> +		if (device_features & (1 << f))
-> +			set_bit(f, dev->features);
-> +	}
-> +
-> +	/* Transport features always preserved to pass to finalize_features. */
-> +	for (i = VIRTIO_TRANSPORT_F_START; i < VIRTIO_TRANSPORT_F_END; i++)
-> +		if (device_features & (1 << i))
-> +			set_bit(i, dev->features);
-> +
-> +	dev->config->finalize_features(dev);
-> +}
-
-A problem of the function is it may be called during DRIVER_OK, not sure
-this is ok since spec suggest to do the feature negotiation after DRIVER
-bit but before DRIVER_OK bit. And this function duplicates some of the
-code from virtio core, may consider a method to share between them.
-
-Another issue is the test never fail which needs more thought.
-> +
-> +static int virtnet_get_sset_count(struct net_device *netdev, int sset)
-> +{
-> +	switch (sset) {
-> +	case ETH_SS_TEST:
-> +		return VIRTNET_NUM_TEST;
-> +	default:
-> +		return -EOPNOTSUPP;
-> +	}
-> +}
-> +
-> +static void virtnet_get_strings(struct net_device *dev, u32 stringset, u8 *buf)
-> +{
-> +	switch (stringset) {
-> +	case ETH_SS_TEST:
-> +		memcpy(buf, &virtnet_gstrings_test,
-> +			sizeof(virtnet_gstrings_test));
-> +		break;
-> +	default:
-> +		break;
-> +	}
-> +}
-> +
-> +static void virtnet_self_test(struct net_device *netdev,
-> +			    struct ethtool_test *eth_test, u64 *data)
-> +{
-> +	struct virtnet_info *vi = netdev_priv(netdev);
-> +	bool if_running = netif_running(netdev);
-> +
-> +	set_bit(__VIRTNET_TESTING, &vi->flags);
-> +	memset(data, 0, sizeof(u64) * VIRTNET_NUM_TEST);
-> +
-> +	if (eth_test->flags == ETH_TEST_FL_OFFLINE) {
-> +		if (!if_running) {
-> +			dev_warn(&vi->dev->dev, "Failed to execute self test.\n");
-> +			eth_test->flags |= ETH_TEST_FL_FAILED;
-> +			return;
-> +		}
-> +		if (virtnet_loopback_test(vi, &data[VIRTNET_LOOPBACK_TEST]))
-> +			eth_test->flags |= ETH_TEST_FL_FAILED;
-> +		virtnet_feature_neg_test(vi);
-> +		virtnet_reset(vi);
-> +	}
-> +	clear_bit(__VIRTNET_TESTING, &vi->flags);
-> +}
-> +
->  static const struct ethtool_ops virtnet_ethtool_ops = {
->  	.get_drvinfo = virtnet_get_drvinfo,
->  	.get_link = ethtool_op_get_link,
->  	.get_ringparam = virtnet_get_ringparam,
->  	.set_channels = virtnet_set_channels,
->  	.get_channels = virtnet_get_channels,
-> +	.self_test = virtnet_self_test,
-> +	.get_strings		= virtnet_get_strings,
-> +	.get_sset_count = virtnet_get_sset_count,
->  };
->  
->  #define MIN_MTU 68
-> @@ -1957,6 +2144,50 @@ static int virtnet_restore(struct virtio_device *vdev)
->  }
->  #endif
->  
-> +static int virtnet_reset(struct virtnet_info *vi)
-
-If this is needed, better split this into anther patch.
-> +{
-> +	struct virtio_device *vdev = vi->vdev;
-> +	int err, i;
-> +	u8 status;
-> +
-> +	mutex_lock(&vi->config_lock);
-> +	vi->config_enable = false;
-> +	mutex_unlock(&vi->config_lock);
-> +
-> +	cancel_delayed_work_sync(&vi->refill);
-> +
-> +	if (netif_running(vi->dev))
-> +		for (i = 0; i < vi->max_queue_pairs; i++) {
-> +			napi_disable(&vi->rq[i].napi);
-> +			netif_napi_del(&vi->rq[i].napi);
-> +		}
-> +
-> +	remove_vq_common(vi);
-> +	flush_work(&vi->config_work);
-> +
-> +	virtnet_feature_neg_test(vi);
-
-Is this used for feature negotiation? If yes, need a better name and can
-we reuse virtio core function to do this?
-> +	err = init_vqs(vi);
-> +	if (err)
-> +		return err;
-> +	if (netif_running(vi->dev)) {
-> +		for (i = 0; i < vi->curr_queue_pairs; i++)
-> +			if (!try_fill_recv(&vi->rq[i], GFP_KERNEL))
-> +				schedule_delayed_work(&vi->refill, 0);
-> +
-> +		for (i = 0; i < vi->max_queue_pairs; i++)
-> +			virtnet_napi_enable(&vi->rq[i]);
-> +	}
-> +
-> +	mutex_lock(&vi->config_lock);
-> +	vi->config_enable = true;
-> +	mutex_unlock(&vi->config_lock);
-> +
-> +	virtnet_set_queues(vi, vi->curr_queue_pairs);
-> +	status = vdev->config->get_status(vdev);
-> +	vdev->config->set_status(vdev, status | VIRTIO_CONFIG_S_DRIVER_OK);
-> +	return 0;
-> +}
-> +
->  static struct virtio_device_id id_table[] = {
->  	{ VIRTIO_ID_NET, VIRTIO_DEV_ANY_ID },
->  	{ 0 },
-> diff --git a/include/uapi/linux/virtio_net.h b/include/uapi/linux/virtio_net.h
-> index 172a7f0..1f31f90 100644
-> --- a/include/uapi/linux/virtio_net.h
-> +++ b/include/uapi/linux/virtio_net.h
-> @@ -201,4 +201,13 @@ struct virtio_net_ctrl_mq {
->   #define VIRTIO_NET_CTRL_MQ_VQ_PAIRS_MIN        1
->   #define VIRTIO_NET_CTRL_MQ_VQ_PAIRS_MAX        0x8000
->  
-> + /*
-> +  * Control Loopback(5 is used by VIRTIO_NET_CTRL_GUEST_OFFLOADS in latest qemu)
-> +  *
-> +  * The command VIRTIO_NET_CTRL_LOOPBACK_SET is used to require the device come
-> +  * into loopback state.
-> +  */
-> +#define VIRTIO_NET_CTRL_LOOPBACK   6
-> + #define VIRTIO_NET_CTRL_LOOPBACK_SET        0
-> + #define VIRTIO_NET_CTRL_LOOPBACK_UNSET        1
->  #endif /* _LINUX_VIRTIO_NET_H */
+thanks
+sudip
 
