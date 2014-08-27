@@ -1,113 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756741AbaH0LBv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 07:01:51 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:38347 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756332AbaH0LBt (ORCPT
+	id S1757043AbaH0LCp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 07:02:45 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:47484 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756755AbaH0LCm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 07:01:49 -0400
-Date: Wed, 27 Aug 2014 12:01:42 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Andreas Werner <andreas.werner@men.de>
-Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com, wim@iguana.be,
-        linux-watchdog@vger.kernel.org, cooloney@gmail.com, rpurdie@rpsys.net,
-        linux-leds@vger.kernel.org, jdelvare@suse.de, linux@roeck-us.net,
-        lm-sensors@lm-sensors.org, johannes.thumshirn@men.de
-Subject: Re: [PATCH v5 1/4] drivers/mfd/menf21bmc: introduce MEN 14F021P00
- BMC MFD Core driver
-Message-ID: <20140827110142.GA6364@lee--X1>
-References: <cover.1409074255.git.andreas.werner@men.de>
- <67faa70de03924edc768002df17b02e47256260c.1409074255.git.andreas.werner@men.de>
- <20140827072633.GY26707@lee--X1>
- <20140827105204.GA2083@awelinux>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140827105204.GA2083@awelinux>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 27 Aug 2014 07:02:42 -0400
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: [PATCH 2/2] ARM: multi_v7_defconfig: Enable Control Groups support
+Date: Wed, 27 Aug 2014 13:02:21 +0200
+Message-Id: <1409137341-20516-2-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <1409137341-20516-1-git-send-email-javier.martinez@collabora.co.uk>
+References: <1409137341-20516-1-git-send-email-javier.martinez@collabora.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Aug 2014, Andreas Werner wrote:
-> On Wed, Aug 27, 2014 at 08:26:33AM +0100, Lee Jones wrote:
-> > On Tue, 26 Aug 2014, Andreas Werner wrote:
-> > > The MEN 14F021P00 Board Management Controller provides an
-> > > I2C interface to the host to access the feature implemented in the BMC.
-> > > The BMC is a PIC Microntroller assembled on CPCI Card from MEN Mikroelektronik
-> > > and on a few Box/Display Computer.
-> > > 
-> > > Added MFD Core driver, supporting the I2C communication to the device.
-> > > 
-> > > The MFD driver currently supports the following features:
-> > >  	- Watchdog
-> > >  	- LEDs
-> > > 	- Hwmon (voltage monitoring)
-> > > 
-> > > Signed-off-by: Andreas Werner <andreas.werner@men.de>
-> > > Acked-by: Lee Jones <lee.jones@linaro.org>
-> > > ---
-> > >  drivers/mfd/Kconfig     |  12 +++++
-> > >  drivers/mfd/Makefile    |   1 +
-> > >  drivers/mfd/menf21bmc.c | 132 ++++++++++++++++++++++++++++++++++++++++++++++++
-> > >  3 files changed, 145 insertions(+)
-> > >  create mode 100644 drivers/mfd/menf21bmc.c
-> > > 
-> > > diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> > > index b8d9ca0..6a9f101 100644
-> > > --- a/drivers/mfd/Kconfig
-> > > +++ b/drivers/mfd/Kconfig
-> > > @@ -453,6 +453,18 @@ config MFD_MAX8998
-> > >  	  additional drivers must be enabled in order to use the functionality
-> > >  	  of the device.
-> > >  
-> > > +config MFD_MENF21BMC
-> > > +	tristate "MEN 14F021P00 Board Management Controller Support"
-> > > +	depends on I2C
-> > > +	select MFD_CORE
-> > > +	help
-> > > +	  Say yes here to add support for the MEN 14F021P00 BMC
-> > > +	  which is a Board Management Controller connected to the I2C bus.
-> > > +	  The device supports multiple sub-devices like LED, HWMON  and WDT.
-> > 
-> > Nit: Whitespace error.
-> > 
-> 
-> I run checkpatch but did not find any whitespace error.
-> Where is it?
+systemd needs control groups support to be enabled in the
+kernel so let's enable it by default since is quite likely
+that a user-space with systemd will be used.
 
-After 'HWMON'.
+Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+---
+ arch/arm/configs/multi_v7_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-> > > +MODULE_DEVICE_TABLE(i2c, menf21bmc_id_table);
-> > > +
-> > > +static struct i2c_driver menf21bmc_driver = {
-> > > +	.driver.name	= "menf21bmc",
-> > > +	.id_table	= menf21bmc_id_table,
-> > > +	.probe		= menf21bmc_probe,
-> > > +	.remove		= menf21bmc_remove,
-> > > +};
-> > 
-> > No DT support?
-> > 
-> 
-> No not at the moment because it is used only on x86 system.
-
-Ah okay.  Shouldn't the Kconfig depend on X86 then?  What about ACPI?
-
-> > > +module_i2c_driver(menf21bmc_driver);
-> > > +
-> > > +MODULE_DESCRIPTION("MEN 14F021P00 BMC mfd core driver");
-> > 
-> > s/mfd/MFD
-> > 
-> > > +MODULE_AUTHOR("Andreas Werner <andreas.werner@men.de>");
-> > > +MODULE_LICENSE("GPL v2");
-> > 
-
+diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
+index 7cfa5fa..abf6490 100644
+--- a/arch/arm/configs/multi_v7_defconfig
++++ b/arch/arm/configs/multi_v7_defconfig
+@@ -3,6 +3,7 @@ CONFIG_FHANDLE=y
+ CONFIG_IRQ_DOMAIN_DEBUG=y
+ CONFIG_NO_HZ=y
+ CONFIG_HIGH_RES_TIMERS=y
++CONFIG_CGROUPS=y
+ CONFIG_BLK_DEV_INITRD=y
+ CONFIG_EMBEDDED=y
+ CONFIG_PERF_EVENTS=y
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+2.0.1
+
