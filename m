@@ -1,101 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932428AbaH0IJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 04:09:27 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:48850 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751721AbaH0IJW (ORCPT
+	id S1754422AbaH0IJZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 04:09:25 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:34102 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751524AbaH0IJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 04:09:22 -0400
+	Wed, 27 Aug 2014 04:09:21 -0400
 From: matwey@sai.msu.ru
 To: gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, linux-parport@lists.infradead.org,
         hsommer@eso.org, matwey.kornilov@gmail.com,
         "Matwey V. Kornilov" <matwey@sai.msu.ru>
-Subject: [PATCHv5 1/2] parport: parport_pc: Introduce intel_bug_present function.
-Date: Wed, 27 Aug 2014 12:07:43 +0400
-Message-Id: <1409126864-2615-2-git-send-email-matwey@sai.msu.ru>
+Subject: [PATCHv5 0/2] parport: parport_pc: Fix false-positives at checking for Intel bug
+Date: Wed, 27 Aug 2014 12:07:42 +0400
+Message-Id: <1409126864-2615-1-git-send-email-matwey@sai.msu.ru>
 X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1409126864-2615-1-git-send-email-matwey@sai.msu.ru>
-References: <1409126864-2615-1-git-send-email-matwey@sai.msu.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Matwey V. Kornilov" <matwey@sai.msu.ru>
 
-Put the code to check present of the Intel bug from parport_EPP_supported
-into new intel_bug_present function. The later also return ECR register
-to the state it has before function call.
+Hi,
+
+The following patch series is to deal with the issue on false-positives
+of Intel EPP bug check [1].
+
+More than a decade ago, the check was introduced in order to prevent EPP
+operation on the some Intel LPT chipsets. The main issue to defence from
+was CPU hang at EPP operation on broken chipsets. It is mentioned that
+affected chipsets are Intel 82091. However, it is not known whether
+there are others.
+
+The check was implemented in strange manner. Now, there is no explanations
+why. The check itself now leads to the false-positives, disabling EPP on
+many PC-s (Dell OptiPlex series for instance). The latter is an issue.
+
+Here is new version of the patches supposed to shrink the set of the false-positives.
+We know that the initial problem arises on x86 with motherboard LPT controller.
+The patches following are to enable initial check only for x86 and non-PCI based devices.
+It is hard to correctly determine which CPUs could be installed into PentiumPro-compatible
+socket, so I postponed initial Alan's suggestion.
+
+For those who want to check theirs hardware, there's prebuilt usb-stick image available:
+https://susestudio.com/a/OdbKqm/opensuse-13-1-parport_pc
+
+The patches organized as following:
+
+1. Introduce-intel_bug_present-function
+
+The transparent refactoring of the check is performed.
+Make the check be immutable regarding to ECR register.
+
+2. Implement architecture and device check to cut off false-positives
+
+Run the initial check only for x86, and for 'legacy' devices.
+
+
+[1] https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=630593
 
 Signed-off-by: Matwey V. Kornilov <matwey@sai.msu.ru>
----
- drivers/parport/parport_pc.c | 38 ++++++++++++++++++++++++++------------
- 1 file changed, 26 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/parport/parport_pc.c b/drivers/parport/parport_pc.c
-index 76ee775..fedc06b 100644
---- a/drivers/parport/parport_pc.c
-+++ b/drivers/parport/parport_pc.c
-@@ -1702,6 +1702,30 @@ static int parport_ECP_supported(struct parport *pb)
- }
- #endif
- 
-+static int intel_bug_present(struct parport *pb)
-+{
-+	const struct parport_pc_private *priv = pb->private_data;
-+	int bug_present = 0;
-+
-+	if (priv->ecr) {
-+		/* store value of ECR */
-+		unsigned char ecr = inb(ECONTROL(pb));
-+		unsigned char i;
-+		for (i = 0x00; i < 0x80; i += 0x20) {
-+			ECR_WRITE(pb, i);
-+			if (clear_epp_timeout(pb)) {
-+				/* Phony EPP in ECP. */
-+				bug_present = 1;
-+				break;
-+			}
-+		}
-+		/* return ECR into the inital state */
-+		ECR_WRITE(pb, ecr);
-+	}
-+
-+	return bug_present;
-+}
-+
- static int parport_ECPPS2_supported(struct parport *pb)
- {
- 	const struct parport_pc_private *priv = pb->private_data;
-@@ -1722,8 +1746,6 @@ static int parport_ECPPS2_supported(struct parport *pb)
- 
- static int parport_EPP_supported(struct parport *pb)
- {
--	const struct parport_pc_private *priv = pb->private_data;
--
- 	/*
- 	 * Theory:
- 	 *	Bit 0 of STR is the EPP timeout bit, this bit is 0
-@@ -1742,16 +1764,8 @@ static int parport_EPP_supported(struct parport *pb)
- 		return 0;  /* No way to clear timeout */
- 
- 	/* Check for Intel bug. */
--	if (priv->ecr) {
--		unsigned char i;
--		for (i = 0x00; i < 0x80; i += 0x20) {
--			ECR_WRITE(pb, i);
--			if (clear_epp_timeout(pb)) {
--				/* Phony EPP in ECP. */
--				return 0;
--			}
--		}
--	}
-+	if (intel_bug_present(pb))
-+		return 0;
- 
- 	pb->modes |= PARPORT_MODE_EPP;
- 
--- 
-1.8.1.4
+---
+Changes from v4:
+ - Revert to v1 and implement different checks: arch and PCI-based.
+
+Changes from v3:
+ - Do not introduce the additional option, rely on CPU model instead.
+
+Changes from v2:
+ - The module option has more clear description
+
+Changes from v1:
+ - Patch 1 fetched from right branch and now compiled
 
