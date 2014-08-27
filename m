@@ -1,114 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933952AbaH0NG3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 09:06:29 -0400
-Received: from smtp5-g21.free.fr ([212.27.42.5]:57959 "EHLO smtp5-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933257AbaH0NG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 09:06:28 -0400
-X-Greylist: delayed 169952 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Aug 2014 09:06:27 EDT
-Date: Wed, 27 Aug 2014 15:06:22 +0200
-From: Sabrina Dubroca <sd@queasysnail.net>
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, linux-nfs@vger.kernel.org, davej@redhat.com
-Subject: BUG: sleeping function called from invalid context at
- arch/x86/mm/fault.c:1177
-Message-ID: <20140827130622.GA31728@kria>
+	id S934123AbaH0NG7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 09:06:59 -0400
+Received: from mail-bn1lp0139.outbound.protection.outlook.com ([207.46.163.139]:20608
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933257AbaH0NG4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 09:06:56 -0400
+Message-ID: <53FDD7D8.5050602@opensource.altera.com>
+Date: Wed, 27 Aug 2014 08:06:32 -0500
+From: Dinh Nguyen <dinguyen@opensource.altera.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Borislav Petkov <bp@alien8.de>
+CC: Thor Thayer <tthayer@opensource.altera.com>, Pavel Machek <pavel@denx.de>,
+        <robherring2@gmail.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <rob@landley.net>, <linux@arm.linux.org.uk>,
+        <atull@opensource.altera.com>, <delicious.quinoa@gmail.com>,
+        <dougthompson@xmission.com>, <grant.likely@linaro.org>,
+        <sameo@linux.intel.com>, <lee.jones@linaro.org>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <tthayer.linux@gmail.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-edac@vger.kernel.org>
+Subject: Re: [PATCHv10 2/2] arm: dts: Add Altera SDRAM EDAC bindings & devicetree
+ entries.
+References: <1407770293-27190-1-git-send-email-tthayer@opensource.altera.com> <1407770293-27190-3-git-send-email-tthayer@opensource.altera.com> <20140814184949.GC11558@amd.pavel.ucw.cz> <53FCD456.3050404@opensource.altera.com> <53FCEDDA.4060906@opensource.altera.com> <20140827063638.GA28234@nazgul.tnic>
+In-Reply-To: <20140827063638.GA28234@nazgul.tnic>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [99.103.66.154]
+X-ClientProxiedBy: BN1PR02CA0011.namprd02.prod.outlook.com (10.141.56.11) To
+ BY1PR0301MB1190.namprd03.prod.outlook.com (25.160.195.149)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0316567485
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6009001)(24454002)(479174003)(199003)(377454003)(51704005)(164054003)(189002)(66066001)(65806001)(65956001)(77982001)(80022001)(79102001)(59896002)(93886004)(85306004)(83506001)(76482001)(80316001)(83322001)(20776003)(85852003)(83072002)(4396001)(81342001)(47776003)(64706001)(21056001)(87976001)(81542001)(23676002)(46102001)(101416001)(74662001)(74502001)(31966008)(86362001)(92726001)(92566001)(90102001)(50466002)(50986999)(99396002)(33656002)(77096002)(87266999)(54356999)(76176999)(65816999)(106356001)(107046002)(105586002)(95666004)(64126003)(110136001)(102836001)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BY1PR0301MB1190;H:Dinhs-MacBook-Pro.local;FPR:;MLV:sfv;PTR:InfoNoRecords;A:3;MX:1;LANG:en;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Boris
 
-While fuzzing with trinity on next-20140827, I ran into this:
+On 8/27/14, 1:36 AM, Borislav Petkov wrote:
+> On Tue, Aug 26, 2014 at 03:28:10PM -0500, Dinh Nguyen wrote:
+>> If Boris is okay with driver part and everyone else is OK with the DTS
+>> portion, then I can apply the DTS patch to my tree, and Boris take the
+>> driver patch into his tree?
+> 
+> Actually, it would be easier for everyone involved if those patches go
+> together due to their dependency. So if you want me to take a look at
+> the EDAC parts again and give you my ack so that you can pick them all
+> up together and they go through your tree, let me know.
+> 
 
-[ 2059.161014] BUG: sleeping function called from invalid context at arch/x86/mm/fault.c:1177
-[ 2059.162968] in_atomic(): 0, irqs_disabled(): 1, pid: 3225, name: trinity-c0
-[ 2059.163142] INFO: lockdep is turned off.
-[ 2059.163142] irq event stamp: 0
-[ 2059.163142] CPU: 0 PID: 3225 Comm: trinity-c0 Not tainted 3.17.0-rc2-next-20140827 #112
-[ 2059.163142] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.7.5-20140617_173321-var-lib-archbuild-testing-x86_64-tobias 04/01/2014
-[ 2059.173190] Call Trace:
-[ 2059.173190]  [<ffffffff815caba9>] dump_stack+0x4e/0x7a
-[ 2059.173190]  [<ffffffff810a5b52>] __might_sleep+0x182/0x2b0
-[ 2059.173190]  [<ffffffff81068a04>] __do_page_fault+0x114/0x680
-[ 2059.173190]  [<ffffffff81191bbb>] ? __alloc_pages_nodemask+0x1eb/0xcf0
-[ 2059.173190]  [<ffffffff81327523>] ? __radix_tree_preload+0x63/0xf0
-[ 2059.173190]  [<ffffffff81068ff5>] trace_do_page_fault+0x45/0x270
-[ 2059.173190]  [<ffffffff8106063b>] do_async_page_fault+0x5b/0x90
-[ 2059.173190]  [<ffffffff815d6d58>] async_page_fault+0x28/0x30
-[ 2059.173190]  [<ffffffff8106ebf2>] ? gup_pte_range+0xb2/0x170
-[ 2059.173190]  [<ffffffff8106ede8>] gup_pud_range+0x138/0x210
-[ 2059.173190]  [<ffffffff8106f11a>] get_user_pages_fast+0xba/0x1d0
-[ 2059.173190]  [<ffffffff811e95ae>] ? __kmalloc+0x2e/0x3c0
-[ 2059.173190]  [<ffffffff811b50e2>] iov_iter_get_pages_alloc+0xb2/0x1c0
-[ 2059.173190]  [<ffffffffa02f6dac>] nfs_direct_read_schedule_iovec+0xbc/0x2e0 [nfs]
-[ 2059.173190]  [<ffffffffa02f1b5f>] ? nfs_get_lock_context+0x4f/0x120 [nfs]
-[ 2059.173190]  [<ffffffffa02f77a6>] nfs_file_direct_read+0x1d6/0x2b0 [nfs]
-[ 2059.173190]  [<ffffffff8120ada0>] ? do_sync_readv_writev+0x80/0x80
-[ 2059.173190]  [<ffffffffa02edbf6>] nfs_file_read+0x56/0x90 [nfs]
-[ 2059.173190]  [<ffffffff8120af62>] do_iter_readv_writev+0x62/0x90
-[ 2059.173190]  [<ffffffff8120b837>] compat_do_readv_writev+0xd7/0x260
-[ 2059.173190]  [<ffffffffa02edba0>] ? nfs_file_release+0x30/0x30 [nfs]
-[ 2059.173190]  [<ffffffff810c9b2d>] ? trace_hardirqs_on+0xd/0x10
-[ 2059.173190]  [<ffffffff815cff65>] ? mutex_lock_nested+0x2e5/0x620
-[ 2059.173190]  [<ffffffff8122d479>] ? __fdget_pos+0x49/0x50
-[ 2059.173190]  [<ffffffff810c9b2d>] ? trace_hardirqs_on+0xd/0x10
-[ 2059.173190]  [<ffffffff8116507c>] ? perf_syscall_enter+0x1c/0x1d0
-[ 2059.173190]  [<ffffffff810f98b7>] ? do_setitimer+0x137/0x2f0
-[ 2059.173190]  [<ffffffff8120ba13>] compat_readv+0x53/0x70
-[ 2059.173190]  [<ffffffff8120cba9>] compat_SyS_readv+0x49/0xb0
-[ 2059.173190]  [<ffffffff815d7989>] ia32_do_call+0x13/0x13
-[ 2059.173190] BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
-[ 2059.173190] IP: [<ffffffff8106ebf2>] gup_pte_range+0xb2/0x170
-[ 2059.173190] PGD 79409067 PUD 74b5c067 PMD 0 
-[ 2059.173190] Oops: 0002 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 2059.173190] Modules linked in: sctp crc32c_generic libcrc32c ipx p8023 psnap p8022 llc auth_rpcgss nfsv4 9p netconsole e1000 cirrus syscopyarea sysfillrect ppdev sysimgblt drm_kms_helper ttm drm psmouse evdev microcode i2c_piix4 parport_pc serio_raw parport intel_agp button intel_gtt processor pcspkr nfs lockd sunrpc ipv6 ext4 crc16 mbcache jbd2 sd_mod sr_mod cdrom ata_generic pata_acpi ata_piix 9pnet_virtio libata 9pnet scsi_mod
-[ 2059.173190] CPU: 0 PID: 3225 Comm: trinity-c0 Not tainted 3.17.0-rc2-next-20140827 #112
-[ 2059.173190] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.7.5-20140617_173321-var-lib-archbuild-testing-x86_64-tobias 04/01/2014
-[ 2059.173190] task: ffff88007a5d4350 ti: ffff880004f28000 task.ti: ffff880004f28000
-[ 2059.173190] RIP: 0010:[<ffffffff8106ebf2>]  [<ffffffff8106ebf2>] gup_pte_range+0xb2/0x170
-[ 2059.173190] RSP: 0000:ffff880004f2ba98  EFLAGS: 00010086
-[ 2059.173190] RAX: 0000000000000000 RBX: ffffea0001e2ffc0 RCX: 0000000000000207
-[ 2059.173190] RDX: 000000004085a000 RSI: ffffea0000000000 RDI: 8000000078bff067
-[ 2059.173190] RBP: ffff880004f2bae8 R08: 0000000000000010 R09: ffff880004f2bb94
-[ 2059.173190] R10: 0000000040a00000 R11: 0000000080000000 R12: ffff880004e8e2d8
-[ 2059.173190] R13: 000000004085b000 R14: 0000000000000007 R15: 00003ffffffff000
-[ 2059.173190] FS:  00007f6133060700(0000) GS:ffff88007f600000(0000) knlGS:0000000000000000
-[ 2059.173190] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[ 2059.173190] CR2: 0000000000000010 CR3: 000000003ab44000 CR4: 00000000001407f0
-[ 2059.173190] Stack:
-[ 2059.173190]  ffff88007cc00618 ffff88007cc00650 ffffea0001e4d6a0 0000000100140010
-[ 2059.173190]  0000000180140011 ffff880004ebf020 0000000040859fff 000000004085a000
-[ 2059.173190]  000000004085a000 ffff880004f2bb94 ffff880004f2bb58 ffffffff8106ede8
-[ 2059.173190] Call Trace:
-[ 2059.173190]  [<ffffffff8106ede8>] gup_pud_range+0x138/0x210
-[ 2059.173190]  [<ffffffff8106f11a>] get_user_pages_fast+0xba/0x1d0
-[ 2059.173190]  [<ffffffff811e95ae>] ? __kmalloc+0x2e/0x3c0
-[ 2059.173190]  [<ffffffff811b50e2>] iov_iter_get_pages_alloc+0xb2/0x1c0
-[ 2059.173190]  [<ffffffffa02f6dac>] nfs_direct_read_schedule_iovec+0xbc/0x2e0 [nfs]
-[ 2059.173190]  [<ffffffffa02f1b5f>] ? nfs_get_lock_context+0x4f/0x120 [nfs]
-[ 2059.173190]  [<ffffffffa02f77a6>] nfs_file_direct_read+0x1d6/0x2b0 [nfs]
-[ 2059.173190]  [<ffffffff8120ada0>] ? do_sync_readv_writev+0x80/0x80
-[ 2059.173190]  [<ffffffffa02edbf6>] nfs_file_read+0x56/0x90 [nfs]
-[ 2059.173190]  [<ffffffff8120af62>] do_iter_readv_writev+0x62/0x90
-[ 2059.173190]  [<ffffffff8120b837>] compat_do_readv_writev+0xd7/0x260
-[ 2059.173190]  [<ffffffffa02edba0>] ? nfs_file_release+0x30/0x30 [nfs]
-[ 2059.173190]  [<ffffffff810c9b2d>] ? trace_hardirqs_on+0xd/0x10
-[ 2059.173190]  [<ffffffff815cff65>] ? mutex_lock_nested+0x2e5/0x620
-[ 2059.173190]  [<ffffffff8122d479>] ? __fdget_pos+0x49/0x50
-[ 2059.173190]  [<ffffffff810c9b2d>] ? trace_hardirqs_on+0xd/0x10
-[ 2059.173190]  [<ffffffff8116507c>] ? perf_syscall_enter+0x1c/0x1d0
-[ 2059.173190]  [<ffffffff810f98b7>] ? do_setitimer+0x137/0x2f0
-[ 2059.173190]  [<ffffffff8120ba13>] compat_readv+0x53/0x70
-[ 2059.173190]  [<ffffffff8120cba9>] compat_SyS_readv+0x49/0xb0
-[ 2059.173190]  [<ffffffff815d7989>] ia32_do_call+0x13/0x13
-[ 2059.173190] Code: 4c 21 f8 48 89 c3 48 c1 eb 06 48 01 f3 48 8b 03 f6 c4 80 75 54 f0 ff 43 1c f0 80 0b 04 49 63 01 49 81 c5 00 10 00 00 49 83 c4 08 <49> 89 1c c0 41 83 01 01 49 39 d5 0f 84 85 00 00 00 49 8b 3c 24 
-[ 2059.173190] RIP  [<ffffffff8106ebf2>] gup_pte_range+0xb2/0x170
-[ 2059.173190]  RSP <ffff880004f2ba98>
-[ 2059.173190] CR2: 0000000000000010
-[ 2059.173190] ---[ end trace 97335fea424ce4de ]---
+That would be great!
+
+Thanks,
+Dinh
