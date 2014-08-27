@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935709AbaH0TXa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 15:23:30 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:58684 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935182AbaH0TX2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 15:23:28 -0400
-Date: Wed, 27 Aug 2014 14:23:12 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-CC: Kukjin Kim <kgene.kim@samsung.com>, Felipe Balbi <balbi@ti.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Kamil Debski <k.debski@samsung.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Mark Brown <broonie@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/5] usb: phy: samsung: remove old USB PHY code
-Message-ID: <20140827192312.GH6347@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1408726745-31135-1-git-send-email-b.zolnierkie@samsung.com>
+	id S935739AbaH0TXl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 15:23:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55756 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935182AbaH0TXk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 15:23:40 -0400
+Date: Wed, 27 Aug 2014 12:23:39 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Roger Quadros <rogerq@ti.com>
+Cc: stern@rowland.harvard.edu, balbi@ti.com, ming.lei@canonical.com,
+        mwelling@emacinc.com, stefan@herbrechtsmeier.net,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "[3.8+]" <stable@vger.kernel.org>
+Subject: Re: [PATCH v2] usb: hub: Prevent hub autosuspend if
+ usbcore.autosuspend is -1
+Message-ID: <20140827192339.GA9620@kroah.com>
+References: <1407145486-14013-1-git-send-email-rogerq@ti.com>
+ <53FDCADE.3040601@ti.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bygAmIonOAIqBxQB"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1408726745-31135-1-git-send-email-b.zolnierkie@samsung.com>
+In-Reply-To: <53FDCADE.3040601@ti.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---bygAmIonOAIqBxQB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Aug 27, 2014 at 03:11:10PM +0300, Roger Quadros wrote:
+> If user specifies that USB autosuspend must be disabled by module
+> parameter "usbcore.autosuspend=-1" then we must prevent
+> autosuspend of USB hub devices as well.
+> 
+> commit 596d789a211d introduced in v3.8 changed the original behaivour
+> and stopped respecting the usbcore.autosuspend parameter for hubs.
+> 
+> Fixes: 596d789a211d "USB: set hub's default autosuspend delay as 0"
+> 
+> Cc: [3.8+] <stable@vger.kernel.org>
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> ---
+>  drivers/usb/core/hub.c | 8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+> index 8a4dcbc..59b599d 100644
+> --- a/drivers/usb/core/hub.c
+> +++ b/drivers/usb/core/hub.c
+> @@ -1728,8 +1728,14 @@ static int hub_probe(struct usb_interface *intf, const struct usb_device_id *id)
+>  	 * - Change autosuspend delay of hub can avoid unnecessary auto
+>  	 *   suspend timer for hub, also may decrease power consumption
+>  	 *   of USB bus.
+> +	 *
+> +	 * - If user has indicated to prevent autosuspend by passing
+> +	 *   usbcore.autosuspend = -1 then keep autosuspend disabled.
+>  	 */
+> -	pm_runtime_set_autosuspend_delay(&hdev->dev, 0);
+> +#ifdef CONFIG_PM_RUNTIME
+> +	if (hdev->dev.power.autosuspend_delay >= 0)
+> +		pm_runtime_set_autosuspend_delay(&hdev->dev, 0);
+> +#endif
+>  
+>  	/*
+>  	 * Hubs have proper suspend/resume support, except for root hubs
 
-Hi,
+Sorry, but can I have a patch that just adds the #ifdef as I already
+have your original one in my tree.
 
-On Fri, Aug 22, 2014 at 06:59:00PM +0200, Bartlomiej Zolnierkiewicz wrote:
-> Hi,
->=20
-> This patch series removes the old Samsung USB PHY drivers that
-> got replaced by the new ones using the generic PHY layer.
->=20
-> Depends on:
-> - v3.17-rc1 branch of Linus' kernel
->=20
-> Changes since v1 (https://lkml.org/lkml/2014/8/14/241):
-> - rebased on v3.17-rc1 kernel
-> - added Acked-by-s from Kishon Vijay Abraham I
-> - added Reviewed-by-s from Vivek Gautam and Jingoo Han
+thanks,
 
-So, everybody agrees that there will be no regressions, right ? I'll
-merge this on my testing/next.
-
---=20
-balbi
-
---bygAmIonOAIqBxQB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJT/jAgAAoJEIaOsuA1yqREMPkP/AoInxTvy7cl3Q90yb+c+uc2
-Qqs0FQd81qQyRJHfzuqPyBZJCbsydBfMQxh6Kz7QEHdoWJD101YRYO5tVBuh93kO
-mHtCMy0TOiReJg+S7m/X0KiTteGYu2X5fB7YvNjMli+QIM/wqTV5xWDrK9+ZtBxo
-XW7oywMBgCzcVGGO8yixT98ZrmlshPOFeAefMQM9CGp6GT+rVQH8gVVBjXpjegmP
-IpCxpyLCWQZPIK9TmbluaLvsBVK74ZxPDLdMLdLl681F0nYYFg/WkcZfWo6OyPx2
-5qwSjDIgxvM7Wgy12s4Jhe4vK/L3X3mWGFJ2aofJZJPA1d9w51qMoxrpClhfRNKK
-uBQ2imbTkZJ880zdeG/dxabmR7Q9v2RPkiy1jf/HVSV8ZPPKNODl2vLVucZJcZhk
-rULmGGriPdOofLofIKKBEavL0Wrz6WmBQwBNW4T0a1jKFhs5mp47v8uYr/Rvkne/
-MHAs7M841p7CRatNHykl6HZsA2E2DfdxcyUpR0AgvQ2up4jWDzISCN69eQhhw3z/
-kZo/kxFece7lLDw8OqtCV+q9Te8Lagcol5ogL8VQBXm3SY3bfLIA2GhZEcewBeVl
-yyoPZkvc0ZQ9OoJDCRZtSSSnlKQqbs+DFRguORvuQJ7OdEb7dzYodKeEXTsKRadz
-HxjklGMmWK448/nUnw+Z
-=QB+n
------END PGP SIGNATURE-----
-
---bygAmIonOAIqBxQB--
+greg k-h
