@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756753AbaH0BsM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 21:48:12 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:59488 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754720AbaH0BsK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 21:48:10 -0400
-From: Kever Yang <ykai007@gmail.com>
-X-Google-Original-From: Kever Yang <kever.yang@rock-chips.com>
-To: heiko@sntech.de
-Cc: dianders@chromium.org, sonnyrao@chromium.org, addy.ke@rock-chips.com,
-        cf@rock-chips.com, xjq@rock-chips.com, wulf@rock-chips.com,
-        lyz@rock-chips.com, hj@rock-chips.com, huangtao@rock-chips.com,
-        Kever Yang <kever.yang@rock-chips.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: dts: make arch-timer always on in rk3288 soc
-Date: Wed, 27 Aug 2014 09:47:40 +0800
-Message-Id: <1409104060-26294-1-git-send-email-kever.yang@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
+	id S1756856AbaH0Bsn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 21:48:43 -0400
+Received: from ks4000838.ip-198-245-63.net ([198.245.63.167]:44533 "EHLO
+	lofn.phire.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756787AbaH0Bsm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 21:48:42 -0400
+X-Greylist: delayed 465 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Aug 2014 21:48:41 EDT
+From: Michael Auchter <a@phire.org>
+To: Michael Buesch <m@bues.ch>, Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-kernel@vger.kernel.org
+Cc: Michael Auchter <a@phire.org>
+Subject: [PATCH] gpio: bt8xx: fix release of managed resources
+Date: Wed, 27 Aug 2014 01:39:33 +0000
+Message-Id: <1409103573-4082-1-git-send-email-a@phire.org>
+X-Mailer: git-send-email 1.8.5.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need use the hrtimer, which need the arch-timer to be 'always-on'
+These resources are managed by devres, and should not be explicitly
+released.
 
-Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+Signed-off-by: Michael Auchter <a@phire.org>
 ---
+ drivers/gpio/gpio-bt8xx.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
- arch/arm/boot/dts/rk3288.dtsi | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
-index 5950b0a..698e6ea 100644
---- a/arch/arm/boot/dts/rk3288.dtsi
-+++ b/arch/arm/boot/dts/rk3288.dtsi
-@@ -76,6 +76,7 @@
- 			     <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_HIGH)>,
- 			     <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_HIGH)>;
- 		clock-frequency = <24000000>;
-+		always-on;
- 	};
+diff --git a/drivers/gpio/gpio-bt8xx.c b/drivers/gpio/gpio-bt8xx.c
+index 6557147..7e4c43c 100644
+--- a/drivers/gpio/gpio-bt8xx.c
++++ b/drivers/gpio/gpio-bt8xx.c
+@@ -241,9 +241,6 @@ static void bt8xxgpio_remove(struct pci_dev *pdev)
+ 	bgwrite(~0x0, BT848_INT_STAT);
+ 	bgwrite(0x0, BT848_GPIO_OUT_EN);
  
- 	i2c1: i2c@ff140000 {
+-	iounmap(bg->mmio);
+-	release_mem_region(pci_resource_start(pdev, 0),
+-			   pci_resource_len(pdev, 0));
+ 	pci_disable_device(pdev);
+ }
+ 
 -- 
-1.9.1
+1.8.5.5
 
