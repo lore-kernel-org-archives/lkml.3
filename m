@@ -1,72 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936061AbaH0W5q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 18:57:46 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:56142 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935948AbaH0W5p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 18:57:45 -0400
-Date: Wed, 27 Aug 2014 23:57:39 +0100
-From: Sitsofe Wheeler <sitsofe@gmail.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: Dexuan Cui <decui@microsoft.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PANIC, hyperv] BUG: unable to handle kernel paging request at
- ffff880077800004 (hv_ringbuffer_write)
-Message-ID: <20140827225739.GA24590@sucs.org>
-References: <20140820092630.GA1478@sucs.org>
- <EE124450C0AAF944A40DD71E61F878C994F314@SINEX14MBXC417.southpacific.corp.microsoft.com>
- <20140825174132.GA17681@sucs.org>
- <EE124450C0AAF944A40DD71E61F878C995E93E@SINEX14MBXC419.southpacific.corp.microsoft.com>
- <20140827104408.GC1827@sucs.org>
- <EE124450C0AAF944A40DD71E61F878C996493E@SINEX14MBXC419.southpacific.corp.microsoft.com>
- <20140827121559.GA14286@sucs.org>
- <EE124450C0AAF944A40DD71E61F878C9965238@SINEX14MBXC419.southpacific.corp.microsoft.com>
- <20140827161900.GA25326@sucs.org>
- <51ae44fcae424365a6d78f3597175d77@BY2PR0301MB0711.namprd03.prod.outlook.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51ae44fcae424365a6d78f3597175d77@BY2PR0301MB0711.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S936101AbaH0W7a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 18:59:30 -0400
+Received: from relay2.sgi.com ([192.48.180.65]:35734 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S936081AbaH0W73 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 18:59:29 -0400
+Message-Id: <20140827225927.818732954@asylum.americas.sgi.com>
+References: <20140827225927.364537333@asylum.americas.sgi.com>
+User-Agent: quilt/0.46-1
+Date: Wed, 27 Aug 2014 17:59:29 -0500
+From: Mike Travis <travis@sgi.com>
+To: mingo@redhat.com, tglx@linutronix.de, hpa@zytor.com
+Cc: akpm@linux-foundation.org, msalter@redhat.com, dyoung@redhat.com,
+        riel@redhat.com, peterz@infradead.org, mgorman@suse.de,
+        linux-kernel@vger.kernel.org, x86@kernel.org, linux-mm@kvack.org,
+        Alex Thorlton <athorlton@sgi.com>
+Subject: [PATCH 2/2] x86: Use optimized ioresource lookup in ioremap function
+Content-Disposition: inline; filename=use-get-resource-type
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 27, 2014 at 06:45:55PM +0000, KY Srinivasan wrote:
-> 
-> > -----Original Message-----
-> > From: Sitsofe Wheeler [mailto:sitsofe@gmail.com]
-> > Sent: Wednesday, August 27, 2014 9:19 AM
-> > 
-> > > BTW, with the patch below, hyperv_fb can work now, BUT,
-> > > *occasionally*,
-> > > storvsc_probe() -> ... -> vmbus_open() -> can fail due to
-> > > HV_STATUS_INVALID_ALIGNMENT...
-> > 
-> > I applied your new patch on top of KY's pieces (it applied cleanly)
-> > and while it doesn't blow up, one warning is printed out and the UP
-> > boot seemed to stall after input: TPPS/2 message (but pressing
-> > ctrl-alt-delete allows the system to reboot cleanly).
-> 
-> First let me thank you guys for looking into this issue. Looking at
-> your dmesg, it looked like storvsc probe failed as Dexuan had seen.
-> Since the failure appears to be alignment related, perhaps we could
-> test with allocating a page all the time (and getting rid of the
-> kmalloc). Sitsofe, here is a patch based on Dexuan's patch. If this
-> works, I will probably minimize failure cases by pre-allocating
-> per-cpu pages for this.:
+This patch uses the optimized ioresource lookup, "region_is_ram", for
+the ioremap function.  If the region is not found, it falls back to the
+"page_is_ram" function.  If it is found and it is RAM, then the usual
+warning message is issued, and the ioremap operation is aborted.
+Otherwise, the ioremap operation continues.
 
-After some modifications to apply on top of your previous patches
-applying this latest patch has cured the issues surrounding hyperv_fb
-issues on boot. The only issue seen on boot now is similar to
-https://lkml.org/lkml/2014/8/19/227 ...
+Signed-off-by: Mike Travis <travis@sgi.com>
+Acked-by: Alex Thorlton <athorlton@sgi.com>
+Reviewed-by: Cliff Wickman <cpw@sgi.com>
+---
+ arch/x86/mm/ioremap.c |   22 +++++++++++++++++-----
+ 1 file changed, 17 insertions(+), 5 deletions(-)
 
-How come previous alignment efforts weren't working out?
+--- linux.orig/arch/x86/mm/ioremap.c
++++ linux/arch/x86/mm/ioremap.c
+@@ -86,6 +86,7 @@ static void __iomem *__ioremap_caller(re
+ 	pgprot_t prot;
+ 	int retval;
+ 	void __iomem *ret_addr;
++	int ram_region;
+ 
+ 	/* Don't allow wraparound or zero size */
+ 	last_addr = phys_addr + size - 1;
+@@ -108,12 +109,23 @@ static void __iomem *__ioremap_caller(re
+ 	/*
+ 	 * Don't allow anybody to remap normal RAM that we're using..
+ 	 */
+-	pfn      = phys_addr >> PAGE_SHIFT;
+-	last_pfn = last_addr >> PAGE_SHIFT;
+-	if (walk_system_ram_range(pfn, last_pfn - pfn + 1, NULL,
+-				  __ioremap_check_ram) == 1)
+-		return NULL;
++	/* First check if whole region can be identified as RAM or not */
++	ram_region = region_is_ram(phys_addr, size);
+ 
++	/* If is RAM(1) or could not be identified(-1), check page by page */
++	if (ram_region) {
++		pfn      = phys_addr >> PAGE_SHIFT;
++		last_pfn = last_addr >> PAGE_SHIFT;
++		if (ram_region > 0) {
++			WARN_ONCE(1, "ioremap on RAM at 0x%lx - 0x%lx\n",
++					(long unsigned int)phys_addr,
++					(long unsigned int)last_addr);
++			return NULL;
++		}
++		if (walk_system_ram_range(pfn, last_pfn - pfn + 1, NULL,
++					  __ioremap_check_ram) == 1)
++			return NULL;
++	}
+ 	/*
+ 	 * Mappings have to be page-aligned
+ 	 */
 
 -- 
-Sitsofe | http://sucs.org/~sits/
