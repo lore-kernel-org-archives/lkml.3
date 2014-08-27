@@ -1,83 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932650AbaH0FEb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 01:04:31 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:65180 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919AbaH0FE1 (ORCPT
+	id S932605AbaH0FU0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 01:20:26 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:32097 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000AbaH0FUZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 01:04:27 -0400
+	Wed, 27 Aug 2014 01:20:25 -0400
+From: Wang Nan <wangnan0@huawei.com>
+To: "David A. Long" <dave.long@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Jon Medhurst <tixy@linaro.org>,
+        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>
+CC: Wang Nan <wangnan0@huawei.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <peifeiyue@huawei.com>
+Subject: [PATCH] ARM: probes: return directly when emulate not set
+Date: Wed, 27 Aug 2014 13:08:29 +0800
+Message-ID: <1409116109-67330-1-git-send-email-wangnan0@huawei.com>
+X-Mailer: git-send-email 1.8.4
 MIME-Version: 1.0
-In-Reply-To: <20140827003527.GA6149@lunn.ch>
-References: <1408375833-10703-1-git-send-email-tomeu.vizoso@collabora.com>
- <1408375833-10703-4-git-send-email-tomeu.vizoso@collabora.com>
- <20140820225513.5251.284@quantum> <53F5A587.9030200@collabora.com>
- <20140821133825.GH8608@lunn.ch> <20140822192933.5251.53733@quantum>
- <20140822201112.GH17277@lunn.ch> <20140826214631.5251.66177@quantum>
- <20140826223637.GA5324@lunn.ch> <20140826233008.5251.50447@quantum> <20140827003527.GA6149@lunn.ch>
-From: Mike Turquette <mturquette@linaro.org>
-Date: Tue, 26 Aug 2014 22:04:05 -0700
-Message-ID: <CAPtuhThyUPrY2AqVEsyRQqR-8hsj_GAe1W0u_XXonP-C2o_Xew@mail.gmail.com>
-Subject: Re: [PATCH v7 3/8] cpufreq: kirkwood: Remove use of the clk provider API
-To: Andrew Lunn <andrew@lunn.ch>
-Cc: Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rabin Vincent <rabin@rab.in>, Tomasz Figa <t.figa@samsung.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 5:35 PM, Andrew Lunn <andrew@lunn.ch> wrote:
->> One final thought I have had is that it might be a good idea to have a
->> mux clock which represents the clock signal that feeds into the cpu. It
->> seems that a mux is exactly what is going on here with cpuclk rate and
->> ddrclk rate.
->
-> I did think of this when i implemented the cpufreq driver. What makes
-> it hard is that this bit is mixed in the same 32 bit register as the
-> gate clocks. It would mean two clock providers sharing the same
-> register, sharing a spinlock, etc. And the gating provider is shared
-> with all mvebu platforms, dove, kirkword, orion5x, and four different
-> armada SoCs. So i'm pushing complexity into this shared code, which
-> none of the others need. Does the standard mux clock do what is
-> needed? Or would i have to write a new clock provider?
+When kprobe decoding instruction, original code calls instruction
+specific decoder if emulate is set to false.  However, instructions with
+DECODE_TYPE_EMULATE are in fact don't have their decoder. What in the
+action table are in fact handlers.  For example:
 
-Well I think that the mux-clock type should suffice. Both the standard
-gate and mux can have a spinlock passed in at registration-time, so it
-could be a shared spinlock. The standard mux clock expects a bitfield
-in a register, similar to the single-bit approach taken by the gate
-clock. So I think it could do just fine.
+	/* LDRD (immediate)	cccc 000x x1x0 xxxx xxxx xxxx 1101 xxxx */
+	/* STRD (immediate)	cccc 000x x1x0 xxxx xxxx xxxx 1111 xxxx */
+	DECODE_EMULATEX	(0x0e5000d0, 0x004000d0, PROBES_LDRSTRD,
+						 REGS(NOPCWB, NOPCX, 0, 0, 0)),
 
->
->> I even wonder if it is even appropriate to model this transition with a
->> clock enable operation? Maybe it is only a multiplex operation, or
->> perhaps a combination of enabling the powersave clock and changing the
->> parent input to the cpu?
->>
->> My idea is instead of relying on a cpufreq driver to parse the state of
->> your clocks and understand the multiplexing, you can use the clock
->> framework for that. In fact that might help you get one step closer to
->> using the cpufreq-cpu0.c/cpufreq-generic.c implementation.
->
-> So you want the whole disabling of interrupt delivery to the cpu,
-> flipping the mux, wait for interrupt and re-enabling of interrupt
-> delivery to the cpu inside the clock provider? That is way past a
-> simple mux clock.
+	and
 
-No way! I said, "one step closer" for a reason. The interrupt stuff is
-clearly out of scope.
+const union decode_action kprobes_arm_actions[NUM_PROBES_ARM_ACTIONS] = {
+	...
+	[PROBES_LDRSTRD] = {.handler = emulate_ldrdstrd},
+	...
 
-Regards,
-Mike
+In this situation, original code calls 'emulate_ldrdstrd' as a decoder,
+which is obviously incorrect.
 
->
->        Andrew
+This patch makes it returns INSN_GOOD directly when 'emulate' is not
+true.
+
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
+Cc: "David A. Long" <dave.long@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Jon Medhurst <tixy@linaro.org>
+Cc: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+Cc: Ben Dooks <ben.dooks@codethink.co.uk>
+---
+ arch/arm/kernel/probes.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/arch/arm/kernel/probes.c b/arch/arm/kernel/probes.c
+index a8ab540..1c77b8d 100644
+--- a/arch/arm/kernel/probes.c
++++ b/arch/arm/kernel/probes.c
+@@ -436,8 +436,7 @@ probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
+ 			struct decode_emulate *d = (struct decode_emulate *)h;
+ 
+ 			if (!emulate)
+-				return actions[d->handler.action].decoder(insn,
+-					asi, h);
++				return INSN_GOOD;
+ 
+ 			asi->insn_handler = actions[d->handler.action].handler;
+ 			set_emulated_insn(insn, asi, thumb);
+-- 
+1.8.4
+
