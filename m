@@ -1,39 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933475AbaH0KJs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 06:09:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18087 "EHLO mx1.redhat.com"
+	id S933503AbaH0KOh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 06:14:37 -0400
+Received: from s3.sipsolutions.net ([5.9.151.49]:44803 "EHLO sipsolutions.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756007AbaH0KJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 06:09:47 -0400
-Message-ID: <53FDAE65.3080208@redhat.com>
-Date: Wed, 27 Aug 2014 12:09:41 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Luis Henriques <luis.henriques@canonical.com>
-CC: linux-kernel@vger.kernel.org, tj@kernel.org
-Subject: Re: [PATCH v3 part1 0/4] Fix SG_IO ambiguity between READ SUBCHANNEL
- and UNMAP (and other similar cases)
-References: <1369317503-4095-1-git-send-email-pbonzini@redhat.com> <20140827093437.GA10937@hercules>
-In-Reply-To: <20140827093437.GA10937@hercules>
-Content-Type: text/plain; charset=windows-1252
+	id S1755288AbaH0KOf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 06:14:35 -0400
+Message-ID: <1409134463.2505.6.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCH] mac80211: Replace rcu_dereference() with
+ rcu_access_pointer()
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+Cc: linville@tuxdriver.com, davem@davemloft.net,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com
+Date: Wed, 27 Aug 2014 12:14:23 +0200
+In-Reply-To: <20140817131801.GA24286@ada> (sfid-20140817_151809_334504_0D1A926E)
+References: <20140817131801.GA24286@ada>
+	 (sfid-20140817_151809_334504_0D1A926E)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 27/08/2014 11:34, Luis Henriques ha scritto:
-> > The SG_IO ioctl's command whitelist is designed for MMC devices (roughly,
-> > "play/burn CDs without requiring root") but some opcodes overlap across SCSI
-> > device classes and have different meanings for different classes.
-> > 
-> > To fix this, use different bitmaps for the various device classes.
-> > This is CVE-2012-4542.
->
-> Sorry for bringing this old issue again, but I was wondering what
-> happen to this fix.
+On Sun, 2014-08-17 at 16:18 +0300, Andreea-Cristina Bernat wrote:
+> The "rcu_dereference()" calls are used directly in conditions.
+> Since their return values are never dereferenced it is recommended to
+> use "rcu_access_pointer()" instead of "rcu_dereference()".
+> Therefore, this patch makes the replacements.
 
-Nothing; everybody lost interest in it.
+Applied, thanks.
 
-Paolo
+johannes
+
