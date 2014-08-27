@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935032AbaH0Qgh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 12:36:37 -0400
-Received: from mail-yk0-f178.google.com ([209.85.160.178]:46354 "EHLO
-	mail-yk0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755377AbaH0Qge (ORCPT
+	id S935137AbaH0Qgq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 12:36:46 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:43084 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935041AbaH0Qgn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 12:36:34 -0400
+	Wed, 27 Aug 2014 12:36:43 -0400
+Message-ID: <53FE0918.3000004@infradead.org>
+Date: Wed, 27 Aug 2014 09:36:40 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-In-Reply-To: <53FB8A8C.8040107@wwwdotorg.org>
-References: <1408381705-3623-1-git-send-email-abrestic@chromium.org>
-	<1408381705-3623-4-git-send-email-abrestic@chromium.org>
-	<53FB8A8C.8040107@wwwdotorg.org>
-Date: Wed, 27 Aug 2014 09:36:33 -0700
-X-Google-Sender-Auth: F7Ck0VL9FwY4Vt9C9e1k-KuS--8
-Message-ID: <CAL1qeaGHuMegpeyumD8GrFRmeufkiiUygAdqu1ECHrfSkixwOQ@mail.gmail.com>
-Subject: Re: [PATCH v2 3/9] of: Update Tegra XUSB pad controller binding for USB
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Stephan Mueller <smueller@chronox.de>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org
+Subject: Re: linux-next: Tree for Aug 26 (drbg)
+References: <20140826173452.7cc5445c@canb.auug.org.au> <53FCDA03.3050504@infradead.org> <2143681.nIInT2cPxl@myon.chronox.de> <53FCF700.7020107@infradead.org>
+In-Reply-To: <53FCF700.7020107@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 12:12 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 08/18/2014 11:08 AM, Andrew Bresticker wrote:
->>   - #phy-cells: Should be 1. The specifier is the index of the PHY to
->> reference.
->>     See <dt-bindings/pinctrl/pinctrl-tegra-xusb.h> for the list of valid
->> values.
->> +- mboxes: Must contain an entry for the XUSB PHY mailbox channel.
->> +  See ../mailbox/mailbox.txt for details.
->
->
-> Can we require the mbox-names property here, so that everything is looked up
-> by names. I know that the proposed mbox binding states that using indexes is
-> preferred over names, but that's just silly considering that names are
-> widely used in most other similar bindings, and are much easier to extend in
-> a backwards compatible fashion in the face of optional entries. As such, I'd
-> prefer that all Tegra bindings use foo-names properties where they exist.
+On 08/26/14 14:07, Randy Dunlap wrote:
+> On 08/26/14 13:19, Stephan Mueller wrote:
+>> Am Dienstag, 26. August 2014, 12:03:31 schrieb Randy Dunlap:
+>>
+>> Hi Randy,
+>>
+>>> On 08/26/14 00:34, Stephen Rothwell wrote:
+>>>> Hi all,
+>>>>
+>>>> Changes since 20140825:
+>>>>
+>>>> The net tree gained a build failure for which I reverted a commit.
+>>>>
+>>>> The mfd tree still had its build failure so I used the version from
+>>>> next-20140822.
+>>>
+>>> on i386:
+>>>
+>>> ../include/crypto/drbg.h:157:2: warning: left shift count >= width of type
+>>> [enabled by default] ../include/crypto/drbg.h:163:2: warning: left shift
+>>> count >= width of type [enabled by default]
+>>>
+>>> I guess that someone has already seen this but I haven't noticed any reports
+>>> of it.
+>>
+>> Thank you for reporting the issue. The patch and fix is provided with [1]. Did 
+>> you test with this patch?
+>>
+>> [1] 
+>> https://git.kernel.org/cgit/linux/kernel/git/herbert/cryptodev-2.6.git/commit/?id=b9347aff91ce4789619168539f08202d8d6a1177
+>>
+> 
+> I tested whatever is in linux-next of 20140826.
+> 
+> I'll check that commit later, got to run errands now.
 
-Sure, will do.
+Yes, that works.  Thanks.
 
->> +Optional properties:
->> +-------------------
->> +- vbus-otg-{0,1,2}-supply: VBUS regulator for the corresponding UTMI pad.
->
->
-> Why "-otg"? It's quite possible to have a regulator for VBUS even on systems
-> that don't support OTG, but rather simply have the ability to turn VBUS off.
-
-Because they're the VBUS supplies for the OTG 'lanes'.  It doesn't
-really add anything, so I'll omit the "-otg".
+-- 
+~Randy
