@@ -1,94 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934735AbaH0Nzb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 09:55:31 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:34491 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934708AbaH0Nz3 (ORCPT
+	id S934703AbaH0N4b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 09:56:31 -0400
+Received: from mail-by2lp0240.outbound.protection.outlook.com ([207.46.163.240]:57989
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933404AbaH0N4a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 09:55:29 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f4-b7f156d0000063c7-87-53fde34f5fde
-Content-transfer-encoding: 8BIT
-Message-id: <1409147725.25748.1.camel@AMDC1943>
-Subject: Re: [RESEND PATCH v3 3/6] charger: max14577: Configure
- battery-dependent settings from DTS and sysfs
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, linux-pm@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Jenny Tc <jenny.tc@intel.com>
-Date: Wed, 27 Aug 2014 15:55:25 +0200
-In-reply-to: <20140827135027.GF6364@lee--X1>
-References: <1409146282-25075-1-git-send-email-k.kozlowski@samsung.com>
- <1409146282-25075-4-git-send-email-k.kozlowski@samsung.com>
- <20140827135027.GF6364@lee--X1>
-X-Mailer: Evolution 3.10.4-0ubuntu2
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAIsWRmVeSWpSXmKPExsVy+t/xK7r+j/8GG6xp5bPYOGM9q8XUh0/Y
-	LCY9ec9sMXHlZGaL/jcLWS3OvVrJaLH2aw+7xdmmN+wW978eZbT4dqWDyWLz9w42i8u75rBZ
-	fO49AlRy5C67xdLrF5ksJkxfy2LRuvcIu8XpblaL07tLHIQ91sxbw+hxua+XyWPnrLvsHiuX
-	f2Hz2LxCy2PxnpdMHptWdbJ53Lm2h81j3slAj74tqxg9Pm+SC+CO4rJJSc3JLEst0rdL4MqY
-	0trNWLCau+L2038sDYwfOboYOTkkBEwkXu3rZ4ewxSQu3FvP1sXIxSEksJRRYvHqK6wgCV4B
-	QYkfk++xdDFycDALyEscuZQNEmYWUJeYNG8RM0T9Z0aJ2bNXMYLU8AroS1x7EwZSIyyQLzGl
-	/wMTiM0mYCyxefkSNpASEQEViXNvzEFamQV2sEoc3viKEaSGRUBVYk/PLlaQGk4BHYkdt3Mg
-	xi9nlFj3v5EJJC4hoCzR2O82gVFgFpLjZiEcNwvJcQsYmVcxiqaWJhcUJ6XnGuoVJ+YWl+al
-	6yXn525ihMTilx2Mi49ZHWIU4GBU4uFlWP8nWIg1say4MvcQowQHs5IIb9mBv8FCvCmJlVWp
-	RfnxRaU5qcWHGJk4OKUaGFsDRd+svaf0Ta7kuN/SJX4Vmt3G/Jw2QaZ/d/lPeMo7z6csZ8em
-	Iy52P3/dtC9Z8WRjeMO+ZyptRpEmwgqLGMq5clSv9fecEGZS3WpU3zND5vaMvb+8DrBPXRJ1
-	IzOq4srOkwpff1r0mRVE/rA/d+3vHI+dShVbZR7Jnbkb/N5bcouIY7HzciWW4oxEQy3mouJE
-	AHKdda+jAgAA
+	Wed, 27 Aug 2014 09:56:30 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Jan Beulich <JBeulich@suse.com>, Dexuan Cui <decui@microsoft.com>
+CC: "jeremy@goop.org" <jeremy@goop.org>,
+        "chrisw@sous-sol.org" <chrisw@sous-sol.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: sync_set_bit() vs set_bit()  -- what's the difference?
+Thread-Topic: sync_set_bit() vs set_bit()  -- what's the difference?
+Thread-Index: Ac/BxOSGReNLYy7sSGa/c8GpUfDFQgABQP2AAA0qKzA=
+Date: Wed, 27 Aug 2014 13:56:27 +0000
+Message-ID: <032994b8585e483c86e71402ecd5a163@BY2PR0301MB0711.namprd03.prod.outlook.com>
+References: <EE124450C0AAF944A40DD71E61F878C99639F3@SINEX14MBXC419.southpacific.corp.microsoft.com>
+ <53FDA71B020000780002DF2E@mail.emea.novell.com>
+In-Reply-To: <53FDA71B020000780002DF2E@mail.emea.novell.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [50.135.110.52]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+x-forefront-prvs: 0316567485
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(13464003)(199003)(189002)(377454003)(24454002)(51704005)(99396002)(101416001)(21056001)(19580395003)(83322001)(19580405001)(81342001)(76576001)(2421001)(87936001)(85852003)(83072002)(74316001)(106356001)(33646002)(86362001)(64706001)(105586002)(92566001)(20776003)(31966008)(74662001)(74502001)(76482001)(66066001)(85306004)(108616004)(90102001)(77982001)(50986999)(107046002)(1511001)(95666004)(76176999)(79102001)(46102001)(4396001)(2656002)(80022001)(77096002)(54356999)(81542001)(7059011)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR0301MB0709;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On śro, 2014-08-27 at 14:50 +0100, Lee Jones wrote:
-> On Wed, 27 Aug 2014, Krzysztof Kozlowski wrote:
+
+
+> -----Original Message-----
+> From: Jan Beulich [mailto:JBeulich@suse.com]
+> Sent: Wednesday, August 27, 2014 12:39 AM
+> To: Dexuan Cui
+> Cc: jeremy@goop.org; KY Srinivasan; chrisw@sous-sol.org; linux-
+> kernel@vger.kernel.org
+> Subject: Re: sync_set_bit() vs set_bit() -- what's the difference?
 > 
-> > Remove hard-coded values for:
-> >  - Fast Charge current,
-> >  - End Of Charge current,
-> >  - Fast Charge timer,
-> >  - Overvoltage Protection Threshold,
-> >  - Battery Constant Voltage,
-> > and use DTS or sysfs to configure them. This allows using the max14577 charger
-> > driver with different batteries.
-> > 
-> > Now the charger driver requires valid configuration data from DTS. In
-> > case of wrong configuration data it fails during probe. Patch adds
-> > of_compatible to the charger mfd cell in MFD driver core.
-> > 
-> > The fast charge timer is configured through sysfs entry.
-> > 
-> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> > Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-> > Cc: David Woodhouse <dwmw2@infradead.org>
-> > Cc: Jenny Tc <jenny.tc@intel.com>
-> > Cc: Mark Rutland <mark.rutland@arm.com>
-> > Acked-by: Lee Jones <lee.jones@linaro.org>
-> > ---
-> >  drivers/mfd/max14577.c               |   5 +-
+> >>> On 27.08.14 at 09:30, <decui@microsoft.com> wrote:
+> > I'm curious about the difference. :-)
+> >
+> > sync_set_bit() is only used in drivers/hv/ and drivers/xen/ while
+> > set_bit() is used in all other places. What makes hv/xen special?
 > 
-> Hmm... not sure why I Acked this.  The code looks okay, but can you
-> break out the MFD changed into a separate patch please?  You can add
-> my Ack to the broken out patch though.
+> I guess this would really want to be used by anything communicating with a
+> hypervisor or a remote driver: set_bit() gets its LOCK prefix discarded when
+> the local kernel determines it runs on a single CPU only. Obviously having
+> knowledge of the CPU count inside a VM does not imply anything about the
+> number of CPUs available to the host, i.e. stripping LOCK prefixes in that case
+> would be unsafe.
 
-Sure, I'll split it however the compatible here in mfd_cell makes sense
-only with this patch.
+That is exactly the case for Hyper-V (and Xen).
 
-Best regards,
-Krzysztof
-
+K. Y
 
