@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933187AbaH0Eg6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 00:36:58 -0400
-Received: from mga01.intel.com ([192.55.52.88]:56535 "EHLO mga01.intel.com"
+	id S933323AbaH0Ehm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 00:37:42 -0400
+Received: from mga09.intel.com ([134.134.136.24]:19005 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932663AbaH0EfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 00:35:01 -0400
+	id S1751266AbaH0Eeh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 00:34:37 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,408,1406617200"; 
-   d="scan'208";a="590397325"
+   d="scan'208";a="593818328"
 From: Matthew Wilcox <matthew.r.wilcox@intel.com>
 To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
 Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com
-Subject: [PATCH v10 08/21] Replace ext2_clear_xip_target with dax_clear_blocks
-Date: Tue, 26 Aug 2014 23:45:28 -0400
-Message-Id: <e3f5407fcbe25ce7a35e2ab058a745f5ecc899bb.1409110741.git.matthew.r.wilcox@intel.com>
+Subject: [PATCH v10 01/21] axonram: Fix bug in direct_access
+Date: Tue, 26 Aug 2014 23:45:21 -0400
+Message-Id: <58b32b560c75cb4ec7beb75502484919b556d394.1409110741.git.matthew.r.wilcox@intel.com>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <cover.1409110741.git.matthew.r.wilcox@intel.com>
 References: <cover.1409110741.git.matthew.r.wilcox@intel.com>
@@ -25,158 +25,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is practically generic code; other filesystems will want to call
-it from other places, but there's nothing ext2-specific about it.
-
-Make it a little more generic by allowing it to take a count of the number
-of bytes to zero rather than fixing it to a single page.  Thanks to Dave
-Hansen for suggesting that I need to call cond_resched() if zeroing more
-than one page.
+The 'pfn' returned by axonram was completely bogus, and has been since
+2008.
 
 Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Reviewed-by: Jan Kara <jack@suse.cz>
 ---
- fs/dax.c           | 35 +++++++++++++++++++++++++++++++++++
- fs/ext2/inode.c    |  8 +++++---
- fs/ext2/xip.c      | 14 --------------
- fs/ext2/xip.h      |  3 ---
- include/linux/fs.h |  6 ++++++
- 5 files changed, 46 insertions(+), 20 deletions(-)
+ arch/powerpc/sysdev/axonram.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/dax.c b/fs/dax.c
-index 108c68e..02e226f 100644
---- a/fs/dax.c
-+++ b/fs/dax.c
-@@ -20,8 +20,43 @@
- #include <linux/fs.h>
- #include <linux/genhd.h>
- #include <linux/mutex.h>
-+#include <linux/sched.h>
- #include <linux/uio.h>
+diff --git a/arch/powerpc/sysdev/axonram.c b/arch/powerpc/sysdev/axonram.c
+index 47b6b9f..830edc8 100644
+--- a/arch/powerpc/sysdev/axonram.c
++++ b/arch/powerpc/sysdev/axonram.c
+@@ -156,7 +156,7 @@ axon_ram_direct_access(struct block_device *device, sector_t sector,
+ 	}
  
-+int dax_clear_blocks(struct inode *inode, sector_t block, long size)
-+{
-+	struct block_device *bdev = inode->i_sb->s_bdev;
-+	sector_t sector = block << (inode->i_blkbits - 9);
-+
-+	might_sleep();
-+	do {
-+		void *addr;
-+		unsigned long pfn;
-+		long count;
-+
-+		count = bdev_direct_access(bdev, sector, &addr, &pfn, size);
-+		if (count < 0)
-+			return count;
-+		while (count > 0) {
-+			unsigned pgsz = PAGE_SIZE - offset_in_page(addr);
-+			if (pgsz > count)
-+				pgsz = count;
-+			if (pgsz < PAGE_SIZE)
-+				memset(addr, 0, pgsz);
-+			else
-+				clear_page(addr);
-+			addr += pgsz;
-+			size -= pgsz;
-+			count -= pgsz;
-+			sector += pgsz / 512;
-+			cond_resched();
-+		}
-+	} while (size);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(dax_clear_blocks);
-+
- static long dax_get_addr(struct buffer_head *bh, void **addr, unsigned blkbits)
- {
- 	unsigned long pfn;
-diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
-index 3ccd5fd..52978b8 100644
---- a/fs/ext2/inode.c
-+++ b/fs/ext2/inode.c
-@@ -733,10 +733,12 @@ static int ext2_get_blocks(struct inode *inode,
+ 	*kaddr = (void *)(bank->ph_addr + offset);
+-	*pfn = virt_to_phys(kaddr) >> PAGE_SHIFT;
++	*pfn = virt_to_phys(*kaddr) >> PAGE_SHIFT;
  
- 	if (IS_DAX(inode)) {
- 		/*
--		 * we need to clear the block
-+		 * block must be initialised before we put it in the tree
-+		 * so that it's not found by another thread before it's
-+		 * initialised
- 		 */
--		err = ext2_clear_xip_target (inode,
--			le32_to_cpu(chain[depth-1].key));
-+		err = dax_clear_blocks(inode, le32_to_cpu(chain[depth-1].key),
-+						1 << inode->i_blkbits);
- 		if (err) {
- 			mutex_unlock(&ei->truncate_mutex);
- 			goto cleanup;
-diff --git a/fs/ext2/xip.c b/fs/ext2/xip.c
-index bbc5fec..8cfca3a 100644
---- a/fs/ext2/xip.c
-+++ b/fs/ext2/xip.c
-@@ -42,20 +42,6 @@ __ext2_get_block(struct inode *inode, pgoff_t pgoff, int create,
- 	return rc;
- }
- 
--int
--ext2_clear_xip_target(struct inode *inode, sector_t block)
--{
--	void *kaddr;
--	unsigned long pfn;
--	long size;
--
--	size = __inode_direct_access(inode, block, &kaddr, &pfn, PAGE_SIZE);
--	if (size < 0)
--		return size;
--	clear_page(kaddr);
--	return 0;
--}
--
- void ext2_xip_verify_sb(struct super_block *sb)
- {
- 	struct ext2_sb_info *sbi = EXT2_SB(sb);
-diff --git a/fs/ext2/xip.h b/fs/ext2/xip.h
-index 29be737..b2592f2 100644
---- a/fs/ext2/xip.h
-+++ b/fs/ext2/xip.h
-@@ -7,8 +7,6 @@
- 
- #ifdef CONFIG_EXT2_FS_XIP
- extern void ext2_xip_verify_sb (struct super_block *);
--extern int ext2_clear_xip_target (struct inode *, sector_t);
--
- static inline int ext2_use_xip (struct super_block *sb)
- {
- 	struct ext2_sb_info *sbi = EXT2_SB(sb);
-@@ -19,6 +17,5 @@ int ext2_get_xip_mem(struct address_space *, pgoff_t, int,
- #else
- #define ext2_xip_verify_sb(sb)			do { } while (0)
- #define ext2_use_xip(sb)			0
--#define ext2_clear_xip_target(inode, chain)	0
- #define ext2_get_xip_mem			NULL
- #endif
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 45839e8..c04d371 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2490,11 +2490,17 @@ extern int generic_file_open(struct inode * inode, struct file * filp);
- extern int nonseekable_open(struct inode * inode, struct file * filp);
- 
- #ifdef CONFIG_FS_XIP
-+int dax_clear_blocks(struct inode *, sector_t block, long size);
- extern int xip_file_mmap(struct file * file, struct vm_area_struct * vma);
- extern int xip_truncate_page(struct address_space *mapping, loff_t from);
- ssize_t dax_do_io(int rw, struct kiocb *, struct inode *, struct iov_iter *,
- 		loff_t, get_block_t, dio_iodone_t, int flags);
- #else
-+static inline int dax_clear_blocks(struct inode *i, sector_t blk, long sz)
-+{
-+	return 0;
-+}
-+
- static inline int xip_truncate_page(struct address_space *mapping, loff_t from)
- {
  	return 0;
+ }
 -- 
 2.0.0
 
