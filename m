@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965022AbaH0VY6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 17:24:58 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:35735 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935917AbaH0VYz (ORCPT
+	id S965084AbaH0V1w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 17:27:52 -0400
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:50212 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932146AbaH0V1u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 17:24:55 -0400
+	Wed, 27 Aug 2014 17:27:50 -0400
 MIME-Version: 1.0
-In-Reply-To: <1409137049-15848-1-git-send-email-pramod.gurav@smartplayin.com>
-References: <1409137049-15848-1-git-send-email-pramod.gurav@smartplayin.com>
-Date: Wed, 27 Aug 2014 14:24:53 -0700
-Message-ID: <CAJAp7OhnUD3oSLfcRMD3veSJhVQLZdW1FPb8grOYqN5Gh3Oagw@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: qcom: Release pin ranges when
- gpiochip_irqchip_add fails
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Pramod Gurav <pramod.gurav@smartplayin.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Linus Walleij <linus.walleij@linaro.org>
+In-Reply-To: <CAOesGMjK65Rc-K0fyFUUJLw6huLT82E-nqJwZO4PqhgopF96Ow@mail.gmail.com>
+References: <1409173419-13076-1-git-send-email-sonnyrao@chromium.org> <CAOesGMjK65Rc-K0fyFUUJLw6huLT82E-nqJwZO4PqhgopF96Ow@mail.gmail.com>
+From: Sonny Rao <sonnyrao@chromium.org>
+Date: Wed, 27 Aug 2014 14:27:28 -0700
+X-Google-Sender-Auth: YNY-_vZJWJVc72Y1ZTBv6Syu1Qk
+Message-ID: <CAPz6YkWAPtuy4sAuAK9GtpDgfGsccxeS+pqqe_t_R818Jt01qA@mail.gmail.com>
+Subject: Re: [PATCH] clocksource: arch_timer: Fix code to use physical timers
+ when requested
+To: Olof Johansson <olof@lixom.net>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 27, 2014 at 3:57 AM, Pramod Gurav
-<pramod.gurav@smartplayin.com> wrote:
-> This patches adds a call to gpiochip_remove_pin_ranges when
-> gpiochip_irqchip_add fails to release memory allocated for pin_ranges.
+On Wed, Aug 27, 2014 at 2:19 PM, Olof Johansson <olof@lixom.net> wrote:
+> On Wed, Aug 27, 2014 at 2:03 PM, Sonny Rao <sonnyrao@chromium.org> wrote:
+>> This is a bug fix for using physical arch timers when
+>> the arch_timer_use_virtual boolean is false.  It restores the
+>> arch_counter_get_cntpct() function after removal in
+>>
+>> 0d651e4e "clocksource: arch_timer: use virtual counters"
+>>
+>> and completes the implementation of memory mapped access for physical
+>> timers, so if a system is trying to use physical timers, it will
+>> function properly.
+>>
+>> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
 >
-> diff --git a/drivers/pinctrl/qcom/pinctrl-msm.c b/drivers/pinctrl/qcom/pinctrl-msm.c
-> @@ -845,6 +845,7 @@ static int msm_gpio_init(struct msm_pinctrl *pctrl)
->                                    IRQ_TYPE_NONE);
->         if (ret) {
->                 dev_err(pctrl->dev, "Failed to add irqchip to gpiochip\n");
-> +               gpiochip_remove_pin_ranges(chip);
->                 return -ENOSYS;
->         }
+> Acked-by: Olof Johansson <olof@lixom.net>
+>
+> This should have a:
+>
+> Fixes: 0d651e4e65e9 ("clocksource: arch_timer: use virtual counters")
+>
+> tag too, and possibly cc stable?
 
-Good catch, I guess this was lost in the introduction of gpiochip_irqchip...
+Ok, as far as stable goes, this patch wouldn't apply cleanly going all
+the way back to  0d651e4e65e9
+As-is, it would need to go after 220069945b29 "clocksource:
+arch_timer: Add support for memory mapped timers" and there would need
+to be another, simpler, version that went between those two commits.
 
+So, I'm not sure what to do in this situation regarding stable?
 
-Rather than just releasing the pin_ranges of the gpio_chip you should
-probably add a gpiochip_remove() both here and in the case of
-gpiochip_add_pin_range() failing.
-
-Regards,
-Bjorn
+>
+>
+> -Olof
