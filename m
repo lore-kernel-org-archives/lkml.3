@@ -1,75 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934664AbaH0Nw1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 09:52:27 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:45403 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933404AbaH0Nw0 (ORCPT
+	id S934686AbaH0Nyf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 09:54:35 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:48903 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933404AbaH0Nye (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 09:52:26 -0400
-Date: Wed, 27 Aug 2014 14:52:18 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, linux-pm@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Anton Vorontsov <anton@enomsg.org>
-Subject: Re: [RESEND PATCH v3 1/6] charger: max14577: Add support for
- MAX77836 charger
-Message-ID: <20140827135218.GG6364@lee--X1>
-References: <1409146282-25075-1-git-send-email-k.kozlowski@samsung.com>
- <1409146282-25075-2-git-send-email-k.kozlowski@samsung.com>
+	Wed, 27 Aug 2014 09:54:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1409146282-25075-2-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LNX.2.00.1408270911130.2992@pobox.suse.cz>
+References: <alpine.LNX.2.00.1408270911130.2992@pobox.suse.cz>
+Date: Wed, 27 Aug 2014 09:54:33 -0400
+Message-ID: <CAN+gG=G_o4ZBDqYT+HvYCW2TwQaw-TcF1FzBSp7dzFpfet_Z+w@mail.gmail.com>
+Subject: Re: [PATCH 1/2] HID: magicmouse: sanity check report size in
+ raw_event() callback
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Aug 2014, Krzysztof Kozlowski wrote:
+On Wed, Aug 27, 2014 at 3:12 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+> The report passed to us from transport driver could potentially be
+> arbitrarily large, therefore we better sanity-check it so that
+> magicmouse_emit_touch() gets only valid values of raw_id.
+>
+> Cc: stable@vger.kernel.org
+> Reported-by: Steven Vittitoe <scvitti@google.com>
+> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 
-> Add support for MAX77836 charger to the max14577 driver. The MAX77836
-> charger is almost the same as 14577 model except:
->  - No dead-battery detection;
->  - Support for special charger (like in MAX77693);
->  - Support for DX over-voltage protection (like in MAX77693);
->  - Lower values of charging current (two times lower current for
->    slow/fast charge, much lower EOC current);
->  - Slightly different values in ChgTyp field of STATUS2 register. On
->    MAX14577 0x6 is reserved and 0x7 dead battery. On the MAX77836 the
->    0x6 means special charger and 0x7 is reserved. Regardless of these
->    differences the driver maps them to one enum max14577_muic_charger_type.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Anton Vorontsov <anton@enomsg.org>
-> Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-> Cc: David Woodhouse <dwmw2@infradead.org>
-> Acked-by: Lee Jones <lee.jones@linaro.org>
+Fair enough.
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+
+Cheers,
+Benjamin
+
 > ---
->  drivers/power/Kconfig                |  4 +-
->  drivers/power/max14577_charger.c     | 77 +++++++++++++++++++++++++++++-------
->  include/linux/mfd/max14577-private.h | 54 ++++++++++++++++++-------
-
-Not quite so important here, but better to break these out too.  We
-can arrange ourselves to that the set can go in together.  Just make
-sure it's bisectable.
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+>  drivers/hid/hid-magicmouse.c | 10 ++++++++++
+>  1 file changed, 10 insertions(+)
+>
+> diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
+> index ecc2cbf..29a74c1 100644
+> --- a/drivers/hid/hid-magicmouse.c
+> +++ b/drivers/hid/hid-magicmouse.c
+> @@ -290,6 +290,11 @@ static int magicmouse_raw_event(struct hid_device *hdev,
+>                 if (size < 4 || ((size - 4) % 9) != 0)
+>                         return 0;
+>                 npoints = (size - 4) / 9;
+> +               if (npoints > 15) {
+> +                       hid_warn(hdev, "invalid size value (%d) for TRACKPAD_REPORT_ID\n",
+> +                                       size);
+> +                       return 0;
+> +               }
+>                 msc->ntouches = 0;
+>                 for (ii = 0; ii < npoints; ii++)
+>                         magicmouse_emit_touch(msc, ii, data + ii * 9 + 4);
+> @@ -307,6 +312,11 @@ static int magicmouse_raw_event(struct hid_device *hdev,
+>                 if (size < 6 || ((size - 6) % 8) != 0)
+>                         return 0;
+>                 npoints = (size - 6) / 8;
+> +               if (npoints > 15) {
+> +                       hid_warn(hdev, "invalid size value (%d) for MOUSE_REPORT_ID\n",
+> +                                       size);
+> +                       return 0;
+> +               }
+>                 msc->ntouches = 0;
+>                 for (ii = 0; ii < npoints; ii++)
+>                         magicmouse_emit_touch(msc, ii, data + ii * 8 + 6);
+> --
+> 1.9.2
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
