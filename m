@@ -1,95 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932271AbaH0DU0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 23:20:26 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:41606 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756448AbaH0DUZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 23:20:25 -0400
-Date: Tue, 26 Aug 2014 20:20:18 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/16] rcu: Some minor fixes and cleanups
-Message-ID: <20140827032018.GO2663@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1406092194-13004-1-git-send-email-bobby.prani@gmail.com>
- <20140723144509.GW11241@linux.vnet.ibm.com>
- <CAJhHMCCsiosr627bh+fTYVtGhgNXvGZUbmFQqn-dS5L5N9_81Q@mail.gmail.com>
+	id S932340AbaH0DVu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 23:21:50 -0400
+Received: from imap.thunk.org ([74.207.234.97]:51038 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932277AbaH0DVt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 23:21:49 -0400
+Date: Tue, 26 Aug 2014 23:21:43 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: Daniel Borkmann <dborkman@redhat.com>, zatimend@hotmail.co.uk,
+        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: [PATCH] random: add and use memzero_explicit() for clearing data
+Message-ID: <20140827032143.GQ11317@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Hannes Frederic Sowa <hannes@stressinduktion.org>,
+	Daniel Borkmann <dborkman@redhat.com>, zatimend@hotmail.co.uk,
+	linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>
+References: <1408996899-4892-1-git-send-email-dborkman@redhat.com>
+ <1409008290.6274.73.camel@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAJhHMCCsiosr627bh+fTYVtGhgNXvGZUbmFQqn-dS5L5N9_81Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082703-6688-0000-0000-0000044FA329
+In-Reply-To: <1409008290.6274.73.camel@localhost>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 09:10:10PM -0400, Pranith Kumar wrote:
-> On Wed, Jul 23, 2014 at 10:45 AM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Wed, Jul 23, 2014 at 01:09:37AM -0400, Pranith Kumar wrote:
-> >> Hi Paul,
-> >>
-> >> This is a series of minor fixes and cleanup patches which I found while studying
-> >> the code. All my previous pending (but not rejected ;) patches are superseded by
-> >> this series, expect the rcutorture snprintf changes. I am still waiting for you
-> >> to decide on that one :)
-> >>
-> >> These changes have been tested by the kvm rcutorture test setup. Some tests give
-> >> me stall warnings, but otherwise have SUCCESS messages in the logs.
-> >
-> > For patches 1, 3, 5, 8, 12, and 13, once you get a Reviewed-by from one
-> > of the co-maintainers or designated reviewers, I will queue them.
-> > The other patches I have responded to.
+On Tue, Aug 26, 2014 at 01:11:30AM +0200, Hannes Frederic Sowa wrote:
+> On Mo, 2014-08-25 at 22:01 +0200, Daniel Borkmann wrote:
+> > zatimend has reported that in his environment (3.16/gcc4.8.3/corei7)
+> > memset() calls which clear out sensitive data in extract_{buf,entropy,
+> > entropy_user}() in random driver are being optimized away by gcc.
+> > 
+> > Add a helper memzero_explicit() (similarly as explicit_bzero() variants)
+> > that can be used in such cases where a variable with sensitive data is
+> > being cleared out in the end. Other use cases might also be in crypto
+> > code. [ I have put this into lib/string.c though, as it's always built-in
+> > and doesn't need any dependencies then. ]
+> > 
+> > Fixes kernel bugzilla: 82041
+> > 
+> > Reported-by: zatimend@hotmail.co.uk
+> > Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+> > Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
+> > Cc: Alexey Dobriyan <adobriyan@gmail.com>
 > 
-> Hi Paul, just a reminder so that these don't get forgotten :)
+> Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-Hello, Pranith, haven't forgotten them, but also haven't seen any
-reviews.
+Applied to the random tree, thanks.
 
-							Thanx, Paul
-
-> >> Pranith Kumar (16):
-> >>   rcu: Use rcu_num_nodes instead of NUM_RCU_NODES
-> >>   rcu: Check return value for cpumask allocation
-> >>   rcu: Fix comment for gp_state field values
-> >>   rcu: Remove redundant check for an online CPU
-> >>   rcu: Add noreturn attribute to boost kthread
-> >>   rcu: Clear gp_flags only when actually starting new gp
-> >>   rcu: Save and restore irq flags in rcu_gp_cleanup()
-> >>   rcu: Clean up rcu_spawn_one_boost_kthread()
-> >>   rcu: Remove redundant check for online cpu
-> >>   rcu: Check for RCU_FLAG_GP_INIT bit in gp_flags for spurious wakeup
-> >>   rcu: Check for spurious wakeup using return value
-> >>   rcu: Rename rcu_spawn_gp_kthread() to rcu_spawn_kthreads()
-> >>   rcu: Spawn nocb kthreads from rcu_prepare_kthreads()
-> >>   rcu: Remove redundant checks for rcu_scheduler_fully_active
-> >>   rcu: Check for a nocb cpu before trying to spawn nocb threads
-> >>   rcu: kvm.sh: Fix error when you pass --cpus argument
-> >>
-> >>  kernel/rcu/tree.c                             | 42 ++++++++++++++-------------
-> >>  kernel/rcu/tree.h                             |  4 +--
-> >>  kernel/rcu/tree_plugin.h                      | 40 +++++++++++++------------
-> >>  tools/testing/selftests/rcutorture/bin/kvm.sh |  4 +--
-> >>  4 files changed, 47 insertions(+), 43 deletions(-)
-> >>
-> >> --
-> >> 2.0.0.rc2
-> >>
-> >
-> 
-> 
-> 
-> -- 
-> Pranith
-> 
-
+					- Ted
