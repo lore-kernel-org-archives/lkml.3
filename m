@@ -1,226 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934793AbaH0OWj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 10:22:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43845 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934514AbaH0OWh (ORCPT
+	id S934875AbaH0OWy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 10:22:54 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:47605 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934745AbaH0OWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 10:22:37 -0400
-Message-ID: <53FDE9A2.501@canonical.com>
-Date: Wed, 27 Aug 2014 10:22:26 -0400
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 27 Aug 2014 10:22:52 -0400
+Message-ID: <53FDE9B2.4040001@collabora.co.uk>
+Date: Wed, 27 Aug 2014 16:22:42 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-To: Mathias Nyman <mathias.nyman@linux.intel.com>
-CC: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        stable@vger.kernel.org,
-        Dustin Kirkland <dustin.kirkland@canonical.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] xhci: rework cycle bit checking for new dequeue pointers
-References: <1408450678-5653-1-git-send-email-mathias.nyman@linux.intel.com> <1408450678-5653-4-git-send-email-mathias.nyman@linux.intel.com> <53F51BD5.50302@canonical.com> <53FDBC03.7040402@linux.intel.com>
-In-Reply-To: <53FDBC03.7040402@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: =?ISO-8859-15?Q?Andreas_F=E4rber?= <afaerber@suse.de>
+CC: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>,
+        Olof Johansson <olof@lixom.net>, Nick Dyer <nick.dyer@itdev.co.uk>,
+        Yufeng Shen <miletus@chromium.org>, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Daniel Stone <daniels@collabora.com>
+Subject: Re: [PATCH v2 1/3] ARM: dts: Add Peach Pit dts entry for Atmel touchpad
+References: <1409066937-3574-1-git-send-email-javier.martinez@collabora.co.uk> <1409066937-3574-2-git-send-email-javier.martinez@collabora.co.uk> <53FD1001.30701@suse.de> <53FD8528.7090504@collabora.co.uk> <53FDD914.5090208@suse.de>
+In-Reply-To: <53FDD914.5090208@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2014 07:07 AM, Mathias Nyman wrote:
-> On 08/21/2014 01:06 AM, Joseph Salisbury wrote:
->> On 08/19/2014 08:17 AM, Mathias Nyman wrote:
->>> When we manually need to move the TR dequeue pointer we need to set the
->>> correct cycle bit as well. Previously we used the trb pointer from the
->>> last event received as a base, but this was changed in
->>> commit 1f81b6d22a59 ("usb: xhci: Prefer endpoint context dequeue pointer")
->>> to use the dequeue pointer from the endpoint context instead
->>>
->>> It turns out some Asmedia controllers advance the dequeue pointer
->>> stored in the endpoint context past the event triggering TRB, and
->>> this messed up the way the cycle bit was calculated.
->>>
->>> Instead of adding a quirk or complicating the already hard to follow cycle bit
->>> code, the whole cycle bit calculation is now simplified and adapted to handle
->>> event and endpoint context dequeue pointer differences.
->>>
->>> Fixes: 1f81b6d22a59 ("usb: xhci: Prefer endpoint context dequeue pointer")
->>> Reported-by: Maciej Puzio <mx34567@gmail.com>
->>> Reported-by: Evan Langlois <uudruid74@gmail.com>
->>> Reviewed-by: Julius Werner <jwerner@chromium.org>
->>> Tested-by: Maciej Puzio <mx34567@gmail.com>
->>> Tested-by: Evan Langlois <uudruid74@gmail.com>
->>> Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
->>> Cc: stable@vger.kernel.org
->>> ---
->>>  drivers/usb/host/xhci-ring.c | 101 +++++++++++++++++--------------------------
->>>  drivers/usb/host/xhci.c      |   3 ++
->>>  2 files changed, 42 insertions(+), 62 deletions(-)
->>>
->>> diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
->>> index ac8cf23..abed30b 100644
->>> --- a/drivers/usb/host/xhci-ring.c
->>> +++ b/drivers/usb/host/xhci-ring.c
->>> @@ -364,32 +364,6 @@ static void ring_doorbell_for_active_rings(struct xhci_hcd *xhci,
->>>  	}
->>>  }
->>>  
->>> -/*
->>> - * Find the segment that trb is in.  Start searching in start_seg.
->>> - * If we must move past a segment that has a link TRB with a toggle cycle state
->>> - * bit set, then we will toggle the value pointed at by cycle_state.
->>> - */
->>> -static struct xhci_segment *find_trb_seg(
->>> -		struct xhci_segment *start_seg,
->>> -		union xhci_trb	*trb, int *cycle_state)
->>> -{
->>> -	struct xhci_segment *cur_seg = start_seg;
->>> -	struct xhci_generic_trb *generic_trb;
->>> -
->>> -	while (cur_seg->trbs > trb ||
->>> -			&cur_seg->trbs[TRBS_PER_SEGMENT - 1] < trb) {
->>> -		generic_trb = &cur_seg->trbs[TRBS_PER_SEGMENT - 1].generic;
->>> -		if (generic_trb->field[3] & cpu_to_le32(LINK_TOGGLE))
->>> -			*cycle_state ^= 0x1;
->>> -		cur_seg = cur_seg->next;
->>> -		if (cur_seg == start_seg)
->>> -			/* Looped over the entire list.  Oops! */
->>> -			return NULL;
->>> -	}
->>> -	return cur_seg;
->>> -}
->>> -
->>> -
->>>  static struct xhci_ring *xhci_triad_to_transfer_ring(struct xhci_hcd *xhci,
->>>  		unsigned int slot_id, unsigned int ep_index,
->>>  		unsigned int stream_id)
->>> @@ -459,9 +433,12 @@ void xhci_find_new_dequeue_state(struct xhci_hcd *xhci,
->>>  	struct xhci_virt_device *dev = xhci->devs[slot_id];
->>>  	struct xhci_virt_ep *ep = &dev->eps[ep_index];
->>>  	struct xhci_ring *ep_ring;
->>> -	struct xhci_generic_trb *trb;
->>> +	struct xhci_segment *new_seg;
->>> +	union xhci_trb *new_deq;
->>>  	dma_addr_t addr;
->>>  	u64 hw_dequeue;
->>> +	bool cycle_found = false;
->>> +	bool td_last_trb_found = false;
->>>  
->>>  	ep_ring = xhci_triad_to_transfer_ring(xhci, slot_id,
->>>  			ep_index, stream_id);
->>> @@ -486,45 +463,45 @@ void xhci_find_new_dequeue_state(struct xhci_hcd *xhci,
->>>  		hw_dequeue = le64_to_cpu(ep_ctx->deq);
->>>  	}
->>>  
->>> -	/* Find virtual address and segment of hardware dequeue pointer */
->>> -	state->new_deq_seg = ep_ring->deq_seg;
->>> -	state->new_deq_ptr = ep_ring->dequeue;
->>> -	while (xhci_trb_virt_to_dma(state->new_deq_seg, state->new_deq_ptr)
->>> -			!= (dma_addr_t)(hw_dequeue & ~0xf)) {
->>> -		next_trb(xhci, ep_ring, &state->new_deq_seg,
->>> -					&state->new_deq_ptr);
->>> -		if (state->new_deq_ptr == ep_ring->dequeue) {
->>> -			WARN_ON(1);
->>> -			return;
->>> -		}
->>> -	}
->>> +	new_seg = ep_ring->deq_seg;
->>> +	new_deq = ep_ring->dequeue;
->>> +	state->new_cycle_state = hw_dequeue & 0x1;
->>> +
->>>  	/*
->>> -	 * Find cycle state for last_trb, starting at old cycle state of
->>> -	 * hw_dequeue. If there is only one segment ring, find_trb_seg() will
->>> -	 * return immediately and cannot toggle the cycle state if this search
->>> -	 * wraps around, so add one more toggle manually in that case.
->>> +	 * We want to find the pointer, segment and cycle state of the new trb
->>> +	 * (the one after current TD's last_trb). We know the cycle state at
->>> +	 * hw_dequeue, so walk the ring until both hw_dequeue and last_trb are
->>> +	 * found.
->>>  	 */
->>> -	state->new_cycle_state = hw_dequeue & 0x1;
->>> -	if (ep_ring->first_seg == ep_ring->first_seg->next &&
->>> -			cur_td->last_trb < state->new_deq_ptr)
->>> -		state->new_cycle_state ^= 0x1;
->>> +	do {
->>> +		if (!cycle_found && xhci_trb_virt_to_dma(new_seg, new_deq)
->>> +		    == (dma_addr_t)(hw_dequeue & ~0xf)) {
->>> +			cycle_found = true;
->>> +			if (td_last_trb_found)
->>> +				break;
->>> +		}
->>> +		if (new_deq == cur_td->last_trb)
->>> +			td_last_trb_found = true;
->>>  
->>> -	state->new_deq_ptr = cur_td->last_trb;
->>> -	xhci_dbg_trace(xhci, trace_xhci_dbg_cancel_urb,
->>> -			"Finding segment containing last TRB in TD.");
->>> -	state->new_deq_seg = find_trb_seg(state->new_deq_seg,
->>> -			state->new_deq_ptr, &state->new_cycle_state);
->>> -	if (!state->new_deq_seg) {
->>> -		WARN_ON(1);
->>> -		return;
->>> -	}
->>> +		if (cycle_found &&
->>> +		    TRB_TYPE_LINK_LE32(new_deq->generic.field[3]) &&
->>> +		    new_deq->generic.field[3] & cpu_to_le32(LINK_TOGGLE))
->>> +			state->new_cycle_state ^= 0x1;
->>> +
->>> +		next_trb(xhci, ep_ring, &new_seg, &new_deq);
->>> +
->>> +		/* Search wrapped around, bail out */
->>> +		if (new_deq == ep->ring->dequeue) {
->>> +			xhci_err(xhci, "Error: Failed finding new dequeue state\n");
->>> +			state->new_deq_seg = NULL;
->>> +			state->new_deq_ptr = NULL;
->>> +			return;
->>> +		}
->>> +
->>> +	} while (!cycle_found || !td_last_trb_found);
->>>  
->>> -	/* Increment to find next TRB after last_trb. Cycle if appropriate. */
->>> -	trb = &state->new_deq_ptr->generic;
->>> -	if (TRB_TYPE_LINK_LE32(trb->field[3]) &&
->>> -	    (trb->field[3] & cpu_to_le32(LINK_TOGGLE)))
->>> -		state->new_cycle_state ^= 0x1;
->>> -	next_trb(xhci, ep_ring, &state->new_deq_seg, &state->new_deq_ptr);
->>> +	state->new_deq_seg = new_seg;
->>> +	state->new_deq_ptr = new_deq;
->>>  
->>>  	/* Don't update the ring cycle state for the producer (us). */
->>>  	xhci_dbg_trace(xhci, trace_xhci_dbg_cancel_urb,
->>> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
->>> index b6f2117..c020b09 100644
->>> --- a/drivers/usb/host/xhci.c
->>> +++ b/drivers/usb/host/xhci.c
->>> @@ -2880,6 +2880,9 @@ void xhci_cleanup_stalled_ring(struct xhci_hcd *xhci,
->>>  			ep_index, ep->stopped_stream, ep->stopped_td,
->>>  			&deq_state);
->>>  
->>> +	if (!deq_state.new_deq_ptr || !deq_state.new_deq_seg)
->>> +		return;
->>> +
->>>  	/* HW with the reset endpoint quirk will use the saved dequeue state to
->>>  	 * issue a configure endpoint command later.
->>>  	 */
->>   
->> Hi Mathias,
->>
->> Some of the stable kernel versions fail to build with this patch, 3.2.y
->> and 3.13.y for example.  This is because the function 'find_trb_seg' is
->> still called by xhci_cmd_to_noop, which is removed from mainline but
->> still exists in the stable kernels.  The patch removes the definition of
->> find_trb_seg, which is what causes the build to fail. 
->>
->> Should we leave the definition of find_trb_seg in your patch for the
->> stable kernels, or do you have other ideas?
->>
-> You can leave the find_trb_seg() function there for xhci_cmd_to_noop() to use in older kernels
->
-> Should I backport it against 3.13.y for you?
-No need for you to backport.  I just wanted to confirm that leaving
-find_trb_seg() was an ok approach.
+Hello Andreas,
 
->
-> -Mathias
+On 08/27/2014 03:11 PM, Andreas Färber wrote:
+> Hi Javier,
+>>>
+>>> +	trackpad@4b {
+>>> +		compatible = "atmel,maxtouch";
+>>> +		reg = <0x4b>;
+>>> +		interrupt-parent = <&gpx1>;
+>>> +		interrupts = <2 IRQ_TYPE_NONE>;
+>>> +		pinctrl-names = "default";
+>>> +		pinctrl-0 = <&trackpad_irq>;
+>>> +		linux,gpio-keymap = <KEY_RESERVED
+>>> +		                     KEY_RESERVED
+>>> +		                     KEY_RESERVED
+>>> +		                     KEY_RESERVED
+>>> +		                     KEY_RESERVED
+>>> +		                     BTN_LEFT>;
+>>> +		wakeup-source;
+>>> +	};
+>>>
+>>> 0 == KEY_RESERVED, so you can consistently use it for GPIO 0-2, too. :)
+>>>
+>> 
+>> I know that the value of KEY_RESERVED is 0 but I didn't use KEY_RESERVED
+>> for the GPIO on purpose.
+>> 
+>> What I understood is that the SPT_GPIOPWN_T19 object sends messages using
+>> a status byte so you have a maximum of 8 GPIO but not every maXTouch
+>> devices use all of them. So in the particular case of the device in the
+>> Peach Pit, from the 8 possible GPIO only 4 can be used and these are pins
+>> 2-5. So in theory you could connect 3 more GPIO in case you had more
+>> buttons (e.g: BTN_RIGHT, BTN_MIDDLE) but only 1 is used since the
+>> Chromebook just have BTN_LEFT.
+> 
+> FWIW when I press to the bottom right of my touchpad, I do get
+> right-click functionality even with just BTN_LEFT specified in the
+> keymap. Magic. :)
 >
 
+Right, I'm not an expert in input but after asking a colleague he
+explained to me that user-space input drivers deal with the MT tracking
+for you, but there is still a single event code reported (BTN_LEFT) as an
+indication that the touchpad has been physically clicked. That's why you
+are having right click even when the hardware is not reporting it.
+
+You can confirm that by running plain evdev or by clicking on the touchpad
+using an object (e.g: a pencil) so ABS_MT_* events won't be reported.
+
+>> Nick sent a patch [0] that extend the atmel touchpad DT binding and the
+>> doc says "Use KEY_RESERVED for unused padding values". But is not clear
+>> what value you should use for GPIO that are actually supported by the
+>> device but have no keycode associated.
+>> 
+>> So by using 0 instead of KEY_RESERVED I wanted to document that pins 2-4
+>> are actually supported and not reserved by the device but there is no
+>> keycode associated with that GPIO.
+> 
+> You already documented that via comments though.
+>
+
+Yes but still I don't like to use KEY_RESERVED for all the pins since some
+of them are not really reserved. Can we agree on disagree here and after
+Nick answer I can post as a follow-up patch after this series gets merged?
+
+>> If there was a BTN_NONE or KEY_UNUSED it would had been better but I think
+>> that making a distinction between these two cases (reserved pin vs GPIO
+>> available but not used) is useful.
+> 
+> Maybe Nick can comment here.
+> 
+>>> I probably should add the two trailing _RESERVEDs, too?
+>>>
+>> 
+>> I see that is used for properties that are arrays, for example
+>> "linux,keymap" in Documentation/devicetree/bindings/input/matrix-keymap.txt.
+> 
+> That does not answer my question: Do all maxTouch touchpads (or
+> specifically that in Spring) need eight entries, padded with said
+> KEY_RESERVED? In my experiments using just six entries (i.e., until the
+> non-zero entry) worked okay - so does this T19 message have specifically
+> eight bits? Tegra used just four entries iirc.
+> 
+
+I guess there are other touchpads that have a different offset (e.g: using
+the last 4 pins) so I think that is good as a way of documenting the
+layout even if not strictly necessary for the driver.
+
+But again, without proper documentation is hard to say so I'll let Nick to
+answer that.
+
+>>> With my above snippet I got an awful lot of "Interrupt triggered but
+>>> zero messages" warnings (which I simply commented out as quickfix).
+>>> Is that why you are using _EDGE_FALLING? Or pin-function 0xf?
+>>> (In my case the ChromeOS DT had IRQ_TYPE_NONE and pin-function 0x0.)
+>>>
+>> 
+>> These are two separate but related things:
+>> 
+>> a) IRQF_TRIGGER_FALLING:
+>> 
+>> Yes, the Chrome OS DT for Peach Pit also has IRQ_TYPE_NONE but the DTS is
+>> not correct.
+>> 
+>> If you look at the Chrome OS atmel driver
+>> (drivers/input/touchscreen/atmel_mxt_ts.c), it passes IRQF_TRIGGER_FALLING
+>> to request_threaded_irq():
+>> 
+>> /* Default to falling edge if no platform data provided */
+>> irqflags = data->pdata ? data->pdata->irqflags : IRQF_TRIGGER_FALLING;
+>> error = request_threaded_irq(client->irq, NULL, mxt_interrupt,
+>> 			     irqflags | IRQF_ONESHOT,
+>> 			     client->name, data);
+>> 
+>> The above code is wrong since is overwriting the edge/level type flags set
+>> by OF when parsing the "interrupts" property so you have to use the
+>> expected IRQ flags in your DTS.
+>> 
+>> b) pin-function 0xf instead of 0x0:
+>> 
+>> The pin-function 0x0 is GPIO input while 0xf is GPIO IRQ. Usually on other
+>> SoCs to use a GPIO IRQ you just configure the pad as GPIO input and then
+>> enable the pin as an interrupt but on Exynos SoC these are really two
+>> different functions. So if you configure the pin as GPIO input and this
+>> happens after the pin is configured as GPIO IRQ, interrupts are not triggered.
+>> 
+>> I faced that issue before [1] and was solved with Tomasz's commit:
+>> 
+>> f6a8249 pinctrl: exynos: Lock GPIOs as interrupts when used as EINTs
+>> 
+>> which changes the pinctrl-exynos driver to setup a pin as GPIO IRQ on
+>> .irq_request_resources instead of .irq_set_type. So, with that patch even
+>> when pin-function re-configures the function to GPIO input, is then
+>> configured as GPIO IRQ when request_threaded_irq() is called.
+>> 
+>> So probably is working for you just because you tested on linux-next that
+>> already has Tomasz's changes but still the correct thing to do is to setup
+>> the pin as 0xf. This change probably is needed on other pins used as GPIO
+>> IRQ that are using 0x0 now.
+>> 
+>> Sorry, the email became longer than I wanted but I hope is helpful to you.
+> 
+> Thanks for the explanations, I'll test those settings on Spring then.
+> 
+> Could you point me to what ChromeOS tree and branch I should be looking
+> at? For instance, the linux-next.git chromeos-3.8 branch did not have
+> any DT for Spring. Therefore my series is based on /proc/device-tree
+> rather than any ChromeOS source code.
+> 
+
+I use as a reference
+https://chromium.googlesource.com/chromiumos/third_party/kernel branch
+chromeos-3.8
+
+> Thanks,
+> Andreas
+> 
+
+Best regards,
+Javier
