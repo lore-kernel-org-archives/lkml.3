@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756895AbaH0Tvp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 15:51:45 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:54446 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755657AbaH0Tvo (ORCPT
+	id S964936AbaH0TyY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 15:54:24 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:61141 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935556AbaH0TyW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 15:51:44 -0400
-From: rtg.canonical@gmail.com
-X-Google-Original-From: tim.gardner@canonical.com
-To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Tim Gardner <tim.gardner@canonical.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 3.17-rc2] fs: namespace: suppress 'may be used uninitialized' warnings
-Date: Wed, 27 Aug 2014 13:51:05 -0600
-Message-Id: <1409169065-61597-1-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 2.1.0
+	Wed, 27 Aug 2014 15:54:22 -0400
 MIME-Version: 1.0
+Date: Wed, 27 Aug 2014 22:54:21 +0300
+Message-ID: <CAGhpvoqrFQn7z942jUr2T8D1tuzS_irTqwmUynnqG55SVe3CqA@mail.gmail.com>
+Subject: [PATCH v3] i2c documentation: rename variable "register" to "reg"
+From: =?UTF-8?B?Sm9zw6kgTWFudWVsIEFsYXJjw7NuIFJvbGTDoW4=?= 
+	<jose.alarcon.roldan@gmail.com>
+To: Randy Dunlap <rdunlap@infradead.org>, wsa@the-dreams.de
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tim Gardner <tim.gardner@canonical.com>
+The example code provided with the i2c device interface documentation
+won't compile since it uses the reserved word "register" to name a
+variable.
 
-The gcc version 4.9.1 compiler complains Even though it isn't possible for
-these variables to not get initialized before they are used.
+The compiler fails with this error message:
 
-fs/namespace.c: In function ‘SyS_mount’:
-fs/namespace.c:2720:8: warning: ‘kernel_dev’ may be used uninitialized in this function [-Wmaybe-uninitialized]
-  ret = do_mount(kernel_dev, kernel_dir->name, kernel_type, flags,
-        ^
-fs/namespace.c:2699:8: note: ‘kernel_dev’ was declared here
-  char *kernel_dev;
-        ^
-fs/namespace.c:2720:8: warning: ‘kernel_type’ may be used uninitialized in this function [-Wmaybe-uninitialized]
-  ret = do_mount(kernel_dev, kernel_dir->name, kernel_type, flags,
-        ^
-fs/namespace.c:2697:8: note: ‘kernel_type’ was declared here
-  char *kernel_type;
-        ^
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+ error: expected identifier or '(' before '=' token
+   __u8 register = 0x20; /* Device register to access */
+                 ^
+
+Rename the variable "register" to simply "reg"
+in the example code.
+
+Signed-off-by: Jose Alarcon Roldan <jose.alarcon.roldan@gmail.com>
 ---
- fs/namespace.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ Documentation/i2c/dev-interface | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 20232e4..8681260 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -2694,9 +2694,9 @@ SYSCALL_DEFINE5(mount, char __user *, dev_name, char __user *, dir_name,
- 		char __user *, type, unsigned long, flags, void __user *, data)
- {
- 	int ret;
--	char *kernel_type;
-+	char *uninitialized_var(kernel_type);
- 	struct filename *kernel_dir;
--	char *kernel_dev;
-+	char *uninitialized_var(kernel_dev);
- 	unsigned long data_page;
- 
- 	ret = copy_mount_string(type, &kernel_type);
+diff --git a/Documentation/i2c/dev-interface b/Documentation/i2c/dev-interface
+index 3e742ba..2ac78ae 100644
+--- a/Documentation/i2c/dev-interface
++++ b/Documentation/i2c/dev-interface
+@@ -57,12 +57,12 @@ Well, you are all set up now. You can now use
+SMBus commands or plain
+ I2C to communicate with your device. SMBus commands are preferred if
+ the device supports them. Both are illustrated below.
+
+-  __u8 register = 0x10; /* Device register to access */
++  __u8 reg = 0x10; /* Device register to access */
+   __s32 res;
+   char buf[10];
+
+   /* Using SMBus commands */
+-  res = i2c_smbus_read_word_data(file, register);
++  res = i2c_smbus_read_word_data(file, reg);
+   if (res < 0) {
+     /* ERROR HANDLING: i2c transaction failed */
+   } else {
+@@ -70,11 +70,11 @@ the device supports them. Both are illustrated below.
+   }
+
+   /* Using I2C Write, equivalent of
+-     i2c_smbus_write_word_data(file, register, 0x6543) */
+-  buf[0] = register;
++     i2c_smbus_write_word_data(file, reg, 0x6543) */
++  buf[0] = reg;
+   buf[1] = 0x43;
+   buf[2] = 0x65;
+-  if (write(file, buf, 3) ! =3) {
++  if (write(file, buf, 3) != 3) {
+     /* ERROR HANDLING: i2c transaction failed */
+   }
+
 -- 
-2.1.0
-
+1.9.1
