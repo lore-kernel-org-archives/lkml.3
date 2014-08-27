@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965585AbaH0Xdr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 19:33:47 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:41807 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964814AbaH0Xdo (ORCPT
+	id S936053AbaH0Xhg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 19:37:36 -0400
+Received: from qmta08.emeryville.ca.mail.comcast.net ([76.96.30.80]:58842 "EHLO
+	qmta08.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935743AbaH0Xhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 19:33:44 -0400
-Date: Wed, 27 Aug 2014 16:33:43 -0700 (PDT)
-Message-Id: <20140827.163343.715764078341662382.davem@davemloft.net>
-To: lftan@altera.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lftan.linux@gmail.com, peppe.cavallaro@st.com, vbridger@altera.com
-Subject: Re: [PATCH] net: stmmac: fix warning from Sparse for socfpga
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1409037076-14775-1-git-send-email-lftan@altera.com>
-References: <1409037076-14775-1-git-send-email-lftan@altera.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 27 Aug 2014 16:33:44 -0700 (PDT)
+	Wed, 27 Aug 2014 19:37:35 -0400
+Date: Wed, 27 Aug 2014 18:37:33 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] mm/slab: use percpu allocator for cpu cache
+In-Reply-To: <1408608675-20420-1-git-send-email-iamjoonsoo.kim@lge.com>
+Message-ID: <alpine.DEB.2.11.1408271827010.26560@gentwo.org>
+References: <1408608675-20420-1-git-send-email-iamjoonsoo.kim@lge.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ley Foon Tan <lftan@altera.com>
-Date: Tue, 26 Aug 2014 15:11:16 +0800
+One minor nit. Otherwise
 
-> @@ -119,7 +119,8 @@ static int socfpga_dwmac_parse_data(struct socfpga_dwmac *dwmac, struct device *
->  			return -EINVAL;
->  		}
->  
-> -		dwmac->splitter_base = (void *)devm_ioremap_resource(dev,
-> +		dwmac->splitter_base =
-> +			(void __iomem *)devm_ioremap_resource(dev,
->  			&res_splitter);
+Acked-by: Christoph Lameter <cl@linux.com>
 
-Please either put this entire call on one line (it'll only be slightly
-over 80 columns, which is fine), or indent it properly.
+On Thu, 21 Aug 2014, Joonsoo Kim wrote:
 
-And by properly I meant that the second and subsequent lines of a function
-call must be indented precisely to the first column after the openning
-parenthesis of the function call on the first line.  You must use the
-appropriate number of TAB and SPACE characters necessary to do so.
+> @@ -2041,56 +1982,63 @@ static size_t calculate_slab_order(struct kmem_cache *cachep,
+>  	return left_over;
+>  }
+>
+> +static int alloc_kmem_cache_cpus(struct kmem_cache *cachep, int entries,
+> +				int batchcount)
+> +{
+> +	cachep->cpu_cache = __alloc_kmem_cache_cpus(cachep, entries,
+> +							batchcount);
+> +	if (!cachep->cpu_cache)
+> +		return 1;
+> +
+> +	return 0;
+> +}
 
-If it is indented using only TAB characters, it is very likely that you
-are doing it wrong.
-
-Thanks.
+Do we really need this trivial function? It doesnt do anything useful as
+far as I can tell.
