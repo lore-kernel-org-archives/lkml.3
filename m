@@ -1,60 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934123AbaH0NG7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 09:06:59 -0400
-Received: from mail-bn1lp0139.outbound.protection.outlook.com ([207.46.163.139]:20608
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933257AbaH0NG4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 09:06:56 -0400
-Message-ID: <53FDD7D8.5050602@opensource.altera.com>
-Date: Wed, 27 Aug 2014 08:06:32 -0500
-From: Dinh Nguyen <dinguyen@opensource.altera.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Thor Thayer <tthayer@opensource.altera.com>, Pavel Machek <pavel@denx.de>,
-        <robherring2@gmail.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rob@landley.net>, <linux@arm.linux.org.uk>,
-        <atull@opensource.altera.com>, <delicious.quinoa@gmail.com>,
-        <dougthompson@xmission.com>, <grant.likely@linaro.org>,
-        <sameo@linux.intel.com>, <lee.jones@linaro.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <tthayer.linux@gmail.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-edac@vger.kernel.org>
-Subject: Re: [PATCHv10 2/2] arm: dts: Add Altera SDRAM EDAC bindings & devicetree
- entries.
-References: <1407770293-27190-1-git-send-email-tthayer@opensource.altera.com> <1407770293-27190-3-git-send-email-tthayer@opensource.altera.com> <20140814184949.GC11558@amd.pavel.ucw.cz> <53FCD456.3050404@opensource.altera.com> <53FCEDDA.4060906@opensource.altera.com> <20140827063638.GA28234@nazgul.tnic>
-In-Reply-To: <20140827063638.GA28234@nazgul.tnic>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [99.103.66.154]
-X-ClientProxiedBy: BN1PR02CA0011.namprd02.prod.outlook.com (10.141.56.11) To
- BY1PR0301MB1190.namprd03.prod.outlook.com (25.160.195.149)
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 0316567485
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6009001)(24454002)(479174003)(199003)(377454003)(51704005)(164054003)(189002)(66066001)(65806001)(65956001)(77982001)(80022001)(79102001)(59896002)(93886004)(85306004)(83506001)(76482001)(80316001)(83322001)(20776003)(85852003)(83072002)(4396001)(81342001)(47776003)(64706001)(21056001)(87976001)(81542001)(23676002)(46102001)(101416001)(74662001)(74502001)(31966008)(86362001)(92726001)(92566001)(90102001)(50466002)(50986999)(99396002)(33656002)(77096002)(87266999)(54356999)(76176999)(65816999)(106356001)(107046002)(105586002)(95666004)(64126003)(110136001)(102836001)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BY1PR0301MB1190;H:Dinhs-MacBook-Pro.local;FPR:;MLV:sfv;PTR:InfoNoRecords;A:3;MX:1;LANG:en;
-X-OriginatorOrg: opensource.altera.com
+	id S934231AbaH0NHY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 09:07:24 -0400
+Received: from relay.felk.cvut.cz ([147.32.80.7]:50413 "EHLO
+	relay.felk.cvut.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933257AbaH0NHU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 09:07:20 -0400
+From: Michal Sojka <sojka@merica.cz>
+To: linux-usb@vger.kernel.org
+Cc: Michal Sojka <sojka@merica.cz>, Bryan Wu <cooloney@gmail.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, michal.vokac@comap.cz
+Subject: [PATCH v3 0/2] LED triggers for USB host and device
+Date: Wed, 27 Aug 2014 15:03:43 +0200
+Message-Id: <1409144625-25274-1-git-send-email-sojka@merica.cz>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <CAK5ve-Jz7=7uZ3_Qg2bAH9BiGRZ36k-Oj9TNZ-_nAvaq6LGbjA@mail.gmail.com>
+References: <CAK5ve-Jz7=7uZ3_Qg2bAH9BiGRZ36k-Oj9TNZ-_nAvaq6LGbjA@mail.gmail.com>
+X-FELK-MailScanner-Information: 
+X-MailScanner-ID: s7RD6RJl068108
+X-FELK-MailScanner: Found to be clean
+X-FELK-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
+	score=-0.498, required 6, autolearn=not spam, BAYES_00 -0.50,
+	HEADER_FROM_DIFFERENT_DOMAINS 0.00, RP_MATCHES_RCVD 0.00)
+X-FELK-MailScanner-From: sojkam1@fel.cvut.cz
+X-FELK-MailScanner-Watermark: 1409749589.81673@lDFih+MseTDsbFRoVg8qTQ
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Boris
+This adds LED triggers for USB host and device. First patch refactors
+UDC drivers as requested by Felipe Balbi, second patch adds the LED
+triggers.
 
-On 8/27/14, 1:36 AM, Borislav Petkov wrote:
-> On Tue, Aug 26, 2014 at 03:28:10PM -0500, Dinh Nguyen wrote:
->> If Boris is okay with driver part and everyone else is OK with the DTS
->> portion, then I can apply the DTS patch to my tree, and Boris take the
->> driver patch into his tree?
-> 
-> Actually, it would be easier for everyone involved if those patches go
-> together due to their dependency. So if you want me to take a look at
-> the EDAC parts again and give you my ack so that you can pick them all
-> up together and they go through your tree, let me know.
-> 
+Changes from v2:
+- host/gadget triggers merged to a single file in usb/common/
+- udc drivers refactored so that LED trigger works for all of them
 
-That would be great!
+Changes from v1:
+- Moved from drivers/leds/ to drivers/usb/
+- Improved Kconfig help
+- Linked with other modules rather than being standalone modules
 
-Thanks,
-Dinh
+Michal Sojka (2):
+  usb: gadget: Refactor request completion
+  usb: Add LED triggers for USB activity
+
+ drivers/usb/Kconfig                     |  11 +++
+ drivers/usb/chipidea/udc.c              |   6 +-
+ drivers/usb/common/Makefile             |   5 +-
+ drivers/usb/common/common.c             | 144 ++++++++++++++++++++++++++++++++
+ drivers/usb/common/led.c                |  59 +++++++++++++
+ drivers/usb/common/usb-common.c         | 144 --------------------------------
+ drivers/usb/core/hcd.c                  |   2 +
+ drivers/usb/dwc2/gadget.c               |   6 +-
+ drivers/usb/dwc3/gadget.c               |   2 +-
+ drivers/usb/gadget/udc/amd5536udc.c     |   2 +-
+ drivers/usb/gadget/udc/at91_udc.c       |   2 +-
+ drivers/usb/gadget/udc/atmel_usba_udc.c |   4 +-
+ drivers/usb/gadget/udc/bcm63xx_udc.c    |   2 +-
+ drivers/usb/gadget/udc/dummy_hcd.c      |  10 +--
+ drivers/usb/gadget/udc/fotg210-udc.c    |   2 +-
+ drivers/usb/gadget/udc/fsl_qe_udc.c     |   6 +-
+ drivers/usb/gadget/udc/fsl_udc_core.c   |   6 +-
+ drivers/usb/gadget/udc/fusb300_udc.c    |   2 +-
+ drivers/usb/gadget/udc/goku_udc.c       |   2 +-
+ drivers/usb/gadget/udc/gr_udc.c         |   2 +-
+ drivers/usb/gadget/udc/lpc32xx_udc.c    |   2 +-
+ drivers/usb/gadget/udc/m66592-udc.c     |   2 +-
+ drivers/usb/gadget/udc/mv_u3d_core.c    |   8 +-
+ drivers/usb/gadget/udc/mv_udc_core.c    |   8 +-
+ drivers/usb/gadget/udc/net2272.c        |   2 +-
+ drivers/usb/gadget/udc/net2280.c        |   2 +-
+ drivers/usb/gadget/udc/omap_udc.c       |   2 +-
+ drivers/usb/gadget/udc/pch_udc.c        |   2 +-
+ drivers/usb/gadget/udc/pxa25x_udc.c     |   2 +-
+ drivers/usb/gadget/udc/pxa27x_udc.c     |   2 +-
+ drivers/usb/gadget/udc/r8a66597-udc.c   |   2 +-
+ drivers/usb/gadget/udc/s3c-hsudc.c      |   3 +-
+ drivers/usb/gadget/udc/s3c2410_udc.c    |   2 +-
+ drivers/usb/gadget/udc/udc-core.c       |  13 +++
+ drivers/usb/musb/musb_gadget.c          |   2 +-
+ drivers/usb/renesas_usbhs/mod_gadget.c  |   2 +-
+ include/linux/usb.h                     |  12 +++
+ include/linux/usb/gadget.h              |   8 ++
+ 38 files changed, 294 insertions(+), 201 deletions(-)
+ create mode 100644 drivers/usb/common/common.c
+ create mode 100644 drivers/usb/common/led.c
+ delete mode 100644 drivers/usb/common/usb-common.c
+
+-- 
+2.1.0
+
