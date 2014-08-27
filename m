@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934781AbaH0N6Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 09:58:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36338 "EHLO mx2.suse.de"
+	id S934805AbaH0N6t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 09:58:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36349 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933404AbaH0N6W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 09:58:22 -0400
-Message-ID: <53FDE3FC.9040106@suse.de>
-Date: Wed, 27 Aug 2014 15:58:20 +0200
+	id S933916AbaH0N6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 09:58:47 -0400
+Message-ID: <53FDE416.1040801@suse.de>
+Date: Wed, 27 Aug 2014 15:58:46 +0200
 From: Hannes Reinecke <hare@suse.de>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
@@ -20,9 +20,9 @@ CC: linux-scsi@vger.kernel.org,
         Doug Gilbert <dgilbert@interlog.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Christoph Hellwig <hch@lst.de>
-Subject: Re: [RFC PATCH 02/10] scsi/constants: Cleanup printk message in scsi_decode_sense_extras()
-References: <20140808115004.6768.97014.stgit@yuno-kbuild.novalocal> <20140808115009.6768.60285.stgit@yuno-kbuild.novalocal>
-In-Reply-To: <20140808115009.6768.60285.stgit@yuno-kbuild.novalocal>
+Subject: Re: [RFC PATCH 03/10] scsi/constants: Cleanup printk message in __scsi_print_command()
+References: <20140808115004.6768.97014.stgit@yuno-kbuild.novalocal> <20140808115012.6768.44952.stgit@yuno-kbuild.novalocal>
+In-Reply-To: <20140808115012.6768.44952.stgit@yuno-kbuild.novalocal>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,8 +30,8 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 08/08/2014 01:50 PM, Yoshihiro YUNOMAE wrote:
-> If sense_flags and fixed_valid are zero, the kernel does not need to
-> output a printk message. So, if those conditions are met, it just returns.
+> All bytes in CDB should be output after linebuf is filled because
+> "[%s] CDB: %s\n" message is output many times in loop.
 >
 > Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
 > Cc: Hannes Reinecke <hare@suse.de>
@@ -42,36 +42,31 @@ On 08/08/2014 01:50 PM, Yoshihiro YUNOMAE wrote:
 > Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
 > Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 > ---
->   drivers/scsi/constants.c |    3 +++
->   1 file changed, 3 insertions(+)
+>   drivers/scsi/constants.c |    3 +--
+>   1 file changed, 1 insertion(+), 2 deletions(-)
 >
 > diff --git a/drivers/scsi/constants.c b/drivers/scsi/constants.c
-> index a0e8159..9c38b8d 100644
+> index 9c38b8d..5956d4d 100644
 > --- a/drivers/scsi/constants.c
 > +++ b/drivers/scsi/constants.c
-> @@ -1438,6 +1438,9 @@ scsi_decode_sense_extras(struct scsi_device *sdev, const char *name,
->   			sense_flags |= ucp[3] & 0xe0;
->   	}
+> @@ -413,9 +413,8 @@ void __scsi_print_command(struct scsi_device *sdev, const char *prefix,
 >
-> +	if (!sense_flags && !fixed_valid)
-> +		return;
-> +
->   	res = 0;
->   	memset(buff, 0, sizeof(buff));
->   	blen = sizeof(buff) - 1;
+>   		hex_dump_to_buffer(cdb + i, linelen, 16, 1,
+>   				   linebuf, sizeof(linebuf), false);
+> -		sdev_printk(KERN_INFO, sdev, "[%s] CDB: %s\n",
+> -			    prefix, linebuf);
+>   	}
+> +	sdev_printk(KERN_INFO, sdev, "[%s] CDB: %s\n", prefix, linebuf);
+>   }
+>   EXPORT_SYMBOL(__scsi_print_command);
+>
 >
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 >
-scsi_decode_sense_extras() is utterly weird, as it only decodes 
-tape-specific sense extras. Seeing that 'st' and 'osst' already 
-contains code to handle those cases we should remove this function 
-altogether, as it doesn't serve any purpose.
-
-Has been removed with my next scsi logging update, so this patch is 
-not applicable anymore.
+As discussed this patch is invalid.
 
 Cheers,
 
