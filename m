@@ -1,79 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933544AbaH0KOw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 06:14:52 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:47070 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933393AbaH0KOt (ORCPT
+	id S933576AbaH0KQq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 06:16:46 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:50793 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755288AbaH0KQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 06:14:49 -0400
-Date: Wed, 27 Aug 2014 13:13:53 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: Julia Lawall <julia.lawall@lip6.fr>, Marc Carino <marc.ceeeee@gmail.com>,
-        kernel-janitors@vger.kernel.org, Christian Daudt <bcm@fixthebug.org>,
-        Matt Porter <mporter@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        bcm-kernel-feedback-list@broadcom.com, linux-kernel@vger.kernel.org,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: [PATCH 11/14] ARM: brcmstb: delete unneeded test before
- of_node_put
-Message-ID: <20140827101353.GG5046@mwanda>
-References: <1407492475-26283-11-git-send-email-Julia.Lawall@lip6.fr>
- <20140813222212.GB18411@ld-irv-0074>
- <alpine.DEB.2.02.1408140733190.2053@localhost6.localdomain6>
- <20140814065310.GK11952@brian-ubuntu>
+	Wed, 27 Aug 2014 06:16:44 -0400
+X-IronPort-AV: E=Sophos;i="5.04,409,1406563200"; 
+   d="scan'208";a="35139128"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: <gleb@kernel.org>, <mtosatti@redhat.com>, <nadav.amit@gmail.com>,
+        <jan.kiszka@web.de>
+CC: <kvm@vger.kernel.org>, <laijs@cn.fujitsu.com>,
+        <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
+        <linux-kernel@vger.kernel.org>, <tangchen@cn.fujitsu.com>
+Subject: [PATCH v4 0/6] kvm, mem-hotplug: Do not pin ept identity pagetable and apic access page.
+Date: Wed, 27 Aug 2014 18:17:35 +0800
+Message-ID: <1409134661-27916-1-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.9.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140814065310.GK11952@brian-ubuntu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.71]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 11:53:10PM -0700, Brian Norris wrote:
-> > > >  cleanup:
-> > > > -	if (syscon_np)
-> > > > -		of_node_put(syscon_np);
-> > > > -
-> > > > +	of_node_put(syscon_np);
-> > > > +out:
-> > > 
-> > > Is there a good reason for this new label? I thought part of the point
-> > > of this semantic patch is that the previous line (of_node_put()) is a
-> > > no-op for NULL arguments.
-> > 
-> > Personally, I prefer code to only be executed if it needs to be.  It is 
-> > helpful from a program analysis point of view, and I think it helps 
-> > someone trying to understand the code.
-> > 
-> > That is, when I am trying to understand some unknown code, I may look at 
-> > the cleanup code and try to figure out why each piece of it is executed.  
-> > If some of it is statically known to be irrelevant, it is confusing.
-> > 
-> > But I you think the other way around, and would rather have just one label 
-> > that contains anything that might ever be useful, then I guess that is a 
-> > reasonable point of view as well.
-> 
-> Yeah, I personally just look to avoid unnecessary labels.
-> 
+ept identity pagetable and apic access page in kvm are pinned in memory.
+As a result, they cannot be migrated/hot-removed.
 
-Having more than one label is better because it helps you avoid "One Err
-Bugs".  This is a common kind of bug which is cause when functions have
-only one "err:" label which does all the error handling.
+But actually they don't need to be pinned in memory.
 
-Some examples of this type of bug are:
-234ad18249a4 ('staging: gdm7240: fix error handling of probe()')
-85a258b70d48 ('ocfs2: fix error handling in ocfs2_ioctl_move_extents()')
-920c4f4c3651 ('drivers/leds/leds-tca6507.c: cleanup error handling in tca6507_probe()')
+[For ept identity page]
+Just do not pin it. When it is migrated, guest will be able to find the
+new page in the next ept violation.
 
-If you unwind in the exact reversed order of how things were allocated
-then it makes the code a lot easier to understand so it avoids bugs.
+[For apic access page]
+The hpa of apic access page is stored in VMCS APIC_ACCESS_ADDR pointer.
+When apic access page is migrated, we update VMCS APIC_ACCESS_ADDR pointer
+for each vcpu in addition.
 
-regards,
-dan carpenter
+NOTE: Tested with -cpu xxx,-x2apic option.
+      But since nested vm pins some other pages in memory, if user uses nested
+      vm, memory hot-remove will not work.
+
+Change log v3 -> v4:
+1. The original patch 6 is now patch 5. ( by Jan Kiszka <jan.kiszka@web.de> )
+2. The original patch 1 is now patch 6 since we should unpin apic access page
+   at the very last moment.
+
+
+Tang Chen (6):
+  kvm: Use APIC_DEFAULT_PHYS_BASE macro as the apic access page address.
+  kvm: Remove ept_identity_pagetable from struct kvm_arch.
+  kvm: Make init_rmode_identity_map() return 0 on success.
+  kvm, mem-hotplug: Reload L1' apic access page on migration in
+    vcpu_enter_guest().
+  kvm, mem-hotplug: Reload L1's apic access page on migration when L2 is
+    running.
+  kvm, mem-hotplug: Do not pin apic access page in memory.
+
+ arch/x86/include/asm/kvm_host.h |   3 +-
+ arch/x86/kvm/svm.c              |  15 +++++-
+ arch/x86/kvm/vmx.c              | 103 +++++++++++++++++++++++++++-------------
+ arch/x86/kvm/x86.c              |  22 +++++++--
+ include/linux/kvm_host.h        |   3 ++
+ virt/kvm/kvm_main.c             |  30 +++++++++++-
+ 6 files changed, 135 insertions(+), 41 deletions(-)
+
+-- 
+1.8.3.1
 
