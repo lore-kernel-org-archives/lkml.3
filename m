@@ -1,153 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965342AbaH0XSt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 19:18:49 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:50096 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933980AbaH0XSr (ORCPT
+	id S965506AbaH0XS6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 19:18:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59283 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933980AbaH0XS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 19:18:47 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: lenb@kernel.org, fengguang.wu@intel.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, All applicable <stable@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH V3] ACPI / OSL: Make acpi_os_map_cleanup() use call_rcu() to avoid deadlocks
-Date: Thu, 28 Aug 2014 01:37:57 +0200
-Message-ID: <8105997.7zQ9mSfecG@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1409123489-11786-1-git-send-email-tianyu.lan@intel.com>
-References: <20140827022709.GA22064@localhost> <1409123489-11786-1-git-send-email-tianyu.lan@intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Wed, 27 Aug 2014 19:18:56 -0400
+Date: Wed, 27 Aug 2014 16:18:54 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mike Travis <travis@sgi.com>
+Cc: mingo@redhat.com, tglx@linutronix.de, hpa@zytor.com, msalter@redhat.com,
+        dyoung@redhat.com, riel@redhat.com, peterz@infradead.org,
+        mgorman@suse.de, linux-kernel@vger.kernel.org, x86@kernel.org,
+        linux-mm@kvack.org, Alex Thorlton <athorlton@sgi.com>
+Subject: Re: [PATCH 1/2] x86: Optimize resource lookups for ioremap
+Message-Id: <20140827161854.0619a04653b336d3adc755f3@linux-foundation.org>
+In-Reply-To: <53FE6515.6050102@sgi.com>
+References: <20140827225927.364537333@asylum.americas.sgi.com>
+	<20140827225927.602319674@asylum.americas.sgi.com>
+	<20140827160515.c59f1c191fde5f788a7c42f6@linux-foundation.org>
+	<53FE6515.6050102@sgi.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, August 27, 2014 03:11:29 PM Lan Tianyu wrote:
-> Deadlock is possible when CPU hotplug and evaluating ACPI method happen
-> at the same time.
+On Wed, 27 Aug 2014 16:09:09 -0700 Mike Travis <travis@sgi.com> wrote:
+
 > 
-> During CPU hotplug, acpi_cpu_soft_notify() is called under the CPU hotplug
-> lock.  Then, acpi_cpu_soft_notify() calls acpi_bus_get_device() to obtain
-> the struct acpi_device attached to the given ACPI handle.  The ACPICA's
-> namespace lock will be acquired by acpi_bus_get_device() in the process.
-> Thus it is possible to hold the ACPICA's namespace lock under the CPU
-> hotplug lock.
+> >>
+> >> ...
+> >>
+> >> --- linux.orig/kernel/resource.c
+> >> +++ linux/kernel/resource.c
+> >> @@ -494,6 +494,43 @@ int __weak page_is_ram(unsigned long pfn
+> >>  }
+> >>  EXPORT_SYMBOL_GPL(page_is_ram);
+> >>  
+> >> +/*
+> >> + * Search for a resouce entry that fully contains the specified region.
+> >> + * If found, return 1 if it is RAM, 0 if not.
+> >> + * If not found, or region is not fully contained, return -1
+> >> + *
+> >> + * Used by the ioremap functions to insure user not remapping RAM and is as
+> >> + * vast speed up over walking through the resource table page by page.
+> >> + */
+> >> +int __weak region_is_ram(resource_size_t start, unsigned long size)
+> >> +{
+> >> +	struct resource *p;
+> >> +	resource_size_t end = start + size - 1;
+> >> +	int flags = IORESOURCE_MEM | IORESOURCE_BUSY;
+> >> +	const char *name = "System RAM";
+> >> +	int ret = -1;
+> >> +
+> >> +	read_lock(&resource_lock);
+> >> +	for (p = iomem_resource.child; p ; p = p->sibling) {
+> >> +		if (end < p->start)
+> >> +			continue;
+> >> +
+> >> +		if (p->start <= start && end <= p->end) {
+> >> +			/* resource fully contains region */
+> >> +			if ((p->flags != flags) || strcmp(p->name, name))
+> >> +				ret = 0;
+> >> +			else
+> >> +				ret = 1;
+> >> +			break;
+> >> +		}
+> >> +		if (p->end < start)
+> >> +			break;	/* not found */
+> >> +	}
+> >> +	read_unlock(&resource_lock);
+> >> +	return ret;
+> >> +}
+> >> +EXPORT_SYMBOL_GPL(region_is_ram);
+> > 
+> > Exporting a __weak symbol is strange.  I guess it works, but neither
+> > the __weak nor the export are actually needed?
+> > 
 > 
-> Evaluating an ACPI method may involve accessing an operation region in
-> system memory and the associated address space will be unmapped under
-> the ACPICA's namespace lock after completing the access. Currently, osl.c
-> uses RCU to protect memory ranges used by AML.  When unmapping them it
-> calls synchronize_rcu() in acpi_os_map_cleanup(), but that blocks
-> CPU hotplug by acquiring the CPU hotplug lock.  Thus it is possible to
-> hold the CPU hotplug lock under the ACPICA's namespace lock.
-> 
-> This leads to deadlocks like the following one if AML accessing operation
-> regions in memory is executed in parallel with CPU hotplug.
+> I mainly used 'weak' and export because that was what the page_is_ram
+> function was using.  Most likely this won't be used anywhere else but
+> I wasn't sure.  I can certainly remove the weak and export, at least
+> until it's actually needed?
 
-[cut]
+Several architectures implement custom page_is_ram(), so they need the
+__weak.  region_is_ram() needs neither so yes, they should be removed.
 
-> To avoid such deadlocks, modify acpi_os_map_cleanup() to use call_rcu()
-> to schedule acpi_os_async_umap() asynchronously to umap memory regions
-> that aren't used any more. The umap operation can't be done in the
-> call_rcu()'s callback directly because the callback will be called in the
-> soft irq context and acpi_unmap() holds mutex lock inside.
-> 
-> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-> [rjw: Subject and changelog.]
-> Cc: All applicable <stable@vger.kernel.org>
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-> ---
->  drivers/acpi/osl.c | 24 +++++++++++++++++++-----
->  1 file changed, 19 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> index 3abe9b2..9baef71 100644
-> --- a/drivers/acpi/osl.c
-> +++ b/drivers/acpi/osl.c
-> @@ -40,6 +40,7 @@
->  #include <linux/nmi.h>
->  #include <linux/acpi.h>
->  #include <linux/efi.h>
-> +#include <linux/async.h>
->  #include <linux/ioport.h>
->  #include <linux/list.h>
->  #include <linux/jiffies.h>
-> @@ -94,6 +95,7 @@ struct acpi_ioremap {
->  	acpi_physical_address phys;
->  	acpi_size size;
->  	unsigned long refcount;
-> +	struct rcu_head rcu;
->  };
->  
->  static LIST_HEAD(acpi_ioremaps);
-> @@ -423,13 +425,25 @@ static void acpi_os_drop_map_ref(struct acpi_ioremap *map)
->  		list_del_rcu(&map->list);
->  }
->  
-> +static void acpi_os_async_umap(void *data, async_cookie_t cookie)
-> +{
-> +	struct acpi_ioremap *map = data;
-> +
-> +	acpi_unmap(map->phys, map->virt);
-> +	kfree(map);
-> +}
-> +
-> +static void acpi_os_map_reclaim(struct rcu_head *rcu)
-> +{
-> +	struct acpi_ioremap *map = container_of(rcu, struct acpi_ioremap, rcu);
-> +
-> +	async_schedule(acpi_os_async_umap, map);
-> +}
-> +
->  static void acpi_os_map_cleanup(struct acpi_ioremap *map)
->  {
-> -	if (!map->refcount) {
-> -		synchronize_rcu();
-> -		acpi_unmap(map->phys, map->virt);
-> -		kfree(map);
-> -	}
-> +	if (!map->refcount)
-> +		call_rcu(&map->rcu, acpi_os_map_reclaim);
->  }
->  
->  void __ref acpi_os_unmap_iomem(void __iomem *virt, acpi_size size)
-> 
+<looks at the code>
 
-This goes a bit too far.  First, if you need to start an async thread,
-you can simply do synchronize_rcu() from there.  Second, though, perhaps
-we can address the whole deadlock in a different way.
-
-For example, if we do something like the patch below (which I haven't
-tested, but it should work if I'm not missing something horribly), we
-won't be taking the ACPI namespace lock under the CPU hotplug lock
-in acpi_cpu_soft_notify() any more.
-
-Rafael
-
----
- drivers/acpi/processor_driver.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
-Index: linux-pm/drivers/acpi/processor_driver.c
-===================================================================
---- linux-pm.orig/drivers/acpi/processor_driver.c
-+++ linux-pm/drivers/acpi/processor_driver.c
-@@ -129,7 +129,11 @@ static int acpi_cpu_soft_notify(struct n
- 	if (action == CPU_STARTING || action == CPU_DYING)
- 		return NOTIFY_DONE;
- 
--	if (!pr || acpi_bus_get_device(pr->handle, &device))
-+	if (!pr || !pr->dev)
-+		return NOTIFY_DONE;
-+
-+	device = ACPI_COMPANION(pr->dev);
-+	if (!device)
- 		return NOTIFY_DONE;
- 
- 	if (action == CPU_ONLINE) {
-
+Doing strcmp("System RAM") is rather a hack.  Is there nothing in
+resource.flags which can be used?  Or added otherwise?
