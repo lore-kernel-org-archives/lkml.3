@@ -1,130 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964843AbaH0PbS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 11:31:18 -0400
-Received: from david.siemens.de ([192.35.17.14]:39482 "EHLO david.siemens.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935216AbaH0PWP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 11:22:15 -0400
-From: Jan Kiszka <jan.kiszka@siemens.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
-        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
-        Borislav Petkov <bp@suse.de>,
-        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Subject: [PATCH v9 17/23] scripts/gdb: Add internal helper and convenience function for per-cpu lookup
-Date: Wed, 27 Aug 2014 17:21:32 +0200
-Message-Id: <e9da1aec72a8d874f7190d8faf491ec095980bd0.1409152897.git.jan.kiszka@siemens.com>
-X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
-In-Reply-To: <cover.1409152897.git.jan.kiszka@siemens.com>
-References: <cover.1409152897.git.jan.kiszka@siemens.com>
-In-Reply-To: <cover.1409152897.git.jan.kiszka@siemens.com>
-References: <cover.1409152897.git.jan.kiszka@siemens.com>
+	id S935586AbaH0Pbd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 11:31:33 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:41943 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935216AbaH0Pba (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 11:31:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <CABb+yY17Y18oAivi_VxPJqDEGLTbEy_PfsdeK9jXWZ0iV3vZ=w@mail.gmail.com>
+References: <20140722153623.25088.37742.stgit@buzz>
+	<20140728181224.GN15536@arm.com>
+	<CALYGNiNrK1d32ecz4rw0sgn0GyN-M6hTBuTLGQV53Z4Br-bpYQ@mail.gmail.com>
+	<20140728184741.GT15536@arm.com>
+	<CALYGNiOd+Dy-2q_woZ9UDbMO24q58jN1Nsq7E8cJMMg_YBK9pA@mail.gmail.com>
+	<CABb+yY17Y18oAivi_VxPJqDEGLTbEy_PfsdeK9jXWZ0iV3vZ=w@mail.gmail.com>
+Date: Wed, 27 Aug 2014 19:31:29 +0400
+Message-ID: <CALYGNiN-SHr6YJ53_deizb1VoXTBzD7dn8hcwqd4zLjx6utCDw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] ARM: LPAE: load upper bits of early TTBR0/TTBR1
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: Jassi Brar <jassisinghbrar@gmail.com>
+Cc: Will Deacon <will.deacon@arm.com>,
+        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vitaly Andrianov <vitalya@ti.com>, Cyril Chemparathy <cyril@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function allows to obtain a per-cpu variable, either of the current
-or an explicitly specified CPU.
+On Wed, Aug 27, 2014 at 7:26 PM, Jassi Brar <jassisinghbrar@gmail.com> wrote:
+> On Tue, Jul 29, 2014 at 5:59 PM, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
+>> On Mon, Jul 28, 2014 at 10:47 PM, Will Deacon <will.deacon@arm.com> wrote:
+>>> On Mon, Jul 28, 2014 at 07:40:58PM +0100, Konstantin Khlebnikov wrote:
+>>>> On Mon, Jul 28, 2014 at 10:12 PM, Will Deacon <will.deacon@arm.com> wrote:
+>>>> > On Tue, Jul 22, 2014 at 04:36:23PM +0100, Konstantin Khlebnikov wrote:
+>>>> >> This patch fixes booting when idmap pgd lays above 4gb. Commit
+>>>> >> 4756dcbfd37 mostly had fixed this, but it'd failed to load upper bits.
+>>>> >>
+>>>> >> Also this fixes adding TTBR1_OFFSET to TTRR1: if lower part overflows
+>>>> >> carry flag must be added to the upper part.
+>>>> >>
+>>>> >> Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+>>>> >> Cc: Cyril Chemparathy <cyril@ti.com>
+>>>> >> Cc: Vitaly Andrianov <vitalya@ti.com>
+>>>> >> ---
+>>>> >>  arch/arm/mm/proc-v7-3level.S |    7 +++----
+>>>> >>  1 file changed, 3 insertions(+), 4 deletions(-)
+>>>> >>
+>>>> >> diff --git a/arch/arm/mm/proc-v7-3level.S b/arch/arm/mm/proc-v7-3level.S
+>>>> >> index 22e3ad6..f0481dd 100644
+>>>> >> --- a/arch/arm/mm/proc-v7-3level.S
+>>>> >> +++ b/arch/arm/mm/proc-v7-3level.S
+>>>> >> @@ -140,12 +140,11 @@ ENDPROC(cpu_v7_set_pte_ext)
+>>>> >>       mov     \tmp, \ttbr1, lsr #(32 - ARCH_PGD_SHIFT)        @ upper bits
+>>>> >>       mov     \ttbr1, \ttbr1, lsl #ARCH_PGD_SHIFT             @ lower bits
+>>>> >>       addls   \ttbr1, \ttbr1, #TTBR1_OFFSET
+>>>> >> -     mcrr    p15, 1, \ttbr1, \zero, c2                       @ load TTBR1
+>>>> >> +     adcls   \tmp, \tmp, #0
+>>>> >> +     mcrr    p15, 1, \ttbr1, \tmp, c2                        @ load TTBR1
+>>>> >>       mov     \tmp, \ttbr0, lsr #(32 - ARCH_PGD_SHIFT)        @ upper bits
+>>>> >>       mov     \ttbr0, \ttbr0, lsl #ARCH_PGD_SHIFT             @ lower bits
+>>>> >> -     mcrr    p15, 0, \ttbr0, \zero, c2                       @ load TTBR0
+>>>> >> -     mcrr    p15, 1, \ttbr1, \zero, c2                       @ load TTBR1
+>>>> >> -     mcrr    p15, 0, \ttbr0, \zero, c2                       @ load TTBR0
+>>>> >> +     mcrr    p15, 0, \ttbr0, \tmp, c2                        @ load TTBR0
+>>>> >
+>>>> > I must admit, the code you are removing here looks really strange. Was there
+>>>> > a badly resolved conflict somewhere along the way? It would be nice to see
+>>>> > if your fix (which seems ok to me) was actually present in the mailing list
+>>>> > posting of the patch that ended in the above mess.
+>>>>
+>>>> Nope, no merge conflicts, source in original patch
+>>>> https://lkml.org/lkml/2012/9/11/346
+>>>>
+>>>> That mess completely harmless, this code is used only once on boot.
+>>>> I don't have that email, so replying isn't trivial for me.
+>>>
+>>> How bizarre. Also, Cyril doesn't work for TI anymore (his email is
+>>> bouncing), so it's tricky to know what he meant here.
+>>>
+>>> Your patch looks better than what we currently have though. Have you managed
+>>> to test it on a keystone platform (I don't have one)?
+>>
+>> No, I don't have it too. As well as I don't have direct access to the
+>> platform where
+>> problem was found. I've debugged this in patched qemu.
+>>
+> It seems the patch wasn't tested on any real platform, I did on my
+> CA15 based platform - it breaks boot. Simply reverting the patch gets
+> it going again. I am happy to try any fix.
+>
 
-Note: sparc64 version is untested.
+Please try to remove adcls line.
+Seems like this affects only systems where PHYS_OFFSET == PAGE_OFFSET.
 
-CC: "David S. Miller" <davem@davemloft.net>
-CC: sparclinux@vger.kernel.org
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
----
- scripts/gdb/linux/cpus.py  | 68 ++++++++++++++++++++++++++++++++++++++++++++++
- scripts/gdb/vmlinux-gdb.py |  1 +
- 2 files changed, 69 insertions(+)
- create mode 100644 scripts/gdb/linux/cpus.py
+--- a/arch/arm/mm/proc-v7-3level.S
++++ b/arch/arm/mm/proc-v7-3level.S
+@@ -146,7 +146,6 @@ ENDPROC(cpu_v7_set_pte_ext)
+        mov     \tmp, \ttbr1, lsr #(32 - ARCH_PGD_SHIFT)        @ upper bits
+        mov     \ttbr1, \ttbr1, lsl #ARCH_PGD_SHIFT             @ lower bits
+        addls   \ttbr1, \ttbr1, #TTBR1_OFFSET
+-       adcls   \tmp, \tmp, #0
+        mcrr    p15, 1, \ttbr1, \tmp, c2                        @ load TTBR1
+        mov     \tmp, \ttbr0, lsr #(32 - ARCH_PGD_SHIFT)        @ upper bits
+        mov     \ttbr0, \ttbr0, lsl #ARCH_PGD_SHIFT             @ lower bits
 
-diff --git a/scripts/gdb/linux/cpus.py b/scripts/gdb/linux/cpus.py
-new file mode 100644
-index 0000000..18337e0
---- /dev/null
-+++ b/scripts/gdb/linux/cpus.py
-@@ -0,0 +1,68 @@
-+#
-+# gdb helper commands and functions for Linux kernel debugging
-+#
-+#  per-cpu tools
-+#
-+# Copyright (c) Siemens AG, 2011-2013
-+#
-+# Authors:
-+#  Jan Kiszka <jan.kiszka@siemens.com>
-+#
-+# This work is licensed under the terms of the GNU GPL version 2.
-+#
-+
-+import gdb
-+
-+from linux import tasks, utils
-+
-+
-+MAX_CPUS = 4096
-+
-+
-+def get_current_cpu():
-+    if utils.get_gdbserver_type() == utils.GDBSERVER_QEMU:
-+        return gdb.selected_thread().num - 1
-+    elif utils.get_gdbserver_type() == utils.GDBSERVER_KGDB:
-+        tid = gdb.selected_thread().ptid[2]
-+        if tid > (0x100000000 - MAX_CPUS - 2):
-+            return 0x100000000 - tid - 2
-+        else:
-+            return tasks.get_thread_info(tasks.get_task_by_pid(tid))['cpu']
-+    else:
-+        raise gdb.GdbError("Sorry, obtaining the current CPU is not yet "
-+                           "supported with this gdb server.")
-+
-+
-+def per_cpu(var_ptr, cpu):
-+    if cpu == -1:
-+        cpu = get_current_cpu()
-+    if utils.is_target_arch("sparc:v9"):
-+        offset = gdb.parse_and_eval(
-+            "trap_block[{0}].__per_cpu_base".format(str(cpu)))
-+    else:
-+        try:
-+            offset = gdb.parse_and_eval(
-+                "__per_cpu_offset[{0}]".format(str(cpu)))
-+        except gdb.error:
-+            # !CONFIG_SMP case
-+            offset = 0
-+    pointer = var_ptr.cast(utils.get_long_type()) + offset
-+    return pointer.cast(var_ptr.type).dereference()
-+
-+
-+class PerCpu(gdb.Function):
-+    """Return per-cpu variable.
-+
-+$lx_per_cpu("VAR"[, CPU]): Return the per-cpu variable called VAR for the
-+given CPU number. If CPU is omitted, the CPU of the current context is used.
-+Note that VAR has to be quoted as string."""
-+
-+    def __init__(self):
-+        super(PerCpu, self).__init__("lx_per_cpu")
-+
-+    def invoke(self, var_name, cpu=-1):
-+        var_ptr = gdb.parse_and_eval("&" + var_name.string())
-+        return per_cpu(var_ptr, cpu)
-+
-+
-+PerCpu()
-diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
-index 4d7eb2c..4848928 100644
---- a/scripts/gdb/vmlinux-gdb.py
-+++ b/scripts/gdb/vmlinux-gdb.py
-@@ -27,3 +27,4 @@ else:
-     import linux.modules
-     import linux.dmesg
-     import linux.tasks
-+    import linux.cpus
--- 
-1.8.1.1.298.ge7eed54
 
+> Thanks
+> Jassi
