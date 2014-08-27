@@ -1,113 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965288AbaH0XOK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 19:14:10 -0400
-Received: from mail-bl2lp0211.outbound.protection.outlook.com ([207.46.163.211]:34123
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S965033AbaH0XOI convert rfc822-to-8bit (ORCPT
+	id S965481AbaH0XPI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 19:15:08 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:50296 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965351AbaH0XOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 19:14:08 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Sitsofe Wheeler <sitsofe@gmail.com>
-CC: Dexuan Cui <decui@microsoft.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PANIC, hyperv] BUG: unable to handle kernel paging request at
- ffff880077800004 (hv_ringbuffer_write)
-Thread-Topic: [PANIC, hyperv] BUG: unable to handle kernel paging request at
- ffff880077800004 (hv_ringbuffer_write)
-Thread-Index: AQHPvFjYjJn6yhiZAUmfcA+tXSCe25vhYa6AgAA9PQCAARoEAIABlgcAgAANEQCAAAyZgIAAIPwAgAAi6gCAABhF8IAAVx2AgAABQrA=
-Date: Wed, 27 Aug 2014 23:13:47 +0000
-Message-ID: <ec859d8c8f8743a0b72e5e578472f45d@BY2PR0301MB0711.namprd03.prod.outlook.com>
-References: <20140820092630.GA1478@sucs.org>
- <EE124450C0AAF944A40DD71E61F878C994F314@SINEX14MBXC417.southpacific.corp.microsoft.com>
- <20140825174132.GA17681@sucs.org>
- <EE124450C0AAF944A40DD71E61F878C995E93E@SINEX14MBXC419.southpacific.corp.microsoft.com>
- <20140827104408.GC1827@sucs.org>
- <EE124450C0AAF944A40DD71E61F878C996493E@SINEX14MBXC419.southpacific.corp.microsoft.com>
- <20140827121559.GA14286@sucs.org>
- <EE124450C0AAF944A40DD71E61F878C9965238@SINEX14MBXC419.southpacific.corp.microsoft.com>
- <20140827161900.GA25326@sucs.org>
- <51ae44fcae424365a6d78f3597175d77@BY2PR0301MB0711.namprd03.prod.outlook.com>
- <20140827225739.GA24590@sucs.org>
-In-Reply-To: <20140827225739.GA24590@sucs.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [2001:4898:80e0:ee43::3]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-x-forefront-prvs: 0316567485
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(24454002)(51704005)(199003)(377454003)(189002)(13464003)(86612001)(87936001)(15395725005)(77982001)(15202345003)(79102001)(21056001)(101416001)(33646002)(106116001)(81342001)(92566001)(106356001)(105586002)(76176999)(85852003)(77096002)(81542001)(95666004)(76482001)(74316001)(99286002)(1411001)(54356999)(50986999)(15975445006)(83072002)(110136001)(99396002)(19580395003)(108616004)(74502001)(31966008)(74662001)(19580405001)(93886004)(4396001)(85306004)(83322001)(76576001)(80022001)(2656002)(90102001)(46102001)(107046002)(86362001)(64706001)(20776003)(7059011)(3826002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR0301MB0711;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 27 Aug 2014 19:14:23 -0400
+Date: Wed, 27 Aug 2014 16:12:43 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hugh Dickins <hughd@google.com>, Peter Feiner <pfeiner@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Pavel Emelyanov <xemul@parallels.com>, Jamie Liu <jamieliu@google.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [PATCH v5] mm: softdirty: enable write notifications on VMAs
+ after VM_SOFTDIRTY cleared
+In-Reply-To: <20140826155351.GC8952@moon>
+Message-ID: <alpine.LSU.2.11.1408271512090.7961@eggly.anvils>
+References: <1408571182-28750-1-git-send-email-pfeiner@google.com> <1408937681-1472-1-git-send-email-pfeiner@google.com> <alpine.LSU.2.11.1408252142380.2073@eggly.anvils> <20140826064952.GR25918@moon> <20140826140419.GA10625@node.dhcp.inet.fi>
+ <20140826141914.GA8952@moon> <20140826145612.GA11226@node.dhcp.inet.fi> <20140826151813.GB8952@moon> <20140826154355.GA11464@node.dhcp.inet.fi> <20140826155351.GC8952@moon>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.onmicrosoft.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 26 Aug 2014, Cyrill Gorcunov wrote:
+> On Tue, Aug 26, 2014 at 06:43:55PM +0300, Kirill A. Shutemov wrote:
+> > On Tue, Aug 26, 2014 at 07:18:13PM +0400, Cyrill Gorcunov wrote:
+> > > > Basically, it's safe if only soft-dirty is allowed to modify vm_flags
+> > > > without down_write(). But why is soft-dirty so special?
+> > > 
+> > > because how we use this bit, i mean in normal workload this bit won't
+> > > be used intensively i think so it's not widespread in kernel code
+> > 
+> > Weak argument to me.
 
+Yes.  However rarely it's modified, we don't want any chance of it
+corrupting another flag.
 
-> -----Original Message-----
-> From: Sitsofe Wheeler [mailto:sitsofe@gmail.com]
-> Sent: Wednesday, August 27, 2014 3:58 PM
-> To: KY Srinivasan
-> Cc: Dexuan Cui; Greg Kroah-Hartman; Haiyang Zhang;
-> devel@linuxdriverproject.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PANIC, hyperv] BUG: unable to handle kernel paging request at
-> ffff880077800004 (hv_ringbuffer_write)
+VM_SOFTDIRTY is special in the sense that it's maintained in a very
+different way from the other VM_flags.  If we had a little alignment
+padding space somewhere in struct vm_area_struct, I think I'd jump at
+Kirill's suggestion to move it out of vm_flags and into a new field:
+that would remove some other special casing, like the vma merge issue.
+
+But I don't think we have such padding space, and we'd prefer not to
+bloat struct vm_area_struct for it; so maybe it should stay for now.
+Besides, with Peter's patch, we're also talking about the locking on
+modifications to vm_page_prot, aren't we?
+
+> > 
+> > What about walk through vmas twice: first with down_write() to modify
+> > vm_flags and vm_page_prot, then downgrade_write() and do
+> > walk_page_range() on every vma?
 > 
-> On Wed, Aug 27, 2014 at 06:45:55PM +0000, KY Srinivasan wrote:
-> >
-> > > -----Original Message-----
-> > > From: Sitsofe Wheeler [mailto:sitsofe@gmail.com]
-> > > Sent: Wednesday, August 27, 2014 9:19 AM
-> > >
-> > > > BTW, with the patch below, hyperv_fb can work now, BUT,
-> > > > *occasionally*,
-> > > > storvsc_probe() -> ... -> vmbus_open() -> can fail due to
-> > > > HV_STATUS_INVALID_ALIGNMENT...
-> > >
-> > > I applied your new patch on top of KY's pieces (it applied cleanly)
-> > > and while it doesn't blow up, one warning is printed out and the UP
-> > > boot seemed to stall after input: TPPS/2 message (but pressing
-> > > ctrl-alt-delete allows the system to reboot cleanly).
-> >
-> > First let me thank you guys for looking into this issue. Looking at
-> > your dmesg, it looked like storvsc probe failed as Dexuan had seen.
-> > Since the failure appears to be alignment related, perhaps we could
-> > test with allocating a page all the time (and getting rid of the
-> > kmalloc). Sitsofe, here is a patch based on Dexuan's patch. If this
-> > works, I will probably minimize failure cases by pre-allocating
-> > per-cpu pages for this.:
-> 
-> After some modifications to apply on top of your previous patches applying
-> this latest patch has cured the issues surrounding hyperv_fb issues on boot.
-> The only issue seen on boot now is similar to
-> https://lkml.org/lkml/2014/8/19/227 ...
+> I still it's undeeded,
 
-That is good to hear. I was under the impression that this issue would be
-resolved with all the cleanup we have done. The last patch-set I posted
-earlier today has the fix for vmbus_open  bug that Dexuan had identified.
+Yes, so long as nothing else is doing the same.
+No bug yet, that we can see, but a bug in waiting.
 
-If you could try with the BUG_ON elimination patch-set I sent out earlier
-today with the fix in hv.c that I had sent that would be great.  
-> 
-> How come previous alignment efforts weren't working out?
-I have chosen to always allocate a page and so alignment won't be
-an issue. I want to eliminate failure in this path and so, I will most likely
-do a per-cpu pre-allocation of this buffer.
+> but for sure using write-lock/downgrade won't hurt,
+> so no argues from my side.
 
-Thank you very much for taking the time to help us debug these issues.
+Yes, Kirill's two-stage suggestion seems the best:
 
-Regards,
+down_write
+quickly scan vmas clearing VM_SOFT_DIRTY and updating vm_page_prot
+downgrade_write (or up_write, down_read?)
+slowly walk page tables write protecting and clearing soft-dirty on ptes
+up_read
 
-K. Y
-> 
-> --
-> Sitsofe | http://sucs.org/~sits/
+But please don't mistake me for someone who has a good grasp of
+soft-dirty: I don't.
+
+Hugh
