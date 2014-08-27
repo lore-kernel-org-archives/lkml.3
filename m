@@ -1,48 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932850AbaH0JUO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 05:20:14 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:62451 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932180AbaH0JUL (ORCPT
+	id S932942AbaH0JVw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 05:21:52 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41487 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932180AbaH0JVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 05:20:11 -0400
-Date: Wed, 27 Aug 2014 10:20:02 +0100
-From: Sitsofe Wheeler <sitsofe@gmail.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com
-Subject: Re: [PATCH 0/4] Drivers: hv: vmbus: Eliminate calls to BUG_ON()
-Message-ID: <20140827092002.GA1827@sucs.org>
-References: <1409079922-16560-1-git-send-email-kys@microsoft.com>
+	Wed, 27 Aug 2014 05:21:51 -0400
+Date: Wed, 27 Aug 2014 02:21:30 -0700
+From: tip-bot for Dan Carpenter <tipbot@zytor.com>
+Message-ID: <tip-88299c9bdb109e0d95abdca648065631ff91b2cb@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        gorcunov@openvz.org, tglx@linutronix.de, viro@zeniv.linux.org.uk,
+        dan.carpenter@oracle.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        gorcunov@openvz.org, tglx@linutronix.de, viro@zeniv.linux.org.uk,
+        dan.carpenter@oracle.com
+In-Reply-To: <20140801082848.GF28869@mwanda>
+References: <20140801082848.GF28869@mwanda>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/core] timerfd: Remove an always true check
+Git-Commit-ID: 88299c9bdb109e0d95abdca648065631ff91b2cb
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1409079922-16560-1-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 12:05:22PM -0700, K. Y. Srinivasan wrote:
-> Cleanup the channel management code and eliminate calls to BUG_ON()
-> 
-> K. Y. Srinivasan (4):
->   Drivers: hv: vmbus: Cleanup vmbus_post_msg()
->   Drivers: hv: vmbus: Cleanup vmbus_teardown_gpadl()
->   Drivers: hv: vmbus: Cleanup vmbus_close_internal()
->   Drivers: hv: vmbus: Cleanup vmbus_establish_gpadl()
+Commit-ID:  88299c9bdb109e0d95abdca648065631ff91b2cb
+Gitweb:     http://git.kernel.org/tip/88299c9bdb109e0d95abdca648065631ff91b2cb
+Author:     Dan Carpenter <dan.carpenter@oracle.com>
+AuthorDate: Fri, 1 Aug 2014 11:28:48 +0300
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 27 Aug 2014 11:17:48 +0200
 
-I've applied these on top of 3.17-rc1 and my Hyper-V guest with most
-verification on bar DEBUG_PAGEALLOC boots without issue so long as I
-have more than one CPU assigned (that issue is being investigated in
-https://lkml.org/lkml/2014/8/26/271, [PANIC, hyperv] BUG: unable to
-handle kernel paging request at ffff880077800004 (hv_ringbuffer_write)).
+timerfd: Remove an always true check
 
-With DEBUG_PAGEALLOC on I hit https://lkml.org/lkml/2014/8/19/227 (BUG:
-unable to handle kernel paging request at ffff8801f3febe63
-(netvsc_select_queue)) but that's different to the above BUG_ONs.
+We would have returned -EINVAL earlier if ticks wasn't set.
 
--- 
-Sitsofe | http://sucs.org/~sits/
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+Link: http://lkml.kernel.org/r/20140801082848.GF28869@mwanda
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+
+---
+ fs/timerfd.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/fs/timerfd.c b/fs/timerfd.c
+index 80c3502..b46ffa9 100644
+--- a/fs/timerfd.c
++++ b/fs/timerfd.c
+@@ -333,8 +333,7 @@ static long timerfd_ioctl(struct file *file, unsigned int cmd, unsigned long arg
+ 		spin_lock_irq(&ctx->wqh.lock);
+ 		if (!timerfd_canceled(ctx)) {
+ 			ctx->ticks = ticks;
+-			if (ticks)
+-				wake_up_locked(&ctx->wqh);
++			wake_up_locked(&ctx->wqh);
+ 		} else
+ 			ret = -ECANCELED;
+ 		spin_unlock_irq(&ctx->wqh.lock);
