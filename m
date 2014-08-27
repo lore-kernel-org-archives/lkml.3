@@ -1,138 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936031AbaH0VqZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 17:46:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57752 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932246AbaH0VqY (ORCPT
+	id S936041AbaH0VrN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 17:47:13 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:38118 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932246AbaH0VrL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 17:46:24 -0400
-Date: Wed, 27 Aug 2014 14:46:22 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Matthew Wilcox <willy@linux.intel.com>
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v10 00/21] Support ext4 on NV-DIMMs
-Message-Id: <20140827144622.ed81195a1d94799bb57a3207@linux-foundation.org>
-In-Reply-To: <20140827211250.GH3285@linux.intel.com>
-References: <cover.1409110741.git.matthew.r.wilcox@intel.com>
-	<20140827130613.c8f6790093d279a447196f17@linux-foundation.org>
-	<20140827211250.GH3285@linux.intel.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Aug 2014 17:47:11 -0400
+Date: Wed, 27 Aug 2014 14:47:06 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>,
+        amit.shah@redhat.com
+Subject: Re: [PATCH] rcu: Make nocb leader kthreads process pending callbacks
+ after spawning
+Message-ID: <20140827214706.GO2663@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1409172220-2804-1-git-send-email-bobby.prani@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409172220-2804-1-git-send-email-bobby.prani@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14082721-7164-0000-0000-00000424D9A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Aug 2014 17:12:50 -0400 Matthew Wilcox <willy@linux.intel.com> wrote:
-
-> On Wed, Aug 27, 2014 at 01:06:13PM -0700, Andrew Morton wrote:
-> > On Tue, 26 Aug 2014 23:45:20 -0400 Matthew Wilcox <matthew.r.wilcox@intel.com> wrote:
-> > 
-> > > One of the primary uses for NV-DIMMs is to expose them as a block device
-> > > and use a filesystem to store files on the NV-DIMM.  While that works,
-> > > it currently wastes memory and CPU time buffering the files in the page
-> > > cache.  We have support in ext2 for bypassing the page cache, but it
-> > > has some races which are unfixable in the current design.  This series
-> > > of patches rewrite the underlying support, and add support for direct
-> > > access to ext4.
-> > 
-> > Sat down to read all this but I'm finding it rather unwieldy - it's
-> > just a great blob of code.  Is there some overall
-> > what-it-does-and-how-it-does-it roadmap?
+On Wed, Aug 27, 2014 at 04:43:40PM -0400, Pranith Kumar wrote:
+> The nocb callbacks generated before the nocb kthreads are spawned are
+> enqueued in the nocb queue for later processing. Commit fbce7497ee5af ("rcu:
+> Parallelize and economize NOCB kthread wakeups") introduced nocb leader kthreads
+> which checked the nocb_leader_wake flag to see if there were any such pending
+> callbacks. A case was reported in which newly spawned leader kthreads were not
+> processing the pending callbacks as this flag was not set, which led to a boot
+> hang.
 > 
-> The overall goal is to map persistent memory / NV-DIMMs directly to
-> userspace.  We have that functionality in the XIP code, but the way
-> it's structured is unsuitable for filesystems like ext4 & XFS, and
-> it has some pretty ugly races.
-
-When thinking about looking at the patchset I wonder things like how
-does mmap work, in what situations does a page get COWed, how do we
-handle partial pages at EOF, etc.  I guess that's all part of the
-filemap_xip legacy, the details of which I've totally forgotten.
-
-> Patches 1 & 3 are simply bug-fixes.  They should go in regardless of
-> the merits of anything else in this series.
+> The following commit ensures that the newly spawned nocb kthreads process the
+> pending callbacks by allowing the kthreads to run immediately after spawning
+> instead of waiting. This is done by inverting the logic of nocb_leader_wake
+> tests to nocb_leader_sleep which allows us to use the default initialization of
+> this flag to 0 to let the kthreads run.
 > 
-> Patch 2 changes the API for the direct_access block_device_operation so
-> it can report more than a single page at a time.  As the series evolved,
-> this work also included moving support for partitioning into the VFS
-> where it belongs, handling various error cases in the VFS and so on.
-> 
-> Patch 4 is an optimisation.  It's poor form to make userspace take two
-> faults for the same dereference.
-> 
-> Patch 5 gives us a VFS flag for the DAX property, which lets us get rid of
-> the get_xip_mem() method later on.
-> 
-> Patch 6 is also prep work; Al Viro liked it enough that it's now in
-> his tree.
-> 
-> The new DAX code is then dribbled in over patches 7-11, split up by
-> functional area.  At each stage, the ext2-xip code is converted over to
-> the new DAX code.
-> 
-> Patches 12-18 delete the remnants of the old XIP code, and fix the things
-> in ext2 that Jan didn't like when he reviewed them for ext4 :-)
-> 
-> Patches 19 & 20 are the work to make ext4 use DAX.
-> 
-> Patch 21 is some final cleanup of references to the old XIP code, renaming
-> it all to DAX.
+> Reported-by: Amit Shah <amit.shah@redhat.com>
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+> Link: http://www.spinics.net/lists/kernel/msg1802899.html
 
-hrm.
+Thank you, Pranith, queued.  I have also backported to v3.17-rc2,
+and am testing both.  A sneak preview of the backport is shown below,
+please let me know if you see any problems with it.  (The reason for
+the backport is to submit to 3.17 as a fix for a regression.)
 
-> > Some explanation of why one would use ext4 instead of, say,
-> > suitably-modified ramfs/tmpfs/rd/etc?
-> 
-> ramfs and tmpfs really rely on the page cache.  They're not exactly
-> built for permanence either.  brd also relies on the page cache, and
-> there's a clear desire to use a filesystem instead of a block device
-> for all the usual reasons of access permissions, grow/shrink, etc.
-> 
-> Some people might want to use XFS instead of ext4.  We're starting with
-> ext4, but we've been keeping an eye on what other filesystems might want
-> to use.  btrfs isn't going to use the DAX code, but some of the other
-> pieces will probably come in handy.
-> 
-> There are also at least three people working on their own filesystems
-> specially designed for persistent memory.  I wish them all the best
-> ... but I'd like to get this infrastructure into place.
+							Thanx, Paul
 
-This is the sort of thing which first-timers (this one at least) like
-to see in [0/n].
+------------------------------------------------------------------------
 
-> > Performance testing results?
-> 
-> I haven't been running any performance tests.  What sort of performance
-> tests would be interesting for you to see?
+rcu: Make nocb leader kthreads process pending callbacks after spawning
 
-fs benchmarks?  `dd' would be a good start ;)
+The nocb callbacks generated before the nocb kthreads are spawned are
+enqueued in the nocb queue for later processing. Commit fbce7497ee5af ("rcu:
+Parallelize and economize NOCB kthread wakeups") introduced nocb leader kthreads
+which checked the nocb_leader_wake flag to see if there were any such pending
+callbacks. A case was reported in which newly spawned leader kthreads were not
+processing the pending callbacks as this flag was not set, which led to a boot
+hang.
 
-I assume (because I wasn't told!) that there are two objectives here:
+The following commit ensures that the newly spawned nocb kthreads process the
+pending callbacks by allowing the kthreads to run immediately after spawning
+instead of waiting. This is done by inverting the logic of nocb_leader_wake
+tests to nocb_leader_sleep which allows us to use the default initialization of
+this flag to 0 to let the kthreads run.
 
-1) reduce memory consumption by not maintaining pagecache and
-2) reduce CPU cost by avoiding the double-copies.
+Reported-by: Amit Shah <amit.shah@redhat.com>
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+Link: http://www.spinics.net/lists/kernel/msg1802899.html
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-These things are pretty easily quantified.  And really they must be
-quantified as part of the developer testing, because if you find
-they've worsened then holy cow, what went wrong.
+diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
+index 71e64c718f75..6a86eb7bac45 100644
+--- a/kernel/rcu/tree.h
++++ b/kernel/rcu/tree.h
+@@ -358,7 +358,7 @@ struct rcu_data {
+ 	struct rcu_head **nocb_gp_tail;
+ 	long nocb_gp_count;
+ 	long nocb_gp_count_lazy;
+-	bool nocb_leader_wake;		/* Is the nocb leader thread awake? */
++	bool nocb_leader_sleep;		/* Is the nocb leader thread asleep? */
+ 	struct rcu_data *nocb_next_follower;
+ 					/* Next follower in wakeup chain. */
+ 
+diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+index 00dc411e9676..a7997e272564 100644
+--- a/kernel/rcu/tree_plugin.h
++++ b/kernel/rcu/tree_plugin.h
+@@ -2074,9 +2074,9 @@ static void wake_nocb_leader(struct rcu_data *rdp, bool force)
+ 
+ 	if (!ACCESS_ONCE(rdp_leader->nocb_kthread))
+ 		return;
+-	if (!ACCESS_ONCE(rdp_leader->nocb_leader_wake) || force) {
++	if (ACCESS_ONCE(rdp_leader->nocb_leader_sleep) || force) {
+ 		/* Prior xchg orders against prior callback enqueue. */
+-		ACCESS_ONCE(rdp_leader->nocb_leader_wake) = true;
++		ACCESS_ONCE(rdp_leader->nocb_leader_sleep) = false;
+ 		wake_up(&rdp_leader->nocb_wq);
+ 	}
+ }
+@@ -2253,7 +2253,7 @@ wait_again:
+ 	if (!rcu_nocb_poll) {
+ 		trace_rcu_nocb_wake(my_rdp->rsp->name, my_rdp->cpu, "Sleep");
+ 		wait_event_interruptible(my_rdp->nocb_wq,
+-					 ACCESS_ONCE(my_rdp->nocb_leader_wake));
++				!ACCESS_ONCE(my_rdp->nocb_leader_sleep));
+ 		/* Memory barrier handled by smp_mb() calls below and repoll. */
+ 	} else if (firsttime) {
+ 		firsttime = false; /* Don't drown trace log with "Poll"! */
+@@ -2292,12 +2292,12 @@ wait_again:
+ 		schedule_timeout_interruptible(1);
+ 
+ 		/* Rescan in case we were a victim of memory ordering. */
+-		my_rdp->nocb_leader_wake = false;
+-		smp_mb();  /* Ensure _wake false before scan. */
++		my_rdp->nocb_leader_sleep = true;
++		smp_mb();  /* Ensure _sleep true before scan. */
+ 		for (rdp = my_rdp; rdp; rdp = rdp->nocb_next_follower)
+ 			if (ACCESS_ONCE(rdp->nocb_head)) {
+ 				/* Found CB, so short-circuit next wait. */
+-				my_rdp->nocb_leader_wake = true;
++				my_rdp->nocb_leader_sleep = false;
+ 				break;
+ 			}
+ 		goto wait_again;
+@@ -2307,17 +2307,17 @@ wait_again:
+ 	rcu_nocb_wait_gp(my_rdp);
+ 
+ 	/*
+-	 * We left ->nocb_leader_wake set to reduce cache thrashing.
+-	 * We clear it now, but recheck for new callbacks while
++	 * We left ->nocb_leader_sleep unset to reduce cache thrashing.
++	 * We set it now, but recheck for new callbacks while
+ 	 * traversing our follower list.
+ 	 */
+-	my_rdp->nocb_leader_wake = false;
+-	smp_mb(); /* Ensure _wake false before scan of ->nocb_head. */
++	my_rdp->nocb_leader_sleep = true;
++	smp_mb(); /* Ensure _sleep true before scan of ->nocb_head. */
+ 
+ 	/* Each pass through the following loop wakes a follower, if needed. */
+ 	for (rdp = my_rdp; rdp; rdp = rdp->nocb_next_follower) {
+ 		if (ACCESS_ONCE(rdp->nocb_head))
+-			my_rdp->nocb_leader_wake = true; /* No need to wait. */
++			my_rdp->nocb_leader_sleep = false;/* No need to sleep.*/
+ 		if (!rdp->nocb_gp_head)
+ 			continue; /* No CBs, so no need to wake follower. */
+ 
 
-> > Carsten Otte wrote filemap_xip.c and may be a useful reviewer of this
-> > work.
-> 
-> I cc'd him on some earlier versions and didn't hear anything back.  It felt
-> rude to keep plying him with 20+ patches every month.
-
-OK.
-
-> > All the patch subjects violate Documentation/SubmittingPatches
-> > section 15 ;)
-> 
-> errr ... which bit?  I used git format-patch to create them.
-
-None of the patch titles identify the subsystem(s) which they're
-hitting.  eg, "Introduce IS_DAX(inode)" is an ext2 patch, but nobody
-would know that from browsing the titles.
