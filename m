@@ -1,83 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935409AbaH0RYR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 13:24:17 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:39492 "EHLO
+	id S935556AbaH0RZp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 13:25:45 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:42588 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933776AbaH0RYP (ORCPT
+	with ESMTP id S935238AbaH0RZn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 13:24:15 -0400
-Message-ID: <53FE143A.6030404@infradead.org>
-Date: Wed, 27 Aug 2014 10:24:10 -0700
+	Wed, 27 Aug 2014 13:25:43 -0400
+Message-ID: <53FE1492.10408@infradead.org>
+Date: Wed, 27 Aug 2014 10:25:38 -0700
 From: Randy Dunlap <rdunlap@infradead.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Jos=E9_Manuel_Alarc=F3n_Rold=E1n?= 
-	<jose.alarcon.roldan@gmail.com>,
-        wsa@the-dreams.de
-CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c documentation: rename variable "register" to "reg"
-References: <CAGhpvopFxfu0hNjtAiUnQ0+trL45c5MexiWSx3v9GDNuQqzoxQ@mail.gmail.com>
-In-Reply-To: <CAGhpvopFxfu0hNjtAiUnQ0+trL45c5MexiWSx3v9GDNuQqzoxQ@mail.gmail.com>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+CC: Sudip Mukherjee <sudipm.mukherjee@gmail.com>,
+        Jim Davis <jim.epost@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-media <linux-media@vger.kernel.org>,
+        linux-doc <linux-doc@vger.kernel.org>
+Subject: Re: randconfig build error with next-20140826, in Documentation/video4linux
+References: <CA+r1Zhh5n3p8Zg+Uvqvjeb3S859iejXkqStnnOuezTTm9UCT8g@mail.gmail.com> <20140827105838.GA6522@sudip-PC> <53FDECD5.7000804@infradead.org> <20140827141746.1ea8c11c.m.chehab@samsung.com>
+In-Reply-To: <20140827141746.1ea8c11c.m.chehab@samsung.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/14 01:40, José Manuel Alarcón Roldán wrote:
-> The example code provided with the i2c device interface documentation
-> won't compile since it uses the reserved word "register" to name a
-> variable.
+On 08/27/14 10:17, Mauro Carvalho Chehab wrote:
+> Em Wed, 27 Aug 2014 07:36:05 -0700
+> Randy Dunlap <rdunlap@infradead.org> escreveu:
 > 
-> The compiler fails with this error message:
+>> On 08/27/14 03:58, Sudip Mukherjee wrote:
+>>> On Tue, Aug 26, 2014 at 09:50:43AM -0700, Jim Davis wrote:
+>>>> Building with the attached random configuration file,
+>>>>
+>>>> ERROR: "vb2_ops_wait_finish"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "vb2_ops_wait_prepare"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "v4l2_event_unsubscribe"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "v4l2_ctrl_subscribe_event"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "v4l2_ctrl_log_status"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "vb2_ioctl_streamoff"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "vb2_ioctl_streamon"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "vb2_ioctl_create_bufs"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "vb2_ioctl_dqbuf"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "vb2_ioctl_expbuf"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "vb2_ioctl_qbuf"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "vb2_ioctl_querybuf"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "vb2_ioctl_reqbufs"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "vb2_fop_release"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "v4l2_fh_open" [Documentation/video4linux/v4l2-pci-skeleton.ko]
+>>>> undefined!
+>>>> ERROR: "vb2_fop_mmap" [Documentation/video4linux/v4l2-pci-skeleton.ko]
+>>>> undefined!
+>>>> ERROR: "video_ioctl2" [Documentation/video4linux/v4l2-pci-skeleton.ko]
+>>>> undefined!
+>>>> ERROR: "vb2_fop_poll" [Documentation/video4linux/v4l2-pci-skeleton.ko]
+>>>> undefined!
+>>>> ERROR: "vb2_fop_read" [Documentation/video4linux/v4l2-pci-skeleton.ko]
+>>>> undefined!
+>>>> ERROR: "vb2_buffer_done"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "__video_register_device"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "video_device_release_empty"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "vb2_dma_contig_init_ctx"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "vb2_queue_init"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "vb2_dma_contig_memops"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "v4l2_ctrl_new_std"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "v4l2_ctrl_handler_init_class"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "v4l2_device_register"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "v4l2_match_dv_timings"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "v4l2_find_dv_timings_cap"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "v4l2_valid_dv_timings"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "v4l2_enum_dv_timings_cap"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "video_devdata"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "v4l2_device_unregister"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "vb2_dma_contig_cleanup_ctx"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "v4l2_ctrl_handler_free"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> ERROR: "video_unregister_device"
+>>>> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
+>>>> make[1]: *** [__modpost] Error 1
+>>>> make: *** [modules] Error 2
+>>>>
+>>>> Similar to a build error from January 7th:
+>>>> https://lists.01.org/pipermail/kbuild-all/2014-January/002566.html
+>>>
+>>> Hi,
+>>> I tried to build next-20140826 with your given config file . But for me everything was fine.
+>>> And I was just wondering why the skeleton code in the Documentation is building ?
+>>
+>> It builds if the Kconfig symbol BUILD_DOCSRC is enabled.
+>> Building of this module was just added to linux-next.
 > 
->  error: expected identifier or '(' before '=' token
->    __u8 register = 0x20; /* Device register to access */
->                  ^
-> 
-> Rename the variable "register" to simply "reg"
-> in the example code.
-> 
-> Signed-off-by: Jose Alarcon Roldan <jose.alarcon.roldan@gmail.com>
-> ---
->  Documentation/i2c/dev-interface | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/Documentation/i2c/dev-interface b/Documentation/i2c/dev-interface
-> index 3e742ba..f8b1e50 100644
-> --- a/Documentation/i2c/dev-interface
-> +++ b/Documentation/i2c/dev-interface
-> @@ -57,12 +57,12 @@ Well, you are all set up now. You can now use
-> SMBus commands or plain
->  I2C to communicate with your device. SMBus commands are preferred if
->  the device supports them. Both are illustrated below.
-> 
-> -  __u8 register = 0x10; /* Device register to access */
-> +  __u8 reg = 0x10; /* Device register to access */
->    __s32 res;
->    char buf[10];
-> 
->    /* Using SMBus commands */
-> -  res = i2c_smbus_read_word_data(file, register);
-> +  res = i2c_smbus_read_word_data(file, reg);
->    if (res < 0) {
->      /* ERROR HANDLING: i2c transaction failed */
->    } else {
-> @@ -70,8 +70,8 @@ the device supports them. Both are illustrated below.
->    }
-> 
->    /* Using I2C Write, equivalent of
-> -     i2c_smbus_write_word_data(file, register, 0x6543) */
-> -  buf[0] = register;
-> +     i2c_smbus_write_word_data(file, reg, 0x6543) */
-> +  buf[0] = reg;
->    buf[1] = 0x43;
->    buf[2] = 0x65;
->    if (write(file, buf, 3) ! =3) {
+> It makes sense to add a depends on BUILD_DOCSRC, PCI and MEDIA_V4L2
+> inside the docs Makefile, instead of moving the Kconfig to 
+> drivers/media, IMHO.
 
-Since you are fixing build problems:  Does that last line compile OK for you?
-It does not for me.
+No, the dependencies should be in a Kconfig file, not in a Makefile.
+If you insist, I'll look into moving the Kconfig contents into Documentation/.
+
 
 -- 
 ~Randy
