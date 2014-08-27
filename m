@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758008AbaH0Cas (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 22:30:48 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:39201 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757840AbaH0Cak (ORCPT
+	id S932648AbaH0Cfn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 22:35:43 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:37286 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757879AbaH0Caq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 22:30:40 -0400
+	Tue, 26 Aug 2014 22:30:46 -0400
 From: Alexei Starovoitov <ast@plumgrid.com>
 To: "David S. Miller" <davem@davemloft.net>
 Cc: Ingo Molnar <mingo@kernel.org>,
@@ -21,9 +21,9 @@ Cc: Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RFC v7 net-next 16/28] bpf: split eBPF out of NET
-Date: Tue, 26 Aug 2014 19:29:30 -0700
-Message-Id: <1409106582-10095-17-git-send-email-ast@plumgrid.com>
+Subject: [PATCH RFC v7 net-next 18/28] tracing: allow eBPF programs call printk()
+Date: Tue, 26 Aug 2014 19:29:32 -0700
+Message-Id: <1409106582-10095-19-git-send-email-ast@plumgrid.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1409106582-10095-1-git-send-email-ast@plumgrid.com>
 References: <1409106582-10095-1-git-send-email-ast@plumgrid.com>
@@ -31,76 +31,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-let eBPF have its own CONFIG_BPF, so that tracing and other subsystems don't
-need to depend on all of NET
+limited printk() with %d %u %x %p modifiers only
 
 Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 ---
- arch/Kconfig      |    3 +++
- kernel/Makefile   |    2 +-
- kernel/bpf/core.c |   12 ++++++++++++
- net/Kconfig       |    1 +
- 4 files changed, 17 insertions(+), 1 deletion(-)
+ include/uapi/linux/bpf.h |    1 +
+ kernel/trace/bpf_trace.c |   61 ++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 62 insertions(+)
 
-diff --git a/arch/Kconfig b/arch/Kconfig
-index 0eae9df35b88..80a72f6f6b60 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -333,6 +333,9 @@ config SECCOMP_FILTER
+diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
+index 55adff33083e..1ec3d293d14e 100644
+--- a/include/uapi/linux/bpf.h
++++ b/include/uapi/linux/bpf.h
+@@ -430,6 +430,7 @@ enum bpf_func_id {
+ 	BPF_FUNC_fetch_u8,        /* u8 bpf_fetch_u8(void *unsafe_ptr) */
+ 	BPF_FUNC_memcmp,          /* int bpf_memcmp(void *unsafe_ptr, void *safe_ptr, int size) */
+ 	BPF_FUNC_dump_stack,      /* void bpf_dump_stack(void) */
++	BPF_FUNC_printk,          /* int bpf_printk(const char *fmt, int fmt_size, ...) */
+ 	__BPF_FUNC_MAX_ID,
+ };
  
- 	  See Documentation/prctl/seccomp_filter.txt for details.
- 
-+config BPF
-+	boolean
-+
- config HAVE_CC_STACKPROTECTOR
- 	bool
- 	help
-diff --git a/kernel/Makefile b/kernel/Makefile
-index dc5c77544fd6..17ea6d4a9a24 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -86,7 +86,7 @@ obj-$(CONFIG_RING_BUFFER) += trace/
- obj-$(CONFIG_TRACEPOINTS) += trace/
- obj-$(CONFIG_IRQ_WORK) += irq_work.o
- obj-$(CONFIG_CPU_PM) += cpu_pm.o
--obj-$(CONFIG_NET) += bpf/
-+obj-$(CONFIG_BPF) += bpf/
- 
- obj-$(CONFIG_PERF_EVENTS) += events/
- 
-diff --git a/kernel/bpf/core.c b/kernel/bpf/core.c
-index 0434c2170f2b..c17ba0ef3dcf 100644
---- a/kernel/bpf/core.c
-+++ b/kernel/bpf/core.c
-@@ -537,3 +537,15 @@ void bpf_prog_free(struct bpf_prog *fp)
- 	bpf_jit_free(fp);
+diff --git a/kernel/trace/bpf_trace.c b/kernel/trace/bpf_trace.c
+index b4751e2c0d52..ff98be5a24d6 100644
+--- a/kernel/trace/bpf_trace.c
++++ b/kernel/trace/bpf_trace.c
+@@ -60,6 +60,60 @@ static u64 bpf_dump_stack(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5)
+ 	return 0;
  }
- EXPORT_SYMBOL_GPL(bpf_prog_free);
-+
-+/* To emulate LD_ABS/LD_IND instructions __sk_run_filter() may call
-+ * skb_copy_bits(), so provide a weak definition for it in NET-less config.
-+ * seccomp_check_filter() verifies that seccomp filters are not using
-+ * LD_ABS/LD_IND instructions. Other BPF users (like tracing filters)
-+ * must not use these instructions unless ctx==skb
+ 
++/* limited printk()
++ * only %d %u %x %ld %lu %lx %lld %llu %llx %p conversion specifiers allowed
 + */
-+int __weak skb_copy_bits(const struct sk_buff *skb, int offset, void *to,
-+			 int len)
++static u64 bpf_printk(u64 r1, u64 fmt_size, u64 r3, u64 r4, u64 r5)
 +{
-+	return -EFAULT;
++	char *fmt = (char *) (long) r1;
++	int fmt_cnt = 0;
++	bool mod_l[3] = {};
++	int i;
++
++	/* bpf_check() guarantees that fmt points to bpf program stack and
++	 * fmt_size bytes of it were initialized by bpf program
++	 */
++	if (fmt[fmt_size - 1] != 0)
++		return -EINVAL;
++
++	/* check format string for allowed specifiers */
++	for (i = 0; i < fmt_size; i++)
++		if (fmt[i] == '%') {
++			if (fmt_cnt >= 3)
++				return -EINVAL;
++			i++;
++			if (i >= fmt_size)
++				return -EINVAL;
++
++			if (fmt[i] == 'l') {
++				mod_l[fmt_cnt] = true;
++				i++;
++				if (i >= fmt_size)
++					return -EINVAL;
++			} else if (fmt[i] == 'p') {
++				mod_l[fmt_cnt] = true;
++				fmt_cnt++;
++				continue;
++			}
++
++			if (fmt[i] == 'l') {
++				mod_l[fmt_cnt] = true;
++				i++;
++				if (i >= fmt_size)
++					return -EINVAL;
++			}
++
++			if (fmt[i] != 'd' && fmt[i] != 'u' && fmt[i] != 'x')
++				return -EINVAL;
++			fmt_cnt++;
++		}
++
++	return __trace_printk((unsigned long) __builtin_return_address(3), fmt,
++			      mod_l[0] ? r3 : (u32) r3,
++			      mod_l[1] ? r4 : (u32) r4,
++			      mod_l[2] ? r5 : (u32) r5);
 +}
-diff --git a/net/Kconfig b/net/Kconfig
-index 4051fdfa4367..9a99e16d6f28 100644
---- a/net/Kconfig
-+++ b/net/Kconfig
-@@ -6,6 +6,7 @@ menuconfig NET
- 	bool "Networking support"
- 	select NLATTR
- 	select GENERIC_NET_UTILS
-+	select BPF
- 	---help---
- 	  Unless you really know what you are doing, you should say Y here.
- 	  The reason is that some programs need kernel networking support even
++
+ static struct bpf_func_proto tracing_filter_funcs[] = {
+ #define FETCH(SIZE)				\
+ 	[BPF_FUNC_fetch_##SIZE] = {		\
+@@ -86,6 +140,13 @@ static struct bpf_func_proto tracing_filter_funcs[] = {
+ 		.gpl_only = false,
+ 		.ret_type = RET_VOID,
+ 	},
++	[BPF_FUNC_printk] = {
++		.func = bpf_printk,
++		.gpl_only = true,
++		.ret_type = RET_INTEGER,
++		.arg1_type = ARG_PTR_TO_STACK,
++		.arg2_type = ARG_CONST_STACK_SIZE,
++	},
+ 	[BPF_FUNC_map_lookup_elem] = {
+ 		.func = bpf_map_lookup_elem,
+ 		.gpl_only = false,
 -- 
 1.7.9.5
 
