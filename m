@@ -1,100 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756527AbaH0CCv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 22:02:51 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:64222 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753484AbaH0CCt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 22:02:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140826095804.GB23445@arm.com>
-References: <1405708100-13604-1-git-send-email-zlim.lnx@gmail.com>
-	<20140721091623.GA16122@arm.com>
-	<CAMEtUuyC+MykPDO0ghTc=oex7KPLEy=BLRgWBdW+qJY7JXQmDQ@mail.gmail.com>
-	<20140723103219.GA1366@localhost>
-	<CABg9mcvU44W5AkPLtyswNWdDdF_nnqvLyKqv7RWhpuRRSWDW3A@mail.gmail.com>
-	<20140826095804.GB23445@arm.com>
-Date: Tue, 26 Aug 2014 19:02:48 -0700
-Message-ID: <CABg9mcsE9J_whihpwZjvU-qYt6RFOAj8inQwQzjgZ6EivUVZSw@mail.gmail.com>
-Subject: Re: [PATCH 00/14] arm64: eBPF JIT compiler
-From: Z Lim <zlim.lnx@gmail.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        Alexei Starovoitov <ast@plumgrid.com>, Jiang Liu <liuj97@gmail.com>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1756612AbaH0CI2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 22:08:28 -0400
+Received: from plane.gmane.org ([80.91.229.3]:54659 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753836AbaH0CI0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Aug 2014 22:08:26 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+Mail-Followup-To: linux-kernel@vger.kernel.org
+To: linux-kernel@vger.kernel.org
+From: rh_ <richard_hubbe11@lavabit.com>
+Subject: Re: [PATCH 0/2] mmc: rtsx: fix incorrect last byte in R2 response
+Date: Tue, 26 Aug 2014 19:00:10 -0700
+Organization: L2N
+Message-ID: <20140826190010.d94a8296e4f55566ab977a1a@lavabit.com>
+References: <1408082761-15333-1-git-send-email-rogerable@realtek.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: ip70-185-178-95.sb.sd.cox.net
+User-Agent: dsodnetnin
+X-Gmane-NNTP-Posting-Host: EZnn0.37p
+Original-Received: from slem by 1.1 with local
+X-No-Archive: yes
+Archive: no
+X-Archive: encrypt
+X-Operating-System: Barebones_6.1
+X-Gmane-NNTP-Posting-Host: 192.168.1.1
+X-NNTP-Posting-Host: 192.168.1.1
+Mail-Copies-To: never
+X-Archive: expiry=79
+X-Mailer: EZnn0.37u
+X-Newsreader: EZnn0.37u
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will,
+On Fri, 15 Aug 2014 14:05:59 +0800
+<rogerable@realtek.com> wrote:
 
-On Tue, Aug 26, 2014 at 2:58 AM, Will Deacon <will.deacon@arm.com> wrote:
-> Hi Z Lim,
->
-> On Thu, Jul 24, 2014 at 05:55:36AM +0100, Z Lim wrote:
->> On Wed, Jul 23, 2014 at 3:32 AM, Catalin Marinas
->> <catalin.marinas@arm.com> wrote:
->> > On Mon, Jul 21, 2014 at 04:49:29PM +0100, Alexei Starovoitov wrote:
->> >> On Mon, Jul 21, 2014 at 2:16 AM, Will Deacon <will.deacon@arm.com> wrote:
->> >> > On Fri, Jul 18, 2014 at 07:28:06PM +0100, Zi Shen Lim wrote:
->> [...]
->> >> >> This series applies against net-next and is tested working
->> >> >> with lib/test_bpf on ARMv8 Foundation Model.
->> >> >
->> >> > Looks like it works on my Juno board too, so:
->> >> >
->> >> >   Acked-by: Will Deacon <will.deacon@arm.com>
->> >> >
->> >> > for the series.
->> >> >
->> >> > It's a bit late for 3.17 now, so I guess we'll queue this for 3.18 (which
->> >> > also means the dependency on -next isn't an issue). Perhaps you could repost
->> >> > around -rc3?
->> >>
->> >> Thanks for testing! Nice to see it working on real hw.
->> >> I'm not sure why you're proposing a 4+ week delay. The patches
->> >> will rot instead of getting used and tested. Imo it makes sense to
->> >> get them into net-next now for 3.17.
->> >> JIT is disabled by sysctl by default anyway.
->> >
->> > We normally like some patches (especially new functionality) to sit in
->> > linux-next for a while before the mering window (ideally starting with
->> > -rc4 or -rc5). We are at -rc6 already, so getting close to the 3.17
->> > merging window.
->> >
->> > Another aspect is that the arm64/bpf branch depends on the net tree, so
->> > it can't easily go in via the arm64 tree for 3.17 (3.18 would not be a
->> > problem).
->>
->> Hi Catalin, I take it you prefer this series going through arm64 tree,
->> targeting 3.18, is that right?
->>
->> I understand your preference to have it sitting in linux-next for a
->> longer period for arm64 material, I'll repost this again after 3.17 so
->> it gets more exposure in linux-next.
->
-> Any chance you could post a new version of this, based on a 3.17 -rc,
-> please? Whilst your current patches apply, I get a bunch of errors if I try
-> to build them.
+> From: Roger Tseng <rogerable@realtek.com>
+> 
+> (The original patch for PCI and USB was splitted here to make it
+> easier for stable tree.)
+> 
+> Current code erroneously fill the last byte of R2 response with an
+> undefined value. In addition, the controller actually 'offloads' the
+> last byte (CRC7, end bit) while receiving R2 response and thus it's
+> impossible to get the actual value. This could cause mmc stack to
+> obtain inconsistent CID from the same card after resume and
+> misidentify it as a different card.
 
-Sure. I just rebased onto -rc2 and fixed up as necessary due to
-changes introduced in net.
-I'll post a v2 shortly.
+What does "resume" mean in this context?  Good to see this was
+finally fixed. This problem has caused copious log messages regarding
+hotplug events and I don't have any debug or extra logging enabled.
 
-Thanks for the reminder :)
+I don't know what triggered the message to get logged as my system
+doesn't suspend/resume so I wonder what in your investigation makes
+you believe this is a symptom of "resume".
 
-z
 
->
-> Cheers,
->
-> Will
+> 
+> Fix by assigning dummy CRC and end bit: {7'b0, 1} = 0x1 to the last
+> byte of R2.
+> 
+> Roger Tseng (2):
+>   mmc: rtsx_pci_sdmmc: fix incorrect last byte in R2 response
+>   mmc: rtsx_usb_sdmmc: fix incorrect last byte in R2 response
+> 
+>  drivers/mmc/host/rtsx_pci_sdmmc.c |    7 +++++++
+>  drivers/mmc/host/rtsx_usb_sdmmc.c |    7 +++++++
+>  2 files changed, 14 insertions(+)
+> 
+> -- 
+> 1.7.10.4
+
+
+-- 
+
+
