@@ -1,138 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933006AbaH0EfE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 00:35:04 -0400
-Received: from mx1.scotdoyle.com ([23.226.141.211]:50815 "EHLO
-	mx1.scotdoyle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932430AbaH0Ee7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 00:34:59 -0400
-Date: Wed, 27 Aug 2014 04:31:56 +0000 (UTC)
-From: Scot Doyle <lkml14@scotdoyle.com>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        Stefan Berger <stefanb@linux.vnet.ibm.com>,
-        Luigi Semenzato <semenzato@google.com>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [RFC PATCH v2] tpm_tis: verify interrupt during init
-In-Reply-To: <20140825182414.GB1298@obsidianresearch.com>
-Message-ID: <alpine.LNX.2.11.1408270410190.701@localhost.localdomain>
-References: <alpine.LNX.2.11.1408220043560.1360@localhost.localdomain> <20140822160626.GA8477@obsidianresearch.com> <alpine.LNX.2.11.1408221924070.1046@localhost.localdomain> <20140822203241.GB1733@obsidianresearch.com> <alpine.LNX.2.11.1408250629110.1207@localhost.localdomain>
- <20140825182414.GB1298@obsidianresearch.com>
-User-Agent: Alpine 2.11 (LNX 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S933068AbaH0Ef3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 00:35:29 -0400
+Received: from mga02.intel.com ([134.134.136.20]:37328 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932430AbaH0EfF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 00:35:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,408,1406617200"; 
+   d="scan'208";a="563955292"
+From: Matthew Wilcox <matthew.r.wilcox@intel.com>
+To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com,
+        Ross Zwisler <ross.zwisler@linux.intel.com>
+Subject: [PATCH v10 19/21] xip: Add xip_zero_page_range
+Date: Tue, 26 Aug 2014 23:45:39 -0400
+Message-Id: <80c8efc903971eb3a338f262fbd3ef135db63eb0.1409110741.git.matthew.r.wilcox@intel.com>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <cover.1409110741.git.matthew.r.wilcox@intel.com>
+References: <cover.1409110741.git.matthew.r.wilcox@intel.com>
+In-Reply-To: <cover.1409110741.git.matthew.r.wilcox@intel.com>
+References: <cover.1409110741.git.matthew.r.wilcox@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Aug 2014, Jason Gunthorpe wrote:
-> On Mon, Aug 25, 2014, Scot Doyle wrote:
->> 3. Custom SeaBIOS. Blacklist the tpm_tis module so that it doesn't load
->>    and therefore doesn't issue startup(clear) to the TPM chip.
->
-> It seems to me at least in this case you should be able to get rid of
-> the IRQ entry, people are going to be flashing the custom SeaBIOS
-> anyhow.
+This new function allows us to support hole-punch for XIP files by zeroing
+a partial page, as opposed to the xip_truncate_page() function which can
+only truncate to the end of the page.  Reimplement xip_truncate_page() as
+a macro that calls xip_zero_page_range().
 
-The person building many of these custom SeaBIOS packages has removed the
-TPM section from the DSDT, so this may be addressed.
-
-
-On Mon, 25 Aug 2014, Jason Gunthorpe wrote:
-> I think you'll have to directly test in the tis driver if the
-> interrupt is working.
->
-> The ordering in the TIS driver is wrong, interrupts should be turned
-> on before any TPM commands are issued. This is what other drivers are
-> doing.
->
-> If you fix this, tis can then just count interrupts recieved and check
-> if that is 0 to detect failure and then turn them off.
-
-How about something like this?
-
-It doesn't enable stock SeaBIOS machines to suspend/resume before the 30 
-second interrupt timeout, unless using interrupts=0 or force=1.
-
+Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+[ported to 3.13-rc2]
+Signed-off-by: Ross Zwisler <ross.zwisler@linux.intel.com>
 ---
+ Documentation/filesystems/dax.txt |  1 +
+ fs/dax.c                          | 20 ++++++++++++++------
+ include/linux/fs.h                |  9 ++++++++-
+ 3 files changed, 23 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
-index 2c46734..ae701d8 100644
---- a/drivers/char/tpm/tpm_tis.c
-+++ b/drivers/char/tpm/tpm_tis.c
-@@ -493,6 +493,8 @@ static irqreturn_t tis_int_probe(int irq, void *dev_id)
- 	return IRQ_HANDLED;
- }
-
-+static bool interrupted = false;
-+
- static irqreturn_t tis_int_handler(int dummy, void *dev_id)
+diff --git a/Documentation/filesystems/dax.txt b/Documentation/filesystems/dax.txt
+index 635adaa..ebcd97f 100644
+--- a/Documentation/filesystems/dax.txt
++++ b/Documentation/filesystems/dax.txt
+@@ -62,6 +62,7 @@ Filesystem support consists of
+   for fault and page_mkwrite (which should probably call dax_fault() and
+   dax_mkwrite(), passing the appropriate get_block() callback)
+ - calling dax_truncate_page() instead of block_truncate_page() for DAX files
++- calling dax_zero_page_range() instead of zero_user() for DAX files
+ - ensuring that there is sufficient locking between reads, writes,
+   truncates and page faults
+ 
+diff --git a/fs/dax.c b/fs/dax.c
+index d54f7d3..96c4fed 100644
+--- a/fs/dax.c
++++ b/fs/dax.c
+@@ -445,13 +445,16 @@ int dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
+ EXPORT_SYMBOL_GPL(dax_fault);
+ 
+ /**
+- * dax_truncate_page - handle a partial page being truncated in a DAX file
++ * dax_zero_page_range - zero a range within a page of a DAX file
+  * @inode: The file being truncated
+  * @from: The file offset that is being truncated to
++ * @length: The number of bytes to zero
+  * @get_block: The filesystem method used to translate file offsets to blocks
+  *
+- * Similar to block_truncate_page(), this function can be called by a
+- * filesystem when it is truncating an DAX file to handle the partial page.
++ * This function can be called by a filesystem when it is zeroing part of a
++ * page in a DAX file.  This is intended for hole-punch operations.  If
++ * you are truncating a file, the helper function dax_truncate_page() may be
++ * more convenient.
+  *
+  * We work in terms of PAGE_CACHE_SIZE here for commonality with
+  * block_truncate_page(), but we could go down to PAGE_SIZE if the filesystem
+@@ -459,12 +462,12 @@ EXPORT_SYMBOL_GPL(dax_fault);
+  * block size is smaller than PAGE_SIZE, we have to zero the rest of the page
+  * since the file might be mmaped.
+  */
+-int dax_truncate_page(struct inode *inode, loff_t from, get_block_t get_block)
++int dax_zero_page_range(struct inode *inode, loff_t from, unsigned length,
++							get_block_t get_block)
  {
- 	struct tpm_chip *chip = dev_id;
-@@ -511,6 +513,8 @@ static irqreturn_t tis_int_handler(int dummy, void *dev_id)
- 		for (i = 0; i < 5; i++)
- 			if (check_locality(chip, i) >= 0)
- 				break;
-+	if (interrupt & TPM_INTF_CMD_READY_INT)
-+		interrupted = true;
- 	if (interrupt &
- 	    (TPM_INTF_LOCALITY_CHANGE_INT | TPM_INTF_STS_VALID_INT |
- 	     TPM_INTF_CMD_READY_INT))
-@@ -612,12 +616,6 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
- 		goto out_err;
+ 	struct buffer_head bh;
+ 	pgoff_t index = from >> PAGE_CACHE_SHIFT;
+ 	unsigned offset = from & (PAGE_CACHE_SIZE-1);
+-	unsigned length = PAGE_CACHE_ALIGN(from) - from;
+ 	int err;
+ 
+ 	/* Block boundary? Nothing to do */
+@@ -481,9 +484,14 @@ int dax_truncate_page(struct inode *inode, loff_t from, get_block_t get_block)
+ 		err = dax_get_addr(&bh, &addr, inode->i_blkbits);
+ 		if (err < 0)
+ 			return err;
++		/*
++		 * ext4 sometimes asks to zero past the end of a block.  It
++		 * really just wants to zero to the end of the block.
++		 */
++		length = min_t(unsigned, length, PAGE_CACHE_SIZE - offset);
+ 		memset(addr + offset, 0, length);
  	}
-
--	if (tpm_do_selftest(chip)) {
--		dev_err(dev, "TPM self test failed\n");
--		rc = -ENODEV;
--		goto out_err;
--	}
--
- 	/* INTERRUPT Setup */
- 	init_waitqueue_head(&chip->vendor.read_queue);
- 	init_waitqueue_head(&chip->vendor.int_queue);
-@@ -693,7 +691,7 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
- 			free_irq(i, chip);
- 		}
- 	}
--	if (chip->vendor.irq) {
-+	if (interrupts && chip->vendor.irq) {
- 		iowrite8(chip->vendor.irq,
- 			 chip->vendor.iobase +
- 			 TPM_INT_VECTOR(chip->vendor.locality));
-@@ -719,6 +717,32 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
- 		}
- 	}
-
-+	/* Test interrupt and/or prepare for later save state */
-+	interrupted = false;
-+	if (tpm_do_selftest(chip)) {
-+		if (!interrupts || interrupted) {
-+			dev_err(dev, "TPM self test failed\n");
-+			rc = -ENODEV;
-+			goto out_err;
-+		} else {
-+			/* Turn off interrupt */
-+			iowrite32(intmask,
-+				  chip->vendor.iobase +
-+				  TPM_INT_ENABLE(chip->vendor.locality));
-+			free_irq(chip->vendor.irq, chip);
+ 
+ 	return 0;
+ }
+-EXPORT_SYMBOL_GPL(dax_truncate_page);
++EXPORT_SYMBOL_GPL(dax_zero_page_range);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index e6b48cc..b0078df 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2490,6 +2490,7 @@ extern int nonseekable_open(struct inode * inode, struct file * filp);
+ 
+ #ifdef CONFIG_FS_DAX
+ int dax_clear_blocks(struct inode *, sector_t block, long size);
++int dax_zero_page_range(struct inode *, loff_t from, unsigned len, get_block_t);
+ int dax_truncate_page(struct inode *, loff_t from, get_block_t);
+ ssize_t dax_do_io(int rw, struct kiocb *, struct inode *, struct iov_iter *,
+ 		loff_t, get_block_t, dio_iodone_t, int flags);
+@@ -2501,7 +2502,8 @@ static inline int dax_clear_blocks(struct inode *i, sector_t blk, long sz)
+ 	return 0;
+ }
+ 
+-static inline int dax_truncate_page(struct inode *i, loff_t frm, get_block_t gb)
++static inline int dax_zero_page_range(struct inode *inode, loff_t from,
++						unsigned len, get_block_t gb)
+ {
+ 	return 0;
+ }
+@@ -2514,6 +2516,11 @@ static inline ssize_t dax_do_io(int rw, struct kiocb *iocb,
+ }
+ #endif
+ 
++/* Can't be a function because PAGE_CACHE_SIZE is defined in pagemap.h */
++#define dax_truncate_page(inode, from, get_block)	\
++	dax_zero_page_range(inode, from, PAGE_CACHE_SIZE, get_block)
 +
-+			/* Retry in polling mode */
-+			chip->vendor.irq = 0;
-+			if (tpm_do_selftest(chip)) {
-+				dev_err(dev, "TPM self test failed\n");
-+				rc = -ENODEV;
-+				goto out_err;
-+			} else {
-+				dev_err(dev, "ACPI DSDT entry incorrect, polling instead\n");
-+			}
-+		}
-+	}
 +
- 	INIT_LIST_HEAD(&chip->vendor.list);
- 	mutex_lock(&tis_lock);
- 	list_add(&chip->vendor.list, &tis_chips);
+ #ifdef CONFIG_BLOCK
+ typedef void (dio_submit_t)(int rw, struct bio *bio, struct inode *inode,
+ 			    loff_t file_offset);
+-- 
+2.0.0
 
