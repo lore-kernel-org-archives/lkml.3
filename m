@@ -1,49 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754422AbaH0IiU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 04:38:20 -0400
-Received: from nasmtp01.atmel.com ([192.199.1.246]:40029 "EHLO
-	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752644AbaH0IiR (ORCPT
+	id S932627AbaH0Ijd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 04:39:33 -0400
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:50659 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932267AbaH0Ij2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 04:38:17 -0400
-X-Greylist: delayed 305 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Aug 2014 04:38:17 EDT
-From: Josh Wu <josh.wu@atmel.com>
-To: <linux-kernel@vger.kernel.org>, <linux-iio@vger.kernel.org>,
-        <jic23@kernel.org>
-CC: <alexandre.belloni@free-electrons.com>, <maxime.ripard@free-electrons.com>,
-        <nicolas.ferre@atmel.com>, Josh Wu <josh.wu@atmel.com>
-Subject: [PATCH] iio: adc: at91: make the function handle_adc_eoc_trigger() static
-Date: Wed, 27 Aug 2014 16:31:11 +0800
-Message-ID: <1409128271-14856-1-git-send-email-josh.wu@atmel.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 27 Aug 2014 04:39:28 -0400
+Date: Wed, 27 Aug 2014 09:39:21 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Gyungoh Yoo <gyungoh@gmail.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        grant.likely@linaro.org, sameo@linux.intel.com,
+        jack.yoo@skyworksinc.com, jason@lakedaemon.net,
+        heiko.stuebner@bqreaders.com, florian.vaussard@epfl.ch,
+        thierry.reding@gmail.com, andrew@lunn.ch, silvio.fricke@gmail.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] Adding Skyworks SKY81452 MFD driver
+Message-ID: <20140827083921.GB26707@lee--X1>
+References: <1407488899-31065-1-git-send-email-jack.yoo@skyworksinc.com>
+ <20140821094502.GV4266@lee--X1>
+ <20140825070608.GA6230@jack-ThinkPad-T520>
+ <20140826082258.GC9574@lee--X1>
+ <20140827040629.GA3401@jack-ThinkPad-T520>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140827040629.GA3401@jack-ThinkPad-T520>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The handle_adc_eoc_trigger() in only used in at91_adc.c. So make it
-static.
+On Wed, 27 Aug 2014, Gyungoh Yoo wrote:
+> On Tue, Aug 26, 2014 at 09:22:58AM +0100, Lee Jones wrote:
+> > On Mon, 25 Aug 2014, Gyungoh Yoo wrote:
+> > > On Thu, Aug 21, 2014 at 10:45:02AM +0100, Lee Jones wrote:
+> > > > When you send patch-sets, you should send them connected to one
+> > > > another AKA threaded.  That way, when we're reviewing we can look at
+> > > > the other patches in the set for reference.  See the man page for `git
+> > > > send-email` for details.
+> > > > 
+> > > > <commit log>
+> > > > 
+> > > > > Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
+> > > > > ---
+> > 
+> > [...]
+> > 
+> > > > > +static int sky81452_register_devices(struct device *dev,
+> > > > > +		const struct sky81452_platform_data *pdata)
+> > > > > +{
+> > > > > +	struct mfd_cell cells[] = {
+> > > > > +		{
+> > > > > +			.name = "sky81452-bl",
+> > > > > +			.platform_data = pdata->bl_pdata,
+> > > > > +			.pdata_size = sizeof(*pdata->bl_pdata),
+> > > > 
+> > > > Have you tested this with DT?
+> > > > 
+> > > > You're not passing the compatible string and not using
+> > > > of_platform_populate() so I'm struggling to see how it would work
+> > > > properly.
+> > > 
+> > > sky81452-bl and regulator-sky81452 is parsing the information
+> > > in regulator node of its parent node. So I thought these 2 drivers
+> > > don't need compatible attribute. That is what it didn't have
+> > > compatible string.
+> > > Is is mandatory that all drivers should have compatible attribute?
+> > 
+> > How do they obtain their DT nodes?
+> 
+> The backlight driver which is one of the child driver is obtain its DT node like this
+> 
+> np = of_get_child_by_name(dev->parent->of_node, "backlight");
 
-Signed-off-by: Josh Wu <josh.wu@atmel.com>
----
- drivers/iio/adc/at91_adc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+The MFD core provides infrastructure so you don't have to do this.
 
-diff --git a/drivers/iio/adc/at91_adc.c b/drivers/iio/adc/at91_adc.c
-index 772e869..7807e0e 100644
---- a/drivers/iio/adc/at91_adc.c
-+++ b/drivers/iio/adc/at91_adc.c
-@@ -266,7 +266,7 @@ static irqreturn_t at91_adc_trigger_handler(int irq, void *p)
- }
- 
- /* Handler for classic adc channel eoc trigger */
--void handle_adc_eoc_trigger(int irq, struct iio_dev *idev)
-+static void handle_adc_eoc_trigger(int irq, struct iio_dev *idev)
- {
- 	struct at91_adc_state *st = iio_priv(idev);
- 
+Just place the compatible string in 'struct mfd_cell cells[]' and the
+core will match and populate dev->of_node for you.
+
+> > [...]
+> > 
+> > > > > +	return mfd_add_devices(dev, -1, cells, ARRAY_SIZE(cells),
+> > > > > +			NULL, 0, NULL);
+> > > > 
+> > > > This doesn't really need to be in a function of its own.  Please put
+> > > > it in .probe().  Also check for the return value and present the user
+> > > > with an error message if it fails.
+> > > 
+> > > I think this need to be, in case of !CONFIG_OF.
+> > > Can you please explain more in details?
+> > 
+> > Then how to you obtain the shared register map you created?
+> 
+> regmap is stored in driver data in MFD.
+> 
+> i2c_set_clientdata(client, regmap);
+> 
+> The child drivers obain the regmap from the parent.
+> 
+> struct regmap *regmap = dev_get_drvdata(dev->parent);
+
+Ah yes, of course you do.  Silly of me to miss this.
+
+I also just noticed that you're also manually populating the
+chlidren's platform data.  It's easier if you do this from the child
+device drivers:
+
+  const struct sky81452_platform_data ppdata = dev_get_platdata(dev->parent);
+  const struct sky81452_bl_platform_data = pdata = ppdata->bl_pdata;
+
 -- 
-1.9.1
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
