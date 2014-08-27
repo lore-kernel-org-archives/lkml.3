@@ -1,355 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756721AbaH0BrF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 21:47:05 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:33830 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753971AbaH0BrD (ORCPT
+	id S1756753AbaH0BsM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 21:48:12 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:59488 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754720AbaH0BsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 21:47:03 -0400
-From: Hengjinxiao <hjxiaohust@gmail.com>
-To: virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
-Cc: mst@redhat.com, rusty@rustcorp.com.au, famz@redhat.com,
-        jasowang@redhat.com
-Subject: [PATCH 1/1] add selftest for virtio-net
-Date: Wed, 27 Aug 2014 09:45:21 +0800
-Message-Id: <1409103921-2879-1-git-send-email-hjxiaohust@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	Tue, 26 Aug 2014 21:48:10 -0400
+From: Kever Yang <ykai007@gmail.com>
+X-Google-Original-From: Kever Yang <kever.yang@rock-chips.com>
+To: heiko@sntech.de
+Cc: dianders@chromium.org, sonnyrao@chromium.org, addy.ke@rock-chips.com,
+        cf@rock-chips.com, xjq@rock-chips.com, wulf@rock-chips.com,
+        lyz@rock-chips.com, hj@rock-chips.com, huangtao@rock-chips.com,
+        Kever Yang <kever.yang@rock-chips.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: dts: make arch-timer always on in rk3288 soc
+Date: Wed, 27 Aug 2014 09:47:40 +0800
+Message-Id: <1409104060-26294-1-git-send-email-kever.yang@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Selftest is an important part of network driver, this patch adds selftest for
-virtio-net, including loopback test, negotiate test and reset test. Loopback 
-test checks whether virtio-net can send and receive packets normally. Negotiate test
-executes feature negotiation between virtio-net driver in Guest OS and virtio-net 
-device in Host OS. Reset test resets virtio-net.
+We need use the hrtimer, which need the arch-timer to be 'always-on'
 
-Signed-off-by: Hengjinxiao <hjxiaohust@gmail.com>
-
+Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
 ---
- drivers/net/virtio_net.c        | 233 +++++++++++++++++++++++++++++++++++++++-
- include/uapi/linux/virtio_net.h |   9 ++
- 2 files changed, 241 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 59caa06..f83f6e4 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -28,6 +28,7 @@
- #include <linux/cpu.h>
- #include <linux/average.h>
- #include <net/busy_poll.h>
-+#include <linux/pci.h>
+ arch/arm/boot/dts/rk3288.dtsi | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+index 5950b0a..698e6ea 100644
+--- a/arch/arm/boot/dts/rk3288.dtsi
++++ b/arch/arm/boot/dts/rk3288.dtsi
+@@ -76,6 +76,7 @@
+ 			     <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_HIGH)>,
+ 			     <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_HIGH)>;
+ 		clock-frequency = <24000000>;
++		always-on;
+ 	};
  
- static int napi_weight = NAPI_POLL_WEIGHT;
- module_param(napi_weight, int, 0444);
-@@ -51,6 +52,23 @@ module_param(gso, bool, 0444);
- #define MERGEABLE_BUFFER_ALIGN max(L1_CACHE_BYTES, 256)
- 
- #define VIRTNET_DRIVER_VERSION "1.0.0"
-+#define __VIRTNET_TESTING  0
-+
-+enum {
-+	VIRTNET_LOOPBACK_TEST,
-+	VIRTNET_FEATURE_NEG_TEST,
-+	VIRTNET_RESET_TEST,
-+};
-+
-+static const struct {
-+	const char string[ETH_GSTRING_LEN];
-+} virtnet_gstrings_test[] = {
-+	[VIRTNET_LOOPBACK_TEST]	= { "loopback test   (offline)" },
-+	[VIRTNET_FEATURE_NEG_TEST]	= { "negotiate test  (offline)" },
-+	[VIRTNET_RESET_TEST]	= { "reset test     (offline)" },
-+};
-+
-+#define VIRTNET_NUM_TEST	ARRAY_SIZE(virtnet_gstrings_test)
- 
- struct virtnet_stats {
- 	struct u64_stats_sync tx_syncp;
-@@ -104,6 +122,8 @@ struct virtnet_info {
- 	struct send_queue *sq;
- 	struct receive_queue *rq;
- 	unsigned int status;
-+	unsigned long flags;
-+	atomic_t lb_count;
- 
- 	/* Max # of queue pairs supported by the device */
- 	u16 max_queue_pairs;
-@@ -436,6 +456,19 @@ err_buf:
- 	return NULL;
- }
- 
-+void virtnet_check_lb_frame(struct virtnet_info *vi,
-+				   struct sk_buff *skb)
-+{
-+	unsigned int frame_size = skb->len;
-+
-+	if (*(skb->data + 3) == 0xFF) {
-+		if ((*(skb->data + frame_size / 2 + 10) == 0xBE) &&
-+		   (*(skb->data + frame_size / 2 + 12) == 0xAF)) {
-+			atomic_dec(&vi->lb_count);
-+		}
-+	}
-+}
-+
- static void receive_buf(struct receive_queue *rq, void *buf, unsigned int len)
- {
- 	struct virtnet_info *vi = rq->vq->vdev->priv;
-@@ -485,7 +518,12 @@ static void receive_buf(struct receive_queue *rq, void *buf, unsigned int len)
- 	} else if (hdr->hdr.flags & VIRTIO_NET_HDR_F_DATA_VALID) {
- 		skb->ip_summed = CHECKSUM_UNNECESSARY;
- 	}
--
-+	/* loopback self test for ethtool */
-+	if (test_bit(__VIRTNET_TESTING, &vi->flags)) {
-+		virtnet_check_lb_frame(vi, skb);
-+		dev_kfree_skb_any(skb);
-+		return;
-+	}
- 	skb->protocol = eth_type_trans(skb, dev);
- 	pr_debug("Receiving skb proto 0x%04x len %i type %i\n",
- 		 ntohs(skb->protocol), skb->len, skb->pkt_type);
-@@ -813,6 +851,9 @@ static int virtnet_open(struct net_device *dev)
- {
- 	struct virtnet_info *vi = netdev_priv(dev);
- 	int i;
-+	/* disallow open during test */
-+	if (test_bit(__VIRTNET_TESTING, &vi->flags))
-+		return -EBUSY;
- 
- 	for (i = 0; i < vi->max_queue_pairs; i++) {
- 		if (i < vi->curr_queue_pairs)
-@@ -1363,12 +1404,158 @@ static void virtnet_get_channels(struct net_device *dev,
- 	channels->other_count = 0;
- }
- 
-+static int virtnet_reset(struct virtnet_info *vi);
-+
-+static void virtnet_create_lb_frame(struct sk_buff *skb,
-+					unsigned int frame_size)
-+{
-+	memset(skb->data, 0xFF, frame_size);
-+	frame_size &= ~1;
-+	memset(&skb->data[frame_size / 2], 0xAA, frame_size / 2 - 1);
-+	memset(&skb->data[frame_size / 2 + 10], 0xBE, 1);
-+	memset(&skb->data[frame_size / 2 + 12], 0xAF, 1);
-+}
-+
-+static int virtnet_start_loopback(struct virtnet_info *vi)
-+{
-+	if (!virtnet_send_command(vi, VIRTIO_NET_CTRL_LOOPBACK,
-+				  VIRTIO_NET_CTRL_LOOPBACK_SET, NULL, NULL)) {
-+		dev_warn(&vi->dev->dev, "Failed to set loopback.\n");
-+		return -EINVAL;
-+	}
-+	return 0;
-+}
-+
-+static int virtnet_run_loopback_test(struct virtnet_info *vi)
-+{
-+	int i;
-+	netdev_tx_t rc;
-+	struct sk_buff *skb;
-+	unsigned int size = GOOD_COPY_LEN;
-+
-+	for (i = 0; i < 100; i++) {
-+		skb = netdev_alloc_skb(vi->dev, size);
-+		if (!skb)
-+			return -ENOMEM;
-+
-+		skb->queue_mapping = 0;
-+		skb_put(skb, size);
-+		virtnet_create_lb_frame(skb, size);
-+		rc = start_xmit(skb, vi->dev);
-+		if (rc != NETDEV_TX_OK)
-+			return -EPIPE;
-+		atomic_inc(&vi->lb_count);
-+	}
-+	/* Give queue time to settle before testing results. */
-+	msleep(20);
-+	return atomic_read(&vi->lb_count) ? -EIO : 0;
-+}
-+
-+static int virtnet_stop_loopback(struct virtnet_info *vi)
-+{
-+	if (!virtnet_send_command(vi, VIRTIO_NET_CTRL_LOOPBACK,
-+				  VIRTIO_NET_CTRL_LOOPBACK_UNSET, NULL, NULL)) {
-+		dev_warn(&vi->dev->dev, "Failed to unset loopback.\n");
-+		return -EINVAL;
-+	}
-+	return 0;
-+}
-+
-+static int virtnet_loopback_test(struct virtnet_info *vi, u64 *data)
-+{
-+	*data = virtnet_start_loopback(vi);
-+	if (*data)
-+		goto out;
-+	*data = virtnet_run_loopback_test(vi);
-+	if (*data)
-+		goto out;
-+	*data = virtnet_stop_loopback(vi);
-+out:
-+	return *data;
-+}
-+
-+static void virtnet_feature_neg_test(struct virtnet_info *vi)
-+{
-+	struct virtio_device *dev = vi->vdev;
-+	struct virtio_driver *drv = drv_to_virtio(dev->dev.driver);
-+	int i;
-+	u32 device_features;
-+
-+	/* Figure out what features the device supports. */
-+	device_features = dev->config->get_features(dev);
-+
-+	/* Features supported by both device and driver into dev->features. */
-+	memset(dev->features, 0, sizeof(dev->features));
-+	for (i = 0; i < drv->feature_table_size; i++) {
-+		unsigned int f = drv->feature_table[i];
-+
-+		BUG_ON(f >= 32);
-+		if (device_features & (1 << f))
-+			set_bit(f, dev->features);
-+	}
-+
-+	/* Transport features always preserved to pass to finalize_features. */
-+	for (i = VIRTIO_TRANSPORT_F_START; i < VIRTIO_TRANSPORT_F_END; i++)
-+		if (device_features & (1 << i))
-+			set_bit(i, dev->features);
-+
-+	dev->config->finalize_features(dev);
-+}
-+
-+static int virtnet_get_sset_count(struct net_device *netdev, int sset)
-+{
-+	switch (sset) {
-+	case ETH_SS_TEST:
-+		return VIRTNET_NUM_TEST;
-+	default:
-+		return -EOPNOTSUPP;
-+	}
-+}
-+
-+static void virtnet_get_strings(struct net_device *dev, u32 stringset, u8 *buf)
-+{
-+	switch (stringset) {
-+	case ETH_SS_TEST:
-+		memcpy(buf, &virtnet_gstrings_test,
-+			sizeof(virtnet_gstrings_test));
-+		break;
-+	default:
-+		break;
-+	}
-+}
-+
-+static void virtnet_self_test(struct net_device *netdev,
-+			    struct ethtool_test *eth_test, u64 *data)
-+{
-+	struct virtnet_info *vi = netdev_priv(netdev);
-+	bool if_running = netif_running(netdev);
-+
-+	set_bit(__VIRTNET_TESTING, &vi->flags);
-+	memset(data, 0, sizeof(u64) * VIRTNET_NUM_TEST);
-+
-+	if (eth_test->flags == ETH_TEST_FL_OFFLINE) {
-+		if (!if_running) {
-+			dev_warn(&vi->dev->dev, "Failed to execute self test.\n");
-+			eth_test->flags |= ETH_TEST_FL_FAILED;
-+			return;
-+		}
-+		if (virtnet_loopback_test(vi, &data[VIRTNET_LOOPBACK_TEST]))
-+			eth_test->flags |= ETH_TEST_FL_FAILED;
-+		virtnet_feature_neg_test(vi);
-+		virtnet_reset(vi);
-+	}
-+	clear_bit(__VIRTNET_TESTING, &vi->flags);
-+}
-+
- static const struct ethtool_ops virtnet_ethtool_ops = {
- 	.get_drvinfo = virtnet_get_drvinfo,
- 	.get_link = ethtool_op_get_link,
- 	.get_ringparam = virtnet_get_ringparam,
- 	.set_channels = virtnet_set_channels,
- 	.get_channels = virtnet_get_channels,
-+	.self_test = virtnet_self_test,
-+	.get_strings		= virtnet_get_strings,
-+	.get_sset_count = virtnet_get_sset_count,
- };
- 
- #define MIN_MTU 68
-@@ -1957,6 +2144,50 @@ static int virtnet_restore(struct virtio_device *vdev)
- }
- #endif
- 
-+static int virtnet_reset(struct virtnet_info *vi)
-+{
-+	struct virtio_device *vdev = vi->vdev;
-+	int err, i;
-+	u8 status;
-+
-+	mutex_lock(&vi->config_lock);
-+	vi->config_enable = false;
-+	mutex_unlock(&vi->config_lock);
-+
-+	cancel_delayed_work_sync(&vi->refill);
-+
-+	if (netif_running(vi->dev))
-+		for (i = 0; i < vi->max_queue_pairs; i++) {
-+			napi_disable(&vi->rq[i].napi);
-+			netif_napi_del(&vi->rq[i].napi);
-+		}
-+
-+	remove_vq_common(vi);
-+	flush_work(&vi->config_work);
-+
-+	virtnet_feature_neg_test(vi);
-+	err = init_vqs(vi);
-+	if (err)
-+		return err;
-+	if (netif_running(vi->dev)) {
-+		for (i = 0; i < vi->curr_queue_pairs; i++)
-+			if (!try_fill_recv(&vi->rq[i], GFP_KERNEL))
-+				schedule_delayed_work(&vi->refill, 0);
-+
-+		for (i = 0; i < vi->max_queue_pairs; i++)
-+			virtnet_napi_enable(&vi->rq[i]);
-+	}
-+
-+	mutex_lock(&vi->config_lock);
-+	vi->config_enable = true;
-+	mutex_unlock(&vi->config_lock);
-+
-+	virtnet_set_queues(vi, vi->curr_queue_pairs);
-+	status = vdev->config->get_status(vdev);
-+	vdev->config->set_status(vdev, status | VIRTIO_CONFIG_S_DRIVER_OK);
-+	return 0;
-+}
-+
- static struct virtio_device_id id_table[] = {
- 	{ VIRTIO_ID_NET, VIRTIO_DEV_ANY_ID },
- 	{ 0 },
-diff --git a/include/uapi/linux/virtio_net.h b/include/uapi/linux/virtio_net.h
-index 172a7f0..1f31f90 100644
---- a/include/uapi/linux/virtio_net.h
-+++ b/include/uapi/linux/virtio_net.h
-@@ -201,4 +201,13 @@ struct virtio_net_ctrl_mq {
-  #define VIRTIO_NET_CTRL_MQ_VQ_PAIRS_MIN        1
-  #define VIRTIO_NET_CTRL_MQ_VQ_PAIRS_MAX        0x8000
- 
-+ /*
-+  * Control Loopback(5 is used by VIRTIO_NET_CTRL_GUEST_OFFLOADS in latest qemu)
-+  *
-+  * The command VIRTIO_NET_CTRL_LOOPBACK_SET is used to require the device come
-+  * into loopback state.
-+  */
-+#define VIRTIO_NET_CTRL_LOOPBACK   6
-+ #define VIRTIO_NET_CTRL_LOOPBACK_SET        0
-+ #define VIRTIO_NET_CTRL_LOOPBACK_UNSET        1
- #endif /* _LINUX_VIRTIO_NET_H */
+ 	i2c1: i2c@ff140000 {
 -- 
-1.8.3.2
+1.9.1
 
