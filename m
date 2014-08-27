@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965233AbaH0VEL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 17:04:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56657 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965199AbaH0VEF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 17:04:05 -0400
-Date: Wed, 27 Aug 2014 14:04:05 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] pci/pci-sysfs: Set pci interface in uppercase
-Message-ID: <20140827210405.GA26372@kroah.com>
-References: <1409144277-23379-1-git-send-email-ricardo.ribalda@gmail.com>
- <20140827202301.GA13800@kroah.com>
- <20140827205129.GA25227@kroah.com>
- <CAPybu_2p0UroO=WwUOC3LybPq0HQymoD50v6-6gA+aVweveOHw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPybu_2p0UroO=WwUOC3LybPq0HQymoD50v6-6gA+aVweveOHw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S965218AbaH0VEJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 17:04:09 -0400
+Received: from mga11.intel.com ([192.55.52.93]:50492 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965200AbaH0VEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 17:04:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,413,1406617200"; 
+   d="scan'208";a="473310998"
+From: Andi Kleen <andi@firstfloor.org>
+To: peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
+        tglx@linutronix.de, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 5/5] perf, x86: Use Broadwell cache event list for Haswell
+Date: Wed, 27 Aug 2014 14:03:57 -0700
+Message-Id: <1409173437-3041-6-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1409173437-3041-1-git-send-email-andi@firstfloor.org>
+References: <1409173437-3041-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 27, 2014 at 10:56:57PM +0200, Ricardo Ribalda Delgado wrote:
-> No worries,
-> 
-> I have to mark for stable it or Bjorn? It it is me, how :) ?
+From: Andi Kleen <ak@linux.intel.com>
 
-Bjorn can when he applies it, for details on the process, see the kernel
-file Documentation/stable_kernel_rules.txt
+Use the newly added Broadwell cache event list for Haswell too.
+All Haswell and Broadwell events and offcore masks used in these lists
+are identical.
 
-> ps: For other people reading this thread, the kmod/modprobe is in
-> http://anonscm.debian.org/cgit/users/md/kmod.git/tree/libkmod/libkmod-index.c
-> and handles all the modalias as strings without differing the type.
+However Haswell is very different from the Sandy Bridge
+list that was used previously. That fixes a wide range of mis-counting
+cache events.
 
-That sounds wrong, and odds are, will cause more problems over time.
-These are hex values, not strings :(
+The node events are now only for retired memory events, so prefetching
+and speculative memory accesses are not included. They are PEBS
+capable now, which makes it much easier to sample for them, plus it's
+possible to create address maps with -d.
 
-thanks,
+The prefetch events are gone now. They way the hardware counts
+them is very misleading (some prefetches included, others not), so
+it seemed best to leave them out.
 
-greg k-h
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 077205f..55975ff 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -2692,8 +2692,8 @@ __init int intel_pmu_init(void)
+ 	case 69: /* 22nm Haswell ULT */
+ 	case 70: /* 22nm Haswell Client */
+ 		x86_pmu.late_ack = true;
+-		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids, sizeof(hw_cache_event_ids));
+-		memcpy(hw_cache_extra_regs, snb_hw_cache_extra_regs, sizeof(hw_cache_extra_regs));
++		memcpy(hw_cache_event_ids, bdw_hw_cache_event_ids, sizeof(hw_cache_event_ids));
++		memcpy(hw_cache_extra_regs, bdw_hw_cache_extra_regs, sizeof(hw_cache_extra_regs));
+ 
+ 		intel_pmu_lbr_init_snb();
+ 
+-- 
+1.9.3
+
