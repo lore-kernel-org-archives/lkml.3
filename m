@@ -1,219 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965280AbaH0VER (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 17:04:17 -0400
-Received: from mga02.intel.com ([134.134.136.20]:35233 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965084AbaH0VEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 17:04:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,413,1406617200"; 
-   d="scan'208";a="564381167"
-From: Andi Kleen <andi@firstfloor.org>
-To: peterz@infradead.org
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
-        tglx@linutronix.de, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 3/5] perf, x86: Add Broadwell core support
-Date: Wed, 27 Aug 2014 14:03:55 -0700
-Message-Id: <1409173437-3041-4-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1409173437-3041-1-git-send-email-andi@firstfloor.org>
-References: <1409173437-3041-1-git-send-email-andi@firstfloor.org>
+	id S965295AbaH0VEU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 17:04:20 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36679 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965201AbaH0VEI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 17:04:08 -0400
+Date: Wed, 27 Aug 2014 22:03:50 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <20140827210350.GD17528@sirena.org.uk>
+References: <20140827183733.GN17528@sirena.org.uk>
+ <53FE25EB.7060702@gmail.com>
+ <20140827184705.GO17528@sirena.org.uk>
+ <53FE2901.50508@gmail.com>
+ <20140827191526.GS17528@sirena.org.uk>
+ <53FE2F9E.80501@gmail.com>
+ <20140827194411.GU17528@sirena.org.uk>
+ <53FE387F.3030302@gmail.com>
+ <20140827202554.GW17528@sirena.org.uk>
+ <53FE4286.3050305@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2RIAITazYFwT/YFl"
+Content-Disposition: inline
+In-Reply-To: <53FE4286.3050305@gmail.com>
+X-Cookie: 98% lean.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/1] regulator: max77802: set opmode to normal if off is
+ read from hw
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
 
-Add Broadwell support for Broadwell Client to perf.
-This is very similar to Haswell.  It uses a new cache event table,
-because there were various changes there.
+--2RIAITazYFwT/YFl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The constraint list has one new event that needs to be handled over Haswell.
+On Wed, Aug 27, 2014 at 10:41:42PM +0200, Tomasz Figa wrote:
+> On 27.08.2014 22:25, Mark Brown wrote:
 
-The PEBS event list is the same, so we reuse Haswell's.
+> > Well, presumably the bootloader is going to run again even for a warm
+> > reboot?
 
-v2: Remove unnamed model numbers.
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/kernel/cpu/perf_event_intel.c | 150 +++++++++++++++++++++++++++++++++
- 1 file changed, 150 insertions(+)
+> This is strange, but apparently it's not the case for the hardware which
+> this patch is supposed to fix or at least this is how I understood it.
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 71caf22..7930b56 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -220,6 +220,15 @@ static struct event_constraint intel_hsw_event_constraints[] = {
- 	EVENT_CONSTRAINT_END
- };
- 
-+struct event_constraint intel_bdw_event_constraints[] = {
-+	FIXED_EVENT_CONSTRAINT(0x00c0, 0),	/* INST_RETIRED.ANY */
-+	FIXED_EVENT_CONSTRAINT(0x003c, 1),	/* CPU_CLK_UNHALTED.CORE */
-+	FIXED_EVENT_CONSTRAINT(0x0300, 2),	/* CPU_CLK_UNHALTED.REF */
-+	INTEL_UEVENT_CONSTRAINT(0x148, 0x4),	/* L1D_PEND_MISS.PENDING */
-+	INTEL_EVENT_CONSTRAINT(0xa3, 0x4),	/* CYCLE_ACTIVITY.* */
-+	EVENT_CONSTRAINT_END
-+};
-+
- static u64 intel_pmu_event_map(int hw_event)
- {
- 	return intel_perfmon_event_map[hw_event];
-@@ -415,6 +424,126 @@ static __initconst const u64 snb_hw_cache_event_ids
- 
- };
- 
-+static __initconst const u64 bdw_hw_cache_event_ids
-+				[PERF_COUNT_HW_CACHE_MAX]
-+				[PERF_COUNT_HW_CACHE_OP_MAX]
-+				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
-+{
-+ [ C(L1D ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x81d0, 	/* MEM_UOPS_RETIRED.ALL_LOADS */
-+		[ C(RESULT_MISS)   ] = 0x151, 	/* L1D.REPLACEMENT */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x82d0, 	/* MEM_UOPS_RETIRED.ALL_STORES */
-+		[ C(RESULT_MISS)   ] = 0x0,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x0,
-+	},
-+ },
-+ [ C(L1I ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x280, 	/* ICACHE.MISSES */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x0,
-+	},
-+ },
-+ [ C(LL  ) ] = {
-+	[ C(OP_READ) ] = {
-+		/* OFFCORE_RESPONSE:ALL_DATA_RD|ALL_CODE_RD */
-+		[ C(RESULT_ACCESS) ] = 0x1b7,
-+		/* OFFCORE_RESPONSE:ALL_DATA_RD|ALL_CODE_RD|SUPPLIER_NONE|
-+                   L3_MISS|ANY_SNOOP */
-+		[ C(RESULT_MISS)   ] = 0x1b7,
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x1b7, 	/* OFFCORE_RESPONSE:ALL_RFO */
-+		/* OFFCORE_RESPONSE:ALL_RFO|SUPPLIER_NONE|L3_MISS|ANY_SNOOP */
-+		[ C(RESULT_MISS)   ] = 0x1b7,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x0,
-+	},
-+ },
-+ [ C(DTLB) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x81d0, 	/* MEM_UOPS_RETIRED.ALL_LOADS */
-+		[ C(RESULT_MISS)   ] = 0x108, 	/* DTLB_LOAD_MISSES.MISS_CAUSES_A_WALK */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x82d0, 	/* MEM_UOPS_RETIRED.ALL_STORES */
-+		[ C(RESULT_MISS)   ] = 0x149, 	/* DTLB_STORE_MISSES.MISS_CAUSES_A_WALK */
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x0,
-+	},
-+ },
-+ [ C(ITLB) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x6085, 	/* ITLB_MISSES.STLB_HIT */
-+		[ C(RESULT_MISS)   ] = 0x185, 	/* ITLB_MISSES.MISS_CAUSES_A_WALK */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+ },
-+ [ C(BPU ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0xc4, 	/* BR_INST_RETIRED.ALL_BRANCHES */
-+		[ C(RESULT_MISS)   ] = 0xc5, 	/* BR_MISP_RETIRED.ALL_BRANCHES */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+ },
-+};
-+
-+static __initconst const u64 bdw_hw_cache_extra_regs
-+				[PERF_COUNT_HW_CACHE_MAX]
-+				[PERF_COUNT_HW_CACHE_OP_MAX]
-+				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
-+{
-+ [ C(LL  ) ] = {
-+	[ C(OP_READ) ] = {
-+		/* OFFCORE_RESPONSE:ALL_DATA_RD|ALL_CODE_RD */
-+		[ C(RESULT_ACCESS) ] = 0x2d5,
-+		/* OFFCORE_RESPONSE:ALL_DATA_RD|ALL_CODE_RD|SUPPLIER_NONE|
-+                   L3_MISS|ANY_SNOOP */
-+		[ C(RESULT_MISS)   ] = 0x3fbc0202d5,
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x122, 	/* OFFCORE_RESPONSE:ALL_RFO */
-+		/* OFFCORE_RESPONSE:ALL_RFO|SUPPLIER_NONE|L3_MISS|ANY_SNOOP */
-+		[ C(RESULT_MISS)   ] = 0x3fbc020122,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x0,
-+	},
-+ },
-+};
-+
- static __initconst const u64 westmere_hw_cache_event_ids
- 				[PERF_COUNT_HW_CACHE_MAX]
- 				[PERF_COUNT_HW_CACHE_OP_MAX]
-@@ -2565,6 +2694,27 @@ __init int intel_pmu_init(void)
- 		pr_cont("Haswell events, ");
- 		break;
- 
-+	case 61: /* Broadwell Client */
-+		x86_pmu.late_ack = true;
-+		memcpy(hw_cache_event_ids, bdw_hw_cache_event_ids, sizeof(hw_cache_event_ids));
-+		memcpy(hw_cache_extra_regs, bdw_hw_cache_extra_regs, sizeof(hw_cache_extra_regs));
-+
-+		intel_pmu_lbr_init_snb();
-+
-+		x86_pmu.event_constraints = intel_bdw_event_constraints;
-+		x86_pmu.pebs_constraints = intel_hsw_pebs_event_constraints;
-+		x86_pmu.extra_regs = intel_snbep_extra_regs;
-+		x86_pmu.pebs_aliases = intel_pebs_aliases_snb;
-+		/* all extra regs are per-cpu when HT is on */
-+		x86_pmu.er_flags |= ERF_HAS_RSP_1;
-+		x86_pmu.er_flags |= ERF_NO_HT_SHARING;
-+
-+		x86_pmu.hw_config = hsw_hw_config;
-+		x86_pmu.get_event_constraints = hsw_get_event_constraints;
-+		x86_pmu.cpu_events = hsw_events_attrs;
-+		pr_cont("Broadwell events, ");
-+		break;
-+
- 	default:
- 		switch (x86_pmu.version) {
- 		case 1:
--- 
-1.9.3
+Fun.  It's like everyone was setting out to define the most fragile
+system they could, from the chip design up...  so many moving pieces
+that have to line up.
 
+> > It's not in general true that Linux should never change the mode (the
+> > main case for toggling modes is usually going between an idle/suspend
+> > state and active state)
+
+> I believe this is yet another reason why we should have a way to specify
+> opmodes in DT, now not only active but also suspend/idle opmodes.
+
+> However on many PMICs this is a bit more complicated. There are opmodes
+> such as
+
+Well, quite.  Plus the more basic question of what a mode actually is
+and how you talk about them generically.  It's not that there's no use
+for this functionality, it's that it doesn't lend itself to defining
+ABIs.
+
+> > You're talking about the case
+> > where the bootloader does set something but avoids doing so on warm
+> > reboots only here.
+
+> From Javier's description I understood this is the case for the board
+> for which he develops.
+
+No, the issue is that the bootloader isn't touching the regulator then
+Linux turns it off, reboots and ends up thinking the default operating
+mode is off which doesn't work terribly well when it tries to enable the
+regulator.  The reading back from hardware is trying to implement the
+standard Linux behaviour of not changing a setting without explicit
+permission, this change is providing a fallback for the case where
+that's giving us something obviously wrong.
+
+> > Besides, even if we did have a way of specifying modes in DT (with all
+> > the problems that brings) we still have to pick a default if that's not
+> > used).
+
+> Sure we do and we can define the binding to default to something (e.g.
+> normal mode) if respective property is not present. Btw. the issue with
+> opmode also affects other PMIC chips such as Samsung S5M ones.
+
+That's then going against our purposely conservative implementation, and
+would be especially bad if it overrode one of the hardware managed modes
+on an otherwise unused regulator.
+
+--2RIAITazYFwT/YFl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT/kezAAoJELSic+t+oim9LPsP/3BYo98aFAqI01X/ynGe22S1
+ZFy/iFZi4TOzqhYQDIEHUwQsrf8v2OEKdDNHoadNrJU5B52S909diuGYMfI9KaGT
+b7SwsHaVXJ/VJBjoj4+Dt5l0Q5MWSlEP07nvlN3YulH5r4Bg8FSkGNAxjW7boFG+
+xSaEJuCLlsacGDAiQc/WA3RTTTtLAtojACYrupUNsD1UQRK56nlwN1JEJdlimEi0
+lJC9yqwVQuaJgoDdh/Tr0C3afTnNXmOa9JkmG6zKgHxm+ZvR3jqb7PrkbqC1mdip
+QriL4z7O6+BCYWLQbpJ70FlmbSKQx48sUTZ7pB7SoVc+mC1ekX4ohI9dITBmVHli
+sMShbRS5XwCkQS8fYxGmKT+Lil2vf9h01AZvicwpz+lO/UPsXWbMghtGyxFH4DnS
+VFpRaatx/nvxcJ3QBKD2T+Xb8t1EqCbzj7ZqSWA6UL5A5Phjts/PeAjFXgvuoR4s
+u0AFzMAX53TdIPDv3vvjoBZAzDHnQpqlmoL2mgPcOlE//3Z7s1397ZrKZIKi+WuN
+F68HQ1/X+VgyvCNpRoc0NDMPWUqwwmIxw4mAhKGgmNYUxS9PQV0khaKCQrhMisCG
+L25SId4lB6pBuZsLcUmt6CO2sNO4q5/U9FEVACnTPEhats5dsQlhqy91oStWVb1N
+YekNSkItnuyZbljsvREG
+=dCU2
+-----END PGP SIGNATURE-----
+
+--2RIAITazYFwT/YFl--
