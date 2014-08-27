@@ -1,198 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756606AbaH0Cuj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 22:50:39 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:60727 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751444AbaH0Cuh (ORCPT
+	id S1756882AbaH0Cyw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 22:54:52 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:10918 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751473AbaH0Cyu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 22:50:37 -0400
-X-Original-SENDERIP: 10.177.222.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Wed, 27 Aug 2014 11:51:32 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: David Horner <ds2horner@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjennings@variantweb.net>,
-        Dan Streetman <ddstreet@ieee.org>
-Subject: Re: [PATCH v5 3/4] zram: zram memory size limitation
-Message-ID: <20140827025132.GI32620@bbox>
-References: <1408925156-11733-1-git-send-email-minchan@kernel.org>
- <1408925156-11733-4-git-send-email-minchan@kernel.org>
- <20140826073730.GA1975@js1304-P5Q-DELUXE>
- <20140826075511.GI11319@bbox>
- <CAFdhcLQce05qi2LGP85N=aaQiKz1ArC3Kn+W-s86R58BkjMr3w@mail.gmail.com>
- <20140827012610.GA10198@js1304-P5Q-DELUXE>
+	Tue, 26 Aug 2014 22:54:50 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 26 Aug 2014 19:40:35 -0700
+Message-ID: <53FD484F.7030504@nvidia.com>
+Date: Wed, 27 Aug 2014 10:54:07 +0800
+From: Wei Ni <wni@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140827012610.GA10198@js1304-P5Q-DELUXE>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Eduardo Valentin <edubezval@gmail.com>
+CC: <khali@linux-fr.org>, <linux@roeck-us.net>, <swarren@wwwdotorg.org>,
+        <lm-sensors@lm-sensors.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 3/4] thermal: add more description for thermal-zones
+References: <1408948188-4181-1-git-send-email-wni@nvidia.com> <1408948188-4181-4-git-send-email-wni@nvidia.com> <20140825110711.GA12349@developer> <53FBEE39.2020001@nvidia.com> <20140826121210.GB15219@developer>
+In-Reply-To: <20140826121210.GB15219@developer>
+X-Originating-IP: [10.19.224.131]
+X-ClientProxiedBy: HKMAIL101.nvidia.com (10.18.16.10) To
+ HKMAIL101.nvidia.com (10.18.16.10)
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Joonsoo,
-
-On Wed, Aug 27, 2014 at 10:26:11AM +0900, Joonsoo Kim wrote:
-> Hello, Minchan and David.
+On 08/26/2014 08:12 PM, Eduardo Valentin wrote:
+> On Tue, Aug 26, 2014 at 10:17:29AM +0800, Wei Ni wrote:
+>> On 08/25/2014 07:07 PM, Eduardo Valentin wrote:
+>>> Hello Wei Ni,
+>>>
+>>> On Mon, Aug 25, 2014 at 02:29:47PM +0800, Wei Ni wrote:
+>>>> Add more description for the "polling-delay" property.
+>>>> Set "trips" and "cooling maps" as optional property, because
+>>>> if missing these two sub-nodes, the thermal zone device still
+>>>> work properly.
+>>>>
+>>>> Signed-off-by: Wei Ni <wni@nvidia.com>
+>>>> ---
+>>>>  Documentation/devicetree/bindings/thermal/thermal.txt | 10 ++++++----
+>>>>  1 file changed, 6 insertions(+), 4 deletions(-)
+>>>>
+>>>> diff --git a/Documentation/devicetree/bindings/thermal/thermal.txt b/Documentation/devicetree/bindings/thermal/thermal.txt
+>>>> index f5db6b7..e3d3ed9 100644
+>>>> --- a/Documentation/devicetree/bindings/thermal/thermal.txt
+>>>> +++ b/Documentation/devicetree/bindings/thermal/thermal.txt
+>>>> @@ -136,8 +136,8 @@ containing trip nodes and one sub-node containing all the zone cooling maps.
+>>>>  
+>>>>  Required properties:
+>>>>  - polling-delay:	The maximum number of milliseconds to wait between polls
+>>>> -  Type: unsigned	when checking this thermal zone.
+>>>> -  Size: one cell
+>>>> +  Type: unsigned	when checking this thermal zone. If this value is 0, the
+>>>> +  Size: one cell	driver will not run polling queue, but just cancel it.
+>>>>  
+>>>
+>>> The description above is specific to Linux kernel implementation
+>>> nomenclature. DT description needs to be OS agnostic.
+>>>
+>>>>  - polling-delay-passive: The maximum number of milliseconds to wait
+>>>>    Type: unsigned	between polls when performing passive cooling.
+>>>> @@ -148,14 +148,16 @@ Required properties:
+>>>>    phandles + sensor
+>>>>    specifier
+>>>>  
+>>>> +Optional property:
+>>>>  - trips:		A sub-node which is a container of only trip point nodes
+>>>>    Type: sub-node	required to describe the thermal zone.
+>>>>  
+>>>>  - cooling-maps:		A sub-node which is a container of only cooling device
+>>>>    Type: sub-node	map nodes, used to describe the relation between trips
+>>>> -			and cooling devices.
+>>>> +			and cooling devices. If missing the "trips" property,
+>>>> +			This sub-node will not be parsed, because no trips can
+>>>> +			be bound to cooling devices.
+>>>
+>>> Do you mean if the thermal zone misses the "trips" property? Actually,
+>>> the binding describes both, cooling-maps and trips, as required
+>>> properties. Thus, both needs to be in place to consider the thermal zone
+>>> as a proper described zone.
+>>
+>> I moved the "trips" and "cooling-maps" to optional property, because if
+>> missing these two properties, the thermal zone devices still can be
+>> registered, and the driver can work properly, it has the basic function,
+>> can read temperature from thermal sysfs, although it doesn't have trips
+>> and bind with cooling devices.
 > 
-> On Tue, Aug 26, 2014 at 08:22:29AM -0400, David Horner wrote:
-> > On Tue, Aug 26, 2014 at 3:55 AM, Minchan Kim <minchan@kernel.org> wrote:
-> > > Hey Joonsoo,
-> > >
-> > > On Tue, Aug 26, 2014 at 04:37:30PM +0900, Joonsoo Kim wrote:
-> > >> On Mon, Aug 25, 2014 at 09:05:55AM +0900, Minchan Kim wrote:
-> > >> > @@ -513,6 +540,14 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
-> > >> >             ret = -ENOMEM;
-> > >> >             goto out;
-> > >> >     }
-> > >> > +
-> > >> > +   if (zram->limit_pages &&
-> > >> > +           zs_get_total_pages(meta->mem_pool) > zram->limit_pages) {
-> > >> > +           zs_free(meta->mem_pool, handle);
-> > >> > +           ret = -ENOMEM;
-> > >> > +           goto out;
-> > >> > +   }
-> > >> > +
-> > >> >     cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_WO);
-> > >>
-> > >> Hello,
-> > >>
-> > >> I don't follow up previous discussion, so I could be wrong.
-> > >> Why this enforcement should be here?
-> > >>
-> > >> I think that this has two problems.
-> > >> 1) alloc/free happens unnecessarilly if we have used memory over the
-> > >> limitation.
-> > >
-> > > True but firstly, I implemented the logic in zsmalloc, not zram but
-> > > as I described in cover-letter, it's not a requirement of zsmalloc
-> > > but zram so it should be in there. If every user want it in future,
-> > > then we could move the function into zsmalloc. That's what we
-> > > concluded in previous discussion.
 > 
-> Hmm...
-> Problem is that we can't avoid these unnecessary overhead in this
-> implementation. If we can implement this feature in zram efficiently,
-> it's okay. But, I think that current form isn't.
+> If a thermal zone is used only for monitoring, then I believe it lost
+> its purpose. As  Maybe a different framework shall be used, such as hwmon,
+> for instance?
 
+Yes, if we only use it for monitoring, we can use hwmon. But we have
+more functions base on these two thermal zone devices. We have a
+skin-temperature driver, which used nct1008's remote and local
+temperatures to estimator the skin temperature. As you know the thermal
+framework is more powerful, the remote/local sensors can be register as
+thermal zone, then the skin-temp driver can use thermal_zone_get_temp()
+to read their temperatures and then estimator skin's temp. We also will
+set trips and cooling devices for this skin-temp.
 
-If we can add it in zsmalloc, it would be more clean and efficient
-for zram but as I said, at the moment, I didn't want to put zram's
-requirement into zsmalloc because to me, it's weird to enforce max
-limit to allocator. It's client's role, I think.
-
-If current implementation is expensive and rather hard to follow,
-It would be one reason to move the feature into zsmalloc but
-I don't think it makes critical trobule in zram usecase.
-See below.
-
-But I still open and will wait others's opinion.
-If other guys think zsmalloc is better place, I am willing to move
-it into zsmalloc.
-
-> 
-> > >
-> > > Another idea is we could call zs_get_total_pages right before zs_malloc
-> > > but the problem is we cannot know how many of pages are allocated
-> > > by zsmalloc in advance.
-> > > IOW, zram should be blind on zsmalloc's internal.
-> > >
-> > 
-> > We did however suggest that we could check before hand to see if
-> > max was already exceeded as an optimization.
-> > (possibly with a guess on usage but at least using the minimum of 1 page)
-> > In the contested case, the max may already be exceeded transiently and
-> > therefore we know this one _could_ fail (it could also pass, but odds
-> > aren't good).
-> > As Minchan mentions this was discussed before - but not into great detail.
-> > Testing should be done to determine possible benefit. And as he also
-> > mentions, the better place for it may be in zsmalloc, but that
-> > requires an ABI change.
-> 
-> Why we hesitate to change zsmalloc API? It is in-kernel API and there
-> are just two users now, zswap and zram. We can change it easily.
-> I think that we just need following simple API change in zsmalloc.c.
-> 
-> zs_zpool_create(gfp_t gfp, struct zpool_ops *zpool_op)
-> =>
-> zs_zpool_create(unsigned long limit, gfp_t gfp, struct zpool_ops
-> *zpool_op)
-> 
-> It's pool allocator so there is no obstacle for us to limit maximum
-> memory usage in zsmalloc. It's a natural idea to limit memory usage
-> for pool allocator.
-> 
-> > Certainly a detailed suggestion could happen on this thread and I'm
-> > also interested
-> > in your thoughts, but this patchset should be able to go in as is.
-> > Memory exhaustion avoidance probably trumps the possible thrashing at
-> > threshold.
-> > 
-> > > About alloc/free cost once if it is over the limit,
-> > > I don't think it's important to consider.
-> > > Do you have any scenario in your mind to consider alloc/free cost
-> > > when the limit is over?
-> > >
-> > >> 2) Even if this request doesn't do new allocation, it could be failed
-> > >> due to other's allocation. There is time gap between allocation and
-> > >> free, so legimate user who want to use preallocated zsmalloc memory
-> > >> could also see this condition true and then he will be failed.
-> > >
-> > > Yeb, we already discussed that. :)
-> > > Such false positive shouldn't be a severe problem if we can keep a
-> > > promise that zram user cannot exceed mem_limit.
-> > >
-> 
-> If we can keep such a promise, why we need to limit memory usage?
-> I guess that this limit feature is useful for user who can't keep such promise.
-> So, we should assume that this false positive happens frequently.
-
-
-The goal is to limit memory usage within some threshold.
-so false positive shouldn't be harmful unless it exceeds the threshold.
-In addition, If such false positive happens frequently, it means
-zram is very trobule so that user would see lots of write fail
-message, sometime really slow system if zram is used for swap.
-If we protect just one write from the race, how much does it help
-this situation? I don't think it's critical problem.
+Wei.
 
 > 
-> > And we cannot avoid the race, nor can we avoid in a low overhead competitive
-> > concurrent process transient inconsistent states.
-> > Different views for different observers.
-> >  They are a consequence of the theory of "Special Computational Relativity".
-> >  I am working on a String Unification Theory of Quantum and General CR in LISP.
-> >  ;-)
+> The purpose of a thermal zone is to describe thermal behavior of a
+> hardware. As it is mentioned in the thermal.txt file.
 > 
-> If we move limit logic to zsmalloc, we can avoid the race by commiting
-> needed memory size before actual allocation attempt. This commiting makes
-> concurrent process serialized so there is no race here. There is
-> possibilty to fail to allocate, but I think this is better than alloc
-> and free blindlessly depending on inconsistent states.
-
-Normally, zsmalloc/zsfree allocates object from existing pool so
-it's not big overhead and if someone continue to try writing  once limit is
-full, another overhead (vfs, fs, block) would be bigger than zsmalloc
-so it's not a problem, I think.
-
 > 
-> Thanks.
-> 
+>>
+>> Thanks.
+>> Wei.
+>>
+>>>
+>>>>  
+>>>> -Optional property:
+>>>>  - coefficients:		An array of integers (one signed cell) containing
+>>>>    Type: array		coefficients to compose a linear relation between
+>>>>    Elem size: one cell	the sensors listed in the thermal-sensors property.
+>>>> -- 
+>>>> 1.8.1.5
+>>>>
+>>
 > --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
--- 
-Kind regards,
-Minchan Kim
