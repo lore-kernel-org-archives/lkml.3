@@ -1,116 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756894AbaH0DjE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 23:39:04 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:24258 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834AbaH0DjC (ORCPT
+	id S932321AbaH0Ds4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 23:48:56 -0400
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:56033 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756104AbaH0Dsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 23:39:02 -0400
-Message-ID: <53FD52C6.60603@oracle.com>
-Date: Tue, 26 Aug 2014 23:38:46 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Tue, 26 Aug 2014 23:48:54 -0400
+X-IronPort-AV: E=Sophos;i="5.04,408,1406617200"; 
+   d="scan'208";a="43739114"
+Subject: Re: [PATCH net v3 4/4] tg3: Fix tx_pending checks for tg3_tso_bug
+From: Prashant Sreedharan <prashant@broadcom.com>
+To: Benjamin Poirier <bpoirier@suse.de>
+CC: Michael Chan <mchan@broadcom.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+In-Reply-To: <1409081178-4877-4-git-send-email-bpoirier@suse.de>
+References: <1409081178-4877-1-git-send-email-bpoirier@suse.de>
+	 <1409081178-4877-4-git-send-email-bpoirier@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 26 Aug 2014 20:40:30 -0700
+Message-ID: <1409110830.28795.36.camel@prashant>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>, David Howells <dhowells@redhat.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, richard@nod.at,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: kernel: signal: NULL ptr deref when killing process
-References: <20140820150619.GA12706@redhat.com> <53F48402.4080302@oracle.com> <20140820141252.GA27301@redhat.com> <3200.1408638173@warthog.procyon.org.uk> <20140821171726.GB27140@redhat.com>
-In-Reply-To: <20140821171726.GB27140@redhat.com>
-Content-Type: text/plain; charset=windows-1252
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2014 01:17 PM, Oleg Nesterov wrote:
->> Is there a race between kill() and exit() brought on by the kill path only
->> > using the RCU read lock?  This doesn't prevent ->real_cred from being
->> > modified, but it looks like this should, in combination with
->> > delayed_put_task_struct(), prevent it from being cleared.
-> Yes, rcu should protect us from both delayed_put_pid() and delayed_put_task().
-> Everything looks correct... And there are a lot of other similar users of
-> find_vpid/find_task_by_vpid/pid_task/etc under rcu, I can't recall any bug
-> in this area.
-> 
-> I am puzzled. Note also that ->signal == NULL. Will try to think more,
-> but so far I have no any idea.
 
-I've hit something similar earlier today, and it might be related:
+>  static inline bool tg3_maybe_stop_txq(struct tg3_napi *tnapi,
+>  				      struct netdev_queue *txq,
+> @@ -7841,14 +7847,16 @@ static inline bool tg3_maybe_stop_txq(struct tg3_napi *tnapi,
+>  		if (!netif_tx_queue_stopped(txq)) {
+>  			stopped = true;
+>  			netif_tx_stop_queue(txq);
+> -			BUG_ON(wakeup_thresh >= tnapi->tx_pending);
+> +			tnapi->wakeup_thresh = wakeup_thresh;
+> +			BUG_ON(tnapi->wakeup_thresh >= tnapi->tx_pending);
+>  		}
+>  		/* netif_tx_stop_queue() must be done before checking tx index
+>  		 * in tg3_tx_avail(), because in tg3_tx(), we update tx index
+> -		 * before checking for netif_tx_queue_stopped().
+> +		 * before checking for netif_tx_queue_stopped(). The memory
+> +		 * barrier also synchronizes wakeup_thresh changes.
+>  		 */
+>  		smp_mb();
+> -		if (tg3_tx_avail(tnapi) > wakeup_thresh)
+> +		if (tg3_tx_avail(tnapi) > tnapi->wakeup_thresh)
+>  			netif_tx_wake_queue(txq);
 
-[  973.452840] BUG: unable to handle kernel NULL pointer dereference at 00000000000002b0
-[  973.455347] IP: flush_sigqueue_mask (include/linux/signal.h:118 kernel/signal.c:715)
-[  973.457526] PGD 4dfdc7067 PUD 5f77d9067 PMD 0
-[  973.459216] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[  973.460086] Dumping ftrace buffer:
-[  973.460086]    (ftrace buffer empty)
-[  973.460086] Modules linked in:
-[  973.460086] CPU: 4 PID: 13145 Comm: trinity-c767 Not tainted 3.17.0-rc2-next-20140826-sasha-00031-gc48c9ac-dirty #1079
-[  973.460086] task: ffff880604800000 ti: ffff880586648000 task.ti: ffff880586648000
-[  973.460086] RIP: flush_sigqueue_mask (include/linux/signal.h:118 kernel/signal.c:715)
-[  973.460086] RSP: 0018:ffff88058664bec8  EFLAGS: 00010046
-[  973.460086] RAX: 0000000000000000 RBX: fffffffffffff730 RCX: 0000000000010000
-[  973.460086] RDX: 0000000000000000 RSI: 00000000000002a0 RDI: ffff88058664bed8
-[  973.460086] RBP: ffff88058664bf10 R08: 0000000000000001 R09: 0000000000000001
-[  973.460086] R10: 000000000002d201 R11: 0000000000000254 R12: 0000000000000000
-[  973.460086] R13: ffff88058664bf40 R14: ffff880604800000 R15: 0000000000000010
-[  973.460086] FS:  00007fe3a3045700(0000) GS:ffff880277c00000(0000) knlGS:0000000000000000
-[  973.460086] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  973.460086] CR2: 00000000000002b0 CR3: 00000004e23d5000 CR4: 00000000000006a0
-[  973.460086] Stack:
-[  973.460086]  ffffffffac183690 01017fffb3247180 0000000000010000 0000000000000000
-[  973.460086]  00007fffb3247180 00007fffb3247220 0000000000000011 0000000000000000
-[  973.460086]  0000000000000000 ffff88058664bf78 ffffffffac183ef5 0000000000000000
-[  973.460086] Call Trace:
-[  973.460086] ? do_sigaction (kernel/signal.c:3124 (discriminator 17))
-[  973.460086] SyS_rt_sigaction (kernel/signal.c:3360 kernel/signal.c:3341)
-[  973.460086] tracesys (arch/x86/kernel/entry_64.S:542)
-[ 973.460086] Code: b7 49 09 d5 4d 89 6e 10 48 83 c4 08 5b 41 5c 41 5d 41 5e 41 5f 5d c3 66 2e 0f 1f 84 00 00 00 00 00 66 66 66 66 90 48 8b 0f 31 c0 <48> 8b 56 10 48 85 ca 74 7b 55 48 f7 d1 48 89 e5 41 56 48 21 ca
-All code
-========
-   0:	b7 49                	mov    $0x49,%bh
-   2:	09 d5                	or     %edx,%ebp
-   4:	4d 89 6e 10          	mov    %r13,0x10(%r14)
-   8:	48 83 c4 08          	add    $0x8,%rsp
-   c:	5b                   	pop    %rbx
-   d:	41 5c                	pop    %r12
-   f:	41 5d                	pop    %r13
-  11:	41 5e                	pop    %r14
-  13:	41 5f                	pop    %r15
-  15:	5d                   	pop    %rbp
-  16:	c3                   	retq
-  17:	66 2e 0f 1f 84 00 00 	nopw   %cs:0x0(%rax,%rax,1)
-  1e:	00 00 00
-  21:	66 66 66 66 90       	data32 data32 data32 xchg %ax,%ax
-  26:	48 8b 0f             	mov    (%rdi),%rcx
-  29:	31 c0                	xor    %eax,%eax
-  2b:*	48 8b 56 10          	mov    0x10(%rsi),%rdx		<-- trapping instruction
-  2f:	48 85 ca             	test   %rcx,%rdx
-  32:	74 7b                	je     0xaf
-  34:	55                   	push   %rbp
-  35:	48 f7 d1             	not    %rcx
-  38:	48 89 e5             	mov    %rsp,%rbp
-  3b:	41 56                	push   %r14
-  3d:	48 21 ca             	and    %rcx,%rdx
-	...
+you can add a comment here... stopped is not set to false even if queue
+wakes up, to log the netdev_err "BUG! TX Ring.." message.
 
-Code starting with the faulting instruction
-===========================================
-   0:	48 8b 56 10          	mov    0x10(%rsi),%rdx
-   4:	48 85 ca             	test   %rcx,%rdx
-   7:	74 7b                	je     0x84
-   9:	55                   	push   %rbp
-   a:	48 f7 d1             	not    %rcx
-   d:	48 89 e5             	mov    %rsp,%rbp
-  10:	41 56                	push   %r14
-  12:	48 21 ca             	and    %rcx,%rdx
-	...
-[  973.460086] RIP flush_sigqueue_mask (include/linux/signal.h:118 kernel/signal.c:715)
-[  973.460086]  RSP <ffff88058664bec8>
-[  973.460086] CR2: 00000000000002b0
+>  	}
+>  	return stopped;
+> @@ -7861,10 +7869,10 @@ static int tg3_tso_bug(struct tg3 *tp, struct tg3_napi *tnapi,
+>  		       struct netdev_queue *txq, struct sk_buff *skb)
 
 
-Thanks,
-Sasha
+> @@ -12318,9 +12354,7 @@ static int tg3_set_ringparam(struct net_device *dev, struct ethtool_ringparam *e
+>  	if ((ering->rx_pending > tp->rx_std_ring_mask) ||
+>  	    (ering->rx_jumbo_pending > tp->rx_jmb_ring_mask) ||
+>  	    (ering->tx_pending > TG3_TX_RING_SIZE - 1) ||
+> -	    (ering->tx_pending <= MAX_SKB_FRAGS + 1) ||
+> -	    (tg3_flag(tp, TSO_BUG) &&
+> -	     (ering->tx_pending <= (MAX_SKB_FRAGS * 3))))
+> +	    (ering->tx_pending <= MAX_SKB_FRAGS + 1))
+>  		return -EINVAL;
+>  
+>  	if (netif_running(dev)) {
+> @@ -12340,6 +12374,7 @@ static int tg3_set_ringparam(struct net_device *dev, struct ethtool_ringparam *e
+>  	if (tg3_flag(tp, JUMBO_RING_ENABLE))
+>  		tp->rx_jumbo_pending = ering->rx_jumbo_pending;
+>  
+> +	dev->gso_max_segs = TG3_TX_SEG_PER_DESC(ering->tx_pending - 1);
+
+Assuming a LSO skb of 64k size takes the tg3_tso_bug() code path, if the
+available TX descriptors is <= 135 assuming gso_segs is 45 for this skb
+based on the estimate 45 * 3 driver would stop this TX queue and set the
+tnapi->wakeup_thresh to 135 and return NETDEV_TX_BUSY. This skb will be
+queued to be resent when the queue wakes up. 
+
+Meanwhile if the user changes the TX ring size tx_pending=135,
+dev->gso_max_segs is modified accordingly to 44, the LSO skb which was
+queued will now be GSO'ed (in net/dev.c) before calling
+tg3_start_xmit(). To note tg3_tx() cannot wake the queue as it is
+expecting to be woken up when available free TX descriptors is 136. So
+we end up with HW TX ring empty and not able to send any pkts.
+
+
+
+
+
+>  	for (i = 0; i < tp->irq_max; i++)
+>  		tp->napi[i].tx_pending = ering->tx_pending;
+>  
+> @@ -17816,6 +17851,7 @@ static int tg3_init_one(struct pci_dev *pdev,
+>  		else
+
+
+
