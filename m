@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935565AbaH0P3u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 11:29:50 -0400
-Received: from goliath.siemens.de ([192.35.17.28]:33739 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935246AbaH0PWY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 11:22:24 -0400
+	id S935573AbaH0PaF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 11:30:05 -0400
+Received: from thoth.sbs.de ([192.35.17.2]:40295 "EHLO thoth.sbs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935244AbaH0PWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 11:22:23 -0400
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -16,9 +15,9 @@ Cc: Jason Wessel <jason.wessel@windriver.com>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@suse.de>,
         Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
-Subject: [PATCH v9 04/23] scripts/gdb: Add module iteration class
-Date: Wed, 27 Aug 2014 17:21:19 +0200
-Message-Id: <b41b9d9d1ab58d8cc2cc58952b245a15fc4ab1f4.1409152897.git.jan.kiszka@siemens.com>
+Subject: [PATCH v9 13/23] scripts/gdb: Add helper and convenience function to look up tasks
+Date: Wed, 27 Aug 2014 17:21:28 +0200
+Message-Id: <b341f909530d1046f456172b1b642d8e62201dac.1409152897.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
 In-Reply-To: <cover.1409152897.git.jan.kiszka@siemens.com>
 References: <cover.1409152897.git.jan.kiszka@siemens.com>
@@ -28,60 +27,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Will soon be used for loading symbols, printing global variables or
-listing modules.
+Add the helper task_by_pid that can look up a task by its PID. Also
+export it as a convenience function.
 
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/linux/modules.py | 39 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 39 insertions(+)
- create mode 100644 scripts/gdb/linux/modules.py
+ scripts/gdb/linux/tasks.py | 27 +++++++++++++++++++++++++++
+ scripts/gdb/vmlinux-gdb.py |  1 +
+ 2 files changed, 28 insertions(+)
 
-diff --git a/scripts/gdb/linux/modules.py b/scripts/gdb/linux/modules.py
-new file mode 100644
-index 0000000..8a65c3d
---- /dev/null
-+++ b/scripts/gdb/linux/modules.py
-@@ -0,0 +1,39 @@
-+#
-+# gdb helper commands and functions for Linux kernel debugging
-+#
-+#  module tools
-+#
-+# Copyright (c) Siemens AG, 2013
-+#
-+# Authors:
-+#  Jan Kiszka <jan.kiszka@siemens.com>
-+#
-+# This work is licensed under the terms of the GNU GPL version 2.
-+#
-+
-+import gdb
-+
-+from linux import utils
+diff --git a/scripts/gdb/linux/tasks.py b/scripts/gdb/linux/tasks.py
+index cd25984..13bb97c 100644
+--- a/scripts/gdb/linux/tasks.py
++++ b/scripts/gdb/linux/tasks.py
+@@ -44,3 +44,30 @@ class TaskList:
+                 utils.container_of(t['thread_group']['next'],
+                                    self.task_ptr_type, "thread_group")
+         return t
 +
 +
-+module_type = utils.CachedType("struct module")
++def get_task_by_pid(pid):
++    for task in TaskList():
++        if int(task['pid']) == pid:
++            return task
++    return None
 +
 +
-+class ModuleList:
++class LxTaskByPidFunc(gdb.Function):
++    """Find Linux task by PID and return the task_struct variable.
++
++$lx_task_by_pid(PID): Given PID, iterate over all tasks of the target and
++return that task_struct variable which PID matches."""
++
 +    def __init__(self):
-+        global module_type
-+        self.module_ptr_type = module_type.get_type().pointer()
-+        modules = gdb.parse_and_eval("modules")
-+        self.curr_entry = modules['next']
-+        self.end_of_list = modules.address
++        super(LxTaskByPidFunc, self).__init__("lx_task_by_pid")
 +
-+    def __iter__(self):
-+        return self
-+
-+    def next(self):
-+        entry = self.curr_entry
-+        if entry != self.end_of_list:
-+            self.curr_entry = entry['next']
-+            return utils.container_of(entry, self.module_ptr_type, "list")
++    def invoke(self, pid):
++        task = get_task_by_pid(pid)
++        if task:
++            return task.dereference()
 +        else:
-+            raise StopIteration
++            raise gdb.GdbError("No task of PID " + str(pid))
++
++
++LxTaskByPidFunc()
+diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
+index fa66d23..4d7eb2c 100644
+--- a/scripts/gdb/vmlinux-gdb.py
++++ b/scripts/gdb/vmlinux-gdb.py
+@@ -26,3 +26,4 @@ else:
+     import linux.symbols
+     import linux.modules
+     import linux.dmesg
++    import linux.tasks
 -- 
 1.8.1.1.298.ge7eed54
 
