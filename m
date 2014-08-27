@@ -1,1026 +1,850 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964824AbaH0RTR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 13:19:17 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:35796 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935530AbaH0RSX (ORCPT
+	id S964846AbaH0RTh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 13:19:37 -0400
+Received: from regular1.263xmail.com ([211.150.99.131]:57301 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935517AbaH0RSV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 13:18:23 -0400
-From: mathieu.poirier@linaro.org
-To: thomas.petazzoni@free-electrons.com, will.deacon@arm.com,
-        linux@arm.linux.org.uk, gregkh@linuxfoundation.org, arnd@linaro.org
-Cc: john.stultz@linaro.org, pratikp@codeaurora.org, varshney@ti.com,
-        Al.Grant@arm.com, jonas.svennebring@avagotech.com,
-        james.king@linaro.org, panchaxari.prasannamurthy@linaro.org,
-        kaixu.xia@linaro.org, marcin.jabrzyk@gmail.com, r.sengupta@samsung.com,
-        robbelibobban@gmail.com, Tony.Armitstead@arm.com, patches@linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        mathieu.poirier@linaro.org
-Subject: [PATCH 11/11 v5] ARM: removing support for etb/etm in "arch/arm/kernel/"
-Date: Wed, 27 Aug 2014 11:17:32 -0600
-Message-Id: <1409159852-7249-12-git-send-email-mathieu.poirier@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1409159852-7249-1-git-send-email-mathieu.poirier@linaro.org>
-References: <1409159852-7249-1-git-send-email-mathieu.poirier@linaro.org>
+	Wed, 27 Aug 2014 13:18:21 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: caesar.wang@rock-chips.com
+X-FST-TO: zyf@rock-chips.com
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: caesar.wang@rock-chips.com
+X-UNIQUE-TAG: <4096fbe3575fdcabe111b9aec7d22ca7>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <53FE12D4.6060902@rock-chips.com>
+Date: Thu, 28 Aug 2014 01:18:12 +0800
+From: Caesar Wang <caesar.wang@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com,
+        grant.likely@linaro.org, robh+dt@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, huangtao@rock-chips.com, cf@rock-chips.com,
+        dianders@chromium.org, dtor@chromium.org, zyw@rock-chips.com,
+        addy.ke@rock-chips.com, zhaoyifeng <zyf@rock-chips.com>
+Subject: Re: [PATCH v2 1/2] thermal: rockchip: add driver for thermal
+References: <1409096503-7081-1-git-send-email-caesar.wang@rock-chips.com> <1409096503-7081-2-git-send-email-caesar.wang@rock-chips.com> <20140827001155.GA24405@core.coreip.homeip.net>
+In-Reply-To: <20140827001155.GA24405@core.coreip.homeip.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathieu Poirier <mathieu.poirier@linaro.org>
+Hi Dmtry,
 
-Removing minimal support for etb/etm to favour an implentation
-that is more flexible, extensible and capable of handling more
-platforms.
+在 2014年08月27日 08:11, Dmitry Torokhov 写道:
+> Hi Caesar,
+>
+> On Wed, Aug 27, 2014 at 07:41:42AM +0800, Caesar Wang wrote:
+>> Thermal is TS-ADC Controller module supports user-defined mode and automatic mode.
+>>
+>> User-defined mode refers,TSADC all the control signals entirely by software
+>> writing to register for direct control.
+>>
+>> Automaic mode refers to the module automatically poll TSADC output,and the results
+>> Were checked.
+>>
+>> If you find that the temperature High in a period of time, an interrupt is generated
+>> to the processor down-measures taken;if the temperature over a period of time High,
+>> the resulting TSHUT gave CRU module,let it reset the entire chip, or via GPIO give PMIC.
+>>
+>> Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
+>> Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
+>> Change-Id: I00e7df78c497704657aff16e602aa56b4c14c6f5
+>> ---
+>>   drivers/thermal/Kconfig            |    9 +
+>>   drivers/thermal/Makefile           |    1 +
+>>   drivers/thermal/rockchip_thermal.c |  644 ++++++++++++++++++++++++++++++++++++
+>>   3 files changed, 654 insertions(+)
+>>   create mode 100644 drivers/thermal/rockchip_thermal.c
+>>
+>> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+>> index 74226dc..43d2400 100644
+>> --- a/drivers/thermal/Kconfig
+>> +++ b/drivers/thermal/Kconfig
+>> @@ -141,6 +141,15 @@ config SPEAR_THERMAL
+>>   	  Enable this to plug the SPEAr thermal sensor driver into the Linux
+>>   	  thermal framework.
+>>   
+>> +config ROCKCHIP_THERMAL
+>> +	tristate "Rockchip thermal driver"
+>> +	depends on ARCH_ROCKCHIP
+>> +	help
+>> +	  Support for Temperature Sensor ADC (TS-ADC) found on Rockchip SoCs.
+>> +	  It supports one critical trip point and one passive trip point.  The
+>> +	  cpufreq is used as the cooling device to throttle CPUs when the
+>> +	  passive trip is crossed.
+>> +
+>>   config RCAR_THERMAL
+>>   	tristate "Renesas R-Car thermal driver"
+>>   	depends on ARCH_SHMOBILE || COMPILE_TEST
+>> diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
+>> index 419c3cd..009a457 100644
+>> --- a/drivers/thermal/Makefile
+>> +++ b/drivers/thermal/Makefile
+>> @@ -20,6 +20,7 @@ thermal_sys-$(CONFIG_CPU_THERMAL)	+= cpu_cooling.o
+>>   
+>>   # platform thermal drivers
+>>   obj-$(CONFIG_SPEAR_THERMAL)	+= spear_thermal.o
+>> +obj-$(CONFIG_ROCKCHIP_THERMAL) 	+= rockchip_thermal.o
+>>   obj-$(CONFIG_RCAR_THERMAL)	+= rcar_thermal.o
+>>   obj-$(CONFIG_KIRKWOOD_THERMAL)  += kirkwood_thermal.o
+>>   obj-y				+= samsung/
+>> diff --git a/drivers/thermal/rockchip_thermal.c b/drivers/thermal/rockchip_thermal.c
+>> new file mode 100644
+>> index 0000000..dea4dc3
+>> --- /dev/null
+>> +++ b/drivers/thermal/rockchip_thermal.c
+>> @@ -0,0 +1,644 @@
+>> +/*
+>> + * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify it
+>> + * under the terms and conditions of the GNU General Public License,
+>> + * version 2, as published by the Free Software Foundation.
+>> + *
+>> + * This program is distributed in the hope it will be useful, but WITHOUT
+>> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+>> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+>> + * more details.
+>> + *
+>> +*/
+>> +
+>> +#include <linux/clk.h>
+>> +#include <linux/io.h>
+>> +#include <linux/interrupt.h>
+>> +#include <linux/module.h>
+>> +#include <linux/of.h>
+>> +#include <linux/of_address.h>
+>> +#include <linux/of_irq.h>
+>> +#include <linux/platform_device.h>
+>> +#include <linux/regulator/consumer.h>
+>> +#include <linux/cpu_cooling.h>
+>> +#include "thermal_core.h"
+>> +
+>> +enum rockchip_thermal_trip {
+>> +	ROCKCHIP_TRIP_PASSIVE,
+>> +	ROCKCHIP_TRIP_CRITICAL,
+>> +	ROCKCHIP_TRIP_NUM,
+>> +};
+>> +
+>> +struct rockchip_thermal_data {
+>> +	const struct rockchip_tsadc_platform_data *pdata;
+>> +	struct thermal_zone_device *tz;
+>> +	struct thermal_cooling_device *cdev;
+>> +	enum thermal_device_mode mode;
+>> +	void __iomem *regs;
+>> +
+>> +	signed long temp_passive;
+>> +	signed long temp_critical;
+>> +	signed long temp_force_shut;
+>> +	signed long alarm_temp;
+>> +	signed long last_temp;
+>> +	bool irq_enabled;
+>> +	int irq;
+>> +	struct clk *tsadc_clk;
+>> +	struct clk *tsadc_pclk;
+>> +};
+>> +
+>> +struct rockchip_tsadc_platform_data {
+>> +	u8 irq_en;
+>> +	signed long temp_passive;
+>> +	signed long temp_critical;
+>> +	signed long temp_force_shut;
+>> +	int passive_delay;
+>> +	int polling_delay;
+>> +
+>> +	int (*irq_handle)(void __iomem *reg);
+>> +	int (*initialize)(void __iomem *reg, signed long temp_force_shut);
+>> +	int (*control)(void __iomem *reg, bool on);
+>> +	u32 (*code_to_temp)(int temp);
+>> +	u32 (*temp_to_code)(int temp);
+>> +	void (*set_alarm_temp)(void __iomem *regs, signed long temp);
+>> +};
+>> +
+>> +/*TSADC V2 Sensor info define:*/
+>> +#define TSADCV2_AUTO_CON			0x04
+>> +#define TSADCV2_INT_EN				0x08
+>> +#define TSADCV2_INT_PD				0x0c
+>> +#define TSADCV2_DATA1				0x24
+>> +#define TSADCV2_COMP1_INT			0x34
+>> +#define TSADCV2_COMP1_SHUT			0x44
+>> +#define TSADCV2_AUTO_PERIOD			0x68
+>> +#define TSADCV2_AUTO_PERIOD_HT			0x6c
+>> +
+>> +#define TSADCV2_AUTO_SRC1_EN			(1 << 5)
+>> +#define TSADCV2_AUTO_EN				(1 << 0)
+>> +#define TSADCV2_AUTO_DISABLE			~(1 << 0)
+>> +#define TSADCV2_AUTO_STAS_BUSY			(1 << 16)
+>> +#define TSADCV2_AUTO_STAS_BUSY_MASK		(1 << 16)
+>> +#define TSADCV2_SHUT_2GPIO_SRC1_EN		(1 << 5)
+>> +#define TSADCV2_INT_SRC1_EN			(1 << 1)
+>> +#define TSADCV2_SHUT_SRC1_STATUS		(1 << 5)
+>> +#define TSADCV2_INT_SRC1_STATUS			(1 << 1)
+>> +
+>> +#define TSADCV2_DATA_MASK			0xfff
+>> +#define TSADCV2_HIGHT_INT_DEBOUNCE		0x60
+>> +#define TSADCV2_HIGHT_TSHUT_DEBOUNCE		0x64
+>> +#define TSADCV2_HIGHT_INT_DEBOUNCE_TIME		0x0a
+>> +#define TSADCV2_HIGHT_TSHUT_DEBOUNCE_TIME	0x0a
+>> +#define TSADCV2_AUTO_PERIOD_TIME		0x03e8
+>> +#define TSADCV2_AUTO_PERIOD_HT_TIME		0x64
+>> +
+>> +struct tsadc_table {
+>> +	int code;
+>> +	int temp;
+>> +};
+>> +
+>> +static const struct tsadc_table v2_code_table[] = {
+>> +	{TSADCV2_DATA_MASK, -40},
+>> +	{3800, -40},
+>> +	{3792, -35},
+>> +	{3783, -30},
+>> +	{3774, -25},
+>> +	{3765, -20},
+>> +	{3756, -15},
+>> +	{3747, -10},
+>> +	{3737, -5},
+>> +	{3728, 0},
+>> +	{3718, 5},
+>> +	{3708, 10},
+>> +	{3698, 15},
+>> +	{3688, 20},
+>> +	{3678, 25},
+>> +	{3667, 30},
+>> +	{3656, 35},
+>> +	{3645, 40},
+>> +	{3634, 45},
+>> +	{3623, 50},
+>> +	{3611, 55},
+>> +	{3600, 60},
+>> +	{3588, 65},
+>> +	{3575, 70},
+>> +	{3563, 75},
+>> +	{3550, 80},
+>> +	{3537, 85},
+>> +	{3524, 90},
+>> +	{3510, 95},
+>> +	{3496, 100},
+>> +	{3482, 105},
+>> +	{3467, 110},
+>> +	{3452, 115},
+>> +	{3437, 120},
+>> +	{3421, 125},
+>> +	{0, 125},
+>> +};
+>> +
+>> +static int rk_tsadcv2_irq_handle(void __iomem *regs)
+>> +{
+>> +	u32 val;
+>> +
+>> +	val = readl_relaxed(regs + TSADCV2_INT_PD);
+>> +	writel_relaxed(val & ~(1 << 8), regs + TSADCV2_INT_PD);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static u32 rk_tsadcv2_temp_to_code(int temp)
+>> +{
+>> +	u32 code = 0;
+>> +	int i;
+>> +
+>> +	for (i = 0; i < ARRAY_SIZE(v2_code_table) - 1; i++) {
+>> +		if (temp <= v2_code_table[i].temp && temp >
+>> +		    v2_code_table[i - 1].temp)
+> Since array is sorted you should be able to do only one comparison, on
+> the upper bound. Also, as soon as you find the code you can return it,
+> there is no need to continue scanning the array.
 
-Also removing the only client of the old driver.  That code can
-easily be replaced by entries for etb/etm in the device tree.
+sound  reasonable, I will fix it ,as the folllow:
 
-Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
----
- arch/arm/Kconfig.debug                    |   8 -
- arch/arm/include/asm/hardware/coresight.h | 157 -------
- arch/arm/kernel/Makefile                  |   1 -
- arch/arm/kernel/etm.c                     | 654 ------------------------------
- arch/arm/kernel/hw_breakpoint.c           |   4 +-
- arch/arm/mach-omap2/Kconfig               |   8 -
- arch/arm/mach-omap2/Makefile              |   1 -
- arch/arm/mach-omap2/emu.c                 |  50 ---
- 8 files changed, 2 insertions(+), 881 deletions(-)
- delete mode 100644 arch/arm/include/asm/hardware/coresight.h
- delete mode 100644 arch/arm/kernel/etm.c
- delete mode 100644 arch/arm/mach-omap2/emu.c
+for (i = 0; i < ARRAY_SIZE(v2_code_table) - 1; i++) {
+         if (temp <= v2_code_table[i].temp && temp >
+             v2_code_table[i - 1].temp){
+             code = v2_code_table[i].code;
+             break;
+         }
+}
 
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 886f4b2..35e608c 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -1223,14 +1223,6 @@ config EARLY_PRINTK
- 	  kernel low-level debugging functions. Add earlyprintk to your
- 	  kernel parameters to enable this console.
- 
--config OC_ETM
--	bool "On-chip ETM and ETB"
--	depends on ARM_AMBA
--	help
--	  Enables the on-chip embedded trace macrocell and embedded trace
--	  buffer driver that will allow you to collect traces of the
--	  kernel code.
--
- config ARM_KPROBES_TEST
- 	tristate "Kprobes test module"
- 	depends on KPROBES && MODULES
-diff --git a/arch/arm/include/asm/hardware/coresight.h b/arch/arm/include/asm/hardware/coresight.h
-deleted file mode 100644
-index ad774f3..0000000
---- a/arch/arm/include/asm/hardware/coresight.h
-+++ /dev/null
-@@ -1,157 +0,0 @@
--/*
-- * linux/arch/arm/include/asm/hardware/coresight.h
-- *
-- * CoreSight components' registers
-- *
-- * Copyright (C) 2009 Nokia Corporation.
-- * Alexander Shishkin
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--
--#ifndef __ASM_HARDWARE_CORESIGHT_H
--#define __ASM_HARDWARE_CORESIGHT_H
--
--#define TRACER_ACCESSED_BIT	0
--#define TRACER_RUNNING_BIT	1
--#define TRACER_CYCLE_ACC_BIT	2
--#define TRACER_ACCESSED		BIT(TRACER_ACCESSED_BIT)
--#define TRACER_RUNNING		BIT(TRACER_RUNNING_BIT)
--#define TRACER_CYCLE_ACC	BIT(TRACER_CYCLE_ACC_BIT)
--
--#define TRACER_TIMEOUT 10000
--
--#define etm_writel(t, v, x) \
--	(writel_relaxed((v), (t)->etm_regs + (x)))
--#define etm_readl(t, x) (readl_relaxed((t)->etm_regs + (x)))
--
--/* CoreSight Management Registers */
--#define CSMR_LOCKACCESS 0xfb0
--#define CSMR_LOCKSTATUS 0xfb4
--#define CSMR_AUTHSTATUS 0xfb8
--#define CSMR_DEVID	0xfc8
--#define CSMR_DEVTYPE	0xfcc
--/* CoreSight Component Registers */
--#define CSCR_CLASS	0xff4
--
--#define CS_LAR_KEY	0xc5acce55
--
--/* ETM control register, "ETM Architecture", 3.3.1 */
--#define ETMR_CTRL		0
--#define ETMCTRL_POWERDOWN	1
--#define ETMCTRL_PROGRAM		(1 << 10)
--#define ETMCTRL_PORTSEL		(1 << 11)
--#define ETMCTRL_DO_CONTEXTID	(3 << 14)
--#define ETMCTRL_PORTMASK1	(7 << 4)
--#define ETMCTRL_PORTMASK2	(1 << 21)
--#define ETMCTRL_PORTMASK	(ETMCTRL_PORTMASK1 | ETMCTRL_PORTMASK2)
--#define ETMCTRL_PORTSIZE(x) ((((x) & 7) << 4) | (!!((x) & 8)) << 21)
--#define ETMCTRL_DO_CPRT		(1 << 1)
--#define ETMCTRL_DATAMASK	(3 << 2)
--#define ETMCTRL_DATA_DO_DATA	(1 << 2)
--#define ETMCTRL_DATA_DO_ADDR	(1 << 3)
--#define ETMCTRL_DATA_DO_BOTH	(ETMCTRL_DATA_DO_DATA | ETMCTRL_DATA_DO_ADDR)
--#define ETMCTRL_BRANCH_OUTPUT	(1 << 8)
--#define ETMCTRL_CYCLEACCURATE	(1 << 12)
--
--/* ETM configuration code register */
--#define ETMR_CONFCODE		(0x04)
--
--/* ETM trace start/stop resource control register */
--#define ETMR_TRACESSCTRL	(0x18)
--
--/* ETM trigger event register */
--#define ETMR_TRIGEVT		(0x08)
--
--/* address access type register bits, "ETM architecture",
-- * table 3-27 */
--/* - access type */
--#define ETMAAT_IFETCH		0
--#define ETMAAT_IEXEC		1
--#define ETMAAT_IEXECPASS	2
--#define ETMAAT_IEXECFAIL	3
--#define ETMAAT_DLOADSTORE	4
--#define ETMAAT_DLOAD		5
--#define ETMAAT_DSTORE		6
--/* - comparison access size */
--#define ETMAAT_JAVA		(0 << 3)
--#define ETMAAT_THUMB		(1 << 3)
--#define ETMAAT_ARM		(3 << 3)
--/* - data value comparison control */
--#define ETMAAT_NOVALCMP		(0 << 5)
--#define ETMAAT_VALMATCH		(1 << 5)
--#define ETMAAT_VALNOMATCH	(3 << 5)
--/* - exact match */
--#define ETMAAT_EXACTMATCH	(1 << 7)
--/* - context id comparator control */
--#define ETMAAT_IGNCONTEXTID	(0 << 8)
--#define ETMAAT_VALUE1		(1 << 8)
--#define ETMAAT_VALUE2		(2 << 8)
--#define ETMAAT_VALUE3		(3 << 8)
--/* - security level control */
--#define ETMAAT_IGNSECURITY	(0 << 10)
--#define ETMAAT_NSONLY		(1 << 10)
--#define ETMAAT_SONLY		(2 << 10)
--
--#define ETMR_COMP_VAL(x)	(0x40 + (x) * 4)
--#define ETMR_COMP_ACC_TYPE(x)	(0x80 + (x) * 4)
--
--/* ETM status register, "ETM Architecture", 3.3.2 */
--#define ETMR_STATUS		(0x10)
--#define ETMST_OVERFLOW		BIT(0)
--#define ETMST_PROGBIT		BIT(1)
--#define ETMST_STARTSTOP		BIT(2)
--#define ETMST_TRIGGER		BIT(3)
--
--#define etm_progbit(t)		(etm_readl((t), ETMR_STATUS) & ETMST_PROGBIT)
--#define etm_started(t)		(etm_readl((t), ETMR_STATUS) & ETMST_STARTSTOP)
--#define etm_triggered(t)	(etm_readl((t), ETMR_STATUS) & ETMST_TRIGGER)
--
--#define ETMR_TRACEENCTRL2	0x1c
--#define ETMR_TRACEENCTRL	0x24
--#define ETMTE_INCLEXCL		BIT(24)
--#define ETMR_TRACEENEVT		0x20
--#define ETMCTRL_OPTS		(ETMCTRL_DO_CPRT | \
--				ETMCTRL_DATA_DO_ADDR | \
--				ETMCTRL_BRANCH_OUTPUT | \
--				ETMCTRL_DO_CONTEXTID)
--
--/* ETM management registers, "ETM Architecture", 3.5.24 */
--#define ETMMR_OSLAR	0x300
--#define ETMMR_OSLSR	0x304
--#define ETMMR_OSSRR	0x308
--#define ETMMR_PDSR	0x314
--
--/* ETB registers, "CoreSight Components TRM", 9.3 */
--#define ETBR_DEPTH		0x04
--#define ETBR_STATUS		0x0c
--#define ETBR_READMEM		0x10
--#define ETBR_READADDR		0x14
--#define ETBR_WRITEADDR		0x18
--#define ETBR_TRIGGERCOUNT	0x1c
--#define ETBR_CTRL		0x20
--#define ETBR_FORMATTERCTRL	0x304
--#define ETBFF_ENFTC		1
--#define ETBFF_ENFCONT		BIT(1)
--#define ETBFF_FONFLIN		BIT(4)
--#define ETBFF_MANUAL_FLUSH	BIT(6)
--#define ETBFF_TRIGIN		BIT(8)
--#define ETBFF_TRIGEVT		BIT(9)
--#define ETBFF_TRIGFL		BIT(10)
--
--#define etb_writel(t, v, x) \
--	(writel_relaxed((v), (t)->etb_regs + (x)))
--#define etb_readl(t, x) (readl_relaxed((t)->etb_regs + (x)))
--
--#define etm_lock(t) do { etm_writel((t), 0, CSMR_LOCKACCESS); } while (0)
--#define etm_unlock(t) \
--	do { etm_writel((t), CS_LAR_KEY, CSMR_LOCKACCESS); } while (0)
--
--#define etb_lock(t) do { etb_writel((t), 0, CSMR_LOCKACCESS); } while (0)
--#define etb_unlock(t) \
--	do { etb_writel((t), CS_LAR_KEY, CSMR_LOCKACCESS); } while (0)
--
--#endif /* __ASM_HARDWARE_CORESIGHT_H */
--
-diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-index 38ddd9f..9e80b98 100644
---- a/arch/arm/kernel/Makefile
-+++ b/arch/arm/kernel/Makefile
-@@ -30,7 +30,6 @@ else
- obj-y		+= entry-armv.o
- endif
- 
--obj-$(CONFIG_OC_ETM)		+= etm.o
- obj-$(CONFIG_CPU_IDLE)		+= cpuidle.o
- obj-$(CONFIG_ISA_DMA_API)	+= dma.o
- obj-$(CONFIG_FIQ)		+= fiq.o fiqasm.o
-diff --git a/arch/arm/kernel/etm.c b/arch/arm/kernel/etm.c
-deleted file mode 100644
-index 131a6ab..0000000
---- a/arch/arm/kernel/etm.c
-+++ /dev/null
-@@ -1,654 +0,0 @@
--/*
-- * linux/arch/arm/kernel/etm.c
-- *
-- * Driver for ARM's Embedded Trace Macrocell and Embedded Trace Buffer.
-- *
-- * Copyright (C) 2009 Nokia Corporation.
-- * Alexander Shishkin
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--
--#include <linux/kernel.h>
--#include <linux/init.h>
--#include <linux/types.h>
--#include <linux/io.h>
--#include <linux/sysrq.h>
--#include <linux/device.h>
--#include <linux/clk.h>
--#include <linux/amba/bus.h>
--#include <linux/fs.h>
--#include <linux/uaccess.h>
--#include <linux/miscdevice.h>
--#include <linux/vmalloc.h>
--#include <linux/mutex.h>
--#include <linux/module.h>
--#include <asm/hardware/coresight.h>
--#include <asm/sections.h>
--
--MODULE_LICENSE("GPL");
--MODULE_AUTHOR("Alexander Shishkin");
--
--/*
-- * ETM tracer state
-- */
--struct tracectx {
--	unsigned int	etb_bufsz;
--	void __iomem	*etb_regs;
--	void __iomem	*etm_regs;
--	unsigned long	flags;
--	int		ncmppairs;
--	int		etm_portsz;
--	struct device	*dev;
--	struct clk	*emu_clk;
--	struct mutex	mutex;
--};
--
--static struct tracectx tracer;
--
--static inline bool trace_isrunning(struct tracectx *t)
--{
--	return !!(t->flags & TRACER_RUNNING);
--}
--
--static int etm_setup_address_range(struct tracectx *t, int n,
--		unsigned long start, unsigned long end, int exclude, int data)
--{
--	u32 flags = ETMAAT_ARM | ETMAAT_IGNCONTEXTID | ETMAAT_NSONLY | \
--		    ETMAAT_NOVALCMP;
--
--	if (n < 1 || n > t->ncmppairs)
--		return -EINVAL;
--
--	/* comparators and ranges are numbered starting with 1 as opposed
--	 * to bits in a word */
--	n--;
--
--	if (data)
--		flags |= ETMAAT_DLOADSTORE;
--	else
--		flags |= ETMAAT_IEXEC;
--
--	/* first comparator for the range */
--	etm_writel(t, flags, ETMR_COMP_ACC_TYPE(n * 2));
--	etm_writel(t, start, ETMR_COMP_VAL(n * 2));
--
--	/* second comparator is right next to it */
--	etm_writel(t, flags, ETMR_COMP_ACC_TYPE(n * 2 + 1));
--	etm_writel(t, end, ETMR_COMP_VAL(n * 2 + 1));
--
--	flags = exclude ? ETMTE_INCLEXCL : 0;
--	etm_writel(t, flags | (1 << n), ETMR_TRACEENCTRL);
--
--	return 0;
--}
--
--static int trace_start(struct tracectx *t)
--{
--	u32 v;
--	unsigned long timeout = TRACER_TIMEOUT;
--
--	etb_unlock(t);
--
--	etb_writel(t, 0, ETBR_FORMATTERCTRL);
--	etb_writel(t, 1, ETBR_CTRL);
--
--	etb_lock(t);
--
--	/* configure etm */
--	v = ETMCTRL_OPTS | ETMCTRL_PROGRAM | ETMCTRL_PORTSIZE(t->etm_portsz);
--
--	if (t->flags & TRACER_CYCLE_ACC)
--		v |= ETMCTRL_CYCLEACCURATE;
--
--	etm_unlock(t);
--
--	etm_writel(t, v, ETMR_CTRL);
--
--	while (!(etm_readl(t, ETMR_CTRL) & ETMCTRL_PROGRAM) && --timeout)
--		;
--	if (!timeout) {
--		dev_dbg(t->dev, "Waiting for progbit to assert timed out\n");
--		etm_lock(t);
--		return -EFAULT;
--	}
--
--	etm_setup_address_range(t, 1, (unsigned long)_stext,
--			(unsigned long)_etext, 0, 0);
--	etm_writel(t, 0, ETMR_TRACEENCTRL2);
--	etm_writel(t, 0, ETMR_TRACESSCTRL);
--	etm_writel(t, 0x6f, ETMR_TRACEENEVT);
--
--	v &= ~ETMCTRL_PROGRAM;
--	v |= ETMCTRL_PORTSEL;
--
--	etm_writel(t, v, ETMR_CTRL);
--
--	timeout = TRACER_TIMEOUT;
--	while (etm_readl(t, ETMR_CTRL) & ETMCTRL_PROGRAM && --timeout)
--		;
--	if (!timeout) {
--		dev_dbg(t->dev, "Waiting for progbit to deassert timed out\n");
--		etm_lock(t);
--		return -EFAULT;
--	}
--
--	etm_lock(t);
--
--	t->flags |= TRACER_RUNNING;
--
--	return 0;
--}
--
--static int trace_stop(struct tracectx *t)
--{
--	unsigned long timeout = TRACER_TIMEOUT;
--
--	etm_unlock(t);
--
--	etm_writel(t, 0x440, ETMR_CTRL);
--	while (!(etm_readl(t, ETMR_CTRL) & ETMCTRL_PROGRAM) && --timeout)
--		;
--	if (!timeout) {
--		dev_dbg(t->dev, "Waiting for progbit to assert timed out\n");
--		etm_lock(t);
--		return -EFAULT;
--	}
--
--	etm_lock(t);
--
--	etb_unlock(t);
--	etb_writel(t, ETBFF_MANUAL_FLUSH, ETBR_FORMATTERCTRL);
--
--	timeout = TRACER_TIMEOUT;
--	while (etb_readl(t, ETBR_FORMATTERCTRL) &
--			ETBFF_MANUAL_FLUSH && --timeout)
--		;
--	if (!timeout) {
--		dev_dbg(t->dev, "Waiting for formatter flush to commence "
--				"timed out\n");
--		etb_lock(t);
--		return -EFAULT;
--	}
--
--	etb_writel(t, 0, ETBR_CTRL);
--
--	etb_lock(t);
--
--	t->flags &= ~TRACER_RUNNING;
--
--	return 0;
--}
--
--static int etb_getdatalen(struct tracectx *t)
--{
--	u32 v;
--	int rp, wp;
--
--	v = etb_readl(t, ETBR_STATUS);
--
--	if (v & 1)
--		return t->etb_bufsz;
--
--	rp = etb_readl(t, ETBR_READADDR);
--	wp = etb_readl(t, ETBR_WRITEADDR);
--
--	if (rp > wp) {
--		etb_writel(t, 0, ETBR_READADDR);
--		etb_writel(t, 0, ETBR_WRITEADDR);
--
--		return 0;
--	}
--
--	return wp - rp;
--}
--
--/* sysrq+v will always stop the running trace and leave it at that */
--static void etm_dump(void)
--{
--	struct tracectx *t = &tracer;
--	u32 first = 0;
--	int length;
--
--	if (!t->etb_regs) {
--		printk(KERN_INFO "No tracing hardware found\n");
--		return;
--	}
--
--	if (trace_isrunning(t))
--		trace_stop(t);
--
--	etb_unlock(t);
--
--	length = etb_getdatalen(t);
--
--	if (length == t->etb_bufsz)
--		first = etb_readl(t, ETBR_WRITEADDR);
--
--	etb_writel(t, first, ETBR_READADDR);
--
--	printk(KERN_INFO "Trace buffer contents length: %d\n", length);
--	printk(KERN_INFO "--- ETB buffer begin ---\n");
--	for (; length; length--)
--		printk("%08x", cpu_to_be32(etb_readl(t, ETBR_READMEM)));
--	printk(KERN_INFO "\n--- ETB buffer end ---\n");
--
--	/* deassert the overflow bit */
--	etb_writel(t, 1, ETBR_CTRL);
--	etb_writel(t, 0, ETBR_CTRL);
--
--	etb_writel(t, 0, ETBR_TRIGGERCOUNT);
--	etb_writel(t, 0, ETBR_READADDR);
--	etb_writel(t, 0, ETBR_WRITEADDR);
--
--	etb_lock(t);
--}
--
--static void sysrq_etm_dump(int key)
--{
--	dev_dbg(tracer.dev, "Dumping ETB buffer\n");
--	etm_dump();
--}
--
--static struct sysrq_key_op sysrq_etm_op = {
--	.handler = sysrq_etm_dump,
--	.help_msg = "etm-buffer-dump(v)",
--	.action_msg = "etm",
--};
--
--static int etb_open(struct inode *inode, struct file *file)
--{
--	if (!tracer.etb_regs)
--		return -ENODEV;
--
--	file->private_data = &tracer;
--
--	return nonseekable_open(inode, file);
--}
--
--static ssize_t etb_read(struct file *file, char __user *data,
--		size_t len, loff_t *ppos)
--{
--	int total, i;
--	long length;
--	struct tracectx *t = file->private_data;
--	u32 first = 0;
--	u32 *buf;
--
--	mutex_lock(&t->mutex);
--
--	if (trace_isrunning(t)) {
--		length = 0;
--		goto out;
--	}
--
--	etb_unlock(t);
--
--	total = etb_getdatalen(t);
--	if (total == t->etb_bufsz)
--		first = etb_readl(t, ETBR_WRITEADDR);
--
--	etb_writel(t, first, ETBR_READADDR);
--
--	length = min(total * 4, (int)len);
--	buf = vmalloc(length);
--
--	dev_dbg(t->dev, "ETB buffer length: %d\n", total);
--	dev_dbg(t->dev, "ETB status reg: %x\n", etb_readl(t, ETBR_STATUS));
--	for (i = 0; i < length / 4; i++)
--		buf[i] = etb_readl(t, ETBR_READMEM);
--
--	/* the only way to deassert overflow bit in ETB status is this */
--	etb_writel(t, 1, ETBR_CTRL);
--	etb_writel(t, 0, ETBR_CTRL);
--
--	etb_writel(t, 0, ETBR_WRITEADDR);
--	etb_writel(t, 0, ETBR_READADDR);
--	etb_writel(t, 0, ETBR_TRIGGERCOUNT);
--
--	etb_lock(t);
--
--	length -= copy_to_user(data, buf, length);
--	vfree(buf);
--
--out:
--	mutex_unlock(&t->mutex);
--
--	return length;
--}
--
--static int etb_release(struct inode *inode, struct file *file)
--{
--	/* there's nothing to do here, actually */
--	return 0;
--}
--
--static const struct file_operations etb_fops = {
--	.owner = THIS_MODULE,
--	.read = etb_read,
--	.open = etb_open,
--	.release = etb_release,
--	.llseek = no_llseek,
--};
--
--static struct miscdevice etb_miscdev = {
--	.name = "tracebuf",
--	.minor = 0,
--	.fops = &etb_fops,
--};
--
--static int etb_probe(struct amba_device *dev, const struct amba_id *id)
--{
--	struct tracectx *t = &tracer;
--	int ret = 0;
--
--	ret = amba_request_regions(dev, NULL);
--	if (ret)
--		goto out;
--
--	t->etb_regs = ioremap_nocache(dev->res.start, resource_size(&dev->res));
--	if (!t->etb_regs) {
--		ret = -ENOMEM;
--		goto out_release;
--	}
--
--	amba_set_drvdata(dev, t);
--
--	etb_miscdev.parent = &dev->dev;
--
--	ret = misc_register(&etb_miscdev);
--	if (ret)
--		goto out_unmap;
--
--	t->emu_clk = clk_get(&dev->dev, "emu_src_ck");
--	if (IS_ERR(t->emu_clk)) {
--		dev_dbg(&dev->dev, "Failed to obtain emu_src_ck.\n");
--		return -EFAULT;
--	}
--
--	clk_enable(t->emu_clk);
--
--	etb_unlock(t);
--	t->etb_bufsz = etb_readl(t, ETBR_DEPTH);
--	dev_dbg(&dev->dev, "Size: %x\n", t->etb_bufsz);
--
--	/* make sure trace capture is disabled */
--	etb_writel(t, 0, ETBR_CTRL);
--	etb_writel(t, 0x1000, ETBR_FORMATTERCTRL);
--	etb_lock(t);
--
--	dev_dbg(&dev->dev, "ETB AMBA driver initialized.\n");
--
--out:
--	return ret;
--
--out_unmap:
--	iounmap(t->etb_regs);
--
--out_release:
--	amba_release_regions(dev);
--
--	return ret;
--}
--
--static int etb_remove(struct amba_device *dev)
--{
--	struct tracectx *t = amba_get_drvdata(dev);
--
--	iounmap(t->etb_regs);
--	t->etb_regs = NULL;
--
--	clk_disable(t->emu_clk);
--	clk_put(t->emu_clk);
--
--	amba_release_regions(dev);
--
--	return 0;
--}
--
--static struct amba_id etb_ids[] = {
--	{
--		.id	= 0x0003b907,
--		.mask	= 0x0007ffff,
--	},
--	{ 0, 0 },
--};
--
--static struct amba_driver etb_driver = {
--	.drv		= {
--		.name	= "etb",
--		.owner	= THIS_MODULE,
--	},
--	.probe		= etb_probe,
--	.remove		= etb_remove,
--	.id_table	= etb_ids,
--};
--
--/* use a sysfs file "trace_running" to start/stop tracing */
--static ssize_t trace_running_show(struct kobject *kobj,
--				  struct kobj_attribute *attr,
--				  char *buf)
--{
--	return sprintf(buf, "%x\n", trace_isrunning(&tracer));
--}
--
--static ssize_t trace_running_store(struct kobject *kobj,
--				   struct kobj_attribute *attr,
--				   const char *buf, size_t n)
--{
--	unsigned int value;
--	int ret;
--
--	if (sscanf(buf, "%u", &value) != 1)
--		return -EINVAL;
--
--	mutex_lock(&tracer.mutex);
--	ret = value ? trace_start(&tracer) : trace_stop(&tracer);
--	mutex_unlock(&tracer.mutex);
--
--	return ret ? : n;
--}
--
--static struct kobj_attribute trace_running_attr =
--	__ATTR(trace_running, 0644, trace_running_show, trace_running_store);
--
--static ssize_t trace_info_show(struct kobject *kobj,
--				  struct kobj_attribute *attr,
--				  char *buf)
--{
--	u32 etb_wa, etb_ra, etb_st, etb_fc, etm_ctrl, etm_st;
--	int datalen;
--
--	etb_unlock(&tracer);
--	datalen = etb_getdatalen(&tracer);
--	etb_wa = etb_readl(&tracer, ETBR_WRITEADDR);
--	etb_ra = etb_readl(&tracer, ETBR_READADDR);
--	etb_st = etb_readl(&tracer, ETBR_STATUS);
--	etb_fc = etb_readl(&tracer, ETBR_FORMATTERCTRL);
--	etb_lock(&tracer);
--
--	etm_unlock(&tracer);
--	etm_ctrl = etm_readl(&tracer, ETMR_CTRL);
--	etm_st = etm_readl(&tracer, ETMR_STATUS);
--	etm_lock(&tracer);
--
--	return sprintf(buf, "Trace buffer len: %d\nComparator pairs: %d\n"
--			"ETBR_WRITEADDR:\t%08x\n"
--			"ETBR_READADDR:\t%08x\n"
--			"ETBR_STATUS:\t%08x\n"
--			"ETBR_FORMATTERCTRL:\t%08x\n"
--			"ETMR_CTRL:\t%08x\n"
--			"ETMR_STATUS:\t%08x\n",
--			datalen,
--			tracer.ncmppairs,
--			etb_wa,
--			etb_ra,
--			etb_st,
--			etb_fc,
--			etm_ctrl,
--			etm_st
--			);
--}
--
--static struct kobj_attribute trace_info_attr =
--	__ATTR(trace_info, 0444, trace_info_show, NULL);
--
--static ssize_t trace_mode_show(struct kobject *kobj,
--				  struct kobj_attribute *attr,
--				  char *buf)
--{
--	return sprintf(buf, "%d %d\n",
--			!!(tracer.flags & TRACER_CYCLE_ACC),
--			tracer.etm_portsz);
--}
--
--static ssize_t trace_mode_store(struct kobject *kobj,
--				   struct kobj_attribute *attr,
--				   const char *buf, size_t n)
--{
--	unsigned int cycacc, portsz;
--
--	if (sscanf(buf, "%u %u", &cycacc, &portsz) != 2)
--		return -EINVAL;
--
--	mutex_lock(&tracer.mutex);
--	if (cycacc)
--		tracer.flags |= TRACER_CYCLE_ACC;
--	else
--		tracer.flags &= ~TRACER_CYCLE_ACC;
--
--	tracer.etm_portsz = portsz & 0x0f;
--	mutex_unlock(&tracer.mutex);
--
--	return n;
--}
--
--static struct kobj_attribute trace_mode_attr =
--	__ATTR(trace_mode, 0644, trace_mode_show, trace_mode_store);
--
--static int etm_probe(struct amba_device *dev, const struct amba_id *id)
--{
--	struct tracectx *t = &tracer;
--	int ret = 0;
--
--	if (t->etm_regs) {
--		dev_dbg(&dev->dev, "ETM already initialized\n");
--		ret = -EBUSY;
--		goto out;
--	}
--
--	ret = amba_request_regions(dev, NULL);
--	if (ret)
--		goto out;
--
--	t->etm_regs = ioremap_nocache(dev->res.start, resource_size(&dev->res));
--	if (!t->etm_regs) {
--		ret = -ENOMEM;
--		goto out_release;
--	}
--
--	amba_set_drvdata(dev, t);
--
--	mutex_init(&t->mutex);
--	t->dev = &dev->dev;
--	t->flags = TRACER_CYCLE_ACC;
--	t->etm_portsz = 1;
--
--	etm_unlock(t);
--	(void)etm_readl(t, ETMMR_PDSR);
--	/* dummy first read */
--	(void)etm_readl(&tracer, ETMMR_OSSRR);
--
--	t->ncmppairs = etm_readl(t, ETMR_CONFCODE) & 0xf;
--	etm_writel(t, 0x440, ETMR_CTRL);
--	etm_lock(t);
--
--	ret = sysfs_create_file(&dev->dev.kobj,
--			&trace_running_attr.attr);
--	if (ret)
--		goto out_unmap;
--
--	/* failing to create any of these two is not fatal */
--	ret = sysfs_create_file(&dev->dev.kobj, &trace_info_attr.attr);
--	if (ret)
--		dev_dbg(&dev->dev, "Failed to create trace_info in sysfs\n");
--
--	ret = sysfs_create_file(&dev->dev.kobj, &trace_mode_attr.attr);
--	if (ret)
--		dev_dbg(&dev->dev, "Failed to create trace_mode in sysfs\n");
--
--	dev_dbg(t->dev, "ETM AMBA driver initialized.\n");
--
--out:
--	return ret;
--
--out_unmap:
--	iounmap(t->etm_regs);
--
--out_release:
--	amba_release_regions(dev);
--
--	return ret;
--}
--
--static int etm_remove(struct amba_device *dev)
--{
--	struct tracectx *t = amba_get_drvdata(dev);
--
--	iounmap(t->etm_regs);
--	t->etm_regs = NULL;
--
--	amba_release_regions(dev);
--
--	sysfs_remove_file(&dev->dev.kobj, &trace_running_attr.attr);
--	sysfs_remove_file(&dev->dev.kobj, &trace_info_attr.attr);
--	sysfs_remove_file(&dev->dev.kobj, &trace_mode_attr.attr);
--
--	return 0;
--}
--
--static struct amba_id etm_ids[] = {
--	{
--		.id	= 0x0003b921,
--		.mask	= 0x0007ffff,
--	},
--	{ 0, 0 },
--};
--
--static struct amba_driver etm_driver = {
--	.drv		= {
--		.name   = "etm",
--		.owner  = THIS_MODULE,
--	},
--	.probe		= etm_probe,
--	.remove		= etm_remove,
--	.id_table	= etm_ids,
--};
--
--static int __init etm_init(void)
--{
--	int retval;
--
--	retval = amba_driver_register(&etb_driver);
--	if (retval) {
--		printk(KERN_ERR "Failed to register etb\n");
--		return retval;
--	}
--
--	retval = amba_driver_register(&etm_driver);
--	if (retval) {
--		amba_driver_unregister(&etb_driver);
--		printk(KERN_ERR "Failed to probe etm\n");
--		return retval;
--	}
--
--	/* not being able to install this handler is not fatal */
--	(void)register_sysrq_key('v', &sysrq_etm_op);
--
--	return 0;
--}
--
--device_initcall(etm_init);
--
-diff --git a/arch/arm/kernel/hw_breakpoint.c b/arch/arm/kernel/hw_breakpoint.c
-index 4d963fb..f61a9d9 100644
---- a/arch/arm/kernel/hw_breakpoint.c
-+++ b/arch/arm/kernel/hw_breakpoint.c
-@@ -29,6 +29,7 @@
- #include <linux/hw_breakpoint.h>
- #include <linux/smp.h>
- #include <linux/cpu_pm.h>
-+#include <linux/coresight.h>
- 
- #include <asm/cacheflush.h>
- #include <asm/cputype.h>
-@@ -36,7 +37,6 @@
- #include <asm/hw_breakpoint.h>
- #include <asm/kdebug.h>
- #include <asm/traps.h>
--#include <asm/hardware/coresight.h>
- 
- /* Breakpoint currently in use for each BRP. */
- static DEFINE_PER_CPU(struct perf_event *, bp_on_reg[ARM_MAX_BRP]);
-@@ -976,7 +976,7 @@ static void reset_ctrl_regs(void *unused)
- 	 * Unconditionally clear the OS lock by writing a value
- 	 * other than CS_LAR_KEY to the access register.
- 	 */
--	ARM_DBG_WRITE(c1, c0, 4, ~CS_LAR_KEY);
-+	ARM_DBG_WRITE(c1, c0, 4, ~CORESIGHT_UNLOCK);
- 	isb();
- 
- 	/*
-diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
-index 1c1ed73..1dd79f5 100644
---- a/arch/arm/mach-omap2/Kconfig
-+++ b/arch/arm/mach-omap2/Kconfig
-@@ -300,14 +300,6 @@ config MACH_TI8148EVM
- 	depends on SOC_TI81XX
- 	default y
- 
--config OMAP3_EMU
--	bool "OMAP3 debugging peripherals"
--	depends on ARCH_OMAP3
--	select ARM_AMBA
--	select OC_ETM
--	help
--	  Say Y here to enable debugging hardware of omap3
--
- config OMAP3_SDRC_AC_TIMING
- 	bool "Enable SDRC AC timing register changes"
- 	depends on ARCH_OMAP3
-diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
-index 8ca99e9..e8d29c4 100644
---- a/arch/arm/mach-omap2/Makefile
-+++ b/arch/arm/mach-omap2/Makefile
-@@ -226,7 +226,6 @@ obj-$(CONFIG_SOC_OMAP5)			+= omap_hwmod_54xx_data.o
- obj-$(CONFIG_SOC_DRA7XX)		+= omap_hwmod_7xx_data.o
- 
- # EMU peripherals
--obj-$(CONFIG_OMAP3_EMU)			+= emu.o
- obj-$(CONFIG_HW_PERF_EVENTS)		+= pmu.o
- 
- iommu-$(CONFIG_OMAP_IOMMU)		:= omap-iommu.o
-diff --git a/arch/arm/mach-omap2/emu.c b/arch/arm/mach-omap2/emu.c
-deleted file mode 100644
-index cbeaca2..0000000
---- a/arch/arm/mach-omap2/emu.c
-+++ /dev/null
-@@ -1,50 +0,0 @@
--/*
-- * emu.c
-- *
-- * ETM and ETB CoreSight components' resources as found in OMAP3xxx.
-- *
-- * Copyright (C) 2009 Nokia Corporation.
-- * Alexander Shishkin
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--
--#include <linux/kernel.h>
--#include <linux/init.h>
--#include <linux/types.h>
--#include <linux/module.h>
--#include <linux/device.h>
--#include <linux/amba/bus.h>
--#include <linux/io.h>
--#include <linux/clk.h>
--#include <linux/err.h>
--
--#include "soc.h"
--#include "iomap.h"
--
--MODULE_LICENSE("GPL");
--MODULE_AUTHOR("Alexander Shishkin");
--
--/* Cortex CoreSight components within omap3xxx EMU */
--#define ETM_BASE	(L4_EMU_34XX_PHYS + 0x10000)
--#define DBG_BASE	(L4_EMU_34XX_PHYS + 0x11000)
--#define ETB_BASE	(L4_EMU_34XX_PHYS + 0x1b000)
--#define DAPCTL		(L4_EMU_34XX_PHYS + 0x1d000)
--
--static AMBA_APB_DEVICE(omap3_etb, "etb", 0x000bb907, ETB_BASE, { }, NULL);
--static AMBA_APB_DEVICE(omap3_etm, "etm", 0x102bb921, ETM_BASE, { }, NULL);
--
--static int __init emu_init(void)
--{
--	if (!cpu_is_omap34xx())
--		return -ENODEV;
--
--	amba_device_register(&omap3_etb_device, &iomem_resource);
--	amba_device_register(&omap3_etm_device, &iomem_resource);
--
--	return 0;
--}
--
--omap_subsys_initcall(emu_init);
+>> +			code = v2_code_table[i].code;
+>> +	}
+>> +	return code;
+>> +}
+>> +
+>> +static u32 rk_tsadcv2_code_to_temp(int code)
+>> +{
+>> +	u32 temp = 0;
+>> +	int i;
+>> +
+>> +	for (i = 0; i < ARRAY_SIZE(v2_code_table) - 1; i++) {
+>> +		if (code <= v2_code_table[i].code && code >
+>> +		    v2_code_table[i + 1].code)
+>> +			temp = v2_code_table[i].temp;
+>> +	}
+>> +	return temp;
+>> +}
+>> +
+Ditto,
+>> +static int rk_tsadcv2_initialize(void __iomem *regs,
+>> +				 signed long temp_force_shut)
+>> +{
+>> +	int shutdown_value;
+>> +
+>> +	shutdown_value = rk_tsadcv2_temp_to_code(temp_force_shut);
+>> +	/* Enable measurements at ~ 10 Hz */
+>> +	writel_relaxed(0, regs + TSADCV2_AUTO_CON);
+>> +	writel_relaxed(TSADCV2_AUTO_PERIOD_TIME, regs + TSADCV2_AUTO_PERIOD);
+>> +	writel_relaxed(TSADCV2_AUTO_PERIOD_HT_TIME, regs +
+>> +		       TSADCV2_AUTO_PERIOD_HT);
+>> +	writel_relaxed(shutdown_value, regs + TSADCV2_COMP1_SHUT);
+>> +	writel_relaxed(TSADCV2_HIGHT_INT_DEBOUNCE_TIME, regs +
+>> +		       TSADCV2_HIGHT_INT_DEBOUNCE);
+>> +	writel_relaxed(TSADCV2_HIGHT_TSHUT_DEBOUNCE_TIME, regs +
+>> +		       TSADCV2_HIGHT_TSHUT_DEBOUNCE);
+>> +	writel_relaxed(TSADCV2_SHUT_2GPIO_SRC1_EN | TSADCV2_INT_SRC1_EN, regs +
+>> +		       TSADCV2_INT_EN);
+>> +	writel_relaxed(TSADCV2_AUTO_SRC1_EN | TSADCV2_AUTO_EN, regs +
+>> +		       TSADCV2_AUTO_CON);
+>> +	return 0;
+>> +}
+>> +
+>> +static int rk_tsadcv2_control(void __iomem *regs, bool on)
+>> +{
+>> +	u32 val;
+>> +
+>> +	if (on) {
+>> +		val = readl_relaxed(regs + TSADCV2_AUTO_CON);
+>> +		writel_relaxed(val | TSADCV2_AUTO_EN, regs + TSADCV2_AUTO_CON);
+>> +	} else {
+>> +		val = readl_relaxed(regs + TSADCV2_AUTO_CON);
+>> +		writel_relaxed(val & TSADCV2_AUTO_DISABLE,
+>> +			       regs + TSADCV2_AUTO_CON);
+>> +	}
+>> +	return 0;
+>> +}
+>> +
+>> +static void rk_tsadcv2_alarm_temp(void __iomem *regs, signed long alarm_temp)
+>> +{
+>> +	int alarm_value;
+>> +
+>> +	alarm_value = rk_tsadcv2_temp_to_code(alarm_temp);
+>> +	writel_relaxed(alarm_value, regs + TSADCV2_COMP1_INT);
+>> +}
+>> +
+>> +struct rockchip_tsadc_platform_data const rk3288_tsadc_data = {
+>> +	.irq_en = 1,
+>> +	.temp_passive = 85000,
+>> +	.temp_critical = 100000,
+>> +	.temp_force_shut = 120000,
+>> +	.passive_delay = 2000,
+>> +	.polling_delay = 1000,
+>> +	.irq_handle = rk_tsadcv2_irq_handle,
+>> +	.initialize = rk_tsadcv2_initialize,
+>> +	.control = rk_tsadcv2_control,
+>> +	.code_to_temp = rk_tsadcv2_code_to_temp,
+>> +	.temp_to_code = rk_tsadcv2_temp_to_code,
+>> +	.set_alarm_temp = rk_tsadcv2_alarm_temp,
+>> +};
+>> +
+>> +static const struct of_device_id of_rockchip_thermal_match[] = {
+>> +	{
+>> +		.compatible = "rockchip,rk3288-tsadc",
+>> +		.data = (void *)&rk3288_tsadc_data,
+>> +	},
+>> +	{ /* end */ },
+>> +};
+>> +MODULE_DEVICE_TABLE(of, of_rockchip_thermal_match);
+>> +
+>> +static void rockchip_set_alarm_temp(struct rockchip_thermal_data *data,
+>> +				    signed long alarm_temp)
+>> +{
+>> +	const struct rockchip_tsadc_platform_data *p_tsadc_data = data->pdata;
+>> +
+>> +	data->alarm_temp = alarm_temp;
+>> +	if (p_tsadc_data->set_alarm_temp)
+>> +		p_tsadc_data->set_alarm_temp(data->regs, alarm_temp);
+>> +}
+>> +
+>> +static int rockchip_get_temp(struct thermal_zone_device *tz,
+>> +			     unsigned long *temp)
+>> +{
+>> +	struct rockchip_thermal_data *data = tz->devdata;
+>> +	const struct rockchip_tsadc_platform_data *p_tsadc_data = data->pdata;
+>> +	u32 val;
+>> +
+>> +	val = readl_relaxed(data->regs + TSADCV2_DATA1);
+>> +	*temp = p_tsadc_data->code_to_temp(val);
+>> +
+>> +	/* Update alarm value to next higher trip point */
+>> +	if (data->alarm_temp == data->temp_passive && *temp >=
+>> +	    data->temp_passive)
+>> +		rockchip_set_alarm_temp(data, data->temp_critical);
+>> +
+>> +	if (data->alarm_temp == data->temp_critical && *temp <
+>> +	    data->temp_passive) {
+>> +		rockchip_set_alarm_temp(data, data->temp_passive);
+>> +		dev_dbg(&tz->device, "thermal alarm off: T < %lu\n",
+>> +			data->alarm_temp / 1000);
+>> +	}
+>> +
+>> +	if (*temp != data->last_temp) {
+>> +		dev_dbg(&tz->device, "millicelsius: %ld\n", *temp);
+>> +		data->last_temp = *temp;
+>> +	}
+>> +
+>> +	/* Reenable alarm IRQ if temperature below alarm temperature */
+>> +	if (!data->irq_enabled && *temp < data->alarm_temp) {
+>> +		data->irq_enabled = true;
+>> +		enable_irq(data->irq);
+>> +	}
+>> +	return 0;
+>> +}
+>> +
+>> +static int rockchip_thermal_initialize(struct rockchip_thermal_data *data)
+>> +{
+>> +	const struct rockchip_tsadc_platform_data *p_tsadc_data = data->pdata;
+>> +
+>> +	if (p_tsadc_data->initialize)
+>> +		p_tsadc_data->initialize(data->regs, data->temp_force_shut);
+>> +	rockchip_set_alarm_temp(data, data->temp_passive);
+>> +	return 0;
+>> +}
+>> +
+>> +static void rockchip_thermal_control(struct rockchip_thermal_data *data,
+>> +				     bool on)
+>> +{
+>> +	const struct rockchip_tsadc_platform_data *p_tsadc_data = data->pdata;
+>> +
+>> +	if (p_tsadc_data->control)
+>> +		p_tsadc_data->control(data->regs, on);
+>> +
+>> +	if (on) {
+>> +		data->irq_enabled = true;
+>> +		data->mode = THERMAL_DEVICE_ENABLED;
+>> +	} else {
+>> +		data->irq_enabled = false;
+>> +		data->mode = THERMAL_DEVICE_DISABLED;
+>> +	}
+>> +}
+>> +
+>> +static int rockchip_get_mode(struct thermal_zone_device *tz,
+>> +			     enum thermal_device_mode *mode)
+>> +{
+>> +	struct rockchip_thermal_data *data = tz->devdata;
+>> +
+>> +	*mode = data->mode;
+>> +	return 0;
+>> +}
+>> +
+>> +static int rockchip_set_mode(struct thermal_zone_device *tz,
+>> +			     enum thermal_device_mode mode)
+>> +{
+>> +	struct rockchip_thermal_data *data = tz->devdata;
+>> +	const struct rockchip_tsadc_platform_data *p_tsadc_data = data->pdata;
+>> +
+>> +	if (mode == THERMAL_DEVICE_ENABLED) {
+>> +		tz->polling_delay = p_tsadc_data->polling_delay;
+>> +		tz->passive_delay = p_tsadc_data->passive_delay;
+>> +		rockchip_thermal_control(data, true);
+>> +		if (!data->irq_enabled) {
+>> +			data->irq_enabled = true;
+>> +			enable_irq(data->irq);
+>> +		}
+>> +	} else {
+>> +		rockchip_thermal_control(data, false);
+>> +		tz->polling_delay = 0;
+>> +		tz->passive_delay = 0;
+>> +		if (data->irq_enabled) {
+>> +			disable_irq(data->irq);
+>> +			data->irq_enabled = false;
+>> +		}
+>> +	}
+>> +
+>> +	data->mode = mode;
+>> +	thermal_zone_device_update(tz);
+>> +	return 0;
+>> +}
+>> +
+>> +static int rockchip_get_trip_type(struct thermal_zone_device *tz, int trip,
+>> +				  enum thermal_trip_type *type)
+>> +{
+>> +	*type = (trip == ROCKCHIP_TRIP_PASSIVE) ? THERMAL_TRIP_PASSIVE :
+>> +		 THERMAL_TRIP_CRITICAL;
+>> +	return 0;
+>> +}
+>> +
+>> +static int rockchip_get_crit_temp(struct thermal_zone_device *tz,
+>> +				  unsigned long *temp)
+>> +{
+>> +	struct rockchip_thermal_data *data = tz->devdata;
+>> +
+>> +	*temp = data->temp_critical;
+>> +	return 0;
+>> +}
+>> +
+>> +static int rockchip_get_trip_temp(struct thermal_zone_device *tz, int trip,
+>> +				  unsigned long *temp)
+>> +{
+>> +	struct rockchip_thermal_data *data = tz->devdata;
+>> +
+>> +	*temp = (trip == ROCKCHIP_TRIP_PASSIVE) ? data->temp_passive :
+>> +		 data->temp_critical;
+>> +	return 0;
+>> +}
+>> +
+>> +static int rockchip_set_trip_temp(struct thermal_zone_device *tz, int trip,
+>> +				  unsigned long temp)
+>> +{
+>> +	struct rockchip_thermal_data *data = tz->devdata;
+>> +
+>> +	if (trip == ROCKCHIP_TRIP_CRITICAL)
+>> +		return -EPERM;
+>> +
+>> +	data->temp_passive = temp;
+>> +	rockchip_set_alarm_temp(data, temp);
+>> +	return 0;
+>> +}
+>> +
+>> +static int rockchip_bind(struct thermal_zone_device *tz,
+>> +			 struct thermal_cooling_device *cdev)
+>> +{
+>> +	int ret;
+>> +
+>> +	ret = thermal_zone_bind_cooling_device(tz, ROCKCHIP_TRIP_PASSIVE, cdev,
+>> +					       THERMAL_NO_LIMIT,
+>> +					       THERMAL_NO_LIMIT);
+>> +	if (ret) {
+>> +		dev_err(&tz->device, "binding zone %s with cdev %s failed:%d\n",
+>> +			tz->type, cdev->type, ret);
+>> +		return ret;
+>> +	}
+>> +	return 0;
+>> +}
+>> +
+>> +static int rockchip_unbind(struct thermal_zone_device *tz,
+>> +			   struct thermal_cooling_device *cdev)
+>> +{
+>> +	int ret;
+>> +
+>> +	ret = thermal_zone_unbind_cooling_device(tz,
+>> +						 ROCKCHIP_TRIP_PASSIVE, cdev);
+>> +	if (ret) {
+>> +		dev_err(&tz->device,
+>> +			"unbinding zone %s with cdev %s failed:%d\n", tz->type,
+>> +			cdev->type, ret);
+>> +		return ret;
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static struct thermal_zone_device_ops rockchip_tz_ops = {
+>> +	.bind = rockchip_bind,
+>> +	.unbind = rockchip_unbind,
+>> +	.get_temp = rockchip_get_temp,
+>> +	.get_mode = rockchip_get_mode,
+>> +	.set_mode = rockchip_set_mode,
+>> +	.get_trip_type = rockchip_get_trip_type,
+>> +	.get_trip_temp = rockchip_get_trip_temp,
+>> +	.get_crit_temp = rockchip_get_crit_temp,
+>> +	.set_trip_temp = rockchip_set_trip_temp,
+>> +};
+>> +
+>> +static irqreturn_t rockchip_thermal_alarm_irq(int irq, void *dev)
+>> +{
+>> +	struct rockchip_thermal_data *data = dev;
+>> +
+>> +	disable_irq_nosync(irq);
+>> +	data->irq_enabled = false;
+>> +
+>> +	return IRQ_WAKE_THREAD;
+> I think you want IRQF_ONESHOT instead of doing disable_irq dance (BTW I
+> also do not see you enabling it in your threaded handle so I wonder how
+> it worked for you).
+
+Sorry, I will remove it.   Amended as follows:
+
+     ...
+     ret = devm_request_threaded_irq(&pdev->dev, data->irq,
+                     NULL,
+                     rockchip_thermal_alarm_irq_thread,
+                     IRQF_ONESHOT,
+                     "rockchip_thermal", data);
+
+>> +}
+>> +
+>> +static irqreturn_t rockchip_thermal_alarm_irq_thread(int irq, void *dev)
+>> +{
+>> +	struct rockchip_thermal_data *data = data;
+>> +	const struct rockchip_tsadc_platform_data *p_tsadc_data = data->pdata;
+>> +
+>> +	dev_dbg(&data->tz->device, "THERMAL ALARM: T > %lu\n",
+>> +		data->alarm_temp / 1000);
+>> +
+>> +	if (p_tsadc_data->irq_en && p_tsadc_data->irq_handle)
+>> +		p_tsadc_data->irq_handle(data->regs);
+>> +
+>> +	thermal_zone_device_update(data->tz);
+>> +
+>> +	return IRQ_HANDLED;
+>> +}
+>> +
+>> +static int rockchip_thermal_probe(struct platform_device *pdev)
+>> +{
+>> +	struct rockchip_thermal_data *data;
+>> +	const struct rockchip_tsadc_platform_data *p_tsadc_data;
+>> +	struct cpumask clip_cpus;
+>> +	struct resource *res;
+>> +	const struct of_device_id *match;
+>> +	int ret, temp;
+>> +
+>> +	data = devm_kzalloc(&pdev->dev, sizeof(struct rockchip_thermal_data),
+>> +			    GFP_KERNEL);
+>> +	if (!data)
+>> +		return -ENOMEM;
+>> +
+>> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> +	data->regs = devm_ioremap_resource(&pdev->dev, res);
+>> +	if (IS_ERR(data->regs)) {
+>> +		dev_err(&pdev->dev, "Could not get tsadc source, %p\n",
+>> +			data->regs);
+>> +		return PTR_ERR(data->regs);
+>> +	}
+>> +
+>> +	match = of_match_node(of_rockchip_thermal_match, pdev->dev.of_node);
+>> +	if (!match)
+>> +		return -ENXIO;
+>> +	data->pdata = (const struct rockchip_tsadc_platform_data *)match->data;
+>> +	if (!data->pdata)
+>> +		return -EINVAL;
+>> +	p_tsadc_data = data->pdata;
+>> +
+>> +	data->tsadc_clk = devm_clk_get(&pdev->dev, "tsadc_clk");
+>> +	if (IS_ERR(data->tsadc_clk)) {
+>> +		dev_err(&pdev->dev, "failed to get tsadc clock\n");
+>> +		return PTR_ERR(data->tsadc_clk);
+>> +	}
+> Throw in a blank line here please.
+
+OK.
+
+>> +	ret = clk_prepare_enable(data->tsadc_clk);
+>> +	if (ret)
+>> +		return ret;
+>> +
+>> +	data->tsadc_pclk = devm_clk_get(&pdev->dev, "tsadc_pclk");
+>> +	if (IS_ERR(data->tsadc_pclk)) {
+>> +		dev_err(&pdev->dev, "failed to get tsadc pclk\n");
+>> +		return PTR_ERR(data->tsadc_pclk);
+>> +	}
+> And here too.
+>
+
+OK.
+
+>> +	ret = clk_prepare_enable(data->tsadc_pclk);
+>> +	if (ret)
+>> +		return ret;
+>> +
+>> +	platform_set_drvdata(pdev, data);
+>> +
+>> +	if (of_property_read_u32(pdev->dev.of_node, "passive-temp", &temp)) {
+>> +		dev_warn(&pdev->dev,
+>> +			 "Missing default passive temp property in the DT.\n");
+>> +		data->temp_passive = p_tsadc_data->temp_passive;
+>> +	} else {
+>> +		data->temp_passive = temp;
+>> +	}
+>> +
+>> +	if (of_property_read_u32(pdev->dev.of_node, "critical-temp", &temp)) {
+>> +		dev_warn(&pdev->dev,
+>> +			 "Missing default critical temp property in the DT.\n");
+>> +		data->temp_critical = p_tsadc_data->temp_critical;
+>> +	} else {
+>> +		data->temp_critical = temp;
+>> +	}
+>> +
+>> +	if (of_property_read_u32(pdev->dev.of_node, "force-shut-temp", &temp)) {
+>> +		dev_warn(&pdev->dev,
+>> +			 "Missing default force shut down temp property in the DT.\n");
+>> +		data->temp_force_shut = p_tsadc_data->temp_force_shut;
+>> +	} else {
+>> +		data->temp_force_shut = temp;
+>> +	}
+>> +
+>> +	cpumask_set_cpu(0, &clip_cpus);
+>> +	data->cdev = of_cpufreq_cooling_register(pdev->dev.of_node, &clip_cpus);
+>> +	if (IS_ERR(data->cdev)) {
+>> +		ret = PTR_ERR(data->cdev);
+>> +		dev_err(&pdev->dev,
+>> +			"failed to register cpufreq cooling device: %d\n", ret);
+> Don't you need to disable clocks here? Disbale operation is not devm
+> controlled as far as I know.
+Oh, you are right!
+
+As you say, maybe I willl fix it, as the following:
+
+clk_disable_unprepare(data->tsadc_clk);
+clk_disable_unprepare(data->tsadc_pclk);
+
+>
+>> +		return ret;
+>> +	}
+>> +
+>> +	data->tz = thermal_zone_device_register("rockchip_thermal",
+>> +						ROCKCHIP_TRIP_NUM,
+>> +						0, data,
+>> +						&rockchip_tz_ops, NULL,
+>> +						p_tsadc_data->passive_delay,
+>> +						p_tsadc_data->polling_delay);
+>> +
+>> +	if (IS_ERR(data->tz)) {
+>> +		ret = PTR_ERR(data->tz);
+>> +		dev_err(&pdev->dev,
+>> +			"failed to register thermal zone device %d\n", ret);
+>> +		cpufreq_cooling_unregister(data->cdev);
+>> +		return ret;
+>> +	}
+>> +
+>> +	if (p_tsadc_data->irq_en) {
+>> +		data->irq = platform_get_irq(pdev, 0);
+>> +		if (data->irq < 0)
+> You are leaking thermal and colling device here.
+>
+
+As follows:
+
+     if (p_tsadc_data->irq_en) {
+         data->irq = platform_get_irq(pdev, 0);
+         if (data->irq < 0) {
+   +        thermal_zone_device_unregister(data->tz);
+   +        cpufreq_cooling_unregister(data->cdev);
+             return data->irq;
+         }
+>> +			return data->irq;
+>> +
+>> +		ret = devm_request_threaded_irq(&pdev->dev, data->irq,
+>> +						rockchip_thermal_alarm_irq,
+>> +					rockchip_thermal_alarm_irq_thread,
+>> +						0, "rockchip_thermal", data);
+>> +		if (ret < 0) {
+>> +			dev_err(&pdev->dev,
+>> +				"failed to request tsadc irq: %d\n", ret);
+> And here as well.
+
+As follows:
+
+         if (ret < 0) {
++         thermal_zone_device_unregister(data->tz);
++         cpufreq_cooling_unregister(data->cdev);
+             dev_err(&pdev->dev,
+                 "failed to request tsadc irq: %d\n", ret);
+             return ret;
+         }
+>
+>> +			return ret;
+>> +		}
+>> +	}
+>> +
+>> +	rockchip_thermal_initialize(data);
+>> +	rockchip_thermal_control(data, true);
+>> +	return 0;
+>> +}
+>> +
+>> +static int rockchip_thermal_remove(struct platform_device *pdev)
+>> +{
+>> +	struct rockchip_thermal_data *data = platform_get_drvdata(pdev);
+>> +
+>> +	rockchip_thermal_control(data, false);
+>> +
+>> +	thermal_zone_device_unregister(data->tz);
+>> +
+>> +	if (!IS_ERR(data->tsadc_clk))
+>> +		clk_disable_unprepare(data->tsadc_clk);
+> No need to check IS_ERR() here: you abort probe if you fail to obtain
+> clocks.
+>
+OK, I will remove it.
+
+>> +
+>> +	if (!IS_ERR(data->tsadc_pclk))
+>> +		clk_disable_unprepare(data->tsadc_pclk);
+> Same here.
+
+Ditto.
+
+>> +
+>> +	cpufreq_cooling_unregister(data->cdev);
+> As I mentioned I believe you should unregister cooling device before
+> disabling clocks.
+
+OK.
+
+>> +	return 0;
+>> +}
+>> +
+>> +#ifdef CONFIG_PM_SLEEP
+>> +static int rockchip_thermal_suspend(struct device *dev)
+>> +{
+>> +	struct platform_device *pdev = to_platform_device(dev);
+>> +	struct rockchip_thermal_data *data = platform_get_drvdata(pdev);
+>> +
+>> +	rockchip_thermal_control(data, false);
+>> +	return 0;
+>> +}
+>> +
+>> +static int rockchip_thermal_resume(struct device *dev)
+>> +{
+>> +	struct platform_device *pdev = to_platform_device(dev);
+>> +	struct rockchip_thermal_data *data = platform_get_drvdata(pdev);
+>> +
+>> +	rockchip_thermal_initialize(data);
+>> +	rockchip_thermal_control(data, true);
+>> +
+>> +	return 0;
+>> +}
+>> +#endif
+>> +
+>> +static SIMPLE_DEV_PM_OPS(rockchip_thermal_pm_ops,
+>> +			 rockchip_thermal_suspend, rockchip_thermal_resume);
+>> +
+>> +static struct platform_driver rockchip_thermal_driver = {
+>> +	.driver = {
+>> +		   .name = "rockchip-thermal",
+>> +		   .owner = THIS_MODULE,
+>> +		   .pm = &rockchip_thermal_pm_ops,
+>> +		   .of_match_table = of_rockchip_thermal_match,
+>> +		   },
+>> +	.probe = rockchip_thermal_probe,
+>> +	.remove = rockchip_thermal_remove,
+>> +};
+>> +
+>> +module_platform_driver(rockchip_thermal_driver);
+>> +
+>> +MODULE_DESCRIPTION("ROCKCHIP THERMAL Driver");
+>> +MODULE_AUTHOR("Rockchip, Inc.");
+>> +MODULE_LICENSE("GPL");
+>> +MODULE_ALIAS("platform:rockchip-thermal");
+> Thanks.
+>
+
+Thanks  for  your comments.
+
+I will amend the about and sent patch v3 today if have no other problems.
+
 -- 
-1.9.1
+Best regards,
+Caesar
+
 
