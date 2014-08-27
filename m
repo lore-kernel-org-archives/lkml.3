@@ -1,134 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935389AbaH0PW4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 11:22:56 -0400
-Received: from goliath.siemens.de ([192.35.17.28]:33942 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934734AbaH0PWw (ORCPT
+	id S935403AbaH0PW7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 11:22:59 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:51781 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935376AbaH0PWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 11:22:52 -0400
-From: Jan Kiszka <jan.kiszka@siemens.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
-        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
-        Borislav Petkov <bp@suse.de>,
-        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
-        Daniel Thompson <daniel.thompson@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Fenghua Yu <fenghua.yu@intel.com>, Kay Sievers <kay@vrfy.org>,
-        linux-doc@vger.kernel.org, linux-ia64@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        Pantelis Koukousoulas <pktoss@gmail.com>,
-        Rob Landley <rob@landley.net>, Rusty Russell <rusty@rustcorp.com.au>,
-        sparclinux@vger.kernel.org, Tony Luck <tony.luck@intel.com>
-Subject: [PATCH v9 00/23] Add gdb python scripts as kernel debugging helpers
-Date: Wed, 27 Aug 2014 17:21:15 +0200
-Message-Id: <cover.1409152897.git.jan.kiszka@siemens.com>
-X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
+	Wed, 27 Aug 2014 11:22:55 -0400
+Message-ID: <53FDF7B6.507@linaro.org>
+Date: Wed, 27 Aug 2014 17:22:30 +0200
+From: Eric Auger <eric.auger@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: eric.auger@st.com, christoffer.dall@linaro.org, marc.zyngier@arm.com,
+        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
+        kvm@vger.kernel.org, joel.schopp@amd.com, kim.phillips@freescale.com,
+        linux-kernel@vger.kernel.org, patches@linaro.org, will.deacon@arm.com,
+        a.motakis@virtualopensystems.com, a.rigo@virtualopensystems.com,
+        john.liuli@huawei.com
+Subject: Re: [RFC 8/9] KVM: KVM-VFIO: add kvm_vfio_arch_data and accessors
+References: <1408973264-30384-1-git-send-email-eric.auger@linaro.org>	 <1408973264-30384-9-git-send-email-eric.auger@linaro.org> <1409079750.2906.130.camel@ul30vt.home>
+In-Reply-To: <1409079750.2906.130.camel@ul30vt.home>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Another refresh of this feature series. Changes since v8:
- - Ignore byte-compiled python files [Daniel Thompson]
- - rebase over recent Linux version, resolving a trivial conflict
+On 08/26/2014 09:02 PM, Alex Williamson wrote:
+> On Mon, 2014-08-25 at 15:27 +0200, Eric Auger wrote:
+>> add a pointer to architecture specific data in kvm_vfio struct
+>> add accessors to keep kvm_vfio private
+>>
+>> Signed-off-by: Eric Auger <eric.auger@linaro.org>
+>> ---
+>>  arch/arm/include/asm/kvm_host.h |  8 ++++++++
+>>  virt/kvm/vfio.c                 | 21 +++++++++++++++++++++
+>>  2 files changed, 29 insertions(+)
+>>
+>> diff --git a/arch/arm/include/asm/kvm_host.h b/arch/arm/include/asm/kvm_host.h
+>> index 62cbf5b..4f1edbf 100644
+>> --- a/arch/arm/include/asm/kvm_host.h
+>> +++ b/arch/arm/include/asm/kvm_host.h
+>> @@ -177,6 +177,14 @@ void kvm_vfio_device_put_external_user(struct vfio_device *vdev);
+>>  int kvm_vfio_external_get_type(struct vfio_device *vdev);
+>>  struct device *kvm_vfio_external_get_base_device(struct vfio_device *vdev);
+>>  
+>> +struct kvm_vfio;
+>> +struct kvm_vfio_arch_data;
+>> +void kvm_vfio_device_set_arch_data(struct kvm_vfio *kv,
+>> +				   struct kvm_vfio_arch_data *ptr);
+>> +struct kvm_vfio_arch_data *kvm_vfio_device_get_arch_data(struct kvm_vfio *kv);
+>> +void kvm_vfio_lock(struct kvm_vfio *kv);
+>> +void kvm_vfio_unlock(struct kvm_vfio *kv);
+>> +
+>>  /* We do not have shadow page tables, hence the empty hooks */
+>>  static inline int kvm_age_hva(struct kvm *kvm, unsigned long hva)
+>>  {
+>> diff --git a/virt/kvm/vfio.c b/virt/kvm/vfio.c
+>> index f1c4e35..177b71e 100644
+>> --- a/virt/kvm/vfio.c
+>> +++ b/virt/kvm/vfio.c
+>> @@ -28,6 +28,7 @@ struct kvm_vfio {
+>>  	struct list_head group_list;
+>>  	struct mutex lock;
+>>  	bool noncoherent;
+>> +	struct kvm_vfio_arch_data *arch_data;
+>>  };
+>>  
+>>  static struct vfio_group *kvm_vfio_group_get_external_user(struct file *filep)
+>> @@ -338,6 +339,26 @@ static int kvm_vfio_create(struct kvm_device *dev, u32 type)
+>>  	return 0;
+>>  }
+>>  
+>> +void kvm_vfio_device_set_arch_data(struct kvm_vfio *kv,
+>> +				   struct kvm_vfio_arch_data *ptr)
+>> +{
+>> +	kv->arch_data = ptr;
+>> +}
+>> +
+>> +struct kvm_vfio_arch_data *kvm_vfio_device_get_arch_data(struct kvm_vfio *kv)
+>> +{
+> 
+> My preference would be s/get_//
+ok
+> 
+>> +	return kv->arch_data;
+>> +}
+>> +
+>> +void kvm_vfio_lock(struct kvm_vfio *kv)
+>> +{
+>> +	mutex_lock(&kv->lock);
+>> +}
+>> +
+>> +void kvm_vfio_unlock(struct kvm_vfio *kv)
+>> +{
+>> +	mutex_unlock(&kv->lock);
+>> +}
+> 
+> Gosh, what could go wrong...
+Hum sorry I did not understand what you meant here
 
-See http://lkml.indiana.edu/hypermail/linux/kernel/1210.0/01598.html for
-the original description and
+Thanks
 
-    git://git.kiszka.org/linux.git queues/gdb-scripts
-
-for the latest version.
-
-Note that there is apparently some issue with gdb 7.8 and newer that
-prevents lx-symbols from working here [1]. 7.7 is still fine, though.
-
-Jan
-
-[1] http://thread.gmane.org/gmane.comp.gdb.devel/34898
-
-CC: Daniel Thompson <daniel.thompson@linaro.org>
-CC: "David S. Miller" <davem@davemloft.net>
-CC: Fenghua Yu <fenghua.yu@intel.com>
-CC: Kay Sievers <kay@vrfy.org>
-CC: linux-doc@vger.kernel.org
-CC: linux-ia64@vger.kernel.org
-Cc: linux-kbuild@vger.kernel.org
-CC: linux-kbuild@vger.kernel.org
-Cc: Michal Marek <mmarek@suse.cz>
-CC: Michal Marek <mmarek@suse.cz>
-CC: Pantelis Koukousoulas <pktoss@gmail.com>
-CC: Rob Landley <rob@landley.net>
-CC: Rusty Russell <rusty@rustcorp.com.au>
-CC: sparclinux@vger.kernel.org
-CC: Tony Luck <tony.luck@intel.com>
-
-Daniel Thompson (1):
-  scripts/gdb: Ignore byte-compiled python files
-
-Jan Kiszka (21):
-  scripts/gdb: Add infrastructure
-  scripts/gdb: Add cache for type objects
-  scripts/gdb: Add container_of helper and convenience function
-  scripts/gdb: Add module iteration class
-  scripts/gdb: Add lx-symbols command
-  module: Do not inline do_init_module
-  scripts/gdb: Add automatic symbol reloading on module insertion
-  scripts/gdb: Add internal helper and convenience function to look up a
-    module
-  scripts/gdb: Add get_target_endianness helper
-  scripts/gdb: Add read_u16/32/64 helpers
-  scripts/gdb: Add lx-dmesg command
-  scripts/gdb: Add task iteration class
-  scripts/gdb: Add helper and convenience function to look up tasks
-  scripts/gdb: Add is_target_arch helper
-  scripts/gdb: Add internal helper and convenience function to retrieve
-    thread_info
-  scripts/gdb: Add get_gdbserver_type helper
-  scripts/gdb: Add internal helper and convenience function for per-cpu
-    lookup
-  scripts/gdb: Add lx_current convenience function
-  scripts/gdb: Add class to iterate over CPU masks
-  scripts/gdb: Add lx-lsmod command
-  scripts/gdb: Add basic documentation
-
-Pantelis Koukousoulas (1):
-  scripts/gdb: Port to python3 / gdb7.7
-
- .gitignore                             |   1 +
- Documentation/gdb-kernel-debugging.txt | 160 +++++++++++++++++++++++++++++++
- Makefile                               |   6 +-
- kernel/module.c                        |   9 +-
- lib/Kconfig.debug                      |  11 +++
- scripts/Makefile                       |   3 +-
- scripts/gdb/Makefile                   |   1 +
- scripts/gdb/linux/.gitignore           |   2 +
- scripts/gdb/linux/Makefile             |  11 +++
- scripts/gdb/linux/__init__.py          |   0
- scripts/gdb/linux/cpus.py              | 142 ++++++++++++++++++++++++++++
- scripts/gdb/linux/dmesg.py             |  65 +++++++++++++
- scripts/gdb/linux/modules.py           | 114 ++++++++++++++++++++++
- scripts/gdb/linux/symbols.py           | 166 +++++++++++++++++++++++++++++++++
- scripts/gdb/linux/tasks.py             | 110 ++++++++++++++++++++++
- scripts/gdb/linux/utils.py             | 156 +++++++++++++++++++++++++++++++
- scripts/gdb/vmlinux-gdb.py             |  30 ++++++
- 17 files changed, 983 insertions(+), 4 deletions(-)
- create mode 100644 Documentation/gdb-kernel-debugging.txt
- create mode 100644 scripts/gdb/Makefile
- create mode 100644 scripts/gdb/linux/.gitignore
- create mode 100644 scripts/gdb/linux/Makefile
- create mode 100644 scripts/gdb/linux/__init__.py
- create mode 100644 scripts/gdb/linux/cpus.py
- create mode 100644 scripts/gdb/linux/dmesg.py
- create mode 100644 scripts/gdb/linux/modules.py
- create mode 100644 scripts/gdb/linux/symbols.py
- create mode 100644 scripts/gdb/linux/tasks.py
- create mode 100644 scripts/gdb/linux/utils.py
- create mode 100644 scripts/gdb/vmlinux-gdb.py
-
--- 
-1.8.1.1.298.ge7eed54
+Eric
+> 
+>>  
+>>  struct kvm_device_ops kvm_vfio_ops = {
+>>  	.name = "kvm-vfio",
+> 
+> 
+> 
 
