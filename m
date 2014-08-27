@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934477AbaH0Nqn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 09:46:43 -0400
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:42651 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934136AbaH0Nql (ORCPT
+	id S934621AbaH0Nug (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 09:50:36 -0400
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:43520 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934253AbaH0Nue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 09:46:41 -0400
-Date: Wed, 27 Aug 2014 14:46:35 +0100
+	Wed, 27 Aug 2014 09:50:34 -0400
+Date: Wed, 27 Aug 2014 14:50:27 +0100
 From: Lee Jones <lee.jones@linaro.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Andreas Werner <andreas.werner@men.de>, linux-kernel@vger.kernel.org,
-        sameo@linux.intel.com, wim@iguana.be, linux-watchdog@vger.kernel.org,
-        cooloney@gmail.com, rpurdie@rpsys.net, linux-leds@vger.kernel.org,
-        jdelvare@suse.de, lm-sensors@lm-sensors.org, johannes.thumshirn@men.de
-Subject: Re: [PATCH v5 1/4] drivers/mfd/menf21bmc: introduce MEN 14F021P00
- BMC MFD Core driver
-Message-ID: <20140827134635.GE6364@lee--X1>
-References: <cover.1409074255.git.andreas.werner@men.de>
- <67faa70de03924edc768002df17b02e47256260c.1409074255.git.andreas.werner@men.de>
- <20140827072633.GY26707@lee--X1>
- <53FDDF0F.2080607@roeck-us.net>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, linux-pm@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Jenny Tc <jenny.tc@intel.com>
+Subject: Re: [RESEND PATCH v3 3/6] charger: max14577: Configure
+ battery-dependent settings from DTS and sysfs
+Message-ID: <20140827135027.GF6364@lee--X1>
+References: <1409146282-25075-1-git-send-email-k.kozlowski@samsung.com>
+ <1409146282-25075-4-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <53FDDF0F.2080607@roeck-us.net>
+In-Reply-To: <1409146282-25075-4-git-send-email-k.kozlowski@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Aug 2014, Guenter Roeck wrote:
-> On 08/27/2014 12:26 AM, Lee Jones wrote:
-> >On Tue, 26 Aug 2014, Andreas Werner wrote:
-> >>The MEN 14F021P00 Board Management Controller provides an
-> >>I2C interface to the host to access the feature implemented in the BMC.
-> >>The BMC is a PIC Microntroller assembled on CPCI Card from MEN Mikroelektronik
-> >>and on a few Box/Display Computer.
-> >>
-> >>Added MFD Core driver, supporting the I2C communication to the device.
-> >>
-> >>The MFD driver currently supports the following features:
-> >>  	- Watchdog
-> >>  	- LEDs
-> >>	- Hwmon (voltage monitoring)
-> >>
-> 
-> >>+	{ }
-> >>+};
-> >>+MODULE_DEVICE_TABLE(i2c, menf21bmc_id_table);
-> >>+
-> >>+static struct i2c_driver menf21bmc_driver = {
-> >>+	.driver.name	= "menf21bmc",
-> >>+	.id_table	= menf21bmc_id_table,
-> >>+	.probe		= menf21bmc_probe,
-> >>+	.remove		= menf21bmc_remove,
-> >>+};
-> >
-> >No DT support?
-> >
-> i2c devices auto-instantiate from dt entries even if there is no
-> explicit devicetree configuration here. The devicetree entry
-> would have to be something like "men,menf21bmc", ie it needs
-> to match the driver name.
+On Wed, 27 Aug 2014, Krzysztof Kozlowski wrote:
 
-https://patchwork.ozlabs.org/patch/362180/
+> Remove hard-coded values for:
+>  - Fast Charge current,
+>  - End Of Charge current,
+>  - Fast Charge timer,
+>  - Overvoltage Protection Threshold,
+>  - Battery Constant Voltage,
+> and use DTS or sysfs to configure them. This allows using the max14577 charger
+> driver with different batteries.
+> 
+> Now the charger driver requires valid configuration data from DTS. In
+> case of wrong configuration data it fails during probe. Patch adds
+> of_compatible to the charger mfd cell in MFD driver core.
+> 
+> The fast charge timer is configured through sysfs entry.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+> Cc: David Woodhouse <dwmw2@infradead.org>
+> Cc: Jenny Tc <jenny.tc@intel.com>
+> Cc: Mark Rutland <mark.rutland@arm.com>
+> Acked-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  drivers/mfd/max14577.c               |   5 +-
+
+Hmm... not sure why I Acked this.  The code looks okay, but can you
+break out the MFD changed into a separate patch please?  You can add
+my Ack to the broken out patch though.
 
 -- 
 Lee Jones
