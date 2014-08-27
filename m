@@ -1,104 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754050AbaH0Hgd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 03:36:33 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:34768 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751674AbaH0Hga (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 03:36:30 -0400
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Grant Likely <grant.likely@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Subject: [PATCH/RFC 1/2] lib: string: Remove duplicated function
-Date: Wed, 27 Aug 2014 09:36:01 +0200
-Message-Id: <1409124962-11527-2-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1409124962-11527-1-git-send-email-linux@rasmusvillemoes.dk>
-References: <1409124962-11527-1-git-send-email-linux@rasmusvillemoes.dk>
+	id S1754603AbaH0Hgn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 03:36:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57944 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754264AbaH0Hgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 03:36:40 -0400
+Date: Wed, 27 Aug 2014 09:36:37 +0200
+From: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
+To: Patrick Palka <patrick@parcs.ath.cx>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, jack@suse.cz,
+        rostedt@goodmis.org
+Subject: Re: [PATCH] Fix faulty logic in the case of recursive printk
+Message-ID: <20140827073637.GA4918@dhcp128.suse.cz>
+References: <20140826084833.GA1581@quack.suse.cz>
+ <1409052202-9498-1-git-send-email-patrick@parcs.ath.cx>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409052202-9498-1-git-send-email-patrick@parcs.ath.cx>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lib/string.c contains two functions, strnicmp and strncasecmp, which
-do roughly the same thing, namely compare two strings
-case-insensitively up to a given bound. They have slightly different
-implementations, but the only important difference is that strncasecmp
-doesn't handle len==0 appropriately; it effectively becomes strcasecmp
-in that case. strnicmp correctly says that two strings are always
-equal in their first 0 characters.
+On Tue 26-08-14 07:23:22, Patrick Palka wrote:
+> Thanks for reviewing!  I have put back the call to strlen() and adjusted
+> the commit message accordingly.
+> 
+> Patrick
+> 
+> -- >8 --
+> 
+> We shouldn't set text_len in the code path that detects printk recursion
+> because text_len corresponds to the length of the string inside textbuf.
+> A few lines down from the line
+> 
+>     text_len = strlen(recursion_msg);
+> 
+> is the line
+> 
+>     text_len += vscnprintf(text + text_len, ...);
+> 
+> So if printk detects recursion, it sets text_len to 29 (the length of
+> recursion_msg) and logs an error.  Then the message supplied by the
+> caller of printk is stored inside textbuf but offset by 29 bytes.  This
+> means that the output of the recursive call to printk will contain 29
+> bytes of garbage in front of it.
+> 
+> This defect is caused by commit 458df9fd ("printk: remove separate
+> printk_sched buffers and use printk buf instead") which turned the line
+> 
+>     text_len = vscnprintf(text, ...);
+> 
+> into
+> 
+>     text_len += vscnprintf(text + text_len, ...);
+> 
+> To fix this, this patch avoids setting text_len when logging the printk
+> recursion error.  This patch also marks unlikely() the branch leading
+> up to this code.
+> 
+> Signed-off-by: Patrick Palka <patrick@parcs.ath.cx>
 
-strncasecmp is the POSIX name for this functionality. So rename the
-non-broken function to the standard name. To minimize the impact on
-the rest of the kernel (and since both are exported to modules), make
-strnicmp a wrapper for strncasecmp.
+Looks fine to me.
 
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
----
- lib/string.c | 27 ++++++++++-----------------
- 1 file changed, 10 insertions(+), 17 deletions(-)
+Reviewed-by: Petr Mladek <pmladek@suse.cz>
 
-diff --git a/lib/string.c b/lib/string.c
-index 992bf30..92c33e1 100644
---- a/lib/string.c
-+++ b/lib/string.c
-@@ -27,14 +27,14 @@
- #include <linux/bug.h>
- #include <linux/errno.h>
- 
--#ifndef __HAVE_ARCH_STRNICMP
-+#ifndef __HAVE_ARCH_STRNCASECMP
- /**
-- * strnicmp - Case insensitive, length-limited string comparison
-+ * strncasecmp - Case insensitive, length-limited string comparison
-  * @s1: One string
-  * @s2: The other string
-  * @len: the maximum number of characters to compare
-  */
--int strnicmp(const char *s1, const char *s2, size_t len)
-+int strncasecmp(const char *s1, const char *s2, size_t len)
- {
- 	/* Yes, Virginia, it had better be unsigned */
- 	unsigned char c1, c2;
-@@ -56,6 +56,13 @@ int strnicmp(const char *s1, const char *s2, size_t len)
- 	} while (--len);
- 	return (int)c1 - (int)c2;
- }
-+EXPORT_SYMBOL(strncasecmp);
-+#endif
-+#ifndef __HAVE_ARCH_STRNICMP
-+int strnicmp(const char *s1, const char *s2, size_t len)
-+{
-+	return strncasecmp(s1, s2, len);
-+}
- EXPORT_SYMBOL(strnicmp);
- #endif
- 
-@@ -73,20 +80,6 @@ int strcasecmp(const char *s1, const char *s2)
- EXPORT_SYMBOL(strcasecmp);
- #endif
- 
--#ifndef __HAVE_ARCH_STRNCASECMP
--int strncasecmp(const char *s1, const char *s2, size_t n)
--{
--	int c1, c2;
--
--	do {
--		c1 = tolower(*s1++);
--		c2 = tolower(*s2++);
--	} while ((--n > 0) && c1 == c2 && c1 != 0);
--	return c1 - c2;
--}
--EXPORT_SYMBOL(strncasecmp);
--#endif
--
- #ifndef __HAVE_ARCH_STRCPY
- /**
-  * strcpy - Copy a %NUL terminated string
--- 
-2.0.4
-
+> ---
+>  kernel/printk/printk.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+> index e04c455..1ce7706 100644
+> --- a/kernel/printk/printk.c
+> +++ b/kernel/printk/printk.c
+> @@ -1665,15 +1665,15 @@ asmlinkage int vprintk_emit(int facility, int level,
+>  	raw_spin_lock(&logbuf_lock);
+>  	logbuf_cpu = this_cpu;
+>  
+> -	if (recursion_bug) {
+> +	if (unlikely(recursion_bug)) {
+>  		static const char recursion_msg[] =
+>  			"BUG: recent printk recursion!";
+>  
+>  		recursion_bug = 0;
+> -		text_len = strlen(recursion_msg);
+>  		/* emit KERN_CRIT message */
+>  		printed_len += log_store(0, 2, LOG_PREFIX|LOG_NEWLINE, 0,
+> -					 NULL, 0, recursion_msg, text_len);
+> +					 NULL, 0, recursion_msg,
+> +					 strlen(recursion_msg));
+>  	}
+>  
+>  	/*
+> -- 
+> 2.1.0
+> 
