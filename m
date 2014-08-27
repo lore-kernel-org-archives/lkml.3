@@ -1,48 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934701AbaH0NkN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 09:40:13 -0400
-Received: from mail.eperm.de ([89.247.134.16]:46966 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933802AbaH0NkL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 09:40:11 -0400
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] DRBG: fix maximum value checks on 32 bit systems
-Date: Wed, 27 Aug 2014 15:40:06 +0200
-Message-ID: <12812557.76Zd8kO297@tauon>
-User-Agent: KMail/4.13.3 (Linux/3.15.10-200.fc20.x86_64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <20140827133528.GA15871@gondor.apana.org.au>
-References: <20140826161456.7ad100e3@canb.auug.org.au> <1471416.zGlxQVbHUr@myon.chronox.de> <20140827133528.GA15871@gondor.apana.org.au>
+	id S934477AbaH0Nqn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 09:46:43 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:42651 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934136AbaH0Nql (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 09:46:41 -0400
+Date: Wed, 27 Aug 2014 14:46:35 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Andreas Werner <andreas.werner@men.de>, linux-kernel@vger.kernel.org,
+        sameo@linux.intel.com, wim@iguana.be, linux-watchdog@vger.kernel.org,
+        cooloney@gmail.com, rpurdie@rpsys.net, linux-leds@vger.kernel.org,
+        jdelvare@suse.de, lm-sensors@lm-sensors.org, johannes.thumshirn@men.de
+Subject: Re: [PATCH v5 1/4] drivers/mfd/menf21bmc: introduce MEN 14F021P00
+ BMC MFD Core driver
+Message-ID: <20140827134635.GE6364@lee--X1>
+References: <cover.1409074255.git.andreas.werner@men.de>
+ <67faa70de03924edc768002df17b02e47256260c.1409074255.git.andreas.werner@men.de>
+ <20140827072633.GY26707@lee--X1>
+ <53FDDF0F.2080607@roeck-us.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53FDDF0F.2080607@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 27. August 2014, 21:35:28 schrieb Herbert Xu:
+On Wed, 27 Aug 2014, Guenter Roeck wrote:
+> On 08/27/2014 12:26 AM, Lee Jones wrote:
+> >On Tue, 26 Aug 2014, Andreas Werner wrote:
+> >>The MEN 14F021P00 Board Management Controller provides an
+> >>I2C interface to the host to access the feature implemented in the BMC.
+> >>The BMC is a PIC Microntroller assembled on CPCI Card from MEN Mikroelektronik
+> >>and on a few Box/Display Computer.
+> >>
+> >>Added MFD Core driver, supporting the I2C communication to the device.
+> >>
+> >>The MFD driver currently supports the following features:
+> >>  	- Watchdog
+> >>  	- LEDs
+> >>	- Hwmon (voltage monitoring)
+> >>
+> 
+> >>+	{ }
+> >>+};
+> >>+MODULE_DEVICE_TABLE(i2c, menf21bmc_id_table);
+> >>+
+> >>+static struct i2c_driver menf21bmc_driver = {
+> >>+	.driver.name	= "menf21bmc",
+> >>+	.id_table	= menf21bmc_id_table,
+> >>+	.probe		= menf21bmc_probe,
+> >>+	.remove		= menf21bmc_remove,
+> >>+};
+> >
+> >No DT support?
+> >
+> i2c devices auto-instantiate from dt entries even if there is no
+> explicit devicetree configuration here. The devicetree entry
+> would have to be something like "men,menf21bmc", ie it needs
+> to match the driver name.
 
-Hi Herbert,
+https://patchwork.ozlabs.org/patch/362180/
 
->On Tue, Aug 26, 2014 at 11:36:54AM +0200, Stephan Mueller wrote:
->> The max_addtllen and max_req are defined in drbg_cores[] in
->> crypto/drbg.c for each DRBG type. As size_t on a 32 bit system is 32
->> bit the bit shifts would not work either.
->> 
->> Thus, I am wondering whether the just applied patch would need to go
->> to Linus
->> tree too? I would think that the following patch would be in order:
->Have you actually tested this on a 32-bit box? If so and it
->actually works then I'd be happy to push it.
-
-I will have it tested by tomorrow.
->
->Cheers,
-
-
-Ciao
-Stephan
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
