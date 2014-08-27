@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757585AbaH0Ca0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 22:30:26 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:49224 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757377AbaH0CaP (ORCPT
+	id S1757742AbaH0Caf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 22:30:35 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:63767 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757591AbaH0Ca3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 22:30:15 -0400
+	Tue, 26 Aug 2014 22:30:29 -0400
 From: Alexei Starovoitov <ast@plumgrid.com>
 To: "David S. Miller" <davem@davemloft.net>
 Cc: Ingo Molnar <mingo@kernel.org>,
@@ -21,9 +21,9 @@ Cc: Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RFC v7 net-next 07/28] bpf: expand BPF syscall with program load/unload
-Date: Tue, 26 Aug 2014 19:29:21 -0700
-Message-Id: <1409106582-10095-8-git-send-email-ast@plumgrid.com>
+Subject: [PATCH RFC v7 net-next 12/28] bpf: verifier (add branch/goto checks)
+Date: Tue, 26 Aug 2014 19:29:26 -0700
+Message-Id: <1409106582-10095-13-git-send-email-ast@plumgrid.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1409106582-10095-1-git-send-email-ast@plumgrid.com>
 References: <1409106582-10095-1-git-send-email-ast@plumgrid.com>
@@ -31,373 +31,220 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-eBPF programs are safe run-to-completion functions with load/unload
-methods from userspace similar to kernel modules.
+check that control flow graph of eBPF program is a directed acyclic graph
 
-User space API:
-
-- load eBPF program
-  fd = bpf(BPF_PROG_LOAD, union bpf_attr *attr, u32 size)
-
-  where 'attr' is
-  struct {
-      enum bpf_prog_type prog_type;
-      __u32 insn_cnt;
-      struct bpf_insn __user *insns;
-      const char __user *license;
-  };
-  insns - array of eBPF instructions
-  license - must be GPL compatible to call helper functions marked gpl_only
-
-- unload eBPF program
-  close(fd)
-
-User space tests and examples follow in the later patches
+check_cfg() does:
+- detect loops
+- detect unreachable instructions
+- check that program terminates with BPF_EXIT insn
+- check that all branches are within program boundary
 
 Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 ---
- include/linux/bpf.h      |   36 ++++++++++
- include/linux/filter.h   |    9 ++-
- include/uapi/linux/bpf.h |   27 ++++++++
- kernel/bpf/syscall.c     |  170 ++++++++++++++++++++++++++++++++++++++++++++++
- net/core/filter.c        |    2 +
- 5 files changed, 242 insertions(+), 2 deletions(-)
+ kernel/bpf/verifier.c |  183 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 183 insertions(+)
 
-diff --git a/include/linux/bpf.h b/include/linux/bpf.h
-index 2887f3f9da59..8ea6f9923ff2 100644
---- a/include/linux/bpf.h
-+++ b/include/linux/bpf.h
-@@ -46,4 +46,40 @@ void bpf_register_map_type(struct bpf_map_type_list *tl);
- void bpf_map_put(struct bpf_map *map);
- struct bpf_map *bpf_map_get(struct fd f);
- 
-+/* eBPF function prototype used by verifier to allow BPF_CALLs from eBPF programs
-+ * to in-kernel helper functions and for adjusting imm32 field in BPF_CALL
-+ * instructions after verifying
-+ */
-+struct bpf_func_proto {
-+	u64 (*func)(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5);
-+	bool gpl_only;
-+};
-+
-+struct bpf_verifier_ops {
-+	/* return eBPF function prototype for verification */
-+	const struct bpf_func_proto *(*get_func_proto)(enum bpf_func_id func_id);
-+};
-+
-+struct bpf_prog_type_list {
-+	struct list_head list_node;
-+	struct bpf_verifier_ops *ops;
-+	enum bpf_prog_type type;
-+};
-+
-+void bpf_register_prog_type(struct bpf_prog_type_list *tl);
-+
-+struct bpf_prog_info {
-+	atomic_t refcnt;
-+	bool is_gpl_compatible;
-+	enum bpf_prog_type prog_type;
-+	struct bpf_verifier_ops *ops;
-+	struct bpf_map **used_maps;
-+	u32 used_map_cnt;
-+};
-+
-+struct bpf_prog;
-+
-+void bpf_prog_put(struct bpf_prog *prog);
-+struct bpf_prog *bpf_prog_get(u32 ufd);
-+
- #endif /* _LINUX_BPF_H */
-diff --git a/include/linux/filter.h b/include/linux/filter.h
-index f04793474d16..f06913b29861 100644
---- a/include/linux/filter.h
-+++ b/include/linux/filter.h
-@@ -31,11 +31,16 @@ struct sock_fprog_kern {
- struct sk_buff;
- struct sock;
- struct seccomp_data;
-+struct bpf_prog_info;
- 
- struct bpf_prog {
- 	u32			jited:1,	/* Is our filter JIT'ed? */
--				len:31;		/* Number of filter blocks */
--	struct sock_fprog_kern	*orig_prog;	/* Original BPF program */
-+				has_info:1,	/* whether 'info' is valid */
-+				len:30;		/* Number of filter blocks */
-+	union {
-+		struct sock_fprog_kern	*orig_prog;	/* Original BPF program */
-+		struct bpf_prog_info	*info;
-+	};
- 	unsigned int		(*bpf_func)(const struct sk_buff *skb,
- 					    const struct bpf_insn *filter);
- 	union {
-diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
-index ad0a5a495ec3..ac272bd7a884 100644
---- a/include/uapi/linux/bpf.h
-+++ b/include/uapi/linux/bpf.h
-@@ -355,6 +355,13 @@ enum bpf_cmd {
- 	 * returns zero and stores next key or negative error
- 	 */
- 	BPF_MAP_GET_NEXT_KEY,
-+
-+	/* verify and load eBPF program
-+	 * prog_fd = bpf(BPF_PROG_LOAD, union bpf_attr *attr, u32 size)
-+	 * Using attr->prog_type, attr->insns, attr->license
-+	 * returns fd or negative error
-+	 */
-+	BPF_PROG_LOAD,
- };
- 
- enum bpf_map_type {
-@@ -362,6 +369,10 @@ enum bpf_map_type {
- 	BPF_MAP_TYPE_HASH,
- };
- 
-+enum bpf_prog_type {
-+	BPF_PROG_TYPE_UNSPEC,
-+};
-+
- union bpf_attr {
- 	struct { /* anonymous struct used by BPF_MAP_CREATE command */
- 		enum bpf_map_type map_type;
-@@ -383,6 +394,22 @@ union bpf_attr {
- #define BPF_MAP_DELETE_ELEM_LAST_FIELD key
- #define BPF_MAP_GET_NEXT_KEY_LAST_FIELD next_key
- 	};
-+
-+	struct { /* anonymous struct used by BPF_PROG_LOAD command */
-+		enum bpf_prog_type prog_type;
-+		__u32 insn_cnt;
-+		const struct bpf_insn __user *insns;
-+		const char __user *license;
-+#define	BPF_PROG_LOAD_LAST_FIELD license
-+	};
-+};
-+
-+/* integer value in 'imm' field of BPF_CALL instruction selects which helper
-+ * function eBPF program intends to call
-+ */
-+enum bpf_func_id {
-+	BPF_FUNC_unspec,
-+	__BPF_FUNC_MAX_ID,
- };
- 
- #endif /* _UAPI__LINUX_BPF_H__ */
-diff --git a/kernel/bpf/syscall.c b/kernel/bpf/syscall.c
-index b863976741d4..c316f7c28895 100644
---- a/kernel/bpf/syscall.c
-+++ b/kernel/bpf/syscall.c
-@@ -14,6 +14,8 @@
- #include <linux/slab.h>
- #include <linux/anon_inodes.h>
- #include <linux/file.h>
-+#include <linux/license.h>
-+#include <linux/filter.h>
- 
- static LIST_HEAD(bpf_map_types);
- 
-@@ -316,6 +318,171 @@ err_put:
- 	return err;
+diff --git a/kernel/bpf/verifier.c b/kernel/bpf/verifier.c
+index 73811d69e7be..7365a190cbd6 100644
+--- a/kernel/bpf/verifier.c
++++ b/kernel/bpf/verifier.c
+@@ -332,6 +332,185 @@ static struct bpf_map *ld_imm64_to_map_ptr(struct bpf_insn *insn)
+ 	return (struct bpf_map *) (unsigned long) imm64;
  }
  
-+static LIST_HEAD(bpf_prog_types);
++/* non-recursive DFS pseudo code
++ * 1  procedure DFS-iterative(G,v):
++ * 2      label v as discovered
++ * 3      let S be a stack
++ * 4      S.push(v)
++ * 5      while S is not empty
++ * 6            t <- S.pop()
++ * 7            if t is what we're looking for:
++ * 8                return t
++ * 9            for all edges e in G.adjacentEdges(t) do
++ * 10               if edge e is already labelled
++ * 11                   continue with the next edge
++ * 12               w <- G.adjacentVertex(t,e)
++ * 13               if vertex w is not discovered and not explored
++ * 14                   label e as tree-edge
++ * 15                   label w as discovered
++ * 16                   S.push(w)
++ * 17                   continue at 5
++ * 18               else if vertex w is discovered
++ * 19                   label e as back-edge
++ * 20               else
++ * 21                   // vertex w is explored
++ * 22                   label e as forward- or cross-edge
++ * 23           label t as explored
++ * 24           S.pop()
++ *
++ * convention:
++ * 0x10 - discovered
++ * 0x11 - discovered and fall-through edge labelled
++ * 0x12 - discovered and fall-through and branch edges labelled
++ * 0x20 - explored
++ */
 +
-+static int find_prog_type(enum bpf_prog_type type, struct bpf_prog *prog)
-+{
-+	struct bpf_prog_type_list *tl;
-+
-+	list_for_each_entry(tl, &bpf_prog_types, list_node) {
-+		if (tl->type == type) {
-+			prog->info->ops = tl->ops;
-+			prog->info->prog_type = type;
-+			return 0;
-+		}
-+	}
-+	return -EINVAL;
-+}
-+
-+void bpf_register_prog_type(struct bpf_prog_type_list *tl)
-+{
-+	list_add(&tl->list_node, &bpf_prog_types);
-+}
-+
-+/* drop refcnt on maps used by eBPF program and free auxilary data */
-+static void free_bpf_prog_info(struct bpf_prog_info *info)
-+{
-+	int i;
-+
-+	for (i = 0; i < info->used_map_cnt; i++)
-+		bpf_map_put(info->used_maps[i]);
-+
-+	kfree(info->used_maps);
-+	kfree(info);
-+}
-+
-+void bpf_prog_put(struct bpf_prog *prog)
-+{
-+	BUG_ON(!prog->has_info);
-+	if (atomic_dec_and_test(&prog->info->refcnt)) {
-+		free_bpf_prog_info(prog->info);
-+		bpf_prog_free(prog);
-+	}
-+}
-+
-+static int bpf_prog_release(struct inode *inode, struct file *filp)
-+{
-+	struct bpf_prog *prog = filp->private_data;
-+
-+	bpf_prog_put(prog);
-+	return 0;
-+}
-+
-+static const struct file_operations bpf_prog_fops = {
-+        .release = bpf_prog_release,
++enum {
++	DISCOVERED = 0x10,
++	EXPLORED = 0x20,
++	FALLTHROUGH = 1,
++	BRANCH = 2,
 +};
 +
-+static struct bpf_prog *get_prog(struct fd f)
-+{
-+	struct bpf_prog *prog;
++#define PUSH_INT(I) \
++	do { \
++		if (cur_stack >= insn_cnt) { \
++			ret = -E2BIG; \
++			goto free_st; \
++		} \
++		stack[cur_stack++] = I; \
++	} while (0)
 +
-+	if (!f.file)
-+		return ERR_PTR(-EBADF);
++#define PEEK_INT() \
++	({ \
++		int _ret; \
++		if (cur_stack == 0) \
++			_ret = -1; \
++		else \
++			_ret = stack[cur_stack - 1]; \
++		_ret; \
++	 })
 +
-+	if (f.file->f_op != &bpf_prog_fops) {
-+		fdput(f);
-+		return ERR_PTR(-EINVAL);
-+	}
++#define POP_INT() \
++	({ \
++		int _ret; \
++		if (cur_stack == 0) \
++			_ret = -1; \
++		else \
++			_ret = stack[--cur_stack]; \
++		_ret; \
++	 })
 +
-+	prog = f.file->private_data;
++#define PUSH_INSN(T, W, E) \
++	do { \
++		int w = W; \
++		if (E == FALLTHROUGH && st[T] >= (DISCOVERED | FALLTHROUGH)) \
++			break; \
++		if (E == BRANCH && st[T] >= (DISCOVERED | BRANCH)) \
++			break; \
++		if (w < 0 || w >= insn_cnt) { \
++			verbose("jump out of range from insn %d to %d\n", T, w); \
++			ret = -EINVAL; \
++			goto free_st; \
++		} \
++		if (st[w] == 0) { \
++			/* tree-edge */ \
++			st[T] = DISCOVERED | E; \
++			st[w] = DISCOVERED; \
++			PUSH_INT(w); \
++			goto peek_stack; \
++		} else if ((st[w] & 0xF0) == DISCOVERED) { \
++			verbose("back-edge from insn %d to %d\n", T, w); \
++			ret = -EINVAL; \
++			goto free_st; \
++		} else if (st[w] == EXPLORED) { \
++			/* forward- or cross-edge */ \
++			st[T] = DISCOVERED | E; \
++		} else { \
++			verbose("insn state internal bug\n"); \
++			ret = -EFAULT; \
++			goto free_st; \
++		} \
++	} while (0)
 +
-+	return prog;
-+}
-+
-+/* called by sockets/tracing/seccomp before attaching program to an event
-+ * pairs with bpf_prog_put()
++/* non-recursive depth-first-search to detect loops in BPF program
++ * loop == back-edge in directed graph
 + */
-+struct bpf_prog *bpf_prog_get(u32 ufd)
++static int check_cfg(struct verifier_env *env)
 +{
-+	struct fd f = fdget(ufd);
-+	struct bpf_prog *prog;
++	struct bpf_insn *insns = env->prog->insnsi;
++	int insn_cnt = env->prog->len;
++	int cur_stack = 0;
++	int *stack;
++	int ret = 0;
++	int *st;
++	int i, t;
 +
-+	prog = get_prog(f);
-+
-+	if (IS_ERR(prog))
-+		return prog;
-+
-+	atomic_inc(&prog->info->refcnt);
-+	fdput(f);
-+	return prog;
-+}
-+
-+static int bpf_prog_load(union bpf_attr *attr)
-+{
-+	enum bpf_prog_type type = attr->prog_type;
-+	struct bpf_prog *prog;
-+	int err;
-+	char license[128];
-+	bool is_gpl;
-+
-+	if (CHECK_ATTR(BPF_PROG_LOAD))
-+		return -EINVAL;
-+
-+	/* copy eBPF program license from user space */
-+	if (strncpy_from_user(license, attr->license, sizeof(license) - 1) < 0)
-+		return -EFAULT;
-+	license[sizeof(license) - 1] = 0;
-+
-+	/* eBPF programs must be GPL compatible to use GPL-ed functions */
-+	is_gpl = license_is_gpl_compatible(license);
-+
-+	if (attr->insn_cnt >= BPF_MAXINSNS)
-+		return -EINVAL;
-+
-+	/* plain bpf_prog allocation */
-+	prog = kmalloc(bpf_prog_size(attr->insn_cnt), GFP_USER);
-+	if (!prog)
++	st = kzalloc(sizeof(int) * insn_cnt, GFP_KERNEL);
++	if (!st)
 +		return -ENOMEM;
 +
-+	prog->len = attr->insn_cnt;
++	stack = kzalloc(sizeof(int) * insn_cnt, GFP_KERNEL);
++	if (!stack) {
++		kfree(st);
++		return -ENOMEM;
++	}
 +
-+	err = -EFAULT;
-+	if (copy_from_user(prog->insns, attr->insns,
-+			   prog->len * sizeof(struct bpf_insn)) != 0)
-+		goto free_prog;
++	st[0] = DISCOVERED; /* mark 1st insn as discovered */
++	PUSH_INT(0);
 +
-+	prog->orig_prog = NULL;
-+	prog->jited = 0;
-+	prog->has_info = 0;
++peek_stack:
++	while ((t = PEEK_INT()) != -1) {
++		if (BPF_CLASS(insns[t].code) == BPF_JMP) {
++			u8 opcode = BPF_OP(insns[t].code);
 +
-+	/* allocate eBPF related auxilary data */
-+	err = -ENOMEM;
-+	prog->info = kzalloc(sizeof(struct bpf_prog_info), GFP_USER);
-+	if (!prog->info)
-+		goto free_prog;
-+	prog->has_info = 1;
-+	atomic_set(&prog->info->refcnt, 1);
-+	prog->info->is_gpl_compatible = is_gpl;
++			if (opcode == BPF_EXIT) {
++				goto mark_explored;
++			} else if (opcode == BPF_CALL) {
++				PUSH_INSN(t, t + 1, FALLTHROUGH);
++			} else if (opcode == BPF_JA) {
++				if (BPF_SRC(insns[t].code) != BPF_K) {
++					ret = -EINVAL;
++					goto free_st;
++				}
++				/* unconditional jump with single edge */
++				PUSH_INSN(t, t + insns[t].off + 1, FALLTHROUGH);
++			} else {
++				/* conditional jump with two edges */
++				PUSH_INSN(t, t + 1, FALLTHROUGH);
++				PUSH_INSN(t, t + insns[t].off + 1, BRANCH);
++			}
++		} else {
++			/* all other non-branch instructions with single
++			 * fall-through edge
++			 */
++			PUSH_INSN(t, t + 1, FALLTHROUGH);
++		}
 +
-+	/* find program type: socket_filter vs tracing_filter */
-+	err = find_prog_type(type, prog);
-+	if (err < 0)
-+		goto free_prog_info;
++mark_explored:
++		st[t] = EXPLORED;
++		if (POP_INT() == -1) {
++			verbose("pop_int internal bug\n");
++			ret = -EFAULT;
++			goto free_st;
++		}
++	}
 +
-+	/* run eBPF verifier */
-+	/* err = bpf_check(prog, tb); */
 +
-+	if (err < 0)
-+		goto free_prog_info;
++	for (i = 0; i < insn_cnt; i++) {
++		if (st[i] != EXPLORED) {
++			verbose("unreachable insn %d\n", i);
++			ret = -EINVAL;
++			goto free_st;
++		}
++	}
 +
-+	/* eBPF program is ready to be JITed */
-+	bpf_prog_select_runtime(prog);
-+
-+	err = anon_inode_getfd("bpf-prog", &bpf_prog_fops, prog, O_RDWR | O_CLOEXEC);
-+
-+	if (err < 0)
-+		/* failed to allocate fd */
-+		goto free_prog_info;
-+
-+	return err;
-+
-+free_prog_info:
-+	free_bpf_prog_info(prog->info);
-+free_prog:
-+	bpf_prog_free(prog);
-+	return err;
++free_st:
++	kfree(st);
++	kfree(stack);
++	return ret;
 +}
 +
- SYSCALL_DEFINE3(bpf, int, cmd, union bpf_attr __user *, uattr, unsigned int, size)
- {
- 	union bpf_attr *attr;
-@@ -359,6 +526,9 @@ SYSCALL_DEFINE3(bpf, int, cmd, union bpf_attr __user *, uattr, unsigned int, siz
- 	case BPF_MAP_GET_NEXT_KEY:
- 		err = map_get_next_key(attr);
- 		break;
-+	case BPF_PROG_LOAD:
-+		err = bpf_prog_load(attr);
-+		break;
- 	default:
- 		err = -EINVAL;
- 		break;
-diff --git a/net/core/filter.c b/net/core/filter.c
-index d814b8a89d0f..ed15874a9beb 100644
---- a/net/core/filter.c
-+++ b/net/core/filter.c
-@@ -835,6 +835,7 @@ static void bpf_release_orig_filter(struct bpf_prog *fp)
- {
- 	struct sock_fprog_kern *fprog = fp->orig_prog;
+ /* look for pseudo eBPF instructions that access map FDs and
+  * replace them with actual map pointers
+  */
+@@ -481,6 +660,10 @@ int bpf_check(struct bpf_prog *prog, union bpf_attr *attr)
+ 	if (ret < 0)
+ 		goto skip_full_check;
  
-+	BUG_ON(fp->has_info);
- 	if (fprog) {
- 		kfree(fprog->filter);
- 		kfree(fprog);
-@@ -973,6 +974,7 @@ static struct bpf_prog *bpf_prepare_filter(struct bpf_prog *fp)
++	ret = check_cfg(env);
++	if (ret < 0)
++		goto skip_full_check;
++
+ 	/* ret = do_check(env); */
  
- 	fp->bpf_func = NULL;
- 	fp->jited = 0;
-+	fp->has_info = 0;
- 
- 	err = bpf_check_classic(fp->insns, fp->len);
- 	if (err) {
+ skip_full_check:
 -- 
 1.7.9.5
 
