@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935709AbaH0SoQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 14:44:16 -0400
-Received: from www.linutronix.de ([62.245.132.108]:35258 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933812AbaH0SoP (ORCPT
+	id S935743AbaH0Soj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 14:44:39 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:57326 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933812AbaH0Soh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 14:44:15 -0400
-Date: Wed, 27 Aug 2014 20:44:09 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mark Brown <broonie@kernel.org>
-cc: Lars-Peter Clausen <lars@metafoo.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@linaro.org>
-Subject: Re: [PATCH] irq: Export handle_fasteoi_irq() to modules
-In-Reply-To: <1409160402-30783-1-git-send-email-broonie@kernel.org>
-Message-ID: <alpine.DEB.2.10.1408272043100.3323@nanos>
-References: <1409160402-30783-1-git-send-email-broonie@kernel.org>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Wed, 27 Aug 2014 14:44:37 -0400
+From: Kevin Hilman <khilman@deeprootsystems.com>
+To: Nishanth Menon <nm@ti.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Tero Kristo <t-kristo@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Keerthy <j-keerthy@ti.com>,
+        =?utf-8?Q?Beno=C3=AEt?= Cousson <bcousson@baylibre.com>
+Subject: Re: [PATCH 02/10] ARM: OMAP5 / DRA7: PM: Set MPUSS-EMIF clock-domain static dependency
+Organization: Deep Root Systems, LLC
+References: <1408716154-26101-1-git-send-email-nm@ti.com>
+	<1408716154-26101-3-git-send-email-nm@ti.com>
+Date: Wed, 27 Aug 2014 11:44:34 -0700
+In-Reply-To: <1408716154-26101-3-git-send-email-nm@ti.com> (Nishanth Menon's
+	message of "Fri, 22 Aug 2014 09:02:26 -0500")
+Message-ID: <7hmwapdb71.fsf@paris.lan>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Aug 2014, Mark Brown wrote:
+Nishanth Menon <nm@ti.com> writes:
 
-> From: Mark Brown <broonie@linaro.org>
-> 
-> Currently handle_fasteoi_irq() is not exported which is causing build
-> failures in -next for ARM allmodconfig due to gpio-zynq using it. Since
-> it seems like a reasonable thing to use from a driver add an export for
-> the function.
+> From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>
+> With EMIF clock-domain put under hardware supervised control, memory
+> corruption and untraceable crashes are observed on OMAP5. Further
+> investigation revealed that there is a weakness in the PRCM on this
+> specific dynamic depedency.
 
-The export is already pending in tip/irq/urgent and scheduled for
-Linus tree.
- 
-> Signed-off-by: Mark Brown <broonie@linaro.org>
-> ---
->  kernel/irq/chip.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-> index a2b28a2fd7b1..9ce0c5dd4489 100644
-> --- a/kernel/irq/chip.c
-> +++ b/kernel/irq/chip.c
-> @@ -517,6 +517,7 @@ out:
->  		chip->irq_eoi(&desc->irq_data);
->  	raw_spin_unlock(&desc->lock);
->  }
-> +EXPORT_SYMBOL(handle_fasteoi_irq);
->  
->  /**
->   *	handle_edge_irq - edge type IRQ handler
-> -- 
-> 2.1.0
-> 
-> 
+hmm, "weakness".  That's a rather polite way of saying bug. :)
+
+Kevin
