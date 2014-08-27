@@ -1,71 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964827AbaH0P3d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 11:29:33 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:64263 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935250AbaH0PWZ (ORCPT
+	id S935565AbaH0P3u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 11:29:50 -0400
+Received: from goliath.siemens.de ([192.35.17.28]:33739 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935246AbaH0PWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 11:22:25 -0400
-Message-ID: <53FDF7AD.5000709@plexistor.com>
-Date: Wed, 27 Aug 2014 18:22:21 +0300
-From: Boaz Harrosh <boaz@plexistor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Jens Axboe <axboe@fb.com>, Matthew Wilcox <willy@linux.intel.com>,
-        Dmitry Monakhov <dmonakhov@openvz.org>
-CC: Ross Zwisler <ross.zwisler@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: [PATCHSET 0/5 v2] brd: partition fixes
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Aug 2014 11:22:24 -0400
+From: Jan Kiszka <jan.kiszka@siemens.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
+        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
+        Borislav Petkov <bp@suse.de>,
+        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
+Subject: [PATCH v9 04/23] scripts/gdb: Add module iteration class
+Date: Wed, 27 Aug 2014 17:21:19 +0200
+Message-Id: <b41b9d9d1ab58d8cc2cc58952b245a15fc4ab1f4.1409152897.git.jan.kiszka@siemens.com>
+X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
+In-Reply-To: <cover.1409152897.git.jan.kiszka@siemens.com>
+References: <cover.1409152897.git.jan.kiszka@siemens.com>
+In-Reply-To: <cover.1409152897.git.jan.kiszka@siemens.com>
+References: <cover.1409152897.git.jan.kiszka@siemens.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jens Hi
+Will soon be used for loading symbols, printing global variables or
+listing modules.
 
-What do you intend to do with these fixes? These are real bugs on devices
-shipped for a while now. I think they need to go into current 3.17-rcX Kernel.
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+---
+ scripts/gdb/linux/modules.py | 39 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
+ create mode 100644 scripts/gdb/linux/modules.py
 
-If not then lets please put them in for-next
-[This set is for linux-block.git/for-next, tell me if you need one ontop
- of for-linus]
-
-[v2]
-Based on Jens's linux-next [30e996a] incorporating the brd patch by Dmitry Monakhov.
-Dmitry has introduced a new part_show parameter, this parameter is now removed
-and we always "part_show=1".
-Scripts that did part_show=1 will work just the same but will display a
-message in logs. This is harmless. (And scripts can be modified to
-remove this parameter)
-
-[v1]
-Current situation is that any attempt to use partitions with brd device would
-create the partition but then any use will trash the data.
-
-See: http://www.spinics.net/lists/linux-scsi/msg76737.html
-
-So these patches fixes up all the problems we saw with the code, but not sacrificing
-any of the old fixtures. See [patch 4/5] for more explanations.
-
-list of patches:
-[PATCH 1/5] axonram: Fix bug in direct_access
-[PATCH 2/5] Change direct_access calling convention
-
-    These are Matthew's patches from the DAX series which fixes the interface to
-    direct_access taking into account the partition offset. It must be applied
-    here for partitions to work with direct_access() API.
-
-[PATCH 3/5] brd: Add getgeo to block ops
-
-    This one is needed by fdisk, otherwise it just asks extra questions
-
-[PATCH 4/5] brd: Fix all partitions BUGs
-[PATCH 5/5] brd: Request from fdisk 4k alignment
-
-Thanks
-Boaz
-
+diff --git a/scripts/gdb/linux/modules.py b/scripts/gdb/linux/modules.py
+new file mode 100644
+index 0000000..8a65c3d
+--- /dev/null
++++ b/scripts/gdb/linux/modules.py
+@@ -0,0 +1,39 @@
++#
++# gdb helper commands and functions for Linux kernel debugging
++#
++#  module tools
++#
++# Copyright (c) Siemens AG, 2013
++#
++# Authors:
++#  Jan Kiszka <jan.kiszka@siemens.com>
++#
++# This work is licensed under the terms of the GNU GPL version 2.
++#
++
++import gdb
++
++from linux import utils
++
++
++module_type = utils.CachedType("struct module")
++
++
++class ModuleList:
++    def __init__(self):
++        global module_type
++        self.module_ptr_type = module_type.get_type().pointer()
++        modules = gdb.parse_and_eval("modules")
++        self.curr_entry = modules['next']
++        self.end_of_list = modules.address
++
++    def __iter__(self):
++        return self
++
++    def next(self):
++        entry = self.curr_entry
++        if entry != self.end_of_list:
++            self.curr_entry = entry['next']
++            return utils.container_of(entry, self.module_ptr_type, "list")
++        else:
++            raise StopIteration
+-- 
+1.8.1.1.298.ge7eed54
 
