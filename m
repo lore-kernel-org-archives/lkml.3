@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936001AbaH0VcH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 17:32:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43811 "EHLO mx2.suse.de"
+	id S936020AbaH0Vc2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 17:32:28 -0400
+Received: from mga02.intel.com ([134.134.136.20]:11356 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935931AbaH0VcC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 17:32:02 -0400
-Date: Wed, 27 Aug 2014 23:32:00 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] HID: picolcd: sanity check report size in raw_event()
- callback
-In-Reply-To: <alpine.LNX.2.00.1408271025040.2992@pobox.suse.cz>
-Message-ID: <alpine.LNX.2.00.1408272331250.21233@pobox.suse.cz>
-References: <alpine.LNX.2.00.1408270911130.2992@pobox.suse.cz> <alpine.LNX.2.00.1408270912310.2992@pobox.suse.cz> <20140827101311.098f3fd1@pluto> <alpine.LNX.2.00.1408271025040.2992@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S935931AbaH0VcY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 17:32:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,414,1406617200"; 
+   d="scan'208";a="594218504"
+From: James Ralston <james.d.ralston@intel.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: James Ralston <james.d.ralston@intel.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/3] ata_piix: Add Device IDs for Intel 9 Series PCH
+Date: Wed, 27 Aug 2014 14:31:58 -0700
+Message-Id: <1409175118-4766-1-git-send-email-james.d.ralston@intel.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Aug 2014, Jiri Kosina wrote:
+This patch adds the IDE mode SATA Device IDs for the Intel 9 Series PCH.
 
-> > Is it worth adding report->id to this hid_warn()?
-> > 
-> > A valid device is not expected to ever send >64 bytes reports but in
-> > case a firmware update would do so it would help to know for which
-> > report it was.
-> 
-> It definitely wouldn't hurt. Pull request with the original patch is now 
-> on its way to Linus though, so let's do this as a followup patch on top 
-> once this is merged.
-
-I've just queued the below for 3.18.
-
-
-
-From: Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH] HID: picolcd: be more verbose when reporting report size error
-
-picolcd device is not expected to send any report with size larger than 64 
-bytes.
-
-If this impossible event happens (sic!), print also a report ID to allow 
-for easier debugging.
-
-Suggested-by: Bruno Prémont <bonbons@linux-vserver.org>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: James Ralston <james.d.ralston@intel.com>
 ---
- drivers/hid/hid-picolcd_core.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/ata/ata_piix.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/drivers/hid/hid-picolcd_core.c b/drivers/hid/hid-picolcd_core.c
-index 020df3c..c1b29a9 100644
---- a/drivers/hid/hid-picolcd_core.c
-+++ b/drivers/hid/hid-picolcd_core.c
-@@ -351,8 +351,8 @@ static int picolcd_raw_event(struct hid_device *hdev,
- 		return 1;
+diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
+index 893e30e..ffbe625 100644
+--- a/drivers/ata/ata_piix.c
++++ b/drivers/ata/ata_piix.c
+@@ -340,6 +340,14 @@ static const struct pci_device_id piix_pci_tbl[] = {
+ 	{ 0x8086, 0x0F21, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_byt },
+ 	/* SATA Controller IDE (Coleto Creek) */
+ 	{ 0x8086, 0x23a6, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
++	/* SATA Controller IDE (9 Series) */
++	{ 0x8086, 0x8c88, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_snb },
++	/* SATA Controller IDE (9 Series) */
++	{ 0x8086, 0x8c89, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_snb },
++	/* SATA Controller IDE (9 Series) */
++	{ 0x8086, 0x8c80, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
++	/* SATA Controller IDE (9 Series) */
++	{ 0x8086, 0x8c81, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
  
- 	if (size > 64) {
--		hid_warn(hdev, "invalid size value (%d) for picolcd raw event\n",
--				size);
-+		hid_warn(hdev, "invalid size value (%d) for picolcd raw event (%d)\n",
-+				size, report->id);
- 		return 0;
- 	}
- 
+ 	{ }	/* terminate list */
+ };
 -- 
-Jiri Kosina
-SUSE Labs
+1.8.3.1
+
