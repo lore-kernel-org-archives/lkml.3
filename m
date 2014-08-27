@@ -1,95 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934388AbaH0Ker (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 06:34:47 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:33095 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933597AbaH0Kep (ORCPT
+	id S933778AbaH0Kgm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 06:36:42 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:39392 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933410AbaH0Kgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 06:34:45 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [RFC PATCH 0/9] dt: dependencies (for deterministic driver
- initialization order based on the DT)
-To: Mark Rutland <mark.rutland@arm.com>,
-        Alexander Holler <holler@ahsoftware.de>
-Cc: Thierry Reding <thierry.reding@gmail.com>, Jon Loeliger <jdl@jdl.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Wed, 27 Aug 2014 06:36:40 -0400
+Message-ID: <53FDB4B3.6000400@arm.com>
+Date: Wed, 27 Aug 2014 11:36:35 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: =?windows-1252?Q?Jan_L=FCbbe?= <jlu@pengutronix.de>
+CC: Mark Rutland <Mark.Rutland@arm.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        "Joe.C" <srv_yingjoe.chen@mediatek.com>,
+        "yh.chen@mediatek.com" <yh.chen@mediatek.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "nathan.chung@mediatek.com" <nathan.chung@mediatek.com>,
+        "Joe.C" <yingjoe.chen@mediatek.com>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        "yingjoe.chen@gmail.com" <yingjoe.chen@gmail.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Herring <robh+dt@kernel.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "eddie.huang@mediatek.com" <eddie.huang@mediatek.com>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-In-Reply-To: <20140826101107.GC32315@leverpostej>
-References: <20140514141914.446F7C4153D@trevor.secretlab.ca>
-	<20140821140211.GD19293@ulmo.nvidia.com> <53F64624.5000403@ahsoftware.de>
-	<20140822131919.GX21734@leverpostej> <20140825093931.GB2399@ulmo>
-	<E1XLu15-0002DP-6o@jdl.com> <20140825133714.GH4163@ulmo.nvidia.com>
-	<20140826084208.AE5F0C40989@trevor.secretlab.ca>
-	<20140826084922.GG17263@ulmo> <53FC566C.30904@ahsoftware.de>
-	<20140826101107.GC32315@leverpostej>
-Date: Wed, 27 Aug 2014 11:34:32 +0100
-Message-Id: <20140827103432.64927C409CB@trevor.secretlab.ca>
+	<linux-arm-kernel@lists.infradead.org>,
+        "srv_heupstream@mediatek.com" <srv_heupstream@mediatek.com>,
+        "hc.yen@mediatek.com" <hc.yen@mediatek.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jonas Jensen <jonas.jensen@gmail.com>,
+        Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>
+Subject: Re: [RESEND PATCH v2 1/4] irqchip: gic: Change irq type check when
+ extension is present
+References: <1407895884-18131-1-git-send-email-srv_yingjoe.chen@mediatek.com> <1407895884-18131-2-git-send-email-srv_yingjoe.chen@mediatek.com> <53F724F5.3040004@arm.com> <1409133344.25382.37.camel@coredoba.hi.pengutronix.de>
+In-Reply-To: <1409133344.25382.37.camel@coredoba.hi.pengutronix.de>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Aug 2014 11:11:07 +0100, Mark Rutland <mark.rutland@arm.com> wrote:
-> On Tue, Aug 26, 2014 at 10:42:04AM +0100, Alexander Holler wrote:
-> > Am 26.08.2014 10:49, schrieb Thierry Reding:
-> > > On Tue, Aug 26, 2014 at 09:42:08AM +0100, Grant Likely wrote:
-> > >> On Mon, 25 Aug 2014 15:37:16 +0200, Thierry Reding <thierry.reding@gmail.com> wrote:
-> > > [...]
-> > >>> There are somewhat standardized bindings for the above and especially
-> > >>> for bindings of the type that clocks implement this is trivial. We can
-> > >>> simply iterate over each (phandle, specifier) tuple and check that the
-> > >>> corresponding clock provider can be resolved (which typically means that
-> > >>> it's been registered with the common clock framework).
-> > >>>
-> > >>> For regulators (and regulator-like bindings) the problem is somewhat
-> > >>> more difficult because they property names are not standardized. One way
-> > >>> to solve this would be to look for property names with a -supply suffix,
-> > >>> but that could obviously lead to false positives. One alternative that I
-> > >>> think could eliminate this would be to explicitly list dependencies in
-> > >>> drivers. This would allow core code to step through such a list and
-> > >>> resolve the (phandle, specifier) tuples.
-> > >>
-> > >> False positives and negatives may not actually be a problem. It is
-> > >> suboptimal, certainly, but it shouldn't outright break the kernel.
-> > >
-> > > There could be cases where some random integer in a cell could be
-> > > interpreted as a phandle and resolve to a struct device_node. I suppose
-> > > it might be unlikely, but not impossible, that the device_node could
-> > > even match a device in the correct subsystem and you'd get a wrong
-> > > dependency. Granted, a wrong dependency may not be catastrophic in that
-> > > it won't lead to a crash, but it could lead to various kinds of
-> > > weirdness and hard to diagnose problems.
-> > 
-> > You need either the type information in the DTB (that's why I've add 
-> > those "dependencies" to identify phandles), or you need to know every 
-> > binding (at "dependency-resolve-time" to identify phandles.
+Hi Jan,
+
+On 27/08/14 10:55, Jan Lübbe wrote:
+> Marc,
 > 
-> While having type information in the DTB would be fantastic, it's not
-> something we can expect from the systems already in the wild, and I
-> worry how it would interact with bootloaders that modify the DTB (I
-> don't know if any modify properties with phandles).
-
-Anything we do here is firmly in the realm of optimization and
-improvement. Adding data to the tree is fine as long as we don't make
-the kernel depend on it. Older platforms will continue to work without
-the optimization.
-
-> > The latter is impracticable to implement in a generic way (for use
-> > with every possible binding).
+> On Fri, 2014-08-22 at 12:09 +0100, Marc Zyngier wrote:
+>> Here, you're using it to program something that sits between the
+>> device and the GIC. This is a separate block, with its own hardware
+>> configuration, that modifies the interrupt signal. This should be
+>> reflected in the device-tree and the code paths.
+>>
+>> You can probably model this as a separate irqchip for the few
+>> interrupts that require this, or have it configured at boot time
+>> (assuming the configuration never changes).
 > 
-> I don't think we necessarily need dependency information for every
-> binding and driver. We only need dependency information where a device
-> has a dependency on another device and we don't currently have an
-> explicit probe ordering guaranteed by Linux.
-> 
-> Where a device driver lacks dependency information and fails to probe,
-> we can fall back to the current deferred probing.
+> It seems to me that using a separate irqchip for a simple inverter would
+> add the run-time overhead of passing through wrapper functions on every
+> IRQ. Do you have an idea how this could be avoided without using the
+> gic_arch_extn feature?
 
-Exactly.
+Well, from the rather vague description, it could be slightly more than
+a simple inverter, like being able to generate interrupts on both rising
+and falling edges. Sorry, but this is not the GIC as ARM has architected it.
 
-g.
+Yes, the additional irqchip adds some overhead. But the DT has to
+reflect the fact that there is something on the interrupt path that does
+some form of conversion.
+
+> As in the DT the actual IRQ polarity should be used, simply configuring
+> the HW IRQ polarity in the bootloader is not enough without telling the
+> GIC driver which polarity is supported on which IRQ, right?
+
+Looking a bit closer at things, what you describe in DT is the IRQ
+polarity the interrupt controller sees. Nothing else should interpret
+that field.
+
+So it is legal (IMO) to have a device with an interrupt specifier
+describing a rising edge interrupt, and yet have the device generating a
+falling edge, with Mediatek's special sauce doing the conversion in between.
+
+Something will have to configure the polarity widget though, but that
+can be left outside of the GIC.
+
+Thanks,
+
+	M.
+-- 
+Jazz is not dead. It just smells funny...
