@@ -1,128 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935755AbaH0SqA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 14:46:00 -0400
-Received: from mail-bn1lp0141.outbound.protection.outlook.com ([207.46.163.141]:35676
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S935468AbaH0Sp7 convert rfc822-to-8bit (ORCPT
+	id S935702AbaH0SrU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 14:47:20 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36443 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934955AbaH0SrT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 14:45:59 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Sitsofe Wheeler <sitsofe@gmail.com>, Dexuan Cui <decui@microsoft.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PANIC, hyperv] BUG: unable to handle kernel paging request at
- ffff880077800004 (hv_ringbuffer_write)
-Thread-Topic: [PANIC, hyperv] BUG: unable to handle kernel paging request at
- ffff880077800004 (hv_ringbuffer_write)
-Thread-Index: AQHPvFjYjJn6yhiZAUmfcA+tXSCe25vhYa6AgAA9PQCAARoEAIABlgcAgAANEQCAAAyZgIAAIPwAgAAi6gCAABhF8A==
-Date: Wed, 27 Aug 2014 18:45:55 +0000
-Message-ID: <51ae44fcae424365a6d78f3597175d77@BY2PR0301MB0711.namprd03.prod.outlook.com>
-References: <20140820092630.GA1478@sucs.org>
- <EE124450C0AAF944A40DD71E61F878C994F314@SINEX14MBXC417.southpacific.corp.microsoft.com>
- <20140825174132.GA17681@sucs.org>
- <EE124450C0AAF944A40DD71E61F878C995E93E@SINEX14MBXC419.southpacific.corp.microsoft.com>
- <20140827104408.GC1827@sucs.org>
- <EE124450C0AAF944A40DD71E61F878C996493E@SINEX14MBXC419.southpacific.corp.microsoft.com>
- <20140827121559.GA14286@sucs.org>
- <EE124450C0AAF944A40DD71E61F878C9965238@SINEX14MBXC419.southpacific.corp.microsoft.com>
- <20140827161900.GA25326@sucs.org>
-In-Reply-To: <20140827161900.GA25326@sucs.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [2001:4898:80e0:ee43::2]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-x-forefront-prvs: 0316567485
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(13464003)(24454002)(189002)(377454003)(199003)(85306004)(90102001)(64706001)(108616004)(93886004)(76576001)(19580395003)(33646002)(19580405001)(83322001)(81342001)(2421001)(20776003)(105586002)(2656002)(99396002)(46102001)(101416001)(31966008)(76176999)(74502001)(50986999)(54356999)(106116001)(1511001)(79102001)(74662001)(95666004)(86362001)(77096002)(21056001)(85852003)(76482001)(106356001)(107046002)(4396001)(80022001)(74316001)(81542001)(87936001)(86612001)(92566001)(99286002)(83072002)(77982001)(575784001)(7059011)(24736002)(3826002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR0301MB0712;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 27 Aug 2014 14:47:19 -0400
+Date: Wed, 27 Aug 2014 19:47:05 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <20140827184705.GO17528@sirena.org.uk>
+References: <1409053061-22568-1-git-send-email-javier.martinez@collabora.co.uk>
+ <53FE2446.3040402@gmail.com>
+ <20140827183733.GN17528@sirena.org.uk>
+ <53FE25EB.7060702@gmail.com>
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.onmicrosoft.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="dP17qLfgq3afTBmP"
+Content-Disposition: inline
+In-Reply-To: <53FE25EB.7060702@gmail.com>
+X-Cookie: 98% lean.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/1] regulator: max77802: set opmode to normal if off is
+ read from hw
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--dP17qLfgq3afTBmP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> -----Original Message-----
-> From: Sitsofe Wheeler [mailto:sitsofe@gmail.com]
-> Sent: Wednesday, August 27, 2014 9:19 AM
-> To: Dexuan Cui
-> Cc: KY Srinivasan; Greg Kroah-Hartman; Haiyang Zhang;
-> devel@linuxdriverproject.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PANIC, hyperv] BUG: unable to handle kernel paging request at
-> ffff880077800004 (hv_ringbuffer_write)
-> 
-> On Wed, Aug 27, 2014 at 02:14:02PM +0000, Dexuan Cui wrote:
-> > > -----Original Message-----
-> > > From: Sitsofe Wheeler
-> > > Sent: Wednesday, August 27, 2014 20:16 PM
-> >
-> > > > I'm making a patch for this.
-> > Please see the end of the mail for the inline patch and try it.
-> > (the patch hasn't been rebased against KY's patchset)
-> 
-> <snip>
-> 
-> > BTW, with the patch below, hyperv_fb can work now, BUT,
-> > *occasionally*,
-> > storvsc_probe() -> ... -> vmbus_open() -> can fail due to
-> > HV_STATUS_INVALID_ALIGNMENT...
-> 
-> I applied your new patch on top of KY's pieces (it applied cleanly) and while it
-> doesn't blow up, one warning is printed out and the UP boot seemed to stall
-> after input: TPPS/2 message (but pressing ctrl-alt-delete allows the system to
-> reboot cleanly).
+On Wed, Aug 27, 2014 at 08:39:39PM +0200, Tomasz Figa wrote:
+> On 27.08.2014 20:37, Mark Brown wrote:
 
-First let me thank you guys for looking into this issue. Looking at your dmesg, it looked like storvsc probe failed as Dexuan had seen. Since the failure appears to be alignment related, perhaps we could test with allocating a page all the time (and getting rid of the kmalloc). Sitsofe, here is a patch based on Dexuan's patch. If this works, I will probably minimize failure cases by pre-allocating per-cpu pages for this.:
+> > That's essentially the situation the patch is trying to fix - if we boot
+> > and the regulator is off there's no way to figure out what the operating
+> > mode would have been so we have to pick something.  If you've got an
+> > idea for something better to do...
 
-diff --git a/drivers/hv/hv.c b/drivers/hv/hv.c
-index edfc848..0ca0cba 100644
---- a/drivers/hv/hv.c
-+++ b/drivers/hv/hv.c
-@@ -217,25 +217,17 @@ int hv_post_message(union hv_connection_id connection_id,
-                  enum hv_message_type message_type,
-                  void *payload, size_t payload_size)
- {
--       struct aligned_input {
--               u64 alignment8;
--               struct hv_input_post_message msg;
--       };
+> Probably the only way to correctly handle this is to specify the right
+> operating mode in DT (after defining a binding for it).
 
-        struct hv_input_post_message *aligned_msg;
-        u16 status;
--       unsigned long addr;
+I'm not convinced that's worth it - chances are that if anything changed
+the mode it was a previously running Linux which will most likely be
+doing the same things when it starts running anyway.
 
-        if (payload_size > HV_MESSAGE_PAYLOAD_BYTE_COUNT)
-                return -EMSGSIZE;
+--dP17qLfgq3afTBmP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
--       addr = (unsigned long)kmalloc(sizeof(struct aligned_input), GFP_ATOMIC);
--       if (!addr)
-+       aligned_msg = (struct hv_input_post_message *)get_zeroed_page(GFP_ATOMIC);
-+       if (!aligned_msg)
-                return -ENOMEM;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
--       aligned_msg = (struct hv_input_post_message *)
--                       (ALIGN(addr, HV_HYPERCALL_PARAM_ALIGN));
--
-        aligned_msg->connectionid = connection_id;
-        aligned_msg->message_type = message_type;
-        aligned_msg->payload_size = payload_size;
-@@ -244,7 +236,7 @@ int hv_post_message(union hv_connection_id connection_id,
-        status = do_hypercall(HVCALL_POST_MESSAGE, aligned_msg, NULL)
-                & 0xFFFF;
+iQIcBAEBAgAGBQJT/iemAAoJELSic+t+oim9v5EQAJgK92JNMRuh+WwMQGW4yp/U
+tES7MrQOGTxyPLlTgHuay66KoBBdfgxOHPVB4y6Sosk5aynaF4rO9g84vekHT1WO
+cUo9wwUV8OBaRtNjAmHB23ysMv1P14fy2twFeRrfufOaDjdEbsHnTnfReBYMJ4OC
+RqpBSJSDVM6rpmMsYgvqVMua6tDqcwvkn22rzV7EmpN7IZNWPDhmuPxY0rtAiHGF
+1BinJgVx36XusYFJWQVc8qiFyeXNLi9OCVrAtEGNijPaIQsSGQc2xfLWv05M6dN9
+z+o3SpzEOMOnWuENx4Arez0eITNg+TLeibC7FrjC30M5uLcwESzlH+eNMIsZ60QB
++SzO/WAGPb1aFBvRjT7qnLw06zPwgEvDNTvdUt58atdP3lJFJmORIEJ83cTexhV5
+LaOw7LEv9v7n2Qi7VjzFY4xCQRCyXWSj6pPmGbzMNtQ3JPSSpHfZDkLcZtk4N6sN
+Ba6PRdJv3vpx5RIbH6u8/1+MTr4N/q76TzXfCUBM9riEJaVzlX5LBNxmNs+RHnIv
++KNdW3jDKObH6nt6eJUBcxZrutLpcDMgC7X0x4YU558WuffR0ncdNf5JPDeBrhUd
+x0WD+1Yq4vbbl3ZI/BfNx4YNTZ7hW8S3GtvH752TGLafyDBl7I5h3x610SpmHIPB
+nYcMcZEDco4AB2NWRI44
+=j/fK
+-----END PGP SIGNATURE-----
 
--       kfree((void *)addr);
-+       free_page((unsigned long)aligned_msg);
-
-        return status;
- }
---
-1.7.4.1
-
+--dP17qLfgq3afTBmP--
