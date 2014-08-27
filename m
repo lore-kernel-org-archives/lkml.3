@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376AbaH0Hg1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 03:36:27 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:35479 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751674AbaH0Hg0 (ORCPT
+	id S1754050AbaH0Hgd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 03:36:33 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:34768 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751674AbaH0Hga (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 03:36:26 -0400
+	Wed, 27 Aug 2014 03:36:30 -0400
 From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 To: Grant Likely <grant.likely@linaro.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -14,10 +14,12 @@ To: Grant Likely <grant.likely@linaro.org>,
         Dan Carpenter <dan.carpenter@oracle.com>,
         "H. Peter Anvin" <hpa@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org, Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Subject: [PATCH/RFC 0/2] lib: string: Remove duplicated function
-Date: Wed, 27 Aug 2014 09:36:00 +0200
-Message-Id: <1409124962-11527-1-git-send-email-linux@rasmusvillemoes.dk>
+Subject: [PATCH/RFC 1/2] lib: string: Remove duplicated function
+Date: Wed, 27 Aug 2014 09:36:01 +0200
+Message-Id: <1409124962-11527-2-git-send-email-linux@rasmusvillemoes.dk>
 X-Mailer: git-send-email 2.0.4
+In-Reply-To: <1409124962-11527-1-git-send-email-linux@rasmusvillemoes.dk>
+References: <1409124962-11527-1-git-send-email-linux@rasmusvillemoes.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,31 +32,73 @@ doesn't handle len==0 appropriately; it effectively becomes strcasecmp
 in that case. strnicmp correctly says that two strings are always
 equal in their first 0 characters.
 
-strncasecmp is the POSIX name for this functionality. The first patch
-renames the non-broken version to the standard name, and makes
-strnicmp into a wrapper for strncasecmp. In order not to cause in-tree
-users of strnicmp to pay the cost of the extra indirection, the second
-patch replaces the declaration of strnicmp in string.h with a
-macro. When and if all callers of strnicmp have been updated, that
-hack can be removed.
+strncasecmp is the POSIX name for this functionality. So rename the
+non-broken function to the standard name. To minimize the impact on
+the rest of the kernel (and since both are exported to modules), make
+strnicmp a wrapper for strncasecmp.
 
-Arch-specific versions of these functions could complicate matters,
-but fortunately the only #define of either __HAVE macro is in a
-!__KERNEL__ section in arch/frv/include/asm/string.h.
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+---
+ lib/string.c | 27 ++++++++++-----------------
+ 1 file changed, 10 insertions(+), 17 deletions(-)
 
-The other problem is how to deal with modules that may be using
-strnicmp. The proper fix would probably involve some alias/linker
-magic, but I have no idea how to do that (hence the RFC).
-
-
-Rasmus Villemoes (2):
-  lib: string: Remove duplicated function
-  lib: string: Make all calls to strnicmp into calls to strncasecmp
-
- include/linux/string.h |  2 +-
- lib/string.c           | 28 +++++++++++-----------------
- 2 files changed, 12 insertions(+), 18 deletions(-)
-
+diff --git a/lib/string.c b/lib/string.c
+index 992bf30..92c33e1 100644
+--- a/lib/string.c
++++ b/lib/string.c
+@@ -27,14 +27,14 @@
+ #include <linux/bug.h>
+ #include <linux/errno.h>
+ 
+-#ifndef __HAVE_ARCH_STRNICMP
++#ifndef __HAVE_ARCH_STRNCASECMP
+ /**
+- * strnicmp - Case insensitive, length-limited string comparison
++ * strncasecmp - Case insensitive, length-limited string comparison
+  * @s1: One string
+  * @s2: The other string
+  * @len: the maximum number of characters to compare
+  */
+-int strnicmp(const char *s1, const char *s2, size_t len)
++int strncasecmp(const char *s1, const char *s2, size_t len)
+ {
+ 	/* Yes, Virginia, it had better be unsigned */
+ 	unsigned char c1, c2;
+@@ -56,6 +56,13 @@ int strnicmp(const char *s1, const char *s2, size_t len)
+ 	} while (--len);
+ 	return (int)c1 - (int)c2;
+ }
++EXPORT_SYMBOL(strncasecmp);
++#endif
++#ifndef __HAVE_ARCH_STRNICMP
++int strnicmp(const char *s1, const char *s2, size_t len)
++{
++	return strncasecmp(s1, s2, len);
++}
+ EXPORT_SYMBOL(strnicmp);
+ #endif
+ 
+@@ -73,20 +80,6 @@ int strcasecmp(const char *s1, const char *s2)
+ EXPORT_SYMBOL(strcasecmp);
+ #endif
+ 
+-#ifndef __HAVE_ARCH_STRNCASECMP
+-int strncasecmp(const char *s1, const char *s2, size_t n)
+-{
+-	int c1, c2;
+-
+-	do {
+-		c1 = tolower(*s1++);
+-		c2 = tolower(*s2++);
+-	} while ((--n > 0) && c1 == c2 && c1 != 0);
+-	return c1 - c2;
+-}
+-EXPORT_SYMBOL(strncasecmp);
+-#endif
+-
+ #ifndef __HAVE_ARCH_STRCPY
+ /**
+  * strcpy - Copy a %NUL terminated string
 -- 
 2.0.4
 
