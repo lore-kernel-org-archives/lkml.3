@@ -1,75 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756725AbaH0K7L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 06:59:11 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:44502 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756657AbaH0K7H (ORCPT
+	id S1756741AbaH0LBv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 07:01:51 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:38347 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756332AbaH0LBt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 06:59:07 -0400
-Date: Wed, 27 Aug 2014 11:59:01 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Matt Fleming <matt.fleming@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Mantas =?utf-8?Q?Mikul=C4=97nas?= <grawity@gmail.com>,
-        Anders Darander <anders@chargestorm.se>, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Harald Hoyer <harald@redhat.com>
-Subject: Re: [PATCH] x86: only load initrd above 4g on second try
-Message-ID: <20140827105901.GC28116@console-pimps.org>
-References: <1409089544-24221-1-git-send-email-yinghai@kernel.org>
+	Wed, 27 Aug 2014 07:01:49 -0400
+Date: Wed, 27 Aug 2014 12:01:42 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Andreas Werner <andreas.werner@men.de>
+Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com, wim@iguana.be,
+        linux-watchdog@vger.kernel.org, cooloney@gmail.com, rpurdie@rpsys.net,
+        linux-leds@vger.kernel.org, jdelvare@suse.de, linux@roeck-us.net,
+        lm-sensors@lm-sensors.org, johannes.thumshirn@men.de
+Subject: Re: [PATCH v5 1/4] drivers/mfd/menf21bmc: introduce MEN 14F021P00
+ BMC MFD Core driver
+Message-ID: <20140827110142.GA6364@lee--X1>
+References: <cover.1409074255.git.andreas.werner@men.de>
+ <67faa70de03924edc768002df17b02e47256260c.1409074255.git.andreas.werner@men.de>
+ <20140827072633.GY26707@lee--X1>
+ <20140827105204.GA2083@awelinux>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1409089544-24221-1-git-send-email-yinghai@kernel.org>
+In-Reply-To: <20140827105204.GA2083@awelinux>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Aug, at 02:45:44PM, Yinghai Lu wrote:
-> Mantas found that after commit 4bf7111f5016 ("x86/efi: Support initrd
-> loaded above 4G"), the kernel freezes at the earliest possible moment
-> when trying to boot via UEFI on Asus laptop.
+On Wed, 27 Aug 2014, Andreas Werner wrote:
+> On Wed, Aug 27, 2014 at 08:26:33AM +0100, Lee Jones wrote:
+> > On Tue, 26 Aug 2014, Andreas Werner wrote:
+> > > The MEN 14F021P00 Board Management Controller provides an
+> > > I2C interface to the host to access the feature implemented in the BMC.
+> > > The BMC is a PIC Microntroller assembled on CPCI Card from MEN Mikroelektronik
+> > > and on a few Box/Display Computer.
+> > > 
+> > > Added MFD Core driver, supporting the I2C communication to the device.
+> > > 
+> > > The MFD driver currently supports the following features:
+> > >  	- Watchdog
+> > >  	- LEDs
+> > > 	- Hwmon (voltage monitoring)
+> > > 
+> > > Signed-off-by: Andreas Werner <andreas.werner@men.de>
+> > > Acked-by: Lee Jones <lee.jones@linaro.org>
+> > > ---
+> > >  drivers/mfd/Kconfig     |  12 +++++
+> > >  drivers/mfd/Makefile    |   1 +
+> > >  drivers/mfd/menf21bmc.c | 132 ++++++++++++++++++++++++++++++++++++++++++++++++
+> > >  3 files changed, 145 insertions(+)
+> > >  create mode 100644 drivers/mfd/menf21bmc.c
+> > > 
+> > > diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> > > index b8d9ca0..6a9f101 100644
+> > > --- a/drivers/mfd/Kconfig
+> > > +++ b/drivers/mfd/Kconfig
+> > > @@ -453,6 +453,18 @@ config MFD_MAX8998
+> > >  	  additional drivers must be enabled in order to use the functionality
+> > >  	  of the device.
+> > >  
+> > > +config MFD_MENF21BMC
+> > > +	tristate "MEN 14F021P00 Board Management Controller Support"
+> > > +	depends on I2C
+> > > +	select MFD_CORE
+> > > +	help
+> > > +	  Say yes here to add support for the MEN 14F021P00 BMC
+> > > +	  which is a Board Management Controller connected to the I2C bus.
+> > > +	  The device supports multiple sub-devices like LED, HWMON  and WDT.
+> > 
+> > Nit: Whitespace error.
+> > 
 > 
-> There are buggy EFI implementations: with EFI run time, kernel need
-> to load file with 512bytes alignment when buffer is above 4G.
+> I run checkpatch but did not find any whitespace error.
+> Where is it?
+
+After 'HWMON'.
+
+> > > +MODULE_DEVICE_TABLE(i2c, menf21bmc_id_table);
+> > > +
+> > > +static struct i2c_driver menf21bmc_driver = {
+> > > +	.driver.name	= "menf21bmc",
+> > > +	.id_table	= menf21bmc_id_table,
+> > > +	.probe		= menf21bmc_probe,
+> > > +	.remove		= menf21bmc_remove,
+> > > +};
+> > 
+> > No DT support?
+> > 
 > 
-> So revert to old way to load initrd on first try,
-> second try will use above 4G buffer when initrd is more than
-> 2G and does not fit under 4G.
-> 
-> Reported-by: Mantas Mikulėnas <grawity@gmail.com>
-> Tested-by: Anders Darander <anders@chargestorm.se>
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> 
-> ---
->  arch/x86/boot/compressed/eboot.c |   16 +++++++++-------
->  1 file changed, 9 insertions(+), 7 deletions(-)
+> No not at the moment because it is used only on x86 system.
 
-The reason I suggested introducing some kind of kernel parameter to
-allow loading above 4G is because if Mantas loads a 5GB initrd with your
-patch, his machine is still going to hang, with no indication of why it
-hung.
+Ah okay.  Shouldn't the Kconfig depend on X86 then?  What about ACPI?
 
-At least with a kernel paramter, by default we can try to load under 4G,
-and if that fails because the file is too big we can print something
-along the lines of,
-
-  "initramfs file too large: try booting with efi=file-max"
-
-No, it's not ideal, but I think it's a worthwhile compromise because
-you're only going to run into this issue when loading a huge initramfs
-with the EFI boot stub.
-
-If instead you're using Grub or Syslinux (and the EFI handover protocol)
-it's a non-issue because both of those boot loaders carry FAT drivers
-and use EFI_BLOCK_IO_PROTOCOL which doesn't trigger the firmware bug.
-
-It's only because we don't have a FAT driver in the EFI boot stub and
-have to resort to using EFI_FILE_PROTOCOL that we've encountered this
-problem at all.
+> > > +module_i2c_driver(menf21bmc_driver);
+> > > +
+> > > +MODULE_DESCRIPTION("MEN 14F021P00 BMC mfd core driver");
+> > 
+> > s/mfd/MFD
+> > 
+> > > +MODULE_AUTHOR("Andreas Werner <andreas.werner@men.de>");
+> > > +MODULE_LICENSE("GPL v2");
+> > 
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
