@@ -1,176 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933053AbaH0EkO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 00:40:14 -0400
-Received: from mga03.intel.com ([143.182.124.21]:44456 "EHLO mga03.intel.com"
+	id S932774AbaH0Ep2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 00:45:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14893 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932713AbaH0Eed (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 00:34:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,408,1406617200"; 
-   d="scan'208";a="473028952"
-From: Matthew Wilcox <matthew.r.wilcox@intel.com>
-To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com
-Subject: [PATCH v10 10/21] Replace xip_truncate_page with dax_truncate_page
-Date: Tue, 26 Aug 2014 23:45:30 -0400
-Message-Id: <1539535b532d413d1030dc16e8684979b7c45889.1409110741.git.matthew.r.wilcox@intel.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <cover.1409110741.git.matthew.r.wilcox@intel.com>
-References: <cover.1409110741.git.matthew.r.wilcox@intel.com>
-In-Reply-To: <cover.1409110741.git.matthew.r.wilcox@intel.com>
-References: <cover.1409110741.git.matthew.r.wilcox@intel.com>
+	id S1751050AbaH0Ep1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 00:45:27 -0400
+Date: Wed, 27 Aug 2014 10:13:50 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Pranith Kumar <pranith@gatech.edu>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Howells <dhowells@redhat.com>,
+        Eric Dumazet <edumazet@google.com>, dvhart@linux.intel.com,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, Silas Boyd-Wickizer <sbw@mit.edu>
+Subject: Re: [PATCH tip/core/rcu 1/2] rcu: Parallelize and economize NOCB
+ kthread wakeups
+Message-ID: <20140827044350.GD13052@grmbl.mre>
+References: <CAJhHMCC6XUo0erp6mPyjiz5614DQq_+gfVaLR5s9YZkP=jPVCw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJhHMCC6XUo0erp6mPyjiz5614DQq_+gfVaLR5s9YZkP=jPVCw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It takes a get_block parameter just like nobh_truncate_page() and
-block_truncate_page()
+On (Sat) 23 Aug 2014 [03:43:38], Pranith Kumar wrote:
+> On Fri, Aug 22, 2014 at 5:53 PM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> >
+> > Hmmm...  Please try replacing the synchronize_rcu() in
+> > __sysrq_swap_key_ops() with (say) schedule_timeout_interruptible(HZ / 10).
+> > I bet that gets rid of the hang.  (And also introduces a low-probability
+> > bug, but should be OK for testing.)
+> >
+> > The other thing to try is to revert your patch that turned my event
+> > traces into printk()s, then put an ftrace_dump(DUMP_ALL); just after
+> > the synchronize_rcu() -- that might make it so that the ftrace data
+> > actually gets dumped out.
+> >
+> 
+> I was able to reproduce this error on my Ubuntu 14.04 machine. I think
+> I found the root cause of the problem after several kvm runs.
+> 
+> The problem is that earlier we were waiting on nocb_head and now we
+> are waiting on nocb_leader_wake.
+> 
+> So there are a lot of nocb callbacks which are enqueued before the
+> nocb thread is spawned. This sets up nocb_head to be non-null, because
+> of which the nocb kthread used to wake up immediately after sleeping.
+> 
+> Now that we have switched to nocb_leader_wake, this is not being set
+> when there are pending callbacks, unless the callbacks overflow the
+> qhimark. The pending callbacks were around 7000 when the boot hangs.
+> 
+> So setting the qhimark using the boot parameter rcutree.qhimark=5000
+> is one way to allow us to boot past the point by forcefully waking up
+> the nocb kthread. I am not sure this is fool-proof.
+> 
+> Another option to start the nocb kthreads with nocb_leader_wake set,
+> so that it can handle any pending callbacks. The following patch also
+> allows us to boot properly.
+> 
+> Phew! Let me know if this makes any sense :)
+> 
+> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+> index 00dc411..4c397aa 100644
+> --- a/kernel/rcu/tree_plugin.h
+> +++ b/kernel/rcu/tree_plugin.h
+> @@ -2386,6 +2386,9 @@ static int rcu_nocb_kthread(void *arg)
+>         struct rcu_head **tail;
+>         struct rcu_data *rdp = arg;
+> 
+> +       if (rdp->nocb_leader == rdp)
+> +               rdp->nocb_leader_wake = true;
+> +
+>         /* Each pass through this loop invokes one batch of callbacks */
+>         for (;;) {
+>                 /* Wait for callbacks. */
 
-Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
----
- fs/dax.c           | 44 ++++++++++++++++++++++++++++++++++++++++++++
- fs/ext2/inode.c    |  2 +-
- include/linux/fs.h |  4 ++--
- mm/filemap_xip.c   | 40 ----------------------------------------
- 4 files changed, 47 insertions(+), 43 deletions(-)
+Yes, this patch helps my case as well.
 
-diff --git a/fs/dax.c b/fs/dax.c
-index f134078..d54f7d3 100644
---- a/fs/dax.c
-+++ b/fs/dax.c
-@@ -443,3 +443,47 @@ int dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
- 	return result;
- }
- EXPORT_SYMBOL_GPL(dax_fault);
-+
-+/**
-+ * dax_truncate_page - handle a partial page being truncated in a DAX file
-+ * @inode: The file being truncated
-+ * @from: The file offset that is being truncated to
-+ * @get_block: The filesystem method used to translate file offsets to blocks
-+ *
-+ * Similar to block_truncate_page(), this function can be called by a
-+ * filesystem when it is truncating an DAX file to handle the partial page.
-+ *
-+ * We work in terms of PAGE_CACHE_SIZE here for commonality with
-+ * block_truncate_page(), but we could go down to PAGE_SIZE if the filesystem
-+ * took care of disposing of the unnecessary blocks.  Even if the filesystem
-+ * block size is smaller than PAGE_SIZE, we have to zero the rest of the page
-+ * since the file might be mmaped.
-+ */
-+int dax_truncate_page(struct inode *inode, loff_t from, get_block_t get_block)
-+{
-+	struct buffer_head bh;
-+	pgoff_t index = from >> PAGE_CACHE_SHIFT;
-+	unsigned offset = from & (PAGE_CACHE_SIZE-1);
-+	unsigned length = PAGE_CACHE_ALIGN(from) - from;
-+	int err;
-+
-+	/* Block boundary? Nothing to do */
-+	if (!length)
-+		return 0;
-+
-+	memset(&bh, 0, sizeof(bh));
-+	bh.b_size = PAGE_CACHE_SIZE;
-+	err = get_block(inode, index, &bh, 0);
-+	if (err < 0)
-+		return err;
-+	if (buffer_written(&bh)) {
-+		void *addr;
-+		err = dax_get_addr(&bh, &addr, inode->i_blkbits);
-+		if (err < 0)
-+			return err;
-+		memset(addr + offset, 0, length);
-+	}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(dax_truncate_page);
-diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
-index 52978b8..5ac0a34 100644
---- a/fs/ext2/inode.c
-+++ b/fs/ext2/inode.c
-@@ -1210,7 +1210,7 @@ static int ext2_setsize(struct inode *inode, loff_t newsize)
- 	inode_dio_wait(inode);
- 
- 	if (IS_DAX(inode))
--		error = xip_truncate_page(inode->i_mapping, newsize);
-+		error = dax_truncate_page(inode, newsize, ext2_get_block);
- 	else if (test_opt(inode->i_sb, NOBH))
- 		error = nobh_truncate_page(inode->i_mapping,
- 				newsize, ext2_get_block);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 338f04b..eee848d 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2492,7 +2492,7 @@ extern int nonseekable_open(struct inode * inode, struct file * filp);
- 
- #ifdef CONFIG_FS_XIP
- int dax_clear_blocks(struct inode *, sector_t block, long size);
--extern int xip_truncate_page(struct address_space *mapping, loff_t from);
-+int dax_truncate_page(struct inode *, loff_t from, get_block_t);
- ssize_t dax_do_io(int rw, struct kiocb *, struct inode *, struct iov_iter *,
- 		loff_t, get_block_t, dio_iodone_t, int flags);
- int dax_fault(struct vm_area_struct *, struct vm_fault *, get_block_t);
-@@ -2503,7 +2503,7 @@ static inline int dax_clear_blocks(struct inode *i, sector_t blk, long sz)
- 	return 0;
- }
- 
--static inline int xip_truncate_page(struct address_space *mapping, loff_t from)
-+static inline int dax_truncate_page(struct inode *i, loff_t frm, get_block_t gb)
- {
- 	return 0;
- }
-diff --git a/mm/filemap_xip.c b/mm/filemap_xip.c
-index 9dd45f3..6316578 100644
---- a/mm/filemap_xip.c
-+++ b/mm/filemap_xip.c
-@@ -21,43 +21,3 @@
- #include <asm/tlbflush.h>
- #include <asm/io.h>
- 
--/*
-- * truncate a page used for execute in place
-- * functionality is analog to block_truncate_page but does use get_xip_mem
-- * to get the page instead of page cache
-- */
--int
--xip_truncate_page(struct address_space *mapping, loff_t from)
--{
--	pgoff_t index = from >> PAGE_CACHE_SHIFT;
--	unsigned offset = from & (PAGE_CACHE_SIZE-1);
--	unsigned blocksize;
--	unsigned length;
--	void *xip_mem;
--	unsigned long xip_pfn;
--	int err;
--
--	BUG_ON(!mapping->a_ops->get_xip_mem);
--
--	blocksize = 1 << mapping->host->i_blkbits;
--	length = offset & (blocksize - 1);
--
--	/* Block boundary? Nothing to do */
--	if (!length)
--		return 0;
--
--	length = blocksize - length;
--
--	err = mapping->a_ops->get_xip_mem(mapping, index, 0,
--						&xip_mem, &xip_pfn);
--	if (unlikely(err)) {
--		if (err == -ENODATA)
--			/* Hole? No need to truncate */
--			return 0;
--		else
--			return err;
--	}
--	memset(xip_mem + offset, 0, length);
--	return 0;
--}
--EXPORT_SYMBOL_GPL(xip_truncate_page);
--- 
-2.0.0
+Thanks!
 
+		Amit
