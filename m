@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935238AbaH0PWR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 11:22:17 -0400
-Received: from goliath.siemens.de ([192.35.17.28]:33613 "EHLO
+	id S935275AbaH0PW2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 11:22:28 -0400
+Received: from goliath.siemens.de ([192.35.17.28]:33703 "EHLO
 	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934907AbaH0PWM (ORCPT
+	with ESMTP id S934907AbaH0PWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 11:22:12 -0400
+	Wed, 27 Aug 2014 11:22:20 -0400
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -15,10 +15,11 @@ Cc: Jason Wessel <jason.wessel@windriver.com>,
         kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@suse.de>,
-        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
-Subject: [PATCH v9 19/23] scripts/gdb: Add class to iterate over CPU masks
-Date: Wed, 27 Aug 2014 17:21:34 +0200
-Message-Id: <b54852bb4209c5e882d55de483a8cb61608143eb.1409152897.git.jan.kiszka@siemens.com>
+        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
+        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org
+Subject: [PATCH v9 21/23] scripts/gdb: Add basic documentation
+Date: Wed, 27 Aug 2014 17:21:36 +0200
+Message-Id: <b0871e06b1325b1acf711af5fc564bb728eb1b39.1409152897.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
 In-Reply-To: <cover.1409152897.git.jan.kiszka@siemens.com>
 References: <cover.1409152897.git.jan.kiszka@siemens.com>
@@ -28,79 +29,180 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Will be used first to count module references. It is optimized to read
-the mask only once per stop.
-
+CC: Rob Landley <rob@landley.net>
+CC: linux-doc@vger.kernel.org
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/linux/cpus.py | 54 +++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 54 insertions(+)
+ Documentation/gdb-kernel-debugging.txt | 160 +++++++++++++++++++++++++++++++++
+ 1 file changed, 160 insertions(+)
+ create mode 100644 Documentation/gdb-kernel-debugging.txt
 
-diff --git a/scripts/gdb/linux/cpus.py b/scripts/gdb/linux/cpus.py
-index b683da9..c1441f2 100644
---- a/scripts/gdb/linux/cpus.py
-+++ b/scripts/gdb/linux/cpus.py
-@@ -50,6 +50,60 @@ def per_cpu(var_ptr, cpu):
-     return pointer.cast(var_ptr.type).dereference()
- 
- 
-+cpu_mask = {}
+diff --git a/Documentation/gdb-kernel-debugging.txt b/Documentation/gdb-kernel-debugging.txt
+new file mode 100644
+index 0000000..7050ce8
+--- /dev/null
++++ b/Documentation/gdb-kernel-debugging.txt
+@@ -0,0 +1,160 @@
++Debugging kernel and modules via gdb
++====================================
++
++The kernel debugger kgdb, hypervisors like QEMU or JTAG-based hardware
++interfaces allow to debug the Linux kernel and its modules during runtime
++using gdb. Gdb comes with a powerful scripting interface for python. The
++kernel provides a collection of helper scripts that can simplify typical
++kernel debugging steps. This is a short tutorial about how to enable and use
++them. It focuses on QEMU/KVM virtual machines as target, but the examples can
++be transferred to the other gdb stubs as well.
 +
 +
-+def cpu_mask_invalidate(event):
-+    global cpu_mask
-+    cpu_mask = {}
-+    gdb.events.stop.disconnect(cpu_mask_invalidate)
-+    if hasattr(gdb.events, 'new_objfile'):
-+        gdb.events.new_objfile.disconnect(cpu_mask_invalidate)
++Requirements
++------------
++
++ o gdb 7.2+ (recommended: 7.4+) with python support enabled (typically true
++   for distributions)
 +
 +
-+class CpuList():
-+    def __init__(self, mask_name):
-+        global cpu_mask
-+        self.mask = None
-+        if mask_name in cpu_mask:
-+            self.mask = cpu_mask[mask_name]
-+        if self.mask is None:
-+            self.mask = gdb.parse_and_eval(mask_name + ".bits")
-+            if hasattr(gdb, 'events'):
-+                cpu_mask[mask_name] = self.mask
-+                gdb.events.stop.connect(cpu_mask_invalidate)
-+                if hasattr(gdb.events, 'new_objfile'):
-+                    gdb.events.new_objfile.connect(cpu_mask_invalidate)
-+        self.bits_per_entry = self.mask[0].type.sizeof * 8
-+        self.num_entries = self.mask.type.sizeof * 8 / self.bits_per_entry
-+        self.entry = -1
-+        self.bits = 0
++Setup
++-----
 +
-+    def __iter__(self):
-+        return self
++ o Create a virtual Linux machine for QEMU/KVM (see www.linux-kvm.org and
++   www.qemu.org for more details). For cross-development,
++   http://landley.net/aboriginal/bin keeps a pool of machine images and
++   toolchains that can be helpful to start from.
 +
-+    def next(self):
-+        while self.bits == 0:
-+            self.entry += 1
-+            if self.entry == self.num_entries:
-+                raise StopIteration
-+            self.bits = self.mask[self.entry]
-+            if self.bits != 0:
-+                self.bit = 0
-+                break
++ o Build the kernel with CONFIG_GDB_SCRIPTS enabled, but leave
++   CONFIG_DEBUG_INFO_REDUCED off. If your architecture supports
++   CONFIG_FRAME_POINTER, keep it enabled.
 +
-+        while self.bits & 1 == 0:
-+            self.bits >>= 1
-+            self.bit += 1
++ o Install that kernel on the guest.
 +
-+        cpu = self.entry * self.bits_per_entry + self.bit
++   Alternatively, QEMU allows to boot the kernel directly using -kernel,
++   -append, -initrd command line switches. This is generally only useful if
++   you do not depend on modules. See QEMU documentation for more details on
++   this mode.
 +
-+        self.bits >>= 1
-+        self.bit += 1
++ o Enable the gdb stub of QEMU/KVM, either
++    - at VM startup time by appending "-s" to the QEMU command line
++   or
++    - during runtime by issuing "gdbserver" from the QEMU monitor
++      console
 +
-+        return cpu
++ o cd /path/to/linux-build
++
++ o Start gdb: gdb vmlinux
++
++   Note: Some distros may restrict auto-loading of gdb scripts to known safe
++   directories. In case gdb reports to refuse loading vmlinux-gdb.py, add
++
++    add-auto-load-safe-path /path/to/linux-build
++
++   to ~/.gdbinit. See gdb help for more details.
++
++ o Attach to the booted guest:
++    (gdb) target remote :1234
 +
 +
- class PerCpu(gdb.Function):
-     """Return per-cpu variable.
- 
++Examples of using the Linux-provided gdb helpers
++------------------------------------------------
++
++ o Load module (and main kernel) symbols:
++    (gdb) lx-symbols
++    loading vmlinux
++    scanning for modules in /home/user/linux/build
++    loading @0xffffffffa0020000: /home/user/linux/build/net/netfilter/xt_tcpudp.ko
++    loading @0xffffffffa0016000: /home/user/linux/build/net/netfilter/xt_pkttype.ko
++    loading @0xffffffffa0002000: /home/user/linux/build/net/netfilter/xt_limit.ko
++    loading @0xffffffffa00ca000: /home/user/linux/build/net/packet/af_packet.ko
++    loading @0xffffffffa003c000: /home/user/linux/build/fs/fuse/fuse.ko
++    ...
++    loading @0xffffffffa0000000: /home/user/linux/build/drivers/ata/ata_generic.ko
++
++ o Set a breakpoint on some not yet loaded module function, e.g.:
++    (gdb) b btrfs_init_sysfs
++    Function "btrfs_init_sysfs" not defined.
++    Make breakpoint pending on future shared library load? (y or [n]) y
++    Breakpoint 1 (btrfs_init_sysfs) pending.
++
++ o Continue the target
++    (gdb) c
++
++ o Load the module on the target and watch the symbols being loaded as well as
++   the breakpoint hit:
++    loading @0xffffffffa0034000: /home/user/linux/build/lib/libcrc32c.ko
++    loading @0xffffffffa0050000: /home/user/linux/build/lib/lzo/lzo_compress.ko
++    loading @0xffffffffa006e000: /home/user/linux/build/lib/zlib_deflate/zlib_deflate.ko
++    loading @0xffffffffa01b1000: /home/user/linux/build/fs/btrfs/btrfs.ko
++
++    Breakpoint 1, btrfs_init_sysfs () at /home/user/linux/fs/btrfs/sysfs.c:36
++    36              btrfs_kset = kset_create_and_add("btrfs", NULL, fs_kobj);
++
++ o Dump the log buffer of the target kernel:
++    (gdb) lx-dmesg
++    [     0.000000] Initializing cgroup subsys cpuset
++    [     0.000000] Initializing cgroup subsys cpu
++    [     0.000000] Linux version 3.8.0-rc4-dbg+ (...
++    [     0.000000] Command line: root=/dev/sda2 resume=/dev/sda1 vga=0x314
++    [     0.000000] e820: BIOS-provided physical RAM map:
++    [     0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000009fbff] usable
++    [     0.000000] BIOS-e820: [mem 0x000000000009fc00-0x000000000009ffff] reserved
++    ....
++
++ o Examine fields of the current task struct:
++    (gdb) p $lx_current().pid
++    $1 = 4998
++    (gdb) p $lx_current().comm
++    $2 = "modprobe\000\000\000\000\000\000\000"
++
++ o Make use of the per-cpu function for the current or a specified CPU:
++    (gdb) p $lx_per_cpu("runqueues").nr_running
++    $3 = 1
++    (gdb) p $lx_per_cpu("runqueues", 2).nr_running
++    $4 = 0
++
++ o Dig into hrtimers using the container_of helper:
++    (gdb) set $next = $lx_per_cpu("hrtimer_bases").clock_base[0].active.next
++    (gdb) p *$container_of($next, "struct hrtimer", "node")
++    $5 = {
++      node = {
++        node = {
++          __rb_parent_color = 18446612133355256072,
++          rb_right = 0x0 <irq_stack_union>,
++          rb_left = 0x0 <irq_stack_union>
++        },
++        expires = {
++          tv64 = 1835268000000
++        }
++      },
++      _softexpires = {
++        tv64 = 1835268000000
++      },
++      function = 0xffffffff81078232 <tick_sched_timer>,
++      base = 0xffff88003fd0d6f0,
++      state = 1,
++      start_pid = 0,
++      start_site = 0xffffffff81055c1f <hrtimer_start_range_ns+20>,
++      start_comm = "swapper/2\000\000\000\000\000\000"
++    }
++
++
++List of commands and functions
++------------------------------
++
++The number of commands and convenience functions may evolve over the time,
++this is just a snapshot of the initial version:
++
++ (gdb) apropos lx
++ function lx_current -- Return current task
++ function lx_module -- Find module by name and return the module variable
++ function lx_per_cpu -- Return per-cpu variable
++ function lx_task_by_pid -- Find Linux task by PID and return the task_struct variable
++ function lx_thread_info -- Calculate Linux thread_info from task variable
++ lx-dmesg -- Print Linux kernel log buffer
++ lx-lsmod -- List currently loaded modules
++ lx-symbols -- (Re-)load symbols of Linux kernel and currently loaded modules
++
++Detailed help can be obtained via "help <command-name>" for commands and "help
++function <function-name>" for convenience functions.
 -- 
 1.8.1.1.298.ge7eed54
 
