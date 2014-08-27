@@ -1,114 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965153AbaH0Ulv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 16:41:51 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:59192 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964892AbaH0Ult (ORCPT
+	id S965178AbaH0Unj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 16:43:39 -0400
+Received: from mail-yk0-f182.google.com ([209.85.160.182]:39330 "EHLO
+	mail-yk0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964892AbaH0Unh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 16:41:49 -0400
-Message-ID: <53FE4286.3050305@gmail.com>
-Date: Wed, 27 Aug 2014 22:41:42 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] regulator: max77802: set opmode to normal if off
- is read from hw
-References: <1409053061-22568-1-git-send-email-javier.martinez@collabora.co.uk> <53FE2446.3040402@gmail.com> <20140827183733.GN17528@sirena.org.uk> <53FE25EB.7060702@gmail.com> <20140827184705.GO17528@sirena.org.uk> <53FE2901.50508@gmail.com> <20140827191526.GS17528@sirena.org.uk> <53FE2F9E.80501@gmail.com> <20140827194411.GU17528@sirena.org.uk> <53FE387F.3030302@gmail.com> <20140827202554.GW17528@sirena.org.uk>
-In-Reply-To: <20140827202554.GW17528@sirena.org.uk>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Aug 2014 16:43:37 -0400
+From: Pranith Kumar <bobby.prani@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org (open list:READ-COPY UPDATE...)
+Cc: amit.shah@redhat.com
+Subject: [PATCH] rcu: Make nocb leader kthreads process pending callbacks after spawning
+Date: Wed, 27 Aug 2014 16:43:40 -0400
+Message-Id: <1409172220-2804-1-git-send-email-bobby.prani@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27.08.2014 22:25, Mark Brown wrote:
-> On Wed, Aug 27, 2014 at 09:58:55PM +0200, Tomasz Figa wrote:
->> On 27.08.2014 21:44, Mark Brown wrote:
-> 
->>> The point is that if anything was setting the mode to something other
->>> than normal it was almost certainly a previously running copy of Linux
->>> and one would expect that if the mode does need to be changed the new
->>> copy will be doing that anyway.  It's rare enough to need to actively
->>> manage modes in the first place.
-> 
->> From what I know based on my experience with Samsung boards we used, the
->> opmodes of regulators are preconfigured by board bootloader to certain
->> values based on power design of the board (i.e. there is no need to keep
->> a regulator in full power mode, if on given board only a little fraction
->> of it is needed).
-> 
-> Well, presumably the bootloader is going to run again even for a warm
-> reboot?
+The nocb callbacks generated before the nocb kthreads are spawned are
+enqueued in the nocb queue for later processing. Commit fbce7497ee5af ("rcu:
+Parallelize and economize NOCB kthread wakeups") introduced nocb leader kthreads
+which checked the nocb_leader_wake flag to see if there were any such pending
+callbacks. A case was reported in which newly spawned leader kthreads were not
+processing the pending callbacks as this flag was not set, which led to a boot
+hang.
 
-This is strange, but apparently it's not the case for the hardware which
-this patch is supposed to fix or at least this is how I understood it.
+The following commit ensures that the newly spawned nocb kthreads process the
+pending callbacks by allowing the kthreads to run immediately after spawning
+instead of waiting. This is done by inverting the logic of nocb_leader_wake
+tests to nocb_leader_sleep which allows us to use the default initialization of
+this flag to 0 to let the kthreads run.
 
-> 
->> Now Linux should not change this mode (excluding cases when the values
->> in the bootloader are wrong - they happen unfortunately), so I'm not
->> getting why you say that it is Linux which changes the mode to something
->> other than normal. Linux should only toggle between the value resulting
->> from power design and off.
-> 
-> It's not in general true that Linux should never change the mode (the
-> main case for toggling modes is usually going between an idle/suspend
-> state and active state)
+Reported-by: Amit Shah <amit.shah@redhat.com>
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+Link: http://www.spinics.net/lists/kernel/msg1802899.html
+---
+ kernel/rcu/tree.h        |  2 +-
+ kernel/rcu/tree_plugin.h | 24 ++++++++++++------------
+ 2 files changed, 13 insertions(+), 13 deletions(-)
 
-I believe this is yet another reason why we should have a way to specify
-opmodes in DT, now not only active but also suspend/idle opmodes.
+diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
+index 83a7d1c..ffedcb9 100644
+--- a/kernel/rcu/tree.h
++++ b/kernel/rcu/tree.h
+@@ -358,7 +358,7 @@ struct rcu_data {
+ 	struct rcu_head **nocb_gp_tail;
+ 	long nocb_gp_count;
+ 	long nocb_gp_count_lazy;
+-	bool nocb_leader_wake;		/* Is the nocb leader thread awake? */
++	bool nocb_leader_sleep;		/* Is the nocb leader thread asleep? */
+ 	struct rcu_data *nocb_next_follower;
+ 					/* Next follower in wakeup chain. */
+ 
+diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+index 5780f6d..28d6763 100644
+--- a/kernel/rcu/tree_plugin.h
++++ b/kernel/rcu/tree_plugin.h
+@@ -2041,9 +2041,9 @@ static void wake_nocb_leader(struct rcu_data *rdp, bool force)
+ 
+ 	if (!ACCESS_ONCE(rdp_leader->nocb_kthread))
+ 		return;
+-	if (!ACCESS_ONCE(rdp_leader->nocb_leader_wake) || force) {
++	if (ACCESS_ONCE(rdp_leader->nocb_leader_sleep) || force) {
+ 		/* Prior smp_mb__after_atomic() orders against prior enqueue. */
+-		ACCESS_ONCE(rdp_leader->nocb_leader_wake) = true;
++		ACCESS_ONCE(rdp_leader->nocb_leader_sleep) = false;
+ 		wake_up(&rdp_leader->nocb_wq);
+ 	}
+ }
+@@ -2071,7 +2071,7 @@ static void __call_rcu_nocb_enqueue(struct rcu_data *rdp,
+ 	ACCESS_ONCE(*old_rhpp) = rhp;
+ 	atomic_long_add(rhcount, &rdp->nocb_q_count);
+ 	atomic_long_add(rhcount_lazy, &rdp->nocb_q_count_lazy);
+-	smp_mb__after_atomic(); /* Store *old_rhpp before _wake test. */
++	smp_mb__after_atomic(); /* Store *old_rhpp before _sleep test. */
+ 
+ 	/* If we are not being polled and there is a kthread, awaken it ... */
+ 	t = ACCESS_ONCE(rdp->nocb_kthread);
+@@ -2239,7 +2239,7 @@ wait_again:
+ 	if (!rcu_nocb_poll) {
+ 		trace_rcu_nocb_wake(my_rdp->rsp->name, my_rdp->cpu, "Sleep");
+ 		wait_event_interruptible(my_rdp->nocb_wq,
+-					 ACCESS_ONCE(my_rdp->nocb_leader_wake));
++				!ACCESS_ONCE(my_rdp->nocb_leader_sleep));
+ 		/* Memory barrier handled by smp_mb() calls below and repoll. */
+ 	} else if (firsttime) {
+ 		firsttime = false; /* Don't drown trace log with "Poll"! */
+@@ -2278,12 +2278,12 @@ wait_again:
+ 		schedule_timeout_interruptible(1);
+ 
+ 		/* Rescan in case we were a victim of memory ordering. */
+-		my_rdp->nocb_leader_wake = false;
+-		smp_mb();  /* Ensure _wake false before scan. */
++		my_rdp->nocb_leader_sleep = true;
++		smp_mb();  /* Ensure _sleep true before scan. */
+ 		for (rdp = my_rdp; rdp; rdp = rdp->nocb_next_follower)
+ 			if (ACCESS_ONCE(rdp->nocb_head)) {
+ 				/* Found CB, so short-circuit next wait. */
+-				my_rdp->nocb_leader_wake = true;
++				my_rdp->nocb_leader_sleep = false;
+ 				break;
+ 			}
+ 		goto wait_again;
+@@ -2293,17 +2293,17 @@ wait_again:
+ 	rcu_nocb_wait_gp(my_rdp);
+ 
+ 	/*
+-	 * We left ->nocb_leader_wake set to reduce cache thrashing.
+-	 * We clear it now, but recheck for new callbacks while
++	 * We left ->nocb_leader_sleep unset to reduce cache thrashing.
++	 * We set it now, but recheck for new callbacks while
+ 	 * traversing our follower list.
+ 	 */
+-	my_rdp->nocb_leader_wake = false;
+-	smp_mb(); /* Ensure _wake false before scan of ->nocb_head. */
++	my_rdp->nocb_leader_sleep = true;
++	smp_mb(); /* Ensure _sleep true before scan of ->nocb_head. */
+ 
+ 	/* Each pass through the following loop wakes a follower, if needed. */
+ 	for (rdp = my_rdp; rdp; rdp = rdp->nocb_next_follower) {
+ 		if (ACCESS_ONCE(rdp->nocb_head))
+-			my_rdp->nocb_leader_wake = true; /* No need to wait. */
++			my_rdp->nocb_leader_sleep = false;/* No need to sleep.*/
+ 		if (!rdp->nocb_gp_head)
+ 			continue; /* No CBs, so no need to wake follower. */
+ 
+-- 
+1.9.1
 
-However on many PMICs this is a bit more complicated. There are opmodes
-such as
-
-1) Regulator powered off.
-2) Regulator powered off if certain pin is active, regulator powered
-   on otherwise.
-3) Regulator powered on.
-
-some of them might also have more interesting combinations, e.g.
-
-4) Regulator powered off if certain pin is active, regulator powered on
-   in low power mode otherwise.
-5) Regulator powered on in lower power mode if certain pin is active,
-   regulator powered on in full power mode otherwise.
-
-They all go to the same opmode field, as "off", "low power", "normal"
-mentioned earlier in this thread.
-
-> and for practical purposes bootloader and
-> hardware defaults tend to be the same.
-
-Not on the boards I worked with. At least when it's just about the
-difference between normal and low power modes. I believe the hardware
-will always default to normal just to be safe, so to optimize power on
-the board, the bootloader will switch those which don't need full power
-to low power mode.
-
-I believe we shouldn't even rely on the bootloader here, as we all know
-that often all you can expect from them is to load and jump to your
-kernel and even some of them can't do this properly...
-
-> You're talking about the case
-> where the bootloader does set something but avoids doing so on warm
-> reboots only here.
-
->From Javier's description I understood this is the case for the board
-for which he develops.
-
-> 
-> Besides, even if we did have a way of specifying modes in DT (with all
-> the problems that brings) we still have to pick a default if that's not
-> used).
-
-Sure we do and we can define the binding to default to something (e.g.
-normal mode) if respective property is not present. Btw. the issue with
-opmode also affects other PMIC chips such as Samsung S5M ones.
-
-Best regards,
-Tomasz
