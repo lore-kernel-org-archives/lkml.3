@@ -1,237 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964797AbaH0RlJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 13:41:09 -0400
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.175]:41985 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934955AbaH0RlH (ORCPT
+	id S935548AbaH0RlY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 13:41:24 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:36444 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932511AbaH0RlX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 13:41:07 -0400
-X-Env-Sender: Andreas.Werner@men.de
-X-Msg-Ref: server-13.tower-38.messagelabs.com!1409158788!23522395!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Wed, 27 Aug 2014 18:59:48 +0200
-Date: Wed, 27 Aug 2014 19:51:45 +0200
-From: Andreas Werner <andreas.werner@men.de>
-To: <linux-kernel@vger.kernel.org>
-CC: <sameo@linux.intel.com>, <lee.jones@linaro.org>, <linux@roeck-us.net>,
-        <lm-sensors@lm-sensors.org>, <wim@iguana.be>,
-        <linux-watchdog@vger.kernel.org>, <cooloney@gmail.com>,
-        <rpurdie@rpsys.net>, <linux-leds@vger.kernel.org>
-Subject: [PATCH v6 1/4] drivers/mfd/menf21bmc: introduce MEN 14F021P00 BMC
- MFD Core driver
-Message-ID: <71aa7a1bbed06f0ec840b3a00664dfd8214fa49a.1409161615.git.andreas.werner@men.de>
-References: <cover.1409161615.git.andreas.werner@men.de>
+	Wed, 27 Aug 2014 13:41:23 -0400
+Message-ID: <53FE183D.4020403@kernel.org>
+Date: Wed, 27 Aug 2014 18:41:17 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <cover.1409161615.git.andreas.werner@men.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [192.1.1.171]
+To: Adam Thomson <Adam.Thomson@diasemi.com>,
+        "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Guenter Roeck <linux@roeck-us.net>
+CC: "knaack.h@gmx.de" <knaack.h@gmx.de>, "lars@metafoo.de" <lars@metafoo.de>,
+        "pmeerw@pmeerw.net" <pmeerw@pmeerw.net>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] iio: core: Propagate error codes from OF layer to client
+ drivers
+References: <1408971437-10751-1-git-send-email-iivanov@mm-sol.com>		 <53FB5FF7.8020504@kernel.org> <20140825165430.GB14614@roeck-us.net>	 <1409039490.5256.75.camel@iivanov-dev> <53FC8AB3.2080603@roeck-us.net> <1409060908.5256.83.camel@iivanov-dev> <2E89032DDAA8B9408CB92943514A0337AB5113C5@SW-EX-MBX01.diasemi.com>
+In-Reply-To: <2E89032DDAA8B9408CB92943514A0337AB5113C5@SW-EX-MBX01.diasemi.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MEN 14F021P00 Board Management Controller provides an
-I2C interface to the host to access the feature implemented in the BMC.
-The BMC is a PIC Microntroller assembled on CPCI Card from MEN Mikroelektronik
-and on a few Box/Display Computer.
+On 27/08/14 16:59, Adam Thomson wrote:
+> On August 26, 2014 15:36, Adam Thomson wrote:
+> 
+>> On August 26, 2014 14:48, Ivan T. Ivanov wrote:
+>>
+>>> On Tue, 2014-08-26 at 06:25 -0700, Guenter Roeck wrote:
+>>>> On 08/26/2014 12:51 AM, Ivan T. Ivanov wrote:
+>>>>> Hi,
+>>>>>
+>>>> [ ... ]
+>>>>>
+>>>>> Another, less intrusive, solution will be if we revert last patch and explicitly
+>>>>> check for EPROBE_DEFER on of_ by_name() return. How this sounds?
+>>>>>
+>>>> How is that different to the just accepted patch ?
+>>>
+>>> You mean this one[1]. I have prepared fix last Friday and forget to
+>>> check again before posting it, sorry. Please ignore my patch.
+>>>
+>>> Thanks,
+>>> Ivan
+>>>
+>>> [1] iio:inkern: fix overwritten -EPROBE_DEFER in of_iio_channel_get_by_name
+>>>
+>>
+>> Apologies on my part for fixing one problem and introducing another. Didn't see
+>> that in my testing, and missed that potential return value when examining the
+>> code. At the time It looked like the parent function would only expect NULL
+>> pointers for failure, especially given the non CONFIG_OF definitions of the
+>> functions. Should've delved further. :(
+> 
+> On August 26, 2014 15:36, Adam Thomson wrote:
+> 
+>> On August 26, 2014 14:48, Ivan T. Ivanov wrote:
+>>
+>>> On Tue, 2014-08-26 at 06:25 -0700, Guenter Roeck wrote:
+>>>> On 08/26/2014 12:51 AM, Ivan T. Ivanov wrote:
+>>>>> Hi,
+>>>>>
+>>>> [ ... ]
+>>>>>
+>>>>> Another, less intrusive, solution will be if we revert last patch and explicitly
+>>>>> check for EPROBE_DEFER on of_ by_name() return. How this sounds?
+>>>>>
+>>>> How is that different to the just accepted patch ?
+>>>
+>>> You mean this one[1]. I have prepared fix last Friday and forget to
+>>> check again before posting it, sorry. Please ignore my patch.
+>>>
+>>> Thanks,
+>>> Ivan
+>>>
+>>> [1] iio:inkern: fix overwritten -EPROBE_DEFER in of_iio_channel_get_by_name
+>>>
+>>
+>> Apologies on my part for fixing one problem and introducing another. Didn't see
+>> that in my testing, and missed that potential return value when examining the
+>> code. At the time It looked like the parent function would only expect NULL
+>> pointers for failure, especially given the non CONFIG_OF definitions of the
+>> functions. Should've delved further. :(
+> 
+> In testing patch code for one of our devices, I've verified what Guenter
+> mentioned previously in this thread, in that iio_channel_get_sys() doesn't
+> return -EPROBE_DEFER. This means that drivers using the default map approach of
+> accessing IIO channels will fail to instantiate as they do not know they
+> need to defer their probe (have seen this with my driver too).
+> 
+> Haven't looked in detail yet as to how, but I guess this is something that will
+> also need to be addressed.
+Yes, that stuff (I think) predates deferred probing and no one has gotten around
+to bringing it up to date as yet.
 
-Added MFD Core driver, supporting the I2C communication to the device.
+All contributions welcome!
 
-The MFD driver currently supports the following features:
- 	- Watchdog
- 	- LEDs
-	- Hwmon (voltage monitoring)
+J
 
-Signed-off-by: Andreas Werner <andreas.werner@men.de>
----
- drivers/mfd/Kconfig     |  15 ++++++
- drivers/mfd/Makefile    |   1 +
- drivers/mfd/menf21bmc.c | 132 ++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 148 insertions(+)
- create mode 100644 drivers/mfd/menf21bmc.c
-
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index b8d9ca0..1020725 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -453,6 +453,21 @@ config MFD_MAX8998
- 	  additional drivers must be enabled in order to use the functionality
- 	  of the device.
- 
-+config MFD_MENF21BMC
-+	tristate "MEN 14F021P00 Board Management Controller Support"
-+	depends on I2C
-+	select MFD_CORE
-+	help
-+	  Say yes here to add support for the MEN 14F021P00 BMC
-+	  which is a Board Management Controller connected to the I2C bus.
-+	  The device supports multiple sub-devices like LED, HWMON and WDT.
-+	  This driver provides common support for accessing the devices;
-+	  additional drivers must be enabled in order to use the
-+	  functionality of the BMC device.
-+
-+	  This driver can also be built as a module. If so the module
-+	  will be called menf21bmc.
-+
- config EZX_PCAP
- 	bool "Motorola EZXPCAP Support"
- 	depends on SPI_MASTER
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 4e2bc25..37bf336 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -169,6 +169,7 @@ obj-$(CONFIG_MFD_AS3711)	+= as3711.o
- obj-$(CONFIG_MFD_AS3722)	+= as3722.o
- obj-$(CONFIG_MFD_STW481X)	+= stw481x.o
- obj-$(CONFIG_MFD_IPAQ_MICRO)	+= ipaq-micro.o
-+obj-$(CONFIG_MFD_MENF21BMC)	+= menf21bmc.o
- 
- intel-soc-pmic-objs		:= intel_soc_pmic_core.o intel_soc_pmic_crc.o
- obj-$(CONFIG_INTEL_SOC_PMIC)	+= intel-soc-pmic.o
-diff --git a/drivers/mfd/menf21bmc.c b/drivers/mfd/menf21bmc.c
-new file mode 100644
-index 0000000..1c27434
---- /dev/null
-+++ b/drivers/mfd/menf21bmc.c
-@@ -0,0 +1,132 @@
-+/*
-+ *  MEN 14F021P00 Board Management Controller (BMC) MFD Core Driver.
-+ *
-+ *  Copyright (C) 2014 MEN Mikro Elektronik Nuernberg GmbH
-+ *
-+ *  This program is free software; you can redistribute  it and/or modify it
-+ *  under  the terms of  the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the  License, or (at your
-+ *  option) any later version.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/device.h>
-+#include <linux/module.h>
-+#include <linux/i2c.h>
-+#include <linux/mfd/core.h>
-+
-+#define BMC_CMD_WDT_EXIT_PROD	0x18
-+#define BMC_CMD_WDT_PROD_STAT	0x19
-+#define BMC_CMD_REV_MAJOR	0x80
-+#define BMC_CMD_REV_MINOR	0x81
-+#define BMC_CMD_REV_MAIN	0x82
-+
-+static struct mfd_cell menf21bmc_cell[] = {
-+	{ .name = "menf21bmc_wdt", },
-+	{ .name = "menf21bmc_led", },
-+	{ .name = "menf21bmc_hwmon", }
-+};
-+
-+static int menf21bmc_wdt_exit_prod_mode(struct i2c_client *client)
-+{
-+	int val, ret;
-+
-+	val = i2c_smbus_read_byte_data(client, BMC_CMD_WDT_PROD_STAT);
-+	if (val < 0)
-+		return val;
-+
-+	/*
-+	 * Production mode should be not active after delivery of the Board.
-+	 * To be sure we check it, inform the user and exit the mode
-+	 * if active.
-+	 */
-+	if (val == 0x00) {
-+		dev_info(&client->dev,
-+			"BMC in production mode. Exit production mode\n");
-+
-+		ret = i2c_smbus_write_byte(client, BMC_CMD_WDT_EXIT_PROD);
-+		if (ret < 0)
-+			return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static int
-+menf21bmc_probe(struct i2c_client *client, const struct i2c_device_id *ids)
-+{
-+	int rev_major, rev_minor, rev_main;
-+	int ret;
-+
-+	ret = i2c_check_functionality(client->adapter,
-+				      I2C_FUNC_SMBUS_BYTE_DATA |
-+				      I2C_FUNC_SMBUS_WORD_DATA |
-+				      I2C_FUNC_SMBUS_BYTE);
-+	if (!ret)
-+		return -ENODEV;
-+
-+	rev_major = i2c_smbus_read_word_data(client, BMC_CMD_REV_MAJOR);
-+	if (rev_major < 0) {
-+		dev_err(&client->dev, "failed to get BMC major revision\n");
-+		return rev_major;
-+	}
-+
-+	rev_minor = i2c_smbus_read_word_data(client, BMC_CMD_REV_MINOR);
-+	if (rev_minor < 0) {
-+		dev_err(&client->dev, "failed to get BMC minor revision\n");
-+		return rev_minor;
-+	}
-+
-+	rev_main = i2c_smbus_read_word_data(client, BMC_CMD_REV_MAIN);
-+	if (rev_main < 0) {
-+		dev_err(&client->dev, "failed to get BMC main revision\n");
-+		return rev_main;
-+	}
-+
-+	dev_info(&client->dev, "FW Revision: %02d.%02d.%02d\n",
-+		 rev_major, rev_minor, rev_main);
-+
-+	/*
-+	 * We have to exit the Production Mode of the BMC to activate the
-+	 * Watchdog functionality and the BIOS life sign monitoring.
-+	 */
-+	ret = menf21bmc_wdt_exit_prod_mode(client);
-+	if (ret < 0) {
-+		dev_err(&client->dev, "failed to leave production mode\n");
-+		return ret;
-+	}
-+
-+	ret = mfd_add_devices(&client->dev, 0, menf21bmc_cell,
-+			      ARRAY_SIZE(menf21bmc_cell), NULL, 0, NULL);
-+	if (ret < 0) {
-+		dev_err(&client->dev, "failed to add BMC sub-devices\n");
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static int menf21bmc_remove(struct i2c_client *client)
-+{
-+	mfd_remove_devices(&client->dev);
-+	return 0;
-+}
-+
-+static const struct i2c_device_id menf21bmc_id_table[] = {
-+	{ "menf21bmc" },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, menf21bmc_id_table);
-+
-+static struct i2c_driver menf21bmc_driver = {
-+	.driver.name	= "menf21bmc",
-+	.id_table	= menf21bmc_id_table,
-+	.probe		= menf21bmc_probe,
-+	.remove		= menf21bmc_remove,
-+};
-+
-+module_i2c_driver(menf21bmc_driver);
-+
-+MODULE_DESCRIPTION("MEN 14F021P00 BMC mfd core driver");
-+MODULE_AUTHOR("Andreas Werner <andreas.werner@men.de>");
-+MODULE_LICENSE("GPL v2");
--- 
-2.0.4
-
+> Legal Disclaimer: This e-mail communication (and any attachment/s) is confidential and contains proprietary information, some or all of which may be legally privileged. It is intended solely for the use of the individual or entity to which it is addressed. Access to this email by anyone else is unauthorized. If you are not the intended recipient, any disclosure, copying, distribution or any action taken or omitted to be taken in reliance on it, is prohibited and may be unlawful.
+> 
+> Please consider the environment before printing this e-mail
+> 
+> 
