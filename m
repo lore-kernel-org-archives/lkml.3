@@ -1,137 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932221AbaH0BK4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Aug 2014 21:10:56 -0400
-Received: from qmta05.emeryville.ca.mail.comcast.net ([76.96.30.48]:60793 "EHLO
-	qmta05.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756533AbaH0BKx (ORCPT
+	id S932266AbaH0BLD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Aug 2014 21:11:03 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:42505 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932222AbaH0BK7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Aug 2014 21:10:53 -0400
-Message-ID: <53FD2E9E.6050809@gentoo.org>
-Date: Tue, 26 Aug 2014 21:04:30 -0400
-From: Joshua Kinard <kumba@gentoo.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: David Daney <ddaney.cavm@gmail.com>
-CC: Ralf Baechle <ralf@linux-mips.org>, Max Filippov <jcmvbkbc@gmail.com>,
-        linux-xtensa@linux-xtensa.org, Chris Zankel <chris@zankel.net>,
-        Marc Gauthier <marc@cadence.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>,
-        Steven Hill <Steven.Hill@imgtec.com>
-Subject: Re: [PATCH v4 0/2] mm/highmem: make kmap cache coloring aware
-References: <1406941899-19932-1-git-send-email-jcmvbkbc@gmail.com> <20140825171600.GH25892@linux-mips.org> <53FBCD09.1050003@gentoo.org> <53FBD676.8080307@gmail.com> <53FBF3C3.90509@gentoo.org> <53FCC7CB.8010701@gmail.com>
-In-Reply-To: <53FCC7CB.8010701@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Aug 2014 21:10:59 -0400
+X-AuditID: cbfee68d-f79c46d000000b84-6a-53fd302072bd
+From: Jingoo Han <jg1.han@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: "'Bryan Wu'" <cooloney@gmail.com>, "'Lee Jones'" <lee.jones@linaro.org>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <004301cfc193$69c1de20$3d459a60$%han@samsung.com>
+In-reply-to: <004301cfc193$69c1de20$3d459a60$%han@samsung.com>
+Subject: [PATCH V2 05/18] backlight: corgi_lcd: add blank line after
+ declarations
+Date: Wed, 27 Aug 2014 10:10:55 +0900
+Message-id: <004901cfc193$c10901e0$431b05a0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac/Bk2mhX0elbPeNSwiBLjt5Esz7eAAAEuZg
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsVy+t8zI10Fg7/BBmtW8Foc3TmRyeLywkus
+	Fve/HmW0uLxrDpsDi8fOWXfZPe5c28Pm0bdlFaPH501yASxRXDYpqTmZZalF+nYJXBmvXxxh
+	K3jAWnFs20TGBsZ7LF2MnBwSAiYSi/ethbLFJC7cW8/WxcjFISSwjFGib/UR9i5GDrCig6/8
+	IOKLGCUu7m6DKvrNKHF+wTdWkG42ATWJL18Os4PYIgIKEpt7n4HFmQVyJX7PXMkIYgsJ2Epc
+	XriWCcTmFLCTmP1hOli9sECwxMqOfWD1LAKqEpN/bwer5wWqv3jmIDOELSjxYzLE1cwCWhLr
+	dx5ngrDlJTavecsMcai6xKO/uhAnGEmcffMTqlxEYt+Ld4wgN0sIHGOXOPzkLdQuAYlvkw+x
+	QPTKSmw6wAwJCEmJgytusExglJiFZPMsJJtnIdk8C8mKBYwsqxhFUwuSC4qT0osM9YoTc4tL
+	89L1kvNzNzFCorJ3B+PtA9aHGAU4GJV4eD8s+BMsxJpYVlyZe4jRFOiiicxSosn5wNjPK4k3
+	NDYzsjA1MTU2Mrc0UxLnVZT6GSwkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBMdeDLUxHSmAX
+	T+qkhYELrk8Oadk84W54OM+8JNnW7T8tZ8zZKbX0tkfcD82PPqWWZjFcUxSP6ek/XizMKWD1
+	+xbnqZUx/LM22k2VXOK8tvzyJm+9R063yuxtatnP6t56JH0i4/vRp3xv2qZeSerp7Yta8Pn6
+	bd7Iok23yxt6bx28yylxM+fkdiWW4oxEQy3mouJEAGCDGsrFAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDIsWRmVeSWpSXmKPExsVy+t9jAV0Fg7/BBosncVkc3TmRyeLywkus
+	Fve/HmW0uLxrDpsDi8fOWXfZPe5c28Pm0bdlFaPH501yASxRDYw2GamJKalFCql5yfkpmXnp
+	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUA7lRTKEnNKgUIBicXFSvp2mCaEhrjp
+	WsA0Ruj6hgTB9RgZoIGEdYwZr18cYSt4wFpxbNtExgbGeyxdjBwcEgImEgdf+XUxcgKZYhIX
+	7q1n62Lk4hASWMQocXF3G5Tzm1Hi/IJvrCBVbAJqEl++HGYHsUUEFCQ29z4DizML5Er8nrmS
+	EcQWErCVuLxwLROIzSlgJzH7w3SwemGBYImVHfvA6lkEVCUm/94OVs8LVH/xzEFmCFtQ4sdk
+	kONAZmpJrN95nAnClpfYvOYtM8TR6hKP/upCnGAkcfbNT6hyEYl9L94xTmAUmoVk0iwkk2Yh
+	mTQLScsCRpZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMEx/0xqB+PKBotDjAIcjEo8vB8X
+	/AkWYk0sK67MPcQowcGsJMKbrPA3WIg3JbGyKrUoP76oNCe1+BCjKdCjE5mlRJPzgekoryTe
+	0NjEzMjSyMzCyMTcXEmc90CrdaCQQHpiSWp2ampBahFMHxMHp1QDY9j/9gv/b82QZAyYWbe+
+	1fphRk/Xr73Tjqya5G/sbpl89fF22bC1vcIcU06etLz41j2p2+ptu1TO1EL5363bn4VfNsi3
+	eLlssWvdmVNbvfINtE+v2Myy9OmSAElrVu4qx+rnDUXLnqutcJ0l9OMnH1/9KzuR66eeS4qb
+	iG9fVPNIa90Sjqny35RYijMSDbWYi4oTASGX+H0PAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2014 13:45, David Daney wrote:
-> On 08/25/2014 07:41 PM, Joshua Kinard wrote:
->> On 08/25/2014 20:36, David Daney wrote:
->>> On 08/25/2014 04:55 PM, Joshua Kinard wrote:
->>>> On 08/25/2014 13:16, Ralf Baechle wrote:
->>>>> On Sat, Aug 02, 2014 at 05:11:37AM +0400, Max Filippov wrote:
->>>>>
->>>>>> this series adds mapping color control to the generic kmap code, allowing
->>>>>> architectures with aliasing VIPT cache to use high memory. There's also
->>>>>> use example of this new interface by xtensa.
->>>>>
->>>>> I haven't actually ported this to MIPS but it certainly appears to be
->>>>> the right framework to get highmem aliases handled on MIPS, too.
->>>>>
->>>>> Though I still consider increasing PAGE_SIZE to 16k the preferable
->>>>> solution because it will entirly do away with cache aliases.
->>>>
->>>> Won't setting PAGE_SIZE to 16k break some existing userlands (o32)?  I
->>>> use a
->>>> 4k PAGE_SIZE because the last few times I've tried 16k or 64k, init won't
->>>> load (SIGSEGVs or such, which panicks the kernel).
->>>>
->>>
->>> It isn't supposed to break things.  Using "stock" toolchains should result
->>> in executables that will run with any page size.
->>>
->>> In the past, some geniuses came up with some linker (ld) patches that, in
->>> order to save a few KB of RAM, produced executables that ran only on 4K
->>> pages.
->>>
->>> There were some equally astute Debian emacs package maintainers that were
->>> carrying emacs patches into Debian that would not work on non-4K page size
->>> systems.
->>>
->>> That said, I think such thinking should be punished.  The punishment should
->>> be to not have their software run when we select non-4K page sizes.  The
->>> vast majority of prepackaged software runs just fine with a larger page
->>> size.
->>
->> Well, it does appear to mostly work now w/ 16k PAGE_SIZE.  The Octane booted
->> into userland with just a couple of "illegal instruction" errors from 'rm'
->> and 'mdadm'.  I wonder if that's tied to a hardcoded PAGE_SIZE somewhere.
->> Have to dig around and find something that reproduces the problem on demand.
->>
-> 
-> What does the output of "readelf -lW" look like for the failing programs? 
-> If the "Offset" and "VirtAddr" constraints for the LOAD Program Headers are
-> not possible to achieve with the selected PAGE_SIZE, you will see problems. 
-> A "correct" toolchain will generate binaries that work with any PAGE_SIZE up
-> to 64K.
+Fixed the following checkpatch warning.
 
-Well, I recently rebuilt shash, so that might've changed things.  But,
-running readelf -lW on shash core dumped readelf itself on the first
-invocation (with a SIGBUS instead of SIGILL).  So I instead ran readelf -lW
-on itself, which hasn't been recently rebuilt:
+  WARNING: Missing a blank line after declarations
 
-# readelf -lW /usr/bin/shash
-Bus error (core dumped)
-# readelf -lW /usr/bin/readelf
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+Acked-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/video/backlight/corgi_lcd.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-Elf file type is EXEC (Executable file)
-Entry point 0x402590
-There are 11 program headers, starting at offset 52
-
-Program Headers:
-  Type           Offset   VirtAddr   PhysAddr   FileSiz MemSiz  Flg Align
-  PHDR           0x000034 0x00400034 0x00400034 0x00160 0x00160 R E 0x4
-  INTERP         0x000194 0x00400194 0x00400194 0x0000d 0x0000d R   0x1
-      [Requesting program interpreter: /lib/ld.so.1]
-  REGINFO        0x0001c4 0x004001c4 0x004001c4 0x00018 0x00018 R   0x4
-  LOAD           0x000000 0x00400000 0x00400000 0x72338 0x72338 R E 0x10000
-  LOAD           0x0728c8 0x004828c8 0x004828c8 0x01834 0x03d88 RW  0x10000
-  DYNAMIC        0x0001dc 0x004001dc 0x004001dc 0x000e0 0x000e0 RWE 0x4
-  NOTE           0x0001a4 0x004001a4 0x004001a4 0x00020 0x00020 R   0x4
-  GNU_EH_FRAME   0x0722c0 0x004722c0 0x004722c0 0x00024 0x00024 R   0x4
-  GNU_RELRO      0x0728c8 0x004828c8 0x004828c8 0x00738 0x00738 R   0x1
-  PAX_FLAGS      0x000000 0x00000000 0x00000000 0x00000 0x00000     0x4
-  NULL           0x000000 0x00000000 0x00000000 0x00000 0x00000     0x4
-
- Section to Segment mapping:
-  Segment Sections...
-   00
-   01     .interp
-   02     .reginfo
-   03     .interp .note.ABI-tag .reginfo .dynamic .hash .dynsym .dynstr
-.gnu.version .gnu.version_r .init .text .MIPS.stubs .fini .rodata
-.eh_frame_hdr .eh_frame
-   04     .ctors .dtors .jcr .data.rel.ro .data .rld_map .got .sdata .sbss .bss
-   05     .dynamic
-   06     .note.ABI-tag
-   07     .eh_frame_hdr
-   08     .ctors .dtors .jcr .data.rel.ro
-   09
-   10
-
+diff --git a/drivers/video/backlight/corgi_lcd.c b/drivers/video/backlight/corgi_lcd.c
+index 51d18d637e2b..d7c37a8ccd1f 100644
+--- a/drivers/video/backlight/corgi_lcd.c
++++ b/drivers/video/backlight/corgi_lcd.c
+@@ -143,6 +143,7 @@ static void lcdtg_i2c_send_byte(struct corgi_lcd *lcd,
+ 				uint8_t base, uint8_t data)
+ {
+ 	int i;
++
+ 	for (i = 0; i < 8; i++) {
+ 		if (data & 0x80)
+ 			lcdtg_i2c_send_bit(lcd, base | POWER0_COM_DOUT);
 -- 
-Joshua Kinard
-Gentoo/MIPS
-kumba@gentoo.org
-4096R/D25D95E3 2011-03-28
+2.0.0
 
-"The past tempts us, the present confuses us, the future frightens us.  And
-our lives slip away, moment by moment, lost in that vast, terrible in-between."
 
---Emperor Turhan, Centauri Republic
