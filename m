@@ -1,118 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932458AbaH0ENQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 00:13:16 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:17355 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932097AbaH0ENO (ORCPT
+	id S932543AbaH0EPl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 00:15:41 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:63414 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750919AbaH0EPj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 00:13:14 -0400
-X-AuditID: cbfee690-f79ce6d00000115a-19-53fd5ad8d1e0
-Message-id: <53FD5AD7.1010402@samsung.com>
-Date: Wed, 27 Aug 2014 13:13:11 +0900
-From: Jaehoon Chung <jh80.chung@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-MIME-version: 1.0
-To: Doug Anderson <dianders@chromium.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Addy Ke <addy.ke@rock-chips.com>, olof@lixom.net,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>, Chris Ball <cjb@laptop.org>,
-        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>, chris@printf.net,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mmc: dw_mmc: Pass back errors from mmc_of_parse()
-References: <1408990744-1093-1-git-send-email-dianders@chromium.org>
-In-reply-to: <1408990744-1093-1-git-send-email-dianders@chromium.org>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHIsWRmVeSWpSXmKPExsWyRsSkSPdG1N9gg++TJS2W/f/OZDHh8nZG
-	i+2vN7JZnF12kM3ixq82VovLu+awWRz5389ocer6ZzaLJ2dmMlp8uH+R2eL42nCLh0e7WR14
-	PGY3XGTx2DnrLrvHoStrGT3uXNvD5nHlRBOrx41XC5k8/s7az+LRt2UVo8fnTXIBnFFcNimp
-	OZllqUX6dglcGfNmrWYpOM5TcepXL3MDYz9XFyMHh4SAicTBpeFdjJxAppjEhXvr2UBsIYGl
-	jBKbd0tCxE0k3vQ2MXYxcgHFpzNKPDqzihnCec0osWTqYSaQQbwCWhKf/0iBNLAIqEo833qX
-	HcRmE9CR2P7tOBOILSoQJnGobR6YzSsgKPFj8j0WEFtEwF/iW/9UVpCZzAL7mST+vpoN1iws
-	4Cbx6+YTVoiLXCRm3D4K1sAp4Cqx7tEiRhCbGWjB/tZpbBC2vMTmNW/BjpMQmMoh8eP5U0aI
-	iwQkvk0+xALxsazEpgPMEJ9JShxccYNlAqPYLCQ3zUIydhaSsQsYmVcxiqYWJBcUJ6UXmegV
-	J+YWl+al6yXn525iBEbz6X/PJuxgvHfA+hCjAAejEg/vhwV/goVYE8uKK3MPMZoCXTGRWUo0
-	OR+YMvJK4g2NzYwsTE1MjY3MLc2UxHlfS/0MFhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cCY
-	ednWcs2m9VUnNrvPsGjzPR9l/GjabOtf606uFF7ve96SWc7re3v5VRl7981bGJhczl0tmaq9
-	PXVRC7fFthcW/81eVu+NyeTirxLPyArcH+qktOTltq9dMstKdp+snKZgbHIzpdFm9d0HmXvd
-	Vx0//0stMOZm9r7N9pwqq4QPafN9nLwq8by1EktxRqKhFnNRcSIA3hoEN+ECAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFKsWRmVeSWpSXmKPExsVy+t9jQd0bUX+DDXrWCVos+/+dyWLC5e2M
-	Fttfb2SzOLvsIJvFjV9trBaXd81hszjyv5/R4tT1z2wWT87MZLT4cP8is8XxteEWD492szrw
-	eMxuuMjisXPWXXaPQ1fWMnrcubaHzePKiSZWjxuvFjJ5/J21n8Wjb8sqRo/Pm+QCOKMaGG0y
-	UhNTUosUUvOS81My89JtlbyD453jTc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgG5WUihLzCkF
-	CgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLWMGbMm7WapeA4T8WpX73MDYz9XF2MnBwS
-	AiYSb3qbGCFsMYkL99azdTFycQgJTGeUeHRmFTOE85pRYsnUw0xdjBwcvAJaEp//SIE0sAio
-	SjzfepcdxGYT0JHY/u04E4gtKhAmcahtHpjNKyAo8WPyPRYQW0TAX+Jb/1RWkJnMAvuZJP6+
-	mg3WLCzgJvHr5hNWEFtIwEVixu2jYA2cAq4S6x4tAruOGWjB/tZpbBC2vMTmNW+ZJzAKzEKy
-	YxaSsllIyhYwMq9iFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECE4Xz6R3MK5qsDjEKMDBqMTD
-	+2HBn2Ah1sSy4srcQ4wSHMxKIrwl4X+DhXhTEiurUovy44tKc1KLDzGaAoNgIrOUaHI+MJXl
-	lcQbGpuYGVkamRtaGBmbK4nzHmy1DhQSSE8sSc1OTS1ILYLpY+LglGpgFKp+5Fjvu5bjz+26
-	k7vVWz6YLGX3EV2wNy9Qq0TWumH3y6yzGeqzT2QHMz/Sm9jGEef95o1Own47l2+LJ2z+y/m1
-	9CFPLMu5CW1OpZvst3womi2euXGLwscLczXcN51f+dbhmVRAnaIo076UE99eO0wMTG1ZfHDZ
-	mhPJRusl+aMKK2u+hYpvU2Ipzkg01GIuKk4EAHaigX8tAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 27 Aug 2014 00:15:39 -0400
+From: Zi Shen Lim <zlim.lnx@gmail.com>
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+Cc: Zi Shen Lim <zlim.lnx@gmail.com>, Jiang Liu <liuj97@gmail.com>,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Chema Gonzalez <chema@google.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org
+Subject: [PATCHv2 00/14] arm64: eBPF JIT compiler
+Date: Tue, 26 Aug 2014 21:15:16 -0700
+Message-Id: <1409112930-25677-1-git-send-email-zlim.lnx@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks good to me.
+Hi Will, Catalin,
 
-Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
+This is a respin of series implementing eBPF JIT compiler for arm64,
+on top of 3.17-rc2. The v1 series [1] missed the previous merge window.
 
-Best Regards,
-Jaehoon Chung
+Patches [1-13/14] implement code generation functions. Unchanged from v1.
 
-On 08/26/2014 03:19 AM, Doug Anderson wrote:
-> It's possible that mmc_of_parse() could return errors (possibly in
-> some future version it might return -EPROBE_DEFER even).  Let's pass
-> those errors back.
-> 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
->  drivers/mmc/host/dw_mmc.c | 10 ++++++----
->  1 file changed, 6 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-> index 7f227e9..9ef4df0 100644
-> --- a/drivers/mmc/host/dw_mmc.c
-> +++ b/drivers/mmc/host/dw_mmc.c
-> @@ -2131,7 +2131,9 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
->  	if (host->pdata->caps2)
->  		mmc->caps2 = host->pdata->caps2;
->  
-> -	mmc_of_parse(mmc);
-> +	ret = mmc_of_parse(mmc);
-> +	if (ret)
-> +		goto err_host_allocated;
->  
->  	if (host->pdata->blk_settings) {
->  		mmc->max_segs = host->pdata->blk_settings->max_segs;
-> @@ -2163,7 +2165,7 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
->  
->  	ret = mmc_add_host(mmc);
->  	if (ret)
-> -		goto err_setup_bus;
-> +		goto err_host_allocated;
->  
->  #if defined(CONFIG_DEBUG_FS)
->  	dw_mci_init_debugfs(slot);
-> @@ -2174,9 +2176,9 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
->  
->  	return 0;
->  
-> -err_setup_bus:
-> +err_host_allocated:
->  	mmc_free_host(mmc);
-> -	return -EINVAL;
-> +	return ret;
->  }
->  
->  static void dw_mci_cleanup_slot(struct dw_mci_slot *slot, unsigned int id)
-> 
+Patch [14/14] implements the actual eBPF JIT compiler. Updated from v1:
+straightforward fixups due to changes from net.
+Please see [14/14] for detailed change log.
+
+This series is applies cleanly against 3.17-rc2 and is tested working
+with lib/test_bpf on ARMv8 Foundation Model.
+
+Will had previously reported that v1 series works on Juno platform.
+Since v2 only involves straightforward renaming in [14/14], I don't
+anticipate any regressions.
+
+Thanks,
+z
+
+[1] https://lkml.org/lkml/2014/7/18/683
+
+--------
+The following changes since commit 52addcf9d6669fa439387610bc65c92fa0980cef:
+
+  Linux 3.17-rc2 (2014-08-25 15:36:20 -0700)
+
+are available in the git repository at:
+
+  https://github.com/zlim/linux.git tags/arm64/bpf-v2
+
+for you to fetch changes up to 2f4a4b8df4ba1cbd24957fb1a8371d30b1976174:
+
+  arm64: eBPF JIT compiler (2014-08-26 19:04:43 -0700)
+
+----------------------------------------------------------------
+ Documentation/networking/filter.txt |   6 +-
+ arch/arm64/Kconfig                  |   1 +
+ arch/arm64/Makefile                 |   1 +
+ arch/arm64/include/asm/insn.h       | 249 +++++++++++++
+ arch/arm64/kernel/insn.c            | 646 +++++++++++++++++++++++++++++++++-
+ arch/arm64/net/Makefile             |   4 +
+ arch/arm64/net/bpf_jit.h            | 169 +++++++++
+ arch/arm64/net/bpf_jit_comp.c       | 677 ++++++++++++++++++++++++++++++++++++
+ 8 files changed, 1743 insertions(+), 10 deletions(-)
+ create mode 100644 arch/arm64/net/Makefile
+ create mode 100644 arch/arm64/net/bpf_jit.h
+ create mode 100644 arch/arm64/net/bpf_jit_comp.c
+
+Zi Shen Lim (14):
+  arm64: introduce aarch64_insn_gen_comp_branch_imm()
+  arm64: introduce aarch64_insn_gen_branch_reg()
+  arm64: introduce aarch64_insn_gen_cond_branch_imm()
+  arm64: introduce aarch64_insn_gen_load_store_reg()
+  arm64: introduce aarch64_insn_gen_load_store_pair()
+  arm64: introduce aarch64_insn_gen_add_sub_imm()
+  arm64: introduce aarch64_insn_gen_bitfield()
+  arm64: introduce aarch64_insn_gen_movewide()
+  arm64: introduce aarch64_insn_gen_add_sub_shifted_reg()
+  arm64: introduce aarch64_insn_gen_data1()
+  arm64: introduce aarch64_insn_gen_data2()
+  arm64: introduce aarch64_insn_gen_data3()
+  arm64: introduce aarch64_insn_gen_logical_shifted_reg()
+  arm64: eBPF JIT compiler
+
+ Documentation/networking/filter.txt |   6 +-
+ arch/arm64/Kconfig                  |   1 +
+ arch/arm64/Makefile                 |   1 +
+ arch/arm64/include/asm/insn.h       | 249 +++++++++++++
+ arch/arm64/kernel/insn.c            | 646 +++++++++++++++++++++++++++++++++-
+ arch/arm64/net/Makefile             |   4 +
+ arch/arm64/net/bpf_jit.h            | 169 +++++++++
+ arch/arm64/net/bpf_jit_comp.c       | 677 ++++++++++++++++++++++++++++++++++++
+ 8 files changed, 1743 insertions(+), 10 deletions(-)
+ create mode 100644 arch/arm64/net/Makefile
+ create mode 100644 arch/arm64/net/bpf_jit.h
+ create mode 100644 arch/arm64/net/bpf_jit_comp.c
+
+-- 
+1.9.1
 
