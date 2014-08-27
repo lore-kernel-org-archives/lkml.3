@@ -1,118 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965514AbaH0X5p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 19:57:45 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43547 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935798AbaH0X5n (ORCPT
+	id S965546AbaH0X6O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 19:58:14 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:36269 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935798AbaH0X6N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 19:57:43 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <53FE7035.4000807@jp.fujitsu.com>
-Date: Thu, 28 Aug 2014 08:56:37 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 27 Aug 2014 19:58:13 -0400
+Date: Wed, 27 Aug 2014 16:58:09 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: Tree for Aug 27
+Message-ID: <20140827235809.GA9598@roeck-us.net>
+References: <20140827161021.298aede6@canb.auug.org.au>
 MIME-Version: 1.0
-To: Zhang Zhen <zhenzhang.zhang@huawei.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Dave Hansen <dave.hansen@intel.com>, Toshi Kani <toshi.kani@hp.com>
-CC: <wangnan0@huawei.com>, Linux MM <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] memory-hotplug: fix not enough check of valid zones
-References: <1409124238-18635-1-git-send-email-zhenzhang.zhang@huawei.com> <53FDBDF0.5000200@huawei.com>
-In-Reply-To: <53FDBDF0.5000200@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140827161021.298aede6@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/08/27 20:16), Zhang Zhen wrote:
-> As Yasuaki Ishimatsu described the check here is not enough
-> if memory has hole as follows:
->
-> PFN       0x00          0xd0          0xe0          0xf0
->               +-------------+-------------+-------------+
-> zone type   |   Normal    |     hole    |   Normal    |
->               +-------------+-------------+-------------+
-> In this case, the check can't guarantee that this is "the last
-> block of memory".
-> The check of ZONE_MOVABLE has the same problem.
->
-> Signed-off-by: Zhang Zhen <zhenzhang.zhang@huawei.com>
+On Wed, Aug 27, 2014 at 04:10:21PM +1000, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Changes since 20140826:
+> 
+> The net tree lost its build failure.
+> 
+> The usb.current tree gained a build failure for which I reverted a commit.
+> 
+> The mfd tree lost its build failure.
+> 
+> The percpu tree gained a build failure so I used the version from
+> next-20140826.
+> 
+> The staging tree still had its build failure for which I applied a
+> fix patch.
+> 
+> The akpm-current tree lost its build failure.
+> 
+> The akpm tree lost its build failure and a patch that turned up elsewhere.
+> 
+> Non-merge commits (relative to Linus' tree): 2028
+>  2105 files changed, 56310 insertions(+), 35111 deletions(-)
+> 
+I see a large number of build failures with this kernel.
 
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+drivers/base/dma-mapping.c: In function 'dma_common_contiguous_remap':
+drivers/base/dma-mapping.c:294:2: error: implicit declaration of function
+'dma_common_pages_remap' [-Werror=implicit-function-declaration]
+drivers/base/dma-mapping.c:294:6: warning: assignment makes pointer from integer
+without a cast [enabled by default]
+drivers/base/dma-mapping.c: At top level:
+drivers/base/dma-mapping.c:305:7: error: conflicting types for
+'dma_common_pages_remap'
+drivers/base/dma-mapping.c:294:8: note: previous implicit declaration of
+'dma_common_pages_remap' was here
+cc1: some warnings being treated as errors
+make[2]: *** [drivers/base/dma-mapping.o] Error 1
 
-Thanks,
-Yasuaki Ishimatsu
-
-> ---
->   drivers/base/memory.c | 36 ++++++------------------------------
->   1 file changed, 6 insertions(+), 30 deletions(-)
->
-> diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-> index ccaf37c..0fc1d25 100644
-> --- a/drivers/base/memory.c
-> +++ b/drivers/base/memory.c
-> @@ -374,20 +374,6 @@ static ssize_t show_phys_device(struct device *dev,
->   }
->
->   #ifdef CONFIG_MEMORY_HOTREMOVE
-> -static int __zones_online_to(unsigned long end_pfn,
-> -				struct page *first_page, unsigned long nr_pages)
-> -{
-> -	struct zone *zone_next;
-> -
-> -	/* The mem block is the last block of memory. */
-> -	if (!pfn_valid(end_pfn + 1))
-> -		return 1;
-> -	zone_next = page_zone(first_page + nr_pages);
-> -	if (zone_idx(zone_next) == ZONE_MOVABLE)
-> -		return 1;
-> -	return 0;
-> -}
-> -
->   static ssize_t show_zones_online_to(struct device *dev,
->   				struct device_attribute *attr, char *buf)
->   {
-> @@ -407,28 +393,18 @@ static ssize_t show_zones_online_to(struct device *dev,
->
->   	zone = page_zone(first_page);
->
-> -#ifdef CONFIG_HIGHMEM
-> -	if (zone_idx(zone) == ZONE_HIGHMEM) {
-> -		if (__zones_online_to(end_pfn, first_page, nr_pages))
-> +	if (zone_idx(zone) == ZONE_MOVABLE - 1) {
-> +		/*The mem block is the last memoryblock of this zone.*/
-> +		if (end_pfn == zone_end_pfn(zone))
->   			return sprintf(buf, "%s %s\n",
->   					zone->name, (zone + 1)->name);
->   	}
-> -#else
-> -	if (zone_idx(zone) == ZONE_NORMAL) {
-> -		if (__zones_online_to(end_pfn, first_page, nr_pages))
-> -			return sprintf(buf, "%s %s\n",
-> -					zone->name, (zone + 1)->name);
-> -	}
-> -#endif
->
->   	if (zone_idx(zone) == ZONE_MOVABLE) {
-> -		if (!pfn_valid(start_pfn - nr_pages))
-> -			return sprintf(buf, "%s %s\n",
-> -						zone->name, (zone - 1)->name);
-> -		zone_prev = page_zone(first_page - nr_pages);
-> -		if (zone_idx(zone_prev) != ZONE_MOVABLE)
-> +		/*The mem block is the first memoryblock of ZONE_MOVABLE.*/
-> +		if (start_pfn == zone->zone_start_pfn)
->   			return sprintf(buf, "%s %s\n",
-> -						zone->name, (zone - 1)->name);
-> +					zone->name, (zone - 1)->name);
->   	}
->
->   	return sprintf(buf, "%s\n", zone->name);
->
-
+Guenter
 
