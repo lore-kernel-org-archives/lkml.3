@@ -1,68 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752872AbaH0Hv6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 03:51:58 -0400
-Received: from mail-by2lp0240.outbound.protection.outlook.com ([207.46.163.240]:59796
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751085AbaH0Hv4 convert rfc822-to-8bit (ORCPT
+	id S1754808AbaH0Hwl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 03:52:41 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:49736 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751586AbaH0Hwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 03:51:56 -0400
-From: Dexuan Cui <decui@microsoft.com>
-To: Jan Beulich <JBeulich@suse.com>
-CC: "jeremy@goop.org" <jeremy@goop.org>, KY Srinivasan <kys@microsoft.com>,
-        "chrisw@sous-sol.org" <chrisw@sous-sol.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: sync_set_bit() vs set_bit()  -- what's the difference?
-Thread-Topic: sync_set_bit() vs set_bit()  -- what's the difference?
-Thread-Index: Ac/BxOSGReNLYy7sSGa/c8GpUfDFQgABQP2AAABaMBA=
-Date: Wed, 27 Aug 2014 07:50:52 +0000
-Message-ID: <EE124450C0AAF944A40DD71E61F878C9963AA0@SINEX14MBXC419.southpacific.corp.microsoft.com>
-References: <EE124450C0AAF944A40DD71E61F878C99639F3@SINEX14MBXC419.southpacific.corp.microsoft.com>
- <53FDA71B020000780002DF2E@mail.emea.novell.com>
-In-Reply-To: <53FDA71B020000780002DF2E@mail.emea.novell.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.168.3.97]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 27 Aug 2014 03:52:39 -0400
+Date: Wed, 27 Aug 2014 09:52:35 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, linux-pwm@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Rob Clark <robdclark@gmail.com>, Mark Rutland <mark.rutland@arm.com>,
+        devicetree@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Bo Shen <voice.shen@atmel.com>, Kumar Gala <galak@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 00/11] drm: add support for Atmel HLCDC Display
+ Controller
+Message-ID: <20140827095235.20334e2d@bbrezillon>
+In-Reply-To: <1997793.CWhjU3F32E@avalon>
+References: <1406034695-15534-1-git-send-email-boris.brezillon@free-electrons.com>
+	<2138720.5GSxsvjVxS@avalon>
+	<20140821192633.69f6b21b@bbrezillon>
+	<1997793.CWhjU3F32E@avalon>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(199003)(377454003)(189002)(13464003)(24454002)(164054003)(51704005)(74502001)(50466002)(23726002)(90102001)(97736001)(16796002)(110136001)(99396002)(31966008)(74662001)(97756001)(68736004)(83322001)(44976005)(6806004)(19580395003)(107046002)(4396001)(47776003)(20776003)(84676001)(80022001)(2656002)(86362001)(64706001)(54356999)(19580405001)(69596002)(85306004)(92726001)(26826002)(92566001)(81342001)(106466001)(81156004)(87936001)(33656002)(81542001)(77982001)(46102001)(55846006)(46406003)(21056001)(86612001)(77096002)(95666004)(79102001)(85852003)(83072002)(76176999)(76482001)(50986999);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB256;H:mail.microsoft.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
- (Engineering ONLY)
-X-Forefront-PRVS: 0316567485
-Authentication-Results: spf=pass (sender IP is 131.107.125.37)
- smtp.mailfrom=decui@microsoft.com; 
-X-OriginatorOrg: microsoft.onmicrosoft.com
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Jan Beulich
-> Sent: Wednesday, August 27, 2014 15:39 PM
-> >>> On 27.08.14 at 09:30, <decui@microsoft.com> wrote:
-> > I'm curious about the difference. :-)
-> >
-> > sync_set_bit() is only used in drivers/hv/ and drivers/xen/ while set_bit()
-> > is used in all other places. What makes hv/xen special?
+Hi Laurent,
+
+On Tue, 26 Aug 2014 01:39:21 +0200
+Laurent Pinchart <laurent.pinchart@ideasonboard.com> wrote:
+
+> Hi Boris,
 > 
-> I guess this would really want to be used by anything communicating
-> with a hypervisor or a remote driver: set_bit() gets its LOCK prefix
-> discarded when the local kernel determines it runs on a single CPU
-> only. Obviously having knowledge of the CPU count inside a VM does
-> not imply anything about the number of CPUs available to the host,
-> i.e. stripping LOCK prefixes in that case would be unsafe.
+> On Thursday 21 August 2014 19:26:33 Boris BREZILLON wrote:
+> > On Thu, 21 Aug 2014 19:08:53 +0200
+> > Laurent Pinchart <laurent.pinchart@ideasonboard.com> wrote:
+> > 
+> > [...]
+> > 
+> > >>>> While this could be acceptable when all drivers are statically linked
+> > >>>> in the kernel, it might be problematic when you're using modules,
+> > >>>> meaning that you won't be able to display anything on your LCD panel
+> > >>>> until your HDMI bridge module has been loaded.
+> > >>> 
+> > >>> No. HDMI should be using proper hotplugging anyway, hence it should be
+> > >>> always be loaded anyway. You're in for a world of pain if you think
+> > >>> you can run DRM with a driver that's composed of separate kernel
+> > >>> modules.
+> > >> 
+> > >> I was talking about the external RGB to HDMI encoder, should the driver
+> > >> for this encoder (which is not on On Chip block) be compiled
+> > >> statically too ?
+> > > 
+> > > Given the move to multiplatform kernels we need to aim for as few modules
+> > > compiled in as possible. I'd say this includes HDMI encoders, panels and
+> > > display controllers.
+> > > 
+> > >>> Also if you don't want to use deferred probe, then you're in for the
+> > >>> full hotplugging panel dance and that implies that you need to fix a
+> > >>> bunch of things in DRM (one being the framebuffer console
+> > >>> instantiation
+> > >>> that I referred to in the other thread).
+> > >> 
+> > >> For now, I wait until there is a device connected on the RGB connector
+> > >> (connector status set to connector_status_connected) before creating an
+> > >> fbdev. It might not be the cleanest way to solve this issue, but it
+> > >> works :-).
+> > > 
+> > > Do you create a new drm_encoder at runtime for the HDMI encoder when it
+> > > appears ? I thought the DRM core and API were not able to correctly cope
+> > > with that.
+> > 
+> > I haven't started to work on the HDMI encoder yet, and ATM I only have
+> > a single connector (which is true from an HW POV), which is then bound
+> > to an LCD panel (the only type of remote endpoint I currently support).
+> > 
+> > BTW, I wonder how my use case should be represented in the DRM
+> > subsystem. As I said, from an HW POV I only have one RGB (or whatever
+> > name you choose for it) connector. But on such kind of connectors you
+> > can connect several output devices (panels, encoders, ...).
+> > And in my case I have 2 devices on the same RGB connector: a panel and
+> > an RGB to HDMI converter.
 > 
-> Jan
+> The DRM connector object was initially meant to model a physical user-
+> accessible connector on a board (VGA, DVI, HDMI, ...) and the properties of 
+> the monitor plugged into it. It has then been (ab)used to represent panels, as 
+> they're similar to monitors.
+> 
+> In your case the VGA and HDMI connectors should be modeled as DRM connectors, 
+> the RGB to HDMI encoder as a DRM encoder, and the LCDC as a DRM CRTC.
 
-Thank you, Juergen and Jan for your  quick answers!
+I don't have any VGA connector (or I'm missing something :-)), but I
+have an LCD panel and an RGB to HDMI encoder connected on the same RGB
+connector.
 
-I didn't realize LOCK_PREFIX is "" for UP. :-)
+> 
+> As DRM hardcodes the pipeline model to CRTC -> encoder -> connector, you will 
+> also need a DRM encoder in the VGA path. I suppose your board has a VGA DAC, 
+> that's the component you should expose as a DRM encoder (even if it can't be 
+> controlled and doesn't limit the valid modes).
 
-Thanks,
--- Dexuan
+Actually, my problem is that both devices are connected on the same RGB
+connector, and thus share the same display mode (resolution, HSYNC,
+VSYNC, RGB output mode, ...).
+This means that all remote devices have to agree on a specific mode if
+we want to mirror the display on several output devices, otherwise we
+must disable one of the output devices.
+
+> 
+> > >>> You also can't be using the current device tree bindings because they
+> > >>> all assume a dependency from the display controller/output to the
+> > >>> panel. For hotplugging you'd need the dependency the other way around
+> > >>> (the panel needs to refer to the output by phandle).
+> > >> 
+> > >> Here [1] is a proposal for notification support in the drm_panel
+> > >> infrastructure (which is not that complicated), and here [2] is how
+> > >> I use it in my atmel-hlcdc driver to generate hotplug events.
+> > > 
+> > > Is there a way we could use the component framework for that ? I know that
+> > > partial notification isn't supported at the moment, but Russell agreed it
+> > > was a real use case that should be implemented at some point.
+> > 
+> > I'll give it a try.
+> 
+
+
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
