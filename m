@@ -1,48 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932459AbaH0Iup (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 04:50:45 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:42577 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755682AbaH0Iun (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 04:50:43 -0400
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: tracing: horrible read performance on host with many CPUs 
-User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
-CC: rostedt@goodmis.org
-Date: Wed, 27 Aug 2014 12:50:38 +0400
-Message-ID: <8738ci9uzl.fsf@openvz.org>
+	id S1755353AbaH0I4H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 04:56:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6038 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753318AbaH0I4E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 04:56:04 -0400
+Date: Wed, 27 Aug 2014 14:25:39 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: stable@vger.kernel.org, Greg KH <greg@kroah.com>
+Cc: Amos Kong <akong@redhat.com>,
+        Virtualization List <virtualization@lists.linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [3.16 stable PATCH v2 1/2] virtio: rng: delay hwrng_register()
+ till driver is ready
+Message-ID: <20140827085539.GG13052@grmbl.mre>
+References: <e85a877491a10650cd4b14de926707954a91f565.1407830026.git.amit.shah@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <e85a877491a10650cd4b14de926707954a91f565.1407830026.git.amit.shah@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hey Greg,
 
-I have tried to use tracing on host with 32cpus, but it is appeared
-that performance is horrible.
-dd if=/sys/kernel/debug/tracing/trace_pipe of=tmpfs/t3.log  bs=1M 
-0+21268 records in
-0+21267 records out
-85701248 bytes (86 MB) copied, 26.1424 s, 3.3 MB/s
-0+25706 records in
-0+25705 records out
-103600749 bytes (104 MB) copied, 31.6595 s, 3.3 MB/s
-0+59204 records in
-0+59203 records out
-238746128 bytes (239 MB) copied, 73.4347 s, 3.3 MB/s
-Since I've collected ~3Gb of data this takes a lot of time to
-simply copy from kernel to tmpfs. 
+Can you add these two patches to the 3.16 queue?
 
-AFAIU this happen due to sub-optimal sorting procedure __find_next_entry
-Each time it walks each cpu and pick the one with smallest timestamp.
-This can be optimized simply by fetching N-entries at the time. Are
-there any plans to implement that?
+Thanks,
 
-BTW:What is the most convenient way fetch big data from traces?
-One of possible way is to dump per-cpu traces(20Mb/s in my case) and
-then merge files according to timestamp
+On (Tue) 12 Aug 2014 [13:23:45], Amit Shah wrote:
+> Instead of calling hwrng_register() in the probe routing, call it in the
+> scan routine.  This ensures that when hwrng_register() is successful,
+> and it requests a few random bytes to seed the kernel's pool at init,
+> we're ready to service that request.
+> 
+> This will also enable us to remove the workaround added previously to
+> check whether probe was completed, and only then ask for data from the
+> host.  The revert follows in the next commit.
+> 
+> There's a slight behaviour change here on unsuccessful hwrng_register().
+> Previously, when hwrng_register() failed, the probe() routine would
+> fail, and the vqs would be torn down, and driver would be marked not
+> initialized.  Now, the vqs will remain initialized, driver would be
+> marked initialized as well, but won't be available in the list of RNGs
+> available to hwrng core.  To fix the failures, the procedure remains the
+> same, i.e. unload and re-load the module, and hope things succeed the
+> next time around.
+> 
+> Signed-off-by: Amit Shah <amit.shah@redhat.com>
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> (cherry picked from commit 5c06273401f2eb7b290cadbae18ee00f8f65e893)
+> Signed-off-by: Amit Shah <amit.shah@redhat.com>
+> ---
+>  drivers/char/hw_random/virtio-rng.c | 25 +++++++++++++++----------
+>  1 file changed, 15 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/char/hw_random/virtio-rng.c b/drivers/char/hw_random/virtio-rng.c
+> index e9b15bc..f4e04f3 100644
+> --- a/drivers/char/hw_random/virtio-rng.c
+> +++ b/drivers/char/hw_random/virtio-rng.c
+> @@ -36,6 +36,7 @@ struct virtrng_info {
+>  	bool busy;
+>  	char name[25];
+>  	int index;
+> +	bool hwrng_register_done;
+>  };
+>  
+>  static bool probe_done;
+> @@ -137,15 +138,6 @@ static int probe_common(struct virtio_device *vdev)
+>  		return err;
+>  	}
+>  
+> -	err = hwrng_register(&vi->hwrng);
+> -	if (err) {
+> -		vdev->config->del_vqs(vdev);
+> -		vi->vq = NULL;
+> -		kfree(vi);
+> -		ida_simple_remove(&rng_index_ida, index);
+> -		return err;
+> -	}
+> -
+>  	probe_done = true;
+>  	return 0;
+>  }
+> @@ -153,9 +145,11 @@ static int probe_common(struct virtio_device *vdev)
+>  static void remove_common(struct virtio_device *vdev)
+>  {
+>  	struct virtrng_info *vi = vdev->priv;
+> +
+>  	vdev->config->reset(vdev);
+>  	vi->busy = false;
+> -	hwrng_unregister(&vi->hwrng);
+> +	if (vi->hwrng_register_done)
+> +		hwrng_unregister(&vi->hwrng);
+>  	vdev->config->del_vqs(vdev);
+>  	ida_simple_remove(&rng_index_ida, vi->index);
+>  	kfree(vi);
+> @@ -171,6 +165,16 @@ static void virtrng_remove(struct virtio_device *vdev)
+>  	remove_common(vdev);
+>  }
+>  
+> +static void virtrng_scan(struct virtio_device *vdev)
+> +{
+> +	struct virtrng_info *vi = vdev->priv;
+> +	int err;
+> +
+> +	err = hwrng_register(&vi->hwrng);
+> +	if (!err)
+> +		vi->hwrng_register_done = true;
+> +}
+> +
+>  #ifdef CONFIG_PM_SLEEP
+>  static int virtrng_freeze(struct virtio_device *vdev)
+>  {
+> @@ -195,6 +199,7 @@ static struct virtio_driver virtio_rng_driver = {
+>  	.id_table =	id_table,
+>  	.probe =	virtrng_probe,
+>  	.remove =	virtrng_remove,
+> +	.scan =		virtrng_scan,
+>  #ifdef CONFIG_PM_SLEEP
+>  	.freeze =	virtrng_freeze,
+>  	.restore =	virtrng_restore,
+> -- 
+> 1.9.3
+> 
 
-
+		Amit
