@@ -1,83 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933896AbaH0Mmq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 08:42:46 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:50538 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933757AbaH0Mmo (ORCPT
+	id S933652AbaH0MxL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 08:53:11 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:36391 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933391AbaH0MxJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 08:42:44 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: lee.jones@linaro.org, kernel@stlinux.com, computersforpeace@gmail.com,
-        pekon@pek-sem.com, linux-mtd@lists.infradead.org
-Subject: [PATCH 3/9] ARM: sti: Add BCH (NAND Flash) Controller support for STiH41x (Orly) SoCs
-Date: Wed, 27 Aug 2014 13:42:18 +0100
-Message-Id: <1409143344-22458-4-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1409143344-22458-1-git-send-email-lee.jones@linaro.org>
-References: <1409143344-22458-1-git-send-email-lee.jones@linaro.org>
+	Wed, 27 Aug 2014 08:53:09 -0400
+Message-ID: <53FDD4A4.5020603@st.com>
+Date: Wed, 27 Aug 2014 14:52:52 +0200
+From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Kweh Hock Leong <hock.leong.kweh@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ong Boon Leong <boon.leong.ong@intel.com>,
+        Rayagond K <rayagond@vayavyalabs.com>
+Subject: Re: [PATCH 0/4] net: stmmac: Enable Intel Quark SoC X1000 Ethernet
+ support
+References: <cover.1409123378.git.hock.leong.kweh@intel.com>
+In-Reply-To: <cover.1409123378.git.hock.leong.kweh@intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.52.138.46]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
+ definitions=2014-08-27_05:2014-08-27,2014-08-27,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide device information and flash layout for the NAND Micron
-MT29F8G08ABABAWP chip found on the STM B2020 Development Board.
+On 8/27/2014 12:32 PM, Kweh Hock Leong wrote:
+> From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
+>
+> Hi,
+>
+> Intel Quark X1000 SoC has 2 Ethernet controllers integrated on chip and they are
+> PCI devices. We adopted the stmmac_pci driver and added on code to support Intel
+> Quark SoC X1000 by creating the patchset below. The patchset has been built and
+> tested on Galileo board and found to be working as expected.
+>
+> We believe that the changes are transparent to other non Intel Quark platform.
+> Please help to review the code change and feedback if there is any concern.
 
-Reviewed-By: Pekon Gupta <pekon@pek-sem.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/boot/dts/stih41x-b2020.dtsi | 38 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 38 insertions(+)
+hello and thx for these patches that at first glance look ok to me.
+Just some minor remark, in the stmmac I try to align the function 
+parameters with the open parenthesis (devm_kzalloc in your case in not 
+aligned).
+Added on copy also Rayagond he tested PCI. I cannot do any test because 
+I have no PCI cards.
 
-diff --git a/arch/arm/boot/dts/stih41x-b2020.dtsi b/arch/arm/boot/dts/stih41x-b2020.dtsi
-index d8a8429..553ee1f 100644
---- a/arch/arm/boot/dts/stih41x-b2020.dtsi
-+++ b/arch/arm/boot/dts/stih41x-b2020.dtsi
-@@ -74,5 +74,43 @@
- 
- 			pinctrl-0	= <&pinctrl_rgmii1>;
- 		};
-+
-+		nand@fe901000 {
-+			compatible = "st,nand-bch";
-+			reg = <0xfe901000 0x1000>, <0xfef00000 0x107c>;
-+			reg-names = "emi_nand", "emiss";
-+			interrupts = <0 139 0x0>;
-+			interrupt-names = "nand_irq";
-+			status = "disabled";
-+
-+			/*
-+			 * Micron MT29F8G08ABABAWP:
-+			 *  - Size = 8Gib(1GiB); Page = 4096+224; Block = 512KiB
-+			 *  - ECC = 4-bit/540B min
-+			 *  - ONFI 2.1 (timing parameters retrieved during probe)
-+			 */
-+			bank0 {
-+				nand-on-flash-bbt;
-+				st,nand-csn		= <0>;
-+				st,nand-timing-relax	= <0>;
-+
-+				partitions {
-+					#address-cells	= <1>;
-+					#size-cells	= <1>;
-+
-+					partition@0 {
-+						/* 8MB */
-+						label = "NANDFlash1";
-+						reg = <0x00000000 0x00800000>;
-+					};
-+
-+					partition@800000 {
-+						/* 1GB - 8MB */
-+						label = "NANDFlash2";
-+						reg = <0x00800000 0x1f000000>;
-+					};
-+				};
-+			};
-+		};
- 	};
- };
--- 
-1.9.1
+peppe
+
+>
+> Thank you very much.
+>
+> Kweh, Hock Leong (4):
+>    net: stmmac: enhance to support multiple device instances
+>    net: stmmac: better code manageability with platform data struct
+>    net: stmmac: add support for Intel Quark X1000
+>    net: stmmac: add MSI support for Intel Quark X1000
+>
+>   drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c |  195 +++++++++++++++++++---
+>   1 file changed, 172 insertions(+), 23 deletions(-)
+>
 
