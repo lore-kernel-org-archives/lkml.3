@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529AbaH1TXC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 15:23:02 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:46695 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753485AbaH1TUS (ORCPT
+	id S1755519AbaH1TW7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 15:22:59 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:48017 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753539AbaH1TUS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 28 Aug 2014 15:20:18 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -15,256 +15,148 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
         bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH v7 tip/core/rcu 17/17] rcu: Per-CPU operation cleanups to rcu_*_qs() functions
-Date: Thu, 28 Aug 2014 12:20:08 -0700
-Message-Id: <1409253608-32538-17-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH v7 tip/core/rcu 12/17] rcu: Make TASKS_RCU handle nohz_full= CPUs
+Date: Thu, 28 Aug 2014 12:20:03 -0700
+Message-Id: <1409253608-32538-12-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1409253608-32538-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20140828191929.GA31795@linux.vnet.ibm.com>
  <1409253608-32538-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082819-1542-0000-0000-0000045FD404
+x-cbid: 14082819-1344-0000-0000-000003CACDA7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-The rcu_bh_qs(), rcu_preempt_qs(), and rcu_sched_qs() functions use
-old-style per-CPU variable access and write to ->passed_quiesce even
-if it is already set.  This commit therefore updates to use the new-style
-per-CPU variable access functions and avoids the spurious writes.
-This commit also eliminates the "cpu" argument to these functions because
-they are always invoked on the indicated CPU.
+Currently TASKS_RCU would ignore a CPU running a task in nohz_full=
+usermode execution.  There would be neither a context switch nor a
+scheduling-clock interrupt to tell TASKS_RCU that the task in question
+had passed through a quiescent state.  The grace period would therefore
+extend indefinitely.  This commit therefore makes RCU's dyntick-idle
+subsystem record the task_struct structure of the task that is running
+in dyntick-idle mode on each CPU.  The TASKS_RCU grace period can
+then access this information and record a quiescent state on
+behalf of any CPU running in dyntick-idle usermode.
 
-Reported-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/linux/rcupdate.h |  4 ++--
- include/linux/rcutiny.h  |  2 +-
- kernel/rcu/tiny.c        | 10 +++++-----
- kernel/rcu/tree.c        | 34 ++++++++++++++++++----------------
- kernel/rcu/tree_plugin.h | 27 +++++++++++++++------------
- kernel/softirq.c         |  2 +-
- 6 files changed, 42 insertions(+), 37 deletions(-)
+ include/linux/init_task.h |  3 ++-
+ include/linux/sched.h     |  2 ++
+ kernel/rcu/tree.c         |  2 ++
+ kernel/rcu/tree.h         |  2 ++
+ kernel/rcu/tree_plugin.h  | 16 ++++++++++++++++
+ kernel/rcu/update.c       |  4 +++-
+ 6 files changed, 27 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 132e1e34cdca..2fab0e37afe0 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -261,8 +261,8 @@ static inline int rcu_preempt_depth(void)
+diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+index dffd9258ee60..03b274873b06 100644
+--- a/include/linux/init_task.h
++++ b/include/linux/init_task.h
+@@ -121,7 +121,8 @@ extern struct group_info init_groups;
+ #define INIT_TASK_RCU_TASKS(tsk)					\
+ 	.rcu_tasks_holdout = false,					\
+ 	.rcu_tasks_holdout_list =					\
+-		LIST_HEAD_INIT(tsk.rcu_tasks_holdout_list),
++		LIST_HEAD_INIT(tsk.rcu_tasks_holdout_list),		\
++	.rcu_tasks_idle_cpu = -1,
+ #else
+ #define INIT_TASK_RCU_TASKS(tsk)
+ #endif
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index eaacac4ae77d..ec8b34722bcc 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1274,6 +1274,7 @@ struct task_struct {
+ 	unsigned long rcu_tasks_nvcsw;
+ 	bool rcu_tasks_holdout;
+ 	struct list_head rcu_tasks_holdout_list;
++	int rcu_tasks_idle_cpu;
+ #endif /* #ifdef CONFIG_TASKS_RCU */
  
- /* Internal to kernel */
- void rcu_init(void);
--void rcu_sched_qs(int cpu);
--void rcu_bh_qs(int cpu);
-+void rcu_sched_qs(void);
-+void rcu_bh_qs(void);
- void rcu_check_callbacks(int cpu, int user);
- struct notifier_block;
- void rcu_idle_enter(void);
-diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
-index d40a6a451330..38cc5b1e252d 100644
---- a/include/linux/rcutiny.h
-+++ b/include/linux/rcutiny.h
-@@ -80,7 +80,7 @@ static inline void kfree_call_rcu(struct rcu_head *head,
- 
- static inline void rcu_note_context_switch(int cpu)
- {
--	rcu_sched_qs(cpu);
-+	rcu_sched_qs();
+ #if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
+@@ -2020,6 +2021,7 @@ static inline void rcu_copy_process(struct task_struct *p)
+ #ifdef CONFIG_TASKS_RCU
+ 	p->rcu_tasks_holdout = false;
+ 	INIT_LIST_HEAD(&p->rcu_tasks_holdout_list);
++	p->rcu_tasks_idle_cpu = -1;
+ #endif /* #ifdef CONFIG_TASKS_RCU */
  }
  
- /*
-diff --git a/kernel/rcu/tiny.c b/kernel/rcu/tiny.c
-index 717f00854fc0..61b8d2ccc2cb 100644
---- a/kernel/rcu/tiny.c
-+++ b/kernel/rcu/tiny.c
-@@ -72,7 +72,7 @@ static void rcu_idle_enter_common(long long newval)
- 			  current->pid, current->comm,
- 			  idle->pid, idle->comm); /* must be idle task! */
- 	}
--	rcu_sched_qs(0); /* implies rcu_bh_qsctr_inc(0) */
-+	rcu_sched_qs(); /* implies rcu_bh_inc() */
- 	barrier();
- 	rcu_dynticks_nesting = newval;
- }
-@@ -217,7 +217,7 @@ static int rcu_qsctr_help(struct rcu_ctrlblk *rcp)
-  * are at it, given that any rcu quiescent state is also an rcu_bh
-  * quiescent state.  Use "+" instead of "||" to defeat short circuiting.
-  */
--void rcu_sched_qs(int cpu)
-+void rcu_sched_qs(void)
- {
- 	unsigned long flags;
- 
-@@ -231,7 +231,7 @@ void rcu_sched_qs(int cpu)
- /*
-  * Record an rcu_bh quiescent state.
-  */
--void rcu_bh_qs(int cpu)
-+void rcu_bh_qs(void)
- {
- 	unsigned long flags;
- 
-@@ -251,9 +251,9 @@ void rcu_check_callbacks(int cpu, int user)
- {
- 	RCU_TRACE(check_cpu_stalls());
- 	if (user || rcu_is_cpu_rrupt_from_idle())
--		rcu_sched_qs(cpu);
-+		rcu_sched_qs();
- 	else if (!in_softirq())
--		rcu_bh_qs(cpu);
-+		rcu_bh_qs();
- 	if (user)
- 		rcu_note_voluntary_context_switch(current);
- }
 diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index c880f5387b1f..4c340625ffd4 100644
+index e23dad0661e2..c880f5387b1f 100644
 --- a/kernel/rcu/tree.c
 +++ b/kernel/rcu/tree.c
-@@ -188,22 +188,24 @@ static int rcu_gp_in_progress(struct rcu_state *rsp)
-  * one since the start of the grace period, this just sets a flag.
-  * The caller must have disabled preemption.
-  */
--void rcu_sched_qs(int cpu)
-+void rcu_sched_qs(void)
+@@ -526,6 +526,7 @@ static void rcu_eqs_enter_common(struct rcu_dynticks *rdtp, long long oldval,
+ 	atomic_inc(&rdtp->dynticks);
+ 	smp_mb__after_atomic();  /* Force ordering with next sojourn. */
+ 	WARN_ON_ONCE(atomic_read(&rdtp->dynticks) & 0x1);
++	rcu_dynticks_task_enter();
+ 
+ 	/*
+ 	 * It is illegal to enter an extended quiescent state while
+@@ -642,6 +643,7 @@ void rcu_irq_exit(void)
+ static void rcu_eqs_exit_common(struct rcu_dynticks *rdtp, long long oldval,
+ 			       int user)
  {
--	struct rcu_data *rdp = &per_cpu(rcu_sched_data, cpu);
--
--	if (rdp->passed_quiesce == 0)
--		trace_rcu_grace_period(TPS("rcu_sched"), rdp->gpnum, TPS("cpuqs"));
--	rdp->passed_quiesce = 1;
-+	if (!__this_cpu_read(rcu_sched_data.passed_quiesce)) {
-+		trace_rcu_grace_period(TPS("rcu_sched"),
-+				       __this_cpu_read(rcu_sched_data.gpnum),
-+				       TPS("cpuqs"));
-+		__this_cpu_write(rcu_sched_data.passed_quiesce, 1);
-+	}
- }
++	rcu_dynticks_task_exit();
+ 	smp_mb__before_atomic();  /* Force ordering w/previous sojourn. */
+ 	atomic_inc(&rdtp->dynticks);
+ 	/* CPUs seeing atomic_inc() must see later RCU read-side crit sects */
+diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
+index 71e64c718f75..7d78f1afcb11 100644
+--- a/kernel/rcu/tree.h
++++ b/kernel/rcu/tree.h
+@@ -605,6 +605,8 @@ static void rcu_sysidle_report_gp(struct rcu_state *rsp, int isidle,
+ static void rcu_bind_gp_kthread(void);
+ static void rcu_sysidle_init_percpu_data(struct rcu_dynticks *rdtp);
+ static bool rcu_nohz_full_cpu(struct rcu_state *rsp);
++static void rcu_dynticks_task_enter(void);
++static void rcu_dynticks_task_exit(void);
  
--void rcu_bh_qs(int cpu)
-+void rcu_bh_qs(void)
- {
--	struct rcu_data *rdp = &per_cpu(rcu_bh_data, cpu);
--
--	if (rdp->passed_quiesce == 0)
--		trace_rcu_grace_period(TPS("rcu_bh"), rdp->gpnum, TPS("cpuqs"));
--	rdp->passed_quiesce = 1;
-+	if (!__this_cpu_read(rcu_bh_data.passed_quiesce)) {
-+		trace_rcu_grace_period(TPS("rcu_bh"),
-+				       __this_cpu_read(rcu_bh_data.gpnum),
-+				       TPS("cpuqs"));
-+		__this_cpu_write(rcu_bh_data.passed_quiesce, 1);
-+	}
- }
+ #endif /* #ifndef RCU_TREE_NONCORE */
  
- static DEFINE_PER_CPU(int, rcu_sched_qs_mask);
-@@ -278,7 +280,7 @@ static void rcu_momentary_dyntick_idle(void)
- void rcu_note_context_switch(int cpu)
- {
- 	trace_rcu_utilization(TPS("Start context switch"));
--	rcu_sched_qs(cpu);
-+	rcu_sched_qs();
- 	rcu_preempt_note_context_switch(cpu);
- 	if (unlikely(raw_cpu_read(rcu_sched_qs_mask)))
- 		rcu_momentary_dyntick_idle();
-@@ -2395,8 +2397,8 @@ void rcu_check_callbacks(int cpu, int user)
- 		 * at least not while the corresponding CPU is online.
- 		 */
- 
--		rcu_sched_qs(cpu);
--		rcu_bh_qs(cpu);
-+		rcu_sched_qs();
-+		rcu_bh_qs();
- 
- 	} else if (!in_softirq()) {
- 
-@@ -2407,7 +2409,7 @@ void rcu_check_callbacks(int cpu, int user)
- 		 * critical section, so note it.
- 		 */
- 
--		rcu_bh_qs(cpu);
-+		rcu_bh_qs();
- 	}
- 	rcu_preempt_check_callbacks(cpu);
- 	if (rcu_pending(cpu))
 diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index 471fc77bb146..73ce36b0b6a8 100644
+index 36a892d11226..533d0381927f 100644
 --- a/kernel/rcu/tree_plugin.h
 +++ b/kernel/rcu/tree_plugin.h
-@@ -158,14 +158,16 @@ EXPORT_SYMBOL_GPL(rcu_batches_completed);
-  * As with the other rcu_*_qs() functions, callers to this function
-  * must disable preemption.
-  */
--static void rcu_preempt_qs(int cpu)
--{
--	struct rcu_data *rdp = &per_cpu(rcu_preempt_data, cpu);
--
--	if (rdp->passed_quiesce == 0)
--		trace_rcu_grace_period(TPS("rcu_preempt"), rdp->gpnum, TPS("cpuqs"));
--	rdp->passed_quiesce = 1;
--	current->rcu_read_unlock_special.b.need_qs = false;
-+static void rcu_preempt_qs(void)
+@@ -3036,3 +3036,19 @@ static void rcu_bind_gp_kthread(void)
+ 		housekeeping_affine(current);
+ #endif /* #else #ifdef CONFIG_NO_HZ_FULL_SYSIDLE */
+ }
++
++/* Record the current task on dyntick-idle entry. */
++static void rcu_dynticks_task_enter(void)
 +{
-+	if (!__this_cpu_read(rcu_preempt_data.passed_quiesce)) {
-+		trace_rcu_grace_period(TPS("rcu_preempt"),
-+				       __this_cpu_read(rcu_preempt_data.gpnum),
-+				       TPS("cpuqs"));
-+		__this_cpu_write(rcu_preempt_data.passed_quiesce, 1);
-+		barrier(); /* Coordinate with rcu_preempt_check_callbacks(). */
-+		current->rcu_read_unlock_special.b.need_qs = false;
-+	}
- }
- 
- /*
-@@ -256,7 +258,7 @@ static void rcu_preempt_note_context_switch(int cpu)
- 	 * grace period, then the fact that the task has been enqueued
- 	 * means that we continue to block the current grace period.
- 	 */
--	rcu_preempt_qs(cpu);
-+	rcu_preempt_qs();
- }
- 
- /*
-@@ -352,7 +354,7 @@ void rcu_read_unlock_special(struct task_struct *t)
- 	 */
- 	special = t->rcu_read_unlock_special;
- 	if (special.b.need_qs) {
--		rcu_preempt_qs(smp_processor_id());
-+		rcu_preempt_qs();
- 		if (!t->rcu_read_unlock_special.s) {
- 			local_irq_restore(flags);
- 			return;
-@@ -651,11 +653,12 @@ static void rcu_preempt_check_callbacks(int cpu)
- 	struct task_struct *t = current;
- 
- 	if (t->rcu_read_lock_nesting == 0) {
--		rcu_preempt_qs(cpu);
-+		rcu_preempt_qs();
- 		return;
- 	}
- 	if (t->rcu_read_lock_nesting > 0 &&
--	    per_cpu(rcu_preempt_data, cpu).qs_pending)
-+	    per_cpu(rcu_preempt_data, cpu).qs_pending &&
-+	    !per_cpu(rcu_preempt_data, cpu).passed_quiesce)
- 		t->rcu_read_unlock_special.b.need_qs = true;
- }
- 
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 5918d227730f..348ec763b104 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -278,7 +278,7 @@ restart:
- 		pending >>= softirq_bit;
- 	}
- 
--	rcu_bh_qs(smp_processor_id());
-+	rcu_bh_qs();
- 	local_irq_disable();
- 
- 	pending = local_softirq_pending();
++#if defined(CONFIG_TASKS_RCU) && defined(CONFIG_NO_HZ_FULL)
++	ACCESS_ONCE(current->rcu_tasks_idle_cpu) = smp_processor_id();
++#endif /* #if defined(CONFIG_TASKS_RCU) && defined(CONFIG_NO_HZ_FULL) */
++}
++
++/* Record no current task on dyntick-idle exit. */
++static void rcu_dynticks_task_exit(void)
++{
++#if defined(CONFIG_TASKS_RCU) && defined(CONFIG_NO_HZ_FULL)
++	ACCESS_ONCE(current->rcu_tasks_idle_cpu) = -1;
++#endif /* #if defined(CONFIG_TASKS_RCU) && defined(CONFIG_NO_HZ_FULL) */
++}
+diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
+index e1d71741958f..2658de4a5975 100644
+--- a/kernel/rcu/update.c
++++ b/kernel/rcu/update.c
+@@ -463,7 +463,9 @@ static void check_holdout_task(struct task_struct *t,
+ {
+ 	if (!ACCESS_ONCE(t->rcu_tasks_holdout) ||
+ 	    t->rcu_tasks_nvcsw != ACCESS_ONCE(t->nvcsw) ||
+-	    !ACCESS_ONCE(t->on_rq)) {
++	    !ACCESS_ONCE(t->on_rq) ||
++	    (IS_ENABLED(CONFIG_NO_HZ_FULL) &&
++	     !is_idle_task(t) && t->rcu_tasks_idle_cpu >= 0)) {
+ 		ACCESS_ONCE(t->rcu_tasks_holdout) = false;
+ 		list_del_rcu(&t->rcu_tasks_holdout_list);
+ 		put_task_struct(t);
 -- 
 1.8.1.5
 
