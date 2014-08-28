@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754758AbaH1S5p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:57:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32865 "EHLO mx2.suse.de"
+	id S1752972AbaH1Sgf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 14:36:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32840 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752977AbaH1Sgh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:36:37 -0400
+	id S1752291AbaH1SgF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:36:05 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Jiri Slaby <jslaby@suse.cz>
 Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 48/97] mm: remove read_cache_page_async()
-Date: Thu, 28 Aug 2014 19:34:56 +0100
-Message-Id: <1409250945-30874-49-git-send-email-mgorman@suse.de>
+Subject: [PATCH 18/97] x86/mm: Eliminate redundant page table walk during TLB range flushing
+Date: Thu, 28 Aug 2014 19:34:26 +0100
+Message-Id: <1409250945-30874-19-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
 References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
@@ -20,229 +20,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sasha Levin <sasha.levin@oracle.com>
+commit 71b54f8263860a37dd9f50f81880a9d681fd9c10 upstream.
 
-commit 67f9fd91f93c582b7de2ab9325b6e179db77e4d5 upstream.
+When choosing between doing an address space or ranged flush,
+the x86 implementation of flush_tlb_mm_range takes into account
+whether there are any large pages in the range.  A per-page
+flush typically requires fewer entries than would covered by a
+single large page and the check is redundant.
 
-This patch removes read_cache_page_async() which wasn't really needed
-anywhere and simplifies the code around it a bit.
+There is one potential exception.  THP migration flushes single
+THP entries and it conceivably would benefit from flushing a
+single entry instead of the mm.  However, this flush is after a
+THP allocation, copy and page table update potentially with any
+other threads serialised behind it.  In comparison to that, the
+flush is noise.  It makes more sense to optimise balancing to
+require fewer flushes than to optimise the flush itself.
 
-read_cache_page_async() is useful when we want to read a page into the
-cache without waiting for it to complete.  This happens when the
-appropriate callback 'filler' doesn't complete its read operation and
-releases the page lock immediately, and instead queues a different
-completion routine to do that.  This never actually happened anywhere in
-the code.
+This patch deletes the redundant huge page check.
 
-read_cache_page_async() had 3 different callers:
-
-- read_cache_page() which is the sync version, it would just wait for
-  the requested read to complete using wait_on_page_read().
-
-- JFFS2 would call it from jffs2_gc_fetch_page(), but the filler
-  function it supplied doesn't do any async reads, and would complete
-  before the filler function returns - making it actually a sync read.
-
-- CRAMFS would call it using the read_mapping_page_async() wrapper, with
-  a similar story to JFFS2 - the filler function doesn't do anything that
-  reminds async reads and would always complete before the filler function
-  returns.
-
-To sum it up, the code in mm/filemap.c never took advantage of having
-read_cache_page_async().  While there are filler callbacks that do async
-reads (such as the block one), we always called it with the
-read_cache_page().
-
-This patch adds a mandatory wait for read to complete when adding a new
-page to the cache, and removes read_cache_page_async() and its wrappers.
-
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Tested-by: Davidlohr Bueso <davidlohr@hp.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Alex Shi <alex.shi@linaro.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/n/tip-sgei1drpOcburujPsfh6ovmo@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- fs/cramfs/inode.c       |  3 +--
- fs/jffs2/fs.c           |  2 +-
- include/linux/pagemap.h | 10 --------
- mm/filemap.c            | 64 ++++++++++++++++++-------------------------------
- 4 files changed, 25 insertions(+), 54 deletions(-)
+ arch/x86/mm/tlb.c | 28 +---------------------------
+ 1 file changed, 1 insertion(+), 27 deletions(-)
 
-diff --git a/fs/cramfs/inode.c b/fs/cramfs/inode.c
-index e501ac3..2f6cfca 100644
---- a/fs/cramfs/inode.c
-+++ b/fs/cramfs/inode.c
-@@ -179,8 +179,7 @@ static void *cramfs_read(struct super_block *sb, unsigned int offset, unsigned i
- 		struct page *page = NULL;
- 
- 		if (blocknr + i < devsize) {
--			page = read_mapping_page_async(mapping, blocknr + i,
--									NULL);
-+			page = read_mapping_page(mapping, blocknr + i, NULL);
- 			/* synchronous error? */
- 			if (IS_ERR(page))
- 				page = NULL;
-diff --git a/fs/jffs2/fs.c b/fs/jffs2/fs.c
-index fe3c052..91bf52d 100644
---- a/fs/jffs2/fs.c
-+++ b/fs/jffs2/fs.c
-@@ -682,7 +682,7 @@ unsigned char *jffs2_gc_fetch_page(struct jffs2_sb_info *c,
- 	struct inode *inode = OFNI_EDONI_2SFFJ(f);
- 	struct page *pg;
- 
--	pg = read_cache_page_async(inode->i_mapping, offset >> PAGE_CACHE_SHIFT,
-+	pg = read_cache_page(inode->i_mapping, offset >> PAGE_CACHE_SHIFT,
- 			     (void *)jffs2_do_readpage_unlock, inode);
- 	if (IS_ERR(pg))
- 		return (void *)pg;
-diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-index 76aaeaa..930b884 100644
---- a/include/linux/pagemap.h
-+++ b/include/linux/pagemap.h
-@@ -278,8 +278,6 @@ static inline struct page *grab_cache_page(struct address_space *mapping,
- 
- extern struct page * grab_cache_page_nowait(struct address_space *mapping,
- 				pgoff_t index);
--extern struct page * read_cache_page_async(struct address_space *mapping,
--				pgoff_t index, filler_t *filler, void *data);
- extern struct page * read_cache_page(struct address_space *mapping,
- 				pgoff_t index, filler_t *filler, void *data);
- extern struct page * read_cache_page_gfp(struct address_space *mapping,
-@@ -287,14 +285,6 @@ extern struct page * read_cache_page_gfp(struct address_space *mapping,
- extern int read_cache_pages(struct address_space *mapping,
- 		struct list_head *pages, filler_t *filler, void *data);
- 
--static inline struct page *read_mapping_page_async(
--				struct address_space *mapping,
--				pgoff_t index, void *data)
--{
--	filler_t *filler = (filler_t *)mapping->a_ops->readpage;
--	return read_cache_page_async(mapping, index, filler, data);
--}
--
- static inline struct page *read_mapping_page(struct address_space *mapping,
- 				pgoff_t index, void *data)
- {
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 5d57a78..d0f765f 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -2029,6 +2029,18 @@ int generic_file_readonly_mmap(struct file * file, struct vm_area_struct * vma)
- EXPORT_SYMBOL(generic_file_mmap);
- EXPORT_SYMBOL(generic_file_readonly_mmap);
- 
-+static struct page *wait_on_page_read(struct page *page)
-+{
-+	if (!IS_ERR(page)) {
-+		wait_on_page_locked(page);
-+		if (!PageUptodate(page)) {
-+			page_cache_release(page);
-+			page = ERR_PTR(-EIO);
-+		}
-+	}
-+	return page;
-+}
-+
- static struct page *__read_cache_page(struct address_space *mapping,
- 				pgoff_t index,
- 				int (*filler)(void *, struct page *),
-@@ -2055,6 +2067,8 @@ repeat:
- 		if (err < 0) {
- 			page_cache_release(page);
- 			page = ERR_PTR(err);
-+		} else {
-+			page = wait_on_page_read(page);
- 		}
- 	}
- 	return page;
-@@ -2091,6 +2105,10 @@ retry:
- 	if (err < 0) {
- 		page_cache_release(page);
- 		return ERR_PTR(err);
-+	} else {
-+		page = wait_on_page_read(page);
-+		if (IS_ERR(page))
-+			return page;
- 	}
- out:
- 	mark_page_accessed(page);
-@@ -2098,40 +2116,25 @@ out:
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index 5176526..dd8dda1 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -158,32 +158,6 @@ void flush_tlb_current_task(void)
+ 	preempt_enable();
  }
  
- /**
-- * read_cache_page_async - read into page cache, fill it if needed
-+ * read_cache_page - read into page cache, fill it if needed
-  * @mapping:	the page's address_space
-  * @index:	the page index
-  * @filler:	function to perform the read
-  * @data:	first arg to filler(data, page) function, often left as NULL
-  *
-- * Same as read_cache_page, but don't wait for page to become unlocked
-- * after submitting it to the filler.
-- *
-  * Read into the page cache. If a page already exists, and PageUptodate() is
-- * not set, try to fill the page but don't wait for it to become unlocked.
-+ * not set, try to fill the page and wait for it to become unlocked.
-  *
-  * If the page does not get brought uptodate, return -EIO.
-  */
--struct page *read_cache_page_async(struct address_space *mapping,
-+struct page *read_cache_page(struct address_space *mapping,
- 				pgoff_t index,
- 				int (*filler)(void *, struct page *),
- 				void *data)
- {
- 	return do_read_cache_page(mapping, index, filler, data, mapping_gfp_mask(mapping));
- }
--EXPORT_SYMBOL(read_cache_page_async);
--
--static struct page *wait_on_page_read(struct page *page)
+-/*
+- * It can find out the THP large page, or
+- * HUGETLB page in tlb_flush when THP disabled
+- */
+-static inline unsigned long has_large_page(struct mm_struct *mm,
+-				 unsigned long start, unsigned long end)
 -{
--	if (!IS_ERR(page)) {
--		wait_on_page_locked(page);
--		if (!PageUptodate(page)) {
--			page_cache_release(page);
--			page = ERR_PTR(-EIO);
+-	pgd_t *pgd;
+-	pud_t *pud;
+-	pmd_t *pmd;
+-	unsigned long addr = ALIGN(start, HPAGE_SIZE);
+-	for (; addr < end; addr += HPAGE_SIZE) {
+-		pgd = pgd_offset(mm, addr);
+-		if (likely(!pgd_none(*pgd))) {
+-			pud = pud_offset(pgd, addr);
+-			if (likely(!pud_none(*pud))) {
+-				pmd = pmd_offset(pud, addr);
+-				if (likely(!pmd_none(*pmd)))
+-					if (pmd_large(*pmd))
+-						return addr;
+-			}
 -		}
 -	}
--	return page;
+-	return 0;
 -}
-+EXPORT_SYMBOL(read_cache_page);
- 
- /**
-  * read_cache_page_gfp - read into page cache, using specified page allocation flags.
-@@ -2150,31 +2153,10 @@ struct page *read_cache_page_gfp(struct address_space *mapping,
- {
- 	filler_t *filler = (filler_t *)mapping->a_ops->readpage;
- 
--	return wait_on_page_read(do_read_cache_page(mapping, index, filler, NULL, gfp));
-+	return do_read_cache_page(mapping, index, filler, NULL, gfp);
- }
- EXPORT_SYMBOL(read_cache_page_gfp);
- 
--/**
-- * read_cache_page - read into page cache, fill it if needed
-- * @mapping:	the page's address_space
-- * @index:	the page index
-- * @filler:	function to perform the read
-- * @data:	first arg to filler(data, page) function, often left as NULL
-- *
-- * Read into the page cache. If a page already exists, and PageUptodate() is
-- * not set, try to fill the page then wait for it to become unlocked.
-- *
-- * If the page does not get brought uptodate, return -EIO.
-- */
--struct page *read_cache_page(struct address_space *mapping,
--				pgoff_t index,
--				int (*filler)(void *, struct page *),
--				void *data)
--{
--	return wait_on_page_read(read_cache_page_async(mapping, index, filler, data));
--}
--EXPORT_SYMBOL(read_cache_page);
 -
- static size_t __iovec_copy_from_user_inatomic(char *vaddr,
- 			const struct iovec *iov, size_t base, size_t bytes)
+ void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
+ 				unsigned long end, unsigned long vmflag)
  {
+@@ -218,7 +192,7 @@ void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
+ 	nr_base_pages = (end - start) >> PAGE_SHIFT;
+ 
+ 	/* tlb_flushall_shift is on balance point, details in commit log */
+-	if (nr_base_pages > act_entries || has_large_page(mm, start, end)) {
++	if (nr_base_pages > act_entries) {
+ 		count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
+ 		local_flush_tlb();
+ 	} else {
 -- 
 1.8.4.5
 
