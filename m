@@ -1,78 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752093AbaH1Ohs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 10:37:48 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:45407 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750894AbaH1Of4 (ORCPT
+	id S1752130AbaH1OiB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 10:38:01 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:54864 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752069AbaH1Ohr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 10:35:56 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: lee.jones@linaro.org, kernel@stlinux.com, wsa@the-dreams.de,
-        grant.likely@linaro.org, linux-i2c@vger.kernel.org,
-        devicetree@vger.kernel.org, linus.walleij@linaro.org
-Subject: [PATCH 2/8] i2c: Add the ability to match device to compatible string without an of_node
-Date: Thu, 28 Aug 2014 15:35:32 +0100
-Message-Id: <1409236538-21274-3-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1409236538-21274-1-git-send-email-lee.jones@linaro.org>
-References: <1409236538-21274-1-git-send-email-lee.jones@linaro.org>
+	Thu, 28 Aug 2014 10:37:47 -0400
+Date: Thu, 28 Aug 2014 10:37:35 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Caesar Wang <caesar.wang@rock-chips.com>, heiko@sntech.de,
+        rui.zhang@intel.com, grant.likely@linaro.org, robh+dt@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, huangtao@rock-chips.com, cf@rock-chips.com,
+        dianders@chromium.org, dtor@chromium.org, zyw@rock-chips.com,
+        addy.ke@rock-chips.com, dmitry.torokhov@gmail.com,
+        zhaoyifeng <zyf@rock-chips.com>, linux-iio@vger.kernel.org,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: Re: [PATCH v3 1/4] thermal: rockchip: add driver for thermal
+Message-ID: <20140828143733.GA18084@developer>
+References: <1409187562-12370-1-git-send-email-caesar.wang@rock-chips.com>
+ <1409187562-12370-2-git-send-email-caesar.wang@rock-chips.com>
+ <2852853.mfRZfFVSev@wuerfel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2852853.mfRZfFVSev@wuerfel>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A great deal of I2C devices are currently matched via DT node name, and
-as such the compatible naming convention of '<vendor>,<device>' has gone
-somewhat awry - some nodes don't supply one, some supply an arbitrary
-string and others the correct device name with an arbitrary vendor prefix.
 
-In an effort to correct this problem we have to supply a mechanism to
-match a device by compatible string AND by simple device name.  This
-function strips off the '<vendor>,' part of a supplied compatible string
-and attempts to match without it.
+Ceasar and Arnd,
 
-The plan is to remove this function once all of the compatible strings
-for each device have been brought into line.
+On Thu, Aug 28, 2014 at 10:48:23AM +0200, Arnd Bergmann wrote:
+> On Thursday 28 August 2014 08:59:19 Caesar Wang wrote:
+> > Thermal is TS-ADC Controller module supports user-defined mode and automatic mode.
+> > 
+> > User-defined mode refers,TSADC all the control signals entirely by software
+> > writing to register for direct control.
+> > 
+> > Automaic mode refers to the module automatically poll TSADC output,and the results
+> > Were checked.
+> > 
+> > If you find that the temperature High in a period of time, an interrupt is generated
+> > to the processor down-measures taken;if the temperature over a period of time High,
+> > the resulting TSHUT gave CRU module,let it reset the entire chip, or via GPIO give PMIC.
+> > 
+> > Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
+> > Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
+> 
+> Hi Caesar,
+> 
+> After looking at the driver (last time I only received the patch for
+> the binding), I have a more general comment:
+> 
+> This looks like a general-purpose ADC device, not an IP block that is
+> specific to thermal management. The binding looks ok for that purpose
+> but should probably be moved into Documentation/devicetree/bindings/iio/adc/
+> as a minor change.
+> 
 
-Acked-by: Grant Likely <grant.likely@linaro.org>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/i2c/i2c-core.c | 21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+I agree with Arnd's point here. It makes sense to me to have this driver
+under the IIO umbrella. 
 
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index d3c8e9f..eb46d15 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -1095,6 +1095,27 @@ struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node *node)
- 	return i2c_verify_adapter(dev);
- }
- EXPORT_SYMBOL(of_find_i2c_adapter_by_node);
-+
-+static const struct of_device_id*
-+i2c_of_match_device_strip_vendor(const struct of_device_id *matches,
-+				  struct i2c_client *client)
-+{
-+	const char *name;
-+
-+	for (; matches->compatible[0]; matches++) {
-+		name = strchr(matches->compatible, ',');
-+		if (!name)
-+			name = matches->compatible;
-+		else
-+			name++;
-+
-+		if (!strnicmp(client->name, name, strlen(client->name)))
-+			return matches;
-+	}
-+
-+	return NULL;
-+}
-+
- #else
- static void of_i2c_register_devices(struct i2c_adapter *adap) { }
- #endif /* CONFIG_OF */
--- 
-1.9.1
+> On the driver side, I believe the correct way to deal with this setup
+> is to split your driver into a generic drivers/iio/adc/rockchips-tsadc.c
+> file, and a smaller thermal driver that uses the iio in-kernel interfaces,
+> ideally one that is independent of the underlying hardware and can
+> work on any ADC implementation.
+> 
 
+Agreed. If you can write such interface and make your driver to work in
+such way, that would be great.
+
+> I've put the IIO maintainer on Cc in this mail, maybe Jonathan or someone
+> else on the linux-iio mailing list has some extra insight.
+> 
+> 	Arnd
+
+
+Cheers,
+
+Eduardo
