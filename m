@@ -1,156 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965892AbaH1K7R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 06:59:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52659 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965139AbaH1K7P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 06:59:15 -0400
-Date: Thu, 28 Aug 2014 12:59:09 +0200
-From: Jan Kara <jack@suse.cz>
-To: Gioh Kim <gioh.kim@lge.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jan Kara <jack@suse.cz>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>, Joonsoo Kim <js1304@gmail.com>,
-        =?utf-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>
-Subject: Re: [PATCHv3 1/3] fs/buffer.c: allocate buffer cache with user
- specific flag
-Message-ID: <20140828105909.GE5961@quack.suse.cz>
-References: <53FE9357.6000505@lge.com>
- <53FE9492.1030909@lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53FE9492.1030909@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S965826AbaH1LAP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 07:00:15 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:45566 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965139AbaH1LAM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 07:00:12 -0400
+From: Gyungoh Yoo <gyungoh@gmail.com>
+X-Google-Original-From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
+To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org
+Cc: jack.yoo@skyworksinc.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 6/7] Adding SKY81452 backlight device tree bindings document
+Date: Thu, 28 Aug 2014 20:00:01 +0900
+Message-Id: <1409223601-23619-1-git-send-email-jack.yoo@skyworksinc.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1409222307-23225-1-git-send-email-jack.yoo@skyworksinc.com>
+References: <1409222307-23225-1-git-send-email-jack.yoo@skyworksinc.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 28-08-14 11:31:46, Gioh Kim wrote:
-> 
-> A buffer cache is allocated from movable area
-> because it is referred for a while and released soon.
-> But some filesystems are taking buffer cache for a long time
-> and it can disturb page migration.
-> 
-> New APIs are introduced to allocate buffer cache
-> with user specific flag.
-> *_gfp APIs are for user want to set page allocation flag for page cache
-> allocation.
-> And *_unmovable APIs are for the user wants to allocate page cache from
-> non-movable area.
-> 
-> Signed-off-by: Gioh Kim <gioh.kim@lge.com>
-  Still a few nits below.
-> ---
->  fs/buffer.c                 |   54 +++++++++++++++++++++++++++++++++----------
->  include/linux/buffer_head.h |   14 ++++++++++-
->  2 files changed, 55 insertions(+), 13 deletions(-)
-> 
-> diff --git a/fs/buffer.c b/fs/buffer.c
-> index 8f05111..ee29bc4 100644
-> --- a/fs/buffer.c
-> +++ b/fs/buffer.c
-> @@ -993,7 +993,7 @@ init_page_buffers(struct page *page, struct block_device *bdev,
->   */
->  static int
->  grow_dev_page(struct block_device *bdev, sector_t block,
-> -               pgoff_t index, int size, int sizebits)
-> +             pgoff_t index, int size, int sizebits, gfp_t gfp)
-  I've noticed that whitespace got damaged in your patches (tabs replaced
-with spaces). Please use email client that doesn't do this or use
-attachments. Otherwise patch doesn't apply.
+v2:
+Added 'compatible' attribute in child drivers
 
->  {
->         struct inode *inode = bdev->bd_inode;
->         struct page *page;
-> @@ -1002,10 +1002,10 @@ grow_dev_page(struct block_device *bdev, sector_t block,
->         int ret = 0;            /* Will call free_more_memory() */
->         gfp_t gfp_mask;
-> 
-> -       gfp_mask = mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS;
-> -       gfp_mask |= __GFP_MOVABLE;
-> +       gfp_mask = (mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS) | gfp;
-> +
->         /*
-> -        * XXX: __getblk_slow() can not really deal with failure and
-> +        * XXX: __getblk_gfp() can not really deal with failure and
->          * will endlessly loop on improvised global reclaim.  Prefer
->          * looping in the allocator rather than here, at least that
->          * code knows what it's doing.
-> @@ -1058,7 +1058,7 @@ failed:
->   * that page was dirty, the buffers are set dirty also.
->   */
->  static int
-> -grow_buffers(struct block_device *bdev, sector_t block, int size)
-> +grow_buffers(struct block_device *bdev, sector_t block, int size, gfp_t gfp)
->  {
->         pgoff_t index;
->         int sizebits;
-> @@ -1085,11 +1085,12 @@ grow_buffers(struct block_device *bdev, sector_t block, int size)
->         }
-> 
->         /* Create a page with the proper size buffers.. */
-> -       return grow_dev_page(bdev, block, index, size, sizebits);
-> +       return grow_dev_page(bdev, block, index, size, sizebits, gfp);
->  }
-> 
-> -static struct buffer_head *
-> -__getblk_slow(struct block_device *bdev, sector_t block, int size)
-> +struct buffer_head *
-> +__getblk_gfp(struct block_device *bdev, sector_t block,
-> +            unsigned size, gfp_t gfp)
->  {
->         /* Size must be multiple of hard sectorsize */
->         if (unlikely(size & (bdev_logical_block_size(bdev)-1) ||
-> @@ -1111,13 +1112,21 @@ __getblk_slow(struct block_device *bdev, sector_t block, int size)
->                 if (bh)
->                         return bh;
-> 
-> -               ret = grow_buffers(bdev, block, size);
-> +               ret = grow_buffers(bdev, block, size, gfp);
->                 if (ret < 0)
->                         return NULL;
->                 if (ret == 0)
->                         free_more_memory();
->         }
->  }
-> +EXPORT_SYMBOL(__getblk_gfp);
-> +
-> +struct buffer_head *getblk_unmovable(struct block_device *bdev, sector_t block,
-> +                                    unsigned size)
-> +{
-> +       return __getblk_gfp(bdev, block, size, 0);
-> +}
-> +EXPORT_SYMBOL(getblk_unmovable);
-  This can be just an inline function in include/linux/buffer_head.h.
+---
+ .../video/backlight/sky81452-backlight.txt         | 24 ++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
 
->  /*
->   * The relationship between dirty buffers and dirty pages:
-> @@ -1385,7 +1394,7 @@ __getblk(struct block_device *bdev, sector_t block, unsigned size)
-> 
->         might_sleep();
->         if (bh == NULL)
-> -               bh = __getblk_slow(bdev, block, size);
-> +               bh = __getblk_gfp(bdev, block, size, __GFP_MOVABLE);
->         return bh;
->  }
->  EXPORT_SYMBOL(__getblk);
-  I'd keep __getblk_slow() internal and just add 'gfp' parameter to it.
-Then change __getblk() to __getblk_gfp() and pass on the 'gfp' parameter.
-And finally define inline __getblk() in include/linux/buffer_head.h which
-just calls __getblk_gfp() with appropriate gfp mask.
-
-That way you keep all the interfaces completely symmetric. For example now
-you miss might_sleep() checks from __getblk_gfp().
-
-								Honza
+diff --git a/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt b/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
+new file mode 100644
+index 0000000..2c2d947
+--- /dev/null
++++ b/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
+@@ -0,0 +1,24 @@
++SKY81452-backlight bindings
++
++Required properties:
++- compatible		: Must be "skyworks,sky81452-backlight"
++
++Optional properties:
++- name			: Name of backlight device. Default is 'lcd-backlight'.
++- gpio-enable		: GPIO to use to EN pin.
++- enable		: Enable mask for current sink channel 1 to 6.
++- ignore-pwm		: Ignore both PWM input
++- dpwm-mode		: Enable DPWM dimming mode, otherwise Analog dimming mode
++- phase-shift		: Enable phase shift mode
++- ovp-level		: Over-voltage protection level. Should be between 14 or 28V.
++- short-detection-threshold	: It should be one of 4, 5, 6 and 7V.
++- boost-current-limit	: It should be one of 800, 1100 and 1500mA.
++
++Example:
++
++	backlight {
++		compatible = "skyworks,sky81452-backlight";
++		name = "pwm-backlight";
++		enable = <0x3F>;
++		ignore-pwm;
++	};
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.9.1
+
