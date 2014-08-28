@@ -1,48 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752592AbaH1Umw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 16:42:52 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:55814 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752233AbaH1Umv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 16:42:51 -0400
-Message-ID: <53FF9449.1000702@kernel.dk>
-Date: Thu, 28 Aug 2014 14:42:49 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752325AbaH1Uph (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 16:45:37 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:34326 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751329AbaH1Upf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 16:45:35 -0400
+From: Nishanth Menon <nm@ti.com>
+To: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>
+CC: <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>
+Subject: [PATCH] ARM: dts: omap4-panda: Fix model and SoC family details
+Date: Thu, 28 Aug 2014 15:45:03 -0500
+Message-ID: <1409258703-21188-1-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "tj@kernel.org" <tj@kernel.org>, "hch@lst.de" <hch@lst.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: 3.17-rc2 percpu-ref oops with virtblk remove
-References: <20140828185046.GR22580@arm.com> <53FF7A3A.7060607@kernel.dk> <20140828185458.GS22580@arm.com>
-In-Reply-To: <20140828185458.GS22580@arm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/28/2014 12:54 PM, Will Deacon wrote:
-> On Thu, Aug 28, 2014 at 07:51:38PM +0100, Jens Axboe wrote:
->> On 08/28/2014 12:50 PM, Will Deacon wrote:
->>> Any ideas?
->>
->> It's fixed in for-linus, which will go out soon, more stuff just kept
->> coming in. Fix:
->>
->> http://git.kernel.dk/?p=linux-block.git;a=commit;h=cddd5d17642cc6881352732693c2ae6930e9ce65
-> 
-> Thanks Jens, at least it kept me entertained this afternoon.
+Currently we claim that omap4-panda and omap4-panda-es are essentially
+the same, but they are not since PandaBoard-ES uses OMAP4460 and
+PandaBoard uses OMAP4430.
 
-Sorry, google could have helped you, though...
+So, split the common definition and make the model name available.
 
-In any case, the branch has now been sent out for inclusion, so should
-be gone shortly.
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+Based on v3.17-rc2
 
+Testing logs: (boot test):
+Before Patch(v3.17-rc2)
+1: pandaboard-es:  Boot PASS: http://slexy.org/raw/s209HfpVTs
+2: pandaboard-vanilla:  Boot PASS: http://slexy.org/raw/s21YNmOhQL
 
+After Patch
+1: pandaboard-es:  Boot PASS: http://slexy.org/raw/s20FH76BTn
+2: pandaboard-vanilla:  Boot PASS: http://slexy.org/raw/s2vFLcfkBu
+
+Note: 'ti,omap4-panda-es' is not documented in bindings, not entirely
+sure if we should be doing the same for every board compatibility.
+
+ arch/arm/boot/dts/omap4-panda-common.dtsi |    3 ---
+ arch/arm/boot/dts/omap4-panda-es.dts      |    5 +++++
+ arch/arm/boot/dts/omap4-panda.dts         |    5 +++++
+ 3 files changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi b/arch/arm/boot/dts/omap4-panda-common.dtsi
+index 8cfa3c8..1505135 100644
+--- a/arch/arm/boot/dts/omap4-panda-common.dtsi
++++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
+@@ -8,9 +8,6 @@
+ #include "elpida_ecb240abacn.dtsi"
+ 
+ / {
+-	model = "TI OMAP4 PandaBoard";
+-	compatible = "ti,omap4-panda", "ti,omap4430", "ti,omap4";
+-
+ 	memory {
+ 		device_type = "memory";
+ 		reg = <0x80000000 0x40000000>; /* 1 GB */
+diff --git a/arch/arm/boot/dts/omap4-panda-es.dts b/arch/arm/boot/dts/omap4-panda-es.dts
+index 816d1c9..2f1dabc 100644
+--- a/arch/arm/boot/dts/omap4-panda-es.dts
++++ b/arch/arm/boot/dts/omap4-panda-es.dts
+@@ -10,6 +10,11 @@
+ #include "omap4460.dtsi"
+ #include "omap4-panda-common.dtsi"
+ 
++/ {
++	model = "TI OMAP4 PandaBoard-ES";
++	compatible = "ti,omap4-panda-es", "ti,omap4-panda", "ti,omap4460", "ti,omap4430", "ti,omap4";
++};
++
+ /* Audio routing is differnet between PandaBoard4430 and PandaBoardES */
+ &sound {
+ 	ti,model = "PandaBoardES";
+diff --git a/arch/arm/boot/dts/omap4-panda.dts b/arch/arm/boot/dts/omap4-panda.dts
+index 6189a8b..a0e28b2 100644
+--- a/arch/arm/boot/dts/omap4-panda.dts
++++ b/arch/arm/boot/dts/omap4-panda.dts
+@@ -9,3 +9,8 @@
+ 
+ #include "omap443x.dtsi"
+ #include "omap4-panda-common.dtsi"
++
++/ {
++	model = "TI OMAP4 PandaBoard";
++	compatible = "ti,omap4-panda", "ti,omap4430", "ti,omap4";
++};
 -- 
-Jens Axboe
+1.7.9.5
 
