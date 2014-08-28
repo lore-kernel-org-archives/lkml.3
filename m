@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526AbaH1NRQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 09:17:16 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:54627 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751278AbaH1NOc (ORCPT
+	id S1751585AbaH1NTF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 09:19:05 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:44134 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750886AbaH1NTD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 09:14:32 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Lee Jones <lee.jones@linaro.org>, jic23@kernel.org,
-        linux-iio@vger.kernel.org
-Subject: [PATCH 01/11] iio: sensors-core: st: Check st_sensors_set_drdy_int_pin()'s return value
-Date: Thu, 28 Aug 2014 14:14:07 +0100
-Message-Id: <1409231657-18294-1-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	Thu, 28 Aug 2014 09:19:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <1407536949-31323-1-git-send-email-dianders@chromium.org>
+References: <1407536949-31323-1-git-send-email-dianders@chromium.org>
+Date: Thu, 28 Aug 2014 15:19:01 +0200
+Message-ID: <CACRpkdbzNYEqYWrF+k0ueOhyhGcJ-nEEqGYOeuQ-ubvi2-SaNg@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: Add mux options 3 and 4 for rockchip pinctrl
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Heiko Stuebner <heiko@sntech.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Sonny Rao <sonnyrao@chromium.org>, eddie.cai@rock-chips.com,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Value from st_sensors_set_drdy_int_pin() is assigned to err here,
-but that stored value is not used before it is overwritten.  To fix
-this we're enforcing a check on st_sensors_set_drdy_int_pin()'s
-return value and if it's an error, we're returning right away.
+On Sat, Aug 9, 2014 at 12:29 AM, Doug Anderson <dianders@chromium.org> wrote:
 
-Cc: jic23@kernel.org
-Cc: linux-iio@vger.kernel.org
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/iio/common/st_sensors/st_sensors_core.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+> Newer Rockchip SoCs have more muxing slots.  Add slots 3 and 4 since
+> the rk3288 table goes all the way up to 4.
+>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
 
-diff --git a/drivers/iio/common/st_sensors/st_sensors_core.c b/drivers/iio/common/st_sensors/st_sensors_core.c
-index 8a4ec00..24cfe4e 100644
---- a/drivers/iio/common/st_sensors/st_sensors_core.c
-+++ b/drivers/iio/common/st_sensors/st_sensors_core.c
-@@ -306,8 +306,11 @@ int st_sensors_init_sensor(struct iio_dev *indio_dev,
- 	if (of_pdata)
- 		pdata = of_pdata;
- 
--	if (pdata)
-+	if (pdata) {
- 		err = st_sensors_set_drdy_int_pin(indio_dev, pdata);
-+		if (err < 0)
-+			return err;
-+	}
- 
- 	err = st_sensors_set_enable(indio_dev, false);
- 	if (err < 0)
--- 
-1.9.1
+Patch applied with Heiko's review tag.
 
+Yours,
+Linus Walleij
