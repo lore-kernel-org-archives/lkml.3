@@ -1,64 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752410AbaH1X1u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 19:27:50 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:40000 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751559AbaH1X1t (ORCPT
+	id S1752639AbaH1X3F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 19:29:05 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:38361 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892AbaH1X3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 19:27:49 -0400
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Cong Wang <cwang@twopensource.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>
-Subject: [Patch] perf_event: fix a race condition in perf_remove_from_context()
-Date: Thu, 28 Aug 2014 16:27:35 -0700
-Message-Id: <1409268455-11807-1-git-send-email-xiyou.wangcong@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
+	Thu, 28 Aug 2014 19:29:03 -0400
+Message-ID: <53FFBB3C.8010207@infradead.org>
+Date: Thu, 28 Aug 2014 16:29:00 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Rob Jones <rob.jones@codethink.co.uk>,
+        Steven Whitehouse <swhiteho@redhat.com>, linux-fsdevel@vger.kernel.org
+CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-kernel@lists.codethink.co.uk, viro@ZenIV.linux.org.uk,
+        ebiederm@xmission.com, ian.molton@codethink.co.uk
+Subject: Re: [PATCH V3] seq_file: Document seq_open_private(), seq_release_private()
+References: <1408362005-21504-1-git-send-email-rob.jones@codethink.co.uk> <53F1E879.2050302@redhat.com> <53FC6872.3060800@codethink.co.uk>
+In-Reply-To: <53FC6872.3060800@codethink.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cong Wang <cwang@twopensource.com>
+On 08/26/14 03:58, Rob Jones wrote:
+> Are there any other responses on this please? It seems pretty
+> uncontentious. Maybe everyone was at LinuxCon last week.
+> 
+> On 18/08/14 12:50, Steven Whitehouse wrote:
+>> Hi,
+>>
+>> On 18/08/14 12:40, Rob Jones wrote:
+>>> Despite the fact that these functions have been around for years, they
+>>> are
+>>> little used (only 15 uses in 13 files at the preseht time) even though
+>>> many other files use work-arounds to achieve the same result.
+>>>
+>>> By documenting them, hopefully they will become more widely used.
+>>>
+>>> Signed-off-by: Rob Jones <rob.jones@codethink.co.uk>
+>> Acked-by: Steven Whitehouse <swhiteho@redhat.com>
 
-We saw a kernel soft lockup in perf_remove_from_context(),
-it looks like the `perf` process, when exiting, could not go
-out of the retry loop. Meanwhile, the target process was forking
-a child. So either the target process should execute the smp
-function call to deactive the event (if it was running) or it should
-do a context switch which deactives the event.
+Applied.  Thanks.
 
-It seems we optimize out a context switch in perf_event_context_sched_out(),
-and what's more important, we still test an obsolete task pointer when
-retrying, so no one actually would deactive that event in this situation.
-Fix it directly by reloading the task pointer in perf_remove_from_context().
-This should fix the above soft lockup.
-
-Cc: stable@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Signed-off-by: Cong Wang <cwang@twopensource.com>
-Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
-
----
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index f9c1ed0..c4141a0 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1524,6 +1524,11 @@ retry:
- 	 */
- 	if (ctx->is_active) {
- 		raw_spin_unlock_irq(&ctx->lock);
-+		/*
-+		 * Reload the task pointer, it might have been changed by
-+		 * a concurrent perf_event_context_sched_out() without switching
-+		 */
-+		task = ctx->task;
- 		goto retry;
- 	}
- 
+-- 
+~Randy
