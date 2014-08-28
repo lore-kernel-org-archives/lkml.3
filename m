@@ -1,95 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753064AbaH1ThP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 15:37:15 -0400
-Received: from www.linutronix.de ([62.245.132.108]:42580 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752995AbaH1ThK (ORCPT
+	id S1753148AbaH1Tht (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 15:37:49 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:55748 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751998AbaH1Tgb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 15:37:10 -0400
-Message-ID: <53FF84DF.7080406@linutronix.de>
-Date: Thu, 28 Aug 2014 21:37:03 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Thu, 28 Aug 2014 15:36:31 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Mark Brown <broonie@kernel.org>, Heiko Stuebner <heiko@sntech.de>,
+        olof@lixom.net, Arnd Bergmann <arnd@arndb.de>
+Cc: Addy Ke <addy.ke@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Doug Anderson <dianders@chromium.org>, lgirdwood@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] regulator: core: Add REGULATOR_EVENT_PRE_VOLTAGE_CHANGE (and ABORT)
+Date: Thu, 28 Aug 2014 12:36:04 -0700
+Message-Id: <1409254565-10677-2-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1409254565-10677-1-git-send-email-dianders@chromium.org>
+References: <1409254565-10677-1-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: balbi@ti.com, linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Vinod Koul <vinod.koul@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 15/15] tty: serial: 8250: omap: add dma support
-References: <1408124563-31541-1-git-send-email-bigeasy@linutronix.de> <1408124563-31541-16-git-send-email-bigeasy@linutronix.de> <20140815210211.GD9239@atomide.com> <53F5AF0D.5060409@linutronix.de> <20140821184416.GF10066@atomide.com> <53FE3779.5090908@linutronix.de> <20140827202313.GF16006@atomide.com> <20140828082348.GA5413@linutronix.de> <20140828164645.GG16006@atomide.com>
-In-Reply-To: <20140828164645.GG16006@atomide.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/28/2014 06:46 PM, Tony Lindgren wrote:
->> To use DMA you don't have to enable it in SCR register you can also use
->> the FCR register. The manual says that you can only write this DMA
->> enable bit in the FCR register if the baud clock is not running. And
->> guess what: same thing: I only *toggle* the DMA enable bit here (it
->> remains 0 later) and the core won't hit idle.
->> Same effect if I toggle this bit while the baud clock is running (the
->> manual says that this bit can only be written if the baud clock is not
->> running). Seems like the UART is following its own specification and it
->> remains blocking once the DMA was enabled.
->> It would be nice if someone from the UART-IP team could ACK this.
-> 
-> Sounds like there should be some way to clear that state.. I wonder
-> if omap-serial.c had something before it's DMA support was removed?
+From: Heiko Stübner <heiko@sntech.de>
 
-Its DMA was removed? Like there was DMA support?
+In some cases we need to know when a regulator is about to be changed.
+Add a way for clients to be notified.  Note that for set_voltage() we
+don't necessarily know what voltage we'll end up with, so we tell the
+client what the range will be so they can prepare.
 
-> I'd assume when the UART is powered down by runtime PM it's state
-> is completetely reset and we could restore the non-DMA state?
+Signed-off-by: Heiko Stübner <heiko@sntech.de>
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+ drivers/regulator/core.c           | 63 +++++++++++++++++++++++++++++++++-----
+ include/linux/regulator/consumer.h | 20 ++++++++++++
+ 2 files changed, 76 insertions(+), 7 deletions(-)
 
-I tried that by canceling the RX-DMA request and removing the DMA-enable
-bits from UART but it didn't help. Then I noticed that once that DMA en
-bit is set, the UART won't do any idle.
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 7bce715..b31d706 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -102,7 +102,7 @@ static int _regulator_disable(struct regulator_dev *rdev);
+ static int _regulator_get_voltage(struct regulator_dev *rdev);
+ static int _regulator_get_current_limit(struct regulator_dev *rdev);
+ static unsigned int _regulator_get_mode(struct regulator_dev *rdev);
+-static void _notifier_call_chain(struct regulator_dev *rdev,
++static int _notifier_call_chain(struct regulator_dev *rdev,
+ 				  unsigned long event, void *data);
+ static int _regulator_do_set_voltage(struct regulator_dev *rdev,
+ 				     int min_uV, int max_uV);
+@@ -2406,6 +2406,55 @@ int regulator_is_supported_voltage(struct regulator *regulator,
+ }
+ EXPORT_SYMBOL_GPL(regulator_is_supported_voltage);
+ 
++static int _regulator_call_set_voltage(struct regulator_dev *rdev,
++				       int min_uV, int max_uV,
++				       unsigned *selector)
++{
++	struct pre_voltage_change_data data;
++	int ret;
++
++	data.old_uV = _regulator_get_voltage(rdev);
++	data.min_uV = min_uV;
++	data.max_uV = max_uV;
++	ret = _notifier_call_chain(rdev, REGULATOR_EVENT_PRE_VOLTAGE_CHANGE,
++				   &data);
++	if (ret & NOTIFY_STOP_MASK)
++		return -EINVAL;
++
++	ret = rdev->desc->ops->set_voltage(rdev, min_uV, max_uV, selector);
++	if (ret >= 0)
++		return ret;
++
++	_notifier_call_chain(rdev, REGULATOR_EVENT_ABORT_VOLTAGE_CHANGE,
++			     (void *)data.old_uV);
++
++	return ret;
++}
++
++static int _regulator_call_set_voltage_sel(struct regulator_dev *rdev,
++					   int uV, unsigned selector)
++{
++	struct pre_voltage_change_data data;
++	int ret;
++
++	data.old_uV = _regulator_get_voltage(rdev);
++	data.min_uV = uV;
++	data.max_uV = uV;
++	ret = _notifier_call_chain(rdev, REGULATOR_EVENT_PRE_VOLTAGE_CHANGE,
++				   &data);
++	if (ret & NOTIFY_STOP_MASK)
++		return -EINVAL;
++
++	ret = rdev->desc->ops->set_voltage_sel(rdev, selector);
++	if (ret >= 0)
++		return ret;
++
++	_notifier_call_chain(rdev, REGULATOR_EVENT_ABORT_VOLTAGE_CHANGE,
++			     (void *)data.old_uV);
++
++	return ret;
++}
++
+ static int _regulator_do_set_voltage(struct regulator_dev *rdev,
+ 				     int min_uV, int max_uV)
+ {
+@@ -2433,8 +2482,8 @@ static int _regulator_do_set_voltage(struct regulator_dev *rdev,
+ 	}
+ 
+ 	if (rdev->desc->ops->set_voltage) {
+-		ret = rdev->desc->ops->set_voltage(rdev, min_uV, max_uV,
+-						   &selector);
++		ret = _regulator_call_set_voltage(rdev, min_uV, max_uV,
++						  &selector);
+ 
+ 		if (ret >= 0) {
+ 			if (rdev->desc->ops->list_voltage)
+@@ -2469,8 +2518,8 @@ static int _regulator_do_set_voltage(struct regulator_dev *rdev,
+ 				if (old_selector == selector)
+ 					ret = 0;
+ 				else
+-					ret = rdev->desc->ops->set_voltage_sel(
+-								rdev, ret);
++					ret = _regulator_call_set_voltage_sel(
++						rdev, best_val, selector);
+ 			} else {
+ 				ret = -EINVAL;
+ 			}
+@@ -3116,11 +3165,11 @@ EXPORT_SYMBOL_GPL(regulator_unregister_notifier);
+ /* notify regulator consumers and downstream regulator consumers.
+  * Note mutex must be held by caller.
+  */
+-static void _notifier_call_chain(struct regulator_dev *rdev,
++static int _notifier_call_chain(struct regulator_dev *rdev,
+ 				  unsigned long event, void *data)
+ {
+ 	/* call rdev chain first */
+-	blocking_notifier_call_chain(&rdev->notifier, event, data);
++	return blocking_notifier_call_chain(&rdev->notifier, event, data);
+ }
+ 
+ /**
+diff --git a/include/linux/regulator/consumer.h b/include/linux/regulator/consumer.h
+index f8a8733..d347c80 100644
+--- a/include/linux/regulator/consumer.h
++++ b/include/linux/regulator/consumer.h
+@@ -93,7 +93,12 @@ struct regmap;
+  * OVER_TEMP      Regulator over temp.
+  * FORCE_DISABLE  Regulator forcibly shut down by software.
+  * VOLTAGE_CHANGE Regulator voltage changed.
++ *                Data passed is old voltage cast to (void *).
+  * DISABLE        Regulator was disabled.
++ * PRE_VOLTAGE_CHANGE   Regulator is about to have voltage changed.
++ *                      Data passed is "struct pre_voltage_change_data"
++ * ABORT_VOLTAGE_CHANGE Regulator voltage change failed for some reason.
++ *                      Data passed is old voltage cast to (void *).
+  *
+  * NOTE: These events can be OR'ed together when passed into handler.
+  */
+@@ -106,6 +111,21 @@ struct regmap;
+ #define REGULATOR_EVENT_FORCE_DISABLE		0x20
+ #define REGULATOR_EVENT_VOLTAGE_CHANGE		0x40
+ #define REGULATOR_EVENT_DISABLE 		0x80
++#define REGULATOR_EVENT_PRE_VOLTAGE_CHANGE	0x100
++#define REGULATOR_EVENT_ABORT_VOLTAGE_CHANGE	0x200
++
++/**
++ * struct pre_voltage_change_data - Data sent with PRE_VOLTAGE_CHANGE event
++ *
++ * @old_uV: Current voltage before change.
++ * @min_uV: Min voltage we'll change to.
++ * @max_uV: Max voltage we'll change to.
++ */
++struct pre_voltage_change_data {
++	unsigned long old_uV;
++	unsigned long min_uV;
++	unsigned long max_uV;
++};
+ 
+ struct regulator;
+ 
+-- 
+2.1.0.rc2.206.gedb03e5
 
-> Maybe post your current patches and a test patch to try to toggle
-> the DMA on and off?
-
-Oh. I pushed my dirty tree to
- git://git.breakpoint.cc/bigeasy/linux.git uart_v8_wip
-
-The top most commit does not setup dma at all and adds commented out
-code how to enable DMA via SCR or FCR register. With this I hit
-core-off. Once _one_ of the modes are enabled, it doesn't work anymore.
-
-I will try to address review comments tomorrow and hopefully post a v8
-based on -rc2. The same goes for your patch (which I will try tomorrow).
-
->> Bah. Does it make sense to use runtime-PM if we can't hit core-off? I'm
->> thinking to add a printk once dma is enabled says that runtime-pm is
->> switched off.
-> 
-> Well if we can't find a way to unset the DMA registers in the UART,
-> how about only enable it if a kernel cmdline option is specified?
-
-Hmmm. So removing DMA properties from DT is not an option? Currently I
-added a message that DMA might forbid low power mode so people might
-remove "dma-names" from DT (or assign "") and DMA is off. However if
-this is no good, then I guess I could add kernel module which enables
-DMA.
-
-> 
-> We do have runtime PM working without it, and the serial console
-> super important for any kind of debugging no matter what idle
-> mode the SoC hits.. So let's not break that.
-
-Yeah, I know. I've been debugging while I broke something which means
-uart wasn't working :)
-
-> 
-> Regards,
-> 
-> Tony
-
-Sebastian
