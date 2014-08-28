@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753152AbaH1Sgy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:36:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32869 "EHLO mx2.suse.de"
+	id S1753276AbaH1ShF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 14:37:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32878 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753110AbaH1Sgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:36:52 -0400
+	id S1752502AbaH1ShC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:37:02 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Jiri Slaby <jslaby@suse.cz>
 Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 63/97] fs/superblock: unregister sb shrinker before ->kill_sb()
-Date: Thu, 28 Aug 2014 19:35:11 +0100
-Message-Id: <1409250945-30874-64-git-send-email-mgorman@suse.de>
+Subject: [PATCH 72/97] mm: page_alloc: calculate classzone_idx once from the zonelist ref
+Date: Thu, 28 Aug 2014 19:35:20 +0100
+Message-Id: <1409250945-30874-73-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
 References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
@@ -20,137 +20,264 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Chinner <david@fromorbit.com>
+commit d8846374a85f4290a473a4e2a64c1ba046c4a0e1 upstream.
 
-commit 28f2cd4f6da24a1aa06c226618ed5ad69e13df64 upstream.
+There is no need to calculate zone_idx(preferred_zone) multiple times
+or use the pgdat to figure it out.
 
-This series is aimed at regressions noticed during reclaim activity.  The
-first two patches are shrinker patches that were posted ages ago but never
-merged for reasons that are unclear to me.  I'm posting them again to see
-if there was a reason they were dropped or if they just got lost.  Dave?
-Time?  The last patch adjusts proportional reclaim.  Yuanhan Liu, can you
-retest the vm scalability test cases on a larger machine?  Hugh, does this
-work for you on the memcg test cases?
-
-Based on ext4, I get the following results but unfortunately my larger
-test machines are all unavailable so this is based on a relatively small
-machine.
-
-postmark
-                                  3.15.0-rc5            3.15.0-rc5
-                                     vanilla       proportion-v1r4
-Ops/sec Transactions         21.00 (  0.00%)       25.00 ( 19.05%)
-Ops/sec FilesCreate          39.00 (  0.00%)       45.00 ( 15.38%)
-Ops/sec CreateTransact       10.00 (  0.00%)       12.00 ( 20.00%)
-Ops/sec FilesDeleted       6202.00 (  0.00%)     6202.00 (  0.00%)
-Ops/sec DeleteTransact       11.00 (  0.00%)       12.00 (  9.09%)
-Ops/sec DataRead/MB          25.97 (  0.00%)       30.02 ( 15.59%)
-Ops/sec DataWrite/MB         49.99 (  0.00%)       57.78 ( 15.58%)
-
-ffsb (mail server simulator)
-                                 3.15.0-rc5             3.15.0-rc5
-                                    vanilla        proportion-v1r4
-Ops/sec readall           9402.63 (  0.00%)      9805.74 (  4.29%)
-Ops/sec create            4695.45 (  0.00%)      4781.39 (  1.83%)
-Ops/sec delete             173.72 (  0.00%)       177.23 (  2.02%)
-Ops/sec Transactions     14271.80 (  0.00%)     14764.37 (  3.45%)
-Ops/sec Read                37.00 (  0.00%)        38.50 (  4.05%)
-Ops/sec Write               18.20 (  0.00%)        18.50 (  1.65%)
-
-dd of a large file
-                                3.15.0-rc5            3.15.0-rc5
-                                   vanilla       proportion-v1r4
-WallTime DownloadTar       75.00 (  0.00%)       61.00 ( 18.67%)
-WallTime DD               423.00 (  0.00%)      401.00 (  5.20%)
-WallTime Delete             2.00 (  0.00%)        5.00 (-150.00%)
-
-stutter (times mmap latency during large amounts of IO)
-
-                            3.15.0-rc5            3.15.0-rc5
-                               vanilla       proportion-v1r4
-Unit >5ms Delays  80252.0000 (  0.00%)  81523.0000 ( -1.58%)
-Unit Mmap min         8.2118 (  0.00%)      8.3206 ( -1.33%)
-Unit Mmap mean       17.4614 (  0.00%)     17.2868 (  1.00%)
-Unit Mmap stddev     24.9059 (  0.00%)     34.6771 (-39.23%)
-Unit Mmap max      2811.6433 (  0.00%)   2645.1398 (  5.92%)
-Unit Mmap 90%        20.5098 (  0.00%)     18.3105 ( 10.72%)
-Unit Mmap 93%        22.9180 (  0.00%)     20.1751 ( 11.97%)
-Unit Mmap 95%        25.2114 (  0.00%)     22.4988 ( 10.76%)
-Unit Mmap 99%        46.1430 (  0.00%)     43.5952 (  5.52%)
-Unit Ideal  Tput     85.2623 (  0.00%)     78.8906 (  7.47%)
-Unit Tput min        44.0666 (  0.00%)     43.9609 (  0.24%)
-Unit Tput mean       45.5646 (  0.00%)     45.2009 (  0.80%)
-Unit Tput stddev      0.9318 (  0.00%)      1.1084 (-18.95%)
-Unit Tput max        46.7375 (  0.00%)     46.7539 ( -0.04%)
-
-This patch (of 3):
-
-We will like to unregister the sb shrinker before ->kill_sb().  This will
-allow cached objects to be counted without call to grab_super_passive() to
-update ref count on sb.  We want to avoid locking during memory
-reclamation especially when we are skipping the memory reclaim when we are
-out of cached objects.
-
-This is safe because grab_super_passive does a try-lock on the
-sb->s_umount now, and so if we are in the unmount process, it won't ever
-block.  That means what used to be a deadlock and races we were avoiding
-by using grab_super_passive() is now:
-
-        shrinker                        umount
-
-        down_read(shrinker_rwsem)
-                                        down_write(sb->s_umount)
-                                        shrinker_unregister
-                                          down_write(shrinker_rwsem)
-                                            <blocks>
-        grab_super_passive(sb)
-          down_read_trylock(sb->s_umount)
-            <fails>
-        <shrinker aborts>
-        ....
-        <shrinkers finish running>
-        up_read(shrinker_rwsem)
-                                          <unblocks>
-                                          <removes shrinker>
-                                          up_write(shrinker_rwsem)
-                                        ->kill_sb()
-                                        ....
-
-So it is safe to deregister the shrinker before ->kill_sb().
-
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Dave Chinner <david@fromorbit.com>
-Tested-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Cc: Bob Liu <bob.liu@oracle.com>
-Cc: Jan Kara <jack@suse.cz>
 Acked-by: Rik van Riel <riel@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
+Acked-by: David Rientjes <rientjes@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Vlastimil Babka <vbabka@suse.cz>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Dave Hansen <dave.hansen@intel.com>
+Cc: Theodore Ts'o <tytso@mit.edu>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- fs/super.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ mm/page_alloc.c | 60 +++++++++++++++++++++++++++++++++------------------------
+ 1 file changed, 35 insertions(+), 25 deletions(-)
 
-diff --git a/fs/super.c b/fs/super.c
-index d127de2..f730016 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -321,10 +321,8 @@ void deactivate_locked_super(struct super_block *s)
- 	struct file_system_type *fs = s->s_type;
- 	if (atomic_dec_and_test(&s->s_active)) {
- 		cleancache_invalidate_fs(s);
--		fs->kill_sb(s);
--
--		/* caches are now gone, we can safely kill the shrinker now */
- 		unregister_shrinker(&s->s_shrink);
-+		fs->kill_sb(s);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 5e0f137..fd2752a 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1897,17 +1897,15 @@ static inline void init_zone_allows_reclaim(int nid)
+ static struct page *
+ get_page_from_freelist(gfp_t gfp_mask, nodemask_t *nodemask, unsigned int order,
+ 		struct zonelist *zonelist, int high_zoneidx, int alloc_flags,
+-		struct zone *preferred_zone, int migratetype)
++		struct zone *preferred_zone, int classzone_idx, int migratetype)
+ {
+ 	struct zoneref *z;
+ 	struct page *page = NULL;
+-	int classzone_idx;
+ 	struct zone *zone;
+ 	nodemask_t *allowednodes = NULL;/* zonelist_cache approximation */
+ 	int zlc_active = 0;		/* set if using zonelist_cache */
+ 	int did_zlc_setup = 0;		/* just call zlc_setup() one time */
  
- 		put_filesystem(fs);
- 		put_super(s);
+-	classzone_idx = zone_idx(preferred_zone);
+ zonelist_scan:
+ 	/*
+ 	 * Scan zonelist, looking for a zone with enough free.
+@@ -2171,7 +2169,7 @@ static inline struct page *
+ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
+ 	struct zonelist *zonelist, enum zone_type high_zoneidx,
+ 	nodemask_t *nodemask, struct zone *preferred_zone,
+-	int migratetype)
++	int classzone_idx, int migratetype)
+ {
+ 	struct page *page;
+ 
+@@ -2189,7 +2187,7 @@ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
+ 	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask,
+ 		order, zonelist, high_zoneidx,
+ 		ALLOC_WMARK_HIGH|ALLOC_CPUSET,
+-		preferred_zone, migratetype);
++		preferred_zone, classzone_idx, migratetype);
+ 	if (page)
+ 		goto out;
+ 
+@@ -2224,7 +2222,7 @@ static struct page *
+ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+ 	struct zonelist *zonelist, enum zone_type high_zoneidx,
+ 	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
+-	int migratetype, enum migrate_mode mode,
++	int classzone_idx, int migratetype, enum migrate_mode mode,
+ 	bool *contended_compaction, bool *deferred_compaction,
+ 	unsigned long *did_some_progress)
+ {
+@@ -2252,7 +2250,7 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+ 		page = get_page_from_freelist(gfp_mask, nodemask,
+ 				order, zonelist, high_zoneidx,
+ 				alloc_flags & ~ALLOC_NO_WATERMARKS,
+-				preferred_zone, migratetype);
++				preferred_zone, classzone_idx, migratetype);
+ 		if (page) {
+ 			preferred_zone->compact_blockskip_flush = false;
+ 			compaction_defer_reset(preferred_zone, order, true);
+@@ -2284,7 +2282,8 @@ static inline struct page *
+ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+ 	struct zonelist *zonelist, enum zone_type high_zoneidx,
+ 	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
+-	int migratetype, enum migrate_mode mode, bool *contended_compaction,
++	int classzone_idx, int migratetype,
++	enum migrate_mode mode, bool *contended_compaction,
+ 	bool *deferred_compaction, unsigned long *did_some_progress)
+ {
+ 	return NULL;
+@@ -2324,7 +2323,7 @@ static inline struct page *
+ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
+ 	struct zonelist *zonelist, enum zone_type high_zoneidx,
+ 	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
+-	int migratetype, unsigned long *did_some_progress)
++	int classzone_idx, int migratetype, unsigned long *did_some_progress)
+ {
+ 	struct page *page = NULL;
+ 	bool drained = false;
+@@ -2342,7 +2341,8 @@ retry:
+ 	page = get_page_from_freelist(gfp_mask, nodemask, order,
+ 					zonelist, high_zoneidx,
+ 					alloc_flags & ~ALLOC_NO_WATERMARKS,
+-					preferred_zone, migratetype);
++					preferred_zone, classzone_idx,
++					migratetype);
+ 
+ 	/*
+ 	 * If an allocation failed after direct reclaim, it could be because
+@@ -2365,14 +2365,14 @@ static inline struct page *
+ __alloc_pages_high_priority(gfp_t gfp_mask, unsigned int order,
+ 	struct zonelist *zonelist, enum zone_type high_zoneidx,
+ 	nodemask_t *nodemask, struct zone *preferred_zone,
+-	int migratetype)
++	int classzone_idx, int migratetype)
+ {
+ 	struct page *page;
+ 
+ 	do {
+ 		page = get_page_from_freelist(gfp_mask, nodemask, order,
+ 			zonelist, high_zoneidx, ALLOC_NO_WATERMARKS,
+-			preferred_zone, migratetype);
++			preferred_zone, classzone_idx, migratetype);
+ 
+ 		if (!page && gfp_mask & __GFP_NOFAIL)
+ 			wait_iff_congested(preferred_zone, BLK_RW_ASYNC, HZ/50);
+@@ -2473,7 +2473,7 @@ static inline struct page *
+ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
+ 	struct zonelist *zonelist, enum zone_type high_zoneidx,
+ 	nodemask_t *nodemask, struct zone *preferred_zone,
+-	int migratetype)
++	int classzone_idx, int migratetype)
+ {
+ 	const gfp_t wait = gfp_mask & __GFP_WAIT;
+ 	struct page *page = NULL;
+@@ -2522,15 +2522,19 @@ restart:
+ 	 * Find the true preferred zone if the allocation is unconstrained by
+ 	 * cpusets.
+ 	 */
+-	if (!(alloc_flags & ALLOC_CPUSET) && !nodemask)
+-		first_zones_zonelist(zonelist, high_zoneidx, NULL,
+-					&preferred_zone);
++	if (!(alloc_flags & ALLOC_CPUSET) && !nodemask) {
++		struct zoneref *preferred_zoneref;
++		preferred_zoneref = first_zones_zonelist(zonelist, high_zoneidx,
++				NULL,
++				&preferred_zone);
++		classzone_idx = zonelist_zone_idx(preferred_zoneref);
++	}
+ 
+ rebalance:
+ 	/* This is the last chance, in general, before the goto nopage. */
+ 	page = get_page_from_freelist(gfp_mask, nodemask, order, zonelist,
+ 			high_zoneidx, alloc_flags & ~ALLOC_NO_WATERMARKS,
+-			preferred_zone, migratetype);
++			preferred_zone, classzone_idx, migratetype);
+ 	if (page)
+ 		goto got_pg;
+ 
+@@ -2545,7 +2549,7 @@ rebalance:
+ 
+ 		page = __alloc_pages_high_priority(gfp_mask, order,
+ 				zonelist, high_zoneidx, nodemask,
+-				preferred_zone, migratetype);
++				preferred_zone, classzone_idx, migratetype);
+ 		if (page) {
+ 			goto got_pg;
+ 		}
+@@ -2569,7 +2573,8 @@ rebalance:
+ 	 */
+ 	page = __alloc_pages_direct_compact(gfp_mask, order, zonelist,
+ 					high_zoneidx, nodemask, alloc_flags,
+-					preferred_zone, migratetype,
++					preferred_zone,
++					classzone_idx, migratetype,
+ 					migration_mode, &contended_compaction,
+ 					&deferred_compaction,
+ 					&did_some_progress);
+@@ -2592,7 +2597,8 @@ rebalance:
+ 					zonelist, high_zoneidx,
+ 					nodemask,
+ 					alloc_flags, preferred_zone,
+-					migratetype, &did_some_progress);
++					classzone_idx, migratetype,
++					&did_some_progress);
+ 	if (page)
+ 		goto got_pg;
+ 
+@@ -2611,7 +2617,7 @@ rebalance:
+ 			page = __alloc_pages_may_oom(gfp_mask, order,
+ 					zonelist, high_zoneidx,
+ 					nodemask, preferred_zone,
+-					migratetype);
++					classzone_idx, migratetype);
+ 			if (page)
+ 				goto got_pg;
+ 
+@@ -2652,7 +2658,8 @@ rebalance:
+ 		 */
+ 		page = __alloc_pages_direct_compact(gfp_mask, order, zonelist,
+ 					high_zoneidx, nodemask, alloc_flags,
+-					preferred_zone, migratetype,
++					preferred_zone,
++					classzone_idx, migratetype,
+ 					migration_mode, &contended_compaction,
+ 					&deferred_compaction,
+ 					&did_some_progress);
+@@ -2679,11 +2686,13 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
+ {
+ 	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
+ 	struct zone *preferred_zone;
++	struct zoneref *preferred_zoneref;
+ 	struct page *page = NULL;
+ 	int migratetype = allocflags_to_migratetype(gfp_mask);
+ 	unsigned int cpuset_mems_cookie;
+ 	int alloc_flags = ALLOC_WMARK_LOW|ALLOC_CPUSET|ALLOC_FAIR;
+ 	struct mem_cgroup *memcg = NULL;
++	int classzone_idx;
+ 
+ 	gfp_mask &= gfp_allowed_mask;
+ 
+@@ -2713,11 +2722,12 @@ retry_cpuset:
+ 	cpuset_mems_cookie = read_mems_allowed_begin();
+ 
+ 	/* The preferred zone is used for statistics later */
+-	first_zones_zonelist(zonelist, high_zoneidx,
++	preferred_zoneref = first_zones_zonelist(zonelist, high_zoneidx,
+ 				nodemask ? : &cpuset_current_mems_allowed,
+ 				&preferred_zone);
+ 	if (!preferred_zone)
+ 		goto out;
++	classzone_idx = zonelist_zone_idx(preferred_zoneref);
+ 
+ #ifdef CONFIG_CMA
+ 	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
+@@ -2727,7 +2737,7 @@ retry:
+ 	/* First allocation attempt */
+ 	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask, order,
+ 			zonelist, high_zoneidx, alloc_flags,
+-			preferred_zone, migratetype);
++			preferred_zone, classzone_idx, migratetype);
+ 	if (unlikely(!page)) {
+ 		/*
+ 		 * The first pass makes sure allocations are spread
+@@ -2753,7 +2763,7 @@ retry:
+ 		gfp_mask = memalloc_noio_flags(gfp_mask);
+ 		page = __alloc_pages_slowpath(gfp_mask, order,
+ 				zonelist, high_zoneidx, nodemask,
+-				preferred_zone, migratetype);
++				preferred_zone, classzone_idx, migratetype);
+ 	}
+ 
+ 	trace_mm_page_alloc(page, order, gfp_mask, migratetype);
 -- 
 1.8.4.5
 
