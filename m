@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752478AbaH1NQx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 09:16:53 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:36264 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751516AbaH1NOf (ORCPT
+	id S1752526AbaH1NRQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 09:17:16 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:54627 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751278AbaH1NOc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 09:14:35 -0400
+	Thu, 28 Aug 2014 09:14:32 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Lee Jones <lee.jones@linaro.org>, gregkh@linuxfoundation.org
-Subject: [PATCH 03/11] misc: st_kim: Increase size of dev_name buffer to incorporate termination
-Date: Thu, 28 Aug 2014 14:14:09 +0100
-Message-Id: <1409231657-18294-3-git-send-email-lee.jones@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>, jic23@kernel.org,
+        linux-iio@vger.kernel.org
+Subject: [PATCH 01/11] iio: sensors-core: st: Check st_sensors_set_drdy_int_pin()'s return value
+Date: Thu, 28 Aug 2014 14:14:07 +0100
+Message-Id: <1409231657-18294-1-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1409231657-18294-1-git-send-email-lee.jones@linaro.org>
-References: <1409231657-18294-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Calling strncpy with a maximum size argument of 32 bytes on destination
-array kim_gdata->dev_name of size 32 bytes might leave the destination
-string unterminated.
+Value from st_sensors_set_drdy_int_pin() is assigned to err here,
+but that stored value is not used before it is overwritten.  To fix
+this we're enforcing a check on st_sensors_set_drdy_int_pin()'s
+return value and if it's an error, we're returning right away.
 
-Cc: gregkh@linuxfoundation.org
+Cc: jic23@kernel.org
+Cc: linux-iio@vger.kernel.org
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- include/linux/ti_wilink_st.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/iio/common/st_sensors/st_sensors_core.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/ti_wilink_st.h b/include/linux/ti_wilink_st.h
-index 932b7639..884d626 100644
---- a/include/linux/ti_wilink_st.h
-+++ b/include/linux/ti_wilink_st.h
-@@ -268,7 +268,7 @@ struct kim_data_s {
- 	struct st_data_s *core_data;
- 	struct chip_version version;
- 	unsigned char ldisc_install;
--	unsigned char dev_name[UART_DEV_NAME_LEN];
-+	unsigned char dev_name[UART_DEV_NAME_LEN + 1];
- 	unsigned char flow_cntrl;
- 	unsigned long baud_rate;
- };
+diff --git a/drivers/iio/common/st_sensors/st_sensors_core.c b/drivers/iio/common/st_sensors/st_sensors_core.c
+index 8a4ec00..24cfe4e 100644
+--- a/drivers/iio/common/st_sensors/st_sensors_core.c
++++ b/drivers/iio/common/st_sensors/st_sensors_core.c
+@@ -306,8 +306,11 @@ int st_sensors_init_sensor(struct iio_dev *indio_dev,
+ 	if (of_pdata)
+ 		pdata = of_pdata;
+ 
+-	if (pdata)
++	if (pdata) {
+ 		err = st_sensors_set_drdy_int_pin(indio_dev, pdata);
++		if (err < 0)
++			return err;
++	}
+ 
+ 	err = st_sensors_set_enable(indio_dev, false);
+ 	if (err < 0)
 -- 
 1.9.1
 
