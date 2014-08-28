@@ -1,167 +1,320 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638AbaH1S3L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:29:11 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:34225 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752048AbaH1S0o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:26:44 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 11/15] rcu: Break more call_rcu() deadlock involving scheduler and perf
-Date: Thu, 28 Aug 2014 11:26:30 -0700
-Message-Id: <1409250394-25159-11-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1409250394-25159-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20140828182614.GA23877@linux.vnet.ibm.com>
- <1409250394-25159-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082818-7164-0000-0000-0000042BFEE9
+	id S1752186AbaH1Sfx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 14:35:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32829 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750773AbaH1Sft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:35:49 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 00/97] Misc series of functional/performance fixes for 3.12-stable
+Date: Thu, 28 Aug 2014 19:34:08 +0100
+Message-Id: <1409250945-30874-1-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Kernel Summit 2014 had a topic on performance regressions and catching
+them.  The situation relatively recently has been good but I believe this
+is partially due to major distributions stabilising recently and hardware
+vendors working on performance for their latest platforms. On thing I fear is
+that we miss performance regressions because releases contains performance
+gains and losses, some of which balance out. After a number of mainline
+releases, the performance may look ok but in comparison to a distribution
+kernel cherry-picking the picture is not as rosy.  The 3.0-longterm
+included a number of performance-related patches so it could be used as
+a good performance baseline for later releases. It is no longer maintained.
 
-Commit 96d3fd0d315a9 (rcu: Break call_rcu() deadlock involving scheduler
-and perf) covered the case where __call_rcu_nocb_enqueue() needs to wake
-the rcuo kthread due to the queue being initially empty, but did not
-do anything for the case where the queue was overflowing.  This commit
-therefore also defers wakeup for the overflow case.
+This series contains a large number of patches against 3.12-longterm that
+never made it to stable as the bugs were not serious enough or they were
+performance patches. 3.10-longterm may need other pre-requisites I did
+not research and 3.14-longterm should be able to apply a subset although
+I have not tested the result.
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- include/trace/events/rcu.h |  3 +++
- kernel/rcu/tree.h          |  9 +++++++--
- kernel/rcu/tree_plugin.h   | 26 ++++++++++++++++++--------
- 3 files changed, 28 insertions(+), 10 deletions(-)
+The first 12 patches are mostly functional patches. After that is mostly but
+not exclusively performance-related patches. Sometimes there are patches
+that are clean-ups so that later patches do not have to be extensively
+modified for the backport.
 
-diff --git a/include/trace/events/rcu.h b/include/trace/events/rcu.h
-index aca382266411..9b56f37148cf 100644
---- a/include/trace/events/rcu.h
-+++ b/include/trace/events/rcu.h
-@@ -180,9 +180,12 @@ TRACE_EVENT(rcu_grace_period_init,
-  * argument is a string as follows:
-  *
-  *	"WakeEmpty": Wake rcuo kthread, first CB to empty list.
-+ *	"WakeEmptyIsDeferred": Wake rcuo kthread later, first CB to empty list.
-  *	"WakeOvf": Wake rcuo kthread, CB list is huge.
-+ *	"WakeOvfIsDeferred": Wake rcuo kthread later, CB list is huge.
-  *	"WakeNot": Don't wake rcuo kthread.
-  *	"WakeNotPoll": Don't wake rcuo kthread because it is polling.
-+ *	"DeferredWake": Carried out the "IsDeferred" wakeup.
-  *	"Poll": Start of new polling cycle for rcu_nocb_poll.
-  *	"Sleep": Sleep waiting for CBs for !rcu_nocb_poll.
-  *	"WokeEmpty": rcuo kthread woke to find empty list.
-diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
-index 71e64c718f75..0abc1a5c63f9 100644
---- a/kernel/rcu/tree.h
-+++ b/kernel/rcu/tree.h
-@@ -350,7 +350,7 @@ struct rcu_data {
- 	int nocb_p_count_lazy;		/*  (approximate). */
- 	wait_queue_head_t nocb_wq;	/* For nocb kthreads to sleep on. */
- 	struct task_struct *nocb_kthread;
--	bool nocb_defer_wakeup;		/* Defer wakeup of nocb_kthread. */
-+	int nocb_defer_wakeup;		/* Defer wakeup of nocb_kthread. */
- 
- 	/* The following fields are used by the leader, hence own cacheline. */
- 	struct rcu_head *nocb_gp_head ____cacheline_internodealigned_in_smp;
-@@ -383,6 +383,11 @@ struct rcu_data {
- #define RCU_FORCE_QS		3	/* Need to force quiescent state. */
- #define RCU_SIGNAL_INIT		RCU_SAVE_DYNTICK
- 
-+/* Values for nocb_defer_wakeup field in struct rcu_data. */
-+#define RCU_NOGP_WAKE_NOT	0
-+#define RCU_NOGP_WAKE		1
-+#define RCU_NOGP_WAKE_FORCE	2
-+
- #define RCU_JIFFIES_TILL_FORCE_QS (1 + (HZ > 250) + (HZ > 500))
- 					/* For jiffies_till_first_fqs and */
- 					/*  and jiffies_till_next_fqs. */
-@@ -589,7 +594,7 @@ static bool __call_rcu_nocb(struct rcu_data *rdp, struct rcu_head *rhp,
- static bool rcu_nocb_adopt_orphan_cbs(struct rcu_state *rsp,
- 				      struct rcu_data *rdp,
- 				      unsigned long flags);
--static bool rcu_nocb_need_deferred_wakeup(struct rcu_data *rdp);
-+static int rcu_nocb_need_deferred_wakeup(struct rcu_data *rdp);
- static void do_nocb_deferred_wakeup(struct rcu_data *rdp);
- static void rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp);
- static void rcu_spawn_nocb_kthreads(struct rcu_state *rsp);
-diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index b6acb9340192..a1af86099a67 100644
---- a/kernel/rcu/tree_plugin.h
-+++ b/kernel/rcu/tree_plugin.h
-@@ -2121,16 +2121,23 @@ static void __call_rcu_nocb_enqueue(struct rcu_data *rdp,
- 			trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
- 					    TPS("WakeEmpty"));
- 		} else {
--			rdp->nocb_defer_wakeup = true;
-+			rdp->nocb_defer_wakeup = RCU_NOGP_WAKE;
- 			trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
- 					    TPS("WakeEmptyIsDeferred"));
- 		}
- 		rdp->qlen_last_fqs_check = 0;
- 	} else if (len > rdp->qlen_last_fqs_check + qhimark) {
- 		/* ... or if many callbacks queued. */
--		wake_nocb_leader(rdp, true);
-+		if (!irqs_disabled_flags(flags)) {
-+			wake_nocb_leader(rdp, true);
-+			trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
-+					    TPS("WakeOvf"));
-+		} else {
-+			rdp->nocb_defer_wakeup = RCU_NOGP_WAKE_FORCE;
-+			trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
-+					    TPS("WakeOvfIsDeferred"));
-+		}
- 		rdp->qlen_last_fqs_check = LONG_MAX / 2;
--		trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu, TPS("WakeOvf"));
- 	} else {
- 		trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu, TPS("WakeNot"));
- 	}
-@@ -2438,7 +2445,7 @@ static int rcu_nocb_kthread(void *arg)
- }
- 
- /* Is a deferred wakeup of rcu_nocb_kthread() required? */
--static bool rcu_nocb_need_deferred_wakeup(struct rcu_data *rdp)
-+static int rcu_nocb_need_deferred_wakeup(struct rcu_data *rdp)
- {
- 	return ACCESS_ONCE(rdp->nocb_defer_wakeup);
- }
-@@ -2446,11 +2453,14 @@ static bool rcu_nocb_need_deferred_wakeup(struct rcu_data *rdp)
- /* Do a deferred wakeup of rcu_nocb_kthread(). */
- static void do_nocb_deferred_wakeup(struct rcu_data *rdp)
- {
-+	int ndw;
-+
- 	if (!rcu_nocb_need_deferred_wakeup(rdp))
- 		return;
--	ACCESS_ONCE(rdp->nocb_defer_wakeup) = false;
--	wake_nocb_leader(rdp, false);
--	trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu, TPS("DeferredWakeEmpty"));
-+	ndw = ACCESS_ONCE(rdp->nocb_defer_wakeup);
-+	ACCESS_ONCE(rdp->nocb_defer_wakeup) = RCU_NOGP_WAKE_NOT;
-+	wake_nocb_leader(rdp, ndw == RCU_NOGP_WAKE_FORCE);
-+	trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu, TPS("DeferredWake"));
- }
- 
- /* Initialize per-rcu_data variables for no-CBs CPUs. */
-@@ -2557,7 +2567,7 @@ static void __init rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp)
- {
- }
- 
--static bool rcu_nocb_need_deferred_wakeup(struct rcu_data *rdp)
-+static int rcu_nocb_need_deferred_wakeup(struct rcu_data *rdp)
- {
- 	return false;
- }
+I'm aware that this series is outside the standard rules for stable.
+Even the stable rules for performance patches is being violated here as
+I do not added information to the changelog on user-visible effects or
+bugzilla entries beyond what is already available as the information was
+not recorded when these patches were identified. By the nature of many of
+the patches they do include performance data though. It's up to the -stable
+maintainers for each longterm kernel if they want to use the kernel they
+maintain as a performance baseline or not.
+
+Al Viro (1):
+  callers of iov_copy_from_user_atomic() don't need pagecache_disable()
+
+Bob Liu (2):
+  mm: thp: cleanup: mv alloc_hugepage to better place
+  mm: thp: khugepaged: add policy for finding target node
+
+Christoph Lameter (1):
+  vmscan: reclaim_clean_pages_from_list() must use mod_zone_page_state()
+
+Damien Ramonda (1):
+  readahead: fix sequential read cache miss detection
+
+Dan Streetman (4):
+  swap: change swap_info singly-linked list to list_head
+  lib/plist: add helper functions
+  lib/plist: add plist_requeue
+  swap: change swap_list_head to plist, add swap_avail_head
+
+Dave Chinner (1):
+  fs/superblock: unregister sb shrinker before ->kill_sb()
+
+David Rientjes (10):
+  mm, thp: do not allow thp faults to avoid cpuset restrictions
+  mm, compaction: avoid isolating pinned pages
+  mm, compaction: determine isolation mode only once
+  mm, compaction: ignore pageblock skip when manually invoking
+    compaction
+  mm, migration: add destination page freeing callback
+  mm, compaction: return failed migration target pages back to freelist
+  mm, compaction: add per-zone migration pfn cache for async compaction
+  mm, compaction: embed migration mode in compact_control
+  mm, compaction: terminate async compaction when rescheduling
+  mm, thp: only collapse hugepages to nodes with affinity for
+    zone_reclaim_mode
+
+Davidlohr Bueso (1):
+  mm: per-thread vma caching
+
+Fabian Frederick (1):
+  mm/readahead.c: inline ra_submit
+
+Han Pingtian (1):
+  mm: prevent setting of a value less than 0 to min_free_kbytes
+
+Heesub Shin (1):
+  mm/compaction: clean up unused code lines
+
+Hugh Dickins (4):
+  mm: fix bad rss-counter if remap_file_pages raced migration
+  mm: fix direct reclaim writeback regression
+  shmem: fix init_page_accessed use to stop !PageLRU bug
+  mm/memory.c: use entry = ACCESS_ONCE(*pte) in handle_pte_fault()
+
+Jens Axboe (1):
+  mm/filemap.c: avoid always dirtying mapping->flags on O_DIRECT
+
+Jerome Marchand (2):
+  mm: make copy_pte_range static again
+  memcg, vmscan: Fix forced scan of anonymous pages
+
+Jianyu Zhan (1):
+  mm/swap.c: clean up *lru_cache_add* functions
+
+Johannes Weiner (5):
+  lib: radix-tree: add radix_tree_delete_item()
+  mm: shmem: save one radix tree lookup when truncating swapped pages
+  mm: filemap: move radix tree hole searching here
+  mm + fs: prepare for non-page entries in page cache radix trees
+  mm: madvise: fix MADV_WILLNEED on shmem swapouts
+
+Joonsoo Kim (7):
+  slab: correct pfmemalloc check
+  mm/compaction: disallow high-order page for migration target
+  mm/compaction: do not call suitable_migration_target() on every page
+  mm/compaction: change the timing to check to drop the spinlock
+  mm/compaction: check pageblock suitability once per pageblock
+  mm/compaction: clean-up code on success of ballon isolation
+  vmalloc: use rcu list iterator to reduce vmap_area_lock contention
+
+KOSAKI Motohiro (2):
+  mm: get rid of unnecessary overhead of trace_mm_page_alloc_extfrag()
+  mm: __rmqueue_fallback() should respect pageblock type
+
+Linus Torvalds (1):
+  mm: don't pointlessly use BUG_ON() for sanity check
+
+Mel Gorman (30):
+  mm, x86: Account for TLB flushes only when debugging
+  x86/mm: Clean up inconsistencies when flushing TLB ranges
+  x86/mm: Eliminate redundant page table walk during TLB range flushing
+  mm: compaction: trace compaction begin and end
+  mm: optimize put_mems_allowed() usage
+  mm: vmscan: use proportional scanning during direct reclaim and full
+    scan at DEF_PRIORITY
+  mm: page_alloc: do not update zlc unless the zlc is active
+  mm: page_alloc: do not treat a zone that cannot be used for dirty
+    pages as "full"
+  include/linux/jump_label.h: expose the reference count
+  mm: page_alloc: use jump labels to avoid checking number_of_cpusets
+  mm: page_alloc: calculate classzone_idx once from the zonelist ref
+  mm: page_alloc: only check the zone id check if pages are buddies
+  mm: page_alloc: only check the alloc flags and gfp_mask for dirty once
+  mm: page_alloc: take the ALLOC_NO_WATERMARK check out of the fast path
+  mm: page_alloc: use unsigned int for order in more places
+  mm: page_alloc: reduce number of times page_to_pfn is called
+  mm: page_alloc: convert hot/cold parameter and immediate callers to
+    bool
+  mm: page_alloc: lookup pageblock migratetype with IRQs enabled during
+    free
+  mm: shmem: avoid atomic operation during shmem_getpage_gfp
+  mm: do not use atomic operations when releasing pages
+  mm: do not use unnecessary atomic operations when adding pages to the
+    LRU
+  fs: buffer: do not use unnecessary atomic operations when discarding
+    buffers
+  mm: non-atomically mark page accessed during page cache allocation
+    where possible
+  mm: avoid unnecessary atomic operations during end_page_writeback()
+  mm: pagemap: avoid unnecessary overhead when tracepoints are
+    deactivated
+  mm: rearrange zone fields into read-only, page alloc, statistics and
+    page reclaim lines
+  mm: move zone->pages_scanned into a vmstat counter
+  mm: vmscan: only update per-cpu thresholds for online CPU
+  mm: page_alloc: abort fair zone allocation policy when remotes nodes
+    are encountered
+  mm: page_alloc: reduce cost of the fair zone allocation policy
+
+Michal Hocko (1):
+  mm: exclude memoryless nodes from zone_reclaim
+
+Nishanth Aravamudan (1):
+  hugetlb: ensure hugepage access is denied if hugepages are not
+    supported
+
+Raghavendra K T (1):
+  mm/readahead.c: fix readahead failure for memoryless NUMA nodes and
+    limit readahead pages
+
+Sasha Levin (1):
+  mm: remove read_cache_page_async()
+
+Shaohua Li (2):
+  swap: add a simple detector for inappropriate swapin readahead
+  x86/mm: In the PTE swapout page reclaim case clear the accessed bit
+    instead of flushing the TLB
+
+Tim Chen (1):
+  fs/superblock: avoid locking counting inodes and dentries before
+    reclaiming them
+
+Vladimir Davydov (4):
+  mm: vmscan: shrink all slab objects if tight on memory
+  mm: vmscan: call NUMA-unaware shrinkers irrespective of nodemask
+  mm: vmscan: respect NUMA policy mask when shrinking slab on direct
+    reclaim
+  mm: vmscan: shrink_slab: rename max_pass -> freeable
+
+Vlastimil Babka (8):
+  mm: compaction: encapsulate defer reset logic
+  mm: compaction: do not mark unmovable pageblocks as skipped in async
+    compaction
+  mm: compaction: reset scanner positions immediately when they meet
+  mm/compaction: cleanup isolate_freepages()
+  mm/compaction: do not count migratepages when unnecessary
+  mm/compaction: avoid rescanning pageblocks in isolate_freepages
+  mm, compaction: properly signal and act upon lock and need_sched()
+    contention
+  mm/page_alloc: prevent MIGRATE_RESERVE pages from being misplaced
+
+Yasuaki Ishimatsu (1):
+  mm: get rid of unnecessary pageblock scanning in
+    setup_zone_migrate_reserve
+
+ arch/tile/mm/homecache.c                 |   2 +-
+ arch/unicore32/include/asm/mmu_context.h |   4 +-
+ arch/x86/include/asm/tlbflush.h          |   6 +-
+ arch/x86/kernel/cpu/mtrr/generic.c       |   4 +-
+ arch/x86/mm/pgtable.c                    |  21 +-
+ arch/x86/mm/tlb.c                        |  52 +---
+ fs/btrfs/compression.c                   |   2 +-
+ fs/btrfs/extent_io.c                     |  15 +-
+ fs/btrfs/file.c                          |  10 +-
+ fs/buffer.c                              |  28 +-
+ fs/cramfs/inode.c                        |   3 +-
+ fs/exec.c                                |   5 +-
+ fs/ext4/mballoc.c                        |  14 +-
+ fs/f2fs/checkpoint.c                     |   1 -
+ fs/f2fs/node.c                           |   2 -
+ fs/fuse/dev.c                            |   2 +-
+ fs/fuse/file.c                           |   4 -
+ fs/gfs2/aops.c                           |   1 -
+ fs/gfs2/meta_io.c                        |   4 +-
+ fs/hugetlbfs/inode.c                     |   5 +
+ fs/jffs2/fs.c                            |   2 +-
+ fs/nfs/blocklayout/blocklayout.c         |   2 +-
+ fs/ntfs/attrib.c                         |   1 -
+ fs/ntfs/file.c                           |   1 -
+ fs/proc/task_mmu.c                       |   3 +-
+ fs/super.c                               |  16 +-
+ include/linux/compaction.h               |  20 +-
+ include/linux/cpuset.h                   |  56 ++--
+ include/linux/gfp.h                      |   4 +-
+ include/linux/huge_mm.h                  |   4 -
+ include/linux/hugetlb.h                  |  10 +
+ include/linux/jump_label.h               |  20 +-
+ include/linux/migrate.h                  |  11 +-
+ include/linux/mm.h                       |  11 +-
+ include/linux/mm_types.h                 |   4 +-
+ include/linux/mmzone.h                   | 233 ++++++++-------
+ include/linux/page-flags.h               |   6 +-
+ include/linux/pageblock-flags.h          |  33 +--
+ include/linux/pagemap.h                  | 131 +++++++--
+ include/linux/pagevec.h                  |   5 +
+ include/linux/plist.h                    |  45 +++
+ include/linux/radix-tree.h               |   5 +-
+ include/linux/sched.h                    |   7 +
+ include/linux/shmem_fs.h                 |   1 +
+ include/linux/swap.h                     |  30 +-
+ include/linux/swapfile.h                 |   2 +-
+ include/linux/vm_event_item.h            |   4 +-
+ include/linux/vmacache.h                 |  38 +++
+ include/linux/vmstat.h                   |   8 +
+ include/trace/events/compaction.h        |  67 ++++-
+ include/trace/events/kmem.h              |  10 +-
+ include/trace/events/pagemap.h           |  16 +-
+ kernel/cpuset.c                          |  16 +-
+ kernel/debug/debug_core.c                |  14 +-
+ kernel/fork.c                            |   7 +-
+ lib/plist.c                              |  52 ++++
+ lib/radix-tree.c                         | 106 ++-----
+ mm/Makefile                              |   2 +-
+ mm/compaction.c                          | 347 +++++++++++++----------
+ mm/filemap.c                             | 470 +++++++++++++++++++++----------
+ mm/fremap.c                              |  28 +-
+ mm/frontswap.c                           |  13 +-
+ mm/huge_memory.c                         |  93 ++++--
+ mm/hugetlb.c                             |  17 +-
+ mm/internal.h                            |  22 +-
+ mm/madvise.c                             |   2 +-
+ mm/memory-failure.c                      |   4 +-
+ mm/memory.c                              |   4 +-
+ mm/memory_hotplug.c                      |   2 +-
+ mm/mempolicy.c                           |  16 +-
+ mm/migrate.c                             |  56 ++--
+ mm/mincore.c                             |  20 +-
+ mm/mmap.c                                |  55 ++--
+ mm/nommu.c                               |  24 +-
+ mm/page_alloc.c                          | 439 ++++++++++++++++-------------
+ mm/readahead.c                           |  37 +--
+ mm/shmem.c                               | 133 +++------
+ mm/slab.c                                |  12 +-
+ mm/slub.c                                |  16 +-
+ mm/swap.c                                | 101 ++++++-
+ mm/swap_state.c                          |  65 ++++-
+ mm/swapfile.c                            | 224 ++++++++-------
+ mm/truncate.c                            |  74 ++++-
+ mm/vmacache.c                            | 114 ++++++++
+ mm/vmalloc.c                             |   6 +-
+ mm/vmscan.c                              | 144 ++++++----
+ mm/vmstat.c                              |  13 +-
+ 87 files changed, 2374 insertions(+), 1365 deletions(-)
+ create mode 100644 include/linux/vmacache.h
+ create mode 100644 mm/vmacache.c
+
 -- 
-1.8.1.5
+1.8.4.5
 
