@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836AbaH1SgY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:36:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32834 "EHLO mx2.suse.de"
+	id S1754989AbaH1TCl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 15:02:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32859 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751743AbaH1Sfw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:35:52 -0400
+	id S1752254AbaH1SgY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:36:24 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Jiri Slaby <jslaby@suse.cz>
 Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 05/97] mm: fix bad rss-counter if remap_file_pages raced migration
-Date: Thu, 28 Aug 2014 19:34:13 +0100
-Message-Id: <1409250945-30874-6-git-send-email-mgorman@suse.de>
+Subject: [PATCH 35/97] mm/readahead.c: fix readahead failure for memoryless NUMA nodes and limit readahead pages
+Date: Thu, 28 Aug 2014 19:34:43 +0100
+Message-Id: <1409250945-30874-36-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
 References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
@@ -20,84 +20,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hugh Dickins <hughd@google.com>
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 
-commit 887843961c4b4681ee993c36d4997bf4b4aa8253 upstream.
+commit 6d2be915e589b58cb11418cbe1f22ff90732b6ac upstream.
 
-Fix some "Bad rss-counter state" reports on exit, arising from the
-interaction between page migration and remap_file_pages(): zap_pte()
-must count a migration entry when zapping it.
+Currently max_sane_readahead() returns zero on the cpu whose NUMA node
+has no local memory which leads to readahead failure.  Fix this
+readahead failure by returning minimum of (requested pages, 512).  Users
+running applications on a memory-less cpu which needs readahead such as
+streaming application see considerable boost in the performance.
 
-And yes, it is possible (though very unusual) to find an anon page or
-swap entry in a VM_SHARED nonlinear mapping: coming from that horrid
-get_user_pages(write, force) case which COWs even in a shared mapping.
+Result:
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Tested-by: Sasha Levin sasha.levin@oracle.com>
-Tested-by: Dave Jones davej@redhat.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+fadvise experiment with FADV_WILLNEED on a PPC machine having memoryless
+CPU with 1GB testfile (12 iterations) yielded around 46.66% improvement.
+
+fadvise experiment with FADV_WILLNEED on a x240 machine with 1GB
+testfile 32GB* 4G RAM numa machine (12 iterations) showed no impact on
+the normal NUMA cases w/ patch.
+
+  Kernel       Avg  Stddev
+  base      7.4975   3.92%
+  patched   7.4174   3.26%
+
+[Andrew: making return value PAGE_SIZE independent]
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Acked-by: Jan Kara <jack@suse.cz>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/fremap.c | 28 ++++++++++++++++++++++------
- 1 file changed, 22 insertions(+), 6 deletions(-)
+ mm/readahead.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/mm/fremap.c b/mm/fremap.c
-index bbc4d66..34feba6 100644
---- a/mm/fremap.c
-+++ b/mm/fremap.c
-@@ -23,28 +23,44 @@
- 
- #include "internal.h"
- 
-+static int mm_counter(struct page *page)
-+{
-+	return PageAnon(page) ? MM_ANONPAGES : MM_FILEPAGES;
-+}
-+
- static void zap_pte(struct mm_struct *mm, struct vm_area_struct *vma,
- 			unsigned long addr, pte_t *ptep)
- {
- 	pte_t pte = *ptep;
-+	struct page *page;
-+	swp_entry_t entry;
- 
- 	if (pte_present(pte)) {
--		struct page *page;
--
- 		flush_cache_page(vma, addr, pte_pfn(pte));
- 		pte = ptep_clear_flush(vma, addr, ptep);
- 		page = vm_normal_page(vma, addr, pte);
- 		if (page) {
- 			if (pte_dirty(pte))
- 				set_page_dirty(page);
-+			update_hiwater_rss(mm);
-+			dec_mm_counter(mm, mm_counter(page));
- 			page_remove_rmap(page);
- 			page_cache_release(page);
-+		}
-+	} else {	/* zap_pte() is not called when pte_none() */
-+		if (!pte_file(pte)) {
- 			update_hiwater_rss(mm);
--			dec_mm_counter(mm, MM_FILEPAGES);
-+			entry = pte_to_swp_entry(pte);
-+			if (non_swap_entry(entry)) {
-+				if (is_migration_entry(entry)) {
-+					page = migration_entry_to_page(entry);
-+					dec_mm_counter(mm, mm_counter(page));
-+				}
-+			} else {
-+				free_swap_and_cache(entry);
-+				dec_mm_counter(mm, MM_SWAPENTS);
-+			}
- 		}
--	} else {
--		if (!pte_file(pte))
--			free_swap_and_cache(pte_to_swp_entry(pte));
- 		pte_clear_not_present_full(mm, addr, ptep, 0);
- 	}
+diff --git a/mm/readahead.c b/mm/readahead.c
+index 5b637b5..e9c4a6a 100644
+--- a/mm/readahead.c
++++ b/mm/readahead.c
+@@ -237,14 +237,14 @@ int force_page_cache_readahead(struct address_space *mapping, struct file *filp,
+ 	return ret;
  }
+ 
++#define MAX_READAHEAD   ((512*4096)/PAGE_CACHE_SIZE)
+ /*
+  * Given a desired number of PAGE_CACHE_SIZE readahead pages, return a
+  * sensible upper limit.
+  */
+ unsigned long max_sane_readahead(unsigned long nr)
+ {
+-	return min(nr, (node_page_state(numa_node_id(), NR_INACTIVE_FILE)
+-		+ node_page_state(numa_node_id(), NR_FREE_PAGES)) / 2);
++	return min(nr, MAX_READAHEAD);
+ }
+ 
+ /*
 -- 
 1.8.4.5
 
