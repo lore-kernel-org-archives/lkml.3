@@ -1,89 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965124AbaH1CKI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 22:10:08 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46953 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932114AbaH1CKF (ORCPT
+	id S965255AbaH1CKX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 22:10:23 -0400
+Received: from mail-pa0-f73.google.com ([209.85.220.73]:56568 "EHLO
+	mail-pa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932193AbaH1CKQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 22:10:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140827175605.GE12827@lenny.home.zabbo.net>
-References: <53EE3966.60609@kernel.dk>
-	<CACVXFVO+3SHy0=zESJqG3ZB68AZaeK5_QK2CVmZWzZ7oBWDGwg@mail.gmail.com>
-	<53F0EAEC.9040505@kernel.dk>
-	<CACVXFVO3CrD2CoHiBOZ8GNMXrT2pJ=t2BzmAHksqRTmgrpsaaQ@mail.gmail.com>
-	<CACVXFVN6W-AAQ6g4LXHOyvMzU+EAmj_YYBEuYRnoSB+VqCJg8A@mail.gmail.com>
-	<53F3B89D.6070703@kernel.dk>
-	<CACVXFVOR0mzMWo+iPtU8jUvYgH+non=hQ0XaP0Z1Fu0qiSbJNA@mail.gmail.com>
-	<53FE029B.1030200@parallels.com>
-	<20140827162955.GF4827@kvack.org>
-	<53FE1328.2040607@parallels.com>
-	<20140827175605.GE12827@lenny.home.zabbo.net>
-Date: Thu, 28 Aug 2014 10:10:02 +0800
-Message-ID: <CACVXFVNTcpjai=2UGTfY6LF1n2AOARX2orMmzKxQrunf-F8fxA@mail.gmail.com>
-Subject: Re: [PATCH v1 5/9] block: loop: convert to blk-mq
-From: Ming Lei <ming.lei@canonical.com>
-To: Zach Brown <zab@zabbo.net>
-Cc: Maxim Patlasov <mpatlasov@parallels.com>,
-        Benjamin LaHaise <bcrl@kvack.org>, Jens Axboe <axboe@kernel.dk>,
-        Christoph Hellwig <hch@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Kent Overstreet <kmo@daterainc.com>, AIO <linux-aio@kvack.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Dave Chinner <david@fromorbit.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 27 Aug 2014 22:10:16 -0400
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Cc: James Hogan <james.hogan@imgtec.com>, Paul Burton <paul.burton@imgtec.com>,
+        David Daney <david.daney@cavium.com>,
+        John Crispin <blogic@openwrt.org>,
+        Jayachandran C <jchandra@broadcom.com>,
+        Qais Yousef <qais.yousef@imgtec.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Jonas Gorski <jogo@openwrt.org>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Geert Uytterhoeven <geert@linux-m68k.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Andrew Bresticker <abrestic@chromium.org>
+Subject: [PATCH v2 0/7] MIPS: Move device-tree files to a common location
+Date: Wed, 27 Aug 2014 19:10:05 -0700
+Message-Id: <1409191812-23697-1-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/28/14, Zach Brown <zab@zabbo.net> wrote:
-> On Wed, Aug 27, 2014 at 09:19:36PM +0400, Maxim Patlasov wrote:
->> On 08/27/2014 08:29 PM, Benjamin LaHaise wrote:
->> >On Wed, Aug 27, 2014 at 08:08:59PM +0400, Maxim Patlasov wrote:
->> >...
->> >>1) /dev/loop0 of 3.17.0-rc1 with Ming's patches applied -- 11K iops
->> >>2) the same as above, but call loop_queue_work() directly from
->> >>loop_queue_rq() -- 270K iops
->> >>3) /dev/nullb0 of 3.17.0-rc1 -- 380K iops
->> >>
->> >>Taking into account so big difference (11K vs. 270K), would it be
->> >> worthy
->> >>to implement pure non-blocking version of aio_kernel_submit() returning
->> >>error if blocking needed? Then loop driver (or any other in-kernel
->> >> user)
->> >>might firstly try that non-blocking submit as fast-path, and, only if
->> >>it's failed, fall back to queueing.
->> >What filesystem is the backing file for loop0 on?  O_DIRECT access as
->> >Ming's patches use should be non-blocking, and if not, that's something
->> >to fix.
->>
->> I used loop0 directly on top of null_blk driver (because my goal was to
->> measure the overhead of processing requests in a separate thread).
->
-> The relative overhead while doing nothing else.  While zooming way down
-> in to micro benchmarks is fun and all, testing on an fs on brd might be
-> more representitive and so more compelling.
->
-> (And you might start to stumble into the terrifying territory of
-> stacking fs write paths under fs write paths.. turn on lockdep! :))
->
->> In case of real-life filesystems, e.g. ext4, aio_kernel_submit() may
->> easily
->> block on something like bh_submit_read(), when fs reads file metadata to
->> calculate the offset on block device by position in the file.
->
-> Yeah, there are a lot of rare potential blocking points throughout the
-> fs aio submission paths.   In practice (aio+dio+block fs), I think
-> submission tends to block waiting for congested block queues most often.
+To be consistent with other architectures and to avoid unnecessary
+makefile duplication, move all MIPS device-trees to arch/mips/boot/dts
+and build them with a common makefile.  Per Olof's suggestion in v1,
+device-trees are grouped into per-vendor subdirectories.  Note that
+since there is currently no Kbuild infrastructure for recursively
+building dtbs like there is for object files, the top level Makefile
+in arch/mips/boot/dts/ just includes the sub-Makefiles.
 
-In case of null_blk, it shouldn't have blocked here since the defaul tag size
-is enough for the single job test if Maxim didn't change the default parameter
-of null_blk.
+Patch 1 sets up the makefiles for building the DTs in arch/mips/boot/dts
+and introduces the config option BUILTIN_DTB for platforms that require
+it.
 
+Patch 2 introduces the 'dtbs' makefile target to allow building of just
+the DT binaries.
 
-Thanks,
+Patches 3-7 move the DTs out of the platform directores.
+
+I've build tested this on all affected platforms (Octeon, Lantiq, SEAD3,
+Netlogic, and Ralink) as well as Malta.  For platforms where builtin DTBs
+are optional (Netlogic and Ralink), I built with and without the builtin
+DTBs.
+
+Based on 3.17-rc2.
+
+Changes from v1:
+ - moved to per-vendor subdirectories
+ - rebased on 3.17-rc2
+
+Andrew Bresticker (7):
+  MIPS: Create common infrastructure for building built-in device-trees
+  MIPS: Add support for building device-tree binaries
+  MIPS: Octeon: Move device-trees to arch/mips/boot/dts/cavium-octeon/
+  MIPS: Lantiq: Move device-trees to arch/mips/boot/dts/lantiq/
+  MIPS: sead3: Move device-trees to arch/mips/boot/dts/mti/
+  MIPS: Netlogic: Move device-trees to arch/mips/boot/dts/netlogic/
+  MIPS: ralink: Move device-trees to arch/mips/boot/dts/ralink/
+
+ arch/mips/Kconfig                                          |  5 +++++
+ arch/mips/Makefile                                         | 11 +++++++++++
+ arch/mips/boot/.gitignore                                  |  1 +
+ arch/mips/boot/dts/Makefile                                | 14 ++++++++++++++
+ arch/mips/boot/dts/cavium-octeon/Makefile                  |  2 ++
+ arch/mips/{ => boot/dts}/cavium-octeon/octeon_3xxx.dts     |  0
+ arch/mips/{ => boot/dts}/cavium-octeon/octeon_68xx.dts     |  0
+ arch/mips/boot/dts/lantiq/Makefile                         |  1 +
+ arch/mips/{lantiq/dts => boot/dts/lantiq}/danube.dtsi      |  0
+ arch/mips/{lantiq/dts => boot/dts/lantiq}/easy50712.dts    |  0
+ arch/mips/boot/dts/mti/Makefile                            |  1 +
+ arch/mips/{mti-sead3 => boot/dts/mti}/sead3.dts            |  0
+ arch/mips/boot/dts/netlogic/Makefile                       |  4 ++++
+ arch/mips/{netlogic/dts => boot/dts/netlogic}/xlp_evp.dts  |  0
+ arch/mips/{netlogic/dts => boot/dts/netlogic}/xlp_fvp.dts  |  0
+ arch/mips/{netlogic/dts => boot/dts/netlogic}/xlp_gvp.dts  |  0
+ arch/mips/{netlogic/dts => boot/dts/netlogic}/xlp_svp.dts  |  0
+ arch/mips/boot/dts/ralink/Makefile                         |  4 ++++
+ arch/mips/{ralink/dts => boot/dts/ralink}/mt7620a.dtsi     |  0
+ arch/mips/{ralink/dts => boot/dts/ralink}/mt7620a_eval.dts |  0
+ arch/mips/{ralink/dts => boot/dts/ralink}/rt2880.dtsi      |  0
+ arch/mips/{ralink/dts => boot/dts/ralink}/rt2880_eval.dts  |  0
+ arch/mips/{ralink/dts => boot/dts/ralink}/rt3050.dtsi      |  0
+ arch/mips/{ralink/dts => boot/dts/ralink}/rt3052_eval.dts  |  0
+ arch/mips/{ralink/dts => boot/dts/ralink}/rt3883.dtsi      |  0
+ arch/mips/{ralink/dts => boot/dts/ralink}/rt3883_eval.dts  |  0
+ arch/mips/cavium-octeon/.gitignore                         |  2 --
+ arch/mips/cavium-octeon/Makefile                           | 10 ----------
+ arch/mips/lantiq/Kconfig                                   |  1 +
+ arch/mips/lantiq/Makefile                                  |  2 --
+ arch/mips/lantiq/dts/Makefile                              |  1 -
+ arch/mips/mti-sead3/Makefile                               |  4 ----
+ arch/mips/netlogic/Kconfig                                 |  4 ++++
+ arch/mips/netlogic/Makefile                                |  1 -
+ arch/mips/netlogic/dts/Makefile                            |  4 ----
+ arch/mips/ralink/Kconfig                                   |  4 ++++
+ arch/mips/ralink/Makefile                                  |  2 --
+ arch/mips/ralink/dts/Makefile                              |  4 ----
+ 38 files changed, 52 insertions(+), 30 deletions(-)
+ create mode 100644 arch/mips/boot/dts/Makefile
+ create mode 100644 arch/mips/boot/dts/cavium-octeon/Makefile
+ rename arch/mips/{ => boot/dts}/cavium-octeon/octeon_3xxx.dts (100%)
+ rename arch/mips/{ => boot/dts}/cavium-octeon/octeon_68xx.dts (100%)
+ create mode 100644 arch/mips/boot/dts/lantiq/Makefile
+ rename arch/mips/{lantiq/dts => boot/dts/lantiq}/danube.dtsi (100%)
+ rename arch/mips/{lantiq/dts => boot/dts/lantiq}/easy50712.dts (100%)
+ create mode 100644 arch/mips/boot/dts/mti/Makefile
+ rename arch/mips/{mti-sead3 => boot/dts/mti}/sead3.dts (100%)
+ create mode 100644 arch/mips/boot/dts/netlogic/Makefile
+ rename arch/mips/{netlogic/dts => boot/dts/netlogic}/xlp_evp.dts (100%)
+ rename arch/mips/{netlogic/dts => boot/dts/netlogic}/xlp_fvp.dts (100%)
+ rename arch/mips/{netlogic/dts => boot/dts/netlogic}/xlp_gvp.dts (100%)
+ rename arch/mips/{netlogic/dts => boot/dts/netlogic}/xlp_svp.dts (100%)
+ create mode 100644 arch/mips/boot/dts/ralink/Makefile
+ rename arch/mips/{ralink/dts => boot/dts/ralink}/mt7620a.dtsi (100%)
+ rename arch/mips/{ralink/dts => boot/dts/ralink}/mt7620a_eval.dts (100%)
+ rename arch/mips/{ralink/dts => boot/dts/ralink}/rt2880.dtsi (100%)
+ rename arch/mips/{ralink/dts => boot/dts/ralink}/rt2880_eval.dts (100%)
+ rename arch/mips/{ralink/dts => boot/dts/ralink}/rt3050.dtsi (100%)
+ rename arch/mips/{ralink/dts => boot/dts/ralink}/rt3052_eval.dts (100%)
+ rename arch/mips/{ralink/dts => boot/dts/ralink}/rt3883.dtsi (100%)
+ rename arch/mips/{ralink/dts => boot/dts/ralink}/rt3883_eval.dts (100%)
+ delete mode 100644 arch/mips/cavium-octeon/.gitignore
+ delete mode 100644 arch/mips/lantiq/dts/Makefile
+ delete mode 100644 arch/mips/netlogic/dts/Makefile
+ delete mode 100644 arch/mips/ralink/dts/Makefile
+
 -- 
-Ming Lei
+2.1.0.rc2.206.gedb03e5
+
