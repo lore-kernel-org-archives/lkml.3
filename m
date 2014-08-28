@@ -1,87 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936274AbaH1HXN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 03:23:13 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:42994 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932523AbaH1HXM (ORCPT
+	id S936290AbaH1HYx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 03:24:53 -0400
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.119]:48963 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935780AbaH1HYp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 03:23:12 -0400
-Date: Thu, 28 Aug 2014 08:23:06 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: James Ralston <james.d.ralston@intel.com>
-Cc: Peter Tyser <ptyser@xes-inc.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] lpc_ich: Add Device IDs for Intel 9 Series PCH
-Message-ID: <20140828072306.GG24579@lee--X1>
-References: <1409175265-4838-1-git-send-email-james.d.ralston@intel.com>
+	Thu, 28 Aug 2014 03:24:45 -0400
+X-Env-Sender: Andreas.Werner@men.de
+X-Msg-Ref: server-3.tower-193.messagelabs.com!1409210682!12683387!1
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.3; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Thu, 28 Aug 2014 09:24:43 +0200
+Date: Thu, 28 Aug 2014 10:16:43 +0200
+From: Andreas Werner <andreas.werner@men.de>
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Andreas Werner <andreas.werner@men.de>, <linux-kernel@vger.kernel.org>,
+        <sameo@linux.intel.com>, <lee.jones@linaro.org>,
+        <lm-sensors@lm-sensors.org>, <wim@iguana.be>,
+        <linux-watchdog@vger.kernel.org>, <cooloney@gmail.com>,
+        <rpurdie@rpsys.net>, <linux-leds@vger.kernel.org>
+Subject: Re: [PATCH v6 4/4] drivers/hwmon/menf21bmc_hwmon: introduce
+ MEN14F021P00 BMC HWMON driver
+Message-ID: <20140828081643.GA27707@awelinux>
+References: <cover.1409161615.git.andreas.werner@men.de>
+ <65074740dfc6363134384b45fcd3acf5f2b4254f.1409161615.git.andreas.werner@men.de>
+ <20140827183843.GC2198@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1409175265-4838-1-git-send-email-james.d.ralston@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140827183843.GC2198@roeck-us.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [192.1.1.171]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Aug 2014, James Ralston wrote:
-
-> This patch adds the LPC Device IDs for the Intel 9 Series PCH.
+On Wed, Aug 27, 2014 at 11:38:43AM -0700, Guenter Roeck wrote:
+> On Wed, Aug 27, 2014 at 07:53:06PM +0200, Andreas Werner wrote:
+> > Added driver to support the 14F021P00 BMC Hardware Monitoring.
+> > The BMC is a Board Management Controller including monitoring of the
+> > board voltages.
+> > 
+> > Signed-off-by: Andreas Werner <andreas.werner@men.de>
 > 
-> Signed-off-by: James Ralston <james.d.ralston@intel.com>
-> ---
->  drivers/mfd/lpc_ich.c | 11 +++++++++++
->  1 file changed, 11 insertions(+)
+> Looks good, though I do have one comment ...
+> 
+> > +
+> > +	hwmon_dev = devm_hwmon_device_register_with_groups(&pdev->dev,
+> > +						   "menf21bmc", drv_data,
+> > +						   menf21bmc_hwmon_groups);
+> > +	if (IS_ERR(hwmon_dev))
+> > +		return PTR_ERR(hwmon_dev);
+> > +
+> > +	dev_info(&pdev->dev, "MEN 14F021P00 BMC hwmon device enabled");
+> > +
+> You removed the dev_info from the mfd driver but left it in the client
+> drivers.  If you'd drop it here as well, you could use
+> 'return PTR_ERR_OR_ZERO(hwmon_dev);'.  Just a suggestion, not mandatory.
+> 
+> Either case,
 
-Applied, thanks.
+It is a nice info for every slave driver which are the drivers for accessing
+the features in the BMC. The mfd is just the driver who will instantiate the
+slaves. For the mfd the most important info is if there was an error.
 
-> diff --git a/drivers/mfd/lpc_ich.c b/drivers/mfd/lpc_ich.c
-> index 7d8482f..cb41f4f 100644
-> --- a/drivers/mfd/lpc_ich.c
-> +++ b/drivers/mfd/lpc_ich.c
-> @@ -54,6 +54,7 @@
->   *	document number TBD : Avoton SoC
->   *	document number TBD : Coleto Creek
->   *	document number TBD : Wildcat Point-LP
-> + *	document number TBD : 9 Series
->   */
->  
->  #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> @@ -216,6 +217,7 @@ enum lpc_chipsets {
->  	LPC_BAYTRAIL,   /* Bay Trail SoC */
->  	LPC_COLETO,	/* Coleto Creek */
->  	LPC_WPT_LP,	/* Wildcat Point-LP */
-> +	LPC_9S,		/* 9 Series */
->  };
->  
->  static struct lpc_ich_info lpc_chipset_info[] = {
-> @@ -519,6 +521,10 @@ static struct lpc_ich_info lpc_chipset_info[] = {
->  		.name = "Wildcat Point_LP",
->  		.iTCO_version = 2,
->  	},
-> +	[LPC_9S] = {
-> +		.name = "9 Series",
-> +		.iTCO_version = 2,
-> +	},
->  };
->  
->  /*
-> @@ -745,6 +751,11 @@ static const struct pci_device_id lpc_ich_ids[] = {
->  	{ PCI_VDEVICE(INTEL, 0x9cc6), LPC_WPT_LP},
->  	{ PCI_VDEVICE(INTEL, 0x9cc7), LPC_WPT_LP},
->  	{ PCI_VDEVICE(INTEL, 0x9cc9), LPC_WPT_LP},
-> +	{ PCI_VDEVICE(INTEL, 0x8cc1), LPC_9S},
-> +	{ PCI_VDEVICE(INTEL, 0x8cc2), LPC_9S},
-> +	{ PCI_VDEVICE(INTEL, 0x8cc3), LPC_9S},
-> +	{ PCI_VDEVICE(INTEL, 0x8cc4), LPC_9S},
-> +	{ PCI_VDEVICE(INTEL, 0x8cc6), LPC_9S},
->  	{ 0, },			/* End of list */
->  };
->  MODULE_DEVICE_TABLE(pci, lpc_ich_ids);
+Anyway good idea with PTR_ERR_OR_ZERO.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Thanks for the nice review and the comments.
+
+Regards
+Andy
+
+> 
+> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+> 
+> I assume this will go in through the mfd tree.
+> 
+> Thanks,
+> Guenter
