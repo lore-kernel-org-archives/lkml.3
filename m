@@ -1,173 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965625AbaH1JGn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 05:06:43 -0400
-Received: from www.linutronix.de ([62.245.132.108]:38582 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936274AbaH1JGi (ORCPT
+	id S965641AbaH1JIS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 05:08:18 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:54124 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934800AbaH1JIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 05:06:38 -0400
-Message-ID: <53FEF116.5080304@linutronix.de>
-Date: Thu, 28 Aug 2014 11:06:30 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
-MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>
-CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tony@atomide.com, balbi@ti.com, Joel Fernandes <joelf@ti.com>,
-        Dan Williams <dan.j.williams@intel.com>, dmaengine@vger.kernel.org
-Subject: Re: [PATCH 1/7] dmaengine: edma: fix two faults which happen with
- the 8250_dma user
-References: <1406660344-25307-1-git-send-email-bigeasy@linutronix.de> <1406660344-25307-2-git-send-email-bigeasy@linutronix.de> <20140731121702.GU8181@intel.com> <20140808162950.GA12080@linutronix.de> <20140819151216.GO13288@intel.com> <53F5EF78.2050800@linutronix.de> <20140828070611.GI13288@intel.com>
-In-Reply-To: <20140828070611.GI13288@intel.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 28 Aug 2014 05:08:12 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-99-53fef179c804
+From: Andrzej Hajda <a.hajda@samsung.com>
+To: Inki Dae <inki.dae@samsung.com>
+Cc: Andrzej Hajda <a.hajda@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org (open list),
+        linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...)
+Subject: [PATCH v2 00/17] drm/exynos/ipp: image post processing fixes and
+ improvements, part four
+Date: Thu, 28 Aug 2014 11:07:24 +0200
+Message-id: <1409216861-12452-1-git-send-email-a.hajda@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHJMWRmVeSWpSXmKPExsVy+t/xy7qVH/8FG7yapGZxa905VosrX9+z
+	WUy6P4HF4sW9iywWZ5vesFtc3jWHzWLG+X1MFmuP3GW3mDH5JZsDp8f97uNMHn1bVjF6fN4k
+	F8AcxWWTkpqTWZZapG+XwJVx4N4mxoIjfBXPL29ha2D8zt3FyMkhIWAi8ebWIRYIW0ziwr31
+	bF2MXBxCAksZJfZdXgvl9DFJLD50nBWkik1AU+Lv5ptsILaIgLLEqn3t7CBFzAIfmSSuLH3D
+	3MXIwSEskCwxc2I4SA2LgKrEuyMnGEFsXgFnieYjx5ghtslJnDw2mXUCI/cCRoZVjKKppckF
+	xUnpuYZ6xYm5xaV56XrJ+bmbGCFh8mUH4+JjVocYBTgYlXh4N5T+CxZiTSwrrsw9xCjBwawk
+	wnv0OFCINyWxsiq1KD++qDQntfgQIxMHp1QDI5eH5aXL+2eIKVl33n+qPuVAVGXa59JWdx6P
+	Of9mr7g4bd2LF/0eWnwqKqF8Gf62/zRWLd/T2yIVv6htz39RNT3myAD7l7wFPJrV8+89rP1y
+	eq9GUZZE0XQ1jwXdPBX+ezv9VjyeJjL1u9fmP0z3u7Z9kok/7JB7o1N9XeLr2hMaB/pu1wvz
+	KLEUZyQaajEXFScCAPJt0PnxAQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/28/2014 09:06 AM, Vinod Koul wrote:
-> On Thu, Aug 21, 2014 at 03:09:12PM +0200, Sebastian Andrzej Siewior wrote:
->> On 08/19/2014 05:12 PM, Vinod Koul wrote:
->>>>
->>>>     desc = dmaengine_prep_slave_single(rxchan, …);
->>>>     rx_cookie = dmaengine_submit(desc);
->>>>     dma_async_issue_pending(rxchan);
->>>>
->>>>     ssleep(2);
->>>>     /* Now assume that the transfer did not start */
->>>>     st = dmaengine_tx_status(rxchan, rx_cookie, NULL);
->>>>     /* st is now DMA_IN_PROGRESS as expected */
->>>>
->>>>     dmaengine_terminate_all(rxchan);
->>>>     st = dmaengine_tx_status(rxchan, rx_cookie, NULL);
->>> and here is the culprit. You have terminated the channel. This means that
->>> dmaengine driver is free to clean up all the allocated descriptors on the
->>> channels and do whatever it decides to do with them.
->>
->> descriptors, yes.
-> and by that logic when you query the driver would have freed up!
+This set of patches contains various improvement and fixes
+for exynos_drm ipp framework.
+The patchset is based on exynos-drm-next branch.
 
-I don't understand. What "would have freed up"?
+IPP framework was tested for regressions on exynos4210-trats target.
 
->>> You have already terminated the channel so what is the point in querying the
->>> status of the cookie, which you shouldn't use anyway after invoking
->>> terminate_all() as its result is not correct.
->>
->> The point is to check (later, after terminate_all()) if there is an
->> outstanding DMA transfer or not _and_ how much data was really
->> transfered. Looking at edma it does not really support the latter if
->> the transfer is already completed. On the plus side the HW does not
->> support partly transfers :)
-> well that can be achieved properly and differently!
+In the 2nd version of the series I have included changes proposed by Joonyoung Shim.
+I have decided to resend whole series because the changes caused merge conflicts and
+two separate patches have been added to the series.
+Changes are described in comit messages.
 
-I am all yours.
+Regards
+Andrzej
 
-> Why don't we pause the channel, get the residue, status and then
-> terminate.
 
-This is done that way. For the protocol: pause is not supported by
-driver (edma and omap-dma) unless the channel is used in "continuous"
-mode. But this does not matter here.
-The root problems remains: You get DMA_IN_PROGRESS returned as long as
-the cookie has not been completed _even_ after the invocation of
-terminate_all(). So that part that knows it terminates the thing for
-the first time does everything correct.
-The other part that only enqueues a transfer if there is not another
-one pending does never do anything.
+Andrzej Hajda (17):
+  drm/exynos/ipp: remove fake pm callbacks
+  drm/exynos/ipp: cancel works before command node clean
+  drm/exynos/ipp: move file reference from memory to command node
+  drm/exynos/ipp: remove only related commands on file close
+  drm/exynos/ipp: remove unused field in command node
+  drm/exynos/ipp: free partially allocated resources on error
+  drm/exynos/ipp: move nodes cleaning to separate function
+  drm/exynos/ipp: clean memory nodes on command node cleaning
+  drm/exynos/ipp: replace work_struct casting with better constructs
+  drm/exynos/ipp: stop hardware before freeing memory
+  drm/exynos/ipp: remove events during command cleaning
+  drm/exynos/fimc: avoid clearing overflow bits
+  drm/exynos/fimc: do not enable fimc twice
+  drm/exynos/fimc: simplify buffer queuing
+  drm/exynos/fimc: fix source buffer registers
+  drm/exynos/ipp: remove file argument from node related functions
+  drm/exynos/ipp: add file checks for ioctls
 
->> But where is it written that the life time of the cookie is limited?
->> Looking at the "cooking check" code there is no such thing. It is
->> simply compare of completed vs passed number but okay, this is an
->> implementation detail.
->> From [0] it says under "4. Submit the transaction":
->>
->> | This returns a cookie can be used to check the progress of DMA engine
->> | activity via other DMA engine calls not covered in this document.
->>
->> no life time limit mentioned here. Which brings to the question: Why is
->> it okay to use the cookie after the transaction "terminated" normally
->> but not if it has been canceled?
-> Due to the special nature of terminate. The point here is that you don't
-> terminate a transaction but channel operation
+ drivers/gpu/drm/exynos/exynos_drm_fimc.c    |  90 ++-----
+ drivers/gpu/drm/exynos/exynos_drm_gsc.c     |   3 +-
+ drivers/gpu/drm/exynos/exynos_drm_ipp.c     | 397 ++++++++++++----------------
+ drivers/gpu/drm/exynos/exynos_drm_ipp.h     |   4 +-
+ drivers/gpu/drm/exynos/exynos_drm_rotator.c |   3 +-
+ 5 files changed, 195 insertions(+), 302 deletions(-)
 
-So the channel is terminated and the transaction is still in progress.
-Is this what you are telling me? And why should a transaction remain in
-progress after the channel has been terminated? I mean once you
-terminate a bridge crossing point there are no cars going over that
-bridge. It is closed. Their trip has been terminated as well.
+-- 
+1.9.1
 
-The question that remains is which of those cars passed the bridge
-before it was terminated. I understand that you want first to pause
-that channel looking at the bytes and then terminate. Totally
-understand. Otherwise the number of bytes transfered (reside) can no
-longer be queried because the driver cleaned up. Fine.
-
-But it should be reported that this transaction is no longer in
-movement. It won't happen. Never. And this is what bugs me.
-
->> And from [0] the API explanation  "4. … dma_async_is_tx_complete()":
-> 
-> 
->>
->> |Note:
->> |    Not all DMA engine drivers can return reliable information for
->> |    a running DMA channel.  It is recommended that DMA engine users
->> |    pause or stop (via dmaengine_terminate_all) the channel before
->> |    using this API.
->>
->> So the documentation says to use the cookie with
->> dma_async_is_tx_complete() and before doing so it is recommended that
->> the transfer should be paused or stopped. _Exactly_ what is done here.
->>
->>>>     /* st is still DMA_IN_PROGRESS but _I_ expect DMA_COMPLETE because
->>>>      * it has been terminated / canceled
->>>>      */
->>>>
->>>> Both dma driver clean up all / terminate all descriptors as required but
->>>> _none_ of them completes the cookie. As a result dma_cookie_status()
->>>> still thinks that the transfer is in progress.
->>>
->>> Btw how does it matter in the driver here if the transaction completed or
->>> not after terminate_all() was invoked. What is the purpose of querying
->>> status.
->>
->> In the RX interrupt (of the 8250 unit), the code checks if the transfer
->> has been already started or not via querying the status. So if it
->> returns DMA_COMPLETE then a new transfer will be started. If it returns
->> DMA_IN_PROGRESS then the code returns doing nothing because the DMA
->> engine should start moving data anytime now so the RX interrupt goes
->> away.
->>
->> That means: If the transfer is canceled then it won't be started again.
->>
->> Btw: the current (probably only) dma driver that is used by 8250-dma is
->> dw/core.c. That one does cookie complete on terminate:
->>  dwc_control(DMA_TERMINATE_ALL) -> dwc_descriptor_complete() ->
->>  dma_cookie_complete().
-> Yes but would above flow work for you :)
-
-No, it wont. I ask you to accept the two patches since now the behavior
-of dma_async_is_tx_complete() is different depending on whether a
-transaction completed on its own or got terminated. And reporting
-in_progress does not reflect the reality. I can even add a patch on top
-updating the documentation where it state that you must not trust the
-dma_tx_state struct once the request is completed (or aborted).
-
-Or we can trade :) I send you a patch which removes the "cookie
-complete" part from the dwc-dma driver with a CC stable tag.
-And you explain it to the intel folks that merged that part of the 8250
-dma code that rely on the fact (that a aborted transaction reports
-complete) that what they do is wrong.
-
-but I think it will end up with this: I will change the 8250-dma code to
-keep track whether or not it enqueued a DMA transfer and rely on this
-information instead of dma_async_is_tx_complete(). I will update the
-documentation stating that dma_async_is_tx_complete() may report bogus
-information on completed and terminated transaction.
-
-Sebastian
