@@ -1,145 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751275AbaH1NA0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 09:00:26 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35464 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750790AbaH1NAY (ORCPT
+	id S1751314AbaH1NCS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 09:02:18 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:54534 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754AbaH1NCR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 09:00:24 -0400
-Date: Thu, 28 Aug 2014 13:59:15 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Matti Vaittinen <matti.vaittinen@nsn.com>
-Cc: "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "linux@roeck-us.net" <linux@roeck-us.net>,
-        "jic23@kernel.org" <jic23@kernel.org>,
-        "arno@natisbad.org" <arno@natisbad.org>,
-        "jgunthorpe@obsidianresearch.com" <jgunthorpe@obsidianresearch.com>,
-        "san@rosetechnology.dk" <san@rosetechnology.dk>,
-        "hs@denx.de" <hs@denx.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        Sverdlin Alexander <alexander.sverdlin@nsn.com>
-Subject: Re: [PATCH] rtc: ds1307: add trickle charger device tree binding
-Message-ID: <20140828125915.GJ14650@leverpostej>
-References: <20140828124237.GA29102@fi-ourus-dhcp00977.emea.nsn-net.net>
+	Thu, 28 Aug 2014 09:02:17 -0400
+Date: Thu, 28 Aug 2014 09:02:13 -0400
+From: Tejun Heo <htejun@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
+        Mike Travis <travis@sgi.com>
+Subject: Re: percpu: Define this_cpu_cpumask_var_t_ptr
+Message-ID: <20140828130213.GD29737@htj.dyndns.org>
+References: <20140821222212.GA7996@mtj.dyndns.org>
+ <alpine.DEB.2.11.1408212001100.19762@gentwo.org>
+ <20140822164051.GB15713@mtj.dyndns.org>
+ <alpine.DEB.2.11.1408221241340.23099@gentwo.org>
+ <20140823171416.GG13540@mtj.dyndns.org>
+ <alpine.DEB.2.11.1408231500430.31459@gentwo.org>
+ <alpine.DEB.2.11.1408261631350.8819@gentwo.org>
+ <20140826213735.GS31659@mtj.dyndns.org>
+ <alpine.DEB.2.11.1408261803500.15698@gentwo.org>
+ <alpine.DEB.2.11.1408261911290.22692@gentwo.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140828124237.GA29102@fi-ourus-dhcp00977.emea.nsn-net.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.11.1408261911290.22692@gentwo.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 28, 2014 at 01:42:44PM +0100, Matti Vaittinen wrote:
-> Patch adding support for specifying trickle charger setup from device
-> tree. Patch is based on linux-next tree.
+Hello,
+
+On Tue, Aug 26, 2014 at 07:12:21PM -0500, Christoph Lameter wrote:
 > 
+> New patch:
 > 
-> Some DS13XX devices have "trickle chargers". Introduce a device tree binding
-> for specifying the setup and register values.
+> From: Christoph Lameter <cl@linux.com>
+> Subject: __get_cpu_var/cpumask_var_t: Resolve ambiguities v2
 > 
-> Signed-off-by: Matti Vaittinen <matti.vaittinen@nsn.com>
-> ---
->  .../devicetree/bindings/i2c/trivial-devices.txt    |  1 -
->  .../devicetree/bindings/rtc/dallas,ds1339.txt      | 19 ++++++++++
->  drivers/rtc/rtc-ds1307.c                           | 44 ++++++++++++++++++++--
->  3 files changed, 59 insertions(+), 5 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/rtc/dallas,ds1339.txt
+> __get_cpu_var can paper over differences in the definitions
+> of cpumask_var_t and either use the address of the cpumask
+> variable directly or perform a fetch of the address of the
+> struct cpumask allocated elsewhere. This is important
+> particularly when using per cpu cpumask_var_t declarations
+> because in one case we have an offset into a per cpu area
+> to handle and in the other case we need to fetch a pointer
+> from the offset.
 > 
-> diff --git a/Documentation/devicetree/bindings/i2c/trivial-devices.txt b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-> index 6af570e..e9206a4 100644
-> --- a/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-> +++ b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-> @@ -35,7 +35,6 @@ catalyst,24c32		i2c serial eeprom
->  cirrus,cs42l51		Cirrus Logic CS42L51 audio codec
->  dallas,ds1307		64 x 8, Serial, I2C Real-Time Clock
->  dallas,ds1338		I2C RTC with 56-Byte NV RAM
-> -dallas,ds1339		I2C Serial Real-Time Clock
->  dallas,ds1340		I2C RTC with Trickle Charger
->  dallas,ds1374		I2C, 32-Bit Binary Counter Watchdog RTC with Trickle Charger and Reset Input/Output
->  dallas,ds1631		High-Precision Digital Thermometer
-> diff --git a/Documentation/devicetree/bindings/rtc/dallas,ds1339.txt b/Documentation/devicetree/bindings/rtc/dallas,ds1339.txt
-> new file mode 100644
-> index 0000000..9faf40e
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/rtc/dallas,ds1339.txt
-> @@ -0,0 +1,19 @@
-> +* Dallas DS1339		I2C Serial Real-Time Clock
-> +
-> +Required properties:
-> +- compatible: Should contain "dallas,ds1339".
-> +- reg: I2C address for chip
-> +
-> +Optional properties:
-> +- trickle_setup : Used Trickle Charger configuration,
-> +        corresponding to 5 lowest bits in trickle charger register.
+> This patch introduces a new macro
+> 
+> this_cpu_cpumask_var_t_ptr()
+> 
+> that is defined where cpumask_var_t is defined and performs
+> the proper actions. All use cases where __get_cpu_var
+> is used with cpumask_var_t are converted to the use
+> of this_cpu_cpumask_var_t_ptr().
+> 
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-s/_/-/ in property names please.
+Rusty, if this looks okay to you, I'll route this through
+percpu/for-3.18-consistent-ops branch.
 
-What do these bits do? is there any documentation available?
+Thanks.
 
-Why do they need to be in the DT?
-
-Why do we not have a higher-level description?
-
-> +- trickle_reg   : Trickle charger register address. Defaults to 0x10 for ds1339.
-
-Is this expected to change? Why does this need to be in the DT?
-
-> +
-> +Example:
-> +	ds1339: rtc@68 {
-> +		compatible = "dallas,ds1339";
-> +        trickle_setup= <0x5>;
-> +		reg = <0x68>;
-> +	};
-> +
-> +
-> diff --git a/drivers/rtc/rtc-ds1307.c b/drivers/rtc/rtc-ds1307.c
-> index f03d5ba..f9b1244 100644
-> --- a/drivers/rtc/rtc-ds1307.c
-> +++ b/drivers/rtc/rtc-ds1307.c
-> @@ -126,9 +126,10 @@ struct chip_desc {
->  	u16			nvram_offset;
->  	u16			nvram_size;
->  	u16			trickle_charger_reg;
-> +	u8		  trickle_charger_setup;
->  };
->  
-> -static const struct chip_desc chips[last_ds_type] = {
-> +static struct chip_desc chips[last_ds_type] = {
->  	[ds_1307] = {
->  		.nvram_offset	= 8,
->  		.nvram_size	= 56,
-> @@ -835,13 +836,37 @@ ds1307_nvram_write(struct file *filp, struct kobject *kobj,
->  
->  /*----------------------------------------------------------------------*/
->  
-> +static void trickle_charger_of_init(struct chip_desc *chip,
-> +			struct device_node *node)
-> +{
-> +	int plen = 0;
-> +	const uint32_t *setup;
-> +	const uint32_t *reg;
-> +
-> +	setup = of_get_property(node, "trickle_setup" , &plen);
-> +	if (plen != 4)
-> +		goto out;
-> +	chip->trickle_charger_setup = (u8)*setup;
-
-This isn't endian-clean, and the casting is unnecessary.
-
-Use the of_property_read_u32 accessor, with a u32 temporary variable.
-
-> +	plen = 0;
-> +	reg = of_get_property(node, "trickle_reg" , &plen);
-> +	if (plen == 4)
-> +		chip->trickle_charger_reg = (u16)*reg;
-
-Likewise.
-
-Mark.
+-- 
+tejun
