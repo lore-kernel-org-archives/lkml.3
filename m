@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754822AbaH1S7D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:59:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32867 "EHLO mx2.suse.de"
+	id S1754841AbaH1S7a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 14:59:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32866 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752304AbaH1Sgd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752917AbaH1Sgd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 28 Aug 2014 14:36:33 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Jiri Slaby <jslaby@suse.cz>
 Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 44/97] mm: shmem: save one radix tree lookup when truncating swapped pages
-Date: Thu, 28 Aug 2014 19:34:52 +0100
-Message-Id: <1409250945-30874-45-git-send-email-mgorman@suse.de>
+Subject: [PATCH 43/97] lib: radix-tree: add radix_tree_delete_item()
+Date: Thu, 28 Aug 2014 19:34:51 +0100
+Message-Id: <1409250945-30874-44-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
 References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
@@ -22,16 +22,15 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johannes Weiner <hannes@cmpxchg.org>
 
-commit 6dbaf22ce1f1dfba33313198eb5bd989ae76dd87 upstream.
+commit 53c59f262d747ea82e7414774c59a489501186a0 upstream.
 
-Page cache radix tree slots are usually stabilized by the page lock, but
-shmem's swap cookies have no such thing.  Because the overall truncation
-loop is lockless, the swap entry is currently confirmed by a tree lookup
-and then deleted by another tree lookup under the same tree lock region.
+Provide a function that does not just delete an entry at a given index,
+but also allows passing in an expected item.  Delete only if that item
+is still located at the specified index.
 
-Use radix_tree_delete_item() instead, which does the verification and
-deletion with only one lookup.  This also allows removing the
-delete-only special case from shmem_radix_tree_replace().
+This is handy when lockless tree traversals want to delete entries as
+well because they don't have to do an second, locked lookup to verify
+the slot has not changed under them before deleting the entry.
 
 Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 Reviewed-by: Minchan Kim <minchan@kernel.org>
@@ -58,60 +57,83 @@ Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/shmem.c | 25 ++++++++++++-------------
- 1 file changed, 12 insertions(+), 13 deletions(-)
+ include/linux/radix-tree.h |  1 +
+ lib/radix-tree.c           | 31 +++++++++++++++++++++++++++----
+ 2 files changed, 28 insertions(+), 4 deletions(-)
 
-diff --git a/mm/shmem.c b/mm/shmem.c
-index 0da81aa..1460b20 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -243,19 +243,17 @@ static int shmem_radix_tree_replace(struct address_space *mapping,
- 			pgoff_t index, void *expected, void *replacement)
- {
- 	void **pslot;
--	void *item = NULL;
-+	void *item;
- 
- 	VM_BUG_ON(!expected);
-+	VM_BUG_ON(!replacement);
- 	pslot = radix_tree_lookup_slot(&mapping->page_tree, index);
--	if (pslot)
--		item = radix_tree_deref_slot_protected(pslot,
--							&mapping->tree_lock);
-+	if (!pslot)
-+		return -ENOENT;
-+	item = radix_tree_deref_slot_protected(pslot, &mapping->tree_lock);
- 	if (item != expected)
- 		return -ENOENT;
--	if (replacement)
--		radix_tree_replace_slot(pslot, replacement);
--	else
--		radix_tree_delete(&mapping->page_tree, index);
-+	radix_tree_replace_slot(pslot, replacement);
- 	return 0;
+diff --git a/include/linux/radix-tree.h b/include/linux/radix-tree.h
+index 4039407..1bf0a9c 100644
+--- a/include/linux/radix-tree.h
++++ b/include/linux/radix-tree.h
+@@ -219,6 +219,7 @@ static inline void radix_tree_replace_slot(void **pslot, void *item)
+ int radix_tree_insert(struct radix_tree_root *, unsigned long, void *);
+ void *radix_tree_lookup(struct radix_tree_root *, unsigned long);
+ void **radix_tree_lookup_slot(struct radix_tree_root *, unsigned long);
++void *radix_tree_delete_item(struct radix_tree_root *, unsigned long, void *);
+ void *radix_tree_delete(struct radix_tree_root *, unsigned long);
+ unsigned int
+ radix_tree_gang_lookup(struct radix_tree_root *root, void **results,
+diff --git a/lib/radix-tree.c b/lib/radix-tree.c
+index 7811ed3..f442e32 100644
+--- a/lib/radix-tree.c
++++ b/lib/radix-tree.c
+@@ -1335,15 +1335,18 @@ static inline void radix_tree_shrink(struct radix_tree_root *root)
  }
  
-@@ -387,14 +385,15 @@ export:
- static int shmem_free_swap(struct address_space *mapping,
- 			   pgoff_t index, void *radswap)
+ /**
+- *	radix_tree_delete    -    delete an item from a radix tree
++ *	radix_tree_delete_item    -    delete an item from a radix tree
+  *	@root:		radix tree root
+  *	@index:		index key
++ *	@item:		expected item
+  *
+- *	Remove the item at @index from the radix tree rooted at @root.
++ *	Remove @item at @index from the radix tree rooted at @root.
+  *
+- *	Returns the address of the deleted item, or NULL if it was not present.
++ *	Returns the address of the deleted item, or NULL if it was not present
++ *	or the entry at the given @index was not @item.
+  */
+-void *radix_tree_delete(struct radix_tree_root *root, unsigned long index)
++void *radix_tree_delete_item(struct radix_tree_root *root,
++			     unsigned long index, void *item)
  {
--	int error;
-+	void *old;
+ 	struct radix_tree_node *node = NULL;
+ 	struct radix_tree_node *slot = NULL;
+@@ -1378,6 +1381,11 @@ void *radix_tree_delete(struct radix_tree_root *root, unsigned long index)
+ 	if (slot == NULL)
+ 		goto out;
  
- 	spin_lock_irq(&mapping->tree_lock);
--	error = shmem_radix_tree_replace(mapping, index, radswap, NULL);
-+	old = radix_tree_delete_item(&mapping->page_tree, index, radswap);
- 	spin_unlock_irq(&mapping->tree_lock);
--	if (!error)
--		free_swap_and_cache(radix_to_swp_entry(radswap));
--	return error;
-+	if (old != radswap)
-+		return -ENOENT;
-+	free_swap_and_cache(radix_to_swp_entry(radswap));
-+	return 0;
++	if (item && slot != item) {
++		slot = NULL;
++		goto out;
++	}
++
+ 	/*
+ 	 * Clear all tags associated with the item to be deleted.
+ 	 * This way of doing it would be inefficient, but seldom is any set.
+@@ -1422,6 +1430,21 @@ void *radix_tree_delete(struct radix_tree_root *root, unsigned long index)
+ out:
+ 	return slot;
  }
++EXPORT_SYMBOL(radix_tree_delete_item);
++
++/**
++ *	radix_tree_delete    -    delete an item from a radix tree
++ *	@root:		radix tree root
++ *	@index:		index key
++ *
++ *	Remove the item at @index from the radix tree rooted at @root.
++ *
++ *	Returns the address of the deleted item, or NULL if it was not present.
++ */
++void *radix_tree_delete(struct radix_tree_root *root, unsigned long index)
++{
++	return radix_tree_delete_item(root, index, NULL);
++}
+ EXPORT_SYMBOL(radix_tree_delete);
  
- /*
+ /**
 -- 
 1.8.4.5
 
