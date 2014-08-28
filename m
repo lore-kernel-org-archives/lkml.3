@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753127AbaH1Sgv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:36:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32869 "EHLO mx2.suse.de"
+	id S1754503AbaH1Swi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 14:52:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32872 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751979AbaH1Sgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:36:48 -0400
+	id S1753095AbaH1Sgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:36:50 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Jiri Slaby <jslaby@suse.cz>
 Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 59/97] mm/compaction: avoid rescanning pageblocks in isolate_freepages
-Date: Thu, 28 Aug 2014 19:35:07 +0100
-Message-Id: <1409250945-30874-60-git-send-email-mgorman@suse.de>
+Subject: [PATCH 62/97] mm: fix direct reclaim writeback regression
+Date: Thu, 28 Aug 2014 19:35:10 +0100
+Message-Id: <1409250945-30874-63-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
 References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
@@ -20,108 +20,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vlastimil Babka <vbabka@suse.cz>
+From: Hugh Dickins <hughd@google.com>
 
-commit e9ade569910a82614ff5f2c2cea2b65a8d785da4 upstream.
+commit 8bdd638091605dc66d92c57c4b80eb87fffc15f7 upstream.
 
-The compaction free scanner in isolate_freepages() currently remembers PFN
-of the highest pageblock where it successfully isolates, to be used as the
-starting pageblock for the next invocation.  The rationale behind this is
-that page migration might return free pages to the allocator when
-migration fails and we don't want to skip them if the compaction
-continues.
+Shortly before 3.16-rc1, Dave Jones reported:
 
-Since migration now returns free pages back to compaction code where they
-can be reused, this is no longer a concern.  This patch changes
-isolate_freepages() so that the PFN for restarting is updated with each
-pageblock where isolation is attempted.  Using stress-highalloc from
-mmtests, this resulted in 10% reduction of the pages scanned by the free
-scanner.
+  WARNING: CPU: 3 PID: 19721 at fs/xfs/xfs_aops.c:971
+           xfs_vm_writepage+0x5ce/0x630 [xfs]()
+  CPU: 3 PID: 19721 Comm: trinity-c61 Not tainted 3.15.0+ #3
+  Call Trace:
+    xfs_vm_writepage+0x5ce/0x630 [xfs]
+    shrink_page_list+0x8f9/0xb90
+    shrink_inactive_list+0x253/0x510
+    shrink_lruvec+0x563/0x6c0
+    shrink_zone+0x3b/0x100
+    shrink_zones+0x1f1/0x3c0
+    try_to_free_pages+0x164/0x380
+    __alloc_pages_nodemask+0x822/0xc90
+    alloc_pages_vma+0xaf/0x1c0
+    handle_mm_fault+0xa31/0xc50
+  etc.
 
-Note that the somewhat similar functionality that records highest
-successful pageblock in zone->compact_cached_free_pfn, remains unchanged.
-This cache is used when the whole compaction is restarted, not for
-multiple invocations of the free scanner during single compaction.
+ 970   if (WARN_ON_ONCE((current->flags & (PF_MEMALLOC|PF_KSWAPD)) ==
+ 971                   PF_MEMALLOC))
 
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Rik van Riel <riel@redhat.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+I did not respond at the time, because a glance at the PageDirty block
+in shrink_page_list() quickly shows that this is impossible: we don't do
+writeback on file pages (other than tmpfs) from direct reclaim nowadays.
+Dave was hallucinating, but it would have been disrespectful to say so.
+
+However, my own /var/log/messages now shows similar complaints
+
+  WARNING: CPU: 1 PID: 28814 at fs/ext4/inode.c:1881 ext4_writepage+0xa7/0x38b()
+  WARNING: CPU: 0 PID: 27347 at fs/ext4/inode.c:1764 ext4_writepage+0xa7/0x38b()
+
+from stressing some mmotm trees during July.
+
+Could a dirty xfs or ext4 file page somehow get marked PageSwapBacked,
+so fail shrink_page_list()'s page_is_file_cache() test, and so proceed
+to mapping->a_ops->writepage()?
+
+Yes, 3.16-rc1's commit 68711a746345 ("mm, migration: add destination
+page freeing callback") has provided such a way to compaction: if
+migrating a SwapBacked page fails, its newpage may be put back on the
+list for later use with PageSwapBacked still set, and nothing will clear
+it.
+
+Whether that can do anything worse than issue WARN_ON_ONCEs, and get
+some statistics wrong, is unclear: easier to fix than to think through
+the consequences.
+
+Fixing it here, before the put_new_page(), addresses the bug directly,
+but is probably the worst place to fix it.  Page migration is doing too
+many parts of the job on too many levels: fixing it in
+move_to_new_page() to complement its SetPageSwapBacked would be
+preferable, except why is it (and newpage->mapping and newpage->index)
+done there, rather than down in migrate_page_move_mapping(), once we are
+sure of success? Not a cleanup to get into right now, especially not
+with memcg cleanups coming in 3.17.
+
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/compaction.c | 22 +++++++---------------
- 1 file changed, 7 insertions(+), 15 deletions(-)
+ mm/migrate.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 88b33e6..44aa2d4 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -686,7 +686,6 @@ static void isolate_freepages(struct zone *zone,
- 	unsigned long block_start_pfn;	/* start of current pageblock */
- 	unsigned long block_end_pfn;	/* end of current pageblock */
- 	unsigned long low_pfn;	     /* lowest pfn scanner is able to scan */
--	unsigned long next_free_pfn; /* start pfn for scaning at next round */
- 	int nr_freepages = cc->nr_freepages;
- 	struct list_head *freelist = &cc->freepages;
- 
-@@ -707,12 +706,6 @@ static void isolate_freepages(struct zone *zone,
- 	low_pfn = ALIGN(cc->migrate_pfn + 1, pageblock_nr_pages);
- 
- 	/*
--	 * If no pages are isolated, the block_start_pfn < low_pfn check
--	 * will kick in.
--	 */
--	next_free_pfn = 0;
--
--	/*
- 	 * Isolate free pages until enough are available to migrate the
- 	 * pages on cc->migratepages. We stop searching if the migrate
- 	 * and free page scanners meet or enough free pages are isolated.
-@@ -752,19 +745,19 @@ static void isolate_freepages(struct zone *zone,
- 			continue;
- 
- 		/* Found a block suitable for isolating free pages from */
-+		cc->free_pfn = block_start_pfn;
- 		isolated = isolate_freepages_block(cc, block_start_pfn,
- 					block_end_pfn, freelist, false);
- 		nr_freepages += isolated;
- 
- 		/*
--		 * Record the highest PFN we isolated pages from. When next
--		 * looking for free pages, the search will restart here as
--		 * page migration may have returned some pages to the allocator
-+		 * Set a flag that we successfully isolated in this pageblock.
-+		 * In the next loop iteration, zone->compact_cached_free_pfn
-+		 * will not be updated and thus it will effectively contain the
-+		 * highest pageblock we isolated pages from.
- 		 */
--		if (isolated && next_free_pfn == 0) {
-+		if (isolated)
- 			cc->finished_update_free = true;
--			next_free_pfn = block_start_pfn;
--		}
- 	}
- 
- 	/* split_free_page does not map the pages */
-@@ -775,9 +768,8 @@ static void isolate_freepages(struct zone *zone,
- 	 * so that compact_finished() may detect this
+diff --git a/mm/migrate.c b/mm/migrate.c
+index e397bd2..96d4d81 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -919,9 +919,10 @@ out:
+ 	 * it.  Otherwise, putback_lru_page() will drop the reference grabbed
+ 	 * during isolation.
  	 */
- 	if (block_start_pfn < low_pfn)
--		next_free_pfn = cc->migrate_pfn;
-+		cc->free_pfn = cc->migrate_pfn;
+-	if (rc != MIGRATEPAGE_SUCCESS && put_new_page)
++	if (rc != MIGRATEPAGE_SUCCESS && put_new_page) {
++		ClearPageSwapBacked(newpage);
+ 		put_new_page(newpage, private);
+-	else
++	} else
+ 		putback_lru_page(newpage);
  
--	cc->free_pfn = next_free_pfn;
- 	cc->nr_freepages = nr_freepages;
- }
- 
+ 	if (result) {
 -- 
 1.8.4.5
 
