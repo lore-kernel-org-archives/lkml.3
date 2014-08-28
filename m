@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752106AbaH1NOg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 09:14:36 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:45762 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464AbaH1NOe (ORCPT
+	id S1752167AbaH1NOn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 09:14:43 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:41292 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360AbaH1NOk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 09:14:34 -0400
+	Thu, 28 Aug 2014 09:14:40 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Lee Jones <lee.jones@linaro.org>, gregkh@linuxfoundation.org
-Subject: [PATCH 02/11] misc: st_core: Protect unsigned value against becoming negative
-Date: Thu, 28 Aug 2014 14:14:08 +0100
-Message-Id: <1409231657-18294-2-git-send-email-lee.jones@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 06/11] mfd: htc-i2cpld: Rectify pointer offset error
+Date: Thu, 28 Aug 2014 14:14:12 +0100
+Message-Id: <1409231657-18294-6-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1409231657-18294-1-git-send-email-lee.jones@linaro.org>
 References: <1409231657-18294-1-git-send-email-lee.jones@linaro.org>
@@ -20,52 +20,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Coverity reported:
-  This less-than-zero comparison of an unsigned value is never true.
+Checking the result of container_of() against NULL will always result to
+false.  Using the offset of member 'chip_out' to find the start of 'struct
+htcpld_chip' will result in an offset error when .get_chip() is attempting
+to obtain 'htcpld-in'.  Instead, we'll use the correct member based on a
+previously the set chip label.
 
-In answer to that, we only ever decrement if protos_registered is
-positive.  We can subsequently remove the paranoid checking during
-unregister.
-
-Cc: gregkh@linuxfoundation.org
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/misc/ti-st/st_core.c | 11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ drivers/mfd/htc-i2cpld.c | 33 ++++++++++-----------------------
+ 1 file changed, 10 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/misc/ti-st/st_core.c b/drivers/misc/ti-st/st_core.c
-index 1972d57a..54be83d 100644
---- a/drivers/misc/ti-st/st_core.c
-+++ b/drivers/misc/ti-st/st_core.c
-@@ -153,8 +153,9 @@ static void st_reg_complete(struct st_data_s *st_gdata, char err)
- 				(st_gdata->list[i]->priv_data, err);
- 			pr_info("protocol %d's cb sent %d\n", i, err);
- 			if (err) { /* cleanup registered protocol */
--				st_gdata->protos_registered--;
- 				st_gdata->is_registered[i] = false;
-+				if (st_gdata->protos_registered)
-+					st_gdata->protos_registered--;
- 			}
- 		}
- 	}
-@@ -639,14 +640,12 @@ long st_unregister(struct st_proto_s *proto)
- 		return -EPROTONOSUPPORT;
- 	}
- 
--	st_gdata->protos_registered--;
-+	if (st_gdata->protos_registered)
-+		st_gdata->protos_registered--;
-+
- 	remove_channel_from_table(st_gdata, proto);
- 	spin_unlock_irqrestore(&st_gdata->lock, flags);
- 
--	/* paranoid check */
--	if (st_gdata->protos_registered < ST_EMPTY)
--		st_gdata->protos_registered = ST_EMPTY;
+diff --git a/drivers/mfd/htc-i2cpld.c b/drivers/mfd/htc-i2cpld.c
+index 073e180..99b362e 100644
+--- a/drivers/mfd/htc-i2cpld.c
++++ b/drivers/mfd/htc-i2cpld.c
+@@ -258,31 +258,18 @@ static void htcpld_chip_set_ni(struct work_struct *work)
+ static int htcpld_chip_get(struct gpio_chip *chip, unsigned offset)
+ {
+ 	struct htcpld_chip *chip_data;
+-	int val = 0;
+-	int is_input = 0;
 -
- 	if ((st_gdata->protos_registered == ST_EMPTY) &&
- 	    (!test_bit(ST_REG_PENDING, &st_gdata->st_state))) {
- 		pr_info(" all chnl_ids unregistered ");
+-	/* Try out first */
+-	chip_data = container_of(chip, struct htcpld_chip, chip_out);
+-	if (!chip_data) {
+-		/* Try in */
+-		is_input = 1;
+-		chip_data = container_of(chip, struct htcpld_chip, chip_in);
+-		if (!chip_data)
+-			return -EINVAL;
+-	}
++	u8 cache;
+ 
+-	/* Determine if this is an input or output GPIO */
+-	if (!is_input)
+-		/* Use the output cache */
+-		val = (chip_data->cache_out >> offset) & 1;
+-	else
+-		/* Use the input cache */
+-		val = (chip_data->cache_in >> offset) & 1;
++	if (!strncmp(chip->label, "htcpld-out", 10)) {
++		chip_data = container_of(chip, struct htcpld_chip, chip_out);
++		cache = chip_data->cache_out;
++	} else if (!strncmp(chip->label, "htcpld-in", 9)) {
++		chip_data = container_of(chip, struct htcpld_chip, chip_in);
++		cache = chip_data->cache_in;
++	} else
++		return -EINVAL;
+ 
+-	if (val)
+-		return 1;
+-	else
+-		return 0;
++	return (cache >> offset) & 1;
+ }
+ 
+ static int htcpld_direction_output(struct gpio_chip *chip,
 -- 
 1.9.1
 
