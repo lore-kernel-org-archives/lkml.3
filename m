@@ -1,192 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964963AbaH1BuL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 21:50:11 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:11127 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932309AbaH1BuI (ORCPT
+	id S965025AbaH1CG2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 22:06:28 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46924 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933884AbaH1CG0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 21:50:08 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 27 Aug 2014 18:40:01 -0700
-Message-ID: <53FE8AC9.2070907@nvidia.com>
-Date: Thu, 28 Aug 2014 09:50:01 +0800
-From: Wei Ni <wni@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 27 Aug 2014 22:06:26 -0400
 MIME-Version: 1.0
-To: Eduardo Valentin <edubezval@gmail.com>
-CC: <khali@linux-fr.org>, <linux@roeck-us.net>, <swarren@wwwdotorg.org>,
-        <lm-sensors@lm-sensors.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 3/4] thermal: add more description for thermal-zones
-References: <1408948188-4181-1-git-send-email-wni@nvidia.com> <1408948188-4181-4-git-send-email-wni@nvidia.com> <20140825110711.GA12349@developer> <53FBEE39.2020001@nvidia.com> <20140826121210.GB15219@developer> <53FD484F.7030504@nvidia.com> <20140827133217.GB15875@developer>
-In-Reply-To: <20140827133217.GB15875@developer>
-X-Originating-IP: [10.19.224.131]
-X-ClientProxiedBy: DRBGMAIL103.nvidia.com (10.18.16.22) To
- HKMAIL101.nvidia.com (10.18.16.10)
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <53FE029B.1030200@parallels.com>
+References: <1408031441-31156-1-git-send-email-ming.lei@canonical.com>
+	<1408031441-31156-6-git-send-email-ming.lei@canonical.com>
+	<20140815163111.GA16652@infradead.org>
+	<53EE370D.1060106@kernel.dk>
+	<53EE3966.60609@kernel.dk>
+	<CACVXFVO+3SHy0=zESJqG3ZB68AZaeK5_QK2CVmZWzZ7oBWDGwg@mail.gmail.com>
+	<53F0EAEC.9040505@kernel.dk>
+	<CACVXFVO3CrD2CoHiBOZ8GNMXrT2pJ=t2BzmAHksqRTmgrpsaaQ@mail.gmail.com>
+	<CACVXFVN6W-AAQ6g4LXHOyvMzU+EAmj_YYBEuYRnoSB+VqCJg8A@mail.gmail.com>
+	<53F3B89D.6070703@kernel.dk>
+	<CACVXFVOR0mzMWo+iPtU8jUvYgH+non=hQ0XaP0Z1Fu0qiSbJNA@mail.gmail.com>
+	<53FE029B.1030200@parallels.com>
+Date: Thu, 28 Aug 2014 10:06:23 +0800
+Message-ID: <CACVXFVOx6n88kFhCk60YOfVa22qw1B3Gs0+Mj_ng2T5zy1Wb3A@mail.gmail.com>
+Subject: Re: [PATCH v1 5/9] block: loop: convert to blk-mq
+From: Ming Lei <ming.lei@canonical.com>
+To: Maxim Patlasov <mpatlasov@parallels.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>, Zach Brown <zab@zabbo.net>,
+        Benjamin LaHaise <bcrl@kvack.org>, Kent Overstreet <kmo@daterainc.com>,
+        AIO <linux-aio@kvack.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2014 09:32 PM, Eduardo Valentin wrote:
-> Hello Wei,
-> 
-> On Wed, Aug 27, 2014 at 10:54:07AM +0800, Wei Ni wrote:
->> On 08/26/2014 08:12 PM, Eduardo Valentin wrote:
->>> On Tue, Aug 26, 2014 at 10:17:29AM +0800, Wei Ni wrote:
->>>> On 08/25/2014 07:07 PM, Eduardo Valentin wrote:
->>>>> Hello Wei Ni,
->>>>>
->>>>> On Mon, Aug 25, 2014 at 02:29:47PM +0800, Wei Ni wrote:
->>>>>> Add more description for the "polling-delay" property.
->>>>>> Set "trips" and "cooling maps" as optional property, because
->>>>>> if missing these two sub-nodes, the thermal zone device still
->>>>>> work properly.
->>>>>>
->>>>>> Signed-off-by: Wei Ni <wni@nvidia.com>
->>>>>> ---
->>>>>>  Documentation/devicetree/bindings/thermal/thermal.txt | 10 ++++++----
->>>>>>  1 file changed, 6 insertions(+), 4 deletions(-)
->>>>>>
->>>>>> diff --git a/Documentation/devicetree/bindings/thermal/thermal.txt b/Documentation/devicetree/bindings/thermal/thermal.txt
->>>>>> index f5db6b7..e3d3ed9 100644
->>>>>> --- a/Documentation/devicetree/bindings/thermal/thermal.txt
->>>>>> +++ b/Documentation/devicetree/bindings/thermal/thermal.txt
->>>>>> @@ -136,8 +136,8 @@ containing trip nodes and one sub-node containing all the zone cooling maps.
->>>>>>  
->>>>>>  Required properties:
->>>>>>  - polling-delay:	The maximum number of milliseconds to wait between polls
->>>>>> -  Type: unsigned	when checking this thermal zone.
->>>>>> -  Size: one cell
->>>>>> +  Type: unsigned	when checking this thermal zone. If this value is 0, the
->>>>>> +  Size: one cell	driver will not run polling queue, but just cancel it.
->>>>>>  
->>>>>
->>>>> The description above is specific to Linux kernel implementation
->>>>> nomenclature. DT description needs to be OS agnostic.
->>>>>
->>>>>>  - polling-delay-passive: The maximum number of milliseconds to wait
->>>>>>    Type: unsigned	between polls when performing passive cooling.
->>>>>> @@ -148,14 +148,16 @@ Required properties:
->>>>>>    phandles + sensor
->>>>>>    specifier
->>>>>>  
->>>>>> +Optional property:
->>>>>>  - trips:		A sub-node which is a container of only trip point nodes
->>>>>>    Type: sub-node	required to describe the thermal zone.
->>>>>>  
->>>>>>  - cooling-maps:		A sub-node which is a container of only cooling device
->>>>>>    Type: sub-node	map nodes, used to describe the relation between trips
->>>>>> -			and cooling devices.
->>>>>> +			and cooling devices. If missing the "trips" property,
->>>>>> +			This sub-node will not be parsed, because no trips can
->>>>>> +			be bound to cooling devices.
->>>>>
->>>>> Do you mean if the thermal zone misses the "trips" property? Actually,
->>>>> the binding describes both, cooling-maps and trips, as required
->>>>> properties. Thus, both needs to be in place to consider the thermal zone
->>>>> as a proper described zone.
->>>>
->>>> I moved the "trips" and "cooling-maps" to optional property, because if
->>>> missing these two properties, the thermal zone devices still can be
->>>> registered, and the driver can work properly, it has the basic function,
->>>> can read temperature from thermal sysfs, although it doesn't have trips
->>>> and bind with cooling devices.
->>>
->>>
->>> If a thermal zone is used only for monitoring, then I believe it lost
->>> its purpose. As  Maybe a different framework shall be used, such as hwmon,
->>> for instance?
->>
->> Yes, if we only use it for monitoring, we can use hwmon. But we have
->> more functions base on these two thermal zone devices. We have a
->> skin-temperature driver, which used nct1008's remote and local
->> temperatures to estimator the skin temperature. As you know the thermal
->> framework is more powerful, the remote/local sensors can be register as
->> thermal zone, then the skin-temp driver can use thermal_zone_get_temp()
->> to read their temperatures and then estimator skin's temp. We also will
->> set trips and cooling devices for this skin-temp.
-> 
-> In this case, don't you think it would make sense to create a thermal
-> zone for the skin temperature and add the required sensors (including
-> the nct1008) in it?
-
-Hi, Eduardo
-Yes, we will create a thermal zone for the skin-temp driver and add the
-required sensors in it, but in here we want to register these required
-sensors as thermal zone devices, then the thermal framework can export
-functions to read these sensors temperature. If use hwmon framework, it
-can't export nct1008's internal sensors, such as remote/local sensors,
-and no exported functions to read these temperatures. If we doesn't use
-the thermal/of-thermal framework, we have to develop a new framework to
-parse those sensor nodes, and I think this new one may only have slight
-difference with current thermal framework.
-If we set those two properties as optional property, then we can use it
-in this case simply.
-
-The skin-temp nodes will something like this:
-
-skin_temp: therm-est {
-	compatible = "nvidia,tegra124-therm-est";
-
-	#thermal-sensor-cells = <0>;
-
-	sub-devs {
-		dev@0 {
-/* we need to register nct1008_remote as thermal zone devices, so that
-it's easy to handle it by using thermal framework's exported functions. */
-			dev = <&nct1008_remote>;
-		};
-		dev@1 {
-			dev = <&nct1008_local>;
-		};
-	};
-};
-
-thermal-zones {
-	skin-therm {
-		polling-delay-passive = <15000>
-		polling-delay = <0>;
-
-		thermal-sensors = <&skin_temp>;
-
-		trips {
-		};
-		cooling-maps {
-		};
-	};
-};
-
-Wei.
-> 
->>
->> Wei.
+On 8/28/14, Maxim Patlasov <mpatlasov@parallels.com> wrote:
+> On 08/21/2014 09:44 AM, Ming Lei wrote:
+>> On Wed, Aug 20, 2014 at 4:50 AM, Jens Axboe <axboe@kernel.dk> wrote:
 >>
 >>>
->>> The purpose of a thermal zone is to describe thermal behavior of a
->>> hardware. As it is mentioned in the thermal.txt file.
+>>> Reworked a bit more:
 >>>
->>>
->>>>
->>>> Thanks.
->>>> Wei.
->>>>
->>>>>
->>>>>>  
->>>>>> -Optional property:
->>>>>>  - coefficients:		An array of integers (one signed cell) containing
->>>>>>    Type: array		coefficients to compose a linear relation between
->>>>>>    Elem size: one cell	the sensors listed in the thermal-sensors property.
->>>>>> -- 
->>>>>> 1.8.1.5
->>>>>>
->>>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>
+>>> http://git.kernel.dk/?p=linux-block.git;a=commit;h=a323185a761b9a54dc340d383695b4205ea258b6
+>> One big problem of the commit is that it is basically a serialized
+>> workqueue
+>> because of single &hctx->run_work, and per-req work_struct has to be
+>> used for concurrent implementation.  So looks the approach isn't flexible
+>> enough compared with doing that in driver, or any idea about how to fix
+>> that?
 >>
+>
+> I'm interested what's the price of handling requests in a separate
+> thread at large. I used the following fio script:
+>
+>      [global]
+>      direct=1
+>      bsrange=512-512
+>      timeout=10
+>      numjobs=1
+>      ioengine=sync
+>
+>      filename=/dev/loop0 # or /dev/nullb0
+>
+>      [f1]
+>      rw=randwrite
+>
+> to compare the performance of:
+>
+> 1) /dev/loop0 of 3.17.0-rc1 with Ming's patches applied -- 11K iops
 
+If you enable BLK_MQ_F_WQ_CONTEXT, it isn't strange to see this
+result since blk-mq implements a serialized workqueue.
+
+> 2) the same as above, but call loop_queue_work() directly from
+> loop_queue_rq() -- 270K iops
+> 3) /dev/nullb0 of 3.17.0-rc1 -- 380K iops
+
+In my recent investigation and discussion with Jens, using workqueue
+may introduce some regression for cases like loop over null_blk, tmpfs.
+
+And 270K vs. 380K is a bit similar with my result, and it was observed that
+context switch is increased by more than 50% with introducing workqueue.
+
+I will post V3 which will use previous kthread, with blk-mq & kernel aio, which
+should make full use of blk-mq and kernel aio, and won't introduce regression
+for cases like above.
+
+> Taking into account so big difference (11K vs. 270K), would it be worthy
+> to implement pure non-blocking version of aio_kernel_submit() returning
+> error if blocking needed? Then loop driver (or any other in-kernel user)
+
+The kernel aio submit is very similar with user space's implementation,
+except for block plug&unplug usage in user space aio submit path.
+
+If it is blocked in aio_kernel_submit(), you should observe similar thing
+with io_submit() too.
+
+Thanks,
+-- 
+Ming Lei
