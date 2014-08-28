@@ -1,129 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752606AbaH1XBM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 19:01:12 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:37660 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752208AbaH1XBJ (ORCPT
+	id S1752646AbaH1XBy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 19:01:54 -0400
+Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:46776 "EHLO
+	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751506AbaH1XBx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 19:01:09 -0400
+	Thu, 28 Aug 2014 19:01:53 -0400
+X-Greylist: delayed 1186 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Aug 2014 19:01:53 EDT
+X-Cam-AntiVirus: no malware found
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <53FFB045.9010809@citrix.com>
+Date: Thu, 28 Aug 2014 23:42:13 +0100
+From: Andrew Cooper <andrew.cooper3@citrix.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:157d:f169:befe:8cc8:f71f]
-In-Reply-To: <20140828181429.GO4703@rric.localhost>
-References: <1406732794-20920-1-git-send-email-rric@kernel.org>
-	<1406732794-20920-3-git-send-email-rric@kernel.org>
-	<CAOesGMh9KkdKB_ytJ7CCbkPW7dHTX91NdfDMsMNfbmOBVOJ8PQ@mail.gmail.com>
-	<20140828161556.GN4703@rric.localhost>
-	<20140828162549.GP14650@leverpostej>
-	<CAOesGMjtjcgUNV8WLp6_Zbok-0zq5afg_KS8QJYp=kDVabrQvg@mail.gmail.com>
-	<20140828181429.GO4703@rric.localhost>
-Date: Thu, 28 Aug 2014 16:01:08 -0700
-Message-ID: <CAOesGMh3TEKZkyPjopfSm07C2ydw5=2VrzY0xQ=9jkhoA-Z_kQ@mail.gmail.com>
-Subject: Re: [PATCH 2/5] arm64, thunder: Add initial dts for Cavium Thunder SoC
-From: Olof Johansson <olof@lixom.net>
-To: Robert Richter <rric@kernel.org>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
-        Robert Richter <rrichter@cavium.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Stefan Bader <stefan.bader@canonical.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Kees Cook <keescook@chromium.org>,
+        David Vrabel <david.vrabel@citrix.com>
+Subject: Re: [Xen-devel] [PATCH] Solved the Xen PV/KASLR riddle
+References: <20140827204940.GA10556@laptop.dumpdata.com> <1409248903-19625-1-git-send-email-stefan.bader@canonical.com>
+In-Reply-To: <1409248903-19625-1-git-send-email-stefan.bader@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 28, 2014 at 11:14 AM, Robert Richter <rric@kernel.org> wrote:
-> On 28.08.14 09:31:43, Olof Johansson wrote:
->> On Thu, Aug 28, 2014 at 9:25 AM, Mark Rutland <mark.rutland@arm.com> wrote:
->> > On Thu, Aug 28, 2014 at 05:15:56PM +0100, Robert Richter wrote:
->> >> Olof,
->> >>
->> >> On 30.07.14 11:14:23, Olof Johansson wrote:
->> >> > On Wed, Jul 30, 2014 at 8:06 AM, Robert Richter <rric@kernel.org> wrote:
->> >> > > From: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
->> >> > >
->> >> > > Add initial device tree nodes for Cavium Thunder SoCs with support of
->> >> > > 48 cores and gicv3. The dts file requires further changes, esp. for
->> >> > > pci, gicv3-its and smmu. This changes will be added later together
->> >> > > with the device drivers.
->> >> > >
->> >> > > Signed-off-by: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
->> >> > > Signed-off-by: Robert Richter <rrichter@cavium.com>
->> >> > > ---
->> >> > >  arch/arm64/boot/dts/Makefile         |   1 +
->> >> > >  arch/arm64/boot/dts/thunder-88xx.dts | 387 +++++++++++++++++++++++++++++++++++
->> >> > >  2 files changed, 388 insertions(+)
->> >> > >  create mode 100644 arch/arm64/boot/dts/thunder-88xx.dts
->> >> > >
->> >> > > diff --git a/arch/arm64/boot/dts/Makefile b/arch/arm64/boot/dts/Makefile
->> >> > > index c52bdb051f66..f8001a62029c 100644
->> >> > > --- a/arch/arm64/boot/dts/Makefile
->> >> > > +++ b/arch/arm64/boot/dts/Makefile
->> >> > > @@ -1,3 +1,4 @@
->> >> > > +dtb-$(CONFIG_ARCH_THUNDER) += thunder-88xx.dtb
->> >> > >  dtb-$(CONFIG_ARCH_VEXPRESS) += rtsm_ve-aemv8a.dtb foundation-v8.dtb
->> >> > >  dtb-$(CONFIG_ARCH_XGENE) += apm-mustang.dtb
->> >> >
->> >> > Oh, and:
->> >> >
->> >> > Let's fix the mistake we made on 32-bit here (that we can't undo
->> >> > unless we move all dts files now, which is too much churn), and put
->> >> > each SoC vendor in its own subdirectory.
->> >> >
->> >> > So, please add a arch/arm64/boot/dts/cavium/ directory, add a Makefile
->> >> > and the dts there.
->> >> >
->> >> > We should move vexpress under arm/   and xgene under apm/ too.
->> >>
->> >> I was looking into this. It turned out that this would introduce more
->> >> pain than it solves. The problem with introducing vendor subdirs for
->> >> .dts files is that this will require also subdirs for .dtb files to
->> >> avoid name conflicts. This means that dtb files are no longer in a
->> >> single directory. Current build scripts and makefiles rely on this.
->> >> E.g.:
->> >>
->> >>  scripts/Makefile.lib:$(obj)/%.dtb.S: $(obj)/%.dtb
->> >>
->> >> Thus, the introduction of vendor subdirs is not easy to implement and
->> >> may break existing workflows. Also, no other arch has vendor subdirs.
->> >>
->> >> A solution would be to have a naming scheme for dts files which
->> >> requires the vendor in the file name, such as cavium-thunder-88xx.dtb.
->> >> Though, these long names may look a bit ugly.
->> >>
->> >> Hmm... Any thoughts?
->> >
->> > That would make it possible to search, but the number of files in one
->> > place might become somewhat overwelming (which I believe was Olof's
->> > concern).
->> >
->> > Olof, thoughts?
->>
->> Yeah, on 32 bit we've got an ever-growing and very large directory
->> today that is becoming a headache. Carving it up in directories to
->> reduce plain directory size would come a long way.
->>
->> I think we would catch name conflicts quickly with the automatic
->> builders we have today -- and it's likely that the files will have a
->> platform prefix anyway so it shouldn't be a big issue. I think we can
->> live with that.
->
-> So you mean, having the source files with subdirectories, but the dtb
-> files in a single obj dir?
+On 28/08/2014 19:01, Stefan Bader wrote:
+>>> So not much further... but then I think I know what I do next. Probably should
+>>> have done before. I'll replace the WARN_ON in vmalloc that triggers by a panic
+>>> and at least get a crash dump of that situation when it occurs. Then I can dig
+>>> in there with crash (really should have thought of that before)...
+>> <nods> I dug a bit in the code (arch/x86/xen/mmu.c) but there is nothing there
+>> that screams at me, so I fear I will have to wait until you get the crash
+>> and get some clues from that.
+> Ok, what a journey. So after long hours of painful staring at the code...
+> (and btw, if someone could tell me how the heck one can do a mfn_to_pfn
+> in crash, I really would appreaciate :-P)
 
-Thinking about it a bit more, the even more obvious solution that I
-for some reason didn't think of at the time, is to have the
-dtbs_install target create the appropriate subdirectories on the
-install side, so that the structure is preserved.
+The M2P map lives in the Xen reserved virtual address space in each PV
+guest, and forms part of the PV ABI.  It is mapped read-only, in the
+native width of the guest.
 
-That comes a bit closer to how modules are handled as well.
+32bit PV (PAE) at 0xF5800000
+64bit PV at 0xFFFF800000000000
 
+This is represented by the MACH2PHYS_VIRT_START symbol from the Xen
+public header files.  You should be able to blindly construct a pointer
+to it (if you have nothing better to hand), as it will be hooked into
+the guests pagetables before execution starts.  Therefore,
+"MACH2PHYS_VIRT_START[(unsigned long)pfn]" ought to do in a pinch.
 
--Olof
+~Andrew
