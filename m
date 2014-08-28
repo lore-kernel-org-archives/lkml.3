@@ -1,119 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965888AbaH1JMs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 05:12:48 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:11822 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936269AbaH1JIP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 05:08:15 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-98-53fef17d88d7
-From: Andrzej Hajda <a.hajda@samsung.com>
-To: Inki Dae <inki.dae@samsung.com>
-Cc: Andrzej Hajda <a.hajda@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org (open list),
-        linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...)
-Subject: [PATCH v2 01/17] drm/exynos/ipp: remove fake pm callbacks
-Date: Thu, 28 Aug 2014 11:07:25 +0200
-Message-id: <1409216861-12452-2-git-send-email-a.hajda@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1409216861-12452-1-git-send-email-a.hajda@samsung.com>
-References: <1409216861-12452-1-git-send-email-a.hajda@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGJMWRmVeSWpSXmKPExsVy+t/xy7q1H/8FG3T0sFjcWneO1eLK1/ds
-	FpPuT2CxeHHvIovF2aY37BaXd81hs5hxfh+Txdojd9ktZkx+yebA6XG/+ziTR9+WVYwenzfJ
-	BTBHcdmkpOZklqUW6dslcGUc2HmeveAXX8XlIy9YGhi38XQxcnJICJhITHjymQnCFpO4cG89
-	WxcjF4eQwFJGiU+n5kE5fUwSW45fYgepYhPQlPi7+SYbiC0ioCyxal87O0gRs8BHJokrS98w
-	gySEBZwklh6/AdbAIqAqcb7nNFADBwevgLPE4bvGENvkJE4em8wKYnMKuEhsPP4GrFwIqGT3
-	+c9MExh5FzAyrGIUTS1NLihOSs810itOzC0uzUvXS87P3cQICauvOxiXHrM6xCjAwajEw6tw
-	+k+wEGtiWXFl7iFGCQ5mJRHeo8f/BQvxpiRWVqUW5ccXleakFh9iZOLglGpg1D+9r6Be23e1
-	UccWpUnfJPqrnQ6bxyRPYMx8e2hd0BXJopoNvz8aes5a/bM75Ler1/5Sb5HUZM1H6Q2N/KK3
-	+y8Vfo/73rizvEjZ/Iyd0fPXH/Wz/nk/2i33qGmx4LNT552+lyy8qtH5bUbGvOY/n1xnP5ZM
-	dNt6WC8578veJH79B0l8jlHTlFiKMxINtZiLihMB0lmdogkCAAA=
+	id S965524AbaH1JPd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 05:15:33 -0400
+Received: from mail-bn1lp0144.outbound.protection.outlook.com ([207.46.163.144]:8116
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S934783AbaH1JPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 05:15:30 -0400
+X-WSS-ID: 0NB0F1J-07-W9Z-02
+X-M-MSG: 
+Message-ID: <53FEF325.20505@amd.com>
+Date: Thu, 28 Aug 2014 04:15:17 -0500
+From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Jingoo Han <jg1.han@samsung.com>
+CC: <marc.zyngier@arm.com>, <mark.rutland@arm.com>, <jason@lakedaemon.net>,
+        <pawel.moll@arm.com>, <Catalin.Marinas@arm.com>, <Will.Deacon@arm.com>,
+        <tglx@linutronix.de>, <Harish.Kasiviswanathan@amd.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 1/2 V4] irqchip: gic: Add supports for ARM GICv2m MSI(-X)
+References: <1407942041-3291-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <1407942041-3291-2-git-send-email-suravee.suthikulpanit@amd.com>
+ <003d01cfb76b$629b43c0$27d1cb40$%han@samsung.com>
+In-Reply-To: <003d01cfb76b$629b43c0$27d1cb40$%han@samsung.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(51704005)(479174003)(377454003)(199003)(189002)(24454002)(85852003)(4396001)(33656002)(90102001)(97736001)(81342001)(101416001)(76482001)(64706001)(20776003)(79102001)(92566001)(80022001)(92726001)(65956001)(102836001)(21056001)(107046002)(47776003)(85306004)(87936001)(105586002)(83322001)(50466002)(36756003)(99396002)(19580395003)(54356999)(106466001)(81542001)(68736004)(44976005)(74502001)(86362001)(50986999)(65816999)(95666004)(31966008)(83072002)(64126003)(46102001)(110136001)(84676001)(19580405001)(77982001)(76176999)(23746002);DIR:OUT;SFP:;SCL:1;SRVR:CO1PR02MB046;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;UriScan:;
+X-Forefront-PRVS: 031763BCAF
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PM callbacks in ipp core do nothing, so the patch removes it.
 
-Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
-Reviewed-by: Joonyoung Shim <jy0922.shim@samsung.com>
----
- drivers/gpu/drm/exynos/exynos_drm_ipp.c | 51 ---------------------------------
- 1 file changed, 51 deletions(-)
 
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_ipp.c b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
-index c411399..da917ca 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_ipp.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
-@@ -1808,63 +1808,12 @@ static int ipp_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
--static int ipp_power_ctrl(struct ipp_context *ctx, bool enable)
--{
--	DRM_DEBUG_KMS("enable[%d]\n", enable);
--
--	return 0;
--}
--
--#ifdef CONFIG_PM_SLEEP
--static int ipp_suspend(struct device *dev)
--{
--	struct ipp_context *ctx = get_ipp_context(dev);
--
--	if (pm_runtime_suspended(dev))
--		return 0;
--
--	return ipp_power_ctrl(ctx, false);
--}
--
--static int ipp_resume(struct device *dev)
--{
--	struct ipp_context *ctx = get_ipp_context(dev);
--
--	if (!pm_runtime_suspended(dev))
--		return ipp_power_ctrl(ctx, true);
--
--	return 0;
--}
--#endif
--
--#ifdef CONFIG_PM_RUNTIME
--static int ipp_runtime_suspend(struct device *dev)
--{
--	struct ipp_context *ctx = get_ipp_context(dev);
--
--	return ipp_power_ctrl(ctx, false);
--}
--
--static int ipp_runtime_resume(struct device *dev)
--{
--	struct ipp_context *ctx = get_ipp_context(dev);
--
--	return ipp_power_ctrl(ctx, true);
--}
--#endif
--
--static const struct dev_pm_ops ipp_pm_ops = {
--	SET_SYSTEM_SLEEP_PM_OPS(ipp_suspend, ipp_resume)
--	SET_RUNTIME_PM_OPS(ipp_runtime_suspend, ipp_runtime_resume, NULL)
--};
--
- struct platform_driver ipp_driver = {
- 	.probe		= ipp_probe,
- 	.remove		= ipp_remove,
- 	.driver		= {
- 		.name	= "exynos-drm-ipp",
- 		.owner	= THIS_MODULE,
--		.pm	= &ipp_pm_ops,
- 	},
- };
- 
--- 
-1.9.1
+On 08/13/2014 09:56 PM, Jingoo Han wrote:
+> On Thursday, August 14, 2014 12:01 AM, Suravee Suthikulpanit wrote:
+>>
+>> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+>>
+>> ARM GICv2m specification extends GICv2 to support MSI(-X) with
+>> a new set of register frame. This patch introduces support for
+>> the non-secure GICv2m register frame. Currently, GICV2m is available
+>> in certain version of GIC-400.
+>>
+>> The patch introduces a new property in ARM gic binding, the v2m subnode.
+>> It is optional.
+>
+> Hi Suravee Suthikulpanit,
+>
+> I added some minor comments.
 
+Thanks for the cleaning up comments.
+
+Suravee
