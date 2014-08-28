@@ -1,93 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965661AbaH1LRv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 07:17:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52914 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932901AbaH1LRt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 07:17:49 -0400
-Date: Thu, 28 Aug 2014 13:17:47 +0200
-From: chrubis@suse.cz
-To: ltp-list@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        libc-alpha@sourceware.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org, lwn@lwn.net
-Subject: [LTP] [ANNOUNCE] The Linux Test Project has been released for AUGUST
- 2014
-Message-ID: <20140828111746.GA23303@rei.suse.cz>
+	id S965771AbaH1LSI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 07:18:08 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:59467 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965685AbaH1LSD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 07:18:03 -0400
+Date: Thu, 28 Aug 2014 12:17:41 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Jonathan Cameron <jic23@kernel.org>,
+        linux-iio@vger.kernel.org, Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-pm@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
+        support.opensource@diasemi.com
+Subject: Re: [PATCH v2 7/7] MAINTAINERS: Include DA9150 files in Dialog
+ Semiconductor support list.
+Message-ID: <20140828111741.GK24579@lee--X1>
+References: <cover.1409145187.git.Adam.Thomson.Opensource@diasemi.com>
+ <09b13677b1e2d1cf02e4eb43e2777f8081ec9597.1409145187.git.Adam.Thomson.Opensource@diasemi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <09b13677b1e2d1cf02e4eb43e2777f8081ec9597.1409145187.git.Adam.Thomson.Opensource@diasemi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good news everyone,
+On Thu, 28 Aug 2014, Adam Thomson wrote:
 
-the Linux Test Project test suite stable release for *August 2014* has
-been released.
+> Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+> ---
+>  MAINTAINERS | 4 ++++
+>  1 file changed, 4 insertions(+)
 
-Since the last release 311 patches by 24 authors were merged.
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
-Notable changes are:
-
-* New testcases and improved coverage for: madvise, waitid, timerfd_*,
-  getcwd, sched_setaffinity, sendfile, vmsplice, rename, renameat, open,
-  openat, readlink, readlinkat, utime, wait, utimes, truncate, fstatfs,
-  statvfs, statfs, splice, tee, setpgid, sbrk, readdir, setresgid,
-  setresuid, rmdir, perf_event_open, ...
-
-* Continued effort to cleanup old code:
-  - many CRAY, SGI, ... ifdefs were removed
-  - the test library headers were cleaned up a bit
-  - several testcases were cleaned up or rewritten from a scratch
-
-* The TCONF (testcase not appropriate for current configuration) test
-  status is now propagated to the test exit value and included in
-  the testrun results. (previously it was reported as passed)
-
-* Testcases utilizing a block device can now prepare a loopback device
-  automatically in the test setup.
-
-* LTP test library has gained API to easily propagate test result from a
-  child process to a parent process.
-
-* Linux containers testcases were cleaned up.
-
-* The can network test were fixed and cleaned up.
-
-* The isofs testcases were fixed and cleaned up.
-
-* Test messages for failures now contain source code filename and line.
-
-* If test gets an unexpected signal the message contains not only the
-  signal number but also symbolic name such as SIGINT.
-
-* Various fixes for failures on Btrfs filesystem, on PPC64 LE, SPARC64
-  and inside of KVM virtual machine.
-
-* And many more smaller fixes and enhancements.
-
-The latest version of the test-suite contains 3000+ tests for the Linux
-and can be downloaded at:
-
-http://sourceforge.net/projects/ltp/files/LTP%20Source/ltp-20140828/
-
-The project pages as well as GIT repository are hosted on GitHub for
-quite some time now:
-
-https://github.com/linux-test-project/ltp
-http://linux-test-project.github.io/
-
-If you ever wondered how to write a LTP testcase, don't miss our
-(continuously updated) developer documentation at:
-
-https://github.com/linux-test-project/ltp/wiki/Test-Writing-Guidelines
-https://github.com/linux-test-project/ltp/wiki/BuildSystem
-
-Patches, new tests, bugs, comments or questions should go to
-to our mailing list at ltp-list@lists.sf.net.
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index aefa948..6dc0aee 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -2883,12 +2883,15 @@ S:	Supported
+>  F:	Documentation/hwmon/da90??
+>  F:	drivers/gpio/gpio-da90??.c
+>  F:	drivers/hwmon/da90??-hwmon.c
+> +F:	drivers/iio/adc/da91??-*.c
+>  F:	drivers/input/misc/da90??_onkey.c
+>  F:	drivers/input/touchscreen/da9052_tsi.c
+>  F:	drivers/leds/leds-da90??.c
+>  F:	drivers/mfd/da903x.c
+>  F:	drivers/mfd/da90??-*.c
+> +F:	drivers/mfd/da91??-*.c
+>  F:	drivers/power/da9052-battery.c
+> +F:	drivers/power/da91??-*.c
+>  F:	drivers/regulator/da903x.c
+>  F:	drivers/regulator/da9???-regulator.[ch]
+>  F:	drivers/rtc/rtc-da90??.c
+> @@ -2898,6 +2901,7 @@ F:	include/linux/mfd/da903x.h
+>  F:	include/linux/mfd/da9052/
+>  F:	include/linux/mfd/da9055/
+>  F:	include/linux/mfd/da9063/
+> +F:	include/linux/mfd/da9150/
+>  F:	include/sound/da[79]*.h
+>  F:	sound/soc/codecs/da[79]*.[ch]
+> 
 
 -- 
-Cyril Hrubis
-chrubis@suse.cz
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
