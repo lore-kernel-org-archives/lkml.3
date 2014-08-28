@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753580AbaH1Sha (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:37:30 -0400
+	id S1753547AbaH1Sh3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 14:37:29 -0400
 Received: from cantor2.suse.de ([195.135.220.15]:32894 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751852AbaH1ShX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:37:23 -0400
+	id S1753385AbaH1ShS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:37:18 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Jiri Slaby <jslaby@suse.cz>
 Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 94/97] mm: move zone->pages_scanned into a vmstat counter
-Date: Thu, 28 Aug 2014 19:35:42 +0100
-Message-Id: <1409250945-30874-95-git-send-email-mgorman@suse.de>
+Subject: [PATCH 89/97] mm: make copy_pte_range static again
+Date: Thu, 28 Aug 2014 19:35:37 +0100
+Message-Id: <1409250945-30874-90-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
 References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
@@ -20,152 +20,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 0d5d823ab4e608ec7b52ac4410de4cb74bbe0edd upstream.
+From: Jerome Marchand <jmarchan@redhat.com>
 
-zone->pages_scanned is a write-intensive cache line during page reclaim
-and it's also updated during page free.  Move the counter into vmstat to
-take advantage of the per-cpu updates and do not update it in the free
-paths unless necessary.
+commit 21bda264f4243f61dfcc485174055f12ad0530b4 upstream.
 
-On a small UMA machine running tiobench the difference is marginal.  On
-a 4-node machine the overhead is more noticable.  Note that automatic
-NUMA balancing was disabled for this test as otherwise the system CPU
-overhead is unpredictable.
+Commit 71e3aac0724f ("thp: transparent hugepage core") adds
+copy_pte_range prototype to huge_mm.h.  I'm not sure why (or if) this
+function have been used outside of memory.c, but it currently isn't.
+This patch makes copy_pte_range() static again.
 
-          3.16.0-rc3  3.16.0-rc3  3.16.0-rc3
-             vanillarearrange-v5   vmstat-v5
-User          746.94      759.78      774.56
-System      65336.22    58350.98    32847.27
-Elapsed     27553.52    27282.02    27415.04
-
-Note that the overhead reduction will vary depending on where exactly
-pages are allocated and freed.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
+Acked-by: David Rientjes <rientjes@google.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/mmzone.h |  2 +-
- mm/page_alloc.c        | 12 +++++++++---
- mm/vmscan.c            |  7 ++++---
- mm/vmstat.c            |  3 ++-
- 4 files changed, 16 insertions(+), 8 deletions(-)
+ include/linux/huge_mm.h | 4 ----
+ mm/memory.c             | 2 +-
+ 2 files changed, 1 insertion(+), 5 deletions(-)
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 9ff35da..1df12c6 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -143,6 +143,7 @@ enum zone_stat_item {
- 	NR_SHMEM,		/* shmem pages (included tmpfs/GEM pages) */
- 	NR_DIRTIED,		/* page dirtyings since bootup */
- 	NR_WRITTEN,		/* page writings since bootup */
-+	NR_PAGES_SCANNED,	/* pages scanned since last reclaim */
- #ifdef CONFIG_NUMA
- 	NUMA_HIT,		/* allocated in intended node */
- 	NUMA_MISS,		/* allocated in non intended node */
-@@ -478,7 +479,6 @@ struct zone {
+diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+index a291552..aac671b 100644
+--- a/include/linux/huge_mm.h
++++ b/include/linux/huge_mm.h
+@@ -92,10 +92,6 @@ extern bool is_vma_temporary_stack(struct vm_area_struct *vma);
+ #endif /* CONFIG_DEBUG_VM */
  
- 	/* Fields commonly accessed by the page reclaim scanner */
- 	spinlock_t		lru_lock;
--	unsigned long		pages_scanned;	   /* since last reclaim */
- 	struct lruvec		lruvec;
- 
- 	/*
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 36e6214..ee24ebb 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -664,9 +664,12 @@ static void free_pcppages_bulk(struct zone *zone, int count,
- 	int migratetype = 0;
- 	int batch_free = 0;
- 	int to_free = count;
-+	unsigned long nr_scanned;
- 
- 	spin_lock(&zone->lock);
--	zone->pages_scanned = 0;
-+	nr_scanned = zone_page_state(zone, NR_PAGES_SCANNED);
-+	if (nr_scanned)
-+		__mod_zone_page_state(zone, NR_PAGES_SCANNED, -nr_scanned);
- 
- 	while (to_free) {
- 		struct page *page;
-@@ -715,8 +718,11 @@ static void free_one_page(struct zone *zone,
- 				unsigned int order,
- 				int migratetype)
+ extern unsigned long transparent_hugepage_flags;
+-extern int copy_pte_range(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+-			  pmd_t *dst_pmd, pmd_t *src_pmd,
+-			  struct vm_area_struct *vma,
+-			  unsigned long addr, unsigned long end);
+ extern int split_huge_page_to_list(struct page *page, struct list_head *list);
+ static inline int split_huge_page(struct page *page)
  {
-+	unsigned long nr_scanned;
- 	spin_lock(&zone->lock);
--	zone->pages_scanned = 0;
-+	nr_scanned = zone_page_state(zone, NR_PAGES_SCANNED);
-+	if (nr_scanned)
-+		__mod_zone_page_state(zone, NR_PAGES_SCANNED, -nr_scanned);
- 
- 	__free_one_page(page, pfn, zone, order, migratetype);
- 	if (unlikely(!is_migrate_isolate(migratetype)))
-@@ -3218,7 +3224,7 @@ void show_free_areas(unsigned int filter)
- 			K(zone_page_state(zone, NR_BOUNCE)),
- 			K(zone_page_state(zone, NR_FREE_CMA_PAGES)),
- 			K(zone_page_state(zone, NR_WRITEBACK_TEMP)),
--			zone->pages_scanned,
-+			K(zone_page_state(zone, NR_PAGES_SCANNED)),
- 			(!zone_reclaimable(zone) ? "yes" : "no")
- 			);
- 		printk("lowmem_reserve[]:");
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 181f0b8..5461d02 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -163,7 +163,8 @@ static unsigned long zone_reclaimable_pages(struct zone *zone)
- 
- bool zone_reclaimable(struct zone *zone)
- {
--	return zone->pages_scanned < zone_reclaimable_pages(zone) * 6;
-+	return zone_page_state(zone, NR_PAGES_SCANNED) <
-+		zone_reclaimable_pages(zone) * 6;
+diff --git a/mm/memory.c b/mm/memory.c
+index b870c9c..b590106 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -878,7 +878,7 @@ out_set_pte:
+ 	return 0;
  }
  
- static unsigned long get_lru_size(struct lruvec *lruvec, enum lru_list lru)
-@@ -1470,7 +1471,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
- 	__mod_zone_page_state(zone, NR_ISOLATED_ANON + file, nr_taken);
- 
- 	if (global_reclaim(sc)) {
--		zone->pages_scanned += nr_scanned;
-+		__mod_zone_page_state(zone, NR_PAGES_SCANNED, nr_scanned);
- 		if (current_is_kswapd())
- 			__count_zone_vm_events(PGSCAN_KSWAPD, zone, nr_scanned);
- 		else
-@@ -1659,7 +1660,7 @@ static void shrink_active_list(unsigned long nr_to_scan,
- 	nr_taken = isolate_lru_pages(nr_to_scan, lruvec, &l_hold,
- 				     &nr_scanned, sc, isolate_mode, lru);
- 	if (global_reclaim(sc))
--		zone->pages_scanned += nr_scanned;
-+		__mod_zone_page_state(zone, NR_PAGES_SCANNED, nr_scanned);
- 
- 	reclaim_stat->recent_scanned[file] += nr_taken;
- 
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 4a32236..28245d5 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -761,6 +761,7 @@ const char * const vmstat_text[] = {
- 	"nr_shmem",
- 	"nr_dirtied",
- 	"nr_written",
-+	"nr_pages_scanned",
- 
- #ifdef CONFIG_NUMA
- 	"numa_hit",
-@@ -1055,7 +1056,7 @@ static void zoneinfo_show_print(struct seq_file *m, pg_data_t *pgdat,
- 		   min_wmark_pages(zone),
- 		   low_wmark_pages(zone),
- 		   high_wmark_pages(zone),
--		   zone->pages_scanned,
-+		   zone_page_state(zone, NR_PAGES_SCANNED),
- 		   zone->spanned_pages,
- 		   zone->present_pages,
- 		   zone->managed_pages);
+-int copy_pte_range(struct mm_struct *dst_mm, struct mm_struct *src_mm,
++static int copy_pte_range(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+ 		   pmd_t *dst_pmd, pmd_t *src_pmd, struct vm_area_struct *vma,
+ 		   unsigned long addr, unsigned long end)
+ {
 -- 
 1.8.4.5
 
