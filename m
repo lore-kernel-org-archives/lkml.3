@@ -1,73 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936570AbaH1K02 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 06:26:28 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39401 "EHLO comal.ext.ti.com"
+	id S965700AbaH1K0g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 06:26:36 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:36572 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934654AbaH1K00 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 06:26:26 -0400
+	id S965470AbaH1K0e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 06:26:34 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <gregkh@linuxfoundation.org>
 CC: <kishon@ti.com>, <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL 0/5] PHY: Fixes for 3.17 -rc cycle
-Date: Thu, 28 Aug 2014 15:55:01 +0530
-Message-ID: <1409221506-6262-1-git-send-email-kishon@ti.com>
+Subject: [PATCH 5/5] phy: miphy365x: Select GENERIC_PHY instead of depending on it
+Date: Thu, 28 Aug 2014 15:55:06 +0530
+Message-ID: <1409221506-6262-6-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1409221506-6262-1-git-send-email-kishon@ti.com>
+References: <1409221506-6262-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+From: Lee Jones <lee.jones@linaro.org>
 
-Please find the pull request for this -rc cycle. It consistes of a regression
-fix to runtime PM on OMAP (cc'ed stable) and few other minor fixes.
+Enabling GENERIC_PHY in the shared (by most ARM sub-architectures)
+defconfig multi_v7_defconfig is prohibited.  Instead, we'll enable
+it from the Kconfig whenever PHY_MIPHY365X is enabled.
 
-Please consider merging it in this -rc cycle.
-Let me know If I have to make any changes.
+Cc: Kishon Vijay Abraham I <kishon@ti.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ drivers/phy/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Cheers
-Kishon
-
-The following changes since commit 451fd72219dd6f3355e2d036c598544c760ee532:
-
-  Merge tag 'pwm/for-3.17-rc2' of git://git.kernel.org/pub/scm/linux/kernel/git/thierry.reding/linux-pwm (2014-08-22 14:50:21 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git tags/for-3.17-rc
-
-for you to fetch changes up to fbb1a770039d3900f5130bab949b757f6f7fb373:
-
-  phy: miphy365x: Select GENERIC_PHY instead of depending on it (2014-08-28 11:17:43 +0530)
-
-----------------------------------------------------------------
-for_3.17-rc
-
-Fix regressions to runtime PM on OMAP and other minor fixes.
-
-----------------------------------------------------------------
-Kamil Debski (1):
-      MAINTAINERS: add entry for the Samsung USB2 PHY driver
-
-Lee Jones (1):
-      phy: miphy365x: Select GENERIC_PHY instead of depending on it
-
-Sjoerd Simons (1):
-      phy: exynos5-usbdrd: Add MODULE_DEVICE_TABLE entry
-
-Tony Lindgren (2):
-      usb: phy: twl4030-usb: Fix regressions to runtime PM on omaps
-      usb: phy: twl4030-usb: Fix lost interrupts after ID pin goes down
-
- MAINTAINERS                      |   13 ++++
- drivers/phy/Kconfig              |    2 +-
- drivers/phy/phy-exynos5-usbdrd.c |    1 +
- drivers/phy/phy-twl4030-usb.c    |  121 +++++++++++++++++++++++---------------
- 4 files changed, 88 insertions(+), 49 deletions(-)
-
+diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+index 0dd7427..4ff8cbb 100644
+--- a/drivers/phy/Kconfig
++++ b/drivers/phy/Kconfig
+@@ -41,9 +41,9 @@ config PHY_MVEBU_SATA
+ config PHY_MIPHY365X
+ 	tristate "STMicroelectronics MIPHY365X PHY driver for STiH41x series"
+ 	depends on ARCH_STI
+-	depends on GENERIC_PHY
+ 	depends on HAS_IOMEM
+ 	depends on OF
++	select GENERIC_PHY
+ 	help
+ 	  Enable this to support the miphy transceiver (for SATA/PCIE)
+ 	  that is part of STMicroelectronics STiH41x SoC series.
 -- 
 1.7.9.5
 
