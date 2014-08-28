@@ -1,61 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303AbaH1Vpo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 17:45:44 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:43159 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750894AbaH1Vpn (ORCPT
+	id S1752386AbaH1Vvs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 17:51:48 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:38878 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750894AbaH1Vvq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 17:45:43 -0400
+	Thu, 28 Aug 2014 17:51:46 -0400
+Date: Thu, 28 Aug 2014 16:51:35 -0500
+From: Shawn Bohrer <shawn.bohrer@gmail.com>
+To: Haggai Eran <haggaie@mellanox.com>
+Cc: Shachar Raindel <raindel@mellanox.com>, Roland Dreier <roland@kernel.org>,
+        Christoph Lameter <cl@linux.com>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tomk@rgmadvisors.com" <tomk@rgmadvisors.com>,
+        Shawn Bohrer <sbohrer@rgmadvisors.com>,
+        Yishai Hadas <yishaih@mellanox.com>,
+        Or Gerlitz <ogerlitz@mellanox.com>
+Subject: Re: [PATCH] ib_umem_release should decrement mm->pinned_vm from
+ ib_umem_get
+Message-ID: <20140828215135.GA11602@sbohrermbp13-local.rgmadvisors.com>
+References: <1407860855-6564-1-git-send-email-shawn.bohrer@gmail.com>
+ <20140820232212.GA5487@sbohrermbp13-local.rgmadvisors.com>
+ <6B2A6E60C06CCC42AE31809BF572352B010E235B4A@MTLDAG02.mtl.com>
+ <20140825210700.GA5759@sbohrermbp13-local.rgmadvisors.com>
+ <53FF1703.3010204@mellanox.com>
 MIME-Version: 1.0
-In-Reply-To: <20140828213945.GP5001@linux.vnet.ibm.com>
-References: <1408972138-12246-1-git-send-email-bobby.prani@gmail.com>
- <53FF8B77.7000103@infradead.org> <20140828210010.GM5001@linux.vnet.ibm.com>
- <CAJhHMCDxsukXe_HW55iJp0oCAWgrosxCRX1AfocS6QBzxaD0pw@mail.gmail.com> <20140828213945.GP5001@linux.vnet.ibm.com>
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Thu, 28 Aug 2014 17:45:10 -0400
-Message-ID: <CAJhHMCDaMH0b0Np8vNf=RBH8i76AUK78qf213aWfHY-F4j3OOw@mail.gmail.com>
-Subject: Re: [PATCH] doc: memory-barriers.txt: Correct example for reorderings
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53FF1703.3010204@mellanox.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 28, 2014 at 5:39 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Thu, Aug 28, 2014 at 05:15:50PM -0400, Pranith Kumar wrote:
->> On Thu, Aug 28, 2014 at 5:00 PM, Paul E. McKenney
->> <paulmck@linux.vnet.ibm.com> wrote:
->> >
->> > I am really confused by the ordering of the new lines, as I would have
->> > expected the "x"s to be replaced with "y"s and vice versa.  But the
->> > ordering of the various combinations does not matter, and each line
->> > looks OK.
->>
->> Since x = A was replaced by x = B and y = B was replaced by y = A, I
->> just converted all x = load A to x = load B. Similarly for y. I think
->> we can do either this or as you suggested replacing x's with y's.
->
-> Fair enough.  The other thing that confused me was the "STORE B=4,"
-> showing up early in your replacement.
->
+On Thu, Aug 28, 2014 at 02:48:19PM +0300, Haggai Eran wrote:
+> On 26/08/2014 00:07, Shawn Bohrer wrote:
+> >>>> The following patch fixes the issue by storing the mm_struct of the
+> >> > 
+> >> > You are doing more than just storing the mm_struct - you are taking
+> >> > a reference to the process' mm.  This can lead to a massive resource
+> >> > leakage. The reason is bit complex: The destruction flow for IB
+> >> > uverbs is based upon releasing the file handle for it. Once the file
+> >> > handle is released, all MRs, QPs, CQs, PDs, etc. that the process
+> >> > allocated are released.  For the kernel to release the file handle,
+> >> > the kernel reference count to it needs to reach zero.  Most IB
+> >> > implementations expose some hardware registers to the application by
+> >> > allowing it to mmap the uverbs device file.  This mmap takes a
+> >> > reference to uverbs device file handle that the application opened.
+> >> > This reference is dropped when the process mm is released during the
+> >> > process destruction.  Your code takes a reference to the mm that
+> >> > will only be released when the parent MR/QP is released.
+> >> > 
+> >> > Now, we have a deadlock - the mm is waiting for the MR to be
+> >> > destroyed, the MR is waiting for the file handle to be destroyed,
+> >> > and the file handle is waiting for the mm to be destroyed.
+> >> > 
+> >> > The proper solution is to keep a reference to the task_pid (using
+> >> > get_task_pid), and use this pid to get the task_struct and from it
+> >> > the mm_struct during the destruction flow.
+> >  
+> > I'll put together a patch using get_task_pid() and see if I can
+> > test/reproduce the issue.  This may take a couple of days since we
+> > have to test this in production at the moment.
+> >  
+> 
+> Hi,
+> 
+> I just wanted to point out that while working on the on demand paging patches
+> we also needed to keep a reference to the task pid (to make sure we always 
+> handle page faults on behalf of the correct mm struct). You can find the 
+> relevant code in the patch titled "IB/core: Add support for on demand paging 
+> regions" [1].
+> 
+> Haggai
+> 
+> [1] https://www.mail-archive.com/linux-rdma@vger.kernel.org/msg20552.html
 
-So I converted
+Haggai,
 
-STORE A=3, x=LOAD A->3
+I looked over the on demand paging patch and I'm not sure if you are
+suggesting that it already fixes my issue, or that I should use it as
+a reference for my code.  In any case I just sent a v2 of a patch that
+appears to fix my issue.
 
-to
-
-STORE B=4, x=LOAD B->4
-
-since the later load into x wanted an updated value of B and not the
-default. That is the reason you see STORE B = 4  in place of STORE A =
-3
-
-
--- 
-Pranith
+--
+Shawn
