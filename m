@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753873AbaH1Sqg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:46:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32888 "EHLO mx2.suse.de"
+	id S1753945AbaH1Sq7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 14:46:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32884 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753301AbaH1ShM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:37:12 -0400
+	id S1753290AbaH1ShL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:37:11 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Jiri Slaby <jslaby@suse.cz>
 Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 82/97] mm: do not use unnecessary atomic operations when adding pages to the LRU
-Date: Thu, 28 Aug 2014 19:35:30 +0100
-Message-Id: <1409250945-30874-83-git-send-email-mgorman@suse.de>
+Subject: [PATCH 81/97] mm: do not use atomic operations when releasing pages
+Date: Thu, 28 Aug 2014 19:35:29 +0100
+Message-Id: <1409250945-30874-82-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
 References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
@@ -20,22 +20,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 6fb81a17d21f2a138b8f424af4cf379f2b694060 upstream.
+commit e3741b506c5088fa8c911bb5884c430f770fb49d upstream.
 
-When adding pages to the LRU we clear the active bit unconditionally.
-As the page could be reachable from other paths we cannot use unlocked
-operations without risk of corruption such as a parallel
-mark_page_accessed.  This patch tests if is necessary to clear the
-active flag before using an atomic operation.  This potentially opens a
-tiny race when PageActive is checked as mark_page_accessed could be
-called after PageActive was checked.  The race already exists but this
-patch changes it slightly.  The consequence is that that the page may be
-promoted to the active list that might have been left on the inactive
-list before the patch.  It's too tiny a race and too marginal a
-consequence to always use atomic operations for.
+There should be no references to it any more and a parallel mark should
+not be reordered against us.  Use non-locked varient to clear page active.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Rik van Riel <riel@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Vlastimil Babka <vbabka@suse.cz>
 Cc: Jan Kara <jack@suse.cz>
 Cc: Michal Hocko <mhocko@suse.cz>
@@ -44,37 +36,27 @@ Cc: Dave Hansen <dave.hansen@intel.com>
 Cc: Theodore Ts'o <tytso@mit.edu>
 Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/swap.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ mm/swap.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/mm/swap.c b/mm/swap.c
-index afeabe3..270b520 100644
+index 026113d..afeabe3 100644
 --- a/mm/swap.c
 +++ b/mm/swap.c
-@@ -565,13 +565,15 @@ static void __lru_cache_add(struct page *page)
-  */
- void lru_cache_add_anon(struct page *page)
- {
--	ClearPageActive(page);
-+	if (PageActive(page))
-+		ClearPageActive(page);
- 	__lru_cache_add(page);
- }
+@@ -835,7 +835,7 @@ void release_pages(struct page **pages, int nr, bool cold)
+ 		}
  
- void lru_cache_add_file(struct page *page)
- {
--	ClearPageActive(page);
-+	if (PageActive(page))
-+		ClearPageActive(page);
- 	__lru_cache_add(page);
- }
- EXPORT_SYMBOL(lru_cache_add_file);
+ 		/* Clear Active bit in case of parallel mark_page_accessed */
+-		ClearPageActive(page);
++		__ClearPageActive(page);
+ 
+ 		list_add(&page->lru, &pages_to_free);
+ 	}
 -- 
 1.8.4.5
 
