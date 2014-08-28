@@ -1,88 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130AbaH1OiB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 10:38:01 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:54864 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752069AbaH1Ohr (ORCPT
+	id S1751244AbaH1OpD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 10:45:03 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:53073 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750764AbaH1OpA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 10:37:47 -0400
-Date: Thu, 28 Aug 2014 10:37:35 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Caesar Wang <caesar.wang@rock-chips.com>, heiko@sntech.de,
-        rui.zhang@intel.com, grant.likely@linaro.org, robh+dt@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, huangtao@rock-chips.com, cf@rock-chips.com,
-        dianders@chromium.org, dtor@chromium.org, zyw@rock-chips.com,
-        addy.ke@rock-chips.com, dmitry.torokhov@gmail.com,
-        zhaoyifeng <zyf@rock-chips.com>, linux-iio@vger.kernel.org,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: Re: [PATCH v3 1/4] thermal: rockchip: add driver for thermal
-Message-ID: <20140828143733.GA18084@developer>
-References: <1409187562-12370-1-git-send-email-caesar.wang@rock-chips.com>
- <1409187562-12370-2-git-send-email-caesar.wang@rock-chips.com>
- <2852853.mfRZfFVSev@wuerfel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2852853.mfRZfFVSev@wuerfel>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Thu, 28 Aug 2014 10:45:00 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: linus.walleij@linaro.org, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 1/4] mfd: 88pm860x-i2c: Purge unused functions
+Date: Thu, 28 Aug 2014 15:44:43 +0100
+Message-Id: <1409237086-21421-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The following functions appear to be unused since v2.6.39:
 
-Ceasar and Arnd,
+  pm860x_page_reg_read()
+  pm860x_page_bulk_write()
+  pm860x_page_set_bits()
 
-On Thu, Aug 28, 2014 at 10:48:23AM +0200, Arnd Bergmann wrote:
-> On Thursday 28 August 2014 08:59:19 Caesar Wang wrote:
-> > Thermal is TS-ADC Controller module supports user-defined mode and automatic mode.
-> > 
-> > User-defined mode refers,TSADC all the control signals entirely by software
-> > writing to register for direct control.
-> > 
-> > Automaic mode refers to the module automatically poll TSADC output,and the results
-> > Were checked.
-> > 
-> > If you find that the temperature High in a period of time, an interrupt is generated
-> > to the processor down-measures taken;if the temperature over a period of time High,
-> > the resulting TSHUT gave CRU module,let it reset the entire chip, or via GPIO give PMIC.
-> > 
-> > Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
-> > Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
-> 
-> Hi Caesar,
-> 
-> After looking at the driver (last time I only received the patch for
-> the binding), I have a more general comment:
-> 
-> This looks like a general-purpose ADC device, not an IP block that is
-> specific to thermal management. The binding looks ok for that purpose
-> but should probably be moved into Documentation/devicetree/bindings/iio/adc/
-> as a minor change.
-> 
+Let's remove them.
 
-I agree with Arnd's point here. It makes sense to me to have this driver
-under the IIO umbrella. 
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/mfd/88pm860x-i2c.c | 64 ----------------------------------------------
+ 1 file changed, 64 deletions(-)
 
-> On the driver side, I believe the correct way to deal with this setup
-> is to split your driver into a generic drivers/iio/adc/rockchips-tsadc.c
-> file, and a smaller thermal driver that uses the iio in-kernel interfaces,
-> ideally one that is independent of the underlying hardware and can
-> work on any ADC implementation.
-> 
+diff --git a/drivers/mfd/88pm860x-i2c.c b/drivers/mfd/88pm860x-i2c.c
+index a93b4d0..7063cfd 100644
+--- a/drivers/mfd/88pm860x-i2c.c
++++ b/drivers/mfd/88pm860x-i2c.c
+@@ -140,26 +140,6 @@ static int write_device(struct i2c_client *i2c, int reg,
+ 	return 0;
+ }
+ 
+-int pm860x_page_reg_read(struct i2c_client *i2c, int reg)
+-{
+-	unsigned char zero = 0;
+-	unsigned char data;
+-	int ret;
+-
+-	i2c_lock_adapter(i2c->adapter);
+-	read_device(i2c, 0xFA, 0, &zero);
+-	read_device(i2c, 0xFB, 0, &zero);
+-	read_device(i2c, 0xFF, 0, &zero);
+-	ret = read_device(i2c, reg, 1, &data);
+-	if (ret >= 0)
+-		ret = (int)data;
+-	read_device(i2c, 0xFE, 0, &zero);
+-	read_device(i2c, 0xFC, 0, &zero);
+-	i2c_unlock_adapter(i2c->adapter);
+-	return ret;
+-}
+-EXPORT_SYMBOL(pm860x_page_reg_read);
+-
+ int pm860x_page_reg_write(struct i2c_client *i2c, int reg,
+ 			  unsigned char data)
+ {
+@@ -195,47 +175,3 @@ int pm860x_page_bulk_read(struct i2c_client *i2c, int reg,
+ 	return ret;
+ }
+ EXPORT_SYMBOL(pm860x_page_bulk_read);
+-
+-int pm860x_page_bulk_write(struct i2c_client *i2c, int reg,
+-			   int count, unsigned char *buf)
+-{
+-	unsigned char zero = 0;
+-	int ret;
+-
+-	i2c_lock_adapter(i2c->adapter);
+-	read_device(i2c, 0xFA, 0, &zero);
+-	read_device(i2c, 0xFB, 0, &zero);
+-	read_device(i2c, 0xFF, 0, &zero);
+-	ret = write_device(i2c, reg, count, buf);
+-	read_device(i2c, 0xFE, 0, &zero);
+-	read_device(i2c, 0xFC, 0, &zero);
+-	i2c_unlock_adapter(i2c->adapter);
+-	i2c_unlock_adapter(i2c->adapter);
+-	return ret;
+-}
+-EXPORT_SYMBOL(pm860x_page_bulk_write);
+-
+-int pm860x_page_set_bits(struct i2c_client *i2c, int reg,
+-			 unsigned char mask, unsigned char data)
+-{
+-	unsigned char zero;
+-	unsigned char value;
+-	int ret;
+-
+-	i2c_lock_adapter(i2c->adapter);
+-	read_device(i2c, 0xFA, 0, &zero);
+-	read_device(i2c, 0xFB, 0, &zero);
+-	read_device(i2c, 0xFF, 0, &zero);
+-	ret = read_device(i2c, reg, 1, &value);
+-	if (ret < 0)
+-		goto out;
+-	value &= ~mask;
+-	value |= data;
+-	ret = write_device(i2c, reg, 1, &value);
+-out:
+-	read_device(i2c, 0xFE, 0, &zero);
+-	read_device(i2c, 0xFC, 0, &zero);
+-	i2c_unlock_adapter(i2c->adapter);
+-	return ret;
+-}
+-EXPORT_SYMBOL(pm860x_page_set_bits);
+-- 
+1.9.1
 
-Agreed. If you can write such interface and make your driver to work in
-such way, that would be great.
-
-> I've put the IIO maintainer on Cc in this mail, maybe Jonathan or someone
-> else on the linux-iio mailing list has some extra insight.
-> 
-> 	Arnd
-
-
-Cheers,
-
-Eduardo
