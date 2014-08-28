@@ -1,85 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752613AbaH1T3X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 15:29:23 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59476 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750942AbaH1T3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 15:29:21 -0400
-Date: Thu, 28 Aug 2014 14:28:39 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Vivek Gautam <gautam.vivek@samsung.com>
-CC: <linux-usb@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, <balbi@ti.com>, <kishon@ti.com>,
-        <kgene.kim@samsung.com>
-Subject: Re: [PATCH 4/5] usb: dwc3: Adding Kconfig dependency for Exynos7
-Message-ID: <20140828192824.GR16689@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1409212920-28526-1-git-send-email-gautam.vivek@samsung.com>
- <1409212920-28526-5-git-send-email-gautam.vivek@samsung.com>
+	id S1752721AbaH1TaR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 15:30:17 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:48139 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892AbaH1TaO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 15:30:14 -0400
+Date: Thu, 28 Aug 2014 15:16:37 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Johannes Berg <johannes@sipsolutions.net>, devel@driverdev.osuosl.org,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joe Perches <joe@perches.com>
+Subject: Re: [PATCH v3 00/11] lib: introduce string_escape_mem and %*pE
+ specifier
+Message-ID: <20140828191637.GQ13758@tuxdriver.com>
+References: <1408527772-27224-1-git-send-email-andriy.shevchenko@linux.intel.com>
+ <20140828183330.GM13758@tuxdriver.com>
+ <20140828120851.07dbd1c52ec287ca169acee4@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AonAANj1daC6QcQu"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1409212920-28526-5-git-send-email-gautam.vivek@samsung.com>
+In-Reply-To: <20140828120851.07dbd1c52ec287ca169acee4@linux-foundation.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---AonAANj1daC6QcQu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Aug 28, 2014 at 12:08:51PM -0700, Andrew Morton wrote:
+> On Thu, 28 Aug 2014 14:33:30 -0400 "John W. Linville" <linville@tuxdriver.com> wrote:
+> 
+> > On Wed, Aug 20, 2014 at 12:42:41PM +0300, Andy Shevchenko wrote:
+> > > The introduced function is a kind of opposite to string_unescape. We have
+> > > several users of such functionality each of them created custom implementation.
+> > > The series contains clean up of test suite, adding new call, and switching few
+> > > users to use it via %*pE specifier.
+> >
+> > Any objections?  Do you (Andy) want me to merge this through the
+> > wireless tree?
+> > 
+> 
+> Who is this top-poster and what have you done with John?
 
-On Thu, Aug 28, 2014 at 01:31:59PM +0530, Vivek Gautam wrote:
-> The Exynos-DWC3 USB 3.0 DRD controller is also present on
-> Exynos7 platform, so adding the dependency on ARCH_EXYNOS7
-> for this driver.
->=20
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> ---
->  drivers/usb/dwc3/Kconfig |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/drivers/usb/dwc3/Kconfig b/drivers/usb/dwc3/Kconfig
-> index 785510a..e235894 100644
-> --- a/drivers/usb/dwc3/Kconfig
-> +++ b/drivers/usb/dwc3/Kconfig
-> @@ -55,7 +55,7 @@ config USB_DWC3_OMAP
-> =20
->  config USB_DWC3_EXYNOS
->  	tristate "Samsung Exynos Platform"
-> -	depends on ARCH_EXYNOS || COMPILE_TEST
-> +	depends on (ARCH_EXYNOS || ARCH_EXYNOS7) || COMPILE_TEST
+:-)
 
-wait when building for ARCH_EXYNOS7 you don't get ARCH_EXYNOS ?
+> I was going to apply them yesterday but in [4/11] Andy said he plans on
+> sending out a v5. (v4 actually?)
 
---=20
-balbi
+OK, I'll not worry any more about it.
 
---AonAANj1daC6QcQu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJT/4LYAAoJEIaOsuA1yqRE8D8P/0x6TC8uZM5+NMPlJeCa1R+t
-yRV5KHQibRTl9idBNyoIFZjim70TLGTqGrSAlFr5zT5esgHjuqW5pcKzFWncW4vm
-ABDbsTc+feZPYUUqQLvp6oxJiAkmhWUzjXqPsAXEC0NqhqJbvXhFjgiQHyRyeOd1
-af0x8JR0gZoCupzu6kb6RiX2G5Gk/b8144YdBt2kKO2VvF70UJGTBx8y5eLtawg2
-6esK6yOegPsoUILf9zODwFb1Dhp6L0rFmvPpT6SdPTzaMEhQdC8Z5MVjwwdGj7vf
-oJthXNzF66B2P6MFRp1/kEcTbXjYjE3pDo4gqrOJ4dkPDbC02O8hAMnftSZfCmgE
-wazv1fCvntDh/UponwC5aB8GRRcKiLRaD7YXtRpT1qEu/8nwhi9WggUt3v7NsBfl
-qX75K95iKQlducc2PGnq8pCD1JqOjqliHGsit3kQsYOcILrUVHHzvGGVOTlnpgx4
-66tZLXdLyFBevYpSiihAkYr7Vj3o6igTKhemVatl7u5FAoIKjvpPJxLvGVLJ8090
-FBV/cfO6I5IhiPrmA1C+EVvpIpdFPCK/VbkpAfuXZ8dXgIEW/BtcHHf88HzxJ1Sq
-7aSrnD7fBNZnp7gLHqjl31Z13JsDNB51IZUcba3iP0N1qvoRp/81+8U9+JfZHBu8
-MZy6TVrQuNYo7Kh+FOmD
-=QabP
------END PGP SIGNATURE-----
-
---AonAANj1daC6QcQu--
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
