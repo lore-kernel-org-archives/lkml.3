@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753073AbaH1Sgq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:36:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32866 "EHLO mx2.suse.de"
+	id S1753152AbaH1Sgy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 14:36:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32869 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752465AbaH1Sgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:36:39 -0400
+	id S1753110AbaH1Sgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:36:52 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Jiri Slaby <jslaby@suse.cz>
 Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 51/97] mm/compaction: clean up unused code lines
-Date: Thu, 28 Aug 2014 19:34:59 +0100
-Message-Id: <1409250945-30874-52-git-send-email-mgorman@suse.de>
+Subject: [PATCH 63/97] fs/superblock: unregister sb shrinker before ->kill_sb()
+Date: Thu, 28 Aug 2014 19:35:11 +0100
+Message-Id: <1409250945-30874-64-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
 References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
@@ -20,68 +20,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heesub Shin <heesub.shin@samsung.com>
+From: Dave Chinner <david@fromorbit.com>
 
-commit 13fb44e4b0414d7e718433a49e6430d5b76bd46e upstream.
+commit 28f2cd4f6da24a1aa06c226618ed5ad69e13df64 upstream.
 
-Remove code lines currently not in use or never called.
+This series is aimed at regressions noticed during reclaim activity.  The
+first two patches are shrinker patches that were posted ages ago but never
+merged for reasons that are unclear to me.  I'm posting them again to see
+if there was a reason they were dropped or if they just got lost.  Dave?
+Time?  The last patch adjusts proportional reclaim.  Yuanhan Liu, can you
+retest the vm scalability test cases on a larger machine?  Hugh, does this
+work for you on the memcg test cases?
 
-Signed-off-by: Heesub Shin <heesub.shin@samsung.com>
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: Dongjun Shin <d.j.shin@samsung.com>
-Cc: Sunghwan Yun <sunghwan.yun@samsung.com>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Dongjun Shin <d.j.shin@samsung.com>
-Cc: Sunghwan Yun <sunghwan.yun@samsung.com>
+Based on ext4, I get the following results but unfortunately my larger
+test machines are all unavailable so this is based on a relatively small
+machine.
+
+postmark
+                                  3.15.0-rc5            3.15.0-rc5
+                                     vanilla       proportion-v1r4
+Ops/sec Transactions         21.00 (  0.00%)       25.00 ( 19.05%)
+Ops/sec FilesCreate          39.00 (  0.00%)       45.00 ( 15.38%)
+Ops/sec CreateTransact       10.00 (  0.00%)       12.00 ( 20.00%)
+Ops/sec FilesDeleted       6202.00 (  0.00%)     6202.00 (  0.00%)
+Ops/sec DeleteTransact       11.00 (  0.00%)       12.00 (  9.09%)
+Ops/sec DataRead/MB          25.97 (  0.00%)       30.02 ( 15.59%)
+Ops/sec DataWrite/MB         49.99 (  0.00%)       57.78 ( 15.58%)
+
+ffsb (mail server simulator)
+                                 3.15.0-rc5             3.15.0-rc5
+                                    vanilla        proportion-v1r4
+Ops/sec readall           9402.63 (  0.00%)      9805.74 (  4.29%)
+Ops/sec create            4695.45 (  0.00%)      4781.39 (  1.83%)
+Ops/sec delete             173.72 (  0.00%)       177.23 (  2.02%)
+Ops/sec Transactions     14271.80 (  0.00%)     14764.37 (  3.45%)
+Ops/sec Read                37.00 (  0.00%)        38.50 (  4.05%)
+Ops/sec Write               18.20 (  0.00%)        18.50 (  1.65%)
+
+dd of a large file
+                                3.15.0-rc5            3.15.0-rc5
+                                   vanilla       proportion-v1r4
+WallTime DownloadTar       75.00 (  0.00%)       61.00 ( 18.67%)
+WallTime DD               423.00 (  0.00%)      401.00 (  5.20%)
+WallTime Delete             2.00 (  0.00%)        5.00 (-150.00%)
+
+stutter (times mmap latency during large amounts of IO)
+
+                            3.15.0-rc5            3.15.0-rc5
+                               vanilla       proportion-v1r4
+Unit >5ms Delays  80252.0000 (  0.00%)  81523.0000 ( -1.58%)
+Unit Mmap min         8.2118 (  0.00%)      8.3206 ( -1.33%)
+Unit Mmap mean       17.4614 (  0.00%)     17.2868 (  1.00%)
+Unit Mmap stddev     24.9059 (  0.00%)     34.6771 (-39.23%)
+Unit Mmap max      2811.6433 (  0.00%)   2645.1398 (  5.92%)
+Unit Mmap 90%        20.5098 (  0.00%)     18.3105 ( 10.72%)
+Unit Mmap 93%        22.9180 (  0.00%)     20.1751 ( 11.97%)
+Unit Mmap 95%        25.2114 (  0.00%)     22.4988 ( 10.76%)
+Unit Mmap 99%        46.1430 (  0.00%)     43.5952 (  5.52%)
+Unit Ideal  Tput     85.2623 (  0.00%)     78.8906 (  7.47%)
+Unit Tput min        44.0666 (  0.00%)     43.9609 (  0.24%)
+Unit Tput mean       45.5646 (  0.00%)     45.2009 (  0.80%)
+Unit Tput stddev      0.9318 (  0.00%)      1.1084 (-18.95%)
+Unit Tput max        46.7375 (  0.00%)     46.7539 ( -0.04%)
+
+This patch (of 3):
+
+We will like to unregister the sb shrinker before ->kill_sb().  This will
+allow cached objects to be counted without call to grab_super_passive() to
+update ref count on sb.  We want to avoid locking during memory
+reclamation especially when we are skipping the memory reclaim when we are
+out of cached objects.
+
+This is safe because grab_super_passive does a try-lock on the
+sb->s_umount now, and so if we are in the unmount process, it won't ever
+block.  That means what used to be a deadlock and races we were avoiding
+by using grab_super_passive() is now:
+
+        shrinker                        umount
+
+        down_read(shrinker_rwsem)
+                                        down_write(sb->s_umount)
+                                        shrinker_unregister
+                                          down_write(shrinker_rwsem)
+                                            <blocks>
+        grab_super_passive(sb)
+          down_read_trylock(sb->s_umount)
+            <fails>
+        <shrinker aborts>
+        ....
+        <shrinkers finish running>
+        up_read(shrinker_rwsem)
+                                          <unblocks>
+                                          <removes shrinker>
+                                          up_write(shrinker_rwsem)
+                                        ->kill_sb()
+                                        ....
+
+So it is safe to deregister the shrinker before ->kill_sb().
+
+Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Dave Chinner <david@fromorbit.com>
+Tested-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Cc: Bob Liu <bob.liu@oracle.com>
+Cc: Jan Kara <jack@suse.cz>
+Acked-by: Rik van Riel <riel@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/compaction.c | 10 ----------
- 1 file changed, 10 deletions(-)
+ fs/super.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 5c17302..c5f2f18 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -208,12 +208,6 @@ static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
- 	return true;
- }
- 
--static inline bool compact_trylock_irqsave(spinlock_t *lock,
--			unsigned long *flags, struct compact_control *cc)
--{
--	return compact_checklock_irqsave(lock, flags, false, cc);
--}
+diff --git a/fs/super.c b/fs/super.c
+index d127de2..f730016 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -321,10 +321,8 @@ void deactivate_locked_super(struct super_block *s)
+ 	struct file_system_type *fs = s->s_type;
+ 	if (atomic_dec_and_test(&s->s_active)) {
+ 		cleancache_invalidate_fs(s);
+-		fs->kill_sb(s);
 -
- /* Returns true if the page is within a block suitable for migration to */
- static bool suitable_migration_target(struct page *page)
- {
-@@ -734,7 +728,6 @@ static void isolate_freepages(struct zone *zone,
- 			continue;
+-		/* caches are now gone, we can safely kill the shrinker now */
+ 		unregister_shrinker(&s->s_shrink);
++		fs->kill_sb(s);
  
- 		/* Found a block suitable for isolating free pages from */
--		isolated = 0;
- 
- 		/*
- 		 * Take care when isolating in last pageblock of a zone which
-@@ -1163,9 +1156,6 @@ static void __compact_pgdat(pg_data_t *pgdat, struct compact_control *cc)
- 			if (zone_watermark_ok(zone, cc->order,
- 						low_wmark_pages(zone), 0, 0))
- 				compaction_defer_reset(zone, cc->order, false);
--			/* Currently async compaction is never deferred. */
--			else if (cc->sync)
--				defer_compaction(zone, cc->order);
- 		}
- 
- 		VM_BUG_ON(!list_empty(&cc->freepages));
+ 		put_filesystem(fs);
+ 		put_super(s);
 -- 
 1.8.4.5
 
