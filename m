@@ -1,112 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752472AbaH1W7z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 18:59:55 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:42316 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751849AbaH1W7w convert rfc822-to-8bit (ORCPT
+	id S1752606AbaH1XBM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 19:01:12 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:37660 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752208AbaH1XBJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 18:59:52 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Caesar Wang <caesar.wang@rock-chips.com>,
-        Eduardo Valentin <edubezval@gmail.com>,
-        Jonathan Cameron <jic23@kernel.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, rui.zhang@intel.com,
-        grant.likely@linaro.org, robh+dt@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, huangtao@rock-chips.com, cf@rock-chips.com,
-        dianders@chromium.org, dtor@chromium.org, zyw@rock-chips.com,
-        addy.ke@rock-chips.com, dmitry.torokhov@gmail.com,
-        zhaoyifeng <zyf@rock-chips.com>, linux-iio@vger.kernel.org,
-        Courtney Cavin <courtney.cavin@sonymobile.com>
-Subject: Re: [PATCH v3 1/4] thermal: rockchip: add driver for thermal
-Date: Fri, 29 Aug 2014 01:01:40 +0200
-Message-ID: <4669530.jbaGRecGMH@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <53FF84C4.9080902@rock-chips.com>
-References: <1409187562-12370-1-git-send-email-caesar.wang@rock-chips.com> <4488604.oBeB6it8Vr@wuerfel> <53FF84C4.9080902@rock-chips.com>
+	Thu, 28 Aug 2014 19:01:09 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+X-Originating-IP: [2620:0:1000:157d:f169:befe:8cc8:f71f]
+In-Reply-To: <20140828181429.GO4703@rric.localhost>
+References: <1406732794-20920-1-git-send-email-rric@kernel.org>
+	<1406732794-20920-3-git-send-email-rric@kernel.org>
+	<CAOesGMh9KkdKB_ytJ7CCbkPW7dHTX91NdfDMsMNfbmOBVOJ8PQ@mail.gmail.com>
+	<20140828161556.GN4703@rric.localhost>
+	<20140828162549.GP14650@leverpostej>
+	<CAOesGMjtjcgUNV8WLp6_Zbok-0zq5afg_KS8QJYp=kDVabrQvg@mail.gmail.com>
+	<20140828181429.GO4703@rric.localhost>
+Date: Thu, 28 Aug 2014 16:01:08 -0700
+Message-ID: <CAOesGMh3TEKZkyPjopfSm07C2ydw5=2VrzY0xQ=9jkhoA-Z_kQ@mail.gmail.com>
+Subject: Re: [PATCH 2/5] arm64, thunder: Add initial dts for Cavium Thunder SoC
+From: Olof Johansson <olof@lixom.net>
+To: Robert Richter <rric@kernel.org>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
+        Robert Richter <rrichter@cavium.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Caesar,
+On Thu, Aug 28, 2014 at 11:14 AM, Robert Richter <rric@kernel.org> wrote:
+> On 28.08.14 09:31:43, Olof Johansson wrote:
+>> On Thu, Aug 28, 2014 at 9:25 AM, Mark Rutland <mark.rutland@arm.com> wrote:
+>> > On Thu, Aug 28, 2014 at 05:15:56PM +0100, Robert Richter wrote:
+>> >> Olof,
+>> >>
+>> >> On 30.07.14 11:14:23, Olof Johansson wrote:
+>> >> > On Wed, Jul 30, 2014 at 8:06 AM, Robert Richter <rric@kernel.org> wrote:
+>> >> > > From: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
+>> >> > >
+>> >> > > Add initial device tree nodes for Cavium Thunder SoCs with support of
+>> >> > > 48 cores and gicv3. The dts file requires further changes, esp. for
+>> >> > > pci, gicv3-its and smmu. This changes will be added later together
+>> >> > > with the device drivers.
+>> >> > >
+>> >> > > Signed-off-by: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
+>> >> > > Signed-off-by: Robert Richter <rrichter@cavium.com>
+>> >> > > ---
+>> >> > >  arch/arm64/boot/dts/Makefile         |   1 +
+>> >> > >  arch/arm64/boot/dts/thunder-88xx.dts | 387 +++++++++++++++++++++++++++++++++++
+>> >> > >  2 files changed, 388 insertions(+)
+>> >> > >  create mode 100644 arch/arm64/boot/dts/thunder-88xx.dts
+>> >> > >
+>> >> > > diff --git a/arch/arm64/boot/dts/Makefile b/arch/arm64/boot/dts/Makefile
+>> >> > > index c52bdb051f66..f8001a62029c 100644
+>> >> > > --- a/arch/arm64/boot/dts/Makefile
+>> >> > > +++ b/arch/arm64/boot/dts/Makefile
+>> >> > > @@ -1,3 +1,4 @@
+>> >> > > +dtb-$(CONFIG_ARCH_THUNDER) += thunder-88xx.dtb
+>> >> > >  dtb-$(CONFIG_ARCH_VEXPRESS) += rtsm_ve-aemv8a.dtb foundation-v8.dtb
+>> >> > >  dtb-$(CONFIG_ARCH_XGENE) += apm-mustang.dtb
+>> >> >
+>> >> > Oh, and:
+>> >> >
+>> >> > Let's fix the mistake we made on 32-bit here (that we can't undo
+>> >> > unless we move all dts files now, which is too much churn), and put
+>> >> > each SoC vendor in its own subdirectory.
+>> >> >
+>> >> > So, please add a arch/arm64/boot/dts/cavium/ directory, add a Makefile
+>> >> > and the dts there.
+>> >> >
+>> >> > We should move vexpress under arm/   and xgene under apm/ too.
+>> >>
+>> >> I was looking into this. It turned out that this would introduce more
+>> >> pain than it solves. The problem with introducing vendor subdirs for
+>> >> .dts files is that this will require also subdirs for .dtb files to
+>> >> avoid name conflicts. This means that dtb files are no longer in a
+>> >> single directory. Current build scripts and makefiles rely on this.
+>> >> E.g.:
+>> >>
+>> >>  scripts/Makefile.lib:$(obj)/%.dtb.S: $(obj)/%.dtb
+>> >>
+>> >> Thus, the introduction of vendor subdirs is not easy to implement and
+>> >> may break existing workflows. Also, no other arch has vendor subdirs.
+>> >>
+>> >> A solution would be to have a naming scheme for dts files which
+>> >> requires the vendor in the file name, such as cavium-thunder-88xx.dtb.
+>> >> Though, these long names may look a bit ugly.
+>> >>
+>> >> Hmm... Any thoughts?
+>> >
+>> > That would make it possible to search, but the number of files in one
+>> > place might become somewhat overwelming (which I believe was Olof's
+>> > concern).
+>> >
+>> > Olof, thoughts?
+>>
+>> Yeah, on 32 bit we've got an ever-growing and very large directory
+>> today that is becoming a headache. Carving it up in directories to
+>> reduce plain directory size would come a long way.
+>>
+>> I think we would catch name conflicts quickly with the automatic
+>> builders we have today -- and it's likely that the files will have a
+>> platform prefix anyway so it shouldn't be a big issue. I think we can
+>> live with that.
+>
+> So you mean, having the source files with subdirectories, but the dtb
+> files in a single obj dir?
 
-Am Freitag, 29. August 2014, 03:36:36 schrieb Caesar Wang:
-> Arnd & Heiko & Eduardo,
-> 
-> OK. Maybe you are right.
-> 
-> This driver should be put into drivers/iio/adc/* ,
-> Anyway,I will re-edit it ASAP.
+Thinking about it a bit more, the even more obvious solution that I
+for some reason didn't think of at the time, is to have the
+dtbs_install target create the appropriate subdirectories on the
+install side, so that the structure is preserved.
 
-I pieced together an example on how this could look, if you need inspiration.
-
-As I've written, the tsadc on the rk3066 is simply another saradc, so it was 
-easy to build a usable example with it, which you can find in my 
-devel/workbench branch [0].
-
-Things to note, the adc values are converted to voltages instead of the 
-"code"-values listed in the TRM [formula: (code * vref_mv)  >> 12)] and the 
-temperatures are listed in millikelvin (C+273150) as expected by the pending 
-iio-thermal driver.
+That comes a bit closer to how modules are handled as well.
 
 
-@Courtney: (not sure how to reply to the old thread from february)
-the only issue I found was the unit of the voltages. The binding doc lists 
-them as uV, while iio (and the driver itself) expect to use mV.
-
-Otherwise the iio-thermal driver:
-Tested-by: Heiko Stuebner <heiko@sntech.de>
-
-
-Heiko
-
-
-
-[0] https://github.com/mmind/linux-rockchip/commits/devel/workbench
-(recent commits till "thermal: add generic IIO channel thermal sensor driver")
-
-
-
-> 在 2014/8/29 0:16, Arnd Bergmann 写道:
-> > On Thursday 28 August 2014 18:11:43 Heiko Stübner wrote:
-> >> Am Donnerstag, 28. August 2014, 10:37:35 schrieb Eduardo Valentin:
-> >>>> On the driver side, I believe the correct way to deal with this setup
-> >>>> is to split your driver into a generic
-> >>>> drivers/iio/adc/rockchips-tsadc.c
-> >>>> file, and a smaller thermal driver that uses the iio in-kernel
-> >>>> interfaces,
-> >>>> ideally one that is independent of the underlying hardware and can
-> >>>> work on any ADC implementation.
-> >>> 
-> >>> Agreed. If you can write such interface and make your driver to work in
-> >>> such way, that would be great.
-> >> 
-> >> But I currently don't see how you would model the temperature handling
-> >> parts from a generic thermal driver to a generic adc driver for the
-> >> rk3288-tsadc.
-> >> 
-> >> I guess the general temperature irq handling would use iio-triggers? But
-> >> how does the target temperature get into the TSADC_COMP1_INT register.
-> >> 
-> >> Also when getting the temperature, Caesar's driver compares it to its
-> >> trip
-> >> points and sets the next trip point depending on the current temperature
-> >> (passive <-> critical) in rockchip_get_temp.
-> >> 
-> >> Maybe there is some completely easy way for this, but currently I don't
-> >> see
-> >> it.
-> > 
-> > Eduardo earlier today replied to an email about a generic driver for
-> > thermal, which was posted in February but hasn't been merged.
-> > See https://lkml.org/lkml/2014/2/5/810
-> > 
-> > There may be a newer version of this patch, which I haven't found.
-> > 
-> > 	Arnd
-
+-Olof
