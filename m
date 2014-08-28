@@ -1,90 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751000AbaH1MUU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 08:20:20 -0400
-Received: from mga09.intel.com ([134.134.136.24]:38204 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750731AbaH1MUT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 08:20:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,418,1406617200"; 
-   d="scan'208";a="564724343"
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: peterz@infradead.org, mingo@redhat.com
-Cc: Mark Rustad <mark.d.rustad@intel.com>, linux-kernel@vger.kernel.org,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: [PATCH] semaphore: Resolve some shadow warnings
-Date: Thu, 28 Aug 2014 05:19:26 -0700
-Message-Id: <1409228366-7027-1-git-send-email-jeffrey.t.kirsher@intel.com>
-X-Mailer: git-send-email 1.9.3
+	id S1751006AbaH1MX6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 08:23:58 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:41140 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748AbaH1MX5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 08:23:57 -0400
+Message-ID: <53FF1F4B.1000905@linux.vnet.ibm.com>
+Date: Thu, 28 Aug 2014 17:53:39 +0530
+From: Hemant Kumar <hemant@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
+        peterz@infradead.org, oleg@redhat.com, hegdevasant@linux.vnet.ibm.com,
+        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org,
+        namhyung@kernel.org, aravinda@linux.vnet.ibm.com, penberg@iki.fi
+Subject: Re: [PATCH v4 2/3] perf/sdt : Support perf-list to print SDT events
+ in a single file
+References: <20140827213745.13454.46266.stgit@hemant-fedora> <20140827214426.13454.76532.stgit@hemant-fedora> <53FF0A4F.3070806@hitachi.com>
+In-Reply-To: <53FF0A4F.3070806@hitachi.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14082812-3568-0000-0000-00000020E3AB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Rustad <mark.d.rustad@intel.com>
+Hi Masami,
 
-Resolve some shadow warnings resulting from using the name
-jiffies, which is a well-known global. This is not a problem
-of course, but it could be a trap for someone copying and
-pasting code, and it just makes W=2 a little cleaner.
+On 08/28/2014 04:24 PM, Masami Hiramatsu wrote:
+> (2014/08/28 6:50), Hemant Kumar wrote:
+> [...]
+>> +/*
+>> + * get_sdt_note_info(): flush the SDT notes onto stdout
+>> + */
+>> +static void get_sdt_note_info(struct list_head *start, const char *target)
+>> +{
+>> +	struct sdt_note *pos;
+>> +
+>> +	if (list_empty(start))
+>> +		return;
+>> +
+>> +	printf("%s :\n", target);
+>> +	list_for_each_entry(pos, start, note_list) {
+>> +		printf("%%%s : %s\n", pos->provider, pos->name);
+> Hmm, this will show
+>
+>   %app : marker
+>
+> instead of
+>
+>   %app:marker
+>
+> (blanks are placed around ":")
+> I think it should be the latter format.
 
-Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
----
- kernel/locking/semaphore.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+I think so too. Missed it. Thanks for pointing that.
 
-diff --git a/kernel/locking/semaphore.c b/kernel/locking/semaphore.c
-index 6815171..7782dbc 100644
---- a/kernel/locking/semaphore.c
-+++ b/kernel/locking/semaphore.c
-@@ -36,7 +36,7 @@
- static noinline void __down(struct semaphore *sem);
- static noinline int __down_interruptible(struct semaphore *sem);
- static noinline int __down_killable(struct semaphore *sem);
--static noinline int __down_timeout(struct semaphore *sem, long jiffies);
-+static noinline int __down_timeout(struct semaphore *sem, long njiffies);
- static noinline void __up(struct semaphore *sem);
- 
- /**
-@@ -145,14 +145,14 @@ EXPORT_SYMBOL(down_trylock);
- /**
-  * down_timeout - acquire the semaphore within a specified time
-  * @sem: the semaphore to be acquired
-- * @jiffies: how long to wait before failing
-+ * @njiffies: how long to wait before failing
-  *
-  * Attempts to acquire the semaphore.  If no more tasks are allowed to
-  * acquire the semaphore, calling this function will put the task to sleep.
-  * If the semaphore is not released within the specified number of jiffies,
-  * this function returns -ETIME.  It returns 0 if the semaphore was acquired.
-  */
--int down_timeout(struct semaphore *sem, long jiffies)
-+int down_timeout(struct semaphore *sem, long njiffies)
- {
- 	unsigned long flags;
- 	int result = 0;
-@@ -161,7 +161,7 @@ int down_timeout(struct semaphore *sem, long jiffies)
- 	if (likely(sem->count > 0))
- 		sem->count--;
- 	else
--		result = __down_timeout(sem, jiffies);
-+		result = __down_timeout(sem, njiffies);
- 	raw_spin_unlock_irqrestore(&sem->lock, flags);
- 
- 	return result;
-@@ -248,9 +248,9 @@ static noinline int __sched __down_killable(struct semaphore *sem)
- 	return __down_common(sem, TASK_KILLABLE, MAX_SCHEDULE_TIMEOUT);
- }
- 
--static noinline int __sched __down_timeout(struct semaphore *sem, long jiffies)
-+static noinline int __sched __down_timeout(struct semaphore *sem, long njiffies)
- {
--	return __down_common(sem, TASK_UNINTERRUPTIBLE, jiffies);
-+	return __down_common(sem, TASK_UNINTERRUPTIBLE, njiffies);
- }
- 
- static noinline void __sched __up(struct semaphore *sem)
+>> +	}
+>> +}
+>> +
+>> +/*
+>> + * Error displayed in case of query of a
+>> + * single file for SDT markers
+>> + */
+>> +static int sdt_err(int val, const char *target)
+>> +{
+>> +	switch (-val) {
+>> +	case 0:
+>> +		break;
+>> +	case ENOENT:
+>> +		/* Absence of SDT markers */
+>> +		printf("%s : No SDT events found\n", target);
+> Please use pr_err or pr_warning for error messages.
+
+Ah! ok.
+
+>> +		break;
+>> +	case EBADF:
+>> +		printf("%s : Bad file name\n", target);
+>> +		break;
+>> +	default:
+>> +		printf("%s\n", strerror(val));
+>> +	}
+> And strerror_r instead of strerror (see https://lkml.org/lkml/2014/8/13/828)
+
+Sure, will use strerror_r instead.
+
+>> +
+>> +	return val;
+>> +}
+>> +
+>> +/*
+>> + * cleanup_sdt_note_list() : Free the sdt note list
+>> + */
+>> +static void cleanup_sdt_note_list(struct list_head *sdt_notes)
+>> +{
+>> +	struct sdt_note *tmp, *pos;
+>> +
+>> +	if (list_empty(sdt_notes))
+>> +		return;
+> You don't need to check this. If the list is empty list_for_each...
+> just skips loops.
+
+Right. Thanks for pointing that out.
+
+>> +
+>> +	list_for_each_entry_safe(pos, tmp, sdt_notes, note_list) {
+>> +		list_del(&pos->note_list);
+>> +		free(pos->name);
+>> +		free(pos->provider);
+>> +		free(pos);
+>> +	}
+>> +}
+> Thank you,
+>
+>> +
+>> +/*
+>> + * filename__find_sdt() : looks for sdt markers and the list is
+>> + * stored in sdt_notes
+>> + */
+>> +static int filename__find_sdt(const char *target)
+>> +{
+>> +	int ret;
+>> +
+>> +	LIST_HEAD(sdt_notes);
+>> +
+>> +	ret = get_sdt_note_list(&sdt_notes, target);
+>> +	if (!ret)
+>> +		get_sdt_note_info(&sdt_notes, target);
+>> +	else
+>> +		sdt_err(ret, target);
+>> +
+>> +	cleanup_sdt_note_list(&sdt_notes);
+>> +
+>> +	return ret;
+>> +}
+>> +
+>> +/*
+>> + * print_sdt_notes() : wrapper function
+>> + */
+>> +void print_sdt_events(const char *arg)
+>> +{
+>> +	if (arg) {
+>> +		filename__find_sdt(arg);
+>> +		return;
+>> +	}
+>> +	pr_err("Error : File Name must be specified with \"sdt\" option!\n"
+>> +	       "Usage :\n  perf list sdt <file-name>\n");
+>> +
+>> +	return;
+>> +}
+>>
+>>
+>
+
 -- 
-1.9.3
+Thanks,
+Hemant Kumar
 
