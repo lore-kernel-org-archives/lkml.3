@@ -1,54 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752410AbaH1UFP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 16:05:15 -0400
-Received: from smtprelay02.ispgateway.de ([80.67.31.40]:44962 "EHLO
-	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752293AbaH1UFL (ORCPT
+	id S1752175AbaH1ULy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 16:11:54 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:44124 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892AbaH1ULx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 16:05:11 -0400
-Message-ID: <53FF8B2B.3050506@ladisch.de>
-Date: Thu, 28 Aug 2014 22:03:55 +0200
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 28 Aug 2014 16:11:53 -0400
+Message-ID: <53FF8D08.5050900@infradead.org>
+Date: Thu, 28 Aug 2014 13:11:52 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: Andreas Mohr <andi@lisas.de>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vojtech Pavlik <vojtech@suse.cz>, Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [PATCH 1/2] SOUND: kill gameport bits
-References: <20140820024638.GA25240@rhlx01.hs-esslingen.de>	<20140820051815.GA1109@core.coreip.homeip.net>	<s5hwqa3hetu.wl-tiwai@suse.de>	<20140820063130.GA11226@core.coreip.homeip.net>	<s5htx57hc89.wl-tiwai@suse.de>	<s5h4mx6rshs.wl-tiwai@suse.de>	<20140824050716.GA523@rhlx01.hs-esslingen.de> <s5hppfpt520.wl-tiwai@suse.de>
-In-Reply-To: <s5hppfpt520.wl-tiwai@suse.de>
-Content-Type: text/plain; charset=utf-8
+To: Masanari Iida <standby24x7@gmail.com>, trivial@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [trivial] treewide: Fix typo in printk
+References: <1409246765-28327-1-git-send-email-standby24x7@gmail.com>
+In-Reply-To: <1409246765-28327-1-git-send-email-standby24x7@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Df-Sender: bGludXgta2VybmVsQGNsLmRvbWFpbmZhY3Rvcnkta3VuZGUuZGU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Takashi Iwai wrote:
-> did anyone test the patch at all...?
+On 08/28/14 10:26, Masanari Iida wrote:
+> This patch fix spelling typo in printk.
+> 
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+> ---
+>  arch/m68k/Kconfig.devices                   | 2 +-
+>  arch/mips/lantiq/falcon/sysctrl.c           | 2 +-
+>  arch/mips/lantiq/xway/sysctrl.c             | 2 +-
+>  arch/mips/pci/pci-lantiq.c                  | 2 +-
+>  arch/powerpc/kvm/e500_mmu_host.c            | 2 +-
+>  arch/powerpc/platforms/powernv/opal.c       | 2 +-
+>  drivers/crypto/qat/qat_common/adf_ctl_drv.c | 2 +-
+>  drivers/infiniband/hw/ocrdma/ocrdma_verbs.c | 2 +-
+>  drivers/net/ethernet/mellanox/mlx4/cmd.c    | 4 ++--
+>  drivers/net/ethernet/via/via-velocity.c     | 2 +-
+>  drivers/net/wireless/libertas/cfg.c         | 2 +-
+>  drivers/scsi/fnic/fnic_debugfs.c            | 2 +-
+>  drivers/scsi/fnic/fnic_trace.c              | 2 +-
+>  drivers/video/backlight/88pm860x_bl.c       | 2 +-
+>  net/netfilter/ipset/ip_set_core.c           | 2 +-
+>  scripts/sign-file                           | 2 +-
+>  16 files changed, 17 insertions(+), 17 deletions(-)
 
-Appears to work.  The ymfpci gameport seems to be somewhat unreliable:
+> diff --git a/arch/powerpc/kvm/e500_mmu_host.c b/arch/powerpc/kvm/e500_mmu_host.c
+> index 08f14bb..c33cc7d 100644
+> --- a/arch/powerpc/kvm/e500_mmu_host.c
+> +++ b/arch/powerpc/kvm/e500_mmu_host.c
+> @@ -663,7 +663,7 @@ int kvmppc_load_last_inst(struct kvm_vcpu *vcpu, enum instruction_type type,
+>  	if (unlikely((pr && !(mas3 & MAS3_UX)) ||
+>  		     (!pr && !(mas3 & MAS3_SX)))) {
+>  		pr_err_ratelimited(
+> -			"%s: Instuction emulation from guest addres %08lx without execute permission\n",
+> +			"%s: Instuction emulation from guest address %08lx without execute permission\n",
 
- analog.c: 100 out of 17347 reads (0%) on pci0000:06:06.1/gameport0 failed
- analog.c: 122 out of 1111 reads (10%) on pci0000:06:07.0/gameport0 failed
+			     Instruction
 
-There is still some dependence of the CPU speed on the loop counts
-calculated by gameport_time(), but it's not very high; the following are
-for 3200 and 800 MHz, 5 times each:
+>  			__func__, geaddr);
+>  		return EMULATE_AGAIN;
+>  	}
+> diff --git a/drivers/net/ethernet/via/via-velocity.c b/drivers/net/ethernet/via/via-velocity.c
+> index f5fbc12..24ef4ca 100644
+> --- a/drivers/net/ethernet/via/via-velocity.c
+> +++ b/drivers/net/ethernet/via/via-velocity.c
+> @@ -2056,7 +2056,7 @@ static int velocity_receive_frame(struct velocity_info *vptr, int idx)
+>  	struct sk_buff *skb;
+>  
+>  	if (rd->rdesc0.RSR & (RSR_STP | RSR_EDP)) {
+> -		VELOCITY_PRT(MSG_LEVEL_VERBOSE, KERN_ERR " %s : the received frame span multple RDs.\n", vptr->netdev->name);
+> +		VELOCITY_PRT(MSG_LEVEL_VERBOSE, KERN_ERR " %s : the received frame span multiple RDs.\n", vptr->netdev->name);
 
- gameport gameport7: EMU10K1 is pci0000:06:06.1/gameport0, io 0xe480, speed 651kHz
- gameport gameport8: EMU10K1 is pci0000:06:06.1/gameport0, io 0xe480, speed 651kHz
- gameport gameport9: EMU10K1 is pci0000:06:06.1/gameport0, io 0xe480, speed 651kHz
- gameport gameport10: EMU10K1 is pci0000:06:06.1/gameport0, io 0xe480, speed 651kHz
- gameport gameport11: EMU10K1 is pci0000:06:06.1/gameport0, io 0xe480, speed 651kHz
- gameport gameport12: EMU10K1 is pci0000:06:06.1/gameport0, io 0xe480, speed 612kHz
- gameport gameport13: EMU10K1 is pci0000:06:06.1/gameport0, io 0xe480, speed 612kHz
- gameport gameport14: EMU10K1 is pci0000:06:06.1/gameport0, io 0xe480, speed 612kHz
- gameport gameport15: EMU10K1 is pci0000:06:06.1/gameport0, io 0xe480, speed 611kHz
- gameport gameport16: EMU10K1 is pci0000:06:06.1/gameport0, io 0xe480, speed 612kHz
+		                                                                   spans
 
+>  		stats->rx_length_errors++;
+>  		return -EINVAL;
+>  	}
 
-Regards,
-Clemens
+Thanks,
+
+-- 
+~Randy
