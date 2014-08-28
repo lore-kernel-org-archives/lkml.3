@@ -1,121 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751006AbaH1QP5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 12:15:57 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:47525 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750794AbaH1QP4 (ORCPT
+	id S1751314AbaH1QQF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 12:16:05 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:35807 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751044AbaH1QQB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 12:15:56 -0400
-Date: Thu, 28 Aug 2014 09:15:51 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Colin Cross <ccross@android.com>, kernel-team@android.com,
-        Rob Herring <robherring2@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Nicolas Pitre <nico@linaro.org>
-Subject: Re: [PATCH v10 03/19] arm: fiq: Replace default FIQ handler
-Message-ID: <20140828161551.GC5001@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1408369264-14242-1-git-send-email-daniel.thompson@linaro.org>
- <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org>
- <1408466769-20004-4-git-send-email-daniel.thompson@linaro.org>
- <20140819173742.GG30401@n2100.arm.linux.org.uk>
- <53F39377.1070308@linaro.org>
- <20140828150112.GD30401@n2100.arm.linux.org.uk>
- <53FF50B1.20009@linaro.org>
+	Thu, 28 Aug 2014 12:16:01 -0400
+Date: Thu, 28 Aug 2014 18:15:56 +0200
+From: Robert Richter <rric@kernel.org>
+To: Olof Johansson <olof@lixom.net>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
+        Robert Richter <rrichter@cavium.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 2/5] arm64, thunder: Add initial dts for Cavium Thunder
+ SoC
+Message-ID: <20140828161556.GN4703@rric.localhost>
+References: <1406732794-20920-1-git-send-email-rric@kernel.org>
+ <1406732794-20920-3-git-send-email-rric@kernel.org>
+ <CAOesGMh9KkdKB_ytJ7CCbkPW7dHTX91NdfDMsMNfbmOBVOJ8PQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53FF50B1.20009@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082816-1542-0000-0000-0000045DD4FD
+In-Reply-To: <CAOesGMh9KkdKB_ytJ7CCbkPW7dHTX91NdfDMsMNfbmOBVOJ8PQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 28, 2014 at 04:54:25PM +0100, Daniel Thompson wrote:
-> On 28/08/14 16:01, Russell King - ARM Linux wrote:
-> > On Tue, Aug 19, 2014 at 07:12:07PM +0100, Daniel Thompson wrote:
-> >> On 19/08/14 18:37, Russell King - ARM Linux wrote:
-> >>> On Tue, Aug 19, 2014 at 05:45:53PM +0100, Daniel Thompson wrote:
-> >>>> +int register_fiq_nmi_notifier(struct notifier_block *nb)
-> >>>> +{
-> >>>> +	return atomic_notifier_chain_register(&fiq_nmi_chain, nb);
-> >>>> +}
-> >>>> +
-> >>>> +asmlinkage void __exception_irq_entry fiq_nmi_handler(struct pt_regs *regs)
-> >>>> +{
-> >>>> +	struct pt_regs *old_regs = set_irq_regs(regs);
-> >>>> +
-> >>>> +	nmi_enter();
-> >>>> +	atomic_notifier_call_chain(&fiq_nmi_chain, (unsigned long)regs, NULL);
-> >>>> +	nmi_exit();
-> >>>> +	set_irq_regs(old_regs);
-> >>>> +}
-> >>>
-> >>> Really not happy with this.  What happens if a FIQ occurs while we're
-> >>> inside register_fiq_nmi_notifier() - more specifically inside
-> >>> atomic_notifier_chain_register() ?
-> >>
-> >> Should depend on which side of the rcu update we're on.
-> > 
-> > I just asked Paul McKenney, our RCU expert... essentially, yes, RCU
-> > stuff itself is safe in this context.  However, RCU stuff can call into
-> > lockdep if lockdep is configured, and there are questions over lockdep.
-> 
-> Thanks for following this up.
-> 
-> I originally formed the opinion RCU was safe from FIQ because it is also
-> used to manage the NMI notification handlers for x86
-> (register_nmi_handler) and I understood the runtime constraints on FIQ
-> to be very similar.
-> 
-> Note that x86 manages the notifiers itself so it uses
-> list_for_each_entry_rcu() rather atomic_notifier_call_chain() but
-> nevertheless I think this boils down to the same thing w.r.t. safety
-> concerns.
-> 
-> 
-> > There's some things which can be done to reduce the lockdep exposure
-> > to it, such as ensuring that rcu_read_lock() is first called outside
-> > of FIQ context.
-> 
-> lockdep is automatically disabled by calling nmi_enter() so all the
-> lockdep calls should end up following the early exit path based on
-> current->lockdep_recursion.
+Olof,
 
-Ah, that was what I was missing.  Then the notification should be
-safe from NMI, so have at it!  ;-)
-
-							Thanx, Paul
-
-> > There's concerns with whether either printk() in check_flags() could
-> > be reached too (flags there should always indicate that IRQs were
-> > disabled, so that reduces down to a question about just the first
-> > printk() there.)
-> > 
-> > There's also the very_verbose() stuff for RCU lockdep classes which
-> > Paul says must not be enabled.
-> > 
-> > Lastly, Paul isn't a lockdep expert, but he sees nothing that prevents
-> > lockdep doing the deadlock checking as a result of the above call.
+On 30.07.14 11:14:23, Olof Johansson wrote:
+> On Wed, Jul 30, 2014 at 8:06 AM, Robert Richter <rric@kernel.org> wrote:
+> > From: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
 > >
-> > So... this coupled with my feeling that notifiers make it too easy for
-> > unreviewed code to be hooked into this path, I'm fairly sure that we
-> > don't want to be calling atomic notifier chains from FIQ context.
+> > Add initial device tree nodes for Cavium Thunder SoCs with support of
+> > 48 cores and gicv3. The dts file requires further changes, esp. for
+> > pci, gicv3-its and smmu. This changes will be added later together
+> > with the device drivers.
+> >
+> > Signed-off-by: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
+> > Signed-off-by: Robert Richter <rrichter@cavium.com>
+> > ---
+> >  arch/arm64/boot/dts/Makefile         |   1 +
+> >  arch/arm64/boot/dts/thunder-88xx.dts | 387 +++++++++++++++++++++++++++++++++++
+> >  2 files changed, 388 insertions(+)
+> >  create mode 100644 arch/arm64/boot/dts/thunder-88xx.dts
+> >
+> > diff --git a/arch/arm64/boot/dts/Makefile b/arch/arm64/boot/dts/Makefile
+> > index c52bdb051f66..f8001a62029c 100644
+> > --- a/arch/arm64/boot/dts/Makefile
+> > +++ b/arch/arm64/boot/dts/Makefile
+> > @@ -1,3 +1,4 @@
+> > +dtb-$(CONFIG_ARCH_THUNDER) += thunder-88xx.dtb
+> >  dtb-$(CONFIG_ARCH_VEXPRESS) += rtsm_ve-aemv8a.dtb foundation-v8.dtb
+> >  dtb-$(CONFIG_ARCH_XGENE) += apm-mustang.dtb
 > 
+> Oh, and:
 > 
+> Let's fix the mistake we made on 32-bit here (that we can't undo
+> unless we move all dts files now, which is too much churn), and put
+> each SoC vendor in its own subdirectory.
 > 
+> So, please add a arch/arm64/boot/dts/cavium/ directory, add a Makefile
+> and the dts there.
+> 
+> We should move vexpress under arm/   and xgene under apm/ too.
 
+I was looking into this. It turned out that this would introduce more
+pain than it solves. The problem with introducing vendor subdirs for
+.dts files is that this will require also subdirs for .dtb files to
+avoid name conflicts. This means that dtb files are no longer in a
+single directory. Current build scripts and makefiles rely on this.
+E.g.:
+
+ scripts/Makefile.lib:$(obj)/%.dtb.S: $(obj)/%.dtb
+
+Thus, the introduction of vendor subdirs is not easy to implement and
+may break existing workflows. Also, no other arch has vendor subdirs.
+
+A solution would be to have a naming scheme for dts files which
+requires the vendor in the file name, such as cavium-thunder-88xx.dtb.
+Though, these long names may look a bit ugly.
+
+Hmm... Any thoughts?
+
+Thanks,
+
+-Robert
