@@ -1,112 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965893AbaH1LUE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 07:20:04 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:44238 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965872AbaH1LUB (ORCPT
+	id S965905AbaH1LVJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 07:21:09 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:45877 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965663AbaH1LVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 07:20:01 -0400
-Message-ID: <53FF105B.1000103@hitachi.com>
-Date: Thu, 28 Aug 2014 20:19:55 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 28 Aug 2014 07:21:07 -0400
+Date: Thu, 28 Aug 2014 12:20:52 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>,
+        "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>,
+        Support Opensource <support.opensource@diasemi.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mfd: da9052: Avoid setting read_flag_mask for da9052-i2c
+ driver
+Message-ID: <20140828112052.GL24579@lee--X1>
+References: <1408195420.21225.2.camel@phoenix>
 MIME-Version: 1.0
-To: Hemant Kumar <hemant@linux.vnet.ibm.com>, acme@kernel.org
-Cc: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
-        peterz@infradead.org, oleg@redhat.com, hegdevasant@linux.vnet.ibm.com,
-        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org,
-        namhyung@kernel.org, aravinda@linux.vnet.ibm.com, penberg@iki.fi
-Subject: Re: [PATCH v4 0/3] perf/sdt : Support for SDT markers
-References: <20140827213745.13454.46266.stgit@hemant-fedora>
-In-Reply-To: <20140827213745.13454.46266.stgit@hemant-fedora>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1408195420.21225.2.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/08/28 6:43), Hemant Kumar wrote:
-> The v3 patchset had some spacing errors because of my editor messing up during
-> sending the patches. Resending the patchset again.
-> This patchset helps in listing dtrace style markers(SDT) present in user space
-> applications through perf.
-> Notes/markers are placed at important places by the
-> developers. They have a negligible overhead when not enabled.
-> We can enable them and probe at these places and find some important information
-> like the arguments' values, etc.
-> 
-> We have lots of applications which use SDT markers today, like:
-> Postgresql, MySql, Mozilla, Perl, Python, Java, Ruby, libvirt, QEMU, glib
-> 
-> To add SDT markers into user applications:
-> We need to have this header sys/sdt.h present.
-> sys/sdt.h used is version 3.
-> If not present, install systemtap-sdt-devel package (for fedora-18).
-> 
-> Please refer to the Documentation patch (3rd patch in this series) to see how the
-> SDT markers are added into a program.
-> 
-> With this patchset,
-> - Use perf to list the markers in the app:
-> # perf list sdt ./user_app
-> 
-> ./user_app :
-> %user_app:foo_start
-> %user_app:fun_start
-> 
-> This link shows an example of marker probing with Systemtap:
-> https://sourceware.org/systemtap/wiki/AddingUserSpaceProbingToApps
-> 
-> Also, this link provides important info regarding SDT notes:
-> http://sourceware.org/systemtap/wiki/UserSpaceProbeImplementation
-> 
-> This patchset has undergone a lot of changes since it was first introduced.
-> Hence, the patchset has now been subdivided for more simplicity and ease of
-> review (thanks to the suggestion from Namhyung Kim). This contains the first 2
-> of the 4 patches as suggested here:
-> https://lkml.org/lkml/2014/7/20/284
+Steve, Adam,
 
-BTW, does this series only contain list command support?
-
-> - Markers in binaries :
-> These SDT markers are present in the ELF in the section named
-> ".note.stapsdt".
-> Here, the name of the marker, its provider, type, location, base
-> address, semaphore address.
-> We can retrieve these values using the members name_off and desc_off in
-> Nhdr structure. If these are not enabled, they are present in the ELF as nop.
+> Current code init regmap with &da9052_regmap_config for both da9052-spi and
+> da9052-i2c drivers. da9052-spi sets the read_flag_mask.
+> The same setting may be applied for da9052-i2c if da9052-spi driver is loaded
+> first because they actually use the same regmap_config setting.
+> Fix this issue by using a local variable for regmap_config in da9052-spi driver,
+> so the settings in spi driver won't impact the settings in i2c driver.
+> Also makes da9052_regmap_config const to avoid similar issue.
 > 
-> Changes since last series :
-> - Subdivided the previous patchset into 4 patches to make it easier to review
->   as suggested by Namhyung Kim. (This set includes first two of the four patches)
-> - Made the required changes and some optimizations suggested by Masami, Namhyung
->   and Andi.
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> ---
+> Hi Adam and Steve,
+> Any chance to test this patch?
+
+** Look here **
+
+> Thanks,
+> Axel
+>  drivers/mfd/da9052-core.c         | 2 +-
+>  drivers/mfd/da9052-spi.c          | 7 ++++---
+>  include/linux/mfd/da9052/da9052.h | 2 +-
+>  3 files changed, 6 insertions(+), 5 deletions(-)
 > 
-> TODO:
-> - Listing SDT events present in most of the binaries present in a system.
-> - Maintaining a cache of the SDT events for faster lookup.
-> - Add support to probe these SDT markers and integrate with a previous patch
->   (support to perf to probe SDT markers) posted in lkml.
->   https://lkml.org/lkml/2013/10/23/10
-
-OK, I think we can postpone sdt-cache command, but this should go with
-probe-side improvements, because if perf-list shows sdt markers, users
-will be misled that the perf already supports sdt events.
-I'm OK if we hold this on a non-released branch on acme's tree. But it
-shouldn't be pushed to upstream without probe-side improvements.
-
-Arnaldo, would you think that works on your tree?
-
-Thank you,
-
-
+> diff --git a/drivers/mfd/da9052-core.c b/drivers/mfd/da9052-core.c
+> index e8af816..52a0c2f 100644
+> --- a/drivers/mfd/da9052-core.c
+> +++ b/drivers/mfd/da9052-core.c
+> @@ -522,7 +522,7 @@ static const struct mfd_cell da9052_subdev_info[] = {
+>  	},
+>  };
+>  
+> -struct regmap_config da9052_regmap_config = {
+> +const struct regmap_config da9052_regmap_config = {
+>  	.reg_bits = 8,
+>  	.val_bits = 8,
+>  
+> diff --git a/drivers/mfd/da9052-spi.c b/drivers/mfd/da9052-spi.c
+> index 17666b4..45ae0b7 100644
+> --- a/drivers/mfd/da9052-spi.c
+> +++ b/drivers/mfd/da9052-spi.c
+> @@ -23,6 +23,7 @@
+>  
+>  static int da9052_spi_probe(struct spi_device *spi)
+>  {
+> +	struct regmap_config config;
+>  	int ret;
+>  	const struct spi_device_id *id = spi_get_device_id(spi);
+>  	struct da9052 *da9052;
+> @@ -40,10 +41,10 @@ static int da9052_spi_probe(struct spi_device *spi)
+>  
+>  	spi_set_drvdata(spi, da9052);
+>  
+> -	da9052_regmap_config.read_flag_mask = 1;
+> -	da9052_regmap_config.write_flag_mask = 0;
+> +	config = da9052_regmap_config;
+> +	config.read_flag_mask = 1;
+>  
+> -	da9052->regmap = devm_regmap_init_spi(spi, &da9052_regmap_config);
+> +	da9052->regmap = devm_regmap_init_spi(spi, &config);
+>  	if (IS_ERR(da9052->regmap)) {
+>  		ret = PTR_ERR(da9052->regmap);
+>  		dev_err(&spi->dev, "Failed to allocate register map: %d\n",
+> diff --git a/include/linux/mfd/da9052/da9052.h b/include/linux/mfd/da9052/da9052.h
+> index bba65f5..c18a4c1 100644
+> --- a/include/linux/mfd/da9052/da9052.h
+> +++ b/include/linux/mfd/da9052/da9052.h
+> @@ -211,7 +211,7 @@ static inline int da9052_reg_update(struct da9052 *da9052, unsigned char reg,
+>  int da9052_device_init(struct da9052 *da9052, u8 chip_id);
+>  void da9052_device_exit(struct da9052 *da9052);
+>  
+> -extern struct regmap_config da9052_regmap_config;
+> +extern const struct regmap_config da9052_regmap_config;
+>  
+>  int da9052_irq_init(struct da9052 *da9052);
+>  int da9052_irq_exit(struct da9052 *da9052);
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
