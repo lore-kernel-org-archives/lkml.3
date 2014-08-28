@@ -1,43 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751585AbaH1NTF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 09:19:05 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:44134 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750886AbaH1NTD (ORCPT
+	id S1751572AbaH1NVF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 09:21:05 -0400
+Received: from mail-oi0-f47.google.com ([209.85.218.47]:65102 "EHLO
+	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754AbaH1NVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 09:19:03 -0400
+	Thu, 28 Aug 2014 09:21:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <1407536949-31323-1-git-send-email-dianders@chromium.org>
-References: <1407536949-31323-1-git-send-email-dianders@chromium.org>
-Date: Thu, 28 Aug 2014 15:19:01 +0200
-Message-ID: <CACRpkdbzNYEqYWrF+k0ueOhyhGcJ-nEEqGYOeuQ-ubvi2-SaNg@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: Add mux options 3 and 4 for rockchip pinctrl
+In-Reply-To: <1407755870-439-1-git-send-email-kiran.padwal21@gmail.com>
+References: <1407755870-439-1-git-send-email-kiran.padwal21@gmail.com>
+Date: Thu, 28 Aug 2014 15:21:02 +0200
+Message-ID: <CACRpkdYGtTAwLC40W6Lp9jE1dEumyWuVesvCH2=Ri5K9mqEaJA@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: tegra114: Make of_device_id array const
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Heiko Stuebner <heiko@sntech.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Sonny Rao <sonnyrao@chromium.org>, eddie.cai@rock-chips.com,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+To: Kiran Padwal <kiran.padwal21@gmail.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 9, 2014 at 12:29 AM, Doug Anderson <dianders@chromium.org> wrote:
+On Mon, Aug 11, 2014 at 1:17 PM, Kiran Padwal <kiran.padwal21@gmail.com> wrote:
 
-> Newer Rockchip SoCs have more muxing slots.  Add slots 3 and 4 since
-> the rk3288 table goes all the way up to 4.
+> Make of_device_id array const, because all OF functions handle it as const.
 >
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> Signed-off-by: Kiran Padwal <kiran.padwal21@gmail.com>
 
-Patch applied with Heiko's review tag.
+Patch applied with Theirry's ACK.
+
+I will squash all of these patches into *one* since it is one single
+functional change.
 
 Yours,
 Linus Walleij
