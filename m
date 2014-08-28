@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965201AbaH1HNn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 03:13:43 -0400
-Received: from mail.eperm.de ([89.247.134.16]:46980 "EHLO mail.eperm.de"
+	id S936206AbaH1HRJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 03:17:09 -0400
+Received: from mail.eperm.de ([89.247.134.16]:46986 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965045AbaH1HNl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 03:13:41 -0400
+	id S932622AbaH1HRH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 03:17:07 -0400
 X-AuthUser: sm@eperm.de
 From: Stephan Mueller <smueller@chronox.de>
 To: Herbert Xu <herbert@gondor.apana.org.au>
 Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] DRBG: fix maximum value checks on 32 bit systems
-Date: Thu, 28 Aug 2014 09:13:36 +0200
-Message-ID: <2035043.6AURNB1mku@myon.chronox.de>
+Subject: DRBG: remove test for uninitialized DRBG handle
+Date: Thu, 28 Aug 2014 09:17:03 +0200
+Message-ID: <2837552.tiNKQxI8Xu@myon.chronox.de>
 User-Agent: KMail/4.13.3 (Linux/3.15.10-200.fc20.x86_64; KDE/4.13.3; x86_64; ; )
 In-Reply-To: <20140827133528.GA15871@gondor.apana.org.au>
 References: <20140826161456.7ad100e3@canb.auug.org.au> <1471416.zGlxQVbHUr@myon.chronox.de> <20140827133528.GA15871@gondor.apana.org.au>
@@ -24,50 +24,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 27. August 2014, 21:35:28 schrieb Herbert Xu:
+The drbg_healthcheck() contains a test to call the DRBG with an
+uninitialized DRBG cipher handle. As this is an inappropriate use of the
+kernel crypto API to try to generate random numbers before
+initialization, checks verifying for an initialized DRBG during the
+generate function have been removed in previous patches.
 
-Hi Herbert,
+Now, the drbg_healthcheck test trying to generate random numbers with
+an uninstantiated DRBG must also be removed.
 
-> On Tue, Aug 26, 2014 at 11:36:54AM +0200, Stephan Mueller wrote:
-> > The max_addtllen and max_req are defined in drbg_cores[] in crypto/drbg.c
-> > for each DRBG type. As size_t on a 32 bit system is 32 bit the bit shifts
-> > would not work either.
-> > 
-> > Thus, I am wondering whether the just applied patch would need to go to
-> > Linus
-> > tree too? I would think that the following patch would be in order:
-> Have you actually tested this on a 32-bit box? If so and it
-> actually works then I'd be happy to push it.
+Signed-off-by: Stephan Mueller <smueller@chronox.de>
+---
+ crypto/drbg.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-I tested the current cryptodev-2.6:
-
-- on x86_64 and on i386
-
-- in FIPS mode and without FIPS mode on both arches
-
-- executing the CAVS testing in FIPS mode and non-FIPS mode on both arches
-
-- executing stress tests (obtain random values at a size randomly selected 
-between 1 through 1 million bytes) in both modes on both arches
-
-- adding some debug printks to check for the drbg_max_addtl() on both arches
-
-- adding some debug printks to check for the drbg_max_requests() on both 
-arches
-
-I found a bug that was introduced with 
-bc034ef5573ef4d81daa666c02a3df1ad28e24a7 when booting in FIPS mode, i.e. it is 
-not in Linus' tree. The patch will be on your desk shortly.
-
-Thus, the fix in b9347aff91ce4789619168539f08202d8d6a1177 works. However, this 
-patch is based on 05c81ccd9087d238c10b234eadb55632742e5518. So, if we want to 
-fix Linus' tree with minimal impact, either these two patches are pushed to 
-Linus or I have to port b9347aff91ce4789619168539f08202d8d6a1177 to the 
-current Linus tree.
-> 
-> Cheers,
-
-
+diff --git a/crypto/drbg.c b/crypto/drbg.c
+index 39ed918..54cfd48 100644
+--- a/crypto/drbg.c
++++ b/crypto/drbg.c
+@@ -1872,9 +1872,6 @@ static inline int __init drbg_healthcheck_sanity(void)
+ 	/* overflow max addtllen with personalization string */
+ 	ret = drbg_instantiate(drbg, &addtl, coreref, pr);
+ 	BUG_ON(0 == ret);
+-	/* test uninstantated DRBG */
+-	len = drbg_generate(drbg, buf, (max_request_bytes + 1), NULL);
+-	BUG_ON(0 < len);
+ 	/* all tests passed */
+ 	rc = 0;
+ 
 -- 
-Ciao
-Stephan
+1.9.3
+
+
