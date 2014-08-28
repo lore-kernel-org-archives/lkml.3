@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754450AbaH1SwJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:52:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32872 "EHLO mx2.suse.de"
+	id S1753127AbaH1Sgv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 14:36:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32869 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751979AbaH1Sgx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:36:53 -0400
+	id S1751979AbaH1Sgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:36:48 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Jiri Slaby <jslaby@suse.cz>
 Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 64/97] fs/superblock: avoid locking counting inodes and dentries before reclaiming them
-Date: Thu, 28 Aug 2014 19:35:12 +0100
-Message-Id: <1409250945-30874-65-git-send-email-mgorman@suse.de>
+Subject: [PATCH 59/97] mm/compaction: avoid rescanning pageblocks in isolate_freepages
+Date: Thu, 28 Aug 2014 19:35:07 +0100
+Message-Id: <1409250945-30874-60-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
 References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
@@ -20,91 +20,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tim Chen <tim.c.chen@linux.intel.com>
+From: Vlastimil Babka <vbabka@suse.cz>
 
-commit d23da150a37c9fe3cc83dbaf71b3e37fd434ed52 upstream.
+commit e9ade569910a82614ff5f2c2cea2b65a8d785da4 upstream.
 
-We remove the call to grab_super_passive in call to super_cache_count.
-This becomes a scalability bottleneck as multiple threads are trying to do
-memory reclamation, e.g.  when we are doing large amount of file read and
-page cache is under pressure.  The cached objects quickly got reclaimed
-down to 0 and we are aborting the cache_scan() reclaim.  But counting
-creates a log jam acquiring the sb_lock.
+The compaction free scanner in isolate_freepages() currently remembers PFN
+of the highest pageblock where it successfully isolates, to be used as the
+starting pageblock for the next invocation.  The rationale behind this is
+that page migration might return free pages to the allocator when
+migration fails and we don't want to skip them if the compaction
+continues.
 
-We are holding the shrinker_rwsem which ensures the safety of call to
-list_lru_count_node() and s_op->nr_cached_objects.  The shrinker is
-unregistered now before ->kill_sb() so the operation is safe when we are
-doing unmount.
+Since migration now returns free pages back to compaction code where they
+can be reused, this is no longer a concern.  This patch changes
+isolate_freepages() so that the PFN for restarting is updated with each
+pageblock where isolation is attempted.  Using stress-highalloc from
+mmtests, this resulted in 10% reduction of the pages scanned by the free
+scanner.
 
-The impact will depend heavily on the machine and the workload but for a
-small machine using postmark tuned to use 4xRAM size the results were
+Note that the somewhat similar functionality that records highest
+successful pageblock in zone->compact_cached_free_pfn, remains unchanged.
+This cache is used when the whole compaction is restarted, not for
+multiple invocations of the free scanner during single compaction.
 
-                                  3.15.0-rc5            3.15.0-rc5
-                                     vanilla         shrinker-v1r1
-Ops/sec Transactions         21.00 (  0.00%)       24.00 ( 14.29%)
-Ops/sec FilesCreate          39.00 (  0.00%)       44.00 ( 12.82%)
-Ops/sec CreateTransact       10.00 (  0.00%)       12.00 ( 20.00%)
-Ops/sec FilesDeleted       6202.00 (  0.00%)     6202.00 (  0.00%)
-Ops/sec DeleteTransact       11.00 (  0.00%)       12.00 (  9.09%)
-Ops/sec DataRead/MB          25.97 (  0.00%)       29.10 ( 12.05%)
-Ops/sec DataWrite/MB         49.99 (  0.00%)       56.02 ( 12.06%)
-
-ffsb running in a configuration that is meant to simulate a mail server showed
-
-                                 3.15.0-rc5             3.15.0-rc5
-                                    vanilla          shrinker-v1r1
-Ops/sec readall           9402.63 (  0.00%)      9567.97 (  1.76%)
-Ops/sec create            4695.45 (  0.00%)      4735.00 (  0.84%)
-Ops/sec delete             173.72 (  0.00%)       179.83 (  3.52%)
-Ops/sec Transactions     14271.80 (  0.00%)     14482.81 (  1.48%)
-Ops/sec Read                37.00 (  0.00%)        37.60 (  1.62%)
-Ops/sec Write               18.20 (  0.00%)        18.30 (  0.55%)
-
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Dave Chinner <david@fromorbit.com>
-Tested-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Cc: Bob Liu <bob.liu@oracle.com>
-Cc: Jan Kara <jack@suse.cz>
-Acked-by: Rik van Riel <riel@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Rik van Riel <riel@redhat.com>
+Acked-by: David Rientjes <rientjes@google.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- fs/super.c | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ mm/compaction.c | 22 +++++++---------------
+ 1 file changed, 7 insertions(+), 15 deletions(-)
 
-diff --git a/fs/super.c b/fs/super.c
-index f730016..fb68a4c 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -112,9 +112,14 @@ static unsigned long super_cache_count(struct shrinker *shrink,
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 88b33e6..44aa2d4 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -686,7 +686,6 @@ static void isolate_freepages(struct zone *zone,
+ 	unsigned long block_start_pfn;	/* start of current pageblock */
+ 	unsigned long block_end_pfn;	/* end of current pageblock */
+ 	unsigned long low_pfn;	     /* lowest pfn scanner is able to scan */
+-	unsigned long next_free_pfn; /* start pfn for scaning at next round */
+ 	int nr_freepages = cc->nr_freepages;
+ 	struct list_head *freelist = &cc->freepages;
  
- 	sb = container_of(shrink, struct super_block, s_shrink);
+@@ -707,12 +706,6 @@ static void isolate_freepages(struct zone *zone,
+ 	low_pfn = ALIGN(cc->migrate_pfn + 1, pageblock_nr_pages);
  
--	if (!grab_super_passive(sb))
--		return 0;
+ 	/*
+-	 * If no pages are isolated, the block_start_pfn < low_pfn check
+-	 * will kick in.
+-	 */
+-	next_free_pfn = 0;
 -
-+	/*
-+	 * Don't call grab_super_passive as it is a potential
-+	 * scalability bottleneck. The counts could get updated
-+	 * between super_cache_count and super_cache_scan anyway.
-+	 * Call to super_cache_count with shrinker_rwsem held
-+	 * ensures the safety of call to list_lru_count_node() and
-+	 * s_op->nr_cached_objects().
-+	 */
- 	if (sb->s_op && sb->s_op->nr_cached_objects)
- 		total_objects = sb->s_op->nr_cached_objects(sb,
- 						 sc->nid);
-@@ -125,7 +130,6 @@ static unsigned long super_cache_count(struct shrinker *shrink,
- 						 sc->nid);
+-	/*
+ 	 * Isolate free pages until enough are available to migrate the
+ 	 * pages on cc->migratepages. We stop searching if the migrate
+ 	 * and free page scanners meet or enough free pages are isolated.
+@@ -752,19 +745,19 @@ static void isolate_freepages(struct zone *zone,
+ 			continue;
  
- 	total_objects = vfs_pressure_ratio(total_objects);
--	drop_super(sb);
- 	return total_objects;
+ 		/* Found a block suitable for isolating free pages from */
++		cc->free_pfn = block_start_pfn;
+ 		isolated = isolate_freepages_block(cc, block_start_pfn,
+ 					block_end_pfn, freelist, false);
+ 		nr_freepages += isolated;
+ 
+ 		/*
+-		 * Record the highest PFN we isolated pages from. When next
+-		 * looking for free pages, the search will restart here as
+-		 * page migration may have returned some pages to the allocator
++		 * Set a flag that we successfully isolated in this pageblock.
++		 * In the next loop iteration, zone->compact_cached_free_pfn
++		 * will not be updated and thus it will effectively contain the
++		 * highest pageblock we isolated pages from.
+ 		 */
+-		if (isolated && next_free_pfn == 0) {
++		if (isolated)
+ 			cc->finished_update_free = true;
+-			next_free_pfn = block_start_pfn;
+-		}
+ 	}
+ 
+ 	/* split_free_page does not map the pages */
+@@ -775,9 +768,8 @@ static void isolate_freepages(struct zone *zone,
+ 	 * so that compact_finished() may detect this
+ 	 */
+ 	if (block_start_pfn < low_pfn)
+-		next_free_pfn = cc->migrate_pfn;
++		cc->free_pfn = cc->migrate_pfn;
+ 
+-	cc->free_pfn = next_free_pfn;
+ 	cc->nr_freepages = nr_freepages;
  }
  
 -- 
