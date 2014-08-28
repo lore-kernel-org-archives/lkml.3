@@ -1,97 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752325AbaH1Uph (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 16:45:37 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:34326 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751329AbaH1Upf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 16:45:35 -0400
-From: Nishanth Menon <nm@ti.com>
-To: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>
-CC: <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>
-Subject: [PATCH] ARM: dts: omap4-panda: Fix model and SoC family details
-Date: Thu, 28 Aug 2014 15:45:03 -0500
-Message-ID: <1409258703-21188-1-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752509AbaH1UrF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 16:47:05 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:53895 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751633AbaH1UrD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 16:47:03 -0400
+Date: Thu, 28 Aug 2014 13:46:58 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Simon Kirby <sim@hostway.ca>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: net_ns cleanup / RCU overhead
+Message-ID: <20140828204658.GL5001@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140820055855.GB5579@hostway.ca>
+ <20140828192431.GF5001@linux.vnet.ibm.com>
+ <20140828194422.GB8867@hostway.ca>
+ <87oav4l5g9.fsf@x220.int.ebiederm.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87oav4l5g9.fsf@x220.int.ebiederm.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14082820-1542-0000-0000-00000460818B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we claim that omap4-panda and omap4-panda-es are essentially
-the same, but they are not since PandaBoard-ES uses OMAP4460 and
-PandaBoard uses OMAP4430.
+On Thu, Aug 28, 2014 at 03:33:42PM -0500, Eric W. Biederman wrote:
+> Simon Kirby <sim@hostway.ca> writes:
+> 
+> > On Thu, Aug 28, 2014 at 12:24:31PM -0700, Paul E. McKenney wrote:
+> >
+> >> On Tue, Aug 19, 2014 at 10:58:55PM -0700, Simon Kirby wrote:
+> >> > Hello!
+> >> > 
+> >> > In trying to figure out what happened to a box running lots of vsftpd
+> >> > since we deployed a CONFIG_NET_NS=y kernel to it, we found that the
+> >> > (wall) time needed for cleanup_net() to complete, even on an idle box,
+> >> > can be quite long:
+> >> > 
+> >> > #!/bin/bash
+> >> > 
+> >> > ip netns delete test >&/dev/null
+> >> > while ip netns add test; do
+> >> >         echo hi
+> >> >         ip netns delete test
+> >> > done
+> >> > 
+> >> > On my desktop and typical hosts, this prints at only around 4 or 6 per
+> >> > second. While this is happening, "vmstat 1" reports 100% idle, and there
+> >> > there are D-state processes with stacks similar to:
+> >> > 
+> >> > 30566 [kworker/u16:1] D wait_rcu_gp+0x48, synchronize_sched+0x2f, cleanup_net+0xdb, process_one_work+0x175, worker_thread+0x119, kthread+0xbb, ret_from_fork+0x7c, 0xffffffffffffffff
+> >> > 
+> >> > 32220 ip              D copy_net_ns+0x68, create_new_namespaces+0xfc, unshare_nsproxy_namespaces+0x66, SyS_unshare+0x159, system_call_fastpath+0x16, 0xffffffffffffffff
+> >> > 
+> >> > copy_net_ns() is waiting on net_mutex which is held by cleanup_net().
+> >> > 
+> >> > vsftpd uses CLONE_NEWNET to set up privsep processes. There is a comment
+> >> > about it being really slow before 2.6.35 (it avoids CLONE_NEWNET in that
+> >> > case). I didn't find anything that makes 2.6.35 any faster, but on Debian
+> >> > 2.6.36-5-amd64, I notice it does seem to be a bit faster than 3.2, 3.10,
+> >> > 3.16, though still not anything I'd ever want to rely on per connection.
+> >> > 
+> >> > C implementation of the above: http://0x.ca/sim/ref/tools/netnsloop.c
+> >> > 
+> >> > Kernel stack "top": http://0x.ca/sim/ref/tools/pstack
+> >> > 
+> >> > What's going on here?
+> >> 
+> >> That is a bit slow for many configurations, but there are some exceptions.
+> >> 
+> >> So, what is your kernel's .config?
+> >
+> > I was unable to find a config (or stock kernel) that was any different,
+> > but here's the one we're using: http://0x.ca/sim/ref/3.10/config-3.10.53
+> >
+> > How fast does the above test run for you?
+> >
+> > We've been running with the attached, which has helped a little, but it's
+> > still quite slow in our particular use case (vsftpd), and with the above
+> n> test. Should I enable RCU_TRACE or STALL_INFO with a low timeout or
+> > something?
+> 
+> I just want to add a little bit more analysis to this.
+> 
+> What we desire to be fast is the copy_net_ns, cleanup_net is batched and
+> asynchronous which nothing really cares how long it takes except that
+> cleanup_net holds the net_mutex and thus blocks copy_net_ns.
+> 
+> The puzzle is why and which rcu delays Simon is seeing in the network
+> namespace cleanup path, as it seems like the synchronize_rcu is not
+> the only one, and in the case of vsftp with trivail network namespaces
+> where nothing has been done we should not need to delay.
 
-So, split the common definition and make the model name available.
+Indeed, given the version and .config, I can't see why any individual
+RCU grace-period operation would be particularly slow.
 
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
-Based on v3.17-rc2
+I suggest using ftrace on synchronize_rcu() and friends.
 
-Testing logs: (boot test):
-Before Patch(v3.17-rc2)
-1: pandaboard-es:  Boot PASS: http://slexy.org/raw/s209HfpVTs
-2: pandaboard-vanilla:  Boot PASS: http://slexy.org/raw/s21YNmOhQL
+							Thanx, Paul
 
-After Patch
-1: pandaboard-es:  Boot PASS: http://slexy.org/raw/s20FH76BTn
-2: pandaboard-vanilla:  Boot PASS: http://slexy.org/raw/s2vFLcfkBu
-
-Note: 'ti,omap4-panda-es' is not documented in bindings, not entirely
-sure if we should be doing the same for every board compatibility.
-
- arch/arm/boot/dts/omap4-panda-common.dtsi |    3 ---
- arch/arm/boot/dts/omap4-panda-es.dts      |    5 +++++
- arch/arm/boot/dts/omap4-panda.dts         |    5 +++++
- 3 files changed, 10 insertions(+), 3 deletions(-)
-
-diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi b/arch/arm/boot/dts/omap4-panda-common.dtsi
-index 8cfa3c8..1505135 100644
---- a/arch/arm/boot/dts/omap4-panda-common.dtsi
-+++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
-@@ -8,9 +8,6 @@
- #include "elpida_ecb240abacn.dtsi"
- 
- / {
--	model = "TI OMAP4 PandaBoard";
--	compatible = "ti,omap4-panda", "ti,omap4430", "ti,omap4";
--
- 	memory {
- 		device_type = "memory";
- 		reg = <0x80000000 0x40000000>; /* 1 GB */
-diff --git a/arch/arm/boot/dts/omap4-panda-es.dts b/arch/arm/boot/dts/omap4-panda-es.dts
-index 816d1c9..2f1dabc 100644
---- a/arch/arm/boot/dts/omap4-panda-es.dts
-+++ b/arch/arm/boot/dts/omap4-panda-es.dts
-@@ -10,6 +10,11 @@
- #include "omap4460.dtsi"
- #include "omap4-panda-common.dtsi"
- 
-+/ {
-+	model = "TI OMAP4 PandaBoard-ES";
-+	compatible = "ti,omap4-panda-es", "ti,omap4-panda", "ti,omap4460", "ti,omap4430", "ti,omap4";
-+};
-+
- /* Audio routing is differnet between PandaBoard4430 and PandaBoardES */
- &sound {
- 	ti,model = "PandaBoardES";
-diff --git a/arch/arm/boot/dts/omap4-panda.dts b/arch/arm/boot/dts/omap4-panda.dts
-index 6189a8b..a0e28b2 100644
---- a/arch/arm/boot/dts/omap4-panda.dts
-+++ b/arch/arm/boot/dts/omap4-panda.dts
-@@ -9,3 +9,8 @@
- 
- #include "omap443x.dtsi"
- #include "omap4-panda-common.dtsi"
-+
-+/ {
-+	model = "TI OMAP4 PandaBoard";
-+	compatible = "ti,omap4-panda", "ti,omap4430", "ti,omap4";
-+};
--- 
-1.7.9.5
+> Eric
+> 
+> 
+> > Simon-
+> >
+> > -- >8 --
+> > Subject: [PATCH] netns: use synchronize_rcu_expedited instead of
+> >  synchronize_rcu
+> >
+> > Similar to ef323088, with synchronize_rcu(), we are only able to create
+> > and destroy about 4 or 7 net namespaces per second, which really puts a
+> > dent in the performance of programs attempting to use CLONE_NEWNET for
+> > privilege separation (vsftpd, chromium).
+> > ---
+> >  net/core/net_namespace.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> > diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
+> > index 85b6269..6dcb4b3 100644
+> > --- a/net/core/net_namespace.c
+> > +++ b/net/core/net_namespace.c
+> > @@ -296,7 +296,7 @@ static void cleanup_net(struct work_struct *work)
+> >  	 * This needs to be before calling the exit() notifiers, so
+> >  	 * the rcu_barrier() below isn't sufficient alone.
+> >  	 */
+> > -	synchronize_rcu();
+> > +	synchronize_rcu_expedited();
+> >  
+> >  	/* Run all of the network namespace exit methods */
+> >  	list_for_each_entry_reverse(ops, &pernet_list, list)
+> 
 
