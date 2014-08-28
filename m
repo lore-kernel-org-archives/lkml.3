@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616AbaH1SgP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:36:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32836 "EHLO mx2.suse.de"
+	id S1753090AbaH1TGr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 15:06:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32849 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752174AbaH1Sfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:35:53 -0400
+	id S1752570AbaH1SgO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:36:14 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Jiri Slaby <jslaby@suse.cz>
 Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 07/97] mm: exclude memoryless nodes from zone_reclaim
-Date: Thu, 28 Aug 2014 19:34:15 +0100
-Message-Id: <1409250945-30874-8-git-send-email-mgorman@suse.de>
+Subject: [PATCH 26/97] mm: get rid of unnecessary pageblock scanning in setup_zone_migrate_reserve
+Date: Thu, 28 Aug 2014 19:34:34 +0100
+Message-Id: <1409250945-30874-27-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
 References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
@@ -20,74 +20,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Hocko <mhocko@suse.cz>
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-commit 70ef57e6c22c3323dce179b7d0d433c479266612 upstream.
+commit 943dca1a1fcbccb58de944669b833fd38a6c809b upstream.
 
-We had a report about strange OOM killer strikes on a PPC machine
-although there was a lot of swap free and a tons of anonymous memory
-which could be swapped out.  In the end it turned out that the OOM was a
-side effect of zone reclaim which wasn't unmapping and swapping out and
-so the system was pushed to the OOM.  Although this sounds like a bug
-somewhere in the kswapd vs.  zone reclaim vs.  direct reclaim
-interaction numactl on the said hardware suggests that the zone reclaim
-should not have been set in the first place:
+Yasuaki Ishimatsu reported memory hot-add spent more than 5 _hours_ on
+9TB memory machine since onlining memory sections is too slow.  And we
+found out setup_zone_migrate_reserve spent >90% of the time.
 
-  node 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
-  node 0 size: 0 MB
-  node 0 free: 0 MB
-  node 2 cpus:
-  node 2 size: 7168 MB
-  node 2 free: 6019 MB
-  node distances:
-  node   0   2
-  0:  10  40
-  2:  40  10
+The problem is, setup_zone_migrate_reserve scans all pageblocks
+unconditionally, but it is only necessary if the number of reserved
+block was reduced (i.e.  memory hot remove).
 
-So all the CPUs are associated with Node0 which doesn't have any memory
-while Node2 contains all the available memory.  Node distances cause an
-automatic zone_reclaim_mode enabling.
+Moreover, maximum MIGRATE_RESERVE per zone is currently 2.  It means
+that the number of reserved pageblocks is almost always unchanged.
 
-Zone reclaim is intended to keep the allocations local but this doesn't
-make any sense on the memoryless nodes.  So let's exclude such nodes for
-init_zone_allows_reclaim which evaluates zone reclaim behavior and
-suitable reclaim_nodes.
+This patch adds zone->nr_migrate_reserve_block to maintain the number of
+MIGRATE_RESERVE pageblocks and it reduces the overhead of
+setup_zone_migrate_reserve dramatically.  The following table shows time
+of onlining a memory section.
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: David Rientjes <rientjes@google.com>
-Acked-by: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-Tested-by: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
+  Amount of memory     | 128GB | 192GB | 256GB|
+  ---------------------------------------------
+  linux-3.12           |  23.9 |  31.4 | 44.5 |
+  This patch           |   8.3 |   8.3 |  8.6 |
+  Mel's proposal patch |  10.9 |  19.2 | 31.3 |
+  ---------------------------------------------
+                                   (millisecond)
+
+  128GB : 4 nodes and each node has 32GB of memory
+  192GB : 6 nodes and each node has 32GB of memory
+  256GB : 8 nodes and each node has 32GB of memory
+
+  (*1) Mel proposed his idea by the following threads.
+       https://lkml.org/lkml/2013/10/30/272
+
+[akpm@linux-foundation.org: tweak comment]
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Reported-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Tested-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/page_alloc.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ include/linux/mmzone.h |  6 ++++++
+ mm/page_alloc.c        | 13 +++++++++++++
+ 2 files changed, 19 insertions(+)
 
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 5648290..4719985 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -494,6 +494,12 @@ struct zone {
+ 	unsigned long		managed_pages;
+ 
+ 	/*
++	 * Number of MIGRATE_RESEVE page block. To maintain for just
++	 * optimization. Protected by zone->lock.
++	 */
++	int			nr_migrate_reserve_block;
++
++	/*
+ 	 * rarely used fields:
+ 	 */
+ 	const char		*name;
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index bffedeb..d37e8cd 100644
+index 3078eaf..c34b582 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -1850,7 +1850,7 @@ static void __paginginit init_zone_allows_reclaim(int nid)
- {
- 	int i;
+@@ -3934,6 +3934,7 @@ static void setup_zone_migrate_reserve(struct zone *zone)
+ 	struct page *page;
+ 	unsigned long block_migratetype;
+ 	int reserve;
++	int old_reserve;
  
--	for_each_online_node(i)
-+	for_each_node_state(i, N_MEMORY)
- 		if (node_distance(nid, i) <= RECLAIM_DISTANCE)
- 			node_set(i, NODE_DATA(nid)->reclaim_nodes);
- 		else
-@@ -4903,7 +4903,8 @@ void __paginginit free_area_init_node(int nid, unsigned long *zones_size,
+ 	/*
+ 	 * Get the start pfn, end pfn and the number of blocks to reserve
+@@ -3955,6 +3956,12 @@ static void setup_zone_migrate_reserve(struct zone *zone)
+ 	 * future allocation of hugepages at runtime.
+ 	 */
+ 	reserve = min(2, reserve);
++	old_reserve = zone->nr_migrate_reserve_block;
++
++	/* When memory hot-add, we almost always need to do nothing */
++	if (reserve == old_reserve)
++		return;
++	zone->nr_migrate_reserve_block = reserve;
  
- 	pgdat->node_id = nid;
- 	pgdat->node_start_pfn = node_start_pfn;
--	init_zone_allows_reclaim(nid);
-+	if (node_state(nid, N_MEMORY))
-+		init_zone_allows_reclaim(nid);
- #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
- 	get_pfn_range_for_nid(nid, &start_pfn, &end_pfn);
- #endif
+ 	for (pfn = start_pfn; pfn < end_pfn; pfn += pageblock_nr_pages) {
+ 		if (!pfn_valid(pfn))
+@@ -3992,6 +3999,12 @@ static void setup_zone_migrate_reserve(struct zone *zone)
+ 				reserve--;
+ 				continue;
+ 			}
++		} else if (!old_reserve) {
++			/*
++			 * At boot time we don't need to scan the whole zone
++			 * for turning off MIGRATE_RESERVE.
++			 */
++			break;
+ 		}
+ 
+ 		/*
 -- 
 1.8.4.5
 
