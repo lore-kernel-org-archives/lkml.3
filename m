@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965826AbaH1LAP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 07:00:15 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:45566 "EHLO
+	id S936606AbaH1LB6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 07:01:58 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:60481 "EHLO
 	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965139AbaH1LAM (ORCPT
+	with ESMTP id S936487AbaH1LB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 07:00:12 -0400
+	Thu, 28 Aug 2014 07:01:56 -0400
 From: Gyungoh Yoo <gyungoh@gmail.com>
 X-Google-Original-From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org
-Cc: jack.yoo@skyworksinc.com, devicetree@vger.kernel.org,
+To: rdunlap@infradead.org
+Cc: jack.yoo@skyworksinc.com, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 6/7] Adding SKY81452 backlight device tree bindings document
-Date: Thu, 28 Aug 2014 20:00:01 +0900
-Message-Id: <1409223601-23619-1-git-send-email-jack.yoo@skyworksinc.com>
+Subject: [PATCH v2 7/7] Adding SKY81452 backlight document
+Date: Thu, 28 Aug 2014 20:01:49 +0900
+Message-Id: <1409223709-23671-1-git-send-email-jack.yoo@skyworksinc.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1409222307-23225-1-git-send-email-jack.yoo@skyworksinc.com>
 References: <1409222307-23225-1-git-send-email-jack.yoo@skyworksinc.com>
@@ -24,43 +23,45 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 v2:
-Added 'compatible' attribute in child drivers
+split the patches
 
 ---
- .../video/backlight/sky81452-backlight.txt         | 24 ++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
+ Documentation/backlight/sky81452-backlight.txt | 26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
+ create mode 100644 Documentation/backlight/sky81452-backlight.txt
 
-diff --git a/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt b/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
+diff --git a/Documentation/backlight/sky81452-backlight.txt b/Documentation/backlight/sky81452-backlight.txt
 new file mode 100644
-index 0000000..2c2d947
+index 0000000..39f2f8c
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
-@@ -0,0 +1,24 @@
-+SKY81452-backlight bindings
++++ b/Documentation/backlight/sky81452-backlight.txt
+@@ -0,0 +1,26 @@
++backlight driver for sky81452
++==========================
 +
-+Required properties:
-+- compatible		: Must be "skyworks,sky81452-backlight"
++* Skyworks Solutions SKY81452 :
++  High-Efficiency, Six-Channel White LED Driver with Touch Panel Bias Supply
 +
-+Optional properties:
-+- name			: Name of backlight device. Default is 'lcd-backlight'.
-+- gpio-enable		: GPIO to use to EN pin.
-+- enable		: Enable mask for current sink channel 1 to 6.
-+- ignore-pwm		: Ignore both PWM input
-+- dpwm-mode		: Enable DPWM dimming mode, otherwise Analog dimming mode
-+- phase-shift		: Enable phase shift mode
-+- ovp-level		: Over-voltage protection level. Should be between 14 or 28V.
-+- short-detection-threshold	: It should be one of 4, 5, 6 and 7V.
-+- boost-current-limit	: It should be one of 800, 1100 and 1500mA.
++Description
++-----------
++The SKY81452 is a highly integrated, high-efficiency LED backlight solution for
++tablets, notebook computers, monitors, and other portable devices.
 +
-+Example:
++The SKY81452 supports Direct Pulse Width Modulation(DPWM) dimming and Analog
++Pulse Width Modulation (APWM). In the DPWM dimming mode, the output waveform
++follows the Pulse Width Modulation Input(PWMI) signal and the current level is
++set by I2C control and an external RSET resistor. In the APWM mode, the PWMI
++signal duty and the I2C brightness control signal are multiplied to control
++the output current level.
 +
-+	backlight {
-+		compatible = "skyworks,sky81452-backlight";
-+		name = "pwm-backlight";
-+		enable = <0x3F>;
-+		ignore-pwm;
-+	};
++The driver exports some additional attributes for SKY81452 backlight.
++- enable : Current sink channels. Bit0 is for channel 1, Bit1 is for channel 2
++	and Bit2 is for channel 3. In same way, Bit5 is for channel 6.
++	For example, if 5 is written to this attribute, channel 1 and
++	channel 3 are enabled.
++- open : Shows an open LED fault.
++- short : Shows an short LED fault.
++- fault : Shows information about over-current and over-temperature.
 -- 
 1.9.1
 
