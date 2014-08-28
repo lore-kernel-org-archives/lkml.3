@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751735AbaH1ERg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 00:17:36 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:61140 "EHLO
+	id S1751611AbaH1EZU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 00:25:20 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:62538 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065AbaH1ERe (ORCPT
+	with ESMTP id S1751069AbaH1EZQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 00:17:34 -0400
-X-AuditID: cbfee691-f79546d0000011a1-64-53fead5c92e6
-From: "vishnu.ps" <vishnu.ps@samsung.com>
-To: akpm@linux-foundation.org, oleg@redhat.com, yangds.fnst@cn.fujitsu.com,
-        mingo@kernel.org, peterz@infradead.org, ebiederm@xmission.com,
-        athorlton@sgi.com, linux-kernel@vger.kernel.org
-Cc: cpgs@samsung.com, pintu.k@samsung.com, vishu13285@gmail.com,
-        "vishnu.ps" <vishnu.ps@samsung.com>
-Subject: [PATCH] kernel: fix for checkpatch errors in sys file
-Date: Thu, 28 Aug 2014 09:46:23 +0530
-Message-id: <1409199383-2313-1-git-send-email-vishnu.ps@samsung.com>
-X-Mailer: git-send-email 1.8.3.2
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrALMWRmVeSWpSXmKPExsWyRsSkWjdm7b9gg/PLpCzmrF/DZvHm+nRm
-	i5eHNC3+b2tht7i8aw6bxep/pxgttu5vZbQ43nuAyaLv+2F2iyl9dxkttqx4yGrR9KaN1YHH
-	4//BScweO2fdZffYvELLY9OqTjaPEzN+s3i833eVzaNvyypGj7vXXzJ5fN4k5zHlUDtLAFcU
-	l01Kak5mWWqRvl0CV8auvXNZC74lVby+49DA2O3bxcjJISFgInGofw8ThC0mceHeerYuRi4O
-	IYGljBLPDq5jgyn6fKCFFSIxnVFi34ujYB1CAn8YJZ5+kwKx2QQ0JVYuuAMWFxHYxyjR+Iqv
-	i5GDg1kgTaL/Ty5IWFjATmL/j/esIDaLgKrEmgvn2EFsXgEXifurJzBC7FKQWPZlLTOEfYxd
-	ovecBES9gMS3yYdYQEZKCMhKbDoAVSIpcXDFDZYJjIILGBlWMYqmFiQXFCelF5nqFSfmFpfm
-	pesl5+duYgRGxOl/zybuYLx/wPoQowAHoxIP74yEf8FCrIllxZW5hxhNgTZMZJYSTc4Hxl1e
-	SbyhsZmRhamJqbGRuaWZkjivjvTPYCGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2Mu/9/jUy+
-	6nx9/7vYX4Hnc23+Sc/a1LhvyifrloKwQsVXsfXJxwV/mf9P2njwW7/RloCJsSdW575/vPzX
-	o2OsQuIhdgUfHKR2T3LsEm99XVqy8duJkGmln3/HxThue/LhxMqOD+fWza6fvG5/yB+Dd8Gb
-	3S0cD84/sej+HFbVmoVpD2aWF4ay8iixFGckGmoxFxUnAgC0UOkVgwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNIsWRmVeSWpSXmKPExsVy+t9jQd2Ytf+CDZ5d4rWYs34Nm8Wb69OZ
-	LV4e0rT4v62F3eLyrjlsFqv/nWK02Lq/ldHieO8BJou+74fZLab03WW02LLiIatF05s2Vgce
-	j/8HJzF77Jx1l91j8wotj02rOtk8Tsz4zeLxft9VNo++LasYPe5ef8nk8XmTnMeUQ+0sAVxR
-	DYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUB3KymU
-	JeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJaxgzdu2dy1rwLani9R2HBsZu3y5G
-	Tg4JAROJzwdaWCFsMYkL99azdTFycQgJTGeU2PfiKBNIQkjgD6PE029SIDabgKbEygV3wOIi
-	AvsYJRpf8XUxcnAwC6RJ9P/JBQkLC9hJ7P/xHmwmi4CqxJoL59hBbF4BF4n7qycwQuxSkFj2
-	ZS3zBEbuBYwMqxhFUwuSC4qT0nMN9YoTc4tL89L1kvNzNzGCI+6Z1A7GlQ0WhxgFOBiVeHgd
-	4v4FC7EmlhVX5h5ilOBgVhLhTQcJ8aYkVlalFuXHF5XmpBYfYjQF2j6RWUo0OR+YDPJK4g2N
-	TcxNjU0tTSxMzCyVxHkPtFoHCgmkJ5akZqemFqQWwfQxcXBKNTA6ZlfnnXNOOfF7drX9tzfH
-	b3+ziHukOWFPfnpUY/acrqVTWX78jFjL36fC+lr9v3elwtZgj8Jbchx5nffcZ7NKX+LRbY/J
-	WKIbfszg+ePzt7Uq+zYEeBoGbj7JzWdYOfPIZl0D0/ecJsq2Pyykz/pzqX1W2qz4951n0rcJ
-	ivJu3pkZdefuzVBiKc5INNRiLipOBABrPsLqzgIAAA==
+	Thu, 28 Aug 2014 00:25:16 -0400
+X-AuditID: cbfee691-f79546d0000011a1-54-53feaf2a6ef4
+Message-id: <53FEAF2A.1080400@samsung.com>
+Date: Thu, 28 Aug 2014 13:25:14 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: eduardo.valentin@ti.com, amit.daniel@samsung.com, rui.zhang@intel.com,
+        kgene.kim@samsung.com, ch.naveen@samsung.com,
+        kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
+        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eduardo Valentin <edubezval@gmail.com>
+Subject: Re: [PATCHv5 4/4] thermal: exynos: Remove duplicate code when reading
+ triminfo register of Exynos5440
+References: <1409016665-3824-1-git-send-email-cw00.choi@samsung.com>
+ <1409016665-3824-5-git-send-email-cw00.choi@samsung.com>
+In-reply-to: <1409016665-3824-5-git-send-email-cw00.choi@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMIsWRmVeSWpSXmKPExsWyRsSkSFdr/b9ggzWvVCwaroZYbJyxntXi
+	7vPDjBbXvzxntViz/yeTxfwr11gtehdcZbM42/SG3WLTYyD38q45bBafe48wWsw4v4/J4snD
+	PjYHXo+ds+6yeyze85LJY/OSeo++LasYPY7f2M7k8XmTXABbFJdNSmpOZllqkb5dAlfGt64n
+	bAV/uCv2zfZvYLzE2cXIySEhYCLx5vJ/FghbTOLCvfVsXYxcHEICSxklZizfxdjFyAFW9KGd
+	HSK+iFHi5L4ZzCANQgKvGSX2rwdr5hXQkrh4diU7iM0ioCrRe/ECK4jNBhTf/+IGG4gtKhAm
+	sXL6Fah6QYkfk++B2SICGhIz/15hBFnALHCXSWLnyjmMIAlhgQKJFc/aGCGW1UssmnkDbDGn
+	gKvEtecvwZYxC+hI7G+dxgZhy0tsXvOWGWSQhMBfdolv558wQVwkIPFt8iEWiG9kJTYdYIb4
+	WFLi4IobLBMYxWYhuWkWkrGzkIxdwMi8ilE0tSC5oDgpvchUrzgxt7g0L10vOT93EyMwbk//
+	ezZxB+P9A9aHGAU4GJV4eGck/AsWYk0sK67MPcRoCnTFRGYp0eR8YHLIK4k3NDYzsjA1MTU2
+	Mrc0UxLn1ZH+GSwkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBUZenpvDe4fcVc7z83s5Yp3k3
+	wOr2h7dVsg1znuxN5w65aC4/c0Y0s9XO3ZP/1rWn7bwuxBx5M4SrVGnWEb7ECbbLp87xW9Gz
+	uqZgdpaf8r6qsgw3+Usnrhl8XJ+UtmrZ3FqTKMvpR9PnnRRZN8n0RsKC3cVHJYLKQos8e0Ou
+	c57+rXOfR8HykhJLcUaioRZzUXEiAJcbAbnWAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42I5/e+xgK7W+n/BBr3bZS0aroZYbJyxntXi
+	7vPDjBbXvzxntViz/yeTxfwr11gtehdcZbM42/SG3WLTYyD38q45bBafe48wWsw4v4/J4snD
+	PjYHXo+ds+6yeyze85LJY/OSeo++LasYPY7f2M7k8XmTXABbVAOjTUZqYkpqkUJqXnJ+SmZe
+	uq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QoUoKZYk5pUChgMTiYiV9O0wTQkPc
+	dC1gGiN0fUOC4HqMDNBAwhrGjG9dT9gK/nBX7Jvt38B4ibOLkYNDQsBE4kM7excjJ5ApJnHh
+	3nq2LkYuDiGBRYwSJ/fNYAZJCAm8ZpTYv54FxOYV0JK4eHYlWAOLgKpE78ULrCA2G1B8/4sb
+	bCC2qECYxMrpV6DqBSV+TL4HZosIaEjM/HuFEWQBs8BdJomdK+cwgiSEBQokVjxrY4RYVi+x
+	aOYNsMWcAq4S156/BFvGLKAjsb91GhuELS+xec1b5gmMArOQ7JiFpGwWkrIFjMyrGEVTC5IL
+	ipPScw31ihNzi0vz0vWS83M3MYKTwjOpHYwrGywOMQpwMCrx8DrE/QsWYk0sK67MPcQowcGs
+	JMKbDhLiTUmsrEotyo8vKs1JLT7EaAoMgonMUqLJ+cCElVcSb2hsYmZkaWRuaGFkbK4kznug
+	1TpQSCA9sSQ1OzW1ILUIpo+Jg1OqgZH1q2Drwht6sV+umbrXaz3033lm990Pv3naX66STVGb
+	rLf9yMwDf/aXGqtctmaZ9fS+TP+yr1N75BvfJgq+8VKXa/LOrTR9JSmv8U7FKmmO+IZn+mxR
+	66xVzY8sPcDU9id/+uTXrteSzdZ9ZWTMinv6Y8PR7xLb+bd/ifuivUPg3TWbP9dNVG4rsRRn
+	JBpqMRcVJwIAzBCNlSADAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -50,432 +62,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "vishnu.ps" <vishnu.ps@samsung.com>
+Dear Eduardo,
 
-This patch fixes minor errors and warning messages in sys.c file.
-These errors were reported while working with some modifications in sys.c file.
-Fixing this first will help me to improve my further patches.
+This patch is wrong. It is my mistake.
 
-ERROR: trailing whitespace - 9
-ERROR: do not use assignment in if condition - 4
-ERROR: spaces required around that '?' (ctx:VxO) - 10
-ERROR: switch and case should be at the same indent - 3
+Please ignore only this patch because
+the offset calculation of 'case 0' is different from 'case 2'.
 
-total 26 errors & 3 warnings fixed.
+Best Regards,
+Chanwoo Choi
 
-Signed-off-by: vishnu.ps <vishnu.ps@samsung.com>
----
- kernel/sys.c | 265 ++++++++++++++++++++++++++++++-----------------------------
- 1 file changed, 137 insertions(+), 128 deletions(-)
-
-diff --git a/kernel/sys.c b/kernel/sys.c
-index 14222a1..7f3518c 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -62,28 +62,28 @@
- #include <asm/unistd.h>
- 
- #ifndef SET_UNALIGN_CTL
--# define SET_UNALIGN_CTL(a,b)	(-EINVAL)
-+# define SET_UNALIGN_CTL(a, b)	(-EINVAL)
- #endif
- #ifndef GET_UNALIGN_CTL
--# define GET_UNALIGN_CTL(a,b)	(-EINVAL)
-+# define GET_UNALIGN_CTL(a, b)	(-EINVAL)
- #endif
- #ifndef SET_FPEMU_CTL
--# define SET_FPEMU_CTL(a,b)	(-EINVAL)
-+# define SET_FPEMU_CTL(a, b)	(-EINVAL)
- #endif
- #ifndef GET_FPEMU_CTL
--# define GET_FPEMU_CTL(a,b)	(-EINVAL)
-+# define GET_FPEMU_CTL(a, b)	(-EINVAL)
- #endif
- #ifndef SET_FPEXC_CTL
--# define SET_FPEXC_CTL(a,b)	(-EINVAL)
-+# define SET_FPEXC_CTL(a, b)	(-EINVAL)
- #endif
- #ifndef GET_FPEXC_CTL
--# define GET_FPEXC_CTL(a,b)	(-EINVAL)
-+# define GET_FPEXC_CTL(a, b)	(-EINVAL)
- #endif
- #ifndef GET_ENDIAN
--# define GET_ENDIAN(a,b)	(-EINVAL)
-+# define GET_ENDIAN(a, b)	(-EINVAL)
- #endif
- #ifndef SET_ENDIAN
--# define SET_ENDIAN(a,b)	(-EINVAL)
-+# define SET_ENDIAN(a, b)	(-EINVAL)
- #endif
- #ifndef GET_TSC_CTL
- # define GET_TSC_CTL(a)		(-EINVAL)
-@@ -182,39 +182,40 @@ SYSCALL_DEFINE3(setpriority, int, which, int, who, int, niceval)
- 	rcu_read_lock();
- 	read_lock(&tasklist_lock);
- 	switch (which) {
--		case PRIO_PROCESS:
--			if (who)
--				p = find_task_by_vpid(who);
--			else
--				p = current;
--			if (p)
--				error = set_one_prio(p, niceval, error);
--			break;
--		case PRIO_PGRP:
--			if (who)
--				pgrp = find_vpid(who);
--			else
--				pgrp = task_pgrp(current);
--			do_each_pid_thread(pgrp, PIDTYPE_PGID, p) {
--				error = set_one_prio(p, niceval, error);
--			} while_each_pid_thread(pgrp, PIDTYPE_PGID, p);
--			break;
--		case PRIO_USER:
--			uid = make_kuid(cred->user_ns, who);
--			user = cred->user;
--			if (!who)
--				uid = cred->uid;
--			else if (!uid_eq(uid, cred->uid) &&
--				 !(user = find_user(uid)))
-+	case PRIO_PROCESS:
-+		if (who)
-+			p = find_task_by_vpid(who);
-+		else
-+			p = current;
-+		if (p)
-+			error = set_one_prio(p, niceval, error);
-+		break;
-+	case PRIO_PGRP:
-+		if (who)
-+			pgrp = find_vpid(who);
-+		else
-+			pgrp = task_pgrp(current);
-+		do_each_pid_thread(pgrp, PIDTYPE_PGID, p) {
-+			error = set_one_prio(p, niceval, error);
-+		} while_each_pid_thread(pgrp, PIDTYPE_PGID, p);
-+		break;
-+	case PRIO_USER:
-+		uid = make_kuid(cred->user_ns, who);
-+		user = cred->user;
-+		if (!who)
-+			uid = cred->uid;
-+		else if (!uid_eq(uid, cred->uid)) {
-+			user = find_user(uid);
-+			if (!user)
- 				goto out_unlock;	/* No processes for this user */
--
--			do_each_thread(g, p) {
--				if (uid_eq(task_uid(p), uid))
--					error = set_one_prio(p, niceval, error);
--			} while_each_thread(g, p);
--			if (!uid_eq(uid, cred->uid))
--				free_uid(user);		/* For find_user() */
--			break;
-+		}
-+		do_each_thread(g, p) {
-+			if (uid_eq(task_uid(p), uid))
-+				error = set_one_prio(p, niceval, error);
-+		} while_each_thread(g, p);
-+		if (!uid_eq(uid, cred->uid))
-+			free_uid(user);		/* For find_user() */
-+		break;
- 	}
- out_unlock:
- 	read_unlock(&tasklist_lock);
-@@ -244,47 +245,48 @@ SYSCALL_DEFINE2(getpriority, int, which, int, who)
- 	rcu_read_lock();
- 	read_lock(&tasklist_lock);
- 	switch (which) {
--		case PRIO_PROCESS:
--			if (who)
--				p = find_task_by_vpid(who);
--			else
--				p = current;
--			if (p) {
-+	case PRIO_PROCESS:
-+		if (who)
-+			p = find_task_by_vpid(who);
-+		else
-+			p = current;
-+		if (p) {
-+			niceval = nice_to_rlimit(task_nice(p));
-+			if (niceval > retval)
-+				retval = niceval;
-+		}
-+		break;
-+	case PRIO_PGRP:
-+		if (who)
-+			pgrp = find_vpid(who);
-+		else
-+			pgrp = task_pgrp(current);
-+		do_each_pid_thread(pgrp, PIDTYPE_PGID, p) {
-+			niceval = nice_to_rlimit(task_nice(p));
-+			if (niceval > retval)
-+				retval = niceval;
-+		} while_each_pid_thread(pgrp, PIDTYPE_PGID, p);
-+		break;
-+	case PRIO_USER:
-+		uid = make_kuid(cred->user_ns, who);
-+		user = cred->user;
-+		if (!who)
-+			uid = cred->uid;
-+		else if (!uid_eq(uid, cred->uid)) {
-+			user = find_user(uid);
-+			if (!user)
-+				goto out_unlock;	/* No processes for this user */
-+		}
-+		do_each_thread(g, p) {
-+			if (uid_eq(task_uid(p), uid)) {
- 				niceval = nice_to_rlimit(task_nice(p));
- 				if (niceval > retval)
- 					retval = niceval;
- 			}
--			break;
--		case PRIO_PGRP:
--			if (who)
--				pgrp = find_vpid(who);
--			else
--				pgrp = task_pgrp(current);
--			do_each_pid_thread(pgrp, PIDTYPE_PGID, p) {
--				niceval = nice_to_rlimit(task_nice(p));
--				if (niceval > retval)
--					retval = niceval;
--			} while_each_pid_thread(pgrp, PIDTYPE_PGID, p);
--			break;
--		case PRIO_USER:
--			uid = make_kuid(cred->user_ns, who);
--			user = cred->user;
--			if (!who)
--				uid = cred->uid;
--			else if (!uid_eq(uid, cred->uid) &&
--				 !(user = find_user(uid)))
--				goto out_unlock;	/* No processes for this user */
--
--			do_each_thread(g, p) {
--				if (uid_eq(task_uid(p), uid)) {
--					niceval = nice_to_rlimit(task_nice(p));
--					if (niceval > retval)
--						retval = niceval;
--				}
--			} while_each_thread(g, p);
--			if (!uid_eq(uid, cred->uid))
--				free_uid(user);		/* for find_user() */
--			break;
-+		} while_each_thread(g, p);
-+		if (!uid_eq(uid, cred->uid))
-+			free_uid(user);		/* for find_user() */
-+		break;
- 	}
- out_unlock:
- 	read_unlock(&tasklist_lock);
-@@ -306,7 +308,7 @@ out_unlock:
-  *
-  * The general idea is that a program which uses just setregid() will be
-  * 100% compatible with BSD.  A program which uses just setgid() will be
-- * 100% compatible with POSIX with saved IDs. 
-+ * 100% compatible with POSIX with saved IDs.
-  *
-  * SMP: There are not races, the GIDs are checked only by filesystem
-  *      operations (as far as semantic preservation is concerned).
-@@ -364,7 +366,7 @@ error:
- }
- 
- /*
-- * setgid() is implemented like SysV w/ SAVED_IDS 
-+ * setgid() is implemented like SysV w/ SAVED_IDS
-  *
-  * SMP: Same implicit races as above.
-  */
-@@ -442,7 +444,7 @@ static int set_user(struct cred *new)
-  *
-  * The general idea is that a program which uses just setreuid() will be
-  * 100% compatible with BSD.  A program which uses just setuid() will be
-- * 100% compatible with POSIX with saved IDs. 
-+ * 100% compatible with POSIX with saved IDs.
-  */
- SYSCALL_DEFINE2(setreuid, uid_t, ruid, uid_t, euid)
- {
-@@ -503,17 +505,17 @@ error:
- 	abort_creds(new);
- 	return retval;
- }
--		
-+
- /*
-- * setuid() is implemented like SysV with SAVED_IDS 
-- * 
-+ * setuid() is implemented like SysV with SAVED_IDS
-+ *
-  * Note that SAVED_ID's is deficient in that a setuid root program
-- * like sendmail, for example, cannot set its uid to be a normal 
-+ * like sendmail, for example, cannot set its uid to be a normal
-  * user and then switch back, because if you're root, setuid() sets
-  * the saved uid too.  If you don't like this, blame the bright people
-  * in the POSIX committee and/or USG.  Note that the BSD-style setreuid()
-  * will allow a root program to temporarily drop privileges and be able to
-- * regain them by swapping the real and effective uid.  
-+ * regain them by swapping the real and effective uid.
-  */
- SYSCALL_DEFINE1(setuid, uid_t, uid)
- {
-@@ -637,10 +639,12 @@ SYSCALL_DEFINE3(getresuid, uid_t __user *, ruidp, uid_t __user *, euidp, uid_t _
- 	euid = from_kuid_munged(cred->user_ns, cred->euid);
- 	suid = from_kuid_munged(cred->user_ns, cred->suid);
- 
--	if (!(retval   = put_user(ruid, ruidp)) &&
--	    !(retval   = put_user(euid, euidp)))
--		retval = put_user(suid, suidp);
--
-+	retval = put_user(ruid, ruidp);
-+	if (!retval) {
-+		retval = put_user(euid, euidp);
-+		if (!retval)
-+			return put_user(suid, suidp);
-+	}
- 	return retval;
- }
- 
-@@ -709,9 +713,12 @@ SYSCALL_DEFINE3(getresgid, gid_t __user *, rgidp, gid_t __user *, egidp, gid_t _
- 	egid = from_kgid_munged(cred->user_ns, cred->egid);
- 	sgid = from_kgid_munged(cred->user_ns, cred->sgid);
- 
--	if (!(retval   = put_user(rgid, rgidp)) &&
--	    !(retval   = put_user(egid, egidp)))
--		retval = put_user(sgid, sgidp);
-+	retval = put_user(rgid, rgidp);
-+	if (!retval) {
-+		retval = put_user(egid, egidp);
-+		if (!retval)
-+			retval = put_user(sgid, sgidp);
-+	}
- 
- 	return retval;
- }
-@@ -1284,7 +1291,6 @@ SYSCALL_DEFINE2(getrlimit, unsigned int, resource, struct rlimit __user *, rlim)
- /*
-  *	Back compatibility for getrlimit. Needed for some apps.
-  */
-- 
- SYSCALL_DEFINE2(old_getrlimit, unsigned int, resource,
- 		struct rlimit __user *, rlim)
- {
-@@ -1299,7 +1305,7 @@ SYSCALL_DEFINE2(old_getrlimit, unsigned int, resource,
- 		x.rlim_cur = 0x7FFFFFFF;
- 	if (x.rlim_max > 0x7FFFFFFF)
- 		x.rlim_max = 0x7FFFFFFF;
--	return copy_to_user(rlim, &x, sizeof(x))?-EFAULT:0;
-+	return copy_to_user(rlim, &x, sizeof(x)) ? -EFAULT : 0;
- }
- 
- #endif
-@@ -1527,7 +1533,7 @@ static void k_getrusage(struct task_struct *p, int who, struct rusage *r)
- 	cputime_t tgutime, tgstime, utime, stime;
- 	unsigned long maxrss = 0;
- 
--	memset((char *) r, 0, sizeof *r);
-+	memset((char *)r, 0, sizeof (*r));
- 	utime = stime = 0;
- 
- 	if (who == RUSAGE_THREAD) {
-@@ -1541,41 +1547,41 @@ static void k_getrusage(struct task_struct *p, int who, struct rusage *r)
- 		return;
- 
- 	switch (who) {
--		case RUSAGE_BOTH:
--		case RUSAGE_CHILDREN:
--			utime = p->signal->cutime;
--			stime = p->signal->cstime;
--			r->ru_nvcsw = p->signal->cnvcsw;
--			r->ru_nivcsw = p->signal->cnivcsw;
--			r->ru_minflt = p->signal->cmin_flt;
--			r->ru_majflt = p->signal->cmaj_flt;
--			r->ru_inblock = p->signal->cinblock;
--			r->ru_oublock = p->signal->coublock;
--			maxrss = p->signal->cmaxrss;
--
--			if (who == RUSAGE_CHILDREN)
--				break;
--
--		case RUSAGE_SELF:
--			thread_group_cputime_adjusted(p, &tgutime, &tgstime);
--			utime += tgutime;
--			stime += tgstime;
--			r->ru_nvcsw += p->signal->nvcsw;
--			r->ru_nivcsw += p->signal->nivcsw;
--			r->ru_minflt += p->signal->min_flt;
--			r->ru_majflt += p->signal->maj_flt;
--			r->ru_inblock += p->signal->inblock;
--			r->ru_oublock += p->signal->oublock;
--			if (maxrss < p->signal->maxrss)
--				maxrss = p->signal->maxrss;
--			t = p;
--			do {
--				accumulate_thread_rusage(t, r);
--			} while_each_thread(p, t);
-+	case RUSAGE_BOTH:
-+	case RUSAGE_CHILDREN:
-+		utime = p->signal->cutime;
-+		stime = p->signal->cstime;
-+		r->ru_nvcsw = p->signal->cnvcsw;
-+		r->ru_nivcsw = p->signal->cnivcsw;
-+		r->ru_minflt = p->signal->cmin_flt;
-+		r->ru_majflt = p->signal->cmaj_flt;
-+		r->ru_inblock = p->signal->cinblock;
-+		r->ru_oublock = p->signal->coublock;
-+		maxrss = p->signal->cmaxrss;
-+
-+		if (who == RUSAGE_CHILDREN)
- 			break;
- 
--		default:
--			BUG();
-+	case RUSAGE_SELF:
-+		thread_group_cputime_adjusted(p, &tgutime, &tgstime);
-+		utime += tgutime;
-+		stime += tgstime;
-+		r->ru_nvcsw += p->signal->nvcsw;
-+		r->ru_nivcsw += p->signal->nivcsw;
-+		r->ru_minflt += p->signal->min_flt;
-+		r->ru_majflt += p->signal->maj_flt;
-+		r->ru_inblock += p->signal->inblock;
-+		r->ru_oublock += p->signal->oublock;
-+		if (maxrss < p->signal->maxrss)
-+			maxrss = p->signal->maxrss;
-+		t = p;
-+		do {
-+			accumulate_thread_rusage(t, r);
-+		} while_each_thread(p, t);
-+		break;
-+
-+	default:
-+		BUG();
- 	}
- 	unlock_task_sighand(p, &flags);
- 
-@@ -1585,6 +1591,7 @@ out:
- 
- 	if (who != RUSAGE_CHILDREN) {
- 		struct mm_struct *mm = get_task_mm(p);
-+
- 		if (mm) {
- 			setmax_mm_hiwater_rss(&maxrss, mm);
- 			mmput(mm);
-@@ -1596,6 +1603,7 @@ out:
- int getrusage(struct task_struct *p, int who, struct rusage __user *ru)
- {
- 	struct rusage r;
-+
- 	k_getrusage(p, who, &r);
- 	return copy_to_user(ru, &r, sizeof(r)) ? -EFAULT : 0;
- }
-@@ -2021,6 +2029,7 @@ SYSCALL_DEFINE3(getcpu, unsigned __user *, cpup, unsigned __user *, nodep,
- {
- 	int err = 0;
- 	int cpu = raw_smp_processor_id();
-+
- 	if (cpup)
- 		err |= put_user(cpu, cpup);
- 	if (nodep)
--- 
-1.8.3.2
+On 08/26/2014 10:31 AM, Chanwoo Choi wrote:
+> This patch remove simply duplicate code when reading triminfo register of Exynos5440.
+> 
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Zhang Rui <rui.zhang@intel.com>
+> Cc: Eduardo Valentin <edubezval@gmail.com>
+> Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> Reviewed-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> ---
+>  drivers/thermal/samsung/exynos_tmu.c | 4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
+> 
+> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+> index 64c702a..5888467 100644
+> --- a/drivers/thermal/samsung/exynos_tmu.c
+> +++ b/drivers/thermal/samsung/exynos_tmu.c
+> @@ -187,15 +187,13 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+>  		 */
+>  		switch (data->id) {
+>  		case 0:
+> +		case 2:
+>  			trim_info = readl(data->base +
+>  			EXYNOS5440_EFUSE_SWAP_OFFSET + reg->triminfo_data);
+>  			break;
+>  		case 1:
+>  			trim_info = readl(data->base + reg->triminfo_data);
+>  			break;
+> -		case 2:
+> -			trim_info = readl(data->base -
+> -			EXYNOS5440_EFUSE_SWAP_OFFSET + reg->triminfo_data);
+>  		}
+>  	} else {
+>  		/* On exynos5420 the triminfo register is in the shared space */
+> 
 
