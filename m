@@ -1,40 +1,860 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754713AbaH1Sys (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:54:48 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39931 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754696AbaH1Syq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:54:46 -0400
-Date: Thu, 28 Aug 2014 19:54:58 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "tj@kernel.org" <tj@kernel.org>, "hch@lst.de" <hch@lst.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: 3.17-rc2 percpu-ref oops with virtblk remove
-Message-ID: <20140828185458.GS22580@arm.com>
-References: <20140828185046.GR22580@arm.com>
- <53FF7A3A.7060607@kernel.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53FF7A3A.7060607@kernel.dk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753432AbaH1Szh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 14:55:37 -0400
+Received: from linuxhacker.ru ([217.76.32.60]:33822 "EHLO fiona.linuxhacker.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754633AbaH1Sym (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:54:42 -0400
+From: Oleg Drokin <green@linuxhacker.ru>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Cc: Oleg Drokin <green@linuxhacker.ru>
+Subject: [PATCH 4/4] staging/lustre: remove unused request policies.
+Date: Thu, 28 Aug 2014 14:54:23 -0400
+Message-Id: <1409252063-23070-5-git-send-email-green@linuxhacker.ru>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1409252063-23070-1-git-send-email-green@linuxhacker.ru>
+References: <1409252063-23070-1-git-send-email-green@linuxhacker.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 28, 2014 at 07:51:38PM +0100, Jens Axboe wrote:
-> On 08/28/2014 12:50 PM, Will Deacon wrote:
-> > Any ideas?
-> 
-> It's fixed in for-linus, which will go out soon, more stuff just kept
-> coming in. Fix:
-> 
-> http://git.kernel.dk/?p=linux-block.git;a=commit;h=cddd5d17642cc6881352732693c2ae6930e9ce65
+Client policies do not make much sense to have in client-only code,
+so remove all references to everything but fifo.
+This also removes lustre/libcfs/heap.c and its header, since it was
+only used by certain request policies (crr and orr).
 
-Thanks Jens, at least it kept me entertained this afternoon.
+Signed-off-by: Oleg Drokin <green@linuxhacker.ru>
+---
+ drivers/staging/lustre/lustre/include/lustre_net.h | 276 ------------
+ drivers/staging/lustre/lustre/libcfs/heap.c        | 475 ---------------------
+ drivers/staging/lustre/lustre/ptlrpc/nrs_crr.c     |  40 --
+ 3 files changed, 791 deletions(-)
+ delete mode 100644 drivers/staging/lustre/lustre/libcfs/heap.c
+ delete mode 100644 drivers/staging/lustre/lustre/ptlrpc/nrs_crr.c
 
-Will
+diff --git a/drivers/staging/lustre/lustre/include/lustre_net.h b/drivers/staging/lustre/lustre/include/lustre_net.h
+index d6af2ca..5749e1d 100644
+--- a/drivers/staging/lustre/lustre/include/lustre_net.h
++++ b/drivers/staging/lustre/lustre/include/lustre_net.h
+@@ -1183,276 +1183,6 @@ struct nrs_fifo_req {
+ /** @} fifo */
+ 
+ /**
+- * \name CRR-N
+- *
+- * CRR-N, Client Round Robin over NIDs
+- * @{
+- */
+-
+-/**
+- * private data structure for CRR-N NRS
+- */
+-struct nrs_crrn_net {
+-	struct ptlrpc_nrs_resource	cn_res;
+-	cfs_binheap_t		       *cn_binheap;
+-	struct cfs_hash		       *cn_cli_hash;
+-	/**
+-	 * Used when a new scheduling round commences, in order to synchronize
+-	 * all clients with the new round number.
+-	 */
+-	__u64				cn_round;
+-	/**
+-	 * Determines the relevant ordering amongst request batches within a
+-	 * scheduling round.
+-	 */
+-	__u64				cn_sequence;
+-	/**
+-	 * Round Robin quantum; the maximum number of RPCs that each request
+-	 * batch for each client can have in a scheduling round.
+-	 */
+-	__u16				cn_quantum;
+-};
+-
+-/**
+- * Object representing a client in CRR-N, as identified by its NID
+- */
+-struct nrs_crrn_client {
+-	struct ptlrpc_nrs_resource	cc_res;
+-	struct hlist_node		cc_hnode;
+-	lnet_nid_t			cc_nid;
+-	/**
+-	 * The round number against which this client is currently scheduling
+-	 * requests.
+-	 */
+-	__u64				cc_round;
+-	/**
+-	 * The sequence number used for requests scheduled by this client during
+-	 * the current round number.
+-	 */
+-	__u64				cc_sequence;
+-	atomic_t			cc_ref;
+-	/**
+-	 * Round Robin quantum; the maximum number of RPCs the client is allowed
+-	 * to schedule in a single batch of each round.
+-	 */
+-	__u16				cc_quantum;
+-	/**
+-	 * # of pending requests for this client, on all existing rounds
+-	 */
+-	__u16				cc_active;
+-};
+-
+-/**
+- * CRR-N NRS request definition
+- */
+-struct nrs_crrn_req {
+-	/**
+-	 * Round number for this request; shared with all other requests in the
+-	 * same batch.
+-	 */
+-	__u64			cr_round;
+-	/**
+-	 * Sequence number for this request; shared with all other requests in
+-	 * the same batch.
+-	 */
+-	__u64			cr_sequence;
+-};
+-
+-/**
+- * CRR-N policy operations.
+- */
+-enum nrs_ctl_crr {
+-	/**
+-	 * Read the RR quantum size of a CRR-N policy.
+-	 */
+-	NRS_CTL_CRRN_RD_QUANTUM = PTLRPC_NRS_CTL_1ST_POL_SPEC,
+-	/**
+-	 * Write the RR quantum size of a CRR-N policy.
+-	 */
+-	NRS_CTL_CRRN_WR_QUANTUM,
+-};
+-
+-/** @} CRR-N */
+-
+-/**
+- * \name ORR/TRR
+- *
+- * ORR/TRR (Object-based Round Robin/Target-based Round Robin) NRS policies
+- * @{
+- */
+-
+-/**
+- * Lower and upper byte offsets of a brw RPC
+- */
+-struct nrs_orr_req_range {
+-	__u64		or_start;
+-	__u64		or_end;
+-};
+-
+-/**
+- * RPC types supported by the ORR/TRR policies
+- */
+-enum nrs_orr_supp {
+-	NOS_OST_READ  = (1 << 0),
+-	NOS_OST_WRITE = (1 << 1),
+-	NOS_OST_RW    = (NOS_OST_READ | NOS_OST_WRITE),
+-	/**
+-	 * Default value for policies.
+-	 */
+-	NOS_DFLT      = NOS_OST_READ
+-};
+-
+-/**
+- * As unique keys for grouping RPCs together, we use the object's OST FID for
+- * the ORR policy, and the OST index for the TRR policy.
+- *
+- * XXX: We waste some space for TRR policy instances by using a union, but it
+- *	allows to consolidate some of the code between ORR and TRR, and these
+- *	policies will probably eventually merge into one anyway.
+- */
+-struct nrs_orr_key {
+-	union {
+-		/** object FID for ORR */
+-		struct lu_fid	ok_fid;
+-		/** OST index for TRR */
+-		__u32		ok_idx;
+-	};
+-};
+-
+-/**
+- * The largest base string for unique hash/slab object names is
+- * "nrs_orr_reg_", so 13 characters. We add 3 to this to be used for the CPT
+- * id number, so this _should_ be more than enough for the maximum number of
+- * CPTs on any system. If it does happen that this statement is incorrect,
+- * nrs_orr_genobjname() will inevitably yield a non-unique name and cause
+- * kmem_cache_create() to complain (on Linux), so the erroneous situation
+- * will hopefully not go unnoticed.
+- */
+-#define NRS_ORR_OBJ_NAME_MAX	(sizeof("nrs_orr_reg_") + 3)
+-
+-/**
+- * private data structure for ORR and TRR NRS
+- */
+-struct nrs_orr_data {
+-	struct ptlrpc_nrs_resource	od_res;
+-	cfs_binheap_t		       *od_binheap;
+-	struct cfs_hash		       *od_obj_hash;
+-	struct kmem_cache		       *od_cache;
+-	/**
+-	 * Used when a new scheduling round commences, in order to synchronize
+-	 * all object or OST batches with the new round number.
+-	 */
+-	__u64				od_round;
+-	/**
+-	 * Determines the relevant ordering amongst request batches within a
+-	 * scheduling round.
+-	 */
+-	__u64				od_sequence;
+-	/**
+-	 * RPC types that are currently supported.
+-	 */
+-	enum nrs_orr_supp		od_supp;
+-	/**
+-	 * Round Robin quantum; the maximum number of RPCs that each request
+-	 * batch for each object or OST can have in a scheduling round.
+-	 */
+-	__u16				od_quantum;
+-	/**
+-	 * Whether to use physical disk offsets or logical file offsets.
+-	 */
+-	bool				od_physical;
+-	/**
+-	 * XXX: We need to provide a persistently allocated string to hold
+-	 * unique object names for this policy, since in currently supported
+-	 * versions of Linux by Lustre, kmem_cache_create() just sets a pointer
+-	 * to the name string provided. kstrdup() is used in the version of
+-	 * kmeme_cache_create() in current Linux mainline, so we may be able to
+-	 * remove this in the future.
+-	 */
+-	char				od_objname[NRS_ORR_OBJ_NAME_MAX];
+-};
+-
+-/**
+- * Represents a backend-fs object or OST in the ORR and TRR policies
+- * respectively
+- */
+-struct nrs_orr_object {
+-	struct ptlrpc_nrs_resource	oo_res;
+-	struct hlist_node		oo_hnode;
+-	/**
+-	 * The round number against which requests are being scheduled for this
+-	 * object or OST
+-	 */
+-	__u64				oo_round;
+-	/**
+-	 * The sequence number used for requests scheduled for this object or
+-	 * OST during the current round number.
+-	 */
+-	__u64				oo_sequence;
+-	/**
+-	 * The key of the object or OST for which this structure instance is
+-	 * scheduling RPCs
+-	 */
+-	struct nrs_orr_key		oo_key;
+-	atomic_t			oo_ref;
+-	/**
+-	 * Round Robin quantum; the maximum number of RPCs that are allowed to
+-	 * be scheduled for the object or OST in a single batch of each round.
+-	 */
+-	__u16				oo_quantum;
+-	/**
+-	 * # of pending requests for this object or OST, on all existing rounds
+-	 */
+-	__u16				oo_active;
+-};
+-
+-/**
+- * ORR/TRR NRS request definition
+- */
+-struct nrs_orr_req {
+-	/**
+-	 * The offset range this request covers
+-	 */
+-	struct nrs_orr_req_range	or_range;
+-	/**
+-	 * Round number for this request; shared with all other requests in the
+-	 * same batch.
+-	 */
+-	__u64				or_round;
+-	/**
+-	 * Sequence number for this request; shared with all other requests in
+-	 * the same batch.
+-	 */
+-	__u64				or_sequence;
+-	/**
+-	 * For debugging purposes.
+-	 */
+-	struct nrs_orr_key		or_key;
+-	/**
+-	 * An ORR policy instance has filled in request information while
+-	 * enqueueing the request on the service partition's regular NRS head.
+-	 */
+-	unsigned int			or_orr_set:1;
+-	/**
+-	 * A TRR policy instance has filled in request information while
+-	 * enqueueing the request on the service partition's regular NRS head.
+-	 */
+-	unsigned int			or_trr_set:1;
+-	/**
+-	 * Request offset ranges have been filled in with logical offset
+-	 * values.
+-	 */
+-	unsigned int			or_logical_set:1;
+-	/**
+-	 * Request offset ranges have been filled in with physical offset
+-	 * values.
+-	 */
+-	unsigned int			or_physical_set:1;
+-};
+-
+-/** @} ORR/TRR */
+-
+-/**
+  * NRS request
+  *
+  * Instances of this object exist embedded within ptlrpc_request; the main
+@@ -1487,12 +1217,6 @@ struct ptlrpc_nrs_request {
+ 		 * Fields for the FIFO policy
+ 		 */
+ 		struct nrs_fifo_req	fifo;
+-		/**
+-		 * CRR-N request definition
+-		 */
+-		struct nrs_crrn_req	crr;
+-		/** ORR and TRR share the same request definition */
+-		struct nrs_orr_req	orr;
+ 	} nr_u;
+ 	/**
+ 	 * Externally-registering policies may want to use this to allocate
+diff --git a/drivers/staging/lustre/lustre/libcfs/heap.c b/drivers/staging/lustre/lustre/libcfs/heap.c
+deleted file mode 100644
+index bf6d0b9..0000000
+--- a/drivers/staging/lustre/lustre/libcfs/heap.c
++++ /dev/null
+@@ -1,475 +0,0 @@
+-/*
+- * GPL HEADER START
+- *
+- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 only,
+- * as published by the Free Software Foundation.
+-
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License version 2 for more details.  A copy is
+- * included in the COPYING file that accompanied this code.
+-
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+- *
+- * GPL HEADER END
+- */
+-/*
+- * Copyright (c) 2011 Intel Corporation
+- */
+-/*
+- * libcfs/libcfs/heap.c
+- *
+- * Author: Eric Barton	<eeb@whamcloud.com>
+- *	   Liang Zhen	<liang@whamcloud.com>
+- */
+-/** \addtogroup heap
+- *
+- * @{
+- */
+-
+-#define DEBUG_SUBSYSTEM S_LNET
+-
+-#include "../../include/linux/libcfs/libcfs.h"
+-
+-#define CBH_ALLOC(ptr, h)						\
+-do {									\
+-	if ((h)->cbh_flags & CBH_FLAG_ATOMIC_GROW)			\
+-		LIBCFS_CPT_ALLOC_GFP((ptr), h->cbh_cptab, h->cbh_cptid,	\
+-				     CBH_NOB, GFP_ATOMIC);	\
+-	else								\
+-		LIBCFS_CPT_ALLOC((ptr), h->cbh_cptab, h->cbh_cptid,	\
+-				 CBH_NOB);				\
+-} while (0)
+-
+-#define CBH_FREE(ptr)	LIBCFS_FREE(ptr, CBH_NOB)
+-
+-/**
+- * Grows the capacity of a binary heap so that it can handle a larger number of
+- * \e cfs_binheap_node_t objects.
+- *
+- * \param[in] h The binary heap
+- *
+- * \retval 0	   Successfully grew the heap
+- * \retval -ENOMEM OOM error
+- */
+-static int
+-cfs_binheap_grow(cfs_binheap_t *h)
+-{
+-	cfs_binheap_node_t ***frag1 = NULL;
+-	cfs_binheap_node_t  **frag2;
+-	int hwm = h->cbh_hwm;
+-
+-	/* need a whole new chunk of pointers */
+-	LASSERT((h->cbh_hwm & CBH_MASK) == 0);
+-
+-	if (hwm == 0) {
+-		/* first use of single indirect */
+-		CBH_ALLOC(h->cbh_elements1, h);
+-		if (h->cbh_elements1 == NULL)
+-			return -ENOMEM;
+-
+-		goto out;
+-	}
+-
+-	hwm -= CBH_SIZE;
+-	if (hwm < CBH_SIZE * CBH_SIZE) {
+-		/* not filled double indirect */
+-		CBH_ALLOC(frag2, h);
+-		if (frag2 == NULL)
+-			return -ENOMEM;
+-
+-		if (hwm == 0) {
+-			/* first use of double indirect */
+-			CBH_ALLOC(h->cbh_elements2, h);
+-			if (h->cbh_elements2 == NULL) {
+-				CBH_FREE(frag2);
+-				return -ENOMEM;
+-			}
+-		}
+-
+-		h->cbh_elements2[hwm >> CBH_SHIFT] = frag2;
+-		goto out;
+-	}
+-
+-	hwm -= CBH_SIZE * CBH_SIZE;
+-#if (CBH_SHIFT * 3 < 32)
+-	if (hwm >= CBH_SIZE * CBH_SIZE * CBH_SIZE) {
+-		/* filled triple indirect */
+-		return -ENOMEM;
+-	}
+-#endif
+-	CBH_ALLOC(frag2, h);
+-	if (frag2 == NULL)
+-		return -ENOMEM;
+-
+-	if (((hwm >> CBH_SHIFT) & CBH_MASK) == 0) {
+-		/* first use of this 2nd level index */
+-		CBH_ALLOC(frag1, h);
+-		if (frag1 == NULL) {
+-			CBH_FREE(frag2);
+-			return -ENOMEM;
+-		}
+-	}
+-
+-	if (hwm == 0) {
+-		/* first use of triple indirect */
+-		CBH_ALLOC(h->cbh_elements3, h);
+-		if (h->cbh_elements3 == NULL) {
+-			CBH_FREE(frag2);
+-			CBH_FREE(frag1);
+-			return -ENOMEM;
+-		}
+-	}
+-
+-	if (frag1 != NULL) {
+-		LASSERT(h->cbh_elements3[hwm >> (2 * CBH_SHIFT)] == NULL);
+-		h->cbh_elements3[hwm >> (2 * CBH_SHIFT)] = frag1;
+-	} else {
+-		frag1 = h->cbh_elements3[hwm >> (2 * CBH_SHIFT)];
+-		LASSERT(frag1 != NULL);
+-	}
+-
+-	frag1[(hwm >> CBH_SHIFT) & CBH_MASK] = frag2;
+-
+- out:
+-	h->cbh_hwm += CBH_SIZE;
+-	return 0;
+-}
+-
+-/**
+- * Creates and initializes a binary heap instance.
+- *
+- * \param[in] ops   The operations to be used
+- * \param[in] flags The heap flags
+- * \parm[in]  count The initial heap capacity in # of elements
+- * \param[in] arg   An optional private argument
+- * \param[in] cptab The CPT table this heap instance will operate over
+- * \param[in] cptid The CPT id of \a cptab this heap instance will operate over
+- *
+- * \retval valid-pointer A newly-created and initialized binary heap object
+- * \retval NULL		 error
+- */
+-cfs_binheap_t *
+-cfs_binheap_create(cfs_binheap_ops_t *ops, unsigned int flags,
+-		   unsigned count, void *arg, struct cfs_cpt_table *cptab,
+-		   int cptid)
+-{
+-	cfs_binheap_t *h;
+-
+-	LASSERT(ops != NULL);
+-	LASSERT(ops->hop_compare != NULL);
+-	LASSERT(cptab != NULL);
+-	LASSERT(cptid == CFS_CPT_ANY ||
+-	       (cptid >= 0 && cptid < cptab->ctb_nparts));
+-
+-	LIBCFS_CPT_ALLOC(h, cptab, cptid, sizeof(*h));
+-	if (h == NULL)
+-		return NULL;
+-
+-	h->cbh_ops	  = ops;
+-	h->cbh_nelements  = 0;
+-	h->cbh_hwm	  = 0;
+-	h->cbh_private	  = arg;
+-	h->cbh_flags	  = flags & (~CBH_FLAG_ATOMIC_GROW);
+-	h->cbh_cptab	  = cptab;
+-	h->cbh_cptid	  = cptid;
+-
+-	while (h->cbh_hwm < count) { /* preallocate */
+-		if (cfs_binheap_grow(h) != 0) {
+-			cfs_binheap_destroy(h);
+-			return NULL;
+-		}
+-	}
+-
+-	h->cbh_flags |= flags & CBH_FLAG_ATOMIC_GROW;
+-
+-	return h;
+-}
+-EXPORT_SYMBOL(cfs_binheap_create);
+-
+-/**
+- * Releases all resources associated with a binary heap instance.
+- *
+- * Deallocates memory for all indirection levels and the binary heap object
+- * itself.
+- *
+- * \param[in] h The binary heap object
+- */
+-void
+-cfs_binheap_destroy(cfs_binheap_t *h)
+-{
+-	int idx0;
+-	int idx1;
+-	int n;
+-
+-	LASSERT(h != NULL);
+-
+-	n = h->cbh_hwm;
+-
+-	if (n > 0) {
+-		CBH_FREE(h->cbh_elements1);
+-		n -= CBH_SIZE;
+-	}
+-
+-	if (n > 0) {
+-		for (idx0 = 0; idx0 < CBH_SIZE && n > 0; idx0++) {
+-			CBH_FREE(h->cbh_elements2[idx0]);
+-			n -= CBH_SIZE;
+-		}
+-
+-		CBH_FREE(h->cbh_elements2);
+-	}
+-
+-	if (n > 0) {
+-		for (idx0 = 0; idx0 < CBH_SIZE && n > 0; idx0++) {
+-
+-			for (idx1 = 0; idx1 < CBH_SIZE && n > 0; idx1++) {
+-				CBH_FREE(h->cbh_elements3[idx0][idx1]);
+-				n -= CBH_SIZE;
+-			}
+-
+-			CBH_FREE(h->cbh_elements3[idx0]);
+-		}
+-
+-		CBH_FREE(h->cbh_elements3);
+-	}
+-
+-	LIBCFS_FREE(h, sizeof(*h));
+-}
+-EXPORT_SYMBOL(cfs_binheap_destroy);
+-
+-/**
+- * Obtains a double pointer to a heap element, given its index into the binary
+- * tree.
+- *
+- * \param[in] h	  The binary heap instance
+- * \param[in] idx The requested node's index
+- *
+- * \retval valid-pointer A double pointer to a heap pointer entry
+- */
+-static cfs_binheap_node_t **
+-cfs_binheap_pointer(cfs_binheap_t *h, unsigned int idx)
+-{
+-	if (idx < CBH_SIZE)
+-		return &(h->cbh_elements1[idx]);
+-
+-	idx -= CBH_SIZE;
+-	if (idx < CBH_SIZE * CBH_SIZE)
+-		return &(h->cbh_elements2[idx >> CBH_SHIFT][idx & CBH_MASK]);
+-
+-	idx -= CBH_SIZE * CBH_SIZE;
+-	return &(h->cbh_elements3[idx >> (2 * CBH_SHIFT)]\
+-				 [(idx >> CBH_SHIFT) & CBH_MASK]\
+-				 [idx & CBH_MASK]);
+-}
+-
+-/**
+- * Obtains a pointer to a heap element, given its index into the binary tree.
+- *
+- * \param[in] h	  The binary heap
+- * \param[in] idx The requested node's index
+- *
+- * \retval valid-pointer The requested heap node
+- * \retval NULL		 Supplied index is out of bounds
+- */
+-cfs_binheap_node_t *
+-cfs_binheap_find(cfs_binheap_t *h, unsigned int idx)
+-{
+-	if (idx >= h->cbh_nelements)
+-		return NULL;
+-
+-	return *cfs_binheap_pointer(h, idx);
+-}
+-EXPORT_SYMBOL(cfs_binheap_find);
+-
+-/**
+- * Moves a node upwards, towards the root of the binary tree.
+- *
+- * \param[in] h The heap
+- * \param[in] e The node
+- *
+- * \retval 1 The position of \a e in the tree was changed at least once
+- * \retval 0 The position of \a e in the tree was not changed
+- */
+-static int
+-cfs_binheap_bubble(cfs_binheap_t *h, cfs_binheap_node_t *e)
+-{
+-	unsigned int	     cur_idx = e->chn_index;
+-	cfs_binheap_node_t **cur_ptr;
+-	unsigned int	     parent_idx;
+-	cfs_binheap_node_t **parent_ptr;
+-	int		     did_sth = 0;
+-
+-	cur_ptr = cfs_binheap_pointer(h, cur_idx);
+-	LASSERT(*cur_ptr == e);
+-
+-	while (cur_idx > 0) {
+-		parent_idx = (cur_idx - 1) >> 1;
+-
+-		parent_ptr = cfs_binheap_pointer(h, parent_idx);
+-		LASSERT((*parent_ptr)->chn_index == parent_idx);
+-
+-		if (h->cbh_ops->hop_compare(*parent_ptr, e))
+-			break;
+-
+-		(*parent_ptr)->chn_index = cur_idx;
+-		*cur_ptr = *parent_ptr;
+-		cur_ptr = parent_ptr;
+-		cur_idx = parent_idx;
+-		did_sth = 1;
+-	}
+-
+-	e->chn_index = cur_idx;
+-	*cur_ptr = e;
+-
+-	return did_sth;
+-}
+-
+-/**
+- * Moves a node downwards, towards the last level of the binary tree.
+- *
+- * \param[in] h The heap
+- * \param[in] e The node
+- *
+- * \retval 1 The position of \a e in the tree was changed at least once
+- * \retval 0 The position of \a e in the tree was not changed
+- */
+-static int
+-cfs_binheap_sink(cfs_binheap_t *h, cfs_binheap_node_t *e)
+-{
+-	unsigned int	     n = h->cbh_nelements;
+-	unsigned int	     child_idx;
+-	cfs_binheap_node_t **child_ptr;
+-	cfs_binheap_node_t  *child;
+-	unsigned int	     child2_idx;
+-	cfs_binheap_node_t **child2_ptr;
+-	cfs_binheap_node_t  *child2;
+-	unsigned int	     cur_idx;
+-	cfs_binheap_node_t **cur_ptr;
+-	int		     did_sth = 0;
+-
+-	cur_idx = e->chn_index;
+-	cur_ptr = cfs_binheap_pointer(h, cur_idx);
+-	LASSERT(*cur_ptr == e);
+-
+-	while (cur_idx < n) {
+-		child_idx = (cur_idx << 1) + 1;
+-		if (child_idx >= n)
+-			break;
+-
+-		child_ptr = cfs_binheap_pointer(h, child_idx);
+-		child = *child_ptr;
+-
+-		child2_idx = child_idx + 1;
+-		if (child2_idx < n) {
+-			child2_ptr = cfs_binheap_pointer(h, child2_idx);
+-			child2 = *child2_ptr;
+-
+-			if (h->cbh_ops->hop_compare(child2, child)) {
+-				child_idx = child2_idx;
+-				child_ptr = child2_ptr;
+-				child = child2;
+-			}
+-		}
+-
+-		LASSERT(child->chn_index == child_idx);
+-
+-		if (h->cbh_ops->hop_compare(e, child))
+-			break;
+-
+-		child->chn_index = cur_idx;
+-		*cur_ptr = child;
+-		cur_ptr = child_ptr;
+-		cur_idx = child_idx;
+-		did_sth = 1;
+-	}
+-
+-	e->chn_index = cur_idx;
+-	*cur_ptr = e;
+-
+-	return did_sth;
+-}
+-
+-/**
+- * Sort-inserts a node into the binary heap.
+- *
+- * \param[in] h The heap
+- * \param[in] e The node
+- *
+- * \retval 0	Element inserted successfully
+- * \retval != 0 error
+- */
+-int
+-cfs_binheap_insert(cfs_binheap_t *h, cfs_binheap_node_t *e)
+-{
+-	cfs_binheap_node_t **new_ptr;
+-	unsigned int	     new_idx = h->cbh_nelements;
+-	int		     rc;
+-
+-	if (new_idx == h->cbh_hwm) {
+-		rc = cfs_binheap_grow(h);
+-		if (rc != 0)
+-			return rc;
+-	}
+-
+-	if (h->cbh_ops->hop_enter) {
+-		rc = h->cbh_ops->hop_enter(h, e);
+-		if (rc != 0)
+-			return rc;
+-	}
+-
+-	e->chn_index = new_idx;
+-	new_ptr = cfs_binheap_pointer(h, new_idx);
+-	h->cbh_nelements++;
+-	*new_ptr = e;
+-
+-	cfs_binheap_bubble(h, e);
+-
+-	return 0;
+-}
+-EXPORT_SYMBOL(cfs_binheap_insert);
+-
+-/**
+- * Removes a node from the binary heap.
+- *
+- * \param[in] h The heap
+- * \param[in] e The node
+- */
+-void
+-cfs_binheap_remove(cfs_binheap_t *h, cfs_binheap_node_t *e)
+-{
+-	unsigned int	     n = h->cbh_nelements;
+-	unsigned int	     cur_idx = e->chn_index;
+-	cfs_binheap_node_t **cur_ptr;
+-	cfs_binheap_node_t  *last;
+-
+-	LASSERT(cur_idx != CBH_POISON);
+-	LASSERT(cur_idx < n);
+-
+-	cur_ptr = cfs_binheap_pointer(h, cur_idx);
+-	LASSERT(*cur_ptr == e);
+-
+-	n--;
+-	last = *cfs_binheap_pointer(h, n);
+-	h->cbh_nelements = n;
+-	if (last == e)
+-		return;
+-
+-	last->chn_index = cur_idx;
+-	*cur_ptr = last;
+-	if (!cfs_binheap_bubble(h, *cur_ptr))
+-		cfs_binheap_sink(h, *cur_ptr);
+-
+-	e->chn_index = CBH_POISON;
+-	if (h->cbh_ops->hop_exit)
+-		h->cbh_ops->hop_exit(h, e);
+-}
+-EXPORT_SYMBOL(cfs_binheap_remove);
+-
+-/** @} heap */
+diff --git a/drivers/staging/lustre/lustre/ptlrpc/nrs_crr.c b/drivers/staging/lustre/lustre/ptlrpc/nrs_crr.c
+deleted file mode 100644
+index ddfb510..0000000
+--- a/drivers/staging/lustre/lustre/ptlrpc/nrs_crr.c
++++ /dev/null
+@@ -1,40 +0,0 @@
+-/*
+- * GPL HEADER START
+- *
+- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 only,
+- * as published by the Free Software Foundation.
+-
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License version 2 for more details.  A copy is
+- * included in the COPYING file that accompanied this code.
+-
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+- *
+- * GPL HEADER END
+- */
+-/*
+- * Copyright (c) 2011 Intel Corporation
+- *
+- * Copyright 2012 Xyratex Technology Limited
+- */
+-/*
+- * lustre/ptlrpc/nrs_crr.c
+- *
+- * Network Request Scheduler (NRS) CRR-N policy
+- *
+- * Request ordering in a batched Round-Robin manner over client NIDs
+- *
+- * Author: Liang Zhen <liang@whamcloud.com>
+- * Author: Nikitas Angelinas <nikitas_angelinas@xyratex.com>
+- */
+-/**
+- * \addtogoup nrs
+- * @{
+- */
+-- 
+1.9.3
+
