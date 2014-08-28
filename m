@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753208AbaH1ShB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:37:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32874 "EHLO mx2.suse.de"
+	id S1754225AbaH1StF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 14:49:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32877 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752502AbaH1Sg5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:36:57 -0400
+	id S1753195AbaH1ShB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:37:01 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Jiri Slaby <jslaby@suse.cz>
 Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 67/97] mm/swap.c: clean up *lru_cache_add* functions
-Date: Thu, 28 Aug 2014 19:35:15 +0100
-Message-Id: <1409250945-30874-68-git-send-email-mgorman@suse.de>
+Subject: [PATCH 71/97] mm: page_alloc: use jump labels to avoid checking number_of_cpusets
+Date: Thu, 28 Aug 2014 19:35:19 +0100
+Message-Id: <1409250945-30874-72-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
 References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
@@ -20,130 +20,162 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jianyu Zhan <nasa4836@gmail.com>
+commit 664eeddeef6539247691197c1ac124d4aa872ab6 upstream.
 
-commit 2329d3751b082b4fd354f334a88662d72abac52d upstream.
+If cpusets are not in use then we still check a global variable on every
+page allocation.  Use jump labels to avoid the overhead.
 
-In mm/swap.c, __lru_cache_add() is exported, but actually there are no
-users outside this file.
-
-This patch unexports __lru_cache_add(), and makes it static.  It also
-exports lru_cache_add_file(), as it is use by cifs and fuse, which can
-loaded as modules.
-
-Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
-Cc: Minchan Kim <minchan@kernel.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Shaohua Li <shli@kernel.org>
-Cc: Bob Liu <bob.liu@oracle.com>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Rafael Aquini <aquini@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Acked-by: Rik van Riel <riel@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Khalid Aziz <khalid.aziz@oracle.com>
-Cc: Christoph Hellwig <hch@lst.de>
-Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: Vlastimil Babka <vbabka@suse.cz>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Dave Hansen <dave.hansen@intel.com>
+Cc: Theodore Ts'o <tytso@mit.edu>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/swap.h | 19 ++-----------------
- mm/swap.c            | 31 +++++++++++++++++++++++--------
- 2 files changed, 25 insertions(+), 25 deletions(-)
+ include/linux/cpuset.h | 29 ++++++++++++++++++++++++++---
+ kernel/cpuset.c        | 14 ++++----------
+ mm/page_alloc.c        |  3 ++-
+ 3 files changed, 32 insertions(+), 14 deletions(-)
 
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index 7893249..13eb44c 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -268,8 +268,9 @@ extern unsigned long nr_free_pagecache_pages(void);
+diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
+index 6f30672..a7ebb89 100644
+--- a/include/linux/cpuset.h
++++ b/include/linux/cpuset.h
+@@ -12,10 +12,31 @@
+ #include <linux/cpumask.h>
+ #include <linux/nodemask.h>
+ #include <linux/mm.h>
++#include <linux/jump_label.h>
  
+ #ifdef CONFIG_CPUSETS
  
- /* linux/mm/swap.c */
--extern void __lru_cache_add(struct page *);
- extern void lru_cache_add(struct page *);
-+extern void lru_cache_add_anon(struct page *page);
-+extern void lru_cache_add_file(struct page *page);
- extern void lru_add_page_tail(struct page *page, struct page *page_tail,
- 			 struct lruvec *lruvec, struct list_head *head);
- extern void activate_page(struct page *);
-@@ -283,22 +284,6 @@ extern void swap_setup(void);
+-extern int number_of_cpusets;	/* How many cpusets are defined in system? */
++extern struct static_key cpusets_enabled_key;
++static inline bool cpusets_enabled(void)
++{
++	return static_key_false(&cpusets_enabled_key);
++}
++
++static inline int nr_cpusets(void)
++{
++	/* jump label reference count + the top-level cpuset */
++	return static_key_count(&cpusets_enabled_key) + 1;
++}
++
++static inline void cpuset_inc(void)
++{
++	static_key_slow_inc(&cpusets_enabled_key);
++}
++
++static inline void cpuset_dec(void)
++{
++	static_key_slow_dec(&cpusets_enabled_key);
++}
  
- extern void add_page_to_unevictable_list(struct page *page);
+ extern int cpuset_init(void);
+ extern void cpuset_init_smp(void);
+@@ -32,13 +53,13 @@ extern int __cpuset_node_allowed_hardwall(int node, gfp_t gfp_mask);
  
--/**
-- * lru_cache_add: add a page to the page lists
-- * @page: the page to add
-- */
--static inline void lru_cache_add_anon(struct page *page)
--{
--	ClearPageActive(page);
--	__lru_cache_add(page);
--}
--
--static inline void lru_cache_add_file(struct page *page)
--{
--	ClearPageActive(page);
--	__lru_cache_add(page);
--}
--
- /* linux/mm/vmscan.c */
- extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
- 					gfp_t gfp_mask, nodemask_t *mask);
-diff --git a/mm/swap.c b/mm/swap.c
-index 2d9ee76..587dfe0 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -548,13 +548,7 @@ void mark_page_accessed(struct page *page)
+ static inline int cpuset_node_allowed_softwall(int node, gfp_t gfp_mask)
+ {
+-	return number_of_cpusets <= 1 ||
++	return nr_cpusets() <= 1 ||
+ 		__cpuset_node_allowed_softwall(node, gfp_mask);
  }
- EXPORT_SYMBOL(mark_page_accessed);
+ 
+ static inline int cpuset_node_allowed_hardwall(int node, gfp_t gfp_mask)
+ {
+-	return number_of_cpusets <= 1 ||
++	return nr_cpusets() <= 1 ||
+ 		__cpuset_node_allowed_hardwall(node, gfp_mask);
+ }
+ 
+@@ -120,6 +141,8 @@ static inline void set_mems_allowed(nodemask_t nodemask)
+ 
+ #else /* !CONFIG_CPUSETS */
+ 
++static inline bool cpusets_enabled(void) { return false; }
++
+ static inline int cpuset_init(void) { return 0; }
+ static inline void cpuset_init_smp(void) {}
+ 
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 15ae2b7..c828913 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -61,12 +61,7 @@
+ #include <linux/cgroup.h>
+ #include <linux/wait.h>
  
 -/*
-- * Queue the page for addition to the LRU via pagevec. The decision on whether
-- * to add the page to the [in]active [file|anon] list is deferred until the
-- * pagevec is drained. This gives a chance for the caller of __lru_cache_add()
-- * have the page added to the active list using mark_page_accessed().
+- * Tracks how many cpusets are currently defined in system.
+- * When there is only one cpuset (the root cpuset) we can
+- * short circuit some hooks.
 - */
--void __lru_cache_add(struct page *page)
-+static void __lru_cache_add(struct page *page)
- {
- 	struct pagevec *pvec = &get_cpu_var(lru_add_pvec);
+-int number_of_cpusets __read_mostly;
++struct static_key cpusets_enabled_key __read_mostly = STATIC_KEY_INIT_FALSE;
  
-@@ -564,11 +558,32 @@ void __lru_cache_add(struct page *page)
- 	pagevec_add(pvec, page);
- 	put_cpu_var(lru_add_pvec);
+ /* See "Frequency meter" comments, below. */
+ 
+@@ -611,7 +606,7 @@ static int generate_sched_domains(cpumask_var_t **domains,
+ 		goto done;
+ 	}
+ 
+-	csa = kmalloc(number_of_cpusets * sizeof(cp), GFP_KERNEL);
++	csa = kmalloc(nr_cpusets() * sizeof(cp), GFP_KERNEL);
+ 	if (!csa)
+ 		goto done;
+ 	csn = 0;
+@@ -1986,7 +1981,7 @@ static int cpuset_css_online(struct cgroup_subsys_state *css)
+ 	if (is_spread_slab(parent))
+ 		set_bit(CS_SPREAD_SLAB, &cs->flags);
+ 
+-	number_of_cpusets++;
++	cpuset_inc();
+ 
+ 	if (!test_bit(CGRP_CPUSET_CLONE_CHILDREN, &css->cgroup->flags))
+ 		goto out_unlock;
+@@ -2037,7 +2032,7 @@ static void cpuset_css_offline(struct cgroup_subsys_state *css)
+ 	if (is_sched_load_balance(cs))
+ 		update_flag(CS_SCHED_LOAD_BALANCE, cs, 0);
+ 
+-	number_of_cpusets--;
++	cpuset_dec();
+ 	clear_bit(CS_ONLINE, &cs->flags);
+ 
+ 	mutex_unlock(&cpuset_mutex);
+@@ -2092,7 +2087,6 @@ int __init cpuset_init(void)
+ 	if (!alloc_cpumask_var(&cpus_attach, GFP_KERNEL))
+ 		BUG();
+ 
+-	number_of_cpusets = 1;
+ 	return 0;
  }
--EXPORT_SYMBOL(__lru_cache_add);
-+
-+/**
-+ * lru_cache_add: add a page to the page lists
-+ * @page: the page to add
-+ */
-+void lru_cache_add_anon(struct page *page)
-+{
-+	ClearPageActive(page);
-+	__lru_cache_add(page);
-+}
-+
-+void lru_cache_add_file(struct page *page)
-+{
-+	ClearPageActive(page);
-+	__lru_cache_add(page);
-+}
-+EXPORT_SYMBOL(lru_cache_add_file);
  
- /**
-  * lru_cache_add - add a page to a page list
-  * @page: the page to be added to the LRU.
-+ *
-+ * Queue the page for addition to the LRU via pagevec. The decision on whether
-+ * to add the page to the [in]active [file|anon] list is deferred until the
-+ * pagevec is drained. This gives a chance for the caller of lru_cache_add()
-+ * have the page added to the active list using mark_page_accessed().
-  */
- void lru_cache_add(struct page *page)
- {
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 68e0349..5e0f137 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1920,7 +1920,8 @@ zonelist_scan:
+ 		if (IS_ENABLED(CONFIG_NUMA) && zlc_active &&
+ 			!zlc_zone_worth_trying(zonelist, z, allowednodes))
+ 				continue;
+-		if ((alloc_flags & ALLOC_CPUSET) &&
++		if (cpusets_enabled() &&
++			(alloc_flags & ALLOC_CPUSET) &&
+ 			!cpuset_zone_allowed_softwall(zone, gfp_mask))
+ 				continue;
+ 		BUILD_BUG_ON(ALLOC_NO_WATERMARKS < NR_WMARK);
 -- 
 1.8.4.5
 
