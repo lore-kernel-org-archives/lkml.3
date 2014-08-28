@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754856AbaH1S7t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:59:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32865 "EHLO mx2.suse.de"
+	id S1752896AbaH1Sga (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 14:36:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32841 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752234AbaH1Sgb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:36:31 -0400
+	id S1752234AbaH1SgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:36:00 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Jiri Slaby <jslaby@suse.cz>
 Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 42/97] mm: don't pointlessly use BUG_ON() for sanity check
-Date: Thu, 28 Aug 2014 19:34:50 +0100
-Message-Id: <1409250945-30874-43-git-send-email-mgorman@suse.de>
+Subject: [PATCH 13/97] readahead: fix sequential read cache miss detection
+Date: Thu, 28 Aug 2014 19:34:21 +0100
+Message-Id: <1409250945-30874-14-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
 References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
@@ -20,59 +20,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Damien Ramonda <damien.ramonda@intel.com>
 
-commit 50f5aa8a9b248fa4262cf379863ec9a531b49737 upstream.
+commit af248a0c67457e5c6d2bcf288f07b4b2ed064f1f upstream.
 
-BUG_ON() is a big hammer, and should be used _only_ if there is some
-major corruption that you cannot possibly recover from, making it
-imperative that the current process (and possibly the whole machine) be
-terminated with extreme prejudice.
+The kernel's readahead algorithm sometimes interprets random read
+accesses as sequential and triggers unnecessary data prefecthing from
+storage device (impacting random read average latency).
 
-The trivial sanity check in the vmacache code is *not* such a fatal
-error.  Recovering from it is absolutely trivial, and using BUG_ON()
-just makes it harder to debug for no actual advantage.
+In order to identify sequential cache read misses, the readahead
+algorithm intends to check whether offset - previous offset == 1
+(trivial sequential reads) or offset - previous offset == 0 (sequential
+reads not aligned on page boundary):
 
-To make matters worse, the placement of the BUG_ON() (only if the range
-check matched) actually makes it harder to hit the sanity check to begin
-with, so _if_ there is a bug (and we just got a report from Srivatsa
-Bhat that this can indeed trigger), it is harder to debug not just
-because the machine is possibly dead, but because we don't have better
-coverage.
+  if (offset - (ra->prev_pos >> PAGE_CACHE_SHIFT) <= 1UL)
 
-BUG_ON() must *die*.  Maybe we should add a checkpatch warning for it,
-because it is simply just about the worst thing you can ever do if you
-hit some "this cannot happen" situation.
+The current offset is stored in the "offset" variable of type "pgoff_t"
+(unsigned long), while previous offset is stored in "ra->prev_pos" of
+type "loff_t" (long long).  Therefore, operands of the if statement are
+implicitly converted to type long long.  Consequently, when previous
+offset > current offset (which happens on random pattern), the if
+condition is true and access is wrongly interpeted as sequential.  An
+unnecessary data prefetching is triggered, impacting the average random
+read latency.
 
-Reported-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+Storing the previous offset value in a "pgoff_t" variable (unsigned
+long) fixes the sequential read detection logic.
+
+Signed-off-by: Damien Ramonda <damien.ramonda@intel.com>
+Reviewed-by: Fengguang Wu <fengguang.wu@intel.com>
+Acked-by: Pierre Tardy <pierre.tardy@intel.com>
+Acked-by: David Cohen <david.a.cohen@linux.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/vmacache.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ mm/readahead.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/mm/vmacache.c b/mm/vmacache.c
-index d4224b3..1037a3ba 100644
---- a/mm/vmacache.c
-+++ b/mm/vmacache.c
-@@ -81,10 +81,12 @@ struct vm_area_struct *vmacache_find(struct mm_struct *mm, unsigned long addr)
- 	for (i = 0; i < VMACACHE_SIZE; i++) {
- 		struct vm_area_struct *vma = current->vmacache[i];
+diff --git a/mm/readahead.c b/mm/readahead.c
+index e4ed041..5b637b5 100644
+--- a/mm/readahead.c
++++ b/mm/readahead.c
+@@ -401,6 +401,7 @@ ondemand_readahead(struct address_space *mapping,
+ 		   unsigned long req_size)
+ {
+ 	unsigned long max = max_sane_readahead(ra->ra_pages);
++	pgoff_t prev_offset;
  
--		if (vma && vma->vm_start <= addr && vma->vm_end > addr) {
--			BUG_ON(vma->vm_mm != mm);
-+		if (!vma)
-+			continue;
-+		if (WARN_ON_ONCE(vma->vm_mm != mm))
-+			break;
-+		if (vma->vm_start <= addr && vma->vm_end > addr)
- 			return vma;
--		}
- 	}
+ 	/*
+ 	 * start of file
+@@ -452,8 +453,11 @@ ondemand_readahead(struct address_space *mapping,
  
- 	return NULL;
+ 	/*
+ 	 * sequential cache miss
++	 * trivial case: (offset - prev_offset) == 1
++	 * unaligned reads: (offset - prev_offset) == 0
+ 	 */
+-	if (offset - (ra->prev_pos >> PAGE_CACHE_SHIFT) <= 1UL)
++	prev_offset = (unsigned long long)ra->prev_pos >> PAGE_CACHE_SHIFT;
++	if (offset - prev_offset <= 1UL)
+ 		goto initial_readahead;
+ 
+ 	/*
 -- 
 1.8.4.5
 
