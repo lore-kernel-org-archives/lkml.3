@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752469AbaH1SgL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:36:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32833 "EHLO mx2.suse.de"
+	id S1755161AbaH1TIG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 15:08:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32848 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751572AbaH1Sfw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:35:52 -0400
+	id S1750892AbaH1SgK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:36:10 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Jiri Slaby <jslaby@suse.cz>
 Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 04/97] mm: prevent setting of a value less than 0 to min_free_kbytes
-Date: Thu, 28 Aug 2014 19:34:12 +0100
-Message-Id: <1409250945-30874-5-git-send-email-mgorman@suse.de>
+Subject: [PATCH 22/97] mm: compaction: reset scanner positions immediately when they meet
+Date: Thu, 28 Aug 2014 19:34:30 +0100
+Message-Id: <1409250945-30874-23-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
 References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
@@ -20,55 +20,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Han Pingtian <hanpt@linux.vnet.ibm.com>
+From: Vlastimil Babka <vbabka@suse.cz>
 
-commit da8c757b080ee84f219fa2368cb5dd23ac304fc0 upstream.
+commit 55b7c4c99f6a448f72179297fe6432544f220063 upstream.
 
-If echo -1 > /proc/vm/sys/min_free_kbytes, the system will hang.  Changing
-proc_dointvec() to proc_dointvec_minmax() in the
-min_free_kbytes_sysctl_handler() can prevent this to happen.
+Compaction used to start its migrate and free page scaners at the zone's
+lowest and highest pfn, respectively.  Later, caching was introduced to
+remember the scanners' progress across compaction attempts so that
+pageblocks are not re-scanned uselessly.  Additionally, pageblocks where
+isolation failed are marked to be quickly skipped when encountered again
+in future compactions.
 
-mhocko said:
+Currently, both the reset of cached pfn's and clearing of the pageblock
+skip information for a zone is done in __reset_isolation_suitable().
+This function gets called when:
 
-: You can still do echo $BIG_VALUE > /proc/vm/sys/min_free_kbytes and make
-: your machine unusable but I agree that proc_dointvec_minmax is more
-: suitable here as we already have:
-:
-: 	.proc_handler   = min_free_kbytes_sysctl_handler,
-: 	.extra1         = &zero,
-:
-: It used to work properly but then 6fce56ec91b5 ("sysctl: Remove references
-: to ctl_name and strategy from the generic sysctl table") has removed
-: sysctl_intvec strategy and so extra1 is ignored.
+ - compaction is restarting after being deferred
+ - compact_blockskip_flush flag is set in compact_finished() when the scanners
+   meet (and not again cleared when direct compaction succeeds in allocation)
+   and kswapd acts upon this flag before going to sleep
 
-Signed-off-by: Han Pingtian <hanpt@linux.vnet.ibm.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: David Rientjes <rientjes@google.com>
+This behavior is suboptimal for several reasons:
+
+ - when direct sync compaction is called after async compaction fails (in the
+   allocation slowpath), it will effectively do nothing, unless kswapd
+   happens to process the compact_blockskip_flush flag meanwhile. This is racy
+   and goes against the purpose of sync compaction to more thoroughly retry
+   the compaction of a zone where async compaction has failed.
+   The restart-after-deferring path cannot help here as deferring happens only
+   after the sync compaction fails. It is also done only for the preferred
+   zone, while the compaction might be done for a fallback zone.
+
+ - the mechanism of marking pageblock to be skipped has little value since the
+   cached pfn's are reset only together with the pageblock skip flags. This
+   effectively limits pageblock skip usage to parallel compactions.
+
+This patch changes compact_finished() so that cached pfn's are reset
+immediately when the scanners meet.  Clearing pageblock skip flags is
+unchanged, as well as the other situations where cached pfn's are reset.
+This allows the sync-after-async compaction to retry pageblocks not
+marked as skipped, such as blocks !MIGRATE_MOVABLE blocks that async
+compactions now skips without marking them.
+
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Cc: Rik van Riel <riel@redhat.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/page_alloc.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ mm/compaction.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 6e0a9cf..bffedeb 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5734,7 +5734,12 @@ module_init(init_per_zone_wmark_min)
- int min_free_kbytes_sysctl_handler(ctl_table *table, int write,
- 	void __user *buffer, size_t *length, loff_t *ppos)
- {
--	proc_dointvec(table, write, buffer, length, ppos);
-+	int rc;
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 5cf2d60..ae428e6 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -860,6 +860,10 @@ static int compact_finished(struct zone *zone,
+ 
+ 	/* Compaction run completes if the migrate and free scanner meet */
+ 	if (cc->free_pfn <= cc->migrate_pfn) {
++		/* Let the next compaction start anew. */
++		zone->compact_cached_migrate_pfn = zone->zone_start_pfn;
++		zone->compact_cached_free_pfn = zone_end_pfn(zone);
 +
-+	rc = proc_dointvec_minmax(table, write, buffer, length, ppos);
-+	if (rc)
-+		return rc;
-+
- 	if (write) {
- 		user_min_free_kbytes = min_free_kbytes;
- 		setup_per_zone_wmarks();
+ 		/*
+ 		 * Mark that the PG_migrate_skip information should be cleared
+ 		 * by kswapd when it goes to sleep. kswapd does not set the
 -- 
 1.8.4.5
 
