@@ -1,184 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753010AbaH1Try (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 15:47:54 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:60210 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197AbaH1Trx (ORCPT
+	id S1752227AbaH1TwB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 15:52:01 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:60394 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750941AbaH1Tv7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 15:47:53 -0400
-Date: Thu, 28 Aug 2014 12:47:45 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        bobby.prani@gmail.com, <""@rjwysocki.net>, tianyu.lan@intel.com
-Subject: [PATCH RFC tip/core/rcu] Eliminate deadlock between CPU hotplug and
- expedited grace periods
-Message-ID: <20140828194745.GA3761@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
+	Thu, 28 Aug 2014 15:51:59 -0400
+From: "Murphy, Dan" <dmurphy@ti.com>
+To: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "sergei.shtylyov@cogentembedded.com" 
+	<sergei.shtylyov@cogentembedded.com>
+Subject: Re: [PATCH v2 1/2] doc: dt/bindings: input: introduce TI DRV2667
+ haptic driver description
+Thread-Topic: [PATCH v2 1/2] doc: dt/bindings: input: introduce TI DRV2667
+ haptic driver description
+Thread-Index: AQHPwHkALSGUIn9lmUKCrHajIRhdvw==
+Date: Thu, 28 Aug 2014 19:51:30 +0000
+Message-ID: <00FC9A978A94B7418C33AFAE8A35ED49E1B3F6@DFLE09.ent.ti.com>
+References: <1408980413-8763-1-git-send-email-dmurphy@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.170.170.90]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082819-3532-0000-0000-00000437CA79
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, the expedited grace-period primitives do get_online_cpus().
-This greatly simplifies their implementation, but means that calls to
-them holding locks that are acquired by CPU-hotplug notifiers (to say
-nothing of calls to these primitives from CPU-hotplug notifiers) can
-deadlock.  But this is starting to become inconvenient:
-https://lkml.org/lkml/2014/8/5/754
+Bump
 
-This commit avoids the deadlock and retains the simplicity by creating
-a try_get_online_cpus(), which returns false if the get_online_cpus()
-reference count could not immediately be incremented.  If a call to
-try_get_online_cpus() returns true, the expedited primitives operate
-as before.  If a call returns false, the expedited primitives fall back
-to normal grace-period operations.  This falling back of course results
-in increased grace-period latency, but only during times when CPU
-hotplug operations are actually in flight.  The effect should therefore
-be negligible during normal operation.
+On 08/25/2014 10:26 AM, Murphy, Dan wrote:
+> DRV2667 is a haptic/vibrator driver for Linear Resonant Actuators.
+> Adding dt binding for this part
+> 
+> Signed-off-by: Dan Murphy <dmurphy@ti.com>
+> ---
+> 
+> v2 - Removed extra tabs, changed node to function not device
+> added vbat-supply, and removed confusing description - https://patchwork.kernel.org/patch/4759381/
+> 
+>  .../devicetree/bindings/input/ti,drv2667.txt       |   17 +++++++++++++++++
+>  1 file changed, 17 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/input/ti,drv2667.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/input/ti,drv2667.txt b/Documentation/devicetree/bindings/input/ti,drv2667.txt
+> new file mode 100644
+> index 0000000..996382c
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/input/ti,drv2667.txt
+> @@ -0,0 +1,17 @@
+> +* Texas Instruments - drv2667 Haptics driver
+> +
+> +Required properties:
+> +	- compatible - "ti,drv2667" - DRV2667
+> +	- reg -  I2C slave address
+> +	- vbat-supply - Required supply regulator
+> +
+> +Example:
+> +
+> +haptics: haptics@59 {
+> +	compatible = "ti,drv2667";
+> +	reg = <0x59>;
+> +	vbat-supply = <&vbat>;
+> +};
+> +
+> +For more product information please see the link below:
+> +http://www.ti.com/product/drv2667
+> 
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Josh Triplett <josh@joshtriplett.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Lan Tianyu <tianyu.lan@intel.com>
 
-diff --git a/include/linux/cpu.h b/include/linux/cpu.h
-index 95978ad7fcdd..b2d9a43012b2 100644
---- a/include/linux/cpu.h
-+++ b/include/linux/cpu.h
-@@ -213,6 +213,7 @@ extern struct bus_type cpu_subsys;
- extern void cpu_hotplug_begin(void);
- extern void cpu_hotplug_done(void);
- extern void get_online_cpus(void);
-+extern bool try_get_online_cpus(void);
- extern void put_online_cpus(void);
- extern void cpu_hotplug_disable(void);
- extern void cpu_hotplug_enable(void);
-@@ -230,6 +231,7 @@ int cpu_down(unsigned int cpu);
- static inline void cpu_hotplug_begin(void) {}
- static inline void cpu_hotplug_done(void) {}
- #define get_online_cpus()	do { } while (0)
-+#define try_get_online_cpus()	true
- #define put_online_cpus()	do { } while (0)
- #define cpu_hotplug_disable()	do { } while (0)
- #define cpu_hotplug_enable()	do { } while (0)
-diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
-index 008388f920d7..4f86465cc317 100644
---- a/include/linux/lockdep.h
-+++ b/include/linux/lockdep.h
-@@ -505,6 +505,7 @@ static inline void print_irqtrace_events(struct task_struct *curr)
- 
- #define lock_map_acquire(l)			lock_acquire_exclusive(l, 0, 0, NULL, _THIS_IP_)
- #define lock_map_acquire_read(l)		lock_acquire_shared_recursive(l, 0, 0, NULL, _THIS_IP_)
-+#define lock_map_acquire_tryread(l)		lock_acquire_shared_recursive(l, 0, 1, NULL, _THIS_IP_)
- #define lock_map_release(l)			lock_release(l, 1, _THIS_IP_)
- 
- #ifdef CONFIG_PROVE_LOCKING
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index 81e2a388a0f6..356450f09c1f 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -79,6 +79,8 @@ static struct {
- 
- /* Lockdep annotations for get/put_online_cpus() and cpu_hotplug_begin/end() */
- #define cpuhp_lock_acquire_read() lock_map_acquire_read(&cpu_hotplug.dep_map)
-+#define cpuhp_lock_acquire_tryread() \
-+				  lock_map_acquire_tryread(&cpu_hotplug.dep_map)
- #define cpuhp_lock_acquire()      lock_map_acquire(&cpu_hotplug.dep_map)
- #define cpuhp_lock_release()      lock_map_release(&cpu_hotplug.dep_map)
- 
-@@ -91,10 +93,22 @@ void get_online_cpus(void)
- 	mutex_lock(&cpu_hotplug.lock);
- 	cpu_hotplug.refcount++;
- 	mutex_unlock(&cpu_hotplug.lock);
--
- }
- EXPORT_SYMBOL_GPL(get_online_cpus);
- 
-+bool try_get_online_cpus(void)
-+{
-+	if (cpu_hotplug.active_writer == current)
-+		return true;
-+	if (!mutex_trylock(&cpu_hotplug.lock))
-+		return false;
-+	cpuhp_lock_acquire_tryread();
-+	cpu_hotplug.refcount++;
-+	mutex_unlock(&cpu_hotplug.lock);
-+	return true;
-+}
-+EXPORT_SYMBOL_GPL(try_get_online_cpus);
-+
- void put_online_cpus(void)
- {
- 	if (cpu_hotplug.active_writer == current)
-diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index d7a3b13bc94c..04558f0c9d64 100644
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -2940,11 +2940,6 @@ static int synchronize_sched_expedited_cpu_stop(void *data)
-  * restructure your code to batch your updates, and then use a single
-  * synchronize_sched() instead.
-  *
-- * Note that it is illegal to call this function while holding any lock
-- * that is acquired by a CPU-hotplug notifier.  And yes, it is also illegal
-- * to call this function from a CPU-hotplug notifier.  Failing to observe
-- * these restriction will result in deadlock.
-- *
-  * This implementation can be thought of as an application of ticket
-  * locking to RCU, with sync_sched_expedited_started and
-  * sync_sched_expedited_done taking on the roles of the halves
-@@ -2994,7 +2989,12 @@ void synchronize_sched_expedited(void)
- 	 */
- 	snap = atomic_long_inc_return(&rsp->expedited_start);
- 	firstsnap = snap;
--	get_online_cpus();
-+	if (!try_get_online_cpus()) {
-+		/* CPU hotplug operation in flight, fall back to normal GP. */
-+		wait_rcu_gp(call_rcu_sched);
-+		atomic_long_inc(&rsp->expedited_normal);
-+		return;
-+	}
- 	WARN_ON_ONCE(cpu_is_offline(raw_smp_processor_id()));
- 
- 	/*
-diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index fb833811c2f6..821dcf9a3b94 100644
---- a/kernel/rcu/tree_plugin.h
-+++ b/kernel/rcu/tree_plugin.h
-@@ -793,11 +793,6 @@ sync_rcu_preempt_exp_init(struct rcu_state *rsp, struct rcu_node *rnp)
-  * In fact, if you are using synchronize_rcu_expedited() in a loop,
-  * please restructure your code to batch your updates, and then Use a
-  * single synchronize_rcu() instead.
-- *
-- * Note that it is illegal to call this function while holding any lock
-- * that is acquired by a CPU-hotplug notifier.  And yes, it is also illegal
-- * to call this function from a CPU-hotplug notifier.  Failing to observe
-- * these restriction will result in deadlock.
-  */
- void synchronize_rcu_expedited(void)
- {
-@@ -819,7 +814,11 @@ void synchronize_rcu_expedited(void)
- 	 * being boosted.  This simplifies the process of moving tasks
- 	 * from leaf to root rcu_node structures.
- 	 */
--	get_online_cpus();
-+	if (!try_get_online_cpus()) {
-+		/* CPU-hotplug operation in flight, fall back to normal GP. */
-+		wait_rcu_gp(call_rcu);
-+		return;
-+	}
- 
- 	/*
- 	 * Acquire lock, falling back to synchronize_rcu() if too many
-
+-- 
+------------------
+Dan Murphy
