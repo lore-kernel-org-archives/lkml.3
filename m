@@ -1,103 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965392AbaH1Jgu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 05:36:50 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:65355 "EHLO
+	id S965551AbaH1JiO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 05:38:14 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:65380 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934650AbaH1Jgs (ORCPT
+	by vger.kernel.org with ESMTP id S932685AbaH1JiN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 05:36:48 -0400
-Date: Thu, 28 Aug 2014 10:35:05 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Olof Johansson <olof@lixom.net>, Stephen Boyd <sboyd@codeaurora.org>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
+	Thu, 28 Aug 2014 05:38:13 -0400
+Date: Thu, 28 Aug 2014 10:38:26 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: "byungchul.park@lge.com" <byungchul.park@lge.com>
+Cc: Sudeep Holla <Sudeep.Holla@arm.com>,
         Catalin Marinas <Catalin.Marinas@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] clocksource: arch_timer: Fix code to use physical timers
- when requested
-Message-ID: <20140828093505.GC14650@leverpostej>
-References: <1409173419-13076-1-git-send-email-sonnyrao@chromium.org>
- <CAOesGMjK65Rc-K0fyFUUJLw6huLT82E-nqJwZO4PqhgopF96Ow@mail.gmail.com>
- <CAPz6YkWAPtuy4sAuAK9GtpDgfGsccxeS+pqqe_t_R818Jt01qA@mail.gmail.com>
- <53FE5B09.2020403@codeaurora.org>
- <CAOesGMhTivDzJFuxONggcJ6N5UvZopKa=+tv9PoPX593cpnm0A@mail.gmail.com>
- <53FE7E3B.1010500@codeaurora.org>
- <CAOesGMgXnsqttHwAxEW4a7-Rx-nmSwpJd_Dt1iCcFOvzDwbzdA@mail.gmail.com>
- <CAD=FV=VjN6Xam-nRRcxvOoN-gokU6DbGVjoPXN_fkTJssH1RWA@mail.gmail.com>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] Revert "arm64: use cpu_online_mask when using forced
+ irq_set_affinity"
+Message-ID: <20140828093826.GC22580@arm.com>
+References: <1409131806-11276-1-git-send-email-byungchul.park@lge.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAD=FV=VjN6Xam-nRRcxvOoN-gokU6DbGVjoPXN_fkTJssH1RWA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1409131806-11276-1-git-send-email-byungchul.park@lge.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 28, 2014 at 04:33:31AM +0100, Doug Anderson wrote:
-> Hi,
+On Wed, Aug 27, 2014 at 10:30:06AM +0100, byungchul.park@lge.com wrote:
+> From: Byungchul Park <byungchul.park@lge.com>
 > 
-> On Wed, Aug 27, 2014 at 7:58 PM, Olof Johansson <olof@lixom.net> wrote:
-> > On Wed, Aug 27, 2014 at 5:56 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> >> On 08/27/14 15:33, Olof Johansson wrote:
-> >>> On Wed, Aug 27, 2014 at 3:26 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> >>>
-> >>>> Is there any reason why the virtual counter can't be read? Maybe we're
-> >>>> the hyp and we need to make sure we don't use the virtual timer so that
-> >>>> the guest can use it, but that doesn't have any effect on the usage of
-> >>>> the virtual counter for the clocksource.
-> >>> There are several cases where virtual is unusable -- in particular it
-> >>> might not have been configured properly (i.e. the phys/virt offset is
-> >>> at a bad value).
-> >>>
-> >>
-> >> Any specifics? It would be nice to say so in the commit text so that
-> >> others using such devices know they need this patch. I'm guessing the
-> >> firmware can't be fixed?
+> This reverts commit 601c942176d8ad8334118bddb747e3720bed24f8.
 > 
-> Even if we could change things to use a virtual timer in some cases,
-> Sonny's patch still fixes a bug.  The code as written right now makes
-> pretenses about supporting the physical timer, but it doesn't work.
-> That should be fixed.
-
-The code does support the physical timer. It does not support the
-physical counter (and makes no pretenses that it does).
-
-I had hoped we wouldn't encounter cases where CNTVOFF was hopelessly
-ill-configured on a platform, but evidently we have. So we need some
-workaround for that.
-
-> > Yeah, there are a few. The big.LITTLE on the Chromebook 2 models have
-> > this issue, due to the A7 cluster having an incorrect offset
-> > programmed. However, arch timers aren't supported on that SoC in the
-> > first place, so it's not a problem in reality.
-> >
-> > The other known platform is rk3288. It has products out in the wild
-> > where firmware updates are unlikely.
+> This patch is designed to ensure that the cpu being offlined is not
+> present in the affinity mask. But it is a bad idea to overwrite the
+> affinity variable with cpu_online_mask, even in case that the current
+> affinity already includes onlined cpus.
 > 
-> One other reason is that (I'm told) that the virtual offset is lost in
-> certain power down conditions (powering down a core, going into S3,
-> etc).  When we power back up the offset is effectively reset to a
-> random value.  That means we need something to reprogram the virtual
-> timer offset whenever we power things back up.
-> 
-> If we've got a hypervisor then the hypervisor will definitely be
-> involved in powering things back up and it can reset the virtual
-> offset.  ...but forcing systems to implement a hypervisor (or somehow
-> adding an interface for the kernel to call back into firmware) is a
-> huge effort and it means more hard-to-update code sitting in firmware.
+> So revert this patch to replace it with another one doing exactly
+> what it intends.
 
-Not if you boot Linux at hyp, as we've recommended for this precise
-reason. That doesn't fix other things like CNTFRQ if the secure
-initialisation doesn't poke that, however.
+Sudeep: what's the right way forward for this? There seems to be general
+agreement that the existing code is broken, but a bunch of different
+`fixes'. Can we just take a straight port of what tglx proposed for ARM?
+(changing force to false)
 
-Thanks,
-Mark.
+Will
