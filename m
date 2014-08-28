@@ -1,124 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965364AbaH1IEn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 04:04:43 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:64706 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935486AbaH1ICe (ORCPT
+	id S965524AbaH1IFi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 04:05:38 -0400
+Received: from andre.telenet-ops.be ([195.130.132.53]:38781 "EHLO
+	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936330AbaH1IFZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 04:02:34 -0400
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: linux-usb@vger.kernel.org
-Cc: devicetree@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, gregkh@linuxfoundation.org, balbi@ti.com,
-        kishon@ti.com, kgene.kim@samsung.com,
-        Vivek Gautam <gautam.vivek@samsung.com>
-Subject: [PATCH 2/5] phy: exynos5-usbdrd: Add pipe-clk and utmi-clk support
-Date: Thu, 28 Aug 2014 13:31:57 +0530
-Message-Id: <1409212920-28526-3-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1409212920-28526-1-git-send-email-gautam.vivek@samsung.com>
-References: <1409212920-28526-1-git-send-email-gautam.vivek@samsung.com>
+	Thu, 28 Aug 2014 04:05:25 -0400
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>
+Cc: devicetree@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH v2] ARM: dts: Add shmobile platform device tree bindings documentation
+Date: Thu, 28 Aug 2014 10:05:20 +0200
+Message-Id: <1409213120-5291-1-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Exynos7 SoC has now separate gate control for 125MHz pipe3 phy
-clock, as well as 60MHz utmi phy clock.
-So get the same and control in the phy-exynos5-usbdrd driver.
+Add Renesas SH-Mobile, R-Mobile, and R-Car Platform Device Tree Bindings
+Documentation, listing supported SoCs and boards.
 
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+This allows to use checkpatch to validate DTSes referring to Renesas
+shmobile SoCs, and boards containing those SoCs.
+
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
 ---
- .../devicetree/bindings/phy/samsung-phy.txt        |    4 ++++
- drivers/phy/phy-exynos5-usbdrd.c                   |   24 ++++++++++++++++++++
- 2 files changed, 28 insertions(+)
+v2:
+  - Drop RFC
+  - Move sh7372/sh73a0 up, before r8a73a4
+  - Add r8a7793/Gose
+  - Drop bogus EMEV2 before KZM9D board name
+  - Drop armadillo-reference, as it's on its way out
+---
+ Documentation/devicetree/bindings/arm/shmobile.txt | 71 ++++++++++++++++++++++
+ 1 file changed, 71 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/shmobile.txt
 
-diff --git a/Documentation/devicetree/bindings/phy/samsung-phy.txt b/Documentation/devicetree/bindings/phy/samsung-phy.txt
-index 7a6feea..b64d616 100644
---- a/Documentation/devicetree/bindings/phy/samsung-phy.txt
-+++ b/Documentation/devicetree/bindings/phy/samsung-phy.txt
-@@ -135,6 +135,10 @@ Required properties:
- 	       PHY operations, associated by phy name. It is used to
- 	       determine bit values for clock settings register.
- 	       For Exynos5420 this is given as 'sclk_usbphy30' in CMU.
-+	- optional clocks: Next gen Exynos SoCs have following additional
-+			   gate clocks available:
-+			   - phy_pipe: for PIPE3 phy
-+			   - phy_utmi: for UTMI+ phy
- - samsung,pmu-syscon: phandle for PMU system controller interface, used to
- 		      control pmu registers for power isolation.
- - #phy-cells : from the generic PHY bindings, must be 1;
-diff --git a/drivers/phy/phy-exynos5-usbdrd.c b/drivers/phy/phy-exynos5-usbdrd.c
-index b05302b..685c108 100644
---- a/drivers/phy/phy-exynos5-usbdrd.c
-+++ b/drivers/phy/phy-exynos5-usbdrd.c
-@@ -148,6 +148,8 @@ struct exynos5_usbdrd_phy_drvdata {
-  * @dev: pointer to device instance of this platform device
-  * @reg_phy: usb phy controller register memory base
-  * @clk: phy clock for register access
-+ * @pipeclk: clock for pipe3 phy
-+ * @utmiclk: clock for utmi+ phy
-  * @drv_data: pointer to SoC level driver data structure
-  * @phys[]: array for 'EXYNOS5_DRDPHYS_NUM' number of PHY
-  *	    instances each with its 'phy' and 'phy_cfg'.
-@@ -161,6 +163,8 @@ struct exynos5_usbdrd_phy {
- 	struct device *dev;
- 	void __iomem *reg_phy;
- 	struct clk *clk;
-+	struct clk *pipeclk;
-+	struct clk *utmiclk;
- 	const struct exynos5_usbdrd_phy_drvdata *drv_data;
- 	struct phy_usb_instance {
- 		struct phy *phy;
-@@ -446,6 +450,10 @@ static int exynos5_usbdrd_phy_power_on(struct phy *phy)
- 
- 	dev_dbg(phy_drd->dev, "Request to power_on usbdrd_phy phy\n");
- 
-+	if (!IS_ERR(phy_drd->utmiclk))
-+		clk_prepare_enable(phy_drd->utmiclk);
-+	if (!IS_ERR(phy_drd->pipeclk))
-+		clk_prepare_enable(phy_drd->pipeclk);
- 	clk_prepare_enable(phy_drd->ref_clk);
- 
- 	/* Enable VBUS supply */
-@@ -464,6 +472,10 @@ static int exynos5_usbdrd_phy_power_on(struct phy *phy)
- 
- fail_vbus:
- 	clk_disable_unprepare(phy_drd->ref_clk);
-+	if (!IS_ERR(phy_drd->pipeclk))
-+		clk_disable_unprepare(phy_drd->pipeclk);
-+	if (!IS_ERR(phy_drd->utmiclk))
-+		clk_disable_unprepare(phy_drd->utmiclk);
- 
- 	return ret;
- }
-@@ -483,6 +495,10 @@ static int exynos5_usbdrd_phy_power_off(struct phy *phy)
- 		regulator_disable(phy_drd->vbus);
- 
- 	clk_disable_unprepare(phy_drd->ref_clk);
-+	if (!IS_ERR(phy_drd->pipeclk))
-+		clk_disable_unprepare(phy_drd->pipeclk);
-+	if (!IS_ERR(phy_drd->utmiclk))
-+		clk_disable_unprepare(phy_drd->utmiclk);
- 
- 	return 0;
- }
-@@ -581,6 +597,14 @@ static int exynos5_usbdrd_phy_probe(struct platform_device *pdev)
- 		return PTR_ERR(phy_drd->clk);
- 	}
- 
-+	phy_drd->pipeclk = devm_clk_get(dev, "phy_pipe");
-+	if (IS_ERR(phy_drd->pipeclk))
-+		dev_warn(dev, "Failed to get pipe3 phy operational clock\n");
+diff --git a/Documentation/devicetree/bindings/arm/shmobile.txt b/Documentation/devicetree/bindings/arm/shmobile.txt
+new file mode 100644
+index 000000000000..5d1c5c0085dc
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/shmobile.txt
+@@ -0,0 +1,71 @@
++Renesas SH-Mobile, R-Mobile, and R-Car Platform Device Tree Bindings
++--------------------------------------------------------------------
 +
-+	phy_drd->utmiclk = devm_clk_get(dev, "phy_utmi");
-+	if (IS_ERR(phy_drd->utmiclk))
-+		dev_warn(dev, "Failed to get utmi phy operational clock\n");
++SoCs:
 +
- 	phy_drd->ref_clk = devm_clk_get(dev, "ref");
- 	if (IS_ERR(phy_drd->ref_clk)) {
- 		dev_err(dev, "Failed to get reference clock of usbdrd phy\n");
++  - Emma Mobile EV2
++    compatible = "renesas,emev2"
++  - RZ/A1H (R7S72100)
++    compatible = "renesas,r7s72100"
++  - SH-Mobile AP4 (R8A73720/SH7372)
++    compatible = "renesas,sh7372"
++  - SH-Mobile AG5 (R8A73A00/SH73A0)
++    compatible = "renesas,sh73a0"
++  - R-Mobile APE6 (R8A73A40)
++    compatible = "renesas,r8a73a4"
++  - R-Mobile A1 (R8A77400)
++    compatible = "renesas,r8a7740"
++  - R-Car M1A (R8A77781)
++    compatible = "renesas,r8a7778"
++  - R-Car H1 (R8A77790)
++    compatible = "renesas,r8a7779"
++  - R-Car H2 (R8A77900)
++    compatible = "renesas,r8a7790"
++  - R-Car M2-W (R8A77910)
++    compatible = "renesas,r8a7791"
++  - R-Car V2H (R8A77920)
++    compatible = "renesas,r8a7792"
++  - R-Car M2-N (R8A77930)
++    compatible = "renesas,r8a7793"
++  - R-Car E2 (R8A77940)
++    compatible = "renesas,r8a7794"
++
++
++Boards:
++
++  - Alt
++    compatible = "renesas,alt", "renesas,r8a7794"
++  - APE6-EVM
++    compatible = "renesas,ape6evm", "renesas,r8a73a4"
++  - APE6-EVM - Reference Device Tree Implementation
++    compatible = "renesas,ape6evm-reference", "renesas,r8a73a4"
++  - Atmark Techno Armadillo-800 EVA
++    compatible = "renesas,armadillo800eva"
++  - BOCK-W
++    compatible = "renesas,bockw", "renesas,r8a7778"
++  - BOCK-W - Reference Device Tree Implementation
++    compatible = "renesas,bockw-reference", "renesas,r8a7778"
++  - Genmai (RTK772100BC00000BR)
++    compatible = "renesas,genmai", "renesas,r7s72100"
++  - Gose
++    compatible = "renesas,gose", "renesas,r8a7793"
++  - Henninger
++    compatible = "renesas,henninger", "renesas,r8a7791"
++  - Koelsch (RTP0RC7791SEB00010S)
++    compatible = "renesas,koelsch", "renesas,r8a7791"
++  - KZM9D
++    compatible = "renesas,kzm9d", "renesas,emev2"
++  - KZM-A9-GT
++    compatible = "renesas,kzm9g", "renesas,sh73a0"
++  - KZM-A9-GT - Reference Device Tree Implementation
++    compatible = "renesas,kzm9g-reference", "renesas,sh73a0"
++  - Lager (RTP0RC7790SEB00010S)
++    compatible = "renesas,lager", "renesas,r8a7790"
++  - Mackerel (R0P7372LC0016RL, AP4 EVM 2nd)
++    compatible = "renesas,mackerel"
++  - Marzen
++    compatible = "renesas,marzen", "renesas,r8a7779"
++
++Note: Reference Device Tree Implementations are temporary implementations
++      to ease the migration from platform devices to Device Tree, and are
++      intended to be removed in the future.
 -- 
-1.7.10.4
+1.9.1
 
