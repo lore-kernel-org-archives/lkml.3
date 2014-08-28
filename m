@@ -1,122 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751191AbaH1MoO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 08:44:14 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:63793 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003AbaH1MoM (ORCPT
+	id S1751244AbaH1Mp6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 08:45:58 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:61952 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790AbaH1Mp5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 08:44:12 -0400
-Date: Thu, 28 Aug 2014 13:44:05 +0100
+	Thu, 28 Aug 2014 08:45:57 -0400
+Date: Thu, 28 Aug 2014 13:45:52 +0100
 From: Lee Jones <lee.jones@linaro.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Beniamino Galvani <b.galvani@gmail.com>, linux-kernel@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Wim Van Sebroeck <wim@iguana.be>,
-        linux-watchdog@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Carlo Caione <carlo@caione.org>
-Subject: Re: [PATCH 3/4] watchdog: add driver for Ricoh RN5T618 watchdog
-Message-ID: <20140828124405.GT24579@lee--X1>
-References: <1409091237-16722-1-git-send-email-b.galvani@gmail.com>
- <1409091237-16722-4-git-send-email-b.galvani@gmail.com>
- <20140827190135.GA18849@roeck-us.net>
- <20140828071946.GF24579@lee--X1>
- <53FF1C58.3070006@roeck-us.net>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] include/linux/mfd/ti_ssp.h: Remove unused header
+Message-ID: <20140828124552.GU24579@lee--X1>
+References: <1409226770-3317-1-git-send-email-linux@rasmusvillemoes.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <53FF1C58.3070006@roeck-us.net>
+In-Reply-To: <1409226770-3317-1-git-send-email-linux@rasmusvillemoes.dk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Aug 2014, Guenter Roeck wrote:
+On Thu, 28 Aug 2014, Rasmus Villemoes wrote:
 
-> On 08/28/2014 12:19 AM, Lee Jones wrote:
-> >On Wed, 27 Aug 2014, Guenter Roeck wrote:
-> >>On Wed, Aug 27, 2014 at 12:13:56AM +0200, Beniamino Galvani wrote:
-> >>>This adds a driver for the watchdog timer available in Ricoh RN5T618
-> >>>PMIC. The device supports a programmable expiration time of 1, 8, 32
-> >>>or 128 seconds.
-> >>>
-> >>>Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
-> >>>---
-> >>>  drivers/watchdog/Kconfig       |   11 +++
-> >>>  drivers/watchdog/Makefile      |    1 +
-> >>>  drivers/watchdog/rn5t618_wdt.c |  196 ++++++++++++++++++++++++++++++++++++++++
-> >>>  include/linux/mfd/rn5t618.h    |    4 +
-> >>>  4 files changed, 212 insertions(+)
-> >>>  create mode 100644 drivers/watchdog/rn5t618_wdt.c
-> >
-> >[...]
-> >
-> >>>+++ b/drivers/watchdog/rn5t618_wdt.c
-> >>>@@ -0,0 +1,196 @@
-> >
-> >[...]
-> >
-> >>>+static int rn5t618_wdt_set_timeout(struct watchdog_device *wdt_dev,
-> >>>+				   unsigned int timeout)
-> >>>+{
-> >>>+	struct rn5t618_wdt *wdt = watchdog_get_drvdata(wdt_dev);
-> >>>+	int ret, i;
-> >>>+
-> >>>+	for (i = 0; i < ARRAY_SIZE(rn5t618_wdt_map); i++) {
-> >>>+		if (rn5t618_wdt_map[i].time + 1 >= timeout)
-> >>>+			break;
-> >>>+	}
-> >>>+
-> >>>+	if (i == ARRAY_SIZE(rn5t618_wdt_map))
-> >>>+		ret = -EINVAL;
-> >>
-> >>Can you simplify this a bit ? If you use
-> >>
-> >>	if (i == ARRAY_SIZE(rn5t618_wdt_map))
-> >>		return -EINVAL;
-> >
-> >This changes the semantics.
-> >
-> How so ? If ret is set to -EINVAL, the rest of the function won't do anything
-> but eventually return -EINVAL. I don't see why returning -EINVAL immediately
-> would change that.
-
-Ah, you're right.
-
-I read:
-
-  if (!ret)
-    wdt_dev->timeout = rn5t618_wdt_map[i].time;
-
-As:
-
-  if (ret)
-    wdt_dev->timeout = rn5t618_wdt_map[i].time;
-
-My bad - withdrawn.
-
-> >>>+	else
-> >>
-> >>You can drop this else statement.
-> >>
-> >>>+		ret = regmap_update_bits(wdt->rn5t618->regmap, RN5T618_WATCHDOG,
-> >>>+					 RN5T618_WATCHDOG_WDOGTIM_M,
-> >>>+					 rn5t618_wdt_map[i].reg_val);
-> >>>+	if (!ret)
-> >>>+		wdt_dev->timeout = rn5t618_wdt_map[i].time;
-> >
-> >... Isn't this important?
-> >
-> >>>+	return ret;
-> >>>+}
-> >
+> The header file include/linux/mfd/ti_ssp.h does not seem to be used
+> anywhere. It was orphaned by 3033ee62 "mfd: Remove obsolete ti-ssp
+> driver". Remove it.
 > 
+> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+> ---
+>  include/linux/mfd/ti_ssp.h | 93 ----------------------------------------------
+>  1 file changed, 93 deletions(-)
+>  delete mode 100644 include/linux/mfd/ti_ssp.h
+
+Patch applied with a properly formatted $SUBJECT line.
+
+> diff --git a/include/linux/mfd/ti_ssp.h b/include/linux/mfd/ti_ssp.h
+> deleted file mode 100644
+> index dbb4b43..0000000
+> --- a/include/linux/mfd/ti_ssp.h
+> +++ /dev/null
+> @@ -1,93 +0,0 @@
+> -/*
+> - * Sequencer Serial Port (SSP) driver for Texas Instruments' SoCs
+> - *
+> - * Copyright (C) 2010 Texas Instruments Inc
+> - *
+> - * This program is free software; you can redistribute it and/or modify
+> - * it under the terms of the GNU General Public License as published by
+> - * the Free Software Foundation; either version 2 of the License, or
+> - * (at your option) any later version.
+> - *
+> - * This program is distributed in the hope that it will be useful,
+> - * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> - * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> - * GNU General Public License for more details.
+> - *
+> - * You should have received a copy of the GNU General Public License
+> - * along with this program; if not, write to the Free Software
+> - * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+> - */
+> -
+> -#ifndef __TI_SSP_H__
+> -#define __TI_SSP_H__
+> -
+> -struct ti_ssp_dev_data {
+> -	const char	*dev_name;
+> -	void		*pdata;
+> -	size_t		pdata_size;
+> -};
+> -
+> -struct ti_ssp_data {
+> -	unsigned long		out_clock;
+> -	struct ti_ssp_dev_data	dev_data[2];
+> -};
+> -
+> -struct ti_ssp_spi_data {
+> -	unsigned long	iosel;
+> -	int		num_cs;
+> -	void		(*select)(int cs);
+> -};
+> -
+> -/*
+> - * Sequencer port IO pin configuration bits.  These do not correlate 1-1 with
+> - * the hardware.  The iosel field in the port data combines iosel1 and iosel2,
+> - * and is therefore not a direct map to register space.  It is best to use the
+> - * macros below to construct iosel values.
+> - *
+> - * least significant 16 bits --> iosel1
+> - * most significant 16 bits  --> iosel2
+> - */
+> -
+> -#define SSP_IN			0x0000
+> -#define SSP_DATA		0x0001
+> -#define SSP_CLOCK		0x0002
+> -#define SSP_CHIPSEL		0x0003
+> -#define SSP_OUT			0x0004
+> -#define SSP_PIN_SEL(pin, v)	((v) << ((pin) * 3))
+> -#define SSP_PIN_MASK(pin)	SSP_PIN_SEL(pin, 0x7)
+> -#define SSP_INPUT_SEL(pin)	((pin) << 16)
+> -
+> -/* Sequencer port config bits */
+> -#define SSP_EARLY_DIN		BIT(8)
+> -#define SSP_DELAY_DOUT		BIT(9)
+> -
+> -/* Sequence map definitions */
+> -#define SSP_CLK_HIGH		BIT(0)
+> -#define SSP_CLK_LOW		0
+> -#define SSP_DATA_HIGH		BIT(1)
+> -#define SSP_DATA_LOW		0
+> -#define SSP_CS_HIGH		BIT(2)
+> -#define SSP_CS_LOW		0
+> -#define SSP_OUT_MODE		BIT(3)
+> -#define SSP_IN_MODE		0
+> -#define SSP_DATA_REG		BIT(4)
+> -#define SSP_ADDR_REG		0
+> -
+> -#define SSP_OPCODE_DIRECT	((0x0) << 5)
+> -#define SSP_OPCODE_TOGGLE	((0x1) << 5)
+> -#define SSP_OPCODE_SHIFT	((0x2) << 5)
+> -#define SSP_OPCODE_BRANCH0	((0x4) << 5)
+> -#define SSP_OPCODE_BRANCH1	((0x5) << 5)
+> -#define SSP_OPCODE_BRANCH	((0x6) << 5)
+> -#define SSP_OPCODE_STOP		((0x7) << 5)
+> -#define SSP_BRANCH(addr)	((addr) << 8)
+> -#define SSP_COUNT(cycles)	((cycles) << 8)
+> -
+> -int ti_ssp_raw_read(struct device *dev);
+> -int ti_ssp_raw_write(struct device *dev, u32 val);
+> -int ti_ssp_load(struct device *dev, int offs, u32* prog, int len);
+> -int ti_ssp_run(struct device *dev, u32 pc, u32 input, u32 *output);
+> -int ti_ssp_set_mode(struct device *dev, int mode);
+> -int ti_ssp_set_iosel(struct device *dev, u32 iosel);
+> -
+> -#endif /* __TI_SSP_H__ */
 
 -- 
 Lee Jones
