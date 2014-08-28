@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935677AbaH0S1z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 14:27:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45031 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933759AbaH0S1y (ORCPT
+	id S964874AbaH0S2X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 14:28:23 -0400
+Received: from smtp113.ord1c.emailsrvr.com ([108.166.43.113]:34076 "EHLO
+	smtp113.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964838AbaH0S2V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 14:27:54 -0400
-From: Chris J Arges <chris.j.arges@canonical.com>
-To: rostedt@goodmis.org
-Cc: Chris J Arges <chris.j.arges@canonical.com>,
-        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ktest: add ability to skip during BISECT_MANUAL
-Date: Wed, 27 Aug 2014 13:26:53 -0500
-Message-Id: <1409164021-2136-1-git-send-email-chris.j.arges@canonical.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 27 Aug 2014 14:28:21 -0400
+X-Sender-Id: pramod.gurav@smartplayin.com
+From: Pramod Gurav <pramod.gurav@smartplayin.com>
+To: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 1/3] cpufreq: cpu0: Release clk and regulator in remove function
+Date: Thu, 28 Aug 2014 00:00:10 -0700
+Message-Id: <1409209212-18730-1-git-send-email-pramod.gurav@smartplayin.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When doing a manual bisect, a build can fail or a test can be inconclusive.
-In these cases it would be helpful to be able to skip the test entirely.
+This function releases clk and regulator in remove function for clean
+unloading.
 
-Signed-off-by: Chris J Arges <chris.j.arges@canonical.com>
+CC: Shawn Guo <shawn.guo@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
 ---
- tools/testing/ktest/ktest.pl | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/cpufreq/cpufreq-cpu0.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index 55ab700..72010f4 100755
---- a/tools/testing/ktest/ktest.pl
-+++ b/tools/testing/ktest/ktest.pl
-@@ -2336,15 +2336,17 @@ sub success {
+diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
+index 0d2172b..e1574f8 100644
+--- a/drivers/cpufreq/cpufreq-cpu0.c
++++ b/drivers/cpufreq/cpufreq-cpu0.c
+@@ -229,6 +229,8 @@ static int cpu0_cpufreq_remove(struct platform_device *pdev)
+ 	cpufreq_cooling_unregister(cdev);
+ 	cpufreq_unregister_driver(&cpu0_cpufreq_driver);
+ 	dev_pm_opp_free_cpufreq_table(cpu_dev, &freq_table);
++	clk_put(cpu_clk);
++	regulator_put(cpu_reg);
  
- sub answer_bisect {
-     for (;;) {
--	doprint "Pass or fail? [p/f]";
-+	doprint "Pass, fail, or skip? [p/f/s]";
- 	my $ans = <STDIN>;
- 	chomp $ans;
- 	if ($ans eq "p" || $ans eq "P") {
- 	    return 1;
- 	} elsif ($ans eq "f" || $ans eq "F") {
- 	    return 0;
-+	} elsif ($ans eq "s" || $ans eq "S") {
-+	    return -1;
- 	} else {
--	    print "Please answer 'P' or 'F'\n";
-+	    print "Please answer 'p', 'f', or 's'\n";
- 	}
-     }
+ 	return 0;
  }
 -- 
-1.9.1
+1.7.0.4
 
