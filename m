@@ -1,237 +1,558 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751369AbaH1Ms4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 08:48:56 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:40137 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750731AbaH1Msy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 08:48:54 -0400
-Date: Thu, 28 Aug 2014 13:48:46 +0100
-From: Sitsofe Wheeler <sitsofe@gmail.com>
-To: Dexuan Cui <decui@microsoft.com>
-Cc: KY Srinivasan <kys@microsoft.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PANIC, hyperv] BUG: unable to handle kernel paging request at
- ffff880077800004 (hv_ringbuffer_write)
-Message-ID: <20140828124846.GA20494@sucs.org>
-References: <EE124450C0AAF944A40DD71E61F878C995E93E@SINEX14MBXC419.southpacific.corp.microsoft.com>
- <20140827104408.GC1827@sucs.org>
- <EE124450C0AAF944A40DD71E61F878C996493E@SINEX14MBXC419.southpacific.corp.microsoft.com>
- <20140827121559.GA14286@sucs.org>
- <EE124450C0AAF944A40DD71E61F878C9965238@SINEX14MBXC419.southpacific.corp.microsoft.com>
- <20140827161900.GA25326@sucs.org>
- <51ae44fcae424365a6d78f3597175d77@BY2PR0301MB0711.namprd03.prod.outlook.com>
- <20140827225739.GA24590@sucs.org>
- <ec859d8c8f8743a0b72e5e578472f45d@BY2PR0301MB0711.namprd03.prod.outlook.com>
- <EE124450C0AAF944A40DD71E61F878C9973DAC@SINEX14MBXC418.southpacific.corp.microsoft.com>
+	id S1751449AbaH1Mtn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 08:49:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18123 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750731AbaH1Mtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 08:49:42 -0400
+Message-ID: <53FF2544.8020601@redhat.com>
+Date: Thu, 28 Aug 2014 14:49:08 +0200
+From: Tomas Henzl <thenzl@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <EE124450C0AAF944A40DD71E61F878C9973DAC@SINEX14MBXC418.southpacific.corp.microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ching Huang <ching2048@areca.com.tw>
+CC: hch@infradead.org, jbottomley@parallels.com, dan.carpenter@oracle.com,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 16/17] arcmsr: support new adapter ARC12x4 series
+References: <1408433122.4748.73.camel@Centos6.3-64>	 <53FDE490.1070201@redhat.com> <1409240809.4762.259.camel@Centos6.3-64>
+In-Reply-To: <1409240809.4762.259.camel@Centos6.3-64>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dexuan,
+On 08/28/2014 05:46 PM, Ching Huang wrote:
+> On Wed, 2014-08-27 at 16:00 +0200, Tomas Henzl wrote:
+>> On 08/19/2014 09:25 AM, Ching Huang wrote:
+>>> From: Ching Huang <ching2048@areca.com.tw>
+>>>
+>>> Add code for supporting Areca new Raid adapter ARC12x4 series.
+>>>
+>>> Signed-off-by: Ching Huang <ching2048@areca.com.tw>
+>>> ---
+>> Hi Ching,
+>> please look at the comments below -
+>>
+>>>  }
+>>> @@ -1039,7 +1147,60 @@ static void arcmsr_done4abort_postqueue(
+>>>  			error = (flag_ccb & ARCMSR_CCBREPLY_FLAG_ERROR_MODE1) ? true : false;
+>>>  			arcmsr_drain_donequeue(acb, pCCB, error);
+>>>  		}
+>>> -	}
+>>> +		}
+>>> +		break;
+>>> +	case ACB_ADAPTER_TYPE_D: {
+>>> +		struct MessageUnit_D  *pmu = acb->pmuD;
+>>> +		uint32_t ccb_cdb_phy, outbound_write_pointer;
+>>> +		uint32_t doneq_index, index_stripped, addressLow, residual;
+>>> +		bool error;
+>>> +		struct CommandControlBlock *pCCB;
+>> I have noticed this^ in this driver already before. Sometimes it makes sense
+>> when a variable is declared in a 'case' block but often it is just
+>> a waste of space. In this function this is the third 'bool error' declared.
+>> Is there a reason for this style (this function is not the worst case) ?
+> Yea, there is many variable are duplicate declaration, I will clean it up.
+>>> +		outbound_write_pointer = pmu->done_qbuffer[0].addressLow + 1;
+>>> +		doneq_index = pmu->doneq_index;
+>>> +		residual = atomic_read(&acb->ccboutstandingcount);
+>>> +		for (i = 0; i < residual; i++) {
+>>> +			while ((doneq_index & 0xFFF) !=
+>>> +				(outbound_write_pointer & 0xFFF)) {
+>>> +				if (doneq_index & 0x4000) {
+>>> +					index_stripped = doneq_index & 0xFFF;
+>>> +					index_stripped += 1;
+>>> +					index_stripped %=
+>>> +						ARCMSR_MAX_ARC1214_DONEQUEUE;
+>>> +					pmu->doneq_index = index_stripped ?
+>>> +						(index_stripped | 0x4000) :
+>>> +						(index_stripped + 1);
+>>> +				} else {
+>>> +					index_stripped = doneq_index;
+>>> +					index_stripped += 1;
+>>> +					index_stripped %=
+>>> +						ARCMSR_MAX_ARC1214_DONEQUEUE;
+>>> +					pmu->doneq_index = index_stripped ?
+>>> +						index_stripped :
+>>> +						((index_stripped | 0x4000) + 1);
+>>> +				}
+>>> +				doneq_index = pmu->doneq_index;
+>>> +				addressLow = pmu->done_qbuffer[doneq_index &
+>>> +					0xFFF].addressLow;
+>>> +				ccb_cdb_phy = (addressLow & 0xFFFFFFF0);
+>>> +				pARCMSR_CDB = (struct  ARCMSR_CDB *)
+>>> +					(acb->vir2phy_offset + ccb_cdb_phy);
+>>> +				pCCB = container_of(pARCMSR_CDB,
+>>> +					struct CommandControlBlock, arcmsr_cdb);
+>>> +				error = (addressLow &
+>>> +					ARCMSR_CCBREPLY_FLAG_ERROR_MODE1) ?
+>>> +					true : false;
+>>> +				arcmsr_drain_donequeue(acb, pCCB, error);
+>>> +				writel(doneq_index, pmu->outboundlist_read_pointer);
+>>> +			}
+>>> +			mdelay(10);
+>>> +			outbound_write_pointer =
+>>> +				pmu->done_qbuffer[0].addressLow + 1;
+>>> +			doneq_index = pmu->doneq_index;
+>>> +		}
+>>> +		pmu->postq_index = 0;
+>>> +		pmu->doneq_index = 0x40FF;
+>>> +		}
+>>> +		break;
+>>>  	}
+>>>  }
+>> ...
+>>
+>>>  
+>>> @@ -1256,6 +1424,38 @@ static void arcmsr_post_ccb(struct Adapt
+>>>  			writel(ccb_post_stamp, &phbcmu->inbound_queueport_low);
+>>>  		}
+>>>  		}
+>>> +		break;
+>>> +	case ACB_ADAPTER_TYPE_D: {
+>>> +		struct MessageUnit_D  *pmu = acb->pmuD;
+>>> +		u16 index_stripped;
+>>> +		u16 postq_index;
+> 		u16 postq_index, toggle;
+>>> +		unsigned long flags;
+>>> +		struct InBound_SRB *pinbound_srb;
+>>> +
+>>> +		spin_lock_irqsave(&acb->postq_lock, flags);
+>>> +		postq_index = pmu->postq_index;
+>>> +		pinbound_srb = (struct InBound_SRB *)&(pmu->post_qbuffer[postq_index & 0xFF]);
+>>> +		pinbound_srb->addressHigh = dma_addr_hi32(cdb_phyaddr);
+>>> +		pinbound_srb->addressLow = dma_addr_lo32(cdb_phyaddr);
+>>> +		pinbound_srb->length = ccb->arc_cdb_size >> 2;
+>>> +		arcmsr_cdb->msgContext = dma_addr_lo32(cdb_phyaddr);
+>>> +		if (postq_index & 0x4000) {
+>>> +			index_stripped = postq_index & 0xFF;
+>>> +			index_stripped += 1;
+>>> +			index_stripped %= ARCMSR_MAX_ARC1214_POSTQUEUE;
+>>> +			pmu->postq_index = index_stripped ?
+>>> +				(index_stripped | 0x4000) : index_stripped;
+>>> +		} else {
+>>> +			index_stripped = postq_index;
+>>> +			index_stripped += 1;
+>>> +			index_stripped %= ARCMSR_MAX_ARC1214_POSTQUEUE;
+>>> +			pmu->postq_index = index_stripped ? index_stripped :
+>>> +				(index_stripped | 0x4000);
+>>> +		}
+>> The code above could be a bit easier -
+> Yea. I simplify it to following.
+> 		toggle = postq_index & 0x4000;
 
-On Thu, Aug 28, 2014 at 03:21:59AM +0000, Dexuan Cui wrote:
+I might be wrong but the following two lines:
 
-> > > > First let me thank you guys for looking into this issue. Looking at
+> 		index_stripped = (postq_index & 0xFF) + 1;
 
-Feel free to add
-Reported-by: Sitsofe Wheeler <sitsofe@yahoo.com>
-to your patches (it's useful too me because it makes it easier for me to show
-what I've been doing to others :-)
+the first '&' is not needed, because we use a modulo in a next step
+>		 index_stripped %= ARCMSR_MAX_ARC1214_POSTQUEUE;
+and module is for certain binary numbers equivalent to '&', so this
+could be changed into 
+		index_stripped = postq_index + 1;
+		index_stripped &= (ARCMSR_MAX_ARC1214_POSTQUEUE - 1);
+( ARCMSR_MAX_ARC1214_POSTQUEUE is equal 0x100)
 
-> > > The only issue seen on boot now is similar to
-> > > https://lkml.org/lkml/2014/8/19/227 ...
+and this 
+>		pmu->postq_index = index_stripped ? (index_stripped | toggle) :
+>			(index_stripped | (toggle ^ 0x4000));
+into 
+		pmu->postq_index = index_stripped ? (index_stripped | toggle) :
+			 (toggle ^ 0x4000);
 
-> I don't see this issue.  Do you still see the issue for EVERY boot
-> after you applied KY's always-use-page-allocation patch?  I doubt that
-> because in the log of the above link:
+Let us stop this discussion, it's not a bug, you may or may not include it in your next series,
+we can discuss it there. 
+For another question, please look below.
 
-I think it depends on if I do a UP or SMP boot. With
-f1bd473f95e02bc382d4dae94d7f82e2a455e05d (post v3.17-rc2) with the V2 BUG_ON
-patch set coupled with the allocation change patch set a UP boot was able to
-run a small bunch of CPU and network stress tests without any issue. However,
-when doing an SMP boot the following happened:
+>> 		
+>> 		arcmsr_cdb->msgContext = dma_addr_lo32(cdb_phyaddr);
+>>                 index_stripped = postq_index + 1;
+>>                 index_stripped &= (ARCMSR_MAX_ARC1214_POSTQUEUE - 1);
+>>
+>>                 if (postq_index & 0x4000)
+>>                         pmu->postq_index = index_stripped ?
+>>                                 (index_stripped | 0x4000) : index_stripped;
+>>                 else
+>>                         pmu->postq_index = index_stripped ?
+>>                                  index_stripped : (index_stripped | 0x4000);
+>> or am I wrong? This is repeated in the code many times
+> Yea. one for postQueue and 3 times for doneQueue. They all can be simplified as above.
+>>  
+>>
+>>> +		writel(postq_index, pmu->inboundlist_write_pointer);
+>>> +		spin_unlock_irqrestore(&acb->postq_lock, flags);
+>>> +		break;
+>>> +		}
+>>>  	}
+>>>  }
+>>>  
+>> ...
+>>> +static int arcmsr_hbaD_polling_ccbdone(struct AdapterControlBlock *acb,
+>>> +				struct CommandControlBlock *poll_ccb)
+>>> +{
+>>> +	bool error;
+>>> +	uint32_t poll_ccb_done = 0, poll_count = 0, flag_ccb, ccb_cdb_phy;
+>>> +	int rtn, doneq_index, index_stripped, outbound_write_pointer;
+>>> +	unsigned long flags;
+>>> +	struct ARCMSR_CDB *arcmsr_cdb;
+>>> +	struct CommandControlBlock *pCCB;
+>>> +	struct MessageUnit_D *pmu = acb->pmuD;
+>>> +
+>>> +polling_hbaD_ccb_retry:
+>>> +	poll_count++;
+>>> +	while (1) {
+>>> +		outbound_write_pointer = pmu->done_qbuffer[0].addressLow + 1;
+>>> +		doneq_index = pmu->doneq_index;
+>> You seem to protect the doneq with a spinlock on some other places, arcmsr_hbaD_postqueue_isr
+>> and below in this function. Why not here, is it intentional? 
+> Before came here, the h/w interrupt was disabled. Hence, don't worry about other thread
+> to change doneq_index.
 
-[  OK  ] Started Getty on tty1.
-[  OK  ] Reached target Login Prompts.
-[  OK  ] Started Login Service.
-[   36.023957] hv_netvsc vmbus_0_15: net device safe to remove
-[   36.078386] hv_netvsc: hv_netvsc channel opened successfully
+I guess you mean the hw interrupts from your card. If so and if you know that no other thread on another 
+processor can access the doneq_index - why do you use the spinlock just few lines below?
 
-Fedora release 20 ([   36.964636] hv_netvsc vmbus_0_15: Send section size: 6144, Section count:2560
-[   37.014857] hv_netvsc vmbus_0_15: Device MAC 00:15:5d:6f:02:a5 link state up
-Heisenbug)[   37.180170] BUG: unable to handle kernel
-pKageing reqruestn at ffff8801f2ec4068
-[   37.181156] IP: el[ 3.1<7.0-ffrc2.x8ffffff814e77dc>] netvsc_start_xmit+0x6ac/0x7c0
-[ 6_ 64- 00044-g0bb037.181156] PGD 2db0067 PUa5Dd on 2 an x86_6407dc0067 PM (ttyDS0)
+>>> +		if ((outbound_write_pointer & 0xFFF) == (doneq_index & 0xFFF)) {
+>>> +			if (poll_ccb_done) {
+>>> +				rtn = SUCCESS;
+>>> +				break;
+>>> +			} else {
+>>> +				msleep(25);
+>>> +				if (poll_count > 40) {
+>>> +					rtn = FAILED;
+>>> +					break;
+>>> +				}
+>>> +				goto polling_hbaD_ccb_retry;
+>>> +			}
+>>> +		}
+>>> +		spin_lock_irqsave(&acb->doneq_lock, flags);
+>>> +		if (doneq_index & 0x4000) {
+>>> +			index_stripped = doneq_index & 0xFFF;
+>>> +			index_stripped += 1;
+>>> +			index_stripped %= ARCMSR_MAX_ARC1214_DONEQUEUE;
+>>> +			pmu->doneq_index = index_stripped ?
+>>> +				(index_stripped | 0x4000) :
+>>> +				(index_stripped + 1);
+>>> +		} else {
+>>> +			index_stripped = doneq_index;
+>>> +			index_stripped += 1;
+>>> +			index_stripped %= ARCMSR_MAX_ARC1214_DONEQUEUE;
+>>> +			pmu->doneq_index = index_stripped ? index_stripped :
+>>> +				((index_stripped | 0x4000) + 1);
+>>> +		}
+>>> +		spin_unlock_irqrestore(&acb->doneq_lock, flags);
+>>> +		doneq_index = pmu->doneq_index;
+>>> +		flag_ccb = pmu->done_qbuffer[doneq_index & 0xFFF].addressLow;
+>>> +		ccb_cdb_phy = (flag_ccb & 0xFFFFFFF0);
+>>> +		arcmsr_cdb = (struct ARCMSR_CDB *)(acb->vir2phy_offset +
+>>> +			ccb_cdb_phy);
+>>> +		pCCB = container_of(arcmsr_cdb, struct CommandControlBlock,
+>>> +			arcmsr_cdb);
+>>> +		poll_ccb_done |= (pCCB == poll_ccb) ? 1 : 0;
+>>> +		if ((pCCB->acb != acb) ||
+>>> +			(pCCB->startdone != ARCMSR_CCB_START)) {
+>>> +			if (pCCB->startdone == ARCMSR_CCB_ABORTED) {
+>>> +				pr_notice("arcmsr%d: scsi id = %d "
+>>> +					"lun = %d ccb = '0x%p' poll command "
+>>> +					"abort successfully\n"
+>>> +					, acb->host->host_no
+>>> +					, pCCB->pcmd->device->id
+>>> +					, (u32)pCCB->pcmd->device->lun
+>>> +					, pCCB);
+>>> +				pCCB->pcmd->result = DID_ABORT << 16;
+>>> +				arcmsr_ccb_complete(pCCB);
+>>> +				continue;
+>>> +			}
+>>> +			pr_notice("arcmsr%d: polling an illegal "
+>>> +				"ccb command done ccb = '0x%p' "
+>>> +				"ccboutstandingcount = %d\n"
+>>> +				, acb->host->host_no
+>>> +				, pCCB
+>>> +				, atomic_read(&acb->ccboutstandingcount));
+>>> +			continue;
+>>> +		}
+>>> +		error = (flag_ccb & ARCMSR_CCBREPLY_FLAG_ERROR_MODE1)
+>>> +			? true : false;
+>>> +		arcmsr_report_ccb_state(acb, pCCB, error);
+>>> +	}
+>>> +	return rtn;
+>>> +}
+>>> +
+>>>  static int arcmsr_polling_ccbdone(struct AdapterControlBlock *acb,
+>>>  					struct CommandControlBlock *poll_ccb)
+>>>  {
+>>> @@ -2711,6 +3280,10 @@ static int arcmsr_polling_ccbdone(struct
+>>>  	case ACB_ADAPTER_TYPE_C: {
+>>>  		rtn = arcmsr_hbaC_polling_ccbdone(acb, poll_ccb);
+>>>  		}
+>>> +		break;
+>>> +	case ACB_ADAPTER_TYPE_D:
+>>> +		rtn = arcmsr_hbaD_polling_ccbdone(acb, poll_ccb);
+>>> +		break;
+>>>  	}
+>>>  	return rtn;
+>>>  }
+>>> @@ -2728,6 +3301,7 @@ static int arcmsr_iop_confirm(struct Ada
+>>>  	*/
+>>>  	switch (acb->adapter_type) {
+>>>  		case ACB_ADAPTER_TYPE_B:
+>>> +		case ACB_ADAPTER_TYPE_D:
+>>>  			dma_coherent_handle = acb->dma_coherent_handle2;
+>>>  			break;
+>>>  		default:
+>>> @@ -2817,6 +3391,27 @@ static int arcmsr_iop_confirm(struct Ada
+>>>  			}
+>>>  		}
+>>>  		}
+>>> +		break;
+>>> +	case ACB_ADAPTER_TYPE_D: {
+>>> +		uint32_t __iomem *rwbuffer;
+>>> +		struct MessageUnit_D *reg = acb->pmuD;
+>>> +		reg->postq_index = 0;
+>>> +		reg->doneq_index = 0;
+>>> +		rwbuffer = reg->msgcode_rwbuffer;
+>>> +		writel(ARCMSR_SIGNATURE_SET_CONFIG, rwbuffer++);
+>>> +		writel(cdb_phyaddr_hi32, rwbuffer++);
+>>> +		writel(cdb_phyaddr, rwbuffer++);
+>>> +		writel(cdb_phyaddr + (ARCMSR_MAX_ARC1214_POSTQUEUE *
+>>> +			sizeof(struct InBound_SRB)), rwbuffer++);
+>>> +		writel(0x100, rwbuffer);
+>>> +		writel(ARCMSR_INBOUND_MESG0_SET_CONFIG, reg->inbound_msgaddr0);
+>>> +		if (!arcmsr_hbaD_wait_msgint_ready(acb)) {
+>>> +			pr_notice("arcmsr%d: 'set command Q window' timeout\n",
+>>> +				acb->host->host_no);
+>>> +			return 1;
+>>> +		}
+>>> +		}
+>>> +		break;
+>>>  	}
+>>>  	return 0;
+>>>  }
+>>> @@ -2848,6 +3443,15 @@ static void arcmsr_wait_firmware_ready(s
+>>>  			firmware_state = readl(&reg->outbound_msgaddr1);
+>>>  		} while ((firmware_state & ARCMSR_HBCMU_MESSAGE_FIRMWARE_OK) == 0);
+>>>  		}
+>>> +		break;
+>>> +	case ACB_ADAPTER_TYPE_D: {
+>>> +		struct MessageUnit_D *reg = acb->pmuD;
+>>> +		do {
+>>> +			firmware_state = readl(reg->outbound_msgaddr1);
+>>> +		} while ((firmware_state &
+>>> +			ARCMSR_ARC1214_MESSAGE_FIRMWARE_OK) == 0);
+>>> +		}
+>>> +		break;
+>>>  	}
+>>>  }
+>>>  
+>>> @@ -2918,6 +3522,35 @@ static void arcmsr_hbaC_request_device_m
+>>>  	return;
+>>>  }
+>>>  
+>>> +static void arcmsr_hbaD_request_device_map(struct AdapterControlBlock *acb)
+>>> +{
+>>> +	struct MessageUnit_D *reg = acb->pmuD;
+>>> +
+>>> +	if (unlikely(atomic_read(&acb->rq_map_token) == 0) ||
+>>> +		((acb->acb_flags & ACB_F_BUS_RESET) != 0) ||
+>>> +		((acb->acb_flags & ACB_F_ABORT) != 0)) {
+>>> +		mod_timer(&acb->eternal_timer,
+>>> +			jiffies + msecs_to_jiffies(6 * HZ));
+>>> +	} else {
+>>> +		acb->fw_flag = FW_NORMAL;
+>>> +		if (atomic_read(&acb->ante_token_value) ==
+>>> +			atomic_read(&acb->rq_map_token)) {
+>>> +			atomic_set(&acb->rq_map_token, 16);
+>>> +		}
+>>> +		atomic_set(&acb->ante_token_value,
+>>> +			atomic_read(&acb->rq_map_token));
+>>> +		if (atomic_dec_and_test(&acb->rq_map_token)) {
+>>> +			mod_timer(&acb->eternal_timer, jiffies +
+>>> +				msecs_to_jiffies(6 * HZ));
+>>> +			return;
+>>> +		}
+>>> +		writel(ARCMSR_INBOUND_MESG0_GET_CONFIG,
+>>> +			reg->inbound_msgaddr0);
+>>> +		mod_timer(&acb->eternal_timer, jiffies +
+>>> +			msecs_to_jiffies(6 * HZ));
+>>> +	}
+>>> +}
+>>> +
+>>>  static void arcmsr_request_device_map(unsigned long pacb)
+>>>  {
+>>>  	struct AdapterControlBlock *acb = (struct AdapterControlBlock *)pacb;
+>>> @@ -2933,6 +3566,10 @@ static void arcmsr_request_device_map(un
+>>>  		case ACB_ADAPTER_TYPE_C: {
+>>>  			arcmsr_hbaC_request_device_map(acb);
+>>>  		}
+>>> +		break;
+>>> +		case ACB_ADAPTER_TYPE_D:
+>>> +			arcmsr_hbaD_request_device_map(acb);
+>>> +		break;
+>>>  	}
+>>>  }
+>>>  
+>>> @@ -2970,6 +3607,19 @@ static void arcmsr_hbaC_start_bgrb(struc
+>>>  	}
+>>>  	return;
+>>>  }
+>>> +
+>>> +static void arcmsr_hbaD_start_bgrb(struct AdapterControlBlock *pACB)
+>>> +{
+>>> +	struct MessageUnit_D *pmu = pACB->pmuD;
+>>> +
+>>> +	pACB->acb_flags |= ACB_F_MSG_START_BGRB;
+>>> +	writel(ARCMSR_INBOUND_MESG0_START_BGRB, pmu->inbound_msgaddr0);
+>>> +	if (!arcmsr_hbaD_wait_msgint_ready(pACB)) {
+>>> +		pr_notice("arcmsr%d: wait 'start adapter "
+>>> +			"background rebulid' timeout\n", pACB->host->host_no);
+>>> +	}
+>>> +}
+>>> +
+>>>  static void arcmsr_start_adapter_bgrb(struct AdapterControlBlock *acb)
+>>>  {
+>>>  	switch (acb->adapter_type) {
+>>> @@ -2981,6 +3631,10 @@ static void arcmsr_start_adapter_bgrb(st
+>>>  		break;
+>>>  	case ACB_ADAPTER_TYPE_C:
+>>>  		arcmsr_hbaC_start_bgrb(acb);
+>>> +		break;
+>>> +	case ACB_ADAPTER_TYPE_D:
+>>> +		arcmsr_hbaD_start_bgrb(acb);
+>>> +		break;
+>>>  	}
+>>>  }
+>>>  
+>>> @@ -3026,6 +3680,29 @@ static void arcmsr_clear_doorbell_queue_
+>>>  				break;
+>>>  		}
+>>>  		}
+>>> +		break;
+>>> +	case ACB_ADAPTER_TYPE_D: {
+>>> +		struct MessageUnit_D *reg = acb->pmuD;
+>>> +		uint32_t outbound_doorbell, i;
+>>> +		/* empty doorbell Qbuffer if door bell ringed */
+>>> +		outbound_doorbell = readl(reg->outbound_doorbell);
+>>> +		writel(outbound_doorbell, reg->outbound_doorbell);
+>>> +		writel(ARCMSR_ARC1214_DRV2IOP_DATA_OUT_READ,
+>>> +			reg->inbound_doorbell);
+>>> +		for (i = 0; i < 200; i++) {
+>>> +			msleep(20);
+>>> +			outbound_doorbell = readl(reg->outbound_doorbell);
+>>> +			if (outbound_doorbell &
+>>> +				ARCMSR_ARC1214_IOP2DRV_DATA_WRITE_OK) {
+>>> +				writel(outbound_doorbell,
+>>> +					reg->outbound_doorbell);
+>>> +				writel(ARCMSR_ARC1214_DRV2IOP_DATA_OUT_READ,
+>>> +					reg->inbound_doorbell);
+>>> +			} else
+>>> +				break;
+>>> +		}
+>>> +		}
+>>> +		break;
+>>>  	}
+>>>  }
+>>>  
+>>> @@ -3056,6 +3733,7 @@ static void arcmsr_hardware_reset(struct
+>>>  	int i, count = 0;
+>>>  	struct MessageUnit_A __iomem *pmuA = acb->pmuA;
+>>>  	struct MessageUnit_C __iomem *pmuC = acb->pmuC;
+>>> +	struct MessageUnit_D *pmuD = acb->pmuD;
+>>>  
+>>>  	/* backup pci config data */
+>>>  	printk(KERN_NOTICE "arcmsr%d: executing hw bus reset .....\n", acb->host->host_no);
+>>> @@ -3076,6 +3754,8 @@ static void arcmsr_hardware_reset(struct
+>>>  			writel(0xD, &pmuC->write_sequence);
+>>>  		} while (((readl(&pmuC->host_diagnostic) & ARCMSR_ARC1880_DiagWrite_ENABLE) == 0) && (count < 5));
+>>>  		writel(ARCMSR_ARC1880_RESET_ADAPTER, &pmuC->host_diagnostic);
+>>> +	} else if ((acb->dev_id == 0x1214)) {
+>>> +		writel(0x20, pmuD->reset_request);
+>>>  	} else {
+>>>  		pci_write_config_byte(acb->pdev, 0x84, 0x20);
+>>>  	}
+>>> @@ -3272,6 +3952,66 @@ sleep:
+>>>  			}
+>>>  			break;
+>>>  		}
+>>> +		case ACB_ADAPTER_TYPE_D: {
+>>> +			if (acb->acb_flags & ACB_F_BUS_RESET) {
+>>> +				long timeout;
+>>> +				pr_notice("arcmsr: there is an bus reset"
+>>> +					" eh proceeding.......\n");
+>>> +				timeout = wait_event_timeout(wait_q, (acb->acb_flags
+>>> +					& ACB_F_BUS_RESET) == 0, 220 * HZ);
+>>> +				if (timeout)
+>>> +					return SUCCESS;
+>>> +			}
+>>> +			acb->acb_flags |= ACB_F_BUS_RESET;
+>>> +			if (!arcmsr_iop_reset(acb)) {
+>>> +				struct MessageUnit_D *reg;
+>>> +				reg = acb->pmuD;
+>>> +				arcmsr_hardware_reset(acb);
+>>> +				acb->acb_flags &= ~ACB_F_IOP_INITED;
+>>> +			nap:
+>>> +				ssleep(ARCMSR_SLEEPTIME);
+>>> +				if ((readl(reg->sample_at_reset) & 0x80) != 0) {
+>>> +					pr_err("arcmsr%d: waiting for "
+>>> +						"hw bus reset return, retry=%d\n",
+>>> +						acb->host->host_no, retry_count);
+>>> +					if (retry_count > ARCMSR_RETRYCOUNT) {
+>>> +						acb->fw_flag = FW_DEADLOCK;
+>>> +						pr_err("arcmsr%d: waiting for hw bus"
+>>> +							" reset return, "
+>>> +							"RETRY TERMINATED!!\n",
+>>> +							acb->host->host_no);
+>>> +						return FAILED;
+>>> +					}
+>>> +					retry_count++;
+>>> +					goto nap;
+>>> +				}
+>>> +				acb->acb_flags |= ACB_F_IOP_INITED;
+>>> +				/* disable all outbound interrupt */
+>>> +				intmask_org = arcmsr_disable_outbound_ints(acb);
+>>> +				arcmsr_get_firmware_spec(acb);
+>>> +				arcmsr_start_adapter_bgrb(acb);
+>>> +				arcmsr_clear_doorbell_queue_buffer(acb);
+>>> +				arcmsr_enable_outbound_ints(acb, intmask_org);
+>>> +				atomic_set(&acb->rq_map_token, 16);
+>>> +				atomic_set(&acb->ante_token_value, 16);
+>>> +				acb->fw_flag = FW_NORMAL;
+>>> +				mod_timer(&acb->eternal_timer,
+>>> +					jiffies + msecs_to_jiffies(6 * HZ));
+>>> +				acb->acb_flags &= ~ACB_F_BUS_RESET;
+>>> +				rtn = SUCCESS;
+>>> +				pr_err("arcmsr: scsi bus reset "
+>>> +					"eh returns with success\n");
+>>> +			} else {
+>>> +				acb->acb_flags &= ~ACB_F_BUS_RESET;
+>>> +				atomic_set(&acb->rq_map_token, 16);
+>>> +				atomic_set(&acb->ante_token_value, 16);
+>>> +				acb->fw_flag = FW_NORMAL;
+>>> +				mod_timer(&acb->eternal_timer,
+>>> +					jiffies + msecs_to_jiffies(6 * HZ));
+>>> +				rtn = SUCCESS;
+>>> +			}
+>>> +			break;
+>>> +		}
+>>>  	}
+>>>  	return rtn;
+>>>  }
+>>> @@ -3348,6 +4088,7 @@ static const char *arcmsr_info(struct Sc
+>>>  	case PCI_DEVICE_ID_ARECA_1280:
+>>>  		type = "SATA";
+>>>  		break;
+>>> +	case PCI_DEVICE_ID_ARECA_1214:
+>>>  	case PCI_DEVICE_ID_ARECA_1380:
+>>>  	case PCI_DEVICE_ID_ARECA_1381:
+>>>  	case PCI_DEVICE_ID_ARECA_1680:
+>>>
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
- 207c280ara67refedora PTE 8 0000001f2eclo4gin0: 60
-[   37.181156] Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
-[   37.181156] CPU: 2 PID: 0 Comm: swapper/2 Not tainted 3.17.0-rc2.x86_64-00044-g0bb0a5d #132
-[   37.181156] Hardware name: Microsoft Corporation Virtual Machine/Virtual Machine, BIOS 090006  05/23/2012
-[   37.181156] task: ffff8801fb27b9f0 ti: ffff8801fb310000 task.ti: ffff8801fb310000
-[   37.181156] RIP: 0010:[<ffffffff814e77dc>]  [<ffffffff814e77dc>] netvsc_start_xmit+0x6ac/0x7c0
-[   37.181156] RSP: 0018:ffff880206c43960  EFLAGS: 00010246
-[   37.181156] RAX: 0000000000000000 RBX: ffff8801f2e9f2d8 RCX: 000000000007f000
-[   37.181156] RDX: 000000000007da20 RSI: 0000000000034f70 RDI: 000000000007efc8
-[   37.181156] RBP: ffff880206c439a8 R08: 0000000000000000 R09: 0000000000000000
-[   37.181156] R10: 0000000000000001 R11: 0000000000000001 R12: 0000000000000000
-[   37.181156] R13: ffff8801f2ec4000 R14: ffff8800f1335680 R15: ffff8801f2e9c4ea
-[   37.181156] FS:  0000000000000000(0000) GS:ffff880206c40000(0000) knlGS:0000000000000000
-[   37.181156] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[   37.181156] CR2: ffff8801f2ec4068 CR3: 0000000001c0e000 CR4: 00000000000406e0
-[   37.181156] Stack:
-[   37.181156]  ffff8801f2e9f344 ffffffff00000062 ffff8800f1335680 0000000081d23300
-[   37.181156]  0000000000000062 ffff8800f1335680 0000000400014883 ffff8800ecc56fa0
-[   37.181156]  ffff8801f2ec4000 ffff880206c43a00 ffffffff815ce458 ffff8800f13311c8
-[   37.181156] Call Trace:
-[   37.181156]  <IRQ>
-[   37.181156]  [<ffffffff815ce458>] dev_hard_start_xmit+0x348/0x630
-[   37.181156]  [<ffffffff815ef5aa>] sch_direct_xmit+0x7a/0x290
-
-That's all I got - all my consoles froze and not even sysrq worked any more.
-
-Here's another splat that also just happened:
-[  OK  ] Started NTP client/server.
-[  OK  ] Started Login Service.
-[   32.558951] hv_netvsc vmbus_0_15: net device safe to remove
-[   32.599919] hv_netvsc: hv_netvsc channel opened successfully
-[   33.728294] hv_netvsc vmbus_0_15: Send section size: 6144, Section count:2560
-[   33.782371] hv_netvsc vmbus_0_15: Device MAC 00:15:5d:6f:02:a5 link state up
-
-Fedora release 20 (Heisenbug)
-Kernel 3.17.0-rc2.x86_64-00044-g0bb0a5d on an x86_64 (ttyS0)
-
-ararefedora login: [   35.301491] BUG: unable to handle kernel paging request at ffff8800ef0df973
-[   35.302392] IP: [<ffffffff814e701d>] netvsc_select_queue+0x3d/0x150
-[   35.302392] PGD 2db0067 PUD 2075be067 PMD 207445067 PTE 80000000ef0df060
-[   35.302392] Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
-[   35.302392] CPU: 1 PID: 723 Comm: arping Not tainted 3.17.0-rc2.x86_64-00044-g0bb0a5d #132
-[   35.302392] Hardware name: Microsoft Corporation Virtual Machine/Virtual Machine, BIOS 090006  05/23/2012
-[   35.302392] task: ffff8800eea68000 ti: ffff8801f5af0000 task.ti: ffff8801f5af0000
-[   35.302392] RIP: 0010:[<ffffffff814e701d>]  [<ffffffff814e701d>] netvsc_select_queue+0x3d/0x150
-[   35.302392] RSP: 0018:ffff8801f5af3c60  EFLAGS: 00010206
-[   35.302392] RAX: 0000000000000000 RBX: ffff8800f0c49160 RCX: 000000000000ffff
-[   35.302392] RDX: ffff8800ef0cf968 RSI: ffff8801fa42a1c0 RDI: ffff8800f0c49160
-[   35.302392] RBP: ffff8801f5af3c88 R08: 000000000000002a R09: 0000000000000000
-[   35.302392] R10: ffff8801f372b3d8 R11: 000000000000000a R12: ffff8801fa42a1c0
-[   35.302392] R13: 0000000000000000 R14: ffff8801f3832e68 R15: ffff8801fa42a1c0
-[   35.302392] FS:  00007f3359e96740(0000) GS:ffff880206c20000(0000) knlGS:0000000000000000
-[   36.090561] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[   36.090561] CR2: ffff8800ef0df973 CR3: 00000000ef1fe000 CR4: 00000000000406e0
-[   36.090561] Stack:
-[   36.090561]  ffffffff8167f591 ffff8800f0c49160 000000000000001c 0000000000000000
-[   36.090561]  ffff8801f3832e68 ffff8801f5af3d48 ffffffff816832fc ffff8800eea68740
-[   36.090561]  0000000000000000 ffff8801f5af3d68 0000000000000046 000000000000001c
-[   36.090561] Call Trace:
-[   36.090561]  [<ffffffff8167f591>] ? packet_pick_tx_queue+0x31/0xa0
-[   36.090561]  [<ffffffff816832fc>] packet_sendmsg+0xc1c/0xdd0
-[   36.090561]  [<ffffffff810bd106>] ? lock_release_non_nested+0xc6/0x330
-[   36.090561]  [<ffffffff815b42a8>] sock_sendmsg+0x88/0xb0
-[   36.090561]  [<ffffffff81185443>] ? might_fault+0xa3/0xb0
-[   36.090561]  [<ffffffff811853fa>] ? might_fault+0x5a/0xb0
-[   36.090561]  [<ffffffff815b43de>] SYSC_sendto+0x10e/0x150
-[   36.090561]  [<ffffffff811853fa>] ? might_fault+0x5a/0xb0
-[   36.090561]  [<ffffffff816a3215>] ? sysret_check+0x22/0x5d
-[   36.090561]  [<ffffffff810b97fd>] ? trace_hardirqs_on_caller+0x17d/0x210
-[   36.090561]  [<ffffffff8139c09e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[   36.090561]  [<ffffffff815b53be>] SyS_sendto+0xe/0x10
-[   36.090561]  [<ffffffff816a31e9>] system_call_fastpath+0x16/0x1b
-[   36.090561] Code: 00 4d 85 d2 0f 84 1c 01 00 00 44 8b 9f 8c 03 00 00 31 c0 41 83 fb 01 0f 86 1b 01 00 00 0f b7 8e b4 00 00 00 48 8b 96 c0 00 00 00 <66> 83 7c 0a 0c 08 0f 85 01 01 00 00 55 48 89 e5 41 55 41 54 53
-[   36.090561] RIP  [<ffffffff814e701d>] netvsc_select_queue+0x3d/0x150
-[   36.090561]  RSP <ffff8801f5af3c60>
-[   36.090561] CR2: ffff8800ef0df973
-[   36.090561] ---[ end trace 7e294eb7f2c54206 ]---
-[   36.090561] BUG: sleeping function called from invalid context at kernel/locking/rwsem.c:41
-[   36.090561] in_atomic(): 0, irqs_disabled(): 1, pid: 723, name: arping
-[   36.090561] INFO: lockdep is turned off.
-[   36.090561] irq event stamp: 4692
-[   36.090561] hardirqs last  enabled at (4691): [<ffffffff81698bf4>] __slab_alloc+0x50b/0x576
-[   36.090561] hardirqs last disabled at (4692): [<ffffffff816a5266>] error_sti+0x5/0x6
-[   36.090561] softirqs last  enabled at (4542): [<ffffffff815cecf0>] __dev_queue_xmit+0x5b0/0x690
-[   36.090561] softirqs last disabled at (4508): [<ffffffff815ce798>] __dev_queue_xmit+0x58/0x690
-[   36.090561] CPU: 1 PID: 723 Comm: arping Tainted: G      D        3.17.0-rc2.x86_64-00044-g0bb0a5d #132
-[   36.090561] Hardware name: Microsoft Corporation Virtual Machine/Virtual Machine, BIOS 090006  05/23/2012
-[   36.090561]  0000000000000046 ffff8801f5af38e0 ffffffff8169a64b ffff8800eea68000
-[   36.090561]  ffff8801f5af38f8 ffffffff8109ec65 ffff8801f3bc5c18 ffff8801f5af3918
-[   36.090561]  ffffffff816a0c84 ffffffff81090f38 ffff8800eea68000 ffff8801f5af3938
-[   36.090561] Call Trace:
-[   36.090561]  [<ffffffff8169a64b>] dump_stack+0x4d/0x66
-[   36.090561]  [<ffffffff8109ec65>] __might_sleep+0x115/0x120
-[   36.090561]  [<ffffffff816a0c84>] down_read+0x24/0x70
-[   36.090561]  [<ffffffff81090f38>] ? __validate_process_creds+0xd8/0xf0
-[   36.090561]  [<ffffffff8107f9d4>] exit_signals+0x24/0x140
-[   36.090561]  [<ffffffff810737d9>] do_exit+0x129/0xa20
-[   36.090561]  [<ffffffff810c4bcc>] ? kmsg_dump+0xfc/0x110
-[   36.090561]  [<ffffffff810c4af5>] ? kmsg_dump+0x25/0x110
-[   36.090561]  [<ffffffff81006348>] oops_end+0xa8/0xc0
-[   36.090561]  [<ffffffff816951c8>] no_context+0x322/0x36b
-[   36.090561]  [<ffffffff810b97fd>] ? trace_hardirqs_on_caller+0x17d/0x210
-[   36.090561]  [<ffffffff816953dc>] __bad_area_nosemaphore+0x1cb/0x1e8
-[   36.090561]  [<ffffffff810b97fd>] ? trace_hardirqs_on_caller+0x17d/0x210
-[   36.090561]  [<ffffffff8169540c>] bad_area_nosemaphore+0x13/0x15
-[   36.090561]  [<ffffffff8104040e>] __do_page_fault+0x1ee/0x4f0
-[   36.090561]  [<ffffffff815bccae>] ? __alloc_skb+0x4e/0x240
-[   36.090561]  [<ffffffff810bd106>] ? lock_release_non_nested+0xc6/0x330
-[   36.090561]  [<ffffffff8139c0dd>] ? trace_hardirqs_off_thunk+0x3a/0x3c
-[   36.090561]  [<ffffffff81040762>] do_page_fault+0x22/0x30
-[   36.090561]  [<ffffffff816a5048>] page_fault+0x28/0x30
-[   36.090561]  [<ffffffff814e701d>] ? netvsc_select_queue+0x3d/0x150
-[   36.090561]  [<ffffffff8167f591>] ? packet_pick_tx_queue+0x31/0xa0
-[   36.090561]  [<ffffffff816832fc>] packet_sendmsg+0xc1c/0xdd0
-[   36.090561]  [<ffffffff810bd106>] ? lock_release_non_nested+0xc6/0x330
-[   36.090561]  [<ffffffff815b42a8>] sock_sendmsg+0x88/0xb0
-[   36.090561]  [<ffffffff81185443>] ? might_fault+0xa3/0xb0
-[   36.090561]  [<ffffffff811853fa>] ? might_fault+0x5a/0xb0
-[   36.090561]  [<ffffffff815b43de>] SYSC_sendto+0x10e/0x150
-[   36.090561]  [<ffffffff811853fa>] ? might_fault+0x5a/0xb0
-[   36.090561]  [<ffffffff816a3215>] ? sysret_check+0x22/0x5d
-[   36.090561]  [<ffffffff810b97fd>] ? trace_hardirqs_on_caller+0x17d/0x210
-[   36.090561]  [<ffffffff8139c09e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[   36.090561]  [<ffffffff815b53be>] SyS_sendto+0xe/0x10
-[   36.090561]  [<ffffffff816a31e9>] system_call_fastpath+0x16/0x1b
-
-We can spin these off into a different thread if that would be helpful.
-
-> [   34.628072] hv_netvsc vmbus_0_15: net device safe to remove
-> [   34.676573] hv_netvsc: hv_netvsc channel opened successfully
-> [   34.860292] hv_netvsc vmbus_0_15 eth1: unable to establish send buffer's gpadl
-> [   34.948983] hv_netvsc vmbus_0_15 eth1: unable to connect to NetVSP - 4
-> 
-> Here the 4 is just HV_STATUS_INVALID_ALIGNMENT -- it should be fixed
-> by the patch.
-
-I've double checked and I don't see that message any more so I must have
-been mistaken.
-
-> > That is good to hear. I was under the impression that this issue would be
-> > resolved with all the cleanup we have done. The last patch-set I posted
-> > earlier today has the fix for vmbus_open  bug that Dexuan had identified.
-> > 
-> > If you could try with the BUG_ON elimination patch-set I sent out earlier
-> > today with the fix in hv.c that I had sent that would be great.
-
-I've switched to it (see above) and a number of issues have been resolved.
-
-> > > How come previous alignment efforts weren't working out?
-> I'm not sure.
-> If we trust the hypervisor, I would guess in hv_post_message()
-> 1) We'd better add "aligned_msg->reserved = 0;"
-> 2) Should we make sure  "aligned_msg->payload_size % 8 == 0"? IMO
->    aligned_msg->payload is an array of 8-byte.
-
-In that case why would payload_size not be a multiple of 8 - can it
-change due to debug padding? If so wouldn't its start have had to be
-misaligned?
-
--- 
-Sitsofe | http://sucs.org/~sits/
