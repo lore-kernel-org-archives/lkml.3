@@ -1,113 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751673AbaH1QLO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 12:11:14 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37988 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750820AbaH1QLM (ORCPT
+	id S1751006AbaH1QP5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 12:15:57 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:47525 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750794AbaH1QP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 12:11:12 -0400
-Date: Thu, 28 Aug 2014 17:10:25 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Matti Vaittinen <matti.vaittinen@nsn.com>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "jic23@kernel.org" <jic23@kernel.org>,
-        "arno@natisbad.org" <arno@natisbad.org>,
-        "jgunthorpe@obsidianresearch.com" <jgunthorpe@obsidianresearch.com>,
-        "san@rosetechnology.dk" <san@rosetechnology.dk>,
-        "hs@denx.de" <hs@denx.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        Sverdlin Alexander <alexander.sverdlin@nsn.com>
-Subject: Re: [PATCH] rtc: ds1307: add trickle charger device tree binding
-Message-ID: <20140828161025.GO14650@leverpostej>
-References: <20140828124237.GA29102@fi-ourus-dhcp00977.emea.nsn-net.net>
- <20140828125915.GJ14650@leverpostej>
- <20140828155157.GB23677@roeck-us.net>
+	Thu, 28 Aug 2014 12:15:56 -0400
+Date: Thu, 28 Aug 2014 09:15:51 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Colin Cross <ccross@android.com>, kernel-team@android.com,
+        Rob Herring <robherring2@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Nicolas Pitre <nico@linaro.org>
+Subject: Re: [PATCH v10 03/19] arm: fiq: Replace default FIQ handler
+Message-ID: <20140828161551.GC5001@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1408369264-14242-1-git-send-email-daniel.thompson@linaro.org>
+ <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org>
+ <1408466769-20004-4-git-send-email-daniel.thompson@linaro.org>
+ <20140819173742.GG30401@n2100.arm.linux.org.uk>
+ <53F39377.1070308@linaro.org>
+ <20140828150112.GD30401@n2100.arm.linux.org.uk>
+ <53FF50B1.20009@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140828155157.GB23677@roeck-us.net>
+In-Reply-To: <53FF50B1.20009@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14082816-1542-0000-0000-0000045DD4FD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 28, 2014 at 04:51:57PM +0100, Guenter Roeck wrote:
-> On Thu, Aug 28, 2014 at 01:59:15PM +0100, Mark Rutland wrote:
-> > On Thu, Aug 28, 2014 at 01:42:44PM +0100, Matti Vaittinen wrote:
-> > > Patch adding support for specifying trickle charger setup from device
-> > > tree. Patch is based on linux-next tree.
-> > > 
-> > > 
-> > > Some DS13XX devices have "trickle chargers". Introduce a device tree binding
-> > > for specifying the setup and register values.
-> > > 
-> > > Signed-off-by: Matti Vaittinen <matti.vaittinen@nsn.com>
-> > > ---
-> > >  .../devicetree/bindings/i2c/trivial-devices.txt    |  1 -
-> > >  .../devicetree/bindings/rtc/dallas,ds1339.txt      | 19 ++++++++++
-> > >  drivers/rtc/rtc-ds1307.c                           | 44 ++++++++++++++++++++--
-> > >  3 files changed, 59 insertions(+), 5 deletions(-)
-> > >  create mode 100644 Documentation/devicetree/bindings/rtc/dallas,ds1339.txt
-> > > 
-> > > diff --git a/Documentation/devicetree/bindings/i2c/trivial-devices.txt b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-> > > index 6af570e..e9206a4 100644
-> > > --- a/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-> > > +++ b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-> > > @@ -35,7 +35,6 @@ catalyst,24c32		i2c serial eeprom
-> > >  cirrus,cs42l51		Cirrus Logic CS42L51 audio codec
-> > >  dallas,ds1307		64 x 8, Serial, I2C Real-Time Clock
-> > >  dallas,ds1338		I2C RTC with 56-Byte NV RAM
-> > > -dallas,ds1339		I2C Serial Real-Time Clock
-> > >  dallas,ds1340		I2C RTC with Trickle Charger
-> > >  dallas,ds1374		I2C, 32-Bit Binary Counter Watchdog RTC with Trickle Charger and Reset Input/Output
-> > >  dallas,ds1631		High-Precision Digital Thermometer
-> > > diff --git a/Documentation/devicetree/bindings/rtc/dallas,ds1339.txt b/Documentation/devicetree/bindings/rtc/dallas,ds1339.txt
-> > > new file mode 100644
-> > > index 0000000..9faf40e
-> > > --- /dev/null
-> > > +++ b/Documentation/devicetree/bindings/rtc/dallas,ds1339.txt
-> > > @@ -0,0 +1,19 @@
-> > > +* Dallas DS1339		I2C Serial Real-Time Clock
-> > > +
-> > > +Required properties:
-> > > +- compatible: Should contain "dallas,ds1339".
-> > > +- reg: I2C address for chip
-> > > +
-> > > +Optional properties:
-> > > +- trickle_setup : Used Trickle Charger configuration,
-> > > +        corresponding to 5 lowest bits in trickle charger register.
+On Thu, Aug 28, 2014 at 04:54:25PM +0100, Daniel Thompson wrote:
+> On 28/08/14 16:01, Russell King - ARM Linux wrote:
+> > On Tue, Aug 19, 2014 at 07:12:07PM +0100, Daniel Thompson wrote:
+> >> On 19/08/14 18:37, Russell King - ARM Linux wrote:
+> >>> On Tue, Aug 19, 2014 at 05:45:53PM +0100, Daniel Thompson wrote:
+> >>>> +int register_fiq_nmi_notifier(struct notifier_block *nb)
+> >>>> +{
+> >>>> +	return atomic_notifier_chain_register(&fiq_nmi_chain, nb);
+> >>>> +}
+> >>>> +
+> >>>> +asmlinkage void __exception_irq_entry fiq_nmi_handler(struct pt_regs *regs)
+> >>>> +{
+> >>>> +	struct pt_regs *old_regs = set_irq_regs(regs);
+> >>>> +
+> >>>> +	nmi_enter();
+> >>>> +	atomic_notifier_call_chain(&fiq_nmi_chain, (unsigned long)regs, NULL);
+> >>>> +	nmi_exit();
+> >>>> +	set_irq_regs(old_regs);
+> >>>> +}
+> >>>
+> >>> Really not happy with this.  What happens if a FIQ occurs while we're
+> >>> inside register_fiq_nmi_notifier() - more specifically inside
+> >>> atomic_notifier_chain_register() ?
+> >>
+> >> Should depend on which side of the rcu update we're on.
 > > 
-> The value is provided via platform data, so it is platform specific
-> and presumably needs to be configurable. I did, however, not find
-> a single in-kernel driver which is actually setting it.
-> So this is a good question.
+> > I just asked Paul McKenney, our RCU expert... essentially, yes, RCU
+> > stuff itself is safe in this context.  However, RCU stuff can call into
+> > lockdep if lockdep is configured, and there are questions over lockdep.
+> 
+> Thanks for following this up.
+> 
+> I originally formed the opinion RCU was safe from FIQ because it is also
+> used to manage the NMI notification handlers for x86
+> (register_nmi_handler) and I understood the runtime constraints on FIQ
+> to be very similar.
+> 
+> Note that x86 manages the notifiers itself so it uses
+> list_for_each_entry_rcu() rather atomic_notifier_call_chain() but
+> nevertheless I think this boils down to the same thing w.r.t. safety
+> concerns.
+> 
+> 
+> > There's some things which can be done to reduce the lockdep exposure
+> > to it, such as ensuring that rcu_read_lock() is first called outside
+> > of FIQ context.
+> 
+> lockdep is automatically disabled by calling nmi_enter() so all the
+> lockdep calls should end up following the early exit path based on
+> current->lockdep_recursion.
 
-I'm uncomfortable adding a field we don't understand to DT.
+Ah, that was what I was missing.  Then the notification should be
+safe from NMI, so have at it!  ;-)
 
-Is there any publicly-available documentation for the device?
+							Thanx, Paul
 
-> > s/_/-/ in property names please.
+> > There's concerns with whether either printk() in check_flags() could
+> > be reached too (flags there should always indicate that IRQs were
+> > disabled, so that reduces down to a question about just the first
+> > printk() there.)
 > > 
-> > What do these bits do? is there any documentation available?
+> > There's also the very_verbose() stuff for RCU lockdep classes which
+> > Paul says must not be enabled.
 > > 
-> > Why do they need to be in the DT?
-> > 
-> > Why do we not have a higher-level description?
-> > 
-> > > +- trickle_reg   : Trickle charger register address. Defaults to 0x10 for ds1339.
-> > 
-> > Is this expected to change? Why does this need to be in the DT?
-> > 
-> A quick look into the code suggests that this is a chip specific register,
-> and the register address is set by the driver depending on the chip type.
-> I don't think it should be configurable via dt.
+> > Lastly, Paul isn't a lockdep expert, but he sees nothing that prevents
+> > lockdep doing the deadlock checking as a result of the above call.
+> >
+> > So... this coupled with my feeling that notifiers make it too easy for
+> > unreviewed code to be hooked into this path, I'm fairly sure that we
+> > don't want to be calling atomic notifier chains from FIQ context.
+> 
+> 
+> 
 
-Ok.
-
-Cheers,
-Mark.
