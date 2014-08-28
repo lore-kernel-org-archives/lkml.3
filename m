@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753090AbaH1TGr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 15:06:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32849 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752570AbaH1SgO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752128AbaH1SgO (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 28 Aug 2014 14:36:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32835 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752121AbaH1Sfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:35:53 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Jiri Slaby <jslaby@suse.cz>
 Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 26/97] mm: get rid of unnecessary pageblock scanning in setup_zone_migrate_reserve
-Date: Thu, 28 Aug 2014 19:34:34 +0100
-Message-Id: <1409250945-30874-27-git-send-email-mgorman@suse.de>
+Subject: [PATCH 06/97] hugetlb: ensure hugepage access is denied if hugepages are not supported
+Date: Thu, 28 Aug 2014 19:34:14 +0100
+Message-Id: <1409250945-30874-7-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
 References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
@@ -20,110 +20,144 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
 
-commit 943dca1a1fcbccb58de944669b833fd38a6c809b upstream.
+commit 457c1b27ed56ec472d202731b12417bff023594a upstream.
 
-Yasuaki Ishimatsu reported memory hot-add spent more than 5 _hours_ on
-9TB memory machine since onlining memory sections is too slow.  And we
-found out setup_zone_migrate_reserve spent >90% of the time.
+Currently, I am seeing the following when I `mount -t hugetlbfs /none
+/dev/hugetlbfs`, and then simply do a `ls /dev/hugetlbfs`.  I think it's
+related to the fact that hugetlbfs is properly not correctly setting
+itself up in this state?:
 
-The problem is, setup_zone_migrate_reserve scans all pageblocks
-unconditionally, but it is only necessary if the number of reserved
-block was reduced (i.e.  memory hot remove).
+  Unable to handle kernel paging request for data at address 0x00000031
+  Faulting instruction address: 0xc000000000245710
+  Oops: Kernel access of bad area, sig: 11 [#1]
+  SMP NR_CPUS=2048 NUMA pSeries
+  ....
 
-Moreover, maximum MIGRATE_RESERVE per zone is currently 2.  It means
-that the number of reserved pageblocks is almost always unchanged.
+In KVM guests on Power, in a guest not backed by hugepages, we see the
+following:
 
-This patch adds zone->nr_migrate_reserve_block to maintain the number of
-MIGRATE_RESERVE pageblocks and it reduces the overhead of
-setup_zone_migrate_reserve dramatically.  The following table shows time
-of onlining a memory section.
+  AnonHugePages:         0 kB
+  HugePages_Total:       0
+  HugePages_Free:        0
+  HugePages_Rsvd:        0
+  HugePages_Surp:        0
+  Hugepagesize:         64 kB
 
-  Amount of memory     | 128GB | 192GB | 256GB|
-  ---------------------------------------------
-  linux-3.12           |  23.9 |  31.4 | 44.5 |
-  This patch           |   8.3 |   8.3 |  8.6 |
-  Mel's proposal patch |  10.9 |  19.2 | 31.3 |
-  ---------------------------------------------
-                                   (millisecond)
+HPAGE_SHIFT == 0 in this configuration, which indicates that hugepages
+are not supported at boot-time, but this is only checked in
+hugetlb_init().  Extract the check to a helper function, and use it in a
+few relevant places.
 
-  128GB : 4 nodes and each node has 32GB of memory
-  192GB : 6 nodes and each node has 32GB of memory
-  256GB : 8 nodes and each node has 32GB of memory
+This does make hugetlbfs not supported (not registered at all) in this
+environment.  I believe this is fine, as there are no valid hugepages
+and that won't change at runtime.
 
-  (*1) Mel proposed his idea by the following threads.
-       https://lkml.org/lkml/2013/10/30/272
-
-[akpm@linux-foundation.org: tweak comment]
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Reported-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Tested-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: Mel Gorman <mgorman@suse.de>
+[akpm@linux-foundation.org: use pr_info(), per Mel]
+[akpm@linux-foundation.org: fix build when HPAGE_SHIFT is undefined]
+Signed-off-by: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Cc: Randy Dunlap <rdunlap@infradead.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/mmzone.h |  6 ++++++
- mm/page_alloc.c        | 13 +++++++++++++
- 2 files changed, 19 insertions(+)
+ fs/hugetlbfs/inode.c    |  5 +++++
+ include/linux/hugetlb.h | 10 ++++++++++
+ mm/hugetlb.c            | 13 +++++++++++++
+ 3 files changed, 28 insertions(+)
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 5648290..4719985 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -494,6 +494,12 @@ struct zone {
- 	unsigned long		managed_pages;
+diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
+index d19b30a..a4a8ed5 100644
+--- a/fs/hugetlbfs/inode.c
++++ b/fs/hugetlbfs/inode.c
+@@ -1017,6 +1017,11 @@ static int __init init_hugetlbfs_fs(void)
+ 	int error;
+ 	int i;
  
- 	/*
-+	 * Number of MIGRATE_RESEVE page block. To maintain for just
-+	 * optimization. Protected by zone->lock.
-+	 */
-+	int			nr_migrate_reserve_block;
++	if (!hugepages_supported()) {
++		pr_info("hugetlbfs: disabling because there are no supported hugepage sizes\n");
++		return -ENOTSUPP;
++	}
 +
+ 	error = bdi_init(&hugetlbfs_backing_dev_info);
+ 	if (error)
+ 		return error;
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index 5214ff6..511b1a0 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -396,6 +396,16 @@ static inline int hugepage_migration_support(struct hstate *h)
+ #endif
+ }
+ 
++static inline bool hugepages_supported(void)
++{
 +	/*
- 	 * rarely used fields:
- 	 */
- 	const char		*name;
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 3078eaf..c34b582 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -3934,6 +3934,7 @@ static void setup_zone_migrate_reserve(struct zone *zone)
- 	struct page *page;
- 	unsigned long block_migratetype;
- 	int reserve;
-+	int old_reserve;
- 
- 	/*
- 	 * Get the start pfn, end pfn and the number of blocks to reserve
-@@ -3955,6 +3956,12 @@ static void setup_zone_migrate_reserve(struct zone *zone)
- 	 * future allocation of hugepages at runtime.
- 	 */
- 	reserve = min(2, reserve);
-+	old_reserve = zone->nr_migrate_reserve_block;
++	 * Some platform decide whether they support huge pages at boot
++	 * time. On these, such as powerpc, HPAGE_SHIFT is set to 0 when
++	 * there is no such support
++	 */
++	return HPAGE_SHIFT != 0;
++}
 +
-+	/* When memory hot-add, we almost always need to do nothing */
-+	if (reserve == old_reserve)
+ #else	/* CONFIG_HUGETLB_PAGE */
+ struct hstate {};
+ #define alloc_huge_page_node(h, nid) NULL
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 92e103b..2814ca8 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2114,6 +2114,9 @@ static int hugetlb_sysctl_handler_common(bool obey_mempolicy,
+ 	unsigned long tmp;
+ 	int ret;
+ 
++	if (!hugepages_supported())
++		return -ENOTSUPP;
++
+ 	tmp = h->max_huge_pages;
+ 
+ 	if (write && h->order >= MAX_ORDER)
+@@ -2167,6 +2170,9 @@ int hugetlb_overcommit_handler(struct ctl_table *table, int write,
+ 	unsigned long tmp;
+ 	int ret;
+ 
++	if (!hugepages_supported())
++		return -ENOTSUPP;
++
+ 	tmp = h->nr_overcommit_huge_pages;
+ 
+ 	if (write && h->order >= MAX_ORDER)
+@@ -2192,6 +2198,8 @@ out:
+ void hugetlb_report_meminfo(struct seq_file *m)
+ {
+ 	struct hstate *h = &default_hstate;
++	if (!hugepages_supported())
 +		return;
-+	zone->nr_migrate_reserve_block = reserve;
+ 	seq_printf(m,
+ 			"HugePages_Total:   %5lu\n"
+ 			"HugePages_Free:    %5lu\n"
+@@ -2208,6 +2216,8 @@ void hugetlb_report_meminfo(struct seq_file *m)
+ int hugetlb_report_node_meminfo(int nid, char *buf)
+ {
+ 	struct hstate *h = &default_hstate;
++	if (!hugepages_supported())
++		return 0;
+ 	return sprintf(buf,
+ 		"Node %d HugePages_Total: %5u\n"
+ 		"Node %d HugePages_Free:  %5u\n"
+@@ -2222,6 +2232,9 @@ void hugetlb_show_meminfo(void)
+ 	struct hstate *h;
+ 	int nid;
  
- 	for (pfn = start_pfn; pfn < end_pfn; pfn += pageblock_nr_pages) {
- 		if (!pfn_valid(pfn))
-@@ -3992,6 +3999,12 @@ static void setup_zone_migrate_reserve(struct zone *zone)
- 				reserve--;
- 				continue;
- 			}
-+		} else if (!old_reserve) {
-+			/*
-+			 * At boot time we don't need to scan the whole zone
-+			 * for turning off MIGRATE_RESERVE.
-+			 */
-+			break;
- 		}
- 
- 		/*
++	if (!hugepages_supported())
++		return;
++
+ 	for_each_node_state(nid, N_MEMORY)
+ 		for_each_hstate(h)
+ 			pr_info("Node %d hugepages_total=%u hugepages_free=%u hugepages_surp=%u hugepages_size=%lukB\n",
 -- 
 1.8.4.5
 
