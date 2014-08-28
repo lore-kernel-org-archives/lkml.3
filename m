@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751111AbaH1NEW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 09:04:22 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:48522 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741AbaH1NEV (ORCPT
+	id S1751438AbaH1NE4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 09:04:56 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:41431 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748AbaH1NEz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 09:04:21 -0400
-Message-ID: <53FF28BE.60502@windriver.com>
-Date: Thu, 28 Aug 2014 09:03:58 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        "David S. Miller" <davem@davemloft.net>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] Remove various orphaned header files
-References: <1409226274-3202-1-git-send-email-linux@rasmusvillemoes.dk>
-In-Reply-To: <1409226274-3202-1-git-send-email-linux@rasmusvillemoes.dk>
-Content-Type: text/plain; charset="windows-1252"
+	Thu, 28 Aug 2014 09:04:55 -0400
+Message-ID: <1409231089.10292.0.camel@phoenix>
+Subject: [PATCH] regulator: rk808: Fix memory leak
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Chris Zhong <zyw@rock-chips.com>, Zhang Qing <zhanqging@rock-chips.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 28 Aug 2014 21:04:49 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.56.57]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-08-28 07:44 AM, Rasmus Villemoes wrote:
-> These four files are not included anywhere, and seem to be accidental
-> leftovers from past cleanups (see the individual commit messages).
-> 
-> Rasmus Villemoes (4):
->   include/linux/cycx_x25.h: Remove unused header
->   include/linux/i82593.h: Remove unused header
->   include/linux/phonedev.h: Remove unused header
->   include/rxrpc/types.h: Remove unused header
+The memory allocated in rk808_regulator_probe() needs to be freed when the
+module is unloaded. Thus pass &pdev->dev rather than &client->dev to
+devm_kzalloc.
 
-Strictly speaking the phonedev.h and types.h were not orphaned
-by net-next commits, but I suppose it is no harm if they go
-via net-next vs. say 3 in Greg's staging and 4 in akpm's tree.
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/rk808-regulator.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I double checked that they are not used anywhere with
-git grep, so...
+diff --git a/drivers/regulator/rk808-regulator.c b/drivers/regulator/rk808-regulator.c
+index f42952e..0d11df1 100644
+--- a/drivers/regulator/rk808-regulator.c
++++ b/drivers/regulator/rk808-regulator.c
+@@ -342,7 +342,7 @@ static int rk808_regulator_probe(struct platform_device *pdev)
+ 	int ret = 0;
+ 
+ 	if (!pdata) {
+-		pdata = devm_kzalloc(&client->dev, sizeof(*pdata), GFP_KERNEL);
++		pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
+ 		if (!pdata)
+ 			return -ENOMEM;
+ 	}
+-- 
+1.9.1
 
-Reviewed-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-Thanks,
-Paul.
---
 
-> 
->  include/linux/cycx_x25.h | 125 --------------------------
->  include/linux/i82593.h   | 229 -----------------------------------------------
->  include/linux/phonedev.h |  25 ------
->  include/rxrpc/types.h    |  41 ---------
->  4 files changed, 420 deletions(-)
->  delete mode 100644 include/linux/cycx_x25.h
->  delete mode 100644 include/linux/i82593.h
->  delete mode 100644 include/linux/phonedev.h
->  delete mode 100644 include/rxrpc/types.h
-> 
