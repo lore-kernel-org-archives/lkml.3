@@ -1,140 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754410AbaH1Sva (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:51:30 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39871 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753516AbaH1Sv0 (ORCPT
+	id S1754432AbaH1Svo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 14:51:44 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:49676 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752168AbaH1Svm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:51:26 -0400
-Date: Thu, 28 Aug 2014 19:50:39 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Vivek Gautam <gautam.vivek@samsung.com>
-Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "balbi@ti.com" <balbi@ti.com>, "kishon@ti.com" <kishon@ti.com>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>
-Subject: Re: [PATCH 2/5] phy: exynos5-usbdrd: Add pipe-clk and utmi-clk
- support
-Message-ID: <20140828185039.GB18464@leverpostej>
-References: <1409212920-28526-1-git-send-email-gautam.vivek@samsung.com>
- <1409212920-28526-3-git-send-email-gautam.vivek@samsung.com>
+	Thu, 28 Aug 2014 14:51:42 -0400
+Message-ID: <53FF7A3A.7060607@kernel.dk>
+Date: Thu, 28 Aug 2014 12:51:38 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409212920-28526-3-git-send-email-gautam.vivek@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Will Deacon <will.deacon@arm.com>, rusty@rustcorp.com.au, tj@kernel.org,
+        hch@lst.de
+CC: linux-kernel@vger.kernel.org
+Subject: Re: 3.17-rc2 percpu-ref oops with virtblk remove
+References: <20140828185046.GR22580@arm.com>
+In-Reply-To: <20140828185046.GR22580@arm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 28, 2014 at 09:01:57AM +0100, Vivek Gautam wrote:
-> Exynos7 SoC has now separate gate control for 125MHz pipe3 phy
-> clock, as well as 60MHz utmi phy clock.
-> So get the same and control in the phy-exynos5-usbdrd driver.
+On 08/28/2014 12:50 PM, Will Deacon wrote:
+> Hi guys,
 > 
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> ---
->  .../devicetree/bindings/phy/samsung-phy.txt        |    4 ++++
->  drivers/phy/phy-exynos5-usbdrd.c                   |   24 ++++++++++++++++++++
->  2 files changed, 28 insertions(+)
+> I've been debugging an issue triggered by virtio-blk and vfio on an
+> arm64 system running 3.17-rc2. The problem occurs when removing a
+> virtio-pci block device, which triggers the following warning in the
+> percpu-ref code:
 > 
-> diff --git a/Documentation/devicetree/bindings/phy/samsung-phy.txt b/Documentation/devicetree/bindings/phy/samsung-phy.txt
-> index 7a6feea..b64d616 100644
-> --- a/Documentation/devicetree/bindings/phy/samsung-phy.txt
-> +++ b/Documentation/devicetree/bindings/phy/samsung-phy.txt
-> @@ -135,6 +135,10 @@ Required properties:
->  	       PHY operations, associated by phy name. It is used to
->  	       determine bit values for clock settings register.
->  	       For Exynos5420 this is given as 'sclk_usbphy30' in CMU.
-> +	- optional clocks: Next gen Exynos SoCs have following additional
+> WARNING: CPU: 0 PID: 1312 at lib/percpu-refcount.c:179 percpu_ref_kill_and_confirm+0x90/0x9c()
+> percpu_ref_kill() called more than once!
+> Modules linked in:
+> CPU: 0 PID: 1312 Comm: vfio-setup.sh Not tainted 3.17.0-rc2+ #5
+> Call trace:
+> [<ffffffc0002b68b0>] percpu_ref_kill_and_confirm+0x8c/0x9c
+> [<ffffffc0002938e8>] blk_mq_freeze_queue+0x34/0xc8
+> [<ffffffc000294dac>] blk_mq_free_queue+0x1c/0x10c
+> [<ffffffc00028cc1c>] blk_release_queue+0x68/0xa8
+> [<ffffffc0002a7208>] kobject_release+0x40/0x84
+> [<ffffffc0002a7284>] kobject_put+0x38/0x6c
+> [<ffffffc000288414>] blk_put_queue+0xc/0x18
+> [<ffffffc0002989b0>] disk_release+0x7c/0xb8
+> [<ffffffc0003245f0>] device_release+0x30/0x98
+> [<ffffffc0002a7208>] kobject_release+0x40/0x84
+> [<ffffffc0002a7284>] kobject_put+0x38/0x6c
+> [<ffffffc0002980cc>] put_disk+0x10/0x1c
+> [<ffffffc00033b010>] virtblk_remove+0x74/0xd4
+> 
+> Some more debugging shows that virtblk_remove earlier called
+> blk_cleanup_queue:
+> 
+> [<ffffffc0002b686c>] percpu_ref_kill_and_confirm+0x48/0x9c
+> [<ffffffc0002938e8>] blk_mq_freeze_queue+0x34/0xc8
+> [<ffffffc000288fd4>] blk_cleanup_queue+0x70/0xf4
+> [<ffffffc00033afe0>] virtblk_remove+0x44/0xd4
+> 
+> which ends up marking the percpu ref as dead and queues some RCU work
+> to switch over to the atomic_t version using call_rcu_sched. The
+> virtblk_remove function then continues happily and calls put_disk (first
+> backtrace above), which ends up trying to get exclusive access to the
+> queue by killing the usage counter and waiting for the percpu reference
+> to become zero. Unfortunately, since the reference is already marked as
+> dead, the call to percpu_ref_kill triggers the warning. Worse still, we
+> then queue the RCU callback a second time, which dies with something
+> like:
+> 
+> Unable to handle kernel paging request at virtual address 87f971000
+> pgd = ffffffc87aca8000
+> [87f971000] *pgd=0000000000000000, *pud=0000000000000000
+> Internal error: Oops: 96000005 [#1] PREEMPT SMP
+> Modules linked in:
+> CPU: 0 PID: 1312 Comm: systemd-udevd Tainted: G        W      3.17.0-rc2+ #9
+> task: ffffffc87bb89480 ti: ffffffc87ace0000 task.ti: ffffffc87ace0000
+> PC is at percpu_ref_kill_rcu+0x50/0x188
+> LR is at percpu_ref_kill_rcu+0x6c/0x188
+> pc : [<ffffffc0002b6a34>] lr : [<ffffffc0002b6a50>] pstate: 80000145
+> sp : ffffffc87ace3840
+> x29: ffffffc87ace3840 x28: ffffffc000470000 
+> x27: 0000000000000000 x26: ffffffc87ff74a00 
+> x25: ffffffc00061f238 x24: ffffffc07f858d68 
+> x23: ffffffc000657000 x22: ffffffc07f858d88 
+> x21: ffffffc00064bc68 x20: 0000000000000000 
+> x19: 0000000000000000 x18: 0000007fc81227e0 
+> x17: 0000007fb74f1194 x16: ffffffc000161a44 
+> x15: 0000007fb757b5a0 x14: 0000000000000008 
+> x13: 0000000000000000 x12: ffffffc000470c70 
+> x11: 0000000000000005 x10: 0101010101010101 
+> x9 : ffffffc000470c4b x8 : ffffffc000647318 
+> x7 : fffffffffffffe40 x6 : 0000000000005b00 
+> x5 : ffffffc00064bc68 x4 : 0000000000000038 
+> x3 : 00000000000000ff x2 : 0000000000000000 
+> x1 : ffffffc000657ee8 x0 : 000000087f971000 
+> 
+> because the percpu_ref has been freed from blk_mq_free_queue.
+> 
+> I'm not really sure how to fix this -- it seems like we shouldn't try to
+> kill a reference that is already dead, but using __pcpu_ref_alive isn't
+> the right answer. Simply removing the warning works for me (patch below),
+> but that also feels like a hack (we skip the confirm callback, for a
+> start).
+> 
+> Any ideas?
 
-It's not going to be 'Next gen' for long...
+It's fixed in for-linus, which will go out soon, more stuff just kept
+coming in. Fix:
 
-> +			   gate clocks available:
-> +			   - phy_pipe: for PIPE3 phy
-> +			   - phy_utmi: for UTMI+ phy
->  - samsung,pmu-syscon: phandle for PMU system controller interface, used to
->  		      control pmu registers for power isolation.
->  - #phy-cells : from the generic PHY bindings, must be 1;
-> diff --git a/drivers/phy/phy-exynos5-usbdrd.c b/drivers/phy/phy-exynos5-usbdrd.c
-> index b05302b..685c108 100644
-> --- a/drivers/phy/phy-exynos5-usbdrd.c
-> +++ b/drivers/phy/phy-exynos5-usbdrd.c
-> @@ -148,6 +148,8 @@ struct exynos5_usbdrd_phy_drvdata {
->   * @dev: pointer to device instance of this platform device
->   * @reg_phy: usb phy controller register memory base
->   * @clk: phy clock for register access
-> + * @pipeclk: clock for pipe3 phy
-> + * @utmiclk: clock for utmi+ phy
->   * @drv_data: pointer to SoC level driver data structure
->   * @phys[]: array for 'EXYNOS5_DRDPHYS_NUM' number of PHY
->   *	    instances each with its 'phy' and 'phy_cfg'.
-> @@ -161,6 +163,8 @@ struct exynos5_usbdrd_phy {
->  	struct device *dev;
->  	void __iomem *reg_phy;
->  	struct clk *clk;
-> +	struct clk *pipeclk;
-> +	struct clk *utmiclk;
->  	const struct exynos5_usbdrd_phy_drvdata *drv_data;
->  	struct phy_usb_instance {
->  		struct phy *phy;
-> @@ -446,6 +450,10 @@ static int exynos5_usbdrd_phy_power_on(struct phy *phy)
->  
->  	dev_dbg(phy_drd->dev, "Request to power_on usbdrd_phy phy\n");
->  
-> +	if (!IS_ERR(phy_drd->utmiclk))
-> +		clk_prepare_enable(phy_drd->utmiclk);
-> +	if (!IS_ERR(phy_drd->pipeclk))
-> +		clk_prepare_enable(phy_drd->pipeclk);
->  	clk_prepare_enable(phy_drd->ref_clk);
->  
->  	/* Enable VBUS supply */
-> @@ -464,6 +472,10 @@ static int exynos5_usbdrd_phy_power_on(struct phy *phy)
->  
->  fail_vbus:
->  	clk_disable_unprepare(phy_drd->ref_clk);
-> +	if (!IS_ERR(phy_drd->pipeclk))
-> +		clk_disable_unprepare(phy_drd->pipeclk);
-> +	if (!IS_ERR(phy_drd->utmiclk))
-> +		clk_disable_unprepare(phy_drd->utmiclk);
->  
->  	return ret;
->  }
-> @@ -483,6 +495,10 @@ static int exynos5_usbdrd_phy_power_off(struct phy *phy)
->  		regulator_disable(phy_drd->vbus);
->  
->  	clk_disable_unprepare(phy_drd->ref_clk);
-> +	if (!IS_ERR(phy_drd->pipeclk))
-> +		clk_disable_unprepare(phy_drd->pipeclk);
-> +	if (!IS_ERR(phy_drd->utmiclk))
-> +		clk_disable_unprepare(phy_drd->utmiclk);
->  
->  	return 0;
->  }
-> @@ -581,6 +597,14 @@ static int exynos5_usbdrd_phy_probe(struct platform_device *pdev)
->  		return PTR_ERR(phy_drd->clk);
->  	}
->  
-> +	phy_drd->pipeclk = devm_clk_get(dev, "phy_pipe");
-> +	if (IS_ERR(phy_drd->pipeclk))
-> +		dev_warn(dev, "Failed to get pipe3 phy operational clock\n");
-> +
-> +	phy_drd->utmiclk = devm_clk_get(dev, "phy_utmi");
-> +	if (IS_ERR(phy_drd->utmiclk))
-> +		dev_warn(dev, "Failed to get utmi phy operational clock\n");
-> +
+http://git.kernel.dk/?p=linux-block.git;a=commit;h=cddd5d17642cc6881352732693c2ae6930e9ce65
 
-Pointless warnings for !Exynos7?
+-- 
+Jens Axboe
 
-Would it not be better to set these to NULL and not litter the code with
-IS_ERR checks?
-
-Mark.
