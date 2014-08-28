@@ -1,96 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751099AbaH1QJQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 12:09:16 -0400
-Received: from mga09.intel.com ([134.134.136.24]:27930 "EHLO mga09.intel.com"
+	id S1751572AbaH1QKE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 12:10:04 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:40003 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750794AbaH1QJP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 12:09:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,418,1406617200"; 
-   d="scan'208";a="564836846"
-Date: Thu, 28 Aug 2014 11:45:27 -0400
-From: Matthew Wilcox <willy@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v10 00/21] Support ext4 on NV-DIMMs
-Message-ID: <20140828154527.GJ3285@linux.intel.com>
-References: <cover.1409110741.git.matthew.r.wilcox@intel.com>
- <20140827130613.c8f6790093d279a447196f17@linux-foundation.org>
- <20140827211250.GH3285@linux.intel.com>
- <20140827144622.ed81195a1d94799bb57a3207@linux-foundation.org>
+	id S1750811AbaH1QKA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 12:10:00 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Caesar Wang <caesar.wang@rock-chips.com>,
+        rui.zhang@intel.com, grant.likely@linaro.org, robh+dt@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, huangtao@rock-chips.com, cf@rock-chips.com,
+        dianders@chromium.org, dtor@chromium.org, zyw@rock-chips.com,
+        addy.ke@rock-chips.com, dmitry.torokhov@gmail.com,
+        zhaoyifeng <zyf@rock-chips.com>, linux-iio@vger.kernel.org,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: Re: [PATCH v3 1/4] thermal: rockchip: add driver for thermal
+Date: Thu, 28 Aug 2014 18:11:43 +0200
+Message-ID: <3440260.edal29kzlR@diego>
+User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <20140828143733.GA18084@developer>
+References: <1409187562-12370-1-git-send-email-caesar.wang@rock-chips.com> <2852853.mfRZfFVSev@wuerfel> <20140828143733.GA18084@developer>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140827144622.ed81195a1d94799bb57a3207@linux-foundation.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 27, 2014 at 02:46:22PM -0700, Andrew Morton wrote:
-> > > Sat down to read all this but I'm finding it rather unwieldy - it's
-> > > just a great blob of code.  Is there some overall
-> > > what-it-does-and-how-it-does-it roadmap?
+Am Donnerstag, 28. August 2014, 10:37:35 schrieb Eduardo Valentin:
+> Ceasar and Arnd,
+> 
+> On Thu, Aug 28, 2014 at 10:48:23AM +0200, Arnd Bergmann wrote:
+> > On Thursday 28 August 2014 08:59:19 Caesar Wang wrote:
+> > > Thermal is TS-ADC Controller module supports user-defined mode and
+> > > automatic mode.
+> > > 
+> > > User-defined mode refers,TSADC all the control signals entirely by
+> > > software
+> > > writing to register for direct control.
+> > > 
+> > > Automaic mode refers to the module automatically poll TSADC output,and
+> > > the results Were checked.
+> > > 
+> > > If you find that the temperature High in a period of time, an interrupt
+> > > is generated to the processor down-measures taken;if the temperature
+> > > over a period of time High, the resulting TSHUT gave CRU module,let it
+> > > reset the entire chip, or via GPIO give PMIC.
+> > > 
+> > > Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
+> > > Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
 > > 
-> > The overall goal is to map persistent memory / NV-DIMMs directly to
-> > userspace.  We have that functionality in the XIP code, but the way
-> > it's structured is unsuitable for filesystems like ext4 & XFS, and
-> > it has some pretty ugly races.
-> 
-> When thinking about looking at the patchset I wonder things like how
-> does mmap work, in what situations does a page get COWed, how do we
-> handle partial pages at EOF, etc.  I guess that's all part of the
-> filemap_xip legacy, the details of which I've totally forgotten.
-
-mmap works by installing a PTE that points to the storage.  This implies
-that the NV-DIMM has to be the kind that always has everything mapped
-(there are other types that require commands to be sent to move windows
-around that point into the storage ... DAX is not for these types
-of DIMMs).
-
-We use a VM_MIXEDMAP vma.  The PTEs pointing to PFNs will just get
-copied across on fork.  Read-faults on holes are covered by a read-only
-page cache page.  On a write to a hole, any page cache page covering it
-will be unmapped and evicted from the page cache.  The mapping for the
-faulting task will be replaced with a mapping to the newly established
-block, but other mappings will take a fresh fault on their next reference.
-
-Partial pages are mmapable, just as they are with page-cache based
-files.  You can even store beyond EOF, just as with page-cache files.
-Those stores are, of course, going to end up on persistence, but they
-might well end up being zeroed if the file is extended ... again, this
-is no different to page-cache based files.
-
-> > > Performance testing results?
+> > Hi Caesar,
 > > 
-> > I haven't been running any performance tests.  What sort of performance
-> > tests would be interesting for you to see?
+> > After looking at the driver (last time I only received the patch for
+> > the binding), I have a more general comment:
+> > 
+> > This looks like a general-purpose ADC device, not an IP block that is
+> > specific to thermal management. The binding looks ok for that purpose
+> > but should probably be moved into
+> > Documentation/devicetree/bindings/iio/adc/ as a minor change.
 > 
-> fs benchmarks?  `dd' would be a good start ;)
-> 
-> I assume (because I wasn't told!) that there are two objectives here:
-> 
-> 1) reduce memory consumption by not maintaining pagecache and
-> 2) reduce CPU cost by avoiding the double-copies.
-> 
-> These things are pretty easily quantified.  And really they must be
-> quantified as part of the developer testing, because if you find
-> they've worsened then holy cow, what went wrong.
+> I agree with Arnd's point here. It makes sense to me to have this driver
+> under the IIO umbrella.
 
-It's really a functionality argument; the users we anticipate for NV-DIMMs
-really want to directly map them into memory and do a lot of work through
-loads and stores with the kernel not being involved at all, so we don't
-actually have any performance targets for things like read/write.
-That said, when running xfstests and comparing results between ext4
-with and without DAX, I do see many of the tests completing quicker
-with DAX than without (others "run for thirty seconds" so there's no
-time difference between with/without).
+interesting suggestion :-)
 
-> None of the patch titles identify the subsystem(s) which they're
-> hitting.  eg, "Introduce IS_DAX(inode)" is an ext2 patch, but nobody
-> would know that from browsing the titles.
+I've just taken another look at the registers of the ts-adc on the rk3066 
+which is completely different from the rk3288 one. Interestingly the rk3066 one 
+is "just" another saradc IP, so for this one it would really make sense.
 
-I actually see that one as being a VFS patch ... ext2 changing is just
-a side-effect.  I can re-split that patch if desired.
+
+> > On the driver side, I believe the correct way to deal with this setup
+> > is to split your driver into a generic drivers/iio/adc/rockchips-tsadc.c
+> > file, and a smaller thermal driver that uses the iio in-kernel interfaces,
+> > ideally one that is independent of the underlying hardware and can
+> > work on any ADC implementation.
+> 
+> Agreed. If you can write such interface and make your driver to work in
+> such way, that would be great.
+
+But I currently don't see how you would model the temperature handling parts 
+from a generic thermal driver to a generic adc driver for the rk3288-tsadc.
+
+I guess the general temperature irq handling would use iio-triggers? But how 
+does the target temperature get into the TSADC_COMP1_INT register.
+
+Also when getting the temperature, Caesar's driver compares it to its trip 
+points and sets the next trip point depending on the current temperature 
+(passive <-> critical) in rockchip_get_temp.
+
+Maybe there is some completely easy way for this, but currently I don't see 
+it.
+
+
+Heiko
