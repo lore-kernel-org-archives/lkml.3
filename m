@@ -1,86 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751329AbaH1Nmz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 09:42:55 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:44123 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750741AbaH1Nmy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 09:42:54 -0400
-Date: Thu, 28 Aug 2014 08:42:38 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Kiran Kumar Raparthy <kiran.kumar@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, Todd Poynor <toddpoynor@google.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Arve =?utf-8?B?SGrvv71ubmV277+9Zw==?= <arve@android.com>,
-        Benoit Goby <benoit@android.com>
-Subject: Re: [RFC v1 1/2] USB: OTG: Hold wakeupsource when VBUS present
-Message-ID: <20140828134238.GD16689@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1409219710-26874-1-git-send-email-kiran.kumar@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jCrbxBqMcLqd4mOl"
-Content-Disposition: inline
-In-Reply-To: <1409219710-26874-1-git-send-email-kiran.kumar@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751273AbaH1Nrf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 09:47:35 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:48145 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756AbaH1Nre (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 09:47:34 -0400
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Zhang Rui <rui.zhang@intel.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <lenb@kernel.org>
+Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] acpi: fan.c: printk replacement
+Date: Thu, 28 Aug 2014 19:17:19 +0530
+Message-Id: <1409233639-9165-1-git-send-email-sudipm.mukherjee@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---jCrbxBqMcLqd4mOl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+printk replaced with corresponding dev_err and dev_info 
+fixed one broken user-visible string 
+multiine comment edited for correct commenting style 
+asm/uaccess.h replaced with linux/uaccess.h
+PREFIX removed
 
-Hi,
+Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+---
 
-On Thu, Aug 28, 2014 at 03:25:10PM +0530, Kiran Kumar Raparthy wrote:
-> +bool enabled =3D false;
-> +
-> +static DEFINE_SPINLOCK(otgws_spinlock);
-> +static struct usb_phy *get_phy_hook(void);
-> +
-> +/* Only one lock, but since these 2 fields are associated with each othe=
-r... */
-> +
-> +struct otgws_lock {
-> +	char name[40];
-> +	struct wakeup_source wsource;
-> +};
-> +
-> +/* VBUS present lock */
-> +
-> +static struct otgws_lock vbus_lock;
+modified with reference to the discussion at https://lkml.org/lkml/2014/8/22/176 
 
-I believe I mentioned that all of this should be per-PHY.
+ drivers/acpi/fan.c | 18 ++++++++----------
+ 1 file changed, 8 insertions(+), 10 deletions(-)
 
---=20
-balbi
+diff --git a/drivers/acpi/fan.c b/drivers/acpi/fan.c
+index 8acf53e..5328b10 100644
+--- a/drivers/acpi/fan.c
++++ b/drivers/acpi/fan.c
+@@ -27,12 +27,10 @@
+ #include <linux/module.h>
+ #include <linux/init.h>
+ #include <linux/types.h>
+-#include <asm/uaccess.h>
++#include <linux/uaccess.h>
+ #include <linux/thermal.h>
+ #include <linux/acpi.h>
+ 
+-#define PREFIX "ACPI: "
+-
+ #define ACPI_FAN_CLASS			"fan"
+ #define ACPI_FAN_FILE_STATE		"state"
+ 
+@@ -127,8 +125,9 @@ static const struct thermal_cooling_device_ops fan_cooling_ops = {
+ };
+ 
+ /* --------------------------------------------------------------------------
+-                                 Driver Interface
+-   -------------------------------------------------------------------------- */
++ *                               Driver Interface
++ * --------------------------------------------------------------------------
++*/
+ 
+ static int acpi_fan_add(struct acpi_device *device)
+ {
+@@ -143,7 +142,7 @@ static int acpi_fan_add(struct acpi_device *device)
+ 
+ 	result = acpi_bus_update_power(device->handle, NULL);
+ 	if (result) {
+-		printk(KERN_ERR PREFIX "Setting initial power state\n");
++		dev_err(&device->dev, "Setting initial power state\n");
+ 		goto end;
+ 	}
+ 
+@@ -168,10 +167,9 @@ static int acpi_fan_add(struct acpi_device *device)
+ 				   &device->dev.kobj,
+ 				   "device");
+ 	if (result)
+-		dev_err(&device->dev, "Failed to create sysfs link "
+-			"'device'\n");
++		dev_err(&device->dev, "Failed to create sysfs link 'device'\n");
+ 
+-	printk(KERN_INFO PREFIX "%s [%s] (%s)\n",
++	dev_info(&device->dev, "ACPI: %s [%s] (%s)\n",
+ 	       acpi_device_name(device), acpi_device_bid(device),
+ 	       !device->power.state ? "on" : "off");
+ 
+@@ -217,7 +215,7 @@ static int acpi_fan_resume(struct device *dev)
+ 
+ 	result = acpi_bus_update_power(to_acpi_device(dev)->handle, NULL);
+ 	if (result)
+-		printk(KERN_ERR PREFIX "Error updating fan power state\n");
++		dev_err(dev, "Error updating fan power state\n");
+ 
+ 	return result;
+ }
+-- 
+1.8.1.2
 
---jCrbxBqMcLqd4mOl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJT/zHOAAoJEIaOsuA1yqRELUUQAJxBfUeI+juryUwak2Lp/+1a
-ge65G73kaubCFCpsAvWEXDETO0n+zQar7uRK1f7QenmmVfNaPThqZ2pQN9p6zvGV
-7tHxy4AdJVUptxZHsaHQfdUg/nuyEhMfxd81HJWJOs9EX928J60Sy0cDHgGzumD0
-w2X0n5sO74hW3XRWkK0dQoInv+XY0Dj+2/aFpXo++09/5FqWbYKHUfrQw9TLlYJ/
-AWsEpR7EyGzwgYdig5YI98TyzGA5wKcMkm5ul6kPDJDAy898G5SO1VmoAigcOAFz
-AEGEhSnzGbdjWzC6hoSddEFhkCY2KGngQjhU5v3ioeNfaazd8Lmg5xlpRFSiu0jP
-p8gfzbQNNIrYUyaPCzKLScChDxv/e0UVDL/V566/4k6juEX2Urn2eWCOInZ5Q2yL
-skyfMce75V8uy+ncWjiQBPT/Zs/8poxaa+IPyXdypGApgSc6ZKBpdbTF3FN/ESId
-WRZlzYLUm9WTMdHyaKvG0iKR5UFjAi/wcqcK7IEA3iukhPmrUAGjrBDaJ350dC/m
-xGNexkGRi3s6KGgXBdwSVmPbMlhQ+UxSydxycB/EjSoxJxuwvIi7JFqx+kQYHobq
-0/CsS0k9wOjOKwP9h6iu+rtNSQ/FsX+xqCrN87bfso21YG8aNfm2aJNX3vBVWKAY
-C08kMHlY2d3pqXf4qXug
-=o7cf
------END PGP SIGNATURE-----
-
---jCrbxBqMcLqd4mOl--
