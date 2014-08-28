@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754727AbaH1TU2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 15:20:28 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:42858 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752918AbaH1TUX (ORCPT
+	id S1754329AbaH1TUZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 15:20:25 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:32786 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752927AbaH1TUS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 15:20:23 -0400
+	Thu, 28 Aug 2014 15:20:18 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,88 +15,85 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
         bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH v7 tip/core/rcu 10/17] documentation: Add verbiage on RCU-tasks stall warning messages
-Date: Thu, 28 Aug 2014 12:20:01 -0700
-Message-Id: <1409253608-32538-10-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH v7 tip/core/rcu 09/17] rcu: Improve RCU-tasks energy efficiency
+Date: Thu, 28 Aug 2014 12:20:00 -0700
+Message-Id: <1409253608-32538-9-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1409253608-32538-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20140828191929.GA31795@linux.vnet.ibm.com>
  <1409253608-32538-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082819-8236-0000-0000-000004F8A81F
+x-cbid: 14082819-6688-0000-0000-0000045BBBB8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This commit documents RCU-tasks stall warning messages and also describes
-when to use the new cond_resched_rcu_qs() API.
+The current RCU-tasks implementation uses strict polling to detect
+callback arrivals.  This works quite well, but is not so good for
+energy efficiency.  This commit therefore replaces the strict polling
+with a wait queue.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- Documentation/RCU/stallwarn.txt | 33 ++++++++++++++++++++++++---------
- 1 file changed, 24 insertions(+), 9 deletions(-)
+ kernel/rcu/update.c | 14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/RCU/stallwarn.txt b/Documentation/RCU/stallwarn.txt
-index 68fe3ad27015..ef5a2fd4ff70 100644
---- a/Documentation/RCU/stallwarn.txt
-+++ b/Documentation/RCU/stallwarn.txt
-@@ -56,8 +56,20 @@ RCU_STALL_RAT_DELAY
- 	two jiffies.  (This is a cpp macro, not a kernel configuration
- 	parameter.)
+diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
+index bad7dbd4c2e3..444c8a303963 100644
+--- a/kernel/rcu/update.c
++++ b/kernel/rcu/update.c
+@@ -365,6 +365,7 @@ early_initcall(check_cpu_stall_init);
+ /* Global list of callbacks and associated lock. */
+ static struct rcu_head *rcu_tasks_cbs_head;
+ static struct rcu_head **rcu_tasks_cbs_tail = &rcu_tasks_cbs_head;
++static DECLARE_WAIT_QUEUE_HEAD(rcu_tasks_cbs_wq);
+ static DEFINE_RAW_SPINLOCK(rcu_tasks_cbs_lock);
  
--When a CPU detects that it is stalling, it will print a message similar
--to the following:
-+rcupdate.rcu_task_stall_timeout
-+
-+	This boot/sysfs parameter controls the RCU-tasks stall warning
-+	interval.  A value of zero or less suppresses RCU-tasks stall
-+	warnings.  A positive value sets the stall-warning interval
-+	in jiffies.  An RCU-tasks stall warning starts wtih the line:
-+
-+		INFO: rcu_tasks detected stalls on tasks:
-+
-+	And continues with the output of sched_show_task() for each
-+	task stalling the current RCU-tasks grace period.
-+
-+For non-RCU-tasks flavors of RCU, when a CPU detects that it is stalling,
-+it will print a message similar to the following:
+ /* Track exiting tasks in order to allow them to be waited for. */
+@@ -378,13 +379,17 @@ module_param(rcu_task_stall_timeout, int, 0644);
+ void call_rcu_tasks(struct rcu_head *rhp, void (*func)(struct rcu_head *rhp))
+ {
+ 	unsigned long flags;
++	bool needwake;
  
- INFO: rcu_sched_state detected stall on CPU 5 (t=2500 jiffies)
+ 	rhp->next = NULL;
+ 	rhp->func = func;
+ 	raw_spin_lock_irqsave(&rcu_tasks_cbs_lock, flags);
++	needwake = !rcu_tasks_cbs_head;
+ 	*rcu_tasks_cbs_tail = rhp;
+ 	rcu_tasks_cbs_tail = &rhp->next;
+ 	raw_spin_unlock_irqrestore(&rcu_tasks_cbs_lock, flags);
++	if (needwake)
++		wake_up(&rcu_tasks_cbs_wq);
+ }
+ EXPORT_SYMBOL_GPL(call_rcu_tasks);
  
-@@ -174,8 +186,12 @@ o	A CPU looping with preemption disabled.  This condition can
- o	A CPU looping with bottom halves disabled.  This condition can
- 	result in RCU-sched and RCU-bh stalls.
+@@ -495,8 +500,12 @@ static int __noreturn rcu_tasks_kthread(void *arg)
  
--o	For !CONFIG_PREEMPT kernels, a CPU looping anywhere in the kernel
--	without invoking schedule().
-+o	For !CONFIG_PREEMPT kernels, a CPU looping anywhere in the
-+	kernel without invoking schedule().  Note that cond_resched()
-+	does not necessarily prevent RCU CPU stall warnings.  Therefore,
-+	if the looping in the kernel is really expected and desirable
-+	behavior, you might need to replace some of the cond_resched()
-+	calls with calls to cond_resched_rcu_qs().
+ 		/* If there were none, wait a bit and start over. */
+ 		if (!list) {
+-			schedule_timeout_interruptible(HZ);
+-			WARN_ON(signal_pending(current));
++			wait_event_interruptible(rcu_tasks_cbs_wq,
++						 rcu_tasks_cbs_head);
++			if (!rcu_tasks_cbs_head) {
++				WARN_ON(signal_pending(current));
++				schedule_timeout_interruptible(HZ/10);
++			}
+ 			continue;
+ 		}
  
- o	A CPU-bound real-time task in a CONFIG_PREEMPT kernel, which might
- 	happen to preempt a low-priority task in the middle of an RCU
-@@ -208,11 +224,10 @@ o	A hardware failure.  This is quite unlikely, but has occurred
- 	This resulted in a series of RCU CPU stall warnings, eventually
- 	leading the realization that the CPU had failed.
+@@ -602,6 +611,7 @@ static int __noreturn rcu_tasks_kthread(void *arg)
+ 			list = next;
+ 			cond_resched();
+ 		}
++		schedule_timeout_uninterruptible(HZ/10);
+ 	}
+ }
  
--The RCU, RCU-sched, and RCU-bh implementations have CPU stall warning.
--SRCU does not have its own CPU stall warnings, but its calls to
--synchronize_sched() will result in RCU-sched detecting RCU-sched-related
--CPU stalls.  Please note that RCU only detects CPU stalls when there is
--a grace period in progress.  No grace period, no CPU stall warnings.
-+The RCU, RCU-sched, RCU-bh, and RCU-tasks implementations have CPU stall
-+warning.  Note that SRCU does -not- have CPU stall warnings.  Please note
-+that RCU only detects CPU stalls when there is a grace period in progress.
-+No grace period, no CPU stall warnings.
- 
- To diagnose the cause of the stall, inspect the stack traces.
- The offending function will usually be near the top of the stack.
 -- 
 1.8.1.5
 
