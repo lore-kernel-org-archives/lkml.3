@@ -1,100 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751273AbaH1Nrf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 09:47:35 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:48145 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750756AbaH1Nre (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 09:47:34 -0400
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Zhang Rui <rui.zhang@intel.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <lenb@kernel.org>
-Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] acpi: fan.c: printk replacement
-Date: Thu, 28 Aug 2014 19:17:19 +0530
-Message-Id: <1409233639-9165-1-git-send-email-sudipm.mukherjee@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1751540AbaH1Ns1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 09:48:27 -0400
+Received: from imap.thunk.org ([74.207.234.97]:53896 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750801AbaH1NsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 09:48:25 -0400
+Date: Thu, 28 Aug 2014 09:48:04 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Gioh Kim <gioh.kim@lge.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Jan Kara <jack@suse.cz>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>, Joonsoo Kim <js1304@gmail.com>,
+        =?utf-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>
+Subject: Re: [PATCHv3 0/3] new APIs to allocate buffer-cache with user
+ specific flag
+Message-ID: <20140828134804.GC21925@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Gioh Kim <gioh.kim@lge.com>,
+	Alexander Viro <viro@zeniv.linux.org.uk>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Peter Zijlstra <peterz@infradead.org>, Jan Kara <jack@suse.cz>,
+	linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Andreas Dilger <adilger.kernel@dilger.ca>,
+	linux-ext4@vger.kernel.org, Minchan Kim <minchan@kernel.org>,
+	Joonsoo Kim <js1304@gmail.com>,
+	=?utf-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>
+References: <53FE9357.6000505@lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53FE9357.6000505@lge.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-printk replaced with corresponding dev_err and dev_info 
-fixed one broken user-visible string 
-multiine comment edited for correct commenting style 
-asm/uaccess.h replaced with linux/uaccess.h
-PREFIX removed
+On Thu, Aug 28, 2014 at 11:26:31AM +0900, Gioh Kim wrote:
+> 
+> I have 3 patchs:
+> 
+> 1. Patch 1/3: introduce a new API that create page cache with allocation flag
+> 2. Patch 2/3: have ext4 use the new API to read superblock
+> 3. Patch 3/3: have jbd/jbd2 use the new API to make journaling of superblock
+> 
+> This patchset is based on linux-next-20140814.
 
-Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
----
+Looks good.  Unless there are any objections from the mm folks, since
+the nearly all of the changes are in fs/buffer.c and in ext4/jbd2
+code, I plan to carry this in the ext4 tree.
 
-modified with reference to the discussion at https://lkml.org/lkml/2014/8/22/176 
+I do plan to clean up the patch titles a little; from:
 
- drivers/acpi/fan.c | 18 ++++++++----------
- 1 file changed, 8 insertions(+), 10 deletions(-)
+fs/buffer.c: allocate buffer cache with user specific flag
+ext4: allocate buffer-cache for superblock in, non-movable area
+jbd/jbd2: allocate buffer-cache for superblock inode in non-movable area
 
-diff --git a/drivers/acpi/fan.c b/drivers/acpi/fan.c
-index 8acf53e..5328b10 100644
---- a/drivers/acpi/fan.c
-+++ b/drivers/acpi/fan.c
-@@ -27,12 +27,10 @@
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/types.h>
--#include <asm/uaccess.h>
-+#include <linux/uaccess.h>
- #include <linux/thermal.h>
- #include <linux/acpi.h>
- 
--#define PREFIX "ACPI: "
--
- #define ACPI_FAN_CLASS			"fan"
- #define ACPI_FAN_FILE_STATE		"state"
- 
-@@ -127,8 +125,9 @@ static const struct thermal_cooling_device_ops fan_cooling_ops = {
- };
- 
- /* --------------------------------------------------------------------------
--                                 Driver Interface
--   -------------------------------------------------------------------------- */
-+ *                               Driver Interface
-+ * --------------------------------------------------------------------------
-+*/
- 
- static int acpi_fan_add(struct acpi_device *device)
- {
-@@ -143,7 +142,7 @@ static int acpi_fan_add(struct acpi_device *device)
- 
- 	result = acpi_bus_update_power(device->handle, NULL);
- 	if (result) {
--		printk(KERN_ERR PREFIX "Setting initial power state\n");
-+		dev_err(&device->dev, "Setting initial power state\n");
- 		goto end;
- 	}
- 
-@@ -168,10 +167,9 @@ static int acpi_fan_add(struct acpi_device *device)
- 				   &device->dev.kobj,
- 				   "device");
- 	if (result)
--		dev_err(&device->dev, "Failed to create sysfs link "
--			"'device'\n");
-+		dev_err(&device->dev, "Failed to create sysfs link 'device'\n");
- 
--	printk(KERN_INFO PREFIX "%s [%s] (%s)\n",
-+	dev_info(&device->dev, "ACPI: %s [%s] (%s)\n",
- 	       acpi_device_name(device), acpi_device_bid(device),
- 	       !device->power.state ? "on" : "off");
- 
-@@ -217,7 +215,7 @@ static int acpi_fan_resume(struct device *dev)
- 
- 	result = acpi_bus_update_power(to_acpi_device(dev)->handle, NULL);
- 	if (result)
--		printk(KERN_ERR PREFIX "Error updating fan power state\n");
-+		dev_err(dev, "Error updating fan power state\n");
- 
- 	return result;
- }
--- 
-1.8.1.2
+to:
 
+fs.c: support buffer cache allocations with gfp modifiers
+ext4: use non-movable memory for the ext4 superblock
+jbd/jbd2: use non-movable memory for the jbd superblock
+
+And do some minor english grammar/spelling cleanups in the commit
+description when I apply the patch.
+
+Thanks for this work; I'm going to need to use the interfaces you
+introduced in fs/buffer.c to guarantee that certain directory reads
+can be done with GFP_NOFAIL (since under heavy memory pressure,
+allocation failures there can currently lead to the file system
+getting declared corrupt.  Interestingly, this bug has been around for
+a long time, and hasn't been noticed in over two cycles of enterprise
+distro qualifications by either RHEL or SLES, which leads me to wonder
+if there are other places where the error paths for GFP_NOFS
+allocations haven't been well tested....)
+
+						- Ted
