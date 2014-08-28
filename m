@@ -1,67 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936403AbaH1Ii1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 04:38:27 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:36344 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934238AbaH1IiZ (ORCPT
+	id S936440AbaH1Ikd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 04:40:33 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:47488 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932699AbaH1Ik3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 04:38:25 -0400
+	Thu, 28 Aug 2014 04:40:29 -0400
+Message-ID: <53FEEAF6.1030701@hitachi.com>
+Date: Thu, 28 Aug 2014 17:40:22 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-From: Sumit Semwal <sumit.semwal@linaro.org>
-Date: Thu, 28 Aug 2014 14:08:04 +0530
-Message-ID: <CAO_48GEbmUaANBuOuTSED2BNUx_sC43xpz_89k_NCACEezDQBg@mail.gmail.com>
-Subject: [GIT PULL]: few dma-buf updates for 3.17-rc3
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Linaro MM SIG <linaro-mm-sig@lists.linaro.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Daniel Vetter <daniel@ffwll.ch>,
-        Arnd Bergmann <arnd@arndb.de>, Dave Airlie <airlied@linux.ie>,
-        Tom Gall <tom.gall@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+To: Luis Henriques <luis.henriques@canonical.com>
+Cc: Shuah Khan <shuah.kh@samsung.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH v2 1/4] ftracetest: Initial commit for ftracetest
+References: <20140826111511.5711.28493.stgit@kbuild-fedora.novalocal> <20140826111518.5711.71441.stgit@kbuild-fedora.novalocal> <20140827155456.GH10937@hercules>
+In-Reply-To: <20140827155456.GH10937@hercules>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+(2014/08/28 0:54), Luis Henriques wrote:
+> Hi,
+> 
+> Not really a complete review, but just 2 comments on this script:
+> 
+> On Tue, Aug 26, 2014 at 11:15:18AM +0000, Masami Hiramatsu wrote:
+> ...
+>> +prlog() { # messages
+>> +  echo $@ | tee -a $LOG_FILE
+>> +}
+>> +catlog() { #file
+>> +  cat $1 | tee -a $LOG_FILE
+>> +}
+>> +
+>> +# Testcase management
+>> +PASSED_CASES=
+>> +FAILED_CASES=
+>> +CASENO=0
+>> +testcase() { # testfile
+>> +  CASENO=$((CASENO+1))
+>> +  prlog -n "[$CASENO]"`grep "^#[ \t]*description:" $1 | cut -f2 -d:`
+>> +}
+>> +failed() {
+>> +  prlog -e "\t[FAIL]"
+>> +  FAILED_CASES="$FAILED_CASES $CASENO"
+>> +}
+>> +passed() {
+>> +  prlog -e "\t[PASS]"
+>> +  PASSED_CASES="$PASSED_CASES $CASENO"
+>> +}
+> 
+> What I see here is a '-e' being echo'ed and not really a '-e' switch
+> being used to 'echo'.  (Also, I'm not sure if this is a standard
+> switch...).
+> 
+> This applies to all the other 'prlog -e'.
 
-The major changes for 3.17 already went via Greg-KH's tree this time
-as well; this is a small pull request for dma-buf - all documentation
-related.
+Oh, really? what shell did you use?
+My target shell is the busybox and I've tested it on fedora20.
 
-Could you please pull?
+e.g. busybox echo command seems accept -e.
+  $ busybox echo -e '\tfoo'
+  	foo
 
-
-The following changes since commit f1bd473f95e02bc382d4dae94d7f82e2a455e05d:
-
-  Merge branch 'sec-v3.17-rc2' of
-git://git.kernel.org/pub/scm/linux/kernel/git/sergeh/linux-security
-(2014-08-27 17:32:37 -0700)
-
-are available in the git repository at:
+Of course maybe I'd better not use \t, but "	"...
 
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/sumits/dma-buf.git
-tags/for-3.17-rc3
+>> +
+>> +
+>> +# Run one test case
+>> +run_test() { # testfile
+>> +  local testname=`basename $1`
+>> +  local testlog=`mktemp --tmpdir=$LOG_DIR ${testname}-XXXXXX.log`
+>> +  testcase $1
+>> +  echo "execute: "$1 > $testlog
+>> +  (cd $TRACING_DIR; set -x ; source $t) >> $testlog 2>&1
+>> +  ret=$?
+> 
+> I believe the usage of 'source' is a bashism, and '.' should be used
+> instead.  In my environment, 'source' results in ret=127.  Replacing
+> it by '.' fixes it.
 
-for you to fetch changes up to 1f58d9465c568eb47cab939bbc4f30ae51863295:
+Ah, right. I missed that, I'll fix that :)
 
-  dma-buf/fence: Fix one more kerneldoc warning (2014-08-28 11:59:38 +0530)
+Thank you,
 
-----------------------------------------------------------------
-Small dma-buf pull request for 3.17-rc3
 
-----------------------------------------------------------------
-Gioh Kim (1):
-      Documentation/dma-buf-sharing.txt: update API descriptions
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-Thierry Reding (2):
-      dma-buf/fence: Fix a kerneldoc warning
-      dma-buf/fence: Fix one more kerneldoc warning
 
- Documentation/dma-buf-sharing.txt | 14 ++++++++------
- drivers/dma-buf/fence.c           |  2 +-
- include/linux/seqno-fence.h       |  1 +
- 3 files changed, 10 insertions(+), 7 deletions(-)
