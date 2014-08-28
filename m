@@ -1,116 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754432AbaH1Svo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:51:44 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:49676 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752168AbaH1Svm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:51:42 -0400
-Message-ID: <53FF7A3A.7060607@kernel.dk>
-Date: Thu, 28 Aug 2014 12:51:38 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>, rusty@rustcorp.com.au, tj@kernel.org,
-        hch@lst.de
-CC: linux-kernel@vger.kernel.org
-Subject: Re: 3.17-rc2 percpu-ref oops with virtblk remove
-References: <20140828185046.GR22580@arm.com>
-In-Reply-To: <20140828185046.GR22580@arm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	id S1754450AbaH1SwJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 14:52:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32872 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751979AbaH1Sgx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:36:53 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 64/97] fs/superblock: avoid locking counting inodes and dentries before reclaiming them
+Date: Thu, 28 Aug 2014 19:35:12 +0100
+Message-Id: <1409250945-30874-65-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
+References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/28/2014 12:50 PM, Will Deacon wrote:
-> Hi guys,
-> 
-> I've been debugging an issue triggered by virtio-blk and vfio on an
-> arm64 system running 3.17-rc2. The problem occurs when removing a
-> virtio-pci block device, which triggers the following warning in the
-> percpu-ref code:
-> 
-> WARNING: CPU: 0 PID: 1312 at lib/percpu-refcount.c:179 percpu_ref_kill_and_confirm+0x90/0x9c()
-> percpu_ref_kill() called more than once!
-> Modules linked in:
-> CPU: 0 PID: 1312 Comm: vfio-setup.sh Not tainted 3.17.0-rc2+ #5
-> Call trace:
-> [<ffffffc0002b68b0>] percpu_ref_kill_and_confirm+0x8c/0x9c
-> [<ffffffc0002938e8>] blk_mq_freeze_queue+0x34/0xc8
-> [<ffffffc000294dac>] blk_mq_free_queue+0x1c/0x10c
-> [<ffffffc00028cc1c>] blk_release_queue+0x68/0xa8
-> [<ffffffc0002a7208>] kobject_release+0x40/0x84
-> [<ffffffc0002a7284>] kobject_put+0x38/0x6c
-> [<ffffffc000288414>] blk_put_queue+0xc/0x18
-> [<ffffffc0002989b0>] disk_release+0x7c/0xb8
-> [<ffffffc0003245f0>] device_release+0x30/0x98
-> [<ffffffc0002a7208>] kobject_release+0x40/0x84
-> [<ffffffc0002a7284>] kobject_put+0x38/0x6c
-> [<ffffffc0002980cc>] put_disk+0x10/0x1c
-> [<ffffffc00033b010>] virtblk_remove+0x74/0xd4
-> 
-> Some more debugging shows that virtblk_remove earlier called
-> blk_cleanup_queue:
-> 
-> [<ffffffc0002b686c>] percpu_ref_kill_and_confirm+0x48/0x9c
-> [<ffffffc0002938e8>] blk_mq_freeze_queue+0x34/0xc8
-> [<ffffffc000288fd4>] blk_cleanup_queue+0x70/0xf4
-> [<ffffffc00033afe0>] virtblk_remove+0x44/0xd4
-> 
-> which ends up marking the percpu ref as dead and queues some RCU work
-> to switch over to the atomic_t version using call_rcu_sched. The
-> virtblk_remove function then continues happily and calls put_disk (first
-> backtrace above), which ends up trying to get exclusive access to the
-> queue by killing the usage counter and waiting for the percpu reference
-> to become zero. Unfortunately, since the reference is already marked as
-> dead, the call to percpu_ref_kill triggers the warning. Worse still, we
-> then queue the RCU callback a second time, which dies with something
-> like:
-> 
-> Unable to handle kernel paging request at virtual address 87f971000
-> pgd = ffffffc87aca8000
-> [87f971000] *pgd=0000000000000000, *pud=0000000000000000
-> Internal error: Oops: 96000005 [#1] PREEMPT SMP
-> Modules linked in:
-> CPU: 0 PID: 1312 Comm: systemd-udevd Tainted: G        W      3.17.0-rc2+ #9
-> task: ffffffc87bb89480 ti: ffffffc87ace0000 task.ti: ffffffc87ace0000
-> PC is at percpu_ref_kill_rcu+0x50/0x188
-> LR is at percpu_ref_kill_rcu+0x6c/0x188
-> pc : [<ffffffc0002b6a34>] lr : [<ffffffc0002b6a50>] pstate: 80000145
-> sp : ffffffc87ace3840
-> x29: ffffffc87ace3840 x28: ffffffc000470000 
-> x27: 0000000000000000 x26: ffffffc87ff74a00 
-> x25: ffffffc00061f238 x24: ffffffc07f858d68 
-> x23: ffffffc000657000 x22: ffffffc07f858d88 
-> x21: ffffffc00064bc68 x20: 0000000000000000 
-> x19: 0000000000000000 x18: 0000007fc81227e0 
-> x17: 0000007fb74f1194 x16: ffffffc000161a44 
-> x15: 0000007fb757b5a0 x14: 0000000000000008 
-> x13: 0000000000000000 x12: ffffffc000470c70 
-> x11: 0000000000000005 x10: 0101010101010101 
-> x9 : ffffffc000470c4b x8 : ffffffc000647318 
-> x7 : fffffffffffffe40 x6 : 0000000000005b00 
-> x5 : ffffffc00064bc68 x4 : 0000000000000038 
-> x3 : 00000000000000ff x2 : 0000000000000000 
-> x1 : ffffffc000657ee8 x0 : 000000087f971000 
-> 
-> because the percpu_ref has been freed from blk_mq_free_queue.
-> 
-> I'm not really sure how to fix this -- it seems like we shouldn't try to
-> kill a reference that is already dead, but using __pcpu_ref_alive isn't
-> the right answer. Simply removing the warning works for me (patch below),
-> but that also feels like a hack (we skip the confirm callback, for a
-> start).
-> 
-> Any ideas?
+From: Tim Chen <tim.c.chen@linux.intel.com>
 
-It's fixed in for-linus, which will go out soon, more stuff just kept
-coming in. Fix:
+commit d23da150a37c9fe3cc83dbaf71b3e37fd434ed52 upstream.
 
-http://git.kernel.dk/?p=linux-block.git;a=commit;h=cddd5d17642cc6881352732693c2ae6930e9ce65
+We remove the call to grab_super_passive in call to super_cache_count.
+This becomes a scalability bottleneck as multiple threads are trying to do
+memory reclamation, e.g.  when we are doing large amount of file read and
+page cache is under pressure.  The cached objects quickly got reclaimed
+down to 0 and we are aborting the cache_scan() reclaim.  But counting
+creates a log jam acquiring the sb_lock.
 
+We are holding the shrinker_rwsem which ensures the safety of call to
+list_lru_count_node() and s_op->nr_cached_objects.  The shrinker is
+unregistered now before ->kill_sb() so the operation is safe when we are
+doing unmount.
+
+The impact will depend heavily on the machine and the workload but for a
+small machine using postmark tuned to use 4xRAM size the results were
+
+                                  3.15.0-rc5            3.15.0-rc5
+                                     vanilla         shrinker-v1r1
+Ops/sec Transactions         21.00 (  0.00%)       24.00 ( 14.29%)
+Ops/sec FilesCreate          39.00 (  0.00%)       44.00 ( 12.82%)
+Ops/sec CreateTransact       10.00 (  0.00%)       12.00 ( 20.00%)
+Ops/sec FilesDeleted       6202.00 (  0.00%)     6202.00 (  0.00%)
+Ops/sec DeleteTransact       11.00 (  0.00%)       12.00 (  9.09%)
+Ops/sec DataRead/MB          25.97 (  0.00%)       29.10 ( 12.05%)
+Ops/sec DataWrite/MB         49.99 (  0.00%)       56.02 ( 12.06%)
+
+ffsb running in a configuration that is meant to simulate a mail server showed
+
+                                 3.15.0-rc5             3.15.0-rc5
+                                    vanilla          shrinker-v1r1
+Ops/sec readall           9402.63 (  0.00%)      9567.97 (  1.76%)
+Ops/sec create            4695.45 (  0.00%)      4735.00 (  0.84%)
+Ops/sec delete             173.72 (  0.00%)       179.83 (  3.52%)
+Ops/sec Transactions     14271.80 (  0.00%)     14482.81 (  1.48%)
+Ops/sec Read                37.00 (  0.00%)        37.60 (  1.62%)
+Ops/sec Write               18.20 (  0.00%)        18.30 (  0.55%)
+
+Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Dave Chinner <david@fromorbit.com>
+Tested-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Cc: Bob Liu <bob.liu@oracle.com>
+Cc: Jan Kara <jack@suse.cz>
+Acked-by: Rik van Riel <riel@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ fs/super.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/fs/super.c b/fs/super.c
+index f730016..fb68a4c 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -112,9 +112,14 @@ static unsigned long super_cache_count(struct shrinker *shrink,
+ 
+ 	sb = container_of(shrink, struct super_block, s_shrink);
+ 
+-	if (!grab_super_passive(sb))
+-		return 0;
+-
++	/*
++	 * Don't call grab_super_passive as it is a potential
++	 * scalability bottleneck. The counts could get updated
++	 * between super_cache_count and super_cache_scan anyway.
++	 * Call to super_cache_count with shrinker_rwsem held
++	 * ensures the safety of call to list_lru_count_node() and
++	 * s_op->nr_cached_objects().
++	 */
+ 	if (sb->s_op && sb->s_op->nr_cached_objects)
+ 		total_objects = sb->s_op->nr_cached_objects(sb,
+ 						 sc->nid);
+@@ -125,7 +130,6 @@ static unsigned long super_cache_count(struct shrinker *shrink,
+ 						 sc->nid);
+ 
+ 	total_objects = vfs_pressure_ratio(total_objects);
+-	drop_super(sb);
+ 	return total_objects;
+ }
+ 
 -- 
-Jens Axboe
+1.8.4.5
 
