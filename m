@@ -1,116 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965353AbaH1Dml (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 23:42:41 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:35248 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965219AbaH1Dmk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 23:42:40 -0400
-Subject: [PATCH v4 0/3] perf/sdt : Support for SDT markers
-To: linux-kernel@vger.kernel.org
-From: Hemant Kumar <hemant@linux.vnet.ibm.com>
-Cc: srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
-        hegdevasant@linux.vnet.ibm.com, mingo@redhat.com, anton@redhat.com,
-        systemtap@sourceware.org, namhyung@kernel.org,
-        masami.hiramatsu.pt@hitachi.com, aravinda@linux.vnet.ibm.com,
-        penberg@iki.fi
-Date: Thu, 28 Aug 2014 03:13:13 +0530
-Message-ID: <20140827213745.13454.46266.stgit@hemant-fedora>
-User-Agent: StGit/0.16
+	id S965470AbaH1Dmx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 23:42:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61093 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965219AbaH1Dmw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 23:42:52 -0400
+Date: Thu, 28 Aug 2014 11:42:45 +0800
+From: WANG Chao <chaowang@redhat.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        "open list:SLAB ALLOCATOR" <linux-mm@kvack.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm, slub: do not add duplicate sysfs
+Message-ID: <20140828034245.GC3971@dhcp-17-37.nay.redhat.com>
+References: <1409152488-21227-1-git-send-email-chaowang@redhat.com>
+ <alpine.DEB.2.11.1408271023130.17080@gentwo.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082803-0013-0000-0000-0000002907D3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1408271023130.17080@gentwo.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The v3 patchset had some spacing errors because of my editor messing up during
-sending the patches. Resending the patchset again.
-This patchset helps in listing dtrace style markers(SDT) present in user space
-applications through perf.
-Notes/markers are placed at important places by the
-developers. They have a negligible overhead when not enabled.
-We can enable them and probe at these places and find some important information
-like the arguments' values, etc.
+On 08/27/14 at 10:25am, Christoph Lameter wrote:
+> On Wed, 27 Aug 2014, WANG Chao wrote:
+> 
+> > Mergeable slab can be changed to unmergeable after tuning its sysfs
+> > interface, for example echo 1 > trace. But the sysfs kobject with the unique
+> > name will be still there.
+> 
+> Hmmm... Merging should be switched off if any debugging features are
+> enabled. Maybe we need to disable modifying debug options for an active
+> cache? This could cause other issues as well since the debug options will
+> then apply to multiple caches.
 
-We have lots of applications which use SDT markers today, like:
-Postgresql, MySql, Mozilla, Perl, Python, Java, Ruby, libvirt, QEMU, glib
+Yes, currently merging is already switched off if there's any debug flag.
 
-To add SDT markers into user applications:
-We need to have this header sys/sdt.h present.
-sys/sdt.h used is version 3.
-If not present, install systemtap-sdt-devel package (for fedora-18).
+It sounds a bit overkill to me to disable runtime configuration. I don't
+know how many people out there would trace a mergeable (multiple)
+caches. Well it sounds better if we give them the chance to that...
 
-Please refer to the Documentation patch (3rd patch in this series) to see how the
-SDT markers are added into a program.
-
-With this patchset,
-- Use perf to list the markers in the app:
-# perf list sdt ./user_app
-
-./user_app :
-%user_app:foo_start
-%user_app:fun_start
-
-This link shows an example of marker probing with Systemtap:
-https://sourceware.org/systemtap/wiki/AddingUserSpaceProbingToApps
-
-Also, this link provides important info regarding SDT notes:
-http://sourceware.org/systemtap/wiki/UserSpaceProbeImplementation
-
-This patchset has undergone a lot of changes since it was first introduced.
-Hence, the patchset has now been subdivided for more simplicity and ease of
-review (thanks to the suggestion from Namhyung Kim). This contains the first 2
-of the 4 patches as suggested here:
-https://lkml.org/lkml/2014/7/20/284
-
-- Markers in binaries :
-These SDT markers are present in the ELF in the section named
-".note.stapsdt".
-Here, the name of the marker, its provider, type, location, base
-address, semaphore address.
-We can retrieve these values using the members name_off and desc_off in
-Nhdr structure. If these are not enabled, they are present in the ELF as nop.
-
-Changes since last series :
-- Subdivided the previous patchset into 4 patches to make it easier to review
-  as suggested by Namhyung Kim. (This set includes first two of the four patches)
-- Made the required changes and some optimizations suggested by Masami, Namhyung
-  and Andi.
-
-TODO:
-- Listing SDT events present in most of the binaries present in a system.
-- Maintaining a cache of the SDT events for faster lookup.
-- Add support to probe these SDT markers and integrate with a previous patch
-  (support to perf to probe SDT markers) posted in lkml.
-  https://lkml.org/lkml/2013/10/23/10
-
-- Recognizing arguments and support to probe on them.
-- Add semaphore support.
-
----
-
-Hemant Kumar (3):
-      Raw SDT parsing functions
-      Support perf-list to print SDT events in a single file
-      Adds documentation for perf support to SDT events.
-
-
- tools/perf/Documentation/SDT-support.txt |   48 ++++++
- tools/perf/Documentation/perf-list.txt   |    4 
- tools/perf/Makefile.perf                 |    1 
- tools/perf/builtin-list.c                |    2 
- tools/perf/util/parse-events.h           |    2 
- tools/perf/util/sdt.c                    |  113 ++++++++++++++
- tools/perf/util/symbol-elf.c             |  244 ++++++++++++++++++++++++++++++
- tools/perf/util/symbol.h                 |   19 ++
- 8 files changed, 432 insertions(+), 1 deletion(-)
- create mode 100644 tools/perf/Documentation/SDT-support.txt
- create mode 100644 tools/perf/util/sdt.c
-
--- 
-
+Thanks
+WANG Chao
