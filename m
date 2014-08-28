@@ -1,72 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753547AbaH1Sh3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:37:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32894 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753385AbaH1ShS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:37:18 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 89/97] mm: make copy_pte_range static again
-Date: Thu, 28 Aug 2014 19:35:37 +0100
-Message-Id: <1409250945-30874-90-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
-References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
+	id S1753605AbaH1SiF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 14:38:05 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:40087 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752484AbaH1SiB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:38:01 -0400
+Date: Thu, 28 Aug 2014 11:37:55 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        bobby.prani@gmail.com
+Subject: [PATCH tip/core/rcu 0/14] NOCBs and NO_HZ_FULL changes for 3.18
+Message-ID: <20140828183754.GA25488@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14082818-7164-0000-0000-0000042C1C9C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jerome Marchand <jmarchan@redhat.com>
+Hello!
 
-commit 21bda264f4243f61dfcc485174055f12ad0530b4 upstream.
+This series includes changes affecting NOCBs and NO_HZ_FULL operation.
 
-Commit 71e3aac0724f ("thp: transparent hugepage core") adds
-copy_pte_range prototype to huge_mm.h.  I'm not sure why (or if) this
-function have been used outside of memory.c, but it currently isn't.
-This patch makes copy_pte_range() static again.
+1.	Fix for bug in earlier patch (b58cc46c5f6b, Don't offload
+	callbacks unless specifically requested) that properly handles
+	early-boot callbacks.  (This bug affects unusual configurations,
+	see commit log for more information.)
 
-Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/linux/huge_mm.h | 4 ----
- mm/memory.c             | 2 +-
- 2 files changed, 1 insertion(+), 5 deletions(-)
+2.	Properly check the return value of zalloc_cpumask_var(), courtesy
+	of Pranith Kumar.
 
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index a291552..aac671b 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -92,10 +92,6 @@ extern bool is_vma_temporary_stack(struct vm_area_struct *vma);
- #endif /* CONFIG_DEBUG_VM */
- 
- extern unsigned long transparent_hugepage_flags;
--extern int copy_pte_range(struct mm_struct *dst_mm, struct mm_struct *src_mm,
--			  pmd_t *dst_pmd, pmd_t *src_pmd,
--			  struct vm_area_struct *vma,
--			  unsigned long addr, unsigned long end);
- extern int split_huge_page_to_list(struct page *page, struct list_head *list);
- static inline int split_huge_page(struct page *page)
- {
-diff --git a/mm/memory.c b/mm/memory.c
-index b870c9c..b590106 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -878,7 +878,7 @@ out_set_pte:
- 	return 0;
- }
- 
--int copy_pte_range(struct mm_struct *dst_mm, struct mm_struct *src_mm,
-+static int copy_pte_range(struct mm_struct *dst_mm, struct mm_struct *src_mm,
- 		   pmd_t *dst_pmd, pmd_t *src_pmd, struct vm_area_struct *vma,
- 		   unsigned long addr, unsigned long end)
- {
--- 
-1.8.4.5
+3.	Use bool constant for __call_rcu_nocb() return value, courtesy
+	of Pranith Kumar.
+
+4.	Use bool constant for rcu_nocb_adopt_orphan_cbs() return value,
+	courtesy of Pranith Kumar.
+
+5.	Use bool constant for __call_rcu_nocb() return value in the case
+	where callbacks are not offloaded, courtesy of Pranith Kumar.
+
+6.	Use bool constant for rcu_nocb_adopt_orphan_cbs() return value in
+	the case where callbacks are not offloaded, courtesy of Pranith
+	Kumar.
+
+7.	Aggregate RCU's kthread creation so that it is all done from a
+	single early_initcall() function.
+
+8.	Create rcuo kthreads only for CPUs that actually have come online
+	at least once since boot.
+
+9.	Check have_rcu_nocb_mask instead of for a NULL rcu_nocb_mask,
+	given that this latter is not necessarily a pointer, courtesy
+	of Pranith Kumar.
+
+10.	Eliminate redundant rcu_sysidle_state variable.
+
+11.	Don't bother tracking sysidle state if there are no nohz_full=
+	CPUs in the system.
+
+12.	Avoid misordering in __call_rcu_nocb_enqueue().
+
+13.	Handle NOCB callbacks from irq-disabled idle code.
+
+14.	Avoid misordering in nocb_leader_wait().
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+ b/include/linux/rcupdate.h |    8 +
+ b/init/Kconfig             |    4 
+ b/init/main.c              |    1 
+ b/kernel/rcu/tree.c        |    4 
+ b/kernel/rcu/tree.h        |    1 
+ b/kernel/rcu/tree_plugin.h |   92 +++++++++++++++-------
+ kernel/rcu/tree.c          |    3 
+ kernel/rcu/tree.h          |    6 +
+ kernel/rcu/tree_plugin.h   |  182 ++++++++++++++++++++++++++++++++-------------
+ 9 files changed, 216 insertions(+), 85 deletions(-)
 
