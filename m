@@ -1,212 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751302AbaH1QrA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 12:47:00 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:14550 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862AbaH1Qq4 (ORCPT
+	id S1751470AbaH1Qse (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 12:48:34 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:36707 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750941AbaH1Qsd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 12:46:56 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+q+Bf0htXouCs9SdHwWohX
-Date: Thu, 28 Aug 2014 09:46:46 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: balbi@ti.com, linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Vinod Koul <vinod.koul@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 15/15] tty: serial: 8250: omap: add dma support
-Message-ID: <20140828164645.GG16006@atomide.com>
-References: <1408124563-31541-1-git-send-email-bigeasy@linutronix.de>
- <1408124563-31541-16-git-send-email-bigeasy@linutronix.de>
- <20140815210211.GD9239@atomide.com>
- <53F5AF0D.5060409@linutronix.de>
- <20140821184416.GF10066@atomide.com>
- <53FE3779.5090908@linutronix.de>
- <20140827202313.GF16006@atomide.com>
- <20140828082348.GA5413@linutronix.de>
+	Thu, 28 Aug 2014 12:48:33 -0400
+Date: Thu, 28 Aug 2014 09:48:25 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Matti Vaittinen <matti.vaittinen@nsn.com>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        "jic23@kernel.org" <jic23@kernel.org>,
+        "arno@natisbad.org" <arno@natisbad.org>,
+        "jgunthorpe@obsidianresearch.com" <jgunthorpe@obsidianresearch.com>,
+        "san@rosetechnology.dk" <san@rosetechnology.dk>,
+        "hs@denx.de" <hs@denx.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        Sverdlin Alexander <alexander.sverdlin@nsn.com>
+Subject: Re: [PATCH] rtc: ds1307: add trickle charger device tree binding
+Message-ID: <20140828164825.GA12153@roeck-us.net>
+References: <20140828124237.GA29102@fi-ourus-dhcp00977.emea.nsn-net.net>
+ <20140828125915.GJ14650@leverpostej>
+ <20140828155157.GB23677@roeck-us.net>
+ <20140828161025.GO14650@leverpostej>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140828082348.GA5413@linutronix.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140828161025.GO14650@leverpostej>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sebastian Andrzej Siewior <bigeasy@linutronix.de> [140828 01:24]:
-> * Tony Lindgren | 2014-08-27 13:23:14 [-0700]:
-> >
-> >Do you mean just the OMAP_UART_SCR_DMAMODE_CTL related code, or
-> >also the dmaengine calls?
+On Thu, Aug 28, 2014 at 05:10:25PM +0100, Mark Rutland wrote:
+> On Thu, Aug 28, 2014 at 04:51:57PM +0100, Guenter Roeck wrote:
+> > On Thu, Aug 28, 2014 at 01:59:15PM +0100, Mark Rutland wrote:
+> > > On Thu, Aug 28, 2014 at 01:42:44PM +0100, Matti Vaittinen wrote:
+> > > > Patch adding support for specifying trickle charger setup from device
+> > > > tree. Patch is based on linux-next tree.
+> > > > 
+> > > > 
+> > > > Some DS13XX devices have "trickle chargers". Introduce a device tree binding
+> > > > for specifying the setup and register values.
+> > > > 
+> > > > Signed-off-by: Matti Vaittinen <matti.vaittinen@nsn.com>
+> > > > ---
+> > > >  .../devicetree/bindings/i2c/trivial-devices.txt    |  1 -
+> > > >  .../devicetree/bindings/rtc/dallas,ds1339.txt      | 19 ++++++++++
+> > > >  drivers/rtc/rtc-ds1307.c                           | 44 ++++++++++++++++++++--
+> > > >  3 files changed, 59 insertions(+), 5 deletions(-)
+> > > >  create mode 100644 Documentation/devicetree/bindings/rtc/dallas,ds1339.txt
+> > > > 
+> > > > diff --git a/Documentation/devicetree/bindings/i2c/trivial-devices.txt b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
+> > > > index 6af570e..e9206a4 100644
+> > > > --- a/Documentation/devicetree/bindings/i2c/trivial-devices.txt
+> > > > +++ b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
+> > > > @@ -35,7 +35,6 @@ catalyst,24c32		i2c serial eeprom
+> > > >  cirrus,cs42l51		Cirrus Logic CS42L51 audio codec
+> > > >  dallas,ds1307		64 x 8, Serial, I2C Real-Time Clock
+> > > >  dallas,ds1338		I2C RTC with 56-Byte NV RAM
+> > > > -dallas,ds1339		I2C Serial Real-Time Clock
+> > > >  dallas,ds1340		I2C RTC with Trickle Charger
+> > > >  dallas,ds1374		I2C, 32-Bit Binary Counter Watchdog RTC with Trickle Charger and Reset Input/Output
+> > > >  dallas,ds1631		High-Precision Digital Thermometer
+> > > > diff --git a/Documentation/devicetree/bindings/rtc/dallas,ds1339.txt b/Documentation/devicetree/bindings/rtc/dallas,ds1339.txt
+> > > > new file mode 100644
+> > > > index 0000000..9faf40e
+> > > > --- /dev/null
+> > > > +++ b/Documentation/devicetree/bindings/rtc/dallas,ds1339.txt
+> > > > @@ -0,0 +1,19 @@
+> > > > +* Dallas DS1339		I2C Serial Real-Time Clock
+> > > > +
+> > > > +Required properties:
+> > > > +- compatible: Should contain "dallas,ds1339".
+> > > > +- reg: I2C address for chip
+> > > > +
+> > > > +Optional properties:
+> > > > +- trickle_setup : Used Trickle Charger configuration,
+> > > > +        corresponding to 5 lowest bits in trickle charger register.
+> > > 
+> > The value is provided via platform data, so it is platform specific
+> > and presumably needs to be configurable. I did, however, not find
+> > a single in-kernel driver which is actually setting it.
+> > So this is a good question.
 > 
-> dmaengine calls are unused because up.dma is not assigned. It is 
-> basically like you wouldn't have the dma properties in the devicetree.
-> And while in that non-DMA mode I just set and unset the DMAMODE_CTL + 
-> DMAMODE_1 bits in the SCR register. Nothing else. Based on some testing
-> I just did, DMAMODE_CTL does not make the difference. DMAMODE_CTL +
-> DMAMODE_1 does.
-
-OK
- 
-> >> However core-off with DMA won't work. I think we could document this in
-> >> the binding document. What do you think?
-> >
-> >There should not be such a limitation though. Maybe dump out the values
-> >of cm_idlest_per and cm_idlest1_core for working and failing off idle
-> >cases and see what the difference is?
+> I'm uncomfortable adding a field we don't understand to DT.
 > 
-> I can't follow here. This is the working case:
-...
- 
-> so per_pwrdm and core_pwrdm remain on and I guess the former is where
-> the UART sits.
-
-That won't show the cm_idlest_per and cm_idlest1_core currently though.
-
-Below is a test patch that allows you to dump those too. Then you
-can see which bits show up as blockers. Sounds like it will be the
-serial port with dma enabled based on your description.
- 
-> >It could be the either the dma or the uart hardware blocking. I guess
-> >it could be also an issue with runtime pm use somewhere.
+> Is there any publicly-available documentation for the device?
 > 
-> So I just toggle the two DMA bits in SCR and the UART seems to block
-> since the DMA hw is not involved. Reading SCR back says that those bits
-> are not set.
 
-Oh that's interesting.
+Lots ;-)
 
-> To use DMA you don't have to enable it in SCR register you can also use
-> the FCR register. The manual says that you can only write this DMA
-> enable bit in the FCR register if the baud clock is not running. And
-> guess what: same thing: I only *toggle* the DMA enable bit here (it
-> remains 0 later) and the core won't hit idle.
-> Same effect if I toggle this bit while the baud clock is running (the
-> manual says that this bit can only be written if the baud clock is not
-> running). Seems like the UART is following its own specification and it
-> remains blocking once the DMA was enabled.
-> It would be nice if someone from the UART-IP team could ACK this.
+http://datasheets.maximintegrated.com/en/ds/DS1307.pdf
+http://datasheets.maximintegrated.com/en/ds/DS1337.pdf
+http://datasheets.maximintegrated.com/en/ds/DS1338.pdf
+http://datasheets.maximintegrated.com/en/ds/DS1339.pdf
+http://datasheets.maximintegrated.com/en/ds/DS1340.pdf
+http://datasheets.maximintegrated.com/en/ds/DS1388.pdf
+http://datasheets.maximintegrated.com/en/ds/DS3231.pdf
 
-Sounds like there should be some way to clear that state.. I wonder
-if omap-serial.c had something before it's DMA support was removed?
+Code suggests that DS1339, DS1339, and DS1340 have the register.
 
-I'd assume when the UART is powered down by runtime PM it's state
-is completetely reset and we could restore the non-DMA state?
+Looking into the datasheets, the configuration consists of two parts:
+- diode connected or not
+- trickle charger resistor value (250, 2000, or 4000 ohm)
 
-Maybe post your current patches and a test patch to try to toggle
-the DMA on and off?
+Given that, it seems to me that those values should be configured
+explicitly instead of using a binary value, and that the driver
+should perform the conversion from dt entry to register value.
 
-> Bah. Does it make sense to use runtime-PM if we can't hit core-off? I'm
-> thinking to add a printk once dma is enabled says that runtime-pm is
-> switched off.
+Note that the relevant bits are the lower 4 bits, not the
+lower 5 bits, so the above text is wrong.
 
-Well if we can't find a way to unset the DMA registers in the UART,
-how about only enable it if a kernel cmdline option is specified?
-
-We do have runtime PM working without it, and the serial console
-super important for any kind of debugging no matter what idle
-mode the SoC hits.. So let's not break that.
-
-Regards,
-
-Tony
-
-8<-----------------
-From: Tony Lindgren <tony@atomide.com>
-Date: Tue, 26 Aug 2014 14:25:33 -0700
-Subject: [PATCH] Test patch for dumping omap3 off idle blocking bits
-
-Allows seeing the deeper idle state blockers in
-/sys/kernel/debug/pm_debug/count. For example, when
-off idle is working on beaglboard xm, this is what
-i see:
-
-# sleep 5; cat /sys/kernel/debug/pm_debug/count
-...
-0006ffff 48005020 (fa005020) cm_idlest_per blocking bits: 00010000
-e7ffffbd 48004a20 (fa004a20) cm_idlest1_core blocking bits: 00000042
-0000000d 48004a28 (fa004a28) cm_idlest3_core
-
---- a/arch/arm/mach-omap2/pm-debug.c
-+++ b/arch/arm/mach-omap2/pm-debug.c
-@@ -142,10 +142,76 @@ static int pwrdm_dbg_show_timer(struct powerdomain *pwrdm, void *user)
- 	return 0;
- }
- 
-+#include "iomap.h"
-+
-+struct dregs {
-+	const char	*desc;
-+	u32		phys;
-+	void __iomem	*virt;
-+	u32		mask;
-+};
-+
-+#define PER_CM_BASE	0x48005000
-+#define PER_CM_REG(name, offset, mask)				\
-+	{ name, PER_CM_BASE + offset,				\
-+	OMAP2_L4_IO_ADDRESS(PER_CM_BASE + offset), mask, }
-+
-+static struct dregs cm_per[] = {
-+	PER_CM_REG("cm_idlest_per", 0x20, 0xfff80000), /* p 513 */
-+	{ NULL, },
-+};
-+
-+#define CORE_CM_BASE	0x48004a00
-+#define CORE_CM_REG(name, offset, mask)				\
-+	{ name, CORE_CM_BASE + offset,				\
-+	OMAP2_L4_IO_ADDRESS(CORE_CM_BASE + offset), mask, }
-+
-+static struct dregs cm_core[] = {
-+	CORE_CM_REG("cm_idlest1_core", 0x20, 0x9c800109), /* p 467 */
-+	CORE_CM_REG("cm_idlest3_core", 0x28, 0xfffffffb),
-+	{ NULL, },
-+};
-+
-+void __dregs_dump(struct dregs *dregs, struct seq_file *s)
-+{
-+	for (; dregs->desc; dregs++) {
-+		u32 val, blockers;
-+
-+		val = __raw_readl(dregs->virt);
-+
-+		seq_printf(s, "%08x %08x (%p) %s",
-+			   val, dregs->phys, dregs->virt,
-+			   dregs->desc);
-+
-+		if (dregs->mask) {
-+			blockers = ~val;
-+			blockers &= ~dregs->mask;
-+
-+			if (blockers)
-+				seq_printf(s, " blocking bits: %08x",
-+					   blockers);
-+		}
-+
-+		seq_printf(s, "\n");
-+	}
-+}
-+
-+void cm_per_dump(struct seq_file *s)
-+{
-+	__dregs_dump(cm_per, s);
-+}
-+
-+void cm_core_dump(struct seq_file *s)
-+{
-+	__dregs_dump(cm_core, s);
-+}
-+
- static int pm_dbg_show_counters(struct seq_file *s, void *unused)
- {
- 	pwrdm_for_each(pwrdm_dbg_show_counter, s);
- 	clkdm_for_each(clkdm_dbg_show_counter, s);
-+	cm_per_dump(s);
-+	cm_core_dump(s);
- 
- 	return 0;
- }
+Guenter
