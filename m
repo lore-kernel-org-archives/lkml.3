@@ -1,106 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751852AbaH1PnP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 11:43:15 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:60263 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750930AbaH1PnN (ORCPT
+	id S1752055AbaH1Pny (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 11:43:54 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:48045 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751479AbaH1Pnx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 11:43:13 -0400
-Date: Thu, 28 Aug 2014 08:43:09 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Colin Cross <ccross@android.com>, kernel-team@android.com,
-        Rob Herring <robherring2@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Nicolas Pitre <nico@linaro.org>
-Subject: Re: [PATCH v10 03/19] arm: fiq: Replace default FIQ handler
-Message-ID: <20140828154309.GA5001@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1408369264-14242-1-git-send-email-daniel.thompson@linaro.org>
- <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org>
- <1408466769-20004-4-git-send-email-daniel.thompson@linaro.org>
- <20140819173742.GG30401@n2100.arm.linux.org.uk>
- <53F39377.1070308@linaro.org>
- <20140828150112.GD30401@n2100.arm.linux.org.uk>
+	Thu, 28 Aug 2014 11:43:53 -0400
+Message-ID: <53FF4E34.5010709@plexistor.com>
+Date: Thu, 28 Aug 2014 18:43:48 +0300
+From: Boaz Harrosh <boaz@plexistor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140828150112.GD30401@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082815-1542-0000-0000-0000045D615F
+To: Matthew Wilcox <willy@linux.intel.com>
+CC: Jens Axboe <axboe@fb.com>, Dmitry Monakhov <dmonakhov@openvz.org>,
+        Ross Zwisler <ross.zwisler@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 3/5] brd: Add getgeo to block ops
+References: <53FDF7AD.5000709@plexistor.com> <53FDF919.6020006@plexistor.com> <20140827175327.GF3285@linux.intel.com> <53FED9A7.3020608@plexistor.com> <20140828151126.GI3285@linux.intel.com>
+In-Reply-To: <20140828151126.GI3285@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 28, 2014 at 04:01:12PM +0100, Russell King - ARM Linux wrote:
-> On Tue, Aug 19, 2014 at 07:12:07PM +0100, Daniel Thompson wrote:
-> > On 19/08/14 18:37, Russell King - ARM Linux wrote:
-> > > On Tue, Aug 19, 2014 at 05:45:53PM +0100, Daniel Thompson wrote:
-> > >> +int register_fiq_nmi_notifier(struct notifier_block *nb)
-> > >> +{
-> > >> +	return atomic_notifier_chain_register(&fiq_nmi_chain, nb);
-> > >> +}
-> > >> +
-> > >> +asmlinkage void __exception_irq_entry fiq_nmi_handler(struct pt_regs *regs)
-> > >> +{
-> > >> +	struct pt_regs *old_regs = set_irq_regs(regs);
-> > >> +
-> > >> +	nmi_enter();
-> > >> +	atomic_notifier_call_chain(&fiq_nmi_chain, (unsigned long)regs, NULL);
-> > >> +	nmi_exit();
-> > >> +	set_irq_regs(old_regs);
-> > >> +}
-> > > 
-> > > Really not happy with this.  What happens if a FIQ occurs while we're
-> > > inside register_fiq_nmi_notifier() - more specifically inside
-> > > atomic_notifier_chain_register() ?
-> > 
-> > Should depend on which side of the rcu update we're on.
+On 08/28/2014 06:11 PM, Matthew Wilcox wrote:
+> On Thu, Aug 28, 2014 at 10:26:31AM +0300, Boaz Harrosh wrote:
+<>
+>> No with patch 5/5 the 4k stuff is good.
+>>
+>> What I'm saying is that with (64, 32, x) fdisk offers a very high first
+>> sector and with all 1(s) it will allow a low value like 4k
+>>
+>> For example with (64, 32, x) + the 4k patch in 5/5 with a 4M brd disk it
+>> will offer 40 (20K) as first possible sector.
+>>
+>> With this patch applied it will offer 8 (4K) as first sector, which is what
+>> I want
 > 
-> I just asked Paul McKenney, our RCU expert... essentially, yes, RCU
-> stuff itself is safe in this context.  However, RCU stuff can call into
-> lockdep if lockdep is configured, and there are questions over lockdep.
+> That makes for a much better changelog entry than what you wrote above :-)
 > 
-> There's some things which can be done to reduce the lockdep exposure
-> to it, such as ensuring that rcu_read_lock() is first called outside
-> of FIQ context.
-> 
-> There's concerns with whether either printk() in check_flags() could
-> be reached too (flags there should always indicate that IRQs were
-> disabled, so that reduces down to a question about just the first
-> printk() there.)
-> 
-> There's also the very_verbose() stuff for RCU lockdep classes which
-> Paul says must not be enabled.
-> 
-> Lastly, Paul isn't a lockdep expert, but he sees nothing that prevents
-> lockdep doing the deadlock checking as a result of the above call.
-> 
-> So... this coupled with my feeling that notifiers make it too easy for
-> unreviewed code to be hooked into this path, I'm fairly sure that we
-> don't want to be calling atomic notifier chains from FIQ context.
 
-In the worst case, it would be possible to create a parallel notifier
-that was intended for use from NMI.  There would be no need for
-rcu_read_lock() in that case, we would instead be using RCU-sched,
-for which NMI handlers are automatically RCU-sched read-side critical
-sections.  Instead of synchronize_rcu(), this NMI version would use
-synchronize_sched().
+OK Will do thanks
 
-But if lockdep works from NMI, then the current notifiers would work
-just fine.
+>> But is it wrong? why?
+>>
+>> I guess that until now no one cared about wasted space at the beginning
+>> but with brd I do. Your words this is all "fake" then why at all.
+>> With all 1(s) the CHS convoluted math just disappears and gets out of the
+>> way.
+> 
+> It is all fake.  Nobody's reported their real CHS geometry in twenty
+> years.  A drive's geometry has been more complex than a fixed number
+> of sectors per track, and anyway the hd_geometry struct tops out at
+> describing a 500GB drive (with 63 heads and 255 sectors).
+> 
 
-							Thanx, Paul
+Right?
+
+> My concern is that clearly (64, 32, x) works since other drivers are
+> doing it.  (1, 1, 1) is stepping into the unknown, and we don't know
+> what applications are going to make of this value.
+> 
+
+But you are ignoring my "it does not work" complain above?
+
+I have tested with fdisk cfdisk gparted (and parted) and they all do
+the same as before or better in the case of fdisk. I have reviewed the
+source code to fdisk, and was satisfied that 1,1,1 is actually good and
+fixes my problem above.
+
+Why can't we put this in Linux-next for a while and let imaginary
+"applications are going to make of this value" complain in do time.
+
+Does anyone know of any application other then above list that I should test
+with?
+
+Let me remind you that partitions was completely broken on brd since its
+inception, and no one knew about it until I started testing, so its not
+like we can do *any kind* of harm with this.
+
+> This really needs to be something that's handled by the block midlayer.
+> Forcing drivers to make this stuff up is only leading to pain and
+> suffering.  Drivers that don't have a getgeo method should be given a
+> default geometry that makes all known users of getgeo do the right thing.
+> 
+
+Fine, I promise to do this once this test driver is to run for a cycle or
+two I will do it. I will clean the all stack and have two defaults for
+faking drivers and let be those old drivers that actually go to hardware
+to read it. Let us have this brd driver as a test bed and I promise to
+do this.
+
+This is regular Kernel procedure. I have audited and tested to the best of
+my, or ML readers ability, and we have in place a staging procedure that should
+catch any problems soon enough.
+
+Since when have we become so defensive on ZERO risk code in the Kernel. We are
+changing core and revolutionary systems every day for breakfast? With far more
+out reaching implications. And problems come up and we fix them.
+
+Can we move forward please
+Boaz
 
