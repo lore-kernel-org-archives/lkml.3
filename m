@@ -1,92 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965645AbaH1J7u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 05:59:50 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:57603 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936510AbaH1J7t (ORCPT
+	id S965698AbaH1KAd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 06:00:33 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:56278 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936510AbaH1KAa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 05:59:49 -0400
-From: Kiran Kumar Raparthy <kiran.kumar@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Todd Poynor <toddpoynor@google.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Kiran Raparthy <kiran.kumar@linaro.org>
-Subject: [RFC v1 2/2] usb: otg: Temporarily hold wakeupsource on charger and disconnect events
-Date: Thu, 28 Aug 2014 15:29:10 +0530
-Message-Id: <1409219950-27037-1-git-send-email-kiran.kumar@linaro.org>
-X-Mailer: git-send-email 1.8.2.1
+	Thu, 28 Aug 2014 06:00:30 -0400
+From: Juri Lelli <juri.lelli@arm.com>
+To: peterz@infradead.org
+Cc: luca.abeni@unitn.it, rdunlap@infradead.org, mingo@redhat.com,
+        henrik@austad.us, raistlin@linux.it, juri.lelli@gmail.com,
+        juri.lelli@arm.com, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3 0/4] SCHED_DEADLINE documentation fixes and improvements
+Date: Thu, 28 Aug 2014 11:00:25 +0100
+Message-Id: <1409220029-9002-1-git-send-email-juri.lelli@arm.com>
+X-Mailer: git-send-email 2.0.4
+X-OriginalArrivalTime: 28 Aug 2014 10:00:27.0003 (UTC) FILETIME=[E47164B0:01CFC2A6]
+X-MC-Unique: 114082811002802501
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s7SA0bOu017312
 
-From: Todd Poynor <toddpoynor@google.com>
+Hello everyone,
 
-usb: otg: Temporarily hold wakeupsource on charger and disconnect events
+This is version 3 of a small patchset that fixes and improves SCHED_DEADLINE
+documentation.
 
-Allow other parts of the system to react to the charger connect/disconnect
-event without allowing the system to suspend before the other parts can process
-the event. This wakeup_source times out after 2 seconds; if nobody else holds a
-wakeup_source by that time then the device can sleep.
+Patch 1/4 fixes and clarifies terminology; patch 2/4 aligns Section 4 to
+the current interface; patch 3/4 improves and clarifies what admission
+control means on UP an SMP systems; patch 4/4 introduces an appendix about
+testing.
 
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-usb@vger.kernel.org
-Cc: Android Kernel Team <kernel-team@android.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Todd Poynor <toddpoynor@google.com>
-[kiran: Added context to commit message]
-Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
----
- drivers/usb/phy/otg-wakeupsource.c | 10 +++++++---
- include/linux/usb/otg.h            |  2 ++
- 2 files changed, 9 insertions(+), 3 deletions(-)
+Changes since v1:
 
-diff --git a/drivers/usb/phy/otg-wakeupsource.c b/drivers/usb/phy/otg-wakeupsource.c
-index 7c838d1..9f3c5c1 100644
---- a/drivers/usb/phy/otg-wakeupsource.c
-+++ b/drivers/usb/phy/otg-wakeupsource.c
-@@ -34,8 +34,11 @@ struct otgws_lock {
- 	struct wakeup_source wsource;
- };
- 
--/* VBUS present lock */
--
-+/*
-+ * VBUS present lock.  Also used as a timed lock on charger
-+ * connect/disconnect and USB host disconnect, to allow the system
-+ * to react to the change in power.
-+ */
- static struct otgws_lock vbus_lock;
- 
- static void otgws_handle_event(unsigned long event)
-@@ -59,7 +62,8 @@ static void otgws_handle_event(unsigned long event)
- 	case USB_EVENT_NONE:
- 	case USB_EVENT_ID:
- 	case USB_EVENT_CHARGER:
--		__pm_relax(&vbus_lock.wsource);
-+		__pm_wakeup_event(&vbus_lock.wsource,
-+		msecs_to_jiffies(TEMPORARY_HOLD_TIME));
- 		break;
- 
- 	default:
-diff --git a/include/linux/usb/otg.h b/include/linux/usb/otg.h
-index 154332b..4243747 100644
---- a/include/linux/usb/otg.h
-+++ b/include/linux/usb/otg.h
-@@ -11,6 +11,8 @@
- 
- #include <linux/usb/phy.h>
- 
-+#define TEMPORARY_HOLD_TIME    2000
-+
- struct usb_otg {
- 	u8			default_a;
- 
+ - fixed typos spotted by Randy and Peter (thanks!)
+
+Changes since v2:
+
+ - fixed typos and rewrote paragraphs as suggested by Ingo (thanks!)
+
+Best Regards,
+
+- Juri
+
+Juri Lelli (2):
+  Documentation/scheduler/sched-deadline.txt: Rewrite section 4 intro
+  Documentation/scheduler/sched-deadline.txt: add tests suite appendix
+
+Luca Abeni (2):
+  Documentation/scheduler/sched-deadline.txt: fix terminology and
+    improve clarity
+  Documentation/scheduler/sched-deadline.txt: improve and clarify AC
+    bits
+
+ Documentation/scheduler/sched-deadline.txt | 204 ++++++++++++++++++++++-------
+ 1 file changed, 159 insertions(+), 45 deletions(-)
+
 -- 
-1.8.2.1
+2.0.4
+
 
