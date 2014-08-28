@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392AbaH2NhM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 09:37:12 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:48833 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752574AbaH2NhK (ORCPT
+	id S1753393AbaH2Njg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 09:39:36 -0400
+Received: from mail-ob0-f202.google.com ([209.85.214.202]:40459 "EHLO
+	mail-ob0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752528AbaH2Nje (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 09:37:10 -0400
-Message-ID: <54008202.4090008@free-electrons.com>
-Date: Fri, 29 Aug 2014 15:37:06 +0200
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Fri, 29 Aug 2014 09:39:34 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Mark Brown <broonie@kernel.org>, Heiko Stuebner <heiko@sntech.de>,
+        olof@lixom.net
+Cc: Addy Ke <addy.ke@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>,
+        Doug Anderson <dianders@chromium.org>, mark.rutland@arm.com,
+        devicetree@vger.kernel.org, swarren@nvidia.com, pawel.moll@arm.com,
+        ijc+devicetree@hellion.org.uk, pdeschrijver@nvidia.com,
+        agross@codeaurora.org, lgirdwood@gmail.com, robh+dt@kernel.org,
+        linux-kernel@vger.kernel.org, santosh.shilimkar@ti.com,
+        sandeep_n@ti.com, galak@codeaurora.org, grant.likely@linaro.org,
+        treding@nvidia.com
+Subject: [PATCH 0/2] IO voltage domain support for rk3188 and rk3288
+Date: Thu, 28 Aug 2014 12:19:19 -0700
+Message-Id: <1409253562-8907-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 MIME-Version: 1.0
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-CC: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Raphael Rigo <ml-arm@syscall.eu>, Arnaud Ebalard <arno@natisbad.org>,
-        Simon Boulay <simon.boulay@vitec.com>
-Subject: Re: [PATCH 2/4] clk: mvebu: armada-370: Fix timer drift caused by
- the SSCG deviation
-References: <1409312620-20631-1-git-send-email-gregory.clement@free-electrons.com>	<1409312620-20631-3-git-send-email-gregory.clement@free-electrons.com> <20140829150821.66f1d03d@free-electrons.com>
-In-Reply-To: <20140829150821.66f1d03d@free-electrons.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+These two patches add support for automatically configuring the IO
+voltage domains on rk3188 and rk3288 SoCs.  The first patch adds some
+new notification types to the regulator code.  It's used by the second
+patch which actually implements the IO voltage domain driver.
 
-On 29/08/2014 15:08, Thomas Petazzoni wrote:
-> Dear Gregory CLEMENT,
-> 
-> On Fri, 29 Aug 2014 13:43:38 +0200, Gregory CLEMENT wrote:
-> 
->> +bool a370_is_sscg_enabled(void __iomem *sar)
-> 
-> Minor nit: "static" is missing here.
-
-OK I will fix it in the next version
+These two patches were co-developed by Heiko Stübner and Doug Anderson
+(proof of concept patches were written by Heiko).  They were tested in
+a private branch on an rk3288 board using rk808 instead of mainline
+since rk808 support isn't finalized in mainline yet.
 
 
-Thanks,
+Heiko Stübner (2):
+  regulator: core: Add REGULATOR_EVENT_PRE_VOLTAGE_CHANGE (and ABORT)
+  soc/rockchip: io-domain: add driver handling io domains
 
-Gregory
-
-
-> 
->> +{
->> +	return !(readl(sar) & SARL_A370_SSCG_ENABLE);
->> +}
->> +
->>  static const struct coreclk_soc_desc a370_coreclks = {
->>  	.get_tclk_freq = a370_get_tclk_freq,
->>  	.get_cpu_freq = a370_get_cpu_freq,
->>  	.get_clk_ratio = a370_get_clk_ratio,
->> +	.is_sscg_enabled = a370_is_sscg_enabled,
->>  	.ratios = a370_coreclk_ratios,
->>  	.num_ratios = ARRAY_SIZE(a370_coreclk_ratios),
->>  };
-> 
-> Thomas
-> 
-
+ .../devicetree/bindings/arm/rockchip/io-domain.txt |  60 ++++
+ drivers/regulator/core.c                           |  63 +++-
+ drivers/soc/Kconfig                                |   1 +
+ drivers/soc/Makefile                               |   1 +
+ drivers/soc/rockchip/Kconfig                       |  10 +
+ drivers/soc/rockchip/Makefile                      |   1 +
+ drivers/soc/rockchip/io-domain.c                   | 333 +++++++++++++++++++++
+ include/linux/regulator/consumer.h                 |  20 ++
+ 8 files changed, 482 insertions(+), 7 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/rockchip/io-domain.txt
+ create mode 100644 drivers/soc/rockchip/Kconfig
+ create mode 100644 drivers/soc/rockchip/Makefile
+ create mode 100644 drivers/soc/rockchip/io-domain.c
 
 -- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+2.1.0.rc2.206.gedb03e5
+
