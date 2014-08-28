@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936211AbaH1H7i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 03:59:38 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:59769 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935552AbaH1H7g (ORCPT
+	id S936297AbaH1ICb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 04:02:31 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:41476 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935486AbaH1IC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 03:59:36 -0400
-Date: Thu, 28 Aug 2014 13:29:19 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Jim Davis <jim.epost@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "m.chehab" <m.chehab@samsung.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        linux-media <linux-media@vger.kernel.org>,
-        linux-doc <linux-doc@vger.kernel.org>
-Subject: Re: randconfig build error with next-20140826, in
- Documentation/video4linux
-Message-ID: <20140828075919.GA4506@sudip-PC>
-References: <CA+r1Zhh5n3p8Zg+Uvqvjeb3S859iejXkqStnnOuezTTm9UCT8g@mail.gmail.com>
- <20140827105838.GA6522@sudip-PC>
- <CA+r1Zhh10fMu4yvFwz__5wt1X3hUZeOpy5yviXy7NY_w+Ugb6w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+r1Zhh10fMu4yvFwz__5wt1X3hUZeOpy5yviXy7NY_w+Ugb6w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 28 Aug 2014 04:02:27 -0400
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: linux-usb@vger.kernel.org
+Cc: devicetree@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, gregkh@linuxfoundation.org, balbi@ti.com,
+        kishon@ti.com, kgene.kim@samsung.com,
+        Vivek Gautam <gautam.vivek@samsung.com>
+Subject: [PATCH 0/5] usb: dwc3/phy-exynos5-usbdrd: Extend support to Exynos7
+Date: Thu, 28 Aug 2014 13:31:55 +0530
+Message-Id: <1409212920-28526-1-git-send-email-gautam.vivek@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 27, 2014 at 10:33:46AM -0700, Jim Davis wrote:
-> On Wed, Aug 27, 2014 at 3:58 AM, Sudip Mukherjee
-> <sudipm.mukherjee@gmail.com> wrote:
-> 
-> > Hi,
-> > I tried to build next-20140826 with your given config file . But for me everything was fine.
-> 
-> Well, you should be able to reproduce it.  Do these steps work for you?
-> 
-> jim@krebstar:~/linux2$ git checkout next-20140826
-> HEAD is now at 1c9e4561f3b2... Add linux-next specific files for 20140826
-> jim@krebstar:~/linux2$ git clean -fdx
-> jim@krebstar:~/linux2$ cp ~/randconfig-1409069188.txt .config
-> jim@krebstar:~/linux2$ make oldconfig
->   HOSTCC  scripts/basic/fixdep
->   HOSTCC  scripts/kconfig/conf.o
->   SHIPPED scripts/kconfig/zconf.tab.c
->   SHIPPED scripts/kconfig/zconf.lex.c
->   SHIPPED scripts/kconfig/zconf.hash.c
->   HOSTCC  scripts/kconfig/zconf.tab.o
->   HOSTLD  scripts/kconfig/conf
-> scripts/kconfig/conf --oldconfig Kconfig
-> #
-> # configuration written to .config
-> #
-> jim@krebstar:~/linux2$ make -j4 >buildlog.txt 2>&1
-> jim@krebstar:~/linux2$ grep ERROR buildlog.txt
-> ERROR: "vb2_ops_wait_finish"
-> [Documentation/video4linux/v4l2-pci-skeleton.ko] undefined!
-> 
-> (followed by many more similar lines).
+Adding required support for clocks and additional VBUS regulators
+to enable USB 3.0 support on Exynos7 SoC.
 
-yes , it worked. thanks . i was missing the oldconfig .
+This series depends for ACRH_EXYNOS7 support on following series:
+[PATCH 00/14] Support 64bit Cortex A57 based Exynos7 SoC
+https://www.mail-archive.com/devicetree@vger.kernel.org/msg39392.html
 
-thanks
-sudip
+The series is based on usb-next branch.
+
+Vivek Gautam (5):
+  usb: dwc3: exynos: Add support for SCLK present on Exynos7
+  phy: exynos5-usbdrd: Add pipe-clk and utmi-clk support
+  phy: exynos5-usbdrd: Add facility for VBUS-BOOST-5V supply
+  usb: dwc3: Adding Kconfig dependency for Exynos7
+  phy: exynos5-usbdrd: Adding Kconfig dependency for Exynos7
+
+ .../devicetree/bindings/phy/samsung-phy.txt        |    4 ++
+ drivers/phy/Kconfig                                |    2 +-
+ drivers/phy/phy-exynos5-usbdrd.c                   |   51 +++++++++++++++++++-
+ drivers/usb/dwc3/Kconfig                           |    2 +-
+ drivers/usb/dwc3/dwc3-exynos.c                     |   16 ++++++
+ 5 files changed, 71 insertions(+), 4 deletions(-)
+
+-- 
+1.7.10.4
+
