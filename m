@@ -1,105 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193AbaH1Pya (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 11:54:30 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:64055 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751540AbaH1Py3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 11:54:29 -0400
-Message-ID: <53FF50B1.20009@linaro.org>
-Date: Thu, 28 Aug 2014 16:54:25 +0100
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1751099AbaH1QJQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 12:09:16 -0400
+Received: from mga09.intel.com ([134.134.136.24]:27930 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750794AbaH1QJP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 12:09:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,418,1406617200"; 
+   d="scan'208";a="564836846"
+Date: Thu, 28 Aug 2014 11:45:27 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v10 00/21] Support ext4 on NV-DIMMs
+Message-ID: <20140828154527.GJ3285@linux.intel.com>
+References: <cover.1409110741.git.matthew.r.wilcox@intel.com>
+ <20140827130613.c8f6790093d279a447196f17@linux-foundation.org>
+ <20140827211250.GH3285@linux.intel.com>
+ <20140827144622.ed81195a1d94799bb57a3207@linux-foundation.org>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Colin Cross <ccross@android.com>, kernel-team@android.com,
-        Rob Herring <robherring2@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Nicolas Pitre <nico@linaro.org>
-Subject: Re: [PATCH v10 03/19] arm: fiq: Replace default FIQ handler
-References: <1408369264-14242-1-git-send-email-daniel.thompson@linaro.org> <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org> <1408466769-20004-4-git-send-email-daniel.thompson@linaro.org> <20140819173742.GG30401@n2100.arm.linux.org.uk> <53F39377.1070308@linaro.org> <20140828150112.GD30401@n2100.arm.linux.org.uk>
-In-Reply-To: <20140828150112.GD30401@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140827144622.ed81195a1d94799bb57a3207@linux-foundation.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/08/14 16:01, Russell King - ARM Linux wrote:
-> On Tue, Aug 19, 2014 at 07:12:07PM +0100, Daniel Thompson wrote:
->> On 19/08/14 18:37, Russell King - ARM Linux wrote:
->>> On Tue, Aug 19, 2014 at 05:45:53PM +0100, Daniel Thompson wrote:
->>>> +int register_fiq_nmi_notifier(struct notifier_block *nb)
->>>> +{
->>>> +	return atomic_notifier_chain_register(&fiq_nmi_chain, nb);
->>>> +}
->>>> +
->>>> +asmlinkage void __exception_irq_entry fiq_nmi_handler(struct pt_regs *regs)
->>>> +{
->>>> +	struct pt_regs *old_regs = set_irq_regs(regs);
->>>> +
->>>> +	nmi_enter();
->>>> +	atomic_notifier_call_chain(&fiq_nmi_chain, (unsigned long)regs, NULL);
->>>> +	nmi_exit();
->>>> +	set_irq_regs(old_regs);
->>>> +}
->>>
->>> Really not happy with this.  What happens if a FIQ occurs while we're
->>> inside register_fiq_nmi_notifier() - more specifically inside
->>> atomic_notifier_chain_register() ?
->>
->> Should depend on which side of the rcu update we're on.
+On Wed, Aug 27, 2014 at 02:46:22PM -0700, Andrew Morton wrote:
+> > > Sat down to read all this but I'm finding it rather unwieldy - it's
+> > > just a great blob of code.  Is there some overall
+> > > what-it-does-and-how-it-does-it roadmap?
+> > 
+> > The overall goal is to map persistent memory / NV-DIMMs directly to
+> > userspace.  We have that functionality in the XIP code, but the way
+> > it's structured is unsuitable for filesystems like ext4 & XFS, and
+> > it has some pretty ugly races.
 > 
-> I just asked Paul McKenney, our RCU expert... essentially, yes, RCU
-> stuff itself is safe in this context.  However, RCU stuff can call into
-> lockdep if lockdep is configured, and there are questions over lockdep.
+> When thinking about looking at the patchset I wonder things like how
+> does mmap work, in what situations does a page get COWed, how do we
+> handle partial pages at EOF, etc.  I guess that's all part of the
+> filemap_xip legacy, the details of which I've totally forgotten.
 
-Thanks for following this up.
+mmap works by installing a PTE that points to the storage.  This implies
+that the NV-DIMM has to be the kind that always has everything mapped
+(there are other types that require commands to be sent to move windows
+around that point into the storage ... DAX is not for these types
+of DIMMs).
 
-I originally formed the opinion RCU was safe from FIQ because it is also
-used to manage the NMI notification handlers for x86
-(register_nmi_handler) and I understood the runtime constraints on FIQ
-to be very similar.
+We use a VM_MIXEDMAP vma.  The PTEs pointing to PFNs will just get
+copied across on fork.  Read-faults on holes are covered by a read-only
+page cache page.  On a write to a hole, any page cache page covering it
+will be unmapped and evicted from the page cache.  The mapping for the
+faulting task will be replaced with a mapping to the newly established
+block, but other mappings will take a fresh fault on their next reference.
 
-Note that x86 manages the notifiers itself so it uses
-list_for_each_entry_rcu() rather atomic_notifier_call_chain() but
-nevertheless I think this boils down to the same thing w.r.t. safety
-concerns.
+Partial pages are mmapable, just as they are with page-cache based
+files.  You can even store beyond EOF, just as with page-cache files.
+Those stores are, of course, going to end up on persistence, but they
+might well end up being zeroed if the file is extended ... again, this
+is no different to page-cache based files.
 
-
-> There's some things which can be done to reduce the lockdep exposure
-> to it, such as ensuring that rcu_read_lock() is first called outside
-> of FIQ context.
-
-lockdep is automatically disabled by calling nmi_enter() so all the
-lockdep calls should end up following the early exit path based on
-current->lockdep_recursion.
-
-
-> There's concerns with whether either printk() in check_flags() could
-> be reached too (flags there should always indicate that IRQs were
-> disabled, so that reduces down to a question about just the first
-> printk() there.)
+> > > Performance testing results?
+> > 
+> > I haven't been running any performance tests.  What sort of performance
+> > tests would be interesting for you to see?
 > 
-> There's also the very_verbose() stuff for RCU lockdep classes which
-> Paul says must not be enabled.
+> fs benchmarks?  `dd' would be a good start ;)
 > 
-> Lastly, Paul isn't a lockdep expert, but he sees nothing that prevents
-> lockdep doing the deadlock checking as a result of the above call.
->
-> So... this coupled with my feeling that notifiers make it too easy for
-> unreviewed code to be hooked into this path, I'm fairly sure that we
-> don't want to be calling atomic notifier chains from FIQ context.
+> I assume (because I wasn't told!) that there are two objectives here:
+> 
+> 1) reduce memory consumption by not maintaining pagecache and
+> 2) reduce CPU cost by avoiding the double-copies.
+> 
+> These things are pretty easily quantified.  And really they must be
+> quantified as part of the developer testing, because if you find
+> they've worsened then holy cow, what went wrong.
 
+It's really a functionality argument; the users we anticipate for NV-DIMMs
+really want to directly map them into memory and do a lot of work through
+loads and stores with the kernel not being involved at all, so we don't
+actually have any performance targets for things like read/write.
+That said, when running xfstests and comparing results between ext4
+with and without DAX, I do see many of the tests completing quicker
+with DAX than without (others "run for thirty seconds" so there's no
+time difference between with/without).
 
+> None of the patch titles identify the subsystem(s) which they're
+> hitting.  eg, "Introduce IS_DAX(inode)" is an ext2 patch, but nobody
+> would know that from browsing the titles.
 
+I actually see that one as being a VFS patch ... ext2 changing is just
+a side-effect.  I can re-split that patch if desired.
