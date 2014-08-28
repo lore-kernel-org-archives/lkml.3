@@ -1,130 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286AbaH1Stu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:49:50 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39813 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754250AbaH1Str (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:49:47 -0400
-Date: Thu, 28 Aug 2014 19:48:47 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Vivek Gautam <gautam.vivek@samsung.com>
-Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "balbi@ti.com" <balbi@ti.com>, "kishon@ti.com" <kishon@ti.com>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>
-Subject: Re: [PATCH 1/5] usb: dwc3: exynos: Add support for SCLK present on
- Exynos7
-Message-ID: <20140828184847.GA18464@leverpostej>
-References: <1409212920-28526-1-git-send-email-gautam.vivek@samsung.com>
- <1409212920-28526-2-git-send-email-gautam.vivek@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409212920-28526-2-git-send-email-gautam.vivek@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753186AbaH1Sg7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 14:36:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32872 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753151AbaH1Sgz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:36:55 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 66/97] mm/page_alloc: prevent MIGRATE_RESERVE pages from being misplaced
+Date: Thu, 28 Aug 2014 19:35:14 +0100
+Message-Id: <1409250945-30874-67-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
+References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 28, 2014 at 09:01:56AM +0100, Vivek Gautam wrote:
-> Exynos7 also has a separate special gate clock going to the IP
-> apart from the usual AHB clock. So add support for the same.
-> 
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> ---
->  drivers/usb/dwc3/dwc3-exynos.c |   16 ++++++++++++++++
->  1 file changed, 16 insertions(+)
-> 
-> diff --git a/drivers/usb/dwc3/dwc3-exynos.c b/drivers/usb/dwc3/dwc3-exynos.c
-> index f9fb8ad..bab6395 100644
-> --- a/drivers/usb/dwc3/dwc3-exynos.c
-> +++ b/drivers/usb/dwc3/dwc3-exynos.c
-> @@ -35,6 +35,7 @@ struct dwc3_exynos {
->  	struct device		*dev;
->  
->  	struct clk		*clk;
-> +	struct clk		*sclk;
->  	struct regulator	*vdd33;
->  	struct regulator	*vdd10;
->  };
-> @@ -141,10 +142,17 @@ static int dwc3_exynos_probe(struct platform_device *pdev)
->  		return -EINVAL;
->  	}
->  
-> +	/* Exynos7 has a special gate clock going to this IP */
-> +	exynos->sclk = devm_clk_get(dev, "usbdrd30_sclk");
-> +	if (IS_ERR(exynos->sclk))
-> +		dev_warn(dev, "couldn't get sclk\n");
+From: Vlastimil Babka <vbabka@suse.cz>
 
-Doesn't this introduce a pointless warning for Exynos SoCs other than
-Exynos7?
+commit 5bcc9f86ef09a933255ee66bd899d4601785dad5 upstream.
 
-> +
->  	exynos->dev	= dev;
->  	exynos->clk	= clk;
->  
->  	clk_prepare_enable(exynos->clk);
-> +	if (!IS_ERR(exynos->sclk))
-> +		clk_prepare_enable(exynos->sclk);
+For the MIGRATE_RESERVE pages, it is useful when they do not get
+misplaced on free_list of other migratetype, otherwise they might get
+allocated prematurely and e.g.  fragment the MIGRATE_RESEVE pageblocks.
+While this cannot be avoided completely when allocating new
+MIGRATE_RESERVE pageblocks in min_free_kbytes sysctl handler, we should
+prevent the misplacement where possible.
 
-If you replaced the returned err value with NULL you could avoid these
-IS_ERR cases.
+Currently, it is possible for the misplacement to happen when a
+MIGRATE_RESERVE page is allocated on pcplist through rmqueue_bulk() as a
+fallback for other desired migratetype, and then later freed back
+through free_pcppages_bulk() without being actually used.  This happens
+because free_pcppages_bulk() uses get_freepage_migratetype() to choose
+the free_list, and rmqueue_bulk() calls set_freepage_migratetype() with
+the *desired* migratetype and not the page's original MIGRATE_RESERVE
+migratetype.
 
-Mark.
+This patch fixes the problem by moving the call to
+set_freepage_migratetype() from rmqueue_bulk() down to
+__rmqueue_smallest() and __rmqueue_fallback() where the actual page's
+migratetype (e.g.  from which free_list the page is taken from) is used.
+Note that this migratetype might be different from the pageblock's
+migratetype due to freepage stealing decisions.  This is OK, as page
+stealing never uses MIGRATE_RESERVE as a fallback, and also takes care
+to leave all MIGRATE_CMA pages on the correct freelist.
 
->  
->  	exynos->vdd33 = devm_regulator_get(dev, "vdd33");
->  	if (IS_ERR(exynos->vdd33)) {
-> @@ -187,6 +195,8 @@ err4:
->  err3:
->  	regulator_disable(exynos->vdd33);
->  err2:
-> +	if (!IS_ERR(exynos->sclk))
-> +		clk_disable_unprepare(exynos->sclk);
->  	clk_disable_unprepare(clk);
->  	return ret;
->  }
-> @@ -199,6 +209,8 @@ static int dwc3_exynos_remove(struct platform_device *pdev)
->  	platform_device_unregister(exynos->usb2_phy);
->  	platform_device_unregister(exynos->usb3_phy);
->  
-> +	if (!IS_ERR(exynos->sclk))
-> +		clk_disable_unprepare(exynos->sclk);
->  	clk_disable_unprepare(exynos->clk);
->  
->  	regulator_disable(exynos->vdd33);
-> @@ -220,6 +232,8 @@ static int dwc3_exynos_suspend(struct device *dev)
->  {
->  	struct dwc3_exynos *exynos = dev_get_drvdata(dev);
->  
-> +	if (!IS_ERR(exynos->sclk))
-> +		clk_disable(exynos->sclk);
->  	clk_disable(exynos->clk);
->  
->  	regulator_disable(exynos->vdd33);
-> @@ -245,6 +259,8 @@ static int dwc3_exynos_resume(struct device *dev)
->  	}
->  
->  	clk_enable(exynos->clk);
-> +	if (!IS_ERR(exynos->sclk))
-> +		clk_enable(exynos->sclk);
->  
->  	/* runtime set active to reflect active state. */
->  	pm_runtime_disable(dev);
-> -- 
-> 1.7.10.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe devicetree" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Therefore, as an additional benefit, the call to
+get_pageblock_migratetype() from rmqueue_bulk() when CMA is enabled, can
+be removed completely.  This relies on the fact that MIGRATE_CMA
+pageblocks are created only during system init, and the above.  The
+related is_migrate_isolate() check is also unnecessary, as memory
+isolation has other ways to move pages between freelists, and drain pcp
+lists containing pages that should be isolated.  The buffered_rmqueue()
+can also benefit from calling get_freepage_migratetype() instead of
+get_pageblock_migratetype().
+
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Reported-by: Yong-Taek Lee <ytk.lee@samsung.com>
+Reported-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Suggested-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Acked-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Suggested-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Minchan Kim <minchan@kernel.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>
+Cc: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/page_alloc.c | 23 +++++++++++++----------
+ 1 file changed, 13 insertions(+), 10 deletions(-)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 08e54b5..7139ed7 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -918,6 +918,7 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
+ 		rmv_page_order(page);
+ 		area->nr_free--;
+ 		expand(zone, page, order, current_order, area, migratetype);
++		set_freepage_migratetype(page, migratetype);
+ 		return page;
+ 	}
+ 
+@@ -1044,7 +1045,9 @@ static int try_to_steal_freepages(struct zone *zone, struct page *page,
+ 
+ 	/*
+ 	 * When borrowing from MIGRATE_CMA, we need to release the excess
+-	 * buddy pages to CMA itself.
++	 * buddy pages to CMA itself. We also ensure the freepage_migratetype
++	 * is set to CMA so it is returned to the correct freelist in case
++	 * the page ends up being not actually allocated from the pcp lists.
+ 	 */
+ 	if (is_migrate_cma(fallback_type))
+ 		return fallback_type;
+@@ -1112,6 +1115,12 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
+ 
+ 			expand(zone, page, order, current_order, area,
+ 			       new_type);
++			/* The freepage_migratetype may differ from pageblock's
++			 * migratetype depending on the decisions in
++			 * try_to_steal_freepages. This is OK as long as it does
++			 * not differ for MIGRATE_CMA type.
++			 */
++			set_freepage_migratetype(page, new_type);
+ 
+ 			trace_mm_page_alloc_extfrag(page, order, current_order,
+ 				start_migratetype, migratetype, new_type);
+@@ -1162,7 +1171,7 @@ static int rmqueue_bulk(struct zone *zone, unsigned int order,
+ 			unsigned long count, struct list_head *list,
+ 			int migratetype, int cold)
+ {
+-	int mt = migratetype, i;
++	int i;
+ 
+ 	spin_lock(&zone->lock);
+ 	for (i = 0; i < count; ++i) {
+@@ -1183,14 +1192,8 @@ static int rmqueue_bulk(struct zone *zone, unsigned int order,
+ 			list_add(&page->lru, list);
+ 		else
+ 			list_add_tail(&page->lru, list);
+-		if (IS_ENABLED(CONFIG_CMA)) {
+-			mt = get_pageblock_migratetype(page);
+-			if (!is_migrate_cma(mt) && !is_migrate_isolate(mt))
+-				mt = migratetype;
+-		}
+-		set_freepage_migratetype(page, mt);
+ 		list = &page->lru;
+-		if (is_migrate_cma(mt))
++		if (is_migrate_cma(get_freepage_migratetype(page)))
+ 			__mod_zone_page_state(zone, NR_FREE_CMA_PAGES,
+ 					      -(1 << order));
+ 	}
+@@ -1559,7 +1562,7 @@ again:
+ 		if (!page)
+ 			goto failed;
+ 		__mod_zone_freepage_state(zone, -(1 << order),
+-					  get_pageblock_migratetype(page));
++					  get_freepage_migratetype(page));
+ 	}
+ 
+ 	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
+-- 
+1.8.4.5
+
