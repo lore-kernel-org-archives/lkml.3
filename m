@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751373AbaH1ORP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 10:17:15 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:41517 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314AbaH1ORN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 10:17:13 -0400
-Date: Thu, 28 Aug 2014 17:17:04 +0300
-From: Gleb Natapov <gleb@kernel.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        "H. Peter Anvin" <hpa@zytor.com>, kvm list <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>, X86 ML <x86@kernel.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Bandan Das <bsd@redhat.com>, Andrew Honig <ahonig@google.com>,
-        KY Srinivasan <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Alok Kataria <akataria@vmware.com>,
-        virtualization@lists.linux-foundation.org
-Subject: Re: GET_RNG_SEED hypercall ABI? (Re: [PATCH v5 0/5] random,x86,kvm:
- Rework arch RNG seeds and get some from kvm)
-Message-ID: <20140828141704.GI18167@minantech.com>
-References: <CALCETrV5U61C-gkikZtddd5RtZWFVRpkjVk69B+ymvy=xauLaQ@mail.gmail.com>
+	id S1751470AbaH1OSa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 10:18:30 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:47135 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750794AbaH1OS3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 10:18:29 -0400
+X-IronPort-AV: E=Sophos;i="5.04,418,1406592000"; 
+   d="scan'208";a="166021967"
+Message-ID: <53FF3A32.7000805@citrix.com>
+Date: Thu, 28 Aug 2014 15:18:26 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrV5U61C-gkikZtddd5RtZWFVRpkjVk69B+ymvy=xauLaQ@mail.gmail.com>
+To: Mukesh Rathor <mukesh.rathor@oracle.com>, <boris.ostrovsky@oracle.com>,
+        <david.vrabel@citrix.com>
+CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [V1 PATCH 1/2] PVH: set EFER.NX and EFER.SCE for
+ boot vcpu
+References: <1409178815-2026-1-git-send-email-mukesh.rathor@oracle.com> <1409178815-2026-2-git-send-email-mukesh.rathor@oracle.com>
+In-Reply-To: <1409178815-2026-2-git-send-email-mukesh.rathor@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 04:58:34PM -0700, Andy Lutomirski wrote:
-> hpa pointed out that the ABI that I chose (an MSR from the KVM range
-> and a KVM cpuid bit) is unnecessarily KVM-specific.  It would be nice
-> to allocate an MSR that everyone involved can agree on and, rather
-> than relying on a cpuid bit, just have the guest probe for the MSR.
+On 27/08/14 23:33, Mukesh Rathor wrote:
+> This patch addresses three things for a pvh boot vcpu:
 > 
-CPUID part allows feature to be disabled for machine compatibility purpose
-during migration. Of course interface can explicitly state that one successful
-use of the MSR does not mean that next use will not result in a #GP, but that
-doesn't sound very elegant and is different from any other MSR out there.
+>   - NX bug on intel: It was recenlty discovered that NX is not being
+>     honored in PVH on intel since EFER.NX is not being set. The pte.NX
+>     bits are ignored if EFER.NX is not set on intel.
 
---
-			Gleb.
+I am unconvinced by this explanation.  The Intel SDM clearly states that
+the XD bit in the page table entries is reserved if EFER.NXE is clear,
+and thus using a entry with XD set and EFER.NXE clear should generate a
+page fault (same as AMD).
+
+You either need to find out why Intel really worked (perhaps Xen is
+setting EFER.NXE on Intel?) or you need to included an errata (or
+similar) reference.
+
+>   - PVH boot hang on newer xen:  Following c/s on xen
+> 
+>         c/s 7645640:  x86/PVH: don't set EFER_SCE for pvh guest
+
+As I already explained in another email, the Xen change caused a
+regression and must be reverted.
+
+David
