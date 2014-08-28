@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751633AbaH1SgW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:36:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32839 "EHLO mx2.suse.de"
+	id S1752922AbaH1Sgc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 14:36:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32844 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752228AbaH1Sf7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:35:59 -0400
+	id S1752272AbaH1SgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:36:04 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Jiri Slaby <jslaby@suse.cz>
 Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 11/97] lib/plist: add plist_requeue
-Date: Thu, 28 Aug 2014 19:34:19 +0100
-Message-Id: <1409250945-30874-12-git-send-email-mgorman@suse.de>
+Subject: [PATCH 16/97] mm, x86: Account for TLB flushes only when debugging
+Date: Thu, 28 Aug 2014 19:34:24 +0100
+Message-Id: <1409250945-30874-17-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
 References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
@@ -20,148 +20,212 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Streetman <ddstreet@ieee.org>
+commit ec65993443736a5091b68e80ff1734548944a4b8 upstream.
 
-commit a75f232ce0fe38bd01301899ecd97ffd0254316a upstream.
+Bisection between 3.11 and 3.12 fingered commit 9824cf97 ("mm:
+vmstats: tlb flush counters") to cause overhead problems.
 
-Add plist_requeue(), which moves the specified plist_node after all other
-same-priority plist_nodes in the list.  This is essentially an optimized
-plist_del() followed by plist_add().
+The counters are undeniably useful but how often do we really
+need to debug TLB flush related issues?  It does not justify
+taking the penalty everywhere so make it a debugging option.
 
-This is needed by swap, which (with the next patch in this set) uses a
-plist of available swap devices.  When a swap device (either a swap
-partition or swap file) are added to the system with swapon(), the device
-is added to a plist, ordered by the swap device's priority.  When swap
-needs to allocate a page from one of the swap devices, it takes the page
-from the first swap device on the plist, which is the highest priority
-swap device.  The swap device is left in the plist until all its pages are
-used, and then removed from the plist when it becomes full.
-
-However, as described in man 2 swapon, swap must allocate pages from swap
-devices with the same priority in round-robin order; to do this, on each
-swap page allocation, swap uses a page from the first swap device in the
-plist, and then calls plist_requeue() to move that swap device entry to
-after any other same-priority swap devices.  The next swap page allocation
-will again use a page from the first swap device in the plist and requeue
-it, and so on, resulting in round-robin usage of equal-priority swap
-devices.
-
-Also add plist_test_requeue() test function, for use by plist_test() to
-test plist_requeue() function.
-
-Signed-off-by: Dan Streetman <ddstreet@ieee.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Shaohua Li <shli@fusionio.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Dan Streetman <ddstreet@ieee.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
-Cc: Weijie Yang <weijieut@gmail.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Bob Liu <bob.liu@oracle.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Tested-by: Davidlohr Bueso <davidlohr@hp.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Alex Shi <alex.shi@linaro.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/n/tip-XzxjntugxuwpxXhcrxqqh53b@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/plist.h |  2 ++
- lib/plist.c           | 52 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 54 insertions(+)
+ arch/x86/include/asm/tlbflush.h    |  6 +++---
+ arch/x86/kernel/cpu/mtrr/generic.c |  4 ++--
+ arch/x86/mm/tlb.c                  | 14 +++++++-------
+ include/linux/vm_event_item.h      |  4 +++-
+ include/linux/vmstat.h             |  8 ++++++++
+ mm/vmstat.c                        |  4 +++-
+ 6 files changed, 26 insertions(+), 14 deletions(-)
 
-diff --git a/include/linux/plist.h b/include/linux/plist.h
-index c815491..8b6c970 100644
---- a/include/linux/plist.h
-+++ b/include/linux/plist.h
-@@ -141,6 +141,8 @@ static inline void plist_node_init(struct plist_node *node, int prio)
- extern void plist_add(struct plist_node *node, struct plist_head *head);
- extern void plist_del(struct plist_node *node, struct plist_head *head);
+diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
+index e6d90ba..04905bf 100644
+--- a/arch/x86/include/asm/tlbflush.h
++++ b/arch/x86/include/asm/tlbflush.h
+@@ -62,7 +62,7 @@ static inline void __flush_tlb_all(void)
  
-+extern void plist_requeue(struct plist_node *node, struct plist_head *head);
-+
- /**
-  * plist_for_each - iterate over the plist
-  * @pos:	the type * to use as a loop counter
-diff --git a/lib/plist.c b/lib/plist.c
-index 1ebc95f..0f2084d 100644
---- a/lib/plist.c
-+++ b/lib/plist.c
-@@ -134,6 +134,46 @@ void plist_del(struct plist_node *node, struct plist_head *head)
- 	plist_check_head(head);
- }
- 
-+/**
-+ * plist_requeue - Requeue @node at end of same-prio entries.
-+ *
-+ * This is essentially an optimized plist_del() followed by
-+ * plist_add().  It moves an entry already in the plist to
-+ * after any other same-priority entries.
-+ *
-+ * @node:	&struct plist_node pointer - entry to be moved
-+ * @head:	&struct plist_head pointer - list head
-+ */
-+void plist_requeue(struct plist_node *node, struct plist_head *head)
-+{
-+	struct plist_node *iter;
-+	struct list_head *node_next = &head->node_list;
-+
-+	plist_check_head(head);
-+	BUG_ON(plist_head_empty(head));
-+	BUG_ON(plist_node_empty(node));
-+
-+	if (node == plist_last(head))
-+		return;
-+
-+	iter = plist_next(node);
-+
-+	if (node->prio != iter->prio)
-+		return;
-+
-+	plist_del(node, head);
-+
-+	plist_for_each_continue(iter, head) {
-+		if (node->prio != iter->prio) {
-+			node_next = &iter->node_list;
-+			break;
-+		}
-+	}
-+	list_add_tail(&node->node_list, node_next);
-+
-+	plist_check_head(head);
-+}
-+
- #ifdef CONFIG_DEBUG_PI_LIST
- #include <linux/sched.h>
- #include <linux/module.h>
-@@ -170,6 +210,14 @@ static void __init plist_test_check(int nr_expect)
- 	BUG_ON(prio_pos->prio_list.next != &first->prio_list);
- }
- 
-+static void __init plist_test_requeue(struct plist_node *node)
-+{
-+	plist_requeue(node, &test_head);
-+
-+	if (node != plist_last(&test_head))
-+		BUG_ON(node->prio == plist_next(node)->prio);
-+}
-+
- static int  __init plist_test(void)
+ static inline void __flush_tlb_one(unsigned long addr)
  {
- 	int nr_expect = 0, i, loop;
-@@ -193,6 +241,10 @@ static int  __init plist_test(void)
- 			nr_expect--;
- 		}
- 		plist_test_check(nr_expect);
-+		if (!plist_node_empty(test_node + i)) {
-+			plist_test_requeue(test_node + i);
-+			plist_test_check(nr_expect);
-+		}
+-	count_vm_event(NR_TLB_LOCAL_FLUSH_ONE);
++	count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ONE);
+ 	__flush_tlb_single(addr);
+ }
+ 
+@@ -93,13 +93,13 @@ static inline void __flush_tlb_one(unsigned long addr)
+  */
+ static inline void __flush_tlb_up(void)
+ {
+-	count_vm_event(NR_TLB_LOCAL_FLUSH_ALL);
++	count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
+ 	__flush_tlb();
+ }
+ 
+ static inline void flush_tlb_all(void)
+ {
+-	count_vm_event(NR_TLB_LOCAL_FLUSH_ALL);
++	count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
+ 	__flush_tlb_all();
+ }
+ 
+diff --git a/arch/x86/kernel/cpu/mtrr/generic.c b/arch/x86/kernel/cpu/mtrr/generic.c
+index ce2d0a2..0e25a1b 100644
+--- a/arch/x86/kernel/cpu/mtrr/generic.c
++++ b/arch/x86/kernel/cpu/mtrr/generic.c
+@@ -683,7 +683,7 @@ static void prepare_set(void) __acquires(set_atomicity_lock)
  	}
  
- 	for (i = 0; i < ARRAY_SIZE(test_node); i++) {
+ 	/* Flush all TLBs via a mov %cr3, %reg; mov %reg, %cr3 */
+-	count_vm_event(NR_TLB_LOCAL_FLUSH_ALL);
++	count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
+ 	__flush_tlb();
+ 
+ 	/* Save MTRR state */
+@@ -697,7 +697,7 @@ static void prepare_set(void) __acquires(set_atomicity_lock)
+ static void post_set(void) __releases(set_atomicity_lock)
+ {
+ 	/* Flush TLBs (no need to flush caches - they are disabled) */
+-	count_vm_event(NR_TLB_LOCAL_FLUSH_ALL);
++	count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
+ 	__flush_tlb();
+ 
+ 	/* Intel (P6) standard MTRRs */
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index ae699b3..05446c1 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -103,7 +103,7 @@ static void flush_tlb_func(void *info)
+ 	if (f->flush_mm != this_cpu_read(cpu_tlbstate.active_mm))
+ 		return;
+ 
+-	count_vm_event(NR_TLB_REMOTE_FLUSH_RECEIVED);
++	count_vm_tlb_event(NR_TLB_REMOTE_FLUSH_RECEIVED);
+ 	if (this_cpu_read(cpu_tlbstate.state) == TLBSTATE_OK) {
+ 		if (f->flush_end == TLB_FLUSH_ALL)
+ 			local_flush_tlb();
+@@ -131,7 +131,7 @@ void native_flush_tlb_others(const struct cpumask *cpumask,
+ 	info.flush_start = start;
+ 	info.flush_end = end;
+ 
+-	count_vm_event(NR_TLB_REMOTE_FLUSH);
++	count_vm_tlb_event(NR_TLB_REMOTE_FLUSH);
+ 	if (is_uv_system()) {
+ 		unsigned int cpu;
+ 
+@@ -151,7 +151,7 @@ void flush_tlb_current_task(void)
+ 
+ 	preempt_disable();
+ 
+-	count_vm_event(NR_TLB_LOCAL_FLUSH_ALL);
++	count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
+ 	local_flush_tlb();
+ 	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
+ 		flush_tlb_others(mm_cpumask(mm), mm, 0UL, TLB_FLUSH_ALL);
+@@ -215,7 +215,7 @@ void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
+ 
+ 	/* tlb_flushall_shift is on balance point, details in commit log */
+ 	if ((end - start) >> PAGE_SHIFT > act_entries >> tlb_flushall_shift) {
+-		count_vm_event(NR_TLB_LOCAL_FLUSH_ALL);
++		count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
+ 		local_flush_tlb();
+ 	} else {
+ 		if (has_large_page(mm, start, end)) {
+@@ -224,7 +224,7 @@ void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
+ 		}
+ 		/* flush range by one by one 'invlpg' */
+ 		for (addr = start; addr < end;	addr += PAGE_SIZE) {
+-			count_vm_event(NR_TLB_LOCAL_FLUSH_ONE);
++			count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ONE);
+ 			__flush_tlb_single(addr);
+ 		}
+ 
+@@ -262,7 +262,7 @@ void flush_tlb_page(struct vm_area_struct *vma, unsigned long start)
+ 
+ static void do_flush_tlb_all(void *info)
+ {
+-	count_vm_event(NR_TLB_REMOTE_FLUSH_RECEIVED);
++	count_vm_tlb_event(NR_TLB_REMOTE_FLUSH_RECEIVED);
+ 	__flush_tlb_all();
+ 	if (this_cpu_read(cpu_tlbstate.state) == TLBSTATE_LAZY)
+ 		leave_mm(smp_processor_id());
+@@ -270,7 +270,7 @@ static void do_flush_tlb_all(void *info)
+ 
+ void flush_tlb_all(void)
+ {
+-	count_vm_event(NR_TLB_REMOTE_FLUSH);
++	count_vm_tlb_event(NR_TLB_REMOTE_FLUSH);
+ 	on_each_cpu(do_flush_tlb_all, NULL, 1);
+ }
+ 
+diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
+index c557c6d..3a712e2 100644
+--- a/include/linux/vm_event_item.h
++++ b/include/linux/vm_event_item.h
+@@ -71,12 +71,14 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+ 		THP_ZERO_PAGE_ALLOC,
+ 		THP_ZERO_PAGE_ALLOC_FAILED,
+ #endif
++#ifdef CONFIG_DEBUG_TLBFLUSH
+ #ifdef CONFIG_SMP
+ 		NR_TLB_REMOTE_FLUSH,	/* cpu tried to flush others' tlbs */
+ 		NR_TLB_REMOTE_FLUSH_RECEIVED,/* cpu received ipi for flush */
+-#endif
++#endif /* CONFIG_SMP */
+ 		NR_TLB_LOCAL_FLUSH_ALL,
+ 		NR_TLB_LOCAL_FLUSH_ONE,
++#endif /* CONFIG_DEBUG_TLBFLUSH */
+ 		NR_VM_EVENT_ITEMS
+ };
+ 
+diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
+index a67b384..67ce70c 100644
+--- a/include/linux/vmstat.h
++++ b/include/linux/vmstat.h
+@@ -83,6 +83,14 @@ static inline void vm_events_fold_cpu(int cpu)
+ #define count_vm_numa_events(x, y) do { (void)(y); } while (0)
+ #endif /* CONFIG_NUMA_BALANCING */
+ 
++#ifdef CONFIG_DEBUG_TLBFLUSH
++#define count_vm_tlb_event(x)	   count_vm_event(x)
++#define count_vm_tlb_events(x, y)  count_vm_events(x, y)
++#else
++#define count_vm_tlb_event(x)     do {} while (0)
++#define count_vm_tlb_events(x, y) do { (void)(y); } while (0)
++#endif
++
+ #define __count_zone_vm_events(item, zone, delta) \
+ 		__count_vm_events(item##_NORMAL - ZONE_NORMAL + \
+ 		zone_idx(zone), delta)
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 5a442a7..8e8acfa 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -851,12 +851,14 @@ const char * const vmstat_text[] = {
+ 	"thp_zero_page_alloc",
+ 	"thp_zero_page_alloc_failed",
+ #endif
++#ifdef CONFIG_DEBUG_TLBFLUSH
+ #ifdef CONFIG_SMP
+ 	"nr_tlb_remote_flush",
+ 	"nr_tlb_remote_flush_received",
+-#endif
++#endif /* CONFIG_SMP */
+ 	"nr_tlb_local_flush_all",
+ 	"nr_tlb_local_flush_one",
++#endif /* CONFIG_DEBUG_TLBFLUSH */
+ 
+ #endif /* CONFIG_VM_EVENTS_COUNTERS */
+ };
 -- 
 1.8.4.5
 
