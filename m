@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752659AbaH1SgR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:36:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32834 "EHLO mx2.suse.de"
+	id S1755106AbaH1TFt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 15:05:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32854 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752193AbaH1Sfy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:35:54 -0400
+	id S1752639AbaH1SgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:36:17 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Jiri Slaby <jslaby@suse.cz>
 Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 08/97] mm, thp: do not allow thp faults to avoid cpuset restrictions
-Date: Thu, 28 Aug 2014 19:34:16 +0100
-Message-Id: <1409250945-30874-9-git-send-email-mgorman@suse.de>
+Subject: [PATCH 28/97] mm/compaction: disallow high-order page for migration target
+Date: Thu, 28 Aug 2014 19:34:36 +0100
+Message-Id: <1409250945-30874-29-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
 References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
@@ -20,83 +20,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Rientjes <rientjes@google.com>
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-commit b104a35d32025ca740539db2808aa3385d0f30eb upstream.
+commit 7d348b9ea64db0a315d777ce7d4b06697f946503 upstream.
 
-The page allocator relies on __GFP_WAIT to determine if ALLOC_CPUSET
-should be set in allocflags.  ALLOC_CPUSET controls if a page allocation
-should be restricted only to the set of allowed cpuset mems.
+Purpose of compaction is to get a high order page.  Currently, if we
+find high-order page while searching migration target page, we break it
+to order-0 pages and use them as migration target.  It is contrary to
+purpose of compaction, so disallow high-order page to be used for
+migration target.
 
-Transparent hugepages clears __GFP_WAIT when defrag is disabled to prevent
-the fault path from using memory compaction or direct reclaim.  Thus, it
-is unfairly able to allocate outside of its cpuset mems restriction as a
-side-effect.
+Additionally, clean-up logic in suitable_migration_target() to simplify
+the code.  There is no functional changes from this clean-up.
 
-This patch ensures that ALLOC_CPUSET is only cleared when the gfp mask is
-truly GFP_ATOMIC by verifying it is also not a thp allocation.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
-Reported-by: Alex Thorlton <athorlton@sgi.com>
-Tested-by: Alex Thorlton <athorlton@sgi.com>
-Cc: Bob Liu <lliubbo@gmail.com>
-Cc: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Hedi Berriche <hedi@sgi.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Acked-by: Vlastimil Babka <vbabka@suse.cz>
 Cc: Mel Gorman <mgorman@suse.de>
 Cc: Rik van Riel <riel@redhat.com>
-Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: <stable@vger.kernel.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/page_alloc.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ mm/compaction.c | 15 +++------------
+ 1 file changed, 3 insertions(+), 12 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index d37e8cd..8b010ca 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2425,7 +2425,7 @@ static inline int
- gfp_to_alloc_flags(gfp_t gfp_mask)
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 4885387..5e48834 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -217,21 +217,12 @@ static inline bool compact_trylock_irqsave(spinlock_t *lock,
+ /* Returns true if the page is within a block suitable for migration to */
+ static bool suitable_migration_target(struct page *page)
  {
- 	int alloc_flags = ALLOC_WMARK_MIN | ALLOC_CPUSET;
--	const gfp_t wait = gfp_mask & __GFP_WAIT;
-+	const bool atomic = !(gfp_mask & (__GFP_WAIT | __GFP_NO_KSWAPD));
+-	int migratetype = get_pageblock_migratetype(page);
+-
+-	/* Don't interfere with memory hot-remove or the min_free_kbytes blocks */
+-	if (migratetype == MIGRATE_RESERVE)
+-		return false;
+-
+-	if (is_migrate_isolate(migratetype))
+-		return false;
+-
+-	/* If the page is a large free page, then allow migration */
++	/* If the page is a large free page, then disallow migration */
+ 	if (PageBuddy(page) && page_order(page) >= pageblock_order)
+-		return true;
++		return false;
  
- 	/* __GFP_HIGH is assumed to be the same as ALLOC_HIGH to save a branch. */
- 	BUILD_BUG_ON(__GFP_HIGH != (__force gfp_t) ALLOC_HIGH);
-@@ -2434,20 +2434,20 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
- 	 * The caller may dip into page reserves a bit more if the caller
- 	 * cannot run direct reclaim, or if the caller has realtime scheduling
- 	 * policy or is asking for __GFP_HIGH memory.  GFP_ATOMIC requests will
--	 * set both ALLOC_HARDER (!wait) and ALLOC_HIGH (__GFP_HIGH).
-+	 * set both ALLOC_HARDER (atomic == true) and ALLOC_HIGH (__GFP_HIGH).
- 	 */
- 	alloc_flags |= (__force int) (gfp_mask & __GFP_HIGH);
+ 	/* If the block is MIGRATE_MOVABLE or MIGRATE_CMA, allow migration */
+-	if (migrate_async_suitable(migratetype))
++	if (migrate_async_suitable(get_pageblock_migratetype(page)))
+ 		return true;
  
--	if (!wait) {
-+	if (atomic) {
- 		/*
--		 * Not worth trying to allocate harder for
--		 * __GFP_NOMEMALLOC even if it can't schedule.
-+		 * Not worth trying to allocate harder for __GFP_NOMEMALLOC even
-+		 * if it can't schedule.
- 		 */
--		if  (!(gfp_mask & __GFP_NOMEMALLOC))
-+		if (!(gfp_mask & __GFP_NOMEMALLOC))
- 			alloc_flags |= ALLOC_HARDER;
- 		/*
--		 * Ignore cpuset if GFP_ATOMIC (!wait) rather than fail alloc.
--		 * See also cpuset_zone_allowed() comment in kernel/cpuset.c.
-+		 * Ignore cpuset mems for GFP_ATOMIC rather than fail, see the
-+		 * comment for __cpuset_node_allowed_softwall().
- 		 */
- 		alloc_flags &= ~ALLOC_CPUSET;
- 	} else if (unlikely(rt_task(current)) && !in_interrupt())
+ 	/* Otherwise skip the block */
 -- 
 1.8.4.5
 
