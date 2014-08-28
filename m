@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934067AbaH1BHI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 21:07:08 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:42559 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932305AbaH1BHG (ORCPT
+	id S965009AbaH1BJq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 21:09:46 -0400
+Received: from mga02.intel.com ([134.134.136.20]:5917 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932305AbaH1BJn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 21:07:06 -0400
-Date: Wed, 27 Aug 2014 18:07:03 -0700 (PDT)
-Message-Id: <20140827.180703.431737353995283706.davem@davemloft.net>
-To: bernat.ada@gmail.com
-Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH] ipv6: sit: Replace rcu_assign_pointer() with
- RCU_INIT_POINTER()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140826134632.GA1473@ada>
-References: <20140826134632.GA1473@ada>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 27 Aug 2014 18:07:05 -0700 (PDT)
+	Wed, 27 Aug 2014 21:09:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,414,1406617200"; 
+   d="scan'208";a="564481200"
+From: "Chen, Alvin" <alvin.chen@intel.com>
+To: atull <atull@opensource.altera.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        "Shevchenko, Andriy" <andriy.shevchenko@intel.com>,
+        "Westerberg, Mika" <mika.westerberg@intel.com>,
+        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        "yvanderv@opensource.altera.com" <yvanderv@opensource.altera.com>,
+        "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>
+Subject: RE: [PATCH 3/3] GPIO: gpio-dwapb: Suspend & Resume PM enabling
+Thread-Topic: [PATCH 3/3] GPIO: gpio-dwapb: Suspend & Resume PM enabling
+Thread-Index: AQHPwdz1dx1k2oxDc0a94LlHeTA5dpvkGkgAgAEXMtA=
+Date: Thu, 28 Aug 2014 01:09:14 +0000
+Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E980AF7@SHSMSX101.ccr.corp.intel.com>
+References: <1409161588-19417-1-git-send-email-alvin.chen@intel.com>
+ <1409161588-19417-4-git-send-email-alvin.chen@intel.com>
+ <alpine.DEB.2.02.1408271103120.11131@atx-linux-37>
+In-Reply-To: <alpine.DEB.2.02.1408271103120.11131@atx-linux-37>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-Date: Tue, 26 Aug 2014 16:46:32 +0300
-
-> According to RCU_INIT_POINTER()'s block comment 3.a, it can be used if
-> "3.   The referenced data structure has already been exposed to readers either
-> at compile time or via rcu_assign_pointer() -and-
->  a.   You have not made -any- reader-visible changes to this structure since
-> then".
 > 
-> This case fulfills the conditions above because between the rtnl_dereference()
-> call and the rcu_assign_pointer() call there is no update of that value.
-> Therefore, this patch makes the replacement.
+> Hi Weike,
 > 
-> The following Coccinelle semantic patch was used:
-> @@
-> @@
+> I tried out these patches on the current master branch (v3.17-rc2-9-g68e3702)
+> with a socfpga cyclone5 board.
 > 
-> - rcu_assign_pointer
-> + RCU_INIT_POINTER
->   (...,
-> (
->  rtnl_dereference(...)
-> |
->  rcu_dereference_protected(...)
-> ) )
+> If I apply all 3 patches, the kernel doesn't boot.
 > 
-> Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+> If I rebuild with only the first patch, I get only one gpio block showing up (should
+> have 3 for this board) and these messages:
+> 
+> 
+> How are you testing this?
+The patches try to not change the current OF flow, and from the log message, the other two GPIO registered failed due to duplicate name.
+Let me check the code to see what happen.
 
-These changes are not correct.
 
-We need the memory barrier added by rcu_assign_pointer(), which occurs
-before the assignment, otherwise the RCU pointer update might be visible
-before the stores that initialize the rest of the structure in question.
-
-I'm not applying any of these patches, sorry.
+> 
+> Alan
