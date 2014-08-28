@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936064AbaH1CRu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 22:17:50 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:39946 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932352AbaH1CRt (ORCPT
+	id S936133AbaH1CSQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 22:18:16 -0400
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:58796 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932352AbaH1CSO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 22:17:49 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s7S2Hj5n026953, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next] r8152: reduce the number of Tx
-Date: Thu, 28 Aug 2014 10:17:35 +0800
-Message-ID: <1394712342-15778-23-Taiwan-albertk@realtek.com>
-X-Mailer: Microsoft Office Outlook 11
+	Wed, 27 Aug 2014 22:18:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+In-Reply-To: <CAPM=9twcfXzFMgHEqj4aQAjsrewOfCK6o4ibrJ5ENP1Z8epM8g@mail.gmail.com>
+References: <20140827190125.29558.80166.stgit@gimli.home>
+	<CADnq5_MaPBTm-PtCq57KLJqZuxw4qTuZgyzHGqhfQoY95YxYsQ@mail.gmail.com>
+	<CAPM=9twcfXzFMgHEqj4aQAjsrewOfCK6o4ibrJ5ENP1Z8epM8g@mail.gmail.com>
+Date: Wed, 27 Aug 2014 22:18:13 -0400
+Message-ID: <CADnq5_MG2savPeRfUQ-pojCY=jVsvZVBO0TVGJ1LjhKxqR08nA@mail.gmail.com>
+Subject: Re: [PATCH] radeon: Test for PCI root bus before assuming bus->self
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>,
+        "Deucher, Alexander" <alexander.deucher@amd.com>,
+        Christian Koenig <christian.koenig@amd.com>,
+        Maling list - DRI developers 
+	<dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because the Tx has the features of stopping queue and aggregation,
-We don't need many tx buffers. Change the tx number from 10 to 4
-to reduce the usage of the memory. This could save 16K * 10 bytes
-memory.
+On Wed, Aug 27, 2014 at 9:32 PM, Dave Airlie <airlied@gmail.com> wrote:
+>> On Wed, Aug 27, 2014 at 3:01 PM, Alex Williamson
+>> <alex.williamson@redhat.com> wrote:
+>>> If we assign a Radeon device to a virtual machine, we can no longer
+>>> assume a fixed hardware topology, like the GPU having a parent device.
+>>> This patch simply adds a few pci_is_root_bus() tests to avoid passing
+>>> a NULL pointer to PCI access functions, allowing the radeon driver to
+>>> work in a QEMU 440FX machine with an assigned HD8570 on the emulated
+>>> PCI root bus.
+>>>
+>>> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+>>
+>
+> Does this mean inside a VM we can't enable pcie 2 speeds?
+>
+> This could lead to a quite disappointing speed decrease for DMA transfers.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+It depends on the sbios, but most boards negotiate the highest speed at boot.
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index 33dcc97..cc64dc0 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -424,7 +424,7 @@ enum rtl_register_content {
- 	FULL_DUP	= 0x01,
- };
- 
--#define RTL8152_MAX_TX		10
-+#define RTL8152_MAX_TX		4
- #define RTL8152_MAX_RX		10
- #define INTBUFSIZE		2
- #define CRC_SIZE		4
--- 
-1.9.3
-
+Alex
