@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965762AbaH1JJS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 05:09:18 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:56444 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965689AbaH1JIh (ORCPT
+	id S965747AbaH1JI4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 05:08:56 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:54144 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965709AbaH1JIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 05:08:37 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-05-53fef1940405
+	Thu, 28 Aug 2014 05:08:38 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-fb-53fef191d218
 From: Andrzej Hajda <a.hajda@samsung.com>
 To: Inki Dae <inki.dae@samsung.com>
 Cc: Andrzej Hajda <a.hajda@samsung.com>,
@@ -18,81 +18,109 @@ Cc: Andrzej Hajda <a.hajda@samsung.com>,
         dri-devel@lists.freedesktop.org,
         linux-kernel@vger.kernel.org (open list),
         linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...)
-Subject: [PATCH v2 17/17] drm/exynos/ipp: add file checks for ioctls
-Date: Thu, 28 Aug 2014 11:07:41 +0200
-Message-id: <1409216861-12452-18-git-send-email-a.hajda@samsung.com>
+Subject: [PATCH v2 16/17] drm/exynos/ipp: remove file argument from node
+ related functions
+Date: Thu, 28 Aug 2014 11:07:40 +0200
+Message-id: <1409216861-12452-17-git-send-email-a.hajda@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1409216861-12452-1-git-send-email-a.hajda@samsung.com>
 References: <1409216861-12452-1-git-send-email-a.hajda@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGJMWRmVeSWpSXmKPExsVy+t/xy7pTPv4LNlgwj8Pi1rpzrBZXvr5n
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCJMWRmVeSWpSXmKPExsVy+t/xy7oTP/4LNjh1x9Li1rpzrBZXvr5n
 	s5h0fwKLxYt7F1kszja9Ybe4vGsOm8WM8/uYLNYeuctuMWPySzYHTo/73ceZPPq2rGL0+LxJ
-	LoA5issmJTUnsyy1SN8ugStj2pfCgpcCFUfXrGJtYJzE18XIySEhYCLxvO8DC4QtJnHh3nq2
-	LkYuDiGBpYwSKzpmMEI4fUwSyxbsYAOpYhPQlPi7+SaYLSKgLLFqXzs7SBGzwEcmiStL3zCD
-	JIQFXCTunJ7ADmKzCKhKLJ2xACzOCxRf0rKaCWKdnMTJY5NZQWxOoPjG42/A6oUEnCV2n//M
-	NIGRdwEjwypG0dTS5ILipPRcI73ixNzi0rx0veT83E2MkLD6uoNx6TGrQ4wCHIxKPLwKp/8E
-	C7EmlhVX5h5ilOBgVhLhPXr8X7AQb0piZVVqUX58UWlOavEhRiYOTqkGxosll7o+sj3ubHFY
-	YNiWHnR7r9zf7AiFrfseVS1Q8PVTn2llcs6pSW6/c57UHE7XUrnN1mcfHuO9uPmX1JYEifcZ
-	9Sz/Z11YZr0n5aq7+ufDwlmcJXfkffjqPLgyuaor9sZKx6zOtnoc0aMguoJB4/Dc+4wqCsrL
-	s4tqJi2Of9cRpvN6daedEktxRqKhFnNRcSIAuirp+gkCAAA=
+	LoA5issmJTUnsyy1SN8ugStj56zIgl7JipcdC5gbGB+IdDFycEgImEjsOOjdxcgJZIpJXLi3
+	nq2LkYtDSGApo8T1r6+YIJw+Jomza26zglSxCWhK/N18kw3EFhFQlli1r50dpIhZ4COTxJWl
+	b5hBEsICMRIvNs5kBNnAIqAqcWdPBkiYV8BFovf1HHaIbXISJ49NBpvJCRTfePwNWFxIwFli
+	9/nPTBMYeRcwMqxiFE0tTS4oTkrPNdIrTswtLs1L10vOz93ECAmprzsYlx6zOsQowMGoxMOr
+	cPpPsBBrYllxZe4hRgkOZiUR3qPH/wUL8aYkVlalFuXHF5XmpBYfYmTi4JRqYPRzcPXnq+1i
+	VXx6fC+znHPTws16ZmFFf09LyfHc4GasylpT3CwuLrpC9lXX2jy5iukvl05gKvjsMm8vN9OZ
+	Be3MMa8PCridTv6avvhSUdn6HOmHwrMusWh2aeR62TyfrtndElvUMP3TlCvXA1gV9uWlzHLZ
+	Yaa+WEQ+/qeB4qz0ux+WNyaaK7EUZyQaajEXFScCAG4zpqcHAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Process should not have access to ipp nodes created by another
-process. The patch adds necessary checks.
+Since file pointer is preserved in c_node passing it
+as argument in node functions is redundant.
 
 Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
 ---
- drivers/gpu/drm/exynos/exynos_drm_ipp.c | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/exynos/exynos_drm_ipp.c | 14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/gpu/drm/exynos/exynos_drm_ipp.c b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
-index fc8bb67..d233cfc 100644
+index 05f0f4e..fc8bb67 100644
 --- a/drivers/gpu/drm/exynos/exynos_drm_ipp.c
 +++ b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
-@@ -318,7 +318,8 @@ static void ipp_print_property(struct drm_exynos_ipp_property *property,
- 		sz->hsize, sz->vsize, config->flip, config->degree);
+@@ -529,7 +529,6 @@ static int ipp_put_mem_node(struct drm_device *drm_dev,
+ 
+ static struct drm_exynos_ipp_mem_node
+ 		*ipp_get_mem_node(struct drm_device *drm_dev,
+-		struct drm_file *file,
+ 		struct drm_exynos_ipp_cmd_node *c_node,
+ 		struct drm_exynos_ipp_queue_buf *qbuf)
+ {
+@@ -560,7 +559,7 @@ static struct drm_exynos_ipp_mem_node
+ 			dma_addr_t *addr;
+ 
+ 			addr = exynos_drm_gem_get_dma_addr(drm_dev,
+-					qbuf->handle[i], file);
++					qbuf->handle[i], c_node->filp);
+ 			if (IS_ERR(addr)) {
+ 				DRM_ERROR("failed to get addr.\n");
+ 				ipp_put_mem_node(drm_dev, c_node, m_node);
+@@ -606,7 +605,6 @@ static void ipp_free_event(struct drm_pending_event *event)
  }
  
--static int ipp_find_and_set_property(struct drm_exynos_ipp_property *property)
-+static int ipp_find_and_set_property(struct drm_exynos_ipp_property *property,
-+		struct drm_file *file)
+ static int ipp_get_event(struct drm_device *drm_dev,
+-		struct drm_file *file,
+ 		struct drm_exynos_ipp_cmd_node *c_node,
+ 		struct drm_exynos_ipp_queue_buf *qbuf)
  {
- 	struct exynos_drm_ippdrv *ippdrv;
- 	struct drm_exynos_ipp_cmd_node *c_node;
-@@ -339,8 +340,12 @@ static int ipp_find_and_set_property(struct drm_exynos_ipp_property *property)
- 	 */
- 	mutex_lock(&ippdrv->cmd_lock);
- 	list_for_each_entry(c_node, &ippdrv->cmd_list, list) {
--		if ((c_node->property.prop_id == prop_id) &&
--		    (c_node->state == IPP_STATE_STOP)) {
-+		if (c_node->property.prop_id == prop_id) {
-+			if (c_node->filp != file)
-+				break;
-+			if (c_node->state != IPP_STATE_STOP)
-+				break;
-+
- 			mutex_unlock(&ippdrv->cmd_lock);
- 			DRM_DEBUG_KMS("found cmd[%d]ippdrv[0x%x]\n",
- 				property->cmd, (int)ippdrv);
-@@ -418,7 +423,7 @@ int exynos_drm_ipp_set_property(struct drm_device *drm_dev, void *data,
- 	 */
- 	if (property->prop_id) {
- 		DRM_DEBUG_KMS("prop_id[%d]\n", property->prop_id);
--		return ipp_find_and_set_property(property);
-+		return ipp_find_and_set_property(property, file);
+@@ -618,7 +616,7 @@ static int ipp_get_event(struct drm_device *drm_dev,
+ 	e = kzalloc(sizeof(*e), GFP_KERNEL);
+ 	if (!e) {
+ 		spin_lock_irqsave(&drm_dev->event_lock, flags);
+-		file->event_space += sizeof(e->event);
++		c_node->filp->event_space += sizeof(e->event);
+ 		spin_unlock_irqrestore(&drm_dev->event_lock, flags);
+ 		return -ENOMEM;
  	}
- 
- 	/* find ipp driver using ipp id */
-@@ -1032,7 +1037,7 @@ int exynos_drm_ipp_cmd_ctrl(struct drm_device *drm_dev, void *data,
- 
+@@ -630,7 +628,7 @@ static int ipp_get_event(struct drm_device *drm_dev,
+ 	e->event.prop_id = qbuf->prop_id;
+ 	e->event.buf_id[EXYNOS_DRM_OPS_DST] = qbuf->buf_id;
+ 	e->base.event = &e->event.base;
+-	e->base.file_priv = file;
++	e->base.file_priv = c_node->filp;
+ 	e->base.destroy = ipp_free_event;
+ 	mutex_lock(&c_node->event_lock);
+ 	list_add_tail(&e->base.link, &c_node->event_list);
+@@ -899,7 +897,7 @@ int exynos_drm_ipp_queue_buf(struct drm_device *drm_dev, void *data,
+ 	/* find command node */
  	c_node = ipp_find_obj(&ctx->prop_idr, &ctx->prop_lock,
- 		cmd_ctrl->prop_id);
+ 		qbuf->prop_id);
 -	if (!c_node) {
 +	if (!c_node || c_node->filp != file) {
- 		DRM_ERROR("invalid command node list.\n");
+ 		DRM_ERROR("failed to get command node.\n");
  		return -ENODEV;
  	}
+@@ -908,7 +906,7 @@ int exynos_drm_ipp_queue_buf(struct drm_device *drm_dev, void *data,
+ 	switch (qbuf->buf_type) {
+ 	case IPP_BUF_ENQUEUE:
+ 		/* get memory node */
+-		m_node = ipp_get_mem_node(drm_dev, file, c_node, qbuf);
++		m_node = ipp_get_mem_node(drm_dev, c_node, qbuf);
+ 		if (IS_ERR(m_node)) {
+ 			DRM_ERROR("failed to get m_node.\n");
+ 			return PTR_ERR(m_node);
+@@ -921,7 +919,7 @@ int exynos_drm_ipp_queue_buf(struct drm_device *drm_dev, void *data,
+ 		 */
+ 		if (qbuf->ops_id == EXYNOS_DRM_OPS_DST) {
+ 			/* get event for destination buffer */
+-			ret = ipp_get_event(drm_dev, file, c_node, qbuf);
++			ret = ipp_get_event(drm_dev, c_node, qbuf);
+ 			if (ret) {
+ 				DRM_ERROR("failed to get event.\n");
+ 				goto err_clean_node;
 -- 
 1.9.1
 
