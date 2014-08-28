@@ -1,71 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949AbaH1SlR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:41:17 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:60889 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753681AbaH1Sih (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:38:37 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 13/14] rcu: Handle NOCB callbacks from irq-disabled idle code
-Date: Thu, 28 Aug 2014 11:38:16 -0700
-Message-Id: <1409251097-26734-13-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1409251097-26734-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20140828183754.GA25488@linux.vnet.ibm.com>
- <1409251097-26734-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082818-9332-0000-0000-000001D6C6C6
+	id S1753525AbaH1Sh2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 14:37:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32893 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753383AbaH1ShR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:37:17 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 88/97] mm, thp: only collapse hugepages to nodes with affinity for zone_reclaim_mode
+Date: Thu, 28 Aug 2014 19:35:36 +0100
+Message-Id: <1409250945-30874-89-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
+References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+From: David Rientjes <rientjes@google.com>
 
-If an RCU callback is queued on a no-CBs CPU from idle code with irqs
-disabled, and if that CPU stays idle forever after, the callback will
-never be invoked.  This commit therefore adds a check for this situation
-in ____call_rcu_nocb(), invoking the RCU core solely for the purpose
-of the ensuing return-to-idle transition.  (If the CPU doesn't return
-to idle, the next scheduling-clock interrupt will fix things up.)
+commit 14a4e2141e24304fff2c697be6382ffb83888185 upstream.
 
-Reported-by: Amit Shah <amit.shah@redhat.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Commit 9f1b868a13ac ("mm: thp: khugepaged: add policy for finding target
+node") improved the previous khugepaged logic which allocated a
+transparent hugepages from the node of the first page being collapsed.
+
+However, it is still possible to collapse pages to remote memory which
+may suffer from additional access latency.  With the current policy, it
+is possible that 255 pages (with PAGE_SHIFT == 12) will be collapsed
+remotely if the majority are allocated from that node.
+
+When zone_reclaim_mode is enabled, it means the VM should make every
+attempt to allocate locally to prevent NUMA performance degradation.  In
+this case, we do not want to collapse hugepages to remote nodes that
+would suffer from increased access latency.  Thus, when
+zone_reclaim_mode is enabled, only allow collapsing to nodes with
+RECLAIM_DISTANCE or less.
+
+There is no functional change for systems that disable
+zone_reclaim_mode.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
+Cc: Dave Hansen <dave.hansen@intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Acked-by: Vlastimil Babka <vbabka@suse.cz>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Bob Liu <bob.liu@oracle.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- kernel/rcu/tree_plugin.h | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+ mm/huge_memory.c | 26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
 
-diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index 304f42c6543b..700e5b37bf26 100644
---- a/kernel/rcu/tree_plugin.h
-+++ b/kernel/rcu/tree_plugin.h
-@@ -2129,6 +2129,17 @@ static bool __call_rcu_nocb(struct rcu_data *rdp, struct rcu_head *rhp,
- 		trace_rcu_callback(rdp->rsp->name, rhp,
- 				   -atomic_long_read(&rdp->nocb_q_count_lazy),
- 				   -atomic_long_read(&rdp->nocb_q_count));
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 515e589..2ee5374 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -2191,6 +2191,30 @@ static void khugepaged_alloc_sleep(void)
+ 
+ static int khugepaged_node_load[MAX_NUMNODES];
+ 
++static bool khugepaged_scan_abort(int nid)
++{
++	int i;
 +
 +	/*
-+	 * If called from an extended quiescent state with interrupts
-+	 * disabled, invoke the RCU core in order to allow the idle-entry
-+	 * deferred-wakeup check to function.
++	 * If zone_reclaim_mode is disabled, then no extra effort is made to
++	 * allocate memory locally.
 +	 */
-+	if (irqs_disabled_flags(flags) &&
-+	    !rcu_is_watching() &&
-+	    cpu_online(smp_processor_id()))
-+		invoke_rcu_core();
++	if (!zone_reclaim_mode)
++		return false;
 +
- 	return true;
- }
- 
++	/* If there is a count for this node already, it must be acceptable */
++	if (khugepaged_node_load[nid])
++		return false;
++
++	for (i = 0; i < MAX_NUMNODES; i++) {
++		if (!khugepaged_node_load[i])
++			continue;
++		if (node_distance(nid, i) > RECLAIM_DISTANCE)
++			return true;
++	}
++	return false;
++}
++
+ #ifdef CONFIG_NUMA
+ static int khugepaged_find_target_node(void)
+ {
+@@ -2507,6 +2531,8 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
+ 		 * hit record.
+ 		 */
+ 		node = page_to_nid(page);
++		if (khugepaged_scan_abort(node))
++			goto out_unmap;
+ 		khugepaged_node_load[node]++;
+ 		VM_BUG_ON(PageCompound(page));
+ 		if (!PageLRU(page) || PageLocked(page) || !PageAnon(page))
 -- 
-1.8.1.5
+1.8.4.5
 
