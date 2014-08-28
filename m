@@ -1,166 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936085AbaH1BtA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 21:49:00 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:21208 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932309AbaH1Bs7 (ORCPT
+	id S964963AbaH1BuL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 21:50:11 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:11127 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932309AbaH1BuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 21:48:59 -0400
-X-AuditID: cbfee690-f79ce6d00000115a-3e-53fe8a881f1c
-Date: Thu, 28 Aug 2014 10:47:36 +0900
-From: Changman Lee <cm224.lee@samsung.com>
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: Jaegeuk Kim <jaegeuk@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Subject: Re: [f2fs-dev] [PATCH] f2fs: reposition unlock_new_inode to prevent
- accessing invalid inode
-Message-id: <20140828014736.GA6808@lcm>
-References: <009101cfc119$8e7a5a00$ab6f0e00$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-disposition: inline
-In-reply-to: <009101cfc119$8e7a5a00$ab6f0e00$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42I5/e+ZsW5H179gg3NPdC3+N31ks3iyfhaz
-	xaVF7haXd81hc2Dx2LSqk81j94LPTB59W1YxenzeJBfAEsVlk5Kak1mWWqRvl8CVcbxnNmvB
-	I+mK2cdOMjcwtol1MXJySAiYSFw7/JQJwhaTuHBvPVsXIxeHkMAyRom1CxcywRXNPsEOkZgO
-	lLj3jREkISTwk1FizWtLEJtFQFWibdZuZhCbTUBLov30WhYQW0RASeLX/EWsIDazQI7EkvP9
-	QEM5OIQF0iSWzOEDCfMKqEtcW/CWGWKkpcTHBe8YIeKCEj8m32OBaNWSWL/zOBOELS3x6O8M
-	dhCbU8BK4um0TrDxogIqElNObgN7QEJgHbvE+2/9TBC3CUh8m3yIBWSvhICsxKYDzBB/SUoc
-	XHGDZQKj2Cwk62YhWTcLyboFjMyrGEVTC5ILipPSi0z0ihNzi0vz0vWS83M3MUJiacIOxnsH
-	rA8xCnAwKvHwzkj4FyzEmlhWXJl7iNEU6IqJzFKiyfnAiM0riTc0NjOyMDUxNTYytzRTEud9
-	LfUzWEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVANj0LZ7Dxn3nIoPfzwpzrf19ZMHxfHKbX5t
-	Ny7ftNqvmJj1Lb1s6crNImsWbzJ4wH996pQ3J7cHPeeaa8i5gl2q9V3SL/srFW+alkZ3uP1d
-	s+/brC22LyZH6f3Yuemxrz2/1DEOBb/mcpdsXd1/gmVc175IeFa7+5vlm4TJKq48UJBRr7PM
-	yTVHiaU4I9FQi7moOBEACnvnIaACAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOIsWRmVeSWpSXmKPExsVy+t9jQd2Orn/BBnP/aFr8b/rIZvFk/Sxm
-	i0uL3C0u75rD5sDisWlVJ5vH7gWfmTz6tqxi9Pi8SS6AJaqB0SYjNTEltUghNS85PyUzL91W
-	yTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaKWSQlliTilQKCCxuFhJ3w7ThNAQN10L
-	mMYIXd+QILgeIwM0kLCOMeN4z2zWgkfSFbOPnWRuYGwT62Lk5JAQMJG4NvsEO4QtJnHh3nq2
-	LkYuDiGB6YwSa+99YwRJCAn8ZJRY89oSxGYRUJVom7WbGcRmE9CSaD+9lgXEFhFQkvg1fxEr
-	iM0skCOx5Hw/UxcjB4ewQJrEkjl8IGFeAXWJawveMkOMtJT4uOAdI0RcUOLH5HssEK1aEut3
-	HmeCsKUlHv2dAXYbp4CVxNNpnWDjRQVUJKac3MY2gVFgFpL2WUjaZyFpX8DIvIpRNLUguaA4
-	KT3XUK84Mbe4NC9dLzk/dxMjOFKfSe1gXNlgcYhRgINRiYfXIe5fsBBrYllxZe4hRgkOZiUR
-	3nSQEG9KYmVValF+fFFpTmrxIUZTYGBMZJYSTc4HJpG8knhDYxMzI0sjMwsjE3NzJXHeA63W
-	gUIC6YklqdmpqQWpRTB9TBycUg2MbI76edsWLMvZEiFbq31gfzHP5IkCqxwOdKvHXDoiFGJo
-	vOm0pCz7hQTe0z3dX/YbL4rprv147O7t856L1RcvD/Nb4fCxNfb82qLtlmXWDVniMw5YSZ34
-	GMUkzXe9pP1nadGxU8+yk861WDXnzOkyFTX9Ux/i9Npw/mLZxqC70RMW1m3dXfxZiaU4I9FQ
-	i7moOBEA4Ohk9uoCAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 27 Aug 2014 21:50:08 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 27 Aug 2014 18:40:01 -0700
+Message-ID: <53FE8AC9.2070907@nvidia.com>
+Date: Thu, 28 Aug 2014 09:50:01 +0800
+From: Wei Ni <wni@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Eduardo Valentin <edubezval@gmail.com>
+CC: <khali@linux-fr.org>, <linux@roeck-us.net>, <swarren@wwwdotorg.org>,
+        <lm-sensors@lm-sensors.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 3/4] thermal: add more description for thermal-zones
+References: <1408948188-4181-1-git-send-email-wni@nvidia.com> <1408948188-4181-4-git-send-email-wni@nvidia.com> <20140825110711.GA12349@developer> <53FBEE39.2020001@nvidia.com> <20140826121210.GB15219@developer> <53FD484F.7030504@nvidia.com> <20140827133217.GB15875@developer>
+In-Reply-To: <20140827133217.GB15875@developer>
+X-Originating-IP: [10.19.224.131]
+X-ClientProxiedBy: DRBGMAIL103.nvidia.com (10.18.16.22) To
+ HKMAIL101.nvidia.com (10.18.16.10)
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chao,
+On 08/27/2014 09:32 PM, Eduardo Valentin wrote:
+> Hello Wei,
+> 
+> On Wed, Aug 27, 2014 at 10:54:07AM +0800, Wei Ni wrote:
+>> On 08/26/2014 08:12 PM, Eduardo Valentin wrote:
+>>> On Tue, Aug 26, 2014 at 10:17:29AM +0800, Wei Ni wrote:
+>>>> On 08/25/2014 07:07 PM, Eduardo Valentin wrote:
+>>>>> Hello Wei Ni,
+>>>>>
+>>>>> On Mon, Aug 25, 2014 at 02:29:47PM +0800, Wei Ni wrote:
+>>>>>> Add more description for the "polling-delay" property.
+>>>>>> Set "trips" and "cooling maps" as optional property, because
+>>>>>> if missing these two sub-nodes, the thermal zone device still
+>>>>>> work properly.
+>>>>>>
+>>>>>> Signed-off-by: Wei Ni <wni@nvidia.com>
+>>>>>> ---
+>>>>>>  Documentation/devicetree/bindings/thermal/thermal.txt | 10 ++++++----
+>>>>>>  1 file changed, 6 insertions(+), 4 deletions(-)
+>>>>>>
+>>>>>> diff --git a/Documentation/devicetree/bindings/thermal/thermal.txt b/Documentation/devicetree/bindings/thermal/thermal.txt
+>>>>>> index f5db6b7..e3d3ed9 100644
+>>>>>> --- a/Documentation/devicetree/bindings/thermal/thermal.txt
+>>>>>> +++ b/Documentation/devicetree/bindings/thermal/thermal.txt
+>>>>>> @@ -136,8 +136,8 @@ containing trip nodes and one sub-node containing all the zone cooling maps.
+>>>>>>  
+>>>>>>  Required properties:
+>>>>>>  - polling-delay:	The maximum number of milliseconds to wait between polls
+>>>>>> -  Type: unsigned	when checking this thermal zone.
+>>>>>> -  Size: one cell
+>>>>>> +  Type: unsigned	when checking this thermal zone. If this value is 0, the
+>>>>>> +  Size: one cell	driver will not run polling queue, but just cancel it.
+>>>>>>  
+>>>>>
+>>>>> The description above is specific to Linux kernel implementation
+>>>>> nomenclature. DT description needs to be OS agnostic.
+>>>>>
+>>>>>>  - polling-delay-passive: The maximum number of milliseconds to wait
+>>>>>>    Type: unsigned	between polls when performing passive cooling.
+>>>>>> @@ -148,14 +148,16 @@ Required properties:
+>>>>>>    phandles + sensor
+>>>>>>    specifier
+>>>>>>  
+>>>>>> +Optional property:
+>>>>>>  - trips:		A sub-node which is a container of only trip point nodes
+>>>>>>    Type: sub-node	required to describe the thermal zone.
+>>>>>>  
+>>>>>>  - cooling-maps:		A sub-node which is a container of only cooling device
+>>>>>>    Type: sub-node	map nodes, used to describe the relation between trips
+>>>>>> -			and cooling devices.
+>>>>>> +			and cooling devices. If missing the "trips" property,
+>>>>>> +			This sub-node will not be parsed, because no trips can
+>>>>>> +			be bound to cooling devices.
+>>>>>
+>>>>> Do you mean if the thermal zone misses the "trips" property? Actually,
+>>>>> the binding describes both, cooling-maps and trips, as required
+>>>>> properties. Thus, both needs to be in place to consider the thermal zone
+>>>>> as a proper described zone.
+>>>>
+>>>> I moved the "trips" and "cooling-maps" to optional property, because if
+>>>> missing these two properties, the thermal zone devices still can be
+>>>> registered, and the driver can work properly, it has the basic function,
+>>>> can read temperature from thermal sysfs, although it doesn't have trips
+>>>> and bind with cooling devices.
+>>>
+>>>
+>>> If a thermal zone is used only for monitoring, then I believe it lost
+>>> its purpose. As  Maybe a different framework shall be used, such as hwmon,
+>>> for instance?
+>>
+>> Yes, if we only use it for monitoring, we can use hwmon. But we have
+>> more functions base on these two thermal zone devices. We have a
+>> skin-temperature driver, which used nct1008's remote and local
+>> temperatures to estimator the skin temperature. As you know the thermal
+>> framework is more powerful, the remote/local sensors can be register as
+>> thermal zone, then the skin-temp driver can use thermal_zone_get_temp()
+>> to read their temperatures and then estimator skin's temp. We also will
+>> set trips and cooling devices for this skin-temp.
+> 
+> In this case, don't you think it would make sense to create a thermal
+> zone for the skin temperature and add the required sensors (including
+> the nct1008) in it?
 
-I agree it's correct unlock_new_inode should be located after make_bad_inode.
+Hi, Eduardo
+Yes, we will create a thermal zone for the skin-temp driver and add the
+required sensors in it, but in here we want to register these required
+sensors as thermal zone devices, then the thermal framework can export
+functions to read these sensors temperature. If use hwmon framework, it
+can't export nct1008's internal sensors, such as remote/local sensors,
+and no exported functions to read these temperatures. If we doesn't use
+the thermal/of-thermal framework, we have to develop a new framework to
+parse those sensor nodes, and I think this new one may only have slight
+difference with current thermal framework.
+If we set those two properties as optional property, then we can use it
+in this case simply.
 
-About this scenario,
-I think we should check some condition if this could be occured;
-A inode allocated newly could be victim by gc thread.
-Then, f2fs_iget called by Thread A have to fail because we handled it as
-bad_inode in Thread B. However, f2fs_iget could still get inode.
-How about check it using is_bad_inode() in f2fs_iget.
+The skin-temp nodes will something like this:
 
-Thanks,
+skin_temp: therm-est {
+	compatible = "nvidia,tegra124-therm-est";
 
-On Tue, Aug 26, 2014 at 06:35:29PM +0800, Chao Yu wrote:
-> As the race condition on the inode cache, following scenario can appear:
-> [Thread a]				[Thread b]
-> 					->f2fs_mkdir
-> 					  ->f2fs_add_link
-> 					    ->__f2fs_add_link
-> 					      ->init_inode_metadata failed here
-> ->gc_thread_func
->   ->f2fs_gc
->     ->do_garbage_collect
->       ->gc_data_segment
->         ->f2fs_iget
->           ->iget_locked
->             ->wait_on_inode
-> 					  ->unlock_new_inode
->         ->move_data_page
-> 					  ->make_bad_inode
-> 					  ->iput
+	#thermal-sensor-cells = <0>;
+
+	sub-devs {
+		dev@0 {
+/* we need to register nct1008_remote as thermal zone devices, so that
+it's easy to handle it by using thermal framework's exported functions. */
+			dev = <&nct1008_remote>;
+		};
+		dev@1 {
+			dev = <&nct1008_local>;
+		};
+	};
+};
+
+thermal-zones {
+	skin-therm {
+		polling-delay-passive = <15000>
+		polling-delay = <0>;
+
+		thermal-sensors = <&skin_temp>;
+
+		trips {
+		};
+		cooling-maps {
+		};
+	};
+};
+
+Wei.
 > 
-> When we fail in create/symlink/mkdir/mknod/tmpfile, the new allocated inode
-> should be set as bad to avoid being accessed by other thread. But in above
-> scenario, it allows f2fs to access the invalid inode before this inode was set
-> as bad.
-> This patch fix the potential problem, and this issue was found by code review.
-> 
-> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> ---
->  fs/f2fs/namei.c | 10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/fs/f2fs/namei.c b/fs/f2fs/namei.c
-> index 6b53ce9..845f1be 100644
-> --- a/fs/f2fs/namei.c
-> +++ b/fs/f2fs/namei.c
-> @@ -134,8 +134,8 @@ static int f2fs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
->  	return 0;
->  out:
->  	clear_nlink(inode);
-> -	unlock_new_inode(inode);
->  	make_bad_inode(inode);
-> +	unlock_new_inode(inode);
->  	iput(inode);
->  	alloc_nid_failed(sbi, ino);
->  	return err;
-> @@ -267,8 +267,8 @@ static int f2fs_symlink(struct inode *dir, struct dentry *dentry,
->  	return err;
->  out:
->  	clear_nlink(inode);
-> -	unlock_new_inode(inode);
->  	make_bad_inode(inode);
-> +	unlock_new_inode(inode);
->  	iput(inode);
->  	alloc_nid_failed(sbi, inode->i_ino);
->  	return err;
-> @@ -308,8 +308,8 @@ static int f2fs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
->  out_fail:
->  	clear_inode_flag(F2FS_I(inode), FI_INC_LINK);
->  	clear_nlink(inode);
-> -	unlock_new_inode(inode);
->  	make_bad_inode(inode);
-> +	unlock_new_inode(inode);
->  	iput(inode);
->  	alloc_nid_failed(sbi, inode->i_ino);
->  	return err;
-> @@ -354,8 +354,8 @@ static int f2fs_mknod(struct inode *dir, struct dentry *dentry,
->  	return 0;
->  out:
->  	clear_nlink(inode);
-> -	unlock_new_inode(inode);
->  	make_bad_inode(inode);
-> +	unlock_new_inode(inode);
->  	iput(inode);
->  	alloc_nid_failed(sbi, inode->i_ino);
->  	return err;
-> @@ -688,8 +688,8 @@ release_out:
->  out:
->  	f2fs_unlock_op(sbi);
->  	clear_nlink(inode);
-> -	unlock_new_inode(inode);
->  	make_bad_inode(inode);
-> +	unlock_new_inode(inode);
->  	iput(inode);
->  	alloc_nid_failed(sbi, inode->i_ino);
->  	return err;
-> -- 
-> 2.0.0.421.g786a89d
-> 
-> 
-> 
-> ------------------------------------------------------------------------------
-> Slashdot TV.  
-> Video for Nerds.  Stuff that matters.
-> http://tv.slashdot.org/
-> _______________________________________________
-> Linux-f2fs-devel mailing list
-> Linux-f2fs-devel@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
+>>
+>> Wei.
+>>
+>>>
+>>> The purpose of a thermal zone is to describe thermal behavior of a
+>>> hardware. As it is mentioned in the thermal.txt file.
+>>>
+>>>
+>>>>
+>>>> Thanks.
+>>>> Wei.
+>>>>
+>>>>>
+>>>>>>  
+>>>>>> -Optional property:
+>>>>>>  - coefficients:		An array of integers (one signed cell) containing
+>>>>>>    Type: array		coefficients to compose a linear relation between
+>>>>>>    Elem size: one cell	the sensors listed in the thermal-sensors property.
+>>>>>> -- 
+>>>>>> 1.8.1.5
+>>>>>>
+>>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>
+>>
+
