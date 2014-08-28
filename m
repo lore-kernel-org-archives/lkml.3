@@ -1,101 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751216AbaH1MLL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 08:11:11 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:57153 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751015AbaH1MLI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 08:11:08 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53FF1C58.3070006@roeck-us.net>
-Date: Thu, 28 Aug 2014 05:11:04 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751046AbaH1MPI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 08:15:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54085 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750748AbaH1MPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 08:15:06 -0400
+Message-ID: <53FF1D44.3080702@suse.de>
+Date: Thu, 28 Aug 2014 14:15:00 +0200
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: Beniamino Galvani <b.galvani@gmail.com>, linux-kernel@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Wim Van Sebroeck <wim@iguana.be>,
-        linux-watchdog@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Carlo Caione <carlo@caione.org>
-Subject: Re: [PATCH 3/4] watchdog: add driver for Ricoh RN5T618 watchdog
-References: <1409091237-16722-1-git-send-email-b.galvani@gmail.com> <1409091237-16722-4-git-send-email-b.galvani@gmail.com> <20140827190135.GA18849@roeck-us.net> <20140828071946.GF24579@lee--X1>
-In-Reply-To: <20140828071946.GF24579@lee--X1>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+CC: linux-scsi@vger.kernel.org,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        yrl.pp-manager.tt@hitachi.com, linux-kernel@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Doug Gilbert <dgilbert@interlog.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christoph Hellwig <hch@lst.de>
+Subject: Re: [RFC PATCH 10/10] scsi/trace: Use scsi_print_command trace point
+ instead of printk
+References: <20140808115004.6768.97014.stgit@yuno-kbuild.novalocal> <20140808115030.6768.91195.stgit@yuno-kbuild.novalocal> <53FDE859.1020800@suse.de> <53FE8890.80403@hitachi.com> <53FEC9E7.6000909@hitachi.com>
+In-Reply-To: <53FEC9E7.6000909@hitachi.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/28/2014 12:19 AM, Lee Jones wrote:
-> On Wed, 27 Aug 2014, Guenter Roeck wrote:
->> On Wed, Aug 27, 2014 at 12:13:56AM +0200, Beniamino Galvani wrote:
->>> This adds a driver for the watchdog timer available in Ricoh RN5T618
->>> PMIC. The device supports a programmable expiration time of 1, 8, 32
->>> or 128 seconds.
->>>
->>> Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
->>> ---
->>>   drivers/watchdog/Kconfig       |   11 +++
->>>   drivers/watchdog/Makefile      |    1 +
->>>   drivers/watchdog/rn5t618_wdt.c |  196 ++++++++++++++++++++++++++++++++++++++++
->>>   include/linux/mfd/rn5t618.h    |    4 +
->>>   4 files changed, 212 insertions(+)
->>>   create mode 100644 drivers/watchdog/rn5t618_wdt.c
+On 08/28/2014 08:19 AM, Yoshihiro YUNOMAE wrote:
+> Hi Hannes,
 >
-> [...]
+> I tried to remove duplicated decoder of SCSI command, but the
+> output format of it in constants.c is different from it in traceevents.
+> I have two questions for it.
 >
->>> +++ b/drivers/watchdog/rn5t618_wdt.c
->>> @@ -0,0 +1,196 @@
+> (Ex1)
+> traceevents: TEST_UNIT_READY
+> constants: Test Unit Ready
 >
-> [...]
+> => Which of "XXX_YYY_ZZZ" and "Xxx Yyy Zzz" should the kernel output
+> strings? This difference comes from difference of implementation.
+> The decoder in traceevents are using macro. So, it cannot define
+> separated words. On the other hand, the decoder in constants are using
+> constant string array table. So, it can define separated words.
 >
->>> +static int rn5t618_wdt_set_timeout(struct watchdog_device *wdt_dev,
->>> +				   unsigned int timeout)
->>> +{
->>> +	struct rn5t618_wdt *wdt = watchdog_get_drvdata(wdt_dev);
->>> +	int ret, i;
->>> +
->>> +	for (i = 0; i < ARRAY_SIZE(rn5t618_wdt_map); i++) {
->>> +		if (rn5t618_wdt_map[i].time + 1 >= timeout)
->>> +			break;
->>> +	}
->>> +
->>> +	if (i == ARRAY_SIZE(rn5t618_wdt_map))
->>> +		ret = -EINVAL;
->>
->> Can you simplify this a bit ? If you use
->>
->> 	if (i == ARRAY_SIZE(rn5t618_wdt_map))
->> 		return -EINVAL;
->
-> This changes the semantics.
->
-How so ? If ret is set to -EINVAL, the rest of the function won't do anything
-but eventually return -EINVAL. I don't see why returning -EINVAL immediately
-would change that.
+I would go with the wording in constants.c, but set in double quotes 
+like "Test Unit Ready" to avoid parsing errors later on.
 
-Guenter
+> (Ex2)
+> traceevents: (nothing)
+> constants: Set limits(12)
+>
+> => Should we merge those decoder?
+>
+Yes, I would prefer this. Again, we should be setting the strings in 
+double quotes irrespective if there are spaces in the resulting 
+string or not.
 
->>> +	else
->>
->> You can drop this else statement.
->>
->>> +		ret = regmap_update_bits(wdt->rn5t618->regmap, RN5T618_WATCHDOG,
->>> +					 RN5T618_WATCHDOG_WDOGTIM_M,
->>> +					 rn5t618_wdt_map[i].reg_val);
->>> +	if (!ret)
->>> +		wdt_dev->timeout = rn5t618_wdt_map[i].time;
+> I understand we use the decoder of constants, but we need to solve
+> these problems. Would you give me your comments?
 >
-> ... Isn't this important?
->
->>> +	return ret;
->>> +}
->
+As mentioned previously, my aim is to convert the logging system in 
+several steps:
 
+a) convert all lone 'printk' statements into dev_printk() variants
+    and ensure everything is printed in one statement to avoid
+    linebreaks in the resulting logging message.
+    This will eliminate the immediate problem we're having, namely
+    that debugging is near to impossible under high load.
+    The patchset is nearing completion, and I will be posting it
+    later this week.
+b) Convert scsi_trace to use the functions from constants.c to
+    avoid code duplication and update scsi_trace to log sense codes.
+c) Remove all logging functions in the hot path (ie
+    SCSI_LOG_MLQUEUE and SCSI_LOG_MLCOMPLETE) and replace them
+    with trace events.
+
+b) is what you're working on, right?
+For 'c)' the problem is that we should retain the existing 
+functionality with scsi_logging_level here, at least initially.
+So we cannot just replace it, as this would leave SCSI_LOG_ML
+a dummy without any real functionality.
+
+I'll be posting my current patchset for review shortly.
+
+Cheers,
+
+Hannes
+-- 
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
