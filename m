@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751650AbaH1Of4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 10:35:56 -0400
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:51945 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751546AbaH1Ofx (ORCPT
+	id S1751783AbaH1OgB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 10:36:01 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:48207 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751546AbaH1Of7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 10:35:53 -0400
+	Thu, 28 Aug 2014 10:35:59 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: lee.jones@linaro.org, kernel@stlinux.com, wsa@the-dreams.de,
         grant.likely@linaro.org, linux-i2c@vger.kernel.org,
         devicetree@vger.kernel.org, linus.walleij@linaro.org
-Subject: [PATCH 1/8] i2c: Add pointer dereference protection to i2c_match_id()
-Date: Thu, 28 Aug 2014 15:35:31 +0100
-Message-Id: <1409236538-21274-2-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 3/8] i2c: Match using traditional OF methods, then by vendor-less compatible strings
+Date: Thu, 28 Aug 2014 15:35:33 +0100
+Message-Id: <1409236538-21274-4-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1409236538-21274-1-git-send-email-lee.jones@linaro.org>
 References: <1409236538-21274-1-git-send-email-lee.jones@linaro.org>
@@ -22,54 +22,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here we're providing dereference protection for i2c_match_id(), which
-saves us having to do it each time it's called.  We're also stripping
-out the (now) needless checks in i2c_device_match().  This patch paves
-the way for other, similar code trimming.
+This function provides a single call for all I2C devices which need to
+match firstly using traditional OF means i.e by of_node, then if that
+fails we attempt to match using the supplied I2C client name with a
+list of supplied compatible strings with the '<vendor>,' string
+removed.  The latter is required due to the unruly naming conventions
+used currently by I2C devices.
 
 Acked-by: Grant Likely <grant.likely@linaro.org>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/i2c/i2c-core.c | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ drivers/i2c/i2c-core.c | 16 ++++++++++++++++
+ include/linux/i2c.h    | 12 ++++++++++++
+ 2 files changed, 28 insertions(+)
 
 diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index 632057a..d3c8e9f 100644
+index eb46d15..5728b2e 100644
 --- a/drivers/i2c/i2c-core.c
 +++ b/drivers/i2c/i2c-core.c
-@@ -83,6 +83,9 @@ void i2c_transfer_trace_unreg(void)
- static const struct i2c_device_id *i2c_match_id(const struct i2c_device_id *id,
- 						const struct i2c_client *client)
- {
-+	if (!(id && client))
+@@ -1116,6 +1116,22 @@ i2c_of_match_device_strip_vendor(const struct of_device_id *matches,
+ 	return NULL;
+ }
+ 
++const struct of_device_id
++*i2c_of_match_device(const struct of_device_id *matches,
++		     struct i2c_client *client)
++{
++	const struct of_device_id *match;
++
++	if (!(client && matches))
 +		return NULL;
 +
- 	while (id->name[0]) {
- 		if (strcmp(client->name, id->name) == 0)
- 			return id;
-@@ -96,8 +99,6 @@ static int i2c_device_match(struct device *dev, struct device_driver *drv)
- 	struct i2c_client	*client = i2c_verify_client(dev);
- 	struct i2c_driver	*driver;
- 
--	if (!client)
--		return 0;
- 
- 	/* Attempt an OF style match */
- 	if (of_driver_match_device(dev, drv))
-@@ -108,9 +109,10 @@ static int i2c_device_match(struct device *dev, struct device_driver *drv)
- 		return 1;
- 
- 	driver = to_i2c_driver(drv);
--	/* match on an id table if there is one */
--	if (driver->id_table)
--		return i2c_match_id(driver->id_table, client) != NULL;
++	match = of_match_device(matches, &client->dev);
++	if (match)
++		return match;
 +
-+	/* Finally an I2C match */
-+	if (i2c_match_id(driver->id_table, client))
-+		return 1;
++	return i2c_of_match_device_strip_vendor(matches, client);
++}
++EXPORT_SYMBOL_GPL(i2c_of_match_device);
+ #else
+ static void of_i2c_register_devices(struct i2c_adapter *adap) { }
+ #endif /* CONFIG_OF */
+diff --git a/include/linux/i2c.h b/include/linux/i2c.h
+index a95efeb..a48eadd 100644
+--- a/include/linux/i2c.h
++++ b/include/linux/i2c.h
+@@ -564,6 +564,10 @@ extern struct i2c_client *of_find_i2c_device_by_node(struct device_node *node);
+ /* must call put_device() when done with returned i2c_adapter device */
+ extern struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node *node);
  
- 	return 0;
++extern const struct of_device_id
++*i2c_of_match_device(const struct of_device_id *matches,
++		     struct i2c_client *client);
++
+ #else
+ 
+ static inline struct i2c_client *of_find_i2c_device_by_node(struct device_node *node)
+@@ -575,6 +579,14 @@ static inline struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node
+ {
+ 	return NULL;
  }
++
++const struct of_device_id
++*i2c_of_match_device(const struct of_device_id *matches,
++		     struct i2c_client *client)
++{
++	return NULL;
++}
++
+ #endif /* CONFIG_OF */
+ 
+ #ifdef CONFIG_ACPI
 -- 
 1.9.1
 
