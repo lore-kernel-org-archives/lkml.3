@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757092AbaH1BFc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 21:05:32 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:32808 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752592AbaH1BFa (ORCPT
+	id S1757234AbaH1BFh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 21:05:37 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:46606 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757122AbaH1BFe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 21:05:30 -0400
+	Wed, 27 Aug 2014 21:05:34 -0400
 From: Benjamin Poirier <bpoirier@suse.de>
 To: Prashant Sreedharan <prashant@broadcom.com>,
         Michael Chan <mchan@broadcom.com>
 Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH net v4 1/4] tg3: Limit minimum tx queue wakeup threshold
-Date: Wed, 27 Aug 2014 18:04:15 -0700
-Message-Id: <1409187858-7698-1-git-send-email-bpoirier@suse.de>
+Subject: [PATCH net v4 2/4] tg3: Fix tx_pending check for MAX_SKB_FRAGS
+Date: Wed, 27 Aug 2014 18:04:16 -0700
+Message-Id: <1409187858-7698-2-git-send-email-bpoirier@suse.de>
 X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1409187858-7698-1-git-send-email-bpoirier@suse.de>
+References: <1409187858-7698-1-git-send-email-bpoirier@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tx_pending may be set by the user (via ethtool -G) to a low enough value that
-TG3_TX_WAKEUP_THRESH becomes smaller than MAX_SKB_FRAGS + 1. This may cause
-the tx queue to be waked when there are in fact not enough descriptors to
-handle an skb with max frags. This in turn causes tg3_start_xmit() to return
-NETDEV_TX_BUSY and print error messages. Fix the problem by putting a limit to
-how low TG3_TX_WAKEUP_THRESH can go.
+The rest of the driver assumes at least one free descriptor in the tx ring.
+Therefore, since an skb with max frags takes up (MAX_SKB_FRAGS + 1)
+descriptors, tx_pending must be > (MAX_SKB_FRAGS + 1).
 
 Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
 ---
 
-I noticed the problem in a 3.0 kernel when setting `ethtool eth0 -G tx 50` and
-running a netperf TCP_STREAM test. The console fills up with
-[10597.596155] tg3 0000:06:00.0: eth0: BUG! Tx Ring full when queue awake!
-The problem in tg3 remains in current kernels though it does not reproduce as
-easily since "5640f76 net: use a per task frag allocator (v3.7-rc1)". I
-reproduced on current kernels by using the fail_page_alloc fault injection
-mechanism to force the creation of skbs with many order-0 frags. Note that the
-following script may also trigger another bug (NETDEV WATCHDOG), which is
-fixed in the next patch.
+Changes v1->v2
+Moved ahead in the series from 3/3 to 2/3, no functionnal change
 
-$ cat /tmp/doit.sh
-
-F="/sys/kernel/debug/fail_page_alloc"
-
-echo -1 > "$F/times"
-echo 0 > "$F/verbose"
-echo 0 > "$F/ignore-gfp-wait"
-echo 1 > "$F/task-filter"
-echo 100 > "$F/probability"
-
-netperf -H 192.168.9.30 -l100 -t omni -- -d send &
-
-n=$!
-
-sleep 0.3
-echo 1 > "/proc/$n/make-it-fail"
-sleep 10
-
-kill "$n"
+I reproduced this bug using the same approach explained in patch 1.
+The bug reproduces with tx_pending = 18
 ---
- drivers/net/ethernet/broadcom/tg3.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/broadcom/tg3.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index 3ac5d23..b11c0fd 100644
+index b11c0fd..0cecd6d 100644
 --- a/drivers/net/ethernet/broadcom/tg3.c
 +++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -202,7 +202,8 @@ static inline void _tg3_flag_clear(enum TG3_FLAGS flag, unsigned long *bits)
- #endif
- 
- /* minimum number of free TX descriptors required to wake up TX process */
--#define TG3_TX_WAKEUP_THRESH(tnapi)		((tnapi)->tx_pending / 4)
-+#define TG3_TX_WAKEUP_THRESH(tnapi)	max_t(u32, (tnapi)->tx_pending / 4, \
-+					      MAX_SKB_FRAGS + 1)
- #define TG3_TX_BD_DMA_MAX_2K		2048
- #define TG3_TX_BD_DMA_MAX_4K		4096
- 
+@@ -12319,7 +12319,7 @@ static int tg3_set_ringparam(struct net_device *dev, struct ethtool_ringparam *e
+ 	if ((ering->rx_pending > tp->rx_std_ring_mask) ||
+ 	    (ering->rx_jumbo_pending > tp->rx_jmb_ring_mask) ||
+ 	    (ering->tx_pending > TG3_TX_RING_SIZE - 1) ||
+-	    (ering->tx_pending <= MAX_SKB_FRAGS) ||
++	    (ering->tx_pending <= MAX_SKB_FRAGS + 1) ||
+ 	    (tg3_flag(tp, TSO_BUG) &&
+ 	     (ering->tx_pending <= (MAX_SKB_FRAGS * 3))))
+ 		return -EINVAL;
 -- 
 1.8.4.5
 
