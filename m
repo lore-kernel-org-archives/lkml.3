@@ -1,118 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965571AbaH1KhV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 06:37:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:49170 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934503AbaH1KhU (ORCPT
+	id S965723AbaH1Kju (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 06:39:50 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:48462 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965470AbaH1Kjt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 06:37:20 -0400
-Date: Thu, 28 Aug 2014 11:37:07 +0100
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Shuah Khan <shuah.kh@samsung.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH v2 1/4] ftracetest: Initial commit for ftracetest
-Message-ID: <20140828103707.GA17707@hercules>
-References: <20140826111511.5711.28493.stgit@kbuild-fedora.novalocal>
- <20140826111518.5711.71441.stgit@kbuild-fedora.novalocal>
- <20140827155456.GH10937@hercules>
- <53FEEAF6.1030701@hitachi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53FEEAF6.1030701@hitachi.com>
+	Thu, 28 Aug 2014 06:39:49 -0400
+From: Gyungoh Yoo <gyungoh@gmail.com>
+X-Google-Original-From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
+To: linux-kernel@vger.kernel.org
+Cc: devicetree@vger.kernel.org, Gyungoh Yoo <jack.yoo@skyworksinc.com>
+Subject: [PATCH v2 0/7] Adding Skyworks SKY81452 device drivers
+Date: Thu, 28 Aug 2014 19:38:27 +0900
+Message-Id: <1409222307-23225-1-git-send-email-jack.yoo@skyworksinc.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1407488899-31065-1-git-send-email-jack.yoo@skyworksinc.com>
+References: <1407488899-31065-1-git-send-email-jack.yoo@skyworksinc.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 28, 2014 at 05:40:22PM +0900, Masami Hiramatsu wrote:
-> (2014/08/28 0:54), Luis Henriques wrote:
-> > Hi,
-> > 
-> > Not really a complete review, but just 2 comments on this script:
-> > 
-> > On Tue, Aug 26, 2014 at 11:15:18AM +0000, Masami Hiramatsu wrote:
-> > ...
-> >> +prlog() { # messages
-> >> +  echo $@ | tee -a $LOG_FILE
-> >> +}
-> >> +catlog() { #file
-> >> +  cat $1 | tee -a $LOG_FILE
-> >> +}
-> >> +
-> >> +# Testcase management
-> >> +PASSED_CASES=
-> >> +FAILED_CASES=
-> >> +CASENO=0
-> >> +testcase() { # testfile
-> >> +  CASENO=$((CASENO+1))
-> >> +  prlog -n "[$CASENO]"`grep "^#[ \t]*description:" $1 | cut -f2 -d:`
-> >> +}
-> >> +failed() {
-> >> +  prlog -e "\t[FAIL]"
-> >> +  FAILED_CASES="$FAILED_CASES $CASENO"
-> >> +}
-> >> +passed() {
-> >> +  prlog -e "\t[PASS]"
-> >> +  PASSED_CASES="$PASSED_CASES $CASENO"
-> >> +}
-> > 
-> > What I see here is a '-e' being echo'ed and not really a '-e' switch
-> > being used to 'echo'.  (Also, I'm not sure if this is a standard
-> > switch...).
-> > 
-> > This applies to all the other 'prlog -e'.
-> 
-> Oh, really? what shell did you use?
-> My target shell is the busybox and I've tested it on fedora20.
-> 
-> e.g. busybox echo command seems accept -e.
->   $ busybox echo -e '\tfoo'
->   	foo
-> 
-> Of course maybe I'd better not use \t, but "	"...
-> 
-> 
+This patch set includes regulator and backlight driver for SKY81452.
+Also it includes documents for device tree and module.
 
-I've tested it with dash (version 0.5.7).
+v2:
+Split the patches for each sub-system.
+Added 'reg' attribute for I2C address in device tree documents
+Added 'compatible' attribute in child drivers
+Renamed CONFIG_SKY81452 to CONFIG_MFD_SKY81452
+Changed the dependency from I2C=y to I2C, for CONFIG_MFD_SKY81452
+Added message for exception or errors.
 
-Anyway, I didn't investigated this any further but I'm sure we'll
-enter the usual POSIX-compliance discussion. :-)
+Gyungoh Yoo (7):
+  Adding Skyworks SKY81452 MFD driver
+  Adding Skyworks SKY81452 regulator driver
+  Adding Skyworks SKY81452 backlight driver
+  Adding SKY81452 MFD device tree bindings document
+  Adding SKY81452 regulator device tree bindings document
+  Adding SKY81452 backlight device tree bindings document
+  Adding SKY81452 backlight document
 
-Cheers,
---
-Luís
+ Documentation/backlight/sky81452-backlight.txt     |  26 ++
+ .../devicetree/bindings/i2c/trivial-devices.txt    |   1 +
+ Documentation/devicetree/bindings/mfd/sky81452.txt |  32 ++
+ .../bindings/regulator/sky81452-regulator.txt      |  18 ++
+ .../devicetree/bindings/vendor-prefixes.txt        |   1 +
+ .../video/backlight/sky81452-backlight.txt         |  24 ++
+ drivers/mfd/Kconfig                                |  12 +
+ drivers/mfd/Makefile                               |   1 +
+ drivers/mfd/sky81452.c                             | 108 +++++++
+ drivers/regulator/Kconfig                          |  11 +
+ drivers/regulator/Makefile                         |   1 +
+ drivers/regulator/sky81452-regulator.c             | 140 +++++++++
+ drivers/video/backlight/Kconfig                    |  10 +
+ drivers/video/backlight/Makefile                   |   1 +
+ drivers/video/backlight/sky81452-backlight.c       | 347 +++++++++++++++++++++
+ include/linux/mfd/sky81452.h                       |  32 ++
+ include/linux/sky81452-backlight.h                 |  47 +++
+ 17 files changed, 812 insertions(+)
+ create mode 100644 Documentation/backlight/sky81452-backlight.txt
+ create mode 100644 Documentation/devicetree/bindings/mfd/sky81452.txt
+ create mode 100644 Documentation/devicetree/bindings/regulator/sky81452-regulator.txt
+ create mode 100644 Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
+ create mode 100644 drivers/mfd/sky81452.c
+ create mode 100644 drivers/regulator/sky81452-regulator.c
+ create mode 100644 drivers/video/backlight/sky81452-backlight.c
+ create mode 100644 include/linux/mfd/sky81452.h
+ create mode 100644 include/linux/sky81452-backlight.h
 
-> >> +
-> >> +
-> >> +# Run one test case
-> >> +run_test() { # testfile
-> >> +  local testname=`basename $1`
-> >> +  local testlog=`mktemp --tmpdir=$LOG_DIR ${testname}-XXXXXX.log`
-> >> +  testcase $1
-> >> +  echo "execute: "$1 > $testlog
-> >> +  (cd $TRACING_DIR; set -x ; source $t) >> $testlog 2>&1
-> >> +  ret=$?
-> > 
-> > I believe the usage of 'source' is a bashism, and '.' should be used
-> > instead.  In my environment, 'source' results in ret=127.  Replacing
-> > it by '.' fixes it.
-> 
-> Ah, right. I missed that, I'll fix that :)
-> 
-> Thank you,
-> 
-> 
-> -- 
-> Masami HIRAMATSU
-> Software Platform Research Dept. Linux Technology Research Center
-> Hitachi, Ltd., Yokohama Research Laboratory
-> E-mail: masami.hiramatsu.pt@hitachi.com
-> 
-> 
+-- 
+1.9.1
+
