@@ -1,147 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936262AbaH1HRP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 03:17:15 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:63651 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932622AbaH1HRL (ORCPT
+	id S936269AbaH1HTz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 03:19:55 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:37559 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934221AbaH1HTx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 03:17:11 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtUUAMLW/lN5LDJ8PGdsb2JhbABRCoMNgSqCLIUHp0cBBQafAYVyAYEZFwUBAQEBODaEBAEFOhwjEAgDDgoJJQ8FJQMHGhMeiCO/FxcYhWSIdA4FSQeDL4EdBZxXmQsrL4EHgUgBAQE
-Date: Thu, 28 Aug 2014 17:17:06 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Christoph Lameter <cl@linux.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, willy@linux.intel.com
-Subject: Re: [PATCH v10 00/21] Support ext4 on NV-DIMMs
-Message-ID: <20140828071706.GD26465@dastard>
-References: <cover.1409110741.git.matthew.r.wilcox@intel.com>
- <20140827130613.c8f6790093d279a447196f17@linux-foundation.org>
- <alpine.DEB.2.11.1408271616070.17080@gentwo.org>
- <20140827143055.5210c5fb9696e460b456eb26@linux-foundation.org>
+	Thu, 28 Aug 2014 03:19:53 -0400
+Date: Thu, 28 Aug 2014 08:19:46 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Beniamino Galvani <b.galvani@gmail.com>, linux-kernel@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Wim Van Sebroeck <wim@iguana.be>,
+        linux-watchdog@vger.kernel.org, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Carlo Caione <carlo@caione.org>
+Subject: Re: [PATCH 3/4] watchdog: add driver for Ricoh RN5T618 watchdog
+Message-ID: <20140828071946.GF24579@lee--X1>
+References: <1409091237-16722-1-git-send-email-b.galvani@gmail.com>
+ <1409091237-16722-4-git-send-email-b.galvani@gmail.com>
+ <20140827190135.GA18849@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140827143055.5210c5fb9696e460b456eb26@linux-foundation.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140827190135.GA18849@roeck-us.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 27, 2014 at 02:30:55PM -0700, Andrew Morton wrote:
-> On Wed, 27 Aug 2014 16:22:20 -0500 (CDT) Christoph Lameter <cl@linux.com> wrote:
-> 
-> > > Some explanation of why one would use ext4 instead of, say,
-> > > suitably-modified ramfs/tmpfs/rd/etc?
+On Wed, 27 Aug 2014, Guenter Roeck wrote:
+> On Wed, Aug 27, 2014 at 12:13:56AM +0200, Beniamino Galvani wrote:
+> > This adds a driver for the watchdog timer available in Ricoh RN5T618
+> > PMIC. The device supports a programmable expiration time of 1, 8, 32
+> > or 128 seconds.
 > > 
-> > The NVDIMM contents survive reboot and therefore ramfs and friends wont
-> > work with it.
+> > Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
+> > ---
+> >  drivers/watchdog/Kconfig       |   11 +++
+> >  drivers/watchdog/Makefile      |    1 +
+> >  drivers/watchdog/rn5t618_wdt.c |  196 ++++++++++++++++++++++++++++++++++++++++
+> >  include/linux/mfd/rn5t618.h    |    4 +
+> >  4 files changed, 212 insertions(+)
+> >  create mode 100644 drivers/watchdog/rn5t618_wdt.c
+
+[...]
+
+> > +++ b/drivers/watchdog/rn5t618_wdt.c
+> > @@ -0,0 +1,196 @@
+
+[...]
+
+> > +static int rn5t618_wdt_set_timeout(struct watchdog_device *wdt_dev,
+> > +				   unsigned int timeout)
+> > +{
+> > +	struct rn5t618_wdt *wdt = watchdog_get_drvdata(wdt_dev);
+> > +	int ret, i;
+> > +
+> > +	for (i = 0; i < ARRAY_SIZE(rn5t618_wdt_map); i++) {
+> > +		if (rn5t618_wdt_map[i].time + 1 >= timeout)
+> > +			break;
+> > +	}
+> > +
+> > +	if (i == ARRAY_SIZE(rn5t618_wdt_map))
+> > +		ret = -EINVAL;
 > 
-> See "suitably modified".  Presumably this type of memory would need to
-> come from a particular page allocator zone.  ramfs would be unweildy
-> due to its use to dentry/inode caches, but rd/etc should be feasible.
+> Can you simplify this a bit ? If you use
+> 
+> 	if (i == ARRAY_SIZE(rn5t618_wdt_map))
+> 		return -EINVAL;
 
-<sigh>
+This changes the semantics.
 
-That's where we started about two years ago with that horrible
-pramfs trainwreck.
+> > +	else
+> 
+> You can drop this else statement.
+> 
+> > +		ret = regmap_update_bits(wdt->rn5t618->regmap, RN5T618_WATCHDOG,
+> > +					 RN5T618_WATCHDOG_WDOGTIM_M,
+> > +					 rn5t618_wdt_map[i].reg_val);
+> > +	if (!ret)
+> > +		wdt_dev->timeout = rn5t618_wdt_map[i].time;
 
-To start with: brd is a block device, not a filesystem. We still
-need the filesystem on top of a persistent ram disk to make it
-useful to applications. We can do this with ext4/XFS right now, and
-that is the fundamental basis on which DAX is built.
+... Isn't this important?
 
-For sake of the discussion, however, let's walk through what is
-required to make an "existing" ramfs persistent. Persistence means we
-can't just wipe it and start again if it gets corrupted, and
-rebooting is not a fix for problems.  Hence we need to be able to
-identify it, check it, repair it, ensure metadata operations are
-persistent across machine crashes, etc, so there is all sorts of
-management tools required by a persistent ramfs.
+> > +	return ret;
+> > +}
 
-But most important of all: the persistent storage format needs to be
-forwards and backwards compatible across kernel versions.  Hence we
-can't encode any structure the kernel uses internally into the
-persistent storage because they aren't stable structures.  That
-means we need to marshall objects between the persistence domain and
-the volatile domain in an orderly fashion.
-
-We can avoid using the dentry/inode *caches* by freeing those
-volatile objects the moment reference counts dop to zero rather than
-putting them on LRUs. However, we can't store them in persistent
-storage and we can't avoid using them to interface with the VFS, so
-it makes little sense to burn CPU continually marshalling such
-structures in and out of volatile memory if we have free RAM to do
-so. So even with a "persistent ramfs" caching the working set of
-volatile VFS objects makes sense from a peformance point of view.
-
-Then you've got crash recovery management: NVDIMMs are not
-synchronous: they can still lose data while it is being written on
-power loss. And we can't update persistent memory piecemeal as the
-VFS code modifies metadata - there needs to be synchronisation
-points, otherwise we will always have inconsistent metadata state in
-persistent memory.
-
-Persistent memory also can't do atomic writes across multiple,
-disjoint CPU cachelines or NVDIMMs, and this is what is needed for
-synchroniation points for multi-object metadata modification
-operations to be consistent after a crash.  There is some work in
-the nvme working groups to define this, but so far there hasn't been
-any useful outcome, and then we willhave to wait for CPUs to
-implement those interfaces.
-
-Hence the metadata that indexes the persistent RAM needs to use COW
-techniques, use a log structure or use WAL (journalling).  Hence
-that "persistent ramfs" is now looking much more like a database or
-traditional filesystem.
-
-Further, it's going to need to scale to very large amounts of
-storage.  We're talking about machines with *tens of TB* of NVDIMM
-capacity in the immediate future and so free space manangement and
-concurrency of allocation and freeing of used space is going to be
-fundamental to the performance of the persistent NVRAM filesystem.
-So, you end up with block/allocation groups to subdivide the space.
-Looking a lot like ext4 or XFS at this point.
-
-And now you have to scale to indexing tens of millions of
-everything. At least tens of millions - hundreds of millions to
-billions is more likely, because storing tens of terabytes of small
-files is going to require indexing billions of files. And because
-there is no performance penalty for doing this, people will use the
-filesystem as a great big database. So now you have to have a
-scalable posix compatible directory structures, scalable freespace
-indexation, dynamic, scalable inode allocation, freeing, etc. Oh,
-and it also needs to be highly concurrent to handle machines with
-hundreds of CPU cores.
-
-Funnily enough, we already have a couple of persistent storage
-implementations that solve these problems to varying degrees. ext4
-is one of them, if you ignore the scalability and concurrency
-requirements. XFS is the other. And both will run unmodified on
-a persistant ram block device, which we *already have*.
-
-And so back to DAX. What users actually want from their high speed
-persistant RAM storage is direct, cpu addressable access to that
-persistent storage. They don't want to have to care about how to
-find an object in the persistent storage - that's what filesystems
-are for - they just want to be able to read and write to it
-directly. That's what DAX does - it provides existing filesystems
-a method for exposing direct access to the persistent RAM to
-applications in a manner that application developers are already
-familiar with. It's a win-win situation all round.
-
-IOWs, ext4/XFS + DAX gets us to a place that is good enough for most
-users and the hardware capabilities we expect to see in the next 5
-years.  And hopefully that will be long enough to bring a purpose
-built, next generation persistent memory filesystem to production
-quality that can take full advantage of the technology...
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
