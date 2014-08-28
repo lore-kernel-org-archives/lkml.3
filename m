@@ -1,101 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936594AbaH1LJL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 07:09:11 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:5387 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936487AbaH1LJJ (ORCPT
+	id S936611AbaH1LKF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 07:10:05 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:33273 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936487AbaH1LKD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 07:09:09 -0400
-Message-ID: <53FF0D6D.9080302@huawei.com>
-Date: Thu, 28 Aug 2014 19:07:25 +0800
-From: Wang Nan <wangnan0@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Thu, 28 Aug 2014 07:10:03 -0400
+Date: Thu, 28 Aug 2014 13:09:56 +0200
+From: Robert Richter <rric@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Chip <chip.programmer@att.net>, linux-kernel@vger.kernel.org
+Subject: Re: amd_mce.c redundant if check?
+Message-ID: <20140828110956.GC4818@rric.localhost>
+References: <A94C429ECA0745D9802830213B114DFE@chip>
+ <20140822045516.GC11381@nazgul.tnic>
 MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: Russell King <linux@arm.linux.org.uk>,
-        "David A. Long" <dave.long@linaro.org>, Jon Medhurst <tixy@linaro.org>,
-        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        "Ananth N Mavinakayanahalli" <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Will Deacon <will.deacon@arm.com>, Pei Feiyue <peifeiyue@huawei.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 2/3] kprobes: copy ainsn after alloc aggr kprobe
-References: <1409144552-12751-1-git-send-email-wangnan0@huawei.com> <1409144552-12751-3-git-send-email-wangnan0@huawei.com> <53FEF8DC.5010607@hitachi.com>
-In-Reply-To: <53FEF8DC.5010607@hitachi.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.90]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020202.53FF0D86.01C9,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2011-05-27 18:58:46
-X-Mirapoint-Loop-Id: 574cd10c122f6fe66c7ef1a3f038c6b5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140822045516.GC11381@nazgul.tnic>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/8/28 17:39, Masami Hiramatsu wrote:
-> (2014/08/27 22:02), Wang Nan wrote:
->> Copy old kprobe to newly alloced optimized_kprobe before
->> arch_prepare_optimized_kprobe(). Original kprove can brings more
->> information to optimizer.
->>
->> Signed-off-by: Wang Nan <wangnan0@huawei.com>
->> Cc: Russell King <linux@arm.linux.org.uk>
->> Cc: "David A. Long" <dave.long@linaro.org> 
->> Cc: Jon Medhurst <tixy@linaro.org>
->> Cc: Taras Kondratiuk <taras.kondratiuk@linaro.org>
->> Cc: Ben Dooks <ben.dooks@codethink.co.uk>
->> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
->> Cc: Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>
->> Cc: "David S. Miller" <davem@davemloft.net>
->> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->> Cc: Will Deacon <will.deacon@arm.com>
->> ---
->>  kernel/kprobes.c | 7 ++++++-
->>  1 file changed, 6 insertions(+), 1 deletion(-)
->>
->> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
->> index 3995f54..33cf568 100644
->> --- a/kernel/kprobes.c
->> +++ b/kernel/kprobes.c
->> @@ -730,7 +730,12 @@ static struct kprobe *alloc_aggr_kprobe(struct kprobe *p)
->>  		return NULL;
->>  
->>  	INIT_LIST_HEAD(&op->list);
->> -	op->kp.addr = p->addr;
+On 22.08.14 06:55:16, Borislav Petkov wrote:
+> On Wed, Aug 20, 2014 at 10:08:18PM -0600, Chip wrote:
+> > Now, if the return from lvt_off_valid() is false, then nothing is
+> > changed in "hi".  However, if the return is true, which means the
+> > value in tr->lvt_off is equal to the LVTOFF value in "hi", then the
+> > LVTOFF value in "hi" is replaced with the value in tr->lvt_off.  One
+> > has to wonder, then, why bother actually calling lvt_off_valid() in
+> > the first place when the end result is that "hi" does not change.
+> > What is the rationale for having the code snippet at lines 170 - 176
+> > when that condition check does nothing to change "hi"?
 > 
-> Do not remove this, since copy_kprobe() doesn't copy kp.addr.
+> Right, I see what you mean now. This is
 > 
-> static inline void copy_kprobe(struct kprobe *ap, struct kprobe *p)
-> {
->         memcpy(&p->opcode, &ap->opcode, sizeof(kprobe_opcode_t));
->         memcpy(&p->ainsn, &ap->ainsn, sizeof(struct arch_specific_insn));
-> }
+> bbaff08dca3c ("mce, amd: Add helper functions to setup APIC")
 > 
-> Thank you,
-> 
+> Frankly, I'm not too worried about the overwriting the LVT offset with
+> the same value in the success case - that doesn't hurt anyone.
 
-It is my fault. I'll fix it in next version.
+The main purpose of lvt_off_valid() is to check the initial msr
+settings provided by the bios and to throw a FW_BUG message if there
+is anything wrong.
 
-Thank you for your comment!
+The MCE offset must be the same for all banks on all cores at every
+time and it must be different to all other vectors, esp. IBS, on all
+other cores. APIC settings also get lost after suspend/resume
+(different for suspend to disk or ram), this needs to be handled too.
 
->> +
->> +	/*
->> +	 * copy gives arch_prepare_optimized_kprobe
->> +	 * more information
->> +	 */
->> +	copy_kprobe(p, &op->kp);
->>  	arch_prepare_optimized_kprobe(op);
->>  
->>  	return &op->kp;
->>
-> 
-> 
+We have seen bioses there this was completely messed up having
+different offsets for different banks or same offsets for mce and
+ibs. Note that mce is used only on cpu 0 of each node while ibs is
+used on every cpu of a node. This makes things even more complex as
+you may not use an unused offset on a particular core since this
+offset is already used on a different core of the same node.
 
+For these reasons we track offsets in sw which is implemented in
+setup_APIC_eilvt().
 
+For mce there is no offset valid bit as for ibs and sw assumes lvt_off
+to be always valid. This value is used in setup_APIC_mce() to setup
+the apic. If there is already an offset for mce registered, that
+current offset is returned instead of the new one, see
+mce_amd_feature_init():
+
+                        if (b.interrupt_capable) {
+                                int new = (high & MASK_LVTOFF_HI) >> 20;
+                                offset  = setup_APIC_mce(offset, new);
+                        }
+
+                        mce_threshold_block_init(&b, offset);
+
+'offset' and 'new' may differ then because of a bios bug. In this case
+a FW_BUG message is thrown.
+
+Now, I agree with you that current implementation does not allow to
+program different offsets than provided by the msr. So we allow to
+overwrite the vector only if the value is the same which is needless
+and this code may be removed. But for !lvt_off_valid which is the case
+if we observe a different offset, we have a bios bug and do not expect
+mces to work properly. Maybe we disable interrupts at all then.  But
+so far this wasn't an issue.
+
+The check is needed in any case to throw FW bug messages.
+
+-Robert
+
+> What is more interesting is what we do in the !lvt_off_valid case... I
+> don't think we should be writing the MSR at all at the end but just exit
+> early. But I've long forgotten the details of the whole APIC vectors
+> deal we thought up at the time.
