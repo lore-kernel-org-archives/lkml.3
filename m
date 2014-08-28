@@ -1,62 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755895AbaH1Aia (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 20:38:30 -0400
-Received: from mx1.scotdoyle.com ([23.226.141.211]:55912 "EHLO
-	mx1.scotdoyle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752592AbaH1Ai3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 20:38:29 -0400
-Date: Thu, 28 Aug 2014 00:35:16 +0000 (UTC)
-From: Scot Doyle <lkml14@scotdoyle.com>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        Stefan Berger <stefanb@linux.vnet.ibm.com>,
-        Luigi Semenzato <semenzato@google.com>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v3] tpm_tis: verify interrupt during init
-In-Reply-To: <20140827214743.GC11183@obsidianresearch.com>
-Message-ID: <alpine.LNX.2.11.1408280017420.1064@localhost.localdomain>
-References: <alpine.LNX.2.11.1408220043560.1360@localhost.localdomain> <20140822160626.GA8477@obsidianresearch.com> <alpine.LNX.2.11.1408221924070.1046@localhost.localdomain> <20140822203241.GB1733@obsidianresearch.com> <alpine.LNX.2.11.1408250629110.1207@localhost.localdomain>
- <20140825182414.GB1298@obsidianresearch.com> <alpine.LNX.2.11.1408270410190.701@localhost.localdomain> <20140827173142.GA11183@obsidianresearch.com> <alpine.LNX.2.11.1408271755470.4371@localhost.localdomain> <20140827214743.GC11183@obsidianresearch.com>
-User-Agent: Alpine 2.11 (LNX 23 2013-08-11)
+	id S1756853AbaH1AsJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 20:48:09 -0400
+Received: from mga14.intel.com ([192.55.52.115]:34612 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754678AbaH1AsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 20:48:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,414,1406617200"; 
+   d="scan'208";a="582647559"
+Date: Thu, 28 Aug 2014 08:47:51 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Guy Martin <guy.martin@samsung.com>, Julia Lawall <julia.lawall@lip6.fr>,
+        kbuild@01.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [linuxtv-media:devel 497/499]
+ drivers/media/platform/s5p-mfc/s5p_mfc.c:454:2-5: WARNING: Use BUG_ON
+Message-ID: <20140828004751.GA31482@localhost>
+References: <53fe0d6b.ILcqU401zWlsffkn%fengguang.wu@intel.com>
+ <alpine.DEB.2.10.1408271905180.7069@hadrien>
+ <20140827143137.2bc29eed.m.chehab@samsung.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140827143137.2bc29eed.m.chehab@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Mauro,
 
-On Wed, 27 Aug 2014, Jason Gunthorpe wrote:
+On Wed, Aug 27, 2014 at 02:31:37PM -0300, Mauro Carvalho Chehab wrote:
+> Hi Fengguang,
+> 
+> Not sure why, but I didn't receive this e-mail (or other emails in this
+> thread).
 
-> On Wed, Aug 27, 2014 at 09:32:10PM +0000, Scot Doyle wrote:
->>>> -    if (tpm_do_selftest(chip)) {
->>>> -            dev_err(dev, "TPM self test failed\n");
->>>> -            rc = -ENODEV;
->>>> -            goto out_err;
->>>> -    }
->>>
->>> Move gettimeout too
->>
->> Can it be moved? It sends startup(clear) if the TPM isn't yet operational.
->
-> To move it means we have to understand why you are getting timeouts:
->
-> [   33.247720] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
-> [   33.247731] tpm_tis 00:08: [Hardware Error]: TPM command timed out during continue self test
->
-> I had thought based on your other patch that these should not happen
-> since the raw register is polled after the timer expires?
+It's a manual check process rather than an email problem.  The TO/CC
+you see lie in the email body. The original email is sent to the
+kbuild list for manual checking. We do such check for all low
+confident static check warnings. Julia and Dan are actively looking at
+these reports and will forward the ones that worth more attention to
+the relevant people.
 
-It is polled after the timer expires in tpm_tis_send_data, but not in 
-tpm_tis_send, and the return value is used in tpm_tis_send...
+Thanks,
+Fengguang
 
-> What is going on here? Do you still have that other patch applied?
-
-...so with the other patch applied too, the output is:
-[    1.464217] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
-[    3.570836] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
-[    3.660885] tpm_tis 00:08: [Firmware Bug]: TPM interrupt not working, polling instead
-
-Much better! Any thoughts before I proceed?
+> Em Wed, 27 Aug 2014 19:07:45 +0200 (CEST)
+> Julia Lawall <julia.lawall@lip6.fr> escreveu:
+> 
+> > The bug_on one doesn't look like a good idea, but the returnvar one would
+> > make the code a little simpler.
+> > 
+> > julia
+> > 
+> > On Thu, 28 Aug 2014, kbuild test robot wrote:
+> > 
+> > > TO: Mauro Carvalho Chehab <m.chehab@samsung.com>
+> > > CC: linux-media@vger.kernel.org
+> > >
+> > > Hi Mauro,
+> > >
+> > > First bad commit (maybe != root cause):
+> > >
+> > > tree:   git://linuxtv.org/media_tree.git devel
+> > > head:   38a0731165250a0a77eff7b90ea3156d44cc7d66
+> > > commit: 7155043c2d027c9c848c3d09badb5af2894ed652 [497/499] [media] enable COMPILE_TEST for media drivers
+> > > :::::: branch date: 19 hours ago
+> > > :::::: commit date: 19 hours ago
+> > >
+> > > >> drivers/media/platform/s5p-mfc/s5p_mfc.c:454:2-5: WARNING: Use BUG_ON
+> > > >> drivers/media/platform/s5p-mfc/s5p_mfc.c:333:3-6: WARNING: Use BUG_ON
+> > > >> drivers/media/platform/s5p-mfc/s5p_mfc.c:406:2-5: WARNING: Use BUG_ON
+> > > >> drivers/media/platform/s5p-mfc/s5p_mfc.c:548:3-6: WARNING: Use BUG_ON
+> > > >> drivers/media/platform/s5p-mfc/s5p_mfc.c:556:3-6: WARNING: Use BUG_ON
+> > > >> drivers/media/platform/s5p-mfc/s5p_mfc.c:509:2-5: WARNING: Use BUG_ON
+> > > >> drivers/media/platform/s5p-mfc/s5p_mfc.c:634:4-7: WARNING: Use BUG_ON
+> > > --
+> > > >> drivers/media/platform/davinci/vpfe_capture.c:946:5-8: Unneeded variable: "ret". Return "0" on line 951
+> > >
+> > > Please consider folding the attached diff :-)
+> > >
+> > > ---
+> > > 0-DAY kernel build testing backend              Open Source Technology Center
+> > > http://lists.01.org/mailman/listinfo/kbuild                 Intel Corporation
+> > >
