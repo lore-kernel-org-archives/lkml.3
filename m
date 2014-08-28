@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936147AbaH1Bmr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 21:42:47 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:47227 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932384AbaH1Bmq (ORCPT
+	id S936052AbaH1BrA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 21:47:00 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:34351 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932384AbaH1Bq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 21:42:46 -0400
-From: Kever Yang <kever.yang@rock-chips.com>
-To: heiko@sntech.de
-Cc: dianders@chromium.org, sonnyrao@chromium.org, addy.ke@rock-chips.com,
-        cf@rock-chips.com, xjq@rock-chips.com, wulf@rock-chips.com,
-        lyz@rock-chips.com, hj@rock-chips.com, huangtao@rock-chips.com,
-        Kever Yang <kever.yang@rock-chips.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [RESEND PATCH] ARM: dts: make arch-timer always on in rk3288 soc
-Date: Thu, 28 Aug 2014 09:40:17 +0800
-Message-Id: <1409190017-12656-1-git-send-email-kever.yang@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 27 Aug 2014 21:46:59 -0400
+From: Fred Chou <fred.chou.nd@gmail.com>
+To: martyn.welch@ge.com, manohar.vanga@gmail.com, gregkh@linuxfoundation.org
+Cc: standby24x7@gmail.com, fred.chou.nd@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] vme: remove redundant else condition
+Date: Thu, 28 Aug 2014 09:50:56 +0800
+Message-Id: <1409190656-17762-1-git-send-email-fred.chou.nd@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need use the hrtimer, which need the arch-timer to be 'always-on'
+The else condition is redundant after a return. Remove these redundant else conditions.
 
-Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+Signed-off-by: Fred Chou <fred.chou.nd@gmail.com>
 ---
+ drivers/staging/vme/devices/vme_pio2_gpio.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
- arch/arm/boot/dts/rk3288.dtsi | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
-index 5950b0a..698e6ea 100644
---- a/arch/arm/boot/dts/rk3288.dtsi
-+++ b/arch/arm/boot/dts/rk3288.dtsi
-@@ -76,6 +76,7 @@
- 			     <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_HIGH)>,
- 			     <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_HIGH)>;
- 		clock-frequency = <24000000>;
-+		always-on;
- 	};
+diff --git a/drivers/staging/vme/devices/vme_pio2_gpio.c b/drivers/staging/vme/devices/vme_pio2_gpio.c
+index f00af07..d8a118d 100644
+--- a/drivers/staging/vme/devices/vme_pio2_gpio.c
++++ b/drivers/staging/vme/devices/vme_pio2_gpio.c
+@@ -58,14 +58,14 @@ static int pio2_gpio_get(struct gpio_chip *chip, unsigned int offset)
+ 	if (reg & PIO2_CHANNEL_BIT[offset]) {
+ 		if (card->bank[PIO2_CHANNEL_BANK[offset]].config != BOTH)
+ 			return 0;
+-		else
+-			return 1;
+-	} else {
+-		if (card->bank[PIO2_CHANNEL_BANK[offset]].config != BOTH)
+-			return 1;
+-		else
+-			return 0;
++
++		return 1;
+ 	}
++
++	if (card->bank[PIO2_CHANNEL_BANK[offset]].config != BOTH)
++		return 1;
++
++	return 0;
+ }
  
- 	i2c1: i2c@ff140000 {
+ static void pio2_gpio_set(struct gpio_chip *chip, unsigned int offset,
 -- 
-1.9.1
+1.7.9.5
 
