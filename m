@@ -1,137 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751353AbaH1MaF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 08:30:05 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:59167 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741AbaH1MaB (ORCPT
+	id S1751421AbaH1Mb4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 08:31:56 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:49523 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714AbaH1Mbz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 08:30:01 -0400
-Date: Thu, 28 Aug 2014 17:59:16 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Joe Perches <joe@perches.com>, Zhang Rui <rui.zhang@intel.com>,
-        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] acpi: fan.c: printk replacement
-Message-ID: <20140828122916.GA3081@sudip-PC>
-References: <1408709001-3272-1-git-send-email-sudipm.mukherjee@gmail.com>
- <4713016.Cq5xvW8zIj@vostro.rjw.lan>
- <20140827045747.GA3309@sudip-PC>
- <2510233.V8A8GLG6Qe@vostro.rjw.lan>
+	Thu, 28 Aug 2014 08:31:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2510233.V8A8GLG6Qe@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Thu, 28 Aug 2014 14:31:54 +0200
+Message-ID: <CACRpkdbanpfcuy6Bui_aT15-BPRaAZ4WujbdTGy2rwYqxiMX8g@mail.gmail.com>
+Subject: [GIT PULL] pin control fixes for the v3.17 series
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 28, 2014 at 01:26:58AM +0200, Rafael J. Wysocki wrote:
-> On Wednesday, August 27, 2014 10:27:47 AM Sudip Mukherjee wrote:
-> > On Tue, Aug 26, 2014 at 11:22:12PM +0200, Rafael J. Wysocki wrote:
-> > > On Tuesday, August 26, 2014 01:59:02 PM Joe Perches wrote:
-> > > > On Tue, 2014-08-26 at 23:02 +0200, Rafael J. Wysocki wrote:
-> > > > > On Tuesday, August 26, 2014 09:00:39 PM Sudip Mukherjee wrote:
-> > > > > > On Tue, Aug 26, 2014 at 12:45:20AM +0200, Rafael J. Wysocki wrote:
-> > > > > > > On Friday, August 22, 2014 05:33:21 PM Sudip Mukherjee wrote:
-> > > > > > > > printk replaced with corresponding dev_err and dev_info
-> > > > > > > > fixed one broken user-visible string
-> > > > > > > > multiine comment edited for correct commenting style
-> > > > > > > > asm/uaccess.h replaced with linux/uaccess.h
-> > > > > > > > 
-> > > > > > > > Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
-> > > > > > > > ---
-> > > > > > > >  drivers/acpi/fan.c | 18 +++++++++---------
-> > > > > > > >  1 file changed, 9 insertions(+), 9 deletions(-)
-> > > > > > > > 
-> > > > > > > > diff --git a/drivers/acpi/fan.c b/drivers/acpi/fan.c
-> > > > > > > > index 8acf53e..7900d55 100644
-> > > > > > > > --- a/drivers/acpi/fan.c
-> > > > > > > > +++ b/drivers/acpi/fan.c
-> > > > > > > > @@ -27,7 +27,7 @@
-> > > > > > > >  #include <linux/module.h>
-> > > > > > > >  #include <linux/init.h>
-> > > > > > > >  #include <linux/types.h>
-> > > > > > > > -#include <asm/uaccess.h>
-> > > > > > > > +#include <linux/uaccess.h>
-> > > > > > > >  #include <linux/thermal.h>
-> > > > > > > >  #include <linux/acpi.h>
-> > > > > > > >  
-> > > > > > > > @@ -127,8 +127,9 @@ static const struct thermal_cooling_device_ops fan_cooling_ops = {
-> > > > > > > >  };
-> > > > > > > >  
-> > > > > > > >  /* --------------------------------------------------------------------------
-> > > > > > > > -                                 Driver Interface
-> > > > > > > > -   -------------------------------------------------------------------------- */
-> > > > > > > > + *                               Driver Interface
-> > > > > > > > + * --------------------------------------------------------------------------
-> > > > > > > > +*/
-> > > > > > > >  
-> > > > > > > >  static int acpi_fan_add(struct acpi_device *device)
-> > > > > > > >  {
-> > > > > > > > @@ -143,7 +144,7 @@ static int acpi_fan_add(struct acpi_device *device)
-> > > > > > > >  
-> > > > > > > >  	result = acpi_bus_update_power(device->handle, NULL);
-> > > > > > > >  	if (result) {
-> > > > > > > > -		printk(KERN_ERR PREFIX "Setting initial power state\n");
-> > > > > > > > +		dev_err(&device->dev, PREFIX "Setting initial power state\n");
-> > > > > > > 
-> > > > > > > While at it, please define a proper pr_fmt() for this file and get rid of PREFIX
-> > > > > > > too.
-> > > > > > > 
-> > > > > > > Otherwise I don't see a compelling reason to apply this.
-> > > > > > > 
-> > > > > > 
-> > > > > > Hi,
-> > > > > > Since in the patch I am not using any pr_* , so I am unable to understand why
-> > > > > > you are asking for a proper pr_fmt().
-> > > > > 
-> > > > > Never mind, I was confused somehow, not exactly sure why.  Sorry about that.
-> > > > > 
-> > > > > > I can get rid of the PREFIX . Then should I use pr_* in the patch instead of dev_* ? 
-> > > > > > My understanding was dev_* is more preffered than pr_*.
-> > > > > > waiting for your suggestion on this.
-> > > > > 
-> > > > > Well, that really depends on the particular case.  It really is better to use
-> > > > > dev_err() here, but then PREFIX with it is not really useful, so please just
-> > > > > drop PREFIX from the new messages.
-> > > > 
-> > > > PREFIX is "ACPI: " so I think the idea is
-> > > > to be able to grep for that.
-> > > 
-> > > I'm not sure how useful that is in this particular case.  You can grep for "power
-> > > state" istead just fine ...
-> > > 
-> > > Rafael
-> > > 
-> > 
-> > Then there is one more printk which prints fan state is on or off :
-> > 
-> > >dev_info(&device->dev, PREFIX "%s [%s] (%s)\n",
-> > >	  acpi_device_name(device), acpi_device_bid(device),
-> > >              !device->power.state ? "on" : "off");
-> > 
-> > So if we drop the PREFIX and if some one wants to grep for this fan on/off , then how to do that ..
-> > after removing PREFIX , in dmesg I am getting it as :
-> > [    2.056204] fan PNP0C0B:00: Fan [FAN0] (off)
-> > [    2.056225] fan PNP0C0B:01: Fan [FAN1] (off)
-> > [    2.056245] fan PNP0C0B:02: Fan [FAN2] (off)
-> > [    2.056263] fan PNP0C0B:03: Fan [FAN3] (off)
-> > [    2.056283] fan PNP0C0B:04: Fan [FAN4] (off)
-> 
-> $ dmesg | grep fan
-> 
-> ?
-> 
-> You can simply say "ACPI fan [%s] (%s)\n", acpi_device_bid(device) " in that
-> dev_info too.
-> 
-> Rafael
-> 
-I was under the impression that grep means using git grep and searching in the kernel code.
-Anyways, I have sent a modified patch , can you please review it ..
+Hi Linus,
 
-thanks
-sudip
+here is my first (a bit delayed) pack of pin control fixes, details
+in the signed tag as usual.
+
+Please pull it in!
+
+Yours,
+Linus Walleij
+
+
+The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
+
+  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl.git
+tags/pinctrl-v3.17-2
+
+for you to fetch changes up to 0252d6a2ac2ad9961dace28e4c8c9abe6f2a0472:
+
+  pinctrl: qcom: apq8064: Correct interrupts in example (2014-08-21
+07:28:24 -0500)
+
+----------------------------------------------------------------
+Pin control fixes for the v3.17 series, only driver fixes:
+
+- SH-PFC (Renesas) r8a7791 CAN bus pin group problem
+- Rockchip (GPIO0 configuration)
+- Tegra-xusb (interrupt handling)
+- Exynos (GPIO interrupt locking)
+- Qualcomm (fix misleading example interrupts)
+- Minor non-critical fixes for abx500 and AT91 also sneaked in,
+  because I initially intended this pull for post RC-1, hope it's
+  still OK.
+
+----------------------------------------------------------------
+Bjorn Andersson (1):
+      pinctrl: qcom: apq8064: Correct interrupts in example
+
+Dan Carpenter (2):
+      pinctrl: tegra-xusb: fix an off by one test
+      pinctrl: tegra-xusb: testing wrong variable in probe()
+
+Hans Wennborg (1):
+      pinctrl: pinctrl-at91.c: fix decimal printf format specifiers
+prefixed with 0x
+
+Patrice CHOTARD (1):
+      pinctrl: abx500: remove useless check
+
+Sergei Shtylyov (1):
+      sh-pfc: r8a7791: fix CAN pin groups
+
+Sonny Rao (1):
+      pinctrl: rockchip: fix rk3288 gpio0 configuration
+
+Tomasz Figa (1):
+      pinctrl: exynos: Lock GPIOs as interrupts when used as EINTs
+
+ .../bindings/pinctrl/qcom,apq8064-pinctrl.txt      |  2 +-
+ drivers/pinctrl/nomadik/pinctrl-abx500.c           |  3 +-
+ drivers/pinctrl/pinctrl-at91.c                     |  4 +-
+ drivers/pinctrl/pinctrl-rockchip.c                 | 15 +++--
+ drivers/pinctrl/pinctrl-tegra-xusb.c               |  5 +-
+ drivers/pinctrl/samsung/pinctrl-exynos.c           | 69 ++++++++++++++++++++--
+ drivers/pinctrl/samsung/pinctrl-samsung.h          |  1 +
+ drivers/pinctrl/sh-pfc/pfc-r8a7791.c               |  8 +--
+ 8 files changed, 84 insertions(+), 23 deletions(-)
