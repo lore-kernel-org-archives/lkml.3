@@ -1,190 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753148AbaH1Tht (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 15:37:49 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:55748 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751998AbaH1Tgb (ORCPT
+	id S1752554AbaH1Toa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 15:44:30 -0400
+Received: from peace.netnation.com ([204.174.223.2]:46117 "EHLO
+	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752057AbaH1To3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 15:36:31 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Mark Brown <broonie@kernel.org>, Heiko Stuebner <heiko@sntech.de>,
-        olof@lixom.net, Arnd Bergmann <arnd@arndb.de>
-Cc: Addy Ke <addy.ke@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Doug Anderson <dianders@chromium.org>, lgirdwood@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] regulator: core: Add REGULATOR_EVENT_PRE_VOLTAGE_CHANGE (and ABORT)
-Date: Thu, 28 Aug 2014 12:36:04 -0700
-Message-Id: <1409254565-10677-2-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1409254565-10677-1-git-send-email-dianders@chromium.org>
-References: <1409254565-10677-1-git-send-email-dianders@chromium.org>
+	Thu, 28 Aug 2014 15:44:29 -0400
+Date: Thu, 28 Aug 2014 12:44:22 -0700
+From: Simon Kirby <sim@hostway.ca>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: net_ns cleanup / RCU overhead
+Message-ID: <20140828194422.GB8867@hostway.ca>
+References: <20140820055855.GB5579@hostway.ca>
+ <20140828192431.GF5001@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140828192431.GF5001@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heiko Stübner <heiko@sntech.de>
+On Thu, Aug 28, 2014 at 12:24:31PM -0700, Paul E. McKenney wrote:
 
-In some cases we need to know when a regulator is about to be changed.
-Add a way for clients to be notified.  Note that for set_voltage() we
-don't necessarily know what voltage we'll end up with, so we tell the
-client what the range will be so they can prepare.
+> On Tue, Aug 19, 2014 at 10:58:55PM -0700, Simon Kirby wrote:
+> > Hello!
+> > 
+> > In trying to figure out what happened to a box running lots of vsftpd
+> > since we deployed a CONFIG_NET_NS=y kernel to it, we found that the
+> > (wall) time needed for cleanup_net() to complete, even on an idle box,
+> > can be quite long:
+> > 
+> > #!/bin/bash
+> > 
+> > ip netns delete test >&/dev/null
+> > while ip netns add test; do
+> >         echo hi
+> >         ip netns delete test
+> > done
+> > 
+> > On my desktop and typical hosts, this prints at only around 4 or 6 per
+> > second. While this is happening, "vmstat 1" reports 100% idle, and there
+> > there are D-state processes with stacks similar to:
+> > 
+> > 30566 [kworker/u16:1] D wait_rcu_gp+0x48, synchronize_sched+0x2f, cleanup_net+0xdb, process_one_work+0x175, worker_thread+0x119, kthread+0xbb, ret_from_fork+0x7c, 0xffffffffffffffff
+> > 
+> > 32220 ip              D copy_net_ns+0x68, create_new_namespaces+0xfc, unshare_nsproxy_namespaces+0x66, SyS_unshare+0x159, system_call_fastpath+0x16, 0xffffffffffffffff
+> > 
+> > copy_net_ns() is waiting on net_mutex which is held by cleanup_net().
+> > 
+> > vsftpd uses CLONE_NEWNET to set up privsep processes. There is a comment
+> > about it being really slow before 2.6.35 (it avoids CLONE_NEWNET in that
+> > case). I didn't find anything that makes 2.6.35 any faster, but on Debian
+> > 2.6.36-5-amd64, I notice it does seem to be a bit faster than 3.2, 3.10,
+> > 3.16, though still not anything I'd ever want to rely on per connection.
+> > 
+> > C implementation of the above: http://0x.ca/sim/ref/tools/netnsloop.c
+> > 
+> > Kernel stack "top": http://0x.ca/sim/ref/tools/pstack
+> > 
+> > What's going on here?
+> 
+> That is a bit slow for many configurations, but there are some exceptions.
+> 
+> So, what is your kernel's .config?
 
-Signed-off-by: Heiko Stübner <heiko@sntech.de>
-Signed-off-by: Doug Anderson <dianders@chromium.org>
+I was unable to find a config (or stock kernel) that was any different,
+but here's the one we're using: http://0x.ca/sim/ref/3.10/config-3.10.53
+
+How fast does the above test run for you?
+
+We've been running with the attached, which has helped a little, but it's
+still quite slow in our particular use case (vsftpd), and with the above
+test. Should I enable RCU_TRACE or STALL_INFO with a low timeout or
+something?
+
+Simon-
+
+-- >8 --
+Subject: [PATCH] netns: use synchronize_rcu_expedited instead of
+ synchronize_rcu
+
+Similar to ef323088, with synchronize_rcu(), we are only able to create
+and destroy about 4 or 7 net namespaces per second, which really puts a
+dent in the performance of programs attempting to use CLONE_NEWNET for
+privilege separation (vsftpd, chromium).
 ---
- drivers/regulator/core.c           | 63 +++++++++++++++++++++++++++++++++-----
- include/linux/regulator/consumer.h | 20 ++++++++++++
- 2 files changed, 76 insertions(+), 7 deletions(-)
+ net/core/net_namespace.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 7bce715..b31d706 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -102,7 +102,7 @@ static int _regulator_disable(struct regulator_dev *rdev);
- static int _regulator_get_voltage(struct regulator_dev *rdev);
- static int _regulator_get_current_limit(struct regulator_dev *rdev);
- static unsigned int _regulator_get_mode(struct regulator_dev *rdev);
--static void _notifier_call_chain(struct regulator_dev *rdev,
-+static int _notifier_call_chain(struct regulator_dev *rdev,
- 				  unsigned long event, void *data);
- static int _regulator_do_set_voltage(struct regulator_dev *rdev,
- 				     int min_uV, int max_uV);
-@@ -2406,6 +2406,55 @@ int regulator_is_supported_voltage(struct regulator *regulator,
- }
- EXPORT_SYMBOL_GPL(regulator_is_supported_voltage);
+diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
+index 85b6269..6dcb4b3 100644
+--- a/net/core/net_namespace.c
++++ b/net/core/net_namespace.c
+@@ -296,7 +296,7 @@ static void cleanup_net(struct work_struct *work)
+ 	 * This needs to be before calling the exit() notifiers, so
+ 	 * the rcu_barrier() below isn't sufficient alone.
+ 	 */
+-	synchronize_rcu();
++	synchronize_rcu_expedited();
  
-+static int _regulator_call_set_voltage(struct regulator_dev *rdev,
-+				       int min_uV, int max_uV,
-+				       unsigned *selector)
-+{
-+	struct pre_voltage_change_data data;
-+	int ret;
-+
-+	data.old_uV = _regulator_get_voltage(rdev);
-+	data.min_uV = min_uV;
-+	data.max_uV = max_uV;
-+	ret = _notifier_call_chain(rdev, REGULATOR_EVENT_PRE_VOLTAGE_CHANGE,
-+				   &data);
-+	if (ret & NOTIFY_STOP_MASK)
-+		return -EINVAL;
-+
-+	ret = rdev->desc->ops->set_voltage(rdev, min_uV, max_uV, selector);
-+	if (ret >= 0)
-+		return ret;
-+
-+	_notifier_call_chain(rdev, REGULATOR_EVENT_ABORT_VOLTAGE_CHANGE,
-+			     (void *)data.old_uV);
-+
-+	return ret;
-+}
-+
-+static int _regulator_call_set_voltage_sel(struct regulator_dev *rdev,
-+					   int uV, unsigned selector)
-+{
-+	struct pre_voltage_change_data data;
-+	int ret;
-+
-+	data.old_uV = _regulator_get_voltage(rdev);
-+	data.min_uV = uV;
-+	data.max_uV = uV;
-+	ret = _notifier_call_chain(rdev, REGULATOR_EVENT_PRE_VOLTAGE_CHANGE,
-+				   &data);
-+	if (ret & NOTIFY_STOP_MASK)
-+		return -EINVAL;
-+
-+	ret = rdev->desc->ops->set_voltage_sel(rdev, selector);
-+	if (ret >= 0)
-+		return ret;
-+
-+	_notifier_call_chain(rdev, REGULATOR_EVENT_ABORT_VOLTAGE_CHANGE,
-+			     (void *)data.old_uV);
-+
-+	return ret;
-+}
-+
- static int _regulator_do_set_voltage(struct regulator_dev *rdev,
- 				     int min_uV, int max_uV)
- {
-@@ -2433,8 +2482,8 @@ static int _regulator_do_set_voltage(struct regulator_dev *rdev,
- 	}
- 
- 	if (rdev->desc->ops->set_voltage) {
--		ret = rdev->desc->ops->set_voltage(rdev, min_uV, max_uV,
--						   &selector);
-+		ret = _regulator_call_set_voltage(rdev, min_uV, max_uV,
-+						  &selector);
- 
- 		if (ret >= 0) {
- 			if (rdev->desc->ops->list_voltage)
-@@ -2469,8 +2518,8 @@ static int _regulator_do_set_voltage(struct regulator_dev *rdev,
- 				if (old_selector == selector)
- 					ret = 0;
- 				else
--					ret = rdev->desc->ops->set_voltage_sel(
--								rdev, ret);
-+					ret = _regulator_call_set_voltage_sel(
-+						rdev, best_val, selector);
- 			} else {
- 				ret = -EINVAL;
- 			}
-@@ -3116,11 +3165,11 @@ EXPORT_SYMBOL_GPL(regulator_unregister_notifier);
- /* notify regulator consumers and downstream regulator consumers.
-  * Note mutex must be held by caller.
-  */
--static void _notifier_call_chain(struct regulator_dev *rdev,
-+static int _notifier_call_chain(struct regulator_dev *rdev,
- 				  unsigned long event, void *data)
- {
- 	/* call rdev chain first */
--	blocking_notifier_call_chain(&rdev->notifier, event, data);
-+	return blocking_notifier_call_chain(&rdev->notifier, event, data);
- }
- 
- /**
-diff --git a/include/linux/regulator/consumer.h b/include/linux/regulator/consumer.h
-index f8a8733..d347c80 100644
---- a/include/linux/regulator/consumer.h
-+++ b/include/linux/regulator/consumer.h
-@@ -93,7 +93,12 @@ struct regmap;
-  * OVER_TEMP      Regulator over temp.
-  * FORCE_DISABLE  Regulator forcibly shut down by software.
-  * VOLTAGE_CHANGE Regulator voltage changed.
-+ *                Data passed is old voltage cast to (void *).
-  * DISABLE        Regulator was disabled.
-+ * PRE_VOLTAGE_CHANGE   Regulator is about to have voltage changed.
-+ *                      Data passed is "struct pre_voltage_change_data"
-+ * ABORT_VOLTAGE_CHANGE Regulator voltage change failed for some reason.
-+ *                      Data passed is old voltage cast to (void *).
-  *
-  * NOTE: These events can be OR'ed together when passed into handler.
-  */
-@@ -106,6 +111,21 @@ struct regmap;
- #define REGULATOR_EVENT_FORCE_DISABLE		0x20
- #define REGULATOR_EVENT_VOLTAGE_CHANGE		0x40
- #define REGULATOR_EVENT_DISABLE 		0x80
-+#define REGULATOR_EVENT_PRE_VOLTAGE_CHANGE	0x100
-+#define REGULATOR_EVENT_ABORT_VOLTAGE_CHANGE	0x200
-+
-+/**
-+ * struct pre_voltage_change_data - Data sent with PRE_VOLTAGE_CHANGE event
-+ *
-+ * @old_uV: Current voltage before change.
-+ * @min_uV: Min voltage we'll change to.
-+ * @max_uV: Max voltage we'll change to.
-+ */
-+struct pre_voltage_change_data {
-+	unsigned long old_uV;
-+	unsigned long min_uV;
-+	unsigned long max_uV;
-+};
- 
- struct regulator;
- 
+ 	/* Run all of the network namespace exit methods */
+ 	list_for_each_entry_reverse(ops, &pernet_list, list)
 -- 
-2.1.0.rc2.206.gedb03e5
-
+1.7.10.4
