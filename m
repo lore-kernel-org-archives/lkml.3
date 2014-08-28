@@ -1,58 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936206AbaH1HRJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 03:17:09 -0400
-Received: from mail.eperm.de ([89.247.134.16]:46986 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932622AbaH1HRH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 03:17:07 -0400
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: DRBG: remove test for uninitialized DRBG handle
-Date: Thu, 28 Aug 2014 09:17:03 +0200
-Message-ID: <2837552.tiNKQxI8Xu@myon.chronox.de>
-User-Agent: KMail/4.13.3 (Linux/3.15.10-200.fc20.x86_64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <20140827133528.GA15871@gondor.apana.org.au>
-References: <20140826161456.7ad100e3@canb.auug.org.au> <1471416.zGlxQVbHUr@myon.chronox.de> <20140827133528.GA15871@gondor.apana.org.au>
+	id S936262AbaH1HRP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 03:17:15 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:63651 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932622AbaH1HRL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 03:17:11 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtUUAMLW/lN5LDJ8PGdsb2JhbABRCoMNgSqCLIUHp0cBBQafAYVyAYEZFwUBAQEBODaEBAEFOhwjEAgDDgoJJQ8FJQMHGhMeiCO/FxcYhWSIdA4FSQeDL4EdBZxXmQsrL4EHgUgBAQE
+Date: Thu, 28 Aug 2014 17:17:06 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Lameter <cl@linux.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, willy@linux.intel.com
+Subject: Re: [PATCH v10 00/21] Support ext4 on NV-DIMMs
+Message-ID: <20140828071706.GD26465@dastard>
+References: <cover.1409110741.git.matthew.r.wilcox@intel.com>
+ <20140827130613.c8f6790093d279a447196f17@linux-foundation.org>
+ <alpine.DEB.2.11.1408271616070.17080@gentwo.org>
+ <20140827143055.5210c5fb9696e460b456eb26@linux-foundation.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140827143055.5210c5fb9696e460b456eb26@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The drbg_healthcheck() contains a test to call the DRBG with an
-uninitialized DRBG cipher handle. As this is an inappropriate use of the
-kernel crypto API to try to generate random numbers before
-initialization, checks verifying for an initialized DRBG during the
-generate function have been removed in previous patches.
+On Wed, Aug 27, 2014 at 02:30:55PM -0700, Andrew Morton wrote:
+> On Wed, 27 Aug 2014 16:22:20 -0500 (CDT) Christoph Lameter <cl@linux.com> wrote:
+> 
+> > > Some explanation of why one would use ext4 instead of, say,
+> > > suitably-modified ramfs/tmpfs/rd/etc?
+> > 
+> > The NVDIMM contents survive reboot and therefore ramfs and friends wont
+> > work with it.
+> 
+> See "suitably modified".  Presumably this type of memory would need to
+> come from a particular page allocator zone.  ramfs would be unweildy
+> due to its use to dentry/inode caches, but rd/etc should be feasible.
 
-Now, the drbg_healthcheck test trying to generate random numbers with
-an uninstantiated DRBG must also be removed.
+<sigh>
 
-Signed-off-by: Stephan Mueller <smueller@chronox.de>
----
- crypto/drbg.c | 3 ---
- 1 file changed, 3 deletions(-)
+That's where we started about two years ago with that horrible
+pramfs trainwreck.
 
-diff --git a/crypto/drbg.c b/crypto/drbg.c
-index 39ed918..54cfd48 100644
---- a/crypto/drbg.c
-+++ b/crypto/drbg.c
-@@ -1872,9 +1872,6 @@ static inline int __init drbg_healthcheck_sanity(void)
- 	/* overflow max addtllen with personalization string */
- 	ret = drbg_instantiate(drbg, &addtl, coreref, pr);
- 	BUG_ON(0 == ret);
--	/* test uninstantated DRBG */
--	len = drbg_generate(drbg, buf, (max_request_bytes + 1), NULL);
--	BUG_ON(0 < len);
- 	/* all tests passed */
- 	rc = 0;
- 
+To start with: brd is a block device, not a filesystem. We still
+need the filesystem on top of a persistent ram disk to make it
+useful to applications. We can do this with ext4/XFS right now, and
+that is the fundamental basis on which DAX is built.
+
+For sake of the discussion, however, let's walk through what is
+required to make an "existing" ramfs persistent. Persistence means we
+can't just wipe it and start again if it gets corrupted, and
+rebooting is not a fix for problems.  Hence we need to be able to
+identify it, check it, repair it, ensure metadata operations are
+persistent across machine crashes, etc, so there is all sorts of
+management tools required by a persistent ramfs.
+
+But most important of all: the persistent storage format needs to be
+forwards and backwards compatible across kernel versions.  Hence we
+can't encode any structure the kernel uses internally into the
+persistent storage because they aren't stable structures.  That
+means we need to marshall objects between the persistence domain and
+the volatile domain in an orderly fashion.
+
+We can avoid using the dentry/inode *caches* by freeing those
+volatile objects the moment reference counts dop to zero rather than
+putting them on LRUs. However, we can't store them in persistent
+storage and we can't avoid using them to interface with the VFS, so
+it makes little sense to burn CPU continually marshalling such
+structures in and out of volatile memory if we have free RAM to do
+so. So even with a "persistent ramfs" caching the working set of
+volatile VFS objects makes sense from a peformance point of view.
+
+Then you've got crash recovery management: NVDIMMs are not
+synchronous: they can still lose data while it is being written on
+power loss. And we can't update persistent memory piecemeal as the
+VFS code modifies metadata - there needs to be synchronisation
+points, otherwise we will always have inconsistent metadata state in
+persistent memory.
+
+Persistent memory also can't do atomic writes across multiple,
+disjoint CPU cachelines or NVDIMMs, and this is what is needed for
+synchroniation points for multi-object metadata modification
+operations to be consistent after a crash.  There is some work in
+the nvme working groups to define this, but so far there hasn't been
+any useful outcome, and then we willhave to wait for CPUs to
+implement those interfaces.
+
+Hence the metadata that indexes the persistent RAM needs to use COW
+techniques, use a log structure or use WAL (journalling).  Hence
+that "persistent ramfs" is now looking much more like a database or
+traditional filesystem.
+
+Further, it's going to need to scale to very large amounts of
+storage.  We're talking about machines with *tens of TB* of NVDIMM
+capacity in the immediate future and so free space manangement and
+concurrency of allocation and freeing of used space is going to be
+fundamental to the performance of the persistent NVRAM filesystem.
+So, you end up with block/allocation groups to subdivide the space.
+Looking a lot like ext4 or XFS at this point.
+
+And now you have to scale to indexing tens of millions of
+everything. At least tens of millions - hundreds of millions to
+billions is more likely, because storing tens of terabytes of small
+files is going to require indexing billions of files. And because
+there is no performance penalty for doing this, people will use the
+filesystem as a great big database. So now you have to have a
+scalable posix compatible directory structures, scalable freespace
+indexation, dynamic, scalable inode allocation, freeing, etc. Oh,
+and it also needs to be highly concurrent to handle machines with
+hundreds of CPU cores.
+
+Funnily enough, we already have a couple of persistent storage
+implementations that solve these problems to varying degrees. ext4
+is one of them, if you ignore the scalability and concurrency
+requirements. XFS is the other. And both will run unmodified on
+a persistant ram block device, which we *already have*.
+
+And so back to DAX. What users actually want from their high speed
+persistant RAM storage is direct, cpu addressable access to that
+persistent storage. They don't want to have to care about how to
+find an object in the persistent storage - that's what filesystems
+are for - they just want to be able to read and write to it
+directly. That's what DAX does - it provides existing filesystems
+a method for exposing direct access to the persistent RAM to
+applications in a manner that application developers are already
+familiar with. It's a win-win situation all round.
+
+IOWs, ext4/XFS + DAX gets us to a place that is good enough for most
+users and the hardware capabilities we expect to see in the next 5
+years.  And hopefully that will be long enough to bring a purpose
+built, next generation persistent memory filesystem to production
+quality that can take full advantage of the technology...
+
+Cheers,
+
+Dave.
 -- 
-1.9.3
-
-
+Dave Chinner
+david@fromorbit.com
