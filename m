@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753186AbaH1Sg7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:36:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32872 "EHLO mx2.suse.de"
+	id S1754318AbaH1Suh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 14:50:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32869 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753151AbaH1Sgz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:36:55 -0400
+	id S1753132AbaH1Sgy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:36:54 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Jiri Slaby <jslaby@suse.cz>
 Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 66/97] mm/page_alloc: prevent MIGRATE_RESERVE pages from being misplaced
-Date: Thu, 28 Aug 2014 19:35:14 +0100
-Message-Id: <1409250945-30874-67-git-send-email-mgorman@suse.de>
+Subject: [PATCH 65/97] mm: vmscan: use proportional scanning during direct reclaim and full scan at DEF_PRIORITY
+Date: Thu, 28 Aug 2014 19:35:13 +0100
+Message-Id: <1409250945-30874-66-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
 References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
@@ -20,135 +20,143 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vlastimil Babka <vbabka@suse.cz>
+commit 1a501907bbea8e6ebb0b16cf6db9e9cbf1d2c813 upstream.
 
-commit 5bcc9f86ef09a933255ee66bd899d4601785dad5 upstream.
+Commit "mm: vmscan: obey proportional scanning requirements for kswapd"
+ensured that file/anon lists were scanned proportionally for reclaim from
+kswapd but ignored it for direct reclaim.  The intent was to minimse
+direct reclaim latency but Yuanhan Liu pointer out that it substitutes one
+long stall for many small stalls and distorts aging for normal workloads
+like streaming readers/writers.  Hugh Dickins pointed out that a
+side-effect of the same commit was that when one LRU list dropped to zero
+that the entirety of the other list was shrunk leading to excessive
+reclaim in memcgs.  This patch scans the file/anon lists proportionally
+for direct reclaim to similarly age page whether reclaimed by kswapd or
+direct reclaim but takes care to abort reclaim if one LRU drops to zero
+after reclaiming the requested number of pages.
 
-For the MIGRATE_RESERVE pages, it is useful when they do not get
-misplaced on free_list of other migratetype, otherwise they might get
-allocated prematurely and e.g.  fragment the MIGRATE_RESEVE pageblocks.
-While this cannot be avoided completely when allocating new
-MIGRATE_RESERVE pageblocks in min_free_kbytes sysctl handler, we should
-prevent the misplacement where possible.
+Based on ext4 and using the Intel VM scalability test
 
-Currently, it is possible for the misplacement to happen when a
-MIGRATE_RESERVE page is allocated on pcplist through rmqueue_bulk() as a
-fallback for other desired migratetype, and then later freed back
-through free_pcppages_bulk() without being actually used.  This happens
-because free_pcppages_bulk() uses get_freepage_migratetype() to choose
-the free_list, and rmqueue_bulk() calls set_freepage_migratetype() with
-the *desired* migratetype and not the page's original MIGRATE_RESERVE
-migratetype.
+                                              3.15.0-rc5            3.15.0-rc5
+                                                shrinker            proportion
+Unit  lru-file-readonce    elapsed      5.3500 (  0.00%)      5.4200 ( -1.31%)
+Unit  lru-file-readonce time_range      0.2700 (  0.00%)      0.1400 ( 48.15%)
+Unit  lru-file-readonce time_stddv      0.1148 (  0.00%)      0.0536 ( 53.33%)
+Unit lru-file-readtwice    elapsed      8.1700 (  0.00%)      8.1700 (  0.00%)
+Unit lru-file-readtwice time_range      0.4300 (  0.00%)      0.2300 ( 46.51%)
+Unit lru-file-readtwice time_stddv      0.1650 (  0.00%)      0.0971 ( 41.16%)
 
-This patch fixes the problem by moving the call to
-set_freepage_migratetype() from rmqueue_bulk() down to
-__rmqueue_smallest() and __rmqueue_fallback() where the actual page's
-migratetype (e.g.  from which free_list the page is taken from) is used.
-Note that this migratetype might be different from the pageblock's
-migratetype due to freepage stealing decisions.  This is OK, as page
-stealing never uses MIGRATE_RESERVE as a fallback, and also takes care
-to leave all MIGRATE_CMA pages on the correct freelist.
+The test cases are running multiple dd instances reading sparse files. The results are within
+the noise for the small test machine. The impact of the patch is more noticable from the vmstats
 
-Therefore, as an additional benefit, the call to
-get_pageblock_migratetype() from rmqueue_bulk() when CMA is enabled, can
-be removed completely.  This relies on the fact that MIGRATE_CMA
-pageblocks are created only during system init, and the above.  The
-related is_migrate_isolate() check is also unnecessary, as memory
-isolation has other ways to move pages between freelists, and drain pcp
-lists containing pages that should be isolated.  The buffered_rmqueue()
-can also benefit from calling get_freepage_migratetype() instead of
-get_pageblock_migratetype().
+                            3.15.0-rc5  3.15.0-rc5
+                              shrinker  proportion
+Minor Faults                     35154       36784
+Major Faults                       611        1305
+Swap Ins                           394        1651
+Swap Outs                         4394        5891
+Allocation stalls               118616       44781
+Direct pages scanned           4935171     4602313
+Kswapd pages scanned          15921292    16258483
+Kswapd pages reclaimed        15913301    16248305
+Direct pages reclaimed         4933368     4601133
+Kswapd efficiency                  99%         99%
+Kswapd velocity             670088.047  682555.961
+Direct efficiency                  99%         99%
+Direct velocity             207709.217  193212.133
+Percentage direct scans            23%         22%
+Page writes by reclaim        4858.000    6232.000
+Page writes file                   464         341
+Page writes anon                  4394        5891
 
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Reported-by: Yong-Taek Lee <ytk.lee@samsung.com>
-Reported-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Suggested-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Acked-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Suggested-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Minchan Kim <minchan@kernel.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Note that there are fewer allocation stalls even though the amount
+of direct reclaim scanning is very approximately the same.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Hugh Dickins <hughd@google.com>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Dave Chinner <david@fromorbit.com>
+Tested-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Cc: Bob Liu <bob.liu@oracle.com>
+Cc: Jan Kara <jack@suse.cz>
 Cc: Rik van Riel <riel@redhat.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/page_alloc.c | 23 +++++++++++++----------
- 1 file changed, 13 insertions(+), 10 deletions(-)
+ mm/vmscan.c | 36 +++++++++++++++++++++++++-----------
+ 1 file changed, 25 insertions(+), 11 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 08e54b5..7139ed7 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -918,6 +918,7 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
- 		rmv_page_order(page);
- 		area->nr_free--;
- 		expand(zone, page, order, current_order, area, migratetype);
-+		set_freepage_migratetype(page, migratetype);
- 		return page;
- 	}
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 96cd5c4..e568be9 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2018,13 +2018,27 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+ 	unsigned long nr_reclaimed = 0;
+ 	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
+ 	struct blk_plug plug;
+-	bool scan_adjusted = false;
++	bool scan_adjusted;
  
-@@ -1044,7 +1045,9 @@ static int try_to_steal_freepages(struct zone *zone, struct page *page,
+ 	get_scan_count(lruvec, sc, nr);
  
- 	/*
- 	 * When borrowing from MIGRATE_CMA, we need to release the excess
--	 * buddy pages to CMA itself.
-+	 * buddy pages to CMA itself. We also ensure the freepage_migratetype
-+	 * is set to CMA so it is returned to the correct freelist in case
-+	 * the page ends up being not actually allocated from the pcp lists.
- 	 */
- 	if (is_migrate_cma(fallback_type))
- 		return fallback_type;
-@@ -1112,6 +1115,12 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
+ 	/* Record the original scan target for proportional adjustments later */
+ 	memcpy(targets, nr, sizeof(nr));
  
- 			expand(zone, page, order, current_order, area,
- 			       new_type);
-+			/* The freepage_migratetype may differ from pageblock's
-+			 * migratetype depending on the decisions in
-+			 * try_to_steal_freepages. This is OK as long as it does
-+			 * not differ for MIGRATE_CMA type.
-+			 */
-+			set_freepage_migratetype(page, new_type);
++	/*
++	 * Global reclaiming within direct reclaim at DEF_PRIORITY is a normal
++	 * event that can occur when there is little memory pressure e.g.
++	 * multiple streaming readers/writers. Hence, we do not abort scanning
++	 * when the requested number of pages are reclaimed when scanning at
++	 * DEF_PRIORITY on the assumption that the fact we are direct
++	 * reclaiming implies that kswapd is not keeping up and it is best to
++	 * do a batch of work at once. For memcg reclaim one check is made to
++	 * abort proportional reclaim if either the file or anon lru has already
++	 * dropped to zero at the first pass.
++	 */
++	scan_adjusted = (global_reclaim(sc) && !current_is_kswapd() &&
++			 sc->priority == DEF_PRIORITY);
++
+ 	blk_start_plug(&plug);
+ 	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
+ 					nr[LRU_INACTIVE_FILE]) {
+@@ -2045,17 +2059,8 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+ 			continue;
  
- 			trace_mm_page_alloc_extfrag(page, order, current_order,
- 				start_migratetype, migratetype, new_type);
-@@ -1162,7 +1171,7 @@ static int rmqueue_bulk(struct zone *zone, unsigned int order,
- 			unsigned long count, struct list_head *list,
- 			int migratetype, int cold)
- {
--	int mt = migratetype, i;
-+	int i;
+ 		/*
+-		 * For global direct reclaim, reclaim only the number of pages
+-		 * requested. Less care is taken to scan proportionally as it
+-		 * is more important to minimise direct reclaim stall latency
+-		 * than it is to properly age the LRU lists.
+-		 */
+-		if (global_reclaim(sc) && !current_is_kswapd())
+-			break;
+-
+-		/*
+ 		 * For kswapd and memcg, reclaim at least the number of pages
+-		 * requested. Ensure that the anon and file LRUs shrink
++		 * requested. Ensure that the anon and file LRUs are scanned
+ 		 * proportionally what was requested by get_scan_count(). We
+ 		 * stop reclaiming one LRU and reduce the amount scanning
+ 		 * proportional to the original scan target.
+@@ -2063,6 +2068,15 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+ 		nr_file = nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE];
+ 		nr_anon = nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON];
  
- 	spin_lock(&zone->lock);
- 	for (i = 0; i < count; ++i) {
-@@ -1183,14 +1192,8 @@ static int rmqueue_bulk(struct zone *zone, unsigned int order,
- 			list_add(&page->lru, list);
- 		else
- 			list_add_tail(&page->lru, list);
--		if (IS_ENABLED(CONFIG_CMA)) {
--			mt = get_pageblock_migratetype(page);
--			if (!is_migrate_cma(mt) && !is_migrate_isolate(mt))
--				mt = migratetype;
--		}
--		set_freepage_migratetype(page, mt);
- 		list = &page->lru;
--		if (is_migrate_cma(mt))
-+		if (is_migrate_cma(get_freepage_migratetype(page)))
- 			__mod_zone_page_state(zone, NR_FREE_CMA_PAGES,
- 					      -(1 << order));
- 	}
-@@ -1559,7 +1562,7 @@ again:
- 		if (!page)
- 			goto failed;
- 		__mod_zone_freepage_state(zone, -(1 << order),
--					  get_pageblock_migratetype(page));
-+					  get_freepage_migratetype(page));
- 	}
- 
- 	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
++		/*
++		 * It's just vindictive to attack the larger once the smaller
++		 * has gone to zero.  And given the way we stop scanning the
++		 * smaller below, this makes sure that we only make one nudge
++		 * towards proportionality once we've got nr_to_reclaim.
++		 */
++		if (!nr_file || !nr_anon)
++			break;
++
+ 		if (nr_file > nr_anon) {
+ 			unsigned long scan_target = targets[LRU_INACTIVE_ANON] +
+ 						targets[LRU_ACTIVE_ANON] + 1;
 -- 
 1.8.4.5
 
