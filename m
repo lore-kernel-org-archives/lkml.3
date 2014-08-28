@@ -1,56 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751421AbaH1Ocq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 10:32:46 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:50663 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751277AbaH1Ocp (ORCPT
+	id S1751534AbaH1Ofx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 10:35:53 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:58116 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750894AbaH1Ofv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 10:32:45 -0400
-Date: Thu, 28 Aug 2014 15:32:43 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: rtg.canonical@gmail.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tim Gardner <tim.gardner@canonical.com>
-Subject: Re: [PATCH v2] fs: namespace: suppress 'may be used uninitialized'
- warnings
-Message-ID: <20140828143243.GH18016@ZenIV.linux.org.uk>
-References: <20140827210112.GE18016@ZenIV.linux.org.uk>
- <1409234149-3485-1-git-send-email-tim.gardner@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409234149-3485-1-git-send-email-tim.gardner@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 28 Aug 2014 10:35:51 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: lee.jones@linaro.org, kernel@stlinux.com, wsa@the-dreams.de,
+        grant.likely@linaro.org, linux-i2c@vger.kernel.org,
+        devicetree@vger.kernel.org, linus.walleij@linaro.org
+Subject: [PATCH RESEND 0/8] i2c: Relax mandatory I2C ID table passing
+Date: Thu, 28 Aug 2014 15:35:30 +0100
+Message-Id: <1409236538-21274-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 28, 2014 at 07:55:49AM -0600, rtg.canonical@gmail.com wrote:
-> From: Tim Gardner <tim.gardner@canonical.com>
-> 
-> The gcc version 4.9.1 compiler complains even though it isn't possible for
-> these variables to not get initialized before they are used.
+Hi Wolfram,
 
-Sigh...  The root cause of that shite is that copy_mount_string() is too
-convoluted for gcc (piss-poor) detection of uninitialized variables.  And
-yes, it is somewhat overcomplicated - it returns 0 or -E... *and* in former
-case it returns NULL or a string as well, via a char ** argument.
+Placing this firmly back on your plate.  I truly hope we don't miss
+another merge-window.  This patch-set has the support of some pretty
+senior kernel maintainers, so I hope acceptance shouldn't be too
+difficult.
 
-The usual convention for such suckers is "return a pointer, using
-ERR_PTR(-E...) to indicate an error".  We have all of 4 (four) callers,
-all in fs/*.c (and nobody else could see that function, unless they manually
-included fs/internal.h).
+As previously discussed I believe it should be okay for an I2C device
+driver _not_ supply an I2C ID table to match to.  The I2C subsystem
+should be able to match via other means, such as via OF tables.  The
+blocking factor during our previous conversation was to keep
+registering via sysfs up and running.  This set does that.
 
-So let's turn that into
-char *copy_mount_string(const void __user *data)
-{
-	return data ? strndup_user(data, PAGE_SIZE) : NULL;
-}
+After thinking more deeply about the problem, it occurred to me that
+any I2C device driver which uses the sysfs method and issues an
+of_match_device() would also fail their probe().  Bolted on to this
+set is a new, more generic way for these devices to match against
+either of the I2C/OF tables.
 
-and uses of that thing into
-        kernel_type = copy_mount_string(type);
-	ret = PTR_ERR(kernel_type);
-        if (IS_ERR(kernel_type))
-                goto out_type;
-etc.
+I hope this ticks all of your boxes.
+
+v3:
+  - Insist on passing 'struct i2c_client' instead of 'struct device'
+  - Remove hook from of_match_device()
+
+v2:
+  - Removal of ACPI support (this is really an OF issue).
+  - Add a new .probe2( with will seamlessly replace
+  - Supply a warning on devices matching via OF without a suitable compatible
+  - Remove unified match_device() - bad idea as it subverts type-safe behaviour
+  - Provide examples of the kind of clean-up possible after this set.
+    - I already have the full support from the maintainer of these drivers =;-)
+
+Kind regards,
+Lee
+
+Lee Jones (8):
+  i2c: Add pointer dereference protection to i2c_match_id()
+  i2c: Add the ability to match device to compatible string without an
+    of_node
+  i2c: Match using traditional OF methods, then by vendor-less
+    compatible strings
+  i2c: Make I2C ID tables non-mandatory for DT'ed devices
+  i2c: Export i2c_match_id() for direct use by device drivers
+  i2c: Provide a temporary .probe2() call-back type
+  mfd: 88pm860x: Move over to new I2C device .probe() call
+  mfd: as3722: Rid driver of superfluous I2C device ID structure
+
+ drivers/i2c/i2c-core.c      | 72 +++++++++++++++++++++++++++++++++++++++------
+ drivers/mfd/88pm860x-core.c |  5 ++--
+ drivers/mfd/as3722.c        | 12 ++------
+ include/linux/i2c.h         | 22 +++++++++++++-
+ 4 files changed, 88 insertions(+), 23 deletions(-)
+
+-- 
+1.9.1
+
