@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752234AbaH1V3j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 17:29:39 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35905 "EHLO arroyo.ext.ti.com"
+	id S1752333AbaH1Vhs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 17:37:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58402 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750894AbaH1V3h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 17:29:37 -0400
-Message-ID: <53FF9E93.3040601@ti.com>
-Date: Thu, 28 Aug 2014 17:26:43 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1750894AbaH1Vhq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 17:37:46 -0400
+Date: Thu, 28 Aug 2014 17:37:19 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Mikulas Patocka <mpatocka@redhat.com>
+Cc: "Alasdair G. Kergon" <agk@redhat.com>,
+        Jonathan Brassow <jbrassow@redhat.com>,
+        Edward Thornber <thornber@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Christoph Hellwig <hch@infradead.org>, dm-devel@redhat.com,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 0/15] SCSI XCOPY support for the kernel and device mapper
+Message-ID: <20140828213719.GA3734@redhat.com>
+References: <alpine.LRH.2.02.1407151531140.14632@file01.intranet.prod.int.rdu2.redhat.com>
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>, Mark Brown <broonie@kernel.org>,
-        Heiko Stuebner <heiko@sntech.de>, <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>
-CC: Addy Ke <addy.ke@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>,
-        <linux-arm-kernel@lists.infradead.org>, <mark.rutland@arm.com>,
-        <devicetree@vger.kernel.org>, <swarren@nvidia.com>,
-        <pawel.moll@arm.com>, <ijc+devicetree@hellion.org.uk>,
-        <pdeschrijver@nvidia.com>, <agross@codeaurora.org>,
-        <lgirdwood@gmail.com>, <robh+dt@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <sandeep_n@ti.com>,
-        <galak@codeaurora.org>, <grant.likely@linaro.org>,
-        <treding@nvidia.com>, Nishanth Menon <nm@ti.com>
-Subject: Re: [PATCH 0/2] IO voltage domain support for rk3188 and rk3288
-References: <1409254565-10677-1-git-send-email-dianders@chromium.org>
-In-Reply-To: <1409254565-10677-1-git-send-email-dianders@chromium.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.02.1407151531140.14632@file01.intranet.prod.int.rdu2.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 28 August 2014 03:36 PM, Doug Anderson wrote:
-> These two patches add support for automatically configuring the IO
-> voltage domains on rk3188 and rk3288 SoCs.  The first patch adds some
-> new notification types to the regulator code.  It's used by the second
-> patch which actually implements the IO voltage domain driver.
-> 
-> These two patches were co-developed by Heiko Stübner and Doug Anderson
-> (proof of concept patches were written by Heiko).  They were tested in
-> a private branch on an rk3288 board using rk808 instead of mainline
-> since rk808 support isn't finalized in mainline yet.
-> 
-> (sorry if you got this series twice; my mailer seems unhappy with me)
-> 
-> Heiko Stübner (2):
->   regulator: core: Add REGULATOR_EVENT_PRE_VOLTAGE_CHANGE (and ABORT)
->   soc/rockchip: io-domain: add driver handling io domains
-> 
-Sorry to shot down but your IO domains are nothing but voltage domains
-and you should really build something in the drivers/power/*
+On Tue, Jul 15 2014 at  3:34pm -0400,
+Mikulas Patocka <mpatocka@redhat.com> wrote:
 
-Please have a look at the RFC [1]. You should really go on those
-lines and collaborate to make a generic voltage domain layer instead of throwing
-the driver under drivers/soc. 
-
->  .../devicetree/bindings/arm/rockchip/io-domain.txt |  60 ++++
->  drivers/regulator/core.c                           |  63 +++-
->  drivers/soc/Kconfig                                |   1 +
->  drivers/soc/Makefile                               |   1 +
->  drivers/soc/rockchip/Kconfig                       |  10 +
->  drivers/soc/rockchip/Makefile                      |   1 +
->  drivers/soc/rockchip/io-domain.c                   | 333 +++++++++++++++++++++
->  include/linux/regulator/consumer.h                 |  20 ++
->  8 files changed, 482 insertions(+), 7 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/arm/rockchip/io-domain.txt
->  create mode 100644 drivers/soc/rockchip/Kconfig
->  create mode 100644 drivers/soc/rockchip/Makefile
->  create mode 100644 drivers/soc/rockchip/io-domain.c
+> This patch series makes it possible to use SCSI XCOPY offload for the 
+> block layer and device mapper.
 > 
+> It is based on Martin Petersen's work
+> https://git.kernel.org/cgit/linux/kernel/git/mkp/linux.git/commit/?h=xcopy&id=0bdeed274e16b3038a851552188512071974eea8,
+> but it is changed significantly so that it is possible to propagate XCOPY
+> bios through the device mapper stack.
+> 
+> The basic architecture is this: in the function blkdev_issue_copy we
+> create two bios, one for read and one for write (with bi_rw READ|REQ_COPY
+> and WRITE|REQ_COPY). Both bios have a pointer to the same bio_copy
+> structure. These two bios travel independently through the device mapper
+> stack - each bio can go through different device mapper devices. When both
+> the bios reach the physical block device (in the function blk_queue_bio)
+> the bio pair is collected and a XCOPY request is allocated and sent to the
+> scsi disk driver.
+> 
+> Note that because device mapper mapping can dynamically change, there no
+> guarantee that the XCOPY command succeeds. If it ends with an error, the
+> caller is supposed to perform the copying manually.
+> 
+> The dm-kcopyd subsystem is modified to use the XCOPY command, so device
+> mapper targets that use it (mirror, snapshot, thin, cache) take advantage
+> of copy offload automatically.
+> 
+> There is a new ioctl BLKCOPY that makes it possible to use copy offload
+> from userspace.
 
-Regards,
-Santosh
-[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-February/233819.html
+Hi Martin (and others on linux-scsi),
+
+It would be ideal for XCOPY support to make its way upstream for
+3.18.. but the window for staging this work in time is closing.
+
+Any chance you might have some time to review Mikulas' revised approach
+to your initial XCOPY support?
