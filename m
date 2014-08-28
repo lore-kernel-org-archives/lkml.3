@@ -1,101 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934058AbaH1CPh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 22:15:37 -0400
-Received: from mail-oa0-f73.google.com ([209.85.219.73]:61479 "EHLO
-	mail-oa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932352AbaH1CPg (ORCPT
+	id S936064AbaH1CRu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 22:17:50 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:39946 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932352AbaH1CRt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 22:15:36 -0400
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Cc: James Hogan <james.hogan@imgtec.com>, Paul Burton <paul.burton@imgtec.com>,
-        David Daney <david.daney@cavium.com>,
-        John Crispin <blogic@openwrt.org>,
-        Jayachandran C <jchandra@broadcom.com>,
-        Qais Yousef <qais.yousef@imgtec.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Jonas Gorski <jogo@openwrt.org>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Andrew Bresticker <abrestic@chromium.org>
-Subject: [PATCH v2 5/7] MIPS: sead3: Move device-trees to arch/mips/boot/dts/mti/
-Date: Wed, 27 Aug 2014 19:10:10 -0700
-Message-Id: <1409191812-23697-6-git-send-email-abrestic@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1409191812-23697-1-git-send-email-abrestic@chromium.org>
-References: <1409191812-23697-1-git-send-email-abrestic@chromium.org>
+	Wed, 27 Aug 2014 22:17:49 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s7S2Hj5n026953, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next] r8152: reduce the number of Tx
+Date: Thu, 28 Aug 2014 10:17:35 +0800
+Message-ID: <1394712342-15778-23-Taiwan-albertk@realtek.com>
+X-Mailer: Microsoft Office Outlook 11
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the SEAD-3 device-tree to arch/mips/boot/dts/mti/ and update the
-Makefiles accordingly.  Since SEAD-3 requires the device-tree to be
-built into the kernel, select BUILTIN_DTB when building for SEAD-3.
+Because the Tx has the features of stopping queue and aggregation,
+We don't need many tx buffers. Change the tx number from 10 to 4
+to reduce the usage of the memory. This could save 16K * 10 bytes
+memory.
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 ---
- arch/mips/Kconfig                               | 1 +
- arch/mips/boot/dts/Makefile                     | 1 +
- arch/mips/boot/dts/mti/Makefile                 | 1 +
- arch/mips/{mti-sead3 => boot/dts/mti}/sead3.dts | 0
- arch/mips/mti-sead3/Makefile                    | 4 ----
- 5 files changed, 3 insertions(+), 4 deletions(-)
- create mode 100644 arch/mips/boot/dts/mti/Makefile
- rename arch/mips/{mti-sead3 => boot/dts/mti}/sead3.dts (100%)
+ drivers/net/usb/r8152.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index dbfcf35..a72c7c9 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -353,6 +353,7 @@ config MIPS_SEAD3
- 	bool "MIPS SEAD3 board"
- 	select BOOT_ELF32
- 	select BOOT_RAW
-+	select BUILTIN_DTB
- 	select CEVT_R4K
- 	select CSRC_R4K
- 	select CSRC_GIC
-diff --git a/arch/mips/boot/dts/Makefile b/arch/mips/boot/dts/Makefile
-index 0f16e92..e32cc0f 100644
---- a/arch/mips/boot/dts/Makefile
-+++ b/arch/mips/boot/dts/Makefile
-@@ -1,5 +1,6 @@
- include arch/mips/boot/dts/cavium-octeon/Makefile
- include arch/mips/boot/dts/lantiq/Makefile
-+include arch/mips/boot/dts/mti/Makefile
+diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+index 33dcc97..cc64dc0 100644
+--- a/drivers/net/usb/r8152.c
++++ b/drivers/net/usb/r8152.c
+@@ -424,7 +424,7 @@ enum rtl_register_content {
+ 	FULL_DUP	= 0x01,
+ };
  
- obj-y		+= $(patsubst %.dtb, %.dtb.o, $(dtb-y))
- 
-diff --git a/arch/mips/boot/dts/mti/Makefile b/arch/mips/boot/dts/mti/Makefile
-new file mode 100644
-index 0000000..913fac9
---- /dev/null
-+++ b/arch/mips/boot/dts/mti/Makefile
-@@ -0,0 +1 @@
-+dtb-$(CONFIG_MIPS_SEAD3)	+= mti/sead3.dtb
-diff --git a/arch/mips/mti-sead3/sead3.dts b/arch/mips/boot/dts/mti/sead3.dts
-similarity index 100%
-rename from arch/mips/mti-sead3/sead3.dts
-rename to arch/mips/boot/dts/mti/sead3.dts
-diff --git a/arch/mips/mti-sead3/Makefile b/arch/mips/mti-sead3/Makefile
-index 071786f..febf433 100644
---- a/arch/mips/mti-sead3/Makefile
-+++ b/arch/mips/mti-sead3/Makefile
-@@ -19,9 +19,5 @@ obj-y				+= sead3-i2c-dev.o sead3-i2c.o \
- 
- obj-$(CONFIG_EARLY_PRINTK)	+= sead3-console.o
- obj-$(CONFIG_USB_EHCI_HCD)	+= sead3-ehci.o
--obj-$(CONFIG_OF)		+= sead3.dtb.o
- 
- CFLAGS_sead3-setup.o = -I$(src)/../../../scripts/dtc/libfdt
--
--$(obj)/%.dtb: $(obj)/%.dts
--	$(call if_changed,dtc)
+-#define RTL8152_MAX_TX		10
++#define RTL8152_MAX_TX		4
+ #define RTL8152_MAX_RX		10
+ #define INTBUFSIZE		2
+ #define CRC_SIZE		4
 -- 
-2.1.0.rc2.206.gedb03e5
+1.9.3
 
