@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753369AbaH1ShQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:37:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32882 "EHLO mx2.suse.de"
+	id S1753802AbaH1SpA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 14:45:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32889 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751086AbaH1ShH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:37:07 -0400
+	id S1753339AbaH1ShP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:37:15 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Jiri Slaby <jslaby@suse.cz>
 Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 77/97] mm: page_alloc: reduce number of times page_to_pfn is called
-Date: Thu, 28 Aug 2014 19:35:25 +0100
-Message-Id: <1409250945-30874-78-git-send-email-mgorman@suse.de>
+Subject: [PATCH 84/97] mm: non-atomically mark page accessed during page cache allocation where possible
+Date: Thu, 28 Aug 2014 19:35:32 +0100
+Message-Id: <1409250945-30874-85-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
 References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
@@ -20,14 +20,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit dc4b0caff24d9b2918e9f27bc65499ee63187eba upstream.
+commit 2457aec63745e235bcafb7ef312b182d8682f0fc upstream.
 
-In the free path we calculate page_to_pfn multiple times. Reduce that.
+aops->write_begin may allocate a new page and make it visible only to have
+mark_page_accessed called almost immediately after.  Once the page is
+visible the atomic operations are necessary which is noticable overhead
+when writing to an in-memory filesystem like tmpfs but should also be
+noticable with fast storage.  The objective of the patch is to initialse
+the accessed information with non-atomic operations before the page is
+visible.
 
+The bulk of filesystems directly or indirectly use
+grab_cache_page_write_begin or find_or_create_page for the initial
+allocation of a page cache page.  This patch adds an init_page_accessed()
+helper which behaves like the first call to mark_page_accessed() but may
+called before the page is visible and can be done non-atomically.
+
+The primary APIs of concern in this care are the following and are used
+by most filesystems.
+
+	find_get_page
+	find_lock_page
+	find_or_create_page
+	grab_cache_page_nowait
+	grab_cache_page_write_begin
+
+All of them are very similar in detail to the patch creates a core helper
+pagecache_get_page() which takes a flags parameter that affects its
+behavior such as whether the page should be marked accessed or not.  Then
+old API is preserved but is basically a thin wrapper around this core
+function.
+
+Each of the filesystems are then updated to avoid calling
+mark_page_accessed when it is known that the VM interfaces have already
+done the job.  There is a slight snag in that the timing of the
+mark_page_accessed() has now changed so in rare cases it's possible a page
+gets to the end of the LRU as PageReferenced where as previously it might
+have been repromoted.  This is expected to be rare but it's worth the
+filesystem people thinking about it in case they see a problem with the
+timing change.  It is also the case that some filesystems may be marking
+pages accessed that previously did not but it makes sense that filesystems
+have consistent behaviour in this regard.
+
+The test case used to evaulate this is a simple dd of a large file done
+multiple times with the file deleted on each iterations.  The size of the
+file is 1/10th physical memory to avoid dirty page balancing.  In the
+async case it will be possible that the workload completes without even
+hitting the disk and will have variable results but highlight the impact
+of mark_page_accessed for async IO.  The sync results are expected to be
+more stable.  The exception is tmpfs where the normal case is for the "IO"
+to not hit the disk.
+
+The test machine was single socket and UMA to avoid any scheduling or NUMA
+artifacts.  Throughput and wall times are presented for sync IO, only wall
+times are shown for async as the granularity reported by dd and the
+variability is unsuitable for comparison.  As async results were variable
+do to writback timings, I'm only reporting the maximum figures.  The sync
+results were stable enough to make the mean and stddev uninteresting.
+
+The performance results are reported based on a run with no profiling.
+Profile data is based on a separate run with oprofile running.
+
+async dd
+                                    3.15.0-rc3            3.15.0-rc3
+                                       vanilla           accessed-v2
+ext3    Max      elapsed     13.9900 (  0.00%)     11.5900 ( 17.16%)
+tmpfs	Max      elapsed      0.5100 (  0.00%)      0.4900 (  3.92%)
+btrfs   Max      elapsed     12.8100 (  0.00%)     12.7800 (  0.23%)
+ext4	Max      elapsed     18.6000 (  0.00%)     13.3400 ( 28.28%)
+xfs	Max      elapsed     12.5600 (  0.00%)      2.0900 ( 83.36%)
+
+The XFS figure is a bit strange as it managed to avoid a worst case by
+sheer luck but the average figures looked reasonable.
+
+        samples percentage
+ext3       86107    0.9783  vmlinux-3.15.0-rc4-vanilla        mark_page_accessed
+ext3       23833    0.2710  vmlinux-3.15.0-rc4-accessed-v3r25 mark_page_accessed
+ext3        5036    0.0573  vmlinux-3.15.0-rc4-accessed-v3r25 init_page_accessed
+ext4       64566    0.8961  vmlinux-3.15.0-rc4-vanilla        mark_page_accessed
+ext4        5322    0.0713  vmlinux-3.15.0-rc4-accessed-v3r25 mark_page_accessed
+ext4        2869    0.0384  vmlinux-3.15.0-rc4-accessed-v3r25 init_page_accessed
+xfs        62126    1.7675  vmlinux-3.15.0-rc4-vanilla        mark_page_accessed
+xfs         1904    0.0554  vmlinux-3.15.0-rc4-accessed-v3r25 init_page_accessed
+xfs          103    0.0030  vmlinux-3.15.0-rc4-accessed-v3r25 mark_page_accessed
+btrfs      10655    0.1338  vmlinux-3.15.0-rc4-vanilla        mark_page_accessed
+btrfs       2020    0.0273  vmlinux-3.15.0-rc4-accessed-v3r25 init_page_accessed
+btrfs        587    0.0079  vmlinux-3.15.0-rc4-accessed-v3r25 mark_page_accessed
+tmpfs      59562    3.2628  vmlinux-3.15.0-rc4-vanilla        mark_page_accessed
+tmpfs       1210    0.0696  vmlinux-3.15.0-rc4-accessed-v3r25 init_page_accessed
+tmpfs         94    0.0054  vmlinux-3.15.0-rc4-accessed-v3r25 mark_page_accessed
+
+[akpm@linux-foundation.org: don't run init_page_accessed() against an uninitialised pointer]
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Rik van Riel <riel@redhat.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
+Cc: Vlastimil Babka <vbabka@suse.cz>
 Cc: Jan Kara <jack@suse.cz>
 Cc: Michal Hocko <mhocko@suse.cz>
 Cc: Hugh Dickins <hughd@google.com>
@@ -35,230 +121,794 @@ Cc: Dave Hansen <dave.hansen@intel.com>
 Cc: Theodore Ts'o <tytso@mit.edu>
 Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
+Tested-by: Prabhakar Lad <prabhakar.csengg@gmail.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/mmzone.h          |  9 +++++++--
- include/linux/pageblock-flags.h | 33 +++++++++++++--------------------
- mm/page_alloc.c                 | 34 +++++++++++++++++++---------------
- 3 files changed, 39 insertions(+), 37 deletions(-)
+ fs/btrfs/extent_io.c       |  15 ++--
+ fs/btrfs/file.c            |   5 +-
+ fs/buffer.c                |   7 +-
+ fs/ext4/mballoc.c          |  14 ++--
+ fs/f2fs/checkpoint.c       |   1 -
+ fs/f2fs/node.c             |   2 -
+ fs/fuse/file.c             |   2 -
+ fs/gfs2/aops.c             |   1 -
+ fs/gfs2/meta_io.c          |   4 +-
+ fs/ntfs/attrib.c           |   1 -
+ fs/ntfs/file.c             |   1 -
+ include/linux/page-flags.h |   1 +
+ include/linux/pagemap.h    | 107 ++++++++++++++++++++++--
+ include/linux/swap.h       |   1 +
+ mm/filemap.c               | 202 +++++++++++++++++----------------------------
+ mm/shmem.c                 |   6 +-
+ mm/swap.c                  |  11 +++
+ 17 files changed, 219 insertions(+), 162 deletions(-)
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 49aa3e5..b45c3a7 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -78,10 +78,15 @@ extern int page_group_by_mobility_disabled;
- #define NR_MIGRATETYPE_BITS (PB_migrate_end - PB_migrate + 1)
- #define MIGRATETYPE_MASK ((1UL << NR_MIGRATETYPE_BITS) - 1)
- 
--static inline int get_pageblock_migratetype(struct page *page)
-+#define get_pageblock_migratetype(page)					\
-+	get_pfnblock_flags_mask(page, page_to_pfn(page),		\
-+			PB_migrate_end, MIGRATETYPE_MASK)
-+
-+static inline int get_pfnblock_migratetype(struct page *page, unsigned long pfn)
- {
- 	BUILD_BUG_ON(PB_migrate_end - PB_migrate != 2);
--	return get_pageblock_flags_mask(page, PB_migrate_end, MIGRATETYPE_MASK);
-+	return get_pfnblock_flags_mask(page, pfn, PB_migrate_end,
-+					MIGRATETYPE_MASK);
+diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
+index b395791..adb5052 100644
+--- a/fs/btrfs/extent_io.c
++++ b/fs/btrfs/extent_io.c
+@@ -4445,7 +4445,8 @@ static void check_buffer_tree_ref(struct extent_buffer *eb)
+ 	spin_unlock(&eb->refs_lock);
  }
  
- struct free_area {
-diff --git a/include/linux/pageblock-flags.h b/include/linux/pageblock-flags.h
-index c08730c..2baeee1 100644
---- a/include/linux/pageblock-flags.h
-+++ b/include/linux/pageblock-flags.h
-@@ -65,33 +65,26 @@ extern int pageblock_order;
- /* Forward declaration */
- struct page;
- 
--unsigned long get_pageblock_flags_mask(struct page *page,
-+unsigned long get_pfnblock_flags_mask(struct page *page,
-+				unsigned long pfn,
- 				unsigned long end_bitidx,
- 				unsigned long mask);
--void set_pageblock_flags_mask(struct page *page,
-+
-+void set_pfnblock_flags_mask(struct page *page,
- 				unsigned long flags,
-+				unsigned long pfn,
- 				unsigned long end_bitidx,
- 				unsigned long mask);
- 
- /* Declarations for getting and setting flags. See mm/page_alloc.c */
--static inline unsigned long get_pageblock_flags_group(struct page *page,
--					int start_bitidx, int end_bitidx)
--{
--	unsigned long nr_flag_bits = end_bitidx - start_bitidx + 1;
--	unsigned long mask = (1 << nr_flag_bits) - 1;
--
--	return get_pageblock_flags_mask(page, end_bitidx, mask);
--}
--
--static inline void set_pageblock_flags_group(struct page *page,
--					unsigned long flags,
--					int start_bitidx, int end_bitidx)
--{
--	unsigned long nr_flag_bits = end_bitidx - start_bitidx + 1;
--	unsigned long mask = (1 << nr_flag_bits) - 1;
--
--	set_pageblock_flags_mask(page, flags, end_bitidx, mask);
--}
-+#define get_pageblock_flags_group(page, start_bitidx, end_bitidx) \
-+	get_pfnblock_flags_mask(page, page_to_pfn(page),		\
-+			end_bitidx,					\
-+			(1 << (end_bitidx - start_bitidx + 1)) - 1)
-+#define set_pageblock_flags_group(page, flags, start_bitidx, end_bitidx) \
-+	set_pfnblock_flags_mask(page, flags, page_to_pfn(page),		\
-+			end_bitidx,					\
-+			(1 << (end_bitidx - start_bitidx + 1)) - 1)
- 
- #ifdef CONFIG_COMPACTION
- #define get_pageblock_skip(page) \
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 46b5a56..031ca22 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -557,6 +557,7 @@ static inline int page_is_buddy(struct page *page, struct page *buddy,
-  */
- 
- static inline void __free_one_page(struct page *page,
-+		unsigned long pfn,
- 		struct zone *zone, unsigned int order,
- 		int migratetype)
+-static void mark_extent_buffer_accessed(struct extent_buffer *eb)
++static void mark_extent_buffer_accessed(struct extent_buffer *eb,
++		struct page *accessed)
  {
-@@ -573,7 +574,7 @@ static inline void __free_one_page(struct page *page,
+ 	unsigned long num_pages, i;
  
- 	VM_BUG_ON(migratetype == -1);
- 
--	page_idx = page_to_pfn(page) & ((1 << MAX_ORDER) - 1);
-+	page_idx = pfn & ((1 << MAX_ORDER) - 1);
- 
- 	VM_BUG_ON(page_idx & ((1 << order) - 1));
- 	VM_BUG_ON(bad_range(zone, page));
-@@ -697,7 +698,7 @@ static void free_pcppages_bulk(struct zone *zone, int count,
- 			list_del(&page->lru);
- 			mt = get_freepage_migratetype(page);
- 			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
--			__free_one_page(page, zone, 0, mt);
-+			__free_one_page(page, page_to_pfn(page), zone, 0, mt);
- 			trace_mm_page_pcpu_drain(page, 0, mt);
- 			if (likely(!is_migrate_isolate_page(page))) {
- 				__mod_zone_page_state(zone, NR_FREE_PAGES, 1);
-@@ -709,13 +710,15 @@ static void free_pcppages_bulk(struct zone *zone, int count,
- 	spin_unlock(&zone->lock);
+@@ -4454,7 +4455,8 @@ static void mark_extent_buffer_accessed(struct extent_buffer *eb)
+ 	num_pages = num_extent_pages(eb->start, eb->len);
+ 	for (i = 0; i < num_pages; i++) {
+ 		struct page *p = extent_buffer_page(eb, i);
+-		mark_page_accessed(p);
++		if (p != accessed)
++			mark_page_accessed(p);
+ 	}
  }
  
--static void free_one_page(struct zone *zone, struct page *page, unsigned int order,
-+static void free_one_page(struct zone *zone,
-+				struct page *page, unsigned long pfn,
-+				unsigned int order,
- 				int migratetype)
- {
- 	spin_lock(&zone->lock);
- 	zone->pages_scanned = 0;
+@@ -4475,7 +4477,7 @@ struct extent_buffer *alloc_extent_buffer(struct extent_io_tree *tree,
+ 	eb = radix_tree_lookup(&tree->buffer, start >> PAGE_CACHE_SHIFT);
+ 	if (eb && atomic_inc_not_zero(&eb->refs)) {
+ 		rcu_read_unlock();
+-		mark_extent_buffer_accessed(eb);
++		mark_extent_buffer_accessed(eb, NULL);
+ 		return eb;
+ 	}
+ 	rcu_read_unlock();
+@@ -4503,7 +4505,7 @@ struct extent_buffer *alloc_extent_buffer(struct extent_io_tree *tree,
+ 				spin_unlock(&mapping->private_lock);
+ 				unlock_page(p);
+ 				page_cache_release(p);
+-				mark_extent_buffer_accessed(exists);
++				mark_extent_buffer_accessed(exists, p);
+ 				goto free_eb;
+ 			}
  
--	__free_one_page(page, zone, order, migratetype);
-+	__free_one_page(page, pfn, zone, order, migratetype);
- 	if (unlikely(!is_migrate_isolate(migratetype)))
- 		__mod_zone_freepage_state(zone, 1 << order, migratetype);
- 	spin_unlock(&zone->lock);
-@@ -752,15 +755,16 @@ static void __free_pages_ok(struct page *page, unsigned int order)
- {
- 	unsigned long flags;
- 	int migratetype;
-+	unsigned long pfn = page_to_pfn(page);
- 
- 	if (!free_pages_prepare(page, order))
- 		return;
- 
- 	local_irq_save(flags);
- 	__count_vm_events(PGFREE, 1 << order);
--	migratetype = get_pageblock_migratetype(page);
-+	migratetype = get_pfnblock_migratetype(page, pfn);
- 	set_freepage_migratetype(page, migratetype);
--	free_one_page(page_zone(page), page, order, migratetype);
-+	free_one_page(page_zone(page), page, pfn, order, migratetype);
- 	local_irq_restore(flags);
- }
- 
-@@ -1368,12 +1372,13 @@ void free_hot_cold_page(struct page *page, int cold)
- 	struct zone *zone = page_zone(page);
- 	struct per_cpu_pages *pcp;
- 	unsigned long flags;
-+	unsigned long pfn = page_to_pfn(page);
- 	int migratetype;
- 
- 	if (!free_pages_prepare(page, 0))
- 		return;
- 
--	migratetype = get_pageblock_migratetype(page);
-+	migratetype = get_pfnblock_migratetype(page, pfn);
- 	set_freepage_migratetype(page, migratetype);
- 	local_irq_save(flags);
- 	__count_vm_event(PGFREE);
-@@ -1387,7 +1392,7 @@ void free_hot_cold_page(struct page *page, int cold)
- 	 */
- 	if (migratetype >= MIGRATE_PCPTYPES) {
- 		if (unlikely(is_migrate_isolate(migratetype))) {
--			free_one_page(zone, page, 0, migratetype);
-+			free_one_page(zone, page, pfn, 0, migratetype);
- 			goto out;
+@@ -4518,7 +4520,6 @@ struct extent_buffer *alloc_extent_buffer(struct extent_io_tree *tree,
+ 		attach_extent_buffer_page(eb, p);
+ 		spin_unlock(&mapping->private_lock);
+ 		WARN_ON(PageDirty(p));
+-		mark_page_accessed(p);
+ 		eb->pages[i] = p;
+ 		if (!PageUptodate(p))
+ 			uptodate = 0;
+@@ -4548,7 +4549,7 @@ again:
  		}
- 		migratetype = MIGRATE_MOVABLE;
-@@ -6011,17 +6016,16 @@ static inline int pfn_to_bitidx(struct zone *zone, unsigned long pfn)
-  * @end_bitidx: The last bit of interest
-  * returns pageblock_bits flags
-  */
--unsigned long get_pageblock_flags_mask(struct page *page,
-+unsigned long get_pfnblock_flags_mask(struct page *page, unsigned long pfn,
- 					unsigned long end_bitidx,
- 					unsigned long mask)
- {
- 	struct zone *zone;
- 	unsigned long *bitmap;
--	unsigned long pfn, bitidx, word_bitidx;
-+	unsigned long bitidx, word_bitidx;
- 	unsigned long word;
- 
- 	zone = page_zone(page);
--	pfn = page_to_pfn(page);
- 	bitmap = get_pageblock_bitmap(zone, pfn);
- 	bitidx = pfn_to_bitidx(zone, pfn);
- 	word_bitidx = bitidx / BITS_PER_LONG;
-@@ -6033,25 +6037,25 @@ unsigned long get_pageblock_flags_mask(struct page *page,
+ 		spin_unlock(&tree->buffer_lock);
+ 		radix_tree_preload_end();
+-		mark_extent_buffer_accessed(exists);
++		mark_extent_buffer_accessed(exists, NULL);
+ 		goto free_eb;
+ 	}
+ 	/* add one reference for the tree */
+@@ -4594,7 +4595,7 @@ struct extent_buffer *find_extent_buffer(struct extent_io_tree *tree,
+ 	eb = radix_tree_lookup(&tree->buffer, start >> PAGE_CACHE_SHIFT);
+ 	if (eb && atomic_inc_not_zero(&eb->refs)) {
+ 		rcu_read_unlock();
+-		mark_extent_buffer_accessed(eb);
++		mark_extent_buffer_accessed(eb, NULL);
+ 		return eb;
+ 	}
+ 	rcu_read_unlock();
+diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
+index 9952a2a..ad80dfa 100644
+--- a/fs/btrfs/file.c
++++ b/fs/btrfs/file.c
+@@ -471,11 +471,12 @@ static void btrfs_drop_pages(struct page **pages, size_t num_pages)
+ 	for (i = 0; i < num_pages; i++) {
+ 		/* page checked is some magic around finding pages that
+ 		 * have been modified without going through btrfs_set_page_dirty
+-		 * clear it here
++		 * clear it here. There should be no need to mark the pages
++		 * accessed as prepare_pages should have marked them accessed
++		 * in prepare_pages via find_or_create_page()
+ 		 */
+ 		ClearPageChecked(pages[i]);
+ 		unlock_page(pages[i]);
+-		mark_page_accessed(pages[i]);
+ 		page_cache_release(pages[i]);
+ 	}
  }
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 6421d61..b788852 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -227,7 +227,7 @@ __find_get_block_slow(struct block_device *bdev, sector_t block)
+ 	int all_mapped = 1;
+ 
+ 	index = block >> (PAGE_CACHE_SHIFT - bd_inode->i_blkbits);
+-	page = find_get_page(bd_mapping, index);
++	page = find_get_page_flags(bd_mapping, index, FGP_ACCESSED);
+ 	if (!page)
+ 		goto out;
+ 
+@@ -1366,12 +1366,13 @@ __find_get_block(struct block_device *bdev, sector_t block, unsigned size)
+ 	struct buffer_head *bh = lookup_bh_lru(bdev, block, size);
+ 
+ 	if (bh == NULL) {
++		/* __find_get_block_slow will mark the page accessed */
+ 		bh = __find_get_block_slow(bdev, block);
+ 		if (bh)
+ 			bh_lru_install(bh);
+-	}
+-	if (bh)
++	} else
+ 		touch_buffer(bh);
++
+ 	return bh;
+ }
+ EXPORT_SYMBOL(__find_get_block);
+diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+index 502f0fd..4cb573d 100644
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -1044,6 +1044,8 @@ int ext4_mb_init_group(struct super_block *sb, ext4_group_t group)
+ 	 * allocating. If we are looking at the buddy cache we would
+ 	 * have taken a reference using ext4_mb_load_buddy and that
+ 	 * would have pinned buddy page to page cache.
++	 * The call to ext4_mb_get_buddy_page_lock will mark the
++	 * page accessed.
+ 	 */
+ 	ret = ext4_mb_get_buddy_page_lock(sb, group, &e4b);
+ 	if (ret || !EXT4_MB_GRP_NEED_INIT(this_grp)) {
+@@ -1062,7 +1064,6 @@ int ext4_mb_init_group(struct super_block *sb, ext4_group_t group)
+ 		ret = -EIO;
+ 		goto err;
+ 	}
+-	mark_page_accessed(page);
+ 
+ 	if (e4b.bd_buddy_page == NULL) {
+ 		/*
+@@ -1082,7 +1083,6 @@ int ext4_mb_init_group(struct super_block *sb, ext4_group_t group)
+ 		ret = -EIO;
+ 		goto err;
+ 	}
+-	mark_page_accessed(page);
+ err:
+ 	ext4_mb_put_buddy_page_lock(&e4b);
+ 	return ret;
+@@ -1141,7 +1141,7 @@ ext4_mb_load_buddy(struct super_block *sb, ext4_group_t group,
+ 
+ 	/* we could use find_or_create_page(), but it locks page
+ 	 * what we'd like to avoid in fast path ... */
+-	page = find_get_page(inode->i_mapping, pnum);
++	page = find_get_page_flags(inode->i_mapping, pnum, FGP_ACCESSED);
+ 	if (page == NULL || !PageUptodate(page)) {
+ 		if (page)
+ 			/*
+@@ -1172,15 +1172,16 @@ ext4_mb_load_buddy(struct super_block *sb, ext4_group_t group,
+ 		ret = -EIO;
+ 		goto err;
+ 	}
++
++	/* Pages marked accessed already */
+ 	e4b->bd_bitmap_page = page;
+ 	e4b->bd_bitmap = page_address(page) + (poff * sb->s_blocksize);
+-	mark_page_accessed(page);
+ 
+ 	block++;
+ 	pnum = block / blocks_per_page;
+ 	poff = block % blocks_per_page;
+ 
+-	page = find_get_page(inode->i_mapping, pnum);
++	page = find_get_page_flags(inode->i_mapping, pnum, FGP_ACCESSED);
+ 	if (page == NULL || !PageUptodate(page)) {
+ 		if (page)
+ 			page_cache_release(page);
+@@ -1201,9 +1202,10 @@ ext4_mb_load_buddy(struct super_block *sb, ext4_group_t group,
+ 		ret = -EIO;
+ 		goto err;
+ 	}
++
++	/* Pages marked accessed already */
+ 	e4b->bd_buddy_page = page;
+ 	e4b->bd_buddy = page_address(page) + (poff * sb->s_blocksize);
+-	mark_page_accessed(page);
+ 
+ 	BUG_ON(e4b->bd_bitmap_page == NULL);
+ 	BUG_ON(e4b->bd_buddy_page == NULL);
+diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+index bb31220..15a29af 100644
+--- a/fs/f2fs/checkpoint.c
++++ b/fs/f2fs/checkpoint.c
+@@ -70,7 +70,6 @@ repeat:
+ 		goto repeat;
+ 	}
+ out:
+-	mark_page_accessed(page);
+ 	return page;
+ }
+ 
+diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+index 51ef278..d0335bd 100644
+--- a/fs/f2fs/node.c
++++ b/fs/f2fs/node.c
+@@ -970,7 +970,6 @@ repeat:
+ 	}
+ got_it:
+ 	BUG_ON(nid != nid_of_node(page));
+-	mark_page_accessed(page);
+ 	return page;
+ }
+ 
+@@ -1026,7 +1025,6 @@ page_hit:
+ 		f2fs_put_page(page, 1);
+ 		return ERR_PTR(-EIO);
+ 	}
+-	mark_page_accessed(page);
+ 	return page;
+ }
+ 
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index bf9a755..d08c108 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -988,8 +988,6 @@ static ssize_t fuse_fill_write_pages(struct fuse_req *req,
+ 		tmp = iov_iter_copy_from_user_atomic(page, ii, offset, bytes);
+ 		flush_dcache_page(page);
+ 
+-		mark_page_accessed(page);
+-
+ 		if (!tmp) {
+ 			unlock_page(page);
+ 			page_cache_release(page);
+diff --git a/fs/gfs2/aops.c b/fs/gfs2/aops.c
+index 1253c20..f3aee0b 100644
+--- a/fs/gfs2/aops.c
++++ b/fs/gfs2/aops.c
+@@ -517,7 +517,6 @@ int gfs2_internal_read(struct gfs2_inode *ip, char *buf, loff_t *pos,
+ 		p = kmap_atomic(page);
+ 		memcpy(buf + copied, p + offset, amt);
+ 		kunmap_atomic(p);
+-		mark_page_accessed(page);
+ 		page_cache_release(page);
+ 		copied += amt;
+ 		index++;
+diff --git a/fs/gfs2/meta_io.c b/fs/gfs2/meta_io.c
+index 52f177b..89afe3a 100644
+--- a/fs/gfs2/meta_io.c
++++ b/fs/gfs2/meta_io.c
+@@ -128,7 +128,8 @@ struct buffer_head *gfs2_getbuf(struct gfs2_glock *gl, u64 blkno, int create)
+ 			yield();
+ 		}
+ 	} else {
+-		page = find_lock_page(mapping, index);
++		page = find_get_page_flags(mapping, index,
++						FGP_LOCK|FGP_ACCESSED);
+ 		if (!page)
+ 			return NULL;
+ 	}
+@@ -145,7 +146,6 @@ struct buffer_head *gfs2_getbuf(struct gfs2_glock *gl, u64 blkno, int create)
+ 		map_bh(bh, sdp->sd_vfs, blkno);
+ 
+ 	unlock_page(page);
+-	mark_page_accessed(page);
+ 	page_cache_release(page);
+ 
+ 	return bh;
+diff --git a/fs/ntfs/attrib.c b/fs/ntfs/attrib.c
+index a27e3fe..250ed5b 100644
+--- a/fs/ntfs/attrib.c
++++ b/fs/ntfs/attrib.c
+@@ -1748,7 +1748,6 @@ int ntfs_attr_make_non_resident(ntfs_inode *ni, const u32 data_size)
+ 	if (page) {
+ 		set_page_dirty(page);
+ 		unlock_page(page);
+-		mark_page_accessed(page);
+ 		page_cache_release(page);
+ 	}
+ 	ntfs_debug("Done.");
+diff --git a/fs/ntfs/file.c b/fs/ntfs/file.c
+index ea4ba9d..a0b2f34 100644
+--- a/fs/ntfs/file.c
++++ b/fs/ntfs/file.c
+@@ -2060,7 +2060,6 @@ static ssize_t ntfs_file_buffered_write(struct kiocb *iocb,
+ 		}
+ 		do {
+ 			unlock_page(pages[--do_pages]);
+-			mark_page_accessed(pages[do_pages]);
+ 			page_cache_release(pages[do_pages]);
+ 		} while (do_pages);
+ 		if (unlikely(status))
+diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
+index 0d1b035..2284ea6 100644
+--- a/include/linux/page-flags.h
++++ b/include/linux/page-flags.h
+@@ -198,6 +198,7 @@ struct page;	/* forward declaration */
+ TESTPAGEFLAG(Locked, locked)
+ PAGEFLAG(Error, error) TESTCLEARFLAG(Error, error)
+ PAGEFLAG(Referenced, referenced) TESTCLEARFLAG(Referenced, referenced)
++	__SETPAGEFLAG(Referenced, referenced)
+ PAGEFLAG(Dirty, dirty) TESTSCFLAG(Dirty, dirty) __CLEARPAGEFLAG(Dirty, dirty)
+ PAGEFLAG(LRU, lru) __CLEARPAGEFLAG(LRU, lru)
+ PAGEFLAG(Active, active) __CLEARPAGEFLAG(Active, active)
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index 57e3693..d57a02a 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -248,12 +248,109 @@ pgoff_t page_cache_next_hole(struct address_space *mapping,
+ pgoff_t page_cache_prev_hole(struct address_space *mapping,
+ 			     pgoff_t index, unsigned long max_scan);
+ 
++#define FGP_ACCESSED		0x00000001
++#define FGP_LOCK		0x00000002
++#define FGP_CREAT		0x00000004
++#define FGP_WRITE		0x00000008
++#define FGP_NOFS		0x00000010
++#define FGP_NOWAIT		0x00000020
++
++struct page *pagecache_get_page(struct address_space *mapping, pgoff_t offset,
++		int fgp_flags, gfp_t cache_gfp_mask, gfp_t radix_gfp_mask);
++
++/**
++ * find_get_page - find and get a page reference
++ * @mapping: the address_space to search
++ * @offset: the page index
++ *
++ * Looks up the page cache slot at @mapping & @offset.  If there is a
++ * page cache page, it is returned with an increased refcount.
++ *
++ * Otherwise, %NULL is returned.
++ */
++static inline struct page *find_get_page(struct address_space *mapping,
++					pgoff_t offset)
++{
++	return pagecache_get_page(mapping, offset, 0, 0, 0);
++}
++
++static inline struct page *find_get_page_flags(struct address_space *mapping,
++					pgoff_t offset, int fgp_flags)
++{
++	return pagecache_get_page(mapping, offset, fgp_flags, 0, 0);
++}
++
++/**
++ * find_lock_page - locate, pin and lock a pagecache page
++ * pagecache_get_page - find and get a page reference
++ * @mapping: the address_space to search
++ * @offset: the page index
++ *
++ * Looks up the page cache slot at @mapping & @offset.  If there is a
++ * page cache page, it is returned locked and with an increased
++ * refcount.
++ *
++ * Otherwise, %NULL is returned.
++ *
++ * find_lock_page() may sleep.
++ */
++static inline struct page *find_lock_page(struct address_space *mapping,
++					pgoff_t offset)
++{
++	return pagecache_get_page(mapping, offset, FGP_LOCK, 0, 0);
++}
++
++/**
++ * find_or_create_page - locate or add a pagecache page
++ * @mapping: the page's address_space
++ * @index: the page's index into the mapping
++ * @gfp_mask: page allocation mode
++ *
++ * Looks up the page cache slot at @mapping & @offset.  If there is a
++ * page cache page, it is returned locked and with an increased
++ * refcount.
++ *
++ * If the page is not present, a new page is allocated using @gfp_mask
++ * and added to the page cache and the VM's LRU list.  The page is
++ * returned locked and with an increased refcount.
++ *
++ * On memory exhaustion, %NULL is returned.
++ *
++ * find_or_create_page() may sleep, even if @gfp_flags specifies an
++ * atomic allocation!
++ */
++static inline struct page *find_or_create_page(struct address_space *mapping,
++					pgoff_t offset, gfp_t gfp_mask)
++{
++	return pagecache_get_page(mapping, offset,
++					FGP_LOCK|FGP_ACCESSED|FGP_CREAT,
++					gfp_mask, gfp_mask & GFP_RECLAIM_MASK);
++}
++
++/**
++ * grab_cache_page_nowait - returns locked page at given index in given cache
++ * @mapping: target address_space
++ * @index: the page index
++ *
++ * Same as grab_cache_page(), but do not wait if the page is unavailable.
++ * This is intended for speculative data generators, where the data can
++ * be regenerated if the page couldn't be grabbed.  This routine should
++ * be safe to call while holding the lock for another page.
++ *
++ * Clear __GFP_FS when allocating the page to avoid recursion into the fs
++ * and deadlock against the caller's locked page.
++ */
++static inline struct page *grab_cache_page_nowait(struct address_space *mapping,
++				pgoff_t index)
++{
++	return pagecache_get_page(mapping, index,
++			FGP_LOCK|FGP_CREAT|FGP_NOFS|FGP_NOWAIT,
++			mapping_gfp_mask(mapping),
++			GFP_NOFS);
++}
++
+ struct page *find_get_entry(struct address_space *mapping, pgoff_t offset);
+-struct page *find_get_page(struct address_space *mapping, pgoff_t offset);
+ struct page *find_lock_entry(struct address_space *mapping, pgoff_t offset);
+-struct page *find_lock_page(struct address_space *mapping, pgoff_t offset);
+-struct page *find_or_create_page(struct address_space *mapping, pgoff_t index,
+-				 gfp_t gfp_mask);
+ unsigned find_get_entries(struct address_space *mapping, pgoff_t start,
+ 			  unsigned int nr_entries, struct page **entries,
+ 			  pgoff_t *indices);
+@@ -276,8 +373,6 @@ static inline struct page *grab_cache_page(struct address_space *mapping,
+ 	return find_or_create_page(mapping, index, mapping_gfp_mask(mapping));
+ }
+ 
+-extern struct page * grab_cache_page_nowait(struct address_space *mapping,
+-				pgoff_t index);
+ extern struct page * read_cache_page(struct address_space *mapping,
+ 				pgoff_t index, filler_t *filler, void *data);
+ extern struct page * read_cache_page_gfp(struct address_space *mapping,
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index c8beed1..241bf09 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -275,6 +275,7 @@ extern void lru_add_page_tail(struct page *page, struct page *page_tail,
+ 			 struct lruvec *lruvec, struct list_head *head);
+ extern void activate_page(struct page *);
+ extern void mark_page_accessed(struct page *);
++extern void init_page_accessed(struct page *page);
+ extern void lru_add_drain(void);
+ extern void lru_add_drain_cpu(int cpu);
+ extern void lru_add_drain_all(void);
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 8144c27..115c77d 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -848,26 +848,6 @@ out:
+ EXPORT_SYMBOL(find_get_entry);
  
  /**
-- * set_pageblock_flags_mask - Set the requested group of flags for a pageblock_nr_pages block of pages
-+ * set_pfnblock_flags_mask - Set the requested group of flags for a pageblock_nr_pages block of pages
-  * @page: The page within the block of interest
-  * @start_bitidx: The first bit of interest
-  * @end_bitidx: The last bit of interest
-  * @flags: The flags to set
+- * find_get_page - find and get a page reference
+- * @mapping: the address_space to search
+- * @offset: the page index
+- *
+- * Looks up the page cache slot at @mapping & @offset.  If there is a
+- * page cache page, it is returned with an increased refcount.
+- *
+- * Otherwise, %NULL is returned.
+- */
+-struct page *find_get_page(struct address_space *mapping, pgoff_t offset)
+-{
+-	struct page *page = find_get_entry(mapping, offset);
+-
+-	if (radix_tree_exceptional_entry(page))
+-		page = NULL;
+-	return page;
+-}
+-EXPORT_SYMBOL(find_get_page);
+-
+-/**
+  * find_lock_entry - locate, pin and lock a page cache entry
+  * @mapping: the address_space to search
+  * @offset: the page cache index
+@@ -904,66 +884,84 @@ repeat:
+ EXPORT_SYMBOL(find_lock_entry);
+ 
+ /**
+- * find_lock_page - locate, pin and lock a pagecache page
++ * pagecache_get_page - find and get a page reference
+  * @mapping: the address_space to search
+  * @offset: the page index
++ * @fgp_flags: PCG flags
++ * @gfp_mask: gfp mask to use if a page is to be allocated
+  *
+- * Looks up the page cache slot at @mapping & @offset.  If there is a
+- * page cache page, it is returned locked and with an increased
+- * refcount.
+- *
+- * Otherwise, %NULL is returned.
+- *
+- * find_lock_page() may sleep.
+- */
+-struct page *find_lock_page(struct address_space *mapping, pgoff_t offset)
+-{
+-	struct page *page = find_lock_entry(mapping, offset);
+-
+-	if (radix_tree_exceptional_entry(page))
+-		page = NULL;
+-	return page;
+-}
+-EXPORT_SYMBOL(find_lock_page);
+-
+-/**
+- * find_or_create_page - locate or add a pagecache page
+- * @mapping: the page's address_space
+- * @index: the page's index into the mapping
+- * @gfp_mask: page allocation mode
++ * Looks up the page cache slot at @mapping & @offset.
+  *
+- * Looks up the page cache slot at @mapping & @offset.  If there is a
+- * page cache page, it is returned locked and with an increased
+- * refcount.
++ * PCG flags modify how the page is returned
+  *
+- * If the page is not present, a new page is allocated using @gfp_mask
+- * and added to the page cache and the VM's LRU list.  The page is
+- * returned locked and with an increased refcount.
++ * FGP_ACCESSED: the page will be marked accessed
++ * FGP_LOCK: Page is return locked
++ * FGP_CREAT: If page is not present then a new page is allocated using
++ *		@gfp_mask and added to the page cache and the VM's LRU
++ *		list. The page is returned locked and with an increased
++ *		refcount. Otherwise, %NULL is returned.
+  *
+- * On memory exhaustion, %NULL is returned.
++ * If FGP_LOCK or FGP_CREAT are specified then the function may sleep even
++ * if the GFP flags specified for FGP_CREAT are atomic.
+  *
+- * find_or_create_page() may sleep, even if @gfp_flags specifies an
+- * atomic allocation!
++ * If there is a page cache page, it is returned with an increased refcount.
   */
--void set_pageblock_flags_mask(struct page *page, unsigned long flags,
-+void set_pfnblock_flags_mask(struct page *page, unsigned long flags,
-+					unsigned long pfn,
- 					unsigned long end_bitidx,
- 					unsigned long mask)
+-struct page *find_or_create_page(struct address_space *mapping,
+-		pgoff_t index, gfp_t gfp_mask)
++struct page *pagecache_get_page(struct address_space *mapping, pgoff_t offset,
++	int fgp_flags, gfp_t cache_gfp_mask, gfp_t radix_gfp_mask)
  {
- 	struct zone *zone;
- 	unsigned long *bitmap;
--	unsigned long pfn, bitidx, word_bitidx;
-+	unsigned long bitidx, word_bitidx;
- 	unsigned long old_word, word;
+ 	struct page *page;
+-	int err;
++
+ repeat:
+-	page = find_lock_page(mapping, index);
+-	if (!page) {
+-		page = __page_cache_alloc(gfp_mask);
++	page = find_get_entry(mapping, offset);
++	if (radix_tree_exceptional_entry(page))
++		page = NULL;
++	if (!page)
++		goto no_page;
++
++	if (fgp_flags & FGP_LOCK) {
++		if (fgp_flags & FGP_NOWAIT) {
++			if (!trylock_page(page)) {
++				page_cache_release(page);
++				return NULL;
++			}
++		} else {
++			lock_page(page);
++		}
++
++		/* Has the page been truncated? */
++		if (unlikely(page->mapping != mapping)) {
++			unlock_page(page);
++			page_cache_release(page);
++			goto repeat;
++		}
++		VM_BUG_ON(page->index != offset);
++	}
++
++	if (page && (fgp_flags & FGP_ACCESSED))
++		mark_page_accessed(page);
++
++no_page:
++	if (!page && (fgp_flags & FGP_CREAT)) {
++		int err;
++		if ((fgp_flags & FGP_WRITE) && mapping_cap_account_dirty(mapping))
++			cache_gfp_mask |= __GFP_WRITE;
++		if (fgp_flags & FGP_NOFS) {
++			cache_gfp_mask &= ~__GFP_FS;
++			radix_gfp_mask &= ~__GFP_FS;
++		}
++
++		page = __page_cache_alloc(cache_gfp_mask);
+ 		if (!page)
+ 			return NULL;
+-		/*
+-		 * We want a regular kernel memory (not highmem or DMA etc)
+-		 * allocation for the radix tree nodes, but we need to honour
+-		 * the context-specific requirements the caller has asked for.
+-		 * GFP_RECLAIM_MASK collects those requirements.
+-		 */
+-		err = add_to_page_cache_lru(page, mapping, index,
+-			(gfp_mask & GFP_RECLAIM_MASK));
++
++		if (WARN_ON_ONCE(!(fgp_flags & FGP_LOCK)))
++			fgp_flags |= FGP_LOCK;
++
++		/* Init accessed so avoit atomic mark_page_accessed later */
++		if (fgp_flags & FGP_ACCESSED)
++			init_page_accessed(page);
++
++		err = add_to_page_cache_lru(page, mapping, offset, radix_gfp_mask);
+ 		if (unlikely(err)) {
+ 			page_cache_release(page);
+ 			page = NULL;
+@@ -971,9 +969,10 @@ repeat:
+ 				goto repeat;
+ 		}
+ 	}
++
+ 	return page;
+ }
+-EXPORT_SYMBOL(find_or_create_page);
++EXPORT_SYMBOL(pagecache_get_page);
  
- 	BUILD_BUG_ON(NR_PAGEBLOCK_BITS != 4);
+ /**
+  * find_get_entries - gang pagecache lookup
+@@ -1263,39 +1262,6 @@ repeat:
+ }
+ EXPORT_SYMBOL(find_get_pages_tag);
  
- 	zone = page_zone(page);
--	pfn = page_to_pfn(page);
- 	bitmap = get_pageblock_bitmap(zone, pfn);
- 	bitidx = pfn_to_bitidx(zone, pfn);
- 	word_bitidx = bitidx / BITS_PER_LONG;
+-/**
+- * grab_cache_page_nowait - returns locked page at given index in given cache
+- * @mapping: target address_space
+- * @index: the page index
+- *
+- * Same as grab_cache_page(), but do not wait if the page is unavailable.
+- * This is intended for speculative data generators, where the data can
+- * be regenerated if the page couldn't be grabbed.  This routine should
+- * be safe to call while holding the lock for another page.
+- *
+- * Clear __GFP_FS when allocating the page to avoid recursion into the fs
+- * and deadlock against the caller's locked page.
+- */
+-struct page *
+-grab_cache_page_nowait(struct address_space *mapping, pgoff_t index)
+-{
+-	struct page *page = find_get_page(mapping, index);
+-
+-	if (page) {
+-		if (trylock_page(page))
+-			return page;
+-		page_cache_release(page);
+-		return NULL;
+-	}
+-	page = __page_cache_alloc(mapping_gfp_mask(mapping) & ~__GFP_FS);
+-	if (page && add_to_page_cache_lru(page, mapping, index, GFP_NOFS)) {
+-		page_cache_release(page);
+-		page = NULL;
+-	}
+-	return page;
+-}
+-EXPORT_SYMBOL(grab_cache_page_nowait);
+-
+ /*
+  * CD/DVDs are error prone. When a medium error occurs, the driver may fail
+  * a _large_ part of the i/o request. Imagine the worst scenario:
+@@ -2399,7 +2365,6 @@ int pagecache_write_end(struct file *file, struct address_space *mapping,
+ {
+ 	const struct address_space_operations *aops = mapping->a_ops;
+ 
+-	mark_page_accessed(page);
+ 	return aops->write_end(file, mapping, pos, len, copied, page, fsdata);
+ }
+ EXPORT_SYMBOL(pagecache_write_end);
+@@ -2481,34 +2446,18 @@ EXPORT_SYMBOL(generic_file_direct_write);
+ struct page *grab_cache_page_write_begin(struct address_space *mapping,
+ 					pgoff_t index, unsigned flags)
+ {
+-	int status;
+-	gfp_t gfp_mask;
+ 	struct page *page;
+-	gfp_t gfp_notmask = 0;
++	int fgp_flags = FGP_LOCK|FGP_ACCESSED|FGP_WRITE|FGP_CREAT;
+ 
+-	gfp_mask = mapping_gfp_mask(mapping);
+-	if (mapping_cap_account_dirty(mapping))
+-		gfp_mask |= __GFP_WRITE;
+ 	if (flags & AOP_FLAG_NOFS)
+-		gfp_notmask = __GFP_FS;
+-repeat:
+-	page = find_lock_page(mapping, index);
++		fgp_flags |= FGP_NOFS;
++
++	page = pagecache_get_page(mapping, index, fgp_flags,
++			mapping_gfp_mask(mapping),
++			GFP_KERNEL);
+ 	if (page)
+-		goto found;
++		wait_for_stable_page(page);
+ 
+-	page = __page_cache_alloc(gfp_mask & ~gfp_notmask);
+-	if (!page)
+-		return NULL;
+-	status = add_to_page_cache_lru(page, mapping, index,
+-						GFP_KERNEL & ~gfp_notmask);
+-	if (unlikely(status)) {
+-		page_cache_release(page);
+-		if (status == -EEXIST)
+-			goto repeat;
+-		return NULL;
+-	}
+-found:
+-	wait_for_stable_page(page);
+ 	return page;
+ }
+ EXPORT_SYMBOL(grab_cache_page_write_begin);
+@@ -2557,7 +2506,7 @@ again:
+ 
+ 		status = a_ops->write_begin(file, mapping, pos, bytes, flags,
+ 						&page, &fsdata);
+-		if (unlikely(status))
++		if (unlikely(status < 0))
+ 			break;
+ 
+ 		if (mapping_writably_mapped(mapping))
+@@ -2566,7 +2515,6 @@ again:
+ 		copied = iov_iter_copy_from_user_atomic(page, i, offset, bytes);
+ 		flush_dcache_page(page);
+ 
+-		mark_page_accessed(page);
+ 		status = a_ops->write_end(file, mapping, pos, bytes, copied,
+ 						page, fsdata);
+ 		if (unlikely(status < 0))
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 8572e8e..d4b7358 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -1440,9 +1440,13 @@ shmem_write_begin(struct file *file, struct address_space *mapping,
+ 			loff_t pos, unsigned len, unsigned flags,
+ 			struct page **pagep, void **fsdata)
+ {
++	int ret;
+ 	struct inode *inode = mapping->host;
+ 	pgoff_t index = pos >> PAGE_CACHE_SHIFT;
+-	return shmem_getpage(inode, index, pagep, SGP_WRITE, NULL);
++	ret = shmem_getpage(inode, index, pagep, SGP_WRITE, NULL);
++	if (ret == 0 && *pagep)
++		init_page_accessed(*pagep);
++	return ret;
+ }
+ 
+ static int
+diff --git a/mm/swap.c b/mm/swap.c
+index 270b520..845e91f 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -548,6 +548,17 @@ void mark_page_accessed(struct page *page)
+ }
+ EXPORT_SYMBOL(mark_page_accessed);
+ 
++/*
++ * Used to mark_page_accessed(page) that is not visible yet and when it is
++ * still safe to use non-atomic ops
++ */
++void init_page_accessed(struct page *page)
++{
++	if (!PageReferenced(page))
++		__SetPageReferenced(page);
++}
++EXPORT_SYMBOL(init_page_accessed);
++
+ static void __lru_cache_add(struct page *page)
+ {
+ 	struct pagevec *pvec = &get_cpu_var(lru_add_pvec);
 -- 
 1.8.4.5
 
