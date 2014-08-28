@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965723AbaH1Kju (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 06:39:50 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:48462 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965470AbaH1Kjt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 06:39:49 -0400
-From: Gyungoh Yoo <gyungoh@gmail.com>
-X-Google-Original-From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
-To: linux-kernel@vger.kernel.org
-Cc: devicetree@vger.kernel.org, Gyungoh Yoo <jack.yoo@skyworksinc.com>
-Subject: [PATCH v2 0/7] Adding Skyworks SKY81452 device drivers
-Date: Thu, 28 Aug 2014 19:38:27 +0900
-Message-Id: <1409222307-23225-1-git-send-email-jack.yoo@skyworksinc.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1407488899-31065-1-git-send-email-jack.yoo@skyworksinc.com>
-References: <1407488899-31065-1-git-send-email-jack.yoo@skyworksinc.com>
+	id S965742AbaH1Kle (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 06:41:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45251 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934503AbaH1Klc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 06:41:32 -0400
+Date: Thu, 28 Aug 2014 12:38:55 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Suresh Siddha <sbsiddha@gmail.com>,
+        Bean Anderson <bean@azulsystems.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] x86, fpu: copy_process's FPU paths cleanups
+Message-ID: <20140828103855.GA15276@redhat.com>
+References: <20140827185138.GA12487@redhat.com> <acea7803-1ed3-437e-9f4c-df8dd56feef8@email.android.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <acea7803-1ed3-437e-9f4c-df8dd56feef8@email.android.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set includes regulator and backlight driver for SKY81452.
-Also it includes documents for device tree and module.
+On 08/27, H. Peter Anvin wrote:
+>
+> Oleg, this is unacceptable.
+>
+> Last week was Kernel Summit and that was right on the heels
+> of a merge window.  We are backlogged like crazy and being
+> rude doesn't help one iota.
 
-v2:
-Split the patches for each sub-system.
-Added 'reg' attribute for I2C address in device tree documents
-Added 'compatible' attribute in child drivers
-Renamed CONFIG_SKY81452 to CONFIG_MFD_SKY81452
-Changed the dependency from I2C=y to I2C, for CONFIG_MFD_SKY81452
-Added message for exception or errors.
+Me? Rude??
 
-Gyungoh Yoo (7):
-  Adding Skyworks SKY81452 MFD driver
-  Adding Skyworks SKY81452 regulator driver
-  Adding Skyworks SKY81452 backlight driver
-  Adding SKY81452 MFD device tree bindings document
-  Adding SKY81452 regulator device tree bindings document
-  Adding SKY81452 backlight device tree bindings document
-  Adding SKY81452 backlight document
+I really hope that this is the first (and last) email from me which
+can be interpreted this way ;)
 
- Documentation/backlight/sky81452-backlight.txt     |  26 ++
- .../devicetree/bindings/i2c/trivial-devices.txt    |   1 +
- Documentation/devicetree/bindings/mfd/sky81452.txt |  32 ++
- .../bindings/regulator/sky81452-regulator.txt      |  18 ++
- .../devicetree/bindings/vendor-prefixes.txt        |   1 +
- .../video/backlight/sky81452-backlight.txt         |  24 ++
- drivers/mfd/Kconfig                                |  12 +
- drivers/mfd/Makefile                               |   1 +
- drivers/mfd/sky81452.c                             | 108 +++++++
- drivers/regulator/Kconfig                          |  11 +
- drivers/regulator/Makefile                         |   1 +
- drivers/regulator/sky81452-regulator.c             | 140 +++++++++
- drivers/video/backlight/Kconfig                    |  10 +
- drivers/video/backlight/Makefile                   |   1 +
- drivers/video/backlight/sky81452-backlight.c       | 347 +++++++++++++++++++++
- include/linux/mfd/sky81452.h                       |  32 ++
- include/linux/sky81452-backlight.h                 |  47 +++
- 17 files changed, 812 insertions(+)
- create mode 100644 Documentation/backlight/sky81452-backlight.txt
- create mode 100644 Documentation/devicetree/bindings/mfd/sky81452.txt
- create mode 100644 Documentation/devicetree/bindings/regulator/sky81452-regulator.txt
- create mode 100644 Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
- create mode 100644 drivers/mfd/sky81452.c
- create mode 100644 drivers/regulator/sky81452-regulator.c
- create mode 100644 drivers/video/backlight/sky81452-backlight.c
- create mode 100644 include/linux/mfd/sky81452.h
- create mode 100644 include/linux/sky81452-backlight.h
+Trust me this was not intentional, and I am sorry if it looked
+like it.
 
--- 
-1.9.1
+> On August 27, 2014 11:51:38 AM PDT, Oleg Nesterov <oleg@redhat.com> wrote:
+> >Hello,
+> >
+> >Who can review this? And where should I send FPU changes?
+> >
+> >And it seems that nobody cares about 2 fixes I sent before.
+> >Linus, I understand that you won't take them into v3.17, but
+> >perhaps you can ack/nack them explicitly? It seems that nobody
+> >can do this.
+> >
+> >Oleg.
+> >
+> > arch/x86/include/asm/fpu-internal.h |    2 +-
+> > arch/x86/kernel/process.c           |   16 +++++++++-------
+> > arch/x86/kernel/process_32.c        |    2 --
+> > arch/x86/kernel/process_64.c        |    1 -
+> > 4 files changed, 10 insertions(+), 11 deletions(-)
+> 
+> -- 
+> Sent from my mobile phone.  Please pardon brevity and lack of formatting.
 
