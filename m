@@ -1,128 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142AbaH1WoW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 18:44:22 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43148 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750894AbaH1WoU (ORCPT
+	id S1752191AbaH1WwD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 18:52:03 -0400
+Received: from galahad.ideasonboard.com ([185.26.127.97]:52782 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750894AbaH1WwA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 18:44:20 -0400
-Date: Fri, 29 Aug 2014 00:44:11 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-cc: Peter Zijlstra <peterz@infradead.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Dmitry Torokhov <dtor@google.com>, Aubrey Li <aubrey.li@intel.com>
-Subject: Re: [PATCH 0/5 v3] irq / PM: Suspend-to-idle wakeup interrupts
-In-Reply-To: <5320472.coYotHR1d0@vostro.rjw.lan>
-Message-ID: <alpine.DEB.2.10.1408282355350.23342@nanos>
-References: <26580319.OZP7jvJnA9@vostro.rjw.lan> <5320472.coYotHR1d0@vostro.rjw.lan>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Thu, 28 Aug 2014 18:52:00 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, linux-pwm@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Rob Clark <robdclark@gmail.com>, Mark Rutland <mark.rutland@arm.com>,
+        devicetree@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Bo Shen <voice.shen@atmel.com>, Kumar Gala <galak@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 00/11] drm: add support for Atmel HLCDC Display Controller
+Date: Fri, 29 Aug 2014 00:52:47 +0200
+Message-ID: <1589754.DxSd6XN1nL@avalon>
+User-Agent: KMail/4.12.5 (Linux/3.14.14-gentoo; KDE/4.12.5; x86_64; ; )
+In-Reply-To: <20140828162100.71543859@bbrezillon>
+References: <1406034695-15534-1-git-send-email-boris.brezillon@free-electrons.com> <1805054.en0m884lPo@avalon> <20140828162100.71543859@bbrezillon>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Aug 2014, Rafael J. Wysocki wrote:
-> To me, all of this is relatively straightforward and the handling of
-> IRQF_NO_SUSPEND for shared interrupts, which is a separate problem, can be
-> addressed on top of it later (make no mistake, I still think that it should be
-> addressed).
+Hi Boris,
 
-Why? Just because there is enough idiotic code using it?
+On Thursday 28 August 2014 16:21:00 Boris BREZILLON wrote:
+> On Thu, 28 Aug 2014 14:19:22 +0200 Laurent Pinchart wrote:
+> > Hi Boris,
+> 
+> [...]
+> 
+> >> I don't have any VGA connector (or I'm missing something :-)),
+> > 
+> > My bad.
+> 
+> No problem.
+> 
+> >> but I have an LCD panel and an RGB to HDMI encoder connected on the same
+> >> RGB connector.
+> > 
+> > There's no such thing as an RGB connector in DRM. Your SoC has a parallel
+> > RGB video output (I assume it's a DPI bus). From a DRM point of view,
+> > that bus corresponds to the output of the CRTC.
+> 
+> Okay, this mean I'll have to dispatch some of the code I've put in
+> atmel_hlcdc_output.c into atmel_hlcdc_crtc.c (BTW, any chance you could
+> take a look at this files ?).
 
-Let's look at the usage sites:
+Not in the very near future I'm afraid, I'm moving to a new flat in a couple 
+of days, that will keep me pretty busy. If nobody has reviewed your patches in 
+a week from now feel free to ping me.
 
-sound/soc/codecs/twl6040.c
+> >>> As DRM hardcodes the pipeline model to CRTC -> encoder -> connector,
+> >>> you will also need a DRM encoder in the VGA path. I suppose your board
+> >>> has a VGA DAC, that's the component you should expose as a DRM encoder
+> >>> (even if it can't be controlled and doesn't limit the valid modes).
+> >> 
+> >> Actually, my problem is that both devices are connected on the same RGB
+> >> connector, and thus share the same display mode (resolution, HSYNC,
+> >> VSYNC, RGB output mode, ...).
+> >> This means that all remote devices have to agree on a specific mode if
+> >> we want to mirror the display on several output devices, otherwise we
+> >> must disable one of the output devices.
+> > 
+> > That's not really a problem. From a DRM perspective you need to model your
+> > device as
+> > 
+> > ,------.       ,---------------.       ,-----------------.
+> > | CRTC | -+--> | Dummy Encoder | ----> | Panel Connector |
+> > `------´  |    `---------------´       `-----------------´
+> >           |    ,---------------.       ,-----------------.
+> >           \--> | HDMI Encoder  | ----> | HDMI Connector  |
+> >                `---------------´       `-----------------´
+> > 
+> > The HDMI pipeline is pretty straightforward.
+> > 
+> > You have told me that the panel has a parallel RGB input without any
+> > encoder in the panel pipeline (by the way, which panel model are you
+> > using ?). However, DRM requires an encoder in every pipeline. You will
+> > thus need to instantiate a dummy encoder. One option would be to set the
+> > encoder and connector types to DRM_MODE_ENCODER_LVDS and
+> > DRM_MODE_CONNECTOR_LVDS respectively, as that's what userspace usually
+> > expects for panels. That doesn't reflect the reality in your case though,
+> > so creating a new DRM_MODE_CONNECTOR_DPI type might be needed, possibly
+> > to be used with DRM_MODE_ENCODER_NONE.
+> > 
+> > As neither encoder can modify the mode, the same mode will be output on
+> > the two connectors.
+> 
+> There are still several things to I'd like to understand:
+>  1) who's gonna configure the RGB bus output format (RGB444, RGB666,
+>     RGB888) which directly depends on the device connected on this bus:
+>     the CRTC or the dummy and HDMI encoders.
 
-  Introduced in commit 8d61f4901f83461e1f04df7743777e9db5f541aa
+Your mileage my vary, but in general I believe this should be the 
+responsibility of the CRTC driver (the HLCDC driver in your case), from 
+information it gets from DT and/or queries dynamically from the encoders at 
+runtime.
 
-    ASoC: twl6040: Convert PLUGINT to no-suspend irq
-    
-    Convert headset PLUGINT interrupt to NO_SUSPEND type in order to
-    allow handling of insertion/removal events while device is
-    suspended.
+>  2) Where should the HDMI encoder/connector support be implemented:
+>     in drivers/gpu/drm/atmel-hlcdc, drivers/gpu/drm/bridge or somewhere
+>     else. My point is that I don't want to add specific support for the
+>     Sil902x transmitter chip in the hlcdc driver.
 
-  So why does this need to be a NO_SUSPEND type interrupt? Just because
-  the flag is sexy? What's wrong with using the wake mechanism?
+The HDMI encoder should definitely be handled by a standalone driver. We have 
+two infrastructures for this at the moment, drm_bridge and drm_encoder_slave. 
+I'd like to see them being merged. I need to implement support for an HDMI 
+encoder as well, I'll see if I can give this a try.
 
-drivers/xen/events/events_base.c
+> Sorry if these are silly questions, but I'm still trying to understand
+> how my case should be modeled :-).
 
-  A genuine usecase which makes sense and is not shared
+As I don't have straightforward answers I won't consider the questions as 
+silly :-)
 
-drivers/watchdog/intel-mid_wdt.c
+-- 
+Regards,
 
-  MUHAHAHAHAHAHA
+Laurent Pinchart
 
-  static irqreturn_t mid_wdt_irq(int irq, void *dev_id)
-  {
-      panic("Kernel Watchdog");
-      /* This code should not be reached */
-      return IRQ_HANDLED;
-  }
-
-  So why does this need to be NO_SUSPEND? Because we forgot to trigger
-  the watchdog during suspend? Brilliant!
-
-drivers/usb/phy/phy-ab8500-usb.c
-
-  Of course no explanation WHY this uses NO_SUSPEND plus SHARED and
-  there is no fcking reason to do so.
-
-So really, I'm too lazy to walk through that mess further. I bet NONE
-of the usage sites except those for which this has been introduced in
-the first place has a real good reason to do so.
-
-Unless someone comes up with a use case where a shared NO_SUSPEND
-handler is absolutely required, there is nothing which needs to be
-addressed. You've proven yourself, that the wake mechanism is
-sufficient to solve the problem which led to this discussion.
-
-So we rather go and fix the ABUSE instead of making it legitimate by
-fugly workarounds in the core code.
-
-The same applies to the IRQF_RESUME_EARLY flag.
-
-Just look at:
-
-  commit 8b41669ceba0c2d4c09d69ccb9a3458953dae784
-
-    mfd: twl4030: Fix chained irq handling on resume from suspend
-    
-    The irqs are enabled one-by-one in pm core resume_noirq phase.
-    This leads to situation where the twl4030 primary interrupt
-    handler (PIH) is enabled before the chained secondary handlers
-    (SIH). As the PIH cannot clear the pending interrupt, and
-    SIHs have not been enabled yet, a flood of interrupts hangs
-    the device.
-    
-    Fixed the issue by setting the SIH irqs with IRQF_EARLY_RESUME
-    flags, so they get enabled before the PIH.
-
-So we solve an ordering problem which has a completely different root
-cause by slapping random flags on it which paper over the issue?
-
-The solution to the problem is completely wrong and of course the
-"fix" is only applied to the one instance which might be affected by
-that issue, i.e. the one which caused the patch submitter trouble.
-
-Now I don't blame the author, I blame the maintainer who happily
-applied that "fix".
-
-That's unfortunately a very common pattern in the kernel which will
-cause serious maintainability issues in the long run, but of course
-that's just the opinion of a grumpy old greybeard.
-
-The sad thing is that neither the author nor the maintainer who
-applied it is going to be around and responsive when the shit hits the
-fan. That commit is a perfect example for this.
-
-Thanks,
-
-	tglx
