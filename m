@@ -1,101 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750920AbaH1OPr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 10:15:47 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:57571 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750801AbaH1OPp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 10:15:45 -0400
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] serial: serial_core.c: printk replacement
-Date: Thu, 28 Aug 2014 19:45:28 +0530
-Message-Id: <1409235328-24648-1-git-send-email-sudipm.mukherjee@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1751108AbaH1OPu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 10:15:50 -0400
+Received: from mail.emea.novell.com ([130.57.118.101]:47343 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750801AbaH1OPs convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Thu, 28 Aug 2014 10:15:48 -0400
+Message-Id: <53FF55B1020000780002EC4A@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.1 
+Date: Thu, 28 Aug 2014 15:15:45 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <david.vrabel@citrix.com>
+Cc: <xen-devel@lists.xenproject.org>, <boris.ostrovsky@oracle.com>,
+        "Mukesh Rathor" <mukesh.rathor@oracle.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [V1 PATCH 0/2] Linux PVH: set EFER bits..
+References: <1409178815-2026-1-git-send-email-mukesh.rathor@oracle.com>
+ <53FF37D8.8070509@citrix.com>
+In-Reply-To: <53FF37D8.8070509@citrix.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-printk replaced with corresponding pr_err, dev_alert, dev_notice and pr_info.
-fixed two broken user-visible strings used by the corresponding printk
+>>> On 28.08.14 at 16:08, <david.vrabel@citrix.com> wrote:
+> The Xen change that broke Linux PVH guests must be reverted.  This
+> change may also have broken other guests (e.g., Mirage or one of the
+> other unikernel OSes).
 
-Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
----
+If PVH wasn't tech preview, I'd agree. But since it is, I don't see a
+reason to revert that change.
 
-In the first patch i sent Greg suggested to use dev_err instead of pr_err , but as later Jiri pointed out in my later patches that uport->dev is having a null check so can not be used , tty_dev is also having a put_device , so back to pr_err. 
-
- drivers/tty/serial/serial_core.c | 26 +++++++++++++-------------
- 1 file changed, 13 insertions(+), 13 deletions(-)
-
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index 29a7be4..0e03c31 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -892,10 +892,11 @@ static int uart_set_info(struct tty_struct *tty, struct tty_port *port,
- 			 */
- 			if (uport->flags & UPF_SPD_MASK) {
- 				char buf[64];
--				printk(KERN_NOTICE
--				       "%s sets custom speed on %s. This "
--				       "is deprecated.\n", current->comm,
--				       tty_name(port->tty, buf));
-+
-+				dev_notice(uport->dev,
-+				       "%s sets custom speed on %s. This is deprecated.\n",
-+				      current->comm,
-+				      tty_name(port->tty, buf));
- 			}
- 			uart_change_speed(tty, state, NULL);
- 		}
-@@ -1975,12 +1976,11 @@ int uart_suspend_port(struct uart_driver *drv, struct uart_port *uport)
- 		for (tries = 3; !ops->tx_empty(uport) && tries; tries--)
- 			msleep(10);
- 		if (!tries)
--			printk(KERN_ERR "%s%s%s%d: Unable to drain "
--					"transmitter\n",
--			       uport->dev ? dev_name(uport->dev) : "",
--			       uport->dev ? ": " : "",
--			       drv->dev_name,
--			       drv->tty_driver->name_base + uport->line);
-+			pr_err("%s%s%s%d: Unable to drain transmitter\n",
-+				uport->dev ? dev_name(uport->dev) : "",
-+				uport->dev ? ": " : "",
-+				drv->dev_name,
-+				drv->tty_driver->name_base + uport->line);
- 
- 		if (console_suspend_enabled || !uart_console(uport))
- 			ops->shutdown(uport);
-@@ -2109,7 +2109,7 @@ uart_report_port(struct uart_driver *drv, struct uart_port *port)
- 		break;
- 	}
- 
--	printk(KERN_INFO "%s%s%s%d at %s (irq = %d, base_baud = %d) is a %s\n",
-+	pr_info("%s%s%s%d at %s (irq = %d, base_baud = %d) is a %s\n",
- 	       port->dev ? dev_name(port->dev) : "",
- 	       port->dev ? ": " : "",
- 	       drv->dev_name,
-@@ -2640,7 +2640,7 @@ int uart_add_one_port(struct uart_driver *drv, struct uart_port *uport)
- 	if (likely(!IS_ERR(tty_dev))) {
- 		device_set_wakeup_capable(tty_dev, 1);
- 	} else {
--		printk(KERN_ERR "Cannot register tty device on line %d\n",
-+		dev_err(uport->dev, "Cannot register tty device on line %d\n",
- 		       uport->line);
- 	}
- 
-@@ -2675,7 +2675,7 @@ int uart_remove_one_port(struct uart_driver *drv, struct uart_port *uport)
- 	BUG_ON(in_interrupt());
- 
- 	if (state->uart_port != uport)
--		printk(KERN_ALERT "Removing wrong port: %p != %p\n",
-+		dev_alert(uport->dev, "Removing wrong port: %p != %p\n",
- 			state->uart_port, uport);
- 
- 	mutex_lock(&port_mutex);
--- 
-1.8.1.2
+Jan
 
