@@ -1,72 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965868AbaH1LTu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 07:19:50 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:57057 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965837AbaH1LTr (ORCPT
+	id S965893AbaH1LUE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 07:20:04 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:44238 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965872AbaH1LUB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 07:19:47 -0400
-Message-ID: <53FF1054.508@linaro.org>
-Date: Thu, 28 Aug 2014 13:19:48 +0200
-From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 28 Aug 2014 07:20:01 -0400
+Message-ID: <53FF105B.1000103@hitachi.com>
+Date: Thu, 28 Aug 2014 20:19:55 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linus.walleij@linaro.org, gnurou@gmail.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org
-Subject: Re: [PATCH] ACPI: Add GPIO-signaled event emulator.
-References: <1408546700-19309-1-git-send-email-tomasz.nowicki@linaro.org> <20140821104533.GM1660@lahna.fi.intel.com> <53F604B2.6020004@linaro.org> <1828087.V5efjsXTdI@vostro.rjw.lan>
-In-Reply-To: <1828087.V5efjsXTdI@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Hemant Kumar <hemant@linux.vnet.ibm.com>, acme@kernel.org
+Cc: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
+        peterz@infradead.org, oleg@redhat.com, hegdevasant@linux.vnet.ibm.com,
+        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org,
+        namhyung@kernel.org, aravinda@linux.vnet.ibm.com, penberg@iki.fi
+Subject: Re: [PATCH v4 0/3] perf/sdt : Support for SDT markers
+References: <20140827213745.13454.46266.stgit@hemant-fedora>
+In-Reply-To: <20140827213745.13454.46266.stgit@hemant-fedora>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26.08.2014 00:39, Rafael J. Wysocki wrote:
-> On Thursday, August 21, 2014 04:39:46 PM Tomasz Nowicki wrote:
->> Hi Mika,
->>
->> On 21.08.2014 12:45, Mika Westerberg wrote:
->>> On Wed, Aug 20, 2014 at 04:58:20PM +0200, Tomasz Nowicki wrote:
->
-> [cut]
->
->>>> +
->>>> +static int gpio_evt_trigger(void *data, u64 val)
->>>> +{
->>>> +	struct gpio_pin_data *pin_data = (struct gpio_pin_data *)data;
->>>> +	int pin = pin_data->pin;
->>>> +
->>>> +	if (ACPI_FAILURE(acpi_execute_simple_method(pin_data->handle, NULL,
->>>> +						    pin <= 255 ? 0 : pin)))
->>>> +		pr_err(PREFIX "evaluating event method failed\n");
->>>
->>> acpi_execute_simple_method() passes one argument to the method. You
->>> can't use it with _Lxx or _Exx which don't expect any arguments.
->>> Otherwise you get this:
->>>
->>> [  122.258191] ACPI: \_SB_.GPO2._E12: Excess arguments - Caller passed 1, method requires 0 (20140724/nsarguments-263)
->> Right, I will fix it.
->
-> OK, so here's my concern.
->
-> If AML does any kind of tracking of state in _Exx/_Lxx, you'll likely totally
-> confuse it by calling those things at random.
->
-> I'm not sure I'm seeing a compelling reason to put this thing into the tree
-> for this reason.
+(2014/08/28 6:43), Hemant Kumar wrote:
+> The v3 patchset had some spacing errors because of my editor messing up during
+> sending the patches. Resending the patchset again.
+> This patchset helps in listing dtrace style markers(SDT) present in user space
+> applications through perf.
+> Notes/markers are placed at important places by the
+> developers. They have a negligible overhead when not enabled.
+> We can enable them and probe at these places and find some important information
+> like the arguments' values, etc.
+> 
+> We have lots of applications which use SDT markers today, like:
+> Postgresql, MySql, Mozilla, Perl, Python, Java, Ruby, libvirt, QEMU, glib
+> 
+> To add SDT markers into user applications:
+> We need to have this header sys/sdt.h present.
+> sys/sdt.h used is version 3.
+> If not present, install systemtap-sdt-devel package (for fedora-18).
+> 
+> Please refer to the Documentation patch (3rd patch in this series) to see how the
+> SDT markers are added into a program.
+> 
+> With this patchset,
+> - Use perf to list the markers in the app:
+> # perf list sdt ./user_app
+> 
+> ./user_app :
+> %user_app:foo_start
+> %user_app:fun_start
+> 
+> This link shows an example of marker probing with Systemtap:
+> https://sourceware.org/systemtap/wiki/AddingUserSpaceProbingToApps
+> 
+> Also, this link provides important info regarding SDT notes:
+> http://sourceware.org/systemtap/wiki/UserSpaceProbeImplementation
+> 
+> This patchset has undergone a lot of changes since it was first introduced.
+> Hence, the patchset has now been subdivided for more simplicity and ease of
+> review (thanks to the suggestion from Namhyung Kim). This contains the first 2
+> of the 4 patches as suggested here:
+> https://lkml.org/lkml/2014/7/20/284
 
-Yes you are right, but this emulator is only for debugging/development 
-purposes and goes with clear statement "DANGER to use on production 
-kernel", like APEI error injection feature.
+BTW, does this series only contain list command support?
 
-IMO, this emulator would help with:
-1. testing and developing AML methods
-2. working on ACPI subsystems that need GPIO-signaled events without 
-GPIO h/w
+> - Markers in binaries :
+> These SDT markers are present in the ELF in the section named
+> ".note.stapsdt".
+> Here, the name of the marker, its provider, type, location, base
+> address, semaphore address.
+> We can retrieve these values using the members name_off and desc_off in
+> Nhdr structure. If these are not enabled, they are present in the ELF as nop.
+> 
+> Changes since last series :
+> - Subdivided the previous patchset into 4 patches to make it easier to review
+>   as suggested by Namhyung Kim. (This set includes first two of the four patches)
+> - Made the required changes and some optimizations suggested by Masami, Namhyung
+>   and Andi.
+> 
+> TODO:
+> - Listing SDT events present in most of the binaries present in a system.
+> - Maintaining a cache of the SDT events for faster lookup.
+> - Add support to probe these SDT markers and integrate with a previous patch
+>   (support to perf to probe SDT markers) posted in lkml.
+>   https://lkml.org/lkml/2013/10/23/10
 
-Regards,
-Tomasz
+OK, I think we can postpone sdt-cache command, but this should go with
+probe-side improvements, because if perf-list shows sdt markers, users
+will be misled that the perf already supports sdt events.
+I'm OK if we hold this on a non-released branch on acme's tree. But it
+shouldn't be pushed to upstream without probe-side improvements.
+
+Arnaldo, would you think that works on your tree?
+
+Thank you,
+
+
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
