@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965009AbaH1BJq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 21:09:46 -0400
-Received: from mga02.intel.com ([134.134.136.20]:5917 "EHLO mga02.intel.com"
+	id S1756994AbaH1BRz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 21:17:55 -0400
+Received: from ozlabs.org ([103.22.144.67]:52535 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932305AbaH1BJn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 21:09:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,414,1406617200"; 
-   d="scan'208";a="564481200"
-From: "Chen, Alvin" <alvin.chen@intel.com>
-To: atull <atull@opensource.altera.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
-        "Shevchenko, Andriy" <andriy.shevchenko@intel.com>,
-        "Westerberg, Mika" <mika.westerberg@intel.com>,
-        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        "yvanderv@opensource.altera.com" <yvanderv@opensource.altera.com>,
-        "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>
-Subject: RE: [PATCH 3/3] GPIO: gpio-dwapb: Suspend & Resume PM enabling
-Thread-Topic: [PATCH 3/3] GPIO: gpio-dwapb: Suspend & Resume PM enabling
-Thread-Index: AQHPwdz1dx1k2oxDc0a94LlHeTA5dpvkGkgAgAEXMtA=
-Date: Thu, 28 Aug 2014 01:09:14 +0000
-Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E980AF7@SHSMSX101.ccr.corp.intel.com>
-References: <1409161588-19417-1-git-send-email-alvin.chen@intel.com>
- <1409161588-19417-4-git-send-email-alvin.chen@intel.com>
- <alpine.DEB.2.02.1408271103120.11131@atx-linux-37>
-In-Reply-To: <alpine.DEB.2.02.1408271103120.11131@atx-linux-37>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756356AbaH1BRy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 21:17:54 -0400
+Date: Thu, 28 Aug 2014 11:17:46 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Laura Abbott <lauraa@codeaurora.org>
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: Tree for Aug 27
+Message-ID: <20140828111746.0ad32c48@canb.auug.org.au>
+In-Reply-To: <53FE7E2D.9060408@codeaurora.org>
+References: <20140827161021.298aede6@canb.auug.org.au>
+	<20140827235809.GA9598@roeck-us.net>
+	<20140828104830.4447c5e5@canb.auug.org.au>
+	<53FE7E2D.9060408@codeaurora.org>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/JPXcmQXk5Rk9lB+uTTYz8io"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> Hi Weike,
-> 
-> I tried out these patches on the current master branch (v3.17-rc2-9-g68e3702)
-> with a socfpga cyclone5 board.
-> 
-> If I apply all 3 patches, the kernel doesn't boot.
-> 
-> If I rebuild with only the first patch, I get only one gpio block showing up (should
-> have 3 for this board) and these messages:
-> 
-> 
-> How are you testing this?
-The patches try to not change the current OF flow, and from the log message, the other two GPIO registered failed due to duplicate name.
-Let me check the code to see what happen.
+--Sig_/JPXcmQXk5Rk9lB+uTTYz8io
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
+Hi Laura,
 
-> 
-> Alan
+On Wed, 27 Aug 2014 17:56:13 -0700 Laura Abbott <lauraa@codeaurora.org> wro=
+te:
+>
+> I sent fixes for this to Andrew yesterday, did those not get picked up
+> or fix the problem?
+
+Things do not migrate to mmotm (and hence linux-next) very quickly
+(depending on Andrew's load).  I don't remember seeing the fix
+patch(es).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/JPXcmQXk5Rk9lB+uTTYz8io
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJT/oM/AAoJEMDTa8Ir7ZwVhlYP/14FfK+HjLWHAy6W2mSUwLnq
+xmvWHm5aL2Xp3GS4F7v4bwBXTnVSEG+MoVDogFm7+qrVprresBkaXJeTCZemv7uW
+o/SdsPftT4wLSomHykucj68gX3FypWqmxZna7AFt34JfktEfjN0rjKKIDgfd+hqv
+4g7sWhscXsRsFg0dKb6aEPFsZpT0hvgKUm+/1WxT4sAcXAlg57CSHyFjq9IQ6o+T
+gFKDlTMK4PqIWT9Fs961NrIMfPTGm+9tPUfBCaECh7HubYpkW/hEdcHfXoCdYWVI
+ipiQeNNxjl6wAQfQDrFLsNhIowJrlDm+SXxWzBcpJ4ddRBnLwZ5gr5YAplu1zuPp
+FttkCEPlhIMAqVZLKAc16ivmj5naXElJe9fAsZTfp07LeQgxjZDh4ejhslFT5YCK
+rSPWYik82eFUOiZxqp/gPgI7dYigQRUsindgQoW8H25iSZLzvsJq4OlM6CLIDgVp
+h6akphc7SundxXtnRbBwW+U8Z5gAsIzRlWqS8+LcIh+Si4kulaeqGSh75xSxS/HO
+YfHy14PnmWDEH1hxSriQc+pPkgpJC1iwjFevwvGoAh6d8V/Qb8C+orF5qyhArTM/
+olemSnoLsrAPBlV81VrkNPXfZ/o4nHgYds7uEzbPtZ6zUwklkSxW2pEbUFaF2Lxs
+TYJFWfdJ+arKQRY3q/rs
+=OL5g
+-----END PGP SIGNATURE-----
+
+--Sig_/JPXcmQXk5Rk9lB+uTTYz8io--
