@@ -1,78 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015AbaH1Oqh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 10:46:37 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:55423 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751502AbaH1Oqe (ORCPT
+	id S1752106AbaH1Orw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 10:47:52 -0400
+Received: from qmta08.emeryville.ca.mail.comcast.net ([76.96.30.80]:50728 "EHLO
+	qmta08.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751191AbaH1Orv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 10:46:34 -0400
-Date: Thu, 28 Aug 2014 10:46:34 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Courtney Cavin <courtney.cavin@sonymobile.com>
-Cc: Zhang Rui <rui.zhang@intel.com>,
-        "eduardo.valentin@ti.com" <eduardo.valentin@ti.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] thermal: add generic IIO channel thermal sensor driver
-Message-ID: <20140828144632.GA18194@developer>
-References: <1391651007-29813-1-git-send-email-courtney.cavin@sonymobile.com>
- <1393484014.2637.14.camel@rzhang1-mobl4>
- <20140314211952.GJ18578@sonymobile.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140314211952.GJ18578@sonymobile.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Thu, 28 Aug 2014 10:47:51 -0400
+Date: Thu, 28 Aug 2014 09:47:47 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: WANG Chao <chaowang@redhat.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        "open list:SLAB ALLOCATOR" <linux-mm@kvack.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm, slub: do not add duplicate sysfs
+In-Reply-To: <20140828043211.GD3971@dhcp-17-37.nay.redhat.com>
+Message-ID: <alpine.DEB.2.11.1408280947270.3275@gentwo.org>
+References: <1409152488-21227-1-git-send-email-chaowang@redhat.com> <alpine.DEB.2.11.1408271023130.17080@gentwo.org> <alpine.DEB.2.11.1408271030360.17080@gentwo.org> <20140828043211.GD3971@dhcp-17-37.nay.redhat.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 14, 2014 at 02:19:53PM -0700, Courtney Cavin wrote:
-> On Thu, Feb 27, 2014 at 07:53:34AM +0100, Zhang Rui wrote:
-> > On Wed, 2014-02-05 at 17:43 -0800, Courtney Cavin wrote:
-> > > This driver is a generic method for using IIO ADC channels as thermal
-> > > sensors.
-> > > 
-> > > Signed-off-by: Courtney Cavin <courtney.cavin@sonymobile.com>
-> > 
-> > Eduardo,
-> > 
-> > what do you think of this patch?
-> 
-> Apparently not very much.  Oh well.
+On Thu, 28 Aug 2014, WANG Chao wrote:
 
-Curtney,
-
-Apolizes, this one fell into the cracks.
+> What about failslab_store()? SLAB_FAILSLAB is also a nomerge flag.
 
 
-> 
-> Sans further input, I will submit a new series with the following
-> changes:
-> 	- Fix some return values in probe().
-> 	- Change DT binding
-> 		- Submit as seperate patch in series
-> 		- Reword/rename to represent a thermistor
-> 		- Remove specific references to IIO, where appropriate
+Subject: slub: Disable tracing and failslab for merged slabs
 
+Tracing of mergeable slabs as well as uses of failslab are
+confusing since the objects of multiple slab caches will be
+affected. Moreover this creates a situation where a mergeable
+slab will become unmergeable.
 
-Do you already send your new version or the current one is still the
-latest?
+If tracing or failslab testing is desired then it may be best to
+switch merging off for starters.
 
-> 
-> -Courtney
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+Index: linux/mm/slub.c
+===================================================================
+--- linux.orig/mm/slub.c	2014-08-08 11:52:30.039681592 -0500
++++ linux/mm/slub.c	2014-08-28 09:45:58.748840392 -0500
+@@ -4604,6 +4604,14 @@ static ssize_t trace_show(struct kmem_ca
+ static ssize_t trace_store(struct kmem_cache *s, const char *buf,
+ 							size_t length)
+ {
++	/*
++	 * Tracing a merged cache is going to give confusing results
++	 * as well as cause other issues like converting a mergeable
++	 * cache into an umergeable one.
++	 */
++	if (s->refcount > 1)
++		return -EINVAL;
++
+ 	s->flags &= ~SLAB_TRACE;
+ 	if (buf[0] == '1') {
+ 		s->flags &= ~__CMPXCHG_DOUBLE;
+@@ -4721,6 +4729,9 @@ static ssize_t failslab_show(struct kmem
+ static ssize_t failslab_store(struct kmem_cache *s, const char *buf,
+ 							size_t length)
+ {
++	if (s->refcount > 1)
++		return -EINVAL;
++
+ 	s->flags &= ~SLAB_FAILSLAB;
+ 	if (buf[0] == '1')
+ 		s->flags |= SLAB_FAILSLAB;
