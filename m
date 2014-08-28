@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753697AbaH1Ssq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:48:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32879 "EHLO mx2.suse.de"
+	id S1753208AbaH1ShB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 14:37:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32874 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753218AbaH1ShD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:37:03 -0400
+	id S1752502AbaH1Sg5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:36:57 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Jiri Slaby <jslaby@suse.cz>
 Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 73/97] mm: page_alloc: only check the zone id check if pages are buddies
-Date: Thu, 28 Aug 2014 19:35:21 +0100
-Message-Id: <1409250945-30874-74-git-send-email-mgorman@suse.de>
+Subject: [PATCH 67/97] mm/swap.c: clean up *lru_cache_add* functions
+Date: Thu, 28 Aug 2014 19:35:15 +0100
+Message-Id: <1409250945-30874-68-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
 References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
@@ -20,66 +20,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit d34c5fa06fade08a689fc171bf756fba2858ae73 upstream.
+From: Jianyu Zhan <nasa4836@gmail.com>
 
-A node/zone index is used to check if pages are compatible for merging
-but this happens unconditionally even if the buddy page is not free. Defer
-the calculation as long as possible. Ideally we would check the zone boundary
-but nodes can overlap.
+commit 2329d3751b082b4fd354f334a88662d72abac52d upstream.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+In mm/swap.c, __lru_cache_add() is exported, but actually there are no
+users outside this file.
+
+This patch unexports __lru_cache_add(), and makes it static.  It also
+exports lru_cache_add_file(), as it is use by cifs and fuse, which can
+loaded as modules.
+
+Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Shaohua Li <shli@kernel.org>
+Cc: Bob Liu <bob.liu@oracle.com>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Rafael Aquini <aquini@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
 Acked-by: Rik van Riel <riel@redhat.com>
-Cc: Vlastimil Babka <vbabka@suse.cz>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Dave Hansen <dave.hansen@intel.com>
-Cc: Theodore Ts'o <tytso@mit.edu>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Khalid Aziz <khalid.aziz@oracle.com>
+Cc: Christoph Hellwig <hch@lst.de>
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/page_alloc.c | 16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
+ include/linux/swap.h | 19 ++-----------------
+ mm/swap.c            | 31 +++++++++++++++++++++++--------
+ 2 files changed, 25 insertions(+), 25 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index fd2752a..2e7ec3c 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -505,16 +505,26 @@ static inline int page_is_buddy(struct page *page, struct page *buddy,
- 	if (!pfn_valid_within(page_to_pfn(buddy)))
- 		return 0;
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index 7893249..13eb44c 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -268,8 +268,9 @@ extern unsigned long nr_free_pagecache_pages(void);
  
--	if (page_zone_id(page) != page_zone_id(buddy))
--		return 0;
+ 
+ /* linux/mm/swap.c */
+-extern void __lru_cache_add(struct page *);
+ extern void lru_cache_add(struct page *);
++extern void lru_cache_add_anon(struct page *page);
++extern void lru_cache_add_file(struct page *page);
+ extern void lru_add_page_tail(struct page *page, struct page *page_tail,
+ 			 struct lruvec *lruvec, struct list_head *head);
+ extern void activate_page(struct page *);
+@@ -283,22 +284,6 @@ extern void swap_setup(void);
+ 
+ extern void add_page_to_unevictable_list(struct page *page);
+ 
+-/**
+- * lru_cache_add: add a page to the page lists
+- * @page: the page to add
+- */
+-static inline void lru_cache_add_anon(struct page *page)
+-{
+-	ClearPageActive(page);
+-	__lru_cache_add(page);
+-}
 -
- 	if (page_is_guard(buddy) && page_order(buddy) == order) {
- 		VM_BUG_ON(page_count(buddy) != 0);
-+
-+		if (page_zone_id(page) != page_zone_id(buddy))
-+			return 0;
-+
- 		return 1;
- 	}
+-static inline void lru_cache_add_file(struct page *page)
+-{
+-	ClearPageActive(page);
+-	__lru_cache_add(page);
+-}
+-
+ /* linux/mm/vmscan.c */
+ extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+ 					gfp_t gfp_mask, nodemask_t *mask);
+diff --git a/mm/swap.c b/mm/swap.c
+index 2d9ee76..587dfe0 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -548,13 +548,7 @@ void mark_page_accessed(struct page *page)
+ }
+ EXPORT_SYMBOL(mark_page_accessed);
  
- 	if (PageBuddy(buddy) && page_order(buddy) == order) {
- 		VM_BUG_ON(page_count(buddy) != 0);
+-/*
+- * Queue the page for addition to the LRU via pagevec. The decision on whether
+- * to add the page to the [in]active [file|anon] list is deferred until the
+- * pagevec is drained. This gives a chance for the caller of __lru_cache_add()
+- * have the page added to the active list using mark_page_accessed().
+- */
+-void __lru_cache_add(struct page *page)
++static void __lru_cache_add(struct page *page)
+ {
+ 	struct pagevec *pvec = &get_cpu_var(lru_add_pvec);
+ 
+@@ -564,11 +558,32 @@ void __lru_cache_add(struct page *page)
+ 	pagevec_add(pvec, page);
+ 	put_cpu_var(lru_add_pvec);
+ }
+-EXPORT_SYMBOL(__lru_cache_add);
 +
-+		/*
-+		 * zone check is done late to avoid uselessly
-+		 * calculating zone/node ids for pages that could
-+		 * never merge.
-+		 */
-+		if (page_zone_id(page) != page_zone_id(buddy))
-+			return 0;
++/**
++ * lru_cache_add: add a page to the page lists
++ * @page: the page to add
++ */
++void lru_cache_add_anon(struct page *page)
++{
++	ClearPageActive(page);
++	__lru_cache_add(page);
++}
 +
- 		return 1;
- 	}
- 	return 0;
++void lru_cache_add_file(struct page *page)
++{
++	ClearPageActive(page);
++	__lru_cache_add(page);
++}
++EXPORT_SYMBOL(lru_cache_add_file);
+ 
+ /**
+  * lru_cache_add - add a page to a page list
+  * @page: the page to be added to the LRU.
++ *
++ * Queue the page for addition to the LRU via pagevec. The decision on whether
++ * to add the page to the [in]active [file|anon] list is deferred until the
++ * pagevec is drained. This gives a chance for the caller of lru_cache_add()
++ * have the page added to the active list using mark_page_accessed().
+  */
+ void lru_cache_add(struct page *page)
+ {
 -- 
 1.8.4.5
 
