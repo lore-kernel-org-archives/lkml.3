@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382AbaH1XH0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 19:07:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34089 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751849AbaH1XHZ (ORCPT
+	id S1752410AbaH1X1u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 19:27:50 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:40000 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751559AbaH1X1t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 19:07:25 -0400
-Date: Thu, 28 Aug 2014 16:07:23 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        chai wen <chaiw.fnst@cn.fujitsu.com>
-Subject: Re: [PATCH] softlockup: Make detector be aware of task switch of
- processes hogging cpu
-Message-Id: <20140828160723.b174b4e03f2854d0a5146199@linux-foundation.org>
-In-Reply-To: <1409201544-82371-1-git-send-email-dzickus@redhat.com>
-References: <1409201544-82371-1-git-send-email-dzickus@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 28 Aug 2014 19:27:49 -0400
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: stable@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Cong Wang <cwang@twopensource.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>
+Subject: [Patch] perf_event: fix a race condition in perf_remove_from_context()
+Date: Thu, 28 Aug 2014 16:27:35 -0700
+Message-Id: <1409268455-11807-1-git-send-email-xiyou.wangcong@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Aug 2014 00:52:24 -0400 Don Zickus <dzickus@redhat.com> wrote:
+From: Cong Wang <cwang@twopensource.com>
 
-> From: chai wen <chaiw.fnst@cn.fujitsu.com>
-> 
-> For now, soft lockup detector warns once for each case of process softlockup.
-> But the thread 'watchdog/n' may not always get the cpu at the time slot between
-> the task switch of two processes hogging that cpu to reset soft_watchdog_warn.
-> 
-> An example would be two processes hogging the cpu.  Process A causes the
-> softlockup warning and is killed manually by a user.  Process B immediately
-> becomes the new process hogging the cpu preventing the softlockup code from
-> resetting the soft_watchdog_warn variable.
-> 
-> This case is a false negative of "warn only once for a process", as there may
-> be a different process that is going to hog the cpu.  Resolve this by
-> saving/checking the task pointer of the hogging process and use that to reset
-> soft_watchdog_warn too.
-> 
+We saw a kernel soft lockup in perf_remove_from_context(),
+it looks like the `perf` process, when exiting, could not go
+out of the retry loop. Meanwhile, the target process was forking
+a child. So either the target process should execute the smp
+function call to deactive the event (if it was running) or it should
+do a context switch which deactives the event.
 
-OK, this should address the PID uniqueness issue which Ingo identified.
+It seems we optimize out a context switch in perf_event_context_sched_out(),
+and what's more important, we still test an obsolete task pointer when
+retrying, so no one actually would deactive that event in this situation.
+Fix it directly by reloading the task pointer in perf_remove_from_context().
+This should fix the above soft lockup.
 
-> --- a/kernel/watchdog.c
-> +++ b/kernel/watchdog.c
-> @@ -47,6 +47,7 @@ static DEFINE_PER_CPU(bool, softlockup_touch_sync);
->  static DEFINE_PER_CPU(bool, soft_watchdog_warn);
->  static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts);
->  static DEFINE_PER_CPU(unsigned long, soft_lockup_hrtimer_cnt);
-> +static DEFINE_PER_CPU(struct task_struct *, softlockup_task_ptr_saved);
->  #ifdef CONFIG_HARDLOCKUP_DETECTOR
->  static DEFINE_PER_CPU(bool, hard_watchdog_warn);
->  static DEFINE_PER_CPU(bool, watchdog_nmi_touch);
-> @@ -331,8 +332,20 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
->  			return HRTIMER_RESTART;
->  
->  		/* only warn once */
-> -		if (__this_cpu_read(soft_watchdog_warn) == true)
-> +		if (__this_cpu_read(soft_watchdog_warn) == true) {
-> +			/*
-> +			 * Handle the case where multiple processes are
-> +			 * causing softlockups but the duration is small
-> +			 * enough, the softlockup detector can not reset
-> +			 * itself in time.  Use task pointers to detect this.
-> +			 */
+Cc: stable@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Signed-off-by: Cong Wang <cwang@twopensource.com>
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
 
-This comment is rather hard to follow ("the duration" of what?).  Can
-you think of some words which are a bit more complete/clear?
-
-
+---
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index f9c1ed0..c4141a0 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -1524,6 +1524,11 @@ retry:
+ 	 */
+ 	if (ctx->is_active) {
+ 		raw_spin_unlock_irq(&ctx->lock);
++		/*
++		 * Reload the task pointer, it might have been changed by
++		 * a concurrent perf_event_context_sched_out() without switching
++		 */
++		task = ctx->task;
+ 		goto retry;
+ 	}
+ 
