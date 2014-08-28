@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849AbaH1Xgn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 19:36:43 -0400
+	id S1753076AbaH1Xhz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 19:37:55 -0400
 Received: from mga01.intel.com ([192.55.52.88]:54933 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752750AbaH1Xgl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 19:36:41 -0400
+	id S1752750AbaH1Xgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 19:36:45 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,421,1406617200"; 
-   d="scan'208";a="583154386"
+   d="scan'208";a="591404843"
 From: "John L. Hammond" <john.hammond@intel.com>
 To: <greg@kroah.com>, <andreas.dilger@intel.com>, <oleg.drokin@intel.com>
 CC: <linux-kernel@vger.kernel.org>, "John L. Hammond" <john.hammond@intel.com>
-Subject: [PATCH 02/11] staging/lustre remove linux/lustre_acl.h
-Date: Thu, 28 Aug 2014 18:35:10 -0500
-Message-ID: <1409268919-16155-3-git-send-email-john.hammond@intel.com>
+Subject: [PATCH 11/11] staging/lustre: remove linux/obd_support.h
+Date: Thu, 28 Aug 2014 18:35:19 -0500
+Message-ID: <1409268919-16155-12-git-send-email-john.hammond@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1409268919-16155-1-git-send-email-john.hammond@intel.com>
 References: <1409268919-16155-1-git-send-email-john.hammond@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Originating-IP: [10.1.200.106]
+X-Originating-IP: [10.1.200.107]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "John L. Hammond" <john.hammond@intel.com>
 
-Move the contents of lustre/include/linux/lustre_acl.h to
-lustre/include/lustre_acl.h and remove the first header.
+Remove the superfluous header lustre/include/linux/obd_support.h.
 
 Signed-off-by: John L. Hammond <john.hammond@intel.com>
 ---
- .../lustre/lustre/include/linux/lustre_acl.h       |   66 --------------------
- drivers/staging/lustre/lustre/include/lustre_acl.h |    9 ++-
- 2 files changed, 8 insertions(+), 67 deletions(-)
- delete mode 100644 drivers/staging/lustre/lustre/include/linux/lustre_acl.h
+ .../lustre/lustre/include/linux/obd_support.h      |   63 --------------------
+ .../staging/lustre/lustre/include/obd_support.h    |    2 +-
+ 2 files changed, 1 insertion(+), 64 deletions(-)
+ delete mode 100644 drivers/staging/lustre/lustre/include/linux/obd_support.h
 
-diff --git a/drivers/staging/lustre/lustre/include/linux/lustre_acl.h b/drivers/staging/lustre/lustre/include/linux/lustre_acl.h
+diff --git a/drivers/staging/lustre/lustre/include/linux/obd_support.h b/drivers/staging/lustre/lustre/include/linux/obd_support.h
 deleted file mode 100644
-index b17273d..0000000
---- a/drivers/staging/lustre/lustre/include/linux/lustre_acl.h
+index ea03b84..0000000
+--- a/drivers/staging/lustre/lustre/include/linux/obd_support.h
 +++ /dev/null
-@@ -1,66 +0,0 @@
+@@ -1,63 +0,0 @@
 -/*
 - * GPL HEADER START
 - *
@@ -69,65 +68,59 @@ index b17273d..0000000
 - * GPL HEADER END
 - */
 -/*
-- * Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
+- * Copyright (c) 1999, 2010, Oracle and/or its affiliates. All rights reserved.
 - * Use is subject to license terms.
-- */
--/*
-- * Copyright (c) 2011, Intel Corporation.
+- *
+- * Copyright (c) 2011, 2012, Intel Corporation.
 - */
 -/*
 - * This file is part of Lustre, http://www.lustre.org/
 - * Lustre is a trademark of Sun Microsystems, Inc.
-- *
-- * lustre/lustre/include/lustre_acl.h
-- *
-- * MDS data structures.
-- * See also lustre_idl.h for wire formats of requests.
 - */
 -
--#ifndef _LUSTRE_LINUX_ACL_H
--#define _LUSTRE_LINUX_ACL_H
+-#ifndef _LINUX_OBD_SUPPORT
+-#define _LINUX_OBD_SUPPORT
 -
--#ifndef	_LUSTRE_ACL_H
--#error	Should not include directly. use #include <lustre_acl.h> instead
+-#ifndef _OBD_SUPPORT
+-#error Do not #include this file directly. #include <obd_support.h> instead
 -#endif
 -
--#include <linux/fs.h>
--#include <linux/dcache.h>
--
--#include <linux/posix_acl_xattr.h>
--#define LUSTRE_POSIX_ACL_MAX_ENTRIES	32
--#define LUSTRE_POSIX_ACL_MAX_SIZE					\
--	(sizeof(posix_acl_xattr_header) +				\
--	 LUSTRE_POSIX_ACL_MAX_ENTRIES * sizeof(posix_acl_xattr_entry))
--
--#include "lustre_intent.h"
--#include <linux/xattr.h> /* XATTR_{REPLACE,CREATE} */
--
--#ifndef LUSTRE_POSIX_ACL_MAX_SIZE
--# define LUSTRE_POSIX_ACL_MAX_SIZE   0
+-#ifdef CONFIG_X86
+-#include <asm/cpufeature.h>
 -#endif
+-#include <asm/processor.h>
+-#include <linux/seq_file.h>
+-#include <linux/module.h>
+-#include <linux/slab.h>
+-#include <linux/highmem.h>
+-#include <linux/swap.h>
+-#include "../../include/linux/lustre_compat25.h"
+-#include "lustre_common.h"
+-#include "../../../include/linux/libcfs/libcfs.h"
+-#include "../lustre/lustre_idl.h"
 -
--#endif /* _LUSTRE_LINUX_ACL_H */
-diff --git a/drivers/staging/lustre/lustre/include/lustre_acl.h b/drivers/staging/lustre/lustre/include/lustre_acl.h
-index 0b6ea07..aa4cfa7 100644
---- a/drivers/staging/lustre/lustre/include/lustre_acl.h
-+++ b/drivers/staging/lustre/lustre/include/lustre_acl.h
-@@ -37,6 +37,13 @@
- #ifndef _LUSTRE_ACL_H
- #define _LUSTRE_ACL_H
+-
+-# include <linux/types.h>
+-# include <linux/blkdev.h>
+-# include "../lvfs.h"
+-
+-#endif
+diff --git a/drivers/staging/lustre/lustre/include/obd_support.h b/drivers/staging/lustre/lustre/include/obd_support.h
+index 874606a..ee36ee5 100644
+--- a/drivers/staging/lustre/lustre/include/obd_support.h
++++ b/drivers/staging/lustre/lustre/include/obd_support.h
+@@ -37,10 +37,10 @@
+ #ifndef _OBD_SUPPORT
+ #define _OBD_SUPPORT
  
--#include "linux/lustre_acl.h"
-+#include <linux/fs.h>
-+#include <linux/dcache.h>
-+#include <linux/posix_acl_xattr.h>
-+
-+#define LUSTRE_POSIX_ACL_MAX_ENTRIES	32
-+#define LUSTRE_POSIX_ACL_MAX_SIZE					\
-+	(sizeof(posix_acl_xattr_header) +				\
-+	 LUSTRE_POSIX_ACL_MAX_ENTRIES * sizeof(posix_acl_xattr_entry))
++#include <linux/slab.h>
+ #include "../../include/linux/libcfs/libcfs.h"
+ #include "lvfs.h"
+ #include "lprocfs_status.h"
+-#include "linux/obd_support.h"
  
- #endif
+ /* global variables */
+ extern struct lprocfs_stats *obd_memory;
 -- 
 1.7.9.5
 
