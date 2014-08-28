@@ -1,99 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751439AbaH1OtR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 10:49:17 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:39770 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790AbaH1OtP (ORCPT
+	id S1751628AbaH1OxJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 10:53:09 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:57437 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750794AbaH1OxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 10:49:15 -0400
-Date: Thu, 28 Aug 2014 10:49:22 -0400
+	Thu, 28 Aug 2014 10:53:07 -0400
+Date: Thu, 28 Aug 2014 10:53:12 -0400
 From: Eduardo Valentin <edubezval@gmail.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Eduardo Valentin <eduardo.valentin@ti.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 0/8] thermal: exynos: various cleanups
-Message-ID: <20140828144921.GB18194@developer>
-References: <1406826667-2289-1-git-send-email-b.zolnierkie@samsung.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: eduardo.valentin@ti.com, amit.daniel@samsung.com, rui.zhang@intel.com,
+        kgene.kim@samsung.com, ch.naveen@samsung.com,
+        kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
+        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv5 4/4] thermal: exynos: Remove duplicate code when
+ reading triminfo register of Exynos5440
+Message-ID: <20140828145310.GC18194@developer>
+References: <1409016665-3824-1-git-send-email-cw00.choi@samsung.com>
+ <1409016665-3824-5-git-send-email-cw00.choi@samsung.com>
+ <53FEAF2A.1080400@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1406826667-2289-1-git-send-email-b.zolnierkie@samsung.com>
+In-Reply-To: <53FEAF2A.1080400@samsung.com>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Amit,
+On Thu, Aug 28, 2014 at 01:25:14PM +0900, Chanwoo Choi wrote:
+> Dear Eduardo,
+> 
+> This patch is wrong. It is my mistake.
+> 
+> Please ignore only this patch because
+> the offset calculation of 'case 0' is different from 'case 2'.
 
-On Thu, Jul 31, 2014 at 07:10:58PM +0200, Bartlomiej Zolnierkiewicz wrote:
-> Hi,
-> 
-> This patch series contains various cleanups for EXYNOS thermal
-> driver.  Overall it decreases driver's LOC by 9%.  It is based
-> on next-20140731 kernel.  It should not cause any functionality
-> changes.
-> 
 
-Did you have the time to test this series?
+Do patches 1 - 3 are still correct? Patch 1, from Barlomiej, seams to be
+a common agreement. 
 
-> Changes since v2 (https://lkml.org/lkml/2014/6/17/436):
-> - synced patches against next-20140731
-> - dropped patch "thermal: exynos: remove dead code for
->   TYPE_TWO_POINT_TRIMMING calibration" (newly added Exynos3250
->   SoC support uses TYPE_TWO_POINT_TRIMMING calibration)
-> - updated patch description for patch #2
-> - dropped Reviewed-by from Amit from patch #8 (due to changed
->   scope of the patch)
 > 
-> Changes since v1 (https://lkml.org/lkml/2014/5/5/194):
-> - synced patches against next-20140617
-> - merged patch "thermal: exynos: remove unused defines" into
->   "thermal: exynos: remove unused struct exynos_tmu_registers
->   entries" one (per request from Eduardo)
-> - improved patch descriptions for patches #1-5
-> - fixed documentation for pdata->gain and pdata->reference_voltage
-> - added Reviewed-by from Amit to patches #6, #7 and #10
-> - added missing Acked-by from Kyungmin Park
+> Best Regards,
+> Chanwoo Choi
 > 
-> Best regards,
-> --
-> Bartlomiej Zolnierkiewicz
-> Samsung R&D Institute Poland
-> Samsung Electronics
+> On 08/26/2014 10:31 AM, Chanwoo Choi wrote:
+> > This patch remove simply duplicate code when reading triminfo register of Exynos5440.
+> > 
+> > Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> > Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> > Cc: Zhang Rui <rui.zhang@intel.com>
+> > Cc: Eduardo Valentin <edubezval@gmail.com>
+> > Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> > Reviewed-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> > ---
+> >  drivers/thermal/samsung/exynos_tmu.c | 4 +---
+> >  1 file changed, 1 insertion(+), 3 deletions(-)
+> > 
+> > diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+> > index 64c702a..5888467 100644
+> > --- a/drivers/thermal/samsung/exynos_tmu.c
+> > +++ b/drivers/thermal/samsung/exynos_tmu.c
+> > @@ -187,15 +187,13 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+> >  		 */
+> >  		switch (data->id) {
+> >  		case 0:
+> > +		case 2:
+> >  			trim_info = readl(data->base +
+> >  			EXYNOS5440_EFUSE_SWAP_OFFSET + reg->triminfo_data);
+> >  			break;
+> >  		case 1:
+> >  			trim_info = readl(data->base + reg->triminfo_data);
+> >  			break;
+> > -		case 2:
+> > -			trim_info = readl(data->base -
+> > -			EXYNOS5440_EFUSE_SWAP_OFFSET + reg->triminfo_data);
+> >  		}
+> >  	} else {
+> >  		/* On exynos5420 the triminfo register is in the shared space */
+> > 
 > 
-> 
-> Bartlomiej Zolnierkiewicz (8):
->   thermal: exynos: remove unused struct exynos_tmu_registers entries
->   thermal: exynos: remove dead code for HW_MODE calibration
->   thermal: exynos: remove redundant pdata checks from
->     exynos_tmu_initialize()
->   thermal: exynos: remove redundant threshold_code checks from
->     exynos_tmu_initialize()
->   thermal: exynos: simplify temp_to_code() and code_to_temp()
->   thermal: exynos: cache non_hw_trigger_levels in pdata
->   thermal: exynos: remove redundant pdata checks from
->     exynos_tmu_control()
->   thermal: exynos: remove identical values from exynos*_tmu_registers
->     structures
-> 
->  drivers/thermal/samsung/exynos_thermal_common.h |   1 -
->  drivers/thermal/samsung/exynos_tmu.c            | 126 +++++-------------------
->  drivers/thermal/samsung/exynos_tmu.h            |  74 +-------------
->  drivers/thermal/samsung/exynos_tmu_data.c       |  56 ++---------
->  drivers/thermal/samsung/exynos_tmu_data.h       |  31 +-----
->  5 files changed, 35 insertions(+), 253 deletions(-)
-> 
-> -- 
-> 1.8.2.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
