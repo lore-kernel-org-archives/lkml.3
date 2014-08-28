@@ -1,73 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965613AbaH1JXU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 05:23:20 -0400
-Received: from www.linutronix.de ([62.245.132.108]:38687 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934704AbaH1JXS (ORCPT
+	id S965667AbaH1JXd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 05:23:33 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:34081 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S965629AbaH1JXb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 05:23:18 -0400
-Date: Thu, 28 Aug 2014 11:23:11 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-cc: Peter Zijlstra <peterz@infradead.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Dmitry Torokhov <dtor@google.com>, Aubrey Li <aubrey.li@intel.com>
-Subject: Re: [PATCH 2/5 v3] irq / PM: Make wakeup interrupts work with
- suspend-to-idle
-In-Reply-To: <7346724.A5YknVMkmd@vostro.rjw.lan>
-Message-ID: <alpine.DEB.2.10.1408281109110.23342@nanos>
-References: <26580319.OZP7jvJnA9@vostro.rjw.lan> <16387974.EqoNYrShmO@vostro.rjw.lan> <alpine.DEB.2.10.1408272130350.3323@nanos> <7346724.A5YknVMkmd@vostro.rjw.lan>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Thu, 28 Aug 2014 05:23:31 -0400
+Message-ID: <53FEF50F.8030206@arm.com>
+Date: Thu, 28 Aug 2014 10:23:27 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Sonny Rao <sonnyrao@chromium.org>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dianders@chromium.org" <dianders@chromium.org>,
+        Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH] clocksource: arch_timer: Fix code to use physical timers
+ when requested
+References: <1409173419-13076-1-git-send-email-sonnyrao@chromium.org>
+In-Reply-To: <1409173419-13076-1-git-send-email-sonnyrao@chromium.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Aug 2014, Rafael J. Wysocki wrote:
-> On Wednesday, August 27, 2014 10:32:23 PM Thomas Gleixner wrote:
-> > void suspend_device_irqs(void)
-> > {
-> > 	for_each_irq_desc(irq, desc) {
-> > 		/* Disable the interrupt unconditionally */	       
-> > 		disable_irq(irq);
+[cc-ing Will for the VDSO bits]
+
+Hi Sonny,
+
+On 27/08/14 22:03, Sonny Rao wrote:
+> This is a bug fix for using physical arch timers when
+> the arch_timer_use_virtual boolean is false.  It restores the
+> arch_counter_get_cntpct() function after removal in
 > 
-> We still need to skip the IRQF_NO_SUSPEND stuff (eg. timers), so I guess
-> everything left disabled here needs to be IRQS_SUSPENDED, so we know which
-> ones to re-enable in resume_device_irqs().
+> 0d651e4e "clocksource: arch_timer: use virtual counters"
 
-Right. I skipped that one for simplicity. I wanted to look into the
-whole maze today again with brain awake. I think it's simple to
-integrate the no suspend magic here and have a separate handler for
-it.
+This isn't a bug, but rather a feature. It allows the kernel to
+consistently use the virtual counter everywhere (including userspace),
+no matter if it behaves as a host or a guest, without worrying about the
+accessibility of the physical counter (hint: you have no way of knowing
+if it is accessible or not).
 
-> > 
-> > 		/* Is the irq a wakeup source? */
-> > 		if (!irqd_is_wakeup_set(&desc->irq_data))
-> > 			continue;
-> > 
-> > 		/* Replace the handler */
-> > 		raw_spin_lock_irqsave(&desc->lock, flags);
-> > 	     	desc->saved_handler = desc->handler;
-> > 		desc->handler = handle_wakeup_irq;
+> and completes the implementation of memory mapped access for physical
+> timers, so if a system is trying to use physical timers, it will
+> function properly.
 > 
-> Hmm.  There's no handler field in struct irq_desc (/me is puzzled).
+> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+> ---
+>  arch/arm/include/asm/arch_timer.h    |  9 +++++++++
+>  arch/arm64/include/asm/arch_timer.h  | 10 ++++++++++
+>  drivers/clocksource/arm_arch_timer.c | 30 ++++++++++++++++++++++++++----
+>  3 files changed, 45 insertions(+), 4 deletions(-)
 > 
-> Did you mean handle_irq (I think you did)?
+> diff --git a/arch/arm/include/asm/arch_timer.h b/arch/arm/include/asm/arch_timer.h
+> index 0704e0c..e72aa4d 100644
+> --- a/arch/arm/include/asm/arch_timer.h
+> +++ b/arch/arm/include/asm/arch_timer.h
+> @@ -78,6 +78,15 @@ static inline u32 arch_timer_get_cntfrq(void)
+>  	return val;
+>  }
+>  
+> +static inline u64 arch_counter_get_cntpct(void)
+> +{
+> +	u64 cval;
+> +
+> +	isb();
+> +	asm volatile("mrrc p15, 0, %Q0, %R0, c14" : "=r" (cval));
+> +	return cval;
+> +}
+> +
+>  static inline u64 arch_counter_get_cntvct(void)
+>  {
+>  	u64 cval;
+> diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
+> index 9400596..58657c4 100644
+> --- a/arch/arm64/include/asm/arch_timer.h
+> +++ b/arch/arm64/include/asm/arch_timer.h
+> @@ -135,6 +135,16 @@ static inline void arch_timer_evtstrm_enable(int divider)
+>  #endif
+>  }
+>  
+> +static inline u64 arch_counter_get_cntpct(void)
+> +{
+> +	u64 cval;
+> +
+> +	isb();
+> +	asm volatile("mrs %0, cntpct_el0" : "=r" (cval));
+> +
+> +	return cval;
+> +}
+> +
+>  static inline u64 arch_counter_get_cntvct(void)
+>  {
+>  	u64 cval;
+> diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+> index 5163ec1..ad723cb 100644
+> --- a/drivers/clocksource/arm_arch_timer.c
+> +++ b/drivers/clocksource/arm_arch_timer.c
+> @@ -30,6 +30,8 @@
+>  #define CNTTIDR		0x08
+>  #define CNTTIDR_VIRT(n)	(BIT(1) << ((n) * 4))
+>  
+> +#define CNTPCT_LO	0x00
+> +#define CNTPCT_HI	0x04
+>  #define CNTVCT_LO	0x08
+>  #define CNTVCT_HI	0x0c
+>  #define CNTFRQ		0x10
+> @@ -386,6 +388,19 @@ static u64 arch_counter_get_cntvct_mem(void)
+>  	return ((u64) vct_hi << 32) | vct_lo;
+>  }
+>  
+> +static u64 arch_counter_get_cntpct_mem(void)
+> +{
+> +	u32 pct_lo, pct_hi, tmp_hi;
+> +
+> +	do {
+> +		pct_hi = readl_relaxed(arch_counter_base + CNTPCT_HI);
+> +		pct_lo = readl_relaxed(arch_counter_base + CNTPCT_LO);
+> +		tmp_hi = readl_relaxed(arch_counter_base + CNTPCT_HI);
+> +	} while (pct_hi != tmp_hi);
+> +
+> +	return ((u64) pct_hi << 32) | pct_lo;
+> +}
+> +
+>  /*
+>   * Default to cp15 based access because arm64 uses this function for
+>   * sched_clock() before DT is probed and the cp15 method is guaranteed
+> @@ -429,10 +444,17 @@ static void __init arch_counter_register(unsigned type)
+>  	u64 start_count;
+>  
+>  	/* Register the CP15 based counter if we have one */
+> -	if (type & ARCH_CP15_TIMER)
+> -		arch_timer_read_counter = arch_counter_get_cntvct;
+> -	else
+> -		arch_timer_read_counter = arch_counter_get_cntvct_mem;
+> +	if (type & ARCH_CP15_TIMER) {
+> +		if (arch_timer_use_virtual)
+> +			arch_timer_read_counter = arch_counter_get_cntvct;
+> +		else
+> +			arch_timer_read_counter = arch_counter_get_cntpct;
+> +	} else {
+> +		if (arch_timer_use_virtual)
+> +			arch_timer_read_counter = arch_counter_get_cntvct_mem;
+> +		else
+> +			arch_timer_read_counter = arch_counter_get_cntpct_mem;
+> +	}
+>  
+>  	start_count = arch_timer_read_counter();
+>  	clocksource_register_hz(&clocksource_counter, arch_timer_rate);
+> 
 
-Yup.
- 
-> There is quite some ugliness related to resume_irqs(), the want_early thing
-> and IRQF_EARLY_RESUME / IRQF_FORCE_RESUME.  I guess that needs to be preserved?
-
-Probably. Did not look into the madness of that yet.
+What will be the effect on arm64 where the VDSO uses the virtual counter
+to implement gettimeofday?
 
 Thanks,
 
-	tglx
+	M.
+-- 
+Jazz is not dead. It just smells funny...
