@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753597AbaH1TYi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 15:24:38 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:50429 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752784AbaH1TYf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 15:24:35 -0400
-Date: Thu, 28 Aug 2014 12:24:31 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Simon Kirby <sim@hostway.ca>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: net_ns cleanup / RCU overhead
-Message-ID: <20140828192431.GF5001@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140820055855.GB5579@hostway.ca>
+	id S1752613AbaH1T3X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 15:29:23 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:59476 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750942AbaH1T3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 15:29:21 -0400
+Date: Thu, 28 Aug 2014 14:28:39 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Vivek Gautam <gautam.vivek@samsung.com>
+CC: <linux-usb@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-samsung-soc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <balbi@ti.com>, <kishon@ti.com>,
+        <kgene.kim@samsung.com>
+Subject: Re: [PATCH 4/5] usb: dwc3: Adding Kconfig dependency for Exynos7
+Message-ID: <20140828192824.GR16689@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1409212920-28526-1-git-send-email-gautam.vivek@samsung.com>
+ <1409212920-28526-5-git-send-email-gautam.vivek@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AonAANj1daC6QcQu"
 Content-Disposition: inline
-In-Reply-To: <20140820055855.GB5579@hostway.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082819-3532-0000-0000-000004379781
+In-Reply-To: <1409212920-28526-5-git-send-email-gautam.vivek@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 10:58:55PM -0700, Simon Kirby wrote:
-> Hello!
-> 
-> In trying to figure out what happened to a box running lots of vsftpd
-> since we deployed a CONFIG_NET_NS=y kernel to it, we found that the
-> (wall) time needed for cleanup_net() to complete, even on an idle box,
-> can be quite long:
-> 
-> #!/bin/bash
-> 
-> ip netns delete test >&/dev/null
-> while ip netns add test; do
->         echo hi
->         ip netns delete test
-> done
-> 
-> On my desktop and typical hosts, this prints at only around 4 or 6 per
-> second. While this is happening, "vmstat 1" reports 100% idle, and there
-> there are D-state processes with stacks similar to:
-> 
-> 30566 [kworker/u16:1] D wait_rcu_gp+0x48, synchronize_sched+0x2f, cleanup_net+0xdb, process_one_work+0x175, worker_thread+0x119, kthread+0xbb, ret_from_fork+0x7c, 0xffffffffffffffff
-> 
-> 32220 ip              D copy_net_ns+0x68, create_new_namespaces+0xfc, unshare_nsproxy_namespaces+0x66, SyS_unshare+0x159, system_call_fastpath+0x16, 0xffffffffffffffff
-> 
-> copy_net_ns() is waiting on net_mutex which is held by cleanup_net().
-> 
-> vsftpd uses CLONE_NEWNET to set up privsep processes. There is a comment
-> about it being really slow before 2.6.35 (it avoids CLONE_NEWNET in that
-> case). I didn't find anything that makes 2.6.35 any faster, but on Debian
-> 2.6.36-5-amd64, I notice it does seem to be a bit faster than 3.2, 3.10,
-> 3.16, though still not anything I'd ever want to rely on per connection.
-> 
-> C implementation of the above: http://0x.ca/sim/ref/tools/netnsloop.c
-> 
-> Kernel stack "top": http://0x.ca/sim/ref/tools/pstack
-> 
-> What's going on here?
+--AonAANj1daC6QcQu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-That is a bit slow for many configurations, but there are some exceptions.
+On Thu, Aug 28, 2014 at 01:31:59PM +0530, Vivek Gautam wrote:
+> The Exynos-DWC3 USB 3.0 DRD controller is also present on
+> Exynos7 platform, so adding the dependency on ARCH_EXYNOS7
+> for this driver.
+>=20
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> ---
+>  drivers/usb/dwc3/Kconfig |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/usb/dwc3/Kconfig b/drivers/usb/dwc3/Kconfig
+> index 785510a..e235894 100644
+> --- a/drivers/usb/dwc3/Kconfig
+> +++ b/drivers/usb/dwc3/Kconfig
+> @@ -55,7 +55,7 @@ config USB_DWC3_OMAP
+> =20
+>  config USB_DWC3_EXYNOS
+>  	tristate "Samsung Exynos Platform"
+> -	depends on ARCH_EXYNOS || COMPILE_TEST
+> +	depends on (ARCH_EXYNOS || ARCH_EXYNOS7) || COMPILE_TEST
 
-So, what is your kernel's .config?
+wait when building for ARCH_EXYNOS7 you don't get ARCH_EXYNOS ?
 
-							Thanx, Paul
+--=20
+balbi
 
+--AonAANj1daC6QcQu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT/4LYAAoJEIaOsuA1yqRE8D8P/0x6TC8uZM5+NMPlJeCa1R+t
+yRV5KHQibRTl9idBNyoIFZjim70TLGTqGrSAlFr5zT5esgHjuqW5pcKzFWncW4vm
+ABDbsTc+feZPYUUqQLvp6oxJiAkmhWUzjXqPsAXEC0NqhqJbvXhFjgiQHyRyeOd1
+af0x8JR0gZoCupzu6kb6RiX2G5Gk/b8144YdBt2kKO2VvF70UJGTBx8y5eLtawg2
+6esK6yOegPsoUILf9zODwFb1Dhp6L0rFmvPpT6SdPTzaMEhQdC8Z5MVjwwdGj7vf
+oJthXNzF66B2P6MFRp1/kEcTbXjYjE3pDo4gqrOJ4dkPDbC02O8hAMnftSZfCmgE
+wazv1fCvntDh/UponwC5aB8GRRcKiLRaD7YXtRpT1qEu/8nwhi9WggUt3v7NsBfl
+qX75K95iKQlducc2PGnq8pCD1JqOjqliHGsit3kQsYOcILrUVHHzvGGVOTlnpgx4
+66tZLXdLyFBevYpSiihAkYr7Vj3o6igTKhemVatl7u5FAoIKjvpPJxLvGVLJ8090
+FBV/cfO6I5IhiPrmA1C+EVvpIpdFPCK/VbkpAfuXZ8dXgIEW/BtcHHf88HzxJ1Sq
+7aSrnD7fBNZnp7gLHqjl31Z13JsDNB51IZUcba3iP0N1qvoRp/81+8U9+JfZHBu8
+MZy6TVrQuNYo7Kh+FOmD
+=QabP
+-----END PGP SIGNATURE-----
+
+--AonAANj1daC6QcQu--
