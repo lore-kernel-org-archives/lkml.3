@@ -1,86 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751540AbaH1Ns1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 09:48:27 -0400
-Received: from imap.thunk.org ([74.207.234.97]:53896 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750801AbaH1NsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 09:48:25 -0400
-Date: Thu, 28 Aug 2014 09:48:04 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Gioh Kim <gioh.kim@lge.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jan Kara <jack@suse.cz>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>, Joonsoo Kim <js1304@gmail.com>,
-        =?utf-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>
-Subject: Re: [PATCHv3 0/3] new APIs to allocate buffer-cache with user
- specific flag
-Message-ID: <20140828134804.GC21925@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Gioh Kim <gioh.kim@lge.com>,
-	Alexander Viro <viro@zeniv.linux.org.uk>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Peter Zijlstra <peterz@infradead.org>, Jan Kara <jack@suse.cz>,
-	linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Andreas Dilger <adilger.kernel@dilger.ca>,
-	linux-ext4@vger.kernel.org, Minchan Kim <minchan@kernel.org>,
-	Joonsoo Kim <js1304@gmail.com>,
-	=?utf-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>
-References: <53FE9357.6000505@lge.com>
+	id S1751938AbaH1NuA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 09:50:00 -0400
+Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:56164
+	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754AbaH1Nt7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 09:49:59 -0400
+Date: Thu, 28 Aug 2014 15:49:57 +0200
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "chenhanxiao@cn.fujitsu.com" <chenhanxiao@cn.fujitsu.com>
+Cc: Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Richard Weinberger (richard@nod.at)" <richard@nod.at>,
+        "containers@lists.linux-foundation.org" 
+	<containers@lists.linux-foundation.org>,
+        "Oleg Nesterov (oleg@redhat.com)" <oleg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman (ebiederm@xmission.com)" <ebiederm@xmission.com>,
+        "Vasily Kulikov (segoon@openwall.com)" <segoon@openwall.com>
+Subject: Re: [RFC]Pid conversion between pid namespace
+Message-ID: <20140828134957.GA6047@mail.hallyn.com>
+References: <5871495633F38949900D2BF2DC04883E55C374@G08CNEXMBPEKD02.g08.fujitsu.local>
+ <5871495633F38949900D2BF2DC04883E560412@G08CNEXMBPEKD02.g08.fujitsu.local>
+ <5871495633F38949900D2BF2DC04883E56C7A2@G08CNEXMBPEKD02.g08.fujitsu.local>
+ <20140804222044.GJ12438@ubuntumail>
+ <5871495633F38949900D2BF2DC04883E57702E@G08CNEXMBPEKD02.g08.fujitsu.local>
+ <20140807161141.GG18303@ubuntumail>
+ <5871495633F38949900D2BF2DC04883E577E1A@G08CNEXMBPEKD02.g08.fujitsu.local>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <53FE9357.6000505@lge.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5871495633F38949900D2BF2DC04883E577E1A@G08CNEXMBPEKD02.g08.fujitsu.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 28, 2014 at 11:26:31AM +0900, Gioh Kim wrote:
+Quoting chenhanxiao@cn.fujitsu.com (chenhanxiao@cn.fujitsu.com):
 > 
-> I have 3 patchs:
 > 
-> 1. Patch 1/3: introduce a new API that create page cache with allocation flag
-> 2. Patch 2/3: have ext4 use the new API to read superblock
-> 3. Patch 3/3: have jbd/jbd2 use the new API to make journaling of superblock
+> > -----Original Message-----
+> > From: Serge Hallyn [mailto:serge.hallyn@ubuntu.com]
+> > Sent: Friday, August 08, 2014 12:12 AM
+> > To: Chen, Hanxiao/陈 晗霄
 > 
-> This patchset is based on linux-next-20140814.
+> > > > How much more kernel space does this take up?
+> > > >
+> > >
+> > > Only first process when creating new ns will be add here.
+> > > So there would not so many items.
+> > 
+> > Oh, I see.
+> > 
+> > > > Is there an easy way to go from a pid in your own namespace
+> > > > to its proper node under /proc/nspid?  I.e. if I am interested
+> > > > in pid 9987, which happens to be pid 5 inside a container in
+> > > > ns2, and then I want to know what it means when it (pid 9987)
+> > > > is talking about 'pid 10'.  Is there a link under /proc/9987/
+> > > > leading to /proc/nspid/ns2/5 ?
+> > >
+> > > If you want to query pid 9987, you could:
+> > > a) readlink /proc/9987/ns/pid
+> > > b) refer to /proc/nspid/ns$(inum)/ns$(inum)..
+> > > c) Also the link to the 1st new ns process could be found under ns$(inum).
+> > 
+> > This is good.  Let's go with it.
+> 
+> OK
+> 
+> > 
+> > > Or as what you said above,
+> > 
+> > Nah.  Let's not change /proc/PID/ns/pid.
+> > 
+> > > > This sure does seem the simplest route.  But it actually still
+> > > > does not provide us an easy answer to "what does pid 9987 mean
+> > > > when it talks about pid 10?".
+> > >
+> > > Do you mean:
+> > > init_pid_ns   ns1     ns2
+> > > 9987            10      5
+> > > Neither getnspid syscall nor proc/PID/status expansion
+> > > could answer this without hierarchy information.
+> > > For users in init_pid_ns, getnspid needs
+> > > an observer pid live and only live in ns1,
+> > 
+> > Yes, good point.  That's a definite disadvantage of getnspid
+> > compared to your proc approach.
+> > 
+> > > or we should call getnspid in ns1.
+> > > See below for more.
+> > >
+> > > >
+> > > > > 2. Advantage of procfs solution
+> > > > > a) easy to use:
+> > > > > getnspid(6, 10) -> (10, 9, 10)
+> > > > > or
+> > > > > getnspid(10, ns1_fd, ns0_fd) -> 9
+> > > > > getnspid(10, ns2_fd, ns0_fd) -> 10
+> > > > >
+> > > > > And we could also get it by:
+> > > > > cat /proc/10/status | grep NSpid:
+> > > > > NSpid:	10 	9 	10
+> > > > > ...
+> > > >
+> > > > It looks nice, but I'm not convinced it gives us the info we
+> > > > need.
+> > > >
+> > > > It's certainly possible that I've just not thought it through
+> > > > enough.
+> > > >
+> > > > Question: are you proposing this (/proc/pid/status expansion) as an
+> > > > alternative to /proc/nspid, or are they meant to be complementary?
+> > > >
+> > >
+> > > We want /proc/nspid as a complement for pid translation.
+> > 
+> > Ok.
+> > 
+> > > Ex:
+> > >     init_pid_ns     ns1         ns2
+> > > t1  2
+> > > t2   `- 3           1
+> > > t3       `- 4       `- 5        1
+> > > t4           `-6        `-8      `-9
+> > > t5             `-10        `-9      `-10
+> > > Suppose we were in init_pid_ns:
+> > > getnspid(9,4)->6 (t4)
+> > > getnspid(9,3)->10(t5)
+> > > We knew t2 in ns1 and t3 in ns2, but we don't know their relationship.
+> > > If we want to query pid 9 in ns1, we could use getnspid(9,3)->10(t5)
+> > > but the pre-requisite is that we know ns2 is the child of ns1.
+> > 
+> > I like your proc approach.  Do you have an implementation?
+> 
+> Thanks for your comments.
+> I'm preparing the pidns hierarchy patch.
+> It seems that it's not easy to carry it out.
 
-Looks good.  Unless there are any objections from the mm folks, since
-the nearly all of the changes are in fs/buffer.c and in ext4/jbd2
-code, I plan to carry this in the ext4 tree.
+:)  Not entirely surprised.
 
-I do plan to clean up the patch titles a little; from:
-
-fs/buffer.c: allocate buffer cache with user specific flag
-ext4: allocate buffer-cache for superblock in, non-movable area
-jbd/jbd2: allocate buffer-cache for superblock inode in non-movable area
-
-to:
-
-fs.c: support buffer cache allocations with gfp modifiers
-ext4: use non-movable memory for the ext4 superblock
-jbd/jbd2: use non-movable memory for the jbd superblock
-
-And do some minor english grammar/spelling cleanups in the commit
-description when I apply the patch.
-
-Thanks for this work; I'm going to need to use the interfaces you
-introduced in fs/buffer.c to guarantee that certain directory reads
-can be done with GFP_NOFAIL (since under heavy memory pressure,
-allocation failures there can currently lead to the file system
-getting declared corrupt.  Interestingly, this bug has been around for
-a long time, and hasn't been noticed in over two cycles of enterprise
-distro qualifications by either RHEL or SLES, which leads me to wonder
-if there are other places where the error paths for GFP_NOFS
-allocations haven't been well tested....)
-
-						- Ted
+Please do send patches earlier rather than later to avoid going
+down a path that someone's going to nack anyway.
