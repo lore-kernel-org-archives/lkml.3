@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753444AbaH1ShV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:37:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32891 "EHLO mx2.suse.de"
+	id S1753540AbaH1Sol (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 14:44:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32895 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753358AbaH1ShQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:37:16 -0400
+	id S1753397AbaH1ShT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:37:19 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Jiri Slaby <jslaby@suse.cz>
 Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 86/97] shmem: fix init_page_accessed use to stop !PageLRU bug
-Date: Thu, 28 Aug 2014 19:35:34 +0100
-Message-Id: <1409250945-30874-87-git-send-email-mgorman@suse.de>
+Subject: [PATCH 90/97] vmalloc: use rcu list iterator to reduce vmap_area_lock contention
+Date: Thu, 28 Aug 2014 19:35:38 +0100
+Message-Id: <1409250945-30874-91-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
 References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
@@ -20,90 +20,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hugh Dickins <hughd@google.com>
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-commit 66d2f4d28cd030220e7ea2a628993fcabcb956d1 upstream.
+commit 474750aba88817c53f39424e5567b8e4acc4b39b upstream.
 
-Under shmem swapping load, I sometimes hit the VM_BUG_ON_PAGE(!PageLRU)
-in isolate_lru_pages() at mm/vmscan.c:1281!
+Richard Yao reported a month ago that his system have a trouble with
+vmap_area_lock contention during performance analysis by /proc/meminfo.
+Andrew asked why his analysis checks /proc/meminfo stressfully, but he
+didn't answer it.
 
-Commit 2457aec63745 ("mm: non-atomically mark page accessed during page
-cache allocation where possible") looks like interrupted work-in-progress.
+  https://lkml.org/lkml/2014/4/10/416
 
-mm/filemap.c's call to init_page_accessed() is fine, but not mm/shmem.c's
-- shmem_write_begin() is clearly wrong to use it after shmem_getpage(),
-when the page is always visible in radix_tree, and often already on LRU.
+Although I'm not sure that this is right usage or not, there is a
+solution reducing vmap_area_lock contention with no side-effect.  That
+is just to use rcu list iterator in get_vmalloc_info().
 
-Revert change to shmem_write_begin(), and use init_page_accessed() or
-mark_page_accessed() appropriately for SGP_WRITE in shmem_getpage_gfp().
+rcu can be used in this function because all RCU protocol is already
+respected by writers, since Nick Piggin commit db64fe02258f1 ("mm:
+rewrite vmap layer") back in linux-2.6.28
 
-SGP_WRITE also covers shmem_symlink(), which did not mark_page_accessed()
-before; but since many other filesystems use [__]page_symlink(), which did
-and does mark the page accessed, consider this as rectifying an oversight.
+Specifically :
+   insertions use list_add_rcu(),
+   deletions use list_del_rcu() and kfree_rcu().
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
+Note the rb tree is not used from rcu reader (it would not be safe),
+only the vmap_area_list has full RCU protection.
+
+Note that __purge_vmap_area_lazy() already uses this rcu protection.
+
+        rcu_read_lock();
+        list_for_each_entry_rcu(va, &vmap_area_list, list) {
+                if (va->flags & VM_LAZY_FREE) {
+                        if (va->va_start < *start)
+                                *start = va->va_start;
+                        if (va->va_end > *end)
+                                *end = va->va_end;
+                        nr += (va->va_end - va->va_start) >> PAGE_SHIFT;
+                        list_add_tail(&va->purge_list, &valist);
+                        va->flags |= VM_LAZY_FREEING;
+                        va->flags &= ~VM_LAZY_FREE;
+                }
+        }
+        rcu_read_unlock();
+
+Peter:
+
+: While rcu list traversal over the vmap_area_list is safe, this may
+: arrive at different results than the spinlocked version. The rcu list
+: traversal version will not be a 'snapshot' of a single, valid instant
+: of the entire vmap_area_list, but rather a potential amalgam of
+: different list states.
+
+Joonsoo:
+
+: Yes, you are right, but I don't think that we should be strict here.
+: Meminfo is already not a 'snapshot' at specific time.  While we try to get
+: certain stats, the other stats can change.  And, although we may arrive at
+: different results than the spinlocked version, the difference would not be
+: large and would not make serious side-effect.
+
+[edumazet@google.com: add more commit description]
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Reported-by: Richard Yao <ryao@gentoo.org>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Cc: Peter Hurley <peter@hurleysoftware.com>
+Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Vlastimil Babka <vbabka@suse.cz>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Dave Hansen <dave.hansen@intel.com>
-Cc: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/shmem.c | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ mm/vmalloc.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/mm/shmem.c b/mm/shmem.c
-index d4b7358..ab05681 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -1037,6 +1037,9 @@ repeat:
- 		goto failed;
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index e2be0f8..060dc36 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -2685,14 +2685,14 @@ void get_vmalloc_info(struct vmalloc_info *vmi)
+ 
+ 	prev_end = VMALLOC_START;
+ 
+-	spin_lock(&vmap_area_lock);
++	rcu_read_lock();
+ 
+ 	if (list_empty(&vmap_area_list)) {
+ 		vmi->largest_chunk = VMALLOC_TOTAL;
+ 		goto out;
  	}
  
-+	if (page && sgp == SGP_WRITE)
-+		mark_page_accessed(page);
-+
- 	/* fallocated page? */
- 	if (page && !PageUptodate(page)) {
- 		if (sgp != SGP_READ)
-@@ -1118,6 +1121,9 @@ repeat:
- 		shmem_recalc_inode(inode);
- 		spin_unlock(&info->lock);
+-	list_for_each_entry(va, &vmap_area_list, list) {
++	list_for_each_entry_rcu(va, &vmap_area_list, list) {
+ 		unsigned long addr = va->va_start;
  
-+		if (sgp == SGP_WRITE)
-+			mark_page_accessed(page);
-+
- 		delete_from_swap_cache(page);
- 		set_page_dirty(page);
- 		swap_free(swap);
-@@ -1144,6 +1150,9 @@ repeat:
+ 		/*
+@@ -2719,7 +2719,7 @@ void get_vmalloc_info(struct vmalloc_info *vmi)
+ 		vmi->largest_chunk = VMALLOC_END - prev_end;
  
- 		__SetPageSwapBacked(page);
- 		__set_page_locked(page);
-+		if (sgp == SGP_WRITE)
-+			init_page_accessed(page);
-+
- 		error = mem_cgroup_cache_charge(page, current->mm,
- 						gfp & GFP_RECLAIM_MASK);
- 		if (error)
-@@ -1440,13 +1449,9 @@ shmem_write_begin(struct file *file, struct address_space *mapping,
- 			loff_t pos, unsigned len, unsigned flags,
- 			struct page **pagep, void **fsdata)
- {
--	int ret;
- 	struct inode *inode = mapping->host;
- 	pgoff_t index = pos >> PAGE_CACHE_SHIFT;
--	ret = shmem_getpage(inode, index, pagep, SGP_WRITE, NULL);
--	if (ret == 0 && *pagep)
--		init_page_accessed(*pagep);
--	return ret;
-+	return shmem_getpage(inode, index, pagep, SGP_WRITE, NULL);
+ out:
+-	spin_unlock(&vmap_area_lock);
++	rcu_read_unlock();
  }
+ #endif
  
- static int
 -- 
 1.8.4.5
 
