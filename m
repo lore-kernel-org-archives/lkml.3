@@ -1,142 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757397AbaH1IX4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 04:23:56 -0400
-Received: from www.linutronix.de ([62.245.132.108]:38343 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755669AbaH1IXx (ORCPT
+	id S936290AbaH1I3I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 04:29:08 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:37347 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934238AbaH1I3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 04:23:53 -0400
-Date: Thu, 28 Aug 2014 10:23:48 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Tony Lindgren <tony@atomide.com>, balbi@ti.com
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Vinod Koul <vinod.koul@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 15/15] tty: serial: 8250: omap: add dma support
-Message-ID: <20140828082348.GA5413@linutronix.de>
-References: <1408124563-31541-1-git-send-email-bigeasy@linutronix.de>
- <1408124563-31541-16-git-send-email-bigeasy@linutronix.de>
- <20140815210211.GD9239@atomide.com>
- <53F5AF0D.5060409@linutronix.de>
- <20140821184416.GF10066@atomide.com>
- <53FE3779.5090908@linutronix.de>
- <20140827202313.GF16006@atomide.com>
+	Thu, 28 Aug 2014 04:29:04 -0400
+Date: Thu, 28 Aug 2014 09:28:38 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Javier Martinez Canillas <javier@dowhile0.org>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Message-ID: <20140828082838.GH17528@sirena.org.uk>
+References: <CABxcv=k2PH-BksYyWirAoL=DiVuy+O=Y1c+pMO=EK58XNKMsFw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FtoCNUwdcqbKhyPv"
 Content-Disposition: inline
-In-Reply-To: <20140827202313.GF16006@atomide.com>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CABxcv=k2PH-BksYyWirAoL=DiVuy+O=Y1c+pMO=EK58XNKMsFw@mail.gmail.com>
+X-Cookie: 98% lean.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/1] regulator: max77802: set opmode to normal if off is
+ read from hw
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tony Lindgren | 2014-08-27 13:23:14 [-0700]:
 
->> which means I just enable DMA mode in UART and disable it. No DMA
->> operations were performed.
->> With this change I see a lost character now and then which means the
->> UART-IP goes into off and loses its context. Good. However I don't see
->> core off anymore. This looks like a bug beyond my responsibilities :)
->
->OK, that sounds like a bug still lurking around somewhere. The core
->domain won't hit idle if there are any hardware pieces blocking.
+--FtoCNUwdcqbKhyPv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Yes.
+On Thu, Aug 28, 2014 at 12:44:18AM +0200, Javier Martinez Canillas wrote:
+> On Wed, Aug 27, 2014 at 11:03 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
 
->> I added code to cancel & and start DMA transfers in runtime suspend
->> callbacks.
->
->Do you mean just the OMAP_UART_SCR_DMAMODE_CTL related code, or
->also the dmaengine calls?
+> This is the case for Chromebooks as well but the solution implemented
+> in the downstream Chrome OS 3.8 kernel is what Tomasz suggested
 
-dmaengine calls are unused because up.dma is not assigned. It is 
-basically like you wouldn't have the dma properties in the devicetree.
-And while in that non-DMA mode I just set and unset the DMAMODE_CTL + 
-DMAMODE_1 bits in the SCR register. Nothing else. Based on some testing
-I just did, DMAMODE_CTL does not make the difference. DMAMODE_CTL +
-DMAMODE_1 does.
+*sigh*  This is not what you were describing, though most of what you
+then go on to say doesn't correspond to the issue Tomasz was describing.
 
->> However core-off with DMA won't work. I think we could document this in
->> the binding document. What do you think?
->
->There should not be such a limitation though. Maybe dump out the values
->of cm_idlest_per and cm_idlest1_core for working and failing off idle
->cases and see what the difference is?
+> Yes, AFAIK the bootloader (none of them because Chromebooks use two
+> chained U-boots) change the regulators default opmode so once is set
+> to OFF on .disable, that value is preserved on warm reboot. This made
+> sense with the Chrome OS kernel since the kernel always set the opmode
+> defined in the "regulator-op-mode" DT property and did not relied on
+> the bootloader to set the most efficient default opmode.
 
-I can't follow here. This is the working case:
+I'm sorry but this is just really unclear.  Does the bootloader change
+the mode or does it not change the mode?  You start off saying that the
+bootloader does change the mode, then go on to say that it doesn't and
+that the system relies on Linux changing the mode (which is consistent
+with what you were originally saying and what you say for much of the
+rest of this mail but not with what Tomasz was talking about).
 
-usbhost_pwrdm (OFF),OFF:1,RET:1,INA:0,ON:2,RET-LOGIC-OFF:0,RET-MEMBANK1-OFF:0
-sgx_pwrdm (OFF),OFF:1,RET:0,INA:0,ON:1,RET-LOGIC-OFF:0,RET-MEMBANK1-OFF:0
-core_pwrdm (ON),OFF:109,RET:22,INA:71,ON:203,RET-LOGIC-OFF:0,RET-MEMBANK1-OFF:0,RET-MEMBANK2-OFF:0
-per_pwrdm (ON),OFF:137,RET:126,INA:0,ON:264,RET-LOGIC-OFF:0,RET-MEMBANK1-OFF:0
-dss_pwrdm (ON),OFF:383,RET:861,INA:0,ON:1245,RET-LOGIC-OFF:0,RET-MEMBANK1-OFF:0
-cam_pwrdm (OFF),OFF:1,RET:1,INA:0,ON:2,RET-LOGIC-OFF:0,RET-MEMBANK1-OFF:0
-neon_pwrdm (ON),OFF:311,RET:889,INA:44,ON:1245,RET-LOGIC-OFF:0
-mpu_pwrdm (ON),OFF:311,RET:889,INA:44,ON:1245,RET-LOGIC-OFF:0,RET-MEMBANK1-OFF:0
-iva2_pwrdm (OFF),OFF:1,RET:1,INA:0,ON:2,RET-LOGIC-OFF:0,RET-MEMBANK1-OFF:0,RET-MEMBANK2-OFF:0,RET-MEMBANK3-OFF:0,RET-MEMBANK4-OFF:0
-usbhost_clkdm->usbhost_pwrdm (0)
-sgx_clkdm->sgx_pwrdm (0)
-per_clkdm->per_pwrdm (15)
-cam_clkdm->cam_pwrdm (0)
-dss_clkdm->dss_pwrdm (1)
-d2d_clkdm->core_pwrdm (0)
-iva2_clkdm->iva2_pwrdm (0)
-mpu_clkdm->mpu_pwrdm (0)
-core_l4_clkdm->core_pwrdm (20)
-core_l3_clkdm->core_pwrdm (1)
-neon_clkdm->neon_pwrdm (0)
+> Also, other drivers have customs operating mode DT properties, please
+> take a look at Documentation/devicetree/bindings/regulator/s5m8767-regulator.txt:
 
-non-working:
+Per driver things can potentially be fine, trying to define generic
+properties is much harder.
 
-usbhost_pwrdm (OFF),OFF:1,RET:1,INA:0,ON:2,RET-LOGIC-OFF:0,RET-MEMBANK1-OFF:0
-sgx_pwrdm (OFF),OFF:1,RET:0,INA:0,ON:1,RET-LOGIC-OFF:0,RET-MEMBANK1-OFF:0
-core_pwrdm (ON),OFF:0,RET:0,INA:0,ON:1,RET-LOGIC-OFF:0,RET-MEMBANK1-OFF:0,RET-MEMBANK2-OFF:0
-per_pwrdm (ON),OFF:0,RET:0,INA:0,ON:1,RET-LOGIC-OFF:0,RET-MEMBANK1-OFF:0
-dss_pwrdm (ON),OFF:253,RET:159,INA:0,ON:413,RET-LOGIC-OFF:0,RET-MEMBANK1-OFF:0
-cam_pwrdm (OFF),OFF:1,RET:1,INA:0,ON:2,RET-LOGIC-OFF:0,RET-MEMBANK1-OFF:0
-neon_pwrdm (ON),OFF:135,RET:242,INA:35,ON:413,RET-LOGIC-OFF:0
-mpu_pwrdm (ON),OFF:135,RET:242,INA:35,ON:413,RET-LOGIC-OFF:0,RET-MEMBANK1-OFF:0
-iva2_pwrdm (OFF),OFF:1,RET:1,INA:0,ON:2,RET-LOGIC-OFF:0,RET-MEMBANK1-OFF:0,RET-MEMBANK2-OFF:0,RET-MEMBANK3-OFF:0,RET-MEMBANK4-OFF:0
-usbhost_clkdm->usbhost_pwrdm (0)
-sgx_clkdm->sgx_pwrdm (0)
-per_clkdm->per_pwrdm (15)
-cam_clkdm->cam_pwrdm (0)
-dss_clkdm->dss_pwrdm (1)
-d2d_clkdm->core_pwrdm (0)
-iva2_clkdm->iva2_pwrdm (0)
-mpu_clkdm->mpu_pwrdm (0)
-core_l4_clkdm->core_pwrdm (21)
-core_l3_clkdm->core_pwrdm (1)
-neon_clkdm->neon_pwrdm (0)
+--FtoCNUwdcqbKhyPv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-so per_pwrdm and core_pwrdm remain on and I guess the former is where
-the UART sits.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
->It could be the either the dma or the uart hardware blocking. I guess
->it could be also an issue with runtime pm use somewhere.
+iQIcBAEBAgAGBQJT/ugzAAoJELSic+t+oim9/eAP/31xRVon8OM6Xeh0NLiRpzDK
+2n1JhH2YiDel5IsQzpPdwsX5E2sy0rlCYPxVe7Cf1e4JXN/dVUbGE06AEMx6JXvc
+nbwgM57WOm1JqZifXuW1m+502PgkxagV+6TgUdHFXuHKfJDFnnPT/aAT8jMkKKGi
+JGPZF//1VmdspHPmxaxB4Oxuj+Oo+BeZLWnOAuMHbu1y1dymfsostQwqHIjRZsYi
+xsN+xDrHFS72tcWU/212bz6dhcoh7mCCH9dwFW6unPOV/hMqsZJG1BJVvKnyx1sk
+wZQERWtHspZleEM/islsBIzcM234Q3YYUbfGmGH4LeMWkksaAsKrLY/UDLl221hF
+hMWAlDigMcrpAXp9JTkiUgjU8/XJ0Q0fEXIBZJ7pxCZVfF7z8Kn272txJTFEf2gD
+VSykBC/t1LN//antMv5/mA5hcMvRJE9RTAG2fuSUVjUVmKLW26eKdG88EijGuOSN
+7CYv+6WC4Fh8f5zGGvZpHkw0ZwCwzP/C+3r5/ddT6GluTPOkIeaO9Z80Uy5DjJtD
+0y77saLri493wTI7zlb+QY8nGKzHeiid5n4ArARXpWcQuZNZ25PeDHWLoY1SqJtt
+A1JcN+ueZ66FN5+OfY3lda2CZqGHJ383fymI0ezwQasj6Uptgy7LHBDUhwfZOp7V
+Xx4LBKOE5TqHShaYneKT
+=PjJD
+-----END PGP SIGNATURE-----
 
-So I just toggle the two DMA bits in SCR and the UART seems to block
-since the DMA hw is not involved. Reading SCR back says that those bits
-are not set.
-To use DMA you don't have to enable it in SCR register you can also use
-the FCR register. The manual says that you can only write this DMA
-enable bit in the FCR register if the baud clock is not running. And
-guess what: same thing: I only *toggle* the DMA enable bit here (it
-remains 0 later) and the core won't hit idle.
-Same effect if I toggle this bit while the baud clock is running (the
-manual says that this bit can only be written if the baud clock is not
-running). Seems like the UART is following its own specification and it
-remains blocking once the DMA was enabled.
-It would be nice if someone from the UART-IP team could ACK this.
-
-Bah. Does it make sense to use runtime-PM if we can't hit core-off? I'm
-thinking to add a printk once dma is enabled says that runtime-pm is
-switched off.
-
->Tony
-
-Sebastian
+--FtoCNUwdcqbKhyPv--
