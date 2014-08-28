@@ -1,131 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752155AbaH1PyG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 11:54:06 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:31952 "EHLO mailhub1.si.c-s.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751273AbaH1PyD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 11:54:03 -0400
-Message-ID: <53FF5097.7090000@c-s.fr>
-Date: Thu, 28 Aug 2014 17:53:59 +0200
-From: leroy christophe <christophe.leroy@c-s.fr>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752193AbaH1Pya (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 11:54:30 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:64055 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751540AbaH1Py3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 11:54:29 -0400
+Message-ID: <53FF50B1.20009@linaro.org>
+Date: Thu, 28 Aug 2014 16:54:25 +0100
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@ingics.com>, Mark Brown <broonie@linaro.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>,
-        linux-spi@vger.kernel.org
-Subject: Re: Linux 3.16: all my drivers on SPI bus report WARNING: at drivers/base/dd.c:286
-References: <53F31707.4040300@c-s.fr>
-In-Reply-To: <53F31707.4040300@c-s.fr>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Colin Cross <ccross@android.com>, kernel-team@android.com,
+        Rob Herring <robherring2@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Nicolas Pitre <nico@linaro.org>
+Subject: Re: [PATCH v10 03/19] arm: fiq: Replace default FIQ handler
+References: <1408369264-14242-1-git-send-email-daniel.thompson@linaro.org> <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org> <1408466769-20004-4-git-send-email-daniel.thompson@linaro.org> <20140819173742.GG30401@n2100.arm.linux.org.uk> <53F39377.1070308@linaro.org> <20140828150112.GD30401@n2100.arm.linux.org.uk>
+In-Reply-To: <20140828150112.GD30401@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've been able to identify the origin of the issue. It happens since the below commit.
-Do you know what should be done to fix that ?
+On 28/08/14 16:01, Russell King - ARM Linux wrote:
+> On Tue, Aug 19, 2014 at 07:12:07PM +0100, Daniel Thompson wrote:
+>> On 19/08/14 18:37, Russell King - ARM Linux wrote:
+>>> On Tue, Aug 19, 2014 at 05:45:53PM +0100, Daniel Thompson wrote:
+>>>> +int register_fiq_nmi_notifier(struct notifier_block *nb)
+>>>> +{
+>>>> +	return atomic_notifier_chain_register(&fiq_nmi_chain, nb);
+>>>> +}
+>>>> +
+>>>> +asmlinkage void __exception_irq_entry fiq_nmi_handler(struct pt_regs *regs)
+>>>> +{
+>>>> +	struct pt_regs *old_regs = set_irq_regs(regs);
+>>>> +
+>>>> +	nmi_enter();
+>>>> +	atomic_notifier_call_chain(&fiq_nmi_chain, (unsigned long)regs, NULL);
+>>>> +	nmi_exit();
+>>>> +	set_irq_regs(old_regs);
+>>>> +}
+>>>
+>>> Really not happy with this.  What happens if a FIQ occurs while we're
+>>> inside register_fiq_nmi_notifier() - more specifically inside
+>>> atomic_notifier_chain_register() ?
+>>
+>> Should depend on which side of the rcu update we're on.
+> 
+> I just asked Paul McKenney, our RCU expert... essentially, yes, RCU
+> stuff itself is safe in this context.  However, RCU stuff can call into
+> lockdep if lockdep is configured, and there are questions over lockdep.
 
-Christophe
+Thanks for following this up.
+
+I originally formed the opinion RCU was safe from FIQ because it is also
+used to manage the NMI notification handlers for x86
+(register_nmi_handler) and I understood the runtime constraints on FIQ
+to be very similar.
+
+Note that x86 manages the notifiers itself so it uses
+list_for_each_entry_rcu() rather atomic_notifier_call_chain() but
+nevertheless I think this boils down to the same thing w.r.t. safety
+concerns.
 
 
- From 7a40054361162d2f78f332aa868fed137beb7901 Mon Sep 17 00:00:00 2001
-From: Axel Lin <axel.lin@ingics.com>
-Date: Sun, 30 Mar 2014 16:42:57 +0800
-Subject: spi: fsl-spi: Fix memory leak
+> There's some things which can be done to reduce the lockdep exposure
+> to it, such as ensuring that rcu_read_lock() is first called outside
+> of FIQ context.
 
-mpc8xxx_spi_probe() has set master->cleanup = mpc8xxx_spi_cleanup,
-however current code overrides the setting in fsl_spi_probe() and set
-master->cleanup = fsl_spi_cleanup.
-Thus the memory allocated for cs is not freed anywhere.
-Convert to use devm_kzalloc to fix the memory leak.
-
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
-
-diff --git a/drivers/spi/spi-fsl-spi.c b/drivers/spi/spi-fsl-spi.c
-index b3e7775..98ccd23 100644
---- a/drivers/spi/spi-fsl-spi.c
-+++ b/drivers/spi/spi-fsl-spi.c
-@@ -431,7 +431,7 @@ static int fsl_spi_setup(struct spi_device *spi)
-  		return -EINVAL;
-  
-  	if (!cs) {
--		cs = kzalloc(sizeof *cs, GFP_KERNEL);
-+		cs = devm_kzalloc(&spi->dev, sizeof(*cs), GFP_KERNEL);
-  		if (!cs)
-  			return -ENOMEM;
-  		spi->controller_state = cs;
--- 
-cgit v0.10.1
+lockdep is automatically disabled by calling nmi_enter() so all the
+lockdep calls should end up following the early exit path based on
+current->lockdep_recursion.
 
 
-Le 19/08/2014 11:21, leroy christophe a écrit :
-> Since Linux 3.16, for all drivers tied to SPI bus, I get the following 
-> warning on a PowerPC 8xx.
-> It doesn't happen with Linux 3.15
+> There's concerns with whether either printk() in check_flags() could
+> be reached too (flags there should always indicate that IRQs were
+> disabled, so that reduces down to a question about just the first
+> printk() there.)
+> 
+> There's also the very_verbose() stuff for RCU lockdep classes which
+> Paul says must not be enabled.
+> 
+> Lastly, Paul isn't a lockdep expert, but he sees nothing that prevents
+> lockdep doing the deadlock checking as a result of the above call.
 >
-> What can be the reason / what should I look at ?
->
-> [    3.086957] device: 'spi32766.1': device_add
-> [    3.087179] bus: 'spi': add device spi32766.1
-> [    3.087653] bus: 'spi': driver_probe_device: matched device 
-> spi32766.1 with driver lm70
-> [    3.087743] bus: 'spi': really_probe: probing driver lm70 with 
-> device spi32766.1
-> [    3.088014] ------------[ cut here ]------------
-> [    3.092348] WARNING: at drivers/base/dd.c:286
-> [    3.096637] Modules linked in:
-> [    3.099697] CPU: 0 PID: 25 Comm: kworker/u2:1 Tainted: G W 
-> 3.16.1-s3k-drv-999-svn5771_knld-999 #158
-> [    3.109610] Workqueue: deferwq deferred_probe_work_func
-> [    3.114736] task: c787f020 ti: c790c000 task.ti: c790c000
-> [    3.120062] NIP: c01df158 LR: c01df144 CTR: 00000000
-> [    3.124983] REGS: c790db30 TRAP: 0700   Tainted: G        W 
-> (3.16.1-s3k-drv-999-svn5771_knld-999)
-> [    3.134162] MSR: 00029032 <EE,ME,IR,DR,RI>  CR: 22002082 XER: 20000000
-> [    3.140703]
-> [    3.140703] GPR00: 00000001 c790dbe0 c787f020 00000044 00000054 
-> 00000308 c056da0e 20737069
-> [    3.140703] GPR08: 33323736 000ebfe0 00000308 000ebfdf 22002082 
-> 00000000 c046c5a0 c046c608
-> [    3.140703] GPR16: c046c614 c046c620 c046c62c c046c638 c046c648 
-> c046c654 c046c68c c046c6c4
-> [    3.140703] GPR24: 00000000 00000000 00000003 c0401aa0 c0596638 
-> c059662c c054e7a8 c7996800
-> [    3.170102] NIP [c01df158] driver_probe_device+0xf8/0x334
-> [    3.175431] LR [c01df144] driver_probe_device+0xe4/0x334
-> [    3.180633] Call Trace:
-> [    3.183093] [c790dbe0] [c01df144] driver_probe_device+0xe4/0x334 
-> (unreliable)
-> [    3.190147] [c790dc10] [c01dd15c] bus_for_each_drv+0x7c/0xc0
-> [    3.195741] [c790dc40] [c01df5fc] device_attach+0xcc/0xf8
-> [    3.201076] [c790dc60] [c01dd6d4] bus_probe_device+0xb4/0xc4
-> [    3.206666] [c790dc80] [c01db9f8] device_add+0x270/0x564
-> [    3.211923] [c790dcc0] [c0219e84] spi_add_device+0xc0/0x190
-> [    3.217427] [c790dce0] [c021a79c] spi_register_master+0x720/0x834
-> [    3.223455] [c790dd40] [c021cb48] of_fsl_spi_probe+0x55c/0x614
-> [    3.229234] [c790dda0] [c01e0d2c] platform_drv_probe+0x30/0x74
-> [    3.234987] [c790ddb0] [c01df18c] driver_probe_device+0x12c/0x334
-> [    3.241008] [c790dde0] [c01dd15c] bus_for_each_drv+0x7c/0xc0
-> [    3.246602] [c790de10] [c01df5fc] device_attach+0xcc/0xf8
-> [    3.251937] [c790de30] [c01dd6d4] bus_probe_device+0xb4/0xc4
-> [    3.257536] [c790de50] [c01de9d8] deferred_probe_work_func+0x98/0xe0
-> [    3.263816] [c790de70] [c00305b8] process_one_work+0x18c/0x440
-> [    3.269577] [c790dea0] [c0030a00] worker_thread+0x194/0x67c
-> [    3.275105] [c790def0] [c0039198] kthread+0xd0/0xe4
-> [    3.279911] [c790df40] [c000c6d0] ret_from_kernel_thread+0x5c/0x64
-> [    3.285970] Instruction dump:
-> [    3.288900] 80de0000 419e01d0 3b7b0038 3c60c046 7f65db78 38635264 
-> 48211b99 813f00a0
-> [    3.296559] 381f00a0 7d290278 3169ffff 7c0b4910 <0f000000> 93df0044 
-> 7fe3fb78 4bfffd4d
-> [    3.304401] ---[ end trace c75d3461bf9e2961 ]---
-> [    3.309598] device: 'hwmon1': device_add
-> [    3.310246] driver: 'lm70': driver_bound: bound to device 'spi32766.1'
-> [    3.310342] bus: 'spi': really_probe: bound device spi32766.1 to 
-> driver lm70
->
-> Christophe
+> So... this coupled with my feeling that notifiers make it too easy for
+> unreviewed code to be hooked into this path, I'm fairly sure that we
+> don't want to be calling atomic notifier chains from FIQ context.
+
+
 
