@@ -1,139 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751000AbaH1OH0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 10:07:26 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:59460 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820AbaH1OHY (ORCPT
+	id S1751261AbaH1OI2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 10:08:28 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:23743 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748AbaH1OI1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 10:07:24 -0400
-From: Shilpasri G Bhat <shilpa.bhat@linux.vnet.ibm.com>
-To: viresh.kumar@linaro.org, benh@kernel.crashing.org
-Cc: linuxppc-dev@lists.ozlabs.org, rjw@rjwysocki.net, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, preeti@linux.vnet.ibm.com,
-        Shilpasri G Bhat <shilpa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v2] cpufreq: powernv: Set the cpus to nominal frequency during reboot/kexec
-Date: Thu, 28 Aug 2014 19:36:56 +0530
-Message-Id: <1409234816-10802-1-git-send-email-shilpa.bhat@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.9.3
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082814-0005-0000-0000-000000BCEA01
+	Thu, 28 Aug 2014 10:08:27 -0400
+X-IronPort-AV: E=Sophos;i="5.04,418,1406592000"; 
+   d="scan'208";a="166782338"
+Message-ID: <53FF37D8.8070509@citrix.com>
+Date: Thu, 28 Aug 2014 15:08:24 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: Mukesh Rathor <mukesh.rathor@oracle.com>, <boris.ostrovsky@oracle.com>,
+        <david.vrabel@citrix.com>
+CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [V1 PATCH 0/2] Linux PVH: set EFER bits..
+References: <1409178815-2026-1-git-send-email-mukesh.rathor@oracle.com>
+In-Reply-To: <1409178815-2026-1-git-send-email-mukesh.rathor@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch ensures the cpus to kexec/reboot at nominal frequency.
-Nominal frequency is the highest cpu frequency on PowerPC at
-which the cores can run without getting throttled.
+On 27/08/14 23:33, Mukesh Rathor wrote:
+> Resending with comments fixed up. Please note, these are no longer
+> AMD only, but address existing broken boot and broken NX on intel.
 
-If the host kernel had set the cpus to a low pstate and then it
-kexecs/reboots to a cpufreq disabled kernel it would cause the target
-kernel to perform poorly. It will also increase the boot up time of
-the target kernel. So set the cpus to high pstate, in this case to
-nominal frequency before rebooting to avoid such scenarios.
+It's no secret that I'm fed up with the cavalier attitude to the PVH ABI.
 
-The reboot notifier will set the cpus to nominal frequncy.
+The Xen change that broke Linux PVH guests must be reverted.  This
+change may also have broken other guests (e.g., Mirage or one of the
+other unikernel OSes).
 
-Changes v1->v2:
-Invoke .target() driver callback to set the cpus to nominal frequency
-in reboot notifier, instead of calling cpufreq_suspend() as suggested
-by Viresh Kumar.
-Modified the commit message.
+The documented posted by Roger is a good start, but I'm still not going
+to apply any PVH patches to Linux until the ABI is agreed and stable and
+the document is committed to the Xen repo.
 
-Signed-off-by: Shilpasri G Bhat <shilpa.bhat@linux.vnet.ibm.com>
-Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
----
- drivers/cpufreq/powernv-cpufreq.c | 35 +++++++++++++++++++++++++++++++++++
- 1 file changed, 35 insertions(+)
-
-diff --git a/drivers/cpufreq/powernv-cpufreq.c b/drivers/cpufreq/powernv-cpufreq.c
-index 379c083..ba27c49 100644
---- a/drivers/cpufreq/powernv-cpufreq.c
-+++ b/drivers/cpufreq/powernv-cpufreq.c
-@@ -26,6 +26,7 @@
- #include <linux/cpufreq.h>
- #include <linux/smp.h>
- #include <linux/of.h>
-+#include <linux/reboot.h>
- 
- #include <asm/cputhreads.h>
- #include <asm/firmware.h>
-@@ -35,6 +36,7 @@
- #define POWERNV_MAX_PSTATES	256
- 
- static struct cpufreq_frequency_table powernv_freqs[POWERNV_MAX_PSTATES+1];
-+static bool rebooting;
- 
- /*
-  * Note: The set of pstates consists of contiguous integers, the
-@@ -284,6 +286,15 @@ static void set_pstate(void *freq_data)
- }
- 
- /*
-+ * get_nominal_index: Returns the index corresponding to the nominal
-+ * pstate in the cpufreq table
-+ */
-+static inline unsigned int get_nominal_index(void)
-+{
-+	return powernv_pstate_info.max - powernv_pstate_info.nominal;
-+}
-+
-+/*
-  * powernv_cpufreq_target_index: Sets the frequency corresponding to
-  * the cpufreq table entry indexed by new_index on the cpus in the
-  * mask policy->cpus
-@@ -293,6 +304,9 @@ static int powernv_cpufreq_target_index(struct cpufreq_policy *policy,
- {
- 	struct powernv_smp_call_data freq_data;
- 
-+	if (unlikely(rebooting) && new_index != get_nominal_index())
-+		return -EBUSY;
-+
- 	freq_data.pstate_id = powernv_freqs[new_index].driver_data;
- 
- 	/*
-@@ -317,6 +331,25 @@ static int powernv_cpufreq_cpu_init(struct cpufreq_policy *policy)
- 	return cpufreq_table_validate_and_show(policy, powernv_freqs);
- }
- 
-+static int powernv_cpufreq_reboot_notifier(struct notifier_block *nb,
-+				unsigned long action, void *unused)
-+{
-+	int cpu;
-+	struct cpufreq_policy cpu_policy;
-+
-+	rebooting = true;
-+	for_each_online_cpu(cpu) {
-+		cpufreq_get_policy(&cpu_policy, cpu);
-+		powernv_cpufreq_target_index(&cpu_policy, get_nominal_index());
-+	}
-+
-+	return NOTIFY_DONE;
-+}
-+
-+static struct notifier_block powernv_cpufreq_reboot_nb = {
-+	.notifier_call = powernv_cpufreq_reboot_notifier,
-+};
-+
- static struct cpufreq_driver powernv_cpufreq_driver = {
- 	.name		= "powernv-cpufreq",
- 	.flags		= CPUFREQ_CONST_LOOPS,
-@@ -342,12 +375,14 @@ static int __init powernv_cpufreq_init(void)
- 		return rc;
- 	}
- 
-+	register_reboot_notifier(&powernv_cpufreq_reboot_nb);
- 	return cpufreq_register_driver(&powernv_cpufreq_driver);
- }
- module_init(powernv_cpufreq_init);
- 
- static void __exit powernv_cpufreq_exit(void)
- {
-+	unregister_reboot_notifier(&powernv_cpufreq_reboot_nb);
- 	cpufreq_unregister_driver(&powernv_cpufreq_driver);
- }
- module_exit(powernv_cpufreq_exit);
--- 
-1.9.3
-
+David
