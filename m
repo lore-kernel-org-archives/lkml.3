@@ -1,228 +1,289 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754594AbaH1SyW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:54:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32869 "EHLO mx2.suse.de"
+	id S1754677AbaH1Syn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 14:54:43 -0400
+Received: from linuxhacker.ru ([217.76.32.60]:33814 "EHLO fiona.linuxhacker.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753001AbaH1Sgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:36:43 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 55/97] mm, compaction: add per-zone migration pfn cache for async compaction
-Date: Thu, 28 Aug 2014 19:35:03 +0100
-Message-Id: <1409250945-30874-56-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
-References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
+	id S1754599AbaH1Syi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:54:38 -0400
+From: Oleg Drokin <green@linuxhacker.ru>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Cc: Oleg Drokin <green@linuxhacker.ru>
+Subject: [PATCH 1/4] staging/lustre/obdclass: remove unused file md_attrs.c
+Date: Thu, 28 Aug 2014 14:54:20 -0400
+Message-Id: <1409252063-23070-2-git-send-email-green@linuxhacker.ru>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1409252063-23070-1-git-send-email-green@linuxhacker.ru>
+References: <1409252063-23070-1-git-send-email-green@linuxhacker.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Rientjes <rientjes@google.com>
+It's only used by server side luster for on-disk structure swabbing.
 
-commit 35979ef3393110ff3c12c6b94552208d3bdf1a36 upstream.
+And also remove forward declarations for its functions from
+md_object.h and lustre_idl.h
 
-Each zone has a cached migration scanner pfn for memory compaction so that
-subsequent calls to memory compaction can start where the previous call
-left off.
-
-Currently, the compaction migration scanner only updates the per-zone
-cached pfn when pageblocks were not skipped for async compaction.  This
-creates a dependency on calling sync compaction to avoid having subsequent
-calls to async compaction from scanning an enormous amount of non-MOVABLE
-pageblocks each time it is called.  On large machines, this could be
-potentially very expensive.
-
-This patch adds a per-zone cached migration scanner pfn only for async
-compaction.  It is updated everytime a pageblock has been scanned in its
-entirety and when no pages from it were successfully isolated.  The cached
-migration scanner pfn for sync compaction is updated only when called for
-sync compaction.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Greg Thelen <gthelen@google.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Oleg Drokin <green@linuxhacker.ru>
 ---
- include/linux/mmzone.h |  5 ++--
- mm/compaction.c        | 66 ++++++++++++++++++++++++++++++--------------------
- 2 files changed, 43 insertions(+), 28 deletions(-)
+ .../lustre/lustre/include/lustre/lustre_idl.h      |   6 -
+ drivers/staging/lustre/lustre/include/md_object.h  |   4 -
+ drivers/staging/lustre/lustre/obdclass/md_attrs.c  | 199 ---------------------
+ 3 files changed, 209 deletions(-)
+ delete mode 100644 drivers/staging/lustre/lustre/obdclass/md_attrs.c
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 4719985..e4d1a88 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -361,9 +361,10 @@ struct zone {
- 	/* Set to true when the PG_migrate_skip bits should be cleared */
- 	bool			compact_blockskip_flush;
+diff --git a/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h b/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h
+index 570f54f..acb77d5 100644
+--- a/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h
++++ b/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h
+@@ -321,9 +321,6 @@ enum lma_incompat {
+ };
+ #define LMA_INCOMPAT_SUPP	(LMAI_AGENT | LMAI_REMOTE_PARENT)
  
--	/* pfns where compaction scanners should start */
-+	/* pfn where compaction free scanner should start */
- 	unsigned long		compact_cached_free_pfn;
--	unsigned long		compact_cached_migrate_pfn;
-+	/* pfn where async and sync compaction migration scanner should start */
-+	unsigned long		compact_cached_migrate_pfn[2];
- #endif
- #ifdef CONFIG_MEMORY_HOTPLUG
- 	/* see spanned/present_pages for more description */
-diff --git a/mm/compaction.c b/mm/compaction.c
-index e4add42..618c919 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -89,7 +89,8 @@ static void __reset_isolation_suitable(struct zone *zone)
- 	unsigned long end_pfn = zone_end_pfn(zone);
- 	unsigned long pfn;
- 
--	zone->compact_cached_migrate_pfn = start_pfn;
-+	zone->compact_cached_migrate_pfn[0] = start_pfn;
-+	zone->compact_cached_migrate_pfn[1] = start_pfn;
- 	zone->compact_cached_free_pfn = end_pfn;
- 	zone->compact_blockskip_flush = false;
- 
-@@ -131,9 +132,10 @@ void reset_isolation_suitable(pg_data_t *pgdat)
+-extern void lustre_lma_swab(struct lustre_mdt_attrs *lma);
+-extern void lustre_lma_init(struct lustre_mdt_attrs *lma,
+-			    const struct lu_fid *fid, __u32 incompat);
+ /**
+  * SOM on-disk attributes stored in a separate xattr.
   */
- static void update_pageblock_skip(struct compact_control *cc,
- 			struct page *page, unsigned long nr_isolated,
--			bool migrate_scanner)
-+			bool set_unsuitable, bool migrate_scanner)
- {
- 	struct zone *zone = cc->zone;
-+	unsigned long pfn;
+@@ -344,8 +341,6 @@ struct som_attrs {
+ 	/** mds mount id the size is valid for */
+ 	__u64	som_mountid;
+ };
+-extern void lustre_som_swab(struct som_attrs *attrs);
+-
+ #define SOM_INCOMPAT_SUPP 0x0
  
- 	if (cc->ignore_skip_hint)
- 		return;
-@@ -141,20 +143,31 @@ static void update_pageblock_skip(struct compact_control *cc,
- 	if (!page)
- 		return;
+ /**
+@@ -362,7 +357,6 @@ struct hsm_attrs {
+ 	/** version associated with the last archiving, if any */
+ 	__u64	hsm_arch_ver;
+ };
+-extern void lustre_hsm_swab(struct hsm_attrs *attrs);
  
--	if (!nr_isolated) {
--		unsigned long pfn = page_to_pfn(page);
-+	if (nr_isolated)
-+		return;
-+
-+	/*
-+	 * Only skip pageblocks when all forms of compaction will be known to
-+	 * fail in the near future.
-+	 */
-+	if (set_unsuitable)
- 		set_pageblock_skip(page);
+ /**
+  * fid constants
+diff --git a/drivers/staging/lustre/lustre/include/md_object.h b/drivers/staging/lustre/lustre/include/md_object.h
+index bd5f618..454a230 100644
+--- a/drivers/staging/lustre/lustre/include/md_object.h
++++ b/drivers/staging/lustre/lustre/include/md_object.h
+@@ -854,10 +854,6 @@ struct lu_local_obj_desc {
+ 	struct list_head		       llod_linkage;
+ };
  
--		/* Update where compaction should restart */
--		if (migrate_scanner) {
--			if (!cc->finished_update_migrate &&
--			    pfn > zone->compact_cached_migrate_pfn)
--				zone->compact_cached_migrate_pfn = pfn;
--		} else {
--			if (!cc->finished_update_free &&
--			    pfn < zone->compact_cached_free_pfn)
--				zone->compact_cached_free_pfn = pfn;
--		}
-+	pfn = page_to_pfn(page);
-+
-+	/* Update where async and sync compaction should restart */
-+	if (migrate_scanner) {
-+		if (cc->finished_update_migrate)
-+			return;
-+		if (pfn > zone->compact_cached_migrate_pfn[0])
-+			zone->compact_cached_migrate_pfn[0] = pfn;
-+		if (cc->sync && pfn > zone->compact_cached_migrate_pfn[1])
-+			zone->compact_cached_migrate_pfn[1] = pfn;
-+	} else {
-+		if (cc->finished_update_free)
-+			return;
-+		if (pfn < zone->compact_cached_free_pfn)
-+			zone->compact_cached_free_pfn = pfn;
- 	}
- }
- #else
-@@ -166,7 +179,7 @@ static inline bool isolation_suitable(struct compact_control *cc,
- 
- static void update_pageblock_skip(struct compact_control *cc,
- 			struct page *page, unsigned long nr_isolated,
--			bool migrate_scanner)
-+			bool set_unsuitable, bool migrate_scanner)
- {
- }
- #endif /* CONFIG_COMPACTION */
-@@ -324,7 +337,8 @@ isolate_fail:
- 
- 	/* Update the pageblock-skip if the whole pageblock was scanned */
- 	if (blockpfn == end_pfn)
--		update_pageblock_skip(cc, valid_page, total_isolated, false);
-+		update_pageblock_skip(cc, valid_page, total_isolated, true,
-+				      false);
- 
- 	count_compact_events(COMPACTFREE_SCANNED, nr_scanned);
- 	if (total_isolated)
-@@ -459,7 +473,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 	unsigned long flags;
- 	bool locked = false;
- 	struct page *page = NULL, *valid_page = NULL;
--	bool skipped_async_unsuitable = false;
-+	bool set_unsuitable = true;
- 	const isolate_mode_t mode = (!cc->sync ? ISOLATE_ASYNC_MIGRATE : 0) |
- 				    (unevictable ? ISOLATE_UNEVICTABLE : 0);
- 
-@@ -536,8 +550,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 			 */
- 			mt = get_pageblock_migratetype(page);
- 			if (!cc->sync && !migrate_async_suitable(mt)) {
--				cc->finished_update_migrate = true;
--				skipped_async_unsuitable = true;
-+				set_unsuitable = false;
- 				goto next_pageblock;
- 			}
- 		}
-@@ -638,11 +651,10 @@ next_pageblock:
- 	/*
- 	 * Update the pageblock-skip information and cached scanner pfn,
- 	 * if the whole pageblock was scanned without isolating any page.
--	 * This is not done when pageblock was skipped due to being unsuitable
--	 * for async compaction, so that eventual sync compaction can try.
- 	 */
--	if (low_pfn == end_pfn && !skipped_async_unsuitable)
--		update_pageblock_skip(cc, valid_page, nr_isolated, true);
-+	if (low_pfn == end_pfn)
-+		update_pageblock_skip(cc, valid_page, nr_isolated,
-+				      set_unsuitable, true);
- 
- 	trace_mm_compaction_isolate_migratepages(nr_scanned, nr_isolated);
- 
-@@ -866,7 +878,8 @@ static int compact_finished(struct zone *zone,
- 	/* Compaction run completes if the migrate and free scanner meet */
- 	if (cc->free_pfn <= cc->migrate_pfn) {
- 		/* Let the next compaction start anew. */
--		zone->compact_cached_migrate_pfn = zone->zone_start_pfn;
-+		zone->compact_cached_migrate_pfn[0] = zone->zone_start_pfn;
-+		zone->compact_cached_migrate_pfn[1] = zone->zone_start_pfn;
- 		zone->compact_cached_free_pfn = zone_end_pfn(zone);
- 
- 		/*
-@@ -991,7 +1004,7 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 	 * information on where the scanners should start but check that it
- 	 * is initialised by ensuring the values are within zone boundaries.
- 	 */
--	cc->migrate_pfn = zone->compact_cached_migrate_pfn;
-+	cc->migrate_pfn = zone->compact_cached_migrate_pfn[cc->sync];
- 	cc->free_pfn = zone->compact_cached_free_pfn;
- 	if (cc->free_pfn < start_pfn || cc->free_pfn > end_pfn) {
- 		cc->free_pfn = end_pfn & ~(pageblock_nr_pages-1);
-@@ -999,7 +1012,8 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 	}
- 	if (cc->migrate_pfn < start_pfn || cc->migrate_pfn > end_pfn) {
- 		cc->migrate_pfn = start_pfn;
--		zone->compact_cached_migrate_pfn = cc->migrate_pfn;
-+		zone->compact_cached_migrate_pfn[0] = cc->migrate_pfn;
-+		zone->compact_cached_migrate_pfn[1] = cc->migrate_pfn;
- 	}
- 
- 	trace_mm_compaction_begin(start_pfn, cc->migrate_pfn, cc->free_pfn, end_pfn);
+-int lustre_buf2som(void *buf, int rc, struct md_som_data *msd);
+-int lustre_buf2hsm(void *buf, int rc, struct md_hsm *mh);
+-void lustre_hsm2buf(void *buf, struct md_hsm *mh);
+-
+ struct lu_ucred {
+ 	__u32	       uc_valid;
+ 	__u32	       uc_o_uid;
+diff --git a/drivers/staging/lustre/lustre/obdclass/md_attrs.c b/drivers/staging/lustre/lustre/obdclass/md_attrs.c
+deleted file mode 100644
+index d9e6348..0000000
+--- a/drivers/staging/lustre/lustre/obdclass/md_attrs.c
++++ /dev/null
+@@ -1,199 +0,0 @@
+-/*
+- * GPL HEADER START
+- *
+- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 only,
+- * as published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be useful, but
+- * WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+- * General Public License version 2 for more details (a copy is included
+- * in the LICENSE file that accompanied this code).
+- *
+- * You should have received a copy of the GNU General Public License
+- * version 2 along with this program; if not, write to the
+- * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+- * Boston, MA 021110-1307, USA
+- *
+- * GPL HEADER END
+- */
+-/*
+- * Copyright (c) 2012, Intel Corporation.
+- * Use is subject to license terms.
+- *
+- * Author: Johann Lombardi <johann.lombardi@intel.com>
+- */
+-
+-#include "../include/lustre/lustre_idl.h"
+-#include "../include/obd.h"
+-#include "../include/md_object.h"
+-
+-/**
+- * Initialize new \a lma. Only fid is stored.
+- *
+- * \param lma - is the new LMA structure to be initialized
+- * \param fid - is the FID of the object this LMA belongs to
+- * \param incompat - features that MDS must understand to access object
+- */
+-void lustre_lma_init(struct lustre_mdt_attrs *lma, const struct lu_fid *fid,
+-		     __u32 incompat)
+-{
+-	lma->lma_compat   = 0;
+-	lma->lma_incompat = incompat;
+-	lma->lma_self_fid = *fid;
+-
+-	/* If a field is added in struct lustre_mdt_attrs, zero it explicitly
+-	 * and change the test below. */
+-	LASSERT(sizeof(*lma) ==
+-		(offsetof(struct lustre_mdt_attrs, lma_self_fid) +
+-		 sizeof(lma->lma_self_fid)));
+-};
+-EXPORT_SYMBOL(lustre_lma_init);
+-
+-/**
+- * Swab, if needed, LMA structure which is stored on-disk in little-endian order.
+- *
+- * \param lma - is a pointer to the LMA structure to be swabbed.
+- */
+-void lustre_lma_swab(struct lustre_mdt_attrs *lma)
+-{
+-	/* Use LUSTRE_MSG_MAGIC to detect local endianness. */
+-	if (LUSTRE_MSG_MAGIC != cpu_to_le32(LUSTRE_MSG_MAGIC)) {
+-		__swab32s(&lma->lma_compat);
+-		__swab32s(&lma->lma_incompat);
+-		lustre_swab_lu_fid(&lma->lma_self_fid);
+-	}
+-};
+-EXPORT_SYMBOL(lustre_lma_swab);
+-
+-/**
+- * Swab, if needed, SOM structure which is stored on-disk in little-endian
+- * order.
+- *
+- * \param attrs - is a pointer to the SOM structure to be swabbed.
+- */
+-void lustre_som_swab(struct som_attrs *attrs)
+-{
+-	/* Use LUSTRE_MSG_MAGIC to detect local endianness. */
+-	if (LUSTRE_MSG_MAGIC != cpu_to_le32(LUSTRE_MSG_MAGIC)) {
+-		__swab32s(&attrs->som_compat);
+-		__swab32s(&attrs->som_incompat);
+-		__swab64s(&attrs->som_ioepoch);
+-		__swab64s(&attrs->som_size);
+-		__swab64s(&attrs->som_blocks);
+-		__swab64s(&attrs->som_mountid);
+-	}
+-};
+-EXPORT_SYMBOL(lustre_som_swab);
+-
+-/*
+- * Swab and extract SOM attributes from on-disk xattr.
+- *
+- * \param buf - is a buffer containing the on-disk SOM extended attribute.
+- * \param rc  - is the SOM xattr stored in \a buf
+- * \param msd - is the md_som_data structure where to extract SOM attributes.
+- */
+-int lustre_buf2som(void *buf, int rc, struct md_som_data *msd)
+-{
+-	struct som_attrs *attrs = (struct som_attrs *)buf;
+-
+-	if (rc == 0 ||  rc == -ENODATA)
+-		/* no SOM attributes */
+-		return -ENODATA;
+-
+-	if (rc < 0)
+-		/* error hit while fetching xattr */
+-		return rc;
+-
+-	/* check SOM compatibility */
+-	if (attrs->som_incompat & ~cpu_to_le32(SOM_INCOMPAT_SUPP))
+-		return -ENODATA;
+-
+-	/* unpack SOM attributes */
+-	lustre_som_swab(attrs);
+-
+-	/* fill in-memory msd structure */
+-	msd->msd_compat   = attrs->som_compat;
+-	msd->msd_incompat = attrs->som_incompat;
+-	msd->msd_ioepoch  = attrs->som_ioepoch;
+-	msd->msd_size     = attrs->som_size;
+-	msd->msd_blocks   = attrs->som_blocks;
+-	msd->msd_mountid  = attrs->som_mountid;
+-
+-	return 0;
+-}
+-EXPORT_SYMBOL(lustre_buf2som);
+-
+-/**
+- * Swab, if needed, HSM structure which is stored on-disk in little-endian
+- * order.
+- *
+- * \param attrs - is a pointer to the HSM structure to be swabbed.
+- */
+-void lustre_hsm_swab(struct hsm_attrs *attrs)
+-{
+-	/* Use LUSTRE_MSG_MAGIC to detect local endianness. */
+-	if (LUSTRE_MSG_MAGIC != cpu_to_le32(LUSTRE_MSG_MAGIC)) {
+-		__swab32s(&attrs->hsm_compat);
+-		__swab32s(&attrs->hsm_flags);
+-		__swab64s(&attrs->hsm_arch_id);
+-		__swab64s(&attrs->hsm_arch_ver);
+-	}
+-};
+-EXPORT_SYMBOL(lustre_hsm_swab);
+-
+-/*
+- * Swab and extract HSM attributes from on-disk xattr.
+- *
+- * \param buf - is a buffer containing the on-disk HSM extended attribute.
+- * \param rc  - is the HSM xattr stored in \a buf
+- * \param mh  - is the md_hsm structure where to extract HSM attributes.
+- */
+-int lustre_buf2hsm(void *buf, int rc, struct md_hsm *mh)
+-{
+-	struct hsm_attrs *attrs = (struct hsm_attrs *)buf;
+-
+-	if (rc == 0 ||  rc == -ENODATA)
+-		/* no HSM attributes */
+-		return -ENODATA;
+-
+-	if (rc < 0)
+-		/* error hit while fetching xattr */
+-		return rc;
+-
+-	/* unpack HSM attributes */
+-	lustre_hsm_swab(attrs);
+-
+-	/* fill md_hsm structure */
+-	mh->mh_compat   = attrs->hsm_compat;
+-	mh->mh_flags    = attrs->hsm_flags;
+-	mh->mh_arch_id  = attrs->hsm_arch_id;
+-	mh->mh_arch_ver = attrs->hsm_arch_ver;
+-
+-	return 0;
+-}
+-EXPORT_SYMBOL(lustre_buf2hsm);
+-
+-/*
+- * Pack HSM attributes.
+- *
+- * \param buf - is the output buffer where to pack the on-disk HSM xattr.
+- * \param mh  - is the md_hsm structure to pack.
+- */
+-void lustre_hsm2buf(void *buf, struct md_hsm *mh)
+-{
+-	struct hsm_attrs *attrs = (struct hsm_attrs *)buf;
+-
+-	/* copy HSM attributes */
+-	attrs->hsm_compat   = mh->mh_compat;
+-	attrs->hsm_flags    = mh->mh_flags;
+-	attrs->hsm_arch_id  = mh->mh_arch_id;
+-	attrs->hsm_arch_ver = mh->mh_arch_ver;
+-
+-	/* pack xattr */
+-	lustre_hsm_swab(attrs);
+-}
+-EXPORT_SYMBOL(lustre_hsm2buf);
 -- 
-1.8.4.5
+1.9.3
 
