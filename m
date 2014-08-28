@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752227AbaH1TwB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 15:52:01 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:60394 "EHLO bear.ext.ti.com"
+	id S1752373AbaH1TwI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 15:52:08 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:60398 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750941AbaH1Tv7 convert rfc822-to-8bit (ORCPT
+	id S1751000AbaH1TwD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 15:51:59 -0400
+	Thu, 28 Aug 2014 15:52:03 -0400
 From: "Murphy, Dan" <dmurphy@ti.com>
 To: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
@@ -16,14 +16,15 @@ CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
 	<linux-arm-kernel@lists.infradead.org>,
         "sergei.shtylyov@cogentembedded.com" 
 	<sergei.shtylyov@cogentembedded.com>
-Subject: Re: [PATCH v2 1/2] doc: dt/bindings: input: introduce TI DRV2667
- haptic driver description
-Thread-Topic: [PATCH v2 1/2] doc: dt/bindings: input: introduce TI DRV2667
- haptic driver description
-Thread-Index: AQHPwHkALSGUIn9lmUKCrHajIRhdvw==
-Date: Thu, 28 Aug 2014 19:51:30 +0000
-Message-ID: <00FC9A978A94B7418C33AFAE8A35ED49E1B3F6@DFLE09.ent.ti.com>
+Subject: Re: [PATCH v2 2/2] input: misc: Add support for the DRV2667 haptic
+ driver
+Thread-Topic: [PATCH v2 2/2] input: misc: Add support for the DRV2667 haptic
+ driver
+Thread-Index: AQHPwHkAaS/OzOVbE0C/2ZHQPgfGBQ==
+Date: Thu, 28 Aug 2014 19:51:41 +0000
+Message-ID: <00FC9A978A94B7418C33AFAE8A35ED49E1B401@DFLE09.ent.ti.com>
 References: <1408980413-8763-1-git-send-email-dmurphy@ti.com>
+ <1408980413-8763-2-git-send-email-dmurphy@ti.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -39,42 +40,568 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Bump
 
 On 08/25/2014 10:26 AM, Murphy, Dan wrote:
-> DRV2667 is a haptic/vibrator driver for Linear Resonant Actuators.
-> Adding dt binding for this part
+> Adding support for the DRV2667 haptic driver.
+> This device has the ability to store vibration
+> patterns in RAM and execute them once the GO bit
+> is set.
+> 
+> The initial driver sets a basic waveform in the
+> first waveform sequence and will play the waveform
+> when the GO bit is set and will continously play
+> the waveform until the GO bit is unset.
+> 
+> Data sheet is here:
+> http://www.ti.com/product/drv2667
 > 
 > Signed-off-by: Dan Murphy <dmurphy@ti.com>
 > ---
 > 
-> v2 - Removed extra tabs, changed node to function not device
-> added vbat-supply, and removed confusing description - https://patchwork.kernel.org/patch/4759381/
+> v2 - No updates since no comments - https://patchwork.kernel.org/patch/4759391/
 > 
->  .../devicetree/bindings/input/ti,drv2667.txt       |   17 +++++++++++++++++
->  1 file changed, 17 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/input/ti,drv2667.txt
+>  drivers/input/misc/Kconfig   |   11 +
+>  drivers/input/misc/Makefile  |    1 +
+>  drivers/input/misc/drv2667.c |  500 ++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 512 insertions(+)
+>  create mode 100644 drivers/input/misc/drv2667.c
 > 
-> diff --git a/Documentation/devicetree/bindings/input/ti,drv2667.txt b/Documentation/devicetree/bindings/input/ti,drv2667.txt
+> diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+> index 41d0ae6..51891f6 100644
+> --- a/drivers/input/misc/Kconfig
+> +++ b/drivers/input/misc/Kconfig
+> @@ -687,4 +687,15 @@ config INPUT_DRV260X_HAPTICS
+>  	  To compile this driver as a module, choose M here: the
+>  	  module will be called drv260x-haptics.
+>  
+> +config INPUT_DRV2667_HAPTICS
+> +	tristate "TI DRV2667 haptics support"
+> +	depends on INPUT && I2C
+> +	select INPUT_FF_MEMLESS
+> +	select REGMAP_I2C
+> +	help
+> +	  Say Y to enable support for the TI DRV2667 haptics driver.
+> +
+> +	  To compile this driver as a module, choose M here: the
+> +	  module will be called drv260x-haptics.
+> +
+>  endif
+> diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+> index cd4bc2d..e0cee17 100644
+> --- a/drivers/input/misc/Makefile
+> +++ b/drivers/input/misc/Makefile
+> @@ -27,6 +27,7 @@ obj-$(CONFIG_INPUT_DA9052_ONKEY)	+= da9052_onkey.o
+>  obj-$(CONFIG_INPUT_DA9055_ONKEY)	+= da9055_onkey.o
+>  obj-$(CONFIG_INPUT_DM355EVM)		+= dm355evm_keys.o
+>  obj-$(CONFIG_INPUT_DRV260X_HAPTICS)	+= drv260x.o
+> +obj-$(CONFIG_INPUT_DRV2667_HAPTICS)	+= drv2667.o
+>  obj-$(CONFIG_INPUT_GP2A)		+= gp2ap002a00f.o
+>  obj-$(CONFIG_INPUT_GPIO_BEEPER)		+= gpio-beeper.o
+>  obj-$(CONFIG_INPUT_GPIO_TILT_POLLED)	+= gpio_tilt_polled.o
+> diff --git a/drivers/input/misc/drv2667.c b/drivers/input/misc/drv2667.c
 > new file mode 100644
-> index 0000000..996382c
+> index 0000000..0f43758
 > --- /dev/null
-> +++ b/Documentation/devicetree/bindings/input/ti,drv2667.txt
-> @@ -0,0 +1,17 @@
-> +* Texas Instruments - drv2667 Haptics driver
+> +++ b/drivers/input/misc/drv2667.c
+> @@ -0,0 +1,500 @@
+> +/*
+> + * DRV2667 haptics driver family
+> + *
+> + * Author: Dan Murphy <dmurphy@ti.com>
+> + *
+> + * Copyright: (C) 2014 Texas Instruments, Inc.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful, but
+> + * WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> + * General Public License for more details.
+> + */
 > +
-> +Required properties:
-> +	- compatible - "ti,drv2667" - DRV2667
-> +	- reg -  I2C slave address
-> +	- vbat-supply - Required supply regulator
+> +#include <linux/i2c.h>
+> +#include <linux/input.h>
+> +#include <linux/module.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/regmap.h>
+> +#include <linux/slab.h>
+> +#include <linux/delay.h>
+> +#include <linux/regulator/consumer.h>
 > +
-> +Example:
+> +/* Contol registers */
+> +#define DRV2667_STATUS	0x00
+> +#define DRV2667_CTRL_1	0x01
+> +#define DRV2667_CTRL_2	0x02
+> +/* Waveform sequencer */
+> +#define DRV2667_WV_SEQ_0	0x03
+> +#define DRV2667_WV_SEQ_1	0x04
+> +#define DRV2667_WV_SEQ_2	0x05
+> +#define DRV2667_WV_SEQ_3	0x06
+> +#define DRV2667_WV_SEQ_4	0x07
+> +#define DRV2667_WV_SEQ_5	0x08
+> +#define DRV2667_WV_SEQ_6	0x09
+> +#define DRV2667_WV_SEQ_7	0x0A
+> +#define DRV2667_FIFO		0x0B
+> +#define DRV2667_PAGE		0xFF
+> +#define DRV2667_MAX_REG		DRV2667_PAGE
 > +
-> +haptics: haptics@59 {
-> +	compatible = "ti,drv2667";
-> +	reg = <0x59>;
-> +	vbat-supply = <&vbat>;
+> +#define DRV2667_PAGE_0		0x00
+> +#define DRV2667_PAGE_1		0x01
+> +#define DRV2667_PAGE_2		0x02
+> +#define DRV2667_PAGE_3		0x03
+> +#define DRV2667_PAGE_4		0x04
+> +#define DRV2667_PAGE_5		0x05
+> +#define DRV2667_PAGE_6		0x06
+> +#define DRV2667_PAGE_7		0x07
+> +#define DRV2667_PAGE_8		0x08
+> +
+> +/* RAM fields */
+> +#define DRV2667_RAM_HDR_SZ	0x0
+> +/* RAM Header addresses */
+> +#define DRV2667_RAM_START_HI	0x01
+> +#define DRV2667_RAM_START_LO	0x02
+> +#define DRV2667_RAM_STOP_HI		0x03
+> +#define DRV2667_RAM_STOP_LO		0x04
+> +#define DRV2667_RAM_REPEAT_CT	0x05
+> +/* RAM data addresses */
+> +#define DRV2667_RAM_AMP		0x06
+> +#define DRV2667_RAM_FREQ	0x07
+> +#define DRV2667_RAM_DURATION	0x08
+> +#define DRV2667_RAM_ENVELOPE	0x09
+> +
+> +/* Control 1 Register */
+> +#define DRV2667_25_VPP_GAIN		0x00
+> +#define DRV2667_50_VPP_GAIN		0x01
+> +#define DRV2667_75_VPP_GAIN		0x02
+> +#define DRV2667_100_VPP_GAIN	0x03
+> +#define DRV2667_DIGITAL_IN		0xfc
+> +#define DRV2667_ANALOG_IN		(1 << 2)
+> +
+> +/* Control 2 Register */
+> +#define DRV2667_GO			(1 << 0)
+> +#define DRV2667_STANDBY		(1 << 6)
+> +#define DRV2667_DEV_RST		(1 << 7)
+> +
+> +/* RAM Envelope settings */
+> +#define DRV2667_NO_ENV			0x00
+> +#define DRV2667_32_MS_ENV		0x01
+> +#define DRV2667_64_MS_ENV		0x02
+> +#define DRV2667_96_MS_ENV		0x03
+> +#define DRV2667_128_MS_ENV		0x04
+> +#define DRV2667_160_MS_ENV		0x05
+> +#define DRV2667_192_MS_ENV		0x06
+> +#define DRV2667_224_MS_ENV		0x07
+> +#define DRV2667_256_MS_ENV		0x08
+> +#define DRV2667_512_MS_ENV		0x09
+> +#define DRV2667_768_MS_ENV		0x0a
+> +#define DRV2667_1024_MS_ENV		0x0b
+> +#define DRV2667_1280_MS_ENV		0x0c
+> +#define DRV2667_1536_MS_ENV		0x0d
+> +#define DRV2667_1792_MS_ENV		0x0e
+> +#define DRV2667_2048_MS_ENV		0x0f
+> +
+> +/**
+> + * struct drv2667_data -
+> + * @input_dev - Pointer to the input device
+> + * @client - Pointer to the I2C client
+> + * @regmap - Register map of the device
+> + * @work - Work item used to off load the enable/disable of the vibration
+> + * @regulator - Pointer to the regulator for the IC
+> + * @magnitude - Magnitude of the vibration event
+> +**/
+> +struct drv2667_data {
+> +	struct input_dev *input_dev;
+> +	struct i2c_client *client;
+> +	struct regmap *regmap;
+> +	struct work_struct work;
+> +	struct regulator *regulator;
+> +	u32 page;
+> +	u32 magnitude;
+> +	u32 frequency;
 > +};
 > +
-> +For more product information please see the link below:
-> +http://www.ti.com/product/drv2667
+> +static struct reg_default drv2667_reg_defs[] = {
+> +	{ DRV2667_STATUS, 0x02 },
+> +	{ DRV2667_CTRL_1, 0x28 },
+> +	{ DRV2667_CTRL_2, 0x40 },
+> +	{ DRV2667_WV_SEQ_0, 0x00 },
+> +	{ DRV2667_WV_SEQ_1, 0x00 },
+> +	{ DRV2667_WV_SEQ_2, 0x00 },
+> +	{ DRV2667_WV_SEQ_3, 0x00 },
+> +	{ DRV2667_WV_SEQ_4, 0x00 },
+> +	{ DRV2667_WV_SEQ_5, 0x00 },
+> +	{ DRV2667_WV_SEQ_6, 0x00 },
+> +	{ DRV2667_WV_SEQ_7, 0x00 },
+> +	{ DRV2667_FIFO, 0x00 },
+> +	{ DRV2667_PAGE, 0x00 },
+> +};
+> +
+> +static int drv2667_set_waveform_freq(struct drv2667_data *haptics)
+> +{
+> +	unsigned int read_buf;
+> +	int freq;
+> +	int error;
+> +
+> +	/* Per the data sheet:
+> +	 * Sinusoid Frequency (Hz) = 7.8125 x Frequency
+> +	 */
+> +	freq = (haptics->frequency * 1000) / 78125;
+> +	if (freq <= 0) {
+> +		dev_err(&haptics->client->dev,
+> +			"ERROR: Frequency calculated to %i\n", freq);
+> +		return -EINVAL;
+> +	}
+> +
+> +	error = regmap_read(haptics->regmap, DRV2667_PAGE, &read_buf);
+> +	if (error) {
+> +		dev_err(&haptics->client->dev,
+> +			"Failed to read the page number: %d\n", error);
+> +		return -EIO;
+> +	}
+> +
+> +	if (read_buf == DRV2667_PAGE_0 ||
+> +		haptics->page != read_buf) {
+> +		error = regmap_write(haptics->regmap,
+> +				DRV2667_PAGE, haptics->page);
+> +		if (error) {
+> +			dev_err(&haptics->client->dev,
+> +				"Failed to set the page: %d\n", error);
+> +			return -EIO;
+> +		}
+> +	}
+> +
+> +	error = regmap_write(haptics->regmap, DRV2667_RAM_FREQ,	freq);
+> +	if (error)
+> +		dev_err(&haptics->client->dev,
+> +				"Failed to set the frequency: %d\n", error);
+> +
+> +	/* Reset back to original page */
+> +	if (read_buf == DRV2667_PAGE_0 ||
+> +		haptics->page != read_buf) {
+> +		error = regmap_write(haptics->regmap, DRV2667_PAGE, read_buf);
+> +		if (error) {
+> +			dev_err(&haptics->client->dev,
+> +					"Failed to set the page: %d\n", error);
+> +				return -EIO;
+> +			}
+> +	}
+> +
+> +	return error;
+> +}
+> +
+> +static void drv2667_worker(struct work_struct *work)
+> +{
+> +	struct drv2667_data *haptics = container_of(work, struct drv2667_data, work);
+> +	int error;
+> +
+> +	if (haptics->magnitude) {
+> +		error = regmap_write(haptics->regmap,
+> +				DRV2667_PAGE, haptics->page);
+> +		if (error) {
+> +			dev_err(&haptics->client->dev,
+> +				"Failed to set the page: %d\n", error);
+> +			return;
+> +		}
+> +
+> +		error = regmap_write(haptics->regmap, DRV2667_RAM_AMP,
+> +				haptics->magnitude);
+> +		if (error) {
+> +			dev_err(&haptics->client->dev,
+> +				"Failed to set the amplitude: %d\n", error);
+> +			return;
+> +		}
+> +
+> +		error = regmap_write(haptics->regmap,
+> +				DRV2667_PAGE, DRV2667_PAGE_0);
+> +		if (error) {
+> +			dev_err(&haptics->client->dev,
+> +				"Failed to set the page: %d\n", error);
+> +			return;
+> +		}
+> +
+> +		error = regmap_write(haptics->regmap,
+> +				DRV2667_CTRL_2, DRV2667_GO);
+> +		if (error) {
+> +			dev_err(&haptics->client->dev,
+> +				"Failed to set the GO bit: %d\n", error);
+> +		}
+> +	} else {
+> +		error = regmap_update_bits(haptics->regmap, DRV2667_CTRL_2,
+> +				DRV2667_GO, 0);
+> +		if (error) {
+> +			dev_err(&haptics->client->dev,
+> +				"Failed to unset the GO bit: %d\n", error);
+> +		}
+> +	}
+> +}
+> +
+> +static int drv2667_haptics_play(struct input_dev *input, void *data,
+> +				struct ff_effect *effect)
+> +{
+> +	struct drv2667_data *haptics = input_get_drvdata(input);
+> +
+> +	if (effect->u.rumble.strong_magnitude > 0)
+> +		haptics->magnitude = effect->u.rumble.strong_magnitude;
+> +	else if (effect->u.rumble.weak_magnitude > 0)
+> +		haptics->magnitude = effect->u.rumble.weak_magnitude;
+> +	else
+> +		haptics->magnitude = 0;
+> +
+> +	schedule_work(&haptics->work);
+> +
+> +	return 0;
+> +}
+> +
+> +static void drv2667_close(struct input_dev *input)
+> +{
+> +	struct drv2667_data *haptics = input_get_drvdata(input);
+> +	int error;
+> +
+> +	cancel_work_sync(&haptics->work);
+> +
+> +	error = regmap_update_bits(haptics->regmap, DRV2667_CTRL_2,
+> +				DRV2667_STANDBY, 1);
+> +	if (error)
+> +		dev_err(&haptics->client->dev,
+> +			"Failed to enter standby mode: %d\n", error);
+> +}
+> +
+> +static const struct reg_default drv2667_init_regs[] = {
+> +	{ DRV2667_CTRL_2, 0 },
+> +	{ DRV2667_CTRL_1, DRV2667_25_VPP_GAIN },
+> +	{ DRV2667_WV_SEQ_0, 1 },
+> +	{ DRV2667_WV_SEQ_1, 0 }
+> +};
+> +
+> +static const struct reg_default drv2667_page1_init[] = {
+> +	{ DRV2667_RAM_HDR_SZ, 0x05 },
+> +	{ DRV2667_RAM_START_HI, 0x80 },
+> +	{ DRV2667_RAM_START_LO, 0x06 },
+> +	{ DRV2667_RAM_STOP_HI, 0x00 },
+> +	{ DRV2667_RAM_STOP_LO, 0x09 },
+> +	{ DRV2667_RAM_REPEAT_CT, 0 },
+> +	{ DRV2667_RAM_DURATION, 0x05 },
+> +	{ DRV2667_RAM_ENVELOPE, DRV2667_NO_ENV },
+> +	{ DRV2667_RAM_AMP, 0x60 },
+> +};
+> +
+> +static int drv2667_init(struct drv2667_data *haptics)
+> +{
+> +	int error;
+> +
+> +	/* Set default haptic frequency to 195Hz on Page 1*/
+> +	haptics->frequency = 195;
+> +	haptics->page = DRV2667_PAGE_1;
+> +
+> +	error = regmap_register_patch(haptics->regmap,
+> +				      drv2667_init_regs,
+> +				      ARRAY_SIZE(drv2667_init_regs));
+> +	if (error) {
+> +		dev_err(&haptics->client->dev,
+> +			"Failed to write init registers: %d\n",
+> +			error);
+> +		return error;
+> +	}
+> +
+> +	error = regmap_write(haptics->regmap, DRV2667_PAGE, haptics->page);
+> +	if (error) {
+> +		dev_err(&haptics->client->dev, "Failed to set page: %d\n",
+> +			error);
+> +		goto error_out;
+> +	}
+> +
+> +	error = drv2667_set_waveform_freq(haptics);
+> +	if (error)
+> +		goto error_page;
+> +
+> +	error = regmap_register_patch(haptics->regmap,
+> +				      drv2667_page1_init,
+> +				      ARRAY_SIZE(drv2667_page1_init));
+> +	if (error) {
+> +		dev_err(&haptics->client->dev,
+> +			"Failed to write page registers: %d\n",
+> +			error);
+> +		return error;
+> +	}
+> +
+> +	error = regmap_write(haptics->regmap, DRV2667_PAGE, DRV2667_PAGE_0);
+> +	return error;
+> +
+> +error_page:
+> +	regmap_write(haptics->regmap, DRV2667_PAGE, DRV2667_PAGE_0);
+> +error_out:
+> +	return error;
+> +}
+> +
+> +static const struct regmap_config drv2667_regmap_config = {
+> +	.reg_bits = 8,
+> +	.val_bits = 8,
+> +
+> +	.max_register = DRV2667_MAX_REG,
+> +	.reg_defaults = drv2667_reg_defs,
+> +	.num_reg_defaults = ARRAY_SIZE(drv2667_reg_defs),
+> +	.cache_type = REGCACHE_NONE,
+> +};
+> +
+> +static int drv2667_probe(struct i2c_client *client,
+> +			 const struct i2c_device_id *id)
+> +{
+> +	struct drv2667_data *haptics;
+> +	int error;
+> +
+> +	haptics = devm_kzalloc(&client->dev, sizeof(*haptics), GFP_KERNEL);
+> +	if (!haptics)
+> +		return -ENOMEM;
+> +
+> +	haptics->regulator = devm_regulator_get(&client->dev, "vbat");
+> +	if (IS_ERR(haptics->regulator)) {
+> +		error = PTR_ERR(haptics->regulator);
+> +		dev_err(&client->dev,
+> +			"unable to get regulator, error: %d\n", error);
+> +		return error;
+> +	}
+> +
+> +	haptics->input_dev = devm_input_allocate_device(&client->dev);
+> +	if (!haptics->input_dev) {
+> +		dev_err(&client->dev, "Failed to allocate input device\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	haptics->input_dev->name = "drv2667:haptics";
+> +	haptics->input_dev->dev.parent = client->dev.parent;
+> +	haptics->input_dev->close = drv2667_close;
+> +	input_set_drvdata(haptics->input_dev, haptics);
+> +	input_set_capability(haptics->input_dev, EV_FF, FF_RUMBLE);
+> +
+> +	error = input_ff_create_memless(haptics->input_dev, NULL,
+> +					drv2667_haptics_play);
+> +	if (error) {
+> +		dev_err(&client->dev, "input_ff_create() failed: %d\n",
+> +			error);
+> +		return error;
+> +	}
+> +
+> +	INIT_WORK(&haptics->work, drv2667_worker);
+> +
+> +	haptics->client = client;
+> +	i2c_set_clientdata(client, haptics);
+> +
+> +	haptics->regmap = devm_regmap_init_i2c(client, &drv2667_regmap_config);
+> +	if (IS_ERR(haptics->regmap)) {
+> +		error = PTR_ERR(haptics->regmap);
+> +		dev_err(&client->dev, "Failed to allocate register map: %d\n",
+> +			error);
+> +		return error;
+> +	}
+> +
+> +	error = drv2667_init(haptics);
+> +	if (error) {
+> +		dev_err(&client->dev, "Device init failed: %d\n", error);
+> +		return error;
+> +	}
+> +
+> +	error = input_register_device(haptics->input_dev);
+> +	if (error) {
+> +		dev_err(&client->dev, "couldn't register input device: %d\n",
+> +			error);
+> +		return error;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +#ifdef CONFIG_PM_SLEEP
+> +static int drv2667_suspend(struct device *dev)
+> +{
+> +	struct drv2667_data *haptics = dev_get_drvdata(dev);
+> +	int ret = 0;
+> +
+> +	mutex_lock(&haptics->input_dev->mutex);
+> +
+> +	if (haptics->input_dev->users) {
+> +		ret = regmap_update_bits(haptics->regmap, DRV2667_CTRL_2,
+> +				DRV2667_STANDBY, 1);
+> +		if (ret) {
+> +			dev_err(dev, "Failed to set standby mode\n");
+> +			regulator_disable(haptics->regulator);
+> +			goto out;
+> +		}
+> +
+> +		ret = regulator_disable(haptics->regulator);
+> +		if (ret) {
+> +			dev_err(dev, "Failed to disable regulator\n");
+> +			regmap_update_bits(haptics->regmap,
+> +					   DRV2667_CTRL_2,
+> +					   DRV2667_STANDBY, 0);
+> +		}
+> +	}
+> +out:
+> +	mutex_unlock(&haptics->input_dev->mutex);
+> +	return ret;
+> +}
+> +
+> +static int drv2667_resume(struct device *dev)
+> +{
+> +	struct drv2667_data *haptics = dev_get_drvdata(dev);
+> +	int ret = 0;
+> +
+> +	mutex_lock(&haptics->input_dev->mutex);
+> +
+> +	if (haptics->input_dev->users) {
+> +		ret = regulator_enable(haptics->regulator);
+> +		if (ret) {
+> +			dev_err(dev, "Failed to enable regulator\n");
+> +			goto out;
+> +		}
+> +
+> +		ret = regmap_update_bits(haptics->regmap, DRV2667_CTRL_2,
+> +					 DRV2667_STANDBY, 0);
+> +		if (ret) {
+> +			dev_err(dev, "Failed to unset standby mode\n");
+> +			regulator_disable(haptics->regulator);
+> +			goto out;
+> +		}
+> +
+> +	}
+> +
+> +out:
+> +	mutex_unlock(&haptics->input_dev->mutex);
+> +	return ret;
+> +}
+> +#endif
+> +
+> +static SIMPLE_DEV_PM_OPS(drv2667_pm_ops, drv2667_suspend, drv2667_resume);
+> +
+> +static const struct i2c_device_id drv2667_id[] = {
+> +	{ "drv2667", 0 },
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(i2c, drv2667_id);
+> +
+> +#ifdef CONFIG_OF
+> +static const struct of_device_id drv2667_of_match[] = {
+> +	{ .compatible = "ti,drv2667", },
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(of, drv2667_of_match);
+> +#endif
+> +
+> +static struct i2c_driver drv2667_driver = {
+> +	.probe		= drv2667_probe,
+> +	.driver		= {
+> +		.name	= "drv2667-haptics",
+> +		.owner	= THIS_MODULE,
+> +		.of_match_table = of_match_ptr(drv2667_of_match),
+> +		.pm	= &drv2667_pm_ops,
+> +	},
+> +	.id_table = drv2667_id,
+> +};
+> +module_i2c_driver(drv2667_driver);
+> +
+> +MODULE_ALIAS("platform:drv2667-haptics");
+> +MODULE_DESCRIPTION("TI DRV2667 haptics driver");
+> +MODULE_LICENSE("GPL");
+> +MODULE_AUTHOR("Dan Murphy <dmurphy@ti.com>");
 > 
 
 
