@@ -1,52 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752483AbaH1Vjv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 17:39:51 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:32958 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752047AbaH1Vju (ORCPT
+	id S1752600AbaH1VkY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 17:40:24 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:55056 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752528AbaH1VkW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 17:39:50 -0400
-Date: Thu, 28 Aug 2014 14:39:45 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] doc: memory-barriers.txt: Correct example for reorderings
-Message-ID: <20140828213945.GP5001@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1408972138-12246-1-git-send-email-bobby.prani@gmail.com>
- <53FF8B77.7000103@infradead.org>
- <20140828210010.GM5001@linux.vnet.ibm.com>
- <CAJhHMCDxsukXe_HW55iJp0oCAWgrosxCRX1AfocS6QBzxaD0pw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJhHMCDxsukXe_HW55iJp0oCAWgrosxCRX1AfocS6QBzxaD0pw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082821-0928-0000-0000-0000047BB590
+	Thu, 28 Aug 2014 17:40:22 -0400
+From: Shawn Bohrer <shawn.bohrer@gmail.com>
+To: Roland Dreier <roland@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tomk@rgmadvisors.com,
+        Yishai Hadas <yishaih@mellanox.com>,
+        Or Gerlitz <ogerlitz@mellanox.com>, Haggai Eran <haggaie@mellanox.com>,
+        Shawn Bohrer <sbohrer@rgmadvisors.com>
+Subject: [PATCH v2] ib_umem_release should decrement mm->pinned_vm from ib_umem_get
+Date: Thu, 28 Aug 2014 16:39:51 -0500
+Message-Id: <1409261991-11533-1-git-send-email-shawn.bohrer@gmail.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 28, 2014 at 05:15:50PM -0400, Pranith Kumar wrote:
-> On Thu, Aug 28, 2014 at 5:00 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> >
-> > I am really confused by the ordering of the new lines, as I would have
-> > expected the "x"s to be replaced with "y"s and vice versa.  But the
-> > ordering of the various combinations does not matter, and each line
-> > looks OK.
-> 
-> Since x = A was replaced by x = B and y = B was replaced by y = A, I
-> just converted all x = load A to x = load B. Similarly for y. I think
-> we can do either this or as you suggested replacing x's with y's.
+From: Shawn Bohrer <sbohrer@rgmadvisors.com>
 
-Fair enough.  The other thing that confused me was the "STORE B=4,"
-showing up early in your replacement.
+In debugging an application that receives -ENOMEM from ib_reg_mr() I
+found that ib_umem_get() can fail because the pinned_vm count has
+wrapped causing it to always be larger than the lock limit even with
+RLIMIT_MEMLOCK set to RLIM_INFINITY.
 
-							Thanx, Paul
+The wrapping of pinned_vm occurs because the process that calls
+ib_reg_mr() will have its mm->pinned_vm count incremented.  Later a
+different process with a different mm_struct than the one that allocated
+the ib_umem struct ends up releasing it which results in decrementing
+the new processes mm->pinned_vm count past zero and wrapping.
+
+I'm not entirely sure what circumstances cause a different process to
+release the ib_umem than the one that allocated it but the kernel stack
+trace of the freeing process from my situation looks like the following:
+
+Call Trace:
+ [<ffffffff814d64b1>] dump_stack+0x19/0x1b
+ [<ffffffffa0b522a5>] ib_umem_release+0x1f5/0x200 [ib_core]
+ [<ffffffffa0b90681>] mlx4_ib_destroy_qp+0x241/0x440 [mlx4_ib]
+ [<ffffffffa0b4d93c>] ib_destroy_qp+0x12c/0x170 [ib_core]
+ [<ffffffffa0cc7129>] ib_uverbs_close+0x259/0x4e0 [ib_uverbs]
+ [<ffffffff81141cba>] __fput+0xba/0x240
+ [<ffffffff81141e4e>] ____fput+0xe/0x10
+ [<ffffffff81060894>] task_work_run+0xc4/0xe0
+ [<ffffffff810029e5>] do_notify_resume+0x95/0xa0
+ [<ffffffff814e3dd0>] int_signal+0x12/0x17
+
+The following patch fixes the issue by storing the pid struct of the
+process that calls ib_umem_get() so that ib_umem_release and/or
+ib_umem_account() can properly decrement the pinned_vm count of the
+correct mm_struct.
+
+Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
+---
+
+v2 changes:
+* Updated to use get_task_pid to avoid keeping a reference to the mm
+
+I've run this patch on our test pool for general testing for a few days
+and today verified that it solves the reported issue above on our
+production machines.
+
+
+ drivers/infiniband/core/umem.c |   18 ++++++++++++------
+ include/rdma/ib_umem.h         |    1 +
+ 2 files changed, 13 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/infiniband/core/umem.c b/drivers/infiniband/core/umem.c
+index a3a2e9c..01750d6 100644
+--- a/drivers/infiniband/core/umem.c
++++ b/drivers/infiniband/core/umem.c
+@@ -105,6 +105,7 @@ struct ib_umem *ib_umem_get(struct ib_ucontext *context, unsigned long addr,
+ 	umem->length    = size;
+ 	umem->offset    = addr & ~PAGE_MASK;
+ 	umem->page_size = PAGE_SIZE;
++	umem->pid       = get_task_pid(current, PIDTYPE_PID);
+ 	/*
+ 	 * We ask for writable memory if any access flags other than
+ 	 * "remote read" are set.  "Local write" and "remote write"
+@@ -198,6 +199,7 @@ out:
+ 	if (ret < 0) {
+ 		if (need_release)
+ 			__ib_umem_release(context->device, umem, 0);
++		put_pid(umem->pid);
+ 		kfree(umem);
+ 	} else
+ 		current->mm->pinned_vm = locked;
+@@ -230,15 +232,18 @@ void ib_umem_release(struct ib_umem *umem)
+ {
+ 	struct ib_ucontext *context = umem->context;
+ 	struct mm_struct *mm;
++	struct task_struct *task;
+ 	unsigned long diff;
+ 
+ 	__ib_umem_release(umem->context->device, umem, 1);
+ 
+-	mm = get_task_mm(current);
+-	if (!mm) {
+-		kfree(umem);
+-		return;
+-	}
++	task = get_pid_task(umem->pid, PIDTYPE_PID);
++	put_pid(umem->pid);
++	if (!task)
++		goto out;
++	mm = get_task_mm(task);
++	if (!mm)
++		goto out;
+ 
+ 	diff = PAGE_ALIGN(umem->length + umem->offset) >> PAGE_SHIFT;
+ 
+@@ -262,9 +267,10 @@ void ib_umem_release(struct ib_umem *umem)
+ 	} else
+ 		down_write(&mm->mmap_sem);
+ 
+-	current->mm->pinned_vm -= diff;
++	mm->pinned_vm -= diff;
+ 	up_write(&mm->mmap_sem);
+ 	mmput(mm);
++out:
+ 	kfree(umem);
+ }
+ EXPORT_SYMBOL(ib_umem_release);
+diff --git a/include/rdma/ib_umem.h b/include/rdma/ib_umem.h
+index 1ea0b65..a2bf41e 100644
+--- a/include/rdma/ib_umem.h
++++ b/include/rdma/ib_umem.h
+@@ -47,6 +47,7 @@ struct ib_umem {
+ 	int                     writable;
+ 	int                     hugetlb;
+ 	struct work_struct	work;
++	struct pid             *pid;
+ 	struct mm_struct       *mm;
+ 	unsigned long		diff;
+ 	struct sg_table sg_head;
+-- 
+1.7.7.6
 
