@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751898AbaH1Pf0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 11:35:26 -0400
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:43094 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831AbaH1PfZ (ORCPT
+	id S1751565AbaH1Pmk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 11:42:40 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:42453 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751111AbaH1Pmj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 11:35:25 -0400
-Date: Thu, 28 Aug 2014 16:35:19 +0100
+	Thu, 28 Aug 2014 11:42:39 -0400
+Date: Thu, 28 Aug 2014 16:42:33 +0100
 From: Lee Jones <lee.jones@linaro.org>
 To: torvalds@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Fixes for MFD due for the v3.17 -rcs
-Message-ID: <20140828153519.GV24579@lee--X1>
+Subject: [GIT PULL] Fixes for Backlight due for the v3.17 -rcs
+Message-ID: <20140828154233.GW24579@lee--X1>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
@@ -28,38 +28,20 @@ The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/mfd-fixes-3.17
+  git://git.kernel.org/pub/scm/linux/kernel/git/lee/backlight.git tags/backlight-fixes-3.17
 
-for you to fetch changes up to daebabd578647440d41fc9b48d8c7a88dc2f7ab5:
+for you to fetch changes up to 937222c4dda495277a8dfbc18bf7e54fe670105c:
 
-  mfd: twl4030-power: Fix PM idle pin configuration to not conflict with regulators (2014-08-28 15:57:55 +0100)
+  pwm-backlight: Fix bogus request for GPIO#0 when instantiated from DT (2014-08-20 13:23:00 +0100)
 
 ----------------------------------------------------------------
-Couple of simple fixes due for the 3.17 rcs
-
-(and a sneaky document addition that slipped from the previous pull-request)
+One simple fix to invalidate GPIO non-request.
 ----------------------------------------------------------------
-Fabio Estevam (1):
-      mfd: ab8500-core: Use 'ifdef' for config options
+Lothar Waßmann (1):
+      pwm-backlight: Fix bogus request for GPIO#0 when instantiated from DT
 
-Hans Wennborg (2):
-      mfd: omap-usb-host: Fix %d confusingly prefixed with 0x in format string
-      mfd: htc-i2cpld: Fix %d confusingly prefixed with 0x in format string
-
-Linus Walleij (1):
-      mfd: tc3589x: Add device tree bindings
-
-Tony Lindgren (1):
-      mfd: twl4030-power: Fix PM idle pin configuration to not conflict with regulators
-
- Documentation/devicetree/bindings/mfd/tc3589x.txt | 107 ++++++++++++++++++++++
- arch/arm/boot/dts/omap3-n900.dts                  |   2 +-
- drivers/mfd/ab8500-core.c                         |   2 +-
- drivers/mfd/htc-i2cpld.c                          |   2 +-
- drivers/mfd/omap-usb-host.c                       |   2 +-
- drivers/mfd/twl4030-power.c                       |  20 ++--
- 6 files changed, 121 insertions(+), 14 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/tc3589x.txt
+ drivers/video/backlight/pwm_bl.c | 1 +
+ 1 file changed, 1 insertion(+)
 
 -- 
 Lee Jones
