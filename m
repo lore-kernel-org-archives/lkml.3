@@ -1,63 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757351AbaH1FrN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 01:47:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59863 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757129AbaH1FrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 01:47:12 -0400
-Date: Thu, 28 Aug 2014 11:16:49 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] rcu: Make nocb leader kthreads process pending callbacks
- after spawning
-Message-ID: <20140828054649.GJ13052@grmbl.mre>
-References: <1409172220-2804-1-git-send-email-bobby.prani@gmail.com>
+	id S934526AbaH1Fxh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 01:53:37 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:33415 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934267AbaH1Fxg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 01:53:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409172220-2804-1-git-send-email-bobby.prani@gmail.com>
+In-Reply-To: <1409209212-18730-1-git-send-email-pramod.gurav@smartplayin.com>
+References: <1409209212-18730-1-git-send-email-pramod.gurav@smartplayin.com>
+Date: Thu, 28 Aug 2014 11:23:35 +0530
+X-Google-Sender-Auth: c60aYo0zTrAPcvwG4E6vBTShZ4c
+Message-ID: <CAOh2x=mLsGNZGJVDNVh4QvyKKkGZFnHdKktB_YtAHKHxZd=vFw@mail.gmail.com>
+Subject: Re: [PATCH 1/3] cpufreq: cpu0: Release clk and regulator in remove function
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Pramod Gurav <pramod.gurav@smartplayin.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Wed) 27 Aug 2014 [16:43:40], Pranith Kumar wrote:
-> The nocb callbacks generated before the nocb kthreads are spawned are
-> enqueued in the nocb queue for later processing. Commit fbce7497ee5af ("rcu:
-> Parallelize and economize NOCB kthread wakeups") introduced nocb leader kthreads
-> which checked the nocb_leader_wake flag to see if there were any such pending
-> callbacks. A case was reported in which newly spawned leader kthreads were not
-> processing the pending callbacks as this flag was not set, which led to a boot
-> hang.
-> 
-> The following commit ensures that the newly spawned nocb kthreads process the
-> pending callbacks by allowing the kthreads to run immediately after spawning
-> instead of waiting. This is done by inverting the logic of nocb_leader_wake
-> tests to nocb_leader_sleep which allows us to use the default initialization of
-> this flag to 0 to let the kthreads run.
-> 
-> Reported-by: Amit Shah <amit.shah@redhat.com>
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-> Link: http://www.spinics.net/lists/kernel/msg1802899.html
+On Thu, Aug 28, 2014 at 12:30 PM, Pramod Gurav
+<pramod.gurav@smartplayin.com> wrote:
+> This function releases clk and regulator in remove function for clean
+> unloading.
+>
+> CC: Shawn Guo <shawn.guo@linaro.org>
+> CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+> CC: Viresh Kumar <viresh.kumar@linaro.org>
+> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
 > ---
->  kernel/rcu/tree.h        |  2 +-
->  kernel/rcu/tree_plugin.h | 24 ++++++++++++------------
->  2 files changed, 13 insertions(+), 13 deletions(-)
+>  drivers/cpufreq/cpufreq-cpu0.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
 
-I'd have split this into two patches: one for the variable rename and
-one for fixing the bug.
-
-However, the backport Paul posted does work fine for me on master, so
-you can add my
-
-Tested-by: Amit Shah <amit.shah@redhat.com>
-
-Thanks,
-
-		Amit
+I already have most of this queued up, have sent V3 and cc'd now. See
+if you need anything over that.
