@@ -1,149 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750924AbaH1MgW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 08:36:22 -0400
-Received: from mail-oi0-f44.google.com ([209.85.218.44]:49061 "EHLO
-	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750731AbaH1MgV (ORCPT
+	id S1751237AbaH1Mgt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 08:36:49 -0400
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.109]:20207 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751029AbaH1Mgp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 08:36:21 -0400
+	Thu, 28 Aug 2014 08:36:45 -0400
+X-Greylist: delayed 418 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Aug 2014 08:36:44 EDT
+X-Env-Sender: Johannes.Thumshirn@men.de
+X-Msg-Ref: server-10.tower-193.messagelabs.com!1409228983!14572650!1
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.3; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Thu, 28 Aug 2014 14:29:44 +0200
+From: Johannes Thumshirn <johannes.thumshirn@men.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+CC: <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Johannes Thumshirn <johannes.thumshirn@men.de>
+Subject: [PATCH] tty: serial: men_z135_uart: Fix driver for changes in hardware
+Date: Thu, 28 Aug 2014 14:32:20 +0200
+Message-ID: <1409229140-14407-1-git-send-email-johannes.thumshirn@men.de>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-In-Reply-To: <CAPybu_0gf3XKsBFsxGPptq9m588K81fdh1sbOgMWM+hDVaHiWQ@mail.gmail.com>
-References: <1409068061-10855-1-git-send-email-ricardo.ribalda@gmail.com>
- <53FDEA48.9030301@intel.com> <CAPybu_1Tzik3yegY2rrXKd7ii1Bzn-ep-gXG5MDZ-rJ2D71-Rw@mail.gmail.com>
- <53FDF8D9.60103@intel.com> <CAPybu_363MD6bFesB44JkkjJYyi+B8KFG9Q1s6aeKNmvvNCz=A@mail.gmail.com>
- <53FF0765.3050509@intel.com> <CAPybu_0gf3XKsBFsxGPptq9m588K81fdh1sbOgMWM+hDVaHiWQ@mail.gmail.com>
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Thu, 28 Aug 2014 14:36:00 +0200
-Message-ID: <CAPybu_1UytoxXk-t7u_3vQ6KL-5DmVUz1u5PiDLysBCvgit--A@mail.gmail.com>
-Subject: Re: [PATCH] xhci-ring: Fix Null pointer dereference
-To: Mathias Nyman <mathias.nyman@intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [192.1.1.31]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Mathias
+16z135 IP Core has changed so the driver needs to be updated to respect
+these changes. The following changes have been made:
 
-This is the dmesg output after your patch. No WARN(), no crash :), but
-still some weird messages:
+* Don't invert the 16z135 modem status register when reading.
+* Add module parameter to configure the (baud rate dependent) RX timeout.
+  Character timeout in seconds = (timeout_reg * baud_reg * 4)/freq_reg.
+* Enable the handling of UART core's automatic flow control feature.
+  When AFE is active disable generation of modem status IRQs.
+* Rework the handling of IRQs to be conform with newer FPGA versions and
+  take precautions not to miss an interrupt because of the destructive read
+  of the IIR register.
 
-[  146.511623] usb 2-2: new SuperSpeed USB device number 2 using xhci_hcd
-[  146.531652] usb 2-2: New USB device found, idVendor=0525, idProduct=a4a5
-[  146.531661] usb 2-2: New USB device strings: Mfr=3, Product=4, SerialNumber=0
-[  146.531666] usb 2-2: Product: Mass Storage Gadget
-[  146.531670] usb 2-2: Manufacturer: Linux 3.16.0-qtec-standard+ with net2280
-[  147.772743] usb-storage 2-2:1.0: USB Mass Storage device detected
-[  147.773018] usb-storage 2-2:1.0: Quirks match for vid 0525 pid a4a5: 10000
-[  147.773185] scsi host6: usb-storage 2-2:1.0
-[  147.773361] usbcore: registered new interface driver usb-storage
-[  147.788950] usbcore: registered new interface driver uas
-[  148.772699] scsi 6:0:0:0: Direct-Access     Linux    File-Stor
-Gadget 0316 PQ: 0 ANSI: 2
-[  148.773192] sd 6:0:0:0: Attached scsi generic sg2 type 0
-[  148.774860] sd 6:0:0:0: [sdb] 32768 512-byte logical blocks: (16.7
-MB/16.0 MiB)
-[  148.888294] usb 2-2: reset SuperSpeed USB device number 2 using xhci_hcd
-[  148.905202] xhci_hcd 0000:0e:00.0: xHCI xhci_drop_endpoint called
-with disabled ep ffff880036f3cc88
-[  148.905207] xhci_hcd 0000:0e:00.0: xHCI xhci_drop_endpoint called
-with disabled ep ffff880036f3cc40
-[  148.906324] xhci_hcd 0000:0e:00.0: Error: Failed finding new dequeue state
-[  148.912639] sd 6:0:0:0: [sdb] Test WP failed, assume Write Enabled
-[  149.014972] sd 6:0:0:0: [sdb] Write cache: enabled, read cache:
-enabled, doesn't support DPO or FUA
-[  149.128640] usb 2-2: reset SuperSpeed USB device number 2 using xhci_hcd
-[  149.145953] xhci_hcd 0000:0e:00.0: xHCI xhci_drop_endpoint called
-with disabled ep ffff880036f3cc88
-[  149.145963] xhci_hcd 0000:0e:00.0: xHCI xhci_drop_endpoint called
-with disabled ep ffff880036f3cc40
-[  149.147525] xhci_hcd 0000:0e:00.0: Error: Failed finding new dequeue state
-[  149.268626] usb 2-2: reset SuperSpeed USB device number 2 using xhci_hcd
-[  149.285563] xhci_hcd 0000:0e:00.0: xHCI xhci_drop_endpoint called
-with disabled ep ffff880036f3cc88
-[  149.285573] xhci_hcd 0000:0e:00.0: xHCI xhci_drop_endpoint called
-with disabled ep ffff880036f3cc40
-[  149.286904] xhci_hcd 0000:0e:00.0: Error: Failed finding new dequeue state
-[  149.404621] usb 2-2: reset SuperSpeed USB device number 2 using xhci_hcd
-[  149.421397] xhci_hcd 0000:0e:00.0: xHCI xhci_drop_endpoint called
-with disabled ep ffff880036f3cc88
-[  149.421404] xhci_hcd 0000:0e:00.0: xHCI xhci_drop_endpoint called
-with disabled ep ffff880036f3cc40
-[  149.422855] xhci_hcd 0000:0e:00.0: Error: Failed finding new dequeue state
-[  149.431667]  sdb: unknown partition table
-[  149.544713] usb 2-2: reset SuperSpeed USB device number 2 using xhci_hcd
-[  149.561649] xhci_hcd 0000:0e:00.0: xHCI xhci_drop_endpoint called
-with disabled ep ffff880036f3cc88
-[  149.561658] xhci_hcd 0000:0e:00.0: xHCI xhci_drop_endpoint called
-with disabled ep ffff880036f3cc40
-[  149.563021] xhci_hcd 0000:0e:00.0: Error: Failed finding new dequeue state
-[  149.680733] usb 2-2: reset SuperSpeed USB device number 2 using xhci_hcd
-[  149.697766] xhci_hcd 0000:0e:00.0: xHCI xhci_drop_endpoint called
-with disabled ep ffff880036f3cc88
-[  149.697774] xhci_hcd 0000:0e:00.0: xHCI xhci_drop_endpoint called
-with disabled ep ffff880036f3cc40
-[  149.699025] xhci_hcd 0000:0e:00.0: Error: Failed finding new dequeue state
-[  149.706700] sd 6:0:0:0: [sdb] Write cache: enabled, read cache:
-enabled, doesn't support DPO or FUA
-[  149.706712] sd 6:0:0:0: [sdb] Attached SCSI disk
-[  149.820933] usb 2-2: reset SuperSpeed USB device number 2 using xhci_hcd
-[  149.837887] xhci_hcd 0000:0e:00.0: xHCI xhci_drop_endpoint called
-with disabled ep ffff880036f3cc88
-[  149.837895] xhci_hcd 0000:0e:00.0: xHCI xhci_drop_endpoint called
-with disabled ep ffff880036f3cc40
-[  149.839242] xhci_hcd 0000:0e:00.0: Error: Failed finding new dequeue state
-[  155.752101] usb 3-1.5.6: reset high-speed USB device number 10 using ehci-pci
-[  155.866642] cdc_acm 3-1.5.6:1.1: This device cannot do calls on its
-own. It is not a modem.
-[  155.866756] cdc_acm 3-1.5.6:1.1: ttyACM0: USB ACM device
-[  155.867613] usb 3-1.5.6: usbfs: process 1521 (pool) did not claim
-interface 0 before use
-[  160.471327] pool[1680]: segfault at fffffffffc0e61c0 ip
-00007f570f036200 sp 00007f570639f0d0 error 5 in
-libc-2.19.so[7f570efee000+19f000]
+Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
+---
+ drivers/tty/serial/men_z135_uart.c | 87 +++++++++++++++++++++++---------------
+ 1 file changed, 53 insertions(+), 34 deletions(-)
 
-Thanks!
-
-On Thu, Aug 28, 2014 at 12:50 PM, Ricardo Ribalda Delgado
-<ricardo.ribalda@gmail.com> wrote:
-> Hello
->
-> On Thu, Aug 28, 2014 at 12:41 PM, Mathias Nyman <mathias.nyman@intel.com> wrote:
->> On 08/27/2014 07:10 PM, Ricardo Ribalda Delgado wrote:
->>> Perhaps we could apply both patches to current tree and backport mine
->>> to older kernels?
->>>
->>
->> The already applied patch fixes many other issues than just this one.
->> backporting it to stable < 3.13 turned out to not be that difficult, stable maintainers
->> said they can do it themselves.
->
-> then I agree, there is absolutely no need for my patch :).
->
-> I have a broken gadget driver that was very good at triggering the
-> bug, I will try it out with your patch.
->
->
-> Thanks!
->
->>
->> Stable kernels prefer patches that are already upstream, as Documentation/stable_kernel_rules.txt states:
->> "- It or an equivalent fix must already exist in Linus' tree (upstream)."
->>
->> There is no need for the other patch anymore, not upstream nor to stable
->>
->> -Mathias
->>
->
->
->
-> --
-> Ricardo Ribalda
-
-
-
+diff --git a/drivers/tty/serial/men_z135_uart.c b/drivers/tty/serial/men_z135_uart.c
+index 30e9e60..d31b8a4 100644
+--- a/drivers/tty/serial/men_z135_uart.c
++++ b/drivers/tty/serial/men_z135_uart.c
+@@ -34,12 +34,11 @@
+ #define MEN_Z135_CONF_REG		0x808
+ #define MEN_Z135_UART_FREQ		0x80c
+ #define MEN_Z135_BAUD_REG		0x810
+-#define MENZ135_TIMEOUT			0x814
++#define MEN_Z135_TIMEOUT		0x814
+ 
+ #define MEN_Z135_MEM_SIZE		0x818
+ 
+-#define IS_IRQ(x) ((x) & 1)
+-#define IRQ_ID(x) (((x) >> 1) & 7)
++#define IRQ_ID(x) ((x) & 0x1f)
+ 
+ #define MEN_Z135_IER_RXCIEN BIT(0)		/* RX Space IRQ */
+ #define MEN_Z135_IER_TXCIEN BIT(1)		/* TX Space IRQ */
+@@ -94,11 +93,11 @@
+ #define MEN_Z135_LSR_TEXP BIT(6)
+ #define MEN_Z135_LSR_RXFIFOERR BIT(7)
+ 
+-#define MEN_Z135_IRQ_ID_MST 0
+-#define MEN_Z135_IRQ_ID_TSA 1
+-#define MEN_Z135_IRQ_ID_RDA 2
+-#define MEN_Z135_IRQ_ID_RLS 3
+-#define MEN_Z135_IRQ_ID_CTI 6
++#define MEN_Z135_IRQ_ID_RLS BIT(0)
++#define MEN_Z135_IRQ_ID_RDA BIT(1)
++#define MEN_Z135_IRQ_ID_CTI BIT(2)
++#define MEN_Z135_IRQ_ID_TSA BIT(3)
++#define MEN_Z135_IRQ_ID_MST BIT(4)
+ 
+ #define LCR(x) (((x) >> MEN_Z135_LCR_SHIFT) & 0xff)
+ 
+@@ -118,6 +117,10 @@ static int align;
+ module_param(align, int, S_IRUGO);
+ MODULE_PARM_DESC(align, "Keep hardware FIFO write pointer aligned, default 0");
+ 
++static int rx_timeout;
++module_param(rx_timeout, uint, S_IRUGO);
++MODULE_PARM_DESC(rx_timeout, "RX timeout");
++
+ struct men_z135_port {
+ 	struct uart_port port;
+ 	struct mcb_device *mdev;
+@@ -373,43 +376,47 @@ out:
+  * @irq: The IRQ number
+  * @data: Pointer to UART port
+  *
+- * Check IIR register to see which tasklet to start.
++ * Check IIR register to find the cause of the interrupt and handle it.
++ * It is possible that multiple interrupts reason bits are set and reading
++ * the IIR is a destructive read, so we always need to check for all possible
++ * interrupts and handle them.
+  */
+ static irqreturn_t men_z135_intr(int irq, void *data)
+ {
+ 	struct men_z135_port *uart = (struct men_z135_port *)data;
+ 	struct uart_port *port = &uart->port;
++	int handled = 0;
+ 	int irq_id;
+ 
+ 	uart->stat_reg = ioread32(port->membase + MEN_Z135_STAT_REG);
+-	/* IRQ pending is low active */
+-	if (IS_IRQ(uart->stat_reg))
+-		return IRQ_NONE;
+-
+ 	irq_id = IRQ_ID(uart->stat_reg);
+-	switch (irq_id) {
+-	case MEN_Z135_IRQ_ID_MST:
+-		men_z135_handle_modem_status(uart);
+-		break;
+-	case MEN_Z135_IRQ_ID_TSA:
+-		men_z135_handle_tx(uart);
+-		break;
+-	case MEN_Z135_IRQ_ID_CTI:
+-		dev_dbg(&uart->mdev->dev, "Character Timeout Indication\n");
+-		/* Fallthrough */
+-	case MEN_Z135_IRQ_ID_RDA:
+-		/* Reading data clears RX IRQ */
+-		men_z135_handle_rx(uart);
+-		break;
+-	case MEN_Z135_IRQ_ID_RLS:
++
++	if (!irq_id)
++		goto out;
++
++	if (irq_id & MEN_Z135_IRQ_ID_RLS) {
+ 		men_z135_handle_lsr(uart);
+-		break;
+-	default:
+-		dev_warn(&uart->mdev->dev, "Unknown IRQ id %d\n", irq_id);
+-		return IRQ_NONE;
++		handled = 1;
+ 	}
+ 
+-	return IRQ_HANDLED;
++	if (irq_id & MEN_Z135_IRQ_ID_RDA || irq_id & MEN_Z135_IRQ_ID_CTI) {
++		if (irq_id & MEN_Z135_IRQ_ID_CTI)
++			dev_dbg(&uart->mdev->dev, "Character Timeout Indication\n");
++		men_z135_handle_rx(uart);
++		handled = 1;
++	}
++
++	if (irq_id & MEN_Z135_IRQ_ID_TSA) {
++		men_z135_handle_tx(uart);
++		handled = 1;
++	}
++
++	if (irq_id & MEN_Z135_IRQ_ID_MST) {
++		men_z135_handle_modem_status(uart);
++		handled = 1;
++	}
++out:
++	return IRQ_RETVAL(handled);
+ }
+ 
+ /**
+@@ -495,7 +502,7 @@ static unsigned int men_z135_get_mctrl(struct uart_port *port)
+ 
+ 	stat_reg = ioread32(port->membase + MEN_Z135_STAT_REG);
+ 
+-	msr = ~((stat_reg >> 8) & 0xff);
++	msr = (stat_reg >> 8) & 0xff;
+ 
+ 	if (msr & MEN_Z135_MSR_CTS)
+ 		mctrl |= TIOCM_CTS;
+@@ -584,6 +591,9 @@ static int men_z135_startup(struct uart_port *port)
+ 
+ 	iowrite32(conf_reg, port->membase + MEN_Z135_CONF_REG);
+ 
++	if (rx_timeout)
++		iowrite32(rx_timeout, port->membase + MEN_Z135_TIMEOUT);
++
+ 	return 0;
+ }
+ 
+@@ -603,6 +613,7 @@ static void men_z135_set_termios(struct uart_port *port,
+ 				struct ktermios *termios,
+ 				struct ktermios *old)
+ {
++	struct men_z135_port *uart = to_men_z135(port);
+ 	unsigned int baud;
+ 	u32 conf_reg;
+ 	u32 bd_reg;
+@@ -643,6 +654,14 @@ static void men_z135_set_termios(struct uart_port *port,
+ 	} else
+ 		lcr |= MEN_Z135_PAR_DIS << MEN_Z135_PEN_SHIFT;
+ 
++	if (termios->c_cflag & CRTSCTS) {
++		conf_reg |= MEN_Z135_MCR_RCFC;
++		men_z135_reg_clr(uart, MEN_Z135_CONF_REG, MEN_Z135_IER_MSIEN);
++	} else {
++		conf_reg &= ~MEN_Z135_MCR_RCFC;
++		men_z135_reg_set(uart, MEN_Z135_CONF_REG, MEN_Z135_IER_MSIEN);
++	}
++
+ 	termios->c_cflag &= ~CMSPAR; /* Mark/Space parity is not supported */
+ 
+ 	conf_reg |= lcr << MEN_Z135_LCR_SHIFT;
 -- 
-Ricardo Ribalda
+1.9.1
+
