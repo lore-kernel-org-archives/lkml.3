@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259AbaH1TBR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 15:01:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32860 "EHLO mx2.suse.de"
+	id S1754904AbaH1TBh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 15:01:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32862 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752861AbaH1Sg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:36:28 -0400
+	id S1752233AbaH1Sg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:36:27 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Jiri Slaby <jslaby@suse.cz>
 Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 39/97] mm: vmscan: shrink_slab: rename max_pass -> freeable
-Date: Thu, 28 Aug 2014 19:34:47 +0100
-Message-Id: <1409250945-30874-40-git-send-email-mgorman@suse.de>
+Subject: [PATCH 38/97] mm: vmscan: respect NUMA policy mask when shrinking slab on direct reclaim
+Date: Thu, 28 Aug 2014 19:34:46 +0100
+Message-Id: <1409250945-30874-39-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
 References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
@@ -22,109 +22,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Vladimir Davydov <vdavydov@parallels.com>
 
-commit d5bc5fd3fcb7b8dfb431694a8c8052466504c10c upstream.
+commit 99120b772b52853f9a2b829a21dd44d9b20558f1 upstream.
 
-The name `max_pass' is misleading, because this variable actually keeps
-the estimate number of freeable objects, not the maximal number of
-objects we can scan in this pass, which can be twice that.  Rename it to
-reflect its actual meaning.
+When direct reclaim is executed by a process bound to a set of NUMA
+nodes, we should scan only those nodes when possible, but currently we
+will scan kmem from all online nodes even if the kmem shrinker is NUMA
+aware.  That said, binding a process to a particular NUMA node won't
+prevent it from shrinking inode/dentry caches from other nodes, which is
+not good.  Fix this.
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Acked-by: David Rientjes <rientjes@google.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Dave Chinner <dchinner@redhat.com>
+Cc: Glauber Costa <glommer@gmail.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/vmscan.c | 26 +++++++++++++-------------
- 1 file changed, 13 insertions(+), 13 deletions(-)
+ mm/vmscan.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index b59d151..9de5a52 100644
+index e36294b..b59d151 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -224,15 +224,15 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
- 	unsigned long freed = 0;
- 	unsigned long long delta;
- 	long total_scan;
--	long max_pass;
-+	long freeable;
- 	long nr;
- 	long new_nr;
- 	int nid = shrinkctl->nid;
- 	long batch_size = shrinker->batch ? shrinker->batch
- 					  : SHRINK_BATCH;
+@@ -2424,8 +2424,8 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 			unsigned long lru_pages = 0;
  
--	max_pass = shrinker->count_objects(shrinker, shrinkctl);
--	if (max_pass == 0)
-+	freeable = shrinker->count_objects(shrinker, shrinkctl);
-+	if (freeable == 0)
- 		return 0;
- 
- 	/*
-@@ -244,14 +244,14 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
- 
- 	total_scan = nr;
- 	delta = (4 * nr_pages_scanned) / shrinker->seeks;
--	delta *= max_pass;
-+	delta *= freeable;
- 	do_div(delta, lru_pages + 1);
- 	total_scan += delta;
- 	if (total_scan < 0) {
- 		printk(KERN_ERR
- 		"shrink_slab: %pF negative objects to delete nr=%ld\n",
- 		       shrinker->scan_objects, total_scan);
--		total_scan = max_pass;
-+		total_scan = freeable;
- 	}
- 
- 	/*
-@@ -260,26 +260,26 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
- 	 * shrinkers to return -1 all the time. This results in a large
- 	 * nr being built up so when a shrink that can do some work
- 	 * comes along it empties the entire cache due to nr >>>
--	 * max_pass.  This is bad for sustaining a working set in
-+	 * freeable. This is bad for sustaining a working set in
- 	 * memory.
- 	 *
- 	 * Hence only allow the shrinker to scan the entire cache when
- 	 * a large delta change is calculated directly.
- 	 */
--	if (delta < max_pass / 4)
--		total_scan = min(total_scan, max_pass / 2);
-+	if (delta < freeable / 4)
-+		total_scan = min(total_scan, freeable / 2);
- 
- 	/*
- 	 * Avoid risking looping forever due to too large nr value:
- 	 * never try to free more than twice the estimate number of
- 	 * freeable entries.
- 	 */
--	if (total_scan > max_pass * 2)
--		total_scan = max_pass * 2;
-+	if (total_scan > freeable * 2)
-+		total_scan = freeable * 2;
- 
- 	trace_mm_shrink_slab_start(shrinker, shrinkctl, nr,
- 				nr_pages_scanned, lru_pages,
--				max_pass, delta, total_scan);
-+				freeable, delta, total_scan);
- 
- 	/*
- 	 * Normally, we should not scan less than batch_size objects in one
-@@ -292,12 +292,12 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
- 	 *
- 	 * We detect the "tight on memory" situations by looking at the total
- 	 * number of objects we want to scan (total_scan). If it is greater
--	 * than the total number of objects on slab (max_pass), we must be
-+	 * than the total number of objects on slab (freeable), we must be
- 	 * scanning at high prio and therefore should try to reclaim as much as
- 	 * possible.
- 	 */
- 	while (total_scan >= batch_size ||
--	       total_scan >= max_pass) {
-+	       total_scan >= freeable) {
- 		unsigned long ret;
- 		unsigned long nr_to_scan = min(batch_size, total_scan);
+ 			nodes_clear(shrink->nodes_to_scan);
+-			for_each_zone_zonelist(zone, z, zonelist,
+-					gfp_zone(sc->gfp_mask)) {
++			for_each_zone_zonelist_nodemask(zone, z, zonelist,
++					gfp_zone(sc->gfp_mask), sc->nodemask) {
+ 				if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
+ 					continue;
  
 -- 
 1.8.4.5
