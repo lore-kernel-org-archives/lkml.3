@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817AbaH1Xgg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 19:36:36 -0400
-Received: from mga11.intel.com ([192.55.52.93]:36134 "EHLO mga11.intel.com"
+	id S1752874AbaH1Xgq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 19:36:46 -0400
+Received: from mga02.intel.com ([134.134.136.20]:34943 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752750AbaH1Xgd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 19:36:33 -0400
+	id S1752831AbaH1Xgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 19:36:43 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="378412858"
+X-IronPort-AV: E=Sophos;i="5.04,421,1406617200"; 
+   d="scan'208";a="565065784"
 From: "John L. Hammond" <john.hammond@intel.com>
 To: <greg@kroah.com>, <andreas.dilger@intel.com>, <oleg.drokin@intel.com>
 CC: <linux-kernel@vger.kernel.org>, "John L. Hammond" <john.hammond@intel.com>
-Subject: [PATCH 07/11] staging/lustre: remove linux/lustre_log.h
-Date: Thu, 28 Aug 2014 18:35:15 -0500
-Message-ID: <1409268919-16155-8-git-send-email-john.hammond@intel.com>
+Subject: [PATCH 04/11] staging/lustre: remove linux/lustre_handles.h
+Date: Thu, 28 Aug 2014 18:35:12 -0500
+Message-ID: <1409268919-16155-5-git-send-email-john.hammond@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1409268919-16155-1-git-send-email-john.hammond@intel.com>
 References: <1409268919-16155-1-git-send-email-john.hammond@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Originating-IP: [10.1.200.107]
+X-Originating-IP: [10.1.200.108]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "John L. Hammond" <john.hammond@intel.com>
 
-Remove the superfluous header lustre/include/linux/lustre_log.h.
+Remove lustre/include/linux/lustre_acl.h and kill the cfs_rcu_head_t
+typedef.
 
 Signed-off-by: John L. Hammond <john.hammond@intel.com>
 ---
- .../lustre/lustre/include/linux/lustre_log.h       |   57 --------------------
- drivers/staging/lustre/lustre/include/lustre_log.h |    2 -
- 2 files changed, 59 deletions(-)
- delete mode 100644 drivers/staging/lustre/lustre/include/linux/lustre_log.h
+ .../lustre/lustre/include/linux/lustre_handles.h   |   52 --------------------
+ .../staging/lustre/lustre/include/lustre_handles.h |   10 ++--
+ .../lustre/lustre/obdclass/lustre_handles.c        |    2 +-
+ 3 files changed, 8 insertions(+), 56 deletions(-)
+ delete mode 100644 drivers/staging/lustre/lustre/include/linux/lustre_handles.h
 
-diff --git a/drivers/staging/lustre/lustre/include/linux/lustre_log.h b/drivers/staging/lustre/lustre/include/linux/lustre_log.h
+diff --git a/drivers/staging/lustre/lustre/include/linux/lustre_handles.h b/drivers/staging/lustre/lustre/include/linux/lustre_handles.h
 deleted file mode 100644
-index e9c8e56..0000000
---- a/drivers/staging/lustre/lustre/include/linux/lustre_log.h
+index 459b238..0000000
+--- a/drivers/staging/lustre/lustre/include/linux/lustre_handles.h
 +++ /dev/null
-@@ -1,57 +0,0 @@
+@@ -1,52 +0,0 @@
 -/*
 - * GPL HEADER START
 - *
@@ -74,44 +76,74 @@ index e9c8e56..0000000
 -/*
 - * This file is part of Lustre, http://www.lustre.org/
 - * Lustre is a trademark of Sun Microsystems, Inc.
-- *
-- * lustre/include/linux/lustre_log.h
-- *
-- * Generic infrastructure for managing a collection of logs.
-- * These logs are used for:
-- *  - orphan recovery: OST adds record on create
-- *  - mtime/size consistency: the OST adds a record on first write
-- *  - open/unlinked objects: OST adds a record on destroy
-- *
-- *  - mds unlink log: the MDS adds an entry upon delete
-- *
-- *  - raid1 replication log between OST's
-- *  - MDS replication logs
 - */
 -
--#ifndef _LINUX_LUSTRE_LOG_H
--#define _LINUX_LUSTRE_LOG_H
+-#ifndef __LINUX_LUSTRE_HANDLES_H_
+-#define __LINUX_LUSTRE_HANDLES_H_
 -
--#ifndef _LUSTRE_LOG_H
--#error Do not #include this file directly. #include <lustre_log.h> instead
+-#ifndef __LUSTRE_HANDLES_H_
+-#error Do not #include this file directly. #include <lustre_handles.h> instead
 -#endif
 -
--#define LUSTRE_LOG_SERVER
+-#include <asm/types.h>
+-#include <asm/atomic.h>
+-#include <linux/list.h>
+-#include <linux/spinlock.h>
+-#include <linux/types.h>
+-
+-#include <linux/rcupdate.h> /* for rcu_head{} */
+-typedef struct rcu_head cfs_rcu_head_t;
+-
 -
 -#endif
-diff --git a/drivers/staging/lustre/lustre/include/lustre_log.h b/drivers/staging/lustre/lustre/include/lustre_log.h
-index d02ea24..3932505 100644
---- a/drivers/staging/lustre/lustre/include/lustre_log.h
-+++ b/drivers/staging/lustre/lustre/include/lustre_log.h
-@@ -56,8 +56,6 @@
+diff --git a/drivers/staging/lustre/lustre/include/lustre_handles.h b/drivers/staging/lustre/lustre/include/lustre_handles.h
+index 94989c5..726bbd3 100644
+--- a/drivers/staging/lustre/lustre/include/lustre_handles.h
++++ b/drivers/staging/lustre/lustre/include/lustre_handles.h
+@@ -42,7 +42,11 @@
   * @{
   */
  
--#include "linux/lustre_log.h"
--
- #include "obd_class.h"
- #include "obd_ost.h"
- #include "lustre/lustre_idl.h"
+-#include "linux/lustre_handles.h"
++#include <linux/atomic.h>
++#include <linux/list.h>
++#include <linux/rcupdate.h>
++#include <linux/spinlock.h>
++#include <linux/types.h>
+ 
+ #include "../../include/linux/libcfs/libcfs.h"
+ 
+@@ -69,7 +73,7 @@ struct portals_handle {
+ 	struct portals_handle_ops	*h_ops;
+ 
+ 	/* newly added fields to handle the RCU issue. -jxiong */
+-	cfs_rcu_head_t			h_rcu;
++	struct rcu_head			h_rcu;
+ 	spinlock_t			h_lock;
+ 	unsigned int			h_size:31;
+ 	unsigned int			h_in:1;
+@@ -84,7 +88,7 @@ void class_handle_hash(struct portals_handle *,
+ void class_handle_unhash(struct portals_handle *);
+ void class_handle_hash_back(struct portals_handle *);
+ void *class_handle2object(__u64 cookie);
+-void class_handle_free_cb(cfs_rcu_head_t *);
++void class_handle_free_cb(struct rcu_head *rcu);
+ int class_handle_init(void);
+ void class_handle_cleanup(void);
+ 
+diff --git a/drivers/staging/lustre/lustre/obdclass/lustre_handles.c b/drivers/staging/lustre/lustre/obdclass/lustre_handles.c
+index 2010463..f720e31 100644
+--- a/drivers/staging/lustre/lustre/obdclass/lustre_handles.c
++++ b/drivers/staging/lustre/lustre/obdclass/lustre_handles.c
+@@ -178,7 +178,7 @@ void *class_handle2object(__u64 cookie)
+ }
+ EXPORT_SYMBOL(class_handle2object);
+ 
+-void class_handle_free_cb(cfs_rcu_head_t *rcu)
++void class_handle_free_cb(struct rcu_head *rcu)
+ {
+ 	struct portals_handle *h = RCU2HANDLE(rcu);
+ 	void *ptr = (void *)(unsigned long)h->h_cookie;
 -- 
 1.7.9.5
 
