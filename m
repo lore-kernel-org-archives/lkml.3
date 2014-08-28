@@ -1,94 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016AbaH1PNB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 11:13:01 -0400
-Received: from mga01.intel.com ([192.55.52.88]:35861 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750958AbaH1PM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 11:12:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,418,1406617200"; 
-   d="scan'208";a="591178053"
-Date: Thu, 28 Aug 2014 11:11:26 -0400
-From: Matthew Wilcox <willy@linux.intel.com>
-To: Boaz Harrosh <boaz@plexistor.com>
-Cc: Jens Axboe <axboe@fb.com>, Dmitry Monakhov <dmonakhov@openvz.org>,
-        Ross Zwisler <ross.zwisler@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 3/5] brd: Add getgeo to block ops
-Message-ID: <20140828151126.GI3285@linux.intel.com>
-References: <53FDF7AD.5000709@plexistor.com>
- <53FDF919.6020006@plexistor.com>
- <20140827175327.GF3285@linux.intel.com>
- <53FED9A7.3020608@plexistor.com>
+	id S1752202AbaH1PNV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 11:13:21 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:53379 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751034AbaH1PNT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 11:13:19 -0400
+Message-ID: <53FF4702.9020509@gmail.com>
+Date: Thu, 28 Aug 2014 23:13:06 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53FED9A7.3020608@plexistor.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: David Vrabel <david.vrabel@citrix.com>, konrad.wilk@oracle.com,
+        boris.ostrovsky@oracle.com
+CC: xen-devel@lists.xenproject.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] drivers/xen/evtchn.c: Check failure for evtchn_make_refcounted()
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 28, 2014 at 10:26:31AM +0300, Boaz Harrosh wrote:
-> On 08/27/2014 08:53 PM, Matthew Wilcox wrote:
-> > On Wed, Aug 27, 2014 at 06:28:25PM +0300, Boaz Harrosh wrote:
-> >> We set all hd_geometry members to 1, because this way fdisk
-> >> math will not try its crazy geometry math and get stuff totally wrong.
-> >>
-> >> I was trying to get some values that will make fdisk Want to align
-> >> first sector on 4K (like 8, 16, 20, ... sectors) but nothing worked,
-> >> I searched the net the math is not your regular simple multiplication
-> >> at all.
-> >>
-> >> If you managed to get these please tell me. I would love to solve
-> >> this.
-> >>
-> >> But for now we use 4k physical sectors for fixing fdisk alignment
-> >> issues, and setting these here to something that will not make
-> >> fdisk serve us with crazy numbers.
-> > 
-> > Are you saying that fdisk ignores the 4k physical sectors (that you set up
-> > in patch 5/5) in favour of the geometry exposed here?  That doesn't make
-> > sense to me, since it would misalign 4k-physical ATA drives if it did.
-> > 
-> 
-> No with patch 5/5 the 4k stuff is good.
-> 
-> What I'm saying is that with (64, 32, x) fdisk offers a very high first
-> sector and with all 1(s) it will allow a low value like 4k
-> 
-> For example with (64, 32, x) + the 4k patch in 5/5 with a 4M brd disk it
-> will offer 40 (20K) as first possible sector.
-> 
-> With this patch applied it will offer 8 (4K) as first sector, which is what
-> I want
+evtchn_make_refcounted() may return failure, so need process the failure
+case. In failure case, it need call unbind_from_irqhandler() just like
+evtchn_unbind_from_user() has done.
 
-That makes for a much better changelog entry than what you wrote above :-)
+irq_from_evtchn() must be OK when bind_evtchn_to_irqhandler() succeed,
+so need not check it again.
 
-> > I don't see anywhere else in the kernel reporting (1,1,1).  The most common
-> > form to fake a geometry uses (64, 32, x), including SCSI.
-> >
-> 
-> But is it wrong? why?
-> 
-> I guess that until now no one cared about wasted space at the beginning
-> but with brd I do. Your words this is all "fake" then why at all.
-> With all 1(s) the CHS convoluted math just disappears and gets out of the
-> way.
+Also still need remain the closing port code, because when the failure
+occurs, unbind_from_irqhandler() will not close port internally.
 
-It is all fake.  Nobody's reported their real CHS geometry in twenty
-years.  A drive's geometry has been more complex than a fixed number
-of sectors per track, and anyway the hd_geometry struct tops out at
-describing a 500GB drive (with 63 heads and 255 sectors).
 
-My concern is that clearly (64, 32, x) works since other drivers are
-doing it.  (1, 1, 1) is stepping into the unknown, and we don't know
-what applications are going to make of this value.
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ drivers/xen/evtchn.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-This really needs to be something that's handled by the block midlayer.
-Forcing drivers to make this stuff up is only leading to pain and
-suffering.  Drivers that don't have a getgeo method should be given a
-default geometry that makes all known users of getgeo do the right thing.
-
+diff --git a/drivers/xen/evtchn.c b/drivers/xen/evtchn.c
+index 00f40f0..8a629d6 100644
+--- a/drivers/xen/evtchn.c
++++ b/drivers/xen/evtchn.c
+@@ -311,6 +311,11 @@ static int evtchn_bind_to_user(struct per_user_data *u, int port)
+ 		goto err;
+ 
+ 	rc = evtchn_make_refcounted(port);
++	if (rc < 0) {
++		unbind_from_irqhandler(irq_from_evtchn(port), evtchn);
++		goto err;
++	}
++
+ 	return rc;
+ 
+ err:
+-- 
+1.7.11.7
