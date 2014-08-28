@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753100AbaH1Sgu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:36:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32872 "EHLO mx2.suse.de"
+	id S1754538AbaH1Sw7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 14:52:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32869 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753063AbaH1Sgq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:36:46 -0400
+	id S1753079AbaH1Sgt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:36:49 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Jiri Slaby <jslaby@suse.cz>
 Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 58/97] mm/compaction: do not count migratepages when unnecessary
-Date: Thu, 28 Aug 2014 19:35:06 +0100
-Message-Id: <1409250945-30874-59-git-send-email-mgorman@suse.de>
+Subject: [PATCH 61/97] x86/mm: In the PTE swapout page reclaim case clear the accessed bit instead of flushing the TLB
+Date: Thu, 28 Aug 2014 19:35:09 +0100
+Message-Id: <1409250945-30874-62-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
 References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
@@ -20,170 +20,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vlastimil Babka <vbabka@suse.cz>
+From: Shaohua Li <shli@kernel.org>
 
-commit f8c9301fa5a2a8b873c67f2a3d8230d5c13f61b7 upstream.
+commit b13b1d2d8692b437203de7a404c6b809d2cc4d99 upstream.
 
-During compaction, update_nr_listpages() has been used to count remaining
-non-migrated and free pages after a call to migrage_pages().  The
-freepages counting has become unneccessary, and it turns out that
-migratepages counting is also unnecessary in most cases.
+We use the accessed bit to age a page at page reclaim time,
+and currently we also flush the TLB when doing so.
 
-The only situation when it's needed to count cc->migratepages is when
-migrate_pages() returns with a negative error code.  Otherwise, the
-non-negative return value is the number of pages that were not migrated,
-which is exactly the count of remaining pages in the cc->migratepages
-list.
+But in some workloads TLB flush overhead is very heavy. In my
+simple multithreaded app with a lot of swap to several pcie
+SSDs, removing the tlb flush gives about 20% ~ 30% swapout
+speedup.
 
-Furthermore, any non-zero count is only interesting for the tracepoint of
-mm_compaction_migratepages events, because after that all remaining
-unmigrated pages are put back and their count is set to 0.
+Fortunately just removing the TLB flush is a valid optimization:
+on x86 CPUs, clearing the accessed bit without a TLB flush
+doesn't cause data corruption.
 
-This patch therefore removes update_nr_listpages() completely, and changes
-the tracepoint definition so that the manual counting is done only when
-the tracepoint is enabled, and only when migrate_pages() returns a
-negative error code.
+It could cause incorrect page aging and the (mistaken) reclaim of
+hot pages, but the chance of that should be relatively low.
 
-Furthermore, migrate_pages() and the tracepoints won't be called when
-there's nothing to migrate.  This potentially avoids some wasted cycles
-and reduces the volume of uninteresting mm_compaction_migratepages events
-where "nr_migrated=0 nr_failed=0".  In the stress-highalloc mmtest, this
-was about 75% of the events.  The mm_compaction_isolate_migratepages event
-is better for determining that nothing was isolated for migration, and
-this one was just duplicating the info.
+So as a performance optimization don't flush the TLB when
+clearing the accessed bit, it will eventually be flushed by
+a context switch or a VM operation anyway. [ In the rare
+event of it not getting flushed for a long time the delay
+shouldn't really matter because there's no real memory
+pressure for swapout to react to. ]
 
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Rik van Riel <riel@redhat.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Shaohua Li <shli@fusionio.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Hugh Dickins <hughd@google.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Cc: linux-mm@kvack.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20140408075809.GA1764@kernel.org
+[ Rewrote the changelog and the code comments. ]
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/trace/events/compaction.h | 25 +++++++++++++++++++++----
- mm/compaction.c                   | 31 +++++++------------------------
- 2 files changed, 28 insertions(+), 28 deletions(-)
+ arch/x86/mm/pgtable.c | 21 ++++++++++++++-------
+ 1 file changed, 14 insertions(+), 7 deletions(-)
 
-diff --git a/include/trace/events/compaction.h b/include/trace/events/compaction.h
-index 06f544e..c6814b9 100644
---- a/include/trace/events/compaction.h
-+++ b/include/trace/events/compaction.h
-@@ -5,6 +5,7 @@
- #define _TRACE_COMPACTION_H
- 
- #include <linux/types.h>
-+#include <linux/list.h>
- #include <linux/tracepoint.h>
- #include <trace/events/gfpflags.h>
- 
-@@ -47,10 +48,11 @@ DEFINE_EVENT(mm_compaction_isolate_template, mm_compaction_isolate_freepages,
- 
- TRACE_EVENT(mm_compaction_migratepages,
- 
--	TP_PROTO(unsigned long nr_migrated,
--		unsigned long nr_failed),
-+	TP_PROTO(unsigned long nr_all,
-+		int migrate_rc,
-+		struct list_head *migratepages),
- 
--	TP_ARGS(nr_migrated, nr_failed),
-+	TP_ARGS(nr_all, migrate_rc, migratepages),
- 
- 	TP_STRUCT__entry(
- 		__field(unsigned long, nr_migrated)
-@@ -58,7 +60,22 @@ TRACE_EVENT(mm_compaction_migratepages,
- 	),
- 
- 	TP_fast_assign(
--		__entry->nr_migrated = nr_migrated;
-+		unsigned long nr_failed = 0;
-+		struct list_head *page_lru;
-+
-+		/*
-+		 * migrate_pages() returns either a non-negative number
-+		 * with the number of pages that failed migration, or an
-+		 * error code, in which case we need to count the remaining
-+		 * pages manually
-+		 */
-+		if (migrate_rc >= 0)
-+			nr_failed = migrate_rc;
-+		else
-+			list_for_each(page_lru, migratepages)
-+				nr_failed++;
-+
-+		__entry->nr_migrated = nr_all - nr_failed;
- 		__entry->nr_failed = nr_failed;
- 	),
- 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 4933fde..88b33e6 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -820,22 +820,6 @@ static void compaction_free(struct page *page, unsigned long data)
- 	cc->nr_freepages++;
+diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
+index dfa537a..5da29d0 100644
+--- a/arch/x86/mm/pgtable.c
++++ b/arch/x86/mm/pgtable.c
+@@ -386,13 +386,20 @@ int pmdp_test_and_clear_young(struct vm_area_struct *vma,
+ int ptep_clear_flush_young(struct vm_area_struct *vma,
+ 			   unsigned long address, pte_t *ptep)
+ {
+-	int young;
+-
+-	young = ptep_test_and_clear_young(vma, address, ptep);
+-	if (young)
+-		flush_tlb_page(vma, address);
+-
+-	return young;
++	/*
++	 * On x86 CPUs, clearing the accessed bit without a TLB flush
++	 * doesn't cause data corruption. [ It could cause incorrect
++	 * page aging and the (mistaken) reclaim of hot pages, but the
++	 * chance of that should be relatively low. ]
++	 *
++	 * So as a performance optimization don't flush the TLB when
++	 * clearing the accessed bit, it will eventually be flushed by
++	 * a context switch or a VM operation anyway. [ In the rare
++	 * event of it not getting flushed for a long time the delay
++	 * shouldn't really matter because there's no real memory
++	 * pressure for swapout to react to. ]
++	 */
++	return ptep_test_and_clear_young(vma, address, ptep);
  }
  
--/*
-- * We cannot control nr_migratepages fully when migration is running as
-- * migrate_pages() has no knowledge of of compact_control.  When migration is
-- * complete, we count the number of pages on the list by hand.
-- */
--static void update_nr_listpages(struct compact_control *cc)
--{
--	int nr_migratepages = 0;
--	struct page *page;
--
--	list_for_each_entry(page, &cc->migratepages, lru)
--		nr_migratepages++;
--
--	cc->nr_migratepages = nr_migratepages;
--}
--
- /* possible outcome of isolate_migratepages */
- typedef enum {
- 	ISOLATE_ABORT,		/* Abort compaction now */
-@@ -1030,7 +1014,6 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 	migrate_prep_local();
- 
- 	while ((ret = compact_finished(zone, cc)) == COMPACT_CONTINUE) {
--		unsigned long nr_migrate, nr_remaining;
- 		int err;
- 
- 		switch (isolate_migratepages(zone, cc)) {
-@@ -1045,20 +1028,20 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 			;
- 		}
- 
--		nr_migrate = cc->nr_migratepages;
-+		if (!cc->nr_migratepages)
-+			continue;
-+
- 		err = migrate_pages(&cc->migratepages, compaction_alloc,
- 				compaction_free, (unsigned long)cc, cc->mode,
- 				MR_COMPACTION);
--		update_nr_listpages(cc);
--		nr_remaining = cc->nr_migratepages;
- 
--		trace_mm_compaction_migratepages(nr_migrate - nr_remaining,
--						nr_remaining);
-+		trace_mm_compaction_migratepages(cc->nr_migratepages, err,
-+							&cc->migratepages);
- 
--		/* Release isolated pages not migrated */
-+		/* All pages were either migrated or will be released */
-+		cc->nr_migratepages = 0;
- 		if (err) {
- 			putback_movable_pages(&cc->migratepages);
--			cc->nr_migratepages = 0;
- 			/*
- 			 * migrate_pages() may return -ENOMEM when scanners meet
- 			 * and we want compact_finished() to detect it
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
 -- 
 1.8.4.5
 
