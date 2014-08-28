@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755106AbaH1TFt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 15:05:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32854 "EHLO mx2.suse.de"
+	id S1755123AbaH1TGK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 15:06:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32853 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752639AbaH1SgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751273AbaH1SgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 28 Aug 2014 14:36:17 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Jiri Slaby <jslaby@suse.cz>
 Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 28/97] mm/compaction: disallow high-order page for migration target
-Date: Thu, 28 Aug 2014 19:34:36 +0100
-Message-Id: <1409250945-30874-29-git-send-email-mgorman@suse.de>
+Subject: [PATCH 27/97] mm, compaction: avoid isolating pinned pages
+Date: Thu, 28 Aug 2014 19:34:35 +0100
+Message-Id: <1409250945-30874-28-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
 References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
@@ -20,59 +20,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+From: David Rientjes <rientjes@google.com>
 
-commit 7d348b9ea64db0a315d777ce7d4b06697f946503 upstream.
+commit 119d6d59dcc0980dcd581fdadb6b2033b512a473 upstream.
 
-Purpose of compaction is to get a high order page.  Currently, if we
-find high-order page while searching migration target page, we break it
-to order-0 pages and use them as migration target.  It is contrary to
-purpose of compaction, so disallow high-order page to be used for
-migration target.
+Page migration will fail for memory that is pinned in memory with, for
+example, get_user_pages().  In this case, it is unnecessary to take
+zone->lru_lock or isolating the page and passing it to page migration
+which will ultimately fail.
 
-Additionally, clean-up logic in suitable_migration_target() to simplify
-the code.  There is no functional changes from this clean-up.
+This is a racy check, the page can still change from under us, but in
+that case we'll just fail later when attempting to move the page.
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: Mel Gorman <mgorman@suse.de>
+This avoids very expensive memory compaction when faulting transparent
+hugepages after pinning a lot of memory with a Mellanox driver.
+
+On a 128GB machine and pinning ~120GB of memory, before this patch we
+see the enormous disparity in the number of page migration failures
+because of the pinning (from /proc/vmstat):
+
+	compact_pages_moved 8450
+	compact_pagemigrate_failed 15614415
+
+0.05% of pages isolated are successfully migrated and explicitly
+triggering memory compaction takes 102 seconds.  After the patch:
+
+	compact_pages_moved 9197
+	compact_pagemigrate_failed 7
+
+99.9% of pages isolated are now successfully migrated in this
+configuration and memory compaction takes less than one second.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 Cc: Rik van Riel <riel@redhat.com>
+Cc: Greg Thelen <gthelen@google.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/compaction.c | 15 +++------------
- 1 file changed, 3 insertions(+), 12 deletions(-)
+ mm/compaction.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
 diff --git a/mm/compaction.c b/mm/compaction.c
-index 4885387..5e48834 100644
+index ae428e6..4885387 100644
 --- a/mm/compaction.c
 +++ b/mm/compaction.c
-@@ -217,21 +217,12 @@ static inline bool compact_trylock_irqsave(spinlock_t *lock,
- /* Returns true if the page is within a block suitable for migration to */
- static bool suitable_migration_target(struct page *page)
- {
--	int migratetype = get_pageblock_migratetype(page);
--
--	/* Don't interfere with memory hot-remove or the min_free_kbytes blocks */
--	if (migratetype == MIGRATE_RESERVE)
--		return false;
--
--	if (is_migrate_isolate(migratetype))
--		return false;
--
--	/* If the page is a large free page, then allow migration */
-+	/* If the page is a large free page, then disallow migration */
- 	if (PageBuddy(page) && page_order(page) >= pageblock_order)
--		return true;
-+		return false;
+@@ -582,6 +582,15 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+ 			continue;
+ 		}
  
- 	/* If the block is MIGRATE_MOVABLE or MIGRATE_CMA, allow migration */
--	if (migrate_async_suitable(migratetype))
-+	if (migrate_async_suitable(get_pageblock_migratetype(page)))
- 		return true;
- 
- 	/* Otherwise skip the block */
++		/*
++		 * Migration will fail if an anonymous page is pinned in memory,
++		 * so avoid taking lru_lock and isolating it unnecessarily in an
++		 * admittedly racy check.
++		 */
++		if (!page_mapping(page) &&
++		    page_count(page) > page_mapcount(page))
++			continue;
++
+ 		/* Check if it is ok to still hold the lock */
+ 		locked = compact_checklock_irqsave(&zone->lru_lock, &flags,
+ 								locked, cc);
 -- 
 1.8.4.5
 
