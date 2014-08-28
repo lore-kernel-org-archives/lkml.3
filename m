@@ -1,104 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752354AbaH1SPE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:15:04 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:32300 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751086AbaH1SPC (ORCPT
+	id S1752400AbaH1SPX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 14:15:23 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:9446 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752213AbaH1SPT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:15:02 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+3N/SIZx+tXNRwEc2BKzNB
-Date: Thu, 28 Aug 2014 11:14:57 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: kishon@ti.com, linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH 1/5] usb: phy: twl4030-usb: Remove unused irq_enabled
-Message-ID: <20140828181457.GK16006@atomide.com>
-References: <1409182091-31191-1-git-send-email-tony@atomide.com>
- <1409182091-31191-2-git-send-email-tony@atomide.com>
- <20140828022051.GB5273@saruman.home>
+	Thu, 28 Aug 2014 14:15:19 -0400
+X-IronPort-AV: E=Sophos;i="5.04,418,1406584800"; 
+   d="scan'208";a="91964270"
+Date: Thu, 28 Aug 2014 20:15:16 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: "Luis R. Rodriguez" <mcgrof@suse.com>
+cc: Johannes Berg <johannes@sipsolutions.net>, linux-kernel@vger.kernel.org,
+        backports@vger.kernel.org, cocci@systeme.lip6.fr
+Subject: Re: [Cocci] [PATCH] coccinelle: add pycocci wrapper for	multithreaded
+ support
+In-Reply-To: <20140828034613.GD3347@wotan.suse.de>
+Message-ID: <alpine.DEB.2.02.1408282014550.2226@localhost6.localdomain6>
+References: <1397152097-315-1-git-send-email-mcgrof@do-not-panic.com> <1397152289.4757.28.camel@jlt4.sipsolutions.net> <20140410175748.GK14815@wotan.suse.de> <alpine.DEB.2.02.1404102131390.2201@localhost6.localdomain6> <20140828034613.GD3347@wotan.suse.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140828022051.GB5273@saruman.home>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Felipe Balbi <balbi@ti.com> [140827 19:21]:
-> Hi,
-> 
-> On Wed, Aug 27, 2014 at 04:28:07PM -0700, Tony Lindgren wrote:
-> > It's not being used any longer.
+
+
+On Thu, 28 Aug 2014, Luis R. Rodriguez wrote:
+
+> On Thu, Apr 10, 2014 at 09:32:34PM +0200, Julia Lawall wrote:
 > > 
-> > Signed-off-by: Tony Lindgren <tony@atomide.com>
-> > ---
-> >  drivers/phy/phy-twl4030-usb.c     | 2 --
-> >  drivers/usb/phy/phy-twl6030-usb.c | 2 --
-> >  2 files changed, 4 deletions(-)
 > > 
-> > diff --git a/drivers/phy/phy-twl4030-usb.c b/drivers/phy/phy-twl4030-usb.c
-> > index 9cd33a4..bc28ecc 100644
-> > --- a/drivers/phy/phy-twl4030-usb.c
-> > +++ b/drivers/phy/phy-twl4030-usb.c
-> > @@ -164,7 +164,6 @@ struct twl4030_usb {
-> >  	enum omap_musb_vbus_id_status linkstat;
-> >  	bool			vbus_supplied;
-> >  	u8			asleep;
-> > -	bool			irq_enabled;
-> >  
-> >  	struct delayed_work	id_workaround_work;
-> >  };
-> > @@ -755,7 +754,6 @@ static int twl4030_usb_probe(struct platform_device *pdev)
-> >  	 * set_host() and/or set_peripheral() ... OTG_capable boards
-> >  	 * need both handles, otherwise just one suffices.
-> >  	 */
-> > -	twl->irq_enabled = true;
-> >  	status = devm_request_threaded_irq(twl->dev, twl->irq, NULL,
-> >  			twl4030_usb_irq, IRQF_TRIGGER_FALLING |
-> >  			IRQF_TRIGGER_RISING | IRQF_ONESHOT, "twl4030_usb", twl);
+> > On Thu, 10 Apr 2014, Luis R. Rodriguez wrote:
+> > 
+> > > On Thu, Apr 10, 2014 at 07:51:29PM +0200, Johannes Berg wrote:
+> > > > On Thu, 2014-04-10 at 10:48 -0700, Luis R. Rodriguez wrote:
+> > > > 
+> > > > > You just pass it a cocci file, a target dir, and in git environments
+> > > > > you always want --in-place enabled. Experiments and profiling random
+> > > > > cocci files with the Linux kernel show that using just using number of
+> > > > > CPUs doesn't scale well given that lots of buckets of files don't require
+> > > > > work, as such this uses 10 * number of CPUs for its number of threads.
+> > > > > For work that define more general ruler 3 * number of CPUs works better,
+> > > > > but for smaller cocci files 3 * number of CPUs performs best right now.
+> > > > > To experiment more with what's going on with the multithreading one can enable
+> > > > > htop while kicking off a cocci task on the kernel, we want to keep
+> > > > > these CPUs busy as much as possible. 
+> > > > 
+> > > > That's not really a good benchmark, you want to actually check how
+> > > > quickly it finishes ... If you have some IO issues then just keeping the
+> > > > CPUs busy trying to do IO won't help at all.
+> > > 
+> > > I checked the profile results, the reason the jobs finish is some threads
+> > > had no work or little work. Hence why I increased the number of threads,
+> > > depending on the context (long or short cocci expected, in backports
+> > > at least, the long being all cocci files in one, the short being --test-cocci
+> > > flag to gentree.py). This wrapper uses the short assumption with 10 * num_cpus
+> > > 
+> > > > > Since its just a helper I toss it into the python directory but don't
+> > > > > install it. Hope is that we can evolve it there instead of carrying this
+> > > > > helper within backports.
+> > > > 
+> > > > If there's a plan to make coccinelle itself multi-threaded, what's the
+> > > > point?
+> > > 
+> > > To be clear, Coccinelle *has* a form of multithreaded support but requires manual
+> > > spawning of jobs with references to the max count and also the number thread
+> > > that this new process you are spawning belongs to. There's plans to consider
+> > > reworking things to handle all this internally but as I discussed with Julia
+> > > the changes required would require some structural changes, and as such we
+> > > need to live with this for a bit longer. I need to use Coccinelle daily now,
+> > > so figured I'd punt this out there in case others might make use of it.
+> > 
+> > I agree with Luis.  Multithreading inside Coccinelle is currently a 
+> > priority task, but not a highest priority one.
 > 
-> can you split this into two patches ? drivers/phy will be taken by
-> Kishon and drivers/usb/phy by me. another possibility is that I get an
-> Acked-by from Kishon and I can take $subject as is.
+> Folks, anyone object to merging pycocci in the meantime? I keep using it outside
+> of backports and it does what I think most kernel developers expect. This would
+> be until we get proper parallelism support in place.
 
-Oops yes sorry I already forgot I'm patching twl6030 too. Below
-is the updated version of this patch for Kishon with just the
-twl4030 changes. I will post the twl6030 changes separately.
+Merge away...
 
-Regards,
-
-Tony
-
-8< ---------------------
-From: Tony Lindgren <tony@atomide.com>
-Date: Mon, 18 Aug 2014 07:54:16 -0700
-Subject: [PATCH] usb: phy: twl4030-usb: Remove unused irq_enabled
-
-It's not being used any longer.
-
-Signed-off-by: Tony Lindgren <tony@atomide.com>
-
---- a/drivers/phy/phy-twl4030-usb.c
-+++ b/drivers/phy/phy-twl4030-usb.c
-@@ -164,7 +164,6 @@ struct twl4030_usb {
- 	enum omap_musb_vbus_id_status linkstat;
- 	bool			vbus_supplied;
- 	u8			asleep;
--	bool			irq_enabled;
- 
- 	struct delayed_work	id_workaround_work;
- };
-@@ -755,7 +754,6 @@ static int twl4030_usb_probe(struct platform_device *pdev)
- 	 * set_host() and/or set_peripheral() ... OTG_capable boards
- 	 * need both handles, otherwise just one suffices.
- 	 */
--	twl->irq_enabled = true;
- 	status = devm_request_threaded_irq(twl->dev, twl->irq, NULL,
- 			twl4030_usb_irq, IRQF_TRIGGER_FALLING |
- 			IRQF_TRIGGER_RISING | IRQF_ONESHOT, "twl4030_usb", twl);
+julia
