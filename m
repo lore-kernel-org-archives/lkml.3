@@ -1,120 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751470AbaH1Qse (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 12:48:34 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:36707 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750941AbaH1Qsd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 12:48:33 -0400
-Date: Thu, 28 Aug 2014 09:48:25 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Matti Vaittinen <matti.vaittinen@nsn.com>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "jic23@kernel.org" <jic23@kernel.org>,
-        "arno@natisbad.org" <arno@natisbad.org>,
-        "jgunthorpe@obsidianresearch.com" <jgunthorpe@obsidianresearch.com>,
-        "san@rosetechnology.dk" <san@rosetechnology.dk>,
-        "hs@denx.de" <hs@denx.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        Sverdlin Alexander <alexander.sverdlin@nsn.com>
-Subject: Re: [PATCH] rtc: ds1307: add trickle charger device tree binding
-Message-ID: <20140828164825.GA12153@roeck-us.net>
-References: <20140828124237.GA29102@fi-ourus-dhcp00977.emea.nsn-net.net>
- <20140828125915.GJ14650@leverpostej>
- <20140828155157.GB23677@roeck-us.net>
- <20140828161025.GO14650@leverpostej>
+	id S1751848AbaH1Qug (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 12:50:36 -0400
+Received: from mga11.intel.com ([192.55.52.93]:17958 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750892AbaH1Quf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 12:50:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,418,1406617200"; 
+   d="scan'208";a="591230783"
+Date: Thu, 28 Aug 2014 12:50:12 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v10 00/21] Support ext4 on NV-DIMMs
+Message-ID: <20140828165012.GK3285@linux.intel.com>
+References: <cover.1409110741.git.matthew.r.wilcox@intel.com>
+ <20140827130613.c8f6790093d279a447196f17@linux-foundation.org>
+ <20140827211250.GH3285@linux.intel.com>
+ <20140827144622.ed81195a1d94799bb57a3207@linux-foundation.org>
+ <53FE8633.10305@amacapital.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140828161025.GO14650@leverpostej>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53FE8633.10305@amacapital.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 28, 2014 at 05:10:25PM +0100, Mark Rutland wrote:
-> On Thu, Aug 28, 2014 at 04:51:57PM +0100, Guenter Roeck wrote:
-> > On Thu, Aug 28, 2014 at 01:59:15PM +0100, Mark Rutland wrote:
-> > > On Thu, Aug 28, 2014 at 01:42:44PM +0100, Matti Vaittinen wrote:
-> > > > Patch adding support for specifying trickle charger setup from device
-> > > > tree. Patch is based on linux-next tree.
-> > > > 
-> > > > 
-> > > > Some DS13XX devices have "trickle chargers". Introduce a device tree binding
-> > > > for specifying the setup and register values.
-> > > > 
-> > > > Signed-off-by: Matti Vaittinen <matti.vaittinen@nsn.com>
-> > > > ---
-> > > >  .../devicetree/bindings/i2c/trivial-devices.txt    |  1 -
-> > > >  .../devicetree/bindings/rtc/dallas,ds1339.txt      | 19 ++++++++++
-> > > >  drivers/rtc/rtc-ds1307.c                           | 44 ++++++++++++++++++++--
-> > > >  3 files changed, 59 insertions(+), 5 deletions(-)
-> > > >  create mode 100644 Documentation/devicetree/bindings/rtc/dallas,ds1339.txt
-> > > > 
-> > > > diff --git a/Documentation/devicetree/bindings/i2c/trivial-devices.txt b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-> > > > index 6af570e..e9206a4 100644
-> > > > --- a/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-> > > > +++ b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-> > > > @@ -35,7 +35,6 @@ catalyst,24c32		i2c serial eeprom
-> > > >  cirrus,cs42l51		Cirrus Logic CS42L51 audio codec
-> > > >  dallas,ds1307		64 x 8, Serial, I2C Real-Time Clock
-> > > >  dallas,ds1338		I2C RTC with 56-Byte NV RAM
-> > > > -dallas,ds1339		I2C Serial Real-Time Clock
-> > > >  dallas,ds1340		I2C RTC with Trickle Charger
-> > > >  dallas,ds1374		I2C, 32-Bit Binary Counter Watchdog RTC with Trickle Charger and Reset Input/Output
-> > > >  dallas,ds1631		High-Precision Digital Thermometer
-> > > > diff --git a/Documentation/devicetree/bindings/rtc/dallas,ds1339.txt b/Documentation/devicetree/bindings/rtc/dallas,ds1339.txt
-> > > > new file mode 100644
-> > > > index 0000000..9faf40e
-> > > > --- /dev/null
-> > > > +++ b/Documentation/devicetree/bindings/rtc/dallas,ds1339.txt
-> > > > @@ -0,0 +1,19 @@
-> > > > +* Dallas DS1339		I2C Serial Real-Time Clock
-> > > > +
-> > > > +Required properties:
-> > > > +- compatible: Should contain "dallas,ds1339".
-> > > > +- reg: I2C address for chip
-> > > > +
-> > > > +Optional properties:
-> > > > +- trickle_setup : Used Trickle Charger configuration,
-> > > > +        corresponding to 5 lowest bits in trickle charger register.
-> > > 
-> > The value is provided via platform data, so it is platform specific
-> > and presumably needs to be configurable. I did, however, not find
-> > a single in-kernel driver which is actually setting it.
-> > So this is a good question.
-> 
-> I'm uncomfortable adding a field we don't understand to DT.
-> 
-> Is there any publicly-available documentation for the device?
-> 
+On Wed, Aug 27, 2014 at 06:30:27PM -0700, Andy Lutomirski wrote:
+> 4) No page faults ever once a page is writable (I hope -- I'm not sure
+> whether this series actually achieves that goal).
 
-Lots ;-)
+I can't think of a circumstance in which you'd end up taking a page fault
+after a writable mapping is established.
 
-http://datasheets.maximintegrated.com/en/ds/DS1307.pdf
-http://datasheets.maximintegrated.com/en/ds/DS1337.pdf
-http://datasheets.maximintegrated.com/en/ds/DS1338.pdf
-http://datasheets.maximintegrated.com/en/ds/DS1339.pdf
-http://datasheets.maximintegrated.com/en/ds/DS1340.pdf
-http://datasheets.maximintegrated.com/en/ds/DS1388.pdf
-http://datasheets.maximintegrated.com/en/ds/DS3231.pdf
-
-Code suggests that DS1339, DS1339, and DS1340 have the register.
-
-Looking into the datasheets, the configuration consists of two parts:
-- diode connected or not
-- trickle charger resistor value (250, 2000, or 4000 ohm)
-
-Given that, it seems to me that those values should be configured
-explicitly instead of using a binary value, and that the driver
-should perform the conversion from dt entry to register value.
-
-Note that the relevant bits are the lower 4 bits, not the
-lower 5 bits, so the above text is wrong.
-
-Guenter
+The next part to this series (that I'm working on now) is PMD support.
