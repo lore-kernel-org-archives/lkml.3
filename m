@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965860AbaH1JMD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 05:12:03 -0400
+	id S965871AbaH1JMe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 05:12:34 -0400
 Received: from mailout2.w1.samsung.com ([210.118.77.12]:54124 "EHLO
 	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965648AbaH1JIV (ORCPT
+	with ESMTP id S936274AbaH1JIQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 05:08:21 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-c7-53fef182a65d
+	Thu, 28 Aug 2014 05:08:16 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-9f-53fef17e6a76
 From: Andrzej Hajda <a.hajda@samsung.com>
 To: Inki Dae <inki.dae@samsung.com>
 Cc: Andrzej Hajda <a.hajda@samsung.com>,
@@ -18,67 +18,50 @@ Cc: Andrzej Hajda <a.hajda@samsung.com>,
         dri-devel@lists.freedesktop.org,
         linux-kernel@vger.kernel.org (open list),
         linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...)
-Subject: [PATCH v2 05/17] drm/exynos/ipp: remove unused field in command node
-Date: Thu, 28 Aug 2014 11:07:29 +0200
-Message-id: <1409216861-12452-6-git-send-email-a.hajda@samsung.com>
+Subject: [PATCH v2 02/17] drm/exynos/ipp: cancel works before command node clean
+Date: Thu, 28 Aug 2014 11:07:26 +0200
+Message-id: <1409216861-12452-3-git-send-email-a.hajda@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1409216861-12452-1-git-send-email-a.hajda@samsung.com>
 References: <1409216861-12452-1-git-send-email-a.hajda@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOJMWRmVeSWpSXmKPExsVy+t/xy7pNH/8FG3ycJWxxa905VosrX9+z
-	WUy6P4HF4sW9iywWZ5vesFtc3jWHzWLG+X1MFmuP3GW3mDH5JZsDp8f97uNMHn1bVjF6fN4k
-	F8AcxWWTkpqTWZZapG+XwJWxonsZU8Eznoo1E5cyNjC+5upi5OSQEDCRmNTxlwXCFpO4cG89
-	WxcjF4eQwFJGiXOzZ7JAOH1MEpP/z2cEqWIT0JT4u/kmG4gtIqAssWpfOztIEbPARyaJK0vf
-	MIMkhAV8JXa2TmQCsVkEVCVerG8Hi/MKOEvMmbmAFWKdnMTJY5PBbE4BF4mNx9+wg9hCQDW7
-	z39mmsDIu4CRYRWjaGppckFxUnquoV5xYm5xaV66XnJ+7iZGSGB92cG4+JjVIUYBDkYlHt4N
-	pf+ChVgTy4orcw8xSnAwK4nwHj0OFOJNSaysSi3Kjy8qzUktPsTIxMEp1cBo0p316NOz5U9+
-	p2RcjjXN3rUmJ+J9aXRMnt05ky8cKyPNi9YfW7J12239Vd9lnr783+OWZfVrh6BGfgnP5BBp
-	/6svbsTXiH9//KJ1q/6GKXdVMxd2ydydeEzl5XTe1fcL2D2mnnqmvltpR0LsRz2rnSFzP3mx
-	F/6sP2nmlCGmrKQZVFKleuGoEktxRqKhFnNRcSIAuEK5ygoCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOJMWRmVeSWpSXmKPExsVy+t/xy7p1H/8FG7QfUbW4te4cq8WVr+/Z
+	LCbdn8Bi8eLeRRaLs01v2C0u75rDZjHj/D4mi7VH7rJbzJj8ks2B0+N+93Emj74tqxg9Pm+S
+	C2CO4rJJSc3JLEst0rdL4MpYdXQjY8Ettopzh36xNTA+Ye1i5OSQEDCReLpjHwuELSZx4d56
+	ti5GLg4hgaWMErsOTGSHcPqYJH68/ArWwSagKfF38002EFtEQFli1b52sCJmgY9MEleWvmEG
+	SQgLBEjMmHEZrIFFQFXi1+dL7CA2r4CzxO1X76HWyUmcPDYZrIZTwEVi4/E3YDVCQDW7z39m
+	msDIu4CRYRWjaGppckFxUnqukV5xYm5xaV66XnJ+7iZGSGB93cG49JjVIUYBDkYlHl6F03+C
+	hVgTy4orcw8xSnAwK4nwHj3+L1iINyWxsiq1KD++qDQntfgQIxMHp1QDo9J/mWUvD66cdSKg
+	vEbLIMNXj8PY+/3X6o557OnuD24fPnMhsut6KOODxqiTknO3T77VsuQmV6TY/XJnaVaLyRKs
+	8tvX/i3V7f0afNXtLseE1w1RNRm9/ZyznyRyhr8vaPGOu7I/iXdBbMaO7n2+Ts99d8188r17
+	EZtW8u70y2tYmR43Ms3/r8RSnJFoqMVcVJwIAF5zMkAKAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since command node have file pointer dev field became useless.
+All pending works should be canceled prior to its removal.
 
 Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
 Reviewed-by: Joonyoung Shim <jy0922.shim@samsung.com>
 ---
- drivers/gpu/drm/exynos/exynos_drm_ipp.c | 1 -
- drivers/gpu/drm/exynos/exynos_drm_ipp.h | 2 --
- 2 files changed, 3 deletions(-)
+ drivers/gpu/drm/exynos/exynos_drm_ipp.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
 diff --git a/drivers/gpu/drm/exynos/exynos_drm_ipp.c b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
-index 81f780e..060a198 100644
+index da917ca..9770966 100644
 --- a/drivers/gpu/drm/exynos/exynos_drm_ipp.c
 +++ b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
-@@ -444,7 +444,6 @@ int exynos_drm_ipp_set_property(struct drm_device *drm_dev, void *data,
- 		property->prop_id, property->cmd, (int)ippdrv);
+@@ -502,6 +502,11 @@ err_clear:
+ static void ipp_clean_cmd_node(struct ipp_context *ctx,
+ 				struct drm_exynos_ipp_cmd_node *c_node)
+ {
++	/* cancel works */
++	cancel_work_sync(&c_node->start_work->work);
++	cancel_work_sync(&c_node->stop_work->work);
++	cancel_work_sync(&c_node->event_work->work);
++
+ 	/* delete list */
+ 	list_del(&c_node->list);
  
- 	/* stored property information and ippdrv in private data */
--	c_node->dev = dev;
- 	c_node->property = *property;
- 	c_node->state = IPP_STATE_IDLE;
- 	c_node->filp = file;
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_ipp.h b/drivers/gpu/drm/exynos/exynos_drm_ipp.h
-index 0311035..2a61547 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_ipp.h
-+++ b/drivers/gpu/drm/exynos/exynos_drm_ipp.h
-@@ -48,7 +48,6 @@ struct drm_exynos_ipp_cmd_work {
- /*
-  * A structure of command node.
-  *
-- * @dev: IPP device.
-  * @list: list head to command queue information.
-  * @event_list: list head of event.
-  * @mem_list: list head to source,destination memory queue information.
-@@ -65,7 +64,6 @@ struct drm_exynos_ipp_cmd_work {
-  * @filp: associated file pointer.
-  */
- struct drm_exynos_ipp_cmd_node {
--	struct device		*dev;
- 	struct list_head	list;
- 	struct list_head	event_list;
- 	struct list_head	mem_list[EXYNOS_DRM_OPS_MAX];
 -- 
 1.9.1
 
