@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752231AbaH1NOt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 09:14:49 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:56864 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360AbaH1NOq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752196AbaH1NOq (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 28 Aug 2014 09:14:46 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:60267 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360AbaH1NOn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 09:14:43 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 10/11] mfd: twl4030-irq: Check return value from twl_i2c_write() - warn() on failure
-Date: Thu, 28 Aug 2014 14:14:16 +0100
-Message-Id: <1409231657-18294-10-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 08/11] mfd: max77686: Remove check which is always true
+Date: Thu, 28 Aug 2014 14:14:14 +0100
+Message-Id: <1409231657-18294-8-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1409231657-18294-1-git-send-email-lee.jones@linaro.org>
 References: <1409231657-18294-1-git-send-email-lee.jones@linaro.org>
@@ -20,39 +20,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the original code a return value variable was provided, but it
-was never checked and the user was never informed of failure.  Now
-it is and they are.
+As 'reg' is unsigned, it can't be less than 0, so checking if it is
+greater than or equal to 0 will always result in a true condition.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mfd/twl4030-irq.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/mfd/max77686.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/twl4030-irq.c b/drivers/mfd/twl4030-irq.c
-index b1dabba..1b772ef 100644
---- a/drivers/mfd/twl4030-irq.c
-+++ b/drivers/mfd/twl4030-irq.c
-@@ -396,13 +396,17 @@ static int twl4030_init_sih_modules(unsigned line)
- 			status = twl_i2c_read(sih->module, rxbuf,
- 				sih->mask[line].isr_offset, sih->bytes_ixr);
- 			if (status < 0)
--				pr_err("twl4030: err %d initializing %s %s\n",
-+				pr_warn("twl4030: err %d initializing %s %s\n",
- 					status, sih->name, "ISR");
+diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
+index 86e5523..929795e 100644
+--- a/drivers/mfd/max77686.c
++++ b/drivers/mfd/max77686.c
+@@ -52,7 +52,7 @@ static const struct mfd_cell max77802_devs[] = {
+ static bool max77802_pmic_is_accessible_reg(struct device *dev,
+ 					    unsigned int reg)
+ {
+-	return (reg >= MAX77802_REG_DEVICE_ID && reg < MAX77802_REG_PMIC_END);
++	return reg < MAX77802_REG_PMIC_END;
+ }
  
--			if (!sih->set_cor)
-+			if (!sih->set_cor) {
- 				status = twl_i2c_write(sih->module, buf,
- 					sih->mask[line].isr_offset,
- 					sih->bytes_ixr);
-+				if (status < 0)
-+					pr_warn("twl4030: write failed: %d\n",
-+						status);
-+			}
- 			/*
- 			 * else COR=1 means read sufficed.
- 			 * (for most SIH modules...)
+ static bool max77802_rtc_is_accessible_reg(struct device *dev,
 -- 
 1.9.1
 
