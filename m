@@ -1,258 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753641AbaH1SiZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:38:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32898 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753506AbaH1Sh2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:37:28 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 97/97] mm: page_alloc: reduce cost of the fair zone allocation policy
-Date: Thu, 28 Aug 2014 19:35:45 +0100
-Message-Id: <1409250945-30874-98-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
-References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
+	id S1753859AbaH1Sir (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 14:38:47 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:40384 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753672AbaH1Sig (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:38:36 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 08/14] rcu: Create rcuo kthreads only for onlined CPUs
+Date: Thu, 28 Aug 2014 11:38:11 -0700
+Message-Id: <1409251097-26734-8-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1409251097-26734-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20140828183754.GA25488@linux.vnet.ibm.com>
+ <1409251097-26734-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14082818-7164-0000-0000-0000042C1E00
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 4ffeaf3560a52b4a69cc7909873d08c0ef5909d4 upstream.
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-The fair zone allocation policy round-robins allocations between zones
-within a node to avoid age inversion problems during reclaim.  If the
-first allocation fails, the batch counts are reset and a second attempt
-made before entering the slow path.
+RCU currently uses for_each_possible_cpu() to spawn rcuo kthreads,
+which can result in more rcuo kthreads than one would expect, for
+example, derRichard reported 64 CPUs worth of rcuo kthreads on an
+8-CPU image.  This commit therefore creates rcuo kthreads only for
+those CPUs that actually come online.
 
-One assumption made with this scheme is that batches expire at roughly
-the same time and the resets each time are justified.  This assumption
-does not hold when zones reach their low watermark as the batches will
-be consumed at uneven rates.  Allocation failure due to watermark
-depletion result in additional zonelist scans for the reset and another
-watermark check before hitting the slowpath.
+This was reported by derRichard on the OFTC IRC network.
 
-On UMA, the benefit is negligible -- around 0.25%.  On 4-socket NUMA
-machine it's variable due to the variability of measuring overhead with
-the vmstat changes.  The system CPU overhead comparison looks like
-
-          3.16.0-rc3  3.16.0-rc3  3.16.0-rc3
-             vanilla   vmstat-v5 lowercost-v5
-User          746.94      774.56      802.00
-System      65336.22    32847.27    40852.33
-Elapsed     27553.52    27415.04    27368.46
-
-However it is worth noting that the overall benchmark still completed
-faster and intuitively it makes sense to take as few passes as possible
-through the zonelists.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reported-by: Richard Weinberger <richard@nod.at>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- include/linux/mmzone.h |   6 +++
- mm/page_alloc.c        | 101 ++++++++++++++++++++++++++-----------------------
- 2 files changed, 59 insertions(+), 48 deletions(-)
+ kernel/rcu/tree.c        |  3 +-
+ kernel/rcu/tree.h        |  6 +++-
+ kernel/rcu/tree_plugin.h | 90 ++++++++++++++++++++++++++++++++++++++++++------
+ 3 files changed, 86 insertions(+), 13 deletions(-)
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 1df12c6..450f19c 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -529,6 +529,7 @@ typedef enum {
- 	ZONE_WRITEBACK,			/* reclaim scanning has recently found
- 					 * many pages under writeback
- 					 */
-+	ZONE_FAIR_DEPLETED,		/* fair zone policy batch depleted */
- } zone_flags_t;
- 
- static inline void zone_set_flag(struct zone *zone, zone_flags_t flag)
-@@ -566,6 +567,11 @@ static inline int zone_is_reclaim_locked(const struct zone *zone)
- 	return test_bit(ZONE_RECLAIM_LOCKED, &zone->flags);
- }
- 
-+static inline int zone_is_fair_depleted(const struct zone *zone)
-+{
-+	return test_bit(ZONE_FAIR_DEPLETED, &zone->flags);
-+}
-+
- static inline int zone_is_oom_locked(const struct zone *zone)
- {
- 	return test_bit(ZONE_OOM_LOCKED, &zone->flags);
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 16e6740..2f91223 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1589,6 +1589,9 @@ again:
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index 9be47f43903b..b49c8433f834 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -3442,6 +3442,7 @@ static int rcu_cpu_notify(struct notifier_block *self,
+ 	case CPU_UP_PREPARE_FROZEN:
+ 		rcu_prepare_cpu(cpu);
+ 		rcu_prepare_kthreads(cpu);
++		rcu_spawn_all_nocb_kthreads(cpu);
+ 		break;
+ 	case CPU_ONLINE:
+ 	case CPU_DOWN_FAILED:
+@@ -3506,8 +3507,8 @@ static int __init rcu_spawn_gp_kthread(void)
+ 		raw_spin_lock_irqsave(&rnp->lock, flags);
+ 		rsp->gp_kthread = t;
+ 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+-		rcu_spawn_nocb_kthreads(rsp);
  	}
- 
- 	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
-+	if (zone_page_state(zone, NR_ALLOC_BATCH) == 0 &&
-+	    !zone_is_fair_depleted(zone))
-+		zone_set_flag(zone, ZONE_FAIR_DEPLETED);
- 
- 	__count_zone_vm_events(PGALLOC, zone, 1 << order);
- 	zone_statistics(preferred_zone, zone, gfp_flags);
-@@ -1913,6 +1916,18 @@ static inline void init_zone_allows_reclaim(int nid)
++	rcu_spawn_nocb_kthreads();
+ 	rcu_spawn_boost_kthreads();
+ 	return 0;
  }
- #endif	/* CONFIG_NUMA */
- 
-+static void reset_alloc_batches(struct zone *preferred_zone)
-+{
-+	struct zone *zone = preferred_zone->zone_pgdat->node_zones;
-+
-+	do {
-+		mod_zone_page_state(zone, NR_ALLOC_BATCH,
-+			high_wmark_pages(zone) - low_wmark_pages(zone) -
-+			atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]));
-+		zone_clear_flag(zone, ZONE_FAIR_DEPLETED);
-+	} while (zone++ != preferred_zone);
-+}
-+
- /*
-  * get_page_from_freelist goes through the zonelist trying to allocate
-  * a page.
-@@ -1930,8 +1945,12 @@ get_page_from_freelist(gfp_t gfp_mask, nodemask_t *nodemask, unsigned int order,
- 	int did_zlc_setup = 0;		/* just call zlc_setup() one time */
- 	bool consider_zone_dirty = (alloc_flags & ALLOC_WMARK_LOW) &&
- 				(gfp_mask & __GFP_WRITE);
-+	int nr_fair_skipped = 0;
-+	bool zonelist_rescan;
- 
- zonelist_scan:
-+	zonelist_rescan = false;
-+
- 	/*
- 	 * Scan zonelist, looking for a zone with enough free.
- 	 * See also __cpuset_node_allowed_softwall() comment in kernel/cpuset.c.
-@@ -1956,8 +1975,10 @@ zonelist_scan:
- 		if (alloc_flags & ALLOC_FAIR) {
- 			if (!zone_local(preferred_zone, zone))
- 				break;
--			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
-+			if (zone_is_fair_depleted(zone)) {
-+				nr_fair_skipped++;
- 				continue;
-+			}
+diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
+index bd7b63da9a8c..6ca5c386d5a0 100644
+--- a/kernel/rcu/tree.h
++++ b/kernel/rcu/tree.h
+@@ -593,7 +593,11 @@ static bool rcu_nocb_adopt_orphan_cbs(struct rcu_state *rsp,
+ static bool rcu_nocb_need_deferred_wakeup(struct rcu_data *rdp);
+ static void do_nocb_deferred_wakeup(struct rcu_data *rdp);
+ static void rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp);
+-static void rcu_spawn_nocb_kthreads(struct rcu_state *rsp);
++static void rcu_spawn_all_nocb_kthreads(int cpu);
++static void __init rcu_spawn_nocb_kthreads(void);
++#ifdef CONFIG_RCU_NOCB_CPU
++static void __init rcu_organize_nocb_kthreads(struct rcu_state *rsp);
++#endif /* #ifdef CONFIG_RCU_NOCB_CPU */
+ static void __maybe_unused rcu_kick_nohz_cpu(int cpu);
+ static bool init_nocb_callback_list(struct rcu_data *rdp);
+ static void rcu_sysidle_enter(struct rcu_dynticks *rdtp, int irq);
+diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+index a9971ac64e00..d7a9e252084f 100644
+--- a/kernel/rcu/tree_plugin.h
++++ b/kernel/rcu/tree_plugin.h
+@@ -2479,6 +2479,7 @@ void __init rcu_init_nohz(void)
+ 				     rdp->nxttail[RCU_NEXT_TAIL] != NULL);
+ 			init_nocb_callback_list(rdp);
  		}
- 		/*
- 		 * When allocating a page cache page for writing, we
-@@ -2063,13 +2084,7 @@ this_zone_full:
- 			zlc_mark_zone_full(zonelist, z);
++		rcu_organize_nocb_kthreads(rsp);
  	}
- 
--	if (unlikely(IS_ENABLED(CONFIG_NUMA) && page == NULL && zlc_active)) {
--		/* Disable zlc cache for second zonelist scan */
--		zlc_active = 0;
--		goto zonelist_scan;
--	}
--
--	if (page)
-+	if (page) {
- 		/*
- 		 * page->pfmemalloc is set when ALLOC_NO_WATERMARKS was
- 		 * necessary to allocate the page. The expectation is
-@@ -2078,8 +2093,37 @@ this_zone_full:
- 		 * for !PFMEMALLOC purposes.
- 		 */
- 		page->pfmemalloc = !!(alloc_flags & ALLOC_NO_WATERMARKS);
-+		return page;
-+	}
- 
--	return page;
-+	/*
-+	 * The first pass makes sure allocations are spread fairly within the
-+	 * local node.  However, the local node might have free pages left
-+	 * after the fairness batches are exhausted, and remote zones haven't
-+	 * even been considered yet.  Try once more without fairness, and
-+	 * include remote zones now, before entering the slowpath and waking
-+	 * kswapd: prefer spilling to a remote zone over swapping locally.
-+	 */
-+	if (alloc_flags & ALLOC_FAIR) {
-+		alloc_flags &= ~ALLOC_FAIR;
-+		if (nr_fair_skipped) {
-+			zonelist_rescan = true;
-+			reset_alloc_batches(preferred_zone);
-+		}
-+		if (nr_online_nodes > 1)
-+			zonelist_rescan = true;
-+	}
-+
-+	if (unlikely(IS_ENABLED(CONFIG_NUMA) && zlc_active)) {
-+		/* Disable zlc cache for second zonelist scan */
-+		zlc_active = 0;
-+		zonelist_rescan = true;
-+	}
-+
-+	if (zonelist_rescan)
-+		goto zonelist_scan;
-+
-+	return NULL;
  }
+ 
+@@ -2490,15 +2491,85 @@ static void __init rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp)
+ 	rdp->nocb_follower_tail = &rdp->nocb_follower_head;
+ }
+ 
++/*
++ * If the specified CPU is a no-CBs CPU that does not already have its
++ * rcuo kthread for the specified RCU flavor, spawn it.  If the CPUs are
++ * brought online out of order, this can require re-organizing the
++ * leader-follower relationships.
++ */
++static void rcu_spawn_one_nocb_kthread(struct rcu_state *rsp, int cpu)
++{
++	struct rcu_data *rdp;
++	struct rcu_data *rdp_last;
++	struct rcu_data *rdp_old_leader;
++	struct rcu_data *rdp_spawn = per_cpu_ptr(rsp->rda, cpu);
++	struct task_struct *t;
++
++	/*
++	 * If this isn't a no-CBs CPU or if it already has an rcuo kthread,
++	 * then nothing to do.
++	 */
++	if (!rcu_is_nocb_cpu(cpu) || rdp_spawn->nocb_kthread)
++		return;
++
++	/* If we didn't spawn the leader first, reorganize! */
++	rdp_old_leader = rdp_spawn->nocb_leader;
++	if (rdp_old_leader != rdp_spawn && !rdp_old_leader->nocb_kthread) {
++		rdp_last = NULL;
++		rdp = rdp_old_leader;
++		do {
++			rdp->nocb_leader = rdp_spawn;
++			if (rdp_last && rdp != rdp_spawn)
++				rdp_last->nocb_next_follower = rdp;
++			rdp_last = rdp;
++			rdp = rdp->nocb_next_follower;
++			rdp_last->nocb_next_follower = NULL;
++		} while (rdp);
++		rdp_spawn->nocb_next_follower = rdp_old_leader;
++	}
++
++	/* Spawn the kthread for this CPU and RCU flavor. */
++	t = kthread_run(rcu_nocb_kthread, rdp_spawn,
++			"rcuo%c/%d", rsp->abbr, cpu);
++	BUG_ON(IS_ERR(t));
++	ACCESS_ONCE(rdp_spawn->nocb_kthread) = t;
++}
++
++/*
++ * If the specified CPU is a no-CBs CPU that does not already have its
++ * rcuo kthreads, spawn them.
++ */
++static void rcu_spawn_all_nocb_kthreads(int cpu)
++{
++	struct rcu_state *rsp;
++
++	if (rcu_scheduler_fully_active)
++		for_each_rcu_flavor(rsp)
++			rcu_spawn_one_nocb_kthread(rsp, cpu);
++}
++
++/*
++ * Once the scheduler is running, spawn rcuo kthreads for all online
++ * no-CBs CPUs.  This assumes that the early_initcall()s happen before
++ * non-boot CPUs come online -- if this changes, we will need to add
++ * some mutual exclusion.
++ */
++static void __init rcu_spawn_nocb_kthreads(void)
++{
++	int cpu;
++
++	for_each_online_cpu(cpu)
++		rcu_spawn_all_nocb_kthreads(cpu);
++}
++
+ /* How many follower CPU IDs per leader?  Default of -1 for sqrt(nr_cpu_ids). */
+ static int rcu_nocb_leader_stride = -1;
+ module_param(rcu_nocb_leader_stride, int, 0444);
  
  /*
-@@ -2407,28 +2451,6 @@ __alloc_pages_high_priority(gfp_t gfp_mask, unsigned int order,
- 	return page;
+- * Create a kthread for each RCU flavor for each no-CBs CPU.
+- * Also initialize leader-follower relationships.
++ * Initialize leader-follower relationships for all no-CBs CPU.
+  */
+-static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
++static void __init rcu_organize_nocb_kthreads(struct rcu_state *rsp)
+ {
+ 	int cpu;
+ 	int ls = rcu_nocb_leader_stride;
+@@ -2506,7 +2577,6 @@ static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
+ 	struct rcu_data *rdp;
+ 	struct rcu_data *rdp_leader = NULL;  /* Suppress misguided gcc warn. */
+ 	struct rcu_data *rdp_prev = NULL;
+-	struct task_struct *t;
+ 
+ 	if (rcu_nocb_mask == NULL)
+ 		return;
+@@ -2532,12 +2602,6 @@ static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
+ 			rdp_prev->nocb_next_follower = rdp;
+ 		}
+ 		rdp_prev = rdp;
+-
+-		/* Spawn the kthread for this CPU. */
+-		t = kthread_run(rcu_nocb_kthread, rdp,
+-				"rcuo%c/%d", rsp->abbr, cpu);
+-		BUG_ON(IS_ERR(t));
+-		ACCESS_ONCE(rdp->nocb_kthread) = t;
+ 	}
  }
  
--static void reset_alloc_batches(struct zonelist *zonelist,
--				enum zone_type high_zoneidx,
--				struct zone *preferred_zone)
--{
--	struct zoneref *z;
--	struct zone *zone;
--
--	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
--		/*
--		 * Only reset the batches of zones that were actually
--		 * considered in the fairness pass, we don't want to
--		 * trash fairness information for zones that are not
--		 * actually part of this zonelist's round-robin cycle.
--		 */
--		if (!zone_local(preferred_zone, zone))
--			continue;
--		mod_zone_page_state(zone, NR_ALLOC_BATCH,
--			high_wmark_pages(zone) - low_wmark_pages(zone) -
--			atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]));
--	}
--}
--
- static void wake_all_kswapds(unsigned int order,
- 			     struct zonelist *zonelist,
- 			     enum zone_type high_zoneidx,
-@@ -2759,29 +2781,12 @@ retry_cpuset:
- 	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
- 		alloc_flags |= ALLOC_CMA;
- #endif
--retry:
- 	/* First allocation attempt */
- 	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask, order,
- 			zonelist, high_zoneidx, alloc_flags,
- 			preferred_zone, classzone_idx, migratetype);
- 	if (unlikely(!page)) {
- 		/*
--		 * The first pass makes sure allocations are spread
--		 * fairly within the local node.  However, the local
--		 * node might have free pages left after the fairness
--		 * batches are exhausted, and remote zones haven't
--		 * even been considered yet.  Try once more without
--		 * fairness, and include remote zones now, before
--		 * entering the slowpath and waking kswapd: prefer
--		 * spilling to a remote zone over swapping locally.
--		 */
--		if (alloc_flags & ALLOC_FAIR) {
--			reset_alloc_batches(zonelist, high_zoneidx,
--					    preferred_zone);
--			alloc_flags &= ~ALLOC_FAIR;
--			goto retry;
--		}
--		/*
- 		 * Runtime PM, block IO and its error handling path
- 		 * can deadlock because I/O on the device might not
- 		 * complete.
+@@ -2591,7 +2655,11 @@ static void do_nocb_deferred_wakeup(struct rcu_data *rdp)
+ {
+ }
+ 
+-static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
++static void rcu_spawn_all_nocb_kthreads(int cpu)
++{
++}
++
++static void __init rcu_spawn_nocb_kthreads(void)
+ {
+ }
+ 
 -- 
-1.8.4.5
+1.8.1.5
 
