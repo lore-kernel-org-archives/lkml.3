@@ -1,67 +1,564 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935986AbaH1BiZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 21:38:25 -0400
-Received: from smtprelay0150.hostedemail.com ([216.40.44.150]:36325 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932689AbaH1BiY (ORCPT
+	id S936055AbaH1BjO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 21:39:14 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:47340 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932689AbaH1BjN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 21:38:24 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2538:2559:2562:2828:3138:3139:3140:3141:3142:3352:3653:3865:3867:3868:3871:4605:5007:6119:7522:7652:7903:10004:10400:10848:11026:11658:11914:12043:12517:12519:12555:13069:13161:13229:13311:13357:13846:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: spy13_834899f75db2b
-X-Filterd-Recvd-Size: 2160
-Message-ID: <1409189901.25751.16.camel@joe-AO725>
-Subject: [PATCH] checkpatch: Allow commit descriptions on separate line from
- commit id
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Whitcroft <apw@canonical.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Joe Lawrence <joe.lawrence@stratus.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 27 Aug 2014 18:38:21 -0700
-In-Reply-To: <20140827131135.6d789d26@jlaw-desktop.mno.stratus.com>
-References: 1404338448.14741.8.camel@joe-AO725 <20140827131135.6d789d26@jlaw-desktop.mno.stratus.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
+	Wed, 27 Aug 2014 21:39:13 -0400
+X-AuditID: 85900ec0-d272ab9000001514-17-53fe883d52d4
+Message-ID: <53FE883C.4030400@hitachi.com>
+Date: Thu, 28 Aug 2014 10:39:08 +0900
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120604 Thunderbird/13.0
+MIME-Version: 1.0
+To: Hannes Reinecke <hare@suse.de>
+Cc: linux-scsi@vger.kernel.org,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        yrl.pp-manager.tt@hitachi.com, linux-kernel@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Doug Gilbert <dgilbert@interlog.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christoph Hellwig <hch@lst.de>
+Subject: Re: Re: [RFC PATCH 08/10] scsi/trace: Use scsi_print_sense trace
+ point instead of printk
+References: <20140808115004.6768.97014.stgit@yuno-kbuild.novalocal> <20140808115025.6768.70331.stgit@yuno-kbuild.novalocal> <53FDE7F6.5030308@suse.de>
+In-Reply-To: <53FDE7F6.5030308@suse.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The general form for commit id and description is
+(2014/08/27 23:15), Hannes Reinecke wrote:
+> On 08/08/2014 01:50 PM, Yoshihiro YUNOMAE wrote:
+>> Previous sense messages can be mixed into other sense messages,
+>> because continuous printk (KERN_CONT) was used. To avoid the problem,
+>> patch d87f3a6f51 introduced a local buffer in Hannes's baranch (*1).
+>> But using local buffers can induce stack overflow, so we want to solve
+>> the
+>> problem without local buffer if possible.
+>>
+>> trace_seq_printf can add log messages without local buffer, so we use it.
+>>
+>> (*1)
+>> http://git.kernel.org/cgit/linux/kernel/git/hare/scsi-devel.git/log/?h=logging
+>>
+>>
+>> - Result examples
+>>
+>> <Before> (printk)
+>> sd 2:0:0:0: [sda] Sense Key : Medium Error [current]
+>>
+>> <After> (ftrace)
+>> scsi_print_sense: host_no=2 channel=0 id=0 lun=0 [sda] Sense Key
+>> (Medium Error [current])
+>>
+>> Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+>> Cc: Hannes Reinecke <hare@suse.de>
+>> Cc: Doug Gilbert <dgilbert@interlog.com>
+>> Cc: Martin K. Petersen <martin.petersen@oracle.com>
+>> Cc: Christoph Hellwig <hch@lst.de>
+>> Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+>> Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
+>> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>> ---
+>>   drivers/scsi/constants.c    |  145
+>> ++-----------------------------------------
+>>   drivers/scsi/scsi_trace.c   |  140
+>> ++++++++++++++++++++++++++++++++++++++++--
+>>   include/scsi/scsi_eh.h      |    7 ++
+>>   include/trace/events/scsi.h |   48 ++++++++++++++
+>>   4 files changed, 195 insertions(+), 145 deletions(-)
+>>
+>> diff --git a/drivers/scsi/constants.c b/drivers/scsi/constants.c
+>> index f7b7f32..85b75c8 100644
+>> --- a/drivers/scsi/constants.c
+>> +++ b/drivers/scsi/constants.c
+>> @@ -19,7 +19,7 @@
+>>   #include <scsi/scsi_eh.h>
+>>   #include <scsi/scsi_dbg.h>
+>>
+>> -
+>> +#include <trace/events/scsi.h>
+>>
+>>   /* Commands with service actions that change the command name */
+>>   #define SERVICE_ACTION_IN_12 0xab
+>> @@ -1267,58 +1267,8 @@ static const struct error_info2 additional2[] =
+>>       {0x70, 0x00, 0xff, "Decompression exception short algorithm id
+>> of %x"},
+>>       {0, 0, 0, NULL}
+>>   };
+>> -
+>> -/* description of the sense key values */
+>> -static const char * const snstext[] = {
+>> -    "No Sense",        /* 0: There is no sense information */
+>> -    "Recovered Error",  /* 1: The last command completed successfully
+>> -                  but used error correction */
+>> -    "Not Ready",        /* 2: The addressed target is not ready */
+>> -    "Medium Error",        /* 3: Data error detected on the medium */
+>> -    "Hardware Error",   /* 4: Controller or device failure */
+>> -    "Illegal Request",  /* 5: Error in request */
+>> -    "Unit Attention",   /* 6: Removable medium was changed, or
+>> -                  the target has been reset, or ... */
+>> -    "Data Protect",        /* 7: Access to the data is blocked */
+>> -    "Blank Check",        /* 8: Reached unexpected written or unwritten
+>> -                  region of the medium */
+>> -    "Vendor Specific(9)",
+>> -    "Copy Aborted",        /* A: COPY or COMPARE was aborted */
+>> -    "Aborted Command",  /* B: The target aborted the command */
+>> -    "Equal",        /* C: A SEARCH DATA command found data equal,
+>> -                  reserved in SPC-4 rev 36 */
+>> -    "Volume Overflow",  /* D: Medium full with still data to be
+>> written */
+>> -    "Miscompare",        /* E: Source data and data on the medium
+>> -                  do not agree */
+>> -    "Completed",        /* F: command completed sense data reported,
+>> -                  may occur for successful command */
+>> -};
+>> -#else
+>> -static const char * const snstext[] = {
+>> -    "0x0", "0x1", "0x2", "0x3", "0x4", "0x5", "0x6", "0x7",
+>> -    "0x8", "0x9", "0xa", "0xb", "0xc", "0xd", "0xe", "0xf",
+>> -};
+>>   #endif
+>>
+>> -/* Get sense key string or NULL if not available */
+>> -const char *
+>> -scsi_sense_key_string(unsigned char key) {
+>> -    return snstext[key & 0xf];
+>> -}
+>> -EXPORT_SYMBOL(scsi_sense_key_string);
+>> -
+>> -const char *
+>> -scsi_sense_type_string(struct scsi_sense_hdr *sshdr)
+>> -{
+>> -    return scsi_sense_is_deferred(sshdr) ? "[deferred]" : "[current]";
+>> -}
+>> -
+>> -const char *
+>> -scsi_sense_format_string(struct scsi_sense_hdr *sshdr)
+>> -{
+>> -    return sshdr->response_code >= 0x72 ? "[descriptor]" : "";
+>> -}
+>> -
+>>   /*
+>>    * Get additional sense code string or NULL if not available.
+>>    * This string may contain a "%x" and should be printed with ascq as
+>> arg.
+>> @@ -1375,105 +1325,22 @@ void
+>>   scsi_print_sense_hdr(struct scsi_device *sdev, const char *name,
+>>                struct scsi_sense_hdr *sshdr)
+>>   {
+>> -    sdev_printk(KERN_INFO, sdev, "[%s] Sense Key : %s %s%s\n", name,
+>> -            scsi_sense_key_string(sshdr->sense_key),
+>> -            scsi_sense_type_string(sshdr),
+>> -            scsi_sense_format_string(sshdr));
+>> +    trace_scsi_print_sense(sdev, name, sshdr, NULL, 0, 0);
+>>       scsi_show_extd_sense(sdev, name, sshdr->asc, sshdr->ascq);
+>>   }
+>>   EXPORT_SYMBOL(scsi_print_sense_hdr);
+>>
+>> -static void
+>> -scsi_dump_sense_buffer(struct scsi_device *sdev, const char *prefix,
+>> -               const unsigned char *sense_buffer, int sense_len)
+>> -{
+>> -    char linebuf[128];
+>> -    int i, linelen, remaining;
+>> -
+>> -    if (sense_len < 32)
+>> -        sense_len = 32;
+>> -
+>> -    remaining = sense_len;
+>> -    for (i = 0; i < sense_len; i += 16) {
+>> -        linelen = min(remaining, 16);
+>> -        remaining -= 16;
+>> -
+>> -        hex_dump_to_buffer(sense_buffer + i, linelen, 16, 1,
+>> -                   linebuf, sizeof(linebuf), false);
+>> -    }
+>> -    sdev_printk(KERN_INFO, sdev,
+>> -            "[%s] Unrecognized sense data (in hex): %s",
+>> -            prefix, linebuf);
+>> -}
+>> -
+>> -static void
+>> -scsi_decode_sense_extras(struct scsi_device *sdev, const char *name,
+>> -             const unsigned char *sense_buffer, int sense_len)
+>> -{
+>> -    int res, sense_flags = 0, fixed_valid = 0;
+>> -    u64 info = 0;
+>> -    char buff[80];
+>> -    int blen;
+>> -
+>> -    if ((sense_buffer[0] & 0x80) < 0x72) {
+>> -        /* decode extras for "fixed" format */
+>> -        fixed_valid = sense_buffer[0] & 0x80;
+>> -        info = get_unaligned_be32(&sense_buffer[3]);
+>> -        sense_flags = sense_buffer[2];
+>> -    } else if (sense_buffer[7] > 0) {
+>> -        const u8 *ucp;
+>> -
+>> -        /* descriptor format with sense descriptors */
+>> -        ucp = scsi_sense_desc_find(sense_buffer, sense_len, 0);
+>> -        if (ucp) {
+>> -            fixed_valid = ucp[2] & 0x80;
+>> -            if (fixed_valid)
+>> -                info = get_unaligned_be64(&ucp[4]);
+>> -        }
+>> -        ucp = scsi_sense_desc_find(sense_buffer, sense_len, 4);
+>> -        if (ucp)
+>> -            sense_flags |= ucp[3] & 0xe0;
+>> -    }
+>> -
+>> -    if (!sense_flags && !fixed_valid)
+>> -        return;
+>> -
+>> -    res = 0;
+>> -    memset(buff, 0, sizeof(buff));
+>> -    blen = sizeof(buff) - 1;
+>> -    if (fixed_valid)
+>> -        res += snprintf(buff + res, blen - res,
+>> -                "Info fld=0x%llx, ", info);
+>> -    if (sense_flags)
+>> -        res += snprintf(buff + res, blen - res, "%s%s%s",
+>> -                sense_flags & SENSE_FMK ? "FMK, " : "",
+>> -                sense_flags & SENSE_EOM ? "EOM, " : "",
+>> -                sense_flags & SENSE_ILI ? "ILI, " : "");
+>> -    if (res) {
+>> -        res -= 2;
+>> -        buff[res] = '\0';
+>> -    }
+>> -
+>> -    sdev_printk(KERN_INFO, sdev, "[%s] %s\n", name, buff);
+>> -}
+>> -
+>>   /* Normalize and print sense buffer with name prefix */
+>>   void __scsi_print_sense(struct scsi_device *sdev, const char *name,
+>>               const unsigned char *sense_buffer, int sense_len)
+>>   {
+>>       struct scsi_sense_hdr sshdr;
+>> +    int raw;
+>>
+>> -    if (!scsi_normalize_sense(sense_buffer, sense_len, &sshdr)) {
+>> -        /* this may be SCSI-1 sense data */
+>> -        scsi_dump_sense_buffer(sdev, name, sense_buffer, sense_len);
+>> -        return;
+>> -    }
+>> +    raw = !scsi_normalize_sense(sense_buffer, sense_len, &sshdr);
+>>
+>> -    sdev_printk(KERN_INFO, sdev, "[%s] Sense Key : %s %s%s\n", name,
+>> -           scsi_sense_key_string(sshdr.sense_key),
+>> -           scsi_sense_type_string(&sshdr),
+>> -           scsi_sense_format_string(&sshdr));
+>> -    scsi_decode_sense_extras(sdev, name, sense_buffer, sense_len);
+>> +    trace_scsi_print_sense(sdev, name, &sshdr, sense_buffer, sense_len,
+>> +                   raw);
+>>       scsi_show_extd_sense(sdev, name, sshdr.asc, sshdr.ascq);
+>>   }
+>>   EXPORT_SYMBOL(__scsi_print_sense);
+>> diff --git a/drivers/scsi/scsi_trace.c b/drivers/scsi/scsi_trace.c
+>> index 6ffbc40..2ecb1dc 100644
+>> --- a/drivers/scsi/scsi_trace.c
+>> +++ b/drivers/scsi/scsi_trace.c
+>> @@ -17,15 +17,16 @@
+>>    */
+>>   #include <linux/kernel.h>
+>>   #include <linux/trace_seq.h>
+>> +#include <asm/unaligned.h>
+>>   #include <trace/events/scsi.h>
+>>
+>>   #include <scsi/scsi_dbg.h>
+>> +#include <scsi/scsi_eh.h>
+>>
+>>   #define SERVICE_ACTION16(cdb) (cdb[1] & 0x1f)
+>>   #define SERVICE_ACTION32(cdb) ((cdb[8] << 8) | cdb[9])
+>>
+>> -static const char *
+>> -scsi_trace_misc(struct trace_seq *, unsigned char *, int);
+>> +static const char *scsi_trace_misc(struct trace_seq *);
+>>
+>>   static const char *
+>>   scsi_trace_rw6(struct trace_seq *p, unsigned char *cdb, int len)
+>> @@ -242,12 +243,12 @@ scsi_trace_varlen(struct trace_seq *p, unsigned
+>> char *cdb, int len)
+>>       case WRITE_SAME_32:
+>>           return scsi_trace_rw32(p, cdb, len);
+>>       default:
+>> -        return scsi_trace_misc(p, cdb, len);
+>> +        return scsi_trace_misc(p);
+>>       }
+>>   }
+>>
+>>   static const char *
+>> -scsi_trace_misc(struct trace_seq *p, unsigned char *cdb, int len)
+>> +scsi_trace_misc(struct trace_seq *p)
+>>   {
+>>       const char *ret = p->buffer + p->len;
+>>
+>> @@ -285,10 +286,139 @@ scsi_trace_parse_cdb(struct trace_seq *p,
+>> unsigned char *cdb, int len)
+>>       case VARIABLE_LENGTH_CMD:
+>>           return scsi_trace_varlen(p, cdb, len);
+>>       default:
+>> -        return scsi_trace_misc(p, cdb, len);
+>> +        return scsi_trace_misc(p);
+>>       }
+>>   }
+>>
+>> +#ifdef CONFIG_SCSI_CONSTANTS
+>> +/* description of the sense key values */
+>> +static const char * const snstext[] = {
+>> +    "No Sense",        /* 0: There is no sense information */
+>> +    "Recovered Error",  /* 1: The last command completed successfully
+>> +                  but used error correction */
+>> +    "Not Ready",        /* 2: The addressed target is not ready */
+>> +    "Medium Error",        /* 3: Data error detected on the medium */
+>> +    "Hardware Error",   /* 4: Controller or device failure */
+>> +    "Illegal Request",  /* 5: Error in request */
+>> +    "Unit Attention",   /* 6: Removable medium was changed, or
+>> +                  the target has been reset, or ... */
+>> +    "Data Protect",        /* 7: Access to the data is blocked */
+>> +    "Blank Check",        /* 8: Reached unexpected written or unwritten
+>> +                  region of the medium */
+>> +    "Vendor Specific(9)",
+>> +    "Copy Aborted",        /* A: COPY or COMPARE was aborted */
+>> +    "Aborted Command",  /* B: The target aborted the command */
+>> +    "Equal",        /* C: A SEARCH DATA command found data equal,
+>> +                  reserved in SPC-4 rev 36 */
+>> +    "Volume Overflow",  /* D: Medium full with still data to be
+>> written */
+>> +    "Miscompare",        /* E: Source data and data on the medium
+>> +                  do not agree */
+>> +    "Completed",        /* F: command completed sense data reported,
+>> +                  may occur for successful command */
+>> +};
+>> +#else
+>> +static const char * const snstext[] = {
+>> +    "0x0", "0x1", "0x2", "0x3", "0x4", "0x5", "0x6", "0x7",
+>> +    "0x8", "0x9", "0xa", "0xb", "0xc", "0xd", "0xe", "0xf",
+>> +};
+>> +#endif
+>> +
+>> +/* Get sense key string or NULL if not available */
+>> +const char *
+>> +scsi_sense_key_string(unsigned char key) {
+>> +    return snstext[key & 0xf];
+>> +}
+>> +EXPORT_SYMBOL(scsi_sense_key_string);
+>> +
+>> +static const char *
+>> +scsi_sense_type_string(u8 res_code)
+>> +{
+>> +    return __scsi_sense_is_deferred(res_code) ? "[deferred]" :
+>> "[current]";
+>> +}
+>> +
+>> +static const char *
+>> +scsi_sense_format_string(u8 res_code)
+>> +{
+>> +    return res_code >= 0x72 ? "[descriptor]" : "";
+>> +}
+>> +
+>> +static const char *
+>> +scsi_dump_sense_buffer(struct trace_seq *p, const unsigned char *buf,
+>> int len)
+>> +{
+>> +    const char *ret = p->buffer + p->len;
+>> +    int i;
+>> +
+>> +    if (!buf || !len)
+>> +        return scsi_trace_misc(p);
+>> +
+>> +    if (len < 32)
+>> +        len = 32;
+>> +
+>> +    trace_seq_printf(p, "Unrecognized sense data (in hex)");
+>> +    for (i = 0; i < len; i += 16)
+>> +        trace_seq_printf(p, " %02x", buf[i]);
+>> +
+>> +    trace_seq_putc(p, 0);
+>> +    return ret;
+>> +}
+>> +
+>> +const char *
+>> +scsi_trace_decode_sense_extras(struct trace_seq *p, u8 sense_key, u8
+>> res_code,
+>> +                   const unsigned char *buf, int len, int raw)
+>> +{
+>> +    const char *ret = p->buffer + p->len;
+>> +    int sense_flags = 0, fixed_valid = 0;
+>> +    u64 info = 0;
+>> +
+>> +    if (raw)
+>> +        /* this may be SCSI-1 sense data */
+>> +        return scsi_dump_sense_buffer(p, buf, len);
+>> +
+>> +    trace_seq_printf(p, "Sense Key (%s %s%s",
+>> +             scsi_sense_key_string(sense_key),
+>> +             scsi_sense_type_string(res_code),
+>> +             scsi_sense_format_string(res_code));
+>> +
+>> +    if (!buf || !len)
+>> +        goto out;
+>> +
+>> +    if ((buf[0] & 0x80) < 0x72) {
+>> +        /* decode extras for "fixed" format */
+>> +        fixed_valid = buf[0] & 0x80;
+>> +        info = get_unaligned_be32(&buf[3]);
+>> +        sense_flags = buf[2];
+>> +    } else if (buf[7] > 0) {
+>> +        const u8 *ucp;
+>> +
+>> +        /* descriptor format with sense descriptors */
+>> +        ucp = scsi_sense_desc_find(buf, len, 0);
+>> +        if (ucp) {
+>> +            fixed_valid = ucp[2] & 0x80;
+>> +            if (fixed_valid)
+>> +                info = get_unaligned_be64(&ucp[4]);
+>> +        }
+>> +        ucp = scsi_sense_desc_find(buf, len, 4);
+>> +        if (ucp)
+>> +            sense_flags |= ucp[3] & 0xe0;
+>> +    }
+>> +
+>> +    if (!sense_flags && !fixed_valid)
+>> +        goto out;
+>> +
+>> +    if (fixed_valid)
+>> +        trace_seq_printf(p, " Info fld=0x%llx", info);
+>> +    if (sense_flags)
+>> +        trace_seq_printf(p, " %s%s%s",
+>> +                sense_flags & SENSE_FMK ? "FMK" : "",
+>> +                sense_flags & SENSE_EOM ? "EOM" : "",
+>> +                sense_flags & SENSE_ILI ? "ILI" : "");
+>> +
+>> +out:
+>> +    trace_seq_printf(p, ")");
+>> +    trace_seq_putc(p, 0);
+>> +    return ret;
+>> +}
+>> +
+>>   void scsi_show_result(struct scsi_device *sdev, const char *name,
+>> int result)
+>>   {
+>>       trace_scsi_show_result(sdev, name, result);
+>> diff --git a/include/scsi/scsi_eh.h b/include/scsi/scsi_eh.h
+>> index 06a8790..0e6d28c 100644
+>> --- a/include/scsi/scsi_eh.h
+>> +++ b/include/scsi/scsi_eh.h
+>> @@ -47,9 +47,14 @@ extern int scsi_normalize_sense(const u8
+>> *sense_buffer, int sb_len,
+>>   extern int scsi_command_normalize_sense(struct scsi_cmnd *cmd,
+>>           struct scsi_sense_hdr *sshdr);
+>>
+>> +static inline int __scsi_sense_is_deferred(u8 response_code)
+>> +{
+>> +    return ((response_code >= 0x70) && (response_code & 1));
+>> +}
+>> +
+>>   static inline int scsi_sense_is_deferred(struct scsi_sense_hdr *sshdr)
+>>   {
+>> -    return ((sshdr->response_code >= 0x70) && (sshdr->response_code &
+>> 1));
+>> +    return __scsi_sense_is_deferred(sshdr->response_code);
+>>   }
+>>
+>>   extern const u8 * scsi_sense_desc_find(const u8 * sense_buffer, int
+>> sb_len,
+>> diff --git a/include/trace/events/scsi.h b/include/trace/events/scsi.h
+>> index 0675195..572aa65 100644
+>> --- a/include/trace/events/scsi.h
+>> +++ b/include/trace/events/scsi.h
+>> @@ -395,6 +395,54 @@ TRACE_EVENT(scsi_show_result,
+>>             show_hostbyte_name(host_byte(__entry->result)))
+>>   );
+>>
+>> +const char *scsi_trace_decode_sense_extras(struct trace_seq*, u8, u8,
+>> +                       const unsigned char*, int, int);
+>> +#define __decode_extras(sense_key, res_code, buf, len, raw) \
+>> +    scsi_trace_decode_sense_extras(p, sense_key, res_code, buf, len,
+>> raw)
+>> +
+>> +TRACE_EVENT(scsi_print_sense,
+>> +
+>> +    TP_PROTO(struct scsi_device *sdev, const char *devname,
+>> +         struct scsi_sense_hdr *sshdr,
+>> +         const unsigned char *sense_buffer, int sense_len, int raw),
+>> +
+>> +    TP_ARGS(sdev, devname, sshdr, sense_buffer, sense_len, raw),
+>> +
+>> +    TP_STRUCT__entry(
+>> +        __field( unsigned int,        host_no        )
+>> +        __field( unsigned int,        channel        )
+>> +        __field( unsigned int,        id        )
+>> +        __field( unsigned int,        lun        )
+>> +        __string(devname,        devname        )
+>> +        __field( u8,            sense_key    )
+>> +        __field( u8,            res_code    )
+>> +        __dynamic_array(unsigned char,    sense_buffer, sense_len)
+>> +        __field( u8,            asc        )
+>> +        __field( u8,            ascq        )
+>> +        __field( int,            sense_len    )
+>> +        __field( int,            raw        )
+>> +    ),
+>> +
+>> +    TP_fast_assign(
+>> +        __entry->host_no    = sdev->host->host_no;
+>> +        __entry->channel    = sdev->channel;
+>> +        __entry->id        = sdev->id;
+>> +        __entry->lun        = sdev->lun;
+>> +        __assign_str(devname, devname);
+>> +        __entry->sense_key    = sshdr->sense_key;
+>> +        __entry->res_code    = sshdr->response_code;
+>> +        memcpy(__get_dynamic_array(sense_buffer), sense_buffer,
+>> +               sense_len);
+>> +        __entry->sense_len    = sense_len;
+>> +        __entry->raw        = raw;
+>> +    ),
+>> +
+>> +    TP_printk("host_no=%u channel=%u id=%u lun=%u [%s] %s",
+>> +          __entry->host_no, __entry->channel, __entry->id, __entry->lun,
+>> +          __get_str(devname), __decode_extras(__entry->sense_key,
+>> +          __entry->res_code, __get_dynamic_array(sense_buffer),
+>> +          __entry->sense_len,  __entry->raw))
+>> +);
+>>   #endif /*  _TRACE_SCSI_H */
+>>
+>>   /* This part must be outside protection */
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+> Same here:
+> Please use the functions from constants.c and delete the functionality
+> from scsi_trace.
 
-'Commit <12+hexdigits> ("commit description/subject line")'
+Sure. I'll use existing decoder in constants.c.
 
-But commit logs often have relatively long commit ids and
-the commit description is on a separate line like:
+> And we should remove the code to interpret any sense code extras.
 
-Some explanation as to why commit <12+hexdigits>
-("commit description/subject line") is improved.
+OK. Sense extra decoder is only for st or osst, and those can handle it
+as you said. So, we can remove it.
 
-Allow this form.
+> But other than that having trace points for sense code printing is a
+> really good idea.
+> Care to send this as a separate patch?
 
-Signed-off-by: Joe Perches <joe@perches.com>
-Suggested-by: Joe Lawrence <joe.lawrence@stratus.com
-Suggested-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index d89857d..4d869dd 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2133,7 +2133,10 @@ sub process {
- # Check for improperly formed commit descriptions
- 		if ($in_commit_log &&
- 		    $line =~ /\bcommit\s+[0-9a-f]{5,}/i &&
--		    $line !~ /\b[Cc]ommit [0-9a-f]{12,40} \("/) {
-+		    !($line =~ /\b[Cc]ommit [0-9a-f]{12,40} \("/ ||
-+		      ($line =~ /\b[Cc]ommit [0-9a-f]{12,40}\s*$/ &&
-+		       defined $rawlines[$linenr] &&
-+		       $rawlines[$linenr] =~ /^\s*\("/))) {
- 			$line =~ /\b(c)ommit\s+([0-9a-f]{5,})/i;
- 			my $init_char = $1;
- 			my $orig_commit = lc($2);
+Sure.
+
+Thanks,
+Yoshihiro YUNOMAE
+
+-- 
+Yoshihiro YUNOMAE
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: yoshihiro.yunomae.ez@hitachi.com
 
 
