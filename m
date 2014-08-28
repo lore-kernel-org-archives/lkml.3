@@ -1,87 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751502AbaH1PBj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 11:01:39 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:35704 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751280AbaH1PBe (ORCPT
+	id S1751673AbaH1PCO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 11:02:14 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38090 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750961AbaH1PCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 11:01:34 -0400
-Date: Thu, 28 Aug 2014 16:01:12 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Daniel Thompson <daniel.thompson@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Colin Cross <ccross@android.com>, kernel-team@android.com,
-        Rob Herring <robherring2@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Nicolas Pitre <nico@linaro.org>
-Subject: Re: [PATCH v10 03/19] arm: fiq: Replace default FIQ handler
-Message-ID: <20140828150112.GD30401@n2100.arm.linux.org.uk>
-References: <1408369264-14242-1-git-send-email-daniel.thompson@linaro.org> <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org> <1408466769-20004-4-git-send-email-daniel.thompson@linaro.org> <20140819173742.GG30401@n2100.arm.linux.org.uk> <53F39377.1070308@linaro.org>
+	Thu, 28 Aug 2014 11:02:13 -0400
+Date: Thu, 28 Aug 2014 16:01:41 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Chris Zhong <zyw@rock-chips.com>, Zhang Qing <zhanqging@rock-chips.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20140828150141.GC29327@sirena.org.uk>
+References: <1409231089.10292.0.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TYecfFk8j8mZq+dy"
 Content-Disposition: inline
-In-Reply-To: <53F39377.1070308@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1409231089.10292.0.camel@phoenix>
+X-Cookie: Simulated picture.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: rk808: Fix memory leak
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 07:12:07PM +0100, Daniel Thompson wrote:
-> On 19/08/14 18:37, Russell King - ARM Linux wrote:
-> > On Tue, Aug 19, 2014 at 05:45:53PM +0100, Daniel Thompson wrote:
-> >> +int register_fiq_nmi_notifier(struct notifier_block *nb)
-> >> +{
-> >> +	return atomic_notifier_chain_register(&fiq_nmi_chain, nb);
-> >> +}
-> >> +
-> >> +asmlinkage void __exception_irq_entry fiq_nmi_handler(struct pt_regs *regs)
-> >> +{
-> >> +	struct pt_regs *old_regs = set_irq_regs(regs);
-> >> +
-> >> +	nmi_enter();
-> >> +	atomic_notifier_call_chain(&fiq_nmi_chain, (unsigned long)regs, NULL);
-> >> +	nmi_exit();
-> >> +	set_irq_regs(old_regs);
-> >> +}
-> > 
-> > Really not happy with this.  What happens if a FIQ occurs while we're
-> > inside register_fiq_nmi_notifier() - more specifically inside
-> > atomic_notifier_chain_register() ?
-> 
-> Should depend on which side of the rcu update we're on.
 
-I just asked Paul McKenney, our RCU expert... essentially, yes, RCU
-stuff itself is safe in this context.  However, RCU stuff can call into
-lockdep if lockdep is configured, and there are questions over lockdep.
+--TYecfFk8j8mZq+dy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-There's some things which can be done to reduce the lockdep exposure
-to it, such as ensuring that rcu_read_lock() is first called outside
-of FIQ context.
+On Thu, Aug 28, 2014 at 09:04:49PM +0800, Axel Lin wrote:
+> The memory allocated in rk808_regulator_probe() needs to be freed when the
+> module is unloaded. Thus pass &pdev->dev rather than &client->dev to
+> devm_kzalloc.
 
-There's concerns with whether either printk() in check_flags() could
-be reached too (flags there should always indicate that IRQs were
-disabled, so that reduces down to a question about just the first
-printk() there.)
+Applied, thanks.
 
-There's also the very_verbose() stuff for RCU lockdep classes which
-Paul says must not be enabled.
+--TYecfFk8j8mZq+dy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Lastly, Paul isn't a lockdep expert, but he sees nothing that prevents
-lockdep doing the deadlock checking as a result of the above call.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-So... this coupled with my feeling that notifiers make it too easy for
-unreviewed code to be hooked into this path, I'm fairly sure that we
-don't want to be calling atomic notifier chains from FIQ context.
+iQIcBAEBAgAGBQJT/0RSAAoJELSic+t+oim9tJQP/2+5G/mn+q14mRS7uDWqofB3
+U72gmz4pOS32zSC3papJcjrY4AMt3zBckqKuufkbzU66sWp51tMaiKB4yqVFlwlG
+qCEcWmb0WKSUF+3MXCDuKxz+6oeQw/HH+Dsa0/ou7EnGaeEk0zTu4/n6I7OEz11F
+WcVzm7ycBhOVydwI0MjWqOmIacdM2L8AMZ850dIbXRQFqPswjyG7IhWYadlLeO/9
+wrzV7w4SxBbZS7WbF7YkCnDR/Sja9BUFAY1u/FZ2KR5Fhqfc6Cq4KBwDCw28UxIv
+oYD/SiCzL2ioIprvM64T9k7U+EcTGSuOsPuZvySFp2PCsyFA8Qyv1193ezeEcYC3
+C/oaDTiHRz/lvBriOpPAmX/643m/W3nnMP3o03YUWX0ItqHISzSpdSnjT9GVcTTL
+gngONlrh4CMiTqrEmyyGwPCBokhP3Li9pPjnYRACFbherbQ5aTTy7JTp/QzGdwZH
+AbEVmC5Jm6bRFVCHPuUri0wkaS2RoOVae0sNk8Ww5DX1HgY86mSVUhacaxzEJLTZ
+3xyIr8UAkGLBzwqtEajffGXidYq9Xn2+1MUhnO9cVNLPuJL5Om1mRjlCXNfQeYQr
+ysecbSsrAXxJsBSm49TdtAuRAd1lL4gfA9saFwsSwv5vTXjcHsnnGRVPqSNRmGKe
+nRHFu3jTr6nabWK+KpOn
+=KQIr
+-----END PGP SIGNATURE-----
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+--TYecfFk8j8mZq+dy--
