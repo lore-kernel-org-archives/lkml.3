@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755267AbaH1TNd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 15:13:33 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:43242 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755249AbaH1TMc (ORCPT
+	id S1755351AbaH1TNg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 15:13:36 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:43910 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755246AbaH1TMc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 28 Aug 2014 15:12:32 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -14,124 +14,287 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 06/11] rcutorture: Specify MAXSMP=y for TREE01
-Date: Thu, 28 Aug 2014 12:12:18 -0700
-Message-Id: <1409253143-31466-6-git-send-email-paulmck@linux.vnet.ibm.com>
+        bobby.prani@gmail.com, Joe Perches <joe@perches.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 08/11] rcu: Use pr_alert/pr_cont for printing logs
+Date: Thu, 28 Aug 2014 12:12:20 -0700
+Message-Id: <1409253143-31466-8-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1409253143-31466-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20140828191203.GA26955@linux.vnet.ibm.com>
  <1409253143-31466-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082819-1542-0000-0000-0000045FBF7E
+x-cbid: 14082819-9332-0000-0000-000001D6E225
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+From: Joe Perches <joe@perches.com>
 
-Setting CONFIG_MAXSMP=y causes cpumasks to be moved offstack, which
-introduces the possibility of NULL cpumask_var_t pointers.  This commit
-therefore enables CONFIG_MAXSMP=y in TREE01 to increase test coverage.
-However, because CONFIG_MAXSMP=y implies 8192 CPUs, we need to use
-the maxcpus= boot parameter to limit the number of CPUs to something
-reasonable, which in turn requires updating the scripts to handle this.
+User pr_alert/pr_cont for printing the logs from rcutorture module directly
+instead of writing it to a buffer and then printing it. This allows us from not
+having to allocate such buffers. Also remove a resulting empty function.
 
+I tested this using the parse-torture.sh script as follows:
+
+$ dmesg | grep torture > log.txt
+$ bash parse-torture.sh log.txt test
+$
+
+There were no warnings which means that parsing went fine.
+
+Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- tools/testing/selftests/rcutorture/bin/functions.sh  | 20 ++++++++++++++++++++
- .../selftests/rcutorture/bin/kvm-test-1-run.sh       |  1 +
- tools/testing/selftests/rcutorture/bin/kvm.sh        |  4 +++-
- .../testing/selftests/rcutorture/configs/rcu/TREE01  |  4 +---
- .../selftests/rcutorture/configs/rcu/TREE01.boot     |  2 +-
- 5 files changed, 26 insertions(+), 5 deletions(-)
+ include/linux/torture.h |   2 +-
+ kernel/rcu/rcutorture.c | 127 +++++++++++++++++++++---------------------------
+ kernel/torture.c        |  16 +++---
+ 3 files changed, 64 insertions(+), 81 deletions(-)
 
-diff --git a/tools/testing/selftests/rcutorture/bin/functions.sh b/tools/testing/selftests/rcutorture/bin/functions.sh
-index d01b865bb100..b325470c01b3 100644
---- a/tools/testing/selftests/rcutorture/bin/functions.sh
-+++ b/tools/testing/selftests/rcutorture/bin/functions.sh
-@@ -64,6 +64,26 @@ configfrag_boot_params () {
- 	fi
+diff --git a/include/linux/torture.h b/include/linux/torture.h
+index 5ca58fcbaf1b..fec46f8c08eb 100644
+--- a/include/linux/torture.h
++++ b/include/linux/torture.h
+@@ -51,7 +51,7 @@
+ 
+ /* Definitions for online/offline exerciser. */
+ int torture_onoff_init(long ooholdoff, long oointerval);
+-char *torture_onoff_stats(char *page);
++void torture_onoff_stats(void);
+ bool torture_onoff_failures(void);
+ 
+ /* Low-rider random number generator. */
+diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
+index 7e67711cbae8..ff4f0c756dee 100644
+--- a/kernel/rcu/rcutorture.c
++++ b/kernel/rcu/rcutorture.c
+@@ -242,7 +242,7 @@ struct rcu_torture_ops {
+ 	void (*call)(struct rcu_head *head, void (*func)(struct rcu_head *rcu));
+ 	void (*cb_barrier)(void);
+ 	void (*fqs)(void);
+-	void (*stats)(char *page);
++	void (*stats)(void);
+ 	int irq_capable;
+ 	int can_boost;
+ 	const char *name;
+@@ -525,21 +525,21 @@ static void srcu_torture_barrier(void)
+ 	srcu_barrier(&srcu_ctl);
  }
  
-+# configfrag_boot_cpus bootparam-string config-fragment-file config-cpus
-+#
-+# Decreases number of CPUs based on any maxcpus= boot parameters specified.
-+configfrag_boot_cpus () {
-+	local bootargs="`configfrag_boot_params "$1" "$2"`"
-+	local maxcpus
-+	if echo "${bootargs}" | grep -q 'maxcpus=[0-9]'
-+	then
-+		maxcpus="`echo "${bootargs}" | sed -e 's/^.*maxcpus=\([0-9]*\).*$/\1/'`"
-+		if test "$3" -gt "$maxcpus"
-+		then
-+			echo $maxcpus
-+		else
-+			echo $3
-+		fi
-+	else
-+		echo $3
-+	fi
-+}
+-static void srcu_torture_stats(char *page)
++static void srcu_torture_stats(void)
+ {
+ 	int cpu;
+ 	int idx = srcu_ctl.completed & 0x1;
+ 
+-	page += sprintf(page, "%s%s per-CPU(idx=%d):",
+-		       torture_type, TORTURE_FLAG, idx);
++	pr_alert("%s%s per-CPU(idx=%d):",
++		 torture_type, TORTURE_FLAG, idx);
+ 	for_each_possible_cpu(cpu) {
+ 		long c0, c1;
+ 
+ 		c0 = (long)per_cpu_ptr(srcu_ctl.per_cpu_ref, cpu)->c[!idx];
+ 		c1 = (long)per_cpu_ptr(srcu_ctl.per_cpu_ref, cpu)->c[idx];
+-		page += sprintf(page, " %d(%ld,%ld)", cpu, c0, c1);
++		pr_cont(" %d(%ld,%ld)", cpu, c0, c1);
+ 	}
+-	sprintf(page, "\n");
++	pr_cont("\n");
+ }
+ 
+ static void srcu_torture_synchronize_expedited(void)
+@@ -1031,10 +1031,15 @@ rcu_torture_reader(void *arg)
+ }
+ 
+ /*
+- * Create an RCU-torture statistics message in the specified buffer.
++ * Print torture statistics.  Caller must ensure that there is only
++ * one call to this function at a given time!!!  This is normally
++ * accomplished by relying on the module system to only have one copy
++ * of the module loaded, and then by giving the rcu_torture_stats
++ * kthread full control (or the init/cleanup functions when rcu_torture_stats
++ * thread is not running).
+  */
+ static void
+-rcu_torture_printk(char *page)
++rcu_torture_stats_print(void)
+ {
+ 	int cpu;
+ 	int i;
+@@ -1052,55 +1057,60 @@ rcu_torture_printk(char *page)
+ 		if (pipesummary[i] != 0)
+ 			break;
+ 	}
+-	page += sprintf(page, "%s%s ", torture_type, TORTURE_FLAG);
+-	page += sprintf(page,
+-		       "rtc: %p ver: %lu tfle: %d rta: %d rtaf: %d rtf: %d ",
+-		       rcu_torture_current,
+-		       rcu_torture_current_version,
+-		       list_empty(&rcu_torture_freelist),
+-		       atomic_read(&n_rcu_torture_alloc),
+-		       atomic_read(&n_rcu_torture_alloc_fail),
+-		       atomic_read(&n_rcu_torture_free));
+-	page += sprintf(page, "rtmbe: %d rtbke: %ld rtbre: %ld ",
+-		       atomic_read(&n_rcu_torture_mberror),
+-		       n_rcu_torture_boost_ktrerror,
+-		       n_rcu_torture_boost_rterror);
+-	page += sprintf(page, "rtbf: %ld rtb: %ld nt: %ld ",
+-		       n_rcu_torture_boost_failure,
+-		       n_rcu_torture_boosts,
+-		       n_rcu_torture_timers);
+-	page = torture_onoff_stats(page);
+-	page += sprintf(page, "barrier: %ld/%ld:%ld",
+-		       n_barrier_successes,
+-		       n_barrier_attempts,
+-		       n_rcu_torture_barrier_error);
+-	page += sprintf(page, "\n%s%s ", torture_type, TORTURE_FLAG);
 +
- # configfrag_hotplug_cpu config-fragment-file
- #
- # Returns 1 if the config fragment specifies hotplug CPU.
-diff --git a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
-index 6d2f5fa48484..487308fabf76 100755
---- a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
-+++ b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
-@@ -140,6 +140,7 @@ fi
- # Generate -smp qemu argument.
- qemu_args="-nographic $qemu_args"
- cpu_count=`configNR_CPUS.sh $config_template`
-+cpu_count=`configfrag_boot_cpus "$boot_args" "$config_template" "$cpu_count"`
- vcpus=`identify_qemu_vcpus`
- if test $cpu_count -gt $vcpus
- then
-diff --git a/tools/testing/selftests/rcutorture/bin/kvm.sh b/tools/testing/selftests/rcutorture/bin/kvm.sh
-index 36534f9938ca..e527dc952eb0 100755
---- a/tools/testing/selftests/rcutorture/bin/kvm.sh
-+++ b/tools/testing/selftests/rcutorture/bin/kvm.sh
-@@ -188,7 +188,9 @@ for CF in $configs
- do
- 	if test -f "$CONFIGFRAG/$kversion/$CF"
- 	then
--		echo $CF `configNR_CPUS.sh $CONFIGFRAG/$kversion/$CF` >> $T/cfgcpu
-+		cpu_count=`configNR_CPUS.sh $CONFIGFRAG/$kversion/$CF`
-+		cpu_count=`configfrag_boot_cpus "$TORTURE_BOOTARGS" "$CONFIGFRAG/$kversion/$CF" "$cpu_count"`
-+		echo $CF $cpu_count >> $T/cfgcpu
- 	else
- 		echo "The --configs file $CF does not exist, terminating."
- 		exit 1
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TREE01 b/tools/testing/selftests/rcutorture/configs/rcu/TREE01
-index 063b7079c621..38e3895759dd 100644
---- a/tools/testing/selftests/rcutorture/configs/rcu/TREE01
-+++ b/tools/testing/selftests/rcutorture/configs/rcu/TREE01
-@@ -1,5 +1,4 @@
- CONFIG_SMP=y
--CONFIG_NR_CPUS=8
- CONFIG_PREEMPT_NONE=n
- CONFIG_PREEMPT_VOLUNTARY=n
- CONFIG_PREEMPT=y
-@@ -10,8 +9,7 @@ CONFIG_NO_HZ_FULL=n
- CONFIG_RCU_FAST_NO_HZ=y
- CONFIG_RCU_TRACE=y
- CONFIG_HOTPLUG_CPU=y
--CONFIG_RCU_FANOUT=8
--CONFIG_RCU_FANOUT_EXACT=n
-+CONFIG_MAXSMP=y
- CONFIG_RCU_NOCB_CPU=y
- CONFIG_RCU_NOCB_CPU_ZERO=y
- CONFIG_DEBUG_LOCK_ALLOC=n
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TREE01.boot b/tools/testing/selftests/rcutorture/configs/rcu/TREE01.boot
-index 0fc8a3428938..adc3abc82fb8 100644
---- a/tools/testing/selftests/rcutorture/configs/rcu/TREE01.boot
-+++ b/tools/testing/selftests/rcutorture/configs/rcu/TREE01.boot
-@@ -1 +1 @@
--rcutorture.torture_type=rcu_bh
-+rcutorture.torture_type=rcu_bh maxcpus=8
++	pr_alert("%s%s ", torture_type, TORTURE_FLAG);
++	pr_cont("rtc: %p ver: %lu tfle: %d rta: %d rtaf: %d rtf: %d ",
++		rcu_torture_current,
++		rcu_torture_current_version,
++		list_empty(&rcu_torture_freelist),
++		atomic_read(&n_rcu_torture_alloc),
++		atomic_read(&n_rcu_torture_alloc_fail),
++		atomic_read(&n_rcu_torture_free));
++	pr_cont("rtmbe: %d rtbke: %ld rtbre: %ld ",
++		atomic_read(&n_rcu_torture_mberror),
++		n_rcu_torture_boost_ktrerror,
++		n_rcu_torture_boost_rterror);
++	pr_cont("rtbf: %ld rtb: %ld nt: %ld ",
++		n_rcu_torture_boost_failure,
++		n_rcu_torture_boosts,
++		n_rcu_torture_timers);
++	torture_onoff_stats();
++	pr_cont("barrier: %ld/%ld:%ld\n",
++		n_barrier_successes,
++		n_barrier_attempts,
++		n_rcu_torture_barrier_error);
++
++	pr_alert("%s%s ", torture_type, TORTURE_FLAG);
+ 	if (atomic_read(&n_rcu_torture_mberror) != 0 ||
+ 	    n_rcu_torture_barrier_error != 0 ||
+ 	    n_rcu_torture_boost_ktrerror != 0 ||
+ 	    n_rcu_torture_boost_rterror != 0 ||
+ 	    n_rcu_torture_boost_failure != 0 ||
+ 	    i > 1) {
+-		page += sprintf(page, "!!! ");
++		pr_cont("%s", "!!! ");
+ 		atomic_inc(&n_rcu_torture_error);
+ 		WARN_ON_ONCE(1);
+ 	}
+-	page += sprintf(page, "Reader Pipe: ");
++	pr_cont("Reader Pipe: ");
+ 	for (i = 0; i < RCU_TORTURE_PIPE_LEN + 1; i++)
+-		page += sprintf(page, " %ld", pipesummary[i]);
+-	page += sprintf(page, "\n%s%s ", torture_type, TORTURE_FLAG);
+-	page += sprintf(page, "Reader Batch: ");
++		pr_cont(" %ld", pipesummary[i]);
++	pr_cont("\n");
++
++	pr_alert("%s%s ", torture_type, TORTURE_FLAG);
++	pr_cont("Reader Batch: ");
+ 	for (i = 0; i < RCU_TORTURE_PIPE_LEN + 1; i++)
+-		page += sprintf(page, " %ld", batchsummary[i]);
+-	page += sprintf(page, "\n%s%s ", torture_type, TORTURE_FLAG);
+-	page += sprintf(page, "Free-Block Circulation: ");
++		pr_cont(" %ld", batchsummary[i]);
++	pr_cont("\n");
++
++	pr_alert("%s%s ", torture_type, TORTURE_FLAG);
++	pr_cont("Free-Block Circulation: ");
+ 	for (i = 0; i < RCU_TORTURE_PIPE_LEN + 1; i++) {
+-		page += sprintf(page, " %d",
+-			       atomic_read(&rcu_torture_wcount[i]));
++		pr_cont(" %d", atomic_read(&rcu_torture_wcount[i]));
+ 	}
+-	page += sprintf(page, "\n");
++	pr_cont("\n");
++
+ 	if (cur_ops->stats)
+-		cur_ops->stats(page);
++		cur_ops->stats();
+ 	if (rtcv_snap == rcu_torture_current_version &&
+ 	    rcu_torture_current != NULL) {
+ 		int __maybe_unused flags;
+@@ -1109,10 +1119,9 @@ rcu_torture_printk(char *page)
+ 
+ 		rcutorture_get_gp_data(cur_ops->ttype,
+ 				       &flags, &gpnum, &completed);
+-		page += sprintf(page,
+-				"??? Writer stall state %d g%lu c%lu f%#x\n",
+-				rcu_torture_writer_state,
+-				gpnum, completed, flags);
++		pr_alert("??? Writer stall state %d g%lu c%lu f%#x\n",
++			 rcu_torture_writer_state,
++			 gpnum, completed, flags);
+ 		show_rcu_gp_kthreads();
+ 		rcutorture_trace_dump();
+ 	}
+@@ -1120,30 +1129,6 @@ rcu_torture_printk(char *page)
+ }
+ 
+ /*
+- * Print torture statistics.  Caller must ensure that there is only
+- * one call to this function at a given time!!!  This is normally
+- * accomplished by relying on the module system to only have one copy
+- * of the module loaded, and then by giving the rcu_torture_stats
+- * kthread full control (or the init/cleanup functions when rcu_torture_stats
+- * thread is not running).
+- */
+-static void
+-rcu_torture_stats_print(void)
+-{
+-	int size = nr_cpu_ids * 200 + 8192;
+-	char *buf;
+-
+-	buf = kmalloc(size, GFP_KERNEL);
+-	if (!buf) {
+-		pr_err("rcu-torture: Out of memory, need: %d", size);
+-		return;
+-	}
+-	rcu_torture_printk(buf);
+-	pr_alert("%s", buf);
+-	kfree(buf);
+-}
+-
+-/*
+  * Periodically prints torture statistics, if periodic statistics printing
+  * was specified via the stat_interval module parameter.
+  */
+diff --git a/kernel/torture.c b/kernel/torture.c
+index d600af21f022..ede8b25ec1ae 100644
+--- a/kernel/torture.c
++++ b/kernel/torture.c
+@@ -211,18 +211,16 @@ EXPORT_SYMBOL_GPL(torture_onoff_cleanup);
+ /*
+  * Print online/offline testing statistics.
+  */
+-char *torture_onoff_stats(char *page)
++void torture_onoff_stats(void)
+ {
+ #ifdef CONFIG_HOTPLUG_CPU
+-	page += sprintf(page,
+-		       "onoff: %ld/%ld:%ld/%ld %d,%d:%d,%d %lu:%lu (HZ=%d) ",
+-		       n_online_successes, n_online_attempts,
+-		       n_offline_successes, n_offline_attempts,
+-		       min_online, max_online,
+-		       min_offline, max_offline,
+-		       sum_online, sum_offline, HZ);
++	pr_cont("onoff: %ld/%ld:%ld/%ld %d,%d:%d,%d %lu:%lu (HZ=%d) ",
++		n_online_successes, n_online_attempts,
++		n_offline_successes, n_offline_attempts,
++		min_online, max_online,
++		min_offline, max_offline,
++		sum_online, sum_offline, HZ);
+ #endif /* #ifdef CONFIG_HOTPLUG_CPU */
+-	return page;
+ }
+ EXPORT_SYMBOL_GPL(torture_onoff_stats);
+ 
 -- 
 1.8.1.5
 
