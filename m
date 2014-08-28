@@ -1,97 +1,468 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936405AbaH1JWB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 05:22:01 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:57306 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932467AbaH1JV7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 05:21:59 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-3b-53fef4b425b6
-Message-id: <1409217715.20020.7.camel@AMDC1943>
-Subject: Re: [PATCH v9 3/5] rtc: max77686: Fail to probe if no RTC regmap
- irqchip is set
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Alessandro Zummo <a.zummo@towertech.it>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        rtc-linux@googlegroups.com, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Thu, 28 Aug 2014 11:21:55 +0200
-In-reply-to: <1408350877-15921-4-git-send-email-javier.martinez@collabora.co.uk>
-References: <1408350877-15921-1-git-send-email-javier.martinez@collabora.co.uk>
- <1408350877-15921-4-git-send-email-javier.martinez@collabora.co.uk>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu2
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFLMWRmVeSWpSXmKPExsVy+t/xa7pbvvwLNth00cxiycWr7BZnlx1k
-	szj6u8Bi0+NrrBaXd81hs5hxfh+Txanrn9ks9nd2MDpweMxuuMji8ff5dRaPPRNPsnlsXlLv
-	ceVEE6vH9Hk/mTw+b5ILYI/isklJzcksSy3St0vgytg3/zJ7wR6Bile3m5gbGFfwdjFyckgI
-	mEisaZ/DBmGLSVy4tx7MFhJYyijRsMi1i5ELyP7MKPH9YANQgoODV0BfYtJuGZAaYYEoiW2v
-	/rKA2GwCxhKbly8B6xURsJO4sfohM0gvs8AfRon1p+4wgyRYBFQlHn7+AGZzCgRIPHj/igVi
-	wVRGiZ39M8AmMQuoS0yat4gZZJmEgLJEY78bSJhXQFDix+R7UCXyEpvXvGWewCgwC0nHLCRl
-	s5CULWBkXsUomlqaXFCclJ5rqFecmFtcmpeul5yfu4kREv5fdjAuPmZ1iFGAg1GJh3dD6b9g
-	IdbEsuLK3EOMEhzMSiK8R48DhXhTEiurUovy44tKc1KLDzEycXBKNTBaXnx73F5v74K7/L52
-	q3dvNP6tJzPROvPb1Y2H531I5LW8c2zyRTvu+8u/PrMzbFl0aleaxlOdQ8viQid999nyRq5p
-	ksh1649ttg5m9/snu7N8c7IUrinbmzv52p3/Vncuhhv8iPvy8k+AoehCC/aDr9Xb/zC95D9x
-	YMIbYRaR/MSDv5qqs49+VGIpzkg01GIuKk4EAOjj7YtdAgAA
+	id S965491AbaH1JWT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 05:22:19 -0400
+Received: from mga01.intel.com ([192.55.52.88]:16670 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934704AbaH1JWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 05:22:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="378068376"
+Date: Thu, 28 Aug 2014 12:21:55 +0300
+From: Laurentiu Palcu <laurentiu.palcu@intel.com>
+To: jic23@kernel.org, linux-iio@vger.kernel.org
+Cc: srinivas.pandruvada@linux.intel.com, knaack.h@gmx.de, lars@metafoo.de,
+        pmeerw@pmeerw.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] iio: accel: BMC150: add support for other Bosch chips
+Message-ID: <20140828092155.GC3164@lpalcu-linux>
+References: <1409214906-27038-1-git-send-email-laurentiu.palcu@intel.com>
+ <1409214906-27038-4-git-send-email-laurentiu.palcu@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409214906-27038-4-git-send-email-laurentiu.palcu@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On pon, 2014-08-18 at 10:34 +0200, Javier Martinez Canillas wrote:
-> The max77686 mfd driver adds a regmap IRQ chip which creates an
-> IRQ domain that is used to map the virtual RTC alarm1 interrupt.
+Sorry for top-posting but it looks like I have to improve my copy-pasting
+techniques. :) The sensitivity value computed in the first patch, 76590, turned
+into 75590 in the last... :/
+
+Please, go ahead and review the patch and I'll fix this in a subsequent
+revision.
+
+thanks,
+laurentiu
+
+On Thu, Aug 28, 2014 at 11:35:06AM +0300, Laurentiu Palcu wrote:
+> The following chips are either similar or have only the resolution
+> different. Hence, change this driver to support these chips too:
 > 
-> The RTC driver assumes that this will always be true since the
-> PMIC IRQ is a required property according to the max77686 DT
-> binding doc. If an "interrupts" property is not defined for a
-> max77686 PMIC, then the mfd probe function will fail and the
-> RTC platform driver will never be probed. But even when it is
-> not possible to probe the rtc-max77686 driver without a regmap
-> IRQ chip, it's better to explicitly check if the IRQ chip data
-> is not NULL and gracefully fail instead of getting an OOPS.
-
-The OOPS was possible only with Bartlomiej's patch because he changed
-the MFD driver probe function to skip IRQ setup on lack of interrupts.
-In current state the OOPS should not happen so mentioning OOPS in commit
-message may be misleading. Maybe just don't put the OOPS here?
-
-Anyway the patch looks good and a check for non-null
-regmap_irq_chip_data is still a valid precaution so:
-
-Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-
-Best regards,
-Krzysztof
-
-
+> BMI055 - combo chip (accelerometer part is identical to BMC150's)
+> BMA255 - identical to BMC150's accelerometer
+> BMA222 - 8 bit resolution
+> BMA250 - 10 bit resolution
+> BMA280 - 14 bit resolution
 > 
-> Reported-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> Additionally:
+>  * add bmc150_accel_match_acpi_device() function to check that the device
+>    has been enumerated through ACPI;
+>  * rename bmc150_accel_acpi_gpio_probe() to bmc150_accel_gpio_probe()
+>    since the ACPI matching has been moved to the new function.  Also, this
+>    will allow for the GPIO matching to be done against a device tree too, not only
+>    ACPI tree;
+> 
+> Signed-off-by: Laurentiu Palcu <laurentiu.palcu@intel.com>
 > ---
+>  drivers/iio/accel/bmc150-accel.c | 231 ++++++++++++++++++++++++++++++---------
+>  1 file changed, 177 insertions(+), 54 deletions(-)
 > 
-> Fixes the issue reported by Krzystof in: https://lkml.org/lkml/2014/8/8/121
-> ---
->  drivers/rtc/rtc-max77686.c | 6 ++++++
->  1 file changed, 6 insertions(+)
-> 
-> diff --git a/drivers/rtc/rtc-max77686.c b/drivers/rtc/rtc-max77686.c
-> index 7bb5433..55396bb 100644
-> --- a/drivers/rtc/rtc-max77686.c
-> +++ b/drivers/rtc/rtc-max77686.c
-> @@ -466,6 +466,12 @@ static int max77686_rtc_probe(struct platform_device *pdev)
->  		goto err_rtc;
+> diff --git a/drivers/iio/accel/bmc150-accel.c b/drivers/iio/accel/bmc150-accel.c
+> index 0e6566a..07e10fc 100644
+> --- a/drivers/iio/accel/bmc150-accel.c
+> +++ b/drivers/iio/accel/bmc150-accel.c
+> @@ -1,5 +1,12 @@
+>  /*
+> - * BMC150 3-axis accelerometer driver
+> + * 3-axis accelerometer driver supporting following Bosch-Sensortec chips:
+> + *  - BMC150
+> + *  - BMI055
+> + *  - BMA255
+> + *  - BMA250
+> + *  - BMA222
+> + *  - BMA280
+> + *
+>   * Copyright (c) 2014, Intel Corporation.
+>   *
+>   * This program is free software; you can redistribute it and/or modify it
+> @@ -35,6 +42,11 @@
+>  
+>  #define BMC150_ACCEL_REG_CHIP_ID		0x00
+>  #define BMC150_ACCEL_CHIP_ID_VAL		0xFA
+> +#define BMA255_ACCEL_CHIP_ID_VAL		0xFA
+> +#define BMI055_ACCEL_CHIP_ID_VAL		0xFA
+> +#define BMA222_ACCEL_CHIP_ID_VAL		0xF8
+> +#define BMA250_ACCEL_CHIP_ID_VAL		0xF9
+> +#define BMA280_ACCEL_CHIP_ID_VAL		0xFB
+>  
+>  #define BMC150_ACCEL_REG_INT_STATUS_2		0x0B
+>  #define BMC150_ACCEL_ANY_MOTION_MASK		0x07
+> @@ -126,6 +138,18 @@ enum bmc150_power_modes {
+>  	BMC150_ACCEL_SLEEP_MODE_SUSPEND = 0x04,
+>  };
+>  
+> +struct bmc150_scale_info {
+> +	int scale;
+> +	int range;
+> +};
+> +
+> +struct bmc150_accel_chip_info {
+> +	u8 chip_id;
+> +	const struct iio_chan_spec *channels;
+> +	int num_channels;
+> +	const struct bmc150_scale_info scale_table[4];
+> +};
+> +
+>  struct bmc150_accel_data {
+>  	struct i2c_client *client;
+>  	struct iio_trigger *dready_trig;
+> @@ -140,6 +164,7 @@ struct bmc150_accel_data {
+>  	bool dready_trigger_on;
+>  	bool motion_trigger_on;
+>  	int64_t timestamp;
+> +	const struct bmc150_accel_chip_info *chip_info;
+>  };
+>  
+>  static const struct {
+> @@ -168,14 +193,6 @@ static const struct {
+>  				     {0x0F, 1} };
+>  
+>  static const struct {
+> -	int scale;
+> -	int range;
+> -} bmc150_accel_scale_table[] = { {9610, BMC150_ACCEL_DEF_RANGE_2G},
+> -				 {19122, BMC150_ACCEL_DEF_RANGE_4G},
+> -				 {38344, BMC150_ACCEL_DEF_RANGE_8G},
+> -				 {76590, BMC150_ACCEL_DEF_RANGE_16G} };
+> -
+> -static const struct {
+>  	int sleep_dur;
+>  	int reg_value;
+>  } bmc150_accel_sleep_value_table[] = { {0, 0},
+> @@ -267,7 +284,7 @@ static int bmc150_accel_chip_init(struct bmc150_accel_data *data)
 >  	}
 >  
-> +	if (!max77686->rtc_irq_data) {
-> +		ret = -EINVAL;
-> +		dev_err(&pdev->dev, "%s: no RTC regmap IRQ chip\n", __func__);
-> +		goto err_rtc;
+>  	dev_dbg(&data->client->dev, "Chip Id %x\n", ret);
+> -	if (ret != BMC150_ACCEL_CHIP_ID_VAL) {
+> +	if (ret != data->chip_info->chip_id) {
+>  		dev_err(&data->client->dev, "Invalid chip %x\n", ret);
+>  		return -ENODEV;
+>  	}
+> @@ -541,19 +558,19 @@ static int bmc150_accel_set_scale(struct bmc150_accel_data *data, int val)
+>  {
+>  	int ret, i;
+>  
+> -	for (i = 0; i < ARRAY_SIZE(bmc150_accel_scale_table); ++i) {
+> -		if (bmc150_accel_scale_table[i].scale == val) {
+> +	for (i = 0; i < ARRAY_SIZE(data->chip_info->scale_table); ++i) {
+> +		if (data->chip_info->scale_table[i].scale == val) {
+>  			ret = i2c_smbus_write_byte_data(
+>  					data->client,
+>  					BMC150_ACCEL_REG_PMU_RANGE,
+> -					bmc150_accel_scale_table[i].range);
+> +					data->chip_info->scale_table[i].range);
+>  			if (ret < 0) {
+>  				dev_err(&data->client->dev,
+>  					"Error writing pmu_range\n");
+>  				return ret;
+>  			}
+>  
+> -			data->range = bmc150_accel_scale_table[i].range;
+> +			data->range = data->chip_info->scale_table[i].range;
+>  			return 0;
+>  		}
+>  	}
+> @@ -580,10 +597,12 @@ static int bmc150_accel_get_temp(struct bmc150_accel_data *data, int *val)
+>  	return IIO_VAL_INT;
+>  }
+>  
+> -static int bmc150_accel_get_axis(struct bmc150_accel_data *data, int axis,
+> +static int bmc150_accel_get_axis(struct bmc150_accel_data *data,
+> +				 struct iio_chan_spec const *chan,
+>  				 int *val)
+>  {
+>  	int ret;
+> +	int axis = chan->scan_index;
+>  
+>  	mutex_lock(&data->mutex);
+>  	ret = bmc150_accel_set_power_state(data, true);
+> @@ -600,7 +619,8 @@ static int bmc150_accel_get_axis(struct bmc150_accel_data *data, int axis,
+>  		mutex_unlock(&data->mutex);
+>  		return ret;
+>  	}
+> -	*val = sign_extend32(ret >> 4, 11);
+> +	*val = sign_extend32(ret >> chan->scan_type.shift,
+> +			     chan->scan_type.realbits - 1);
+>  	ret = bmc150_accel_set_power_state(data, false);
+>  	mutex_unlock(&data->mutex);
+>  	if (ret < 0)
+> @@ -625,9 +645,7 @@ static int bmc150_accel_read_raw(struct iio_dev *indio_dev,
+>  			if (iio_buffer_enabled(indio_dev))
+>  				return -EBUSY;
+>  			else
+> -				return bmc150_accel_get_axis(data,
+> -							     chan->scan_index,
+> -							     val);
+> +				return bmc150_accel_get_axis(data, chan, val);
+>  		default:
+>  			return -EINVAL;
+>  		}
+> @@ -647,12 +665,13 @@ static int bmc150_accel_read_raw(struct iio_dev *indio_dev,
+>  		{
+>  			int i;
+>  
+> -			for (i = 0; i < ARRAY_SIZE(bmc150_accel_scale_table);
+> -									 ++i) {
+> -				if (bmc150_accel_scale_table[i].range ==
+> +			for (i = 0;
+> +			     i < ARRAY_SIZE(data->chip_info->scale_table);
+> +			     ++i) {
+> +				if (data->chip_info->scale_table[i].range ==
+>  								data->range) {
+>  					*val2 =
+> -					bmc150_accel_scale_table[i].scale;
+> +					data->chip_info->scale_table[i].scale;
+>  					return IIO_VAL_INT_PLUS_MICRO;
+>  				}
+>  			}
+> @@ -840,7 +859,7 @@ static const struct iio_event_spec bmc150_accel_event = {
+>  				 BIT(IIO_EV_INFO_PERIOD)
+>  };
+>  
+> -#define BMC150_ACCEL_CHANNEL(_axis) {					\
+> +#define BMC150_ACCEL_CHANNEL(_axis, bits) {				\
+>  	.type = IIO_ACCEL,						\
+>  	.modified = 1,							\
+>  	.channel2 = IIO_MOD_##_axis,					\
+> @@ -850,28 +869,103 @@ static const struct iio_event_spec bmc150_accel_event = {
+>  	.scan_index = AXIS_##_axis,					\
+>  	.scan_type = {							\
+>  		.sign = 's',						\
+> -		.realbits = 12,					\
+> +		.realbits = (bits),					\
+>  		.storagebits = 16,					\
+> -		.shift = 4,						\
+> +		.shift = 16 - (bits),					\
+>  	},								\
+>  	.event_spec = &bmc150_accel_event,				\
+>  	.num_event_specs = 1						\
+>  }
+>  
+> -static const struct iio_chan_spec bmc150_accel_channels[] = {
+> -	{
+> -		.type = IIO_TEMP,
+> -		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
+> -				      BIT(IIO_CHAN_INFO_SCALE) |
+> -				      BIT(IIO_CHAN_INFO_OFFSET),
+> -		.scan_index = -1,
+> -	},
+> -	BMC150_ACCEL_CHANNEL(X),
+> -	BMC150_ACCEL_CHANNEL(Y),
+> -	BMC150_ACCEL_CHANNEL(Z),
+> -	IIO_CHAN_SOFT_TIMESTAMP(3),
+> +#define BMC150_ACCEL_CHANNELS(bits) {					\
+> +	{								\
+> +		.type = IIO_TEMP,					\
+> +		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |		\
+> +				      BIT(IIO_CHAN_INFO_SCALE) |	\
+> +				      BIT(IIO_CHAN_INFO_OFFSET),	\
+> +		.scan_index = -1,					\
+> +	},								\
+> +	BMC150_ACCEL_CHANNEL(X, bits),					\
+> +	BMC150_ACCEL_CHANNEL(Y, bits),					\
+> +	BMC150_ACCEL_CHANNEL(Z, bits),					\
+> +	IIO_CHAN_SOFT_TIMESTAMP(3),					\
+> +}
+> +
+> +static const struct iio_chan_spec bma222_accel_channels[] =
+> +	BMC150_ACCEL_CHANNELS(8);
+> +static const struct iio_chan_spec bma250_accel_channels[] =
+> +	BMC150_ACCEL_CHANNELS(10);
+> +static const struct iio_chan_spec bmc150_accel_channels[] =
+> +	BMC150_ACCEL_CHANNELS(12);
+> +static const struct iio_chan_spec bma280_accel_channels[] =
+> +	BMC150_ACCEL_CHANNELS(14);
+> +
+> +enum {
+> +	bmc150,
+> +	bmi055,
+> +	bma255,
+> +	bma250,
+> +	bma222,
+> +	bma280,
+>  };
+>  
+> +static const struct bmc150_accel_chip_info bmc150_accel_chip_info_tbl[] = {
+> +	[bmc150] = {
+> +		.chip_id = BMC150_ACCEL_CHIP_ID_VAL,
+> +		.channels = bmc150_accel_channels,
+> +		.num_channels = ARRAY_SIZE(bmc150_accel_channels),
+> +		.scale_table = { {9610, BMC150_ACCEL_DEF_RANGE_2G},
+> +				 {19122, BMC150_ACCEL_DEF_RANGE_4G},
+> +				 {38344, BMC150_ACCEL_DEF_RANGE_8G},
+> +				 {75590, BMC150_ACCEL_DEF_RANGE_16G} },
+> +	},
+> +	[bmi055] = {
+> +		.chip_id = BMI055_ACCEL_CHIP_ID_VAL,
+> +		.channels = bmc150_accel_channels,
+> +		.num_channels = ARRAY_SIZE(bmc150_accel_channels),
+> +		.scale_table = { {9610, BMC150_ACCEL_DEF_RANGE_2G},
+> +				 {19122, BMC150_ACCEL_DEF_RANGE_4G},
+> +				 {38344, BMC150_ACCEL_DEF_RANGE_8G},
+> +				 {75590, BMC150_ACCEL_DEF_RANGE_16G} },
+> +	},
+> +	[bma255] = {
+> +		.chip_id = BMA255_ACCEL_CHIP_ID_VAL,
+> +		.channels = bmc150_accel_channels,
+> +		.num_channels = ARRAY_SIZE(bmc150_accel_channels),
+> +		.scale_table = { {9610, BMC150_ACCEL_DEF_RANGE_2G},
+> +				 {19122, BMC150_ACCEL_DEF_RANGE_4G},
+> +				 {38344, BMC150_ACCEL_DEF_RANGE_8G},
+> +				 {75590, BMC150_ACCEL_DEF_RANGE_16G} },
+> +	},
+> +	[bma250] = {
+> +		.chip_id = BMA250_ACCEL_CHIP_ID_VAL,
+> +		.channels = bma250_accel_channels,
+> +		.num_channels = ARRAY_SIZE(bma250_accel_channels),
+> +		.scale_table = { {38344, BMC150_ACCEL_DEF_RANGE_2G},
+> +				 {75590, BMC150_ACCEL_DEF_RANGE_4G},
+> +				 {153277, BMC150_ACCEL_DEF_RANGE_8G},
+> +				 {306457, BMC150_ACCEL_DEF_RANGE_16G} },
+> +	},
+> +	[bma222] = {
+> +		.chip_id = BMA222_ACCEL_CHIP_ID_VAL,
+> +		.channels = bma222_accel_channels,
+> +		.num_channels = ARRAY_SIZE(bma222_accel_channels),
+> +		.scale_table = { {153277, BMC150_ACCEL_DEF_RANGE_2G},
+> +				 {306457, BMC150_ACCEL_DEF_RANGE_4G},
+> +				 {612915, BMC150_ACCEL_DEF_RANGE_8G},
+> +				 {1225831, BMC150_ACCEL_DEF_RANGE_16G} },
+> +	},
+> +	[bma280] = {
+> +		.chip_id = BMA280_ACCEL_CHIP_ID_VAL,
+> +		.channels = bma280_accel_channels,
+> +		.num_channels = ARRAY_SIZE(bma280_accel_channels),
+> +		.scale_table = { {2392, BMC150_ACCEL_DEF_RANGE_2G},
+> +				 {4785, BMC150_ACCEL_DEF_RANGE_4G},
+> +				 {9581, BMC150_ACCEL_DEF_RANGE_8G},
+> +				 {19152, BMC150_ACCEL_DEF_RANGE_16G} },
+> +	},
+> +};
+> +
+>  static const struct iio_info bmc150_accel_info = {
+>  	.attrs			= &bmc150_accel_attrs_group,
+>  	.read_raw		= bmc150_accel_read_raw,
+> @@ -1040,10 +1134,23 @@ static irqreturn_t bmc150_accel_data_rdy_trig_poll(int irq, void *private)
+>  		return IRQ_HANDLED;
+>  }
+>  
+> -static int bmc150_accel_acpi_gpio_probe(struct i2c_client *client,
+> -					struct bmc150_accel_data *data)
+> +static char *bmc150_accel_match_acpi_device(struct device *dev, int *data)
+>  {
+>  	const struct acpi_device_id *id;
+> +
+> +	id = acpi_match_device(dev->driver->acpi_match_table, dev);
+> +
+> +	if (!id)
+> +		return NULL;
+> +
+> +	*data = (int) id->driver_data;
+> +
+> +	return (char *) dev_name(dev);
+> +}
+> +
+> +static int bmc150_accel_gpio_probe(struct i2c_client *client,
+> +					struct bmc150_accel_data *data)
+> +{
+>  	struct device *dev;
+>  	struct gpio_desc *gpio;
+>  	int ret;
+> @@ -1052,17 +1159,11 @@ static int bmc150_accel_acpi_gpio_probe(struct i2c_client *client,
+>  		return -EINVAL;
+>  
+>  	dev = &client->dev;
+> -	if (!ACPI_HANDLE(dev))
+> -		return -ENODEV;
+> -
+> -	id = acpi_match_device(dev->driver->acpi_match_table, dev);
+> -	if (!id)
+> -		return -ENODEV;
+>  
+>  	/* data ready gpio interrupt pin */
+>  	gpio = devm_gpiod_get_index(dev, BMC150_ACCEL_GPIO_NAME, 0);
+>  	if (IS_ERR(gpio)) {
+> -		dev_err(dev, "Failed: acpi gpio get index\n");
+> +		dev_err(dev, "Failed: gpio get index\n");
+>  		return PTR_ERR(gpio);
+>  	}
+>  
+> @@ -1083,6 +1184,8 @@ static int bmc150_accel_probe(struct i2c_client *client,
+>  	struct bmc150_accel_data *data;
+>  	struct iio_dev *indio_dev;
+>  	int ret;
+> +	char *name = NULL;
+> +	int chip_id = 0;
+>  
+>  	indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*data));
+>  	if (!indio_dev)
+> @@ -1092,6 +1195,16 @@ static int bmc150_accel_probe(struct i2c_client *client,
+>  	i2c_set_clientdata(client, indio_dev);
+>  	data->client = client;
+>  
+> +	if (id) {
+> +		name = (char *) id->name;
+> +		chip_id = id->driver_data;
 > +	}
 > +
->  	info->virq = regmap_irq_get_virq(max77686->rtc_irq_data,
->  					 MAX77686_RTCIRQ_RTCA1);
->  	if (!info->virq) {
-
+> +	if (ACPI_HANDLE(&client->dev))
+> +		name = bmc150_accel_match_acpi_device(&client->dev, &chip_id);
+> +
+> +	data->chip_info = &bmc150_accel_chip_info_tbl[chip_id];
+> +
+>  	ret = bmc150_accel_chip_init(data);
+>  	if (ret < 0)
+>  		return ret;
+> @@ -1099,14 +1212,14 @@ static int bmc150_accel_probe(struct i2c_client *client,
+>  	mutex_init(&data->mutex);
+>  
+>  	indio_dev->dev.parent = &client->dev;
+> -	indio_dev->channels = bmc150_accel_channels;
+> -	indio_dev->num_channels = ARRAY_SIZE(bmc150_accel_channels);
+> -	indio_dev->name = BMC150_ACCEL_DRV_NAME;
+> +	indio_dev->channels = data->chip_info->channels;
+> +	indio_dev->num_channels = data->chip_info->num_channels;
+> +	indio_dev->name = name;
+>  	indio_dev->modes = INDIO_DIRECT_MODE;
+>  	indio_dev->info = &bmc150_accel_info;
+>  
+>  	if (client->irq < 0)
+> -		client->irq = bmc150_accel_acpi_gpio_probe(client, data);
+> +		client->irq = bmc150_accel_gpio_probe(client, data);
+>  
+>  	if (client->irq >= 0) {
+>  		ret = devm_request_threaded_irq(
+> @@ -1284,14 +1397,24 @@ static const struct dev_pm_ops bmc150_accel_pm_ops = {
+>  };
+>  
+>  static const struct acpi_device_id bmc150_accel_acpi_match[] = {
+> -	{"BSBA0150", 0},
+> -	{"BMC150A", 0},
+> +	{"BSBA0150",	bmc150},
+> +	{"BMC150A",	bmc150},
+> +	{"BMI055A",	bmi055},
+> +	{"BMA0255",	bma255},
+> +	{"BMA0250",	bma250},
+> +	{"BMA0222",	bma222},
+> +	{"BMA0280",	bma280},
+>  	{ },
+>  };
+>  MODULE_DEVICE_TABLE(acpi, bmc150_accel_acpi_match);
+>  
+>  static const struct i2c_device_id bmc150_accel_id[] = {
+> -	{"bmc150_accel", 0},
+> +	{"bmc150_accel",	bmc150},
+> +	{"bmi055_accel",	bmi055},
+> +	{"bma255",		bma255},
+> +	{"bma250",		bma250},
+> +	{"bma222",		bma222},
+> +	{"bma280",		bma280},
+>  	{}
+>  };
+>  
+> -- 
+> 1.9.1
+> 
