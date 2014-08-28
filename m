@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936161AbaH1CUP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 22:20:15 -0400
-Received: from mga14.intel.com ([192.55.52.115]:27361 "EHLO mga14.intel.com"
+	id S936178AbaH1CUi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 22:20:38 -0400
+Received: from mga14.intel.com ([192.55.52.115]:27428 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932592AbaH1CUM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 22:20:12 -0400
+	id S932284AbaH1CUg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Aug 2014 22:20:36 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,415,1406617200"; 
-   d="scan'208";a="582676339"
+   d="scan'208";a="582676501"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -16,106 +16,205 @@ To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Bjorn Helgaas <bhelgaas@google.com>,
         Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        x86@kernel.org
 Cc: Jiang Liu <jiang.liu@linux.intel.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-acpi@vger.kernel.org
-Subject: [Patch v4 00/16] Enable support of IOAPIC hotplug on x86 platforms
-Date: Thu, 28 Aug 2014 10:22:25 +0800
-Message-Id: <1409192561-19744-1-git-send-email-jiang.liu@linux.intel.com>
+Subject: [Patch v4 01/16] x86, PCI, ACPI: Kill private function resource_to_addr() in arch/x86/pci/acpi.c
+Date: Thu, 28 Aug 2014 10:22:26 +0800
+Message-Id: <1409192561-19744-2-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1409192561-19744-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1409192561-19744-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set enhances IOAPIC core and ACPI drivers to support IOAPIC
-hotplug on x86 platforms. It's based on latest mainstream kernel at
-https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+Private function resource_to_addr() is used to parse ACPI resources
+for PCI host bridge. There are public interfaces available for that
+purpose, so replace resource_to_addr() with public interfaces.
 
-You may pull it from 
-https://github.com/jiangliu/linux.git ioapic/hotplug_v4
+Reviewed-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ arch/x86/pci/acpi.c |  142 ++++++++++++++++++---------------------------------
+ 1 file changed, 51 insertions(+), 91 deletions(-)
 
-We have pick up several patches from Yinghai's original IOAPIC hotplug
-patch set and reimplemented IOAPIC driver as an ACPI driver instead of
-a PCI driver.
-
-It has been tested on a 4-socket Intel SDV with socket hot-addition
-capability. Any suggestions are welcomed!
-
-Patch 1-5 are bugfixes and enhancements to ACPI subsystem
-Patch 6-14 enhances IOAPIC core to support IOAPIC hotplug
-Patch 15 killes PCI IOAPIC driver
-Patch 16 reimplements ACPI IOAPIC driver and enables IOAPIC hotplug
-
-V3->V4:
-1) Fix a bug in manage IOAPIC reference count
-2) Rebase to v3.17-rc2
-3) Refine commit messages
-V2->V3:
-1) Refine ACPI resource walk functions for PCI root bus and IOAPIC
-2) Improve commit messages
-3) Reorder patch order for better maintenence
-
-Jiang Liu (13):
-  x86, PCI, ACPI: Kill private function resource_to_addr() in
-    arch/x86/pci/acpi.c
-  ACPI: Correct return value of acpi_dev_resource_address_space()
-  ACPI: Fix minor syntax issues in processor_core.c
-  ACPI: Rename processor_core.c as apic_id.c
-  x86, irq: Remove __init marker for functions will be used by IOAPIC
-    hotplug
-  x86, irq: Keep balance of IOAPIC pin reference count
-  x86, irq: Refine mp_register_ioapic() to prepare for IOAPIC hotplug
-  x86, irq, ACPI: Introduce a rwsem to protect IOAPIC operations from
-    hotplug
-  x86, irq, ACPI: Implement interface to support ACPI based IOAPIC
-    hot-addition
-  x86, irq, ACPI: Implement interfaces to support ACPI based IOAPIC
-    hot-removal
-  x86, irq: Introduce helper to check whether an IOAPIC has been
-    registered
-  PCI: Remove PCI ioapic driver
-  x86, irq, ACPI: Implement ACPI driver to support IOAPIC hotplug
-
-Yinghai Lu (3):
-  ACPI: Add interfaces to parse IOAPIC ID for IOAPIC hotplug
-  x86, irq: Split out alloc_ioapic_save_registers()
-  x86, irq: Prefer assigned ID in APIC ID register for x86_64
-
- arch/x86/include/asm/io_apic.h |    6 +-
- arch/x86/kernel/acpi/boot.c    |   68 +++++++++-
- arch/x86/kernel/apic/io_apic.c |  235 +++++++++++++++++++++++++-------
- arch/x86/pci/acpi.c            |  142 +++++++------------
- arch/x86/pci/intel_mid_pci.c   |    9 +-
- arch/x86/pci/irq.c             |    7 +-
- drivers/acpi/Kconfig           |    6 +
- drivers/acpi/Makefile          |    3 +-
- drivers/acpi/apic_id.c         |  294 ++++++++++++++++++++++++++++++++++++++++
- drivers/acpi/internal.h        |    7 +
- drivers/acpi/ioapic.c          |  236 ++++++++++++++++++++++++++++++++
- drivers/acpi/pci_irq.c         |   11 +-
- drivers/acpi/pci_root.c        |    3 +
- drivers/acpi/processor_core.c  |  206 ----------------------------
- drivers/acpi/resource.c        |    2 +-
- drivers/pci/Kconfig            |    7 -
- drivers/pci/Makefile           |    2 -
- drivers/pci/ioapic.c           |  121 -----------------
- include/acpi/processor.h       |    3 -
- include/linux/acpi.h           |    8 ++
- include/linux/pci.h            |    1 +
- 21 files changed, 885 insertions(+), 492 deletions(-)
- create mode 100644 drivers/acpi/apic_id.c
- create mode 100644 drivers/acpi/ioapic.c
- delete mode 100644 drivers/acpi/processor_core.c
- delete mode 100644 drivers/pci/ioapic.c
-
+diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
+index cfd1b132b8e3..0e716fa56ae5 100644
+--- a/arch/x86/pci/acpi.c
++++ b/arch/x86/pci/acpi.c
+@@ -218,114 +218,74 @@ static void teardown_mcfg_map(struct pci_root_info *info)
+ }
+ #endif
+ 
+-static acpi_status resource_to_addr(struct acpi_resource *resource,
+-				    struct acpi_resource_address64 *addr)
+-{
+-	acpi_status status;
+-	struct acpi_resource_memory24 *memory24;
+-	struct acpi_resource_memory32 *memory32;
+-	struct acpi_resource_fixed_memory32 *fixed_memory32;
+-
+-	memset(addr, 0, sizeof(*addr));
+-	switch (resource->type) {
+-	case ACPI_RESOURCE_TYPE_MEMORY24:
+-		memory24 = &resource->data.memory24;
+-		addr->resource_type = ACPI_MEMORY_RANGE;
+-		addr->minimum = memory24->minimum;
+-		addr->address_length = memory24->address_length;
+-		addr->maximum = addr->minimum + addr->address_length - 1;
+-		return AE_OK;
+-	case ACPI_RESOURCE_TYPE_MEMORY32:
+-		memory32 = &resource->data.memory32;
+-		addr->resource_type = ACPI_MEMORY_RANGE;
+-		addr->minimum = memory32->minimum;
+-		addr->address_length = memory32->address_length;
+-		addr->maximum = addr->minimum + addr->address_length - 1;
+-		return AE_OK;
+-	case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
+-		fixed_memory32 = &resource->data.fixed_memory32;
+-		addr->resource_type = ACPI_MEMORY_RANGE;
+-		addr->minimum = fixed_memory32->address;
+-		addr->address_length = fixed_memory32->address_length;
+-		addr->maximum = addr->minimum + addr->address_length - 1;
+-		return AE_OK;
+-	case ACPI_RESOURCE_TYPE_ADDRESS16:
+-	case ACPI_RESOURCE_TYPE_ADDRESS32:
+-	case ACPI_RESOURCE_TYPE_ADDRESS64:
+-		status = acpi_resource_to_address64(resource, addr);
+-		if (ACPI_SUCCESS(status) &&
+-		    (addr->resource_type == ACPI_MEMORY_RANGE ||
+-		    addr->resource_type == ACPI_IO_RANGE) &&
+-		    addr->address_length > 0) {
+-			return AE_OK;
+-		}
+-		break;
+-	}
+-	return AE_ERROR;
+-}
+-
+ static acpi_status count_resource(struct acpi_resource *acpi_res, void *data)
+ {
+ 	struct pci_root_info *info = data;
+-	struct acpi_resource_address64 addr;
+-	acpi_status status;
++	struct resource r = {
++		.flags = 0
++	};
+ 
+-	status = resource_to_addr(acpi_res, &addr);
+-	if (ACPI_SUCCESS(status))
++	if (!acpi_dev_resource_memory(acpi_res, &r) &&
++	    !acpi_dev_resource_address_space(acpi_res, &r))
++		return AE_OK;
++
++	if ((r.flags & (IORESOURCE_IO | IORESOURCE_MEM)) && resource_size(&r))
+ 		info->res_num++;
++
+ 	return AE_OK;
+ }
+ 
+ static acpi_status setup_resource(struct acpi_resource *acpi_res, void *data)
+ {
+ 	struct pci_root_info *info = data;
+-	struct resource *res;
+-	struct acpi_resource_address64 addr;
+-	acpi_status status;
+-	unsigned long flags;
+-	u64 start, orig_end, end;
++	struct resource *res = &info->res[info->res_num];
++	u64 translation_offset = 0;
++
++	memset(res, 0, sizeof(*res));
++	if (acpi_dev_resource_memory(acpi_res, res)) {
++		res->flags &= IORESOURCE_MEM | IORESOURCE_IO;
++	} else if (acpi_dev_resource_address_space(acpi_res, res)) {
++		u64 orig_end;
++		struct acpi_resource_address64 addr;
++
++		res->flags &= IORESOURCE_MEM | IORESOURCE_IO;
++		if (res->flags == 0)
++			return AE_OK;
+ 
+-	status = resource_to_addr(acpi_res, &addr);
+-	if (!ACPI_SUCCESS(status))
+-		return AE_OK;
++		if (ACPI_FAILURE(acpi_resource_to_address64(acpi_res, &addr)))
++			return AE_OK;
+ 
+-	if (addr.resource_type == ACPI_MEMORY_RANGE) {
+-		flags = IORESOURCE_MEM;
+-		if (addr.info.mem.caching == ACPI_PREFETCHABLE_MEMORY)
+-			flags |= IORESOURCE_PREFETCH;
+-	} else if (addr.resource_type == ACPI_IO_RANGE) {
+-		flags = IORESOURCE_IO;
+-	} else
+-		return AE_OK;
++		if (addr.resource_type == ACPI_MEMORY_RANGE &&
++		    addr.info.mem.caching == ACPI_PREFETCHABLE_MEMORY)
++			res->flags |= IORESOURCE_PREFETCH;
+ 
+-	start = addr.minimum + addr.translation_offset;
+-	orig_end = end = addr.maximum + addr.translation_offset;
++		translation_offset = addr.translation_offset;
++		orig_end = res->end;
++		res->start += translation_offset;
++		res->end += translation_offset;
+ 
+-	/* Exclude non-addressable range or non-addressable portion of range */
+-	end = min(end, (u64)iomem_resource.end);
+-	if (end <= start) {
+-		dev_info(&info->bridge->dev,
+-			"host bridge window [%#llx-%#llx] "
+-			"(ignored, not CPU addressable)\n", start, orig_end);
+-		return AE_OK;
+-	} else if (orig_end != end) {
+-		dev_info(&info->bridge->dev,
+-			"host bridge window [%#llx-%#llx] "
+-			"([%#llx-%#llx] ignored, not CPU addressable)\n", 
+-			start, orig_end, end + 1, orig_end);
++		/* Exclude non-addressable range or non-addressable portion of range */
++		res->end = min(res->end, (u64)iomem_resource.end);
++		if (res->end <= res->start) {
++			dev_info(&info->bridge->dev,
++				"host bridge window [%#llx-%#llx] (ignored, not CPU addressable)\n",
++				 res->start, orig_end);
++			return AE_OK;
++		} else if (orig_end != res->end) {
++			dev_info(&info->bridge->dev,
++				"host bridge window [%#llx-%#llx] ([%#llx-%#llx] ignored, not CPU addressable)\n",
++				res->start, orig_end, res->end + 1, orig_end);
++		}
+ 	}
+ 
+-	res = &info->res[info->res_num];
+-	res->name = info->name;
+-	res->flags = flags;
+-	res->start = start;
+-	res->end = end;
+-	info->res_offset[info->res_num] = addr.translation_offset;
+-	info->res_num++;
+-
+-	if (!pci_use_crs)
+-		dev_printk(KERN_DEBUG, &info->bridge->dev,
+-			   "host bridge window %pR (ignored)\n", res);
++	if (res->flags && resource_size(res)) {
++		res->name = info->name;
++		info->res_offset[info->res_num] = translation_offset;
++		info->res_num++;
++		if (!pci_use_crs)
++			dev_printk(KERN_DEBUG, &info->bridge->dev,
++				   "host bridge window %pR (ignored)\n", res);
++	}
+ 
+ 	return AE_OK;
+ }
 -- 
 1.7.10.4
 
