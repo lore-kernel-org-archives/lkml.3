@@ -1,93 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605AbaH1SiF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:38:05 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:40087 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752484AbaH1SiB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:38:01 -0400
-Date: Thu, 28 Aug 2014 11:37:55 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        bobby.prani@gmail.com
-Subject: [PATCH tip/core/rcu 0/14] NOCBs and NO_HZ_FULL changes for 3.18
-Message-ID: <20140828183754.GA25488@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082818-7164-0000-0000-0000042C1C9C
+	id S1753641AbaH1SiZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 14:38:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32898 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753506AbaH1Sh2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:37:28 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 97/97] mm: page_alloc: reduce cost of the fair zone allocation policy
+Date: Thu, 28 Aug 2014 19:35:45 +0100
+Message-Id: <1409250945-30874-98-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
+References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+commit 4ffeaf3560a52b4a69cc7909873d08c0ef5909d4 upstream.
 
-This series includes changes affecting NOCBs and NO_HZ_FULL operation.
+The fair zone allocation policy round-robins allocations between zones
+within a node to avoid age inversion problems during reclaim.  If the
+first allocation fails, the batch counts are reset and a second attempt
+made before entering the slow path.
 
-1.	Fix for bug in earlier patch (b58cc46c5f6b, Don't offload
-	callbacks unless specifically requested) that properly handles
-	early-boot callbacks.  (This bug affects unusual configurations,
-	see commit log for more information.)
+One assumption made with this scheme is that batches expire at roughly
+the same time and the resets each time are justified.  This assumption
+does not hold when zones reach their low watermark as the batches will
+be consumed at uneven rates.  Allocation failure due to watermark
+depletion result in additional zonelist scans for the reset and another
+watermark check before hitting the slowpath.
 
-2.	Properly check the return value of zalloc_cpumask_var(), courtesy
-	of Pranith Kumar.
+On UMA, the benefit is negligible -- around 0.25%.  On 4-socket NUMA
+machine it's variable due to the variability of measuring overhead with
+the vmstat changes.  The system CPU overhead comparison looks like
 
-3.	Use bool constant for __call_rcu_nocb() return value, courtesy
-	of Pranith Kumar.
+          3.16.0-rc3  3.16.0-rc3  3.16.0-rc3
+             vanilla   vmstat-v5 lowercost-v5
+User          746.94      774.56      802.00
+System      65336.22    32847.27    40852.33
+Elapsed     27553.52    27415.04    27368.46
 
-4.	Use bool constant for rcu_nocb_adopt_orphan_cbs() return value,
-	courtesy of Pranith Kumar.
+However it is worth noting that the overall benchmark still completed
+faster and intuitively it makes sense to take as few passes as possible
+through the zonelists.
 
-5.	Use bool constant for __call_rcu_nocb() return value in the case
-	where callbacks are not offloaded, courtesy of Pranith Kumar.
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ include/linux/mmzone.h |   6 +++
+ mm/page_alloc.c        | 101 ++++++++++++++++++++++++++-----------------------
+ 2 files changed, 59 insertions(+), 48 deletions(-)
 
-6.	Use bool constant for rcu_nocb_adopt_orphan_cbs() return value in
-	the case where callbacks are not offloaded, courtesy of Pranith
-	Kumar.
-
-7.	Aggregate RCU's kthread creation so that it is all done from a
-	single early_initcall() function.
-
-8.	Create rcuo kthreads only for CPUs that actually have come online
-	at least once since boot.
-
-9.	Check have_rcu_nocb_mask instead of for a NULL rcu_nocb_mask,
-	given that this latter is not necessarily a pointer, courtesy
-	of Pranith Kumar.
-
-10.	Eliminate redundant rcu_sysidle_state variable.
-
-11.	Don't bother tracking sysidle state if there are no nohz_full=
-	CPUs in the system.
-
-12.	Avoid misordering in __call_rcu_nocb_enqueue().
-
-13.	Handle NOCB callbacks from irq-disabled idle code.
-
-14.	Avoid misordering in nocb_leader_wait().
-
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
- b/include/linux/rcupdate.h |    8 +
- b/init/Kconfig             |    4 
- b/init/main.c              |    1 
- b/kernel/rcu/tree.c        |    4 
- b/kernel/rcu/tree.h        |    1 
- b/kernel/rcu/tree_plugin.h |   92 +++++++++++++++-------
- kernel/rcu/tree.c          |    3 
- kernel/rcu/tree.h          |    6 +
- kernel/rcu/tree_plugin.h   |  182 ++++++++++++++++++++++++++++++++-------------
- 9 files changed, 216 insertions(+), 85 deletions(-)
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 1df12c6..450f19c 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -529,6 +529,7 @@ typedef enum {
+ 	ZONE_WRITEBACK,			/* reclaim scanning has recently found
+ 					 * many pages under writeback
+ 					 */
++	ZONE_FAIR_DEPLETED,		/* fair zone policy batch depleted */
+ } zone_flags_t;
+ 
+ static inline void zone_set_flag(struct zone *zone, zone_flags_t flag)
+@@ -566,6 +567,11 @@ static inline int zone_is_reclaim_locked(const struct zone *zone)
+ 	return test_bit(ZONE_RECLAIM_LOCKED, &zone->flags);
+ }
+ 
++static inline int zone_is_fair_depleted(const struct zone *zone)
++{
++	return test_bit(ZONE_FAIR_DEPLETED, &zone->flags);
++}
++
+ static inline int zone_is_oom_locked(const struct zone *zone)
+ {
+ 	return test_bit(ZONE_OOM_LOCKED, &zone->flags);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 16e6740..2f91223 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1589,6 +1589,9 @@ again:
+ 	}
+ 
+ 	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
++	if (zone_page_state(zone, NR_ALLOC_BATCH) == 0 &&
++	    !zone_is_fair_depleted(zone))
++		zone_set_flag(zone, ZONE_FAIR_DEPLETED);
+ 
+ 	__count_zone_vm_events(PGALLOC, zone, 1 << order);
+ 	zone_statistics(preferred_zone, zone, gfp_flags);
+@@ -1913,6 +1916,18 @@ static inline void init_zone_allows_reclaim(int nid)
+ }
+ #endif	/* CONFIG_NUMA */
+ 
++static void reset_alloc_batches(struct zone *preferred_zone)
++{
++	struct zone *zone = preferred_zone->zone_pgdat->node_zones;
++
++	do {
++		mod_zone_page_state(zone, NR_ALLOC_BATCH,
++			high_wmark_pages(zone) - low_wmark_pages(zone) -
++			atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]));
++		zone_clear_flag(zone, ZONE_FAIR_DEPLETED);
++	} while (zone++ != preferred_zone);
++}
++
+ /*
+  * get_page_from_freelist goes through the zonelist trying to allocate
+  * a page.
+@@ -1930,8 +1945,12 @@ get_page_from_freelist(gfp_t gfp_mask, nodemask_t *nodemask, unsigned int order,
+ 	int did_zlc_setup = 0;		/* just call zlc_setup() one time */
+ 	bool consider_zone_dirty = (alloc_flags & ALLOC_WMARK_LOW) &&
+ 				(gfp_mask & __GFP_WRITE);
++	int nr_fair_skipped = 0;
++	bool zonelist_rescan;
+ 
+ zonelist_scan:
++	zonelist_rescan = false;
++
+ 	/*
+ 	 * Scan zonelist, looking for a zone with enough free.
+ 	 * See also __cpuset_node_allowed_softwall() comment in kernel/cpuset.c.
+@@ -1956,8 +1975,10 @@ zonelist_scan:
+ 		if (alloc_flags & ALLOC_FAIR) {
+ 			if (!zone_local(preferred_zone, zone))
+ 				break;
+-			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
++			if (zone_is_fair_depleted(zone)) {
++				nr_fair_skipped++;
+ 				continue;
++			}
+ 		}
+ 		/*
+ 		 * When allocating a page cache page for writing, we
+@@ -2063,13 +2084,7 @@ this_zone_full:
+ 			zlc_mark_zone_full(zonelist, z);
+ 	}
+ 
+-	if (unlikely(IS_ENABLED(CONFIG_NUMA) && page == NULL && zlc_active)) {
+-		/* Disable zlc cache for second zonelist scan */
+-		zlc_active = 0;
+-		goto zonelist_scan;
+-	}
+-
+-	if (page)
++	if (page) {
+ 		/*
+ 		 * page->pfmemalloc is set when ALLOC_NO_WATERMARKS was
+ 		 * necessary to allocate the page. The expectation is
+@@ -2078,8 +2093,37 @@ this_zone_full:
+ 		 * for !PFMEMALLOC purposes.
+ 		 */
+ 		page->pfmemalloc = !!(alloc_flags & ALLOC_NO_WATERMARKS);
++		return page;
++	}
+ 
+-	return page;
++	/*
++	 * The first pass makes sure allocations are spread fairly within the
++	 * local node.  However, the local node might have free pages left
++	 * after the fairness batches are exhausted, and remote zones haven't
++	 * even been considered yet.  Try once more without fairness, and
++	 * include remote zones now, before entering the slowpath and waking
++	 * kswapd: prefer spilling to a remote zone over swapping locally.
++	 */
++	if (alloc_flags & ALLOC_FAIR) {
++		alloc_flags &= ~ALLOC_FAIR;
++		if (nr_fair_skipped) {
++			zonelist_rescan = true;
++			reset_alloc_batches(preferred_zone);
++		}
++		if (nr_online_nodes > 1)
++			zonelist_rescan = true;
++	}
++
++	if (unlikely(IS_ENABLED(CONFIG_NUMA) && zlc_active)) {
++		/* Disable zlc cache for second zonelist scan */
++		zlc_active = 0;
++		zonelist_rescan = true;
++	}
++
++	if (zonelist_rescan)
++		goto zonelist_scan;
++
++	return NULL;
+ }
+ 
+ /*
+@@ -2407,28 +2451,6 @@ __alloc_pages_high_priority(gfp_t gfp_mask, unsigned int order,
+ 	return page;
+ }
+ 
+-static void reset_alloc_batches(struct zonelist *zonelist,
+-				enum zone_type high_zoneidx,
+-				struct zone *preferred_zone)
+-{
+-	struct zoneref *z;
+-	struct zone *zone;
+-
+-	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
+-		/*
+-		 * Only reset the batches of zones that were actually
+-		 * considered in the fairness pass, we don't want to
+-		 * trash fairness information for zones that are not
+-		 * actually part of this zonelist's round-robin cycle.
+-		 */
+-		if (!zone_local(preferred_zone, zone))
+-			continue;
+-		mod_zone_page_state(zone, NR_ALLOC_BATCH,
+-			high_wmark_pages(zone) - low_wmark_pages(zone) -
+-			atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]));
+-	}
+-}
+-
+ static void wake_all_kswapds(unsigned int order,
+ 			     struct zonelist *zonelist,
+ 			     enum zone_type high_zoneidx,
+@@ -2759,29 +2781,12 @@ retry_cpuset:
+ 	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
+ 		alloc_flags |= ALLOC_CMA;
+ #endif
+-retry:
+ 	/* First allocation attempt */
+ 	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask, order,
+ 			zonelist, high_zoneidx, alloc_flags,
+ 			preferred_zone, classzone_idx, migratetype);
+ 	if (unlikely(!page)) {
+ 		/*
+-		 * The first pass makes sure allocations are spread
+-		 * fairly within the local node.  However, the local
+-		 * node might have free pages left after the fairness
+-		 * batches are exhausted, and remote zones haven't
+-		 * even been considered yet.  Try once more without
+-		 * fairness, and include remote zones now, before
+-		 * entering the slowpath and waking kswapd: prefer
+-		 * spilling to a remote zone over swapping locally.
+-		 */
+-		if (alloc_flags & ALLOC_FAIR) {
+-			reset_alloc_batches(zonelist, high_zoneidx,
+-					    preferred_zone);
+-			alloc_flags &= ~ALLOC_FAIR;
+-			goto retry;
+-		}
+-		/*
+ 		 * Runtime PM, block IO and its error handling path
+ 		 * can deadlock because I/O on the device might not
+ 		 * complete.
+-- 
+1.8.4.5
 
