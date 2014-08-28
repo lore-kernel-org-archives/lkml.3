@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754503AbaH1Swi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:52:38 -0400
+	id S1753100AbaH1Sgu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 14:36:50 -0400
 Received: from cantor2.suse.de ([195.135.220.15]:32872 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753095AbaH1Sgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:36:50 -0400
+	id S1753063AbaH1Sgq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:36:46 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Jiri Slaby <jslaby@suse.cz>
 Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 62/97] mm: fix direct reclaim writeback regression
-Date: Thu, 28 Aug 2014 19:35:10 +0100
-Message-Id: <1409250945-30874-63-git-send-email-mgorman@suse.de>
+Subject: [PATCH 58/97] mm/compaction: do not count migratepages when unnecessary
+Date: Thu, 28 Aug 2014 19:35:06 +0100
+Message-Id: <1409250945-30874-59-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
 References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
@@ -20,91 +20,170 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hugh Dickins <hughd@google.com>
+From: Vlastimil Babka <vbabka@suse.cz>
 
-commit 8bdd638091605dc66d92c57c4b80eb87fffc15f7 upstream.
+commit f8c9301fa5a2a8b873c67f2a3d8230d5c13f61b7 upstream.
 
-Shortly before 3.16-rc1, Dave Jones reported:
+During compaction, update_nr_listpages() has been used to count remaining
+non-migrated and free pages after a call to migrage_pages().  The
+freepages counting has become unneccessary, and it turns out that
+migratepages counting is also unnecessary in most cases.
 
-  WARNING: CPU: 3 PID: 19721 at fs/xfs/xfs_aops.c:971
-           xfs_vm_writepage+0x5ce/0x630 [xfs]()
-  CPU: 3 PID: 19721 Comm: trinity-c61 Not tainted 3.15.0+ #3
-  Call Trace:
-    xfs_vm_writepage+0x5ce/0x630 [xfs]
-    shrink_page_list+0x8f9/0xb90
-    shrink_inactive_list+0x253/0x510
-    shrink_lruvec+0x563/0x6c0
-    shrink_zone+0x3b/0x100
-    shrink_zones+0x1f1/0x3c0
-    try_to_free_pages+0x164/0x380
-    __alloc_pages_nodemask+0x822/0xc90
-    alloc_pages_vma+0xaf/0x1c0
-    handle_mm_fault+0xa31/0xc50
-  etc.
+The only situation when it's needed to count cc->migratepages is when
+migrate_pages() returns with a negative error code.  Otherwise, the
+non-negative return value is the number of pages that were not migrated,
+which is exactly the count of remaining pages in the cc->migratepages
+list.
 
- 970   if (WARN_ON_ONCE((current->flags & (PF_MEMALLOC|PF_KSWAPD)) ==
- 971                   PF_MEMALLOC))
+Furthermore, any non-zero count is only interesting for the tracepoint of
+mm_compaction_migratepages events, because after that all remaining
+unmigrated pages are put back and their count is set to 0.
 
-I did not respond at the time, because a glance at the PageDirty block
-in shrink_page_list() quickly shows that this is impossible: we don't do
-writeback on file pages (other than tmpfs) from direct reclaim nowadays.
-Dave was hallucinating, but it would have been disrespectful to say so.
+This patch therefore removes update_nr_listpages() completely, and changes
+the tracepoint definition so that the manual counting is done only when
+the tracepoint is enabled, and only when migrate_pages() returns a
+negative error code.
 
-However, my own /var/log/messages now shows similar complaints
+Furthermore, migrate_pages() and the tracepoints won't be called when
+there's nothing to migrate.  This potentially avoids some wasted cycles
+and reduces the volume of uninteresting mm_compaction_migratepages events
+where "nr_migrated=0 nr_failed=0".  In the stress-highalloc mmtest, this
+was about 75% of the events.  The mm_compaction_isolate_migratepages event
+is better for determining that nothing was isolated for migration, and
+this one was just duplicating the info.
 
-  WARNING: CPU: 1 PID: 28814 at fs/ext4/inode.c:1881 ext4_writepage+0xa7/0x38b()
-  WARNING: CPU: 0 PID: 27347 at fs/ext4/inode.c:1764 ext4_writepage+0xa7/0x38b()
-
-from stressing some mmotm trees during July.
-
-Could a dirty xfs or ext4 file page somehow get marked PageSwapBacked,
-so fail shrink_page_list()'s page_is_file_cache() test, and so proceed
-to mapping->a_ops->writepage()?
-
-Yes, 3.16-rc1's commit 68711a746345 ("mm, migration: add destination
-page freeing callback") has provided such a way to compaction: if
-migrating a SwapBacked page fails, its newpage may be put back on the
-list for later use with PageSwapBacked still set, and nothing will clear
-it.
-
-Whether that can do anything worse than issue WARN_ON_ONCEs, and get
-some statistics wrong, is unclear: easier to fix than to think through
-the consequences.
-
-Fixing it here, before the put_new_page(), addresses the bug directly,
-but is probably the worst place to fix it.  Page migration is doing too
-many parts of the job on too many levels: fixing it in
-move_to_new_page() to complement its SetPageSwapBacked would be
-preferable, except why is it (and newpage->mapping and newpage->index)
-done there, rather than down in migrate_page_move_mapping(), once we are
-sure of success? Not a cleanup to get into right now, especially not
-with memcg cleanups coming in 3.17.
-
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Rik van Riel <riel@redhat.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/migrate.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ include/trace/events/compaction.h | 25 +++++++++++++++++++++----
+ mm/compaction.c                   | 31 +++++++------------------------
+ 2 files changed, 28 insertions(+), 28 deletions(-)
 
-diff --git a/mm/migrate.c b/mm/migrate.c
-index e397bd2..96d4d81 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -919,9 +919,10 @@ out:
- 	 * it.  Otherwise, putback_lru_page() will drop the reference grabbed
- 	 * during isolation.
- 	 */
--	if (rc != MIGRATEPAGE_SUCCESS && put_new_page)
-+	if (rc != MIGRATEPAGE_SUCCESS && put_new_page) {
-+		ClearPageSwapBacked(newpage);
- 		put_new_page(newpage, private);
--	else
-+	} else
- 		putback_lru_page(newpage);
+diff --git a/include/trace/events/compaction.h b/include/trace/events/compaction.h
+index 06f544e..c6814b9 100644
+--- a/include/trace/events/compaction.h
++++ b/include/trace/events/compaction.h
+@@ -5,6 +5,7 @@
+ #define _TRACE_COMPACTION_H
  
- 	if (result) {
+ #include <linux/types.h>
++#include <linux/list.h>
+ #include <linux/tracepoint.h>
+ #include <trace/events/gfpflags.h>
+ 
+@@ -47,10 +48,11 @@ DEFINE_EVENT(mm_compaction_isolate_template, mm_compaction_isolate_freepages,
+ 
+ TRACE_EVENT(mm_compaction_migratepages,
+ 
+-	TP_PROTO(unsigned long nr_migrated,
+-		unsigned long nr_failed),
++	TP_PROTO(unsigned long nr_all,
++		int migrate_rc,
++		struct list_head *migratepages),
+ 
+-	TP_ARGS(nr_migrated, nr_failed),
++	TP_ARGS(nr_all, migrate_rc, migratepages),
+ 
+ 	TP_STRUCT__entry(
+ 		__field(unsigned long, nr_migrated)
+@@ -58,7 +60,22 @@ TRACE_EVENT(mm_compaction_migratepages,
+ 	),
+ 
+ 	TP_fast_assign(
+-		__entry->nr_migrated = nr_migrated;
++		unsigned long nr_failed = 0;
++		struct list_head *page_lru;
++
++		/*
++		 * migrate_pages() returns either a non-negative number
++		 * with the number of pages that failed migration, or an
++		 * error code, in which case we need to count the remaining
++		 * pages manually
++		 */
++		if (migrate_rc >= 0)
++			nr_failed = migrate_rc;
++		else
++			list_for_each(page_lru, migratepages)
++				nr_failed++;
++
++		__entry->nr_migrated = nr_all - nr_failed;
+ 		__entry->nr_failed = nr_failed;
+ 	),
+ 
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 4933fde..88b33e6 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -820,22 +820,6 @@ static void compaction_free(struct page *page, unsigned long data)
+ 	cc->nr_freepages++;
+ }
+ 
+-/*
+- * We cannot control nr_migratepages fully when migration is running as
+- * migrate_pages() has no knowledge of of compact_control.  When migration is
+- * complete, we count the number of pages on the list by hand.
+- */
+-static void update_nr_listpages(struct compact_control *cc)
+-{
+-	int nr_migratepages = 0;
+-	struct page *page;
+-
+-	list_for_each_entry(page, &cc->migratepages, lru)
+-		nr_migratepages++;
+-
+-	cc->nr_migratepages = nr_migratepages;
+-}
+-
+ /* possible outcome of isolate_migratepages */
+ typedef enum {
+ 	ISOLATE_ABORT,		/* Abort compaction now */
+@@ -1030,7 +1014,6 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+ 	migrate_prep_local();
+ 
+ 	while ((ret = compact_finished(zone, cc)) == COMPACT_CONTINUE) {
+-		unsigned long nr_migrate, nr_remaining;
+ 		int err;
+ 
+ 		switch (isolate_migratepages(zone, cc)) {
+@@ -1045,20 +1028,20 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+ 			;
+ 		}
+ 
+-		nr_migrate = cc->nr_migratepages;
++		if (!cc->nr_migratepages)
++			continue;
++
+ 		err = migrate_pages(&cc->migratepages, compaction_alloc,
+ 				compaction_free, (unsigned long)cc, cc->mode,
+ 				MR_COMPACTION);
+-		update_nr_listpages(cc);
+-		nr_remaining = cc->nr_migratepages;
+ 
+-		trace_mm_compaction_migratepages(nr_migrate - nr_remaining,
+-						nr_remaining);
++		trace_mm_compaction_migratepages(cc->nr_migratepages, err,
++							&cc->migratepages);
+ 
+-		/* Release isolated pages not migrated */
++		/* All pages were either migrated or will be released */
++		cc->nr_migratepages = 0;
+ 		if (err) {
+ 			putback_movable_pages(&cc->migratepages);
+-			cc->nr_migratepages = 0;
+ 			/*
+ 			 * migrate_pages() may return -ENOMEM when scanners meet
+ 			 * and we want compact_finished() to detect it
 -- 
 1.8.4.5
 
