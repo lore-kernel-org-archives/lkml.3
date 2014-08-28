@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757051AbaH1Baf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Aug 2014 21:30:35 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:60825 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752592AbaH1Bab (ORCPT
+	id S932687AbaH1BdB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Aug 2014 21:33:01 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:40806 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932271AbaH1Bc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Aug 2014 21:30:31 -0400
-Message-ID: <53FE8633.10305@amacapital.net>
-Date: Wed, 27 Aug 2014 18:30:27 -0700
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Wed, 27 Aug 2014 21:32:59 -0400
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Matthew Wilcox <willy@linux.intel.com>
-CC: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v10 00/21] Support ext4 on NV-DIMMs
-References: <cover.1409110741.git.matthew.r.wilcox@intel.com>	<20140827130613.c8f6790093d279a447196f17@linux-foundation.org>	<20140827211250.GH3285@linux.intel.com> <20140827144622.ed81195a1d94799bb57a3207@linux-foundation.org>
-In-Reply-To: <20140827144622.ed81195a1d94799bb57a3207@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CADnq5_MaPBTm-PtCq57KLJqZuxw4qTuZgyzHGqhfQoY95YxYsQ@mail.gmail.com>
+References: <20140827190125.29558.80166.stgit@gimli.home>
+	<CADnq5_MaPBTm-PtCq57KLJqZuxw4qTuZgyzHGqhfQoY95YxYsQ@mail.gmail.com>
+Date: Thu, 28 Aug 2014 11:32:58 +1000
+Message-ID: <CAPM=9twcfXzFMgHEqj4aQAjsrewOfCK6o4ibrJ5ENP1Z8epM8g@mail.gmail.com>
+Subject: Re: [PATCH] radeon: Test for PCI root bus before assuming bus->self
+From: Dave Airlie <airlied@gmail.com>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>,
+        "Deucher, Alexander" <alexander.deucher@amd.com>,
+        Christian Koenig <christian.koenig@amd.com>,
+        Maling list - DRI developers 
+	<dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2014 02:46 PM, Andrew Morton wrote:
-> I assume (because I wasn't told!) that there are two objectives here:
-> 
-> 1) reduce memory consumption by not maintaining pagecache and
-> 2) reduce CPU cost by avoiding the double-copies.
-> 
-> These things are pretty easily quantified.  And really they must be
-> quantified as part of the developer testing, because if you find
-> they've worsened then holy cow, what went wrong.
-> 
+> On Wed, Aug 27, 2014 at 3:01 PM, Alex Williamson
+> <alex.williamson@redhat.com> wrote:
+>> If we assign a Radeon device to a virtual machine, we can no longer
+>> assume a fixed hardware topology, like the GPU having a parent device.
+>> This patch simply adds a few pci_is_root_bus() tests to avoid passing
+>> a NULL pointer to PCI access functions, allowing the radeon driver to
+>> work in a QEMU 440FX machine with an assigned HD8570 on the emulated
+>> PCI root bus.
+>>
+>> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+>
 
-There are two more huge ones:
+Does this mean inside a VM we can't enable pcie 2 speeds?
 
-3) Writes via mmap are immediately durable (or at least they're durable
-after a *very* lightweight flush).
+This could lead to a quite disappointing speed decrease for DMA transfers.
 
-4) No page faults ever once a page is writable (I hope -- I'm not sure
-whether this series actually achieves that goal).
-
-A note on #3: there is ongoing work to enable write-through memory for
-things like this.  Once that's done, then writes via mmap might actually
-be synchronously durable, depending on chipset details.
-
---Andy
+Dave.
