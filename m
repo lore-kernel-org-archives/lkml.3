@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753980AbaH1TUV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 15:20:21 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:50303 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752540AbaH1TUR (ORCPT
+	id S1754727AbaH1TU2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 15:20:28 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:42858 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752918AbaH1TUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 15:20:17 -0400
+	Thu, 28 Aug 2014 15:20:23 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,112 +15,88 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
         bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH v7 tip/core/rcu 03/17] rcu: Add synchronous grace-period waiting for RCU-tasks
-Date: Thu, 28 Aug 2014 12:19:54 -0700
-Message-Id: <1409253608-32538-3-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH v7 tip/core/rcu 10/17] documentation: Add verbiage on RCU-tasks stall warning messages
+Date: Thu, 28 Aug 2014 12:20:01 -0700
+Message-Id: <1409253608-32538-10-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1409253608-32538-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20140828191929.GA31795@linux.vnet.ibm.com>
  <1409253608-32538-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082819-0928-0000-0000-000004685EB7
+x-cbid: 14082819-8236-0000-0000-000004F8A81F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-It turns out to be easier to add the synchronous grace-period waiting
-functions to RCU-tasks than to work around their absense in rcutorture,
-so this commit adds them.  The key point is that the existence of
-call_rcu_tasks() means that rcutorture needs an rcu_barrier_tasks().
+This commit documents RCU-tasks stall warning messages and also describes
+when to use the new cond_resched_rcu_qs() API.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/linux/rcupdate.h |  2 ++
- kernel/rcu/update.c      | 55 ++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 57 insertions(+)
+ Documentation/RCU/stallwarn.txt | 33 ++++++++++++++++++++++++---------
+ 1 file changed, 24 insertions(+), 9 deletions(-)
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 473350462d04..640152fedcde 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -216,6 +216,8 @@ void synchronize_sched(void);
-  * memory ordering guarantees.
-  */
- void call_rcu_tasks(struct rcu_head *head, void (*func)(struct rcu_head *head));
-+void synchronize_rcu_tasks(void);
-+void rcu_barrier_tasks(void);
+diff --git a/Documentation/RCU/stallwarn.txt b/Documentation/RCU/stallwarn.txt
+index 68fe3ad27015..ef5a2fd4ff70 100644
+--- a/Documentation/RCU/stallwarn.txt
++++ b/Documentation/RCU/stallwarn.txt
+@@ -56,8 +56,20 @@ RCU_STALL_RAT_DELAY
+ 	two jiffies.  (This is a cpp macro, not a kernel configuration
+ 	parameter.)
  
- #ifdef CONFIG_PREEMPT_RCU
+-When a CPU detects that it is stalling, it will print a message similar
+-to the following:
++rcupdate.rcu_task_stall_timeout
++
++	This boot/sysfs parameter controls the RCU-tasks stall warning
++	interval.  A value of zero or less suppresses RCU-tasks stall
++	warnings.  A positive value sets the stall-warning interval
++	in jiffies.  An RCU-tasks stall warning starts wtih the line:
++
++		INFO: rcu_tasks detected stalls on tasks:
++
++	And continues with the output of sched_show_task() for each
++	task stalling the current RCU-tasks grace period.
++
++For non-RCU-tasks flavors of RCU, when a CPU detects that it is stalling,
++it will print a message similar to the following:
  
-diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-index 19b3dacb0753..5fd1ddbfcc55 100644
---- a/kernel/rcu/update.c
-+++ b/kernel/rcu/update.c
-@@ -381,6 +381,61 @@ void call_rcu_tasks(struct rcu_head *rhp, void (*func)(struct rcu_head *rhp))
- }
- EXPORT_SYMBOL_GPL(call_rcu_tasks);
+ INFO: rcu_sched_state detected stall on CPU 5 (t=2500 jiffies)
  
-+/**
-+ * synchronize_rcu_tasks - wait until an rcu-tasks grace period has elapsed.
-+ *
-+ * Control will return to the caller some time after a full rcu-tasks
-+ * grace period has elapsed, in other words after all currently
-+ * executing rcu-tasks read-side critical sections have elapsed.  These
-+ * read-side critical sections are delimited by calls to schedule(),
-+ * cond_resched_rcu_qs(), idle execution, userspace execution, calls
-+ * to synchronize_rcu_tasks(), and (in theory, anyway) cond_resched().
-+ *
-+ * This is a very specialized primitive, intended only for a few uses in
-+ * tracing and other situations requiring manipulation of function
-+ * preambles and profiling hooks.  The synchronize_rcu_tasks() function
-+ * is not (yet) intended for heavy use from multiple CPUs.
-+ *
-+ * Note that this guarantee implies further memory-ordering guarantees.
-+ * On systems with more than one CPU, when synchronize_rcu_tasks() returns,
-+ * each CPU is guaranteed to have executed a full memory barrier since the
-+ * end of its last RCU-tasks read-side critical section whose beginning
-+ * preceded the call to synchronize_rcu_tasks().  In addition, each CPU
-+ * having an RCU-tasks read-side critical section that extends beyond
-+ * the return from synchronize_rcu_tasks() is guaranteed to have executed
-+ * a full memory barrier after the beginning of synchronize_rcu_tasks()
-+ * and before the beginning of that RCU-tasks read-side critical section.
-+ * Note that these guarantees include CPUs that are offline, idle, or
-+ * executing in user mode, as well as CPUs that are executing in the kernel.
-+ *
-+ * Furthermore, if CPU A invoked synchronize_rcu_tasks(), which returned
-+ * to its caller on CPU B, then both CPU A and CPU B are guaranteed
-+ * to have executed a full memory barrier during the execution of
-+ * synchronize_rcu_tasks() -- even if CPU A and CPU B are the same CPU
-+ * (but again only if the system has more than one CPU).
-+ */
-+void synchronize_rcu_tasks(void)
-+{
-+	/* Complain if the scheduler has not started.  */
-+	rcu_lockdep_assert(!rcu_scheduler_active,
-+			   "synchronize_rcu_tasks called too soon");
-+
-+	/* Wait for the grace period. */
-+	wait_rcu_gp(call_rcu_tasks);
-+}
-+
-+/**
-+ * rcu_barrier_tasks - Wait for in-flight call_rcu_tasks() callbacks.
-+ *
-+ * Although the current implementation is guaranteed to wait, it is not
-+ * obligated to, for example, if there are no pending callbacks.
-+ */
-+void rcu_barrier_tasks(void)
-+{
-+	/* There is only one callback queue, so this is easy.  ;-) */
-+	synchronize_rcu_tasks();
-+}
-+
- /* See if the current task has stopped holding out, remove from list if so. */
- static void check_holdout_task(struct task_struct *t)
- {
+@@ -174,8 +186,12 @@ o	A CPU looping with preemption disabled.  This condition can
+ o	A CPU looping with bottom halves disabled.  This condition can
+ 	result in RCU-sched and RCU-bh stalls.
+ 
+-o	For !CONFIG_PREEMPT kernels, a CPU looping anywhere in the kernel
+-	without invoking schedule().
++o	For !CONFIG_PREEMPT kernels, a CPU looping anywhere in the
++	kernel without invoking schedule().  Note that cond_resched()
++	does not necessarily prevent RCU CPU stall warnings.  Therefore,
++	if the looping in the kernel is really expected and desirable
++	behavior, you might need to replace some of the cond_resched()
++	calls with calls to cond_resched_rcu_qs().
+ 
+ o	A CPU-bound real-time task in a CONFIG_PREEMPT kernel, which might
+ 	happen to preempt a low-priority task in the middle of an RCU
+@@ -208,11 +224,10 @@ o	A hardware failure.  This is quite unlikely, but has occurred
+ 	This resulted in a series of RCU CPU stall warnings, eventually
+ 	leading the realization that the CPU had failed.
+ 
+-The RCU, RCU-sched, and RCU-bh implementations have CPU stall warning.
+-SRCU does not have its own CPU stall warnings, but its calls to
+-synchronize_sched() will result in RCU-sched detecting RCU-sched-related
+-CPU stalls.  Please note that RCU only detects CPU stalls when there is
+-a grace period in progress.  No grace period, no CPU stall warnings.
++The RCU, RCU-sched, RCU-bh, and RCU-tasks implementations have CPU stall
++warning.  Note that SRCU does -not- have CPU stall warnings.  Please note
++that RCU only detects CPU stalls when there is a grace period in progress.
++No grace period, no CPU stall warnings.
+ 
+ To diagnose the cause of the stall, inspect the stack traces.
+ The offending function will usually be near the top of the stack.
 -- 
 1.8.1.5
 
