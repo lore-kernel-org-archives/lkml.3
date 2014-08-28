@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755412AbaH1TNm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 15:13:42 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:57919 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755243AbaH1TMc (ORCPT
+	id S1755435AbaH1TNo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 15:13:44 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:43899 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755241AbaH1TMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 15:12:32 -0400
+	Thu, 28 Aug 2014 15:12:31 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,50 +14,221 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 11/11] torture: Check for nul bytes in console output
-Date: Thu, 28 Aug 2014 12:12:23 -0700
-Message-Id: <1409253143-31466-11-git-send-email-paulmck@linux.vnet.ibm.com>
+        bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Miller <davem@davemloft.net>
+Subject: [PATCH tip/core/rcu 09/11] rcutorture: Add callback-flood test
+Date: Thu, 28 Aug 2014 12:12:21 -0700
+Message-Id: <1409253143-31466-9-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1409253143-31466-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20140828191203.GA26955@linux.vnet.ibm.com>
  <1409253143-31466-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082819-6688-0000-0000-0000045BAA65
+x-cbid: 14082819-9332-0000-0000-000001D6E226
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-When starting a new torture run while an old one is still running, both
-qemu processes can be outputting to the same console.out file.  This can
-cause quite a bit of confusion, so this commit checks for this situation,
-which is normally indicated by nul bytes in the console output.  Yes,
-if your new run uses up an exact number of blocks of the file, this
-check will be ineffective, but the odds are not bad.
+Although RCU is designed to handle arbitrary floods of callbacks, this
+capability is not routinely tested.   This commit therefore adds a
+cbflood capability in which kthreads repeatedly registers large numbers
+of callbacks.  One such kthread is created for each four CPUs (rounding
+up), and the test may be controlled by several cbflood_* kernel boot
+parameters, which control the number of bursts per flood, the number
+of callbacks per burst, the time between bursts, and the time between
+floods.  The default values are large enough to exercise RCU's emergency
+responses to callback flooding.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: David Miller <davem@davemloft.net>
 ---
- tools/testing/selftests/rcutorture/bin/parse-console.sh | 4 ++++
- 1 file changed, 4 insertions(+)
+ Documentation/kernel-parameters.txt | 18 ++++++++
+ kernel/rcu/rcutorture.c             | 86 ++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 103 insertions(+), 1 deletion(-)
 
-diff --git a/tools/testing/selftests/rcutorture/bin/parse-console.sh b/tools/testing/selftests/rcutorture/bin/parse-console.sh
-index a0bde6c79456..f962ba4cf68b 100755
---- a/tools/testing/selftests/rcutorture/bin/parse-console.sh
-+++ b/tools/testing/selftests/rcutorture/bin/parse-console.sh
-@@ -32,6 +32,10 @@ title="$2"
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 5ae8608ca9f5..0a104be4ad86 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2881,6 +2881,24 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			Lazy RCU callbacks are those which RCU can
+ 			prove do nothing more than free memory.
  
- . functions.sh
++	rcutorture.cbflood_inter_holdoff= [KNL]
++			Set holdoff time (jiffies) between successive
++			callback-flood tests.
++
++	rcutorture.cbflood_intra_holdoff= [KNL]
++			Set holdoff time (jiffies) between successive
++			bursts of callbacks within a given callback-flood
++			test.
++
++	rcutorture.cbflood_n_burst= [KNL]
++			Set the number of bursts making up a given
++			callback-flood test.  Set this to zero to
++			disable callback-flood testing.
++
++	rcutorture.cbflood_n_per_burst= [KNL]
++			Set the number of callbacks to be registered
++			in a given burst of a callback-flood test.
++
+ 	rcutorture.fqs_duration= [KNL]
+ 			Set duration of force_quiescent_state bursts.
  
-+if grep -Pq '\x00' < $file
-+then
-+	print_warning Console output contains nul bytes, old qemu still running?
-+fi
- egrep 'Badness|WARNING:|Warn|BUG|===========|Call Trace:|Oops:' < $file | grep -v 'ODEBUG: ' | grep -v 'Warning: unable to open an initial console' > $T
- if test -s $T
- then
+diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
+index ff4f0c756dee..0bcd53adac73 100644
+--- a/kernel/rcu/rcutorture.c
++++ b/kernel/rcu/rcutorture.c
+@@ -49,11 +49,19 @@
+ #include <linux/trace_clock.h>
+ #include <asm/byteorder.h>
+ #include <linux/torture.h>
++#include <linux/vmalloc.h>
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Paul E. McKenney <paulmck@us.ibm.com> and Josh Triplett <josh@joshtriplett.org>");
+ 
+ 
++torture_param(int, cbflood_inter_holdoff, HZ,
++	      "Holdoff between floods (jiffies)");
++torture_param(int, cbflood_intra_holdoff, 1,
++	      "Holdoff between bursts (jiffies)");
++torture_param(int, cbflood_n_burst, 3, "# bursts in flood, zero to disable");
++torture_param(int, cbflood_n_per_burst, 20000,
++	      "# callbacks per burst in flood");
+ torture_param(int, fqs_duration, 0,
+ 	      "Duration of fqs bursts (us), 0 to disable");
+ torture_param(int, fqs_holdoff, 0, "Holdoff time within fqs bursts (us)");
+@@ -96,10 +104,12 @@ module_param(torture_type, charp, 0444);
+ MODULE_PARM_DESC(torture_type, "Type of RCU to torture (rcu, rcu_bh, ...)");
+ 
+ static int nrealreaders;
++static int ncbflooders;
+ static struct task_struct *writer_task;
+ static struct task_struct **fakewriter_tasks;
+ static struct task_struct **reader_tasks;
+ static struct task_struct *stats_task;
++static struct task_struct **cbflood_task;
+ static struct task_struct *fqs_task;
+ static struct task_struct *boost_tasks[NR_CPUS];
+ static struct task_struct *stall_task;
+@@ -138,6 +148,7 @@ static long n_rcu_torture_boosts;
+ static long n_rcu_torture_timers;
+ static long n_barrier_attempts;
+ static long n_barrier_successes;
++static atomic_long_t n_cbfloods;
+ static struct list_head rcu_torture_removed;
+ 
+ static int rcu_torture_writer_state;
+@@ -707,6 +718,58 @@ checkwait:	stutter_wait("rcu_torture_boost");
+ 	return 0;
+ }
+ 
++static void rcu_torture_cbflood_cb(struct rcu_head *rhp)
++{
++}
++
++/*
++ * RCU torture callback-flood kthread.  Repeatedly induces bursts of calls
++ * to call_rcu() or analogous, increasing the probability of occurrence
++ * of callback-overflow corner cases.
++ */
++static int
++rcu_torture_cbflood(void *arg)
++{
++	int err = 1;
++	int i;
++	int j;
++	struct rcu_head *rhp;
++
++	if (cbflood_n_per_burst > 0 &&
++	    cbflood_inter_holdoff > 0 &&
++	    cbflood_intra_holdoff > 0 &&
++	    cur_ops->call &&
++	    cur_ops->cb_barrier) {
++		rhp = vmalloc(sizeof(*rhp) *
++			      cbflood_n_burst * cbflood_n_per_burst);
++		err = !rhp;
++	}
++	if (err) {
++		VERBOSE_TOROUT_STRING("rcu_torture_cbflood disabled: Bad args or OOM");
++		while (!torture_must_stop())
++			schedule_timeout_interruptible(HZ);
++		return 0;
++	}
++	VERBOSE_TOROUT_STRING("rcu_torture_cbflood task started");
++	do {
++		schedule_timeout_interruptible(cbflood_inter_holdoff);
++		atomic_long_inc(&n_cbfloods);
++		WARN_ON(signal_pending(current));
++		for (i = 0; i < cbflood_n_burst; i++) {
++			for (j = 0; j < cbflood_n_per_burst; j++) {
++				cur_ops->call(&rhp[i * cbflood_n_per_burst + j],
++					      rcu_torture_cbflood_cb);
++			}
++			schedule_timeout_interruptible(cbflood_intra_holdoff);
++			WARN_ON(signal_pending(current));
++		}
++		cur_ops->cb_barrier();
++		stutter_wait("rcu_torture_cbflood");
++	} while (!torture_must_stop());
++	torture_kthread_stopping("rcu_torture_cbflood");
++	return 0;
++}
++
+ /*
+  * RCU torture force-quiescent-state kthread.  Repeatedly induces
+  * bursts of calls to force_quiescent_state(), increasing the probability
+@@ -1075,10 +1138,11 @@ rcu_torture_stats_print(void)
+ 		n_rcu_torture_boosts,
+ 		n_rcu_torture_timers);
+ 	torture_onoff_stats();
+-	pr_cont("barrier: %ld/%ld:%ld\n",
++	pr_cont("barrier: %ld/%ld:%ld ",
+ 		n_barrier_successes,
+ 		n_barrier_attempts,
+ 		n_rcu_torture_barrier_error);
++	pr_cont("cbflood: %ld\n", atomic_long_read(&n_cbfloods));
+ 
+ 	pr_alert("%s%s ", torture_type, TORTURE_FLAG);
+ 	if (atomic_read(&n_rcu_torture_mberror) != 0 ||
+@@ -1432,6 +1496,8 @@ rcu_torture_cleanup(void)
+ 
+ 	torture_stop_kthread(rcu_torture_stats, stats_task);
+ 	torture_stop_kthread(rcu_torture_fqs, fqs_task);
++	for (i = 0; i < ncbflooders; i++)
++		torture_stop_kthread(rcu_torture_cbflood, cbflood_task[i]);
+ 	if ((test_boost == 1 && cur_ops->can_boost) ||
+ 	    test_boost == 2) {
+ 		unregister_cpu_notifier(&rcutorture_cpu_nb);
+@@ -1678,6 +1744,24 @@ rcu_torture_init(void)
+ 		goto unwind;
+ 	if (object_debug)
+ 		rcu_test_debug_objects();
++	if (cbflood_n_burst > 0) {
++		/* Create the cbflood threads */
++		ncbflooders = (num_online_cpus() + 3) / 4;
++		cbflood_task = kcalloc(ncbflooders, sizeof(*cbflood_task),
++				       GFP_KERNEL);
++		if (!cbflood_task) {
++			VERBOSE_TOROUT_ERRSTRING("out of memory");
++			firsterr = -ENOMEM;
++			goto unwind;
++		}
++		for (i = 0; i < ncbflooders; i++) {
++			firsterr = torture_create_kthread(rcu_torture_cbflood,
++							  NULL,
++							  cbflood_task[i]);
++			if (firsterr)
++				goto unwind;
++		}
++	}
+ 	rcutorture_record_test_transition();
+ 	torture_init_end();
+ 	return 0;
 -- 
 1.8.1.5
 
