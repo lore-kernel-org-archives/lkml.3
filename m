@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276AbaH1ShF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 14:37:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32878 "EHLO mx2.suse.de"
+	id S1753580AbaH1Sha (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 14:37:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32894 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752502AbaH1ShC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 14:37:02 -0400
+	id S1751852AbaH1ShX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 14:37:23 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Jiri Slaby <jslaby@suse.cz>
 Cc: Linux-Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 72/97] mm: page_alloc: calculate classzone_idx once from the zonelist ref
-Date: Thu, 28 Aug 2014 19:35:20 +0100
-Message-Id: <1409250945-30874-73-git-send-email-mgorman@suse.de>
+Subject: [PATCH 94/97] mm: move zone->pages_scanned into a vmstat counter
+Date: Thu, 28 Aug 2014 19:35:42 +0100
+Message-Id: <1409250945-30874-95-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
 References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
@@ -20,264 +20,152 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit d8846374a85f4290a473a4e2a64c1ba046c4a0e1 upstream.
+commit 0d5d823ab4e608ec7b52ac4410de4cb74bbe0edd upstream.
 
-There is no need to calculate zone_idx(preferred_zone) multiple times
-or use the pgdat to figure it out.
+zone->pages_scanned is a write-intensive cache line during page reclaim
+and it's also updated during page free.  Move the counter into vmstat to
+take advantage of the per-cpu updates and do not update it in the free
+paths unless necessary.
+
+On a small UMA machine running tiobench the difference is marginal.  On
+a 4-node machine the overhead is more noticable.  Note that automatic
+NUMA balancing was disabled for this test as otherwise the system CPU
+overhead is unpredictable.
+
+          3.16.0-rc3  3.16.0-rc3  3.16.0-rc3
+             vanillarearrange-v5   vmstat-v5
+User          746.94      759.78      774.56
+System      65336.22    58350.98    32847.27
+Elapsed     27553.52    27282.02    27415.04
+
+Note that the overhead reduction will vary depending on where exactly
+pages are allocated and freed.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Rik van Riel <riel@redhat.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Vlastimil Babka <vbabka@suse.cz>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Dave Hansen <dave.hansen@intel.com>
-Cc: Theodore Ts'o <tytso@mit.edu>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/page_alloc.c | 60 +++++++++++++++++++++++++++++++++------------------------
- 1 file changed, 35 insertions(+), 25 deletions(-)
+ include/linux/mmzone.h |  2 +-
+ mm/page_alloc.c        | 12 +++++++++---
+ mm/vmscan.c            |  7 ++++---
+ mm/vmstat.c            |  3 ++-
+ 4 files changed, 16 insertions(+), 8 deletions(-)
 
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 9ff35da..1df12c6 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -143,6 +143,7 @@ enum zone_stat_item {
+ 	NR_SHMEM,		/* shmem pages (included tmpfs/GEM pages) */
+ 	NR_DIRTIED,		/* page dirtyings since bootup */
+ 	NR_WRITTEN,		/* page writings since bootup */
++	NR_PAGES_SCANNED,	/* pages scanned since last reclaim */
+ #ifdef CONFIG_NUMA
+ 	NUMA_HIT,		/* allocated in intended node */
+ 	NUMA_MISS,		/* allocated in non intended node */
+@@ -478,7 +479,6 @@ struct zone {
+ 
+ 	/* Fields commonly accessed by the page reclaim scanner */
+ 	spinlock_t		lru_lock;
+-	unsigned long		pages_scanned;	   /* since last reclaim */
+ 	struct lruvec		lruvec;
+ 
+ 	/*
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 5e0f137..fd2752a 100644
+index 36e6214..ee24ebb 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -1897,17 +1897,15 @@ static inline void init_zone_allows_reclaim(int nid)
- static struct page *
- get_page_from_freelist(gfp_t gfp_mask, nodemask_t *nodemask, unsigned int order,
- 		struct zonelist *zonelist, int high_zoneidx, int alloc_flags,
--		struct zone *preferred_zone, int migratetype)
-+		struct zone *preferred_zone, int classzone_idx, int migratetype)
+@@ -664,9 +664,12 @@ static void free_pcppages_bulk(struct zone *zone, int count,
+ 	int migratetype = 0;
+ 	int batch_free = 0;
+ 	int to_free = count;
++	unsigned long nr_scanned;
+ 
+ 	spin_lock(&zone->lock);
+-	zone->pages_scanned = 0;
++	nr_scanned = zone_page_state(zone, NR_PAGES_SCANNED);
++	if (nr_scanned)
++		__mod_zone_page_state(zone, NR_PAGES_SCANNED, -nr_scanned);
+ 
+ 	while (to_free) {
+ 		struct page *page;
+@@ -715,8 +718,11 @@ static void free_one_page(struct zone *zone,
+ 				unsigned int order,
+ 				int migratetype)
  {
- 	struct zoneref *z;
- 	struct page *page = NULL;
--	int classzone_idx;
- 	struct zone *zone;
- 	nodemask_t *allowednodes = NULL;/* zonelist_cache approximation */
- 	int zlc_active = 0;		/* set if using zonelist_cache */
- 	int did_zlc_setup = 0;		/* just call zlc_setup() one time */
++	unsigned long nr_scanned;
+ 	spin_lock(&zone->lock);
+-	zone->pages_scanned = 0;
++	nr_scanned = zone_page_state(zone, NR_PAGES_SCANNED);
++	if (nr_scanned)
++		__mod_zone_page_state(zone, NR_PAGES_SCANNED, -nr_scanned);
  
--	classzone_idx = zone_idx(preferred_zone);
- zonelist_scan:
- 	/*
- 	 * Scan zonelist, looking for a zone with enough free.
-@@ -2171,7 +2169,7 @@ static inline struct page *
- __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
- 	struct zonelist *zonelist, enum zone_type high_zoneidx,
- 	nodemask_t *nodemask, struct zone *preferred_zone,
--	int migratetype)
-+	int classzone_idx, int migratetype)
+ 	__free_one_page(page, pfn, zone, order, migratetype);
+ 	if (unlikely(!is_migrate_isolate(migratetype)))
+@@ -3218,7 +3224,7 @@ void show_free_areas(unsigned int filter)
+ 			K(zone_page_state(zone, NR_BOUNCE)),
+ 			K(zone_page_state(zone, NR_FREE_CMA_PAGES)),
+ 			K(zone_page_state(zone, NR_WRITEBACK_TEMP)),
+-			zone->pages_scanned,
++			K(zone_page_state(zone, NR_PAGES_SCANNED)),
+ 			(!zone_reclaimable(zone) ? "yes" : "no")
+ 			);
+ 		printk("lowmem_reserve[]:");
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 181f0b8..5461d02 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -163,7 +163,8 @@ static unsigned long zone_reclaimable_pages(struct zone *zone)
+ 
+ bool zone_reclaimable(struct zone *zone)
  {
- 	struct page *page;
+-	return zone->pages_scanned < zone_reclaimable_pages(zone) * 6;
++	return zone_page_state(zone, NR_PAGES_SCANNED) <
++		zone_reclaimable_pages(zone) * 6;
+ }
  
-@@ -2189,7 +2187,7 @@ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
- 	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask,
- 		order, zonelist, high_zoneidx,
- 		ALLOC_WMARK_HIGH|ALLOC_CPUSET,
--		preferred_zone, migratetype);
-+		preferred_zone, classzone_idx, migratetype);
- 	if (page)
- 		goto out;
+ static unsigned long get_lru_size(struct lruvec *lruvec, enum lru_list lru)
+@@ -1470,7 +1471,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+ 	__mod_zone_page_state(zone, NR_ISOLATED_ANON + file, nr_taken);
  
-@@ -2224,7 +2222,7 @@ static struct page *
- __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
- 	struct zonelist *zonelist, enum zone_type high_zoneidx,
- 	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
--	int migratetype, enum migrate_mode mode,
-+	int classzone_idx, int migratetype, enum migrate_mode mode,
- 	bool *contended_compaction, bool *deferred_compaction,
- 	unsigned long *did_some_progress)
- {
-@@ -2252,7 +2250,7 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
- 		page = get_page_from_freelist(gfp_mask, nodemask,
- 				order, zonelist, high_zoneidx,
- 				alloc_flags & ~ALLOC_NO_WATERMARKS,
--				preferred_zone, migratetype);
-+				preferred_zone, classzone_idx, migratetype);
- 		if (page) {
- 			preferred_zone->compact_blockskip_flush = false;
- 			compaction_defer_reset(preferred_zone, order, true);
-@@ -2284,7 +2282,8 @@ static inline struct page *
- __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
- 	struct zonelist *zonelist, enum zone_type high_zoneidx,
- 	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
--	int migratetype, enum migrate_mode mode, bool *contended_compaction,
-+	int classzone_idx, int migratetype,
-+	enum migrate_mode mode, bool *contended_compaction,
- 	bool *deferred_compaction, unsigned long *did_some_progress)
- {
- 	return NULL;
-@@ -2324,7 +2323,7 @@ static inline struct page *
- __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
- 	struct zonelist *zonelist, enum zone_type high_zoneidx,
- 	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
--	int migratetype, unsigned long *did_some_progress)
-+	int classzone_idx, int migratetype, unsigned long *did_some_progress)
- {
- 	struct page *page = NULL;
- 	bool drained = false;
-@@ -2342,7 +2341,8 @@ retry:
- 	page = get_page_from_freelist(gfp_mask, nodemask, order,
- 					zonelist, high_zoneidx,
- 					alloc_flags & ~ALLOC_NO_WATERMARKS,
--					preferred_zone, migratetype);
-+					preferred_zone, classzone_idx,
-+					migratetype);
+ 	if (global_reclaim(sc)) {
+-		zone->pages_scanned += nr_scanned;
++		__mod_zone_page_state(zone, NR_PAGES_SCANNED, nr_scanned);
+ 		if (current_is_kswapd())
+ 			__count_zone_vm_events(PGSCAN_KSWAPD, zone, nr_scanned);
+ 		else
+@@ -1659,7 +1660,7 @@ static void shrink_active_list(unsigned long nr_to_scan,
+ 	nr_taken = isolate_lru_pages(nr_to_scan, lruvec, &l_hold,
+ 				     &nr_scanned, sc, isolate_mode, lru);
+ 	if (global_reclaim(sc))
+-		zone->pages_scanned += nr_scanned;
++		__mod_zone_page_state(zone, NR_PAGES_SCANNED, nr_scanned);
  
- 	/*
- 	 * If an allocation failed after direct reclaim, it could be because
-@@ -2365,14 +2365,14 @@ static inline struct page *
- __alloc_pages_high_priority(gfp_t gfp_mask, unsigned int order,
- 	struct zonelist *zonelist, enum zone_type high_zoneidx,
- 	nodemask_t *nodemask, struct zone *preferred_zone,
--	int migratetype)
-+	int classzone_idx, int migratetype)
- {
- 	struct page *page;
+ 	reclaim_stat->recent_scanned[file] += nr_taken;
  
- 	do {
- 		page = get_page_from_freelist(gfp_mask, nodemask, order,
- 			zonelist, high_zoneidx, ALLOC_NO_WATERMARKS,
--			preferred_zone, migratetype);
-+			preferred_zone, classzone_idx, migratetype);
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 4a32236..28245d5 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -761,6 +761,7 @@ const char * const vmstat_text[] = {
+ 	"nr_shmem",
+ 	"nr_dirtied",
+ 	"nr_written",
++	"nr_pages_scanned",
  
- 		if (!page && gfp_mask & __GFP_NOFAIL)
- 			wait_iff_congested(preferred_zone, BLK_RW_ASYNC, HZ/50);
-@@ -2473,7 +2473,7 @@ static inline struct page *
- __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
- 	struct zonelist *zonelist, enum zone_type high_zoneidx,
- 	nodemask_t *nodemask, struct zone *preferred_zone,
--	int migratetype)
-+	int classzone_idx, int migratetype)
- {
- 	const gfp_t wait = gfp_mask & __GFP_WAIT;
- 	struct page *page = NULL;
-@@ -2522,15 +2522,19 @@ restart:
- 	 * Find the true preferred zone if the allocation is unconstrained by
- 	 * cpusets.
- 	 */
--	if (!(alloc_flags & ALLOC_CPUSET) && !nodemask)
--		first_zones_zonelist(zonelist, high_zoneidx, NULL,
--					&preferred_zone);
-+	if (!(alloc_flags & ALLOC_CPUSET) && !nodemask) {
-+		struct zoneref *preferred_zoneref;
-+		preferred_zoneref = first_zones_zonelist(zonelist, high_zoneidx,
-+				NULL,
-+				&preferred_zone);
-+		classzone_idx = zonelist_zone_idx(preferred_zoneref);
-+	}
- 
- rebalance:
- 	/* This is the last chance, in general, before the goto nopage. */
- 	page = get_page_from_freelist(gfp_mask, nodemask, order, zonelist,
- 			high_zoneidx, alloc_flags & ~ALLOC_NO_WATERMARKS,
--			preferred_zone, migratetype);
-+			preferred_zone, classzone_idx, migratetype);
- 	if (page)
- 		goto got_pg;
- 
-@@ -2545,7 +2549,7 @@ rebalance:
- 
- 		page = __alloc_pages_high_priority(gfp_mask, order,
- 				zonelist, high_zoneidx, nodemask,
--				preferred_zone, migratetype);
-+				preferred_zone, classzone_idx, migratetype);
- 		if (page) {
- 			goto got_pg;
- 		}
-@@ -2569,7 +2573,8 @@ rebalance:
- 	 */
- 	page = __alloc_pages_direct_compact(gfp_mask, order, zonelist,
- 					high_zoneidx, nodemask, alloc_flags,
--					preferred_zone, migratetype,
-+					preferred_zone,
-+					classzone_idx, migratetype,
- 					migration_mode, &contended_compaction,
- 					&deferred_compaction,
- 					&did_some_progress);
-@@ -2592,7 +2597,8 @@ rebalance:
- 					zonelist, high_zoneidx,
- 					nodemask,
- 					alloc_flags, preferred_zone,
--					migratetype, &did_some_progress);
-+					classzone_idx, migratetype,
-+					&did_some_progress);
- 	if (page)
- 		goto got_pg;
- 
-@@ -2611,7 +2617,7 @@ rebalance:
- 			page = __alloc_pages_may_oom(gfp_mask, order,
- 					zonelist, high_zoneidx,
- 					nodemask, preferred_zone,
--					migratetype);
-+					classzone_idx, migratetype);
- 			if (page)
- 				goto got_pg;
- 
-@@ -2652,7 +2658,8 @@ rebalance:
- 		 */
- 		page = __alloc_pages_direct_compact(gfp_mask, order, zonelist,
- 					high_zoneidx, nodemask, alloc_flags,
--					preferred_zone, migratetype,
-+					preferred_zone,
-+					classzone_idx, migratetype,
- 					migration_mode, &contended_compaction,
- 					&deferred_compaction,
- 					&did_some_progress);
-@@ -2679,11 +2686,13 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
- {
- 	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
- 	struct zone *preferred_zone;
-+	struct zoneref *preferred_zoneref;
- 	struct page *page = NULL;
- 	int migratetype = allocflags_to_migratetype(gfp_mask);
- 	unsigned int cpuset_mems_cookie;
- 	int alloc_flags = ALLOC_WMARK_LOW|ALLOC_CPUSET|ALLOC_FAIR;
- 	struct mem_cgroup *memcg = NULL;
-+	int classzone_idx;
- 
- 	gfp_mask &= gfp_allowed_mask;
- 
-@@ -2713,11 +2722,12 @@ retry_cpuset:
- 	cpuset_mems_cookie = read_mems_allowed_begin();
- 
- 	/* The preferred zone is used for statistics later */
--	first_zones_zonelist(zonelist, high_zoneidx,
-+	preferred_zoneref = first_zones_zonelist(zonelist, high_zoneidx,
- 				nodemask ? : &cpuset_current_mems_allowed,
- 				&preferred_zone);
- 	if (!preferred_zone)
- 		goto out;
-+	classzone_idx = zonelist_zone_idx(preferred_zoneref);
- 
- #ifdef CONFIG_CMA
- 	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
-@@ -2727,7 +2737,7 @@ retry:
- 	/* First allocation attempt */
- 	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask, order,
- 			zonelist, high_zoneidx, alloc_flags,
--			preferred_zone, migratetype);
-+			preferred_zone, classzone_idx, migratetype);
- 	if (unlikely(!page)) {
- 		/*
- 		 * The first pass makes sure allocations are spread
-@@ -2753,7 +2763,7 @@ retry:
- 		gfp_mask = memalloc_noio_flags(gfp_mask);
- 		page = __alloc_pages_slowpath(gfp_mask, order,
- 				zonelist, high_zoneidx, nodemask,
--				preferred_zone, migratetype);
-+				preferred_zone, classzone_idx, migratetype);
- 	}
- 
- 	trace_mm_page_alloc(page, order, gfp_mask, migratetype);
+ #ifdef CONFIG_NUMA
+ 	"numa_hit",
+@@ -1055,7 +1056,7 @@ static void zoneinfo_show_print(struct seq_file *m, pg_data_t *pgdat,
+ 		   min_wmark_pages(zone),
+ 		   low_wmark_pages(zone),
+ 		   high_wmark_pages(zone),
+-		   zone->pages_scanned,
++		   zone_page_state(zone, NR_PAGES_SCANNED),
+ 		   zone->spanned_pages,
+ 		   zone->present_pages,
+ 		   zone->managed_pages);
 -- 
 1.8.4.5
 
