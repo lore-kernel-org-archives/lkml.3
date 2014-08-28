@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965641AbaH1JIS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 05:08:18 -0400
+	id S965700AbaH1JI2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 05:08:28 -0400
 Received: from mailout2.w1.samsung.com ([210.118.77.12]:54124 "EHLO
 	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934800AbaH1JIM (ORCPT
+	with ESMTP id S965642AbaH1JIT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 05:08:12 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-99-53fef179c804
+	Thu, 28 Aug 2014 05:08:19 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-ab-53fef18194db
 From: Andrzej Hajda <a.hajda@samsung.com>
 To: Inki Dae <inki.dae@samsung.com>
 Cc: Andrzej Hajda <a.hajda@samsung.com>,
@@ -18,66 +18,64 @@ Cc: Andrzej Hajda <a.hajda@samsung.com>,
         dri-devel@lists.freedesktop.org,
         linux-kernel@vger.kernel.org (open list),
         linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...)
-Subject: [PATCH v2 00/17] drm/exynos/ipp: image post processing fixes and
- improvements, part four
-Date: Thu, 28 Aug 2014 11:07:24 +0200
-Message-id: <1409216861-12452-1-git-send-email-a.hajda@samsung.com>
+Subject: [PATCH v2 04/17] drm/exynos/ipp: remove only related commands on file
+ close
+Date: Thu, 28 Aug 2014 11:07:28 +0200
+Message-id: <1409216861-12452-5-git-send-email-a.hajda@samsung.com>
 X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHJMWRmVeSWpSXmKPExsVy+t/xy7qVH/8FG7yapGZxa905VosrX9+z
+In-reply-to: <1409216861-12452-1-git-send-email-a.hajda@samsung.com>
+References: <1409216861-12452-1-git-send-email-a.hajda@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGJMWRmVeSWpSXmKPExsVy+t/xy7qNH/8FG+x6wWpxa905VosrX9+z
 	WUy6P4HF4sW9iywWZ5vesFtc3jWHzWLG+X1MFmuP3GW3mDH5JZsDp8f97uNMHn1bVjF6fN4k
-	F8AcxWWTkpqTWZZapG+XwJVx4N4mxoIjfBXPL29ha2D8zt3FyMkhIWAi8ebWIRYIW0ziwr31
-	bF2MXBxCAksZJfZdXgvl9DFJLD50nBWkik1AU+Lv5ptsILaIgLLEqn3t7CBFzAIfmSSuLH3D
-	3MXIwSEskCwxc2I4SA2LgKrEuyMnGEFsXgFnieYjx5ghtslJnDw2mXUCI/cCRoZVjKKppckF
-	xUnpuYZ6xYm5xaV56XrJ+bmbGCFh8mUH4+JjVocYBTgYlXh4N5T+CxZiTSwrrsw9xCjBwawk
-	wnv0OFCINyWxsiq1KD++qDQntfgQIxMHp1QDI5eH5aXL+2eIKVl33n+qPuVAVGXa59JWdx6P
-	Of9mr7g4bd2LF/0eWnwqKqF8Gf62/zRWLd/T2yIVv6htz39RNT3myAD7l7wFPJrV8+89rP1y
-	eq9GUZZE0XQ1jwXdPBX+ezv9VjyeJjL1u9fmP0z3u7Z9kok/7JB7o1N9XeLr2hMaB/pu1wvz
-	KLEUZyQaajEXFScCAPJt0PnxAQAA
+	F8AcxWWTkpqTWZZapG+XwJXRP6GHpaCVp6Jx+xWWBsY+ri5GTg4JAROJo6t+skHYYhIX7q0H
+	srk4hASWMkpceLKIHcLpY5I4e3QXK0gVm4CmxN/NN8E6RASUJVbtawcrYhb4yCRxZekbZpCE
+	sECYRO+fU0A2BweLgKrEt2diIGFeAWeJyU++MEFsk5M4eWwy2ExOAReJjcffsIPYQkA1u89/
+	ZprAyLuAkWEVo2hqaXJBcVJ6rpFecWJucWleul5yfu4mRkhYfd3BuPSY1SFGAQ5GJR5ehdN/
+	goVYE8uKK3MPMUpwMCuJ8B49/i9YiDclsbIqtSg/vqg0J7X4ECMTB6dUA6NA7C6zB9vkMqK+
+	f8qq2dmWGJMf6HJa1EF+T4psWJehYInB/vOpW2Y8yu25Y3Sc5UBHiU4gX03T9bcvXgmGpu0z
+	SXrxdaVE3va/cxYrn1ySm/Fkx/X/AXc/3H5RctY79MR3+RpeB7u5O2Y8efDWn2Upfwy79d/c
+	yLQfJxmFJ3y6+rzlo0zGsXwlluKMREMt5qLiRAC+vXf7CQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This set of patches contains various improvement and fixes
-for exynos_drm ipp framework.
-The patchset is based on exynos-drm-next branch.
+On file close driver should remove only command nodes created
+via this file.
 
-IPP framework was tested for regressions on exynos4210-trats target.
+Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
+Reviewed-by: Joonyoung Shim <jy0922.shim@samsung.com>
+---
+ drivers/gpu/drm/exynos/exynos_drm_ipp.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-In the 2nd version of the series I have included changes proposed by Joonyoung Shim.
-I have decided to resend whole series because the changes caused merge conflicts and
-two separate patches have been added to the series.
-Changes are described in comit messages.
-
-Regards
-Andrzej
-
-
-Andrzej Hajda (17):
-  drm/exynos/ipp: remove fake pm callbacks
-  drm/exynos/ipp: cancel works before command node clean
-  drm/exynos/ipp: move file reference from memory to command node
-  drm/exynos/ipp: remove only related commands on file close
-  drm/exynos/ipp: remove unused field in command node
-  drm/exynos/ipp: free partially allocated resources on error
-  drm/exynos/ipp: move nodes cleaning to separate function
-  drm/exynos/ipp: clean memory nodes on command node cleaning
-  drm/exynos/ipp: replace work_struct casting with better constructs
-  drm/exynos/ipp: stop hardware before freeing memory
-  drm/exynos/ipp: remove events during command cleaning
-  drm/exynos/fimc: avoid clearing overflow bits
-  drm/exynos/fimc: do not enable fimc twice
-  drm/exynos/fimc: simplify buffer queuing
-  drm/exynos/fimc: fix source buffer registers
-  drm/exynos/ipp: remove file argument from node related functions
-  drm/exynos/ipp: add file checks for ioctls
-
- drivers/gpu/drm/exynos/exynos_drm_fimc.c    |  90 ++-----
- drivers/gpu/drm/exynos/exynos_drm_gsc.c     |   3 +-
- drivers/gpu/drm/exynos/exynos_drm_ipp.c     | 397 ++++++++++++----------------
- drivers/gpu/drm/exynos/exynos_drm_ipp.h     |   4 +-
- drivers/gpu/drm/exynos/exynos_drm_rotator.c |   3 +-
- 5 files changed, 195 insertions(+), 302 deletions(-)
-
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_ipp.c b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
+index bbe9968..81f780e 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_ipp.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
+@@ -1681,14 +1681,11 @@ static int ipp_subdrv_open(struct drm_device *drm_dev, struct device *dev,
+ static void ipp_subdrv_close(struct drm_device *drm_dev, struct device *dev,
+ 		struct drm_file *file)
+ {
+-	struct drm_exynos_file_private *file_priv = file->driver_priv;
+ 	struct exynos_drm_ippdrv *ippdrv = NULL;
+ 	struct ipp_context *ctx = get_ipp_context(dev);
+ 	struct drm_exynos_ipp_cmd_node *c_node, *tc_node;
+ 	int count = 0;
+ 
+-	DRM_DEBUG_KMS("for priv[0x%x]\n", (int)file_priv->ipp_dev);
+-
+ 	list_for_each_entry(ippdrv, &exynos_drm_ippdrv_list, drv_list) {
+ 		mutex_lock(&ippdrv->cmd_lock);
+ 		list_for_each_entry_safe(c_node, tc_node,
+@@ -1696,7 +1693,7 @@ static void ipp_subdrv_close(struct drm_device *drm_dev, struct device *dev,
+ 			DRM_DEBUG_KMS("count[%d]ippdrv[0x%x]\n",
+ 				count++, (int)ippdrv);
+ 
+-			if (c_node->dev == file_priv->ipp_dev) {
++			if (c_node->filp == file) {
+ 				/*
+ 				 * userland goto unnormal state. process killed.
+ 				 * and close the file.
 -- 
 1.9.1
 
