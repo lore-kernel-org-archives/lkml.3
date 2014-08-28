@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582AbaH1WJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 18:09:56 -0400
-Received: from mga11.intel.com ([192.55.52.93]:28117 "EHLO mga11.intel.com"
+	id S1752624AbaH1WLF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 18:11:05 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:42181 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751647AbaH1WJy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 18:09:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,420,1406617200"; 
-   d="scan'208";a="473611426"
-From: "Zwisler, Ross" <ross.zwisler@intel.com>
-To: "openosd@gmail.com" <openosd@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "willy@linux.intel.com" <willy@linux.intel.com>,
-        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH v10 00/21] Support ext4 on NV-DIMMs
-Thread-Topic: [PATCH v10 00/21] Support ext4 on NV-DIMMs
-Thread-Index: AQHPwwzGjI+p/oSZd0u8kp1kH2GFCg==
-Date: Thu, 28 Aug 2014 22:09:45 +0000
-Message-ID: <1409263783.27285.7.camel@rzwisler-mobl1.amr.corp.intel.com>
-References: <cover.1409110741.git.matthew.r.wilcox@intel.com>
-	 <53FEE379.9060204@gmail.com>
-In-Reply-To: <53FEE379.9060204@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.232.112.154]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <A9DC40E375DCAF47BEAC93C3D4371464@intel.com>
+	id S1751647AbaH1WLD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 18:11:03 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] iio: handle -EPROBE_DEFER in of_iio_channel_get_by_name
+Date: Fri, 29 Aug 2014 00:13 +0200
+Message-ID: <4420839.L1RSpT2Pjo@diego>
+User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7SMA4Gi021661
 
-On Thu, 2014-08-28 at 11:08 +0300, Boaz Harrosh wrote:
-> On 08/27/2014 06:45 AM, Matthew Wilcox wrote:
-> > One of the primary uses for NV-DIMMs is to expose them as a block device
-> > and use a filesystem to store files on the NV-DIMM.  While that works,
-> > it currently wastes memory and CPU time buffering the files in the page
-> > cache.  We have support in ext2 for bypassing the page cache, but it
-> > has some races which are unfixable in the current design.  This series
-> > of patches rewrite the underlying support, and add support for direct
-> > access to ext4.
-> > 
-> > Note that patch 6/21 has been included in
-> > https://git.kernel.org/cgit/linux/kernel/git/viro/vfs.git/log/?h=for-next-candidate
-> > 
-> 
-> Matthew hi
-> 
-> Could you please push this to the regular or a new public tree?
-> 
-> (Old versions are at: https://github.com/01org/prd)
-> 
-> Thanks
-> Boaz
+Till now of_iio_channel_get_by_name always tried to find the channel without
+evaluating the return code from of_iio_channel_get. This might include
+-EPROBE_DEFER in which case the channel is present but its driver simply not
+probed yet. Therefore simply return on -EPROBE_DEFER so that the driver
+requesting the channel can also defer.
 
-Hi Boaz,
+Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+---
+ drivers/iio/inkern.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I've pushed the updated tree to https://github.com/01org/prd in the master
-branch.  All the older versions of the code that we've had while rebasing are
-still available in their own branches.
+diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
+index c749700..f084610 100644
+--- a/drivers/iio/inkern.c
++++ b/drivers/iio/inkern.c
+@@ -178,7 +178,7 @@ static struct iio_channel *of_iio_channel_get_by_name(struct device_node *np,
+ 			index = of_property_match_string(np, "io-channel-names",
+ 							 name);
+ 		chan = of_iio_channel_get(np, index);
+-		if (!IS_ERR(chan))
++		if (!IS_ERR(chan) || PTR_ERR(chan) == -EPROBE_DEFER)
+ 			break;
+ 		else if (name && index >= 0) {
+ 			pr_err("ERROR: could not get IIO channel %s:%s(%i)\n",
+-- 
+2.0.1
 
-Thanks,
-- Ross
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
