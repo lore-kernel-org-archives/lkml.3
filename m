@@ -1,74 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751307AbaH1N42 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 09:56:28 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:39114 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750764AbaH1N41 (ORCPT
+	id S1750928AbaH1OAf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 10:00:35 -0400
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:34366 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788AbaH1OAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 09:56:27 -0400
-From: rtg.canonical@gmail.com
-X-Google-Original-From: tim.gardner@canonical.com
-To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Tim Gardner <tim.gardner@canonical.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH v2] fs: namespace: suppress 'may be used uninitialized' warnings
-Date: Thu, 28 Aug 2014 07:55:49 -0600
-Message-Id: <1409234149-3485-1-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140827210112.GE18016@ZenIV.linux.org.uk>
-References: <20140827210112.GE18016@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Thu, 28 Aug 2014 10:00:34 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: lee.jones@linaro.org, kernel@stlinux.com, kishon@ti.com,
+        Alexandre Torgue <alexandre.torgue@st.com>
+Subject: [PATCH] phy: miphy365x: Fix off-by-one error
+Date: Thu, 28 Aug 2014 14:59:50 +0100
+Message-Id: <1409234390-20168-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tim Gardner <tim.gardner@canonical.com>
+We index the RX/TX speed select values in the following way:
 
-The gcc version 4.9.1 compiler complains even though it isn't possible for
-these variables to not get initialized before they are used.
+  rx_tx_spd[miphy_phy->sata_gen];
 
-fs/namespace.c: In function ‘SyS_mount’:
-fs/namespace.c:2720:8: warning: ‘kernel_dev’ may be used uninitialized in this function [-Wmaybe-uninitialized]
-  ret = do_mount(kernel_dev, kernel_dir->name, kernel_type, flags,
-        ^
-fs/namespace.c:2699:8: note: ‘kernel_dev’ was declared here
-  char *kernel_dev;
-        ^
-fs/namespace.c:2720:8: warning: ‘kernel_type’ may be used uninitialized in this function [-Wmaybe-uninitialized]
-  ret = do_mount(kernel_dev, kernel_dir->name, kernel_type, flags,
-        ^
-fs/namespace.c:2697:8: note: ‘kernel_type’ was declared here
-  char *kernel_type;
-        ^
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+However rx_tx_spd[] starts at index zero and the SATA_GENx's start
+at one.  In this patch we pad out the first element in rx_tx_spd[]
+in an attempt to realign the values.
+
+Cc: Alexandre Torgue <alexandre.torgue@st.com>
+Reported-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
+ drivers/phy/phy-miphy365x.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-V1 - use of the uninitialized_var() macro rejected.
-V2 - assign automatic variables an initial value.
-
- fs/namespace.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/fs/namespace.c b/fs/namespace.c
-index a01c773..365a06d 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -2665,9 +2665,9 @@ SYSCALL_DEFINE5(mount, char __user *, dev_name, char __user *, dir_name,
- 		char __user *, type, unsigned long, flags, void __user *, data)
- {
- 	int ret;
--	char *kernel_type;
-+	char *kernel_type = NULL;
- 	struct filename *kernel_dir;
--	char *kernel_dev;
-+	char *kernel_dev = NULL;
- 	unsigned long data_page;
+diff --git a/drivers/phy/phy-miphy365x.c b/drivers/phy/phy-miphy365x.c
+index e111baf..e0fb7a1 100644
+--- a/drivers/phy/phy-miphy365x.c
++++ b/drivers/phy/phy-miphy365x.c
+@@ -163,6 +163,7 @@ enum miphy_sata_gen {
+ };
  
- 	ret = copy_mount_string(type, &kernel_type);
+ static u8 rx_tx_spd[] = {
++	0, /* GEN0 doesn't exist. */
+ 	TX_SPDSEL_GEN1_VAL | RX_SPDSEL_GEN1_VAL,
+ 	TX_SPDSEL_GEN2_VAL | RX_SPDSEL_GEN2_VAL,
+ 	TX_SPDSEL_GEN3_VAL | RX_SPDSEL_GEN3_VAL
 -- 
-2.1.0
+1.9.1
 
