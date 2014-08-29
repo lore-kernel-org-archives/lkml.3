@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752410AbaH2EIU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 00:08:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37416 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751350AbaH2EIT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 00:08:19 -0400
-Message-ID: <53FFFCAF.8030409@suse.com>
-Date: Fri, 29 Aug 2014 06:08:15 +0200
-From: Juergen Gross <jgross@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1752621AbaH2EJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 00:09:28 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:38527 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188AbaH2EJ0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 00:09:26 -0400
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: stefan.bader@canonical.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
-        ville.syrjala@linux.intel.com, hpa@zytor.com, x86@kernel.org
-Subject: Re: [PATCH 2/3] x86: Enable PAT to use cache mode translation tables
-References: <1409033783-12136-1-git-send-email-jgross@suse.com>	 <1409033783-12136-3-git-send-email-jgross@suse.com> <1409268069.28990.120.camel@misato.fc.hp.com>
-In-Reply-To: <1409268069.28990.120.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <53FE53E1.9030605@codeaurora.org>
+References: <53D788A7.4020303@mm-sol.com>
+	<3794875.CZFbAag5Sv@wuerfel>
+	<53D7AA72.6010309@mm-sol.com>
+	<20140729234522.E9FF1C40738@trevor.secretlab.ca>
+	<53D84558.7060406@codeaurora.org>
+	<CAL_JsqJjH0OH+X=fzwqAPeWarjoLev7v6Nv_QhAa+nZyztMnFA@mail.gmail.com>
+	<20140730060619.GC19933@codeaurora.org>
+	<CAJAp7OhoRQ1eWack1e=OL0cS4Fxmgxc7OWeNxcj1qt7Q-x-sQA@mail.gmail.com>
+	<53FE53E1.9030605@codeaurora.org>
+Date: Thu, 28 Aug 2014 21:09:24 -0700
+Message-ID: <CAJAp7Oj+3bUAciLcbfZpfDE0MFem8G_P1gTjV=-UK_U3o4UEZw@mail.gmail.com>
+Subject: Re: use IORESOURCE_REG resource type for non-translatable addresses
+ in DT
+From: Bjorn Andersson <bjorn@kryo.se>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Stanimir Varbanov <svarbanov@mm-sol.com>,
+        Arnd Bergmann <arnd@arndb.de>, Rob Herring <rob.herring@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mark Brown <broonie@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2014 01:21 AM, Toshi Kani wrote:
-> On Tue, 2014-08-26 at 08:16 +0200, Juergen Gross wrote:
->> Update the translation tables from cache mode to pgprot values according to
->> the PAT settings. This enables changing the cache attributes of a PAT index in
->> just one place without having to change at the users side.
->>
->> With this change it is possible to use the same kernel with different PAT
->> configurations, e.g. supporting Xen.
->>
->> Signed-off-by: Juergen Gross <jgross@suse.com>
+On Wed, Aug 27, 2014 at 2:55 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> What's Josh's original proposal? We've already punted on this for SSBI
+> PMICs and just required them to put registers in DT for use some day and
+> I don't see anyone blocking individual SPMI pmic drivers from merging
+> over this. So I guess I agree with you that we can move forward with the
+> other drivers. I'd still like to see us make this better though, so it
+> seems worthwhile to have the discussion and get to some conclusion.
 >
-> I know I sent my review-by before, but my build test failed...
->
->> diff --git a/include/linux/mm.h b/include/linux/mm.h
->> index 8981cc8..d7bf551 100644
->> --- a/include/linux/mm.h
->> +++ b/include/linux/mm.h
->> @@ -1574,6 +1574,7 @@ extern void free_area_init(unsigned long * zones_size);
->>   extern void free_area_init_node(int nid, unsigned long * zones_size,
->>   		unsigned long zone_start_pfn, unsigned long *zholes_size);
->>   extern void free_initmem(void);
->> +extern void update_cache_mode_entry(unsigned entry, enum page_cache_mode cache);
->
-> This new interface cannot be defined in this common header file since
-> page_cache_mode is only defined in x86.  It should be defined in x86
-> header, such as pat.h.
 
-Oh, right you are.
+That sounds totally reasonable, I agree that we should try to sort
+this out and if we do this should be applicable on pm8xxx as well(?).
 
-Thanks,
+My concern was that further discussions would hinder the ability of
+actually committing the pm8x41 container driver and that is in my eyes
+blocking integration of drivers for the pmic blocks.
 
-Juergen
-
+Regards,
+Bjorn
