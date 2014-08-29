@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753727AbaH2PWD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 11:22:03 -0400
-Received: from gw1.transmode.se ([195.58.98.146]:52437 "EHLO gw1.transmode.se"
+	id S1753871AbaH2PWm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 11:22:42 -0400
+Received: from mga01.intel.com ([192.55.52.88]:46637 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753605AbaH2PV7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 11:21:59 -0400
-In-Reply-To: <20140829091324.D71E61ABD63@localhost.localdomain>
-References: <20140829091324.D71E61ABD63@localhost.localdomain>
-To: Christophe Leroy <christophe.leroy@c-s.fr>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Paul Mackerras <paulus@samba.org>, scottwood@freescale.com
-MIME-Version: 1.0
-Subject: Re: [PATCH v2 00/19] powerpc/8xx: Optimise MMU TLB handling and add support
- of 16k pages
-X-KeepSent: 844FADBC:6B73E319-C1257D43:005106B8;
- type=4; name=$KeepSent
-X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
-From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Message-ID: <OF844FADBC.6B73E319-ONC1257D43.005106B8-C1257D43.005467D6@transmode.se>
-Date: Fri, 29 Aug 2014 17:21:55 +0200
-X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.3FP6|November 21, 2013) at
- 29/08/2014 17:21:55,
-	Serialize complete at 29/08/2014 17:21:55
-Content-Type: text/plain; charset="US-ASCII"
+	id S1753135AbaH2PVw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 11:21:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,424,1406617200"; 
+   d="scan'208";a="591743207"
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: airlied@linux.ie
+Cc: Mark Rustad <mark.d.rustad@intel.com>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [PATCH 2/2] drm: Resolve shadow warning for s32
+Date: Fri, 29 Aug 2014 08:21:26 -0700
+Message-Id: <1409325686-13994-2-git-send-email-jeffrey.t.kirsher@intel.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1409325686-13994-1-git-send-email-jeffrey.t.kirsher@intel.com>
+References: <1409325686-13994-1-git-send-email-jeffrey.t.kirsher@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christophe Leroy <christophe.leroy@c-s.fr> wrote on 2014/08/29 11:13:24:
-> 
-> This patchset:
-> 1) provides several MMU TLB handling optimisation on MPC8xx.
-> 2) adds support of 16k pages on MPC8xx.
-> All changes have been successfully tested on a custom board equipped 
-with MPC885
-> 
-> The two differences with first version of the patch are:
-> 1) I removed the patch number 10, which was implementing a 16 bit 
-alignment of the
-> PGDIR. It is not worth potentially wasting up to 64k of memory just for 
-removing one
-> instruction (ori).
-> 2) I managed to preserve r11 while calculating the level 2 address, 
-therefore
-> no more need to save r11 into CR.
-> 
-> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
-> Tested-by: Christophe Leroy <christophe.leroy@c-s.fr>
+From: Mark Rustad <mark.d.rustad@intel.com>
 
-This looks good but I need to look harder, some minor critique 
-though(already sent)
+Resolve a shadow warning produced in a W=2 build by changing
+the name of a local variable from s32 to ds32. Since s32 clashes
+with the well-known typedef, any macro expansion that could
+someday be used that might attempt to use an s32 type would fail
+to compile. It is best to eliminate the hazard.
+
+Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+---
+ drivers/gpu/drm/drm_ioc32.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/gpu/drm/drm_ioc32.c b/drivers/gpu/drm/drm_ioc32.c
+index 2f4c4343..777ffd8 100644
+--- a/drivers/gpu/drm/drm_ioc32.c
++++ b/drivers/gpu/drm/drm_ioc32.c
+@@ -339,7 +339,7 @@ typedef struct drm_stats32 {
+ static int compat_drm_getstats(struct file *file, unsigned int cmd,
+ 			       unsigned long arg)
+ {
+-	drm_stats32_t s32;
++	drm_stats32_t ds32;
+ 	drm_stats32_t __user *argp = (void __user *)arg;
+ 	struct drm_stats __user *stats;
+ 	int i, err;
+@@ -352,14 +352,14 @@ static int compat_drm_getstats(struct file *file, unsigned int cmd,
+ 	if (err)
+ 		return err;
  
-As you are optimizing I think the impl.of powerpc/8xx: Invalidate non 
-present TLBs 
-in 2.4 is better than 3.x, compare:
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/arch/powerpc/mm/fault.c?id=5efab4a02c89c252fb4cce097aafde5f8208dbfe
-with
-https://git.kernel.org/cgit/linux/kernel/git/wtarreau/linux-2.4.git/commit/?id=da5c5609e86fb12061f2c05a6ddd80ffc46592b2
+-	if (__get_user(s32.count, &stats->count))
++	if (__get_user(ds32.count, &stats->count))
+ 		return -EFAULT;
+ 	for (i = 0; i < 15; ++i)
+-		if (__get_user(s32.data[i].value, &stats->data[i].value)
+-		    || __get_user(s32.data[i].type, &stats->data[i].type))
++		if (__get_user(ds32.data[i].value, &stats->data[i].value)
++		    || __get_user(ds32.data[i].type, &stats->data[i].type))
+ 			return -EFAULT;
+ 
+-	if (copy_to_user(argp, &s32, sizeof(s32)))
++	if (copy_to_user(argp, &ds32, sizeof(ds32)))
+ 		return -EFAULT;
+ 	return 0;
+ }
+-- 
+1.9.3
 
-
-This will free the TLB before you jump to xxx_page_fault which might need 
-a TLB before invalidation
-and it isolates this 8xx quirk in 8xx specific code.
-
- Jocke
