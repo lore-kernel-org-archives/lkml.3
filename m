@@ -1,86 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386AbaH2Msq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 08:48:46 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:21631 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753063AbaH2Msn (ORCPT
+	id S1753254AbaH2Mso (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 08:48:44 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:57129 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752727AbaH2Msm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 08:48:43 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19TGbEfUFtnPt9nnqSrhfshOyu50mVvcQo=
-X-DKIM: OpenDKIM Filter v2.0.1 titan E0B905D25F6
-Date: Fri, 29 Aug 2014 08:48:29 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Matti Vaittinen <matti.vaittinen@nsn.com>,
-        ext Guenter Roeck <linux@roeck-us.net>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "jic23@kernel.org" <jic23@kernel.org>,
-        "arno@natisbad.org" <arno@natisbad.org>,
-        "jgunthorpe@obsidianresearch.com" <jgunthorpe@obsidianresearch.com>,
-        "san@rosetechnology.dk" <san@rosetechnology.dk>,
-        "hs@denx.de" <hs@denx.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        Sverdlin Alexander <alexander.sverdlin@nsn.com>
-Subject: Re: [PATCH] rtc: ds1307: add trickle charger device tree binding
-Message-ID: <20140829124829.GD3683@titan.lakedaemon.net>
-References: <20140828125915.GJ14650@leverpostej>
- <20140828155157.GB23677@roeck-us.net>
- <20140828161025.GO14650@leverpostej>
- <20140828164825.GA12153@roeck-us.net>
- <20140828172842.GF12769@titan.lakedaemon.net>
- <20140828174034.GC15307@roeck-us.net>
- <20140829073413.GN4587@fi-ourus-dhcp00977.emea.nsn-net.net>
- <20140829104001.GB19424@leverpostej>
- <20140829122452.GA3683@titan.lakedaemon.net>
- <20140829124216.GD21473@leverpostej>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140829124216.GD21473@leverpostej>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 29 Aug 2014 08:48:42 -0400
+Message-ID: <540076A4.5000303@gmail.com>
+Date: Fri, 29 Aug 2014 14:48:36 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org
+CC: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Raphael Rigo <ml-arm@syscall.eu>, Arnaud Ebalard <arno@natisbad.org>,
+        Simon Boulay <simon.boulay@vitec.com>
+Subject: Re: [PATCH 1/4] clk: mvebu: Fix clk frequency value if SSCG is enabled
+References: <1409312620-20631-1-git-send-email-gregory.clement@free-electrons.com> <1409312620-20631-2-git-send-email-gregory.clement@free-electrons.com>
+In-Reply-To: <1409312620-20631-2-git-send-email-gregory.clement@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 29, 2014 at 01:42:16PM +0100, Mark Rutland wrote:
-> On Fri, Aug 29, 2014 at 01:24:52PM +0100, Jason Cooper wrote:
-> > On Fri, Aug 29, 2014 at 11:40:02AM +0100, Mark Rutland wrote:
-...
-Someone wrote:
-> > > > > > > http://datasheets.maximintegrated.com/en/ds/DS1307.pdf
-> > > > > > > http://datasheets.maximintegrated.com/en/ds/DS1337.pdf
-> > > > > > > http://datasheets.maximintegrated.com/en/ds/DS1338.pdf
-> > > > > > > http://datasheets.maximintegrated.com/en/ds/DS1339.pdf
-> > > > > > > http://datasheets.maximintegrated.com/en/ds/DS1340.pdf
-> > > > > > > http://datasheets.maximintegrated.com/en/ds/DS1388.pdf
-> > > > > > > http://datasheets.maximintegrated.com/en/ds/DS3231.pdf
-...
-> > > I would suggest we have two properties that describe the resistor's
-> > > rating and whether or not there is a diode:
-> > > 
-> > > trickle-resistor-ohms = <250>
-> > > diode-connected;
-> > 
-> > I much prefer this solution over my own suggestion.  With one small
-> > change, s/diode-connected/trickle-diode-enable/  Does that sound ok?
-> 
-> I'm not too keen on 'enable'; I was under the impression that this
-> described whether or not there was an external diode. Perhaps I've
-> misunderstood?
+On 08/29/2014 01:43 PM, Gregory CLEMENT wrote:
+> When the SSCG (Spread Spectrum Clock Generator) is enabled, it shifts
+> the frequency of the clock. The percentage is no more than 1% but when
+> the clock is used for a timer it leads to a clock drift.
+>
+> This patch allows to correct the affected clock when the SSCG is
+> enabled. The check is done in an new optional function related to each
+> SoC: is_sscg_enabled(). If this function is not present then no
+> correction is done on the clock frequency.
 
-iiuc from the link ds1339 ds, the register configuration is enabling
-internal diodes and resistors for the trickle charge configuration.  I
-may have read it incorrectly, though.
+Gregory,
 
-In either case, my main point was to prepend 'trickle-' to the property
-to more accurately describe what it is toggling.
+I think computing the SSCG inside the common clk part is a no-go. I
+flipped through KW, Dove, Armada 370, and Armada XP FS looking at
+SSCG config register layout. Guess what: Dove is different.
 
-thx,
+How about we have a .get_sscg_deviation() callback instead and move
+the one below to some common place where KW, Armada 370, and XP can
+set it for their callback struct?
 
-Jason.
+Sebastian
+
+> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> ---
+>   drivers/clk/mvebu/common.c | 74 ++++++++++++++++++++++++++++++++++++++++++++++
+>   drivers/clk/mvebu/common.h |  1 +
+>   2 files changed, 75 insertions(+)
+>
+> diff --git a/drivers/clk/mvebu/common.c b/drivers/clk/mvebu/common.c
+> index 25ceccf939ad..834d36cf79b0 100644
+> --- a/drivers/clk/mvebu/common.c
+> +++ b/drivers/clk/mvebu/common.c
+> @@ -26,8 +26,78 @@
+>    * Core Clocks
+>    */
+>
+> +#define SSCG_CONF_MODE(reg)	(((reg) >> 16) & 0x3)
+> +#define SSCG_SPREAD_DOWN	0x0
+> +#define SSCG_SPREAD_UP		0x1
+> +#define SSCG_SPREAD_CENTRAL	0x2
+> +#define SSCG_CONF_LOW(reg)	(((reg) >> 8) & 0xFF)
+> +#define SSCG_CONF_HIGH(reg)	((reg) & 0xFF)
+> +
+>   static struct clk_onecell_data clk_data;
+>
+> +static u32 fix_sscg_deviation(struct device_node *np, u32 system_clk)
+> +{
+> +	struct device_node *sscg_np = NULL;
+> +	void __iomem *sscg_map;
+> +	u32 sscg_reg;
+> +	s32 low_bound, high_bound;
+> +	u64 freq_swing_half;
+> +
+> +	sscg_np = of_find_node_by_name(np, "sscg");
+> +	if (sscg_np == NULL) {
+> +		pr_err("cannot get SSCG register node\n");
+> +		return system_clk;
+> +	}
+> +
+> +	sscg_map = of_iomap(sscg_np, 0);
+> +	if (sscg_map == NULL) {
+> +		pr_err("cannot map SSCG register\n");
+> +		goto out;
+> +	}
+> +
+> +	sscg_reg = readl(sscg_map);
+> +	high_bound = SSCG_CONF_HIGH(sscg_reg);
+> +	low_bound = SSCG_CONF_LOW(sscg_reg);
+> +
+> +	if ((high_bound - low_bound) <= 0)
+> +		goto out;
+> +	/*
+> +	 * From the datasheet we got the following formula
+> +	 * Spread percentage = 1/96 * (H - L) / H
+> +	 * H = SSCG_High_Boundary
+> +	 * L = SSCG_Low_Boundary
+> +	 *
+> +	 * As the deviation is half of spread then it lead to the
+> +	 * following formula in the code.
+> +	 *
+> +	 * To avoid an overflow and not lose any significant digit in
+> +	 * the same time we have to use a 64 bit integer.
+> +	 */
+> +
+> +	freq_swing_half = (((u64)high_bound - (u64)low_bound)
+> +			* (u64)system_clk);
+> +	do_div(freq_swing_half, (2 * 96 * high_bound));
+> +
+> +	switch (SSCG_CONF_MODE(sscg_reg)) {
+> +	case SSCG_SPREAD_DOWN:
+> +		system_clk -= freq_swing_half;
+> +		break;
+> +	case SSCG_SPREAD_UP:
+> +		system_clk += freq_swing_half;
+> +		break;
+> +	case SSCG_SPREAD_CENTRAL:
+> +	default:
+> +		break;
+> +	}
+> +
+> +	iounmap(sscg_map);
+> +
+> +out:
+> +	of_node_put(sscg_np);
+> +
+> +	return system_clk;
+> +}
+> +
+>   void __init mvebu_coreclk_setup(struct device_node *np,
+>   				const struct coreclk_soc_desc *desc)
+>   {
+> @@ -62,6 +132,10 @@ void __init mvebu_coreclk_setup(struct device_node *np,
+>   	of_property_read_string_index(np, "clock-output-names", 1,
+>   				      &cpuclk_name);
+>   	rate = desc->get_cpu_freq(base);
+> +
+> +	if (desc->is_sscg_enabled && desc->is_sscg_enabled(base))
+> +		rate = fix_sscg_deviation(np, rate);
+> +
+>   	clk_data.clks[1] = clk_register_fixed_rate(NULL, cpuclk_name, NULL,
+>   						   CLK_IS_ROOT, rate);
+>   	WARN_ON(IS_ERR(clk_data.clks[1]));
+> diff --git a/drivers/clk/mvebu/common.h b/drivers/clk/mvebu/common.h
+> index f968b4d9df92..495f94ff4c90 100644
+> --- a/drivers/clk/mvebu/common.h
+> +++ b/drivers/clk/mvebu/common.h
+> @@ -28,6 +28,7 @@ struct coreclk_soc_desc {
+>   	u32 (*get_tclk_freq)(void __iomem *sar);
+>   	u32 (*get_cpu_freq)(void __iomem *sar);
+>   	void (*get_clk_ratio)(void __iomem *sar, int id, int *mult, int *div);
+> +	bool (*is_sscg_enabled)(void __iomem *sar);
+>   	const struct coreclk_ratio *ratios;
+>   	int num_ratios;
+>   };
+>
+
