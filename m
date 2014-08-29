@@ -1,90 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752047AbaH2B1P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 21:27:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40867 "EHLO mx1.redhat.com"
+	id S1752319AbaH2B2V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 21:28:21 -0400
+Received: from mga14.intel.com ([192.55.52.115]:52297 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751358AbaH2B1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 21:27:14 -0400
-Date: Thu, 28 Aug 2014 21:27:05 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        chai wen <chaiw.fnst@cn.fujitsu.com>
-Subject: Re: [PATCH] softlockup: Make detector be aware of task switch of
- processes hogging cpu
-Message-ID: <20140829012705.GC49576@redhat.com>
-References: <1409201544-82371-1-git-send-email-dzickus@redhat.com>
- <20140828160723.b174b4e03f2854d0a5146199@linux-foundation.org>
+	id S1752121AbaH2B2T convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 21:28:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="378453658"
+From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
+To: Giuseppe CAVALLARO <peppe.cavallaro@st.com>,
+        "David S. Miller" <davem@davemloft.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        Rayagond K <rayagond@vayavyalabs.com>
+Subject: RE: [PATCH 0/4] net: stmmac: Enable Intel Quark SoC X1000 Ethernet
+ support
+Thread-Topic: [PATCH 0/4] net: stmmac: Enable Intel Quark SoC X1000 Ethernet
+ support
+Thread-Index: AQHPwcriov0aluuOkUqC4/B/pAR9F5vj4e4AgALqYlA=
+Date: Fri, 29 Aug 2014 01:28:14 +0000
+Message-ID: <F54AEECA5E2B9541821D670476DAE19C2B6E7189@PGSMSX102.gar.corp.intel.com>
+References: <cover.1409123378.git.hock.leong.kweh@intel.com>
+ <53FDD4A4.5020603@st.com>
+In-Reply-To: <53FDD4A4.5020603@st.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.30.20.205]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140828160723.b174b4e03f2854d0a5146199@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 28, 2014 at 04:07:23PM -0700, Andrew Morton wrote:
-> On Thu, 28 Aug 2014 00:52:24 -0400 Don Zickus <dzickus@redhat.com> wrote:
+> -----Original Message-----
+> From: Giuseppe CAVALLARO [mailto:peppe.cavallaro@st.com]
+> Sent: Wednesday, August 27, 2014 8:53 PM
+> To: Kweh, Hock Leong; David S. Miller
+> Cc: netdev@vger.kernel.org; LKML; Ong, Boon Leong; Rayagond K
+> Subject: Re: [PATCH 0/4] net: stmmac: Enable Intel Quark SoC X1000 Ethernet
+> support
 > 
-> > From: chai wen <chaiw.fnst@cn.fujitsu.com>
-> > 
-> > For now, soft lockup detector warns once for each case of process softlockup.
-> > But the thread 'watchdog/n' may not always get the cpu at the time slot between
-> > the task switch of two processes hogging that cpu to reset soft_watchdog_warn.
-> > 
-> > An example would be two processes hogging the cpu.  Process A causes the
-> > softlockup warning and is killed manually by a user.  Process B immediately
-> > becomes the new process hogging the cpu preventing the softlockup code from
-> > resetting the soft_watchdog_warn variable.
-> > 
-> > This case is a false negative of "warn only once for a process", as there may
-> > be a different process that is going to hog the cpu.  Resolve this by
-> > saving/checking the task pointer of the hogging process and use that to reset
-> > soft_watchdog_warn too.
-> > 
+> On 8/27/2014 12:32 PM, Kweh Hock Leong wrote:
 > 
-> OK, this should address the PID uniqueness issue which Ingo identified.
+> hello and thx for these patches that at first glance look ok to me.
+> Just some minor remark, in the stmmac I try to align the function parameters
+> with the open parenthesis (devm_kzalloc in your case in not aligned).
+> Added on copy also Rayagond he tested PCI. I cannot do any test because I
+> have no PCI cards.
 > 
-> > --- a/kernel/watchdog.c
-> > +++ b/kernel/watchdog.c
-> > @@ -47,6 +47,7 @@ static DEFINE_PER_CPU(bool, softlockup_touch_sync);
-> >  static DEFINE_PER_CPU(bool, soft_watchdog_warn);
-> >  static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts);
-> >  static DEFINE_PER_CPU(unsigned long, soft_lockup_hrtimer_cnt);
-> > +static DEFINE_PER_CPU(struct task_struct *, softlockup_task_ptr_saved);
-> >  #ifdef CONFIG_HARDLOCKUP_DETECTOR
-> >  static DEFINE_PER_CPU(bool, hard_watchdog_warn);
-> >  static DEFINE_PER_CPU(bool, watchdog_nmi_touch);
-> > @@ -331,8 +332,20 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
-> >  			return HRTIMER_RESTART;
-> >  
-> >  		/* only warn once */
-> > -		if (__this_cpu_read(soft_watchdog_warn) == true)
-> > +		if (__this_cpu_read(soft_watchdog_warn) == true) {
-> > +			/*
-> > +			 * Handle the case where multiple processes are
-> > +			 * causing softlockups but the duration is small
-> > +			 * enough, the softlockup detector can not reset
-> > +			 * itself in time.  Use task pointers to detect this.
-> > +			 */
+> peppe
 > 
-> This comment is rather hard to follow ("the duration" of what?).  Can
-> you think of some words which are a bit more complete/clear?
 
-Agreed.  Does this work better?
+Hi, noted and will update that in the v2 patch. Looking forward to get more feedback
+before sending out the second version. Thanks.
 
-"
-/*
- * When multiple processes are causing softlockups
- * the softlockup detector only warns on the first
- * one because the code relies on a full quiet cycle
- * to re-arm.  The second process prevents the
- * quiet cycle and never gets reported.  Use task
- * pointers to detect this.
- */
 
-Cheers,
-Don
-
+Regards,
+Wilson
