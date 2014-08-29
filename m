@@ -1,38 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752795AbaH2Lvr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 07:51:47 -0400
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:36483 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752594AbaH2Lvq (ORCPT
+	id S1752755AbaH2L7M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 07:59:12 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:51448 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751006AbaH2L7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 07:51:46 -0400
-Message-ID: <5400694C.4040303@de.ibm.com>
-Date: Fri, 29 Aug 2014 13:51:40 +0200
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Fri, 29 Aug 2014 07:59:09 -0400
+Message-ID: <54006B0A.2050902@cogentembedded.com>
+Date: Fri, 29 Aug 2014 15:59:06 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org, linux-s390 <linux-s390@vger.kernel.org>
-Subject: Re: WARNING: at kernel/workqueue.c:845
-References: <54005AFB.2010604@de.ibm.com>
-In-Reply-To: <54005AFB.2010604@de.ibm.com>
-Content-Type: text/plain; charset=utf-8
+To: Lu Baolu <baolu.lu@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Mathias Nyman <mathias.nyman@intel.com>
+CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] USB: Add device quirk for ASUS T100 Base Station
+ keyboard
+References: <1409286391-2854-1-git-send-email-baolu.lu@linux.intel.com>
+In-Reply-To: <1409286391-2854-1-git-send-email-baolu.lu@linux.intel.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082911-1948-0000-0000-000000F41607
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/08/14 12:50, Christian Borntraeger wrote:
-> Tejun,
-> 
-> with kvm/next (pretty close to 3.17-rc1) as KVM guest I get the following warning in one of my stress tests:
+Hello.
 
-Turns out that it happens when I shutdown the guest via an sclp quiesce interrupt (wired to ctrl-alt-delete)
-and it also happens with 3.16, just less often. So I will some other places first.
+On 8/29/2014 8:26 AM, Lu Baolu wrote:
 
-Christian
+> This full-speed USB device generates spurious remote wakeup event
+> as soon as USB_DEVICE_REMOTE_WAKEUP feature is set. As the result,
+> Linux can't enter system suspend and S0ix power saving modes once
+> this keyboard is used.
+
+> This patch tries to introduce USB_QUIRK_IGNOR_REMOTE_WAKEUP quirk.
+
+    Why not IGNORE? This doesn't look like a big save...
+
+> With this quirk set, wakeup capability will be ignored during
+> device configure.
+
+> This patch could be back-ported to kernels as old as 2.6.39.
+
+> Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
+
+WBR, Sergei
 
