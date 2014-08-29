@@ -1,165 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807AbaH2Kkv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 06:40:51 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51168 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752655AbaH2Kkt (ORCPT
+	id S1752904AbaH2KlZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 06:41:25 -0400
+Received: from relay.parallels.com ([195.214.232.42]:42214 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752655AbaH2KlX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 06:40:49 -0400
-Date: Fri, 29 Aug 2014 11:40:02 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Matti Vaittinen <matti.vaittinen@nsn.com>
-Cc: ext Guenter Roeck <linux@roeck-us.net>,
-        Jason Cooper <jason@lakedaemon.net>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "jic23@kernel.org" <jic23@kernel.org>,
-        "arno@natisbad.org" <arno@natisbad.org>,
-        "jgunthorpe@obsidianresearch.com" <jgunthorpe@obsidianresearch.com>,
-        "san@rosetechnology.dk" <san@rosetechnology.dk>,
-        "hs@denx.de" <hs@denx.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        Sverdlin Alexander <alexander.sverdlin@nsn.com>
-Subject: Re: [PATCH] rtc: ds1307: add trickle charger device tree binding
-Message-ID: <20140829104001.GB19424@leverpostej>
-References: <20140828124237.GA29102@fi-ourus-dhcp00977.emea.nsn-net.net>
- <20140828125915.GJ14650@leverpostej>
- <20140828155157.GB23677@roeck-us.net>
- <20140828161025.GO14650@leverpostej>
- <20140828164825.GA12153@roeck-us.net>
- <20140828172842.GF12769@titan.lakedaemon.net>
- <20140828174034.GC15307@roeck-us.net>
- <20140829073413.GN4587@fi-ourus-dhcp00977.emea.nsn-net.net>
+	Fri, 29 Aug 2014 06:41:23 -0400
+Message-ID: <540058CB.2030704@parallels.com>
+Date: Fri, 29 Aug 2014 14:41:15 +0400
+From: Maxim Patlasov <mpatlasov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140829073413.GN4587@fi-ourus-dhcp00977.emea.nsn-net.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Zach Brown <zab@zabbo.net>
+CC: Ming Lei <ming.lei@canonical.com>, Benjamin LaHaise <bcrl@kvack.org>,
+        "axboe@kernel.dk" <axboe@kernel.dk>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Kent Overstreet <kmo@daterainc.com>,
+        open list:
+	AIO <linux-aio@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>, ;
+Illegal-Object: Syntax error in CC: address found on vger.kernel.org:
+	CC:	;
+			^-missing semicolon to end mail group, extraneous tokens in mailbox, missing end of mailbox
+Subject: Re: [PATCH v1 5/9] block: loop: convert to blk-mq
+In-Reply-To: 20140827175605.GE12827@lenny.home.zabbo.net
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.22.200]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 29, 2014 at 08:34:25AM +0100, Matti Vaittinen wrote:
-> On Thu, Aug 28, 2014 at 10:40:34AM -0700, ext Guenter Roeck wrote:
-> > On Thu, Aug 28, 2014 at 01:28:42PM -0400, Jason Cooper wrote:
-> > > On Thu, Aug 28, 2014 at 09:48:25AM -0700, Guenter Roeck wrote:
-> > > > On Thu, Aug 28, 2014 at 05:10:25PM +0100, Mark Rutland wrote:
-> > > > > On Thu, Aug 28, 2014 at 04:51:57PM +0100, Guenter Roeck wrote:
-> > > > > > On Thu, Aug 28, 2014 at 01:59:15PM +0100, Mark Rutland wrote:
-> > > > > > > On Thu, Aug 28, 2014 at 01:42:44PM +0100, Matti Vaittinen wrote:
-> > > > > > > > Patch adding support for specifying trickle charger setup from device
-> > > > > > > > tree. Patch is based on linux-next tree.
-> > > > > > > > 
-> > > > > > > > 
-> > > > > > > > Some DS13XX devices have "trickle chargers". Introduce a device tree binding
-> > > > > > > > for specifying the setup and register values.
-> > > > > > > > 
-> > > > > > > > +++ b/Documentation/devicetree/bindings/rtc/dallas,ds1339.txt
-> > > > > > > > @@ -0,0 +1,19 @@
-> > > > > > > > +* Dallas DS1339		I2C Serial Real-Time Clock
-> > > > > > > > +
-> > > > > > > > +Required properties:
-> > > > > > > > +- compatible: Should contain "dallas,ds1339".
-> > > > > > > > +- reg: I2C address for chip
-> > > > > > > > +
-> > > > > > > > +Optional properties:
-> > > > > > > > +- trickle_setup : Used Trickle Charger configuration,
-> > > > > > > > +        corresponding to 5 lowest bits in trickle charger register.
-> > > > > > > 
-> > > > > > The value is provided via platform data, so it is platform specific
-> > > > > > and presumably needs to be configurable. I did, however, not find
-> > > > > > a single in-kernel driver which is actually setting it.
-> > > > > > So this is a good question.
-> > > > > 
-> > > > > I'm uncomfortable adding a field we don't understand to DT.
-> > > > > 
-> > > > > Is there any publicly-available documentation for the device?
-> > > > > 
-> > > > 
-> > > > Lots ;-)
-> > > > 
-> > > > http://datasheets.maximintegrated.com/en/ds/DS1307.pdf
-> > > > http://datasheets.maximintegrated.com/en/ds/DS1337.pdf
-> > > > http://datasheets.maximintegrated.com/en/ds/DS1338.pdf
-> > > > http://datasheets.maximintegrated.com/en/ds/DS1339.pdf
-> > > > http://datasheets.maximintegrated.com/en/ds/DS1340.pdf
-> > > > http://datasheets.maximintegrated.com/en/ds/DS1388.pdf
-> > > > http://datasheets.maximintegrated.com/en/ds/DS3231.pdf
-> > > > 
-> > > > Code suggests that DS1339, DS1339, and DS1340 have the register.
-> > > > 
-> > > > Looking into the datasheets, the configuration consists of two parts:
-> > > > - diode connected or not
-> > > > - trickle charger resistor value (250, 2000, or 4000 ohm)
-> > > > 
-> > > > Given that, it seems to me that those values should be configured
-> > > > explicitly instead of using a binary value, and that the driver
-> > > > should perform the conversion from dt entry to register value.
-> > > 
-> > > iiuc, there is no way for the kernel to determine what is being trickle
-> > > charged, and thus no way to determine how it should set this register.
-> > > 
-> > > It may be a bit of overkill, but I think a DT macro would be the most
-> > > maintainable solution here:
-> > > 
-> > > #define DS1339_TRCKL_DIODE   0x08
-> > > #define DS1339_TRCKL_NODIODE 0x04
-> > > #define DS1339_TRCKL_R250    0x01
-> > > #define DS1339_TRCKL_R2000   0x02
-> > > #define DS1339_TRCKL_R4000   0x03
-> > > 
-> > > trickle_setup = <DS1339_TRCKL_DIODE | DS1339_TRCKL_R250>;
-> > > 
-> > > And the driver would take care of oring it with the enable pattern.
-> > > 
-> > 
-> > Yes, that sounds reasonable as well.
-> > 
-> I thought of this too. However the ds1307 seems to be designed to work
-> with bunch of chips. What then when next chip supported by this driver
-> introduces 75, 1000 and 5000 ohm resistors? Or something else. (Or add
-> some other configuration). I do not see this approach to be
-> maintainable in long run.
+On 8/28/14, Zach Brown<zab@zabbo.net>  wrote:
 
-If a new chip comes out with new features, the driver will need an
-update anyhow. We have no guarantee that the register placement will be
-the same, let alone the layout.
+> On Wed, Aug 27, 2014 at 09:19:36PM +0400, Maxim Patlasov wrote:
+>> On 08/27/2014 08:29 PM, Benjamin LaHaise wrote:
+>>> On Wed, Aug 27, 2014 at 08:08:59PM +0400, Maxim Patlasov wrote:
+>>> ...
+>>>> 1) /dev/loop0 of 3.17.0-rc1 with Ming's patches applied -- 11K iops
+>>>> 2) the same as above, but call loop_queue_work() directly from
+>>>> loop_queue_rq() -- 270K iops
+>>>> 3) /dev/nullb0 of 3.17.0-rc1 -- 380K iops
+>>>>
+>>>> Taking into account so big difference (11K vs. 270K), would it be
+>>>> worthy
+>>>> to implement pure non-blocking version of aio_kernel_submit() returning
+>>>> error if blocking needed? Then loop driver (or any other in-kernel
+>>>> user)
+>>>> might firstly try that non-blocking submit as fast-path, and, only if
+>>>> it's failed, fall back to queueing.
+>>> What filesystem is the backing file for loop0 on?  O_DIRECT access as
+>>> Ming's patches use should be non-blocking, and if not, that's something
+>>> to fix.
+>> I used loop0 directly on top of null_blk driver (because my goal was to
+>> measure the overhead of processing requests in a separate thread).
+> The relative overhead while doing nothing else.  While zooming way down
+> in to micro benchmarks is fun and all, testing on an fs on brd might be
+> more representitive and so more compelling.
 
-If and when said new chip comes out we allocate a new compatible string.
-If it's compatible iwith (i.e. is a superset of) an existing device's
-programming model, we add that existing string as a fallback in the
-compatible list so old kernels can drive the subset of features they
-understand.
+The measurements on an fs on brd are even more outrageous (the same fio 
+script I posted a few messages above):
 
-> I see strong possibility of polluting dt with endless amount of
-> defines. Furthermore I believe the benefits of these defines would be
-> negligible compared to effort maintaining defines and documentation of
-> them causes. Surely the one who needs to add dt node for this chip in
-> his board's dt has the manual for the chip he has on board. Especially
-> so if he knows the trickle charger there and wants to configure it.
-> The plain resistor type still gives zero information without knowing
-> the other details.
+1) Baseline. no loopback device involved.
 
-I would rather that the driver had some idea of what it were doing
-rather than being a glorified copy routine.
+fio on /dev/ram0:                           467K iops
+fio on ext4 over /dev/ram0:                 378K iops
 
-I would suggest we have two properties that describe the resistor's
-rating and whether or not there is a diode:
+2) Loopback device from 3.17.0-rc1 with Ming's patches (v1) applied:
 
-trickle-resistor-ohms = <250>
-diode-connected;
+fio on /dev/loop0 over /dev/ram0:            10K iops
+fio on ext4 over /dev/loop0 over /dev/ram0:   9K iops
 
-That's easy for a human to write and/or validate, we can easily extend
-it in future, requires no proliferation of macros, and describes the
-hardware rather than telling software what to do.
+3) the same as above, but avoid extra context switch (call 
+loop_queue_work() directly from loop_queue_rq()):
 
-The driver becomes a little more complicated, but gains sanity checking,
-which is a good thing.
+fio on /dev/loop0 over /dev/ram0:           267K iops
+fio on ext4 over /dev/loop0 over /dev/ram0: 223K iops
 
-I'm still worried that we have no idea what the device is intended to
-charge. Surely that's important?
+The problem is not about huge relative overhead while doing nothing 
+else. It's rather about introducing extra latency (~100 microseconds on 
+commodity h/w I used) which might be noticeable on modern SSDs (and h/w 
+RAIDs with caching).
 
 Thanks,
-Mark.
+Maxim
