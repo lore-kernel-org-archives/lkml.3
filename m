@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753020AbaH2H1E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 03:27:04 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:39634 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752942AbaH2H1C (ORCPT
+	id S1752582AbaH2H31 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 03:29:27 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:45951 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752093AbaH2H3Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 03:27:02 -0400
+	Fri, 29 Aug 2014 03:29:25 -0400
+Date: Fri, 29 Aug 2014 08:29:18 +0100
+From: Sitsofe Wheeler <sitsofe@gmail.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com, decui@microsoft.com
+Subject: Re: [PATCH V2 0/5] Drivers: hv: vmbus: Eliminate calls to BUG_ON()
+Message-ID: <20140829072918.GA842@sucs.org>
+References: <1409181905-23254-1-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-In-Reply-To: <20140825190311.GA21871@kahuna>
-References: <1408716062-26055-1-git-send-email-nm@ti.com>
-	<1408716062-26055-2-git-send-email-nm@ti.com>
-	<20140825172506.GM17254@atomide.com>
-	<20140825190311.GA21871@kahuna>
-Date: Fri, 29 Aug 2014 09:27:01 +0200
-Message-ID: <CACRpkdaiNQncQBr22rePLU29McEoj776U+YqcQBNw5AoDjOxUA@mail.gmail.com>
-Subject: Re: [PATCH 1/3] pinctrl: bindings: Add OMAP pinctrl binding
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Nishanth Menon <nm@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>, Tero Kristo <t-kristo@ti.com>,
-        Paul Walmsley <paul@pwsan.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Keerthy <j-keerthy@ti.com>,
-        =?UTF-8?Q?Beno=C3=AEt_Cousson?= <bcousson@baylibre.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Dave Gerlach <d-gerlach@ti.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409181905-23254-1-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 9:03 PM, Nishanth Menon <nm@ti.com> wrote:
+On Wed, Aug 27, 2014 at 04:25:05PM -0700, K. Y. Srinivasan wrote:
+> Cleanup the channel management code and eliminate calls to BUG_ON().
+> Also fix an error propagation bug in vmbus_open().
+> 
+> In this version of the patch-set, I have addressed comments from
+> Dan Carpenter.
+> 
+> K. Y. Srinivasan (5):
+>   Drivers: hv: vmbus: Cleanup vmbus_post_msg()
+>   Drivers: hv: vmbus: Cleanup vmbus_teardown_gpadl()
+>   Drivers: hv: vmbus: Cleanup vmbus_close_internal()
+>   Drivers: hv: vmbus: Cleanup vmbus_establish_gpadl()
+>   Drivers: hv: vmbus: Fix a bug in vmbus_open()
 
-> ---8<---
-> From 74121c6a2524048eb02c3b33a25e13261edd2e99 Mon Sep 17 00:00:00 2001
-> From: Nishanth Menon <nm@ti.com>
-> Date: Thu, 22 May 2014 23:32:09 -0500
-> Subject: [PATCH V2] pinctrl: bindings: Add OMAP pinctrl binding
->
-> Add basic skeleton of OMAP pinctrl bindings. This is compatible with
-> pinctrl,single bindings and is meant purely as a reference point.
->
-> Acked-by: Tony Lindgren <tony@atomide.com>
-> Signed-off-by: Nishanth Menon <nm@ti.com>
+This patch set resolves a number of BUG_ON crashes I was hitting on
+Hyper-V while booting a kernel with verification options on. With these
+I can complete a 3.17.0-rc2 boot on an SMP setup although patches from
+"Drivers: hv: vmbus: Miscellaneous cleanup" are needed to resolve other
+non-crash issues.
 
-Applied this inline v2 version.
+Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
 
-Yours,
-Linus Walleij
+-- 
+Sitsofe | http://sucs.org/~sits/
