@@ -1,66 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407AbaH2Ss4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 14:48:56 -0400
-Received: from mga02.intel.com ([134.134.136.20]:27973 "EHLO mga02.intel.com"
+	id S1753741AbaH2Svd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 14:51:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16915 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752914AbaH2Ssz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 14:48:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,425,1406617200"; 
-   d="scan'208";a="565515956"
-Message-ID: <5400CB13.4040004@intel.com>
-Date: Fri, 29 Aug 2014 21:48:51 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753213AbaH2Svb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 14:51:31 -0400
+Date: Fri, 29 Aug 2014 14:51:10 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: akpm@linux-foundation.org, kirill.shutemov@linux.intel.com,
+        khlebnikov@openvz.org, riel@redhat.com, mgorman@suse.de,
+        mhocko@suse.cz, hughd@google.com, vbabka@suse.cz, walken@google.com,
+        minchan@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 1/3] Introduce dump_vma
+Message-ID: <20140829185110.GA12774@nhori.bos.redhat.com>
+References: <1409324059-28692-1-git-send-email-sasha.levin@oracle.com>
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 20/41] perf tools: Let a user specify a PMU event without
- any config terms
-References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com> <1405332185-4050-21-git-send-email-adrian.hunter@intel.com> <20140716142510.GE9441@krava.redhat.com> <53C6948C.2080103@intel.com> <20140716182214.GB32716@krava.redhat.com>
-In-Reply-To: <20140716182214.GB32716@krava.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409324059-28692-1-git-send-email-sasha.levin@oracle.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/07/2014 9:22 p.m., Jiri Olsa wrote:
-> On Wed, Jul 16, 2014 at 06:04:44PM +0300, Adrian Hunter wrote:
->> On 16/07/2014 5:25 p.m., Jiri Olsa wrote:
->>> On Mon, Jul 14, 2014 at 01:02:44PM +0300, Adrian Hunter wrote:
->>>> This enables a PMU event to be specified in the form:
->>>>
->>>> 	pmu//
->>>>
->>>> which is effectively the same as:
->>>>
->>>> 	pmu/config=0/
->>>>
->>>> This patch is a precursor to defining
->>>> default config for a PMU.
->>>
->>> I understand the need for default config, but could you please elaborate
->>> why do we want to parse 'pmu//' as an event string string?
->>
->> Currently the parser requires the slashes to identify a PMU event
->> as opposed to a hardware or other kind of event.
->
-> right, so why do we want to parse 'pmu//' as an event string? ;-)
+On Fri, Aug 29, 2014 at 10:54:17AM -0400, Sasha Levin wrote:
+> Introduce a helper to dump information about a VMA, this also
+> makes dump_page_flags more generic and re-uses that so the
+> output looks very similar to dump_page:
+> 
+> [   61.903437] vma ffff88070f88be00 start 00007fff25970000 end 00007fff25992000
+> [   61.903437] next ffff88070facd600 prev ffff88070face400 mm ffff88070fade000
+> [   61.903437] prot 8000000000000025 anon_vma ffff88070fa1e200 vm_ops           (null)
+> [   61.903437] pgoff 7ffffffdd file           (null) private_data           (null)
+> [   61.909129] flags: 0x100173(read|write|mayread|maywrite|mayexec|growsdown|account)
+> 
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 
-I am not sure what you mean.  Here I am using 'pmu' as a placeholder
-for a real PMU name.  So actual event strings are 'intel_bts//' or
-'intel_pt//' or 'intel_pt/tsc=0,noretcomp=1/'
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-The parser uses various tricks to decide what kind of event the event
-name actually is e.g. colons indicate a tracepoint.
+# checkpatch.pl shows warnings on using printk(KERN_ALERT), but there
+# are many other lines using printk in this file, so it should be done
+# as a whole in a separate patch.
 
-If you are asking why the parser isn't smart enough to know the event
-name is a PMU name, I guess it is either to keep the namespaces separate,
-or because it was easier to program it that way.
+Thanks,
+Naoya Horiguchi
+
+> ---
+>  include/linux/mmdebug.h |    2 ++
+>  mm/page_alloc.c         |   77 +++++++++++++++++++++++++++++++++++++++++------
+>  2 files changed, 70 insertions(+), 9 deletions(-)
+> 
+> diff --git a/include/linux/mmdebug.h b/include/linux/mmdebug.h
+> index 2f348d0..dfb9333 100644
+> --- a/include/linux/mmdebug.h
+> +++ b/include/linux/mmdebug.h
+> @@ -4,10 +4,12 @@
+>  #include <linux/stringify.h>
+>  
+>  struct page;
+> +struct vm_area_struct;
+>  
+>  extern void dump_page(struct page *page, const char *reason);
+>  extern void dump_page_badflags(struct page *page, const char *reason,
+>  			       unsigned long badflags);
+> +void dump_vma(const struct vm_area_struct *vma);
+>  
+>  #ifdef CONFIG_DEBUG_VM
+>  #define VM_BUG_ON(cond) BUG_ON(cond)
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index f86023b..add97b8 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -6628,27 +6628,26 @@ static const struct trace_print_flags pageflag_names[] = {
+>  #endif
+>  };
+>  
+> -static void dump_page_flags(unsigned long flags)
+> +static void dump_flags(unsigned long flags,
+> +			const struct trace_print_flags *names, int count)
+>  {
+>  	const char *delim = "";
+>  	unsigned long mask;
+>  	int i;
+>  
+> -	BUILD_BUG_ON(ARRAY_SIZE(pageflag_names) != __NR_PAGEFLAGS);
+> -
+> -	printk(KERN_ALERT "page flags: %#lx(", flags);
+> +	printk(KERN_ALERT "flags: %#lx(", flags);
+>  
+>  	/* remove zone id */
+>  	flags &= (1UL << NR_PAGEFLAGS) - 1;
+>  
+> -	for (i = 0; i < ARRAY_SIZE(pageflag_names) && flags; i++) {
+> +	for (i = 0; i < count && flags; i++) {
+>  
+> -		mask = pageflag_names[i].mask;
+> +		mask = names[i].mask;
+>  		if ((flags & mask) != mask)
+>  			continue;
+>  
+>  		flags &= ~mask;
+> -		printk("%s%s", delim, pageflag_names[i].name);
+> +		printk("%s%s", delim, names[i].name);
+>  		delim = "|";
+>  	}
+>  
+> @@ -6666,12 +6665,14 @@ void dump_page_badflags(struct page *page, const char *reason,
+>  	       "page:%p count:%d mapcount:%d mapping:%p index:%#lx\n",
+>  		page, atomic_read(&page->_count), page_mapcount(page),
+>  		page->mapping, page->index);
+> -	dump_page_flags(page->flags);
+> +	BUILD_BUG_ON(ARRAY_SIZE(pageflag_names) != __NR_PAGEFLAGS);
+> +	dump_flags(page->flags, pageflag_names, ARRAY_SIZE(pageflag_names));
+>  	if (reason)
+>  		pr_alert("page dumped because: %s\n", reason);
+>  	if (page->flags & badflags) {
+>  		pr_alert("bad because of flags:\n");
+> -		dump_page_flags(page->flags & badflags);
+> +		dump_flags(page->flags & badflags,
+> +				pageflag_names, ARRAY_SIZE(pageflag_names));
+>  	}
+>  	mem_cgroup_print_bad_page(page);
+>  }
+> @@ -6681,3 +6682,61 @@ void dump_page(struct page *page, const char *reason)
+>  	dump_page_badflags(page, reason, 0);
+>  }
+>  EXPORT_SYMBOL(dump_page);
+> +
+> +static const struct trace_print_flags vmaflags_names[] = {
+> +	{VM_READ,			"read"		},
+> +	{VM_WRITE,			"write"		},
+> +	{VM_EXEC,			"exec"		},
+> +	{VM_SHARED,			"shared"	},
+> +	{VM_MAYREAD,			"mayread"	},
+> +	{VM_MAYWRITE,			"maywrite"	},
+> +	{VM_MAYEXEC,			"mayexec"	},
+> +	{VM_MAYSHARE,			"mayshare"	},
+> +	{VM_GROWSDOWN,			"growsdown"	},
+> +	{VM_PFNMAP,			"pfnmap"	},
+> +	{VM_DENYWRITE,			"denywrite"	},
+> +	{VM_LOCKED,			"locked"	},
+> +	{VM_IO,				"io"		},
+> +	{VM_SEQ_READ,			"seqread"	},
+> +	{VM_RAND_READ,			"randread"	},
+> +	{VM_DONTCOPY,			"dontcopy"	},
+> +	{VM_DONTEXPAND,			"dontexpand"	},
+> +	{VM_ACCOUNT,			"account"	},
+> +	{VM_NORESERVE,			"noreserve"	},
+> +	{VM_HUGETLB,			"hugetlb"	},
+> +	{VM_NONLINEAR,			"nonlinear"	},
+> +#if defined(CONFIG_X86)
+> +	{VM_PAT,			"pat"		},
+> +#elif defined(CONFIG_PPC)
+> +	{VM_SAO,			"sao"		},
+> +#elif defined(CONFIG_PARISC) || defined(CONFIG_METAG) || defined(CONFIG_IA64)
+> +	{VM_GROWSUP,			"growsup"	},
+> +#elif !defined(CONFIG_MMU)
+> +	{VM_MAPPED_COPY,		"mappedcopy"	},
+> +#else
+> +	{VM_ARCH_1,			"arch_1"	},
+> +#endif
+> +	{VM_DONTDUMP,			"dontdump"	},
+> +#ifdef CONFIG_MEM_SOFT_DIRTY
+> +	{VM_SOFTDIRTY,			"softdirty"	},
+> +#endif
+> +	{VM_MIXEDMAP,			"mixedmap"	},
+> +	{VM_HUGEPAGE,			"hugepage"	},
+> +	{VM_NOHUGEPAGE,			"nohugepage"	},
+> +	{VM_MERGEABLE,			"mergeable"	},
+> +};
+> +
+> +void dump_vma(const struct vm_area_struct *vma)
+> +{
+> +	printk(KERN_ALERT
+> +		"vma %p start %p end %p\n"
+> +		"next %p prev %p mm %p\n"
+> +		"prot %lx anon_vma %p vm_ops %p\n"
+> +		"pgoff %lx file %p private_data %p\n",
+> +		vma, (void *)vma->vm_start, (void *)vma->vm_end, vma->vm_next,
+> +		vma->vm_prev, vma->vm_mm, vma->vm_page_prot.pgprot,
+> +		vma->anon_vma, vma->vm_ops, vma->vm_pgoff,
+> +		vma->vm_file, vma->vm_private_data);
+> +	dump_flags(vma->vm_flags, vmaflags_names, ARRAY_SIZE(vmaflags_names));
+> +}
+> +EXPORT_SYMBOL(dump_vma);
+> -- 
+> 1.7.10.4
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
