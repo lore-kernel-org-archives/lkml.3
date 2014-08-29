@@ -1,38 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502AbaH2Pdw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 11:33:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6940 "EHLO mx1.redhat.com"
+	id S1753686AbaH2Pe5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 11:34:57 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:42704 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753065AbaH2Pdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 11:33:51 -0400
-Message-ID: <54009D34.3010800@redhat.com>
-Date: Fri, 29 Aug 2014 17:33:08 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752877AbaH2Pez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 11:34:55 -0400
+Date: Fri, 29 Aug 2014 08:33:44 -0700
+From: Kees Cook <keescook@chromium.org>
+To: gregkh@linuxfoundation.org
+Cc: ulf.hansson@linaro.org, john.stultz@linaro.org, keescook@chromium.org,
+        linux@arm.linux.org.uk, peter.maydell@linaro.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: [PATCH -stable] mmc: mmci: Reverse IRQ handling for the arm_variant
+Message-ID: <20140829153344.GA11448@www.outflux.net>
 MIME-Version: 1.0
-To: Markos Chandras <markos.chandras@imgtec.com>
-CC: linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexei Starovoitov <ast@plumgrid.com>, linux-doc@vger.kernel.org
-Subject: Re: [PATCH] Documentation: filter: Add MIPS to architectures with
- BPF JIT
-References: <1409322218-3689-1-git-send-email-markos.chandras@imgtec.com>
-In-Reply-To: <1409322218-3689-1-git-send-email-markos.chandras@imgtec.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2014 04:23 PM, Markos Chandras wrote:
-> MIPS supports BPF JIT since v3.16-rc1
->
-> Cc: Randy Dunlap <rdunlap@infradead.org>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Daniel Borkmann <dborkman@redhat.com>
-> Cc: Alexei Starovoitov <ast@plumgrid.com>
-> Cc: linux-doc@vger.kernel.org
-> Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+Commit "mmc: mmci: Handle CMD irq before DATA irq", caused an issue
+when using the ARM model of the PL181 and running QEMU.
 
-Acked-by: Daniel Borkmann <dborkman@redhat.com>
+The bug was reported for the following QEMU version:
+$ qemu-system-arm -version
+QEMU emulator version 2.0.0 (Debian 2.0.0+dfsg-2ubuntu1.1), Copyright
+(c) 2003-2008 Fabrice Bellard
+
+To resolve the problem, let's restore the old behavior were the DATA
+irq is handled prior the CMD irq, but only for the arm_variant, which
+the problem was reported for.
+
+Reported-by: John Stultz <john.stultz@linaro.org>
+Cc: Peter Maydell <peter.maydell@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Tested-by: Kees Cook <keescook@chromium.org>
+Tested-by: John Stultz <john.stultz@linaro.org>
+Cc: <stable@vger.kernel.org> # v3.15+
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+[kees: backported to 3.16]
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+This is the back-port to 3.16, in response to "FAILED: patch "[PATCH]
+mmc: mmci: Reverse IRQ handling for the arm_variant" failed to apply to
+3.16-stable tree"
+
+---
+ drivers/mmc/host/mmci.c | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
+index 249ab80cbb45..d3f05ad33f09 100644
+--- a/drivers/mmc/host/mmci.c
++++ b/drivers/mmc/host/mmci.c
+@@ -65,6 +65,7 @@ static unsigned int fmax = 515633;
+  * @pwrreg_clkgate: MMCIPOWER register must be used to gate the clock
+  * @busy_detect: true if busy detection on dat0 is supported
+  * @pwrreg_nopower: bits in MMCIPOWER don't controls ext. power supply
++ * @reversed_irq_handling: handle data irq before cmd irq.
+  */
+ struct variant_data {
+ 	unsigned int		clkreg;
+@@ -80,6 +81,7 @@ struct variant_data {
+ 	bool			pwrreg_clkgate;
+ 	bool			busy_detect;
+ 	bool			pwrreg_nopower;
++	bool			reversed_irq_handling;
+ };
+ 
+ static struct variant_data variant_arm = {
+@@ -87,6 +89,7 @@ static struct variant_data variant_arm = {
+ 	.fifohalfsize		= 8 * 4,
+ 	.datalength_bits	= 16,
+ 	.pwrreg_powerup		= MCI_PWR_UP,
++	.reversed_irq_handling	= true,
+ };
+ 
+ static struct variant_data variant_arm_extended_fifo = {
+@@ -1163,8 +1166,13 @@ static irqreturn_t mmci_irq(int irq, void *dev_id)
+ 
+ 		dev_dbg(mmc_dev(host->mmc), "irq0 (data+cmd) %08x\n", status);
+ 
+-		mmci_cmd_irq(host, host->cmd, status);
+-		mmci_data_irq(host, host->data, status);
++		if (host->variant->reversed_irq_handling) {
++			mmci_data_irq(host, host->data, status);
++			mmci_cmd_irq(host, host->cmd, status);
++		} else {
++			mmci_cmd_irq(host, host->cmd, status);
++			mmci_data_irq(host, host->data, status);
++		}
+ 
+ 		/* Don't poll for busy completion in irq context. */
+ 		if (host->busy_status)
+-- 
+1.9.1
+
+
+-- 
+Kees Cook
+Chrome OS Security
