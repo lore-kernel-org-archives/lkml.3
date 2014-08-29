@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582AbaH2H31 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 03:29:27 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:45951 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752093AbaH2H3Z (ORCPT
+	id S1753110AbaH2H3y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 03:29:54 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:57594 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753083AbaH2H3v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 03:29:25 -0400
-Date: Fri, 29 Aug 2014 08:29:18 +0100
-From: Sitsofe Wheeler <sitsofe@gmail.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com, decui@microsoft.com
-Subject: Re: [PATCH V2 0/5] Drivers: hv: vmbus: Eliminate calls to BUG_ON()
-Message-ID: <20140829072918.GA842@sucs.org>
-References: <1409181905-23254-1-git-send-email-kys@microsoft.com>
+	Fri, 29 Aug 2014 03:29:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409181905-23254-1-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1408716062-26055-3-git-send-email-nm@ti.com>
+References: <1408716062-26055-1-git-send-email-nm@ti.com>
+	<1408716062-26055-3-git-send-email-nm@ti.com>
+Date: Fri, 29 Aug 2014 09:29:51 +0200
+Message-ID: <CACRpkdZafNeL+mmeOVfbEJFFAtYSbOV74rPHWZZrr6DsfeD-Yw@mail.gmail.com>
+Subject: Re: [PATCH 2/3] pinctrl: single: Add DRA7 pinctrl compatibility
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Nishanth Menon <nm@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, Tero Kristo <t-kristo@ti.com>,
+        Paul Walmsley <paul@pwsan.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Keerthy <j-keerthy@ti.com>,
+        =?UTF-8?Q?Beno=C3=AEt_Cousson?= <bcousson@baylibre.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Dave Gerlach <d-gerlach@ti.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 27, 2014 at 04:25:05PM -0700, K. Y. Srinivasan wrote:
-> Cleanup the channel management code and eliminate calls to BUG_ON().
-> Also fix an error propagation bug in vmbus_open().
-> 
-> In this version of the patch-set, I have addressed comments from
-> Dan Carpenter.
-> 
-> K. Y. Srinivasan (5):
->   Drivers: hv: vmbus: Cleanup vmbus_post_msg()
->   Drivers: hv: vmbus: Cleanup vmbus_teardown_gpadl()
->   Drivers: hv: vmbus: Cleanup vmbus_close_internal()
->   Drivers: hv: vmbus: Cleanup vmbus_establish_gpadl()
->   Drivers: hv: vmbus: Fix a bug in vmbus_open()
+On Fri, Aug 22, 2014 at 4:01 PM, Nishanth Menon <nm@ti.com> wrote:
 
-This patch set resolves a number of BUG_ON crashes I was hitting on
-Hyper-V while booting a kernel with verification options on. With these
-I can complete a 3.17.0-rc2 boot on an SMP setup although patches from
-"Drivers: hv: vmbus: Miscellaneous cleanup" are needed to resolve other
-non-crash issues.
+> DRA7 pinctrl definitions now differ from traditional 16 bit OMAP pin
+> ctrl definitions, in that all 32 bits are used to describe a single pin
+>
+> Also the location of wakeupenable and event bits have changed.
+>
+> Signed-off-by: Nishanth Menon <nm@ti.com>
 
-Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+Patch applied with Tony's ACK.
 
--- 
-Sitsofe | http://sucs.org/~sits/
+Yours,
+Linus Walleij
