@@ -1,53 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755AbaH2L7M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 07:59:12 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:51448 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751006AbaH2L7J (ORCPT
+	id S1753042AbaH2MAD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 08:00:03 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:52550 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752606AbaH2MAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 07:59:09 -0400
-Message-ID: <54006B0A.2050902@cogentembedded.com>
-Date: Fri, 29 Aug 2014 15:59:06 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Fri, 29 Aug 2014 08:00:00 -0400
 MIME-Version: 1.0
-To: Lu Baolu <baolu.lu@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Mathias Nyman <mathias.nyman@intel.com>
-CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] USB: Add device quirk for ASUS T100 Base Station
- keyboard
-References: <1409286391-2854-1-git-send-email-baolu.lu@linux.intel.com>
-In-Reply-To: <1409286391-2854-1-git-send-email-baolu.lu@linux.intel.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1408990744-1093-1-git-send-email-dianders@chromium.org>
+References: <1408990744-1093-1-git-send-email-dianders@chromium.org>
+Date: Fri, 29 Aug 2014 13:59:59 +0200
+Message-ID: <CAPDyKFrAP2zRDbR5Xx_mstjLRBGARknjeP1UjR8jXMhBABanXg@mail.gmail.com>
+Subject: Re: [PATCH] mmc: dw_mmc: Pass back errors from mmc_of_parse()
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Addy Ke <addy.ke@rock-chips.com>, Olof Johansson <olof@lixom.net>,
+        Sonny Rao <sonnyrao@chromium.org>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>, Chris Ball <cjb@laptop.org>,
+        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
+        Chris Ball <chris@printf.net>, linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 25 August 2014 20:19, Doug Anderson <dianders@chromium.org> wrote:
+> It's possible that mmc_of_parse() could return errors (possibly in
+> some future version it might return -EPROBE_DEFER even).  Let's pass
+> those errors back.
+>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
 
-On 8/29/2014 8:26 AM, Lu Baolu wrote:
+Thanks! Applied for next.
 
-> This full-speed USB device generates spurious remote wakeup event
-> as soon as USB_DEVICE_REMOTE_WAKEUP feature is set. As the result,
-> Linux can't enter system suspend and S0ix power saving modes once
-> this keyboard is used.
+I needed to resolve to simple conflict, but you still might want to
+verify that the end result is what you expected.
 
-> This patch tries to introduce USB_QUIRK_IGNOR_REMOTE_WAKEUP quirk.
+Kind regards
+Uffe
 
-    Why not IGNORE? This doesn't look like a big save...
-
-> With this quirk set, wakeup capability will be ignored during
-> device configure.
-
-> This patch could be back-ported to kernels as old as 2.6.39.
-
-> Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
-
-WBR, Sergei
-
+> ---
+>  drivers/mmc/host/dw_mmc.c | 10 ++++++----
+>  1 file changed, 6 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+> index 7f227e9..9ef4df0 100644
+> --- a/drivers/mmc/host/dw_mmc.c
+> +++ b/drivers/mmc/host/dw_mmc.c
+> @@ -2131,7 +2131,9 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+>         if (host->pdata->caps2)
+>                 mmc->caps2 = host->pdata->caps2;
+>
+> -       mmc_of_parse(mmc);
+> +       ret = mmc_of_parse(mmc);
+> +       if (ret)
+> +               goto err_host_allocated;
+>
+>         if (host->pdata->blk_settings) {
+>                 mmc->max_segs = host->pdata->blk_settings->max_segs;
+> @@ -2163,7 +2165,7 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+>
+>         ret = mmc_add_host(mmc);
+>         if (ret)
+> -               goto err_setup_bus;
+> +               goto err_host_allocated;
+>
+>  #if defined(CONFIG_DEBUG_FS)
+>         dw_mci_init_debugfs(slot);
+> @@ -2174,9 +2176,9 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+>
+>         return 0;
+>
+> -err_setup_bus:
+> +err_host_allocated:
+>         mmc_free_host(mmc);
+> -       return -EINVAL;
+> +       return ret;
+>  }
+>
+>  static void dw_mci_cleanup_slot(struct dw_mci_slot *slot, unsigned int id)
+> --
+> 2.1.0.rc2.206.gedb03e5
+>
