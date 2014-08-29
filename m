@@ -1,132 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753718AbaH2Ntu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 09:49:50 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:44076 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752775AbaH2Nts (ORCPT
+	id S1753879AbaH2NwF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 09:52:05 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:48983 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753063AbaH2NwA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 09:49:48 -0400
-Date: Fri, 29 Aug 2014 15:49:42 +0200
-From: Robert Richter <rric@kernel.org>
-To: Olof Johansson <olof@lixom.net>
-Cc: Robert Richter <rrichter@cavium.com>, Mark Rutland <mark.rutland@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: [PATCH] arm64, dts: Add dtbs_install make target
-Message-ID: <20140829134942.GP4703@rric.localhost>
-References: <1406732794-20920-1-git-send-email-rric@kernel.org>
- <1406732794-20920-3-git-send-email-rric@kernel.org>
- <CAOesGMh9KkdKB_ytJ7CCbkPW7dHTX91NdfDMsMNfbmOBVOJ8PQ@mail.gmail.com>
- <20140828161556.GN4703@rric.localhost>
- <20140828162549.GP14650@leverpostej>
- <CAOesGMjtjcgUNV8WLp6_Zbok-0zq5afg_KS8QJYp=kDVabrQvg@mail.gmail.com>
- <20140828181429.GO4703@rric.localhost>
- <CAOesGMh3TEKZkyPjopfSm07C2ydw5=2VrzY0xQ=9jkhoA-Z_kQ@mail.gmail.com>
- <20140829121023.GW13038@rric.localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140829121023.GW13038@rric.localhost>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 29 Aug 2014 09:52:00 -0400
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
+To: sebastian.hesselbarth@gmail.com, thomas.petazzoni@free-electrons.com
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
+        alexandre.belloni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/5] ARM: Berlin: Ethernet support
+Date: Fri, 29 Aug 2014 15:50:58 +0200
+Message-Id: <1409320263-10295-1-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Olof,
+Hi all,
 
-On 29.08.14 14:10:23, Robert Richter wrote:
-> On 28.08.14 16:01:08, Olof Johansson wrote:
-> > Thinking about it a bit more, the even more obvious solution that I
-> > for some reason didn't think of at the time, is to have the
-> > dtbs_install target create the appropriate subdirectories on the
-> > install side, so that the structure is preserved.
-> > 
-> > That comes a bit closer to how modules are handled as well.
-> 
-> Yes, dtbs_install target would be useful.
-> 
-> Will come with a solution for this too.
+This series introduce the Marvell Berlin Ethernet driver, allowing to
+handle the fast Ethernet port. This driver is based on the mv643xx_eth
+driver and reuse some of its functions. While I wanted to make these
+functions common to the two drivers at first, I finally do think this
+is not a great idea:
+- Registers are very different.
+- The mv643xx_eth supports up to 1000Mbps interfaces and performance
+  issues may occur, whereas the mvberlin_eth is only for fast Ethernet.
+- The mvberlin_eth driver uses a hash table to filter incoming packets.
+- A few other differences.
 
-below is a patch that adds the dtbs_install target to arm64. Taken
-from arm where this was already implemented.
+I tried to stay close to the mv643xx_eth implementation, so that the
+discussion is still open, but I still ended up with lots of tiny
+differences that can be hard to manage for both cases. In the end I do
+think having two separate drivers is a good choice.
 
--Robert
+That being said, I tested the Ethernet communication with ICMP pings,
+netcat, tried to use some network related softwares (such as ssh). Here
+is an iperf output:
+
+ ------------------------------------------------------------
+ Client connecting to 192.168.0.11, TCP port 5001
+ TCP window size: 85.0 KByte (default)
+ ------------------------------------------------------------
+ [  3] local 192.168.0.20 port 44183 connected with 192.168.0.11 port 5001
+ [ ID] Interval       Transfer     Bandwidth
+ [  3]  0.0-10.0 sec   113 MBytes  94.8 Mbits/sec
+
+Tests were done on a BG2Q DMP, and this series currently does not add
+other device tree nodes than the ones for this board.
+
+Thanks!
+
+Antoine
 
 
+Antoine Tenart (5):
+  net: mvberlin_eth: add an Ethernet driver for Marvell Berlin
+  Documentation: bindings: net: add the Marvell Berlin Ethernet
+    controller
+  Documentation: devicetree: net: mention Marvell Berlin
+  ARM: dts: berlin: add ethernet and mdio nodes
+  ARM: dts: berlin: enable the Ethernet port on the BG2Q DMP
 
->From bbb09a3775a385f4a549b1c4b8518658bcbc382d Mon Sep 17 00:00:00 2001
-From: Robert Richter <rrichter@cavium.com>
-Date: Fri, 29 Aug 2014 14:17:02 +0200
-Subject: [PATCH] arm64, dts: Add dtbs_install make target
+ .../devicetree/bindings/net/marvell-berlin.txt     |   23 +
+ .../devicetree/bindings/net/marvell-orion-mdio.txt |    6 +-
+ arch/arm/boot/dts/berlin2q-marvell-dmp.dts         |   13 +
+ arch/arm/boot/dts/berlin2q.dtsi                    |   19 +
+ drivers/net/ethernet/marvell/Kconfig               |    9 +
+ drivers/net/ethernet/marvell/Makefile              |    1 +
+ drivers/net/ethernet/marvell/mvberlin_eth.c        | 2081 ++++++++++++++++++++
+ 7 files changed, 2149 insertions(+), 3 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/net/marvell-berlin.txt
+ create mode 100644 drivers/net/ethernet/marvell/mvberlin_eth.c
 
-This adds the dtbs_install make target to arm64. The target has been
-introduced already to arch/arm with the following commit:
-
- f4d4ffc03efc kbuild: dtbs_install: new make target
-
-Implementation for arm64 is the same as for arm.
-
-With 'dtbs_install' all config enabled dtb files are installed to
-either the INSTALL_DTBS_PATH directory or the default location:
-
- $INSTALL_PATH/dtbs/$KERNELRELEASE
-
-Signed-off-by: Robert Richter <rrichter@cavium.com>
----
- arch/arm64/Makefile          | 6 ++++--
- arch/arm64/boot/dts/Makefile | 4 +++-
- 2 files changed, 7 insertions(+), 3 deletions(-)
-
-diff --git a/arch/arm64/Makefile b/arch/arm64/Makefile
-index 8185a913c5ed..c68efa07c5f3 100644
---- a/arch/arm64/Makefile
-+++ b/arch/arm64/Makefile
-@@ -66,8 +66,9 @@ zinstall install: vmlinux
- %.dtb: scripts
- 	$(Q)$(MAKE) $(build)=$(boot)/dts $(boot)/dts/$@
- 
--dtbs: scripts
--	$(Q)$(MAKE) $(build)=$(boot)/dts dtbs
-+PHONY += dtbs dtbs_install
-+dtbs dtbs_install: prepare scripts
-+	$(Q)$(MAKE) $(build)=$(boot)/dts $@
- 
- PHONY += vdso_install
- vdso_install:
-@@ -81,6 +82,7 @@ define archhelp
-   echo  '* Image.gz      - Compressed kernel image (arch/$(ARCH)/boot/Image.gz)'
-   echo  '  Image         - Uncompressed kernel image (arch/$(ARCH)/boot/Image)'
-   echo  '* dtbs          - Build device tree blobs for enabled boards'
-+  echo  '  dtbs_install  - Install dtbs to $(INSTALL_DTBS_PATH)'
-   echo  '  install       - Install uncompressed kernel'
-   echo  '  zinstall      - Install compressed kernel'
-   echo  '                  Install using (your) ~/bin/installkernel or'
-diff --git a/arch/arm64/boot/dts/Makefile b/arch/arm64/boot/dts/Makefile
-index f8001a62029c..3a75cdc2d087 100644
---- a/arch/arm64/boot/dts/Makefile
-+++ b/arch/arm64/boot/dts/Makefile
-@@ -2,9 +2,11 @@ dtb-$(CONFIG_ARCH_THUNDER) += thunder-88xx.dtb
- dtb-$(CONFIG_ARCH_VEXPRESS) += rtsm_ve-aemv8a.dtb foundation-v8.dtb
- dtb-$(CONFIG_ARCH_XGENE) += apm-mustang.dtb
- 
--targets += dtbs
-+targets += dtbs dtbs_install
- targets += $(dtb-y)
- 
- dtbs: $(addprefix $(obj)/, $(dtb-y))
- 
- clean-files := *.dtb
-+
-+dtbs_install: $(addsuffix _dtbinst_, $(dtb-y))
 -- 
-2.0.1
+1.9.1
 
