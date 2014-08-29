@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752594AbaH2FBN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 01:01:13 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:46026 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750800AbaH2FBM (ORCPT
+	id S1752639AbaH2FCC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 01:02:02 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:36825 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751173AbaH2FCB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 01:01:12 -0400
+	Fri, 29 Aug 2014 01:02:01 -0400
 MIME-Version: 1.0
-In-Reply-To: <1407771277-19477-3-git-send-email-kiran.padwal@smartplayin.com>
-References: <1407771277-19477-1-git-send-email-kiran.padwal@smartplayin.com>
-	<1407771277-19477-3-git-send-email-kiran.padwal@smartplayin.com>
-Date: Fri, 29 Aug 2014 07:01:12 +0200
-Message-ID: <CACRpkdbp0r6nskWwquNMyHnmoN-C01J=8C25-r=soMj1vO1b+Q@mail.gmail.com>
-Subject: Re: [PATCH 02/11] pinctrl: imx25: Make of_device_id array const
+In-Reply-To: <1407771475-19543-1-git-send-email-kiran.padwal@smartplayin.com>
+References: <1407771475-19543-1-git-send-email-kiran.padwal@smartplayin.com>
+Date: Fri, 29 Aug 2014 07:02:00 +0200
+Message-ID: <CACRpkdZaad=YhMh=5m3OO-ozzMF__t2oE1Zp=Z-swiRCOhQ3mg@mail.gmail.com>
+Subject: Re: [PATCH 03/11] pinctrl: imx27: Make of_device_id array const
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Kiran Padwal <kiran.padwal@smartplayin.com>
 Cc: Shawn Guo <shawn.guo@linaro.org>,
@@ -23,12 +22,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014 at 5:34 PM, Kiran Padwal
+On Mon, Aug 11, 2014 at 5:37 PM, Kiran Padwal
 <kiran.padwal@smartplayin.com> wrote:
 
 > Make of_device_id array const, because all OF functions handle it as const.
 > ---
->  drivers/pinctrl/pinctrl-imx25.c |    2 +-
+>  drivers/pinctrl/pinctrl-imx27.c |    2 +-
 >  1 file changed, 1 insertion(+), 1 deletion(-)
 
 Applied and squashed.
