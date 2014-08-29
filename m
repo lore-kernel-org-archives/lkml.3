@@ -1,116 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753260AbaH2LOz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 07:14:55 -0400
-Received: from relay.parallels.com ([195.214.232.42]:47546 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752085AbaH2LOx (ORCPT
+	id S1753284AbaH2LQC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 07:16:02 -0400
+Received: from demumfd001.nsn-inter.net ([93.183.12.32]:58819 "EHLO
+	demumfd001.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752469AbaH2LP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 07:14:53 -0400
-Message-ID: <540060A5.1030502@parallels.com>
-Date: Fri, 29 Aug 2014 15:14:45 +0400
-From: Maxim Patlasov <mpatlasov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 29 Aug 2014 07:15:59 -0400
+Date: Fri, 29 Aug 2014 15:19:56 +0300
+From: Matti Vaittinen <matti.vaittinen@nsn.com>
+To: ext Mark Rutland <mark.rutland@arm.com>
+Cc: ext Guenter Roeck <linux@roeck-us.net>,
+        Jason Cooper <jason@lakedaemon.net>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>,
+        "jic23@kernel.org" <jic23@kernel.org>,
+        "arno@natisbad.org" <arno@natisbad.org>,
+        "jgunthorpe@obsidianresearch.com" <jgunthorpe@obsidianresearch.com>,
+        "san@rosetechnology.dk" <san@rosetechnology.dk>,
+        "hs@denx.de" <hs@denx.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        Sverdlin Alexander <alexander.sverdlin@nsn.com>
+Subject: Re: [PATCH] rtc: ds1307: add trickle charger device tree binding
+Message-ID: <20140829121954.GB13630@fi-ourus-dhcp00977.emea.nsn-net.net>
+References: <20140828124237.GA29102@fi-ourus-dhcp00977.emea.nsn-net.net>
+ <20140828125915.GJ14650@leverpostej>
+ <20140828155157.GB23677@roeck-us.net>
+ <20140828161025.GO14650@leverpostej>
+ <20140828164825.GA12153@roeck-us.net>
+ <20140828172842.GF12769@titan.lakedaemon.net>
+ <20140828174034.GC15307@roeck-us.net>
+ <20140829073413.GN4587@fi-ourus-dhcp00977.emea.nsn-net.net>
+ <20140829104001.GB19424@leverpostej>
 MIME-Version: 1.0
-To: Ming Lei <ming.lei@canonical.com>
-CC: Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>, "Zach Brown" <zab@zabbo.net>,
-        Benjamin LaHaise <bcrl@kvack.org>, Kent Overstreet <kmo@daterainc.com>,
-        AIO <linux-aio@kvack.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH v1 5/9] block: loop: convert to blk-mq
-References: <1408031441-31156-1-git-send-email-ming.lei@canonical.com>	<1408031441-31156-6-git-send-email-ming.lei@canonical.com>	<20140815163111.GA16652@infradead.org>	<53EE370D.1060106@kernel.dk>	<53EE3966.60609@kernel.dk>	<CACVXFVO+3SHy0=zESJqG3ZB68AZaeK5_QK2CVmZWzZ7oBWDGwg@mail.gmail.com>	<53F0EAEC.9040505@kernel.dk>	<CACVXFVO3CrD2CoHiBOZ8GNMXrT2pJ=t2BzmAHksqRTmgrpsaaQ@mail.gmail.com>	<CACVXFVN6W-AAQ6g4LXHOyvMzU+EAmj_YYBEuYRnoSB+VqCJg8A@mail.gmail.com>	<53F3B89D.6070703@kernel.dk>	<CACVXFVOR0mzMWo+iPtU8jUvYgH+non=hQ0XaP0Z1Fu0qiSbJNA@mail.gmail.com>	<53FE029B.1030200@parallels.com> <CACVXFVOx6n88kFhCk60YOfVa22qw1B3Gs0+Mj_ng2T5zy1Wb3A@mail.gmail.com>
-In-Reply-To: <CACVXFVOx6n88kFhCk60YOfVa22qw1B3Gs0+Mj_ng2T5zy1Wb3A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.22.200]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140829104001.GB19424@leverpostej>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-purgate-type: clean
+X-purgate-Ad: Categorized by eleven eXpurgate (R) http://www.eleven.de
+X-purgate: clean
+X-purgate: This mail is considered clean (visit http://www.eleven.de for further information)
+X-purgate-size: 3651
+X-purgate-ID: 151667::1409310919-0000061C-B3F4AA05/0/0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/28/2014 06:06 AM, Ming Lei wrote:
-> On 8/28/14, Maxim Patlasov <mpatlasov@parallels.com> wrote:
->> On 08/21/2014 09:44 AM, Ming Lei wrote:
->>> On Wed, Aug 20, 2014 at 4:50 AM, Jens Axboe <axboe@kernel.dk> wrote:
->>>
->>>> Reworked a bit more:
->>>>
->>>> http://git.kernel.dk/?p=linux-block.git;a=commit;h=a323185a761b9a54dc340d383695b4205ea258b6
->>> One big problem of the commit is that it is basically a serialized
->>> workqueue
->>> because of single &hctx->run_work, and per-req work_struct has to be
->>> used for concurrent implementation.  So looks the approach isn't flexible
->>> enough compared with doing that in driver, or any idea about how to fix
->>> that?
->>>
->> I'm interested what's the price of handling requests in a separate
->> thread at large. I used the following fio script:
->>
->>       [global]
->>       direct=1
->>       bsrange=512-512
->>       timeout=10
->>       numjobs=1
->>       ioengine=sync
->>
->>       filename=/dev/loop0 # or /dev/nullb0
->>
->>       [f1]
->>       rw=randwrite
->>
->> to compare the performance of:
->>
->> 1) /dev/loop0 of 3.17.0-rc1 with Ming's patches applied -- 11K iops
-> If you enable BLK_MQ_F_WQ_CONTEXT, it isn't strange to see this
-> result since blk-mq implements a serialized workqueue.
+On Fri, Aug 29, 2014 at 11:40:02AM +0100, ext Mark Rutland wrote:
+> On Fri, Aug 29, 2014 at 08:34:25AM +0100, Matti Vaittinen wrote:
+> > On Thu, Aug 28, 2014 at 10:40:34AM -0700, ext Guenter Roeck wrote:
+> > > On Thu, Aug 28, 2014 at 01:28:42PM -0400, Jason Cooper wrote:
+> > > > On Thu, Aug 28, 2014 at 09:48:25AM -0700, Guenter Roeck wrote:
+> > > > 
+> > > > It may be a bit of overkill, but I think a DT macro would be the most
+> > > > maintainable solution here:
+> > > > 
+> > > > #define DS1339_TRCKL_DIODE   0x08
+> > > > #define DS1339_TRCKL_NODIODE 0x04
+> > > > #define DS1339_TRCKL_R250    0x01
+> > > > #define DS1339_TRCKL_R2000   0x02
+> > > > #define DS1339_TRCKL_R4000   0x03
+> > > > 
+> > > > trickle_setup = <DS1339_TRCKL_DIODE | DS1339_TRCKL_R250>;
+> > > > 
+> > > > And the driver would take care of oring it with the enable pattern.
+> > > > 
+> > > 
+> > > Yes, that sounds reasonable as well.
+> > > 
+> > I thought of this too. However the ds1307 seems to be designed to work
+> > with bunch of chips. What then when next chip supported by this driver
+> > introduces 75, 1000 and 5000 ohm resistors? Or something else. (Or add
+> > some other configuration). I do not see this approach to be
+> > maintainable in long run.
+> 
+> If a new chip comes out with new features, the driver will need an
+> update anyhow. We have no guarantee that the register placement will be
+> the same, let alone the layout.
 
-BLK_MQ_F_WQ_CONTEXT is not in 3.17.0-rc1, so I couldn't enable it.
+This is why I originally also added the trickle_reg property. But let's
+leave it out.
 
->
->> 2) the same as above, but call loop_queue_work() directly from
->> loop_queue_rq() -- 270K iops
->> 3) /dev/nullb0 of 3.17.0-rc1 -- 380K iops
-> In my recent investigation and discussion with Jens, using workqueue
-> may introduce some regression for cases like loop over null_blk, tmpfs.
->
-> And 270K vs. 380K is a bit similar with my result, and it was observed that
-> context switch is increased by more than 50% with introducing workqueue.
+> 
+> If and when said new chip comes out we allocate a new compatible string.
+> If it's compatible iwith (i.e. is a superset of) an existing device's
+> programming model, we add that existing string as a fallback in the
+> compatible list so old kernels can drive the subset of features they
+> understand.
 
-The figures are similar, but the comparison is not. Both 270K and 380K 
-refer to configurations where no extra context switch involved.
+Yes.
 
->
-> I will post V3 which will use previous kthread, with blk-mq & kernel aio, which
-> should make full use of blk-mq and kernel aio, and won't introduce regression
-> for cases like above.
+> 
+> > I see strong possibility of polluting dt with endless amount of
+> > defines. Furthermore I believe the benefits of these defines would be
+> > negligible compared to effort maintaining defines and documentation of
+> > them causes. Surely the one who needs to add dt node for this chip in
+> > his board's dt has the manual for the chip he has on board. Especially
+> > so if he knows the trickle charger there and wants to configure it.
+> > The plain resistor type still gives zero information without knowing
+> > the other details.
+> 
+> I would rather that the driver had some idea of what it were doing
+> rather than being a glorified copy routine.
+> 
+> I would suggest we have two properties that describe the resistor's
+> rating and whether or not there is a diode:
+> 
+> trickle-resistor-ohms = <250>
+> diode-connected;
+> 
+> That's easy for a human to write and/or validate, we can easily extend
+> it in future, requires no proliferation of macros, and describes the
+> hardware rather than telling software what to do.
+> 
+> The driver becomes a little more complicated, but gains sanity checking,
+> which is a good thing.
 
-That would be great!
+This looks like a nice way. Problem is that I can not provide support for 
+all chips ds1307 supports. I have access to ds1339 variant only. I assume
+the driver should thus reject this dt information for all other chips for 
+now.
 
->
->> Taking into account so big difference (11K vs. 270K), would it be worthy
->> to implement pure non-blocking version of aio_kernel_submit() returning
->> error if blocking needed? Then loop driver (or any other in-kernel user)
-> The kernel aio submit is very similar with user space's implementation,
-> except for block plug&unplug usage in user space aio submit path.
->
-> If it is blocked in aio_kernel_submit(), you should observe similar thing
-> with io_submit() too.
+> 
+> I'm still worried that we have no idea what the device is intended to
+> charge. Surely that's important?
 
-Yes, I agree. My point was that there is a room for optimization as my 
-experiments demonstrate. The question is whether it's worthy to 
-sophisticate kernel aio (and fs-specific code too) for the sake of that 
-optimization.
+In my case it will charge capcitor which provides Vbackup for short
+power breaks.
 
-In fact, in a simple case like block fs on top of loopback device on top 
-of a file on another block fs, what kernel aio does for loopback driver 
-is a subtle way of converting incoming bio-s to outgoing bio-s. In case 
-you know where the image file is placed (e.g. by fiemap), such a 
-conversion may be done with zero overhead and anything that makes the 
-overhead noticeable is suspicious. And it is easy to imagine other 
-use-cases when that extra context switch is avoidable.
+Br.
+--Matti Vaittinen
 
-Thanks,
-Maxim
+
+-- 
+=============================================
+
+Matti Vaittinen
+Senile SW Specialist
+FINLAND 
+
+~~ When things go utterly wrong vim users can always type :help! ~~
+
