@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753329AbaH2JcO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 05:32:14 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:36372 "EHLO mailhub1.si.c-s.fr"
+	id S1753300AbaH2JcM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 05:32:12 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:36370 "EHLO mailhub1.si.c-s.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752085AbaH2JcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752882AbaH2JcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 29 Aug 2014 05:32:07 -0400
 From: Christophe Leroy <christophe.leroy@c-s.fr>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -12,112 +12,72 @@ To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
 CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         Joakim Tjernlund <joakim.tjernlund@transmode.se>,
         scottwood@freescale.com
-Subject: [PATCH v2 17/19] powerpc/8xx: set PTE bit 22 off TLBmiss
-Message-Id: <20140829091440.6DAD91ABD66@localhost.localdomain>
+Subject: [PATCH v2 15/19] powerpc/8xx: Implement 16k pages
+Message-Id: <20140829091440.121861ABD63@localhost.localdomain>
 Date: Fri, 29 Aug 2014 11:14:40 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No need to re-set this bit at each TLB miss. Let's set it in the PTE.
+This patch activates the handling of 16k pages on the MPC8xx.
 
 Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
 ---
- arch/powerpc/include/asm/pgtable-ppc32.h |   21 +++++++++++++++++++++
- arch/powerpc/include/asm/pte-8xx.h       |    7 +++++--
- arch/powerpc/kernel/head_8xx.S           |   10 ++--------
- 3 files changed, 28 insertions(+), 10 deletions(-)
+ arch/powerpc/Kconfig               |    2 +-
+ arch/powerpc/include/asm/mmu-8xx.h |    2 ++
+ arch/powerpc/kernel/head_8xx.S     |    4 ++++
+ 3 files changed, 7 insertions(+), 1 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/pgtable-ppc32.h b/arch/powerpc/include/asm/pgtable-ppc32.h
-index 47edde8..c261792 100644
---- a/arch/powerpc/include/asm/pgtable-ppc32.h
-+++ b/arch/powerpc/include/asm/pgtable-ppc32.h
-@@ -172,6 +172,26 @@ static inline unsigned long pte_update(pte_t *p,
- #ifdef PTE_ATOMIC_UPDATES
- 	unsigned long old, tmp;
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index 5f44d3b..dc5f64e 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -518,7 +518,7 @@ config PPC_4K_PAGES
+ 	bool "4k page size"
  
-+#ifdef CONFIG_PPC_8xx
-+	unsigned long tmp2;
-+
-+	__asm__ __volatile__("\
-+1:	lwarx	%0,0,%4\n\
-+	andc	%1,%0,%5\n\
-+	or	%1,%1,%6\n\
-+	/* 0x200 == Extended encoding, bit 22 */ \
-+	/* Bit 22 has to be 1 if neither _PAGE_USER nor _PAGE_RW are set */ \
-+	rlwimi	%1,%1,32-2,0x200\n /* get _PAGE_USER */ \
-+	rlwinm	%3,%1,32-1,0x200\n /* get _PAGE_RW */ \
-+	or	%1,%3,%1\n\
-+	xori	%1,%1,0x200\n"
-+	PPC405_ERR77(0,%4)
-+"	stwcx.	%1,0,%4\n\
-+	bne-	1b"
-+	: "=&r" (old), "=&r" (tmp), "=m" (*p), "=&r" (tmp2)
-+	: "r" (p), "r" (clr), "r" (set), "m" (*p)
-+	: "cc" );
-+#else /* CONFIG_PPC_8xx */
- 	__asm__ __volatile__("\
- 1:	lwarx	%0,0,%3\n\
- 	andc	%1,%0,%4\n\
-@@ -182,6 +202,7 @@ static inline unsigned long pte_update(pte_t *p,
- 	: "=&r" (old), "=&r" (tmp), "=m" (*p)
- 	: "r" (p), "r" (clr), "r" (set), "m" (*p)
- 	: "cc" );
-+#endif /* CONFIG_PPC_8xx */
- #else /* PTE_ATOMIC_UPDATES */
- 	unsigned long old = pte_val(*p);
- 	*p = __pte((old & ~clr) | set);
-diff --git a/arch/powerpc/include/asm/pte-8xx.h b/arch/powerpc/include/asm/pte-8xx.h
-index d44826e..dede1e7 100644
---- a/arch/powerpc/include/asm/pte-8xx.h
-+++ b/arch/powerpc/include/asm/pte-8xx.h
-@@ -48,19 +48,22 @@
+ config PPC_16K_PAGES
+-	bool "16k page size" if 44x
++	bool "16k page size" if 44x || PPC_8xx
+ 
+ config PPC_64K_PAGES
+ 	bool "64k page size" if 44x || PPC_STD_MMU_64 || PPC_BOOK3E_64
+diff --git a/arch/powerpc/include/asm/mmu-8xx.h b/arch/powerpc/include/asm/mmu-8xx.h
+index 3d11d3c..986b9e1 100644
+--- a/arch/powerpc/include/asm/mmu-8xx.h
++++ b/arch/powerpc/include/asm/mmu-8xx.h
+@@ -56,6 +56,7 @@
+  * additional information from the MI_EPN, and MI_TWC registers.
   */
- #define _PAGE_RW	0x0400	/* lsb PP bits, inverted in HW */
- #define _PAGE_USER	0x0800	/* msb PP bits */
-+/* set when neither _PAGE_USER nor _PAGE_RW are set */
-+#define _PAGE_KNLRO	0x0200
+ #define SPRN_MI_RPN	790
++#define MI_SPS16K	0x00000008	/* Small page size (0 = 4k, 1 = 16k) */
  
- #define _PMD_PRESENT	0x0001
- #define _PMD_BAD	0x0ff0
- #define _PMD_PAGE_MASK	0x000c
- #define _PMD_PAGE_8M	0x000c
+ /* Define an RPN value for mapping kernel memory to large virtual
+  * pages for boot initialization.  This has real page number of 0,
+@@ -129,6 +130,7 @@
+  * additional information from the MD_EPN, and MD_TWC registers.
+  */
+ #define SPRN_MD_RPN	798
++#define MD_SPS16K	0x00000008	/* Small page size (0 = 4k, 1 = 16k) */
  
--#define _PTE_NONE_MASK _PAGE_ACCESSED
-+#define _PTE_NONE_MASK (_PAGE_ACCESSED | _PAGE_KNLRO)
- 
- /* Until my rework is finished, 8xx still needs atomic PTE updates */
- #define PTE_ATOMIC_UPDATES	1
- 
- /* We need to add _PAGE_SHARED to kernel pages */
--#define _PAGE_KERNEL_RO	(_PAGE_SHARED)
-+#define _PAGE_KERNEL_RO	(_PAGE_SHARED | _PAGE_KNLRO)
-+#define _PAGE_KERNEL_ROX	(_PAGE_EXEC | _PAGE_KNLRO)
- #define _PAGE_KERNEL_RW	(_PAGE_DIRTY | _PAGE_RW | _PAGE_HWWRITE)
- 
- #endif /* __KERNEL__ */
+ /* This is a temporary storage register that could be used to save
+  * a processor working register during a tablewalk.
 diff --git a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
-index a7af26e..48d3de8 100644
+index 8966262..4dd6be0 100644
 --- a/arch/powerpc/kernel/head_8xx.S
 +++ b/arch/powerpc/kernel/head_8xx.S
-@@ -445,14 +445,8 @@ DataStoreTLBMiss:
- 	and	r11, r11, r10
- 	rlwimi	r10, r11, 0, _PAGE_PRESENT
- #endif
--	/* Honour kernel RO, User NA */
--	/* 0x200 == Extended encoding, bit 22 */
--	rlwimi	r10, r10, 32-2, 0x200 /* Copy USER to bit 22, 0x200 */
--	/* r11 =  (r10 & _PAGE_RW) >> 1 */
--	rlwinm	r11, r10, 32-1, 0x200
--	or	r10, r11, r10
--	/* invert RW and 0x200 bits */
--	xori	r10, r10, _PAGE_RW | 0x200
-+	/* invert RW */
-+	xori	r10, r10, _PAGE_RW
+@@ -45,7 +45,11 @@
+  * Value for the bits that have fixed value in RPN entries.
+  * Also used for tagging DAR for DTLBerror.
+  */
++#ifdef CONFIG_PPC_16K_PAGES
++#define RPN_PATTERN	(0x00f0 | MD_SPS16K)
++#else
+ #define RPN_PATTERN	0x00f0
++#endif
  
- 	/* The Linux PTE won't go exactly into the MMU TLB.
- 	 * Software indicator bits 22 and 28 must be clear.
+ 	__HEAD
+ _ENTRY(_stext);
 -- 
 1.7.1
 
