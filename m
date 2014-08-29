@@ -1,85 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356AbaH2LXe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 07:23:34 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:39777 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751611AbaH2LXc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 07:23:32 -0400
-Date: Fri, 29 Aug 2014 12:23:26 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Wei-Chun Pan <weichun.pan@advantech.com.tw>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Jean Delvare <jdelvare@suse.de>,
-        Guenter Roeck <linux@roeck-us.net>, Wolfram Sang <wsa@the-dreams.de>,
-        "Louis.Lu" <Louis.Lu@advantech.com.tw>,
-        "Neo.Lo" <neo.lo@advantech.com.tw>,
-        "Hank.Peng" <Hank.Peng@advantech.com.tw>,
-        "Kevin.Ong" <Kevin.Ong@advantech.com.tw>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] mfd: imanager2: Add Core supports for IT8516/18/28
-Message-ID: <20140829112326.GL24579@lee--X1>
-References: <1408442679-3662-1-git-send-email-weichun.pan@advantech.com.tw>
+	id S1752775AbaH2L1C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 07:27:02 -0400
+Received: from imap.thunk.org ([74.207.234.97]:55556 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752016AbaH2L1A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 07:27:00 -0400
+Date: Fri, 29 Aug 2014 07:26:55 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Calvin Owens <jcalvinowens@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
+Subject: Re: BUG: drivers/char/random.c:986
+Message-ID: <20140829112655.GB20278@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Calvin Owens <jcalvinowens@gmail.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
+References: <20140829050150.GA3011@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1408442679-3662-1-git-send-email-weichun.pan@advantech.com.tw>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140829050150.GA3011@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Aug 2014, Wei-Chun Pan wrote:
-
-> > You've replied to this email as an independent message, so now there is little
-> > context.  When you reply, please ensure your mailer replies to the thread.
-> > 
+On Thu, Aug 28, 2014 at 10:01:50PM -0700, Calvin Owens wrote:
+> Hello all,
 > 
-> Could you tell me more detail about this?
-> I use Git to reply mails but don't know how to set them to be dependent on.
-
-How do you use Git to reply to emails?
-
-> > On Thu, 07 Aug 2014, Wei-Chun Pan wrote:
-> > > I have a question for your comment. As your mail,
-> > >
-> > > > > +
-> > > > > +static void __exit imanager2_mfd_device_exit(void) {
-> > > > > +	mfd_remove_devices(&ec_pdev->dev);
-> > > > > +	platform_device_unregister(ec_pdev);
-> > > > > +}
-> > > > > +
-> > > > > +module_init(imanager2_mfd_device_init);
-> > > > > +module_exit(imanager2_mfd_device_exit);
-> > > >
-> > > > This is a mess.  Use module_platform_driver() instead.
-> > > >
-> > > > > +MODULE_AUTHOR("Richard Vidal-Dorsch <richard.dorsch at
-> > > > > +advantech.com>");
-> > > > > +MODULE_DESCRIPTION("iManager2 platform device definitions v"
-> > > > > +DRV_VERSION); MODULE_LICENSE("GPL");
-> > MODULE_VERSION(DRV_VERSION);
-> > > >
-> > >
-> > > How can I use module_platform_driver() and my driver exit function
-> > > also can do mfd_remove_devices().
-> > > Or any other better function install of mfd_remove_devices()?
-> > 
-> > That's the point - you don't do mfd_remove_devices() in exit(), you do
-> > mfd_add_devices() in .probe() and mfd_remove_devices() in .remove().
-> > 
-> > The only thing you want to do in init() is platform_driver_register(), or even better
-> > - don't have init() and exit() calls and use use
-> > module_platform_driver_probe() instead.
-> > 
+> I hit this BUG_ON() on my laptop a few days ago: http://i.imgur.com/N1GQeJW.jpg
 > 
-> It seems that module_platform_driver() only registers/unregisters driver but not device.
-> Is there a method to register/unregister my device?
+> In the current upstream, this corresponds to line 1022:
+> 
+> 	BUG_ON(r->entropy_count > r->poolinfo->poolfracbits);
+> 
+> It triggered when I executed `dd if=/dev/urandom of=file bs=N count=1`
+> while watching a YouTube video in Chromium. I don't recall the exact value of
+> N I used, but it was rather large (>50M), and a few bytes past an even power
+> of two (I was creating a file to test an HTTP upload script I was working on).
+> 
+> I haven't had any luck reproducing this on the current upstream or the version
+> it was originally triggered on.
 
-You need to do that from Device Tree or from within arch/<arch>/{mach,plat}-*
+Known bug, fixed in 79a8468747c5 which landed in mainline as of
+3.16-rc6.  And you were running 3.16-rc4.  (BTW, in the future it
+would be nice if you mentioned the kernel version you were running in;
+I found it by looking at the jpg, but it's always more convenient to
+be able to read it in ASCII.  :-)
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Cheers,
+
+						- Ted
