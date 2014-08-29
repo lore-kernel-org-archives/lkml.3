@@ -1,156 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752360AbaH2F3S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 01:29:18 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:48642 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506AbaH2F3Q (ORCPT
+	id S1752701AbaH2FaS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 01:30:18 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:41500 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751321AbaH2FaP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 01:29:16 -0400
-From: Sahara <kpark3469@gmail.com>
-X-Google-Original-From: Sahara <lastnite@SEL-KPARK-D2>
-Date: Fri, 29 Aug 2014 14:28:38 +0900 (KST)
-To: Thierry Reding <thierry.reding@gmail.com>
-cc: kpark3469@gmail.com, akpm@linux-foundation.org, keun-o.park@windriver.com,
-        hpa@zytor.com, rafael.j.wysocki@intel.com, peterz@infradead.org,
-        rusty@rustcorp.com.au, kirill.shutemov@linux.intel.com,
-        oleg@redhat.com, prarit@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] earlyprintk: re-enable earlyprintk calling early_param
-In-Reply-To: <20140827151504.GA22824@ulmo>
-Message-ID: <alpine.DEB.2.02.1408291216350.5912@SEL-KPARK-D2>
-References: <1408011216-8621-1-git-send-email-kpark3469@gmail.com> <20140827151504.GA22824@ulmo>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 29 Aug 2014 01:30:15 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+In-Reply-To: <1409057156-1201-2-git-send-email-gdjakov@mm-sol.com>
+References: <1409057156-1201-1-git-send-email-gdjakov@mm-sol.com>
+	<1409057156-1201-2-git-send-email-gdjakov@mm-sol.com>
+Date: Fri, 29 Aug 2014 07:30:15 +0200
+Message-ID: <CACRpkdYj3n-N58OLd7Qom1LTDQ3=3KWY4m39zmPxrKjJow=f1w@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] pinctrl: qcom: Add APQ8084 pinctrl support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Georgi Djakov <gdjakov@mm-sol.com>,
+        Bjorn Andersson <Bjorn.Andersson@sonymobile.com>
+Cc: Kumar Gala <galak@codeaurora.org>, Andy Gross <agross@codeaurora.org>,
+        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 26, 2014 at 2:45 PM, Georgi Djakov <gdjakov@mm-sol.com> wrote:
 
-
-On Wed, 27 Aug 2014, Thierry Reding wrote:
-
-> On Thu, Aug 14, 2014 at 07:13:36PM +0900, kpark3469@gmail.com wrote:
->> From: Sahara <keun-o.park@windriver.com>
->>
->> Although there are many obs_kernel_param and its names are
->> earlyprintk and also EARLY_PRINTK is also enabled, we could not
->> see the early_printk output properly until now. This patch
->> considers earlycon as well as earlyprintk.
->>
->> Signed-off-by: Sahara <keun-o.park@windriver.com>
->> ---
->>  init/main.c |    3 ++-
->>  1 file changed, 2 insertions(+), 1 deletion(-)
->>
->> diff --git a/init/main.c b/init/main.c
->> index bb1aed9..235d248 100644
->> --- a/init/main.c
->> +++ b/init/main.c
->> @@ -426,7 +426,8 @@ static int __init do_early_param(char *param, char 
-*val, const char *unused)
->>  	for (p = __setup_start; p < __setup_end; p++) {
->>  		if ((p->early && parameq(param, p->str)) ||
->>  		    (strcmp(param, "console") == 0 &&
->> -		     strcmp(p->str, "earlycon") == 0)
->> +		     ((strcmp(p->str, "earlycon") == 0) ||
->> +		     (strcmp(p->str, "earlyprintk") == 0)))
->>  		) {
->>  			if (p->setup_func(val) != 0)
->>  				pr_warn("Malformed early option '%s'\n", 
-param);
+> This patchset adds pinctrl support for the Qualcomm APQ8084 platform.
 >
-> It seems like this patch causes the following warning for me during
-> boot:
->
-> [    0.000000] Booting Linux on physical CPU 0x0
-> [    0.000000] Initializing cgroup subsys cpu
-> [    0.000000] Initializing cgroup subsys cpuacct
-> [    0.000000] Linux version 3.17.0-rc2-next-20140827 
-(thierry.reding@ulmo) (gcc version 4.9.0 (GCC) ) #18 SMP PREEMPT Wed Aug 
-27 17:08:12 CEST 2014
-> [    0.000000] CPU: ARMv7 Processor [413fc0f3] revision 3 (ARMv7), 
-cr=10c5387d
-> [    0.000000] CPU: PIPT / VIPT nonaliasing data cache, PIPT instruction 
-cache
-> [    0.000000] Machine model: NVIDIA Tegra124 Jetson TK1
-> [    0.000000] bootconsole [earlycon0] enabled
-> [    0.000000] debug: ignoring loglevel setting.
-> [    0.000000] ------------[ cut here ]------------
-> [    0.000000] WARNING: CPU: 0 PID: 0 at 
-/home/thierry.reding/src/kernel/linux-work.git/kernel/printk/printk.c:2402 
-register_console+0x60/0x37c()
-> [    0.000000] console 'earlycon0' already registered
-> [    0.000000] Modules linked in:
-> [    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted 
-3.17.0-rc2-next-20140827 #18
-> [    0.000000] [<c0015fec>] (unwind_backtrace) from [<c0011aac>] 
-(show_stack+0x10/0x14)
-> [    0.000000] [<c0011aac>] (show_stack) from [<c062b700>] 
-(dump_stack+0x98/0xd8)
-> [    0.000000] [<c062b700>] (dump_stack) from [<c0025ba0>] 
-(warn_slowpath_common+0x70/0x8c)
-> [    0.000000] [<c0025ba0>] (warn_slowpath_common) from [<c0025bec>] 
-(warn_slowpath_fmt+0x30/0x40)
-> [    0.000000] [<c0025bec>] (warn_slowpath_fmt) from [<c00639b8>] 
-(register_console+0x60/0x37c)
-> [    0.000000] [<c00639b8>] (register_console) from [<c0883870>] 
-(setup_early_printk+0x20/0x28)
-> [    0.000000] [<c0883870>] (setup_early_printk) from [<c087f43c>] 
-(do_early_param+0x6c/0xd0)
-> [    0.000000] [<c087f43c>] (do_early_param) from [<c003cba0>] 
-(parse_args+0x238/0x3d0)
-> [    0.000000] [<c003cba0>] (parse_args) from [<c087f814>] 
-(parse_early_options+0x38/0x40)
-> [    0.000000] [<c087f814>] (parse_early_options) from [<c087f84c>] 
-(parse_early_param+0x30/0x40)
-> [    0.000000] [<c087f84c>] (parse_early_param) from [<c088206c>] 
-(setup_arch+0x4b4/0x974)
-> [    0.000000] [<c088206c>] (setup_arch) from [<c087f8f8>] 
-(start_kernel+0x98/0x3a8)
-> [    0.000000] [<c087f8f8>] (start_kernel) from [<80008074>] 
-(0x80008074)
-> [    0.000000] ---[ end trace cb88537fdc8fa200 ]---
-> [    0.000000] cma: Reserved 128 MiB at a7800000
-> [    0.000000] Memory policy: Data cache writealloc
-> [    0.000000] On node 0 totalpages: 524032
-> [    0.000000] free_area_init_node: node 0, pgdat c091cc00, node_mem_map 
-e67b7000
-> [    0.000000]   Normal zone: 1520 pages used for memmap
-> [    0.000000]   Normal zone: 0 pages reserved
-> [    0.000000]   Normal zone: 194560 pages, LIFO batch:31
-> [    0.000000]   HighMem zone: 2574 pages used for memmap
-> [    0.000000]   HighMem zone: 329472 pages, LIFO batch:31
-> [    0.000000] PERCPU: Embedded 8 pages/cpu @e6767000 s8832 r8192 d15744 
-u32768
-> [    0.000000] pcpu-alloc: s8832 r8192 d15744 u32768 alloc=8*4096
-> [    0.000000] pcpu-alloc: [0] 0 [0] 1 [0] 2 [0] 3
-> [    0.000000] Built 1 zonelists in Zone order, mobility grouping on. 
-Total pages: 522512
-> [    0.000000] Kernel command line: console=ttyS0,115200n8 
-ignore_loglevel rootwait ro earlyprintk ip=:::::eth0:dhcp root=/dev/nfs 
-nfsroot=192.168.69.100:/srv/nfs/tegra124 drm.debug=0xf cma=128M
->
-> Reverting the patch eliminates the warning. earlyprintk does work fine
-> for me without this patch.
->
-> Thierry
+> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
 
+Looks good to me, but waiting for Björn's review before
+merging.
 
-This warning message is caused by specifying 'earlyprintk' in
-your command line args. Same problem may happen if you specify 'earlycon'
-in your command line args and enable CONFIG_SERIAL_EARLYCON with
-the current code without this patch. I think it's appropriate result
-letting a developer know that both ways of using earlyprintk are enabled.
-With current code, although a developer enables CONFIG_EARLY_PRINTK and
-has "console=" arg in command line args, he/she should specify the
-'earlyprintk' in command line args also to see early_printk() outputs.
-With this patch, simply enabling CONFIG_EARLY_PRINTK and having 'console='
-line make you be able to the early_printk().
-
-Nonetheless I want to retract this patch. It's good for ARM, but not good
-for other architectures such as x86. And, because CONFIG_EARLY_PRINTK is
-depending on DEBUG_LL in ARM, making a relation with "console=" is absurd.
-(see strcmp(param, "console") == 0 && strcmp(p->str, "earlyprintk") == 0)
-
-- Sahara
+Yours,
+Linus Walleij
