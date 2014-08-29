@@ -1,178 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534AbaH2OzO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 10:55:14 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:49504 "EHLO
+	id S1753880AbaH2O4O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 10:56:14 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:50161 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752666AbaH2OzM (ORCPT
+	with ESMTP id S1752528AbaH2O4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 10:55:12 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-To: akpm@linux-foundation.org
-Cc: kirill.shutemov@linux.intel.com, khlebnikov@openvz.org, riel@redhat.com,
-        mgorman@suse.de, n-horiguchi@ah.jp.nec.com, mhocko@suse.cz,
-        hughd@google.com, vbabka@suse.cz, walken@google.com,
-        minchan@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH 1/3] Introduce dump_vma
-Date: Fri, 29 Aug 2014 10:54:17 -0400
-Message-Id: <1409324059-28692-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.9.1
+	Fri, 29 Aug 2014 10:56:13 -0400
+Date: Fri, 29 Aug 2014 10:55:58 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: Stefan Bader <stefan.bader@canonical.com>,
+        Kees Cook <keescook@chromium.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] Solved the Xen PV/KASLR riddle
+Message-ID: <20140829145558.GK3609@laptop.dumpdata.com>
+References: <20140827204940.GA10556@laptop.dumpdata.com>
+ <1409248903-19625-1-git-send-email-stefan.bader@canonical.com>
+ <20140829140823.GF3609@laptop.dumpdata.com>
+ <54008DDA.3040701@canonical.com>
+ <5400ADD6020000780002F159@mail.emea.novell.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5400ADD6020000780002F159@mail.emea.novell.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a helper to dump information about a VMA, this also
-makes dump_page_flags more generic and re-uses that so the
-output looks very similar to dump_page:
+On Fri, Aug 29, 2014 at 03:44:06PM +0100, Jan Beulich wrote:
+> >>> On 29.08.14 at 16:27, <stefan.bader@canonical.com> wrote:
+> > Sure. Btw, someone also contacted me saying they have the same problem 
+> > without
+> > changing the layout but having really big initrd (500M). While that feels 
+> > like
+> > it should be impossible (if the kernel+initrd+xen stuff has to fix the 512M
+> > kernel image size area then). But if it can happen, then surely it does 
+> > cause
+> > mappings to be where the module space starts then.
+> 
+> Since the initrd doesn't really need to be mapped into the (limited)
+> virtual address space a pv guest starts with, we specifically got
+> 
+> /*
+>  * Whether or not the guest can deal with being passed an initrd not
+>  * mapped through its initial page tables.
+>  */
+> #define XEN_ELFNOTE_MOD_START_PFN 16
+> 
+> to deal with that situation. The hypervisor side for Dom0 is in place,
+> and the kernel side works in our (classic) kernels. Whether it got
+> implemented for DomU meanwhile I don't know; I'm pretty certain
+> pv-ops kernels don't support it so far.
 
-[   61.903437] vma ffff88070f88be00 start 00007fff25970000 end 00007fff25992000
-[   61.903437] next ffff88070facd600 prev ffff88070face400 mm ffff88070fade000
-[   61.903437] prot 8000000000000025 anon_vma ffff88070fa1e200 vm_ops           (null)
-[   61.903437] pgoff 7ffffffdd file           (null) private_data           (null)
-[   61.909129] flags: 0x100173(read|write|mayread|maywrite|mayexec|growsdown|account)
+Correct - Not implemented. Here is what I had mentioned in the past:
+(see http://lists.xen.org/archives/html/xen-devel/2014-03/msg00580.html)
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- include/linux/mmdebug.h |    2 ++
- mm/page_alloc.c         |   77 +++++++++++++++++++++++++++++++++++++++++------
- 2 files changed, 70 insertions(+), 9 deletions(-)
 
-diff --git a/include/linux/mmdebug.h b/include/linux/mmdebug.h
-index 2f348d0..dfb9333 100644
---- a/include/linux/mmdebug.h
-+++ b/include/linux/mmdebug.h
-@@ -4,10 +4,12 @@
- #include <linux/stringify.h>
- 
- struct page;
-+struct vm_area_struct;
- 
- extern void dump_page(struct page *page, const char *reason);
- extern void dump_page_badflags(struct page *page, const char *reason,
- 			       unsigned long badflags);
-+void dump_vma(const struct vm_area_struct *vma);
- 
- #ifdef CONFIG_DEBUG_VM
- #define VM_BUG_ON(cond) BUG_ON(cond)
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index f86023b..add97b8 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -6628,27 +6628,26 @@ static const struct trace_print_flags pageflag_names[] = {
- #endif
- };
- 
--static void dump_page_flags(unsigned long flags)
-+static void dump_flags(unsigned long flags,
-+			const struct trace_print_flags *names, int count)
- {
- 	const char *delim = "";
- 	unsigned long mask;
- 	int i;
- 
--	BUILD_BUG_ON(ARRAY_SIZE(pageflag_names) != __NR_PAGEFLAGS);
--
--	printk(KERN_ALERT "page flags: %#lx(", flags);
-+	printk(KERN_ALERT "flags: %#lx(", flags);
- 
- 	/* remove zone id */
- 	flags &= (1UL << NR_PAGEFLAGS) - 1;
- 
--	for (i = 0; i < ARRAY_SIZE(pageflag_names) && flags; i++) {
-+	for (i = 0; i < count && flags; i++) {
- 
--		mask = pageflag_names[i].mask;
-+		mask = names[i].mask;
- 		if ((flags & mask) != mask)
- 			continue;
- 
- 		flags &= ~mask;
--		printk("%s%s", delim, pageflag_names[i].name);
-+		printk("%s%s", delim, names[i].name);
- 		delim = "|";
- 	}
- 
-@@ -6666,12 +6665,14 @@ void dump_page_badflags(struct page *page, const char *reason,
- 	       "page:%p count:%d mapcount:%d mapping:%p index:%#lx\n",
- 		page, atomic_read(&page->_count), page_mapcount(page),
- 		page->mapping, page->index);
--	dump_page_flags(page->flags);
-+	BUILD_BUG_ON(ARRAY_SIZE(pageflag_names) != __NR_PAGEFLAGS);
-+	dump_flags(page->flags, pageflag_names, ARRAY_SIZE(pageflag_names));
- 	if (reason)
- 		pr_alert("page dumped because: %s\n", reason);
- 	if (page->flags & badflags) {
- 		pr_alert("bad because of flags:\n");
--		dump_page_flags(page->flags & badflags);
-+		dump_flags(page->flags & badflags,
-+				pageflag_names, ARRAY_SIZE(pageflag_names));
- 	}
- 	mem_cgroup_print_bad_page(page);
- }
-@@ -6681,3 +6682,61 @@ void dump_page(struct page *page, const char *reason)
- 	dump_page_badflags(page, reason, 0);
- }
- EXPORT_SYMBOL(dump_page);
-+
-+static const struct trace_print_flags vmaflags_names[] = {
-+	{VM_READ,			"read"		},
-+	{VM_WRITE,			"write"		},
-+	{VM_EXEC,			"exec"		},
-+	{VM_SHARED,			"shared"	},
-+	{VM_MAYREAD,			"mayread"	},
-+	{VM_MAYWRITE,			"maywrite"	},
-+	{VM_MAYEXEC,			"mayexec"	},
-+	{VM_MAYSHARE,			"mayshare"	},
-+	{VM_GROWSDOWN,			"growsdown"	},
-+	{VM_PFNMAP,			"pfnmap"	},
-+	{VM_DENYWRITE,			"denywrite"	},
-+	{VM_LOCKED,			"locked"	},
-+	{VM_IO,				"io"		},
-+	{VM_SEQ_READ,			"seqread"	},
-+	{VM_RAND_READ,			"randread"	},
-+	{VM_DONTCOPY,			"dontcopy"	},
-+	{VM_DONTEXPAND,			"dontexpand"	},
-+	{VM_ACCOUNT,			"account"	},
-+	{VM_NORESERVE,			"noreserve"	},
-+	{VM_HUGETLB,			"hugetlb"	},
-+	{VM_NONLINEAR,			"nonlinear"	},
-+#if defined(CONFIG_X86)
-+	{VM_PAT,			"pat"		},
-+#elif defined(CONFIG_PPC)
-+	{VM_SAO,			"sao"		},
-+#elif defined(CONFIG_PARISC) || defined(CONFIG_METAG) || defined(CONFIG_IA64)
-+	{VM_GROWSUP,			"growsup"	},
-+#elif !defined(CONFIG_MMU)
-+	{VM_MAPPED_COPY,		"mappedcopy"	},
-+#else
-+	{VM_ARCH_1,			"arch_1"	},
-+#endif
-+	{VM_DONTDUMP,			"dontdump"	},
-+#ifdef CONFIG_MEM_SOFT_DIRTY
-+	{VM_SOFTDIRTY,			"softdirty"	},
-+#endif
-+	{VM_MIXEDMAP,			"mixedmap"	},
-+	{VM_HUGEPAGE,			"hugepage"	},
-+	{VM_NOHUGEPAGE,			"nohugepage"	},
-+	{VM_MERGEABLE,			"mergeable"	},
-+};
-+
-+void dump_vma(const struct vm_area_struct *vma)
-+{
-+	printk(KERN_ALERT
-+		"vma %p start %p end %p\n"
-+		"next %p prev %p mm %p\n"
-+		"prot %lx anon_vma %p vm_ops %p\n"
-+		"pgoff %lx file %p private_data %p\n",
-+		vma, (void *)vma->vm_start, (void *)vma->vm_end, vma->vm_next,
-+		vma->vm_prev, vma->vm_mm, vma->vm_page_prot.pgprot,
-+		vma->anon_vma, vma->vm_ops, vma->vm_pgoff,
-+		vma->vm_file, vma->vm_private_data);
-+	dump_flags(vma->vm_flags, vmaflags_names, ARRAY_SIZE(vmaflags_names));
-+}
-+EXPORT_SYMBOL(dump_vma);
--- 
-1.7.10.4
+XEN_ELFNOTE_INIT_P2M, XEN_ELFNOTE_MOD_START_PFN - I had been looking
+    at that but I can't figure out a nice way of implementing this
+    without the usage of SPARSEMAP_VMAP virtual addresses - which is how
+    the classic Xen does it. But then - I don't know who is using huge PV
+    guests - as the PVHVM does a fine job? But then with PVH, now you can
+    boot with large amount of memory (1TB?) - so some of these issues
+    would go away? Except the 'large ramdisk' as that would eat in the
+    MODULES_VADDR I think? Needs more thinking.
 
+.. and then I left it and to my suprise saw on Luis's slides that
+Jurgen is going to take a look at that (500GB support).
+
+> 
+> Jan
+> 
