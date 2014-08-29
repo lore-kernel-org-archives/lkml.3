@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753645AbaH2NJm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 09:09:42 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:59678 "EHLO zene.cmpxchg.org"
+	id S1753425AbaH2NIe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 09:08:34 -0400
+Received: from max.feld.cvut.cz ([147.32.192.36]:58759 "EHLO max.feld.cvut.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753606AbaH2NJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 09:09:40 -0400
-Date: Fri, 29 Aug 2014 09:09:25 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Weijie Yang <weijie.yang@samsung.com>
-Cc: "'Mel Gorman'" <mgorman@suse.de>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Rik van Riel'" <riel@redhat.com>, rientjes@google.com,
-        "'Weijie Yang'" <weijie.yang.kh@gmail.com>,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
-        "'Linux-MM'" <linux-mm@kvack.org>
-Subject: Re: [PATCH] mm: page_alloc: avoid wakeup kswapd on the unintended
- node
-Message-ID: <20140829130925.GA9900@cmpxchg.org>
-References: <000001cfc357$74db64a0$5e922de0$%yang@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <000001cfc357$74db64a0$5e922de0$%yang@samsung.com>
+	id S1753349AbaH2NIa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 09:08:30 -0400
+From: Michal Sojka <sojka@merica.cz>
+To: linux-usb@vger.kernel.org
+Cc: Michal Sojka <sojka@merica.cz>, Alan Stern <stern@rowland.harvard.edu>,
+        Bryan Wu <cooloney@gmail.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, michal.vokac@comap.cz
+Subject: [PATCH v5 2/3] usb: Rename usb-common.c
+Date: Fri, 29 Aug 2014 15:07:42 +0200
+Message-Id: <1409317663-31160-3-git-send-email-sojka@merica.cz>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1409317663-31160-1-git-send-email-sojka@merica.cz>
+References: <87k35rihcc.fsf@steelpick.2x.cz>
+ <1409317663-31160-1-git-send-email-sojka@merica.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 29, 2014 at 03:03:19PM +0800, Weijie Yang wrote:
-> When enter page_alloc slowpath, we wakeup kswapd on every pgdat
-> according to the zonelist and high_zoneidx. However, this doesn't
-> take nodemask into account, and could prematurely wakeup kswapd on
-> some unintended nodes.
-> 
-> This patch uses for_each_zone_zonelist_nodemask() instead of
-> for_each_zone_zonelist() in wake_all_kswapds() to avoid the above situation.
-> 
-> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+In the next commit, we will want the usb-common module to be composed of
+two object files. Since Kbuild cannot "append" another object to an
+existing one, we need to rename usb-common.c to something
+else (common.c) and create usb-common.o by linking the wanted objects
+together. Currently, usb-common.o comprises only common.o.
 
-Wow, we have never respected nodemask when waking kswapd, but your
-change does make sense to me.
+Signed-off-by: Michal Sojka <sojka@merica.cz>
+---
+ drivers/usb/common/Makefile                   | 4 +++-
+ drivers/usb/common/{usb-common.c => common.c} | 0
+ 2 files changed, 3 insertions(+), 1 deletion(-)
+ rename drivers/usb/common/{usb-common.c => common.c} (100%)
 
-As far as impact go, this has the chance of reducing reclaim/swapping
-for certain configurations.  Higher-order wakeups on an ineligible
-zone are more obviously undesirable, but even order-0 rebalancing is
-not necessarily a future investment for other allocations on that
-node, as other allocations may have access to the free pages of a
-third node and overall demand might drop before these are exhausted.
-This reminds me of the issue fixed in 3a025760fc15 ("mm: page_alloc:
-spill to remote nodes before waking kswapd"), where accidental eager
-order-0 rebalancing turned out to be a true waste.
+diff --git a/drivers/usb/common/Makefile b/drivers/usb/common/Makefile
+index 7526461..052c120 100644
+--- a/drivers/usb/common/Makefile
++++ b/drivers/usb/common/Makefile
+@@ -2,5 +2,7 @@
+ # Makefile for the usb common parts.
+ #
+ 
+-obj-$(CONFIG_USB_COMMON) += usb-common.o
++obj-$(CONFIG_USB_COMMON)	  += usb-common.o
++usb-common-y			  += common.o
++
+ obj-$(CONFIG_USB_OTG_FSM) += usb-otg-fsm.o
+diff --git a/drivers/usb/common/usb-common.c b/drivers/usb/common/common.c
+similarity index 100%
+rename from drivers/usb/common/usb-common.c
+rename to drivers/usb/common/common.c
+-- 
+2.1.0
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
