@@ -1,130 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753402AbaH2JdO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 05:33:14 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:36380 "EHLO mailhub1.si.c-s.fr"
+	id S1753369AbaH2JdK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 05:33:10 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:36398 "EHLO mailhub1.si.c-s.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753202AbaH2JcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 05:32:07 -0400
+	id S1753203AbaH2JcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 05:32:08 -0400
 From: Christophe Leroy <christophe.leroy@c-s.fr>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Paul Mackerras <paulus@samba.org>
 CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         Joakim Tjernlund <joakim.tjernlund@transmode.se>,
         scottwood@freescale.com
-Subject: [PATCH v2 13/19] powerpc/8xx: Use PAGE size related consts
-Message-Id: <20140829091439.A387B1ABD66@localhost.localdomain>
+Subject: [PATCH v2 12/19] powerpc/8xx: Don't use MD_TWC for walk
+Message-Id: <20140829091439.74F471ABD63@localhost.localdomain>
 Date: Fri, 29 Aug 2014 11:14:39 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For PAGE size related operations, use PAGE size consts in order to be able to
-use different page size in the futur.
+MD_TWC can only be used properly with 4k pages.
+So lets calculate level 2 table index by ourselves.
 
 Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
 ---
- arch/powerpc/kernel/head_8xx.S |   30 ++++++++++++++++++------------
- 1 files changed, 18 insertions(+), 12 deletions(-)
+ arch/powerpc/kernel/head_8xx.S |   28 ++++++++++++----------------
+ 1 files changed, 12 insertions(+), 16 deletions(-)
 
 diff --git a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
-index 0f571f5..dcaee9f 100644
+index ad15070..0f571f5 100644
 --- a/arch/powerpc/kernel/head_8xx.S
 +++ b/arch/powerpc/kernel/head_8xx.S
-@@ -292,9 +292,9 @@ InstructionTLBMiss:
- 	mtspr	SPRN_SPRG_SCRATCH2, r10
- 	mfspr	r10, SPRN_SRR0	/* Get effective address of fault */
- #ifdef CONFIG_8xx_CPU15
--	addi	r11, r10, 0x1000
-+	addi	r11, r10, PAGE_SIZE
- 	tlbie	r11
--	addi	r11, r10, -0x1000
-+	addi	r11, r10, -PAGE_SIZE
+@@ -297,8 +297,6 @@ InstructionTLBMiss:
+ 	addi	r11, r10, -0x1000
  	tlbie	r11
  #endif
+-	DO_8xx_CPU6(0x3780, r3)
+-	mtspr	SPRN_MD_EPN, r10	/* Have to use MD_EPN for walk, MI_EPN can't */
  
-@@ -313,7 +313,8 @@ InstructionTLBMiss:
- 	ori	r11, r11, (swapper_pg_dir-PAGE_OFFSET)@l
- 3:
- #endif
--	rlwinm	r10, r10, 12, 20, 29	/* Extract level 1 index */
-+	/* Extract level 1 index */
-+	rlwinm	r10, r10, 32 - ((PAGE_SHIFT - 2) << 1), (PAGE_SHIFT - 2) << 1, 29
- 	lwzx	r11, r10, r11	/* Get the level 1 entry */
- 	rlwinm.	r10, r11,0,0,19	/* Extract page descriptor page address */
- 	beq	2f		/* If zero, don't try to find a pte */
-@@ -325,7 +326,8 @@ InstructionTLBMiss:
+ 	/* If we are faulting a kernel address, we have to use the
+ 	 * kernel page tables.
+@@ -326,10 +324,9 @@ InstructionTLBMiss:
+ 	ori	r11,r11,1		/* Set valid bit */
  	DO_8xx_CPU6(0x2b80, r3)
  	mtspr	SPRN_MI_TWC, r11	/* Set segment attributes */
- 	mfspr	r11, SPRN_SRR0	/* Get effective address of fault */
--	rlwinm	r11, r11, 22, 20, 29	/* Extract level 2 index */
-+	/* Extract level 2 index */
-+	rlwinm	r11, r11, 32 - (PAGE_SHIFT - 2), 32 - PAGE_SHIFT, 29
- 	lwzx	r10, r10, r11	/* Get the pte */
+-	DO_8xx_CPU6(0x3b80, r3)
+-	mtspr	SPRN_MD_TWC, r11	/* Load pte table base address */
+-	mfspr	r11, SPRN_MD_TWC	/* ....and get the pte address */
+-	lwz	r10, 0(r11)	/* Get the pte */
++	mfspr	r11, SPRN_SRR0	/* Get effective address of fault */
++	rlwinm	r11, r11, 22, 20, 29	/* Extract level 2 index */
++	lwzx	r10, r10, r11	/* Get the pte */
  
  #ifdef CONFIG_SWAP
-@@ -385,7 +387,8 @@ DataStoreTLBMiss:
- 	lis	r11, (swapper_pg_dir-PAGE_OFFSET)@h
- 	ori	r11, r11, (swapper_pg_dir-PAGE_OFFSET)@l
- 3:
--	rlwinm	r10, r10, 12, 20, 29	/* Extract level 1 index */
-+	/* Extract level 1 index */
-+	rlwinm	r10, r10, 32 - ((PAGE_SHIFT - 2) << 1), (PAGE_SHIFT - 2) << 1, 29
- 	lwzx	r11, r10, r11	/* Get the level 1 entry */
- 	rlwinm.	r10, r11,0,0,19	/* Extract page descriptor page address */
- 	beq	2f		/* If zero, don't try to find a pte */
-@@ -394,8 +397,8 @@ DataStoreTLBMiss:
+ 	andi.	r11, r10, _PAGE_ACCESSED | _PAGE_PRESENT
+@@ -395,12 +392,13 @@ DataStoreTLBMiss:
+ 
+ 	/* We have a pte table, so load fetch the pte from the table.
  	 */
- 	mfspr	r10, SPRN_MD_EPN	/* Get address of fault */
- 	/* Extract level 2 index */
--	rlwinm	r10, r10, 22, 20, 29
--	rlwimi	r10, r11, 0, 0, 19	/* Add level 2 base */
-+	rlwinm	r10, r10, 32 - (PAGE_SHIFT - 2), 32 - PAGE_SHIFT, 29
-+	rlwimi	r10, r11, 0, 0, 32 - PAGE_SHIFT - 1	/* Add level 2 base */
+-	ori	r11, r11, 1	/* Set valid bit in physical L2 page */
+-	DO_8xx_CPU6(0x3b80, r3)
+-	mtspr	SPRN_MD_TWC, r11	/* Load pte table base address */
+-	mfspr	r10, SPRN_MD_TWC	/* ....and get the pte address */
++	mfspr	r10, SPRN_MD_EPN	/* Get address of fault */
++	/* Extract level 2 index */
++	rlwinm	r10, r10, 22, 20, 29
++	rlwimi	r10, r11, 0, 0, 19	/* Add level 2 base */
  	lwz	r10, 0(r10)	/* Get the pte */
  
- 	ori	r11, r11, 1	/* Set valid bit in physical L2 page */
-@@ -526,18 +529,20 @@ FixupDAR:/* Entry point for dcbx workaround. */
++	ori	r11, r11, 1	/* Set valid bit in physical L2 page */
+ 	/* Insert the Guarded flag into the TWC from the Linux PTE.
+ 	 * It is bit 27 of both the Linux PTE and the TWC (at least
+ 	 * I got that right :-).  It will be better when we can put
+@@ -524,18 +522,16 @@ FixupDAR:/* Entry point for dcbx workaround. */
+ 	/* fetch instruction from memory. */
+ 	mfspr	r10, SPRN_SRR0
+ 	andis.	r11, r10, 0x8000	/* Address >= 0x80000000 */
+-	DO_8xx_CPU6(0x3780, r3)
+-	mtspr	SPRN_MD_EPN, r10
+ 	mfspr	r11, SPRN_M_TW	/* Get level 1 table base address */
  	beq-	3f		/* Branch if user space */
  	lis	r11, (swapper_pg_dir-PAGE_OFFSET)@h
  	ori	r11, r11, (swapper_pg_dir-PAGE_OFFSET)@l
--3:	rlwinm	r10, r10, 12, 20, 29	/* Extract level 1 index */
-+	/* Extract level 1 index */
-+3:	rlwinm	r10, r10, 32 - ((PAGE_SHIFT - 2) << 1), (PAGE_SHIFT - 2) << 1, 29
+ 3:	rlwinm	r10, r10, 12, 20, 29	/* Extract level 1 index */
  	lwzx	r11, r10, r11	/* Get the level 1 entry */
- 	rlwinm	r10, r11,0,0,19	/* Extract page descriptor page address */
- 	mfspr	r11, SPRN_SRR0	/* Get effective address of fault */
--	rlwinm	r11, r11, 22, 20, 29	/* Extract level 2 index */
-+	/* Extract level 2 index */
-+	rlwinm	r11, r11, 32 - (PAGE_SHIFT - 2), 32 - PAGE_SHIFT, 29
- 	lwzx	r11, r10, r11	/* Get the pte */
+-	DO_8xx_CPU6(0x3b80, r3)
+-	mtspr	SPRN_MD_TWC, r11	/* Load pte table base address */
+-	mfspr	r11, SPRN_MD_TWC	/* ....and get the pte address */
+-	lwz	r11, 0(r11)	/* Get the pte */
++	rlwinm	r10, r11,0,0,19	/* Extract page descriptor page address */
++	mfspr	r11, SPRN_SRR0	/* Get effective address of fault */
++	rlwinm	r11, r11, 22, 20, 29	/* Extract level 2 index */
++	lwzx	r11, r10, r11	/* Get the pte */
  #ifdef CONFIG_8xx_CPU6
  	lwz	r3, 8(r0)	/* restore r3 from memory */
  #endif
- 	/* concat physical page address(r11) and page offset(r10) */
- 	mfspr	r10, SPRN_SRR0
--	rlwimi	r11, r10, 0, 20, 31
-+	rlwimi	r11, r10, 0, 32 - PAGE_SHIFT, 31
- 	lwz	r11,0(r11)
- /* Check if it really is a dcbx instruction. */
- /* dcbt and dcbtst does not generate DTLB Misses/Errors,
-@@ -913,12 +918,13 @@ set_dec_cpu6:
- 	.globl	sdata
- sdata:
- 	.globl	empty_zero_page
-+	.align	PAGE_SHIFT
- empty_zero_page:
--	.space	4096
-+	.space	PAGE_SIZE
- 
- 	.globl	swapper_pg_dir
- swapper_pg_dir:
--	.space	4096
-+	.space	PGD_TABLE_SIZE
- 
- /* Room for two PTE table poiners, usually the kernel and current user
-  * pointer to their respective root page table (pgdir).
 -- 
 1.7.1
 
