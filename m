@@ -1,65 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754021AbaH2QY3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 12:24:29 -0400
-Received: from albert.telenet-ops.be ([195.130.137.90]:54728 "EHLO
-	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753250AbaH2QYZ (ORCPT
+	id S1754086AbaH2QYs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 12:24:48 -0400
+Received: from qmta06.emeryville.ca.mail.comcast.net ([76.96.30.56]:37485 "EHLO
+	qmta06.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753539AbaH2QYr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 12:24:25 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Brett Rudley <brudley@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] brcmfmac: BRCMFMAC should depend on HAS_DMA
-Date: Fri, 29 Aug 2014 18:24:23 +0200
-Message-Id: <1409329464-768-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.9.1
+	Fri, 29 Aug 2014 12:24:47 -0400
+Date: Fri, 29 Aug 2014 11:24:44 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Rob Jones <rob.jones@codethink.co.uk>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jbaron@akamai.com,
+        penberg@kernel.org, mpm@selenic.com, akpm@linux-foundation.org,
+        linux-kernel@codethink.co.uk
+Subject: Re: [PATCH 3/4] mm: Use __seq_open_private() instead of seq_open()
+In-Reply-To: <1409328400-18212-4-git-send-email-rob.jones@codethink.co.uk>
+Message-ID: <alpine.DEB.2.11.1408291124290.23612@gentwo.org>
+References: <1409328400-18212-1-git-send-email-rob.jones@codethink.co.uk> <1409328400-18212-4-git-send-email-rob.jones@codethink.co.uk>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If NO_DMA=y:
+On Fri, 29 Aug 2014, Rob Jones wrote:
 
-drivers/built-in.o: In function `brcmf_msgbuf_release_array':
-msgbuf.c:(.text+0x34dbbe): undefined reference to `dma_unmap_single'
-drivers/built-in.o: In function `brcmf_proto_msgbuf_detach':
-(.text+0x34dca4): undefined reference to `dma_free_coherent'
-drivers/built-in.o: In function `brcmf_msgbuf_get_pktid':
-msgbuf.c:(.text+0x34dd2a): undefined reference to `dma_unmap_single'
-drivers/built-in.o: In function `brcmf_msgbuf_alloc_pktid':
-msgbuf.c:(.text+0x34de12): undefined reference to `dma_map_single'
-msgbuf.c:(.text+0x34de20): undefined reference to `dma_mapping_error'
-drivers/built-in.o: In function `brcmf_msgbuf_remove_flowring':
-msgbuf.c:(.text+0x34e3d6): undefined reference to `dma_free_coherent'
-drivers/built-in.o: In function `brcmf_msgbuf_flowring_create':
-msgbuf.c:(.text+0x34e4f8): undefined reference to `dma_alloc_coherent'
-drivers/built-in.o: In function `brcmf_proto_msgbuf_attach':
-(.text+0x34f5fe): undefined reference to `dma_alloc_coherent'
-drivers/built-in.o: In function `brcmf_proto_msgbuf_attach':
-(.text+0x34f798): undefined reference to `dma_free_coherent'
+> Using __seq_open_private() removes boilerplate code from slabstats_open()
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- drivers/net/wireless/brcm80211/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/net/wireless/brcm80211/Kconfig b/drivers/net/wireless/brcm80211/Kconfig
-index b8e2561ea645..2e0da8925834 100644
---- a/drivers/net/wireless/brcm80211/Kconfig
-+++ b/drivers/net/wireless/brcm80211/Kconfig
-@@ -19,7 +19,7 @@ config BRCMSMAC
- 
- config BRCMFMAC
- 	tristate "Broadcom IEEE802.11n embedded FullMAC WLAN driver"
--	depends on CFG80211
-+	depends on CFG80211A && HAS_DMA
- 	select BRCMUTIL
- 	---help---
- 	  This module adds support for embedded wireless adapters based on
--- 
-1.9.1
+Acked-by: Christoph Lameter <cl@linux.com>
 
