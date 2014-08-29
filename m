@@ -1,53 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753071AbaH2JOr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 05:14:47 -0400
+	id S1753333AbaH2JQh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 05:16:37 -0400
 Received: from pegase1.c-s.fr ([93.17.236.30]:36076 "EHLO mailhub1.si.c-s.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752975AbaH2JOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 05:14:43 -0400
+	id S1752900AbaH2JOl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 05:14:41 -0400
 From: Christophe Leroy <christophe.leroy@c-s.fr>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Paul Mackerras <paulus@samba.org>
 CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         Joakim Tjernlund <joakim.tjernlund@transmode.se>,
         scottwood@freescale.com
-Subject: [PATCH v2 18/19] powerpc/8xx: _PMD_PRESENT already set in level 1 entries
-Message-Id: <20140829091440.A2DD91ABD63@localhost.localdomain>
-Date: Fri, 29 Aug 2014 11:14:40 +0200 (CEST)
+Subject: [PATCH v2 06/19] powerpc/8xx: No need to save r10 and r3 when not calling FixupDAR
+Message-Id: <20140829091438.5A5CC1ABD66@localhost.localdomain>
+Date: Fri, 29 Aug 2014 11:14:38 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a PMD entry is valid, _PMD_PRESENT is set. Therefore, forcing that bit
-during TLB loading is useless.
+r10 and r3 are only used inside FixupDAR function. So lets save them inside
+that function only.
 
 Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
 ---
- arch/powerpc/kernel/head_8xx.S |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ arch/powerpc/kernel/head_8xx.S |   27 +++++++++++++--------------
+ 1 files changed, 13 insertions(+), 14 deletions(-)
 
 diff --git a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
-index 48d3de8..bb7c816 100644
+index 171c6ef..845abf8 100644
 --- a/arch/powerpc/kernel/head_8xx.S
 +++ b/arch/powerpc/kernel/head_8xx.S
-@@ -340,7 +340,6 @@ InstructionTLBMiss:
- 	/* We have a pte table, so load the MI_TWC with the attributes
- 	 * for this "segment."
- 	 */
--	ori	r11,r11,1		/* Set valid bit */
- 	MTSPR_CPU6(SPRN_MI_TWC, r11, r3)	/* Set segment attributes */
- 	mfspr	r11, SPRN_SRR0	/* Get effective address of fault */
- 	/* Extract level 2 index */
-@@ -417,7 +416,6 @@ DataStoreTLBMiss:
- 	rlwimi	r10, r11, 0, 0, 32 - PAGE_SHIFT - 1	/* Add level 2 base */
- 	lwz	r10, 0(r10)	/* Get the pte */
+@@ -482,20 +482,12 @@ InstructionTLBError:
+  */
+ 	. = 0x1400
+ DataTLBError:
+-#ifdef CONFIG_8xx_CPU6
+-	stw	r3, 8(r0)
+-#endif
+ 	EXCEPTION_PROLOG_0
+-	mtspr	SPRN_SPRG_SCRATCH2, r10
  
--	ori	r11, r11, 1	/* Set valid bit in physical L2 page */
- 	/* Insert the Guarded flag into the TWC from the Linux PTE.
- 	 * It is bit 27 of both the Linux PTE and the TWC (at least
- 	 * I got that right :-).  It will be better when we can put
+-	mfspr	r10, SPRN_DAR
+-	cmpwi	cr0, r10, 0x00f0
++	mfspr	r11, SPRN_DAR
++	cmpwi	cr0, r11, 0x00f0
+ 	beq-	FixupDAR	/* must be a buggy dcbX, icbi insn. */
+ DARFixed:/* Return from dcbx instruction bug workaround */
+-#ifdef CONFIG_8xx_CPU6
+-	lwz	r3, 8(r0)
+-#endif
+-	mfspr	r10,SPRN_SPRG_SCRATCH2
+ 	EXCEPTION_EPILOG_0
+ 	b	DataAccess
+ 
+@@ -525,6 +517,10 @@ DARFixed:/* Return from dcbx instruction bug workaround */
+  /* define if you don't want to use self modifying code */
+ #define NO_SELF_MODIFYING_CODE
+ FixupDAR:/* Entry point for dcbx workaround. */
++#ifdef CONFIG_8xx_CPU6
++	stw	r3, 8(r0)
++#endif
++	mtspr	SPRN_SPRG_SCRATCH2, r10
+ 	/* fetch instruction from memory. */
+ 	mfspr	r10, SPRN_SRR0
+ 	andis.	r11, r10, 0x8000	/* Address >= 0x80000000 */
+@@ -540,6 +536,9 @@ FixupDAR:/* Entry point for dcbx workaround. */
+ 	mtspr	SPRN_MD_TWC, r11	/* Load pte table base address */
+ 	mfspr	r11, SPRN_MD_TWC	/* ....and get the pte address */
+ 	lwz	r11, 0(r11)	/* Get the pte */
++#ifdef CONFIG_8xx_CPU6
++	lwz	r3, 8(r0)	/* restore r3 from memory */
++#endif
+ 	/* concat physical page address(r11) and page offset(r10) */
+ 	rlwimi	r11, r10, 0, 20, 31
+ 	lwz	r11,0(r11)
+@@ -560,15 +559,13 @@ FixupDAR:/* Entry point for dcbx workaround. */
+ 	beq+	142f
+ 	cmpwi	cr0, r10, 1964	/* Is icbi? */
+ 	beq+	142f
+-141:	b	DARFixed	/* Nope, go back to normal TLB processing */
++141:	mfspr	r10,SPRN_SPRG_SCRATCH2
++	b	DARFixed	/* Nope, go back to normal TLB processing */
+ 
+ 144:	mfspr	r10, SPRN_DSISR
+ 	rlwinm	r10, r10,0,7,5	/* Clear store bit for buggy dcbst insn */
+ 	mtspr	SPRN_DSISR, r10
+ 142:	/* continue, it was a dcbx, dcbi instruction. */
+-#ifdef CONFIG_8xx_CPU6
+-	lwz	r3, 8(r0)	/* restore r3 from memory */
+-#endif
+ #ifndef NO_SELF_MODIFYING_CODE
+ 	andis.	r10,r11,0x1f	/* test if reg RA is r0 */
+ 	li	r10,modified_instr@l
+@@ -587,6 +584,7 @@ modified_instr:
+ 	bne+	143f
+ 	subf	r10,r0,r10	/* r10=r10-r0, only if reg RA is r0 */
+ 143:	mtdar	r10		/* store faulting EA in DAR */
++	mfspr	r10,SPRN_SPRG_SCRATCH2
+ 	b	DARFixed	/* Go back to normal TLB handling */
+ #else
+ 	mfctr	r10
+@@ -640,6 +638,7 @@ modified_instr:
+ 	mfdar	r11
+ 	mtctr	r11			/* restore ctr reg from DAR */
+ 	mtdar	r10			/* save fault EA to DAR */
++	mfspr	r10,SPRN_SPRG_SCRATCH2
+ 	b	DARFixed		/* Go back to normal TLB handling */
+ 
+ 	/* special handling for r10,r11 since these are modified already */
 -- 
 1.7.1
 
