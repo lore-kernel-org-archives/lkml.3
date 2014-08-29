@@ -1,84 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752923AbaH2FJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 01:09:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62260 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752897AbaH2FJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 01:09:26 -0400
-Date: Fri, 29 Aug 2014 13:09:17 +0800
-From: WANG Chao <chaowang@redhat.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        "open list:SLAB ALLOCATOR" <linux-mm@kvack.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm, slub: do not add duplicate sysfs
-Message-ID: <20140829050917.GB2831@dhcp-17-37.nay.redhat.com>
-References: <1409152488-21227-1-git-send-email-chaowang@redhat.com>
- <alpine.DEB.2.11.1408271023130.17080@gentwo.org>
- <alpine.DEB.2.11.1408271030360.17080@gentwo.org>
- <20140828043211.GD3971@dhcp-17-37.nay.redhat.com>
- <alpine.DEB.2.11.1408280947270.3275@gentwo.org>
+	id S1752950AbaH2FKb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 01:10:31 -0400
+Received: from mail-oi0-f44.google.com ([209.85.218.44]:50674 "EHLO
+	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752141AbaH2FKa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 01:10:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1408280947270.3275@gentwo.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1407765741-3846-1-git-send-email-kiran.padwal21@gmail.com>
+References: <1407765741-3846-1-git-send-email-kiran.padwal21@gmail.com>
+Date: Fri, 29 Aug 2014 07:10:29 +0200
+Message-ID: <CACRpkdYd_eVp82zj=5FsM6mVybvv4rC5=sm4tratmdyCzefxYQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] pinctrl: tegra124: Make of_device_id array const
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Kiran Padwal <kiran.padwal21@gmail.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/28/14 at 09:47am, Christoph Lameter wrote:
-> On Thu, 28 Aug 2014, WANG Chao wrote:
-> 
-> > What about failslab_store()? SLAB_FAILSLAB is also a nomerge flag.
-> 
-> 
-> Subject: slub: Disable tracing and failslab for merged slabs
-> 
-> Tracing of mergeable slabs as well as uses of failslab are
-> confusing since the objects of multiple slab caches will be
-> affected. Moreover this creates a situation where a mergeable
-> slab will become unmergeable.
-> 
-> If tracing or failslab testing is desired then it may be best to
-> switch merging off for starters.
-> 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
-> 
-> Index: linux/mm/slub.c
-> ===================================================================
-> --- linux.orig/mm/slub.c	2014-08-08 11:52:30.039681592 -0500
-> +++ linux/mm/slub.c	2014-08-28 09:45:58.748840392 -0500
-> @@ -4604,6 +4604,14 @@ static ssize_t trace_show(struct kmem_ca
->  static ssize_t trace_store(struct kmem_cache *s, const char *buf,
->  							size_t length)
->  {
-> +	/*
-> +	 * Tracing a merged cache is going to give confusing results
-> +	 * as well as cause other issues like converting a mergeable
-> +	 * cache into an umergeable one.
-> +	 */
-> +	if (s->refcount > 1)
-> +		return -EINVAL;
-> +
->  	s->flags &= ~SLAB_TRACE;
->  	if (buf[0] == '1') {
->  		s->flags &= ~__CMPXCHG_DOUBLE;
-> @@ -4721,6 +4729,9 @@ static ssize_t failslab_show(struct kmem
->  static ssize_t failslab_store(struct kmem_cache *s, const char *buf,
->  							size_t length)
->  {
-> +	if (s->refcount > 1)
-> +		return -EINVAL;
-> +
->  	s->flags &= ~SLAB_FAILSLAB;
->  	if (buf[0] == '1')
->  		s->flags |= SLAB_FAILSLAB;
+On Mon, Aug 11, 2014 at 4:02 PM, Kiran Padwal <kiran.padwal21@gmail.com> wrote:
 
-This works for me. Thanks for the fix.
+> Make of_device_id array const, because all OF functions handle it as const.
+>
+> Signed-off-by: Kiran Padwal <kiran.padwal21@gmail.com>
 
-WANG Chao
+Applied and squashed.
+
+Yours,
+Linus Walleij
