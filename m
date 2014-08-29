@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752551AbaH2Jy0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 05:54:26 -0400
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.142]:13815 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751413AbaH2JyY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 05:54:24 -0400
-X-Env-Sender: stwiss.opensource@diasemi.com
-X-Msg-Ref: server-12.tower-178.messagelabs.com!1409306028!33119365!2
-X-Originating-IP: [94.185.165.51]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
+	id S1752066AbaH2J6D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 05:58:03 -0400
+Received: from mga02.intel.com ([134.134.136.20]:28392 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750800AbaH2J6B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 05:58:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,424,1406617200"; 
+   d="scan'208";a="565270307"
+Message-ID: <1409306274.30155.30.camel@linux.intel.com>
+Subject: Re: [PATCH v1 0/5] mfd: lpc_sch: Intel Quark support
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: Lee Jones <lee.jones@linaro.org>
-CC: DEVICE TREE <devicetree@vger.kernel.org>,
-        LINUX ARM KERNEL <linux-arm-kernel@lists.infradead.org>,
-        LINUX KERNEL <linux-kernel@vger.kernel.org>,
-        LINUX SH <linux-sh@vger.kernel.org>,
-        "Support Opensource" <Support.Opensource@diasemi.com>
-Subject: RE: [GIT PULL] MFD: ARM (IMX & R8): Immutable branch for Dialog
- Semiconductor - vendor prefix consolidation
-Thread-Topic: [GIT PULL] MFD: ARM (IMX & R8): Immutable branch for Dialog
- Semiconductor - vendor prefix consolidation
-Thread-Index: AQHPw2mZhAJ9kvzk0kq1k3+SdX4gPJvnVsPA
-Date: Fri, 29 Aug 2014 09:54:00 +0000
-Message-ID: <6ED8E3B22081A4459DAC7699F3695FB7D0B3BF98@SW-EX-MBX02.diasemi.com>
-References: <201408221446.s7MEkNVF001775@swsrvapps-01.diasemi.com>
- <20140829091359.GF24579@lee--X1>
-In-Reply-To: <20140829091359.GF24579@lee--X1>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.26.77]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+Date: Fri, 29 Aug 2014 12:57:54 +0300
+In-Reply-To: <1408705096-31286-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1408705096-31286-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.5-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7T9sXtg024191
 
-On 29 August 2014 10:14, Lee Jones wrote
+On Fri, 2014-08-22 at 13:58 +0300, Andy Shevchenko wrote:
+> This brings support of the LPC SCH device found on Intel Quark SoC. Patches
+> were compile tested, and driver runs on actual hardware.
+> 
+> Please, note that PCI ID will be used in future in the gpio-sch driver.
 
-> Subject: [GIT PULL] MFD: ARM (IMX & R8): Immutable branch for Dialog
-> Semiconductor - vendor prefix consolidation
+Bjorn, could you Ack or comment patch 3/5?
+
+Lee, do you have any comments on the series?
+
 > 
-> IMX and R8 sub-arch Maintainers,
+> Andy Shevchenko (4):
+>   mfd: lpc_sch: reduce duplicate code
+>   mfd: lpc_sch: better code manageability with chipset info struct
+>   mfd: lpc_sch: Add support for Intel Quark X1000
+>   mfd: lpc_sch: remove FSF address
 > 
-> The following changes since commit
-> 52addcf9d6669fa439387610bc65c92fa0980cef:
+> Josef Ahmad (1):
+>   pci_ids: add support for Intel Quark ILB
 > 
->   Linux 3.17-rc2 (2014-08-25 15:36:20 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/ib-mfd-arm-
-> v3.18
-> 
-> for you to fetch changes up to bd597f47ca4bf7a522a0298a95c7f9b2f0a75b9e:
-> 
->   devicetree: Dialog Semiconductor consolidate existing vendor prefixes to
-> standardise on 'dlg' (2014-08-29 09:26:29 +0100)
+>  drivers/mfd/lpc_sch.c   | 207 ++++++++++++++++++++++++++++--------------------
+>  include/linux/pci_ids.h |   1 +
+>  2 files changed, 122 insertions(+), 86 deletions(-)
 > 
 
-[...]
 
-Thank you for doing this.
-Regards,
-Steve
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
+
