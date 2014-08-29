@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775AbaH2L1C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 07:27:02 -0400
-Received: from imap.thunk.org ([74.207.234.97]:55556 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752016AbaH2L1A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 07:27:00 -0400
-Date: Fri, 29 Aug 2014 07:26:55 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Calvin Owens <jcalvinowens@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
-Subject: Re: BUG: drivers/char/random.c:986
-Message-ID: <20140829112655.GB20278@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Calvin Owens <jcalvinowens@gmail.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
-References: <20140829050150.GA3011@gmail.com>
+	id S1753074AbaH2L2Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 07:28:25 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39392 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752349AbaH2L2Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 07:28:24 -0400
+Date: Fri, 29 Aug 2014 12:28:09 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <20140829112809.GP29327@sirena.org.uk>
+References: <20140829150713.50d78c30@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="WYfJCIN5rqlfy3K0"
 Content-Disposition: inline
-In-Reply-To: <20140829050150.GA3011@gmail.com>
+In-Reply-To: <20140829150713.50d78c30@canb.auug.org.au>
+X-Cookie: Simulated picture.
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: linux-next: Tree for Aug 29
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 28, 2014 at 10:01:50PM -0700, Calvin Owens wrote:
-> Hello all,
-> 
-> I hit this BUG_ON() on my laptop a few days ago: http://i.imgur.com/N1GQeJW.jpg
-> 
-> In the current upstream, this corresponds to line 1022:
-> 
-> 	BUG_ON(r->entropy_count > r->poolinfo->poolfracbits);
-> 
-> It triggered when I executed `dd if=/dev/urandom of=file bs=N count=1`
-> while watching a YouTube video in Chromium. I don't recall the exact value of
-> N I used, but it was rather large (>50M), and a few bytes past an even power
-> of two (I was creating a file to test an HTTP upload script I was working on).
-> 
-> I haven't had any luck reproducing this on the current upstream or the version
-> it was originally triggered on.
 
-Known bug, fixed in 79a8468747c5 which landed in mainline as of
-3.16-rc6.  And you were running 3.16-rc4.  (BTW, in the future it
-would be nice if you mentioned the kernel version you were running in;
-I found it by looking at the jpg, but it's always more convenient to
-be able to read it in ASCII.  :-)
+--WYfJCIN5rqlfy3K0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Cheers,
+On Fri, Aug 29, 2014 at 03:07:13PM +1000, Stephen Rothwell wrote:
 
-						- Ted
+> I will be on vacation for the next week, so the next linux-next that I
+> will release will be next-20140908.  Sorry for the inconvenience.
+
+I'm going to try to cover this with the usual reduced service so
+hopefully there should be some builds next week.
+
+--WYfJCIN5rqlfy3K0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUAGPFAAoJELSic+t+oim9/5QP/Rsh4f85kgiBAxqKxeS0FOqH
+AL58APraNlqec9Plnc6rzKz7AodqO7SF/t9IlqtUDvJ9Cb0Jp/W8VqWSmEEHeZuE
+5zn3SiPPJq9XfOyx6RhdRvTCwSUetgf2wwJ/c9n+yVk2HJC0/+CLtn65Se53op0q
+3tr2Jv4aIOp2U/m2UxZqmSDW7gmNxipWcdWTubhrUPUK2XlxylwZS17jgFxKwoac
+hcWMr6IKSgsJez1k+4z9JaOfiy5Vhlspv9dLw9WWAzOLKydT3erhLLuEQpJJCiiM
+e0LilVJYEBq3cWvL6pKYJBFerSa5pnDrg2ruwvBvVJheWszSqZ9EOsbwQcDfdff7
+11snHxLqHj4AngLUSTwddLZIUQ68JcaG6mD+IF8T/X5SnfwYZtIx+OE5E2KWkIPf
+97jN4aXXe/Jf5hpDtPd66youcXQNX1BO4qL4afkDnDy1bUOwx3XZ4vFkGF+bX8cL
+g6rdq1jQrgCkddbOzWz7vTO7L1tzXSqyeD06JV3Pv+5vFU6bQB27hQLCf1jfH5db
+zvzvLO3fa0Hz2ixJz8KKdyDpUZqrtitxFgxhMV6BA0VfS8EYvhTLK6EprAl82U1L
+ir05eS46oWAYAG+eHiR+KOZVT+N6l/IDRz6haOuVbiPGEFBk0TQtDlCoLvuL0fLp
+CXY2RQCwfT4fLLfSoZRZ
+=PCLE
+-----END PGP SIGNATURE-----
+
+--WYfJCIN5rqlfy3K0--
