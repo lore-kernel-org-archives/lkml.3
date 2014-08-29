@@ -1,46 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775AbaH2K3j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 06:29:39 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:32000 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752642AbaH2K3h (ORCPT
+	id S1752839AbaH2Kb2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 06:31:28 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:62079 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752016AbaH2Kb0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 06:29:37 -0400
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        "Alasdair G. Kergon" <agk@redhat.com>,
-        Jonathan Brassow <jbrassow@redhat.com>,
-        Edward Thornber <thornber@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Christoph Hellwig <hch@infradead.org>, dm-devel@redhat.com,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 0/15] SCSI XCOPY support for the kernel and device mapper
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <alpine.LRH.2.02.1407151531140.14632@file01.intranet.prod.int.rdu2.redhat.com>
-	<20140828213719.GA3734@redhat.com>
-Date: Fri, 29 Aug 2014 06:29:02 -0400
-In-Reply-To: <20140828213719.GA3734@redhat.com> (Mike Snitzer's message of
-	"Thu, 28 Aug 2014 17:37:19 -0400")
-Message-ID: <yq1egvzfv2p.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Fri, 29 Aug 2014 06:31:26 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: [PATCH 0/3] fix bugs with stale or corrupt MMIO caches
+Date: Fri, 29 Aug 2014 12:31:14 +0200
+Message-Id: <1409308277-4021-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Mike" == Mike Snitzer <snitzer@redhat.com> writes:
+David and Xiao, here's my take on the MMIO generation patches.  Now
+with documentation, too. :)  Please review!
 
-Mike> It would be ideal for XCOPY support to make its way upstream for
-Mike> 3.18.. but the window for staging this work in time is closing.
+David Matlack (2):
+  kvm: fix potentially corrupt mmio cache
+  kvm: x86: fix stale mmio cache bug
 
-Mike> Any chance you might have some time to review Mikulas' revised
-Mike> approach to your initial XCOPY support? 
+Paolo Bonzini (1):
+  KVM: do not bias the generation number in kvm_current_mmio_generation
 
-It is at the top of my list.
+ Documentation/virtual/kvm/mmu.txt | 14 ++++++++++++++
+ arch/x86/include/asm/kvm_host.h   |  1 +
+ arch/x86/kvm/mmu.c                | 29 ++++++++++++++---------------
+ arch/x86/kvm/x86.h                | 20 +++++++++++++++-----
+ virt/kvm/kvm_main.c               | 30 +++++++++++++++++++++++-------
+ 5 files changed, 67 insertions(+), 27 deletions(-)
 
 -- 
-Martin K. Petersen	Oracle Linux Engineering
+1.8.3.1
+
