@@ -1,342 +1,376 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907AbaH2IgE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 04:36:04 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:54802 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752769AbaH2Ift convert rfc822-to-8bit (ORCPT
+	id S1753080AbaH2IgP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 04:36:15 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:43455 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751678AbaH2IgI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 04:35:49 -0400
-Message-ID: <54003b63.ac26460a.73fc.ffffe940@mx.google.com>
-X-Google-Original-Message-ID: <000101cfc364$39e10d70$ada32850$@dulixin@gmail.com>
+	Fri, 29 Aug 2014 04:36:08 -0400
+Message-ID: <54003b77.ac26460a.73fc.ffffe951@mx.google.com>
+X-Google-Original-Message-ID: <000301cfc364$444d5b60$cce81220$@dulixin@gmail.com>
 From: "Dudley Du" <dudley.dulixin@gmail.com>
 To: <dmitry.torokhov@gmail.com>, <rydberg@euromail.se>
 Cc: <bleung@google.com>, <patrik@google.com>, <linux-input@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH V5 13/14] input: cyapa: add gen5 trackpad device read firmware image and raw data functions support
+Subject: [PATCH V5 11/14] input: cyapa: add gen5 trackpad device firmware update function support
 Date: Fri, 29 Aug 2014 16:35:27 +0800
 MIME-Version: 1.0
 Content-Type: text/plain;
 	charset="utf-8"
 Content-Transfer-Encoding: 8BIT
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Ac/DWKquEQ2Jmr58StKuhCaaaWHpIQ==
+Thread-Index: Ac/DWKHdfYSa41YOQQiaeye8VG1meA==
 Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add read firmware image function supported for gen5 trackpad device,
-which its function is supplied through cyapa core read_fw interface.
-Through this interface, upper layer application can read out, check
-and backup the firmware image in trackpad device before updated
-with new one when new firmware image may have problems.
-Also add interfaces to report all sensor's raw data values to upper
-layer, so it can help to find out the performance issue when users
-reports problem, and also it's useful and required interface for
-some customers that require sensors' raw data.
+Add firmware image update function supported for gen5 trackpad device,
+which its function is supplied through cyapa core update_fw interface.
 TEST=test on Chromebooks.
 
 Signed-off-by: Dudley Du <dudl@cyrpess.com>
 ---
- drivers/input/mouse/cyapa_gen5.c | 267 ++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 266 insertions(+), 1 deletion(-)
+ drivers/input/mouse/Kconfig      |   2 +-
+ drivers/input/mouse/cyapa_gen5.c | 294 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 295 insertions(+), 1 deletion(-)
 
+diff --git a/drivers/input/mouse/Kconfig b/drivers/input/mouse/Kconfig
+index 366fc7a..005d69b 100644
+--- a/drivers/input/mouse/Kconfig
++++ b/drivers/input/mouse/Kconfig
+@@ -205,7 +205,7 @@ config MOUSE_BCM5974
+ 
+ config MOUSE_CYAPA
+ 	tristate "Cypress APA I2C Trackpad support"
+-	depends on I2C
++	depends on I2C && CRC_ITU_T
+ 	help
+ 	  This driver adds support for Cypress All Points Addressable (APA)
+ 	  I2C Trackpads, including the ones used in 2012 Samsung Chromebooks.
 diff --git a/drivers/input/mouse/cyapa_gen5.c b/drivers/input/mouse/cyapa_gen5.c
-index 452cb5d..e7f410d 100644
+index 4f64b0b..0c84b1b 100644
 --- a/drivers/input/mouse/cyapa_gen5.c
 +++ b/drivers/input/mouse/cyapa_gen5.c
-@@ -1221,6 +1221,158 @@ static int cyapa_gen5_write_fw_block(struct cyapa *cyapa,
- 	return 0;
+@@ -18,6 +18,7 @@
+ #include <linux/completion.h>
+ #include <linux/slab.h>
+ #include <linux/unaligned/access_ok.h>
++#include <linux/crc-itu-t.h>
+ #include "cyapa.h"
+ 
+ 
+@@ -918,6 +919,86 @@ static int cyapa_gen5_state_parse(struct cyapa *cyapa, u8 *reg_data, int len)
+ 	return -EAGAIN;
  }
  
-+static int cyapa_gen5_read_fw_bytes(struct cyapa *cyapa, u16 row_num, u8 *data)
++static int cyapa_gen5_bl_initiate(struct cyapa *cyapa,
++		const struct firmware *fw)
 +{
-+	int ret;
-+	u8 cmd[16];
-+	size_t cmd_len;
-+	u8 resp_data[CYAPA_TSG_FW_ROW_SIZE / 2 + GEN5_MIN_BL_RESP_LENGTH];
++	int ret = 0;
++	u16 length = 0;
++	u16 data_len = 0;
++	u16 meta_data_crc = 0;
++	u16 cmd_crc = 0;
++	u8 bl_gen5_activate[18 + CYAPA_TSG_FLASH_MAP_BLOCK_SIZE + 3];
++	int bl_gen5_activate_size = 0;
++	u8 resp_data[11];
 +	int resp_len;
-+	u16 offset;
-+	u16 cmd_crc;
-+	struct cyapa_tsg_bin_image_data_record *fw_img_record;
++	struct cyapa_tsg_bin_image *image;
++	int records_num;
++	u8 *data;
 +
-+	fw_img_record = (struct cyapa_tsg_bin_image_data_record *)data;
-+
-+	cmd[0] = 0x04;  /* Register address */
-+	cmd[1] = 0x00;
-+	cmd[2] = 0x0e;
-+	cmd[3] = 0x00;
-+	cmd[4] = 0x40;  /* Report id 40h */
-+	cmd[5] = 0x00;
-+	cmd[6] = GEN5_SOP_KEY;
-+	cmd[7] = 0x3d;  /* Read application image command code */
-+	cmd[8] = 0x03;
-+	cmd[9] = 0x00;
-+	offset = row_num * CYAPA_TSG_FW_ROW_SIZE -
-+			CYAPA_TSG_START_OF_APPLICATION;
-+	put_unaligned_le16(offset, &cmd[10]);
-+	cmd[12] = CYAPA_TSG_IMG_READ_SIZE;
-+	cmd_crc = crc_itu_t(0xffff, &cmd[6], 7);
-+	put_unaligned_le16(cmd_crc, &cmd[13]);  /* CRC[15:0] */
-+	cmd[15] = GEN5_EOP_KEY;  /* EOP = 17h */
-+	cmd_len = 16;
-+
-+	resp_len = CYAPA_TSG_IMG_READ_SIZE + GEN5_MIN_BL_RESP_LENGTH;
-+	ret = cyapa_i2c_pip_cmd_irq_sync(cyapa,
-+			cmd, cmd_len,
-+			resp_data, &resp_len,
-+			50, cyapa_gen5_sort_tsg_pip_bl_resp_data);
-+	if (resp_len != (CYAPA_TSG_IMG_READ_SIZE + GEN5_MIN_BL_RESP_LENGTH) ||
-+			ret || resp_data[2] != GEN5_BL_RESP_REPORT_ID ||
-+			!GEN5_CMD_COMPLETE_SUCCESS(resp_data[5]))
-+		return (ret < 0) ? ret : -EAGAIN;
-+
-+	/* Copy first 64 bytes in the row. */
-+	memcpy(&fw_img_record->record_data[0], &resp_data[8],
-+			CYAPA_TSG_IMG_READ_SIZE);
-+
-+	if (row_num == CYAPA_TSG_IMG_APP_INTEGRITY_ROW_NUM) {
-+		/* Last row's rest 64 bytes are bootloader metadata,
-+		 * it's not allowed to be read out, will respond with error. */
-+		memset(&fw_img_record->record_data[CYAPA_TSG_IMG_READ_SIZE],
-+			0, CYAPA_TSG_IMG_READ_SIZE);
-+		goto skip_last_row;
-+	}
-+
-+	/* Read next 64 bytes in the row. */
-+	offset = offset + CYAPA_TSG_IMG_READ_SIZE;
-+	put_unaligned_le16(offset, &cmd[10]);
-+	cmd_crc = crc_itu_t(0xffff, &cmd[6], 7);
-+	put_unaligned_le16(cmd_crc, &cmd[13]);  /* CRC[15:0] */
-+	ret = cyapa_i2c_pip_cmd_irq_sync(cyapa,
-+			cmd, cmd_len,
-+			resp_data, &resp_len,
-+			500, cyapa_gen5_sort_tsg_pip_bl_resp_data);
-+	if (resp_len != (CYAPA_TSG_IMG_READ_SIZE + GEN5_MIN_BL_RESP_LENGTH) ||
-+			ret || resp_data[2] != GEN5_BL_RESP_REPORT_ID ||
-+			!GEN5_CMD_COMPLETE_SUCCESS(resp_data[5]))
-+		return (ret < 0) ? ret : -EAGAIN;
-+
-+	/* Copy last 64 bytes in the row. */
-+	memcpy(&fw_img_record->record_data[CYAPA_TSG_IMG_READ_SIZE],
-+		&resp_data[8], CYAPA_TSG_IMG_READ_SIZE);
-+
-+skip_last_row:
-+	fw_img_record->flash_array_id = 0;
-+	put_unaligned_be16(row_num, &fw_img_record->row_number);
-+	put_unaligned_be16(CYAPA_TSG_FW_ROW_SIZE, &fw_img_record->record_len);
-+
-+	return 0;
-+}
-+
-+static int cyapa_gen5_read_fw(struct cyapa *cyapa)
-+{
-+	int ret;
-+	int fw_img_head_size;
-+	int fw_img_record_size;
-+	int row_index;
-+	int array_index;
-+	u32 img_start;
-+	u16 img_len;
-+	u16 img_start_row;
-+	u16 img_end_row;
-+	struct cyapa_tsg_bin_image_data_record app_integrity;
-+	u8 *record_data;
-+
-+	ret = cyapa_gen5_bl_enter(cyapa);
-+	if (ret)
-+		goto err;
-+
++	/* Try to dump all bufferred report data before send any command. */
 +	cyapa_empty_pip_output_data(cyapa, NULL, NULL, NULL);
 +
-+	fw_img_head_size = sizeof(struct cyapa_tsg_bin_image_head);
-+	fw_img_record_size = sizeof(struct cyapa_tsg_bin_image_data_record);
++	bl_gen5_activate_size = sizeof(bl_gen5_activate);
++	memset(bl_gen5_activate, 0, bl_gen5_activate_size);
 +
-+	/* Read app integrity block data. */
-+	row_index = CYAPA_TSG_IMG_APP_INTEGRITY_ROW_NUM;
-+	ret = cyapa_gen5_read_fw_bytes(cyapa, row_index, (u8 *)&app_integrity);
-+	if (ret)
-+		goto err;
-+	img_start = get_unaligned_le32(&app_integrity.record_data[16]);
-+	img_len = get_unaligned_le16(&app_integrity.record_data[20]);
-+	if ((img_start + img_len) % CYAPA_TSG_FW_ROW_SIZE)
-+		goto err;
-+	img_start_row = img_start / CYAPA_TSG_FW_ROW_SIZE;
-+	img_end_row = (img_start + img_len) / CYAPA_TSG_FW_ROW_SIZE - 1;
++	/* Output Report Register Address[15:0] = 0004h */
++	bl_gen5_activate[0] = 0x04;
++	bl_gen5_activate[1] = 0x00;
 +
-+	/* Allocate memory for image. */
-+	cyapa->fw_image_size = fw_img_head_size +
-+		(img_end_row -  img_start_row + 2) * fw_img_record_size;
-+	cyapa->fw_image = kmalloc(cyapa->fw_image_size, GFP_KERNEL);
-+	if (!cyapa->fw_image) {
-+		ret = -ENOMEM;
-+		goto err;
-+	}
++	/* Total command length[15:0] */
++	length = bl_gen5_activate_size - 2;
++	put_unaligned_le16(length, &bl_gen5_activate[2]);
++	bl_gen5_activate[4] = 0x40;  /* Report ID = 40h */
++	bl_gen5_activate[5] = 0x00;  /* RSVD = 00h */
 +
-+	/* Set image head data. */
-+	memcpy(cyapa->fw_image, &gen5_fw_img_head, fw_img_head_size);
++	bl_gen5_activate[6] = GEN5_SOP_KEY;  /* SOP = 01h */
++	bl_gen5_activate[7] = 0x48;  /* Command Code = 48h */
 +
-+	/* Read image blocks. */
-+	for (row_index = img_start_row, array_index = 0;
-+			row_index <= img_end_row;
-+			row_index++, array_index++) {
-+		record_data = &cyapa->fw_image[fw_img_head_size +
-+				array_index * fw_img_record_size];
-+		ret = cyapa_gen5_read_fw_bytes(cyapa, row_index, record_data);
-+		if (ret)
-+			goto err;
-+	}
++	/* 8 Key bytes and block size */
++	data_len = CYAPA_TSG_BL_KEY_SIZE + CYAPA_TSG_FLASH_MAP_BLOCK_SIZE;
++	/* Data Length[15:0] */
++	put_unaligned_le16(data_len, &bl_gen5_activate[8]);
++	bl_gen5_activate[10] = 0xa5;  /* Key Byte 0 */
++	bl_gen5_activate[11] = 0x01;
++	bl_gen5_activate[12] = 0x02;  /*     .      */
++	bl_gen5_activate[13] = 0x03;  /*     .      */
++	bl_gen5_activate[14] = 0xff;  /*     .      */
++	bl_gen5_activate[15] = 0xfe;
++	bl_gen5_activate[16] = 0xfd;
++	bl_gen5_activate[17] = 0x5a;  /* Key Byte 7 */
 +
-+	/* Append last app integrity block data. */
-+	record_data = &cyapa->fw_image[fw_img_head_size +
-+				array_index * fw_img_record_size];
-+	memcpy(record_data, &app_integrity, fw_img_record_size);
++	/* Copy 60 bytes Meta Data Row Parameters */
++	image = (struct cyapa_tsg_bin_image *)fw->data;
++	records_num = (fw->size - sizeof(struct cyapa_tsg_bin_image_head)) /
++				sizeof(struct cyapa_tsg_bin_image_data_record);
++	/* APP_INTEGRITY row is always the last row block */
++	data = image->records[records_num - 1].record_data;
++	memcpy(&bl_gen5_activate[18], data, CYAPA_TSG_FLASH_MAP_METADATA_SIZE);
 +
-+err:
-+	if (ret) {
-+		kfree(cyapa->fw_image);
-+		cyapa->fw_image = NULL;
-+		cyapa->fw_image_size = 0;
-+	}
-+	return ret;
-+}
++	meta_data_crc = crc_itu_t(0xffff, &bl_gen5_activate[18],
++				CYAPA_TSG_FLASH_MAP_METADATA_SIZE);
++	/* Meta Data CRC[15:0] */
++	put_unaligned_le16(meta_data_crc,
++		&bl_gen5_activate[18 + CYAPA_TSG_FLASH_MAP_METADATA_SIZE]);
 +
- static int cyapa_gen5_do_fw_update(struct cyapa *cyapa,
- 		const struct firmware *fw)
- {
-@@ -1493,7 +1645,7 @@ static int cyapa_gen5_set_power_mode(struct cyapa *cyapa,
- 		ret = cyapa_gen5_change_power_state(cyapa,
- 				GEN5_POWER_STATE_BTN_ONLY);
- 		if (ret) {
--			dev_err(dev, "fail change to active, (%d)\n", ret);
-+			dev_err(dev, "fail to button only mode, (%d)\n", ret);
- 			return ret;
- 		}
- 
-@@ -2207,6 +2359,116 @@ resume_scanning:
- 	return ret + err;
- }
- 
-+static int cyapa_gen5_read_raw_data(struct cyapa *cyapa)
-+{
-+	int ret, err;
-+	int raw_cap_mutual_max, raw_cap_mutual_min, raw_cap_mutual_ave;
-+	int raw_cap_self_max, raw_cap_self_min, raw_cap_self_ave;
-+	int offset;
-+	int data_size, max, min, ave;
-+	ktime_t time_mono;
++	cmd_crc = crc_itu_t(0xffff, &bl_gen5_activate[6], 4 + data_len);
++	put_unaligned_le16(cmd_crc,
++		&bl_gen5_activate[bl_gen5_activate_size - 3]);  /* CRC[15:0] */
++	bl_gen5_activate[bl_gen5_activate_size - 1] = GEN5_EOP_KEY;
 +
-+	offset = 0;
-+	if (!cyapa->tp_raw_data) {
-+		if (cyapa->state != CYAPA_STATE_GEN5_APP ||
-+			!cyapa->electrodes_x || !cyapa->electrodes_y)
-+			return  -EINVAL;
++	resp_len = sizeof(resp_data);
++	ret = cyapa_i2c_pip_cmd_irq_sync(cyapa,
++			bl_gen5_activate, sizeof(bl_gen5_activate),
++			resp_data, &resp_len, 12000,
++			cyapa_gen5_sort_tsg_pip_bl_resp_data);
++	if (ret || resp_len != GEN5_BL_INITIATE_RESP_LEN ||
++			resp_data[2] != GEN5_BL_RESP_REPORT_ID ||
++			!GEN5_CMD_COMPLETE_SUCCESS(resp_data[5]))
++		return (ret < 0) ? ret : -EAGAIN;
 +
-+		cyapa->tp_raw_data_size = sizeof(s32) * (cyapa->electrodes_x *
-+			cyapa->electrodes_y + cyapa->electrodes_x +
-+			cyapa->electrodes_y) + GEN5_RAW_DATA_HEAD_SIZE;
-+		/*
-+		 * This buffer will be hold after used until the driver is
-+		 * unloaded, the purpose of it is to improve the performace
-+		 * to avoid frequently allocate and release the buffer.
-+		 */
-+		cyapa->tp_raw_data =
-+			kmalloc(cyapa->tp_raw_data_size, GFP_KERNEL);
-+		if (!cyapa->tp_raw_data)
-+			return -ENOMEM;
-+		memset(cyapa->tp_raw_data, 0, cyapa->tp_raw_data_size);
-+	}
-+
-+
-+	/*
-+	 * 1. Suspend Scanning.
-+	 *
-+	 * After suspend scanning, the raw data will not be updated,
-+	 * so the time of the raw data is before scanning suspended.
-+	 */
-+	time_mono = ktime_get();
-+	ret = cyapa_gen5_suspend_scanning(cyapa);
-+	if (ret)
-+		return ret;
-+
-+	/* 2. Get the correct electrodes_rx number. */
-+	if (cyapa->electrodes_rx == 0) {
-+		/*
-+		 * Through the read global idac interface to get the Rx number.
-+		 * this value is useful to the raw data map.
-+		 */
-+		data_size = 0;
-+		err = cyapa_gen5_read_idac_data(cyapa,
-+				GEN5_CMD_RETRIEVE_DATA_STRUCTURE,
-+				GEN5_RETRIEVE_MUTUAL_PWC_DATA,
-+				&data_size, &max, &min, &ave);
-+		if (err || cyapa->electrodes_rx == 0)
-+			goto resume_scanning;
-+	}
-+
-+	/* 3. Execuate panel scan. It must be executed before read data. */
-+	err = cyapa_gen5_execute_panel_scan(cyapa);
-+	if (err)
-+		goto resume_scanning;
-+
-+	/* 4. Retrive panel scan, mutual cap raw data. */
-+	offset = GEN5_RAW_DATA_HEAD_SIZE;
-+	err = cyapa_gen5_read_panel_scan_raw_data(cyapa,
-+				GEN5_CMD_RETRIEVE_PANEL_SCAN,
-+				GEN5_PANEL_SCAN_MUTUAL_DIFFCOUNT,
-+				cyapa->electrodes_x * cyapa->electrodes_y,
-+				&raw_cap_mutual_max, &raw_cap_mutual_min,
-+				&raw_cap_mutual_ave,
-+				cyapa->tp_raw_data + offset);
-+	if (err)
-+		goto resume_scanning;
-+
-+	offset += sizeof(s32) * cyapa->electrodes_x * cyapa->electrodes_y;
-+
-+	/* 5. Retrive panel scan, self cap raw data. */
-+	err = cyapa_gen5_read_panel_scan_raw_data(cyapa,
-+				GEN5_CMD_RETRIEVE_PANEL_SCAN,
-+				GEN5_PANEL_SCAN_SELF_DIFFCOUNT,
-+				cyapa->electrodes_x + cyapa->electrodes_y,
-+				&raw_cap_self_max, &raw_cap_self_min,
-+				&raw_cap_self_ave,
-+				cyapa->tp_raw_data + offset);
-+	if (err)
-+		goto resume_scanning;
-+
-+	offset += sizeof(s32) * (cyapa->electrodes_x + cyapa->electrodes_y);
-+
-+resume_scanning:
-+	/* 6. Resume Scanning*/
-+	ret = cyapa_gen5_resume_scanning(cyapa);
-+	if (ret || err)
-+		return ret ? ret : err;
-+
-+	*((struct timeval *)&cyapa->tp_raw_data[0]) =
-+						ktime_to_timeval(time_mono);
-+	cyapa->tp_raw_data[16] = (u8)cyapa->electrodes_x;
-+	cyapa->tp_raw_data[17] = (u8)cyapa->electrodes_y;
-+	cyapa->tp_raw_data[18] = (u8)cyapa->x_origin;
-+	cyapa->tp_raw_data[19] = (u8)cyapa->y_origin;
-+	cyapa->tp_raw_data[20] = (u8)sizeof(s32);
-+	cyapa->tp_raw_data[21] = (u8)sizeof(s32);
-+	cyapa->tp_raw_data[22] = (u8)cyapa->electrodes_rx;
-+	cyapa->tp_raw_data[23] = 0;  /* Reserved. */
-+
-+	cyapa->tp_raw_data_size = offset;
 +	return 0;
 +}
 +
- static bool cyapa_gen5_sort_system_info_data(struct cyapa *cyapa,
- 		u8 *buf, int len)
+ bool cyapa_gen5_sort_bl_exit_data(struct cyapa *cyapa, u8 *buf, int len)
  {
-@@ -2611,6 +2873,9 @@ const struct cyapa_dev_ops cyapa_gen5_ops = {
- 	.show_baseline = cyapa_gen5_show_baseline,
- 	.calibrate_store = cyapa_gen5_do_calibrate,
+ 	if (buf == NULL || len < GEN5_RESP_LENGTH_SIZE)
+@@ -966,6 +1047,214 @@ static int cyapa_gen5_bl_exit(struct cyapa *cyapa)
+ 	return -EAGAIN;
+ }
  
-+	.read_fw = cyapa_gen5_read_fw,
-+	.read_raw_data = cyapa_gen5_read_raw_data,
++static int cyapa_gen5_bl_enter(struct cyapa *cyapa)
++{
++	int ret;
++	u8 cmd[] = { 0x04, 0x00, 0x05, 0x00, 0x2F, 0x00, 0x01 };
++	u8 resp_data[2];
++	int resp_len;
++
++	if (cyapa->input) {
++		input_unregister_device(cyapa->input);
++		cyapa->input = NULL;
++	}
++
++	ret = cyapa_poll_state(cyapa, 500);
++	if (ret < 0)
++		return ret;
++	if (cyapa->gen != CYAPA_GEN5)
++		return -EINVAL;
++
++	/* Already in Gen5 BL. Skipping exit. */
++	if (cyapa->state == CYAPA_STATE_GEN5_BL)
++		return 0;
++
++	if (cyapa->state != CYAPA_STATE_GEN5_APP)
++		return -EAGAIN;
++
++	/* Try to dump all bufferred report data before send any command. */
++	cyapa_empty_pip_output_data(cyapa, NULL, NULL, NULL);
++
++	/*
++	 * Send bootloader enter command to trackpad device,
++	 * after enter bootloader, the response data is two bytes of 0x00 0x00.
++	 */
++	resp_len = sizeof(resp_data);
++	memset(resp_data, 0, resp_len);
++	ret = cyapa_i2c_pip_cmd_irq_sync(cyapa,
++			cmd, sizeof(cmd),
++			resp_data, &resp_len,
++			5000, cyapa_gen5_sort_application_launch_data);
++	if (ret || resp_data[0] != 0x00 || resp_data[1] != 0x00)
++		return (ret < 0) ? ret : -EAGAIN;
++
++	cyapa->state = CYAPA_STATE_GEN5_BL;
++	return 0;
++}
++
++static int cyapa_gen5_check_fw(struct cyapa *cyapa, const struct firmware *fw)
++{
++	int i;
++	struct cyapa_tsg_bin_image *image;
++	int flash_records_count;
++	u16 expected_app_crc;
++	u16 expected_app_integrity_crc;
++	u16 app_crc = 0;
++	u16 app_integrity_crc = 0;
++	u16 row_num;
++	u8 *data;
++	u32 app_start;
++	u16 app_len;
++	u32 img_start;
++	u16 img_len;
++	int record_index;
++	struct device *dev = &cyapa->client->dev;
++
++	image = (struct cyapa_tsg_bin_image *)fw->data;
++	flash_records_count = (fw->size -
++			sizeof(struct cyapa_tsg_bin_image_head)) /
++			sizeof(struct cyapa_tsg_bin_image_data_record);
++
++	/* APP_INTEGRITY row is always the last row block,
++	 * and the row id must be 0x01ff */
++	row_num = get_unaligned_be16(
++			&image->records[flash_records_count - 1].row_number);
++	if (&image->records[flash_records_count - 1].flash_array_id != 0x00 &&
++			row_num != 0x01ff) {
++		dev_err(dev, "%s: invaid app_integrity data.\n", __func__);
++		return -EINVAL;
++	}
++	data = image->records[flash_records_count - 1].record_data;
++	app_start = get_unaligned_le32(&data[4]);
++	app_len = get_unaligned_le16(&data[8]);
++	expected_app_crc = get_unaligned_le16(&data[10]);
++	img_start = get_unaligned_le32(&data[16]);
++	img_len = get_unaligned_le16(&data[20]);
++	expected_app_integrity_crc = get_unaligned_le16(&data[60]);
++
++	if ((app_start + app_len + img_start + img_len) %
++			CYAPA_TSG_FW_ROW_SIZE) {
++		dev_err(dev, "%s: invaid image alignment.\n", __func__);
++		return -EINVAL;
++	}
++
++	/* Verify app_integrity crc */
++	app_integrity_crc = crc_itu_t(0xffff, data,
++			CYAPA_TSG_APP_INTEGRITY_SIZE);
++	if (app_integrity_crc != expected_app_integrity_crc) {
++		dev_err(dev, "%s: invaid app_integrity crc.\n", __func__);
++		return -EINVAL;
++	}
++
++	/*
++	 * Verify application image CRC
++	 */
++	record_index = app_start / CYAPA_TSG_FW_ROW_SIZE -
++				CYAPA_TSG_IMG_START_ROW_NUM;
++	data = (u8 *)&image->records[record_index].record_data;
++	app_crc = crc_itu_t(0xffff, data, CYAPA_TSG_FW_ROW_SIZE);
++	for (i = 1; i < (app_len / CYAPA_TSG_FW_ROW_SIZE); i++) {
++		data = (u8 *)&image->records[++record_index].record_data;
++		app_crc = crc_itu_t(app_crc, data, CYAPA_TSG_FW_ROW_SIZE);
++	}
++
++	if (app_crc != expected_app_crc) {
++		dev_err(dev, "%s: invaid firmware app crc check.\n", __func__);
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++static int cyapa_gen5_write_fw_block(struct cyapa *cyapa,
++		struct cyapa_tsg_bin_image_data_record *flash_record)
++{
++	u8 flash_array_id;
++	u16 flash_row_id;
++	u16 record_len;
++	u8 *record_data;
++	u8 cmd[144];  /* 13 + 128+ 3 */
++	u16 cmd_len;
++	u16 data_len;
++	u16 crc;
++	u8 resp_data[11];
++	int resp_len;
++	int ret;
++
++	flash_array_id = flash_record->flash_array_id;
++	flash_row_id = get_unaligned_be16(&flash_record->row_number);
++	record_len = get_unaligned_be16(&flash_record->record_len);
++	record_data = flash_record->record_data;
++
++	cmd_len = sizeof(cmd) - 2; /* Not include 2 bytes regisetr address. */
++	memset(cmd, 0, cmd_len + 2);
++	cmd[0] = 0x04;  /* Register address */
++	cmd[1] = 0x00;
++
++	put_unaligned_le16(cmd_len, &cmd[2]);
++	cmd[4] = 0x40;  /* Report id 40h */
++	cmd[5] = 0x00;
++
++	cmd[6] = GEN5_SOP_KEY;  /* SOP = 01h */
++	cmd[7] = 0x39;  /* Command code = 39h */
++	/* 1 (Flash Array ID) + 2 (Flash Row ID) + 128 (flash data) */
++	data_len = 3 + record_len;
++	put_unaligned_le16(data_len, &cmd[8]);
++	cmd[10] = flash_array_id;  /* Flash Array ID = 00h */
++	put_unaligned_le16(flash_row_id, &cmd[11]);
++
++	memcpy(&cmd[13], record_data, record_len);
++	crc = crc_itu_t(0xffff, &cmd[6], 4 + data_len);
++	put_unaligned_le16(crc, &cmd[2 + cmd_len - 3]);
++	cmd[2 + cmd_len - 1] = GEN5_EOP_KEY;
++
++	resp_len = sizeof(resp_data);
++	ret = cyapa_i2c_pip_cmd_irq_sync(cyapa,
++			cmd, sizeof(cmd),
++			resp_data, &resp_len,
++			500, cyapa_gen5_sort_tsg_pip_bl_resp_data);
++	if (ret || resp_len != GEN5_BL_BLOCK_WRITE_RESP_LEN ||
++			resp_data[2] != GEN5_BL_RESP_REPORT_ID ||
++			!GEN5_CMD_COMPLETE_SUCCESS(resp_data[5]))
++		return ret < 0 ? ret : -EAGAIN;
++
++	return 0;
++}
++
++static int cyapa_gen5_do_fw_update(struct cyapa *cyapa,
++		const struct firmware *fw)
++{
++	struct device *dev = &cyapa->client->dev;
++	struct cyapa_tsg_bin_image *image =
++		(struct cyapa_tsg_bin_image *)fw->data;
++	struct cyapa_tsg_bin_image_data_record *flash_record;
++	int flash_records_count;
++	int i;
++	int ret;
++
++	/* Try to dump all bufferred data if exists before send commands. */
++	cyapa_empty_pip_output_data(cyapa, NULL, NULL, NULL);
++
++	flash_records_count =
++		(fw->size - sizeof(struct cyapa_tsg_bin_image_head)) /
++			sizeof(struct cyapa_tsg_bin_image_data_record);
++	/*
++	 * The last flash row 0x01ff has been written through bl_initiate
++	 *  command, so DO NOT write flash 0x01ff to trackpad device.
++	 */
++	for (i = 0; i < (flash_records_count - 1); i++) {
++		flash_record = &image->records[i];
++		ret = cyapa_gen5_write_fw_block(cyapa, flash_record);
++		if (ret) {
++			dev_err(dev, "%s: Gen5 FW update aborted, %d\n",
++				__func__, ret);
++			return ret;
++		}
++	}
++
++	return 0;
++}
++
+ static int cyapa_gen5_change_power_state(struct cyapa *cyapa, u8 power_state)
+ {
+ 	int ret;
+@@ -1647,6 +1936,11 @@ static void cyapa_gen5_irq_handler(struct cyapa *cyapa)
+ }
+ 
+ const struct cyapa_dev_ops cyapa_gen5_ops = {
++	.check_fw = cyapa_gen5_check_fw,
++	.bl_enter = cyapa_gen5_bl_enter,
++	.bl_initiate = cyapa_gen5_bl_initiate,
++	.update_fw = cyapa_gen5_do_fw_update,
 +
  	.initialize = cyapa_gen5_initialize,
  	.uninitialize = cyapa_gen5_uninitialize,
