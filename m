@@ -1,87 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751564AbaH2WY6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 18:24:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7522 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750889AbaH2WY4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 18:24:56 -0400
-Message-ID: <5400FDA0.7000704@redhat.com>
-Date: Sat, 30 Aug 2014 00:24:32 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751349AbaH2WbG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 18:31:06 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:50911 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750896AbaH2WbE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 18:31:04 -0400
+X-Sasl-enc: Ggwvm7Lyx5p4vM8XnJAl5Hbq/KfZMCoPN0B7jxZIvuz4 1409351462
+Date: Fri, 29 Aug 2014 15:31:01 -0700
+From: Greg KH <greg@kroah.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mike Travis <travis@sgi.com>, mingo@redhat.com, tglx@linutronix.de,
+        hpa@zytor.com, msalter@redhat.com, dyoung@redhat.com, riel@redhat.com,
+        peterz@infradead.org, mgorman@suse.de, linux-kernel@vger.kernel.org,
+        x86@kernel.org, linux-mm@kvack.org, Alex Thorlton <athorlton@sgi.com>,
+        Cliff Wickman <cpw@sgi.com>, Russ Anderson <rja@sgi.com>
+Subject: Re: [PATCH 0/2] x86: Speed up ioremap operations
+Message-ID: <20140829223101.GA13583@kroah.com>
+References: <20140829195328.511550688@asylum.americas.sgi.com>
+ <20140829131602.72c422ebd2fd3fba426379e8@linux-foundation.org>
+ <5400E62F.8000405@sgi.com>
+ <20140829135200.636dec4a64e2668c2072d787@linux-foundation.org>
 MIME-Version: 1.0
-To: Alexei Starovoitov <alexei.starovoitov@gmail.com>
-CC: Alexei Starovoitov <ast@plumgrid.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Brendan Gregg <brendan.d.gregg@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v8 net-next 2/2] net: filter: split filter.h and expose
- eBPF to user space
-References: <1409171833-6979-1-git-send-email-ast@plumgrid.com> <1409171833-6979-3-git-send-email-ast@plumgrid.com> <5400BAB7.80001@redhat.com> <CAADnVQJbgiUK1vt_SDEG6Yee-Ht67e2M82PrHb3Kx533BOF-rg@mail.gmail.com>
-In-Reply-To: <CAADnVQJbgiUK1vt_SDEG6Yee-Ht67e2M82PrHb3Kx533BOF-rg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140829135200.636dec4a64e2668c2072d787@linux-foundation.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2014 08:02 PM, Alexei Starovoitov wrote:
-> On Fri, Aug 29, 2014 at 10:39 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
->> On 08/27/2014 10:37 PM, Alexei Starovoitov wrote:
->>>
->>> allow user space to generate eBPF programs
->>>
->>> uapi/linux/bpf.h: eBPF instruction set definition
->>>
->>> linux/filter.h: the rest
->>
->> Very sorry for being late, but just a thought since we're touching user
->> space headers anyway ...
->>
->> Wouldn't it be more consistent to have it organized as follows ...
->>
->>   - uapi/linux/bpf.h    : classic BPF instruction set parts only
->>   - uapi/linux/ebpf.h   : eBPF instruction set definition (which also
->>                           includes uapi/linux/bpf.h though)
->> ... and have ...
->>
->>   - uapi/linux/filter.h : just include uapi/linux/bpf.h but rest is empty
->>
->> That way, it would be more consistent ...
->>
->> Old legacy application can stay with linux/filter.h; new applications
->> based on their needs can choose between linux/{e,}bpf.h and in the kernel,
->> we can just include linux/ebpf.h.
->>
->> Right now, it seems, an eBPF user space program would need to include
->> 2 header files in user space (linux/filter.h, linux/bpf.h) which I find
->> a bit confusing.
->
-> It's been bugging me as well, but I suspect having it the way you
-> described won't work. Mainly because we cannot do include <uapi/..>
-> inside uapi/*.h, so we would need to do include <linux/bpf.h>
-> inside uapi/linux/filter.h, but that will cause serious include path
-> confusion. That was the reason I didn't simply do include <linux/filter.h>
-> inside uapi/linux/bpf.h
->
-> Also I really dislike 'ebpf' name in all lower case. If we make such header
-> file name, we would need to rename all macros and function names
-> to EBPF_... which I find very ugly looking. I think all good abbreviations are
-> three letters :)
+On Fri, Aug 29, 2014 at 01:52:00PM -0700, Andrew Morton wrote:
+> On Fri, 29 Aug 2014 13:44:31 -0700 Mike Travis <travis@sgi.com> wrote:
+> 
+> > 
+> > 
+> > On 8/29/2014 1:16 PM, Andrew Morton wrote:
+> > > On Fri, 29 Aug 2014 14:53:28 -0500 Mike Travis <travis@sgi.com> wrote:
+> > > 
+> > >>
+> > >> We have a large university system in the UK that is experiencing
+> > >> very long delays modprobing the driver for a specific I/O device.
+> > >> The delay is from 8-10 minutes per device and there are 31 devices
+> > >> in the system.  This 4 to 5 hour delay in starting up those I/O
+> > >> devices is very much a burden on the customer.
+> > >>
+> > >> There are two causes for requiring a restart/reload of the drivers.
+> > >> First is periodic preventive maintenance (PM) and the second is if
+> > >> any of the devices experience a fatal error.  Both of these trigger
+> > >> this excessively long delay in bringing the system back up to full
+> > >> capability.
+> > >>
+> > >> The problem was tracked down to a very slow IOREMAP operation and
+> > >> the excessively long ioresource lookup to insure that the user is
+> > >> not attempting to ioremap RAM.  These patches provide a speed up
+> > >> to that function.
+> > >>
+> > > 
+> > > Really would prefer to have some quantitative testing results in here,
+> > > as that is the entire point of the patchset.  And it leaves the reader
+> > > wondering "how much of this severe problem remains?".
+> > 
+> > Okay, I have some results from testing.  The modprobe time appears to
+> > be affected quite a bit by previous activity on the ioresource list,
+> > which I suspect is due to cache preloading.  While the overall
+> > improvement is impacted by other overhead of starting the devices,
+> > this drastically improves the modprobe time.
+> > 
+> > Also our system is considerably smaller so the percentages gained
+> > will not be the same.  Best case improvement with the modprobe
+> > on our 20 device smallish system was from 'real    5m51.913s' to
+> > 'real    0m18.275s'.
+> 
+> Thanks, I slurped that into the changelog.
+> 
+> > > Also, the -stable backport is a big ask, isn't it?  It's arguably
+> > > notabug and the affected number of machines is small.
+> > > 
+> > 
+> > Ingo had suggested this.  We are definitely pushing it to our distro
+> > suppliers for our customers.  Whether it's a big deal for smaller
+> > systems is up in the air.  Note that the customer system has 31 devices
+> > on an SSI that includes a large number of other IB and SAS devices
+> > as well as a number of nodes which all which have discontiguous memory
+> > segments.  I'm envisioning an ioresource list that numbers at least
+> > several hundred entries.  While that's somewhat indicative of typical
+> > UV systems it is generally not that common otherwise.
+> > 
+> > So I guess the -stable is merely a suggestion, not a request.
+> 
+> Cc Greg for his thoughts!
 
-I don't think we would have to name defines that way, really, that would be
-terrible. We can keep them simply *as is*. Not sure though why bpf.h + ebpf.h
-would be that bad. ;) I haven't tried it out yet, but if we would indeed run
-into a name collision, above proposal would resolve that.
+Sounds like a good thing for stable.
+
+thanks,
+
+greg k-h
