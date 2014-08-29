@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753020AbaH2Kbi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 06:31:38 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:46149 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752861AbaH2Kbe (ORCPT
+	id S1753156AbaH2KcJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 06:32:09 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:59909 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752860AbaH2Kbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 06:31:34 -0400
+	Fri, 29 Aug 2014 06:31:31 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
 Cc: David Matlack <dmatlack@google.com>, stable@vger.kernel.org,
         Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Subject: [PATCH 3/3] kvm: x86: fix stale mmio cache bug
-Date: Fri, 29 Aug 2014 12:31:17 +0200
-Message-Id: <1409308277-4021-4-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH 2/3] kvm: fix potentially corrupt mmio cache
+Date: Fri, 29 Aug 2014 12:31:16 +0200
+Message-Id: <1409308277-4021-3-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1409308277-4021-1-git-send-email-pbonzini@redhat.com>
 References: <1409308277-4021-1-git-send-email-pbonzini@redhat.com>
@@ -23,115 +23,193 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Matlack <dmatlack@google.com>
 
-The following events can lead to an incorrect KVM_EXIT_MMIO bubbling
-up to userspace:
+vcpu exits and memslot mutations can run concurrently as long as the
+vcpu does not aquire the slots mutex. Thus it is theoretically possible
+for memslots to change underneath a vcpu that is handling an exit.
 
-(1) Guest accesses gpa X without a memory slot. The gfn is cached in
-struct kvm_vcpu_arch (mmio_gfn). On Intel EPT-enabled hosts, KVM sets
-the SPTE write-execute-noread so that future accesses cause
-EPT_MISCONFIGs.
+If we increment the memslot generation number again after
+synchronize_srcu_expedited(), vcpus can safely cache memslot generation
+without maintaining a single rcu_dereference through an entire vm exit.
+And much of the x86/kvm code does not maintain a single rcu_dereference
+of the current memslots during each exit.
 
-(2) Host userspace creates a memory slot via KVM_SET_USER_MEMORY_REGION
-covering the page just accessed.
+We can prevent the following case:
 
-(3) Guest attempts to read or write to gpa X again. On Intel, this
-generates an EPT_MISCONFIG. The memory slot generation number that
-was incremented in (2) would normally take care of this but we fast
-path mmio faults through quickly_check_mmio_pf(), which only checks
-the per-vcpu mmio cache. Since we hit the cache, KVM passes a
-KVM_EXIT_MMIO up to userspace.
+   vcpu (CPU 0)                             | thread (CPU 1)
+--------------------------------------------+--------------------------
+1  vm exit                                  |
+2  srcu_read_unlock(&kvm->srcu)             |
+3  decide to cache something based on       |
+     old memslots                           |
+4                                           | change memslots
+                                            | (increments generation)
+5                                           | synchronize_srcu(&kvm->srcu);
+6  retrieve generation # from new memslots  |
+7  tag cache with new memslot generation    |
+8  srcu_read_unlock(&kvm->srcu)             |
+...                                         |
+   <action based on cache occurs even       |
+    though the caching decision was based   |
+    on the old memslots>                    |
+...                                         |
+   <action *continues* to occur until next  |
+    memslot generation change, which may    |
+    be never>                               |
+                                            |
 
-This patch fixes the issue by using the memslot generation number
-to validate the mmio cache.
+By incrementing the generation after synchronizing with kvm->srcu readers,
+we ensure that the generation retrieved in (6) will become invalid soon
+after (8).
 
-[ xiaoguangrong: adjust the code to make it simpler for stable-tree fix. ]
+Keeping the existing increment is not strictly necessary, but we
+do keep it and just move it for consistency from update_memslots to
+install_new_memslots.  It invalidates old cached MMIOs immediately,
+instead of having to wait for the end of synchronize_srcu_expedited,
+which makes the code more clearly correct in case CPU 1 is preempted
+right after synchronize_srcu() returns.
+
+To avoid halving the generation space in SPTEs, always presume that the
+low bit of the generation is zero when reconstructing a generation number
+out of an SPTE.  This effectively disables MMIO caching in SPTEs during
+the call to synchronize_srcu_expedited.  Using the low bit this way is
+somewhat like a seqcount---where the protected thing is a cache, and
+instead of retrying we can simply punt if we observe the low bit to be 1.
 
 Cc: stable@vger.kernel.org
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 Signed-off-by: David Matlack <dmatlack@google.com>
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- arch/x86/include/asm/kvm_host.h |  1 +
- arch/x86/kvm/mmu.c              |  2 +-
- arch/x86/kvm/x86.h              | 20 +++++++++++++++-----
- 3 files changed, 17 insertions(+), 6 deletions(-)
+ Documentation/virtual/kvm/mmu.txt | 14 ++++++++++++++
+ arch/x86/kvm/mmu.c                | 20 ++++++++++++--------
+ virt/kvm/kvm_main.c               | 23 ++++++++++++++++-------
+ 3 files changed, 42 insertions(+), 15 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 031e1dcea5a6..a9dc893dcf1b 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -481,6 +481,7 @@ struct kvm_vcpu_arch {
- 	u64 mmio_gva;
- 	unsigned access;
- 	gfn_t mmio_gfn;
-+	u64 mmio_gen;
+diff --git a/Documentation/virtual/kvm/mmu.txt b/Documentation/virtual/kvm/mmu.txt
+index 290894176142..53838d9c6295 100644
+--- a/Documentation/virtual/kvm/mmu.txt
++++ b/Documentation/virtual/kvm/mmu.txt
+@@ -425,6 +425,20 @@ fault through the slow path.
+ Since only 19 bits are used to store generation-number on mmio spte, all
+ pages are zapped when there is an overflow.
  
- 	struct kvm_pmu pmu;
++Unfortunately, a single memory access might access kvm_memslots(kvm) multiple
++times, the last one happening when the generation number is retrieved and
++stored into the MMIO spte.  Thus, the MMIO spte might be created based on
++out-of-date information, but with an up-to-date generation number.
++
++To avoid this, the generation number is incremented again after synchronize_srcu
++returns; thus, the low bit of kvm_memslots(kvm)->generation is only 1 during a
++memslot update, while some SRCU readers might be using the old copy.  We do not
++want to use an MMIO sptes created with an odd generation number, and we can do
++this without losing a bit in the MMIO spte.  The low bit of the generation
++is not stored in MMIO spte, and presumed zero when it is extracted out of the
++spte.  If KVM is unlucky and creates an MMIO spte while the low bit is 1,
++the next access to the spte will always be a cache miss.
++
  
+ Further reading
+ ===============
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 96515957ba82..1cd2a5fbde07 100644
+index 323c3f5f5c84..96515957ba82 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -3162,7 +3162,7 @@ static void mmu_sync_roots(struct kvm_vcpu *vcpu)
- 	if (!VALID_PAGE(vcpu->arch.mmu.root_hpa))
- 		return;
- 
--	vcpu_clear_mmio_info(vcpu, ~0ul);
-+	vcpu_clear_mmio_info(vcpu, MMIO_GVA_ANY);
- 	kvm_mmu_audit(vcpu, AUDIT_PRE_SYNC);
- 	if (vcpu->arch.mmu.root_level == PT64_ROOT_LEVEL) {
- 		hpa_t root = vcpu->arch.mmu.root_hpa;
-diff --git a/arch/x86/kvm/x86.h b/arch/x86/kvm/x86.h
-index 306a1b77581f..985fb2c006fa 100644
---- a/arch/x86/kvm/x86.h
-+++ b/arch/x86/kvm/x86.h
-@@ -88,15 +88,23 @@ static inline void vcpu_cache_mmio_info(struct kvm_vcpu *vcpu,
- 	vcpu->arch.mmio_gva = gva & PAGE_MASK;
- 	vcpu->arch.access = access;
- 	vcpu->arch.mmio_gfn = gfn;
-+	vcpu->arch.mmio_gen = kvm_memslots(vcpu->kvm)->generation;
-+}
-+
-+static inline bool vcpu_match_mmio_gen(struct kvm_vcpu *vcpu)
-+{
-+	return vcpu->arch.mmio_gen == kvm_memslots(vcpu->kvm)->generation;
- }
+@@ -199,16 +199,20 @@ void kvm_mmu_set_mmio_spte_mask(u64 mmio_mask)
+ EXPORT_SYMBOL_GPL(kvm_mmu_set_mmio_spte_mask);
  
  /*
-- * Clear the mmio cache info for the given gva,
-- * specially, if gva is ~0ul, we clear all mmio cache info.
-+ * Clear the mmio cache info for the given gva. If gva is MMIO_GVA_ANY, we
-+ * clear all mmio cache info.
+- * spte bits of bit 3 ~ bit 11 are used as low 9 bits of generation number,
+- * the bits of bits 52 ~ bit 61 are used as high 10 bits of generation
+- * number.
++ * the low bit of the generation number is always presumed to be zero.
++ * This disables mmio caching during memslot updates.  The concept is
++ * similar to a seqcount but instead of retrying the access we just punt
++ * and ignore the cache.
++ *
++ * spte bits 3-11 are used as bits 1-9 of the generation number,
++ * the bits 52-61 are used as bits 10-19 of the generation number.
   */
-+#define MMIO_GVA_ANY (~(gva_t)0)
+-#define MMIO_SPTE_GEN_LOW_SHIFT		3
++#define MMIO_SPTE_GEN_LOW_SHIFT		2
+ #define MMIO_SPTE_GEN_HIGH_SHIFT	52
+ 
+-#define MMIO_GEN_SHIFT			19
+-#define MMIO_GEN_LOW_SHIFT		9
+-#define MMIO_GEN_LOW_MASK		((1 << MMIO_GEN_LOW_SHIFT) - 1)
++#define MMIO_GEN_SHIFT			20
++#define MMIO_GEN_LOW_SHIFT		10
++#define MMIO_GEN_LOW_MASK		((1 << MMIO_GEN_LOW_SHIFT) - 2)
+ #define MMIO_GEN_MASK			((1 << MMIO_GEN_SHIFT) - 1)
+ #define MMIO_MAX_GEN			((1 << MMIO_GEN_SHIFT) - 1)
+ 
+@@ -4428,7 +4432,7 @@ void kvm_mmu_invalidate_mmio_sptes(struct kvm *kvm)
+ 	 * The very rare case: if the generation-number is round,
+ 	 * zap all shadow pages.
+ 	 */
+-	if (unlikely(kvm_current_mmio_generation(kvm) >= MMIO_MAX_GEN)) {
++	if (unlikely(kvm_current_mmio_generation(kvm) == 0)) {
+ 		printk_ratelimited(KERN_INFO "kvm: zapping shadow pages for mmio generation wraparound\n");
+ 		kvm_mmu_invalidate_zap_all_pages(kvm);
+ 	}
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 0bfdb673db26..bb8641b5d83b 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -95,8 +95,6 @@ static int hardware_enable_all(void);
+ static void hardware_disable_all(void);
+ 
+ static void kvm_io_bus_destroy(struct kvm_io_bus *bus);
+-static void update_memslots(struct kvm_memslots *slots,
+-			    struct kvm_memory_slot *new, u64 last_generation);
+ 
+ static void kvm_release_pfn_dirty(pfn_t pfn);
+ static void mark_page_dirty_in_slot(struct kvm *kvm,
+@@ -695,8 +693,7 @@ static void sort_memslots(struct kvm_memslots *slots)
+ }
+ 
+ static void update_memslots(struct kvm_memslots *slots,
+-			    struct kvm_memory_slot *new,
+-			    u64 last_generation)
++			    struct kvm_memory_slot *new)
+ {
+ 	if (new) {
+ 		int id = new->id;
+@@ -707,8 +704,6 @@ static void update_memslots(struct kvm_memslots *slots,
+ 		if (new->npages != npages)
+ 			sort_memslots(slots);
+ 	}
+-
+-	slots->generation = last_generation + 1;
+ }
+ 
+ static int check_memory_region_flags(struct kvm_userspace_memory_region *mem)
+@@ -730,10 +725,24 @@ static struct kvm_memslots *install_new_memslots(struct kvm *kvm,
+ {
+ 	struct kvm_memslots *old_memslots = kvm->memslots;
+ 
+-	update_memslots(slots, new, kvm->memslots->generation);
++	/*
++	 * Set the low bit in the generation, which disables SPTE caching
++	 * until the end of synchronize_srcu_expedited.
++	 */
++	WARN_ON(old_memslots->generation & 1);
++	slots->generation = old_memslots->generation + 1;
 +
- static inline void vcpu_clear_mmio_info(struct kvm_vcpu *vcpu, gva_t gva)
- {
--	if (gva != (~0ul) && vcpu->arch.mmio_gva != (gva & PAGE_MASK))
-+	if (gva != MMIO_GVA_ANY && vcpu->arch.mmio_gva != (gva & PAGE_MASK))
- 		return;
++	update_memslots(slots, new);
+ 	rcu_assign_pointer(kvm->memslots, slots);
+ 	synchronize_srcu_expedited(&kvm->srcu);
  
- 	vcpu->arch.mmio_gva = 0;
-@@ -104,7 +112,8 @@ static inline void vcpu_clear_mmio_info(struct kvm_vcpu *vcpu, gva_t gva)
++	/*
++	 * Increment the new memslot generation a second time. This prevents
++	 * vm exits that race with memslot updates from caching a memslot
++	 * generation that will (potentially) be valid forever.
++	 */
++	slots->generation++;
++
+ 	kvm_arch_memslots_updated(kvm);
  
- static inline bool vcpu_match_mmio_gva(struct kvm_vcpu *vcpu, unsigned long gva)
- {
--	if (vcpu->arch.mmio_gva && vcpu->arch.mmio_gva == (gva & PAGE_MASK))
-+	if (vcpu_match_mmio_gen(vcpu) && vcpu->arch.mmio_gva &&
-+	      vcpu->arch.mmio_gva == (gva & PAGE_MASK))
- 		return true;
- 
- 	return false;
-@@ -112,7 +121,8 @@ static inline bool vcpu_match_mmio_gva(struct kvm_vcpu *vcpu, unsigned long gva)
- 
- static inline bool vcpu_match_mmio_gpa(struct kvm_vcpu *vcpu, gpa_t gpa)
- {
--	if (vcpu->arch.mmio_gfn && vcpu->arch.mmio_gfn == gpa >> PAGE_SHIFT)
-+	if (vcpu_match_mmio_gen(vcpu) && vcpu->arch.mmio_gfn &&
-+	      vcpu->arch.mmio_gfn == gpa >> PAGE_SHIFT)
- 		return true;
- 
- 	return false;
+ 	return old_memslots;
 -- 
 1.8.3.1
+
 
