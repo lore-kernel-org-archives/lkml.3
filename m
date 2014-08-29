@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752735AbaH2GJr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 02:09:47 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:13872 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751900AbaH2GJp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 02:09:45 -0400
-Date: Thu, 28 Aug 2014 23:09:42 -0700
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: Georgi Djakov <gdjakov@mm-sol.com>
-CC: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "agross@codeaurora.org" <agross@codeaurora.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
-        "iivanov@mm-sol.com" <iivanov@mm-sol.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH v2 2/3] dt: Document Qualcomm APQ8084 pinctrl binding
-Message-ID: <20140829060941.GH12494@sonymobile.com>
-References: <1409057156-1201-1-git-send-email-gdjakov@mm-sol.com>
- <1409057156-1201-3-git-send-email-gdjakov@mm-sol.com>
+	id S1752621AbaH2GTQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 02:19:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38307 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751173AbaH2GTO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 02:19:14 -0400
+Message-ID: <54001B5F.9040506@suse.de>
+Date: Fri, 29 Aug 2014 08:19:11 +0200
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1409057156-1201-3-git-send-email-gdjakov@mm-sol.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Mike Christie <michaelc@cs.wisc.edu>,
+        Christoph Hellwig <hch@infradead.org>,
+        "K. Y. Srinivasan" <kys@microsoft.com>
+CC: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        ohering@suse.com, jbottomley@parallels.com, linux-scsi@vger.kernel.org,
+        "Martin K. Petersen" <martin.petersen@oracle.com>
+Subject: Re: [PATCH 2/2] Drivers: scsi: storvsc: Force discovery of LUNs that
+ may have been removed.
+References: <1408244954-27417-1-git-send-email-kys@microsoft.com> <1408244988-27456-1-git-send-email-kys@microsoft.com> <1408244988-27456-2-git-send-email-kys@microsoft.com> <20140819175431.GA4617@infradead.org> <53FDEBB9.5070704@suse.de> <53FFE87B.9040802@cs.wisc.edu>
+In-Reply-To: <53FFE87B.9040802@cs.wisc.edu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 26 Aug 05:45 PDT 2014, Georgi Djakov wrote:
+On 08/29/2014 04:42 AM, Mike Christie wrote:
+> On 08/27/2014 09:31 AM, Hannes Reinecke wrote:
+>> On 08/19/2014 07:54 PM, Christoph Hellwig wrote:
+>>> On Sat, Aug 16, 2014 at 08:09:48PM -0700, K. Y. Srinivasan wrote:
+>>>> The host asks the guest to scan when a LUN is removed or added.
+>>>> The only way a guest can identify the removed LUN is when an I/O is
+>>>> attempted on a removed LUN - the SRB status code indicates that the LUN
+>>>> is invalid. We currently handle this SRB status and remove the device.
+>>>>
+>>>> Rather than waiting for an I/O to remove the device, force the
+>>>> discovery of
+>>>> LUNs that may have been removed prior to discovering LUNs that may have
+>>>> been added.
+>>>
+>>> This looks pretty reasonable to me, but I wonder if we should move this
+>>> up to common code so that it happens for any host rescan triggered by
+>>> sysfs or other drivers as well.
+>>>
+>> Not without proper testing.
+>> Currently we cannot rescan existing devices; the inquiry string is
+>> nailed to the sdev structure. The only way to really refresh the
+>> information is to delete it and rescan it again.
+>
+> How are distros handling 0x6/0x3f/0x0e (report luns changed) when it
+> gets passed to userspace? Is everyone kicking off a new full (add and
+> delete) scan to handle this or logging it? Is the driver returning this
+> when the LUNs change?
+>
+Currently it's logged to userspace and ignored.
+Doing an automated rescan has proven to be dangerous, as it
+might disconnect any LUNs which are still in use by applications.
+Especially HA or database setups tends to become very annoyed
+when you do an automated rescan.
 
-> Define a new binding for the Qualcomm TLMM (Top-Level Mode Mux) based pin
-> controller inside the APQ8084.
-> 
-> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
-[...]
-> +Valid values for function are:
-> +adsp_ext, audio_ref, blsp_i2c1, blsp_i2c2, blsp_i2c3, blsp_i2c4, blsp_i2c5,
-> +blsp_i2c6, blsp_i2c7, blsp_i2c8, blsp_i2c9, blsp_i2c10, blsp_i2c11, blsp_i2c12,
-> +blsp_spi1, blsp_spi2, blsp_spi3, blsp_spi4, blsp_spi5, blsp_spi6, blsp_spi7,
-> +blsp_spi8, blsp_spi9, blsp_spi10, blsp_spi11, blsp_spi12, blsp_uart1,
-> +blsp_uart2, blsp_uart3, blsp_uart4, blsp_uart5, blsp_uart6, blsp_uart7,
-> +blsp_uart8, blsp_uart9, blsp_uart10, blsp_uart11, blsp_uart12, blsp_uim1,
-> +blsp_uim2, blsp_uim3, blsp_uim4, blsp_uim5, blsp_uim6, blsp_uim7, blsp_uim8,
-> +blsp_uim9, blsp_uim10, blsp_uim11, blsp_uim12, cam_mclk0, cam_mclk1, cam_mclk2,
-> +cam_mclk3, cci_async, cci_async_in0, cci_i2c0, cci_i2c1, cci_timer0, cci_timer1,
-> +cci_timer2, cci_timer3, cci_timer4, edp_hpd, gcc_gp1, gcc_gp2, gcc_gp3, gcc_obt,
-> +gcc_vtt, gp_mn, gp_pdm0, gp_pdm1, gp_pdm2, gp0_clk, gp1_clk, gpio, hdmi_cec,
-> +hdmi_ddc, hdmi_dtest, hdmi_hpd, hdmi_rcv, hsic, ldo_en, ldo_update, mdp_vsync,
-> +pci_e0, pci_e0_n, pci_e0_rst, pci_e1, pci_e1_rst, pci_e1_rst_n, pci_e1_clkreq_n,
-> +pri_mi2s, qua_mi2s, sata_act, sata_devsleep, sata_devsleep_n, sd_write,
-> +sdc_emmc_mode, sdc3, sdc4, sec_mi2s, slimbus, spdif_tx, spkr_i2s, spkr_i2s_ws,
-> +spss_geni, ter_mi2s, tsif1, tsif2, uim, uim_batt_alarm, gpio
+Cheers,
 
-It would be nice if these where indented.
-
-Also, the last binding I sent up was for msm8960, where I got some comments
-that made me change the format completely. I don't require you to follow that
-instead, but I have to vent my opinion saying that it would be nice if you
-did ;)
-
-Otherwise, Acked-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-
-Regards,
-Bjorn
+Hannes
+-- 
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
