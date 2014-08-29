@@ -1,164 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824AbaH2LjY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 07:39:24 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:41764 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752574AbaH2LjV convert rfc822-to-8bit (ORCPT
+	id S1752838AbaH2Lm5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 07:42:57 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44838 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751006AbaH2Lmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 07:39:21 -0400
+	Fri, 29 Aug 2014 07:42:55 -0400
+Date: Fri, 29 Aug 2014 04:40:14 -0700
+From: tip-bot for Jiang Liu <tipbot@zytor.com>
+Message-ID: <tip-9eabc99a635a77cbf0948ce17d3cbc2b51680d4a@git.kernel.org>
+Cc: mingo@kernel.org, konrad.wilk@oracle.com, rdunlap@infradead.org,
+        tony.luck@intel.com, gregkh@linuxfoundation.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, hpa@zytor.com, jiang.liu@linux.intel.com,
+        grant.likely@linaro.org, amanual@openmailbox.org, yinghai@kernel.org,
+        joro@8bytes.org, bp@alien8.de, benh@kernel.crashing.org,
+        bhelgaas@google.com, rjw@rjwysocki.net
+Reply-To: mingo@kernel.org, konrad.wilk@oracle.com, rdunlap@infradead.org,
+        tony.luck@intel.com, gregkh@linuxfoundation.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, hpa@zytor.com, jiang.liu@linux.intel.com,
+        grant.likely@linaro.org, amanual@openmailbox.org, yinghai@kernel.org,
+        joro@8bytes.org, bp@alien8.de, benh@kernel.crashing.org,
+        bhelgaas@google.com, rjw@rjwysocki.net
+In-Reply-To: <1409304383-18806-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1409304383-18806-1-git-send-email-jiang.liu@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, irq, PCI:
+  Keep IRQ assignment for runtime power management
+Git-Commit-ID: 9eabc99a635a77cbf0948ce17d3cbc2b51680d4a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <2014082909531345696848@rock-chips.com>
-References: <1409187562-12370-1-git-send-email-caesar.wang@rock-chips.com>
-	<2852853.mfRZfFVSev@wuerfel>
-	<20140828143733.GA18084@developer>
-	<3440260.edal29kzlR@diego>
-	<2014082909531345696848@rock-chips.com>
-Date: Fri, 29 Aug 2014 07:39:19 -0400
-Message-ID: <CAC-25o-winy6jVjh9_hQ-t2VO2UfxG67pW5DpOve8A2o39EJSw@mail.gmail.com>
-Subject: Re: Re: [PATCH v3 1/4] thermal: rockchip: add driver for thermal
-From: "edubezval@gmail.com" <edubezval@gmail.com>
-To: =?UTF-8?B?6LW15Luq5bOw?= <zyf@rock-chips.com>
-Cc: =?UTF-8?Q?HeikoSt=C3=BCbner?= <heiko@sntech.de>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Caesar Wang <caesar.wang@rock-chips.com>,
-        "rui.zhang" <rui.zhang@intel.com>,
-        "grant.likely" <grant.likely@linaro.org>,
-        "robh+dt" <robh+dt@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-doc <linux-doc@vger.kernel.org>,
-        =?UTF-8?B?6buE5rab?= <huangtao@rock-chips.com>,
-        =?UTF-8?B?6JSh5p6r?= <cf@rock-chips.com>,
-        dianders <dianders@chromium.org>, dtor <dtor@chromium.org>,
-        =?UTF-8?B?6ZKf5YuH5rGq?= <zyw@rock-chips.com>,
-        "addy.ke@rock-chips.com" <addy.ke@rock-chips.com>,
-        "dmitry.torokhov" <dmitry.torokhov@gmail.com>,
-        linux-iio <linux-iio@vger.kernel.org>,
-        Jonathan Cameron <jic23@kernel.org>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Zhao,
+Commit-ID:  9eabc99a635a77cbf0948ce17d3cbc2b51680d4a
+Gitweb:     http://git.kernel.org/tip/9eabc99a635a77cbf0948ce17d3cbc2b51680d4a
+Author:     Jiang Liu <jiang.liu@linux.intel.com>
+AuthorDate: Fri, 29 Aug 2014 17:26:23 +0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Fri, 29 Aug 2014 13:38:00 +0200
 
-On Thu, Aug 28, 2014 at 9:54 PM, 赵仪峰 <zyf@rock-chips.com> wrote:
-> Hi Heiko，
->
->    The TS-ADC on RK3288 has two component, a tsadc and a tsadc controller.
-> The tsadc controller is similar like the thermal manager unit on other SOCs.
-> We followed the naming of 3066, but not named as the Thermal Manager.
->
->    Moreover,there is only one set of apb registers to access the tsadc
-> controller,and the tsadc is controlled by the tsadc controller,could not
-> access directly. If we write a general tsadc driver by accessed tsadc
-> controller registers, and it hardly to write a driver for the tsadc
-> controller.
+x86, irq, PCI: Keep IRQ assignment for runtime power management
 
-As suggested by Arnd, you can use the generic driver as interface
-between thermal framework and IIO layer. The driver you are going to
-write to your ADC is going to be in the IIO subsystem. The only
-difference is that the generic driver would work for any ADC driver in
-the IIO subsystem.
-https://lkml.org/lkml/2014/2/5/810
+Now IOAPIC driver dynamically allocates IRQ numbers for IOAPIC pins.
+We need to keep IRQ assignment for PCI devices during runtime power
+management, otherwise it may cause failure of device wakeups.
 
-In fact, there is already a generic driver. We just need to get it up
-to date.  I see some testing has been already done, and results sound
-promising.
+Commit 3eec595235c17a7 "x86, irq, PCI: Keep IRQ assignment for PCI
+devices during suspend/hibernation" has fixed the issue for suspend/
+hibernation, we also need the same fix for runtime device sleep too.
 
->
->    So, I do not agree to write a generic adc driver for the rk3288-tsadc.
->
-> ________________________________
-> Yifeng Zhao
->
-> 发件人： HeikoStübner
-> 发送时间： 2014-08-29 00:11
-> 收件人： Eduardo Valentin
-> 抄送： Arnd Bergmann; Caesar Wang; rui.zhang; grant.likely; robh+dt;
-> linux-kernel; linux-pm; linux-arm-kernel; devicetree; linux-doc; huangtao;
-> cf; dianders; dtor; zyw; addy.ke; dmitry.torokhov; zhaoyifeng; linux-iio;
-> Jonathan Cameron
-> 主题： Re: [PATCH v3 1/4] thermal: rockchip: add driver for thermal
->
-> Am Donnerstag, 28. August 2014, 10:37:35 schrieb Eduardo Valentin:
->> Ceasar and Arnd,
->>
->> On Thu, Aug 28, 2014 at 10:48:23AM +0200, Arnd Bergmann wrote:
->> > On Thursday 28 August 2014 08:59:19 Caesar Wang wrote:
->> > > Thermal is TS-ADC Controller module supports user-defined mode and
->> > > automatic mode.
->> > >
->> > > User-defined mode refers,TSADC all the control signals entirely by
->> > > software
->> > > writing to register for direct control.
->> > >
->> > > Automaic mode refers to the module automatically poll TSADC output,and
->> > > the results Were checked.
->> > >
->> > > If you find that the temperature High in a period of time, an
->> > > interrupt
->> > > is generated to the processor down-measures taken;if the temperature
->> > > over a period of time High, the resulting TSHUT gave CRU module,let it
->> > > reset the entire chip, or via GPIO give PMIC.
->> > >
->> > > Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
->> > > Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
->> >
->> > Hi Caesar,
->> >
->> > After looking at the driver (last time I only received the patch for
->> > the binding), I have a more general comment:
->> >
->> > This looks like a general-purpose ADC device, not an IP block that is
->> > specific to thermal management. The binding looks ok for that purpose
->> > but should probably be moved into
->> > Documentation/devicetree/bindings/iio/adc/ as a minor change.
->>
->> I agree with Arnd's point here. It makes sense to me to have this driver
->> under the IIO umbrella.
->
-> interesting suggestion :-)
->
-> I've just taken another look at the registers of the ts-adc on the rk3066
-> which is completely different from the rk3288 one. Interestingly the rk3066
-> one
-> is "just" another saradc IP, so for this one it would really make sense.
->
->
->> > On the driver side, I believe the correct way to deal with this setup
->> > is to split your driver into a generic drivers/iio/adc/rockchips-tsadc.c
->> > file, and a smaller thermal driver that uses the iio in-kernel
->> > interfaces,
->> > ideally one that is independent of the underlying hardware and can
->> > work on any ADC implementation.
->>
->> Agreed. If you can write such interface and make your driver to work in
->> such way, that would be great.
->
-> But I currently don't see how you would model the temperature handling parts
-> from a generic thermal driver to a generic adc driver for the rk3288-tsadc.
->
-> I guess the general temperature irq handling would use iio-triggers? But how
-> does the target temperature get into the TSADC_COMP1_INT register.
->
-> Also when getting the temperature, Caesar's driver compares it to its trip
-> points and sets the next trip point depending on the current temperature
-> (passive <-> critical) in rockchip_get_temp.
->
-> Maybe there is some completely easy way for this, but currently I don't see
-> it.
->
->
-> Heiko
->
->
+Fix: https://bugzilla.kernel.org/show_bug.cgi?id=83271
+Reported-and-Tested-by: EmanueL Czirai <amanual@openmailbox.org>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: EmanueL Czirai <amanual@openmailbox.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Grant Likely <grant.likely@linaro.org>
+Link: http://lkml.kernel.org/r/1409304383-18806-1-git-send-email-jiang.liu@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/include/asm/io_apic.h |  2 ++
+ arch/x86/kernel/apic/io_apic.c | 12 ++++++++++++
+ arch/x86/pci/intel_mid_pci.c   |  2 +-
+ arch/x86/pci/irq.c             |  2 +-
+ drivers/acpi/pci_irq.c         |  4 ++++
+ 5 files changed, 20 insertions(+), 2 deletions(-)
 
-
-
--- 
-Eduardo Bezerra Valentin
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index 0aeed5c..478c490 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -227,6 +227,8 @@ static inline void io_apic_modify(unsigned int apic, unsigned int reg, unsigned
+ 
+ extern void io_apic_eoi(unsigned int apic, unsigned int vector);
+ 
++extern bool mp_should_keep_irq(struct device *dev);
++
+ #else  /* !CONFIG_X86_IO_APIC */
+ 
+ #define io_apic_assign_pci_irqs 0
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 40a4aa3..337ce5a 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -3959,6 +3959,18 @@ int mp_set_gsi_attr(u32 gsi, int trigger, int polarity, int node)
+ 	return ret;
+ }
+ 
++bool mp_should_keep_irq(struct device *dev)
++{
++	if (dev->power.is_prepared)
++		return true;
++#ifdef	CONFIG_PM_RUNTIME
++	if (dev->power.runtime_status == RPM_SUSPENDING)
++		return true;
++#endif
++
++	return false;
++}
++
+ /* Enable IOAPIC early just for system timer */
+ void __init pre_init_apic_IRQ0(void)
+ {
+diff --git a/arch/x86/pci/intel_mid_pci.c b/arch/x86/pci/intel_mid_pci.c
+index 3865116..b9958c3 100644
+--- a/arch/x86/pci/intel_mid_pci.c
++++ b/arch/x86/pci/intel_mid_pci.c
+@@ -229,7 +229,7 @@ static int intel_mid_pci_irq_enable(struct pci_dev *dev)
+ 
+ static void intel_mid_pci_irq_disable(struct pci_dev *dev)
+ {
+-	if (!dev->dev.power.is_prepared && dev->irq > 0)
++	if (!mp_should_keep_irq(&dev->dev) && dev->irq > 0)
+ 		mp_unmap_irq(dev->irq);
+ }
+ 
+diff --git a/arch/x86/pci/irq.c b/arch/x86/pci/irq.c
+index bc1a2c3..eb500c2 100644
+--- a/arch/x86/pci/irq.c
++++ b/arch/x86/pci/irq.c
+@@ -1256,7 +1256,7 @@ static int pirq_enable_irq(struct pci_dev *dev)
+ 
+ static void pirq_disable_irq(struct pci_dev *dev)
+ {
+-	if (io_apic_assign_pci_irqs && !dev->dev.power.is_prepared &&
++	if (io_apic_assign_pci_irqs && !mp_should_keep_irq(&dev->dev) &&
+ 	    dev->irq) {
+ 		mp_unmap_irq(dev->irq);
+ 		dev->irq = 0;
+diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
+index c96887d..6e6b80e 100644
+--- a/drivers/acpi/pci_irq.c
++++ b/drivers/acpi/pci_irq.c
+@@ -484,6 +484,10 @@ void acpi_pci_irq_disable(struct pci_dev *dev)
+ 	/* Keep IOAPIC pin configuration when suspending */
+ 	if (dev->dev.power.is_prepared)
+ 		return;
++#ifdef	CONFIG_PM_RUNTIME
++	if (dev->dev.power.runtime_status == RPM_SUSPENDING)
++		return;
++#endif
+ 
+ 	entry = acpi_pci_irq_lookup(dev, pin);
+ 	if (!entry)
