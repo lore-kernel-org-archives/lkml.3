@@ -1,81 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751289AbaH2Uoo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 16:44:44 -0400
-Received: from relay2.sgi.com ([192.48.180.65]:42667 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750985AbaH2Uon (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 16:44:43 -0400
-Message-ID: <5400E62F.8000405@sgi.com>
-Date: Fri, 29 Aug 2014 13:44:31 -0700
-From: Mike Travis <travis@sgi.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: mingo@redhat.com, tglx@linutronix.de, hpa@zytor.com, msalter@redhat.com,
-        dyoung@redhat.com, riel@redhat.com, peterz@infradead.org,
-        mgorman@suse.de, linux-kernel@vger.kernel.org, x86@kernel.org,
-        linux-mm@kvack.org, Alex Thorlton <athorlton@sgi.com>,
-        Cliff Wickman <cpw@sgi.com>, Russ Anderson <rja@sgi.com>
-Subject: Re: [PATCH 0/2] x86: Speed up ioremap operations
-References: <20140829195328.511550688@asylum.americas.sgi.com> <20140829131602.72c422ebd2fd3fba426379e8@linux-foundation.org>
-In-Reply-To: <20140829131602.72c422ebd2fd3fba426379e8@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1751397AbaH2Uql (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 16:46:41 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:43838 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751020AbaH2Uqj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 16:46:39 -0400
+From: Benjamin Poirier <bpoirier@suse.de>
+To: Prashant Sreedharan <prashant@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH net v5 1/4] tg3: Limit minimum tx queue wakeup threshold
+Date: Fri, 29 Aug 2014 13:46:28 -0700
+Message-Id: <1409345191-8819-1-git-send-email-bpoirier@suse.de>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+tx_pending may be set by the user (via ethtool -G) to a low enough value that
+TG3_TX_WAKEUP_THRESH becomes smaller than MAX_SKB_FRAGS + 1. This may cause
+the tx queue to be waked when there are in fact not enough descriptors to
+handle an skb with max frags. This in turn causes tg3_start_xmit() to return
+NETDEV_TX_BUSY and print error messages. Fix the problem by putting a limit to
+how low TG3_TX_WAKEUP_THRESH can go.
 
+Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
+---
 
-On 8/29/2014 1:16 PM, Andrew Morton wrote:
-> On Fri, 29 Aug 2014 14:53:28 -0500 Mike Travis <travis@sgi.com> wrote:
-> 
->>
->> We have a large university system in the UK that is experiencing
->> very long delays modprobing the driver for a specific I/O device.
->> The delay is from 8-10 minutes per device and there are 31 devices
->> in the system.  This 4 to 5 hour delay in starting up those I/O
->> devices is very much a burden on the customer.
->>
->> There are two causes for requiring a restart/reload of the drivers.
->> First is periodic preventive maintenance (PM) and the second is if
->> any of the devices experience a fatal error.  Both of these trigger
->> this excessively long delay in bringing the system back up to full
->> capability.
->>
->> The problem was tracked down to a very slow IOREMAP operation and
->> the excessively long ioresource lookup to insure that the user is
->> not attempting to ioremap RAM.  These patches provide a speed up
->> to that function.
->>
-> 
-> Really would prefer to have some quantitative testing results in here,
-> as that is the entire point of the patchset.  And it leaves the reader
-> wondering "how much of this severe problem remains?".
+I noticed the problem in a 3.0 kernel when setting `ethtool eth0 -G tx 50` and
+running a netperf TCP_STREAM test. The console fills up with
+[10597.596155] tg3 0000:06:00.0: eth0: BUG! Tx Ring full when queue awake!
+The problem in tg3 remains in current kernels though it does not reproduce as
+easily since "5640f76 net: use a per task frag allocator (v3.7-rc1)". I
+reproduced on current kernels by using the fail_page_alloc fault injection
+mechanism to force the creation of skbs with many order-0 frags. Note that the
+following script may also trigger another bug (NETDEV WATCHDOG), which is
+fixed in the next patch.
 
-Okay, I have some results from testing.  The modprobe time appears to
-be affected quite a bit by previous activity on the ioresource list,
-which I suspect is due to cache preloading.  While the overall
-improvement is impacted by other overhead of starting the devices,
-this drastically improves the modprobe time.
+$ cat /tmp/doit.sh
 
-Also our system is considerably smaller so the percentages gained
-will not be the same.  Best case improvement with the modprobe
-on our 20 device smallish system was from 'real    5m51.913s' to
-'real    0m18.275s'.
+F="/sys/kernel/debug/fail_page_alloc"
 
-> Also, the -stable backport is a big ask, isn't it?  It's arguably
-> notabug and the affected number of machines is small.
-> 
+echo -1 > "$F/times"
+echo 0 > "$F/verbose"
+echo 0 > "$F/ignore-gfp-wait"
+echo 1 > "$F/task-filter"
+echo 100 > "$F/probability"
 
-Ingo had suggested this.  We are definitely pushing it to our distro
-suppliers for our customers.  Whether it's a big deal for smaller
-systems is up in the air.  Note that the customer system has 31 devices
-on an SSI that includes a large number of other IB and SAS devices
-as well as a number of nodes which all which have discontiguous memory
-segments.  I'm envisioning an ioresource list that numbers at least
-several hundred entries.  While that's somewhat indicative of typical
-UV systems it is generally not that common otherwise.
+netperf -H 192.168.9.30 -l100 -t omni -- -d send &
 
-So I guess the -stable is merely a suggestion, not a request.
+n=$!
+
+sleep 0.3
+echo 1 > "/proc/$n/make-it-fail"
+sleep 10
+
+kill "$n"
+---
+ drivers/net/ethernet/broadcom/tg3.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+index 3ac5d23..b11c0fd 100644
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -202,7 +202,8 @@ static inline void _tg3_flag_clear(enum TG3_FLAGS flag, unsigned long *bits)
+ #endif
+ 
+ /* minimum number of free TX descriptors required to wake up TX process */
+-#define TG3_TX_WAKEUP_THRESH(tnapi)		((tnapi)->tx_pending / 4)
++#define TG3_TX_WAKEUP_THRESH(tnapi)	max_t(u32, (tnapi)->tx_pending / 4, \
++					      MAX_SKB_FRAGS + 1)
+ #define TG3_TX_BD_DMA_MAX_2K		2048
+ #define TG3_TX_BD_DMA_MAX_4K		4096
+ 
+-- 
+1.8.4.5
+
