@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300AbaH2JcM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 05:32:12 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:36370 "EHLO mailhub1.si.c-s.fr"
+	id S1753267AbaH2JcK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 05:32:10 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:36357 "EHLO mailhub1.si.c-s.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752882AbaH2JcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753028AbaH2JcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 29 Aug 2014 05:32:07 -0400
 From: Christophe Leroy <christophe.leroy@c-s.fr>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -12,72 +12,95 @@ To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
 CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         Joakim Tjernlund <joakim.tjernlund@transmode.se>,
         scottwood@freescale.com
-Subject: [PATCH v2 15/19] powerpc/8xx: Implement 16k pages
-Message-Id: <20140829091440.121861ABD63@localhost.localdomain>
-Date: Fri, 29 Aug 2014 11:14:40 +0200 (CEST)
+Subject: [PATCH v2 14/19] powerpc/8xx: Const for TLB RPN forced value
+Message-Id: <20140829091439.D2EAB1ABD67@localhost.localdomain>
+Date: Fri, 29 Aug 2014 11:14:39 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch activates the handling of 16k pages on the MPC8xx.
+Value 0x00f0 is used to force bits in TLB level 2 entry. This value is linked
+to the page size and will vary when we change the page size. Lets define a const
+for it in order to have it at only one place.
 
 Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
 ---
- arch/powerpc/Kconfig               |    2 +-
- arch/powerpc/include/asm/mmu-8xx.h |    2 ++
- arch/powerpc/kernel/head_8xx.S     |    4 ++++
- 3 files changed, 7 insertions(+), 1 deletions(-)
+ arch/powerpc/kernel/head_8xx.S |   19 +++++++++++++------
+ 1 files changed, 13 insertions(+), 6 deletions(-)
 
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index 5f44d3b..dc5f64e 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -518,7 +518,7 @@ config PPC_4K_PAGES
- 	bool "4k page size"
- 
- config PPC_16K_PAGES
--	bool "16k page size" if 44x
-+	bool "16k page size" if 44x || PPC_8xx
- 
- config PPC_64K_PAGES
- 	bool "64k page size" if 44x || PPC_STD_MMU_64 || PPC_BOOK3E_64
-diff --git a/arch/powerpc/include/asm/mmu-8xx.h b/arch/powerpc/include/asm/mmu-8xx.h
-index 3d11d3c..986b9e1 100644
---- a/arch/powerpc/include/asm/mmu-8xx.h
-+++ b/arch/powerpc/include/asm/mmu-8xx.h
-@@ -56,6 +56,7 @@
-  * additional information from the MI_EPN, and MI_TWC registers.
-  */
- #define SPRN_MI_RPN	790
-+#define MI_SPS16K	0x00000008	/* Small page size (0 = 4k, 1 = 16k) */
- 
- /* Define an RPN value for mapping kernel memory to large virtual
-  * pages for boot initialization.  This has real page number of 0,
-@@ -129,6 +130,7 @@
-  * additional information from the MD_EPN, and MD_TWC registers.
-  */
- #define SPRN_MD_RPN	798
-+#define MD_SPS16K	0x00000008	/* Small page size (0 = 4k, 1 = 16k) */
- 
- /* This is a temporary storage register that could be used to save
-  * a processor working register during a tablewalk.
 diff --git a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
-index 8966262..4dd6be0 100644
+index dcaee9f..8966262 100644
 --- a/arch/powerpc/kernel/head_8xx.S
 +++ b/arch/powerpc/kernel/head_8xx.S
-@@ -45,7 +45,11 @@
-  * Value for the bits that have fixed value in RPN entries.
-  * Also used for tagging DAR for DTLBerror.
-  */
-+#ifdef CONFIG_PPC_16K_PAGES
-+#define RPN_PATTERN	(0x00f0 | MD_SPS16K)
-+#else
- #define RPN_PATTERN	0x00f0
-+#endif
- 
+@@ -40,6 +40,13 @@
+ #else
+ #define DO_8xx_CPU6(val, reg)
+ #endif
++
++/*
++ * Value for the bits that have fixed value in RPN entries.
++ * Also used for tagging DAR for DTLBerror.
++ */
++#define RPN_PATTERN	0x00f0
++
  	__HEAD
  _ENTRY(_stext);
+ _ENTRY(_start);
+@@ -211,7 +218,7 @@ MachineCheck:
+ 	EXCEPTION_PROLOG
+ 	mfspr r4,SPRN_DAR
+ 	stw r4,_DAR(r11)
+-	li r5,0x00f0
++	li r5,RPN_PATTERN
+ 	mtspr SPRN_DAR,r5	/* Tag DAR, to be used in DTLB Error */
+ 	mfspr r5,SPRN_DSISR
+ 	stw r5,_DSISR(r11)
+@@ -237,7 +244,7 @@ Alignment:
+ 	EXCEPTION_PROLOG
+ 	mfspr	r4,SPRN_DAR
+ 	stw	r4,_DAR(r11)
+-	li	r5,0x00f0
++	li	r5,RPN_PATTERN
+ 	mtspr	SPRN_DAR,r5	/* Tag DAR, to be used in DTLB Error */
+ 	mfspr	r5,SPRN_DSISR
+ 	stw	r5,_DSISR(r11)
+@@ -341,7 +348,7 @@ InstructionTLBMiss:
+ 	 * set.  All other Linux PTE bits control the behavior
+ 	 * of the MMU.
+ 	 */
+-	li	r11, 0x00f0
++	li	r11, RPN_PATTERN
+ 	rlwimi	r10, r11, 0, 0x07f8	/* Set 24-27, clear 21-23,28 */
+ 	DO_8xx_CPU6(0x2d80, r3)
+ 	mtspr	SPRN_MI_RPN, r10	/* Update TLB entry */
+@@ -445,7 +452,7 @@ DataStoreTLBMiss:
+ 	 * set.  All other Linux PTE bits control the behavior
+ 	 * of the MMU.
+ 	 */
+-2:	li	r11, 0x00f0
++2:	li	r11, RPN_PATTERN
+ 	rlwimi	r10, r11, 0, 24, 28	/* Set 24-27, clear 28 */
+ 	DO_8xx_CPU6(0x3d80, r3)
+ 	mtspr	SPRN_MD_RPN, r10	/* Update TLB entry */
+@@ -479,7 +486,7 @@ DataTLBError:
+ 	EXCEPTION_PROLOG_0
+ 
+ 	mfspr	r11, SPRN_DAR
+-	cmpwi	cr0, r11, 0x00f0
++	cmpwi	cr0, r11, RPN_PATTERN
+ 	beq-	FixupDAR	/* must be a buggy dcbX, icbi insn. */
+ DARFixed:/* Return from dcbx instruction bug workaround */
+ 	EXCEPTION_PROLOG_1
+@@ -488,7 +495,7 @@ DARFixed:/* Return from dcbx instruction bug workaround */
+ 	stw	r10,_DSISR(r11)
+ 	mr	r5,r10
+ 	mfspr	r4,SPRN_DAR
+-	li	r10,0x00f0
++	li	r10,RPN_PATTERN
+ 	mtspr	SPRN_DAR,r10	/* Tag DAR, to be used in DTLB Error */
+ 	EXC_XFER_LITE(0x1400, handle_page_fault)
+ 
 -- 
 1.7.1
 
