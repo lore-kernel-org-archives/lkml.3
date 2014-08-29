@@ -1,162 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752551AbaH2DoB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 23:44:01 -0400
-Received: from mga09.intel.com ([134.134.136.24]:22312 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752070AbaH2Dn7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 23:43:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,422,1406617200"; 
-   d="scan'208";a="473683036"
-Message-ID: <53FFF642.7010909@intel.com>
-Date: Fri, 29 Aug 2014 11:40:50 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752350AbaH2DtE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 23:49:04 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:6227 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750983AbaH2DtC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 23:49:02 -0400
+Date: Thu, 28 Aug 2014 20:49:01 -0700
+From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+To: Pramod Gurav <pramod.gurav@smartplayin.com>
+CC: Bjorn Andersson <bjorn@kryo.se>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] pinctrl: qcom: Release pin ranges when
+ gpiochip_irqchip_add fails
+Message-ID: <20140829034900.GF12494@sonymobile.com>
+References: <1409137049-15848-1-git-send-email-pramod.gurav@smartplayin.com>
+ <CAJAp7OhnUD3oSLfcRMD3veSJhVQLZdW1FPb8grOYqN5Gh3Oagw@mail.gmail.com>
+ <53FED69B.3020406@smartplayin.com>
 MIME-Version: 1.0
-To: peterz@infradead.org, mingo@kernel.org, rafael.j.wysocki@intel.com,
-        srivatsa@mit.edu, akpm@linux-foundation.org, laijs@cn.fujitsu.com,
-        toshi.kani@hp.com, todd.e.brandt@linux.intel.com,
-        wangyun@linux.vnet.ibm.com, ego@linux.vnet.ibm.com, fabf@skynet.be,
-        linux@arm.linux.org.uk
-CC: oleg@redhat.com, srivatsa.bhat@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH V2] PM/CPU: Parallel enalbing nonboot cpus with resume
- devices
-References: <1408696420-2654-1-git-send-email-tianyu.lan@intel.com>
-In-Reply-To: <1408696420-2654-1-git-send-email-tianyu.lan@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <53FED69B.3020406@smartplayin.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014年08月22日 16:33, Lan Tianyu wrote:
-> In the current world, all nonboot cpus are enabled serially during system
-> resume. System resume sequence is that boot cpu enables nonboot cpu one by
-> one and then resume devices. Before resuming devices, there are few tasks
-> assigned to nonboot cpus after they are brought up. This waste cpu usage.
+On Thu 28 Aug 00:13 PDT 2014, Pramod Gurav wrote:
+
+> On Thursday 28 August 2014 02:54 AM, Bjorn Andersson wrote:
+> > On Wed, Aug 27, 2014 at 3:57 AM, Pramod Gurav
+> > <pramod.gurav@smartplayin.com> wrote:
+> >> This patches adds a call to gpiochip_remove_pin_ranges when
+> >> gpiochip_irqchip_add fails to release memory allocated for pin_ranges.
+> >>
+> >> diff --git a/drivers/pinctrl/qcom/pinctrl-msm.c b/drivers/pinctrl/qcom/pinctrl-msm.c
+> >> @@ -845,6 +845,7 @@ static int msm_gpio_init(struct msm_pinctrl *pctrl)
+> >>                                    IRQ_TYPE_NONE);
+> >>         if (ret) {
+> >>                 dev_err(pctrl->dev, "Failed to add irqchip to gpiochip\n");
+> >> +               gpiochip_remove_pin_ranges(chip);
+> >>                 return -ENOSYS;
+> >>         }
+> > 
+> > Good catch, I guess this was lost in the introduction of gpiochip_irqchip...
+> > 
+> > 
+> > Rather than just releasing the pin_ranges of the gpio_chip you should
+> > probably add a gpiochip_remove() both here and in the case of
+> > gpiochip_add_pin_range() failing.
 > 
-> To accelerate S3, this patches allows boot cpu to go forward to resume
-> devices after bringing up one nonboot cpu. The nonboot cpu will be in
-> charge of bringing up other cpus. This makes enabling cpu2~x parallel
-> with resuming devices.
+> Thanks for review. But if I see implementation of gpiochip_remove() it does:
+> 	gpiochip_irqchip_remove(chip);
+>         gpiochip_remove_pin_ranges(chip);
+>         of_gpiochip_remove(chip);
 > 
-> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-> ---
-> Change since V1:
-> 	Remove PM_PARALLEL_CPU_UP_FOR_SUSPEND kernel config and make
-> paralleling cpu as default behaviour. Add error handling for 
-> failure of the first frozen cpu online.
-> 
-> So far, I just tested the patch on the Intel machines. It's better
-> to test it on the others Arch platforms. Appreciate a lot if some
-> one can help test it. 
+> In above failure case only gpiochip_add() and gpiochip_add_pin_range()
+> have been successful hence I thought that would cause any problem to add
+> gpiochip_remove(). If that is not a problem I think we can call
+> gpiochip_remove() in fail case of gpiochip_add_pin_range() as well.
+> Do I make sense?
 > 
 
-Hi All:
-	Any comments on this patch?  Thanks.
+As soon as gpiochip_add() have returned successfully we will have a live
+gpio_chip, upon returning unsuccessfully from probe devres will free the pctrl
+node and the gpio core will continue to operate on freed memory.
 
->  kernel/cpu.c | 70 +++++++++++++++++++++++++++++++++++++++++++++++++-----------
->  1 file changed, 58 insertions(+), 12 deletions(-)
-> 
-> diff --git a/kernel/cpu.c b/kernel/cpu.c
-> index a343bde..9bc8497 100644
-> --- a/kernel/cpu.c
-> +++ b/kernel/cpu.c
-> @@ -551,8 +551,42 @@ void __weak arch_enable_nonboot_cpus_end(void)
->  {
->  }
->  
-> +static int _cpu_up_with_trace(int cpu)
-> +{
-> +	int error;
-> +
-> +	trace_suspend_resume(TPS("CPU_ON"), cpu, true);
-> +	error = _cpu_up(cpu, 1);
-> +	trace_suspend_resume(TPS("CPU_ON"), cpu, false);
-> +	if (error) {
-> +		pr_warn("Error taking CPU%d up: %d\n", cpu, error);
-> +		return error;
-> +	}
-> +
-> +	pr_info("CPU%d is up\n", cpu);
-> +	return 0;
-> +}
-> +
-> +static int async_enable_nonboot_cpus(void *data)
-> +{
-> +	int cpu;
-> +
-> +	cpu_maps_update_begin();
-> +	arch_enable_nonboot_cpus_begin();
-> +
-> +	for_each_cpu(cpu, frozen_cpus) {
-> +		_cpu_up_with_trace(cpu);
-> +	}
-> +
-> +	arch_enable_nonboot_cpus_end();
-> +	cpumask_clear(frozen_cpus);
-> +	cpu_maps_update_done();
-> +	return 0;
-> +}
-> +
->  void __ref enable_nonboot_cpus(void)
->  {
-> +	struct task_struct *tsk;
->  	int cpu, error;
->  
->  	/* Allow everyone to use the CPU hotplug again */
-> @@ -563,22 +597,34 @@ void __ref enable_nonboot_cpus(void)
->  
->  	pr_info("Enabling non-boot CPUs ...\n");
->  
-> -	arch_enable_nonboot_cpus_begin();
-> +	cpu = cpumask_first(frozen_cpus);
-> +	cpumask_clear_cpu(cpu, frozen_cpus);
->  
-> -	for_each_cpu(cpu, frozen_cpus) {
-> -		trace_suspend_resume(TPS("CPU_ON"), cpu, true);
-> -		error = _cpu_up(cpu, 1);
-> -		trace_suspend_resume(TPS("CPU_ON"), cpu, false);
-> -		if (!error) {
-> -			pr_info("CPU%d is up\n", cpu);
-> -			continue;
-> +	error = _cpu_up_with_trace(cpu);
-> +	if (cpumask_empty(frozen_cpus))
-> +		goto out;
-> +
-> +	if (error) {
-> +		/*
-> +		 * If fail to bring up the first frozen cpus,
-> +		 * enable the rest frozen cpus on the boot cpu.
-> +		 */
-> +		arch_enable_nonboot_cpus_begin();
-> +		for_each_cpu(cpu, frozen_cpus) {
-> +			_cpu_up_with_trace(cpu);
->  		}
-> -		pr_warn("Error taking CPU%d up: %d\n", cpu, error);
-> -	}
-> +		arch_enable_nonboot_cpus_end();
->  
-> -	arch_enable_nonboot_cpus_end();
-> +	} else {
-> +		tsk = kthread_create_on_cpu(async_enable_nonboot_cpus,
-> +				NULL, cpu, "async-enable-nonboot-cpus");
-> +		if (IS_ERR(tsk)) {
-> +			pr_err("Failed to create async enable nonboot cpus thread.\n");
-> +			goto out;
-> +		}
->  
-> -	cpumask_clear(frozen_cpus);
-> +		kthread_unpark(tsk);
-> +	}
->  out:
->  	cpu_maps_update_done();
->  }
-> 
+Therefor we need to call gpio_remove() in the ccase of both
+gpiochip_add_pin_range() and gpiochip_irqchip_add() failing.
 
+The gpio_remove() does as you say remove those additional items, but handles
+the case where they are not yet "allocated".
 
--- 
-Best regards
-Tianyu Lan
+I hope this answers your conserns.
+
+Regards,
+Bjorn
