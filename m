@@ -1,162 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323AbaH2MmZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 08:42:25 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45512 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752712AbaH2MmX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 08:42:23 -0400
-Message-ID: <54007515.5080506@ti.com>
-Date: Fri, 29 Aug 2014 07:41:57 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1753363AbaH2MnH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 08:43:07 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53049 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753080AbaH2MnF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 08:43:05 -0400
+Date: Fri, 29 Aug 2014 13:42:16 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Matti Vaittinen <matti.vaittinen@nsn.com>,
+        ext Guenter Roeck <linux@roeck-us.net>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>,
+        "jic23@kernel.org" <jic23@kernel.org>,
+        "arno@natisbad.org" <arno@natisbad.org>,
+        "jgunthorpe@obsidianresearch.com" <jgunthorpe@obsidianresearch.com>,
+        "san@rosetechnology.dk" <san@rosetechnology.dk>,
+        "hs@denx.de" <hs@denx.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        Sverdlin Alexander <alexander.sverdlin@nsn.com>
+Subject: Re: [PATCH] rtc: ds1307: add trickle charger device tree binding
+Message-ID: <20140829124216.GD21473@leverpostej>
+References: <20140828124237.GA29102@fi-ourus-dhcp00977.emea.nsn-net.net>
+ <20140828125915.GJ14650@leverpostej>
+ <20140828155157.GB23677@roeck-us.net>
+ <20140828161025.GO14650@leverpostej>
+ <20140828164825.GA12153@roeck-us.net>
+ <20140828172842.GF12769@titan.lakedaemon.net>
+ <20140828174034.GC15307@roeck-us.net>
+ <20140829073413.GN4587@fi-ourus-dhcp00977.emea.nsn-net.net>
+ <20140829104001.GB19424@leverpostej>
+ <20140829122452.GA3683@titan.lakedaemon.net>
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@linaro.org>,
-        Tony Lindgren <tony@atomide.com>, Keerthy <j-keerthy@ti.com>,
-        <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mfd: palmas: Add support for optional wakeup
-References: <1408457197-30487-1-git-send-email-nm@ti.com> <20140829105619.GH24579@lee--X1>
-In-Reply-To: <20140829105619.GH24579@lee--X1>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140829122452.GA3683@titan.lakedaemon.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2014 05:56 AM, Lee Jones wrote:
-> On Tue, 19 Aug 2014, Nishanth Menon wrote:
+On Fri, Aug 29, 2014 at 01:24:52PM +0100, Jason Cooper wrote:
+> On Fri, Aug 29, 2014 at 11:40:02AM +0100, Mark Rutland wrote:
+> > On Fri, Aug 29, 2014 at 08:34:25AM +0100, Matti Vaittinen wrote:
+> > > On Thu, Aug 28, 2014 at 10:40:34AM -0700, ext Guenter Roeck wrote:
+> > > > On Thu, Aug 28, 2014 at 01:28:42PM -0400, Jason Cooper wrote:
+> > > > > On Thu, Aug 28, 2014 at 09:48:25AM -0700, Guenter Roeck wrote:
+> > > > > > On Thu, Aug 28, 2014 at 05:10:25PM +0100, Mark Rutland wrote:
+> > > > > > > On Thu, Aug 28, 2014 at 04:51:57PM +0100, Guenter Roeck wrote:
+> > > > > > > > On Thu, Aug 28, 2014 at 01:59:15PM +0100, Mark Rutland wrote:
+> > > > > > > > > On Thu, Aug 28, 2014 at 01:42:44PM +0100, Matti Vaittinen wrote:
+> > > > > > > > > > Patch adding support for specifying trickle charger setup from device
+> > > > > > > > > > tree. Patch is based on linux-next tree.
+> > > > > > > > > > 
+> > > > > > > > > > 
+> > > > > > > > > > Some DS13XX devices have "trickle chargers". Introduce a device tree binding
+> > > > > > > > > > for specifying the setup and register values.
+> > > > > > > > > > 
+> > > > > > > > > > +++ b/Documentation/devicetree/bindings/rtc/dallas,ds1339.txt
+> > > > > > > > > > @@ -0,0 +1,19 @@
+> > > > > > > > > > +* Dallas DS1339		I2C Serial Real-Time Clock
+> > > > > > > > > > +
+> > > > > > > > > > +Required properties:
+> > > > > > > > > > +- compatible: Should contain "dallas,ds1339".
+> > > > > > > > > > +- reg: I2C address for chip
+> > > > > > > > > > +
+> > > > > > > > > > +Optional properties:
+> > > > > > > > > > +- trickle_setup : Used Trickle Charger configuration,
+> > > > > > > > > > +        corresponding to 5 lowest bits in trickle charger register.
+> > > > > > > > > 
+> > > > > > > > The value is provided via platform data, so it is platform specific
+> > > > > > > > and presumably needs to be configurable. I did, however, not find
+> > > > > > > > a single in-kernel driver which is actually setting it.
+> > > > > > > > So this is a good question.
+> > > > > > > 
+> > > > > > > I'm uncomfortable adding a field we don't understand to DT.
+> > > > > > > 
+> > > > > > > Is there any publicly-available documentation for the device?
+> > > > > > > 
+> > > > > > 
+> > > > > > Lots ;-)
+> > > > > > 
+> > > > > > http://datasheets.maximintegrated.com/en/ds/DS1307.pdf
+> > > > > > http://datasheets.maximintegrated.com/en/ds/DS1337.pdf
+> > > > > > http://datasheets.maximintegrated.com/en/ds/DS1338.pdf
+> > > > > > http://datasheets.maximintegrated.com/en/ds/DS1339.pdf
+> > > > > > http://datasheets.maximintegrated.com/en/ds/DS1340.pdf
+> > > > > > http://datasheets.maximintegrated.com/en/ds/DS1388.pdf
+> > > > > > http://datasheets.maximintegrated.com/en/ds/DS3231.pdf
+> > > > > > 
+> > > > > > Code suggests that DS1339, DS1339, and DS1340 have the register.
+> > > > > > 
+> > > > > > Looking into the datasheets, the configuration consists of two parts:
+> > > > > > - diode connected or not
+> > > > > > - trickle charger resistor value (250, 2000, or 4000 ohm)
+> > > > > > 
+> > > > > > Given that, it seems to me that those values should be configured
+> > > > > > explicitly instead of using a binary value, and that the driver
+> > > > > > should perform the conversion from dt entry to register value.
+> > > > > 
+> > > > > iiuc, there is no way for the kernel to determine what is being trickle
+> > > > > charged, and thus no way to determine how it should set this register.
+> > > > > 
+> > > > > It may be a bit of overkill, but I think a DT macro would be the most
+> > > > > maintainable solution here:
+> > > > > 
+> > > > > #define DS1339_TRCKL_DIODE   0x08
+> > > > > #define DS1339_TRCKL_NODIODE 0x04
+> > > > > #define DS1339_TRCKL_R250    0x01
+> > > > > #define DS1339_TRCKL_R2000   0x02
+> > > > > #define DS1339_TRCKL_R4000   0x03
+> > > > > 
+> > > > > trickle_setup = <DS1339_TRCKL_DIODE | DS1339_TRCKL_R250>;
+> > > > > 
+> > > > > And the driver would take care of oring it with the enable pattern.
+> > > > > 
+> > > > 
+> > > > Yes, that sounds reasonable as well.
+> > > > 
+> > > I thought of this too. However the ds1307 seems to be designed to work
+> > > with bunch of chips. What then when next chip supported by this driver
+> > > introduces 75, 1000 and 5000 ohm resistors? Or something else. (Or add
+> > > some other configuration). I do not see this approach to be
+> > > maintainable in long run.
+> > 
+> > If a new chip comes out with new features, the driver will need an
+> > update anyhow. We have no guarantee that the register placement will be
+> > the same, let alone the layout.
 > 
->> With the recent pinctrl-single changes, omaps can treat wake-up events
->> from deeper idle states as interrupts.
->>
->> Let's add support for the optional second interrupt for wake-up
->> events. And then SoC can wakeup and handle the event using it's
->> regular handler.
->>
->> Finally, to pass the wake-up interrupt in the dts file,
->> interrupts-extended property needs to be passed.
->>
->> This is similar in approach to commit 2a0b965cfb6e ("serial: omap: Add
->> support for optional wake-up")
->>
->> Signed-off-by: Nishanth Menon <nm@ti.com>
->> ---
->>  Documentation/devicetree/bindings/mfd/palmas.txt |   20 ++++++++
+> Yes, I'm reminded of our conversations a year ago in Edinburgh.  It's
+> impossible to engineer a perfect, future-proof binding.  But that
+> being said...
 > 
-> DT Ack please.
+> > If and when said new chip comes out we allocate a new compatible string.
+> > If it's compatible iwith (i.e. is a superset of) an existing device's
+> > programming model, we add that existing string as a fallback in the
+> > compatible list so old kernels can drive the subset of features they
+> > understand.
+> > 
+> > > I see strong possibility of polluting dt with endless amount of
+> > > defines. Furthermore I believe the benefits of these defines would be
+> > > negligible compared to effort maintaining defines and documentation of
+> > > them causes. Surely the one who needs to add dt node for this chip in
+> > > his board's dt has the manual for the chip he has on board. Especially
+> > > so if he knows the trickle charger there and wants to configure it.
+> > > The plain resistor type still gives zero information without knowing
+> > > the other details.
+> > 
+> > I would rather that the driver had some idea of what it were doing
+> > rather than being a glorified copy routine.
+> > 
+> > I would suggest we have two properties that describe the resistor's
+> > rating and whether or not there is a diode:
+> > 
+> > trickle-resistor-ohms = <250>
+> > diode-connected;
 > 
->>  drivers/mfd/palmas.c                             |   59 ++++++++++++++++++++++
->>  include/linux/mfd/palmas.h                       |    2 +
->>  3 files changed, 81 insertions(+)
->>
->> diff --git a/Documentation/devicetree/bindings/mfd/palmas.txt b/Documentation/devicetree/bindings/mfd/palmas.txt
->> index eda8989..2627842 100644
->> --- a/Documentation/devicetree/bindings/mfd/palmas.txt
->> +++ b/Documentation/devicetree/bindings/mfd/palmas.txt
->> @@ -51,3 +51,23 @@ palmas {
->>  		....
->>  	};
->>  }
->> +
->> +Example: with interrupts extended
->> + See Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
->> + Use pinmux 0x418 as wakeup interrupt and gpio1_0 as interrupt source
->> +
->> +palmas {
+> I much prefer this solution over my own suggestion.  With one small
+> change, s/diode-connected/trickle-diode-enable/  Does that sound ok?
+
+I'm not too keen on 'enable'; I was under the impression that this
+described whether or not there was an external diode. Perhaps I've
+misunderstood?
+
+Thanks,
+Mark.
+
+> > That's easy for a human to write and/or validate, we can easily extend
+> > it in future, requires no proliferation of macros, and describes the
+> > hardware rather than telling software what to do.
+> > 
+> > The driver becomes a little more complicated, but gains sanity checking,
+> > which is a good thing.
+> > 
+> > I'm still worried that we have no idea what the device is intended to
+> > charge. Surely that's important?
 > 
-> Should this be 'palmas@40 {'?
-
-I might have preferred that as well.. I kept the existing style in the
-documentation. Would you like me to change existing doc style too?
-
+> In the docs it said a variety of batteries and supercaps.  Yeah, not
+> much help...
 > 
->> +	compatible = "ti,twl6035", "ti,palmas";
->> +	reg = <0x48>
->> +	interrupt-parent = <&intc>;
->> +	interrupt-controller;
->> +	#interrupt-cells = <2>;
->> +	#address-cells = <1>;
->> +	#size-cells = <0>;
->> +	interrupts-extended = <&gpio1 0 IRQ_TYPE_LEVEL_HIGH
->> +			       &pinmux 0x418>;
+> thx,
 > 
-> Can I get a DT Ack, that this is being used correctly?  It doesn't
-> match the syntax given in:
+> Jason.
 > 
->   Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
-Did you mean:
-<&gpio1 0 IRQ_TYPE_LEVEL_HIGH>, <&pinmux 0x418>;
-
-Yes, I can fix that - sorry, both usage seem to be functional.
-
-> 
->> +	pmic {
->> +		compatible = "ti,twl6035-pmic", "ti,palmas-pmic";
->> +		....
->> +	};
->> +}
->> diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
->> index 28cb048..11186ab 100644
->> --- a/drivers/mfd/palmas.c
->> +++ b/drivers/mfd/palmas.c
->> @@ -24,6 +24,7 @@
->>  #include <linux/mfd/core.h>
->>  #include <linux/mfd/palmas.h>
->>  #include <linux/of_device.h>
->> +#include <linux/of_irq.h>
->>  
->>  static const struct regmap_config palmas_regmap_config[PALMAS_NUM_CLIENTS] = {
->>  	{
->> @@ -326,6 +327,16 @@ static struct regmap_irq_chip tps65917_irq_chip = {
->>  			PALMAS_INT1_MASK),
->>  };
->>  
->> +static irqreturn_t palmas_wake_irq(int irq, void *_palmas)
->> +{
->> +	/*
->> +	 * Return Not handled so that interrupt is disabled.
->> +	 * Level event ensures that the event is eventually handled
->> +	 * by the appropriate chip handler already registered
->> +	 */
-> 
-> This looks okay to me, but could do with a second opinion from someone
-> who is a little more familier with this kind of h/w.
-> 
-> How does this differ from threading IRQs?
-
-I could try with an example:
-consider a GPIO block 7 gpio 4 connected to a pinctrl pin 234 as the
-interrupt source for palmas.
-
-When the system is active, the GPIO block 7, gpio 4 happily functions
-as the interrupt source. However, the SoC might not capable of
-achieving SoC wide deepsleep when GPIO block 7 is active, So we have
-to power off GPIO block 7. However on achieving low power, the system
-needs to be capable of waking backup, for this, SoC uses the hardware
-at the pin itself(TI calls it control module, others have other names,
-lets for the discussion, call it pinctrl), on going to sleep the
-action of enabling the pinctrl irq - enables the wakeup capability of
-the pin, and disabling it disabled the wakeup capability. when the
-wakeup event does take place, in some cases, it might be a edge event,
-where by the time we have recofigured GPIO block, the interrupt event
-is long gone - to support this, pinctrl invokes the driver interrupt
-handler to ensure this functions. in our case(palmas), we are level
-event and can depend on GPIO block to handle it when it is configured.
-
-Basically two interrupt sources when SoC is in deep sleep(1 to exit
-from deepsleep, and other from the module handling the actual event) -
-Example: powerbutton press OR palmas RTC wakeup OR Palmas GPIO
-generated wakeup.
-
-However, this is not the same as threading IRQ as the wakeup event is
-involved only during suspend path.
-
-commit 2a0b965cfb6e ("serial: omap: Add support for optional wake-up")
-
-is a good reference from serial port handling perspective.
-
--- 
-Regards,
-Nishanth Menon
