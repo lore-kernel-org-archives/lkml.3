@@ -1,98 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753766AbaH2Iii (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 04:38:38 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:33081 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753727AbaH2Iif (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 04:38:35 -0400
-Message-ID: <54003c0a.69a0420a.034a.ffffe286@mx.google.com>
-X-Google-Original-Message-ID: <000e01cfc364$9cea7230$d6bf5690$@dulixin@gmail.com>
-From: "Dudley Du" <dudley.dulixin@gmail.com>
-To: <dmitry.torokhov@gmail.com>, <rydberg@euromail.se>
-Cc: <bleung@google.com>, <patrik@google.com>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH V5 0/14] input: cyapa: re-architecture driver to support multi-trackpads in one driver
-Date: Fri, 29 Aug 2014 16:38:22 +0800
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Ac/DWE4C9eKIGEqHTPmSlLiaWpIS5Q==
-Content-Language: zh-cn
+	id S1753618AbaH2IiQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 04:38:16 -0400
+Received: from mga11.intel.com ([192.55.52.93]:17723 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753573AbaH2IiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 04:38:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="378564414"
+From: Laurentiu Palcu <laurentiu.palcu@intel.com>
+To: jic23@kernel.org, linux-iio@vger.kernel.org
+Cc: srinivas.pandruvada@linux.intel.com, knaack.h@gmx.de, lars@metafoo.de,
+        pmeerw@pmeerw.net, laurentiu.palcu@intel.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/3] iio: accel: BMC150: add support for more Bosch chips
+Date: Fri, 29 Aug 2014 11:38:05 +0300
+Message-Id: <1409301488-22166-1-git-send-email-laurentiu.palcu@intel.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This v5 patch set is updated based on cyapa v4 patches, it has below updates:
-1) Uses get_device()/put_device() instead of kobject_get()/kobject_put();
-2) Fix memories freed before debugfs entries issue;
-3) Make cyapa_debugs_root valid in driver module level
-   in module_init()/moudle_exit() ;
-4) Fix i2c_transfer() may return partial transfer issues.
-5) Add cyapa->removed flag to avoid detecting thread may still running
-   when driver module is removed.
-6) Fix the meanings of some comments and return error code not clear issue.
+v2:
+ * fixed the sensitivity value: 75590 -> 76590
+ * changed comments, commit messages and IDs to reflect that BMA250E and BMA222E
+   are the chips supported (not BMA250/BMA222);
 
+To ease reviewers' job (I should've done that from the very beginning, sorry), here's
+where you cand find the registers table for each chip. It's easier to compare:
 
-This patch set is aimed to re-architecture the cyapa driver to support
-old gen3 trackpad device and new gen5 trackpad device in one
-cyapa driver for easily productions support based on
-customers' requirements, and add sysfs functions and interfaces
-supported that required by users and customers.
-Because the earlier gen3 and the latest gen5 trackpad devies using
-two different chipsets, and have different protocol and interfaces.
-If supported these two trackpad devices in two different drivers, then
-it will be difficult to manage productions and later firmware updates.
-it will cause customer don't know which one to use and update
-because these two trackpad devices have been used and integrated
-in same one productions at a time, so must to support these two trackpad
-devices in same on driver.
+BMC150:  [1] - page 66
+BMI055:  [2] - page 46
+BMA250E: [3] - page 49
+BMA222E: [4] - page 49
+BMA280:  [5] - page 49
+BMA255:  [6] - page 49
 
-The new architecture is made of:
-cyapa.c - the core of the architecture, supply interfaces and
-functions to system and read trackpad devices.
-cyapa_gen3.c - functions support for gen3 trackpad devices,
-cyapa_gen5.c - functions support for gen5 trackpad devices.
+[1] http://ae-bst.resource.bosch.com/media/products/dokumente/bmc150/BST-BMC150-DS000-04.pdf
+[2] http://ae-bst.resource.bosch.com/media/products/dokumente/bmi055/BST-BMI055-DS000-06.pdf
+[3] http://ae-bst.resource.bosch.com/media/products/dokumente/bma250e/BST-BMA250E-DS004-05_published.pdf
+[4] http://ae-bst.resource.bosch.com/media/products/dokumente/bma222e/BST-BMA222E-DS004-05_published.pdf
+[5] http://ae-bst.resource.bosch.com/media/products/dokumente/bma280/BST-BMA280-DS000-11_published.pdf
+[6] http://ae-bst.resource.bosch.com/media/products/dokumente/bma255/BST-BMA255-DS004-05_published.pdf
 
-Beside this introduction patch, it has 14 patches listed as below.
-For these patches each one is patched based on previous one.
+laurentiu
 
-patch 1/14: re-architecture cyapa driver with core functions,
-and applying the device detecting function in async thread to speed
-up system boot time.
+Laurentiu Palcu (3):
+  iio: accel: BMC150: fix scale value for 16G
+  iio: accel: BMC150: fix issues when CONFIG_PM_RUNTIME is not set
+  iio: accel: BMC150: add support for other Bosch chips
 
-patch 2/14: add cyapa driver power management interfaces support.
+ drivers/iio/accel/bmc150-accel.c | 236 ++++++++++++++++++++++++++++++---------
+ 1 file changed, 183 insertions(+), 53 deletions(-)
 
-patch 3/14: add cyapa driver runtime power management interfaces support.
-
-patch 4/14: add cyapa key function interfaces in sysfs system.
-Including read firmware version, get production ID, read baseline,
-re-calibrate trackpad baselines and do trackpad firmware update.
-
-patch 5/14: add read firmware image and read raw trackpad device'
-sensors' raw data interface in debugfs system.
-
-patch 6/14: add gen3 trackpad device basic functions support.
-
-patch 7/14: add gen3 trackpad device firmware update function support.
-
-patch 8/14: add gen3 trackpad device report baseline and do force
-re-calibrate functions support.
-
-patch 9/14: add gen3 trackpad device read firmware image function support.
-
-patch 10/14: add gen5 trackpad device basic functions support.
-
-patch 11/14: add gen5 trackpad device firmware update function support.
-
-patch 12/14: add gen5 trackpad device report baseline and do force
-re-calibrate functions support.
-
-patch 13/14: add gen5 trackpad device read firmware image and report
-sensors' raw data values functions support.
-
-patch 14/14: add function to monitor LID close event to off trackpad device.
+-- 
+1.9.1
 
