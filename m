@@ -1,85 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752877AbaH2LCR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 07:02:17 -0400
-Received: from smtp.mei.co.jp ([133.183.100.20]:49555 "EHLO smtp.mei.co.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751006AbaH2LCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 07:02:16 -0400
-From: Masahiro Yamada <yamada.m@jp.panasonic.com>
-To: linux-mtd@lists.infradead.org
-Cc: Masahiro Yamada <yamada.m@jp.panasonic.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Huang Shijie <shijie8@gmail.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] mtd: denali: fix include guard and license block of denali.h
-Date: Fri, 29 Aug 2014 20:00:51 +0900
-Message-Id: <1409310051-25726-1-git-send-email-yamada.m@jp.panasonic.com>
-X-Mailer: git-send-email 1.9.1
+	id S1752914AbaH2LFo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 07:05:44 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:63934 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751959AbaH2LFl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 07:05:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAD=FV=Xri1gVdBvmEmxzsyf3z=+Qpuzj4afJ-A2NJfPY0in00A@mail.gmail.com>
+References: <1408003293-27375-1-git-send-email-addy.ke@rock-chips.com>
+	<1408422974-22301-1-git-send-email-addy.ke@rock-chips.com>
+	<CAD=FV=Xri1gVdBvmEmxzsyf3z=+Qpuzj4afJ-A2NJfPY0in00A@mail.gmail.com>
+Date: Fri, 29 Aug 2014 13:05:39 +0200
+Message-ID: <CAPDyKFqAx=WVk2T6FwsSZ0hHsC5ARZF4KhHnn9MCbT6DkAAXkg@mail.gmail.com>
+Subject: Re: [PATCH v2] mmc: dw_mmc: move rockchip related code to a separate file
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Doug Anderson <dianders@chromium.org>, Addy Ke <addy.ke@rock-chips.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Olof Johansson <olof@lixom.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "zhenfu.fang" <zhenfu.fang@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, lintao <lintao@rock-chips.com>,
+        chenfen <chenfen@rock-chips.com>, zyf <zyf@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Chris <zyw@rock-chips.com>,
+        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
+        han jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
+        zhangqing <zhangqing@rock-chips.com>, Lin Huang <hl@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It looks like this header file is a concatenation of two headers.
-Anyway, the include guard should be renamed and placed at the correct
-postion and the license block in the middle should be deleted.
+On 19 August 2014 19:28, Doug Anderson <dianders@chromium.org> wrote:
+> Hi,
+>
+> On Mon, Aug 18, 2014 at 9:36 PM, Addy Ke <addy.ke@rock-chips.com> wrote:
+>> To support HS200 and UHS-1, we need add a big hunk of code,
+>> as shown in the following patches. So a separate file for
+>> rockchip SOCs is suitable.
+>>
+>> Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+>> ---
+>> Changes in v2:
+>> - Kconfig: depend on ARCH_ROCKCHIP, suggested by Bartlomiej Zolnierkiewicz
+>> - Kconfig: depend on OF, suggested by Doug Anderson
+>> - Not change suspend/resume code, suggested by Doug Anderson
+>> - If pdev->dev.of_node is NULL, then return -ENODEV, suggested by Heiko Stübner
+>>
+>>  drivers/mmc/host/Kconfig           |   9 +++
+>>  drivers/mmc/host/Makefile          |   1 +
+>>  drivers/mmc/host/dw_mmc-pltfm.c    |  57 ----------------
+>>  drivers/mmc/host/dw_mmc-rockchip.c | 136 +++++++++++++++++++++++++++++++++++++
+>>  4 files changed, 146 insertions(+), 57 deletions(-)
+>>  create mode 100644 drivers/mmc/host/dw_mmc-rockchip.c
+>>
+>> diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+>> index a565254..f6095f6 100644
+>> --- a/drivers/mmc/host/Kconfig
+>> +++ b/drivers/mmc/host/Kconfig
+>> @@ -621,6 +621,15 @@ config MMC_DW_PCI
+>>
+>>           If unsure, say N.
+>>
+>> +config MMC_DW_ROCKCHIP
+>> +       tristate "Rockchip specific extensions for Synopsys DW Memory Card Interface"
+>> +       depends on MMC_DW && ARCH_ROCKCHIP && OF
+>
+> Actually, Heiko's change to check if pdev->dev.of_node is NULL means
+> that you don't need to depend on OF anymore.
+>
+> Ulf: do you want Addy to spin again, or do you want to just remove
+> this "&& OF" when applying the patch?
+>
+> ...I've tested this both with and without the "&& OF", and the "&& OF"
+> won't really hurt anything, so:
+>
+> Tested-by: Doug Anderson <dianders@chromium.org>
+> Reviewed-by: Doug Anderson <dianders@chromium.org>
 
-Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
----
+Thanks! Applied for next and by removing the dependency to "OF".
 
- drivers/mtd/nand/denali.h | 27 ++++-----------------------
- 1 file changed, 4 insertions(+), 23 deletions(-)
-
-diff --git a/drivers/mtd/nand/denali.h b/drivers/mtd/nand/denali.h
-index 9668174..145bf88 100644
---- a/drivers/mtd/nand/denali.h
-+++ b/drivers/mtd/nand/denali.h
-@@ -17,6 +17,9 @@
-  *
-  */
- 
-+#ifndef __DENALI_H__
-+#define __DENALI_H__
-+
- #include <linux/mtd/nand.h>
- 
- #define DEVICE_RESET				0x0
-@@ -400,28 +403,6 @@
- #define ONFI_BLOOM_TIME         1
- #define MODE5_WORKAROUND        0
- 
--/* lld_nand.h */
--/*
-- * NAND Flash Controller Device Driver
-- * Copyright (c) 2009, Intel Corporation and its suppliers.
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms and conditions of the GNU General Public License,
-- * version 2, as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope it will be useful, but WITHOUT
-- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-- * more details.
-- *
-- * You should have received a copy of the GNU General Public License along with
-- * this program; if not, write to the Free Software Foundation, Inc.,
-- * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-- *
-- */
--
--#ifndef _LLD_NAND_
--#define _LLD_NAND_
- 
- #define MODE_00    0x00000000
- #define MODE_01    0x04000000
-@@ -499,4 +480,4 @@ struct denali_nand_info {
- extern int denali_init(struct denali_nand_info *denali);
- extern void denali_remove(struct denali_nand_info *denali);
- 
--#endif /*_LLD_NAND_*/
-+#endif /* __DENALI_H__ */
--- 
-1.9.1
-
+Kind regards
+Uffe
