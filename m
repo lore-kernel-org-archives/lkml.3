@@ -1,106 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753267AbaH2JcK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 05:32:10 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:36357 "EHLO mailhub1.si.c-s.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753028AbaH2JcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 05:32:07 -0400
-From: Christophe Leroy <christophe.leroy@c-s.fr>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
-        scottwood@freescale.com
-Subject: [PATCH v2 14/19] powerpc/8xx: Const for TLB RPN forced value
-Message-Id: <20140829091439.D2EAB1ABD67@localhost.localdomain>
-Date: Fri, 29 Aug 2014 11:14:39 +0200 (CEST)
+	id S1753346AbaH2Jcq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 05:32:46 -0400
+Received: from www.linutronix.de ([62.245.132.108]:45232 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751709AbaH2Jcn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 05:32:43 -0400
+Message-ID: <540048B4.7010807@linutronix.de>
+Date: Fri, 29 Aug 2014 11:32:36 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+MIME-Version: 1.0
+To: Tony Lindgren <tony@atomide.com>
+CC: balbi@ti.com, linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Vinod Koul <vinod.koul@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Walmsley <paul@pwsan.com>
+Subject: Re: [PATCH 15/15] tty: serial: 8250: omap: add dma support
+References: <1408124563-31541-1-git-send-email-bigeasy@linutronix.de> <1408124563-31541-16-git-send-email-bigeasy@linutronix.de> <20140815210211.GD9239@atomide.com> <53F5AF0D.5060409@linutronix.de> <20140821184416.GF10066@atomide.com> <53FE3779.5090908@linutronix.de> <20140827202313.GF16006@atomide.com> <20140828082348.GA5413@linutronix.de> <20140828164645.GG16006@atomide.com> <53FF84DF.7080406@linutronix.de> <20140828225454.GM16006@atomide.com>
+In-Reply-To: <20140828225454.GM16006@atomide.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Value 0x00f0 is used to force bits in TLB level 2 entry. This value is linked
-to the page size and will vary when we change the page size. Lets define a const
-for it in order to have it at only one place.
+On 08/29/2014 12:54 AM, Tony Lindgren wrote:
+> * Sebastian Andrzej Siewior <bigeasy@linutronix.de> [140828 12:37]:
+>> On 08/28/2014 06:46 PM, Tony Lindgren wrote:
+>>>
+>>> Sounds like there should be some way to clear that state.. I wonder
+>>> if omap-serial.c had something before it's DMA support was removed?
+>>
+>> Its DMA was removed? Like there was DMA support?
+> 
+> Yeah see commit 494574304711a333386e7dd5fd3ebbc3b7024994...
 
-Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+Interesting. I've been browsing that file and checking other trees and
+never noticed that it was there at some point. I only saw the pieces
+which looked it was there.
 
----
- arch/powerpc/kernel/head_8xx.S |   19 +++++++++++++------
- 1 files changed, 13 insertions(+), 6 deletions(-)
+> OK thanks, I'm seeing the same issue as you. And the idlest registers
+> don't show any blockers. Looking at the errata docs, seems like
+> "Usage Note 2.7" in sprz318f.pdf says:
+> 
+>  Details When configured for DMA operations using smartidle mode (SYSC[4:3].IDLEMODE =
+>  0x2), the UART module will not acknowledge incoming idle requests. As a consequence,
+>  it can prevent L4 from going to idle.
+>  When there are additional expected transfers, the UART should be placed in force-idle
+>  mode.
 
-diff --git a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
-index dcaee9f..8966262 100644
---- a/arch/powerpc/kernel/head_8xx.S
-+++ b/arch/powerpc/kernel/head_8xx.S
-@@ -40,6 +40,13 @@
- #else
- #define DO_8xx_CPU6(val, reg)
- #endif
-+
-+/*
-+ * Value for the bits that have fixed value in RPN entries.
-+ * Also used for tagging DAR for DTLBerror.
-+ */
-+#define RPN_PATTERN	0x00f0
-+
- 	__HEAD
- _ENTRY(_stext);
- _ENTRY(_start);
-@@ -211,7 +218,7 @@ MachineCheck:
- 	EXCEPTION_PROLOG
- 	mfspr r4,SPRN_DAR
- 	stw r4,_DAR(r11)
--	li r5,0x00f0
-+	li r5,RPN_PATTERN
- 	mtspr SPRN_DAR,r5	/* Tag DAR, to be used in DTLB Error */
- 	mfspr r5,SPRN_DSISR
- 	stw r5,_DSISR(r11)
-@@ -237,7 +244,7 @@ Alignment:
- 	EXCEPTION_PROLOG
- 	mfspr	r4,SPRN_DAR
- 	stw	r4,_DAR(r11)
--	li	r5,0x00f0
-+	li	r5,RPN_PATTERN
- 	mtspr	SPRN_DAR,r5	/* Tag DAR, to be used in DTLB Error */
- 	mfspr	r5,SPRN_DSISR
- 	stw	r5,_DSISR(r11)
-@@ -341,7 +348,7 @@ InstructionTLBMiss:
- 	 * set.  All other Linux PTE bits control the behavior
- 	 * of the MMU.
- 	 */
--	li	r11, 0x00f0
-+	li	r11, RPN_PATTERN
- 	rlwimi	r10, r11, 0, 0x07f8	/* Set 24-27, clear 21-23,28 */
- 	DO_8xx_CPU6(0x2d80, r3)
- 	mtspr	SPRN_MI_RPN, r10	/* Update TLB entry */
-@@ -445,7 +452,7 @@ DataStoreTLBMiss:
- 	 * set.  All other Linux PTE bits control the behavior
- 	 * of the MMU.
- 	 */
--2:	li	r11, 0x00f0
-+2:	li	r11, RPN_PATTERN
- 	rlwimi	r10, r11, 0, 24, 28	/* Set 24-27, clear 28 */
- 	DO_8xx_CPU6(0x3d80, r3)
- 	mtspr	SPRN_MD_RPN, r10	/* Update TLB entry */
-@@ -479,7 +486,7 @@ DataTLBError:
- 	EXCEPTION_PROLOG_0
- 
- 	mfspr	r11, SPRN_DAR
--	cmpwi	cr0, r11, 0x00f0
-+	cmpwi	cr0, r11, RPN_PATTERN
- 	beq-	FixupDAR	/* must be a buggy dcbX, icbi insn. */
- DARFixed:/* Return from dcbx instruction bug workaround */
- 	EXCEPTION_PROLOG_1
-@@ -488,7 +495,7 @@ DARFixed:/* Return from dcbx instruction bug workaround */
- 	stw	r10,_DSISR(r11)
- 	mr	r5,r10
- 	mfspr	r4,SPRN_DAR
--	li	r10,0x00f0
-+	li	r10,RPN_PATTERN
- 	mtspr	SPRN_DAR,r10	/* Tag DAR, to be used in DTLB Error */
- 	EXC_XFER_LITE(0x1400, handle_page_fault)
- 
--- 
-1.7.1
+Ehm. So I haven't found an errata document for omap3630, there is
+nothing like that in that one I have for am335x or dra7. The document
+you mentioned is for AM3715. Interesting…
 
+> So I've added also Paul to Cc, he may have better suggestions for the
+> hwmod flags to use. The experimental patch below seems to allow idling
+> for me, care to give it a try?
+
+Yep, this one works. And I see DMA transfers (for RX side) after the
+core hit idle so it seems to look good :)
+
+> 
+> Regards,
+> 
+> Tony
+
+Sebastian
