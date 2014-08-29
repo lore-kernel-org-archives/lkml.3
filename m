@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143AbaH2R0O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 13:26:14 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:33271 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754024AbaH2R0M (ORCPT
+	id S1754181AbaH2R0V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 13:26:21 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56824 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753693AbaH2R0T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 13:26:12 -0400
-Message-ID: <5400B7AE.5000600@infradead.org>
-Date: Fri, 29 Aug 2014 10:26:06 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Fri, 29 Aug 2014 13:26:19 -0400
+Date: Fri, 29 Aug 2014 18:26:02 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Nicolin Chen <nicoleotsuka@gmail.com>
+Cc: Mark Brown <broonie@kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCHv2] ASoC: fsl-sai: using 'lsb-first' property instead of
+ 'big-endian-data'.
+Message-ID: <20140829172601.GC18555@leverpostej>
+References: <20140829110601.GB21473@leverpostej>
+ <20140829115943.GV29327@sirena.org.uk>
+ <20140829164010.GA5520@Asurada>
 MIME-Version: 1.0
-To: Masanari Iida <standby24x7@gmail.com>, trivial@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/v2] [trivial] treewide: Fix typo in printk
-References: <53FF8D08.5050900@infradead.org> <1409323053-6582-1-git-send-email-standby24x7@gmail.com>
-In-Reply-To: <1409323053-6582-1-git-send-email-standby24x7@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140829164010.GA5520@Asurada>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/14 07:37, Masanari Iida wrote:
-> This patch fix spelling typo in printk.
+On Fri, Aug 29, 2014 at 05:40:11PM +0100, Nicolin Chen wrote:
+> On Fri, Aug 29, 2014 at 12:59:43PM +0100, Mark Brown wrote:
+> > On Fri, Aug 29, 2014 at 12:06:01PM +0100, Mark Rutland wrote:
+> > > On Fri, Aug 29, 2014 at 08:12:12AM +0100, Xiubo Li wrote:
+> > 
+> > > > The 'big-endian-data' property is originally used to indicate whether the
+> > > > LSB firstly or MSB firstly will be transmitted to the CODEC or received
+> > > > from the CODEC, and there has nothing relation to the memory data.
+> > 
+> > > Both Nicolin [1] and Mark [2] asked for the old property to be kept
+> > > around for compatibility reasons. Those requests seem to have been
+> > > ignored entirely; the commit message doesn't even describe why you
+> > > believe removing support for the old property is safe.
+> > 
+> > The response was that the relevant chips aren't out in the wild so it's
+> > vanishingly unlikely that anyone would have a real DT with this option
+> > enabled.  I'll defer to Nicolin on if that's the case or not.
 > 
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-> Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Yea, it sounds like so. I thought Vf610 also used this property. But if
+> only LS1 using it, I think we may consent this rename right?
 
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
+If you two are happy, then fine by me. My only concern was that the
+rationale for this being safe wasn't in the commit message.
 
-Thanks.
-
-> ---
->  arch/m68k/Kconfig.devices                   | 2 +-
->  arch/mips/lantiq/falcon/sysctrl.c           | 2 +-
->  arch/mips/lantiq/xway/sysctrl.c             | 2 +-
->  arch/mips/pci/pci-lantiq.c                  | 2 +-
->  arch/powerpc/kvm/e500_mmu_host.c            | 2 +-
->  arch/powerpc/platforms/powernv/opal.c       | 2 +-
->  drivers/crypto/qat/qat_common/adf_ctl_drv.c | 2 +-
->  drivers/infiniband/hw/ocrdma/ocrdma_verbs.c | 2 +-
->  drivers/net/ethernet/mellanox/mlx4/cmd.c    | 4 ++--
->  drivers/net/ethernet/via/via-velocity.c     | 2 +-
->  drivers/net/wireless/libertas/cfg.c         | 2 +-
->  drivers/scsi/fnic/fnic_debugfs.c            | 2 +-
->  drivers/scsi/fnic/fnic_trace.c              | 2 +-
->  drivers/video/backlight/88pm860x_bl.c       | 2 +-
->  net/netfilter/ipset/ip_set_core.c           | 2 +-
->  scripts/sign-file                           | 2 +-
->  16 files changed, 17 insertions(+), 17 deletions(-)
-
-
--- 
-~Randy
+Mark.
