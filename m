@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752606AbaH2CWG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 22:22:06 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:35318 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751476AbaH2CWD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 22:22:03 -0400
-Date: Fri, 29 Aug 2014 11:21:55 +0900
-From: Gyungoh Yoo <gyungoh@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: lgirdwood@gmail.com, grant.likely@linaro.org, robh+dt@kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Gyungoh Yoo <jack.yoo@skyworksinc.com>, lee.jones@linaro.org
-Subject: Re: [PATCH v2 2/7] Adding Skyworks SKY81452 regulator driver
-Message-ID: <20140829022155.GA28641@jack-ThinkPad-T520>
-References: <1409222307-23225-1-git-send-email-jack.yoo@skyworksinc.com>
- <1409222797-23343-1-git-send-email-jack.yoo@skyworksinc.com>
- <20140828110254.GN17528@sirena.org.uk>
+	id S1752483AbaH2C1A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 22:27:00 -0400
+Received: from mail-bn1lp0140.outbound.protection.outlook.com ([207.46.163.140]:46126
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751470AbaH2C06 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 22:26:58 -0400
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <shawn.guo@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH] ARM: dts: vf610-twr: remove useless property for sound card.
+Date: Fri, 29 Aug 2014 10:22:21 +0800
+Message-ID: <1409278941-16975-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.5
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199003)(189002)(36756003)(93916002)(68736004)(89996001)(74662001)(26826002)(46102001)(92726001)(50226001)(19580395003)(85852003)(31966008)(74502001)(86362001)(2201001)(92566001)(4396001)(69596002)(6806004)(76482001)(90102001)(229853001)(44976005)(80022001)(83322001)(77156001)(79102001)(99396002)(97736001)(83072002)(20776003)(19580405001)(87286001)(50466002)(47776003)(105606002)(48376002)(81542001)(21056001)(77982001)(62966002)(88136002)(84676001)(95666004)(104016003)(50986999)(64706001)(81342001)(106466001)(104166001)(102836001)(87936001)(85306004)(107046002)(81156004);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR0301MB0623;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140828110254.GN17528@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0318501FAE
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Li.Xiubo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 28, 2014 at 12:02:54PM +0100, Mark Brown wrote:
-> On Thu, Aug 28, 2014 at 07:46:37PM +0900, Gyungoh Yoo wrote:
-> > v2:
-> > Added 'compatible' attribute in the driver
-> > Added message for exception or errors.
-> 
-> This driver has already been applied, please send any changes as
-> incremental patches against current code.  I would *not* expect to see
-> a compatible being defined for a MFD function device though unless it's
-> genuinely reusable.
+This was added by:
+Commit 8128c4f36 ("ARM: dts: vf610-twr: Add simple-card support.")
 
-I am really sorry about confusing. I will resumit this regulator driver as the incremental patches.
+This useless property may cause some confusions for users.
 
-BTW,
-as Lee Jones-MFD supporter mentioned,
-MFD core provides infrastructure for child drivers using compatible.
-https://lkml.org/lkml/2014/8/27/132
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
+ arch/arm/boot/dts/vf610-twr.dts | 1 -
+ 1 file changed, 1 deletion(-)
 
-I want your opinion.
+diff --git a/arch/arm/boot/dts/vf610-twr.dts b/arch/arm/boot/dts/vf610-twr.dts
+index 58e988e..82d16ac 100644
+--- a/arch/arm/boot/dts/vf610-twr.dts
++++ b/arch/arm/boot/dts/vf610-twr.dts
+@@ -76,7 +76,6 @@
+ 
+ 		simple-audio-card,cpu {
+ 			sound-dai = <&sai2>;
+-			master-clkdir-out;
+ 			frame-master;
+ 			bitclock-master;
+ 		};
+-- 
+1.8.5
 
-Thank you.
