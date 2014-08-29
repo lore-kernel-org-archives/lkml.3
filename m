@@ -1,93 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753092AbaH2PCp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 11:02:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51853 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752528AbaH2PCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 11:02:44 -0400
-Subject: Re: [PATCH 2/2] Drivers: scsi: storvsc: Force discovery of LUNs
- that may have been removed.
-From: Ewan Milne <emilne@redhat.com>
-Reply-To: emilne@redhat.com
-To: Mike Christie <michaelc@cs.wisc.edu>
-Cc: Hannes Reinecke <hare@suse.de>, Christoph Hellwig <hch@infradead.org>,
-        "K. Y. Srinivasan" <kys@microsoft.com>, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, ohering@suse.com,
-        jbottomley@parallels.com, linux-scsi@vger.kernel.org,
-        "Martin K. Petersen" <martin.petersen@oracle.com>
-In-Reply-To: <53FFE87B.9040802@cs.wisc.edu>
-References: <1408244954-27417-1-git-send-email-kys@microsoft.com>
-	 <1408244988-27456-1-git-send-email-kys@microsoft.com>
-	 <1408244988-27456-2-git-send-email-kys@microsoft.com>
-	 <20140819175431.GA4617@infradead.org> <53FDEBB9.5070704@suse.de>
-	 <53FFE87B.9040802@cs.wisc.edu>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat
-Date: Fri, 29 Aug 2014 11:01:37 -0400
-Message-ID: <1409324497.1223.383.camel@localhost.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753456AbaH2PDM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 11:03:12 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:14151 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753215AbaH2PDH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 11:03:07 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-e5-540096285218
+From: Lukasz Pawelczyk <l.pawelczyk@samsung.com>
+To: r.krypa@samsung.com, havner@gmail.com, m.lis@samsung.com,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        James Morris <james.l.morris@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Cc: Lukasz Pawelczyk <l.pawelczyk@samsung.com>
+Subject: [PATCH 2/3] Fix a bidirectional UDS connect check typo
+Date: Fri, 29 Aug 2014 17:02:54 +0200
+Message-id: <1409324575-12057-2-git-send-email-l.pawelczyk@samsung.com>
+X-Mailer: git-send-email 1.9.3
+In-reply-to: <1409324575-12057-1-git-send-email-l.pawelczyk@samsung.com>
+References: <1409324575-12057-1-git-send-email-l.pawelczyk@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmluLIzCtJLcpLzFFi42I5/e/4NV2NaQwhBnMPmFjc2/aLzeL/ax2L
+	vsdBFmcmLWSyuLxrDpvFh55HbBZ3D75lsXg7aQWzxfkL59gdOD12zrrL7nFtd6THx6e3WDz6
+	tqxi9Di6fxGbx+dNcgFsUVw2Kak5mWWpRfp2CVwZFzv+MRfcZ6+4e3slawPjBrYuRk4OCQET
+	icubv0PZYhIX7q0Hsrk4hASWMkrs+3aDGcLpZZI4sXw6WBWbgIHE9wt7wRIiAs1MEjO2rWAC
+	STAL6ElMWrKbBcQWFrCXmLp0BSOIzSKgKnF/+T9mEJtXwF3i4uIbrBDr5CR6t70Bi3MKeEhc
+	uPkFLC4EVPNp0TLWCYy8CxgZVjGKppYmFxQnpeca6RUn5haX5qXrJefnbmKEBNzXHYxLj1kd
+	YhTgYFTi4X2RwRAixJpYVlyZe4hRgoNZSYR33QSgEG9KYmVValF+fFFpTmrxIUYmDk6pBkbd
+	PC6fL0vumZ/Ojjz6uM3Sfc/6nlu3WKf7eS53EfsfEvy04qDWhqVz+FJYfvdJcinkF9xcmMn3
+	+/lbwdJy2wP3dcxmn+Q9PP9/YUfNfPeyA9Fvm249Enwy9ae1tLOygfQkjXX31Gt3GzWpB6hE
+	rC5t/jn1xg7l/lmmF8ynW2kt/ybwIWmVzQclluKMREMt5qLiRADJ6IPhFgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-08-28 at 21:42 -0500, Mike Christie wrote:
-> On 08/27/2014 09:31 AM, Hannes Reinecke wrote:
-> > On 08/19/2014 07:54 PM, Christoph Hellwig wrote:
-> >> On Sat, Aug 16, 2014 at 08:09:48PM -0700, K. Y. Srinivasan wrote:
-> >>> The host asks the guest to scan when a LUN is removed or added.
-> >>> The only way a guest can identify the removed LUN is when an I/O is
-> >>> attempted on a removed LUN - the SRB status code indicates that the LUN
-> >>> is invalid. We currently handle this SRB status and remove the device.
-> >>>
-> >>> Rather than waiting for an I/O to remove the device, force the
-> >>> discovery of
-> >>> LUNs that may have been removed prior to discovering LUNs that may have
-> >>> been added.
-> >>
-> >> This looks pretty reasonable to me, but I wonder if we should move this
-> >> up to common code so that it happens for any host rescan triggered by
-> >> sysfs or other drivers as well.
-> >>
-> > Not without proper testing.
-> > Currently we cannot rescan existing devices; the inquiry string is
-> > nailed to the sdev structure. The only way to really refresh the
-> > information is to delete it and rescan it again.
-> 
-> How are distros handling 0x6/0x3f/0x0e (report luns changed) when it
-> gets passed to userspace? Is everyone kicking off a new full (add and
-> delete) scan to handle this or logging it? Is the driver returning this
-> when the LUNs change?
+The 54e70ec5eb090193b03e69d551fa6771a5a217c4 commit introduced a
+bidirectional check that should have checked for mutual WRITE access
+between two labels. Due to a typo the second check was incorrect.
 
-Currently the udev rules we have to handle these events are installed
-with a separate package, and only the REPORTED LUNS DATA HAS CHANGED
-does anything, the others are commented out.  It turns out that e.g.
-multipath stops using a path if it notices that the capacity has changed
-and we need to do some more work there, it is under discussion.
+Signed-off-by: Lukasz Pawelczyk <l.pawelczyk@samsung.com>
+---
+ security/smack/smack_lsm.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-We do not delete LUNs that disappear from the REPORT LUNS inventory,
-although someone could write their own udev rule to do that if desired.
-
-Beware the case where a LUN is remapped to a different LUN number, or
-if LUN's WWID is used for a device with different data (e.g. a LUN
-deleted and re-added and the WWID is the same although I don't know
-if this actually happens).
-
-Consider that the UA just provides notification to userspace of a
-change -- lack of notification does not prevent someone from deciding
-to rescan for new LUNs via sysfs any time they feel like it.  So
-you can't just change the storage configuration and hope that no-one
-notices until you are done making changes.
-
--Ewan
-
-> 
-> Also is the driver getting a 0x5/0x25/0 (invalid LUN) when the LUN does
-> not exist, or is it just getting that SRB_STATUS_INVALID_LUN error code?
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+index 478d99e..00443a9 100644
+--- a/security/smack/smack_lsm.c
++++ b/security/smack/smack_lsm.c
+@@ -3302,8 +3302,8 @@ static int smack_unix_stream_connect(struct sock *sock,
+ 		rc = smk_bu_note("UDS connect", skp, okp->smk_known,
+ 					MAY_WRITE, rc);
+ 		if (rc == 0) {
+-			rc = smk_access(okp, okp->smk_known, MAY_WRITE, NULL);
+-			rc = smk_bu_note("UDS connect", okp, okp->smk_known,
++			rc = smk_access(okp, skp->smk_known, MAY_WRITE, NULL);
++			rc = smk_bu_note("UDS connect", okp, skp->smk_known,
+ 						MAY_WRITE, rc);
+ 		}
+ 	}
+-- 
+1.9.3
 
