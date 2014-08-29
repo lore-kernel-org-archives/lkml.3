@@ -1,143 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540AbaH2Sl0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 14:41:26 -0400
-Received: from mail-by2lp0235.outbound.protection.outlook.com ([207.46.163.235]:48495
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753154AbaH2SlZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 14:41:25 -0400
-Message-ID: <1409337669.24184.0.camel@snotra.buserror.net>
-Subject: Re: [PATCH v2 17/19] powerpc/8xx: set PTE bit 22 off TLBmiss
-From: Scott Wood <scottwood@freescale.com>
-To: Christophe Leroy <christophe.leroy@c-s.fr>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>,
-        Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Date: Fri, 29 Aug 2014 13:41:09 -0500
-In-Reply-To: <20140829091440.6DAD91ABD66@localhost.localdomain>
-References: <20140829091440.6DAD91ABD66@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
+	id S1753899AbaH2SmL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 14:42:11 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:35110 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753759AbaH2SmJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 14:42:09 -0400
+X-CheckPoint: {5400C981-0-2100090A-C0000000}
+Message-ID: <201408291842.s7TIg7HN028765@farm-0039.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Fri, 29 Aug 2014 14:31:14 -0400
+Subject: [PATCH 1/2] Add strscpy() as a new string copy primitive
+To: Randy Dunlap <rdunlap@infradead.org>,
+        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        "David S. Miller" <davem@davemloft.net>,
+        <linux-kernel@vger.kernel.org>
+References: <1406383386-1400-1-git-send-email-rickard_strandqvist@spectrumdigital.se> <53E13D78.6000903@tilera.com> <CAFo99gZ1rOqD-RFN7Shx4mWO4kfVLCXpuxUWqOwK5uY6uwAh3Q@mail.gmail.com> <201408061838.s76Ic6lV014201@farm-0039.internal.tilera.com> <53E32022.2090006@infradead.org> <CAFo99gYMtpVo9=dZ-dW5iiiRgKGjwxwaLBe6C5Ci9v6-7o8H+A@mail.gmail.com> <53E935DE.6050201@infradead.org>
+In-Reply-To: <53E935DE.6050201@infradead.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [2601:2:5800:3f7:6853:5536:db43:a2c7]
-X-ClientProxiedBy: CO2PR11CA0024.namprd11.prod.outlook.com (10.141.242.162) To
- CY1PR0301MB0732.namprd03.prod.outlook.com (25.160.159.150)
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 0318501FAE
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6009001)(189002)(51704005)(24454002)(199003)(377424004)(50986999)(74502001)(74662001)(77156001)(87286001)(90102001)(92566001)(19580405001)(92726001)(83322001)(99396002)(31966008)(86362001)(575784001)(89996001)(33646002)(93916002)(76176999)(87976001)(23676002)(50226001)(4396001)(81342001)(88136002)(62966002)(81542001)(47776003)(20776003)(21056001)(64706001)(85306004)(80022001)(79102001)(105586002)(76482001)(95666004)(110136001)(106356001)(101416001)(104166001)(85852003)(50466002)(103116003)(77096002)(102836001)(42186005)(46102001)(77982001)(107046002)(3826002);DIR:OUT;SFP:;SCL:1;SRVR:CY1PR0301MB0732;H:[IPv6:2601:2:5800:3f7:6853:5536:db43:a2c7];FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-08-29 at 11:14 +0200, Christophe Leroy wrote:
-> No need to re-set this bit at each TLB miss. Let's set it in the PTE.
-> 
-> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
-> 
-> ---
->  arch/powerpc/include/asm/pgtable-ppc32.h |   21 +++++++++++++++++++++
->  arch/powerpc/include/asm/pte-8xx.h       |    7 +++++--
->  arch/powerpc/kernel/head_8xx.S           |   10 ++--------
->  3 files changed, 28 insertions(+), 10 deletions(-)
-> 
+Both strncpy and strlcpy suffer from the fact that they do
+partial copies of strings into the destination when the target
+buffer is too small.  This is frequently pointless since an
+overflow of the target buffer may make the result invalid.
 
-When you post a vN+1 please indicate below the --- what changed sinced
-vN.
+strncpy() makes it relatively hard to even detect the error
+condition, and with strlcpy() you have to duplicate the buffer
+size parameter to test to see if the result exceeds it.
+By returning zero in the failure case, we both make testing
+for it easy, and by simply not copying anything in that case,
+we make it mandatory for callers to test the error code.
 
--Scott
+To catch lazy programmers who don't check, we also place a NUL at
+the start of the destination buffer (if there is space) to
+ensure that the result is an invalid string.
 
-> diff --git a/arch/powerpc/include/asm/pgtable-ppc32.h b/arch/powerpc/include/asm/pgtable-ppc32.h
-> index 47edde8..c261792 100644
-> --- a/arch/powerpc/include/asm/pgtable-ppc32.h
-> +++ b/arch/powerpc/include/asm/pgtable-ppc32.h
-> @@ -172,6 +172,26 @@ static inline unsigned long pte_update(pte_t *p,
->  #ifdef PTE_ATOMIC_UPDATES
->  	unsigned long old, tmp;
->  
-> +#ifdef CONFIG_PPC_8xx
-> +	unsigned long tmp2;
-> +
-> +	__asm__ __volatile__("\
-> +1:	lwarx	%0,0,%4\n\
-> +	andc	%1,%0,%5\n\
-> +	or	%1,%1,%6\n\
-> +	/* 0x200 == Extended encoding, bit 22 */ \
-> +	/* Bit 22 has to be 1 if neither _PAGE_USER nor _PAGE_RW are set */ \
-> +	rlwimi	%1,%1,32-2,0x200\n /* get _PAGE_USER */ \
-> +	rlwinm	%3,%1,32-1,0x200\n /* get _PAGE_RW */ \
-> +	or	%1,%3,%1\n\
-> +	xori	%1,%1,0x200\n"
-> +	PPC405_ERR77(0,%4)
-> +"	stwcx.	%1,0,%4\n\
-> +	bne-	1b"
-> +	: "=&r" (old), "=&r" (tmp), "=m" (*p), "=&r" (tmp2)
-> +	: "r" (p), "r" (clr), "r" (set), "m" (*p)
-> +	: "cc" );
-> +#else /* CONFIG_PPC_8xx */
->  	__asm__ __volatile__("\
->  1:	lwarx	%0,0,%3\n\
->  	andc	%1,%0,%4\n\
-> @@ -182,6 +202,7 @@ static inline unsigned long pte_update(pte_t *p,
->  	: "=&r" (old), "=&r" (tmp), "=m" (*p)
->  	: "r" (p), "r" (clr), "r" (set), "m" (*p)
->  	: "cc" );
-> +#endif /* CONFIG_PPC_8xx */
->  #else /* PTE_ATOMIC_UPDATES */
->  	unsigned long old = pte_val(*p);
->  	*p = __pte((old & ~clr) | set);
-> diff --git a/arch/powerpc/include/asm/pte-8xx.h b/arch/powerpc/include/asm/pte-8xx.h
-> index d44826e..dede1e7 100644
-> --- a/arch/powerpc/include/asm/pte-8xx.h
-> +++ b/arch/powerpc/include/asm/pte-8xx.h
-> @@ -48,19 +48,22 @@
->   */
->  #define _PAGE_RW	0x0400	/* lsb PP bits, inverted in HW */
->  #define _PAGE_USER	0x0800	/* msb PP bits */
-> +/* set when neither _PAGE_USER nor _PAGE_RW are set */
-> +#define _PAGE_KNLRO	0x0200
->  
->  #define _PMD_PRESENT	0x0001
->  #define _PMD_BAD	0x0ff0
->  #define _PMD_PAGE_MASK	0x000c
->  #define _PMD_PAGE_8M	0x000c
->  
-> -#define _PTE_NONE_MASK _PAGE_ACCESSED
-> +#define _PTE_NONE_MASK (_PAGE_ACCESSED | _PAGE_KNLRO)
->  
->  /* Until my rework is finished, 8xx still needs atomic PTE updates */
->  #define PTE_ATOMIC_UPDATES	1
->  
->  /* We need to add _PAGE_SHARED to kernel pages */
-> -#define _PAGE_KERNEL_RO	(_PAGE_SHARED)
-> +#define _PAGE_KERNEL_RO	(_PAGE_SHARED | _PAGE_KNLRO)
-> +#define _PAGE_KERNEL_ROX	(_PAGE_EXEC | _PAGE_KNLRO)
->  #define _PAGE_KERNEL_RW	(_PAGE_DIRTY | _PAGE_RW | _PAGE_HWWRITE)
->  
->  #endif /* __KERNEL__ */
-> diff --git a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
-> index a7af26e..48d3de8 100644
-> --- a/arch/powerpc/kernel/head_8xx.S
-> +++ b/arch/powerpc/kernel/head_8xx.S
-> @@ -445,14 +445,8 @@ DataStoreTLBMiss:
->  	and	r11, r11, r10
->  	rlwimi	r10, r11, 0, _PAGE_PRESENT
->  #endif
-> -	/* Honour kernel RO, User NA */
-> -	/* 0x200 == Extended encoding, bit 22 */
-> -	rlwimi	r10, r10, 32-2, 0x200 /* Copy USER to bit 22, 0x200 */
-> -	/* r11 =  (r10 & _PAGE_RW) >> 1 */
-> -	rlwinm	r11, r10, 32-1, 0x200
-> -	or	r10, r11, r10
-> -	/* invert RW and 0x200 bits */
-> -	xori	r10, r10, _PAGE_RW | 0x200
-> +	/* invert RW */
-> +	xori	r10, r10, _PAGE_RW
->  
->  	/* The Linux PTE won't go exactly into the MMU TLB.
->  	 * Software indicator bits 22 and 28 must be clear.
+Reviewed-by: Randy Dunlap <rdunlap@infradead.org>
+Reviewed-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+ include/linux/string.h |  3 +++
+ lib/string.c           | 29 +++++++++++++++++++++++++++++
+ 2 files changed, 32 insertions(+)
 
+diff --git a/include/linux/string.h b/include/linux/string.h
+index d36977e029af..b9e9b2b5f6c6 100644
+--- a/include/linux/string.h
++++ b/include/linux/string.h
+@@ -25,6 +25,9 @@ extern char * strncpy(char *,const char *, __kernel_size_t);
+ #ifndef __HAVE_ARCH_STRLCPY
+ size_t strlcpy(char *, const char *, size_t);
+ #endif
++#ifndef __HAVE_ARCH_STRSCPY
++size_t strscpy(char *, const char *, size_t);
++#endif
+ #ifndef __HAVE_ARCH_STRCAT
+ extern char * strcat(char *, const char *);
+ #endif
+diff --git a/lib/string.c b/lib/string.c
+index 992bf30af759..bbd67b3343dc 100644
+--- a/lib/string.c
++++ b/lib/string.c
+@@ -160,6 +160,35 @@ size_t strlcpy(char *dest, const char *src, size_t size)
+ EXPORT_SYMBOL(strlcpy);
+ #endif
+ 
++#ifndef __HAVE_ARCH_STRSCPY
++/**
++ * strscpy - Copy a C-string into a sized buffer, but only if it fits
++ * @dest: Where to copy the string to
++ * @src: Where to copy the string from
++ * @size: size of destination buffer
++ *
++ * Use this routine to avoid copying too-long strings.
++ * The routine returns the total number of bytes copied
++ * (including the trailing NUL) or zero if the buffer wasn't
++ * big enough.  To ensure that programmers pay attention
++ * to the return code, the destination has a single NUL
++ * written at the front (if size is non-zero) when the
++ * buffer is not big enough.
++ */
++size_t strscpy(char *dest, const char *src, size_t size)
++{
++	size_t len = strnlen(src, size) + 1;
++	if (len > size) {
++		if (size)
++			dest[0] = '\0';
++		return 0;
++	}
++	memcpy(dest, src, len);
++	return len;
++}
++EXPORT_SYMBOL(strscpy);
++#endif
++
+ #ifndef __HAVE_ARCH_STRCAT
+ /**
+  * strcat - Append one %NUL-terminated string to another
+-- 
+1.8.3.1
 
