@@ -1,384 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752110AbaH2Esd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 00:48:33 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:48792 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751321AbaH2Esb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 00:48:31 -0400
-X-Original-SENDERIP: 10.178.33.69
-X-Original-MAILFROM: gioh.kim@lge.com
-Message-ID: <5400061B.7060709@lge.com>
-Date: Fri, 29 Aug 2014 13:48:27 +0900
-From: Gioh Kim <gioh.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751840AbaH2E53 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 00:57:29 -0400
+Received: from mail-bn1blp0184.outbound.protection.outlook.com ([207.46.163.184]:3385
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750800AbaH2E51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 00:57:27 -0400
+Date: Fri, 29 Aug 2014 06:57:15 +0200
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>, Joonsoo Kim <js1304@gmail.com>,
-        =?UTF-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>
-Subject: Re: [PATCHv3 1/3] fs/buffer.c: allocate buffer cache with user specific
- flag
-References: <53FE9357.6000505@lge.com> <53FE9492.1030909@lge.com> <20140828105909.GE5961@quack.suse.cz>
-In-Reply-To: <20140828105909.GE5961@quack.suse.cz>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>,
+        Michal Simek <michal.simek@xilinx.com>
+CC: Ezra Savard <ezras@xilinx.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        Ezra Savard <ezra.savard@xilinx.com>
+Subject: Re: [PATCH] ARM: zynq: DT: Add LEDs to zc702 DT
+References: <1409242973-2735-1-git-send-email-soren.brinkmann@xilinx.com>
+ <20140828171536.GB4345@xsjandreislx>
+In-Reply-To: <20140828171536.GB4345@xsjandreislx>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="47Ir30rTcEQf8R6Ol1DKg2pPU9u6tq70C"
+X-RCIS-Action: ALLOW
+Message-ID: <93dd8f20-f13a-4446-8b11-e8508fc0ebb7@BY2FFO11FD047.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(24454002)(199003)(51704005)(189002)(164054003)(377454003)(377424004)(479174003)(50986999)(76176999)(80022001)(95666004)(19580405001)(65956001)(107046002)(1496007)(102836001)(512874002)(74316001)(106466001)(85306004)(104016003)(83506001)(90102001)(568964001)(31696002)(79102001)(54356999)(99396002)(31966008)(85852003)(83072002)(92566001)(81342001)(44976005)(19580395003)(20776003)(71186001)(46102001)(74662001)(64706001)(21056001)(81542001)(86362001)(65806001)(70736001)(76482001)(77982001)(92726001)(74502001)(87936001)(4396001)(83322001)(6806004)(107986001);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB046;H:xir-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0318501FAE
+Authentication-Results: spf=pass (sender IP is 62.221.5.235)
+ smtp.mailfrom=michal.simek@xilinx.com; 
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--47Ir30rTcEQf8R6Ol1DKg2pPU9u6tq70C
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-
-2014-08-28 오후 7:59, Jan Kara 쓴 글:
-> On Thu 28-08-14 11:31:46, Gioh Kim wrote:
+On 08/28/2014 07:15 PM, S=C3=B6ren Brinkmann wrote:
+> On Thu, 2014-08-28 at 09:22AM -0700, Soren Brinkmann wrote:
+>> From: Ezra Savard <ezra.savard@xilinx.com>
 >>
->> A buffer cache is allocated from movable area
->> because it is referred for a while and released soon.
->> But some filesystems are taking buffer cache for a long time
->> and it can disturb page migration.
+>> Adds LEDs to the zc702 devicetree for use with the leds-gpio driver.
 >>
->> New APIs are introduced to allocate buffer cache
->> with user specific flag.
->> *_gfp APIs are for user want to set page allocation flag for page cache
->> allocation.
->> And *_unmovable APIs are for the user wants to allocate page cache from
->> non-movable area.
->>
->> Signed-off-by: Gioh Kim <gioh.kim@lge.com>
->    Still a few nits below.
+>> Signed-off-by: Ezra Savard <ezra.savard@xilinx.com>
+>> Reviewed-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 >> ---
->>   fs/buffer.c                 |   54 +++++++++++++++++++++++++++++++++----------
->>   include/linux/buffer_head.h |   14 ++++++++++-
->>   2 files changed, 55 insertions(+), 13 deletions(-)
+>>  arch/arm/boot/dts/zynq-zc702.dts | 10 ++++++++++
+>>  1 file changed, 10 insertions(+)
 >>
->> diff --git a/fs/buffer.c b/fs/buffer.c
->> index 8f05111..ee29bc4 100644
->> --- a/fs/buffer.c
->> +++ b/fs/buffer.c
->> @@ -993,7 +993,7 @@ init_page_buffers(struct page *page, struct block_device *bdev,
->>    */
->>   static int
->>   grow_dev_page(struct block_device *bdev, sector_t block,
->> -               pgoff_t index, int size, int sizebits)
->> +             pgoff_t index, int size, int sizebits, gfp_t gfp)
->    I've noticed that whitespace got damaged in your patches (tabs replaced
-> with spaces). Please use email client that doesn't do this or use
-> attachments. Otherwise patch doesn't apply.
+>> diff --git a/arch/arm/boot/dts/zynq-zc702.dts b/arch/arm/boot/dts/zynq=
+-zc702.dts
+>> index 835c3089c61c..4e9fe26b3e85 100644
+>> --- a/arch/arm/boot/dts/zynq-zc702.dts
+>> +++ b/arch/arm/boot/dts/zynq-zc702.dts
+>> @@ -27,6 +27,16 @@
+>>  		bootargs =3D "console=3DttyPS0,115200 earlyprintk";
+>>  	};
+>> =20
+>> +	gpio-leds {
+> The node name should rather be just 'leds'. That slipped through, sorry=
+=2E
+> Do you want a v2 for that?
 
-I'm sorry, it's my mistake.
-I'm using Thunderbird but looking for another client.
+yes, please send v2.
 
->
->>   {
->>          struct inode *inode = bdev->bd_inode;
->>          struct page *page;
->> @@ -1002,10 +1002,10 @@ grow_dev_page(struct block_device *bdev, sector_t block,
->>          int ret = 0;            /* Will call free_more_memory() */
->>          gfp_t gfp_mask;
->>
->> -       gfp_mask = mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS;
->> -       gfp_mask |= __GFP_MOVABLE;
->> +       gfp_mask = (mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS) | gfp;
->> +
->>          /*
->> -        * XXX: __getblk_slow() can not really deal with failure and
->> +        * XXX: __getblk_gfp() can not really deal with failure and
->>           * will endlessly loop on improvised global reclaim.  Prefer
->>           * looping in the allocator rather than here, at least that
->>           * code knows what it's doing.
->> @@ -1058,7 +1058,7 @@ failed:
->>    * that page was dirty, the buffers are set dirty also.
->>    */
->>   static int
->> -grow_buffers(struct block_device *bdev, sector_t block, int size)
->> +grow_buffers(struct block_device *bdev, sector_t block, int size, gfp_t gfp)
->>   {
->>          pgoff_t index;
->>          int sizebits;
->> @@ -1085,11 +1085,12 @@ grow_buffers(struct block_device *bdev, sector_t block, int size)
->>          }
->>
->>          /* Create a page with the proper size buffers.. */
->> -       return grow_dev_page(bdev, block, index, size, sizebits);
->> +       return grow_dev_page(bdev, block, index, size, sizebits, gfp);
->>   }
->>
->> -static struct buffer_head *
->> -__getblk_slow(struct block_device *bdev, sector_t block, int size)
->> +struct buffer_head *
->> +__getblk_gfp(struct block_device *bdev, sector_t block,
->> +            unsigned size, gfp_t gfp)
->>   {
->>          /* Size must be multiple of hard sectorsize */
->>          if (unlikely(size & (bdev_logical_block_size(bdev)-1) ||
->> @@ -1111,13 +1112,21 @@ __getblk_slow(struct block_device *bdev, sector_t block, int size)
->>                  if (bh)
->>                          return bh;
->>
->> -               ret = grow_buffers(bdev, block, size);
->> +               ret = grow_buffers(bdev, block, size, gfp);
->>                  if (ret < 0)
->>                          return NULL;
->>                  if (ret == 0)
->>                          free_more_memory();
->>          }
->>   }
->> +EXPORT_SYMBOL(__getblk_gfp);
->> +
->> +struct buffer_head *getblk_unmovable(struct block_device *bdev, sector_t block,
->> +                                    unsigned size)
->> +{
->> +       return __getblk_gfp(bdev, block, size, 0);
->> +}
->> +EXPORT_SYMBOL(getblk_unmovable);
->    This can be just an inline function in include/linux/buffer_head.h.
-
-OK. I agreed.
-
->
->>   /*
->>    * The relationship between dirty buffers and dirty pages:
->> @@ -1385,7 +1394,7 @@ __getblk(struct block_device *bdev, sector_t block, unsigned size)
->>
->>          might_sleep();
->>          if (bh == NULL)
->> -               bh = __getblk_slow(bdev, block, size);
->> +               bh = __getblk_gfp(bdev, block, size, __GFP_MOVABLE);
->>          return bh;
->>   }
->>   EXPORT_SYMBOL(__getblk);
->    I'd keep __getblk_slow() internal and just add 'gfp' parameter to it.
-> Then change __getblk() to __getblk_gfp() and pass on the 'gfp' parameter.
-> And finally define inline __getblk() in include/linux/buffer_head.h which
-> just calls __getblk_gfp() with appropriate gfp mask.
->
-> That way you keep all the interfaces completely symmetric. For example now
-> you miss might_sleep() checks from __getblk_gfp().
->
-> 								Honza
->
-
-I got it.
-What about below?: add gfp for __getblk_slow, change __getblk into __getblk_gfp,
-getblk_unmovable and __getblk are, I think, symmetric.
-
-If you say OK, I'm going to send v4 with tabs ;-)
+Thanks,
+Michal
 
 
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 8f05111..21711c78 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -993,7 +993,7 @@ init_page_buffers(struct page *page, struct block_device *bdev,
-   */
-  static int
-  grow_dev_page(struct block_device *bdev, sector_t block,
--               pgoff_t index, int size, int sizebits)
-+             pgoff_t index, int size, int sizebits, gfp_t gfp)
-  {
-         struct inode *inode = bdev->bd_inode;
-         struct page *page;
-@@ -1002,10 +1002,10 @@ grow_dev_page(struct block_device *bdev, sector_t block,
-         int ret = 0;            /* Will call free_more_memory() */
-         gfp_t gfp_mask;
 
--       gfp_mask = mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS;
--       gfp_mask |= __GFP_MOVABLE;
-+       gfp_mask = (mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS) | gfp;
-+
-         /*
--        * XXX: __getblk_slow() can not really deal with failure and
-+        * XXX: __getblk_gfp() can not really deal with failure and
-          * will endlessly loop on improvised global reclaim.  Prefer
-          * looping in the allocator rather than here, at least that
-          * code knows what it's doing.
-@@ -1058,7 +1058,7 @@ failed:
-   * that page was dirty, the buffers are set dirty also.
-   */
-  static int
--grow_buffers(struct block_device *bdev, sector_t block, int size)
-+grow_buffers(struct block_device *bdev, sector_t block, int size, gfp_t gfp)
-  {
-         pgoff_t index;
-         int sizebits;
-@@ -1085,11 +1085,12 @@ grow_buffers(struct block_device *bdev, sector_t block, int size)
-         }
 
-         /* Create a page with the proper size buffers.. */
--       return grow_dev_page(bdev, block, index, size, sizebits);
-+       return grow_dev_page(bdev, block, index, size, sizebits, gfp);
-  }
+--47Ir30rTcEQf8R6Ol1DKg2pPU9u6tq70C
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
--static struct buffer_head *
--__getblk_slow(struct block_device *bdev, sector_t block, int size)
-+struct buffer_head *
-+__getblk_slow(struct block_device *bdev, sector_t block,
-+            unsigned size, gfp_t gfp)
-  {
-         /* Size must be multiple of hard sectorsize */
-         if (unlikely(size & (bdev_logical_block_size(bdev)-1) ||
-@@ -1111,13 +1112,14 @@ __getblk_slow(struct block_device *bdev, sector_t block, int size)
-                 if (bh)
-                         return bh;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
--               ret = grow_buffers(bdev, block, size);
-+               ret = grow_buffers(bdev, block, size, gfp);
-                 if (ret < 0)
-                         return NULL;
-                 if (ret == 0)
-                         free_more_memory();
-         }
-  }
-+EXPORT_SYMBOL(__getblk_slow);
+iEYEARECAAYFAlQACCsACgkQykllyylKDCHOkACfXwIuicyn/1RK5huAlGoCrjnJ
+iAYAn104llAWJWyr+5PWtE9sCZLcYa9I
+=xMBG
+-----END PGP SIGNATURE-----
 
-  /*
-   * The relationship between dirty buffers and dirty pages:
-@@ -1371,24 +1373,25 @@ __find_get_block(struct block_device *bdev, sector_t block, unsigned size)
-  EXPORT_SYMBOL(__find_get_block);
-
-  /*
-- * __getblk will locate (and, if necessary, create) the buffer_head
-+ * __getblk_gfp will locate (and, if necessary, create) the buffer_head
-   * which corresponds to the passed block_device, block and size. The
-   * returned buffer has its reference count incremented.
-   *
-- * __getblk() will lock up the machine if grow_dev_page's try_to_free_buffers()
-- * attempt is failing.  FIXME, perhaps?
-+ * __getblk()_gfp will lock up the machine if grow_dev_page's
-+ * try_to_free_buffers() attempt is failing.  FIXME, perhaps?
-   */
-  struct buffer_head *
--__getblk(struct block_device *bdev, sector_t block, unsigned size)
-+__getblk_gfp(struct block_device *bdev, sector_t block,
-+            unsigned size, gfp_t gfp)
-  {
-         struct buffer_head *bh = __find_get_block(bdev, block, size);
-
-         might_sleep();
-         if (bh == NULL)
--               bh = __getblk_slow(bdev, block, size);
-+               bh = __getblk_slow(bdev, block, size, gfp);
-         return bh;
-  }
--EXPORT_SYMBOL(__getblk);
-+EXPORT_SYMBOL(__getblk_gfp);
-
-  /*
-   * Do async read-ahead on a buffer..
-@@ -1410,18 +1413,39 @@ EXPORT_SYMBOL(__breadahead);
-   *  @size: size (in bytes) to read
-   *
-   *  Reads a specified block, and returns buffer head that contains it.
-+ *  The page cache is allocated from movable area so that it can be migrated.
-   *  It returns NULL if the block was unreadable.
-   */
-  struct buffer_head *
-  __bread(struct block_device *bdev, sector_t block, unsigned size)
-  {
--       struct buffer_head *bh = __getblk(bdev, block, size);
-+       return __bread_gfp(bdev, block, size, __GFP_MOVABLE);
-+}
-+EXPORT_SYMBOL(__bread);
-+
-+/**
-+ *  __bread_gfp() - reads a specified block and returns the bh
-+ *  @bdev: the block_device to read from
-+ *  @block: number of block
-+ *  @size: size (in bytes) to read
-+ *  @gfp: page allocation flag
-+ *
-+ *  Reads a specified block, and returns buffer head that contains it.
-+ *  The page cache can be allocated from non-movable area
-+ *  not to prevent page migration if you set gfp to zero.
-+ *  It returns NULL if the block was unreadable.
-+ */
-+struct buffer_head *
-+__bread_gfp(struct block_device *bdev, sector_t block,
-+                  unsigned size, gfp_t gfp)
-+{
-+       struct buffer_head *bh = __getblk_gfp(bdev, block, size, gfp);
-
-         if (likely(bh) && !buffer_uptodate(bh))
-                 bh = __bread_slow(bh);
-         return bh;
-  }
--EXPORT_SYMBOL(__bread);
-+EXPORT_SYMBOL(__bread_gfp);
-
-  /*
-   * invalidate_bh_lrus() is called rarely - but not only at unmount.
-diff --git a/include/linux/buffer_head.h b/include/linux/buffer_head.h
-index 324329c..6073f5d 100644
---- a/include/linux/buffer_head.h
-+++ b/include/linux/buffer_head.h
-@@ -175,12 +175,14 @@ void __wait_on_buffer(struct buffer_head *);
-  wait_queue_head_t *bh_waitq_head(struct buffer_head *bh);
-  struct buffer_head *__find_get_block(struct block_device *bdev, sector_t block,
-                         unsigned size);
--struct buffer_head *__getblk(struct block_device *bdev, sector_t block,
--                       unsigned size);
-+struct buffer_head *__getblk_gfp(struct block_device *bdev, sector_t block,
-+                                 unsigned size, gfp_t gfp);
-  void __brelse(struct buffer_head *);
-  void __bforget(struct buffer_head *);
-  void __breadahead(struct block_device *, sector_t block, unsigned int size);
-  struct buffer_head *__bread(struct block_device *, sector_t block, unsigned size);
-+struct buffer_head *__bread_gfp(struct block_device *,
-+                               sector_t block, unsigned size, gfp_t gfp);
-  void invalidate_bh_lrus(void);
-  struct buffer_head *alloc_buffer_head(gfp_t gfp_flags);
-  void free_buffer_head(struct buffer_head * bh);
-@@ -295,7 +297,13 @@ static inline void bforget(struct buffer_head *bh)
-  static inline struct buffer_head *
-  sb_bread(struct super_block *sb, sector_t block)
-  {
--       return __bread(sb->s_bdev, block, sb->s_blocksize);
-+       return __bread_gfp(sb->s_bdev, block, sb->s_blocksize, __GFP_MOVABLE);
-+}
-+
-+static inline struct buffer_head *
-+sb_bread_unmovable(struct super_block *sb, sector_t block)
-+{
-+       return __bread_gfp(sb->s_bdev, block, sb->s_blocksize, 0);
-  }
-
-  static inline void
-@@ -307,7 +315,7 @@ sb_breadahead(struct super_block *sb, sector_t block)
-  static inline struct buffer_head *
-  sb_getblk(struct super_block *sb, sector_t block)
-  {
--       return __getblk(sb->s_bdev, block, sb->s_blocksize);
-+       return __getblk_gfp(sb->s_bdev, block, sb->s_blocksize, __GFP_MOVABLE);
-  }
-
-  static inline struct buffer_head *
-@@ -344,6 +352,20 @@ static inline void lock_buffer(struct buffer_head *bh)
-                 __lock_buffer(bh);
-  }
-
-+static inline struct buffer_head *getblk_unmovable(struct block_device *bdev,
-+                                                  sector_t block,
-+                                                  unsigned size)
-+{
-+       return __getblk_gfp(bdev, block, size, 0);
-+}
-+
-+static inline struct buffer_head *__getblk(struct block_device *bdev,
-+                                          sector_t block,
-+                                          unsigned size)
-+{
-+       return __getblk_gfp(bdev, block, size, __GFP_MOVABLE);
-+}
-+
-  extern int __set_page_dirty_buffers(struct page *page);
-
-  #else /* CONFIG_BLOCK */
---
-1.7.9.5
-
+--47Ir30rTcEQf8R6Ol1DKg2pPU9u6tq70C--
