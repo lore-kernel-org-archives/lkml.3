@@ -1,101 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753369AbaH2JdK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 05:33:10 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:36398 "EHLO mailhub1.si.c-s.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753203AbaH2JcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 05:32:08 -0400
-From: Christophe Leroy <christophe.leroy@c-s.fr>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
-        scottwood@freescale.com
-Subject: [PATCH v2 12/19] powerpc/8xx: Don't use MD_TWC for walk
-Message-Id: <20140829091439.74F471ABD63@localhost.localdomain>
-Date: Fri, 29 Aug 2014 11:14:39 +0200 (CEST)
+	id S1753416AbaH2Jdh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 05:33:37 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:61428 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752509AbaH2Jde (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 05:33:34 -0400
+Date: Fri, 29 Aug 2014 10:33:29 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] include/linux/mfd/davinci_voicecodec.h: Fix typo in
+ include guard
+Message-ID: <20140829093329.GG24579@lee--X1>
+References: <1408726143-3014-1-git-send-email-linux@rasmusvillemoes.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1408726143-3014-1-git-send-email-linux@rasmusvillemoes.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MD_TWC can only be used properly with 4k pages.
-So lets calculate level 2 table index by ourselves.
+On Fri, 22 Aug 2014, Rasmus Villemoes wrote:
+> The include guard doesn't work as intended due to the transposition
+> typo DAVINCI -> DAVINIC.
+> 
+> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+> ---
+>  include/linux/mfd/davinci_voicecodec.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+Corrected non-standard $SUBJECT line and applied.
 
----
- arch/powerpc/kernel/head_8xx.S |   28 ++++++++++++----------------
- 1 files changed, 12 insertions(+), 16 deletions(-)
+> diff --git a/include/linux/mfd/davinci_voicecodec.h b/include/linux/mfd/davinci_voicecodec.h
+> index 5166935..cb01496 100644
+> --- a/include/linux/mfd/davinci_voicecodec.h
+> +++ b/include/linux/mfd/davinci_voicecodec.h
+> @@ -21,7 +21,7 @@
+>   */
+>  
+>  #ifndef __LINUX_MFD_DAVINCI_VOICECODEC_H_
+> -#define __LINUX_MFD_DAVINIC_VOICECODEC_H_
+> +#define __LINUX_MFD_DAVINCI_VOICECODEC_H_
+>  
+>  #include <linux/kernel.h>
+>  #include <linux/platform_device.h>
 
-diff --git a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
-index ad15070..0f571f5 100644
---- a/arch/powerpc/kernel/head_8xx.S
-+++ b/arch/powerpc/kernel/head_8xx.S
-@@ -297,8 +297,6 @@ InstructionTLBMiss:
- 	addi	r11, r10, -0x1000
- 	tlbie	r11
- #endif
--	DO_8xx_CPU6(0x3780, r3)
--	mtspr	SPRN_MD_EPN, r10	/* Have to use MD_EPN for walk, MI_EPN can't */
- 
- 	/* If we are faulting a kernel address, we have to use the
- 	 * kernel page tables.
-@@ -326,10 +324,9 @@ InstructionTLBMiss:
- 	ori	r11,r11,1		/* Set valid bit */
- 	DO_8xx_CPU6(0x2b80, r3)
- 	mtspr	SPRN_MI_TWC, r11	/* Set segment attributes */
--	DO_8xx_CPU6(0x3b80, r3)
--	mtspr	SPRN_MD_TWC, r11	/* Load pte table base address */
--	mfspr	r11, SPRN_MD_TWC	/* ....and get the pte address */
--	lwz	r10, 0(r11)	/* Get the pte */
-+	mfspr	r11, SPRN_SRR0	/* Get effective address of fault */
-+	rlwinm	r11, r11, 22, 20, 29	/* Extract level 2 index */
-+	lwzx	r10, r10, r11	/* Get the pte */
- 
- #ifdef CONFIG_SWAP
- 	andi.	r11, r10, _PAGE_ACCESSED | _PAGE_PRESENT
-@@ -395,12 +392,13 @@ DataStoreTLBMiss:
- 
- 	/* We have a pte table, so load fetch the pte from the table.
- 	 */
--	ori	r11, r11, 1	/* Set valid bit in physical L2 page */
--	DO_8xx_CPU6(0x3b80, r3)
--	mtspr	SPRN_MD_TWC, r11	/* Load pte table base address */
--	mfspr	r10, SPRN_MD_TWC	/* ....and get the pte address */
-+	mfspr	r10, SPRN_MD_EPN	/* Get address of fault */
-+	/* Extract level 2 index */
-+	rlwinm	r10, r10, 22, 20, 29
-+	rlwimi	r10, r11, 0, 0, 19	/* Add level 2 base */
- 	lwz	r10, 0(r10)	/* Get the pte */
- 
-+	ori	r11, r11, 1	/* Set valid bit in physical L2 page */
- 	/* Insert the Guarded flag into the TWC from the Linux PTE.
- 	 * It is bit 27 of both the Linux PTE and the TWC (at least
- 	 * I got that right :-).  It will be better when we can put
-@@ -524,18 +522,16 @@ FixupDAR:/* Entry point for dcbx workaround. */
- 	/* fetch instruction from memory. */
- 	mfspr	r10, SPRN_SRR0
- 	andis.	r11, r10, 0x8000	/* Address >= 0x80000000 */
--	DO_8xx_CPU6(0x3780, r3)
--	mtspr	SPRN_MD_EPN, r10
- 	mfspr	r11, SPRN_M_TW	/* Get level 1 table base address */
- 	beq-	3f		/* Branch if user space */
- 	lis	r11, (swapper_pg_dir-PAGE_OFFSET)@h
- 	ori	r11, r11, (swapper_pg_dir-PAGE_OFFSET)@l
- 3:	rlwinm	r10, r10, 12, 20, 29	/* Extract level 1 index */
- 	lwzx	r11, r10, r11	/* Get the level 1 entry */
--	DO_8xx_CPU6(0x3b80, r3)
--	mtspr	SPRN_MD_TWC, r11	/* Load pte table base address */
--	mfspr	r11, SPRN_MD_TWC	/* ....and get the pte address */
--	lwz	r11, 0(r11)	/* Get the pte */
-+	rlwinm	r10, r11,0,0,19	/* Extract page descriptor page address */
-+	mfspr	r11, SPRN_SRR0	/* Get effective address of fault */
-+	rlwinm	r11, r11, 22, 20, 29	/* Extract level 2 index */
-+	lwzx	r11, r10, r11	/* Get the pte */
- #ifdef CONFIG_8xx_CPU6
- 	lwz	r3, 8(r0)	/* restore r3 from memory */
- #endif
 -- 
-1.7.1
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
