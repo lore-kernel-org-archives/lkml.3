@@ -1,90 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753904AbaH2QAY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 12:00:24 -0400
-Received: from vsp-authed02.binero.net ([195.74.38.226]:20409 "EHLO
-	vsp-authed-01-02.binero.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753798AbaH2QAW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 12:00:22 -0400
-From: Andreas Larsson <andreas@gaisler.com>
-To: davem@davemloft.net
-Cc: sparclinux@vger.kernel.org, sam@ravnborg.org, linux-kernel@vger.kernel.org,
-        software@gaisler.com
-Subject: [PATCH] sparc: Let memset return the address argument
-Date: Fri, 29 Aug 2014 17:08:21 +0200
-Message-Id: <1409324901-19291-1-git-send-email-andreas@gaisler.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1753935AbaH2QCS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 12:02:18 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:52492 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753065AbaH2QCP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 12:02:15 -0400
+Date: Fri, 29 Aug 2014 18:02:04 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: tthayer@opensource.altera.com
+Cc: robherring2@gmail.com, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        linux@arm.linux.org.uk, atull@opensource.altera.com,
+        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
+        dougthompson@xmission.com, grant.likely@linaro.org,
+        sameo@linux.intel.com, lee.jones@linaro.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, tthayer.linux@gmail.com
+Subject: Re: [PATCHv10 1/2] edac: altera: Add Altera SDRAM EDAC support.
+Message-ID: <20140829160204.GA8835@nazgul.tnic>
+References: <1407770293-27190-1-git-send-email-tthayer@opensource.altera.com>
+ <1407770293-27190-2-git-send-email-tthayer@opensource.altera.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1407770293-27190-2-git-send-email-tthayer@opensource.altera.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes memset follow the standard (instead of returning 0 on success). This
-is needed when certain versions of gcc optimizes around memset calls and assume
-that the address argument is preserved in %o0.
+On Mon, Aug 11, 2014 at 10:18:12AM -0500, tthayer@opensource.altera.com wrote:
+> From: Thor Thayer <tthayer@opensource.altera.com>
+> 
+> This patch adds support for the CycloneV and ArriaV SDRAM controllers.
+> Correction and reporting of SBEs, Panic on DBEs.
+> 
+> Signed-off-by: Thor Thayer <tthayer@opensource.altera.com>
+> ---
+> v2: Use the SDRAM controller registers to calculate memory size
+>     instead of the Device Tree. Update To & Cc list. Add maintainer
+>     information.
+> 
+> v3: EDAC driver cleanup based on comments from Mailing list.
+> 
+> v4: Panic on DBE. Add macro around inject-error reads to prevent
+>     them from being optimized out. Remove of_match_ptr since this
+>     will always use Device Tree.
+> 
+> v5: Addition of printk to trigger function to ensure read vars
+>     are not optimized out.
+> 
+> v6: Changes to split out shared SDRAM controller reg (offset 0x00)
+>     as a syscon device and allocate ECC specific SDRAM registers
+>     to EDAC.
+> 
+> v7: No changes. Bump for consistency.
+> 
+> v8: Alphabetize headers.
+> 
+> v9: Changes to support a MFD SDRAM controller with nested EDAC.
+> 
+> v10: Revert to version 5 (syscon) and fix errors found in v5.
 
-Signed-off-by: Andreas Larsson <andreas@gaisler.com>
----
- arch/sparc/lib/memset.S |   18 ++++++++++++++----
- 1 file changed, 14 insertions(+), 4 deletions(-)
+EDAC bits look ok to me,
 
-diff --git a/arch/sparc/lib/memset.S b/arch/sparc/lib/memset.S
-index 99c017b..f75e690 100644
---- a/arch/sparc/lib/memset.S
-+++ b/arch/sparc/lib/memset.S
-@@ -3,8 +3,9 @@
-  * Copyright (C) 1996,1997 Jakub Jelinek (jj@sunsite.mff.cuni.cz)
-  * Copyright (C) 1996 David S. Miller (davem@caip.rutgers.edu)
-  *
-- * Returns 0, if ok, and number of bytes not yet set if exception
-- * occurs and we were called as clear_user.
-+ * Calls to memset returns initial %o0. Calls to bzero returns 0, if ok, and
-+ * number of bytes not yet set if exception occurs and we were called as
-+ * clear_user.
-  */
- 
- #include <asm/ptrace.h>
-@@ -65,6 +66,8 @@ __bzero_begin:
- 	.globl	__memset_start, __memset_end
- __memset_start:
- memset:
-+	mov	%o0, %g1
-+	mov	1, %g4
- 	and	%o1, 0xff, %g3
- 	sll	%g3, 8, %g2
- 	or	%g3, %g2, %g3
-@@ -89,6 +92,7 @@ memset:
- 	 sub	%o0, %o2, %o0
- 
- __bzero:
-+	clr	%g4
- 	mov	%g0, %g3
- 1:
- 	cmp	%o1, 7
-@@ -151,8 +155,8 @@ __bzero:
- 	bne,a	8f
- 	 EX(stb	%g3, [%o0], and %o1, 1)
- 8:
--	retl
--	 clr	%o0
-+	b	0f
-+	 nop
- 7:
- 	be	13b
- 	 orcc	%o1, 0, %g0
-@@ -164,6 +168,12 @@ __bzero:
- 	bne	8b
- 	 EX(stb	%g3, [%o0 - 1], add %o1, 1)
- 0:
-+	andcc	%g4, 1, %g0
-+	be	5f
-+	 nop
-+	retl
-+	 mov	%g1, %o0
-+5:
- 	retl
- 	 clr	%o0
- __memset_end:
+Acked-by: Borislav Petkov <bp@suse.de>
+
+Dinh, please convert that version information above to a nice commit
+message and add it when applying as it is very useful for future
+reference.
+
+Thanks.
+
 -- 
-1.7.10.4
-
+Regards/Gruss,
+    Boris.
+--
