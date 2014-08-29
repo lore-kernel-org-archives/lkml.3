@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246AbaH2TST (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 15:18:19 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:45949 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753199AbaH2TSR (ORCPT
+	id S1754319AbaH2TVr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 15:21:47 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:33386 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753607AbaH2TVo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 15:18:17 -0400
-Date: Fri, 29 Aug 2014 12:18:04 -0700
-From: Nicolin Chen <nicoleotsuka@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Mark Rutland <mark.rutland@arm.com>, Xiubo Li <Li.Xiubo@freescale.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCHv2] ASoC: fsl-sai: using 'lsb-first' property instead of
- 'big-endian-data'.
-Message-ID: <20140829191803.GA7756@Asurada>
-References: <20140829110601.GB21473@leverpostej>
- <20140829115943.GV29327@sirena.org.uk>
- <20140829164010.GA5520@Asurada>
- <20140829172601.GC18555@leverpostej>
- <20140829174019.GA5536@Asurada>
- <20140829191141.GA29327@sirena.org.uk>
+	Fri, 29 Aug 2014 15:21:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140829191141.GA29327@sirena.org.uk>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <540032AF.5080504@redhat.com>
+References: <1408401967-27211-1-git-send-email-dmatlack@google.com>
+ <1408401967-27211-2-git-send-email-dmatlack@google.com> <CALzav=fCgNRbfPBxzYR7RL0f8w3qU8h3ZQTRU=P9-djo7fRJ3g@mail.gmail.com>
+ <540032AF.5080504@redhat.com>
+From: David Matlack <dmatlack@google.com>
+Date: Fri, 29 Aug 2014 12:21:23 -0700
+Message-ID: <CALzav=fGNUPX5aNHjm8UkOy_PBMdV78CckmGHurByDDGcsCuDw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] kvm: x86: fix stale mmio cache bug
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: gleb@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Avi Kivity <avi.kivity@gmail.com>, mtosatti@redhat.com,
+        stable@vger.kernel.org,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 29, 2014 at 08:11:41PM +0100, Mark Brown wrote:
-> On Fri, Aug 29, 2014 at 10:40:20AM -0700, Nicolin Chen wrote:
-> 
-> > Agreed, it's better to be described in the commit comments as well.
-> 
-> > And regarding the compatibility with the old DT, I personally prefer
-> > it to be added in the change for safety but if this case is allowable
-> > which I'm not so sure about it, I'm fairly okay with the rename.
-> 
-> If you're happy I can easily add a note, but keeping the old property
+On Fri, Aug 29, 2014 at 12:58 AM, Paolo Bonzini <pbonzini@redhat.com> wrote:
+> Il 28/08/2014 23:10, David Matlack ha scritto:
+>> Paolo,
+>> It seems like this patch ("[PATCH 2/2] kvm: x86: fix stale mmio cache")
+>> is ready to go. Is there anything blocking it from being merged?
+>>
+>> (It should be fine to merge this on its own, independent of the fix
+>> discussed in "[PATCH 1/2] KVM: fix cache stale memslot info with
+>> correct mmio generation number", https://lkml.org/lkml/2014/8/14/62.)
+>
+> I'll post the full series today.  Sorry, I've been swamped a bit.
 
-That will be helpful, thank you :)
+Thanks, I'll start testing it. Hope things quiet down for you soon :)
 
-> would remove all doubt :)  I'll wait for either an ack or a respin.
-
-Yea, I'm fine with it. Acked.
-
-Thanks
-Nicolin
+>
+> Paolo
