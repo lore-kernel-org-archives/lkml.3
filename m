@@ -1,104 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754079AbaH2RZe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 13:25:34 -0400
-Received: from smtp103.biz.mail.gq1.yahoo.com ([98.137.12.178]:28097 "EHLO
-	smtp103.biz.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753378AbaH2RZd (ORCPT
+	id S1754143AbaH2R0O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 13:26:14 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:33271 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754024AbaH2R0M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 13:25:33 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Fri, 29 Aug 2014 13:25:33 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: JS9.YK8VM1kd0uRZeTXf64fShJQjoPDOwSbCZ0c7.L4O3Oq
- 0VK99JMhcFtBFXPMCbUYJOTNP0pm0vO1I_IhbwKXizpLJW7mU50qUjmH8gno
- dYj817Qp8R482PQSXYYK.zYTdsShqUfToIdXAepY629PAc4qq7OIHDGM_4u6
- J1g0SG04tzVeblPzdg84a5POVsk3UNb6M9CgvBRZKRyFL2uvMpvWmZ1PlcCr
- oOzZmnmx7R2rANLR4i3Ta0JuWFHsDr.utOTvNcdtl6ac8wGfyDO4bHU9Prn2
- pG5AO.tIV1U11sdYcA8zdPT3QZ1MwBkX_pgA36tOAGBgObDz99frspUrawTs
- Uk5_I1N5UDLEwUhUSMFvOVFPKXTNEFziK2oL94XWeCT4iz0OZc.3J7wCN_UF
- SGJYGHeboeo3hB3XRGEg_qwtf5VUgZnB8O.jVqZ0t3aZuyx2oS4clNjJRGrR
- u6Lf5Qjy.9.IKJEdZATxz85GX3_hM3MxF9dDc3mTXrjwlQdmtXZO4j56vuzc
- 2_uroy8MJM6D602GaQsE9YW5RHNz76RNm3vXOj1oMseD65zjdEMRuOJ8Kmek
- bi2TZhJqT7pq.bmbMyJu75mJdveUMKJeb1m2k5HEjKTQ5btBVCsGyn4vTbXO
- tiucjVZ54e4U-
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <5400B608.1070507@schaufler-ca.com>
-Date: Fri, 29 Aug 2014 10:19:04 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 29 Aug 2014 13:26:12 -0400
+Message-ID: <5400B7AE.5000600@infradead.org>
+Date: Fri, 29 Aug 2014 10:26:06 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Lukasz Pawelczyk <l.pawelczyk@samsung.com>, r.krypa@samsung.com,
-        havner@gmail.com, m.lis@samsung.com,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        James Morris <james.l.morris@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-CC: Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH 1/3] Small fixes in comments describing function parameters
-References: <1409324575-12057-1-git-send-email-l.pawelczyk@samsung.com>
-In-Reply-To: <1409324575-12057-1-git-send-email-l.pawelczyk@samsung.com>
+To: Masanari Iida <standby24x7@gmail.com>, trivial@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH/v2] [trivial] treewide: Fix typo in printk
+References: <53FF8D08.5050900@infradead.org> <1409323053-6582-1-git-send-email-standby24x7@gmail.com>
+In-Reply-To: <1409323053-6582-1-git-send-email-standby24x7@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/29/2014 8:02 AM, Lukasz Pawelczyk wrote:
-> Signed-off-by: Lukasz Pawelczyk <l.pawelczyk@samsung.com>
+On 08/29/14 07:37, Masanari Iida wrote:
+> This patch fix spelling typo in printk.
+> 
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+> Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-Applied to git://git.gitorious.org/smack-next/kernel.git#smack-for-3.18
+Acked-by: Randy Dunlap <rdunlap@infradead.org>
+
+Thanks.
 
 > ---
->  security/smack/smack_lsm.c | 18 +++++++++---------
->  1 file changed, 9 insertions(+), 9 deletions(-)
->
-> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-> index 154548e..478d99e 100644
-> --- a/security/smack/smack_lsm.c
-> +++ b/security/smack/smack_lsm.c
-> @@ -771,8 +771,8 @@ static void smack_inode_free_security(struct inode *inode)
->  
->  /**
->   * smack_inode_init_security - copy out the smack from an inode
-> - * @inode: the inode
-> - * @dir: unused
-> + * @inode: the newly created inode
-> + * @dir: containing directory object
->   * @qstr: unused
->   * @name: where to put the attribute name
->   * @value: where to put the attribute value
-> @@ -923,10 +923,10 @@ static int smack_inode_rmdir(struct inode *dir, struct dentry *dentry)
->  
->  /**
->   * smack_inode_rename - Smack check on rename
-> - * @old_inode: the old directory
-> - * @old_dentry: unused
-> - * @new_inode: the new directory
-> - * @new_dentry: unused
-> + * @old_inode: unused
-> + * @old_dentry: the old object
-> + * @new_inode: unused
-> + * @new_dentry: the new object
->   *
->   * Read and write access is required on both the old and
->   * new directories.
-> @@ -1017,7 +1017,7 @@ static int smack_inode_setattr(struct dentry *dentry, struct iattr *iattr)
->  
->  /**
->   * smack_inode_getattr - Smack check for getting attributes
-> - * @mnt: unused
-> + * @mnt: vfsmount of the object
->   * @dentry: the object
->   *
->   * Returns 0 if access is permitted, an error code otherwise
-> @@ -1042,8 +1042,8 @@ static int smack_inode_getattr(struct vfsmount *mnt, struct dentry *dentry)
->   * smack_inode_setxattr - Smack check for setting xattrs
->   * @dentry: the object
->   * @name: name of the attribute
-> - * @value: unused
-> - * @size: unused
-> + * @value: value of the attribute
-> + * @size: size of the value
->   * @flags: unused
->   *
->   * This protects the Smack attribute explicitly.
+>  arch/m68k/Kconfig.devices                   | 2 +-
+>  arch/mips/lantiq/falcon/sysctrl.c           | 2 +-
+>  arch/mips/lantiq/xway/sysctrl.c             | 2 +-
+>  arch/mips/pci/pci-lantiq.c                  | 2 +-
+>  arch/powerpc/kvm/e500_mmu_host.c            | 2 +-
+>  arch/powerpc/platforms/powernv/opal.c       | 2 +-
+>  drivers/crypto/qat/qat_common/adf_ctl_drv.c | 2 +-
+>  drivers/infiniband/hw/ocrdma/ocrdma_verbs.c | 2 +-
+>  drivers/net/ethernet/mellanox/mlx4/cmd.c    | 4 ++--
+>  drivers/net/ethernet/via/via-velocity.c     | 2 +-
+>  drivers/net/wireless/libertas/cfg.c         | 2 +-
+>  drivers/scsi/fnic/fnic_debugfs.c            | 2 +-
+>  drivers/scsi/fnic/fnic_trace.c              | 2 +-
+>  drivers/video/backlight/88pm860x_bl.c       | 2 +-
+>  net/netfilter/ipset/ip_set_core.c           | 2 +-
+>  scripts/sign-file                           | 2 +-
+>  16 files changed, 17 insertions(+), 17 deletions(-)
 
+
+-- 
+~Randy
