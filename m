@@ -1,85 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752812AbaH2JOL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 05:14:11 -0400
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:43156 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752701AbaH2JOH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 05:14:07 -0400
-Date: Fri, 29 Aug 2014 10:13:59 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
-Cc: Andrew Lunn <andrew@lunn.ch>, Arnaud Ebalard <arno@natisbad.org>,
-        DEVICE TREE <devicetree@vger.kernel.org>,
-        Florian Vaussard <florian.vaussard@epfl.ch>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Jonathan Cameron <jic23@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        LINUX ARM KERNEL <linux-arm-kernel@lists.infradead.org>,
-        LINUX KERNEL <linux-kernel@vger.kernel.org>,
-        LINUX SH <linux-sh@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Mark Brown <broonie@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Martin Fuzzey <mfuzzey@parkeon.com>, Pawel Moll <pawel.moll@arm.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Rob Herring <robh+dt@kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Silvio F <silvio.fricke@gmail.com>, Simon Horman <horms@verge.net.au>,
-        Support Opensource <support.opensource@diasemi.com>,
-        Thierry Reding <thierry.reding@gmail.com>
-Subject: [GIT PULL] MFD: ARM (IMX & R8): Immutable branch for Dialog
- Semiconductor - vendor prefix consolidation
-Message-ID: <20140829091359.GF24579@lee--X1>
-References: <201408221446.s7MEkNVF001775@swsrvapps-01.diasemi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201408221446.s7MEkNVF001775@swsrvapps-01.diasemi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752889AbaH2JOk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 05:14:40 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:36033 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751006AbaH2JOj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 05:14:39 -0400
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
+        scottwood@freescale.com
+Subject: [PATCH v2 01/19] powerpc/8xx: Declare SPRG2 as a SCRATCH register
+Message-Id: <20140829091437.44DE71ABD63@localhost.localdomain>
+Date: Fri, 29 Aug 2014 11:14:37 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IMX and R8 sub-arch Maintainers,
+Since coming 469d62be9263b92f2c3329540cbb1c076111f4f3, SPRG2 is used as a
+scratch register just like SPRG0 and SPRG1. So Declare it as such and fix
+the comment which is not valid anymore since that commit.
 
-The following changes since commit 52addcf9d6669fa439387610bc65c92fa0980cef:
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
-  Linux 3.17-rc2 (2014-08-25 15:36:20 -0700)
+---
+ arch/powerpc/include/asm/reg.h |    3 ++-
+ arch/powerpc/kernel/head_8xx.S |   10 +++++-----
+ 2 files changed, 7 insertions(+), 6 deletions(-)
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/ib-mfd-arm-v3.18
-
-for you to fetch changes up to bd597f47ca4bf7a522a0298a95c7f9b2f0a75b9e:
-
-  devicetree: Dialog Semiconductor consolidate existing vendor prefixes to standardise on 'dlg' (2014-08-29 09:26:29 +0100)
-
-----------------------------------------------------------------
-Immutable branch between MFD and some ARM sub-arch maintainers.
-----------------------------------------------------------------
-Steve Twiss (1):
-      devicetree: Dialog Semiconductor consolidate existing vendor prefixes to standardise on 'dlg'
-
- .../devicetree/bindings/i2c/trivial-devices.txt    |  2 +-
- .../devicetree/bindings/regulator/da9210.txt       |  4 ++--
- .../devicetree/bindings/vendor-prefixes.txt        |  1 +
- arch/arm/boot/dts/imx53-smd.dts                    |  2 +-
- arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi       |  2 +-
- arch/arm/boot/dts/r8a7790-lager.dts                |  2 +-
- arch/arm/boot/dts/r8a7791-koelsch.dts              |  2 +-
- drivers/mfd/da9055-core.c                          | 26 +++++++++++-----------
- 8 files changed, 21 insertions(+), 20 deletions(-)
-
+diff --git a/arch/powerpc/include/asm/reg.h b/arch/powerpc/include/asm/reg.h
+index cb9c174..b6a7d62 100644
+--- a/arch/powerpc/include/asm/reg.h
++++ b/arch/powerpc/include/asm/reg.h
+@@ -888,7 +888,7 @@
+  * 32-bit 8xx:
+  *	- SPRG0 scratch for exception vectors
+  *	- SPRG1 scratch for exception vectors
+- *	- SPRG2 apparently unused but initialized
++ *	- SPRG2 scratch for exception vectors
+  *
+  */
+ #ifdef CONFIG_PPC64
+@@ -994,6 +994,7 @@
+ #ifdef CONFIG_8xx
+ #define SPRN_SPRG_SCRATCH0	SPRN_SPRG0
+ #define SPRN_SPRG_SCRATCH1	SPRN_SPRG1
++#define SPRN_SPRG_SCRATCH2	SPRN_SPRG2
+ #endif
+ 
+ 
+diff --git a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
+index 55d12fb..1329c5a 100644
+--- a/arch/powerpc/kernel/head_8xx.S
++++ b/arch/powerpc/kernel/head_8xx.S
+@@ -301,7 +301,7 @@ InstructionTLBMiss:
+ 	stw	r11, 4(r0)
+ #else
+ 	mtspr	SPRN_DAR, r10
+-	mtspr	SPRN_SPRG2, r11
++	mtspr	SPRN_SPRG_SCRATCH2, r11
+ #endif
+ 	mfspr	r10, SPRN_SRR0	/* Get effective address of fault */
+ #ifdef CONFIG_8xx_CPU15
+@@ -363,7 +363,7 @@ InstructionTLBMiss:
+ 	mfspr	r10, SPRN_DAR
+ 	mtcr	r10
+ 	mtspr	SPRN_DAR, r11	/* Tag DAR */
+-	mfspr	r11, SPRN_SPRG2
++	mfspr	r11, SPRN_SPRG_SCRATCH2
+ #else
+ 	lwz	r11, 0(r0)
+ 	mtcr	r11
+@@ -386,7 +386,7 @@ InstructionTLBMiss:
+ 	mtcr	r10
+ 	li	r11, 0x00f0
+ 	mtspr	SPRN_DAR, r11	/* Tag DAR */
+-	mfspr	r11, SPRN_SPRG2
++	mfspr	r11, SPRN_SPRG_SCRATCH2
+ #else
+ 	lwz	r11, 0(r0)
+ 	mtcr	r11
+@@ -409,7 +409,7 @@ DataStoreTLBMiss:
+ 	stw	r11, 4(r0)
+ #else
+ 	mtspr	SPRN_DAR, r10
+-	mtspr	SPRN_SPRG2, r11
++	mtspr	SPRN_SPRG_SCRATCH2, r11
+ #endif
+ 	mfspr	r10, SPRN_M_TWB	/* Get level 1 table entry address */
+ 
+@@ -487,7 +487,7 @@ DataStoreTLBMiss:
+ 	mfspr	r10, SPRN_DAR
+ 	mtcr	r10
+ 	mtspr	SPRN_DAR, r11	/* Tag DAR */
+-	mfspr	r11, SPRN_SPRG2
++	mfspr	r11, SPRN_SPRG_SCRATCH2
+ #else
+ 	mtspr	SPRN_DAR, r11	/* Tag DAR */
+ 	lwz	r11, 0(r0)
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.1
+
