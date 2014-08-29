@@ -1,78 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753631AbaH2SSU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 14:18:20 -0400
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:58117 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753094AbaH2SSR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 14:18:17 -0400
-X-IronPort-AV: E=Sophos;i="5.04,425,1406617200"; 
-   d="scan'208";a="43853533"
-Message-ID: <5400C3E8.9040500@broadcom.com>
-Date: Fri, 29 Aug 2014 11:18:16 -0700
-From: Franky Lin <frankyl@broadcom.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753800AbaH2SSk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 14:18:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23582 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753061AbaH2SSi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 14:18:38 -0400
+Date: Fri, 29 Aug 2014 20:16:03 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fenghua Yu <fenghua.yu@intel.com>, Suresh Siddha <sbsiddha@gmail.com>,
+        Bean Anderson <bean@azulsystems.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/4] x86, fpu: introduce per-cpu "bool in_kernel_fpu"
+Message-ID: <20140829181603.GB30659@redhat.com>
+References: <20140827185138.GA12487@redhat.com> <CA+55aFwi-S27_maZXU+baOqPAYfi_NTGcfbnRnk45+B8+i4hVQ@mail.gmail.com> <20140828111628.GB15276@redhat.com> <20140829181533.GA30659@redhat.com>
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Brett Rudley <brudley@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>
-CC: <linux-wireless@vger.kernel.org>, <brcm80211-dev-list@broadcom.com>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] brcmfmac: BRCMFMAC should depend on HAS_DMA
-References: <1409329464-768-1-git-send-email-geert@linux-m68k.org>
-In-Reply-To: <1409329464-768-1-git-send-email-geert@linux-m68k.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140829181533.GA30659@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+interrupted_kernel_fpu_idle() tries to detect if kernel_fpu_begin()
+is safe or not. In particulat it should obviously deny the nested
+kernel_fpu_begin() and this logic doesn't look clean.
 
-On 8/29/2014 9:24 AM, Geert Uytterhoeven wrote:
-> If NO_DMA=y:
->
-> drivers/built-in.o: In function `brcmf_msgbuf_release_array':
-> msgbuf.c:(.text+0x34dbbe): undefined reference to `dma_unmap_single'
-> drivers/built-in.o: In function `brcmf_proto_msgbuf_detach':
-> (.text+0x34dca4): undefined reference to `dma_free_coherent'
-> drivers/built-in.o: In function `brcmf_msgbuf_get_pktid':
-> msgbuf.c:(.text+0x34dd2a): undefined reference to `dma_unmap_single'
-> drivers/built-in.o: In function `brcmf_msgbuf_alloc_pktid':
-> msgbuf.c:(.text+0x34de12): undefined reference to `dma_map_single'
-> msgbuf.c:(.text+0x34de20): undefined reference to `dma_mapping_error'
-> drivers/built-in.o: In function `brcmf_msgbuf_remove_flowring':
-> msgbuf.c:(.text+0x34e3d6): undefined reference to `dma_free_coherent'
-> drivers/built-in.o: In function `brcmf_msgbuf_flowring_create':
-> msgbuf.c:(.text+0x34e4f8): undefined reference to `dma_alloc_coherent'
-> drivers/built-in.o: In function `brcmf_proto_msgbuf_attach':
-> (.text+0x34f5fe): undefined reference to `dma_alloc_coherent'
-> drivers/built-in.o: In function `brcmf_proto_msgbuf_attach':
-> (.text+0x34f798): undefined reference to `dma_free_coherent'
->
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
->   drivers/net/wireless/brcm80211/Kconfig | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/net/wireless/brcm80211/Kconfig b/drivers/net/wireless/brcm80211/Kconfig
-> index b8e2561ea645..2e0da8925834 100644
-> --- a/drivers/net/wireless/brcm80211/Kconfig
-> +++ b/drivers/net/wireless/brcm80211/Kconfig
-> @@ -19,7 +19,7 @@ config BRCMSMAC
->
->   config BRCMFMAC
->   	tristate "Broadcom IEEE802.11n embedded FullMAC WLAN driver"
-> -	depends on CFG80211
-> +	depends on CFG80211A && HAS_DMA
->   	select BRCMUTIL
->   	---help---
->   	  This module adds support for embedded wireless adapters based on
+If use_eager_fpu() == T we rely on a) __thread_has_fpu() check in
+interrupted_kernel_fpu_idle(), and b) on the fact that _begin() does
+__thread_clear_has_fpu().
 
-Thanks for reporting this. All complaints are from msgbuf code. So the 
-dependency should belong to BRCMFMAC_PCIE not BRCMFMAC.
+Otherwise we demand that the interrupted task has no FPU if it is in
+kernel mode, this works becase __kernel_fpu_begin() does clts().
 
-Thanks,
-Franky
+Add the per-cpu "bool in_kernel_fpu" variable, and change this code
+to check/set/clear it. This allows to do some cleanups (see the next
+changes) and fixes.
+
+Note that the current code looks racy. Say, kernel_fpu_begin() right
+after math_state_restore()->__thread_fpu_begin() will overwrite the
+regs we are going to restore. This patch doesn't even try to fix this,
+it just adds the comment, but "in_kernel_fpu" can also be used to
+implement kernel_fpu_disable() / kernel_fpu_enable().
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ arch/x86/include/asm/i387.h |    2 +-
+ arch/x86/kernel/i387.c      |   10 ++++++++++
+ 2 files changed, 11 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
+index ed8089d..5e275d3 100644
+--- a/arch/x86/include/asm/i387.h
++++ b/arch/x86/include/asm/i387.h
+@@ -40,8 +40,8 @@ extern void __kernel_fpu_end(void);
+ 
+ static inline void kernel_fpu_begin(void)
+ {
+-	WARN_ON_ONCE(!irq_fpu_usable());
+ 	preempt_disable();
++	WARN_ON_ONCE(!irq_fpu_usable());
+ 	__kernel_fpu_begin();
+ }
+ 
+diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+index d5dd808..8fb8868 100644
+--- a/arch/x86/kernel/i387.c
++++ b/arch/x86/kernel/i387.c
+@@ -19,6 +19,8 @@
+ #include <asm/fpu-internal.h>
+ #include <asm/user.h>
+ 
++static DEFINE_PER_CPU(bool, in_kernel_fpu);
++
+ /*
+  * Were we in an interrupt that interrupted kernel mode?
+  *
+@@ -33,6 +35,9 @@
+  */
+ static inline bool interrupted_kernel_fpu_idle(void)
+ {
++	if (this_cpu_read(in_kernel_fpu))
++		return false;
++
+ 	if (use_eager_fpu())
+ 		return __thread_has_fpu(current);
+ 
+@@ -73,6 +78,9 @@ void __kernel_fpu_begin(void)
+ {
+ 	struct task_struct *me = current;
+ 
++	this_cpu_write(in_kernel_fpu, true);
++
++	/* FIXME: race with math_state_restore()-like code */
+ 	if (__thread_has_fpu(me)) {
+ 		__thread_clear_has_fpu(me);
+ 		__save_init_fpu(me);
+@@ -99,6 +107,8 @@ void __kernel_fpu_end(void)
+ 	} else {
+ 		stts();
+ 	}
++
++	this_cpu_write(in_kernel_fpu, false);
+ }
+ EXPORT_SYMBOL(__kernel_fpu_end);
+ 
+-- 
+1.5.5.1
+
+
