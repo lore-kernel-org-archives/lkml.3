@@ -1,72 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753167AbaH2LIS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 07:08:18 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39364 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751461AbaH2LIR (ORCPT
+	id S1753213AbaH2LI3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 07:08:29 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:53328 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751461AbaH2LI1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 07:08:17 -0400
-Date: Fri, 29 Aug 2014 12:08:03 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Addy Ke <addy.ke@rock-chips.com>, Heiko Stuebner <heiko@sntech.de>,
-        "Jeffy.Chen" <jeffy.chen@rock-chips.com>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>, amstan@chromium.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, linux-spi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140829110803.GO29327@sirena.org.uk>
-References: <1409269428-24680-1-git-send-email-dianders@chromium.org>
+	Fri, 29 Aug 2014 07:08:27 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XMHqbYJb993HXwLR"
-Content-Disposition: inline
-In-Reply-To: <1409269428-24680-1-git-send-email-dianders@chromium.org>
-X-Cookie: Simulated picture.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] spi/rockchip: Avoid accidentally turning off the clock
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <1408530464-8025-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1408530464-8025-1-git-send-email-mika.westerberg@linux.intel.com>
+Date: Fri, 29 Aug 2014 13:08:25 +0200
+Message-ID: <CAPDyKFp+NYUOVwjiHLDAB2idSXmUFDGNGxVLUyNRW_XuVCoRkw@mail.gmail.com>
+Subject: Re: [PATCH] mmc: sdhci: Add PCI IDs for Intel Braswell
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Chris Ball <chris@printf.net>, Alan Cox <alan@linux.intel.com>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 20 August 2014 12:27, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
+> From: Alan Cox <alan@linux.intel.com>
+>
+> The hardware is the same as used in Baytrail. Add these new PCI IDs to the
+> driver's list of supported IDs.
+>
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
---XMHqbYJb993HXwLR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks! Applied for next.
 
-On Thu, Aug 28, 2014 at 04:43:48PM -0700, Doug Anderson wrote:
-> If our client is requesting a clock that is above the maximum clock
-> then the following division will result in 0:
->   rs->max_freq / rs->speed
+Kind regards
+Uffe
 
-Applied, thanks.
-
---XMHqbYJb993HXwLR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUAF8QAAoJELSic+t+oim99kIP/3uRNvfVY4neyrcFLxk1xnYG
-3JU3o5OVMkWVN1ltT7fh18ukOXO9S2MGXzBSHbHuhnt46iqJx1pJll+8eftzrPJZ
-zYyoubftXWJJquP1Ih+m4sicqMw9BXkWbfUt/i5pWwGvjGbwAZFPAwe83PXMx8YU
-LFApMDg9+GX/QNrkjZfFiJwH9s2bsioupDBMtMeL5rxecGWgE5fSXd5JRyXuVCF7
-X5k3qVIr/ulBVv/E7Mpt5IbJjlTAGEfObOuH6t8hu3xs3hP6riG345XTTV2HHSek
-b6fuKmgcLOh/pOA1cXoCzqHdAc/X690m8W6y/U30YlOoPa6+wyLmMY1jclr26Kx6
-os6poTlUEHPYDXrTzYMlae3TF64lrSMTNHRxHQNoAfA8B17bLOkzqNrrgfH/BTxK
-I/3tzvJq/9z1+bjzK4bv06OCkfjwmN7TCehVWeO+A7MBKOm6y3E83c6003fwb2eb
-JO6KOt959b8fCoNCXhVBJpu+5dEAFRoo0GziFEJLEM5HttCGhuH6Q5ilJlqakK2W
-rwyCoqyunqFxt/CiT58KANfRku0Q2UntXIHj+1M449EE2XEQTHUPaSaN+SXYqho4
-n9R5UH3y7QeAMUnczG3iTxJTMVHBsyXjSKi8uPZMagfgbPN3HTC2dqJzb7+vw3of
-+ygK23mpVXd2kgAyHLbU
-=Rg55
------END PGP SIGNATURE-----
-
---XMHqbYJb993HXwLR--
+> ---
+>  drivers/mmc/host/sdhci-pci.c | 23 +++++++++++++++++++++++
+>  drivers/mmc/host/sdhci-pci.h |  3 +++
+>  2 files changed, 26 insertions(+)
+>
+> diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
+> index c3a1debc9289..03daad56d884 100644
+> --- a/drivers/mmc/host/sdhci-pci.c
+> +++ b/drivers/mmc/host/sdhci-pci.c
+> @@ -876,6 +876,29 @@ static const struct pci_device_id pci_ids[] = {
+>                 .driver_data    = (kernel_ulong_t)&sdhci_intel_byt_emmc,
+>         },
+>
+> +       {
+> +               .vendor         = PCI_VENDOR_ID_INTEL,
+> +               .device         = PCI_DEVICE_ID_INTEL_BSW_EMMC,
+> +               .subvendor      = PCI_ANY_ID,
+> +               .subdevice      = PCI_ANY_ID,
+> +               .driver_data    = (kernel_ulong_t)&sdhci_intel_byt_emmc,
+> +       },
+> +
+> +       {
+> +               .vendor         = PCI_VENDOR_ID_INTEL,
+> +               .device         = PCI_DEVICE_ID_INTEL_BSW_SDIO,
+> +               .subvendor      = PCI_ANY_ID,
+> +               .subdevice      = PCI_ANY_ID,
+> +               .driver_data    = (kernel_ulong_t)&sdhci_intel_byt_sdio,
+> +       },
+> +
+> +       {
+> +               .vendor         = PCI_VENDOR_ID_INTEL,
+> +               .device         = PCI_DEVICE_ID_INTEL_BSW_SD,
+> +               .subvendor      = PCI_ANY_ID,
+> +               .subdevice      = PCI_ANY_ID,
+> +               .driver_data    = (kernel_ulong_t)&sdhci_intel_byt_sd,
+> +       },
+>
+>         {
+>                 .vendor         = PCI_VENDOR_ID_INTEL,
+> diff --git a/drivers/mmc/host/sdhci-pci.h b/drivers/mmc/host/sdhci-pci.h
+> index c101477ef3be..9c1909b2a3ad 100644
+> --- a/drivers/mmc/host/sdhci-pci.h
+> +++ b/drivers/mmc/host/sdhci-pci.h
+> @@ -11,6 +11,9 @@
+>  #define PCI_DEVICE_ID_INTEL_BYT_SDIO   0x0f15
+>  #define PCI_DEVICE_ID_INTEL_BYT_SD     0x0f16
+>  #define PCI_DEVICE_ID_INTEL_BYT_EMMC2  0x0f50
+> +#define PCI_DEVICE_ID_INTEL_BSW_EMMC   0x2294
+> +#define PCI_DEVICE_ID_INTEL_BSW_SDIO   0x2295
+> +#define PCI_DEVICE_ID_INTEL_BSW_SD     0x2296
+>  #define PCI_DEVICE_ID_INTEL_MRFL_MMC   0x1190
+>  #define PCI_DEVICE_ID_INTEL_CLV_SDIO0  0x08f9
+>  #define PCI_DEVICE_ID_INTEL_CLV_SDIO1  0x08fa
+> --
+> 2.1.0
+>
