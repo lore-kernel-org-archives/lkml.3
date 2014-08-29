@@ -1,153 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052AbaH2Ocr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 10:32:47 -0400
-Received: from smtp105.ord1c.emailsrvr.com ([108.166.43.105]:59640 "EHLO
-	smtp105.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752877AbaH2Oco (ORCPT
+	id S1753555AbaH2OfG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 10:35:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56842 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752666AbaH2OfE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 10:32:44 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-To: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Andy Gross <agross@codeaurora.org>
-Subject: [PATCH v3 4/4] pinctrl: qcom: Add support for reset for apq8064
-Date: Fri, 29 Aug 2014 20:00:59 +0530
-Message-Id: <1409322659-17693-5-git-send-email-pramod.gurav@smartplayin.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1409322659-17693-1-git-send-email-pramod.gurav@smartplayin.com>
-References: <1409322659-17693-1-git-send-email-pramod.gurav@smartplayin.com>
+	Fri, 29 Aug 2014 10:35:04 -0400
+Message-ID: <54008F96.20601@canonical.com>
+Date: Fri, 29 Aug 2014 16:35:02 +0200
+From: Stefan Bader <stefan.bader@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Kees Cook <keescook@chromium.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Solved the Xen PV/KASLR riddle
+References: <20140827204940.GA10556@laptop.dumpdata.com> <1409248903-19625-1-git-send-email-stefan.bader@canonical.com> <20140829140823.GF3609@laptop.dumpdata.com> <54008DDA.3040701@canonical.com> <54008EAE.2020601@citrix.com>
+In-Reply-To: <54008EAE.2020601@citrix.com>
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="3ggTPdltkJnGeVeCMlbKCVdTk26BETpqX"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for reset functions to reboot the boards
-with soc apq8064.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--3ggTPdltkJnGeVeCMlbKCVdTk26BETpqX
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-CC: Linus Walleij <linus.walleij@linaro.org>
-CC: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-CC: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: Stephen Boyd <sboyd@codeaurora.org>
-CC: Andy Gross <agross@codeaurora.org>
-Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
----
- drivers/pinctrl/qcom/pinctrl-apq8064.c |    7 ++++++-
- drivers/pinctrl/qcom/pinctrl-msm.c     |   30 ++++++++++++++++++++++++++++++
- 2 files changed, 36 insertions(+), 1 deletions(-)
+On 29.08.2014 16:31, David Vrabel wrote:
+> On 29/08/14 15:27, Stefan Bader wrote:
+>>
+>> Ok, I rework the patch and re-send it (freshly, iow not part of this t=
+hread).
+>> And while I am at it, I would add the stable tag.
+>=20
+> Can you use a different title? Perhaps:
+>=20
+> x86/xen: fix 64-bit PV guest kernel page tables for KASLR
+>=20
+> David
+>=20
+I can change the title but would not want to include KASLR. Because that =
+is just
+indirectly responsible. This is a fix for a problem that always was there=
+ but
+just escaped notice until KASLR caused the layout to change. This could h=
+ave
+done independently before.
 
-diff --git a/drivers/pinctrl/qcom/pinctrl-apq8064.c b/drivers/pinctrl/qcom/pinctrl-apq8064.c
-index feb6f15..ef1263c 100644
---- a/drivers/pinctrl/qcom/pinctrl-apq8064.c
-+++ b/drivers/pinctrl/qcom/pinctrl-apq8064.c
-@@ -324,6 +324,7 @@ enum apq8064_functions {
- 	APQ_MUX_tsif1,
- 	APQ_MUX_tsif2,
- 	APQ_MUX_usb2_hsic,
-+	APQ_MUX_ps_hold,
- 	APQ_MUX_NA,
- };
- 
-@@ -351,6 +352,9 @@ static const char * const gpio_groups[] = {
- 	"gpio78", "gpio79", "gpio80", "gpio81", "gpio82", "gpio83", "gpio84",
- 	"gpio85", "gpio86", "gpio87", "gpio88", "gpio89"
- };
-+static const char * const ps_hold_groups[] = {
-+	"gpio78"
-+};
- static const char * const gsbi1_groups[] = {
- 	"gpio18", "gpio19", "gpio20", "gpio21"
- };
-@@ -477,6 +481,7 @@ static const struct msm_function apq8064_functions[] = {
- 	FUNCTION(tsif1),
- 	FUNCTION(tsif2),
- 	FUNCTION(usb2_hsic),
-+	FUNCTION(ps_hold),
- };
- 
- static const struct msm_pingroup apq8064_groups[] = {
-@@ -558,7 +563,7 @@ static const struct msm_pingroup apq8064_groups[] = {
- 	PINGROUP(75, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
- 	PINGROUP(76, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
- 	PINGROUP(77, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
--	PINGROUP(78, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(78, ps_hold, NA, NA, NA, NA, NA, NA, NA, NA, NA),
- 	PINGROUP(79, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
- 	PINGROUP(80, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
- 	PINGROUP(81, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
-diff --git a/drivers/pinctrl/qcom/pinctrl-msm.c b/drivers/pinctrl/qcom/pinctrl-msm.c
-index 9175bbc..80a64ca 100644
---- a/drivers/pinctrl/qcom/pinctrl-msm.c
-+++ b/drivers/pinctrl/qcom/pinctrl-msm.c
-@@ -12,6 +12,7 @@
-  * GNU General Public License for more details.
-  */
- 
-+#include <linux/delay.h>
- #include <linux/err.h>
- #include <linux/io.h>
- #include <linux/module.h>
-@@ -27,12 +28,15 @@
- #include <linux/interrupt.h>
- #include <linux/spinlock.h>
- 
-+#include <asm/system_misc.h>
-+
- #include "../core.h"
- #include "../pinconf.h"
- #include "pinctrl-msm.h"
- #include "../pinctrl-utils.h"
- 
- #define MAX_NR_GPIO 300
-+#define PS_HOLD_OFFSET 0x820
- 
- /**
-  * struct msm_pinctrl - state for a pinctrl-msm device
-@@ -850,6 +854,30 @@ static int msm_gpio_init(struct msm_pinctrl *pctrl)
- 	return 0;
- }
- 
-+#ifdef CONFIG_ARM
-+static void __iomem *msm_ps_hold;
-+
-+static void msm_reset(enum reboot_mode reboot_mode, const char *cmd)
-+{
-+	writel(0, msm_ps_hold);
-+	mdelay(10000);
-+}
-+
-+static void msm_pinctrl_setup_pm_reset(struct msm_pinctrl *pctrl)
-+{
-+	int i = 0;
-+	const struct msm_function *func = pctrl->soc->functions;
-+
-+	for (; i <= pctrl->soc->nfunctions; i++)
-+		if (!strcmp(func[i].name, "ps_hold")) {
-+			msm_ps_hold = pctrl->regs + PS_HOLD_OFFSET;
-+			arm_pm_restart = msm_reset;
-+		}
-+}
-+#else
-+static void msm_pinctrl_setup_pm_reset(const struct msm_pinctrl *pctrl) {}
-+#endif
-+
- int msm_pinctrl_probe(struct platform_device *pdev,
- 		      const struct msm_pinctrl_soc_data *soc_data)
- {
-@@ -873,6 +901,8 @@ int msm_pinctrl_probe(struct platform_device *pdev,
- 	if (IS_ERR(pctrl->regs))
- 		return PTR_ERR(pctrl->regs);
- 
-+	msm_pinctrl_setup_pm_reset(pctrl);
-+
- 	pctrl->irq = platform_get_irq(pdev, 0);
- 	if (pctrl->irq < 0) {
- 		dev_err(&pdev->dev, "No interrupt defined for msmgpio\n");
--- 
-1.7.0.4
+Or, like I mentioned in the last email, be caused by a large initrd.
 
+-Stefan
+
+
+--3ggTPdltkJnGeVeCMlbKCVdTk26BETpqX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJUAI+WAAoJEOhnXe7L7s6jjHoQAIcRRrQm9DGiCyZCKWomsKaX
+LR/y2rZjmSMAyUmeCJ1WcDpLdaL0FOtg/YTQKAFMBbJz/ZqKCDDM9bzIfkFhqwXg
+gUzLgpyOJ4gYnCPJYtMiOVb+3w+dD45v8AlBlMZKidvCic2dJ/0dU41cTakA5CzQ
+gGD4nQ491ptnqEo+P6W2jijV7o1A5QqvdvxRUGpAZCX+3i2XsHlPgDiRzOJfMvBr
+Ce4958S+Zi5pUbdAdb1UDglX3c+glddVFqPTIiVBi1hxeAdK2KQN3pQPknbKRoW/
+Yl7V3fZwdoOPpIp5BMIl58nv6dh2lSNEABTi5eEeiSKNygI6tD6PYL0X4KAMg01e
+LP/V52HpuvFbcwRrCwl23N3urvE61goVECZY2ISuEwu0vqlstEFHjc3tBQG6kNDN
+zoNwB6DZ5FJAX45j2uJex8Q8Po/5uo82UuDryk+xYyILv9Bqc5ws7Z8IWfNC7Euu
+V2jr36hVzbY+boLfAmRzLs7H9bpeuE7n8rkbp4V/60jRoNTvVBH4WYwEpmxf/UX8
+FoQpuI3jQ29JC3/jzFqeLO+ljRLyRlod/FFziSd2DJG2BEY3Qal/QFXHrKAlgf9r
+n2RCxKemS9harPGEZbcNXL19Vu+o9zgHCSojGigY4dQSvqPchknElcrcAd6zQgoK
+LV374jfv+AgpKWTjjrPw
+=vLML
+-----END PGP SIGNATURE-----
+
+--3ggTPdltkJnGeVeCMlbKCVdTk26BETpqX--
