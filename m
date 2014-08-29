@@ -1,717 +1,304 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752851AbaH2J1J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 05:27:09 -0400
-Received: from mail-bl2lp0208.outbound.protection.outlook.com ([207.46.163.208]:23187
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751026AbaH2J1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 05:27:06 -0400
-From: Jingchang Lu <jingchang.lu@freescale.com>
-To: <mturquette@linaro.org>
-CC: <scottwood@freescale.com>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Jingchang Lu <jingchang.lu@freescale.com>
-Subject: [PATCHv2] clk: ppc-corenet: rename to ppc-qoriq and add CLK_OF_DECLARE support
-Date: Fri, 29 Aug 2014 16:35:54 +0800
-Message-ID: <1409301354-13699-1-git-send-email-jingchang.lu@freescale.com>
-X-Mailer: git-send-email 1.8.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199003)(189002)(90102001)(50466002)(64706001)(2351001)(104016003)(84676001)(93916002)(46102001)(80022001)(83322001)(19580405001)(31966008)(85306004)(4396001)(86362001)(87286001)(47776003)(68736004)(229853001)(48376002)(20776003)(99396002)(107046002)(97736001)(110136001)(6806004)(69596002)(81156004)(87936001)(88136002)(105606002)(26826002)(106466001)(77982001)(81342001)(102836001)(21056001)(81542001)(104166001)(89996001)(92726001)(50226001)(76482001)(44976005)(74662001)(77156001)(19580395003)(33646002)(92566001)(95666004)(79102001)(36756003)(62966002)(83072002)(74502001)(50986999)(85852003)(2004002);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB467;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+	id S1753190AbaH2Jbs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 05:31:48 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:44302 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752594AbaH2Jbp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 05:31:45 -0400
+Date: Fri, 29 Aug 2014 10:31:41 +0100
+From: Sitsofe Wheeler <sitsofe@gmail.com>
+To: Dexuan Cui <decui@microsoft.com>
+Cc: KY Srinivasan <kys@microsoft.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev@vger.kernel.org, David Miller <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>
+Subject: [hyperv] BUG: unable to handle kernel paging request at
+ ffff8801f5bc7cbb (netvsc_select_queue)
+Message-ID: <20140829093141.GC11445@sucs.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 0318501FAE
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=jingchang.lu@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The IP is shared on PPC and ARM, this rename it to qoriq for better
-represention, and this also add the CLK_OF_DECLARE support for being
-initialized by of_clk_init() on ARM.
+While booting a 10 vcpu system with a post v3.17-rc2 kernel with the
+"Drivers: hv: vmbus: Eliminate calls to BUG_ON()",  "Drivers: hv: vmbus:
+Miscellaneous cleanup" patches and debugging/verification config options
+on I'm seeing the following:
 
-Signed-off-by: Jingchang Lu <jingchang.lu@freescale.com>
----
-changes in v2:
- rename the driver name to ppc-qoriq.c for shared on PPC and ARM.
+[   31.570860] EXT4-fs (sdb1): mounted filesystem with ordered data mode. Opts: (null)
+[   31.799558] systemd-journald[367]: Received request to flush runtime journal from PID 1
+[   32.679811] hv_utils: KVP: user-mode registering done.
+[   39.826001] hv_netvsc vmbus_0_15: net device safe to remove
+[   39.868109] hv_netvsc: hv_netvsc channel opened successfully
+[   41.585834] hv_netvsc vmbus_0_15: Send section size: 6144, Section count:2560
+[   41.644187] hv_netvsc vmbus_0_15: Device MAC 00:15:5d:6f:02:a5 link state up
+[   43.174058] BUG: unable to handle kernel paging request at ffff8801f5bc7cbb
+[   43.174956] IP: [<ffffffff814e701d>] netvsc_select_queue+0x3d/0x150
+[   43.174956] PGD 2db0067 PUD 207dc0067 PMD 207c12067 PTE 80000001f5bc7060
+[   43.174956] Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+[   43.174956] CPU: 7 PID: 640 Comm: arping Not tainted 3.17.0-rc2.x86_64-00096-g9c6196f #137
+[   43.174956] Hardware name: Microsoft Corporation Virtual Machine/Virtual Machine, BIOS 090006  05/23/2012
+[   43.174956] task: ffff8800ebc56090 ti: ffff8800ecf04000 task.ti: ffff8800ecf04000
+[   43.174956] RIP: 0010:[<ffffffff814e701d>]  [<ffffffff814e701d>] netvsc_select_queue+0x3d/0x150
+[   43.174956] RSP: 0018:ffff8800ecf07c60  EFLAGS: 00010206
+[   43.174956] RAX: 0000000000000000 RBX: ffff8800f13f0000 RCX: 000000000000ffff
+[   43.174956] RDX: ffff8801f5bb7cb0 RSI: ffff8800ecf47a80 RDI: ffff8800f13f0000
+[   43.174956] RBP: ffff8800ecf07c88 R08: 000000000000002a R09: 0000000000000000
+[   43.174956] R10: ffff8801f99b2290 R11: 000000000000000a R12: ffff8800ecf47a80
+[   43.174956] R13: 0000000000000000 R14: ffff8800ecfb1bd8 R15: ffff8800ecf47a80
+[   43.174956] FS:  00007f69fdf31740(0000) GS:ffff880206ce0000(0000) knlGS:0000000000000000
+[   43.174956] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[   43.174956] CR2: ffff8801f5bc7cbb CR3: 00000000ecfc9000 CR4: 00000000000406e0
+[   43.174956] Stack:
+[   43.174956]  ffffffff8167f651 ffff8800f13f0000 000000000000001c 0000000000000000
+[   43.174956]  ffff8800ecfb1bd8 ffff8800ecf07d48 ffffffff816833bc ffff8800ebc567d0
+[   43.174956]  0000000000000000 ffff8800ecf07d68 0000000000000046 000000000000001c
+[   43.174956] Call Trace:
+[   43.174956]  [<ffffffff8167f651>] ? packet_pick_tx_queue+0x31/0xa0
+[   43.174956]  [<ffffffff816833bc>] packet_sendmsg+0xc1c/0xdd0
+[   43.174956]  [<ffffffff810bd106>] ? lock_release_non_nested+0xc6/0x330
+[   43.174956]  [<ffffffff815b4368>] sock_sendmsg+0x88/0xb0
+[   43.174956]  [<ffffffff81185443>] ? might_fault+0xa3/0xb0
+[   43.174956]  [<ffffffff811853fa>] ? might_fault+0x5a/0xb0
+[   43.174956]  [<ffffffff815b449e>] SYSC_sendto+0x10e/0x150
+[   43.174956]  [<ffffffff811853fa>] ? might_fault+0x5a/0xb0
+[   43.174956]  [<ffffffff816a32d5>] ? sysret_check+0x22/0x5d
+[   43.174956]  [<ffffffff810b97fd>] ? trace_hardirqs_on_caller+0x17d/0x210
+[   43.174956]  [<ffffffff8139c09e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+[   43.174956]  [<ffffffff815b547e>] SyS_sendto+0xe/0x10
+[   43.174956]  [<ffffffff816a32a9>] system_call_fastpath+0x16/0x1b
+[   43.174956] Code: 00 4d 85 d2 0f 84 1c 01 00 00 44 8b 9f 8c 03 00 00 31 c0 41 83 fb 01 0f 86 1b 01 00 00 0f b7 8e b4 00 00 00 48 8b 96 c0 00 00 00 <66> 83 7c 0a 0c 08 0f 85 01 01 00 00 55 48 89 e5 41 55 41 54 53 
+[   43.174956] RIP  [<ffffffff814e701d>] netvsc_select_queue+0x3d/0x150
+[   43.174956]  RSP <ffff8800ecf07c60>
+[   43.174956] CR2: ffff8801f5bc7cbb
+[   43.174956] ---[ end trace d476efa8244dbdc1 ]---
+[   43.174956] BUG: sleeping function called from invalid context at kernel/locking/rwsem.c:41
+[   43.174956] in_atomic(): 0, irqs_disabled(): 1, pid: 640, name: arping
+[   43.174956] INFO: lockdep is turned off.
+[   43.174956] irq event stamp: 5710
+[   43.174956] hardirqs last  enabled at (5709): [<ffffffff81698cb4>] __slab_alloc+0x50b/0x576
+[   43.174956] hardirqs last disabled at (5710): [<ffffffff816a5326>] error_sti+0x5/0x6
+[   43.174956] softirqs last  enabled at (5662): [<ffffffff815cedb0>] __dev_queue_xmit+0x5b0/0x690
+[   43.174956] softirqs last disabled at (5628): [<ffffffff815ce858>] __dev_queue_xmit+0x58/0x690
+[   43.174956] CPU: 7 PID: 640 Comm: arping Tainted: G      D        3.17.0-rc2.x86_64-00096-g9c6196f #137
+[   43.174956] Hardware name: Microsoft Corporation Virtual Machine/Virtual Machine, BIOS 090006  05/23/2012
+[   43.174956]  0000000000000046 ffff8800ecf078e0 ffffffff8169a70b ffff8800ebc56090
+[   43.174956]  ffff8800ecf078f8 ffffffff8109ec65 ffff8801f35eacd8 ffff8800ecf07918
+[   43.174956]  ffffffff816a0d44 ffffffff81090f38 ffff8800ebc56090 ffff8800ecf07938
+[   43.174956] Call Trace:
+[   43.174956]  [<ffffffff8169a70b>] dump_stack+0x4d/0x66
+[   43.174956]  [<ffffffff8109ec65>] __might_sleep+0x115/0x120
+[   43.174956]  [<ffffffff816a0d44>] down_read+0x24/0x70
+[   43.174956]  [<ffffffff81090f38>] ? __validate_process_creds+0xd8/0xf0
+[   43.174956]  [<ffffffff8107f9d4>] exit_signals+0x24/0x140
+[   43.174956]  [<ffffffff810737d9>] do_exit+0x129/0xa20
+[   43.174956]  [<ffffffff810c4bcc>] ? kmsg_dump+0xfc/0x110
+[   43.174956]  [<ffffffff810c4af5>] ? kmsg_dump+0x25/0x110
+[   43.174956]  [<ffffffff81006348>] oops_end+0xa8/0xc0
+[   43.174956]  [<ffffffff81695288>] no_context+0x322/0x36b
+[   43.174956]  [<ffffffff810b97fd>] ? trace_hardirqs_on_caller+0x17d/0x210
+[   43.174956]  [<ffffffff8169549c>] __bad_area_nosemaphore+0x1cb/0x1e8
+[   43.174956]  [<ffffffff810b97fd>] ? trace_hardirqs_on_caller+0x17d/0x210
+[   43.174956]  [<ffffffff816954cc>] bad_area_nosemaphore+0x13/0x15
+[   43.174956]  [<ffffffff8104040e>] __do_page_fault+0x1ee/0x4f0
+[   43.174956]  [<ffffffff815bcd6e>] ? __alloc_skb+0x4e/0x240
+[   43.174956]  [<ffffffff810bd106>] ? lock_release_non_nested+0xc6/0x330
+[   43.174956]  [<ffffffff8139c0dd>] ? trace_hardirqs_off_thunk+0x3a/0x3c
+[   43.174956]  [<ffffffff81040762>] do_page_fault+0x22/0x30
+[   43.174956]  [<ffffffff816a5108>] page_fault+0x28/0x30
+[   43.174956]  [<ffffffff814e701d>] ? netvsc_select_queue+0x3d/0x150
+[   43.174956]  [<ffffffff8167f651>] ? packet_pick_tx_queue+0x31/0xa0
+[   43.174956]  [<ffffffff816833bc>] packet_sendmsg+0xc1c/0xdd0
+[   43.174956]  [<ffffffff810bd106>] ? lock_release_non_nested+0xc6/0x330
+[   43.174956]  [<ffffffff815b4368>] sock_sendmsg+0x88/0xb0
+[   43.174956]  [<ffffffff81185443>] ? might_fault+0xa3/0xb0
+[   43.174956]  [<ffffffff811853fa>] ? might_fault+0x5a/0xb0
+[   43.174956]  [<ffffffff815b449e>] SYSC_sendto+0x10e/0x150
+[   43.174956]  [<ffffffff811853fa>] ? might_fault+0x5a/0xb0
+[   43.174956]  [<ffffffff816a32d5>] ? sysret_check+0x22/0x5d
+[   43.174956]  [<ffffffff810b97fd>] ? trace_hardirqs_on_caller+0x17d/0x210
+[   43.174956]  [<ffffffff8139c09e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+[   43.174956]  [<ffffffff815b547e>] SyS_sendto+0xe/0x10
+[   43.174956]  [<ffffffff816a32a9>] system_call_fastpath+0x16/0x1b
+[   43.174956] BUG: sleeping function called from invalid context at kernel/locking/rwsem.c:41
+[   43.174956] in_atomic(): 0, irqs_disabled(): 1, pid: 640, name: arping
+[   43.174956] INFO: lockdep is turned off.
+[   43.174956] irq event stamp: 5710
+[   43.174956] hardirqs last  enabled at (5709): [<ffffffff81698cb4>] __slab_alloc+0x50b/0x576
+[   43.174956] hardirqs last disabled at (5710): [<ffffffff816a5326>] error_sti+0x5/0x6
+[   43.174956] softirqs last  enabled at (5662): [<ffffffff815cedb0>] __dev_queue_xmit+0x5b0/0x690
+[   43.174956] softirqs last disabled at (5628): [<ffffffff815ce858>] __dev_queue_xmit+0x58/0x690
+[   43.174956] CPU: 7 PID: 640 Comm: arping Tainted: G      D        3.17.0-rc2.x86_64-00096-g9c6196f #137
+[   43.174956] Hardware name: Microsoft Corporation Virtual Machine/Virtual Machine, BIOS 090006  05/23/2012
+[   43.174956]  ffff8800ebc56090 ffff8800ecf078d0 ffffffff8169a70b ffff8800ebc56090
+[   43.174956]  ffff8800ecf078e8 ffffffff8109ec65 ffff8801f3afba18 ffff8800ecf07908
+[   43.174956]  ffffffff816a0d44 ffffffff810d5cb1 ffff8801f35ea880 ffff8800ecf07938
+[   43.174956] Call Trace:
+[   43.174956]  [<ffffffff8169a70b>] dump_stack+0x4d/0x66
+[   43.174956]  [<ffffffff8109ec65>] __might_sleep+0x115/0x120
+[   43.174956]  [<ffffffff816a0d44>] down_read+0x24/0x70
+[   43.174956]  [<ffffffff810d5cb1>] ? hrtimer_try_to_cancel+0xf1/0x100
+[   43.174956]  [<ffffffff810ec612>] acct_collect+0x52/0x1c0
+[   43.174956]  [<ffffffff81074082>] do_exit+0x9d2/0xa20
+[   43.174956]  [<ffffffff810c4bcc>] ? kmsg_dump+0xfc/0x110
+[   43.174956]  [<ffffffff810c4af5>] ? kmsg_dump+0x25/0x110
+[   43.174956]  [<ffffffff81006348>] oops_end+0xa8/0xc0
+[   43.174956]  [<ffffffff81695288>] no_context+0x322/0x36b
+[   43.174956]  [<ffffffff810b97fd>] ? trace_hardirqs_on_caller+0x17d/0x210
+[   43.174956]  [<ffffffff8169549c>] __bad_area_nosemaphore+0x1cb/0x1e8
+[   43.174956]  [<ffffffff810b97fd>] ? trace_hardirqs_on_caller+0x17d/0x210
+[   43.174956]  [<ffffffff816954cc>] bad_area_nosemaphore+0x13/0x15
+[   43.174956]  [<ffffffff8104040e>] __do_page_fault+0x1ee/0x4f0
+[   43.174956]  [<ffffffff815bcd6e>] ? __alloc_skb+0x4e/0x240
+[   43.174956]  [<ffffffff810bd106>] ? lock_release_non_nested+0xc6/0x330
+[   43.174956]  [<ffffffff8139c0dd>] ? trace_hardirqs_off_thunk+0x3a/0x3c
+[   43.174956]  [<ffffffff81040762>] do_page_fault+0x22/0x30
+[   43.174956]  [<ffffffff816a5108>] page_fault+0x28/0x30
+[   43.174956]  [<ffffffff814e701d>] ? netvsc_select_queue+0x3d/0x150
+[   43.174956]  [<ffffffff8167f651>] ? packet_pick_tx_queue+0x31/0xa0
+[   43.174956]  [<ffffffff816833bc>] packet_sendmsg+0xc1c/0xdd0
+[   43.174956]  [<ffffffff810bd106>] ? lock_release_non_nested+0xc6/0x330
+[   43.174956]  [<ffffffff815b4368>] sock_sendmsg+0x88/0xb0
+[   43.174956]  [<ffffffff81185443>] ? might_fault+0xa3/0xb0
+[   43.174956]  [<ffffffff811853fa>] ? might_fault+0x5a/0xb0
+[   48.347217]  [<ffffffff815b449e>] SYSC_sendto+0x10e/0x150
+[   48.347217]  [<ffffffff811853fa>] ? might_fault+0x5a/0xb0
+[   48.347217]  [<ffffffff816a32d5>] ? sysret_check+0x22/0x5d
+[   48.347217]  [<ffffffff810b97fd>] ? trace_hardirqs_on_caller+0x17d/0x210
+[   48.347217]  [<ffffffff8139c09e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+[   48.347217]  [<ffffffff815b547e>] SyS_sendto+0xe/0x10
+[   48.347217]  [<ffffffff816a32a9>] system_call_fastpath+0x16/0x1b
+[   48.663676] BUG: unable to handle kernel paging request at ffff8800ee453a23
+[   48.708188] IP:
+[   48.708188]  [<ffffffff814e701d>] netvsc_select_queue+0x3d/0x150
+[   48.708188] PGD 2db0067 
+[   48.708188] PUD 2075be067 
+[   48.708188] PMD 20744b067 
+[   48.708188] PTE 80000000ee453060
 
- drivers/clk/Kconfig           |   9 +-
- drivers/clk/Makefile          |   2 +-
- drivers/clk/clk-ppc-corenet.c | 307 -----------------------------------------
- drivers/clk/clk-qoriq.c       | 312 ++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 318 insertions(+), 312 deletions(-)
- delete mode 100644 drivers/clk/clk-ppc-corenet.c
- create mode 100644 drivers/clk/clk-qoriq.c
+[   48.708188] Oops: 0000 [#2] 
+[   48.708188] SMP 
+[   48.708188] DEBUG_PAGEALLOC
 
-diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-index cfd3af7..d7892b9 100644
---- a/drivers/clk/Kconfig
-+++ b/drivers/clk/Kconfig
-@@ -81,12 +81,13 @@ config COMMON_CLK_AXI_CLKGEN
- 	  Support for the Analog Devices axi-clkgen pcore clock generator for Xilinx
- 	  FPGAs. It is commonly used in Analog Devices' reference designs.
- 
--config CLK_PPC_CORENET
--	bool "Clock driver for PowerPC corenet platforms"
--	depends on PPC_E500MC && OF
-+config CLK_QORIQ
-+	bool "Clock driver for PowerPC corenet and compatible ARM-based platforms"
-+	depends on (PPC_E500MC || ARM) && OF
- 	---help---
- 	  This adds the clock driver support for Freescale PowerPC corenet
--	  platforms using common clock framework.
-+	  platforms and compatible Freescale ARM based platforms using common
-+	  clock framework.
- 
- config COMMON_CLK_XGENE
- 	bool "Clock driver for APM XGene SoC"
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index 312742c..c8f1f52 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -23,7 +23,7 @@ obj-$(CONFIG_ARCH_MOXART)		+= clk-moxart.o
- obj-$(CONFIG_ARCH_NOMADIK)		+= clk-nomadik.o
- obj-$(CONFIG_ARCH_NSPIRE)		+= clk-nspire.o
- obj-$(CONFIG_COMMON_CLK_PALMAS)		+= clk-palmas.o
--obj-$(CONFIG_CLK_PPC_CORENET)		+= clk-ppc-corenet.o
-+obj-$(CONFIG_CLK_QORIQ)			+= clk-qoriq.o
- obj-$(CONFIG_COMMON_CLK_S2MPS11)	+= clk-s2mps11.o
- obj-$(CONFIG_COMMON_CLK_SI5351)		+= clk-si5351.o
- obj-$(CONFIG_COMMON_CLK_SI570)		+= clk-si570.o
-diff --git a/drivers/clk/clk-ppc-corenet.c b/drivers/clk/clk-ppc-corenet.c
-deleted file mode 100644
-index 8e58edf..0000000
---- a/drivers/clk/clk-ppc-corenet.c
-+++ /dev/null
-@@ -1,307 +0,0 @@
--/*
-- * Copyright 2013 Freescale Semiconductor, Inc.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- *
-- * clock driver for Freescale PowerPC corenet SoCs.
-- */
--#include <linux/clk-provider.h>
--#include <linux/io.h>
--#include <linux/kernel.h>
--#include <linux/module.h>
--#include <linux/of_address.h>
--#include <linux/of_platform.h>
--#include <linux/of.h>
--#include <linux/slab.h>
--
--struct cmux_clk {
--	struct clk_hw hw;
--	void __iomem *reg;
--	u32 flags;
--};
--
--#define PLL_KILL			BIT(31)
--#define	CLKSEL_SHIFT		27
--#define CLKSEL_ADJUST		BIT(0)
--#define to_cmux_clk(p)		container_of(p, struct cmux_clk, hw)
--
--static unsigned int clocks_per_pll;
--
--static int cmux_set_parent(struct clk_hw *hw, u8 idx)
--{
--	struct cmux_clk *clk = to_cmux_clk(hw);
--	u32 clksel;
--
--	clksel = ((idx / clocks_per_pll) << 2) + idx % clocks_per_pll;
--	if (clk->flags & CLKSEL_ADJUST)
--		clksel += 8;
--	clksel = (clksel & 0xf) << CLKSEL_SHIFT;
--	iowrite32be(clksel, clk->reg);
--
--	return 0;
--}
--
--static u8 cmux_get_parent(struct clk_hw *hw)
--{
--	struct cmux_clk *clk = to_cmux_clk(hw);
--	u32 clksel;
--
--	clksel = ioread32be(clk->reg);
--	clksel = (clksel >> CLKSEL_SHIFT) & 0xf;
--	if (clk->flags & CLKSEL_ADJUST)
--		clksel -= 8;
--	clksel = (clksel >> 2) * clocks_per_pll + clksel % 4;
--
--	return clksel;
--}
--
--const struct clk_ops cmux_ops = {
--	.get_parent = cmux_get_parent,
--	.set_parent = cmux_set_parent,
--};
--
--static void __init core_mux_init(struct device_node *np)
--{
--	struct clk *clk;
--	struct clk_init_data init;
--	struct cmux_clk *cmux_clk;
--	struct device_node *node;
--	int rc, count, i;
--	u32	offset;
--	const char *clk_name;
--	const char **parent_names;
--
--	rc = of_property_read_u32(np, "reg", &offset);
--	if (rc) {
--		pr_err("%s: could not get reg property\n", np->name);
--		return;
--	}
--
--	/* get the input clock source count */
--	count = of_property_count_strings(np, "clock-names");
--	if (count < 0) {
--		pr_err("%s: get clock count error\n", np->name);
--		return;
--	}
--	parent_names = kzalloc((sizeof(char *) * count), GFP_KERNEL);
--	if (!parent_names) {
--		pr_err("%s: could not allocate parent_names\n", __func__);
--		return;
--	}
--
--	for (i = 0; i < count; i++)
--		parent_names[i] = of_clk_get_parent_name(np, i);
--
--	cmux_clk = kzalloc(sizeof(struct cmux_clk), GFP_KERNEL);
--	if (!cmux_clk) {
--		pr_err("%s: could not allocate cmux_clk\n", __func__);
--		goto err_name;
--	}
--	cmux_clk->reg = of_iomap(np, 0);
--	if (!cmux_clk->reg) {
--		pr_err("%s: could not map register\n", __func__);
--		goto err_clk;
--	}
--
--	node = of_find_compatible_node(NULL, NULL, "fsl,p4080-clockgen");
--	if (node && (offset >= 0x80))
--		cmux_clk->flags = CLKSEL_ADJUST;
--
--	rc = of_property_read_string_index(np, "clock-output-names",
--			0, &clk_name);
--	if (rc) {
--		pr_err("%s: read clock names error\n", np->name);
--		goto err_clk;
--	}
--
--	init.name = clk_name;
--	init.ops = &cmux_ops;
--	init.parent_names = parent_names;
--	init.num_parents = count;
--	init.flags = 0;
--	cmux_clk->hw.init = &init;
--
--	clk = clk_register(NULL, &cmux_clk->hw);
--	if (IS_ERR(clk)) {
--		pr_err("%s: could not register clock\n", clk_name);
--		goto err_clk;
--	}
--
--	rc = of_clk_add_provider(np, of_clk_src_simple_get, clk);
--	if (rc) {
--		pr_err("Could not register clock provider for node:%s\n",
--			 np->name);
--		goto err_clk;
--	}
--	goto err_name;
--
--err_clk:
--	kfree(cmux_clk);
--err_name:
--	/* free *_names because they are reallocated when registered */
--	kfree(parent_names);
--}
--
--static void __init core_pll_init(struct device_node *np)
--{
--	u32 mult;
--	int i, rc, count;
--	const char *clk_name, *parent_name;
--	struct clk_onecell_data *onecell_data;
--	struct clk      **subclks;
--	void __iomem *base;
--
--	base = of_iomap(np, 0);
--	if (!base) {
--		pr_err("clk-ppc: iomap error\n");
--		return;
--	}
--
--	/* get the multiple of PLL */
--	mult = ioread32be(base);
--
--	/* check if this PLL is disabled */
--	if (mult & PLL_KILL) {
--		pr_debug("PLL:%s is disabled\n", np->name);
--		goto err_map;
--	}
--	mult = (mult >> 1) & 0x3f;
--
--	parent_name = of_clk_get_parent_name(np, 0);
--	if (!parent_name) {
--		pr_err("PLL: %s must have a parent\n", np->name);
--		goto err_map;
--	}
--
--	count = of_property_count_strings(np, "clock-output-names");
--	if (count < 0 || count > 4) {
--		pr_err("%s: clock is not supported\n", np->name);
--		goto err_map;
--	}
--
--	/* output clock number per PLL */
--	clocks_per_pll = count;
--
--	subclks = kzalloc(sizeof(struct clk *) * count, GFP_KERNEL);
--	if (!subclks) {
--		pr_err("%s: could not allocate subclks\n", __func__);
--		goto err_map;
--	}
--
--	onecell_data = kzalloc(sizeof(struct clk_onecell_data), GFP_KERNEL);
--	if (!onecell_data) {
--		pr_err("%s: could not allocate onecell_data\n", __func__);
--		goto err_clks;
--	}
--
--	for (i = 0; i < count; i++) {
--		rc = of_property_read_string_index(np, "clock-output-names",
--				i, &clk_name);
--		if (rc) {
--			pr_err("%s: could not get clock names\n", np->name);
--			goto err_cell;
--		}
--
--		/*
--		 * when count == 4, there are 4 output clocks:
--		 * /1, /2, /3, /4 respectively
--		 * when count < 4, there are at least 2 output clocks:
--		 * /1, /2, (/4, if count == 3) respectively.
--		 */
--		if (count == 4)
--			subclks[i] = clk_register_fixed_factor(NULL, clk_name,
--					parent_name, 0, mult, 1 + i);
--		else
--
--			subclks[i] = clk_register_fixed_factor(NULL, clk_name,
--					parent_name, 0, mult, 1 << i);
--
--		if (IS_ERR(subclks[i])) {
--			pr_err("%s: could not register clock\n", clk_name);
--			goto err_cell;
--		}
--	}
--
--	onecell_data->clks = subclks;
--	onecell_data->clk_num = count;
--
--	rc = of_clk_add_provider(np, of_clk_src_onecell_get, onecell_data);
--	if (rc) {
--		pr_err("Could not register clk provider for node:%s\n",
--			 np->name);
--		goto err_cell;
--	}
--
--	iounmap(base);
--	return;
--err_cell:
--	kfree(onecell_data);
--err_clks:
--	kfree(subclks);
--err_map:
--	iounmap(base);
--}
--
--static void __init sysclk_init(struct device_node *node)
--{
--	struct clk *clk;
--	const char *clk_name = node->name;
--	struct device_node *np = of_get_parent(node);
--	u32 rate;
--
--	if (!np) {
--		pr_err("ppc-clk: could not get parent node\n");
--		return;
--	}
--
--	if (of_property_read_u32(np, "clock-frequency", &rate)) {
--		of_node_put(node);
--		return;
--	}
--
--	of_property_read_string(np, "clock-output-names", &clk_name);
--
--	clk = clk_register_fixed_rate(NULL, clk_name, NULL, CLK_IS_ROOT, rate);
--	if (!IS_ERR(clk))
--		of_clk_add_provider(np, of_clk_src_simple_get, clk);
--}
--
--static const struct of_device_id clk_match[] __initconst = {
--	{ .compatible = "fsl,qoriq-sysclk-1.0", .data = sysclk_init, },
--	{ .compatible = "fsl,qoriq-sysclk-2.0", .data = sysclk_init, },
--	{ .compatible = "fsl,qoriq-core-pll-1.0", .data = core_pll_init, },
--	{ .compatible = "fsl,qoriq-core-pll-2.0", .data = core_pll_init, },
--	{ .compatible = "fsl,qoriq-core-mux-1.0", .data = core_mux_init, },
--	{ .compatible = "fsl,qoriq-core-mux-2.0", .data = core_mux_init, },
--	{}
--};
--
--static int __init ppc_corenet_clk_probe(struct platform_device *pdev)
--{
--	of_clk_init(clk_match);
--
--	return 0;
--}
--
--static const struct of_device_id ppc_clk_ids[] __initconst = {
--	{ .compatible = "fsl,qoriq-clockgen-1.0", },
--	{ .compatible = "fsl,qoriq-clockgen-2.0", },
--	{}
--};
--
--static struct platform_driver ppc_corenet_clk_driver __initdata = {
--	.driver = {
--		.name = "ppc_corenet_clock",
--		.owner = THIS_MODULE,
--		.of_match_table = ppc_clk_ids,
--	},
--	.probe = ppc_corenet_clk_probe,
--};
--
--static int __init ppc_corenet_clk_init(void)
--{
--	return platform_driver_register(&ppc_corenet_clk_driver);
--}
--subsys_initcall(ppc_corenet_clk_init);
-diff --git a/drivers/clk/clk-qoriq.c b/drivers/clk/clk-qoriq.c
-new file mode 100644
-index 0000000..7692cac
---- /dev/null
-+++ b/drivers/clk/clk-qoriq.c
-@@ -0,0 +1,312 @@
-+/*
-+ * Copyright 2013 Freescale Semiconductor, Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * clock driver for Freescale PowerPC corenet SoCs.
-+ */
-+#include <linux/clk-provider.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/of_address.h>
-+#include <linux/of_platform.h>
-+#include <linux/of.h>
-+#include <linux/slab.h>
-+
-+struct cmux_clk {
-+	struct clk_hw hw;
-+	void __iomem *reg;
-+	u32 flags;
-+};
-+
-+#define PLL_KILL			BIT(31)
-+#define	CLKSEL_SHIFT		27
-+#define CLKSEL_ADJUST		BIT(0)
-+#define to_cmux_clk(p)		container_of(p, struct cmux_clk, hw)
-+
-+static unsigned int clocks_per_pll;
-+
-+static int cmux_set_parent(struct clk_hw *hw, u8 idx)
-+{
-+	struct cmux_clk *clk = to_cmux_clk(hw);
-+	u32 clksel;
-+
-+	clksel = ((idx / clocks_per_pll) << 2) + idx % clocks_per_pll;
-+	if (clk->flags & CLKSEL_ADJUST)
-+		clksel += 8;
-+	clksel = (clksel & 0xf) << CLKSEL_SHIFT;
-+	iowrite32be(clksel, clk->reg);
-+
-+	return 0;
-+}
-+
-+static u8 cmux_get_parent(struct clk_hw *hw)
-+{
-+	struct cmux_clk *clk = to_cmux_clk(hw);
-+	u32 clksel;
-+
-+	clksel = ioread32be(clk->reg);
-+	clksel = (clksel >> CLKSEL_SHIFT) & 0xf;
-+	if (clk->flags & CLKSEL_ADJUST)
-+		clksel -= 8;
-+	clksel = (clksel >> 2) * clocks_per_pll + clksel % 4;
-+
-+	return clksel;
-+}
-+
-+const struct clk_ops cmux_ops = {
-+	.get_parent = cmux_get_parent,
-+	.set_parent = cmux_set_parent,
-+};
-+
-+static void __init core_mux_init(struct device_node *np)
-+{
-+	struct clk *clk;
-+	struct clk_init_data init;
-+	struct cmux_clk *cmux_clk;
-+	struct device_node *node;
-+	int rc, count, i;
-+	u32	offset;
-+	const char *clk_name;
-+	const char **parent_names;
-+
-+	rc = of_property_read_u32(np, "reg", &offset);
-+	if (rc) {
-+		pr_err("%s: could not get reg property\n", np->name);
-+		return;
-+	}
-+
-+	/* get the input clock source count */
-+	count = of_property_count_strings(np, "clock-names");
-+	if (count < 0) {
-+		pr_err("%s: get clock count error\n", np->name);
-+		return;
-+	}
-+	parent_names = kzalloc((sizeof(char *) * count), GFP_KERNEL);
-+	if (!parent_names) {
-+		pr_err("%s: could not allocate parent_names\n", __func__);
-+		return;
-+	}
-+
-+	for (i = 0; i < count; i++)
-+		parent_names[i] = of_clk_get_parent_name(np, i);
-+
-+	cmux_clk = kzalloc(sizeof(struct cmux_clk), GFP_KERNEL);
-+	if (!cmux_clk) {
-+		pr_err("%s: could not allocate cmux_clk\n", __func__);
-+		goto err_name;
-+	}
-+	cmux_clk->reg = of_iomap(np, 0);
-+	if (!cmux_clk->reg) {
-+		pr_err("%s: could not map register\n", __func__);
-+		goto err_clk;
-+	}
-+
-+	node = of_find_compatible_node(NULL, NULL, "fsl,p4080-clockgen");
-+	if (node && (offset >= 0x80))
-+		cmux_clk->flags = CLKSEL_ADJUST;
-+
-+	rc = of_property_read_string_index(np, "clock-output-names",
-+			0, &clk_name);
-+	if (rc) {
-+		pr_err("%s: read clock names error\n", np->name);
-+		goto err_clk;
-+	}
-+
-+	init.name = clk_name;
-+	init.ops = &cmux_ops;
-+	init.parent_names = parent_names;
-+	init.num_parents = count;
-+	init.flags = 0;
-+	cmux_clk->hw.init = &init;
-+
-+	clk = clk_register(NULL, &cmux_clk->hw);
-+	if (IS_ERR(clk)) {
-+		pr_err("%s: could not register clock\n", clk_name);
-+		goto err_clk;
-+	}
-+
-+	rc = of_clk_add_provider(np, of_clk_src_simple_get, clk);
-+	if (rc) {
-+		pr_err("Could not register clock provider for node:%s\n",
-+			 np->name);
-+		goto err_clk;
-+	}
-+	goto err_name;
-+
-+err_clk:
-+	kfree(cmux_clk);
-+err_name:
-+	/* free *_names because they are reallocated when registered */
-+	kfree(parent_names);
-+}
-+
-+static void __init core_pll_init(struct device_node *np)
-+{
-+	u32 mult;
-+	int i, rc, count;
-+	const char *clk_name, *parent_name;
-+	struct clk_onecell_data *onecell_data;
-+	struct clk      **subclks;
-+	void __iomem *base;
-+
-+	base = of_iomap(np, 0);
-+	if (!base) {
-+		pr_err("clk-ppc: iomap error\n");
-+		return;
-+	}
-+
-+	/* get the multiple of PLL */
-+	mult = ioread32be(base);
-+
-+	/* check if this PLL is disabled */
-+	if (mult & PLL_KILL) {
-+		pr_debug("PLL:%s is disabled\n", np->name);
-+		goto err_map;
-+	}
-+	mult = (mult >> 1) & 0x3f;
-+
-+	parent_name = of_clk_get_parent_name(np, 0);
-+	if (!parent_name) {
-+		pr_err("PLL: %s must have a parent\n", np->name);
-+		goto err_map;
-+	}
-+
-+	count = of_property_count_strings(np, "clock-output-names");
-+	if (count < 0 || count > 4) {
-+		pr_err("%s: clock is not supported\n", np->name);
-+		goto err_map;
-+	}
-+
-+	/* output clock number per PLL */
-+	clocks_per_pll = count;
-+
-+	subclks = kzalloc(sizeof(struct clk *) * count, GFP_KERNEL);
-+	if (!subclks) {
-+		pr_err("%s: could not allocate subclks\n", __func__);
-+		goto err_map;
-+	}
-+
-+	onecell_data = kzalloc(sizeof(struct clk_onecell_data), GFP_KERNEL);
-+	if (!onecell_data) {
-+		pr_err("%s: could not allocate onecell_data\n", __func__);
-+		goto err_clks;
-+	}
-+
-+	for (i = 0; i < count; i++) {
-+		rc = of_property_read_string_index(np, "clock-output-names",
-+				i, &clk_name);
-+		if (rc) {
-+			pr_err("%s: could not get clock names\n", np->name);
-+			goto err_cell;
-+		}
-+
-+		/*
-+		 * when count == 4, there are 4 output clocks:
-+		 * /1, /2, /3, /4 respectively
-+		 * when count < 4, there are at least 2 output clocks:
-+		 * /1, /2, (/4, if count == 3) respectively.
-+		 */
-+		if (count == 4)
-+			subclks[i] = clk_register_fixed_factor(NULL, clk_name,
-+					parent_name, 0, mult, 1 + i);
-+		else
-+
-+			subclks[i] = clk_register_fixed_factor(NULL, clk_name,
-+					parent_name, 0, mult, 1 << i);
-+
-+		if (IS_ERR(subclks[i])) {
-+			pr_err("%s: could not register clock\n", clk_name);
-+			goto err_cell;
-+		}
-+	}
-+
-+	onecell_data->clks = subclks;
-+	onecell_data->clk_num = count;
-+
-+	rc = of_clk_add_provider(np, of_clk_src_onecell_get, onecell_data);
-+	if (rc) {
-+		pr_err("Could not register clk provider for node:%s\n",
-+			 np->name);
-+		goto err_cell;
-+	}
-+
-+	iounmap(base);
-+	return;
-+err_cell:
-+	kfree(onecell_data);
-+err_clks:
-+	kfree(subclks);
-+err_map:
-+	iounmap(base);
-+}
-+
-+static void __init sysclk_init(struct device_node *node)
-+{
-+	struct clk *clk;
-+	const char *clk_name = node->name;
-+	struct device_node *np = of_get_parent(node);
-+	u32 rate;
-+
-+	if (!np) {
-+		pr_err("ppc-clk: could not get parent node\n");
-+		return;
-+	}
-+
-+	if (of_property_read_u32(np, "clock-frequency", &rate)) {
-+		of_node_put(node);
-+		return;
-+	}
-+
-+	of_property_read_string(np, "clock-output-names", &clk_name);
-+
-+	clk = clk_register_fixed_rate(NULL, clk_name, NULL, CLK_IS_ROOT, rate);
-+	if (!IS_ERR(clk))
-+		of_clk_add_provider(np, of_clk_src_simple_get, clk);
-+}
-+
-+static const struct of_device_id clk_match[] __initconst = {
-+	{ .compatible = "fsl,qoriq-sysclk-1.0", .data = sysclk_init, },
-+	{ .compatible = "fsl,qoriq-sysclk-2.0", .data = sysclk_init, },
-+	{ .compatible = "fsl,qoriq-core-pll-1.0", .data = core_pll_init, },
-+	{ .compatible = "fsl,qoriq-core-pll-2.0", .data = core_pll_init, },
-+	{ .compatible = "fsl,qoriq-core-mux-1.0", .data = core_mux_init, },
-+	{ .compatible = "fsl,qoriq-core-mux-2.0", .data = core_mux_init, },
-+	{}
-+};
-+
-+static int __init ppc_corenet_clk_probe(struct platform_device *pdev)
-+{
-+	of_clk_init(clk_match);
-+
-+	return 0;
-+}
-+
-+static const struct of_device_id ppc_clk_ids[] __initconst = {
-+	{ .compatible = "fsl,qoriq-clockgen-1.0", },
-+	{ .compatible = "fsl,qoriq-clockgen-2.0", },
-+	{}
-+};
-+
-+static struct platform_driver ppc_corenet_clk_driver __initdata = {
-+	.driver = {
-+		.name = "ppc_corenet_clock",
-+		.owner = THIS_MODULE,
-+		.of_match_table = ppc_clk_ids,
-+	},
-+	.probe = ppc_corenet_clk_probe,
-+};
-+
-+static int __init ppc_corenet_clk_init(void)
-+{
-+	return platform_driver_register(&ppc_corenet_clk_driver);
-+}
-+subsys_initcall(ppc_corenet_clk_init);
-+
-+CLK_OF_DECLARE(ppc_core_pll_v1, "fsl,qoriq-core-pll-1.0", core_pll_init);
-+CLK_OF_DECLARE(ppc_core_pll_v2, "fsl,qoriq-core-pll-2.0", core_pll_init);
-+CLK_OF_DECLARE(ppc_core_mux_v1, "fsl,qoriq-core-mux-1.0", core_mux_init);
-+CLK_OF_DECLARE(ppc_core_mux_v2, "fsl,qoriq-core-mux-2.0", core_mux_init);
+[   48.708188] CPU: 7 PID: 609 Comm: dhclient Tainted: G      D        3.17.0-rc2.x86_64-00096-g9c6196f #137
+[   48.708188] Hardware name: Microsoft Corporation Virtual Machine/Virtual Machine, BIOS 090006  05/23/2012
+[   48.708188] task: ffff8801f9946090 ti: ffff8800ee468000 task.ti: ffff8800ee468000
+[   48.708188] RIP: 0010:[<ffffffff814e701d>] 
+[   48.708188]  [<ffffffff814e701d>] netvsc_select_queue+0x3d/0x150
+[   48.708188] RSP: 0018:ffff8800ee46bcd8  EFLAGS: 00010206
+[   48.708188] RAX: 0000000000000000 RBX: ffff8800f13f0000 RCX: 000000000000ffff
+[   48.708188] RDX: ffff8800ee443a18 RSI: ffff8800ecf446c0 RDI: ffff8800f13f0000
+[   48.708188] RBP: ffff8800ee46bd00 R08: 0000000000000156 R09: 0000000000000000
+[   48.708188] R10: ffff8801f99b2290 R11: 000000000000000a R12: ffff8800ecf446c0
+[   48.708188] R13: 0000000000000000 R14: ffff8800ecfb0948 R15: ffff8800ecf446c0
+[   48.708188] FS:  00007f5b90b22880(0000) GS:ffff880206ce0000(0000) knlGS:0000000000000000
+[   48.708188] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[   48.708188] CR2: ffff8800ee453a23 CR3: 00000000ec783000 CR4: 00000000000406e0
+[   48.708188] Stack:
+[   48.708188]  ffffffff8167f651
+[   48.708188]  ffff8800f13f0000
+[   48.708188]  0000000000000156
+[   48.708188]  0000000000000000
+
+[   48.708188]  ffff8800ecfb0948
+[   48.708188]  ffff8800ee46bdc0
+[   48.708188]  ffffffff816833bc
+[   48.708188]  ffffffff00000000
+
+[   48.708188]  00000000ffffffff
+[   48.708188]  ffff8800ee46bd58
+[   48.708188]  ffff8800f3354440
+[   48.708188]  0000000000000156
+
+[   48.708188] Call Trace:
+
+[   48.708188]  [<ffffffff8167f651>] ? packet_pick_tx_queue+0x31/0xa0
+[   48.708188]  [<ffffffff816833bc>] packet_sendmsg+0xc1c/0xdd0
+[   48.708188]  [<ffffffff815b357b>] sock_aio_write+0xfb/0x120
+[   48.708188]  [<ffffffff811c262a>] do_sync_write+0x5a/0x80
+[   48.708188]  [<ffffffff811c2925>] vfs_write+0xe5/0x1d0
+[   48.708188]  [<ffffffff811c2b09>] SyS_write+0x49/0xb0
+[   48.708188]  [<ffffffff816a32a9>] system_call_fastpath+0x16/0x1b
+[   48.708188] Code: 00 4d 85 d2 0f 84 1c 01 00 00 44 8b 9f 8c 03 00 00 31 c0 41 83 fb 01 0f 86 1b 01 00 00 0f b7 8e b4 00 00 00 48 8b 96 c0 00 00 00 <66> 83 7c 0a 0c 08 0f 85 01 01 00 00 55 48 89 e5 41 55 41 54 53 
+[   48.708188] RIP  [<ffffffff814e701d>] netvsc_select_queue+0x3d/0x150
+[   48.708188]  RSP <ffff8800ee46bcd8>
+[   48.708188] CR2: ffff8800ee453a23
+[   48.708188] ---[ end trace d476efa8244dbdc2 ]---
+[   48.708188] BUG: sleeping function called from invalid context at kernel/locking/rwsem.c:41
+[   48.708188] in_atomic(): 0, irqs_disabled(): 1, pid: 609, name: dhclient
+[   48.708188] INFO: lockdep is turned off.
+[   48.708188] irq event stamp: 97752
+[   48.708188] hardirqs last  enabled at (97751): [<ffffffff816a263d>] _raw_spin_unlock_irqrestore+0x4d/0x70
+[   48.708188] hardirqs last disabled at (97752): [<ffffffff816a251d>] _raw_spin_lock_irq+0x1d/0x60
+[   48.708188] softirqs last  enabled at (97356): [<ffffffff810753f8>] __do_softirq+0x278/0x320
+[   48.708188] softirqs last disabled at (97341): [<ffffffff81075768>] irq_exit+0x58/0xc0
+[   48.708188] CPU: 7 PID: 609 Comm: dhclient Tainted: G      D        3.17.0-rc2.x86_64-00096-g9c6196f #137
+[   48.708188] Hardware name: Microsoft Corporation Virtual Machine/Virtual Machine, BIOS 090006  05/23/2012
+[   48.708188]  0000000000000046 ffff8800ee46b950 ffffffff8169a70b ffff8801f9946090
+[   48.708188]  ffff8800ee46b968 ffffffff8109ec65 ffff8801f35e9898 ffff8800ee46b988
+[   48.708188]  ffffffff816a0d44 ffffffff81090f38 ffff8801f9946090 ffff8800ee46b9a8
+[   48.708188] Call Trace:
+[   48.708188]  [<ffffffff8169a70b>] dump_stack+0x4d/0x66
+[   48.708188]  [<ffffffff8109ec65>] __might_sleep+0x115/0x120
+[   48.708188]  [<ffffffff816a0d44>] down_read+0x24/0x70
+[   48.708188]  [<ffffffff81090f38>] ? __validate_process_creds+0xd8/0xf0
+[   48.708188]  [<ffffffff8107f9d4>] exit_signals+0x24/0x140
+[   48.708188]  [<ffffffff810737d9>] do_exit+0x129/0xa20
+[   48.708188]  [<ffffffff810c4bcc>] ? kmsg_dump+0xfc/0x110
+[   48.708188]  [<ffffffff810c4af5>] ? kmsg_dump+0x25/0x110
+[   48.708188]  [<ffffffff81006348>] oops_end+0xa8/0xc0
+[   48.708188]  [<ffffffff81695288>] no_context+0x322/0x36b
+[   48.708188]  [<ffffffff8169549c>] __bad_area_nosemaphore+0x1cb/0x1e8
+[   48.708188]  [<ffffffff816954cc>] bad_area_nosemaphore+0x13/0x15
+[   48.708188]  [<ffffffff8104040e>] __do_page_fault+0x1ee/0x4f0
+[   48.708188]  [<ffffffff815bcd6e>] ? __alloc_skb+0x4e/0x240
+[   48.708188]  [<ffffffff811a990e>] ? __kmalloc_node_track_caller+0x15e/0x2f0
+[   48.708188]  [<ffffffff810b9b0d>] ? trace_hardirqs_off+0xd/0x10
+[   48.708188]  [<ffffffff8139c0dd>] ? trace_hardirqs_off_thunk+0x3a/0x3c
+[   48.708188]  [<ffffffff81040762>] do_page_fault+0x22/0x30
+[   48.708188]  [<ffffffff816a5108>] page_fault+0x28/0x30
+[   48.708188]  [<ffffffff814e701d>] ? netvsc_select_queue+0x3d/0x150
+[   48.708188]  [<ffffffff8167f651>] ? packet_pick_tx_queue+0x31/0xa0
+[   48.708188]  [<ffffffff816833bc>] packet_sendmsg+0xc1c/0xdd0
+[   48.708188]  [<ffffffff815b357b>] sock_aio_write+0xfb/0x120
+[   48.708188]  [<ffffffff811c262a>] do_sync_write+0x5a/0x80
+[   48.708188]  [<ffffffff811c2925>] vfs_write+0xe5/0x1d0
+[   48.708188]  [<ffffffff811c2b09>] SyS_write+0x49/0xb0
+[   48.708188]  [<ffffffff816a32a9>] system_call_fastpath+0x16/0x1b
+
+In https://lkml.org/lkml/2014/8/19/133 (Re: BUG: unable to handle kernel
+paging request at ffff8801f3febe63 (netvsc_select_queue)) there is the
+following:
+
+On Tue, Aug 19, 2014 at 10:57:30AM +0200, Daniel Borkmann wrote:
+>
+> Hmm, I am not really familiar with hyper-v, but it seems 5b54dac856cb
+> ("hyperv: Add support for virtual Receive Side Scaling (vRSS)") has
+> been introduced after 0fd5d57ba345 ("packet: check for
+> ndo_select_queue during queue selection").
+> 
+> arping seems to send a raw packet (AF_PACKET) via normal
+> packet_sendmsg() out and when doing the queue selection in
+> packet_pick_tx_queue(), we discover that the device has
+> ndo_select_queue implemented, so we respect that and call into it. In
+> netvsc_select_queue(), the fallback of __packet_pick_tx_queue() is not
+> being invoked here.
+> 
+> Given that the next log message is "hv_netvsc vmbus_0_15: net device
+> safe to remove" ... could it be that your back pointer to the device
+> context (the actual struct hv_device) is already invalid when you try
+> to get hv_get_drvdata(hdev) as it's sort of decoupled from
+> netdev_priv(ndev) ? (Just a wild guess ...)
+
+So I'm guessing this is the same issue.
+
 -- 
-1.8.0
-
+Sitsofe | http://sucs.org/~sits/
