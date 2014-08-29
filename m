@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753800AbaH2SSk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 14:18:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23582 "EHLO mx1.redhat.com"
+	id S1753882AbaH2STH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 14:19:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27506 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753061AbaH2SSi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 14:18:38 -0400
-Date: Fri, 29 Aug 2014 20:16:03 +0200
+	id S1752962AbaH2STE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 14:19:04 -0400
+Date: Fri, 29 Aug 2014 20:16:32 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Al Viro <viro@zeniv.linux.org.uk>,
@@ -16,8 +16,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>,
         Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
         the arch/x86 maintainers <x86@kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/4] x86, fpu: introduce per-cpu "bool in_kernel_fpu"
-Message-ID: <20140829181603.GB30659@redhat.com>
+Subject: [PATCH 2/4] x86, fpu: don't abuse ->has_fpu in
+	__kernel_fpu_begin/end
+Message-ID: <20140829181632.GC30659@redhat.com>
 References: <20140827185138.GA12487@redhat.com> <CA+55aFwi-S27_maZXU+baOqPAYfi_NTGcfbnRnk45+B8+i4hVQ@mail.gmail.com> <20140828111628.GB15276@redhat.com> <20140829181533.GA30659@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -28,88 +29,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-interrupted_kernel_fpu_idle() tries to detect if kernel_fpu_begin()
-is safe or not. In particulat it should obviously deny the nested
-kernel_fpu_begin() and this logic doesn't look clean.
+Now that we have in_kernel_fpu we can remove __thread_clear_has_fpu()
+in __kernel_fpu_begin(). And this allow to replace the asymmetrical
+and nontrivial use_eager_fpu+tsk_used_math check in kernel_fpu_end()
+with the same __thread_has_fpu().
 
-If use_eager_fpu() == T we rely on a) __thread_has_fpu() check in
-interrupted_kernel_fpu_idle(), and b) on the fact that _begin() does
-__thread_clear_has_fpu().
+The logic becomes really simple afaics: if _begin() does save() then
+_end() needs restore(), and this is controlled by __thread_has_fpu().
 
-Otherwise we demand that the interrupted task has no FPU if it is in
-kernel mode, this works becase __kernel_fpu_begin() does clts().
-
-Add the per-cpu "bool in_kernel_fpu" variable, and change this code
-to check/set/clear it. This allows to do some cleanups (see the next
-changes) and fixes.
-
-Note that the current code looks racy. Say, kernel_fpu_begin() right
-after math_state_restore()->__thread_fpu_begin() will overwrite the
-regs we are going to restore. This patch doesn't even try to fix this,
-it just adds the comment, but "in_kernel_fpu" can also be used to
-implement kernel_fpu_disable() / kernel_fpu_enable().
+Also, with this patch __kernel_fpu_end() does restore_fpu_checking()
+and WARNs if it fails instead of math_state_restore(). I think this
+looks better because we no longer need __thread_fpu_begin(), and it
+would be better to report the failure in this case.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- arch/x86/include/asm/i387.h |    2 +-
- arch/x86/kernel/i387.c      |   10 ++++++++++
- 2 files changed, 11 insertions(+), 1 deletions(-)
+ arch/x86/kernel/i387.c |   19 ++++++-------------
+ 1 files changed, 6 insertions(+), 13 deletions(-)
 
-diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
-index ed8089d..5e275d3 100644
---- a/arch/x86/include/asm/i387.h
-+++ b/arch/x86/include/asm/i387.h
-@@ -40,8 +40,8 @@ extern void __kernel_fpu_end(void);
- 
- static inline void kernel_fpu_begin(void)
- {
--	WARN_ON_ONCE(!irq_fpu_usable());
- 	preempt_disable();
-+	WARN_ON_ONCE(!irq_fpu_usable());
- 	__kernel_fpu_begin();
- }
- 
 diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-index d5dd808..8fb8868 100644
+index 8fb8868..19dd36d 100644
 --- a/arch/x86/kernel/i387.c
 +++ b/arch/x86/kernel/i387.c
-@@ -19,6 +19,8 @@
- #include <asm/fpu-internal.h>
- #include <asm/user.h>
+@@ -82,9 +82,7 @@ void __kernel_fpu_begin(void)
  
-+static DEFINE_PER_CPU(bool, in_kernel_fpu);
-+
- /*
-  * Were we in an interrupt that interrupted kernel mode?
-  *
-@@ -33,6 +35,9 @@
-  */
- static inline bool interrupted_kernel_fpu_idle(void)
- {
-+	if (this_cpu_read(in_kernel_fpu))
-+		return false;
-+
- 	if (use_eager_fpu())
- 		return __thread_has_fpu(current);
- 
-@@ -73,6 +78,9 @@ void __kernel_fpu_begin(void)
- {
- 	struct task_struct *me = current;
- 
-+	this_cpu_write(in_kernel_fpu, true);
-+
-+	/* FIXME: race with math_state_restore()-like code */
+ 	/* FIXME: race with math_state_restore()-like code */
  	if (__thread_has_fpu(me)) {
- 		__thread_clear_has_fpu(me);
+-		__thread_clear_has_fpu(me);
  		__save_init_fpu(me);
-@@ -99,6 +107,8 @@ void __kernel_fpu_end(void)
- 	} else {
+-		/* We do 'stts()' in __kernel_fpu_end() */
+ 	} else if (!use_eager_fpu()) {
+ 		this_cpu_write(fpu_owner_task, NULL);
+ 		clts();
+@@ -94,17 +92,12 @@ EXPORT_SYMBOL(__kernel_fpu_begin);
+ 
+ void __kernel_fpu_end(void)
+ {
+-	if (use_eager_fpu()) {
+-		/*
+-		 * For eager fpu, most the time, tsk_used_math() is true.
+-		 * Restore the user math as we are done with the kernel usage.
+-		 * At few instances during thread exit, signal handling etc,
+-		 * tsk_used_math() is false. Those few places will take proper
+-		 * actions, so we don't need to restore the math here.
+-		 */
+-		if (likely(tsk_used_math(current)))
+-			math_state_restore();
+-	} else {
++	struct task_struct *me = current;
++
++	if (__thread_has_fpu(me)) {
++		if (WARN_ON(restore_fpu_checking(me)))
++			drop_init_fpu(me);
++	} else if (!use_eager_fpu()) {
  		stts();
  	}
-+
-+	this_cpu_write(in_kernel_fpu, false);
- }
- EXPORT_SYMBOL(__kernel_fpu_end);
  
 -- 
 1.5.5.1
