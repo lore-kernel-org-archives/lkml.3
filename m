@@ -1,76 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425AbaH2JRq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 05:17:46 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:36046 "EHLO mailhub1.si.c-s.fr"
+	id S1752580AbaH2JXt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 05:23:49 -0400
+Received: from mga09.intel.com ([134.134.136.24]:17600 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751840AbaH2JOj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 05:14:39 -0400
-From: Christophe Leroy <christophe.leroy@c-s.fr>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
-        scottwood@freescale.com
-Subject: [PATCH v2 03/19] powerpc/8xx: exception InstructionAccess does not exist on MPC8xx
-Message-Id: <20140829091437.B3FE71ABD63@localhost.localdomain>
-Date: Fri, 29 Aug 2014 11:14:37 +0200 (CEST)
+	id S1750892AbaH2JXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 05:23:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,424,1406617200"; 
+   d="scan'208";a="565258821"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: EmanueL Czirai <amanual@openmailbox.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: [Patch v4] x86, irq, PCI: Keep IRQ assignment for runtime power management
+Date: Fri, 29 Aug 2014 17:26:23 +0800
+Message-Id: <1409304383-18806-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Exception InstructionAccess does not exist on MPC8xx. No need to branch there from somewhere else. 
-Handling can be done directly in InstructionTLBError Exception.
+Now IOAPIC driver dynamically allocates IRQ numbers for IOAPIC pins.
+We need to keep IRQ assignment for PCI devices during runtime power
+management, otherwise it may cause failure of device wakeups.
 
-Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+Commit 3eec595235c17a7 "x86, irq, PCI: Keep IRQ assignment for PCI
+devices during suspend/hibernation" has fixed the issue for suspend/
+hibernation, we also need the same fix for runtime device sleep too.
 
+Fix: https://bugzilla.kernel.org/show_bug.cgi?id=83271
+Reported-and-Tested-by: EmanueL Czirai <amanual@openmailbox.org>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/powerpc/kernel/head_8xx.S |   17 +++++++----------
- 1 files changed, 7 insertions(+), 10 deletions(-)
+ arch/x86/include/asm/io_apic.h |    2 ++
+ arch/x86/kernel/apic/io_apic.c |   12 ++++++++++++
+ arch/x86/pci/intel_mid_pci.c   |    2 +-
+ arch/x86/pci/irq.c             |    2 +-
+ drivers/acpi/pci_irq.c         |    4 ++++
+ 5 files changed, 20 insertions(+), 2 deletions(-)
 
-diff --git a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
-index 3af6db1..fbe5d10 100644
---- a/arch/powerpc/kernel/head_8xx.S
-+++ b/arch/powerpc/kernel/head_8xx.S
-@@ -234,15 +234,9 @@ DataAccess:
- 	EXC_XFER_LITE(0x300, handle_page_fault)
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index 0aeed5ca356e..478c490f3654 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -227,6 +227,8 @@ static inline void io_apic_modify(unsigned int apic, unsigned int reg, unsigned
  
- /* Instruction access exception.
-- * This is "never generated" by the MPC8xx.  We jump to it for other
-- * translation errors.
-+ * This is "never generated" by the MPC8xx.
-  */
--	. = 0x400
--InstructionAccess:
--	EXCEPTION_PROLOG
--	mr	r4,r12
--	mr	r5,r9
--	EXC_XFER_LITE(0x400, handle_page_fault)
-+	EXCEPTION(0x400, InstructionAccess, unknown_exception, EXC_XFER_STD)
+ extern void io_apic_eoi(unsigned int apic, unsigned int vector);
  
- /* External interrupt */
- 	EXCEPTION(0x500, HardwareInterrupt, do_IRQ, EXC_XFER_LITE)
-@@ -382,7 +376,7 @@ InstructionTLBMiss:
- #endif
- 	mfspr	r10, SPRN_SPRG_SCRATCH2
- 	EXCEPTION_EPILOG_0
--	b	InstructionAccess
-+	b	InstructionTLBError
++extern bool mp_should_keep_irq(struct device *dev);
++
+ #else  /* !CONFIG_X86_IO_APIC */
  
- 	. = 0x1200
- DataStoreTLBMiss:
-@@ -477,7 +471,10 @@ DataStoreTLBMiss:
-  */
- 	. = 0x1300
- InstructionTLBError:
--	b	InstructionAccess
-+	EXCEPTION_PROLOG
-+	mr	r4,r12
-+	mr	r5,r9
-+	EXC_XFER_LITE(0x1300, handle_page_fault)
+ #define io_apic_assign_pci_irqs 0
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 29290f554e79..1e9a921d9701 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -3946,6 +3946,18 @@ int mp_set_gsi_attr(u32 gsi, int trigger, int polarity, int node)
+ 	return ret;
+ }
  
- /* This is the data TLB error on the MPC8xx.  This could be due to
-  * many reasons, including a dirty update to a pte.  We can catch that
++bool mp_should_keep_irq(struct device *dev)
++{
++	if (dev->power.is_prepared)
++		return true;
++#ifdef	CONFIG_PM_RUNTIME
++	if (dev->power.runtime_status == RPM_SUSPENDING)
++		return true;
++#endif
++
++	return false;
++}
++
+ /* Enable IOAPIC early just for system timer */
+ void __init pre_init_apic_IRQ0(void)
+ {
+diff --git a/arch/x86/pci/intel_mid_pci.c b/arch/x86/pci/intel_mid_pci.c
+index 3865116c51fb..b9958c364075 100644
+--- a/arch/x86/pci/intel_mid_pci.c
++++ b/arch/x86/pci/intel_mid_pci.c
+@@ -229,7 +229,7 @@ static int intel_mid_pci_irq_enable(struct pci_dev *dev)
+ 
+ static void intel_mid_pci_irq_disable(struct pci_dev *dev)
+ {
+-	if (!dev->dev.power.is_prepared && dev->irq > 0)
++	if (!mp_should_keep_irq(&dev->dev) && dev->irq > 0)
+ 		mp_unmap_irq(dev->irq);
+ }
+ 
+diff --git a/arch/x86/pci/irq.c b/arch/x86/pci/irq.c
+index bc1a2c341891..eb500c2592ad 100644
+--- a/arch/x86/pci/irq.c
++++ b/arch/x86/pci/irq.c
+@@ -1256,7 +1256,7 @@ static int pirq_enable_irq(struct pci_dev *dev)
+ 
+ static void pirq_disable_irq(struct pci_dev *dev)
+ {
+-	if (io_apic_assign_pci_irqs && !dev->dev.power.is_prepared &&
++	if (io_apic_assign_pci_irqs && !mp_should_keep_irq(&dev->dev) &&
+ 	    dev->irq) {
+ 		mp_unmap_irq(dev->irq);
+ 		dev->irq = 0;
+diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
+index c96887d5289e..6e6b80eb0bba 100644
+--- a/drivers/acpi/pci_irq.c
++++ b/drivers/acpi/pci_irq.c
+@@ -484,6 +484,10 @@ void acpi_pci_irq_disable(struct pci_dev *dev)
+ 	/* Keep IOAPIC pin configuration when suspending */
+ 	if (dev->dev.power.is_prepared)
+ 		return;
++#ifdef	CONFIG_PM_RUNTIME
++	if (dev->dev.power.runtime_status == RPM_SUSPENDING)
++		return;
++#endif
+ 
+ 	entry = acpi_pci_irq_lookup(dev, pin);
+ 	if (!entry)
 -- 
-1.7.1
+1.7.10.4
 
