@@ -1,50 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753672AbaH2Tbp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 15:31:45 -0400
-Received: from albert.telenet-ops.be ([195.130.137.90]:55621 "EHLO
-	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753085AbaH2Tbn (ORCPT
+	id S1753930AbaH2Tc0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 15:32:26 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:45032 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753104AbaH2TcZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 15:31:43 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Felipe Balbi <balbi@ti.com>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] usb: gadget: USB_RENESAS_USBHS_UDC should depend on HAS_DMA
-Date: Fri, 29 Aug 2014 21:31:40 +0200
-Message-Id: <1409340700-2033-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.9.1
+	Fri, 29 Aug 2014 15:32:25 -0400
+Message-ID: <5400D535.9080002@oracle.com>
+Date: Fri, 29 Aug 2014 15:32:05 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+CC: akpm@linux-foundation.org, kirill.shutemov@linux.intel.com,
+        khlebnikov@openvz.org, riel@redhat.com, mgorman@suse.de,
+        mhocko@suse.cz, hughd@google.com, vbabka@suse.cz, walken@google.com,
+        minchan@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 3/3] Convert a few VM_BUG_ON callers to VM_BUG_ON_VMA
+References: <1409324059-28692-1-git-send-email-sasha.levin@oracle.com> <1409324059-28692-3-git-send-email-sasha.levin@oracle.com> <20140829191719.GC12774@nhori.bos.redhat.com>
+In-Reply-To: <20140829191719.GC12774@nhori.bos.redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If NO_DMA=y:
+On 08/29/2014 03:17 PM, Naoya Horiguchi wrote:
+>> -	VM_BUG_ON(!PageLocked(page));
+>> > +	VM_BUG_ON_PAGE(!PageLocked(page), page);
+> This is not the replacement with VM_BUG_ON_VMA(), but it's fine :)
 
-drivers/built-in.o: In function `usbhsg_dma_map_ctrl':
-mod_gadget.c:(.text+0x53b226): undefined reference to `usb_gadget_map_request'
-mod_gadget.c:(.text+0x53b242): undefined reference to `usb_gadget_unmap_request'
+Woops, I was on a spree and got this one as well.
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- drivers/usb/gadget/udc/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks for the review Naoya!
 
-diff --git a/drivers/usb/gadget/udc/Kconfig b/drivers/usb/gadget/udc/Kconfig
-index 5151f947a4f5..00171d436cf8 100644
---- a/drivers/usb/gadget/udc/Kconfig
-+++ b/drivers/usb/gadget/udc/Kconfig
-@@ -163,7 +163,7 @@ config USB_R8A66597
- 
- config USB_RENESAS_USBHS_UDC
- 	tristate 'Renesas USBHS controller'
--	depends on USB_RENESAS_USBHS
-+	depends on USB_RENESAS_USBHS && HAS_DMA
- 	help
- 	   Renesas USBHS is a discrete USB host and peripheral controller chip
- 	   that supports both full and high speed USB 2.0 data transfers.
--- 
-1.9.1
 
+Thanks,
+Sasha
