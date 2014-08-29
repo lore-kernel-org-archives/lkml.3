@@ -1,107 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273AbaH2Dk5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 23:40:57 -0400
-Received: from mail-bl2lp0211.outbound.protection.outlook.com ([207.46.163.211]:42595
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750983AbaH2Dk4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 23:40:56 -0400
-From: Dexuan Cui <decui@microsoft.com>
-To: Sitsofe Wheeler <sitsofe@gmail.com>
-CC: KY Srinivasan <kys@microsoft.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PANIC, hyperv] BUG: unable to handle kernel paging request at
- ffff880077800004 (hv_ringbuffer_write)
-Thread-Topic: [PANIC, hyperv] BUG: unable to handle kernel paging request at
- ffff880077800004 (hv_ringbuffer_write)
-Thread-Index: AQHPwr6FHOqdouoVV0yV/yTpMU6fvpvm2tqw
-Date: Fri, 29 Aug 2014 03:39:40 +0000
-Message-ID: <EE124450C0AAF944A40DD71E61F878C9977892@SINEX14MBXC418.southpacific.corp.microsoft.com>
-References: <EE124450C0AAF944A40DD71E61F878C995E93E@SINEX14MBXC419.southpacific.corp.microsoft.com>
- <20140827104408.GC1827@sucs.org>
- <EE124450C0AAF944A40DD71E61F878C996493E@SINEX14MBXC419.southpacific.corp.microsoft.com>
- <20140827121559.GA14286@sucs.org>
- <EE124450C0AAF944A40DD71E61F878C9965238@SINEX14MBXC419.southpacific.corp.microsoft.com>
- <20140827161900.GA25326@sucs.org>
- <51ae44fcae424365a6d78f3597175d77@BY2PR0301MB0711.namprd03.prod.outlook.com>
- <20140827225739.GA24590@sucs.org>
- <ec859d8c8f8743a0b72e5e578472f45d@BY2PR0301MB0711.namprd03.prod.outlook.com>
- <EE124450C0AAF944A40DD71E61F878C9973DAC@SINEX14MBXC418.southpacific.corp.microsoft.com>
- <20140828124846.GA20494@sucs.org>
-In-Reply-To: <20140828124846.GA20494@sucs.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.168.3.98]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752551AbaH2DoB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 23:44:01 -0400
+Received: from mga09.intel.com ([134.134.136.24]:22312 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752070AbaH2Dn7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 23:43:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,422,1406617200"; 
+   d="scan'208";a="473683036"
+Message-ID: <53FFF642.7010909@intel.com>
+Date: Fri, 29 Aug 2014 11:40:50 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(377454003)(199003)(13464003)(51704005)(189002)(164054003)(1411001)(97756001)(81542001)(46102001)(77982001)(46406003)(4396001)(81342001)(90102001)(26826002)(93886004)(33656002)(76482001)(106116001)(85852003)(97736001)(74502001)(92726001)(92566001)(21056001)(50466002)(106466001)(77096002)(74662001)(31966008)(79102001)(23726002)(110136001)(15975445006)(20776003)(76176999)(44976005)(47776003)(69596002)(50986999)(81156004)(83072002)(99396002)(95666004)(107046002)(86362001)(6806004)(86612001)(83322001)(85306004)(16796002)(84676001)(19580395003)(68736004)(87936001)(80022001)(64706001)(2656002)(54356999)(55846006);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR03MB252;H:mail.microsoft.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
- (Engineering ONLY)
-X-Forefront-PRVS: 0318501FAE
-Authentication-Results: spf=pass (sender IP is 131.107.125.37)
- smtp.mailfrom=decui@microsoft.com; 
-X-OriginatorOrg: microsoft.onmicrosoft.com
+To: peterz@infradead.org, mingo@kernel.org, rafael.j.wysocki@intel.com,
+        srivatsa@mit.edu, akpm@linux-foundation.org, laijs@cn.fujitsu.com,
+        toshi.kani@hp.com, todd.e.brandt@linux.intel.com,
+        wangyun@linux.vnet.ibm.com, ego@linux.vnet.ibm.com, fabf@skynet.be,
+        linux@arm.linux.org.uk
+CC: oleg@redhat.com, srivatsa.bhat@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH V2] PM/CPU: Parallel enalbing nonboot cpus with resume
+ devices
+References: <1408696420-2654-1-git-send-email-tianyu.lan@intel.com>
+In-Reply-To: <1408696420-2654-1-git-send-email-tianyu.lan@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Sitsofe Wheeler
-> Sent: Thursday, August 28, 2014 20:49 PM
-> > > > The only issue seen on boot now is similar to
-> > > > https://lkml.org/lkml/2014/8/19/227 ...
+On 2014年08月22日 16:33, Lan Tianyu wrote:
+> In the current world, all nonboot cpus are enabled serially during system
+> resume. System resume sequence is that boot cpu enables nonboot cpu one by
+> one and then resume devices. Before resuming devices, there are few tasks
+> assigned to nonboot cpus after they are brought up. This waste cpu usage.
 > 
-> > I don't see this issue.  Do you still see the issue for EVERY boot
-> > after you applied KY's always-use-page-allocation patch?  I doubt that
-> > because in the log of the above link:
+> To accelerate S3, this patches allows boot cpu to go forward to resume
+> devices after bringing up one nonboot cpu. The nonboot cpu will be in
+> charge of bringing up other cpus. This makes enabling cpu2~x parallel
+> with resuming devices.
 > 
-> I think it depends on if I do a UP or SMP boot. With
-> f1bd473f95e02bc382d4dae94d7f82e2a455e05d (post v3.17-rc2) with the V2
-> BUG_ON
-> patch set coupled with the allocation change patch set a UP boot was able
-> to
-> run a small bunch of CPU and network stress tests without any issue.
-> However,
-> when doing an SMP boot the following happened:
->  <snip>
-> We can spin these off into a different thread if that would be helpful.
-
-Hi Sitsofe,
-This seems a hv_netvsc specific issue(?)
-IMO it's better to open a new thread. 
-
-However, I tried vcpus=1, 2 and 4 for 5 times respectively but couldn't
-reproduce the same issue(surely I used all of KY's patches, including the
-page-aligned-input-parameter-for-hypercall one)
-I used a workload of dd-ing and scp-ing big files.
-
-> > > > How come previous alignment efforts weren't working out?
-> > I'm not sure.
-> > If we trust the hypervisor, I would guess in hv_post_message()
-> > 1) We'd better add "aligned_msg->reserved = 0;"
-> > 2) Should we make sure  "aligned_msg->payload_size % 8 == 0"? IMO
-> >    aligned_msg->payload is an array of 8-byte.
+> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> ---
+> Change since V1:
+> 	Remove PM_PARALLEL_CPU_UP_FOR_SUSPEND kernel config and make
+> paralleling cpu as default behaviour. Add error handling for 
+> failure of the first frozen cpu online.
 > 
-> In that case why would payload_size not be a multiple of 8 - can it
-> change due to debug padding? If so wouldn't its start have had to be
-> misaligned?
+> So far, I just tested the patch on the Intel machines. It's better
+> to test it on the others Arch platforms. Appreciate a lot if some
+> one can help test it. 
+> 
 
-I found in some normal code path, e.g.,
-vmbus_open() -> vmbus_post_msg() -> ...
-(here the payload size is sizeof(struct vmbus_channel_open_channel),
-i.e., 148, not a multiple of 8), the payload_size is not a multiple of 8.
-I don't think this causes the issue here, but I think we'd better double
-check this and see if there is a potential issue or not.
+Hi All:
+	Any comments on this patch?  Thanks.
 
-Thanks,
--- Dexuan
+>  kernel/cpu.c | 70 +++++++++++++++++++++++++++++++++++++++++++++++++-----------
+>  1 file changed, 58 insertions(+), 12 deletions(-)
+> 
+> diff --git a/kernel/cpu.c b/kernel/cpu.c
+> index a343bde..9bc8497 100644
+> --- a/kernel/cpu.c
+> +++ b/kernel/cpu.c
+> @@ -551,8 +551,42 @@ void __weak arch_enable_nonboot_cpus_end(void)
+>  {
+>  }
+>  
+> +static int _cpu_up_with_trace(int cpu)
+> +{
+> +	int error;
+> +
+> +	trace_suspend_resume(TPS("CPU_ON"), cpu, true);
+> +	error = _cpu_up(cpu, 1);
+> +	trace_suspend_resume(TPS("CPU_ON"), cpu, false);
+> +	if (error) {
+> +		pr_warn("Error taking CPU%d up: %d\n", cpu, error);
+> +		return error;
+> +	}
+> +
+> +	pr_info("CPU%d is up\n", cpu);
+> +	return 0;
+> +}
+> +
+> +static int async_enable_nonboot_cpus(void *data)
+> +{
+> +	int cpu;
+> +
+> +	cpu_maps_update_begin();
+> +	arch_enable_nonboot_cpus_begin();
+> +
+> +	for_each_cpu(cpu, frozen_cpus) {
+> +		_cpu_up_with_trace(cpu);
+> +	}
+> +
+> +	arch_enable_nonboot_cpus_end();
+> +	cpumask_clear(frozen_cpus);
+> +	cpu_maps_update_done();
+> +	return 0;
+> +}
+> +
+>  void __ref enable_nonboot_cpus(void)
+>  {
+> +	struct task_struct *tsk;
+>  	int cpu, error;
+>  
+>  	/* Allow everyone to use the CPU hotplug again */
+> @@ -563,22 +597,34 @@ void __ref enable_nonboot_cpus(void)
+>  
+>  	pr_info("Enabling non-boot CPUs ...\n");
+>  
+> -	arch_enable_nonboot_cpus_begin();
+> +	cpu = cpumask_first(frozen_cpus);
+> +	cpumask_clear_cpu(cpu, frozen_cpus);
+>  
+> -	for_each_cpu(cpu, frozen_cpus) {
+> -		trace_suspend_resume(TPS("CPU_ON"), cpu, true);
+> -		error = _cpu_up(cpu, 1);
+> -		trace_suspend_resume(TPS("CPU_ON"), cpu, false);
+> -		if (!error) {
+> -			pr_info("CPU%d is up\n", cpu);
+> -			continue;
+> +	error = _cpu_up_with_trace(cpu);
+> +	if (cpumask_empty(frozen_cpus))
+> +		goto out;
+> +
+> +	if (error) {
+> +		/*
+> +		 * If fail to bring up the first frozen cpus,
+> +		 * enable the rest frozen cpus on the boot cpu.
+> +		 */
+> +		arch_enable_nonboot_cpus_begin();
+> +		for_each_cpu(cpu, frozen_cpus) {
+> +			_cpu_up_with_trace(cpu);
+>  		}
+> -		pr_warn("Error taking CPU%d up: %d\n", cpu, error);
+> -	}
+> +		arch_enable_nonboot_cpus_end();
+>  
+> -	arch_enable_nonboot_cpus_end();
+> +	} else {
+> +		tsk = kthread_create_on_cpu(async_enable_nonboot_cpus,
+> +				NULL, cpu, "async-enable-nonboot-cpus");
+> +		if (IS_ERR(tsk)) {
+> +			pr_err("Failed to create async enable nonboot cpus thread.\n");
+> +			goto out;
+> +		}
+>  
+> -	cpumask_clear(frozen_cpus);
+> +		kthread_unpark(tsk);
+> +	}
+>  out:
+>  	cpu_maps_update_done();
+>  }
+> 
+
+
+-- 
+Best regards
+Tianyu Lan
