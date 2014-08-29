@@ -1,78 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370AbaH2NQK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 09:16:10 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:59618 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752150AbaH2NQI (ORCPT
+	id S1753065AbaH2N35 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 09:29:57 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:37480 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751944AbaH2N3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 09:16:08 -0400
-X-Greylist: delayed 411 seconds by postgrey-1.27 at vger.kernel.org; Fri, 29 Aug 2014 09:16:08 EDT
-From: Stefan Hengelein <stefan.hengelein@fau.de>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, jkosina@suse.cz, paul.gortmaker@windriver.com,
-        mhocko@suse.cz, mattst88@gmail.com, josh@joshtriplett.org,
-        geert@linux-m68k.org, khilman@linaro.org,
-        Stefan Hengelein <stefan.hengelein@fau.de>,
-        Andreas Ruprecht <rupran@einserver.de>
-Subject: [PATCH] init/Kconfig: move RCU_NOCB_CPU dependencies to choice
-Date: Fri, 29 Aug 2014 15:08:20 +0200
-Message-Id: <1409317700-3836-1-git-send-email-stefan.hengelein@fau.de>
-X-Mailer: git-send-email 1.9.1
+	Fri, 29 Aug 2014 09:29:55 -0400
+Message-ID: <5400817E.6060500@gmail.com>
+Date: Fri, 29 Aug 2014 21:34:54 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: David Vrabel <david.vrabel@citrix.com>, konrad.wilk@oracle.com,
+        boris.ostrovsky@oracle.com
+CC: xen-devel@lists.xenproject.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers/xen/evtchn.c: Check failure for evtchn_make_refcounted()
+References: <53FF4702.9020509@gmail.com> <53FF4FA5.4050105@citrix.com>
+In-Reply-To: <53FF4FA5.4050105@citrix.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Every choice item of the "Build-forced no-CBs CPUs" choice had a
-dependency to RCU_NOCB_CPU. It's more comprehensible if the choice
-itself has the dependency instead of every choice item.
-The choice itself doesn't need to be visible if there are no items
-selectable (i.e. on arch/frv) or RCU_NOCB_CPU is not defined.
 
-Signed-off-by: Stefan Hengelein <stefan.hengelein@fau.de>
-Signed-off-by: Andreas Ruprecht <rupran@einserver.de>
----
- init/Kconfig | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/init/Kconfig b/init/Kconfig
-index 197b563..d604000 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -729,6 +729,7 @@ config RCU_NOCB_CPU
- choice
- 	prompt "Build-forced no-CBs CPUs"
- 	default RCU_NOCB_CPU_NONE
-+	depends on RCU_NOCB_CPU
- 	help
- 	  This option allows no-CBs CPUs (whose RCU callbacks are invoked
- 	  from kthreads rather than from softirq context) to be specified
-@@ -737,7 +738,7 @@ choice
- 
- config RCU_NOCB_CPU_NONE
- 	bool "No build_forced no-CBs CPUs"
--	depends on RCU_NOCB_CPU && !NO_HZ_FULL_ALL
-+	depends on !NO_HZ_FULL_ALL
- 	help
- 	  This option does not force any of the CPUs to be no-CBs CPUs.
- 	  Only CPUs designated by the rcu_nocbs= boot parameter will be
-@@ -751,7 +752,7 @@ config RCU_NOCB_CPU_NONE
- 
- config RCU_NOCB_CPU_ZERO
- 	bool "CPU 0 is a build_forced no-CBs CPU"
--	depends on RCU_NOCB_CPU && !NO_HZ_FULL_ALL
-+	depends on !NO_HZ_FULL_ALL
- 	help
- 	  This option forces CPU 0 to be a no-CBs CPU, so that its RCU
- 	  callbacks are invoked by a per-CPU kthread whose name begins
-@@ -766,7 +767,6 @@ config RCU_NOCB_CPU_ZERO
- 
- config RCU_NOCB_CPU_ALL
- 	bool "All CPUs are build_forced no-CBs CPUs"
--	depends on RCU_NOCB_CPU
- 	help
- 	  This option forces all CPUs to be no-CBs CPUs.  The rcu_nocbs=
- 	  boot parameter will be ignored.  All CPUs' RCU callbacks will
+On 8/28/14 23:49, David Vrabel wrote:
+> On 28/08/14 16:13, Chen Gang wrote:
+>> evtchn_make_refcounted() may return failure, so need process the failure
+>> case. In failure case, it need call unbind_from_irqhandler() just like
+>> evtchn_unbind_from_user() has done.
+>>
+>> irq_from_evtchn() must be OK when bind_evtchn_to_irqhandler() succeed,
+>> so need not check it again.
+>>
+>> Also still need remain the closing port code, because when the failure
+>> occurs, unbind_from_irqhandler() will not close port internally.
+> 
+> None of the evtchn_make_refcounted() failures can occur since we know we
+> have a valid irq and info at the single call site.
+> 
+
+OK, thanks. I guess what you said is correct.
+
+But only according to the code, for me, I am not quite sure about 'info'
+must be always valid. If bind_evtchn_to_irqhandler() succeeds, I can not
+find any related code to prove 'info' must be valid.
+
+ - for a new irq, it will allocate 'info' for it.
+
+ - but for an existing irq, the code assumes it may has no 'info'.
+   (so several areas check 'info' whether valid, although irq is OK).
+
+So could you give some additional related proofs for it? And if 'info'
+must be always OK, can we remove all the related check about 'info'?
+
+
+> I would like to see this fixed by refactoring the code to remove
+> evtchn_make_refcounted() by making all irqs for event channels reference
+> counted.  These no need for this refcounting to be optional.
+> 
+
+If 'info' really must always be valid, what you said sounds reasonable
+to me.
+
+
+Thanks
 -- 
-1.9.1
+Chen Gang
 
+Open, share, and attitude like air, water, and life which God blessed
