@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753268AbaH2OM1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 10:12:27 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:47484 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752528AbaH2OMZ (ORCPT
+	id S1753294AbaH2OTe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 10:19:34 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:29214 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752877AbaH2OTd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 10:12:25 -0400
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: monstr@monstr.eu, Josh Cartwright <josh.cartwright@ni.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Rob Herring <robherring2@gmail.com>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: zynq: Remove useless L2C AUX setting
-Date: Fri, 29 Aug 2014 16:12:12 +0200
-Message-Id: <66d0f1762b6b76559794d86e85d31398c337d109.1409321528.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-17731-1409321532-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	Fri, 29 Aug 2014 10:19:33 -0400
+X-IronPort-AV: E=Sophos;i="5.04,424,1406592000"; 
+   d="scan'208";a="167178657"
+Message-ID: <54008BF2.5050905@citrix.com>
+Date: Fri, 29 Aug 2014 15:19:30 +0100
+From: Andrew Cooper <andrew.cooper3@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
+MIME-Version: 1.0
+To: Stefan Bader <stefan.bader@canonical.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Kees Cook <keescook@chromium.org>,
+        David Vrabel <david.vrabel@citrix.com>
+Subject: Re: [Xen-devel] [PATCH] Solved the Xen PV/KASLR riddle
+References: <20140827204940.GA10556@laptop.dumpdata.com> <1409248903-19625-1-git-send-email-stefan.bader@canonical.com> <53FFB045.9010809@citrix.com> <54003BE5.5010603@canonical.com>
+In-Reply-To: <54003BE5.5010603@canonical.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+On 29/08/14 09:37, Stefan Bader wrote:
+> On 29.08.2014 00:42, Andrew Cooper wrote:
+>> On 28/08/2014 19:01, Stefan Bader wrote:
+>>>>> So not much further... but then I think I know what I do next. Probably should
+>>>>> have done before. I'll replace the WARN_ON in vmalloc that triggers by a panic
+>>>>> and at least get a crash dump of that situation when it occurs. Then I can dig
+>>>>> in there with crash (really should have thought of that before)...
+>>>> <nods> I dug a bit in the code (arch/x86/xen/mmu.c) but there is nothing there
+>>>> that screams at me, so I fear I will have to wait until you get the crash
+>>>> and get some clues from that.
+>>> Ok, what a journey. So after long hours of painful staring at the code...
+>>> (and btw, if someone could tell me how the heck one can do a mfn_to_pfn
+>>> in crash, I really would appreaciate :-P)
+>> The M2P map lives in the Xen reserved virtual address space in each PV
+>> guest, and forms part of the PV ABI.  It is mapped read-only, in the
+>> native width of the guest.
+>>
+>> 32bit PV (PAE) at 0xF5800000
+>> 64bit PV at 0xFFFF800000000000
+>>
+>> This is represented by the MACH2PHYS_VIRT_START symbol from the Xen
+>> public header files.  You should be able to blindly construct a pointer
+>> to it (if you have nothing better to hand), as it will be hooked into
+>> the guests pagetables before execution starts.  Therefore,
+>> "MACH2PHYS_VIRT_START[(unsigned long)pfn]" ought to do in a pinch.
+> machine_to_phys_mapping is set to that address but its not mapped inside the
+> crash dump. Somehow vtop in crash handles translations. I need to have a look at
+> their code, I guess.
+>
+> Thanks,
+> Stefan
 
---=_mimegpg-monstr-desktop-17731-1409321532-0001
+What context is the crash dump?  If it is a Xen+dom0 kexec()d to native
+linux, then the m2p should still be accessible given dom0's cr3.  If it
+is some state copied off-host then you will need to adjust the copy to
+include that virtual range.
 
-AUX setting has no effect that's why remove it.
-
-Warning log:
-L2C: platform provided aux values match the hardware, so
-have no effect.  Please remove them.
-
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
----
-
- arch/arm/mach-zynq/common.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
-index 31a6fa40ba37..151bcbcb0f67 100644
---- a/arch/arm/mach-zynq/common.c
-+++ b/arch/arm/mach-zynq/common.c
-@@ -198,8 +198,8 @@ static const char * const zynq_dt_match[] = {
-
- DT_MACHINE_START(XILINX_EP107, "Xilinx Zynq Platform")
- 	/* 64KB way size, 8-way associativity, parity disabled */
--	.l2c_aux_val	= 0x02000000,
--	.l2c_aux_mask	= 0xf0ffffff,
-+	.l2c_aux_val	= 0x00000000,
-+	.l2c_aux_mask	= 0xffffffff,
- 	.smp		= smp_ops(zynq_smp_ops),
- 	.map_io		= zynq_map_io,
- 	.init_irq	= zynq_irq_init,
---
-1.8.2.3
-
-
---=_mimegpg-monstr-desktop-17731-1409321532-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlQAijwACgkQykllyylKDCHrbACeJp2cDrwZFa7Hnv2kkFvExdz3
-I0IAn0bLNR8xWVEHxQWE3lEI84FtLKNe
-=jnmm
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-17731-1409321532-0001--
+~Andrew
