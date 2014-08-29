@@ -1,82 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752350AbaH2DtE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 23:49:04 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:6227 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750983AbaH2DtC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 23:49:02 -0400
-Date: Thu, 28 Aug 2014 20:49:01 -0700
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: Pramod Gurav <pramod.gurav@smartplayin.com>
-CC: Bjorn Andersson <bjorn@kryo.se>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] pinctrl: qcom: Release pin ranges when
- gpiochip_irqchip_add fails
-Message-ID: <20140829034900.GF12494@sonymobile.com>
-References: <1409137049-15848-1-git-send-email-pramod.gurav@smartplayin.com>
- <CAJAp7OhnUD3oSLfcRMD3veSJhVQLZdW1FPb8grOYqN5Gh3Oagw@mail.gmail.com>
- <53FED69B.3020406@smartplayin.com>
+	id S1752446AbaH2D6p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 23:58:45 -0400
+Received: from ja.ssi.bg ([178.16.129.10]:33043 "EHLO ja.home.ssi.bg"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751470AbaH2D6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 23:58:43 -0400
+Date: Fri, 29 Aug 2014 06:57:55 +0300 (EEST)
+From: Julian Anastasov <ja@ssi.bg>
+X-X-Sender: ja@ja.home.ssi.bg
+To: Simon Kirby <sim@hostway.ca>
+cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: net_ns cleanup / RCU overhead
+In-Reply-To: <20140829004029.GA18300@hostway.ca>
+Message-ID: <alpine.LFD.2.11.1408290635530.1520@ja.home.ssi.bg>
+References: <20140820055855.GB5579@hostway.ca> <20140828192431.GF5001@linux.vnet.ibm.com> <20140828194422.GB8867@hostway.ca> <87oav4l5g9.fsf@x220.int.ebiederm.org> <20140828204658.GL5001@linux.vnet.ibm.com> <20140829004029.GA18300@hostway.ca>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <53FED69B.3020406@smartplayin.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 28 Aug 00:13 PDT 2014, Pramod Gurav wrote:
 
-> On Thursday 28 August 2014 02:54 AM, Bjorn Andersson wrote:
-> > On Wed, Aug 27, 2014 at 3:57 AM, Pramod Gurav
-> > <pramod.gurav@smartplayin.com> wrote:
-> >> This patches adds a call to gpiochip_remove_pin_ranges when
-> >> gpiochip_irqchip_add fails to release memory allocated for pin_ranges.
-> >>
-> >> diff --git a/drivers/pinctrl/qcom/pinctrl-msm.c b/drivers/pinctrl/qcom/pinctrl-msm.c
-> >> @@ -845,6 +845,7 @@ static int msm_gpio_init(struct msm_pinctrl *pctrl)
-> >>                                    IRQ_TYPE_NONE);
-> >>         if (ret) {
-> >>                 dev_err(pctrl->dev, "Failed to add irqchip to gpiochip\n");
-> >> +               gpiochip_remove_pin_ranges(chip);
-> >>                 return -ENOSYS;
-> >>         }
-> > 
-> > Good catch, I guess this was lost in the introduction of gpiochip_irqchip...
-> > 
-> > 
-> > Rather than just releasing the pin_ranges of the gpio_chip you should
-> > probably add a gpiochip_remove() both here and in the case of
-> > gpiochip_add_pin_range() failing.
+	Hello,
+
+On Thu, 28 Aug 2014, Simon Kirby wrote:
+
+> I noticed that [kworker/u16:0]'s stack is often:
 > 
-> Thanks for review. But if I see implementation of gpiochip_remove() it does:
-> 	gpiochip_irqchip_remove(chip);
->         gpiochip_remove_pin_ranges(chip);
->         of_gpiochip_remove(chip);
-> 
-> In above failure case only gpiochip_add() and gpiochip_add_pin_range()
-> have been successful hence I thought that would cause any problem to add
-> gpiochip_remove(). If that is not a problem I think we can call
-> gpiochip_remove() in fail case of gpiochip_add_pin_range() as well.
-> Do I make sense?
-> 
+> [<ffffffff810942a6>] wait_rcu_gp+0x46/0x50
+> [<ffffffff8109607e>] synchronize_sched+0x2e/0x50
+> [<ffffffffa00385ac>] nf_nat_net_exit+0x2c/0x50 [nf_nat]
 
-As soon as gpiochip_add() have returned successfully we will have a live
-gpio_chip, upon returning unsuccessfully from probe devres will free the pctrl
-node and the gpio core will continue to operate on freed memory.
+	I guess the problem is in nf_nat_net_exit,
+may be other nf exit handlers too. pernet-exit handlers
+should avoid synchronize_rcu and rcu_barrier.
+A RCU callback and rcu_barrier in module-exit is the way
+to go. cleanup_net includes rcu_barrier, so pernet-exit
+does not need such calls.
 
-Therefor we need to call gpio_remove() in the ccase of both
-gpiochip_add_pin_range() and gpiochip_irqchip_add() failing.
+> [<ffffffff81720339>] ops_exit_list.isra.4+0x39/0x60
+> [<ffffffff817209e0>] cleanup_net+0xf0/0x1a0
+> [<ffffffff81062997>] process_one_work+0x157/0x440
+> [<ffffffff81063303>] worker_thread+0x63/0x520
+> [<ffffffff81068b96>] kthread+0xd6/0xf0
+> [<ffffffff818d412c>] ret_from_fork+0x7c/0xb0
+> [<ffffffffffffffff>] 0xffffffffffffffff
 
-The gpio_remove() does as you say remove those additional items, but handles
-the case where they are not yet "allocated".
+Regards
 
-I hope this answers your conserns.
-
-Regards,
-Bjorn
+--
+Julian Anastasov <ja@ssi.bg>
