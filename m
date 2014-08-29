@@ -1,185 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247AbaH2MUM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 08:20:12 -0400
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:50877 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752735AbaH2MUK (ORCPT
+	id S1752877AbaH2MZP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 08:25:15 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:36690 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751608AbaH2MZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 08:20:10 -0400
-From: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] perf kvm stat: unify print_vcpu_info() for report/live
-References: <1409242664-10883-1-git-send-email-yarygin@linux.vnet.ibm.com>
-	<53FF69E3.2020501@gmail.com>
-Date: Fri, 29 Aug 2014 16:20:03 +0400
-In-Reply-To: <53FF69E3.2020501@gmail.com> (David Ahern's message of "Thu, 28
-	Aug 2014 11:41:55 -0600")
-Message-ID: <87vbpbsd1o.fsf@linux.vnet.ibm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4.50 (gnu/linux)
+	Fri, 29 Aug 2014 08:25:12 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19bxP7/iqorQf+fJG/9SBvvXTA+8sjwn4M=
+X-DKIM: OpenDKIM Filter v2.0.1 titan CBDE05D2548
+Date: Fri, 29 Aug 2014 08:24:52 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Matti Vaittinen <matti.vaittinen@nsn.com>,
+        ext Guenter Roeck <linux@roeck-us.net>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>,
+        "jic23@kernel.org" <jic23@kernel.org>,
+        "arno@natisbad.org" <arno@natisbad.org>,
+        "jgunthorpe@obsidianresearch.com" <jgunthorpe@obsidianresearch.com>,
+        "san@rosetechnology.dk" <san@rosetechnology.dk>,
+        "hs@denx.de" <hs@denx.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        Sverdlin Alexander <alexander.sverdlin@nsn.com>
+Subject: Re: [PATCH] rtc: ds1307: add trickle charger device tree binding
+Message-ID: <20140829122452.GA3683@titan.lakedaemon.net>
+References: <20140828124237.GA29102@fi-ourus-dhcp00977.emea.nsn-net.net>
+ <20140828125915.GJ14650@leverpostej>
+ <20140828155157.GB23677@roeck-us.net>
+ <20140828161025.GO14650@leverpostej>
+ <20140828164825.GA12153@roeck-us.net>
+ <20140828172842.GF12769@titan.lakedaemon.net>
+ <20140828174034.GC15307@roeck-us.net>
+ <20140829073413.GN4587@fi-ourus-dhcp00977.emea.nsn-net.net>
+ <20140829104001.GB19424@leverpostej>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082912-3548-0000-0000-000001300885
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140829104001.GB19424@leverpostej>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Ahern <dsahern@gmail.com> writes:
+On Fri, Aug 29, 2014 at 11:40:02AM +0100, Mark Rutland wrote:
+> On Fri, Aug 29, 2014 at 08:34:25AM +0100, Matti Vaittinen wrote:
+> > On Thu, Aug 28, 2014 at 10:40:34AM -0700, ext Guenter Roeck wrote:
+> > > On Thu, Aug 28, 2014 at 01:28:42PM -0400, Jason Cooper wrote:
+> > > > On Thu, Aug 28, 2014 at 09:48:25AM -0700, Guenter Roeck wrote:
+> > > > > On Thu, Aug 28, 2014 at 05:10:25PM +0100, Mark Rutland wrote:
+> > > > > > On Thu, Aug 28, 2014 at 04:51:57PM +0100, Guenter Roeck wrote:
+> > > > > > > On Thu, Aug 28, 2014 at 01:59:15PM +0100, Mark Rutland wrote:
+> > > > > > > > On Thu, Aug 28, 2014 at 01:42:44PM +0100, Matti Vaittinen wrote:
+> > > > > > > > > Patch adding support for specifying trickle charger setup from device
+> > > > > > > > > tree. Patch is based on linux-next tree.
+> > > > > > > > > 
+> > > > > > > > > 
+> > > > > > > > > Some DS13XX devices have "trickle chargers". Introduce a device tree binding
+> > > > > > > > > for specifying the setup and register values.
+> > > > > > > > > 
+> > > > > > > > > +++ b/Documentation/devicetree/bindings/rtc/dallas,ds1339.txt
+> > > > > > > > > @@ -0,0 +1,19 @@
+> > > > > > > > > +* Dallas DS1339		I2C Serial Real-Time Clock
+> > > > > > > > > +
+> > > > > > > > > +Required properties:
+> > > > > > > > > +- compatible: Should contain "dallas,ds1339".
+> > > > > > > > > +- reg: I2C address for chip
+> > > > > > > > > +
+> > > > > > > > > +Optional properties:
+> > > > > > > > > +- trickle_setup : Used Trickle Charger configuration,
+> > > > > > > > > +        corresponding to 5 lowest bits in trickle charger register.
+> > > > > > > > 
+> > > > > > > The value is provided via platform data, so it is platform specific
+> > > > > > > and presumably needs to be configurable. I did, however, not find
+> > > > > > > a single in-kernel driver which is actually setting it.
+> > > > > > > So this is a good question.
+> > > > > > 
+> > > > > > I'm uncomfortable adding a field we don't understand to DT.
+> > > > > > 
+> > > > > > Is there any publicly-available documentation for the device?
+> > > > > > 
+> > > > > 
+> > > > > Lots ;-)
+> > > > > 
+> > > > > http://datasheets.maximintegrated.com/en/ds/DS1307.pdf
+> > > > > http://datasheets.maximintegrated.com/en/ds/DS1337.pdf
+> > > > > http://datasheets.maximintegrated.com/en/ds/DS1338.pdf
+> > > > > http://datasheets.maximintegrated.com/en/ds/DS1339.pdf
+> > > > > http://datasheets.maximintegrated.com/en/ds/DS1340.pdf
+> > > > > http://datasheets.maximintegrated.com/en/ds/DS1388.pdf
+> > > > > http://datasheets.maximintegrated.com/en/ds/DS3231.pdf
+> > > > > 
+> > > > > Code suggests that DS1339, DS1339, and DS1340 have the register.
+> > > > > 
+> > > > > Looking into the datasheets, the configuration consists of two parts:
+> > > > > - diode connected or not
+> > > > > - trickle charger resistor value (250, 2000, or 4000 ohm)
+> > > > > 
+> > > > > Given that, it seems to me that those values should be configured
+> > > > > explicitly instead of using a binary value, and that the driver
+> > > > > should perform the conversion from dt entry to register value.
+> > > > 
+> > > > iiuc, there is no way for the kernel to determine what is being trickle
+> > > > charged, and thus no way to determine how it should set this register.
+> > > > 
+> > > > It may be a bit of overkill, but I think a DT macro would be the most
+> > > > maintainable solution here:
+> > > > 
+> > > > #define DS1339_TRCKL_DIODE   0x08
+> > > > #define DS1339_TRCKL_NODIODE 0x04
+> > > > #define DS1339_TRCKL_R250    0x01
+> > > > #define DS1339_TRCKL_R2000   0x02
+> > > > #define DS1339_TRCKL_R4000   0x03
+> > > > 
+> > > > trickle_setup = <DS1339_TRCKL_DIODE | DS1339_TRCKL_R250>;
+> > > > 
+> > > > And the driver would take care of oring it with the enable pattern.
+> > > > 
+> > > 
+> > > Yes, that sounds reasonable as well.
+> > > 
+> > I thought of this too. However the ds1307 seems to be designed to work
+> > with bunch of chips. What then when next chip supported by this driver
+> > introduces 75, 1000 and 5000 ohm resistors? Or something else. (Or add
+> > some other configuration). I do not see this approach to be
+> > maintainable in long run.
+> 
+> If a new chip comes out with new features, the driver will need an
+> update anyhow. We have no guarantee that the register placement will be
+> the same, let alone the layout.
 
-> On 8/28/14, 10:17 AM, Alexander Yarygin wrote:
->> The print_vcpu_info() function prints title line "Analyze events ..."
->> with a description of the current target. For 'live' option, the
->> output includes "system-wide/specific pids, all vcpus/specific vcpus".
->> Example:
->> $ sudo perf kvm stat live -p 1
->> Analyze events for pid(s) 1, all VCPUs: [..]
->>
->> But for 'report' option the output only contains "all vcpus/specific
->> vcpus":
->> $ sudo perf kvm stat report -p 1
->> Analyze events for all VCPUs: [..]
->>
->> Adding '-a' option for 'stat report' and unifying the print_vcpu_info()
->> function, so it can print complete target info for 'stat report':
->>
->> $ sudo perf kvm stat report -p 1
->> Analyze events for pid(s) 1, all VCPUs: [..]
->
-> I did not follow that commit message at all.
->
+Yes, I'm reminded of our conversations a year ago in Edinburgh.  It's
+impossible to engineer a perfect, future-proof binding.  But that
+being said...
 
-I'll rephrase.
+> If and when said new chip comes out we allocate a new compatible string.
+> If it's compatible iwith (i.e. is a superset of) an existing device's
+> programming model, we add that existing string as a fallback in the
+> compatible list so old kernels can drive the subset of features they
+> understand.
+> 
+> > I see strong possibility of polluting dt with endless amount of
+> > defines. Furthermore I believe the benefits of these defines would be
+> > negligible compared to effort maintaining defines and documentation of
+> > them causes. Surely the one who needs to add dt node for this chip in
+> > his board's dt has the manual for the chip he has on board. Especially
+> > so if he knows the trickle charger there and wants to configure it.
+> > The plain resistor type still gives zero information without knowing
+> > the other details.
+> 
+> I would rather that the driver had some idea of what it were doing
+> rather than being a glorified copy routine.
+> 
+> I would suggest we have two properties that describe the resistor's
+> rating and whether or not there is a diode:
+> 
+> trickle-resistor-ohms = <250>
+> diode-connected;
 
->>
->> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
->> Cc: Christian Borntraeger <borntraeger@de.ibm.com>
->> Cc: David Ahern <dsahern@gmail.com>
->> Cc: Ingo Molnar <mingo@kernel.org>
->> Cc: Jiri Olsa <jolsa@kernel.org>
->> Cc: Paul Mackerras <paulus@samba.org>
->> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
->> Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
->> ---
->>   tools/perf/builtin-kvm.c   |   37 ++++++++++++++++++++++++++-----------
->>   tools/perf/util/kvm-stat.h |    1 -
->>   2 files changed, 26 insertions(+), 12 deletions(-)
->>
->> diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
->> index 43367eb..ab97920 100644
->> --- a/tools/perf/builtin-kvm.c
->> +++ b/tools/perf/builtin-kvm.c
->> @@ -543,14 +543,12 @@ static void print_vcpu_info(struct perf_kvm_stat *kvm)
->>
->>   	pr_info("Analyze events for ");
->>
->> -	if (kvm->live) {
->> -		if (kvm->opts.target.system_wide)
->> -			pr_info("all VMs, ");
->> -		else if (kvm->opts.target.pid)
->> -			pr_info("pid(s) %s, ", kvm->opts.target.pid);
->> -		else
->> -			pr_info("dazed and confused on what is monitored, ");
->> -	}
->> +	if (kvm->opts.target.system_wide)
->> +		pr_info("all VMs, ");
->> +	else if (kvm->opts.target.pid)
->> +		pr_info("pid(s) %s, ", kvm->opts.target.pid);
->> +	else
->> +		pr_info("dazed and confused on what is monitored, ");
->
-> Ah, you are unifying the output -- same title bar for both live and report.
->
->>
->>   	if (vcpu == -1)
->>   		pr_info("all VCPUs:\n\n");
->> @@ -1088,8 +1086,8 @@ static int read_events(struct perf_kvm_stat *kvm)
->>
->>   static int parse_target_str(struct perf_kvm_stat *kvm)
->>   {
->> -	if (kvm->pid_str) {
->> -		kvm->pid_list = intlist__new(kvm->pid_str);
->> +	if (kvm->opts.target.pid) {
->> +		kvm->pid_list = intlist__new(kvm->opts.target.pid);
->>   		if (kvm->pid_list == NULL) {
->>   			pr_err("Error parsing process id string\n");
->>   			return -EINVAL;
->
-> And this is an unrelated change. please make it a separate patch.
->
-> David
->
+I much prefer this solution over my own suggestion.  With one small
+change, s/diode-connected/trickle-diode-enable/  Does that sound ok?
 
-Why? These are necessary changes for the output unification part:
-print_vcpu_info() looks for a pid string in kvm->opts.target.pid, but
-'report' command keeps it in kvm->pid_str instead. It also wants the
-kvm->opts.target.system_wide flag, that 'report' doesn't have, so this
-patch switches from kvm->pid_str to kvm->opts.target.pid, adds the flag
-and enables it by default.
+> That's easy for a human to write and/or validate, we can easily extend
+> it in future, requires no proliferation of macros, and describes the
+> hardware rather than telling software what to do.
+> 
+> The driver becomes a little more complicated, but gains sanity checking,
+> which is a good thing.
+> 
+> I'm still worried that we have no idea what the device is intended to
+> charge. Surely that's important?
 
-So, should I resend it with 2 patches?
+In the docs it said a variety of batteries and supercaps.  Yeah, not
+much help...
 
->> @@ -1182,16 +1180,21 @@ kvm_events_record(struct perf_kvm_stat *kvm, int argc, const char **argv)
->>   static int
->>   kvm_events_report(struct perf_kvm_stat *kvm, int argc, const char **argv)
->>   {
->> +	char errbuf[BUFSIZ];
->> +	int err;
->> +
->>   	const struct option kvm_events_report_options[] = {
->>   		OPT_STRING(0, "event", &kvm->report_event, "report event",
->>   			   "event for reporting: vmexit, "
->>   			   "mmio (x86 only), ioport (x86 only)"),
->> +		OPT_BOOLEAN('a', "all-cpus", &kvm->opts.target.system_wide,
->> +			    "system-wide collection from all CPUs"),
->>   		OPT_INTEGER(0, "vcpu", &kvm->trace_vcpu,
->>   			    "vcpu id to report"),
->>   		OPT_STRING('k', "key", &kvm->sort_key, "sort-key",
->>   			    "key for sorting: sample(sort by samples number)"
->>   			    " time (sort by avg time)"),
->> -		OPT_STRING('p', "pid", &kvm->pid_str, "pid",
->> +		OPT_STRING('p', "pid", &kvm->opts.target.pid, "pid",
->>   			   "analyze events only for given process id(s)"),
->>   		OPT_END()
->>   	};
->> @@ -1212,6 +1215,18 @@ kvm_events_report(struct perf_kvm_stat *kvm, int argc, const char **argv)
->>   					   kvm_events_report_options);
->>   	}
->>
->> +	/*
->> +	 * target related setups
->> +	 */
->> +	err = target__validate(&kvm->opts.target);
->> +	if (err) {
->> +		target__strerror(&kvm->opts.target, err, errbuf, BUFSIZ);
->> +		ui__warning("%s", errbuf);
->> +	}
->> +
->> +	if (target__none(&kvm->opts.target))
->> +		kvm->opts.target.system_wide = true;
->> +
->>   	return kvm_events_report_vcpu(kvm);
->>   }
->>
->> diff --git a/tools/perf/util/kvm-stat.h b/tools/perf/util/kvm-stat.h
->> index 0b5a8cd..cf1d7913 100644
->> --- a/tools/perf/util/kvm-stat.h
->> +++ b/tools/perf/util/kvm-stat.h
->> @@ -92,7 +92,6 @@ struct perf_kvm_stat {
->>   	u64 lost_events;
->>   	u64 duration;
->>
->> -	const char *pid_str;
->>   	struct intlist *pid_list;
->>
->>   	struct rb_root result;
->> --
->> 1.7.9.5
->>
+thx,
 
+Jason.
