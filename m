@@ -1,60 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066AbaH2J6D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 05:58:03 -0400
-Received: from mga02.intel.com ([134.134.136.20]:28392 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750800AbaH2J6B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 05:58:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,424,1406617200"; 
-   d="scan'208";a="565270307"
-Message-ID: <1409306274.30155.30.camel@linux.intel.com>
-Subject: Re: [PATCH v1 0/5] mfd: lpc_sch: Intel Quark support
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-Date: Fri, 29 Aug 2014 12:57:54 +0300
-In-Reply-To: <1408705096-31286-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1408705096-31286-1-git-send-email-andriy.shevchenko@linux.intel.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.5-1 
-Mime-Version: 1.0
+	id S1752678AbaH2J6o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 05:58:44 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:37894 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752067AbaH2J6m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 05:58:42 -0400
+Message-ID: <54004E82.3060608@huawei.com>
+Date: Fri, 29 Aug 2014 17:57:22 +0800
+From: Xue jiufei <xuejiufei@huawei.com>
+Reply-To: <xuejiufei@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <linux-fsdevel@vger.kernel.org>,
+        "ocfs2-devel@oss.oracle.com" <ocfs2-devel@oss.oracle.com>,
+        Junxiao Bi <junxiao.bi@oracle.com>
+Subject: [PATCH] fs/super.c: do not shrink fs slab during direct memory reclaim
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.22.96]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-08-22 at 13:58 +0300, Andy Shevchenko wrote:
-> This brings support of the LPC SCH device found on Intel Quark SoC. Patches
-> were compile tested, and driver runs on actual hardware.
-> 
-> Please, note that PCI ID will be used in future in the gpio-sch driver.
+The patch trys to solve one deadlock problem caused by cluster
+fs, like ocfs2. And the problem may happen at least in the below
+situations:
+1)Receiving a connect message from other nodes, node queues a
+work_struct o2net_listen_work.
+2)o2net_wq processes this work and calls sock_alloc() to allocate
+memory for a new socket.
+3)It would do direct memory reclaim when available memory is not
+enough and trigger the inode cleanup. That inode being cleaned up
+is happened to be ocfs2 inode, so call evict()->ocfs2_evict_inode()
+->ocfs2_drop_lock()->dlmunlock()->o2net_send_message_vec(),
+and wait for the unlock response from master.
+4)tcp layer received the response, call o2net_data_ready() and
+queue sc_rx_work, waiting o2net_wq to process this work.
+5)o2net_wq is a single thread workqueue, it process the work one by
+one. Right now it is still doing o2net_listen_work and cannot handle
+sc_rx_work. so we deadlock.
 
-Bjorn, could you Ack or comment patch 3/5?
+It is impossible to set GFP_NOFS for memory allocation in sock_alloc().
+So we use PF_FSTRANS to avoid the task reentering filesystem when
+available memory is not enough.
 
-Lee, do you have any comments on the series?
+Signed-off-by: joyce.xue <xuejiufei@huawei.com>
+---
+ fs/ocfs2/cluster/tcp.c | 7 +++++++
+ fs/super.c             | 3 +++
+ 2 files changed, 10 insertions(+)
 
-> 
-> Andy Shevchenko (4):
->   mfd: lpc_sch: reduce duplicate code
->   mfd: lpc_sch: better code manageability with chipset info struct
->   mfd: lpc_sch: Add support for Intel Quark X1000
->   mfd: lpc_sch: remove FSF address
-> 
-> Josef Ahmad (1):
->   pci_ids: add support for Intel Quark ILB
-> 
->  drivers/mfd/lpc_sch.c   | 207 ++++++++++++++++++++++++++++--------------------
->  include/linux/pci_ids.h |   1 +
->  2 files changed, 122 insertions(+), 86 deletions(-)
-> 
-
-
+diff --git a/fs/ocfs2/cluster/tcp.c b/fs/ocfs2/cluster/tcp.c
+index 681691b..629b4da 100644
+--- a/fs/ocfs2/cluster/tcp.c
++++ b/fs/ocfs2/cluster/tcp.c
+@@ -1581,6 +1581,8 @@ static void o2net_start_connect(struct work_struct *work)
+ 	int ret = 0, stop;
+ 	unsigned int timeout;
+ 
++	current->flags |= PF_FSTRANS;
++
+ 	/* if we're greater we initiate tx, otherwise we accept */
+ 	if (o2nm_this_node() <= o2net_num_from_nn(nn))
+ 		goto out;
+@@ -1683,6 +1685,7 @@ out:
+ 	if (mynode)
+ 		o2nm_node_put(mynode);
+ 
++	current->flags &= ~PF_FSTRANS;
+ 	return;
+ }
+ 
+@@ -1809,6 +1812,8 @@ static int o2net_accept_one(struct socket *sock, int *more)
+ 	struct o2net_sock_container *sc = NULL;
+ 	struct o2net_node *nn;
+ 
++	current->flags |= PF_FSTRANS;
++
+ 	BUG_ON(sock == NULL);
+ 	*more = 0;
+ 	ret = sock_create_lite(sock->sk->sk_family, sock->sk->sk_type,
+@@ -1918,6 +1923,8 @@ out:
+ 		o2nm_node_put(local_node);
+ 	if (sc)
+ 		sc_put(sc);
++
++	current->flags &= ~PF_FSTRANS;
+ 	return ret;
+ }
+ 
+diff --git a/fs/super.c b/fs/super.c
+index b9a214d..c4a8dc1 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -71,6 +71,9 @@ static unsigned long super_cache_scan(struct shrinker *shrink,
+ 	if (!(sc->gfp_mask & __GFP_FS))
+ 		return SHRINK_STOP;
+ 
++	if (current->flags & PF_FSTRANS)
++		return SHRINK_STOP;
++
+ 	if (!grab_super_passive(sb))
+ 		return SHRINK_STOP;
+ 
 -- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
+1.8.4.3
 
