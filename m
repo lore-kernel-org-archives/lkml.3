@@ -1,229 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201AbaH2NeN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 09:34:13 -0400
-Received: from smtp121.ord1c.emailsrvr.com ([108.166.43.121]:41323 "EHLO
-	smtp121.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752666AbaH2NeL (ORCPT
+	id S1753288AbaH2Nfd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 09:35:33 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:48820 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751944AbaH2Nfc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 09:34:11 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-Message-ID: <54008106.90207@smartplayin.com>
-Date: Fri, 29 Aug 2014 19:02:54 +0530
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Fri, 29 Aug 2014 09:35:32 -0400
+Message-ID: <5400819B.4050607@free-electrons.com>
+Date: Fri, 29 Aug 2014 15:35:23 +0200
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Andy Gross <agross@codeaurora.org>
-Subject: Re: [PATCH 4/4] pinctrl: qcom: Add support for reset for apq8064
-References: <1409282570-27299-1-git-send-email-pramod.gurav@smartplayin.com> <1409282570-27299-5-git-send-email-pramod.gurav@smartplayin.com> <20140829012819.GE12494@sonymobile.com>
-In-Reply-To: <20140829012819.GE12494@sonymobile.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        Tawfik Bayouk <tawfik@marvell.com>,
+        Simon Boulay <simon.boulay@vitec.com>,
+        Arnaud Ebalard <arno@natisbad.org>, Nadav Haklai <nadavh@marvell.com>,
+        Lior Amsalem <alior@marvell.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Raphael Rigo <ml-arm@syscall.eu>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/4] clk: mvebu: Fix clk frequency value if SSCG is enabled
+References: <1409312620-20631-1-git-send-email-gregory.clement@free-electrons.com> <1409312620-20631-2-git-send-email-gregory.clement@free-electrons.com> <540076A4.5000303@gmail.com>
+In-Reply-To: <540076A4.5000303@gmail.com>
 Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bjorn,
+Hi Sebastian,
 
-On 29-08-2014 06:58 AM, Bjorn Andersson wrote:
-> On Thu 28 Aug 20:22 PDT 2014, Pramod Gurav wrote:
-> 
->> This patch adds support for reset functions to reboot the boards
->> with soc apq8064.
+On 29/08/2014 14:48, Sebastian Hesselbarth wrote:
+> On 08/29/2014 01:43 PM, Gregory CLEMENT wrote:
+>> When the SSCG (Spread Spectrum Clock Generator) is enabled, it shifts
+>> the frequency of the clock. The percentage is no more than 1% but when
+>> the clock is used for a timer it leads to a clock drift.
 >>
->> CC: Linus Walleij <linus.walleij@linaro.org>
->> CC: Bjorn Andersson <bjorn.andersson@sonymobile.com>
->> CC: "Ivan T. Ivanov" <iivanov@mm-sol.com>
->> CC: Stephen Boyd <sboyd@codeaurora.org>
->> CC: Andy Gross <agross@codeaurora.org>
->> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+>> This patch allows to correct the affected clock when the SSCG is
+>> enabled. The check is done in an new optional function related to each
+>> SoC: is_sscg_enabled(). If this function is not present then no
+>> correction is done on the clock frequency.
+> 
+> Gregory,
+> 
+> I think computing the SSCG inside the common clk part is a no-go. I
+> flipped through KW, Dove, Armada 370, and Armada XP FS looking at
+> SSCG config register layout. Guess what: Dove is different.
+
+
+argh I checked all the other SoC excepting Dove! Sometime I wonder if
+the Dove really belongs to the mvebu family
+
+> 
+> How about we have a .get_sscg_deviation() callback instead and move
+> the one below to some common place where KW, Armada 370, and XP can
+> set it for their callback struct?
+
+I agree. Given the name of thie file the common place will be here.
+
+Thanks,
+
+Gregory
+
+> 
+> Sebastian
+> 
+>> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 >> ---
->>  drivers/pinctrl/qcom/pinctrl-apq8064.c |    7 +++++-
->>  drivers/pinctrl/qcom/pinctrl-msm.c     |   38 ++++++++++++++++++++++++++++++++
->>  2 files changed, 44 insertions(+), 1 deletions(-)
+>>   drivers/clk/mvebu/common.c | 74 ++++++++++++++++++++++++++++++++++++++++++++++
+>>   drivers/clk/mvebu/common.h |  1 +
+>>   2 files changed, 75 insertions(+)
 >>
->> diff --git a/drivers/pinctrl/qcom/pinctrl-apq8064.c b/drivers/pinctrl/qcom/pinctrl-apq8064.c
->> index feb6f15..ef1263c 100644
->> --- a/drivers/pinctrl/qcom/pinctrl-apq8064.c
->> +++ b/drivers/pinctrl/qcom/pinctrl-apq8064.c
->> @@ -324,6 +324,7 @@ enum apq8064_functions {
->>  	APQ_MUX_tsif1,
->>  	APQ_MUX_tsif2,
->>  	APQ_MUX_usb2_hsic,
->> +	APQ_MUX_ps_hold,
->>  	APQ_MUX_NA,
->>  };
->>  
->> @@ -351,6 +352,9 @@ static const char * const gpio_groups[] = {
->>  	"gpio78", "gpio79", "gpio80", "gpio81", "gpio82", "gpio83", "gpio84",
->>  	"gpio85", "gpio86", "gpio87", "gpio88", "gpio89"
->>  };
->> +static const char * const ps_hold_groups[] = {
->> +	"gpio78"
->> +};
->>  static const char * const gsbi1_groups[] = {
->>  	"gpio18", "gpio19", "gpio20", "gpio21"
->>  };
->> @@ -477,6 +481,7 @@ static const struct msm_function apq8064_functions[] = {
->>  	FUNCTION(tsif1),
->>  	FUNCTION(tsif2),
->>  	FUNCTION(usb2_hsic),
->> +	FUNCTION(ps_hold),
->>  };
->>  
->>  static const struct msm_pingroup apq8064_groups[] = {
->> @@ -558,7 +563,7 @@ static const struct msm_pingroup apq8064_groups[] = {
->>  	PINGROUP(75, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
->>  	PINGROUP(76, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
->>  	PINGROUP(77, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
->> -	PINGROUP(78, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
->> +	PINGROUP(78, ps_hold, NA, NA, NA, NA, NA, NA, NA, NA, NA),
->>  	PINGROUP(79, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
->>  	PINGROUP(80, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
->>  	PINGROUP(81, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
->> diff --git a/drivers/pinctrl/qcom/pinctrl-msm.c b/drivers/pinctrl/qcom/pinctrl-msm.c
->> index 2738108..be43e7a 100644
->> --- a/drivers/pinctrl/qcom/pinctrl-msm.c
->> +++ b/drivers/pinctrl/qcom/pinctrl-msm.c
->> @@ -12,6 +12,7 @@
->>   * GNU General Public License for more details.
->>   */
->>  
->> +#include <linux/delay.h>
->>  #include <linux/err.h>
->>  #include <linux/io.h>
->>  #include <linux/module.h>
->> @@ -27,12 +28,17 @@
->>  #include <linux/interrupt.h>
->>  #include <linux/spinlock.h>
->>  
->> +#include <asm/system_misc.h>
+>> diff --git a/drivers/clk/mvebu/common.c b/drivers/clk/mvebu/common.c
+>> index 25ceccf939ad..834d36cf79b0 100644
+>> --- a/drivers/clk/mvebu/common.c
+>> +++ b/drivers/clk/mvebu/common.c
+>> @@ -26,8 +26,78 @@
+>>    * Core Clocks
+>>    */
+>>
+>> +#define SSCG_CONF_MODE(reg)	(((reg) >> 16) & 0x3)
+>> +#define SSCG_SPREAD_DOWN	0x0
+>> +#define SSCG_SPREAD_UP		0x1
+>> +#define SSCG_SPREAD_CENTRAL	0x2
+>> +#define SSCG_CONF_LOW(reg)	(((reg) >> 8) & 0xFF)
+>> +#define SSCG_CONF_HIGH(reg)	((reg) & 0xFF)
 >> +
->>  #include "../core.h"
->>  #include "../pinconf.h"
->>  #include "pinctrl-msm.h"
->>  #include "../pinctrl-utils.h"
->>  
->>  #define MAX_NR_GPIO 300
->> +#define PS_HOLD_OFFSET 0x820
->> +
->> +static void __iomem *msm_ps_hold;
->>  
->>  /**
->>   * struct msm_pinctrl - state for a pinctrl-msm device
->> @@ -848,10 +854,31 @@ static int msm_gpio_init(struct msm_pinctrl *pctrl)
->>  	return 0;
->>  }
->>  
->> +static void qcom_reset(enum reboot_mode reboot_mode, const char *cmd)
-> 
-> This doesn't follow the naming used in this.
-> 
+>>   static struct clk_onecell_data clk_data;
+>>
+>> +static u32 fix_sscg_deviation(struct device_node *np, u32 system_clk)
 >> +{
->> +	writel(0, msm_ps_hold);
->> +	mdelay(10000);
-> 
-> Why 10 seconds? What happens after that?
-
-This I copied from existing msm-poweroff.c driver for apq8074. Not sure
-why such a long delay. I will exclude this from mine as I have no valid
-reason.
-
-> 
->> +}
+>> +	struct device_node *sscg_np = NULL;
+>> +	void __iomem *sscg_map;
+>> +	u32 sscg_reg;
+>> +	s32 low_bound, high_bound;
+>> +	u64 freq_swing_half;
 >> +
->> +const struct msm_function
->> +*find_pshold_function(const struct msm_function *functions,
->> +					unsigned nfunctions, const char *name)
-> 
-> This should be static. But that would cause a compile warning on non-ARM
-> platforms, see below.
-> 
->> +{
->> +	int i = 0;
->> +	const struct msm_function *func;
->> +
->> +	for (func = functions; i <= nfunctions; func++, i++)
-> 
-> Why do you have 'func' and why do you iterate over that and i?
-> 
-> for (i = 0; i < nfunctions; i++)
-> 	if (strcmp(functions[i]->name, name) == 0)
-> 		return true; (or &functions[i] if you really need it)
-> 
-> But as you only uses this once I would prefer if you just merge in the setting
-> of msm_ps_hold and arm_pm_restart here as well, see below.
-> 
->> +		if (!strcmp(func->name, name))
->> +			return func;
->> +
->> +	return NULL;
->> +}
->> +
->>  int msm_pinctrl_probe(struct platform_device *pdev,
->>  		      const struct msm_pinctrl_soc_data *soc_data)
->>  {
->>  	struct msm_pinctrl *pctrl;
->> +	const struct msm_function *func;
->>  	struct resource *res;
->>  	int ret;
->>  
->> @@ -871,6 +898,17 @@ int msm_pinctrl_probe(struct platform_device *pdev,
->>  	if (IS_ERR(pctrl->regs))
->>  		return PTR_ERR(pctrl->regs);
->>  
->> +#ifdef CONFIG_ARM
->> +	func = find_pshold_function(soc_data->functions,
->> +					soc_data->nfunctions, "ps_hold");
->> +	if (func) {
->> +		dev_dbg(&pdev->dev, "Found Function %s\n", func->name);
-> 
-> Guess what, it will print "ps_hold" here. I would prefer if you just skip this
-> line, as this will always be true on 8960 and 8064.
-> 
->> +		msm_ps_hold = pctrl->regs + PS_HOLD_OFFSET;
->> +		arm_pm_restart = qcom_reset;
+>> +	sscg_np = of_find_node_by_name(np, "sscg");
+>> +	if (sscg_np == NULL) {
+>> +		pr_err("cannot get SSCG register node\n");
+>> +		return system_clk;
 >> +	}
->> +#else
->> +#error "not supported on this arch"
+>> +
+>> +	sscg_map = of_iomap(sscg_np, 0);
+>> +	if (sscg_map == NULL) {
+>> +		pr_err("cannot map SSCG register\n");
+>> +		goto out;
+>> +	}
+>> +
+>> +	sscg_reg = readl(sscg_map);
+>> +	high_bound = SSCG_CONF_HIGH(sscg_reg);
+>> +	low_bound = SSCG_CONF_LOW(sscg_reg);
+>> +
+>> +	if ((high_bound - low_bound) <= 0)
+>> +		goto out;
+>> +	/*
+>> +	 * From the datasheet we got the following formula
+>> +	 * Spread percentage = 1/96 * (H - L) / H
+>> +	 * H = SSCG_High_Boundary
+>> +	 * L = SSCG_Low_Boundary
+>> +	 *
+>> +	 * As the deviation is half of spread then it lead to the
+>> +	 * following formula in the code.
+>> +	 *
+>> +	 * To avoid an overflow and not lose any significant digit in
+>> +	 * the same time we have to use a 64 bit integer.
+>> +	 */
+>> +
+>> +	freq_swing_half = (((u64)high_bound - (u64)low_bound)
+>> +			* (u64)system_clk);
+>> +	do_div(freq_swing_half, (2 * 96 * high_bound));
+>> +
+>> +	switch (SSCG_CONF_MODE(sscg_reg)) {
+>> +	case SSCG_SPREAD_DOWN:
+>> +		system_clk -= freq_swing_half;
+>> +		break;
+>> +	case SSCG_SPREAD_UP:
+>> +		system_clk += freq_swing_half;
+>> +		break;
+>> +	case SSCG_SPREAD_CENTRAL:
+>> +	default:
+>> +		break;
+>> +	}
+>> +
+>> +	iounmap(sscg_map);
+>> +
+>> +out:
+>> +	of_node_put(sscg_np);
+>> +
+>> +	return system_clk;
+>> +}
+>> +
+>>   void __init mvebu_coreclk_setup(struct device_node *np,
+>>   				const struct coreclk_soc_desc *desc)
+>>   {
+>> @@ -62,6 +132,10 @@ void __init mvebu_coreclk_setup(struct device_node *np,
+>>   	of_property_read_string_index(np, "clock-output-names", 1,
+>>   				      &cpuclk_name);
+>>   	rate = desc->get_cpu_freq(base);
+>> +
+>> +	if (desc->is_sscg_enabled && desc->is_sscg_enabled(base))
+>> +		rate = fix_sscg_deviation(np, rate);
+>> +
+>>   	clk_data.clks[1] = clk_register_fixed_rate(NULL, cpuclk_name, NULL,
+>>   						   CLK_IS_ROOT, rate);
+>>   	WARN_ON(IS_ERR(clk_data.clks[1]));
+>> diff --git a/drivers/clk/mvebu/common.h b/drivers/clk/mvebu/common.h
+>> index f968b4d9df92..495f94ff4c90 100644
+>> --- a/drivers/clk/mvebu/common.h
+>> +++ b/drivers/clk/mvebu/common.h
+>> @@ -28,6 +28,7 @@ struct coreclk_soc_desc {
+>>   	u32 (*get_tclk_freq)(void __iomem *sar);
+>>   	u32 (*get_cpu_freq)(void __iomem *sar);
+>>   	void (*get_clk_ratio)(void __iomem *sar, int id, int *mult, int *div);
+>> +	bool (*is_sscg_enabled)(void __iomem *sar);
+>>   	const struct coreclk_ratio *ratios;
+>>   	int num_ratios;
+>>   };
+>>
 > 
-> There is no reason for you to break compilation of this driver on non-ARM
-> platforms. This #else/#error should be removed.
 > 
-> I would prefer if you did not #ifdef at all within the function, but rather
-> merge this piece of logic with the search above into a static function that's
-> surrounded by a check for CONFIG_ARM - providing a no-op for non-arm boards.
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 > 
-> I.e
-> 
-> #ifdef CONFIG_ARM
-> static void qcom_reset(enum reboot_mode reboot_mode, const char *cmd)
-> {
-> 	...
-> }
-> 
-> static void msm_pinctrl_setup_pm_reset(pctrl)
-> {
-> 	...
-> }
-> #else
-> static void msm_pinctrl_setup_pm_reset(pctrl) {}
-> #endif
 
-Will put this in a single function which takes pctrl and address you
-comments there in v3.
-Thanks for review. :-)
-> 
->> +#endif
-> 
-> Regards,
-> Bjorn
-> 
+
+-- 
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
