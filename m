@@ -1,196 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825AbaH2G6j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 02:58:39 -0400
-Received: from mga11.intel.com ([192.55.52.93]:34165 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751461AbaH2G6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 02:58:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,423,1406617200"; 
-   d="scan'208";a="473717537"
-Message-ID: <540023BE.90902@intel.com>
-Date: Fri, 29 Aug 2014 14:54:54 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752897AbaH2G7Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 02:59:24 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:54957 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751955AbaH2G7W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 02:59:22 -0400
+Date: Fri, 29 Aug 2014 07:59:15 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Bryan Wu <cooloney@gmail.com>
+Cc: Andreas Werner <andreas.werner@men.de>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux@roeck-us.net,
+        lm-sensors@lm-sensors.org, wim@iguana.be,
+        linux-watchdog@vger.kernel.org,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>
+Subject: Re: [PATCH v6 3/4] drivers/leds/leds-menf21bmc: introduce MEN
+ 14F021P00 BMC LED driver
+Message-ID: <20140829065915.GZ24579@lee--X1>
+References: <cover.1409161615.git.andreas.werner@men.de>
+ <e91e4f47cda55c03fa1d0a54c0891341d73adfa6.1409161615.git.andreas.werner@men.de>
+ <CAK5ve-+zjZBw_HXWm9kGE5Vbv=R2SO4P2dB_0opzLHTAV-BQ0Q@mail.gmail.com>
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-CC: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        bobby.prani@gmail.com, "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Subject: Re: [PATCH RFC tip/core/rcu] Eliminate deadlock between CPU hotplug
- and expedited grace periods
-References: <20140828194745.GA3761@linux.vnet.ibm.com>
-In-Reply-To: <20140828194745.GA3761@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAK5ve-+zjZBw_HXWm9kGE5Vbv=R2SO4P2dB_0opzLHTAV-BQ0Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014年08月29日 03:47, Paul E. McKenney wrote:
-> Currently, the expedited grace-period primitives do get_online_cpus().
-> This greatly simplifies their implementation, but means that calls to
-> them holding locks that are acquired by CPU-hotplug notifiers (to say
-> nothing of calls to these primitives from CPU-hotplug notifiers) can
-> deadlock.  But this is starting to become inconvenient:
-> https://lkml.org/lkml/2014/8/5/754
-> 
-> This commit avoids the deadlock and retains the simplicity by creating
-> a try_get_online_cpus(), which returns false if the get_online_cpus()
-> reference count could not immediately be incremented.  If a call to
-> try_get_online_cpus() returns true, the expedited primitives operate
-> as before.  If a call returns false, the expedited primitives fall back
-> to normal grace-period operations.  This falling back of course results
-> in increased grace-period latency, but only during times when CPU
-> hotplug operations are actually in flight.  The effect should therefore
-> be negligible during normal operation.
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Josh Triplett <josh@joshtriplett.org>
-> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-> Cc: Lan Tianyu <tianyu.lan@intel.com>
-> 
+On Thu, 28 Aug 2014, Bryan Wu wrote:
 
-Hi Paul:
-	I tested this patch and it fixes my issue. Thanks.
-
-Tested-by: Lan Tianyu <tianyu.lan@intel.com>
-
-> diff --git a/include/linux/cpu.h b/include/linux/cpu.h
-> index 95978ad7fcdd..b2d9a43012b2 100644
-> --- a/include/linux/cpu.h
-> +++ b/include/linux/cpu.h
-> @@ -213,6 +213,7 @@ extern struct bus_type cpu_subsys;
->  extern void cpu_hotplug_begin(void);
->  extern void cpu_hotplug_done(void);
->  extern void get_online_cpus(void);
-> +extern bool try_get_online_cpus(void);
->  extern void put_online_cpus(void);
->  extern void cpu_hotplug_disable(void);
->  extern void cpu_hotplug_enable(void);
-> @@ -230,6 +231,7 @@ int cpu_down(unsigned int cpu);
->  static inline void cpu_hotplug_begin(void) {}
->  static inline void cpu_hotplug_done(void) {}
->  #define get_online_cpus()	do { } while (0)
-> +#define try_get_online_cpus()	true
->  #define put_online_cpus()	do { } while (0)
->  #define cpu_hotplug_disable()	do { } while (0)
->  #define cpu_hotplug_enable()	do { } while (0)
-> diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
-> index 008388f920d7..4f86465cc317 100644
-> --- a/include/linux/lockdep.h
-> +++ b/include/linux/lockdep.h
-> @@ -505,6 +505,7 @@ static inline void print_irqtrace_events(struct task_struct *curr)
->  
->  #define lock_map_acquire(l)			lock_acquire_exclusive(l, 0, 0, NULL, _THIS_IP_)
->  #define lock_map_acquire_read(l)		lock_acquire_shared_recursive(l, 0, 0, NULL, _THIS_IP_)
-> +#define lock_map_acquire_tryread(l)		lock_acquire_shared_recursive(l, 0, 1, NULL, _THIS_IP_)
->  #define lock_map_release(l)			lock_release(l, 1, _THIS_IP_)
->  
->  #ifdef CONFIG_PROVE_LOCKING
-> diff --git a/kernel/cpu.c b/kernel/cpu.c
-> index 81e2a388a0f6..356450f09c1f 100644
-> --- a/kernel/cpu.c
-> +++ b/kernel/cpu.c
-> @@ -79,6 +79,8 @@ static struct {
->  
->  /* Lockdep annotations for get/put_online_cpus() and cpu_hotplug_begin/end() */
->  #define cpuhp_lock_acquire_read() lock_map_acquire_read(&cpu_hotplug.dep_map)
-> +#define cpuhp_lock_acquire_tryread() \
-> +				  lock_map_acquire_tryread(&cpu_hotplug.dep_map)
->  #define cpuhp_lock_acquire()      lock_map_acquire(&cpu_hotplug.dep_map)
->  #define cpuhp_lock_release()      lock_map_release(&cpu_hotplug.dep_map)
->  
-> @@ -91,10 +93,22 @@ void get_online_cpus(void)
->  	mutex_lock(&cpu_hotplug.lock);
->  	cpu_hotplug.refcount++;
->  	mutex_unlock(&cpu_hotplug.lock);
-> -
->  }
->  EXPORT_SYMBOL_GPL(get_online_cpus);
->  
-> +bool try_get_online_cpus(void)
-> +{
-> +	if (cpu_hotplug.active_writer == current)
-> +		return true;
-> +	if (!mutex_trylock(&cpu_hotplug.lock))
-> +		return false;
-> +	cpuhp_lock_acquire_tryread();
-> +	cpu_hotplug.refcount++;
-> +	mutex_unlock(&cpu_hotplug.lock);
-> +	return true;
-> +}
-> +EXPORT_SYMBOL_GPL(try_get_online_cpus);
-> +
->  void put_online_cpus(void)
->  {
->  	if (cpu_hotplug.active_writer == current)
-> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-> index d7a3b13bc94c..04558f0c9d64 100644
-> --- a/kernel/rcu/tree.c
-> +++ b/kernel/rcu/tree.c
-> @@ -2940,11 +2940,6 @@ static int synchronize_sched_expedited_cpu_stop(void *data)
->   * restructure your code to batch your updates, and then use a single
->   * synchronize_sched() instead.
->   *
-> - * Note that it is illegal to call this function while holding any lock
-> - * that is acquired by a CPU-hotplug notifier.  And yes, it is also illegal
-> - * to call this function from a CPU-hotplug notifier.  Failing to observe
-> - * these restriction will result in deadlock.
-> - *
->   * This implementation can be thought of as an application of ticket
->   * locking to RCU, with sync_sched_expedited_started and
->   * sync_sched_expedited_done taking on the roles of the halves
-> @@ -2994,7 +2989,12 @@ void synchronize_sched_expedited(void)
->  	 */
->  	snap = atomic_long_inc_return(&rsp->expedited_start);
->  	firstsnap = snap;
-> -	get_online_cpus();
-> +	if (!try_get_online_cpus()) {
-> +		/* CPU hotplug operation in flight, fall back to normal GP. */
-> +		wait_rcu_gp(call_rcu_sched);
-> +		atomic_long_inc(&rsp->expedited_normal);
-> +		return;
-> +	}
->  	WARN_ON_ONCE(cpu_is_offline(raw_smp_processor_id()));
->  
->  	/*
-> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> index fb833811c2f6..821dcf9a3b94 100644
-> --- a/kernel/rcu/tree_plugin.h
-> +++ b/kernel/rcu/tree_plugin.h
-> @@ -793,11 +793,6 @@ sync_rcu_preempt_exp_init(struct rcu_state *rsp, struct rcu_node *rnp)
->   * In fact, if you are using synchronize_rcu_expedited() in a loop,
->   * please restructure your code to batch your updates, and then Use a
->   * single synchronize_rcu() instead.
-> - *
-> - * Note that it is illegal to call this function while holding any lock
-> - * that is acquired by a CPU-hotplug notifier.  And yes, it is also illegal
-> - * to call this function from a CPU-hotplug notifier.  Failing to observe
-> - * these restriction will result in deadlock.
->   */
->  void synchronize_rcu_expedited(void)
->  {
-> @@ -819,7 +814,11 @@ void synchronize_rcu_expedited(void)
->  	 * being boosted.  This simplifies the process of moving tasks
->  	 * from leaf to root rcu_node structures.
->  	 */
-> -	get_online_cpus();
-> +	if (!try_get_online_cpus()) {
-> +		/* CPU-hotplug operation in flight, fall back to normal GP. */
-> +		wait_rcu_gp(call_rcu);
-> +		return;
-> +	}
->  
->  	/*
->  	 * Acquire lock, falling back to synchronize_rcu() if too many
+> On Wed, Aug 27, 2014 at 10:52 AM, Andreas Werner <andreas.werner@men.de> wrote:
+> > Added driver to support the 14F021P00 BMC LEDs.
+> > The BMC is a Board Management Controller including four LEDs which
+> > can be switched on and off.
+> >
 > 
+> Please go ahead with my Ack
+> Acked-by: Bryan Wu <cooloney@gmail.com>
+> 
+> Lee, will you merge this through your tree? I think we do that in one
+> shot is better.
 
+Yes, that's fine.  Pull-request to follow.
+
+> > Signed-off-by: Andreas Werner <andreas.werner@men.de>
+> > ---
+> >  drivers/leds/Kconfig          |   9 +++
+> >  drivers/leds/Makefile         |   1 +
+> >  drivers/leds/leds-menf21bmc.c | 131 ++++++++++++++++++++++++++++++++++++++++++
+> >  3 files changed, 141 insertions(+)
+> >  create mode 100644 drivers/leds/leds-menf21bmc.c
+> >
+> > diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+> > index 27cf0cd..ec03457 100644
+> > --- a/drivers/leds/Kconfig
+> > +++ b/drivers/leds/Kconfig
+> > @@ -458,6 +458,15 @@ config LEDS_OT200
+> >           This option enables support for the LEDs on the Bachmann OT200.
+> >           Say Y to enable LEDs on the Bachmann OT200.
+> >
+> > +config LEDS_MENF21BMC
+> > +       tristate "LED support for the MEN 14F021P00 BMC"
+> > +       depends on LEDS_CLASS && MFD_MENF21BMC
+> > +       help
+> > +         Say Y here to include support for the MEN 14F021P00 BMC LEDs.
+> > +
+> > +         This driver can also be built as a module. If so the module
+> > +         will be called leds-menf21bmc.
+> > +
+> >  comment "LED driver for blink(1) USB RGB LED is under Special HID drivers (HID_THINGM)"
+> >
+> >  config LEDS_BLINKM
+> > diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
+> > index 3c03666..cadc433 100644
+> > --- a/drivers/leds/Makefile
+> > +++ b/drivers/leds/Makefile
+> > @@ -53,6 +53,7 @@ obj-$(CONFIG_LEDS_MAX8997)            += leds-max8997.o
+> >  obj-$(CONFIG_LEDS_LM355x)              += leds-lm355x.o
+> >  obj-$(CONFIG_LEDS_BLINKM)              += leds-blinkm.o
+> >  obj-$(CONFIG_LEDS_VERSATILE)           += leds-versatile.o
+> > +obj-$(CONFIG_LEDS_MENF21BMC)           += leds-menf21bmc.o
+> >
+> >  # LED SPI Drivers
+> >  obj-$(CONFIG_LEDS_DAC124S085)          += leds-dac124s085.o
+> > diff --git a/drivers/leds/leds-menf21bmc.c b/drivers/leds/leds-menf21bmc.c
+> > new file mode 100644
+> > index 0000000..89dd577
+> > --- /dev/null
+> > +++ b/drivers/leds/leds-menf21bmc.c
+> > @@ -0,0 +1,131 @@
+> > +/*
+> > + *  MEN 14F021P00 Board Management Controller (BMC) LEDs Driver.
+> > + *
+> > + *  This is the core LED driver of the MEN 14F021P00 BMC.
+> > + *  There are four LEDs available which can be switched on and off.
+> > + *  STATUS LED, HOT SWAP LED, USER LED 1, USER LED 2
+> > + *
+> > + *  Copyright (C) 2014 MEN Mikro Elektronik Nuernberg GmbH
+> > + *
+> > + *  This program is free software; you can redistribute  it and/or modify it
+> > + *  under  the terms of  the GNU General  Public License as published by the
+> > + *  Free Software Foundation;  either version 2 of the  License, or (at your
+> > + *  option) any later version.
+> > + */
+> > +
+> > +#include <linux/module.h>
+> > +#include <linux/kernel.h>
+> > +#include <linux/platform_device.h>
+> > +#include <linux/leds.h>
+> > +#include <linux/i2c.h>
+> > +
+> > +#define BMC_CMD_LED_GET_SET    0xA0
+> > +#define BMC_BIT_LED_STATUS     BIT(0)
+> > +#define BMC_BIT_LED_HOTSWAP    BIT(1)
+> > +#define BMC_BIT_LED_USER1      BIT(2)
+> > +#define BMC_BIT_LED_USER2      BIT(3)
+> > +
+> > +struct menf21bmc_led {
+> > +       struct led_classdev cdev;
+> > +       u8 led_bit;
+> > +       const char *name;
+> > +       struct i2c_client *i2c_client;
+> > +};
+> > +
+> > +static struct menf21bmc_led leds[] = {
+> > +       {
+> > +               .name = "menf21bmc:led_status",
+> > +               .led_bit = BMC_BIT_LED_STATUS,
+> > +       },
+> > +       {
+> > +               .name = "menf21bmc:led_hotswap",
+> > +               .led_bit = BMC_BIT_LED_HOTSWAP,
+> > +       },
+> > +       {
+> > +               .name = "menf21bmc:led_user1",
+> > +               .led_bit = BMC_BIT_LED_USER1,
+> > +       },
+> > +       {
+> > +               .name = "menf21bmc:led_user2",
+> > +               .led_bit = BMC_BIT_LED_USER2,
+> > +       }
+> > +};
+> > +
+> > +static DEFINE_MUTEX(led_lock);
+> > +
+> > +static void
+> > +menf21bmc_led_set(struct led_classdev *led_cdev, enum led_brightness value)
+> > +{
+> > +       int led_val;
+> > +       struct menf21bmc_led *led = container_of(led_cdev,
+> > +                                       struct menf21bmc_led, cdev);
+> > +
+> > +       mutex_lock(&led_lock);
+> > +       led_val = i2c_smbus_read_byte_data(led->i2c_client,
+> > +                                          BMC_CMD_LED_GET_SET);
+> > +       if (led_val < 0)
+> > +               goto err_out;
+> > +
+> > +       if (value == LED_OFF)
+> > +               led_val &= ~led->led_bit;
+> > +       else
+> > +               led_val |= led->led_bit;
+> > +
+> > +       i2c_smbus_write_byte_data(led->i2c_client,
+> > +                                 BMC_CMD_LED_GET_SET, led_val);
+> > +err_out:
+> > +       mutex_unlock(&led_lock);
+> > +}
+> > +
+> > +static int menf21bmc_led_probe(struct platform_device *pdev)
+> > +{
+> > +       int i;
+> > +       int ret;
+> > +       struct i2c_client *i2c_client = to_i2c_client(pdev->dev.parent);
+> > +
+> > +       for (i = 0; i < ARRAY_SIZE(leds); i++) {
+> > +               leds[i].cdev.name = leds[i].name;
+> > +               leds[i].cdev.brightness_set = menf21bmc_led_set;
+> > +               leds[i].i2c_client = i2c_client;
+> > +               ret = led_classdev_register(&pdev->dev, &leds[i].cdev);
+> > +               if (ret < 0)
+> > +                       goto err_free_leds;
+> > +       }
+> > +       dev_info(&pdev->dev, "MEN 140F21P00 BMC LED device enabled\n");
+> > +
+> > +       return 0;
+> > +
+> > +err_free_leds:
+> > +       dev_err(&pdev->dev, "failed to register LED device\n");
+> > +
+> > +       for (i = i - 1; i >= 0; i--)
+> > +               led_classdev_unregister(&leds[i].cdev);
+> > +
+> > +       return ret;
+> > +}
+> > +
+> > +static int menf21bmc_led_remove(struct platform_device *pdev)
+> > +{
+> > +       int i;
+> > +
+> > +       for (i = 0; i < ARRAY_SIZE(leds); i++)
+> > +               led_classdev_unregister(&leds[i].cdev);
+> > +
+> > +       return 0;
+> > +}
+> > +
+> > +static struct platform_driver menf21bmc_led = {
+> > +       .probe          = menf21bmc_led_probe,
+> > +       .remove         = menf21bmc_led_remove,
+> > +       .driver         = {
+> > +               .name           = "menf21bmc_led",
+> > +               .owner          = THIS_MODULE,
+> > +       },
+> > +};
+> > +
+> > +module_platform_driver(menf21bmc_led);
+> > +
+> > +MODULE_AUTHOR("Andreas Werner <andreas.werner@men.de>");
+> > +MODULE_DESCRIPTION("MEN 14F021P00 BMC led driver");
+> > +MODULE_LICENSE("GPL v2");
+> > +MODULE_ALIAS("platform:menf21bmc_led");
+> >
 
 -- 
-Best regards
-Tianyu Lan
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
