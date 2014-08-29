@@ -1,70 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753294AbaH2OTe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 10:19:34 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:29214 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752877AbaH2OTd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 10:19:33 -0400
-X-IronPort-AV: E=Sophos;i="5.04,424,1406592000"; 
-   d="scan'208";a="167178657"
-Message-ID: <54008BF2.5050905@citrix.com>
-Date: Fri, 29 Aug 2014 15:19:30 +0100
-From: Andrew Cooper <andrew.cooper3@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
-MIME-Version: 1.0
-To: Stefan Bader <stefan.bader@canonical.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Kees Cook <keescook@chromium.org>,
-        David Vrabel <david.vrabel@citrix.com>
-Subject: Re: [Xen-devel] [PATCH] Solved the Xen PV/KASLR riddle
-References: <20140827204940.GA10556@laptop.dumpdata.com> <1409248903-19625-1-git-send-email-stefan.bader@canonical.com> <53FFB045.9010809@citrix.com> <54003BE5.5010603@canonical.com>
-In-Reply-To: <54003BE5.5010603@canonical.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+	id S1753434AbaH2OWI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 10:22:08 -0400
+Received: from mga14.intel.com ([192.55.52.115]:49621 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752727AbaH2OWF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 10:22:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,424,1406617200"; 
+   d="scan'208";a="583458632"
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: akpm@linux-foundation.org
+Cc: Mark Rustad <mark.d.rustad@intel.com>, linux-kernel@vger.kernel.org,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [PATCH] init: Resolve shadow warnings
+Date: Fri, 29 Aug 2014 07:21:52 -0700
+Message-Id: <1409322112-31346-1-git-send-email-jeffrey.t.kirsher@intel.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/08/14 09:37, Stefan Bader wrote:
-> On 29.08.2014 00:42, Andrew Cooper wrote:
->> On 28/08/2014 19:01, Stefan Bader wrote:
->>>>> So not much further... but then I think I know what I do next. Probably should
->>>>> have done before. I'll replace the WARN_ON in vmalloc that triggers by a panic
->>>>> and at least get a crash dump of that situation when it occurs. Then I can dig
->>>>> in there with crash (really should have thought of that before)...
->>>> <nods> I dug a bit in the code (arch/x86/xen/mmu.c) but there is nothing there
->>>> that screams at me, so I fear I will have to wait until you get the crash
->>>> and get some clues from that.
->>> Ok, what a journey. So after long hours of painful staring at the code...
->>> (and btw, if someone could tell me how the heck one can do a mfn_to_pfn
->>> in crash, I really would appreaciate :-P)
->> The M2P map lives in the Xen reserved virtual address space in each PV
->> guest, and forms part of the PV ABI.  It is mapped read-only, in the
->> native width of the guest.
->>
->> 32bit PV (PAE) at 0xF5800000
->> 64bit PV at 0xFFFF800000000000
->>
->> This is represented by the MACH2PHYS_VIRT_START symbol from the Xen
->> public header files.  You should be able to blindly construct a pointer
->> to it (if you have nothing better to hand), as it will be hooked into
->> the guests pagetables before execution starts.  Therefore,
->> "MACH2PHYS_VIRT_START[(unsigned long)pfn]" ought to do in a pinch.
-> machine_to_phys_mapping is set to that address but its not mapped inside the
-> crash dump. Somehow vtop in crash handles translations. I need to have a look at
-> their code, I guess.
->
-> Thanks,
-> Stefan
+From: Mark Rustad <mark.d.rustad@intel.com>
 
-What context is the crash dump?  If it is a Xen+dom0 kexec()d to native
-linux, then the m2p should still be accessible given dom0's cr3.  If it
-is some state copied off-host then you will need to adjust the copy to
-include that virtual range.
+Resolve shadow warnings that are produced in W=2 builds by
+renaming a global with a too-generic name and renaming a
+formal parameter.
 
-~Andrew
+Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+---
+ init/initramfs.c | 34 +++++++++++++++++-----------------
+ 1 file changed, 17 insertions(+), 17 deletions(-)
+
+diff --git a/init/initramfs.c b/init/initramfs.c
+index bece48c..c9fc2e2 100644
+--- a/init/initramfs.c
++++ b/init/initramfs.c
+@@ -197,14 +197,14 @@ static __initdata enum state {
+ } state, next_state;
+ 
+ static __initdata char *victim;
+-static unsigned long count __initdata;
++static unsigned long byte_count __initdata;
+ static __initdata loff_t this_header, next_header;
+ 
+ static inline void __init eat(unsigned n)
+ {
+ 	victim += n;
+ 	this_header += n;
+-	count -= n;
++	byte_count -= n;
+ }
+ 
+ static __initdata char *vcollected;
+@@ -214,7 +214,7 @@ static __initdata char *collect;
+ 
+ static void __init read_into(char *buf, unsigned size, enum state next)
+ {
+-	if (count >= size) {
++	if (byte_count >= size) {
+ 		collected = victim;
+ 		eat(size);
+ 		state = next;
+@@ -237,8 +237,8 @@ static int __init do_start(void)
+ static int __init do_collect(void)
+ {
+ 	unsigned long n = remains;
+-	if (count < n)
+-		n = count;
++	if (byte_count < n)
++		n = byte_count;
+ 	memcpy(collect, victim, n);
+ 	eat(n);
+ 	collect += n;
+@@ -280,8 +280,8 @@ static int __init do_header(void)
+ 
+ static int __init do_skip(void)
+ {
+-	if (this_header + count < next_header) {
+-		eat(count);
++	if (this_header + byte_count < next_header) {
++		eat(byte_count);
+ 		return 1;
+ 	} else {
+ 		eat(next_header - this_header);
+@@ -292,9 +292,9 @@ static int __init do_skip(void)
+ 
+ static int __init do_reset(void)
+ {
+-	while(count && *victim == '\0')
++	while(byte_count && *victim == '\0')
+ 		eat(1);
+-	if (count && (this_header & 3))
++	if (byte_count && (this_header & 3))
+ 		error("broken padding");
+ 	return 1;
+ }
+@@ -309,11 +309,11 @@ static int __init maybe_link(void)
+ 	return 0;
+ }
+ 
+-static void __init clean_path(char *path, umode_t mode)
++static void __init clean_path(char *path, umode_t fmode)
+ {
+ 	struct stat st;
+ 
+-	if (!sys_newlstat(path, &st) && (st.st_mode^mode) & S_IFMT) {
++	if (!sys_newlstat(path, &st) && (st.st_mode ^ fmode) & S_IFMT) {
+ 		if (S_ISDIR(st.st_mode))
+ 			sys_rmdir(path);
+ 		else
+@@ -368,7 +368,7 @@ static int __init do_name(void)
+ 
+ static int __init do_copy(void)
+ {
+-	if (count >= body_len) {
++	if (byte_count >= body_len) {
+ 		if (xwrite(wfd, victim, body_len) != body_len)
+ 			error("write error");
+ 		sys_close(wfd);
+@@ -378,10 +378,10 @@ static int __init do_copy(void)
+ 		state = SkipIt;
+ 		return 0;
+ 	} else {
+-		if (xwrite(wfd, victim, count) != count)
++		if (xwrite(wfd, victim, byte_count) != byte_count)
+ 			error("write error");
+-		body_len -= count;
+-		eat(count);
++		body_len -= byte_count;
++		eat(byte_count);
+ 		return 1;
+ 	}
+ }
+@@ -411,12 +411,12 @@ static __initdata int (*actions[])(void) = {
+ 
+ static long __init write_buffer(char *buf, unsigned long len)
+ {
+-	count = len;
++	byte_count = len;
+ 	victim = buf;
+ 
+ 	while (!actions[state]())
+ 		;
+-	return len - count;
++	return len - byte_count;
+ }
+ 
+ static long __init flush_buffer(void *bufv, unsigned long len)
+-- 
+1.9.3
+
