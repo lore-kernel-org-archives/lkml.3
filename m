@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917AbaH2H0J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 03:26:09 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56988 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750800AbaH2H0I (ORCPT
+	id S1753020AbaH2H1E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 03:27:04 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:39634 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752942AbaH2H1C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 03:26:08 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Hemant Kumar <hemant@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
-        peterz@infradead.org, oleg@redhat.com, hegdevasant@linux.vnet.ibm.com,
-        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org,
-        masami.hiramatsu.pt@hitachi.com, aravinda@linux.vnet.ibm.com,
-        penberg@iki.fi
-Subject: Re: [PATCH v4 3/3] perf/sdt : Documentation for SDT events
-References: <20140827213745.13454.46266.stgit@hemant-fedora>
-	<20140827215120.13454.30680.stgit@hemant-fedora>
-Date: Fri, 29 Aug 2014 16:26:05 +0900
-In-Reply-To: <20140827215120.13454.30680.stgit@hemant-fedora> (Hemant Kumar's
-	message of "Thu, 28 Aug 2014 03:23:16 +0530")
-Message-ID: <8738cfbvua.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 29 Aug 2014 03:27:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20140825190311.GA21871@kahuna>
+References: <1408716062-26055-1-git-send-email-nm@ti.com>
+	<1408716062-26055-2-git-send-email-nm@ti.com>
+	<20140825172506.GM17254@atomide.com>
+	<20140825190311.GA21871@kahuna>
+Date: Fri, 29 Aug 2014 09:27:01 +0200
+Message-ID: <CACRpkdaiNQncQBr22rePLU29McEoj776U+YqcQBNw5AoDjOxUA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] pinctrl: bindings: Add OMAP pinctrl binding
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Nishanth Menon <nm@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, Tero Kristo <t-kristo@ti.com>,
+        Paul Walmsley <paul@pwsan.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Keerthy <j-keerthy@ti.com>,
+        =?UTF-8?Q?Beno=C3=AEt_Cousson?= <bcousson@baylibre.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Dave Gerlach <d-gerlach@ti.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Aug 2014 03:23:16 +0530, Hemant Kumar wrote:
->  SYNOPSIS
->  --------
->  [verse]
-> -'perf list' [hw|sw|cache|tracepoint|pmu|event_glob]
-> +'perf list' [hw|sw|cache|tracepoint|pmu|sdt|event_glob]
+On Mon, Aug 25, 2014 at 9:03 PM, Nishanth Menon <nm@ti.com> wrote:
 
-What about adding it to a different line as the 'sdt' subcommand needs
-an extra argument?
+> ---8<---
+> From 74121c6a2524048eb02c3b33a25e13261edd2e99 Mon Sep 17 00:00:00 2001
+> From: Nishanth Menon <nm@ti.com>
+> Date: Thu, 22 May 2014 23:32:09 -0500
+> Subject: [PATCH V2] pinctrl: bindings: Add OMAP pinctrl binding
+>
+> Add basic skeleton of OMAP pinctrl bindings. This is compatible with
+> pinctrl,single bindings and is meant purely as a reference point.
+>
+> Acked-by: Tony Lindgren <tony@atomide.com>
+> Signed-off-by: Nishanth Menon <nm@ti.com>
 
-  [verse]
-  'perf list' [hw|sw|cache|tracepoint|pmu|event_glob]
-  'perf list' sdt <file>
+Applied this inline v2 version.
 
-
-Thanks,
-Namhyung
+Yours,
+Linus Walleij
