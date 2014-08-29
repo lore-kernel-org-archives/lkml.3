@@ -1,188 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363AbaH2MnH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 08:43:07 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53049 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753080AbaH2MnF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 08:43:05 -0400
-Date: Fri, 29 Aug 2014 13:42:16 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Matti Vaittinen <matti.vaittinen@nsn.com>,
-        ext Guenter Roeck <linux@roeck-us.net>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "jic23@kernel.org" <jic23@kernel.org>,
-        "arno@natisbad.org" <arno@natisbad.org>,
-        "jgunthorpe@obsidianresearch.com" <jgunthorpe@obsidianresearch.com>,
-        "san@rosetechnology.dk" <san@rosetechnology.dk>,
-        "hs@denx.de" <hs@denx.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        Sverdlin Alexander <alexander.sverdlin@nsn.com>
-Subject: Re: [PATCH] rtc: ds1307: add trickle charger device tree binding
-Message-ID: <20140829124216.GD21473@leverpostej>
-References: <20140828124237.GA29102@fi-ourus-dhcp00977.emea.nsn-net.net>
- <20140828125915.GJ14650@leverpostej>
- <20140828155157.GB23677@roeck-us.net>
- <20140828161025.GO14650@leverpostej>
- <20140828164825.GA12153@roeck-us.net>
- <20140828172842.GF12769@titan.lakedaemon.net>
- <20140828174034.GC15307@roeck-us.net>
- <20140829073413.GN4587@fi-ourus-dhcp00977.emea.nsn-net.net>
- <20140829104001.GB19424@leverpostej>
- <20140829122452.GA3683@titan.lakedaemon.net>
+	id S1753085AbaH2MrE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 08:47:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12851 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752150AbaH2MrC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 08:47:02 -0400
+Date: Fri, 29 Aug 2014 14:46:58 +0200
+From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH] KVM: forward declare structs in kvm_types.h
+Message-ID: <20140829124657.GA8674@potion.brq.redhat.com>
+References: <1409313707-7791-1-git-send-email-pbonzini@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140829122452.GA3683@titan.lakedaemon.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1409313707-7791-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 29, 2014 at 01:24:52PM +0100, Jason Cooper wrote:
-> On Fri, Aug 29, 2014 at 11:40:02AM +0100, Mark Rutland wrote:
-> > On Fri, Aug 29, 2014 at 08:34:25AM +0100, Matti Vaittinen wrote:
-> > > On Thu, Aug 28, 2014 at 10:40:34AM -0700, ext Guenter Roeck wrote:
-> > > > On Thu, Aug 28, 2014 at 01:28:42PM -0400, Jason Cooper wrote:
-> > > > > On Thu, Aug 28, 2014 at 09:48:25AM -0700, Guenter Roeck wrote:
-> > > > > > On Thu, Aug 28, 2014 at 05:10:25PM +0100, Mark Rutland wrote:
-> > > > > > > On Thu, Aug 28, 2014 at 04:51:57PM +0100, Guenter Roeck wrote:
-> > > > > > > > On Thu, Aug 28, 2014 at 01:59:15PM +0100, Mark Rutland wrote:
-> > > > > > > > > On Thu, Aug 28, 2014 at 01:42:44PM +0100, Matti Vaittinen wrote:
-> > > > > > > > > > Patch adding support for specifying trickle charger setup from device
-> > > > > > > > > > tree. Patch is based on linux-next tree.
-> > > > > > > > > > 
-> > > > > > > > > > 
-> > > > > > > > > > Some DS13XX devices have "trickle chargers". Introduce a device tree binding
-> > > > > > > > > > for specifying the setup and register values.
-> > > > > > > > > > 
-> > > > > > > > > > +++ b/Documentation/devicetree/bindings/rtc/dallas,ds1339.txt
-> > > > > > > > > > @@ -0,0 +1,19 @@
-> > > > > > > > > > +* Dallas DS1339		I2C Serial Real-Time Clock
-> > > > > > > > > > +
-> > > > > > > > > > +Required properties:
-> > > > > > > > > > +- compatible: Should contain "dallas,ds1339".
-> > > > > > > > > > +- reg: I2C address for chip
-> > > > > > > > > > +
-> > > > > > > > > > +Optional properties:
-> > > > > > > > > > +- trickle_setup : Used Trickle Charger configuration,
-> > > > > > > > > > +        corresponding to 5 lowest bits in trickle charger register.
-> > > > > > > > > 
-> > > > > > > > The value is provided via platform data, so it is platform specific
-> > > > > > > > and presumably needs to be configurable. I did, however, not find
-> > > > > > > > a single in-kernel driver which is actually setting it.
-> > > > > > > > So this is a good question.
-> > > > > > > 
-> > > > > > > I'm uncomfortable adding a field we don't understand to DT.
-> > > > > > > 
-> > > > > > > Is there any publicly-available documentation for the device?
-> > > > > > > 
-> > > > > > 
-> > > > > > Lots ;-)
-> > > > > > 
-> > > > > > http://datasheets.maximintegrated.com/en/ds/DS1307.pdf
-> > > > > > http://datasheets.maximintegrated.com/en/ds/DS1337.pdf
-> > > > > > http://datasheets.maximintegrated.com/en/ds/DS1338.pdf
-> > > > > > http://datasheets.maximintegrated.com/en/ds/DS1339.pdf
-> > > > > > http://datasheets.maximintegrated.com/en/ds/DS1340.pdf
-> > > > > > http://datasheets.maximintegrated.com/en/ds/DS1388.pdf
-> > > > > > http://datasheets.maximintegrated.com/en/ds/DS3231.pdf
-> > > > > > 
-> > > > > > Code suggests that DS1339, DS1339, and DS1340 have the register.
-> > > > > > 
-> > > > > > Looking into the datasheets, the configuration consists of two parts:
-> > > > > > - diode connected or not
-> > > > > > - trickle charger resistor value (250, 2000, or 4000 ohm)
-> > > > > > 
-> > > > > > Given that, it seems to me that those values should be configured
-> > > > > > explicitly instead of using a binary value, and that the driver
-> > > > > > should perform the conversion from dt entry to register value.
-> > > > > 
-> > > > > iiuc, there is no way for the kernel to determine what is being trickle
-> > > > > charged, and thus no way to determine how it should set this register.
-> > > > > 
-> > > > > It may be a bit of overkill, but I think a DT macro would be the most
-> > > > > maintainable solution here:
-> > > > > 
-> > > > > #define DS1339_TRCKL_DIODE   0x08
-> > > > > #define DS1339_TRCKL_NODIODE 0x04
-> > > > > #define DS1339_TRCKL_R250    0x01
-> > > > > #define DS1339_TRCKL_R2000   0x02
-> > > > > #define DS1339_TRCKL_R4000   0x03
-> > > > > 
-> > > > > trickle_setup = <DS1339_TRCKL_DIODE | DS1339_TRCKL_R250>;
-> > > > > 
-> > > > > And the driver would take care of oring it with the enable pattern.
-> > > > > 
-> > > > 
-> > > > Yes, that sounds reasonable as well.
-> > > > 
-> > > I thought of this too. However the ds1307 seems to be designed to work
-> > > with bunch of chips. What then when next chip supported by this driver
-> > > introduces 75, 1000 and 5000 ohm resistors? Or something else. (Or add
-> > > some other configuration). I do not see this approach to be
-> > > maintainable in long run.
-> > 
-> > If a new chip comes out with new features, the driver will need an
-> > update anyhow. We have no guarantee that the register placement will be
-> > the same, let alone the layout.
+2014-08-29 14:01+0200, Paolo Bonzini:
+> Opaque KVM structs are useful for prototypes in asm/kvm_host.h, to avoid
+> "'struct foo' declared inside parameter list" warnings (and consequent
+> breakage due to conflicting types).
 > 
-> Yes, I'm reminded of our conversations a year ago in Edinburgh.  It's
-> impossible to engineer a perfect, future-proof binding.  But that
-> being said...
+> Move them from individual files to a generic place in linux/kvm_types.h.
 > 
-> > If and when said new chip comes out we allocate a new compatible string.
-> > If it's compatible iwith (i.e. is a superset of) an existing device's
-> > programming model, we add that existing string as a fallback in the
-> > compatible list so old kernels can drive the subset of features they
-> > understand.
-> > 
-> > > I see strong possibility of polluting dt with endless amount of
-> > > defines. Furthermore I believe the benefits of these defines would be
-> > > negligible compared to effort maintaining defines and documentation of
-> > > them causes. Surely the one who needs to add dt node for this chip in
-> > > his board's dt has the manual for the chip he has on board. Especially
-> > > so if he knows the trickle charger there and wants to configure it.
-> > > The plain resistor type still gives zero information without knowing
-> > > the other details.
-> > 
-> > I would rather that the driver had some idea of what it were doing
-> > rather than being a glorified copy routine.
-> > 
-> > I would suggest we have two properties that describe the resistor's
-> > rating and whether or not there is a diode:
-> > 
-> > trickle-resistor-ohms = <250>
-> > diode-connected;
-> 
-> I much prefer this solution over my own suggestion.  With one small
-> change, s/diode-connected/trickle-diode-enable/  Does that sound ok?
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
 
-I'm not too keen on 'enable'; I was under the impression that this
-described whether or not there was an external diode. Perhaps I've
-misunderstood?
+Reviewed-by: Radim Krčmář <rkrcmar@redhat.com>
 
-Thanks,
-Mark.
+(Inclusion of <linux/types.h> seems to be piggybacking, but is a nice
+ thing to do :)
 
-> > That's easy for a human to write and/or validate, we can easily extend
-> > it in future, requires no proliferation of macros, and describes the
-> > hardware rather than telling software what to do.
-> > 
-> > The driver becomes a little more complicated, but gains sanity checking,
-> > which is a good thing.
-> > 
-> > I'm still worried that we have no idea what the device is intended to
-> > charge. Surely that's important?
-> 
-> In the docs it said a variety of batteries and supercaps.  Yeah, not
-> much help...
-> 
-> thx,
-> 
-> Jason.
-> 
+And I'd apply these changes:  (Definitely the first hunk.)
+
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index 33d8d0a..e098dce 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -140,8 +140,6 @@ static inline bool is_error_page(struct page *page)
+ #define KVM_USERSPACE_IRQ_SOURCE_ID		0
+ #define KVM_IRQFD_RESAMPLE_IRQ_SOURCE_ID	1
+ 
+-struct kvm;
+-struct kvm_vcpu;
+ extern struct kmem_cache *kvm_vcpu_cache;
+ 
+ extern spinlock_t kvm_lock;
+@@ -325,8 +323,6 @@ struct kvm_kernel_irq_routing_entry {
+ 	struct hlist_node link;
+ };
+ 
+-struct kvm_irq_routing_table;
+-
+ #ifndef KVM_PRIVATE_MEM_SLOTS
+ #define KVM_PRIVATE_MEM_SLOTS 0
+ #endif
+@@ -1036,8 +1032,6 @@ static inline bool kvm_check_request(int req, struct kvm_vcpu *vcpu)
+ 
+ extern bool kvm_rebooting;
+ 
+-struct kvm_device_ops;
+-
+ struct kvm_device {
+ 	struct kvm_device_ops *ops;
+ 	struct kvm *kvm;
+diff --git a/include/linux/kvm_types.h b/include/linux/kvm_types.h
+index 1d6daca..53c4f20 100644
+--- a/include/linux/kvm_types.h
++++ b/include/linux/kvm_types.h
+@@ -19,7 +19,9 @@
+ 
+ struct kvm;
+ struct kvm_async_pf;
++struct kvm_device_ops;
+ struct kvm_interrupt;
++struct kvm_irq_routing_table;
+ struct kvm_memory_slot;
+ struct kvm_one_reg;
+ struct kvm_run;
