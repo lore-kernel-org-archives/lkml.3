@@ -1,162 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752745AbaH2K5M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 06:57:12 -0400
-Received: from mail6.autoliv.com ([195.33.130.243]:39117 "EHLO
-	mail6.autoliv.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752110AbaH2K5J (ORCPT
+	id S1752823AbaH2K7W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 06:59:22 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:42541 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752110AbaH2K7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 06:57:09 -0400
-From: Mattis Lorentzon <Mattis.Lorentzon@autoliv.com>
-To: Iain Paton <ipaton0@gmail.com>
-CC: Fabio Estevam <festevam@gmail.com>,
-        Fredrik Noring <fredrik.noring@autoliv.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: Oops: 17 SMP ARM (v3.16-rc2)
-Thread-Topic: Oops: 17 SMP ARM (v3.16-rc2)
-Thread-Index: Ac+QeuMIv4ry9FBDTNKHf1ccZ0ioqQAu3GGAAAUkuuD//+tKAIABUVuA//+RU9CAAMUXAP/CyllwgHui4wD//8wREAAM+aMA//6IPID//QHtAP/4Df8A/+ub5xD/1wicgP+rMUjQ/1SejoD+qU6QAP1RkiKw+p8SkAD1PiHLAOp6Jo+A1PDsGICp4OdZgNPBHUWAp3qIGIDO9OT5gJ3mhc5Q
-Date: Fri, 29 Aug 2014 10:57:05 +0000
-Message-ID: <C4A61A5CA4AD2246942F4BA6F20ACB80435790DF@ALVA-EXMB04.alv.autoliv.int>
-References: <20140626151424.GT32514@n2100.arm.linux.org.uk>
- <20140806125550.GO30282@n2100.arm.linux.org.uk>
- <C4A61A5CA4AD2246942F4BA6F20ACB804357526C@ALVA-EXMB04.alv.autoliv.int>
- <20140807121248.GY30282@n2100.arm.linux.org.uk>
- <20140808180900.GG30282@n2100.arm.linux.org.uk>
- <C4A61A5CA4AD2246942F4BA6F20ACB8043576356@ALVA-EXMB04.alv.autoliv.int>
- <CAOMZO5B8GR+ABBoJ=dJcFqw3Wagfaip7HM+C1FTz+aE4CmqiPw@mail.gmail.com>
- <C4A61A5CA4AD2246942F4BA6F20ACB80435776D3@ALVA-EXMB04.alv.autoliv.int>
- <CAOMZO5B7FgzB7ThVyV2Vk7wTwYgjRWjEnkkAN5uwwKMaBKq1yg@mail.gmail.com>
- <C4A61A5CA4AD2246942F4BA6F20ACB8043577770@ALVA-EXMB04.alv.autoliv.int>
- <53F11FF6.8030303@gmail.com>
- <CAOMZO5CDvQDD7gVLFStwv4MPrUyqZE3sEDZwb0gukkXujYG-6Q@mail.gmail.com>
- <53F2E89B.80009@gmail.com> <53F5BE3D.5070209@gmail.com>
- <CAOMZO5A3CgaVCKxNDG-zEdwprYdRDXD_XZ2ikW+mns-iieYHsg@mail.gmail.com>
- <53F71D1B.8090004@gmail.com>
- <C4A61A5CA4AD2246942F4BA6F20ACB8043578CB2@ALVA-EXMB04.alv.autoliv.int>
- <53FDB649.2070506@gmail.com>
-In-Reply-To: <53FDB649.2070506@gmail.com>
-Accept-Language: sv-SE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.14.8.137]
-x-tm-as-product-ver: SMEX-10.2.0.2087-7.500.1018-20914.006
-x-tm-as-result: No--29.911800-8.000000-31
-x-tm-as-user-approved-sender: No
-x-tm-as-user-blocked-sender: No
-Content-Type: multipart/mixed;
-	boundary="_002_C4A61A5CA4AD2246942F4BA6F20ACB80435790DFALVAEXMB04alvau_"
+	Fri, 29 Aug 2014 06:59:20 -0400
+Date: Fri, 29 Aug 2014 11:59:13 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Andreas Werner <andreas.werner@men.de>
+Cc: Bryan Wu <cooloney@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux@roeck-us.net,
+        lm-sensors@lm-sensors.org, wim@iguana.be,
+        linux-watchdog@vger.kernel.org,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>
+Subject: Re: [PATCH v6 3/4] drivers/leds/leds-menf21bmc: introduce MEN
+ 14F021P00 BMC LED driver
+Message-ID: <20140829105913.GI24579@lee--X1>
+References: <cover.1409161615.git.andreas.werner@men.de>
+ <e91e4f47cda55c03fa1d0a54c0891341d73adfa6.1409161615.git.andreas.werner@men.de>
+ <CAK5ve-+zjZBw_HXWm9kGE5Vbv=R2SO4P2dB_0opzLHTAV-BQ0Q@mail.gmail.com>
+ <20140829065915.GZ24579@lee--X1>
+ <20140829113815.GA30736@awelinux>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140829113815.GA30736@awelinux>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_C4A61A5CA4AD2246942F4BA6F20ACB80435790DFALVAEXMB04alvau_
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+On Fri, 29 Aug 2014, Andreas Werner wrote:
 
-Iain,
+> On Fri, Aug 29, 2014 at 07:59:15AM +0100, Lee Jones wrote:
+> > On Thu, 28 Aug 2014, Bryan Wu wrote:
+> > 
+> > > On Wed, Aug 27, 2014 at 10:52 AM, Andreas Werner <andreas.werner@men.de> wrote:
+> > > > Added driver to support the 14F021P00 BMC LEDs.
+> > > > The BMC is a Board Management Controller including four LEDs which
+> > > > can be switched on and off.
+> > > >
+> > > 
+> > > Please go ahead with my Ack
+> > > Acked-by: Bryan Wu <cooloney@gmail.com>
+> > > 
+> > > Lee, will you merge this through your tree? I think we do that in one
+> > > shot is better.
+> > 
+> > Yes, that's fine.  Pull-request to follow.
+> > 
+> 
+> Thanks to all for review.
+> 
+> Who of you does the Watchdog part? Is it the part of Wim to Ack the patch
+> if everythings is right or Guenther?
 
-> Interesting. We obviously have some differences in how we boot, my
-> changes to your config to get it to boot basically amount to reverting =
-the
-> patch you attached and then enabling sata and mmc. So far I've been una=
-ble
-> to get your config to fail.
+Wim looks like the guy:
 
-Our version of U-boot doesn't support specifying a device tree separate f=
-rom
-the kernel, so we append it to the end of the kernel binary. We also enab=
-le
-automatic configuration of IP addresses (CONFIG_IP_PNP). Our bootargs are=
-:
-console=3Dttymxc1,115200
-ip=3D192.168.2.157:192.168.2.1:192.168.2.1:255.255.255.0:armcard:eth0:on
-earlyprintk enable_wait_mode=3Doff
+WATCHDOG DEVICE DRIVERS
+M:      Wim Van Sebroeck <wim@iguana.be>
+L:      linux-watchdog@vger.kernel.org
+W:      http://www.linux-watchdog.org/
+T:      git git://www.linux-watchdog.org/linux-watchdog.git
+S:      Maintained
+F:      Documentation/watchdog/
+F:      drivers/watchdog/
+F:      include/linux/watchdog.h
+F:      include/uapi/linux/watchdog.h
 
-> It would be good to know what makes my config work for you, I don't thi=
-nk
-> I've done anything special with it.
+> I ask because if everything is ok all the patches can go in completly that would
+> be nice.
 
-With a couple of modifications (attached) we have been able to get your
-config running on our Zynq boards as well, solving our ethernet issues.
+That is the plan.
 
-The serial port and ethernet are essentially the only things we use. No d=
-isks,
-no graphics, no USB, etc. which is why we tried to reduce the kernel
-configuration to a bare minimum. We have no idea which disabled and/or
-enabled options that are causing the stalls.
+> > > > Signed-off-by: Andreas Werner <andreas.werner@men.de>
+> > > > ---
+> > > >  drivers/leds/Kconfig          |   9 +++
+> > > >  drivers/leds/Makefile         |   1 +
+> > > >  drivers/leds/leds-menf21bmc.c | 131 ++++++++++++++++++++++++++++++++++++++++++
+> > > >  3 files changed, 141 insertions(+)
+> > > >  create mode 100644 drivers/leds/leds-menf21bmc.c
+> > > >
+> > > > diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+> > > > index 27cf0cd..ec03457 100644
+> > > > --- a/drivers/leds/Kconfig
+> > > > +++ b/drivers/leds/Kconfig
+> > > > @@ -458,6 +458,15 @@ config LEDS_OT200
+> > > >           This option enables support for the LEDs on the Bachmann OT200.
+> > > >           Say Y to enable LEDs on the Bachmann OT200.
+> > > >
+> > > > +config LEDS_MENF21BMC
+> > > > +       tristate "LED support for the MEN 14F021P00 BMC"
+> > > > +       depends on LEDS_CLASS && MFD_MENF21BMC
+> > > > +       help
+> > > > +         Say Y here to include support for the MEN 14F021P00 BMC LEDs.
+> > > > +
+> > > > +         This driver can also be built as a module. If so the module
+> > > > +         will be called leds-menf21bmc.
+> > > > +
+> > > >  comment "LED driver for blink(1) USB RGB LED is under Special HID drivers (HID_THINGM)"
+> > > >
+> > > >  config LEDS_BLINKM
+> > > > diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
+> > > > index 3c03666..cadc433 100644
+> > > > --- a/drivers/leds/Makefile
+> > > > +++ b/drivers/leds/Makefile
+> > > > @@ -53,6 +53,7 @@ obj-$(CONFIG_LEDS_MAX8997)            += leds-max8997.o
+> > > >  obj-$(CONFIG_LEDS_LM355x)              += leds-lm355x.o
+> > > >  obj-$(CONFIG_LEDS_BLINKM)              += leds-blinkm.o
+> > > >  obj-$(CONFIG_LEDS_VERSATILE)           += leds-versatile.o
+> > > > +obj-$(CONFIG_LEDS_MENF21BMC)           += leds-menf21bmc.o
+> > > >
+> > > >  # LED SPI Drivers
+> > > >  obj-$(CONFIG_LEDS_DAC124S085)          += leds-dac124s085.o
+> > > > diff --git a/drivers/leds/leds-menf21bmc.c b/drivers/leds/leds-menf21bmc.c
+> > > > new file mode 100644
+> > > > index 0000000..89dd577
+> > > > --- /dev/null
+> > > > +++ b/drivers/leds/leds-menf21bmc.c
+> > > > @@ -0,0 +1,131 @@
+> > > > +/*
+> > > > + *  MEN 14F021P00 Board Management Controller (BMC) LEDs Driver.
+> > > > + *
+> > > > + *  This is the core LED driver of the MEN 14F021P00 BMC.
+> > > > + *  There are four LEDs available which can be switched on and off.
+> > > > + *  STATUS LED, HOT SWAP LED, USER LED 1, USER LED 2
+> > > > + *
+> > > > + *  Copyright (C) 2014 MEN Mikro Elektronik Nuernberg GmbH
+> > > > + *
+> > > > + *  This program is free software; you can redistribute  it and/or modify it
+> > > > + *  under  the terms of  the GNU General  Public License as published by the
+> > > > + *  Free Software Foundation;  either version 2 of the  License, or (at your
+> > > > + *  option) any later version.
+> > > > + */
+> > > > +
+> > > > +#include <linux/module.h>
+> > > > +#include <linux/kernel.h>
+> > > > +#include <linux/platform_device.h>
+> > > > +#include <linux/leds.h>
+> > > > +#include <linux/i2c.h>
+> > > > +
+> > > > +#define BMC_CMD_LED_GET_SET    0xA0
+> > > > +#define BMC_BIT_LED_STATUS     BIT(0)
+> > > > +#define BMC_BIT_LED_HOTSWAP    BIT(1)
+> > > > +#define BMC_BIT_LED_USER1      BIT(2)
+> > > > +#define BMC_BIT_LED_USER2      BIT(3)
+> > > > +
+> > > > +struct menf21bmc_led {
+> > > > +       struct led_classdev cdev;
+> > > > +       u8 led_bit;
+> > > > +       const char *name;
+> > > > +       struct i2c_client *i2c_client;
+> > > > +};
+> > > > +
+> > > > +static struct menf21bmc_led leds[] = {
+> > > > +       {
+> > > > +               .name = "menf21bmc:led_status",
+> > > > +               .led_bit = BMC_BIT_LED_STATUS,
+> > > > +       },
+> > > > +       {
+> > > > +               .name = "menf21bmc:led_hotswap",
+> > > > +               .led_bit = BMC_BIT_LED_HOTSWAP,
+> > > > +       },
+> > > > +       {
+> > > > +               .name = "menf21bmc:led_user1",
+> > > > +               .led_bit = BMC_BIT_LED_USER1,
+> > > > +       },
+> > > > +       {
+> > > > +               .name = "menf21bmc:led_user2",
+> > > > +               .led_bit = BMC_BIT_LED_USER2,
+> > > > +       }
+> > > > +};
+> > > > +
+> > > > +static DEFINE_MUTEX(led_lock);
+> > > > +
+> > > > +static void
+> > > > +menf21bmc_led_set(struct led_classdev *led_cdev, enum led_brightness value)
+> > > > +{
+> > > > +       int led_val;
+> > > > +       struct menf21bmc_led *led = container_of(led_cdev,
+> > > > +                                       struct menf21bmc_led, cdev);
+> > > > +
+> > > > +       mutex_lock(&led_lock);
+> > > > +       led_val = i2c_smbus_read_byte_data(led->i2c_client,
+> > > > +                                          BMC_CMD_LED_GET_SET);
+> > > > +       if (led_val < 0)
+> > > > +               goto err_out;
+> > > > +
+> > > > +       if (value == LED_OFF)
+> > > > +               led_val &= ~led->led_bit;
+> > > > +       else
+> > > > +               led_val |= led->led_bit;
+> > > > +
+> > > > +       i2c_smbus_write_byte_data(led->i2c_client,
+> > > > +                                 BMC_CMD_LED_GET_SET, led_val);
+> > > > +err_out:
+> > > > +       mutex_unlock(&led_lock);
+> > > > +}
+> > > > +
+> > > > +static int menf21bmc_led_probe(struct platform_device *pdev)
+> > > > +{
+> > > > +       int i;
+> > > > +       int ret;
+> > > > +       struct i2c_client *i2c_client = to_i2c_client(pdev->dev.parent);
+> > > > +
+> > > > +       for (i = 0; i < ARRAY_SIZE(leds); i++) {
+> > > > +               leds[i].cdev.name = leds[i].name;
+> > > > +               leds[i].cdev.brightness_set = menf21bmc_led_set;
+> > > > +               leds[i].i2c_client = i2c_client;
+> > > > +               ret = led_classdev_register(&pdev->dev, &leds[i].cdev);
+> > > > +               if (ret < 0)
+> > > > +                       goto err_free_leds;
+> > > > +       }
+> > > > +       dev_info(&pdev->dev, "MEN 140F21P00 BMC LED device enabled\n");
+> > > > +
+> > > > +       return 0;
+> > > > +
+> > > > +err_free_leds:
+> > > > +       dev_err(&pdev->dev, "failed to register LED device\n");
+> > > > +
+> > > > +       for (i = i - 1; i >= 0; i--)
+> > > > +               led_classdev_unregister(&leds[i].cdev);
+> > > > +
+> > > > +       return ret;
+> > > > +}
+> > > > +
+> > > > +static int menf21bmc_led_remove(struct platform_device *pdev)
+> > > > +{
+> > > > +       int i;
+> > > > +
+> > > > +       for (i = 0; i < ARRAY_SIZE(leds); i++)
+> > > > +               led_classdev_unregister(&leds[i].cdev);
+> > > > +
+> > > > +       return 0;
+> > > > +}
+> > > > +
+> > > > +static struct platform_driver menf21bmc_led = {
+> > > > +       .probe          = menf21bmc_led_probe,
+> > > > +       .remove         = menf21bmc_led_remove,
+> > > > +       .driver         = {
+> > > > +               .name           = "menf21bmc_led",
+> > > > +               .owner          = THIS_MODULE,
+> > > > +       },
+> > > > +};
+> > > > +
+> > > > +module_platform_driver(menf21bmc_led);
+> > > > +
+> > > > +MODULE_AUTHOR("Andreas Werner <andreas.werner@men.de>");
+> > > > +MODULE_DESCRIPTION("MEN 14F021P00 BMC led driver");
+> > > > +MODULE_LICENSE("GPL v2");
+> > > > +MODULE_ALIAS("platform:menf21bmc_led");
+> > > >
+> > 
 
-Best regards,
-Mattis Lorentzon
-
-***************************************************************
-Consider the environment before printing this message.
-
-To read Autoliv's Information and Confidentiality Notice, follow this lin=
-k:
-http://www.autoliv.com/disclaimer.html
-***************************************************************
-
---_002_C4A61A5CA4AD2246942F4BA6F20ACB80435790DFALVAEXMB04alvau_
-Content-Type: application/octet-stream; name="config.patch"
-Content-Description: config.patch
-Content-Disposition: attachment; filename="config.patch"; size=2670;
-	creation-date="Fri, 29 Aug 2014 10:48:08 GMT";
-	modification-date="Fri, 29 Aug 2014 10:46:02 GMT"
-Content-Transfer-Encoding: base64
-
-MzcyYzM3Mgo8IENPTkZJR19BUkNIX1pZTlE9eQotLS0KPiAjIENPTkZJR19BUkNIX1pZTlEgaXMg
-bm90IHNldAozOTlkMzk4CjwgIyBDT05GSUdfQ1BVX0JJR19FTkRJQU4gaXMgbm90IHNldAo0MTZk
-NDE0CjwgQ09ORklHX0FSQ0hfU1VQUE9SVFNfQklHX0VORElBTj15CjQyN2Q0MjQKPCBDT05GSUdf
-SUNTVD15CjQzMmQ0MjgKPCBDT05GSUdfQVJNX0FNQkE9eQo1NDMsNTQ2YzUzOQo8IENPTkZJR19B
-Uk1fQVBQRU5ERURfRFRCPXkKPCBDT05GSUdfQVJNX0FUQUdfRFRCX0NPTVBBVD15CjwgQ09ORklH
-X0FSTV9BVEFHX0RUQl9DT01QQVRfQ01ETElORV9GUk9NX0JPT1RMT0FERVI9eQo8ICMgQ09ORklH
-X0FSTV9BVEFHX0RUQl9DT01QQVRfQ01ETElORV9FWFRFTkQgaXMgbm90IHNldAotLS0KPiAjIENP
-TkZJR19BUk1fQVBQRU5ERURfRFRCIGlzIG5vdCBzZXQKNjQ0LDY0N2M2MzcKPCBDT05GSUdfSVBf
-UE5QPXkKPCAjIENPTkZJR19JUF9QTlBfREhDUCBpcyBub3Qgc2V0CjwgIyBDT05GSUdfSVBfUE5Q
-X0JPT1RQIGlzIG5vdCBzZXQKPCAjIENPTkZJR19JUF9QTlBfUkFSUCBpcyBub3Qgc2V0Ci0tLQo+
-ICMgQ09ORklHX0lQX1BOUCBpcyBub3Qgc2V0CjEwMTJkMTAwMQo8ICMgQ09ORklHX0NBTl9YSUxJ
-TlhDQU4gaXMgbm90IHNldAoxNDU0LDE0NTVjMTQ0Mwo8IENPTkZJR19ORVRfQ0FERU5DRT15Cjwg
-Q09ORklHX01BQ0I9eQotLS0KPiAjIENPTkZJR19ORVRfQ0FERU5DRSBpcyBub3Qgc2V0CjE1MTAs
-MTUxMWQxNDk3CjwgQ09ORklHX05FVF9WRU5ET1JfWElMSU5YPXkKPCAjIENPTkZJR19YSUxJTlhf
-RU1BQ0xJVEUgaXMgbm90IHNldAoxNzg5ZDE3NzQKPCAjIENPTkZJR19TRVJJT19BTUJBS01JIGlz
-IG5vdCBzZXQKMTgyNSwxODI2ZDE4MDkKPCAjIENPTkZJR19TRVJJQUxfQU1CQV9QTDAxMCBpcyBu
-b3Qgc2V0CjwgIyBDT05GSUdfU0VSSUFMX0FNQkFfUEwwMTEgaXMgbm90IHNldAoxODMzLDE4MzRk
-MTgxNQo8IENPTkZJR19TRVJJQUxfVUFSVExJVEU9eQo8IENPTkZJR19TRVJJQUxfVUFSVExJVEVf
-Q09OU09MRT15CjE4NDMsMTg0NGMxODI0CjwgQ09ORklHX1NFUklBTF9YSUxJTlhfUFNfVUFSVD15
-CjwgQ09ORklHX1NFUklBTF9YSUxJTlhfUFNfVUFSVF9DT05TT0xFPXkKLS0tCj4gIyBDT05GSUdf
-U0VSSUFMX1hJTElOWF9QU19VQVJUIGlzIG5vdCBzZXQKMTkwN2QxODg2CjwgIyBDT05GSUdfSTJD
-X0NBREVOQ0UgaXMgbm90IHNldAoxOTE0ZDE4OTIKPCAjIENPTkZJR19JMkNfTk9NQURJSyBpcyBu
-b3Qgc2V0CjE5NTJkMTkyOQo8ICMgQ09ORklHX1NQSV9QTDAyMiBpcyBub3Qgc2V0CjIwMzhkMjAx
-NAo8ICMgQ09ORklHX0dQSU9fUEwwNjEgaXMgbm90IHNldAoyMDQxZDIwMTYKPCAjIENPTkZJR19H
-UElPX1hJTElOWCBpcyBub3Qgc2V0CjIyNDVkMjIxOQo8ICMgQ09ORklHX0FSTV9TUDgwNV9XQVRD
-SERPRyBpcyBub3Qgc2V0CjI2NTJkMjYyNQo8ICMgQ09ORklHX0ZCX0FSTUNMQ0QgaXMgbm90IHNl
-dAoyNjgwZDI2NTIKPCAjIENPTkZJR19GQl9YSUxJTlggaXMgbm90IHNldAoyODI4ZDI3OTkKPCAj
-IENPTkZJR19TTkRfQVJNQUFDSSBpcyBub3Qgc2V0CjI4MzlkMjgwOQo8ICMgQ09ORklHX1NORF9T
-T0NfQURJIGlzIG5vdCBzZXQKMzI4OWQzMjU4CjwgIyBDT05GSUdfTU1DX0FSTU1NQ0kgaXMgbm90
-IHNldAozNDQwLDM0NDFkMzQwOAo8ICMgQ09ORklHX1JUQ19EUlZfUEwwMzAgaXMgbm90IHNldAo8
-ICMgQ09ORklHX1JUQ19EUlZfUEwwMzEgaXMgbm90IHNldAozNDU4ZDM0MjQKPCAjIENPTkZJR19B
-TUJBX1BMMDhYIGlzIG5vdCBzZXQKMzQ2NGQzNDI5CjwgIyBDT05GSUdfUEwzMzBfRE1BIGlzIG5v
-dCBzZXQKMzQ2OWQzNDMzCjwgIyBDT05GSUdfWElMSU5YX1ZETUEgaXMgbm90IHNldAozNTYxZDM1
-MjQKPCAjIENPTkZJR19DT01NT05fQ0xLX0FYSV9DTEtHRU4gaXMgbm90IHNldAozNTcxZDM1MzMK
-PCBDT05GSUdfQ0FERU5DRV9UVENfVElNRVI9eQozNzA1ZDM2NjYKPCAjIENPTkZJR19ST09UX05G
-UyBpcyBub3Qgc2V0CjM5MTIsMzkyMmMzODczCjwgQ09ORklHX0RFQlVHX0xMPXkKPCBDT05GSUdf
-REVCVUdfWllOUV9VQVJUMD15CjwgIyBDT05GSUdfREVCVUdfWllOUV9VQVJUMSBpcyBub3Qgc2V0
-CjwgIyBDT05GSUdfREVCVUdfSU1YNlFfVUFSVCBpcyBub3Qgc2V0CjwgIyBDT05GSUdfREVCVUdf
-SU1YNlNMX1VBUlQgaXMgbm90IHNldAo8ICMgQ09ORklHX0RFQlVHX1NVTlhJX1VBUlQwIGlzIG5v
-dCBzZXQKPCAjIENPTkZJR19ERUJVR19TVU5YSV9VQVJUMSBpcyBub3Qgc2V0CjwgIyBDT05GSUdf
-REVCVUdfSUNFRENDIGlzIG5vdCBzZXQKPCAjIENPTkZJR19ERUJVR19TRU1JSE9TVElORyBpcyBu
-b3Qgc2V0CjwgIyBDT05GSUdfREVCVUdfTExfVUFSVF84MjUwIGlzIG5vdCBzZXQKPCAjIENPTkZJ
-R19ERUJVR19MTF9VQVJUX1BMMDFYIGlzIG5vdCBzZXQKLS0tCj4gIyBDT05GSUdfREVCVUdfTEwg
-aXMgbm90IHNldAozOTI0YzM4NzUKPCBDT05GSUdfREVCVUdfTExfSU5DTFVERT0iZGVidWcvenlu
-cS5TIgotLS0KPiBDT05GSUdfREVCVUdfTExfSU5DTFVERT0ibWFjaC9kZWJ1Zy1tYWNyby5TIgoz
-OTI3ZDM4NzcKPCBDT05GSUdfREVCVUdfVU5DT01QUkVTUz15CjM5MjksMzkzMGQzODc4CjwgQ09O
-RklHX0VBUkxZX1BSSU5USz15CjwgIyBDT05GSUdfT0NfRVRNIGlzIG5vdCBzZXQK
-
---_002_C4A61A5CA4AD2246942F4BA6F20ACB80435790DFALVAEXMB04alvau_--
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
