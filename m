@@ -1,60 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752621AbaH2EJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 00:09:28 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:38527 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751188AbaH2EJ0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 00:09:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <53FE53E1.9030605@codeaurora.org>
-References: <53D788A7.4020303@mm-sol.com>
-	<3794875.CZFbAag5Sv@wuerfel>
-	<53D7AA72.6010309@mm-sol.com>
-	<20140729234522.E9FF1C40738@trevor.secretlab.ca>
-	<53D84558.7060406@codeaurora.org>
-	<CAL_JsqJjH0OH+X=fzwqAPeWarjoLev7v6Nv_QhAa+nZyztMnFA@mail.gmail.com>
-	<20140730060619.GC19933@codeaurora.org>
-	<CAJAp7OhoRQ1eWack1e=OL0cS4Fxmgxc7OWeNxcj1qt7Q-x-sQA@mail.gmail.com>
-	<53FE53E1.9030605@codeaurora.org>
-Date: Thu, 28 Aug 2014 21:09:24 -0700
-Message-ID: <CAJAp7Oj+3bUAciLcbfZpfDE0MFem8G_P1gTjV=-UK_U3o4UEZw@mail.gmail.com>
-Subject: Re: use IORESOURCE_REG resource type for non-translatable addresses
- in DT
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Stanimir Varbanov <svarbanov@mm-sol.com>,
-        Arnd Bergmann <arnd@arndb.de>, Rob Herring <rob.herring@linaro.org>,
-        Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Brown <broonie@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1752469AbaH2Ecv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 00:32:51 -0400
+Received: from mga14.intel.com ([192.55.52.115]:51434 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751161AbaH2Ect (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 00:32:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,422,1406617200"; 
+   d="scan'208";a="583251724"
+From: Lu Baolu <baolu.lu@linux.intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Mathias Nyman <mathias.nyman@intel.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lu Baolu <baolu.lu@linux.intel.com>
+Subject: [PATCH 1/1] USB: Add device quirk for ASUS T100 Base Station keyboard
+Date: Fri, 29 Aug 2014 12:26:31 +0800
+Message-Id: <1409286391-2854-1-git-send-email-baolu.lu@linux.intel.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 27, 2014 at 2:55 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> What's Josh's original proposal? We've already punted on this for SSBI
-> PMICs and just required them to put registers in DT for use some day and
-> I don't see anyone blocking individual SPMI pmic drivers from merging
-> over this. So I guess I agree with you that we can move forward with the
-> other drivers. I'd still like to see us make this better though, so it
-> seems worthwhile to have the discussion and get to some conclusion.
->
+This full-speed USB device generates spurious remote wakeup event
+as soon as USB_DEVICE_REMOTE_WAKEUP feature is set. As the result,
+Linux can't enter system suspend and S0ix power saving modes once
+this keyboard is used.
 
-That sounds totally reasonable, I agree that we should try to sort
-this out and if we do this should be applicable on pm8xxx as well(?).
+This patch tries to introduce USB_QUIRK_IGNOR_REMOTE_WAKEUP quirk.
+With this quirk set, wakeup capability will be ignored during
+device configure.
 
-My concern was that further discussions would hinder the ability of
-actually committing the pm8x41 container driver and that is in my eyes
-blocking integration of drivers for the pmic blocks.
+This patch could be back-ported to kernels as old as 2.6.39.
 
-Regards,
-Bjorn
+Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
+---
+ drivers/usb/core/hub.c     | 6 ++++--
+ drivers/usb/core/quirks.c  | 4 ++++
+ include/linux/usb/quirks.h | 3 +++
+ 3 files changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index 8a4dcbc..5df1457 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -1977,8 +1977,10 @@ void usb_set_device_state(struct usb_device *udev,
+ 					|| new_state == USB_STATE_SUSPENDED)
+ 				;	/* No change to wakeup settings */
+ 			else if (new_state == USB_STATE_CONFIGURED)
+-				wakeup = udev->actconfig->desc.bmAttributes
+-					 & USB_CONFIG_ATT_WAKEUP;
++				wakeup = (udev->quirks &
++					USB_QUIRK_IGNOR_REMOTE_WAKEUP) ? 0 :
++					udev->actconfig->desc.bmAttributes &
++					USB_CONFIG_ATT_WAKEUP;
+ 			else
+ 				wakeup = 0;
+ 		}
+diff --git a/drivers/usb/core/quirks.c b/drivers/usb/core/quirks.c
+index bae636e..e7d1e3c 100644
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -159,6 +159,10 @@ static const struct usb_device_id usb_quirk_list[] = {
+ 	/* USB3503 */
+ 	{ USB_DEVICE(0x0424, 0x3503), .driver_info = USB_QUIRK_RESET_RESUME },
+ 
++	/* ASUS Base Station(T100) */
++	{ USB_DEVICE(0x0b05, 0x17e0), .driver_info =
++			USB_QUIRK_IGNOR_REMOTE_WAKEUP },
++
+ 	{ }  /* terminating entry must be last */
+ };
+ 
+diff --git a/include/linux/usb/quirks.h b/include/linux/usb/quirks.h
+index 55a17b1..0f784c3 100644
+--- a/include/linux/usb/quirks.h
++++ b/include/linux/usb/quirks.h
+@@ -41,4 +41,7 @@
+  */
+ #define USB_QUIRK_LINEAR_UFRAME_INTR_BINTERVAL	0x00000080
+ 
++/* device generates spurious wakeup, ignore remote wakeup capability */
++#define USB_QUIRK_IGNOR_REMOTE_WAKEUP	0x00000100
++
+ #endif /* __LINUX_USB_QUIRKS_H */
+-- 
+1.9.1
+
