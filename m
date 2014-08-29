@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754085AbaH2QIO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 12:08:14 -0400
-Received: from andre.telenet-ops.be ([195.130.132.53]:43477 "EHLO
-	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753929AbaH2QIL (ORCPT
+	id S1754146AbaH2QIu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 12:08:50 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:39171 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753738AbaH2QIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 12:08:11 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-m68k@vger.kernel.org
-Cc: Greg Ungerer <gerg@uclinux.org>, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 1/2] m68k: Wire up getrandom
-Date: Fri, 29 Aug 2014 18:08:02 +0200
-Message-Id: <1409328483-8460-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.9.1
+	Fri, 29 Aug 2014 12:08:48 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19DOhE+TFEsh31sfQXDIMcf
+Date: Fri, 29 Aug 2014 09:08:42 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        balbi@ti.com, Vinod Koul <vinod.koul@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 05/15] tty: serial: Add 8250-core based omap driver
+Message-ID: <20140829160842.GN16006@atomide.com>
+References: <1408124563-31541-1-git-send-email-bigeasy@linutronix.de>
+ <1408124563-31541-6-git-send-email-bigeasy@linutronix.de>
+ <20140815210716.GE9239@atomide.com>
+ <20140815224446.GF9239@atomide.com>
+ <5400A11A.7000202@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5400A11A.7000202@linutronix.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- arch/m68k/include/asm/unistd.h      | 2 +-
- arch/m68k/include/uapi/asm/unistd.h | 1 +
- arch/m68k/kernel/syscalltable.S     | 1 +
- 3 files changed, 3 insertions(+), 1 deletion(-)
+* Sebastian Andrzej Siewior <bigeasy@linutronix.de> [140829 08:50]:
+> On 08/16/2014 12:44 AM, Tony Lindgren wrote:
+> 
+> > Oh and echo mem > /sys/power/state and then hitting a key on the serial
+> > console won't wake the system. Does that need to be manually configured
+> > for device_may_wakeup()?
+> 
+> This is what it looks like:
+> 
+> /# echo enabled >
+> /sys/devices/68000000.ocp/49020000.serial/tty/ttyS2/power/wakeup
+> 
+> / # date; echo mem > /sys/power/state; date
+> Sat Jan  1 07:01:41 UTC 2000
+> [  249.916503] PM: Syncing filesystems ... done.
+> [  252.674652] Freezing user space processes ... (elapsed 0.001 seconds)
+> done.
+> [  252.683563] Freezing remaining freezable tasks ... (elapsed 0.001
+> seconds) done.
+> [  252.693084] Suspending console(s) (use no_console_suspend to debug)
+> [  252.715820] PM: suspend of devices complete after 11.688 msecs
+> [  252.722015] PM: late suspend of devices complete after 6.195 msecs
+> [  252.729187] PM: noirq suspend of devices complete after 7.110 msecs
+> [  252.729278] Successfully put all powerdomains to target state
+> [  252.733306] PM: noirq resume of devices complete after 3.967 msecs
+> [  252.738708] PM: early resume of devices complete after 4.425 msecs
+> [  252.910400] PM: resume of devices complete after 171.569 msecs
+> [  252.957855] Restarting tasks ... done.
+> Sat Jan  1 07:01:51 UTC 2000
 
-diff --git a/arch/m68k/include/asm/unistd.h b/arch/m68k/include/asm/unistd.h
-index 1fcdd344c7ad..fbf8792f4179 100644
---- a/arch/m68k/include/asm/unistd.h
-+++ b/arch/m68k/include/asm/unistd.h
-@@ -4,7 +4,7 @@
- #include <uapi/asm/unistd.h>
- 
- 
--#define NR_syscalls		352
-+#define NR_syscalls		353
- 
- #define __ARCH_WANT_OLD_READDIR
- #define __ARCH_WANT_OLD_STAT
-diff --git a/arch/m68k/include/uapi/asm/unistd.h b/arch/m68k/include/uapi/asm/unistd.h
-index 9cd82fbc7817..e906e3c1542e 100644
---- a/arch/m68k/include/uapi/asm/unistd.h
-+++ b/arch/m68k/include/uapi/asm/unistd.h
-@@ -357,5 +357,6 @@
- #define __NR_sched_setattr	349
- #define __NR_sched_getattr	350
- #define __NR_renameat2		351
-+#define __NR_getrandom		352
- 
- #endif /* _UAPI_ASM_M68K_UNISTD_H_ */
-diff --git a/arch/m68k/kernel/syscalltable.S b/arch/m68k/kernel/syscalltable.S
-index 501e10212789..9307b488ce14 100644
---- a/arch/m68k/kernel/syscalltable.S
-+++ b/arch/m68k/kernel/syscalltable.S
-@@ -372,4 +372,5 @@ ENTRY(sys_call_table)
- 	.long sys_sched_setattr
- 	.long sys_sched_getattr		/* 350 */
- 	.long sys_renameat2
-+	.long sys_getrandom
- 
--- 
-1.9.1
+Yes works for me too now thanks.
 
+Tony
