@@ -1,230 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750938AbaH2UWS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 16:22:18 -0400
-Received: from xavier.telenet-ops.be ([195.130.132.52]:43255 "EHLO
-	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750761AbaH2UWQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 16:22:16 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH resend] nosave: Consolidate __nosave_{begin,end} in <asm/sections.h>
-Date: Fri, 29 Aug 2014 22:22:11 +0200
-Message-Id: <1409343731-5292-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.9.1
+	id S1751089AbaH2U0V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 16:26:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49826 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750761AbaH2U0T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 16:26:19 -0400
+Date: Fri, 29 Aug 2014 16:25:33 -0400
+From: "J. Bruce Fields" <bfields@redhat.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>, stable@vger.kernel.org,
+        Raphos <raphoszap@laposte.net>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "'Alexey Lugovskoy'" <lugovskoy@dev.rtsoft.ru>,
+        Konstantin Kholopov <kkholopov@dev.rtsoft.ru>,
+        linux-kernel@vger.kernel.org, jlayton@primarydata.com,
+        linux-nfs@vger.kernel.org
+Subject: Re: 3.10.y regression caused by:  lockd: ensure we tear down any
+ live sockets when socket creation fails during lockd_up
+Message-ID: <20140829202532.GA8204@pad.redhat.com>
+References: <53A4177B.6060300@dev.rtsoft.ru>
+ <20140707222721.GC11171@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140707222721.GC11171@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The different architectures used their own (and different) declarations:
+On Mon, Jul 07, 2014 at 03:27:21PM -0700, Greg Kroah-Hartman wrote:
+> On Fri, Jun 20, 2014 at 03:14:03PM +0400, Nikita Yushchenko wrote:
+> > With current 3.10.y, if kernel is booted with init=/bin/sh and then nfs mount
+> > is attempted (without portmap or rpcbind running) using busybox mount, following
+> > OOPS happen:
+> > 
+> > # mount -t nfs 10.30.130.21:/opt /mnt
+> > svc: failed to register lockdv1 RPC service (errno 111).
+> > lockd_up: makesock failed, error=-111
+> > Unable to handle kernel paging request for data at address 0x00000030
+> > Faulting instruction address: 0xc055e65c
+> > Oops: Kernel access of bad area, sig: 11 [#1]
+> > MPC85xx CDS
+> > Modules linked in:
+> > CPU: 0 PID: 1338 Comm: mount Not tainted 3.10.44.cge #117
+> > task: cf29cea0 ti: cf35c000 task.ti: cf35c000
+> > NIP: c055e65c LR: c0566490 CTR: c055e648
+> > REGS: cf35dad0 TRAP: 0300   Not tainted  (3.10.44.cge)
+> > MSR: 00029000 <CE,EE,ME>  CR: 22442488  XER: 20000000
+> > DEAR: 00000030, ESR: 00000000
+> > 
+> > GPR00: c05606f4 cf35db80 cf29cea0 cf0ded80 cf0dedb8 00000001 1dec3086 00000000 
+> > GPR08: 00000000 c07b1640 00000007 1dec3086 22442482 100b9758 00000000 10090ae8 
+> > GPR16: 00000000 000186a5 00000000 00000000 100c3018 bfa46edc 100b0000 bfa46ef0 
+> > GPR24: cf386ae0 c07834f0 00000000 c0565f88 00000001 cf0dedb8 00000000 cf0ded80 
+> > NIP [c055e65c] call_start+0x14/0x34
+> > LR [c0566490] __rpc_execute+0x70/0x250
+> > Call Trace:
+> > [cf35db80] [00000080] 0x80 (unreliable)
+> > [cf35dbb0] [c05606f4] rpc_run_task+0x9c/0xc4
+> > [cf35dbc0] [c0560840] rpc_call_sync+0x50/0xb8
+> > [cf35dbf0] [c056ee90] rpcb_register_call+0x54/0x84
+> > [cf35dc10] [c056f24c] rpcb_register+0xf8/0x10c
+> > [cf35dc70] [c0569e18] svc_unregister.isra.23+0x100/0x108
+> > [cf35dc90] [c0569e38] svc_rpcb_cleanup+0x18/0x30
+> > [cf35dca0] [c0198c5c] lockd_up+0x1dc/0x2e0
+> > [cf35dcd0] [c0195348] nlmclnt_init+0x2c/0xc8
+> > [cf35dcf0] [c015bb5c] nfs_start_lockd+0x98/0xec
+> > [cf35dd20] [c015ce6c] nfs_create_server+0x1e8/0x3f4
+> > [cf35dd90] [c0171590] nfs3_create_server+0x10/0x44
+> > [cf35dda0] [c016528c] nfs_try_mount+0x158/0x1e4
+> > [cf35de20] [c01670d0] nfs_fs_mount+0x434/0x8c8
+> > [cf35de70] [c00cd3bc] mount_fs+0x20/0xbc
+> > [cf35de90] [c00e4f88] vfs_kern_mount+0x50/0x104
+> > [cf35dec0] [c00e6e0c] do_mount+0x1d0/0x8e0
+> > [cf35df10] [c00e75ac] SyS_mount+0x90/0xd0
+> > [cf35df40] [c000ccf4] ret_from_syscall+0x0/0x3c
+> > --- Exception: c01 at 0xff2acc4
+> >     LR = 0x10048ab8
+> > Instruction dump:
+> > 3d20c056 3929e648 91230028 38600001 4e800020 38600000 4e800020 81230014 
+> > 8103000c 81490014 394a0001 91490014 <81280030> 81490018 394a0001 91490018 
+> > ---[ end trace 033b5b4715cb5452 ]---
+> > 
+> > 
+> > This does not happen if
+> > 
+> > commit 72a6e594497032bd911bd187a88fae4b4473abb3
+> > Author: Jeff Layton <jlayton@redhat.com>
+> > Date:   Tue Mar 25 11:55:26 2014 -0700
+> > 
+> >     lockd: ensure we tear down any live sockets when socket creation fails during lockd_up
+> >     
+> >     commit 679b033df48422191c4cac52b610d9980e019f9b upstream.
+> > 
+> > is reverted:
+> > 
+> > # mount -t nfs 10.30.130.21:/opt /mnt
+> > svc: failed to register lockdv1 RPC service (errno 111).
+> > lockd_up: makesock failed, error=-111
+> > mount: mounting 10.30.130.21:/opt on /mnt failed: Connection refused
+> > #
+> > 
+> > 
+> > Physical reason of the OOPS is that:
+> > 
+> > - addition of svc_shutdown_net() call to error path of make_socks() causes
+> > double call of svc_rpcb_cleanup():
+> >   - first call is from within svc_shutdown_net(), because serv->sv_shutdown
+> > points to svc_rpcb_cleanup() at this time,
+> >   - immediately followed by second call from lockd_up_net()'s error path
+> > 
+> > - when second svc_rpcb_cleanup() is executed, then at
+> >   svc_unregister() -> __svc_unregister() -> rpcb_register() -> rpcb_register_call()
+> > call path, rpcb_register_call() is called with clnt=NULL.
+> 
+> So, Jeff, what should I do here?  Drop this patch from 3.10?  Add
+> something else to fix it up?  Something else entirely?
 
-    extern __visible const void __nosave_begin, __nosave_end;
-    extern const void __nosave_begin, __nosave_end;
-    extern long __nosave_begin, __nosave_end;
+Sorry this got ignored.  Adding more useful addressess....
 
-Consolidate them using the first variant in <asm/sections.h>.
+So looks like the new svc_shutdown_net made lockd_up_net's cleanup
+redundant, and just removing it might do the job?
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
-This has been sent before, as part of the series "[PATCH 00/17] <asm/sections.h>
-related cleanups", almost one year ago (https://lkml.org/lkml/2013/11/12/510).
+--b.
 
- arch/mips/include/asm/suspend.h   | 7 -------
- arch/mips/power/cpu.c             | 2 +-
- arch/powerpc/kernel/suspend.c     | 4 +---
- arch/s390/kernel/suspend.c        | 6 +-----
- arch/sh/include/asm/sections.h    | 1 -
- arch/sparc/power/hibernate.c      | 4 +---
- arch/unicore32/include/mach/pm.h  | 3 ---
- arch/unicore32/kernel/hibernate.c | 1 +
- arch/x86/power/hibernate_32.c     | 4 +---
- arch/x86/power/hibernate_64.c     | 4 +---
- include/asm-generic/sections.h    | 4 ++++
- 11 files changed, 11 insertions(+), 29 deletions(-)
- delete mode 100644 arch/mips/include/asm/suspend.h
-
-diff --git a/arch/mips/include/asm/suspend.h b/arch/mips/include/asm/suspend.h
-deleted file mode 100644
-index 3adac3b53d19..000000000000
---- a/arch/mips/include/asm/suspend.h
-+++ /dev/null
-@@ -1,7 +0,0 @@
--#ifndef __ASM_SUSPEND_H
--#define __ASM_SUSPEND_H
--
--/* References to section boundaries */
--extern const void __nosave_begin, __nosave_end;
--
--#endif /* __ASM_SUSPEND_H */
-diff --git a/arch/mips/power/cpu.c b/arch/mips/power/cpu.c
-index 521e5963df05..2129e67723ff 100644
---- a/arch/mips/power/cpu.c
-+++ b/arch/mips/power/cpu.c
-@@ -7,7 +7,7 @@
-  * Author: Hu Hongbing <huhb@lemote.com>
-  *	   Wu Zhangjin <wuzhangjin@gmail.com>
-  */
--#include <asm/suspend.h>
-+#include <asm/sections.h>
- #include <asm/fpu.h>
- #include <asm/dsp.h>
+diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
+index 673668a9eec1..685e953c5103 100644
+--- a/fs/lockd/svc.c
++++ b/fs/lockd/svc.c
+@@ -253,13 +253,11 @@ static int lockd_up_net(struct svc_serv *serv, struct net *net)
  
-diff --git a/arch/powerpc/kernel/suspend.c b/arch/powerpc/kernel/suspend.c
-index 0167d53da30c..a531154cc0f3 100644
---- a/arch/powerpc/kernel/suspend.c
-+++ b/arch/powerpc/kernel/suspend.c
-@@ -9,9 +9,7 @@
+ 	error = make_socks(serv, net);
+ 	if (error < 0)
+-		goto err_socks;
++		goto err_bind;
+ 	set_grace_period(net);
+ 	dprintk("lockd_up_net: per-net data created; net=%p\n", net);
+ 	return 0;
  
- #include <linux/mm.h>
- #include <asm/page.h>
--
--/* References to section boundaries */
--extern const void __nosave_begin, __nosave_end;
-+#include <asm/sections.h>
- 
- /*
-  *	pfn_is_nosave - check if given pfn is in the 'nosave' section
-diff --git a/arch/s390/kernel/suspend.c b/arch/s390/kernel/suspend.c
-index a7a7537ce1e7..1c4c5accd220 100644
---- a/arch/s390/kernel/suspend.c
-+++ b/arch/s390/kernel/suspend.c
-@@ -13,14 +13,10 @@
- #include <asm/ipl.h>
- #include <asm/cio.h>
- #include <asm/pci.h>
-+#include <asm/sections.h>
- #include "entry.h"
- 
- /*
-- * References to section boundaries
-- */
--extern const void __nosave_begin, __nosave_end;
--
--/*
-  * The restore of the saved pages in an hibernation image will set
-  * the change and referenced bits in the storage key for each page.
-  * Overindication of the referenced bits after an hibernation cycle
-diff --git a/arch/sh/include/asm/sections.h b/arch/sh/include/asm/sections.h
-index 1b6199740e98..7a99e6af6372 100644
---- a/arch/sh/include/asm/sections.h
-+++ b/arch/sh/include/asm/sections.h
-@@ -3,7 +3,6 @@
- 
- #include <asm-generic/sections.h>
- 
--extern long __nosave_begin, __nosave_end;
- extern long __machvec_start, __machvec_end;
- extern char __uncached_start, __uncached_end;
- extern char __start_eh_frame[], __stop_eh_frame[];
-diff --git a/arch/sparc/power/hibernate.c b/arch/sparc/power/hibernate.c
-index 42b0b8ce699a..17bd2e167e07 100644
---- a/arch/sparc/power/hibernate.c
-+++ b/arch/sparc/power/hibernate.c
-@@ -9,11 +9,9 @@
- #include <asm/hibernate.h>
- #include <asm/visasm.h>
- #include <asm/page.h>
-+#include <asm/sections.h>
- #include <asm/tlb.h>
- 
--/* References to section boundaries */
--extern const void __nosave_begin, __nosave_end;
--
- struct saved_context saved_context;
- 
- /*
-diff --git a/arch/unicore32/include/mach/pm.h b/arch/unicore32/include/mach/pm.h
-index 4dcd34ae194c..77b522694e74 100644
---- a/arch/unicore32/include/mach/pm.h
-+++ b/arch/unicore32/include/mach/pm.h
-@@ -36,8 +36,5 @@ extern int puv3_pm_enter(suspend_state_t state);
- /* Defined in hibernate_asm.S */
- extern int restore_image(pgd_t *resume_pg_dir, struct pbe *restore_pblist);
- 
--/* References to section boundaries */
--extern const void __nosave_begin, __nosave_end;
--
- extern struct pbe *restore_pblist;
- #endif
-diff --git a/arch/unicore32/kernel/hibernate.c b/arch/unicore32/kernel/hibernate.c
-index d75ef8b6cb56..9969ec374abb 100644
---- a/arch/unicore32/kernel/hibernate.c
-+++ b/arch/unicore32/kernel/hibernate.c
-@@ -18,6 +18,7 @@
- #include <asm/page.h>
- #include <asm/pgtable.h>
- #include <asm/pgalloc.h>
-+#include <asm/sections.h>
- #include <asm/suspend.h>
- 
- #include "mach/pm.h"
-diff --git a/arch/x86/power/hibernate_32.c b/arch/x86/power/hibernate_32.c
-index 7d28c885d238..291226b952a9 100644
---- a/arch/x86/power/hibernate_32.c
-+++ b/arch/x86/power/hibernate_32.c
-@@ -13,13 +13,11 @@
- #include <asm/page.h>
- #include <asm/pgtable.h>
- #include <asm/mmzone.h>
-+#include <asm/sections.h>
- 
- /* Defined in hibernate_asm_32.S */
- extern int restore_image(void);
- 
--/* References to section boundaries */
--extern const void __nosave_begin, __nosave_end;
--
- /* Pointer to the temporary resume page tables */
- pgd_t *resume_pg_dir;
- 
-diff --git a/arch/x86/power/hibernate_64.c b/arch/x86/power/hibernate_64.c
-index 35e2bb6c0f37..009947d419a6 100644
---- a/arch/x86/power/hibernate_64.c
-+++ b/arch/x86/power/hibernate_64.c
-@@ -17,11 +17,9 @@
- #include <asm/page.h>
- #include <asm/pgtable.h>
- #include <asm/mtrr.h>
-+#include <asm/sections.h>
- #include <asm/suspend.h>
- 
--/* References to section boundaries */
--extern __visible const void __nosave_begin, __nosave_end;
--
- /* Defined in hibernate_asm_64.S */
- extern asmlinkage __visible int restore_image(void);
- 
-diff --git a/include/asm-generic/sections.h b/include/asm-generic/sections.h
-index f1a24b5c3b90..b58fd667f87b 100644
---- a/include/asm-generic/sections.h
-+++ b/include/asm-generic/sections.h
-@@ -3,6 +3,8 @@
- 
- /* References to section boundaries */
- 
-+#include <linux/compiler.h>
-+
- /*
-  * Usage guidelines:
-  * _text, _data: architecture specific, don't use them in arch-independent code
-@@ -37,6 +39,8 @@ extern char __start_rodata[], __end_rodata[];
- /* Start and end of .ctors section - used for constructor calls. */
- extern char __ctors_start[], __ctors_end[];
- 
-+extern __visible const void __nosave_begin, __nosave_end;
-+
- /* function descriptor handling (if any).  Override
-  * in asm/sections.h */
- #ifndef dereference_function_descriptor
--- 
-1.9.1
-
+-err_socks:
+-	svc_rpcb_cleanup(serv, net);
+ err_bind:
+ 	ln->nlmsvc_users--;
+ 	return error;
