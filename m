@@ -1,80 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752216AbaH2FoF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 01:44:05 -0400
-Received: from mail-oi0-f52.google.com ([209.85.218.52]:53703 "EHLO
-	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750983AbaH2FoD (ORCPT
+	id S1752659AbaH2Fpr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 01:45:47 -0400
+Received: from mail-pa0-f74.google.com ([209.85.220.74]:46984 "EHLO
+	mail-pa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751672AbaH2Fpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 01:44:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAAVeFuK8kb3kopVaM9qz+qOa4RT_oji8LNLQa_UHDxxxwyfZgw@mail.gmail.com>
-References: <1406139132-5404-1-git-send-email-linux@roeck-us.net>
-	<CAAVeFuKsJpSYo2DMyTdYE2J5Cu_ZD=b9o-=S0DLDccyNmwniNg@mail.gmail.com>
-	<53D0A8B7.2010005@roeck-us.net>
-	<CAAVeFuK5uKhpkpEnoRFGKU4G4Fey0+giz5wwmtr+OCLJHPvnLQ@mail.gmail.com>
-	<53E32C09.5000704@roeck-us.net>
-	<CAAVeFuJohBznnjELvJj0OUCK+anbZ-j1xPc9gyKDGVq9X0MDSA@mail.gmail.com>
-	<53E8DE1D.9070503@roeck-us.net>
-	<CAAVeFuK8kb3kopVaM9qz+qOa4RT_oji8LNLQa_UHDxxxwyfZgw@mail.gmail.com>
-Date: Fri, 29 Aug 2014 07:44:02 +0200
-Message-ID: <CACRpkdZfRxNHGtZvzjn_vb2FGNPrvh1znWSGi0znN2_yHmz0Tw@mail.gmail.com>
-Subject: Re: [RFC PATCH] gpiolib: Provide and export gpiod_export_name
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 29 Aug 2014 01:45:44 -0400
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Cc: James Hogan <james.hogan@imgtec.com>, Paul Burton <paul.burton@imgtec.com>,
+        David Daney <david.daney@cavium.com>,
+        John Crispin <blogic@openwrt.org>,
+        Jayachandran C <jchandra@broadcom.com>,
+        Qais Yousef <qais.yousef@imgtec.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Jonas Gorski <jogo@openwrt.org>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Geert Uytterhoeven <geert@linux-m68k.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Andrew Bresticker <abrestic@chromium.org>
+Subject: [PATCH v2 7/7] MIPS: ralink: Move device-trees to arch/mips/boot/dts/ralink/
+Date: Thu, 28 Aug 2014 20:27:42 -0700
+Message-Id: <1409282862-4435-1-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1409191812-23697-1-git-send-email-abrestic@chromium.org>
+References: <1409191812-23697-1-git-send-email-abrestic@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014 at 5:20 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
-> On Tue, Aug 12, 2014 at 12:15 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+Move the Ralink device-trees to arch/mips/boot/dts/ralink/ and update
+the Makefiles accordingly.  A built-in device-tree is optional, so
+select BUILTIN_DTB when it is requested.
 
->> This is just one of many patches which would make it possible to submit
->> the rest, which would make use of it. What you are saying is that it won't
->> make sense to submit that series into the kernel, because one of the very
->> first patches needed to enable that won't be accepted. Kind of a circular
->> argument, but I guess I'll have to live with it.
->
-> Well I have not seen the other patches you mention and cannot guess
-> their existence. If you send the full series it will of course be
-> considered as such, but right now this lone patch does not hint any
-> upstream user for this interface.
->
-> Note that this doesn't change anything to the core of the argument ;
-> we have not heard what Linus thinks about named GPIOs in
-> /sys/class/gpio yet, maybe he will have a different opinion...
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+---
+Looks like this one didn't make it through the first time.
+---
+ arch/mips/boot/dts/Makefile                                | 1 +
+ arch/mips/boot/dts/ralink/Makefile                         | 4 ++++
+ arch/mips/{ralink/dts => boot/dts/ralink}/mt7620a.dtsi     | 0
+ arch/mips/{ralink/dts => boot/dts/ralink}/mt7620a_eval.dts | 0
+ arch/mips/{ralink/dts => boot/dts/ralink}/rt2880.dtsi      | 0
+ arch/mips/{ralink/dts => boot/dts/ralink}/rt2880_eval.dts  | 0
+ arch/mips/{ralink/dts => boot/dts/ralink}/rt3050.dtsi      | 0
+ arch/mips/{ralink/dts => boot/dts/ralink}/rt3052_eval.dts  | 0
+ arch/mips/{ralink/dts => boot/dts/ralink}/rt3883.dtsi      | 0
+ arch/mips/{ralink/dts => boot/dts/ralink}/rt3883_eval.dts  | 0
+ arch/mips/ralink/Kconfig                                   | 4 ++++
+ arch/mips/ralink/Makefile                                  | 2 --
+ arch/mips/ralink/dts/Makefile                              | 4 ----
+ 13 files changed, 9 insertions(+), 6 deletions(-)
+ create mode 100644 arch/mips/boot/dts/ralink/Makefile
+ rename arch/mips/{ralink/dts => boot/dts/ralink}/mt7620a.dtsi (100%)
+ rename arch/mips/{ralink/dts => boot/dts/ralink}/mt7620a_eval.dts (100%)
+ rename arch/mips/{ralink/dts => boot/dts/ralink}/rt2880.dtsi (100%)
+ rename arch/mips/{ralink/dts => boot/dts/ralink}/rt2880_eval.dts (100%)
+ rename arch/mips/{ralink/dts => boot/dts/ralink}/rt3050.dtsi (100%)
+ rename arch/mips/{ralink/dts => boot/dts/ralink}/rt3052_eval.dts (100%)
+ rename arch/mips/{ralink/dts => boot/dts/ralink}/rt3883.dtsi (100%)
+ rename arch/mips/{ralink/dts => boot/dts/ralink}/rt3883_eval.dts (100%)
+ delete mode 100644 arch/mips/ralink/dts/Makefile
 
-The sysfs is sort of broken by design because of things like this and
-some other stuff.
+diff --git a/arch/mips/boot/dts/Makefile b/arch/mips/boot/dts/Makefile
+index a861be5..47406f7 100644
+--- a/arch/mips/boot/dts/Makefile
++++ b/arch/mips/boot/dts/Makefile
+@@ -2,6 +2,7 @@ include arch/mips/boot/dts/cavium-octeon/Makefile
+ include arch/mips/boot/dts/lantiq/Makefile
+ include arch/mips/boot/dts/mti/Makefile
+ include arch/mips/boot/dts/netlogic/Makefile
++include arch/mips/boot/dts/ralink/Makefile
+ 
+ obj-y		+= $(patsubst %.dtb, %.dtb.o, $(dtb-y))
+ 
+diff --git a/arch/mips/boot/dts/ralink/Makefile b/arch/mips/boot/dts/ralink/Makefile
+new file mode 100644
+index 0000000..81a567e
+--- /dev/null
++++ b/arch/mips/boot/dts/ralink/Makefile
+@@ -0,0 +1,4 @@
++dtb-$(CONFIG_DTB_RT2880_EVAL)	+= ralink/rt2880_eval.dtb
++dtb-$(CONFIG_DTB_RT305X_EVAL)	+= ralink/rt3052_eval.dtb
++dtb-$(CONFIG_DTB_RT3883_EVAL)	+= ralink/rt3883_eval.dtb
++dtb-$(CONFIG_DTB_MT7620A_EVAL)	+= ralink/mt7620a_eval.dtb
+diff --git a/arch/mips/ralink/dts/mt7620a.dtsi b/arch/mips/boot/dts/ralink/mt7620a.dtsi
+similarity index 100%
+rename from arch/mips/ralink/dts/mt7620a.dtsi
+rename to arch/mips/boot/dts/ralink/mt7620a.dtsi
+diff --git a/arch/mips/ralink/dts/mt7620a_eval.dts b/arch/mips/boot/dts/ralink/mt7620a_eval.dts
+similarity index 100%
+rename from arch/mips/ralink/dts/mt7620a_eval.dts
+rename to arch/mips/boot/dts/ralink/mt7620a_eval.dts
+diff --git a/arch/mips/ralink/dts/rt2880.dtsi b/arch/mips/boot/dts/ralink/rt2880.dtsi
+similarity index 100%
+rename from arch/mips/ralink/dts/rt2880.dtsi
+rename to arch/mips/boot/dts/ralink/rt2880.dtsi
+diff --git a/arch/mips/ralink/dts/rt2880_eval.dts b/arch/mips/boot/dts/ralink/rt2880_eval.dts
+similarity index 100%
+rename from arch/mips/ralink/dts/rt2880_eval.dts
+rename to arch/mips/boot/dts/ralink/rt2880_eval.dts
+diff --git a/arch/mips/ralink/dts/rt3050.dtsi b/arch/mips/boot/dts/ralink/rt3050.dtsi
+similarity index 100%
+rename from arch/mips/ralink/dts/rt3050.dtsi
+rename to arch/mips/boot/dts/ralink/rt3050.dtsi
+diff --git a/arch/mips/ralink/dts/rt3052_eval.dts b/arch/mips/boot/dts/ralink/rt3052_eval.dts
+similarity index 100%
+rename from arch/mips/ralink/dts/rt3052_eval.dts
+rename to arch/mips/boot/dts/ralink/rt3052_eval.dts
+diff --git a/arch/mips/ralink/dts/rt3883.dtsi b/arch/mips/boot/dts/ralink/rt3883.dtsi
+similarity index 100%
+rename from arch/mips/ralink/dts/rt3883.dtsi
+rename to arch/mips/boot/dts/ralink/rt3883.dtsi
+diff --git a/arch/mips/ralink/dts/rt3883_eval.dts b/arch/mips/boot/dts/ralink/rt3883_eval.dts
+similarity index 100%
+rename from arch/mips/ralink/dts/rt3883_eval.dts
+rename to arch/mips/boot/dts/ralink/rt3883_eval.dts
+diff --git a/arch/mips/ralink/Kconfig b/arch/mips/ralink/Kconfig
+index 4a29665..77e8a96 100644
+--- a/arch/mips/ralink/Kconfig
++++ b/arch/mips/ralink/Kconfig
+@@ -42,18 +42,22 @@ choice
+ 	config DTB_RT2880_EVAL
+ 		bool "RT2880 eval kit"
+ 		depends on SOC_RT288X
++		select BUILTIN_DTB
+ 
+ 	config DTB_RT305X_EVAL
+ 		bool "RT305x eval kit"
+ 		depends on SOC_RT305X
++		select BUILTIN_DTB
+ 
+ 	config DTB_RT3883_EVAL
+ 		bool "RT3883 eval kit"
+ 		depends on SOC_RT3883
++		select BUILTIN_DTB
+ 
+ 	config DTB_MT7620A_EVAL
+ 		bool "MT7620A eval kit"
+ 		depends on SOC_MT7620
++		select BUILTIN_DTB
+ 
+ endchoice
+ 
+diff --git a/arch/mips/ralink/Makefile b/arch/mips/ralink/Makefile
+index 98ae349..2c09c8a 100644
+--- a/arch/mips/ralink/Makefile
++++ b/arch/mips/ralink/Makefile
+@@ -16,5 +16,3 @@ obj-$(CONFIG_SOC_RT3883) += rt3883.o
+ obj-$(CONFIG_SOC_MT7620) += mt7620.o
+ 
+ obj-$(CONFIG_EARLY_PRINTK) += early_printk.o
+-
+-obj-y += dts/
+diff --git a/arch/mips/ralink/dts/Makefile b/arch/mips/ralink/dts/Makefile
+deleted file mode 100644
+index 18194fa..0000000
+--- a/arch/mips/ralink/dts/Makefile
++++ /dev/null
+@@ -1,4 +0,0 @@
+-obj-$(CONFIG_DTB_RT2880_EVAL) := rt2880_eval.dtb.o
+-obj-$(CONFIG_DTB_RT305X_EVAL) := rt3052_eval.dtb.o
+-obj-$(CONFIG_DTB_RT3883_EVAL) := rt3883_eval.dtb.o
+-obj-$(CONFIG_DTB_MT7620A_EVAL) := mt7620a_eval.dtb.o
+-- 
+2.1.0.rc2.206.gedb03e5
 
-I think the sysfs is scary, for example since it's not hierarchical
-but flat and build on the assumption that there is one single
-GPIO numberspace. As pointed out in some other message
-in the thread it would be nicer to have:
-
-/dev/gpiochip0/gpio0
-/dev/gpiochip0/gpio1
-....
-
-instead of the horrid sysfs ABI that will have to maintain forever.
-
-Still it is true that there is a precedent for named GPIOs in sysfs.
-
-And in the end, userspace needs a way to figure out how to
-get what it needs, a unique string is as good as anything.
-I would be feeling better if userspace got that name from an
-ioctl() on some /dev/* node than by plain filename search in
-sysfs. I somewhat feel a named gpio in sysfs is more
-helpful than just "gpio25".
-
-But I'm not happy about merging the patch if Alexandre is
-hesitant.
-
-Yours,
-Linus Walleij
