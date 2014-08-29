@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580AbaH2GBG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 02:01:06 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:10758 "EHLO
+	id S1752735AbaH2GJr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 02:09:47 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:13872 "EHLO
 	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751559AbaH2GBE (ORCPT
+	by vger.kernel.org with ESMTP id S1751900AbaH2GJp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 02:01:04 -0400
-Date: Thu, 28 Aug 2014 23:01:00 -0700
+	Fri, 29 Aug 2014 02:09:45 -0400
+Date: Thu, 28 Aug 2014 23:09:42 -0700
 From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
 To: Georgi Djakov <gdjakov@mm-sol.com>
 CC: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
@@ -23,14 +23,14 @@ CC: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH v2 1/3] pinctrl: qcom: Add APQ8084 pinctrl support
-Message-ID: <20140829060059.GG12494@sonymobile.com>
+Subject: Re: [PATCH v2 2/3] dt: Document Qualcomm APQ8084 pinctrl binding
+Message-ID: <20140829060941.GH12494@sonymobile.com>
 References: <1409057156-1201-1-git-send-email-gdjakov@mm-sol.com>
- <1409057156-1201-2-git-send-email-gdjakov@mm-sol.com>
+ <1409057156-1201-3-git-send-email-gdjakov@mm-sol.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1409057156-1201-2-git-send-email-gdjakov@mm-sol.com>
+In-Reply-To: <1409057156-1201-3-git-send-email-gdjakov@mm-sol.com>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -38,77 +38,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue 26 Aug 05:45 PDT 2014, Georgi Djakov wrote:
 
-Hi Georgi,
-
-Sorry for missing this before, but I did a quick walkthrough and unfortunately
-the gpio configuration needs a few updates.
-
-> diff --git a/drivers/pinctrl/qcom/pinctrl-apq8084.c b/drivers/pinctrl/qcom/pinctrl-apq8084.c
+> Define a new binding for the Qualcomm TLMM (Top-Level Mode Mux) based pin
+> controller inside the APQ8084.
+> 
+> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
 [...]
-> +
-> +#define PINGROUP(id, f1, f2, f3, f4, f5, f6, f7)        \
-> +       {                                               \
-> +               .name = "gpio" #id,                     \
-> +               .pins = gpio##id##_pins,                \
-> +               .npins = ARRAY_SIZE(gpio##id##_pins),   \
-> +               .funcs = (int[]){                       \
-> +                       APQ_MUX_gpio,                   \
-> +                       APQ_MUX_##f1,                   \
-> +                       APQ_MUX_##f2,                   \
-> +                       APQ_MUX_##f3,                   \
-> +                       APQ_MUX_##f4,                   \
-> +                       APQ_MUX_##f5,                   \
-> +                       APQ_MUX_##f6,                   \
-> +                       APQ_MUX_##f7                    \
-> +               },                                      \
-> +               .nfuncs = 8,                            \
-> +               .ctl_reg = 0x1000 + 0x10 * id,          \
-> +               .io_reg = 0x1004 + 0x10 * id,           \
-> +               .intr_cfg_reg = 0x1008 + 0x10 * id,     \
-> +               .intr_status_reg = 0x100c + 0x10 * id,  \
-> +               .intr_target_reg = 0x400 + 0x4 * id,    \
+> +Valid values for function are:
+> +adsp_ext, audio_ref, blsp_i2c1, blsp_i2c2, blsp_i2c3, blsp_i2c4, blsp_i2c5,
+> +blsp_i2c6, blsp_i2c7, blsp_i2c8, blsp_i2c9, blsp_i2c10, blsp_i2c11, blsp_i2c12,
+> +blsp_spi1, blsp_spi2, blsp_spi3, blsp_spi4, blsp_spi5, blsp_spi6, blsp_spi7,
+> +blsp_spi8, blsp_spi9, blsp_spi10, blsp_spi11, blsp_spi12, blsp_uart1,
+> +blsp_uart2, blsp_uart3, blsp_uart4, blsp_uart5, blsp_uart6, blsp_uart7,
+> +blsp_uart8, blsp_uart9, blsp_uart10, blsp_uart11, blsp_uart12, blsp_uim1,
+> +blsp_uim2, blsp_uim3, blsp_uim4, blsp_uim5, blsp_uim6, blsp_uim7, blsp_uim8,
+> +blsp_uim9, blsp_uim10, blsp_uim11, blsp_uim12, cam_mclk0, cam_mclk1, cam_mclk2,
+> +cam_mclk3, cci_async, cci_async_in0, cci_i2c0, cci_i2c1, cci_timer0, cci_timer1,
+> +cci_timer2, cci_timer3, cci_timer4, edp_hpd, gcc_gp1, gcc_gp2, gcc_gp3, gcc_obt,
+> +gcc_vtt, gp_mn, gp_pdm0, gp_pdm1, gp_pdm2, gp0_clk, gp1_clk, gpio, hdmi_cec,
+> +hdmi_ddc, hdmi_dtest, hdmi_hpd, hdmi_rcv, hsic, ldo_en, ldo_update, mdp_vsync,
+> +pci_e0, pci_e0_n, pci_e0_rst, pci_e1, pci_e1_rst, pci_e1_rst_n, pci_e1_clkreq_n,
+> +pri_mi2s, qua_mi2s, sata_act, sata_devsleep, sata_devsleep_n, sd_write,
+> +sdc_emmc_mode, sdc3, sdc4, sec_mi2s, slimbus, spdif_tx, spkr_i2s, spkr_i2s_ws,
+> +spss_geni, ter_mi2s, tsif1, tsif2, uim, uim_batt_alarm, gpio
 
-The routing of the interrupt is specified in TLMM_GPIO_INTR_CFG(n),
-i.e: 0x1008 + 0x10 * n
+It would be nice if these where indented.
 
-Apparently the HW guys wanted to give us more work, so in 8084 they use 3 to
-specify routing the interrupts to KPSS, instead of the previous 4. So the
-static define of INTR_TARGET_PROC_APPS is no longer adequate.
+Also, the last binding I sent up was for msm8960, where I got some comments
+that made me change the format completely. I don't require you to follow that
+instead, but I have to vent my opinion saying that it would be nice if you
+did ;)
 
-My suggestion is that you create an additional patch and add to your series
-that moves todays hardcoded 4 into the soc_data for the existing platforms (or
-include it in this struct).
-
-> +               .mux_bit = 2,                           \
-> +               .pull_bit = 0,                          \
-> +               .drv_bit = 6,                           \
-> +               .oe_bit = 9,                            \
-> +               .in_bit = 0,                            \
-> +               .out_bit = 1,                           \
-> +               .intr_enable_bit = 0,                   \
-> +               .intr_status_bit = 0,                   \
-> +               .intr_ack_high = 1,                     \
-
-With the 8084 TLMM chip you ack the interrupt status by clearing this bit, so
-intr_ack_high should be 0.
-
-> +               .intr_target_bit = 0,                   \
-
-Target bit is 5.
-
-> +               .intr_raw_status_bit = 3,               \
-
-Raw interrupt status bit is 4.
-
-> +               .intr_polarity_bit = 1,                 \
-> +               .intr_detection_bit = 2,                \
-> +               .intr_detection_width = 1,              \
-
-You can do level, raise, fall and both edge detection with 8084, so the width
-of his part is 2.
-
-> +       }
-> +
+Otherwise, Acked-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
 
 Regards,
 Bjorn
