@@ -1,82 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753188AbaH2LUP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 07:20:15 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:43478 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751678AbaH2LUN (ORCPT
+	id S1753301AbaH2LUf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 07:20:35 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:60465 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752795AbaH2LUe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 07:20:13 -0400
-Date: Fri, 29 Aug 2014 12:20:10 +0100
-From: Sitsofe Wheeler <sitsofe@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Dexuan Cui <decui@microsoft.com>, KY Srinivasan <kys@microsoft.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: Re: [PANIC, hyperv] BUG: unable to handle kernel paging request at
- ffff880077800004 (hv_ringbuffer_write)
-Message-ID: <20140829112009.GD11445@sucs.org>
-References: <EE124450C0AAF944A40DD71E61F878C995E93E@SINEX14MBXC419.southpacific.corp.microsoft.com>
- <20140827104408.GC1827@sucs.org>
- <EE124450C0AAF944A40DD71E61F878C996493E@SINEX14MBXC419.southpacific.corp.microsoft.com>
- <20140827121559.GA14286@sucs.org>
- <EE124450C0AAF944A40DD71E61F878C9965238@SINEX14MBXC419.southpacific.corp.microsoft.com>
- <20140827161900.GA25326@sucs.org>
- <51ae44fcae424365a6d78f3597175d77@BY2PR0301MB0711.namprd03.prod.outlook.com>
- <20140829094945.GA5122@mwanda>
- <EE124450C0AAF944A40DD71E61F878C997956C@SINEX14MBXC418.southpacific.corp.microsoft.com>
- <20140829102411.GE5071@mwanda>
+	Fri, 29 Aug 2014 07:20:34 -0400
+Date: Fri, 29 Aug 2014 12:20:27 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Sean Cross <xobs@kosagi.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        bunnie@kosagi.com
+Subject: Re: [PATCH] mfd: stmpe: add OF support for irq-over-gpio
+Message-ID: <20140829112027.GK24579@lee--X1>
+References: <1408440288-27323-1-git-send-email-xobs@kosagi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140829102411.GE5071@mwanda>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1408440288-27323-1-git-send-email-xobs@kosagi.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 29, 2014 at 01:24:11PM +0300, Dan Carpenter wrote:
-> On Fri, Aug 29, 2014 at 10:16:32AM +0000, Dexuan Cui wrote:
-> > 
-> > Section 4.11.3 of Hypervisor Top Level Functional Specification(available at
-> > http://blogs.msdn.com/b/virtual_pc_guy/archive/2014/02/17/updated-hypervisor-top-level-functional-specification.aspx)
-> > says HV_STATUS_INVALID_ALIGNMENT can also be returned for a hypercall if
-> > "the specified input or output parameter lists spans pages."
-> > 
-> > My understanding is: the input's memory range shouldn't cross a page
-> > boundary.
+On Tue, 19 Aug 2014, Sean Cross wrote:
+
+> When using the STMPE610 or STMPE811 as a platform device, the platform data
+> struct allows for irq_over_gpio to be set.  This patch allows for using a
+> GPIO as an IRQ source when using device tree by specifying an irq-gpio
+> property.
 > 
-> Ah.  That makes sense then.  Thanks.
+> Signed-off-by: Sean Cross <xobs@kosagi.com>
+> ---
+>  Documentation/devicetree/bindings/mfd/stmpe.txt | 1 +
+>  drivers/mfd/stmpe.c                             | 7 ++++++-
+>  2 files changed, 7 insertions(+), 1 deletion(-)
 
-This got me too.
+See: Documentation/devicetree/bindings/submitting-patches.txt
 
-Because this particular return code is overloaded with multiple meanings
-that can't necessarily be deduced from its name perhaps this
-documentation patch would be helpful:
+- You need to break this up into two patches
+- You need to CC the DT folks.
 
-diff --git a/arch/x86/include/uapi/asm/hyperv.h b/arch/x86/include/uapi/asm/hyperv.h
-index 462efe7..04894d5 100644
---- a/arch/x86/include/uapi/asm/hyperv.h
-+++ b/arch/x86/include/uapi/asm/hyperv.h
-@@ -213,6 +213,12 @@
- #define HV_STATUS_SUCCESS                      0
- #define HV_STATUS_INVALID_HYPERCALL_CODE       2
- #define HV_STATUS_INVALID_HYPERCALL_INPUT      3
-+/*
-+ * HV_STATUS_INVALID_ALIGNMENT indicates one of the following:
-+ *   The input or output pointer is not aligned to 8 bytes.
-+ *   The input or output lists span more than one page.
-+ *   The input or output pointer is out of bounds.
-+ */
- #define HV_STATUS_INVALID_ALIGNMENT            4
- #define HV_STATUS_INSUFFICIENT_BUFFERS         19
-
-Dexuan: Does this mean that if input/output pointer is well aligned and
-the (payload start) is in the same page as (payload start + payload
-size) all will be well? If so it won't matter what the length of payload
-size is right?
+> diff --git a/Documentation/devicetree/bindings/mfd/stmpe.txt b/Documentation/devicetree/bindings/mfd/stmpe.txt
+> index 56edb55..3fb68bf 100644
+> --- a/Documentation/devicetree/bindings/mfd/stmpe.txt
+> +++ b/Documentation/devicetree/bindings/mfd/stmpe.txt
+> @@ -13,6 +13,7 @@ Optional properties:
+>   - interrupt-parent             : Specifies which IRQ controller we're connected to
+>   - wakeup-source                : Marks the input device as wakable
+>   - st,autosleep-timeout         : Valid entries (ms); 4, 16, 32, 64, 128, 256, 512 and 1024
+> + - irq-gpio                     : If present, which GPIO to use for event IRQ
+>  
+>  Example:
+>  
+> diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
+> index 3b6bfa7..4c42b05 100644
+> --- a/drivers/mfd/stmpe.c
+> +++ b/drivers/mfd/stmpe.c
+> @@ -1122,7 +1122,12 @@ static void stmpe_of_probe(struct stmpe_platform_data *pdata,
+>  	if (pdata->id < 0)
+>  		pdata->id = -1;
+>  
+> -	pdata->irq_trigger = IRQF_TRIGGER_NONE;
+> +	pdata->irq_gpio = of_get_named_gpio_flags(np, "irq-gpio", 0,
+> +				&pdata->irq_trigger);
+> +	if (gpio_is_valid(pdata->irq_gpio))
+> +		pdata->irq_over_gpio = 1;
+> +	else
+> +		pdata->irq_trigger = IRQF_TRIGGER_NONE;
+>  
+>  	of_property_read_u32(np, "st,autosleep-timeout",
+>  			&pdata->autosleep_timeout);
 
 -- 
-Sitsofe | http://sucs.org/~sits/
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
