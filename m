@@ -1,147 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753684AbaH2Oj6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 10:39:58 -0400
-Received: from gw1.transmode.se ([195.58.98.146]:54702 "EHLO gw1.transmode.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752655AbaH2Oj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 10:39:57 -0400
-In-Reply-To: <20140829091440.6DAD91ABD66@localhost.localdomain>
-References: <20140829091440.6DAD91ABD66@localhost.localdomain>
-To: Christophe Leroy <christophe.leroy@c-s.fr>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Paul Mackerras <paulus@samba.org>, scottwood@freescale.com
+	id S1753333AbaH2Omh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 10:42:37 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:47233 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752528AbaH2Omf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 10:42:35 -0400
 MIME-Version: 1.0
-Subject: Re: [PATCH v2 17/19] powerpc/8xx: set PTE bit 22 off TLBmiss
-X-KeepSent: C266DD00:56C086CA-C1257D43:005005B3;
- type=4; name=$KeepSent
-X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
-From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Message-ID: <OFC266DD00.56C086CA-ONC1257D43.005005B3-C1257D43.00508E4E@transmode.se>
-Date: Fri, 29 Aug 2014 16:39:52 +0200
-X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.3FP6|November 21, 2013) at
- 29/08/2014 16:39:52,
-	Serialize complete at 29/08/2014 16:39:52
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <1409304383-18806-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1409304383-18806-1-git-send-email-jiang.liu@linux.intel.com>
+Date: Fri, 29 Aug 2014 16:42:34 +0200
+X-Google-Sender-Auth: hiB2ExF_0hCP0BwYabui7rOmueU
+Message-ID: <CAJZ5v0ikimRs4XJihULUdS-ZtU=xBMJECbKmzpUf1ZnzXijihQ@mail.gmail.com>
+Subject: Re: [Patch v4] x86, irq, PCI: Keep IRQ assignment for runtime power management
+From: "Rafael J. Wysocki" <rafael@kernel.org>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: EmanueL Czirai <amanual@openmailbox.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christophe Leroy <christophe.leroy@c-s.fr> wrote on 2014/08/29 11:14:40:
-> 
-> No need to re-set this bit at each TLB miss. Let's set it in the PTE.
-> 
-> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
-> 
+On Fri, Aug 29, 2014 at 11:26 AM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
+> Now IOAPIC driver dynamically allocates IRQ numbers for IOAPIC pins.
+> We need to keep IRQ assignment for PCI devices during runtime power
+> management, otherwise it may cause failure of device wakeups.
+>
+> Commit 3eec595235c17a7 "x86, irq, PCI: Keep IRQ assignment for PCI
+> devices during suspend/hibernation" has fixed the issue for suspend/
+> hibernation, we also need the same fix for runtime device sleep too.
+>
+> Fix: https://bugzilla.kernel.org/show_bug.cgi?id=83271
+> Reported-and-Tested-by: EmanueL Czirai <amanual@openmailbox.org>
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 > ---
->  arch/powerpc/include/asm/pgtable-ppc32.h |   21 +++++++++++++++++++++
->  arch/powerpc/include/asm/pte-8xx.h       |    7 +++++--
->  arch/powerpc/kernel/head_8xx.S           |   10 ++--------
->  3 files changed, 28 insertions(+), 10 deletions(-)
-> 
-> diff --git a/arch/powerpc/include/asm/pgtable-ppc32.h 
-b/arch/powerpc/include/asm/pgtable-ppc32.h
-> index 47edde8..c261792 100644
-> --- a/arch/powerpc/include/asm/pgtable-ppc32.h
-> +++ b/arch/powerpc/include/asm/pgtable-ppc32.h
-> @@ -172,6 +172,26 @@ static inline unsigned long pte_update(pte_t *p,
->  #ifdef PTE_ATOMIC_UPDATES
->     unsigned long old, tmp;
-> 
-> +#ifdef CONFIG_PPC_8xx
-> +   unsigned long tmp2;
+>  arch/x86/include/asm/io_apic.h |    2 ++
+>  arch/x86/kernel/apic/io_apic.c |   12 ++++++++++++
+>  arch/x86/pci/intel_mid_pci.c   |    2 +-
+>  arch/x86/pci/irq.c             |    2 +-
+>  drivers/acpi/pci_irq.c         |    4 ++++
+>  5 files changed, 20 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+> index 0aeed5ca356e..478c490f3654 100644
+> --- a/arch/x86/include/asm/io_apic.h
+> +++ b/arch/x86/include/asm/io_apic.h
+> @@ -227,6 +227,8 @@ static inline void io_apic_modify(unsigned int apic, unsigned int reg, unsigned
+>
+>  extern void io_apic_eoi(unsigned int apic, unsigned int vector);
+>
+> +extern bool mp_should_keep_irq(struct device *dev);
 > +
-> +   __asm__ __volatile__("\
-> +1:   lwarx   %0,0,%4\n\
-> +   andc   %1,%0,%5\n\
-> +   or   %1,%1,%6\n\
-> +   /* 0x200 == Extended encoding, bit 22 */ \
-> +   /* Bit 22 has to be 1 if neither _PAGE_USER nor _PAGE_RW are set */ 
-\
-> +   rlwimi   %1,%1,32-2,0x200\n /* get _PAGE_USER */ \
-> +   rlwinm   %3,%1,32-1,0x200\n /* get _PAGE_RW */ \
-> +   or   %1,%3,%1\n\
-> +   xori   %1,%1,0x200\n"
-> +   PPC405_ERR77(0,%4)
+>  #else  /* !CONFIG_X86_IO_APIC */
+>
+>  #define io_apic_assign_pci_irqs 0
+> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> index 29290f554e79..1e9a921d9701 100644
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -3946,6 +3946,18 @@ int mp_set_gsi_attr(u32 gsi, int trigger, int polarity, int node)
+>         return ret;
+>  }
+>
+> +bool mp_should_keep_irq(struct device *dev)
+> +{
+> +       if (dev->power.is_prepared)
+> +               return true;
+> +#ifdef CONFIG_PM_RUNTIME
+> +       if (dev->power.runtime_status == RPM_SUSPENDING)
+> +               return true;
+> +#endif
 
-Should above PPC405_XXXX really be there? This is 8xx only
+No, you can't do that.  It is racy and incorrect.
 
-> +"   stwcx.   %1,0,%4\n\
-> +   bne-   1b"
-> +   : "=&r" (old), "=&r" (tmp), "=m" (*p), "=&r" (tmp2)
-> +   : "r" (p), "r" (clr), "r" (set), "m" (*p)
-> +   : "cc" );
-> +#else /* CONFIG_PPC_8xx */
->     __asm__ __volatile__("\
->  1:   lwarx   %0,0,%3\n\
->     andc   %1,%0,%4\n\
-> @@ -182,6 +202,7 @@ static inline unsigned long pte_update(pte_t *p,
->     : "=&r" (old), "=&r" (tmp), "=m" (*p)
->     : "r" (p), "r" (clr), "r" (set), "m" (*p)
->     : "cc" );
-> +#endif /* CONFIG_PPC_8xx */
->  #else /* PTE_ATOMIC_UPDATES */
->     unsigned long old = pte_val(*p);
->     *p = __pte((old & ~clr) | set);
-> diff --git a/arch/powerpc/include/asm/pte-8xx.h 
-b/arch/powerpc/include/asm/pte-8xx.h
-> index d44826e..dede1e7 100644
-> --- a/arch/powerpc/include/asm/pte-8xx.h
-> +++ b/arch/powerpc/include/asm/pte-8xx.h
-> @@ -48,19 +48,22 @@
->   */
->  #define _PAGE_RW   0x0400   /* lsb PP bits, inverted in HW */
->  #define _PAGE_USER   0x0800   /* msb PP bits */
-> +/* set when neither _PAGE_USER nor _PAGE_RW are set */
-> +#define _PAGE_KNLRO   0x0200
-> 
->  #define _PMD_PRESENT   0x0001
->  #define _PMD_BAD   0x0ff0
->  #define _PMD_PAGE_MASK   0x000c
->  #define _PMD_PAGE_8M   0x000c
-> 
-> -#define _PTE_NONE_MASK _PAGE_ACCESSED
-> +#define _PTE_NONE_MASK (_PAGE_ACCESSED | _PAGE_KNLRO)
+Please give me some time for looking into this.
 
-_PAGE_ACCESSED can be removed from PTE_NONE_MASK as 8xx no longer cheets.
-See 2.4 commit 
-https://git.kernel.org/cgit/linux/kernel/git/wtarreau/linux-2.4.git/commit/?id=82582b970d04ad4bcfaa9d3f9c3c256619fd889f
-
-> 
->  /* Until my rework is finished, 8xx still needs atomic PTE updates */
->  #define PTE_ATOMIC_UPDATES   1
-> 
->  /* We need to add _PAGE_SHARED to kernel pages */
-> -#define _PAGE_KERNEL_RO   (_PAGE_SHARED)
-> +#define _PAGE_KERNEL_RO   (_PAGE_SHARED | _PAGE_KNLRO)
-> +#define _PAGE_KERNEL_ROX   (_PAGE_EXEC | _PAGE_KNLRO)
->  #define _PAGE_KERNEL_RW   (_PAGE_DIRTY | _PAGE_RW | _PAGE_HWWRITE)
-> 
->  #endif /* __KERNEL__ */
-> diff --git a/arch/powerpc/kernel/head_8xx.S 
-b/arch/powerpc/kernel/head_8xx.S
-> index a7af26e..48d3de8 100644
-> --- a/arch/powerpc/kernel/head_8xx.S
-> +++ b/arch/powerpc/kernel/head_8xx.S
-> @@ -445,14 +445,8 @@ DataStoreTLBMiss:
->     and   r11, r11, r10
->     rlwimi   r10, r11, 0, _PAGE_PRESENT
->  #endif
-> -   /* Honour kernel RO, User NA */
-> -   /* 0x200 == Extended encoding, bit 22 */
-> -   rlwimi   r10, r10, 32-2, 0x200 /* Copy USER to bit 22, 0x200 */
-> -   /* r11 =  (r10 & _PAGE_RW) >> 1 */
-> -   rlwinm   r11, r10, 32-1, 0x200
-> -   or   r10, r11, r10
-> -   /* invert RW and 0x200 bits */
-> -   xori   r10, r10, _PAGE_RW | 0x200
-> +   /* invert RW */
-> +   xori   r10, r10, _PAGE_RW
-> 
->     /* The Linux PTE won't go exactly into the MMU TLB.
->      * Software indicator bits 22 and 28 must be clear.
-> -- 
-> 1.7.1
-> 
-
+Rafael
