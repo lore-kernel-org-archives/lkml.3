@@ -1,92 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753163AbaH2HaY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 03:30:24 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:42849 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753138AbaH2HaV (ORCPT
+	id S1753055AbaH2Hbw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 03:31:52 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:34532 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188AbaH2Hbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 03:30:21 -0400
-Date: Fri, 29 Aug 2014 08:30:17 +0100
+	Fri, 29 Aug 2014 03:31:51 -0400
+Date: Fri, 29 Aug 2014 08:31:45 +0100
 From: Lee Jones <lee.jones@linaro.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: linux-kernel@vger.kernel.org, "'Bryan Wu'" <cooloney@gmail.com>
-Subject: Re: [PATCH V2 00/18] backlight: fix checkpatch warnings
-Message-ID: <20140829073017.GB24579@lee--X1>
-References: <004301cfc193$69c1de20$3d459a60$%han@samsung.com>
- <20140827071402.GX26707@lee--X1>
+To: "Arnout Vandecappelle (Essensium/Mind)" <arnout@mind.be>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>,
+        David Brown <davidb@codeaurora.org>
+Subject: Re: [PATCH v2] tps65910: Work around silicon erratum SWCZ010
+Message-ID: <20140829073145.GC24579@lee--X1>
+References: <1408709666-5927-1-git-send-email-arnout@mind.be>
+ <1408721456-8101-1-git-send-email-arnout@mind.be>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140827071402.GX26707@lee--X1>
+In-Reply-To: <1408721456-8101-1-git-send-email-arnout@mind.be>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Aug 2014, Lee Jones wrote:
+On Fri, 22 Aug 2014, Arnout Vandecappelle (Essensium/Mind) wrote:
 
-> On Wed, 27 Aug 2014, Jingoo Han wrote:
-> > This patchset fixes checkpatch warnings as follows.
-> > There is no functional change.
-> > 
-> >    WARNING: Missing a blank line after declarations
-> >    WARNING: else is not generally useful after a break or return
-> >    WARNING: void function return statements are not generally useful
-> > 
-> > Changes for V2
-> > - Added Lee Jones's Acked-by for 1~18th patches, except for 17th patch.
-> > - Fixed 17th patch, per Lee Jones's feedback.
-> >    
-> > Jingoo Han (18)
-> >       backlight: adp5520: add blank line after declarations
-> >       backlight: adp8860: add blank line after declarations
-> >       backlight: adp8870: add blank line after declarations
-> >       backlight: ams369fg06: remove 'else' after a return
-> >       backlight: corgi_lcd: add blank line after declarations
-> >       backlight: cr_bllcd: add blank line after declarations
-> >       backlight: ili922x: remove 'else' after a return
-> >       backlight: ld9040: remove 'else' after a return
-> >       backlight: lm3639: remove unnecessary return statements
-> >       backlight: lms501kf03: remove 'else' after a return
-> >       backlight: lp855x: add blank line after declarations
-> >       backlight: pcf50633: add blank line after declarations
-> >       backlight: s6e63m0: remove 'else' after a return
-> >       backlight: tdo24m: add blank line after declarations
-> >       backlight: wm831x_bl: add blank line after declarations
-> >       backlight: jornada720: remove 'else' after a return
-> >       backlight: jornada720: remove 'else' after a return
-> >       backlight: omap1: add blank line after declarations
+> From http://www.ti.com/lit/pdf/SWCZ010 :
 > 
-> I'll wait to see if Bryan has anything to add.  If not, I'll apply
-> them in a couple of days.
-
-All patches applied and pushed.
-
-> > ---
-> >  drivers/video/backlight/adp5520_bl.c         |  1 +
-> >  drivers/video/backlight/adp8860_bl.c         |  3 +++
-> >  drivers/video/backlight/adp8870_bl.c         |  4 ++++
-> >  drivers/video/backlight/ams369fg06.c         |  6 +++---
-> >  drivers/video/backlight/corgi_lcd.c          |  1 +
-> >  drivers/video/backlight/cr_bllcd.c           |  1 +
-> >  drivers/video/backlight/ili922x.c            | 11 ++++++-----
-> >  drivers/video/backlight/jornada720_bl.c      |  6 +++---
-> >  drivers/video/backlight/jornada720_lcd.c     |  6 +-----
-> >  drivers/video/backlight/ld9040.c             |  6 +++---
-> >  drivers/video/backlight/lm3639_bl.c          |  2 --
-> >  drivers/video/backlight/lms501kf03.c         | 12 ++++++------
-> >  drivers/video/backlight/lp855x_bl.c          |  2 ++
-> >  drivers/video/backlight/omap1_bl.c           |  1 +
-> >  drivers/video/backlight/pcf50633-backlight.c |  1 +
-> >  drivers/video/backlight/s6e63m0.c            | 12 ++++++------
-> >  drivers/video/backlight/tdo24m.c             |  2 ++
-> >  drivers/video/backlight/wm831x_bl.c          |  1 +
-> >  18 files changed, 45 insertions(+), 33 deletions(-)
-> > 
-> > 
+> Glitch on SDA-SCL not managed correctly by the I2C IP
 > 
+> Impact:
+> The standard specifies that the I2C transfer should restart on a start
+> event in all cases. The current design does not support two consecutive
+> Start conditions. This can cause the first real access after such a
+> glitch to be corrupted.
+> 
+> Description:
+> An unexpected glitch on SDA and SCL can generate a wrong start event.
+> In the current design, the SCL line must toggle two times to detect a
+> new start event and completely restart the I2C access; hence the real
+> start event is not detected in the case of a single SCL toggle.
+> 
+> Workaround:
+> Repeat I2C access.
+> 
+> A simpler workaround is to make a dummy transfer just before the first
+> access to the tps65910 chip. This can be done unconditionally.
+> 
+> Signed-off-by: Arnout Vandecappelle (Essensium/Mind) <arnout@mind.be>
+> ---
+> This patch is based on v3.17-rc1.
+> Build-tested with omap2plus_defconfig.
+> Runtime tested based on v3.4.97 with a custom config.
+> 
+> v2: use dummy transfer instead of retrying (Laxman Dewangan)
+> ---
+>  drivers/mfd/tps65910.c | 5 +++++
+>  1 file changed, 5 insertions(+)
+
+Applied with Mark's Ack.
+
+> diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
+> index f243e75..7612d89 100644
+> --- a/drivers/mfd/tps65910.c
+> +++ b/drivers/mfd/tps65910.c
+> @@ -486,6 +486,11 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
+>  	tps65910->i2c_client = i2c;
+>  	tps65910->id = chip_id;
+>  
+> +	/* Work around silicon erratum SWCZ010: the tps65910 may miss the
+> +	 * first I2C transfer. So issue a dummy transfer before the first
+> +	 * real transfer.
+> +	 */
+> +	i2c_master_send(i2c, "", 1);
+>  	tps65910->regmap = devm_regmap_init_i2c(i2c, &tps65910_regmap_config);
+>  	if (IS_ERR(tps65910->regmap)) {
+>  		ret = PTR_ERR(tps65910->regmap);
 
 -- 
 Lee Jones
