@@ -1,102 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754154AbaH2Qr0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 12:47:26 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:42611 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753065AbaH2QrY (ORCPT
+	id S1754192AbaH2QsC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 12:48:02 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:61366 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753894AbaH2QsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 12:47:24 -0400
-Message-ID: <5400AE95.2040308@gmail.com>
-Date: Fri, 29 Aug 2014 18:47:17 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-To: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        thomas.petazzoni@free-electrons.com
-CC: alexandre.belloni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] ARM: Berlin: Ethernet support
-References: <1409320263-10295-1-git-send-email-antoine.tenart@free-electrons.com>
-In-Reply-To: <1409320263-10295-1-git-send-email-antoine.tenart@free-electrons.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 29 Aug 2014 12:48:00 -0400
+Message-ID: <5400AEBA.2080405@redhat.com>
+Date: Fri, 29 Aug 2014 18:47:54 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Wanpeng Li <wanpeng.li@linux.intel.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Zhang Yang <yang.z.zhang@intel.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jan Kiszka <jan.kiszka@siemens.com>
+Subject: Re: [PATCH v2 3/3] KVM: x86: #GP when attempts to write reserved
+ bits of Variable Range MTRRs
+References: <1408439080-57721-1-git-send-email-wanpeng.li@linux.intel.com> <1408439080-57721-3-git-send-email-wanpeng.li@linux.intel.com>
+In-Reply-To: <1408439080-57721-3-git-send-email-wanpeng.li@linux.intel.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2014 03:50 PM, Antoine Tenart wrote:
-> This series introduce the Marvell Berlin Ethernet driver, allowing to
-> handle the fast Ethernet port. This driver is based on the mv643xx_eth
-> driver and reuse some of its functions. While I wanted to make these
-> functions common to the two drivers at first, I finally do think this
-> is not a great idea:
-> - Registers are very different.
-> - The mv643xx_eth supports up to 1000Mbps interfaces and performance
->   issues may occur, whereas the mvberlin_eth is only for fast Ethernet.
-> - The mvberlin_eth driver uses a hash table to filter incoming packets.
-> - A few other differences.
+Il 19/08/2014 11:04, Wanpeng Li ha scritto:
+> Section 11.11.2.3 of the SDM mentions "All other bits in the IA32_MTRR_PHYSBASEn 
+> and IA32_MTRR_PHYSMASKn registers are reserved; the processor generates a 
+> general-protection exception(#GP) if software attempts to write to them". This 
+> patch do it in kvm.
 > 
-> I tried to stay close to the mv643xx_eth implementation, so that the
-> discussion is still open, but I still ended up with lots of tiny
-> differences that can be hard to manage for both cases. In the end I do
-> think having two separate drivers is a good choice.
+> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
 
-Antoine,
+This breaks if the guest maxphyaddr is higher than the host's (which 
+sometimes happens depending on your hardware and how QEMU is 
+configured).
 
-first of all, thanks a lot for providing this driver! I checked the
-usual Marvell datasheets to see where the ethernet IP in Berlin comes
-from and I hate to say it but it very much looks like PXA168, see [1]
-A.22. Also, there is already a driver for pxa168_eth available.
+You need to use cpuid_maxphyaddr, like this
 
-I'll test and review you current driver on BG2 asap, but I guess it
-should be merged with pxa168_eth _if_ the registers are really
-compatible.
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index a375dfc42f6a..916e89515210 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1726,7 +1726,7 @@ static bool valid_mtrr_type(unsigned t)
+ static bool mtrr_valid(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+ {
+ 	int i;
+-	u64 mask = 0;
++	u64 mask;
+ 
+ 	if (!msr_mtrr_valid(msr))
+ 		return false;
+@@ -1750,8 +1750,7 @@ static bool mtrr_valid(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+ 	/* variable MTRRs */
+ 	WARN_ON(!(msr >= 0x200 && msr < 0x200 + 2 * KVM_NR_VAR_MTRR));
+ 
+-	for (i = 63; i > boot_cpu_data.x86_phys_bits; i--)
+-		mask |= (1ULL << i);
++	mask = (~0ULL) << cpuid_maxphyaddr(vcpu);
+ 	if ((msr & 1) == 0) {
+ 		/* MTRR base */
+ 		if (!valid_mtrr_type(data & 0xff))
 
-Sebastian
 
-[1]
-http://www.marvell.com/application-processors/armada-100/assets/armada_16x_software_manual.pdf
+Jan, can you see if this patch fixes the SeaBIOS triple fault you reported?
 
-> That being said, I tested the Ethernet communication with ICMP pings,
-> netcat, tried to use some network related softwares (such as ssh). Here
-> is an iperf output:
+Paolo
+
+> ---
+>  arch/x86/kvm/x86.c | 18 +++++++++++++++---
+>  1 file changed, 15 insertions(+), 3 deletions(-)
 > 
->  ------------------------------------------------------------
->  Client connecting to 192.168.0.11, TCP port 5001
->  TCP window size: 85.0 KByte (default)
->  ------------------------------------------------------------
->  [  3] local 192.168.0.20 port 44183 connected with 192.168.0.11 port 5001
->  [ ID] Interval       Transfer     Bandwidth
->  [  3]  0.0-10.0 sec   113 MBytes  94.8 Mbits/sec
-> 
-> Tests were done on a BG2Q DMP, and this series currently does not add
-> other device tree nodes than the ones for this board.
-> 
-> Thanks!
-> 
-> Antoine
-> 
-> 
-> Antoine Tenart (5):
->   net: mvberlin_eth: add an Ethernet driver for Marvell Berlin
->   Documentation: bindings: net: add the Marvell Berlin Ethernet
->     controller
->   Documentation: devicetree: net: mention Marvell Berlin
->   ARM: dts: berlin: add ethernet and mdio nodes
->   ARM: dts: berlin: enable the Ethernet port on the BG2Q DMP
-> 
->  .../devicetree/bindings/net/marvell-berlin.txt     |   23 +
->  .../devicetree/bindings/net/marvell-orion-mdio.txt |    6 +-
->  arch/arm/boot/dts/berlin2q-marvell-dmp.dts         |   13 +
->  arch/arm/boot/dts/berlin2q.dtsi                    |   19 +
->  drivers/net/ethernet/marvell/Kconfig               |    9 +
->  drivers/net/ethernet/marvell/Makefile              |    1 +
->  drivers/net/ethernet/marvell/mvberlin_eth.c        | 2081 ++++++++++++++++++++
->  7 files changed, 2149 insertions(+), 3 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/net/marvell-berlin.txt
->  create mode 100644 drivers/net/ethernet/marvell/mvberlin_eth.c
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index fb3ea7a..b85da5f 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -1726,6 +1726,7 @@ static bool valid_mtrr_type(unsigned t)
+>  static bool mtrr_valid(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+>  {
+>  	int i;
+> +	u64 mask = 0;
+>  
+>  	if (!msr_mtrr_valid(msr))
+>  		return false;
+> @@ -1749,10 +1750,21 @@ static bool mtrr_valid(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+>  	/* variable MTRRs */
+>  	WARN_ON(!(msr >= 0x200 && msr < 0x200 + 2 * KVM_NR_VAR_MTRR));
+>  
+> -	if ((msr & 1) == 0)
+> +	for (i = 63; i > boot_cpu_data.x86_phys_bits; i--)
+> +		mask |= (1ULL << i);
+> +	if ((msr & 1) == 0) {
+>  		/* MTRR base */
+> -		return valid_mtrr_type(data & 0xff);
+> -	/* MTRR mask */
+> +		if (!valid_mtrr_type(data & 0xff))
+> +			return false;
+> +		 mask |= 0xf00;
+> +	} else
+> +		/* MTRR mask */
+> +		mask |= 0x7ff;
+> +	if (data & mask) {
+> +		kvm_inject_gp(vcpu, 0);
+> +		return false;
+> +	}
+> +
+>  	return true;
+>  }
+>  
 > 
 
