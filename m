@@ -1,154 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753434AbaH2OWI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 10:22:08 -0400
-Received: from mga14.intel.com ([192.55.52.115]:49621 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752727AbaH2OWF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 10:22:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,424,1406617200"; 
-   d="scan'208";a="583458632"
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: akpm@linux-foundation.org
-Cc: Mark Rustad <mark.d.rustad@intel.com>, linux-kernel@vger.kernel.org,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: [PATCH] init: Resolve shadow warnings
-Date: Fri, 29 Aug 2014 07:21:52 -0700
-Message-Id: <1409322112-31346-1-git-send-email-jeffrey.t.kirsher@intel.com>
-X-Mailer: git-send-email 1.9.3
+	id S1753349AbaH2OWH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 10:22:07 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:49338 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751476AbaH2OWE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 10:22:04 -0400
+Date: Fri, 29 Aug 2014 16:22:00 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Peter Chen <peter.chen@freescale.com>
+Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        balbi@ti.com, gregkh@linuxfoundation.org, kishon@ti.com,
+        stern@rowland.harvard.edu, sergei.shtylyov@cogentembedded.com,
+        yoshihiro.shimoda.uh@renesas.com, alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 9/9] usb: chipidea: add support to the generic PHY
+ framework in ChipIdea
+Message-ID: <20140829142200.GB3848@kwain>
+References: <1408722621-3635-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1408722621-3635-10-git-send-email-antoine.tenart@free-electrons.com>
+ <20140826104241.GE16758@peterchendt>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140826104241.GE16758@peterchendt>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Rustad <mark.d.rustad@intel.com>
+Hi,
 
-Resolve shadow warnings that are produced in W=2 builds by
-renaming a global with a too-generic name and renaming a
-formal parameter.
+On Tue, Aug 26, 2014 at 06:42:42PM +0800, Peter Chen wrote:
+> On Fri, Aug 22, 2014 at 05:50:20PM +0200, Antoine Ténart wrote:
+> >  
+> >  /**
+> > + * _ci_usb_phy_init: initialize phy taking in account both phy and usb_phy
+> > + * interfaces
+> > + * @ci: the controller
+> > + *
+> > + * This function returns an error code if the phy failed to init
+> > + */
+> > +static int _ci_usb_phy_init(struct ci_hdrc *ci)
+> > +{
+> > +	int ret;
+> > +
+> > +	if (ci->phy) {
+> > +		ret = phy_init(ci->phy);
+> > +		if (ret) {
+> > +			phy_exit(ci->phy);
+> > +			return ret;
+> > +		}
+> > +		ret = phy_power_on(ci->phy);
+> 
+> phy_exit is needed to call after phy_power_on failed
 
-Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
----
- init/initramfs.c | 34 +++++++++++++++++-----------------
- 1 file changed, 17 insertions(+), 17 deletions(-)
+I was pretty sure I made the change. Sorry for the noise, I'll fix that
+in the next version.
 
-diff --git a/init/initramfs.c b/init/initramfs.c
-index bece48c..c9fc2e2 100644
---- a/init/initramfs.c
-+++ b/init/initramfs.c
-@@ -197,14 +197,14 @@ static __initdata enum state {
- } state, next_state;
- 
- static __initdata char *victim;
--static unsigned long count __initdata;
-+static unsigned long byte_count __initdata;
- static __initdata loff_t this_header, next_header;
- 
- static inline void __init eat(unsigned n)
- {
- 	victim += n;
- 	this_header += n;
--	count -= n;
-+	byte_count -= n;
- }
- 
- static __initdata char *vcollected;
-@@ -214,7 +214,7 @@ static __initdata char *collect;
- 
- static void __init read_into(char *buf, unsigned size, enum state next)
- {
--	if (count >= size) {
-+	if (byte_count >= size) {
- 		collected = victim;
- 		eat(size);
- 		state = next;
-@@ -237,8 +237,8 @@ static int __init do_start(void)
- static int __init do_collect(void)
- {
- 	unsigned long n = remains;
--	if (count < n)
--		n = count;
-+	if (byte_count < n)
-+		n = byte_count;
- 	memcpy(collect, victim, n);
- 	eat(n);
- 	collect += n;
-@@ -280,8 +280,8 @@ static int __init do_header(void)
- 
- static int __init do_skip(void)
- {
--	if (this_header + count < next_header) {
--		eat(count);
-+	if (this_header + byte_count < next_header) {
-+		eat(byte_count);
- 		return 1;
- 	} else {
- 		eat(next_header - this_header);
-@@ -292,9 +292,9 @@ static int __init do_skip(void)
- 
- static int __init do_reset(void)
- {
--	while(count && *victim == '\0')
-+	while(byte_count && *victim == '\0')
- 		eat(1);
--	if (count && (this_header & 3))
-+	if (byte_count && (this_header & 3))
- 		error("broken padding");
- 	return 1;
- }
-@@ -309,11 +309,11 @@ static int __init maybe_link(void)
- 	return 0;
- }
- 
--static void __init clean_path(char *path, umode_t mode)
-+static void __init clean_path(char *path, umode_t fmode)
- {
- 	struct stat st;
- 
--	if (!sys_newlstat(path, &st) && (st.st_mode^mode) & S_IFMT) {
-+	if (!sys_newlstat(path, &st) && (st.st_mode ^ fmode) & S_IFMT) {
- 		if (S_ISDIR(st.st_mode))
- 			sys_rmdir(path);
- 		else
-@@ -368,7 +368,7 @@ static int __init do_name(void)
- 
- static int __init do_copy(void)
- {
--	if (count >= body_len) {
-+	if (byte_count >= body_len) {
- 		if (xwrite(wfd, victim, body_len) != body_len)
- 			error("write error");
- 		sys_close(wfd);
-@@ -378,10 +378,10 @@ static int __init do_copy(void)
- 		state = SkipIt;
- 		return 0;
- 	} else {
--		if (xwrite(wfd, victim, count) != count)
-+		if (xwrite(wfd, victim, byte_count) != byte_count)
- 			error("write error");
--		body_len -= count;
--		eat(count);
-+		body_len -= byte_count;
-+		eat(byte_count);
- 		return 1;
- 	}
- }
-@@ -411,12 +411,12 @@ static __initdata int (*actions[])(void) = {
- 
- static long __init write_buffer(char *buf, unsigned long len)
- {
--	count = len;
-+	byte_count = len;
- 	victim = buf;
- 
- 	while (!actions[state]())
- 		;
--	return len - count;
-+	return len - byte_count;
- }
- 
- static long __init flush_buffer(void *bufv, unsigned long len)
+> >  
+> > -	if (ci->platdata->usb_phy)
+> > +	if (ci->platdata->phy)
+> > +		ci->phy = ci->platdata->phy;
+> > +	else if (ci->platdata->usb_phy)
+> >  		ci->usb_phy = ci->platdata->usb_phy;
+> >  	else
+> > -		ci->usb_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+> > +		ci->phy = devm_phy_get(dev, "usb-phy");
+> >  
+> > -	if (IS_ERR(ci->usb_phy)) {
+> > -		ret = PTR_ERR(ci->usb_phy);
+> > +	if (IS_ERR(ci->phy)) {
+> >  		/*
+> >  		 * if -ENXIO is returned, it means PHY layer wasn't
+> >  		 * enabled, so it makes no sense to return -EPROBE_DEFER
+> >  		 * in that case, since no PHY driver will ever probe.
+> >  		 */
+> > -		if (ret == -ENXIO)
+> > -			return ret;
+> > +		if (PTR_ERR(ci->phy) == -ENXIO)
+> > +			return -ENXIO;
+> >  
+> > -		dev_err(dev, "no usb2 phy configured\n");
+> > -		return -EPROBE_DEFER;
+> > +		ci->usb_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+> > +		if (IS_ERR(ci->usb_phy)) {
+> > +			dev_err(dev, "no usb2 phy configured\n");
+> > +			return -EPROBE_DEFER;
+> > +		}
+> >  	}
+> 
+> I am a little puzzled of your above change, if ci->phy == NULL, any chances
+> for devm_usb_get_phy(dev, USB_PHY_TYPE_USB2) is invoded?
+
+Right, now that there's two PHY pointers we need to check if ci->phy is
+NULL too.
+
+> > diff --git a/drivers/usb/chipidea/debug.c b/drivers/usb/chipidea/debug.c
+> > index 5a7ea93011dd..9e9da190a144 100644
+> > --- a/drivers/usb/chipidea/debug.c
+> > +++ b/drivers/usb/chipidea/debug.c
+> > @@ -219,7 +219,9 @@ static int ci_otg_show(struct seq_file *s, void *unused)
+> >  	fsm = &ci->fsm;
+> >  
+> >  	/* ------ State ----- */
+> > -		usb_otg_state_string(ci->usb_phy->otg.state));
+> > +	if (ci->usb_phy)
+> > +		seq_printf(s, "OTG state: %s\n\n",
+> 
+> Why above line is added? Did you delete wrongly before?
+
+I'll fix that.
+
+> > +			usb_otg_state_string(ci->usb_phy->otg->state));
+> >  
+
+Antoine
+
 -- 
-1.9.3
-
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
