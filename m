@@ -1,96 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753318AbaH2Los (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 07:44:48 -0400
-Received: from regular1.263xmail.com ([211.150.99.137]:52561 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753250AbaH2Lop (ORCPT
+	id S1753382AbaH2LpL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 07:45:11 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:48226 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751006AbaH2LoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 07:44:45 -0400
-X-Greylist: delayed 31074 seconds by postgrey-1.27 at vger.kernel.org; Fri, 29 Aug 2014 07:44:43 EDT
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: huangtao@rock-chips.com
-X-FST-TO: huangtao@rock-chips.com
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: huangtao@rock-chips.com
-X-UNIQUE-TAG: <76f9beab9c951148a205946107f65124>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-Message-ID: <540067A1.6090005@rock-chips.com>
-Date: Fri, 29 Aug 2014 19:44:33 +0800
-From: Huang Tao <huangtao@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Kever Yang <kever.yang@rock-chips.com>,
-        "heiko@sntech.de" <heiko@sntech.de>,
-        "dianders@chromium.org" <dianders@chromium.org>,
-        "sonnyrao@chromium.org" <sonnyrao@chromium.org>,
-        "addy.ke@rock-chips.com" <addy.ke@rock-chips.com>,
-        "cf@rock-chips.com" <cf@rock-chips.com>,
-        "xjq@rock-chips.com" <xjq@rock-chips.com>,
-        "wulf@rock-chips.com" <wulf@rock-chips.com>,
-        "lyz@rock-chips.com" <lyz@rock-chips.com>,
-        "hj@rock-chips.com" <hj@rock-chips.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>
-Subject: Re: [RESEND PATCH] ARM: dts: make arch-timer always on in rk3288
- soc
-References: <1409190017-12656-1-git-send-email-kever.yang@rock-chips.com> <20140828091758.GB14650@leverpostej> <20140828151121.GM14650@leverpostej> <53FFEE40.3010001@rock-chips.com> <20140829112242.GC21473@leverpostej>
-In-Reply-To: <20140829112242.GC21473@leverpostej>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+	Fri, 29 Aug 2014 07:44:09 -0400
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+To: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org
+Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Raphael Rigo <ml-arm@syscall.eu>, Arnaud Ebalard <arno@natisbad.org>,
+        Simon Boulay <simon.boulay@vitec.com>
+Subject: [PATCH 3/4] ARM: mvebu: add SSCG to Armada 370 Device Tree
+Date: Fri, 29 Aug 2014 13:43:39 +0200
+Message-Id: <1409312620-20631-4-git-send-email-gregory.clement@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1409312620-20631-1-git-send-email-gregory.clement@free-electrons.com>
+References: <1409312620-20631-1-git-send-email-gregory.clement@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The Armada 370 SoC has a Spread Spectrum Clock Generator. This commit
+adds the description of this generator to the Device Tree describing
+this SoC.
 
-在 2014年08月29日 19:22, Mark Rutland 写道:
->> 在 2014年08月28日 23:11, Mark Rutland 写道:
->>> To clarify: if there are low power states that the CPU can enter where
->>> we lose state, then this patch isn't correct.
->> Right now, the software of RK3288 SoC only support CPU hotplug
->> (cpu_on/off) and power off all CPUs on suspend.
-> Sure, but that's a Linux implementation detail rather than a fixed
-> property of the hardware. Given those states exist, the "always-on"
-> property is not appropriate.
->
->> We do not implement cpuidle to power off CPU. Do you think we should
->> introduce a broadcast timer?
-> If one is present, yes. 
->
->> On our early kernel, I never see any interrupt on a broadcast timer
->> (yes, we implement it with a external timer).
-> That's fine; Linux doesn't need to use it just yet. However, when we
-> want to use low power states later, it will be necessary to enable
-> placing all CPUS into a low power state.
->
-> If your external timer is already supported by an existing driver, there
-> is no reason not to add it now.
->
->>> A more general approach would be to enable the broadcast hrtimer for
->>> arm, as has been done for arm64.
->> Yes. I think it should be done by arm framework.
-> Patches welcome.
->
-> I also think it would make sense to enable this for arm.
->
-> Thanks,
-> Mark.
->
->
-Okay, so this patch is wrong as I expected.
-Thank you!
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+---
+ arch/arm/boot/dts/armada-370.dtsi | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm/boot/dts/armada-370.dtsi b/arch/arm/boot/dts/armada-370.dtsi
+index 21b588b6f6bd..dfbbb709f4fb 100644
+--- a/arch/arm/boot/dts/armada-370.dtsi
++++ b/arch/arm/boot/dts/armada-370.dtsi
+@@ -206,6 +206,10 @@
+ 				status = "okay";
+ 			};
+ 
++			sscg@18330 {
++				reg = <0x18330 0x4>;
++			};
++
+ 			interrupt-controller@20000 {
+ 				reg = <0x20a00 0x1d0>, <0x21870 0x58>;
+ 			};
+-- 
+1.9.1
 
