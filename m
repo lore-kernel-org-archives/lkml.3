@@ -1,70 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753287AbaH2MAx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 08:00:53 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39470 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753202AbaH2MAw (ORCPT
+	id S1753340AbaH2MB4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 08:01:56 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:34312 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751006AbaH2MBy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 08:00:52 -0400
-Date: Fri, 29 Aug 2014 13:00:35 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Jean-Francois Moine <moinejf@free.fr>, Jyri Sarha <jsarha@ti.com>,
-        Nicolin Chen <nicoleotsuka@gmail.com>
-Message-ID: <20140829120035.GW29327@sirena.org.uk>
-References: <1409294797-21948-1-git-send-email-Li.Xiubo@freescale.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cxfMsoqvp1jUizWj"
-Content-Disposition: inline
-In-Reply-To: <1409294797-21948-1-git-send-email-Li.Xiubo@freescale.com>
-X-Cookie: Simulated picture.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC][PATCH] ASoC: simple-card: Merge single and muti DAI link
- code.
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Fri, 29 Aug 2014 08:01:54 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Cc: rkrcmar@redhat.com
+Subject: [PATCH] KVM: forward declare structs in kvm_types.h
+Date: Fri, 29 Aug 2014 14:01:47 +0200
+Message-Id: <1409313707-7791-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Opaque KVM structs are useful for prototypes in asm/kvm_host.h, to avoid
+"'struct foo' declared inside parameter list" warnings (and consequent
+breakage due to conflicting types).
 
---cxfMsoqvp1jUizWj
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Move them from individual files to a generic place in linux/kvm_types.h.
 
-On Fri, Aug 29, 2014 at 02:46:37PM +0800, Xiubo Li wrote:
-> This patch merge single DAI link and muti-DAI links code together,
-> and simply the simple-card driver code.
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ arch/arm/include/asm/kvm_host.h     |  7 ++-----
+ arch/arm64/include/asm/kvm_host.h   |  6 ++----
+ arch/ia64/include/asm/kvm_host.h    |  3 ---
+ arch/mips/include/asm/kvm_host.h    |  5 -----
+ arch/powerpc/include/asm/kvm_host.h |  5 -----
+ arch/s390/include/asm/kvm_host.h    |  5 +++--
+ arch/x86/include/asm/kvm_host.h     |  4 ----
+ include/linux/kvm_types.h           | 11 +++++++++++
+ 8 files changed, 18 insertions(+), 28 deletions(-)
 
-This will need to be rebased on Morimoto-san's changes I believe.
+diff --git a/arch/arm/include/asm/kvm_host.h b/arch/arm/include/asm/kvm_host.h
+index 84291feee9e1..aea259e9431f 100644
+--- a/arch/arm/include/asm/kvm_host.h
++++ b/arch/arm/include/asm/kvm_host.h
+@@ -19,6 +19,8 @@
+ #ifndef __ARM_KVM_HOST_H__
+ #define __ARM_KVM_HOST_H__
+ 
++#include <linux/types.h>
++#include <linux/kvm_types.h>
+ #include <asm/kvm.h>
+ #include <asm/kvm_asm.h>
+ #include <asm/kvm_mmio.h>
+@@ -40,7 +42,6 @@
+ 
+ #include <kvm/arm_vgic.h>
+ 
+-struct kvm_vcpu;
+ u32 *kvm_vcpu_reg(struct kvm_vcpu *vcpu, u8 reg_num, u32 mode);
+ int kvm_target_cpu(void);
+ int kvm_reset_vcpu(struct kvm_vcpu *vcpu);
+@@ -149,20 +150,17 @@ struct kvm_vcpu_stat {
+ 	u32 halt_wakeup;
+ };
+ 
+-struct kvm_vcpu_init;
+ int kvm_vcpu_set_target(struct kvm_vcpu *vcpu,
+ 			const struct kvm_vcpu_init *init);
+ int kvm_vcpu_preferred_target(struct kvm_vcpu_init *init);
+ unsigned long kvm_arm_num_regs(struct kvm_vcpu *vcpu);
+ int kvm_arm_copy_reg_indices(struct kvm_vcpu *vcpu, u64 __user *indices);
+-struct kvm_one_reg;
+ int kvm_arm_get_reg(struct kvm_vcpu *vcpu, const struct kvm_one_reg *reg);
+ int kvm_arm_set_reg(struct kvm_vcpu *vcpu, const struct kvm_one_reg *reg);
+ u64 kvm_call_hyp(void *hypfn, ...);
+ void force_vm_exit(const cpumask_t *mask);
+ 
+ #define KVM_ARCH_WANT_MMU_NOTIFIER
+-struct kvm;
+ int kvm_unmap_hva(struct kvm *kvm, unsigned long hva);
+ int kvm_unmap_hva_range(struct kvm *kvm,
+ 			unsigned long start, unsigned long end);
+@@ -187,7 +185,6 @@ struct kvm_vcpu __percpu **kvm_get_running_vcpus(void);
+ 
+ int kvm_arm_copy_coproc_indices(struct kvm_vcpu *vcpu, u64 __user *uindices);
+ unsigned long kvm_arm_num_coproc_regs(struct kvm_vcpu *vcpu);
+-struct kvm_one_reg;
+ int kvm_arm_coproc_get_reg(struct kvm_vcpu *vcpu, const struct kvm_one_reg *);
+ int kvm_arm_coproc_set_reg(struct kvm_vcpu *vcpu, const struct kvm_one_reg *);
+ 
+diff --git a/arch/arm64/include/asm/kvm_host.h b/arch/arm64/include/asm/kvm_host.h
+index 94d8a3c9b644..b5045e3e05f8 100644
+--- a/arch/arm64/include/asm/kvm_host.h
++++ b/arch/arm64/include/asm/kvm_host.h
+@@ -22,6 +22,8 @@
+ #ifndef __ARM64_KVM_HOST_H__
+ #define __ARM64_KVM_HOST_H__
+ 
++#include <linux/types.h>
++#include <linux/kvm_types.h>
+ #include <asm/kvm.h>
+ #include <asm/kvm_asm.h>
+ #include <asm/kvm_mmio.h>
+@@ -41,7 +43,6 @@
+ 
+ #define KVM_VCPU_MAX_FEATURES 3
+ 
+-struct kvm_vcpu;
+ int kvm_target_cpu(void);
+ int kvm_reset_vcpu(struct kvm_vcpu *vcpu);
+ int kvm_arch_dev_ioctl_check_extension(long ext);
+@@ -164,18 +165,15 @@ struct kvm_vcpu_stat {
+ 	u32 halt_wakeup;
+ };
+ 
+-struct kvm_vcpu_init;
+ int kvm_vcpu_set_target(struct kvm_vcpu *vcpu,
+ 			const struct kvm_vcpu_init *init);
+ int kvm_vcpu_preferred_target(struct kvm_vcpu_init *init);
+ unsigned long kvm_arm_num_regs(struct kvm_vcpu *vcpu);
+ int kvm_arm_copy_reg_indices(struct kvm_vcpu *vcpu, u64 __user *indices);
+-struct kvm_one_reg;
+ int kvm_arm_get_reg(struct kvm_vcpu *vcpu, const struct kvm_one_reg *reg);
+ int kvm_arm_set_reg(struct kvm_vcpu *vcpu, const struct kvm_one_reg *reg);
+ 
+ #define KVM_ARCH_WANT_MMU_NOTIFIER
+-struct kvm;
+ int kvm_unmap_hva(struct kvm *kvm, unsigned long hva);
+ int kvm_unmap_hva_range(struct kvm *kvm,
+ 			unsigned long start, unsigned long end);
+diff --git a/arch/ia64/include/asm/kvm_host.h b/arch/ia64/include/asm/kvm_host.h
+index 353167d95c66..4729752b7256 100644
+--- a/arch/ia64/include/asm/kvm_host.h
++++ b/arch/ia64/include/asm/kvm_host.h
+@@ -234,9 +234,6 @@ struct kvm_vm_data {
+ #define KVM_REQ_PTC_G		32
+ #define KVM_REQ_RESUME		33
+ 
+-struct kvm;
+-struct kvm_vcpu;
+-
+ struct kvm_mmio_req {
+ 	uint64_t addr;          /*  physical address		*/
+ 	uint64_t size;          /*  size in bytes		*/
+diff --git a/arch/mips/include/asm/kvm_host.h b/arch/mips/include/asm/kvm_host.h
+index b4d900acbdb9..0b24d6622ec1 100644
+--- a/arch/mips/include/asm/kvm_host.h
++++ b/arch/mips/include/asm/kvm_host.h
+@@ -96,11 +96,6 @@
+ #define CAUSEB_DC			27
+ #define CAUSEF_DC			(_ULCAST_(1) << 27)
+ 
+-struct kvm;
+-struct kvm_run;
+-struct kvm_vcpu;
+-struct kvm_interrupt;
+-
+ extern atomic_t kvm_mips_instance;
+ extern pfn_t(*kvm_mips_gfn_to_pfn) (struct kvm *kvm, gfn_t gfn);
+ extern void (*kvm_mips_release_pfn_clean) (pfn_t pfn);
+diff --git a/arch/powerpc/include/asm/kvm_host.h b/arch/powerpc/include/asm/kvm_host.h
+index 0e646c1bff13..237cc0cc80a2 100644
+--- a/arch/powerpc/include/asm/kvm_host.h
++++ b/arch/powerpc/include/asm/kvm_host.h
+@@ -53,7 +53,6 @@
+ 
+ #define KVM_ARCH_WANT_MMU_NOTIFIER
+ 
+-struct kvm;
+ extern int kvm_unmap_hva(struct kvm *kvm, unsigned long hva);
+ extern int kvm_unmap_hva_range(struct kvm *kvm,
+ 			       unsigned long start, unsigned long end);
+@@ -76,10 +75,6 @@ extern void kvm_set_spte_hva(struct kvm *kvm, unsigned long hva, pte_t pte);
+ /* Physical Address Mask - allowed range of real mode RAM access */
+ #define KVM_PAM			0x0fffffffffffffffULL
+ 
+-struct kvm;
+-struct kvm_run;
+-struct kvm_vcpu;
+-
+ struct lppaca;
+ struct slb_shadow;
+ struct dtl_entry;
+diff --git a/arch/s390/include/asm/kvm_host.h b/arch/s390/include/asm/kvm_host.h
+index cee2be94e4ae..f6dd90684b97 100644
+--- a/arch/s390/include/asm/kvm_host.h
++++ b/arch/s390/include/asm/kvm_host.h
+@@ -13,8 +13,11 @@
+ 
+ #ifndef ASM_KVM_HOST_H
+ #define ASM_KVM_HOST_H
++
++#include <linux/types.h>
+ #include <linux/hrtimer.h>
+ #include <linux/interrupt.h>
++#include <linux/kvm_types.h>
+ #include <linux/kvm_host.h>
+ #include <linux/kvm.h>
+ #include <asm/debug.h>
+@@ -431,8 +434,6 @@ static inline bool kvm_is_error_hva(unsigned long addr)
+ }
+ 
+ #define ASYNC_PF_PER_VCPU	64
+-struct kvm_vcpu;
+-struct kvm_async_pf;
+ struct kvm_arch_async_pf {
+ 	unsigned long pfault_token;
+ };
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index ac0f90e26a0b..567fface45f8 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -99,10 +99,6 @@ static inline gfn_t gfn_to_index(gfn_t gfn, gfn_t base_gfn, int level)
+ 
+ #define ASYNC_PF_PER_VCPU 64
+ 
+-struct kvm_vcpu;
+-struct kvm;
+-struct kvm_async_pf;
+-
+ enum kvm_reg {
+ 	VCPU_REGS_RAX = 0,
+ 	VCPU_REGS_RCX = 1,
+diff --git a/include/linux/kvm_types.h b/include/linux/kvm_types.h
+index b0bcce0ddc95..1d6daca4927a 100644
+--- a/include/linux/kvm_types.h
++++ b/include/linux/kvm_types.h
+@@ -17,6 +17,17 @@
+ #ifndef __KVM_TYPES_H__
+ #define __KVM_TYPES_H__
+ 
++struct kvm;
++struct kvm_async_pf;
++struct kvm_interrupt;
++struct kvm_memory_slot;
++struct kvm_one_reg;
++struct kvm_run;
++struct kvm_userspace_memory_region;
++struct kvm_vcpu;
++struct kvm_vcpu_init;
++enum kvm_mr_change;
++
+ #include <asm/types.h>
+ 
+ /*
+-- 
+1.8.3.1
 
---cxfMsoqvp1jUizWj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUAGtgAAoJELSic+t+oim9EFEQAI91fXdtxJbdSr3mBIG1vnOq
-ouZ+3lP2ITAzXFdQGdnuPUnW40FAV4xcrPRZq5wTMI0xYI3m45ZvwxGBN5OtSOCv
-hdHo8/LRGgqnLUIhwTQvJe6vzX/YnHlM9bi9IKU+PxtOVWlB4LhnpbKMQNivBJ6r
-jECRo2n2EAnWUdiPlJYfgE+21PWAPX0oZSGdU2NFR/8+2US79su4asvJHBIfnAUI
-iSvwQ0RR7+y0pfiuw4raQ5NhPcAm5DyEEXFWklhtECdP8WeAaQ1s422zyU8UkmMM
-rjYFccvtc2gHIF+bsd3k2u52N+ZTbie8W+ov0kwqcnzLG2oi7EZy/efWxdv3cWQg
-O8OqqzCOMckfACQcmG+t+LUa4/r16NbslV7XCOln/SzqGad/38WqE8idPcuIeCGz
-bhok28KnQqXZQfj8G/a4CofpGzFIfq4dwt6YL7h786k5DQJFm3ahzCTDKHq4HTW0
-hO2DAL+QMt6u8Jwx+M9jyL95uqrMD7z52GjQrwwnXtpwbe9zMKCcGjtxTbKlTsoi
-J1avdoIdqidT02iToimsyIgxC4gqNe0RdIic2tXNpYJpcqpPtM2PC2utg0KPmhsV
-wCJNO2FxY2yhKdGeKL16s0KkmoWdxmAHhkG4ruMluClNXglXyc0dwYOBfBk1Io+z
-GwG8YGZyhMWTJxPl2OIs
-=ESqC
------END PGP SIGNATURE-----
-
---cxfMsoqvp1jUizWj--
