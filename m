@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752483AbaH2C1A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 22:27:00 -0400
-Received: from mail-bn1lp0140.outbound.protection.outlook.com ([207.46.163.140]:46126
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751470AbaH2C06 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 22:26:58 -0400
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <shawn.guo@linaro.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCH] ARM: dts: vf610-twr: remove useless property for sound card.
-Date: Fri, 29 Aug 2014 10:22:21 +0800
-Message-ID: <1409278941-16975-1-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.5
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199003)(189002)(36756003)(93916002)(68736004)(89996001)(74662001)(26826002)(46102001)(92726001)(50226001)(19580395003)(85852003)(31966008)(74502001)(86362001)(2201001)(92566001)(4396001)(69596002)(6806004)(76482001)(90102001)(229853001)(44976005)(80022001)(83322001)(77156001)(79102001)(99396002)(97736001)(83072002)(20776003)(19580405001)(87286001)(50466002)(47776003)(105606002)(48376002)(81542001)(21056001)(77982001)(62966002)(88136002)(84676001)(95666004)(104016003)(50986999)(64706001)(81342001)(106466001)(104166001)(102836001)(87936001)(85306004)(107046002)(81156004);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR0301MB0623;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 0318501FAE
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Li.Xiubo@freescale.com; 
-X-OriginatorOrg: freescale.com
+	id S1752408AbaH2Cbj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 22:31:39 -0400
+Received: from mga09.intel.com ([134.134.136.24]:11460 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750958AbaH2Cbi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 22:31:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,421,1406617200"; 
+   d="scan'208";a="594892206"
+From: Chen LinX <linx.z.chen@intel.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Cc: yanmin_zhang@linux.intel.com, "Chen, LinX" <linx.z.chen@intel.com>,
+        "He, Bo" <bo.he@intel.com>
+Subject: [PATCH V2] debugfs: keep the old mode value at remount when no explicit change
+Date: Fri, 29 Aug 2014 10:33:23 +0800
+Message-Id: <1409279603-19468-1-git-send-email-linx.z.chen@intel.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This was added by:
-Commit 8128c4f36 ("ARM: dts: vf610-twr: Add simple-card support.")
+From: "Chen, LinX" <linx.z.chen@intel.com>
 
-This useless property may cause some confusions for users.
+Android framework has a good method to detect userspace hang and reports
+UIWDT issues. It uses client/server model. Clients communicate with
+servers by binder. binder has debugfs interfaces. Some files show what
+threads are communicating with what other threads. If one thread is
+blocked for a long time, we can find the blocking chain from the binder
+info. Since the error dumping process has no root access, booting
+process changes debugfs mount dir mode to 0755. When UIWDT happens,
+the error dumping process can read the info.
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+Unfortunately, some other scripts at booting try to mount debugfs for
+many times. No matter if the double mounting fails or succeeds,
+debugfs_parse_options changes the root inode's mode back to default
+0700. It means the effect of previous mode changing to 0755 is lost.
+At UIWDT, the dumping process can't save binder info to disk log files.
+
+The patch checks if debugfs_mount_opts->mode is initiated. If it is
+already, it bypasses the reinitiation, and the old mode value is kept.
+
+Signed-off-by: He, Bo <bo.he@intel.com>
+Signed-off-by: Chen, LinX <linx.z.chen@intel.com>
 ---
- arch/arm/boot/dts/vf610-twr.dts | 1 -
- 1 file changed, 1 deletion(-)
+ fs/debugfs/inode.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/vf610-twr.dts b/arch/arm/boot/dts/vf610-twr.dts
-index 58e988e..82d16ac 100644
---- a/arch/arm/boot/dts/vf610-twr.dts
-+++ b/arch/arm/boot/dts/vf610-twr.dts
-@@ -76,7 +76,6 @@
+diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
+index c7c83ff..f1eb4b9 100644
+--- a/fs/debugfs/inode.c
++++ b/fs/debugfs/inode.c
+@@ -159,7 +159,8 @@ static int debugfs_parse_options(char *data, struct debugfs_mount_opts *opts)
+ 	kgid_t gid;
+ 	char *p;
  
- 		simple-audio-card,cpu {
- 			sound-dai = <&sai2>;
--			master-clkdir-out;
- 			frame-master;
- 			bitclock-master;
- 		};
+-	opts->mode = DEBUGFS_DEFAULT_MODE;
++	if (opts->mode == 0)
++		opts->mode = DEBUGFS_DEFAULT_MODE;
+ 
+ 	while ((p = strsep(&data, ",")) != NULL) {
+ 		if (!*p)
 -- 
-1.8.5
+1.7.9.5
 
