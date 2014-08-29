@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956AbaH2NwP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 09:52:15 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:49001 "EHLO
+	id S1753915AbaH2NwO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 09:52:14 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:48996 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753097AbaH2NwK (ORCPT
+	with ESMTP id S1753063AbaH2NwK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 29 Aug 2014 09:52:10 -0400
 From: Antoine Tenart <antoine.tenart@free-electrons.com>
@@ -14,9 +14,9 @@ Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
         jszhang@marvell.com, netdev@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 5/5] ARM: dts: berlin: enable the Ethernet port on the BG2Q DMP
-Date: Fri, 29 Aug 2014 15:51:03 +0200
-Message-Id: <1409320263-10295-6-git-send-email-antoine.tenart@free-electrons.com>
+Subject: [PATCH 3/5] Documentation: devicetree: net: mention Marvell Berlin
+Date: Fri, 29 Aug 2014 15:51:01 +0200
+Message-Id: <1409320263-10295-4-git-send-email-antoine.tenart@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1409320263-10295-1-git-send-email-antoine.tenart@free-electrons.com>
 References: <1409320263-10295-1-git-send-email-antoine.tenart@free-electrons.com>
@@ -24,35 +24,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables the Ethernet port on the Marvell Berlin2Q DMP board.
-The Ethernet PHY node is also added.
+Marvell Berlin SoCs have a MDIO interface for their Ethernet
+controllers. Mention Berlin in the SoC list.
 
 Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
 ---
- arch/arm/boot/dts/berlin2q-marvell-dmp.dts | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ Documentation/devicetree/bindings/net/marvell-orion-mdio.txt | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/boot/dts/berlin2q-marvell-dmp.dts b/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
-index a357ce02a64e..1826534ffce3 100644
---- a/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
-+++ b/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
-@@ -45,3 +45,16 @@
- &uart0 {
- 	status = "okay";
- };
-+
-+&eth0 {
-+	phy-handle = <&ethphy0>;
-+	status = "okay";
-+};
-+
-+&mdio {
-+	status = "okay";
-+
-+	ethphy0: ethernet-phy@0 {
-+		reg = <0>;
-+	};
-+};
+diff --git a/Documentation/devicetree/bindings/net/marvell-orion-mdio.txt b/Documentation/devicetree/bindings/net/marvell-orion-mdio.txt
+index 9417e54c26c0..4580c2256039 100644
+--- a/Documentation/devicetree/bindings/net/marvell-orion-mdio.txt
++++ b/Documentation/devicetree/bindings/net/marvell-orion-mdio.txt
+@@ -1,9 +1,9 @@
+ * Marvell MDIO Ethernet Controller interface
+ 
+ The Ethernet controllers of the Marvel Kirkwood, Dove, Orion5x,
+-MV78xx0, Armada 370 and Armada XP have an identical unit that provides
+-an interface with the MDIO bus. This driver handles this MDIO
+-interface.
++MV78xx0, Armada 370, Armada XP and Berlin have an identical unit
++that provides an interface with the MDIO bus. This driver handles
++this MDIO interface.
+ 
+ Required properties:
+ - compatible: "marvell,orion-mdio"
 -- 
 1.9.1
 
