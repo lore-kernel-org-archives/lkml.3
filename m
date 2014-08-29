@@ -1,91 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904AbaH2KlZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 06:41:25 -0400
-Received: from relay.parallels.com ([195.214.232.42]:42214 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752655AbaH2KlX (ORCPT
+	id S1752928AbaH2Kpc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 06:45:32 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:56817 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751672AbaH2Kpa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 06:41:23 -0400
-Message-ID: <540058CB.2030704@parallels.com>
-Date: Fri, 29 Aug 2014 14:41:15 +0400
-From: Maxim Patlasov <mpatlasov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 29 Aug 2014 06:45:30 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Fri, 29 Aug 2014 12:44:07 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Wang YanQing <udknight@gmail.com>
+Cc: Johan Hovold <johan@kernel.org>, Linus Walleij <linus.walleij@linaro.org>,
+        gregkh@linuxfoundation.org, jhovold@gmail.com, andi@lisas.de,
+        dforsi@gmail.com, gnomes@lxorguk.ukuu.org.uk,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7] usb:serial:pl2303: add GPIOs interface on PL2303
+Message-ID: <20140829104407.GH4894@localhost>
+References: <20140809052828.GA28307@udknight>
+ <20140812144625.GB9799@localhost>
+ <20140817020536.GA2509@localhost.localdomain>
+ <20140818100720.GF31755@localhost>
+ <20140827234301.GB418@localhost.localdomain>
 MIME-Version: 1.0
-To: Zach Brown <zab@zabbo.net>
-CC: Ming Lei <ming.lei@canonical.com>, Benjamin LaHaise <bcrl@kvack.org>,
-        "axboe@kernel.dk" <axboe@kernel.dk>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Kent Overstreet <kmo@daterainc.com>,
-        open list:
-	AIO <linux-aio@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Dave Chinner <david@fromorbit.com>, ;
-Illegal-Object: Syntax error in CC: address found on vger.kernel.org:
-	CC:	;
-			^-missing semicolon to end mail group, extraneous tokens in mailbox, missing end of mailbox
-Subject: Re: [PATCH v1 5/9] block: loop: convert to blk-mq
-In-Reply-To: 20140827175605.GE12827@lenny.home.zabbo.net
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.22.200]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140827234301.GB418@localhost.localdomain>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/28/14, Zach Brown<zab@zabbo.net>  wrote:
+On Thu, Aug 28, 2014 at 07:43:01AM +0800, Wang YanQing wrote:
+> On Mon, Aug 18, 2014 at 12:07:20PM +0200, Johan Hovold wrote:
+> > On Sun, Aug 17, 2014 at 10:05:36AM +0800, Wang YanQing wrote:
+> > > Hi Johan Hovold.
+> > > 
+> > > Another two questions.
+> > > 	
+> > > On Tue, Aug 12, 2014 at 04:46:25PM +0200, Johan Hovold wrote:
+> > > > 
+> > > > > +	int (*gpio_startup)(struct usb_serial *serial);
+> > > > > +	void (*gpio_release)(struct usb_serial *serial);
+> > > > 
+> > > > This isn't the right place for this abstraction. Most of the setup code
+> > > > would be common for any device type with GPIOs.
+> > > 
+> > > I assume you mean any pl2303 variant, not any device type, because
+> > > no device in drivers/gpio has common setup code except many of them
+> > > use struct gpio_chip.
+> > 
+> > Yes, pl2303 type/variant. Specifically, much of the setup code will be
+> > identical even if say the number of gpio differ (2 or 4) depending on
+> > type.
+> 
+> Yes, indeed unless I know how to make kernel could distinguish those two
+> types, this patch willn't be fit for mergence.
 
-> On Wed, Aug 27, 2014 at 09:19:36PM +0400, Maxim Patlasov wrote:
->> On 08/27/2014 08:29 PM, Benjamin LaHaise wrote:
->>> On Wed, Aug 27, 2014 at 08:08:59PM +0400, Maxim Patlasov wrote:
->>> ...
->>>> 1) /dev/loop0 of 3.17.0-rc1 with Ming's patches applied -- 11K iops
->>>> 2) the same as above, but call loop_queue_work() directly from
->>>> loop_queue_rq() -- 270K iops
->>>> 3) /dev/nullb0 of 3.17.0-rc1 -- 380K iops
->>>>
->>>> Taking into account so big difference (11K vs. 270K), would it be
->>>> worthy
->>>> to implement pure non-blocking version of aio_kernel_submit() returning
->>>> error if blocking needed? Then loop driver (or any other in-kernel
->>>> user)
->>>> might firstly try that non-blocking submit as fast-path, and, only if
->>>> it's failed, fall back to queueing.
->>> What filesystem is the backing file for loop0 on?  O_DIRECT access as
->>> Ming's patches use should be non-blocking, and if not, that's something
->>> to fix.
->> I used loop0 directly on top of null_blk driver (because my goal was to
->> measure the overhead of processing requests in a separate thread).
-> The relative overhead while doing nothing else.  While zooming way down
-> in to micro benchmarks is fun and all, testing on an fs on brd might be
-> more representitive and so more compelling.
+It might be possible to do based on the device descriptor (e.g.
+bcdDevice). Someone sniffed the official drivers and found some requests
+that appeared to be device specific as well.
 
-The measurements on an fs on brd are even more outrageous (the same fio 
-script I posted a few messages above):
+Unfortunately official documentation from Prolific on this is lacking.
 
-1) Baseline. no loopback device involved.
-
-fio on /dev/ram0:                           467K iops
-fio on ext4 over /dev/ram0:                 378K iops
-
-2) Loopback device from 3.17.0-rc1 with Ming's patches (v1) applied:
-
-fio on /dev/loop0 over /dev/ram0:            10K iops
-fio on ext4 over /dev/loop0 over /dev/ram0:   9K iops
-
-3) the same as above, but avoid extra context switch (call 
-loop_queue_work() directly from loop_queue_rq()):
-
-fio on /dev/loop0 over /dev/ram0:           267K iops
-fio on ext4 over /dev/loop0 over /dev/ram0: 223K iops
-
-The problem is not about huge relative overhead while doing nothing 
-else. It's rather about introducing extra latency (~100 microseconds on 
-commodity h/w I used) which might be noticeable on modern SSDs (and h/w 
-RAIDs with caching).
-
-Thanks,
-Maxim
+Johan
