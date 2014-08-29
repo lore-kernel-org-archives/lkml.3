@@ -1,46 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701AbaH2FaS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 01:30:18 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:41500 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751321AbaH2FaP convert rfc822-to-8bit (ORCPT
+	id S1752216AbaH2FoF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 01:44:05 -0400
+Received: from mail-oi0-f52.google.com ([209.85.218.52]:53703 "EHLO
+	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750983AbaH2FoD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 01:30:15 -0400
+	Fri, 29 Aug 2014 01:44:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <1409057156-1201-2-git-send-email-gdjakov@mm-sol.com>
-References: <1409057156-1201-1-git-send-email-gdjakov@mm-sol.com>
-	<1409057156-1201-2-git-send-email-gdjakov@mm-sol.com>
-Date: Fri, 29 Aug 2014 07:30:15 +0200
-Message-ID: <CACRpkdYj3n-N58OLd7Qom1LTDQ3=3KWY4m39zmPxrKjJow=f1w@mail.gmail.com>
-Subject: Re: [PATCH v2 1/3] pinctrl: qcom: Add APQ8084 pinctrl support
+In-Reply-To: <CAAVeFuK8kb3kopVaM9qz+qOa4RT_oji8LNLQa_UHDxxxwyfZgw@mail.gmail.com>
+References: <1406139132-5404-1-git-send-email-linux@roeck-us.net>
+	<CAAVeFuKsJpSYo2DMyTdYE2J5Cu_ZD=b9o-=S0DLDccyNmwniNg@mail.gmail.com>
+	<53D0A8B7.2010005@roeck-us.net>
+	<CAAVeFuK5uKhpkpEnoRFGKU4G4Fey0+giz5wwmtr+OCLJHPvnLQ@mail.gmail.com>
+	<53E32C09.5000704@roeck-us.net>
+	<CAAVeFuJohBznnjELvJj0OUCK+anbZ-j1xPc9gyKDGVq9X0MDSA@mail.gmail.com>
+	<53E8DE1D.9070503@roeck-us.net>
+	<CAAVeFuK8kb3kopVaM9qz+qOa4RT_oji8LNLQa_UHDxxxwyfZgw@mail.gmail.com>
+Date: Fri, 29 Aug 2014 07:44:02 +0200
+Message-ID: <CACRpkdZfRxNHGtZvzjn_vb2FGNPrvh1znWSGi0znN2_yHmz0Tw@mail.gmail.com>
+Subject: Re: [RFC PATCH] gpiolib: Provide and export gpiod_export_name
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Georgi Djakov <gdjakov@mm-sol.com>,
-        Bjorn Andersson <Bjorn.Andersson@sonymobile.com>
-Cc: Kumar Gala <galak@codeaurora.org>, Andy Gross <agross@codeaurora.org>,
-        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 2:45 PM, Georgi Djakov <gdjakov@mm-sol.com> wrote:
+On Mon, Aug 11, 2014 at 5:20 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
+> On Tue, Aug 12, 2014 at 12:15 AM, Guenter Roeck <linux@roeck-us.net> wrote:
 
-> This patchset adds pinctrl support for the Qualcomm APQ8084 platform.
+>> This is just one of many patches which would make it possible to submit
+>> the rest, which would make use of it. What you are saying is that it won't
+>> make sense to submit that series into the kernel, because one of the very
+>> first patches needed to enable that won't be accepted. Kind of a circular
+>> argument, but I guess I'll have to live with it.
 >
-> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
+> Well I have not seen the other patches you mention and cannot guess
+> their existence. If you send the full series it will of course be
+> considered as such, but right now this lone patch does not hint any
+> upstream user for this interface.
+>
+> Note that this doesn't change anything to the core of the argument ;
+> we have not heard what Linus thinks about named GPIOs in
+> /sys/class/gpio yet, maybe he will have a different opinion...
 
-Looks good to me, but waiting for Björn's review before
-merging.
+The sysfs is sort of broken by design because of things like this and
+some other stuff.
+
+I think the sysfs is scary, for example since it's not hierarchical
+but flat and build on the assumption that there is one single
+GPIO numberspace. As pointed out in some other message
+in the thread it would be nicer to have:
+
+/dev/gpiochip0/gpio0
+/dev/gpiochip0/gpio1
+....
+
+instead of the horrid sysfs ABI that will have to maintain forever.
+
+Still it is true that there is a precedent for named GPIOs in sysfs.
+
+And in the end, userspace needs a way to figure out how to
+get what it needs, a unique string is as good as anything.
+I would be feeling better if userspace got that name from an
+ioctl() on some /dev/* node than by plain filename search in
+sysfs. I somewhat feel a named gpio in sysfs is more
+helpful than just "gpio25".
+
+But I'm not happy about merging the patch if Alexandre is
+hesitant.
 
 Yours,
 Linus Walleij
