@@ -1,258 +1,476 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753038AbaH2KqR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 06:46:17 -0400
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.167]:37070 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751006AbaH2KqO (ORCPT
+	id S1753097AbaH2Kq3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 06:46:29 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:44859 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753056AbaH2Kq0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 06:46:14 -0400
-X-Env-Sender: Andreas.Werner@men.de
-X-Msg-Ref: server-4.tower-38.messagelabs.com!1409309170!619211!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Fri, 29 Aug 2014 12:46:10 +0200
-Date: Fri, 29 Aug 2014 13:38:15 +0200
-From: Andreas Werner <andreas.werner@men.de>
-To: Lee Jones <lee.jones@linaro.org>
-CC: Bryan Wu <cooloney@gmail.com>, Andreas Werner <andreas.werner@men.de>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, <linux@roeck-us.net>,
-        <lm-sensors@lm-sensors.org>, <wim@iguana.be>,
-        <linux-watchdog@vger.kernel.org>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>
-Subject: Re: [PATCH v6 3/4] drivers/leds/leds-menf21bmc: introduce MEN
- 14F021P00 BMC LED driver
-Message-ID: <20140829113815.GA30736@awelinux>
-References: <cover.1409161615.git.andreas.werner@men.de>
- <e91e4f47cda55c03fa1d0a54c0891341d73adfa6.1409161615.git.andreas.werner@men.de>
- <CAK5ve-+zjZBw_HXWm9kGE5Vbv=R2SO4P2dB_0opzLHTAV-BQ0Q@mail.gmail.com>
- <20140829065915.GZ24579@lee--X1>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140829065915.GZ24579@lee--X1>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [192.1.1.171]
+	Fri, 29 Aug 2014 06:46:26 -0400
+From: Daniel Jeong <gshark.jeong@gmail.com>
+To: Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Daniel Jeong <daniel.jeong@ti.com>, <linux-kernel@vger.kernel.org>,
+        <linux-fbdev@vger.kernel.org>, Daniel Jeong <gshark.jeong@gmail.com>
+Subject: [PATCH] backlight: add new lm3509 backlight driver
+Date: Fri, 29 Aug 2014 19:46:14 +0900
+Message-Id: <1409309174-1137-1-git-send-email-gshark.jeong@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 29, 2014 at 07:59:15AM +0100, Lee Jones wrote:
-> On Thu, 28 Aug 2014, Bryan Wu wrote:
-> 
-> > On Wed, Aug 27, 2014 at 10:52 AM, Andreas Werner <andreas.werner@men.de> wrote:
-> > > Added driver to support the 14F021P00 BMC LEDs.
-> > > The BMC is a Board Management Controller including four LEDs which
-> > > can be switched on and off.
-> > >
-> > 
-> > Please go ahead with my Ack
-> > Acked-by: Bryan Wu <cooloney@gmail.com>
-> > 
-> > Lee, will you merge this through your tree? I think we do that in one
-> > shot is better.
-> 
-> Yes, that's fine.  Pull-request to follow.
-> 
+This is a general driver for LM3509 backlgiht chip of TI.
+LM3509 is High Efficiency Boost for White LED's and/or OLED Displays with Dual
+Current Sinks. This driver supports OLED/White LED select, brightness control
+sub/main conrtorl. 
+You can refer to the datasheet at http://www.ti.com/product/lm3509 for review.
 
-Thanks to all for review.
+Signed-off-by: Daniel Jeong <gshark.jeong@gmail.com>
+---
+ drivers/video/backlight/Kconfig     |    7 +
+ drivers/video/backlight/Makefile    |    1 +
+ drivers/video/backlight/lm3509_bl.c |  399 +++++++++++++++++++++++++++++++++++
+ 3 files changed, 407 insertions(+)
+ create mode 100644 drivers/video/backlight/lm3509_bl.c
 
-Who of you does the Watchdog part? Is it the part of Wim to Ack the patch
-if everythings is right or Guenther?
+diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
+index 8d03924..9dc119e 100644
+--- a/drivers/video/backlight/Kconfig
++++ b/drivers/video/backlight/Kconfig
+@@ -366,6 +366,13 @@ config BACKLIGHT_AAT2870
+ 	  If you have a AnalogicTech AAT2870 say Y to enable the
+ 	  backlight driver.
+ 
++config BACKLIGHT_LM3509
++	tristate "Backlight Driver for LM3509"
++	depends on BACKLIGHT_CLASS_DEVICE && I2C
++	select REGMAP_I2C
++	help
++	  This supports TI LM3509 Backlight Driver
++
+ config BACKLIGHT_LM3630A
+ 	tristate "Backlight Driver for LM3630A"
+ 	depends on BACKLIGHT_CLASS_DEVICE && I2C && PWM
+diff --git a/drivers/video/backlight/Makefile b/drivers/video/backlight/Makefile
+index fcd50b73..c34ed98 100644
+--- a/drivers/video/backlight/Makefile
++++ b/drivers/video/backlight/Makefile
+@@ -36,6 +36,7 @@ obj-$(CONFIG_BACKLIGHT_GPIO)		+= gpio_backlight.o
+ obj-$(CONFIG_BACKLIGHT_HP680)		+= hp680_bl.o
+ obj-$(CONFIG_BACKLIGHT_HP700)		+= jornada720_bl.o
+ obj-$(CONFIG_BACKLIGHT_IPAQ_MICRO)	+= ipaq_micro_bl.o
++obj-$(CONFIG_BACKLIGHT_LM3509)		+= lm3509_bl.o
+ obj-$(CONFIG_BACKLIGHT_LM3533)		+= lm3533_bl.o
+ obj-$(CONFIG_BACKLIGHT_LM3630A)		+= lm3630a_bl.o
+ obj-$(CONFIG_BACKLIGHT_LM3639)		+= lm3639_bl.o
+diff --git a/drivers/video/backlight/lm3509_bl.c b/drivers/video/backlight/lm3509_bl.c
+new file mode 100644
+index 0000000..4f4fb85
+--- /dev/null
++++ b/drivers/video/backlight/lm3509_bl.c
+@@ -0,0 +1,399 @@
++/*
++ * Simple driver for Texas Instruments LM3509 Backlight driver chip
++ * Copyright (C) 2014 Texas Instruments
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++#include <linux/backlight.h>
++#include <linux/delay.h>
++#include <linux/err.h>
++#include <linux/i2c.h>
++#include <linux/module.h>
++#include <linux/regmap.h>
++#include <linux/slab.h>
++#include <linux/uaccess.h>
++
++#define LM3509_NAME "lm3509"
++
++#define REG_GP	0x10
++#define REG_BMAIN	0xa0
++#define REG_BSUB	0xb0
++#define REG_MAX		0xff
++
++#define LM3509_POR_BR_MAIN	0xe0
++#define LM3509_POR_BR_SUB	0xe0
++#define LM3509_MAX_BR		0xff
++
++enum lm3509_leds {
++	BLED_BMAIN = 0,
++	BLED_BSUB
++};
++
++struct lm3509_chip {
++	struct device *dev;
++	struct backlight_device *bmain;
++	struct backlight_device *bsub;
++	struct regmap *regmap;
++};
++
++/*
++ * enable main
++ * 0 : disables the main current sink and forces MAIN high impedence.
++ * 1 : enables the main current sink.
++ */
++static ssize_t lm3509_bmain_enable_store(struct device *dev,
++				      struct device_attribute *devAttr,
++				      const char *buf, size_t size)
++{
++	struct lm3509_chip *pchip = dev_get_drvdata(dev);
++	unsigned int state;
++	ssize_t ret;
++
++	ret = kstrtouint(buf, 10, &state);
++	if (ret) {
++		dev_err(pchip->dev, "input conversion fail\n");
++		return ret;
++	}
++
++	if (!state)
++		ret = regmap_update_bits(pchip->regmap, REG_GP, 0x1, 0x0);
++	else
++		ret = regmap_update_bits(pchip->regmap, REG_GP, 0x1, 0x1);
++	if (ret < 0) {
++		dev_err(pchip->dev, "i2c access fail to register\n");
++		return ret;
++	}
++
++	return size;
++}
++
++static DEVICE_ATTR(main_enable, S_IWUSR, NULL, lm3509_bmain_enable_store);
++
++/*
++ * OLED mode control
++ * 0 : white led mode - main and sub current sinks are active
++ * 1 : OLED mode - sub current sink is idabled
++ */
++static ssize_t lm3509_oled_mode_store(struct device *dev,
++				      struct device_attribute *devAttr,
++				      const char *buf, size_t size)
++{
++	struct lm3509_chip *pchip = dev_get_drvdata(dev);
++	unsigned int state;
++	ssize_t ret;
++
++	ret = kstrtouint(buf, 10, &state);
++	if (ret) {
++		dev_err(pchip->dev, "input conversion fail\n");
++		return ret;
++	}
++
++	if (!state)
++		ret = regmap_update_bits(pchip->regmap, REG_GP, 0x20, 0x00);
++	else
++		ret = regmap_update_bits(pchip->regmap, REG_GP, 0x20, 0x20);
++	if (ret < 0) {
++		dev_err(pchip->dev, "i2c access fail to register\n");
++		return ret;
++	}
++
++	return size;
++}
++
++static DEVICE_ATTR(oled_enable, S_IWUSR, NULL, lm3509_oled_mode_store);
++
++/*
++ * brightness rate of change
++ * set the rate of change of the LED current in to MAIN and SUB/FB
++ * in response to change in the contents of registers
++ * 0 - 51 us/step
++ * 1 - 13 ms/step
++ * 2 - 26 ms/step
++ * 3 - 52 ms/step
++ */
++static ssize_t lm3509_rate_store(struct device *dev,
++				      struct device_attribute *devAttr,
++				      const char *buf, size_t size)
++{
++	struct lm3509_chip *pchip = dev_get_drvdata(dev);
++	unsigned int state;
++	ssize_t ret;
++
++	ret = kstrtouint(buf, 10, &state);
++	if (ret) {
++		dev_err(pchip->dev, "input conversion fail\n");
++		return ret;
++	}
++
++	ret = regmap_update_bits(pchip->regmap, REG_GP, 0x18, state << 3);
++	if (ret < 0) {
++		dev_err(pchip->dev, "i2c access fail to register\n");
++		return ret;
++	}
++
++	return size;
++}
++
++static DEVICE_ATTR(rate, S_IWUSR, NULL, lm3509_rate_store);
++
++/* update and get brightness */
++static int lm3509_bmain_update_status(struct backlight_device *bl)
++{
++	struct lm3509_chip *pchip = bl_get_data(bl);
++	int ret;
++
++	ret = regmap_write(pchip->regmap, REG_BMAIN, bl->props.brightness);
++	if (ret < 0)
++		dev_err(pchip->dev, "i2c access fail to register\n");
++	return bl->props.brightness;
++}
++
++static int lm3509_bmain_get_brightness(struct backlight_device *bl)
++{
++	return bl->props.brightness;
++}
++
++static const struct backlight_ops lm3509_bmain_ops = {
++	.options = BL_CORE_SUSPENDRESUME,
++	.update_status = lm3509_bmain_update_status,
++	.get_brightness = lm3509_bmain_get_brightness,
++};
++
++/*
++ * enable sub
++ * 0 : disables the secondary current sink and forces SUB/FB high impedence.
++ * 1 : enables the secondary current sink.
++ */
++static ssize_t lm3509_bsub_enable_store(struct device *dev,
++				      struct device_attribute *devAttr,
++				      const char *buf, size_t size)
++{
++	struct lm3509_chip *pchip = dev_get_drvdata(dev);
++	unsigned int state;
++	ssize_t ret;
++
++	ret = kstrtouint(buf, 10, &state);
++	if (ret) {
++		dev_err(pchip->dev, "input conversion fail\n");
++		return ret;
++	}
++
++	if (!state)
++		ret = regmap_update_bits(pchip->regmap, REG_GP, 0x2, 0x0);
++	else
++		ret = regmap_update_bits(pchip->regmap, REG_GP, 0x2, 0x2);
++	if (ret < 0) {
++		dev_err(pchip->dev, "i2c access fail to register\n");
++		return ret;
++	}
++
++	return size;
++}
++
++static DEVICE_ATTR(sub_enable, S_IWUSR, NULL, lm3509_bsub_enable_store);
++
++/*
++ * uni mode select
++ * 0 : allows the current into MAIN and SUB/FB to be independently controlled
++ *     via the bmain and bsub.
++ * 1 : disables the bsub register and causes the contents of bmain to set
++ *     the current in both the MAIN and SUB/FB current sinks.
++ */
++static ssize_t lm3509_uni_mode_store(struct device *dev,
++				      struct device_attribute *devAttr,
++				      const char *buf, size_t size)
++{
++	struct lm3509_chip *pchip = dev_get_drvdata(dev);
++	unsigned int state;
++	ssize_t ret;
++
++	ret = kstrtouint(buf, 10, &state);
++	if (ret) {
++		dev_err(pchip->dev, "input conversion fail\n");
++		return ret;
++	}
++
++	if (!state)
++		ret = regmap_update_bits(pchip->regmap, REG_GP, 0x4, 0x0);
++	else
++		ret = regmap_update_bits(pchip->regmap, REG_GP, 0x4, 0x4);
++	if (ret < 0) {
++		dev_err(pchip->dev, "i2c access fail to register\n");
++		return ret;
++	}
++
++	return size;
++}
++
++static DEVICE_ATTR(uni_mode, S_IWUSR, NULL, lm3509_uni_mode_store);
++
++/* update and get brightness */
++static int lm3509_bsub_update_status(struct backlight_device *bl)
++{
++	struct lm3509_chip *pchip = bl_get_data(bl);
++	int ret;
++
++	ret = regmap_write(pchip->regmap, REG_BSUB, bl->props.brightness);
++	if (ret < 0)
++		dev_err(pchip->dev, "i2c access fail to register\n");
++	return bl->props.brightness;
++}
++
++static int lm3509_bsub_get_brightness(struct backlight_device *bl)
++{
++	return bl->props.brightness;
++}
++
++static const struct backlight_ops lm3509_bsub_ops = {
++	.options = BL_CORE_SUSPENDRESUME,
++	.update_status = lm3509_bsub_update_status,
++	.get_brightness = lm3509_bsub_get_brightness,
++};
++
++static int lm3509_backlight_register(struct lm3509_chip *pchip,
++				     enum lm3509_leds ledno)
++{
++	struct backlight_properties props;
++
++	props.type = BACKLIGHT_RAW;
++	switch (ledno) {
++	case BLED_BMAIN:
++		props.brightness = LM3509_POR_BR_MAIN;
++		props.max_brightness = LM3509_MAX_BR;
++		pchip->bmain =
++			devm_backlight_device_register(pchip->dev, "bmain",
++				pchip->dev, pchip, &lm3509_bmain_ops, &props);
++		if (IS_ERR(pchip->bmain))
++			return -EIO;
++		break;
++	case BLED_BSUB:
++		props.brightness = LM3509_POR_BR_SUB;
++		props.max_brightness = LM3509_MAX_BR;
++		pchip->bsub =
++			devm_backlight_device_register(pchip->dev, "bsub",
++				pchip->dev, pchip, &lm3509_bsub_ops, &props);
++		if (IS_ERR(pchip->bsub))
++			return -EIO;
++		break;
++	default:
++		BUG();
++	}
++	return 0;
++}
++
++static const struct regmap_config lm3509_regmap = {
++	.reg_bits = 8,
++	.val_bits = 8,
++	.max_register = REG_MAX,
++};
++
++static int lm3509_probe(struct i2c_client *client,
++				  const struct i2c_device_id *id)
++{
++	struct lm3509_chip *pchip;
++	int ret;
++
++	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
++		dev_err(&client->dev, "fail : i2c functionality check\n");
++		return -EOPNOTSUPP;
++	}
++
++	pchip = devm_kzalloc(&client->dev, sizeof(struct lm3509_chip),
++			     GFP_KERNEL);
++	if (!pchip)
++		return -ENOMEM;
++	pchip->dev = &client->dev;
++
++	pchip->regmap = devm_regmap_init_i2c(client, &lm3509_regmap);
++	if (IS_ERR(pchip->regmap)) {
++		dev_err(&client->dev, "fail : allocate register map\n");
++		ret = PTR_ERR(pchip->regmap);
++		return ret;
++	}
++	i2c_set_clientdata(client, pchip);
++
++	ret = lm3509_backlight_register(pchip, BLED_BMAIN);
++	if (ret < 0)
++		return ret;
++
++	ret = lm3509_backlight_register(pchip, BLED_BSUB);
++	if (ret < 0)
++		return ret;
++
++	ret = device_create_file(&(pchip->bmain->dev), &dev_attr_main_enable);
++	if (ret < 0)
++		return ret;
++
++	ret = device_create_file(&(pchip->bmain->dev), &dev_attr_oled_enable);
++	if (ret < 0)
++		goto err_oled_enable;
++
++	ret = device_create_file(&(pchip->bmain->dev), &dev_attr_rate);
++	if (ret < 0)
++		goto err_rate;
++
++	ret = device_create_file(&(pchip->bsub->dev), &dev_attr_sub_enable);
++	if (ret < 0)
++		goto err_sub_enable;
++
++	ret = device_create_file(&(pchip->bsub->dev), &dev_attr_uni_mode);
++	if (ret < 0)
++		goto err_uni_mode;
++
++	return 0;
++
++err_uni_mode:
++	device_remove_file(&(pchip->bsub->dev), &dev_attr_sub_enable);
++err_sub_enable:
++	device_remove_file(&(pchip->bmain->dev), &dev_attr_rate);
++err_rate:
++	device_remove_file(&(pchip->bmain->dev), &dev_attr_oled_enable);
++err_oled_enable:
++	device_remove_file(&(pchip->bmain->dev), &dev_attr_main_enable);
++	dev_err(pchip->dev, "failed : add sysfs entries\n");
++
++	return ret;
++}
++
++static int lm3509_remove(struct i2c_client *client)
++{
++	int ret;
++	struct lm3509_chip *pchip = i2c_get_clientdata(client);
++
++	device_remove_file(&(pchip->bsub->dev), &dev_attr_uni_mode);
++	device_remove_file(&(pchip->bsub->dev), &dev_attr_sub_enable);
++	device_remove_file(&(pchip->bmain->dev), &dev_attr_rate);
++	device_remove_file(&(pchip->bmain->dev), &dev_attr_oled_enable);
++	device_remove_file(&(pchip->bmain->dev), &dev_attr_main_enable);
++
++	ret = regmap_write(pchip->regmap, REG_GP, 0x0);
++	if (ret < 0)
++		dev_err(pchip->dev, "i2c failed to access register\n");
++
++	return 0;
++}
++
++static const struct i2c_device_id lm3509_id[] = {
++	{LM3509_NAME, 0},
++	{}
++};
++
++MODULE_DEVICE_TABLE(i2c, lm3509_id);
++
++static struct i2c_driver lm3509_i2c_driver = {
++	.driver = {
++		.name = LM3509_NAME,
++	},
++	.probe = lm3509_probe,
++	.remove = lm3509_remove,
++	.id_table = lm3509_id,
++};
++
++module_i2c_driver(lm3509_i2c_driver);
++
++MODULE_DESCRIPTION("Texas Instruments Backlight driver for LM3509");
++MODULE_AUTHOR("Daniel Jeong <gshark.jeong@gmail.com>");
++MODULE_LICENSE("GPL v2");
+-- 
+1.7.9.5
 
-I ask because if everything is ok all the patches can go in completly that would
-be nice.
-
-Regards
-Andy
-
-> > > Signed-off-by: Andreas Werner <andreas.werner@men.de>
-> > > ---
-> > >  drivers/leds/Kconfig          |   9 +++
-> > >  drivers/leds/Makefile         |   1 +
-> > >  drivers/leds/leds-menf21bmc.c | 131 ++++++++++++++++++++++++++++++++++++++++++
-> > >  3 files changed, 141 insertions(+)
-> > >  create mode 100644 drivers/leds/leds-menf21bmc.c
-> > >
-> > > diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-> > > index 27cf0cd..ec03457 100644
-> > > --- a/drivers/leds/Kconfig
-> > > +++ b/drivers/leds/Kconfig
-> > > @@ -458,6 +458,15 @@ config LEDS_OT200
-> > >           This option enables support for the LEDs on the Bachmann OT200.
-> > >           Say Y to enable LEDs on the Bachmann OT200.
-> > >
-> > > +config LEDS_MENF21BMC
-> > > +       tristate "LED support for the MEN 14F021P00 BMC"
-> > > +       depends on LEDS_CLASS && MFD_MENF21BMC
-> > > +       help
-> > > +         Say Y here to include support for the MEN 14F021P00 BMC LEDs.
-> > > +
-> > > +         This driver can also be built as a module. If so the module
-> > > +         will be called leds-menf21bmc.
-> > > +
-> > >  comment "LED driver for blink(1) USB RGB LED is under Special HID drivers (HID_THINGM)"
-> > >
-> > >  config LEDS_BLINKM
-> > > diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-> > > index 3c03666..cadc433 100644
-> > > --- a/drivers/leds/Makefile
-> > > +++ b/drivers/leds/Makefile
-> > > @@ -53,6 +53,7 @@ obj-$(CONFIG_LEDS_MAX8997)            += leds-max8997.o
-> > >  obj-$(CONFIG_LEDS_LM355x)              += leds-lm355x.o
-> > >  obj-$(CONFIG_LEDS_BLINKM)              += leds-blinkm.o
-> > >  obj-$(CONFIG_LEDS_VERSATILE)           += leds-versatile.o
-> > > +obj-$(CONFIG_LEDS_MENF21BMC)           += leds-menf21bmc.o
-> > >
-> > >  # LED SPI Drivers
-> > >  obj-$(CONFIG_LEDS_DAC124S085)          += leds-dac124s085.o
-> > > diff --git a/drivers/leds/leds-menf21bmc.c b/drivers/leds/leds-menf21bmc.c
-> > > new file mode 100644
-> > > index 0000000..89dd577
-> > > --- /dev/null
-> > > +++ b/drivers/leds/leds-menf21bmc.c
-> > > @@ -0,0 +1,131 @@
-> > > +/*
-> > > + *  MEN 14F021P00 Board Management Controller (BMC) LEDs Driver.
-> > > + *
-> > > + *  This is the core LED driver of the MEN 14F021P00 BMC.
-> > > + *  There are four LEDs available which can be switched on and off.
-> > > + *  STATUS LED, HOT SWAP LED, USER LED 1, USER LED 2
-> > > + *
-> > > + *  Copyright (C) 2014 MEN Mikro Elektronik Nuernberg GmbH
-> > > + *
-> > > + *  This program is free software; you can redistribute  it and/or modify it
-> > > + *  under  the terms of  the GNU General  Public License as published by the
-> > > + *  Free Software Foundation;  either version 2 of the  License, or (at your
-> > > + *  option) any later version.
-> > > + */
-> > > +
-> > > +#include <linux/module.h>
-> > > +#include <linux/kernel.h>
-> > > +#include <linux/platform_device.h>
-> > > +#include <linux/leds.h>
-> > > +#include <linux/i2c.h>
-> > > +
-> > > +#define BMC_CMD_LED_GET_SET    0xA0
-> > > +#define BMC_BIT_LED_STATUS     BIT(0)
-> > > +#define BMC_BIT_LED_HOTSWAP    BIT(1)
-> > > +#define BMC_BIT_LED_USER1      BIT(2)
-> > > +#define BMC_BIT_LED_USER2      BIT(3)
-> > > +
-> > > +struct menf21bmc_led {
-> > > +       struct led_classdev cdev;
-> > > +       u8 led_bit;
-> > > +       const char *name;
-> > > +       struct i2c_client *i2c_client;
-> > > +};
-> > > +
-> > > +static struct menf21bmc_led leds[] = {
-> > > +       {
-> > > +               .name = "menf21bmc:led_status",
-> > > +               .led_bit = BMC_BIT_LED_STATUS,
-> > > +       },
-> > > +       {
-> > > +               .name = "menf21bmc:led_hotswap",
-> > > +               .led_bit = BMC_BIT_LED_HOTSWAP,
-> > > +       },
-> > > +       {
-> > > +               .name = "menf21bmc:led_user1",
-> > > +               .led_bit = BMC_BIT_LED_USER1,
-> > > +       },
-> > > +       {
-> > > +               .name = "menf21bmc:led_user2",
-> > > +               .led_bit = BMC_BIT_LED_USER2,
-> > > +       }
-> > > +};
-> > > +
-> > > +static DEFINE_MUTEX(led_lock);
-> > > +
-> > > +static void
-> > > +menf21bmc_led_set(struct led_classdev *led_cdev, enum led_brightness value)
-> > > +{
-> > > +       int led_val;
-> > > +       struct menf21bmc_led *led = container_of(led_cdev,
-> > > +                                       struct menf21bmc_led, cdev);
-> > > +
-> > > +       mutex_lock(&led_lock);
-> > > +       led_val = i2c_smbus_read_byte_data(led->i2c_client,
-> > > +                                          BMC_CMD_LED_GET_SET);
-> > > +       if (led_val < 0)
-> > > +               goto err_out;
-> > > +
-> > > +       if (value == LED_OFF)
-> > > +               led_val &= ~led->led_bit;
-> > > +       else
-> > > +               led_val |= led->led_bit;
-> > > +
-> > > +       i2c_smbus_write_byte_data(led->i2c_client,
-> > > +                                 BMC_CMD_LED_GET_SET, led_val);
-> > > +err_out:
-> > > +       mutex_unlock(&led_lock);
-> > > +}
-> > > +
-> > > +static int menf21bmc_led_probe(struct platform_device *pdev)
-> > > +{
-> > > +       int i;
-> > > +       int ret;
-> > > +       struct i2c_client *i2c_client = to_i2c_client(pdev->dev.parent);
-> > > +
-> > > +       for (i = 0; i < ARRAY_SIZE(leds); i++) {
-> > > +               leds[i].cdev.name = leds[i].name;
-> > > +               leds[i].cdev.brightness_set = menf21bmc_led_set;
-> > > +               leds[i].i2c_client = i2c_client;
-> > > +               ret = led_classdev_register(&pdev->dev, &leds[i].cdev);
-> > > +               if (ret < 0)
-> > > +                       goto err_free_leds;
-> > > +       }
-> > > +       dev_info(&pdev->dev, "MEN 140F21P00 BMC LED device enabled\n");
-> > > +
-> > > +       return 0;
-> > > +
-> > > +err_free_leds:
-> > > +       dev_err(&pdev->dev, "failed to register LED device\n");
-> > > +
-> > > +       for (i = i - 1; i >= 0; i--)
-> > > +               led_classdev_unregister(&leds[i].cdev);
-> > > +
-> > > +       return ret;
-> > > +}
-> > > +
-> > > +static int menf21bmc_led_remove(struct platform_device *pdev)
-> > > +{
-> > > +       int i;
-> > > +
-> > > +       for (i = 0; i < ARRAY_SIZE(leds); i++)
-> > > +               led_classdev_unregister(&leds[i].cdev);
-> > > +
-> > > +       return 0;
-> > > +}
-> > > +
-> > > +static struct platform_driver menf21bmc_led = {
-> > > +       .probe          = menf21bmc_led_probe,
-> > > +       .remove         = menf21bmc_led_remove,
-> > > +       .driver         = {
-> > > +               .name           = "menf21bmc_led",
-> > > +               .owner          = THIS_MODULE,
-> > > +       },
-> > > +};
-> > > +
-> > > +module_platform_driver(menf21bmc_led);
-> > > +
-> > > +MODULE_AUTHOR("Andreas Werner <andreas.werner@men.de>");
-> > > +MODULE_DESCRIPTION("MEN 14F021P00 BMC led driver");
-> > > +MODULE_LICENSE("GPL v2");
-> > > +MODULE_ALIAS("platform:menf21bmc_led");
-> > >
-> 
-> -- 
-> Lee Jones
-> Linaro STMicroelectronics Landing Team Lead
-> Linaro.org │ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
