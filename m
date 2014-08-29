@@ -1,78 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880AbaH2O4O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 10:56:14 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:50161 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752528AbaH2O4N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 10:56:13 -0400
-Date: Fri, 29 Aug 2014 10:55:58 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Stefan Bader <stefan.bader@canonical.com>,
-        Kees Cook <keescook@chromium.org>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] Solved the Xen PV/KASLR riddle
-Message-ID: <20140829145558.GK3609@laptop.dumpdata.com>
-References: <20140827204940.GA10556@laptop.dumpdata.com>
- <1409248903-19625-1-git-send-email-stefan.bader@canonical.com>
- <20140829140823.GF3609@laptop.dumpdata.com>
- <54008DDA.3040701@canonical.com>
- <5400ADD6020000780002F159@mail.emea.novell.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5400ADD6020000780002F159@mail.emea.novell.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	id S1753092AbaH2PCp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 11:02:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51853 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752528AbaH2PCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 11:02:44 -0400
+Subject: Re: [PATCH 2/2] Drivers: scsi: storvsc: Force discovery of LUNs
+ that may have been removed.
+From: Ewan Milne <emilne@redhat.com>
+Reply-To: emilne@redhat.com
+To: Mike Christie <michaelc@cs.wisc.edu>
+Cc: Hannes Reinecke <hare@suse.de>, Christoph Hellwig <hch@infradead.org>,
+        "K. Y. Srinivasan" <kys@microsoft.com>, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, ohering@suse.com,
+        jbottomley@parallels.com, linux-scsi@vger.kernel.org,
+        "Martin K. Petersen" <martin.petersen@oracle.com>
+In-Reply-To: <53FFE87B.9040802@cs.wisc.edu>
+References: <1408244954-27417-1-git-send-email-kys@microsoft.com>
+	 <1408244988-27456-1-git-send-email-kys@microsoft.com>
+	 <1408244988-27456-2-git-send-email-kys@microsoft.com>
+	 <20140819175431.GA4617@infradead.org> <53FDEBB9.5070704@suse.de>
+	 <53FFE87B.9040802@cs.wisc.edu>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat
+Date: Fri, 29 Aug 2014 11:01:37 -0400
+Message-ID: <1409324497.1223.383.camel@localhost.localdomain>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 29, 2014 at 03:44:06PM +0100, Jan Beulich wrote:
-> >>> On 29.08.14 at 16:27, <stefan.bader@canonical.com> wrote:
-> > Sure. Btw, someone also contacted me saying they have the same problem 
-> > without
-> > changing the layout but having really big initrd (500M). While that feels 
-> > like
-> > it should be impossible (if the kernel+initrd+xen stuff has to fix the 512M
-> > kernel image size area then). But if it can happen, then surely it does 
-> > cause
-> > mappings to be where the module space starts then.
+On Thu, 2014-08-28 at 21:42 -0500, Mike Christie wrote:
+> On 08/27/2014 09:31 AM, Hannes Reinecke wrote:
+> > On 08/19/2014 07:54 PM, Christoph Hellwig wrote:
+> >> On Sat, Aug 16, 2014 at 08:09:48PM -0700, K. Y. Srinivasan wrote:
+> >>> The host asks the guest to scan when a LUN is removed or added.
+> >>> The only way a guest can identify the removed LUN is when an I/O is
+> >>> attempted on a removed LUN - the SRB status code indicates that the LUN
+> >>> is invalid. We currently handle this SRB status and remove the device.
+> >>>
+> >>> Rather than waiting for an I/O to remove the device, force the
+> >>> discovery of
+> >>> LUNs that may have been removed prior to discovering LUNs that may have
+> >>> been added.
+> >>
+> >> This looks pretty reasonable to me, but I wonder if we should move this
+> >> up to common code so that it happens for any host rescan triggered by
+> >> sysfs or other drivers as well.
+> >>
+> > Not without proper testing.
+> > Currently we cannot rescan existing devices; the inquiry string is
+> > nailed to the sdev structure. The only way to really refresh the
+> > information is to delete it and rescan it again.
 > 
-> Since the initrd doesn't really need to be mapped into the (limited)
-> virtual address space a pv guest starts with, we specifically got
-> 
-> /*
->  * Whether or not the guest can deal with being passed an initrd not
->  * mapped through its initial page tables.
->  */
-> #define XEN_ELFNOTE_MOD_START_PFN 16
-> 
-> to deal with that situation. The hypervisor side for Dom0 is in place,
-> and the kernel side works in our (classic) kernels. Whether it got
-> implemented for DomU meanwhile I don't know; I'm pretty certain
-> pv-ops kernels don't support it so far.
+> How are distros handling 0x6/0x3f/0x0e (report luns changed) when it
+> gets passed to userspace? Is everyone kicking off a new full (add and
+> delete) scan to handle this or logging it? Is the driver returning this
+> when the LUNs change?
 
-Correct - Not implemented. Here is what I had mentioned in the past:
-(see http://lists.xen.org/archives/html/xen-devel/2014-03/msg00580.html)
+Currently the udev rules we have to handle these events are installed
+with a separate package, and only the REPORTED LUNS DATA HAS CHANGED
+does anything, the others are commented out.  It turns out that e.g.
+multipath stops using a path if it notices that the capacity has changed
+and we need to do some more work there, it is under discussion.
 
+We do not delete LUNs that disappear from the REPORT LUNS inventory,
+although someone could write their own udev rule to do that if desired.
 
-XEN_ELFNOTE_INIT_P2M, XEN_ELFNOTE_MOD_START_PFN - I had been looking
-    at that but I can't figure out a nice way of implementing this
-    without the usage of SPARSEMAP_VMAP virtual addresses - which is how
-    the classic Xen does it. But then - I don't know who is using huge PV
-    guests - as the PVHVM does a fine job? But then with PVH, now you can
-    boot with large amount of memory (1TB?) - so some of these issues
-    would go away? Except the 'large ramdisk' as that would eat in the
-    MODULES_VADDR I think? Needs more thinking.
+Beware the case where a LUN is remapped to a different LUN number, or
+if LUN's WWID is used for a device with different data (e.g. a LUN
+deleted and re-added and the WWID is the same although I don't know
+if this actually happens).
 
-.. and then I left it and to my suprise saw on Luis's slides that
-Jurgen is going to take a look at that (500GB support).
+Consider that the UA just provides notification to userspace of a
+change -- lack of notification does not prevent someone from deciding
+to rescan for new LUNs via sysfs any time they feel like it.  So
+you can't just change the storage configuration and hope that no-one
+notices until you are done making changes.
+
+-Ewan
 
 > 
-> Jan
-> 
+> Also is the driver getting a 0x5/0x25/0 (invalid LUN) when the LUN does
+> not exist, or is it just getting that SRB_STATUS_INVALID_LUN error code?
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
