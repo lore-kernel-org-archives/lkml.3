@@ -1,84 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054AbaH2QLn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 12:11:43 -0400
-Received: from mail.aswsp.com ([193.34.35.150]:44839 "EHLO mail.aswsp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753135AbaH2QLl convert rfc822-to-8bit (ORCPT
+	id S1754032AbaH2QMd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 12:12:33 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:21924 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753818AbaH2QM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 12:11:41 -0400
-Date: Fri, 29 Aug 2014 18:12:01 +0200
-From: Matthieu CASTET <matthieu.castet@parrot.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: <linux-scsi@vger.kernel.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        TARUISI Hiroaki <taruishi.hiroak@jp.fujitsu.com>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: Re: Buffer I/O error after s2ram with usb storage
-Message-ID: <20140829181201.277e699d@parrot.com>
-In-Reply-To: <Pine.LNX.4.44L0.1408271051160.1460-100000@iolanthe.rowland.org>
-References: <20140827104059.3a4bed94@parrot.com>
-	<Pine.LNX.4.44L0.1408271051160.1460-100000@iolanthe.rowland.org>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	Fri, 29 Aug 2014 12:12:29 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/pq3P9ujPNhy24kvIFeqZD
+Date: Fri, 29 Aug 2014 09:12:22 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: balbi@ti.com, linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Vinod Koul <vinod.koul@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Walmsley <paul@pwsan.com>
+Subject: Re: [PATCH 15/15] tty: serial: 8250: omap: add dma support
+Message-ID: <20140829161221.GO16006@atomide.com>
+References: <20140815210211.GD9239@atomide.com>
+ <53F5AF0D.5060409@linutronix.de>
+ <20140821184416.GF10066@atomide.com>
+ <53FE3779.5090908@linutronix.de>
+ <20140827202313.GF16006@atomide.com>
+ <20140828082348.GA5413@linutronix.de>
+ <20140828164645.GG16006@atomide.com>
+ <53FF84DF.7080406@linutronix.de>
+ <20140828225454.GM16006@atomide.com>
+ <540048B4.7010807@linutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [46.218.109.88]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <540048B4.7010807@linutronix.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le Wed, 27 Aug 2014 10:54:53 -0400,
-Alan Stern <stern@rowland.harvard.edu> a écrit :
-
-> On Wed, 27 Aug 2014, Matthieu CASTET wrote:
-> 
-> > Ping
+* Sebastian Andrzej Siewior <bigeasy@linutronix.de> [140829 02:32]:
+> On 08/29/2014 12:54 AM, Tony Lindgren wrote:
+> > OK thanks, I'm seeing the same issue as you. And the idlest registers
+> > don't show any blockers. Looking at the errata docs, seems like
+> > "Usage Note 2.7" in sprz318f.pdf says:
 > > 
-> > I have got also a problem with a usb sdcard reader (without power cut
-> > during suspend)
+> >  Details When configured for DMA operations using smartidle mode (SYSC[4:3].IDLEMODE =
+> >  0x2), the UART module will not acknowledge incoming idle requests. As a consequence,
+> >  it can prevent L4 from going to idle.
+> >  When there are additional expected transfers, the UART should be placed in force-idle
+> >  mode.
 > 
-> > > > The usb storage driver call scsi_report_bus_reset after device reset,
-> > > > but because of commit dfcf7775 <4>, we don't ignore unit attention if
-> > > > "sshdr.asc == 0x28 && sshdr.ascq == 0x00" ("Not-ready to ready").
-> > > > 
-> > > > If dfcf7775 is reverted there is no more Buffer I/O error.
-> > > > 
-> > > > Is that possible to find a way to restore the behavior before dfcf7775
-> > > > commit (no Buffer I/O error after device reset) after a suspend to ram ?
-> 
-> Since that commit was written to fix a problem with certain cdrom
-> drives, maybe we would work around the issue by modifying the commit.  
-> Have it go back to the original behavior if the device isn't a cdrom 
-> drive.
-> 
-> That's not a complete fix (it won't help when a CD drive is attached 
-> via USB), but maybe it's better than nothing.
-> 
-Ok,
+> Ehm. So I haven't found an errata document for omap3630, there is
+> nothing like that in that one I have for am335x or dra7. The document
+> you mentioned is for AM3715. Interestingâ€¦
 
-note to handle all case we need also to filter unit_attention in
-scsi_test_unit_ready. Otherwise DISK_EVENT_MEDIA_CHANGE event is set and check_disk_change will invalidate vfs cache.
-
-
-Matthieu
-
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index 2bc0362..e994061 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -2030,8 +2030,12 @@ scsi_test_unit_ready(struct scsi_device *sdev, int timeout, int retries,
- 		result = scsi_execute_req(sdev, cmd, DMA_NONE, NULL, 0, sshdr,
- 					  timeout, retries, NULL);
- 		if (sdev->removable && scsi_sense_valid(sshdr) &&
--		    sshdr->sense_key == UNIT_ATTENTION)
--			sdev->changed = 1;
-+		    sshdr->sense_key == UNIT_ATTENTION) {
-+			if (sdev->expecting_cc_ua)
-+				sdev->expecting_cc_ua = 0;
-+			else
-+				sdev->changed = 1;
-+		}
- 	} while (scsi_sense_valid(sshdr) &&
- 		 sshdr->sense_key == UNIT_ATTENTION && --retries);
+Yes I would not be suprised if that same bug is in all of them though..
  
+> > So I've added also Paul to Cc, he may have better suggestions for the
+> > hwmod flags to use. The experimental patch below seems to allow idling
+> > for me, care to give it a try?
+> 
+> Yep, this one works. And I see DMA transfers (for RX side) after the
+> core hit idle so it seems to look good :)
+
+OK great :)
+
+Looks like the paste bug is there for sure, doing off idle and pasting
+240 characters to the console can hang the UART RX after few attempts,
+and pasting 16 charactes won't show up at all if the system is idling.
+So you may want to play with that too a bit :)
+
+Regards,
+
+Tony
