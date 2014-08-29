@@ -1,107 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751080AbaH2Xit (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 19:38:49 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:17452 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750811AbaH2Xir (ORCPT
+	id S1751353AbaH2XwW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 19:52:22 -0400
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:42643 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750888AbaH2XwU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 19:38:47 -0400
-Date: Fri, 29 Aug 2014 16:41:29 -0700
-From: Courtney Cavin <courtney.cavin@sonymobile.com>
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-CC: Ohad Ben-Cohen <ohad@wizery.com>, Kumar Gala <galak@codeaurora.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Likely <grant.likely@linaro.org>, Suman Anna <s-anna@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Jeffrey Hugo <jhugo@codeaurora.org>,
-        Eric Holmberg <eholmber@codeaurora.org>
-Subject: Re: [PATCH v2] hwspinlock/msm: Add support for Qualcomm MSM HW Mutex
- block
-Message-ID: <20140829234128.GB25668@sonymobile.com>
-References: <1409354063-20289-1-git-send-email-bjorn.andersson@sonymobile.com>
+	Fri, 29 Aug 2014 19:52:20 -0400
+Date: Sat, 30 Aug 2014 01:52:06 +0200
+From: Florian Westphal <fw@strlen.de>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Julian Anastasov <ja@ssi.bg>, Simon Kirby <sim@hostway.ca>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Florian Westphal <fw@strlen.de>,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: Re: net_ns cleanup / RCU overhead
+Message-ID: <20140829235206.GA15853@breakpoint.cc>
+References: <20140820055855.GB5579@hostway.ca>
+ <20140828192431.GF5001@linux.vnet.ibm.com>
+ <20140828194422.GB8867@hostway.ca>
+ <87oav4l5g9.fsf@x220.int.ebiederm.org>
+ <20140828204658.GL5001@linux.vnet.ibm.com>
+ <20140829004029.GA18300@hostway.ca>
+ <alpine.LFD.2.11.1408290635530.1520@ja.home.ssi.bg>
+ <87ppfjj6x6.fsf@x220.int.ebiederm.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1409354063-20289-1-git-send-email-bjorn.andersson@sonymobile.com>
+In-Reply-To: <87ppfjj6x6.fsf@x220.int.ebiederm.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 30, 2014 at 01:14:23AM +0200, Bjorn Andersson wrote:
-> From: Kumar Gala <galak@codeaurora.org>
+Eric W. Biederman <ebiederm@xmission.com> wrote:
+> Julian Anastasov <ja@ssi.bg> writes:
 > 
-> Add driver for Qualcomm MSM Hardware Mutex block that exists on
-> newer Qualcomm SoCs.
+> > 	Hello,
+> >
+> > On Thu, 28 Aug 2014, Simon Kirby wrote:
+> >
+> >> I noticed that [kworker/u16:0]'s stack is often:
+> >> 
+> >> [<ffffffff810942a6>] wait_rcu_gp+0x46/0x50
+> >> [<ffffffff8109607e>] synchronize_sched+0x2e/0x50
+> >> [<ffffffffa00385ac>] nf_nat_net_exit+0x2c/0x50 [nf_nat]
+> >
+> > 	I guess the problem is in nf_nat_net_exit,
+> > may be other nf exit handlers too. pernet-exit handlers
+> > should avoid synchronize_rcu and rcu_barrier.
+> > A RCU callback and rcu_barrier in module-exit is the way
+> > to go. cleanup_net includes rcu_barrier, so pernet-exit
+> > does not need such calls.
 > 
-> Cc: Jeffrey Hugo <jhugo@codeaurora.org>
-> Cc: Eric Holmberg <eholmber@codeaurora.org>
-> Cc: Courtney Cavin <courtney.cavin@sonymobile.com>
-> Signed-off-by: Kumar Gala <galak@codeaurora.org>
-> [bjorn: added pm_runtime calls, from Courtney,
-> 	added sfpb-mutex compatible,
-> 	updated DT binding documentation formatting]
-> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-> ---
-[...]
-> diff --git a/drivers/hwspinlock/Kconfig b/drivers/hwspinlock/Kconfig
-> index 3612cb5..2cd39e2 100644
-> --- a/drivers/hwspinlock/Kconfig
-> +++ b/drivers/hwspinlock/Kconfig
-> @@ -8,6 +8,17 @@ config HWSPINLOCK
->  
->  menu "Hardware Spinlock drivers"
->  
-> +config HWSPINLOCK_MSM
-> +	tristate "MSM Hardware Spinlock device"
-> +	depends on ARCH_QCOM
+> In principle I agree, however in this particular case it looks a bit
+> tricky because a separate hash table to track nat state per network
+> namespace.
+> 
+> At the same time all of the packets should be drained before
+> we get to nf_nat_net_exit so it doesn't look the synchronize_rcu
+> in nf_nat_exit is actually protecting anything.
 
-This should also depend on OF, as it won't compile or work without it.
+Hmm, the problem is with the conntrack entries living in the netns being
+destroyed.
 
-> +	select HWSPINLOCK
-> +	help
-> +	  Say y here to support the MSM Hardware Mutex functionality, which
-> +	  provides a synchronisation mechanism for the various processors on
-> +	  the SoC.
-> +
-> +	  If unsure, say N.
-> +
->  config HWSPINLOCK_OMAP
->  	tristate "OMAP Hardware Spinlock device"
->  	depends on ARCH_OMAP4 || SOC_OMAP5 || SOC_DRA7XX || SOC_AM33XX || SOC_AM43XX
-[...]
-> +static const struct of_device_id msm_hwspinlock_of_match[] = {
-> +	{ .compatible = "qcom,sfpb-mutex", .data = (void *)0x4 },
-> +	{ .compatible = "qcom,tcsr-mutex", .data = (void *)0x80 },
-> +	{ },
-> +};
+I don't think they are guaranteed to be removed by the time
+the nat netns exit function runs.
 
-MODULE_DEVICE_TABLE(of, msm_hwspinlock_of_match); ?
+> Further calling a rcu delay function in net_exit methods largely
+> destroys the batched cleanup of network namespaces, so it is very
+> unpleasant.
+> 
+> Could someone who knows nf_nat_core.c better than I do look and
+> see if we can just remove the synchronize_rcu in nf_nat_exit?
 
-[...]
-> +static struct platform_driver msm_hwspinlock_driver = {
-> +	.probe		= msm_hwspinlock_probe,
-> +	.remove		= msm_hwspinlock_remove,
-> +	.driver		= {
-> +		.name	= "msm_hwspinlock",
-> +		.owner	= THIS_MODULE,
+If I remember correctly its needed to ensure that
+all conntracks with nat extensions that might still be referenced
+on other cpu have finished (i.e., nf_conntrack_destroy() has been
+called, which calls nf_nat_cleanup_conntrack() which deletes
+the extension from the hash table).
 
-No need, as:
+As we remove the ct from that table ourselves EXCEPT in the
+case where we cannot steal the timers' reference we should
+be able to avoid that call virtually every time.
 
-#define platform_driver_register(drv) \
-	__platform_driver_register(drv, THIS_MODULE)
-extern int __platform_driver_register(struct platform_driver *,
-					struct module *);
+Perhaps this is worth a shot (not even compile tested):
 
-> +		.of_match_table = msm_hwspinlock_of_match,
-> +	},
-> +};
-
-Otherwise, looks fine.
-
--Courtney
+diff --git a/net/netfilter/nf_nat_core.c b/net/netfilter/nf_nat_core.c
+index 4e0b478..80cfe10 100644
+--- a/net/netfilter/nf_nat_core.c
++++ b/net/netfilter/nf_nat_core.c
+@@ -508,6 +508,7 @@ EXPORT_SYMBOL_GPL(nf_nat_packet);
+ struct nf_nat_proto_clean {
+ 	u8	l3proto;
+ 	u8	l4proto;
++	bool	need_sync_rcu;
+ };
+ 
+ /* kill conntracks with affected NAT section */
+@@ -528,23 +529,32 @@ static int nf_nat_proto_remove(struct nf_conn *i, void *data)
+ 
+ static int nf_nat_proto_clean(struct nf_conn *ct, void *data)
+ {
++	struct nf_nat_proto_clean *clean = data;
+ 	struct nf_conn_nat *nat = nfct_nat(ct);
+ 
+-	if (nf_nat_proto_remove(ct, data))
+-		return 1;
+-
+ 	if (!nat || !nat->ct)
+ 		return 0;
+ 
+-	/* This netns is being destroyed, and conntrack has nat null binding.
++	/* This netns is being destroyed, and conntrack has nat binding.
+ 	 * Remove it from bysource hash, as the table will be freed soon.
+ 	 *
+-	 * Else, when the conntrack is destoyed, nf_nat_cleanup_conntrack()
++	 * Else, when the conntrack is destroyed, nf_nat_cleanup_conntrack()
+ 	 * will delete entry from already-freed table.
+ 	 */
+-	if (!del_timer(&ct->timeout))
++	if (!del_timer(&ct->timeout)) {
++		/* We have nat binding, but destruction
++		 * might already be in progress.
++		 *
++		 * nat entry is removed only after last
++		 * nf_ct_put().
++		 */
++		clean->need_sync_rcu = true;
+ 		return 1;
++	}
+ 
++	/* We stole refcount owned by timer;
++	 * conntrack cannot go away.
++	 */
+ 	spin_lock_bh(&nf_nat_lock);
+ 	hlist_del_rcu(&nat->bysource);
+ 	ct->status &= ~IPS_NAT_DONE_MASK;
+@@ -553,6 +563,9 @@ static int nf_nat_proto_clean(struct nf_conn *ct, void *data)
+ 
+ 	add_timer(&ct->timeout);
+ 
++	if (nf_nat_proto_remove(ct, data))
++		return 1;
++
+ 	/* don't delete conntrack.  Although that would make things a lot
+ 	 * simpler, we'd end up flushing all conntracks on nat rmmod.
+ 	 */
+@@ -830,7 +843,8 @@ static void __net_exit nf_nat_net_exit(struct net *net)
+ 	struct nf_nat_proto_clean clean = {};
+ 
+ 	nf_ct_iterate_cleanup(net, nf_nat_proto_clean, &clean, 0, 0);
+-	synchronize_rcu();
++	if (clean.need_sync_rcu)
++		synchronize_rcu();
+ 	nf_ct_free_hashtable(net->ct.nat_bysource, net->ct.nat_htable_size);
+ }
+ 
