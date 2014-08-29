@@ -1,47 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382AbaH2Ac3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 20:32:29 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:5148 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751454AbaH2Ac2 (ORCPT
+	id S1752733AbaH2AfK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 20:35:10 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:58828 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751959AbaH2AfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 20:32:28 -0400
-Date: Thu, 28 Aug 2014 17:32:26 -0700
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: Pramod Gurav <pramod.gurav@smartplayin.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Andy Gross <agross@codeaurora.org>
-Subject: Re: [PATCH 3/4] pinctrl: msm: Add ps_hold function in
- pinctrl-apq8064 binding documentation
-Message-ID: <20140829003225.GD12494@sonymobile.com>
-References: <1409282570-27299-1-git-send-email-pramod.gurav@smartplayin.com>
- <1409282570-27299-4-git-send-email-pramod.gurav@smartplayin.com>
+	Thu, 28 Aug 2014 20:35:07 -0400
+Date: Fri, 29 Aug 2014 09:34:57 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: Magnus Damm <magnus.damm@gmail.com>, devicetree@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] ARM: dts: Add shmobile platform device tree bindings
+ documentation
+Message-ID: <20140829003456.GM16165@verge.net.au>
+References: <1409213120-5291-1-git-send-email-geert+renesas@glider.be>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1409282570-27299-4-git-send-email-pramod.gurav@smartplayin.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1409213120-5291-1-git-send-email-geert+renesas@glider.be>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 28 Aug 20:22 PDT 2014, Pramod Gurav wrote:
-
-> This adds a function ps_hold (Power Suppy Hold Signal) in pinctrl-ap8064
-> documentation which was missing. This function is used to reset the targets
-> with apq8064 soc.
+On Thu, Aug 28, 2014 at 10:05:20AM +0200, Geert Uytterhoeven wrote:
+> Add Renesas SH-Mobile, R-Mobile, and R-Car Platform Device Tree Bindings
+> Documentation, listing supported SoCs and boards.
 > 
-> CC: Linus Walleij <linus.walleij@linaro.org>
-> CC: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+> This allows to use checkpatch to validate DTSes referring to Renesas
+> shmobile SoCs, and boards containing those SoCs.
+> 
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
 
-Acked-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Thanks Geert, this looks good to me.
+Is it for me to pick up?
 
-Regards,
-Bjorn
+If so I would prefer a slightly re-structured title:
+
+ARM: shmobile: Add platform device tree bindings documentation
+
+> ---
+> v2:
+>   - Drop RFC
+>   - Move sh7372/sh73a0 up, before r8a73a4
+>   - Add r8a7793/Gose
+>   - Drop bogus EMEV2 before KZM9D board name
+>   - Drop armadillo-reference, as it's on its way out
+> ---
+>  Documentation/devicetree/bindings/arm/shmobile.txt | 71 ++++++++++++++++++++++
+>  1 file changed, 71 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/arm/shmobile.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/shmobile.txt b/Documentation/devicetree/bindings/arm/shmobile.txt
+> new file mode 100644
+> index 000000000000..5d1c5c0085dc
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/arm/shmobile.txt
+> @@ -0,0 +1,71 @@
+> +Renesas SH-Mobile, R-Mobile, and R-Car Platform Device Tree Bindings
+> +--------------------------------------------------------------------
+> +
+> +SoCs:
+> +
+> +  - Emma Mobile EV2
+> +    compatible = "renesas,emev2"
+> +  - RZ/A1H (R7S72100)
+> +    compatible = "renesas,r7s72100"
+> +  - SH-Mobile AP4 (R8A73720/SH7372)
+> +    compatible = "renesas,sh7372"
+> +  - SH-Mobile AG5 (R8A73A00/SH73A0)
+> +    compatible = "renesas,sh73a0"
+> +  - R-Mobile APE6 (R8A73A40)
+> +    compatible = "renesas,r8a73a4"
+> +  - R-Mobile A1 (R8A77400)
+> +    compatible = "renesas,r8a7740"
+> +  - R-Car M1A (R8A77781)
+> +    compatible = "renesas,r8a7778"
+> +  - R-Car H1 (R8A77790)
+> +    compatible = "renesas,r8a7779"
+> +  - R-Car H2 (R8A77900)
+> +    compatible = "renesas,r8a7790"
+> +  - R-Car M2-W (R8A77910)
+> +    compatible = "renesas,r8a7791"
+> +  - R-Car V2H (R8A77920)
+> +    compatible = "renesas,r8a7792"
+> +  - R-Car M2-N (R8A77930)
+> +    compatible = "renesas,r8a7793"
+> +  - R-Car E2 (R8A77940)
+> +    compatible = "renesas,r8a7794"
+> +
+> +
+> +Boards:
+> +
+> +  - Alt
+> +    compatible = "renesas,alt", "renesas,r8a7794"
+> +  - APE6-EVM
+> +    compatible = "renesas,ape6evm", "renesas,r8a73a4"
+> +  - APE6-EVM - Reference Device Tree Implementation
+> +    compatible = "renesas,ape6evm-reference", "renesas,r8a73a4"
+> +  - Atmark Techno Armadillo-800 EVA
+> +    compatible = "renesas,armadillo800eva"
+> +  - BOCK-W
+> +    compatible = "renesas,bockw", "renesas,r8a7778"
+> +  - BOCK-W - Reference Device Tree Implementation
+> +    compatible = "renesas,bockw-reference", "renesas,r8a7778"
+> +  - Genmai (RTK772100BC00000BR)
+> +    compatible = "renesas,genmai", "renesas,r7s72100"
+> +  - Gose
+> +    compatible = "renesas,gose", "renesas,r8a7793"
+> +  - Henninger
+> +    compatible = "renesas,henninger", "renesas,r8a7791"
+> +  - Koelsch (RTP0RC7791SEB00010S)
+> +    compatible = "renesas,koelsch", "renesas,r8a7791"
+> +  - KZM9D
+> +    compatible = "renesas,kzm9d", "renesas,emev2"
+> +  - KZM-A9-GT
+> +    compatible = "renesas,kzm9g", "renesas,sh73a0"
+> +  - KZM-A9-GT - Reference Device Tree Implementation
+> +    compatible = "renesas,kzm9g-reference", "renesas,sh73a0"
+> +  - Lager (RTP0RC7790SEB00010S)
+> +    compatible = "renesas,lager", "renesas,r8a7790"
+> +  - Mackerel (R0P7372LC0016RL, AP4 EVM 2nd)
+> +    compatible = "renesas,mackerel"
+> +  - Marzen
+> +    compatible = "renesas,marzen", "renesas,r8a7779"
+> +
+> +Note: Reference Device Tree Implementations are temporary implementations
+> +      to ease the migration from platform devices to Device Tree, and are
+> +      intended to be removed in the future.
+> -- 
+> 1.9.1
+> 
