@@ -1,134 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580AbaH2JXt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 05:23:49 -0400
-Received: from mga09.intel.com ([134.134.136.24]:17600 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750892AbaH2JXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 05:23:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,424,1406617200"; 
-   d="scan'208";a="565258821"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: EmanueL Czirai <amanual@openmailbox.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: [Patch v4] x86, irq, PCI: Keep IRQ assignment for runtime power management
-Date: Fri, 29 Aug 2014 17:26:23 +0800
-Message-Id: <1409304383-18806-1-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752712AbaH2JYO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 05:24:14 -0400
+Received: from mail-bn1lp0142.outbound.protection.outlook.com ([207.46.163.142]:8573
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751006AbaH2JYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 05:24:11 -0400
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>, <moinejf@free.fr>,
+        <kuninori.morimoto.gx@renesas.com>, <jsarha@ti.com>,
+        <alsa-devel@alsa-project.org>
+CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH 0/2] ASoC: simple-card: Fix bug about DT node's refcount
+Date: Fri, 29 Aug 2014 17:19:31 +0800
+Message-ID: <1409303973-1084-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.5
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(979002)(6009001)(189002)(199003)(81542001)(80022001)(92726001)(83322001)(62966002)(69596002)(81156004)(229853001)(77156001)(105606002)(102836001)(74502001)(2201001)(81342001)(68736004)(64706001)(79102001)(50466002)(92566001)(44976005)(50226001)(104016003)(4396001)(87286001)(76482001)(87936001)(106466001)(104166001)(89996001)(50986999)(93916002)(86362001)(6806004)(99396002)(21056001)(95666004)(48376002)(20776003)(47776003)(26826002)(97736001)(31966008)(85306004)(107046002)(36756003)(88136002)(84676001)(74662001)(90102001)(46102001)(77982001)(85852003)(83072002)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR0301MB0614;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0318501FAE
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Li.Xiubo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now IOAPIC driver dynamically allocates IRQ numbers for IOAPIC pins.
-We need to keep IRQ assignment for PCI devices during runtime power
-management, otherwise it may cause failure of device wakeups.
+This patch series hasn't any dependency with the previous one:
+   "[RFC][PATCH] ASoC: simple-card: Merge single and muti DAI link code."
 
-Commit 3eec595235c17a7 "x86, irq, PCI: Keep IRQ assignment for PCI
-devices during suspend/hibernation" has fixed the issue for suspend/
-hibernation, we also need the same fix for runtime device sleep too.
 
-Fix: https://bugzilla.kernel.org/show_bug.cgi?id=83271
-Reported-and-Tested-by: EmanueL Czirai <amanual@openmailbox.org>
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- arch/x86/include/asm/io_apic.h |    2 ++
- arch/x86/kernel/apic/io_apic.c |   12 ++++++++++++
- arch/x86/pci/intel_mid_pci.c   |    2 +-
- arch/x86/pci/irq.c             |    2 +-
- drivers/acpi/pci_irq.c         |    4 ++++
- 5 files changed, 20 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index 0aeed5ca356e..478c490f3654 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -227,6 +227,8 @@ static inline void io_apic_modify(unsigned int apic, unsigned int reg, unsigned
- 
- extern void io_apic_eoi(unsigned int apic, unsigned int vector);
- 
-+extern bool mp_should_keep_irq(struct device *dev);
-+
- #else  /* !CONFIG_X86_IO_APIC */
- 
- #define io_apic_assign_pci_irqs 0
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 29290f554e79..1e9a921d9701 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3946,6 +3946,18 @@ int mp_set_gsi_attr(u32 gsi, int trigger, int polarity, int node)
- 	return ret;
- }
- 
-+bool mp_should_keep_irq(struct device *dev)
-+{
-+	if (dev->power.is_prepared)
-+		return true;
-+#ifdef	CONFIG_PM_RUNTIME
-+	if (dev->power.runtime_status == RPM_SUSPENDING)
-+		return true;
-+#endif
-+
-+	return false;
-+}
-+
- /* Enable IOAPIC early just for system timer */
- void __init pre_init_apic_IRQ0(void)
- {
-diff --git a/arch/x86/pci/intel_mid_pci.c b/arch/x86/pci/intel_mid_pci.c
-index 3865116c51fb..b9958c364075 100644
---- a/arch/x86/pci/intel_mid_pci.c
-+++ b/arch/x86/pci/intel_mid_pci.c
-@@ -229,7 +229,7 @@ static int intel_mid_pci_irq_enable(struct pci_dev *dev)
- 
- static void intel_mid_pci_irq_disable(struct pci_dev *dev)
- {
--	if (!dev->dev.power.is_prepared && dev->irq > 0)
-+	if (!mp_should_keep_irq(&dev->dev) && dev->irq > 0)
- 		mp_unmap_irq(dev->irq);
- }
- 
-diff --git a/arch/x86/pci/irq.c b/arch/x86/pci/irq.c
-index bc1a2c341891..eb500c2592ad 100644
---- a/arch/x86/pci/irq.c
-+++ b/arch/x86/pci/irq.c
-@@ -1256,7 +1256,7 @@ static int pirq_enable_irq(struct pci_dev *dev)
- 
- static void pirq_disable_irq(struct pci_dev *dev)
- {
--	if (io_apic_assign_pci_irqs && !dev->dev.power.is_prepared &&
-+	if (io_apic_assign_pci_irqs && !mp_should_keep_irq(&dev->dev) &&
- 	    dev->irq) {
- 		mp_unmap_irq(dev->irq);
- 		dev->irq = 0;
-diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
-index c96887d5289e..6e6b80eb0bba 100644
---- a/drivers/acpi/pci_irq.c
-+++ b/drivers/acpi/pci_irq.c
-@@ -484,6 +484,10 @@ void acpi_pci_irq_disable(struct pci_dev *dev)
- 	/* Keep IOAPIC pin configuration when suspending */
- 	if (dev->dev.power.is_prepared)
- 		return;
-+#ifdef	CONFIG_PM_RUNTIME
-+	if (dev->dev.power.runtime_status == RPM_SUSPENDING)
-+		return;
-+#endif
- 
- 	entry = acpi_pci_irq_lookup(dev, pin);
- 	if (!entry)
+Xiubo Li (2):
+  ASoC: simple-card: Fix bug of forgetting decrement DT node's refcount
+  ASoC: simple-card: Fix bug of wrong decrement DT node's refcount
+
+ sound/soc/generic/simple-card.c | 53 ++++++++++++++++++++++-------------------
+ 1 file changed, 29 insertions(+), 24 deletions(-)
+
 -- 
-1.7.10.4
+1.8.5
 
