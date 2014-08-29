@@ -1,163 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751509AbaH2VWW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 17:22:22 -0400
-Received: from mail-yk0-f170.google.com ([209.85.160.170]:36986 "EHLO
-	mail-yk0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751234AbaH2VWU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 17:22:20 -0400
-From: Jeff Layton <jeff.layton@primarydata.com>
-X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
-Date: Fri, 29 Aug 2014 17:22:16 -0400
-To: "J. Bruce Fields" <bfields@redhat.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>, stable@vger.kernel.org,
-        Raphos <raphoszap@laposte.net>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "'Alexey Lugovskoy'" <lugovskoy@dev.rtsoft.ru>,
-        Konstantin Kholopov <kkholopov@dev.rtsoft.ru>,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
-Subject: Re: 3.10.y regression caused by:  lockd: ensure we tear down any
- live sockets when socket creation fails during lockd_up
-Message-ID: <20140829172216.18aac86a@synchrony.poochiereds.net>
-In-Reply-To: <20140829202532.GA8204@pad.redhat.com>
-References: <53A4177B.6060300@dev.rtsoft.ru>
-	<20140707222721.GC11171@kroah.com>
-	<20140829202532.GA8204@pad.redhat.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	id S1751275AbaH2V0W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 17:26:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11829 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750788AbaH2V0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 17:26:21 -0400
+Date: Fri, 29 Aug 2014 17:26:04 -0400
+From: Rafael Aquini <aquini@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>, linux-mm@kvack.org,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrey Ryabinin <ryabinin.a.a@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/7] mm/balloon_compaction: general cleanup
+Message-ID: <20140829212604.GA20984@t510.redhat.com>
+References: <20140820150435.4194.28003.stgit@buzz>
+ <20140820150509.4194.24336.stgit@buzz>
+ <20140829140521.ca9b1dc87c8bc4b075f5b083@linux-foundation.org>
+ <20140829210955.GB11878@t510.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140829210955.GB11878@t510.redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Aug 2014 16:25:33 -0400
-"J. Bruce Fields" <bfields@redhat.com> wrote:
-
-> On Mon, Jul 07, 2014 at 03:27:21PM -0700, Greg Kroah-Hartman wrote:
-> > On Fri, Jun 20, 2014 at 03:14:03PM +0400, Nikita Yushchenko wrote:
-> > > With current 3.10.y, if kernel is booted with init=/bin/sh and then nfs mount
-> > > is attempted (without portmap or rpcbind running) using busybox mount, following
-> > > OOPS happen:
-> > > 
-> > > # mount -t nfs 10.30.130.21:/opt /mnt
-> > > svc: failed to register lockdv1 RPC service (errno 111).
-> > > lockd_up: makesock failed, error=-111
-> > > Unable to handle kernel paging request for data at address 0x00000030
-> > > Faulting instruction address: 0xc055e65c
-> > > Oops: Kernel access of bad area, sig: 11 [#1]
-> > > MPC85xx CDS
-> > > Modules linked in:
-> > > CPU: 0 PID: 1338 Comm: mount Not tainted 3.10.44.cge #117
-> > > task: cf29cea0 ti: cf35c000 task.ti: cf35c000
-> > > NIP: c055e65c LR: c0566490 CTR: c055e648
-> > > REGS: cf35dad0 TRAP: 0300   Not tainted  (3.10.44.cge)
-> > > MSR: 00029000 <CE,EE,ME>  CR: 22442488  XER: 20000000
-> > > DEAR: 00000030, ESR: 00000000
-> > > 
-> > > GPR00: c05606f4 cf35db80 cf29cea0 cf0ded80 cf0dedb8 00000001 1dec3086 00000000 
-> > > GPR08: 00000000 c07b1640 00000007 1dec3086 22442482 100b9758 00000000 10090ae8 
-> > > GPR16: 00000000 000186a5 00000000 00000000 100c3018 bfa46edc 100b0000 bfa46ef0 
-> > > GPR24: cf386ae0 c07834f0 00000000 c0565f88 00000001 cf0dedb8 00000000 cf0ded80 
-> > > NIP [c055e65c] call_start+0x14/0x34
-> > > LR [c0566490] __rpc_execute+0x70/0x250
-> > > Call Trace:
-> > > [cf35db80] [00000080] 0x80 (unreliable)
-> > > [cf35dbb0] [c05606f4] rpc_run_task+0x9c/0xc4
-> > > [cf35dbc0] [c0560840] rpc_call_sync+0x50/0xb8
-> > > [cf35dbf0] [c056ee90] rpcb_register_call+0x54/0x84
-> > > [cf35dc10] [c056f24c] rpcb_register+0xf8/0x10c
-> > > [cf35dc70] [c0569e18] svc_unregister.isra.23+0x100/0x108
-> > > [cf35dc90] [c0569e38] svc_rpcb_cleanup+0x18/0x30
-> > > [cf35dca0] [c0198c5c] lockd_up+0x1dc/0x2e0
-> > > [cf35dcd0] [c0195348] nlmclnt_init+0x2c/0xc8
-> > > [cf35dcf0] [c015bb5c] nfs_start_lockd+0x98/0xec
-> > > [cf35dd20] [c015ce6c] nfs_create_server+0x1e8/0x3f4
-> > > [cf35dd90] [c0171590] nfs3_create_server+0x10/0x44
-> > > [cf35dda0] [c016528c] nfs_try_mount+0x158/0x1e4
-> > > [cf35de20] [c01670d0] nfs_fs_mount+0x434/0x8c8
-> > > [cf35de70] [c00cd3bc] mount_fs+0x20/0xbc
-> > > [cf35de90] [c00e4f88] vfs_kern_mount+0x50/0x104
-> > > [cf35dec0] [c00e6e0c] do_mount+0x1d0/0x8e0
-> > > [cf35df10] [c00e75ac] SyS_mount+0x90/0xd0
-> > > [cf35df40] [c000ccf4] ret_from_syscall+0x0/0x3c
-> > > --- Exception: c01 at 0xff2acc4
-> > >     LR = 0x10048ab8
-> > > Instruction dump:
-> > > 3d20c056 3929e648 91230028 38600001 4e800020 38600000 4e800020 81230014 
-> > > 8103000c 81490014 394a0001 91490014 <81280030> 81490018 394a0001 91490018 
-> > > ---[ end trace 033b5b4715cb5452 ]---
-> > > 
-> > > 
-> > > This does not happen if
-> > > 
-> > > commit 72a6e594497032bd911bd187a88fae4b4473abb3
-> > > Author: Jeff Layton <jlayton@redhat.com>
-> > > Date:   Tue Mar 25 11:55:26 2014 -0700
-> > > 
-> > >     lockd: ensure we tear down any live sockets when socket creation fails during lockd_up
-> > >     
-> > >     commit 679b033df48422191c4cac52b610d9980e019f9b upstream.
-> > > 
-> > > is reverted:
-> > > 
-> > > # mount -t nfs 10.30.130.21:/opt /mnt
-> > > svc: failed to register lockdv1 RPC service (errno 111).
-> > > lockd_up: makesock failed, error=-111
-> > > mount: mounting 10.30.130.21:/opt on /mnt failed: Connection refused
-> > > #
-> > > 
-> > > 
-> > > Physical reason of the OOPS is that:
-> > > 
-> > > - addition of svc_shutdown_net() call to error path of make_socks() causes
-> > > double call of svc_rpcb_cleanup():
-> > >   - first call is from within svc_shutdown_net(), because serv->sv_shutdown
-> > > points to svc_rpcb_cleanup() at this time,
-> > >   - immediately followed by second call from lockd_up_net()'s error path
-> > > 
-> > > - when second svc_rpcb_cleanup() is executed, then at
-> > >   svc_unregister() -> __svc_unregister() -> rpcb_register() -> rpcb_register_call()
-> > > call path, rpcb_register_call() is called with clnt=NULL.
+On Fri, Aug 29, 2014 at 05:09:55PM -0400, Rafael Aquini wrote:
+> On Fri, Aug 29, 2014 at 02:05:21PM -0700, Andrew Morton wrote:
+> > On Wed, 20 Aug 2014 19:05:09 +0400 Konstantin Khlebnikov <k.khlebnikov@samsung.com> wrote:
 > > 
-> > So, Jeff, what should I do here?  Drop this patch from 3.10?  Add
-> > something else to fix it up?  Something else entirely?
-> 
-> Sorry this got ignored.  Adding more useful addressess....
-> 
-> So looks like the new svc_shutdown_net made lockd_up_net's cleanup
-> redundant, and just removing it might do the job?
-> 
-> --b.
-> 
-> diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
-> index 673668a9eec1..685e953c5103 100644
-> --- a/fs/lockd/svc.c
-> +++ b/fs/lockd/svc.c
-> @@ -253,13 +253,11 @@ static int lockd_up_net(struct svc_serv *serv, struct net *net)
->  
->  	error = make_socks(serv, net);
->  	if (error < 0)
-> -		goto err_socks;
-> +		goto err_bind;
->  	set_grace_period(net);
->  	dprintk("lockd_up_net: per-net data created; net=%p\n", net);
->  	return 0;
->  
-> -err_socks:
-> -	svc_rpcb_cleanup(serv, net);
->  err_bind:
->  	ln->nlmsvc_users--;
->  	return error;
+> > > * move special branch for balloon migraion into migrate_pages
+> > > * remove special mapping for balloon and its flag AS_BALLOON_MAP
+> > > * embed struct balloon_dev_info into struct virtio_balloon
+> > > * cleanup balloon_page_dequeue, kill balloon_page_free
+> > > 
+> > 
+> > grump.
+> > 
+> > diff -puN include/linux/balloon_compaction.h~mm-balloon_compaction-general-cleanup-fix include/linux/balloon_compaction.h
+> > --- a/include/linux/balloon_compaction.h~mm-balloon_compaction-general-cleanup-fix
+> > +++ a/include/linux/balloon_compaction.h
+> > @@ -145,7 +145,7 @@ static inline void
+> >  balloon_page_insert(struct balloon_dev_info *balloon, struct page *page)
+> >  {
+> >  	__SetPageBalloon(page);
+> > -	list_add(&page->lru, head);
+> > +	list_add(&page->lru, &balloon->pages);
+> >  }
+> >  
+> >  static inline void balloon_page_delete(struct page *page, bool isolated)
+> > 
+> > 
+> > This obviously wasn't tested with CONFIG_BALLOON_COMPACTION=n.  Please
+> > complete the testing of this patchset and let us know the result?
+> >
+>
 
-Oof -- sorry I missed this. Must have gotten lost in the shuffle with my
-email address change...
+Btw, I'll do a mea culpa here. Although this build failure was addressed
+by my extra-cleanup suggestion, I never made that statement clear at my
+original message.
 
-Yeah, that patch looks correct to me. I do wish the whole svc
-setup/shutdown codepath weren't so godawful complicated, but that's not
-a trivial thing to untangle at this point (particularly not in the
-context of -stable).
+http://permalink.gmane.org/gmane.linux.kernel.mm/121788
 
-Acked-by: Jeff Layton <jlayton@primarydata.com>
+Sorry,
+-- Rafael
+ 
+> That also reminds me why I suggested moving those as static inlines into mm.h, 
+> instead of getting them hidden in mm/balloon_compaction.c
+> 
+> Cheers,
+> -- Rafael
