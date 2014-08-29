@@ -1,49 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751249AbaH2U2y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 16:28:54 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:52658 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750924AbaH2U2x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 16:28:53 -0400
-X-CheckPoint: {5400E285-A-2100090A-C0000000}
-Message-ID: <5400E284.3020304@tilera.com>
-Date: Fri, 29 Aug 2014 16:28:52 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1750995AbaH2UkO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 16:40:14 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:36234 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750784AbaH2UkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 16:40:12 -0400
+Date: Fri, 29 Aug 2014 15:40:05 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Shea Levy <shea@shealevy.com>
+CC: Felipe Balbi <balbi@ti.com>, Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
+        <linux-usb@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] usb: gadget: Remove use of PWD in Makefiles
+Message-ID: <20140829204005.GA16391@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1409203846-11007-1-git-send-email-shea@shealevy.com>
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: David Howells <dhowells@redhat.com>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/4] tile: Remove tile-specific _sinitdata and _einitdata
-References: <1409343516-5132-1-git-send-email-geert@linux-m68k.org> <1409343516-5132-4-git-send-email-geert@linux-m68k.org>
-In-Reply-To: <1409343516-5132-4-git-send-email-geert@linux-m68k.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.9.0.23]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7JfCtLOvnd9MIVvH"
+Content-Disposition: inline
+In-Reply-To: <1409203846-11007-1-git-send-email-shea@shealevy.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/29/2014 4:18 PM, Geert Uytterhoeven wrote:
-> Use standard __init_begin and __init_end instead.
->
-> Signed-off-by: Geert Uytterhoeven<geert@linux-m68k.org>
-> Acked-by: Chris Metcalf<cmetcalf@tilera.com>
-> ---
->   arch/tile/include/asm/sections.h |  3 ---
->   arch/tile/kernel/vmlinux.lds.S   |  2 --
->   arch/tile/mm/init.c              | 10 +++++-----
->   3 files changed, 5 insertions(+), 10 deletions(-)
+--7JfCtLOvnd9MIVvH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This is still in the tile tree; I missed the merge window for 3.17
-since I was lazing around on the beach, but I'll push it to Linus
-for 3.18.
+On Thu, Aug 28, 2014 at 01:30:46AM -0400, Shea Levy wrote:
+> Using PWD breaks out-of-tree builds in certain circumstances [1], and
+> other kernel Makefiles use relative paths just fine.
+>=20
+> [1]: https://bugzilla.kernel.org/show_bug.cgi?id=3D83251
+>=20
+> Signed-off-by: Shea Levy <shea@shealevy.com>
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+There is already another version for this patch which is in my
+testing/fixes branch
 
+--=20
+balbi
+
+--7JfCtLOvnd9MIVvH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUAOUlAAoJEIaOsuA1yqRE2+kP/3C7zpTFbgDfFfKdVbhu8XVS
+wOWZBaWVM7FmOIcZDU7Y3NzqSrnvGNvK3n2AscJKCqftyNik7AOheLeqnn4jpzlR
+pgvQ7rOAH3g34Iw/axjLOo3kizxQ9Ejeh+/144aoTKbnjzottYwNcjv2X/TNHaPv
+KsNzWZU+hChEhriTeTgrcD+kRkWz/TH2VagGrXLay8cXoJNJ98vtt9nn4vfE3tEu
+K5hz6DhuR8o1weQZO4UWMQ268yeL8ROYCnlubFslSORwsVPtTw2AVWM9X/OM8gS7
+5Ey7tWUdjOEQZTiEyavS54ZyLqwQ8c5svL5ygTEXb+pOu2Jjq3wqm0fyFNJxxo2f
+MuQrFLdZtWwvhKQFh0kms8v4sERJ0FfKJZFLjVb2B8Wv2vhTLcU7AFRP2K4iIhEQ
+35ya/zqGK+LilWMIlFgaxiysLNBIGYPzF9+8a/Qortf13xjAVnTz3IpwogVcTmSP
+4CXKtEy72F4/Gn7Q3GXuEpgdQsb9SspyWsyAbSVp1G7EYUUoCYFLntBkGJSpqHOX
+wpEmtifrZ+R761z0PGRv7CeVuJ+Fu+jVqCnMG0LCegnJmEzx0r97Mh+VigpLbTu+
+d68Q7rEJBqv4r3HPrO2MPQZl3oIYEPhiRccDOkv8XNDxuFehw4AEAJHKzTHxI8/2
+g/9v7WD9BYKexX6+t3+/
+=KkRf
+-----END PGP SIGNATURE-----
+
+--7JfCtLOvnd9MIVvH--
