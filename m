@@ -1,246 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753340AbaH2MB4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 08:01:56 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:34312 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751006AbaH2MBy (ORCPT
+	id S1752853AbaH2MI4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 08:08:56 -0400
+Received: from regular1.263xmail.com ([211.150.99.138]:47150 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751006AbaH2MIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 08:01:54 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Cc: rkrcmar@redhat.com
-Subject: [PATCH] KVM: forward declare structs in kvm_types.h
-Date: Fri, 29 Aug 2014 14:01:47 +0200
-Message-Id: <1409313707-7791-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
+	Fri, 29 Aug 2014 08:08:54 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: huangtao@rock-chips.com
+X-FST-TO: huangtao@rock-chips.com
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: huangtao@rock-chips.com
+X-UNIQUE-TAG: <766a18d078addef3bab3b6407c56332e>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+Message-ID: <54006D4C.2070404@rock-chips.com>
+Date: Fri, 29 Aug 2014 20:08:44 +0800
+From: Huang Tao <huangtao@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: "edubezval@gmail.com" <edubezval@gmail.com>,
+        =?UTF-8?B?6LW15Luq5bOw?= <zyf@rock-chips.com>
+CC: =?UTF-8?B?SGVpa29TdMO8Ym5lcg==?= <heiko@sntech.de>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Caesar Wang <caesar.wang@rock-chips.com>,
+        "rui.zhang" <rui.zhang@intel.com>,
+        "grant.likely" <grant.likely@linaro.org>, robh+dt <robh+dt@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-doc <linux-doc@vger.kernel.org>,
+        =?UTF-8?B?6JSh5p6r?= <cf@rock-chips.com>,
+        dianders <dianders@chromium.org>, dtor <dtor@chromium.org>,
+        =?UTF-8?B?6ZKf5YuH5rGq?= <zyw@rock-chips.com>,
+        "addy.ke@rock-chips.com" <addy.ke@rock-chips.com>,
+        "dmitry.torokhov" <dmitry.torokhov@gmail.com>,
+        linux-iio <linux-iio@vger.kernel.org>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: Re: [PATCH v3 1/4] thermal: rockchip: add driver for thermal
+References: <1409187562-12370-1-git-send-email-caesar.wang@rock-chips.com>	<2852853.mfRZfFVSev@wuerfel>	<20140828143733.GA18084@developer>	<3440260.edal29kzlR@diego>	<2014082909531345696848@rock-chips.com> <CAC-25o-winy6jVjh9_hQ-t2VO2UfxG67pW5DpOve8A2o39EJSw@mail.gmail.com>
+In-Reply-To: <CAC-25o-winy6jVjh9_hQ-t2VO2UfxG67pW5DpOve8A2o39EJSw@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Opaque KVM structs are useful for prototypes in asm/kvm_host.h, to avoid
-"'struct foo' declared inside parameter list" warnings (and consequent
-breakage due to conflicting types).
+Dear Eduardo Bezerra Valentin:
 
-Move them from individual files to a generic place in linux/kvm_types.h.
+在 2014年08月29日 19:39, edubezval@gmail.com 写道:
+> Hello Zhao,
+>
+> On Thu, Aug 28, 2014 at 9:54 PM, 赵仪峰 <zyf@rock-chips.com> wrote:
+>> Hi Heiko，
+>>
+>>    The TS-ADC on RK3288 has two component, a tsadc and a tsadc controller.
+>> The tsadc controller is similar like the thermal manager unit on other SOCs.
+>> We followed the naming of 3066, but not named as the Thermal Manager.
+>>
+>>    Moreover,there is only one set of apb registers to access the tsadc
+>> controller,and the tsadc is controlled by the tsadc controller,could not
+>> access directly. If we write a general tsadc driver by accessed tsadc
+>> controller registers, and it hardly to write a driver for the tsadc
+>> controller.
+> As suggested by Arnd, you can use the generic driver as interface
+> between thermal framework and IIO layer. The driver you are going to
+> write to your ADC is going to be in the IIO subsystem. The only
+> difference is that the generic driver would work for any ADC driver in
+> the IIO subsystem.
+> https://lkml.org/lkml/2014/2/5/810
+>
+> In fact, there is already a generic driver. We just need to get it up
+> to date.  I see some testing has been already done, and results sound
+> promising.
+This iio_thermal driver only support get temperature from the ADC IIO
+channel.
+It dose not support any advanced feature such as configure the
+temperature when system should be reset.
+So if we adapt it, we will access the register form both TSADC IIO
+driver and  thermal driver.
+I don't thank this is a good ideal.
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- arch/arm/include/asm/kvm_host.h     |  7 ++-----
- arch/arm64/include/asm/kvm_host.h   |  6 ++----
- arch/ia64/include/asm/kvm_host.h    |  3 ---
- arch/mips/include/asm/kvm_host.h    |  5 -----
- arch/powerpc/include/asm/kvm_host.h |  5 -----
- arch/s390/include/asm/kvm_host.h    |  5 +++--
- arch/x86/include/asm/kvm_host.h     |  4 ----
- include/linux/kvm_types.h           | 11 +++++++++++
- 8 files changed, 18 insertions(+), 28 deletions(-)
+In fact, we should ignore the "ADC" stuff. This sensor use ADC internal,
+but it is transparent to software, especially in automatic mode.
+>
+>>    So, I do not agree to write a generic adc driver for the rk3288-tsadc.
+>>
+>> ________________________________
+>> Yifeng Zhao
+>>
+>>
 
-diff --git a/arch/arm/include/asm/kvm_host.h b/arch/arm/include/asm/kvm_host.h
-index 84291feee9e1..aea259e9431f 100644
---- a/arch/arm/include/asm/kvm_host.h
-+++ b/arch/arm/include/asm/kvm_host.h
-@@ -19,6 +19,8 @@
- #ifndef __ARM_KVM_HOST_H__
- #define __ARM_KVM_HOST_H__
- 
-+#include <linux/types.h>
-+#include <linux/kvm_types.h>
- #include <asm/kvm.h>
- #include <asm/kvm_asm.h>
- #include <asm/kvm_mmio.h>
-@@ -40,7 +42,6 @@
- 
- #include <kvm/arm_vgic.h>
- 
--struct kvm_vcpu;
- u32 *kvm_vcpu_reg(struct kvm_vcpu *vcpu, u8 reg_num, u32 mode);
- int kvm_target_cpu(void);
- int kvm_reset_vcpu(struct kvm_vcpu *vcpu);
-@@ -149,20 +150,17 @@ struct kvm_vcpu_stat {
- 	u32 halt_wakeup;
- };
- 
--struct kvm_vcpu_init;
- int kvm_vcpu_set_target(struct kvm_vcpu *vcpu,
- 			const struct kvm_vcpu_init *init);
- int kvm_vcpu_preferred_target(struct kvm_vcpu_init *init);
- unsigned long kvm_arm_num_regs(struct kvm_vcpu *vcpu);
- int kvm_arm_copy_reg_indices(struct kvm_vcpu *vcpu, u64 __user *indices);
--struct kvm_one_reg;
- int kvm_arm_get_reg(struct kvm_vcpu *vcpu, const struct kvm_one_reg *reg);
- int kvm_arm_set_reg(struct kvm_vcpu *vcpu, const struct kvm_one_reg *reg);
- u64 kvm_call_hyp(void *hypfn, ...);
- void force_vm_exit(const cpumask_t *mask);
- 
- #define KVM_ARCH_WANT_MMU_NOTIFIER
--struct kvm;
- int kvm_unmap_hva(struct kvm *kvm, unsigned long hva);
- int kvm_unmap_hva_range(struct kvm *kvm,
- 			unsigned long start, unsigned long end);
-@@ -187,7 +185,6 @@ struct kvm_vcpu __percpu **kvm_get_running_vcpus(void);
- 
- int kvm_arm_copy_coproc_indices(struct kvm_vcpu *vcpu, u64 __user *uindices);
- unsigned long kvm_arm_num_coproc_regs(struct kvm_vcpu *vcpu);
--struct kvm_one_reg;
- int kvm_arm_coproc_get_reg(struct kvm_vcpu *vcpu, const struct kvm_one_reg *);
- int kvm_arm_coproc_set_reg(struct kvm_vcpu *vcpu, const struct kvm_one_reg *);
- 
-diff --git a/arch/arm64/include/asm/kvm_host.h b/arch/arm64/include/asm/kvm_host.h
-index 94d8a3c9b644..b5045e3e05f8 100644
---- a/arch/arm64/include/asm/kvm_host.h
-+++ b/arch/arm64/include/asm/kvm_host.h
-@@ -22,6 +22,8 @@
- #ifndef __ARM64_KVM_HOST_H__
- #define __ARM64_KVM_HOST_H__
- 
-+#include <linux/types.h>
-+#include <linux/kvm_types.h>
- #include <asm/kvm.h>
- #include <asm/kvm_asm.h>
- #include <asm/kvm_mmio.h>
-@@ -41,7 +43,6 @@
- 
- #define KVM_VCPU_MAX_FEATURES 3
- 
--struct kvm_vcpu;
- int kvm_target_cpu(void);
- int kvm_reset_vcpu(struct kvm_vcpu *vcpu);
- int kvm_arch_dev_ioctl_check_extension(long ext);
-@@ -164,18 +165,15 @@ struct kvm_vcpu_stat {
- 	u32 halt_wakeup;
- };
- 
--struct kvm_vcpu_init;
- int kvm_vcpu_set_target(struct kvm_vcpu *vcpu,
- 			const struct kvm_vcpu_init *init);
- int kvm_vcpu_preferred_target(struct kvm_vcpu_init *init);
- unsigned long kvm_arm_num_regs(struct kvm_vcpu *vcpu);
- int kvm_arm_copy_reg_indices(struct kvm_vcpu *vcpu, u64 __user *indices);
--struct kvm_one_reg;
- int kvm_arm_get_reg(struct kvm_vcpu *vcpu, const struct kvm_one_reg *reg);
- int kvm_arm_set_reg(struct kvm_vcpu *vcpu, const struct kvm_one_reg *reg);
- 
- #define KVM_ARCH_WANT_MMU_NOTIFIER
--struct kvm;
- int kvm_unmap_hva(struct kvm *kvm, unsigned long hva);
- int kvm_unmap_hva_range(struct kvm *kvm,
- 			unsigned long start, unsigned long end);
-diff --git a/arch/ia64/include/asm/kvm_host.h b/arch/ia64/include/asm/kvm_host.h
-index 353167d95c66..4729752b7256 100644
---- a/arch/ia64/include/asm/kvm_host.h
-+++ b/arch/ia64/include/asm/kvm_host.h
-@@ -234,9 +234,6 @@ struct kvm_vm_data {
- #define KVM_REQ_PTC_G		32
- #define KVM_REQ_RESUME		33
- 
--struct kvm;
--struct kvm_vcpu;
--
- struct kvm_mmio_req {
- 	uint64_t addr;          /*  physical address		*/
- 	uint64_t size;          /*  size in bytes		*/
-diff --git a/arch/mips/include/asm/kvm_host.h b/arch/mips/include/asm/kvm_host.h
-index b4d900acbdb9..0b24d6622ec1 100644
---- a/arch/mips/include/asm/kvm_host.h
-+++ b/arch/mips/include/asm/kvm_host.h
-@@ -96,11 +96,6 @@
- #define CAUSEB_DC			27
- #define CAUSEF_DC			(_ULCAST_(1) << 27)
- 
--struct kvm;
--struct kvm_run;
--struct kvm_vcpu;
--struct kvm_interrupt;
--
- extern atomic_t kvm_mips_instance;
- extern pfn_t(*kvm_mips_gfn_to_pfn) (struct kvm *kvm, gfn_t gfn);
- extern void (*kvm_mips_release_pfn_clean) (pfn_t pfn);
-diff --git a/arch/powerpc/include/asm/kvm_host.h b/arch/powerpc/include/asm/kvm_host.h
-index 0e646c1bff13..237cc0cc80a2 100644
---- a/arch/powerpc/include/asm/kvm_host.h
-+++ b/arch/powerpc/include/asm/kvm_host.h
-@@ -53,7 +53,6 @@
- 
- #define KVM_ARCH_WANT_MMU_NOTIFIER
- 
--struct kvm;
- extern int kvm_unmap_hva(struct kvm *kvm, unsigned long hva);
- extern int kvm_unmap_hva_range(struct kvm *kvm,
- 			       unsigned long start, unsigned long end);
-@@ -76,10 +75,6 @@ extern void kvm_set_spte_hva(struct kvm *kvm, unsigned long hva, pte_t pte);
- /* Physical Address Mask - allowed range of real mode RAM access */
- #define KVM_PAM			0x0fffffffffffffffULL
- 
--struct kvm;
--struct kvm_run;
--struct kvm_vcpu;
--
- struct lppaca;
- struct slb_shadow;
- struct dtl_entry;
-diff --git a/arch/s390/include/asm/kvm_host.h b/arch/s390/include/asm/kvm_host.h
-index cee2be94e4ae..f6dd90684b97 100644
---- a/arch/s390/include/asm/kvm_host.h
-+++ b/arch/s390/include/asm/kvm_host.h
-@@ -13,8 +13,11 @@
- 
- #ifndef ASM_KVM_HOST_H
- #define ASM_KVM_HOST_H
-+
-+#include <linux/types.h>
- #include <linux/hrtimer.h>
- #include <linux/interrupt.h>
-+#include <linux/kvm_types.h>
- #include <linux/kvm_host.h>
- #include <linux/kvm.h>
- #include <asm/debug.h>
-@@ -431,8 +434,6 @@ static inline bool kvm_is_error_hva(unsigned long addr)
- }
- 
- #define ASYNC_PF_PER_VCPU	64
--struct kvm_vcpu;
--struct kvm_async_pf;
- struct kvm_arch_async_pf {
- 	unsigned long pfault_token;
- };
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index ac0f90e26a0b..567fface45f8 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -99,10 +99,6 @@ static inline gfn_t gfn_to_index(gfn_t gfn, gfn_t base_gfn, int level)
- 
- #define ASYNC_PF_PER_VCPU 64
- 
--struct kvm_vcpu;
--struct kvm;
--struct kvm_async_pf;
--
- enum kvm_reg {
- 	VCPU_REGS_RAX = 0,
- 	VCPU_REGS_RCX = 1,
-diff --git a/include/linux/kvm_types.h b/include/linux/kvm_types.h
-index b0bcce0ddc95..1d6daca4927a 100644
---- a/include/linux/kvm_types.h
-+++ b/include/linux/kvm_types.h
-@@ -17,6 +17,17 @@
- #ifndef __KVM_TYPES_H__
- #define __KVM_TYPES_H__
- 
-+struct kvm;
-+struct kvm_async_pf;
-+struct kvm_interrupt;
-+struct kvm_memory_slot;
-+struct kvm_one_reg;
-+struct kvm_run;
-+struct kvm_userspace_memory_region;
-+struct kvm_vcpu;
-+struct kvm_vcpu_init;
-+enum kvm_mr_change;
-+
- #include <asm/types.h>
- 
- /*
--- 
-1.8.3.1
 
