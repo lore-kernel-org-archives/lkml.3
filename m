@@ -1,92 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752675AbaH2Bcx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 21:32:53 -0400
-Received: from mga01.intel.com ([192.55.52.88]:52978 "EHLO mga01.intel.com"
+	id S1752526AbaH2BjU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 21:39:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14689 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752625AbaH2Bcv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 21:32:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="378454979"
-From: Lv Zheng <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>
-Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Bob Moore <robert.moore@intel.com>
-Subject: [PATCH] ACPICA: ACPI 5.1: Add support for runtime validation of _DSD package.
-Date: Fri, 29 Aug 2014 09:32:42 +0800
-Message-Id: <856f29de2607cab36bb3936fae26daa275e0b129.1409275857.git.lv.zheng@intel.com>
-X-Mailer: git-send-email 1.7.10
+	id S1751476AbaH2BjR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 21:39:17 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>
+Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: [PATCH 0/6] hugepage migration fixes (v3)
+Date: Thu, 28 Aug 2014 21:38:54 -0400
+Message-Id: <1409276340-7054-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
+This is the ver.3 of hugepage migration fix patchset.
 
-Adds ACPICA kernel runtime support to validate contents/format
-of the _DSD package, similar to the iASL support. Ported by
-Mika Westerberg.
+The original problem discussed with Hugh was that follow_huge_pmd(FOLL_GET)
+looks to do get_page() without any locking (fixed in patch 2/6). However,
+thorough testing showed that we have more fundamental issue on hugetlb_fault(),
+where it suffers the race related to migration entry. This will be fixed in
+patch 3/6.
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Bob Moore <robert.moore@intel.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+And as a cosmetic/readability issue, currently follow_huge_(addr|pud|pmd) are
+defined in common code or in arch-dependent code, depending on
+CONFIG_ARCH_WANT_GENERAL_HUGETLB. But in reality, most architectures are doing
+the same thing, so patch 1/6 cleans it up and leaves arch-dependent implementation
+only if necessary, which decreases code by more than 100 lines.
+
+Another point mentioned in the previous cycle is that we repeated fixing
+migration entry issues again and again, which is inefficient considering
+all such patches are backported to stable trees. So it's nice to completely
+fix the similar problems at one time.
+I researched the all code calling huge_pte_offset() and checked if !pte_present()
+case is properly handled or not, and found that only 2 points missed it,
+each of which is fixed in patch 4/6 and 5/6.
+There are some non-trivial cases, so I put justifications for them below:
+- mincore_hugetlb_page_range() determines present only by
+  (ptep && !huge_pte_none()), but it's fine because we can consider migrating
+  hugepage or hwpoisoned hugepage as in-memory.
+- follow_huge_addr@arch/ia64/mm/hugetlbpage.c don't have to check pte_present,
+  because ia64 doesn't support hugepage migration or hwpoison, so never sees
+  migration entry.
+- huge_pmd_share() is called only when pud_none() returns true, but then
+  pmd is never migration/hwpoisoned entry.
+
+Patch 6/6 is a just cleanup of an unused parameter.
+
+This patchset is based on mmotm-2014-08-25-16-52 and shows no regression
+in libhugetlbfs test.
+
+I'd like to add Hugh's Suggested-by tags on patch 2 and 3 if he is OK,
+because the solutions are mostly based on his idea.
+
+Tree: git@github.com:Naoya-Horiguchi/linux.git
+Branch: mmotm-2014-08-25-16-52/fix_follow_huge_pmd.v3
+
+v2: http://thread.gmane.org/gmane.linux.kernel/1761065
 ---
- drivers/acpi/acpica/nsprepkg.c |   39 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 39 insertions(+)
+Summary:
 
-diff --git a/drivers/acpi/acpica/nsprepkg.c b/drivers/acpi/acpica/nsprepkg.c
-index 68f7258..1b13b92 100644
---- a/drivers/acpi/acpica/nsprepkg.c
-+++ b/drivers/acpi/acpica/nsprepkg.c
-@@ -316,6 +316,45 @@ acpi_ns_check_package(struct acpi_evaluate_info *info,
- 		    acpi_ns_check_package_list(info, package, elements, count);
- 		break;
- 
-+	case ACPI_PTYPE2_UUID_PAIR:
-+
-+		/* The package must contain pairs of (UUID + type) */
-+
-+		if (count & 1) {
-+			expected_count = count + 1;
-+			goto package_too_small;
-+		}
-+
-+		while (count > 0) {
-+			status = acpi_ns_check_object_type(info, elements,
-+							   package->ret_info.
-+							   object_type1, 0);
-+			if (ACPI_FAILURE(status)) {
-+				return (status);
-+			}
-+
-+			/* Validate length of the UUID buffer */
-+
-+			if ((*elements)->buffer.length != 16) {
-+				ACPI_WARN_PREDEFINED((AE_INFO,
-+						      info->full_pathname,
-+						      info->node_flags,
-+						      "Invalid length for UUID Buffer"));
-+				return (AE_AML_OPERAND_VALUE);
-+			}
-+
-+			status = acpi_ns_check_object_type(info, elements + 1,
-+							   package->ret_info.
-+							   object_type2, 0);
-+			if (ACPI_FAILURE(status)) {
-+				return (status);
-+			}
-+
-+			elements += 2;
-+			count -= 2;
-+		}
-+		break;
-+
- 	default:
- 
- 		/* Should not get here if predefined info table is correct */
--- 
-1.7.10
+Naoya Horiguchi (6):
+      mm/hugetlb: reduce arch dependent code around follow_huge_*
+      mm/hugetlb: take page table lock in follow_huge_(addr|pmd|pud)()
+      mm/hugetlb: fix getting refcount 0 page in hugetlb_fault()
+      mm/hugetlb: add migration entry check in hugetlb_change_protection
+      mm/hugetlb: add migration entry check in __unmap_hugepage_range
+      mm/hugetlb: remove unused argument of follow_huge_addr()
 
+ arch/arm/mm/hugetlbpage.c     |   6 --
+ arch/arm64/mm/hugetlbpage.c   |   6 --
+ arch/ia64/mm/hugetlbpage.c    |  17 +++---
+ arch/metag/mm/hugetlbpage.c   |  10 +---
+ arch/mips/mm/hugetlbpage.c    |  18 ------
+ arch/powerpc/mm/hugetlbpage.c |  28 +++++----
+ arch/s390/mm/hugetlbpage.c    |  20 -------
+ arch/sh/mm/hugetlbpage.c      |  12 ----
+ arch/sparc/mm/hugetlbpage.c   |  12 ----
+ arch/tile/mm/hugetlbpage.c    |  28 ---------
+ arch/x86/mm/hugetlbpage.c     |  14 +----
+ include/linux/hugetlb.h       |  17 +++---
+ mm/gup.c                      |  27 ++-------
+ mm/hugetlb.c                  | 130 +++++++++++++++++++++++++++++-------------
+ 14 files changed, 131 insertions(+), 214 deletions(-)
