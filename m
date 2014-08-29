@@ -1,59 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753686AbaH2Oir (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 10:38:47 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:63630 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752650AbaH2Oip (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 10:38:45 -0400
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
-        Ezra Savard <ezras@xilinx.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Ezra Savard <ezra.savard@xilinx.com>
-Subject: [PATCH v2] ARM: zynq: DT: Add LEDs to zc702 DT
-Date: Fri, 29 Aug 2014 07:38:37 -0700
-Message-Id: <1409323117-21711-1-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 2.1.0.1.g27b9230
+	id S1753684AbaH2Oj6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 10:39:58 -0400
+Received: from gw1.transmode.se ([195.58.98.146]:54702 "EHLO gw1.transmode.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752655AbaH2Oj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 10:39:57 -0400
+In-Reply-To: <20140829091440.6DAD91ABD66@localhost.localdomain>
+References: <20140829091440.6DAD91ABD66@localhost.localdomain>
+To: Christophe Leroy <christophe.leroy@c-s.fr>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Paul Mackerras <paulus@samba.org>, scottwood@freescale.com
+MIME-Version: 1.0
+Subject: Re: [PATCH v2 17/19] powerpc/8xx: set PTE bit 22 off TLBmiss
+X-KeepSent: C266DD00:56C086CA-C1257D43:005005B3;
+ type=4; name=$KeepSent
+X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
+From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Message-ID: <OFC266DD00.56C086CA-ONC1257D43.005005B3-C1257D43.00508E4E@transmode.se>
+Date: Fri, 29 Aug 2014 16:39:52 +0200
+X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.3FP6|November 21, 2013) at
+ 29/08/2014 16:39:52,
+	Serialize complete at 29/08/2014 16:39:52
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ezra Savard <ezra.savard@xilinx.com>
+Christophe Leroy <christophe.leroy@c-s.fr> wrote on 2014/08/29 11:14:40:
+> 
+> No need to re-set this bit at each TLB miss. Let's set it in the PTE.
+> 
+> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+> 
+> ---
+>  arch/powerpc/include/asm/pgtable-ppc32.h |   21 +++++++++++++++++++++
+>  arch/powerpc/include/asm/pte-8xx.h       |    7 +++++--
+>  arch/powerpc/kernel/head_8xx.S           |   10 ++--------
+>  3 files changed, 28 insertions(+), 10 deletions(-)
+> 
+> diff --git a/arch/powerpc/include/asm/pgtable-ppc32.h 
+b/arch/powerpc/include/asm/pgtable-ppc32.h
+> index 47edde8..c261792 100644
+> --- a/arch/powerpc/include/asm/pgtable-ppc32.h
+> +++ b/arch/powerpc/include/asm/pgtable-ppc32.h
+> @@ -172,6 +172,26 @@ static inline unsigned long pte_update(pte_t *p,
+>  #ifdef PTE_ATOMIC_UPDATES
+>     unsigned long old, tmp;
+> 
+> +#ifdef CONFIG_PPC_8xx
+> +   unsigned long tmp2;
+> +
+> +   __asm__ __volatile__("\
+> +1:   lwarx   %0,0,%4\n\
+> +   andc   %1,%0,%5\n\
+> +   or   %1,%1,%6\n\
+> +   /* 0x200 == Extended encoding, bit 22 */ \
+> +   /* Bit 22 has to be 1 if neither _PAGE_USER nor _PAGE_RW are set */ 
+\
+> +   rlwimi   %1,%1,32-2,0x200\n /* get _PAGE_USER */ \
+> +   rlwinm   %3,%1,32-1,0x200\n /* get _PAGE_RW */ \
+> +   or   %1,%3,%1\n\
+> +   xori   %1,%1,0x200\n"
+> +   PPC405_ERR77(0,%4)
 
-Adds LEDs to the zc702 devicetree for use with the leds-gpio driver.
+Should above PPC405_XXXX really be there? This is 8xx only
 
-Signed-off-by: Ezra Savard <ezra.savard@xilinx.com>
-Reviewed-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
----
-v2:
- - fix node names
----
- arch/arm/boot/dts/zynq-zc702.dts | 9 +++++++++
- 1 file changed, 9 insertions(+)
+> +"   stwcx.   %1,0,%4\n\
+> +   bne-   1b"
+> +   : "=&r" (old), "=&r" (tmp), "=m" (*p), "=&r" (tmp2)
+> +   : "r" (p), "r" (clr), "r" (set), "m" (*p)
+> +   : "cc" );
+> +#else /* CONFIG_PPC_8xx */
+>     __asm__ __volatile__("\
+>  1:   lwarx   %0,0,%3\n\
+>     andc   %1,%0,%4\n\
+> @@ -182,6 +202,7 @@ static inline unsigned long pte_update(pte_t *p,
+>     : "=&r" (old), "=&r" (tmp), "=m" (*p)
+>     : "r" (p), "r" (clr), "r" (set), "m" (*p)
+>     : "cc" );
+> +#endif /* CONFIG_PPC_8xx */
+>  #else /* PTE_ATOMIC_UPDATES */
+>     unsigned long old = pte_val(*p);
+>     *p = __pte((old & ~clr) | set);
+> diff --git a/arch/powerpc/include/asm/pte-8xx.h 
+b/arch/powerpc/include/asm/pte-8xx.h
+> index d44826e..dede1e7 100644
+> --- a/arch/powerpc/include/asm/pte-8xx.h
+> +++ b/arch/powerpc/include/asm/pte-8xx.h
+> @@ -48,19 +48,22 @@
+>   */
+>  #define _PAGE_RW   0x0400   /* lsb PP bits, inverted in HW */
+>  #define _PAGE_USER   0x0800   /* msb PP bits */
+> +/* set when neither _PAGE_USER nor _PAGE_RW are set */
+> +#define _PAGE_KNLRO   0x0200
+> 
+>  #define _PMD_PRESENT   0x0001
+>  #define _PMD_BAD   0x0ff0
+>  #define _PMD_PAGE_MASK   0x000c
+>  #define _PMD_PAGE_8M   0x000c
+> 
+> -#define _PTE_NONE_MASK _PAGE_ACCESSED
+> +#define _PTE_NONE_MASK (_PAGE_ACCESSED | _PAGE_KNLRO)
 
-diff --git a/arch/arm/boot/dts/zynq-zc702.dts b/arch/arm/boot/dts/zynq-zc702.dts
-index 835c3089c61c..b29e0f97e764 100644
---- a/arch/arm/boot/dts/zynq-zc702.dts
-+++ b/arch/arm/boot/dts/zynq-zc702.dts
-@@ -27,6 +27,15 @@
- 		bootargs = "console=ttyPS0,115200 earlyprintk";
- 	};
- 
-+	leds {
-+		compatible = "gpio-leds";
-+
-+		ds23 {
-+			label = "ds23";
-+			gpios = <&gpio0 10 0>;
-+			linux,default-trigger = "heartbeat";
-+		};
-+	};
- };
- 
- &can0 {
--- 
-2.1.0.1.g27b9230
+_PAGE_ACCESSED can be removed from PTE_NONE_MASK as 8xx no longer cheets.
+See 2.4 commit 
+https://git.kernel.org/cgit/linux/kernel/git/wtarreau/linux-2.4.git/commit/?id=82582b970d04ad4bcfaa9d3f9c3c256619fd889f
+
+> 
+>  /* Until my rework is finished, 8xx still needs atomic PTE updates */
+>  #define PTE_ATOMIC_UPDATES   1
+> 
+>  /* We need to add _PAGE_SHARED to kernel pages */
+> -#define _PAGE_KERNEL_RO   (_PAGE_SHARED)
+> +#define _PAGE_KERNEL_RO   (_PAGE_SHARED | _PAGE_KNLRO)
+> +#define _PAGE_KERNEL_ROX   (_PAGE_EXEC | _PAGE_KNLRO)
+>  #define _PAGE_KERNEL_RW   (_PAGE_DIRTY | _PAGE_RW | _PAGE_HWWRITE)
+> 
+>  #endif /* __KERNEL__ */
+> diff --git a/arch/powerpc/kernel/head_8xx.S 
+b/arch/powerpc/kernel/head_8xx.S
+> index a7af26e..48d3de8 100644
+> --- a/arch/powerpc/kernel/head_8xx.S
+> +++ b/arch/powerpc/kernel/head_8xx.S
+> @@ -445,14 +445,8 @@ DataStoreTLBMiss:
+>     and   r11, r11, r10
+>     rlwimi   r10, r11, 0, _PAGE_PRESENT
+>  #endif
+> -   /* Honour kernel RO, User NA */
+> -   /* 0x200 == Extended encoding, bit 22 */
+> -   rlwimi   r10, r10, 32-2, 0x200 /* Copy USER to bit 22, 0x200 */
+> -   /* r11 =  (r10 & _PAGE_RW) >> 1 */
+> -   rlwinm   r11, r10, 32-1, 0x200
+> -   or   r10, r11, r10
+> -   /* invert RW and 0x200 bits */
+> -   xori   r10, r10, _PAGE_RW | 0x200
+> +   /* invert RW */
+> +   xori   r10, r10, _PAGE_RW
+> 
+>     /* The Linux PTE won't go exactly into the MMU TLB.
+>      * Software indicator bits 22 and 28 must be clear.
+> -- 
+> 1.7.1
+> 
 
