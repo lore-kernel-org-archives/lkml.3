@@ -1,197 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753288AbaH2Nfd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 09:35:33 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:48820 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751944AbaH2Nfc (ORCPT
+	id S1753356AbaH2NgP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 09:36:15 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:40066 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753028AbaH2NgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 09:35:32 -0400
-Message-ID: <5400819B.4050607@free-electrons.com>
-Date: Fri, 29 Aug 2014 15:35:23 +0200
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Fri, 29 Aug 2014 09:36:12 -0400
 MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
-        Tawfik Bayouk <tawfik@marvell.com>,
-        Simon Boulay <simon.boulay@vitec.com>,
-        Arnaud Ebalard <arno@natisbad.org>, Nadav Haklai <nadavh@marvell.com>,
-        Lior Amsalem <alior@marvell.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Raphael Rigo <ml-arm@syscall.eu>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/4] clk: mvebu: Fix clk frequency value if SSCG is enabled
-References: <1409312620-20631-1-git-send-email-gregory.clement@free-electrons.com> <1409312620-20631-2-git-send-email-gregory.clement@free-electrons.com> <540076A4.5000303@gmail.com>
-In-Reply-To: <540076A4.5000303@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <53FB8CFE.3090007@wwwdotorg.org>
+References: <1408381705-3623-1-git-send-email-abrestic@chromium.org>
+	<1408381705-3623-5-git-send-email-abrestic@chromium.org>
+	<53FB8CFE.3090007@wwwdotorg.org>
+Date: Fri, 29 Aug 2014 15:36:11 +0200
+Message-ID: <CACRpkdZD2Ww44ExnLQgJvaw64rSiTZAMdphBV3gQSMZpRPj50g@mail.gmail.com>
+Subject: Re: [PATCH v2 4/9] pinctrl: tegra-xusb: Add USB PHY support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Andrew Bresticker <abrestic@chromium.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Mikko Perttunen <mperttunen@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
-
-On 29/08/2014 14:48, Sebastian Hesselbarth wrote:
-> On 08/29/2014 01:43 PM, Gregory CLEMENT wrote:
->> When the SSCG (Spread Spectrum Clock Generator) is enabled, it shifts
->> the frequency of the clock. The percentage is no more than 1% but when
->> the clock is used for a timer it leads to a clock drift.
+On Mon, Aug 25, 2014 at 9:22 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 08/18/2014 11:08 AM, Andrew Bresticker wrote:
 >>
->> This patch allows to correct the affected clock when the SSCG is
->> enabled. The check is done in an new optional function related to each
->> SoC: is_sscg_enabled(). If this function is not present then no
->> correction is done on the clock frequency.
-> 
-> Gregory,
-> 
-> I think computing the SSCG inside the common clk part is a no-go. I
-> flipped through KW, Dove, Armada 370, and Armada XP FS looking at
-> SSCG config register layout. Guess what: Dove is different.
-
-
-argh I checked all the other SoC excepting Dove! Sometime I wonder if
-the Dove really belongs to the mvebu family
-
-> 
-> How about we have a .get_sscg_deviation() callback instead and move
-> the one below to some common place where KW, Armada 370, and XP can
-> set it for their callback struct?
-
-I agree. Given the name of thie file the common place will be here.
-
-Thanks,
-
-Gregory
-
-> 
-> Sebastian
-> 
->> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
->> ---
->>   drivers/clk/mvebu/common.c | 74 ++++++++++++++++++++++++++++++++++++++++++++++
->>   drivers/clk/mvebu/common.h |  1 +
->>   2 files changed, 75 insertions(+)
+>> In addition to the PCIe and SATA PHYs, the XUSB pad controller also
+>> supports 3 UTMI, 2 HSIC, and 2 USB3 PHYs.  Each USB3 PHY uses a single
+>> PCIe or SATA lane and is mapped to one of the three UTMI ports.
 >>
->> diff --git a/drivers/clk/mvebu/common.c b/drivers/clk/mvebu/common.c
->> index 25ceccf939ad..834d36cf79b0 100644
->> --- a/drivers/clk/mvebu/common.c
->> +++ b/drivers/clk/mvebu/common.c
->> @@ -26,8 +26,78 @@
->>    * Core Clocks
->>    */
->>
->> +#define SSCG_CONF_MODE(reg)	(((reg) >> 16) & 0x3)
->> +#define SSCG_SPREAD_DOWN	0x0
->> +#define SSCG_SPREAD_UP		0x1
->> +#define SSCG_SPREAD_CENTRAL	0x2
->> +#define SSCG_CONF_LOW(reg)	(((reg) >> 8) & 0xFF)
->> +#define SSCG_CONF_HIGH(reg)	((reg) & 0xFF)
->> +
->>   static struct clk_onecell_data clk_data;
->>
->> +static u32 fix_sscg_deviation(struct device_node *np, u32 system_clk)
->> +{
->> +	struct device_node *sscg_np = NULL;
->> +	void __iomem *sscg_map;
->> +	u32 sscg_reg;
->> +	s32 low_bound, high_bound;
->> +	u64 freq_swing_half;
->> +
->> +	sscg_np = of_find_node_by_name(np, "sscg");
->> +	if (sscg_np == NULL) {
->> +		pr_err("cannot get SSCG register node\n");
->> +		return system_clk;
->> +	}
->> +
->> +	sscg_map = of_iomap(sscg_np, 0);
->> +	if (sscg_map == NULL) {
->> +		pr_err("cannot map SSCG register\n");
->> +		goto out;
->> +	}
->> +
->> +	sscg_reg = readl(sscg_map);
->> +	high_bound = SSCG_CONF_HIGH(sscg_reg);
->> +	low_bound = SSCG_CONF_LOW(sscg_reg);
->> +
->> +	if ((high_bound - low_bound) <= 0)
->> +		goto out;
->> +	/*
->> +	 * From the datasheet we got the following formula
->> +	 * Spread percentage = 1/96 * (H - L) / H
->> +	 * H = SSCG_High_Boundary
->> +	 * L = SSCG_Low_Boundary
->> +	 *
->> +	 * As the deviation is half of spread then it lead to the
->> +	 * following formula in the code.
->> +	 *
->> +	 * To avoid an overflow and not lose any significant digit in
->> +	 * the same time we have to use a 64 bit integer.
->> +	 */
->> +
->> +	freq_swing_half = (((u64)high_bound - (u64)low_bound)
->> +			* (u64)system_clk);
->> +	do_div(freq_swing_half, (2 * 96 * high_bound));
->> +
->> +	switch (SSCG_CONF_MODE(sscg_reg)) {
->> +	case SSCG_SPREAD_DOWN:
->> +		system_clk -= freq_swing_half;
->> +		break;
->> +	case SSCG_SPREAD_UP:
->> +		system_clk += freq_swing_half;
->> +		break;
->> +	case SSCG_SPREAD_CENTRAL:
->> +	default:
->> +		break;
->> +	}
->> +
->> +	iounmap(sscg_map);
->> +
->> +out:
->> +	of_node_put(sscg_np);
->> +
->> +	return system_clk;
->> +}
->> +
->>   void __init mvebu_coreclk_setup(struct device_node *np,
->>   				const struct coreclk_soc_desc *desc)
->>   {
->> @@ -62,6 +132,10 @@ void __init mvebu_coreclk_setup(struct device_node *np,
->>   	of_property_read_string_index(np, "clock-output-names", 1,
->>   				      &cpuclk_name);
->>   	rate = desc->get_cpu_freq(base);
->> +
->> +	if (desc->is_sscg_enabled && desc->is_sscg_enabled(base))
->> +		rate = fix_sscg_deviation(np, rate);
->> +
->>   	clk_data.clks[1] = clk_register_fixed_rate(NULL, cpuclk_name, NULL,
->>   						   CLK_IS_ROOT, rate);
->>   	WARN_ON(IS_ERR(clk_data.clks[1]));
->> diff --git a/drivers/clk/mvebu/common.h b/drivers/clk/mvebu/common.h
->> index f968b4d9df92..495f94ff4c90 100644
->> --- a/drivers/clk/mvebu/common.h
->> +++ b/drivers/clk/mvebu/common.h
->> @@ -28,6 +28,7 @@ struct coreclk_soc_desc {
->>   	u32 (*get_tclk_freq)(void __iomem *sar);
->>   	u32 (*get_cpu_freq)(void __iomem *sar);
->>   	void (*get_clk_ratio)(void __iomem *sar, int id, int *mult, int *div);
->> +	bool (*is_sscg_enabled)(void __iomem *sar);
->>   	const struct coreclk_ratio *ratios;
->>   	int num_ratios;
->>   };
->>
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
+>> The xHCI controller will also send messages intended for the PHY driver,
+>> so request and listen for messages on the mailbox's PHY channel.
+>
+>
+> I'd like a review from Thierry here as the HW expert.
+>
+> I need an ack from LinusW in order to take this pinctrl patch through the
+> Tegra tree.
 
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
--- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+Yours,
+Linus Walleij
