@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754001AbaH2QVr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 12:21:47 -0400
-Received: from xavier.telenet-ops.be ([195.130.132.52]:45237 "EHLO
-	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753065AbaH2QVq (ORCPT
+	id S1754021AbaH2QY3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 12:24:29 -0400
+Received: from albert.telenet-ops.be ([195.130.137.90]:54728 "EHLO
+	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753250AbaH2QYZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 12:21:46 -0400
+	Fri, 29 Aug 2014 12:24:25 -0400
 From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Iyappan Subramanian <isubramanian@apm.com>,
+To: Brett Rudley <brudley@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+Cc: linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] drivers: net: NET_XGENE should depend on HAS_DMA
-Date: Fri, 29 Aug 2014 18:21:41 +0200
-Message-Id: <1409329301-6747-1-git-send-email-geert@linux-m68k.org>
+Subject: [PATCH] brcmfmac: BRCMFMAC should depend on HAS_DMA
+Date: Fri, 29 Aug 2014 18:24:23 +0200
+Message-Id: <1409329464-768-1-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,42 +24,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 If NO_DMA=y:
 
-drivers/built-in.o: In function `xgene_enet_delete_ring':
-xgene_enet_main.c:(.text+0x28755a): undefined reference to `dma_free_coherent'
-drivers/built-in.o: In function `xgene_enet_setup_tx_desc':
-xgene_enet_main.c:(.text+0x287774): undefined reference to `dma_map_single'
-xgene_enet_main.c:(.text+0x287780): undefined reference to `dma_mapping_error'
-drivers/built-in.o: In function `xgene_enet_tx_completion':
-xgene_enet_main.c:(.text+0x2878e6): undefined reference to `dma_unmap_single'
-drivers/built-in.o: In function `xgene_enet_refill_bufpool':
-xgene_enet_main.c:(.text+0x2879d4): undefined reference to `dma_map_single'
-xgene_enet_main.c:(.text+0x2879e0): undefined reference to `dma_mapping_error'
-drivers/built-in.o: In function `xgene_enet_rx_frame':
-xgene_enet_main.c:(.text+0x287aaa): undefined reference to `dma_unmap_single'
-drivers/built-in.o: In function `xgene_enet_free_desc_ring':
-xgene_enet_main.c:(.text+0x287f98): undefined reference to `dma_free_coherent'
-drivers/built-in.o: In function `xgene_enet_create_desc_ring':
-xgene_enet_main.c:(.text+0x28808e): undefined reference to `dma_alloc_coherent'
-drivers/built-in.o: In function `xgene_enet_probe':
-xgene_enet_main.c:(.text+0x2883d4): undefined reference to `dma_set_mask'
-xgene_enet_main.c:(.text+0x2883ec): undefined reference to `dma_supported'
+drivers/built-in.o: In function `brcmf_msgbuf_release_array':
+msgbuf.c:(.text+0x34dbbe): undefined reference to `dma_unmap_single'
+drivers/built-in.o: In function `brcmf_proto_msgbuf_detach':
+(.text+0x34dca4): undefined reference to `dma_free_coherent'
+drivers/built-in.o: In function `brcmf_msgbuf_get_pktid':
+msgbuf.c:(.text+0x34dd2a): undefined reference to `dma_unmap_single'
+drivers/built-in.o: In function `brcmf_msgbuf_alloc_pktid':
+msgbuf.c:(.text+0x34de12): undefined reference to `dma_map_single'
+msgbuf.c:(.text+0x34de20): undefined reference to `dma_mapping_error'
+drivers/built-in.o: In function `brcmf_msgbuf_remove_flowring':
+msgbuf.c:(.text+0x34e3d6): undefined reference to `dma_free_coherent'
+drivers/built-in.o: In function `brcmf_msgbuf_flowring_create':
+msgbuf.c:(.text+0x34e4f8): undefined reference to `dma_alloc_coherent'
+drivers/built-in.o: In function `brcmf_proto_msgbuf_attach':
+(.text+0x34f5fe): undefined reference to `dma_alloc_coherent'
+drivers/built-in.o: In function `brcmf_proto_msgbuf_attach':
+(.text+0x34f798): undefined reference to `dma_free_coherent'
 
 Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- drivers/net/ethernet/apm/xgene/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/brcm80211/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/apm/xgene/Kconfig b/drivers/net/ethernet/apm/xgene/Kconfig
-index 616dff6d3f5f..f4054d242f3c 100644
---- a/drivers/net/ethernet/apm/xgene/Kconfig
-+++ b/drivers/net/ethernet/apm/xgene/Kconfig
-@@ -1,5 +1,6 @@
- config NET_XGENE
- 	tristate "APM X-Gene SoC Ethernet Driver"
-+	depends on HAS_DMA
- 	select PHYLIB
- 	help
- 	  This is the Ethernet driver for the on-chip ethernet interface on the
+diff --git a/drivers/net/wireless/brcm80211/Kconfig b/drivers/net/wireless/brcm80211/Kconfig
+index b8e2561ea645..2e0da8925834 100644
+--- a/drivers/net/wireless/brcm80211/Kconfig
++++ b/drivers/net/wireless/brcm80211/Kconfig
+@@ -19,7 +19,7 @@ config BRCMSMAC
+ 
+ config BRCMFMAC
+ 	tristate "Broadcom IEEE802.11n embedded FullMAC WLAN driver"
+-	depends on CFG80211
++	depends on CFG80211A && HAS_DMA
+ 	select BRCMUTIL
+ 	---help---
+ 	  This module adds support for embedded wireless adapters based on
 -- 
 1.9.1
 
