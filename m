@@ -1,93 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333AbaH2Omh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 10:42:37 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:47233 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752528AbaH2Omf (ORCPT
+	id S1753482AbaH2Ons (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 10:43:48 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:22716 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752645AbaH2Onr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 10:42:35 -0400
+	Fri, 29 Aug 2014 10:43:47 -0400
+X-IronPort-AV: E=Sophos;i="5.04,424,1406592000"; 
+   d="scan'208";a="167187110"
+Message-ID: <5400919F.5090801@citrix.com>
+Date: Fri, 29 Aug 2014 15:43:43 +0100
+From: Andrew Cooper <andrew.cooper3@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <1409304383-18806-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1409304383-18806-1-git-send-email-jiang.liu@linux.intel.com>
-Date: Fri, 29 Aug 2014 16:42:34 +0200
-X-Google-Sender-Auth: hiB2ExF_0hCP0BwYabui7rOmueU
-Message-ID: <CAJZ5v0ikimRs4XJihULUdS-ZtU=xBMJECbKmzpUf1ZnzXijihQ@mail.gmail.com>
-Subject: Re: [Patch v4] x86, irq, PCI: Keep IRQ assignment for runtime power management
-From: "Rafael J. Wysocki" <rafael@kernel.org>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: EmanueL Czirai <amanual@openmailbox.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Stefan Bader <stefan.bader@canonical.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Kees Cook <keescook@chromium.org>,
+        David Vrabel <david.vrabel@citrix.com>
+Subject: Re: [Xen-devel] [PATCH] Solved the Xen PV/KASLR riddle
+References: <20140827204940.GA10556@laptop.dumpdata.com> <1409248903-19625-1-git-send-email-stefan.bader@canonical.com> <53FFB045.9010809@citrix.com> <54003BE5.5010603@canonical.com> <54008BF2.5050905@citrix.com> <54008F05.9090403@canonical.com>
+In-Reply-To: <54008F05.9090403@canonical.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 29, 2014 at 11:26 AM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
-> Now IOAPIC driver dynamically allocates IRQ numbers for IOAPIC pins.
-> We need to keep IRQ assignment for PCI devices during runtime power
-> management, otherwise it may cause failure of device wakeups.
->
-> Commit 3eec595235c17a7 "x86, irq, PCI: Keep IRQ assignment for PCI
-> devices during suspend/hibernation" has fixed the issue for suspend/
-> hibernation, we also need the same fix for runtime device sleep too.
->
-> Fix: https://bugzilla.kernel.org/show_bug.cgi?id=83271
-> Reported-and-Tested-by: EmanueL Czirai <amanual@openmailbox.org>
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> ---
->  arch/x86/include/asm/io_apic.h |    2 ++
->  arch/x86/kernel/apic/io_apic.c |   12 ++++++++++++
->  arch/x86/pci/intel_mid_pci.c   |    2 +-
->  arch/x86/pci/irq.c             |    2 +-
->  drivers/acpi/pci_irq.c         |    4 ++++
->  5 files changed, 20 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-> index 0aeed5ca356e..478c490f3654 100644
-> --- a/arch/x86/include/asm/io_apic.h
-> +++ b/arch/x86/include/asm/io_apic.h
-> @@ -227,6 +227,8 @@ static inline void io_apic_modify(unsigned int apic, unsigned int reg, unsigned
->
->  extern void io_apic_eoi(unsigned int apic, unsigned int vector);
->
-> +extern bool mp_should_keep_irq(struct device *dev);
-> +
->  #else  /* !CONFIG_X86_IO_APIC */
->
->  #define io_apic_assign_pci_irqs 0
-> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-> index 29290f554e79..1e9a921d9701 100644
-> --- a/arch/x86/kernel/apic/io_apic.c
-> +++ b/arch/x86/kernel/apic/io_apic.c
-> @@ -3946,6 +3946,18 @@ int mp_set_gsi_attr(u32 gsi, int trigger, int polarity, int node)
->         return ret;
->  }
->
-> +bool mp_should_keep_irq(struct device *dev)
-> +{
-> +       if (dev->power.is_prepared)
-> +               return true;
-> +#ifdef CONFIG_PM_RUNTIME
-> +       if (dev->power.runtime_status == RPM_SUSPENDING)
-> +               return true;
-> +#endif
+On 29/08/14 15:32, Stefan Bader wrote:
+> On 29.08.2014 16:19, Andrew Cooper wrote:
+>> On 29/08/14 09:37, Stefan Bader wrote:
+>>> On 29.08.2014 00:42, Andrew Cooper wrote:
+>>>> On 28/08/2014 19:01, Stefan Bader wrote:
+>>>>>>> So not much further... but then I think I know what I do next. Probably should
+>>>>>>> have done before. I'll replace the WARN_ON in vmalloc that triggers by a panic
+>>>>>>> and at least get a crash dump of that situation when it occurs. Then I can dig
+>>>>>>> in there with crash (really should have thought of that before)...
+>>>>>> <nods> I dug a bit in the code (arch/x86/xen/mmu.c) but there is nothing there
+>>>>>> that screams at me, so I fear I will have to wait until you get the crash
+>>>>>> and get some clues from that.
+>>>>> Ok, what a journey. So after long hours of painful staring at the code...
+>>>>> (and btw, if someone could tell me how the heck one can do a mfn_to_pfn
+>>>>> in crash, I really would appreaciate :-P)
+>>>> The M2P map lives in the Xen reserved virtual address space in each PV
+>>>> guest, and forms part of the PV ABI.  It is mapped read-only, in the
+>>>> native width of the guest.
+>>>>
+>>>> 32bit PV (PAE) at 0xF5800000
+>>>> 64bit PV at 0xFFFF800000000000
+>>>>
+>>>> This is represented by the MACH2PHYS_VIRT_START symbol from the Xen
+>>>> public header files.  You should be able to blindly construct a pointer
+>>>> to it (if you have nothing better to hand), as it will be hooked into
+>>>> the guests pagetables before execution starts.  Therefore,
+>>>> "MACH2PHYS_VIRT_START[(unsigned long)pfn]" ought to do in a pinch.
+>>> machine_to_phys_mapping is set to that address but its not mapped inside the
+>>> crash dump. Somehow vtop in crash handles translations. I need to have a look at
+>>> their code, I guess.
+>>>
+>>> Thanks,
+>>> Stefan
+>> What context is the crash dump?  If it is a Xen+dom0 kexec()d to native
+>> linux, then the m2p should still be accessible given dom0's cr3.  If it
+>> is some state copied off-host then you will need to adjust the copy to
+>> include that virtual range.
+> No its a domU dump of a PV guest taken with "xl dump-core" (or actually the
+> result of on-crash trigger).
 
-No, you can't do that.  It is racy and incorrect.
+Ah - I believe the m2p lives in one of the Xen elf notes for a domain
+coredump.  See what readelf -n shows.
 
-Please give me some time for looking into this.
-
-Rafael
+~Andrew
