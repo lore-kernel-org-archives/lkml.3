@@ -1,45 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752224AbaH2BLe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 21:11:34 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:56569 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470AbaH2BLd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 21:11:33 -0400
-Date: Thu, 28 Aug 2014 18:11:29 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: Christoph Hellwig <hch@infradead.org>, "hare@suse.de" <hare@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "jbottomley@parallels.com" <jbottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>
-Subject: Re: [PATCH 2/2] Drivers: scsi: storvsc: Force discovery of LUNs that
- may have been removed.
-Message-ID: <20140829011129.GA22458@infradead.org>
-References: <1408244954-27417-1-git-send-email-kys@microsoft.com>
- <1408244988-27456-1-git-send-email-kys@microsoft.com>
- <1408244988-27456-2-git-send-email-kys@microsoft.com>
- <20140819175431.GA4617@infradead.org>
- <c5da85b38a2a4b26b9a7a7fadc40bcc2@BY2PR0301MB0711.namprd03.prod.outlook.com>
+	id S1752047AbaH2B1P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 21:27:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40867 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751358AbaH2B1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 21:27:14 -0400
+Date: Thu, 28 Aug 2014 21:27:05 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        chai wen <chaiw.fnst@cn.fujitsu.com>
+Subject: Re: [PATCH] softlockup: Make detector be aware of task switch of
+ processes hogging cpu
+Message-ID: <20140829012705.GC49576@redhat.com>
+References: <1409201544-82371-1-git-send-email-dzickus@redhat.com>
+ <20140828160723.b174b4e03f2854d0a5146199@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <c5da85b38a2a4b26b9a7a7fadc40bcc2@BY2PR0301MB0711.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20140828160723.b174b4e03f2854d0a5146199@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 10:54:51PM +0000, KY Srinivasan wrote:
-> > This looks pretty reasonable to me, but I wonder if we should move this up
-> > to common code so that it happens for any host rescan triggered by sysfs or
-> > other drivers as well.
-> Ping. Any decision on if/when this patch may be checked in.
+On Thu, Aug 28, 2014 at 04:07:23PM -0700, Andrew Morton wrote:
+> On Thu, 28 Aug 2014 00:52:24 -0400 Don Zickus <dzickus@redhat.com> wrote:
+> 
+> > From: chai wen <chaiw.fnst@cn.fujitsu.com>
+> > 
+> > For now, soft lockup detector warns once for each case of process softlockup.
+> > But the thread 'watchdog/n' may not always get the cpu at the time slot between
+> > the task switch of two processes hogging that cpu to reset soft_watchdog_warn.
+> > 
+> > An example would be two processes hogging the cpu.  Process A causes the
+> > softlockup warning and is killed manually by a user.  Process B immediately
+> > becomes the new process hogging the cpu preventing the softlockup code from
+> > resetting the soft_watchdog_warn variable.
+> > 
+> > This case is a false negative of "warn only once for a process", as there may
+> > be a different process that is going to hog the cpu.  Resolve this by
+> > saving/checking the task pointer of the hogging process and use that to reset
+> > soft_watchdog_warn too.
+> > 
+> 
+> OK, this should address the PID uniqueness issue which Ingo identified.
+> 
+> > --- a/kernel/watchdog.c
+> > +++ b/kernel/watchdog.c
+> > @@ -47,6 +47,7 @@ static DEFINE_PER_CPU(bool, softlockup_touch_sync);
+> >  static DEFINE_PER_CPU(bool, soft_watchdog_warn);
+> >  static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts);
+> >  static DEFINE_PER_CPU(unsigned long, soft_lockup_hrtimer_cnt);
+> > +static DEFINE_PER_CPU(struct task_struct *, softlockup_task_ptr_saved);
+> >  #ifdef CONFIG_HARDLOCKUP_DETECTOR
+> >  static DEFINE_PER_CPU(bool, hard_watchdog_warn);
+> >  static DEFINE_PER_CPU(bool, watchdog_nmi_touch);
+> > @@ -331,8 +332,20 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+> >  			return HRTIMER_RESTART;
+> >  
+> >  		/* only warn once */
+> > -		if (__this_cpu_read(soft_watchdog_warn) == true)
+> > +		if (__this_cpu_read(soft_watchdog_warn) == true) {
+> > +			/*
+> > +			 * Handle the case where multiple processes are
+> > +			 * causing softlockups but the duration is small
+> > +			 * enough, the softlockup detector can not reset
+> > +			 * itself in time.  Use task pointers to detect this.
+> > +			 */
+> 
+> This comment is rather hard to follow ("the duration" of what?).  Can
+> you think of some words which are a bit more complete/clear?
 
-I'll need a review or two for it still..
+Agreed.  Does this work better?
+
+"
+/*
+ * When multiple processes are causing softlockups
+ * the softlockup detector only warns on the first
+ * one because the code relies on a full quiet cycle
+ * to re-arm.  The second process prevents the
+ * quiet cycle and never gets reported.  Use task
+ * pointers to detect this.
+ */
+
+Cheers,
+Don
+
