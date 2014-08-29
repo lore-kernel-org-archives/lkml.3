@@ -1,84 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753831AbaH2TBm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 15:01:42 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40060 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752942AbaH2TBk (ORCPT
+	id S1753585AbaH2TK2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 15:10:28 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:44119 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752914AbaH2TK0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 15:01:40 -0400
-Date: Fri, 29 Aug 2014 20:01:29 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Dmitry Eremin-Solenikov <dmitry_eremin@mentor.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Gokulkrishnan Nagarajan <Gokulkrishnan.Nagarajan@in.bosch.com>
-Message-ID: <20140829190129.GZ29327@sirena.org.uk>
-References: <1409336356-27682-1-git-send-email-dmitry_eremin@mentor.com>
+	Fri, 29 Aug 2014 15:10:26 -0400
+From: j.glisse@gmail.com
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        akpm@linux-foundation.org, Haggai Eran <haggaie@mellanox.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, <joro@8bytes.org>,
+        Mel Gorman <mgorman@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Dave Airlie <airlied@redhat.com>, Brendan Conoboy <blc@redhat.com>,
+        Joe Donohue <jdonohue@redhat.com>, Duncan Poole <dpoole@nvidia.com>,
+        Sherry Cheung <SCheung@nvidia.com>, Subhash Gutti <sgutti@nvidia.com>,
+        John Hubbard <jhubbard@nvidia.com>,
+        Mark Hairgrove <mhairgrove@nvidia.com>,
+        Lucien Dunning <ldunning@nvidia.com>,
+        Cameron Buschardt <cabuschardt@nvidia.com>,
+        Arvind Gopalakrishnan <arvindg@nvidia.com>,
+        Shachar Raindel <raindel@mellanox.com>,
+        Liran Liss <liranl@mellanox.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Ben Sander <ben.sander@amd.com>, Greg Stoner <Greg.Stoner@amd.com>,
+        John Bridgman <John.Bridgman@amd.com>,
+        Michael Mantor <Michael.Mantor@amd.com>,
+        Paul Blinzer <Paul.Blinzer@amd.com>,
+        Laurent Morichetti <Laurent.Morichetti@amd.com>,
+        Alexander Deucher <Alexander.Deucher@amd.com>,
+        Oded Gabbay <Oded.Gabbay@amd.com>
+Subject: [RFC PATCH 0/6] HMM (heterogeneous memory management) v4
+Date: Fri, 29 Aug 2014 15:10:09 -0400
+Message-Id: <1409339415-3626-1-git-send-email-j.glisse@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lKbk9CFItQTD29wm"
-Content-Disposition: inline
-In-Reply-To: <1409336356-27682-1-git-send-email-dmitry_eremin@mentor.com>
-X-Cookie: Simulated picture.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: core: GPIO #0 is a valid GPIO
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is an updated patchset for HMM (Heterogeneous Memory Management). In
+a nutshell HMM is a subsystem that provide an easy to use api to mirror a
+process address on a device with minimal hardware requirement. The device
+must be able to handle page fault (missing entry inside its page table),
+must be support read only mapping. It does not rely on ATS and PASID PCIE
+extensions. It intends to supersede those extensions by allowing to move
+system memory to device memory in a transparent fashion for core kernel mm
+code (ie cpu page fault on page residing in device memory will trigger
+migration back to system memory).
 
---lKbk9CFItQTD29wm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I think it has been establish in previous discussion of HMM that device
+memory, specificaly in GPU case, is a thing that will remains revealent
+given that device memory bandwith keep growing faster than system memory
+bandwidth. You can find link to previous discussion at bottom of this
+email.
 
-On Fri, Aug 29, 2014 at 10:19:16PM +0400, Dmitry Eremin-Solenikov wrote:
-> From: Dirk Behme <dirk.behme@de.bosch.com>
->=20
-> With GPIO #0, this if statement will always fail. Remove this, the
-> check for gpio_is_valid() is sufficent here.
+Even the case of CPU with GPU in same package (same die or not) associated
+with pool of fast memory (either in same package or in same die like stack
+memory) can leverage HMM. Current implementation of package memory manage
+it like another level of cache making it transparent for the operating
+system but adding a management cost and being less flexible and in some
+case making worse decision on what should be cached or not.
 
-No, read the archives - this will break boards using zero as default.
-Any current boards should be using DT and so shouldn't be using fixed
-GPIO numbers in the first place which will mean they'll not end up
-getting zero as a valid GPIO.  If you are using zero as a GPIO for some
-reason provide a way to specify that the GPIO is a real GPIO and not
-just the default value for the struct.
 
-> Change-Id: Ia10e8e9c74e11deba852fcd44040cc275b583cfd
-> Signed-off-by: Gokulkrishnan Nagarajan <Gokulkrishnan.Nagarajan@in.bosch.=
-com>
-> Signed-off-by: Dirk Behme <dirk.behme@de.bosch.com>
+In this version of the patchset i wanted to address the request of device
+driver folks that want to abstract the handling of the iommu mapping of
+pages of a process. To achieve this patch 5 introduce a new iommu domain
+api that allow to map a directory of page into a specific domain and to
+later on update this directory mapping.
 
-In any case I can't apply this since you didn't sign it off and please
-don't include noise from your internal review system in upstream
-postings.
+Before going further down that patch i would like to gather feedback and
+see if such api have a change to be accepted. I should stress that while
+i demonstrate how it is intended to be use inside HMM in patch 6. This api
+can also be use by thing such as dma-buf for more legacy GPU workload and
+i am sure there are others driver that might find this api usefull.
 
---lKbk9CFItQTD29wm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+It does however rely on exposing which domain a device is bound to. This
+domain should not change as long as a driver is bind to the device (at
+least this is my understanding). So i believe it is fine to expose this.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
 
-iQIcBAEBAgAGBQJUAM4GAAoJELSic+t+oim9fIgP/jgVBAmL+Ot5lkfQ7WLqFaP3
-JmSXqyYeIDG5SiycDVASLFh56dWrfqoDU9mgga5RUH7/9IPUxDm9uAYWGMGA9T8c
-Hrbm76dO3e6JKT/lSguqQPE9rPNBqbMMFGbmuxlAZ7vcwrSDPGvoJYoWmlmqN0Vf
-kDAbDKaFz9Ss7WUr/+/vpb18PkpiCol3+OsKr+5si/icTjiiJZgTWEAdXNxEG7Xa
-GHt4LLB16rxUbJm5DfzGFBsjXtw7apORI9CTWc9nehwOY4Ql6dlrapVK/Lf2O8c5
-OcZ19NpQcBUmFa8E4SyxsmlHvt9/dQsk0DUHJWxcywq3SMnAQuqKlvdIuMSeyzGi
-8g10PWt7pQFsNlE5jC+LsbtG8DU4ATYqAGuQYNpKTd4CKU8Yehgqr5fTNsvB6MT9
-3Kqd8CoWE5O7YNzGURUigYbZkoqqzlbMBaBSDkWJ4U5mcgnqOEd29Aov5QZwQD36
-hXLhiqVkXU19KHOFV8+DN7K30IGHnJO6S5QCFpco0l/lQB/X9AskAUcgy2igsOl7
-+TQmNYwMQ+1KFfSmA1yBo+VvwApWaWAjwqBgw2fPJHK3DPq7G3oojTnHxGTJxl3e
-fGKVvY/a5zY+xMvJydmJMoi8F3cwubSumXPwTzNrSXga+6wc50ckVH+80XOPUKMR
-TAMzkf2b0uZ+I3J05Ete
-=51Qb
------END PGP SIGNATURE-----
+To avoid writting over and over the same code patch 2 introduce a generic
+lockless arch independant page table. I have made it very flexible leading
+to quite a lot of fields but if it sounds more reasonable to only care
+about two case (unsigned long and uint64 namely) then code and structure
+can be simplify.
 
---lKbk9CFItQTD29wm--
+It has been designed to be a suitable replacement for AMD and Intel IOMMU
+driver code. Thought for AMD case there is still some work that needs to
+be done to support level skipping. Before adding that i wanted to gather
+interest about of converting AMD and Intel IOMMU driver to use that code.
+
+The HMM have been lightly tested and the IOMMU part is untested at this
+point. But if there is no objection with the IOMMU API i will go ahead
+and implement it for AMD and Intel IOMMU. Then i will take a stab at
+converting mlx5 driver to use HMM.
+
+
+As usual comments are more then welcome. Thanks in advance to anyone that
+take a look at this code.
+
+Previous patchset posting :
+  v1 http://lwn.net/Articles/597289/
+  v2 https://lkml.org/lkml/2014/6/12/559 (cover letter did not make it to ml)
+  v3 https://lkml.org/lkml/2014/6/13/633
+
+
+Cheers,
+Jérôme
+
