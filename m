@@ -1,74 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346AbaH2Jcq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 05:32:46 -0400
-Received: from www.linutronix.de ([62.245.132.108]:45232 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751709AbaH2Jcn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 05:32:43 -0400
-Message-ID: <540048B4.7010807@linutronix.de>
-Date: Fri, 29 Aug 2014 11:32:36 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
-MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: balbi@ti.com, linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Vinod Koul <vinod.koul@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paul Walmsley <paul@pwsan.com>
-Subject: Re: [PATCH 15/15] tty: serial: 8250: omap: add dma support
-References: <1408124563-31541-1-git-send-email-bigeasy@linutronix.de> <1408124563-31541-16-git-send-email-bigeasy@linutronix.de> <20140815210211.GD9239@atomide.com> <53F5AF0D.5060409@linutronix.de> <20140821184416.GF10066@atomide.com> <53FE3779.5090908@linutronix.de> <20140827202313.GF16006@atomide.com> <20140828082348.GA5413@linutronix.de> <20140828164645.GG16006@atomide.com> <53FF84DF.7080406@linutronix.de> <20140828225454.GM16006@atomide.com>
-In-Reply-To: <20140828225454.GM16006@atomide.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1753402AbaH2JdO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 05:33:14 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:36380 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753202AbaH2JcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 05:32:07 -0400
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
+        scottwood@freescale.com
+Subject: [PATCH v2 13/19] powerpc/8xx: Use PAGE size related consts
+Message-Id: <20140829091439.A387B1ABD66@localhost.localdomain>
+Date: Fri, 29 Aug 2014 11:14:39 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2014 12:54 AM, Tony Lindgren wrote:
-> * Sebastian Andrzej Siewior <bigeasy@linutronix.de> [140828 12:37]:
->> On 08/28/2014 06:46 PM, Tony Lindgren wrote:
->>>
->>> Sounds like there should be some way to clear that state.. I wonder
->>> if omap-serial.c had something before it's DMA support was removed?
->>
->> Its DMA was removed? Like there was DMA support?
-> 
-> Yeah see commit 494574304711a333386e7dd5fd3ebbc3b7024994...
+For PAGE size related operations, use PAGE size consts in order to be able to
+use different page size in the futur.
 
-Interesting. I've been browsing that file and checking other trees and
-never noticed that it was there at some point. I only saw the pieces
-which looked it was there.
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
-> OK thanks, I'm seeing the same issue as you. And the idlest registers
-> don't show any blockers. Looking at the errata docs, seems like
-> "Usage Note 2.7" in sprz318f.pdf says:
-> 
->  Details When configured for DMA operations using smartidle mode (SYSC[4:3].IDLEMODE =
->  0x2), the UART module will not acknowledge incoming idle requests. As a consequence,
->  it can prevent L4 from going to idle.
->  When there are additional expected transfers, the UART should be placed in force-idle
->  mode.
+---
+ arch/powerpc/kernel/head_8xx.S |   30 ++++++++++++++++++------------
+ 1 files changed, 18 insertions(+), 12 deletions(-)
 
-Ehm. So I haven't found an errata document for omap3630, there is
-nothing like that in that one I have for am335x or dra7. The document
-you mentioned is for AM3715. Interesting…
+diff --git a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
+index 0f571f5..dcaee9f 100644
+--- a/arch/powerpc/kernel/head_8xx.S
++++ b/arch/powerpc/kernel/head_8xx.S
+@@ -292,9 +292,9 @@ InstructionTLBMiss:
+ 	mtspr	SPRN_SPRG_SCRATCH2, r10
+ 	mfspr	r10, SPRN_SRR0	/* Get effective address of fault */
+ #ifdef CONFIG_8xx_CPU15
+-	addi	r11, r10, 0x1000
++	addi	r11, r10, PAGE_SIZE
+ 	tlbie	r11
+-	addi	r11, r10, -0x1000
++	addi	r11, r10, -PAGE_SIZE
+ 	tlbie	r11
+ #endif
+ 
+@@ -313,7 +313,8 @@ InstructionTLBMiss:
+ 	ori	r11, r11, (swapper_pg_dir-PAGE_OFFSET)@l
+ 3:
+ #endif
+-	rlwinm	r10, r10, 12, 20, 29	/* Extract level 1 index */
++	/* Extract level 1 index */
++	rlwinm	r10, r10, 32 - ((PAGE_SHIFT - 2) << 1), (PAGE_SHIFT - 2) << 1, 29
+ 	lwzx	r11, r10, r11	/* Get the level 1 entry */
+ 	rlwinm.	r10, r11,0,0,19	/* Extract page descriptor page address */
+ 	beq	2f		/* If zero, don't try to find a pte */
+@@ -325,7 +326,8 @@ InstructionTLBMiss:
+ 	DO_8xx_CPU6(0x2b80, r3)
+ 	mtspr	SPRN_MI_TWC, r11	/* Set segment attributes */
+ 	mfspr	r11, SPRN_SRR0	/* Get effective address of fault */
+-	rlwinm	r11, r11, 22, 20, 29	/* Extract level 2 index */
++	/* Extract level 2 index */
++	rlwinm	r11, r11, 32 - (PAGE_SHIFT - 2), 32 - PAGE_SHIFT, 29
+ 	lwzx	r10, r10, r11	/* Get the pte */
+ 
+ #ifdef CONFIG_SWAP
+@@ -385,7 +387,8 @@ DataStoreTLBMiss:
+ 	lis	r11, (swapper_pg_dir-PAGE_OFFSET)@h
+ 	ori	r11, r11, (swapper_pg_dir-PAGE_OFFSET)@l
+ 3:
+-	rlwinm	r10, r10, 12, 20, 29	/* Extract level 1 index */
++	/* Extract level 1 index */
++	rlwinm	r10, r10, 32 - ((PAGE_SHIFT - 2) << 1), (PAGE_SHIFT - 2) << 1, 29
+ 	lwzx	r11, r10, r11	/* Get the level 1 entry */
+ 	rlwinm.	r10, r11,0,0,19	/* Extract page descriptor page address */
+ 	beq	2f		/* If zero, don't try to find a pte */
+@@ -394,8 +397,8 @@ DataStoreTLBMiss:
+ 	 */
+ 	mfspr	r10, SPRN_MD_EPN	/* Get address of fault */
+ 	/* Extract level 2 index */
+-	rlwinm	r10, r10, 22, 20, 29
+-	rlwimi	r10, r11, 0, 0, 19	/* Add level 2 base */
++	rlwinm	r10, r10, 32 - (PAGE_SHIFT - 2), 32 - PAGE_SHIFT, 29
++	rlwimi	r10, r11, 0, 0, 32 - PAGE_SHIFT - 1	/* Add level 2 base */
+ 	lwz	r10, 0(r10)	/* Get the pte */
+ 
+ 	ori	r11, r11, 1	/* Set valid bit in physical L2 page */
+@@ -526,18 +529,20 @@ FixupDAR:/* Entry point for dcbx workaround. */
+ 	beq-	3f		/* Branch if user space */
+ 	lis	r11, (swapper_pg_dir-PAGE_OFFSET)@h
+ 	ori	r11, r11, (swapper_pg_dir-PAGE_OFFSET)@l
+-3:	rlwinm	r10, r10, 12, 20, 29	/* Extract level 1 index */
++	/* Extract level 1 index */
++3:	rlwinm	r10, r10, 32 - ((PAGE_SHIFT - 2) << 1), (PAGE_SHIFT - 2) << 1, 29
+ 	lwzx	r11, r10, r11	/* Get the level 1 entry */
+ 	rlwinm	r10, r11,0,0,19	/* Extract page descriptor page address */
+ 	mfspr	r11, SPRN_SRR0	/* Get effective address of fault */
+-	rlwinm	r11, r11, 22, 20, 29	/* Extract level 2 index */
++	/* Extract level 2 index */
++	rlwinm	r11, r11, 32 - (PAGE_SHIFT - 2), 32 - PAGE_SHIFT, 29
+ 	lwzx	r11, r10, r11	/* Get the pte */
+ #ifdef CONFIG_8xx_CPU6
+ 	lwz	r3, 8(r0)	/* restore r3 from memory */
+ #endif
+ 	/* concat physical page address(r11) and page offset(r10) */
+ 	mfspr	r10, SPRN_SRR0
+-	rlwimi	r11, r10, 0, 20, 31
++	rlwimi	r11, r10, 0, 32 - PAGE_SHIFT, 31
+ 	lwz	r11,0(r11)
+ /* Check if it really is a dcbx instruction. */
+ /* dcbt and dcbtst does not generate DTLB Misses/Errors,
+@@ -913,12 +918,13 @@ set_dec_cpu6:
+ 	.globl	sdata
+ sdata:
+ 	.globl	empty_zero_page
++	.align	PAGE_SHIFT
+ empty_zero_page:
+-	.space	4096
++	.space	PAGE_SIZE
+ 
+ 	.globl	swapper_pg_dir
+ swapper_pg_dir:
+-	.space	4096
++	.space	PGD_TABLE_SIZE
+ 
+ /* Room for two PTE table poiners, usually the kernel and current user
+  * pointer to their respective root page table (pgdir).
+-- 
+1.7.1
 
-> So I've added also Paul to Cc, he may have better suggestions for the
-> hwmod flags to use. The experimental patch below seems to allow idling
-> for me, care to give it a try?
-
-Yep, this one works. And I see DMA transfers (for RX side) after the
-core hit idle so it seems to look good :)
-
-> 
-> Regards,
-> 
-> Tony
-
-Sebastian
