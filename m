@@ -1,144 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142AbaH2Gnz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 02:43:55 -0400
-Received: from demumfd001.nsn-inter.net ([93.183.12.32]:52054 "EHLO
-	demumfd001.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750800AbaH2Gnx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 02:43:53 -0400
-Date: Fri, 29 Aug 2014 10:34:25 +0300
-From: Matti Vaittinen <matti.vaittinen@nsn.com>
-To: ext Guenter Roeck <linux@roeck-us.net>
-Cc: Jason Cooper <jason@lakedaemon.net>, Mark Rutland <mark.rutland@arm.com>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "jic23@kernel.org" <jic23@kernel.org>,
-        "arno@natisbad.org" <arno@natisbad.org>,
-        "jgunthorpe@obsidianresearch.com" <jgunthorpe@obsidianresearch.com>,
-        "san@rosetechnology.dk" <san@rosetechnology.dk>,
-        "hs@denx.de" <hs@denx.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        Sverdlin Alexander <alexander.sverdlin@nsn.com>
-Subject: Re: [PATCH] rtc: ds1307: add trickle charger device tree binding
-Message-ID: <20140829073413.GN4587@fi-ourus-dhcp00977.emea.nsn-net.net>
-References: <20140828124237.GA29102@fi-ourus-dhcp00977.emea.nsn-net.net>
- <20140828125915.GJ14650@leverpostej>
- <20140828155157.GB23677@roeck-us.net>
- <20140828161025.GO14650@leverpostej>
- <20140828164825.GA12153@roeck-us.net>
- <20140828172842.GF12769@titan.lakedaemon.net>
- <20140828174034.GC15307@roeck-us.net>
+	id S1752150AbaH2Gvs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 02:51:48 -0400
+Received: from smtp07.online.nl ([194.134.42.52]:36011 "EHLO smtp07.online.nl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751321AbaH2Gvr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 02:51:47 -0400
+X-Greylist: delayed 481 seconds by postgrey-1.27 at vger.kernel.org; Fri, 29 Aug 2014 02:51:46 EDT
+Message-ID: <5400211D.1060107@topic.nl>
+Date: Fri, 29 Aug 2014 08:43:41 +0200
+From: Mike Looijmans <mike.looijmans@topic.nl>
+Organization: Topic
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140828174034.GC15307@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-purgate-type: clean
-X-purgate-Ad: Categorized by eleven eXpurgate (R) http://www.eleven.de
-X-purgate: clean
-X-purgate: This mail is considered clean (visit http://www.eleven.de for further information)
-X-purgate-size: 4436
-X-purgate-ID: 151667::1409293793-0000061C-8D63229D/0/0
+To: linux-mmc@vger.kernel.org
+CC: cjb@laptop.org, ulf.hansson@linaro.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] davinci-mmc: Use IRQ to detect "card not busy" status
+ change
+References: <1409294496-4220-1-git-send-email-mike.looijmans@topic.nl>
+In-Reply-To: <1409294496-4220-1-git-send-email-mike.looijmans@topic.nl>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Online-Scanned: by Cloudmark authority (on smtp07.online.nl)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 28, 2014 at 10:40:34AM -0700, ext Guenter Roeck wrote:
-> On Thu, Aug 28, 2014 at 01:28:42PM -0400, Jason Cooper wrote:
-> > On Thu, Aug 28, 2014 at 09:48:25AM -0700, Guenter Roeck wrote:
-> > > On Thu, Aug 28, 2014 at 05:10:25PM +0100, Mark Rutland wrote:
-> > > > On Thu, Aug 28, 2014 at 04:51:57PM +0100, Guenter Roeck wrote:
-> > > > > On Thu, Aug 28, 2014 at 01:59:15PM +0100, Mark Rutland wrote:
-> > > > > > On Thu, Aug 28, 2014 at 01:42:44PM +0100, Matti Vaittinen wrote:
-> > > > > > > Patch adding support for specifying trickle charger setup from device
-> > > > > > > tree. Patch is based on linux-next tree.
-> > > > > > > 
-> > > > > > > 
-> > > > > > > Some DS13XX devices have "trickle chargers". Introduce a device tree binding
-> > > > > > > for specifying the setup and register values.
-> > > > > > > 
-> > > > > > > +++ b/Documentation/devicetree/bindings/rtc/dallas,ds1339.txt
-> > > > > > > @@ -0,0 +1,19 @@
-> > > > > > > +* Dallas DS1339		I2C Serial Real-Time Clock
-> > > > > > > +
-> > > > > > > +Required properties:
-> > > > > > > +- compatible: Should contain "dallas,ds1339".
-> > > > > > > +- reg: I2C address for chip
-> > > > > > > +
-> > > > > > > +Optional properties:
-> > > > > > > +- trickle_setup : Used Trickle Charger configuration,
-> > > > > > > +        corresponding to 5 lowest bits in trickle charger register.
-> > > > > > 
-> > > > > The value is provided via platform data, so it is platform specific
-> > > > > and presumably needs to be configurable. I did, however, not find
-> > > > > a single in-kernel driver which is actually setting it.
-> > > > > So this is a good question.
-> > > > 
-> > > > I'm uncomfortable adding a field we don't understand to DT.
-> > > > 
-> > > > Is there any publicly-available documentation for the device?
-> > > > 
-> > > 
-> > > Lots ;-)
-> > > 
-> > > http://datasheets.maximintegrated.com/en/ds/DS1307.pdf
-> > > http://datasheets.maximintegrated.com/en/ds/DS1337.pdf
-> > > http://datasheets.maximintegrated.com/en/ds/DS1338.pdf
-> > > http://datasheets.maximintegrated.com/en/ds/DS1339.pdf
-> > > http://datasheets.maximintegrated.com/en/ds/DS1340.pdf
-> > > http://datasheets.maximintegrated.com/en/ds/DS1388.pdf
-> > > http://datasheets.maximintegrated.com/en/ds/DS3231.pdf
-> > > 
-> > > Code suggests that DS1339, DS1339, and DS1340 have the register.
-> > > 
-> > > Looking into the datasheets, the configuration consists of two parts:
-> > > - diode connected or not
-> > > - trickle charger resistor value (250, 2000, or 4000 ohm)
-> > > 
-> > > Given that, it seems to me that those values should be configured
-> > > explicitly instead of using a binary value, and that the driver
-> > > should perform the conversion from dt entry to register value.
-> > 
-> > iiuc, there is no way for the kernel to determine what is being trickle
-> > charged, and thus no way to determine how it should set this register.
-> > 
-> > It may be a bit of overkill, but I think a DT macro would be the most
-> > maintainable solution here:
-> > 
-> > #define DS1339_TRCKL_DIODE   0x08
-> > #define DS1339_TRCKL_NODIODE 0x04
-> > #define DS1339_TRCKL_R250    0x01
-> > #define DS1339_TRCKL_R2000   0x02
-> > #define DS1339_TRCKL_R4000   0x03
-> > 
-> > trickle_setup = <DS1339_TRCKL_DIODE | DS1339_TRCKL_R250>;
-> > 
-> > And the driver would take care of oring it with the enable pattern.
-> > 
-> 
-> Yes, that sounds reasonable as well.
-> 
-I thought of this too. However the ds1307 seems to be designed to work
-with bunch of chips. What then when next chip supported by this driver
-introduces 75, 1000 and 5000 ohm resistors? Or something else. (Or add
-some other configuration). I do not see this approach to be maintainable
-in long run. I see strong possibility of polluting dt with endless 
-amount of defines. Furthermore I believe the benefits of these defines
-would be negligible compared to effort maintaining defines and
-documentation of them causes. Surely the one who needs to add dt node
-for this chip in his board's dt has the manual for the chip he has on
-board. Especially so if he knows the trickle charger there and wants to
-configure it. The plain resistor type still gives zero information
-without knowing the other details.
+Note: I have not been able to test or even compile this on recent 
+kernels. Can somebody verify that this does not kill the SD driver?
+
+Mike.
+
+On 08/29/2014 08:41 AM, Mike Looijmans wrote:
+> The davinci-mmc driver uses a busy wait loop to wait for the card to
+> become ready (BUSY signal). The MMC card uses this to signal the
+> controller that it's busy writing and cannot handle new requests yet.
+> This loop often takes 100k cycles and 10ms to complete.
+>
+> The controller can raise an interrupt when the BUSY signal is deasserted,
+> so the routine has been adapted to trigger an interrupt and wait for it
+> using a wait_event_timeout instead of a busy wait loop.
+>
+> This reduces the CPU usage of the mmcqd process drastically, from 35% to
+> 2% when writing to SD. No noticable change in performance or reliability.
+>
+> Tested on a custom board with an OMAP-L138 CPU. Patch originally applied
+> to a 2.6.37 kernel and ported to 3.14.
+>
+> Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
+> ---
+>   drivers/mmc/host/davinci_mmc.c |   52 +++++++++++++++++++++++++---------------
+>   1 file changed, 33 insertions(+), 19 deletions(-)
+>
+> diff --git a/drivers/mmc/host/davinci_mmc.c b/drivers/mmc/host/davinci_mmc.c
+> index d615374..50458f4 100644
+> --- a/drivers/mmc/host/davinci_mmc.c
+> +++ b/drivers/mmc/host/davinci_mmc.c
+> @@ -223,6 +223,7 @@ struct mmc_davinci_host {
+>   #ifdef CONFIG_CPU_FREQ
+>   	struct notifier_block	freq_transition;
+>   #endif
+> +	wait_queue_head_t 	wait_while_busy_queue
+>   };
+>
+>   static irqreturn_t mmc_davinci_irq(int irq, void *dev_id);
+> @@ -628,23 +629,28 @@ mmc_davinci_prepare_data(struct mmc_davinci_host *host, struct mmc_request *req)
+>   static void mmc_davinci_request(struct mmc_host *mmc, struct mmc_request *req)
+>   {
+>   	struct mmc_davinci_host *host = mmc_priv(mmc);
+> -	unsigned long timeout = jiffies + msecs_to_jiffies(900);
+> -	u32 mmcst1 = 0;
+> +	unsigned int remaining;
+>
+>   	/* Card may still be sending BUSY after a previous operation,
+>   	 * typically some kind of write.  If so, we can't proceed yet.
+>   	 */
+> -	while (time_before(jiffies, timeout)) {
+> -		mmcst1  = readl(host->base + DAVINCI_MMCST1);
+> -		if (!(mmcst1 & MMCST1_BUSY))
+> -			break;
+> -		cpu_relax();
+> -	}
+> -	if (mmcst1 & MMCST1_BUSY) {
+> -		dev_err(mmc_dev(host->mmc), "still BUSY? bad ... \n");
+> -		req->cmd->error = -ETIMEDOUT;
+> -		mmc_request_done(mmc, req);
+> -		return;
+> +	if (readl(host->base + DAVINCI_MMCST1) & MMCST1_BUSY) {
+> +		/* Arm BSYDNE interrupt and wait for it */
+> +		writel(MMCST0_BSYDNE, host->base + DAVINCI_MMCIM);
+> +		remaining = wait_event_timeout(
+> +				host->wait_while_busy_queue,
+> +				((readl(host->base + DAVINCI_MMCST1) & MMCST1_BUSY) == 0),
+> +				msecs_to_jiffies(900));
+> +		writel(0, host->base + DAVINCI_MMCIM);
+> +		if (unlikely(remaining == 0))
+> +		{
+> +			if (readl(host->base + DAVINCI_MMCST1) & MMCST1_BUSY) {
+> +				dev_err(mmc_dev(host->mmc), "Timeout waiting for BSYDNE interrupt.\n");
+> +				req->cmd->error = -ETIMEDOUT;
+> +				mmc_request_done(mmc, req);
+> +				return;
+> +			}
+> +		}
+>   	}
+>
+>   	host->do_dma = 0;
+> @@ -914,18 +920,21 @@ static irqreturn_t mmc_davinci_irq(int irq, void *dev_id)
+>   	int end_transfer = 0;
+>   	struct mmc_data *data = host->data;
+>
+> +	status = readl(host->base + DAVINCI_MMCST0);
+> +	qstatus = status;
+> +
+>   	if (host->cmd == NULL && host->data == NULL) {
+> -		status = readl(host->base + DAVINCI_MMCST0);
+> -		dev_dbg(mmc_dev(host->mmc),
+> -			"Spurious interrupt 0x%04x\n", status);
+> +		/* We may have been waiting for the busy-done signal */
+> +		if (qstatus & MMCST0_BSYDNE) {
+> +			wake_up(&host->wait_while_busy_queue);
+> +			return IRQ_HANDLED;
+> +		}
+> +		dev_dbg(mmc_dev(host->mmc), "Spurious interrupt %#x\n", status);
+>   		/* Disable the interrupt from mmcsd */
+>   		writel(0, host->base + DAVINCI_MMCIM);
+>   		return IRQ_NONE;
+>   	}
+>
+> -	status = readl(host->base + DAVINCI_MMCST0);
+> -	qstatus = status;
+> -
+>   	/* handle FIFO first when using PIO for data.
+>   	 * bytes_left will decrease to zero as I/O progress and status will
+>   	 * read zero over iteration because this controller status
+> @@ -1044,6 +1053,10 @@ static irqreturn_t mmc_davinci_irq(int irq, void *dev_id)
+>   		end_command = (int) host->cmd;
+>   	}
+>
+> +	if (qstatus & MMCST0_BSYDNE) {
+> +		wake_up(&host->wait_while_busy_queue);
+> +	}
+> +
+>   	if (end_command)
+>   		mmc_davinci_cmd_done(host, host->cmd);
+>   	if (end_transfer)
+> @@ -1261,6 +1274,7 @@ static int __init davinci_mmcsd_probe(struct platform_device *pdev)
+>
+>   	host = mmc_priv(mmc);
+>   	host->mmc = mmc;	/* Important */
+> +	init_waitqueue_head(&host->wait_while_busy_queue);
+>
+>   	r = platform_get_resource(pdev, IORESOURCE_DMA, 0);
+>   	if (!r)
+>
+
 
 -- 
-=============================================
-
-Matti Vaittinen
-Senile SW Specialist
-FINLAND 
-
-~~ When things go utterly wrong vim users can always type :help! ~~
-
+Mike Looijmans
