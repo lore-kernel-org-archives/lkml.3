@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751673AbaH2BFs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 21:05:48 -0400
-Received: from lists.s-osg.org ([54.187.51.154]:52168 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750892AbaH2BFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 21:05:47 -0400
-Message-ID: <53FFD1E8.6070508@osg.samsung.com>
-Date: Thu, 28 Aug 2014 19:05:44 -0600
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752056AbaH2BJo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 21:09:44 -0400
+Received: from www.linutronix.de ([62.245.132.108]:43426 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751087AbaH2BJm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Aug 2014 21:09:42 -0400
+Date: Fri, 29 Aug 2014 03:09:34 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+cc: Peter Zijlstra <peterz@infradead.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Dmitry Torokhov <dtor@google.com>, Aubrey Li <aubrey.li@intel.com>
+Subject: Re: [PATCH 0/5 v3] irq / PM: Suspend-to-idle wakeup interrupts
+In-Reply-To: <14849230.M7591XGLg0@vostro.rjw.lan>
+Message-ID: <alpine.DEB.2.10.1408290256020.23342@nanos>
+References: <26580319.OZP7jvJnA9@vostro.rjw.lan> <5320472.coYotHR1d0@vostro.rjw.lan> <alpine.DEB.2.10.1408282355350.23342@nanos> <14849230.M7591XGLg0@vostro.rjw.lan>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Shuah Khan <shuah.kh@samsung.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH v2 4/4] ftracetest: Add XFAIL/XPASS/UNSUPPORTED as
- result code
-References: <20140826111511.5711.28493.stgit@kbuild-fedora.novalocal> <20140826111539.5711.93588.stgit@kbuild-fedora.novalocal>
-In-Reply-To: <20140826111539.5711.93588.stgit@kbuild-fedora.novalocal>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2014 05:15 AM, Masami Hiramatsu wrote:
-> Add XFAIL, XPASS and UNSUPPORTED as a result code. These are
-> used for the results that test case is expected to fail or
-> unsupported feature (by config).
-> This also introduces PASS/FAIL/XFAIL/XPASS/UNSUP result codes
-> for each testcase. Since the results are not binary, each
-> testcase must use these code to return the test result.
+On Fri, 29 Aug 2014, Rafael J. Wysocki wrote:
+> On Friday, August 29, 2014 12:44:11 AM Thomas Gleixner wrote:
+> > So really, I'm too lazy to walk through that mess further. I bet NONE
+> > of the usage sites except those for which this has been introduced in
+> > the first place has a real good reason to do so.
 > 
-> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> ---
->  tools/testing/ftrace/ftracetest                    |   61 +++++++++++++++-----
->  tools/testing/ftrace/test.d/basic1.tc              |    6 ++
->  tools/testing/ftrace/test.d/basic2.tc              |    6 +-
->  tools/testing/ftrace/test.d/basic3.tc              |    9 ++-
->  .../testing/ftrace/test.d/kprobe/add_and_remove.tc |   15 +++--
->  tools/testing/ftrace/test.d/kprobe/busy_check.tc   |   20 +++----
->  tools/testing/ftrace/test.d/template               |    6 ++
->  7 files changed, 84 insertions(+), 39 deletions(-)
+> A quite similar conclusion occured to me earlier today independently,
+> so we seem to be in agreement here. :-)
+
+I appreciate that!
+ 
+> > Unless someone comes up with a use case where a shared NO_SUSPEND
+> > handler is absolutely required, there is nothing which needs to be
+> > addressed. You've proven yourself, that the wake mechanism is
+> > sufficient to solve the problem which led to this discussion.
 > 
-> diff --git a/tools/testing/ftrace/ftracetest b/tools/testing/ftrace/ftracetest
-> index 0378c8a..bfcd56a 100755
-> --- a/tools/testing/ftrace/ftracetest
-> +++ b/tools/testing/ftrace/ftracetest
-> @@ -107,22 +107,53 @@ catlog() { #file
->  }
->  
->  # Testcase management
-> +# Test result codes
-> +PASS=0	# The test succeeded.
-> +FAIL=1	# The test failed, but was expected to succeed.
-> +XFAIL=2	# The test failed, and was expected to fail.
-> +XPASS=3	# The test succeeded, but was expected to fail.
+> Yeah, that particular thing can be perfectly addressed without using
+> IRQF_NO_SUSPEND.
+> 
+> There seems to be quite some confusion about that in the ARM world,
+> though, as IRQF_NO_SUSPEND things *happen* to wake the system up if WFI is
+> used to emulate "suspend" and that appears to make people believe that using
+> them for this purpose is actually fine (because that appears to work).
 
-This one is confusing. It is still a failure. XFAIL case is
-expected to fail, using that convention XPASS should be
-expected to pass?
+Well, the problem in the ARM world is still the same as we had 10
+years ago, just a bit different. While 10 years ago, the "make it work
+for me" attitude was hidden in some vendor tree and stayed there
+forever, today its still the same "make it work for me" thing which
+gets applied to the vendor tree (they still sport 1000+ patches
+despite all efforts) and then trickles into the mainline w/o much
+review to fulfil the "we need to be mainline" mantra.
+ 
+> That said I was not involved in the introduction of IRQF_EARLY_RESUME (or
+> at least I can't recall being involved) and I also can't recall having used
+> it for anything, so I can't really say what the original motivation was.
 
-Can we use XFAIL0 for XFAIL pass case and XFAIL1 for XFAIL fail
-case?
+It was solely introduced to solve an oddball issue with the XEN "IPIs"
+and I take the blame for not documenting it proper. Though I really
+have a hard time to understand why random drivers use this w/o comment
+and for no obvious reason. "Works for me" looks like a reasonable
+explanation.
 
-thanks,
--- Shuah
+I've uploaded an incomplete and completely untested patch series to
+handle this stuff to: https://tglx.de/~tglx/patches.tar
 
+Feel free to pick it up and work from there.
 
--- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+Thanks,
+
+	tglx
