@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752802AbaH2FFg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 01:05:36 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:37800 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752319AbaH2FFf (ORCPT
+	id S1752812AbaH2FGZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 01:06:25 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:42016 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751672AbaH2FGX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 01:05:35 -0400
+	Fri, 29 Aug 2014 01:06:23 -0400
 MIME-Version: 1.0
-In-Reply-To: <1407771686-19708-1-git-send-email-kiran.padwal@smartplayin.com>
-References: <1407771686-19708-1-git-send-email-kiran.padwal@smartplayin.com>
-Date: Fri, 29 Aug 2014 07:05:34 +0200
-Message-ID: <CACRpkdZKXyOjfPPdmaSuR7anon3xk2AoZTzdEmprDHhLhhbqhA@mail.gmail.com>
-Subject: Re: [PATCH 07/11] pinctrl: imx51: Make of_device_id array const
+In-Reply-To: <1407771709-19746-1-git-send-email-kiran.padwal@smartplayin.com>
+References: <1407771709-19746-1-git-send-email-kiran.padwal@smartplayin.com>
+Date: Fri, 29 Aug 2014 07:06:23 +0200
+Message-ID: <CACRpkdZJAV4vB7sUOjfe3xBheqBYRoBO6VbySRpK0Vy9O+4eQA@mail.gmail.com>
+Subject: Re: [PATCH 08/11] pinctrl: imx53: Make of_device_id array const
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Kiran Padwal <kiran.padwal@smartplayin.com>
 Cc: Shawn Guo <shawn.guo@linaro.org>,
@@ -27,7 +27,7 @@ On Mon, Aug 11, 2014 at 5:41 PM, Kiran Padwal
 
 > Make of_device_id array const, because all OF functions handle it as const.
 > ---
->  drivers/pinctrl/pinctrl-imx51.c |    2 +-
+>  drivers/pinctrl/pinctrl-imx53.c |    2 +-
 >  1 file changed, 1 insertion(+), 1 deletion(-)
 
 Applied and squashed.
