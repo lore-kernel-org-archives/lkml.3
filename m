@@ -1,475 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754312AbaH2Rpv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 13:45:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:57790 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753434AbaH2Rpg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 13:45:36 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: lwn@lwn.net
-Subject: Re: [3.8.y.z extended stable] Linux 3.8.13.28
-Date: Fri, 29 Aug 2014 10:45:32 -0700
-Message-Id: <1409334332-22902-2-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1409334332-22902-1-git-send-email-kamal@canonical.com>
-References: <1409334332-22902-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	id S1754367AbaH2RsF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 13:48:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19845 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752871AbaH2RsC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 13:48:02 -0400
+Date: Fri, 29 Aug 2014 13:46:41 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
+        Gioh Kim <gioh.kim@lge.com>, Vlastimil Babka <vbabka@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v3 1/4] mm/page_alloc: fix incorrect isolation
+ behavior by rechecking migratetype
+Message-ID: <20140829174641.GB27127@nhori.bos.redhat.com>
+References: <1409040498-10148-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1409040498-10148-2-git-send-email-iamjoonsoo.kim@lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409040498-10148-2-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-diff --git a/Makefile b/Makefile
-index 5cc8641..7f7e383 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,7 +1,7 @@
- VERSION = 3
- PATCHLEVEL = 8
- SUBLEVEL = 13
--EXTRAVERSION = .27
-+EXTRAVERSION = .28
- NAME = Remoralised Urchins Update
- 
- # *DOCUMENTATION*
-diff --git a/arch/x86/include/asm/ptrace.h b/arch/x86/include/asm/ptrace.h
-index 942a086..68e9f00 100644
---- a/arch/x86/include/asm/ptrace.h
-+++ b/arch/x86/include/asm/ptrace.h
-@@ -232,6 +232,22 @@ static inline unsigned long regs_get_kernel_stack_nth(struct pt_regs *regs,
- 
- #define ARCH_HAS_USER_SINGLE_STEP_INFO
- 
-+/*
-+ * When hitting ptrace_stop(), we cannot return using SYSRET because
-+ * that does not restore the full CPU state, only a minimal set.  The
-+ * ptracer can change arbitrary register values, which is usually okay
-+ * because the usual ptrace stops run off the signal delivery path which
-+ * forces IRET; however, ptrace_event() stops happen in arbitrary places
-+ * in the kernel and don't force IRET path.
-+ *
-+ * So force IRET path after a ptrace stop.
-+ */
-+#define arch_ptrace_stop_needed(code, info)				\
-+({									\
-+	set_thread_flag(TIF_NOTIFY_RESUME);				\
-+	false;								\
-+})
-+
- struct user_desc;
- extern int do_get_thread_area(struct task_struct *p, int idx,
- 			      struct user_desc __user *info);
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 60d03c2..1843543 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -434,8 +434,9 @@ sysenter_past_esp:
- 	jnz sysenter_audit
- sysenter_do_call:
- 	cmpl $(NR_syscalls), %eax
--	jae syscall_badsys
-+	jae sysenter_badsys
- 	call *sys_call_table(,%eax,4)
-+sysenter_after_call:
- 	movl %eax,PT_EAX(%esp)
- 	LOCKDEP_SYS_EXIT
- 	DISABLE_INTERRUPTS(CLBR_ANY)
-@@ -516,6 +517,7 @@ ENTRY(system_call)
- 	jae syscall_badsys
- syscall_call:
- 	call *sys_call_table(,%eax,4)
-+syscall_after_call:
- 	movl %eax,PT_EAX(%esp)		# store the return value
- syscall_exit:
- 	LOCKDEP_SYS_EXIT
-@@ -685,8 +687,13 @@ syscall_fault:
- END(syscall_fault)
- 
- syscall_badsys:
--	movl $-ENOSYS,PT_EAX(%esp)
--	jmp resume_userspace
-+	movl $-ENOSYS,%eax
-+	jmp syscall_after_call
-+END(syscall_badsys)
-+
-+sysenter_badsys:
-+	movl $-ENOSYS,%eax
-+	jmp sysenter_after_call
- END(syscall_badsys)
- 	CFI_ENDPROC
- /*
-diff --git a/drivers/target/target_core_rd.c b/drivers/target/target_core_rd.c
-index 0457de3..51968ed 100644
---- a/drivers/target/target_core_rd.c
-+++ b/drivers/target/target_core_rd.c
-@@ -174,7 +174,7 @@ static int rd_build_device_space(struct rd_dev *rd_dev)
- 						- 1;
- 
- 		for (j = 0; j < sg_per_table; j++) {
--			pg = alloc_pages(GFP_KERNEL, 0);
-+			pg = alloc_pages(GFP_KERNEL | __GFP_ZERO, 0);
- 			if (!pg) {
- 				pr_err("Unable to allocate scatterlist"
- 					" pages for struct rd_dev_sg_table\n");
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 5dd7709..4d63cfe 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -799,8 +799,21 @@ static struct mount *clone_mnt(struct mount *old, struct dentry *root,
- 
- 	mnt->mnt.mnt_flags = old->mnt.mnt_flags & ~MNT_WRITE_HOLD;
- 	/* Don't allow unprivileged users to change mount flags */
--	if ((flag & CL_UNPRIVILEGED) && (mnt->mnt.mnt_flags & MNT_READONLY))
--		mnt->mnt.mnt_flags |= MNT_LOCK_READONLY;
-+	if (flag & CL_UNPRIVILEGED) {
-+		mnt->mnt.mnt_flags |= MNT_LOCK_ATIME;
-+
-+		if (mnt->mnt.mnt_flags & MNT_READONLY)
-+			mnt->mnt.mnt_flags |= MNT_LOCK_READONLY;
-+
-+		if (mnt->mnt.mnt_flags & MNT_NODEV)
-+			mnt->mnt.mnt_flags |= MNT_LOCK_NODEV;
-+
-+		if (mnt->mnt.mnt_flags & MNT_NOSUID)
-+			mnt->mnt.mnt_flags |= MNT_LOCK_NOSUID;
-+
-+		if (mnt->mnt.mnt_flags & MNT_NOEXEC)
-+			mnt->mnt.mnt_flags |= MNT_LOCK_NOEXEC;
-+	}
- 
- 	atomic_inc(&sb->s_active);
- 	mnt->mnt.mnt_sb = sb;
-@@ -1740,9 +1753,6 @@ static int change_mount_flags(struct vfsmount *mnt, int ms_flags)
- 	if (readonly_request == __mnt_is_readonly(mnt))
- 		return 0;
- 
--	if (mnt->mnt_flags & MNT_LOCK_READONLY)
--		return -EPERM;
--
- 	if (readonly_request)
- 		error = mnt_make_readonly(real_mount(mnt));
- 	else
-@@ -1771,6 +1781,33 @@ static int do_remount(struct path *path, int flags, int mnt_flags,
- 	if (path->dentry != path->mnt->mnt_root)
- 		return -EINVAL;
- 
-+	/* Don't allow changing of locked mnt flags.
-+	 *
-+	 * No locks need to be held here while testing the various
-+	 * MNT_LOCK flags because those flags can never be cleared
-+	 * once they are set.
-+	 */
-+	if ((mnt->mnt.mnt_flags & MNT_LOCK_READONLY) &&
-+	    !(mnt_flags & MNT_READONLY)) {
-+		return -EPERM;
-+	}
-+	if ((mnt->mnt.mnt_flags & MNT_LOCK_NODEV) &&
-+	    !(mnt_flags & MNT_NODEV)) {
-+		return -EPERM;
-+	}
-+	if ((mnt->mnt.mnt_flags & MNT_LOCK_NOSUID) &&
-+	    !(mnt_flags & MNT_NOSUID)) {
-+		return -EPERM;
-+	}
-+	if ((mnt->mnt.mnt_flags & MNT_LOCK_NOEXEC) &&
-+	    !(mnt_flags & MNT_NOEXEC)) {
-+		return -EPERM;
-+	}
-+	if ((mnt->mnt.mnt_flags & MNT_LOCK_ATIME) &&
-+	    ((mnt->mnt.mnt_flags & MNT_ATIME_MASK) != (mnt_flags & MNT_ATIME_MASK))) {
-+		return -EPERM;
-+	}
-+
- 	err = security_sb_remount(sb, data);
- 	if (err)
- 		return err;
-@@ -1782,7 +1819,7 @@ static int do_remount(struct path *path, int flags, int mnt_flags,
- 		err = do_remount_sb(sb, flags, data, 0);
- 	if (!err) {
- 		br_write_lock(&vfsmount_lock);
--		mnt_flags |= mnt->mnt.mnt_flags & MNT_PROPAGATION_MASK;
-+		mnt_flags |= mnt->mnt.mnt_flags & ~MNT_USER_SETTABLE_MASK;
- 		mnt->mnt.mnt_flags = mnt_flags;
- 		br_write_unlock(&vfsmount_lock);
- 	}
-@@ -1971,7 +2008,7 @@ static int do_new_mount(struct path *path, const char *fstype, int flags,
- 		 */
- 		if (!(type->fs_flags & FS_USERNS_DEV_MOUNT)) {
- 			flags |= MS_NODEV;
--			mnt_flags |= MNT_NODEV;
-+			mnt_flags |= MNT_NODEV | MNT_LOCK_NODEV;
- 		}
- 	}
- 
-@@ -2290,6 +2327,14 @@ long do_mount(const char *dev_name, const char *dir_name,
- 	if (flags & MS_RDONLY)
- 		mnt_flags |= MNT_READONLY;
- 
-+	/* The default atime for remount is preservation */
-+	if ((flags & MS_REMOUNT) &&
-+	    ((flags & (MS_NOATIME | MS_NODIRATIME | MS_RELATIME |
-+		       MS_STRICTATIME)) == 0)) {
-+		mnt_flags &= ~MNT_ATIME_MASK;
-+		mnt_flags |= path.mnt->mnt_flags & MNT_ATIME_MASK;
-+	}
-+
- 	flags &= ~(MS_NOSUID | MS_NOEXEC | MS_NODEV | MS_ACTIVE | MS_BORN |
- 		   MS_NOATIME | MS_NODIRATIME | MS_RELATIME| MS_KERNMOUNT |
- 		   MS_STRICTATIME);
-diff --git a/include/linux/mount.h b/include/linux/mount.h
-index 73005f9..f058e13 100644
---- a/include/linux/mount.h
-+++ b/include/linux/mount.h
-@@ -42,11 +42,18 @@ struct mnt_namespace;
-  * flag, consider how it interacts with shared mounts.
-  */
- #define MNT_SHARED_MASK	(MNT_UNBINDABLE)
--#define MNT_PROPAGATION_MASK	(MNT_SHARED | MNT_UNBINDABLE)
-+#define MNT_USER_SETTABLE_MASK  (MNT_NOSUID | MNT_NODEV | MNT_NOEXEC \
-+				 | MNT_NOATIME | MNT_NODIRATIME | MNT_RELATIME \
-+				 | MNT_READONLY)
-+#define MNT_ATIME_MASK (MNT_NOATIME | MNT_NODIRATIME | MNT_RELATIME )
- 
- 
- #define MNT_INTERNAL	0x4000
- 
-+#define MNT_LOCK_ATIME		0x040000
-+#define MNT_LOCK_NOEXEC		0x080000
-+#define MNT_LOCK_NOSUID		0x100000
-+#define MNT_LOCK_NODEV		0x200000
- #define MNT_LOCK_READONLY	0x400000
- 
- struct vfsmount {
-diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
-index 2e99b8e..bb980ae 100644
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -337,6 +337,9 @@ static inline void user_single_step_siginfo(struct task_struct *tsk,
-  * calling arch_ptrace_stop() when it would be superfluous.  For example,
-  * if the thread has not been back to user mode since the last stop, the
-  * thread state might indicate that nothing needs to be done.
-+ *
-+ * This is guaranteed to be invoked once before a task stops for ptrace and
-+ * may include arch-specific operations necessary prior to a ptrace stop.
-  */
- #define arch_ptrace_stop_needed(code, info)	(0)
- #endif
-diff --git a/mm/shmem.c b/mm/shmem.c
-index efd0b3a..840643a 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -78,11 +78,12 @@ static struct vfsmount *shm_mnt;
- #define SHORT_SYMLINK_LEN 128
- 
- /*
-- * shmem_fallocate and shmem_writepage communicate via inode->i_private
-- * (with i_mutex making sure that it has only one user at a time):
-- * we would prefer not to enlarge the shmem inode just for that.
-+ * shmem_fallocate communicates with shmem_fault or shmem_writepage via
-+ * inode->i_private (with i_mutex making sure that it has only one user at
-+ * a time): we would prefer not to enlarge the shmem inode just for that.
-  */
- struct shmem_falloc {
-+	wait_queue_head_t *waitq; /* faults into hole wait for punch to end */
- 	pgoff_t start;		/* start of range currently being fallocated */
- 	pgoff_t next;		/* the next page offset to be fallocated */
- 	pgoff_t nr_falloced;	/* how many new pages have been fallocated */
-@@ -532,22 +533,19 @@ static void shmem_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
- 		return;
- 
- 	index = start;
--	for ( ; ; ) {
-+	while (index < end) {
- 		cond_resched();
- 		pvec.nr = shmem_find_get_pages_and_swap(mapping, index,
- 				min(end - index, (pgoff_t)PAGEVEC_SIZE),
- 							pvec.pages, indices);
- 		if (!pvec.nr) {
--			if (index == start || unfalloc)
-+			/* If all gone or hole-punch or unfalloc, we're done */
-+			if (index == start || end != -1)
- 				break;
-+			/* But if truncating, restart to make sure all gone */
- 			index = start;
- 			continue;
- 		}
--		if ((index == start || unfalloc) && indices[0] >= end) {
--			shmem_deswap_pagevec(&pvec);
--			pagevec_release(&pvec);
--			break;
--		}
- 		mem_cgroup_uncharge_start();
- 		for (i = 0; i < pagevec_count(&pvec); i++) {
- 			struct page *page = pvec.pages[i];
-@@ -559,8 +557,12 @@ static void shmem_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
- 			if (radix_tree_exceptional_entry(page)) {
- 				if (unfalloc)
- 					continue;
--				nr_swaps_freed += !shmem_free_swap(mapping,
--								index, page);
-+				if (shmem_free_swap(mapping, index, page)) {
-+					/* Swap was replaced by page: retry */
-+					index--;
-+					break;
-+				}
-+				nr_swaps_freed++;
- 				continue;
- 			}
- 
-@@ -569,6 +571,11 @@ static void shmem_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
- 				if (page->mapping == mapping) {
- 					VM_BUG_ON(PageWriteback(page));
- 					truncate_inode_page(mapping, page);
-+				} else {
-+					/* Page was replaced by swap: retry */
-+					unlock_page(page);
-+					index--;
-+					break;
- 				}
- 			}
- 			unlock_page(page);
-@@ -825,6 +832,7 @@ static int shmem_writepage(struct page *page, struct writeback_control *wbc)
- 			spin_lock(&inode->i_lock);
- 			shmem_falloc = inode->i_private;
- 			if (shmem_falloc &&
-+			    !shmem_falloc->waitq &&
- 			    index >= shmem_falloc->start &&
- 			    index < shmem_falloc->next)
- 				shmem_falloc->nr_unswapped++;
-@@ -1299,6 +1307,64 @@ static int shmem_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	int error;
- 	int ret = VM_FAULT_LOCKED;
- 
-+	/*
-+	 * Trinity finds that probing a hole which tmpfs is punching can
-+	 * prevent the hole-punch from ever completing: which in turn
-+	 * locks writers out with its hold on i_mutex.  So refrain from
-+	 * faulting pages into the hole while it's being punched.  Although
-+	 * shmem_undo_range() does remove the additions, it may be unable to
-+	 * keep up, as each new page needs its own unmap_mapping_range() call,
-+	 * and the i_mmap tree grows ever slower to scan if new vmas are added.
-+	 *
-+	 * It does not matter if we sometimes reach this check just before the
-+	 * hole-punch begins, so that one fault then races with the punch:
-+	 * we just need to make racing faults a rare case.
-+	 *
-+	 * The implementation below would be much simpler if we just used a
-+	 * standard mutex or completion: but we cannot take i_mutex in fault,
-+	 * and bloating every shmem inode for this unlikely case would be sad.
-+	 */
-+	if (unlikely(inode->i_private)) {
-+		struct shmem_falloc *shmem_falloc;
-+
-+		spin_lock(&inode->i_lock);
-+		shmem_falloc = inode->i_private;
-+		if (shmem_falloc &&
-+		    shmem_falloc->waitq &&
-+		    vmf->pgoff >= shmem_falloc->start &&
-+		    vmf->pgoff < shmem_falloc->next) {
-+			wait_queue_head_t *shmem_falloc_waitq;
-+			DEFINE_WAIT(shmem_fault_wait);
-+
-+			ret = VM_FAULT_NOPAGE;
-+			if ((vmf->flags & FAULT_FLAG_ALLOW_RETRY) &&
-+			   !(vmf->flags & FAULT_FLAG_RETRY_NOWAIT)) {
-+				/* It's polite to up mmap_sem if we can */
-+				up_read(&vma->vm_mm->mmap_sem);
-+				ret = VM_FAULT_RETRY;
-+			}
-+
-+			shmem_falloc_waitq = shmem_falloc->waitq;
-+			prepare_to_wait(shmem_falloc_waitq, &shmem_fault_wait,
-+					TASK_UNINTERRUPTIBLE);
-+			spin_unlock(&inode->i_lock);
-+			schedule();
-+
-+			/*
-+			 * shmem_falloc_waitq points into the shmem_fallocate()
-+			 * stack of the hole-punching task: shmem_falloc_waitq
-+			 * is usually invalid by the time we reach here, but
-+			 * finish_wait() does not dereference it in that case;
-+			 * though i_lock needed lest racing with wake_up_all().
-+			 */
-+			spin_lock(&inode->i_lock);
-+			finish_wait(shmem_falloc_waitq, &shmem_fault_wait);
-+			spin_unlock(&inode->i_lock);
-+			return ret;
-+		}
-+		spin_unlock(&inode->i_lock);
-+	}
-+
- 	error = shmem_getpage(inode, vmf->pgoff, &vmf->page, SGP_CACHE, &ret);
- 	if (error)
- 		return ((error == -ENOMEM) ? VM_FAULT_OOM : VM_FAULT_SIGBUS);
-@@ -1820,12 +1886,25 @@ static long shmem_fallocate(struct file *file, int mode, loff_t offset,
- 		struct address_space *mapping = file->f_mapping;
- 		loff_t unmap_start = round_up(offset, PAGE_SIZE);
- 		loff_t unmap_end = round_down(offset + len, PAGE_SIZE) - 1;
-+		DECLARE_WAIT_QUEUE_HEAD_ONSTACK(shmem_falloc_waitq);
-+
-+		shmem_falloc.waitq = &shmem_falloc_waitq;
-+		shmem_falloc.start = unmap_start >> PAGE_SHIFT;
-+		shmem_falloc.next = (unmap_end + 1) >> PAGE_SHIFT;
-+		spin_lock(&inode->i_lock);
-+		inode->i_private = &shmem_falloc;
-+		spin_unlock(&inode->i_lock);
- 
- 		if ((u64)unmap_end > (u64)unmap_start)
- 			unmap_mapping_range(mapping, unmap_start,
- 					    1 + unmap_end - unmap_start, 0);
- 		shmem_truncate_range(inode, offset, offset + len - 1);
- 		/* No need to unmap again: hole-punching leaves COWed pages */
-+
-+		spin_lock(&inode->i_lock);
-+		inode->i_private = NULL;
-+		wake_up_all(&shmem_falloc_waitq);
-+		spin_unlock(&inode->i_lock);
- 		error = 0;
- 		goto out;
- 	}
-@@ -1843,6 +1922,7 @@ static long shmem_fallocate(struct file *file, int mode, loff_t offset,
- 		goto out;
- 	}
- 
-+	shmem_falloc.waitq = NULL;
- 	shmem_falloc.start = start;
- 	shmem_falloc.next  = start;
- 	shmem_falloc.nr_falloced = 0;
-diff --git a/net/l2tp/l2tp_ppp.c b/net/l2tp/l2tp_ppp.c
-index 26dbd9a..fbd6bbf 100644
---- a/net/l2tp/l2tp_ppp.c
-+++ b/net/l2tp/l2tp_ppp.c
-@@ -1404,7 +1404,7 @@ static int pppol2tp_setsockopt(struct socket *sock, int level, int optname,
- 	int err;
- 
- 	if (level != SOL_PPPOL2TP)
--		return udp_prot.setsockopt(sk, level, optname, optval, optlen);
-+		return -EINVAL;
- 
- 	if (optlen < sizeof(int))
- 		return -EINVAL;
-@@ -1530,7 +1530,7 @@ static int pppol2tp_getsockopt(struct socket *sock, int level, int optname,
- 	struct pppol2tp_session *ps;
- 
- 	if (level != SOL_PPPOL2TP)
--		return udp_prot.getsockopt(sk, level, optname, optval, optlen);
-+		return -EINVAL;
- 
- 	if (get_user(len, optlen))
- 		return -EFAULT;
-diff --git a/net/sctp/associola.c b/net/sctp/associola.c
-index 67c6823..c5cd799 100644
---- a/net/sctp/associola.c
-+++ b/net/sctp/associola.c
-@@ -396,7 +396,7 @@ void sctp_association_free(struct sctp_association *asoc)
- 	/* Only real associations count against the endpoint, so
- 	 * don't bother for if this is a temporary association.
- 	 */
--	if (!asoc->temp) {
-+	if (!list_empty(&asoc->asocs)) {
- 		list_del(&asoc->asocs);
- 
- 		/* Decrement the backlog value for a TCP-style listening
+On Tue, Aug 26, 2014 at 05:08:15PM +0900, Joonsoo Kim wrote:
+> There are two paths to reach core free function of buddy allocator,
+> __free_one_page(), one is free_one_page()->__free_one_page() and the
+> other is free_hot_cold_page()->free_pcppages_bulk()->__free_one_page().
+> Each paths has race condition causing serious problems. At first, this
+> patch is focused on first type of freepath. And then, following patch
+> will solve the problem in second type of freepath.
+> 
+> In the first type of freepath, we got migratetype of freeing page without
+> holding the zone lock, so it could be racy. There are two cases of this
+> race.
+> 
+> 1. pages are added to isolate buddy list after restoring orignal
+> migratetype
+> 
+> CPU1                                   CPU2
+> 
+> get migratetype => return MIGRATE_ISOLATE
+> call free_one_page() with MIGRATE_ISOLATE
+> 
+> 				grab the zone lock
+> 				unisolate pageblock
+> 				release the zone lock
+> 
+> grab the zone lock
+> call __free_one_page() with MIGRATE_ISOLATE
+> freepage go into isolate buddy list,
+> although pageblock is already unisolated
+> 
+> This may cause two problems. One is that we can't use this page anymore
+> until next isolation attempt of this pageblock, because freepage is on
+> isolate pageblock. The other is that freepage accouting could be wrong
+> due to merging between different buddy list. Freepages on isolate buddy
+> list aren't counted as freepage, but ones on normal buddy list are counted
+> as freepage. If merge happens, buddy freepage on normal buddy list is
+> inevitably moved to isolate buddy list without any consideration of
+> freepage accouting so it could be incorrect.
+> 
+> 2. pages are added to normal buddy list while pageblock is isolated.
+> It is similar with above case.
+> 
+> This also may cause two problems. One is that we can't keep these
+> freepages from being allocated. Although this pageblock is isolated,
+> freepage would be added to normal buddy list so that it could be
+> allocated without any restriction. And the other problem is same as
+> case 1, that it, incorrect freepage accouting.
+> 
+> This race condition would be prevented by checking migratetype again
+> with holding the zone lock. Because it is somewhat heavy operation
+> and it isn't needed in common case, we want to avoid rechecking as much
+> as possible. So this patch introduce new variable, nr_isolate_pageblock
+> in struct zone to check if there is isolated pageblock.
+> With this, we can avoid to re-check migratetype in common case and do
+> it only if there is isolated pageblock. This solve above
+> mentioned problems.
+> 
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> ---
+>  include/linux/mmzone.h         |    4 ++++
+>  include/linux/page-isolation.h |    8 ++++++++
+>  mm/page_alloc.c                |   10 ++++++++--
+>  mm/page_isolation.c            |    2 ++
+>  4 files changed, 22 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> index 318df70..23e69f1 100644
+> --- a/include/linux/mmzone.h
+> +++ b/include/linux/mmzone.h
+> @@ -431,6 +431,10 @@ struct zone {
+>  	 */
+>  	int			nr_migrate_reserve_block;
+>  
+> +#ifdef CONFIG_MEMORY_ISOLATION
+
+It's worth adding some comment, especially about locking?
+The patch itself looks good me.
+
+Thanks,
+Naoya Horiguchi
+
+> +	unsigned long		nr_isolate_pageblock;
+> +#endif
+> +
+>  #ifdef CONFIG_MEMORY_HOTPLUG
+>  	/* see spanned/present_pages for more description */
+>  	seqlock_t		span_seqlock;
+> diff --git a/include/linux/page-isolation.h b/include/linux/page-isolation.h
+> index 3fff8e7..2dc1e16 100644
+> --- a/include/linux/page-isolation.h
+> +++ b/include/linux/page-isolation.h
+> @@ -2,6 +2,10 @@
+>  #define __LINUX_PAGEISOLATION_H
+>  
+>  #ifdef CONFIG_MEMORY_ISOLATION
+> +static inline bool has_isolate_pageblock(struct zone *zone)
+> +{
+> +	return zone->nr_isolate_pageblock;
+> +}
+>  static inline bool is_migrate_isolate_page(struct page *page)
+>  {
+>  	return get_pageblock_migratetype(page) == MIGRATE_ISOLATE;
+> @@ -11,6 +15,10 @@ static inline bool is_migrate_isolate(int migratetype)
+>  	return migratetype == MIGRATE_ISOLATE;
+>  }
+>  #else
+> +static inline bool has_isolate_pageblock(struct zone *zone)
+> +{
+> +	return false;
+> +}
+>  static inline bool is_migrate_isolate_page(struct page *page)
+>  {
+>  	return false;
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index f86023b..51e0d13 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -740,9 +740,15 @@ static void free_one_page(struct zone *zone,
+>  	if (nr_scanned)
+>  		__mod_zone_page_state(zone, NR_PAGES_SCANNED, -nr_scanned);
+>  
+> +	if (unlikely(has_isolate_pageblock(zone))) {
+> +		migratetype = get_pfnblock_migratetype(page, pfn);
+> +		if (is_migrate_isolate(migratetype))
+> +			goto skip_counting;
+> +	}
+> +	__mod_zone_freepage_state(zone, 1 << order, migratetype);
+> +
+> +skip_counting:
+>  	__free_one_page(page, pfn, zone, order, migratetype);
+> -	if (unlikely(!is_migrate_isolate(migratetype)))
+> -		__mod_zone_freepage_state(zone, 1 << order, migratetype);
+>  	spin_unlock(&zone->lock);
+>  }
+>  
+> diff --git a/mm/page_isolation.c b/mm/page_isolation.c
+> index d1473b2..1fa4a4d 100644
+> --- a/mm/page_isolation.c
+> +++ b/mm/page_isolation.c
+> @@ -60,6 +60,7 @@ out:
+>  		int migratetype = get_pageblock_migratetype(page);
+>  
+>  		set_pageblock_migratetype(page, MIGRATE_ISOLATE);
+> +		zone->nr_isolate_pageblock++;
+>  		nr_pages = move_freepages_block(zone, page, MIGRATE_ISOLATE);
+>  
+>  		__mod_zone_freepage_state(zone, -nr_pages, migratetype);
+> @@ -83,6 +84,7 @@ void unset_migratetype_isolate(struct page *page, unsigned migratetype)
+>  	nr_pages = move_freepages_block(zone, page, migratetype);
+>  	__mod_zone_freepage_state(zone, nr_pages, migratetype);
+>  	set_pageblock_migratetype(page, migratetype);
+> +	zone->nr_isolate_pageblock--;
+>  out:
+>  	spin_unlock_irqrestore(&zone->lock, flags);
+>  }
+> -- 
+> 1.7.9.5
+> 
+> 
