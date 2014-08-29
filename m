@@ -1,215 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753156AbaH2KcJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 06:32:09 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:59909 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752860AbaH2Kbb (ORCPT
+	id S1752265AbaH2KkL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 06:40:11 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:56718 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751578AbaH2KkJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 06:31:31 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Cc: David Matlack <dmatlack@google.com>, stable@vger.kernel.org,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Subject: [PATCH 2/3] kvm: fix potentially corrupt mmio cache
-Date: Fri, 29 Aug 2014 12:31:16 +0200
-Message-Id: <1409308277-4021-3-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1409308277-4021-1-git-send-email-pbonzini@redhat.com>
-References: <1409308277-4021-1-git-send-email-pbonzini@redhat.com>
+	Fri, 29 Aug 2014 06:40:09 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Fri, 29 Aug 2014 12:38:45 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Wang YanQing <udknight@gmail.com>
+Cc: Johan Hovold <johan@kernel.org>, gregkh@linuxfoundation.org,
+        linus.walleij@linaro.org, jhovold@gmail.com, andi@lisas.de,
+        dforsi@gmail.com, gnomes@lxorguk.ukuu.org.uk,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Resend Re: [PATCH v6] usb:serial:pl2303: add GPIOs interface on
+ PL2303
+Message-ID: <20140829103845.GG4894@localhost>
+References: <20140729165709.GA3380@udknight>
+ <20140804140032.GA25529@localhost>
+ <20140804171536.GA2330@udknight>
+ <20140805135408.GD25529@localhost>
+ <20140807191034.GA6335@udknight>
+ <20140808075442.GB14553@localhost>
+ <20140808184655.GA20958@udknight>
+ <20140812140259.GA9799@localhost>
+ <20140827233810.GA418@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140827233810.GA418@localhost.localdomain>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Matlack <dmatlack@google.com>
+On Thu, Aug 28, 2014 at 07:38:10AM +0800, Wang YanQing wrote:
+> On Tue, Aug 12, 2014 at 04:02:59PM +0200, Johan Hovold wrote:
+> > On Sat, Aug 09, 2014 at 02:46:56AM +0800, Wang YanQing wrote:
+> > > On Fri, Aug 08, 2014 at 09:54:42AM +0200, Johan Hovold wrote:
+> > > > On Fri, Aug 08, 2014 at 03:10:34AM +0800, Wang YanQing wrote:
 
-vcpu exits and memslot mutations can run concurrently as long as the
-vcpu does not aquire the slots mutex. Thus it is theoretically possible
-for memslots to change underneath a vcpu that is handling an exit.
+> > > "
+> > > You must allocate the buffer dynamically as some platforms cannot do
+> > > DMA to the stack.
+> > > "
+> > > Thanks very much for point out it, could you clarify it? 
+> > > I want to know the reason.
+> > 
+> > The memory where the stack resides might not be available for DMA, and
+> > even if it is, there could still be problems with cache coherency.
+> 
+> It is still vague:
+> stack memory maybe resident higher place than normal memory,
+> but I don't think kmalloc could be immune from this problem, unless
+> we use GFP_DMA?
 
-If we increment the memslot generation number again after
-synchronize_srcu_expedited(), vcpus can safely cache memslot generation
-without maintaining a single rcu_dereference through an entire vm exit.
-And much of the x86/kvm code does not maintain a single rcu_dereference
-of the current memslots during each exit.
+No, you don't need to use GFP_DMA (unless implementing a driver for an
+ISA device on x86).
 
-We can prevent the following case:
+Have a look at Documentation/DMA-API-HOWTO.txt, specifically the section
+"What memory is DMA'able?".
 
-   vcpu (CPU 0)                             | thread (CPU 1)
---------------------------------------------+--------------------------
-1  vm exit                                  |
-2  srcu_read_unlock(&kvm->srcu)             |
-3  decide to cache something based on       |
-     old memslots                           |
-4                                           | change memslots
-                                            | (increments generation)
-5                                           | synchronize_srcu(&kvm->srcu);
-6  retrieve generation # from new memslots  |
-7  tag cache with new memslot generation    |
-8  srcu_read_unlock(&kvm->srcu)             |
-...                                         |
-   <action based on cache occurs even       |
-    though the caching decision was based   |
-    on the old memslots>                    |
-...                                         |
-   <action *continues* to occur until next  |
-    memslot generation change, which may    |
-    be never>                               |
-                                            |
-
-By incrementing the generation after synchronizing with kvm->srcu readers,
-we ensure that the generation retrieved in (6) will become invalid soon
-after (8).
-
-Keeping the existing increment is not strictly necessary, but we
-do keep it and just move it for consistency from update_memslots to
-install_new_memslots.  It invalidates old cached MMIOs immediately,
-instead of having to wait for the end of synchronize_srcu_expedited,
-which makes the code more clearly correct in case CPU 1 is preempted
-right after synchronize_srcu() returns.
-
-To avoid halving the generation space in SPTEs, always presume that the
-low bit of the generation is zero when reconstructing a generation number
-out of an SPTE.  This effectively disables MMIO caching in SPTEs during
-the call to synchronize_srcu_expedited.  Using the low bit this way is
-somewhat like a seqcount---where the protected thing is a cache, and
-instead of retrying we can simply punt if we observe the low bit to be 1.
-
-Cc: stable@vger.kernel.org
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Signed-off-by: David Matlack <dmatlack@google.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- Documentation/virtual/kvm/mmu.txt | 14 ++++++++++++++
- arch/x86/kvm/mmu.c                | 20 ++++++++++++--------
- virt/kvm/kvm_main.c               | 23 ++++++++++++++++-------
- 3 files changed, 42 insertions(+), 15 deletions(-)
-
-diff --git a/Documentation/virtual/kvm/mmu.txt b/Documentation/virtual/kvm/mmu.txt
-index 290894176142..53838d9c6295 100644
---- a/Documentation/virtual/kvm/mmu.txt
-+++ b/Documentation/virtual/kvm/mmu.txt
-@@ -425,6 +425,20 @@ fault through the slow path.
- Since only 19 bits are used to store generation-number on mmio spte, all
- pages are zapped when there is an overflow.
- 
-+Unfortunately, a single memory access might access kvm_memslots(kvm) multiple
-+times, the last one happening when the generation number is retrieved and
-+stored into the MMIO spte.  Thus, the MMIO spte might be created based on
-+out-of-date information, but with an up-to-date generation number.
-+
-+To avoid this, the generation number is incremented again after synchronize_srcu
-+returns; thus, the low bit of kvm_memslots(kvm)->generation is only 1 during a
-+memslot update, while some SRCU readers might be using the old copy.  We do not
-+want to use an MMIO sptes created with an odd generation number, and we can do
-+this without losing a bit in the MMIO spte.  The low bit of the generation
-+is not stored in MMIO spte, and presumed zero when it is extracted out of the
-+spte.  If KVM is unlucky and creates an MMIO spte while the low bit is 1,
-+the next access to the spte will always be a cache miss.
-+
- 
- Further reading
- ===============
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 323c3f5f5c84..96515957ba82 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -199,16 +199,20 @@ void kvm_mmu_set_mmio_spte_mask(u64 mmio_mask)
- EXPORT_SYMBOL_GPL(kvm_mmu_set_mmio_spte_mask);
- 
- /*
-- * spte bits of bit 3 ~ bit 11 are used as low 9 bits of generation number,
-- * the bits of bits 52 ~ bit 61 are used as high 10 bits of generation
-- * number.
-+ * the low bit of the generation number is always presumed to be zero.
-+ * This disables mmio caching during memslot updates.  The concept is
-+ * similar to a seqcount but instead of retrying the access we just punt
-+ * and ignore the cache.
-+ *
-+ * spte bits 3-11 are used as bits 1-9 of the generation number,
-+ * the bits 52-61 are used as bits 10-19 of the generation number.
-  */
--#define MMIO_SPTE_GEN_LOW_SHIFT		3
-+#define MMIO_SPTE_GEN_LOW_SHIFT		2
- #define MMIO_SPTE_GEN_HIGH_SHIFT	52
- 
--#define MMIO_GEN_SHIFT			19
--#define MMIO_GEN_LOW_SHIFT		9
--#define MMIO_GEN_LOW_MASK		((1 << MMIO_GEN_LOW_SHIFT) - 1)
-+#define MMIO_GEN_SHIFT			20
-+#define MMIO_GEN_LOW_SHIFT		10
-+#define MMIO_GEN_LOW_MASK		((1 << MMIO_GEN_LOW_SHIFT) - 2)
- #define MMIO_GEN_MASK			((1 << MMIO_GEN_SHIFT) - 1)
- #define MMIO_MAX_GEN			((1 << MMIO_GEN_SHIFT) - 1)
- 
-@@ -4428,7 +4432,7 @@ void kvm_mmu_invalidate_mmio_sptes(struct kvm *kvm)
- 	 * The very rare case: if the generation-number is round,
- 	 * zap all shadow pages.
- 	 */
--	if (unlikely(kvm_current_mmio_generation(kvm) >= MMIO_MAX_GEN)) {
-+	if (unlikely(kvm_current_mmio_generation(kvm) == 0)) {
- 		printk_ratelimited(KERN_INFO "kvm: zapping shadow pages for mmio generation wraparound\n");
- 		kvm_mmu_invalidate_zap_all_pages(kvm);
- 	}
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 0bfdb673db26..bb8641b5d83b 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -95,8 +95,6 @@ static int hardware_enable_all(void);
- static void hardware_disable_all(void);
- 
- static void kvm_io_bus_destroy(struct kvm_io_bus *bus);
--static void update_memslots(struct kvm_memslots *slots,
--			    struct kvm_memory_slot *new, u64 last_generation);
- 
- static void kvm_release_pfn_dirty(pfn_t pfn);
- static void mark_page_dirty_in_slot(struct kvm *kvm,
-@@ -695,8 +693,7 @@ static void sort_memslots(struct kvm_memslots *slots)
- }
- 
- static void update_memslots(struct kvm_memslots *slots,
--			    struct kvm_memory_slot *new,
--			    u64 last_generation)
-+			    struct kvm_memory_slot *new)
- {
- 	if (new) {
- 		int id = new->id;
-@@ -707,8 +704,6 @@ static void update_memslots(struct kvm_memslots *slots,
- 		if (new->npages != npages)
- 			sort_memslots(slots);
- 	}
--
--	slots->generation = last_generation + 1;
- }
- 
- static int check_memory_region_flags(struct kvm_userspace_memory_region *mem)
-@@ -730,10 +725,24 @@ static struct kvm_memslots *install_new_memslots(struct kvm *kvm,
- {
- 	struct kvm_memslots *old_memslots = kvm->memslots;
- 
--	update_memslots(slots, new, kvm->memslots->generation);
-+	/*
-+	 * Set the low bit in the generation, which disables SPTE caching
-+	 * until the end of synchronize_srcu_expedited.
-+	 */
-+	WARN_ON(old_memslots->generation & 1);
-+	slots->generation = old_memslots->generation + 1;
-+
-+	update_memslots(slots, new);
- 	rcu_assign_pointer(kvm->memslots, slots);
- 	synchronize_srcu_expedited(&kvm->srcu);
- 
-+	/*
-+	 * Increment the new memslot generation a second time. This prevents
-+	 * vm exits that race with memslot updates from caching a memslot
-+	 * generation that will (potentially) be valid forever.
-+	 */
-+	slots->generation++;
-+
- 	kvm_arch_memslots_updated(kvm);
- 
- 	return old_memslots;
--- 
-1.8.3.1
-
-
+Johan
