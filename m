@@ -1,78 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008AbaH2Qwq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 12:52:46 -0400
-Received: from goliath.siemens.de ([192.35.17.28]:49308 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753519AbaH2Qwp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 12:52:45 -0400
-Message-ID: <5400AFBF.90408@siemens.com>
-Date: Fri, 29 Aug 2014 18:52:15 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1754143AbaH2QyO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 12:54:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31395 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753509AbaH2QyN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 12:54:13 -0400
+Date: Fri, 29 Aug 2014 12:52:44 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
+        Gioh Kim <gioh.kim@lge.com>, Vlastimil Babka <vbabka@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v3 4/4] mm/page_alloc: restrict max order of merging
+ on isolated pageblock
+Message-ID: <20140829165244.GA27127@nhori.bos.redhat.com>
+References: <1409040498-10148-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1409040498-10148-5-git-send-email-iamjoonsoo.kim@lge.com>
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>,
-        Wanpeng Li <wanpeng.li@linux.intel.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Zhang Yang <yang.z.zhang@intel.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 3/3] KVM: x86: #GP when attempts to write reserved
- bits of Variable Range MTRRs
-References: <1408439080-57721-1-git-send-email-wanpeng.li@linux.intel.com> <1408439080-57721-3-git-send-email-wanpeng.li@linux.intel.com> <5400AEBA.2080405@redhat.com>
-In-Reply-To: <5400AEBA.2080405@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409040498-10148-5-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-08-29 18:47, Paolo Bonzini wrote:
-> Il 19/08/2014 11:04, Wanpeng Li ha scritto:
->> Section 11.11.2.3 of the SDM mentions "All other bits in the IA32_MTRR_PHYSBASEn 
->> and IA32_MTRR_PHYSMASKn registers are reserved; the processor generates a 
->> general-protection exception(#GP) if software attempts to write to them". This 
->> patch do it in kvm.
->>
->> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+Hi Joonsoo,
+
+On Tue, Aug 26, 2014 at 05:08:18PM +0900, Joonsoo Kim wrote:
+> Current pageblock isolation logic could isolate each pageblock
+> individually. This causes freepage accounting problem if freepage with
+> pageblock order on isolate pageblock is merged with other freepage on
+> normal pageblock. We can prevent merging by restricting max order of
+> merging to pageblock order if freepage is on isolate pageblock.
 > 
-> This breaks if the guest maxphyaddr is higher than the host's (which 
-> sometimes happens depending on your hardware and how QEMU is 
-> configured).
+> Side-effect of this change is that there could be non-merged buddy
+> freepage even if finishing pageblock isolation, because undoing pageblock
+> isolation is just to move freepage from isolate buddy list to normal buddy
+> list rather than to consider merging. But, I think it doesn't matter
+> because 1) almost allocation request are for equal or below pageblock
+> order, 2) caller of pageblock isolation will use this freepage so
+> freepage will split in any case and 3) merge would happen soon after
+> some alloc/free on this and buddy pageblock.
 > 
-> You need to use cpuid_maxphyaddr, like this
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> ---
+>  mm/page_alloc.c |   15 ++++++++++++---
+>  1 file changed, 12 insertions(+), 3 deletions(-)
 > 
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index a375dfc42f6a..916e89515210 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -1726,7 +1726,7 @@ static bool valid_mtrr_type(unsigned t)
->  static bool mtrr_valid(struct kvm_vcpu *vcpu, u32 msr, u64 data)
->  {
->  	int i;
-> -	u64 mask = 0;
-> +	u64 mask;
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 809bfd3..8ba9fb0 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -570,6 +570,7 @@ static inline void __free_one_page(struct page *page,
+>  	unsigned long combined_idx;
+>  	unsigned long uninitialized_var(buddy_idx);
+>  	struct page *buddy;
+> +	int max_order = MAX_ORDER;
 >  
->  	if (!msr_mtrr_valid(msr))
->  		return false;
-> @@ -1750,8 +1750,7 @@ static bool mtrr_valid(struct kvm_vcpu *vcpu, u32 msr, u64 data)
->  	/* variable MTRRs */
->  	WARN_ON(!(msr >= 0x200 && msr < 0x200 + 2 * KVM_NR_VAR_MTRR));
+>  	VM_BUG_ON(!zone_is_initialized(zone));
 >  
-> -	for (i = 63; i > boot_cpu_data.x86_phys_bits; i--)
-> -		mask |= (1ULL << i);
-> +	mask = (~0ULL) << cpuid_maxphyaddr(vcpu);
->  	if ((msr & 1) == 0) {
->  		/* MTRR base */
->  		if (!valid_mtrr_type(data & 0xff))
+> @@ -580,18 +581,26 @@ static inline void __free_one_page(struct page *page,
+>  	VM_BUG_ON(migratetype == -1);
+>  	if (unlikely(has_isolate_pageblock(zone))) {
+>  		migratetype = get_pfnblock_migratetype(page, pfn);
+> -		if (is_migrate_isolate(migratetype))
+> +		if (is_migrate_isolate(migratetype)) {
+> +			/*
+> +			 * We restrict max order of merging to prevent merge
+> +			 * between freepages on isolate pageblock and normal
+> +			 * pageblock. Without this, pageblock isolation
+> +			 * could cause incorrect freepage accounting.
+> +			 */
+> +			max_order = pageblock_order + 1;
+
+When pageblock_order >= max_order, order in the while loop below could
+go beyond MAX_ORDER - 1. Or does it never happen?
+
+Thanks,
+Naoya Horiguchi
+
+>  			goto skip_counting;
+> +		}
+>  	}
+>  	__mod_zone_freepage_state(zone, 1 << order, migratetype);
+>  
+>  skip_counting:
+> -	page_idx = pfn & ((1 << MAX_ORDER) - 1);
+> +	page_idx = pfn & ((1 << max_order) - 1);
+>  
+>  	VM_BUG_ON_PAGE(page_idx & ((1 << order) - 1), page);
+>  	VM_BUG_ON_PAGE(bad_range(zone, page), page);
+>  
+> -	while (order < MAX_ORDER-1) {
+> +	while (order < max_order - 1) {
+>  		buddy_idx = __find_buddy_index(page_idx, order);
+>  		buddy = page + (buddy_idx - page_idx);
+>  		if (!page_is_buddy(page, buddy, order))
+> -- 
+> 1.7.9.5
 > 
 > 
-> Jan, can you see if this patch fixes the SeaBIOS triple fault you reported?
-
-Yep, it does.
-
-Jan
-
--- 
-Siemens AG, Corporate Technology, CT RTC ITP SES-DE
-Corporate Competence Center Embedded Linux
