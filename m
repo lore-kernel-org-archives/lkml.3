@@ -1,238 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753661AbaH2RLX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 13:11:23 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:61363 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753115AbaH2RLV (ORCPT
+	id S1753919AbaH2ROA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 13:14:00 -0400
+Received: from mail-bn1lp0139.outbound.protection.outlook.com ([207.46.163.139]:29387
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753268AbaH2RN6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 13:11:21 -0400
-MIME-Version: 1.0
-Reply-To: rajatxjain@gmail.com
-In-Reply-To: <20140829040419.GA11664@richard>
-References: <53FFA54D.9000907@gmail.com>
-	<20140829040419.GA11664@richard>
-Date: Fri, 29 Aug 2014 10:11:16 -0700
-Message-ID: <CAA93t1oqJ3tKiSpCsnN-L+iTCjXbk4FY_VjRVyAR5ZWELrB97g@mail.gmail.com>
-Subject: Re: [PATCH] pci/probe: Enable CRS for Intel Haswell root ports
-From: Rajat Jain <rajatxjain@gmail.com>
-To: Wei Yang <weiyang@linux.vnet.ibm.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+	Fri, 29 Aug 2014 13:13:58 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Sitsofe Wheeler <sitsofe@gmail.com>, Dexuan Cui <decui@microsoft.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rajat Jain <rajatjain@juniper.net>, Guenter Roeck <groeck@juniper.net>
-Content-Type: text/plain; charset=UTF-8
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>
+Subject: RE: [hyperv] BUG: unable to handle kernel paging request at
+ ffff8801f5bc7cbb (netvsc_select_queue)
+Thread-Topic: [hyperv] BUG: unable to handle kernel paging request at
+ ffff8801f5bc7cbb (netvsc_select_queue)
+Thread-Index: AQHPw2wO6MHucssNGk6ZrACVaHo57Jvn0EpQ
+Date: Fri, 29 Aug 2014 17:13:55 +0000
+Message-ID: <2028bb06104a4e2fafdb2e266a064aaf@BY2PR0301MB0711.namprd03.prod.outlook.com>
+References: <20140829093141.GC11445@sucs.org>
+In-Reply-To: <20140829093141.GC11445@sucs.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [50.135.110.52]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+x-forefront-prvs: 0318501FAE
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(189002)(199003)(377454003)(13464003)(51704005)(77096002)(66066001)(86362001)(21056001)(76482001)(4396001)(106356001)(80022001)(95666004)(79102001)(1511001)(74662001)(99286002)(87936001)(74502001)(77982001)(86612001)(92566001)(81542001)(76576001)(85852003)(107046002)(54356999)(83072002)(33646002)(106116001)(74316001)(19580405001)(83322001)(64706001)(85306004)(90102001)(108616004)(101416001)(46102001)(20776003)(81342001)(2421001)(76176999)(105586002)(19580395003)(50986999)(31966008)(2656002)(99396002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR0301MB0712;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Wei Yang,
-
-Thanks for your mail and review.
-
-On Thu, Aug 28, 2014 at 9:04 PM, Wei Yang <weiyang@linux.vnet.ibm.com> wrote:
-> On Thu, Aug 28, 2014 at 02:55:25PM -0700, Rajat Jain wrote:
->>The PCIe root port of the Intel Haswell CPU, has a behavior to endlessly
->>retry the configuration cycles, if an endpoint responds with a CRS
->>(Configuration Request Retry Status), and the "CRS Software Visibility"
->>flag is not set at the root port. This results in a CPU hang, when the
->>kernel tries to enumerate the device that responds with CRS.
->>
->>Please note that this root port behavior (of endless retries) is still
->>compliant with PCIe spec as the spec leaves the behavior open to
->>implementation, on how many retries to do if "CRS visibility flag" is
->>not enabled and it receives a CRS. (Intel has chosen to retry indefinitely)
->>
->>Ref1:
->>https://www.pcisig.com/specifications/pciexpress/ECN_CRS_Software_Visibility_No27.pdf
->>
->>Ref2:
->>PCIe spec V3.0, pg119, pg127 for "Configuration Request Retry Status"
->>
->>Following CPUs are affected:
->>http://ark.intel.com/products/codename/42174/Haswell#@All
->>
->>Thus we need to enable the CRS visibility flag for such root ports. The
->>commit ad7edfe04908 ("[PCI] Do not enable CRS Software Visibility by
->>default") suggests to maintain a whitelist of the systems for which CRS
->>should be enabled. This patch does the same.
->>
->>Note: Looking at the spec and reading about the CRS, IMHO the "CRS
->>visibility" looks like a good thing to me that should always be enabled
->>on the root ports that support it. And may be we should always enable
->>it if supported and maintain a blacklist of devices on which should be
->>disabled (because of known issues).
->>
->>How I stumbled upon this and tested the fix:
->>
->>Root port: PCI bridge: Intel Corporation Device 2f02 (rev 01)
->>
->>I have a PCIe endpoint (a PLX 8713 NT bridge) that will keep on responding
->>with CRS for a long time when the kernel tries to enumerate the
->>endpoint, trying to indicate that the device is not yet ready. This is
->>because it needs some configuration over I2C in order to complete its
->>reset sequence. This results in a CPU hang during enumeration.
->>
->>I used this setup to fix and test this issue. After enabling the CRS
->>visibility flag at the root port, I see that CPU moves on as expected
->>declaring the following (instead of freezing):
->>
->>pci 0000:30:00.0 id reading try 50 times with interval 20 ms to get
->>ffff0001
->>
->>Signed-off-by: Rajat Jain <rajatxjain@gmail.com>
->>Signed-off-by: Rajat Jain <rajatjain@juniper.net>
->>Signed-off-by: Guenter Roeck <groeck@juniper.net>
->>---
->>Hi Bjorn / folks,
->>
->>I had also saught suggestions on how this patch should be modelled.
->>Please find a suggestive alternative here:
->>
->>https://lkml.org/lkml/2014/8/1/186
->>
->>Please let me know your thoughts.
->>
->>Thanks,
->>
->>Rajat
->>
->>
->>
->>
->> drivers/pci/probe.c |   28 ++++++++++++++++++++++++++++
->> 1 file changed, 28 insertions(+)
->>
->>diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
->>index e3cf8a2..909ca75 100644
->>--- a/drivers/pci/probe.c
->>+++ b/drivers/pci/probe.c
->>@@ -740,6 +740,32 @@ struct pci_bus *pci_add_new_bus(struct pci_bus *parent, struct pci_dev *dev,
->> }
->> EXPORT_SYMBOL(pci_add_new_bus);
->>
->>+static const struct pci_device_id crs_whitelist[] = {
->>+      { PCI_VDEVICE(INTEL, 0x2f00), },
->>+      { PCI_VDEVICE(INTEL, 0x2f01), },
->>+      { PCI_VDEVICE(INTEL, 0x2f02), },
->>+      { PCI_VDEVICE(INTEL, 0x2f03), },
->>+      { PCI_VDEVICE(INTEL, 0x2f04), },
->>+      { PCI_VDEVICE(INTEL, 0x2f05), },
->>+      { PCI_VDEVICE(INTEL, 0x2f06), },
->>+      { PCI_VDEVICE(INTEL, 0x2f07), },
->>+      { PCI_VDEVICE(INTEL, 0x2f08), },
->>+      { PCI_VDEVICE(INTEL, 0x2f09), },
->>+      { PCI_VDEVICE(INTEL, 0x2f0a), },
->>+      { PCI_VDEVICE(INTEL, 0x2f0b), },
->>+      { },
->>+};
->>+
->>+static void pci_enable_crs(struct pci_dev *dev)
->>+{
->>+      /* Enable CRS Software visibility only for whitelisted systems */
->>+      if (pci_is_pcie(dev) &&
->>+          pci_pcie_type(dev) == PCI_EXP_TYPE_ROOT_PORT &&
->>+          pci_match_id(crs_whitelist, dev))
->>+              pcie_capability_set_word(dev, PCI_EXP_RTCTL,
->>+                                       PCI_EXP_RTCTL_CRSSVE);
->>+}
->>+
->> /*
->>  * If it's a bridge, configure it and scan the bus behind it.
->>  * For CardBus bridges, we don't scan behind as the devices will
->>@@ -787,6 +813,8 @@ int pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max, int pass)
->>       pci_write_config_word(dev, PCI_BRIDGE_CONTROL,
->>                             bctl & ~PCI_BRIDGE_CTL_MASTER_ABORT);
->>
->>+      pci_enable_crs(dev);
->>+
->
-> Rajat,
->
-> I am not familiar with the CRS Software Visibility, but I think your code
-> could fix the problem.
->
-> While I have one tiny suggestion. I see the commit
-> "ad7edfe04908 [PCI] Do not enable CRS Software Visibility by default" has the
-> pci_enable_crs() called in pci_scan_bridge(), while I think this may not be a
-> very good place for this fix.
->
-> How about have a early fixup for these intel devices? Since the original code
-> is called on each bridge, while this fix is just invoked on specific devices.
-> And sounds we are not planing to have this enabled by default in a short term.
-
-Yes, my current patch is like that.
-
-However to the extent I could understand, the CRS seemed only a good
-thing to me and I could not really visualize in what conditions could
-it create a problem. I was actually seeking opinion on if we should
-enable it always and instead maintain a blacklist of systems on which
-it is known to cause problems and should be disabled. But I do
-understand that obtaining such a blacklist may not be possible since
-the original commit is pretty old. The good thing with a black list
-woulds that there may be other PCI root port bridges with the same
-(PCIe compliant) behavior and will hang.. Such cases will be
-automatically taken care since it is very difficult in those cases to
-debug and trace the problem to this CRS issue.
-
-> If we have other devices to be in the white list in the future, we would
-> expand this list. This will make the probe.c not that generic.
-
-I agree that we shouldn't really be putting things like device lists
-in  a generic file such as probe.c. However, I think it is important
-that we make the call to enable CRS visibility somewhere in the common
-PCI root port initialization path (although the decision whether or
-not to enable it, or enable it for certain devices only can be taken
-from a platform / device specific file). That is so that any developer
-seeing similar issues and trying to debug the PCI code should be able
-to stumble upon CRS and think "Hmmm ... maybe I need this for my
-device also?". I did not want to separate this out as just a quirk,
-because quirks are typically seen as a device anomaly (which in this
-case it is not). And developers wouldn't' tend to delve into unrelated
-device quirks, to debug a problem they are seeing on a different
-device.
-
-To this end, I had a different suggestive patch posted here, that
-maintains device lists in platform specific files:
-
-https://lkml.org/lkml/2014/8/1/186
-
-Please let me know if you think this is any better?
-
->
-> Hmm... to me, enable this in the eary fixup is a different stage as you did in
-> pci_scan_bridge(). Not sure enable them in a different stage will effect the
-> behavior. If this matters, my suggestion is not a good one.
 
 
-Your suggestions are very welcome, thus please keep them coming. I can
-try moving the call to "enable_crs" around - however since the
-original commit had it in this place, I had decided to keep it here.
-The other thing that I was not clear was under which reset conditions
-would the CRS visibility flag get cleared? Would it get cleared if we
-do a root port reset (or any PCI resets)? If so a quirk might not
-work. I looked though the PCIe specs and did not find any hint on when
-could this be cleared. So I decided to play safe and leave it in the
-place it originally was.
+> -----Original Message-----
+> From: Sitsofe Wheeler [mailto:sitsofe@gmail.com]
+> Sent: Friday, August 29, 2014 2:32 AM
+> To: Dexuan Cui
+> Cc: KY Srinivasan; Greg Kroah-Hartman; Haiyang Zhang;
+> devel@linuxdriverproject.org; linux-kernel@vger.kernel.org;
+> netdev@vger.kernel.org; David Miller; Daniel Borkmann
+> Subject: [hyperv] BUG: unable to handle kernel paging request at
+> ffff8801f5bc7cbb (netvsc_select_queue)
+> 
+> While booting a 10 vcpu system with a post v3.17-rc2 kernel with the
+> "Drivers: hv: vmbus: Eliminate calls to BUG_ON()",  "Drivers: hv: vmbus:
+> Miscellaneous cleanup" patches and debugging/verification config options on
+> I'm seeing the following:
 
-Thanks,
+Were you changing the MTU when this occurred?
 
-Rajat
+Regards,
 
-
->
->>       if ((secondary || subordinate) && !pcibios_assign_all_busses() &&
->>           !is_cardbus && !broken) {
->>               unsigned int cmax;
->>--
->>1.7.9.5
->>
->>--
->>To unsubscribe from this list: send the line "unsubscribe linux-pci" in
->>the body of a message to majordomo@vger.kernel.org
->>More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-> --
-> Richard Yang
-> Help you, Help me
->
+K. Y
