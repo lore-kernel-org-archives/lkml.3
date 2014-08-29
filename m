@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976AbaH2Tft (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 15:35:49 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:49871 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753085AbaH2Tfr (ORCPT
+	id S1754079AbaH2Thd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 15:37:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45831 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753104AbaH2Thc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 15:35:47 -0400
-Message-ID: <1409340947.18172.4.camel@leira.trondhjem.org>
-Subject: [GIT PULL] Please pull NFS client fixes
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
-Date: Fri, 29 Aug 2014 15:35:47 -0400
-Organization: Primary Data, Inc
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+	Fri, 29 Aug 2014 15:37:32 -0400
+Date: Fri, 29 Aug 2014 12:37:30 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: kirill.shutemov@linux.intel.com, khlebnikov@openvz.org, riel@redhat.com,
+        mgorman@suse.de, n-horiguchi@ah.jp.nec.com, mhocko@suse.cz,
+        hughd@google.com, vbabka@suse.cz, walken@google.com,
+        minchan@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 1/3] Introduce dump_vma
+Message-Id: <20140829123730.ac09a559320224f7ed84f1c7@linux-foundation.org>
+In-Reply-To: <1409324059-28692-1-git-send-email-sasha.levin@oracle.com>
+References: <1409324059-28692-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, 29 Aug 2014 10:54:17 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
 
-The following changes since commit 52addcf9d6669fa439387610bc65c92fa0980cef:
+> Introduce a helper to dump information about a VMA, this also
+> makes dump_page_flags more generic and re-uses that so the
+> output looks very similar to dump_page:
+> 
 
-  Linux 3.17-rc2 (2014-08-25 15:36:20 -0700)
+That's another kilobyte which we don't actually use unless
+CONFIG_DEBUG_VM, so how about we do
 
-are available in the git repository at:
+--- a/mm/page_alloc.c~introduce-dump_vma-fix
++++ a/mm/page_alloc.c
+@@ -6683,6 +6683,8 @@ void dump_page(struct page *page, const
+ }
+ EXPORT_SYMBOL(dump_page);
+ 
++#ifdef CONFIG_DEBUG_VM
++
+ static const struct trace_print_flags vmaflags_names[] = {
+ 	{VM_READ,			"read"		},
+ 	{VM_WRITE,			"write"		},
+@@ -6740,3 +6742,5 @@ void dump_vma(const struct vm_area_struc
+ 	dump_flags(vma->vm_flags, vmaflags_names, ARRAY_SIZE(vmaflags_names));
+ }
+ EXPORT_SYMBOL(dump_vma);
++
++#endif		/* CONFIG_DEBUG_VM */
 
-  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.17-3
-
-for you to fetch changes up to f87d928f6d98644d39809a013a22f981d39017cf:
-
-  NFSv3: Fix another acl regression (2014-08-26 16:17:48 -0400)
-
-----------------------------------------------------------------
-NFS client fixes for 3.17
-
-Highlights:
-- NFSv3 stable fix for another POSIX ACL regression
-- NFSv4 stable fix for a regression with OPEN_DOWNGRADE
-- NFSv4 stable fix for bad close() behaviour when holding a delegation
-
-----------------------------------------------------------------
-Trond Myklebust (3):
-      NFSv4: Fix problems with close in the presence of a delegation
-      NFSv4: Don't clear the open state when we just did an OPEN_DOWNGRADE
-      NFSv3: Fix another acl regression
-
- fs/nfs/nfs3acl.c  |  5 ++++-
- fs/nfs/nfs4proc.c | 26 +++++++++++++++++---------
- 2 files changed, 21 insertions(+), 10 deletions(-)
-
-
+until someone needs it from non-debug code?
