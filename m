@@ -1,84 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752932AbaH2Kun (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 06:50:43 -0400
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:49047 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752325AbaH2Kul (ORCPT
+	id S1752288AbaH2K42 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 06:56:28 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:40315 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125AbaH2K4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 06:50:41 -0400
-Message-ID: <54005AFB.2010604@de.ibm.com>
-Date: Fri, 29 Aug 2014 12:50:35 +0200
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Fri, 29 Aug 2014 06:56:25 -0400
+Date: Fri, 29 Aug 2014 11:56:19 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Nishanth Menon <nm@ti.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@linaro.org>,
+        Tony Lindgren <tony@atomide.com>, Keerthy <j-keerthy@ti.com>,
+        devicetree@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: palmas: Add support for optional wakeup
+Message-ID: <20140829105619.GH24579@lee--X1>
+References: <1408457197-30487-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org, linux-s390 <linux-s390@vger.kernel.org>
-Subject: WARNING: at kernel/workqueue.c:845
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082910-3548-0000-0000-0000012FABD3
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1408457197-30487-1-git-send-email-nm@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun,
+On Tue, 19 Aug 2014, Nishanth Menon wrote:
 
-with kvm/next (pretty close to 3.17-rc1) as KVM guest I get the following warning in one of my stress tests:
+> With the recent pinctrl-single changes, omaps can treat wake-up events
+> from deeper idle states as interrupts.
+> 
+> Let's add support for the optional second interrupt for wake-up
+> events. And then SoC can wakeup and handle the event using it's
+> regular handler.
+> 
+> Finally, to pass the wake-up interrupt in the dts file,
+> interrupts-extended property needs to be passed.
+> 
+> This is similar in approach to commit 2a0b965cfb6e ("serial: omap: Add
+> support for optional wake-up")
+> 
+> Signed-off-by: Nishanth Menon <nm@ti.com>
+> ---
+>  Documentation/devicetree/bindings/mfd/palmas.txt |   20 ++++++++
 
-[    0.296047] ------------[ cut here ]------------
-[    0.296050] WARNING: at kernel/workqueue.c:809
-[    0.296051] Modules linked in:
-[    0.296054] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.17.0-rc1+ #172
-[    0.296056] task: 0000000000934618 ti: 000000000091c000 task.ti: 000000000091c000
-[    0.296062]            R:0 T:1 IO:0 EX:0 Key:0 M:1 W:0 P:0 AS:3 CC:0 PM:0 EA:3
-               Krnl GPRS: 0000000000000001 00000000063bed00 0000000000996740 0000000000000000
-[    0.296065]            000000000000000d 000000000000036a ffffffff00000000 0000000000000000
-[    0.296067]            000000000620e400 0000000000001201 0000000000001201 04000000009f6700
-[    0.296068]            000000000639b700 0000000000000000 00000000001453e8 00000000063fbc80
-[    0.296078] Krnl Code: 0000000000145416: 95002000            cli     0(%r2),0
-                          000000000014541a: a774fff4            brc     7,145402
-                         #000000000014541e: a7f40001            brc     15,145420
-[    0.296083] TCP: cubic registered
-[    0.296084] 
-                         >0000000000145422: 92012000            mvi     0(%r2),1
-[    0.296086] 
-                          0000000000145426: a7f4ffee            brc     15,145402
-                          000000000014542a: 0707                bcr     0,%r7
-                          000000000014542c: ebdff0800024        stmg    %r13,%r15,128(%r15)
-[    0.296092] Initializing XFRM netlink socket
-[    0.296094] 
-                          0000000000145432: a7f13fe0            tmll    %r15,16352
-[    0.296096] Call Trace:
-[    0.296099] ([<0000000000001201>] 0x1201)
-[    0.296102]  [<00000000001545dc>] ttwu_do_activate.constprop.97+0x64/0x7c
-[    0.296103]  [<00000000001550ce>] sched_ttwu_pending+0x7e/0xd4
-[    0.296104]  [<0000000000156bea>] scheduler_ipi+0x62/0x168
-[    0.296107]  [<0000000000113482>] smp_handle_ext_call+0xbe/0xdc
-[    0.296111]  [<000000000010b3dc>] do_ext_interrupt+0xb4/0xd4
-[    0.296113]  [<00000000001833be>] handle_irq_event_percpu+0x76/0x204
-[    0.296115]  [<00000000001870e8>] handle_percpu_irq+0x6c/0x98
-[    0.296116]  [<0000000000182a02>] generic_handle_irq+0x46/0x68
-[    0.296117]  [<000000000010b78a>] do_IRQ+0x5e/0x84
-[    0.296120]  [<0000000000634840>] ext_skip+0x42/0x46
-[    0.296121]  [<0000000000633fce>] vtime_stop_cpu+0x4a/0x9c
-[    0.296122] ([<0000000000000000>]           (null))
-[    0.296124]  [<0000000000103816>] arch_cpu_idle+0x92/0xa0
-[    0.296126]  [<000000000016bb9a>] cpu_startup_entry+0x15a/0x228
-[    0.296127]  [<00000000009a5ae4>] start_kernel+0x408/0x418
-[    0.296128]  [<0000000000100020>] _stext+0x20/0x80
-[    0.296129] Last Breaking-Event-Address:
-[    0.296130]  [<000000000014541e>] wq_worker_waking_up+0x5e/0x6c
-[    0.296133] ---[ end trace 68915e61d289d806 ]---
-[    0.296137] reboot: Restarting system
-[    0.296141] ------------[ cut here ]------------
+DT Ack please.
 
-The test is basically to start 50 KVM guests that only have a kernel + busybox ramdisk with rcS calling reboot.
-One or two guests of these 50 have thing warning pretty soon. With 3.16 as guest everything runs fine.
+>  drivers/mfd/palmas.c                             |   59 ++++++++++++++++++++++
+>  include/linux/mfd/palmas.h                       |    2 +
+>  3 files changed, 81 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/mfd/palmas.txt b/Documentation/devicetree/bindings/mfd/palmas.txt
+> index eda8989..2627842 100644
+> --- a/Documentation/devicetree/bindings/mfd/palmas.txt
+> +++ b/Documentation/devicetree/bindings/mfd/palmas.txt
+> @@ -51,3 +51,23 @@ palmas {
+>  		....
+>  	};
+>  }
+> +
+> +Example: with interrupts extended
+> + See Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
+> + Use pinmux 0x418 as wakeup interrupt and gpio1_0 as interrupt source
+> +
+> +palmas {
 
-Do you have any idea what might be wrong or do I need to bisect?
+Should this be 'palmas@40 {'?
 
-Christian
+> +	compatible = "ti,twl6035", "ti,palmas";
+> +	reg = <0x48>
+> +	interrupt-parent = <&intc>;
+> +	interrupt-controller;
+> +	#interrupt-cells = <2>;
+> +	#address-cells = <1>;
+> +	#size-cells = <0>;
+> +	interrupts-extended = <&gpio1 0 IRQ_TYPE_LEVEL_HIGH
+> +			       &pinmux 0x418>;
 
+Can I get a DT Ack, that this is being used correctly?  It doesn't
+match the syntax given in:
+
+  Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
+
+> +	pmic {
+> +		compatible = "ti,twl6035-pmic", "ti,palmas-pmic";
+> +		....
+> +	};
+> +}
+> diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
+> index 28cb048..11186ab 100644
+> --- a/drivers/mfd/palmas.c
+> +++ b/drivers/mfd/palmas.c
+> @@ -24,6 +24,7 @@
+>  #include <linux/mfd/core.h>
+>  #include <linux/mfd/palmas.h>
+>  #include <linux/of_device.h>
+> +#include <linux/of_irq.h>
+>  
+>  static const struct regmap_config palmas_regmap_config[PALMAS_NUM_CLIENTS] = {
+>  	{
+> @@ -326,6 +327,16 @@ static struct regmap_irq_chip tps65917_irq_chip = {
+>  			PALMAS_INT1_MASK),
+>  };
+>  
+> +static irqreturn_t palmas_wake_irq(int irq, void *_palmas)
+> +{
+> +	/*
+> +	 * Return Not handled so that interrupt is disabled.
+> +	 * Level event ensures that the event is eventually handled
+> +	 * by the appropriate chip handler already registered
+> +	 */
+
+This looks okay to me, but could do with a second opinion from someone
+who is a little more familier with this kind of h/w.
+
+How does this differ from threading IRQs?
+
+> +	return IRQ_NONE;
+> +}
+> +
+>  int palmas_ext_control_req_config(struct palmas *palmas,
+>  	enum palmas_external_requestor_id id,  int ext_ctrl, bool enable)
+>  {
+> @@ -409,6 +420,7 @@ static void palmas_dt_to_pdata(struct i2c_client *i2c,
+>  		pdata->mux_from_pdata = 1;
+>  		pdata->pad2 = prop;
+>  	}
+> +	pdata->wakeirq = irq_of_parse_and_map(node, 1);
+>  
+>  	/* The default for this register is all masked */
+>  	ret = of_property_read_u32(node, "ti,power-ctrl", &prop);
+> @@ -521,6 +533,7 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
+>  	i2c_set_clientdata(i2c, palmas);
+>  	palmas->dev = &i2c->dev;
+>  	palmas->irq = i2c->irq;
+> +	palmas->wakeirq = pdata->wakeirq;
+>  
+>  	match = of_match_device(of_palmas_match_tbl, &i2c->dev);
+>  
+> @@ -587,6 +600,22 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
+>  	if (ret < 0)
+>  		goto err_i2c;
+>  
+> +	if (!palmas->wakeirq)
+> +		goto no_wake_irq;
+> +
+> +	ret = devm_request_irq(palmas->dev, palmas->wakeirq,
+> +			       palmas_wake_irq,
+> +			       IRQF_ONESHOT | pdata->irq_flags,
+> +			       dev_name(palmas->dev),
+> +			       &palmas);
+> +	if (ret < 0)
+> +		goto err_i2c;
+> +
+> +	/* We use wakeirq only during suspend-resume path */
+> +	device_set_wakeup_capable(palmas->dev, true);
+> +	disable_irq_nosync(palmas->wakeirq);
+> +
+> +no_wake_irq:
+>  no_irq:
+>  	slave = PALMAS_BASE_TO_SLAVE(PALMAS_PU_PD_OD_BASE);
+>  	addr = PALMAS_BASE_TO_REG(PALMAS_PU_PD_OD_BASE,
+> @@ -706,6 +735,34 @@ static int palmas_i2c_remove(struct i2c_client *i2c)
+>  	return 0;
+>  }
+>  
+> +static int palmas_i2c_suspend(struct i2c_client *i2c,  pm_message_t mesg)
+> +{
+> +	struct palmas *palmas = i2c_get_clientdata(i2c);
+> +	struct device *dev = &i2c->dev;
+> +
+> +	if (!palmas->wakeirq)
+> +		return 0;
+> +
+> +	if (device_may_wakeup(dev))
+> +		enable_irq(palmas->wakeirq);
+> +
+> +	return 0;
+> +}
+> +
+> +static int palmas_i2c_resume(struct i2c_client *i2c)
+> +{
+> +	struct palmas *palmas = i2c_get_clientdata(i2c);
+> +	struct device *dev = &i2c->dev;
+> +
+> +	if (!palmas->wakeirq)
+> +		return 0;
+> +
+> +	if (device_may_wakeup(dev))
+> +		disable_irq_nosync(palmas->wakeirq);
+> +
+> +	return 0;
+> +}
+> +
+>  static const struct i2c_device_id palmas_i2c_id[] = {
+>  	{ "palmas", },
+>  	{ "twl6035", },
+> @@ -721,6 +778,8 @@ static struct i2c_driver palmas_i2c_driver = {
+>  		   .of_match_table = of_palmas_match_tbl,
+>  		   .owner = THIS_MODULE,
+>  	},
+> +	.suspend = palmas_i2c_suspend,
+> +	.resume = palmas_i2c_resume,
+>  	.probe = palmas_i2c_probe,
+>  	.remove = palmas_i2c_remove,
+>  	.id_table = palmas_i2c_id,
+> diff --git a/include/linux/mfd/palmas.h b/include/linux/mfd/palmas.h
+> index fb0390a..e8cf4c2 100644
+> --- a/include/linux/mfd/palmas.h
+> +++ b/include/linux/mfd/palmas.h
+> @@ -75,6 +75,7 @@ struct palmas {
+>  	/* IRQ Data */
+>  	int irq;
+>  	u32 irq_mask;
+> +	int wakeirq;
+>  	struct mutex irq_lock;
+>  	struct regmap_irq_chip_data *irq_data;
+>  
+> @@ -377,6 +378,7 @@ struct palmas_clk_platform_data {
+>  
+>  struct palmas_platform_data {
+>  	int irq_flags;
+> +	int wakeirq;
+>  	int gpio_base;
+>  
+>  	/* bit value to be loaded to the POWER_CTRL register */
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
