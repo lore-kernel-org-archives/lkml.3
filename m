@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753202AbaH2NDg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 09:03:36 -0400
-Received: from demumfd002.nsn-inter.net ([93.183.12.31]:34458 "EHLO
-	demumfd002.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752735AbaH2NDe (ORCPT
+	id S1753129AbaH2NFK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 09:05:10 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53283 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751608AbaH2NFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 09:03:34 -0400
-Date: Fri, 29 Aug 2014 17:06:56 +0300
-From: Matti Vaittinen <matti.vaittinen@nsn.com>
-To: ext Jason Cooper <jason@lakedaemon.net>
-Cc: Mark Rutland <mark.rutland@arm.com>,
+	Fri, 29 Aug 2014 09:05:08 -0400
+Date: Fri, 29 Aug 2014 14:03:54 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Matti Vaittinen <matti.vaittinen@nsn.com>,
         ext Guenter Roeck <linux@roeck-us.net>,
         "a.zummo@towertech.it" <a.zummo@towertech.it>,
         "jic23@kernel.org" <jic23@kernel.org>,
@@ -23,7 +23,7 @@ Cc: Mark Rutland <mark.rutland@arm.com>,
         "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
         Sverdlin Alexander <alexander.sverdlin@nsn.com>
 Subject: Re: [PATCH] rtc: ds1307: add trickle charger device tree binding
-Message-ID: <20140829140656.GC13630@fi-ourus-dhcp00977.emea.nsn-net.net>
+Message-ID: <20140829130354.GE21473@leverpostej>
 References: <20140828155157.GB23677@roeck-us.net>
  <20140828161025.GO14650@leverpostej>
  <20140828164825.GA12153@roeck-us.net>
@@ -39,17 +39,11 @@ Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <20140829124829.GD3683@titan.lakedaemon.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-purgate-type: clean
-X-purgate-Ad: Categorized by eleven eXpurgate (R) http://www.eleven.de
-X-purgate: clean
-X-purgate: This mail is considered clean (visit http://www.eleven.de for further information)
-X-purgate-size: 1839
-X-purgate-ID: 151667::1409317347-000023E0-C377EC5F/0/0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 29, 2014 at 08:48:29AM -0400, ext Jason Cooper wrote:
+On Fri, Aug 29, 2014 at 01:48:29PM +0100, Jason Cooper wrote:
 > On Fri, Aug 29, 2014 at 01:42:16PM +0100, Mark Rutland wrote:
 > > On Fri, Aug 29, 2014 at 01:24:52PM +0100, Jason Cooper wrote:
 > > > On Fri, Aug 29, 2014 at 11:40:02AM +0100, Mark Rutland wrote:
@@ -80,19 +74,13 @@ On Fri, Aug 29, 2014 at 08:48:29AM -0400, ext Jason Cooper wrote:
 > internal diodes and resistors for the trickle charge configuration.  I
 > may have read it incorrectly, though.
 
-Yes. It is about using internal diode.
+Ok.
 
-I will cook new patch based on these comments on monday.
+> In either case, my main point was to prepend 'trickle-' to the property
+> to more accurately describe what it is toggling.
 
-Regards
-  Matti Vaittinen
+That's fine by me. My only concern was 'enable' due to the
+internal/external confusion.
 
--- 
-=============================================
-
-Matti Vaittinen
-Senile SW Specialist
-FINLAND 
-
-~~ When things go utterly wrong vim users can always type :help! ~~
-
+Thanks,
+Mark.
