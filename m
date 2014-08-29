@@ -1,147 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824AbaH2Afn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Aug 2014 20:35:43 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:55393 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751959AbaH2Afl (ORCPT
+	id S1752621AbaH2Akh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Aug 2014 20:40:37 -0400
+Received: from peace.netnation.com ([204.174.223.2]:46147 "EHLO
+	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751959AbaH2Akf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 20:35:41 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Dmitry Torokhov <dtor@google.com>, Aubrey Li <aubrey.li@intel.com>
-Subject: Re: [PATCH 0/5 v3] irq / PM: Suspend-to-idle wakeup interrupts
-Date: Fri, 29 Aug 2014 02:54:51 +0200
-Message-ID: <14849230.M7591XGLg0@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <alpine.DEB.2.10.1408282355350.23342@nanos>
-References: <26580319.OZP7jvJnA9@vostro.rjw.lan> <5320472.coYotHR1d0@vostro.rjw.lan> <alpine.DEB.2.10.1408282355350.23342@nanos>
+	Thu, 28 Aug 2014 20:40:35 -0400
+Date: Thu, 28 Aug 2014 17:40:29 -0700
+From: Simon Kirby <sim@hostway.ca>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: net_ns cleanup / RCU overhead
+Message-ID: <20140829004029.GA18300@hostway.ca>
+References: <20140820055855.GB5579@hostway.ca>
+ <20140828192431.GF5001@linux.vnet.ibm.com>
+ <20140828194422.GB8867@hostway.ca>
+ <87oav4l5g9.fsf@x220.int.ebiederm.org>
+ <20140828204658.GL5001@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140828204658.GL5001@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 29, 2014 12:44:11 AM Thomas Gleixner wrote:
-> On Wed, 27 Aug 2014, Rafael J. Wysocki wrote:
-> > To me, all of this is relatively straightforward and the handling of
-> > IRQF_NO_SUSPEND for shared interrupts, which is a separate problem, can be
-> > addressed on top of it later (make no mistake, I still think that it should be
-> > addressed).
-> 
-> Why? Just because there is enough idiotic code using it?
-> 
-> Let's look at the usage sites:
-> 
-> sound/soc/codecs/twl6040.c
-> 
->   Introduced in commit 8d61f4901f83461e1f04df7743777e9db5f541aa
-> 
->     ASoC: twl6040: Convert PLUGINT to no-suspend irq
->     
->     Convert headset PLUGINT interrupt to NO_SUSPEND type in order to
->     allow handling of insertion/removal events while device is
->     suspended.
-> 
->   So why does this need to be a NO_SUSPEND type interrupt? Just because
->   the flag is sexy? What's wrong with using the wake mechanism?
-> 
-> drivers/xen/events/events_base.c
-> 
->   A genuine usecase which makes sense and is not shared
-> 
-> drivers/watchdog/intel-mid_wdt.c
-> 
->   MUHAHAHAHAHAHA
-> 
->   static irqreturn_t mid_wdt_irq(int irq, void *dev_id)
->   {
->       panic("Kernel Watchdog");
->       /* This code should not be reached */
->       return IRQ_HANDLED;
->   }
-> 
->   So why does this need to be NO_SUSPEND? Because we forgot to trigger
->   the watchdog during suspend? Brilliant!
-> 
-> drivers/usb/phy/phy-ab8500-usb.c
-> 
->   Of course no explanation WHY this uses NO_SUSPEND plus SHARED and
->   there is no fcking reason to do so.
-> 
-> So really, I'm too lazy to walk through that mess further. I bet NONE
-> of the usage sites except those for which this has been introduced in
-> the first place has a real good reason to do so.
+On Thu, Aug 28, 2014 at 01:46:58PM -0700, Paul E. McKenney wrote:
 
-A quite similar conclusion occured to me earlier today independently,
-so we seem to be in agreement here. :-)
-
-> Unless someone comes up with a use case where a shared NO_SUSPEND
-> handler is absolutely required, there is nothing which needs to be
-> addressed. You've proven yourself, that the wake mechanism is
-> sufficient to solve the problem which led to this discussion.
-
-Yeah, that particular thing can be perfectly addressed without using
-IRQF_NO_SUSPEND.
-
-There seems to be quite some confusion about that in the ARM world,
-though, as IRQF_NO_SUSPEND things *happen* to wake the system up if WFI is
-used to emulate "suspend" and that appears to make people believe that using
-them for this purpose is actually fine (because that appears to work).
-
-> So we rather go and fix the ABUSE instead of making it legitimate by
-> fugly workarounds in the core code.
-
-Fine by me.
-
-> The same applies to the IRQF_RESUME_EARLY flag.
+> On Thu, Aug 28, 2014 at 03:33:42PM -0500, Eric W. Biederman wrote:
 > 
-> Just look at:
+> > I just want to add a little bit more analysis to this.
+> > 
+> > What we desire to be fast is the copy_net_ns, cleanup_net is batched and
+> > asynchronous which nothing really cares how long it takes except that
+> > cleanup_net holds the net_mutex and thus blocks copy_net_ns.
+> > 
+> > The puzzle is why and which rcu delays Simon is seeing in the network
+> > namespace cleanup path, as it seems like the synchronize_rcu is not
+> > the only one, and in the case of vsftp with trivail network namespaces
+> > where nothing has been done we should not need to delay.
 > 
->   commit 8b41669ceba0c2d4c09d69ccb9a3458953dae784
+> Indeed, given the version and .config, I can't see why any individual
+> RCU grace-period operation would be particularly slow.
 > 
->     mfd: twl4030: Fix chained irq handling on resume from suspend
->     
->     The irqs are enabled one-by-one in pm core resume_noirq phase.
->     This leads to situation where the twl4030 primary interrupt
->     handler (PIH) is enabled before the chained secondary handlers
->     (SIH). As the PIH cannot clear the pending interrupt, and
->     SIHs have not been enabled yet, a flood of interrupts hangs
->     the device.
->     
->     Fixed the issue by setting the SIH irqs with IRQF_EARLY_RESUME
->     flags, so they get enabled before the PIH.
-> 
-> So we solve an ordering problem which has a completely different root
-> cause by slapping random flags on it which paper over the issue?
-> 
-> The solution to the problem is completely wrong and of course the
-> "fix" is only applied to the one instance which might be affected by
-> that issue, i.e. the one which caused the patch submitter trouble.
-> 
-> Now I don't blame the author, I blame the maintainer who happily
-> applied that "fix".
-> 
-> That's unfortunately a very common pattern in the kernel which will
-> cause serious maintainability issues in the long run, but of course
-> that's just the opinion of a grumpy old greybeard.
-> 
-> The sad thing is that neither the author nor the maintainer who
-> applied it is going to be around and responsive when the shit hits the
-> fan.
->
-> That commit is a perfect example for this.
+> I suggest using ftrace on synchronize_rcu() and friends.
 
-Oh, I can reach that particular maintainer if need be.
+I made a parallel net namespace create/destroy benchmark that prints the
+progress and time to create and cleanup 32 unshare()d child processes:
 
-That said I was not involved in the introduction of IRQF_EARLY_RESUME (or
-at least I can't recall being involved) and I also can't recall having used
-it for anything, so I can't really say what the original motivation was.
+http://0x.ca/sim/ref/tools/netnsbench.c
 
-Rafael
+I noticed that if I haven't run it for a while, the first batch often is
+fast, followed by slowness from then on:
 
+++++++++++++++++++++++++++++++++-------------------------------- 0.039478s
+++++++++++++++++++++-----+----------------+++++++++---------++-- 4.463837s
++++++++++++++++++++++++++------+--------------------++++++------ 3.011882s
++++++++++++++++---+-------------++++++++++++++++---------------- 2.283993s
+
+Fiddling around on a stock kernel, "echo 1 > /sys/kernel/rcu_expedited"
+makes behaviour change as it did with my patch:
+
+++-++-+++-+-----+-+-++-+-++--++-+--+-+-++--++-+-+-+-++-+--++---- 0.801406s
++-+-+-++-+-+-+-+-++--+-+-++-+--++-+-+-+-+-+-+-+-+-+-+-+--++-+--- 0.872011s
+++--+-++--+-++--+-++--+-+-+-+-++-+--++--+-++-+-+-+-+--++-+-+-+-- 0.946745s
+
+How would I use ftrace on synchronize_rcu() here?
+
+As Eric said, cleanup_net() is batched, but while it is cleaning up,
+net_mutex is held. Isn't the issue just that net_mutex is held while
+some other things are going on that are meant to be lazy / batched?
+
+What is net_mutex protecting in cleanup_net()?
+
+I noticed that [kworker/u16:0]'s stack is often:
+
+[<ffffffff810942a6>] wait_rcu_gp+0x46/0x50
+[<ffffffff8109607e>] synchronize_sched+0x2e/0x50
+[<ffffffffa00385ac>] nf_nat_net_exit+0x2c/0x50 [nf_nat]
+[<ffffffff81720339>] ops_exit_list.isra.4+0x39/0x60
+[<ffffffff817209e0>] cleanup_net+0xf0/0x1a0
+[<ffffffff81062997>] process_one_work+0x157/0x440
+[<ffffffff81063303>] worker_thread+0x63/0x520
+[<ffffffff81068b96>] kthread+0xd6/0xf0
+[<ffffffff818d412c>] ret_from_fork+0x7c/0xb0
+[<ffffffffffffffff>] 0xffffffffffffffff
+
+and
+
+[<ffffffff81095364>] _rcu_barrier+0x154/0x1f0
+[<ffffffff81095450>] rcu_barrier+0x10/0x20
+[<ffffffff81102c2c>] kmem_cache_destroy+0x6c/0xb0
+[<ffffffffa0089e97>] nf_conntrack_cleanup_net_list+0x167/0x1c0 [nf_conntrack]
+[<ffffffffa008aab5>] nf_conntrack_pernet_exit+0x65/0x70 [nf_conntrack]
+[<ffffffff81720353>] ops_exit_list.isra.4+0x53/0x60
+[<ffffffff817209e0>] cleanup_net+0xf0/0x1a0
+[<ffffffff81062997>] process_one_work+0x157/0x440
+[<ffffffff81063303>] worker_thread+0x63/0x520
+[<ffffffff81068b96>] kthread+0xd6/0xf0
+[<ffffffff818d412c>] ret_from_fork+0x7c/0xb0
+[<ffffffffffffffff>] 0xffffffffffffffff
+
+So I tried flushing iptables rules and rmmoding netfilter bits:
+
+++++++++++++++++++++-+--------------------+++++++++++----------- 0.179940s
+++++++++++++++--+-------------+++++++++++++++++----------------- 0.151988s
+++++++++++++++++++++++++++++---+--------------------------+++--- 0.159967s
+++++++++++++++++++++++----------------------++++++++++---------- 0.175964s
+
+Expedited:
+
+++-+--++-+-+-+-+-+-+--++-+-+-++-+-+-+--++-+-+-+-+-+-+-+-+-+-+--- 0.079988s
+++-+-+-+-+-+-+-+-+-+-+-+--++-+--++-+--+-++-+-+--++-+-+-+-+-+-+-- 0.089347s
+++++--+++--++--+-+++++++-+++++--------------++-+-+--++-+-+--++-- 0.081566s
++++++-+++-------++-+-+-+-+-+-+-+-+-+-+-++-+-+-+-+-+-+-+-+-+-+--- 0.089026s
+
+So, much faster. It seems that just loading nf_conntrack_ipv4 (like by
+running iptables -t nat -nvL) is enough to slow it way down. But it is
+still capable of being fast, as above.
+
+Simon-
