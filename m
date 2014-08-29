@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753208AbaH2JOy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 05:14:54 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:36085 "EHLO mailhub1.si.c-s.fr"
+	id S1753143AbaH2JOu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 05:14:50 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:36106 "EHLO mailhub1.si.c-s.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752066AbaH2JOm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752921AbaH2JOm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 29 Aug 2014 05:14:42 -0400
 From: Christophe Leroy <christophe.leroy@c-s.fr>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -12,40 +12,155 @@ To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
 CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         Joakim Tjernlund <joakim.tjernlund@transmode.se>,
         scottwood@freescale.com
-Subject: [PATCH v2 10/19] powerpc/8xx: Duplicate two insns instead of branching
-Message-Id: <20140829091439.152D51ABD63@localhost.localdomain>
+Subject: [PATCH v2 11/19] powerpc/8xx: Use M_TW instead of M_TWB
+Message-Id: <20140829091439.4239C1ABD65@localhost.localdomain>
 Date: Fri, 29 Aug 2014 11:14:39 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Branching takes two cycles on MPC8xx. Lets duplicate the two instructions
-and avoid the branching.
+Use M_TW instead of M_TWB for storing Level 1 table address as M_TWB requires
+4k aligned tables, which is only the case with 4k pages.
+Consequently, we have to calculate the level 1 table index by ourselves.
 
 Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
 ---
- arch/powerpc/kernel/head_8xx.S |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+ arch/powerpc/kernel/head_8xx.S |   48 ++++++++++++++++++---------------
+ 1 files changed, 26 insertions(+), 22 deletions(-)
 
 diff --git a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
-index 5037420..4a49ff3 100644
+index 4a49ff3..ad15070 100644
 --- a/arch/powerpc/kernel/head_8xx.S
 +++ b/arch/powerpc/kernel/head_8xx.S
-@@ -638,9 +638,11 @@ modified_instr:
- 
- 	/* special handling for r10,r11 since these are modified already */
- 153:	mfspr	r11, SPRN_SPRG_SCRATCH1	/* load r11 from SPRN_SPRG_SCRATCH1 */
--	b	155f
-+	add	r10, r10, r11	/* add it */
-+	mfctr	r11		/* restore r11 */
-+	b	151b
- 154:	mfspr	r11, SPRN_SPRG_SCRATCH0	/* load r10 from SPRN_SPRG_SCRATCH0 */
--155:	add	r10, r10, r11	/* add it */
-+	add	r10, r10, r11	/* add it */
- 	mfctr	r11		/* restore r11 */
- 	b	151b
+@@ -276,8 +276,8 @@ SystemCall:
+ 	. = 0x1100
+ /*
+  * For the MPC8xx, this is a software tablewalk to load the instruction
+- * TLB.  It is modelled after the example in the Motorola manual.  The task
+- * switch loads the M_TWB register with the pointer to the first level table.
++ * TLB.  The task switch loads the M_TW register with the pointer to the first
++ * level table.
+  * If we discover there is no second level table (value is zero) or if there
+  * is an invalid pte, we load that into the TLB, which causes another fault
+  * into the TLB Error interrupt where we can handle such problems.
+@@ -299,7 +299,6 @@ InstructionTLBMiss:
  #endif
+ 	DO_8xx_CPU6(0x3780, r3)
+ 	mtspr	SPRN_MD_EPN, r10	/* Have to use MD_EPN for walk, MI_EPN can't */
+-	mfspr	r10, SPRN_M_TWB	/* Get level 1 table entry address */
+ 
+ 	/* If we are faulting a kernel address, we have to use the
+ 	 * kernel page tables.
+@@ -307,14 +306,17 @@ InstructionTLBMiss:
+ #ifdef CONFIG_MODULES
+ 	/* Only modules will cause ITLB Misses as we always
+ 	 * pin the first 8MB of kernel memory */
+-	andi.	r11, r10, 0x0800	/* Address >= 0x80000000 */
++	andis.	r11, r10, 0x8000	/* Address >= 0x80000000 */
++#endif
++	mfspr	r11, SPRN_M_TW	/* Get level 1 table base address */
++#ifdef CONFIG_MODULES
+ 	beq	3f
+-	lis	r11, swapper_pg_dir@h
+-	ori	r11, r11, swapper_pg_dir@l
+-	rlwimi	r10, r11, 0, 2, 19
++	lis	r11, (swapper_pg_dir-PAGE_OFFSET)@h
++	ori	r11, r11, (swapper_pg_dir-PAGE_OFFSET)@l
+ 3:
+ #endif
+-	lwz	r11, 0(r10)	/* Get the level 1 entry */
++	rlwinm	r10, r10, 12, 20, 29	/* Extract level 1 index */
++	lwzx	r11, r10, r11	/* Get the level 1 entry */
+ 	rlwinm.	r10, r11,0,0,19	/* Extract page descriptor page address */
+ 	beq	2f		/* If zero, don't try to find a pte */
+ 
+@@ -375,18 +377,19 @@ DataStoreTLBMiss:
+ #endif
+ 	EXCEPTION_PROLOG_0
+ 	mtspr	SPRN_SPRG_SCRATCH2, r10
+-	mfspr	r10, SPRN_M_TWB	/* Get level 1 table entry address */
++	mfspr	r10, SPRN_MD_EPN
+ 
+ 	/* If we are faulting a kernel address, we have to use the
+ 	 * kernel page tables.
+ 	 */
+-	andi.	r11, r10, 0x0800
++	andis.	r11, r10, 0x8000
++	mfspr	r11, SPRN_M_TW	/* Get level 1 table base address */
+ 	beq	3f
+-	lis	r11, swapper_pg_dir@h
+-	ori	r11, r11, swapper_pg_dir@l
+-	rlwimi	r10, r11, 0, 2, 19
++	lis	r11, (swapper_pg_dir-PAGE_OFFSET)@h
++	ori	r11, r11, (swapper_pg_dir-PAGE_OFFSET)@l
+ 3:
+-	lwz	r11, 0(r10)	/* Get the level 1 entry */
++	rlwinm	r10, r10, 12, 20, 29	/* Extract level 1 index */
++	lwzx	r11, r10, r11	/* Get the level 1 entry */
+ 	rlwinm.	r10, r11,0,0,19	/* Extract page descriptor page address */
+ 	beq	2f		/* If zero, don't try to find a pte */
+ 
+@@ -523,12 +526,12 @@ FixupDAR:/* Entry point for dcbx workaround. */
+ 	andis.	r11, r10, 0x8000	/* Address >= 0x80000000 */
+ 	DO_8xx_CPU6(0x3780, r3)
+ 	mtspr	SPRN_MD_EPN, r10
+-	mfspr	r11, SPRN_M_TWB	/* Get level 1 table entry address */
++	mfspr	r11, SPRN_M_TW	/* Get level 1 table base address */
+ 	beq-	3f		/* Branch if user space */
+ 	lis	r11, (swapper_pg_dir-PAGE_OFFSET)@h
+ 	ori	r11, r11, (swapper_pg_dir-PAGE_OFFSET)@l
+-	rlwimi	r11, r10, 32-20, 0xffc /* r11 = r11&~0xffc|(r10>>20)&0xffc */
+-3:	lwz	r11, 0(r11)	/* Get the level 1 entry */
++3:	rlwinm	r10, r10, 12, 20, 29	/* Extract level 1 index */
++	lwzx	r11, r10, r11	/* Get the level 1 entry */
+ 	DO_8xx_CPU6(0x3b80, r3)
+ 	mtspr	SPRN_MD_TWC, r11	/* Load pte table base address */
+ 	mfspr	r11, SPRN_MD_TWC	/* ....and get the pte address */
+@@ -537,6 +540,7 @@ FixupDAR:/* Entry point for dcbx workaround. */
+ 	lwz	r3, 8(r0)	/* restore r3 from memory */
+ #endif
+ 	/* concat physical page address(r11) and page offset(r10) */
++	mfspr	r10, SPRN_SRR0
+ 	rlwimi	r11, r10, 0, 20, 31
+ 	lwz	r11,0(r11)
+ /* Check if it really is a dcbx instruction. */
+@@ -692,11 +696,11 @@ start_here:
+ #ifdef CONFIG_8xx_CPU6
+ 	lis	r4, cpu6_errata_word@h
+ 	ori	r4, r4, cpu6_errata_word@l
+-	li	r3, 0x3980
++	li	r3, 0x3f80
+ 	stw	r3, 12(r4)
+ 	lwz	r3, 12(r4)
+ #endif
+-	mtspr	SPRN_M_TWB, r6
++	mtspr	SPRN_M_TW, r6
+ 	lis	r4,2f@h
+ 	ori	r4,r4,2f@l
+ 	tophys(r4,r4)
+@@ -870,10 +874,10 @@ _GLOBAL(set_context)
+ 	lis	r6, cpu6_errata_word@h
+ 	ori	r6, r6, cpu6_errata_word@l
+ 	tophys	(r4, r4)
+-	li	r7, 0x3980
++	li	r7, 0x3f80
+ 	stw	r7, 12(r6)
+ 	lwz	r7, 12(r6)
+-        mtspr   SPRN_M_TWB, r4               /* Update MMU base address */
++        mtspr   SPRN_M_TW, r4               /* Update MMU base address */
+ 	li	r7, 0x3380
+ 	stw	r7, 12(r6)
+ 	lwz	r7, 12(r6)
+@@ -881,7 +885,7 @@ _GLOBAL(set_context)
+ #else
+         mtspr   SPRN_M_CASID,r3		/* Update context */
+ 	tophys	(r4, r4)
+-	mtspr	SPRN_M_TWB, r4		/* and pgd */
++	mtspr	SPRN_M_TW, r4		/* and pgd */
+ #endif
+ 	SYNC
+ 	blr
 -- 
 1.7.1
 
