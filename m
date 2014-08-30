@@ -1,103 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751335AbaH3Bvh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 21:51:37 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48834 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750895AbaH3Bvf (ORCPT
+	id S1751204AbaH3BxW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 21:53:22 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:26707 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750890AbaH3BxV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 21:51:35 -0400
-X-Sasl-enc: XeQ43Oyv6rDIh71xRyk8q3pZLxX7ibC5IVrTQUHjYdd5 1409363493
-Message-ID: <1409363489.2980.17.camel@localhost>
-Subject: Re: RTNL: assertion failed at net/ipv6/addrconf.c (1699)
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Sabrina Dubroca <sd@queasysnail.net>
-Cc: Cong Wang <cwang@twopensource.com>, Tommi Rantala <tt.rantala@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org,
-        Dave Jones <davej@redhat.com>
-Date: Sat, 30 Aug 2014 03:51:29 +0200
-In-Reply-To: <20140829195339.GA9780@kria>
-References: <CA+ydwtoDwQVg_BWrxxdpUyJ7Up60GtxTCLYe_5vFdV2td_kGhQ@mail.gmail.com>
-	 <CAHA+R7MZCDGRhSf=UuVCGQvNo03wVziZQB_X30rwNf6hmHipQA@mail.gmail.com>
-	 <20140829195339.GA9780@kria>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 29 Aug 2014 21:53:21 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-8c-54012e8fd9c1
+From: Chao Yu <chao2.yu@samsung.com>
+To: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [f2fs-dev][PATCH v2] f2fs: reposition unlock_new_inode to prevent
+ accessing invalid inode
+Date: Sat, 30 Aug 2014 09:52:34 +0800
+Message-id: <000901cfc3f5$2baaee60$8300cb20$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac/D9OctQAolm5EXSF+AfxagWyGm+A==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t9jAd1+PcYQg3uNPBbX9jUyWTxZP4vZ
+	4tIid4vLu+awObB4bFrVyeaxe8FnJo++LasYPT5vkgtgieKySUnNySxLLdK3S+DK6Nl9ga3g
+	gXjF+pXfWRoY3wt1MXJySAiYSGyad5sNwhaTuHBvPZDNxSEksIhRom3NCSYI5wejxIvbD9hB
+	qtgEVCSWd/xnArFFBLwkJu0/wQJiMwt4SDR2fGcFsYUFUiSuH3oJVs8ioCoxte87I4jNK2Ap
+	ceV4OyuELSjxY/I9qF4tifU7jzNB2PISm9e8ZYa4SEFix9nXjBC79CQO3PvCCFEjLrHxyC2W
+	CYwCs5CMmoVk1Cwko2YhaVnAyLKKUTS1ILmgOCk911CvODG3uDQvXS85P3cTIzion0ntYFzZ
+	YHGIUYCDUYmH98JLhhAh1sSy4srcQ4wSHMxKIrxSj4FCvCmJlVWpRfnxRaU5qcWHGKU5WJTE
+	eQ+0WgcKCaQnlqRmp6YWpBbBZJk4OKUaGCWingm1Gjzcn1G97qP5lut8/5v/ZSzImbEwbPeL
+	lGvBdUHae+7c5E4uLDzA+yNVPI9lnfOTx4IZPEsem9nunbD8vzKf7aXuF4x7hYW2RixtW7Rl
+	Qdhi52VVAqLO3UsmsxULrRFee41duV2ns7Nrbk7xultXN8YdEQu8Ev5a4A1Hb+KalhsREUos
+	xRmJhlrMRcWJAPUf46BmAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sabrina,
+As the race condition on the inode cache, following scenario can appear:
+[Thread a]				[Thread b]
+					->f2fs_mkdir
+					  ->f2fs_add_link
+					    ->__f2fs_add_link
+					      ->init_inode_metadata failed here
+->gc_thread_func
+  ->f2fs_gc
+    ->do_garbage_collect
+      ->gc_data_segment
+        ->f2fs_iget
+          ->iget_locked
+            ->wait_on_inode
+					  ->unlock_new_inode
+        ->move_data_page
+					  ->make_bad_inode
+					  ->iput
 
-On Fr, 2014-08-29 at 21:53 +0200, Sabrina Dubroca wrote:
-> 2014-08-29, 11:14:48 -0700, Cong Wang wrote:
-> > On Fri, Aug 29, 2014 at 8:26 AM, Tommi Rantala <tt.rantala@gmail.com> wrote:
-> > > [   77.297196] RTNL: assertion failed at net/ipv6/addrconf.c (1699)
-> > > [   77.298080] CPU: 0 PID: 4842 Comm: trinity-main Not tainted 3.17.0-rc2+ #30
-> > > [   77.299039] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> > > [   77.299789]  ffff88003d76a618 ffff880026133c50 ffffffff8238ba79
-> > > ffff880037c84520
-> > > [   77.300829]  ffff880026133c90 ffffffff820bd52b 0000000000000000
-> > > ffffffff82d86c40
-> > > [   77.301869]  0000000000000000 00000000f76fd1e1 ffff8800382d8000
-> > > ffff8800382d8220
-> > > [   77.302906] Call Trace:
-> > > [   77.303246]  [<ffffffff8238ba79>] dump_stack+0x4d/0x66
-> > > [   77.303928]  [<ffffffff820bd52b>] addrconf_join_solict+0x4b/0xb0
-> > > [   77.304731]  [<ffffffff820b031b>] ipv6_dev_ac_inc+0x2bb/0x330
-> > > [   77.305498]  [<ffffffff820b0060>] ? ac6_seq_start+0x260/0x260
-> > > [   77.306257]  [<ffffffff820b05fe>] ipv6_sock_ac_join+0x26e/0x360
-> > > [   77.307046]  [<ffffffff820b0429>] ? ipv6_sock_ac_join+0x99/0x360
-> > > [   77.307798]  [<ffffffff820cdd60>] do_ipv6_setsockopt.isra.5+0xa70/0xf20
-> > 
-> > 
-> > I think we should just use rtnl_lock() instead of rcu_read_lock() there,
-> > it is not a hot path worth optimization.
-> > 
-> > Please try the attached patch.
-> 
-> note: it doesn't build as it is now, it needs:
-> 
-> -EXPORT_SYMBOL(dev_get_by_flags_rcu);
-> +EXPORT_SYMBOL(dev_get_by_flags);
-> 
-> 
-> I just tried your patch with a basic test program (open
-> socket/join/leave/close and open socket/join/close).
-> 
-> I think you need to modify ipv6_sock_ac_close as well, or you can still
-> trigger the assertion when closing the socket without leaving first.
-> 
-> Modified patch attached.
+When we fail in create/symlink/mkdir/mknod/tmpfile, the new allocated inode
+should be set as bad to avoid being accessed by other thread. But in above
+scenario, it allows f2fs to access the invalid inode before this inode was set
+as bad.
+This patch fix the potential problem, and this issue was found by code review.
 
-Sorry, just had time to look at this.
+change log from v1:
+ o Add condition judgment in gc_data_segment() suggested by Changman Lee.
+ o use iget_failed to simplify code.
 
-The reason is not to have list corruption but that the calls down to
-ndo_set_rx_mode expect rtnl to be locked by the drivers. Filter lists
-are locked by addr_list_lock and that's why I think we never saw any
-problems with that, but drivers expect rtnl locked for those calls.
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ fs/f2fs/gc.c    |  2 +-
+ fs/f2fs/namei.c | 20 +++++---------------
+ 2 files changed, 6 insertions(+), 16 deletions(-)
 
-But this problem also affects multicast join, so patch seems incomplete
-to me (and for that matter ssm multicast join, too).
-
-Also rtnl_lock and rcu_read_lock compose in that order, so we don't need
-to change dev_get_by_flags, but as this is the only user it sure is
-possible. RCU locked version is just easier composeable, so I wouldn't
-touch that if needed in future, just also take rcu lock as before.
-
-So just adding rtnl_lock add appropriate places seems to be ok to me,
-but still need to review parts of the ssm code.
-
-Also we should move ASSERT_RTNL checks from addrconf_join_solict to
-ipv6_dev_mc_inc/dec.
-
-Thanks,
-Hannes
+diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
+index e8507b1..943a31d 100644
+--- a/fs/f2fs/gc.c
++++ b/fs/f2fs/gc.c
+@@ -593,7 +593,7 @@ next_step:
+ 
+ 		if (phase == 2) {
+ 			inode = f2fs_iget(sb, dni.ino);
+-			if (IS_ERR(inode))
++			if (IS_ERR(inode) || is_bad_inode(inode))
+ 				continue;
+ 
+ 			start_bidx = start_bidx_of_node(nofs, F2FS_I(inode));
+diff --git a/fs/f2fs/namei.c b/fs/f2fs/namei.c
+index 6b53ce9..ee103fd 100644
+--- a/fs/f2fs/namei.c
++++ b/fs/f2fs/namei.c
+@@ -134,9 +134,7 @@ static int f2fs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
+ 	return 0;
+ out:
+ 	clear_nlink(inode);
+-	unlock_new_inode(inode);
+-	make_bad_inode(inode);
+-	iput(inode);
++	iget_failed(inode);
+ 	alloc_nid_failed(sbi, ino);
+ 	return err;
+ }
+@@ -267,9 +265,7 @@ static int f2fs_symlink(struct inode *dir, struct dentry *dentry,
+ 	return err;
+ out:
+ 	clear_nlink(inode);
+-	unlock_new_inode(inode);
+-	make_bad_inode(inode);
+-	iput(inode);
++	iget_failed(inode);
+ 	alloc_nid_failed(sbi, inode->i_ino);
+ 	return err;
+ }
+@@ -308,9 +304,7 @@ static int f2fs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
+ out_fail:
+ 	clear_inode_flag(F2FS_I(inode), FI_INC_LINK);
+ 	clear_nlink(inode);
+-	unlock_new_inode(inode);
+-	make_bad_inode(inode);
+-	iput(inode);
++	iget_failed(inode);
+ 	alloc_nid_failed(sbi, inode->i_ino);
+ 	return err;
+ }
+@@ -354,9 +348,7 @@ static int f2fs_mknod(struct inode *dir, struct dentry *dentry,
+ 	return 0;
+ out:
+ 	clear_nlink(inode);
+-	unlock_new_inode(inode);
+-	make_bad_inode(inode);
+-	iput(inode);
++	iget_failed(inode);
+ 	alloc_nid_failed(sbi, inode->i_ino);
+ 	return err;
+ }
+@@ -688,9 +680,7 @@ release_out:
+ out:
+ 	f2fs_unlock_op(sbi);
+ 	clear_nlink(inode);
+-	unlock_new_inode(inode);
+-	make_bad_inode(inode);
+-	iput(inode);
++	iget_failed(inode);
+ 	alloc_nid_failed(sbi, inode->i_ino);
+ 	return err;
+ }
+-- 
+2.0.1.474.g72c7794
 
 
