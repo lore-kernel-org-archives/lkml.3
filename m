@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751931AbaH3Svx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Aug 2014 14:51:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52908 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751677AbaH3Svw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Aug 2014 14:51:52 -0400
-Date: Sat, 30 Aug 2014 11:51:50 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Oleg Drokin <green@linuxhacker.ru>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/10] lustre: Add MAINTAINERS entry
-Message-ID: <20140830185150.GA24711@kroah.com>
-References: <1408121295-29115-1-git-send-email-green@linuxhacker.ru>
- <1408121295-29115-10-git-send-email-green@linuxhacker.ru>
- <20140817163739.GA15982@kroah.com>
- <980AF87D-E1F4-4C0E-AFF3-DB170DB98ADA@linuxhacker.ru>
+	id S1751925AbaH3SxZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Aug 2014 14:53:25 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:59779 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751163AbaH3SxY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Aug 2014 14:53:24 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Jianqun <jay.xu@rock-chips.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        "broonie@kernel.org" <broonie@kernel.org>, perex@perex.cz,
+        tiwai@suse.de, yongjun_wei@trendmicro.com.cn,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH 0/2] rockchip-i2s: add power setting for I2S controller and fix some critical bugs
+Date: Sat, 30 Aug 2014 20:55:12 +0200
+Message-ID: <2985541.F8SvxX1thq@diego>
+User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <CAD=FV=XPYkDJ2J3rTHZgKzbH_EMBUmCMwHWjpf1Aagnv_mUqGQ@mail.gmail.com>
+References: <1409350027-17604-1-git-send-email-jay.xu@rock-chips.com> <CAD=FV=XPYkDJ2J3rTHZgKzbH_EMBUmCMwHWjpf1Aagnv_mUqGQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <980AF87D-E1F4-4C0E-AFF3-DB170DB98ADA@linuxhacker.ru>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 17, 2014 at 12:47:57PM -0400, Oleg Drokin wrote:
+Am Freitag, 29. August 2014, 21:30:43 schrieb Doug Anderson:
+> Jianqun,
 > 
-> On Aug 17, 2014, at 12:37 PM, Greg Kroah-Hartman wrote:
-> 
-> > On Fri, Aug 15, 2014 at 12:48:14PM -0400, Oleg Drokin wrote:
-> >> Just add the entry with some info.
-> >> 
-> >> Signed-off-by: Oleg Drokin <green@linuxhacker.ru>
-> >> ---
-> >> MAINTAINERS | 8 ++++++++
-> >> 1 file changed, 8 insertions(+)
-> >> 
-> >> diff --git a/MAINTAINERS b/MAINTAINERS
-> >> index 7e2eb4c..369183b 100644
-> >> --- a/MAINTAINERS
-> >> +++ b/MAINTAINERS
-> >> @@ -8646,6 +8646,14 @@ W:	http://www.lirc.org/
-> >> S:	Odd Fixes
-> >> F:	drivers/staging/media/lirc/
-> >> 
-> >> +STAGING - LUSTRE PARALLEL FILESYSTEM
-> >> +M:	Oleg Drokin <oleg.drokin@intel.com>
-> >> +M:	Andreas Dilger <andreas.dilger@intel.com>
-> >> +L:	HPDD-discuss@lists.01.org (moderated for non-subscribers)
+> On Fri, Aug 29, 2014 at 3:07 PM, Jianqun <jay.xu@rock-chips.com> wrote:
+> > Add optional power setting for i2s controller found on rk3066, rk3168 and
+> > rk3288 processors from rockchip, should according to hardware design.
 > > 
-> > I _really_ hate moderated mailing lists for kernel development stuff.
-> > Why not just use the driverdev mailing list instead?
+> > Default setting for I2S controller is powered by 3.3V, there needs this
+> > patch if it's powered by 1.8V by hardware design.
+> > 
+> > Jianqun (2):
+> >   rockchip-i2s: dt: add grf requested properties to set power of I2S
+> >   controller rockchip-i2s: add power setting for I2S controller, also fix
+> >   some bugs>  
+> >  .../devicetree/bindings/sound/rockchip-i2s.txt     |  6 +-
+> >  sound/soc/rockchip/rockchip_i2s.c                  | 93
+> >  +++++++++++++--------- sound/soc/rockchip/rockchip_i2s.h                
+> >   | 13 +--
+> >  3 files changed, 68 insertions(+), 44 deletions(-)
 > 
-> I guess this could be done if we really need to, but ...
-> 
-> > I note that you didn't even cc: this patch series to that list...
-> 
-> The instructions in the beginning of the file say:
-> "L: Mailing list that is relevant to this area"
-> This is the mailing list that is relevant to the area, but we don't really send patches in there,
-> and because it's premoderated it's not really convenient anyway as you rightly notice.
-> People can ask other questions they might have bout their problems there, though, and there's
-> a higher chance that somebody familiar with lustre will read and answer them.
-> 
-> the 'M:' is the send patches to according to the instructions?
+> Did the general solution I posted at
+> <https://patchwork.kernel.org/patch/4807821/> not work for you?  ...or
+> did you not see that?
 
-Yes, this is correct, but watch out, this isn't going to keep patches
-from being sent to the driverdevel mailing list and me applying them
-directly.
+Also, I don't think it's a good idea to set the io voltage bit simply from a 
+dt setting without looking at the actual regulator voltage ... as a 1.8V 
+setting when the regulator supplies 3.3V supposedly is able to damage the 
+chip.
 
-Personally, I'll never cc: your hpdd mailing list, as I get bounces from
-it, and don't feel that kernel mailing lists should ever be "closed"
-(I run an open kernel mailing list, it can be done, and isn't all that
-hard...)
 
-So I'll go apply this, but don't really like it...
-
-greg k-h
