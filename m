@@ -1,86 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751645AbaH3MAp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Aug 2014 08:00:45 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:44491 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751581AbaH3MAo (ORCPT
+	id S1751565AbaH3MZB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Aug 2014 08:25:01 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:33918 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402AbaH3MY7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Aug 2014 08:00:44 -0400
-Message-ID: <5401BCDF.3040503@linux.vnet.ibm.com>
-Date: Sat, 30 Aug 2014 17:30:31 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>, peterz@infradead.org,
-        mingo@kernel.org, linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org
-CC: riel@redhat.com, Morten.Rasmussen@arm.com, efault@gmx.de,
-        nicolas.pitre@linaro.org, linaro-kernel@lists.linaro.org,
-        daniel.lezcano@linaro.org, dietmar.eggemann@arm.com
-Subject: Re: [PATCH v5 03/12] sched: fix avg_load computation
-References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org> <1409051215-16788-4-git-send-email-vincent.guittot@linaro.org>
-In-Reply-To: <1409051215-16788-4-git-send-email-vincent.guittot@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14083012-3532-0000-0000-000004421370
+	Sat, 30 Aug 2014 08:24:59 -0400
+From: matwey@sai.msu.ru
+To: mohit.kumar@st.com, jg1.han@samsung.com
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        matwey.kornilov@gmail.com, "Matwey V. Kornilov" <matwey@sai.msu.ru>
+Subject: [PATCH] Export functions from pcie-designware
+Date: Sat, 30 Aug 2014 16:24:36 +0400
+Message-Id: <1409401476-5002-1-git-send-email-matwey@sai.msu.ru>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vincent,
+From: "Matwey V. Kornilov" <matwey@sai.msu.ru>
 
-On 08/26/2014 04:36 PM, Vincent Guittot wrote:
-> The computation of avg_load and avg_load_per_task should only takes into
-> account the number of cfs tasks. The non cfs task are already taken into
-> account by decreasing the cpu's capacity and they will be tracked in the
-> CPU's utilization (group_utilization) of the next patches
-> 
-> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-> ---
->  kernel/sched/fair.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 87b9dc7..b85e9f7 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -4092,7 +4092,7 @@ static unsigned long capacity_of(int cpu)
->  static unsigned long cpu_avg_load_per_task(int cpu)
->  {
->  	struct rq *rq = cpu_rq(cpu);
-> -	unsigned long nr_running = ACCESS_ONCE(rq->nr_running);
-> +	unsigned long nr_running = ACCESS_ONCE(rq->cfs.h_nr_running);
->  	unsigned long load_avg = rq->cfs.runnable_load_avg;
-> 
->  	if (nr_running)
-> @@ -5985,7 +5985,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
->  			load = source_load(i, load_idx);
-> 
->  		sgs->group_load += load;
-> -		sgs->sum_nr_running += rq->nr_running;
-> +		sgs->sum_nr_running += rq->cfs.h_nr_running;
-> 
->  		if (rq->nr_running > 1)
->  			*overload = true;
-> 
+pcie-spear13xx when built as module requires the functions from pcie-designware.
+Export them properly.
 
-Why do we probe rq->nr_running while we do load balancing? Should not we
-be probing cfs_rq->nr_running instead? We are interested after all in
-load balancing fair tasks right? The reason I ask this is, I was
-wondering if we need to make the above similar change in more places in
-load balancing.
+Signed-off-by: Matwey V. Kornilov <matwey@sai.msu.ru>
+---
+ drivers/pci/host/pcie-designware.c |  7 +++++++
+ drivers/pci/host/pcie-designware.h | 14 +++++++-------
+ 2 files changed, 14 insertions(+), 7 deletions(-)
 
-To cite examples: The above check says a cpu is overloaded when
-rq->nr_running > 1. However if these tasks happen to be rt tasks, we
-would anyway not be able to load balance. So while I was looking through
-this patch, I noticed this and wanted to cross verify if we are checking
-rq->nr_running on purpose in some places in load balancing; another
-example being in nohz_kick_needed().
-
-
-Regards
-Preeti U Murthy
+diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
+index 52bd3a1..7914b92c 100644
+--- a/drivers/pci/host/pcie-designware.c
++++ b/drivers/pci/host/pcie-designware.c
+@@ -89,6 +89,7 @@ int dw_pcie_cfg_read(void __iomem *addr, int where, int size, u32 *val)
+ 
+ 	return PCIBIOS_SUCCESSFUL;
+ }
++EXPORT_SYMBOL(dw_pcie_cfg_read);
+ 
+ int dw_pcie_cfg_write(void __iomem *addr, int where, int size, u32 val)
+ {
+@@ -103,6 +104,7 @@ int dw_pcie_cfg_write(void __iomem *addr, int where, int size, u32 val)
+ 
+ 	return PCIBIOS_SUCCESSFUL;
+ }
++EXPORT_SYMBOL(dw_pcie_cfg_write);
+ 
+ static inline void dw_pcie_readl_rc(struct pcie_port *pp, u32 reg, u32 *val)
+ {
+@@ -183,6 +185,7 @@ irqreturn_t dw_handle_msi_irq(struct pcie_port *pp)
+ 
+ 	return ret;
+ }
++EXPORT_SYMBOL(dw_handle_msi_irq);
+ 
+ void dw_pcie_msi_init(struct pcie_port *pp)
+ {
+@@ -193,6 +196,7 @@ void dw_pcie_msi_init(struct pcie_port *pp)
+ 			virt_to_phys((void *)pp->msi_data));
+ 	dw_pcie_wr_own_conf(pp, PCIE_MSI_ADDR_HI, 4, 0);
+ }
++EXPORT_SYMBOL(dw_pcie_msi_init);
+ 
+ static int find_valid_pos0(struct pcie_port *pp, int msgvec, int pos, int *pos0)
+ {
+@@ -401,6 +405,7 @@ int dw_pcie_link_up(struct pcie_port *pp)
+ 	else
+ 		return 0;
+ }
++EXPORT_SYMBOL(dw_pcie_link_up);
+ 
+ static int dw_pcie_msi_map(struct irq_domain *domain, unsigned int irq,
+ 			irq_hw_number_t hwirq)
+@@ -565,6 +570,7 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL(dw_pcie_host_init);
+ 
+ static void dw_pcie_prog_viewport_cfg0(struct pcie_port *pp, u32 busdev)
+ {
+@@ -899,6 +905,7 @@ void dw_pcie_setup_rc(struct pcie_port *pp)
+ 		PCI_COMMAND_MASTER | PCI_COMMAND_SERR;
+ 	dw_pcie_writel_rc(pp, val, PCI_COMMAND);
+ }
++EXPORT_SYMBOL(dw_pcie_setup_rc);
+ 
+ MODULE_AUTHOR("Jingoo Han <jg1.han@samsung.com>");
+ MODULE_DESCRIPTION("Designware PCIe host controller driver");
+diff --git a/drivers/pci/host/pcie-designware.h b/drivers/pci/host/pcie-designware.h
+index daf81f9..6e4400b 100644
+--- a/drivers/pci/host/pcie-designware.h
++++ b/drivers/pci/host/pcie-designware.h
+@@ -76,12 +76,12 @@ struct pcie_host_ops {
+ 	u32 (*get_msi_data)(struct pcie_port *pp);
+ };
+ 
+-int dw_pcie_cfg_read(void __iomem *addr, int where, int size, u32 *val);
+-int dw_pcie_cfg_write(void __iomem *addr, int where, int size, u32 val);
+-irqreturn_t dw_handle_msi_irq(struct pcie_port *pp);
+-void dw_pcie_msi_init(struct pcie_port *pp);
+-int dw_pcie_link_up(struct pcie_port *pp);
+-void dw_pcie_setup_rc(struct pcie_port *pp);
+-int dw_pcie_host_init(struct pcie_port *pp);
++extern int dw_pcie_cfg_read(void __iomem *addr, int where, int size, u32 *val);
++extern int dw_pcie_cfg_write(void __iomem *addr, int where, int size, u32 val);
++extern irqreturn_t dw_handle_msi_irq(struct pcie_port *pp);
++extern void dw_pcie_msi_init(struct pcie_port *pp);
++extern int dw_pcie_link_up(struct pcie_port *pp);
++extern void dw_pcie_setup_rc(struct pcie_port *pp);
++extern int dw_pcie_host_init(struct pcie_port *pp);
+ 
+ #endif /* _PCIE_DESIGNWARE_H */
+-- 
+1.8.1.4
 
