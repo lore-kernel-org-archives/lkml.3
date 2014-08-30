@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751200AbaH3DG0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 23:06:26 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:52587 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750965AbaH3DGY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 23:06:24 -0400
-Date: Fri, 29 Aug 2014 20:06:23 -0700 (PDT)
-Message-Id: <20140829.200623.1931173830496862001.davem@davemloft.net>
-To: hock.leong.kweh@intel.com
-Cc: peppe.cavallaro@st.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, boon.leong.ong@intel.com
-Subject: Re: [PATCH 1/4] net: stmmac: enhance to support multiple device
- instances
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <cf29eb9e793cf67b99b455f3a4a55e7aca5d826c.1409123378.git.hock.leong.kweh@intel.com>
-References: <cover.1409123378.git.hock.leong.kweh@intel.com>
-	<cover.1409123378.git.hock.leong.kweh@intel.com>
-	<cf29eb9e793cf67b99b455f3a4a55e7aca5d826c.1409123378.git.hock.leong.kweh@intel.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1751194AbaH3DQF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 23:16:05 -0400
+Received: from mga01.intel.com ([192.55.52.88]:6183 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750874AbaH3DQC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 23:16:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,429,1406617200"; 
+   d="scan'208";a="591988340"
+Message-ID: <540141F0.7080207@linux.intel.com>
+Date: Sat, 30 Aug 2014 11:16:00 +0800
+From: "Lu, Baolu" <baolu.lu@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Mathias Nyman <mathias.nyman@intel.com>
+CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] USB: Add device quirk for ASUS T100 Base Station
+ keyboard
+References: <1409286391-2854-1-git-send-email-baolu.lu@linux.intel.com> <54006B0A.2050902@cogentembedded.com>
+In-Reply-To: <54006B0A.2050902@cogentembedded.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 29 Aug 2014 20:06:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kweh Hock Leong <hock.leong.kweh@intel.com>
-Date: Wed, 27 Aug 2014 18:32:26 +0800
 
-> @@ -26,27 +26,22 @@
->  #include <linux/pci.h>
->  #include "stmmac.h"
->  
-> -static struct plat_stmmacenet_data plat_dat;
-> -static struct stmmac_mdio_bus_data mdio_data;
-> -static struct stmmac_dma_cfg dma_cfg;
-> +static int instance_id = 1;
+On 8/29/2014 7:59 PM, Sergei Shtylyov wrote:
+> Hello.
+>
+> On 8/29/2014 8:26 AM, Lu Baolu wrote:
+>
+>> This full-speed USB device generates spurious remote wakeup event
+>> as soon as USB_DEVICE_REMOTE_WAKEUP feature is set. As the result,
+>> Linux can't enter system suspend and S0ix power saving modes once
+>> this keyboard is used.
+>
+>> This patch tries to introduce USB_QUIRK_IGNOR_REMOTE_WAKEUP quirk.
+>
+>    Why not IGNORE? This doesn't look like a big save...
 
-Don't do this instance stuff.  Instead pull in some identifier that
-can come from elsewhere.
+Sure, will change it.
 
-> +	plat_dat->mdio_bus_data = devm_kzalloc(&pdev->dev,
-> +				    sizeof(*plat_dat->mdio_bus_data),
-> +				    GFP_KERNEL);
+>
+>> With this quirk set, wakeup capability will be ignored during
+>> device configure.
+>
+>> This patch could be back-ported to kernels as old as 2.6.39.
+>
+>> Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
+>
+> WBR, Sergei
+>
 
-This is not indented properly.
-
-On the second and subsequent lines of a multi-line function call,
-the lines should start exactly at the first column after the openning
-parenthesis of the first line.
-
-You must use the correct number of TAB and SPACE characters necessary
-to do so.  Generally speaking, if you are indenting using only TAB
-characters, odds are you are doing it wrong.
-
-Please audit for, and fix this, in your entire patch series.
