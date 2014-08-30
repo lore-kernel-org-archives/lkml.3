@@ -1,165 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751797AbaH3OpI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Aug 2014 10:45:08 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:18707 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751565AbaH3OpF (ORCPT
+	id S1751942AbaH3OqU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Aug 2014 10:46:20 -0400
+Received: from smtp89.ord1c.emailsrvr.com ([108.166.43.89]:46440 "EHLO
+	smtp89.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751626AbaH3OqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Aug 2014 10:45:05 -0400
-X-IronPort-AV: E=Sophos;i="5.04,431,1406584800"; 
-   d="scan'208";a="92247408"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        "Dilger, Andreas" <andreas.dilger@intel.com>,
-        "Drokin, Oleg" <oleg.drokin@intel.com>, Peng Tao <bergwolf@gmail.com>
-Subject: [PATCH] staging: lustre: fid,fld: expand the GOTO macro
-Date: Sat, 30 Aug 2014 16:41:23 +0200
-Message-Id: <1409409683-5288-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.8.3.2
+	Sat, 30 Aug 2014 10:46:19 -0400
+X-Sender-Id: pramod.gurav@smartplayin.com
+From: Pramod Gurav <pramod.gurav@smartplayin.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kernel@stlinux.com
+Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.com>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Subject: [PATCH] pinctrl: st: Add remove function and remove gpio_chip on failure
+Date: Sat, 30 Aug 2014 20:15:35 +0530
+Message-Id: <1409409935-8775-1-git-send-email-pramod.gurav@smartplayin.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+This patch adds a remove function to platform_driver to unload
+the driver in a cleaner way. This also releases gpiochip related
+resources by calling gpiochip_remove when gpiochip_irqchip_add fails.
 
-The semantic patch that makes this change is as follows:
-(http://coccinelle.lip6.fr/)
+CC: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>
+CC: Srinivas Kandagatla <srinivas.kandagatla@linaro.com>
+CC: Maxime Coquelin <maxime.coquelin@st.com>
+CC: Patrice Chotard <patrice.chotard@st.com>
+CC: Linus Walleij <linus.walleij@linaro.org>
+CC: Bjorn Andersson <bjorn.andersson@sonymobile.com>
 
-// <smpl>
-@@
-identifier lbl;
-identifier rc;
-constant c;
-@@
-
-- GOTO(lbl,\(rc\|c\));
-+ goto lbl;
-
-@@
-identifier lbl;
-expression rc;
-@@
-
-- GOTO(lbl,rc);
-+ rc;
-+ goto lbl;
-// </smpl>
-
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
+Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
 ---
- drivers/staging/lustre/lustre/fid/fid_request.c |   18 +++++++++++-------
- drivers/staging/lustre/lustre/fld/fld_request.c |   14 ++++++++------
- 2 files changed, 19 insertions(+), 13 deletions(-)
+ drivers/pinctrl/pinctrl-st.c |   25 +++++++++++++++++++++++++
+ 1 files changed, 25 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/staging/lustre/lustre/fid/fid_request.c b/drivers/staging/lustre/lustre/fid/fid_request.c
-index 46c11ca..64b1d80 100644
---- a/drivers/staging/lustre/lustre/fid/fid_request.c
-+++ b/drivers/staging/lustre/lustre/fid/fid_request.c
-@@ -113,7 +113,7 @@ static int seq_client_rpc(struct lu_client_seq *seq,
- 	if (seq->lcs_type == LUSTRE_SEQ_METADATA)
- 		mdc_put_rpc_lock(exp->exp_obd->u.cli.cl_rpc_lock, NULL);
- 	if (rc)
--		GOTO(out_req, rc);
-+		goto out_req;
- 
- 	out = req_capsule_server_get(&req->rq_pill, &RMF_SEQ_RANGE);
- 	*output = *out;
-@@ -121,13 +121,15 @@ static int seq_client_rpc(struct lu_client_seq *seq,
- 	if (!range_is_sane(output)) {
- 		CERROR("%s: Invalid range received from server: "
- 		       DRANGE"\n", seq->lcs_name, PRANGE(output));
--		GOTO(out_req, rc = -EINVAL);
-+		rc = -EINVAL;
-+		goto out_req;
- 	}
- 
- 	if (range_is_exhausted(output)) {
- 		CERROR("%s: Range received from server is exhausted: "
- 		       DRANGE"]\n", seq->lcs_name, PRANGE(output));
--		GOTO(out_req, rc = -EINVAL);
-+		rc = -EINVAL;
-+		goto out_req;
- 	}
- 
- 	CDEBUG_LIMIT(debug_mask, "%s: Allocated %s-sequence "DRANGE"]\n",
-@@ -430,7 +432,7 @@ static int seq_client_proc_init(struct lu_client_seq *seq)
- 	if (rc) {
- 		CERROR("%s: Can't init sequence manager proc, rc %d\n",
- 		       seq->lcs_name, rc);
--		GOTO(out_cleanup, rc);
-+		goto out_cleanup;
- 	}
- 
+diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
+index 5475374..9296845 100644
+--- a/drivers/pinctrl/pinctrl-st.c
++++ b/drivers/pinctrl/pinctrl-st.c
+@@ -1517,6 +1517,7 @@ static int st_gpiolib_register_bank(struct st_pinctrl *info,
+ 					   0, handle_simple_irq,
+ 					   IRQ_TYPE_LEVEL_LOW);
+ 		if (err) {
++			gpiochip_remove(&bank->gpio_chip);
+ 			dev_info(dev, "could not add irqchip\n");
+ 			return err;
+ 		}
+@@ -1685,6 +1686,29 @@ static int st_pctl_probe(struct platform_device *pdev)
  	return 0;
-@@ -508,8 +510,10 @@ int client_fid_init(struct obd_device *obd,
- 		return -ENOMEM;
+ }
  
- 	OBD_ALLOC(prefix, MAX_OBD_NAME + 5);
--	if (prefix == NULL)
--		GOTO(out_free_seq, rc = -ENOMEM);
-+	if (prefix == NULL) {
-+		rc = -ENOMEM;
-+		goto out_free_seq;
++static int st_pctl_remove(struct platform_device *pdev)
++{
++	struct st_pinctrl *info = platform_get_drvdata(pdev);
++	struct device_node *np = pdev->dev.of_node;
++	struct device_node *child;
++	struct gpio_chip gpio_chip;
++	int bank = 0;
++
++	if (info->nbanks) {
++		for_each_child_of_node(np, child) {
++			if (of_property_read_bool(child, "gpio-controller")) {
++				gpio_chip = info->banks[bank].gpio_chip;
++				gpiochip_remove(&gpio_chip);
++				bank++;
++			}
++		}
 +	}
++
++	pinctrl_unregister(info->pctl);
++
++	return 0;
++}
++
+ static struct platform_driver st_pctl_driver = {
+ 	.driver = {
+ 		.name = "st-pinctrl",
+@@ -1692,6 +1716,7 @@ static struct platform_driver st_pctl_driver = {
+ 		.of_match_table = st_pctl_of_match,
+ 	},
+ 	.probe = st_pctl_probe,
++	.remove = st_pctl_remove,
+ };
  
- 	snprintf(prefix, MAX_OBD_NAME + 5, "cli-%s", obd->obd_name);
- 
-@@ -517,7 +521,7 @@ int client_fid_init(struct obd_device *obd,
- 	rc = seq_client_init(cli->cl_seq, exp, type, prefix, NULL);
- 	OBD_FREE(prefix, MAX_OBD_NAME + 5);
- 	if (rc)
--		GOTO(out_free_seq, rc);
-+		goto out_free_seq;
- 
- 	return rc;
- out_free_seq:
-diff --git a/drivers/staging/lustre/lustre/fld/fld_request.c b/drivers/staging/lustre/lustre/fld/fld_request.c
-index 4539a02..f63c669 100644
---- a/drivers/staging/lustre/lustre/fld/fld_request.c
-+++ b/drivers/staging/lustre/lustre/fld/fld_request.c
-@@ -293,7 +293,7 @@ static int fld_client_proc_init(struct lu_client_fld *fld)
- 	if (rc) {
- 		CERROR("%s: Can't init FLD proc, rc %d\n",
- 		       fld->lcf_name, rc);
--		GOTO(out_cleanup, rc);
-+		goto out_cleanup;
- 	}
- 
- 	return 0;
-@@ -363,12 +363,12 @@ int fld_client_init(struct lu_client_fld *fld,
- 	if (IS_ERR(fld->lcf_cache)) {
- 		rc = PTR_ERR(fld->lcf_cache);
- 		fld->lcf_cache = NULL;
--		GOTO(out, rc);
-+		goto out;
- 	}
- 
- 	rc = fld_client_proc_init(fld);
- 	if (rc)
--		GOTO(out, rc);
-+		goto out;
- out:
- 	if (rc)
- 		fld_client_fini(fld);
-@@ -441,11 +441,13 @@ int fld_client_rpc(struct obd_export *exp,
- 	if (fld_op != FLD_LOOKUP)
- 		mdc_put_rpc_lock(exp->exp_obd->u.cli.cl_rpc_lock, NULL);
- 	if (rc)
--		GOTO(out_req, rc);
-+		goto out_req;
- 
- 	prange = req_capsule_server_get(&req->rq_pill, &RMF_FLD_MDFLD);
--	if (prange == NULL)
--		GOTO(out_req, rc = -EFAULT);
-+	if (prange == NULL) {
-+		rc = -EFAULT;
-+		goto out_req;
-+	}
- 	*range = *prange;
- out_req:
- 	ptlrpc_req_finished(req);
+ static int __init st_pctl_init(void)
+-- 
+1.7.0.4
 
