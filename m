@@ -1,161 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751468AbaH3Kjx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Aug 2014 06:39:53 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:60840 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751228AbaH3Kjv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Aug 2014 06:39:51 -0400
-Message-ID: <5401A9F3.4090006@kernel.org>
-Date: Sat, 30 Aug 2014 11:39:47 +0100
-From: Jonathan Cameron <jic23@kernel.org>
+	id S1751517AbaH3KnB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Aug 2014 06:43:01 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:33717 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751152AbaH3KnA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Aug 2014 06:43:00 -0400
+Message-ID: <5401AA33.4010206@mev.co.uk>
+Date: Sat, 30 Aug 2014 11:40:51 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+Organization: MEV Ltd
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Laurentiu Palcu <laurentiu.palcu@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>
-CC: Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Derek Basehore <dbasehore@chromium.org>,
-        Teodora Baluta <teodora.baluta@intel.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Jingoo Han <jg1.han@samsung.com>, linux-iio@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH 3/3] staging: iio: light: isl29018: add ACPI support
-References: <1409322382-30021-1-git-send-email-laurentiu.palcu@intel.com> <1409322382-30021-4-git-send-email-laurentiu.palcu@intel.com>
-In-Reply-To: <1409322382-30021-4-git-send-email-laurentiu.palcu@intel.com>
-Content-Type: text/plain; charset=windows-1252
+To: Chase Southwood <chase.southwood@gmail.com>, <gregkh@linuxfoundation.org>
+CC: <hsweeten@visionengravers.com>, <devel@driverdev.osuosl.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging: comedi: usbdux: fix sparse endianness warnings
+References: <1409362832-1312-1-git-send-email-chase.southwood@gmail.com>
+In-Reply-To: <1409362832-1312-1-git-send-email-chase.southwood@gmail.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-ClientProxiedBy: MEVEXCHANGE.mev.local (10.0.0.4) To MEVEXCHANGE.mev.local
+ (10.0.0.4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/08/14 15:26, Laurentiu Palcu wrote:
-> Add support for enumerating the device through ACPI.
+On 30/08/14 02:40, Chase Southwood wrote:
+> Sparse has many warnings like:
 >
-> Signed-off-by: Laurentiu Palcu <laurentiu.palcu@intel.com>
-Mostly fine, but I'm unclear on why we have a cast to a char * for name.
-
-Maybe I just haven't had enough coffee this morning :)
-
-Jonathan
+> drivers/staging/comedi/drivers/usbdux.c:366:32: warning: cast to
+> restricted __le16
+>
+> on lines on which devpriv->in_buf or devpriv->insn_buf are passed to
+> le16_to_cpu().  This suggests that both of these variables should actually
+> be of type __le16.
+>
+> Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
+> Cc: Ian Abbott <abbotti@mev.co.uk>
+> Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
 > ---
->  drivers/staging/iio/light/isl29018.c | 46 +++++++++++++++++++++++++++++++-----
->  1 file changed, 40 insertions(+), 6 deletions(-)
+> This is, as usual, compile tested only.  I tried to verify as best as I
+> could that this is a sane change, but I am unable to test on the hardware.
 >
-> diff --git a/drivers/staging/iio/light/isl29018.c b/drivers/staging/iio/light/isl29018.c
-> index b50f126..c54c6ae 100644
-> --- a/drivers/staging/iio/light/isl29018.c
-> +++ b/drivers/staging/iio/light/isl29018.c
-> @@ -30,6 +30,7 @@
->  #include <linux/slab.h>
->  #include <linux/iio/iio.h>
->  #include <linux/iio/sysfs.h>
-> +#include <linux/acpi.h>
+>   drivers/staging/comedi/drivers/usbdux.c | 4 ++--
+>   1 file changed, 2 insertions(+), 2 deletions(-)
 >
->  #define CONVERSION_TIME_MS		100
+> diff --git a/drivers/staging/comedi/drivers/usbdux.c b/drivers/staging/comedi/drivers/usbdux.c
+> index 053bc50..e1a19222 100644
+> --- a/drivers/staging/comedi/drivers/usbdux.c
+> +++ b/drivers/staging/comedi/drivers/usbdux.c
+> @@ -198,9 +198,9 @@ struct usbdux_private {
+>   	/* size of the PWM buffer which holds the bit pattern */
+>   	int pwm_buf_sz;
+>   	/* input buffer for the ISO-transfer */
+> -	uint16_t *in_buf;
+> +	__le16 *in_buf;
+>   	/* input buffer for single insn */
+> -	uint16_t *insn_buf;
+> +	__le16 *insn_buf;
 >
-> @@ -656,12 +657,28 @@ static const struct chip_info chip_info_tbl[] = {
->  	},
->  };
+>   	unsigned int ao_readback[USBDUX_NUM_AO_CHAN];
 >
-> +static char *isl29018_match_acpi_device(struct device *dev, int *data)
-> +{
-> +	const struct acpi_device_id *id;
-> +
-> +	id = acpi_match_device(dev->driver->acpi_match_table, dev);
-> +
-> +	if (!id)
-> +		return NULL;
-> +
-> +	*data = (int) id->driver_data;
-> +
-> +	return (char *) dev_name(dev);
-Silly question, but what is wrong with const char * as the return type?
-Where this name ultimately ends up is a const char * anyway so you cast
-the const away and then back again.
-> +}
-> +
->  static int isl29018_probe(struct i2c_client *client,
->  			 const struct i2c_device_id *id)
->  {
->  	struct isl29018_chip *chip;
->  	struct iio_dev *indio_dev;
->  	int err;
-> +	char *name = NULL;
-const char *
+>
 
-> +	int dev_id = 0;
->
->  	indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*chip));
->  	if (indio_dev == NULL) {
-> @@ -673,9 +690,17 @@ static int isl29018_probe(struct i2c_client *client,
->  	i2c_set_clientdata(client, indio_dev);
->  	chip->dev = &client->dev;
->
-> +	if (id) {
-> +		name = (char *) id->name;
-> +		dev_id = id->driver_data;
-> +	}
-> +
-> +	if (ACPI_HANDLE(&client->dev))
-> +		name = isl29018_match_acpi_device(&client->dev, &dev_id);
-> +
->  	mutex_init(&chip->lock);
->
-> -	chip->type = id->driver_data;
-> +	chip->type = dev_id;
->  	chip->lux_scale = 1;
->  	chip->lux_uscale = 0;
->  	chip->range = 1000;
-> @@ -683,7 +708,7 @@ static int isl29018_probe(struct i2c_client *client,
->  	chip->suspended = false;
->
->  	chip->regmap = devm_regmap_init_i2c(client,
-> -				chip_info_tbl[id->driver_data].regmap_cfg);
-> +				chip_info_tbl[dev_id].regmap_cfg);
->  	if (IS_ERR(chip->regmap)) {
->  		err = PTR_ERR(chip->regmap);
->  		dev_err(chip->dev, "regmap initialization failed: %d\n", err);
-> @@ -694,10 +719,10 @@ static int isl29018_probe(struct i2c_client *client,
->  	if (err)
->  		return err;
->
-> -	indio_dev->info = chip_info_tbl[id->driver_data].indio_info;
-> -	indio_dev->channels = chip_info_tbl[id->driver_data].channels;
-> -	indio_dev->num_channels = chip_info_tbl[id->driver_data].num_channels;
-> -	indio_dev->name = id->name;
-> +	indio_dev->info = chip_info_tbl[dev_id].indio_info;
-> +	indio_dev->channels = chip_info_tbl[dev_id].channels;
-> +	indio_dev->num_channels = chip_info_tbl[dev_id].num_channels;
-> +	indio_dev->name = name;
->  	indio_dev->dev.parent = &client->dev;
->  	indio_dev->modes = INDIO_DIRECT_MODE;
->  	err = devm_iio_device_register(&client->dev, indio_dev);
-> @@ -747,6 +772,14 @@ static SIMPLE_DEV_PM_OPS(isl29018_pm_ops, isl29018_suspend, isl29018_resume);
->  #define ISL29018_PM_OPS NULL
->  #endif
->
-> +static const struct acpi_device_id isl29018_acpi_match[] = {
-> +	{"ISL29018", isl29018},
-> +	{"ISL29023", isl29023},
-> +	{"ISL29035", isl29035},
-> +	{},
-> +};
-> +MODULE_DEVICE_TABLE(acpi, isl29018_acpi_match);
-> +
->  static const struct i2c_device_id isl29018_id[] = {
->  	{"isl29018", isl29018},
->  	{"isl29023", isl29023},
-> @@ -768,6 +801,7 @@ static struct i2c_driver isl29018_driver = {
->  	.class	= I2C_CLASS_HWMON,
->  	.driver	 = {
->  			.name = "isl29018",
-> +			.acpi_match_table = ACPI_PTR(isl29018_acpi_match),
->  			.pm = ISL29018_PM_OPS,
->  			.owner = THIS_MODULE,
->  			.of_match_table = isl29018_of_match,
->
+That seems fine.  Perhaps the variable 'p' in usbdux_ao_insn_write() 
+should also be of type '__le16 *'?
+
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
