@@ -1,248 +1,390 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751406AbaH3Jzh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Aug 2014 05:55:37 -0400
-Received: from michel.telenet-ops.be ([195.130.137.88]:52272 "EHLO
-	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137AbaH3Jzf (ORCPT
+	id S1751476AbaH3KAO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Aug 2014 06:00:14 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:60578 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751137AbaH3KAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Aug 2014 05:55:35 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Russell King <linux@arm.linux.org.uk>, Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH v2] nosave: Consolidate __nosave_{begin,end} in <asm/sections.h>
-Date: Sat, 30 Aug 2014 11:55:23 +0200
-Message-Id: <1409392523-31570-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.9.1
+	Sat, 30 Aug 2014 06:00:11 -0400
+Message-ID: <5401A0A6.9010200@kernel.org>
+Date: Sat, 30 Aug 2014 11:00:06 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Hartmut Knaack <knaack.h@gmx.de>, Daniel Baluta <daniel.baluta@intel.com>,
+        linux-iio@vger.kernel.org, pmeerw@pmeerw.net
+CC: linux-kernel@vger.kernel.org, Tsechih_Lin@asus.com
+Subject: Re: [PATCH v3] iio: Add Dyna-Image AL3320A ambient light sensor driver
+References: <1408699042-17336-1-git-send-email-daniel.baluta@intel.com> <53FD9B88.5070901@gmx.de>
+In-Reply-To: <53FD9B88.5070901@gmx.de>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The different architectures used their own (and different) declarations:
+On 27/08/14 09:49, Hartmut Knaack wrote:
+> Daniel Baluta schrieb:
+>> Minimal implementation. This driver provides raw illuminance readings.
+>>
+>> This is based on drivers/hwmon/al3320.c (*) driver from msm tree written
+>> by Tsechih Lin <Tsechih_Lin@asus.com>
+>>
+>> * https://android.googlesource.com/kernel/msm.git
+>>
+>> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
+> Hi, I think you should protect your write_raw with a mutex. 
+Either that or drop the local store of the value and read it back from
+the device (assuming you can!).  That way everything becomes nice an
+atomic.  It's a rather narrow race, but Hartmut is correct in pointing it
+out.
 
-    extern __visible const void __nosave_begin, __nosave_end;
-    extern const void __nosave_begin, __nosave_end;
-    extern long __nosave_begin, __nosave_end;
+Few comments inline, mostly about my pet peeve: wrapper functions that don't
+do much.  Note I'm not that fussed if you really really want to keep them ;)
 
-Consolidate them using the first variant in <asm/sections.h>.
+Otherwise, looks good.
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
-v2: Fix new occurrence on arm, as reported by Stephen Boyd
+J
+>Other minor comments inline.
+>> ---
+>> Changes since v2: (reported by Peter Meerwald)
+>> 	* removed definition of DATA_HIGH and SW_RESET as they are not used
+>> 	* added a comment to al3320a_get_adc_value() function
+>> 	* added thresholds on TODO list
+>> 	* small stye fixes
+>>
+>> Changes since v1: (reported by Peter Meerwald)
+>> 	* used u8 instead of int for passing gain and mean_time
+>> 	* used i2c_smbus_read_word_swapped instead of 2 x i2c_smbus_read_byte_data
+>> 	* used devm_iio_device_register instead of iio_device_register
+>> 	* small style fixes
+>>
+>>  drivers/iio/light/Kconfig   |  10 ++
+>>  drivers/iio/light/Makefile  |   1 +
+>>  drivers/iio/light/al3320a.c | 255 ++++++++++++++++++++++++++++++++++++++++++++
+>>  3 files changed, 266 insertions(+)
+>>  create mode 100644 drivers/iio/light/al3320a.c
+>>
+>> diff --git a/drivers/iio/light/Kconfig b/drivers/iio/light/Kconfig
+>> index bf05ca5..5bea821 100644
+>> --- a/drivers/iio/light/Kconfig
+>> +++ b/drivers/iio/light/Kconfig
+>> @@ -17,6 +17,16 @@ config ADJD_S311
+>>  	 This driver can also be built as a module.  If so, the module
+>>  	 will be called adjd_s311.
+>>
+>> +config AL3320A
+>> +	tristate "AL3320A ambient light sensor"
+>> +	depends on I2C
+>> +	help
+>> +	 Say Y here if you want to build a driver for the Dyna Image AL3320A
+>> +	 ambient light sensor.
+>> +
+>> +	 To compile this driver as a module, choose M here: the
+>> +	 module will be called al3320a.
+>> +
+>>  config APDS9300
+>>  	tristate "APDS9300 ambient light sensor"
+>>  	depends on I2C
+>> diff --git a/drivers/iio/light/Makefile b/drivers/iio/light/Makefile
+>> index 8b8c09f..47877a3 100644
+>> --- a/drivers/iio/light/Makefile
+>> +++ b/drivers/iio/light/Makefile
+>> @@ -4,6 +4,7 @@
+>>
+>>  # When adding new entries keep the list in alphabetical order
+>>  obj-$(CONFIG_ADJD_S311)		+= adjd_s311.o
+>> +obj-$(CONFIG_AL3320A)		+= al3320a.o
+>>  obj-$(CONFIG_APDS9300)		+= apds9300.o
+>>  obj-$(CONFIG_CM32181)		+= cm32181.o
+>>  obj-$(CONFIG_CM36651)		+= cm36651.o
+>> diff --git a/drivers/iio/light/al3320a.c b/drivers/iio/light/al3320a.c
+>> new file mode 100644
+>> index 0000000..28fc8b0
+>> --- /dev/null
+>> +++ b/drivers/iio/light/al3320a.c
+>> @@ -0,0 +1,255 @@
+>> +/*
+>> + * AL3320A - Dyna Image Ambient Light Sensor
+>> + *
+>> + * Copyright (c) 2014, Intel Corporation.
+>> + *
+>> + * This file is subject to the terms and conditions of version 2 of
+>> + * the GNU General Public License.  See the file COPYING in the main
+>> + * directory of this archive for more details.
+>> + *
+>> + * IIO driver for AL3320A (7-bit I2C slave address 0x1C).
+>> + *
+>> + * TODO: interrupt support, thresholds
+>> + *
+>> + */
+>> +
+>> +#include <linux/module.h>
+>> +#include <linux/init.h>
+>> +#include <linux/i2c.h>
+>> +
+>> +#include <linux/iio/iio.h>
+>> +#include <linux/iio/sysfs.h>
+>> +
+>> +#define AL3320A_DRV_NAME "al3320a"
+>> +
+>> +#define AL3320A_REG_CONFIG		0x00
+>> +#define AL3320A_REG_STATUS		0x01
+>> +#define AL3320A_REG_INT			0x02
+>> +#define AL3320A_REG_WAIT		0x06
+>> +#define AL3320A_REG_CONFIG_RANGE	0x07
+>> +#define AL3320A_REG_PERSIST		0x08
+>> +#define AL3320A_REG_MEAN_TIME		0x09
+>> +#define AL3320A_REG_ADUMMY		0x0A
+>> +#define AL3320A_REG_DATA_LOW		0x22
+>> +
+>> +#define AL3320A_REG_LOW_THRESH_LOW	0x30
+>> +#define AL3320A_REG_LOW_THRESH_HIGH	0x31
+>> +#define AL3320A_REG_HIGH_THRESH_LOW	0x32
+>> +#define AL3320A_REG_HIGH_THRESH_HIGH	0x33
+>> +
+>> +#define AL3320A_CONFIG_DISABLE		0x00
+>> +#define AL3320A_CONFIG_ENABLE		BIT(0)
+>> +
+>> +#define AL3320A_GAIN_SHIFT		1
+>> +
+>> +/* chip params default values */
+>> +#define AL3320A_DEFAULT_MEAN_TIME	4
+>> +#define AL3320A_DEFAULT_WAIT_TIME	0 /* no waiting */
+>> +
+>> +enum al3320a_range {
+>> +	AL3320A_RANGE_1, /* 33.28K lux */
+>> +	AL3320A_RANGE_2, /* 8.32K lux  */
+>> +	AL3320A_RANGE_3, /* 2.08K lux  */
+>> +	AL3320A_RANGE_4  /* 0.65K lux  */
+>> +};
+>> +
+>> +static const int al3320a_scales[][2] = {
+>> +	{0, 512000}, {0, 128000}, {0, 32000}, {0, 10000}
+>> +};
+>> +
+>> +struct al3320a_data {
+>> +	struct i2c_client *client;
+>> +	u8 range;
+>> +};
+>> +
+>> +static const struct iio_chan_spec al3320a_channels[] = {
+>> +	{
+>> +		.type	= IIO_LIGHT,
+>> +		.info_mask_separate =
+>> +			BIT(IIO_CHAN_INFO_RAW) |
+>> +			BIT(IIO_CHAN_INFO_SCALE),
+> I would indent it like this:
+>
+> +		.type = IIO_LIGHT,
+> +		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
+> +				      BIT(IIO_CHAN_INFO_SCALE),
+>
+>
+>> +	}
+>> +};
+>> +
+As commented below, you do have a lot of wrapper functions whose
+function is pretty obvious from what is inside them that could just
+be rolled into the call sites for a shorter, cleaner driver...
+>> +static int al3320a_enable(struct al3320a_data *data)
+>> +{
+>> +	return i2c_smbus_write_byte_data(data->client, AL3320A_REG_CONFIG,
+>> +					 AL3320A_CONFIG_ENABLE);
+>> +}
+>> +
+>> +static int al3320a_disable(struct al3320a_data *data)
+>> +{
+>> +	return i2c_smbus_write_byte_data(data->client, AL3320A_REG_CONFIG,
+>> +					 AL3320A_CONFIG_DISABLE);
+>> +}
+>> +
+>> +static int al3320a_set_config_range(struct al3320a_data *data, u8 gain)
+>> +{
+>> +	int ret;
+>> +
+>> +	ret = i2c_smbus_write_byte_data(data->client, AL3320A_REG_CONFIG_RANGE,
+>> +					 gain << AL3320A_GAIN_SHIFT);
+> If you remove the whitespace before gain, you would get a perfect indentation.
+>> +	if (ret >= 0)
+> From the description: This executes the SMBus "write byte" protocol, returning negative errno else zero on success.
+> So, checking for 0 is sufficient and fits better with your upper level functions.
+>> +		data->range = gain;
+>> +	return ret;
+>> +}
+>> +
+>> +static int al3320a_set_mean_time(struct al3320a_data *data, u8 mean_time)
+>> +{
+>> +	return i2c_smbus_write_byte_data(data->client, AL3320A_REG_MEAN_TIME,
+>> +					 mean_time);
+>> +}
+>> +
+>> +static int al3320a_set_wait_time(struct al3320a_data *data, u8 wait_time)
+>> +{
+>> +	return i2c_smbus_write_byte_data(data->client, AL3320A_REG_WAIT,
+>> +					 wait_time);
+>> +}
+>> +
+>> +/**
+>> + * al3320a_get_adc_value() - report raw ADC reading
+>> + * @data - pointer to struct al3320a_data
+>> + *
+>> + * ALS ADC value is stored in two adjacent registers:
+>> + *   - low byte of the channel output is stored at AL3320A_REG_DATA_LOW
+>> + *   - high byte of channel output is stored at AL3320A_REG_DATA_LOW + 1.
+>> + *
+>> + * Return: positive raw ADC reading or negative error code.
+>> + */
+>> +static int al3320a_get_adc_value(struct al3320a_data *data)
+>> +{
+>> +	return i2c_smbus_read_word_swapped(data->client, AL3320A_REG_DATA_LOW);
+I suppose the comment above almost justifies the trivial wrapper function.
+Hmm.  Could just put the comment where the read line would be...
+>> +}
+>> +
+>> +static int al3320a_init(struct al3320a_data *data)
+>> +{
+>> +	int ret;
+>> +
+>> +	/* power on */
+>> +	ret = al3320a_enable(data);
+>> +	if (ret)
+>> +		return ret;
+>> +
+>> +	ret = al3320a_set_config_range(data, AL3320A_RANGE_3);
+>> +	if (ret)
+>> +		return ret;
+>> +
+>> +	ret = al3320a_set_mean_time(data, AL3320A_DEFAULT_MEAN_TIME);
+>> +	if (ret)
+>> +		return ret;
+>> +
+>> +	ret = al3320a_set_wait_time(data, AL3320A_DEFAULT_WAIT_TIME);
+>> +	if (ret)
+>> +		return ret;
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static int al3320a_read_raw(struct iio_dev *indio_dev,
+>> +			    struct iio_chan_spec const *chan,
+>> +			    int *val,
+>> +			    int *val2,
+>> +			    long mask)
+> Since you don't put a parameter per line in other function, do the same here and save some lines ;-)
+>> +{
+>> +	struct al3320a_data *data = iio_priv(indio_dev);
+>> +	int ret;
+>> +
+>> +	switch (mask) {
+>> +	case IIO_CHAN_INFO_RAW:
+>> +		ret = al3320a_get_adc_value(data);
+>> +		if (ret < 0)
+>> +			return ret;
+>> +		*val = ret;
+>> +		return IIO_VAL_INT;
+>> +	case IIO_CHAN_INFO_SCALE:
+>> +		*val = al3320a_scales[data->range][0];
+>> +		*val2 = al3320a_scales[data->range][1];
+>> +		return IIO_VAL_INT_PLUS_MICRO;
+>> +	}
+>> +	return -EINVAL;
+>> +}
+>> +
+>> +static int al3320a_write_raw(struct iio_dev *indio_dev,
+>> +			     struct iio_chan_spec const *chan,
+>> +			     int val, int val2, long mask)
+>> +{
+>> +	struct al3320a_data *data = iio_priv(indio_dev);
+>> +	int i;
+>> +
+>> +	switch (mask) {
+>> +	case IIO_CHAN_INFO_SCALE:
+>> +		for (i = 0; i < ARRAY_SIZE(al3320a_scales); i++) {
+>> +			if (val == al3320a_scales[i][0] &&
+>> +			    val2 == al3320a_scales[i][1])
+>> +				return al3320a_set_config_range(data, i);
+>> +		}
+>> +		break;
+>> +	}
+>> +	return -EINVAL;
+>> +}
+Given that there is no way of knowing valid values without digging out
+the datasheet or reading the code, you'll want an _available attribute
+listing them.
 
-v1: This has been sent before, as part of the series "[PATCH 00/17]
-    <asm/sections.h> related cleanups", almost one year ago
-    (https://lkml.org/lkml/2013/11/12/510).
----
- arch/arm/kernel/hibernate.c       | 3 +--
- arch/mips/include/asm/suspend.h   | 7 -------
- arch/mips/power/cpu.c             | 2 +-
- arch/powerpc/kernel/suspend.c     | 4 +---
- arch/s390/kernel/suspend.c        | 6 +-----
- arch/sh/include/asm/sections.h    | 1 -
- arch/sparc/power/hibernate.c      | 4 +---
- arch/unicore32/include/mach/pm.h  | 3 ---
- arch/unicore32/kernel/hibernate.c | 1 +
- arch/x86/power/hibernate_32.c     | 4 +---
- arch/x86/power/hibernate_64.c     | 4 +---
- include/asm-generic/sections.h    | 4 ++++
- 12 files changed, 12 insertions(+), 31 deletions(-)
- delete mode 100644 arch/mips/include/asm/suspend.h
+>> +
+>> +static const struct iio_info al3320a_info = {
+>> +	.driver_module	= THIS_MODULE,
+>> +	.read_raw	= al3320a_read_raw,
+>> +	.write_raw	= al3320a_write_raw,
+>> +};
+>> +
+>> +static int al3320a_probe(struct i2c_client *client,
+>> +			 const struct i2c_device_id *id)
+>> +{
+>> +	struct al3320a_data *data;
+>> +	struct iio_dev *indio_dev;
+>> +	int ret;
+>> +
+>> +	indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*data));
+>> +	if (!indio_dev)
+>> +		return -ENOMEM;
+>> +
+>> +	data = iio_priv(indio_dev);
+>> +	i2c_set_clientdata(client, indio_dev);
+>> +	data->client = client;
+>> +
+>> +	indio_dev->dev.parent = &client->dev;
+>> +	indio_dev->info = &al3320a_info;
+>> +	indio_dev->name = AL3320A_DRV_NAME;
+>> +	indio_dev->channels = al3320a_channels;
+>> +	indio_dev->num_channels = ARRAY_SIZE(al3320a_channels);
+>> +	indio_dev->modes = INDIO_DIRECT_MODE;
+>> +
+>> +	ret = al3320a_init(data);
+>> +	if (ret) {
+>> +		dev_err(&client->dev, "al3320a chip init failed\n");
+>> +		return ret;
+>> +	}
+>> +
+>> +	return devm_iio_device_register(&client->dev, indio_dev);
+>> +}
+>> +
+>> +static int al3320a_remove(struct i2c_client *client)
+>> +{
+>> +	struct iio_dev *indio_dev = i2c_get_clientdata(client);
+>> +	struct al3320a_data *data = iio_priv(indio_dev);
+>> +
+>> +	return al3320a_disable(data);
+slight personal preference would be to roll this up into a one liner.
+        return al3320a_disable(iio_priv(i2c_get_clientdata(client)));
+Or seeing as how trivial the disable function is just roll that in here.
 
-diff --git a/arch/arm/kernel/hibernate.c b/arch/arm/kernel/hibernate.c
-index bb8b79648643..c4cc50e58c13 100644
---- a/arch/arm/kernel/hibernate.c
-+++ b/arch/arm/kernel/hibernate.c
-@@ -21,8 +21,7 @@
- #include <asm/idmap.h>
- #include <asm/suspend.h>
- #include <asm/memory.h>
--
--extern const void __nosave_begin, __nosave_end;
-+#include <asm/sections.h>
- 
- int pfn_is_nosave(unsigned long pfn)
- {
-diff --git a/arch/mips/include/asm/suspend.h b/arch/mips/include/asm/suspend.h
-deleted file mode 100644
-index 3adac3b53d19..000000000000
---- a/arch/mips/include/asm/suspend.h
-+++ /dev/null
-@@ -1,7 +0,0 @@
--#ifndef __ASM_SUSPEND_H
--#define __ASM_SUSPEND_H
--
--/* References to section boundaries */
--extern const void __nosave_begin, __nosave_end;
--
--#endif /* __ASM_SUSPEND_H */
-diff --git a/arch/mips/power/cpu.c b/arch/mips/power/cpu.c
-index 521e5963df05..2129e67723ff 100644
---- a/arch/mips/power/cpu.c
-+++ b/arch/mips/power/cpu.c
-@@ -7,7 +7,7 @@
-  * Author: Hu Hongbing <huhb@lemote.com>
-  *	   Wu Zhangjin <wuzhangjin@gmail.com>
-  */
--#include <asm/suspend.h>
-+#include <asm/sections.h>
- #include <asm/fpu.h>
- #include <asm/dsp.h>
- 
-diff --git a/arch/powerpc/kernel/suspend.c b/arch/powerpc/kernel/suspend.c
-index 0167d53da30c..a531154cc0f3 100644
---- a/arch/powerpc/kernel/suspend.c
-+++ b/arch/powerpc/kernel/suspend.c
-@@ -9,9 +9,7 @@
- 
- #include <linux/mm.h>
- #include <asm/page.h>
--
--/* References to section boundaries */
--extern const void __nosave_begin, __nosave_end;
-+#include <asm/sections.h>
- 
- /*
-  *	pfn_is_nosave - check if given pfn is in the 'nosave' section
-diff --git a/arch/s390/kernel/suspend.c b/arch/s390/kernel/suspend.c
-index a7a7537ce1e7..1c4c5accd220 100644
---- a/arch/s390/kernel/suspend.c
-+++ b/arch/s390/kernel/suspend.c
-@@ -13,14 +13,10 @@
- #include <asm/ipl.h>
- #include <asm/cio.h>
- #include <asm/pci.h>
-+#include <asm/sections.h>
- #include "entry.h"
- 
- /*
-- * References to section boundaries
-- */
--extern const void __nosave_begin, __nosave_end;
--
--/*
-  * The restore of the saved pages in an hibernation image will set
-  * the change and referenced bits in the storage key for each page.
-  * Overindication of the referenced bits after an hibernation cycle
-diff --git a/arch/sh/include/asm/sections.h b/arch/sh/include/asm/sections.h
-index 1b6199740e98..7a99e6af6372 100644
---- a/arch/sh/include/asm/sections.h
-+++ b/arch/sh/include/asm/sections.h
-@@ -3,7 +3,6 @@
- 
- #include <asm-generic/sections.h>
- 
--extern long __nosave_begin, __nosave_end;
- extern long __machvec_start, __machvec_end;
- extern char __uncached_start, __uncached_end;
- extern char __start_eh_frame[], __stop_eh_frame[];
-diff --git a/arch/sparc/power/hibernate.c b/arch/sparc/power/hibernate.c
-index 42b0b8ce699a..17bd2e167e07 100644
---- a/arch/sparc/power/hibernate.c
-+++ b/arch/sparc/power/hibernate.c
-@@ -9,11 +9,9 @@
- #include <asm/hibernate.h>
- #include <asm/visasm.h>
- #include <asm/page.h>
-+#include <asm/sections.h>
- #include <asm/tlb.h>
- 
--/* References to section boundaries */
--extern const void __nosave_begin, __nosave_end;
--
- struct saved_context saved_context;
- 
- /*
-diff --git a/arch/unicore32/include/mach/pm.h b/arch/unicore32/include/mach/pm.h
-index 4dcd34ae194c..77b522694e74 100644
---- a/arch/unicore32/include/mach/pm.h
-+++ b/arch/unicore32/include/mach/pm.h
-@@ -36,8 +36,5 @@ extern int puv3_pm_enter(suspend_state_t state);
- /* Defined in hibernate_asm.S */
- extern int restore_image(pgd_t *resume_pg_dir, struct pbe *restore_pblist);
- 
--/* References to section boundaries */
--extern const void __nosave_begin, __nosave_end;
--
- extern struct pbe *restore_pblist;
- #endif
-diff --git a/arch/unicore32/kernel/hibernate.c b/arch/unicore32/kernel/hibernate.c
-index d75ef8b6cb56..9969ec374abb 100644
---- a/arch/unicore32/kernel/hibernate.c
-+++ b/arch/unicore32/kernel/hibernate.c
-@@ -18,6 +18,7 @@
- #include <asm/page.h>
- #include <asm/pgtable.h>
- #include <asm/pgalloc.h>
-+#include <asm/sections.h>
- #include <asm/suspend.h>
- 
- #include "mach/pm.h"
-diff --git a/arch/x86/power/hibernate_32.c b/arch/x86/power/hibernate_32.c
-index 7d28c885d238..291226b952a9 100644
---- a/arch/x86/power/hibernate_32.c
-+++ b/arch/x86/power/hibernate_32.c
-@@ -13,13 +13,11 @@
- #include <asm/page.h>
- #include <asm/pgtable.h>
- #include <asm/mmzone.h>
-+#include <asm/sections.h>
- 
- /* Defined in hibernate_asm_32.S */
- extern int restore_image(void);
- 
--/* References to section boundaries */
--extern const void __nosave_begin, __nosave_end;
--
- /* Pointer to the temporary resume page tables */
- pgd_t *resume_pg_dir;
- 
-diff --git a/arch/x86/power/hibernate_64.c b/arch/x86/power/hibernate_64.c
-index 35e2bb6c0f37..009947d419a6 100644
---- a/arch/x86/power/hibernate_64.c
-+++ b/arch/x86/power/hibernate_64.c
-@@ -17,11 +17,9 @@
- #include <asm/page.h>
- #include <asm/pgtable.h>
- #include <asm/mtrr.h>
-+#include <asm/sections.h>
- #include <asm/suspend.h>
- 
--/* References to section boundaries */
--extern __visible const void __nosave_begin, __nosave_end;
--
- /* Defined in hibernate_asm_64.S */
- extern asmlinkage __visible int restore_image(void);
- 
-diff --git a/include/asm-generic/sections.h b/include/asm-generic/sections.h
-index f1a24b5c3b90..b58fd667f87b 100644
---- a/include/asm-generic/sections.h
-+++ b/include/asm-generic/sections.h
-@@ -3,6 +3,8 @@
- 
- /* References to section boundaries */
- 
-+#include <linux/compiler.h>
-+
- /*
-  * Usage guidelines:
-  * _text, _data: architecture specific, don't use them in arch-independent code
-@@ -37,6 +39,8 @@ extern char __start_rodata[], __end_rodata[];
- /* Start and end of .ctors section - used for constructor calls. */
- extern char __ctors_start[], __ctors_end[];
- 
-+extern __visible const void __nosave_begin, __nosave_end;
-+
- /* function descriptor handling (if any).  Override
-  * in asm/sections.h */
- #ifndef dereference_function_descriptor
--- 
-1.9.1
-
+In fact a few of the wrapper functions don't really have enough in them
+to justify their existence.  Doesn't really matter though if you particularly
+like the long winded option ;)
+>> +}
+>> +
+>> +static const struct i2c_device_id al3320a_id[] = {
+>> +	{"al3320a", 0},
+>> +	{}
+>> +};
+>> +MODULE_DEVICE_TABLE(i2c, al3320a_id);
+>> +
+>> +static struct i2c_driver al3320a_driver = {
+>> +	.driver = {
+>> +		.name = AL3320A_DRV_NAME,
+>> +	},
+>> +	.probe		= al3320a_probe,
+>> +	.remove		= al3320a_remove,
+>> +	.id_table	= al3320a_id,
+>> +};
+>> +
+>> +module_i2c_driver(al3320a_driver);
+>> +
+>> +MODULE_AUTHOR("Daniel Baluta <daniel.baluta@intel.com>");
+>> +MODULE_DESCRIPTION("AL3320A Ambient Light Sensor driver");
+>> +MODULE_LICENSE("GPL v2");
+>
