@@ -1,72 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752111AbaH3WET (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Aug 2014 18:04:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54357 "EHLO
+	id S1752136AbaH3WGA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Aug 2014 18:06:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54367 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751943AbaH3WES (ORCPT
+	with ESMTP id S1751925AbaH3WF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Aug 2014 18:04:18 -0400
-Date: Sat, 30 Aug 2014 15:04:17 -0700
+	Sat, 30 Aug 2014 18:05:59 -0400
+Date: Sat, 30 Aug 2014 15:05:58 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: cmroliv@gmail.com, marcel@holtmann.org, pali.rohar@gmail.com,
-        kernel list <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: patch "staging: remove nokia_hp4p driver
-Message-ID: <20140830220417.GA15000@kroah.com>
-References: <14094295422869@kroah.com>
- <20140830213022.GA17147@amd>
+To: Miguel Oliveira <cmroliv@gmail.com>
+Cc: devel@driverdev.osuosl.org, Larry.Finger@lwfinger.net,
+        linux-kernel@vger.kernel.org, davem@davemloft.net
+Subject: Re: [PATCH 3/4] staging: rtl8188eu: osdep_intf.h and usb_intf.c
+Message-ID: <20140830220558.GB15000@kroah.com>
+References: <1408703558-32167-1-git-send-email-cmroliv@gmail.com>
+ <1408703617-32248-1-git-send-email-cmroliv@gmail.com>
+ <20140830204109.GC16168@kroah.com>
+ <CAMGgR5tmQE2nWJwBkc5jv_TF=xM+XRf6exGUOA6A-X+7iXqbFg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140830213022.GA17147@amd>
+In-Reply-To: <CAMGgR5tmQE2nWJwBkc5jv_TF=xM+XRf6exGUOA6A-X+7iXqbFg@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 30, 2014 at 11:30:22PM +0200, Pavel Machek wrote:
-> Hi!
-> 
-> > This is a note to let you know that I've just added the patch titled
-> > 
-> >     staging: remove nokia_hp4p driver
-> > -Re: [PATCH v6] Bluetooth: Add hci_h4p driver
-> > 
-> > to my staging git tree which can be found at
-> >     git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
-> > in the staging-next branch.
-> > 
-> > The patch will show up in the next release of the linux-next tree
-> > (usually sometime within the next 24 hours during the week.)
-> > 
-> > The patch will also be merged in the next major kernel release
-> > during the merge window.
-> > 
-> > If you have any questions about this process, please let me know.
-> 
-> What is going on here? I get flamed for not cleaning up the driver,
-> because I cleaned it up before merging to -staging. Ok, so I did more
-> cleanups, sent 3 cleanup patches, no reaction on those, and now I got
-> a note that you are going to remove the driver...?
+On Sat, Aug 30, 2014 at 11:22:56PM +0200, Miguel Oliveira wrote:
+> > Same comments as the previous ones, please redo all of these patches.
+> >
+> Should all the alterations be in one big single patch, insted of small ones?
 
-For the 3 "cleanup" patches, the first one was rejected and you said to
-not include it, so I couldn't apply the others.
-
-> Please don't, I'd still like to clean the driver up and get included,
-> as n900's are still under active use.
-
-As the Bluetooth maintainer has said a number of times, he doesn't want
-the driver in the tree as it is not doing the correct things.  It's been
-a long time in the tree with no work on it at all, and I follow the
-suggestions of the maintainers of the subsystems that staging drivers
-follow.
-
-I suggest cleaning this up in your own tree, and then just submitting it
-for inclusion in the "normal" part of the kernel.  That way I'm not
-standing in your way on applying patches, and you can work much quicker
-to resolve the issues that Marcel has pointed out.
+I don't know, I don't remember what this patch even contained given that
+it was 100+ patches ago in my review queue and I have the short term
+memory of a squirrel.  Please fix up and resend and I'll be glad to
+review it then.
 
 thanks,
 
