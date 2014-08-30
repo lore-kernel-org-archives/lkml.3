@@ -1,100 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751194AbaH3IVL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Aug 2014 04:21:11 -0400
-Received: from ja.ssi.bg ([178.16.129.10]:33125 "EHLO ja.home.ssi.bg"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751026AbaH3IVH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Aug 2014 04:21:07 -0400
-Date: Sat, 30 Aug 2014 11:20:17 +0300 (EEST)
-From: Julian Anastasov <ja@ssi.bg>
-X-X-Sender: ja@ja.home.ssi.bg
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-cc: Simon Kirby <sim@hostway.ca>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Florian Westphal <fw@strlen.de>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: Re: net_ns cleanup / RCU overhead
-In-Reply-To: <87ppfjj6x6.fsf@x220.int.ebiederm.org>
-Message-ID: <alpine.LFD.2.11.1408300907130.1671@ja.home.ssi.bg>
-References: <20140820055855.GB5579@hostway.ca> <20140828192431.GF5001@linux.vnet.ibm.com> <20140828194422.GB8867@hostway.ca> <87oav4l5g9.fsf@x220.int.ebiederm.org> <20140828204658.GL5001@linux.vnet.ibm.com> <20140829004029.GA18300@hostway.ca>
- <alpine.LFD.2.11.1408290635530.1520@ja.home.ssi.bg> <87ppfjj6x6.fsf@x220.int.ebiederm.org>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	id S1751224AbaH3IyJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Aug 2014 04:54:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4466 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751059AbaH3IyG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Aug 2014 04:54:06 -0400
+Date: Sat, 30 Aug 2014 10:53:10 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 20/41] perf tools: Let a user specify a PMU event without
+ any config terms
+Message-ID: <20140830085310.GA14358@krava.redhat.com>
+References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
+ <1405332185-4050-21-git-send-email-adrian.hunter@intel.com>
+ <20140716142510.GE9441@krava.redhat.com>
+ <53C6948C.2080103@intel.com>
+ <20140716182214.GB32716@krava.redhat.com>
+ <5400CB13.4040004@intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5400CB13.4040004@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-	Hello,
-
-On Fri, 29 Aug 2014, Eric W. Biederman wrote:
-
-> > 	I guess the problem is in nf_nat_net_exit,
-> > may be other nf exit handlers too. pernet-exit handlers
-> > should avoid synchronize_rcu and rcu_barrier.
-> > A RCU callback and rcu_barrier in module-exit is the way
-> > to go. cleanup_net includes rcu_barrier, so pernet-exit
-> > does not need such calls.
+On Fri, Aug 29, 2014 at 09:48:51PM +0300, Adrian Hunter wrote:
+> On 16/07/2014 9:22 p.m., Jiri Olsa wrote:
+> >On Wed, Jul 16, 2014 at 06:04:44PM +0300, Adrian Hunter wrote:
+> >>On 16/07/2014 5:25 p.m., Jiri Olsa wrote:
+> >>>On Mon, Jul 14, 2014 at 01:02:44PM +0300, Adrian Hunter wrote:
+> >>>>This enables a PMU event to be specified in the form:
+> >>>>
+> >>>>	pmu//
+> >>>>
+> >>>>which is effectively the same as:
+> >>>>
+> >>>>	pmu/config=0/
+> >>>>
+> >>>>This patch is a precursor to defining
+> >>>>default config for a PMU.
+> >>>
+> >>>I understand the need for default config, but could you please elaborate
+> >>>why do we want to parse 'pmu//' as an event string string?
+> >>
+> >>Currently the parser requires the slashes to identify a PMU event
+> >>as opposed to a hardware or other kind of event.
+> >
+> >right, so why do we want to parse 'pmu//' as an event string? ;-)
 > 
-> In principle I agree, however in this particular case it looks a bit
-> tricky because a separate hash table to track nat state per network
-> namespace.
+> I am not sure what you mean.  Here I am using 'pmu' as a placeholder
+> for a real PMU name.  So actual event strings are 'intel_bts//' or
+> 'intel_pt//' or 'intel_pt/tsc=0,noretcomp=1/'
 
-	It is still possible module's pernet-init handler to
-attach in net->ct... special structure with all pointers that
-should be freed by RCU callback for the module, like the hash table.
+so the consequence of default arguments is that you can
+specify event just by the pmu name, like:
+  -e intel_pt//
 
-For example:
+which means (with default attributes):
+  -e intel_pt/tsc=1,noretcomp=0/
 
-struct netns_ct_nat_rcu_allocs {
-	struct rcu_head		rcu_head;
-	struct hlist_head	*nat_bysource;
-	unsigned int		nat_htable_size;
-};
+I guess I wanted to hear more elaboration why is this better
+than the current way we have by defining an alias, like:
 
-- pernet-init:
-	- allocate structure, attach it to net->ct.nat_rcu_allocs
-	- the original nat_bysource place remains because
-	we want to avoid net->ct.nat_rcu_allocs dereference.
+  krava alias: "tsc=1,noretcomp=0"
 
-- pernet-exit:
-	- copy nat_bysource and nat_htable_size to net->ct.nat_rcu_allocs,
-	this can be done even in above pernet-init function
-	- call_rcu(&net->ct.nat_rcu_allocs->rcu_head, nat_rcu_free);
+  -e intel_pt/krava/
 
-- cleanup_net:
-	- rcu_barrier()
+which gives the same result
 
-- RCU callback (nat_rcu_free):
-	- call nf_ct_free_hashtable
-	- kfree the structure
-
-- cleanup_net:
-	- drop netns after rcu_barrier
-
-	Due to the rcu_barrier in cleanup_net it is even
-possible to provide per-module rcu_head instead of using
-allocated structure, for example:
-
-	call_rcu(&net->ct.nat_rcu_head, nat_rcu_free);
-
-	Then the nat_rcu_free function will just call
-nf_ct_free_hashtable before cleanup_net drops the netns struct.
-In this case the memory price is just one rcu_head for every module
-that uses RCU callback.
-
-> At the same time all of the packets should be drained before
-> we get to nf_nat_net_exit so it doesn't look the synchronize_rcu
-> in nf_nat_exit is actually protecting anything.
-
-	It is true for cleanup_net. I don't remember, can we
-see packets while the particular module-exit calls
-unregister_pernet_subsys(), may be yes?
-
-Regards
-
---
-Julian Anastasov <ja@ssi.bg>
+thanks,
+jirka
