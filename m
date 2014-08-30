@@ -1,63 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751549AbaH3Jtp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Aug 2014 05:49:45 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:60522 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137AbaH3Jto (ORCPT
+	id S1751406AbaH3Jzh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Aug 2014 05:55:37 -0400
+Received: from michel.telenet-ops.be ([195.130.137.88]:52272 "EHLO
+	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751137AbaH3Jzf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Aug 2014 05:49:44 -0400
-Message-ID: <54019E36.4030304@kernel.org>
-Date: Sat, 30 Aug 2014 10:49:42 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-CC: linux-iio@vger.kernel.org
-Subject: Re: [PATCH 01/11] iio: sensors-core: st: Check st_sensors_set_drdy_int_pin()'s
- return value
-References: <1409231657-18294-1-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1409231657-18294-1-git-send-email-lee.jones@linaro.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Sat, 30 Aug 2014 05:55:35 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Russell King <linux@arm.linux.org.uk>, Ralf Baechle <ralf@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH v2] nosave: Consolidate __nosave_{begin,end} in <asm/sections.h>
+Date: Sat, 30 Aug 2014 11:55:23 +0200
+Message-Id: <1409392523-31570-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/08/14 14:14, Lee Jones wrote:
-> Value from st_sensors_set_drdy_int_pin() is assigned to err here,
-> but that stored value is not used before it is overwritten.  To fix
-> this we're enforcing a check on st_sensors_set_drdy_int_pin()'s
-> return value and if it's an error, we're returning right away.
-> 
-> Cc: jic23@kernel.org
-> Cc: linux-iio@vger.kernel.org
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-Applied to the togreg branch of iio.git
+The different architectures used their own (and different) declarations:
 
-Thanks,
+    extern __visible const void __nosave_begin, __nosave_end;
+    extern const void __nosave_begin, __nosave_end;
+    extern long __nosave_begin, __nosave_end;
 
-Jonathan
-> ---
->  drivers/iio/common/st_sensors/st_sensors_core.c | 5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/iio/common/st_sensors/st_sensors_core.c b/drivers/iio/common/st_sensors/st_sensors_core.c
-> index 8a4ec00..24cfe4e 100644
-> --- a/drivers/iio/common/st_sensors/st_sensors_core.c
-> +++ b/drivers/iio/common/st_sensors/st_sensors_core.c
-> @@ -306,8 +306,11 @@ int st_sensors_init_sensor(struct iio_dev *indio_dev,
->  	if (of_pdata)
->  		pdata = of_pdata;
->  
-> -	if (pdata)
-> +	if (pdata) {
->  		err = st_sensors_set_drdy_int_pin(indio_dev, pdata);
-> +		if (err < 0)
-> +			return err;
-> +	}
->  
->  	err = st_sensors_set_enable(indio_dev, false);
->  	if (err < 0)
-> 
+Consolidate them using the first variant in <asm/sections.h>.
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+v2: Fix new occurrence on arm, as reported by Stephen Boyd
+
+v1: This has been sent before, as part of the series "[PATCH 00/17]
+    <asm/sections.h> related cleanups", almost one year ago
+    (https://lkml.org/lkml/2013/11/12/510).
+---
+ arch/arm/kernel/hibernate.c       | 3 +--
+ arch/mips/include/asm/suspend.h   | 7 -------
+ arch/mips/power/cpu.c             | 2 +-
+ arch/powerpc/kernel/suspend.c     | 4 +---
+ arch/s390/kernel/suspend.c        | 6 +-----
+ arch/sh/include/asm/sections.h    | 1 -
+ arch/sparc/power/hibernate.c      | 4 +---
+ arch/unicore32/include/mach/pm.h  | 3 ---
+ arch/unicore32/kernel/hibernate.c | 1 +
+ arch/x86/power/hibernate_32.c     | 4 +---
+ arch/x86/power/hibernate_64.c     | 4 +---
+ include/asm-generic/sections.h    | 4 ++++
+ 12 files changed, 12 insertions(+), 31 deletions(-)
+ delete mode 100644 arch/mips/include/asm/suspend.h
+
+diff --git a/arch/arm/kernel/hibernate.c b/arch/arm/kernel/hibernate.c
+index bb8b79648643..c4cc50e58c13 100644
+--- a/arch/arm/kernel/hibernate.c
++++ b/arch/arm/kernel/hibernate.c
+@@ -21,8 +21,7 @@
+ #include <asm/idmap.h>
+ #include <asm/suspend.h>
+ #include <asm/memory.h>
+-
+-extern const void __nosave_begin, __nosave_end;
++#include <asm/sections.h>
+ 
+ int pfn_is_nosave(unsigned long pfn)
+ {
+diff --git a/arch/mips/include/asm/suspend.h b/arch/mips/include/asm/suspend.h
+deleted file mode 100644
+index 3adac3b53d19..000000000000
+--- a/arch/mips/include/asm/suspend.h
++++ /dev/null
+@@ -1,7 +0,0 @@
+-#ifndef __ASM_SUSPEND_H
+-#define __ASM_SUSPEND_H
+-
+-/* References to section boundaries */
+-extern const void __nosave_begin, __nosave_end;
+-
+-#endif /* __ASM_SUSPEND_H */
+diff --git a/arch/mips/power/cpu.c b/arch/mips/power/cpu.c
+index 521e5963df05..2129e67723ff 100644
+--- a/arch/mips/power/cpu.c
++++ b/arch/mips/power/cpu.c
+@@ -7,7 +7,7 @@
+  * Author: Hu Hongbing <huhb@lemote.com>
+  *	   Wu Zhangjin <wuzhangjin@gmail.com>
+  */
+-#include <asm/suspend.h>
++#include <asm/sections.h>
+ #include <asm/fpu.h>
+ #include <asm/dsp.h>
+ 
+diff --git a/arch/powerpc/kernel/suspend.c b/arch/powerpc/kernel/suspend.c
+index 0167d53da30c..a531154cc0f3 100644
+--- a/arch/powerpc/kernel/suspend.c
++++ b/arch/powerpc/kernel/suspend.c
+@@ -9,9 +9,7 @@
+ 
+ #include <linux/mm.h>
+ #include <asm/page.h>
+-
+-/* References to section boundaries */
+-extern const void __nosave_begin, __nosave_end;
++#include <asm/sections.h>
+ 
+ /*
+  *	pfn_is_nosave - check if given pfn is in the 'nosave' section
+diff --git a/arch/s390/kernel/suspend.c b/arch/s390/kernel/suspend.c
+index a7a7537ce1e7..1c4c5accd220 100644
+--- a/arch/s390/kernel/suspend.c
++++ b/arch/s390/kernel/suspend.c
+@@ -13,14 +13,10 @@
+ #include <asm/ipl.h>
+ #include <asm/cio.h>
+ #include <asm/pci.h>
++#include <asm/sections.h>
+ #include "entry.h"
+ 
+ /*
+- * References to section boundaries
+- */
+-extern const void __nosave_begin, __nosave_end;
+-
+-/*
+  * The restore of the saved pages in an hibernation image will set
+  * the change and referenced bits in the storage key for each page.
+  * Overindication of the referenced bits after an hibernation cycle
+diff --git a/arch/sh/include/asm/sections.h b/arch/sh/include/asm/sections.h
+index 1b6199740e98..7a99e6af6372 100644
+--- a/arch/sh/include/asm/sections.h
++++ b/arch/sh/include/asm/sections.h
+@@ -3,7 +3,6 @@
+ 
+ #include <asm-generic/sections.h>
+ 
+-extern long __nosave_begin, __nosave_end;
+ extern long __machvec_start, __machvec_end;
+ extern char __uncached_start, __uncached_end;
+ extern char __start_eh_frame[], __stop_eh_frame[];
+diff --git a/arch/sparc/power/hibernate.c b/arch/sparc/power/hibernate.c
+index 42b0b8ce699a..17bd2e167e07 100644
+--- a/arch/sparc/power/hibernate.c
++++ b/arch/sparc/power/hibernate.c
+@@ -9,11 +9,9 @@
+ #include <asm/hibernate.h>
+ #include <asm/visasm.h>
+ #include <asm/page.h>
++#include <asm/sections.h>
+ #include <asm/tlb.h>
+ 
+-/* References to section boundaries */
+-extern const void __nosave_begin, __nosave_end;
+-
+ struct saved_context saved_context;
+ 
+ /*
+diff --git a/arch/unicore32/include/mach/pm.h b/arch/unicore32/include/mach/pm.h
+index 4dcd34ae194c..77b522694e74 100644
+--- a/arch/unicore32/include/mach/pm.h
++++ b/arch/unicore32/include/mach/pm.h
+@@ -36,8 +36,5 @@ extern int puv3_pm_enter(suspend_state_t state);
+ /* Defined in hibernate_asm.S */
+ extern int restore_image(pgd_t *resume_pg_dir, struct pbe *restore_pblist);
+ 
+-/* References to section boundaries */
+-extern const void __nosave_begin, __nosave_end;
+-
+ extern struct pbe *restore_pblist;
+ #endif
+diff --git a/arch/unicore32/kernel/hibernate.c b/arch/unicore32/kernel/hibernate.c
+index d75ef8b6cb56..9969ec374abb 100644
+--- a/arch/unicore32/kernel/hibernate.c
++++ b/arch/unicore32/kernel/hibernate.c
+@@ -18,6 +18,7 @@
+ #include <asm/page.h>
+ #include <asm/pgtable.h>
+ #include <asm/pgalloc.h>
++#include <asm/sections.h>
+ #include <asm/suspend.h>
+ 
+ #include "mach/pm.h"
+diff --git a/arch/x86/power/hibernate_32.c b/arch/x86/power/hibernate_32.c
+index 7d28c885d238..291226b952a9 100644
+--- a/arch/x86/power/hibernate_32.c
++++ b/arch/x86/power/hibernate_32.c
+@@ -13,13 +13,11 @@
+ #include <asm/page.h>
+ #include <asm/pgtable.h>
+ #include <asm/mmzone.h>
++#include <asm/sections.h>
+ 
+ /* Defined in hibernate_asm_32.S */
+ extern int restore_image(void);
+ 
+-/* References to section boundaries */
+-extern const void __nosave_begin, __nosave_end;
+-
+ /* Pointer to the temporary resume page tables */
+ pgd_t *resume_pg_dir;
+ 
+diff --git a/arch/x86/power/hibernate_64.c b/arch/x86/power/hibernate_64.c
+index 35e2bb6c0f37..009947d419a6 100644
+--- a/arch/x86/power/hibernate_64.c
++++ b/arch/x86/power/hibernate_64.c
+@@ -17,11 +17,9 @@
+ #include <asm/page.h>
+ #include <asm/pgtable.h>
+ #include <asm/mtrr.h>
++#include <asm/sections.h>
+ #include <asm/suspend.h>
+ 
+-/* References to section boundaries */
+-extern __visible const void __nosave_begin, __nosave_end;
+-
+ /* Defined in hibernate_asm_64.S */
+ extern asmlinkage __visible int restore_image(void);
+ 
+diff --git a/include/asm-generic/sections.h b/include/asm-generic/sections.h
+index f1a24b5c3b90..b58fd667f87b 100644
+--- a/include/asm-generic/sections.h
++++ b/include/asm-generic/sections.h
+@@ -3,6 +3,8 @@
+ 
+ /* References to section boundaries */
+ 
++#include <linux/compiler.h>
++
+ /*
+  * Usage guidelines:
+  * _text, _data: architecture specific, don't use them in arch-independent code
+@@ -37,6 +39,8 @@ extern char __start_rodata[], __end_rodata[];
+ /* Start and end of .ctors section - used for constructor calls. */
+ extern char __ctors_start[], __ctors_end[];
+ 
++extern __visible const void __nosave_begin, __nosave_end;
++
+ /* function descriptor handling (if any).  Override
+  * in asm/sections.h */
+ #ifndef dereference_function_descriptor
+-- 
+1.9.1
+
