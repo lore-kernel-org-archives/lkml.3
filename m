@@ -1,79 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751482AbaH3DhU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 23:37:20 -0400
-Received: from mail-yh0-f47.google.com ([209.85.213.47]:37076 "EHLO
-	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750878AbaH3DhR (ORCPT
+	id S1751307AbaH3Dk5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 23:40:57 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:58097 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750888AbaH3Dkz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 23:37:17 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Anton Blanchard <anton@samba.org>, Fabian Frederick <fabf@skynet.be>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linuxppc-dev@lists.ozlabs.org (open list:LINUX FOR POWERPC...),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [RFC PATCH] powerpc: Wire up three syscalls
-Date: Fri, 29 Aug 2014 23:36:25 -0400
-Message-Id: <1409369788-22563-1-git-send-email-bobby.prani@gmail.com>
-X-Mailer: git-send-email 2.1.0
+	Fri, 29 Aug 2014 23:40:55 -0400
+X-Original-SENDERIP: 10.178.36.63
+X-Original-MAILFROM: chanho.min@lge.com
+From: Chanho Min <chanho.min@lge.com>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hankyung Yu <hankyung.yu@lge.com>,
+        Gwendal Grignou <gwendal@chromium.org>,
+        Chanho Min <chanho.min@lge.com>
+Subject: [PATCH v2] mmc:sdhci: handle busy-end interrupt during command
+Date: Sat, 30 Aug 2014 12:40:40 +0900
+Message-Id: <1409370040-14225-1-git-send-email-chanho.min@lge.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I see that the three syscalls seccomp, getrandom and memfd_create are not wired
-because of which we get a warning while compilation.
+It is fully legal for a controller to start handling busy-end interrupt
+before it has signaled that the command has completed. So make sure
+we do things in the proper order, Or it results that command interrupt
+is ignored so it can cause unexpected operations. This is founded at some
+toshiba emmc with the bellow warning.
 
-So I wired them up in this patch. What else needs to be done? I tried the
-memfd_test after compiling this kernel, but it is failing. What am I missing for
-this to work? Any advice is really appreciated! :)
+"mmc0: Got command interrupt 0x00000001 even though
+no command operation was in progress."
 
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+This issue has been also reported by Youssef TRIKI:
+It is not specific to Toshiba devices, and happens with eMMC devices
+as well as SD card which support Auto-CMD12 rather than CMD23.
+
+Also, similar patch is submitted by:
+Gwendal Grignou <gwendal@chromium.org>
+
+Changes since v1:
+ Fixed conflict with the next of git.linaro.org/people/ulf.hansson/mmc.git
+ and Tested if issue is fixed again. 
+
+Signed-off-by: Hankyung Yu <hankyung.yu@lge.com>
+Signed-off-by: Chanho Min <chanho.min@lge.com>
+Tested-by: Youssef TRIKI <youssef.triki@st.com>
 ---
- arch/powerpc/include/asm/systbl.h      | 3 +++
- arch/powerpc/include/asm/unistd.h      | 2 +-
- arch/powerpc/include/uapi/asm/unistd.h | 3 +++
- 3 files changed, 7 insertions(+), 1 deletion(-)
+ drivers/mmc/host/sdhci.c  |   17 +++++++++++++++--
+ include/linux/mmc/sdhci.h |    1 +
+ 2 files changed, 16 insertions(+), 2 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/systbl.h b/arch/powerpc/include/asm/systbl.h
-index 542bc0f..7d8a600 100644
---- a/arch/powerpc/include/asm/systbl.h
-+++ b/arch/powerpc/include/asm/systbl.h
-@@ -362,3 +362,6 @@ SYSCALL(ni_syscall) /* sys_kcmp */
- SYSCALL_SPU(sched_setattr)
- SYSCALL_SPU(sched_getattr)
- SYSCALL_SPU(renameat2)
-+SYSCALL_SPU(seccomp)
-+SYSCALL_SPU(getrandom)
-+SYSCALL_SPU(memfd_create)
-diff --git a/arch/powerpc/include/asm/unistd.h b/arch/powerpc/include/asm/unistd.h
-index 5ce5552..4e9af3f 100644
---- a/arch/powerpc/include/asm/unistd.h
-+++ b/arch/powerpc/include/asm/unistd.h
-@@ -12,7 +12,7 @@
- #include <uapi/asm/unistd.h>
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index f6a683b..8428148 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -1016,6 +1016,7 @@ void sdhci_send_command(struct sdhci_host *host, struct mmc_command *cmd)
+ 	mod_timer(&host->timer, timeout);
  
+ 	host->cmd = cmd;
++	host->busy_handle = 0;
  
--#define __NR_syscalls		358
-+#define __NR_syscalls		361
+ 	sdhci_prepare_data(host, cmd);
  
- #define __NR__exit __NR_exit
- #define NR_syscalls	__NR_syscalls
-diff --git a/arch/powerpc/include/uapi/asm/unistd.h b/arch/powerpc/include/uapi/asm/unistd.h
-index 2d526f7..0688fc0 100644
---- a/arch/powerpc/include/uapi/asm/unistd.h
-+++ b/arch/powerpc/include/uapi/asm/unistd.h
-@@ -380,5 +380,8 @@
- #define __NR_sched_setattr	355
- #define __NR_sched_getattr	356
- #define __NR_renameat2		357
-+#define __NR_seccomp		358
-+#define __NR_getrandom		359
-+#define __NR_memfd_create	360
+@@ -2261,8 +2262,12 @@ static void sdhci_cmd_irq(struct sdhci_host *host, u32 intmask)
+ 		if (host->cmd->data)
+ 			DBG("Cannot wait for busy signal when also "
+ 				"doing a data transfer");
+-		else if (!(host->quirks & SDHCI_QUIRK_NO_BUSY_IRQ))
++		else if (!(host->quirks & SDHCI_QUIRK_NO_BUSY_IRQ)
++				&& !host->busy_handle) {
++			/* Mark that command complete before busy is ended */
++			host->busy_handle = 1;
+ 			return;
++		}
  
- #endif /* _UAPI_ASM_POWERPC_UNISTD_H_ */
+ 		/* The controller does not support the end-of-busy IRQ,
+ 		 * fall through and take the SDHCI_INT_RESPONSE */
+@@ -2330,7 +2335,15 @@ static void sdhci_data_irq(struct sdhci_host *host, u32 intmask)
+ 				return;
+ 			}
+ 			if (intmask & SDHCI_INT_DATA_END) {
+-				sdhci_finish_command(host);
++				/*
++				 * Some cards handle busy-end interrupt
++				 * before the command completed, so make
++				 * sure we do things in the proper order.
++				 */
++				if (host->busy_handle)
++					sdhci_finish_command(host);
++				else
++					host->busy_handle = 1;
+ 				return;
+ 			}
+ 		}
+diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
+index 09ebe57..0aa85ca 100644
+--- a/include/linux/mmc/sdhci.h
++++ b/include/linux/mmc/sdhci.h
+@@ -146,6 +146,7 @@ struct sdhci_host {
+ 	struct mmc_command *cmd;	/* Current command */
+ 	struct mmc_data *data;	/* Current data request */
+ 	unsigned int data_early:1;	/* Data finished before cmd */
++	unsigned int busy_handle:1;	/* Handling the order of Busy-end */
+ 
+ 	struct sg_mapping_iter sg_miter;	/* SG state for PIO */
+ 	unsigned int blocks;	/* remaining PIO blocks */
 -- 
-2.1.0
+1.7.9.5
 
