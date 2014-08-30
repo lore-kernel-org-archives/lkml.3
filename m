@@ -1,46 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752025AbaH3TW6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Aug 2014 15:22:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53091 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751711AbaH3TW5 (ORCPT
+	id S1751939AbaH3Tz1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Aug 2014 15:55:27 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:42563 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751802AbaH3Tz0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Aug 2014 15:22:57 -0400
-Date: Sat, 30 Aug 2014 12:22:56 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Janet Liu <jianhua.ljh@gmail.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv1 3/4] staging:lustre:lnet: lib-md.c erase C99 // comments
-Message-ID: <20140830192256.GA11237@kroah.com>
-References: <1409381769-2311-1-git-send-email-jianhua.ljh@gmail.com>
- <1409381853-2362-1-git-send-email-jianhua.ljh@gmail.com>
+	Sat, 30 Aug 2014 15:55:26 -0400
+Date: Sat, 30 Aug 2014 22:54:32 +0300
+From: Ramon Fried <ramon.fried@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: netlogic: fixed checkpatch.pl styling warnings
+Message-ID: <20140830195432.GA29429@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/mixed; boundary="6TrnltStXW4iwmi0"
 Content-Disposition: inline
-In-Reply-To: <1409381853-2362-1-git-send-email-jianhua.ljh@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 30, 2014 at 02:57:33PM +0800, Janet Liu wrote:
-> After changing the comments format, the other error disappears.
-> So silences two checkpatch errors:
->   ERROR: do not use C99 // comments
->   ERROR: trailing statements should be on next line
-> 
-> Signed-off-by: Janet Liu <jianhua.ljh@gmail.com>
-> ---
->  drivers/staging/lustre/lnet/lnet/lib-md.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
 
-This doesn't apply properly, maybe due to the first patch not being
-applied?
+--6TrnltStXW4iwmi0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Can you redo patches 1/4 and 3/4 and resend them?  I've taken 2/4 and
-4/4 now.
+This patch fixes the following checkpatch.pl warnings:
 
-thanks,
+WARNING: Possible unnecessary 'out of memory' message
+#146: FILE: ./xlr_net.c:146:
++	if (!skb) {
++		pr_err("SKB allocation failed\n");
 
-greg k-h
+WARNING: Missing a blank line after declarations
+#1107: FILE: ./xlr_net.c:1107:
++	struct xlr_net_priv *priv = platform_get_drvdata(pdev);
++	unregister_netdev(priv->ndev);
+
+--6TrnltStXW4iwmi0
+Content-Type: text/x-diff; charset=us-ascii
+Content-Disposition: attachment; filename="0001-staging-netlogic-fixed-checkpatch.pl-styling-warning.patch"
+
+>From 27b58d9b1d39ab99bf6022b82ac9e602621b2822 Mon Sep 17 00:00:00 2001
+From: Ramon Fried <ramon.fried@gmail.com>
+Date: Sat, 30 Aug 2014 22:26:11 +0300
+Subject: [PATCH] staging: netlogic: fixed checkpatch.pl styling warnings
+
+Signed-off-by: Ramon Fried <ramon.fried@gmail.com>
+---
+ drivers/staging/netlogic/xlr_net.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/staging/netlogic/xlr_net.c b/drivers/staging/netlogic/xlr_net.c
+index 9bf407d..28a42831 100644
+--- a/drivers/staging/netlogic/xlr_net.c
++++ b/drivers/staging/netlogic/xlr_net.c
+@@ -142,10 +142,8 @@ static inline struct sk_buff *xlr_alloc_skb(void)
+ 
+ 	/* skb->data is cache aligned */
+ 	skb = alloc_skb(XLR_RX_BUF_SIZE, GFP_ATOMIC);
+-	if (!skb) {
+-		pr_err("SKB allocation failed\n");
++	if (!skb)
+ 		return NULL;
+-	}
+ 	mac_put_skb_back_ptr(skb);
+ 	return skb;
+ }
+@@ -1104,6 +1102,7 @@ err_gmac:
+ static int xlr_net_remove(struct platform_device *pdev)
+ {
+ 	struct xlr_net_priv *priv = platform_get_drvdata(pdev);
++
+ 	unregister_netdev(priv->ndev);
+ 	mdiobus_unregister(priv->mii_bus);
+ 	mdiobus_free(priv->mii_bus);
+-- 
+1.9.1
+
+
+--6TrnltStXW4iwmi0--
