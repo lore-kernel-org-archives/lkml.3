@@ -1,46 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986AbaH3RLW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Aug 2014 13:11:22 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:30268 "EHLO smtp3-g21.free.fr"
+	id S1751802AbaH3RfW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Aug 2014 13:35:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41764 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751689AbaH3RLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Aug 2014 13:11:20 -0400
-Date: Sat, 30 Aug 2014 19:11:06 +0200
-From: Sabrina Dubroca <sd@queasysnail.net>
-To: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: Cong Wang <cwang@twopensource.com>, Tommi Rantala <tt.rantala@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org,
-        Dave Jones <davej@redhat.com>
-Subject: Re: RTNL: assertion failed at net/ipv6/addrconf.c (1699)
-Message-ID: <20140830171106.GA4698@kria>
-References: <CA+ydwtoDwQVg_BWrxxdpUyJ7Up60GtxTCLYe_5vFdV2td_kGhQ@mail.gmail.com>
- <CAHA+R7MZCDGRhSf=UuVCGQvNo03wVziZQB_X30rwNf6hmHipQA@mail.gmail.com>
- <20140829195339.GA9780@kria>
- <1409363489.2980.17.camel@localhost>
- <20140830105821.GB18155@kria>
+	id S1751585AbaH3RfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Aug 2014 13:35:20 -0400
+Date: Sat, 30 Aug 2014 18:35:10 +0100
+From: "Richard W.M. Jones" <rjones@redhat.com>
+To: Andy Grover <agrover@redhat.com>
+Cc: target-devel@vger.kernel.org, linux-scsi@vger.kernel.org, hch@lst.de,
+        nab@linux-iscsi.org, shli@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 1/2] target: Add documentation on the target userspace
+ pass-through driver
+Message-ID: <20140830173510.GA11820@redhat.com>
+References: <1404241875-29164-1-git-send-email-agrover@redhat.com>
+ <1404241875-29164-2-git-send-email-agrover@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140830105821.GB18155@kria>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1404241875-29164-2-git-send-email-agrover@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-08-30, 12:58:21 +0200, Sabrina Dubroca wrote:
->    - pndisc_constructor, called from pneigh_lookup -- pneigh_lookup
->      has ASSERT_RTNL(), but pneigh_lookup is called from ip6_forward and
->      ndisc_recv_na
+On Tue, Jul 01, 2014 at 12:11:14PM -0700, Andy Grover wrote:
+> Describes the driver and its interface to make it possible for user
+> programs to back a LIO-exported LUN.
+> 
+> Signed-off-by: Andy Grover <agrover@redhat.com>
+> ---
+>  Documentation/target/tcmu-design.txt | 210 +++++++++++++++++++++++++++++++++++
+>  1 file changed, 210 insertions(+)
+>  create mode 100644 Documentation/target/tcmu-design.txt
+> 
+> diff --git a/Documentation/target/tcmu-design.txt b/Documentation/target/tcmu-design.txt
+> new file mode 100644
+> index 0000000..200ff3e
+> --- /dev/null
+> +++ b/Documentation/target/tcmu-design.txt
+> @@ -0,0 +1,210 @@
+> +TCM Userspace Design
+> +--------------------
+> +
+> +
+> +Background:
+> +
+> +In addition to modularizing the transport protocol used for carrying
+> +SCSI commands ("fabrics"), the Linux kernel target, LIO, also modularizes
+> +the actual data storage as well. These are referred to as "backstores"
+> +or "storage engines". The target comes with backstores that allow a
+> +file, a block device, RAM, or another SCSI device to be used for the
+> +local storage needed for the exported SCSI LUN. Like the rest of LIO,
+> +these are implemented entirely as kernel code.
+> +
+> +These backstores cover the most common use cases, but not all. One new
+> +use case that other non-kernel target solutions, such as tgt, are able
+> +to support is using Gluster's GLFS or Ceph's RBD as a backstore. The
+> +target then serves as a translator, allowing initiators to store data
+> +in these non-traditional networked storage systems, while still only
+> +using standard protocols themselves.
+> +
+> +If the target is a userspace process, supporting these is easy. tgt,
+> +for example, needs only a small adapter module for each, because the
+> +modules just use the available userspace libraries for RBD and GLFS.
+> +
+> +Adding support for these backstores in LIO is considerably more
+> +difficult, because LIO is entirely kernel code. Instead of undertaking
+> +the significant work to port the GLFS or RBD APIs and protocols to the
+> +kernel, another approach is to create a userspace pass-through
+> +backstore for LIO, "TCMU".
 
-Ah, these have creat = 0, so it's fine. I missed that earlier.
+It has to be said that this documentation is terrible.
 
-Sorry for the noise.
+Jumping "in medias res"[1] is great for fiction, awful for technical
+documentation.
+
+I would recommend the Economist Style Guide[2].  They always say
+"Barak Obama, President of the United States" the first time he is
+mentioned in an article, even though almost everyone knows who Barak
+Obama is.
+
+In this case you're leaping into something .. fabrics, LIO,
+backstores, target solutions, ... aargh.  Explain what you mean by
+each term and how it all fits together.
+
+Thanks,
+Rich.
+
+[1] https://en.wikipedia.org/wiki/In_medias_res
+
+[2] http://www.economist.com/styleguide/introduction
 
 -- 
-Sabrina
+Richard Jones, Virtualization Group, Red Hat http://people.redhat.com/~rjones
+Read my programming and virtualization blog: http://rwmj.wordpress.com
+virt-builder quickly builds VMs from scratch
+http://libguestfs.org/virt-builder.1.html
