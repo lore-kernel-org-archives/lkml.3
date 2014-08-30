@@ -1,128 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751206AbaH3CpS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 22:45:18 -0400
-Received: from mga01.intel.com ([192.55.52.88]:5924 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750889AbaH3CpQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 22:45:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,429,1406617200"; 
-   d="scan'208";a="591981611"
-Message-ID: <54013AA8.8050200@linux.intel.com>
-Date: Sat, 30 Aug 2014 10:44:56 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751041AbaH3Cwc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 22:52:32 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:50327 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750878AbaH3Cwb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 22:52:31 -0400
+Date: Fri, 29 Aug 2014 19:52:25 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Simon Kirby <sim@hostway.ca>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: net_ns cleanup / RCU overhead
+Message-ID: <20140830025225.GC5001@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140820055855.GB5579@hostway.ca>
+ <20140828192431.GF5001@linux.vnet.ibm.com>
+ <20140828194422.GB8867@hostway.ca>
+ <87oav4l5g9.fsf@x220.int.ebiederm.org>
+ <20140828204658.GL5001@linux.vnet.ibm.com>
+ <20140829004029.GA18300@hostway.ca>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "Rafael J. Wysocki" <rafael@kernel.org>
-CC: EmanueL Czirai <amanual@openmailbox.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Subject: Re: [Patch v4] x86, irq, PCI: Keep IRQ assignment for runtime power
- management
-References: <1409304383-18806-1-git-send-email-jiang.liu@linux.intel.com> <CAJZ5v0ikimRs4XJihULUdS-ZtU=xBMJECbKmzpUf1ZnzXijihQ@mail.gmail.com> <8823237.zCdVqYrZ5W@vostro.rjw.lan>
-In-Reply-To: <8823237.zCdVqYrZ5W@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140829004029.GA18300@hostway.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14083002-9332-0000-0000-000001DA9C0B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 2014/8/30 7:24, Rafael J. Wysocki wrote:
-> On Friday, August 29, 2014 04:42:34 PM Rafael J. Wysocki wrote:
->> On Fri, Aug 29, 2014 at 11:26 AM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
->>> Now IOAPIC driver dynamically allocates IRQ numbers for IOAPIC pins.
->>> We need to keep IRQ assignment for PCI devices during runtime power
->>> management, otherwise it may cause failure of device wakeups.
->>>
->>> Commit 3eec595235c17a7 "x86, irq, PCI: Keep IRQ assignment for PCI
->>> devices during suspend/hibernation" has fixed the issue for suspend/
->>> hibernation, we also need the same fix for runtime device sleep too.
->>>
->>> Fix: https://bugzilla.kernel.org/show_bug.cgi?id=83271
->>> Reported-and-Tested-by: EmanueL Czirai <amanual@openmailbox.org>
->>> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
->>> ---
->>>  arch/x86/include/asm/io_apic.h |    2 ++
->>>  arch/x86/kernel/apic/io_apic.c |   12 ++++++++++++
->>>  arch/x86/pci/intel_mid_pci.c   |    2 +-
->>>  arch/x86/pci/irq.c             |    2 +-
->>>  drivers/acpi/pci_irq.c         |    4 ++++
->>>  5 files changed, 20 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
->>> index 0aeed5ca356e..478c490f3654 100644
->>> --- a/arch/x86/include/asm/io_apic.h
->>> +++ b/arch/x86/include/asm/io_apic.h
->>> @@ -227,6 +227,8 @@ static inline void io_apic_modify(unsigned int apic, unsigned int reg, unsigned
->>>
->>>  extern void io_apic_eoi(unsigned int apic, unsigned int vector);
->>>
->>> +extern bool mp_should_keep_irq(struct device *dev);
->>> +
->>>  #else  /* !CONFIG_X86_IO_APIC */
->>>
->>>  #define io_apic_assign_pci_irqs 0
->>> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
->>> index 29290f554e79..1e9a921d9701 100644
->>> --- a/arch/x86/kernel/apic/io_apic.c
->>> +++ b/arch/x86/kernel/apic/io_apic.c
->>> @@ -3946,6 +3946,18 @@ int mp_set_gsi_attr(u32 gsi, int trigger, int polarity, int node)
->>>         return ret;
->>>  }
->>>
->>> +bool mp_should_keep_irq(struct device *dev)
->>> +{
->>> +       if (dev->power.is_prepared)
->>> +               return true;
->>> +#ifdef CONFIG_PM_RUNTIME
->>> +       if (dev->power.runtime_status == RPM_SUSPENDING)
->>> +               return true;
->>> +#endif
->>
->> No, you can't do that.  It is racy and incorrect.
+On Thu, Aug 28, 2014 at 05:40:29PM -0700, Simon Kirby wrote:
+> On Thu, Aug 28, 2014 at 01:46:58PM -0700, Paul E. McKenney wrote:
 > 
-> Well, maybe not.
+> > On Thu, Aug 28, 2014 at 03:33:42PM -0500, Eric W. Biederman wrote:
+> > 
+> > > I just want to add a little bit more analysis to this.
+> > > 
+> > > What we desire to be fast is the copy_net_ns, cleanup_net is batched and
+> > > asynchronous which nothing really cares how long it takes except that
+> > > cleanup_net holds the net_mutex and thus blocks copy_net_ns.
+> > > 
+> > > The puzzle is why and which rcu delays Simon is seeing in the network
+> > > namespace cleanup path, as it seems like the synchronize_rcu is not
+> > > the only one, and in the case of vsftp with trivail network namespaces
+> > > where nothing has been done we should not need to delay.
+> > 
+> > Indeed, given the version and .config, I can't see why any individual
+> > RCU grace-period operation would be particularly slow.
+> > 
+> > I suggest using ftrace on synchronize_rcu() and friends.
 > 
->> Please give me some time for looking into this.
+> I made a parallel net namespace create/destroy benchmark that prints the
+> progress and time to create and cleanup 32 unshare()d child processes:
 > 
-> So I guess the intended check is "Am I running in a suspend callback"?
-Hi Rafael,
-	Yes, we are trying to check whether it's called for suspend.
-Function pci_disable_device() may be called when:
-1) unbinding PCI driver
-2) destroying PCI device
-3) suspending for runtime power management or sleep
-For case 1 and 2, we should release IRQ assigned. But we need to
-keep assigned IRQ for case 3.
+> http://0x.ca/sim/ref/tools/netnsbench.c
+> 
+> I noticed that if I haven't run it for a while, the first batch often is
+> fast, followed by slowness from then on:
+> 
+> ++++++++++++++++++++++++++++++++-------------------------------- 0.039478s
+> ++++++++++++++++++++-----+----------------+++++++++---------++-- 4.463837s
+> +++++++++++++++++++++++++------+--------------------++++++------ 3.011882s
+> +++++++++++++++---+-------------++++++++++++++++---------------- 2.283993s
+> 
+> Fiddling around on a stock kernel, "echo 1 > /sys/kernel/rcu_expedited"
+> makes behaviour change as it did with my patch:
+> 
+> ++-++-+++-+-----+-+-++-+-++--++-+--+-+-++--++-+-+-+-++-+--++---- 0.801406s
+> +-+-+-++-+-+-+-+-++--+-+-++-+--++-+-+-+-+-+-+-+-+-+-+-+--++-+--- 0.872011s
+> ++--+-++--+-++--+-++--+-+-+-+-++-+--++--+-++-+-+-+-+--++-+-+-+-- 0.946745s
+> 
+> How would I use ftrace on synchronize_rcu() here?
 
-So is it safe to check runtime_status and is_prepared flags to detect
-case 3? Any better ways?
+http://lwn.net/Articles/370423/ is your friend here.  If your kernel
+is built with the needed configuration, you give the command
+"echo synchronize_rcu > set_ftrace_filter"
 
-Regards!
-Gerry
+http://lwn.net/Articles/365835/ and http://lwn.net/Articles/366796/
+have background info.
 
+> As Eric said, cleanup_net() is batched, but while it is cleaning up,
+> net_mutex is held. Isn't the issue just that net_mutex is held while
+> some other things are going on that are meant to be lazy / batched?
+> 
+> What is net_mutex protecting in cleanup_net()?
+> 
+> I noticed that [kworker/u16:0]'s stack is often:
+> 
+> [<ffffffff810942a6>] wait_rcu_gp+0x46/0x50
+> [<ffffffff8109607e>] synchronize_sched+0x2e/0x50
+> [<ffffffffa00385ac>] nf_nat_net_exit+0x2c/0x50 [nf_nat]
+> [<ffffffff81720339>] ops_exit_list.isra.4+0x39/0x60
+> [<ffffffff817209e0>] cleanup_net+0xf0/0x1a0
+> [<ffffffff81062997>] process_one_work+0x157/0x440
+> [<ffffffff81063303>] worker_thread+0x63/0x520
+> [<ffffffff81068b96>] kthread+0xd6/0xf0
+> [<ffffffff818d412c>] ret_from_fork+0x7c/0xb0
+> [<ffffffffffffffff>] 0xffffffffffffffff
+> 
+> and
+> 
+> [<ffffffff81095364>] _rcu_barrier+0x154/0x1f0
+> [<ffffffff81095450>] rcu_barrier+0x10/0x20
+> [<ffffffff81102c2c>] kmem_cache_destroy+0x6c/0xb0
+> [<ffffffffa0089e97>] nf_conntrack_cleanup_net_list+0x167/0x1c0 [nf_conntrack]
+> [<ffffffffa008aab5>] nf_conntrack_pernet_exit+0x65/0x70 [nf_conntrack]
+> [<ffffffff81720353>] ops_exit_list.isra.4+0x53/0x60
+> [<ffffffff817209e0>] cleanup_net+0xf0/0x1a0
+> [<ffffffff81062997>] process_one_work+0x157/0x440
+> [<ffffffff81063303>] worker_thread+0x63/0x520
+> [<ffffffff81068b96>] kthread+0xd6/0xf0
+> [<ffffffff818d412c>] ret_from_fork+0x7c/0xb0
+> [<ffffffffffffffff>] 0xffffffffffffffff
+> 
+> So I tried flushing iptables rules and rmmoding netfilter bits:
+> 
+> ++++++++++++++++++++-+--------------------+++++++++++----------- 0.179940s
+> ++++++++++++++--+-------------+++++++++++++++++----------------- 0.151988s
+> ++++++++++++++++++++++++++++---+--------------------------+++--- 0.159967s
+> ++++++++++++++++++++++----------------------++++++++++---------- 0.175964s
+> 
+> Expedited:
+> 
+> ++-+--++-+-+-+-+-+-+--++-+-+-++-+-+-+--++-+-+-+-+-+-+-+-+-+-+--- 0.079988s
+> ++-+-+-+-+-+-+-+-+-+-+-+--++-+--++-+--+-++-+-+--++-+-+-+-+-+-+-- 0.089347s
+> ++++--+++--++--+-+++++++-+++++--------------++-+-+--++-+-+--++-- 0.081566s
+> +++++-+++-------++-+-+-+-+-+-+-+-+-+-+-++-+-+-+-+-+-+-+-+-+-+--- 0.089026s
+> 
+> So, much faster. It seems that just loading nf_conntrack_ipv4 (like by
+> running iptables -t nat -nvL) is enough to slow it way down. But it is
+> still capable of being fast, as above.
 
-> 
-> Rafael
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+My first guess is that this code sequence is calling synchronize_rcu()
+quite often.  Would it be possible to consolidate these?
+
+							Thanx, Paul
+
