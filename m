@@ -1,67 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751801AbaH3PiZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Aug 2014 11:38:25 -0400
-Received: from fallback7.mail.ru ([94.100.181.128]:42617 "EHLO
-	fallback7.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751619AbaH3PiX (ORCPT
+	id S1751950AbaH3QDa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Aug 2014 12:03:30 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:50102 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751785AbaH3QD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Aug 2014 11:38:23 -0400
-From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-To: =?UTF-8?B?UGhpbGlwcGUgUmV5bmVz?= <tremyfr@gmail.com>
-Cc: kernel@pengutronix.de, shawn.guo@freescale.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org
-Subject: =?UTF-8?B?UmU6IFtQQVRDSF0gYXBmMjdkZXY6IGFkZCBtYXgxMDI3IGluIHRoZSBkdHM=?=
+	Sat, 30 Aug 2014 12:03:29 -0400
+Message-ID: <1409414606.21896.105.camel@x220>
+Subject: clk: shmobile: CONFIG_ARCH_R8A7794?
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Hisashi Nakamura <hisashi.nakamura.ak@renesas.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Simon Horman <horms+renesas@verge.net.au>,
+        linux-kernel@vger.kernel.org
+Date: Sat, 30 Aug 2014 18:03:26 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
 Mime-Version: 1.0
-X-Mailer: Mail.Ru Mailer 1.0
-X-Originating-IP: [5.18.98.7]
-Date: Sat, 30 Aug 2014 19:36:28 +0400
-Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-X-Priority: 3 (Normal)
-Message-ID: <1409412988.93020165@f362.i.mail.ru>
-X-Cloud-Ids: 
-Content-Type: text/plain; charset=utf-8
-X-Mras: Ok
-X-Spam: undefined
-In-Reply-To: <1409404932-12532-1-git-send-email-tremyfr@gmail.com>
-References: <1409404932-12532-1-git-send-email-tremyfr@gmail.com>
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 30 Aug 2014 16:03:27.0004 (UTC) FILETIME=[EF294DC0:01CFC46B]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7UFckhw030063
 
-Sat, 30 Aug 2014 15:22:12 +0200 Ğ¾Ñ‚ Philippe Reynes <tremyfr@gmail.com>:
-> 
-> Signed-off-by: Philippe Reynes <tremyfr@gmail.com>
-> ---
->  arch/arm/boot/dts/imx27-apf27dev.dts |   20 ++++++++++++++++++++
->  1 files changed, 20 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/imx27-apf27dev.dts b/arch/arm/boot/dts/imx27-apf27dev.dts
-> index b982309..25b9ecd 100644
-> --- a/arch/arm/boot/dts/imx27-apf27dev.dts
-> +++ b/arch/arm/boot/dts/imx27-apf27dev.dts
-> @@ -82,6 +82,19 @@
->  	pinctrl-names = "default";
->  	pinctrl-0 = <&pinctrl_cspi1 &pinctrl_cspi1_cs>;
->  	status = "okay";
-> +
-> +	adc@0 {
-> +		compatible = "maxim,max1027";
-> +		reg = <0>;
-> +		interrupt-parent = <&gpio5>;
-> +		interrupts = <15 IRQ_TYPE_EDGE_FALLING>;
-> +		pinctrl-names = "default";
-> +		pinctrl-0 = <&pinctrl_max1027>;
-> +		/* SPI mode = 0 */
-> +		spi-cpol = <0>;
-> +		spi-cpha = <0>;
+Hi Hisashi,
 
-Mode0 is default.
-Afaik you not need to specify SPOL & SPHA for this. Is not it?
+Your commit 8de078f189da ("clk: shmobile: Add r8a7794 support") landed
+in next-20140828. It adds a single line to a Makefile. That new line
+contains a check for CONFIG_ARCH_R8A7794.
 
----
+There's no Kconfig symbol ARCH_R8A7794 so this line is basically a NOP
+currently. I assume that code to add the Kconfig symbol ARCH_R8A7794 is
+queued somewhere. Is that correct?
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+Paul Bolle
+
