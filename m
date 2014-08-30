@@ -1,112 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751200AbaH3Asf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 20:48:35 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:53218 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857AbaH3Asd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 20:48:33 -0400
-Message-ID: <54011F5D.5040809@gmail.com>
-Date: Sat, 30 Aug 2014 02:48:29 +0200
-From: poma <pomidorabelisima@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1751089AbaH3BAU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 21:00:20 -0400
+Received: from mail-bn1blp0188.outbound.protection.outlook.com ([207.46.163.188]:25489
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750811AbaH3BAT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 21:00:19 -0400
+Message-ID: <1409360401.24184.41.camel@snotra.buserror.net>
+Subject: Re: [RESEND] clk: ppc-corenet: Add Freescale ARM-based platforms
+ CLK_OF_DECLARE support
+From: Scott Wood <scottwood@freescale.com>
+To: Lu Jingchang-B35083 <jingchang.lu@freescale.com>
+CC: "mturquette@linaro.org" <mturquette@linaro.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Fri, 29 Aug 2014 20:00:01 -0500
+In-Reply-To: <c5564f8aa16b4156837a5fc4134036fb@BL2PR03MB467.namprd03.prod.outlook.com>
+References: <1408700096-25415-1-git-send-email-jingchang.lu@freescale.com>
+	 <1409093463.6510.92.camel@snotra.buserror.net>
+	 <164af7b3be3747a0be3fe3a6cf83d3b1@BL2PR03MB467.namprd03.prod.outlook.com>
+	 <1409182412.6510.129.camel@snotra.buserror.net>
+	 <f7b4263f189346a391d66c85756b4907@BL2PR03MB467.namprd03.prod.outlook.com>
+	 <1409243145.6510.160.camel@snotra.buserror.net>
+	 <c5564f8aa16b4156837a5fc4134036fb@BL2PR03MB467.namprd03.prod.outlook.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
 MIME-Version: 1.0
-To: Linux Kernel list <linux-kernel@vger.kernel.org>
-CC: Takashi Iwai <tiwai@suse.de>, Clemens Ladisch <clemens@ladisch.de>,
-        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Sander Eikelenboom <linux@eikelenboom.it>,
-        Dave Jones <davej@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Wei Liu <wei.liu2@citrix.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: debug_dma_assert_idle - ahci - cpu touching an active dma mapped
- cacheline
-References: <534F01D1.9000206@gmail.com> <534F858B.4060208@ladisch.de> <53500CDB.8050802@gmail.com> <53570F1F.1000709@gmail.com> <53575099.1030501@gmail.com> <5361D69E.1060802@gmail.com> <53684172.6090402@gmail.com> <536A0777.1050407@gmail.com> <536F4ACA.3040300@gmail.com>
-In-Reply-To: <536F4ACA.3040300@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [2601:2:5800:3f7:6853:5536:db43:a2c7]
+X-ClientProxiedBy: DM2PR04CA038.namprd04.prod.outlook.com (10.141.154.156) To
+ BY2PR0301MB0727.namprd03.prod.outlook.com (25.160.63.17)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 031996B7EF
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(979002)(6009001)(377424004)(13464003)(189002)(199003)(377454003)(24454002)(51704005)(104166001)(76176999)(107046002)(31966008)(90102001)(50466002)(77096002)(50986999)(33646002)(103116003)(99396002)(42186005)(106356001)(102836001)(105586002)(110136001)(86362001)(95666004)(85306004)(19580405001)(19580395003)(76482001)(83322001)(77156001)(62966002)(80022001)(79102001)(88136002)(101416001)(87976001)(21056001)(23676002)(46102001)(4396001)(74662001)(74502001)(83072002)(93886004)(89996001)(92726001)(20776003)(93916002)(50226001)(85852003)(77982001)(87286001)(47776003)(92566001)(81542001)(81342001)(64706001)(99106002)(3826002)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR0301MB0727;H:[IPv6:2601:2:5800:3f7:6853:5536:db43:a2c7];FPR:;MLV:ovrnspm;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11.05.2014 12:02, poma wrote:
-> 
-> ------------[ cut here ]------------
-> WARNING: CPU: 2 PID: 628 at lib/dma-debug.c:593 debug_dma_assert_idle+0x159/0x1d0()
-> snd_hda_intel 0000:00:07.0: DMA-API: cpu touching an active dma mapped cacheline [cln=0x03074000]
-> CPU: 2 PID: 628 Comm: lightdm Not tainted 3.15.0-0.rc5.git0.1.fc21.i686+debug #1
-> Call Trace:
->  [<c0ae737d>] dump_stack+0x48/0x60
->  [<c04547b2>] warn_slowpath_common+0x82/0xa0
->  [<c0754d99>] ? debug_dma_assert_idle+0x159/0x1d0
->  [<c0754d99>] ? debug_dma_assert_idle+0x159/0x1d0
->  [<c045480e>] warn_slowpath_fmt+0x3e/0x60
->  [<c0754d99>] debug_dma_assert_idle+0x159/0x1d0
->  [<c058a149>] ? anon_vma_prepare+0x29/0x140
->  [<c057e56e>] do_wp_page+0xce/0x890
->  [<c0580b72>] handle_mm_fault+0x662/0xb70
->  [<c0af3667>] __do_page_fault+0x1a7/0x5d0
->  [<c04e1057>] ? SyS_futex+0x97/0x180
->  [<c04b1b00>] ? trace_hardirqs_on_caller+0x1c0/0x1e0
->  [<c04b1a7c>] ? trace_hardirqs_on_caller+0x13c/0x1e0
->  [<c0af3a90>] ? __do_page_fault+0x5d0/0x5d0
->  [<c0af3aaa>] do_page_fault+0x1a/0x20
->  [<c0af0484>] error_code+0x6c/0x74
-> ---[ end trace b400a64c04aed387 ]---
-> Mapped at:
->  [<c0752e42>] debug_dma_alloc_coherent+0x22/0x70
->  [<f80c3e90>] snd_dma_alloc_pages+0x170/0x260 [snd_pcm]
->  [<f80c3fe2>] snd_dma_alloc_pages_fallback+0x62/0x90 [snd_pcm]
->  [<f80c43b0>] snd_malloc_sgbuf_pages+0xf0/0x211 [snd_pcm]
->  [<f80c3f23>] snd_dma_alloc_pages+0x203/0x260 [snd_pcm]
-> 
+On Fri, 2014-08-29 at 02:17 -0500, Lu Jingchang-B35083 wrote:
+> >-----Original Message-----
+> >From: Wood Scott-B07421
+> >Sent: Friday, August 29, 2014 12:26 AM
+> >To: Lu Jingchang-B35083
+> >Cc: mturquette@linaro.org; linuxppc-dev@lists.ozlabs.org; linux-
+> >kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org
+> >Subject: Re: [RESEND] clk: ppc-corenet: Add Freescale ARM-based platforms
+> >CLK_OF_DECLARE support
+> >
+> >On Thu, 2014-08-28 at 05:05 -0500, Lu Jingchang-B35083 wrote:
+> >> >-----Original Message-----
+> >> >From: Wood Scott-B07421
+> >> >Sent: Thursday, August 28, 2014 7:34 AM
+> >> >To: Lu Jingchang-B35083
+> >> >Cc: mturquette@linaro.org; linuxppc-dev@lists.ozlabs.org; linux-
+> >> >kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org
+> >> >Subject: Re: [RESEND] clk: ppc-corenet: Add Freescale ARM-based
+> >> >platforms CLK_OF_DECLARE support
+> >> >
+> >> >On Tue, 2014-08-26 at 21:19 -0500, Lu Jingchang-B35083 wrote:
+> >> >> >-----Original Message-----
+> >> >> >From: Wood Scott-B07421
+> >> >> >Sent: Wednesday, August 27, 2014 6:51 AM
+> >> >> >To: Lu Jingchang-B35083
+> >> >> >Cc: mturquette@linaro.org; linuxppc-dev@lists.ozlabs.org; linux-
+> >> >> >kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org
+> >> >> >Subject: Re: [RESEND] clk: ppc-corenet: Add Freescale ARM-based
+> >> >> >platforms CLK_OF_DECLARE support
+> >> >> >
+> >> >> >On Fri, 2014-08-22 at 17:34 +0800, Jingchang Lu wrote:
+> >> >> >> +CLK_OF_DECLARE(ppc_core_pll_v1, "fsl,qoriq-core-pll-1.0",
+> >> >> >core_pll_init);
+> >> >> >> +CLK_OF_DECLARE(ppc_core_pll_v2, "fsl,qoriq-core-pll-2.0",
+> >> >> >core_pll_init);
+> >> >> >> +CLK_OF_DECLARE(ppc_core_mux_v1, "fsl,qoriq-core-mux-1.0",
+> >> >> >core_mux_init);
+> >> >> >> +CLK_OF_DECLARE(ppc_core_mux_v2, "fsl,qoriq-core-mux-2.0",
+> >> >> >core_mux_init);
+> >> >> >
+> >> >> >What does this do that the existing platform driver and match
+> >> >> >table don't?  Why is it needed for ARM when PPC didn't need it?
+> >> >> >
+> >> >> >-Scott
+> >> >> >
+> >> >> Common clk init on ARM platform is initialized earlier via
+> >> >> of_clk_init() instead of driver probe method, the of_clk_init will
+> >> >> walk a __clk_of_table to init each clk provider in the table, the
+> >> >> CLK_OF_DECLARE() macro puts a supported clk in the __clk_of_table
+> >> >> for it
+> >> >initializing on starup, and the clk system has added some common clk
+> >> >such as "fixed-clk"
+> >> >> to this table already.
+> >> >> So here I add our specific clk init declaration to consist this
+> >> >> framework, and the driver probe function will not be needed on ARM.
+> >> >
+> >> >OK... Is there any reason why the new method won't work on PPC?
+> >> >
+> >> PPC has little dependence on the clock tree but frequency, it will
+> >> work well if adopted I think.
+> >
+> >I'm just saying it seems redundant to have both.  Even on ARM, won't this
+> >result in the clock getting registered twice (albeit with one of those
+> >times being too late)?
+> >
+> >Regardless of what dependence PPC has on the clock tree, what stops this
+> >method of enumeration from working on PPC?  Is there anything required
+> >other than inserting a call to of_clk_init(NULL) in the arch init code?
+> >
+> >-Scott
+> >
+> The of_clk_init is an alternative way to the legacy driver. 
+> Latest ARM standard support a default call to of_clk_init(NULL) in its time_init().
+> So this is the general way for ARM-based platform.
 
-------------[ cut here ]------------
-WARNING: CPU: 1 PID: 1180 at lib/dma-debug.c:593 debug_dma_assert_idle+0x159/0x1d0()
-ahci 0000:00:09.0: DMA-API: cpu touching an active dma mapped cacheline [cln=0x03001000]
-Modules linked in: ip6t_rpfilter ip6t_REJECT xt_conntrack cfg80211 rfkill ebtable_nat ebtable_broute bridge stp llc ebtable_filter ebtables ip6table_nat nf_conntrack_ipv6 nf_defrag_ipv6 nf_nat_ipv6 ip6table_mangle ip6table_security ip6table_raw ip6table_filter ip6_tables iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack iptable_mangle iptable_security iptable_raw mt7601Usta(OE) nouveau kvm_amd ata_generic kvm uas pata_acpi ppdev mxm_wmi parport_serial video usb_storage k10temp r8169 i2c_algo_bit ttm drm_kms_helper serio_raw microcode parport_pc skge parport mii drm wmi i2c_nforce2 i2ccore pata_amd acpi_cpufreq sunrpc
-CPU: 1 PID: 1180 Comm: gmain Tainted: G           OE  3.17.0-0.rc2.git3.1.fc22.i686 #1
-...
-Call Trace:
- [<c0b137d8>] dump_stack+0x48/0x60
- [<c0459092>] warn_slowpath_common+0x82/0xa0
- [<c076c1e9>] ? debug_dma_assert_idle+0x159/0x1d0
- [<c076c1e9>] ? debug_dma_assert_idle+0x159/0x1d0
- [<c04590ee>] warn_slowpath_fmt+0x3e/0x60
- [<c076c1e9>] debug_dma_assert_idle+0x159/0x1d0
- [<c059b8a9>] ? anon_vma_prepare+0x29/0x140
- [<c0590524>] do_wp_page+0xe4/0x8c0
- [<c0592722>] handle_mm_fault+0x662/0xba0
- [<c0447237>] ? __do_page_fault+0x1a7/0x5d0
- [<c0447298>] __do_page_fault+0x208/0x5d0
- [<c058ebd1>] ? might_fault+0x51/0xb0
- [<c058ec27>] ? might_fault+0xa7/0xb0
- [<c074dbb0>] ? _copy_to_user+0x40/0x60
- [<c0447660>] ? __do_page_fault+0x5d0/0x5d0
- [<c044767a>] do_page_fault+0x1a/0x20
- [<c0b1d2b4>] error_code+0x6c/0x74
----[ end trace d1e2e0e42481c1e4 ]---
-Mapped at:
- [<c076a292>] debug_dma_alloc_coherent+0x22/0x70
- [<c0867cbb>] dmam_alloc_coherent+0xdb/0x130
- [<c08b798d>] ahci_port_start+0xed/0x230
- [<c089d23b>] ata_host_start.part.24+0xcb/0x1b0
- [<c08a2a35>] ata_host_activate+0x45/0x100
+Why are such things dependent on CPU architecture?
 
-ahci:
-00:09.0 SATA controller: NVIDIA Corporation MCP78S [GeForce 8200] AHCI Controller (rev a2)
-and
-snd_hda_intel:
-00:07.0 Audio device: NVIDIA Corporation MCP72XE/MCP72P/MCP78U/MCP78S High Definition Audio (rev a1)
-swapped the roles. :)
-mt7601Usta is irrelevant as tainter, here.
+> The clk register layer can detect the twice registration of a same clk and
+> avoid the duplicate registration. The dtb should select the compatible for either,
+> but not both.
 
+Either but not both of what?
 
-poma
+> On LS1021A the driver probe method will not be triggered.
+> And for support of of_clk_init on PPC, I think just add a call to it as ARM do
+> in time_init()[arch/arm/kernel/time.c] would be ok.
 
+I'd rather see this happen than have the driver have to register itself
+differently on different architectures.
+
+-Scott
 
 
