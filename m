@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751194AbaH3DQF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 23:16:05 -0400
-Received: from mga01.intel.com ([192.55.52.88]:6183 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750874AbaH3DQC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 23:16:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,429,1406617200"; 
-   d="scan'208";a="591988340"
-Message-ID: <540141F0.7080207@linux.intel.com>
-Date: Sat, 30 Aug 2014 11:16:00 +0800
-From: "Lu, Baolu" <baolu.lu@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Mathias Nyman <mathias.nyman@intel.com>
-CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] USB: Add device quirk for ASUS T100 Base Station
- keyboard
-References: <1409286391-2854-1-git-send-email-baolu.lu@linux.intel.com> <54006B0A.2050902@cogentembedded.com>
-In-Reply-To: <54006B0A.2050902@cogentembedded.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+	id S1751353AbaH3DZH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 23:25:07 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:52778 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750895AbaH3DZF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 23:25:05 -0400
+Date: Fri, 29 Aug 2014 20:25:04 -0700 (PDT)
+Message-Id: <20140829.202504.655684636693672249.davem@davemloft.net>
+To: hayeswang@realtek.com
+Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH net-next v2] r8152: reduce the number of Tx
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1394712342-15778-24-Taiwan-albertk@realtek.com>
+References: <1394712342-15778-23-Taiwan-albertk@realtek.com>
+	<1394712342-15778-24-Taiwan-albertk@realtek.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 29 Aug 2014 20:25:04 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Hayes Wang <hayeswang@realtek.com>
+Date: Thu, 28 Aug 2014 10:24:18 +0800
 
-On 8/29/2014 7:59 PM, Sergei Shtylyov wrote:
-> Hello.
->
-> On 8/29/2014 8:26 AM, Lu Baolu wrote:
->
->> This full-speed USB device generates spurious remote wakeup event
->> as soon as USB_DEVICE_REMOTE_WAKEUP feature is set. As the result,
->> Linux can't enter system suspend and S0ix power saving modes once
->> this keyboard is used.
->
->> This patch tries to introduce USB_QUIRK_IGNOR_REMOTE_WAKEUP quirk.
->
->    Why not IGNORE? This doesn't look like a big save...
+> Because the Tx has the features of stopping queue and aggregation,
+> We don't need many tx buffers. Change the tx number from 10 to 4
+> to reduce the usage of the memory. This could save 16K * 6 bytes
+> memory.
+> 
+> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+> ---
+>  drivers/net/usb/r8152.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+> index 33dcc97..cc64dc0 100644
+> --- a/drivers/net/usb/r8152.c
+> +++ b/drivers/net/usb/r8152.c
+> @@ -424,7 +424,7 @@ enum rtl_register_content {
+>  	FULL_DUP	= 0x01,
+>  };
+>  
+> -#define RTL8152_MAX_TX		10
+> +#define RTL8152_MAX_TX		4
+>  #define RTL8152_MAX_RX		10
 
-Sure, will change it.
+This driver has a loop that iterates MAX_TX times to initialize both
+the RX and TX buffers.
 
->
->> With this quirk set, wakeup capability will be ignored during
->> device configure.
->
->> This patch could be back-ported to kernels as old as 2.6.39.
->
->> Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
->
-> WBR, Sergei
->
+So if they are not equal, it can't possibly work.
 
+Sorry, I'm not applying this.
