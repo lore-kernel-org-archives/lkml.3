@@ -1,118 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932645AbaICNJK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 09:09:10 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:47865 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932520AbaICNJH (ORCPT
+	id S932659AbaICNLk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 09:11:40 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:40320 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756076AbaICNLh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 09:09:07 -0400
+	Wed, 3 Sep 2014 09:11:37 -0400
+Date: Fri, 29 Aug 2014 22:39:30 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: eduardo.valentin@ti.com, amit.daniel@samsung.com, rui.zhang@intel.com,
+        kgene.kim@samsung.com, ch.naveen@samsung.com,
+        kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
+        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv6 0/2] thermal: exynos: Add support for TRIMINFO feature
+ of Exynos3250
+Message-ID: <20140830023928.GC23645@developer>
+References: <1409713743-6124-1-git-send-email-cw00.choi@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <CAPDyKFrnF4biUGkLgkzz2RNdY1yLp2_bfvoWMM55yx-_TG6ENw@mail.gmail.com>
-References: <1409672977-26972-1-git-send-email-jean-michel.hautbois@vodalys.com>
- <CAPDyKFrwCzQJvbpbue4T=HWLmbq5sZOP3RXwiupKvXe71uboUw@mail.gmail.com>
- <5406D942.4080405@intel.com> <CAPDyKFrnF4biUGkLgkzz2RNdY1yLp2_bfvoWMM55yx-_TG6ENw@mail.gmail.com>
-From: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
-Date: Wed, 3 Sep 2014 15:08:51 +0200
-X-Google-Sender-Auth: MF9KyeO2CN237M8Mx721iaFLzWs
-Message-ID: <CAL8zT=j0TfC=RaA5L+Zm3ACk=D57tb+k6HNrQnSjd4JY_iupCQ@mail.gmail.com>
-Subject: Re: [PATCH] mmc: sdhci-esdhc-imx: Enable boot partition access from DT
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Shawn Guo <shawn.guo@linaro.org>, Dong Aisheng <b29396@freescale.com>,
-        Peter Griffin <peter.griffin@linaro.org>,
-        "tgih.jun@samsung.com" <tgih.jun@samsung.com>, h80.chung@samsung.com,
-        Chris Ball <chris@printf.net>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409713743-6124-1-git-send-email-cw00.choi@samsung.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-09-03 11:09 GMT+02:00 Ulf Hansson <ulf.hansson@linaro.org>:
-> On 3 September 2014 11:02, Adrian Hunter <adrian.hunter@intel.com> wrote:
->> On 09/03/2014 11:30 AM, Ulf Hansson wrote:
->>> On 2 September 2014 17:49, Jean-Michel Hautbois
->>> <jean-michel.hautbois@vodalys.com> wrote:
->>>> This property is useful when we don't want to access boot partitions on eMMC
->>>>
->>>> Signed-off-by: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
->>>> ---
->>>>  Documentation/devicetree/bindings/mmc/mmc.txt | 1 +
->>>>  drivers/mmc/host/sdhci-esdhc-imx.c            | 8 ++++++++
->>>>  include/linux/platform_data/mmc-esdhc-imx.h   | 1 +
->>>>  3 files changed, 10 insertions(+)
->>>>
->>>> diff --git a/Documentation/devicetree/bindings/mmc/mmc.txt b/Documentation/devicetree/bindings/mmc/mmc.txt
->>>> index 431716e..59cc854 100644
->>>> --- a/Documentation/devicetree/bindings/mmc/mmc.txt
->>>> +++ b/Documentation/devicetree/bindings/mmc/mmc.txt
->>>> @@ -40,6 +40,7 @@ Optional properties:
->>>>  - mmc-hs200-1_2v: eMMC HS200 mode(1.2V I/O) is supported
->>>>  - mmc-hs400-1_8v: eMMC HS400 mode(1.8V I/O) is supported
->>>>  - mmc-hs400-1_2v: eMMC HS400 mode(1.2V I/O) is supported
->>>> +- no-boot-part : when preset, tells to access boot partitions
->>>>
->>>>  *NOTE* on CD and WP polarity. To use common for all SD/MMC host controllers line
->>>>  polarity properties, we have to fix the meaning of the "normal" and "inverted"
->>>> diff --git a/drivers/mmc/host/sdhci-esdhc-imx.c b/drivers/mmc/host/sdhci-esdhc-imx.c
->>>> index ccec0e3..439e663 100644
->>>> --- a/drivers/mmc/host/sdhci-esdhc-imx.c
->>>> +++ b/drivers/mmc/host/sdhci-esdhc-imx.c
->>>> @@ -942,6 +942,11 @@ sdhci_esdhc_imx_probe_dt(struct platform_device *pdev,
->>>>         if (of_property_read_u32(np, "fsl,delay-line", &boarddata->delay_line))
->>>>                 boarddata->delay_line = 0;
->>>>
->>>> +       if (of_find_property(np, "no-boot-part", NULL))
->>>> +               boarddata->access_boot_part = false;
->>>> +       else
->>>> +               boarddata->access_boot_part = true;
->>>> +
->>>>         return 0;
->>>>  }
->>>>  #else
->>>> @@ -1119,6 +1124,9 @@ static int sdhci_esdhc_imx_probe(struct platform_device *pdev)
->>>>                 host->quirks2 |= SDHCI_QUIRK2_NO_1_8_V;
->>>>         }
->>>>
->>>> +       if (!boarddata->access_boot_part)
->>>> +               host->mmc->caps2 |= MMC_CAP2_BOOTPART_NOACC;
->>>> +
->>>
->>> Hmm, I don't think MMC_CAP2_BOOTPART_NOACC should have a DT binding.
->>> Does it describe the hardware in some form?
->>>
->>> Actually I would like to question why MMC_CAP2_BOOTPART_NOACC exists
->>> at all. If there are cards that don't supports the BOOT area,
->>> shouldn't we have a card quirk for it instead of a host cap? Maybe
->>> Adrian Hunter, how originally wrote the patch for adding
->>> MMC_CAP2_BOOTPART_NOACC, could help me understand the reasons behind
->>> it!?
->>
->> It was added because platform firmware was able to prevent access to the
->> boot partitions (for security I think), so attempts to access them would
->> fail messily.  It was not related to any specific card.
->
-> Adrian, appreciate your clarification. After all it seems like adding
-> a DT binding for it should be appropriate.
->
-> Kind regards
-> Uffe
+Hi,
 
-Thanks Adrian :).
-Well, there is boot partitions and rpmb partition, and maybe should we
-have a binding to prevent access to both of them ?
-Something else came to my mind, when you want to boot on eMMC, do you
-need to write u-boot in boot partitions or is it written at the
-logical adress 0 which is what fdisk uses as start ?
-Because, if this is not usuable but just scanned I can't see why we
-bother doing it... ?
+On Wed, Sep 03, 2014 at 12:09:01PM +0900, Chanwoo Choi wrote:
+> This patchset add the support of TRIMINFO_RELOAD feature for Exynos3250.
+> But Exynos3250 has two TRIMINFO_CTRL register instead other Exynos has only one
+> TRIMINFO_CTRL register. So, this patchset support the some Exynos SoC which
+> has more than one TRIMINF_CTRL.
+> 
+> Also, this patchset fix wrong value of TRIMINFO_RELOAD_SHIFT and remove
+> duplicate code when reading triminfo register of Exynos5440.
+> 
+> Changes from v5:
+> - Rebase this patchset on next branch of linux-soc-thermal.git
+> 
 
-Thanks,
-JM
+Pulled into my next branch. Thanks.
+
+> Changes from v4:
+> - Remove un-necessary triminfo_ctrl_{shift, mask} field
+> - Includes Bartlomiej's patch[1] that Exynos5260 / Exynos5420 should not use
+> TRIM_RELOAD flag
+> [2] https://lkml.org/lkml/2014/8/20/481
+> 
+> Changes from v3:
+> - Add reviewed message of Amit Daniel Kachhap <amit.daniel@samsung.com>
+> - Split RELOAD patch as two patch
+> - Fix 'TRIMINFO_RELOAD_SHIFT' value
+> - This series includes separate patch[1]
+> [1] https://lkml.org/lkml/2014/8/20/5
+> - Drop ACTIME bit setting because TRM includes not enough information of ACTIME bit.
+> 
+> Changes from v2:
+> - Fix build break because of missing 'or' operation.
+> 
+> Changes from v1:
+> - Add missing 'TMU_SUPPORT_TRIM_RELOAD' features
+> 
+> Chanwoo Choi (2):
+>   thermal: exynos: Add support for many TRIMINFO_CTRL registers
+>   thermal: exynos: Add support for TRIM_RELOAD feature at Exynos3250
+> 
+>  drivers/thermal/samsung/exynos_thermal_common.h |  1 +
+>  drivers/thermal/samsung/exynos_tmu.c            | 15 ++++++++++++---
+>  drivers/thermal/samsung/exynos_tmu.h            |  7 +++++--
+>  drivers/thermal/samsung/exynos_tmu_data.c       | 11 +++++++++--
+>  drivers/thermal/samsung/exynos_tmu_data.h       |  8 ++++++--
+>  5 files changed, 33 insertions(+), 9 deletions(-)
+> 
+> -- 
+> 1.8.0
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
