@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141AbaH3U7P (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Aug 2014 16:59:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53952 "EHLO
+	id S1752057AbaH3VBa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Aug 2014 17:01:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53963 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751898AbaH3U7O (ORCPT
+	with ESMTP id S1751898AbaH3VB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Aug 2014 16:59:14 -0400
-Date: Sat, 30 Aug 2014 13:59:14 -0700
+	Sat, 30 Aug 2014 17:01:29 -0400
+Date: Sat, 30 Aug 2014 14:01:28 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
-To: An Ha <zero579911@gmail.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: rtl8821ae: hal_bt_coexist: fix coding style
- issue
-Message-ID: <20140830205914.GA2329@kroah.com>
-References: <1409422252-3592-1-git-send-email-zero579911@gmail.com>
+To: Ramon Fried <ramon.fried@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: netlogic: fixed checkpatch.pl styling warnings
+Message-ID: <20140830210128.GA11560@kroah.com>
+References: <20140830195432.GA29429@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1409422252-3592-1-git-send-email-zero579911@gmail.com>
+In-Reply-To: <20140830195432.GA29429@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 30, 2014 at 02:10:52PM -0400, An Ha wrote:
-> Fix coding style issues, these changes include:
-> -Add space between "if" and brackets
-> -Add space after comma in an argument
-> -Add space between equal sign to separate the variable and the assignment
-> -Remove unnecessary curly braces around one-line if statements
-> -Remove unnecessary whitespace between two brackets
-> -Remove unnecessary whitespace before newline
-> -Join else-if statement onto same line as end curly brace
-> -Join open curly brace onto same line as if statement
-> -Use "foo *" instead of "foo*" for the pointer placement
-> -Switch commenting style from C99 comments to C89 comments
+On Sat, Aug 30, 2014 at 10:54:32PM +0300, Ramon Fried wrote:
+> This patch fixes the following checkpatch.pl warnings:
 > 
-> Signed-off-by: An Ha <zero579911@gmail.com>
+> WARNING: Possible unnecessary 'out of memory' message
+> #146: FILE: ./xlr_net.c:146:
+> +	if (!skb) {
+> +		pr_err("SKB allocation failed\n");
+> 
+> WARNING: Missing a blank line after declarations
+> #1107: FILE: ./xlr_net.c:1107:
+> +	struct xlr_net_priv *priv = platform_get_drvdata(pdev);
+> +	unregister_netdev(priv->ndev);
 
-That's a lot of different things all to be doing in one single patch.
-Please break this up into "one thing at a time per patch" so that it is
-reviewable and readable.
+> >From 27b58d9b1d39ab99bf6022b82ac9e602621b2822 Mon Sep 17 00:00:00 2001
+> From: Ramon Fried <ramon.fried@gmail.com>
+> Date: Sat, 30 Aug 2014 22:26:11 +0300
+> Subject: [PATCH] staging: netlogic: fixed checkpatch.pl styling warnings
+> 
+> Signed-off-by: Ramon Fried <ramon.fried@gmail.com>
+
+WHy did you not put the information above in the changelog area here?
+
+And why send a patch as an attachment, I can't do much of anything with
+that :(
+
+Also, please use the scripts/get_maintainer.pl tool to determine who and
+what mailing lists to cc: for a patch.
+
+Please fix this up and resend.
 
 thanks,
 
