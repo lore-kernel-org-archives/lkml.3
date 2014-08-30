@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751578AbaH3Kt4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Aug 2014 06:49:56 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:57561 "EHLO gloria.sntech.de"
+	id S1751680AbaH3KuX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Aug 2014 06:50:23 -0400
+Received: from smtp4-g21.free.fr ([212.27.42.4]:9584 "EHLO smtp4-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751194AbaH3Ktz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Aug 2014 06:49:55 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iio: handle -EPROBE_DEFER in of_iio_channel_get_by_name
-Date: Sat, 30 Aug 2014 12:51:55 +0200
-Message-ID: <1889900.9ty4gGSZCE@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <5401A770.3040204@kernel.org>
-References: <4420839.L1RSpT2Pjo@diego> <5401A770.3040204@kernel.org>
+	id S1751152AbaH3KuV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Aug 2014 06:50:21 -0400
+Date: Sat, 30 Aug 2014 12:50:02 +0200
+From: Sabrina Dubroca <sd@queasysnail.net>
+To: Cong Wang <cwang@twopensource.com>
+Cc: Tommi Rantala <tt.rantala@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        trinity@vger.kernel.org, Dave Jones <davej@redhat.com>
+Subject: Re: RTNL: assertion failed at net/ipv6/addrconf.c (1699)
+Message-ID: <20140830105002.GA18155@kria>
+References: <CA+ydwtoDwQVg_BWrxxdpUyJ7Up60GtxTCLYe_5vFdV2td_kGhQ@mail.gmail.com>
+ <CAHA+R7MZCDGRhSf=UuVCGQvNo03wVziZQB_X30rwNf6hmHipQA@mail.gmail.com>
+ <20140829195339.GA9780@kria>
+ <CAHA+R7PLR7QHZuPriCErpuYL2_T+EiMhKF=qEKXjdgubno_StA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAHA+R7PLR7QHZuPriCErpuYL2_T+EiMhKF=qEKXjdgubno_StA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Samstag, 30. August 2014, 11:29:04 schrieb Jonathan Cameron:
-> On 28/08/14 23:13, Heiko Stübner wrote:
-> > Till now of_iio_channel_get_by_name always tried to find the channel
-> > without evaluating the return code from of_iio_channel_get. This might
-> > include -EPROBE_DEFER in which case the channel is present but its driver
-> > simply not probed yet. Therefore simply return on -EPROBE_DEFER so that
-> > the driver requesting the channel can also defer.
-> > 
-> > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+2014-08-29, 15:54:48 -0700, Cong Wang wrote:
+> [...]
 > 
-> I already have a patch queued up for this change in the fixes-togreg branch
+> You are absolutely right here.
 > 
-> [PATCH] iio:inkern: fix overwritten -EPROBE_DEFER in
-> of_iio_channel_get_by_name by Johannes Pointner
+> Can I have your Signed-off-by and Tested-by before sending the patch
+> formally?
 > 
-> I'm just being a little slow catching up with patches at the moment.
+> Thanks!
 
-no problem ... at least the issue got fixed :-)
+Sure:
+
+Signed-off-by: Sabrina Dubroca <sd@queasysnail.net>
+Tested-by: Sabrina Dubroca <sd@queasysnail.net>
 
 
-> 
-> J
-> 
-> > ---
-> > 
-> >  drivers/iio/inkern.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
-> > index c749700..f084610 100644
-> > --- a/drivers/iio/inkern.c
-> > +++ b/drivers/iio/inkern.c
-> > @@ -178,7 +178,7 @@ static struct iio_channel
-> > *of_iio_channel_get_by_name(struct device_node *np,> 
-> >  			index = of_property_match_string(np, "io-channel-names",
-> >  			
-> >  							 name);
-> >  		
-> >  		chan = of_iio_channel_get(np, index);
-> > 
-> > -		if (!IS_ERR(chan))
-> > +		if (!IS_ERR(chan) || PTR_ERR(chan) == -EPROBE_DEFER)
-> > 
-> >  			break;
-> >  		
-> >  		else if (name && index >= 0) {
-> >  		
-> >  			pr_err("ERROR: could not get IIO channel %s:%s(%i)\n",
+Thanks,
 
+-- 
+Sabrina
