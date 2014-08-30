@@ -1,47 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751618AbaH3Lox (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Aug 2014 07:44:53 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:64976 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506AbaH3Lov (ORCPT
+	id S1751645AbaH3MAp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Aug 2014 08:00:45 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:44491 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581AbaH3MAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Aug 2014 07:44:51 -0400
+	Sat, 30 Aug 2014 08:00:44 -0400
+Message-ID: <5401BCDF.3040503@linux.vnet.ibm.com>
+Date: Sat, 30 Aug 2014 17:30:31 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <1408461959-29660-1-git-send-email-daniel.baluta@intel.com>
-References: <1408461959-29660-1-git-send-email-daniel.baluta@intel.com>
-Date: Sat, 30 Aug 2014 14:44:49 +0300
-X-Google-Sender-Auth: k9iQu8I6TlKHsJn9C8cQxZwNLdE
-Message-ID: <CAEnQRZBHKbnKPe7raezXNzHovepRW4eJ4D33ZqVZMxP5o51PMQ@mail.gmail.com>
-Subject: Re: [PATCH] iio: accel: kxcjk-1013: add support for kxcj9-1008
-From: Daniel Baluta <daniel.baluta@intel.com>
-To: Daniel Baluta <daniel.baluta@intel.com>,
-        Jonathan Cameron <jic23@kernel.org>
-Cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>,
-        swarren@nvidia.com, Peter Meerwald <pmeerw@pmeerw.net>,
-        linux-iio@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Vincent Guittot <vincent.guittot@linaro.org>, peterz@infradead.org,
+        mingo@kernel.org, linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org
+CC: riel@redhat.com, Morten.Rasmussen@arm.com, efault@gmx.de,
+        nicolas.pitre@linaro.org, linaro-kernel@lists.linaro.org,
+        daniel.lezcano@linaro.org, dietmar.eggemann@arm.com
+Subject: Re: [PATCH v5 03/12] sched: fix avg_load computation
+References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org> <1409051215-16788-4-git-send-email-vincent.guittot@linaro.org>
+In-Reply-To: <1409051215-16788-4-git-send-email-vincent.guittot@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14083012-3532-0000-0000-000004421370
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 6:25 PM, Daniel Baluta <daniel.baluta@intel.com> wrote:
-> This patch adds support for KXCJ9-1008 3-axis acceleromenter sensor.
-> KXCJ9-1008 uses the same register definitions as KXCJK-1013.
->
-> The specification for KXCJ9-1008 can be downloaded from:
-> http://www.kionix.com/sites/default/files/KXCJ9-1008%20Specifications%20Rev%205.pdf
->
-> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
+Hi Vincent,
 
-Hi Jonathan,
+On 08/26/2014 04:36 PM, Vincent Guittot wrote:
+> The computation of avg_load and avg_load_per_task should only takes into
+> account the number of cfs tasks. The non cfs task are already taken into
+> account by decreasing the cpu's capacity and they will be tracked in the
+> CPU's utilization (group_utilization) of the next patches
+> 
+> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+> ---
+>  kernel/sched/fair.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 87b9dc7..b85e9f7 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -4092,7 +4092,7 @@ static unsigned long capacity_of(int cpu)
+>  static unsigned long cpu_avg_load_per_task(int cpu)
+>  {
+>  	struct rq *rq = cpu_rq(cpu);
+> -	unsigned long nr_running = ACCESS_ONCE(rq->nr_running);
+> +	unsigned long nr_running = ACCESS_ONCE(rq->cfs.h_nr_running);
+>  	unsigned long load_avg = rq->cfs.runnable_load_avg;
+> 
+>  	if (nr_running)
+> @@ -5985,7 +5985,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+>  			load = source_load(i, load_idx);
+> 
+>  		sgs->group_load += load;
+> -		sgs->sum_nr_running += rq->nr_running;
+> +		sgs->sum_nr_running += rq->cfs.h_nr_running;
+> 
+>  		if (rq->nr_running > 1)
+>  			*overload = true;
+> 
 
-Any comments on this?
+Why do we probe rq->nr_running while we do load balancing? Should not we
+be probing cfs_rq->nr_running instead? We are interested after all in
+load balancing fair tasks right? The reason I ask this is, I was
+wondering if we need to make the above similar change in more places in
+load balancing.
 
-On Monday I will send a patch that adds support  KXTJ2-1009 and its
-based on this patch.
-I can squash them together if you want.
+To cite examples: The above check says a cpu is overloaded when
+rq->nr_running > 1. However if these tasks happen to be rt tasks, we
+would anyway not be able to load balance. So while I was looking through
+this patch, I noticed this and wanted to cross verify if we are checking
+rq->nr_running on purpose in some places in load balancing; another
+example being in nohz_kick_needed().
 
-Daniel.
+
+Regards
+Preeti U Murthy
+
