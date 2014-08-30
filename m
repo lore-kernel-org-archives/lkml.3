@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751204AbaH3BlL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 21:41:11 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:36224 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751358AbaH3BlF (ORCPT
+	id S1751080AbaH3Bsl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 21:48:41 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:51291 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750811AbaH3Bsk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 21:41:05 -0400
-From: Chase Southwood <chase.southwood@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Chase Southwood <chase.southwood@gmail.com>
-Subject: [PATCH] staging: comedi: usbduxsigma: fix sparse endianness warnings
-Date: Fri, 29 Aug 2014 20:40:55 -0500
-Message-Id: <1409362855-1490-1-git-send-email-chase.southwood@gmail.com>
-X-Mailer: git-send-email 2.1.0
+	Fri, 29 Aug 2014 21:48:40 -0400
+Message-ID: <54012D74.7010302@infradead.org>
+Date: Fri, 29 Aug 2014 18:48:36 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-next@vger.kernel.org, sfr@canb.auug.org.au,
+        mhocko@suse.cz, Pekka Enberg <penberg@kernel.org>,
+        Vegard Nossum <vegardno@ifi.uio.no>
+Subject: [PATCH -mmotm] mm: fix kmemcheck.c build errors
+References: <5400fba1.732YclygYZprDXeI%akpm@linux-foundation.org>
+In-Reply-To: <5400fba1.732YclygYZprDXeI%akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sparse has many warnings like:
+From: Randy Dunlap <rdunlap@infradead.org>
 
-drivers/staging/comedi/drivers/usbduxsigma.c:293:21: warning: cast to
-restricted __be32
+Add header file to fix kmemcheck.c build errors:
 
-on lines on which devpriv->in_buf is passed to be32_to_cpu().  This
-suggests that this variable should actually be of type __be32.
+../mm/kmemcheck.c:70:7: error: dereferencing pointer to incomplete type
+../mm/kmemcheck.c:83:15: error: dereferencing pointer to incomplete type
+../mm/kmemcheck.c:95:8: error: dereferencing pointer to incomplete type
+../mm/kmemcheck.c:95:21: error: dereferencing pointer to incomplete type
 
-Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
 ---
-This is, as usual, compile tested only.  I tried to verify as best as I
-could that this is a sane change, but I am unable to test on the hardware.
+ mm/kmemcheck.c |    1 +
+ 1 file changed, 1 insertion(+)
 
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/staging/comedi/drivers/usbduxsigma.c b/drivers/staging/comedi/drivers/usbduxsigma.c
-index 94a09c1..e9b11e8 100644
---- a/drivers/staging/comedi/drivers/usbduxsigma.c
-+++ b/drivers/staging/comedi/drivers/usbduxsigma.c
-@@ -157,7 +157,7 @@ struct usbduxsigma_private {
- 	/* size of the PWM buffer which holds the bit pattern */
- 	int pwm_buf_sz;
- 	/* input buffer for the ISO-transfer */
--	uint32_t *in_buf;
-+	__be32 *in_buf;
- 	/* input buffer for single insn */
- 	uint8_t *insn_buf;
+Index: mmotm-2014-0829-1515/mm/kmemcheck.c
+===================================================================
+--- mmotm-2014-0829-1515.orig/mm/kmemcheck.c
++++ mmotm-2014-0829-1515/mm/kmemcheck.c
+@@ -2,6 +2,7 @@
+ #include <linux/mm_types.h>
+ #include <linux/mm.h>
+ #include <linux/slab.h>
++#include <linux/slab_def.h>
+ #include <linux/kmemcheck.h>
  
--- 
-2.1.0
-
+ void kmemcheck_alloc_shadow(struct page *page, int order, gfp_t flags, int node)
