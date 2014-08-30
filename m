@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751504AbaH3JsH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Aug 2014 05:48:07 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:60511 "EHLO
+	id S1751549AbaH3Jtp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Aug 2014 05:49:45 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:60522 "EHLO
 	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137AbaH3JsE (ORCPT
+	with ESMTP id S1751137AbaH3Jto (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Aug 2014 05:48:04 -0400
-Message-ID: <54019DD2.30509@kernel.org>
-Date: Sat, 30 Aug 2014 10:48:02 +0100
+	Sat, 30 Aug 2014 05:49:44 -0400
+Message-ID: <54019E36.4030304@kernel.org>
+Date: Sat, 30 Aug 2014 10:49:42 +0100
 From: Jonathan Cameron <jic23@kernel.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>, Josh Wu <josh.wu@atmel.com>,
-        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        maxime.ripard@free-electrons.com
-CC: alexandre.belloni@free-electrons.com
-Subject: Re: [PATCH] iio: adc: at91: make the function handle_adc_eoc_trigger()
- static
-References: <1409128271-14856-1-git-send-email-josh.wu@atmel.com> <53FD987B.50601@atmel.com>
-In-Reply-To: <53FD987B.50601@atmel.com>
+To: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+CC: linux-iio@vger.kernel.org
+Subject: Re: [PATCH 01/11] iio: sensors-core: st: Check st_sensors_set_drdy_int_pin()'s
+ return value
+References: <1409231657-18294-1-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1409231657-18294-1-git-send-email-lee.jones@linaro.org>
 Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/08/14 09:36, Nicolas Ferre wrote:
-> On 27/08/2014 10:31, Josh Wu :
->> The handle_adc_eoc_trigger() in only used in at91_adc.c. So make it
->> static.
->>
->> Signed-off-by: Josh Wu <josh.wu@atmel.com>
+On 28/08/14 14:14, Lee Jones wrote:
+> Value from st_sensors_set_drdy_int_pin() is assigned to err here,
+> but that stored value is not used before it is overwritten.  To fix
+> this we're enforcing a check on st_sensors_set_drdy_int_pin()'s
+> return value and if it's an error, we're returning right away.
 > 
-> Absolutely.
-> 
-> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> 
+> Cc: jic23@kernel.org
+> Cc: linux-iio@vger.kernel.org
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Applied to the togreg branch of iio.git
 
 Thanks,
 
 Jonathan
-> Thanks, bye.
+> ---
+>  drivers/iio/common/st_sensors/st_sensors_core.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
 > 
->> ---
->>  drivers/iio/adc/at91_adc.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/iio/adc/at91_adc.c b/drivers/iio/adc/at91_adc.c
->> index 772e869..7807e0e 100644
->> --- a/drivers/iio/adc/at91_adc.c
->> +++ b/drivers/iio/adc/at91_adc.c
->> @@ -266,7 +266,7 @@ static irqreturn_t at91_adc_trigger_handler(int irq, void *p)
->>  }
->>  
->>  /* Handler for classic adc channel eoc trigger */
->> -void handle_adc_eoc_trigger(int irq, struct iio_dev *idev)
->> +static void handle_adc_eoc_trigger(int irq, struct iio_dev *idev)
->>  {
->>  	struct at91_adc_state *st = iio_priv(idev);
->>  
->>
-> 
+> diff --git a/drivers/iio/common/st_sensors/st_sensors_core.c b/drivers/iio/common/st_sensors/st_sensors_core.c
+> index 8a4ec00..24cfe4e 100644
+> --- a/drivers/iio/common/st_sensors/st_sensors_core.c
+> +++ b/drivers/iio/common/st_sensors/st_sensors_core.c
+> @@ -306,8 +306,11 @@ int st_sensors_init_sensor(struct iio_dev *indio_dev,
+>  	if (of_pdata)
+>  		pdata = of_pdata;
+>  
+> -	if (pdata)
+> +	if (pdata) {
+>  		err = st_sensors_set_drdy_int_pin(indio_dev, pdata);
+> +		if (err < 0)
+> +			return err;
+> +	}
+>  
+>  	err = st_sensors_set_enable(indio_dev, false);
+>  	if (err < 0)
 > 
