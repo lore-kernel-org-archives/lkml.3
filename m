@@ -1,40 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751441AbaH3Dtq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 23:49:46 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:53043 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750878AbaH3Dtp (ORCPT
+	id S1751204AbaH3Eaq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Aug 2014 00:30:46 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:46322 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750874AbaH3Eao (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 23:49:45 -0400
-Date: Fri, 29 Aug 2014 20:49:44 -0700 (PDT)
-Message-Id: <20140829.204944.664583582819173206.davem@davemloft.net>
-To: lftan@altera.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lftan.linux@gmail.com, peppe.cavallaro@st.com, vbridger@altera.com
-Subject: Re: [PATCH (net-next) v3] net: stmmac: fix warning from Sparse for
- socfpga
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1409201986-3514-1-git-send-email-lftan@altera.com>
-References: <1409201986-3514-1-git-send-email-lftan@altera.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 29 Aug 2014 20:49:45 -0700 (PDT)
+	Sat, 30 Aug 2014 00:30:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <1409350027-17604-1-git-send-email-jay.xu@rock-chips.com>
+References: <1409350027-17604-1-git-send-email-jay.xu@rock-chips.com>
+Date: Fri, 29 Aug 2014 21:30:43 -0700
+X-Google-Sender-Auth: NYwkin561a0Rb_GUpPLOoEGFwTI
+Message-ID: <CAD=FV=XPYkDJ2J3rTHZgKzbH_EMBUmCMwHWjpf1Aagnv_mUqGQ@mail.gmail.com>
+Subject: Re: [PATCH 0/2] rockchip-i2s: add power setting for I2S controller
+ and fix some critical bugs
+From: Doug Anderson <dianders@chromium.org>
+To: Jianqun <jay.xu@rock-chips.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        "broonie@kernel.org" <broonie@kernel.org>, perex@perex.cz,
+        tiwai@suse.de, yongjun_wei@trendmicro.com.cn,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ley Foon Tan <lftan@altera.com>
-Date: Thu, 28 Aug 2014 12:59:46 +0800
+Jianqun,
 
-> Warning:
-> drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c:122:41:
-> sparse: cast removes address space of expression
-> drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c:122:38:
-> sparse: incorrect type in assignment (different address spaces)
-> 
-> Signed-off-by: Ley Foon Tan <lftan@altera.com>
+On Fri, Aug 29, 2014 at 3:07 PM, Jianqun <jay.xu@rock-chips.com> wrote:
+> Add optional power setting for i2s controller found on rk3066, rk3168 and rk3288
+> processors from rockchip, should according to hardware design.
+>
+> Default setting for I2S controller is powered by 3.3V, there needs this patch if
+> it's powered by 1.8V by hardware design.
+>
+> Jianqun (2):
+>   rockchip-i2s: dt: add grf requested properties to set power of I2S controller
+>   rockchip-i2s: add power setting for I2S controller, also fix some bugs
+>
+>  .../devicetree/bindings/sound/rockchip-i2s.txt     |  6 +-
+>  sound/soc/rockchip/rockchip_i2s.c                  | 93 +++++++++++++---------
+>  sound/soc/rockchip/rockchip_i2s.h                  | 13 +--
+>  3 files changed, 68 insertions(+), 44 deletions(-)
 
-Applied, thanks.
+Did the general solution I posted at
+<https://patchwork.kernel.org/patch/4807821/> not work for you?  ...or
+did you not see that?
+
+-Doug
