@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167AbaH3Ulm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Aug 2014 16:41:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53857 "EHLO
+	id S1752194AbaH3Ums (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Aug 2014 16:42:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53864 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751898AbaH3Ull (ORCPT
+	with ESMTP id S1751898AbaH3Umr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Aug 2014 16:41:41 -0400
-Date: Sat, 30 Aug 2014 13:41:41 -0700
+	Sat, 30 Aug 2014 16:42:47 -0400
+Date: Sat, 30 Aug 2014 13:42:46 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Miguel Oliveira <cmroliv@gmail.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, Larry.Finger@lwfinger.net
-Subject: Re: [PATCH 4/4] staging: rtl8188eu: rtw_debug.h
-Message-ID: <20140830204141.GD16168@kroah.com>
-References: <1408703558-32167-1-git-send-email-cmroliv@gmail.com>
- <1408703632-32286-1-git-send-email-cmroliv@gmail.com>
+To: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+Cc: Larry.Finger@lwfinger.net, oat.elena@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com
+Subject: Re: [PATCH] rtl8188eu: Replace rcu_dereference() with
+ rcu_access_pointer()
+Message-ID: <20140830204246.GA16563@kroah.com>
+References: <20140817114336.GA24984@ada>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1408703632-32286-1-git-send-email-cmroliv@gmail.com>
+In-Reply-To: <20140817114336.GA24984@ada>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 11:33:52AM +0100, Miguel Oliveira wrote:
-> Convert all rtw_proc_xxx references to rtw_sys_xxx in file
-> include/rtw_debug.h
-
-That's interesting, but:
-
+On Sun, Aug 17, 2014 at 02:43:37PM +0300, Andreea-Cristina Bernat wrote:
+> The "rcu_dereference()" call is used directly in a condition.
+> Since its return value is never dereferenced it is recommended to use
+> "rcu_access_pointer()" instead of "rcu_dereference()".
+> Therefore, this patch makes the replacement.
 > 
-> Signed-off-by: Miguel Oliveira <cmroliv@gmail.com>
+> The following Coccinelle semantic patch was used:
+> @@
+> @@
+> 
+> (
+>  if(
+>  (<+...
+> - rcu_dereference
+> + rcu_access_pointer
+>   (...)
+>   ...+>)) {...}
+> |
+>  while(
+>  (<+...
+> - rcu_dereference
+> + rcu_access_pointer
+>   (...)
+>   ...+>)) {...}
+> )
+> 
+> Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
 > ---
->  drivers/staging/rtl8188eu/include/rtw_debug.h |  227 +++++++++++--------------
->  1 file changed, 98 insertions(+), 129 deletions(-)
-> 
-> diff --git a/drivers/staging/rtl8188eu/include/rtw_debug.h b/drivers/staging/rtl8188eu/include/rtw_debug.h
-> index a38616e..aa0f46a 100644
-> --- a/drivers/staging/rtl8188eu/include/rtw_debug.h
-> +++ b/drivers/staging/rtl8188eu/include/rtw_debug.h
-> @@ -87,7 +87,7 @@ extern u32 GlobalDebugLevel;
->  #define MSG_88E(...)							\
->  	do {								\
->  		if (_drv_err_ <= GlobalDebugLevel)			\
-> -			pr_info(DRIVER_PREFIX __VA_ARGS__);			\
-> +			pr_info(DRIVER_PREFIX __VA_ARGS__);		\
+>  drivers/staging/rtl8188eu/core/rtw_mlme.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-How does this change relate to what you said you were going to do above?
+This patch fails to apply to my tree, can you refresh it against the
+staging-next branch of the staging.git tree on kernel.org and resend?
 
-confused,
+thanks,
 
 greg k-h
