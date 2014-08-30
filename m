@@ -1,84 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751099AbaH3Wtn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Aug 2014 18:49:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54705 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750738AbaH3Wtm (ORCPT
+	id S1751074AbaH3WyW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Aug 2014 18:54:22 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:59490 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750738AbaH3WyV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Aug 2014 18:49:42 -0400
-Date: Sat, 30 Aug 2014 15:49:41 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: cmroliv@gmail.com, marcel@holtmann.org, pali.rohar@gmail.com,
-        kernel list <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: patch "staging: remove nokia_hp4p driver
-Message-ID: <20140830224941.GA25134@kroah.com>
-References: <14094295422869@kroah.com>
- <20140830213022.GA17147@amd>
- <20140830220417.GA15000@kroah.com>
- <20140830224430.GA19622@amd>
+	Sat, 30 Aug 2014 18:54:21 -0400
+Date: Sat, 30 Aug 2014 23:54:07 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Tadeusz Struk <tadeusz.struk@intel.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Helge Deller <deller@gmx.de>,
+        Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>,
+        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
+        Marek Vasut <marex@denx.de>
+Subject: Re: [PATCH v3 1/5] seq_file: provide an analogue of print_hex_dump()
+Message-ID: <20140830225407.GF7996@ZenIV.linux.org.uk>
+References: <1408957395-404-1-git-send-email-andriy.shevchenko@linux.intel.com>
+ <1408957395-404-2-git-send-email-andriy.shevchenko@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140830224430.GA19622@amd>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1408957395-404-2-git-send-email-andriy.shevchenko@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 31, 2014 at 12:44:30AM +0200, Pavel Machek wrote:
-> Hi!
+On Mon, Aug 25, 2014 at 12:03:11PM +0300, Andy Shevchenko wrote:
+> The new seq_hex_dump() is a complete analogue of print_hex_dump().
 > 
-> > > 
-> > > What is going on here? I get flamed for not cleaning up the driver,
-> > > because I cleaned it up before merging to -staging. Ok, so I did more
-> > > cleanups, sent 3 cleanup patches, no reaction on those, and now I got
-> > > a note that you are going to remove the driver...?
-> > 
-> > For the 3 "cleanup" patches, the first one was rejected and you said to
-> > not include it, so I couldn't apply the others.
-> 
-> That was different series. I'm talking about:
-> 
-> [PATCH 1/3] staging: nokia_h4: switch to right types and use bdaddr_t
-> [PATCH 2/3] staging: nokia_h4: avoid __uX types
-> [PATCH 3/3] staging: use inlines where it makes sense
-> 
-> That is still valid and received no comments at all.
+> We have few users of this functionality already. It allows to reduce their
+> codebase.
 
-I didn't see those, were they mixed in with the previous ones?
+I really don't like the stack footprint.
 
-> > > Please don't, I'd still like to clean the driver up and get included,
-> > > as n900's are still under active use.
-> > 
-> > As the Bluetooth maintainer has said a number of times, he doesn't want
-> > the driver in the tree as it is not doing the correct things.  It's been
-> > a long time in the tree with no work on it at all, and I follow the
-> > suggestions of the maintainers of the subsystems that staging drivers
-> > follow.
-> 
-> You asked for more work and explained how easy it is to revert the
-> removal.
-> 
-> I did more work, you ignored it, and are removing the driver, anyway.
+> +	unsigned char linebuf[32 * 3 + 2 + 32 + 1];
 
-Those 3 patches do nothing to address the issues that the bluetooth
-maintainers have raised, right?
-
-> > I suggest cleaning this up  in your own tree, and then just submitting it
-> > for inclusion in the "normal" part of the kernel.  That way I'm not
-> 
-> ...creating a mess in the history, and fun merge problems for
-> people actually using the driver :-(. And yes, n900 people actually
-> are using it and have their own changes on top of it.
-
-Look, the driver has been in my tree for a very long time with nothing
-done on it.  The bluetooth maintainer has asked me to remove it as it
-does not follow the proper api calls.  So I'll remove it.  It's a
-staging driver, who cares about the "history" of it, just clean it up on
-your own, and submit it to the bluetooth maintainers for inclusion in
-the "real" part of the tree.
-
-greg k-h
+... and extra copying for no good reason.  Why not check that we have
+enough space in buffer and generate directly into it?  See what e.g.
+seq_escape() is doing...
