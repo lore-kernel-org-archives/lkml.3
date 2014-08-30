@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752403AbaH3VNw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Aug 2014 17:13:52 -0400
-Received: from linuxhacker.ru ([217.76.32.60]:51524 "EHLO fiona.linuxhacker.ru"
+	id S1752378AbaH3VNv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Aug 2014 17:13:51 -0400
+Received: from linuxhacker.ru ([217.76.32.60]:51522 "EHLO fiona.linuxhacker.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751969AbaH3VNW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Aug 2014 17:13:22 -0400
+	id S1751956AbaH3VNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Aug 2014 17:13:21 -0400
 From: Oleg Drokin <green@linuxhacker.ru>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
         Andreas Dilger <andreas.dilger@intel.com>
 Cc: "John L. Hammond" <john.hammond@intel.com>,
-        Oleg Drokin <oleg.drokin@intel.com>
-Subject: [PATCH 04/12] staging/lustre/obdclass: remove idmap.c
-Date: Sat, 30 Aug 2014 17:12:43 -0400
-Message-Id: <1409433171-23572-5-git-send-email-green@linuxhacker.ru>
+        Oleg Drokin <green@linuxhacker.ru>
+Subject: [PATCH 01/12] staging/lustre: Remove unused header libcfs_heap.h
+Date: Sat, 30 Aug 2014 17:12:40 -0400
+Message-Id: <1409433171-23572-2-git-send-email-green@linuxhacker.ru>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1409433171-23572-1-git-send-email-green@linuxhacker.ru>
 References: <1409433171-23572-1-git-send-email-green@linuxhacker.ru>
@@ -22,27 +22,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John L. Hammond" <john.hammond@intel.com>
+With removal of libcfs/heap.c, it's header can also go away now.
 
-The functions defined in lustre/include/lustre_idmap.h are not used so
-remove them.
-
-Signed-off-by: John L. Hammond <john.hammond@intel.com>
-Signed-off-by: Oleg Drokin <oleg.drokin@intel.com>
+Signed-off-by: Oleg Drokin <green@linuxhacker.ru>
 ---
- .../staging/lustre/lustre/include/lustre_idmap.h   | 104 -----
- drivers/staging/lustre/lustre/obdclass/Makefile    |   2 +-
- drivers/staging/lustre/lustre/obdclass/idmap.c     | 477 ---------------------
- 3 files changed, 1 insertion(+), 582 deletions(-)
- delete mode 100644 drivers/staging/lustre/lustre/include/lustre_idmap.h
- delete mode 100644 drivers/staging/lustre/lustre/obdclass/idmap.c
+ .../staging/lustre/include/linux/libcfs/libcfs.h   |   1 -
+ .../lustre/include/linux/libcfs/libcfs_heap.h      | 200 ---------------------
+ drivers/staging/lustre/lustre/include/lustre_net.h |   1 -
+ 3 files changed, 202 deletions(-)
+ delete mode 100644 drivers/staging/lustre/include/linux/libcfs/libcfs_heap.h
 
-diff --git a/drivers/staging/lustre/lustre/include/lustre_idmap.h b/drivers/staging/lustre/lustre/include/lustre_idmap.h
+diff --git a/drivers/staging/lustre/include/linux/libcfs/libcfs.h b/drivers/staging/lustre/include/linux/libcfs/libcfs.h
+index 7d37bec..1122ae9 100644
+--- a/drivers/staging/lustre/include/linux/libcfs/libcfs.h
++++ b/drivers/staging/lustre/include/linux/libcfs/libcfs.h
+@@ -165,7 +165,6 @@ void cfs_get_random_bytes(void *buf, int size);
+ #include "libcfs_kernelcomm.h"
+ #include "libcfs_workitem.h"
+ #include "libcfs_hash.h"
+-#include "libcfs_heap.h"
+ #include "libcfs_fail.h"
+ #include "libcfs_crypto.h"
+ 
+diff --git a/drivers/staging/lustre/include/linux/libcfs/libcfs_heap.h b/drivers/staging/lustre/include/linux/libcfs/libcfs_heap.h
 deleted file mode 100644
-index 5624b8b..0000000
---- a/drivers/staging/lustre/lustre/include/lustre_idmap.h
+index bfa6d7b..0000000
+--- a/drivers/staging/lustre/include/linux/libcfs/libcfs_heap.h
 +++ /dev/null
-@@ -1,104 +0,0 @@
+@@ -1,200 +0,0 @@
 -/*
 - * GPL HEADER START
 - *
@@ -51,596 +58,210 @@ index 5624b8b..0000000
 - * This program is free software; you can redistribute it and/or modify
 - * it under the terms of the GNU General Public License version 2 only,
 - * as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful, but
-- * WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-- * General Public License version 2 for more details (a copy is included
-- * in the LICENSE file that accompanied this code).
-- *
+-
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License version 2 for more details.  A copy is
+- * included in the COPYING file that accompanied this code.
+-
 - * You should have received a copy of the GNU General Public License
-- * version 2 along with this program; If not, see
-- * http://www.sun.com/software/products/lustre/docs/GPLv2.pdf
-- *
-- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
-- * CA 95054 USA or visit www.sun.com if you need additional information or
-- * have any questions.
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 - *
 - * GPL HEADER END
 - */
 -/*
-- * Copyright (c) 2008, 2010, Oracle and/or its affiliates. All rights reserved.
-- * Use is subject to license terms.
-- *
-- * Copyright (c) 2012, Intel Corporation.
+- * Copyright (c) 2011 Intel Corporation
 - */
 -/*
-- * This file is part of Lustre, http://www.lustre.org/
-- * Lustre is a trademark of Sun Microsystems, Inc.
+- * libcfs/include/libcfs/heap.h
 - *
-- * lustre/lustre/include/lustre_idmap.h
-- *
-- * MDS data structures.
-- * See also lustre_idl.h for wire formats of requests.
+- * Author: Eric Barton	<eeb@whamcloud.com>
+- *	   Liang Zhen	<liang@whamcloud.com>
 - */
 -
--#ifndef _LUSTRE_IDMAP_H
--#define _LUSTRE_IDMAP_H
+-#ifndef __LIBCFS_HEAP_H__
+-#define __LIBCFS_HEAP_H__
 -
--/** \defgroup idmap idmap
+-/** \defgroup heap Binary heap
 - *
+- * The binary heap is a scalable data structure created using a binary tree. It
+- * is capable of maintaining large sets of elements sorted usually by one or
+- * more element properties, but really based on anything that can be used as a
+- * binary predicate in order to determine the relevant ordering of any two nodes
+- * that belong to the set. There is no search operation, rather the intention is
+- * for the element of the lowest priority which will always be at the root of
+- * the tree (as this is an implementation of a min-heap) to be removed by users
+- * for consumption.
+- *
+- * Users of the heap should embed a \e cfs_binheap_node_t object instance on
+- * every object of the set that they wish the binary heap instance to handle,
+- * and (at a minimum) provide a cfs_binheap_ops_t::hop_compare() implementation
+- * which is used by the heap as the binary predicate during its internal sorting
+- * operations.
+- *
+- * The current implementation enforces no locking scheme, and so assumes the
+- * user caters for locking between calls to insert, delete and lookup
+- * operations. Since the only consumer for the data structure at this point
+- * are NRS policies, and these operate on a per-CPT basis, binary heap instances
+- * are tied to a specific CPT.
 - * @{
 - */
 -
--#include "../../include/linux/libcfs/libcfs.h"
+-/**
+- * Binary heap node.
+- *
+- * Objects of this type are embedded into objects of the ordered set that is to
+- * be maintained by a \e cfs_binheap_t instance.
+- */
+-typedef struct {
+-	/** Index into the binary tree */
+-	unsigned int	chn_index;
+-} cfs_binheap_node_t;
 -
--#define CFS_NGROUPS_PER_BLOCK   ((int)(PAGE_CACHE_SIZE / sizeof(gid_t)))
+-#define CBH_SHIFT	9
+-#define CBH_SIZE       (1 << CBH_SHIFT)		    /* # ptrs per level */
+-#define CBH_MASK       (CBH_SIZE - 1)
+-#define CBH_NOB	(CBH_SIZE * sizeof(cfs_binheap_node_t *))
 -
--#define CFS_GROUP_AT(gi, i) \
--	((gi)->blocks[(i) / CFS_NGROUPS_PER_BLOCK][(i) % CFS_NGROUPS_PER_BLOCK])
+-#define CBH_POISON	0xdeadbeef
 -
+-/**
+- * Binary heap flags.
+- */
 -enum {
--	CFS_IC_NOTHING     = 0,    /* convert nothing */
--	CFS_IC_ALL	 = 1,    /* convert all items */
--	CFS_IC_MAPPED      = 2,    /* convert mapped uid/gid */
--	CFS_IC_UNMAPPED    = 3     /* convert unmapped uid/gid */
+-	CBH_FLAG_ATOMIC_GROW	= 1,
 -};
 -
--#define  CFS_IDMAP_NOTFOUND     (-1)
+-struct cfs_binheap;
 -
--#define CFS_IDMAP_HASHSIZE      32
--
--enum lustre_idmap_idx {
--	RMT_UIDMAP_IDX,
--	LCL_UIDMAP_IDX,
--	RMT_GIDMAP_IDX,
--	LCL_GIDMAP_IDX,
--	CFS_IDMAP_N_HASHES
--};
--
--struct lustre_idmap_table {
--	spinlock_t	lit_lock;
--	struct list_head	lit_idmaps[CFS_IDMAP_N_HASHES][CFS_IDMAP_HASHSIZE];
--};
--
--struct lu_ucred;
--
--extern void lustre_groups_from_list(struct group_info *ginfo, gid_t *glist);
--extern void lustre_groups_sort(struct group_info *group_info);
--extern int lustre_in_group_p(struct lu_ucred *mu, gid_t grp);
--
--extern int lustre_idmap_add(struct lustre_idmap_table *t,
--			    uid_t ruid, uid_t luid,
--			    gid_t rgid, gid_t lgid);
--extern int lustre_idmap_del(struct lustre_idmap_table *t,
--			    uid_t ruid, uid_t luid,
--			    gid_t rgid, gid_t lgid);
--extern int lustre_idmap_lookup_uid(struct lu_ucred *mu,
--				   struct lustre_idmap_table *t,
--				   int reverse, uid_t uid);
--extern int lustre_idmap_lookup_gid(struct lu_ucred *mu,
--				   struct lustre_idmap_table *t,
--				   int reverse, gid_t gid);
--extern struct lustre_idmap_table *lustre_idmap_init(void);
--extern void lustre_idmap_fini(struct lustre_idmap_table *t);
--
--/** @} idmap */
--
--#endif
-diff --git a/drivers/staging/lustre/lustre/obdclass/Makefile b/drivers/staging/lustre/lustre/obdclass/Makefile
-index ba10043..989fb7c 100644
---- a/drivers/staging/lustre/lustre/obdclass/Makefile
-+++ b/drivers/staging/lustre/lustre/obdclass/Makefile
-@@ -6,5 +6,5 @@ obdclass-y := linux/linux-module.o linux/linux-obdo.o linux/linux-sysctl.o \
- 	      lustre_handles.o lustre_peer.o llog_osd.o \
- 	      local_storage.o statfs_pack.o obdo.o obd_config.o obd_mount.o\
- 	      mea.o lu_object.o dt_object.o capa.o cl_object.o   \
--	      cl_page.o cl_lock.o cl_io.o lu_ref.o acl.o idmap.o	   \
-+	      cl_page.o cl_lock.o cl_io.o lu_ref.o acl.o \
- 	      lu_ucred.o
-diff --git a/drivers/staging/lustre/lustre/obdclass/idmap.c b/drivers/staging/lustre/lustre/obdclass/idmap.c
-deleted file mode 100644
-index 8c2f0b7..0000000
---- a/drivers/staging/lustre/lustre/obdclass/idmap.c
-+++ /dev/null
-@@ -1,477 +0,0 @@
--/*
-- * GPL HEADER START
-- *
-- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 only,
-- * as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful, but
-- * WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-- * General Public License version 2 for more details (a copy is included
-- * in the LICENSE file that accompanied this code).
-- *
-- * You should have received a copy of the GNU General Public License
-- * version 2 along with this program; If not, see
-- * http://www.sun.com/software/products/lustre/docs/GPLv2.pdf
-- *
-- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
-- * CA 95054 USA or visit www.sun.com if you need additional information or
-- * have any questions.
-- *
-- * GPL HEADER END
+-/**
+- * Binary heap operations.
 - */
--/*
-- * Copyright (c) 2008, 2010, Oracle and/or its affiliates. All rights reserved.
-- * Use is subject to license terms.
+-typedef struct {
+-	/**
+-	 * Called right before inserting a node into the binary heap.
+-	 *
+-	 * Implementing this operation is optional.
+-	 *
+-	 * \param[in] h The heap
+-	 * \param[in] e The node
+-	 *
+-	 * \retval 0 success
+-	 * \retval != 0 error
+-	 */
+-	int		(*hop_enter)(struct cfs_binheap *h,
+-				     cfs_binheap_node_t *e);
+-	/**
+-	 * Called right after removing a node from the binary heap.
+-	 *
+-	 * Implementing this operation is optional.
+-	 *
+-	 * \param[in] h The heap
+-	 * \param[in] e The node
+-	 */
+-	void		(*hop_exit)(struct cfs_binheap *h,
+-				    cfs_binheap_node_t *e);
+-	/**
+-	 * A binary predicate which is called during internal heap sorting
+-	 * operations, and used in order to determine the relevant ordering of
+-	 * two heap nodes.
+-	 *
+-	 * Implementing this operation is mandatory.
+-	 *
+-	 * \param[in] a The first heap node
+-	 * \param[in] b The second heap node
+-	 *
+-	 * \retval 0 Node a > node b
+-	 * \retval 1 Node a < node b
+-	 *
+-	 * \see cfs_binheap_bubble()
+-	 * \see cfs_biheap_sink()
+-	 */
+-	int		(*hop_compare)(cfs_binheap_node_t *a,
+-				       cfs_binheap_node_t *b);
+-} cfs_binheap_ops_t;
+-
+-/**
+- * Binary heap object.
 - *
-- * Copyright (c) 2012, Intel Corporation.
+- * Sorts elements of type \e cfs_binheap_node_t
 - */
--/*
-- * This file is part of Lustre, http://www.lustre.org/
-- * Lustre is a trademark of Sun Microsystems, Inc.
-- *
-- * lustre/obdclass/idmap.c
-- *
-- * Lustre user identity mapping.
-- *
-- * Author: Fan Yong <fanyong@clusterfs.com>
-- */
+-typedef struct cfs_binheap {
+-	/** Triple indirect */
+-	cfs_binheap_node_t  ****cbh_elements3;
+-	/** double indirect */
+-	cfs_binheap_node_t   ***cbh_elements2;
+-	/** single indirect */
+-	cfs_binheap_node_t    **cbh_elements1;
+-	/** # elements referenced */
+-	unsigned int		cbh_nelements;
+-	/** high water mark */
+-	unsigned int		cbh_hwm;
+-	/** user flags */
+-	unsigned int		cbh_flags;
+-	/** operations table */
+-	cfs_binheap_ops_t      *cbh_ops;
+-	/** private data */
+-	void		       *cbh_private;
+-	/** associated CPT table */
+-	struct cfs_cpt_table   *cbh_cptab;
+-	/** associated CPT id of this cfs_binheap_t::cbh_cptab */
+-	int			cbh_cptid;
+-} cfs_binheap_t;
 -
--#define DEBUG_SUBSYSTEM S_SEC
+-void cfs_binheap_destroy(cfs_binheap_t *h);
+-cfs_binheap_t *cfs_binheap_create(cfs_binheap_ops_t *ops, unsigned int flags,
+-				  unsigned count, void *arg,
+-				  struct cfs_cpt_table *cptab, int cptid);
+-cfs_binheap_node_t *cfs_binheap_find(cfs_binheap_t *h, unsigned int idx);
+-int cfs_binheap_insert(cfs_binheap_t *h, cfs_binheap_node_t *e);
+-void cfs_binheap_remove(cfs_binheap_t *h, cfs_binheap_node_t *e);
 -
--#include "../include/lustre_idmap.h"
--#include "../include/md_object.h"
--#include "../include/obd_support.h"
--
--#define lustre_get_group_info(group_info) do {	     \
--	atomic_inc(&(group_info)->usage);	      \
--} while (0)
--
--#define lustre_put_group_info(group_info) do {	     \
--	if (atomic_dec_and_test(&(group_info)->usage)) \
--		groups_free(group_info);	       \
--} while (0)
--
--/*
-- * groups_search() is copied from linux kernel!
-- * A simple bsearch.
-- */
--static int lustre_groups_search(const struct group_info *group_info, gid_t grp)
+-static inline int
+-cfs_binheap_size(cfs_binheap_t *h)
 -{
--	int left, right;
--
--	if (!group_info)
--		return 0;
--
--	left = 0;
--	right = group_info->ngroups;
--	while (left < right) {
--		int mid = (left + right) / 2;
--		int cmp = grp -
--			from_kgid(&init_user_ns, CFS_GROUP_AT(group_info, mid));
--
--		if (cmp > 0)
--			left = mid + 1;
--		else if (cmp < 0)
--			right = mid;
--		else
--			return 1;
--	}
--	return 0;
+-	return h->cbh_nelements;
 -}
 -
--void lustre_groups_from_list(struct group_info *ginfo, gid_t *glist)
+-static inline int
+-cfs_binheap_is_empty(cfs_binheap_t *h)
 -{
--	int i;
--	int count = ginfo->ngroups;
--
--	/* fill group_info from gid array */
--	for (i = 0; i < ginfo->nblocks && count > 0; i++) {
--		int cp_count = min(CFS_NGROUPS_PER_BLOCK, count);
--		int off = i * CFS_NGROUPS_PER_BLOCK;
--		int len = cp_count * sizeof(*glist);
--
--		memcpy(ginfo->blocks[i], glist + off, len);
--		count -= cp_count;
--	}
--}
--EXPORT_SYMBOL(lustre_groups_from_list);
--
--/* groups_sort() is copied from linux kernel! */
--/* a simple shell-metzner sort */
--void lustre_groups_sort(struct group_info *group_info)
--{
--	int base, max, stride;
--	int gidsetsize = group_info->ngroups;
--
--	for (stride = 1; stride < gidsetsize; stride = 3 * stride + 1)
--		; /* nothing */
--	stride /= 3;
--
--	while (stride) {
--		max = gidsetsize - stride;
--		for (base = 0; base < max; base++) {
--			int left = base;
--			int right = left + stride;
--			gid_t tmp = from_kgid(&init_user_ns,
--					      CFS_GROUP_AT(group_info, right));
--
--			while (left >= 0 &&
--			       tmp < from_kgid(&init_user_ns,
--					       CFS_GROUP_AT(group_info, left))) {
--				CFS_GROUP_AT(group_info, right) =
--				    CFS_GROUP_AT(group_info, left);
--				right = left;
--				left -= stride;
--			}
--			CFS_GROUP_AT(group_info, right) =
--						make_kgid(&init_user_ns, tmp);
--		}
--		stride /= 3;
--	}
--}
--EXPORT_SYMBOL(lustre_groups_sort);
--
--int lustre_in_group_p(struct lu_ucred *mu, gid_t grp)
--{
--	int rc = 1;
--
--	if (grp != mu->uc_fsgid) {
--		struct group_info *group_info = NULL;
--
--		if (mu->uc_ginfo || !mu->uc_identity ||
--		    mu->uc_valid == UCRED_OLD)
--			if (grp == mu->uc_suppgids[0] ||
--			    grp == mu->uc_suppgids[1])
--				return 1;
--
--		if (mu->uc_ginfo)
--			group_info = mu->uc_ginfo;
--		else if (mu->uc_identity)
--			group_info = mu->uc_identity->mi_ginfo;
--
--		if (!group_info)
--			return 0;
--
--		lustre_get_group_info(group_info);
--		rc = lustre_groups_search(group_info, grp);
--		lustre_put_group_info(group_info);
--	}
--	return rc;
--}
--EXPORT_SYMBOL(lustre_in_group_p);
--
--struct lustre_idmap_entry {
--	struct list_head       lie_rmt_uid_hash; /* hashed as lie_rmt_uid; */
--	struct list_head       lie_lcl_uid_hash; /* hashed as lie_lcl_uid; */
--	struct list_head       lie_rmt_gid_hash; /* hashed as lie_rmt_gid; */
--	struct list_head       lie_lcl_gid_hash; /* hashed as lie_lcl_gid; */
--	uid_t	    lie_rmt_uid;      /* remote uid */
--	uid_t	    lie_lcl_uid;      /* local uid */
--	gid_t	    lie_rmt_gid;      /* remote gid */
--	gid_t	    lie_lcl_gid;      /* local gid */
--};
--
--static inline __u32 lustre_idmap_hashfunc(__u32 id)
--{
--	return id & (CFS_IDMAP_HASHSIZE - 1);
+-	return h->cbh_nelements == 0;
 -}
 -
--static
--struct lustre_idmap_entry *idmap_entry_alloc(uid_t rmt_uid, uid_t lcl_uid,
--					     gid_t rmt_gid, gid_t lcl_gid)
+-static inline cfs_binheap_node_t *
+-cfs_binheap_root(cfs_binheap_t *h)
 -{
--	struct lustre_idmap_entry *e;
+-	return cfs_binheap_find(h, 0);
+-}
 -
--	OBD_ALLOC_PTR(e);
--	if (e == NULL)
--		return NULL;
+-static inline cfs_binheap_node_t *
+-cfs_binheap_remove_root(cfs_binheap_t *h)
+-{
+-	cfs_binheap_node_t *e = cfs_binheap_find(h, 0);
 -
--	INIT_LIST_HEAD(&e->lie_rmt_uid_hash);
--	INIT_LIST_HEAD(&e->lie_lcl_uid_hash);
--	INIT_LIST_HEAD(&e->lie_rmt_gid_hash);
--	INIT_LIST_HEAD(&e->lie_lcl_gid_hash);
--	e->lie_rmt_uid = rmt_uid;
--	e->lie_lcl_uid = lcl_uid;
--	e->lie_rmt_gid = rmt_gid;
--	e->lie_lcl_gid = lcl_gid;
--
+-	if (e != NULL)
+-		cfs_binheap_remove(h, e);
 -	return e;
 -}
 -
--static void idmap_entry_free(struct lustre_idmap_entry *e)
--{
--	if (!list_empty(&e->lie_rmt_uid_hash))
--		list_del(&e->lie_rmt_uid_hash);
--	if (!list_empty(&e->lie_lcl_uid_hash))
--		list_del(&e->lie_lcl_uid_hash);
--	if (!list_empty(&e->lie_rmt_gid_hash))
--		list_del(&e->lie_rmt_gid_hash);
--	if (!list_empty(&e->lie_lcl_gid_hash))
--		list_del(&e->lie_lcl_gid_hash);
--	OBD_FREE_PTR(e);
--}
+-/** @} heap */
 -
--/*
-- * return value
-- * NULL: not found entry
-- * ERR_PTR(-EACCES): found 1(remote):N(local) mapped entry
-- * others: found normal entry
-- */
--static
--struct lustre_idmap_entry *idmap_search_entry(struct lustre_idmap_table *t,
--					      uid_t rmt_uid, uid_t lcl_uid,
--					      gid_t rmt_gid, gid_t lcl_gid)
--{
--	struct list_head *head;
--	struct lustre_idmap_entry *e;
--
--	head = &t->lit_idmaps[RMT_UIDMAP_IDX][lustre_idmap_hashfunc(rmt_uid)];
--	list_for_each_entry(e, head, lie_rmt_uid_hash)
--		if (e->lie_rmt_uid == rmt_uid) {
--			if (e->lie_lcl_uid == lcl_uid) {
--				if (e->lie_rmt_gid == rmt_gid &&
--				    e->lie_lcl_gid == lcl_gid)
--					/* must be quaternion match */
--					return e;
--			} else {
--				/* 1:N uid mapping */
--				CERROR("rmt uid %u already be mapped to %u"
--				       " (new %u)\n", e->lie_rmt_uid,
--				       e->lie_lcl_uid, lcl_uid);
--				return ERR_PTR(-EACCES);
--			}
--		}
--
--	head = &t->lit_idmaps[RMT_GIDMAP_IDX][lustre_idmap_hashfunc(rmt_gid)];
--	list_for_each_entry(e, head, lie_rmt_gid_hash)
--		if (e->lie_rmt_gid == rmt_gid) {
--			if (e->lie_lcl_gid == lcl_gid) {
--				if (unlikely(e->lie_rmt_uid == rmt_uid &&
--				    e->lie_lcl_uid == lcl_uid))
--					/* after uid mapping search above,
--					 * we should never come here */
--					LBUG();
--			} else {
--				/* 1:N gid mapping */
--				CERROR("rmt gid %u already be mapped to %u"
--				       " (new %u)\n", e->lie_rmt_gid,
--				       e->lie_lcl_gid, lcl_gid);
--				return ERR_PTR(-EACCES);
--			}
--		}
--
--	return NULL;
--}
--
--static __u32 idmap_lookup_uid(struct list_head *hash, int reverse,
--			      __u32 uid)
--{
--	struct list_head *head = &hash[lustre_idmap_hashfunc(uid)];
--	struct lustre_idmap_entry *e;
--
--	if (!reverse) {
--		list_for_each_entry(e, head, lie_rmt_uid_hash)
--			if (e->lie_rmt_uid == uid)
--				return e->lie_lcl_uid;
--	} else {
--		list_for_each_entry(e, head, lie_lcl_uid_hash)
--			if (e->lie_lcl_uid == uid)
--				return e->lie_rmt_uid;
--	}
--
--	return CFS_IDMAP_NOTFOUND;
--}
--
--static __u32 idmap_lookup_gid(struct list_head *hash, int reverse, __u32 gid)
--{
--	struct list_head *head = &hash[lustre_idmap_hashfunc(gid)];
--	struct lustre_idmap_entry *e;
--
--	if (!reverse) {
--		list_for_each_entry(e, head, lie_rmt_gid_hash)
--			if (e->lie_rmt_gid == gid)
--				return e->lie_lcl_gid;
--	} else {
--		list_for_each_entry(e, head, lie_lcl_gid_hash)
--			if (e->lie_lcl_gid == gid)
--				return e->lie_rmt_gid;
--	}
--
--	return CFS_IDMAP_NOTFOUND;
--}
--
--int lustre_idmap_add(struct lustre_idmap_table *t,
--		     uid_t ruid, uid_t luid,
--		     gid_t rgid, gid_t lgid)
--{
--	struct lustre_idmap_entry *e0, *e1;
--
--	LASSERT(t);
--
--	spin_lock(&t->lit_lock);
--	e0 = idmap_search_entry(t, ruid, luid, rgid, lgid);
--	spin_unlock(&t->lit_lock);
--	if (!e0) {
--		e0 = idmap_entry_alloc(ruid, luid, rgid, lgid);
--		if (!e0)
--			return -ENOMEM;
--
--		spin_lock(&t->lit_lock);
--		e1 = idmap_search_entry(t, ruid, luid, rgid, lgid);
--		if (e1 == NULL) {
--			list_add_tail(&e0->lie_rmt_uid_hash,
--					  &t->lit_idmaps[RMT_UIDMAP_IDX]
--					  [lustre_idmap_hashfunc(ruid)]);
--			list_add_tail(&e0->lie_lcl_uid_hash,
--					  &t->lit_idmaps[LCL_UIDMAP_IDX]
--					  [lustre_idmap_hashfunc(luid)]);
--			list_add_tail(&e0->lie_rmt_gid_hash,
--					  &t->lit_idmaps[RMT_GIDMAP_IDX]
--					  [lustre_idmap_hashfunc(rgid)]);
--			list_add_tail(&e0->lie_lcl_gid_hash,
--					  &t->lit_idmaps[LCL_GIDMAP_IDX]
--					  [lustre_idmap_hashfunc(lgid)]);
--		}
--		spin_unlock(&t->lit_lock);
--		if (e1 != NULL) {
--			idmap_entry_free(e0);
--			if (IS_ERR(e1))
--				return PTR_ERR(e1);
--		}
--	} else if (IS_ERR(e0)) {
--		return PTR_ERR(e0);
--	}
--
--	return 0;
--}
--EXPORT_SYMBOL(lustre_idmap_add);
--
--int lustre_idmap_del(struct lustre_idmap_table *t,
--		    uid_t ruid, uid_t luid,
--		    gid_t rgid, gid_t lgid)
--{
--	struct lustre_idmap_entry *e;
--	int rc = 0;
--
--	LASSERT(t);
--
--	spin_lock(&t->lit_lock);
--	e = idmap_search_entry(t, ruid, luid, rgid, lgid);
--	if (IS_ERR(e))
--		rc = PTR_ERR(e);
--	else if (e)
--		idmap_entry_free(e);
--	spin_unlock(&t->lit_lock);
--
--	return rc;
--}
--EXPORT_SYMBOL(lustre_idmap_del);
--
--int lustre_idmap_lookup_uid(struct lu_ucred *mu,
--			    struct lustre_idmap_table *t,
--			    int reverse, uid_t uid)
--{
--	struct list_head *hash;
--
--	if (mu && (mu->uc_valid == UCRED_OLD || mu->uc_valid == UCRED_NEW)) {
--		if (!reverse) {
--			if (uid == mu->uc_o_uid)
--				return mu->uc_uid;
--			else if (uid == mu->uc_o_fsuid)
--				return mu->uc_fsuid;
--		} else {
--			if (uid == mu->uc_uid)
--				return mu->uc_o_uid;
--			else if (uid == mu->uc_fsuid)
--				return mu->uc_o_fsuid;
--		}
--	}
--
--	if (t == NULL)
--		return CFS_IDMAP_NOTFOUND;
--
--	hash = t->lit_idmaps[reverse ? LCL_UIDMAP_IDX : RMT_UIDMAP_IDX];
--
--	spin_lock(&t->lit_lock);
--	uid = idmap_lookup_uid(hash, reverse, uid);
--	spin_unlock(&t->lit_lock);
--
--	return uid;
--}
--EXPORT_SYMBOL(lustre_idmap_lookup_uid);
--
--int lustre_idmap_lookup_gid(struct lu_ucred *mu, struct lustre_idmap_table *t,
--			    int reverse, gid_t gid)
--{
--	struct list_head *hash;
--
--	if (mu && (mu->uc_valid == UCRED_OLD || mu->uc_valid == UCRED_NEW)) {
--		if (!reverse) {
--			if (gid == mu->uc_o_gid)
--				return mu->uc_gid;
--			else if (gid == mu->uc_o_fsgid)
--				return mu->uc_fsgid;
--		} else {
--			if (gid == mu->uc_gid)
--				return mu->uc_o_gid;
--			else if (gid == mu->uc_fsgid)
--				return mu->uc_o_fsgid;
--		}
--	}
--
--	if (t == NULL)
--		return CFS_IDMAP_NOTFOUND;
--
--	hash = t->lit_idmaps[reverse ? LCL_GIDMAP_IDX : RMT_GIDMAP_IDX];
--
--	spin_lock(&t->lit_lock);
--	gid = idmap_lookup_gid(hash, reverse, gid);
--	spin_unlock(&t->lit_lock);
--
--	return gid;
--}
--EXPORT_SYMBOL(lustre_idmap_lookup_gid);
--
--struct lustre_idmap_table *lustre_idmap_init(void)
--{
--	struct lustre_idmap_table *t;
--	int i, j;
--
--	OBD_ALLOC_PTR(t);
--	if (unlikely(t == NULL))
--		return ERR_PTR(-ENOMEM);
--
--	spin_lock_init(&t->lit_lock);
--	for (i = 0; i < ARRAY_SIZE(t->lit_idmaps); i++)
--		for (j = 0; j < ARRAY_SIZE(t->lit_idmaps[i]); j++)
--			INIT_LIST_HEAD(&t->lit_idmaps[i][j]);
--
--	return t;
--}
--EXPORT_SYMBOL(lustre_idmap_init);
--
--void lustre_idmap_fini(struct lustre_idmap_table *t)
--{
--	struct list_head *list;
--	struct lustre_idmap_entry *e;
--	int i;
--	LASSERT(t);
--
--	list = t->lit_idmaps[RMT_UIDMAP_IDX];
--	spin_lock(&t->lit_lock);
--	for (i = 0; i < CFS_IDMAP_HASHSIZE; i++)
--		while (!list_empty(&list[i])) {
--			e = list_entry(list[i].next,
--					   struct lustre_idmap_entry,
--					   lie_rmt_uid_hash);
--			idmap_entry_free(e);
--		}
--	spin_unlock(&t->lit_lock);
--
--	OBD_FREE_PTR(t);
--}
--EXPORT_SYMBOL(lustre_idmap_fini);
+-#endif /* __LIBCFS_HEAP_H__ */
+diff --git a/drivers/staging/lustre/lustre/include/lustre_net.h b/drivers/staging/lustre/lustre/include/lustre_net.h
+index 8d58349..0a024d3 100644
+--- a/drivers/staging/lustre/lustre/include/lustre_net.h
++++ b/drivers/staging/lustre/lustre/include/lustre_net.h
+@@ -1204,7 +1204,6 @@ struct ptlrpc_nrs_request {
+ 	unsigned			nr_enqueued:1;
+ 	unsigned			nr_started:1;
+ 	unsigned			nr_finalized:1;
+-	cfs_binheap_node_t		nr_node;
+ 
+ 	/**
+ 	 * Policy-specific fields, used for determining a request's scheduling
 -- 
 1.9.3
 
