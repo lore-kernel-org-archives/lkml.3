@@ -1,40 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950AbaH3QDa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Aug 2014 12:03:30 -0400
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:50102 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751785AbaH3QD3 (ORCPT
+	id S1751918AbaH3QI5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Aug 2014 12:08:57 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:39673 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751785AbaH3QIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Aug 2014 12:03:29 -0400
-Message-ID: <1409414606.21896.105.camel@x220>
-Subject: clk: shmobile: CONFIG_ARCH_R8A7794?
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Hisashi Nakamura <hisashi.nakamura.ak@renesas.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Simon Horman <horms+renesas@verge.net.au>,
-        linux-kernel@vger.kernel.org
-Date: Sat, 30 Aug 2014 18:03:26 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 30 Aug 2014 16:03:27.0004 (UTC) FILETIME=[EF294DC0:01CFC46B]
-X-RcptDomain: vger.kernel.org
+	Sat, 30 Aug 2014 12:08:55 -0400
+From: Ming Lei <ming.lei@canonical.com>
+To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Zach Brown <zab@zabbo.net>, Christoph Hellwig <hch@infradead.org>,
+        Maxim Patlasov <mpatlasov@parallels.com>
+Subject: block: loop: convert to blk-mq
+Date: Sun, 31 Aug 2014 00:08:21 +0800
+Message-Id: <1409414907-22238-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hisashi,
+Hi,
 
-Your commit 8de078f189da ("clk: shmobile: Add r8a7794 support") landed
-in next-20140828. It adds a single line to a Makefile. That new line
-contains a check for CONFIG_ARCH_R8A7794.
+The following 6 patches convert current loop driver into blk-mq:
 
-There's no Kconfig symbol ARCH_R8A7794 so this line is basically a NOP
-currently. I assume that code to add the Kconfig symbol ARCH_R8A7794 is
-queued somewhere. Is that correct?
+	- loop's scalability gets improved much
+	- loop driver gets quite simplified, and the conversion can
+	be throught as cleanup
+
+The previous kernel AIO patches will be submitted in another patchset
+for improving loop's performance.
+
+V2:
+	- replace work queue with kthread worker because wq may cause
+	regression on some fast devices(such as loop over null_blk, tmpfs
+	file, ...), in these cases, loop thread becomes CPU bound actually,
+	so work queue will introduce lots of unnecessary context switch, and
+	decrease throughput a lot one this cases
+	- introduce prepare_flush_rq_fn callback and its pair in blk-mq ops
+	for setting up flush rq's pdu correctly
+	- move kernel aio patches into another patchset as suggested by
+	Christoph
+	- no change in the other 4 patches
+
+V1:
+	- improve failure path in aio_kernel_submit()
+
+ block/blk-flush.c      |    4 +
+ block/blk-mq.c         |   16 +-
+ block/blk-mq.h         |    1 -
+ drivers/block/loop.c   |  411 +++++++++++++++++++++++++-----------------------
+ drivers/block/loop.h   |   20 ++-
+ include/linux/blk-mq.h |   14 ++
+ 6 files changed, 259 insertions(+), 207 deletions(-)
 
 
-Paul Bolle
+
+Thanks,
+--
+Ming Lei
 
