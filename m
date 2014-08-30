@@ -1,148 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751204AbaH3BxW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 21:53:22 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:26707 "EHLO
+	id S1751277AbaH3C13 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 22:27:29 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:30226 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750890AbaH3BxV (ORCPT
+	with ESMTP id S1750857AbaH3C1Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 21:53:21 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-8c-54012e8fd9c1
-From: Chao Yu <chao2.yu@samsung.com>
-To: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [f2fs-dev][PATCH v2] f2fs: reposition unlock_new_inode to prevent
- accessing invalid inode
-Date: Sat, 30 Aug 2014 09:52:34 +0800
-Message-id: <000901cfc3f5$2baaee60$8300cb20$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac/D9OctQAolm5EXSF+AfxagWyGm+A==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t9jAd1+PcYQg3uNPBbX9jUyWTxZP4vZ
-	4tIid4vLu+awObB4bFrVyeaxe8FnJo++LasYPT5vkgtgieKySUnNySxLLdK3S+DK6Nl9ga3g
-	gXjF+pXfWRoY3wt1MXJySAiYSGyad5sNwhaTuHBvPZDNxSEksIhRom3NCSYI5wejxIvbD9hB
-	qtgEVCSWd/xnArFFBLwkJu0/wQJiMwt4SDR2fGcFsYUFUiSuH3oJVs8ioCoxte87I4jNK2Ap
-	ceV4OyuELSjxY/I9qF4tifU7jzNB2PISm9e8ZYa4SEFix9nXjBC79CQO3PvCCFEjLrHxyC2W
-	CYwCs5CMmoVk1Cwko2YhaVnAyLKKUTS1ILmgOCk911CvODG3uDQvXS85P3cTIzion0ntYFzZ
-	YHGIUYCDUYmH98JLhhAh1sSy4srcQ4wSHMxKIrxSj4FCvCmJlVWpRfnxRaU5qcWHGKU5WJTE
-	eQ+0WgcKCaQnlqRmp6YWpBbBZJk4OKUaGCWingm1Gjzcn1G97qP5lut8/5v/ZSzImbEwbPeL
-	lGvBdUHae+7c5E4uLDzA+yNVPI9lnfOTx4IZPEsem9nunbD8vzKf7aXuF4x7hYW2RixtW7Rl
-	Qdhi52VVAqLO3UsmsxULrRFee41duV2ns7Nrbk7xultXN8YdEQu8Ev5a4A1Hb+KalhsREUos
-	xRmJhlrMRcWJAPUf46BmAgAA
+	Fri, 29 Aug 2014 22:27:25 -0400
+X-AuditID: cbfee68e-f79536d000000fd1-5b-5401368bf412
+From: Inha Song <ideal.song@samsung.com>
+To: broonie@kernel.org
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        sameo@linux.intel.com, lee.jones@linaro.org,
+        ckeepax@opensource.wolfsonmicro.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        alsa-devel@alsa-project.org, cw00.choi@samsung.com,
+        Inha Song <ideal.song@samsung.com>
+Subject: [alsa-devel] [PATCH v5 2/2] mfd: arizona: Update DT binding to support
+ INn_MODE init_data
+Date: Sat, 30 Aug 2014 11:27:19 +0900
+Message-id: <1409365639-5320-3-git-send-email-ideal.song@samsung.com>
+X-Mailer: git-send-email 2.0.0.390.gcb682f8
+In-reply-to: <1409365639-5320-1-git-send-email-ideal.song@samsung.com>
+References: <1409365639-5320-1-git-send-email-ideal.song@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDIsWRmVeSWpSXmKPExsWyRsSkSLfbjDHEYPd2IYsrFw8xWUx9+ITN
+	4t+UG+wW1788Z7WYf+Qcq0X/m4WsFrv+3me0OPdqJaPF/a9HGS0u75rDZrH0+kUmi+Vv/7NZ
+	TJi+lsWide8RdovT3awO/B4bPjexeayZt4bR43JfL5PHyuVf2Dw2repk87hzbQ+bx7yTgR4v
+	J/5m8+jbsorR4/MmuQCuKC6blNSczLLUIn27BK6MJXuaGQuOclfsvrOFqYHxMGcXIyeHhICJ
+	xKQrF9kgbDGJC/fWA9lcHEICSxklTu+cwQRTtHjCGRaIxHRGiXe9u5ggnDlMEjtmHGAEqWIT
+	0JD4/nkzM4gtAjTq9pxOZpAiZoEOZokp23aBFQkLpEj0XN7ODmKzCKhK/Li7ihXE5hVwlbg0
+	5zgrxDptiX0NM8Fu4hRwk7i/fiFYrxBQze2de9hBhkoI/GSXaHpxnxVikIDEt8mHgO7jAErI
+	Smw6wAwxR1Li4IobLBMYhRcwMqxiFE0tSC4oTkovMtIrTswtLs1L10vOz93ECIy00/+e9e1g
+	vHnA+hCjAAejEg/vhZcMIUKsiWXFlbmHGE2BNkxklhJNzgfGc15JvKGxmZGFqYmpsZG5pZmS
+	OG+C1M9gIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYzzC2x+xth5Tpz3inHn7GZx5d16QSI3
+	p8bLKe74Yy2x2bK9cyXvo8Tzh9les1lZPJgxq9F154HLKWeZNiyvb56W2bup1Xl38FXGfrff
+	gprp/xY/P/WFW+K075f3a7ZLTs3hDv49T+y8jdQjq+IPwbe0NMOa259y/L5UUto/o/1ExWrZ
+	BcfXG95WYinOSDTUYi4qTgQAV4YM+68CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGIsWRmVeSWpSXmKPExsVy+t9jQd1uM8YQg9WruSyuXDzEZDH14RM2
+	i39TbrBbXP/ynNVi/pFzrBb9bxayWuz6e5/R4tyrlYwW978eZbS4vGsOm8XS6xeZLJa//c9m
+	MWH6WhaL1r1H2C1Od7M68Hts+NzE5rFm3hpGj8t9vUweK5d/YfPYtKqTzePOtT1sHvNOBnq8
+	nPibzaNvyypGj8+b5AK4ohoYbTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwMdQ0tLcyVFPIS
+	c1NtlVx8AnTdMnOA3lBSKEvMKQUKBSQWFyvp22GaEBripmsB0xih6xsSBNdjZIAGEtYwZizZ
+	08xYcJS7YvedLUwNjIc5uxg5OSQETCQWTzjDAmGLSVy4t56ti5GLQ0hgOqPEu95dTBDOHCaJ
+	HTMOMIJUsQloSHz/vJkZxBYB6rg9p5MZpIhZoINZYsq2XWBFwgIpEj2Xt7OD2CwCqhI/7q5i
+	BbF5BVwlLs05zgqxTltiX8NMNhCbU8BN4v76hWC9QkA1t3fuYZ/AyLuAkWEVo2hqQXJBcVJ6
+	rqFecWJucWleul5yfu4mRnAcP5PawbiyweIQowAHoxIP74WXDCFCrIllxZW5hxglOJiVRHil
+	HgOFeFMSK6tSi/Lji0pzUosPMZoCXTWRWUo0OR+YYvJK4g2NTcyMLI3MDS2MjM2VxHkPtFoH
+	CgmkJ5akZqemFqQWwfQxcXBKNTDOZl2wssLzY6ZUverbnaYNZ0R2RGy5+r2c8c9TvqQ4P1/W
+	fY8mpS/v7lu6Ru1Uq0HG7E+77nJqZ+xxF3tl9OLYjcNGQWquz6y7EnMv3+EW0+Gdrmo8SYnV
+	PvfbwoBJDbLupVFb3j9sNd917PlR6en6NmY7p0jY//LLieR7feqssmud1u7dHIlKLMUZiYZa
+	zEXFiQAjZ2Zy+QIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As the race condition on the inode cache, following scenario can appear:
-[Thread a]				[Thread b]
-					->f2fs_mkdir
-					  ->f2fs_add_link
-					    ->__f2fs_add_link
-					      ->init_inode_metadata failed here
-->gc_thread_func
-  ->f2fs_gc
-    ->do_garbage_collect
-      ->gc_data_segment
-        ->f2fs_iget
-          ->iget_locked
-            ->wait_on_inode
-					  ->unlock_new_inode
-        ->move_data_page
-					  ->make_bad_inode
-					  ->iput
+This patch update DT binding to support INn_MODE init_data. Each
+input signal path can be configurated either as a Analogue or
+Digital using the INn_MODE registers.
 
-When we fail in create/symlink/mkdir/mknod/tmpfile, the new allocated inode
-should be set as bad to avoid being accessed by other thread. But in above
-scenario, it allows f2fs to access the invalid inode before this inode was set
-as bad.
-This patch fix the potential problem, and this issue was found by code review.
-
-change log from v1:
- o Add condition judgment in gc_data_segment() suggested by Changman Lee.
- o use iget_failed to simplify code.
-
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+Signed-off-by: Inha Song <ideal.song@samsung.com>
+Reviewed-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 ---
- fs/f2fs/gc.c    |  2 +-
- fs/f2fs/namei.c | 20 +++++---------------
- 2 files changed, 6 insertions(+), 16 deletions(-)
+ Documentation/devicetree/bindings/mfd/arizona.txt | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
-index e8507b1..943a31d 100644
---- a/fs/f2fs/gc.c
-+++ b/fs/f2fs/gc.c
-@@ -593,7 +593,7 @@ next_step:
+diff --git a/Documentation/devicetree/bindings/mfd/arizona.txt b/Documentation/devicetree/bindings/mfd/arizona.txt
+index 5c7e723..7bd1273 100644
+--- a/Documentation/devicetree/bindings/mfd/arizona.txt
++++ b/Documentation/devicetree/bindings/mfd/arizona.txt
+@@ -42,6 +42,13 @@ Optional properties:
+     the chip default will be used.  If present exactly five values must
+     be specified.
  
- 		if (phase == 2) {
- 			inode = f2fs_iget(sb, dni.ino);
--			if (IS_ERR(inode))
-+			if (IS_ERR(inode) || is_bad_inode(inode))
- 				continue;
- 
- 			start_bidx = start_bidx_of_node(nofs, F2FS_I(inode));
-diff --git a/fs/f2fs/namei.c b/fs/f2fs/namei.c
-index 6b53ce9..ee103fd 100644
---- a/fs/f2fs/namei.c
-+++ b/fs/f2fs/namei.c
-@@ -134,9 +134,7 @@ static int f2fs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
- 	return 0;
- out:
- 	clear_nlink(inode);
--	unlock_new_inode(inode);
--	make_bad_inode(inode);
--	iput(inode);
-+	iget_failed(inode);
- 	alloc_nid_failed(sbi, ino);
- 	return err;
- }
-@@ -267,9 +265,7 @@ static int f2fs_symlink(struct inode *dir, struct dentry *dentry,
- 	return err;
- out:
- 	clear_nlink(inode);
--	unlock_new_inode(inode);
--	make_bad_inode(inode);
--	iput(inode);
-+	iget_failed(inode);
- 	alloc_nid_failed(sbi, inode->i_ino);
- 	return err;
- }
-@@ -308,9 +304,7 @@ static int f2fs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
- out_fail:
- 	clear_inode_flag(F2FS_I(inode), FI_INC_LINK);
- 	clear_nlink(inode);
--	unlock_new_inode(inode);
--	make_bad_inode(inode);
--	iput(inode);
-+	iget_failed(inode);
- 	alloc_nid_failed(sbi, inode->i_ino);
- 	return err;
- }
-@@ -354,9 +348,7 @@ static int f2fs_mknod(struct inode *dir, struct dentry *dentry,
- 	return 0;
- out:
- 	clear_nlink(inode);
--	unlock_new_inode(inode);
--	make_bad_inode(inode);
--	iput(inode);
-+	iget_failed(inode);
- 	alloc_nid_failed(sbi, inode->i_ino);
- 	return err;
- }
-@@ -688,9 +680,7 @@ release_out:
- out:
- 	f2fs_unlock_op(sbi);
- 	clear_nlink(inode);
--	unlock_new_inode(inode);
--	make_bad_inode(inode);
--	iput(inode);
-+	iget_failed(inode);
- 	alloc_nid_failed(sbi, inode->i_ino);
- 	return err;
- }
++  - wlf,inmode : A list of INn_MODE register values, where n is the number
++    of input signals. Valid values are 0 (Differential), 1 (Single-ended) and
++    2 (Digital Microphone). If absent, INn_MODE registers set to 0 by default.
++    If present, values must be specified less than or equal to the number of
++    input singals. If values less than the number of input signals, elements
++    that has not been specifed are set to 0 by default.
++
+   - DCVDD-supply, MICVDD-supply : Power supplies, only need to be specified if
+     they are being externally supplied. As covered in
+     Documentation/devicetree/bindings/regulator/regulator.txt
 -- 
-2.0.1.474.g72c7794
-
+2.0.0.390.gcb682f8
 
