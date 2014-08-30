@@ -1,205 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751154AbaH3ILI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Aug 2014 04:11:08 -0400
-Received: from libra.uberspace.de ([95.143.172.171]:37253 "EHLO
-	libra.uberspace.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751007AbaH3ILD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Aug 2014 04:11:03 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Sat, 30 Aug 2014 04:11:02 EDT
-Date: Sat, 30 Aug 2014 10:04:12 +0200
-From: Matthias Beyer <mail@beyermatthias.de>
-To: Andrew Plummer <plummer574@gmail.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: bcm: LeakyBucket: format kernel-docs
-Message-ID: <20140830080412.GA4509@fu.3gs>
-Reply-To: Matthias Beyer <mail@beyermatthias.de>
-References: <1409345416-16408-1-git-send-email-plummer574@gmail.com>
+	id S1751194AbaH3IVL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Aug 2014 04:21:11 -0400
+Received: from ja.ssi.bg ([178.16.129.10]:33125 "EHLO ja.home.ssi.bg"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751026AbaH3IVH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Aug 2014 04:21:07 -0400
+Date: Sat, 30 Aug 2014 11:20:17 +0300 (EEST)
+From: Julian Anastasov <ja@ssi.bg>
+X-X-Sender: ja@ja.home.ssi.bg
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+cc: Simon Kirby <sim@hostway.ca>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Florian Westphal <fw@strlen.de>,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: Re: net_ns cleanup / RCU overhead
+In-Reply-To: <87ppfjj6x6.fsf@x220.int.ebiederm.org>
+Message-ID: <alpine.LFD.2.11.1408300907130.1671@ja.home.ssi.bg>
+References: <20140820055855.GB5579@hostway.ca> <20140828192431.GF5001@linux.vnet.ibm.com> <20140828194422.GB8867@hostway.ca> <87oav4l5g9.fsf@x220.int.ebiederm.org> <20140828204658.GL5001@linux.vnet.ibm.com> <20140829004029.GA18300@hostway.ca>
+ <alpine.LFD.2.11.1408290635530.1520@ja.home.ssi.bg> <87ppfjj6x6.fsf@x220.int.ebiederm.org>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Kj7319i9nmIyA2yE"
-Content-Disposition: inline
-In-Reply-To: <1409345416-16408-1-git-send-email-plummer574@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---Kj7319i9nmIyA2yE
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+	Hello,
 
-On 29-08-2014 21:50:16, Andrew Plummer wrote:
-> Remove insignificant spaces before tabs in comments.
->=20
-> Signed-off-by: Andrew Plummer <plummer574@gmail.com>
-> ---
->  drivers/staging/bcm/LeakyBucket.c | 81 ++++++++++++++++-----------------=
-------
->  1 file changed, 33 insertions(+), 48 deletions(-)
->=20
-> diff --git a/drivers/staging/bcm/LeakyBucket.c b/drivers/staging/bcm/Leak=
-yBucket.c
-> index 8c4030d..d6b55f9 100644
-> --- a/drivers/staging/bcm/LeakyBucket.c
-> +++ b/drivers/staging/bcm/LeakyBucket.c
-> @@ -1,20 +1,16 @@
->  /**********************************************************************
-> -* 			LEAKYBUCKET.C
-> +*			LEAKYBUCKET.C
->  *	This file contains the routines related to Leaky Bucket Algorithm.
->  ***********************************************************************/
->  #include "headers.h"
-> =20
-> -/*********************************************************************
-> -* Function    - UpdateTokenCount()
-> -*
-> -* Description - This function calculates the token count for each
-> -*				channel and updates the same in Adapter strucuture.
-> -*
-> -* Parameters  - Adapter: Pointer to the Adapter structure.
-> -*
-> -* Returns     - None
-> -**********************************************************************/
-> -
-> +/**
-> + * UpdateTokenCount() - Calculates the token count for each channel
-> + * and updates the same in Adapter structure
-> + * @Adapter:	Pointer to the Adapter structure.
-> + *
-> + * Return: None
-> + */
->  static VOID UpdateTokenCount(register struct bcm_mini_adapter *Adapter)
->  {
->  	ULONG liCurrentTime;
-> @@ -59,20 +55,16 @@ static VOID UpdateTokenCount(register struct bcm_mini=
-_adapter *Adapter)
->  }
-> =20
-> =20
-> -/*********************************************************************
-> -* Function    - IsPacketAllowedForFlow()
-> -*
-> -* Description - This function checks whether the given packet from the
-> -*				specified queue can be allowed for transmission by
-> -*				checking the token count.
-> -*
-> -* Parameters  - Adapter	      :	Pointer to the Adpater structure.
-> -* 			  - iQIndex	      :	The queue Identifier.
-> -* 			  - ulPacketLength:	Number of bytes to be transmitted.
-> -*
-> -* Returns     - The number of bytes allowed for transmission.
-> -*
-> -***********************************************************************/
-> +/**
-> + * IsPacketAllowedForFlow() - This function checks whether the given
-> + * packet from the specified queue can be allowed for transmission by
-> + * checking the token count.
-> + * @Adapter:		Pointer to the Adpater structure.
-> + * @iQIndex:		The queue Identifier.
-> + * @ulPacketLength:	Number of bytes to be transmitted.
-> + *
-> + * Returns: The number of bytes allowed for transmission.
-> + */
->  static ULONG GetSFTokenCount(struct bcm_mini_adapter *Adapter, struct bc=
-m_packet_info *psSF)
->  {
->  	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, TOKEN_COUNTS, DBG_LVL_ALL,
-> @@ -256,18 +248,14 @@ static void send_control_packet(struct bcm_mini_ada=
-pter *ad,
->  	}
->  }
-> =20
-> -/************************************************************************
-> -* Function    - CheckAndSendPacketFromIndex()
-> -*
-> -* Description - This function dequeues the data/control packet from the
-> -*				specified queue for transmission.
-> -*
-> -* Parameters  - Adapter : Pointer to the driver control structure.
-> -* 			  - iQIndex : The queue Identifier.
-> -*
-> -* Returns     - None.
-> -*
-> -************************************************************************=
-****/
-> +/**
-> + * CheckAndSendPacketFromIndex() - This function dequeues the
-> + * data/control packet from the specified queue for transmission.
-> + * @Adapter:	Pointer to the driver control structure.
-> + * @iQIndex:	The queue Identifier.
-> + *
-> + * Returns: None.
-> + */
->  static VOID CheckAndSendPacketFromIndex(struct bcm_mini_adapter *Adapter,
->  					struct bcm_packet_info *psSF)
->  {
-> @@ -284,16 +272,13 @@ static VOID CheckAndSendPacketFromIndex(struct bcm_=
-mini_adapter *Adapter,
->  }
-> =20
-> =20
-> -/*******************************************************************
-> -* Function    - transmit_packets()
-> -*
-> -* Description - This function transmits the packets from different
-> -*				queues, if free descriptors are available on target.
-> -*
-> -* Parameters  - Adapter:  Pointer to the Adapter structure.
-> -*
-> -* Returns     - None.
-> -********************************************************************/
-> +/**
-> + * transmit_packets() - This function transmits the packets from
-> + * different queues, if free descriptors are available on target.
-> + * @Adapter:	Pointer to the Adapter structure.
-> + *
-> + * Returns: None.
-> + */
->  VOID transmit_packets(struct bcm_mini_adapter *Adapter)
->  {
->  	UINT uiPrevTotalCount =3D 0;
-> --=20
-> 1.9.1
->=20
-> _______________________________________________
-> devel mailing list
-> devel@linuxdriverproject.org
-> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
+On Fri, 29 Aug 2014, Eric W. Biederman wrote:
 
-Reviewed-by: Matthias Beyer <mail@beyermatthias.de>
+> > 	I guess the problem is in nf_nat_net_exit,
+> > may be other nf exit handlers too. pernet-exit handlers
+> > should avoid synchronize_rcu and rcu_barrier.
+> > A RCU callback and rcu_barrier in module-exit is the way
+> > to go. cleanup_net includes rcu_barrier, so pernet-exit
+> > does not need such calls.
+> 
+> In principle I agree, however in this particular case it looks a bit
+> tricky because a separate hash table to track nat state per network
+> namespace.
 
---=20
-Mit freundlichen Gr=FC=DFen,
-Kind regards,
-Matthias Beyer
+	It is still possible module's pernet-init handler to
+attach in net->ct... special structure with all pointers that
+should be freed by RCU callback for the module, like the hash table.
 
-Proudly sent with mutt.
-Happily signed with gnupg.
+For example:
 
---Kj7319i9nmIyA2yE
-Content-Type: application/pgp-signature
+struct netns_ct_nat_rcu_allocs {
+	struct rcu_head		rcu_head;
+	struct hlist_head	*nat_bysource;
+	unsigned int		nat_htable_size;
+};
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+- pernet-init:
+	- allocate structure, attach it to net->ct.nat_rcu_allocs
+	- the original nat_bysource place remains because
+	we want to avoid net->ct.nat_rcu_allocs dereference.
 
-iQIbBAEBAgAGBQJUAYV8AAoJEJi+S08gyg+Ux1IP93/37gkSIWNBQlFsEMN+txtv
-37Yqf24KNlziQMgMY0FTI8JaUibC8MvnRqmAyQHdnXmMhuFpru122kWi6ktpLLCI
-6dwevsht/q5Mtb+2imaDlGrO9XQWztr80mm11N6DsautFN2XNYDqL7IrMNG5+KjV
-TSKLj3oQfrXyFC7KLtonl2zz4mGTzxAJp4XLQPh0NeTHcEmJ1Zfinm83UAhbv8Wq
-Y2MUE0DHi6+K/wHgA9zPo4h5GXrsycAhB3/InWK34vNyl1Kmc1C9DG0MVaic+Gok
-frtDCm0uHolfhoag4TUJXslJRJm1ETsUhNuKMtgHouG0+A8DmtOIJtvHTBs9R9Xz
-7plmoPqoDBmIWa2GVhKb0gjJpEJHjTP+g/q/lU22JVkGTFBWVat2h7+RzvMEkmFp
-URPzC19OIslohBz4q8j+AielSfpOeD7wH0P4cjH87iWdWCQEhvu3WRrfRBI8wZT0
-wJw6usjSS9vkIL4h8ceQBqxjmaqym3rhg9E6+WNqy3SrZnRRwkvi2Jq8FA0LCW34
-hXr1e83WrPezATztL3+xP2ADXvTRXH5t7cT+qxICi/62utz4iB2nObIe37pojJRK
-PXJHdD/IVwaRygo0WPXDWTHhTrjFZ1/Xu+rPtQhuqFm/5fELbU3I+tuJQW+46YHB
-TZk9TK5o1KDLvt4sLjw=
-=DryE
------END PGP SIGNATURE-----
+- pernet-exit:
+	- copy nat_bysource and nat_htable_size to net->ct.nat_rcu_allocs,
+	this can be done even in above pernet-init function
+	- call_rcu(&net->ct.nat_rcu_allocs->rcu_head, nat_rcu_free);
 
---Kj7319i9nmIyA2yE--
+- cleanup_net:
+	- rcu_barrier()
+
+- RCU callback (nat_rcu_free):
+	- call nf_ct_free_hashtable
+	- kfree the structure
+
+- cleanup_net:
+	- drop netns after rcu_barrier
+
+	Due to the rcu_barrier in cleanup_net it is even
+possible to provide per-module rcu_head instead of using
+allocated structure, for example:
+
+	call_rcu(&net->ct.nat_rcu_head, nat_rcu_free);
+
+	Then the nat_rcu_free function will just call
+nf_ct_free_hashtable before cleanup_net drops the netns struct.
+In this case the memory price is just one rcu_head for every module
+that uses RCU callback.
+
+> At the same time all of the packets should be drained before
+> we get to nf_nat_net_exit so it doesn't look the synchronize_rcu
+> in nf_nat_exit is actually protecting anything.
+
+	It is true for cleanup_net. I don't remember, can we
+see packets while the particular module-exit calls
+unregister_pernet_subsys(), may be yes?
+
+Regards
+
+--
+Julian Anastasov <ja@ssi.bg>
