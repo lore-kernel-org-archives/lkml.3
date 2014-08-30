@@ -1,142 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751041AbaH3Cwc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 22:52:32 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:50327 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750878AbaH3Cwb (ORCPT
+	id S1751310AbaH3CzL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 22:55:11 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:53304 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750801AbaH3CzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 22:52:31 -0400
-Date: Fri, 29 Aug 2014 19:52:25 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Simon Kirby <sim@hostway.ca>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: net_ns cleanup / RCU overhead
-Message-ID: <20140830025225.GC5001@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140820055855.GB5579@hostway.ca>
- <20140828192431.GF5001@linux.vnet.ibm.com>
- <20140828194422.GB8867@hostway.ca>
- <87oav4l5g9.fsf@x220.int.ebiederm.org>
- <20140828204658.GL5001@linux.vnet.ibm.com>
- <20140829004029.GA18300@hostway.ca>
+	Fri, 29 Aug 2014 22:55:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140829004029.GA18300@hostway.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14083002-9332-0000-0000-000001DA9C0B
+In-Reply-To: <F5184659D418E34EA12B1903EE5EF5FD015DCAE7ABB8@seldmbx02.corpusers.net>
+References: <20140819163621.GA15109@linux.vnet.ibm.com>
+	<CACxGe6vUXr_uqLG_98oAgbcjddsNgXWdGMrtJ8t23tQ1+z5iag@mail.gmail.com>
+	<CAKocOOMG91D7Qam5PLY0Dd7bR07GMHHYsRCqUMYQGCR-hB2+=w@mail.gmail.com>
+	<F5184659D418E34EA12B1903EE5EF5FD015DCAE7ABA1@seldmbx02.corpusers.net>
+	<F5184659D418E34EA12B1903EE5EF5FD015DCAE7ABB8@seldmbx02.corpusers.net>
+Date: Fri, 29 Aug 2014 20:55:08 -0600
+Message-ID: <CAKocOOOqSPGjvJcfn_HFZgbZDRH2WFqpTJVBip2jNfhEDYEv2w@mail.gmail.com>
+Subject: Re: [kselftest] kselftest wiki (was RE: [Ksummit-discuss] Fwd: Rough
+ notes from testing unconference)
+From: Shuah Khan <shuahkhan@gmail.com>
+To: "Bird, Tim" <Tim.Bird@sonymobile.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        "ksummit-discuss@lists.linuxfoundation.org" 
+	<ksummit-discuss@lists.linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 28, 2014 at 05:40:29PM -0700, Simon Kirby wrote:
-> On Thu, Aug 28, 2014 at 01:46:58PM -0700, Paul E. McKenney wrote:
-> 
-> > On Thu, Aug 28, 2014 at 03:33:42PM -0500, Eric W. Biederman wrote:
-> > 
-> > > I just want to add a little bit more analysis to this.
-> > > 
-> > > What we desire to be fast is the copy_net_ns, cleanup_net is batched and
-> > > asynchronous which nothing really cares how long it takes except that
-> > > cleanup_net holds the net_mutex and thus blocks copy_net_ns.
-> > > 
-> > > The puzzle is why and which rcu delays Simon is seeing in the network
-> > > namespace cleanup path, as it seems like the synchronize_rcu is not
-> > > the only one, and in the case of vsftp with trivail network namespaces
-> > > where nothing has been done we should not need to delay.
-> > 
-> > Indeed, given the version and .config, I can't see why any individual
-> > RCU grace-period operation would be particularly slow.
-> > 
-> > I suggest using ftrace on synchronize_rcu() and friends.
-> 
-> I made a parallel net namespace create/destroy benchmark that prints the
-> progress and time to create and cleanup 32 unshare()d child processes:
-> 
-> http://0x.ca/sim/ref/tools/netnsbench.c
-> 
-> I noticed that if I haven't run it for a while, the first batch often is
-> fast, followed by slowness from then on:
-> 
-> ++++++++++++++++++++++++++++++++-------------------------------- 0.039478s
-> ++++++++++++++++++++-----+----------------+++++++++---------++-- 4.463837s
-> +++++++++++++++++++++++++------+--------------------++++++------ 3.011882s
-> +++++++++++++++---+-------------++++++++++++++++---------------- 2.283993s
-> 
-> Fiddling around on a stock kernel, "echo 1 > /sys/kernel/rcu_expedited"
-> makes behaviour change as it did with my patch:
-> 
-> ++-++-+++-+-----+-+-++-+-++--++-+--+-+-++--++-+-+-+-++-+--++---- 0.801406s
-> +-+-+-++-+-+-+-+-++--+-+-++-+--++-+-+-+-+-+-+-+-+-+-+-+--++-+--- 0.872011s
-> ++--+-++--+-++--+-++--+-+-+-+-++-+--++--+-++-+-+-+-+--++-+-+-+-- 0.946745s
-> 
-> How would I use ftrace on synchronize_rcu() here?
+On Fri, Aug 29, 2014 at 7:09 PM, Bird, Tim <Tim.Bird@sonymobile.com> wrote:
+> On Saturday, August 23, 2014 6:35 AM, Bird, Tim wrote:
+>> Also, I've requested a 'test' wiki on kernel.org, where we can place
+>> notes, ideas, and lists of things to work on, or things in progress
+>> (like possible output format guidelines).
+>>
+>> I'll let everyone know when the wiki is set up.
+>
+> There is now a kselftest wiki on kernel.org at:
+> https://kselftest.wiki.kernel.org/
+>
+> I believe anyone with a Linux Foundation account can edit it.
+> I have put together a main page, along with a few sub-pages for
+> some of the sub-projects (as I call them) that were discussed at
+> the kernel summit.
+>
+> Please feel free to directly edit the wiki, or to let me know if
+> there's any content you'd like to see placed on the wiki.
+>
 
-http://lwn.net/Articles/370423/ is your friend here.  If your kernel
-is built with the needed configuration, you give the command
-"echo synchronize_rcu > set_ftrace_filter"
+Thanks for doing this.
 
-http://lwn.net/Articles/365835/ and http://lwn.net/Articles/366796/
-have background info.
+>
+> P.S.  I have copied lkml and linux-api on this.  I believe this is the first
+> use of linux-api for discussions about kselftest.  If the linux-api maintainers
+> would prefer we get our own list, please let me know.
 
-> As Eric said, cleanup_net() is batched, but while it is cleaning up,
-> net_mutex is held. Isn't the issue just that net_mutex is held while
-> some other things are going on that are meant to be lazy / batched?
-> 
-> What is net_mutex protecting in cleanup_net()?
-> 
-> I noticed that [kworker/u16:0]'s stack is often:
-> 
-> [<ffffffff810942a6>] wait_rcu_gp+0x46/0x50
-> [<ffffffff8109607e>] synchronize_sched+0x2e/0x50
-> [<ffffffffa00385ac>] nf_nat_net_exit+0x2c/0x50 [nf_nat]
-> [<ffffffff81720339>] ops_exit_list.isra.4+0x39/0x60
-> [<ffffffff817209e0>] cleanup_net+0xf0/0x1a0
-> [<ffffffff81062997>] process_one_work+0x157/0x440
-> [<ffffffff81063303>] worker_thread+0x63/0x520
-> [<ffffffff81068b96>] kthread+0xd6/0xf0
-> [<ffffffff818d412c>] ret_from_fork+0x7c/0xb0
-> [<ffffffffffffffff>] 0xffffffffffffffff
-> 
-> and
-> 
-> [<ffffffff81095364>] _rcu_barrier+0x154/0x1f0
-> [<ffffffff81095450>] rcu_barrier+0x10/0x20
-> [<ffffffff81102c2c>] kmem_cache_destroy+0x6c/0xb0
-> [<ffffffffa0089e97>] nf_conntrack_cleanup_net_list+0x167/0x1c0 [nf_conntrack]
-> [<ffffffffa008aab5>] nf_conntrack_pernet_exit+0x65/0x70 [nf_conntrack]
-> [<ffffffff81720353>] ops_exit_list.isra.4+0x53/0x60
-> [<ffffffff817209e0>] cleanup_net+0xf0/0x1a0
-> [<ffffffff81062997>] process_one_work+0x157/0x440
-> [<ffffffff81063303>] worker_thread+0x63/0x520
-> [<ffffffff81068b96>] kthread+0xd6/0xf0
-> [<ffffffff818d412c>] ret_from_fork+0x7c/0xb0
-> [<ffffffffffffffff>] 0xffffffffffffffff
-> 
-> So I tried flushing iptables rules and rmmoding netfilter bits:
-> 
-> ++++++++++++++++++++-+--------------------+++++++++++----------- 0.179940s
-> ++++++++++++++--+-------------+++++++++++++++++----------------- 0.151988s
-> ++++++++++++++++++++++++++++---+--------------------------+++--- 0.159967s
-> ++++++++++++++++++++++----------------------++++++++++---------- 0.175964s
-> 
-> Expedited:
-> 
-> ++-+--++-+-+-+-+-+-+--++-+-+-++-+-+-+--++-+-+-+-+-+-+-+-+-+-+--- 0.079988s
-> ++-+-+-+-+-+-+-+-+-+-+-+--++-+--++-+--+-++-+-+--++-+-+-+-+-+-+-- 0.089347s
-> ++++--+++--++--+-+++++++-+++++--------------++-+-+--++-+-+--++-- 0.081566s
-> +++++-+++-------++-+-+-+-+-+-+-+-+-+-+-++-+-+-+-+-+-+-+-+-+-+--- 0.089026s
-> 
-> So, much faster. It seems that just loading nf_conntrack_ipv4 (like by
-> running iptables -t nat -nvL) is enough to slow it way down. But it is
-> still capable of being fast, as above.
+I spoke to a few folks and gave a heads up to Michael Kerrisk about using
+linux-api for kselftest - so far no objections to using it. I sent in
+a patch adding
+entry for Kselftest framework to MAINTAINERS file with linux-api as the
+mailing list. I have a git for this:
 
-My first guess is that this code sequence is calling synchronize_rcu()
-quite often.  Would it be possible to consolidate these?
+git git://git.kernel.org/pub/scm/shuah/linux-kselftest
 
-							Thanx, Paul
+I couldn't edit the wiki to add this detail even after logging into my
+LF account.
+Might have to request for access perhaps.
 
+thanks,
+-- Shuah
