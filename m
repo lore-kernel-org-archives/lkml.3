@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751041AbaH3BJl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 21:09:41 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:6542 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750748AbaH3BJj convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 21:09:39 -0400
-From: "Bird, Tim" <Tim.Bird@sonymobile.com>
-To: "Bird, Tim" <Tim.Bird@sonymobile.com>, Shuah Khan <shuahkhan@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-CC: "ksummit-discuss@lists.linuxfoundation.org" 
-	<ksummit-discuss@lists.linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
-Date: Sat, 30 Aug 2014 03:09:36 +0200
-Subject: [kselftest] kselftest wiki (was RE: [Ksummit-discuss] Fwd: Rough
- notes from testing unconference)
-Thread-Topic: [kselftest] kselftest wiki (was RE: [Ksummit-discuss] Fwd:
- Rough notes from testing unconference)
-Thread-Index: AQHPw+8OBdumusW0PE+BJkNW3LTR2Q==
-Message-ID: <F5184659D418E34EA12B1903EE5EF5FD015DCAE7ABB8@seldmbx02.corpusers.net>
-References: <20140819163621.GA15109@linux.vnet.ibm.com>
-	<CACxGe6vUXr_uqLG_98oAgbcjddsNgXWdGMrtJ8t23tQ1+z5iag@mail.gmail.com>,<CAKocOOMG91D7Qam5PLY0Dd7bR07GMHHYsRCqUMYQGCR-hB2+=w@mail.gmail.com>,<F5184659D418E34EA12B1903EE5EF5FD015DCAE7ABA1@seldmbx02.corpusers.net>
-In-Reply-To: <F5184659D418E34EA12B1903EE5EF5FD015DCAE7ABA1@seldmbx02.corpusers.net>
-Accept-Language: en-US, sv-SE
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, sv-SE
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751107AbaH3BZE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 21:25:04 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:46278 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748AbaH3BZB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Aug 2014 21:25:01 -0400
+Message-ID: <540127AC.4040804@oracle.com>
+Date: Fri, 29 Aug 2014 21:23:56 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
+To: Mel Gorman <mgorman@suse.de>
+CC: Hugh Dickins <hughd@google.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>
+Subject: Re: mm: BUG in unmap_page_range
+References: <53DD5F20.8010507@oracle.com> <alpine.LSU.2.11.1408040418500.3406@eggly.anvils> <20140805144439.GW10819@suse.de> <alpine.LSU.2.11.1408051649330.6591@eggly.anvils> <53E17F06.30401@oracle.com> <53E989FB.5000904@oracle.com> <53FD4D9F.6050500@oracle.com> <20140827152622.GC12424@suse.de>
+In-Reply-To: <20140827152622.GC12424@suse.de>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, August 23, 2014 6:35 AM, Bird, Tim wrote:
-> Also, I've requested a 'test' wiki on kernel.org, where we can place
-> notes, ideas, and lists of things to work on, or things in progress
-> (like possible output format guidelines).
-> 
-> I'll let everyone know when the wiki is set up.
+On 08/27/2014 11:26 AM, Mel Gorman wrote:
+> diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
+> index 281870f..ffea570 100644
+> --- a/include/asm-generic/pgtable.h
+> +++ b/include/asm-generic/pgtable.h
+> @@ -723,6 +723,9 @@ static inline pte_t pte_mknuma(pte_t pte)
+>  
+>  	VM_BUG_ON(!(val & _PAGE_PRESENT));
+>  
+> +	/* debugging only, specific to x86 */
+> +	VM_BUG_ON(val & _PAGE_PROTNONE);
+> +
+>  	val &= ~_PAGE_PRESENT;
+>  	val |= _PAGE_NUMA;
 
-There is now a kselftest wiki on kernel.org at:
-https://kselftest.wiki.kernel.org/
+Triggered again, the first VM_BUG_ON got hit, the second one never did.
 
-I believe anyone with a Linux Foundation account can edit it.
-I have put together a main page, along with a few sub-pages for
-some of the sub-projects (as I call them) that were discussed at
-the kernel summit.
 
-Please feel free to directly edit the wiki, or to let me know if
-there's any content you'd like to see placed on the wiki.
-
- -- Tim
-
-P.S.  I have copied lkml and linux-api on this.  I believe this is the first 
-use of linux-api for discussions about kselftest.  If the linux-api maintainers
-would prefer we get our own list, please let me know.
+Thanks,
+Sasha
