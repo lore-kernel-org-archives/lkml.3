@@ -1,197 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098AbaH3UPU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Aug 2014 16:15:20 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:14457 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751790AbaH3UPS (ORCPT
+	id S1752130AbaH3UP7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Aug 2014 16:15:59 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:35983 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751790AbaH3UP5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Aug 2014 16:15:18 -0400
-X-IronPort-AV: E=Sophos;i="5.04,432,1406584800"; 
-   d="scan'208";a="92273146"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        "Dilger, Andreas" <andreas.dilger@intel.com>,
-        "Drokin, Oleg" <oleg.drokin@intel.com>, Peng Tao <bergwolf@gmail.com>
-Subject: [PATCH] staging: lustre: adjust spacing within pointer casts
-Date: Sat, 30 Aug 2014 22:11:37 +0200
-Message-Id: <1409429497-16402-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.8.3.2
+	Sat, 30 Aug 2014 16:15:57 -0400
+Message-ID: <540230F9.2010004@kernel.org>
+Date: Sat, 30 Aug 2014 21:15:53 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: =?windows-1252?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH] iio: adc: rockchip_saradc: add support for rk3066-tsadc
+ variant
+References: <1999284.oRCTeZRSv1@diego>
+In-Reply-To: <1999284.oRCTeZRSv1@diego>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-
-The semantic patch that makes this change is as follows:
-(http://coccinelle.lip6.fr/)
-
-// <smpl>
-@@
-type T;
-expression e;
-@@
- (
-- T *
-+ T *
- )
- e
-// </smpl>
-
-This semantic patch just removes the cast and adds it back, but when it
-does so, it follows the spacing conventions of Linux.
-
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
----
-This should be applied after the first set of GOTO patches.
-
- drivers/staging/lustre/lustre/ldlm/ldlm_lock.c          |    4 ++--
- drivers/staging/lustre/lustre/llite/file.c              |    4 ++--
- drivers/staging/lustre/lustre/llite/llite_lib.c         |    2 +-
- drivers/staging/lustre/lustre/llite/lloop.c             |    2 +-
- drivers/staging/lustre/lustre/obdclass/class_obd.c      |    2 +-
- drivers/staging/lustre/lustre/obdclass/lprocfs_status.c |    2 +-
- drivers/staging/lustre/lustre/obdclass/obd_config.c     |    2 +-
- drivers/staging/lustre/lustre/osc/osc_quota.c           |    2 +-
- drivers/staging/lustre/lustre/ptlrpc/connection.c       |    2 +-
- 9 files changed, 11 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/staging/lustre/lustre/ldlm/ldlm_lock.c b/drivers/staging/lustre/lustre/ldlm/ldlm_lock.c
-index 3143222..0cb098e 100644
---- a/drivers/staging/lustre/lustre/ldlm/ldlm_lock.c
-+++ b/drivers/staging/lustre/lustre/ldlm/ldlm_lock.c
-@@ -1746,7 +1746,7 @@ ldlm_work_revoke_ast_lock(struct ptlrpc_request_set *rqset, void *opaq)
- 	desc.l_req_mode = LCK_EX;
- 	desc.l_granted_mode = 0;
- 
--	rc = lock->l_blocking_ast(lock, &desc, (void*)arg, LDLM_CB_BLOCKING);
-+	rc = lock->l_blocking_ast(lock, &desc, (void *)arg, LDLM_CB_BLOCKING);
- 	LDLM_LOCK_RELEASE(lock);
- 
- 	return rc;
-@@ -1775,7 +1775,7 @@ int ldlm_work_gl_ast_lock(struct ptlrpc_request_set *rqset, void *opaq)
- 	arg->gl_desc = gl_work->gl_desc;
- 
- 	/* invoke the actual glimpse callback */
--	if (lock->l_glimpse_ast(lock, (void*)arg) == 0)
-+	if (lock->l_glimpse_ast(lock, (void *)arg) == 0)
- 		rc = 1;
- 
- 	LDLM_LOCK_RELEASE(lock);
-diff --git a/drivers/staging/lustre/lustre/llite/file.c b/drivers/staging/lustre/lustre/llite/file.c
-index 531e062..098deaf 100644
---- a/drivers/staging/lustre/lustre/llite/file.c
-+++ b/drivers/staging/lustre/lustre/llite/file.c
-@@ -1489,7 +1489,7 @@ static int ll_lov_setea(struct inode *inode, struct file *file,
- 	if (lump == NULL)
- 		return -ENOMEM;
- 
--	if (copy_from_user(lump, (struct lov_user_md  *)arg, lum_size)) {
-+	if (copy_from_user(lump, (struct lov_user_md *)arg, lum_size)) {
- 		OBD_FREE_LARGE(lump, lum_size);
- 		return -EFAULT;
- 	}
-@@ -2323,7 +2323,7 @@ ll_file_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 		if (mdtidx < 0)
- 			return mdtidx;
- 
--		if (put_user((int)mdtidx, (int*)arg))
-+		if (put_user((int)mdtidx, (int *)arg))
- 			return -EFAULT;
- 
- 		return 0;
-diff --git a/drivers/staging/lustre/lustre/llite/llite_lib.c b/drivers/staging/lustre/lustre/llite/llite_lib.c
-index 5e39e3a..dc87bfe 100644
---- a/drivers/staging/lustre/lustre/llite/llite_lib.c
-+++ b/drivers/staging/lustre/lustre/llite/llite_lib.c
-@@ -2173,7 +2173,7 @@ int ll_obd_statfs(struct inode *inode, void *arg)
- 	if (rc)
- 		goto out_statfs;
- 
--	data = (void*)buf;
-+	data = (void *)buf;
- 	if (!data->ioc_inlbuf1 || !data->ioc_inlbuf2 ||
- 	    !data->ioc_pbuf1 || !data->ioc_pbuf2) {
- 		rc = -EINVAL;
-diff --git a/drivers/staging/lustre/lustre/llite/lloop.c b/drivers/staging/lustre/lustre/llite/lloop.c
-index 177137a..a5a4115 100644
---- a/drivers/staging/lustre/lustre/llite/lloop.c
-+++ b/drivers/staging/lustre/lustre/llite/lloop.c
-@@ -705,7 +705,7 @@ static enum llioc_iter lloop_ioctl(struct inode *unused, struct file *file,
- 		dev = MKDEV(lloop_major, lo->lo_number);
- 
- 		/* quit if the used pointer is writable */
--		if (put_user((long)old_encode_dev(dev), (long*)arg)) {
-+		if (put_user((long)old_encode_dev(dev), (long *)arg)) {
- 			err = -EFAULT;
- 			goto out;
- 		}
-diff --git a/drivers/staging/lustre/lustre/obdclass/class_obd.c b/drivers/staging/lustre/lustre/obdclass/class_obd.c
-index 701c6a7..b3c16bc 100644
---- a/drivers/staging/lustre/lustre/obdclass/class_obd.c
-+++ b/drivers/staging/lustre/lustre/obdclass/class_obd.c
-@@ -208,7 +208,7 @@ int class_handle_ioctl(unsigned int cmd, unsigned long arg)
- 
- 	/* only for debugging */
- 	if (cmd == LIBCFS_IOC_DEBUG_MASK) {
--		debug_data = (struct libcfs_debug_ioctl_data*)arg;
-+		debug_data = (struct libcfs_debug_ioctl_data *)arg;
- 		libcfs_subsystem_debug = debug_data->subs;
- 		libcfs_debug = debug_data->debug;
- 		return 0;
-diff --git a/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c b/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
-index 90a1e11..11c7913 100644
---- a/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
-+++ b/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
-@@ -927,7 +927,7 @@ EXPORT_SYMBOL(lprocfs_rd_num_exports);
- 
- int lprocfs_rd_numrefs(struct seq_file *m, void *data)
- {
--	struct obd_type *class = (struct obd_type*) data;
-+	struct obd_type *class = (struct obd_type *) data;
- 
- 	LASSERT(class != NULL);
- 	return seq_printf(m, "%d\n", class->typ_refcnt);
-diff --git a/drivers/staging/lustre/lustre/obdclass/obd_config.c b/drivers/staging/lustre/lustre/obdclass/obd_config.c
-index 0d81d32..a88d67d 100644
---- a/drivers/staging/lustre/lustre/obdclass/obd_config.c
-+++ b/drivers/staging/lustre/lustre/obdclass/obd_config.c
-@@ -1361,7 +1361,7 @@ int class_config_llog_handler(const struct lu_env *env,
- {
- 	struct config_llog_instance *clli = data;
- 	int cfg_len = rec->lrh_len;
--	char *cfg_buf = (char*) (rec + 1);
-+	char *cfg_buf = (char *) (rec + 1);
- 	int rc = 0;
- 
- 	//class_config_dump_handler(handle, rec, data);
-diff --git a/drivers/staging/lustre/lustre/osc/osc_quota.c b/drivers/staging/lustre/lustre/osc/osc_quota.c
-index db4540a..6987261 100644
---- a/drivers/staging/lustre/lustre/osc/osc_quota.c
-+++ b/drivers/staging/lustre/lustre/osc/osc_quota.c
-@@ -138,7 +138,7 @@ int osc_quota_setdq(struct client_obd *cli, const unsigned int qid[],
- static unsigned
- oqi_hashfn(struct cfs_hash *hs, const void *key, unsigned mask)
- {
--	return cfs_hash_u32_hash(*((__u32*)key), mask);
-+	return cfs_hash_u32_hash(*((__u32 *)key), mask);
- }
- 
- static int
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/connection.c b/drivers/staging/lustre/lustre/ptlrpc/connection.c
-index 62154c4..6f63333 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/connection.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/connection.c
-@@ -173,7 +173,7 @@ conn_keycmp(const void *key, struct hlist_node *hnode)
- 	const lnet_process_id_t *conn_key;
- 
- 	LASSERT(key != NULL);
--	conn_key = (lnet_process_id_t*)key;
-+	conn_key = (lnet_process_id_t *)key;
- 	conn = hlist_entry(hnode, struct ptlrpc_connection, c_hash);
- 
- 	return conn_key->nid == conn->c_peer.nid &&
-
+On 30/08/14 14:07, Heiko Stübner wrote:
+> Older Rockchip SoCs, at least the rk3066, used a slightly modified saradc
+> for temperature measurements. This so called tsadc does not contain any
+> active parts like temperature interrupts and only supports polling the
+> current temperature. The returned voltage can then be converted by a
+> suitable thermal driver to and actual temperature and used for thermal
+> handling.
+>
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+Looks, good to me, but will let this sit for a few days for other comments on
+it.  Long shot, but are the docs for the vairous rockchip parts publically
+available somewhere?
+> ---
+> This is a different IP than the rk3288-tsadc Ceasar provided a driver for.
+> As the commit messages states, the one used on the rk3066 is just a saradc,
+> while the new tsadc in the rk3288 contains active components for thermal
+> handling.
+>
+> A working example using the pending iio-thermal driver can found on
+> https://github.com/mmind/linux-rockchip/commit/c07e02f069d9677d489f254176619fae36f2aad0
+>
+>  .../bindings/iio/adc/rockchip-saradc.txt           |  2 +-
+>  drivers/iio/adc/rockchip_saradc.c                  | 62 +++++++++++++++++-----
+>  2 files changed, 50 insertions(+), 14 deletions(-)
+>
+> diff --git a/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt b/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt
+> index 5d3ec1d..a9a5fe1 100644
+> --- a/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt
+> +++ b/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt
+> @@ -1,7 +1,7 @@
+>  Rockchip Successive Approximation Register (SAR) A/D Converter bindings
+>
+>  Required properties:
+> -- compatible: Should be "rockchip,saradc"
+> +- compatible: Should be "rockchip,saradc" or "rockchip,rk3066-tsadc"
+>  - reg: physical base address of the controller and length of memory mapped
+>         region.
+>  - interrupts: The interrupt number to the cpu. The interrupt specifier format
+> diff --git a/drivers/iio/adc/rockchip_saradc.c b/drivers/iio/adc/rockchip_saradc.c
+> index e074a0b..7effada 100644
+> --- a/drivers/iio/adc/rockchip_saradc.c
+> +++ b/drivers/iio/adc/rockchip_saradc.c
+> @@ -18,13 +18,13 @@
+>  #include <linux/interrupt.h>
+>  #include <linux/io.h>
+>  #include <linux/of.h>
+> +#include <linux/of_device.h>
+>  #include <linux/clk.h>
+>  #include <linux/completion.h>
+>  #include <linux/regulator/consumer.h>
+>  #include <linux/iio/iio.h>
+>
+>  #define SARADC_DATA			0x00
+> -#define SARADC_DATA_MASK		0x3ff
+>
+>  #define SARADC_STAS			0x04
+>  #define SARADC_STAS_BUSY		BIT(0)
+> @@ -38,15 +38,22 @@
+>  #define SARADC_DLY_PU_SOC		0x0c
+>  #define SARADC_DLY_PU_SOC_MASK		0x3f
+>
+> -#define SARADC_BITS			10
+>  #define SARADC_TIMEOUT			msecs_to_jiffies(100)
+>
+> +struct rockchip_saradc_data {
+> +	int				num_bits;
+> +	const struct iio_chan_spec	*channels;
+> +	int				num_channels;
+> +	unsigned long			clk_rate;
+> +};
+> +
+>  struct rockchip_saradc {
+>  	void __iomem		*regs;
+>  	struct clk		*pclk;
+>  	struct clk		*clk;
+>  	struct completion	completion;
+>  	struct regulator	*vref;
+> +	const struct rockchip_saradc_data *data;
+>  	u16			last_val;
+>  };
+>
+> @@ -90,7 +97,7 @@ static int rockchip_saradc_read_raw(struct iio_dev *indio_dev,
+>  		}
+>
+>  		*val = ret / 1000;
+> -		*val2 = SARADC_BITS;
+> +		*val2 = info->data->num_bits;
+>  		return IIO_VAL_FRACTIONAL_LOG2;
+>  	default:
+>  		return -EINVAL;
+> @@ -103,7 +110,7 @@ static irqreturn_t rockchip_saradc_isr(int irq, void *dev_id)
+>
+>  	/* Read value */
+>  	info->last_val = readl_relaxed(info->regs + SARADC_DATA);
+> -	info->last_val &= SARADC_DATA_MASK;
+> +	info->last_val &= BIT(info->data->num_bits) - 1;
+>
+>  	/* Clear irq & power down adc */
+>  	writel_relaxed(0, info->regs + SARADC_CTRL);
+> @@ -133,12 +140,44 @@ static const struct iio_chan_spec rockchip_saradc_iio_channels[] = {
+>  	ADC_CHANNEL(2, "adc2"),
+>  };
+>
+> +static const struct rockchip_saradc_data saradc_data = {
+> +	.num_bits = 10,
+> +	.channels = rockchip_saradc_iio_channels,
+> +	.num_channels = ARRAY_SIZE(rockchip_saradc_iio_channels),
+> +	.clk_rate = 1000000,
+> +};
+> +
+> +static const struct iio_chan_spec rockchip_rk3066_tsadc_iio_channels[] = {
+> +	ADC_CHANNEL(0, "adc0"),
+> +	ADC_CHANNEL(1, "adc1"),
+> +};
+> +
+> +static const struct rockchip_saradc_data rk3066_tsadc_data = {
+> +	.num_bits = 12,
+> +	.channels = rockchip_rk3066_tsadc_iio_channels,
+> +	.num_channels = ARRAY_SIZE(rockchip_rk3066_tsadc_iio_channels),
+> +	.clk_rate = 50000,
+> +};
+> +
+> +static const struct of_device_id rockchip_saradc_match[] = {
+> +	{
+> +		.compatible = "rockchip,saradc",
+> +		.data = &saradc_data,
+> +	}, {
+> +		.compatible = "rockchip,rk3066-tsadc",
+> +		.data = &rk3066_tsadc_data,
+> +	},
+> +	{},
+> +};
+> +MODULE_DEVICE_TABLE(of, rockchip_saradc_match);
+> +
+>  static int rockchip_saradc_probe(struct platform_device *pdev)
+>  {
+>  	struct rockchip_saradc *info = NULL;
+>  	struct device_node *np = pdev->dev.of_node;
+>  	struct iio_dev *indio_dev = NULL;
+>  	struct resource	*mem;
+> +	const struct of_device_id *match;
+>  	int ret;
+>  	int irq;
+>
+> @@ -152,6 +191,9 @@ static int rockchip_saradc_probe(struct platform_device *pdev)
+>  	}
+>  	info = iio_priv(indio_dev);
+>
+> +	match = of_match_device(rockchip_saradc_match, &pdev->dev);
+> +	info->data = match->data;
+> +
+>  	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>  	info->regs = devm_ioremap_resource(&pdev->dev, mem);
+>  	if (IS_ERR(info->regs))
+> @@ -195,7 +237,7 @@ static int rockchip_saradc_probe(struct platform_device *pdev)
+>  	 * Use a default of 1MHz for the converter clock.
+>  	 * This may become user-configurable in the future.
+>  	 */
+> -	ret = clk_set_rate(info->clk, 1000000);
+> +	ret = clk_set_rate(info->clk, info->data->clk_rate);
+>  	if (ret < 0) {
+>  		dev_err(&pdev->dev, "failed to set adc clk rate, %d\n", ret);
+>  		return ret;
+> @@ -227,8 +269,8 @@ static int rockchip_saradc_probe(struct platform_device *pdev)
+>  	indio_dev->info = &rockchip_saradc_iio_info;
+>  	indio_dev->modes = INDIO_DIRECT_MODE;
+>
+> -	indio_dev->channels = rockchip_saradc_iio_channels;
+> -	indio_dev->num_channels = ARRAY_SIZE(rockchip_saradc_iio_channels);
+> +	indio_dev->channels = info->data->channels;
+> +	indio_dev->num_channels = info->data->num_channels;
+>
+>  	ret = iio_device_register(indio_dev);
+>  	if (ret)
+> @@ -296,12 +338,6 @@ static int rockchip_saradc_resume(struct device *dev)
+>  static SIMPLE_DEV_PM_OPS(rockchip_saradc_pm_ops,
+>  			 rockchip_saradc_suspend, rockchip_saradc_resume);
+>
+> -static const struct of_device_id rockchip_saradc_match[] = {
+> -	{ .compatible = "rockchip,saradc" },
+> -	{},
+> -};
+> -MODULE_DEVICE_TABLE(of, rockchip_saradc_match);
+> -
+>  static struct platform_driver rockchip_saradc_driver = {
+>  	.probe		= rockchip_saradc_probe,
+>  	.remove		= rockchip_saradc_remove,
+>
