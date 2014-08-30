@@ -1,111 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751307AbaH3Dk5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 23:40:57 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:58097 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750888AbaH3Dkz (ORCPT
+	id S1751327AbaH3DsH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 23:48:07 -0400
+Received: from mga11.intel.com ([192.55.52.93]:28827 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750909AbaH3DsF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 23:40:55 -0400
-X-Original-SENDERIP: 10.178.36.63
-X-Original-MAILFROM: chanho.min@lge.com
-From: Chanho Min <chanho.min@lge.com>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hankyung Yu <hankyung.yu@lge.com>,
-        Gwendal Grignou <gwendal@chromium.org>,
-        Chanho Min <chanho.min@lge.com>
-Subject: [PATCH v2] mmc:sdhci: handle busy-end interrupt during command
-Date: Sat, 30 Aug 2014 12:40:40 +0900
-Message-Id: <1409370040-14225-1-git-send-email-chanho.min@lge.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 29 Aug 2014 23:48:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="378966628"
+From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
+To: David Miller <davem@davemloft.net>
+CC: "peppe.cavallaro@st.com" <peppe.cavallaro@st.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        Rayagond K <rayagond@vayavyalabs.com>
+Subject: RE: [PATCH 1/4] net: stmmac: enhance to support multiple device
+ instances
+Thread-Topic: [PATCH 1/4] net: stmmac: enhance to support multiple device
+ instances
+Thread-Index: AQHPwcrrXzTI3zohQ0CyXTCUnKuDb5vn9RCAgACJBcA=
+Date: Sat, 30 Aug 2014 03:48:00 +0000
+Message-ID: <F54AEECA5E2B9541821D670476DAE19C2B6E74EE@PGSMSX102.gar.corp.intel.com>
+References: <cover.1409123378.git.hock.leong.kweh@intel.com>
+	<cover.1409123378.git.hock.leong.kweh@intel.com>
+	<cf29eb9e793cf67b99b455f3a4a55e7aca5d826c.1409123378.git.hock.leong.kweh@intel.com>
+ <20140829.200623.1931173830496862001.davem@davemloft.net>
+In-Reply-To: <20140829.200623.1931173830496862001.davem@davemloft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.255.177.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is fully legal for a controller to start handling busy-end interrupt
-before it has signaled that the command has completed. So make sure
-we do things in the proper order, Or it results that command interrupt
-is ignored so it can cause unexpected operations. This is founded at some
-toshiba emmc with the bellow warning.
+> -----Original Message-----
+> From: David Miller [mailto:davem@davemloft.net]
+> Sent: Saturday, August 30, 2014 11:06 AM
+> To: Kweh, Hock Leong
+> Cc: peppe.cavallaro@st.com; netdev@vger.kernel.org; linux-
+> kernel@vger.kernel.org; Ong, Boon Leong
+> Subject: Re: [PATCH 1/4] net: stmmac: enhance to support multiple device
+> instances
+> 
+> From: Kweh Hock Leong <hock.leong.kweh@intel.com>
+> Date: Wed, 27 Aug 2014 18:32:26 +0800
+> 
+> > +static int instance_id = 1;
+> 
+> Don't do this instance stuff.  Instead pull in some identifier that
+> can come from elsewhere.
 
-"mmc0: Got command interrupt 0x00000001 even though
-no command operation was in progress."
+Regarding this, I would like to open up a discussion here. This "instance_id" actually
+is used for registering the mdio bus as a bus id. The original code use "1" for the bus
+id. If the system plug in more than one stmmac pci cards, I believe there is conflict on
+the mdio bus registration. So introduce this static global variable is to increase the
+bus id starting from "1" base on how many stmmac pci cards being plugged in.
 
-This issue has been also reported by Youssef TRIKI:
-It is not specific to Toshiba devices, and happens with eMMC devices
-as well as SD card which support Auto-CMD12 rather than CMD23.
+So, to change the "instance_id" by using some identifier, the only thing come to my
+mind is pci_dev->devfn number. Is anyone have concern about using devfn number
+as an mdio bus id ?
 
-Also, similar patch is submitted by:
-Gwendal Grignou <gwendal@chromium.org>
 
-Changes since v1:
- Fixed conflict with the next of git.linaro.org/people/ulf.hansson/mmc.git
- and Tested if issue is fixed again. 
+> > +	plat_dat->mdio_bus_data = devm_kzalloc(&pdev->dev,
+> > +				    sizeof(*plat_dat->mdio_bus_data),
+> > +				    GFP_KERNEL);
+> 
+> This is not indented properly.
+> 
+> On the second and subsequent lines of a multi-line function call,
+> the lines should start exactly at the first column after the openning
+> parenthesis of the first line.
+> 
+> You must use the correct number of TAB and SPACE characters necessary
+> to do so.  Generally speaking, if you are indenting using only TAB
+> characters, odds are you are doing it wrong.
+> 
+> Please audit for, and fix this, in your entire patch series.
 
-Signed-off-by: Hankyung Yu <hankyung.yu@lge.com>
-Signed-off-by: Chanho Min <chanho.min@lge.com>
-Tested-by: Youssef TRIKI <youssef.triki@st.com>
----
- drivers/mmc/host/sdhci.c  |   17 +++++++++++++++--
- include/linux/mmc/sdhci.h |    1 +
- 2 files changed, 16 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index f6a683b..8428148 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -1016,6 +1016,7 @@ void sdhci_send_command(struct sdhci_host *host, struct mmc_command *cmd)
- 	mod_timer(&host->timer, timeout);
- 
- 	host->cmd = cmd;
-+	host->busy_handle = 0;
- 
- 	sdhci_prepare_data(host, cmd);
- 
-@@ -2261,8 +2262,12 @@ static void sdhci_cmd_irq(struct sdhci_host *host, u32 intmask)
- 		if (host->cmd->data)
- 			DBG("Cannot wait for busy signal when also "
- 				"doing a data transfer");
--		else if (!(host->quirks & SDHCI_QUIRK_NO_BUSY_IRQ))
-+		else if (!(host->quirks & SDHCI_QUIRK_NO_BUSY_IRQ)
-+				&& !host->busy_handle) {
-+			/* Mark that command complete before busy is ended */
-+			host->busy_handle = 1;
- 			return;
-+		}
- 
- 		/* The controller does not support the end-of-busy IRQ,
- 		 * fall through and take the SDHCI_INT_RESPONSE */
-@@ -2330,7 +2335,15 @@ static void sdhci_data_irq(struct sdhci_host *host, u32 intmask)
- 				return;
- 			}
- 			if (intmask & SDHCI_INT_DATA_END) {
--				sdhci_finish_command(host);
-+				/*
-+				 * Some cards handle busy-end interrupt
-+				 * before the command completed, so make
-+				 * sure we do things in the proper order.
-+				 */
-+				if (host->busy_handle)
-+					sdhci_finish_command(host);
-+				else
-+					host->busy_handle = 1;
- 				return;
- 			}
- 		}
-diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
-index 09ebe57..0aa85ca 100644
---- a/include/linux/mmc/sdhci.h
-+++ b/include/linux/mmc/sdhci.h
-@@ -146,6 +146,7 @@ struct sdhci_host {
- 	struct mmc_command *cmd;	/* Current command */
- 	struct mmc_data *data;	/* Current data request */
- 	unsigned int data_early:1;	/* Data finished before cmd */
-+	unsigned int busy_handle:1;	/* Handling the order of Busy-end */
- 
- 	struct sg_mapping_iter sg_miter;	/* SG state for PIO */
- 	unsigned int blocks;	/* remaining PIO blocks */
--- 
-1.7.9.5
+Noted. Will fix the indentation on version 2 patch. Thanks.
 
