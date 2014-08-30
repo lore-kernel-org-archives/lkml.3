@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751925AbaH3SxZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Aug 2014 14:53:25 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:59779 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751163AbaH3SxY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Aug 2014 14:53:24 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Jianqun <jay.xu@rock-chips.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>, perex@perex.cz,
-        tiwai@suse.de, yongjun_wei@trendmicro.com.cn,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        alsa-devel@alsa-project.org
-Subject: Re: [PATCH 0/2] rockchip-i2s: add power setting for I2S controller and fix some critical bugs
-Date: Sat, 30 Aug 2014 20:55:12 +0200
-Message-ID: <2985541.F8SvxX1thq@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <CAD=FV=XPYkDJ2J3rTHZgKzbH_EMBUmCMwHWjpf1Aagnv_mUqGQ@mail.gmail.com>
-References: <1409350027-17604-1-git-send-email-jay.xu@rock-chips.com> <CAD=FV=XPYkDJ2J3rTHZgKzbH_EMBUmCMwHWjpf1Aagnv_mUqGQ@mail.gmail.com>
+	id S1751954AbaH3S4V (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Aug 2014 14:56:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52919 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751427AbaH3S4U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Aug 2014 14:56:20 -0400
+Date: Sat, 30 Aug 2014 11:56:20 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Hema Prathaban <hemaklnce@gmail.com>
+Cc: devel@driverdev.osuosl.org, oleg.drokin@intel.com,
+        andreas.dilger@intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: lustre: lustre: ptlrpc: Fix space required
+Message-ID: <20140830185620.GA7455@kroah.com>
+References: <20140821132907.GA4118@hema-Inspiron-3520>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140821132907.GA4118@hema-Inspiron-3520>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, 29. August 2014, 21:30:43 schrieb Doug Anderson:
-> Jianqun,
+On Thu, Aug 21, 2014 at 06:59:07PM +0530, Hema Prathaban wrote:
+> This patch fixes the checkpatch.pl issue
+> Error: Required space after " '+' ',' '=' '(' ' if' "
 > 
-> On Fri, Aug 29, 2014 at 3:07 PM, Jianqun <jay.xu@rock-chips.com> wrote:
-> > Add optional power setting for i2s controller found on rk3066, rk3168 and
-> > rk3288 processors from rockchip, should according to hardware design.
-> > 
-> > Default setting for I2S controller is powered by 3.3V, there needs this
-> > patch if it's powered by 1.8V by hardware design.
-> > 
-> > Jianqun (2):
-> >   rockchip-i2s: dt: add grf requested properties to set power of I2S
-> >   controller rockchip-i2s: add power setting for I2S controller, also fix
-> >   some bugs>  
-> >  .../devicetree/bindings/sound/rockchip-i2s.txt     |  6 +-
-> >  sound/soc/rockchip/rockchip_i2s.c                  | 93
-> >  +++++++++++++--------- sound/soc/rockchip/rockchip_i2s.h                
-> >   | 13 +--
-> >  3 files changed, 68 insertions(+), 44 deletions(-)
+> Signed-off-by: Hema Prathaban <hemaklnce@gmail.com>
+> ---
+>  drivers/staging/lustre/lustre/ptlrpc/client.c       |  2 +-
+>  drivers/staging/lustre/lustre/ptlrpc/events.c       |  4 ++--
+>  drivers/staging/lustre/lustre/ptlrpc/import.c       |  8 ++++----
+>  drivers/staging/lustre/lustre/ptlrpc/llog_client.c  | 16 ++++++++--------
+>  drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c |  6 +++---
+>  drivers/staging/lustre/lustre/ptlrpc/sec_bulk.c     |  2 +-
+>  drivers/staging/lustre/lustre/ptlrpc/sec_config.c   |  6 +++---
+>  drivers/staging/lustre/lustre/ptlrpc/sec_null.c     |  2 +-
+>  drivers/staging/lustre/lustre/ptlrpc/service.c      |  2 +-
+>  9 files changed, 24 insertions(+), 24 deletions(-)
 > 
-> Did the general solution I posted at
-> <https://patchwork.kernel.org/patch/4807821/> not work for you?  ...or
-> did you not see that?
+> diff --git a/drivers/staging/lustre/lustre/ptlrpc/client.c b/drivers/staging/lustre/lustre/ptlrpc/client.c
+> index 8fa9b71..a327d19 100644
+> --- a/drivers/staging/lustre/lustre/ptlrpc/client.c
+> +++ b/drivers/staging/lustre/lustre/ptlrpc/client.c
+> @@ -289,7 +289,7 @@ static void ptlrpc_at_adj_net_latency(struct ptlrpc_request *req,
+>  	at = &req->rq_import->imp_at;
+>  
+>  	/* Network latency is total time less server processing time */
+> -	nl = max_t(int, now - req->rq_sent - service_time, 0) +1/*st rounding*/;
+> +	nl = max_t(int, now - req->rq_sent - service_time, 0) + 1/*st rounding*/;
+>  	if (service_time > now - req->rq_sent + 3 /* bz16408 */)
+>  		CWARN("Reported service time %u > total measured time "
+>  		      CFS_DURATION_T"\n", service_time,
+> diff --git a/drivers/staging/lustre/lustre/ptlrpc/events.c b/drivers/staging/lustre/lustre/ptlrpc/events.c
+> index c3ec21d..9f5af45 100644
+> --- a/drivers/staging/lustre/lustre/ptlrpc/events.c
+> +++ b/drivers/staging/lustre/lustre/ptlrpc/events.c
+> @@ -186,7 +186,7 @@ void client_bulk_callback(lnet_event_t *ev)
+>  	if (CFS_FAIL_CHECK_ORSET(OBD_FAIL_PTLRPC_CLIENT_BULK_CB, CFS_FAIL_ONCE))
+>  		ev->status = -EIO;
+>  
+> -	if (CFS_FAIL_CHECK_ORSET(OBD_FAIL_PTLRPC_CLIENT_BULK_CB2,CFS_FAIL_ONCE))
+> +	if (CFS_FAIL_CHECK_ORSEuT(OBD_FAIL_PTLRPC_CLIENT_BULK_CB2, CFS_FAIL_ONCE))
 
-Also, I don't think it's a good idea to set the io voltage bit simply from a 
-dt setting without looking at the actual regulator voltage ... as a 1.8V 
-setting when the regulator supplies 3.3V supposedly is able to damage the 
-chip.
+You obviously did not compile this code as it breaks the build :(
 
+Please _always_ test build your patches, don't force others to find
+errors like this, it's a huge waste of time on my end when it happens...
 
+greg k-h
