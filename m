@@ -1,61 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752014AbaH3TEe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Aug 2014 15:04:34 -0400
-Received: from cthulhu.worldbroken.com ([173.230.133.178]:34510 "EHLO
-	cthulhu.worldbroken.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751800AbaH3TEb (ORCPT
+	id S1751921AbaH3TTs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Aug 2014 15:19:48 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42738 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751640AbaH3TTr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Aug 2014 15:04:31 -0400
-From: wfp5p@worldbroken.com
-To: gregkh@linuxfoundation.org
-Cc: cascardo@linux.vnet.ibm.com, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        lidza.louina@gmail.com, devel@driverdev.osuosl.org
-Subject: [PATCH 2/2] staging: dgnc: remove Neo card ids from device table
-Date: Sat, 30 Aug 2014 14:54:37 -0400
-Message-Id: <1409424877-2304-3-git-send-email-wfp5p@worldbroken.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1409424877-2304-1-git-send-email-wfp5p@worldbroken.com>
-References: <1409424877-2304-1-git-send-email-wfp5p@worldbroken.com>
+	Sat, 30 Aug 2014 15:19:47 -0400
+X-Sasl-enc: Y4V1nNahIGCyIBl10Na1Oz+3GXQuVhNRVxWrC5q0ftgC 1409426386
+Date: Sat, 30 Aug 2014 12:19:45 -0700
+From: Greg KH <greg@kroah.com>
+To: "John L. Hammond" <john.hammond@intel.com>
+Cc: andreas.dilger@intel.com, oleg.drokin@intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/11] staging/lustre flatten some headers
+Message-ID: <20140830191945.GA12501@kroah.com>
+References: <1409268919-16155-1-git-send-email-john.hammond@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409268919-16155-1-git-send-email-john.hammond@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bill Pemberton <wfp5p@worldbroken.com>
+On Thu, Aug 28, 2014 at 06:35:08PM -0500, John L. Hammond wrote:
+> This series removes several headers from lustre/include/linux by
+> taking whatever was worthwhile from linux/lustre_barf.h and moving it
+> to lustre_barf.h or to wherever it's needed.
 
-The Digi Neo cards are supported by the jsm driver.  Remove support
-for these cards from dgnc.
+Very nice, all now applied, thanks.
 
-Signed-off-by: Bill Pemberton <wfp5p@worldbroken.com>
----
- drivers/staging/dgnc/dgnc_driver.c | 13 -------------
- 1 file changed, 13 deletions(-)
-
-diff --git a/drivers/staging/dgnc/dgnc_driver.c b/drivers/staging/dgnc/dgnc_driver.c
-index 764613b2f4b4..ad07cc698147 100644
---- a/drivers/staging/dgnc/dgnc_driver.c
-+++ b/drivers/staging/dgnc/dgnc_driver.c
-@@ -128,19 +128,6 @@ static struct pci_device_id dgnc_pci_tbl[] = {
- 	{	DIGI_VID, PCI_DEVICE_CLASSIC_4_422_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	1 },
- 	{	DIGI_VID, PCI_DEVICE_CLASSIC_8_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	2 },
- 	{	DIGI_VID, PCI_DEVICE_CLASSIC_8_422_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	3 },
--	{	DIGI_VID, PCI_DEVICE_NEO_4_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,		4 },
--	{	DIGI_VID, PCI_DEVICE_NEO_8_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,		5 },
--	{	DIGI_VID, PCI_DEVICE_NEO_2DB9_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	6 },
--	{	DIGI_VID, PCI_DEVICE_NEO_2DB9PRI_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	7 },
--	{	DIGI_VID, PCI_DEVICE_NEO_2RJ45_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	8 },
--	{	DIGI_VID, PCI_DEVICE_NEO_2RJ45PRI_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	9 },
--	{	DIGI_VID, PCI_DEVICE_NEO_1_422_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	10 },
--	{	DIGI_VID, PCI_DEVICE_NEO_1_422_485_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	11 },
--	{	DIGI_VID, PCI_DEVICE_NEO_2_422_485_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	12 },
--	{	DIGI_VID, PCI_DEVICE_NEO_EXPRESS_8_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	 13 },
--	{	DIGI_VID, PCI_DEVICE_NEO_EXPRESS_4_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	14 },
--	{	DIGI_VID, PCI_DEVICE_NEO_EXPRESS_4RJ45_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	15 },
--	{	DIGI_VID, PCI_DEVICE_NEO_EXPRESS_8RJ45_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	16 },
- 	{0,}						/* 0 terminated list. */
- };
- MODULE_DEVICE_TABLE(pci, dgnc_pci_tbl);
--- 
-1.9.3
-
+greg k-h
