@@ -1,53 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751080AbaH3Bsl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 21:48:41 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:51291 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750811AbaH3Bsk (ORCPT
+	id S1751335AbaH3Bvh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 21:51:37 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48834 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750895AbaH3Bvf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 21:48:40 -0400
-Message-ID: <54012D74.7010302@infradead.org>
-Date: Fri, 29 Aug 2014 18:48:36 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-next@vger.kernel.org, sfr@canb.auug.org.au,
-        mhocko@suse.cz, Pekka Enberg <penberg@kernel.org>,
-        Vegard Nossum <vegardno@ifi.uio.no>
-Subject: [PATCH -mmotm] mm: fix kmemcheck.c build errors
-References: <5400fba1.732YclygYZprDXeI%akpm@linux-foundation.org>
-In-Reply-To: <5400fba1.732YclygYZprDXeI%akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 29 Aug 2014 21:51:35 -0400
+X-Sasl-enc: XeQ43Oyv6rDIh71xRyk8q3pZLxX7ibC5IVrTQUHjYdd5 1409363493
+Message-ID: <1409363489.2980.17.camel@localhost>
+Subject: Re: RTNL: assertion failed at net/ipv6/addrconf.c (1699)
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Sabrina Dubroca <sd@queasysnail.net>
+Cc: Cong Wang <cwang@twopensource.com>, Tommi Rantala <tt.rantala@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org,
+        Dave Jones <davej@redhat.com>
+Date: Sat, 30 Aug 2014 03:51:29 +0200
+In-Reply-To: <20140829195339.GA9780@kria>
+References: <CA+ydwtoDwQVg_BWrxxdpUyJ7Up60GtxTCLYe_5vFdV2td_kGhQ@mail.gmail.com>
+	 <CAHA+R7MZCDGRhSf=UuVCGQvNo03wVziZQB_X30rwNf6hmHipQA@mail.gmail.com>
+	 <20140829195339.GA9780@kria>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@infradead.org>
+Hi Sabrina,
 
-Add header file to fix kmemcheck.c build errors:
+On Fr, 2014-08-29 at 21:53 +0200, Sabrina Dubroca wrote:
+> 2014-08-29, 11:14:48 -0700, Cong Wang wrote:
+> > On Fri, Aug 29, 2014 at 8:26 AM, Tommi Rantala <tt.rantala@gmail.com> wrote:
+> > > [   77.297196] RTNL: assertion failed at net/ipv6/addrconf.c (1699)
+> > > [   77.298080] CPU: 0 PID: 4842 Comm: trinity-main Not tainted 3.17.0-rc2+ #30
+> > > [   77.299039] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> > > [   77.299789]  ffff88003d76a618 ffff880026133c50 ffffffff8238ba79
+> > > ffff880037c84520
+> > > [   77.300829]  ffff880026133c90 ffffffff820bd52b 0000000000000000
+> > > ffffffff82d86c40
+> > > [   77.301869]  0000000000000000 00000000f76fd1e1 ffff8800382d8000
+> > > ffff8800382d8220
+> > > [   77.302906] Call Trace:
+> > > [   77.303246]  [<ffffffff8238ba79>] dump_stack+0x4d/0x66
+> > > [   77.303928]  [<ffffffff820bd52b>] addrconf_join_solict+0x4b/0xb0
+> > > [   77.304731]  [<ffffffff820b031b>] ipv6_dev_ac_inc+0x2bb/0x330
+> > > [   77.305498]  [<ffffffff820b0060>] ? ac6_seq_start+0x260/0x260
+> > > [   77.306257]  [<ffffffff820b05fe>] ipv6_sock_ac_join+0x26e/0x360
+> > > [   77.307046]  [<ffffffff820b0429>] ? ipv6_sock_ac_join+0x99/0x360
+> > > [   77.307798]  [<ffffffff820cdd60>] do_ipv6_setsockopt.isra.5+0xa70/0xf20
+> > 
+> > 
+> > I think we should just use rtnl_lock() instead of rcu_read_lock() there,
+> > it is not a hot path worth optimization.
+> > 
+> > Please try the attached patch.
+> 
+> note: it doesn't build as it is now, it needs:
+> 
+> -EXPORT_SYMBOL(dev_get_by_flags_rcu);
+> +EXPORT_SYMBOL(dev_get_by_flags);
+> 
+> 
+> I just tried your patch with a basic test program (open
+> socket/join/leave/close and open socket/join/close).
+> 
+> I think you need to modify ipv6_sock_ac_close as well, or you can still
+> trigger the assertion when closing the socket without leaving first.
+> 
+> Modified patch attached.
 
-../mm/kmemcheck.c:70:7: error: dereferencing pointer to incomplete type
-../mm/kmemcheck.c:83:15: error: dereferencing pointer to incomplete type
-../mm/kmemcheck.c:95:8: error: dereferencing pointer to incomplete type
-../mm/kmemcheck.c:95:21: error: dereferencing pointer to incomplete type
+Sorry, just had time to look at this.
 
-Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
----
- mm/kmemcheck.c |    1 +
- 1 file changed, 1 insertion(+)
+The reason is not to have list corruption but that the calls down to
+ndo_set_rx_mode expect rtnl to be locked by the drivers. Filter lists
+are locked by addr_list_lock and that's why I think we never saw any
+problems with that, but drivers expect rtnl locked for those calls.
 
-Index: mmotm-2014-0829-1515/mm/kmemcheck.c
-===================================================================
---- mmotm-2014-0829-1515.orig/mm/kmemcheck.c
-+++ mmotm-2014-0829-1515/mm/kmemcheck.c
-@@ -2,6 +2,7 @@
- #include <linux/mm_types.h>
- #include <linux/mm.h>
- #include <linux/slab.h>
-+#include <linux/slab_def.h>
- #include <linux/kmemcheck.h>
- 
- void kmemcheck_alloc_shadow(struct page *page, int order, gfp_t flags, int node)
+But this problem also affects multicast join, so patch seems incomplete
+to me (and for that matter ssm multicast join, too).
+
+Also rtnl_lock and rcu_read_lock compose in that order, so we don't need
+to change dev_get_by_flags, but as this is the only user it sure is
+possible. RCU locked version is just easier composeable, so I wouldn't
+touch that if needed in future, just also take rcu lock as before.
+
+So just adding rtnl_lock add appropriate places seems to be ok to me,
+but still need to review parts of the ssm code.
+
+Also we should move ASSERT_RTNL checks from addrconf_join_solict to
+ipv6_dev_mc_inc/dec.
+
+Thanks,
+Hannes
+
+
