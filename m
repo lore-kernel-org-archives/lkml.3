@@ -1,34 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751373AbaH3Dd7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 23:33:59 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:52893 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137AbaH3Dd6 (ORCPT
+	id S1751458AbaH3Det (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 23:34:49 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:49115 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751137AbaH3Der (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 23:33:58 -0400
-Date: Fri, 29 Aug 2014 20:33:57 -0700 (PDT)
-Message-Id: <20140829.203357.1929663716118629035.davem@davemloft.net>
-To: linux@rasmusvillemoes.dk
-Cc: paul.gortmaker@windriver.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] Remove various orphaned header files
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1409226274-3202-1-git-send-email-linux@rasmusvillemoes.dk>
-References: <1409226274-3202-1-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Fri, 29 Aug 2014 23:34:47 -0400
+Message-ID: <54014773.6020303@gmail.com>
+Date: Sat, 30 Aug 2014 11:39:31 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: David Vrabel <david.vrabel@citrix.com>, konrad.wilk@oracle.com,
+        boris.ostrovsky@oracle.com
+CC: xen-devel@lists.xenproject.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers/xen/evtchn.c: Check failure for evtchn_make_refcounted()
+References: <53FF4702.9020509@gmail.com> <53FF4FA5.4050105@citrix.com> <5400817E.6060500@gmail.com> <5400836F.1090508@citrix.com>
+In-Reply-To: <5400836F.1090508@citrix.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 29 Aug 2014 20:33:58 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Date: Thu, 28 Aug 2014 13:44:30 +0200
 
-> These four files are not included anywhere, and seem to be accidental
-> leftovers from past cleanups (see the individual commit messages).
 
-Series applied, thanks.
+On 8/29/14 21:43, David Vrabel wrote:
+> On 29/08/14 14:34, Chen Gang wrote:
+>>
+>>
+>> On 8/28/14 23:49, David Vrabel wrote:
+>>> On 28/08/14 16:13, Chen Gang wrote:
+>>>> evtchn_make_refcounted() may return failure, so need process the failure
+>>>> case. In failure case, it need call unbind_from_irqhandler() just like
+>>>> evtchn_unbind_from_user() has done.
+>>>>
+>>>> irq_from_evtchn() must be OK when bind_evtchn_to_irqhandler() succeed,
+>>>> so need not check it again.
+>>>>
+>>>> Also still need remain the closing port code, because when the failure
+>>>> occurs, unbind_from_irqhandler() will not close port internally.
+>>>
+>>> None of the evtchn_make_refcounted() failures can occur since we know we
+>>> have a valid irq and info at the single call site.
+>>>
+>>
+>> OK, thanks. I guess what you said is correct.
+>>
+>> But only according to the code, for me, I am not quite sure about 'info'
+>> must be always valid. If bind_evtchn_to_irqhandler() succeeds, I can not
+>> find any related code to prove 'info' must be valid.
+>>
+>>  - for a new irq, it will allocate 'info' for it.
+>>
+>>  - but for an existing irq, the code assumes it may has no 'info'.
+>>    (so several areas check 'info' whether valid, although irq is OK).
+>>
+>> So could you give some additional related proofs for it? And if 'info'
+>> must be always OK, can we remove all the related check about 'info'?
+> 
+> I'm not sure what you mean by an existing irq.  If it's an irq for an
+> event channel it will have had info set when it was allocated.  the
+> irq_mapping_update_lock protects against seeing partially setup irqs.
+> 
+
+After check the code details again. I guess, really no "existing irq",
+just like you said.
+
+But in honest, only based on the code, for me, it is not quite clear (
+I guess it is OK, but I am not sure it must be OK -- still worry about
+it).
+
+
+> So, the checks for !info can be removed, yes.
+> 
+
+So for me, for safety (also easy understanding) reason, I still prefer
+my original patch, although it is not the best one.
+
+If you are sure about it (I guess you are sure), please help send patch
+for it (skip checking "!info"). If necessary, may mark Cc or Reported-by
+to me.
+
+
+Thanks.
+-- 
+Chen Gang
+
+Open, share, and attitude like air, water, and life which God blessed
