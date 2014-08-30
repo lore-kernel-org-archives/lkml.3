@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751713AbaH3NGr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Aug 2014 09:06:47 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:63798 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609AbaH3NGq (ORCPT
+	id S1751812AbaH3NHe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Aug 2014 09:07:34 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:65057 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751757AbaH3NHc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Aug 2014 09:06:46 -0400
+	Sat, 30 Aug 2014 09:07:32 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAMym5wtmgsAUP6C-eYgMKJcbiPCUVJ-jZW0PFtv4Mwvr3S9jdw@mail.gmail.com>
-References: <1409164021-2136-1-git-send-email-chris.j.arges@canonical.com>
-	<CAMym5wtmgsAUP6C-eYgMKJcbiPCUVJ-jZW0PFtv4Mwvr3S9jdw@mail.gmail.com>
-Date: Sat, 30 Aug 2014 22:06:45 +0900
-Message-ID: <CAMym5wtXPOd+5FQiXatpnM-TLkyabA=ZV6aj=wxe-=Bn83B5qw@mail.gmail.com>
-Subject: Re: [PATCH] ktest: add ability to skip during BISECT_MANUAL
-From: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-To: Chris J Arges <chris.j.arges@canonical.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1409401476-5002-1-git-send-email-matwey@sai.msu.ru>
+References: <1409401476-5002-1-git-send-email-matwey@sai.msu.ru>
+Date: Sat, 30 Aug 2014 10:07:30 -0300
+Message-ID: <CAOMZO5DzNo3Y6=R4mA=h0+RjWoM6UBCqXxqeEqUM4iu5RjrBEA@mail.gmail.com>
+Subject: Re: [PATCH] Export functions from pcie-designware
+From: Fabio Estevam <festevam@gmail.com>
+To: matwey@sai.msu.ru
+Cc: Mohit Kumar <mohit.kumar@st.com>, Jingoo Han <jg1.han@samsung.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, matwey.kornilov@gmail.com
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
-
-Sorry for late reply.
-
-2014-08-28 3:26 GMT+09:00 Chris J Arges <chris.j.arges@canonical.com>:
-
-> When doing a manual bisect, a build can fail or a test can be inconclusive.
-> In these cases it would be helpful to be able to skip the test entirely.
+On Sat, Aug 30, 2014 at 9:24 AM,  <matwey@sai.msu.ru> wrote:
+> From: "Matwey V. Kornilov" <matwey@sai.msu.ru>
 >
-> Signed-off-by: Chris J Arges <chris.j.arges@canonical.com>
-
-It look good to me.
-
-Reviewed-by: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-
-Thanks,
-Satoru
-
+> pcie-spear13xx when built as module requires the functions from pcie-designware.
+> Export them properly.
 >
+> Signed-off-by: Matwey V. Kornilov <matwey@sai.msu.ru>
 > ---
->  tools/testing/ktest/ktest.pl | 6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
+>  drivers/pci/host/pcie-designware.c |  7 +++++++
+>  drivers/pci/host/pcie-designware.h | 14 +++++++-------
+>  2 files changed, 14 insertions(+), 7 deletions(-)
 >
-> diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-> index 55ab700..72010f4 100755
-> --- a/tools/testing/ktest/ktest.pl
-> +++ b/tools/testing/ktest/ktest.pl
-> @@ -2336,15 +2336,17 @@ sub success {
+> diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
+> index 52bd3a1..7914b92c 100644
+> --- a/drivers/pci/host/pcie-designware.c
+> +++ b/drivers/pci/host/pcie-designware.c
+> @@ -89,6 +89,7 @@ int dw_pcie_cfg_read(void __iomem *addr, int where, int size, u32 *val)
 >
->  sub answer_bisect {
->      for (;;) {
-> -       doprint "Pass or fail? [p/f]";
-> +       doprint "Pass, fail, or skip? [p/f/s]";
->         my $ans = <STDIN>;
->         chomp $ans;
->         if ($ans eq "p" || $ans eq "P") {
->             return 1;
->         } elsif ($ans eq "f" || $ans eq "F") {
->             return 0;
-> +       } elsif ($ans eq "s" || $ans eq "S") {
-> +           return -1;
->         } else {
-> -           print "Please answer 'P' or 'F'\n";
-> +           print "Please answer 'p', 'f', or 's'\n";
->         }
->      }
+>         return PCIBIOS_SUCCESSFUL;
 >  }
-> --
-> 1.9.1
->
+> +EXPORT_SYMBOL(dw_pcie_cfg_read);
+
+What about using EXPORT_SYMBOL_GPL instead?
+
+> -int dw_pcie_cfg_read(void __iomem *addr, int where, int size, u32 *val);
+> -int dw_pcie_cfg_write(void __iomem *addr, int where, int size, u32 val);
+> -irqreturn_t dw_handle_msi_irq(struct pcie_port *pp);
+> -void dw_pcie_msi_init(struct pcie_port *pp);
+> -int dw_pcie_link_up(struct pcie_port *pp);
+> -void dw_pcie_setup_rc(struct pcie_port *pp);
+> -int dw_pcie_host_init(struct pcie_port *pp);
+> +extern int dw_pcie_cfg_read(void __iomem *addr, int where, int size, u32 *val);
+> +extern int dw_pcie_cfg_write(void __iomem *addr, int where, int size, u32 val);
+> +extern irqreturn_t dw_handle_msi_irq(struct pcie_port *pp);
+> +extern void dw_pcie_msi_init(struct pcie_port *pp);
+> +extern int dw_pcie_link_up(struct pcie_port *pp);
+> +extern void dw_pcie_setup_rc(struct pcie_port *pp);
+> +extern int dw_pcie_host_init(struct pcie_port *pp);
+
+Why is this needed?
