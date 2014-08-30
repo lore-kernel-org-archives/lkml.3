@@ -1,92 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751458AbaH3Det (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Aug 2014 23:34:49 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:49115 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137AbaH3Der (ORCPT
+	id S1751482AbaH3DhU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Aug 2014 23:37:20 -0400
+Received: from mail-yh0-f47.google.com ([209.85.213.47]:37076 "EHLO
+	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750878AbaH3DhR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Aug 2014 23:34:47 -0400
-Message-ID: <54014773.6020303@gmail.com>
-Date: Sat, 30 Aug 2014 11:39:31 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>, konrad.wilk@oracle.com,
-        boris.ostrovsky@oracle.com
-CC: xen-devel@lists.xenproject.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers/xen/evtchn.c: Check failure for evtchn_make_refcounted()
-References: <53FF4702.9020509@gmail.com> <53FF4FA5.4050105@citrix.com> <5400817E.6060500@gmail.com> <5400836F.1090508@citrix.com>
-In-Reply-To: <5400836F.1090508@citrix.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Fri, 29 Aug 2014 23:37:17 -0400
+From: Pranith Kumar <bobby.prani@gmail.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Anton Blanchard <anton@samba.org>, Fabian Frederick <fabf@skynet.be>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linuxppc-dev@lists.ozlabs.org (open list:LINUX FOR POWERPC...),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [RFC PATCH] powerpc: Wire up three syscalls
+Date: Fri, 29 Aug 2014 23:36:25 -0400
+Message-Id: <1409369788-22563-1-git-send-email-bobby.prani@gmail.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I see that the three syscalls seccomp, getrandom and memfd_create are not wired
+because of which we get a warning while compilation.
 
+So I wired them up in this patch. What else needs to be done? I tried the
+memfd_test after compiling this kernel, but it is failing. What am I missing for
+this to work? Any advice is really appreciated! :)
 
-On 8/29/14 21:43, David Vrabel wrote:
-> On 29/08/14 14:34, Chen Gang wrote:
->>
->>
->> On 8/28/14 23:49, David Vrabel wrote:
->>> On 28/08/14 16:13, Chen Gang wrote:
->>>> evtchn_make_refcounted() may return failure, so need process the failure
->>>> case. In failure case, it need call unbind_from_irqhandler() just like
->>>> evtchn_unbind_from_user() has done.
->>>>
->>>> irq_from_evtchn() must be OK when bind_evtchn_to_irqhandler() succeed,
->>>> so need not check it again.
->>>>
->>>> Also still need remain the closing port code, because when the failure
->>>> occurs, unbind_from_irqhandler() will not close port internally.
->>>
->>> None of the evtchn_make_refcounted() failures can occur since we know we
->>> have a valid irq and info at the single call site.
->>>
->>
->> OK, thanks. I guess what you said is correct.
->>
->> But only according to the code, for me, I am not quite sure about 'info'
->> must be always valid. If bind_evtchn_to_irqhandler() succeeds, I can not
->> find any related code to prove 'info' must be valid.
->>
->>  - for a new irq, it will allocate 'info' for it.
->>
->>  - but for an existing irq, the code assumes it may has no 'info'.
->>    (so several areas check 'info' whether valid, although irq is OK).
->>
->> So could you give some additional related proofs for it? And if 'info'
->> must be always OK, can we remove all the related check about 'info'?
-> 
-> I'm not sure what you mean by an existing irq.  If it's an irq for an
-> event channel it will have had info set when it was allocated.  the
-> irq_mapping_update_lock protects against seeing partially setup irqs.
-> 
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+---
+ arch/powerpc/include/asm/systbl.h      | 3 +++
+ arch/powerpc/include/asm/unistd.h      | 2 +-
+ arch/powerpc/include/uapi/asm/unistd.h | 3 +++
+ 3 files changed, 7 insertions(+), 1 deletion(-)
 
-After check the code details again. I guess, really no "existing irq",
-just like you said.
-
-But in honest, only based on the code, for me, it is not quite clear (
-I guess it is OK, but I am not sure it must be OK -- still worry about
-it).
-
-
-> So, the checks for !info can be removed, yes.
-> 
-
-So for me, for safety (also easy understanding) reason, I still prefer
-my original patch, although it is not the best one.
-
-If you are sure about it (I guess you are sure), please help send patch
-for it (skip checking "!info"). If necessary, may mark Cc or Reported-by
-to me.
-
-
-Thanks.
+diff --git a/arch/powerpc/include/asm/systbl.h b/arch/powerpc/include/asm/systbl.h
+index 542bc0f..7d8a600 100644
+--- a/arch/powerpc/include/asm/systbl.h
++++ b/arch/powerpc/include/asm/systbl.h
+@@ -362,3 +362,6 @@ SYSCALL(ni_syscall) /* sys_kcmp */
+ SYSCALL_SPU(sched_setattr)
+ SYSCALL_SPU(sched_getattr)
+ SYSCALL_SPU(renameat2)
++SYSCALL_SPU(seccomp)
++SYSCALL_SPU(getrandom)
++SYSCALL_SPU(memfd_create)
+diff --git a/arch/powerpc/include/asm/unistd.h b/arch/powerpc/include/asm/unistd.h
+index 5ce5552..4e9af3f 100644
+--- a/arch/powerpc/include/asm/unistd.h
++++ b/arch/powerpc/include/asm/unistd.h
+@@ -12,7 +12,7 @@
+ #include <uapi/asm/unistd.h>
+ 
+ 
+-#define __NR_syscalls		358
++#define __NR_syscalls		361
+ 
+ #define __NR__exit __NR_exit
+ #define NR_syscalls	__NR_syscalls
+diff --git a/arch/powerpc/include/uapi/asm/unistd.h b/arch/powerpc/include/uapi/asm/unistd.h
+index 2d526f7..0688fc0 100644
+--- a/arch/powerpc/include/uapi/asm/unistd.h
++++ b/arch/powerpc/include/uapi/asm/unistd.h
+@@ -380,5 +380,8 @@
+ #define __NR_sched_setattr	355
+ #define __NR_sched_getattr	356
+ #define __NR_renameat2		357
++#define __NR_seccomp		358
++#define __NR_getrandom		359
++#define __NR_memfd_create	360
+ 
+ #endif /* _UAPI_ASM_POWERPC_UNISTD_H_ */
 -- 
-Chen Gang
+2.1.0
 
-Open, share, and attitude like air, water, and life which God blessed
