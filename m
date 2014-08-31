@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752039AbaHaSmS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 14:42:18 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:38441 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751617AbaHaSmP (ORCPT
+	id S1751993AbaHaStq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 14:49:46 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:57659 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751572AbaHaStn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 14:42:15 -0400
+	Sun, 31 Aug 2014 14:49:43 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <54036E45.2050604@roeck-us.net>
+Date: Sun, 31 Aug 2014 11:49:41 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <15153439.zUXECAnL7k@wuerfel>
-References: <1409350479-19108-1-git-send-email-abrestic@chromium.org>
-	<1409350479-19108-6-git-send-email-abrestic@chromium.org>
-	<15153439.zUXECAnL7k@wuerfel>
-Date: Sun, 31 Aug 2014 11:42:14 -0700
-X-Google-Sender-Auth: 1uhxDrVvTNDKicdPwdNXftoJHic
-Message-ID: <CAL1qeaFFrQJLMyNQtcwWtrYSJ4=_Yf0zuYWPtCPsUu-6OrvKdw@mail.gmail.com>
-Subject: Re: [PATCH 05/12] MIPS: GIC: Add device-tree support
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Jeffrey Deans <jeffrey.deans@imgtec.com>,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        Paul Burton <paul.burton@imgtec.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Linux-MIPS <linux-mips@linux-mips.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Sam Ravnborg <sam@ravnborg.org>
+CC: linux-kernel@vger.kernel.org, linux-cris-kernel@axis.com,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Mikael Starvik <starvik@axis.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        "Edgar E. Iglesias" <edgar.iglesias@gmail.com>
+Subject: Re: Status of 'cris' architecture support in Linux kernel
+References: <20140831175010.GA15408@roeck-us.net> <20140831183342.GA25437@ravnborg.org>
+In-Reply-To: <20140831183342.GA25437@ravnborg.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 30, 2014 at 12:54 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Friday 29 August 2014 15:14:32 Andrew Bresticker wrote:
->> Add device-tree support for the MIPS GIC.  With DT, no per-platform
->> static device interrupt mapping is supplied and instead all device
->> interrupts are specified through the DT.  The GIC-to-CPU interrupts
->> must also be specified in the DT.
+On 08/31/2014 11:33 AM, Sam Ravnborg wrote:
+> On Sun, Aug 31, 2014 at 10:50:10AM -0700, Guenter Roeck wrote:
+>> The idea was to create a crisv32 kernel and initramfs to work with qemu
+>> for the ongoing Linux kernel test project.
 >>
->> Platforms using DT-based probing of the GIC need only supply the
->> GIC_NUM_INTRS and, if necessary, MIPS_GIC_IRQ_BASE values and
->> call of_irq_init() with an of_device_id table including the GIC.
+>> After spending a number of days (and nights) on it, the results don't look
+>> very encouraging.
 >>
->> Currenlty only legacy and vecotred interrupt modes are supported.
+>> My overall conclusion is that 'cris' architecture support in the Linux kernel
+>> is in bad shape, does not work anymore, and would require substantial effort
+>> to get it into working state.
 >>
->> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
->> ---
->>  arch/mips/include/asm/gic.h |  15 ++++++
->>  arch/mips/kernel/irq-gic.c  | 122 +++++++++++++++++++++++++++++++++++++++++++-
->>
+>> Anyway, below are my individual findings. If there is an ongoing effort to
+>> improve cris support in the upstream kernel, specifically support for crisv32,
+>> please let me know. I'll be happy to test the resulting kernels.
 >
+> Jesper is on parental leave so do not expect any prompt reply from him.
 >
-> Can you move this to drivers/irqchip and use the IRQCHIP_DECLARE()
-> macro to define the entry point?
+>>
+>> Individual findings:
+>>
+>> headers_install
+>>
+>> make ARCH=cris INSTALL_HDR_PATH=/tmp headers_install
+>>
+>> results in:
+>>
+>> ./scripts/Makefile.headersinst:14: arch/cris/include/uapi/asm/arch-v10/Kbuild:
+>> 	No such file or directory
+>> make[2]: *** No rule to make target `arch/cris/include/uapi/asm/arch-v10/Kbuild'.  Stop.
+> I have already sent a fix for this that Michael said he wanted to deal with.
+>
 
-Sure.  I was planning on doing this later, but I don't see why it
-couldn't be done now though.
+Hi Sam,
+
+That is great. Note there is a second part besides the failure itself:
+The resulting installed headers don't work and need a post-installation
+patch, as mentioned in my previous e-mail. Would be great if you can
+look into this as well (if you did not do so already).
+
+Thanks,
+Guenter
+
