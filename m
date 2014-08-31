@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751925AbaHaS27 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 14:28:59 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:58286 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464AbaHaS2z (ORCPT
+	id S1751954AbaHaScg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 14:32:36 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:35051 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751464AbaHaScd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 14:28:55 -0400
-Date: Sun, 31 Aug 2014 11:28:51 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, gregkh@linuxfoundation.org,
-        falcon@meizu.com, tiwai@suse.de, arjan@linux.intel.com,
-        linux-kernel@vger.kernel.org, oleg@redhat.com,
-        akpm@linux-foundation.org, penguin-kernel@i-love.sakura.ne.jp,
-        joseph.salisbury@canonical.com, bpoirier@suse.de,
-        "Luis R. Rodriguez" <mcgrof@suse.com>
-Subject: Re: [RFC v1 0/3] driver-core: add asynch module loading support
-Message-ID: <20140831182851.GC17827@core.coreip.homeip.net>
-References: <1409475800-17573-1-git-send-email-mcgrof@do-not-panic.com>
- <20140831101358.GB19853@htj.dyndns.org>
+	Sun, 31 Aug 2014 14:32:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140831101358.GB19853@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5401703B.4090801@openwrt.org>
+References: <1409350479-19108-1-git-send-email-abrestic@chromium.org>
+	<5401703B.4090801@openwrt.org>
+Date: Sun, 31 Aug 2014 11:32:32 -0700
+X-Google-Sender-Auth: 8-t7nfBXHyYcZOh_On04gKMfJkQ
+Message-ID: <CAL1qeaH7q1N8oPpyyhTkwDhwGjn80CcfHZt6jqgFVg9ik=KdAQ@mail.gmail.com>
+Subject: Re: [PATCH 00/12] MIPS: GIC device-tree support
+From: Andrew Bresticker <abrestic@chromium.org>
+To: John Crispin <blogic@openwrt.org>
+Cc: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Jeffrey Deans <jeffrey.deans@imgtec.com>,
+        Markos Chandras <markos.chandras@imgtec.com>,
+        Paul Burton <paul.burton@imgtec.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Linux-MIPS <linux-mips@linux-mips.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HI Tejun,
+On Fri, Aug 29, 2014 at 11:33 PM, John Crispin <blogic@openwrt.org> wrote:
+> Hi Andrew,
+>
+> On 30/08/2014 00:14, Andrew Bresticker wrote:
+>> Based on 3.17-rc2 and boot tested on Danube (+ out of tree patches) and
+>> Malta.
+>
+> Lantiq makes a mips soc called danube. is this the same family or is
+> this just a name collision between 2 chip vendors ?
 
-On Sun, Aug 31, 2014 at 06:13:58AM -0400, Tejun Heo wrote:
-> Hello, Luis.
-> 
-> I haven't followed the previous discussions so please let me know if
-> this has been discussed before.  It looks like you're trying to extend
-> the async mechanism and applying them to init functions themselves.
-> That sounds kinda weird to me.  Isn't the root cause of the problem
-> doing device probings along with driver initilaization on module load?
-
-For my use case it is driver initialization itself (because most of the
-relevant drivers is compiled in). Although, come to think, if we could do
-something about resume that would be nice too: then I'd be able to drop all
-stuff in serio that lies about device state and marks it as resumed even though
-mouse/touchpad will be actually reset and operable much later.
-
-> 
-> Wouldn't it be more logical to simply make bus_add_driver() ->
-> driver_attach() invocation asynchronous?  There's no reason to make
-> them parallel either.  We can use an ordered queue for it so that we
-> don't lose the probing order we used to have.
-
-Sometimes losing probing order is the desired outcome though. Like with my
-beloved touchpad :)
-
-> Making things go
-> parallel is the responsibility of each probing function after all and
-> there isn't much to gain by making attach calls go parallel.
-
-If we make probe function schedule stuff asynchronously, then, in case of
-failures, we'll end up with half-bound driver. Also drivers would have to have
-additional code on removal to make sure probe full done before removing. PM
-methods need to be ready to be called on half-initialized device. It is a mess.
-
-Thanks.
-
--- 
-Dmitry
+They are unrelated.  It's just a name collision.
