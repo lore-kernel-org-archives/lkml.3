@@ -1,69 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751341AbaHaLgV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 07:36:21 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:53007 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204AbaHaLgU (ORCPT
+	id S1751393AbaHaLi1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 07:38:27 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:48917 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751046AbaHaLiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 07:36:20 -0400
+	Sun, 31 Aug 2014 07:38:25 -0400
+Date: Sun, 31 Aug 2014 07:38:22 -0400
+From: Tejun Heo <tj@kernel.org>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>, falcon@meizu.com,
+        Takashi Iwai <tiwai@suse.de>, arjan@linux.intel.com,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        penguin-kernel@i-love.sakura.ne.jp,
+        Joseph Salisbury <joseph.salisbury@canonical.com>, bpoirier@suse.de,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [RFC v1 0/3] driver-core: add asynch module loading support
+Message-ID: <20140831113822.GF19853@htj.dyndns.org>
+References: <1409475800-17573-1-git-send-email-mcgrof@do-not-panic.com>
+ <20140831101358.GB19853@htj.dyndns.org>
+ <20140831110200.GC19853@htj.dyndns.org>
+ <CANq1E4QFtTrCU8eq67AqeUO1v9EAZnAfaHJW4CnJkh0KKq9XmA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <54012D74.7010302@infradead.org>
-References: <5400fba1.732YclygYZprDXeI%akpm@linux-foundation.org>
-	<54012D74.7010302@infradead.org>
-Date: Sun, 31 Aug 2014 15:36:18 +0400
-Message-ID: <CAPAsAGz4458YgHN0b04Z4fTwvo-guh+ESNAXy7j=c-bc7v4gcA@mail.gmail.com>
-Subject: Re: [PATCH -mmotm] mm: fix kmemcheck.c build errors
-From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
-To: Randy Dunlap <rdunlap@infradead.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>, linux-next@vger.kernel.org,
-        sfr@canb.auug.org.au, mhocko@suse.cz,
-        Pekka Enberg <penberg@kernel.org>, Vegard Nossum <vegardno@ifi.uio.no>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANq1E4QFtTrCU8eq67AqeUO1v9EAZnAfaHJW4CnJkh0KKq9XmA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-08-30 5:48 GMT+04:00 Randy Dunlap <rdunlap@infradead.org>:
-> From: Randy Dunlap <rdunlap@infradead.org>
->
-> Add header file to fix kmemcheck.c build errors:
->
-> ../mm/kmemcheck.c:70:7: error: dereferencing pointer to incomplete type
-> ../mm/kmemcheck.c:83:15: error: dereferencing pointer to incomplete type
-> ../mm/kmemcheck.c:95:8: error: dereferencing pointer to incomplete type
-> ../mm/kmemcheck.c:95:21: error: dereferencing pointer to incomplete type
->
-> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-> ---
->  mm/kmemcheck.c |    1 +
->  1 file changed, 1 insertion(+)
->
-> Index: mmotm-2014-0829-1515/mm/kmemcheck.c
-> ===================================================================
-> --- mmotm-2014-0829-1515.orig/mm/kmemcheck.c
-> +++ mmotm-2014-0829-1515/mm/kmemcheck.c
-> @@ -2,6 +2,7 @@
->  #include <linux/mm_types.h>
->  #include <linux/mm.h>
->  #include <linux/slab.h>
-> +#include <linux/slab_def.h>
+(cc'ing Rusty for module loading)
 
-This will work only for CONFIG_SLAB=y. struct kmem_cache definition
-was moved to internal header [*],
-so you need to include it here:
-#include "slab.h"
+Hello,
 
-[*] http://ozlabs.org/~akpm/mmotm/broken-out/mm-slab_common-move-kmem_cache-definition-to-internal-header.patch
+On Sun, Aug 31, 2014 at 01:25:03PM +0200, David Herrmann wrote:
+> On Sun, Aug 31, 2014 at 1:02 PM, Tejun Heo <tj@kernel.org> wrote:
+> > @@ -689,9 +704,23 @@ int bus_add_driver(struct device_driver *drv)
+> >
+> >         klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers);
+> >         if (drv->bus->p->drivers_autoprobe) {
+> > -               error = driver_attach(drv);
+> > -               if (error)
+> > -                       goto out_unregister;
+> > +               struct driver_attach_work *daw;
 
->  #include <linux/kmemcheck.h>
->
->  void kmemcheck_alloc_shadow(struct page *page, int order, gfp_t flags, int node)
->
+Oops, this probably should go inside the below if block.
 
+> > +
+> > +               if (drv->owner) {
+> > +                       daw = kzalloc(sizeof(*daw), GFP_KERNEL);
+> > +                       if (!daw) {
+> > +                               error = -ENOMEM;
+> > +                               goto out_unregister;
+> > +                       }
+> > +
+> > +                       INIT_WORK(&daw->work, driver_attach_workfn);
+> > +                       daw->driver = drv;
+> > +                       queue_work(driver_attach_wq, &daw->work);
+> 
+> Doesn't this break on-demand cdev initialization? We currently call
+> request_module() on open() for unclaimed major/minor combinations. If
+> driver_attach() is no longer part of module_init(), there is no
+> guarantee the driver created the cdev before request_module() returns.
+
+Right, yeah, this really looks like something we'd need to switch per
+insmod instance.  It looks like driver core needs a generic parameter
+to tell it to whether drive probing asynchronously to module loading
+or not.  Maybe we can add a generic driver param like
+"driver_async_probe"?
+
+> I actually like this "deferred attach" approach, so this is not meant
+> as counter-argument. We just need to make sure to have a notion of
+> "settled modules" so we know how long to wait after loading a module.
+
+Another way could be making module-generic pollable file in the
+module's sysfs dir to indicate "full init completion", which would map
+to probing completion for drivers; however, given that we need to keep
+the synchronous behavior by default for compatibility, I don't think
+that buys us much.
+
+Thanks.
 
 -- 
-Best regards,
-Andrey Ryabinin
+tejun
