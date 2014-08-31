@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751464AbaHaOeH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 10:34:07 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:35494 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751119AbaHaOeE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 10:34:04 -0400
+	id S1751457AbaHaOoO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 10:44:14 -0400
+Received: from mga14.intel.com ([192.55.52.115]:10031 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751119AbaHaOoH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Aug 2014 10:44:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="379442429"
+Message-ID: <540334B2.7000009@linux.intel.com>
+Date: Sun, 31 Aug 2014 07:44:02 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <CAJhHMCDaSAzU3zvhY2FRFoBaQH4oQBTsUsYMU6pvBbCXydROZQ@mail.gmail.com>
-References: <1409369788-22563-1-git-send-email-bobby.prani@gmail.com>
-	<CAMuHMdV_naTfQOLwOshWq1Q15kSE39a8GWChsjt3RrWRcd6peg@mail.gmail.com>
-	<CAJhHMCDaSAzU3zvhY2FRFoBaQH4oQBTsUsYMU6pvBbCXydROZQ@mail.gmail.com>
-Date: Sun, 31 Aug 2014 16:34:03 +0200
-Message-ID: <CANq1E4SCnDjN5yetrgtaRNdvDr7xqGOm1BXz7dbGvX3mnsm-MA@mail.gmail.com>
-Subject: Re: [RFC PATCH] powerpc: Wire up three syscalls
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Anton Blanchard <anton@samba.org>, Fabian Frederick <fabf@skynet.be>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "open list:LINUX FOR POWERPC..." <linuxppc-dev@lists.ozlabs.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, gregkh@linuxfoundation.org,
+        dmitry.torokhov@gmail.com, falcon@meizu.com, tiwai@suse.de,
+        tj@kernel.org
+CC: linux-kernel@vger.kernel.org, oleg@redhat.com, akpm@linux-foundation.org,
+        penguin-kernel@i-love.sakura.ne.jp, joseph.salisbury@canonical.com,
+        bpoirier@suse.de, "Luis R. Rodriguez" <mcgrof@suse.com>
+Subject: Re: [RFC v1 0/3] driver-core: add asynch module loading support
+References: <1409475800-17573-1-git-send-email-mcgrof@do-not-panic.com>
+In-Reply-To: <1409475800-17573-1-git-send-email-mcgrof@do-not-panic.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On 8/31/2014 2:03 AM, Luis R. Rodriguez wrote:
+> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+>
+> While reviewing Wu Zhangjin's solution to async probe [0] and his
+> ideas on creating async groups I decided to try following the init
+> levels on the kernel to try to help with synchronization at least
+> on some level. This borrows ideas discussed with the kthread_create()
+> solution [1] and also simplifies the idea of how we should be grouping
+> async calls between drivers.
+>
+> A few things worth mentioning. I decided to go down a generic solution as
+> if we ever wanted to bring asynchrnonization behaviour below modules
+> this would allow folks to start testing this without much effort. It
+> allows asynchronous calls to upkeep the order already set in place
+> for built-in code. If one wanted to eventually venture down below
+> that path we'd need to add respective exit calls for each level, as
+> right now we just assume that every level should use module_exit().
+> SmPL grammer could be used to easily tidy this up, for example on
+> the subsys_init():
 
-On Sun, Aug 31, 2014 at 2:52 PM, Pranith Kumar <bobby.prani@gmail.com> wrote:
-> Hi Geert,
->
-> On Sun, Aug 31, 2014 at 4:53 AM, Geert Uytterhoeven
-> <geert@linux-m68k.org> wrote:
->> Hi Pranith,
->>
->> On Sat, Aug 30, 2014 at 5:36 AM, Pranith Kumar <bobby.prani@gmail.com> wrote:
->>> I see that the three syscalls seccomp, getrandom and memfd_create are not wired
->>> because of which we get a warning while compilation.
->>>
->>> So I wired them up in this patch. What else needs to be done? I tried the
->>> memfd_test after compiling this kernel, but it is failing. What am I missing for
->>> this to work? Any advice is really appreciated! :)
->>
->> Did it fail due to the (silly) "ifeq ($(ARCH),X86)" checks in
->> tools/testing/selftests/memfd/Makefile?
->>
->
-> I removed that check and compiled memfd_test.c by hand. This is the
-> following error which I get when I run the test:
->
-> $ ./memfd_test
-> memfd: CREATE
-> memfd: BASIC
-> 10 != 0 = GET_SEALS(3)
-> Aborted
->
-> This is basically when checking the seals which we already added. It
-> should return 10 (F_SEAL_SHRINK | F_SEAL_WRITE), instead it is returning 0.
->
-> What else needs to be done for this to properly work? I see that for
-> m68k, you just wired it up like in this patch. Did it work after that?
+before we added the current async approach the approach of async init calls was tried
+At the time, Linus hated it and he was right, it was not the right thing.
 
-The only arch-dependent code for memfd_test.c is the syscall invocation:
-    memfd_create(const char *name, unsigned int flags);
-via glibc as:
-    syscall(__NR_memfd_create, name, flags);
+What is different this time to make this the right thing to do ?
 
-Can you debug your test-run (maybe via simple printk() in mm/shmem.c
-memfd_create()) and see what's going wrong there?
 
-Thanks
-David
