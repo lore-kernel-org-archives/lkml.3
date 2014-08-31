@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751954AbaHaToz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 15:44:55 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:63349 "EHLO
+	id S1752051AbaHaTpV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 15:45:21 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:48742 "EHLO
 	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751449AbaHaToy (ORCPT
+	with ESMTP id S1751995AbaHaTpK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 15:44:54 -0400
+	Sun, 31 Aug 2014 15:45:10 -0400
 From: Chase Southwood <chase.southwood@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Chase Southwood <chase.southwood@gmail.com>
-Subject: [PATCH] staging: comedi: usbdux: fix more sparse endianness warnings
-Date: Sun, 31 Aug 2014 14:44:23 -0500
-Message-Id: <1409514263-15251-1-git-send-email-chase.southwood@gmail.com>
+Subject: [PATCH] staging: comedi: usbduxsigma: fix more sparse endianness warnings
+Date: Sun, 31 Aug 2014 14:45:00 -0500
+Message-Id: <1409514300-15493-1-git-send-email-chase.southwood@gmail.com>
 X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,43 +22,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Sparse shows a couple of warnings like:
 
-drivers/staging/comedi/drivers/usbdux.c:889:20: warning: incorrect type in assignment (different base types)
-drivers/staging/comedi/drivers/usbdux.c:889:20:    expected unsigned short [unsigned] [short] [usertype] <noident>
-drivers/staging/comedi/drivers/usbdux.c:889:20:    got restricted __le16 [usertype] <noident>
+drivers/staging/comedi/drivers/usbduxsigma.c:787:23: warning: cast to restricted __be32
 
-This is the result of a couple of calls to cpu_to_le16() being assigned to
-uint16_t typed variables.  Switch the types of these variables/pointers to
-__le16 accordingly.
+Looking at the indicated lines shows that the issue is caused by an
+incorrect cast to uint32_t instead of __be32.  Fix this cast.
 
 Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
-Suggested-by: Ian Abbott <abbotti@mev.co.uk>
+Cc: Ian Abbott <abbotti@mev.co.uk>
 Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
 ---
-
- drivers/staging/comedi/drivers/usbdux.c | 4 ++--
+ drivers/staging/comedi/drivers/usbduxsigma.c | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/usbdux.c b/drivers/staging/comedi/drivers/usbdux.c
-index 86c2c27..8eb2742 100644
---- a/drivers/staging/comedi/drivers/usbdux.c
-+++ b/drivers/staging/comedi/drivers/usbdux.c
-@@ -868,7 +868,7 @@ static int usbdux_ao_insn_write(struct comedi_device *dev,
- 	struct usbdux_private *devpriv = dev->private;
- 	unsigned int chan = CR_CHAN(insn->chanspec);
- 	unsigned int val = s->readback[chan];
--	uint16_t *p = (uint16_t *)&devpriv->dux_commands[2];
-+	__le16 *p = (__le16 *)&devpriv->dux_commands[2];
- 	int ret = -EBUSY;
- 	int i;
+diff --git a/drivers/staging/comedi/drivers/usbduxsigma.c b/drivers/staging/comedi/drivers/usbduxsigma.c
+index 5dbab04..5bad118 100644
+--- a/drivers/staging/comedi/drivers/usbduxsigma.c
++++ b/drivers/staging/comedi/drivers/usbduxsigma.c
+@@ -784,7 +784,7 @@ static int usbduxsigma_ai_insn_read(struct comedi_device *dev,
+ 		}
  
-@@ -1180,7 +1180,7 @@ static int usbdux_counter_write(struct comedi_device *dev,
- {
- 	struct usbdux_private *devpriv = dev->private;
- 	unsigned int chan = CR_CHAN(insn->chanspec);
--	uint16_t *p = (uint16_t *)&devpriv->dux_commands[2];
-+	__le16 *p = (__le16 *)&devpriv->dux_commands[2];
- 	int ret = 0;
- 	int i;
+ 		/* 32 bits big endian from the A/D converter */
+-		val = be32_to_cpu(get_unaligned((uint32_t
++		val = be32_to_cpu(get_unaligned((__be32
+ 						 *)(devpriv->insn_buf + 1)));
+ 		val &= 0x00ffffff;	/* strip status byte */
+ 		val ^= 0x00800000;	/* convert to unsigned */
+@@ -1343,7 +1343,7 @@ static int usbduxsigma_getstatusinfo(struct comedi_device *dev, int chan)
+ 		return ret;
+ 
+ 	/* 32 bits big endian from the A/D converter */
+-	val = be32_to_cpu(get_unaligned((uint32_t *)(devpriv->insn_buf + 1)));
++	val = be32_to_cpu(get_unaligned((__be32 *)(devpriv->insn_buf + 1)));
+ 	val &= 0x00ffffff;	/* strip status byte */
+ 	val ^= 0x00800000;	/* convert to unsigned */
  
 -- 
 2.1.0
