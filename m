@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752147AbaHaWSQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 18:18:16 -0400
-Received: from doppler.thel33t.co.uk ([193.110.88.198]:41419 "EHLO
-	doppler.thel33t.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751744AbaHaWSP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 18:18:15 -0400
+	id S1751990AbaHaWcV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 18:32:21 -0400
+Received: from mga01.intel.com ([192.55.52.88]:63718 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751667AbaHaWcU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Aug 2014 18:32:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="379534953"
+Message-ID: <5403A273.4070504@linux.intel.com>
+Date: Sun, 31 Aug 2014 15:32:19 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Sun, 31 Aug 2014 23:30:10 +0100
-From: Leigh Brown <leigh@solinno.co.uk>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
-        Tawfik Bayouk <tawfik@marvell.com>,
-        Simon Boulay <simon.boulay@vitec.com>,
-        Arnaud Ebalard <arno@natisbad.org>, Nadav Haklai <nadavh@marvell.com>,
-        Lior Amsalem <alior@marvell.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Raphael Rigo <ml-arm@syscall.eu>, linux-arm-kernel@lists.infradead.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH 1/4] clk: mvebu: Fix clk frequency value if SSCG is
- enabled
-In-Reply-To: <d9e3be49b00eb7dd8827f05a955b4497@doppler.thel33t.co.uk>
-References: <1409312620-20631-1-git-send-email-gregory.clement@free-electrons.com>
- <1409312620-20631-2-git-send-email-gregory.clement@free-electrons.com>
- <d9e3be49b00eb7dd8827f05a955b4497@doppler.thel33t.co.uk>
-Message-ID: <ba70e97da698fe6053adbb6218c905a3@doppler.thel33t.co.uk>
-User-Agent: Roundcube Webmail/1.0.0
+To: =?UTF-8?B?5ZC056ug6YeR?= <falcon@meizu.com>,
+        Greg KH <gregkh@linuxfoundation.org>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        "tiwai@suse.de" <tiwai@suse.de>, "tj@kernel.org" <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "oleg@redhat.com" <oleg@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "penguin-kernel@i-love.sakura.ne.jp" 
+	<penguin-kernel@i-love.sakura.ne.jp>,
+        "joseph.salisbury@canonical.com" <joseph.salisbury@canonical.com>,
+        "bpoirier@suse.de" <bpoirier@suse.de>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>
+Subject: Re: [RFC v1 0/3] driver-core: add asynch module loading support
+References: <99jhsb6abtsilpt3j5nu991b.1409513632114@email.android.com>
+In-Reply-To: <99jhsb6abtsilpt3j5nu991b.1409513632114@email.android.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-08-31 23:25, Leigh Brown wrote:
-[...]
-> /* NB: 0.96% = 0.0048 or 3/625 */
-> freq_swing_half = (((u64)high_bound - (u64)low_bound)
-> 		* (u64)system_clk * 3);
-> do_div(freq_swing_half, (625 * high_bound));
+On 8/31/2014 1:06 PM, 吴章金 wrote:
+> Hi, folks
+>
+> I'm back to this discussion,
+>
+> The original requirement of my first RFC patchset is mainly for Android Smartphone use case:
+>
+> 1. We want light on LCD and draw a logo immediately after power key press(don't consider uboot or lk biotloader here).
+> 2. We want the whole kernel boot fast to give user the Android Launch deaktop
+> 3. The modem initialization/reset is slow
+> 4. The Touchpad firmware upgrade is slow
+> 5. We have many cpu cores(up to 8 in latest exynos 5430 and MT6595...)
+> 6. We have few schedulable/parallellizable threads
+> 7. We compiled all of the modules in the kernel(stupid? avoid modprobe...but lose parallelization in userspace)
+>
+> So, I think about is that possible to async most of the probes, but still reserve the requred dependencies to let them still work as expected.
 
-Sigh.  The comment should be:
+you can boot a whole kernel including all graphics in less than 0.5 seconds, even without this patchset.
 
-/* NB: half of 0.96% is 0.0048 or 3/625 */
-
-The code should be right :-)
-
-Regards,
-
-Leigh.
 
