@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751237AbaHaE4j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 00:56:39 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:61584 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750732AbaHaE4i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 00:56:38 -0400
-From: Janet Liu <jianhua.ljh@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Janet Liu <jianhua.ljh@gmail.com>
-Subject: [PATCHv2 3/4] staging:lustre:lnet: lib-md.c erase C99 // comments
-Date: Sun, 31 Aug 2014 12:56:20 +0800
-Message-Id: <1409460980-4898-1-git-send-email-jianhua.ljh@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1409460907-4859-1-git-send-email-jianhua.ljh@gmail.com>
-References: <1409460907-4859-1-git-send-email-jianhua.ljh@gmail.com>
+	id S1751324AbaHaE6L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 00:58:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33674 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751060AbaHaE6G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Aug 2014 00:58:06 -0400
+Date: Sun, 31 Aug 2014 06:58:01 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Jim Davis <jim.epost@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "m.chehab" <m.chehab@samsung.com>, hans.verkuil@cisco.com,
+        felipensp@gmail.com, mkrufky@linuxtv.org, crazycat69@narod.ru,
+        linux-media <linux-media@vger.kernel.org>
+Subject: Re: randconfig build error with next-20140829, in
+	drivers/media/usb/dvb-usb/technisat-usb2.c
+Message-ID: <20140831045801.GL3347@wotan.suse.de>
+References: <CA+r1ZhhfV+fLKY6X0fp2QevQGZMx4g=okSeZjPN9Z3LZJqykGg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+r1ZhhfV+fLKY6X0fp2QevQGZMx4g=okSeZjPN9Z3LZJqykGg@mail.gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After changing the comments format, the other error disappears.
-So silences two checkpatch errors:
-  ERROR: do not use C99 // comments
-  ERROR: trailing statements should be on next line
+On Fri, Aug 29, 2014 at 09:19:42AM -0700, Jim Davis wrote:
+> Building with the attached random configuration file,
+> 
+>   LD      init/built-in.o
+> drivers/built-in.o: In function `technisat_usb2_set_voltage':
+> technisat-usb2.c:(.text+0x3b4919): undefined reference to `stv090x_set_gpio'
+> make: *** [vmlinux] Error 1
 
-Signed-off-by: Janet Liu <jianhua.ljh@gmail.com>
----
- drivers/staging/lustre/lnet/lnet/lib-md.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+This is because MEDIA_SUBDRV_AUTOSELECT is designed to let you
+pick and choose, technically we should just have:
 
-diff --git a/drivers/staging/lustre/lnet/lnet/lib-md.c b/drivers/staging/lustre/lnet/lnet/lib-md.c
-index ca08703..5b9c93a 100644
---- a/drivers/staging/lustre/lnet/lnet/lib-md.c
-+++ b/drivers/staging/lustre/lnet/lnet/lib-md.c
-@@ -125,7 +125,7 @@ lnet_md_build(lnet_libmd_t *lmd, lnet_md_t *umd, int unlink)
- 
- 		if ((umd->options & LNET_MD_MAX_SIZE) != 0 && /* max size used */
- 		    (umd->max_size < 0 ||
--		     umd->max_size > total_length)) // illegal max_size
-+		     umd->max_size > total_length)) /* illegal max_size */
- 			return -EINVAL;
- 
- 	} else if ((umd->options & LNET_MD_KIOV) != 0) {
-@@ -146,7 +146,7 @@ lnet_md_build(lnet_libmd_t *lmd, lnet_md_t *umd, int unlink)
- 
- 		if ((umd->options & LNET_MD_MAX_SIZE) != 0 && /* max size used */
- 		    (umd->max_size < 0 ||
--		     umd->max_size > total_length)) // illegal max_size
-+		     umd->max_size > total_length)) /* illegal max_size */
- 			return -EINVAL;
- 	} else {   /* contiguous */
- 		lmd->md_length = umd->length;
-@@ -156,7 +156,7 @@ lnet_md_build(lnet_libmd_t *lmd, lnet_md_t *umd, int unlink)
- 
- 		if ((umd->options & LNET_MD_MAX_SIZE) != 0 && /* max size used */
- 		    (umd->max_size < 0 ||
--		     umd->max_size > (int)umd->length)) // illegal max_size
-+		     umd->max_size > (int)umd->length)) /* illegal max_size */
- 			return -EINVAL;
- 	}
- 
--- 
-1.7.9.5
+diff --git a/drivers/media/usb/dvb-usb/Kconfig b/drivers/media/usb/dvb-usb/Kconfig
+index c5d9566..5a4e82e 100644
+--- a/drivers/media/usb/dvb-usb/Kconfig
++++ b/drivers/media/usb/dvb-usb/Kconfig
+@@ -313,7 +313,7 @@ config DVB_USB_AZ6027
+ config DVB_USB_TECHNISAT_USB2
+ 	tristate "Technisat DVB-S/S2 USB2.0 support"
+ 	depends on DVB_USB
+-	select DVB_STV090x if MEDIA_SUBDRV_AUTOSELECT
++	select DVB_STV090x
+ 	select DVB_STV6110x if MEDIA_SUBDRV_AUTOSELECT
+ 	help
+ 	  Say Y here to support the Technisat USB2 DVB-S/S2 device
 
+and that would fix the issue you saw but then again if we do that
+we might as well also do the same for DVB_STV6110x and a slew of
+different Kconfig entries on that file.
+
+Someone needs to make a judgement call and either fix all these
+Kconfig entries or document that MEDIA_SUBDRV_AUTOSELECT will
+let you shoot yourself in the foot at build time. Then what
+I recommend in the meantime is simply to not trust randomconfig
+builds unless you are always enabling MEDIA_SUBDRV_AUTOSELECT.
+
+I think its fair to expect for 'make randomconfig' to give you
+a configuration that lets you build things without issue so
+I see this more of an issue with MEDIA_SUBDRV_AUTOSELECT and
+this sloppy embedded craze.
+
+  Luis
