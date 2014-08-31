@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752174AbaHaXUQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 19:20:16 -0400
-Received: from mga01.intel.com ([192.55.52.88]:28850 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751667AbaHaXUL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 19:20:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="379544899"
-Message-ID: <5403ADA8.1090903@linux.intel.com>
-Date: Sun, 31 Aug 2014 16:20:08 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752197AbaHaXUh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 19:20:37 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:49191 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752176AbaHaXUT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Aug 2014 19:20:19 -0400
+Message-ID: <5403ADAF.1000909@infradead.org>
+Date: Sun, 31 Aug 2014 16:20:15 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>, Greg KH <gregkh@linuxfoundation.org>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, falcon@meizu.com,
-        tiwai@suse.de, linux-kernel@vger.kernel.org, oleg@redhat.com,
-        akpm@linux-foundation.org, penguin-kernel@i-love.sakura.ne.jp,
-        joseph.salisbury@canonical.com, bpoirier@suse.de,
-        "Luis R. Rodriguez" <mcgrof@suse.com>
-Subject: Re: [RFC v1 0/3] driver-core: add asynch module loading support
-References: <1409475800-17573-1-git-send-email-mcgrof@do-not-panic.com> <540334B2.7000009@linux.intel.com> <20140831175040.GA17827@core.coreip.homeip.net> <5403767E.1020107@linux.intel.com> <20140831193140.GA12678@kroah.com> <20140831201407.GB19881@core.coreip.homeip.net> <20140831204035.GA4793@kroah.com> <20140831215313.GA28690@mtj.dyndns.org> <20140831221534.GA18064@kroah.com> <20140831225312.GA29948@mtj.dyndns.org>
-In-Reply-To: <20140831225312.GA29948@mtj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Max Filippov <jcmvbkbc@gmail.com>, dri-devel@lists.freedesktop.org
+CC: linux-kernel@vger.kernel.org, David Airlie <airlied@redhat.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: Re: [PATCH] drm/vmwgfx: select FB when DRM_VMWGFX is selected
+References: <1409526467-20944-1-git-send-email-jcmvbkbc@gmail.com>
+In-Reply-To: <1409526467-20944-1-git-send-email-jcmvbkbc@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/31/2014 3:53 PM, Tejun Heo wrote:
-> Hello,
->
-> On Sun, Aug 31, 2014 at 03:15:34PM -0700, Greg KH wrote:
->> For the use cases we have today, it would work.  We have a few drivers
->> that take a _long_ time in their probe callback, and they need to be
->> made async for various reasons (modprobe timeout killer, touchscreen
->> init sequence stalling boot, etc.)
->
-> Oh, but there already is a reported case which fails.  Hard drives
-> with a lot of platters take > 10secs to spin up and there are
-> configurations which regularly fail the initial reset and it's quite
-> rare but probing time taking over 30s does happen in the wild.  We
-> can't mark libata as requiring async probing on module load
-> unconditionally but at the same time we need them to be asynchronous
-> for use cases which don't depend on synchronous behavior has has
-> timeout.
+On 08/31/14 16:07, Max Filippov wrote:
+> Otherwise, if FB is not selected build fails at linking step:
+>   vmwgfx_fb.c:(.text+0x4098b): undefined reference to `register_framebuffer'
+>   vmwgfx_fb.c:(.text+0x409c0): undefined reference to `framebuffer_release'
+>   vmwgfx_fb.c:(.text+0x409f4): undefined reference to `unregister_framebuffer'
+>   vmwgfx_fb.c:(.text+0x40a0e): undefined reference to `framebuffer_release'
+> 
+> Patch ae6445ac7475ff05 drm/vmwgfx: depends on FB
+> added dependency on FB that was subsequently removed in patch
+> 04381b987292256d drm: Move plane helpers into drm_kms_helper.ko
+> 
+> Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+> ---
+>  drivers/gpu/drm/vmwgfx/Kconfig |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/vmwgfx/Kconfig b/drivers/gpu/drm/vmwgfx/Kconfig
+> index 67720f7..4fba548 100644
+> --- a/drivers/gpu/drm/vmwgfx/Kconfig
+> +++ b/drivers/gpu/drm/vmwgfx/Kconfig
+> @@ -1,6 +1,7 @@
+>  config DRM_VMWGFX
+>  	tristate "DRM driver for VMware Virtual GPU"
+>  	depends on DRM && PCI
+> +	select FB
+>  	select FB_DEFERRED_IO
+>  	select FB_CFB_FILLRECT
+>  	select FB_CFB_COPYAREA
+> 
 
-libata probing is already async thankfully.
+My experience with these "select FB_*" things is that this symbol (DRM_VMWGFX)
+should still depend on FB.  Has something changed recently to negate that?
 
+
+-- 
+~Randy
