@@ -1,73 +1,290 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751893AbaHaRuq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 13:50:46 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:54446 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751346AbaHaRup (ORCPT
+	id S1751970AbaHaRva (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 13:51:30 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:57404 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751909AbaHaRv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 13:50:45 -0400
-Date: Sun, 31 Aug 2014 10:50:40 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, gregkh@linuxfoundation.org,
-        falcon@meizu.com, tiwai@suse.de, tj@kernel.org,
-        linux-kernel@vger.kernel.org, oleg@redhat.com,
-        akpm@linux-foundation.org, penguin-kernel@i-love.sakura.ne.jp,
-        joseph.salisbury@canonical.com, bpoirier@suse.de,
-        "Luis R. Rodriguez" <mcgrof@suse.com>
-Subject: Re: [RFC v1 0/3] driver-core: add asynch module loading support
-Message-ID: <20140831175040.GA17827@core.coreip.homeip.net>
-References: <1409475800-17573-1-git-send-email-mcgrof@do-not-panic.com>
- <540334B2.7000009@linux.intel.com>
+	Sun, 31 Aug 2014 13:51:27 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <54036099.2030506@roeck-us.net>
+Date: Sun, 31 Aug 2014 10:51:21 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <540334B2.7000009@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Beniamino Galvani <b.galvani@gmail.com>, linux-kernel@vger.kernel.org
+CC: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
+        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Carlo Caione <carlo@caione.org>
+Subject: Re: [PATCH v2 3/4] watchdog: add driver for Ricoh RN5T618 watchdog
+References: <1409403026-28818-1-git-send-email-b.galvani@gmail.com> <1409403026-28818-4-git-send-email-b.galvani@gmail.com>
+In-Reply-To: <1409403026-28818-4-git-send-email-b.galvani@gmail.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 31, 2014 at 07:44:02AM -0700, Arjan van de Ven wrote:
-> On 8/31/2014 2:03 AM, Luis R. Rodriguez wrote:
-> >From: "Luis R. Rodriguez" <mcgrof@suse.com>
-> >
-> >While reviewing Wu Zhangjin's solution to async probe [0] and his
-> >ideas on creating async groups I decided to try following the init
-> >levels on the kernel to try to help with synchronization at least
-> >on some level. This borrows ideas discussed with the kthread_create()
-> >solution [1] and also simplifies the idea of how we should be grouping
-> >async calls between drivers.
-> >
-> >A few things worth mentioning. I decided to go down a generic solution as
-> >if we ever wanted to bring asynchrnonization behaviour below modules
-> >this would allow folks to start testing this without much effort. It
-> >allows asynchronous calls to upkeep the order already set in place
-> >for built-in code. If one wanted to eventually venture down below
-> >that path we'd need to add respective exit calls for each level, as
-> >right now we just assume that every level should use module_exit().
-> >SmPL grammer could be used to easily tidy this up, for example on
-> >the subsys_init():
-> 
-> before we added the current async approach the approach of async init calls was tried
-> At the time, Linus hated it and he was right, it was not the right thing.
-> 
-> What is different this time to make this the right thing to do ?
+On 08/30/2014 05:50 AM, Beniamino Galvani wrote:
+> This adds a driver for the watchdog timer available in Ricoh RN5T618
+> PMIC. The device supports a programmable expiration time of 1, 8, 32
+> or 128 seconds.
+>
+> Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
 
-Because otherwise drivers still have to do this, but open code it. Let's say I
-have a long operations (i.e. for some touchpads it takes about 2 secs to reset
-and configure it). I can offload that part into async_schedule() so it does not
-stop initialization of the rest of the system (why would I want to delay
-initializing of USB or storage system until touchpad is ready?) but if that
-initialization fails we end up with partially bound driver and device that is
-not really operable. I would very much prefer async and sync cases be the same
-- if probe() fails the driver is not bound to the device.
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 
-I think it is wrong to make async probing system-wide, but driver opt-in shoudl
-be fine and right thing to do.
+> ---
+>   drivers/watchdog/Kconfig       |   11 +++
+>   drivers/watchdog/Makefile      |    1 +
+>   drivers/watchdog/rn5t618_wdt.c |  198 ++++++++++++++++++++++++++++++++++++++++
+>   3 files changed, 210 insertions(+)
+>   create mode 100644 drivers/watchdog/rn5t618_wdt.c
+>
+> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> index f57312f..9eba6af 100644
+> --- a/drivers/watchdog/Kconfig
+> +++ b/drivers/watchdog/Kconfig
+> @@ -309,6 +309,17 @@ config ORION_WATCHDOG
+>   	  To compile this driver as a module, choose M here: the
+>   	  module will be called orion_wdt.
+>
+> +config RN5T618_WATCHDOG
+> +	tristate "Ricoh RN5T618 watchdog"
+> +	depends on MFD_RN5T618
+> +	select WATCHDOG_CORE
+> +	help
+> +	  If you say yes here you get support for watchdog on the Ricoh
+> +	  RN5T618 PMIC.
+> +
+> +	  This driver can also be built as a module.  If so, the module
+> +	  will be called rn5t618_wdt.
+> +
+>   config SUNXI_WATCHDOG
+>   	tristate "Allwinner SoCs watchdog support"
+>   	depends on ARCH_SUNXI
+> diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+> index 468c320..0afa343 100644
+> --- a/drivers/watchdog/Makefile
+> +++ b/drivers/watchdog/Makefile
+> @@ -47,6 +47,7 @@ obj-$(CONFIG_IOP_WATCHDOG) += iop_wdt.o
+>   obj-$(CONFIG_DAVINCI_WATCHDOG) += davinci_wdt.o
+>   obj-$(CONFIG_ORION_WATCHDOG) += orion_wdt.o
+>   obj-$(CONFIG_SUNXI_WATCHDOG) += sunxi_wdt.o
+> +obj-$(CONFIG_RN5T618_WATCHDOG) += rn5t618_wdt.o
+>   obj-$(CONFIG_COH901327_WATCHDOG) += coh901327_wdt.o
+>   obj-$(CONFIG_STMP3XXX_RTC_WATCHDOG) += stmp3xxx_rtc_wdt.o
+>   obj-$(CONFIG_NUC900_WATCHDOG) += nuc900_wdt.o
+> diff --git a/drivers/watchdog/rn5t618_wdt.c b/drivers/watchdog/rn5t618_wdt.c
+> new file mode 100644
+> index 0000000..b6d62ac
+> --- /dev/null
+> +++ b/drivers/watchdog/rn5t618_wdt.c
+> @@ -0,0 +1,198 @@
+> +/*
+> + * Watchdog driver for Ricoh RN5T618 PMIC
+> + *
+> + * Copyright (C) 2014 Beniamino Galvani <b.galvani@gmail.com>
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * version 2 as published by the Free Software Foundation.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program. If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +
+> +#include <linux/device.h>
+> +#include <linux/mfd/rn5t618.h>
+> +#include <linux/module.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/watchdog.h>
+> +
+> +#define DRIVER_NAME "rn5t618-wdt"
+> +
+> +static bool nowayout = WATCHDOG_NOWAYOUT;
+> +static unsigned int heartbeat;
+> +
+> +module_param(heartbeat, int, 0);
+> +MODULE_PARM_DESC(heartbeat, "Initial watchdog heartbeat in seconds");
+> +
+> +module_param(nowayout, bool, 0);
+> +MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
+> +		 __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
+> +
+> +struct rn5t618_wdt {
+> +	struct watchdog_device wdt_dev;
+> +	struct rn5t618 *rn5t618;
+> +};
+> +
+> +/*
+> + * This array encodes the values of WDOGTIM field for the supported
+> + * watchdog expiration times. If the watchdog is not accessed before
+> + * the timer expiration, the PMU generates an interrupt and if the CPU
+> + * doesn't clear it within one second the system is restarted.
+> + */
+> +static const struct {
+> +	u8 reg_val;
+> +	unsigned int time;
+> +} rn5t618_wdt_map[] = {
+> +	{ 0, 1 },
+> +	{ 1, 8 },
+> +	{ 2, 32 },
+> +	{ 3, 128 },
+> +};
+> +
+> +static int rn5t618_wdt_set_timeout(struct watchdog_device *wdt_dev,
+> +				   unsigned int timeout)
+> +{
+> +	struct rn5t618_wdt *wdt = watchdog_get_drvdata(wdt_dev);
+> +	int ret, i;
+> +
+> +	for (i = 0; i < ARRAY_SIZE(rn5t618_wdt_map); i++) {
+> +		if (rn5t618_wdt_map[i].time + 1 >= timeout)
+> +			break;
+> +	}
+> +
+> +	if (i == ARRAY_SIZE(rn5t618_wdt_map))
+> +		return -EINVAL;
+> +
+> +	ret = regmap_update_bits(wdt->rn5t618->regmap, RN5T618_WATCHDOG,
+> +				 RN5T618_WATCHDOG_WDOGTIM_M,
+> +				 rn5t618_wdt_map[i].reg_val);
+> +	if (!ret)
+> +		wdt_dev->timeout = rn5t618_wdt_map[i].time;
+> +
+> +	return ret;
+> +}
+> +
+> +static int rn5t618_wdt_start(struct watchdog_device *wdt_dev)
+> +{
+> +	struct rn5t618_wdt *wdt = watchdog_get_drvdata(wdt_dev);
+> +	int ret;
+> +
+> +	ret = rn5t618_wdt_set_timeout(wdt_dev, wdt_dev->timeout);
+> +	if (ret)
+> +		return ret;
+> +
+> +	/* enable repower-on */
+> +	ret = regmap_update_bits(wdt->rn5t618->regmap, RN5T618_REPCNT,
+> +				 RN5T618_REPCNT_REPWRON,
+> +				 RN5T618_REPCNT_REPWRON);
+> +	if (ret)
+> +		return ret;
+> +
+> +	/* enable watchdog */
+> +	ret = regmap_update_bits(wdt->rn5t618->regmap, RN5T618_WATCHDOG,
+> +				 RN5T618_WATCHDOG_WDOGEN,
+> +				 RN5T618_WATCHDOG_WDOGEN);
+> +	if (ret)
+> +		return ret;
+> +
+> +	/* enable watchdog interrupt */
+> +	return regmap_update_bits(wdt->rn5t618->regmap, RN5T618_PWRIREN,
+> +				  RN5T618_PWRIRQ_IR_WDOG,
+> +				  RN5T618_PWRIRQ_IR_WDOG);
+> +}
+> +
+> +static int rn5t618_wdt_stop(struct watchdog_device *wdt_dev)
+> +{
+> +	struct rn5t618_wdt *wdt = watchdog_get_drvdata(wdt_dev);
+> +
+> +	return regmap_update_bits(wdt->rn5t618->regmap, RN5T618_WATCHDOG,
+> +				  RN5T618_WATCHDOG_WDOGEN, 0);
+> +}
+> +
+> +static int rn5t618_wdt_ping(struct watchdog_device *wdt_dev)
+> +{
+> +	struct rn5t618_wdt *wdt = watchdog_get_drvdata(wdt_dev);
+> +	unsigned int val;
+> +	int ret;
+> +
+> +	/* The counter is restarted after a R/W access to watchdog register */
+> +	ret = regmap_read(wdt->rn5t618->regmap, RN5T618_WATCHDOG, &val);
+> +	if (ret)
+> +		return ret;
+> +
+> +	ret = regmap_write(wdt->rn5t618->regmap, RN5T618_WATCHDOG, val);
+> +	if (ret)
+> +		return ret;
+> +
+> +	/* Clear pending watchdog interrupt */
+> +	return regmap_update_bits(wdt->rn5t618->regmap, RN5T618_PWRIRQ,
+> +				  RN5T618_PWRIRQ_IR_WDOG, 0);
+> +}
+> +
+> +static struct watchdog_info rn5t618_wdt_info = {
+> +	.options	= WDIOF_SETTIMEOUT | WDIOF_MAGICCLOSE |
+> +			  WDIOF_KEEPALIVEPING,
+> +	.identity	= DRIVER_NAME,
+> +};
+> +
+> +static struct watchdog_ops rn5t618_wdt_ops = {
+> +	.owner          = THIS_MODULE,
+> +	.start          = rn5t618_wdt_start,
+> +	.stop           = rn5t618_wdt_stop,
+> +	.ping           = rn5t618_wdt_ping,
+> +	.set_timeout    = rn5t618_wdt_set_timeout,
+> +};
+> +
+> +static int rn5t618_wdt_probe(struct platform_device *pdev)
+> +{
+> +	struct rn5t618 *rn5t618 = dev_get_drvdata(pdev->dev.parent);
+> +	struct rn5t618_wdt *wdt;
+> +	int min_timeout, max_timeout;
+> +
+> +	wdt = devm_kzalloc(&pdev->dev, sizeof(struct rn5t618_wdt), GFP_KERNEL);
+> +	if (!wdt)
+> +		return -ENOMEM;
+> +
+> +	min_timeout = rn5t618_wdt_map[0].time;
+> +	max_timeout = rn5t618_wdt_map[ARRAY_SIZE(rn5t618_wdt_map) - 1].time;
+> +
+> +	wdt->rn5t618 = rn5t618;
+> +	wdt->wdt_dev.info = &rn5t618_wdt_info;
+> +	wdt->wdt_dev.ops = &rn5t618_wdt_ops;
+> +	wdt->wdt_dev.min_timeout = min_timeout;
+> +	wdt->wdt_dev.max_timeout = max_timeout;
+> +	wdt->wdt_dev.timeout = max_timeout;
+> +	wdt->wdt_dev.parent = &pdev->dev;
+> +
+> +	watchdog_set_drvdata(&wdt->wdt_dev, wdt);
+> +	watchdog_init_timeout(&wdt->wdt_dev, heartbeat, &pdev->dev);
+> +	watchdog_set_nowayout(&wdt->wdt_dev, nowayout);
+> +
+> +	platform_set_drvdata(pdev, wdt);
+> +
+> +	return watchdog_register_device(&wdt->wdt_dev);
+> +}
+> +
+> +static int rn5t618_wdt_remove(struct platform_device *pdev)
+> +{
+> +	struct rn5t618_wdt *wdt = platform_get_drvdata(pdev);
+> +
+> +	watchdog_unregister_device(&wdt->wdt_dev);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver rn5t618_wdt_driver = {
+> +	.probe = rn5t618_wdt_probe,
+> +	.remove = rn5t618_wdt_remove,
+> +	.driver = {
+> +		.name	= DRIVER_NAME,
+> +	},
+> +};
+> +
+> +module_platform_driver(rn5t618_wdt_driver);
+> +
+> +MODULE_AUTHOR("Beniamino Galvani <b.galvani@gmail.com>");
+> +MODULE_DESCRIPTION("RN5T618 watchdog driver");
+> +MODULE_LICENSE("GPL v2");
+>
 
-Thanks.
-
--- 
-Dmitry
