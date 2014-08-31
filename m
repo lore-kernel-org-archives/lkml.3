@@ -1,168 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752100AbaHaTLK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 15:11:10 -0400
-Received: from smtp03.smtpout.orange.fr ([80.12.242.125]:44083 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751808AbaHaTLG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 15:11:06 -0400
-X-ME-Helo: localhost.localdomain
-X-ME-Date: Sun, 31 Aug 2014 21:11:05 +0200
-X-ME-IP: 90.38.41.55
-From: Robert Jarzmik <robert.jarzmik@free.fr>
-To: broonie@kernel.org
-Cc: linux-kernel@vger.kernel.org, Robert Jarzmik <robert.jarzmik@free.fr>
-Subject: [PATCH v2 RESEND 1/2] regulator: max1586 add device-tree support
-Date: Sun, 31 Aug 2014 21:10:51 +0200
-Message-Id: <1409512253-15738-1-git-send-email-robert.jarzmik@free.fr>
-X-Mailer: git-send-email 2.0.0.rc2
+	id S1752043AbaHaTYu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 15:24:50 -0400
+Received: from mga14.intel.com ([192.55.52.115]:36743 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751813AbaHaTYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Aug 2014 15:24:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="379501015"
+Message-ID: <5403767E.1020107@linux.intel.com>
+Date: Sun, 31 Aug 2014 12:24:46 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, gregkh@linuxfoundation.org,
+        falcon@meizu.com, tiwai@suse.de, tj@kernel.org,
+        linux-kernel@vger.kernel.org, oleg@redhat.com,
+        akpm@linux-foundation.org, penguin-kernel@i-love.sakura.ne.jp,
+        joseph.salisbury@canonical.com, bpoirier@suse.de,
+        "Luis R. Rodriguez" <mcgrof@suse.com>
+Subject: Re: [RFC v1 0/3] driver-core: add asynch module loading support
+References: <1409475800-17573-1-git-send-email-mcgrof@do-not-panic.com> <540334B2.7000009@linux.intel.com> <20140831175040.GA17827@core.coreip.homeip.net>
+In-Reply-To: <20140831175040.GA17827@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device-tree support to max1586.
-The driver can still be used with the legacy platform data, or the new
-device-tree way.
+>> before we added the current async approach the approach of async init calls was tried
+>> At the time, Linus hated it and he was right, it was not the right thing.
+>>
+>> What is different this time to make this the right thing to do ?
+>
+> Because otherwise drivers still have to do this, but open code it. Let's say I
+> have a long operations (i.e. for some touchpads it takes about 2 secs to reset
+> and configure it). I can offload that part into async_schedule() so it does not
+> stop initialization of the rest of the system (why would I want to delay
+> initializing of USB or storage system until touchpad is ready?) but if that
+> initialization fails we end up with partially bound driver and device that is
+> not really operable. I would very much prefer async and sync cases be the same
+> - if probe() fails the driver is not bound to the device.
+>
+> I think it is wrong to make async probing system-wide, but driver opt-in shoudl
+> be fine and right thing to do.
+>
 
-This work is heavily inspired by the device-tree support of its cousin
-max8660 driver.
+I am completely fine if we make basically an async wrapper for
+pci_register_driver() and friends.. that would be convenient I suppose.
 
-Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
+(but then again, in reality very few drivers take real time to init... most already
+do the heavy work in open(). Not all can, sure, but if you look at a bootgraph.pl
+graph of a typical boot it's only a few that matter).
+And many drivers need to register with a subsystem, and there's some ordering around that,
+and that's why we ended up with the async cookie stuff, so that you can do the
+heavy work in parallel, but order near the end at registeration-with-the-subsystem time.
 
----
-Since V1: added the comment about regulator not being able to be
-          queried.
-          See https://lkml.org/lkml/2014/6/24/899
----
- drivers/regulator/max1586.c       | 81 ++++++++++++++++++++++++++++++++++++++-
- include/linux/regulator/max1586.h |  2 +-
- 2 files changed, 80 insertions(+), 3 deletions(-)
+But doing this on an initcall level was wrong back then, and I have yet to hear
+a reason why it would be right this time.
 
-diff --git a/drivers/regulator/max1586.c b/drivers/regulator/max1586.c
-index d23d057..5c04a71 100644
---- a/drivers/regulator/max1586.c
-+++ b/drivers/regulator/max1586.c
-@@ -24,6 +24,8 @@
- #include <linux/regulator/driver.h>
- #include <linux/slab.h>
- #include <linux/regulator/max1586.h>
-+#include <linux/of_device.h>
-+#include <linux/regulator/of_regulator.h>
- 
- #define MAX1586_V3_MAX_VSEL 31
- #define MAX1586_V6_MAX_VSEL 3
-@@ -157,13 +159,87 @@ static struct regulator_desc max1586_reg[] = {
- 	},
- };
- 
-+int of_get_max1586_platform_data(struct device *dev,
-+				 struct max1586_platform_data *pdata)
-+{
-+	struct max1586_subdev_data *sub;
-+	struct of_regulator_match rmatch[ARRAY_SIZE(max1586_reg)];
-+	struct device_node *np = dev->of_node;
-+	int i, matched;
-+
-+	if (of_property_read_u32(np, "v3-gain",
-+				 &pdata->v3_gain) < 0) {
-+		dev_err(dev, "%s has no 'v3-gain' property\n", np->full_name);
-+		return -EINVAL;
-+	}
-+
-+	np = of_get_child_by_name(np, "regulators");
-+	if (!np) {
-+		dev_err(dev, "missing 'regulators' subnode in DT\n");
-+		return -EINVAL;
-+	}
-+
-+	for (i = 0; i < ARRAY_SIZE(rmatch); i++)
-+		rmatch[i].name = max1586_reg[i].name;
-+
-+	matched = of_regulator_match(dev, np, rmatch, ARRAY_SIZE(rmatch));
-+	of_node_put(np);
-+	/*
-+	 * If matched is 0, ie. neither Output_V3 nor Output_V6 have been found,
-+	 * return 0, which signals the normal situation where no subregulator is
-+	 * available. This is normal because the max1586 doesn't provide any
-+	 * readback support, so the subregulators can't report any status
-+	 * anyway.  If matched < 0, return the error.
-+	 */
-+	if (matched <= 0)
-+		return matched;
-+
-+	pdata->subdevs = devm_kzalloc(dev, sizeof(struct max1586_subdev_data) *
-+						matched, GFP_KERNEL);
-+	if (!pdata->subdevs)
-+		return -ENOMEM;
-+
-+	pdata->num_subdevs = matched;
-+	sub = pdata->subdevs;
-+
-+	for (i = 0; i < matched; i++) {
-+		sub->id = i;
-+		sub->name = rmatch[i].of_node->name;
-+		sub->platform_data = rmatch[i].init_data;
-+		sub++;
-+	}
-+
-+	return 0;
-+}
-+
-+static const struct of_device_id max1586_of_match[] = {
-+	{ .compatible = "maxim,max1586", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, max1586_of_match);
-+
- static int max1586_pmic_probe(struct i2c_client *client,
- 					const struct i2c_device_id *i2c_id)
- {
--	struct max1586_platform_data *pdata = dev_get_platdata(&client->dev);
-+	struct max1586_platform_data *pdata, pdata_of;
- 	struct regulator_config config = { };
- 	struct max1586_data *max1586;
--	int i, id;
-+	int i, id, ret;
-+	const struct of_device_id *match;
-+
-+	pdata = dev_get_platdata(&client->dev);
-+	if (client->dev.of_node && !pdata) {
-+		match = of_match_device(of_match_ptr(max1586_of_match),
-+					&client->dev);
-+		if (!match) {
-+			dev_err(&client->dev, "Error: No device match found\n");
-+			return -ENODEV;
-+		}
-+		ret = of_get_max1586_platform_data(&client->dev, &pdata_of);
-+		if (ret < 0)
-+			return ret;
-+		pdata = &pdata_of;
-+	}
- 
- 	max1586 = devm_kzalloc(&client->dev, sizeof(struct max1586_data),
- 			GFP_KERNEL);
-@@ -229,6 +305,7 @@ static struct i2c_driver max1586_pmic_driver = {
- 	.driver		= {
- 		.name	= "max1586",
- 		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(max1586_of_match),
- 	},
- 	.id_table	= max1586_id,
- };
-diff --git a/include/linux/regulator/max1586.h b/include/linux/regulator/max1586.h
-index de9a7fa..cedd0fe 100644
---- a/include/linux/regulator/max1586.h
-+++ b/include/linux/regulator/max1586.h
-@@ -40,7 +40,7 @@
-  */
- struct max1586_subdev_data {
- 	int				id;
--	char				*name;
-+	const char			*name;
- 	struct regulator_init_data	*platform_data;
- };
- 
--- 
-2.0.0.rc2
+
 
