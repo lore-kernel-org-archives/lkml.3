@@ -1,52 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752076AbaHaTs4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 15:48:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42356 "EHLO mail.zytor.com"
+	id S1752100AbaHaTtg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 15:49:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63891 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751235AbaHaTsw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 15:48:52 -0400
-Message-ID: <54037C07.8060703@zytor.com>
-Date: Sun, 31 Aug 2014 12:48:23 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1751707AbaHaTte (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Aug 2014 15:49:34 -0400
+Message-ID: <54037C46.1050601@redhat.com>
+Date: Sun, 31 Aug 2014 12:49:26 -0700
+From: Andy Grover <agrover@redhat.com>
+Organization: Red Hat
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Borislav Petkov <bp@alien8.de>, Fenghua Yu <fenghua.yu@intel.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: early microcode: how to disable at runtime?
-References: <20140809231911.GA4843@khazad-dum.debian.net> <20140831194548.GA12628@khazad-dum.debian.net>
-In-Reply-To: <20140831194548.GA12628@khazad-dum.debian.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Richard W.M. Jones" <rjones@redhat.com>
+CC: target-devel@vger.kernel.org, linux-scsi@vger.kernel.org, hch@lst.de,
+        nab@linux-iscsi.org, shli@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 1/2] target: Add documentation on the target userspace pass-through
+ driver
+References: <1404241875-29164-1-git-send-email-agrover@redhat.com> <1404241875-29164-2-git-send-email-agrover@redhat.com> <20140830173510.GA11820@redhat.com>
+In-Reply-To: <20140830173510.GA11820@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/31/2014 12:45 PM, Henrique de Moraes Holschuh wrote:
-> Currently, there is no way to disable early microcode update at runtime.  If
-> an early initramfs with microcode update data is available, it will always
-> be used.
-> 
-> This can be a very big deal when things go wrong: it is hard for the regular
-> user to recover from an initramfs image that crashes the system, and the
-> early initramfs has no "disable" trigger.
-> 
-> In the general case, booting from rescue media will be required to fix the
-> system.
-> 
-> Unfortunately, the BSP microcode update is handled before early_param() is
-> available, so a kernel command line parameter to disable early microcode
-> updates for the BSP isn't easily possible.
-> 
-> Other than duplicating much of the code in parse_early_param/parse_args to
-> search for a "noearlymcu" parameter, is there any other way we could add a
-> disable switch for the early microcode update system?
-> 
+On 08/30/2014 10:35 AM, Richard W.M. Jones wrote:
+> On Tue, Jul 01, 2014 at 12:11:14PM -0700, Andy Grover wrote:
+>> Describes the driver and its interface to make it possible for user
+>> programs to back a LIO-exported LUN.
+>>
+>> Signed-off-by: Andy Grover <agrover@redhat.com>
+>> ---
+>>   Documentation/target/tcmu-design.txt | 210 +++++++++++++++++++++++++++++++++++
+>>   1 file changed, 210 insertions(+)
+>>   create mode 100644 Documentation/target/tcmu-design.txt
+>>
+>> diff --git a/Documentation/target/tcmu-design.txt b/Documentation/target/tcmu-design.txt
+>> new file mode 100644
+>> index 0000000..200ff3e
+>> --- /dev/null
+>> +++ b/Documentation/target/tcmu-design.txt
+>> @@ -0,0 +1,210 @@
+>> +TCM Userspace Design
+>> +--------------------
+>> +
+>> +
+>> +Background:
+>> +
+>> +In addition to modularizing the transport protocol used for carrying
+>> +SCSI commands ("fabrics"), the Linux kernel target, LIO, also modularizes
+>> +the actual data storage as well. These are referred to as "backstores"
+>> +or "storage engines". The target comes with backstores that allow a
+>> +file, a block device, RAM, or another SCSI device to be used for the
+>> +local storage needed for the exported SCSI LUN. Like the rest of LIO,
+>> +these are implemented entirely as kernel code.
+>> +
+>> +These backstores cover the most common use cases, but not all. One new
+>> +use case that other non-kernel target solutions, such as tgt, are able
+>> +to support is using Gluster's GLFS or Ceph's RBD as a backstore. The
+>> +target then serves as a translator, allowing initiators to store data
+>> +in these non-traditional networked storage systems, while still only
+>> +using standard protocols themselves.
+>> +
+>> +If the target is a userspace process, supporting these is easy. tgt,
+>> +for example, needs only a small adapter module for each, because the
+>> +modules just use the available userspace libraries for RBD and GLFS.
+>> +
+>> +Adding support for these backstores in LIO is considerably more
+>> +difficult, because LIO is entirely kernel code. Instead of undertaking
+>> +the significant work to port the GLFS or RBD APIs and protocols to the
+>> +kernel, another approach is to create a userspace pass-through
+>> +backstore for LIO, "TCMU".
+>
+> It has to be said that this documentation is terrible.
+>
+> Jumping "in medias res"[1] is great for fiction, awful for technical
+> documentation.
+>
+> I would recommend the Economist Style Guide[2].  They always say
+> "Barak Obama, President of the United States" the first time he is
+> mentioned in an article, even though almost everyone knows who Barak
+> Obama is.
+>
+> In this case you're leaping into something .. fabrics, LIO,
+> backstores, target solutions, ... aargh.  Explain what you mean by
+> each term and how it all fits together.
 
-Probably more like something more like arch/x86/boot/cmdline.c.  Maybe
-we could even make it sharable.
+Thanks for the feedback. I am undoubtedly too close to the details, 
+because I thought I *was* explaining things :)
 
-	-hpa
+This doc is for people like you -- tech-savvy but unfamiliar with this 
+specific area. Would you be so kind as to point out exactly the terms 
+this document should explain? Should it explain SCSI and SCSI commands? 
+What a SCSI target is? Say "target implementations" rather than "target 
+solutions"? Do I need some ASCII art?
 
+Or, if in finding these gaps you've actually picked up the jargon and 
+wanted to just take a pass a rewriting it, that would be fine too :) 
+I've read some of your libguestfs docs and they were very understandable.
+
+Regards -- Andy
 
