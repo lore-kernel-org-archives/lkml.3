@@ -1,104 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752100AbaHaTtg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 15:49:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63891 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751707AbaHaTte (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 15:49:34 -0400
-Message-ID: <54037C46.1050601@redhat.com>
-Date: Sun, 31 Aug 2014 12:49:26 -0700
-From: Andy Grover <agrover@redhat.com>
-Organization: Red Hat
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751973AbaHaUCn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 16:02:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59635 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498AbaHaUCm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Aug 2014 16:02:42 -0400
+Date: Sun, 31 Aug 2014 13:02:41 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, alan@linux.intel.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: goldfish_audio.c: sparse warning of incorrect
+ type
+Message-ID: <20140831200241.GA26833@kroah.com>
+References: <1409501782-20775-1-git-send-email-sudipm.mukherjee@gmail.com>
 MIME-Version: 1.0
-To: "Richard W.M. Jones" <rjones@redhat.com>
-CC: target-devel@vger.kernel.org, linux-scsi@vger.kernel.org, hch@lst.de,
-        nab@linux-iscsi.org, shli@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 1/2] target: Add documentation on the target userspace pass-through
- driver
-References: <1404241875-29164-1-git-send-email-agrover@redhat.com> <1404241875-29164-2-git-send-email-agrover@redhat.com> <20140830173510.GA11820@redhat.com>
-In-Reply-To: <20140830173510.GA11820@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409501782-20775-1-git-send-email-sudipm.mukherjee@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/30/2014 10:35 AM, Richard W.M. Jones wrote:
-> On Tue, Jul 01, 2014 at 12:11:14PM -0700, Andy Grover wrote:
->> Describes the driver and its interface to make it possible for user
->> programs to back a LIO-exported LUN.
->>
->> Signed-off-by: Andy Grover <agrover@redhat.com>
->> ---
->>   Documentation/target/tcmu-design.txt | 210 +++++++++++++++++++++++++++++++++++
->>   1 file changed, 210 insertions(+)
->>   create mode 100644 Documentation/target/tcmu-design.txt
->>
->> diff --git a/Documentation/target/tcmu-design.txt b/Documentation/target/tcmu-design.txt
->> new file mode 100644
->> index 0000000..200ff3e
->> --- /dev/null
->> +++ b/Documentation/target/tcmu-design.txt
->> @@ -0,0 +1,210 @@
->> +TCM Userspace Design
->> +--------------------
->> +
->> +
->> +Background:
->> +
->> +In addition to modularizing the transport protocol used for carrying
->> +SCSI commands ("fabrics"), the Linux kernel target, LIO, also modularizes
->> +the actual data storage as well. These are referred to as "backstores"
->> +or "storage engines". The target comes with backstores that allow a
->> +file, a block device, RAM, or another SCSI device to be used for the
->> +local storage needed for the exported SCSI LUN. Like the rest of LIO,
->> +these are implemented entirely as kernel code.
->> +
->> +These backstores cover the most common use cases, but not all. One new
->> +use case that other non-kernel target solutions, such as tgt, are able
->> +to support is using Gluster's GLFS or Ceph's RBD as a backstore. The
->> +target then serves as a translator, allowing initiators to store data
->> +in these non-traditional networked storage systems, while still only
->> +using standard protocols themselves.
->> +
->> +If the target is a userspace process, supporting these is easy. tgt,
->> +for example, needs only a small adapter module for each, because the
->> +modules just use the available userspace libraries for RBD and GLFS.
->> +
->> +Adding support for these backstores in LIO is considerably more
->> +difficult, because LIO is entirely kernel code. Instead of undertaking
->> +the significant work to port the GLFS or RBD APIs and protocols to the
->> +kernel, another approach is to create a userspace pass-through
->> +backstore for LIO, "TCMU".
->
-> It has to be said that this documentation is terrible.
->
-> Jumping "in medias res"[1] is great for fiction, awful for technical
-> documentation.
->
-> I would recommend the Economist Style Guide[2].  They always say
-> "Barak Obama, President of the United States" the first time he is
-> mentioned in an article, even though almost everyone knows who Barak
-> Obama is.
->
-> In this case you're leaping into something .. fabrics, LIO,
-> backstores, target solutions, ... aargh.  Explain what you mean by
-> each term and how it all fits together.
+Adding Alan Cox, as he pushed this driver upstream...
 
-Thanks for the feedback. I am undoubtedly too close to the details, 
-because I thought I *was* explaining things :)
+On Sun, Aug 31, 2014 at 09:46:22PM +0530, Sudip Mukherjee wrote:
+> fixed sparse warning of incorrect type in argument 1 and incorrect type in argument 2
+> it was directly dereferencing a __iomem pointer , which will work in x86 but will fail in other architectures.
 
-This doc is for people like you -- tech-savvy but unfamiliar with this 
-specific area. Would you be so kind as to point out exactly the terms 
-this document should explain? Should it explain SCSI and SCSI commands? 
-What a SCSI target is? Say "target implementations" rather than "target 
-solutions"? Do I need some ASCII art?
+Please wrap your changelog comments at 72 columns...
 
-Or, if in finding these gaps you've actually picked up the jargon and 
-wanted to just take a pass a rewriting it, that would be fine too :) 
-I've read some of your libguestfs docs and they were very understandable.
+> Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+> ---
+> 
+> hi,
+> can you please reveiew the patch and check if the approach is correct. If it is correct then I can send another patch to correct the other similar warnings present in this file. 
 
-Regards -- Andy
+I don't think this is correct, because:
 
+> 
+>  drivers/staging/goldfish/goldfish_audio.c | 11 +++++++++--
+>  1 file changed, 9 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/staging/goldfish/goldfish_audio.c b/drivers/staging/goldfish/goldfish_audio.c
+> index c89d0b8..f9a13e7 100644
+> --- a/drivers/staging/goldfish/goldfish_audio.c
+> +++ b/drivers/staging/goldfish/goldfish_audio.c
+> @@ -118,6 +118,7 @@ static ssize_t goldfish_audio_read(struct file *fp, char __user *buf,
+>  	struct goldfish_audio *data = fp->private_data;
+>  	int length;
+>  	int result = 0;
+> +	void *buffer;
+>  
+>  	if (!data->read_supported)
+>  		return -ENODEV;
+> @@ -133,9 +134,15 @@ static ssize_t goldfish_audio_read(struct file *fp, char __user *buf,
+>  						AUDIO_READ_BUFFER_AVAILABLE);
+>  
+>  		/* copy data to user space */
+> -		if (copy_to_user(buf, data->read_buffer, length))
+> +		buffer = kzalloc(length, GFP_KERNEL);
+> +		if (buffer == NULL)
+> +			return -ENOMEM;
+> +		memcpy_fromio(buffer, data->read_buffer, length);
+> +		if (copy_to_user((void __user *)buf, buffer, length)) {
+> +			kfree(buffer);
+>  			return -EFAULT;
+> -
+> +		}
+> +		kfree(buffer);
+
+The goldfish platform is an "emulator" so iomem is (or should be?) the
+same as "normal" memory here.  So I think this is a false-positive.
+
+But I could be totally wrong here, Alan?
+
+thanks,
+
+greg k-h
