@@ -1,76 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751789AbaHaQqZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 12:46:25 -0400
-Received: from mout.gmx.net ([212.227.15.18]:54279 "EHLO mout.gmx.net"
+	id S1751719AbaHaRNi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 13:13:38 -0400
+Received: from mga02.intel.com ([134.134.136.20]:64288 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751288AbaHaQqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 12:46:24 -0400
-Message-ID: <54035154.6080306@rempel-privat.de>
-Date: Sun, 31 Aug 2014 18:46:12 +0200
-From: Oleksij Rempel <linux@rempel-privat.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751346AbaHaRNh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Aug 2014 13:13:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,436,1406617200"; 
+   d="scan'208";a="595924830"
+From: "Drokin, Oleg" <oleg.drokin@intel.com>
+To: Sun Wang <743559269@qq.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Pershin, Mike" <mike.pershin@intel.com>,
+        "Dilger, Andreas" <andreas.dilger@intel.com>,
+        Chris Horn <hornc@cray.com>,
+        Kristina Martsenko <kristina.martsenko@gmail.com>,
+        Alexey Lyashkov <alexey_lyashkov@xyratex.com>,
+        Andriy Skulysh <Andriy_Skulysh@xyratex.com>,
+        Masanari Iida <standby24x7@gmail.com>,
+        "<devel@driverdev.osuosl.org>" <devel@driverdev.osuosl.org>,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging: lustre: lustre: ptlrpc: events: fix coding
+ style issue 
+Thread-Topic: [PATCH] staging: lustre: lustre: ptlrpc: events: fix coding
+ style issue 
+Thread-Index: AQHPxT29h7YWOL8ulki8EMgwHVzqO5vraJ4A
+Date: Sun, 31 Aug 2014 17:13:27 +0000
+Message-ID: <E9D1EF94-A221-4200-BE5F-8101BBC1475B@intel.com>
+References: <1409504548-26650-2-git-send-email-743559269@qq.com>
+In-Reply-To: <1409504548-26650-2-git-send-email-743559269@qq.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.254.38.158]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <78C863E522B5A24895795608C1FFEAEF@intel.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Writing clocksource driver, tips?
-Content-Type: multipart/signed; micalg=pgp-sha256;
- protocol="application/pgp-signature";
- boundary="GN75KUVAtun9UinU8taRtMoXWjFGMIm5o"
-X-Provags-ID: V03:K0:5hVu5PwwTUJV+S4mvLJE7vlrnl+d/jcOjbPgkxItvm01N4sTIUG
- LA7gOxGWrOYYCPAAqIaSUY7j/lXpPmmPXujqsCSow6GSUrbgrIifRfDL16CfY9XERvRVxyj
- HLrb+mX+KMBVqwuBOsbcT5VjD+VXZPCn59lY10mTgO6qFJjjWZUxCCMXfaqPmAMRjk8nF/U
- OeqjVI2dVXj3pnAwkOxSQ==
-X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---GN75KUVAtun9UinU8taRtMoXWjFGMIm5o
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+Apparently this was already fixed by commit 1d8cb70c7bdda47125ed551fc390aa9597c5f264 a few days ago.
 
-Hello all,
+On Aug 31, 2014, at 1:02 PM, Sun Wang wrote:
 
-currently i work on porting linux to Aplscale ASM9260,
-most basic parts are done, now is the time for clocksource driver. I
-never did it before, so i need some beginner tips.
-My current driver clocksource provide periodic events at 100Hz rate. But
-this hardvare can do more then it.
-This SoC has 4 32bit-timer controller attached to 100MHz source. Each
-controller has 4 separate timer register each of them can be configure
-separately for scale, match and interrupt. 3 controllers can choice the
-tick source.
-This controller looks similar to one found on NXP LPC1311, but looks
-like no similar hardware in drivers/clocksource.
+> From: sunwxg <743559269@qq.com>
+> 
+> Coding style issues, the changes include:
+> -Add sapce after ','
+> 
+> Signed-off-by: Sun Wang <743559269@qq.com>
+> 
+> ---
+> drivers/staging/lustre/lustre/ptlrpc/events.c | 5 +++--
+> 1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/staging/lustre/lustre/ptlrpc/events.c b/drivers/staging/lustre/lustre/ptlrpc/events.c
+> index c3ec21d..ed811ef 100644
+> --- a/drivers/staging/lustre/lustre/ptlrpc/events.c
+> +++ b/drivers/staging/lustre/lustre/ptlrpc/events.c
+> @@ -186,7 +186,8 @@ void client_bulk_callback(lnet_event_t *ev)
+> 	if (CFS_FAIL_CHECK_ORSET(OBD_FAIL_PTLRPC_CLIENT_BULK_CB, CFS_FAIL_ONCE))
+> 		ev->status = -EIO;
+> 
+> -	if (CFS_FAIL_CHECK_ORSET(OBD_FAIL_PTLRPC_CLIENT_BULK_CB2,CFS_FAIL_ONCE))
+> +	if (CFS_FAIL_CHECK_ORSET(OBD_FAIL_PTLRPC_CLIENT_BULK_CB2,
+> +				CFS_FAIL_ONCE))
+> 		ev->status = -EIO;
+> 
+> 	CDEBUG((ev->status == 0) ? D_NET : D_ERROR,
+> @@ -481,7 +482,7 @@ int ptlrpc_uuid_to_peer(struct obd_uuid *uuid,
+> 		}
+> 	}
+> 
+> -	CDEBUG(D_NET,"%s->%s\n", uuid->uuid, libcfs_id2str(*peer));
+> +	CDEBUG(D_NET, "%s->%s\n", uuid->uuid, libcfs_id2str(*peer));
+> 	return rc;
+> }
+> 
+> 
 
-For now i have fallowing questions:
-- 1 timer can be used for clocksource other as  clock_event_device, how
-can i use other 2 timers on same controller. and how can i use other 3
-controllers?
-- theoretically i can use clocksource_mmio_init to read directly
-timer_counter_register. Which scale should be used on it. 100MHz is
-probably too match.
-- should clocksource provide interrupt on overflow or some kind of limit?=
-
-
---=20
-Regards,
-Oleksij
-
-
---GN75KUVAtun9UinU8taRtMoXWjFGMIm5o
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iF4EAREIAAYFAlQDUVsACgkQHwImuRkmbWmK9AD/TLya1LhHqkawf6xTaOKOX+F+
-s64Th2F6jXeVTThDkG8A/jwvrjTROkXfhffsmyw3QMmQ75/fAcHTsXRetZ4l3j5X
-=TcR7
------END PGP SIGNATURE-----
-
---GN75KUVAtun9UinU8taRtMoXWjFGMIm5o--
