@@ -1,81 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751429AbaHaOOY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 10:14:24 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:58775 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751097AbaHaOOX (ORCPT
+	id S1751470AbaHaOZM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 10:25:12 -0400
+Received: from 80-229-23-162.plus.com ([80.229.23.162]:48481 "EHLO
+	mail.einon.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119AbaHaOZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 10:14:23 -0400
+	Sun, 31 Aug 2014 10:25:08 -0400
+Date: Sun, 31 Aug 2014 15:25:03 +0100
+From: Mark Einon <mark.einon@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/8] staging: et131x: Use for loop to initialise
+ contiguous registers to zero
+Message-ID: <20140831142502.GA2019@msilap.einon.net>
+References: <1408573078-9320-1-git-send-email-mark.einon@gmail.com>
+ <1408573078-9320-4-git-send-email-mark.einon@gmail.com>
+ <20140830203216.GA11525@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <CAJhHMCDaSAzU3zvhY2FRFoBaQH4oQBTsUsYMU6pvBbCXydROZQ@mail.gmail.com>
-References: <1409369788-22563-1-git-send-email-bobby.prani@gmail.com>
-	<CAMuHMdV_naTfQOLwOshWq1Q15kSE39a8GWChsjt3RrWRcd6peg@mail.gmail.com>
-	<CAJhHMCDaSAzU3zvhY2FRFoBaQH4oQBTsUsYMU6pvBbCXydROZQ@mail.gmail.com>
-Date: Sun, 31 Aug 2014 16:14:21 +0200
-X-Google-Sender-Auth: qXGM5o3Rp_gy2E7hj9bkGpJ5bOM
-Message-ID: <CAMuHMdWMct-06aEMNdHWv7A-9SyLwu3pZfmF9ZxTrFGA2=ab_A@mail.gmail.com>
-Subject: Re: [RFC PATCH] powerpc: Wire up three syscalls
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Anton Blanchard <anton@samba.org>, Fabian Frederick <fabf@skynet.be>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "open list:LINUX FOR POWERPC..." <linuxppc-dev@lists.ozlabs.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140830203216.GA11525@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pranith,
+On Sat, Aug 30, 2014 at 01:32:16PM -0700, Greg KH wrote:
+> On Wed, Aug 20, 2014 at 11:17:53PM +0100, Mark Einon wrote:
+> > Replace a long list of contiguous writel() calls with a for loop iterating
+> > over the same values.
+> > 
+> > Signed-off-by: Mark Einon <mark.einon@gmail.com>
+> > ---
+> >  drivers/staging/et131x/et131x.c | 27 +++------------------------
+> >  1 file changed, 3 insertions(+), 24 deletions(-)
+> > 
+> > diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
+> > index fffe763..44cc684 100644
+> > --- a/drivers/staging/et131x/et131x.c
+> > +++ b/drivers/staging/et131x/et131x.c
+> > @@ -1138,6 +1138,7 @@ static void et1310_config_rxmac_regs(struct et131x_adapter *adapter)
+> >  	u32 sa_lo;
+> >  	u32 sa_hi = 0;
+> >  	u32 pf_ctrl = 0;
+> > +	u32 *wolw;
+> >  
+> >  	/* Disable the MAC while it is being configured (also disable WOL) */
+> >  	writel(0x8, &rxmac->ctrl);
+> > @@ -1151,30 +1152,8 @@ static void et1310_config_rxmac_regs(struct et131x_adapter *adapter)
+> >  	 * its default Values of 0x00000000 because there are not WOL masks
+> >  	 * as of this time.
+> >  	 */
+> > -	writel(0, &rxmac->mask0_word0);
+> > -	writel(0, &rxmac->mask0_word1);
+> > -	writel(0, &rxmac->mask0_word2);
+> > -	writel(0, &rxmac->mask0_word3);
+> > -
+> > -	writel(0, &rxmac->mask1_word0);
+> > -	writel(0, &rxmac->mask1_word1);
+> > -	writel(0, &rxmac->mask1_word2);
+> > -	writel(0, &rxmac->mask1_word3);
+> > -
+> > -	writel(0, &rxmac->mask2_word0);
+> > -	writel(0, &rxmac->mask2_word1);
+> > -	writel(0, &rxmac->mask2_word2);
+> > -	writel(0, &rxmac->mask2_word3);
+> > -
+> > -	writel(0, &rxmac->mask3_word0);
+> > -	writel(0, &rxmac->mask3_word1);
+> > -	writel(0, &rxmac->mask3_word2);
+> > -	writel(0, &rxmac->mask3_word3);
+> > -
+> > -	writel(0, &rxmac->mask4_word0);
+> > -	writel(0, &rxmac->mask4_word1);
+> > -	writel(0, &rxmac->mask4_word2);
+> > -	writel(0, &rxmac->mask4_word3);
+> > +	for (wolw = &rxmac->mask0_word0; wolw <= &rxmac->mask4_word3; wolw++)
+> > +		writel(0, wolw);
+> 
+> You are now only writing to all locations 1 time, instead of 4 times,
+> like before, are you sure that is ok?  Hardware is flaky, sometimes it
+> wants to be written to multiple times...
 
-On Sun, Aug 31, 2014 at 2:52 PM, Pranith Kumar <bobby.prani@gmail.com> wrote:
-> On Sun, Aug 31, 2014 at 4:53 AM, Geert Uytterhoeven
-> <geert@linux-m68k.org> wrote:
->> On Sat, Aug 30, 2014 at 5:36 AM, Pranith Kumar <bobby.prani@gmail.com> wrote:
->>> I see that the three syscalls seccomp, getrandom and memfd_create are not wired
->>> because of which we get a warning while compilation.
->>>
->>> So I wired them up in this patch. What else needs to be done? I tried the
->>> memfd_test after compiling this kernel, but it is failing. What am I missing for
->>> this to work? Any advice is really appreciated! :)
->>
->> Did it fail due to the (silly) "ifeq ($(ARCH),X86)" checks in
->> tools/testing/selftests/memfd/Makefile?
->
-> I removed that check and compiled memfd_test.c by hand. This is the
-> following error which I get when I run the test:
->
-> $ ./memfd_test
-> memfd: CREATE
-> memfd: BASIC
-> 10 != 0 = GET_SEALS(3)
-> Aborted
->
-> This is basically when checking the seals which we already added. It
-> should return 10 (F_SEAL_SHRINK | F_SEAL_WRITE), instead it is returning 0.
+Hi Greg,
 
-So it does fail.
+Thanks for the review.
 
-> What else needs to be done for this to properly work? I see that for
-> m68k, you just wired it up like in this patch. Did it work after that?
+As far as my understanding goes, the new code is equivalent to the old
+code - it's a little confusing that the name refers to a word, but the
+masks are all 32 bit values, and the loop iterates over the contiguous
+list of masks found in txmac_regs (et131x.h:891 - the masks are also
+unused in the driver after being set).
 
-To be honest, I didn't run any tests.
+Or am I missing something here?
 
-I had a few spare minutes, so I wanted to give it a try, but "make kselftest"
-doesn't work with building in a separate directory (O=), doesn't support
-CROSS_COMPILE=, etc... So I gave up (for now).
+Cheers,
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Mark
