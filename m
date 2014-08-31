@@ -1,63 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751212AbaHaJQt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 05:16:49 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:54246 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750855AbaHaJQp (ORCPT
+	id S1751216AbaHaJ2w (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 05:28:52 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:41689 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750929AbaHaJ2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 05:16:45 -0400
+	Sun, 31 Aug 2014 05:28:51 -0400
+Date: Sun, 31 Aug 2014 11:28:48 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: cmroliv@gmail.com, marcel@holtmann.org, pali.rohar@gmail.com,
+        kernel list <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: patch "staging: remove nokia_hp4p driver
+Message-ID: <20140831092848.GA24601@amd>
+References: <14094295422869@kroah.com>
+ <20140830213022.GA17147@amd>
+ <20140830220417.GA15000@kroah.com>
+ <20140830224430.GA19622@amd>
+ <20140830224941.GA25134@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <5402E5D8.6080401@gmail.com>
-References: <1409328896-8457-1-git-send-email-geert@linux-m68k.org>
-	<5402E5D8.6080401@gmail.com>
-Date: Sun, 31 Aug 2014 11:16:43 +0200
-X-Google-Sender-Auth: eYFJ3RCGFokn8tc5xL93Vc6fQ7Q
-Message-ID: <CAMuHMdVFcFwhnJ0wSOLLucE3hEUavVLMMoqwetG5n9jU57BYiA@mail.gmail.com>
-Subject: Re: [PATCH] m68k/atari: Remove obsolete keyboard_tasklet scheduling
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Michael Schmitz <schmitzmic@gmail.com>
-Cc: linux-m68k <linux-m68k@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140830224941.GA25134@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael,
+Hi!
 
-On Sun, Aug 31, 2014 at 11:07 AM, Michael Schmitz <schmitzmic@gmail.com> wrote:
->> If CONFIG_VT=n:
->>
->> arch/m68k/atari/built-in.o: In function `atari_keyboard_interrupt':
->> atakeyb.c:(.text+0x1846): undefined reference to `keyboard_tasklet'
->> atakeyb.c:(.text+0x1852): undefined reference to `keyboard_tasklet'
->
-> Has keyboard_tasklet gone for good, or just been conditionalized on
-> CONFIG_VT?
+> > > > What is going on here? I get flamed for not cleaning up the driver,
+> > > > because I cleaned it up before merging to -staging. Ok, so I did more
+> > > > cleanups, sent 3 cleanup patches, no reaction on those, and now I got
+> > > > a note that you are going to remove the driver...?
+> > > 
+> > > For the 3 "cleanup" patches, the first one was rejected and you said to
+> > > not include it, so I couldn't apply the others.
+> > 
+> > That was different series. I'm talking about:
+> > 
+> > [PATCH 1/3] staging: nokia_h4: switch to right types and use bdaddr_t
+> > [PATCH 2/3] staging: nokia_h4: avoid __uX types
+> > [PATCH 3/3] staging: use inlines where it makes sense
+> > 
+> > That is still valid and received no comments at all.
+> 
+> I didn't see those, were they mixed in with the previous ones?
 
-Conditionalized. It's in drivers/tty/vt/keyboard.c.
-Note that this was from a randconfig build.
+Well, I did sent them in reply to discussion... Do you want me to
+resend them?
 
->> I think the keyboard_tasklet scheduling is no longer needed, as I
->> believe it's handled by drivers/tty/vt/keyboard.c based on events
->> received from the input subsystem. So just remove it.
->
-> I'd like to test this on real hardware (though ARAnyM does emulate the
-> keyboard ACIA IIRC - if you had a working keyboard there I should find no
-> different),
+> > > > Please don't, I'd still like to clean the driver up and get included,
+> > > > as n900's are still under active use.
+> > > 
+> > > As the Bluetooth maintainer has said a number of times, he doesn't want
+> > > the driver in the tree as it is not doing the correct things.  It's been
+> > > a long time in the tree with no work on it at all, and I follow the
+> > > suggestions of the maintainers of the subsystems that staging drivers
+> > > follow.
+> > 
+> > You asked for more work and explained how easy it is to revert the
+> > removal.
+> > 
+> > I did more work, you ignored it, and are removing the driver, anyway.
+> 
+> Those 3 patches do nothing to address the issues that the bluetooth
+> maintainers have raised, right?
 
-Keyboard was still working on ARAnyM.
-But AFAICU, the keyboard_tasklet is used for the LED state only.
+Bluetooth maintainers have raised a ton of issues, this addresses
+"custom random address" part of them.
 
-Gr{oetje,eeting}s,
+> > > I suggest cleaning this up  in your own tree, and then just submitting it
+> > > for inclusion in the "normal" part of the kernel.  That way I'm not
+> > 
+> > ...creating a mess in the history, and fun merge problems for
+> > people actually using the driver :-(. And yes, n900 people actually
+> > are using it and have their own changes on top of it.
+> 
+> Look, the driver has been in my tree for a very long time with nothing
+> done on it.  The bluetooth maintainer has asked me to remove it as it
 
-                        Geert
+Very long time == 1 kernel release. When single patch takes 20 days to
+apply, I'd not characterise it as very long time.
+									Pavel
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
