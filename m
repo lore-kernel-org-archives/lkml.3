@@ -1,70 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137AbaHaWPg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 18:15:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60085 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574AbaHaWPf (ORCPT
+	id S1752147AbaHaWSQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 18:18:16 -0400
+Received: from doppler.thel33t.co.uk ([193.110.88.198]:41419 "EHLO
+	doppler.thel33t.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751744AbaHaWSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 18:15:35 -0400
-Date: Sun, 31 Aug 2014 15:15:34 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, falcon@meizu.com,
-        tiwai@suse.de, linux-kernel@vger.kernel.org, oleg@redhat.com,
-        akpm@linux-foundation.org, penguin-kernel@i-love.sakura.ne.jp,
-        joseph.salisbury@canonical.com, bpoirier@suse.de,
-        "Luis R. Rodriguez" <mcgrof@suse.com>
-Subject: Re: [RFC v1 0/3] driver-core: add asynch module loading support
-Message-ID: <20140831221534.GA18064@kroah.com>
-References: <1409475800-17573-1-git-send-email-mcgrof@do-not-panic.com>
- <540334B2.7000009@linux.intel.com>
- <20140831175040.GA17827@core.coreip.homeip.net>
- <5403767E.1020107@linux.intel.com>
- <20140831193140.GA12678@kroah.com>
- <20140831201407.GB19881@core.coreip.homeip.net>
- <20140831204035.GA4793@kroah.com>
- <20140831215313.GA28690@mtj.dyndns.org>
+	Sun, 31 Aug 2014 18:18:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140831215313.GA28690@mtj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Sun, 31 Aug 2014 23:30:10 +0100
+From: Leigh Brown <leigh@solinno.co.uk>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        Tawfik Bayouk <tawfik@marvell.com>,
+        Simon Boulay <simon.boulay@vitec.com>,
+        Arnaud Ebalard <arno@natisbad.org>, Nadav Haklai <nadavh@marvell.com>,
+        Lior Amsalem <alior@marvell.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Raphael Rigo <ml-arm@syscall.eu>, linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH 1/4] clk: mvebu: Fix clk frequency value if SSCG is
+ enabled
+In-Reply-To: <d9e3be49b00eb7dd8827f05a955b4497@doppler.thel33t.co.uk>
+References: <1409312620-20631-1-git-send-email-gregory.clement@free-electrons.com>
+ <1409312620-20631-2-git-send-email-gregory.clement@free-electrons.com>
+ <d9e3be49b00eb7dd8827f05a955b4497@doppler.thel33t.co.uk>
+Message-ID: <ba70e97da698fe6053adbb6218c905a3@doppler.thel33t.co.uk>
+User-Agent: Roundcube Webmail/1.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 31, 2014 at 05:53:13PM -0400, Tejun Heo wrote:
-> Hello, Greg.
-> 
-> On Sun, Aug 31, 2014 at 01:40:35PM -0700, Greg KH wrote:
-> > > Right, all (well almost all) I wanted is for individual drivers to declare
-> > > their probe() functions asynchronous and driver core scheduling async attach
-> > > and properly handle failures from it.
-> > 
-> > Yes, that's what I want as well.
-> > 
-> > Luis, care to redo the patches in this way?  It should be a lot simpler
-> > (no messing around with init levels and linker fun...)
-> 
-> I don't think binding that switch to the driver is gonna work.  This
-> is mainly about the behavior expected by the entity which initiated
-> module loading not about specific drivers.  I'm fairly certain that
-> there are userland scripts which depend on synchronous device probing
-> on module loading, especially for storage devices, so we can't simply
-> mark, say, libata as needing async probing and do it always
-> asynchronously.
+On 2014-08-31 23:25, Leigh Brown wrote:
+[...]
+> /* NB: 0.96% = 0.0048 or 3/625 */
+> freq_swing_half = (((u64)high_bound - (u64)low_bound)
+> 		* (u64)system_clk * 3);
+> do_div(freq_swing_half, (625 * high_bound));
 
-For the use cases we have today, it would work.  We have a few drivers
-that take a _long_ time in their probe callback, and they need to be
-made async for various reasons (modprobe timeout killer, touchscreen
-init sequence stalling boot, etc.)
+Sigh.  The comment should be:
 
-I'm not saying to mark drivers that require synchronous probing with
-this flag, that would be broken and wrong.
+/* NB: half of 0.96% is 0.0048 or 3/625 */
 
-thanks,
+The code should be right :-)
 
-greg k-h
+Regards,
+
+Leigh.
+
