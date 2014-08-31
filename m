@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752031AbaHaULl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 16:11:41 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59605 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751235AbaHaULj (ORCPT
+	id S1752070AbaHaULp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 16:11:45 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:64733 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752009AbaHaULl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 16:11:39 -0400
-X-Sasl-enc: PWyc6yXRFN6368tOib8FhUX71ENmpB4PGzKqOWlZEHkg 1409515898
-Date: Sun, 31 Aug 2014 17:11:26 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Borislav Petkov <bp@alien8.de>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: early microcode: how to disable at runtime?
-Message-ID: <20140831201126.GB12628@khazad-dum.debian.net>
-References: <20140809231911.GA4843@khazad-dum.debian.net>
- <20140831194548.GA12628@khazad-dum.debian.net>
- <54037C07.8060703@zytor.com>
+	Sun, 31 Aug 2014 16:11:41 -0400
+Date: Sun, 31 Aug 2014 13:11:37 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Tejun Heo <tj@kernel.org>, "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        gregkh@linuxfoundation.org, falcon@meizu.com, tiwai@suse.de,
+        linux-kernel@vger.kernel.org, oleg@redhat.com,
+        akpm@linux-foundation.org, penguin-kernel@i-love.sakura.ne.jp,
+        joseph.salisbury@canonical.com, bpoirier@suse.de,
+        "Luis R. Rodriguez" <mcgrof@suse.com>
+Subject: Re: [RFC v1 0/3] driver-core: add asynch module loading support
+Message-ID: <20140831201137.GA19881@core.coreip.homeip.net>
+References: <1409475800-17573-1-git-send-email-mcgrof@do-not-panic.com>
+ <20140831101358.GB19853@htj.dyndns.org>
+ <20140831110200.GC19853@htj.dyndns.org>
+ <20140831110526.GE19853@htj.dyndns.org>
+ <20140831175243.GB17827@core.coreip.homeip.net>
+ <540376CE.2050007@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54037C07.8060703@zytor.com>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
+In-Reply-To: <540376CE.2050007@linux.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 31 Aug 2014, H. Peter Anvin wrote:
-> On 08/31/2014 12:45 PM, Henrique de Moraes Holschuh wrote:
-> > Currently, there is no way to disable early microcode update at runtime.  If
-> > an early initramfs with microcode update data is available, it will always
-> > be used.
-> > 
-> > This can be a very big deal when things go wrong: it is hard for the regular
-> > user to recover from an initramfs image that crashes the system, and the
-> > early initramfs has no "disable" trigger.
-> > 
-> > In the general case, booting from rescue media will be required to fix the
-> > system.
-> > 
-> > Unfortunately, the BSP microcode update is handled before early_param() is
-> > available, so a kernel command line parameter to disable early microcode
-> > updates for the BSP isn't easily possible.
-> > 
-> > Other than duplicating much of the code in parse_early_param/parse_args to
-> > search for a "noearlymcu" parameter, is there any other way we could add a
-> > disable switch for the early microcode update system?
-> > 
+On Sun, Aug 31, 2014 at 12:26:06PM -0700, Arjan van de Ven wrote:
+> On 8/31/2014 10:52 AM, Dmitry Torokhov wrote:
+> >On Sun, Aug 31, 2014 at 07:05:26AM -0400, Tejun Heo wrote:
+> >>On Sun, Aug 31, 2014 at 07:02:00AM -0400, Tejun Heo wrote:
+> >>>So, something like the following.  A couple things to note
+> >>>
+> >>>* driver_attach() can never fail but is marked with __must_check.  We
+> >>>   prolly should change it to void.
+> >>>
+> >>>* Old/weird userspace which depends on insmod to wait for device
+> >>>   probing might choke and the new behavior might need to be switched
+> >>>   somehow (sysctl, insmod param or whatever).
+> >>
+> >>One more thing.
+> >>
+> >>* Use of ordered workqueue probably isn't necessary and using
+> >>   system_unbound_wq should be fine.
+> >>
+> >
+> >For my use case (touchpad taking long time to initialize) I explicitly do not
+> >want it to keep order of initialization. I want to make sure the rest of the
+> >kernel continues initialization while touchpad device resets.
 > 
-> Probably more like something more like arch/x86/boot/cmdline.c.  Maybe
-> we could even make it sharable.
+> but we do that right now
+> 
+> you know its there synchronous
+> and do the heavy stuff async
 
-Looks like that would work, yes.
+No, in general we do not. I have hacked in serio (i.e. PS/2 support to do
+registration/probing in a separate thread - and I'd love to drop that code),
+but PS/2 is in its way out and we need the same for devices on I2C. SPI and
+other slow buses.
+
+Thanks.
 
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Dmitry
