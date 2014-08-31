@@ -1,87 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751857AbaHaVXK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 17:23:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9241 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751235AbaHaVXH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 17:23:07 -0400
-Date: Sun, 31 Aug 2014 22:22:58 +0100
-From: "Richard W.M. Jones" <rjones@redhat.com>
-To: Andy Grover <agrover@redhat.com>
-Cc: target-devel@vger.kernel.org, linux-scsi@vger.kernel.org, hch@lst.de,
-        nab@linux-iscsi.org, shli@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 1/2] target: Add documentation on the target userspace
- pass-through driver
-Message-ID: <20140831212257.GO1302@redhat.com>
-References: <1404241875-29164-1-git-send-email-agrover@redhat.com>
- <1404241875-29164-2-git-send-email-agrover@redhat.com>
- <20140830173510.GA11820@redhat.com>
- <54037C46.1050601@redhat.com>
+	id S1751789AbaHaVa1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 17:30:27 -0400
+Received: from v095080.home.net.pl ([79.96.174.84]:51674 "HELO
+	v095080.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751235AbaHaVa0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Aug 2014 17:30:26 -0400
+X-Greylist: delayed 1999 seconds by postgrey-1.27 at vger.kernel.org; Sun, 31 Aug 2014 17:30:26 EDT
+Reply-To: "=?iso-8859-2?Q?Przemys=B3aw_Nowak?=" 
+	  <biuro@centrumpomocykredytowej.pl>
+From: "=?iso-8859-2?Q?Przemys=B3aw_Nowak?=" <biuro@biznesowewparcie.pl>
+To: <linux-kernel@vger.kernel.org>
+Subject: =?iso-8859-2?Q?Kredyt_bez_za=B6wiadcze=F1?=
+Message-ID: <AD5CEA27999D5D7FE2430EBA8B9A143C@giada>
+Date: Sun, 31 Aug 2014 22:33:03 +0200
+Organization: AnoMail - oprogramowanie do emailingow
+X-Mailer: Microsoft Office Outlook, Build 11.0.5510
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3028
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54037C46.1050601@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-2";
+	reply-type=original
+Content-Transfer-Encoding: 8BIT
+X-Antivirus: avast! (VPS 140831-0, 2014-08-31), Outbound message
+X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 31, 2014 at 12:49:26PM -0700, Andy Grover wrote:
-> Thanks for the feedback. I am undoubtedly too close to the details,
-> because I thought I *was* explaining things :)
+Witam,
 
-Yeah, sorry it came across as a bit harsh.
+Mam do zaoferowania  kredyty firmowe które zawieraja m.in.
 
-Benoit did explain it to me so I understood it in the end (I think!)
+kredyt bez za¶wiadczeñ z ZUS i US,
+3 letnie limity w rachunku bie¿±cym,
+kredyt na o¶wiadczenie do 500 tys PLN,
+kredyt na start,
 
-> This doc is for people like you -- tech-savvy but unfamiliar with
-> this specific area. Would you be so kind as to point out exactly the
-> terms this document should explain? Should it explain SCSI and SCSI
-> commands? What a SCSI target is? Say "target implementations" rather
-> than "target solutions"? Do I need some ASCII art?
+Prosimy o odpowied¼ zwrotn± TAK w przypadku chêci otrzymania oferty.
 
-So I can only speak for myself here, but I'm pretty familiar with
-iSCSI, using it, and some of the internals -- in fact I'm using the
-Linux kernel target daily.
+Powy¿sze zapytanie nie stanowi oferty handlowej. Jest ono jedynie pro¶b± o zgodê na przes³anie do Pañstwa stosownej oferty. Jesli nie ustosunkuj± siê Pañstwo do tej wiadomo¶ci pozytywnie nie otrzymaj± Pañstwo ponownie zapytania.
 
-> TCM Userspace Design
-> In addition to modularizing the transport protocol used for carrying
-> SCSI commands ("fabrics"), the Linux kernel target, LIO, also
-> modularizes the actual data storage as well.  These are referred to
-> as "backstores" or "storage engines".
+z powa¿aniem
+Przemys³aw Nowak 
+tel. 884-898-471
 
-Reading this several times, I now think I get what it's trying to say,
-but I think it needs to introduces the terms (as the Economist style
-does).  Something like this:
 
-  "TCM is the new name for LIO, an in-kernel iSCSI target (server).
-  Existing TCM targets run in the kernel.  TCMU (TCM in Userspace)
-  allows userspace programs to be written which act as iSCSI targets.
-  This document describes the design.
+---
+Ta wiadomo¶æ e-mail jest wolna od wirusów i z³o¶liwego oprogramowania, poniewa¿ ochrona avast! Antivirus jest aktywna.
+http://www.avast.com
 
-  The existing kernel provides modules for different SCSI transport
-  protocols.  TCM also modularizes the data storage.  There are
-  existing modules for file, block device, RAM or using another SCSI
-  device as storage.  These are called "backstores" or "storage
-  engines".  These built-in modules are implemented entirely as kernel
-  code."
-
-And hopefully having defined a bit of background, the rest of the
-document just flows nicely:
-
-> These backstores cover the most common use cases, but not all. One new
-> use case that other non-kernel target solutions, such as tgt, are able
-> to support is using Gluster's GLFS or Ceph's RBD as a backstore. The
-> target then serves as a translator, allowing initiators to store data
-> in these non-traditional networked storage systems, while still only
-> using standard protocols themselves.
-
-Rich.
-
--- 
-Richard Jones, Virtualization Group, Red Hat http://people.redhat.com/~rjones
-Read my programming and virtualization blog: http://rwmj.wordpress.com
-virt-df lists disk usage of guests without needing to install any
-software inside the virtual machine.  Supports Linux and Windows.
-http://people.redhat.com/~rjones/virt-df/
