@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752076AbaHaWsK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 18:48:10 -0400
-Received: from mga11.intel.com ([192.55.52.93]:6157 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751429AbaHaWsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 18:48:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="379537710"
-Message-ID: <5403A625.4020801@linux.intel.com>
-Date: Sun, 31 Aug 2014 15:48:05 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        =?UTF-8?B?5ZC056ug6YeR?= <falcon@meizu.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-CC: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        "tiwai@suse.de" <tiwai@suse.de>, "tj@kernel.org" <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "oleg@redhat.com" <oleg@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "penguin-kernel@i-love.sakura.ne.jp" 
-	<penguin-kernel@i-love.sakura.ne.jp>,
-        "joseph.salisbury@canonical.com" <joseph.salisbury@canonical.com>,
-        "bpoirier@suse.de" <bpoirier@suse.de>,
+	id S1752089AbaHaWvp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 18:51:45 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:47382 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751667AbaHaWvo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Aug 2014 18:51:44 -0400
+Date: Sun, 31 Aug 2014 15:51:40 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, falcon@meizu.com,
+        tiwai@suse.de, linux-kernel@vger.kernel.org, oleg@redhat.com,
+        akpm@linux-foundation.org, penguin-kernel@i-love.sakura.ne.jp,
+        joseph.salisbury@canonical.com, bpoirier@suse.de,
         "Luis R. Rodriguez" <mcgrof@suse.com>
 Subject: Re: [RFC v1 0/3] driver-core: add asynch module loading support
-References: <99jhsb6abtsilpt3j5nu991b.1409513632114@email.android.com> <5403A273.4070504@linux.intel.com> <e781dc3b-5829-4bce-8a34-7ed708309f3b@email.android.com>
-In-Reply-To: <e781dc3b-5829-4bce-8a34-7ed708309f3b@email.android.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Message-ID: <20140831225140.GA20569@core.coreip.homeip.net>
+References: <1409475800-17573-1-git-send-email-mcgrof@do-not-panic.com>
+ <540334B2.7000009@linux.intel.com>
+ <20140831175040.GA17827@core.coreip.homeip.net>
+ <5403767E.1020107@linux.intel.com>
+ <20140831193140.GA12678@kroah.com>
+ <20140831201407.GB19881@core.coreip.homeip.net>
+ <20140831204035.GA4793@kroah.com>
+ <20140831215313.GA28690@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140831215313.GA28690@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/31/2014 3:45 PM, Dmitry Torokhov wrote:
-> On August 31, 2014 3:32:19 PM PDT, Arjan van de Ven <arjan@linux.intel.com> wrote:
->> On 8/31/2014 1:06 PM, 吴章金 wrote:
->>> Hi, folks
->>>
->>> I'm back to this discussion,
->>>
->>> The original requirement of my first RFC patchset is mainly for
->> Android Smartphone use case:
->>>
->>> 1. We want light on LCD and draw a logo immediately after power key
->> press(don't consider uboot or lk biotloader here).
->>> 2. We want the whole kernel boot fast to give user the Android Launch
->> deaktop
->>> 3. The modem initialization/reset is slow
->>> 4. The Touchpad firmware upgrade is slow
->>> 5. We have many cpu cores(up to 8 in latest exynos 5430 and
->> MT6595...)
->>> 6. We have few schedulable/parallellizable threads
->>> 7. We compiled all of the modules in the kernel(stupid? avoid
->> modprobe...but lose parallelization in userspace)
->>>
->>> So, I think about is that possible to async most of the probes, but
->> still reserve the requred dependencies to let them still work as
->> expected.
->>
->> you can boot a whole kernel including all graphics in less than 0.5
->> seconds, even without this patchset.
->
->
-> You forgot to add "on certain subset of hardware and configuration".
+On Sun, Aug 31, 2014 at 05:53:13PM -0400, Tejun Heo wrote:
+> Hello, Greg.
+> 
+> On Sun, Aug 31, 2014 at 01:40:35PM -0700, Greg KH wrote:
+> > > Right, all (well almost all) I wanted is for individual drivers to declare
+> > > their probe() functions asynchronous and driver core scheduling async attach
+> > > and properly handle failures from it.
+> > 
+> > Yes, that's what I want as well.
+> > 
+> > Luis, care to redo the patches in this way?  It should be a lot simpler
+> > (no messing around with init levels and linker fun...)
+> 
+> I don't think binding that switch to the driver is gonna work.  This
+> is mainly about the behavior expected by the entity which initiated
+> module loading not about specific drivers.
 
-certainly.
+Why would you say that? In my particular userspace we do not have modules.
 
-for hardware that takes longer than 0.5s you certainly won't get that.
+>  I'm fairly certain that
+> there are userland scripts which depend on synchronous device probing
+> on module loading, especially for storage devices, so we can't simply
+> mark, say, libata as needing async probing and do it always
+> asynchronously.
 
-asynchronous/parallel init helps, but it is not a miracle. Most devices I've worked on
-(wide range of hardware from PC to tablets to phones) there tend to be 4 to 5 big guys and a long tail of negliable ones.
-the big guys tend to be, even after going in parallel, so large that people who wanted instant boot have to accept
-that more miracles are needed.
-Like actual work in the driver or device firmware to split work up, rather than an "from the outside" make it asynchronous.
+Right. But for many devices (input ones for example, USB as well, etc) that are
+essentially hot-pluggable userspace has been long ready to handle async order.
 
+Thanks.
+
+-- 
+Dmitry
