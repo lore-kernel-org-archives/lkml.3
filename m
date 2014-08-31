@@ -1,50 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751324AbaHaLFc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 07:05:32 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:64325 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046AbaHaLF3 (ORCPT
+	id S1751234AbaHaLWa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 07:22:30 -0400
+Received: from smtp97.ord1c.emailsrvr.com ([108.166.43.97]:58954 "EHLO
+	smtp97.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751046AbaHaLW3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 07:05:29 -0400
-Date: Sun, 31 Aug 2014 07:05:26 -0400
-From: Tejun Heo <tj@kernel.org>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: gregkh@linuxfoundation.org, dmitry.torokhov@gmail.com, falcon@meizu.com,
-        tiwai@suse.de, arjan@linux.intel.com, linux-kernel@vger.kernel.org,
-        oleg@redhat.com, akpm@linux-foundation.org,
-        penguin-kernel@i-love.sakura.ne.jp, joseph.salisbury@canonical.com,
-        bpoirier@suse.de, "Luis R. Rodriguez" <mcgrof@suse.com>
-Subject: Re: [RFC v1 0/3] driver-core: add asynch module loading support
-Message-ID: <20140831110526.GE19853@htj.dyndns.org>
-References: <1409475800-17573-1-git-send-email-mcgrof@do-not-panic.com>
- <20140831101358.GB19853@htj.dyndns.org>
- <20140831110200.GC19853@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140831110200.GC19853@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sun, 31 Aug 2014 07:22:29 -0400
+X-Sender-Id: pramod.gurav@smartplayin.com
+From: Pramod Gurav <pramod.gurav@smartplayin.com>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] pinctrl: at91: Fixes in probe function
+Date: Sun, 31 Aug 2014 16:51:51 +0530
+Message-Id: <1409484115-1974-1-git-send-email-pramod.gurav@smartplayin.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 31, 2014 at 07:02:00AM -0400, Tejun Heo wrote:
-> So, something like the following.  A couple things to note
-> 
-> * driver_attach() can never fail but is marked with __must_check.  We
->   prolly should change it to void.
-> 
-> * Old/weird userspace which depends on insmod to wait for device
->   probing might choke and the new behavior might need to be switched
->   somehow (sysctl, insmod param or whatever).
+This patchset modifies the probe function to do some changes such as 
+switching to manage version of clk_get, fixing the error path by releasing
+resources etc. The last patch adds a remove function for clean unload.
 
-One more thing.
+Pramod Gurav (4):
+  pinctrl: at91: Switch to using managed clk_get
+  pinctrl: at91: Fix failure path in at91_gpio_probe path
+  pinctrl: at91: Fix error handling while doing gpiochio_irqchip_add
+  pinctrl: at91: Add remove function in platform_driver
+    at91_gpio_driver
 
-* Use of ordered workqueue probably isn't necessary and using
-  system_unbound_wq should be fine.
+ drivers/pinctrl/pinctrl-at91.c |   51 +++++++++++++++++++++++++++++-----------
+ 1 files changed, 37 insertions(+), 14 deletions(-)
 
-Thanks.
-
--- 
-tejun
