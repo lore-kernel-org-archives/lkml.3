@@ -1,92 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751393AbaHaLi1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 07:38:27 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:48917 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046AbaHaLiZ (ORCPT
+	id S1751479AbaHaME0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 08:04:26 -0400
+Received: from mga02.intel.com ([134.134.136.20]:15327 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751107AbaHaMEY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 07:38:25 -0400
-Date: Sun, 31 Aug 2014 07:38:22 -0400
-From: Tejun Heo <tj@kernel.org>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>, falcon@meizu.com,
-        Takashi Iwai <tiwai@suse.de>, arjan@linux.intel.com,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        penguin-kernel@i-love.sakura.ne.jp,
-        Joseph Salisbury <joseph.salisbury@canonical.com>, bpoirier@suse.de,
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [RFC v1 0/3] driver-core: add asynch module loading support
-Message-ID: <20140831113822.GF19853@htj.dyndns.org>
-References: <1409475800-17573-1-git-send-email-mcgrof@do-not-panic.com>
- <20140831101358.GB19853@htj.dyndns.org>
- <20140831110200.GC19853@htj.dyndns.org>
- <CANq1E4QFtTrCU8eq67AqeUO1v9EAZnAfaHJW4CnJkh0KKq9XmA@mail.gmail.com>
+	Sun, 31 Aug 2014 08:04:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,436,1406617200"; 
+   d="scan'208";a="566161315"
+From: "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>
+To: Luis Henriques <luis.henriques@canonical.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "kernel-team@lists.ubuntu.com" <kernel-team@lists.ubuntu.com>
+CC: "Coelho, Luciano" <luciano.coelho@intel.com>
+Subject: RE: [PATCH 3.11 005/137] iwlwifi: dvm: don't enable CTS to self
+Thread-Topic: [PATCH 3.11 005/137] iwlwifi: dvm: don't enable CTS to self
+Thread-Index: AQHPuseB6g8+Jto6MEGWBl5OYNwFlpvqsZew
+Date: Sun, 31 Aug 2014 12:04:19 +0000
+Message-ID: <0BA3FCBA62E2DC44AF3030971E174FB31B277EB2@hasmsx107.ger.corp.intel.com>
+References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
+ <1408354398-10226-6-git-send-email-luis.henriques@canonical.com>
+In-Reply-To: <1408354398-10226-6-git-send-email-luis.henriques@canonical.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANq1E4QFtTrCU8eq67AqeUO1v9EAZnAfaHJW4CnJkh0KKq9XmA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ing Rusty for module loading)
-
-Hello,
-
-On Sun, Aug 31, 2014 at 01:25:03PM +0200, David Herrmann wrote:
-> On Sun, Aug 31, 2014 at 1:02 PM, Tejun Heo <tj@kernel.org> wrote:
-> > @@ -689,9 +704,23 @@ int bus_add_driver(struct device_driver *drv)
-> >
-> >         klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers);
-> >         if (drv->bus->p->drivers_autoprobe) {
-> > -               error = driver_attach(drv);
-> > -               if (error)
-> > -                       goto out_unregister;
-> > +               struct driver_attach_work *daw;
-
-Oops, this probably should go inside the below if block.
-
-> > +
-> > +               if (drv->owner) {
-> > +                       daw = kzalloc(sizeof(*daw), GFP_KERNEL);
-> > +                       if (!daw) {
-> > +                               error = -ENOMEM;
-> > +                               goto out_unregister;
-> > +                       }
-> > +
-> > +                       INIT_WORK(&daw->work, driver_attach_workfn);
-> > +                       daw->driver = drv;
-> > +                       queue_work(driver_attach_wq, &daw->work);
+> -----Original Message-----
+> From: Luis Henriques [mailto:luis.henriques@canonical.com]
+> Sent: Monday, August 18, 2014 12:31 PM
+> To: linux-kernel@vger.kernel.org; stable@vger.kernel.org; kernel-
+> team@lists.ubuntu.com
+> Cc: Grumbach, Emmanuel; Luis Henriques
+> Subject: [PATCH 3.11 005/137] iwlwifi: dvm: don't enable CTS to self
 > 
-> Doesn't this break on-demand cdev initialization? We currently call
-> request_module() on open() for unclaimed major/minor combinations. If
-> driver_attach() is no longer part of module_init(), there is no
-> guarantee the driver created the cdev before request_module() returns.
+> 3.11.10.15 -stable review patch.  If anyone has any objections, please let me
+> know.
 
-Right, yeah, this really looks like something we'd need to switch per
-insmod instance.  It looks like driver core needs a generic parameter
-to tell it to whether drive probing asynchronously to module loading
-or not.  Maybe we can add a generic driver param like
-"driver_async_probe"?
+Just came back from a long travel - please drop this one. It has caused trouble to people.
+I need to revert it.
 
-> I actually like this "deferred attach" approach, so this is not meant
-> as counter-argument. We just need to make sure to have a notion of
-> "settled modules" so we know how long to wait after loading a module.
+> 
+> ------------------
+> 
+> From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+> 
+> commit 43d826ca5979927131685cc2092c7ce862cb91cd upstream.
+> 
+> We should always prefer to use full RTS protection. Using CTS to self gives a
+> meaningless improvement, but this flow is much harder for the firmware
+> which is likely to have issues with it.
+> 
+> Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+> ---
+>  drivers/net/wireless/iwlwifi/dvm/rxon.c | 12 ------------
+>  1 file changed, 12 deletions(-)
+> 
+> diff --git a/drivers/net/wireless/iwlwifi/dvm/rxon.c
+> b/drivers/net/wireless/iwlwifi/dvm/rxon.c
+> index cd1ad0019185..ca17e4c9eca2 100644
+> --- a/drivers/net/wireless/iwlwifi/dvm/rxon.c
+> +++ b/drivers/net/wireless/iwlwifi/dvm/rxon.c
+> @@ -1072,13 +1072,6 @@ int iwlagn_commit_rxon(struct iwl_priv *priv,
+> struct iwl_rxon_context *ctx)
+>  	/* recalculate basic rates */
+>  	iwl_calc_basic_rates(priv, ctx);
+> 
+> -	/*
+> -	 * force CTS-to-self frames protection if RTS-CTS is not preferred
+> -	 * one aggregation protection method
+> -	 */
+> -	if (!priv->hw_params.use_rts_for_aggregation)
+> -		ctx->staging.flags |= RXON_FLG_SELF_CTS_EN;
+> -
+>  	if ((ctx->vif && ctx->vif->bss_conf.use_short_slot) ||
+>  	    !(ctx->staging.flags & RXON_FLG_BAND_24G_MSK))
+>  		ctx->staging.flags |= RXON_FLG_SHORT_SLOT_MSK; @@ -
+> 1484,11 +1477,6 @@ void iwlagn_bss_info_changed(struct ieee80211_hw
+> *hw,
+>  	else
+>  		ctx->staging.flags &= ~RXON_FLG_TGG_PROTECT_MSK;
+> 
+> -	if (bss_conf->use_cts_prot)
+> -		ctx->staging.flags |= RXON_FLG_SELF_CTS_EN;
+> -	else
+> -		ctx->staging.flags &= ~RXON_FLG_SELF_CTS_EN;
+> -
+>  	memcpy(ctx->staging.bssid_addr, bss_conf->bssid, ETH_ALEN);
+> 
+>  	if (vif->type == NL80211_IFTYPE_AP ||
+> --
+> 1.9.1
 
-Another way could be making module-generic pollable file in the
-module's sysfs dir to indicate "full init completion", which would map
-to probing completion for drivers; however, given that we need to keep
-the synchronous behavior by default for compatibility, I don't think
-that buys us much.
-
-Thanks.
-
--- 
-tejun
