@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752043AbaHaTYu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 15:24:50 -0400
-Received: from mga14.intel.com ([192.55.52.115]:36743 "EHLO mga14.intel.com"
+	id S1752077AbaHaT0N (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 15:26:13 -0400
+Received: from mga14.intel.com ([192.55.52.115]:36891 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751813AbaHaTYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 15:24:47 -0400
+	id S1751813AbaHaT0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Aug 2014 15:26:07 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="379501015"
-Message-ID: <5403767E.1020107@linux.intel.com>
-Date: Sun, 31 Aug 2014 12:24:46 -0700
+   d="scan'208";a="379501291"
+Message-ID: <540376CE.2050007@linux.intel.com>
+Date: Sun, 31 Aug 2014 12:26:06 -0700
 From: Arjan van de Ven <arjan@linux.intel.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Tejun Heo <tj@kernel.org>
 CC: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, gregkh@linuxfoundation.org,
-        falcon@meizu.com, tiwai@suse.de, tj@kernel.org,
-        linux-kernel@vger.kernel.org, oleg@redhat.com,
-        akpm@linux-foundation.org, penguin-kernel@i-love.sakura.ne.jp,
-        joseph.salisbury@canonical.com, bpoirier@suse.de,
-        "Luis R. Rodriguez" <mcgrof@suse.com>
+        falcon@meizu.com, tiwai@suse.de, linux-kernel@vger.kernel.org,
+        oleg@redhat.com, akpm@linux-foundation.org,
+        penguin-kernel@i-love.sakura.ne.jp, joseph.salisbury@canonical.com,
+        bpoirier@suse.de, "Luis R. Rodriguez" <mcgrof@suse.com>
 Subject: Re: [RFC v1 0/3] driver-core: add asynch module loading support
-References: <1409475800-17573-1-git-send-email-mcgrof@do-not-panic.com> <540334B2.7000009@linux.intel.com> <20140831175040.GA17827@core.coreip.homeip.net>
-In-Reply-To: <20140831175040.GA17827@core.coreip.homeip.net>
+References: <1409475800-17573-1-git-send-email-mcgrof@do-not-panic.com> <20140831101358.GB19853@htj.dyndns.org> <20140831110200.GC19853@htj.dyndns.org> <20140831110526.GE19853@htj.dyndns.org> <20140831175243.GB17827@core.coreip.homeip.net>
+In-Reply-To: <20140831175243.GB17827@core.coreip.homeip.net>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> before we added the current async approach the approach of async init calls was tried
->> At the time, Linus hated it and he was right, it was not the right thing.
+On 8/31/2014 10:52 AM, Dmitry Torokhov wrote:
+> On Sun, Aug 31, 2014 at 07:05:26AM -0400, Tejun Heo wrote:
+>> On Sun, Aug 31, 2014 at 07:02:00AM -0400, Tejun Heo wrote:
+>>> So, something like the following.  A couple things to note
+>>>
+>>> * driver_attach() can never fail but is marked with __must_check.  We
+>>>    prolly should change it to void.
+>>>
+>>> * Old/weird userspace which depends on insmod to wait for device
+>>>    probing might choke and the new behavior might need to be switched
+>>>    somehow (sysctl, insmod param or whatever).
 >>
->> What is different this time to make this the right thing to do ?
+>> One more thing.
+>>
+>> * Use of ordered workqueue probably isn't necessary and using
+>>    system_unbound_wq should be fine.
+>>
 >
-> Because otherwise drivers still have to do this, but open code it. Let's say I
-> have a long operations (i.e. for some touchpads it takes about 2 secs to reset
-> and configure it). I can offload that part into async_schedule() so it does not
-> stop initialization of the rest of the system (why would I want to delay
-> initializing of USB or storage system until touchpad is ready?) but if that
-> initialization fails we end up with partially bound driver and device that is
-> not really operable. I would very much prefer async and sync cases be the same
-> - if probe() fails the driver is not bound to the device.
->
-> I think it is wrong to make async probing system-wide, but driver opt-in shoudl
-> be fine and right thing to do.
->
+> For my use case (touchpad taking long time to initialize) I explicitly do not
+> want it to keep order of initialization. I want to make sure the rest of the
+> kernel continues initialization while touchpad device resets.
 
-I am completely fine if we make basically an async wrapper for
-pci_register_driver() and friends.. that would be convenient I suppose.
+but we do that right now
 
-(but then again, in reality very few drivers take real time to init... most already
-do the heavy work in open(). Not all can, sure, but if you look at a bootgraph.pl
-graph of a typical boot it's only a few that matter).
-And many drivers need to register with a subsystem, and there's some ordering around that,
-and that's why we ended up with the async cookie stuff, so that you can do the
-heavy work in parallel, but order near the end at registeration-with-the-subsystem time.
-
-But doing this on an initcall level was wrong back then, and I have yet to hear
-a reason why it would be right this time.
+you know its there synchronous
+and do the heavy stuff async
 
 
+now sadly  we also wait for the touchpad to finish init if you don't use an initramfs
+(but we dont wait if you have an initramfs) but that's a different thing from all of this
 
