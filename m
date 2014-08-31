@@ -1,70 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751099AbaHaFnz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 01:43:55 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:1855 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750837AbaHaFny (ORCPT
+	id S1751103AbaHaGra (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 02:47:30 -0400
+Received: from fallback5.mail.ru ([94.100.181.253]:47802 "EHLO
+	fallback5.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750740AbaHaGr0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 01:43:54 -0400
-From: Leo Yan <leoy@marvell.com>
-To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-CC: Leo Yan <leoy@marvell.com>
-Subject: [PATCH v1] arm64: fix bug for reloading FPSIMD state after cpu power off
-Date: Sun, 31 Aug 2014 13:39:51 +0800
-Message-ID: <1409463591-661-1-git-send-email-leoy@marvell.com>
-X-Mailer: git-send-email 1.9.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
- definitions=2014-08-31_02:2014-08-29,2014-08-31,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1408310074
+	Sun, 31 Aug 2014 02:47:26 -0400
+From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+To: =?UTF-8?B?UGhpbGlwcGUgUmV5bmVz?= <tremyfr@gmail.com>
+Cc: kernel@pengutronix.de, shawn.guo@freescale.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org
+Subject: =?UTF-8?B?UmU6IFtQQVRDSCB2Ml0gYXBmMjdkZXY6IGFkZCBtYXgxMDI3IGluIHRoZSBk?=
+ =?UTF-8?B?dHM=?=
+Mime-Version: 1.0
+X-Mailer: Mail.Ru Mailer 1.0
+X-Originating-IP: [5.18.98.7]
+Date: Sun, 31 Aug 2014 10:46:54 +0400
+Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+X-Priority: 3 (Normal)
+Message-ID: <1409467614.685837886@f430.i.mail.ru>
+X-Cloud-Ids: 
+Content-Type: text/plain; charset=utf-8
+X-Mras: Ok
+X-Spam: undefined
+In-Reply-To: <1409436057-29729-1-git-send-email-tremyfr@gmail.com>
+References: <1409436057-29729-1-git-send-email-tremyfr@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7V6lqEJ031974
 
-Now arm64 defers reloading FPSIMD state, but this optimization also
-introduces the bug after cpu resume back from low power mode.
 
-The reason is after the cpu has been powered off, s/w need set the
-cpu's fpsimd_last_state to NULL so that it will force to reload
-FPSIMD state for the thread, otherwise there has the chance to meet
-the condition for both the task's fpsimd_state.cpu field contains the
-id of the current cpu, and the cpu's fpsimd_last_state per-cpu variable
-points to the task's fpsimd_state, so finally kernel will skip to reload
-the context during it return back to userland.
+Sun, 31 Aug 2014 00:00:57 +0200 Ğ¾Ñ‚ Philippe Reynes <tremyfr@gmail.com>:
+> 
+> Signed-off-by: Philippe Reynes <tremyfr@gmail.com>
+> ---
+>  arch/arm/boot/dts/imx27-apf27dev.dts |   17 +++++++++++++++++
+>  1 files changed, 17 insertions(+), 0 deletions(-)
+> 
+> Changelog:
+> v2: (thanks Alexander Shiyan for the feedback)
+> - spi mode 0 is the default so no need to explicitly define it
+> 
+> diff --git a/arch/arm/boot/dts/imx27-apf27dev.dts b/arch/arm/boot/dts/imx27-apf27dev.dts
+> index b982309..f2bab73 100644
+> --- a/arch/arm/boot/dts/imx27-apf27dev.dts
+> +++ b/arch/arm/boot/dts/imx27-apf27dev.dts
+> @@ -82,6 +82,16 @@
+>  	pinctrl-names = "default";
+>  	pinctrl-0 = <&pinctrl_cspi1 &pinctrl_cspi1_cs>;
+>  	status = "okay";
+> +
+> +	adc@0 {
+> +		compatible = "maxim,max1027";
+> +		reg = <0>;
+> +		interrupt-parent = <&gpio5>;
+> +		interrupts = <15 IRQ_TYPE_EDGE_FALLING>;
+> +		pinctrl-names = "default";
+> +		pinctrl-0 = <&pinctrl_max1027>;
+> +		spi-max-frequency = <10000000>;
+> +	};
+>  };
+>  
+>  &cspi2 {
+> @@ -230,6 +240,13 @@
+>  		pinctrl_sdhc2_cd: sdhc2cdgrp {
+>  			fsl,pins = <MX27_PAD_TOUT__GPIO3_14 0x0>;
+>  		};
+> +
+> +		pinctrl_max1027: max1027 {
+> +			 fsl,pins = <
+> +				 MX27_PAD_UART1_CTS__GPIO5_14 0
+> +				 MX27_PAD_UART1_RTS__GPIO5_15 0
+> +			>;
+> +		};
+>  	};
+>  };
 
-Furthermore, this patch also removes the redundant operation for saving
-the state for idle thread; this operation is needless due kernel's idle
-thread will not use any VFP/NEON instruction. so that this also can
-benefit a bit for the latency during cpu's power off.
+Only one remark.
+Function of GPIO5.14 is unclear. Can you add a comment for this?
 
-Signed-off-by: Leo Yan <leoy@marvell.com>
 ---
- arch/arm64/kernel/fpsimd.c | 6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
 
-diff --git a/arch/arm64/kernel/fpsimd.c b/arch/arm64/kernel/fpsimd.c
-index ad8aebb..4caef93 100644
---- a/arch/arm64/kernel/fpsimd.c
-+++ b/arch/arm64/kernel/fpsimd.c
-@@ -268,13 +268,9 @@ static int fpsimd_cpu_pm_notifier(struct notifier_block *self,
- {
- 	switch (cmd) {
- 	case CPU_PM_ENTER:
--		if (current->mm && !test_thread_flag(TIF_FOREIGN_FPSTATE))
--			fpsimd_save_state(&current->thread.fpsimd_state);
-+		this_cpu_write(fpsimd_last_state, NULL);
- 		break;
- 	case CPU_PM_EXIT:
--		if (current->mm)
--			set_thread_flag(TIF_FOREIGN_FPSTATE);
--		break;
- 	case CPU_PM_ENTER_FAILED:
- 	default:
- 		return NOTIFY_DONE;
--- 
-1.9.1
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
