@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051AbaHaTpV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 15:45:21 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:48742 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751995AbaHaTpK (ORCPT
+	id S1752079AbaHaTqG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 15:46:06 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47128 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751498AbaHaTqC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 15:45:10 -0400
-From: Chase Southwood <chase.southwood@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Chase Southwood <chase.southwood@gmail.com>
-Subject: [PATCH] staging: comedi: usbduxsigma: fix more sparse endianness warnings
-Date: Sun, 31 Aug 2014 14:45:00 -0500
-Message-Id: <1409514300-15493-1-git-send-email-chase.southwood@gmail.com>
-X-Mailer: git-send-email 2.1.0
+	Sun, 31 Aug 2014 15:46:02 -0400
+X-Sasl-enc: gw7xf070mByrPEF7zbGv7jt4Ub1Zvh5RtiZtZG+QSh+T 1409514360
+Date: Sun, 31 Aug 2014 16:45:48 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Borislav Petkov <bp@alien8.de>, H Peter Anvin <hpa@zytor.com>,
+        Fenghua Yu <fenghua.yu@intel.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: early microcode: how to disable at runtime?
+Message-ID: <20140831194548.GA12628@khazad-dum.debian.net>
+References: <20140809231911.GA4843@khazad-dum.debian.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140809231911.GA4843@khazad-dum.debian.net>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sparse shows a couple of warnings like:
+Currently, there is no way to disable early microcode update at runtime.  If
+an early initramfs with microcode update data is available, it will always
+be used.
 
-drivers/staging/comedi/drivers/usbduxsigma.c:787:23: warning: cast to restricted __be32
+This can be a very big deal when things go wrong: it is hard for the regular
+user to recover from an initramfs image that crashes the system, and the
+early initramfs has no "disable" trigger.
 
-Looking at the indicated lines shows that the issue is caused by an
-incorrect cast to uint32_t instead of __be32.  Fix this cast.
+In the general case, booting from rescue media will be required to fix the
+system.
 
-Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
----
- drivers/staging/comedi/drivers/usbduxsigma.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Unfortunately, the BSP microcode update is handled before early_param() is
+available, so a kernel command line parameter to disable early microcode
+updates for the BSP isn't easily possible.
 
-diff --git a/drivers/staging/comedi/drivers/usbduxsigma.c b/drivers/staging/comedi/drivers/usbduxsigma.c
-index 5dbab04..5bad118 100644
---- a/drivers/staging/comedi/drivers/usbduxsigma.c
-+++ b/drivers/staging/comedi/drivers/usbduxsigma.c
-@@ -784,7 +784,7 @@ static int usbduxsigma_ai_insn_read(struct comedi_device *dev,
- 		}
- 
- 		/* 32 bits big endian from the A/D converter */
--		val = be32_to_cpu(get_unaligned((uint32_t
-+		val = be32_to_cpu(get_unaligned((__be32
- 						 *)(devpriv->insn_buf + 1)));
- 		val &= 0x00ffffff;	/* strip status byte */
- 		val ^= 0x00800000;	/* convert to unsigned */
-@@ -1343,7 +1343,7 @@ static int usbduxsigma_getstatusinfo(struct comedi_device *dev, int chan)
- 		return ret;
- 
- 	/* 32 bits big endian from the A/D converter */
--	val = be32_to_cpu(get_unaligned((uint32_t *)(devpriv->insn_buf + 1)));
-+	val = be32_to_cpu(get_unaligned((__be32 *)(devpriv->insn_buf + 1)));
- 	val &= 0x00ffffff;	/* strip status byte */
- 	val ^= 0x00800000;	/* convert to unsigned */
- 
+Other than duplicating much of the code in parse_early_param/parse_args to
+search for a "noearlymcu" parameter, is there any other way we could add a
+disable switch for the early microcode update system?
+
+Otherwise, distros will have to generate a rescue initramfs image
+automatically that has the entire early initramfs stripped, or somehow get
+the bootloaders (and mkinitramfs/dracut) to deal (correctly) with two
+initramfs images.
+
 -- 
-2.1.0
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
