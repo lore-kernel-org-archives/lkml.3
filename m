@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751789AbaHaVa1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 17:30:27 -0400
-Received: from v095080.home.net.pl ([79.96.174.84]:51674 "HELO
-	v095080.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751235AbaHaVa0 convert rfc822-to-8bit (ORCPT
+	id S1751968AbaHaVxS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 17:53:18 -0400
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:57985 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751719AbaHaVxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 17:30:26 -0400
-X-Greylist: delayed 1999 seconds by postgrey-1.27 at vger.kernel.org; Sun, 31 Aug 2014 17:30:26 EDT
-Reply-To: "=?iso-8859-2?Q?Przemys=B3aw_Nowak?=" 
-	  <biuro@centrumpomocykredytowej.pl>
-From: "=?iso-8859-2?Q?Przemys=B3aw_Nowak?=" <biuro@biznesowewparcie.pl>
-To: <linux-kernel@vger.kernel.org>
-Subject: =?iso-8859-2?Q?Kredyt_bez_za=B6wiadcze=F1?=
-Message-ID: <AD5CEA27999D5D7FE2430EBA8B9A143C@giada>
-Date: Sun, 31 Aug 2014 22:33:03 +0200
-Organization: AnoMail - oprogramowanie do emailingow
-X-Mailer: Microsoft Office Outlook, Build 11.0.5510
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3028
+	Sun, 31 Aug 2014 17:53:17 -0400
+Date: Sun, 31 Aug 2014 17:53:13 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, falcon@meizu.com,
+        tiwai@suse.de, linux-kernel@vger.kernel.org, oleg@redhat.com,
+        akpm@linux-foundation.org, penguin-kernel@i-love.sakura.ne.jp,
+        joseph.salisbury@canonical.com, bpoirier@suse.de,
+        "Luis R. Rodriguez" <mcgrof@suse.com>
+Subject: Re: [RFC v1 0/3] driver-core: add asynch module loading support
+Message-ID: <20140831215313.GA28690@mtj.dyndns.org>
+References: <1409475800-17573-1-git-send-email-mcgrof@do-not-panic.com>
+ <540334B2.7000009@linux.intel.com>
+ <20140831175040.GA17827@core.coreip.homeip.net>
+ <5403767E.1020107@linux.intel.com>
+ <20140831193140.GA12678@kroah.com>
+ <20140831201407.GB19881@core.coreip.homeip.net>
+ <20140831204035.GA4793@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-2";
-	reply-type=original
-Content-Transfer-Encoding: 8BIT
-X-Antivirus: avast! (VPS 140831-0, 2014-08-31), Outbound message
-X-Antivirus-Status: Clean
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140831204035.GA4793@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Witam,
+Hello, Greg.
 
-Mam do zaoferowania  kredyty firmowe które zawieraja m.in.
+On Sun, Aug 31, 2014 at 01:40:35PM -0700, Greg KH wrote:
+> > Right, all (well almost all) I wanted is for individual drivers to declare
+> > their probe() functions asynchronous and driver core scheduling async attach
+> > and properly handle failures from it.
+> 
+> Yes, that's what I want as well.
+> 
+> Luis, care to redo the patches in this way?  It should be a lot simpler
+> (no messing around with init levels and linker fun...)
 
-kredyt bez za¶wiadczeñ z ZUS i US,
-3 letnie limity w rachunku bie¿±cym,
-kredyt na o¶wiadczenie do 500 tys PLN,
-kredyt na start,
+I don't think binding that switch to the driver is gonna work.  This
+is mainly about the behavior expected by the entity which initiated
+module loading not about specific drivers.  I'm fairly certain that
+there are userland scripts which depend on synchronous device probing
+on module loading, especially for storage devices, so we can't simply
+mark, say, libata as needing async probing and do it always
+asynchronously.
 
-Prosimy o odpowied¼ zwrotn± TAK w przypadku chêci otrzymania oferty.
+Thanks.
 
-Powy¿sze zapytanie nie stanowi oferty handlowej. Jest ono jedynie pro¶b± o zgodê na przes³anie do Pañstwa stosownej oferty. Jesli nie ustosunkuj± siê Pañstwo do tej wiadomo¶ci pozytywnie nie otrzymaj± Pañstwo ponownie zapytania.
-
-z powa¿aniem
-Przemys³aw Nowak 
-tel. 884-898-471
-
-
----
-Ta wiadomo¶æ e-mail jest wolna od wirusów i z³o¶liwego oprogramowania, poniewa¿ ochrona avast! Antivirus jest aktywna.
-http://www.avast.com
-
+-- 
+tejun
