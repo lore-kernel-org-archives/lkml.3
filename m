@@ -1,58 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752035AbaHaRwt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 13:52:49 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:56368 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751665AbaHaRwr (ORCPT
+	id S1751693AbaHaSAc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 14:00:32 -0400
+Received: from mail-yk0-f170.google.com ([209.85.160.170]:40764 "EHLO
+	mail-yk0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751393AbaHaSAa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 13:52:47 -0400
-Date: Sun, 31 Aug 2014 10:52:43 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, gregkh@linuxfoundation.org,
-        falcon@meizu.com, tiwai@suse.de, arjan@linux.intel.com,
-        linux-kernel@vger.kernel.org, oleg@redhat.com,
-        akpm@linux-foundation.org, penguin-kernel@i-love.sakura.ne.jp,
-        joseph.salisbury@canonical.com, bpoirier@suse.de,
-        "Luis R. Rodriguez" <mcgrof@suse.com>
-Subject: Re: [RFC v1 0/3] driver-core: add asynch module loading support
-Message-ID: <20140831175243.GB17827@core.coreip.homeip.net>
-References: <1409475800-17573-1-git-send-email-mcgrof@do-not-panic.com>
- <20140831101358.GB19853@htj.dyndns.org>
- <20140831110200.GC19853@htj.dyndns.org>
- <20140831110526.GE19853@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140831110526.GE19853@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 31 Aug 2014 14:00:30 -0400
+From: Pranith Kumar <bobby.prani@gmail.com>
+To: Hugh Dickins <hughd@google.com>, David Herrmann <dh.herrmann@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] memfd_test: Add missing argument to printf()
+Date: Sun, 31 Aug 2014 14:00:03 -0400
+Message-Id: <1409508006-13136-1-git-send-email-bobby.prani@gmail.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 31, 2014 at 07:05:26AM -0400, Tejun Heo wrote:
-> On Sun, Aug 31, 2014 at 07:02:00AM -0400, Tejun Heo wrote:
-> > So, something like the following.  A couple things to note
-> > 
-> > * driver_attach() can never fail but is marked with __must_check.  We
-> >   prolly should change it to void.
-> > 
-> > * Old/weird userspace which depends on insmod to wait for device
-> >   probing might choke and the new behavior might need to be switched
-> >   somehow (sysctl, insmod param or whatever).
-> 
-> One more thing.
-> 
-> * Use of ordered workqueue probably isn't necessary and using
->   system_unbound_wq should be fine.
-> 
+Add a missing path argument buf to printf() 
 
-For my use case (touchpad taking long time to initialize) I explicitly do not
-want it to keep order of initialization. I want to make sure the rest of the
-kernel continues initialization while touchpad device resets.
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+---
+ tools/testing/selftests/memfd/memfd_test.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks.
-
+diff --git a/tools/testing/selftests/memfd/memfd_test.c b/tools/testing/selftests/memfd/memfd_test.c
+index 3634c90..c343df8 100644
+--- a/tools/testing/selftests/memfd/memfd_test.c
++++ b/tools/testing/selftests/memfd/memfd_test.c
+@@ -205,7 +205,7 @@ static void mfd_fail_open(int fd, int flags, mode_t mode)
+ 	sprintf(buf, "/proc/self/fd/%d", fd);
+ 	r = open(buf, flags, mode);
+ 	if (r >= 0) {
+-		printf("open(%s) didn't fail as expected\n");
++		printf("open(%s) didn't fail as expected\n", buf);
+ 		abort();
+ 	}
+ }
 -- 
-Dmitry
+2.1.0
+
