@@ -1,88 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751103AbaHaGra (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 02:47:30 -0400
-Received: from fallback5.mail.ru ([94.100.181.253]:47802 "EHLO
-	fallback5.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750740AbaHaGr0 (ORCPT
+	id S1751145AbaHaG6Y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 02:58:24 -0400
+Received: from mail-yk0-f173.google.com ([209.85.160.173]:63535 "EHLO
+	mail-yk0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853AbaHaG6V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 02:47:26 -0400
-From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-To: =?UTF-8?B?UGhpbGlwcGUgUmV5bmVz?= <tremyfr@gmail.com>
-Cc: kernel@pengutronix.de, shawn.guo@freescale.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org
-Subject: =?UTF-8?B?UmU6IFtQQVRDSCB2Ml0gYXBmMjdkZXY6IGFkZCBtYXgxMDI3IGluIHRoZSBk?=
- =?UTF-8?B?dHM=?=
-Mime-Version: 1.0
-X-Mailer: Mail.Ru Mailer 1.0
-X-Originating-IP: [5.18.98.7]
-Date: Sun, 31 Aug 2014 10:46:54 +0400
-Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-X-Priority: 3 (Normal)
-Message-ID: <1409467614.685837886@f430.i.mail.ru>
-X-Cloud-Ids: 
-Content-Type: text/plain; charset=utf-8
-X-Mras: Ok
-X-Spam: undefined
-In-Reply-To: <1409436057-29729-1-git-send-email-tremyfr@gmail.com>
-References: <1409436057-29729-1-git-send-email-tremyfr@gmail.com>
+	Sun, 31 Aug 2014 02:58:21 -0400
+From: =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soeren.brinkmann@gmail.com>
+To: Lars-Peter Clausen <lars@metafoo.de>,
+        Michael Hennerich <Michael.Hennerich@analog.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>, linux-iio@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soeren.brinkmann@gmail.com>
+Subject: [PATCH] staging: ad7606_core: Fix checkpatch warning
+Date: Sat, 30 Aug 2014 23:57:34 -0700
+Message-Id: <1409468254-5312-1-git-send-email-soeren.brinkmann@gmail.com>
+X-Mailer: git-send-email 2.1.0
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7V6lqEJ031974
 
+Fix the checkpatch complaint regarding unnecessary line continuation.
+  WARNING: Avoid unnecessary line continuations
+  #143: FILE: ad7606_core.c:143:
 
-Sun, 31 Aug 2014 00:00:57 +0200 Ğ¾Ñ‚ Philippe Reynes <tremyfr@gmail.com>:
-> 
-> Signed-off-by: Philippe Reynes <tremyfr@gmail.com>
-> ---
->  arch/arm/boot/dts/imx27-apf27dev.dts |   17 +++++++++++++++++
->  1 files changed, 17 insertions(+), 0 deletions(-)
-> 
-> Changelog:
-> v2: (thanks Alexander Shiyan for the feedback)
-> - spi mode 0 is the default so no need to explicitly define it
-> 
-> diff --git a/arch/arm/boot/dts/imx27-apf27dev.dts b/arch/arm/boot/dts/imx27-apf27dev.dts
-> index b982309..f2bab73 100644
-> --- a/arch/arm/boot/dts/imx27-apf27dev.dts
-> +++ b/arch/arm/boot/dts/imx27-apf27dev.dts
-> @@ -82,6 +82,16 @@
->  	pinctrl-names = "default";
->  	pinctrl-0 = <&pinctrl_cspi1 &pinctrl_cspi1_cs>;
->  	status = "okay";
-> +
-> +	adc@0 {
-> +		compatible = "maxim,max1027";
-> +		reg = <0>;
-> +		interrupt-parent = <&gpio5>;
-> +		interrupts = <15 IRQ_TYPE_EDGE_FALLING>;
-> +		pinctrl-names = "default";
-> +		pinctrl-0 = <&pinctrl_max1027>;
-> +		spi-max-frequency = <10000000>;
-> +	};
->  };
->  
->  &cspi2 {
-> @@ -230,6 +240,13 @@
->  		pinctrl_sdhc2_cd: sdhc2cdgrp {
->  			fsl,pins = <MX27_PAD_TOUT__GPIO3_14 0x0>;
->  		};
-> +
-> +		pinctrl_max1027: max1027 {
-> +			 fsl,pins = <
-> +				 MX27_PAD_UART1_CTS__GPIO5_14 0
-> +				 MX27_PAD_UART1_RTS__GPIO5_15 0
-> +			>;
-> +		};
->  	};
->  };
-
-Only one remark.
-Function of GPIO5.14 is unclear. Can you add a comment for this?
-
+Signed-off-by: SÃ¶ren Brinkmann <soeren.brinkmann@gmail.com>
 ---
+ drivers/staging/iio/adc/ad7606_core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+diff --git a/drivers/staging/iio/adc/ad7606_core.c b/drivers/staging/iio/adc/ad7606_core.c
+index f0f05f195d2c..bf2c8013134c 100644
+--- a/drivers/staging/iio/adc/ad7606_core.c
++++ b/drivers/staging/iio/adc/ad7606_core.c
+@@ -140,7 +140,7 @@ static ssize_t ad7606_store_range(struct device *dev,
+ 	return count;
+ }
+ 
+-static IIO_DEVICE_ATTR(in_voltage_range, S_IRUGO | S_IWUSR, \
++static IIO_DEVICE_ATTR(in_voltage_range, S_IRUGO | S_IWUSR,
+ 		       ad7606_show_range, ad7606_store_range, 0);
+ static IIO_CONST_ATTR(in_voltage_range_available, "5000 10000");
+ 
+-- 
+2.1.0
+
