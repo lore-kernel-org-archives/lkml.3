@@ -1,141 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751617AbaHaLZH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 07:25:07 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:48264 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223AbaHaLZE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 07:25:04 -0400
+	id S1751749AbaHaLZb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 07:25:31 -0400
+Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:57317 "EHLO
+	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751684AbaHaLZ2 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Aug 2014 07:25:28 -0400
+From: Shachar Raindel <raindel@mellanox.com>
+To: Shawn Bohrer <shawn.bohrer@gmail.com>, Roland Dreier <roland@kernel.org>
+CC: Christoph Lameter <cl@linux.com>, Sean Hefty <sean.hefty@intel.com>,
+        "Hal Rosenstock" <hal.rosenstock@gmail.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tomk@rgmadvisors.com" <tomk@rgmadvisors.com>,
+        Yishai Hadas <yishaih@mellanox.com>,
+        Or Gerlitz <ogerlitz@mellanox.com>, Haggai Eran <haggaie@mellanox.com>,
+        Shawn Bohrer <sbohrer@rgmadvisors.com>
+Subject: RE: [PATCH v2] ib_umem_release should decrement mm->pinned_vm from
+ ib_umem_get
+Thread-Topic: [PATCH v2] ib_umem_release should decrement mm->pinned_vm from
+ ib_umem_get
+Thread-Index: AQHPwwixwMyDMmKmRUWO6KR3TGdSFpvqlcZQ
+Date: Sun, 31 Aug 2014 11:25:09 +0000
+Deferred-Delivery: Sun, 31 Aug 2014 11:25:00 +0000
+Message-ID: <6B2A6E60C06CCC42AE31809BF572352B010E240634@MTLDAG02.mtl.com>
+References: <1409261991-11533-1-git-send-email-shawn.bohrer@gmail.com>
+In-Reply-To: <1409261991-11533-1-git-send-email-shawn.bohrer@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.0.13.1]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20140831110200.GC19853@htj.dyndns.org>
-References: <1409475800-17573-1-git-send-email-mcgrof@do-not-panic.com>
-	<20140831101358.GB19853@htj.dyndns.org>
-	<20140831110200.GC19853@htj.dyndns.org>
-Date: Sun, 31 Aug 2014 13:25:03 +0200
-Message-ID: <CANq1E4QFtTrCU8eq67AqeUO1v9EAZnAfaHJW4CnJkh0KKq9XmA@mail.gmail.com>
-Subject: Re: [RFC v1 0/3] driver-core: add asynch module loading support
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>, falcon@meizu.com,
-        Takashi Iwai <tiwai@suse.de>, arjan@linux.intel.com,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        penguin-kernel@i-love.sakura.ne.jp,
-        Joseph Salisbury <joseph.salisbury@canonical.com>, bpoirier@suse.de,
-        "Luis R. Rodriguez" <mcgrof@suse.com>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Hi,
 
-On Sun, Aug 31, 2014 at 1:02 PM, Tejun Heo <tj@kernel.org> wrote:
-> So, something like the following.  A couple things to note
->
-> * driver_attach() can never fail but is marked with __must_check.  We
->   prolly should change it to void.
->
-> * Old/weird userspace which depends on insmod to wait for device
->   probing might choke and the new behavior might need to be switched
->   somehow (sysctl, insmod param or whatever).
->
-> Lightly tested and seems to work fine.
->
-> Thanks.
+Generally speaking, code now looks better.
+
+However, I think you have a resource leak in your code. See below.
+
+Thanks,
+--Shachar
+
+> -----Original Message-----
+> From: linux-rdma-owner@vger.kernel.org [mailto:linux-rdma-
+> owner@vger.kernel.org] On Behalf Of Shawn Bohrer
+> Sent: Friday, August 29, 2014 12:41 AM
+> To: Roland Dreier
+> Cc: Christoph Lameter; Sean Hefty; Hal Rosenstock; linux-
+> rdma@vger.kernel.org; linux-kernel@vger.kernel.org;
+> tomk@rgmadvisors.com; Yishai Hadas; Or Gerlitz; Haggai Eran; Shawn Bohrer
+> Subject: [PATCH v2] ib_umem_release should decrement mm->pinned_vm
+> from ib_umem_get
+> 
+> From: Shawn Bohrer <sbohrer@rgmadvisors.com>
+> 
+> In debugging an application that receives -ENOMEM from ib_reg_mr() I
+> found that ib_umem_get() can fail because the pinned_vm count has
+> wrapped causing it to always be larger than the lock limit even with
+> RLIMIT_MEMLOCK set to RLIM_INFINITY.
+> 
+> The wrapping of pinned_vm occurs because the process that calls
+> ib_reg_mr() will have its mm->pinned_vm count incremented.  Later a
+> different process with a different mm_struct than the one that allocated
+> the ib_umem struct ends up releasing it which results in decrementing
+> the new processes mm->pinned_vm count past zero and wrapping.
+> 
+> I'm not entirely sure what circumstances cause a different process to
+> release the ib_umem than the one that allocated it but the kernel stack
+> trace of the freeing process from my situation looks like the following:
+> 
+> Call Trace:
+>  [<ffffffff814d64b1>] dump_stack+0x19/0x1b
+>  [<ffffffffa0b522a5>] ib_umem_release+0x1f5/0x200 [ib_core]
+>  [<ffffffffa0b90681>] mlx4_ib_destroy_qp+0x241/0x440 [mlx4_ib]
+>  [<ffffffffa0b4d93c>] ib_destroy_qp+0x12c/0x170 [ib_core]
+>  [<ffffffffa0cc7129>] ib_uverbs_close+0x259/0x4e0 [ib_uverbs]
+>  [<ffffffff81141cba>] __fput+0xba/0x240
+>  [<ffffffff81141e4e>] ____fput+0xe/0x10
+>  [<ffffffff81060894>] task_work_run+0xc4/0xe0
+>  [<ffffffff810029e5>] do_notify_resume+0x95/0xa0
+>  [<ffffffff814e3dd0>] int_signal+0x12/0x17
+> 
+> The following patch fixes the issue by storing the pid struct of the
+> process that calls ib_umem_get() so that ib_umem_release and/or
+> ib_umem_account() can properly decrement the pinned_vm count of the
+> correct mm_struct.
+> 
+> Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
 > ---
->  drivers/base/bus.c |   39 ++++++++++++++++++++++++++++++++++++---
->  1 file changed, 36 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/base/bus.c b/drivers/base/bus.c
-> index 83e910a..e4fc9bc 100644
-> --- a/drivers/base/bus.c
-> +++ b/drivers/base/bus.c
-> @@ -23,6 +23,7 @@
->
->  /* /sys/devices/system */
->  static struct kset *system_kset;
-> +static struct workqueue_struct *driver_attach_wq;
->
->  #define to_bus_attr(_attr) container_of(_attr, struct bus_attribute, attr)
->
-> @@ -657,6 +658,20 @@ static ssize_t uevent_store(struct device_driver *drv, const char *buf,
+> 
+> v2 changes:
+> * Updated to use get_task_pid to avoid keeping a reference to the mm
+> 
+> I've run this patch on our test pool for general testing for a few days
+> and today verified that it solves the reported issue above on our
+> production machines.
+> 
+> 
+>  drivers/infiniband/core/umem.c |   18 ++++++++++++------
+>  include/rdma/ib_umem.h         |    1 +
+>  2 files changed, 13 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/infiniband/core/umem.c
+> b/drivers/infiniband/core/umem.c
+> index a3a2e9c..01750d6 100644
+> --- a/drivers/infiniband/core/umem.c
+> +++ b/drivers/infiniband/core/umem.c
+> @@ -105,6 +105,7 @@ struct ib_umem *ib_umem_get(struct ib_ucontext
+> *context, unsigned long addr,
+>  	umem->length    = size;
+>  	umem->offset    = addr & ~PAGE_MASK;
+>  	umem->page_size = PAGE_SIZE;
+> +	umem->pid       = get_task_pid(current, PIDTYPE_PID);
+>  	/*
+>  	 * We ask for writable memory if any access flags other than
+>  	 * "remote read" are set.  "Local write" and "remote write"
+> @@ -198,6 +199,7 @@ out:
+>  	if (ret < 0) {
+>  		if (need_release)
+>  			__ib_umem_release(context->device, umem, 0);
+> +		put_pid(umem->pid);
+>  		kfree(umem);
+>  	} else
+>  		current->mm->pinned_vm = locked;
+> @@ -230,15 +232,18 @@ void ib_umem_release(struct ib_umem *umem)
+>  {
+>  	struct ib_ucontext *context = umem->context;
+>  	struct mm_struct *mm;
+> +	struct task_struct *task;
+>  	unsigned long diff;
+> 
+>  	__ib_umem_release(umem->context->device, umem, 1);
+> 
+> -	mm = get_task_mm(current);
+> -	if (!mm) {
+> -		kfree(umem);
+> -		return;
+> -	}
+> +	task = get_pid_task(umem->pid, PIDTYPE_PID);
+> +	put_pid(umem->pid);
+> +	if (!task)
+> +		goto out;
+> +	mm = get_task_mm(task);
+> +	if (!mm)
+> +		goto out;
+> 
+
+I think you are leaking task structs here. You need a put_task (task) once you got an mm (or failed to get one)
+
+>  	diff = PAGE_ALIGN(umem->length + umem->offset) >>
+> PAGE_SHIFT;
+> 
+> @@ -262,9 +267,10 @@ void ib_umem_release(struct ib_umem *umem)
+>  	} else
+>  		down_write(&mm->mmap_sem);
+> 
+> -	current->mm->pinned_vm -= diff;
+> +	mm->pinned_vm -= diff;
+>  	up_write(&mm->mmap_sem);
+>  	mmput(mm);
+> +out:
+>  	kfree(umem);
 >  }
->  static DRIVER_ATTR_WO(uevent);
->
-> +struct driver_attach_work {
-> +       struct work_struct              work;
-> +       struct device_driver            *driver;
-> +};
-> +
-> +static void driver_attach_workfn(struct work_struct *work)
-> +{
-> +       struct driver_attach_work *daw =
-> +               container_of(work, struct driver_attach_work, work);
-> +
-> +       driver_attach(daw->driver);
-> +       kfree(daw);
-> +}
-> +
->  /**
->   * bus_add_driver - Add a driver to the bus.
->   * @drv: driver.
-> @@ -689,9 +704,23 @@ int bus_add_driver(struct device_driver *drv)
->
->         klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers);
->         if (drv->bus->p->drivers_autoprobe) {
-> -               error = driver_attach(drv);
-> -               if (error)
-> -                       goto out_unregister;
-> +               struct driver_attach_work *daw;
-> +
-> +               if (drv->owner) {
-> +                       daw = kzalloc(sizeof(*daw), GFP_KERNEL);
-> +                       if (!daw) {
-> +                               error = -ENOMEM;
-> +                               goto out_unregister;
-> +                       }
-> +
-> +                       INIT_WORK(&daw->work, driver_attach_workfn);
-> +                       daw->driver = drv;
-> +                       queue_work(driver_attach_wq, &daw->work);
-
-Doesn't this break on-demand cdev initialization? We currently call
-request_module() on open() for unclaimed major/minor combinations. If
-driver_attach() is no longer part of module_init(), there is no
-guarantee the driver created the cdev before request_module() returns.
-
-I actually like this "deferred attach" approach, so this is not meant
-as counter-argument. We just need to make sure to have a notion of
-"settled modules" so we know how long to wait after loading a module.
-
-Thanks
-David
-
-> +               } else {
-> +                       error = driver_attach(drv);
-> +                       if (error)
-> +                               goto out_unregister;
-> +               }
->         }
->         module_add_driver(drv->owner, drv);
->
-> @@ -1268,5 +1297,9 @@ int __init buses_init(void)
->         if (!system_kset)
->                 return -ENOMEM;
->
-> +       driver_attach_wq = alloc_ordered_workqueue("driver_attach", 0);
-> +       if (!driver_attach_wq)
-> +               return -ENOMEM;
-> +
->         return 0;
->  }
+>  EXPORT_SYMBOL(ib_umem_release);
+> diff --git a/include/rdma/ib_umem.h b/include/rdma/ib_umem.h
+> index 1ea0b65..a2bf41e 100644
+> --- a/include/rdma/ib_umem.h
+> +++ b/include/rdma/ib_umem.h
+> @@ -47,6 +47,7 @@ struct ib_umem {
+>  	int                     writable;
+>  	int                     hugetlb;
+>  	struct work_struct	work;
+> +	struct pid             *pid;
+>  	struct mm_struct       *mm;
+>  	unsigned long		diff;
+>  	struct sg_table sg_head;
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> 1.7.7.6
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-rdma" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
