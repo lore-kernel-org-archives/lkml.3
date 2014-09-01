@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754653AbaIARRT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 13:17:19 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:20819 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751195AbaIARRR (ORCPT
+	id S1754584AbaIARTA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 13:19:00 -0400
+Received: from www.xora.org.uk ([80.68.91.202]:53139 "EHLO
+	xora.vm.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753092AbaIARS6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 13:17:17 -0400
-Message-ID: <1409591843.4343.65.camel@hornet>
-Subject: Re: [PATCH v4 00/22] perf: Add infrastructure and support for Intel
- PT
-From: Pawel Moll <pawel.moll@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Ingo Molnar <mingo@redhat.com>,
+	Mon, 1 Sep 2014 13:18:58 -0400
+Date: Mon, 1 Sep 2014 18:18:56 +0100
+From: Graeme Gregory <gg@slimlogic.co.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Hanjun Guo <hanjun.guo@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        "kan.liang@intel.com" <kan.liang@intel.com>,
-        Michael Williams <Michael.Williams@arm.com>,
-        "ralf@linux-mips.org" <ralf@linux-mips.org>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>
-Date: Mon, 01 Sep 2014 18:17:23 +0100
-In-Reply-To: <20140901163039.GV27892@worktop.ger.corp.intel.com>
-References: <1408538179-792-1-git-send-email-alexander.shishkin@linux.intel.com>
-	 <20140901163039.GV27892@worktop.ger.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
+Subject: Re: [RFC PATCH for Juno 2/2] tty: SBSA compatible UART
+Message-ID: <20140901171856.GL2953@xora-haswell.xora.org.uk>
+References: <1409583961-7466-1-git-send-email-hanjun.guo@linaro.org>
+ <1409583961-7466-3-git-send-email-hanjun.guo@linaro.org>
+ <20140901171248.GG608@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140901171248.GG608@arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-09-01 at 17:30 +0100, Peter Zijlstra wrote:
-> On Wed, Aug 20, 2014 at 03:35:57PM +0300, Alexander Shishkin wrote:
-> > This patchset adds support for Intel Processor Trace (PT) extension [1] of
-> > Intel Architecture that allows the capture of information about software
-> > execution flow, to the perf kernel infrastructure.
+On Mon, Sep 01, 2014 at 06:12:48PM +0100, Catalin Marinas wrote:
+> On Mon, Sep 01, 2014 at 04:06:01PM +0100, Hanjun Guo wrote:
+> > From: Graeme Gregory <graeme.gregory@linaro.org>
+> > 
+> > This is a subset of pl011 UART which does not supprt DMA or baud rate
+> > changing.
+> > 
+> > It is specified in the Server Base System Architecture document from
+> > ARM.
+> > 
+> > Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
+> > ---
+> >  drivers/tty/Kconfig    |    6 +
+> >  drivers/tty/Makefile   |    1 +
+> >  drivers/tty/sbsauart.c |  328 ++++++++++++++++++++++++++++++++++++++++++++++++
+> >  3 files changed, 335 insertions(+)
+> >  create mode 100644 drivers/tty/sbsauart.c
+> 
+> Any overlap with this?
+> 
+> http://www.spinics.net/lists/arm-kernel/msg358084.html
+> 
+I knew that driver was being developed and is why we specifically said
+we did not plan to upstream this in preference for ARMs version.
 
-I'm particularly excited about the "to the perf kernel
-infrastructure" :-)
+I just missed the release of this 2 days ago.
 
-> It would also be good if some other archs can comment on this (the
-> generic parts obviously). There is the ARM CoreSight stuff 
-
-We've got Mathieu Poirier at Linaro working on the drivers for CoreSight
-components, with the latest (v5) version here:
-
-http://thread.gmane.org/gmane.linux.ports.arm.kernel/351654
-
-but it was mostly intended to have the processor trace decoded using a
-separate tool in userspace. I must say that an idea of getting it all
-into perf sounds really interesting.
-
-I've copied Mathieu so he can have a look as well. As for me personally,
-I'd like to have 48 hours to digest it all. I've just got back from a
-very distant time zone and am suffering a monumental jet lag... 
-
-Paweł
+Graeme
 
