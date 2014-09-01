@@ -1,83 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754802AbaIARfa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 13:35:30 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:55439 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754784AbaIARf0 (ORCPT
+	id S1754648AbaIARiw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 13:38:52 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:19221 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082AbaIARiv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 13:35:26 -0400
-Date: Mon, 1 Sep 2014 10:35:21 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>
-Subject: Re: linux-next: Tree for Aug 29
-Message-ID: <20140901173521.GA8259@roeck-us.net>
-References: <20140829150713.50d78c30@canb.auug.org.au>
+	Mon, 1 Sep 2014 13:38:51 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        <arm@kernel.org>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [GIT PULL 1/4] at91: cleanup for 3.18 #1
+Date: Mon, 1 Sep 2014 19:38:44 +0200
+Message-ID: <1409593127-24049-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+Organization: atmel
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140829150713.50d78c30@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 29, 2014 at 03:07:13PM +1000, Stephen Rothwell wrote:
-> Hi all,
-> 
-> I will be on vacation for the next week, so the next linux-next that I
-> will release will be next-20140908.  Sorry for the inconvenience.
-> 
-> Changes since 20140828:
-> 
-> The staging tree still had its build failure for which I applied a
-> fix patch.
-> 
-> Non-merge commits (relative to Linus' tree): 2327
->  2465 files changed, 66838 insertions(+), 40620 deletions(-)
-> 
-> ----------------------------------------------------------------------------
-> 
-ia64:defconfig is broken with this build and results in the following error
-message.
+Arnd, Olof, Kevin,
 
-arch/ia64/sn/kernel/setup.c: In function 'sn_cpu_init':
-arch/ia64/sn/kernel/setup.c:632:13: error: lvalue required as left operand of assignment
-make[1]: *** [arch/ia64/sn/kernel/setup.o] Error 1
-make: *** [arch/ia64/sn/kernel/setup.o] Error 2
+Boris moved both of our AIC drivers to their new home: the drivers/irqchip
+directory taking advantage of the genirc framework. For DT-enabled SoCs, we can
+use these drivers (aic and aic5) as Jason merged them and they are
+available in 3.17 kernel.
 
-bisect points to commit 6065a244a039 ('ia64: Replace __get_cpu_var uses').
+Thanks, best regards,
 
-$ git bisect log
-# bad: [d7cf2b3139909a354a71e2885c942e21a60ea062] Add linux-next specific files for 20140829
-# good: [52addcf9d6669fa439387610bc65c92fa0980cef] Linux 3.17-rc2
-git bisect start 'HEAD' 'v3.17-rc2'
-# good: [a065408138b1e9876a95c30153087617e9ef56df] Merge remote-tracking branch 'crypto/master'
-git bisect good a065408138b1e9876a95c30153087617e9ef56df
-# good: [8032bd58d53bf68cc618ed3c945654d495a3381e] Merge remote-tracking branch 'xen-tip/linux-next'
-git bisect good 8032bd58d53bf68cc618ed3c945654d495a3381e
-# bad: [937c09a4fafaa87793584723a9c78070ba1313c7] Merge remote-tracking branch 'staging/staging-next'
-git bisect bad 937c09a4fafaa87793584723a9c78070ba1313c7
-# good: [09d6dd7490ee7f1dda926e309df370e28679a71c] staging: comedi: 8255: add a comedi_device param to the (*io) callback
-git bisect good 09d6dd7490ee7f1dda926e309df370e28679a71c
-# bad: [436011f94749fe990ca1fafbdb28d5dc4abe9120] Merge remote-tracking branch 'regmap/for-next'
-git bisect bad 436011f94749fe990ca1fafbdb28d5dc4abe9120
-# bad: [0b3fd10cf0cda8f319eae27adffb8b7a45431702] Merge remote-tracking branch 'workqueues/for-next'
-git bisect bad 0b3fd10cf0cda8f319eae27adffb8b7a45431702
-# bad: [6065a244a039a23d933e4b803a4e052da2849208] ia64: Replace __get_cpu_var uses
-git bisect bad 6065a244a039a23d933e4b803a4e052da2849208
-# good: [903ceff7ca7b4d80c083a80ee5163b74e9fa359f] net: Replace get_cpu_var through this_cpu_ptr
-git bisect good 903ceff7ca7b4d80c083a80ee5163b74e9fa359f
-# good: [e16321709c8270f9803bbfdb51e5e02235078c7f] uv: Replace __get_cpu_var
-git bisect good e16321709c8270f9803bbfdb51e5e02235078c7f
-# good: [35898716b4d3382791d219be317faace580b6a41] mips: Replace __get_cpu_var uses
-git bisect good 35898716b4d3382791d219be317faace580b6a41
-# good: [0bf7fcf155160fd483af7ffdc50efd4be96f1c96] s390: cio driver &__get_cpu_var replacements
-git bisect good 0bf7fcf155160fd483af7ffdc50efd4be96f1c96
-# first bad commit: [6065a244a039a23d933e4b803a4e052da2849208] ia64: Replace __get_cpu_var uses
+The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
 
-Reverting the bad commit fixes the problem.
+  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
 
-Guenter
+are available in the git repository at:
+
+  git://github.com/at91linux/linux-at91.git tags/at91-cleanup
+
+for you to fetch changes up to 2626063f86cdce500153e8550334b9331421dc6f:
+
+  ARM: at91: remove old irq material (2014-08-19 20:32:49 +0200)
+
+----------------------------------------------------------------
+First batch of AT91 cleanup for 3.18:
+Following the merge of AIC/AIC5 code as standard irqchip drivers during early
+3.17 merge window, we can use these drivers for AT91 DT-enabled chips and
+boards.
+
+----------------------------------------------------------------
+Boris BREZILLON (4):
+      ARM: at91: introduce OLD_IRQ_AT91 Kconfig option
+      ARM: at91: enclose at91_aic_xx calls in IS_ENABLED(CONFIG_OLD_IRQ_AT91) blocks
+      ARM: at91: make use of the new AIC driver for dt enabled boards
+      ARM: at91: remove old irq material
+
+ arch/arm/mach-at91/Kconfig           |  17 +--
+ arch/arm/mach-at91/Kconfig.non_dt    |   6 +
+ arch/arm/mach-at91/Makefile          |   3 +-
+ arch/arm/mach-at91/board-dt-rm9200.c |  13 --
+ arch/arm/mach-at91/board-dt-sam9.c   |  13 --
+ arch/arm/mach-at91/board-dt-sama5.c  |  13 --
+ arch/arm/mach-at91/irq.c             | 270 +----------------------------------
+ arch/arm/mach-at91/pm.c              |  32 +++--
+ arch/arm/mach-at91/setup.c           |   3 +-
+ 9 files changed, 45 insertions(+), 325 deletions(-)
+
+-- 
+Nicolas Ferre
