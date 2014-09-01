@@ -1,205 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753127AbaIAJiQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 05:38:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12003 "EHLO mx1.redhat.com"
+	id S1753314AbaIAJie (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 05:38:34 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:42707 "EHLO smtp.gentoo.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751405AbaIAJiO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 05:38:14 -0400
-Message-ID: <54043E68.7010405@redhat.com>
-Date: Mon, 01 Sep 2014 11:37:44 +0200
-From: Laszlo Ersek <lersek@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1753247AbaIAJib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 05:38:31 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org
+Subject: [PATCH 2/2] binfmt_misc: touch up documentation a bit
+Date: Mon,  1 Sep 2014 05:38:29 -0400
+Message-Id: <1409564309-2393-2-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1409564309-2393-1-git-send-email-vapier@gentoo.org>
+References: <1409564309-2393-1-git-send-email-vapier@gentoo.org>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, x86@kernel.org,
-        linux-ia64@vger.kernel.org, matt.fleming@intel.com, msalter@redhat.com
-Subject: Re: [PATCH 0/5] beautify EFI memmap logs
-References: <1409532820-5027-1-git-send-email-lersek@redhat.com> <20140901072207.GA22193@gmail.com>
-In-Reply-To: <20140901072207.GA22193@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01/14 09:22, Ingo Molnar wrote:
->
-> * Laszlo Ersek <lersek@redhat.com> wrote:
->
->> It's a pain to analyze EFI memmap logs while debugging, especially to
->> verify the memory types (an enum) and the memory attributes (a bitmap).
->> This series renders those columns human-readable, and unifies their
->> formatting between x86, ia64 and arm64.
->>
->> Example output with the patchset on arm64 (in a qemu-system-aarch64
->> guest, booted with Ard's v5 series from edk2-devel ("QEMU_EFI.fd")):
->>
->>> Processing EFI memory map:
->>>   0x000040000000-0x000040000fff [Loader Data        |   |  |  |  |   |WB|WT|WC|UC]
->>>   0x000040001000-0x00004007ffff [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC]
->>>   0x000040080000-0x00004072afff [Loader Data        |   |  |  |  |   |WB|WT|WC|UC]
->>>   0x00004072b000-0x00005fdfffff [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC]
->>>   0x00005fe00000-0x00005fe0ffff [Loader Data        |   |  |  |  |   |WB|WT|WC|UC]
->>>   0x00005fe10000-0x0000964e8fff [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC]
->>>   0x0000964e9000-0x0000964e9fff [Loader Data        |   |  |  |  |   |WB|WT|WC|UC]
->>>   0x0000964ea000-0x000096c52fff [Loader Code        |   |  |  |  |   |WB|WT|WC|UC]
->>>   0x000096c53000-0x00009709dfff [Boot Code          |   |  |  |  |   |WB|WT|WC|UC]*
->>>   0x00009709e000-0x0000970b3fff [Runtime Code       |RUN|  |  |  |   |WB|WT|WC|UC]*
->>>   0x0000970b4000-0x0000970f4fff [Runtime Data       |RUN|  |  |  |   |WB|WT|WC|UC]*
->>>   0x0000970f5000-0x000097117fff [Runtime Code       |RUN|  |  |  |   |WB|WT|WC|UC]*
->>>   0x000097118000-0x000097199fff [Runtime Data       |RUN|  |  |  |   |WB|WT|WC|UC]*
->>>   0x00009719a000-0x0000971dffff [Runtime Code       |RUN|  |  |  |   |WB|WT|WC|UC]*
->>>   0x0000971e0000-0x0000997f8fff [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC]
->>>   0x0000997f9000-0x0000998f1fff [Boot Data          |   |  |  |  |   |WB|WT|WC|UC]*
->>>   0x0000998f2000-0x0000999eafff [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC]
->>>   0x0000999eb000-0x00009af09fff [Boot Data          |   |  |  |  |   |WB|WT|WC|UC]*
->>>   0x00009af0a000-0x00009af21fff [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC]
->>>   0x00009af22000-0x00009af46fff [Boot Data          |   |  |  |  |   |WB|WT|WC|UC]*
->>>   0x00009af47000-0x00009af5bfff [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC]
->>>   0x00009af5c000-0x00009afe1fff [Boot Data          |   |  |  |  |   |WB|WT|WC|UC]*
->>>   0x00009afe2000-0x00009afe2fff [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC]
->>>   0x00009afe3000-0x00009c01ffff [Boot Data          |   |  |  |  |   |WB|WT|WC|UC]*
->>>   0x00009c020000-0x00009efbffff [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC]
->>>   0x00009efc0000-0x00009f14efff [Boot Code          |   |  |  |  |   |WB|WT|WC|UC]*
->>>   0x00009f14f000-0x00009f162fff [Runtime Code       |RUN|  |  |  |   |WB|WT|WC|UC]*
->>>   0x00009f163000-0x00009f194fff [Runtime Data       |RUN|  |  |  |   |WB|WT|WC|UC]*
->>>   0x00009f195000-0x00009f197fff [Boot Data          |   |  |  |  |   |WB|WT|WC|UC]*
->>>   0x00009f198000-0x00009f198fff [Runtime Data       |RUN|  |  |  |   |WB|WT|WC|UC]*
->>>   0x00009f199000-0x00009f1acfff [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC]
->>>   0x00009f1ad000-0x00009f1affff [Boot Data          |   |  |  |  |   |WB|WT|WC|UC]*
->>>   0x00009f1b0000-0x00009f1b0fff [Runtime Data       |RUN|  |  |  |   |WB|WT|WC|UC]*
->>>   0x00009f1b1000-0x00009fffffff [Boot Data          |   |  |  |  |   |WB|WT|WC|UC]*
->>>   0x000004000000-0x000007ffffff [Memory Mapped I/O  |RUN|  |  |  |   |  |  |  |UC]
->>>   0x000009010000-0x000009010fff [Memory Mapped I/O  |RUN|  |  |  |   |  |  |  |UC]
->>
->> Output on x86 (OVMF guest):
->>
->>> [    0.000000] efi: mem00: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000000000000-0x000000000009f000) (0MB)
->>> [    0.000000] efi: mem01: [Loader Data        |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000000009f000-0x00000000000a0000) (0MB)
->>> [    0.000000] efi: mem02: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000000100000-0x0000000000400000) (3MB)
->>> [    0.000000] efi: mem03: [Loader Data        |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000000400000-0x0000000000800000) (4MB)
->>> [    0.000000] efi: mem04: [ACPI Memory NVS    |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000000800000-0x0000000000808000) (0MB)
->>> [    0.000000] efi: mem05: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000000808000-0x0000000000810000) (0MB)
->>> [    0.000000] efi: mem06: [ACPI Memory NVS    |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000000810000-0x0000000000900000) (0MB)
->>> [    0.000000] efi: mem07: [Boot Data          |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000000900000-0x0000000001100000) (8MB)
->>> [    0.000000] efi: mem08: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000001100000-0x0000000001400000) (3MB)
->>> [    0.000000] efi: mem09: [Loader Data        |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000001400000-0x0000000002613000) (18MB)
->>> [    0.000000] efi: mem10: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000002613000-0x0000000004000000) (25MB)
->>> [    0.000000] efi: mem11: [Boot Data          |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000004000000-0x0000000004020000) (0MB)
->>> [    0.000000] efi: mem12: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000004020000-0x00000000068ea000) (40MB)
->>> [    0.000000] efi: mem13: [Loader Data        |   |  |  |  |   |WB|WT|WC|UC] range=[0x00000000068ea000-0x00000000068f0000) (0MB)
->>> [    0.000000] efi: mem14: [Boot Code          |   |  |  |  |   |WB|WT|WC|UC] range=[0x00000000068f0000-0x0000000006c7b000) (3MB)
->>> [    0.000000] efi: mem15: [Runtime Data       |RUN|  |  |  |   |WB|WT|WC|UC] range=[0x0000000006c7b000-0x0000000006c7d000) (0MB)
->>> [    0.000000] efi: mem16: [Runtime Code       |RUN|  |  |  |   |WB|WT|WC|UC] range=[0x0000000006c7d000-0x0000000006c85000) (0MB)
->>> [    0.000000] efi: mem17: [Runtime Data       |RUN|  |  |  |   |WB|WT|WC|UC] range=[0x0000000006c85000-0x0000000006c87000) (0MB)
->>> [    0.000000] efi: mem18: [Boot Code          |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000006c87000-0x0000000006ca3000) (0MB)
->>> [    0.000000] efi: mem19: [Runtime Data       |RUN|  |  |  |   |WB|WT|WC|UC] range=[0x0000000006ca3000-0x0000000006ca6000) (0MB)
->>> [    0.000000] efi: mem20: [ACPI Memory NVS    |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000006ca6000-0x0000000006cc6000) (0MB)
->>> [    0.000000] efi: mem21: [Runtime Data       |RUN|  |  |  |   |WB|WT|WC|UC] range=[0x0000000006cc6000-0x0000000006d95000) (0MB)
->>> [    0.000000] efi: mem22: [Runtime Code       |RUN|  |  |  |   |WB|WT|WC|UC] range=[0x0000000006d95000-0x0000000006e22000) (0MB)
->>> [    0.000000] efi: mem23: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000006e22000-0x0000000007165000) (3MB)
->>> [    0.000000] efi: mem24: [Boot Data          |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000007165000-0x0000000007d22000) (11MB)
->>> [    0.000000] efi: mem25: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000007d22000-0x0000000007d25000) (0MB)
->>> [    0.000000] efi: mem26: [Boot Code          |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000007d25000-0x0000000007ea2000) (1MB)
->>> [    0.000000] efi: mem27: [Runtime Code       |RUN|  |  |  |   |WB|WT|WC|UC] range=[0x0000000007ea2000-0x0000000007ed2000) (0MB)
->>> [    0.000000] efi: mem28: [Runtime Data       |RUN|  |  |  |   |WB|WT|WC|UC] range=[0x0000000007ed2000-0x0000000007ef6000) (0MB)
->>> [    0.000000] efi: mem29: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000007ef6000-0x0000000007f00000) (0MB)
->>> [    0.000000] efi: mem30: [ACPI Reclaim Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000007f00000-0x0000000007f02000) (0MB)
->>> [    0.000000] efi: mem31: [ACPI Memory NVS    |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000007f02000-0x0000000007f06000) (0MB)
->>> [    0.000000] efi: mem32: [Boot Data          |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000007f06000-0x0000000007fd0000) (0MB)
->>> [    0.000000] efi: mem33: [Runtime Data       |RUN|  |  |  |   |WB|WT|WC|UC] range=[0x0000000007fd0000-0x0000000007ff0000) (0MB)
->>> [    0.000000] efi: mem34: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000007ff0000-0x0000000008000000) (0MB)
->
-> Would be nice to see the 'before' dump as well, so that we can
-> see exactly what changed.
+Line wrap the content to 80 cols, and add more details to various
+fields to match the code.  Drop reference to a website that does
+not exist anymore.
 
-Right.
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+---
+ Documentation/binfmt_misc.txt | 48 +++++++++++++++++++++++++------------------
+ 1 file changed, 28 insertions(+), 20 deletions(-)
 
-Current format on arm64 (same qemu-system-aarch64 / QEMU_EFI.fd guest):
+diff --git a/Documentation/binfmt_misc.txt b/Documentation/binfmt_misc.txt
+index f64372b..6b1de70 100644
+--- a/Documentation/binfmt_misc.txt
++++ b/Documentation/binfmt_misc.txt
+@@ -15,39 +15,50 @@ First you must mount binfmt_misc:
+ 	mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc 
+ 
+ To actually register a new binary type, you have to set up a string looking like
+-:name:type:offset:magic:mask:interpreter:flags (where you can choose the ':' upon
+-your needs) and echo it to /proc/sys/fs/binfmt_misc/register.
++:name:type:offset:magic:mask:interpreter:flags (where you can choose the ':'
++upon your needs) and echo it to /proc/sys/fs/binfmt_misc/register.
++
+ Here is what the fields mean:
+  - 'name' is an identifier string. A new /proc file will be created with this
+-   name below /proc/sys/fs/binfmt_misc
++   name below /proc/sys/fs/binfmt_misc; cannot contain slashes '/' for obvious
++   reasons.
+  - 'type' is the type of recognition. Give 'M' for magic and 'E' for extension.
+  - 'offset' is the offset of the magic/mask in the file, counted in bytes. This
+-   defaults to 0 if you omit it (i.e. you write ':name:type::magic...')
++   defaults to 0 if you omit it (i.e. you write ':name:type::magic...'). Ignored
++   when using filename extension matching.
+  - 'magic' is the byte sequence binfmt_misc is matching for. The magic string
+-   may contain hex-encoded characters like \x0a or \xA4. In a shell environment
+-   you will have to write \\x0a to prevent the shell from eating your \.
++   may contain hex-encoded characters like \x0a or \xA4. Note that you must
++   escape any NUL bytes; parsing halts at the first one. In a shell environment
++   you might have to write \\x0a to prevent the shell from eating your \.
+    If you chose filename extension matching, this is the extension to be
+    recognised (without the '.', the \x0a specials are not allowed). Extension
+-   matching is case sensitive!
++   matching is case sensitive, and slashes '/' are not allowed!
+  - 'mask' is an (optional, defaults to all 0xff) mask. You can mask out some
+    bits from matching by supplying a string like magic and as long as magic.
+-   The mask is anded with the byte sequence of the file.
++   The mask is anded with the byte sequence of the file. Note that you must
++   escape any NUL bytes; parsing halts at the first one. Ignored when using
++   filename extension matching.
+  - 'interpreter' is the program that should be invoked with the binary as first
+    argument (specify the full path)
+  - 'flags' is an optional field that controls several aspects of the invocation
+-   of the interpreter. It is a string of capital letters, each controls a certain
+-   aspect. The following flags are supported -
+-      'P' - preserve-argv[0].  Legacy behavior of binfmt_misc is to overwrite the
+-            original argv[0] with the full path to the binary.  When this flag is
+-            included, binfmt_misc will add an argument to the argument vector for
+-            this purpose, thus preserving the original argv[0].
++   of the interpreter. It is a string of capital letters, each controls a
++   certain aspect. The following flags are supported -
++      'P' - preserve-argv[0]. Legacy behavior of binfmt_misc is to overwrite
++            the original argv[0] with the full path to the binary. When this
++            flag is included, binfmt_misc will add an argument to the argument
++            vector for this purpose, thus preserving the original argv[0].
++            e.g. If your interp is set to /bin/foo and you run `blah` (which is
++            in /usr/local/bin), then the kernel will execute /bin/foo with
++            argv[] set to ["/bin/foo", "/usr/local/bin/blah", "blah"].  The
++            interp has to be aware of this so it can execute /usr/local/bin/blah
++            with argv[] set to ["blah"].
+       'O' - open-binary. Legacy behavior of binfmt_misc is to pass the full path
+             of the binary to the interpreter as an argument. When this flag is
+             included, binfmt_misc will open the file for reading and pass its
+             descriptor as an argument, instead of the full path, thus allowing
+-            the interpreter to execute non-readable binaries. This feature should
+-            be used with care - the interpreter has to be trusted not to emit
+-            the contents of the non-readable binary.
++            the interpreter to execute non-readable binaries. This feature
++            should be used with care - the interpreter has to be trusted not to
++            emit the contents of the non-readable binary.
+       'C' - credentials. Currently, the behavior of binfmt_misc is to calculate
+             the credentials and security token of the new process according to
+             the interpreter. When this flag is included, these attributes are
+@@ -110,7 +121,4 @@ passes it the full filename (or the file descriptor) to use.  Using $PATH can
+ cause unexpected behaviour and can be a security hazard.
+ 
+ 
+-There is a web page about binfmt_misc at
+-http://www.tat.physik.uni-tuebingen.de
+-
+ Richard Günther <rguenth@tat.physik.uni-tuebingen.de>
+-- 
+2.0.0
 
-> Processing EFI memory map:
->   0x000040000000-0x000040000fff [Loader Data]
->   0x000040001000-0x00004007ffff [Conventional Memory]
->   0x000040080000-0x00004072afff [Loader Data]
->   0x00004072b000-0x00005fdfffff [Conventional Memory]
->   0x00005fe00000-0x00005fe0ffff [Loader Data]
->   0x00005fe10000-0x0000964e8fff [Conventional Memory]
->   0x0000964e9000-0x0000964e9fff [Loader Data]
->   0x0000964ea000-0x000096c52fff [Loader Code]
->   0x000096c53000-0x00009709dfff [Boot Code]*
->   0x00009709e000-0x0000970b3fff [Runtime Code]*
->   0x0000970b4000-0x0000970f4fff [Runtime Data]*
->   0x0000970f5000-0x000097117fff [Runtime Code]*
->   0x000097118000-0x000097199fff [Runtime Data]*
->   0x00009719a000-0x0000971dffff [Runtime Code]*
->   0x0000971e0000-0x0000997f8fff [Conventional Memory]
->   0x0000997f9000-0x0000998f1fff [Boot Data]*
->   0x0000998f2000-0x0000999eafff [Conventional Memory]
->   0x0000999eb000-0x00009af09fff [Boot Data]*
->   0x00009af0a000-0x00009af21fff [Conventional Memory]
->   0x00009af22000-0x00009af46fff [Boot Data]*
->   0x00009af47000-0x00009af5bfff [Conventional Memory]
->   0x00009af5c000-0x00009afe1fff [Boot Data]*
->   0x00009afe2000-0x00009afe2fff [Conventional Memory]
->   0x00009afe3000-0x00009c01ffff [Boot Data]*
->   0x00009c020000-0x00009efbffff [Conventional Memory]
->   0x00009efc0000-0x00009f14efff [Boot Code]*
->   0x00009f14f000-0x00009f162fff [Runtime Code]*
->   0x00009f163000-0x00009f194fff [Runtime Data]*
->   0x00009f195000-0x00009f197fff [Boot Data]*
->   0x00009f198000-0x00009f198fff [Runtime Data]*
->   0x00009f199000-0x00009f1acfff [Conventional Memory]
->   0x00009f1ad000-0x00009f1affff [Boot Data]*
->   0x00009f1b0000-0x00009f1b0fff [Runtime Data]*
->   0x00009f1b1000-0x00009fffffff [Boot Data]*
->   0x000004000000-0x000007ffffff [Memory Mapped I/O]
->   0x000009010000-0x000009010fff [Memory Mapped I/O]
-
-The difference for arm64 is that the attribute bitmap is decoded.
-
-On x86 (same OVMF guest):
-
-> [    0.000000] efi: mem00: type=7, attr=0xf, range=[0x0000000000000000-0x000000000009f000) (0MB)
-> [    0.000000] efi: mem01: type=2, attr=0xf, range=[0x000000000009f000-0x00000000000a0000) (0MB)
-> [    0.000000] efi: mem02: type=7, attr=0xf, range=[0x0000000000100000-0x0000000000400000) (3MB)
-> [    0.000000] efi: mem03: type=2, attr=0xf, range=[0x0000000000400000-0x0000000000800000) (4MB)
-> [    0.000000] efi: mem04: type=10, attr=0xf, range=[0x0000000000800000-0x0000000000808000) (0MB)
-> [    0.000000] efi: mem05: type=7, attr=0xf, range=[0x0000000000808000-0x0000000000810000) (0MB)
-> [    0.000000] efi: mem06: type=10, attr=0xf, range=[0x0000000000810000-0x0000000000900000) (0MB)
-> [    0.000000] efi: mem07: type=4, attr=0xf, range=[0x0000000000900000-0x0000000001100000) (8MB)
-> [    0.000000] efi: mem08: type=7, attr=0xf, range=[0x0000000001100000-0x0000000001400000) (3MB)
-> [    0.000000] efi: mem09: type=2, attr=0xf, range=[0x0000000001400000-0x0000000002613000) (18MB)
-> [    0.000000] efi: mem10: type=7, attr=0xf, range=[0x0000000002613000-0x0000000004000000) (25MB)
-> [    0.000000] efi: mem11: type=4, attr=0xf, range=[0x0000000004000000-0x0000000004020000) (0MB)
-> [    0.000000] efi: mem12: type=7, attr=0xf, range=[0x0000000004020000-0x00000000068ea000) (40MB)
-> [    0.000000] efi: mem13: type=2, attr=0xf, range=[0x00000000068ea000-0x00000000068f0000) (0MB)
-> [    0.000000] efi: mem14: type=3, attr=0xf, range=[0x00000000068f0000-0x0000000006c7b000) (3MB)
-> [    0.000000] efi: mem15: type=6, attr=0x800000000000000f, range=[0x0000000006c7b000-0x0000000006c7d000) (0MB)
-> [    0.000000] efi: mem16: type=5, attr=0x800000000000000f, range=[0x0000000006c7d000-0x0000000006c85000) (0MB)
-> [    0.000000] efi: mem17: type=6, attr=0x800000000000000f, range=[0x0000000006c85000-0x0000000006c87000) (0MB)
-> [    0.000000] efi: mem18: type=3, attr=0xf, range=[0x0000000006c87000-0x0000000006ca3000) (0MB)
-> [    0.000000] efi: mem19: type=6, attr=0x800000000000000f, range=[0x0000000006ca3000-0x0000000006ca6000) (0MB)
-> [    0.000000] efi: mem20: type=10, attr=0xf, range=[0x0000000006ca6000-0x0000000006cc6000) (0MB)
-> [    0.000000] efi: mem21: type=6, attr=0x800000000000000f, range=[0x0000000006cc6000-0x0000000006d95000) (0MB)
-> [    0.000000] efi: mem22: type=5, attr=0x800000000000000f, range=[0x0000000006d95000-0x0000000006e22000) (0MB)
-> [    0.000000] efi: mem23: type=7, attr=0xf, range=[0x0000000006e22000-0x0000000007165000) (3MB)
-> [    0.000000] efi: mem24: type=4, attr=0xf, range=[0x0000000007165000-0x0000000007d22000) (11MB)
-> [    0.000000] efi: mem25: type=7, attr=0xf, range=[0x0000000007d22000-0x0000000007d25000) (0MB)
-> [    0.000000] efi: mem26: type=3, attr=0xf, range=[0x0000000007d25000-0x0000000007ea2000) (1MB)
-> [    0.000000] efi: mem27: type=5, attr=0x800000000000000f, range=[0x0000000007ea2000-0x0000000007ed2000) (0MB)
-> [    0.000000] efi: mem28: type=6, attr=0x800000000000000f, range=[0x0000000007ed2000-0x0000000007ef6000) (0MB)
-> [    0.000000] efi: mem29: type=7, attr=0xf, range=[0x0000000007ef6000-0x0000000007f00000) (0MB)
-> [    0.000000] efi: mem30: type=9, attr=0xf, range=[0x0000000007f00000-0x0000000007f02000) (0MB)
-> [    0.000000] efi: mem31: type=10, attr=0xf, range=[0x0000000007f02000-0x0000000007f06000) (0MB)
-> [    0.000000] efi: mem32: type=4, attr=0xf, range=[0x0000000007f06000-0x0000000007fd0000) (0MB)
-> [    0.000000] efi: mem33: type=6, attr=0x800000000000000f, range=[0x0000000007fd0000-0x0000000007ff0000) (0MB)
-> [    0.000000] efi: mem34: type=7, attr=0xf, range=[0x0000000007ff0000-0x0000000008000000) (0MB)
-
-The difference for x86 (and ia64) is that both the type enum and the
-attribute bitmap are decoded (with the additional benefit that the
-memory ranges line up as well).
-
-Thanks!
-Laszlo
