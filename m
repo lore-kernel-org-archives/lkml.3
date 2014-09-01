@@ -1,88 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752654AbaIAXHj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 19:07:39 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45437 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752031AbaIAXHh (ORCPT
+	id S1752832AbaIAXIl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 19:08:41 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:42778 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752031AbaIAXIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 19:07:37 -0400
-Date: Tue, 2 Sep 2014 00:07:28 +0100
-From: Mark Brown <broonie@kernel.org>
-To: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20140901230728.GM29327@sirena.org.uk>
+	Mon, 1 Sep 2014 19:08:40 -0400
+Date: Tue, 2 Sep 2014 00:08:35 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Cc: Evgeniy Dushistov <dushistov@mail.ru>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: Re: [PATCH] ufs: fix deadlocks after mutex merge
+Message-ID: <20140901230835.GK7996@ZenIV.linux.org.uk>
+References: <1409610624-10898-1-git-send-email-khoroshilov@ispras.ru>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ura8jf0QYTXVPAoa"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Cookie: Simulated picture.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: linux-next: Tree for Sep 1
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <1409610624-10898-1-git-send-email-khoroshilov@ispras.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Sep 02, 2014 at 02:30:24AM +0400, Alexey Khoroshilov wrote:
+> Commit 0244756edc4b ("ufs: sb mutex merge + mutex_destroy") introduces
+> deadlocks in ufs_new_inode() and ufs_free_inode() that call lock_ufs()
+> being already invoked with mutex held.
+> 
+> ufs_free_inode() is always invoked with mutex locked, while
+> ufs_new_inode() is called with mutex locked two times of four.
+> 
+> The patch proposes to resolve the issue by agreement to call
+> ufs_new_inode() and ufs_free_inode() with mutex unheld.
 
---ura8jf0QYTXVPAoa
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> @@ -902,9 +902,6 @@ void ufs_evict_inode(struct inode * inode)
+>  	invalidate_inode_buffers(inode);
+>  	clear_inode(inode);
+>  
+> -	if (want_delete) {
+> -		lock_ufs(inode->i_sb);
+> -		ufs_free_inode (inode);
+> -		unlock_ufs(inode->i_sb);
+> -	}
+> +	if (want_delete)
+> +		ufs_free_inode(inode);
 
-Changes since 20140829:
+Your commit message makes no sense - ufs_evict_inode() is *never* called
+with that lock held, for one thing.  I agree that "ufs: sb mutex merge +
+mutex_destroy" was been badly broken and apparently never tested, though -
+the bugs are real.
 
-The akpm-current gained a conflict against Linus' tree.
-
-Non-merge commits (relative to Linus' tree): 2553
- 2686 files changed, 98625 insertions(+), 79475 deletions(-)
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git .
-If you are tracking the linux-next tree using git, you should not use
-"git pull" to do so as that will try to merge the new linux-next release
-with the old one.  You should use "git fetch" and checkout or reset to
-the new master.
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with an
-allmodconfig for x86_64 and a multi_v7_defconfig for arm.
-
-Below is a summary of the state of the merge.
-
-I am currently merging 214 trees (counting Linus' and 30 trees of patches
-pending for Linus' tree).
-
-Stats about the size of the tree over time can be seen at
-http://neuling.org/linux-next-size.html .
-
-Status of Stephen's local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
---ura8jf0QYTXVPAoa
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIbBAEBAgAGBQJUBPwtAAoJELSic+t+oim9NHAP9jegzsmmNFcyWEeqZprh1xML
-IyyrelCCMQgfZ3v5N4BuxVBwW8VZuRWIoM7ecxdzmlrHxBmVxiSyZKY563cph7xt
-b4YGB+jijGzYmpj1RaX9HAdzwbqxiSo9U8eOl617MF86xP+Q3UTDySP2EhuwImK9
-s30YY4Gj501v+7ns3d3F2sMQb2LjEfU0awNblyPNRFzcrQYfUmoDkQaTOv+4wXEP
-+CMqepy+U7rAZlDTAuGri348B0TEhUWum1859bsFGa3dVYV2fB2vpBIeA8GTSkWN
-OOFIvLgu5mNA4kkrzfzVjjsBC15RR5A+kn091QSFiY4T02bR85s/qC6TN3qKzfyg
-Rt+WOLEIF6gHlYlosI8qOvna5dWJq+HqhNQwV+ATD35SXii4ne7ogx3FqSmpbVYB
-sXvz/Z5FdldW0kCxLt+vYwn4MhrhclpKv2tVbrTyLJlvc2nmzJlfjMCYs56qZrTQ
-Pq0AE4juymkvMos4zkwwb1kftmW0Ddl0oRBofViXA7jHrlQy6/QNTFzWNmOrKo+Y
-yuplU56S+QXDStvdCqXpK3sSOhvKLV5lo+8hkLdXLhrY/f17FRs/H7DeC3TRp5Dd
-aAAtUqoSF7SDYwbn3ImpodV5lTCLDpXkFGXWr+mNLkNUKrJpvKvtRZlXKQoslPeR
-jhMY73cBJVjTMQQ5Jb4=
-=WBmw
------END PGP SIGNATURE-----
-
---ura8jf0QYTXVPAoa--
+	Please, write a saner commit message; what happens is that
+ufs_{new,free}_inode() take the damn lock themselves these days, so
+their caller shouldn't do that.
