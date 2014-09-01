@@ -1,205 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046AbaIAMyl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 08:54:41 -0400
-Received: from exprod7og117.obsmtp.com ([64.18.2.6]:33164 "EHLO
-	exprod7og117.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754001AbaIAMyE (ORCPT
+	id S1754068AbaIAMzE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 08:55:04 -0400
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:25806 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753635AbaIAMzB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 08:54:04 -0400
-From: Anders Berg <anders.berg@avagotech.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Anders Berg <anders.berg@avagotech.com>
-Subject: [PATCH 1/2] gpio: Add driver for AXM55xx SSP chip selects
-Date: Mon,  1 Sep 2014 14:53:40 +0200
-Message-Id: <1409576021-24828-2-git-send-email-anders.berg@avagotech.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1409576021-24828-1-git-send-email-anders.berg@avagotech.com>
-References: <1409576021-24828-1-git-send-email-anders.berg@avagotech.com>
+	Mon, 1 Sep 2014 08:55:01 -0400
+X-IronPort-AV: E=Sophos;i="5.04,442,1406617200"; 
+   d="scan'208";a="44067537"
+Message-ID: <54046CA1.4040108@broadcom.com>
+Date: Mon, 1 Sep 2014 14:54:57 +0200
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Brett Rudley <brudley@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        <brcm80211-dev-list@broadcom.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] brcmfmac: BRCMFMAC should depend on HAS_DMA
+References: <1409329464-768-1-git-send-email-geert@linux-m68k.org>	<54042CA1.6010904@broadcom.com> <CAMuHMdV2hV_r_OASkv+U-AGVov18qFOrAVm-nDHHPHXZ6fcxxg@mail.gmail.com>
+In-Reply-To: <CAMuHMdV2hV_r_OASkv+U-AGVov18qFOrAVm-nDHHPHXZ6fcxxg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The AXM55xx device has a ARM PL022 SSP controller with an extension that
-enables the control of up to five chip select signals. This driver implements
-the logic to control these signals and exports them as GPIOs.
+On 09/01/14 10:44, Geert Uytterhoeven wrote:
+> Hi Arend,
+>
+> On Mon, Sep 1, 2014 at 10:21 AM, Arend van Spriel<arend@broadcom.com>  wrote:
+>>>    config BRCMFMAC
+>>>          tristate "Broadcom IEEE802.11n embedded FullMAC WLAN driver"
+>>> -       depends on CFG80211
+>>> +       depends on CFG80211A&&   HAS_DMA
+>>
+>> Not sure what happened here, but CFG80211 kconfig option did was not renamed
+>> as far as I know. Anyway, I would like to propose a different solution. Will
+>
+> Oops, that was me typing the vim append-command twice :-(
+> Thanks for noticing!
+>
+>> get back to you when I have it ready.
+>
+> OK. Thanks again!
 
-Signed-off-by: Anders Berg <anders.berg@avagotech.com>
+Hi Geert,
+
+I added Kconfig options for the proto layer which are selected by the 
+host interface selection. So the HAS_DMA dependency is checked for 
+BRCMFMAC_PCIE. I am wondering whether GENERIC_IO should also be checked.
+
+Can you verify the patch below works with your configuration?
+
+Regards,
+Arend
 ---
- drivers/gpio/Kconfig          |   8 +++
- drivers/gpio/Makefile         |   1 +
- drivers/gpio/gpio-axxia-ssp.c | 128 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 137 insertions(+)
- create mode 100644 drivers/gpio/gpio-axxia-ssp.c
+diff --git a/drivers/net/wireless/brcm80211/Kconfig 
+b/drivers/net/wireless/brcm80211/Kconfig
+index b8e2561..fe3dc12 100644
+--- a/drivers/net/wireless/brcm80211/Kconfig
++++ b/drivers/net/wireless/brcm80211/Kconfig
+@@ -27,10 +27,17 @@ config BRCMFMAC
+  	  one of the bus interface support. If you choose to build a module,
+  	  it'll be called brcmfmac.ko.
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 9de1515..c2f2686 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -112,6 +112,14 @@ config GPIO_MAX730X
- 
- comment "Memory mapped GPIO drivers:"
- 
-+config GPIO_AXXIA_SSP
-+	tristate "AXM55xx SSP chip select pins as GPIO"
-+	depends on ARCH_AXXIA
-+	default y if SPI_MASTER
-+	select GPIO_GENERIC
-+	help
-+	  Say yes here to get GPIO interface for AXM55xx SSP chip select signals.
++config BRCMFMAC_PROTO_BCDC
++	bool
 +
- config GPIO_CLPS711X
- 	tristate "CLPS711X GPIO support"
- 	depends on ARCH_CLPS711X || COMPILE_TEST
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index 5d024e3..01e1869 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -18,6 +18,7 @@ obj-$(CONFIG_GPIO_ADP5520)	+= gpio-adp5520.o
- obj-$(CONFIG_GPIO_ADP5588)	+= gpio-adp5588.o
- obj-$(CONFIG_GPIO_AMD8111)	+= gpio-amd8111.o
- obj-$(CONFIG_GPIO_ARIZONA)	+= gpio-arizona.o
-+obj-$(CONFIG_GPIO_AXXIA_SSP)	+= gpio-axxia-ssp.o
- obj-$(CONFIG_GPIO_BCM_KONA)	+= gpio-bcm-kona.o
- obj-$(CONFIG_GPIO_BT8XX)	+= gpio-bt8xx.o
- obj-$(CONFIG_GPIO_CLPS711X)	+= gpio-clps711x.o
-diff --git a/drivers/gpio/gpio-axxia-ssp.c b/drivers/gpio/gpio-axxia-ssp.c
-new file mode 100644
-index 0000000..5884206
---- /dev/null
-+++ b/drivers/gpio/gpio-axxia-ssp.c
-@@ -0,0 +1,128 @@
-+/*
-+ * GPIO interface for SSP chip select outputs.
-+ *
-+ * Copyright (C) 2013 LSI Corporation
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
++config BRCMFMAC_PROTO_MSGBUF
++	bool
 +
-+#include <linux/module.h>
-+#include <linux/bitops.h>
-+#include <linux/init.h>
-+#include <linux/gpio.h>
-+#include <linux/platform_device.h>
-+#include <linux/io.h>
-+#include <linux/of.h>
-+
-+struct gpio_dev {
-+	void __iomem    *reg;
-+	struct gpio_chip gpio_chip;
-+};
-+
-+static int ssp_gpio_direction_out(struct gpio_chip *chip,
-+				  unsigned offset, int value)
+  config BRCMFMAC_SDIO
+  	bool "SDIO bus interface support for FullMAC driver"
+  	depends on (MMC = y || MMC = BRCMFMAC)
+  	depends on BRCMFMAC
++	select BRCMFMAC_PROTO_BCDC
+  	select FW_LOADER
+  	default y
+  	---help---
+@@ -42,6 +49,7 @@ config BRCMFMAC_USB
+  	bool "USB bus interface support for FullMAC driver"
+  	depends on (USB = y || USB = BRCMFMAC)
+  	depends on BRCMFMAC
++	select BRCMFMAC_PROTO_BCDC
+  	select FW_LOADER
+  	---help---
+  	  This option enables the USB bus interface support for Broadcom
+@@ -52,6 +60,8 @@ config BRCMFMAC_PCIE
+  	bool "PCIE bus interface support for FullMAC driver"
+  	depends on BRCMFMAC
+  	depends on PCI
++	depends on HAS_DMA
++	select BRCMFMAC_PROTO_MSGBUF
+  	select FW_LOADER
+  	---help---
+  	  This option enables the PCIE bus interface support for Broadcom
+diff --git a/drivers/net/wireless/brcm80211/brcmfmac/Makefile 
+b/drivers/net/wireless/brcm80211/brcmfmac/Makefile
+index c35adf4..90a977f 100644
+--- a/drivers/net/wireless/brcm80211/brcmfmac/Makefile
++++ b/drivers/net/wireless/brcm80211/brcmfmac/Makefile
+@@ -30,16 +30,18 @@ brcmfmac-objs += \
+  		fwsignal.o \
+  		p2p.o \
+  		proto.o \
+-		bcdc.o \
+-		commonring.o \
+-		flowring.o \
+-		msgbuf.o \
+  		dhd_common.o \
+  		dhd_linux.o \
+  		firmware.o \
+  		feature.o \
+  		btcoex.o \
+  		vendor.o
++brcmfmac-$(CONFIG_BRCMFMAC_PROTO_BCDC) += \
++		bcdc.o
++brcmfmac-$(CONFIG_BRCMFMAC_PROTO_MSGBUF) += \
++		commonring.o \
++		flowring.o \
++		msgbuf.o
+  brcmfmac-$(CONFIG_BRCMFMAC_SDIO) += \
+  		dhd_sdio.o \
+  		bcmsdh.o
+diff --git a/drivers/net/wireless/brcm80211/brcmfmac/bcdc.h 
+b/drivers/net/wireless/brcm80211/brcmfmac/bcdc.h
+index 17e8c03..6003179 100644
+--- a/drivers/net/wireless/brcm80211/brcmfmac/bcdc.h
++++ b/drivers/net/wireless/brcm80211/brcmfmac/bcdc.h
+@@ -16,9 +16,12 @@
+  #ifndef BRCMFMAC_BCDC_H
+  #define BRCMFMAC_BCDC_H
+
+-
++#ifdef CONFIG_BRCMFMAC_PROTO_BCDC
+  int brcmf_proto_bcdc_attach(struct brcmf_pub *drvr);
+  void brcmf_proto_bcdc_detach(struct brcmf_pub *drvr);
+-
++#else
++static inline int brcmf_proto_bcdc_attach(struct brcmf_pub *drvr) { 
+return 0; }
++static inline void brcmf_proto_bcdc_detach(struct brcmf_pub *drvr) {}
++#endif
+
+  #endif /* BRCMFMAC_BCDC_H */
+diff --git a/drivers/net/wireless/brcm80211/brcmfmac/msgbuf.h 
+b/drivers/net/wireless/brcm80211/brcmfmac/msgbuf.h
+index f901ae5..e6395ee 100644
+--- a/drivers/net/wireless/brcm80211/brcmfmac/msgbuf.h
++++ b/drivers/net/wireless/brcm80211/brcmfmac/msgbuf.h
+@@ -32,9 +32,16 @@
+
+
+  int brcmf_proto_msgbuf_rx_trigger(struct device *dev);
++void brcmf_msgbuf_delete_flowring(struct brcmf_pub *drvr, u8 flowid);
++#ifdef CONFIG_BRCMFMAC_PROTO_MSGBUF
+  int brcmf_proto_msgbuf_attach(struct brcmf_pub *drvr);
+  void brcmf_proto_msgbuf_detach(struct brcmf_pub *drvr);
+-void brcmf_msgbuf_delete_flowring(struct brcmf_pub *drvr, u8 flowid);
+-
++#else
++static inline int brcmf_proto_msgbuf_attach(struct brcmf_pub *drvr)
 +{
-+	/* Always outputs */
 +	return 0;
 +}
-+
-+static int ssp_gpio_direction_in(struct gpio_chip *chip, unsigned offset)
-+{
-+	return -ENXIO;
-+}
-+
-+static int ssp_gpio_get(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct gpio_dev *priv = dev_get_drvdata(chip->dev);
-+	u32 tmp;
-+
-+	tmp = readl(priv->reg);
-+	return !!(tmp & BIT(offset));
-+}
-+
-+static void ssp_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
-+{
-+	struct gpio_dev *priv = dev_get_drvdata(chip->dev);
-+	u32 tmp;
-+
-+	tmp = readl(priv->reg);
-+	if (value)
-+		tmp |= BIT(offset);
-+	else
-+		tmp &= ~BIT(offset);
-+	writel(tmp, priv->reg);
-+}
-+
-+static int ssp_gpio_probe(struct platform_device *pdev)
-+{
-+	struct gpio_dev *priv;
-+	struct resource *io;
-+	struct gpio_chip *chip;
-+	int ret;
-+
-+	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
-+	if (!priv)
-+		return -ENOMEM;
-+
-+	io = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	priv->reg = devm_ioremap(&pdev->dev, io->start, resource_size(io));
-+	if (!priv->reg)
-+		return -ENXIO;
-+
-+	platform_set_drvdata(pdev, priv);
-+
-+	chip = &priv->gpio_chip;
-+	chip->dev = &pdev->dev;
-+#ifdef CONFIG_OF_GPIO
-+	chip->of_node = pdev->dev.of_node;
++static inline void brcmf_proto_msgbuf_detach(struct brcmf_pub *drvr) {}
 +#endif
-+	chip->direction_input = ssp_gpio_direction_in;
-+	chip->direction_output = ssp_gpio_direction_out;
-+	chip->get = ssp_gpio_get;
-+	chip->set = ssp_gpio_set;
-+	chip->label = "ssp-gpio";
-+	chip->owner = THIS_MODULE;
-+	chip->base = -1;
-+	chip->ngpio = 5;
-+
-+	/* Set all 5 chip-selects high (de-asserted) by default */
-+	writel(0x1f, priv->reg);
-+
-+	ret = gpiochip_add(chip);
-+	if (ret < 0)
-+		dev_err(&pdev->dev, "failed to register chip, %d\n", ret);
-+
-+	return ret;
-+}
-+
-+static int ssp_gpio_remove(struct platform_device *pdev)
-+{
-+	struct gpio_dev *priv = dev_get_drvdata(&pdev->dev);
-+
-+	return gpiochip_remove(&priv->gpio_chip);
-+}
-+
-+static const struct of_device_id ssp_gpio_id_table[] = {
-+	{ .compatible = "lsi,ssp-gpio" },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(platform, ssp_gpio_id_table);
-+
-+static struct platform_driver ssp_gpio_driver = {
-+	.driver = {
-+		.name = "ssp-gpio",
-+		.owner = THIS_MODULE,
-+		.of_match_table = ssp_gpio_id_table
-+	},
-+	.probe = ssp_gpio_probe,
-+	.remove = ssp_gpio_remove,
-+};
-+
-+module_platform_driver(ssp_gpio_driver);
-+
-+MODULE_AUTHOR("LSI Corporation");
-+MODULE_DESCRIPTION("GPIO interface for SSP chip selects");
-+MODULE_LICENSE("GPL");
--- 
-1.9.1
+
+  #endif /* BRCMFMAC_MSGBUF_H */
+> Gr{oetje,eeting}s,
+>
+>                          Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                  -- Linus Torvalds
 
