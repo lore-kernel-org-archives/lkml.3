@@ -1,86 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150AbaIAP6L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 11:58:11 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57831 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753829AbaIAP6J (ORCPT
+	id S1754157AbaIAQDi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 12:03:38 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:58045 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753961AbaIAQDh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 11:58:09 -0400
-Date: Mon, 1 Sep 2014 17:58:04 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: linux-next: Tree for Aug 23
-Message-ID: <20140901155804.GT27892@worktop.ger.corp.intel.com>
-References: <20140823080422.7895575c@canb.auug.org.au>
- <20140825045741.GA29723@roeck-us.net>
+	Mon, 1 Sep 2014 12:03:37 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140825045741.GA29723@roeck-us.net>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Transfer-Encoding: 8BIT
+To: Linus Walleij <linus.walleij@linaro.org>,
+        "Tomasz Figa" <t.figa@samsung.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <CACRpkdY87ptY4riPDmy3aiHekFEg+n3eKVJyW3fff+W1ocfMVA@mail.gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc" <linux-samsung-soc@vger.kernel.org>,
+        "Sylwester Nawrocki" <s.nawrocki@samsung.com>,
+        "Marek Szyprowski" <m.szyprowski@samsung.com>
+References: <1409063453-16124-1-git-send-email-t.figa@samsung.com>
+ <CACRpkdY87ptY4riPDmy3aiHekFEg+n3eKVJyW3fff+W1ocfMVA@mail.gmail.com>
+Message-ID: <20140901160323.5251.39874@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH] MAINTAINERS: Tomasz has moved
+Date: Mon, 01 Sep 2014 09:03:23 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 24, 2014 at 09:57:41PM -0700, Guenter Roeck wrote:
-> On Sat, Aug 23, 2014 at 08:04:22AM +1000, Stephen Rothwell wrote:
-> > Hi all,
-> > 
-> > Changes since 20140822:
-> > 
-> > The mfd tree gained a build failure so I used the version from
-> > next-20140822.
-> > 
-> > The usb-gadget tree gained a conflict against the usb-gadget-fixes tree.
-> > 
-> > The pwm tree gained a build failure for which I reverted a couple of
-> > commits.
-> > 
-> > The staging tree still had its build failure for which I applied a
-> > fix patch.
-> > 
-> > Non-merge commits (relative to Linus' tree): 1435
-> >  1372 files changed, 34371 insertions(+), 25442 deletions(-)
-> > 
+Quoting Linus Walleij (2014-08-29 05:18:15)
+> On Tue, Aug 26, 2014 at 4:30 PM, Tomasz Figa <t.figa@samsung.com> wrote:
 > 
-> Images build from this tree crash in mips, mips64, and sparc64 qemu tests
-> with memory allocation errors. For mips, bisect points to commit ef31563e950c
-> (locking,arch,mips: Fold atomic_ops).
+> > I am leaving Samsung, so my current e-mail address is not going to work
+> > any longer. Replace it with my private one. In addition, Sylwester
+> > Nawrocki is being added as co-maintainer for Samsung clock drivers to
+> > take some of the responsibilities, as I will be doing my part in my spare
+> > time.
+> >
+> > Signed-off-by: Tomasz Figa <t.figa@samsung.com>
 > 
-> # bad: [eeed658b5a92d957aab7bdb7c469a90016420c7d] Add linux-next specific files for 20140823
-> # good: [7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9] Linux 3.17-rc1
-> git bisect start 'HEAD' 'v3.17-rc1'
-> # good: [a364ac83d553cd223cf1b898a738594f866242ac] Merge remote-tracking branch 'input/next'
-> git bisect good a364ac83d553cd223cf1b898a738594f866242ac
-> # bad: [6804e0868ce1f5f55a16270de65587e35b80231e] Merge remote-tracking branch 'usb-gadget/next'
-> git bisect bad 6804e0868ce1f5f55a16270de65587e35b80231e
-> # bad: [8590e100eca66f5763b4c8a5775e38e4a0c9939d] Merge branch 'x86/xsave'
-> git bisect bad 8590e100eca66f5763b4c8a5775e38e4a0c9939d
-> # good: [e71e79457b79a52827039d9d7f253321bfd342bd] perf symbols: Don't demangle parameters and such by default
-> git bisect good e71e79457b79a52827039d9d7f253321bfd342bd
-> # bad: [100b1cb29333c8ac37e68025b291e4b273c8ad43] Merge branch 'locking/core'
-> git bisect bad 100b1cb29333c8ac37e68025b291e4b273c8ad43
-> # bad: [c6470150dff9aff682063890c9b8eac71b695def] locking,arch,sh: Fold atomic_ops
-> git bisect bad c6470150dff9aff682063890c9b8eac71b695def
-> # good: [50f853e38b0b90a5703ab14b70e20eb5a8ccd5de] locking,arch,hexagon: Fold atomic_ops
-> git bisect good 50f853e38b0b90a5703ab14b70e20eb5a8ccd5de
-> # good: [d6dfe2509da935a15583cace7cd3837b1e8addef] locking,arch,metag: Fold atomic_ops
-> git bisect good d6dfe2509da935a15583cace7cd3837b1e8addef
-> # bad: [e69a0ef76627005e3e83d0e086e6bb1d247bb65b] locking,arch,mn10300: Fold atomic_ops
-> git bisect bad e69a0ef76627005e3e83d0e086e6bb1d247bb65b
-> # bad: [ef31563e950c60bb41b97c2b61c32de874f3c949] locking,arch,mips: Fold atomic_ops
-> git bisect bad ef31563e950c60bb41b97c2b61c32de874f3c949
-> # first bad commit: [ef31563e950c60bb41b97c2b61c32de874f3c949] locking,arch,mips: Fold atomic_ops
-> 
-> Reverting the first bad commit fixes the problem for mips and mips64.
-> 
-> For sparc64, given the above, I did not bother to bisect, but just reverted
-> commit 4f3316c (locking,arch,sparc: Fold atomic_ops). This fixes the problem
-> for sparc64.
+> OK I'm taking this patch through pinctrl fixes. Not much controversy
+> here, Mike you need not worry about it.
 
-Urgh, I take it this is still current? Would you perhaps have these qemu
-images available so I can try and fix this?
+Ack.
+
+Regards,
+Mike
+
+> 
+> Patch applied.
+> 
+> Yours,
+> Linus Walleij
