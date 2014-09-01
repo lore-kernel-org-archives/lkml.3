@@ -1,208 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754464AbaIAPfg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 11:35:36 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:58811 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754186AbaIAPey (ORCPT
+	id S1754486AbaIAPg3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 11:36:29 -0400
+Received: from smtprelay0203.hostedemail.com ([216.40.44.203]:55587 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754022AbaIAPg1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 11:34:54 -0400
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>, rabin@rab.in,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Subject: [PATCH v8 6/7] clk: Add floor and ceiling constraints to clock rates
-Date: Mon,  1 Sep 2014 17:34:34 +0200
-Message-Id: <1409585675-26894-3-git-send-email-tomeu.vizoso@collabora.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1409585675-26894-1-git-send-email-tomeu.vizoso@collabora.com>
-References: <1409585377-26091-1-git-send-email-tomeu.vizoso@collabora.com>
- <1409585675-26894-1-git-send-email-tomeu.vizoso@collabora.com>
+	Mon, 1 Sep 2014 11:36:27 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:960:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:1981:2194:2198:2199:2200:2393:2559:2562:2693:2828:2914:3138:3139:3140:3141:3142:3353:3622:3865:3867:3871:3872:3874:4250:4321:5007:7652:7875:10004:10400:10848:11026:11232:11233:11473:11658:11914:12043:12296:12438:12517:12519:12740:13161:13229:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: balls30_722fa2329d416
+X-Filterd-Recvd-Size: 3121
+Message-ID: <1409585783.2664.18.camel@joe-AO725>
+Subject: Re: [PATCH v3 3/3] iio: accel: BMC150: add support for other Bosch
+ chips
+From: Joe Perches <joe@perches.com>
+To: Laurentiu Palcu <laurentiu.palcu@intel.com>
+Cc: Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 01 Sep 2014 08:36:23 -0700
+In-Reply-To: <1409562698-13202-1-git-send-email-laurentiu.palcu@intel.com>
+References: <1409301488-22166-4-git-send-email-laurentiu.palcu@intel.com>
+	 <1409562698-13202-1-git-send-email-laurentiu.palcu@intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds a way for clock consumers to set maximum and minimum rates. This can be
-used for thermal drivers to set ceiling rates, or by misc. drivers to set
-floor rates to assure a minimum performance level.
+On Mon, 2014-09-01 at 12:11 +0300, Laurentiu Palcu wrote:
+> The following chips are either similar or have only the resolution
+> different. Hence, change this driver to support these chips too:
+> 
+> BMI055  - combo chip (accelerometer part is identical to BMC150's)
+> BMA255  - identical to BMC150's accelerometer
+> BMA222E - 8 bit resolution
+> BMA250E - 10 bit resolution
+> BMA280  - 14 bit resolution
+> 
+> Additionally:
+>  * add bmc150_accel_match_acpi_device() function to check that the device
+>    has been enumerated through ACPI;
+>  * rename bmc150_accel_acpi_gpio_probe() to bmc150_accel_gpio_probe()
+>    since the ACPI matching has been moved to the new function.  Also, this
+>    will allow for the GPIO matching to be done against a device tree too, not only
+>    ACPI tree;
+[]
+> diff --git a/drivers/iio/accel/bmc150-accel.c b/drivers/iio/accel/bmc150-accel.c
+[]
+> @@ -647,12 +659,13 @@ static int bmc150_accel_read_raw(struct iio_dev *indio_dev,
+>  		{
+>  			int i;
+>  
+> -			for (i = 0; i < ARRAY_SIZE(bmc150_accel_scale_table);
+> -									 ++i) {
+> -				if (bmc150_accel_scale_table[i].range ==
+> +			for (i = 0;
+> +			     i < ARRAY_SIZE(data->chip_info->scale_table);
+> +			     ++i) {
+> +				if (data->chip_info->scale_table[i].range ==
+>  								data->range) {
+>  					*val2 =
+> -					bmc150_accel_scale_table[i].scale;
+> +					data->chip_info->scale_table[i].scale;
+>  					return IIO_VAL_INT_PLUS_MICRO;
+>  				}
+>  			}
 
-Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Tested-by: Heiko Stuebner <heiko@sntech.de>
+This looks like it would read a lot better with
+a temporary for data->chip_info->scale_table[i]
 
----
+so these could become:
 
-v5: * Move the storage of constraints to the per-user clk struct, as suggested
-      by Stephen Warren.
----
- drivers/clk/clk.c           | 36 ++++++++++++++++++++++++++++++++++++
- drivers/clk/clk.h           |  1 +
- drivers/clk/clkdev.c        |  2 +-
- include/linux/clk-private.h |  5 +++++
- include/linux/clk.h         | 18 ++++++++++++++++++
- 5 files changed, 61 insertions(+), 1 deletion(-)
+			for (i = 0; i < etc; i++) {
+				type *temp = &data->chip_info->scale_table[i];
+				if (temp->range == data->range) {
+					*val2 = temp->scale;
+					return IIO_VAL_INT_PLUS_MICRO;
+				}
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 61a3492..13ee3dd 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -560,6 +560,8 @@ struct clk *__clk_create_clk(struct clk_core *clk_core, const char *dev,
- 	clk->dev_id = dev;
- 	clk->con_id = con;
- 
-+	hlist_add_head(&clk->child_node, &clk_core->per_user_clks);
-+
- 	return clk;
- }
- 
-@@ -1625,6 +1627,7 @@ static void clk_change_rate(struct clk_core *clk)
- int clk_provider_set_rate(struct clk_core *clk, unsigned long rate)
- {
- 	struct clk_core *top, *fail_clk;
-+	struct clk *clk_user;
- 	int ret = 0;
- 
- 	if (!clk)
-@@ -1633,6 +1636,13 @@ int clk_provider_set_rate(struct clk_core *clk, unsigned long rate)
- 	/* prevent racing with updates to the clock topology */
- 	clk_prepare_lock();
- 
-+	hlist_for_each_entry(clk_user, &clk->per_user_clks, child_node) {
-+		rate = max(rate, clk_user->floor_constraint);
-+
-+		if (clk_user->ceiling_constraint > 0)
-+			rate = min(rate, clk_user->ceiling_constraint);
-+	}
-+
- 	/* bail early if nothing to do */
- 	if (rate == clk_provider_get_rate(clk))
- 		goto out;
-@@ -1699,6 +1709,24 @@ int clk_set_rate(struct clk *clk_user, unsigned long rate)
- }
- EXPORT_SYMBOL_GPL(clk_set_rate);
- 
-+int clk_set_floor_rate(struct clk *clk_user, unsigned long rate)
-+{
-+	struct clk_core *clk = clk_to_clk_core(clk_user);
-+
-+	clk_user->floor_constraint = rate;
-+	return clk_provider_set_rate(clk, clk_provider_get_rate(clk));
-+}
-+EXPORT_SYMBOL_GPL(clk_set_floor_rate);
-+
-+int clk_set_ceiling_rate(struct clk *clk_user, unsigned long rate)
-+{
-+	struct clk_core *clk = clk_to_clk_core(clk_user);
-+
-+	clk_user->ceiling_constraint = rate;
-+	return clk_provider_set_rate(clk, clk_provider_get_rate(clk));
-+}
-+EXPORT_SYMBOL_GPL(clk_set_ceiling_rate);
-+
- struct clk_core *clk_provider_get_parent(struct clk_core *clk)
- {
- 	struct clk_core *parent;
-@@ -2043,6 +2071,8 @@ int __clk_init(struct device *dev, struct clk_core *clk)
- 			}
- 	 }
- 
-+	INIT_HLIST_HEAD(&clk->per_user_clks);
-+
- 	/*
- 	 * optional platform-specific magic
- 	 *
-@@ -2493,6 +2523,12 @@ int clk_notifier_unregister(struct clk *clk_user, struct notifier_block *nb)
- }
- EXPORT_SYMBOL_GPL(clk_notifier_unregister);
- 
-+void __clk_free_clk(struct clk *clk_user)
-+{
-+	hlist_del(&clk_user->child_node);
-+	kfree(clk_user);
-+}
-+
- #ifdef CONFIG_OF
- /**
-  * struct of_clk_provider - Clock provider registration structure
-diff --git a/drivers/clk/clk.h b/drivers/clk/clk.h
-index 49eff38..005deb3 100644
---- a/drivers/clk/clk.h
-+++ b/drivers/clk/clk.h
-@@ -21,4 +21,5 @@ void of_clk_unlock(void);
- #if defined(CONFIG_COMMON_CLK)
- struct clk *__clk_create_clk(struct clk_core *clk_core, const char *dev,
- 			     const char *con);
-+void __clk_free_clk(struct clk *clk_user);
- #endif
-diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
-index 0752cc9..0db829c 100644
---- a/drivers/clk/clkdev.c
-+++ b/drivers/clk/clkdev.c
-@@ -270,7 +270,7 @@ void clk_put(struct clk *clk)
- #if defined(CONFIG_COMMON_CLK)
- 	clk_core_t *core = clk_to_clk_core(clk);
- 
--	kfree(clk);
-+	__clk_free_clk(clk);
- 	__clk_put(core);
- #else
- 	__clk_put(clk);
-diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
-index ce6a528..8126046 100644
---- a/include/linux/clk-private.h
-+++ b/include/linux/clk-private.h
-@@ -48,6 +48,7 @@ struct clk_core {
- 	unsigned long		accuracy;
- 	struct hlist_head	children;
- 	struct hlist_node	child_node;
-+	struct hlist_head	per_user_clks;
- 	unsigned int		notifier_count;
- #ifdef CONFIG_DEBUG_FS
- 	struct dentry		*dentry;
-@@ -62,6 +63,10 @@ struct clk {
- 
- 	unsigned int	enable_count;
- 	void		*last_disable;
-+
-+	unsigned long	floor_constraint;
-+	unsigned long	ceiling_constraint;
-+	struct hlist_node child_node;
- };
- 
- /*
-diff --git a/include/linux/clk.h b/include/linux/clk.h
-index f46a2eb..066b100 100644
---- a/include/linux/clk.h
-+++ b/include/linux/clk.h
-@@ -275,6 +275,24 @@ long clk_round_rate(struct clk *clk, unsigned long rate);
- int clk_set_rate(struct clk *clk, unsigned long rate);
- 
- /**
-+ * clk_set_floor_rate - set a minimum clock rate for a clock source
-+ * @clk: clock source
-+ * @rate: desired minimum clock rate in Hz
-+ *
-+ * Returns success (0) or negative errno.
-+ */
-+int clk_set_floor_rate(struct clk *clk, unsigned long rate);
-+
-+/**
-+ * clk_set_ceiling_rate - set a maximum clock rate for a clock source
-+ * @clk: clock source
-+ * @rate: desired maximum clock rate in Hz
-+ *
-+ * Returns success (0) or negative errno.
-+ */
-+int clk_set_ceiling_rate(struct clk *clk, unsigned long rate);
-+
-+/**
-  * clk_set_parent - set the parent clock source for this clock
-  * @clk: clock source
-  * @parent: parent clock source
--- 
-1.9.3
+Maybe all the bmc150_ variable names could be removed.
+The prefixes don't seem to serve a purpose other than
+to make the code longer.
+
+The filename could be changed to be more generic.
+
 
