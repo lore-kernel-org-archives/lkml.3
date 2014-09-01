@@ -1,116 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752235AbaIACrx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 22:47:53 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:12447 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751667AbaIACrv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 22:47:51 -0400
-X-AuditID: cbfee691-f79546d0000011a1-ae-5403de553e16
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'bpqw'" <bpqw@micron.com>
-Cc: "'David Woodhouse'" <dwmw2@infradead.org>,
-        "'Brian Norris'" <computersforpeace@gmail.com>,
-        "'Christian Riesch'" <christian.riesch@omicron.at>,
-        "'Paul Gortmaker'" <paul.gortmaker@windriver.com>,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <A765B125120D1346A63912DDE6D8B6315DB7BE@NTXXIAMBX02.xacn.micron.com>
-In-reply-to: <A765B125120D1346A63912DDE6D8B6315DB7BE@NTXXIAMBX02.xacn.micron.com>
-Subject: Re: [PATCH 1/1] mtd: cfi_cmdset_0002:add fixup for Micron M29EW after
- erase operation
-Date: Mon, 01 Sep 2014 11:47:43 +0900
-Message-id: <013d01cfc58f$1e4c0f10$5ae42d30$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac/FirFoX5r9fafZSu+Pmx6RITsSBwAAIQmwAADXYRA=
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJIsWRmVeSWpSXmKPExsVy+t8zY93Qe8whBvvWmFhsm7+d0eJ680Z2
-	iyMX1jJbTFw5mdni8sJLrBaXd81hs9jdtIzd4tre48wOHB47Z91l99i8Qstj85J6j+/rO9g8
-	Vk9YxubRt2UVo8fnTXIe67dsZQrgiOKySUnNySxLLdK3S+DK2D/lMlPBA+6K7jnaDYyHObsY
-	OTkkBEwkZp/vYoGwxSQu3FvP1sXIxSEksIxRou3tdFaYohv9r1kgEtMZJfpeHYFyfjNKtO9f
-	xQxSxSagJvHly2F2EFtEQEbi2+V1YKOYBZYzSax6fA6sSEggQGL2uQOMIDanQLDE4d9/wHYL
-	CyRItJ57DGazCKhK7Ny+CMzmFbCVWHHiFSOELSjxY/I9sDizgJbE+p3HmSBseYnNa94CzecA
-	OlVd4tFfXYgbrCQ6175mhigRkdj34h0jyD0SAo0cEquedLND7BKQ+Db5EAtEr6zEpgPMEB9L
-	ShxccYNlAqPELCSbZyHZPAvJ5llIVixgZFnFKJpakFxQnJReZKpXnJhbXJqXrpecn7uJERLj
-	E3cw3j9gfYhRgINRiYf3wSzmECHWxLLiytxDjKZAF01klhJNzgcmkrySeENjMyMLUxNTYyNz
-	SzMlcV4d6Z/BQgLpiSWp2ampBalF8UWlOanFhxiZODilGhiF+V9LpDK8PGi7OV6Rt/FBsut0
-	oWLGrG/V7b4uc0/pZd+w/WP84RrDb1XJBtVvVkcaHr+vNgz4+lxDn9tYMfg6x3lNTYv/vuWL
-	+NYu1n/ff2pCqqzd145JLCF/b7a0L7nh7avttHRlprbvvunPV2zZuN2+aPnLW7VTxRuXnftp
-	ke7Dzm677ZYSS3FGoqEWc1FxIgCeg58X7AIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMKsWRmVeSWpSXmKPExsVy+t9jQd3Qe8whBjd6DCy2zd/OaHG9eSO7
-	xZELa5ktJq6czGxxeeElVovLu+awWexuWsZucW3vcWYHDo+ds+6ye2xeoeWxeUm9x/f1HWwe
-	qycsY/Po27KK0ePzJjmP9Vu2MgVwRDUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY6hpa
-	WpgrKeQl5qbaKrn4BOi6ZeYAXaakUJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC1zckCK7HyAAN
-	JKxjzNg/5TJTwQPuiu452g2Mhzm7GDk5JARMJG70v2aBsMUkLtxbz9bFyMUhJDCdUaLv1REW
-	COc3o0T7/lXMIFVsAmoSX74cZgexRQRkJL5dXgfWwSywnEli1eNzYEVCAgESs88dYASxOQWC
-	JQ7//gO2QlggQaL13GMwm0VAVWLn9kVgNq+ArcSKE68YIWxBiR+T74HFmQW0JNbvPM4EYctL
-	bF7zFmg+B9Cp6hKP/upC3GAl0bn2NTNEiYjEvhfvGCcwCs1CMmkWkkmzkEyahaRlASPLKkbR
-	1ILkguKk9FwjveLE3OLSvHS95PzcTYzgBPJMegfjqgaLQ4wCHIxKPLwPZjGHCLEmlhVX5h5i
-	lOBgVhLhPXIaKMSbklhZlVqUH19UmpNafIjRFOjRicxSosn5wOSWVxJvaGxiZmRpZGZhZGJu
-	riTOe7DVOlBIID2xJDU7NbUgtQimj4mDU6qBMephpKvHfRlhOR7jnGUxv3hPfJuq9Udm0VSb
-	IF+elIq5U7m+v7NYbC4svfuW4I6cRZs9pbl8r1S2hF+Rim9Ik9Da5C5cVH+6x1t57pOmbZJG
-	Kc4ucg2z91eKsO5r0+9XOuA135DT4PD9Bwn7u9bMbPjuNTexy2qz2vF3267wrf14IaPrTfsW
-	JZbijERDLeai4kQAU/WnXzYDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1752031AbaIAC5L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 22:57:11 -0400
+Received: from mail-bn1lp0144.outbound.protection.outlook.com ([207.46.163.144]:7318
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751679AbaIAC5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Aug 2014 22:57:09 -0400
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Jean-Francois Moine <moinejf@free.fr>
+CC: "broonie@kernel.org" <broonie@kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Jyri Sarha <jsarha@ti.com>, Nicolin Chen <nicoleotsuka@gmail.com>
+Subject: RE: [RFC][PATCH] ASoC: simple-card: Merge single and muti DAI link
+ code.
+Thread-Topic: [RFC][PATCH] ASoC: simple-card: Merge single and muti DAI link
+ code.
+Thread-Index: AQHPw1WlKghmtyQaZ0ed1b/HG05M45vq6jqAgACt5TA=
+Date: Mon, 1 Sep 2014 02:57:05 +0000
+Message-ID: <1330150cda9f47eb88497fc10fb2b045@BY2PR0301MB0613.namprd03.prod.outlook.com>
+References: <1409294797-21948-1-git-send-email-Li.Xiubo@freescale.com>
+ <20140831182725.3135db4f@armhf>
+In-Reply-To: <20140831182725.3135db4f@armhf>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [123.151.195.49]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+x-forefront-prvs: 03218BFD9F
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(51704005)(189002)(199003)(110136001)(31966008)(87936001)(74502001)(85852003)(76482001)(83322001)(19580405001)(99286002)(105586002)(77982001)(79102001)(106116001)(107046002)(99396002)(83072002)(92566001)(74662001)(77096002)(101416001)(76176999)(21056001)(80022001)(66066001)(20776003)(64706001)(46102001)(108616004)(76576001)(90102001)(95666004)(2656002)(85306004)(74316001)(106356001)(86362001)(81542001)(33646002)(54356999)(81342001)(4396001)(50986999)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR0301MB0615;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s812vVaQ002345
 
-On Monday, September 01, 2014 11:21 AM, Bean Huo wrote:
+> > ---
+> >
+> > Hi,
+> >
+> > This patch will break the old DT, so i just send one RFC version, and
+> > will add the old DT patches in next version if this patch can work
+> > well.
+> >
+> > Any comments and advices are welcome.
 > 
-> For Micron M29EW,20ms delay is needed after erase operation.
-
-You already added the reason to cfi_fixup_m29ew_delay_after_erase().
-However, please add the comment to this commit message.
-
+> Hi Xiubo,
 > 
-> Signed-off-by: BeanHuo <bpqw@micron.com>
-
-BeanHuo/Bean Huo
-
-Others look good.
-
-Best regards,
-Jingoo Han
-
-> ---
->  drivers/mtd/chips/cfi_cmdset_0002.c |   11 +++++++++++
->  1 file changed, 11 insertions(+)
+> My DT is
 > 
-> diff --git a/drivers/mtd/chips/cfi_cmdset_0002.c b/drivers/mtd/chips/cfi_cmdset_0002.c
-> index 5a4bfe3..9b0de91 100644
-> --- a/drivers/mtd/chips/cfi_cmdset_0002.c
-> +++ b/drivers/mtd/chips/cfi_cmdset_0002.c
-> @@ -509,6 +509,16 @@ static void cfi_fixup_m29ew_delay_after_resume(struct cfi_private *cfi)
->  		cfi_udelay(500);
->  }
+> 	sound {
+> 		compatible = "simple-audio-card";
+> 		simple-audio-card,name = "Cubox Audio";
 > 
-> +static void cfi_fixup_m29ew_delay_after_erase(struct cfi_private *cfi)
-> +{
-> +	/*
-> +	 * Resolving the Delay After ERASE Issue @low temperature.
-> +	 * 20ms delay is needed after erase operation.
-> +	 */
-> +	if (is_m29ew(cfi))
-> +		cfi_udelay(20000);
-> +}
-> +
->  struct mtd_info *cfi_cmdset_0002(struct map_info *map, int primary)  {
->  	struct cfi_private *cfi = map->fldrv_priv; @@ -2397,6 +2407,7 @@ static int __xipram
-> do_erase_oneblock(struct map_info *map, struct flchip *chip,
->  		ret = -EIO;
->  	}
+> 		simple-audio-card,dai-link@0 {		/* I2S - HDMI */
+> 			format = "i2s";
+> 			cpu {
+> 				sound-dai = <&audio1 0>;
+> 			};
+> 			codec {
+> 				sound-dai = <&hdmi 0>;
+> 			};
+> 		};
+> 	...
 > 
-> +	cfi_fixup_m29ew_delay_after_erase(cfi);
->  	chip->state = FL_READY;
->  	DISABLE_VPP(map);
->  	put_chip(map, chip, adr);
-> --
-> 1.7.9.5
+> I was getting 0x1001 as the format (codec clk & FRM master and i2s').
+> 
+> With your patch, I get 0x4000 (clk master & frame slave and no format).
+> 
 
+Well, yes, If your DAI link's bit clock & frame using the CODEC as master,
+You should specify it in your DAI link node like:
+
+> 	sound {
+> 		compatible = "simple-audio-card";
+> 		simple-audio-card,name = "Cubox Audio";
+> 
+> 		simple-audio-card,dai-link@0 {		/* I2S - HDMI */
+> 			format = "i2s";
+> 			cpu {
+> 				sound-dai = <&audio1 0>;
+> 			};
+> 			codec {
+> 				sound-dai = <&hdmi 0>;
+> 			};
+
+			bitclock-master;
+			frame-master;
+> 		};
+> 	...
+
+And the reason for cannot parsing the "i2s" format is that there is one bug
+in this patch and I will fix it in next version.
+
+Thanks very much for your comment.
+
+BRs
+Xiubo
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
