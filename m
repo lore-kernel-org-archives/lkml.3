@@ -1,117 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314AbaIAJie (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 05:38:34 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:42707 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753247AbaIAJib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 05:38:31 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org
-Subject: [PATCH 2/2] binfmt_misc: touch up documentation a bit
-Date: Mon,  1 Sep 2014 05:38:29 -0400
-Message-Id: <1409564309-2393-2-git-send-email-vapier@gentoo.org>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1409564309-2393-1-git-send-email-vapier@gentoo.org>
-References: <1409564309-2393-1-git-send-email-vapier@gentoo.org>
+	id S1753336AbaIAJit (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 05:38:49 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:64999 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753247AbaIAJiq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 05:38:46 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Thierry Reding <treding@nvidia.com>, Rob Herring <robh@kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Shaik Ameer Basha <shaik.ameer@samsung.com>,
+        Inki Dae <inki.dae@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joerg Roedel <joro@8bytes.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Olof Johansson <olof@lixom.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Cho KyongHo <pullip.cho@samsung.com>
+Subject: Re: [PATCH 10/29] drivers: add DRIVER_HAS_OWN_IOMMU_MANAGER flag
+Date: Mon, 01 Sep 2014 11:38:31 +0200
+Message-ID: <4621634.jlJLccozTJ@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <540425F9.7080307@samsung.com>
+References: <1407235677-26324-1-git-send-email-m.szyprowski@samsung.com> <20140901070748.GA24226@ulmo.nvidia.com> <540425F9.7080307@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:d58/vUqDx0qDdR0tKZ4LzwyYRAV1W1RLESAQhMmmNPF
+ MHW8hMo9MCJpTMvsWT0z0Cr/eKRUYVa6HrqLsHcvm6x9BrBMB4
+ o2y4Tlba01/+mP9lXCy6/B+IYuWnZ48V5O5xLmdwavQOFWyYXz
+ PM6k3ZaoxU/2LopRjQYEqPnbKhLmLCG6avXM2ztrsbv5OFPOBM
+ bpxvldo5JAPNajFxqxsXp6RA+ENdg+29qoBww90mSrUlLq6B++
+ LP4pvXpE21woWcKx6TtcI39uUXTIVVNK8UAaUXgtVmmE6eainE
+ JNjnSg7Cbywoc8DsympXYgyma9NjiXlhh7ZRq778FiD7Yeo8mF
+ 2E70OQm+acul7/N/HGvs=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Line wrap the content to 80 cols, and add more details to various
-fields to match the code.  Drop reference to a website that does
-not exist anymore.
+On Monday 01 September 2014 09:53:29 Marek Szyprowski wrote:
+> On 2014-09-01 09:07, Thierry Reding wrote:
+> > On Mon, Sep 01, 2014 at 07:22:32AM +0200, Marek Szyprowski wrote:
+> >> Hi Greg,
+> >>
+> >> On 2014-08-05 12:47, Marek Szyprowski wrote:
+> >>> This patch adds a new flags for device drivers. This flag instructs
+> >>> kernel that the device driver does it own management of IOMMU assisted
+> >>> IO address space translations, so no default dma-mapping structures
+> >>> should be initialized.
+> >>>
+> >>> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> >>> ---
+> >>>    include/linux/device.h | 2 ++
+> >>>    1 file changed, 2 insertions(+)
+> >>>
+> >>> diff --git a/include/linux/device.h b/include/linux/device.h
+> >>> index 5f4ff02..2e62371 100644
+> >>> --- a/include/linux/device.h
+> >>> +++ b/include/linux/device.h
+> >>> @@ -253,6 +253,8 @@ struct device_driver {
+> >>>    
+> >>>    /* disables bind/unbind via sysfs */
+> >>>    #define DRIVER_SUPPRESS_BIND_ATTRS       (1 << 0)
+> >>> +/* driver uses own methods to manage IO address space */
+> >>> +#define DRIVER_HAS_OWN_IOMMU_MANAGER       (1 << 1)
+> >>>    
+> >>>    extern int __must_check driver_register(struct device_driver *drv);
+> >>>    extern void driver_unregister(struct device_driver *drv);
+> >> Could you comment if the approach of using flags in the struct driver
+> >> could be accepted? I've converted suppress_bind_attrs entry to flags to
+> >> avoid extending the structure, please see patch "[PATCH 05/29] drivers:
+> >> convert suppress_bind_attrs parameter into flags".
+> > Is this really necessary? What I did as part of an RFC series for Tegra
+> > IOMMU support is keep this knowledge within the IOMMU driver rather than
+> > export it to the driver core.i
+> 
+> The problem with embedding the list of drivers that you would need to update
+> it everytime when you modify or extend iommu support in the other drivers.
+> I've tried also other approach, like adding respective notifiers to 
+> individual
+> drivers to initialize custom iommu support (or disable default iommu 
+> mapping)
+> before iommu driver gets initialized, but such solution is in my opinion too
+> complex and hard to understand if one is not familiar will all this stuff.
+> 
+> All in all it turned out that the simplest and most generic way is to simply
+> add the flag to the driver core. Flags might be also used in the future
+> to model other kinds of dependencies between device drivers and/or driver
+> core.
 
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
----
- Documentation/binfmt_misc.txt | 48 +++++++++++++++++++++++++------------------
- 1 file changed, 28 insertions(+), 20 deletions(-)
+I don't get it yet. I would expect that a driver doing its own management
+of the iommu gets to use the linux/iommu.h interfaces, while a driver
+using the default iommu setup uses linux/dma-mapping.h. Who do you think
+needs to set this flag, and who needs to read it?
 
-diff --git a/Documentation/binfmt_misc.txt b/Documentation/binfmt_misc.txt
-index f64372b..6b1de70 100644
---- a/Documentation/binfmt_misc.txt
-+++ b/Documentation/binfmt_misc.txt
-@@ -15,39 +15,50 @@ First you must mount binfmt_misc:
- 	mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc 
- 
- To actually register a new binary type, you have to set up a string looking like
--:name:type:offset:magic:mask:interpreter:flags (where you can choose the ':' upon
--your needs) and echo it to /proc/sys/fs/binfmt_misc/register.
-+:name:type:offset:magic:mask:interpreter:flags (where you can choose the ':'
-+upon your needs) and echo it to /proc/sys/fs/binfmt_misc/register.
-+
- Here is what the fields mean:
-  - 'name' is an identifier string. A new /proc file will be created with this
--   name below /proc/sys/fs/binfmt_misc
-+   name below /proc/sys/fs/binfmt_misc; cannot contain slashes '/' for obvious
-+   reasons.
-  - 'type' is the type of recognition. Give 'M' for magic and 'E' for extension.
-  - 'offset' is the offset of the magic/mask in the file, counted in bytes. This
--   defaults to 0 if you omit it (i.e. you write ':name:type::magic...')
-+   defaults to 0 if you omit it (i.e. you write ':name:type::magic...'). Ignored
-+   when using filename extension matching.
-  - 'magic' is the byte sequence binfmt_misc is matching for. The magic string
--   may contain hex-encoded characters like \x0a or \xA4. In a shell environment
--   you will have to write \\x0a to prevent the shell from eating your \.
-+   may contain hex-encoded characters like \x0a or \xA4. Note that you must
-+   escape any NUL bytes; parsing halts at the first one. In a shell environment
-+   you might have to write \\x0a to prevent the shell from eating your \.
-    If you chose filename extension matching, this is the extension to be
-    recognised (without the '.', the \x0a specials are not allowed). Extension
--   matching is case sensitive!
-+   matching is case sensitive, and slashes '/' are not allowed!
-  - 'mask' is an (optional, defaults to all 0xff) mask. You can mask out some
-    bits from matching by supplying a string like magic and as long as magic.
--   The mask is anded with the byte sequence of the file.
-+   The mask is anded with the byte sequence of the file. Note that you must
-+   escape any NUL bytes; parsing halts at the first one. Ignored when using
-+   filename extension matching.
-  - 'interpreter' is the program that should be invoked with the binary as first
-    argument (specify the full path)
-  - 'flags' is an optional field that controls several aspects of the invocation
--   of the interpreter. It is a string of capital letters, each controls a certain
--   aspect. The following flags are supported -
--      'P' - preserve-argv[0].  Legacy behavior of binfmt_misc is to overwrite the
--            original argv[0] with the full path to the binary.  When this flag is
--            included, binfmt_misc will add an argument to the argument vector for
--            this purpose, thus preserving the original argv[0].
-+   of the interpreter. It is a string of capital letters, each controls a
-+   certain aspect. The following flags are supported -
-+      'P' - preserve-argv[0]. Legacy behavior of binfmt_misc is to overwrite
-+            the original argv[0] with the full path to the binary. When this
-+            flag is included, binfmt_misc will add an argument to the argument
-+            vector for this purpose, thus preserving the original argv[0].
-+            e.g. If your interp is set to /bin/foo and you run `blah` (which is
-+            in /usr/local/bin), then the kernel will execute /bin/foo with
-+            argv[] set to ["/bin/foo", "/usr/local/bin/blah", "blah"].  The
-+            interp has to be aware of this so it can execute /usr/local/bin/blah
-+            with argv[] set to ["blah"].
-       'O' - open-binary. Legacy behavior of binfmt_misc is to pass the full path
-             of the binary to the interpreter as an argument. When this flag is
-             included, binfmt_misc will open the file for reading and pass its
-             descriptor as an argument, instead of the full path, thus allowing
--            the interpreter to execute non-readable binaries. This feature should
--            be used with care - the interpreter has to be trusted not to emit
--            the contents of the non-readable binary.
-+            the interpreter to execute non-readable binaries. This feature
-+            should be used with care - the interpreter has to be trusted not to
-+            emit the contents of the non-readable binary.
-       'C' - credentials. Currently, the behavior of binfmt_misc is to calculate
-             the credentials and security token of the new process according to
-             the interpreter. When this flag is included, these attributes are
-@@ -110,7 +121,4 @@ passes it the full filename (or the file descriptor) to use.  Using $PATH can
- cause unexpected behaviour and can be a security hazard.
- 
- 
--There is a web page about binfmt_misc at
--http://www.tat.physik.uni-tuebingen.de
--
- Richard Günther <rguenth@tat.physik.uni-tuebingen.de>
--- 
-2.0.0
-
+	Arnd
