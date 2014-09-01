@@ -1,54 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174AbaIAOS2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 10:18:28 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:54217 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753398AbaIAOS0 (ORCPT
+	id S1754211AbaIAOVZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 10:21:25 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:50767 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753740AbaIAOVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 10:18:26 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Pankaj Dubey <pankaj.dubey@samsung.com>
-Cc: "'Lee Jones'" <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kgene.kim@samsung.com, linux@arm.linux.org.uk,
-        vikas.sajjan@samsung.com, joshi@samsung.com, naushad@samsung.com,
-        thomas.ab@samsung.com, chow.kim@samsung.com,
-        "'Tomasz Figa'" <t.figa@samsung.com>, broonie@kernel.org
-Subject: Re: [PATCH] mfd: syscon: Decouple syscon interface from syscon devices
-Date: Mon, 01 Sep 2014 16:18 +0200
-Message-ID: <6929512.Xet4VLKWdC@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <000c01cfc5d9$03866c30$0a934490$@samsung.com>
-References: <1408694991-21615-1-git-send-email-pankaj.dubey@samsung.com> <4121644.3haxjiIdIo@wuerfel> <000c01cfc5d9$03866c30$0a934490$@samsung.com>
+	Mon, 1 Sep 2014 10:21:23 -0400
+Date: Mon, 1 Sep 2014 19:51:07 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] serial: serial_core.c: printk replacement
+Message-ID: <20140901142107.GA3068@sudip-PC>
+References: <1409235328-24648-1-git-send-email-sudipm.mukherjee@gmail.com>
+ <5403B9B1.4010407@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:EFy3LSqE7Sz9zvX3cy0GGQKZmeUMX9FOforwXJdCaBm
- WTKFgdvpM/qML5IQxwKGTQMIVhePJLXLAoJx1T1TevQ1s7UiiO
- WSVYUfa5bNAJSXbqa9E9Fed1Egt7KFxFryOH1Cvi1jw6eMcCHC
- GFTUov2ZpEELFb5aHvjPBpxPmsKPWb418X6Y336tajx36QG75Q
- X+qeVpCx1Utc5btHu/vK415W/tN3HxyuaCzFXy9XdC/nU6upol
- 2P8kbgVfalh/8SRWbVlYkUk4FeXUlwl/0REcHU2G+ZuC7BybN5
- EBhX15sliRZ1VRiNDRgzWpqMsD4FofOTl4r0mareB7dLJ7t+0e
- avXCEJRyB0MMD3jEDe4c=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5403B9B1.4010407@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 01 September 2014 17:05:33 Pankaj Dubey wrote:
+On Mon, Sep 01, 2014 at 10:11:29AM +1000, Ryan Mallon wrote:
 > 
-> Please have a look at this thread [1], where we discussed the need of syscon
-> as platform device.
-> Looks like still there are users of syscon_regmap_lookup_by_pdevname
-> (clps711x.c).
-> So we can't make it completely independent of platform_device. 
 > 
-> [1]
-> https://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg35708.html
+> On 29/08/14 00:15, Sudip Mukherjee wrote:
+> > printk replaced with corresponding pr_err, dev_alert, dev_notice and pr_info.
+> > fixed two broken user-visible strings used by the corresponding printk
+> > 
+> > Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+> > ---
+> > 
+> > In the first patch i sent Greg suggested to use dev_err instead of pr_err , but as later Jiri pointed out in my later patches that uport->dev is having a null check so can not be used , tty_dev is also having a put_device , so back to pr_err. 
+> > 
+> >  drivers/tty/serial/serial_core.c | 26 +++++++++++++-------------
+> >  1 file changed, 13 insertions(+), 13 deletions(-)
+> > 
+> 
+> > @@ -1975,12 +1976,11 @@ int uart_suspend_port(struct uart_driver *drv, struct uart_port *uport)
+> >  		for (tries = 3; !ops->tx_empty(uport) && tries; tries--)
+> >  			msleep(10);
+> >  		if (!tries)
+> > -			printk(KERN_ERR "%s%s%s%d: Unable to drain "
+> > -					"transmitter\n",
+> > -			       uport->dev ? dev_name(uport->dev) : "",
+> > -			       uport->dev ? ": " : "",
+> > -			       drv->dev_name,
+> > -			       drv->tty_driver->name_base + uport->line);
+> > +			pr_err("%s%s%s%d: Unable to drain transmitter\n",
+> > +				uport->dev ? dev_name(uport->dev) : "",
+> > +				uport->dev ? ": " : "",
+> > +				drv->dev_name,
+> > +				drv->tty_driver->name_base + uport->line);
+> 
+> dev_printk() prints the value of dev_name() and handles the NULL case,
+> so this could be changed to:
+> 
+> 	dev_err(uport->dev, "%s%d: Unable to drain transmitter\n",
+> 		drv->dev_name,
+> 		drv->tty_driver->name_base + uport->line);
+> 
+> It might also be possible to remove drv->dev_name since dev_printk()
+> also prints the driver string, but I don't know if they are equivalent
+> in this case.
+> 
 
-I think the clps711x platform will soon stop using it, we already
-have patches for migrating to DT.
+they are not equivalent. drv->dev_name is giving "ttyS" , and the driver string as printed by dev_printk() is "serial".
+So, I guess I will make a v3 of the patch and mention all these in the commit message.
 
-	Arnd
+thanks
+sudip
+
+> >  
+> >  		if (console_suspend_enabled || !uart_console(uport))
+> >  			ops->shutdown(uport);
+> > @@ -2109,7 +2109,7 @@ uart_report_port(struct uart_driver *drv, struct uart_port *port)
+> >  		break;
+> >  	}
+> >  
+> > -	printk(KERN_INFO "%s%s%s%d at %s (irq = %d, base_baud = %d) is a %s\n",
+> > +	pr_info("%s%s%s%d at %s (irq = %d, base_baud = %d) is a %s\n",
+> >  	       port->dev ? dev_name(port->dev) : "",
+> >  	       port->dev ? ": " : "",
+> >  	       drv->dev_name,
+> 
+> Same here.
+> 
+> ~Ryan
