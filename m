@@ -1,154 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753774AbaIALH4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 07:07:56 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:38999 "EHLO mail.mev.co.uk"
+	id S1753804AbaIALIL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 07:08:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22553 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753403AbaIALE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 07:04:26 -0400
-From: Ian Abbott <abbotti@mev.co.uk>
-To: driverdev-devel@linuxdriverproject.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 18/28] staging: comedi: amplc_pci230: add `pci230_` prefix to functions
-Date: Mon,  1 Sep 2014 12:03:50 +0100
-Message-Id: <1409569440-10979-19-git-send-email-abbotti@mev.co.uk>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1409569440-10979-1-git-send-email-abbotti@mev.co.uk>
-References: <1409569440-10979-1-git-send-email-abbotti@mev.co.uk>
+	id S1753782AbaIALII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 07:08:08 -0400
+From: Maurizio Lombardi <mlombard@redhat.com>
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org, jet.chen@intel.com,
+        akpm@linux-foundation.org, thenzl@redhat.com
+Subject: [PATCH V4] bio: modify __bio_add_page() to accept pages that don't start a new segment
+Date: Mon,  1 Sep 2014 13:08:00 +0200
+Message-Id: <1409569680-15139-1-git-send-email-mlombard@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most functions in "amplc_pci230" are named with the prefix `pci230_`,
-apart from one or two that have the prefix `amplc_pci230_` and a few
-odd-balls with no particular prefix.  Rename the ones without a prefix
-for consistency.
+The original behaviour is to refuse to add a new page if the maximum
+number of segments has been reached, regardless of the fact the page we
+are going to add can be merged into the last segment or not.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Unfortunately, when the system runs under heavy memory fragmentation
+conditions, a driver may try to add multiple pages to the last segment.
+The original code won't accept them and EBUSY will be reported to
+userspace.
+
+This patch modifies the function so it refuses to add a page only in case
+the latter starts a new segment and the maximum number of segments has
+already been reached.
+
+The bug can be easily reproduced with the st driver:
+
+1) set CONFIG_SCSI_MPT2SAS_MAX_SGE or CONFIG_SCSI_MPT3SAS_MAX_SGE  to 16
+2) modprobe st buffer_kbs=1024
+3) #dd if=/dev/zero of=/dev/st0 bs=1M count=10
+   dd: error writing `/dev/st0': Device or resource busy
+
+V2: restore the correct number of segments in case of failure.
+
+V3: In case of error, V2 restored the previous number of segments but left
+    the BIO_SEG_VALID flag set.
+    To avoid problems, after the page is removed from the bio vec,
+    V3 performs a recount of the segments in the error code path.
+
+[ming.lei@canonical.com: update bi_iter.bi_size before recounting segments]
+
+V4: merge_bvec_fn() must be called with the old bi_iter.bi_size value.
+
+Signed-off-by: Maurizio Lombardi <mlombard@redhat.com>
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
 ---
- drivers/staging/comedi/drivers/amplc_pci230.c | 41 ++++++++++++++-------------
- 1 file changed, 21 insertions(+), 20 deletions(-)
+ block/bio.c | 54 ++++++++++++++++++++++++++++++------------------------
+ 1 file changed, 30 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/amplc_pci230.c b/drivers/staging/comedi/drivers/amplc_pci230.c
-index 72da4b6..6cd235d 100644
---- a/drivers/staging/comedi/drivers/amplc_pci230.c
-+++ b/drivers/staging/comedi/drivers/amplc_pci230.c
-@@ -613,8 +613,8 @@ static void pci230_ao_write_fifo(struct comedi_device *dev,
- 	     devpriv->daqio + PCI230P2_DACDATA);
- }
- 
--static int get_resources(struct comedi_device *dev, unsigned int res_mask,
--			 unsigned char owner)
-+static int pci230_get_resources(struct comedi_device *dev,
-+				unsigned int res_mask, unsigned char owner)
- {
- 	struct pci230_private *devpriv = dev->private;
- 	int ok;
-@@ -649,14 +649,14 @@ static int get_resources(struct comedi_device *dev, unsigned int res_mask,
- 	return ok;
- }
- 
--static int get_one_resource(struct comedi_device *dev,
--			    unsigned int resource, unsigned char owner)
-+static int pci230_get_one_resource(struct comedi_device *dev,
-+				   unsigned int resource, unsigned char owner)
- {
--	return get_resources(dev, 1U << resource, owner);
-+	return pci230_get_resources(dev, 1U << resource, owner);
- }
- 
--static void put_resources(struct comedi_device *dev, unsigned int res_mask,
--			  unsigned char owner)
-+static void pci230_put_resources(struct comedi_device *dev,
-+				 unsigned int res_mask, unsigned char owner)
- {
- 	struct pci230_private *devpriv = dev->private;
- 	unsigned int i;
-@@ -674,19 +674,20 @@ static void put_resources(struct comedi_device *dev, unsigned int res_mask,
- 	spin_unlock_irqrestore(&devpriv->res_spinlock, irqflags);
- }
- 
--static void put_one_resource(struct comedi_device *dev,
--			     unsigned int resource, unsigned char owner)
-+static void pci230_put_one_resource(struct comedi_device *dev,
-+				    unsigned int resource, unsigned char owner)
- {
--	put_resources(dev, 1U << resource, owner);
-+	pci230_put_resources(dev, 1U << resource, owner);
- }
- 
--static void put_all_resources(struct comedi_device *dev, unsigned char owner)
-+static void pci230_put_all_resources(struct comedi_device *dev,
-+				     unsigned char owner)
- {
--	put_resources(dev, (1U << NUM_RESOURCES) - 1, owner);
-+	pci230_put_resources(dev, (1U << NUM_RESOURCES) - 1, owner);
- }
- 
--static unsigned int divide_ns(uint64_t ns, unsigned int timebase,
--			      unsigned int flags)
-+static unsigned int pci230_divide_ns(uint64_t ns, unsigned int timebase,
-+				     unsigned int flags)
- {
- 	uint64_t div;
- 	unsigned int rem;
-@@ -717,7 +718,7 @@ static unsigned int pci230_choose_clk_count(uint64_t ns, unsigned int *count,
- 	unsigned int clk_src, cnt;
- 
- 	for (clk_src = CLK_10MHZ;; clk_src++) {
--		cnt = divide_ns(ns, pci230_timebase[clk_src], flags);
-+		cnt = pci230_divide_ns(ns, pci230_timebase[clk_src], flags);
- 		if (cnt <= 65536 || clk_src == CLK_1KHZ)
- 			break;
- 	}
-@@ -1112,7 +1113,7 @@ static void pci230_ao_stop(struct comedi_device *dev,
- 		     devpriv->daqio + PCI230_DACCON);
- 	}
- 	/* Release resources. */
--	put_all_resources(dev, OWNER_AOCMD);
-+	pci230_put_all_resources(dev, OWNER_AOCMD);
- }
- 
- static void pci230_handle_ao_nofifo(struct comedi_device *dev,
-@@ -1408,7 +1409,7 @@ static int pci230_ao_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 
- 	if (cmd->scan_begin_src == TRIG_TIMER) {
- 		/* Claim Z2-CT1. */
--		if (!get_one_resource(dev, RES_Z2CT1, OWNER_AOCMD))
-+		if (!pci230_get_one_resource(dev, RES_Z2CT1, OWNER_AOCMD))
- 			return -EBUSY;
- 	}
- 
-@@ -1963,7 +1964,7 @@ static void pci230_ai_stop(struct comedi_device *dev,
- 	outw(devpriv->adccon | PCI230_ADC_FIFO_RESET,
- 	     devpriv->daqio + PCI230_ADCCON);
- 	/* Release resources. */
--	put_all_resources(dev, OWNER_AICMD);
-+	pci230_put_all_resources(dev, OWNER_AICMD);
- }
- 
- static void pci230_ai_start(struct comedi_device *dev,
-@@ -2112,7 +2113,7 @@ static void pci230_ai_start(struct comedi_device *dev,
+diff --git a/block/bio.c b/block/bio.c
+index 3e6331d..535b16d 100644
+--- a/block/bio.c
++++ b/block/bio.c
+@@ -745,6 +745,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+ 				}
  			}
- 		} else if (cmd->convert_src != TRIG_INT) {
- 			/* No longer need Z2-CT2. */
--			put_one_resource(dev, RES_Z2CT2, OWNER_AICMD);
-+			pci230_put_one_resource(dev, RES_Z2CT2, OWNER_AICMD);
- 		}
- 	}
- }
-@@ -2253,7 +2254,7 @@ static int pci230_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 		}
- 	}
- 	/* Claim resources. */
--	if (!get_resources(dev, res_mask, OWNER_AICMD))
-+	if (!pci230_get_resources(dev, res_mask, OWNER_AICMD))
- 		return -EBUSY;
  
- 	/* Get number of scans required. */
++			bio->bi_iter.bi_size += len;
+ 			goto done;
+ 		}
+ 
+@@ -761,29 +762,32 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+ 		return 0;
+ 
+ 	/*
+-	 * we might lose a segment or two here, but rather that than
+-	 * make this too complex.
++	 * setup the new entry, we might clear it again later if we
++	 * cannot add the page
++	 */
++	bvec = &bio->bi_io_vec[bio->bi_vcnt];
++	bvec->bv_page = page;
++	bvec->bv_len = len;
++	bvec->bv_offset = offset;
++	bio->bi_vcnt++;
++	bio->bi_phys_segments++;
++	bio->bi_iter.bi_size += len;
++
++	/*
++	 * Perform a recount if the number of segments is greater
++	 * than queue_max_segments(q).
+ 	 */
+ 
+-	while (bio->bi_phys_segments >= queue_max_segments(q)) {
++	while (bio->bi_phys_segments > queue_max_segments(q)) {
+ 
+ 		if (retried_segments)
+-			return 0;
++			goto failed;
+ 
+ 		retried_segments = 1;
+ 		blk_recount_segments(q, bio);
+ 	}
+ 
+ 	/*
+-	 * setup the new entry, we might clear it again later if we
+-	 * cannot add the page
+-	 */
+-	bvec = &bio->bi_io_vec[bio->bi_vcnt];
+-	bvec->bv_page = page;
+-	bvec->bv_len = len;
+-	bvec->bv_offset = offset;
+-
+-	/*
+ 	 * if queue has other restrictions (eg varying max sector size
+ 	 * depending on offset), it can specify a merge_bvec_fn in the
+ 	 * queue to get further control
+@@ -792,7 +796,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+ 		struct bvec_merge_data bvm = {
+ 			.bi_bdev = bio->bi_bdev,
+ 			.bi_sector = bio->bi_iter.bi_sector,
+-			.bi_size = bio->bi_iter.bi_size,
++			.bi_size = bio->bi_iter.bi_size - len,
+ 			.bi_rw = bio->bi_rw,
+ 		};
+ 
+@@ -800,23 +804,25 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+ 		 * merge_bvec_fn() returns number of bytes it can accept
+ 		 * at this offset
+ 		 */
+-		if (q->merge_bvec_fn(q, &bvm, bvec) < bvec->bv_len) {
+-			bvec->bv_page = NULL;
+-			bvec->bv_len = 0;
+-			bvec->bv_offset = 0;
+-			return 0;
+-		}
++		if (q->merge_bvec_fn(q, &bvm, bvec) < bvec->bv_len)
++			goto failed;
+ 	}
+ 
+ 	/* If we may be able to merge these biovecs, force a recount */
+-	if (bio->bi_vcnt && (BIOVEC_PHYS_MERGEABLE(bvec-1, bvec)))
++	if (bio->bi_vcnt > 1 && (BIOVEC_PHYS_MERGEABLE(bvec-1, bvec)))
+ 		bio->bi_flags &= ~(1 << BIO_SEG_VALID);
+ 
+-	bio->bi_vcnt++;
+-	bio->bi_phys_segments++;
+  done:
+-	bio->bi_iter.bi_size += len;
+ 	return len;
++
++ failed:
++	bvec->bv_page = NULL;
++	bvec->bv_len = 0;
++	bvec->bv_offset = 0;
++	bio->bi_vcnt--;
++	bio->bi_iter.bi_size -= len;
++	blk_recount_segments(q, bio);
++	return 0;
+ }
+ 
+ /**
 -- 
-2.0.4
+Maurizio Lombardi
 
