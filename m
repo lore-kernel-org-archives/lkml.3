@@ -1,183 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753539AbaIANcK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 09:32:10 -0400
-Received: from www.linutronix.de ([62.245.132.108]:58873 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751500AbaIANcI (ORCPT
+	id S1753837AbaIANcy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 09:32:54 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:59143 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752817AbaIANcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 09:32:08 -0400
-Message-ID: <5404754C.8080809@linutronix.de>
-Date: Mon, 01 Sep 2014 15:31:56 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Mon, 1 Sep 2014 09:32:52 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: EmanueL Czirai <amanual@openmailbox.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Subject: Re: [Patch v4] x86, irq, PCI: Keep IRQ assignment for runtime power management
+Date: Mon, 01 Sep 2014 15:52:06 +0200
+Message-ID: <4543591.GHid1Qx4Vl@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <54013AA8.8050200@linux.intel.com>
+References: <1409304383-18806-1-git-send-email-jiang.liu@linux.intel.com> <8823237.zCdVqYrZ5W@vostro.rjw.lan> <54013AA8.8050200@linux.intel.com>
 MIME-Version: 1.0
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tony@atomide.com, balbi@ti.com, Vinod Koul <vinod.koul@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 05/15] tty: serial: Add 8250-core based omap driver
-References: <1408124563-31541-1-git-send-email-bigeasy@linutronix.de> <1408124563-31541-6-git-send-email-bigeasy@linutronix.de> <20140818134643.GA32400@xps8300>
-In-Reply-To: <20140818134643.GA32400@xps8300>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/18/2014 03:46 PM, Heikki Krogerus wrote:
-> On Fri, Aug 15, 2014 at 07:42:33PM +0200, Sebastian Andrzej Siewior wrote:
->> diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
->> index cc90c19..ab003b6 100644
->> --- a/drivers/tty/serial/8250/8250_core.c
->> +++ b/drivers/tty/serial/8250/8250_core.c
->> @@ -264,6 +264,12 @@ static const struct serial8250_config uart_config[] = {
->>  		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
->>  		.flags		= UART_CAP_FIFO | UART_CAP_AFE,
->>  	},
->> +	[PORT_OMAP_16750] = {
->> +		.name		= "OMAP",
->> +		.fifo_size	= 64,
->> +		.tx_loadsz	= 64,
->> +		.flags		= UART_CAP_FIFO | UART_CAP_EFR | UART_CAP_SLEEP,
->> +	},
+On Saturday, August 30, 2014 10:44:56 AM Jiang Liu wrote:
 > 
-> I don't think you need this. Reasons below...
+> On 2014/8/30 7:24, Rafael J. Wysocki wrote:
+> > On Friday, August 29, 2014 04:42:34 PM Rafael J. Wysocki wrote:
+> >> On Fri, Aug 29, 2014 at 11:26 AM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
+> >>> Now IOAPIC driver dynamically allocates IRQ numbers for IOAPIC pins.
+> >>> We need to keep IRQ assignment for PCI devices during runtime power
+> >>> management, otherwise it may cause failure of device wakeups.
+> >>>
+> >>> Commit 3eec595235c17a7 "x86, irq, PCI: Keep IRQ assignment for PCI
+> >>> devices during suspend/hibernation" has fixed the issue for suspend/
+> >>> hibernation, we also need the same fix for runtime device sleep too.
+> >>>
+> >>> Fix: https://bugzilla.kernel.org/show_bug.cgi?id=83271
+> >>> Reported-and-Tested-by: EmanueL Czirai <amanual@openmailbox.org>
+> >>> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> >>> ---
+> >>>  arch/x86/include/asm/io_apic.h |    2 ++
+> >>>  arch/x86/kernel/apic/io_apic.c |   12 ++++++++++++
+> >>>  arch/x86/pci/intel_mid_pci.c   |    2 +-
+> >>>  arch/x86/pci/irq.c             |    2 +-
+> >>>  drivers/acpi/pci_irq.c         |    4 ++++
+> >>>  5 files changed, 20 insertions(+), 2 deletions(-)
+> >>>
+> >>> diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+> >>> index 0aeed5ca356e..478c490f3654 100644
+> >>> --- a/arch/x86/include/asm/io_apic.h
+> >>> +++ b/arch/x86/include/asm/io_apic.h
+> >>> @@ -227,6 +227,8 @@ static inline void io_apic_modify(unsigned int apic, unsigned int reg, unsigned
+> >>>
+> >>>  extern void io_apic_eoi(unsigned int apic, unsigned int vector);
+> >>>
+> >>> +extern bool mp_should_keep_irq(struct device *dev);
+> >>> +
+> >>>  #else  /* !CONFIG_X86_IO_APIC */
+> >>>
+> >>>  #define io_apic_assign_pci_irqs 0
+> >>> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> >>> index 29290f554e79..1e9a921d9701 100644
+> >>> --- a/arch/x86/kernel/apic/io_apic.c
+> >>> +++ b/arch/x86/kernel/apic/io_apic.c
+> >>> @@ -3946,6 +3946,18 @@ int mp_set_gsi_attr(u32 gsi, int trigger, int polarity, int node)
+> >>>         return ret;
+> >>>  }
+> >>>
+> >>> +bool mp_should_keep_irq(struct device *dev)
+> >>> +{
+> >>> +       if (dev->power.is_prepared)
+> >>> +               return true;
+> >>> +#ifdef CONFIG_PM_RUNTIME
+> >>> +       if (dev->power.runtime_status == RPM_SUSPENDING)
+> >>> +               return true;
+> >>> +#endif
+> >>
+> >> No, you can't do that.  It is racy and incorrect.
+> > 
+> > Well, maybe not.
+> > 
+> >> Please give me some time for looking into this.
+> > 
+> > So I guess the intended check is "Am I running in a suspend callback"?
 
-For those it works. However I have to this value to something because
-it can't stay PORT_UNKNOWN. So for now I took PORT_8250 because it is
-not used anywhere in the code. The only side effect of this is that I
-can't specify the name. I can live with this…
+> Hi Rafael,
+> 	Yes, we are trying to check whether it's called for suspend.
+> Function pci_disable_device() may be called when:
+> 1) unbinding PCI driver
+> 2) destroying PCI device
+> 3) suspending for runtime power management or sleep
+> For case 1 and 2, we should release IRQ assigned. But we need to
+> keep assigned IRQ for case 3.
 
-> 
->>  	[PORT_TEGRA] = {
->>  		.name		= "Tegra",
->>  		.fifo_size	= 32,
->> @@ -1390,6 +1396,8 @@ static void serial8250_stop_rx(struct uart_port *port)
->>  	serial8250_rpm_get(up);
->>  
->>  	up->ier &= ~UART_IER_RLSI;
->> +	if (port->type == PORT_OMAP_16750)
->> +		up->ier &= ~UART_IER_RDI;
-> 
-> I don't see any reason why this could not be always cleared regardless
-> of the type:
-> 
->         up->ier &= ~(UART_IER_RLSI | UART_IRE_RDI);
-> 
+Why don't we add an extra arg to that funtion, then, instead of trying to
+play with the PM core's internals in generally unreliable ways?
 
-I remember you brought that up recently asking Alan if it is okay doing
-so. Since it looks sane to revert that bit on RX-stop, I will drop that
-omap check here.
+> So is it safe to check runtime_status and is_prepared flags to detect
+> case 3? Any better ways?
 
-> [cut]
-> 
-> Since you are not calling serial8250_do_set_termios, 8250_core.c newer
-> overrides the FCR set in this driver. However, if the FCR is a
-> problem, since Yoshihiro added the member for it to struct
-> uart_8250_port (commit aef9a7bd9), just make it possible for the probe
-> drivers to provide also it's value:
-> 
->  static int
-> 
-> So instead of using PORT_OMAP_16750:
->         up.port.type = PORT_16750;
->         up.capabilities = UART_CAP_FIFO | UART_CAP_EFR | UART_CAP_SLEEP;
-> 
-> and the fcr if needed.
->         up.fcr = ...
-> 
+Above?
 
-That fcr value looks nice so I can't drop my private copy of it.  But
-this FCR works different for RX trigger (the way it is used). Which
-means to support user configurable RX-level I would need to overwrite
-that callback. However since PORT_8250 does not supply any FCR values,
-I can just ignore it for now.
+Both runtime_status and is_prepared are internal to the PM core.  In fact,
+there's no guarantee that is_prepared will be needed in the future even, so
+you've made quite a bit of a mess by using it outside of the PM core.
 
->> +	up.port.iotype = UPIO_MEM32;
->> +	up.port.flags = UPF_BOOT_AUTOCONF | UPF_FIXED_PORT | UPF_FIXED_TYPE |
->> +		UPF_SOFT_FLOW | UPF_HARD_FLOW;
->> +	up.port.private_data = priv;
->> +
->> +	up.port.regshift = 2;
->> +	up.port.fifosize = 64;
-> 
-> You don't need to set the fifosize unless you want to replace the
-> value you get from uart_config array.
-Since you made me drop my uart_config array entry I keep this and add
-the other values, too
+Moreover, what you've done is obviously racy, but question is whether or
+not the race really matters.  Like, for example, what happens if PCI device
+removal is triggered from user space via sysfs in parallel with a runtime
+suspend?
 
->> +	up.port.set_termios = omap_8250_set_termios;
->> +	up.port.pm = omap_8250_pm;
->> +	up.port.startup = omap_8250_startup;
->> +	up.port.shutdown = omap_8250_shutdown;
->> +	up.port.throttle = omap_8250_throttle;
->> +	up.port.unthrottle = omap_8250_unthrottle;
->> +
->> +	if (pdev->dev.of_node) {
->> +		up.port.line = of_alias_get_id(pdev->dev.of_node, "serial");
->> +		of_property_read_u32(pdev->dev.of_node, "clock-frequency",
->> +				&up.port.uartclk);
->> +		priv->wakeirq = irq_of_parse_and_map(pdev->dev.of_node, 1);
->> +	} else {
->> +		up.port.line = pdev->id;
->> +	}
->> +
->> +	if (up.port.line < 0) {
->> +		dev_err(&pdev->dev, "failed to get alias/pdev id, errno %d\n",
->> +				up.port.line);
->> +		return -ENODEV;
->> +	}
->> +	if (!up.port.uartclk) {
->> +		up.port.uartclk = DEFAULT_CLK_SPEED;
->> +		dev_warn(&pdev->dev,
->> +				"No clock speed specified: using default: %d\n",
->> +				DEFAULT_CLK_SPEED);
->> +	}
->> +
->> +#ifdef CONFIG_PM_RUNTIME
->> +	up.capabilities |= UART_CAP_RPM;
->> +#endif
-> 
-> By setting this here, you will not get the capabilities from the
-> uart_config[type].flags if runtime PM is enabled in any case, right?
+Plus the $subject patch introduced mp_should_keep_irq() and then duplicated
+the exact same code in acpi_pci_irq_disable(), so it doesn't look like it
+actually received enough consideration which is worrisome.
 
-Yes. It was not plan to behave like this and is fixed, thanks.
+Moreover, the original patchset this is "fixing" apparently disregarded power
+management entirely which is even more concerning.
 
-> [cut]
-> 
->> diff --git a/drivers/tty/serial/8250/Makefile b/drivers/tty/serial/8250/Makefile
->> index 36d68d0..4bac392 100644
->> --- a/drivers/tty/serial/8250/Makefile
->> +++ b/drivers/tty/serial/8250/Makefile
->> @@ -20,3 +20,4 @@ obj-$(CONFIG_SERIAL_8250_HUB6)		+= 8250_hub6.o
->>  obj-$(CONFIG_SERIAL_8250_FSL)		+= 8250_fsl.o
->>  obj-$(CONFIG_SERIAL_8250_DW)		+= 8250_dw.o
->>  obj-$(CONFIG_SERIAL_8250_EM)		+= 8250_em.o
->> +obj-$(CONFIG_SERIAL_8250_OMAP)		+= 8250_omap.o
->> diff --git a/include/uapi/linux/serial_core.h b/include/uapi/linux/serial_core.h
->> index 5820269..74f9b11 100644
->> --- a/include/uapi/linux/serial_core.h
->> +++ b/include/uapi/linux/serial_core.h
->> @@ -54,7 +54,8 @@
->>  #define PORT_ALTR_16550_F32 26	/* Altera 16550 UART with 32 FIFOs */
->>  #define PORT_ALTR_16550_F64 27	/* Altera 16550 UART with 64 FIFOs */
->>  #define PORT_ALTR_16550_F128 28 /* Altera 16550 UART with 128 FIFOs */
->> -#define PORT_MAX_8250	28	/* max port ID */
->> +#define PORT_OMAP_16750	29	/* TI's OMAP internal 16C750 compatible UART */
->> +#define PORT_MAX_8250	29	/* max port ID */
-> 
-> So in this case I see no reason for new type.
+KR,
+Rafael
 
-gone.
-
-> 
-> Cheers,
-> 
-
-
-Sebastian
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
