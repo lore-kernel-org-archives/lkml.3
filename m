@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107AbaIAOQl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 10:16:41 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:58066 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752008AbaIAOQj (ORCPT
+	id S1754174AbaIAOS2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 10:18:28 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:54217 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753398AbaIAOS0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 10:16:39 -0400
-Date: Mon, 1 Sep 2014 10:16:38 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Mathias Nyman <mathias.nyman@intel.com>
-cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] xhci-ring: Fix Null pointer dereference
-In-Reply-To: <54044C5C.9010305@intel.com>
-Message-ID: <Pine.LNX.4.44L0.1409011013100.7410-100000@netrider.rowland.org>
+	Mon, 1 Sep 2014 10:18:26 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Pankaj Dubey <pankaj.dubey@samsung.com>
+Cc: "'Lee Jones'" <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kgene.kim@samsung.com, linux@arm.linux.org.uk,
+        vikas.sajjan@samsung.com, joshi@samsung.com, naushad@samsung.com,
+        thomas.ab@samsung.com, chow.kim@samsung.com,
+        "'Tomasz Figa'" <t.figa@samsung.com>, broonie@kernel.org
+Subject: Re: [PATCH] mfd: syscon: Decouple syscon interface from syscon devices
+Date: Mon, 01 Sep 2014 16:18 +0200
+Message-ID: <6929512.Xet4VLKWdC@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <000c01cfc5d9$03866c30$0a934490$@samsung.com>
+References: <1408694991-21615-1-git-send-email-pankaj.dubey@samsung.com> <4121644.3haxjiIdIo@wuerfel> <000c01cfc5d9$03866c30$0a934490$@samsung.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:EFy3LSqE7Sz9zvX3cy0GGQKZmeUMX9FOforwXJdCaBm
+ WTKFgdvpM/qML5IQxwKGTQMIVhePJLXLAoJx1T1TevQ1s7UiiO
+ WSVYUfa5bNAJSXbqa9E9Fed1Egt7KFxFryOH1Cvi1jw6eMcCHC
+ GFTUov2ZpEELFb5aHvjPBpxPmsKPWb418X6Y336tajx36QG75Q
+ X+qeVpCx1Utc5btHu/vK415W/tN3HxyuaCzFXy9XdC/nU6upol
+ 2P8kbgVfalh/8SRWbVlYkUk4FeXUlwl/0REcHU2G+ZuC7BybN5
+ EBhX15sliRZ1VRiNDRgzWpqMsD4FofOTl4r0mareB7dLJ7t+0e
+ avXCEJRyB0MMD3jEDe4c=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Sep 2014, Mathias Nyman wrote:
-
-> On 09/01/2014 12:36 PM, Ricardo Ribalda Delgado wrote:
-> > After some time of use (one hour or so) my system started to behave
-> > "weird". I did check  dmesg and I was receiving the following line
-> > again and again:
-> > 
-> > usb-storage: Error in queuecommand_lck: us->sfb= ffff8805bd61ccc0
-
-This is probably caused by some transfer not occurring correctly.  With 
-a usbmon trace we could see what was going on.
-
-> > I did disconnect the usb device and the whole computer crashed :S
-> > 
+On Monday 01 September 2014 17:05:33 Pankaj Dubey wrote:
 > 
-> Ok, thanks.
+> Please have a look at this thread [1], where we discussed the need of syscon
+> as platform device.
+> Looks like still there are users of syscon_regmap_lookup_by_pdevname
+> (clps711x.c).
+> So we can't make it completely independent of platform_device. 
 > 
-> Would you say things work better after the patch?
-> 
-> I still think the patch solves part of the issue, i.e. how we handle halted endpoints
-> in reset, but I don't know the reason why the endpoints stall in the first place
+> [1]
+> https://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg35708.html
 
-The endpoint stall occurs because the device's protocol requires the
-endpoint to stall.  The reason doesn't matter; xhci-hcd should handle 
-stalls correctly whenever they occur.
+I think the clps711x platform will soon stop using it, we already
+have patches for migrating to DT.
 
-Alan Stern
-
+	Arnd
