@@ -1,58 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754129AbaIAOsK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 10:48:10 -0400
-Received: from www.linutronix.de ([62.245.132.108]:59527 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751965AbaIAOsI (ORCPT
+	id S1754098AbaIAOzv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 10:55:51 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:39526 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753719AbaIAOzt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 10:48:08 -0400
-Message-ID: <54048720.9000003@linutronix.de>
-Date: Mon, 01 Sep 2014 16:48:00 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Mon, 1 Sep 2014 10:55:49 -0400
 MIME-Version: 1.0
-To: Frans Klaver <frans.klaver@xsens.com>
-CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tony@atomide.com, balbi@ti.com, Vinod Koul <vinod.koul@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        mika.westerberg@linux.intel.com
-Subject: Re: [PATCH 03/15] tty: serial: 8250_core: add run time pm
-References: <1408124563-31541-1-git-send-email-bigeasy@linutronix.de> <1408124563-31541-4-git-send-email-bigeasy@linutronix.de> <20140820092319.GA20775@ci00147.xsens-tech.local> <20140820093936.GB20775@ci00147.xsens-tech.local>
-In-Reply-To: <20140820093936.GB20775@ci00147.xsens-tech.local>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <20140901113949.GP7374@lee--X1>
+References: <1409349654-24841-1-git-send-email-octavian.purdila@intel.com>
+	<1409349654-24841-2-git-send-email-octavian.purdila@intel.com>
+	<20140901083744.GE7374@lee--X1>
+	<CAE1zotK0cddns4f4ay-GJie8O2pjb72+-yYndZvW0hbF0D83HA@mail.gmail.com>
+	<20140901095127.GK7374@lee--X1>
+	<CAE1zot+T6eq0jrL6_Qh=5nihNOgGEaWe5RCDk7_1XS8ZWaWKqA@mail.gmail.com>
+	<20140901113949.GP7374@lee--X1>
+Date: Mon, 1 Sep 2014 17:55:47 +0300
+Message-ID: <CAE1zotKNBTEMX8DDYwdwOcq0qZgqxZWazE60TUQeiOmD0a4xbA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] mfd: add support for Diolan DLN-2 devices
+From: Octavian Purdila <octavian.purdila@intel.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, wsa@the-dreams.de,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Johan Hovold <johan@kernel.org>, linux-usb@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>, linux-gpio@vger.kernel.org,
+        linux-i2c@vger.kernel.org, Daniel Baluta <daniel.baluta@intel.com>,
+        Laurentiu Palcu <laurentiu.palcu@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2014 11:39 AM, Frans Klaver wrote:
-
->>>  static int serial8250_get_poll_char(struct uart_port *port)
->>>  {
->>> -	unsigned char lsr = serial_port_in(port, UART_LSR);
->>> +	unsigned char lsr;
->>> +	int status;
->>> +
->>> +	serial8250_rpm_get(up);
+On Mon, Sep 1, 2014 at 2:39 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> On Mon, 01 Sep 2014, Octavian Purdila wrote:
+>
+>> On Mon, Sep 1, 2014 at 12:51 PM, Lee Jones <lee.jones@linaro.org> wrote:
+>> > On Mon, 01 Sep 2014, Octavian Purdila wrote:
+>> >
+>> >> On Mon, Sep 1, 2014 at 11:37 AM, Lee Jones <lee.jones@linaro.org> wrote:
+>> >> > On Sat, 30 Aug 2014, Octavian Purdila wrote:
+>> >> >
+>> >> >> This patch implements the USB part of the Diolan USB-I2C/SPI/GPIO
+>> >> >> Master Adapter DLN-2. Details about the device can be found here:
+>> >> >>
+>> >> >> https://www.diolan.com/i2c/i2c_interface.html.
+>> >> >>
+>> >> >> Information about the USB protocol can be found in the Programmer's
+>> >> >> Reference Manual [1], see section 1.7.
+>> >> >>
+>> >> >> Because the hardware has a single transmit endpoint and a single
+>> >> >> receive endpoint the communication between the various DLN2 drivers
+>> >> >> and the hardware will be muxed/demuxed by this driver.
+>> >> >>
+>> >> >> Each DLN2 module will be identified by the handle field within the DLN2
+>> >> >> message header. If a DLN2 module issues multiple commands in parallel
+>> >> >> they will be identified by the echo counter field in the message header.
+>> >> >>
+>> >> >> The DLN2 modules can use the dln2_transfer() function to issue a
+>> >> >> command and wait for its response. They can also register a callback
+>> >> >> that is going to be called when a specific event id is generated by
+>> >> >> the device (e.g. GPIO interrupts). The device uses handle 0 for
+>> >> >> sending events.
+>> >> >>
+>> >> >> [1] https://www.diolan.com/downloads/dln-api-manual.pdf
+>> >> >
+>> >> > MFD is not a dumping ground for misfit h/w.  Almost all of this code
+>> >> > looks like it belongs in drivers/usb.  Please move it there.
+>> >> >
+>> >>
+>> >> We initially submitted this driver as a pure USB driver, with our own
+>> >> module registration mechanism, but during the first round of reviews
+>> >> people pointed out that a MFD driver is the better approach, and I
+>> >> agree. I also see that there are already a couple of USB drivers
+>> >> implemented as MFD drivers.
+>> >
+>> > Can you link me to your previous submission please?
 >>
->> or up won't be defined below. You probably need 
-> 
-> Obviously I meant to say that 'up' won't be defined here.
+>> Sure, here it is:
+>>
+>> https://lkml.org/lkml/2014/8/20/228
+>>
+>> >
+>> >> Do you see a better approach?
+>> >
+>> > You should have a small MFD driver which controls resources and
+>> > registers children.  All other functionality should live in their
+>> > respective drivers/X locations i.e. USB functionallity should normally
+>> > live in drivers/usb.
+>> >
+>>
+>> OK, that sounds better. I am not sure how to handle the registration
+>> part though, since in this case we need to create the children at
+>> runtime, from the usb probe routine.
+>>
+>> The only solution I see is to move the driver completely to
+>> usb/drivers and continue to use the MFD infrastructure. Does that
+>> sound OK to you?
+>
+> I have no problem with that.  If this is an MFD driver, it _should_
+> live in drivers/mfd.  However, all of that USB specific stuff
+> defiantly should not.
+>
 
-Good catch, thanks. However I wouldn't bet my money it that won't be
-defined here. The semaphore code provides up() and down() so it is
-makes it kind of defined :) But it doesn't compile due to wrong pointer
-types which is good (I run into this myself and looked confused at
-first).
-I didn't notice this at all because only kgdb uses this
-CONFIG_CONSOLE_POLL which I had off. Once again, thank you.
+It is a multi-function driver which is using the USB interface, so I
+am not sure where it belongs. The only driver that calls
+mfd_add_devices and is not in drivers/mfd is the hid sensor hub
+driver.
 
->> +	struct uart_8250_port *up = up_to_u8250p(port);
->> somewhere in there.
-
-Sebastian
+BTW, the mfd/viperboard.c driver is very similar with this driver. It
+has less USB specific stuff because the protocol is simpler, but still
+has some.
