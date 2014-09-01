@@ -1,166 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754436AbaIAPjl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 11:39:41 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57749 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754210AbaIAPjj (ORCPT
+	id S1754066AbaIAPn4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 11:43:56 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:47103 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753673AbaIAPny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 11:39:39 -0400
-Date: Mon, 1 Sep 2014 17:39:35 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Kautuk Consul <consul.kautuk@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
-        Ionut Alexa <ionut.m.alexa@gmail.com>,
-        Guillaume Morin <guillaume@morinfr.org>, linux-kernel@vger.kernel.org,
-        Kirill Tkhai <tkhai@yandex.ru>
-Subject: Re: [PATCH 1/1] do_exit(): Solve possibility of BUG() due to race
- with try_to_wake_up()
-Message-ID: <20140901153935.GQ27892@worktop.ger.corp.intel.com>
-References: <1408964064-21447-1-git-send-email-consul.kautuk@gmail.com>
- <20140825155738.GA5944@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140825155738.GA5944@redhat.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	Mon, 1 Sep 2014 11:43:54 -0400
+From: navin patidar <navin.patidar@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
+Subject: [PATCH 1/8] staging: rtl8188eu: Rework function HalPwrSeqCmdParsing()
+Date: Mon,  1 Sep 2014 21:13:36 +0530
+Message-Id: <1409586223-5915-1-git-send-email-navin.patidar@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 05:57:38PM +0200, Oleg Nesterov wrote:
-> Peter, do you remember another problem with TASK_DEAD we discussed recently?
-> (prev_state == TASK_DEAD detection in finish_task_switch() still looks racy).
+Rename CamelCase variables and function name.
 
-Uhm, right. That was somewhere on the todo list :-)
+Signed-off-by: navin patidar <navin.patidar@gmail.com>
+---
+ drivers/staging/rtl8188eu/hal/HalPwrSeqCmd.c     |   64 +++++++++-------------
+ drivers/staging/rtl8188eu/hal/usb_halinit.c      |   12 +++-
+ drivers/staging/rtl8188eu/include/HalPwrSeqCmd.h |    4 +-
+ 3 files changed, 38 insertions(+), 42 deletions(-)
 
-> I am starting to think that perhaps we need something like below, what do
-> you all think?
+diff --git a/drivers/staging/rtl8188eu/hal/HalPwrSeqCmd.c b/drivers/staging/rtl8188eu/hal/HalPwrSeqCmd.c
+index caca535..2565d6e 100644
+--- a/drivers/staging/rtl8188eu/hal/HalPwrSeqCmd.c
++++ b/drivers/staging/rtl8188eu/hal/HalPwrSeqCmd.c
+@@ -15,36 +15,16 @@
+  * this program; if not, write to the Free Software Foundation, Inc.,
+  * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
+  *
+- *
+  ******************************************************************************/
+-/*++
+-Copyright (c) Realtek Semiconductor Corp. All rights reserved.
+-
+-Module Name:
+-	HalPwrSeqCmd.c
+-
+-Abstract:
+-	Implement HW Power sequence configuration CMD handling routine for Realtek devices.
+-
+-Major Change History:
+-	When       Who               What
+-	---------- ---------------   -------------------------------
+-	2011-10-26 Lucas            Modify to be compatible with SD4-CE driver.
+-	2011-07-07 Roger            Create.
+-
+---*/
+ 
+ #include <HalPwrSeqCmd.h>
+ #include <usb_ops_linux.h>
+ 
+-/*	Description: */
+-/*		This routine deals with the Power Configuration CMDs parsing
+- *		for RTL8723/RTL8188E Series IC.
+- *	Assumption:
+- *		We should follow specific format which was released from HW SD.
++/* This routine deals with the Power Configuration CMDs parsing
++ * for RTL8723/RTL8188E Series IC.
+  */
+-u8 HalPwrSeqCmdParsing(struct adapter *padapter, u8 cut_vers, u8 fab_vers,
+-		       u8 ifacetype, struct wl_pwr_cfg pwrseqcmd[])
++u8 rtl88eu_pwrseqcmdparsing(struct adapter *padapter, u8 cut_vers, u8 fab_vers,
++			    u8 ifacetype, struct wl_pwr_cfg pwrseqcmd[])
+ {
+ 	struct wl_pwr_cfg pwrcfgcmd = {0};
+ 	u8 poll_bit = false;
+@@ -58,7 +38,9 @@ u8 HalPwrSeqCmdParsing(struct adapter *padapter, u8 cut_vers, u8 fab_vers,
+ 		pwrcfgcmd = pwrseqcmd[aryidx];
+ 
+ 		RT_TRACE(_module_hal_init_c_ , _drv_info_,
+-			 ("HalPwrSeqCmdParsing: offset(%#x) cut_msk(%#x) fab_msk(%#x) interface_msk(%#x) base(%#x) cmd(%#x) msk(%#x) value(%#x)\n",
++			 ("rtl88eu_pwrseqcmdparsing: offset(%#x) cut_msk(%#x)"
++			  "fab_msk(%#x) interface_msk(%#x) base(%#x) cmd(%#x)"
++			  "msk(%#x) value(%#x)\n",
+ 			 GET_PWR_CFG_OFFSET(pwrcfgcmd),
+ 			 GET_PWR_CFG_CUT_MASK(pwrcfgcmd),
+ 			 GET_PWR_CFG_FAB_MASK(pwrcfgcmd),
+@@ -68,37 +50,42 @@ u8 HalPwrSeqCmdParsing(struct adapter *padapter, u8 cut_vers, u8 fab_vers,
+ 			 GET_PWR_CFG_MASK(pwrcfgcmd),
+ 			 GET_PWR_CFG_VALUE(pwrcfgcmd)));
+ 
+-		/* 2 Only Handle the command whose FAB, CUT, and Interface are matched */
++		/* Only Handle the command whose FAB, CUT, and Interface are matched */
+ 		if ((GET_PWR_CFG_FAB_MASK(pwrcfgcmd) & fab_vers) &&
+ 		    (GET_PWR_CFG_CUT_MASK(pwrcfgcmd) & cut_vers) &&
+ 		    (GET_PWR_CFG_INTF_MASK(pwrcfgcmd) & ifacetype)) {
+ 			switch (GET_PWR_CFG_CMD(pwrcfgcmd)) {
+ 			case PWR_CMD_READ:
+-				RT_TRACE(_module_hal_init_c_ , _drv_info_, ("HalPwrSeqCmdParsing: PWR_CMD_READ\n"));
++				RT_TRACE(_module_hal_init_c_, _drv_info_,
++					 ("rtl88eu_pwrseqcmdparsing: PWR_CMD_READ\n"));
+ 				break;
+ 			case PWR_CMD_WRITE:
+-				RT_TRACE(_module_hal_init_c_ , _drv_info_, ("HalPwrSeqCmdParsing: PWR_CMD_WRITE\n"));
++				RT_TRACE(_module_hal_init_c_, _drv_info_,
++					 ("rtl88eu_pwrseqcmdparsing: PWR_CMD_WRITE\n"));
+ 				offset = GET_PWR_CFG_OFFSET(pwrcfgcmd);
+ 
+ 				/*  Read the value from system register */
+ 				value = usb_read8(padapter, offset);
+ 
+ 				value &= ~(GET_PWR_CFG_MASK(pwrcfgcmd));
+-				value |= (GET_PWR_CFG_VALUE(pwrcfgcmd) & GET_PWR_CFG_MASK(pwrcfgcmd));
++				value |= (GET_PWR_CFG_VALUE(pwrcfgcmd) &
++					  GET_PWR_CFG_MASK(pwrcfgcmd));
+ 
+ 				/*  Write the value back to system register */
+ 				usb_write8(padapter, offset, value);
+ 				break;
+ 			case PWR_CMD_POLLING:
+-				RT_TRACE(_module_hal_init_c_ , _drv_info_, ("HalPwrSeqCmdParsing: PWR_CMD_POLLING\n"));
++				RT_TRACE(_module_hal_init_c_, _drv_info_,
++					 ("rtl88eu_pwrseqcmdparsing: PWR_CMD_POLLING\n"));
+ 
+ 				poll_bit = false;
+ 				offset = GET_PWR_CFG_OFFSET(pwrcfgcmd);
+ 				do {
+-						value = usb_read8(padapter, offset);
+-
++					value = usb_read8(padapter, offset);
+ 					value &= GET_PWR_CFG_MASK(pwrcfgcmd);
+-					if (value == (GET_PWR_CFG_VALUE(pwrcfgcmd) & GET_PWR_CFG_MASK(pwrcfgcmd)))
++
++					if (value == (GET_PWR_CFG_VALUE(pwrcfgcmd) &
++						      GET_PWR_CFG_MASK(pwrcfgcmd)))
+ 						poll_bit = true;
+ 					else
+ 						udelay(10);
+@@ -110,19 +97,22 @@ u8 HalPwrSeqCmdParsing(struct adapter *padapter, u8 cut_vers, u8 fab_vers,
+ 				} while (!poll_bit);
+ 				break;
+ 			case PWR_CMD_DELAY:
+-				RT_TRACE(_module_hal_init_c_ , _drv_info_, ("HalPwrSeqCmdParsing: PWR_CMD_DELAY\n"));
++				RT_TRACE(_module_hal_init_c_, _drv_info_,
++					 ("rtl88eu_pwrseqcmdparsing: PWR_CMD_DELAY\n"));
+ 				if (GET_PWR_CFG_VALUE(pwrcfgcmd) == PWRSEQ_DELAY_US)
+ 					udelay(GET_PWR_CFG_OFFSET(pwrcfgcmd));
+ 				else
+ 					udelay(GET_PWR_CFG_OFFSET(pwrcfgcmd)*1000);
+ 				break;
+ 			case PWR_CMD_END:
+-				/*  When this command is parsed, end the process */
+-				RT_TRACE(_module_hal_init_c_ , _drv_info_, ("HalPwrSeqCmdParsing: PWR_CMD_END\n"));
++				/* When this command is parsed, end the process */
++				RT_TRACE(_module_hal_init_c_, _drv_info_,
++					 ("rtl88eu_pwrseqcmdparsing: PWR_CMD_END\n"));
+ 				return true;
+ 				break;
+ 			default:
+-				RT_TRACE(_module_hal_init_c_ , _drv_err_, ("HalPwrSeqCmdParsing: Unknown CMD!!\n"));
++				RT_TRACE(_module_hal_init_c_, _drv_err_,
++					 ("rtl88eu_pwrseqcmdparsing: Unknown CMD!!\n"));
+ 				break;
+ 			}
+ 		}
+diff --git a/drivers/staging/rtl8188eu/hal/usb_halinit.c b/drivers/staging/rtl8188eu/hal/usb_halinit.c
+index f56cbdf..15a818a 100644
+--- a/drivers/staging/rtl8188eu/hal/usb_halinit.c
++++ b/drivers/staging/rtl8188eu/hal/usb_halinit.c
+@@ -107,7 +107,9 @@ static u32 rtl8188eu_InitPowerOn(struct adapter *adapt)
+ 	if (haldata->bMacPwrCtrlOn)
+ 		return _SUCCESS;
+ 
+-	if (!HalPwrSeqCmdParsing(adapt, PWR_CUT_ALL_MSK, PWR_FAB_ALL_MSK, PWR_INTF_USB_MSK, Rtl8188E_NIC_PWR_ON_FLOW)) {
++	if (!rtl88eu_pwrseqcmdparsing(adapt, PWR_CUT_ALL_MSK,
++				      PWR_FAB_ALL_MSK, PWR_INTF_USB_MSK,
++				      Rtl8188E_NIC_PWR_ON_FLOW)) {
+ 		DBG_88E(KERN_ERR "%s: run power on flow fail\n", __func__);
+ 		return _FAIL;
+ 	}
+@@ -925,7 +927,9 @@ static void CardDisableRTL8188EU(struct adapter *Adapter)
+ 	usb_write8(Adapter, REG_CR, 0x0);
+ 
+ 	/*  Run LPS WL RFOFF flow */
+-	HalPwrSeqCmdParsing(Adapter, PWR_CUT_ALL_MSK, PWR_FAB_ALL_MSK, PWR_INTF_USB_MSK, Rtl8188E_NIC_LPS_ENTER_FLOW);
++	rtl88eu_pwrseqcmdparsing(Adapter, PWR_CUT_ALL_MSK,
++				 PWR_FAB_ALL_MSK, PWR_INTF_USB_MSK,
++				 Rtl8188E_NIC_LPS_ENTER_FLOW);
+ 
+ 	/*  2. 0x1F[7:0] = 0		turn off RF */
+ 
+@@ -946,7 +950,9 @@ static void CardDisableRTL8188EU(struct adapter *Adapter)
+ 	usb_write8(Adapter, REG_32K_CTRL, val8&(~BIT0));
+ 
+ 	/*  Card disable power action flow */
+-	HalPwrSeqCmdParsing(Adapter, PWR_CUT_ALL_MSK, PWR_FAB_ALL_MSK, PWR_INTF_USB_MSK, Rtl8188E_NIC_DISABLE_FLOW);
++	rtl88eu_pwrseqcmdparsing(Adapter, PWR_CUT_ALL_MSK,
++				 PWR_FAB_ALL_MSK, PWR_INTF_USB_MSK,
++				 Rtl8188E_NIC_DISABLE_FLOW);
+ 
+ 	/*  Reset MCU IO Wrapper */
+ 	val8 = usb_read8(Adapter, REG_RSV_CTRL+1);
+diff --git a/drivers/staging/rtl8188eu/include/HalPwrSeqCmd.h b/drivers/staging/rtl8188eu/include/HalPwrSeqCmd.h
+index d945784..fc24ce4 100644
+--- a/drivers/staging/rtl8188eu/include/HalPwrSeqCmd.h
++++ b/drivers/staging/rtl8188eu/include/HalPwrSeqCmd.h
+@@ -122,7 +122,7 @@ struct wl_pwr_cfg {
+ 
+ 
+ /*	Prototype of protected function. */
+-u8 HalPwrSeqCmdParsing(struct adapter *padapter, u8 CutVersion, u8 FabVersion,
+-		       u8 InterfaceType, struct wl_pwr_cfg PwrCfgCmd[]);
++u8 rtl88eu_pwrseqcmdparsing(struct adapter *padapter, u8 cut_vers, u8 fab_vers,
++			    u8 ifacetype, struct wl_pwr_cfg pwrcfgCmd[]);
+ 
+ #endif
+-- 
+1.7.10.4
 
-I'm thinking you lost the hunk that adds rq::dead :-), more comments
-below.
-
-> --- x/kernel/sched/core.c
-> +++ x/kernel/sched/core.c
-> @@ -2205,9 +2205,10 @@ static void finish_task_switch(struct rq
->  	__releases(rq->lock)
->  {
->  	struct mm_struct *mm = rq->prev_mm;
-> -	long prev_state;
-> +	struct task_struct *dead = rq->dead;
->  
->  	rq->prev_mm = NULL;
-> +	rq->dead = NULL;
->  
->  	/*
->  	 * A task struct has one reference for the use as "current".
-> @@ -2220,7 +2221,6 @@ static void finish_task_switch(struct rq
->  	 * be dropped twice.
->  	 *		Manfred Spraul <manfred@colorfullife.com>
->  	 */
-
-Clearly that comment needs to go as well..
-
-> -	prev_state = prev->state;
->  	vtime_task_switch(prev);
->  	finish_arch_switch(prev);
->  	perf_event_task_sched_in(prev, current);
-> @@ -2230,16 +2230,16 @@ static void finish_task_switch(struct rq
->  	fire_sched_in_preempt_notifiers(current);
->  	if (mm)
->  		mmdrop(mm);
-> -	if (unlikely(prev_state == TASK_DEAD)) {
-> -		if (prev->sched_class->task_dead)
-> -			prev->sched_class->task_dead(prev);
-> +	if (unlikely(dead)) {
-
-	BUG_ON(dead != prev); ?
-
-> +		if (dead->sched_class->task_dead)
-> +			dead->sched_class->task_dead(dead);
->  
->  		/*
->  		 * Remove function-return probe instances associated with this
->  		 * task and put them back on the free list.
->  		 */
-> -		kprobe_flush_task(prev);
-> -		put_task_struct(prev);
-> +		kprobe_flush_task(dead);
-> +		put_task_struct(dead);
->  	}
->  
->  	tick_nohz_task_switch(current);
-> @@ -2770,11 +2770,15 @@ need_resched:
->  	smp_mb__before_spinlock();
->  	raw_spin_lock_irq(&rq->lock);
->  
-> +	if (unlikely(rq->dead))
-> +		goto deactivate;
-> +
-
-Yeah, it would be best to not have to do that; ideally we would be able
-to maybe do both; set rq->dead and current->state == TASK_DEAD.
-
-Hmm, your exit_schedule() already does this, so why this extra test?
-
->  	switch_count = &prev->nivcsw;
->  	if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) {
->  		if (unlikely(signal_pending_state(prev->state, prev))) {
->  			prev->state = TASK_RUNNING;
->  		} else {
-> +deactivate:
->  			deactivate_task(rq, prev, DEQUEUE_SLEEP);
->  			prev->on_rq = 0;
->  
-> @@ -2826,6 +2830,15 @@ need_resched:
->  		goto need_resched;
->  }
->  
-> +// called under preempt_disable();
-> +void exit_schedule()
-> +{
-> +	// TODO: kill TASK_DEAD, this is only for proc
-> +	current->state = TASK_DEAD;
-
-Ah, not so, its also to avoid that extra condition in schedule() :-)
-
-> +	task_rq(current)->dead = current;
-> +	__schedule();
-> +}
-> +
->  static inline void sched_submit_work(struct task_struct *tsk)
->  {
->  	if (!tsk->state || tsk_is_pi_blocked(tsk))
-> --- x/kernel/exit.c
-> +++ x/kernel/exit.c
-> @@ -815,25 +815,8 @@ void do_exit(long code)
->  		__this_cpu_add(dirty_throttle_leaks, tsk->nr_dirtied);
->  	exit_rcu();
->  
-> -	/*
-> -	 * The setting of TASK_RUNNING by try_to_wake_up() may be delayed
-> -	 * when the following two conditions become true.
-> -	 *   - There is race condition of mmap_sem (It is acquired by
-> -	 *     exit_mm()), and
-> -	 *   - SMI occurs before setting TASK_RUNINNG.
-> -	 *     (or hypervisor of virtual machine switches to other guest)
-> -	 *  As a result, we may become TASK_RUNNING after becoming TASK_DEAD
-> -	 *
-> -	 * To avoid it, we have to wait for releasing tsk->pi_lock which
-> -	 * is held by try_to_wake_up()
-> -	 */
-> -	smp_mb();
-> -	raw_spin_unlock_wait(&tsk->pi_lock);
-> -
-> -	/* causes final put_task_struct in finish_task_switch(). */
-> -	tsk->state = TASK_DEAD;
->  	tsk->flags |= PF_NOFREEZE;	/* tell freezer to ignore us */
-> -	schedule();
-> +	exit_schedule();
->  	BUG();
->  	/* Avoid "noreturn function does return".  */
->  	for (;;)
-
-Yes, something like this might work fine..
