@@ -1,58 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752649AbaIAGgL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 02:36:11 -0400
-Received: from smtp1-g21.free.fr ([212.27.42.1]:22087 "EHLO smtp1-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752163AbaIAGgJ convert rfc822-to-8bit (ORCPT
+	id S1752506AbaIAGiO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 02:38:14 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:58287 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751987AbaIAGiM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 02:36:09 -0400
-Date: Mon, 1 Sep 2014 08:37:28 +0200
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: <broonie@kernel.org>, <lgirdwood@gmail.com>, <perex@perex.cz>,
-        <tiwai@suse.de>, <kuninori.morimoto.gx@renesas.com>, <jsarha@ti.com>,
-        <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2 1/2] ASoC: simple-card: Fix bug of forgetting
- decrement DT node's refcount
-Message-ID: <20140901083728.01454558@armhf>
-In-Reply-To: <1409535327-11449-2-git-send-email-Li.Xiubo@freescale.com>
-References: <1409535327-11449-1-git-send-email-Li.Xiubo@freescale.com>
-	<1409535327-11449-2-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; arm-unknown-linux-gnueabihf)
+	Mon, 1 Sep 2014 02:38:12 -0400
+X-AuditID: 85900ec0-d312bb9000001514-af-54041450182a
+Message-ID: <5404144F.2070509@hitachi.com>
+Date: Mon, 01 Sep 2014 15:38:07 +0900
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120604 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Hannes Reinecke <hare@suse.de>
+Cc: linux-scsi@vger.kernel.org,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        yrl.pp-manager.tt@hitachi.com, linux-kernel@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Doug Gilbert <dgilbert@interlog.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christoph Hellwig <hch@lst.de>
+Subject: Re: [RFC PATCH 10/10] scsi/trace: Use scsi_print_command trace point
+ instead of printk
+References: <20140808115004.6768.97014.stgit@yuno-kbuild.novalocal> <20140808115030.6768.91195.stgit@yuno-kbuild.novalocal> <53FDE859.1020800@suse.de> <53FE8890.80403@hitachi.com> <53FEC9E7.6000909@hitachi.com> <53FF1D44.3080702@suse.de>
+In-Reply-To: <53FF1D44.3080702@suse.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Sep 2014 09:35:26 +0800
-Xiubo Li <Li.Xiubo@freescale.com> wrote:
+Hi Hannes,
 
-> We shouldn't forget decrement the last DT node when the
-> for_each_child_of_node() has finished searching.
-> 
-> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-> ---
->  sound/soc/generic/simple-card.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/sound/soc/generic/simple-card.c b/sound/soc/generic/simple-card.c
-> index fd8b045..9e170fe 100644
-> --- a/sound/soc/generic/simple-card.c
-> +++ b/sound/soc/generic/simple-card.c
-> @@ -360,6 +360,7 @@ static int asoc_simple_card_parse_of(struct device_node *node,
->  			}
->  			i++;
->  		}
-> +		of_node_put(np);
->  	} else {
->  		ret = asoc_simple_card_dai_link_of(node, dev,
->  						   dai_link, dai_props, true);
+Sorry for the late reply.
 
-No. np is NULL at end of loop.
+(2014/08/28 21:15), Hannes Reinecke wrote:
+> On 08/28/2014 08:19 AM, Yoshihiro YUNOMAE wrote:
+>> Hi Hannes,
+>>
+>> I tried to remove duplicated decoder of SCSI command, but the
+>> output format of it in constants.c is different from it in traceevents.
+>> I have two questions for it.
+>>
+>> (Ex1)
+>> traceevents: TEST_UNIT_READY
+>> constants: Test Unit Ready
+>>
+>> => Which of "XXX_YYY_ZZZ" and "Xxx Yyy Zzz" should the kernel output
+>> strings? This difference comes from difference of implementation.
+>> The decoder in traceevents are using macro. So, it cannot define
+>> separated words. On the other hand, the decoder in constants are using
+>> constant string array table. So, it can define separated words.
+>>
+> I would go with the wording in constants.c, but set in double quotes
+> like "Test Unit Ready" to avoid parsing errors later on.
+
+OK, we use constants' format and add double quotes for each sense code.
+
+>> (Ex2)
+>> traceevents: (nothing)
+>> constants: Set limits(12)
+>>
+>> => Should we merge those decoder?
+>>
+> Yes, I would prefer this. Again, we should be setting the strings in
+> double quotes irrespective if there are spaces in the resulting string
+> or not.
+
+Sure.
+
+>> I understand we use the decoder of constants, but we need to solve
+>> these problems. Would you give me your comments?
+>>
+> As mentioned previously, my aim is to convert the logging system in
+> several steps:
+>
+> a) convert all lone 'printk' statements into dev_printk() variants
+>     and ensure everything is printed in one statement to avoid
+>     linebreaks in the resulting logging message.
+>     This will eliminate the immediate problem we're having, namely
+>     that debugging is near to impossible under high load.
+>     The patchset is nearing completion, and I will be posting it
+>     later this week.
+> b) Convert scsi_trace to use the functions from constants.c to
+>     avoid code duplication and update scsi_trace to log sense codes.
+> c) Remove all logging functions in the hot path (ie
+>     SCSI_LOG_MLQUEUE and SCSI_LOG_MLCOMPLETE) and replace them
+>     with trace events.
+>
+> b) is what you're working on, right?
+
+Right.
+
+> For 'c)' the problem is that we should retain the existing functionality
+> with scsi_logging_level here, at least initially.
+> So we cannot just replace it, as this would leave SCSI_LOG_ML
+> a dummy without any real functionality.
+
+I tried to change printk messages to new tracevents, but I'll stop it
+until we solve the problem.
+I'll submit the patch set removing duplicated decoder first.
+
+Thanks,
+Yoshihiro YUNOMAE
 
 -- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+Yoshihiro YUNOMAE
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: yoshihiro.yunomae.ez@hitachi.com
+
+
