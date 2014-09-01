@@ -1,160 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753573AbaIALFg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 07:05:36 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:39050 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753491AbaIALEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 07:04:35 -0400
-From: Ian Abbott <abbotti@mev.co.uk>
-To: driverdev-devel@linuxdriverproject.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 28/28] staging: comedi: amplc_pci230: simplify interrupt enable handling
-Date: Mon,  1 Sep 2014 12:04:00 +0100
-Message-Id: <1409569440-10979-29-git-send-email-abbotti@mev.co.uk>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1409569440-10979-1-git-send-email-abbotti@mev.co.uk>
-References: <1409569440-10979-1-git-send-email-abbotti@mev.co.uk>
+	id S1753559AbaIALFe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 07:05:34 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:62767 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752722AbaIALF3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 07:05:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <CADGdYn7NzwJKuO1DG2OJdWwd_keZbUJXY=+XeHhf1e+xcSvoVw@mail.gmail.com>
+References: <1406826667-2289-1-git-send-email-b.zolnierkie@samsung.com>
+	<20140828144921.GB18194@developer>
+	<CADGdYn7NzwJKuO1DG2OJdWwd_keZbUJXY=+XeHhf1e+xcSvoVw@mail.gmail.com>
+Date: Mon, 1 Sep 2014 07:05:27 -0400
+Message-ID: <CAC-25o9ajcpusqUzxTXpVKgi6YBy3_9wZNihtm-9hKXn5OFgNw@mail.gmail.com>
+Subject: Re: [PATCH v3 0/8] thermal: exynos: various cleanups
+From: "edubezval@gmail.com" <edubezval@gmail.com>
+To: amit daniel kachhap <amit.daniel@samsung.com>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        Zhang Rui <rui.zhang@intel.com>, Tomasz Figa <t.figa@samsung.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-`struct pci230_private` has two members to manage the enabled interrupt
-sources.  `int_en` is the interrupt sources we want to be enabled and
-`ier` is a shadow of the write-only interrupt enable register.  They
-have the same value most of the time.  They differ in the interrupt
-handler (`pci230_interrupt()`) itself when it temporarily clears bits in
-the interrupt enable register and the `ier` member in order to unlatch
-them in hardware, but leaves the `int_en` member alone.  They also
-differ in `pci230_ai_stop()` and `pci230_ao_stop()` which clear bits in
-the `int_en` member and wait for the interrupt handler to finish before
-copying the value to the `ier` member and the interrupt enable register.
+Amit
 
-Simplify the handling a bit, by making the `ier` member take on the role
-of the `int_en` member, and allowing the value to differ from the
-interrupt enable register while the interrupt handler is running.
+On Mon, Sep 1, 2014 at 6:53 AM, amit daniel kachhap
+<amit.daniel@samsung.com> wrote:
+> On Thu, Aug 28, 2014 at 8:19 PM, Eduardo Valentin <edubezval@gmail.com> wrote:
+>> Amit,
+>>
+>> On Thu, Jul 31, 2014 at 07:10:58PM +0200, Bartlomiej Zolnierkiewicz wrote:
+>>> Hi,
+>>>
+>>> This patch series contains various cleanups for EXYNOS thermal
+>>> driver.  Overall it decreases driver's LOC by 9%.  It is based
+>>> on next-20140731 kernel.  It should not cause any functionality
+>>> changes.
+>>>
+>>
+>> Did you have the time to test this series?
+>
+> Hi Eduardo/Bartlomiej,
+>
+> For the whole series tested on exynos5250 based arndale board.
+> Tested-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+>
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
----
- drivers/staging/comedi/drivers/amplc_pci230.c | 32 +++++++++------------------
- 1 file changed, 10 insertions(+), 22 deletions(-)
+Thanks! I will pull the series on my tree.
 
-diff --git a/drivers/staging/comedi/drivers/amplc_pci230.c b/drivers/staging/comedi/drivers/amplc_pci230.c
-index 7748e17..66e7a47 100644
---- a/drivers/staging/comedi/drivers/amplc_pci230.c
-+++ b/drivers/staging/comedi/drivers/amplc_pci230.c
-@@ -499,8 +499,7 @@ struct pci230_private {
- 	unsigned short daccon;		/* DACCON register value */
- 	unsigned short adcfifothresh;	/* ADC FIFO threshold (PCI230+/260+) */
- 	unsigned short adcg;		/* ADCG register value */
--	unsigned char int_en;		/* Interrupt enable bits */
--	unsigned char ier;		/* Copy of interrupt enable register */
-+	unsigned char ier;		/* Interrupt enable bits */
- 	unsigned char res_owned[NUM_OWNERS]; /* Owned resources */
- 	bool intr_running:1;		/* Flag set in interrupt routine */
- 	bool ai_bipolar:1;		/* Flag AI range is bipolar */
-@@ -1049,15 +1048,12 @@ static void pci230_ao_stop(struct comedi_device *dev,
- 	 * unless we are called from the interrupt routine.
- 	 */
- 	spin_lock_irqsave(&devpriv->isr_spinlock, irqflags);
--	devpriv->int_en &= ~intsrc;
-+	devpriv->ier &= ~intsrc;
- 	while (devpriv->intr_running && devpriv->intr_cpuid != THISCPU) {
- 		spin_unlock_irqrestore(&devpriv->isr_spinlock, irqflags);
- 		spin_lock_irqsave(&devpriv->isr_spinlock, irqflags);
- 	}
--	if (devpriv->ier != devpriv->int_en) {
--		devpriv->ier = devpriv->int_en;
--		outb(devpriv->ier, dev->iobase + PCI230_INT_SCE);
--	}
-+	outb(devpriv->ier, dev->iobase + PCI230_INT_SCE);
- 	spin_unlock_irqrestore(&devpriv->isr_spinlock, irqflags);
- 	if (devpriv->hwver >= 2) {
- 		/*
-@@ -1311,7 +1307,6 @@ static void pci230_ao_start(struct comedi_device *dev,
- 			/* Not using DAC FIFO. */
- 			/* Enable CT1 timer interrupt. */
- 			spin_lock_irqsave(&devpriv->isr_spinlock, irqflags);
--			devpriv->int_en |= PCI230_INT_ZCLK_CT1;
- 			devpriv->ier |= PCI230_INT_ZCLK_CT1;
- 			outb(devpriv->ier, dev->iobase + PCI230_INT_SCE);
- 			spin_unlock_irqrestore(&devpriv->isr_spinlock,
-@@ -1327,7 +1322,6 @@ static void pci230_ao_start(struct comedi_device *dev,
- 	if (devpriv->hwver >= 2) {
- 		/* Using DAC FIFO.  Enable DAC FIFO interrupt. */
- 		spin_lock_irqsave(&devpriv->isr_spinlock, irqflags);
--		devpriv->int_en |= PCI230P2_INT_DAC;
- 		devpriv->ier |= PCI230P2_INT_DAC;
- 		outb(devpriv->ier, dev->iobase + PCI230_INT_SCE);
- 		spin_unlock_irqrestore(&devpriv->isr_spinlock, irqflags);
-@@ -1892,15 +1886,12 @@ static void pci230_ai_stop(struct comedi_device *dev,
- 	 * Disable ADC interrupt and wait for interrupt routine to finish
- 	 * running unless we are called from the interrupt routine.
- 	 */
--	devpriv->int_en &= ~PCI230_INT_ADC;
-+	devpriv->ier &= ~PCI230_INT_ADC;
- 	while (devpriv->intr_running && devpriv->intr_cpuid != THISCPU) {
- 		spin_unlock_irqrestore(&devpriv->isr_spinlock, irqflags);
- 		spin_lock_irqsave(&devpriv->isr_spinlock, irqflags);
- 	}
--	if (devpriv->ier != devpriv->int_en) {
--		devpriv->ier = devpriv->int_en;
--		outb(devpriv->ier, dev->iobase + PCI230_INT_SCE);
--	}
-+	outb(devpriv->ier, dev->iobase + PCI230_INT_SCE);
- 	spin_unlock_irqrestore(&devpriv->isr_spinlock, irqflags);
- 	/*
- 	 * Reset FIFO, disable FIFO and set start conversion source to none.
-@@ -1935,7 +1926,6 @@ static void pci230_ai_start(struct comedi_device *dev,
- 
- 	/* Enable ADC FIFO trigger level interrupt. */
- 	spin_lock_irqsave(&devpriv->isr_spinlock, irqflags);
--	devpriv->int_en |= PCI230_INT_ADC;
- 	devpriv->ier |= PCI230_INT_ADC;
- 	outb(devpriv->ier, dev->iobase + PCI230_INT_SCE);
- 	spin_unlock_irqrestore(&devpriv->isr_spinlock, irqflags);
-@@ -2379,7 +2369,7 @@ static int pci230_ai_cancel(struct comedi_device *dev,
- /* Interrupt handler */
- static irqreturn_t pci230_interrupt(int irq, void *d)
- {
--	unsigned char status_int, valid_status_int;
-+	unsigned char status_int, valid_status_int, temp_ier;
- 	struct comedi_device *dev = (struct comedi_device *)d;
- 	struct pci230_private *devpriv = dev->private;
- 	struct comedi_subdevice *s;
-@@ -2392,14 +2382,14 @@ static irqreturn_t pci230_interrupt(int irq, void *d)
- 		return IRQ_NONE;
- 
- 	spin_lock_irqsave(&devpriv->isr_spinlock, irqflags);
--	valid_status_int = devpriv->int_en & status_int;
-+	valid_status_int = devpriv->ier & status_int;
- 	/*
- 	 * Disable triggered interrupts.
- 	 * (Only those interrupts that need re-enabling, are, later in the
- 	 * handler).
- 	 */
--	devpriv->ier = devpriv->int_en & ~status_int;
--	outb(devpriv->ier, dev->iobase + PCI230_INT_SCE);
-+	temp_ier = devpriv->ier & ~status_int;
-+	outb(temp_ier, dev->iobase + PCI230_INT_SCE);
- 	devpriv->intr_running = true;
- 	devpriv->intr_cpuid = THISCPU;
- 	spin_unlock_irqrestore(&devpriv->isr_spinlock, irqflags);
-@@ -2432,10 +2422,8 @@ static irqreturn_t pci230_interrupt(int irq, void *d)
- 
- 	/* Reenable interrupts. */
- 	spin_lock_irqsave(&devpriv->isr_spinlock, irqflags);
--	if (devpriv->ier != devpriv->int_en) {
--		devpriv->ier = devpriv->int_en;
-+	if (devpriv->ier != temp_ier)
- 		outb(devpriv->ier, dev->iobase + PCI230_INT_SCE);
--	}
- 	devpriv->intr_running = false;
- 	spin_unlock_irqrestore(&devpriv->isr_spinlock, irqflags);
- 
+
+> Sorry for the delay as I was busy in some internal work.
+>
+> Thanks,
+> Amit D
+>>
+>>> Changes since v2 (https://lkml.org/lkml/2014/6/17/436):
+>>> - synced patches against next-20140731
+>>> - dropped patch "thermal: exynos: remove dead code for
+>>>   TYPE_TWO_POINT_TRIMMING calibration" (newly added Exynos3250
+>>>   SoC support uses TYPE_TWO_POINT_TRIMMING calibration)
+>>> - updated patch description for patch #2
+>>> - dropped Reviewed-by from Amit from patch #8 (due to changed
+>>>   scope of the patch)
+>>>
+>>> Changes since v1 (https://lkml.org/lkml/2014/5/5/194):
+>>> - synced patches against next-20140617
+>>> - merged patch "thermal: exynos: remove unused defines" into
+>>>   "thermal: exynos: remove unused struct exynos_tmu_registers
+>>>   entries" one (per request from Eduardo)
+>>> - improved patch descriptions for patches #1-5
+>>> - fixed documentation for pdata->gain and pdata->reference_voltage
+>>> - added Reviewed-by from Amit to patches #6, #7 and #10
+>>> - added missing Acked-by from Kyungmin Park
+>>>
+>>> Best regards,
+>>> --
+>>> Bartlomiej Zolnierkiewicz
+>>> Samsung R&D Institute Poland
+>>> Samsung Electronics
+>>>
+>>>
+>>> Bartlomiej Zolnierkiewicz (8):
+>>>   thermal: exynos: remove unused struct exynos_tmu_registers entries
+>>>   thermal: exynos: remove dead code for HW_MODE calibration
+>>>   thermal: exynos: remove redundant pdata checks from
+>>>     exynos_tmu_initialize()
+>>>   thermal: exynos: remove redundant threshold_code checks from
+>>>     exynos_tmu_initialize()
+>>>   thermal: exynos: simplify temp_to_code() and code_to_temp()
+>>>   thermal: exynos: cache non_hw_trigger_levels in pdata
+>>>   thermal: exynos: remove redundant pdata checks from
+>>>     exynos_tmu_control()
+>>>   thermal: exynos: remove identical values from exynos*_tmu_registers
+>>>     structures
+>>>
+>>>  drivers/thermal/samsung/exynos_thermal_common.h |   1 -
+>>>  drivers/thermal/samsung/exynos_tmu.c            | 126 +++++-------------------
+>>>  drivers/thermal/samsung/exynos_tmu.h            |  74 +-------------
+>>>  drivers/thermal/samsung/exynos_tmu_data.c       |  56 ++---------
+>>>  drivers/thermal/samsung/exynos_tmu_data.h       |  31 +-----
+>>>  5 files changed, 35 insertions(+), 253 deletions(-)
+>>>
+>>> --
+>>> 1.8.2.3
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
 -- 
-2.0.4
-
+Eduardo Bezerra Valentin
