@@ -1,213 +1,398 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752295AbaIAU55 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 16:57:57 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:56954 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751426AbaIAU5z convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 16:57:55 -0400
+	id S1752606AbaIAVFj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 17:05:39 -0400
+Received: from smtp1-g21.free.fr ([212.27.42.1]:16188 "EHLO smtp1-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752331AbaIAVFh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 17:05:37 -0400
+Date: Mon, 1 Sep 2014 23:05:20 +0200
+From: Sabrina Dubroca <sd@queasysnail.net>
+To: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: Cong Wang <cwang@twopensource.com>, Tommi Rantala <tt.rantala@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org,
+        Dave Jones <davej@redhat.com>
+Subject: [PATCH] ipv6: fix rtnl locking in setsockopt for anycast and
+ multicast
+Message-ID: <20140901210520.GB25543@kria>
+References: <CA+ydwtoDwQVg_BWrxxdpUyJ7Up60GtxTCLYe_5vFdV2td_kGhQ@mail.gmail.com>
+ <CAHA+R7MZCDGRhSf=UuVCGQvNo03wVziZQB_X30rwNf6hmHipQA@mail.gmail.com>
+ <20140829195339.GA9780@kria>
+ <1409363489.2980.17.camel@localhost>
+ <20140830105821.GB18155@kria>
+ <1409599348.21965.6.camel@localhost>
 MIME-Version: 1.0
-In-Reply-To: <53F5310A.5080503@gmail.com>
-References: <53F5310A.5080503@gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 1 Sep 2014 13:57:33 -0700
-Message-ID: <CALCETrX2qwvzmeoVcLFLxEK=1Fv+f0Ri0TouzzvbN_rgDjka4A@mail.gmail.com>
-Subject: Re: For review: user_namespace(7) man page
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1409599348.21965.6.camel@localhost>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 4:36 PM, Michael Kerrisk (man-pages)
-<mtk.manpages@gmail.com> wrote:
-> Hello Eric et al.,
->
-> For various reasons, my work on the namespaces man pages
-> fell off the table a while back. Nevertheless, the pages have
-> been close to completion for a while now, and I recently restarted,
-> in an effort to finish them. As you also noted to me f2f, there have
-> been recently been some small namespace changes that you may affect
-> the content of the pages. Therefore, I'll take the opportunity to
-> send the namespace-related pages out for further (final?) review.
->
-> So, here, I start with the user_namespaces(7) page, which is shown
-> in rendered form below, with source attached to this mail. I'll
-> send various other pages in follow-on mails.
->
-> Review comments/suggestions for improvements / bug fixes welcome.
->
-> Cheers,
->
-> Michael
->
-> ==
->
-> NAME
->        user_namespaces - overview of Linux user_namespaces
->
-> DESCRIPTION
->        For an overview of namespaces, see namespaces(7).
->
->        User   namespaces   isolate   security-related   identifiers  and
->        attributes, in particular, user IDs and group  IDs  (see  creden‐
->        tials(7), the root directory, keys (see keyctl(2)), and capabili‐
+Calling setsockopt with IPV6_JOIN_ANYCAST or IPV6_LEAVE_ANYCAST
+triggers the assertion in addrconf_join_solict()/addrconf_leave_solict()
 
-Putting "root directory" here is odd -- that's really part of a
-different namespace.  But user namespaces sort of isolate the other
-namespaces from each other.
+ipv6_sock_ac_join(), ipv6_sock_ac_drop(), ipv6_sock_ac_close() need to
+take RTNL before calling ipv6_dev_ac_inc/dec. Same thing with
+ipv6_sock_mc_join(), ipv6_sock_mc_drop(), ipv6_sock_mc_close() before
+calling ipv6_dev_mc_inc/dec.
 
-Also, ugh, keys.  How did keyctl(2) ever make it through any kind of review?
+This patch moves ASSERT_RTNL() up a level in the call stack.
 
->        ties (see capabilities(7)).  A process's user and group  IDs  can
->        be different inside and outside a user namespace.  In particular,
->        a process can have a normal unprivileged user ID outside  a  user
->        namespace while at the same time having a user ID of 0 inside the
->        namespace; in other words, the process has  full  privileges  for
->        operations  inside  the  user  namespace, but is unprivileged for
->        operations outside the namespace.
->
->    Nested namespaces, namespace membership
->        User namespaces can be nested;  that  is,  each  user  namespace—
->        except  the  initial  ("root") namespace—has a parent user names‐
->        pace, and can have zero or more child user namespaces.  The  par‐
->        ent user namespace is the user namespace of the process that cre‐
->        ates the user namespace via a call to unshare(2) or clone(2) with
->        the CLONE_NEWUSER flag.
->
->        The kernel imposes (since version 3.11) a limit of 32 nested lev‐
->        els of user namespaces.  Calls to  unshare(2)  or  clone(2)  that
->        would cause this limit to be exceeded fail with the error EUSERS.
->
->        Each  process  is  a  member  of  exactly  one user namespace.  A
->        process created via fork(2) or clone(2) without the CLONE_NEWUSER
->        flag  is  a  member  of the same user namespace as its parent.  A
->        process can join another user namespace with setns(2) if  it  has
->        the  CAP_SYS_ADMIN  in  that namespace; upon doing so, it gains a
->        full set of capabilities in that namespace.
->
->        A call to clone(2) or  unshare(2)  with  the  CLONE_NEWUSER  flag
->        makes  the  new  child  process (for clone(2)) or the caller (for
->        unshare(2)) a member of the new user  namespace  created  by  the
->        call.
->
->    Capabilities
->        The child process created by clone(2) with the CLONE_NEWUSER flag
->        starts out with a complete set of capabilities in  the  new  user
->        namespace.  Likewise, a process that creates a new user namespace
->        using unshare(2)  or  joins  an  existing  user  namespace  using
->        setns(2)  gains a full set of capabilities in that namespace.  On
->        the other hand, that process has no capabilities  in  the  parent
->        (in  the case of clone(2)) or previous (in the case of unshare(2)
->        and setns(2)) user namespace, even if the new namespace  is  cre‐
->        ated  or  joined by the root user (i.e., a process with user ID 0
->        in the root namespace).
->
->        Note that a call to execve(2) will cause a process  to  lose  any
->        capabilities that it has, unless it has a user ID of 0 within the
->        namespace.
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+Signed-off-by: Sabrina Dubroca <sd@queasysnail.net>
+Reported-by: Tommi Rantala <tt.rantala@gmail.com>
+---
+I included Cong's Signed-off-by for the first part of the patch,
+I hope that's OK.
 
-Or unless file capabilities have a non-empty inheritable mask.
+This patch is based on -next, but since the assertion can also be
+triggered on a current kernel (tested on a 3.16), I think it should
+also go in stable.
 
-It may be worth mentioning that execve in a user namespace works
-exactly like execve outside a userns.
+ include/linux/netdevice.h |  4 ++--
+ net/core/dev.c            | 11 ++++++-----
+ net/ipv6/addrconf.c       | 15 +++++----------
+ net/ipv6/anycast.c        | 30 +++++++++++++++++++-----------
+ net/ipv6/mcast.c          | 16 ++++++++++++++++
+ 5 files changed, 48 insertions(+), 28 deletions(-)
 
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 429801370d0c..1ae0e745b1b1 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -2077,8 +2077,8 @@ void __dev_remove_pack(struct packet_type *pt);
+ void dev_add_offload(struct packet_offload *po);
+ void dev_remove_offload(struct packet_offload *po);
+ 
+-struct net_device *dev_get_by_flags_rcu(struct net *net, unsigned short flags,
+-					unsigned short mask);
++struct net_device *dev_get_by_flags(struct net *net, unsigned short flags,
++				    unsigned short mask);
+ struct net_device *dev_get_by_name(struct net *net, const char *name);
+ struct net_device *dev_get_by_name_rcu(struct net *net, const char *name);
+ struct net_device *__dev_get_by_name(struct net *net, const char *name);
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 443b814db05b..8fede6ef4a39 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -897,23 +897,24 @@ struct net_device *dev_getfirstbyhwtype(struct net *net, unsigned short type)
+ EXPORT_SYMBOL(dev_getfirstbyhwtype);
+ 
+ /**
+- *	dev_get_by_flags_rcu - find any device with given flags
++ *	dev_get_by_flags - find any device with given flags
+  *	@net: the applicable net namespace
+  *	@if_flags: IFF_* values
+  *	@mask: bitmask of bits in if_flags to check
+  *
+  *	Search for any interface with the given flags. Returns NULL if a device
+  *	is not found or a pointer to the device. Must be called inside
+- *	rcu_read_lock(), and result refcount is unchanged.
++ *	rtnl_lock(), and result refcount is unchanged.
+  */
+ 
+-struct net_device *dev_get_by_flags_rcu(struct net *net, unsigned short if_flags,
++struct net_device *dev_get_by_flags(struct net *net, unsigned short if_flags,
+ 				    unsigned short mask)
+ {
+ 	struct net_device *dev, *ret;
+ 
++	ASSERT_RTNL();
+ 	ret = NULL;
+-	for_each_netdev_rcu(net, dev) {
++	for_each_netdev(net, dev) {
+ 		if (((dev->flags ^ if_flags) & mask) == 0) {
+ 			ret = dev;
+ 			break;
+@@ -921,7 +922,7 @@ struct net_device *dev_get_by_flags_rcu(struct net *net, unsigned short if_flags
+ 	}
+ 	return ret;
+ }
+-EXPORT_SYMBOL(dev_get_by_flags_rcu);
++EXPORT_SYMBOL(dev_get_by_flags);
+ 
+ /**
+  *	dev_valid_name - check if name is okay for network device
+diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
+index 267ce3caee24..7ada65937d23 100644
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -1690,14 +1690,12 @@ void addrconf_dad_failure(struct inet6_ifaddr *ifp)
+ 	addrconf_mod_dad_work(ifp, 0);
+ }
+ 
+-/* Join to solicited addr multicast group. */
+-
++/* Join to solicited addr multicast group.
++ * caller must hold RTNL */
+ void addrconf_join_solict(struct net_device *dev, const struct in6_addr *addr)
+ {
+ 	struct in6_addr maddr;
+ 
+-	ASSERT_RTNL();
+-
+ 	if (dev->flags&(IFF_LOOPBACK|IFF_NOARP))
+ 		return;
+ 
+@@ -1705,12 +1703,11 @@ void addrconf_join_solict(struct net_device *dev, const struct in6_addr *addr)
+ 	ipv6_dev_mc_inc(dev, &maddr);
+ }
+ 
++/* caller must hold RTNL */
+ void addrconf_leave_solict(struct inet6_dev *idev, const struct in6_addr *addr)
+ {
+ 	struct in6_addr maddr;
+ 
+-	ASSERT_RTNL();
+-
+ 	if (idev->dev->flags&(IFF_LOOPBACK|IFF_NOARP))
+ 		return;
+ 
+@@ -1718,12 +1715,11 @@ void addrconf_leave_solict(struct inet6_dev *idev, const struct in6_addr *addr)
+ 	__ipv6_dev_mc_dec(idev, &maddr);
+ }
+ 
++/* caller must hold RTNL */
+ static void addrconf_join_anycast(struct inet6_ifaddr *ifp)
+ {
+ 	struct in6_addr addr;
+ 
+-	ASSERT_RTNL();
+-
+ 	if (ifp->prefix_len >= 127) /* RFC 6164 */
+ 		return;
+ 	ipv6_addr_prefix(&addr, &ifp->addr, ifp->prefix_len);
+@@ -1732,12 +1728,11 @@ static void addrconf_join_anycast(struct inet6_ifaddr *ifp)
+ 	ipv6_dev_ac_inc(ifp->idev->dev, &addr);
+ }
+ 
++/* caller must hold RTNL */
+ static void addrconf_leave_anycast(struct inet6_ifaddr *ifp)
+ {
+ 	struct in6_addr addr;
+ 
+-	ASSERT_RTNL();
+-
+ 	if (ifp->prefix_len >= 127) /* RFC 6164 */
+ 		return;
+ 	ipv6_addr_prefix(&addr, &ifp->addr, ifp->prefix_len);
+diff --git a/net/ipv6/anycast.c b/net/ipv6/anycast.c
+index 210183244689..572c2faede55 100644
+--- a/net/ipv6/anycast.c
++++ b/net/ipv6/anycast.c
+@@ -77,7 +77,7 @@ int ipv6_sock_ac_join(struct sock *sk, int ifindex, const struct in6_addr *addr)
+ 	pac->acl_next = NULL;
+ 	pac->acl_addr = *addr;
+ 
+-	rcu_read_lock();
++	rtnl_lock();
+ 	if (ifindex == 0) {
+ 		struct rt6_info *rt;
+ 
+@@ -90,11 +90,11 @@ int ipv6_sock_ac_join(struct sock *sk, int ifindex, const struct in6_addr *addr)
+ 			goto error;
+ 		} else {
+ 			/* router, no matching interface: just pick one */
+-			dev = dev_get_by_flags_rcu(net, IFF_UP,
+-						   IFF_UP | IFF_LOOPBACK);
++			dev = dev_get_by_flags(net, IFF_UP,
++					       IFF_UP | IFF_LOOPBACK);
+ 		}
+ 	} else
+-		dev = dev_get_by_index_rcu(net, ifindex);
++		dev = __dev_get_by_index(net, ifindex);
+ 
+ 	if (dev == NULL) {
+ 		err = -ENODEV;
+@@ -136,7 +136,7 @@ int ipv6_sock_ac_join(struct sock *sk, int ifindex, const struct in6_addr *addr)
+ 	}
+ 
+ error:
+-	rcu_read_unlock();
++	rtnl_unlock();
+ 	if (pac)
+ 		sock_kfree_s(sk, pac, sizeof(*pac));
+ 	return err;
+@@ -171,13 +171,15 @@ int ipv6_sock_ac_drop(struct sock *sk, int ifindex, const struct in6_addr *addr)
+ 
+ 	spin_unlock_bh(&ipv6_sk_ac_lock);
+ 
+-	rcu_read_lock();
+-	dev = dev_get_by_index_rcu(net, pac->acl_ifindex);
++	rtnl_lock();
++	dev = __dev_get_by_index(net, pac->acl_ifindex);
+ 	if (dev)
+ 		ipv6_dev_ac_dec(dev, &pac->acl_addr);
+-	rcu_read_unlock();
++	rtnl_unlock();
+ 
+ 	sock_kfree_s(sk, pac, sizeof(*pac));
++	if (!dev)
++		return -ENODEV;
+ 	return 0;
+ }
+ 
+@@ -198,12 +200,12 @@ void ipv6_sock_ac_close(struct sock *sk)
+ 	spin_unlock_bh(&ipv6_sk_ac_lock);
+ 
+ 	prev_index = 0;
+-	rcu_read_lock();
++	rtnl_lock();
+ 	while (pac) {
+ 		struct ipv6_ac_socklist *next = pac->acl_next;
+ 
+ 		if (pac->acl_ifindex != prev_index) {
+-			dev = dev_get_by_index_rcu(net, pac->acl_ifindex);
++			dev = __dev_get_by_index(net, pac->acl_ifindex);
+ 			prev_index = pac->acl_ifindex;
+ 		}
+ 		if (dev)
+@@ -211,7 +213,7 @@ void ipv6_sock_ac_close(struct sock *sk)
+ 		sock_kfree_s(sk, pac, sizeof(*pac));
+ 		pac = next;
+ 	}
+-	rcu_read_unlock();
++	rtnl_unlock();
+ }
+ 
+ static void aca_put(struct ifacaddr6 *ac)
+@@ -233,6 +235,8 @@ int ipv6_dev_ac_inc(struct net_device *dev, const struct in6_addr *addr)
+ 	struct rt6_info *rt;
+ 	int err;
+ 
++	ASSERT_RTNL();
++
+ 	idev = in6_dev_get(dev);
+ 
+ 	if (idev == NULL)
+@@ -302,6 +306,8 @@ int __ipv6_dev_ac_dec(struct inet6_dev *idev, const struct in6_addr *addr)
+ {
+ 	struct ifacaddr6 *aca, *prev_aca;
+ 
++	ASSERT_RTNL();
++
+ 	write_lock_bh(&idev->lock);
+ 	prev_aca = NULL;
+ 	for (aca = idev->ac_list; aca; aca = aca->aca_next) {
+@@ -336,6 +342,8 @@ static int ipv6_dev_ac_dec(struct net_device *dev, const struct in6_addr *addr)
+ {
+ 	struct inet6_dev *idev = __in6_dev_get(dev);
+ 
++	ASSERT_RTNL();
++
+ 	if (idev == NULL)
+ 		return -ENODEV;
+ 	return __ipv6_dev_ac_dec(idev, addr);
+diff --git a/net/ipv6/mcast.c b/net/ipv6/mcast.c
+index 70881795da96..d73ac1ef65f2 100644
+--- a/net/ipv6/mcast.c
++++ b/net/ipv6/mcast.c
+@@ -172,6 +172,7 @@ int ipv6_sock_mc_join(struct sock *sk, int ifindex, const struct in6_addr *addr)
+ 	mc_lst->next = NULL;
+ 	mc_lst->addr = *addr;
+ 
++	rtnl_lock();
+ 	rcu_read_lock();
+ 	if (ifindex == 0) {
+ 		struct rt6_info *rt;
+@@ -185,6 +186,7 @@ int ipv6_sock_mc_join(struct sock *sk, int ifindex, const struct in6_addr *addr)
+ 
+ 	if (dev == NULL) {
+ 		rcu_read_unlock();
++		rtnl_unlock();
+ 		sock_kfree_s(sk, mc_lst, sizeof(*mc_lst));
+ 		return -ENODEV;
+ 	}
+@@ -202,6 +204,7 @@ int ipv6_sock_mc_join(struct sock *sk, int ifindex, const struct in6_addr *addr)
+ 
+ 	if (err) {
+ 		rcu_read_unlock();
++		rtnl_unlock();
+ 		sock_kfree_s(sk, mc_lst, sizeof(*mc_lst));
+ 		return err;
+ 	}
+@@ -212,6 +215,7 @@ int ipv6_sock_mc_join(struct sock *sk, int ifindex, const struct in6_addr *addr)
+ 	spin_unlock(&ipv6_sk_mc_lock);
+ 
+ 	rcu_read_unlock();
++	rtnl_unlock();
+ 
+ 	return 0;
+ }
+@@ -229,6 +233,7 @@ int ipv6_sock_mc_drop(struct sock *sk, int ifindex, const struct in6_addr *addr)
+ 	if (!ipv6_addr_is_multicast(addr))
+ 		return -EINVAL;
+ 
++	rtnl_lock();
+ 	spin_lock(&ipv6_sk_mc_lock);
+ 	for (lnk = &np->ipv6_mc_list;
+ 	     (mc_lst = rcu_dereference_protected(*lnk,
+@@ -252,12 +257,15 @@ int ipv6_sock_mc_drop(struct sock *sk, int ifindex, const struct in6_addr *addr)
+ 			} else
+ 				(void) ip6_mc_leave_src(sk, mc_lst, NULL);
+ 			rcu_read_unlock();
++			rtnl_unlock();
++
+ 			atomic_sub(sizeof(*mc_lst), &sk->sk_omem_alloc);
+ 			kfree_rcu(mc_lst, rcu);
+ 			return 0;
+ 		}
+ 	}
+ 	spin_unlock(&ipv6_sk_mc_lock);
++	rtnl_unlock();
+ 
+ 	return -EADDRNOTAVAIL;
+ }
+@@ -302,6 +310,7 @@ void ipv6_sock_mc_close(struct sock *sk)
+ 	if (!rcu_access_pointer(np->ipv6_mc_list))
+ 		return;
+ 
++	rtnl_lock();
+ 	spin_lock(&ipv6_sk_mc_lock);
+ 	while ((mc_lst = rcu_dereference_protected(np->ipv6_mc_list,
+ 				lockdep_is_held(&ipv6_sk_mc_lock))) != NULL) {
+@@ -328,6 +337,7 @@ void ipv6_sock_mc_close(struct sock *sk)
+ 		spin_lock(&ipv6_sk_mc_lock);
+ 	}
+ 	spin_unlock(&ipv6_sk_mc_lock);
++	rtnl_unlock();
+ }
+ 
+ int ip6_mc_source(int add, int omode, struct sock *sk,
+@@ -845,6 +855,8 @@ int ipv6_dev_mc_inc(struct net_device *dev, const struct in6_addr *addr)
+ 	struct ifmcaddr6 *mc;
+ 	struct inet6_dev *idev;
+ 
++	ASSERT_RTNL();
++
+ 	/* we need to take a reference on idev */
+ 	idev = in6_dev_get(dev);
+ 
+@@ -916,6 +928,8 @@ int __ipv6_dev_mc_dec(struct inet6_dev *idev, const struct in6_addr *addr)
+ {
+ 	struct ifmcaddr6 *ma, **map;
+ 
++	ASSERT_RTNL();
++
+ 	write_lock_bh(&idev->lock);
+ 	for (map = &idev->mc_list; (ma = *map) != NULL; map = &ma->next) {
+ 		if (ipv6_addr_equal(&ma->mca_addr, addr)) {
+@@ -942,6 +956,8 @@ int ipv6_dev_mc_dec(struct net_device *dev, const struct in6_addr *addr)
+ 	struct inet6_dev *idev;
+ 	int err;
+ 
++	ASSERT_RTNL();
++
+ 	rcu_read_lock();
+ 
+ 	idev = __in6_dev_get(dev);
+-- 
+2.1.0
 
->            $ cat /proc/$$/uid_map
->                     0          0 4294967295
->
->        This mapping tells us that the range starting at  user  ID  0  in
->        this namespace maps to a range starting at 0 in the (nonexistent)
->        parent namespace, and the length of  the  range  is  the  largest
->        32-bit unsigned integer.
->
->    Defining user and group ID mappings: writing to uid_map and gid_map
->        After  the  creation of a new user namespace, the uid_map file of
->        one of the processes in the namespace may be written to  once  to
->        define  the  mapping  of  user IDs in the new user namespace.  An
->        attempt to write more than once to  a  uid_map  file  in  a  user
->        namespace  fails  with  the error EPERM.  Similar rules apply for
->        gid_map files.
->
->        The lines written to uid_map (gid_map) must conform to  the  fol‐
->        lowing rules:
->
->        *  The  three  fields  must  be valid numbers, and the last field
->           must be greater than 0.
->
->        *  Lines are terminated by newline characters.
->
->        *  There is an (arbitrary) limit on the number of  lines  in  the
->           file.  As at Linux 3.8, the limit is five lines.  In addition,
->           the number of bytes written to the file must be less than  the
->           system page size, and the write must be performed at the start
->           of the file (i.e., lseek(2) and pwrite(2)  can't  be  used  to
->           write to nonzero offsets in the file).
->
->        *  The  range of user IDs (group IDs) specified in each line can‐
->           not overlap with the ranges in any other lines.  In  the  ini‐
->           tial  implementation  (Linux 3.8), this requirement was satis‐
->           fied by a simplistic implementation that imposed  the  further
->           requirement  that  the  values  in both field 1 and field 2 of
->           successive lines must be in ascending numerical  order,  which
->           prevented some otherwise valid maps from being created.  Linux
->           3.9 and later fix this limitation, allowing any valid  set  of
->           nonoverlapping maps.
->
->        *  At least one line must be written to the file.
->
->        Writes that violate the above rules fail with the error EINVAL.
->
->        In  order  for  a  process  to  write  to the /proc/[pid]/uid_map
->        (/proc/[pid]/gid_map) file, all  of  the  following  requirements
->        must be met:
->
->        1. The  writing  process  must  have  the CAP_SETUID (CAP_SETGID)
->           capability in the user namespace of the process pid.
-
-This checked for the opening process (and I don't actually remember
-whether it's checked for the writing process).
-
->
->        2. The writing process must be in either the  user  namespace  of
->           the  process  pid  or  inside the parent user namespace of the
->           process pid.
->
->        3. The mapped user IDs (group IDs) must in turn have a mapping in
->           the parent user namespace.
->
->        4. One of the following is true:
->
->           *  The  data written to uid_map (gid_map) consists of a single
->              line that maps the writing  process's  filesystem  user  ID
->              (group ID) in the parent user namespace to a user ID (group
->              ID) in the user namespace.  The usual  case  here  is  that
->              this  single  line  provides  a  mapping for user ID of the
->              process that created the namespace.
->
->           *  The process has the CAP_SETUID (CAP_SETGID)  capability  in
->              the  parent user namespace.  Thus, a privileged process can
->              make mappings to arbitrary user IDs (group IDs) in the par‐
->              ent user namespace.
-
-The opening process.
-
-
-One other thing that could be worth mentioning it: any non-user
-namespace that's created is owned by the user namespace of the process
-that created it at the time of creation.  Actions on those namespaces
-require capabilities in the corresponding user namespace.
-
-Thanks for doing this!
-
-
-
---Andy
