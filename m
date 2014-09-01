@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668AbaIAWNy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 18:13:54 -0400
-Received: from mga02.intel.com ([134.134.136.20]:42172 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752031AbaIAWNx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 18:13:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,445,1406617200"; 
-   d="scan'208";a="566789979"
-Date: Mon, 1 Sep 2014 23:13:44 +0100
-From: Damien Lespiau <damien.lespiau@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Daniel Vetter <daniel@ffwll.ch>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [Intel-gfx] Regression in drm-intel caused by d91a2cb8e510
-Message-ID: <20140901221344.GA22902@strange.ger.corp.intel.com>
-References: <Pine.LNX.4.44L0.1409011609390.13894-100000@netrider.rowland.org>
+	id S1752770AbaIAWPU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 18:15:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48039 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752045AbaIAWPT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 18:15:19 -0400
+Date: Mon, 1 Sep 2014 15:15:18 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Grzegorz Swirski <grzegorz@swirski.name>
+Cc: john.stultz@linaro.org, daniel@ffwll.ch, waydi1@gmail.com,
+        alistair.strachan@imgtec.com, pkamliya@codeaurora.org,
+        executerx@gmail.com, maarten.lankhorst@canonical.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: android: add a blank line after declarations
+Message-ID: <20140901221518.GA29791@kroah.com>
+References: <1409517795-10237-1-git-send-email-grzegorz@swirski.name>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1409011609390.13894-100000@netrider.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1409517795-10237-1-git-send-email-grzegorz@swirski.name>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 01, 2014 at 04:19:23PM -0400, Alan Stern wrote:
-> Daniel:
+On Sun, Aug 31, 2014 at 09:43:15PM +0100, Grzegorz Swirski wrote:
+> Signed-off-by: Grzegorz Swirski <grzegorz@swirski.name>
+> ---
+>  drivers/staging/android/sync.c | 1 +
+>  1 file changed, 1 insertion(+)
 > 
-> I'm encountering a problem with the drm-intel-nightly branch in your
-> drm-intel repository.  The symptom is that when I boot my laptop, at
-> some point during the start-up procedure the screen goes totally blank,
-> as though the backlight were turned off, and it remains that way.  I
-> can't tell if the backlight really is off -- it may be that there's
-> just nothing being displayed -- and playing with the screen-brightness
-> function keys doesn't help.
-> 
-> Git bisect located the source of the problem as commit d91a2cb8e510
-> (drm/i915: Add 180 degree primary plane rotation support).  The problem
-> occurs when I boot a kernel built from that commit, and it doesn't
-> occur when I boot a kernel built from the preceding commit
-> (19ac737dc3c3).
-> 
-> If necessary, I can get debugging info by logging in over a network 
-> connection.  Tell me what you need.
+> diff --git a/drivers/staging/android/sync.c b/drivers/staging/android/sync.c
+> index e7b2e02..0d37495 100644
+> --- a/drivers/staging/android/sync.c
+> +++ b/drivers/staging/android/sync.c
+> @@ -705,6 +705,7 @@ static long sync_fence_ioctl(struct file *file, unsigned int cmd,
+>  			     unsigned long arg)
+>  {
+>  	struct sync_fence *fence = file->private_data;
+> +
+>  	switch (cmd) {
+>  	case SYNC_IOC_WAIT:
+>  		return sync_fence_ioctl_wait(fence, arg);
 
-It seems like Ville and Mika already caught a similar bug today, could
-you give Ville's patch a go (available on the intel-gfx):
+This patch is already in my tree, sorry, I can't accept it ;(
 
-  drm/i915: Don't call intel_plane_restore() when the prop value didn't change
-
-
-Thanks,
-
--- 
-Damien
+greg k-h
