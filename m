@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758AbaIAHTl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 03:19:41 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:42483 "EHLO
+	id S1752782AbaIAHTo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 03:19:44 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:42626 "EHLO
 	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752331AbaIAHTh (ORCPT
+	with ESMTP id S1752753AbaIAHTl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 03:19:37 -0400
+	Mon, 1 Sep 2014 03:19:41 -0400
 X-Original-SENDERIP: 10.177.222.156
 X-Original-MAILFROM: minchan@kernel.org
 From: Minchan Kim <minchan@kernel.org>
@@ -19,123 +19,56 @@ Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
         zhangyanfei@cn.fujitsu.com,
         "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Minchan Kim <minchan@kernel.org>
-Subject: [PATCH v16 0/7] MADV_FREE support
-Date: Mon,  1 Sep 2014 16:20:41 +0900
-Message-Id: <1409556048-5045-1-git-send-email-minchan@kernel.org>
+        Minchan Kim <minchan@kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        Will Deacon <will.deacon@arm.com>,
+        Steve Capper <steve.capper@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH v16 6/7] arm64: add pmd_[dirty|mkclean] for THP
+Date: Mon,  1 Sep 2014 16:20:47 +0900
+Message-Id: <1409556048-5045-7-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1409556048-5045-1-git-send-email-minchan@kernel.org>
+References: <1409556048-5045-1-git-send-email-minchan@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enable MADV_FREE hint for madvise syscall, which have
-been supported by other OSes. [PATCH 1] includes the details.
+MADV_FREE needs pmd_dirty and pmd_mkclean for detecting recent
+overwrite of the contents since MADV_FREE syscall is called for
+THP page.
 
-[1] support MADVISE_FREE for !THP page so if VM encounter
-THP page in syscall context, it splits THP page.
-[2-6] is to preparing to call madvise syscall without THP plitting
-[7] enable THP page support for MADV_FREE.
+This patch adds pmd_dirty and pmd_mkclean for THP page MADV_FREE
+support.
 
-* from v15
- * Add more Acked-by - Rik van Riel
- * Rebased on mmotom-08-29-15-15
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org
+Acked-by: Will Deacon <will.deacon@arm.com>
+Acked-by: Steve Capper <steve.capper@linaro.org>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ arch/arm64/include/asm/pgtable.h | 2 ++
+ 1 file changed, 2 insertions(+)
 
-* from v14
- * Add more Ackedy-by from arch people(sparc, arm64 and arm)
- * Drop s390 since pmd_dirty/clean was merged
-
-* from v13
- * Add more Ackedy-by from arch people(arm, arm64 and ppc)
- * Rebased on mmotm 2014-08-13-14-29
-
-* from v12
- * Fix - skip to mark free pte on try_to_free_swap failed page - Kirill
- * Add more Acked-by from arch maintainers and Kirill
-
-* From v11
- * Fix arm build - Steve
- * Separate patch for arm and arm64 - Steve
- * Remove unnecessary check - Kirill
- * Skip non-vm_normal page - Kirill
- * Add Acked-by - Zhang
- * Sparc64 build fix
- * Pagetable walker THP handling fix
-
-* From v10
- * Add Acked-by from arch stuff(x86, s390)
- * Pagewalker based pagetable working - Kirill
- * Fix try_to_unmap_one broken with hwpoison - Kirill
- * Use VM_BUG_ON_PAGE in madvise_free_pmd - Kirill
- * Fix pgtable-3level.h for arm - Steve
-
-* From v9
- * Add Acked-by - Rik
- * Add THP page support - Kirill
-
-* From v8
- * Rebased-on v3.16-rc2-mmotm-2014-06-25-16-44
-
-* From v7
- * Rebased-on next-20140613
-
-* From v6
- * Remove page from swapcache in syscal time
- * Move utility functions from memory.c to madvise.c - Johannes
- * Rename untilify functtions - Johannes
- * Remove unnecessary checks from vmscan.c - Johannes
- * Rebased-on v3.15-rc5-mmotm-2014-05-16-16-56
- * Drop Reviewe-by because there was some changes since then.
-
-* From v5
- * Fix PPC problem which don't flush TLB - Rik
- * Remove unnecessary lazyfree_range stub function - Rik
- * Rebased on v3.15-rc5
-
-* From v4
- * Add Reviewed-by: Zhang Yanfei
- * Rebase on v3.15-rc1-mmotm-2014-04-15-16-14
-
-* From v3
- * Add "how to work part" in description - Zhang
- * Add page_discardable utility function - Zhang
- * Clean up
-
-* From v2
- * Remove forceful dirty marking of swap-readed page - Johannes
- * Remove deactivation logic of lazyfreed page
- * Rebased on 3.14
- * Remove RFC tag
-
-* From v1
- * Use custom page table walker for madvise_free - Johannes
- * Remove PG_lazypage flag - Johannes
- * Do madvise_dontneed instead of madvise_freein swapless system
-
-Minchan Kim (7):
-  mm: support madvise(MADV_FREE)
-  x86: add pmd_[dirty|mkclean] for THP
-  sparc: add pmd_[dirty|mkclean] for THP
-  powerpc: add pmd_[dirty|mkclean] for THP
-  arm: add pmd_mkclean for THP
-  arm64: add pmd_[dirty|mkclean] for THP
-  mm: Don't split THP page when syscall is called
-
- arch/arm/include/asm/pgtable-3level.h    |   1 +
- arch/arm64/include/asm/pgtable.h         |   2 +
- arch/powerpc/include/asm/pgtable-ppc64.h |   2 +
- arch/sparc/include/asm/pgtable_64.h      |  16 ++++
- arch/x86/include/asm/pgtable.h           |  10 ++
- include/linux/huge_mm.h                  |   4 +
- include/linux/rmap.h                     |   9 +-
- include/linux/vm_event_item.h            |   1 +
- include/uapi/asm-generic/mman-common.h   |   1 +
- mm/huge_memory.c                         |  35 +++++++
- mm/madvise.c                             | 159 +++++++++++++++++++++++++++++++
- mm/rmap.c                                |  46 ++++++++-
- mm/vmscan.c                              |  64 +++++++++----
- mm/vmstat.c                              |   1 +
- 14 files changed, 331 insertions(+), 20 deletions(-)
-
+diff --git a/arch/arm64/include/asm/pgtable.h b/arch/arm64/include/asm/pgtable.h
+index ffe1ba0506d1..efb1b2fc4d39 100644
+--- a/arch/arm64/include/asm/pgtable.h
++++ b/arch/arm64/include/asm/pgtable.h
+@@ -259,10 +259,12 @@ static inline pmd_t pte_pmd(pte_t pte)
+ #endif
+ 
+ #define pmd_young(pmd)		pte_young(pmd_pte(pmd))
++#define pmd_dirty(pmd)		pte_dirty(pmd_pte(pmd))
+ #define pmd_wrprotect(pmd)	pte_pmd(pte_wrprotect(pmd_pte(pmd)))
+ #define pmd_mksplitting(pmd)	pte_pmd(pte_mkspecial(pmd_pte(pmd)))
+ #define pmd_mkold(pmd)		pte_pmd(pte_mkold(pmd_pte(pmd)))
+ #define pmd_mkwrite(pmd)	pte_pmd(pte_mkwrite(pmd_pte(pmd)))
++#define pmd_mkclean(pmd)	pte_pmd(pte_mkclean(pmd_pte(pmd)))
+ #define pmd_mkdirty(pmd)	pte_pmd(pte_mkdirty(pmd_pte(pmd)))
+ #define pmd_mkyoung(pmd)	pte_pmd(pte_mkyoung(pmd_pte(pmd)))
+ #define pmd_mknotpresent(pmd)	(__pmd(pmd_val(pmd) & ~PMD_TYPE_MASK))
 -- 
 2.0.0
 
