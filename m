@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738AbaIAIAZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 04:00:25 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:63013 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752465AbaIAIAX (ORCPT
+	id S1752750AbaIAIAr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 04:00:47 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:65065 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752363AbaIAIAq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 04:00:23 -0400
+	Mon, 1 Sep 2014 04:00:46 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAN_we7MQAqEsRaQc_pkRE_KXx9zZNLDBR2aHUrazM30Nv3udmQ@mail.gmail.com>
-References: <1409212920-28526-1-git-send-email-gautam.vivek@samsung.com>
-	<1409212920-28526-6-git-send-email-gautam.vivek@samsung.com>
-	<CAN_we7MQAqEsRaQc_pkRE_KXx9zZNLDBR2aHUrazM30Nv3udmQ@mail.gmail.com>
-Date: Mon, 1 Sep 2014 13:30:21 +0530
-X-Google-Sender-Auth: Fa8nkfDxAwnZhJVbVe9YDinX_CY
-Message-ID: <CAFp+6iHsfg6Ru0LBN=JviV=-mSdmuSo9Te3EXYF+X8jssD_BYQ@mail.gmail.com>
-Subject: Re: [PATCH 5/5] phy: exynos5-usbdrd: Adding Kconfig dependency for Exynos7
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: Daniele Forsi <dforsi@gmail.com>
-Cc: USB list <linux-usb@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
+In-Reply-To: <A765B125120D1346A63912DDE6D8B6315DB7BE@NTXXIAMBX02.xacn.micron.com>
+References: <A765B125120D1346A63912DDE6D8B6315DB7BE@NTXXIAMBX02.xacn.micron.com>
+Date: Mon, 1 Sep 2014 10:00:45 +0200
+X-Google-Sender-Auth: PPb2yCU6UgQD4BnFMNSFRbuWLn8
+Message-ID: <CABkLObp7h4goCjgFVfXEgXtJ-Mv+gXbUqgxoY23udt9D3tNFKA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] mtd: cfi_cmdset_0002:add fixup for Micron M29EW after
+ erase operation
+From: Christian Riesch <christian.riesch@omicron.at>
+To: bpqw <bpqw@micron.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jingoo Han <jg1.han@samsung.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>, kishon <kishon@ti.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 28, 2014 at 8:36 PM, Daniele Forsi <dforsi@gmail.com> wrote:
-> 2014-08-28 10:02 GMT+02:00 Vivek Gautam:
+Hi,
+
+On Mon, Sep 1, 2014 at 4:20 AM, bpqw <bpqw@micron.com> wrote:
+> For Micron M29EW,20ms delay is needed after erase operation.
+
+Is there a datasheet/application note/technical note from Micron
+describing this issue? Like the TN-13-07 for the other M29EW fixes?
+Are all M29EW types affected?
+
+Thanks,
+Christian
+
 >
->> This USB 3.0 PHY controller is also present on Exynos7
->> platform, so adding the dependency on ARCH_EXYNOS7 for this driver.
+> Signed-off-by: BeanHuo <bpqw@micron.com>
+> ---
+>  drivers/mtd/chips/cfi_cmdset_0002.c |   11 +++++++++++
+>  1 file changed, 11 insertions(+)
 >
->> +++ b/drivers/phy/Kconfig
->> @@ -186,7 +186,7 @@ config PHY_EXYNOS5250_USB2
->>
->>  config PHY_EXYNOS5_USBDRD
->>         tristate "Exynos5 SoC series USB DRD PHY driver"
->> -       depends on ARCH_EXYNOS5 && OF
->> +       depends on (ARCH_EXYNOS5 || ARCH_EXYNOS7) && OF
+> diff --git a/drivers/mtd/chips/cfi_cmdset_0002.c b/drivers/mtd/chips/cfi_cmdset_0002.c
+> index 5a4bfe3..9b0de91 100644
+> --- a/drivers/mtd/chips/cfi_cmdset_0002.c
+> +++ b/drivers/mtd/chips/cfi_cmdset_0002.c
+> @@ -509,6 +509,16 @@ static void cfi_fixup_m29ew_delay_after_resume(struct cfi_private *cfi)
+>                 cfi_udelay(500);
+>  }
 >
-> shouldn't that prompt and its help text be updated to mention also Exynos7?
-
-Right, even that has to be updated accordingly. Will update the same in next
-version of the patch. Thanks for pointing this.
-
-
-
--- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
+> +static void cfi_fixup_m29ew_delay_after_erase(struct cfi_private *cfi)
+> +{
+> +       /*
+> +        * Resolving the Delay After ERASE Issue @low temperature.
+> +        * 20ms delay is needed after erase operation.
+> +        */
+> +       if (is_m29ew(cfi))
+> +               cfi_udelay(20000);
+> +}
+> +
+>  struct mtd_info *cfi_cmdset_0002(struct map_info *map, int primary)  {
+>         struct cfi_private *cfi = map->fldrv_priv; @@ -2397,6 +2407,7 @@ static int __xipram do_erase_oneblock(struct map_info *map, struct flchip *chip,
+>                 ret = -EIO;
+>         }
+>
+> +       cfi_fixup_m29ew_delay_after_erase(cfi);
+>         chip->state = FL_READY;
+>         DISABLE_VPP(map);
+>         put_chip(map, chip, adr);
+> --
+> 1.7.9.5
+>
+> ______________________________________________________
+> Linux MTD discussion mailing list
+> http://lists.infradead.org/mailman/listinfo/linux-mtd/
