@@ -1,112 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712AbaIALkA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 07:40:00 -0400
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:59274 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753319AbaIALj5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 07:39:57 -0400
-Date: Mon, 1 Sep 2014 12:39:49 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Octavian Purdila <octavian.purdila@intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, wsa@the-dreams.de,
-        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Johan Hovold <johan@kernel.org>, linux-usb@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>, linux-gpio@vger.kernel.org,
-        linux-i2c@vger.kernel.org, Daniel Baluta <daniel.baluta@intel.com>,
-        Laurentiu Palcu <laurentiu.palcu@intel.com>
-Subject: Re: [PATCH v2 1/3] mfd: add support for Diolan DLN-2 devices
-Message-ID: <20140901113949.GP7374@lee--X1>
-References: <1409349654-24841-1-git-send-email-octavian.purdila@intel.com>
- <1409349654-24841-2-git-send-email-octavian.purdila@intel.com>
- <20140901083744.GE7374@lee--X1>
- <CAE1zotK0cddns4f4ay-GJie8O2pjb72+-yYndZvW0hbF0D83HA@mail.gmail.com>
- <20140901095127.GK7374@lee--X1>
- <CAE1zot+T6eq0jrL6_Qh=5nihNOgGEaWe5RCDk7_1XS8ZWaWKqA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAE1zot+T6eq0jrL6_Qh=5nihNOgGEaWe5RCDk7_1XS8ZWaWKqA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753779AbaIALko (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 07:40:44 -0400
+Received: from mga09.intel.com ([134.134.136.24]:57293 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753342AbaIALkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 07:40:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,442,1406617200"; 
+   d="scan'208";a="566551154"
+Message-ID: <1409571613.30155.57.camel@linux.intel.com>
+Subject: Re: [PATCH v1 0/5] mfd: lpc_sch: Intel Quark support
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+Date: Mon, 01 Sep 2014 14:40:13 +0300
+In-Reply-To: <20140829110043.GJ24579@lee--X1>
+References: <1408705096-31286-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1409306274.30155.30.camel@linux.intel.com>
+	 <20140829110043.GJ24579@lee--X1>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.5-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 01 Sep 2014, Octavian Purdila wrote:
+On Fri, 2014-08-29 at 12:00 +0100, Lee Jones wrote:
+> On Fri, 29 Aug 2014, Andy Shevchenko wrote:
+> 
+> > On Fri, 2014-08-22 at 13:58 +0300, Andy Shevchenko wrote:
+> > > This brings support of the LPC SCH device found on Intel Quark SoC. Patches
+> > > were compile tested, and driver runs on actual hardware.
+> > > 
+> > > Please, note that PCI ID will be used in future in the gpio-sch driver.
+> > 
+> > Bjorn, could you Ack or comment patch 3/5?
+> > 
+> > Lee, do you have any comments on the series?
+> 
+> I have marked them as 'important' and will get round to them when I
+> can.  This week has been hectic.  I will get round to it next week.
 
-> On Mon, Sep 1, 2014 at 12:51 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> > On Mon, 01 Sep 2014, Octavian Purdila wrote:
-> >
-> >> On Mon, Sep 1, 2014 at 11:37 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> >> > On Sat, 30 Aug 2014, Octavian Purdila wrote:
-> >> >
-> >> >> This patch implements the USB part of the Diolan USB-I2C/SPI/GPIO
-> >> >> Master Adapter DLN-2. Details about the device can be found here:
-> >> >>
-> >> >> https://www.diolan.com/i2c/i2c_interface.html.
-> >> >>
-> >> >> Information about the USB protocol can be found in the Programmer's
-> >> >> Reference Manual [1], see section 1.7.
-> >> >>
-> >> >> Because the hardware has a single transmit endpoint and a single
-> >> >> receive endpoint the communication between the various DLN2 drivers
-> >> >> and the hardware will be muxed/demuxed by this driver.
-> >> >>
-> >> >> Each DLN2 module will be identified by the handle field within the DLN2
-> >> >> message header. If a DLN2 module issues multiple commands in parallel
-> >> >> they will be identified by the echo counter field in the message header.
-> >> >>
-> >> >> The DLN2 modules can use the dln2_transfer() function to issue a
-> >> >> command and wait for its response. They can also register a callback
-> >> >> that is going to be called when a specific event id is generated by
-> >> >> the device (e.g. GPIO interrupts). The device uses handle 0 for
-> >> >> sending events.
-> >> >>
-> >> >> [1] https://www.diolan.com/downloads/dln-api-manual.pdf
-> >> >
-> >> > MFD is not a dumping ground for misfit h/w.  Almost all of this code
-> >> > looks like it belongs in drivers/usb.  Please move it there.
-> >> >
-> >>
-> >> We initially submitted this driver as a pure USB driver, with our own
-> >> module registration mechanism, but during the first round of reviews
-> >> people pointed out that a MFD driver is the better approach, and I
-> >> agree. I also see that there are already a couple of USB drivers
-> >> implemented as MFD drivers.
-> >
-> > Can you link me to your previous submission please?
-> 
-> Sure, here it is:
-> 
-> https://lkml.org/lkml/2014/8/20/228
-> 
-> >
-> >> Do you see a better approach?
-> >
-> > You should have a small MFD driver which controls resources and
-> > registers children.  All other functionality should live in their
-> > respective drivers/X locations i.e. USB functionallity should normally
-> > live in drivers/usb.
-> >
-> 
-> OK, that sounds better. I am not sure how to handle the registration
-> part though, since in this case we need to create the children at
-> runtime, from the usb probe routine.
-> 
-> The only solution I see is to move the driver completely to
-> usb/drivers and continue to use the MFD infrastructure. Does that
-> sound OK to you?
+Thanks for your comments. I will fix everything we agreed about and send
+v2. For now I'm waiting for Rebecca's comment regarding to squashing
+patch 1/5 and 2/5.
 
-I have no problem with that.  If this is an MFD driver, it _should_
-live in drivers/mfd.  However, all of that USB specific stuff
-defiantly should not.
+> 
+> > > Andy Shevchenko (4):
+> > >   mfd: lpc_sch: reduce duplicate code
+> > >   mfd: lpc_sch: better code manageability with chipset info struct
+> > >   mfd: lpc_sch: Add support for Intel Quark X1000
+> > >   mfd: lpc_sch: remove FSF address
+> > > 
+> > > Josef Ahmad (1):
+> > >   pci_ids: add support for Intel Quark ILB
+> > > 
+> > >  drivers/mfd/lpc_sch.c   | 207 ++++++++++++++++++++++++++++--------------------
+> > >  include/linux/pci_ids.h |   1 +
+> > >  2 files changed, 122 insertions(+), 86 deletions(-)
+> > > 
+> > 
+> > 
+> 
+
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
+
