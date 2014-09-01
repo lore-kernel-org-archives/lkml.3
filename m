@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473AbaIALEa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 07:04:30 -0400
+	id S1753674AbaIALGs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 07:06:48 -0400
 Received: from mail.mev.co.uk ([62.49.15.74]:39018 "EHLO mail.mev.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753418AbaIALE1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 07:04:27 -0400
+	id S1753449AbaIALE3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 07:04:29 -0400
 From: Ian Abbott <abbotti@mev.co.uk>
 To: driverdev-devel@linuxdriverproject.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Ian Abbott <abbotti@mev.co.uk>,
         H Hartley Sweeten <hartleys@visionengravers.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 19/28] staging: comedi: amplc_pci230: use comedi_range_is_bipolar()
-Date: Mon,  1 Sep 2014 12:03:51 +0100
-Message-Id: <1409569440-10979-20-git-send-email-abbotti@mev.co.uk>
+Subject: [PATCH 21/28] staging: comedi: amplc_pci230: replace `state` member with bitfields
+Date: Mon,  1 Sep 2014 12:03:53 +0100
+Message-Id: <1409569440-10979-22-git-send-email-abbotti@mev.co.uk>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <1409569440-10979-1-git-send-email-abbotti@mev.co.uk>
 References: <1409569440-10979-1-git-send-email-abbotti@mev.co.uk>
@@ -22,133 +22,125 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the inline `comedi_range_is_bipolar()` function from "comedidev.h"
-to decide whether a range is bipolar or unipolar instead of using the
-local static arrays `pci230_ai_bipolar[]` and `pci230_ao_bipolar[]`
-which can then be removed.
-
-Change the types of the `ai_bipolar` and `ao_bipolar` members of `struct
-pci230_private` to `bool` to match the return value of
-`comedi_range_is_bipolar()` and change them into single-bit bitfields to
-save a bit of space.  Also change the type and name of some local
-variables in `pci230_ai_check_chanlist()` that hold the result of
-`comedi_range_is_bipolar()`.
+The `state` member of `struct pci230_private` is used with the atomic
+bit-op functions and has a couple of bits defined, `AI_CMD_STARTED` and
+`AO_CMD_STARTED`.  Spin-locks are used to protect the clearing of these
+bits and other stuff.  No special protection is used for setting these
+bits.  Replace the `state` member with a couple of new, single-bit
+bitfield members, `ai_cmd_started` and `ao_cmd_started` to save some
+space.
 
 Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 ---
- drivers/staging/comedi/drivers/amplc_pci230.c | 26 ++++++++++----------------
- 1 file changed, 10 insertions(+), 16 deletions(-)
+ drivers/staging/comedi/drivers/amplc_pci230.c | 27 +++++++++++++--------------
+ 1 file changed, 13 insertions(+), 14 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/amplc_pci230.c b/drivers/staging/comedi/drivers/amplc_pci230.c
-index 6cd235d..8959820 100644
+index 29e6016..7a8291a 100644
 --- a/drivers/staging/comedi/drivers/amplc_pci230.c
 +++ b/drivers/staging/comedi/drivers/amplc_pci230.c
-@@ -506,11 +506,11 @@ struct pci230_private {
- 	unsigned short adcfifothresh;	/* ADC FIFO threshold (PCI230+/260+) */
- 	unsigned short adcg;		/* ADCG register value */
- 	unsigned char int_en;		/* Interrupt enable bits */
--	unsigned char ai_bipolar;	/* Flag AI range is bipolar */
--	unsigned char ao_bipolar;	/* Flag AO range is bipolar */
- 	unsigned char ier;		/* Copy of interrupt enable register */
- 	unsigned char intr_running;	/* Flag set in interrupt routine */
- 	unsigned char res_owner[NUM_RESOURCES]; /* Shared resource owners */
-+	bool ai_bipolar:1;		/* Flag AI range is bipolar */
-+	bool ao_bipolar:1;		/* Flag AO range is bipolar */
+@@ -443,10 +443,6 @@ enum {
+ /* Current CPU.  XXX should this be hard_smp_processor_id()? */
+ #define THISCPU		smp_processor_id()
+ 
+-/* State flags for atomic bit operations */
+-#define AI_CMD_STARTED	0
+-#define AO_CMD_STARTED	1
+-
+ /*
+  * Board descriptions for the two boards supported.
+  */
+@@ -495,7 +491,6 @@ struct pci230_private {
+ 	spinlock_t ai_stop_spinlock;	/* Spin lock for stopping AI command */
+ 	spinlock_t ao_stop_spinlock;	/* Spin lock for stopping AO command */
+ 	unsigned long daqio;		/* PCI230's DAQ I/O space */
+-	unsigned long state;		/* State flags */
+ 	unsigned int ai_scan_count;	/* Number of AI scans remaining */
+ 	unsigned int ai_scan_pos;	/* Current position within AI scan */
+ 	unsigned int ao_scan_count;	/* Number of AO scans remaining.  */
+@@ -511,6 +506,8 @@ struct pci230_private {
+ 	bool intr_running:1;		/* Flag set in interrupt routine */
+ 	bool ai_bipolar:1;		/* Flag AI range is bipolar */
+ 	bool ao_bipolar:1;		/* Flag AO range is bipolar */
++	bool ai_cmd_started:1;		/* Flag AI command started */
++	bool ao_cmd_started:1;		/* Flag AO command started */
  };
  
  /* PCI230 clock source periods in ns */
-@@ -538,9 +538,6 @@ static const struct comedi_lrange pci230_ai_range = {
- /* PCI230 analogue gain bits for each input range. */
- static const unsigned char pci230_ai_gain[7] = { 0, 1, 2, 3, 1, 2, 3 };
+@@ -1060,11 +1057,12 @@ static void pci230_ao_stop(struct comedi_device *dev,
+ 	struct pci230_private *devpriv = dev->private;
+ 	unsigned long irqflags;
+ 	unsigned char intsrc;
+-	int started;
++	bool started;
+ 	struct comedi_cmd *cmd;
  
--/* PCI230 adccon bipolar flag for each analogue input range. */
--static const unsigned char pci230_ai_bipolar[7] = { 1, 1, 1, 1, 0, 0, 0 };
--
- /* PCI230 analogue output range table */
- static const struct comedi_lrange pci230_ao_range = {
- 	2, {
-@@ -549,9 +546,6 @@ static const struct comedi_lrange pci230_ao_range = {
- 	}
- };
+ 	spin_lock_irqsave(&devpriv->ao_stop_spinlock, irqflags);
+-	started = test_and_clear_bit(AO_CMD_STARTED, &devpriv->state);
++	started = devpriv->ao_cmd_started;
++	devpriv->ao_cmd_started = false;
+ 	spin_unlock_irqrestore(&devpriv->ao_stop_spinlock, irqflags);
+ 	if (!started)
+ 		return;
+@@ -1263,7 +1261,7 @@ static int pci230_ao_inttrig_scan_begin(struct comedi_device *dev,
+ 		return -EINVAL;
  
--/* PCI230 daccon bipolar flag for each analogue output range. */
--static const unsigned char pci230_ao_bipolar[2] = { 0, 1 };
--
- static unsigned short pci230_ai_read(struct comedi_device *dev)
- {
- 	const struct pci230_board *thisboard = comedi_board(dev);
-@@ -809,7 +803,7 @@ static int pci230_ai_insn_read(struct comedi_device *dev,
- 	adccon = PCI230_ADC_TRIG_Z2CT2 | PCI230_ADC_FIFO_EN;
- 	/* Set Z2-CT2 output low to avoid any false triggers. */
- 	i8254_set_mode(dev->iobase + PCI230_Z2_CT_BASE, 0, 2, I8254_MODE0);
--	devpriv->ai_bipolar = pci230_ai_bipolar[range];
-+	devpriv->ai_bipolar = comedi_range_is_bipolar(s, range);
- 	if (aref == AREF_DIFF) {
- 		/* Differential. */
- 		gainshift = chan * 2;
-@@ -892,7 +886,7 @@ static int pci230_ao_insn_write(struct comedi_device *dev,
- 	 * Set range - see analogue output range table; 0 => unipolar 10V,
- 	 * 1 => bipolar +/-10V range scale
- 	 */
--	devpriv->ao_bipolar = pci230_ao_bipolar[range];
-+	devpriv->ao_bipolar = comedi_range_is_bipolar(s, range);
- 	outw(range, devpriv->daqio + PCI230_DACCON);
+ 	spin_lock_irqsave(&devpriv->ao_stop_spinlock, irqflags);
+-	if (test_bit(AO_CMD_STARTED, &devpriv->state)) {
++	if (devpriv->ao_cmd_started) {
+ 		/* Perform scan. */
+ 		if (devpriv->hwver < 2) {
+ 			/* Not using DAC FIFO. */
+@@ -1296,7 +1294,7 @@ static void pci230_ao_start(struct comedi_device *dev,
+ 	struct comedi_cmd *cmd = &async->cmd;
+ 	unsigned long irqflags;
  
- 	for (i = 0; i < insn->n; i++) {
-@@ -1424,7 +1418,7 @@ static int pci230_ao_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 	 * 1 => bipolar +/-10V range scale
- 	 */
- 	range = CR_RANGE(cmd->chanlist[0]);
--	devpriv->ao_bipolar = pci230_ao_bipolar[range];
-+	devpriv->ao_bipolar = comedi_range_is_bipolar(s, range);
- 	daccon = devpriv->ao_bipolar ? PCI230_DAC_OR_BIP : PCI230_DAC_OR_UNI;
- 	/* Use DAC FIFO for hardware version 2 onwards. */
- 	if (devpriv->hwver >= 2) {
-@@ -1514,7 +1508,7 @@ static int pci230_ai_check_chanlist(struct comedi_device *dev,
- 	unsigned int prev_chan = 0;
- 	unsigned int prev_range = 0;
- 	unsigned int prev_aref = 0;
--	unsigned int prev_polarity = 0;
-+	bool prev_bipolar = false;
- 	unsigned int subseq_len = 0;
- 	int i;
+-	set_bit(AO_CMD_STARTED, &devpriv->state);
++	devpriv->ao_cmd_started = true;
+ 	if (cmd->stop_src == TRIG_COUNT && devpriv->ao_scan_count == 0) {
+ 		/* An empty acquisition! */
+ 		async->events |= COMEDI_CB_EOA;
+@@ -1852,7 +1850,7 @@ static int pci230_ai_inttrig_convert(struct comedi_device *dev,
+ 		return -EINVAL;
  
-@@ -1523,7 +1517,7 @@ static int pci230_ai_check_chanlist(struct comedi_device *dev,
- 		unsigned int chan = CR_CHAN(chanspec);
- 		unsigned int range = CR_RANGE(chanspec);
- 		unsigned int aref = CR_AREF(chanspec);
--		unsigned int polarity = pci230_ai_bipolar[range];
-+		bool bipolar = comedi_range_is_bipolar(s, range);
+ 	spin_lock_irqsave(&devpriv->ai_stop_spinlock, irqflags);
+-	if (test_bit(AI_CMD_STARTED, &devpriv->state)) {
++	if (devpriv->ai_cmd_started) {
+ 		unsigned int delayus;
  
- 		if (aref == AREF_DIFF && chan >= max_diff_chan) {
- 			dev_dbg(dev->class_dev,
-@@ -1555,7 +1549,7 @@ static int pci230_ai_check_chanlist(struct comedi_device *dev,
- 				return -EINVAL;
- 			}
+ 		/*
+@@ -1899,7 +1897,7 @@ static int pci230_ai_inttrig_scan_begin(struct comedi_device *dev,
+ 		return -EINVAL;
  
--			if (polarity != prev_polarity) {
-+			if (bipolar != prev_bipolar) {
- 				dev_dbg(dev->class_dev,
- 					"%s: channel sequence ranges must be all bipolar or all unipolar\n",
- 					__func__);
-@@ -1573,7 +1567,7 @@ static int pci230_ai_check_chanlist(struct comedi_device *dev,
- 		prev_chan = chan;
- 		prev_range = range;
- 		prev_aref = aref;
--		prev_polarity = polarity;
-+		prev_bipolar = bipolar;
- 	}
+ 	spin_lock_irqsave(&devpriv->ai_stop_spinlock, irqflags);
+-	if (test_bit(AI_CMD_STARTED, &devpriv->state)) {
++	if (devpriv->ai_cmd_started) {
+ 		/* Trigger scan by waggling CT0 gate source. */
+ 		zgat = GAT_CONFIG(0, GAT_GND);
+ 		outb(zgat, dev->iobase + PCI230_ZGAT_SCE);
+@@ -1917,10 +1915,11 @@ static void pci230_ai_stop(struct comedi_device *dev,
+ 	struct pci230_private *devpriv = dev->private;
+ 	unsigned long irqflags;
+ 	struct comedi_cmd *cmd;
+-	int started;
++	bool started;
  
- 	if (subseq_len == 0)
-@@ -2296,7 +2290,7 @@ static int pci230_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 	}
+ 	spin_lock_irqsave(&devpriv->ai_stop_spinlock, irqflags);
+-	started = test_and_clear_bit(AI_CMD_STARTED, &devpriv->state);
++	started = devpriv->ai_cmd_started;
++	devpriv->ai_cmd_started = false;
+ 	spin_unlock_irqrestore(&devpriv->ai_stop_spinlock, irqflags);
+ 	if (!started)
+ 		return;
+@@ -1970,7 +1969,7 @@ static void pci230_ai_start(struct comedi_device *dev,
+ 	struct comedi_async *async = s->async;
+ 	struct comedi_cmd *cmd = &async->cmd;
  
- 	range = CR_RANGE(cmd->chanlist[0]);
--	devpriv->ai_bipolar = pci230_ai_bipolar[range];
-+	devpriv->ai_bipolar = comedi_range_is_bipolar(s, range);
- 	if (devpriv->ai_bipolar)
- 		adccon |= PCI230_ADC_IR_BIP;
- 	else
+-	set_bit(AI_CMD_STARTED, &devpriv->state);
++	devpriv->ai_cmd_started = true;
+ 	if (cmd->stop_src == TRIG_COUNT && devpriv->ai_scan_count == 0) {
+ 		/* An empty acquisition! */
+ 		async->events |= COMEDI_CB_EOA;
 -- 
 2.0.4
 
