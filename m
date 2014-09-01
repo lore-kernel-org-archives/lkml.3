@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753873AbaIAMOt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 08:14:49 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:34670 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752311AbaIAMOs (ORCPT
+	id S1753284AbaIAMZS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 08:25:18 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:65003 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751500AbaIAMZQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 08:14:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <540465D0.6000003@linux.intel.com>
-References: <1409068061-10855-1-git-send-email-ricardo.ribalda@gmail.com>
- <53FDEA48.9030301@intel.com> <CAPybu_1Tzik3yegY2rrXKd7ii1Bzn-ep-gXG5MDZ-rJ2D71-Rw@mail.gmail.com>
- <53FDF8D9.60103@intel.com> <CAPybu_363MD6bFesB44JkkjJYyi+B8KFG9Q1s6aeKNmvvNCz=A@mail.gmail.com>
- <53FF0765.3050509@intel.com> <CAPybu_0gf3XKsBFsxGPptq9m588K81fdh1sbOgMWM+hDVaHiWQ@mail.gmail.com>
- <CAPybu_1UytoxXk-t7u_3vQ6KL-5DmVUz1u5PiDLysBCvgit--A@mail.gmail.com>
- <53FF48B1.5090901@intel.com> <CAPybu_2rgn-DEUKfdmGsaAsFSQJ_zz6fsdnD0dHmyCPW4B-+WA@mail.gmail.com>
- <54009A50.9010707@intel.com> <CAPybu_2ZQ9iPA_FfYn2Mqg5vXn40HuFCcVv1Zg900YavKCDxUQ@mail.gmail.com>
- <CAPybu_3qmtob-uJhcUwEETcM7cXPxOm3-zOjNFLub31mQDdABQ@mail.gmail.com>
- <54044C5C.9010305@intel.com> <CAPybu_3jtJDXw1rJOQVoc2G9UmDXqeaLW-aNvfO=y306XQoXjQ@mail.gmail.com>
- <54045485.4080700@intel.com> <CAPybu_009Z7Ehak_CGMAfO80hWKC=w2LoUQjg0B-aQwqd58H6w@mail.gmail.com>
- <540465D0.6000003@linux.intel.com>
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Mon, 1 Sep 2014 14:14:26 +0200
-Message-ID: <CAPybu_1Jvn2vMjcY863JCz08SZOp7LbOGAX83bsKuzDrmC18SA@mail.gmail.com>
-Subject: Re: [PATCH] xhci-ring: Fix Null pointer dereference
-To: Mathias Nyman <mathias.nyman@linux.intel.com>
-Cc: Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 1 Sep 2014 08:25:16 -0400
+From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+To: rjw@rjwysocki.net, viresh.kumar@linaro.org
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>
+Subject: [PATCH] cpufreq: intel_pstate: Remove unneeded variable
+Date: Mon,  1 Sep 2014 14:23:45 +0200
+Message-Id: <1409574225-5618-1-git-send-email-gabriele.mzt@gmail.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I could offer you a net3380 usb gadget device (mini pcie or pcie) but
-the uPD720200 is my notebook, so I cannot afford an extra one for you
-:)
+It should have been removed with commit d1b6848590af
+("cpufreq / intel_pstate: Optimize intel_pstate_set_policy")
 
-On Mon, Sep 1, 2014 at 2:25 PM, Mathias Nyman
-<mathias.nyman@linux.intel.com> wrote:
-> On 09/01/2014 02:19 PM, Ricardo Ribalda Delgado wrote:
->> Do you have a NEC/Renesas uPD720200 USB 3.0 Host?
->>
->> If so, try with an usb gadget acting as a mass storage. That hits the
->> bug in my machine.
->>
->
-> Thanks for the tip, but currently I only got Intel hosts.
->
-> btw I earlier meant to say that I _don't_ know what's going on yet.
->
-> -Mathias
->
->
+Signed-off-by: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+---
+ drivers/cpufreq/intel_pstate.c | 4 ----
+ 1 file changed, 4 deletions(-)
 
-
-
+diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+index e396ad3..0668b38 100644
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -708,10 +708,6 @@ static unsigned int intel_pstate_get(unsigned int cpu_num)
+ 
+ static int intel_pstate_set_policy(struct cpufreq_policy *policy)
+ {
+-	struct cpudata *cpu;
+-
+-	cpu = all_cpu_data[policy->cpu];
+-
+ 	if (!policy->cpuinfo.max_freq)
+ 		return -ENODEV;
+ 
 -- 
-Ricardo Ribalda
+2.1.0
+
