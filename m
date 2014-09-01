@@ -1,77 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095AbaIACVo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 22:21:44 -0400
-Received: from mailout.micron.com ([137.201.242.129]:52831 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751000AbaIACVn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 22:21:43 -0400
-From: bpqw <bpqw@micron.com>
-To: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>
-CC: Christian Riesch <christian.riesch@omicron.at>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/1] mtd: cfi_cmdset_0002:add fixup for Micron M29EW after
- erase operation
-Thread-Topic: [PATCH 1/1] mtd: cfi_cmdset_0002:add fixup for Micron M29EW
- after erase operation
-Thread-Index: Ac/FirFoX5r9fafZSu+Pmx6RITsSBwAAIQmw
-Date: Mon, 1 Sep 2014 02:20:52 +0000
-Message-ID: <A765B125120D1346A63912DDE6D8B6315DB7BE@NTXXIAMBX02.xacn.micron.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.84.5]
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-20920.004
-X-TM-AS-Result: No--2.219900-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-x-mt-checkinternalsenderrule: True
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	id S1752163AbaIAC0u (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 22:26:50 -0400
+Received: from mail-bn1blp0184.outbound.protection.outlook.com ([207.46.163.184]:26059
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751000AbaIAC0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Aug 2014 22:26:49 -0400
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>, <lgirdwood@gmail.com>, <perex@perex.cz>,
+        <tiwai@suse.de>, <moinejf@free.fr>, <kuninori.morimoto.gx@renesas.com>,
+        <jsarha@ti.com>, <alsa-devel@alsa-project.org>
+CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCHv2 0/2] ASoC: simple-card: Fix bug about DT node's refcount
+Date: Mon, 1 Sep 2014 09:35:25 +0800
+Message-ID: <1409535327-11449-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199003)(77156001)(68736004)(69596002)(99396002)(44976005)(2201001)(92726001)(6806004)(83322001)(31966008)(92566001)(93916002)(104016003)(97736001)(50986999)(74502001)(74662001)(88136002)(50226001)(4396001)(87936001)(81342001)(62966002)(86362001)(89996001)(90102001)(84676001)(87286001)(21056001)(64706001)(85306004)(80022001)(79102001)(26826002)(36756003)(106466001)(81156004)(81542001)(47776003)(20776003)(83072002)(105606002)(229853001)(77982001)(76482001)(95666004)(102836001)(85852003)(50466002)(104166001)(107046002)(48376002)(46102001);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR0301MB0611;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03218BFD9F
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Li.Xiubo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For Micron M29EW,20ms delay is needed after erase operation.
+Change for v2:
+- Just rebased to the next branch newest head.
 
-Signed-off-by: BeanHuo <bpqw@micron.com>
----
- drivers/mtd/chips/cfi_cmdset_0002.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
 
-diff --git a/drivers/mtd/chips/cfi_cmdset_0002.c b/drivers/mtd/chips/cfi_cmdset_0002.c
-index 5a4bfe3..9b0de91 100644
---- a/drivers/mtd/chips/cfi_cmdset_0002.c
-+++ b/drivers/mtd/chips/cfi_cmdset_0002.c
-@@ -509,6 +509,16 @@ static void cfi_fixup_m29ew_delay_after_resume(struct cfi_private *cfi)
- 		cfi_udelay(500);
- }
- 
-+static void cfi_fixup_m29ew_delay_after_erase(struct cfi_private *cfi) 
-+{
-+	/*
-+	 * Resolving the Delay After ERASE Issue @low temperature.
-+	 * 20ms delay is needed after erase operation.
-+	 */
-+	if (is_m29ew(cfi))
-+		cfi_udelay(20000);
-+}
-+
- struct mtd_info *cfi_cmdset_0002(struct map_info *map, int primary)  {
- 	struct cfi_private *cfi = map->fldrv_priv; @@ -2397,6 +2407,7 @@ static int __xipram do_erase_oneblock(struct map_info *map, struct flchip *chip,
- 		ret = -EIO;
- 	}
- 
-+	cfi_fixup_m29ew_delay_after_erase(cfi);
- 	chip->state = FL_READY;
- 	DISABLE_VPP(map);
- 	put_chip(map, chip, adr);
---
-1.7.9.5
+Xiubo Li (2):
+  ASoC: simple-card: Fix bug of forgetting decrement DT node's refcount
+  ASoC: simple-card: Fix bug of wrong decrement DT node's refcount
+
+ sound/soc/generic/simple-card.c | 53 ++++++++++++++++++++++-------------------
+ 1 file changed, 29 insertions(+), 24 deletions(-)
+
+-- 
+1.8.4
+
