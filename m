@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754070AbaIANs1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 09:48:27 -0400
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:33851 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754053AbaIANsY (ORCPT
+	id S1753991AbaIANvA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 09:51:00 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:59716 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752008AbaIANu6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 09:48:24 -0400
-From: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Yarygin <yarygin@linux.vnet.ibm.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 3/3] perf kvm stat report: Unify the title bar output
-Date: Mon,  1 Sep 2014 17:44:55 +0400
-Message-Id: <1409579095-12963-4-git-send-email-yarygin@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1409579095-12963-1-git-send-email-yarygin@linux.vnet.ibm.com>
-References: <1409579095-12963-1-git-send-email-yarygin@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14090113-2966-0000-0000-000000FBF1AD
+	Mon, 1 Sep 2014 09:50:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <1409571154-50408-1-git-send-email-shakilk1729@gmail.com>
+References: <1409571154-50408-1-git-send-email-shakilk1729@gmail.com>
+Date: Mon, 1 Sep 2014 09:50:57 -0400
+Message-ID: <CAHQdGtQAwp_QuQE-xmjJNkcxbu7g4QtYQv8qrPT_qWpkym1GZg@mail.gmail.com>
+Subject: Re: [PATCH] Next branch: authgss: authgss.c: Fix warnings for
+ uninitizlized variable expire
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+To: Shakil A Khan <shakilk1729@gmail.com>
+Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        William Andros Adamson <andros@netapp.com>,
+        Jeffrey Layton <jlayton@primarydata.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Bruce Fields <bfields@fieldses.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'live' command prints additional information to the
-"Analyze events for " title bar about the current target.
-Let's print the same title for the 'report' command.
+On Mon, Sep 1, 2014 at 7:32 AM, Shakil A Khan <shakilk1729@gmail.com> wrote:
+> Signed-off-by : Shakil A Khan <shakilk1729@gmail.com>
+> ---
+>  net/sunrpc/auth_gss/auth_gss.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/net/sunrpc/auth_gss/auth_gss.c b/net/sunrpc/auth_gss/auth_gss.c
+> index afb292c..bea0951 100644
+> --- a/net/sunrpc/auth_gss/auth_gss.c
+> +++ b/net/sunrpc/auth_gss/auth_gss.c
+> @@ -1387,7 +1387,7 @@ gss_key_timeout(struct rpc_cred *rc)
+>         struct gss_cred *gss_cred = container_of(rc, struct gss_cred, gc_base);
+>         struct gss_cl_ctx *ctx;
+>         unsigned long now = jiffies;
+> -       unsigned long expire;
+> +       unsigned long expire = 0;
+>
+>         rcu_read_lock();
+>         ctx = rcu_dereference(gss_cred->gc_ctx);
+> --
+> 1.7.1
 
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
----
- tools/perf/builtin-kvm.c |   14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+That would be a compiler bug, not a kernel bug. The kernel code is
+perfectly correct as it stands, and will never access the
+uninitialised variable.
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index b7fa0bc..c3af7ee 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -543,14 +543,12 @@ static void print_vcpu_info(struct perf_kvm_stat *kvm)
+-- 
+Trond Myklebust
 
- 	pr_info("Analyze events for ");
+Linux NFS client maintainer, PrimaryData
 
--	if (kvm->live) {
--		if (kvm->opts.target.system_wide)
--			pr_info("all VMs, ");
--		else if (kvm->opts.target.pid)
--			pr_info("pid(s) %s, ", kvm->opts.target.pid);
--		else
--			pr_info("dazed and confused on what is monitored, ");
--	}
-+	if (kvm->opts.target.system_wide)
-+		pr_info("all VMs, ");
-+	else if (kvm->opts.target.pid)
-+		pr_info("pid(s) %s, ", kvm->opts.target.pid);
-+	else
-+		pr_info("dazed and confused on what is monitored, ");
-
- 	if (vcpu == -1)
- 		pr_info("all VCPUs:\n\n");
---
-1.7.9.5
-
+trond.myklebust@primarydata.com
