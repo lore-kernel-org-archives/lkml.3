@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076AbaIAOrH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 10:47:07 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44389 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753815AbaIAOrE (ORCPT
+	id S1754129AbaIAOsK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 10:48:10 -0400
+Received: from www.linutronix.de ([62.245.132.108]:59527 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751965AbaIAOsI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 10:47:04 -0400
-Date: Mon, 1 Sep 2014 15:47:00 +0100
-From: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
-To: broonie@kernel.org, lee.jones@linaro.org, sameo@linux.intel.com,
-        lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de
-Cc: alsa-devel@alsa-project.org, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3 v4 RESEND] mfd: arizona: Export function to control
-	subsystem DVFS
-Message-ID: <20140901144700.GA18134@opensource.wolfsonmicro.com>
-References: <20140808133233.GA2665@opensource.wolfsonmicro.com>
+	Mon, 1 Sep 2014 10:48:08 -0400
+Message-ID: <54048720.9000003@linutronix.de>
+Date: Mon, 01 Sep 2014 16:48:00 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140808133233.GA2665@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Frans Klaver <frans.klaver@xsens.com>
+CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        tony@atomide.com, balbi@ti.com, Vinod Koul <vinod.koul@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        mika.westerberg@linux.intel.com
+Subject: Re: [PATCH 03/15] tty: serial: 8250_core: add run time pm
+References: <1408124563-31541-1-git-send-email-bigeasy@linutronix.de> <1408124563-31541-4-git-send-email-bigeasy@linutronix.de> <20140820092319.GA20775@ci00147.xsens-tech.local> <20140820093936.GB20775@ci00147.xsens-tech.local>
+In-Reply-To: <20140820093936.GB20775@ci00147.xsens-tech.local>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->  
-> +
-> +int arizona_dvfs_down(struct arizona *arizona, unsigned int flags)
-> +{
-> +	int ret = 0;
-> +
-> +	mutex_lock(&arizona->subsys_max_lock);
-> +
-> +	if ((arizona->subsys_max_rq & flags) != flags)
-> +		dev_warn(arizona->dev, "Unbalanced DVFS down: %x\n", flags);
+On 08/20/2014 11:39 AM, Frans Klaver wrote:
 
-This warning is bogus and should be removed. These are just simple on/off bit
-flags, not a reference count. If a requestor is already at the lower DVFS
-state we just do nothing.
+>>>  static int serial8250_get_poll_char(struct uart_port *port)
+>>>  {
+>>> -	unsigned char lsr = serial_port_in(port, UART_LSR);
+>>> +	unsigned char lsr;
+>>> +	int status;
+>>> +
+>>> +	serial8250_rpm_get(up);
+>>
+>> or up won't be defined below. You probably need 
+> 
+> Obviously I meant to say that 'up' won't be defined here.
 
-It was done this way to keep the code simple and lower risk. None of the
-blocks that need to move the DVFS frequency up and down have multiple users
-so they are simple either/or cases that don't currently reference count
-themselves. So having a boolean flag to match the state of each block
-keeps the change set smaller.
+Good catch, thanks. However I wouldn't bet my money it that won't be
+defined here. The semaphore code provides up() and down() so it is
+makes it kind of defined :) But it doesn't compile due to wrong pointer
+types which is good (I run into this myself and looked confused at
+first).
+I didn't notice this at all because only kgdb uses this
+CONFIG_CONSOLE_POLL which I had off. Once again, thank you.
 
-> +
-> +	arizona->subsys_max_rq &= ~flags;
-> +
-> +	if (arizona->subsys_max_rq == 0) {
-> +		switch (arizona->type) {
-> +		case WM5102:
-> +		case WM8997:
-> +			ret = regmap_update_bits(arizona->regmap,
-> +					ARIZONA_DYNAMIC_FREQUENCY_SCALING_1,
-> +					ARIZONA_SUBSYS_MAX_FREQ, 0);
-> +			if (ret != 0)
-> +				dev_err(arizona->dev,
-> +					"Failed to disable subsys max: %d\n",
-> +					ret);
-> +
-> +			ret = regulator_set_voltage(arizona->dcvdd,
-> +						    1200000, 1800000);
-> +			if (ret != 0)
-> +				dev_err(arizona->dev,
-> +					"Failed to set DCVDD (DVFS down): %d\n",
-> +					ret);
-> +			break;
-> +
-> +		default:
-> +			break;
-> +		}
-> +	}
-> +
-> +	mutex_unlock(&arizona->subsys_max_lock);
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(arizona_dvfs_down);
-> +
+>> +	struct uart_8250_port *up = up_to_u8250p(port);
+>> somewhere in there.
+
+Sebastian
