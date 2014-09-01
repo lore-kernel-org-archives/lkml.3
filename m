@@ -1,47 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318AbaIADg1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 23:36:27 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:53918 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752238AbaIADgZ (ORCPT
+	id S1752377AbaIADgh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 23:36:37 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:62034 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752338AbaIADgg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 23:36:25 -0400
-From: Chase Southwood <chase.southwood@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Chase Southwood <chase.southwood@gmail.com>
-Subject: [PATCH] staging: comedi: hwdrv_apci3501: change printk to dev_err
-Date: Sun, 31 Aug 2014 22:36:11 -0500
-Message-Id: <1409542571-27509-1-git-send-email-chase.southwood@gmail.com>
-X-Mailer: git-send-email 2.1.0
+	Sun, 31 Aug 2014 23:36:36 -0400
+From: Wang Long <long.wanglong@huawei.com>
+To: <linux@arm.linux.org.uk>, <santosh.shilimkar@ti.com>,
+        <victor.kamensky@linaro.org>, <nico@linaro.org>,
+        <ben.dooks@codethink.co.uk>, <cov@codeaurora.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: [SMP BUG?] the return value of is_smp() is bug?
+Date: Mon, 1 Sep 2014 19:35:34 +0800
+Message-ID: <1409571334-2814-1-git-send-email-long.wanglong@huawei.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.110.60.26]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A02020A.5403E98B.009A,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2011-05-27 18:58:46
+X-Mirapoint-Loop-Id: cb4e8cd32801adca102209c105356a3a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dev_err() is preferred to printk() in device drivers.
 
-Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
+Hi,all
+
+In kernel 3.17-rc2, when i set CONFIG_HAVE_SMP = y and CONFIG_SMP_ON_UP = y 
+in .config file. the secondary core can not boot.
+
+when i set CONFIG_HAVE_SMP = y and CONFIG_SMP_ON_UP = n in .config file,
+the secondary core can boot.
+
+But this does not happen in kernel 3.10 lts kernel, Whether the 
+CONFIG_SMP_ON_UP is set yes or no ,the secondary core can boot.
+
+Does the meaning of CONFIG_SMP_ON_UP changed or this is a bug in kernel 3.17-rc2 ? 
+
+
+I write the following patch to test the return value of is_smp().
+
+----------------------------------------
+
+Signed-off-by: Wang Long <long.wanglong@huawei.com>
 ---
- drivers/staging/comedi/drivers/addi-data/hwdrv_apci3501.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/kernel/setup.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3501.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3501.c
-index e82c3fc..339519a 100644
---- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3501.c
-+++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3501.c
-@@ -168,7 +168,7 @@ static int apci3501_read_insn_timer(struct comedi_device *dev,
- 
- 	else if ((devpriv->b_TimerSelectMode != ADDIDATA_TIMER)
- 		&& (devpriv->b_TimerSelectMode != ADDIDATA_WATCHDOG)) {
--		printk("\nIn ReadTimerCounterWatchdog :: Invalid Subdevice \n");
-+		dev_err(dev->class_dev, "Invalid subdevice.\n");
- 	}
- 	return insn->n;
- }
+diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+index 84db893d..fbeb67f 100644
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -925,6 +925,11 @@ void __init setup_arch(char **cmdline_p)
+ 	arm_dt_init_cpu_maps();
+ 	psci_init();
+ #ifdef CONFIG_SMP
++	
++	if (is_smp() == 1)
++		printk("is_smp() return true;\n");
++	else if (is_smp() == 0)
++		printk("is_smp() return false;\n");
+ 	if (is_smp()) {
+ 		if (!mdesc->smp_init || !mdesc->smp_init()) {
+ 			if (psci_smp_available())
+
+kernel version: 3.17-rc2
+
+config:     set CONFIG_HAVE_SMP = y and CONFIG_SMP_ON_UP = y
+command:    # qemu-system-arm -M vexpress-a9 -smp 2  -m 128M -kernel arch/arm/boot/zImage -nographic
+The output:
+
+..........
+is_smp() return false;
+CPU: Testing write buffer coherency: ok
+missing device node for CPU 0
+CPU0: thread -1, cpu 0, socket 0, mpidr 80000000
+Setting up static identity map for 0x604643d8 - 0x60464430
+Brought up 1 CPUs
+SMP: Total of 1 processors activated.
+CPU: All CPU(s) started in SVC mode.
+...........
+
+config:     set CONFIG_HAVE_SMP = y and not set CONFIG_SMP_ON_UP 
+command:    # qemu-system-arm -M vexpress-a9 -smp 2  -m 128M -kernel arch/arm/boot/zImage -nographic
+The output:
+
+.....
+ Memory policy: Data cache writealloc
+is_smp() return true;
+sched_clock: 32 bits at 24MHz, resolution 41ns, wraps every 178956969942ns
+......
+......
+CPU: Testing write buffer coherency: ok
+missing device node for CPU 0
+missing device node for CPU 1
+CPU0: thread -1, cpu 0, socket 0, mpidr 80000000
+Setting up static identity map for 0x60463ef8 - 0x60463f50
+CPU1: Booted secondary processor
+CPU1: thread -1, cpu 1, socket 0, mpidr 80000001
+Brought up 2 CPUs
+SMP: Total of 2 processors activated.
+CPU: All CPU(s) started in SVC mode.
+devtmpfs: initialized
+.......
+
+Any ideas?
+
+
 -- 
-2.1.0
-
+1.7.9.5
