@@ -1,59 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753324AbaIAKTe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 06:19:34 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51603 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752577AbaIAKTd (ORCPT
+	id S1753345AbaIAKT5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 06:19:57 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:47484 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752722AbaIAKTz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 06:19:33 -0400
-X-Sasl-enc: by0gF7GvqBrB233197R136GgaWr8Lb0o6PbYrdwesnsf 1409566771
-Date: Mon, 1 Sep 2014 07:19:19 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: early microcode: how to disable at runtime?
-Message-ID: <20140901101919.GA2902@khazad-dum.debian.net>
-References: <20140809231911.GA4843@khazad-dum.debian.net>
- <20140831194548.GA12628@khazad-dum.debian.net>
- <54037C07.8060703@zytor.com>
- <20140831201126.GB12628@khazad-dum.debian.net>
- <20140901051302.GA28402@nazgul.tnic>
+	Mon, 1 Sep 2014 06:19:55 -0400
+Date: Mon, 1 Sep 2014 12:19:39 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Jason Wang <jasowang@redhat.com>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>,
+        Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process is
+ runnable
+Message-ID: <20140901101939.GA31157@worktop.ger.corp.intel.com>
+References: <1408608310-13579-1-git-send-email-jasowang@redhat.com>
+ <1408608310-13579-2-git-send-email-jasowang@redhat.com>
+ <1408683665.5648.69.camel@marge.simpson.net>
+ <20140901093159.GB27892@worktop.ger.corp.intel.com>
+ <20140901095219.GD21269@redhat.com>
+ <20140901100434.GD27892@worktop.ger.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140901051302.GA28402@nazgul.tnic>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140901100434.GD27892@worktop.ger.corp.intel.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 01 Sep 2014, Borislav Petkov wrote:
-> On Sun, Aug 31, 2014 at 05:11:26PM -0300, Henrique de Moraes Holschuh wrote:
-> > > Probably more like something more like arch/x86/boot/cmdline.c.  Maybe
-> > > we could even make it sharable.
+On Mon, Sep 01, 2014 at 12:04:34PM +0200, Peter Zijlstra wrote:
+> On Mon, Sep 01, 2014 at 12:52:19PM +0300, Michael S. Tsirkin wrote:
+> > On Mon, Sep 01, 2014 at 11:31:59AM +0200, Peter Zijlstra wrote:
+> > > On Fri, Aug 22, 2014 at 07:01:05AM +0200, Mike Galbraith wrote:
+> > > > > +++ b/include/net/busy_poll.h
+> > > > > @@ -109,7 +109,8 @@ static inline bool sk_busy_loop(struct sock *sk, int nonblock)
+> > > > >  		cpu_relax();
+> > > > >  
+> > > > >  	} while (!nonblock && skb_queue_empty(&sk->sk_receive_queue) &&
+> > > > > -		 !need_resched() && !busy_loop_timeout(end_time));
+> > > > > +		 !need_resched() && !busy_loop_timeout(end_time) &&
+> > > > > +		 nr_running_this_cpu() < 2);
+> > > > >  
+> > > 
+> > > So as has been said by now; this is horrible.
+> > > 
+> > > We should not export nr_running like this ever. Your usage of < 2
+> > > implies this can be hit with nr_running == 0, and therefore you can also
+> > > hit it with nr_running == 1 where the one is not network related and you
+> > > get random delays.
+> > > 
+> > > Worse still, you have BH (and thereby preemption) disabled, you should
+> > > not _ever_ have undefined and indefinite waits like that.
+> > > 
+> > > You also destroy any hope of dropping into lower power states; even when
+> > > there's never going to be a packet ever again, also bad.
 > > 
-> > Looks like that would work, yes.
+> > Hmm this patch sometimes makes us exit from the busy loop *earlier*.
+> > How can this interfere with dropping into lower power states?
 > 
-> Guys, guys, please relax and check the code first: "dis_ucode_ldr".
+> Ah.. jetlag.. :/ I read it like it owuld indefinitely spin if there was
+> only the 'one' task, not avoid the spin unless there was the one task.
+> 
+> The nr_running thing is still horrible, but let me reread this patch
+> description to see if it explains why that is a good thing.
 
-Thanks!
+OK I suppose that more or less makes sense, the contextual behaviour is
+of course tedious in that it makes behaviour less predictable. The
+'other' tasks might not want to generate data and you then destroy
+throughput by not spinning.
 
-Now we just need it added to Documentation/kernel-parameters.txt and to get
-it backported to -stable.
+I'm not entirely sure I see how its all supposed to work though; the
+various poll functions call sk_busy_poll() and do_select() also loops.
 
-This parameter is not a "debugging aid", it is a "save the day" bug
-workaround aid...
+The patch only kills the sk_busy_poll() loop, but then do_select() will
+still loop and not sleep, so how is this helping?
 
-I can't say I like the parameter name, though :p
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
