@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752883AbaIAG2R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 02:28:17 -0400
-Received: from mail.kapsi.fi ([217.30.184.167]:47490 "EHLO mail.kapsi.fi"
+	id S1752685AbaIAG0p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 02:26:45 -0400
+Received: from mail.kapsi.fi ([217.30.184.167]:58417 "EHLO mail.kapsi.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752619AbaIAG0u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 02:26:50 -0400
+	id S1752617AbaIAG0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 02:26:40 -0400
 From: Mikko Rapeli <mikko.rapeli@iki.fi>
 To: linux-kernel@vger.kernel.org
 Cc: linux-kbuild@vger.kernel.org, mikko.rapeli@iki.fi
-Subject: [RFC PATCH v2 17/27] scsi_bsg_fc.h: include stdint.h in userspace
-Date: Mon,  1 Sep 2014 09:26:08 +0300
-Message-Id: <1409552778-2537-18-git-send-email-mikko.rapeli@iki.fi>
+Subject: [RFC PATCH v2 21/27] gntalloc.h: include stdint.h in userspace
+Date: Mon,  1 Sep 2014 09:26:12 +0300
+Message-Id: <1409552778-2537-22-git-send-email-mikko.rapeli@iki.fi>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1409552778-2537-1-git-send-email-mikko.rapeli@iki.fi>
 References: <1408660449-4011-1-git-send-email-mikko.rapeli@iki.fi>
@@ -28,20 +28,20 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Fixes compilation error:
 
-scsi/scsi_bsg_fc.h:83:2: error: unknown type name ‘uint8_t’
+xen/gntalloc.h:22:2: error: unknown type name ‘uint16_t’
 
 Signed-off-by: Mikko Rapeli <mikko.rapeli@iki.fi>
 ---
- include/uapi/scsi/scsi_bsg_fc.h | 6 ++++++
+ include/uapi/xen/gntalloc.h | 6 ++++++
  1 file changed, 6 insertions(+)
 
-diff --git a/include/uapi/scsi/scsi_bsg_fc.h b/include/uapi/scsi/scsi_bsg_fc.h
-index 3031b90..5cc25df 100644
---- a/include/uapi/scsi/scsi_bsg_fc.h
-+++ b/include/uapi/scsi/scsi_bsg_fc.h
-@@ -22,6 +22,12 @@
- #ifndef SCSI_BSG_FC_H
- #define SCSI_BSG_FC_H
+diff --git a/include/uapi/xen/gntalloc.h b/include/uapi/xen/gntalloc.h
+index 76bd580..184df7e 100644
+--- a/include/uapi/xen/gntalloc.h
++++ b/include/uapi/xen/gntalloc.h
+@@ -11,6 +11,12 @@
+ #ifndef __LINUX_PUBLIC_GNTALLOC_H__
+ #define __LINUX_PUBLIC_GNTALLOC_H__
  
 +#ifdef __KERNEL__
 +#include <linux/types.h>
@@ -50,7 +50,7 @@ index 3031b90..5cc25df 100644
 +#endif
 +
  /*
-  * This file intended to be included by both kernel and user space
+  * Allocates a new page and creates a new grant reference.
   */
 -- 
 2.1.0
