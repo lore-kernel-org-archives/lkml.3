@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752680AbaIAWAI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 18:00:08 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:64487 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752281AbaIAWAH (ORCPT
+	id S1752715AbaIAWFA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 18:05:00 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:38768 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752015AbaIAWE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 18:00:07 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <5404EC61.9060907@roeck-us.net>
-Date: Mon, 01 Sep 2014 15:00:01 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: Re: linux-next: Tree for Aug 29
-References: <20140829150713.50d78c30@canb.auug.org.au> <20140901173521.GA8259@roeck-us.net> <alpine.DEB.2.11.1409011615210.22966@gentwo.org>
-In-Reply-To: <alpine.DEB.2.11.1409011615210.22966@gentwo.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+	Mon, 1 Sep 2014 18:04:59 -0400
+X-Greylist: delayed 519 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Sep 2014 18:04:58 EDT
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Mon, 1 Sep 2014 23:56:05 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Sander Nemvalts <snemvalts@gmail.com>
+Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Drivers:firewire: fix style errors in core-card.c This
+ is a patch in the core-card.c file which fixes up 2 warnings found by the
+ checkpatch.pl tool Signed-off-by: Sander Nemvalts <snemvalts@gmail.com>
+Message-ID: <20140901235605.5466b6a6@kant>
+In-Reply-To: <1409597306-22164-1-git-send-email-snemvalts@gmail.com>
+References: <1409597306-22164-1-git-send-email-snemvalts@gmail.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01/2014 02:15 PM, Christoph Lameter wrote:
-> On Mon, 1 Sep 2014, Guenter Roeck wrote:
->
->> arch/ia64/sn/kernel/setup.c: In function 'sn_cpu_init':
->> arch/ia64/sn/kernel/setup.c:632:13: error: lvalue required as left operand of assignment
->> make[1]: *** [arch/ia64/sn/kernel/setup.o] Error 1
->> make: *** [arch/ia64/sn/kernel/setup.o] Error 2
->
->
-> Subject: ia64: sn_nodepda cannot be assigned to after this_cpu conversion. Use __this_cpu_write.
->
-> There must be an explit statement to modify the percpu variable after the conversion of the
-> sn_nodpda macro to use this_cpu_read.
->
-> Signed-off-by: Christoph Lameter <cl@linux.com>
->
-FWIW: Compile-tested-by: Guenter Roeck <linux@roeck-us.net>
+On Sep 01 Sander Nemvalts wrote:
+> --- a/drivers/firewire/core-card.c
+> +++ b/drivers/firewire/core-card.c
+> @@ -89,7 +89,8 @@ static size_t config_rom_length = 1 + 4 + 1 + 1;
+>  #define BIB_ISC			((1) << 29)
+>  #define BIB_CMC			((1) << 30)
+>  #define BIB_IRMC		((1) << 31)
+> -#define NODE_CAPABILITIES	0x0c0083c0 /* per IEEE 1394 clause 8.3.2.6.5.2 */
+> +/* per IEEE 1394 clause 8.3.2.6.5.2 */
+> +#define NODE_CAPABILITIES	0x0c0083c0
 
-Too bad there is no ia64 support in qemu; this could use some "real" testing.
+This is no improvement.
 
-Guenter
+>  /*
+>   * IEEE-1394 specifies a default SPLIT_TIMEOUT value of 800 cycles (100 ms),
+> @@ -132,7 +133,7 @@ static void generate_config_rom(struct fw_card *card, __be32 *config_rom)
+>  	j = 7 + descriptor_count;
+>  
+>  	/* Generate root directory entries for descriptors. */
+> -	list_for_each_entry (desc, &descriptor_list, link) {
+> +	list_for_each_entry(desc, &descriptor_list, link) {
+>  		if (desc->immediate > 0)
+>  			config_rom[i++] = cpu_to_be32(desc->immediate);
+>  		config_rom[i] = cpu_to_be32(desc->key | (j - i));
 
+We are writing
+	for (a; b; c);
+not
+	for(a; b; c);
+and thus a space after list_for_each and friends makes sense.
+-- 
+Stefan Richter
+-=====-====- =--= ----=
+http://arcgraph.de/sr/
