@@ -1,101 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752147AbaIAAwe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 20:52:34 -0400
-Received: from mga09.intel.com ([134.134.136.24]:6322 "EHLO mga09.intel.com"
+	id S1752183AbaIAAyN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 20:54:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37558 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751429AbaIAAwa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 20:52:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,438,1406617200"; 
-   d="scan'208";a="596015339"
-From: Chuansheng Liu <chuansheng.liu@intel.com>
-To: tj@kernel.org
-Cc: MyMailClone@t-online.de, rjw@rjwysocki.net, aaron.lu@intel.com,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chuansheng Liu <chuansheng.liu@intel.com>
-Subject: [PATCH] ata: Disabling the async PM for JMicron chip 363/361
-Date: Mon,  1 Sep 2014 08:38:03 +0800
-Message-Id: <1409531883-17260-1-git-send-email-chuansheng.liu@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751429AbaIAAyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Aug 2014 20:54:11 -0400
+From: Laszlo Ersek <lersek@redhat.com>
+To: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, x86@kernel.org,
+        linux-ia64@vger.kernel.org, matt.fleming@intel.com, msalter@redhat.com,
+        lersek@redhat.com
+Subject: [PATCH 2/5] efi: introduce efi_md_typeattr_format()
+Date: Mon,  1 Sep 2014 02:53:37 +0200
+Message-Id: <1409532820-5027-3-git-send-email-lersek@redhat.com>
+In-Reply-To: <1409532820-5027-1-git-send-email-lersek@redhat.com>
+References: <1409532820-5027-1-git-send-email-lersek@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After enabled the PM feature that supporting async noirq(76569faa62
-(PM / sleep: Asynchronous threads for resume_noirq)),
-Jay hit the system resuming issue, that one of the JMicron controller
-can not be powered up.
+At the moment, there are three architectures debug-printing the EFI memory
+map at initialization: x86, ia64, and arm64. They all use different format
+strings, plus the EFI memory type and the EFI memory attributes are
+similarly hard to decode for a human reader.
 
-His device tree is like below:
-             +-1c.4-[02]--+-00.0  JMicron Technology Corp. JMB363 SATA/IDE Controller
-             |            \-00.1  JMicron Technology Corp. JMB363 SATA/IDE Controller
+Introduce a helper __init function that formats the memory type and the
+memory attributes in a unified way, to a user-provided character buffer.
 
-After investigation, we found the the Micron chip 363 included
-one SATA controller(0000:02:00.0) and one PATA controller(0000:02:00.1),
-these two controllers do not have parent-children relationship,
-but the PATA controller only can be powered on after the SATA controller
-has finished the powering on.
+The array "memory_type_name" is copied from the arm64 code, temporarily
+duplicating it. The (otherwise optional) braces around each string literal
+in the initializer list are dropped in order to match the kernel coding
+style more closely. The element size is tightened from 32 to 20 bytes
+(maximum actual string length + 1) so that we can derive the field width
+from the element size.
 
-If we enabled the async noirq(), then the below error is hit during noirq
-phase:
-pata_jmicron 0000:02:00.1: Refused to change power state, currently in D3
-
-Here for JMicron chip 363/361, we need forcedly to disable the async method.
-
-Bug detail: https://bugzilla.kernel.org/show_bug.cgi?id=81551
-
-Reported-by: Jay <MyMailClone@t-online.de>
-Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
+Signed-off-by: Laszlo Ersek <lersek@redhat.com>
 ---
- drivers/ata/ahci.c         |   11 +++++++++++
- drivers/ata/pata_jmicron.c |   11 +++++++++++
- 2 files changed, 22 insertions(+)
+ include/linux/efi.h        |  7 ++++++
+ drivers/firmware/efi/efi.c | 57 ++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 64 insertions(+)
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index a29f801..f5634cd 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -1329,6 +1329,17 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	else if (pdev->vendor == 0x1c44 && pdev->device == 0x8000)
- 		ahci_pci_bar = AHCI_PCI_BAR_ENMOTUS;
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index b4b1d8d..d04d618 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -887,6 +887,13 @@ extern bool efi_poweroff_required(void);
+ 	     (md) <= (efi_memory_desc_t *)((m)->map_end - (m)->desc_size); \
+ 	     (md) = (void *)(md) + (m)->desc_size)
  
-+	/* The JMicron chip 361/363 contains one SATA controller and
-+	 * one PATA controller,for powering on these both controllers,
-+	 * we must follow the sequence one by one, otherwise one of them
-+	 * can not be powered on successfully.
-+	 * So here we disabled the async suspend method for these chips.
-+	*/
-+	if (pdev->vendor == PCI_VENDOR_ID_JMICRON &&
-+		(pdev->device == PCI_DEVICE_ID_JMICRON_JMB363 ||
-+		pdev->device == PCI_DEVICE_ID_JMICRON_JMB361))
-+		device_disable_async_suspend(&pdev->dev);
++/*
++ * Format an EFI memory descriptor's type and attributes to a user-provided
++ * character buffer, as per snprintf(), and return the buffer.
++ */
++char * __init efi_md_typeattr_format(char *buf, size_t size,
++				     const efi_memory_desc_t *md);
 +
- 	/* acquire resources */
- 	rc = pcim_enable_device(pdev);
- 	if (rc)
-diff --git a/drivers/ata/pata_jmicron.c b/drivers/ata/pata_jmicron.c
-index 4d1a5d2..6b7aa77 100644
---- a/drivers/ata/pata_jmicron.c
-+++ b/drivers/ata/pata_jmicron.c
-@@ -143,6 +143,17 @@ static int jmicron_init_one (struct pci_dev *pdev, const struct pci_device_id *i
- 	};
- 	const struct ata_port_info *ppi[] = { &info, NULL };
- 
-+	/* The JMicron chip 361/363 contains one SATA controller and
-+	 * one PATA controller,for powering on these both controllers,
-+	 * we must follow the sequence one by one, otherwise one of them
-+	 * can not be powered on successfully.
-+	 * So here we disabled the async suspend method for these chips.
-+	 */
-+	if (pdev->vendor == PCI_VENDOR_ID_JMICRON &&
-+		(pdev->device == PCI_DEVICE_ID_JMICRON_JMB363 ||
-+		pdev->device == PCI_DEVICE_ID_JMICRON_JMB361))
-+		device_disable_async_suspend(&pdev->dev);
-+
- 	return ata_pci_bmdma_init_one(pdev, ppi, &jmicron_sht, NULL, 0);
+ /**
+  * efi_range_is_wc - check the WC bit on an address range
+  * @start: starting kvirt address
+diff --git a/drivers/firmware/efi/efi.c b/drivers/firmware/efi/efi.c
+index 64ecbb5..43d9d25 100644
+--- a/drivers/firmware/efi/efi.c
++++ b/drivers/firmware/efi/efi.c
+@@ -423,3 +423,60 @@ int __init efi_get_fdt_params(struct efi_fdt_params *params, int verbose)
+ 	return ret;
  }
- 
+ #endif /* CONFIG_EFI_PARAMS_FROM_FDT */
++
++static __initdata char memory_type_name[][20] = {
++	"Reserved",
++	"Loader Code",
++	"Loader Data",
++	"Boot Code",
++	"Boot Data",
++	"Runtime Code",
++	"Runtime Data",
++	"Conventional Memory",
++	"Unusable Memory",
++	"ACPI Reclaim Memory",
++	"ACPI Memory NVS",
++	"Memory Mapped I/O",
++	"MMIO Port Space",
++	"PAL Code"
++};
++
++char * __init efi_md_typeattr_format(char *buf, size_t size,
++				     const efi_memory_desc_t *md)
++{
++	char *pos;
++	int type_len;
++	register u64 attr;
++
++	pos = buf;
++	if (md->type >= ARRAY_SIZE(memory_type_name))
++		type_len = snprintf(pos, size, "[type=%u", md->type);
++	else
++		type_len = snprintf(pos, size, "[%-*s",
++				    (int)(sizeof(memory_type_name[0]) - 1),
++				    memory_type_name[md->type]);
++	if (type_len >= size)
++		return buf;
++
++	pos += type_len;
++	size -= type_len;
++
++	attr = md->attribute;
++	if (attr & ~(EFI_MEMORY_UC | EFI_MEMORY_WC | EFI_MEMORY_WT |
++		     EFI_MEMORY_WB | EFI_MEMORY_UCE | EFI_MEMORY_WP |
++		     EFI_MEMORY_RP | EFI_MEMORY_XP | EFI_MEMORY_RUNTIME))
++		snprintf(pos, size, "|attr=0x%016llx]",
++			 (unsigned long long)attr);
++	else
++		snprintf(pos, size, "|%3s|%2s|%2s|%2s|%3s|%2s|%2s|%2s|%2s]",
++			 attr & EFI_MEMORY_RUNTIME ? "RUN" : "",
++			 attr & EFI_MEMORY_XP      ? "XP"  : "",
++			 attr & EFI_MEMORY_RP      ? "RP"  : "",
++			 attr & EFI_MEMORY_WP      ? "WP"  : "",
++			 attr & EFI_MEMORY_UCE     ? "UCE" : "",
++			 attr & EFI_MEMORY_WB      ? "WB"  : "",
++			 attr & EFI_MEMORY_WT      ? "WT"  : "",
++			 attr & EFI_MEMORY_WC      ? "WC"  : "",
++			 attr & EFI_MEMORY_UC      ? "UC"  : "");
++	return buf;
++}
 -- 
-1.7.9.5
+1.8.3.1
+
 
