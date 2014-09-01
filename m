@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548AbaIAFVt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 01:21:49 -0400
-Received: from mail-bl2lp0212.outbound.protection.outlook.com ([207.46.163.212]:20266
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	id S1752525AbaIAFVg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 01:21:36 -0400
+Received: from mail-bn1lp0140.outbound.protection.outlook.com ([207.46.163.140]:23048
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752187AbaIAFVq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 01:21:46 -0400
+	id S1752433AbaIAFVd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 01:21:33 -0400
 From: Xiubo Li <Li.Xiubo@freescale.com>
 To: <broonie@kernel.org>, <lgirdwood@gmail.com>, <perex@perex.cz>,
         <tiwai@suse.de>, <kuninori.morimoto.gx@renesas.com>, <moinejf@free.fr>,
@@ -14,14 +14,14 @@ To: <broonie@kernel.org>, <lgirdwood@gmail.com>, <perex@perex.cz>,
         <linux-arm-kernel@lists.infradead.org>, <linux-sh@vger.kernel.org>,
         <alsa-devel@alsa-project.org>, <shawn.guo@freescale.com>
 CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCHv1 6/7] ASoC: dts: sh73a0-kzm9g-reference: To support simple card newest style.
-Date: Mon, 1 Sep 2014 12:29:40 +0800
-Message-ID: <1409545781-20530-7-git-send-email-Li.Xiubo@freescale.com>
+Subject: [PATCHv1 7/7] ASoC: dts: kirkwood-openrd-client: To support simple card newest style.
+Date: Mon, 1 Sep 2014 12:29:41 +0800
+Message-ID: <1409545781-20530-8-git-send-email-Li.Xiubo@freescale.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1409545781-20530-1-git-send-email-Li.Xiubo@freescale.com>
 References: <1409545781-20530-1-git-send-email-Li.Xiubo@freescale.com>
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199003)(90102001)(81542001)(97736001)(81342001)(229853001)(80022001)(86362001)(64706001)(62966002)(36756003)(77156001)(106466001)(104166001)(81156004)(105606002)(77982001)(47776003)(107046002)(95666004)(46102001)(19580395003)(93916002)(87936001)(74662001)(230783001)(20776003)(102836001)(83072002)(85852003)(92566001)(92726001)(2201001)(83322001)(48376002)(50466002)(99396002)(50986999)(4396001)(76176999)(31966008)(26826002)(88136002)(85306004)(89996001)(74502001)(104016003)(50226001)(6806004)(19580405001)(76482001)(79102001)(44976005)(84676001)(87286001)(21056001)(68736004)(69596002)(1121002)(921003)(83996005)(2101003);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB337;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199003)(189002)(81342001)(86362001)(77982001)(20776003)(229853001)(105606002)(102836001)(69596002)(19580405001)(83322001)(19580395003)(44976005)(6806004)(87286001)(81542001)(107046002)(230783001)(80022001)(47776003)(68736004)(26826002)(90102001)(84676001)(106466001)(62966002)(79102001)(64706001)(95666004)(21056001)(92726001)(81156004)(97736001)(76482001)(46102001)(31966008)(77156001)(36756003)(74662001)(89996001)(50226001)(48376002)(104016003)(99396002)(50466002)(93916002)(88136002)(2201001)(85306004)(104166001)(92566001)(85852003)(4396001)(50986999)(74502001)(83072002)(76176999)(87936001)(1121002)(921003)(83996005)(2101003);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB344;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
@@ -58,36 +58,33 @@ letter 'C' here mean to Codec.
 
 Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
 ---
- arch/arm/boot/dts/sh73a0-kzm9g-reference.dts | 18 +++++++++++-------
- 1 file changed, 11 insertions(+), 7 deletions(-)
+ arch/arm/boot/dts/kirkwood-openrd-client.dts | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/arch/arm/boot/dts/sh73a0-kzm9g-reference.dts b/arch/arm/boot/dts/sh73a0-kzm9g-reference.dts
-index 18662ae..e689ae3 100644
---- a/arch/arm/boot/dts/sh73a0-kzm9g-reference.dts
-+++ b/arch/arm/boot/dts/sh73a0-kzm9g-reference.dts
-@@ -160,15 +160,19 @@
+diff --git a/arch/arm/boot/dts/kirkwood-openrd-client.dts b/arch/arm/boot/dts/kirkwood-openrd-client.dts
+index 887b9c1..3b6f169 100644
+--- a/arch/arm/boot/dts/kirkwood-openrd-client.dts
++++ b/arch/arm/boot/dts/kirkwood-openrd-client.dts
+@@ -33,15 +33,16 @@
  
  	sound {
  		compatible = "simple-audio-card";
--		simple-audio-card,format = "left_j";
+-		simple-audio-card,format = "i2s";
+ 		simple-audio-card,mclk-fs = <256>;
+ 
 -		simple-audio-card,cpu {
--			sound-dai = <&sh_fsi2 0>;
+-			sound-dai = <&audio0>;
 -		};
+-
 -		simple-audio-card,codec {
--			sound-dai = <&ak4648>;
-+
+-			sound-dai = <&cs42l51>;
 +		simple-audio-card,dai-link {
-+			format = "left_j";
- 			bitclock-master;
- 			frame-master;
--			system-clock-frequency = <11289600>;
-+
++			format = "i2s";
 +			cpu {
-+				sound-dai = <&sh_fsi2 0>;
++				sound-dai = <&audio0>;
 +			};
 +			codec {
-+				sound-dai = <&ak4648>;
-+				system-clock-frequency = <11289600>;
++				sound-dai = <&cs42l51>;
 +			};
  		};
  	};
