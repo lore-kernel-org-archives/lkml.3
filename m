@@ -1,153 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828AbaIASsi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 14:48:38 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:54164 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752506AbaIASsf (ORCPT
+	id S1752887AbaIASsp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 14:48:45 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:38710 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752339AbaIASsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 14:48:35 -0400
-From: Mike Turquette <mturquette@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: patches@linaro.org, Mike Turquette <mturquette@linaro.org>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 3/3] cpufreq: kirkwood: use the powersave multiplexer
-Date: Mon,  1 Sep 2014 11:47:05 -0700
-Message-Id: <1409597225-24368-4-git-send-email-mturquette@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1409597225-24368-1-git-send-email-mturquette@linaro.org>
-References: <1409597225-24368-1-git-send-email-mturquette@linaro.org>
+	Mon, 1 Sep 2014 14:48:43 -0400
+From: Sander Nemvalts <snemvalts@gmail.com>
+To: stefanr@s5r6.in-berlin.de
+Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Sander Nemvalts <snemvalts@gmail.com>
+Subject: [PATCH] Drivers:firewire: fix style errors in core-card.c This is a patch in the core-card.c file which fixes up 2 warnings found by the checkpatch.pl tool Signed-off-by: Sander Nemvalts <snemvalts@gmail.com>
+Date: Mon,  1 Sep 2014 21:48:26 +0300
+Message-Id: <1409597306-22164-1-git-send-email-snemvalts@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The powersave clock acts like a multiplexer for the cpu, selecting
-either the clock signal derived from the cpu pll or from the ddr clock.
-This patch changes powersave from a gate clock to a mux clock to better
-reflect this behavior.
-
-This is a cleaner approach whereby the frequency of the cpu always
-matches the rate of powersave_clk. The cpufreq driver for the kirkwood
-platform no longer must parse this behavior out of various calls to
-clk_enable and clk_disable, but can instead simply select the parent cpu
-it wants when changing rate. Likewise when requesting the cpu rate we
-need only query powersave_clk's rate through the usual call to
-clk_get_rate.
-
-The new clock data and corresponding changes to the cpufreq driver are
-combined into this single commit to avoid a git bisect issue where this
-cpufreq driver fails to work properly between the commit that updates
-the kirkwood clock driver and the commit that changes how the cpufreq
-driver uses that clock.
-
-Cc: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Tested-by: Andrew Lunn <andrew@lunn.ch>
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
 ---
- drivers/clk/mvebu/kirkwood.c       | 15 +++++++++++++--
- drivers/cpufreq/kirkwood-cpufreq.c | 14 +++++---------
- 2 files changed, 18 insertions(+), 11 deletions(-)
+ drivers/firewire/core-card.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/clk/mvebu/kirkwood.c b/drivers/clk/mvebu/kirkwood.c
-index f73a2fa..99550f2 100644
---- a/drivers/clk/mvebu/kirkwood.c
-+++ b/drivers/clk/mvebu/kirkwood.c
-@@ -216,7 +216,6 @@ static const struct clk_gating_soc_desc kirkwood_gating_desc[] __initconst = {
- 	{ "runit", NULL, 7, 0 },
- 	{ "xor0", NULL, 8, 0 },
- 	{ "audio", NULL, 9, 0 },
--	{ "powersave", "cpuclk", 11, 0 },
- 	{ "sata0", NULL, 14, 0 },
- 	{ "sata1", NULL, 15, 0 },
- 	{ "xor1", NULL, 16, 0 },
-@@ -247,6 +246,16 @@ struct clk_muxing_ctrl {
- 	int num_muxes;
- };
+diff --git a/drivers/firewire/core-card.c b/drivers/firewire/core-card.c
+index 57ea7f4..825b260 100644
+--- a/drivers/firewire/core-card.c
++++ b/drivers/firewire/core-card.c
+@@ -89,7 +89,8 @@ static size_t config_rom_length = 1 + 4 + 1 + 1;
+ #define BIB_ISC			((1) << 29)
+ #define BIB_CMC			((1) << 30)
+ #define BIB_IRMC		((1) << 31)
+-#define NODE_CAPABILITIES	0x0c0083c0 /* per IEEE 1394 clause 8.3.2.6.5.2 */
++/* per IEEE 1394 clause 8.3.2.6.5.2 */
++#define NODE_CAPABILITIES	0x0c0083c0
  
-+static const char *powersave_parents[] = {
-+	"cpuclk",
-+	"ddrclk",
-+};
-+
-+static const struct clk_muxing_soc_desc kirkwood_mux_desc[] __initconst = {
-+	{ "powersave", powersave_parents, ARRAY_SIZE(powersave_parents),
-+		11, 1, 0 },
-+};
-+
- #define to_clk_mux(_hw) container_of(_hw, struct clk_mux, hw)
+ /*
+  * IEEE-1394 specifies a default SPLIT_TIMEOUT value of 800 cycles (100 ms),
+@@ -132,7 +133,7 @@ static void generate_config_rom(struct fw_card *card, __be32 *config_rom)
+ 	j = 7 + descriptor_count;
  
- static struct clk *clk_muxing_get_src(
-@@ -323,8 +332,10 @@ static void __init kirkwood_clk_init(struct device_node *np)
- 	else
- 		mvebu_coreclk_setup(np, &kirkwood_coreclks);
+ 	/* Generate root directory entries for descriptors. */
+-	list_for_each_entry (desc, &descriptor_list, link) {
++	list_for_each_entry(desc, &descriptor_list, link) {
+ 		if (desc->immediate > 0)
+ 			config_rom[i++] = cpu_to_be32(desc->immediate);
+ 		config_rom[i] = cpu_to_be32(desc->key | (j - i));
+@@ -144,7 +145,7 @@ static void generate_config_rom(struct fw_card *card, __be32 *config_rom)
+ 	config_rom[5] = cpu_to_be32((i - 5 - 1) << 16);
  
--	if (cgnp)
-+	if (cgnp) {
- 		mvebu_clk_gating_setup(cgnp, kirkwood_gating_desc);
-+		kirkwood_clk_muxing_setup(cgnp, kirkwood_mux_desc);
-+	}
- }
- CLK_OF_DECLARE(kirkwood_clk, "marvell,kirkwood-core-clock",
- 	       kirkwood_clk_init);
-diff --git a/drivers/cpufreq/kirkwood-cpufreq.c b/drivers/cpufreq/kirkwood-cpufreq.c
-index 37a4806..7906d4a 100644
---- a/drivers/cpufreq/kirkwood-cpufreq.c
-+++ b/drivers/cpufreq/kirkwood-cpufreq.c
-@@ -12,7 +12,6 @@
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/clk.h>
--#include <linux/clk-provider.h>
- #include <linux/cpufreq.h>
- #include <linux/of_device.h>
- #include <linux/platform_device.h>
-@@ -39,8 +38,7 @@ static struct priv
-  * - cpu clk
-  * - ddr clk
-  *
-- * The frequencies are set at runtime before registering this *
-- * table.
-+ * The frequencies are set at runtime before registering this table.
-  */
- static struct cpufreq_frequency_table kirkwood_freq_table[] = {
- 	{0, STATE_CPU_FREQ,	0}, /* CPU uses cpuclk */
-@@ -50,9 +48,7 @@ static struct cpufreq_frequency_table kirkwood_freq_table[] = {
- 
- static unsigned int kirkwood_cpufreq_get_cpu_frequency(unsigned int cpu)
+ 	/* End of root directory, now copy in descriptors. */
+-	list_for_each_entry (desc, &descriptor_list, link) {
++	list_for_each_entry(desc, &descriptor_list, link) {
+ 		for (k = 0; k < desc->length; k++)
+ 			config_rom[i + k] = cpu_to_be32(desc->data[k]);
+ 		i += desc->length;
+@@ -164,7 +165,7 @@ static void update_config_roms(void)
  {
--	if (__clk_is_enabled(priv.powersave_clk))
--		return kirkwood_freq_table[1].frequency;
--	return kirkwood_freq_table[0].frequency;
-+	return clk_get_rate(priv.powersave_clk) / 1000;
- }
+ 	struct fw_card *card;
  
- static int kirkwood_cpufreq_target(struct cpufreq_policy *policy,
-@@ -70,10 +66,10 @@ static int kirkwood_cpufreq_target(struct cpufreq_policy *policy,
- 
- 	switch (state) {
- 	case STATE_CPU_FREQ:
--		clk_disable(priv.powersave_clk);
-+		clk_set_parent(priv.powersave_clk, priv.cpu_clk);
- 		break;
- 	case STATE_DDR_FREQ:
--		clk_enable(priv.powersave_clk);
-+		clk_set_parent(priv.powersave_clk, priv.ddr_clk);
- 		break;
- 	}
- 
-@@ -150,7 +146,7 @@ static int kirkwood_cpufreq_probe(struct platform_device *pdev)
- 		err = PTR_ERR(priv.powersave_clk);
- 		goto out_ddr;
- 	}
--	clk_prepare(priv.powersave_clk);
-+	clk_prepare_enable(priv.powersave_clk);
- 
- 	of_node_put(np);
- 	np = NULL;
+-	list_for_each_entry (card, &card_list, link) {
++	list_for_each_entry(card, &card_list, link) {
+ 		generate_config_rom(card, tmp_config_rom);
+ 		card->driver->set_config_rom(card, tmp_config_rom,
+ 					     config_rom_length);
 -- 
-1.8.3.2
+1.9.1
 
