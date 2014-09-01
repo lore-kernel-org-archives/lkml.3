@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753028AbaIAJzf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 05:55:35 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:32030 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752060AbaIAJze (ORCPT
+	id S1752837AbaIAKA7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 06:00:59 -0400
+Received: from filter1.ibarracuda.nl ([83.247.7.10]:33894 "EHLO
+	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751832AbaIAKA5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 05:55:34 -0400
-Date: Mon, 1 Sep 2014 12:54:47 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Miguel Oliveira <cmroliv@gmail.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
-        Larry.Finger@lwfinger.net, linux-kernel@vger.kernel.org,
-        davem@davemloft.net
-Subject: Re: [PATCH 3/4] staging: rtl8188eu: osdep_intf.h and usb_intf.c
-Message-ID: <20140901095446.GF5122@mwanda>
-References: <1408703558-32167-1-git-send-email-cmroliv@gmail.com>
- <1408703617-32248-1-git-send-email-cmroliv@gmail.com>
- <20140830204109.GC16168@kroah.com>
- <CAMGgR5tmQE2nWJwBkc5jv_TF=xM+XRf6exGUOA6A-X+7iXqbFg@mail.gmail.com>
+	Mon, 1 Sep 2014 06:00:57 -0400
+X-ASG-Debug-ID: 1409565648-0759e7416b870b0b0002-xx1T2L
+X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
+X-Barracuda-AUTH-User: xsenscom
+X-Barracuda-Apparent-Source-IP: 87.249.116.215
+Date: Mon, 1 Sep 2014 12:00:47 +0200
+From: Frans Klaver <frans.klaver@xsens.com>
+To: <usb-serial@vger.kernel.org>
+CC: Johan Hovold <johan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Frans Klaver <fransklaver@gmail.com>, <stable@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] usb: serial: xsens_mt: add author and description
+Message-ID: <20140901100047.GA23597@ci00147.xsens-tech.local>
+X-ASG-Orig-Subj: Re: [PATCH 1/2] usb: serial: xsens_mt: add author and description
+References: <1409560333-12871-1-git-send-email-frans.klaver@xsens.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <CAMGgR5tmQE2nWJwBkc5jv_TF=xM+XRf6exGUOA6A-X+7iXqbFg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <1409560333-12871-1-git-send-email-frans.klaver@xsens.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [172.16.11.49]
+X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
+X-Barracuda-Start-Time: 1409565648
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=BSF_SC0_MISMATCH_TO
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.9056
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.00 BSF_SC0_MISMATCH_TO    Envelope rcpt doesn't match header
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 30, 2014 at 11:22:56PM +0200, Miguel Oliveira wrote:
-> > Same comments as the previous ones, please redo all of these patches.
-> >
-> Should all the alterations be in one big single patch, insted of small ones?
+Neither of these patches should be on stable. The resend has a slightly
+better tuned audience.
 
-Your first version broke the build if we applied only the first patch.
-That's not allowed.
+Sorry for the noise,
+Frans
 
-Also the new rtw_sys_remove_one() function isn't called.  I was confused
-by it as well.  It doesn't "remove one", it removes everything.
-
-Do we need to support llseek?
-
-How have you tested this?  Have you tested module unloading?
-
-regards,
-dan carpenter
-
+On Mon, Sep 01, 2014 at 10:32:12AM +0200, Frans Klaver wrote:
+> Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
+> ---
+>  drivers/usb/serial/xsens_mt.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/usb/serial/xsens_mt.c b/drivers/usb/serial/xsens_mt.c
+> index 4841fb5..d500ccd 100644
+> --- a/drivers/usb/serial/xsens_mt.c
+> +++ b/drivers/usb/serial/xsens_mt.c
+> @@ -82,4 +82,6 @@ static struct usb_serial_driver * const serial_drivers[] = {
+>  
+>  module_usb_serial_driver(serial_drivers, id_table);
+>  
+> +MODULE_AUTHOR("Frans Klaver <frans.klaver@xsens.com>");
+> +MODULE_DESCRIPTION("USB-serial driver for Xsens motion trackers");
+>  MODULE_LICENSE("GPL");
+> -- 
+> 2.1.0
+> 
