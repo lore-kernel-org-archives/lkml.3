@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792AbaIAWqK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 18:46:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58303 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752031AbaIAWqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 18:46:07 -0400
-Message-ID: <5404F72D.8030402@suse.de>
-Date: Tue, 02 Sep 2014 00:46:05 +0200
-From: Alexander Graf <agraf@suse.de>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752785AbaIAWs1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 18:48:27 -0400
+Received: from ppsw-40.csi.cam.ac.uk ([131.111.8.140]:45518 "EHLO
+	ppsw-40.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752015AbaIAWs0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 18:48:26 -0400
+X-Greylist: delayed 958 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Sep 2014 18:48:25 EDT
+X-Cam-AntiVirus: no malware found
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Date: Mon, 1 Sep 2014 15:31:55 -0700
+From: David Wood <devel@dtwood.uk>
+To: netdev@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Alexander Gordeev <agordeev@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Antonio Ospite <ao2@ao2.it>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jiri Pirko <jiri@resnulli.us>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Wilfried Klaebe <w-lkml@lebenslange-mailadresse.de>,
+        Ivan Vecera <ivecera@redhat.com>, linux-kernel@vger.kernel.org,
+        trivial@kernel.org
+Subject: [PATCH] ethernet: nvidia: Remove extra parens
+Message-ID: <20140901223152.GA3066@dtw-laptop.attlocal.net>
 MIME-Version: 1.0
-To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>,
-        linux-kernel@vger.kernel.org
-CC: kvm@vger.kernel.org, kvm-ppc@vger.kernel.org, kvm-ia64@vger.kernel.org,
-        linux-s390@vger.kernel.org, kvmarm@lists.cs.columbia.edu,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>
-Subject: Re: [PATCH 0/2] KVM: minor cleanup and optimizations
-References: <1409231583-7048-1-git-send-email-rkrcmar@redhat.com>
-In-Reply-To: <1409231583-7048-1-git-send-email-rkrcmar@redhat.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Remove unnecessary double parenthesis around if statement.
 
+Signed-off-by: David Wood <devel@dtwood.uk>
+---
+ drivers/net/ethernet/nvidia/forcedeth.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-On 28.08.14 15:13, Radim Krčmář wrote:
-> The first patch answers a demand for inline arch functions.
-> (There is a lot of constant functions that could be inlined as well.)
-> 
-> Second patch digs a bit into the history of KVM and removes a useless
-> argument that seemed suspicious when preparing the first patch.
-> 
-> 
-> Radim Krčmář (2):
->   KVM: static inline empty kvm_arch functions
->   KVM: remove garbage arg to *hardware_{en,dis}able
-
-Acked-by: Alexander Graf <agraf@suse.de>
-
-
-Alex
+diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
+index 925b296..f39cae6 100644
+--- a/drivers/net/ethernet/nvidia/forcedeth.c
++++ b/drivers/net/ethernet/nvidia/forcedeth.c
+@@ -1481,7 +1481,7 @@ static int phy_init(struct net_device *dev)
+ 	}
+ 
+ 	/* phy vendor specific configuration */
+-	if ((np->phy_oui == PHY_OUI_CICADA)) {
++	if (np->phy_oui == PHY_OUI_CICADA) {
+ 		if (init_cicada(dev, np, phyinterface)) {
+ 			netdev_info(dev, "%s: phy init failed\n",
+ 				    pci_name(np->pci_dev));
+-- 
+2.0.3
