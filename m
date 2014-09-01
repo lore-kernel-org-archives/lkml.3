@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753269AbaIAJkh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 05:40:37 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:38801 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752707AbaIAJkg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 05:40:36 -0400
-Message-ID: <54043F0F.2060104@mev.co.uk>
-Date: Mon, 1 Sep 2014 10:40:31 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1753045AbaIAJmk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 05:42:40 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:19169 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752559AbaIAJmj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 05:42:39 -0400
+Message-ID: <54043F8C.8070307@atmel.com>
+Date: Mon, 1 Sep 2014 11:42:36 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Chase Southwood <chase.southwood@gmail.com>, <gregkh@linuxfoundation.org>
-CC: <hsweeten@visionengravers.com>, <devel@driverdev.osuosl.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] staging: comedi: hwdrv_apci1500: coding style cleanups
-References: <cover.1409542016.git.chase.southwood@gmail.com>
-In-Reply-To: <cover.1409542016.git.chase.southwood@gmail.com>
-Content-Type: text/plain; charset="us-ascii"; format=flowed
+To: Bo Shen <voice.shen@atmel.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+Subject: Re: [PATCH] dtb: at91: sam9n12ek: ohci: add port and vbus property
+References: <1409133169-26741-1-git-send-email-voice.shen@atmel.com>
+In-Reply-To: <1409133169-26741-1-git-send-email-voice.shen@atmel.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-ClientProxiedBy: MEVEXCHANGE.mev.local (10.0.0.4) To MEVEXCHANGE.mev.local
- (10.0.0.4)
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-09-01 04:37, Chase Southwood wrote:
-> This patchset begins by removing unneeded braces and commented out lines
-> of code, and then tidies whitespace issues that are revealed after the
-> braces/dead code is removed.
->
-> Chase Southwood (4):
->    staging: comedi: hwdrv_apci1500: remove unneeded braces
->    staging: comedi: hwdrv_apci1500: remove commented out code
->    staging: comedi: hwdrv_apci1500: clean some whitespace style issues
->    staging: comedi: hwdrv_apci1500: miscellaneous cleanup
->
->   .../comedi/drivers/addi-data/hwdrv_apci1500.c      | 349 +++++++++------------
->   1 file changed, 149 insertions(+), 200 deletions(-)
->
+On 27/08/2014 11:52, Bo Shen :
+> Add the port number and vbus property for ohci port, or else if
+> bootloader won't configure the vbus pin, the 5v supply is not
+> power on, so can not work with usb devices.
+> 
+> Signed-off-by: Bo Shen <voice.shen@atmel.com>
 
-Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+Ok, thanks:
+
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+
+> ---
+> 
+>  arch/arm/boot/dts/at91sam9n12ek.dts | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/at91sam9n12ek.dts b/arch/arm/boot/dts/at91sam9n12ek.dts
+> index 83d7237..13bb24e 100644
+> --- a/arch/arm/boot/dts/at91sam9n12ek.dts
+> +++ b/arch/arm/boot/dts/at91sam9n12ek.dts
+> @@ -136,6 +136,8 @@
+>  		};
+>  
+>  		usb0: ohci@00500000 {
+> +			num-ports = <1>;
+> +			atmel,vbus-gpio = <&pioB 7 GPIO_ACTIVE_LOW>;
+>  			status = "okay";
+>  		};
+>  	};
+> 
+
 
 -- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+Nicolas Ferre
