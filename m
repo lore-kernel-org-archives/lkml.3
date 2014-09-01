@@ -1,92 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752265AbaIADRa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 23:17:30 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:39559 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752219AbaIADR2 (ORCPT
+	id S1752319AbaIADVb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 23:21:31 -0400
+Received: from mga01.intel.com ([192.55.52.88]:48140 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751931AbaIADV3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 23:17:28 -0400
-Message-ID: <5403E53F.50806@hitachi.com>
-Date: Mon, 01 Sep 2014 12:17:19 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Sun, 31 Aug 2014 23:21:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,439,1406617200"; 
+   d="scan'208";a="592641953"
+From: "Chen, Alvin" <alvin.chen@intel.com>
+To: atull <atull@opensource.altera.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        "Shevchenko, Andriy" <andriy.shevchenko@intel.com>,
+        "Westerberg, Mika" <mika.westerberg@intel.com>,
+        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>
+Subject: RE: [PATCH 3/3] GPIO: gpio-dwapb: Suspend & Resume PM enabling
+Thread-Topic: [PATCH 3/3] GPIO: gpio-dwapb: Suspend & Resume PM enabling
+Thread-Index: AQHPxZOdFKnKqUJESkW9jjZvXiQLDg==
+Date: Mon, 1 Sep 2014 03:20:00 +0000
+Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E981942@SHSMSX101.ccr.corp.intel.com>
+References: <1409161588-19417-1-git-send-email-alvin.chen@intel.com>
+ <1409161588-19417-4-git-send-email-alvin.chen@intel.com>
+ <alpine.DEB.2.02.1408280955560.26299@atx-linux-37>
+In-Reply-To: <alpine.DEB.2.02.1408280955560.26299@atx-linux-37>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Shuah Khan <shuahkh@osg.samsung.com>
-Cc: Shuah Khan <shuah.kh@samsung.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH v2 4/4] ftracetest: Add XFAIL/XPASS/UNSUPPORTED as
- result code
-References: <20140826111511.5711.28493.stgit@kbuild-fedora.novalocal> <20140826111539.5711.93588.stgit@kbuild-fedora.novalocal> <53FFD1E8.6070508@osg.samsung.com>
-In-Reply-To: <53FFD1E8.6070508@osg.samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/08/29 10:05), Shuah Khan wrote:
-> On 08/26/2014 05:15 AM, Masami Hiramatsu wrote:
->> Add XFAIL, XPASS and UNSUPPORTED as a result code. These are
->> used for the results that test case is expected to fail or
->> unsupported feature (by config).
->> This also introduces PASS/FAIL/XFAIL/XPASS/UNSUP result codes
->> for each testcase. Since the results are not binary, each
->> testcase must use these code to return the test result.
->>
->> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->> ---
->>  tools/testing/ftrace/ftracetest                    |   61 +++++++++++++++-----
->>  tools/testing/ftrace/test.d/basic1.tc              |    6 ++
->>  tools/testing/ftrace/test.d/basic2.tc              |    6 +-
->>  tools/testing/ftrace/test.d/basic3.tc              |    9 ++-
->>  .../testing/ftrace/test.d/kprobe/add_and_remove.tc |   15 +++--
->>  tools/testing/ftrace/test.d/kprobe/busy_check.tc   |   20 +++----
->>  tools/testing/ftrace/test.d/template               |    6 ++
->>  7 files changed, 84 insertions(+), 39 deletions(-)
->>
->> diff --git a/tools/testing/ftrace/ftracetest b/tools/testing/ftrace/ftracetest
->> index 0378c8a..bfcd56a 100755
->> --- a/tools/testing/ftrace/ftracetest
->> +++ b/tools/testing/ftrace/ftracetest
->> @@ -107,22 +107,53 @@ catlog() { #file
->>  }
->>  
->>  # Testcase management
->> +# Test result codes
->> +PASS=0	# The test succeeded.
->> +FAIL=1	# The test failed, but was expected to succeed.
->> +XFAIL=2	# The test failed, and was expected to fail.
->> +XPASS=3	# The test succeeded, but was expected to fail.
+> > +/* Store GPIO context across system-wide suspend/resume transitions
+> > +*/ static struct gpio_saved_regs {
+> > +	unsigned long data;
+> > +	unsigned long dir;
+> > +	unsigned long int_en;
+> > +	unsigned long int_mask;
+> > +	unsigned long int_type;
+> > +	unsigned long int_pol;
+> > +	unsigned long int_deb;
+> > +} saved_regs;
+> > +
+> > +static int dwapb_gpio_suspend(struct device *dev) {
+> > +	struct platform_device *pdev = to_platform_device(dev);
+> > +	struct dwapb_gpio *gpio = platform_get_drvdata(pdev);
+> > +	struct bgpio_chip *bgc	= &gpio->ports[0].bgc;
+> > +	unsigned long flags;
+> > +
+> > +	spin_lock_irqsave(&bgc->lock, flags);
+> > +
+> > +	saved_regs.int_mask	= dwapb_read(gpio, GPIO_INTMASK);
+> > +	saved_regs.int_en	= dwapb_read(gpio, GPIO_INTEN);
+> > +	saved_regs.int_deb	= dwapb_read(gpio, GPIO_PORTA_DEBOUNCE);
+> > +	saved_regs.int_pol	= dwapb_read(gpio, GPIO_INT_POLARITY);
+> > +	saved_regs.int_type	= dwapb_read(gpio, GPIO_INTTYPE_LEVEL);
+> > +	saved_regs.dir		= dwapb_read(gpio, GPIO_SWPORTA_DDR);
+> > +	saved_regs.data		= dwapb_read(gpio, GPIO_SWPORTA_DR);
 > 
-> This one is confusing. It is still a failure. XFAIL case is
-> expected to fail, using that convention XPASS should be
-> expected to pass?
-
-I see, but they have been already used as above by Dejagnu testing framework.
-http://www.delorie.com/gnu/docs/dejagnu/dejagnu_6.html
-
-Of course, it might be better to support only POSIX compatible results at
-first.
-
-> Can we use XFAIL0 for XFAIL pass case and XFAIL1 for XFAIL fail
-> case?
-
-No, new definition can confuse developers.
-To avoid confusion, I'd like to use the same definitions as Dejegnu does.
-
-Thank you,
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+> Hello,
+> 
+> The DesignWare GPIO IP can be configured to have ports a, b, c, and d. So you
+> will need to save and restore any ports that are present.  I think that *some*
+> configurations of the IP include a register that can tell us how it was configured,
+> but that register is also optional :)  I don't have confidence that we can
+> read/write the registers blindly whether they are known to be there or not.
+> So you may be stuck with looking at the device tree or platform data to know
+> whether banks b, c, or d exist.
+>
+>From the code, the device node has one property for port index. If the index is '0', then it is port A.
+So I think we can store the status according to the port index.
 
