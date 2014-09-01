@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752826AbaIATwR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 15:52:17 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:56790 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752608AbaIATwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 15:52:15 -0400
-Message-ID: <5404CE6A.8090402@interlog.com>
-Date: Mon, 01 Sep 2014 15:52:10 -0400
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752861AbaIAT7g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 15:59:36 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:56514 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751421AbaIAT7f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 15:59:35 -0400
+X-Sasl-enc: 44zPXc5ziEwH1TKamzc7rL6W9Mw+b1cjEYqFEuuWFy9j 1409601573
+Date: Mon, 1 Sep 2014 16:59:21 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Borislav Petkov <bp@alien8.de>, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: early microcode: how to disable at runtime?
+Message-ID: <20140901195921.GA18675@khazad-dum.debian.net>
+References: <20140809231911.GA4843@khazad-dum.debian.net>
+ <20140831194548.GA12628@khazad-dum.debian.net>
+ <54037C07.8060703@zytor.com>
+ <20140831201126.GB12628@khazad-dum.debian.net>
+ <20140901051302.GA28402@nazgul.tnic>
+ <5404A035.3070707@zytor.com>
+ <20140901174322.GA15533@khazad-dum.debian.net>
+ <ea40f7c4-ec8d-4be5-8f8c-bbd11ab07252@email.android.com>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: SCSI development list <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        James Bottomley <james.bottomley@hansenpartnership.com>,
-        Milan Broz <gmazyland@gmail.com>
-Subject: Re: [PATCH] scsi_debug: deadlock between completions and surprise
- module removal
-References: <5403AB47.3040706@interlog.com> <20140901153629.GA29938@infradead.org>
-In-Reply-To: <20140901153629.GA29938@infradead.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ea40f7c4-ec8d-4be5-8f8c-bbd11ab07252@email.android.com>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-09-01 11:36 AM, Christoph Hellwig wrote:
->> --- a/drivers/scsi/scsi_debug.c	2014-08-26 13:24:51.646948507 -0400
->> +++ b/drivers/scsi/scsi_debug.c	2014-08-30 18:04:54.589226679 -0400
->> @@ -2743,6 +2743,13 @@ static int stop_queued_cmnd(struct scsi_
->>   		if (test_bit(k, queued_in_use_bm)) {
->>   			sqcp = &queued_arr[k];
->>   			if (cmnd == sqcp->a_cmnd) {
->> +				devip = (struct sdebug_dev_info *)
->> +					cmnd->device->hostdata;
->> +				if (devip)
->> +					atomic_dec(&devip->num_in_q);
->> +				sqcp->a_cmnd = NULL;
->
-> Why would the hostdata every be NULL here?  We should never
-> call ->slave_destroy on a device that has outstanding commands.
+On Mon, 01 Sep 2014, H. Peter Anvin wrote:
+> No, it is worse to rename it and have older kernels behave differently.
+> Kernel options are basically super obscure to most people anyway.
 
-To your first question, perhaps it could not be. In
-the scsi_debug driver almost all uses of 'devip'
-check for NULL, so it may not always have been true.
+Ok, so rename is out, although as long as the rename was accepted for
+3.16-stable, it would be just 3.16 and 3.16.1 (and maybe 3.16.2) that would
+not have the new name.
 
-'rmmod scsi_debug' would lead to scsi_debug_exit()
-being called and that called stop_all_queued() which
-deadlocked with a command completion, or worse command
-commencement. scsi_debug_exit() looks a bit racy: the
-first thing it does is stop_all_queued() but has
-anything been done to stop new commands being issued?
-Later scsi_debug_exit() brings down the hosts.
+Options left are "keep it as is", or "add new and [optionally] deprecate
+old".  I can't really tell for sure which one you'd prefer from your
+previous answer.
 
-
-This patch is primarily a bug fix for the lk 3.17 series and
-the code you highlight was simply moved from being under a
-lock to outside that lock. I didn't want to be too creative,
-it's too easy to slip up and upset the management.
-
-
-Enhancements could be sent to your drivers-for-3.18 tree. Rob
-Elliott already has a few in mind, to improve performance.
-Removing all 'devip' NULL checks would also improve performance,
-and readability.
-
-Doug Gilbert
-
-
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
