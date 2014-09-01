@@ -1,87 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668AbaIAMG0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 08:06:26 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44562 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752638AbaIAMGZ (ORCPT
+	id S1753717AbaIAMHn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 08:07:43 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:57763 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752997AbaIAMHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 08:06:25 -0400
-Date: Mon, 1 Sep 2014 13:06:02 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Dmitry Eremin-Solenikov <dmitry_eremin@mentor.com>
-Cc: Dirk Behme <dirk.behme@de.bosch.com>, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Gokulkrishnan Nagarajan <Gokulkrishnan.Nagarajan@in.bosch.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-Message-ID: <20140901120602.GT29327@sirena.org.uk>
-References: <1409336356-27682-1-git-send-email-dmitry_eremin@mentor.com>
- <20140829190129.GZ29327@sirena.org.uk>
- <5404246E.4090908@de.bosch.com>
- <20140901101512.GK29327@sirena.org.uk>
- <54045FA6.70602@mentor.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wKbYzd8t8rt1PVqr"
-Content-Disposition: inline
-In-Reply-To: <54045FA6.70602@mentor.com>
-X-Cookie: Simulated picture.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: core: GPIO #0 is a valid GPIO
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Mon, 1 Sep 2014 08:07:41 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-dd-5404618a8f20
+Message-id: <54046186.5030407@samsung.com>
+Date: Mon, 01 Sep 2014 14:07:34 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101
+ Thunderbird/31.0
+MIME-version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, Thierry Reding <treding@nvidia.com>,
+        Rob Herring <robh@kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Shaik Ameer Basha <shaik.ameer@samsung.com>,
+        Inki Dae <inki.dae@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joerg Roedel <joro@8bytes.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Olof Johansson <olof@lixom.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Cho KyongHo <pullip.cho@samsung.com>
+Subject: Re: [PATCH 10/29] drivers: add DRIVER_HAS_OWN_IOMMU_MANAGER flag
+References: <1407235677-26324-1-git-send-email-m.szyprowski@samsung.com>
+ <4621634.jlJLccozTJ@wuerfel> <54044EAC.6010701@samsung.com>
+ <5493968.dbuSPSqts4@wuerfel>
+In-reply-to: <5493968.dbuSPSqts4@wuerfel>
+Content-type: text/plain; charset=utf-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJIsWRmVeSWpSXmKPExsVy+t/xy7pdiSwhBhN2clj8nXSM3aJ58Xo2
+	i0n3J7BYLNhvbdE5ewO7Re+Cq2wWZ5vesFt0TlzCbvHlykMmi02Pr7FaXN41h81ixvl9TBan
+	rn9ms/jXe5DR4szpS6wW//fsYLc4/Kad1eLIw93sFqt2/WG0uP2bz0HE48nBeUwev39NYvTY
+	Oesuu8fsjpmsHptWdbJ57J+7ht1j85J6j9v/HjN7TL6xnNHjyokmVo/e5ndsHluutrN49G1Z
+	xejxeZNcAF8Ul01Kak5mWWqRvl0CV8a+j+fYCnbxVtzY+Z29gfENVxcjJ4eEgInEh0uv2CFs
+	MYkL99azdTFycQgJLGWUaDjawAzhfGKUmHXoBZDDwcEroCUxt9cXpIFFQFVi75mXrCA2m4Ch
+	RNfbLjaQElGBKIljX/NAwrwCghI/Jt9jAbFFBBQlpr54BjaSWeAfm8TSw4+YQRLCAp4Ss57M
+	ZYdb/P/AQbChnAKaEu833WYEsZkFzCS+vDzMCmHLS2xe85Z5AqPALCRLZiEpm4WkbAEj8ypG
+	0dTS5ILipPRcQ73ixNzi0rx0veT83E2MkOj9soNx8TGrQ4wCHIxKPLwvFjKHCLEmlhVX5h5i
+	lOBgVhLhnRzLEiLEm5JYWZValB9fVJqTWnyIkYmDU6qBUbFIwMzKQeSW2azYYq8XhU6ml2vF
+	XQweh7ssPB1ieGxy7OJ2gVsK3gbW3kcb06Tyy4xKZhRoKxeX/jPrX8Kd+vKZo0onV9HetMef
+	Va6W/mt80BVT3Dl1rtuvH0tO//EXWDKbZ9k1m/1fNJvVMqOXyJQp8BT9d3yn/sa2tP588r1T
+	Gilvl91UYinOSDTUYi4qTgQAdkI8+bwCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
---wKbYzd8t8rt1PVqr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 2014-09-01 13:56, Arnd Bergmann wrote:
+> On Monday 01 September 2014 12:47:08 Marek Szyprowski wrote:
+>>> Who do you think needs to set this flag, and who needs to read it?
+>> In the proposed solution Exynos IOMMU driver creates a separate IO
+>> address space
+>> for every client device in a system and binds it to the default
+>> dma-mapping space
+>> for the given device. When drivers are doing its own management of IO
+>> address
+>> space, instead of relying on what is available by default with dma-mapping
+>> interface, this will require releasing of the previously created default
+>> structures and resources. So this flag is set by the driver doing its own
+>> management of io address space. The flags is then checked by Exynos
+>> IOMMU driver
+>> to avoid creating the default dma-mapping address space for devices
+>> which driver
+>> does its own management.
+> I don't completely understand it yet. I would assume the device
+> to be added to the default domain at device creation time
+> (of_platform_populate), way before we know which device driver
+> is going to be used. How can this prevent the iommu driver
+> from doing the association with the domain?
 
-On Mon, Sep 01, 2014 at 03:59:34PM +0400, Dmitry Eremin-Solenikov wrote:
-> On 09/01/2014 02:15 PM, Mark Brown wrote:
+of_platform_populate() is too early to do the association, because that 
+time the
+exynos iommu driver is even not yet probed.
 
-> >There's no practical way to deploy that without breaking users - as soon
-> >as you treat 0 as a valid GPIO you make all existing users relying on
-> >the natural behaviour of treating 0 as default instantly buggy which is
-> >not practical.  Really the GPIO API is badly specified here.
+The association with default dma-mapping domain is done in
+IOMMU_GROUP_NOTIFY_BIND_DRIVER notifier, just before binding the driver 
+to the
+given device. This way iommu driver can check dev->driver->flags and 
+skip creating
+default dma-mapping domain if driver announces that it wants to handle it by
+itself.
 
-> Back in the time before DTS conversion started, the 0 was a correct GPIO
-> number. If somebody wanted to specify that no gpio is provided, he provided
-> -1 as an invalid number. I have the feeling that allowing users to use 0 as
-> 'no gpio' is a mistake. Or the API should be changed
-> to disallow GPIO 0 to exist at all.
+Best regards
+-- 
+Marek Szyprowski, PhD
+Samsung R&D Institute Poland
 
-Please consider my point about making users instantly buggy - it's not
-practical to introduce a new field into existing platform data which
-needs initialization.  Disallowing the use of 0 as a GPIO seems more
-practical here (in that it's something the platform can control with
-more reliable coordination).
-
---wKbYzd8t8rt1PVqr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUBGEnAAoJELSic+t+oim9O18P/RyfbP6ZNwFMZfDLz319s9a3
-mkvygsjPKJawDBWYLAZrnhYzM1n9wAUJ95fdf8/RkCM3Sd0XiJEorJu2sgCJXb1y
-4RnPBGixpmaRVZlzNZaGUhE5bqYeUzheYTY6ii8YeBPApm+qa8YTYpbgWjcOjgBL
-iniADKzuWBQ89jvMmpxWhu0OAWKijJXpbvKEPxpJXDTF+DnhUNBjWcx8Y++v/De9
-PH2JI5WnB+JlqNFMdxf0Ee39xXiBRepDvFdqIfWqeuBSw0k7cz0pecaKupUSoTiv
-Afc9lLE6Bp232u3EvLTJpwQKKdSleTlDiczsC6ZmDqsrbkNcMl5QIXdFpFYHCW/w
-BzBj8v+DFvtnTHze9qxmTJG+WqZ0FSGAEAvhPcmyEo+w5s5JZwAfQVwyU4qj348v
-Rrm5qLf3tLa7kKO+Bysg1XZNAIESYDoyROb5dWtYm9tIElnhKDuDOp0kEgopIo3I
-H50e14CRDAfxhxcSodU5RTSTR0EIYVc1khXQPeLQF/wSWCZQM7pf35oi+nPnIDnp
-7GmtBLR9mUBSjKw/ieRs1+GXYGmZgWfDomCAEtAoQF8q4oLEmoP1iyniu7L5bIgQ
-viS7SriAmPC1YH/3FmhxIm944HR2u4KEV8xt45bF3g/7jaXT1/+mI0dEFg58Lruh
-j/llOqev25bJRmN5odbR
-=Crtp
------END PGP SIGNATURE-----
-
---wKbYzd8t8rt1PVqr--
