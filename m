@@ -1,113 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752235AbaIAHCz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 03:02:55 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:57348 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751987AbaIAHCx (ORCPT
+	id S1752306AbaIAHH5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 03:07:57 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:8026 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751198AbaIAHHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 03:02:53 -0400
+	Mon, 1 Sep 2014 03:07:55 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 01 Sep 2014 00:06:39 -0700
+Date: Mon, 1 Sep 2014 09:07:49 +0200
+From: Thierry Reding <treding@nvidia.com>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "Shaik Ameer Basha" <shaik.ameer@samsung.com>,
+        Cho KyongHo <pullip.cho@samsung.com>, "Joerg Roedel" <joro@8bytes.org>,
+        Olof Johansson <olof@lixom.net>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Rob Herring <robh@kernel.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Inki Dae <inki.dae@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        "Tomasz Figa" <tomasz.figa@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH 10/29] drivers: add DRIVER_HAS_OWN_IOMMU_MANAGER flag
+Message-ID: <20140901070748.GA24226@ulmo.nvidia.com>
+References: <1407235677-26324-1-git-send-email-m.szyprowski@samsung.com>
+ <1407235677-26324-11-git-send-email-m.szyprowski@samsung.com>
+ <54040298.9020002@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <1409486735.4991.19.camel@marge.simpson.net>
-References: <1409382202.5141.36.camel@marge.simpson.net>
-	<1409486735.4991.19.camel@marge.simpson.net>
-Date: Mon, 1 Sep 2014 17:02:51 +1000
-Message-ID: <CAPM=9txZ5mS3u-7FrjCMF6T3sATfAU2Y+fpyXi-REPWXExBajA@mail.gmail.com>
-Subject: Re: [drm/i915/3.17] panic in i915_digport_work_func
-From: Dave Airlie <airlied@gmail.com>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Dave Airlie <airlied@redhat.com>
-Content-Type: multipart/mixed; boundary=047d7b342ba65a9ec60501fb976c
+In-Reply-To: <54040298.9020002@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6c2NcOVqGQ03X4Wi"
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7b342ba65a9ec60501fb976c
-Content-Type: text/plain; charset=UTF-8
+--6c2NcOVqGQ03X4Wi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->     drm/i915: add DP 1.2 MST support (v0.7)
->
->     This adds DP 1.2 MST support on Haswell systems.
->
-I've attached a patch that might fix this, please test and let me know.
+On Mon, Sep 01, 2014 at 07:22:32AM +0200, Marek Szyprowski wrote:
+> Hi Greg,
+>=20
+> On 2014-08-05 12:47, Marek Szyprowski wrote:
+> > This patch adds a new flags for device drivers. This flag instructs
+> > kernel that the device driver does it own management of IOMMU assisted
+> > IO address space translations, so no default dma-mapping structures
+> > should be initialized.
+> >
+> > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> > ---
+> >   include/linux/device.h | 2 ++
+> >   1 file changed, 2 insertions(+)
+> >
+> > diff --git a/include/linux/device.h b/include/linux/device.h
+> > index 5f4ff02..2e62371 100644
+> > --- a/include/linux/device.h
+> > +++ b/include/linux/device.h
+> > @@ -253,6 +253,8 @@ struct device_driver {
+> >  =20
+> >   /* disables bind/unbind via sysfs */
+> >   #define DRIVER_SUPPRESS_BIND_ATTRS	(1 << 0)
+> > +/* driver uses own methods to manage IO address space */
+> > +#define DRIVER_HAS_OWN_IOMMU_MANAGER	(1 << 1)
+> >  =20
+> >   extern int __must_check driver_register(struct device_driver *drv);
+> >   extern void driver_unregister(struct device_driver *drv);
+>=20
+> Could you comment if the approach of using flags in the struct driver
+> could be accepted? I've converted suppress_bind_attrs entry to flags to
+> avoid extending the structure, please see patch "[PATCH 05/29] drivers:
+> convert suppress_bind_attrs parameter into flags".
 
-Dave.
+Is this really necessary? What I did as part of an RFC series for Tegra
+IOMMU support is keep this knowledge within the IOMMU driver rather than
+export it to the driver core.
 
---047d7b342ba65a9ec60501fb976c
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0001-drm-i915-handle-G45-GM45-pulse-detection-connected-s.patch"
-Content-Disposition: attachment; 
-	filename="0001-drm-i915-handle-G45-GM45-pulse-detection-connected-s.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hzjgmcm10
+The idea being that the IOMMU driver wouldn't create an ARM DMA/IOMMU
+mapping by default but rather allow individual drivers to be marked as
+"kernel-internal" and use the DMA/IOMMU glue in that case. Drivers such
+as DRM would use the IOMMU API directly.
 
-RnJvbSBkNDA3Yzk0NmZiZjVjNDhmMzAxNjA1OTFmNWJkNzFmYmUxNThhZWI0IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBEYXZlIEFpcmxpZSA8YWlybGllZEByZWRoYXQuY29tPgpEYXRl
-OiBNb24sIDEgU2VwIDIwMTQgMTY6NTg6MTIgKzEwMDAKU3ViamVjdDogW1BBVENIXSBkcm0vaTkx
-NTogaGFuZGxlIEc0NS9HTTQ1IHB1bHNlIGRldGVjdGlvbiBjb25uZWN0ZWQgc3RhdGUuCgpJbiB0
-aGUgSFBEIHB1bHNlIGhhbmRsZXIgd2UgY2hlY2sgZm9yIGxvbmcgcHVsc2VzIGlmIHRoZSBwb3J0
-IGlzIGFjdHVhbGx5CmNvbm5lY3RlZCwgaG93ZXZlciB3ZSBkbyB0aGF0IGZvciBJQlgsIGJ1dCB3
-ZSB1c2UgdGhlIHB1bHNlIGhhbmRsaW5nIGNvZGUgb24KR000NSBzeXN0ZW1zIGFzIHdlbGwsIHNv
-IHdlIG5lZWQgdG8gdXNlIGEgZGlmZmVudCBjaGVjay4KClRoaXMgcGF0Y2ggcmVmYWN0b3JzIHRo
-ZSBkaWdpdGFsIHBvcnQgY29ubmVjdGVkIGNoZWNrIG91dCBvZiB0aGUgZzR4IGRldGVjdGlvbgpw
-YXRoIGFuZCByZXVzZXMgaXQgaW4gdGhlIGhwZCBwdWxzZSBwYXRoLgoKU2hvdWxkIGZpeDoKTWVz
-c2FnZS1JRDogPDE0MDkzODIyMDIuNTE0MS4zNi5jYW1lbEBtYXJnZS5zaW1wc29uLm5ldD4KClJl
-cG9ydGVkLWJ5OiBNaWtlIEdhbGJyYWl0aCA8dW1nd2FuYWtpa2J1dGlAZ21haWwuY29tPgpTaWdu
-ZWQtb2ZmLWJ5OiBEYXZlIEFpcmxpZSA8YWlybGllZEByZWRoYXQuY29tPgotLS0KIGRyaXZlcnMv
-Z3B1L2RybS9pOTE1L2ludGVsX2RwLmMgfCA1NSArKysrKysrKysrKysrKysrKysrKysrKysrKyst
-LS0tLS0tLS0tLS0tLQogMSBmaWxlIGNoYW5nZWQsIDM3IGluc2VydGlvbnMoKyksIDE4IGRlbGV0
-aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvZ3B1L2RybS9pOTE1L2ludGVsX2RwLmMgYi9k
-cml2ZXJzL2dwdS9kcm0vaTkxNS9pbnRlbF9kcC5jCmluZGV4IDY3Y2ZlZDYuLjgxZDc2ODEgMTAw
-NjQ0Ci0tLSBhL2RyaXZlcnMvZ3B1L2RybS9pOTE1L2ludGVsX2RwLmMKKysrIGIvZHJpdmVycy9n
-cHUvZHJtL2k5MTUvaW50ZWxfZHAuYwpAQCAtMzY2MSwyNCArMzY2MSwxMiBAQCBpcm9ubGFrZV9k
-cF9kZXRlY3Qoc3RydWN0IGludGVsX2RwICppbnRlbF9kcCkKIAlyZXR1cm4gaW50ZWxfZHBfZGV0
-ZWN0X2RwY2QoaW50ZWxfZHApOwogfQogCi1zdGF0aWMgZW51bSBkcm1fY29ubmVjdG9yX3N0YXR1
-cwotZzR4X2RwX2RldGVjdChzdHJ1Y3QgaW50ZWxfZHAgKmludGVsX2RwKQorc3RhdGljIGludCBn
-NHhfZGlnaXRhbF9wb3J0X2Nvbm5lY3RlZChzdHJ1Y3QgZHJtX2RldmljZSAqZGV2LAorCQkJCSAg
-ICAgICBzdHJ1Y3QgaW50ZWxfZGlnaXRhbF9wb3J0ICppbnRlbF9kaWdfcG9ydCkKIHsKLQlzdHJ1
-Y3QgZHJtX2RldmljZSAqZGV2ID0gaW50ZWxfZHBfdG9fZGV2KGludGVsX2RwKTsKIAlzdHJ1Y3Qg
-ZHJtX2k5MTVfcHJpdmF0ZSAqZGV2X3ByaXYgPSBkZXYtPmRldl9wcml2YXRlOwotCXN0cnVjdCBp
-bnRlbF9kaWdpdGFsX3BvcnQgKmludGVsX2RpZ19wb3J0ID0gZHBfdG9fZGlnX3BvcnQoaW50ZWxf
-ZHApOwogCXVpbnQzMl90IGJpdDsKIAotCS8qIENhbid0IGRpc2Nvbm5lY3QgZURQLCBidXQgeW91
-IGNhbiBjbG9zZSB0aGUgbGlkLi4uICovCi0JaWYgKGlzX2VkcChpbnRlbF9kcCkpIHsKLQkJZW51
-bSBkcm1fY29ubmVjdG9yX3N0YXR1cyBzdGF0dXM7Ci0KLQkJc3RhdHVzID0gaW50ZWxfcGFuZWxf
-ZGV0ZWN0KGRldik7Ci0JCWlmIChzdGF0dXMgPT0gY29ubmVjdG9yX3N0YXR1c191bmtub3duKQot
-CQkJc3RhdHVzID0gY29ubmVjdG9yX3N0YXR1c19jb25uZWN0ZWQ7Ci0JCXJldHVybiBzdGF0dXM7
-Ci0JfQotCiAJaWYgKElTX1ZBTExFWVZJRVcoZGV2KSkgewogCQlzd2l0Y2ggKGludGVsX2RpZ19w
-b3J0LT5wb3J0KSB7CiAJCWNhc2UgUE9SVF9COgpAQCAtMzY5MSw3ICszNjc5LDcgQEAgZzR4X2Rw
-X2RldGVjdChzdHJ1Y3QgaW50ZWxfZHAgKmludGVsX2RwKQogCQkJYml0ID0gUE9SVERfSE9UUExV
-R19MSVZFX1NUQVRVU19WTFY7CiAJCQlicmVhazsKIAkJZGVmYXVsdDoKLQkJCXJldHVybiBjb25u
-ZWN0b3Jfc3RhdHVzX3Vua25vd247CisJCQlyZXR1cm4gLUVJTlZBTDsKIAkJfQogCX0gZWxzZSB7
-CiAJCXN3aXRjaCAoaW50ZWxfZGlnX3BvcnQtPnBvcnQpIHsKQEAgLTM3MDUsMTEgKzM2OTMsMzYg
-QEAgZzR4X2RwX2RldGVjdChzdHJ1Y3QgaW50ZWxfZHAgKmludGVsX2RwKQogCQkJYml0ID0gUE9S
-VERfSE9UUExVR19MSVZFX1NUQVRVU19HNFg7CiAJCQlicmVhazsKIAkJZGVmYXVsdDoKLQkJCXJl
-dHVybiBjb25uZWN0b3Jfc3RhdHVzX3Vua25vd247CisJCQlyZXR1cm4gLUVJTlZBTDsKIAkJfQog
-CX0KIAogCWlmICgoSTkxNV9SRUFEKFBPUlRfSE9UUExVR19TVEFUKSAmIGJpdCkgPT0gMCkKKwkJ
-cmV0dXJuIDA7CisJcmV0dXJuIDE7Cit9CisKK3N0YXRpYyBlbnVtIGRybV9jb25uZWN0b3Jfc3Rh
-dHVzCitnNHhfZHBfZGV0ZWN0KHN0cnVjdCBpbnRlbF9kcCAqaW50ZWxfZHApCit7CisJc3RydWN0
-IGRybV9kZXZpY2UgKmRldiA9IGludGVsX2RwX3RvX2RldihpbnRlbF9kcCk7CisJc3RydWN0IGlu
-dGVsX2RpZ2l0YWxfcG9ydCAqaW50ZWxfZGlnX3BvcnQgPSBkcF90b19kaWdfcG9ydChpbnRlbF9k
-cCk7CisJaW50IHJldDsKKworCS8qIENhbid0IGRpc2Nvbm5lY3QgZURQLCBidXQgeW91IGNhbiBj
-bG9zZSB0aGUgbGlkLi4uICovCisJaWYgKGlzX2VkcChpbnRlbF9kcCkpIHsKKwkJZW51bSBkcm1f
-Y29ubmVjdG9yX3N0YXR1cyBzdGF0dXM7CisKKwkJc3RhdHVzID0gaW50ZWxfcGFuZWxfZGV0ZWN0
-KGRldik7CisJCWlmIChzdGF0dXMgPT0gY29ubmVjdG9yX3N0YXR1c191bmtub3duKQorCQkJc3Rh
-dHVzID0gY29ubmVjdG9yX3N0YXR1c19jb25uZWN0ZWQ7CisJCXJldHVybiBzdGF0dXM7CisJfQor
-CisJcmV0ID0gZzR4X2RpZ2l0YWxfcG9ydF9jb25uZWN0ZWQoZGV2LCBpbnRlbF9kaWdfcG9ydCk7
-CisJaWYgKHJldCA9PSAtRUlOVkFMKQorCQlyZXR1cm4gY29ubmVjdG9yX3N0YXR1c191bmtub3du
-OworCWVsc2UgaWYgKHJldCA9PSAwKQogCQlyZXR1cm4gY29ubmVjdG9yX3N0YXR1c19kaXNjb25u
-ZWN0ZWQ7CiAKIAlyZXR1cm4gaW50ZWxfZHBfZGV0ZWN0X2RwY2QoaW50ZWxfZHApOwpAQCAtNDA2
-Niw4ICs0MDc5LDE0IEBAIGludGVsX2RwX2hwZF9wdWxzZShzdHJ1Y3QgaW50ZWxfZGlnaXRhbF9w
-b3J0ICppbnRlbF9kaWdfcG9ydCwgYm9vbCBsb25nX2hwZCkKIAlpbnRlbF9kaXNwbGF5X3Bvd2Vy
-X2dldChkZXZfcHJpdiwgcG93ZXJfZG9tYWluKTsKIAogCWlmIChsb25nX2hwZCkgewotCQlpZiAo
-IWlieF9kaWdpdGFsX3BvcnRfY29ubmVjdGVkKGRldl9wcml2LCBpbnRlbF9kaWdfcG9ydCkpCi0J
-CQlnb3RvIG1zdF9mYWlsOworCisJCWlmIChIQVNfUENIX1NQTElUKGRldikpIHsKKwkJCWlmICgh
-aWJ4X2RpZ2l0YWxfcG9ydF9jb25uZWN0ZWQoZGV2X3ByaXYsIGludGVsX2RpZ19wb3J0KSkKKwkJ
-CQlnb3RvIG1zdF9mYWlsOworCQl9IGVsc2UgeworCQkJaWYgKGc0eF9kaWdpdGFsX3BvcnRfY29u
-bmVjdGVkKGRldiwgaW50ZWxfZGlnX3BvcnQpICE9IDEpCisJCQkJZ290byBtc3RfZmFpbDsKKwkJ
-fQogCiAJCWlmICghaW50ZWxfZHBfZ2V0X2RwY2QoaW50ZWxfZHApKSB7CiAJCQlnb3RvIG1zdF9m
-YWlsOwotLSAKMS45LjMKCg==
---047d7b342ba65a9ec60501fb976c--
+Thierry
+
+--6c2NcOVqGQ03X4Wi
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUBBtEAAoJEN0jrNd/PrOhF3MP/1ssXeNRPb3m/7VTznB7wung
+9DLRtgN4WVUDwhx0MRhDB6O4k3Jb667azWOBis8NIal5mcc0Vapoy4CiJKdt/piv
+t5FwD0xgo41avHjgvw+x1YNxwsiavBCBKuVZp80JaHYIfIV4E+T9V/gFfgK+ZWhQ
+i2lE7VAYkUaDk4JLIDhTkYjn/1Onftsw+WT7imGSmZ9vQ0r7Yu27rOhs8pB59Adu
+7La8FMcL7L58Q5BDcSeemQu4ajxIakDhXOtvfSpM0VbC/JV/nW+DaRkxW7gf8VsF
+aRH31I42pssQDcEBoHLrK5igHUH7VDSwitMEUtVMTPx7jm+uKn3bWEw/z69hn9a2
+2YvRZofQAaGxsl9okoFuOM1XBsxEytjJgfcAAI2uKEv7jNjlOV+0vILhzYsCqe4N
+nUzSYwR0Hmk3YRwZPiGiQBbBcRRstVyLswR0zGnZrq1Eerf7PrSn+KveJ7Hw6rZL
+l2wjSyr4X6k5ovI9HFslCnh494cIPX6qAyjnHaINMkGwGuVKO3CexWXejvVBMZQD
+13QVm9MA50Qya9syIdQC4KYJTgcLAzt4ipDKGN4R9hFSuzM8vyJol/XQVURNQSs5
+j1+G9TMdgDjPV1ayR529Fm95vGFAA6jbu29LRhzq5xAaplAFUNrGT9swgjJGK1im
+iBwJIbSbueWALvGLJT9K
+=U8N1
+-----END PGP SIGNATURE-----
+
+--6c2NcOVqGQ03X4Wi--
