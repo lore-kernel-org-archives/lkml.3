@@ -1,74 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753394AbaIAKWt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 06:22:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29130 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753341AbaIAKWr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 06:22:47 -0400
-Date: Mon, 1 Sep 2014 13:22:14 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Jason Wang <jasowang@redhat.com>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process is
- runnable
-Message-ID: <20140901102214.GA22141@redhat.com>
-References: <1408608310-13579-1-git-send-email-jasowang@redhat.com>
- <1408608310-13579-2-git-send-email-jasowang@redhat.com>
- <1408683665.5648.69.camel@marge.simpson.net>
- <20140901093159.GB27892@worktop.ger.corp.intel.com>
- <20140901095219.GD21269@redhat.com>
- <20140901100434.GD27892@worktop.ger.corp.intel.com>
+	id S1753413AbaIAKW6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 06:22:58 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:61861 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753341AbaIAKWy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 06:22:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140901100434.GD27892@worktop.ger.corp.intel.com>
+In-Reply-To: <20140901095127.GK7374@lee--X1>
+References: <1409349654-24841-1-git-send-email-octavian.purdila@intel.com>
+	<1409349654-24841-2-git-send-email-octavian.purdila@intel.com>
+	<20140901083744.GE7374@lee--X1>
+	<CAE1zotK0cddns4f4ay-GJie8O2pjb72+-yYndZvW0hbF0D83HA@mail.gmail.com>
+	<20140901095127.GK7374@lee--X1>
+Date: Mon, 1 Sep 2014 13:22:53 +0300
+Message-ID: <CAE1zot+T6eq0jrL6_Qh=5nihNOgGEaWe5RCDk7_1XS8ZWaWKqA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] mfd: add support for Diolan DLN-2 devices
+From: Octavian Purdila <octavian.purdila@intel.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, wsa@the-dreams.de,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Johan Hovold <johan@kernel.org>, linux-usb@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>, linux-gpio@vger.kernel.org,
+        linux-i2c@vger.kernel.org, Daniel Baluta <daniel.baluta@intel.com>,
+        Laurentiu Palcu <laurentiu.palcu@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 01, 2014 at 12:04:34PM +0200, Peter Zijlstra wrote:
-> On Mon, Sep 01, 2014 at 12:52:19PM +0300, Michael S. Tsirkin wrote:
-> > On Mon, Sep 01, 2014 at 11:31:59AM +0200, Peter Zijlstra wrote:
-> > > On Fri, Aug 22, 2014 at 07:01:05AM +0200, Mike Galbraith wrote:
-> > > > > +++ b/include/net/busy_poll.h
-> > > > > @@ -109,7 +109,8 @@ static inline bool sk_busy_loop(struct sock *sk, int nonblock)
-> > > > >  		cpu_relax();
-> > > > >  
-> > > > >  	} while (!nonblock && skb_queue_empty(&sk->sk_receive_queue) &&
-> > > > > -		 !need_resched() && !busy_loop_timeout(end_time));
-> > > > > +		 !need_resched() && !busy_loop_timeout(end_time) &&
-> > > > > +		 nr_running_this_cpu() < 2);
-> > > > >  
-> > > 
-> > > So as has been said by now; this is horrible.
-> > > 
-> > > We should not export nr_running like this ever. Your usage of < 2
-> > > implies this can be hit with nr_running == 0, and therefore you can also
-> > > hit it with nr_running == 1 where the one is not network related and you
-> > > get random delays.
-> > > 
-> > > Worse still, you have BH (and thereby preemption) disabled, you should
-> > > not _ever_ have undefined and indefinite waits like that.
-> > > 
-> > > You also destroy any hope of dropping into lower power states; even when
-> > > there's never going to be a packet ever again, also bad.
-> > 
-> > Hmm this patch sometimes makes us exit from the busy loop *earlier*.
-> > How can this interfere with dropping into lower power states?
-> 
-> Ah.. jetlag.. :/ I read it like it owuld indefinitely spin if there was
-> only the 'one' task, not avoid the spin unless there was the one task.
-> 
-> The nr_running thing is still horrible,
+On Mon, Sep 1, 2014 at 12:51 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> On Mon, 01 Sep 2014, Octavian Purdila wrote:
+>
+>> On Mon, Sep 1, 2014 at 11:37 AM, Lee Jones <lee.jones@linaro.org> wrote:
+>> > On Sat, 30 Aug 2014, Octavian Purdila wrote:
+>> >
+>> >> This patch implements the USB part of the Diolan USB-I2C/SPI/GPIO
+>> >> Master Adapter DLN-2. Details about the device can be found here:
+>> >>
+>> >> https://www.diolan.com/i2c/i2c_interface.html.
+>> >>
+>> >> Information about the USB protocol can be found in the Programmer's
+>> >> Reference Manual [1], see section 1.7.
+>> >>
+>> >> Because the hardware has a single transmit endpoint and a single
+>> >> receive endpoint the communication between the various DLN2 drivers
+>> >> and the hardware will be muxed/demuxed by this driver.
+>> >>
+>> >> Each DLN2 module will be identified by the handle field within the DLN2
+>> >> message header. If a DLN2 module issues multiple commands in parallel
+>> >> they will be identified by the echo counter field in the message header.
+>> >>
+>> >> The DLN2 modules can use the dln2_transfer() function to issue a
+>> >> command and wait for its response. They can also register a callback
+>> >> that is going to be called when a specific event id is generated by
+>> >> the device (e.g. GPIO interrupts). The device uses handle 0 for
+>> >> sending events.
+>> >>
+>> >> [1] https://www.diolan.com/downloads/dln-api-manual.pdf
+>> >
+>> > MFD is not a dumping ground for misfit h/w.  Almost all of this code
+>> > looks like it belongs in drivers/usb.  Please move it there.
+>> >
+>>
+>> We initially submitted this driver as a pure USB driver, with our own
+>> module registration mechanism, but during the first round of reviews
+>> people pointed out that a MFD driver is the better approach, and I
+>> agree. I also see that there are already a couple of USB drivers
+>> implemented as MFD drivers.
+>
+> Can you link me to your previous submission please?
 
-Yea, it's a kludge, but busy waiting is a heuristic thing anyway,
-so it boils down to whether it's mostly effective.
-I agree it would be better to make it more robust/consistent if we can
-do it without a lot of complexity.
+Sure, here it is:
 
-> but let me reread this patch
-> description to see if it explains why that is a good thing.
+https://lkml.org/lkml/2014/8/20/228
+
+>
+>> Do you see a better approach?
+>
+> You should have a small MFD driver which controls resources and
+> registers children.  All other functionality should live in their
+> respective drivers/X locations i.e. USB functionallity should normally
+> live in drivers/usb.
+>
+
+OK, that sounds better. I am not sure how to handle the registration
+part though, since in this case we need to create the children at
+runtime, from the usb probe routine.
+
+The only solution I see is to move the driver completely to
+usb/drivers and continue to use the MFD infrastructure. Does that
+sound OK to you?
+
+Thanks,
+Tavi
