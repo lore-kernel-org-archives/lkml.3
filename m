@@ -1,102 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891AbaIAM4p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 08:56:45 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:38240 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753844AbaIAMxs (ORCPT
+	id S1753333AbaIANHt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 09:07:49 -0400
+Received: from mail.kmu-office.ch ([178.209.48.102]:52543 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751952AbaIANHr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 08:53:48 -0400
-From: Eric Auger <eric.auger@linaro.org>
-To: eric.auger@st.com, eric.auger@linaro.org, christoffer.dall@linaro.org,
-        marc.zyngier@arm.com, linux-arm-kernel@lists.infradead.org,
-        kvmarm@lists.cs.columbia.edu, kvm@vger.kernel.org,
-        alex.williamson@redhat.com, joel.schopp@amd.com,
-        kim.phillips@freescale.com, paulus@samba.org, gleb@kernel.org,
-        pbonzini@redhat.com
-Cc: linux-kernel@vger.kernel.org, patches@linaro.org, will.deacon@arm.com,
-        a.motakis@virtualopensystems.com, a.rigo@virtualopensystems.com,
-        john.liuli@huawei.com
-Subject: [RFC v2 6/9] VFIO: Extend external user API
-Date: Mon,  1 Sep 2014 14:52:45 +0200
-Message-Id: <1409575968-5329-7-git-send-email-eric.auger@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1409575968-5329-1-git-send-email-eric.auger@linaro.org>
-References: <1409575968-5329-1-git-send-email-eric.auger@linaro.org>
+	Mon, 1 Sep 2014 09:07:47 -0400
+MIME-Version: 1.0
+Content-Type: text/plain; charset=
+Content-Transfer-Encoding: 7bit
+Date: Mon, 01 Sep 2014 18:36:50 +0530
+From: Stefan Agner <stefan@agner.ch>
+To: balbi@ti.com, gregkh@linuxfoundation.org
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, jingchang.lu@freescale.com,
+        peter.chen@freescale.com, s.hauer@pengutronix.de,
+        kernel@pengutronix.de, shawn.guo@freescale.com
+Subject: Re: [PATCH RESEND v2 3/7] usb: phy: mxs: Add VF610 USB PHY support
+In-Reply-To: <acb7c055ded38c74291d0f0d8d2fdca54a8b95f8.1408391385.git.stefan@agner.ch>
+References: <cover.1408391385.git.stefan@agner.ch>
+ <acb7c055ded38c74291d0f0d8d2fdca54a8b95f8.1408391385.git.stefan@agner.ch>
+Message-ID: <147749d74a57dcf72ed9bd81249d0ca5@agner.ch>
+User-Agent: Roundcube Webmail/1.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New functions are added to be called from ARM KVM-VFIO device.
+I think I still miss a Signed-Off-By Felipe Balbi here...
 
-- vfio_device_get_external_user enables to get a vfio device from
-  its fd
-- vfio_device_put_external_user puts the vfio device
-- vfio_external_base_device returns the struct device*,
-  useful to access the platform_device
+All the rest should make it into 3.18, but USB without PHY is no fun to
+use ;-)
 
-Signed-off-by: Eric Auger <eric.auger@linaro.org>
-
----
-
-v1 -> v2:
-
-- vfio_external_get_base_device renamed into vfio_external_base_device
-- vfio_external_get_type removed
----
- drivers/vfio/vfio.c  | 24 ++++++++++++++++++++++++
- include/linux/vfio.h |  3 +++
- 2 files changed, 27 insertions(+)
-
-diff --git a/drivers/vfio/vfio.c b/drivers/vfio/vfio.c
-index 8e84471..282814e 100644
---- a/drivers/vfio/vfio.c
-+++ b/drivers/vfio/vfio.c
-@@ -1401,6 +1401,30 @@ void vfio_group_put_external_user(struct vfio_group *group)
- }
- EXPORT_SYMBOL_GPL(vfio_group_put_external_user);
- 
-+struct vfio_device *vfio_device_get_external_user(struct file *filep)
-+{
-+	struct vfio_device *vdev = filep->private_data;
-+
-+	if (filep->f_op != &vfio_device_fops)
-+		return ERR_PTR(-EINVAL);
-+
-+	vfio_device_get(vdev);
-+	return vdev;
-+}
-+EXPORT_SYMBOL_GPL(vfio_device_get_external_user);
-+
-+void vfio_device_put_external_user(struct vfio_device *vdev)
-+{
-+	vfio_device_put(vdev);
-+}
-+EXPORT_SYMBOL_GPL(vfio_device_put_external_user);
-+
-+struct device *vfio_external_base_device(struct vfio_device *vdev)
-+{
-+	return vdev->dev;
-+}
-+EXPORT_SYMBOL_GPL(vfio_external_base_device);
-+
- int vfio_external_user_iommu_id(struct vfio_group *group)
- {
- 	return iommu_group_id(group->iommu_group);
-diff --git a/include/linux/vfio.h b/include/linux/vfio.h
-index ffe04ed..bd4b6cb 100644
---- a/include/linux/vfio.h
-+++ b/include/linux/vfio.h
-@@ -99,6 +99,9 @@ extern void vfio_group_put_external_user(struct vfio_group *group);
- extern int vfio_external_user_iommu_id(struct vfio_group *group);
- extern long vfio_external_check_extension(struct vfio_group *group,
- 					  unsigned long arg);
-+extern struct vfio_device *vfio_device_get_external_user(struct file *filep);
-+extern void vfio_device_put_external_user(struct vfio_device *vdev);
-+extern struct device *vfio_external_base_device(struct vfio_device *vdev);
- 
- struct pci_dev;
- #ifdef CONFIG_EEH
--- 
-1.9.1
-
+Am 2014-08-19 01:37, schrieb Stefan Agner:
+> This adds support for the USB PHY in Vybrid VF610. We assume that
+> the disconnection without VBUS is also needed for Vybrid.
+> 
+> Tests showed, without MXS_PHY_NEED_IP_FIX, enumeration of devices
+> behind a USB Hub fails with errors:
+> 
+> [  215.163507] usb usb1-port1: cannot reset (err = -32)
+> [  215.170498] usb usb1-port1: cannot reset (err = -32)
+> [  215.185120] usb usb1-port1: cannot reset (err = -32)
+> [  215.191345] usb usb1-port1: cannot reset (err = -32)
+> [  215.202487] usb usb1-port1: cannot reset (err = -32)
+> [  215.207718] usb usb1-port1: Cannot enable. Maybe the USB cable is bad?
+> [  215.219317] usb usb1-port1: unable to enumerate USB device
+> 
+> Hence we also enable the MXS_PHY_NEED_IP_FIX flag.
+> 
+> Acked-by: Peter Chen <peter.chen@freescale.com>
+> Signed-off-by: Stefan Agner <stefan@agner.ch>
+> ---
+>  Documentation/devicetree/bindings/usb/mxs-phy.txt | 1 +
+>  drivers/usb/phy/phy-mxs-usb.c                     | 6 ++++++
+>  2 files changed, 7 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/usb/mxs-phy.txt
+> b/Documentation/devicetree/bindings/usb/mxs-phy.txt
+> index cef181a..fe3eed8 100644
+> --- a/Documentation/devicetree/bindings/usb/mxs-phy.txt
+> +++ b/Documentation/devicetree/bindings/usb/mxs-phy.txt
+> @@ -5,6 +5,7 @@ Required properties:
+>  	* "fsl,imx23-usbphy" for imx23 and imx28
+>  	* "fsl,imx6q-usbphy" for imx6dq and imx6dl
+>  	* "fsl,imx6sl-usbphy" for imx6sl
+> +	* "fsl,vf610-usbphy" for Vybrid vf610
+>    "fsl,imx23-usbphy" is still a fallback for other strings
+>  - reg: Should contain registers location and length
+>  - interrupts: Should contain phy interrupt
+> diff --git a/drivers/usb/phy/phy-mxs-usb.c b/drivers/usb/phy/phy-mxs-usb.c
+> index c42bdf0..8c2f23b 100644
+> --- a/drivers/usb/phy/phy-mxs-usb.c
+> +++ b/drivers/usb/phy/phy-mxs-usb.c
+> @@ -125,10 +125,16 @@ static const struct mxs_phy_data imx6sl_phy_data = {
+>  		MXS_PHY_NEED_IP_FIX,
+>  };
+>  
+> +static const struct mxs_phy_data vf610_phy_data = {
+> +	.flags = MXS_PHY_DISCONNECT_LINE_WITHOUT_VBUS |
+> +		MXS_PHY_NEED_IP_FIX,
+> +};
+> +
+>  static const struct of_device_id mxs_phy_dt_ids[] = {
+>  	{ .compatible = "fsl,imx6sl-usbphy", .data = &imx6sl_phy_data, },
+>  	{ .compatible = "fsl,imx6q-usbphy", .data = &imx6q_phy_data, },
+>  	{ .compatible = "fsl,imx23-usbphy", .data = &imx23_phy_data, },
+> +	{ .compatible = "fsl,vf610-usbphy", .data = &vf610_phy_data, },
+>  	{ /* sentinel */ }
+>  };
+>  MODULE_DEVICE_TABLE(of, mxs_phy_dt_ids);
