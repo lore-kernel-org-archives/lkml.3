@@ -1,64 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753991AbaIANvA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 09:51:00 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:59716 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752008AbaIANu6 (ORCPT
+	id S1754123AbaIANvD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 09:51:03 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57240 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752008AbaIANvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 09:50:58 -0400
+	Mon, 1 Sep 2014 09:51:00 -0400
+Date: Mon, 1 Sep 2014 15:50:59 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/5] perf, x86: Document all Haswell models
+Message-ID: <20140901135059.GM27892@worktop.ger.corp.intel.com>
+References: <1409006611-30741-1-git-send-email-andi@firstfloor.org>
+ <1409006611-30741-3-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-In-Reply-To: <1409571154-50408-1-git-send-email-shakilk1729@gmail.com>
-References: <1409571154-50408-1-git-send-email-shakilk1729@gmail.com>
-Date: Mon, 1 Sep 2014 09:50:57 -0400
-Message-ID: <CAHQdGtQAwp_QuQE-xmjJNkcxbu7g4QtYQv8qrPT_qWpkym1GZg@mail.gmail.com>
-Subject: Re: [PATCH] Next branch: authgss: authgss.c: Fix warnings for
- uninitizlized variable expire
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: Shakil A Khan <shakilk1729@gmail.com>
-Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        William Andros Adamson <andros@netapp.com>,
-        Jeffrey Layton <jlayton@primarydata.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Bruce Fields <bfields@fieldses.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409006611-30741-3-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 1, 2014 at 7:32 AM, Shakil A Khan <shakilk1729@gmail.com> wrote:
-> Signed-off-by : Shakil A Khan <shakilk1729@gmail.com>
-> ---
->  net/sunrpc/auth_gss/auth_gss.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/net/sunrpc/auth_gss/auth_gss.c b/net/sunrpc/auth_gss/auth_gss.c
-> index afb292c..bea0951 100644
-> --- a/net/sunrpc/auth_gss/auth_gss.c
-> +++ b/net/sunrpc/auth_gss/auth_gss.c
-> @@ -1387,7 +1387,7 @@ gss_key_timeout(struct rpc_cred *rc)
->         struct gss_cred *gss_cred = container_of(rc, struct gss_cred, gc_base);
->         struct gss_cl_ctx *ctx;
->         unsigned long now = jiffies;
-> -       unsigned long expire;
-> +       unsigned long expire = 0;
->
->         rcu_read_lock();
->         ctx = rcu_dereference(gss_cred->gc_ctx);
-> --
-> 1.7.1
+On Mon, Aug 25, 2014 at 03:43:28PM -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> Add names for each Haswell model as requested by Peter.
+> 
+> v2: Remove Crystall Well name.
 
-That would be a compiler bug, not a kernel bug. The kernel code is
-perfectly correct as it stands, and will never access the
-uninitialised variable.
 
--- 
-Trond Myklebust
+> +	case 60: /* 22nm Haswell Client */
+> +	case 70: /* 22nm Haswell Client */
+> +	case 63: /* 22nm Haswell Server */
+> +	case 69: /* 22nm Haswell ULT */
 
-Linux NFS client maintainer, PrimaryData
-
-trond.myklebust@primarydata.com
+That's inconsistent with all the others. I gave you one that makes
+sense, why not use it?
