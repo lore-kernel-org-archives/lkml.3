@@ -1,187 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068AbaIAMzE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 08:55:04 -0400
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:25806 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753635AbaIAMzB (ORCPT
+	id S1754084AbaIAMzN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 08:55:13 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57006 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753348AbaIAMzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 08:55:01 -0400
-X-IronPort-AV: E=Sophos;i="5.04,442,1406617200"; 
-   d="scan'208";a="44067537"
-Message-ID: <54046CA1.4040108@broadcom.com>
-Date: Mon, 1 Sep 2014 14:54:57 +0200
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
+	Mon, 1 Sep 2014 08:55:09 -0400
+Date: Mon, 1 Sep 2014 14:55:05 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jason Low <jason.low2@hp.com>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>, Paul Turner <pjt@google.com>,
+        Ingo Molnar <mingo@kernel.org>, Ben Segall <bsegall@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] sched: Reduce contention in update_cfs_rq_blocked_load
+Message-ID: <20140901125505.GK27892@worktop.ger.corp.intel.com>
+References: <1409094682.29189.23.camel@j-VirtualBox>
+ <CAPM31RJcYakzwo9mByoadw6DGcg5SfYDOdX79NPo08hBP5PGjA@mail.gmail.com>
+ <1409160893.31379.24.camel@j-VirtualBox>
+ <1409182369.27939.9.camel@schen9-desk2.jf.intel.com>
+ <1409255196.4945.7.camel@j-VirtualBox>
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Brett Rudley <brudley@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        <brcm80211-dev-list@broadcom.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] brcmfmac: BRCMFMAC should depend on HAS_DMA
-References: <1409329464-768-1-git-send-email-geert@linux-m68k.org>	<54042CA1.6010904@broadcom.com> <CAMuHMdV2hV_r_OASkv+U-AGVov18qFOrAVm-nDHHPHXZ6fcxxg@mail.gmail.com>
-In-Reply-To: <CAMuHMdV2hV_r_OASkv+U-AGVov18qFOrAVm-nDHHPHXZ6fcxxg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409255196.4945.7.camel@j-VirtualBox>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01/14 10:44, Geert Uytterhoeven wrote:
-> Hi Arend,
->
-> On Mon, Sep 1, 2014 at 10:21 AM, Arend van Spriel<arend@broadcom.com>  wrote:
->>>    config BRCMFMAC
->>>          tristate "Broadcom IEEE802.11n embedded FullMAC WLAN driver"
->>> -       depends on CFG80211
->>> +       depends on CFG80211A&&   HAS_DMA
->>
->> Not sure what happened here, but CFG80211 kconfig option did was not renamed
->> as far as I know. Anyway, I would like to propose a different solution. Will
->
-> Oops, that was me typing the vim append-command twice :-(
-> Thanks for noticing!
->
->> get back to you when I have it ready.
->
-> OK. Thanks again!
+On Thu, Aug 28, 2014 at 12:46:36PM -0700, Jason Low wrote:
+> On Wed, 2014-08-27 at 16:32 -0700, Tim Chen wrote:
 
-Hi Geert,
+> > If there are multiple non-forced updates, option 1's error seems to
+> > accumulate and non-bounded as we do not actually update?  
+> > Is this a concern?
+> 
+> It should be fine. Once the delta is large enough, we will end up doing
+> the update anyway.
 
-I added Kconfig options for the proto layer which are selected by the 
-host interface selection. So the HAS_DMA dependency is checked for 
-BRCMFMAC_PCIE. I am wondering whether GENERIC_IO should also be checked.
+Well, the thing is you can have nr_cpus * 12.5% of outstanding delta;
+that might be a lot, esp on the large machines.
 
-Can you verify the patch below works with your configuration?
+Now there's two problems with all this; the first is the relative
+threshold, typically such per-cpu things have a fixed update threshold,
+this makes it much easier to qualify the actual error.
 
-Regards,
-Arend
----
-diff --git a/drivers/net/wireless/brcm80211/Kconfig 
-b/drivers/net/wireless/brcm80211/Kconfig
-index b8e2561..fe3dc12 100644
---- a/drivers/net/wireless/brcm80211/Kconfig
-+++ b/drivers/net/wireless/brcm80211/Kconfig
-@@ -27,10 +27,17 @@ config BRCMFMAC
-  	  one of the bus interface support. If you choose to build a module,
-  	  it'll be called brcmfmac.ko.
+Secondly the indeed the nr_cpus in the error bound. Some things; like
+the proportion code scale the threshold by log2(nr_cpus) in an attempt
+to do something sensible there.
 
-+config BRCMFMAC_PROTO_BCDC
-+	bool
-+
-+config BRCMFMAC_PROTO_MSGBUF
-+	bool
-+
-  config BRCMFMAC_SDIO
-  	bool "SDIO bus interface support for FullMAC driver"
-  	depends on (MMC = y || MMC = BRCMFMAC)
-  	depends on BRCMFMAC
-+	select BRCMFMAC_PROTO_BCDC
-  	select FW_LOADER
-  	default y
-  	---help---
-@@ -42,6 +49,7 @@ config BRCMFMAC_USB
-  	bool "USB bus interface support for FullMAC driver"
-  	depends on (USB = y || USB = BRCMFMAC)
-  	depends on BRCMFMAC
-+	select BRCMFMAC_PROTO_BCDC
-  	select FW_LOADER
-  	---help---
-  	  This option enables the USB bus interface support for Broadcom
-@@ -52,6 +60,8 @@ config BRCMFMAC_PCIE
-  	bool "PCIE bus interface support for FullMAC driver"
-  	depends on BRCMFMAC
-  	depends on PCI
-+	depends on HAS_DMA
-+	select BRCMFMAC_PROTO_MSGBUF
-  	select FW_LOADER
-  	---help---
-  	  This option enables the PCIE bus interface support for Broadcom
-diff --git a/drivers/net/wireless/brcm80211/brcmfmac/Makefile 
-b/drivers/net/wireless/brcm80211/brcmfmac/Makefile
-index c35adf4..90a977f 100644
---- a/drivers/net/wireless/brcm80211/brcmfmac/Makefile
-+++ b/drivers/net/wireless/brcm80211/brcmfmac/Makefile
-@@ -30,16 +30,18 @@ brcmfmac-objs += \
-  		fwsignal.o \
-  		p2p.o \
-  		proto.o \
--		bcdc.o \
--		commonring.o \
--		flowring.o \
--		msgbuf.o \
-  		dhd_common.o \
-  		dhd_linux.o \
-  		firmware.o \
-  		feature.o \
-  		btcoex.o \
-  		vendor.o
-+brcmfmac-$(CONFIG_BRCMFMAC_PROTO_BCDC) += \
-+		bcdc.o
-+brcmfmac-$(CONFIG_BRCMFMAC_PROTO_MSGBUF) += \
-+		commonring.o \
-+		flowring.o \
-+		msgbuf.o
-  brcmfmac-$(CONFIG_BRCMFMAC_SDIO) += \
-  		dhd_sdio.o \
-  		bcmsdh.o
-diff --git a/drivers/net/wireless/brcm80211/brcmfmac/bcdc.h 
-b/drivers/net/wireless/brcm80211/brcmfmac/bcdc.h
-index 17e8c03..6003179 100644
---- a/drivers/net/wireless/brcm80211/brcmfmac/bcdc.h
-+++ b/drivers/net/wireless/brcm80211/brcmfmac/bcdc.h
-@@ -16,9 +16,12 @@
-  #ifndef BRCMFMAC_BCDC_H
-  #define BRCMFMAC_BCDC_H
-
--
-+#ifdef CONFIG_BRCMFMAC_PROTO_BCDC
-  int brcmf_proto_bcdc_attach(struct brcmf_pub *drvr);
-  void brcmf_proto_bcdc_detach(struct brcmf_pub *drvr);
--
-+#else
-+static inline int brcmf_proto_bcdc_attach(struct brcmf_pub *drvr) { 
-return 0; }
-+static inline void brcmf_proto_bcdc_detach(struct brcmf_pub *drvr) {}
-+#endif
-
-  #endif /* BRCMFMAC_BCDC_H */
-diff --git a/drivers/net/wireless/brcm80211/brcmfmac/msgbuf.h 
-b/drivers/net/wireless/brcm80211/brcmfmac/msgbuf.h
-index f901ae5..e6395ee 100644
---- a/drivers/net/wireless/brcm80211/brcmfmac/msgbuf.h
-+++ b/drivers/net/wireless/brcm80211/brcmfmac/msgbuf.h
-@@ -32,9 +32,16 @@
-
-
-  int brcmf_proto_msgbuf_rx_trigger(struct device *dev);
-+void brcmf_msgbuf_delete_flowring(struct brcmf_pub *drvr, u8 flowid);
-+#ifdef CONFIG_BRCMFMAC_PROTO_MSGBUF
-  int brcmf_proto_msgbuf_attach(struct brcmf_pub *drvr);
-  void brcmf_proto_msgbuf_detach(struct brcmf_pub *drvr);
--void brcmf_msgbuf_delete_flowring(struct brcmf_pub *drvr, u8 flowid);
--
-+#else
-+static inline int brcmf_proto_msgbuf_attach(struct brcmf_pub *drvr)
-+{
-+	return 0;
-+}
-+static inline void brcmf_proto_msgbuf_detach(struct brcmf_pub *drvr) {}
-+#endif
-
-  #endif /* BRCMFMAC_MSGBUF_H */
-> Gr{oetje,eeting}s,
->
->                          Geert
->
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
->
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                  -- Linus Torvalds
-
+But yes, unbounded errors here are a problem, sure relaxing the updates
+makes things go fast, they also make things go skew.
