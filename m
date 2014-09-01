@@ -1,94 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754227AbaIAP0Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 11:26:25 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:54202 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751965AbaIAP0V (ORCPT
+	id S1754345AbaIAP0w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 11:26:52 -0400
+Received: from smarthost01d.mail.zen.net.uk ([212.23.1.7]:35547 "EHLO
+	smarthost01d.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754284AbaIAP0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 11:26:21 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-49-5404901a2d4e
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Tomasz Figa <t.figa@samsung.com>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 3/3] dt-bindings: clk: samsung: Document the DMC domain of
- Exynos3250 CMU
-Date: Mon, 01 Sep 2014 17:26:02 +0200
-Message-id: <1409585162-10523-3-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1409585162-10523-1-git-send-email-k.kozlowski@samsung.com>
-References: <1409585162-10523-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t/xq7pSE1hCDObcULDYOGM9q8WkdQeY
-	LOYfOcdq0f9mIavFuVcrGS1evzC06F1wlc3ibNMbdotNj6+xWlzeNYfNYsb5fUwWty/zWqw9
-	cpfdYun1i0wWTydcZLOYMH0ti0Xr3iPsFofftLNarJ/xmsVi1a4/jA4iHmvmrWH0aGnuYfO4
-	3NfL5PF31Qtmj52z7rJ7rFz+hc1j06pONo871/aweWxeUu/Rt2UVo8fnTXIB3FFcNimpOZll
-	qUX6dglcGd8e9bMU3OGrWNW0j6mBcQFPFyMHh4SAiUT7f6MuRk4gU0ziwr31bF2MXBxCAksZ
-	Jc5seckK4fQxSez6t5UFpIpNwFhi8/IlYFUiAs2sEh9OzWACcZgFZjBK3Fu4C6xKWCBaYure
-	XewgNouAqsSTNa+YQGxeAXeJn+9/sELsk5M4eWwyK8gZnAIeEo23FEDCQkAlV5/eZp/AyLuA
-	kWEVo2hqaXJBcVJ6rqFecWJucWleul5yfu4mRkg8fNnBuPiY1SFGAQ5GJR7eFwuZQ4RYE8uK
-	K3MPMUpwMCuJ8KZmsIQI8aYkVlalFuXHF5XmpBYfYmTi4JRqYBR3TdhoJNyzRcjhwNvtS1p/
-	/WL5kndGwMMv06QgVfOC8NOoV+skZwgtjNY//p+v99EM3yVfrv05ub/3+oE7pU/WL/h82f2I
-	0uP92Tb2MgcWfpNbZ79/Z/GM5bcXTZk7a9+/TfGqzTVXLjv93iaiMneDI//TG0cfcvJVX7fZ
-	dd746Ke/jB36/JN7lViKMxINtZiLihMBBdKDHGUCAAA=
+	Mon, 1 Sep 2014 11:26:50 -0400
+Message-ID: <1409585190.2948.45.camel@linaro1.home>
+Subject: Re: [PATCH] ARM: probes: return directly when emulate not set
+From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+To: Wang Nan <wangnan0@huawei.com>
+Cc: "David A. Long" <dave.long@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        peifeiyue@huawei.com
+Date: Mon, 01 Sep 2014 16:26:30 +0100
+In-Reply-To: <1409116109-67330-1-git-send-email-wangnan0@huawei.com>
+References: <1409116109-67330-1-git-send-email-wangnan0@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2-1+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-smarthost01d-IP: [82.69.122.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the new compatible for clock ins DMC (Dynamic Memory
-Controller) domain of Exynos3250 Clock Management Unit (CMU).
+On Wed, 2014-08-27 at 13:08 +0800, Wang Nan wrote:
+> When kprobe decoding instruction, original code calls instruction
+> specific decoder if emulate is set to false.  However, instructions with
+> DECODE_TYPE_EMULATE are in fact don't have their decoder. What in the
+> action table are in fact handlers.  For example:
+> 
+> 	/* LDRD (immediate)	cccc 000x x1x0 xxxx xxxx xxxx 1101 xxxx */
+> 	/* STRD (immediate)	cccc 000x x1x0 xxxx xxxx xxxx 1111 xxxx */
+> 	DECODE_EMULATEX	(0x0e5000d0, 0x004000d0, PROBES_LDRSTRD,
+> 						 REGS(NOPCWB, NOPCX, 0, 0, 0)),
+> 
+> 	and
+> 
+> const union decode_action kprobes_arm_actions[NUM_PROBES_ARM_ACTIONS] = {
+> 	...
+> 	[PROBES_LDRSTRD] = {.handler = emulate_ldrdstrd},
+> 	...
+> 
+> In this situation, original code calls 'emulate_ldrdstrd' as a decoder,
+> which is obviously incorrect.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- Documentation/devicetree/bindings/clock/exynos3250-clock.txt | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+Except that situation can't occur because when arm_probes_decode_insn()
+is called with kprobes_arm_actions then emulate is set to true (see
+arch_prepare_kprobe).
 
-diff --git a/Documentation/devicetree/bindings/clock/exynos3250-clock.txt b/Documentation/devicetree/bindings/clock/exynos3250-clock.txt
-index aadc9c59e2d1..f57d9dd9ea85 100644
---- a/Documentation/devicetree/bindings/clock/exynos3250-clock.txt
-+++ b/Documentation/devicetree/bindings/clock/exynos3250-clock.txt
-@@ -7,6 +7,8 @@ Required Properties:
- 
- - compatible: should be one of the following.
-   - "samsung,exynos3250-cmu" - controller compatible with Exynos3250 SoC.
-+  - "samsung,exynos3250-cmu-dmc" - controller compatible with
-+    Exynos3250 SoC for Dynamic Memory Controller domain.
- 
- - reg: physical base address of the controller and length of memory mapped
-   region.
-@@ -20,7 +22,7 @@ All available clocks are defined as preprocessor macros in
- dt-bindings/clock/exynos3250.h header and can be used in device
- tree sources.
- 
--Example 1: An example of a clock controller node is listed below.
-+Example 1: Examples of clock controller nodes are listed below.
- 
- 	cmu: clock-controller@10030000 {
- 		compatible = "samsung,exynos3250-cmu";
-@@ -28,6 +30,12 @@ Example 1: An example of a clock controller node is listed below.
- 		#clock-cells = <1>;
- 	};
- 
-+	cmu_dmc: clock-controller@105C0000 {
-+		compatible = "samsung,exynos3250-cmu-dmc";
-+		reg = <0x105C0000 0x2000>;
-+		#clock-cells = <1>;
-+	};
-+
- Example 2: UART controller node that consumes the clock generated by the clock
- 	   controller. Refer to the standard clock bindings for information
- 	   about 'clocks' and 'clock-names' property.
+For the situation where emulate is false, i.e. when called from
+arch_uprobe_analyze_insn(), then this provides these actions...
+
+const union decode_action uprobes_probes_actions[] = {
+	...
+	[PROBES_LDRSTRD] = {.decoder = decode_pc_ro},
+	...
+
+and we do want that decode function called. Basically, the code is
+behaving as it was designed and when passed emulate=false it turns the
+behaviour of emulated instruction forms into into the 'custom' action. 
+
+> 
+> This patch makes it returns INSN_GOOD directly when 'emulate' is not
+> true.
+> 
+> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+> Cc: "David A. Long" <dave.long@linaro.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Jon Medhurst <tixy@linaro.org>
+> Cc: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+> Cc: Ben Dooks <ben.dooks@codethink.co.uk>
+> ---
+>  arch/arm/kernel/probes.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/kernel/probes.c b/arch/arm/kernel/probes.c
+> index a8ab540..1c77b8d 100644
+> --- a/arch/arm/kernel/probes.c
+> +++ b/arch/arm/kernel/probes.c
+> @@ -436,8 +436,7 @@ probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
+>  			struct decode_emulate *d = (struct decode_emulate *)h;
+>  
+>  			if (!emulate)
+> -				return actions[d->handler.action].decoder(insn,
+> -					asi, h);
+> +				return INSN_GOOD;
+>  
+>  			asi->insn_handler = actions[d->handler.action].handler;
+>  			set_emulated_insn(insn, asi, thumb);
+
 -- 
-1.9.1
+Tixy
+
 
