@@ -1,158 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753599AbaIALiT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 07:38:19 -0400
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:50420 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753509AbaIALiQ (ORCPT
+	id S1753712AbaIALkA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 07:40:00 -0400
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:59274 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753319AbaIALj5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 07:38:16 -0400
-Date: Mon, 1 Sep 2014 12:38:05 +0100
+	Mon, 1 Sep 2014 07:39:57 -0400
+Date: Mon, 1 Sep 2014 12:39:49 +0100
 From: Lee Jones <lee.jones@linaro.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-Subject: Re: [PATCH v1 1/5] mfd: lpc_sch: reduce duplicate code
-Message-ID: <20140901113805.GO7374@lee--X1>
-References: <1408705096-31286-1-git-send-email-andriy.shevchenko@linux.intel.com>
- <1408705096-31286-2-git-send-email-andriy.shevchenko@linux.intel.com>
- <20140901091317.GG7374@lee--X1>
- <1409566903.30155.47.camel@linux.intel.com>
+To: Octavian Purdila <octavian.purdila@intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, wsa@the-dreams.de,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Johan Hovold <johan@kernel.org>, linux-usb@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>, linux-gpio@vger.kernel.org,
+        linux-i2c@vger.kernel.org, Daniel Baluta <daniel.baluta@intel.com>,
+        Laurentiu Palcu <laurentiu.palcu@intel.com>
+Subject: Re: [PATCH v2 1/3] mfd: add support for Diolan DLN-2 devices
+Message-ID: <20140901113949.GP7374@lee--X1>
+References: <1409349654-24841-1-git-send-email-octavian.purdila@intel.com>
+ <1409349654-24841-2-git-send-email-octavian.purdila@intel.com>
+ <20140901083744.GE7374@lee--X1>
+ <CAE1zotK0cddns4f4ay-GJie8O2pjb72+-yYndZvW0hbF0D83HA@mail.gmail.com>
+ <20140901095127.GK7374@lee--X1>
+ <CAE1zot+T6eq0jrL6_Qh=5nihNOgGEaWe5RCDk7_1XS8ZWaWKqA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1409566903.30155.47.camel@linux.intel.com>
+In-Reply-To: <CAE1zot+T6eq0jrL6_Qh=5nihNOgGEaWe5RCDk7_1XS8ZWaWKqA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 01 Sep 2014, Andy Shevchenko wrote:
+On Mon, 01 Sep 2014, Octavian Purdila wrote:
 
-> On Mon, 2014-09-01 at 10:13 +0100, Lee Jones wrote:
-> > On Fri, 22 Aug 2014, Andy Shevchenko wrote:
-> > 
-> > > This patch refactors the driver to use helper functions instead of
-> > > copy'n'pasted pieces of code.
-> > > 
-> > > Tested-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-> > > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> > > ---
-> > >  drivers/mfd/lpc_sch.c | 146 ++++++++++++++++++++++----------------------------
-> > >  1 file changed, 64 insertions(+), 82 deletions(-)
-> > > 
-> > > diff --git a/drivers/mfd/lpc_sch.c b/drivers/mfd/lpc_sch.c
-> > > index 4ee7550..0f01ef0 100644
-> > > --- a/drivers/mfd/lpc_sch.c
-> > > +++ b/drivers/mfd/lpc_sch.c
-> > > @@ -40,41 +40,6 @@
-> > 
-> > [...]
+> On Mon, Sep 1, 2014 at 12:51 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> > On Mon, 01 Sep 2014, Octavian Purdila wrote:
+> >
+> >> On Mon, Sep 1, 2014 at 11:37 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> >> > On Sat, 30 Aug 2014, Octavian Purdila wrote:
+> >> >
+> >> >> This patch implements the USB part of the Diolan USB-I2C/SPI/GPIO
+> >> >> Master Adapter DLN-2. Details about the device can be found here:
+> >> >>
+> >> >> https://www.diolan.com/i2c/i2c_interface.html.
+> >> >>
+> >> >> Information about the USB protocol can be found in the Programmer's
+> >> >> Reference Manual [1], see section 1.7.
+> >> >>
+> >> >> Because the hardware has a single transmit endpoint and a single
+> >> >> receive endpoint the communication between the various DLN2 drivers
+> >> >> and the hardware will be muxed/demuxed by this driver.
+> >> >>
+> >> >> Each DLN2 module will be identified by the handle field within the DLN2
+> >> >> message header. If a DLN2 module issues multiple commands in parallel
+> >> >> they will be identified by the echo counter field in the message header.
+> >> >>
+> >> >> The DLN2 modules can use the dln2_transfer() function to issue a
+> >> >> command and wait for its response. They can also register a callback
+> >> >> that is going to be called when a specific event id is generated by
+> >> >> the device (e.g. GPIO interrupts). The device uses handle 0 for
+> >> >> sending events.
+> >> >>
+> >> >> [1] https://www.diolan.com/downloads/dln-api-manual.pdf
+> >> >
+> >> > MFD is not a dumping ground for misfit h/w.  Almost all of this code
+> >> > looks like it belongs in drivers/usb.  Please move it there.
+> >> >
+> >>
+> >> We initially submitted this driver as a pure USB driver, with our own
+> >> module registration mechanism, but during the first round of reviews
+> >> people pointed out that a MFD driver is the better approach, and I
+> >> agree. I also see that there are already a couple of USB drivers
+> >> implemented as MFD drivers.
+> >
+> > Can you link me to your previous submission please?
 > 
-> Thanks for review, my answers below.
+> Sure, here it is:
 > 
-> > 
-> > > -static int lpc_sch_probe(struct pci_dev *dev,
-> > > -				const struct pci_device_id *id)
-> > > +static int lpc_sch_get_io(struct pci_dev *pdev, int where, const char *name,
-> > > +			  struct resource *res, int size)
-> > >  {
-> > >  	unsigned int base_addr_cfg;
-> > >  	unsigned short base_addr;
-> > > -	int i, cells = 0;
-> > > -	int ret;
-> > >  
-> > > -	pci_read_config_dword(dev, SMBASE, &base_addr_cfg);
-> > > +	pci_read_config_dword(pdev, where, &base_addr_cfg);
-> > >  	base_addr = 0;
-> > >  	if (!(base_addr_cfg & (1 << 31)))
-> > > -		dev_warn(&dev->dev, "Decode of the SMBus I/O range disabled\n");
-> > > +		dev_warn(&pdev->dev, "Decode of the %s I/O range disabled\n",
-> > > +			 name);
-> > >  	else
-> > >  		base_addr = (unsigned short)base_addr_cfg;
-> > >  
-> > >  	if (base_addr == 0) {
-> > > -		dev_warn(&dev->dev, "I/O space for SMBus uninitialized\n");
-> > > -	} else {
-> > > -		lpc_sch_cells[cells++] = isch_smbus_cell;
-> > > -		smbus_sch_resource.start = base_addr;
-> > > -		smbus_sch_resource.end = base_addr + SMBUS_IO_SIZE - 1;
-> > > +		dev_warn(&pdev->dev, "I/O space for %s uninitialized\n", name);
-> > > +		return -ENODEV;
-> > 
-> > If you're going to return an error, you need to use dev_err() above.
+> https://lkml.org/lkml/2014/8/20/228
 > 
-> Okay.
+> >
+> >> Do you see a better approach?
+> >
+> > You should have a small MFD driver which controls resources and
+> > registers children.  All other functionality should live in their
+> > respective drivers/X locations i.e. USB functionallity should normally
+> > live in drivers/usb.
+> >
 > 
-> > >  	}
-> > >  
-> > > -	pci_read_config_dword(dev, GPIOBASE, &base_addr_cfg);
-> > > -	base_addr = 0;
-> > > -	if (!(base_addr_cfg & (1 << 31)))
-> > > -		dev_warn(&dev->dev, "Decode of the GPIO I/O range disabled\n");
-> > > +	res->start = base_addr;
-> > > +	res->end = base_addr + size - 1;
-> > > +	res->flags = IORESOURCE_IO;
-> > > +
-> > > +	return 0;
-> > > +}
-> > > +
-> > > +static int lpc_sch_populate_cell(struct pci_dev *pdev, int where,
-> > > +				 const char *name, int size, int id,
-> > > +				 struct mfd_cell *cell)
-> > > +{
-> > > +	struct resource *res;
-> > > +	int ret;
-> > > +
-> > > +	res = devm_kzalloc(&pdev->dev, sizeof(*res), GFP_KERNEL);
-> > > +	if (!res)
-> > > +		return -ENOMEM;
-> > > +
-> > > +	ret = lpc_sch_get_io(pdev, where, name, res, size);
-> > > +	if (ret)
-> > > +		return ret;
-> > > +
-> > > +	memset(cell, 0, sizeof(*cell));
-> > > +
-> > > +	cell->name = name;
-> > > +	cell->resources = res;
-> > > +	cell->num_resources = 1;
-> > > +	cell->ignore_resource_conflicts = true;
-> > > +	cell->id = id;
-> > > +
-> > > +	return 0;
-> > > +}
-> > > +
-> > > +static int lpc_sch_probe(struct pci_dev *dev,
-> > > +			 const struct pci_device_id *id)
-> > > +{
-> > > +	struct mfd_cell lpc_sch_cells[3];
-> > > +	int size, cells = 0;
-> > > +	int ret;
-> > > +
-> > > +	ret = lpc_sch_populate_cell(dev, SMBASE, "isch_smbus", SMBUS_IO_SIZE,
-> > > +				    id->device, &lpc_sch_cells[cells]);
-> > > +	if (!ret)
-> > > +		cells++;
-> > 
-> > You're masking errors here.  You need to return on error.
+> OK, that sounds better. I am not sure how to handle the registration
+> part though, since in this case we need to create the children at
+> runtime, from the usb probe routine.
 > 
-> No, I don't. It's a local error, I just need to understand if the HW has
-> or hasn't the IP part we're looking for.
+> The only solution I see is to move the driver completely to
+> usb/drivers and continue to use the MFD infrastructure. Does that
+> sound OK to you?
 
-Yes, you do.  -ENOMEM is not a local error, it needs to be returned.
-
-> I could, let's say, return true or false, if you prefer, with the above
-> meaning.
-
-I don't see this very often, which makes me wonder if it's the right
-thing to do at all; however, if you're going to this then please
-return a local state, instead of a Linux Error Code.
-
-#define LCP_SKIP_RESOURCE /* Seems resonable? */
+I have no problem with that.  If this is an MFD driver, it _should_
+live in drivers/mfd.  However, all of that USB specific stuff
+defiantly should not.
 
 -- 
 Lee Jones
