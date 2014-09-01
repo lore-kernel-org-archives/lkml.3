@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753586AbaIALKu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 07:10:50 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:39017 "EHLO mail.mev.co.uk"
+	id S1753174AbaIALER (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 07:04:17 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:38972 "EHLO mail.mev.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753347AbaIALEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 07:04:20 -0400
+	id S1752241AbaIALEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 07:04:15 -0400
 From: Ian Abbott <abbotti@mev.co.uk>
 To: driverdev-devel@linuxdriverproject.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Ian Abbott <abbotti@mev.co.uk>,
         H Hartley Sweeten <hartleys@visionengravers.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 09/28] staging: comedi: amplc_pci230: no need to comedi_set_hw_dev() here
-Date: Mon,  1 Sep 2014 12:03:41 +0100
-Message-Id: <1409569440-10979-10-git-send-email-abbotti@mev.co.uk>
+Subject: [PATCH 00/28] staging: comedi: more clean-up and remove legacy attach
+Date: Mon,  1 Sep 2014 12:03:32 +0100
+Message-Id: <1409569440-10979-1-git-send-email-abbotti@mev.co.uk>
 X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1409569440-10979-1-git-send-email-abbotti@mev.co.uk>
-References: <1409569440-10979-1-git-send-email-abbotti@mev.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The comedi core module calls `comedi_set_hw_dev()` to associate the
-hardware `struct device` with the `struct comedi_device` before it calls
-the comedi driver's "auto_attach" hook `pci230_auto_attach()`.  There is
-no need for `pci230_auto_attach()` to call `comedi_set_hw_dev()` itself,
-so remove the call.
+Continue to clean up the amplc_pci230 driver code and remove the legacy
+attach mechanism, since it isn't very useful for this driver (see PATCH
+05/28).
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
----
- drivers/staging/comedi/drivers/amplc_pci230.c | 2 --
- 1 file changed, 2 deletions(-)
+01) staging: comedi: amplc_pci230: update MODULE_DESCRIPTION()
+02) staging: comedi: amplc_pci230: don't use multiple blank lines
+03) staging: comedi: amplc_pci230: remove some unnecessary parentheses
+04) staging: comedi: amplc_pci230: collapse some 'else { if' chains
+05) staging: comedi: amplc_pci230: remove "legacy" attach mechanism
+06) staging: comedi: amplc_pci230: no need to manipulate PCI ref count
+07) staging: comedi: amplc_pci230: set detach handler to
+    comedi_pci_detach()
+08) staging: comedi: amplc_pci230: absorb pci230_attach_common()
+09) staging: comedi: amplc_pci230: no need to comedi_set_hw_dev() here
+10) staging: comedi: amplc_pci230: absorb pci230_alloc_private()
+11) staging: comedi: amplc_pci230: remove ai_chans member
+12) staging: comedi: amplc_pci230: remove ao_chans member
+13) staging: comedi: amplc_pci230: shrink struct pci230_board
+14) staging: comedi: amplc_pci230: simplify pci230_ao_mangle_datum()
+15) staging: comedi: amplc_pci230: simplify pci230_ai_read()
+16) staging: comedi: amplc_pci230: remove 'inline'
+17) staging: comedi: amplc_pci230: rename pci230_ai_rinsn()
+18) staging: comedi: amplc_pci230: add `pci230_` prefix to functions
+19) staging: comedi: amplc_pci230: use comedi_range_is_bipolar()
+20) staging: comedi: amplc_pci230: make `intr_running` a bitfield
+21) staging: comedi: amplc_pci230: replace `state` member with bitfields
+22) staging: comedi: amplc_pci230: rewrite shared resource handling
+23) staging: comedi: amplc_pci230: reduce indentation in
+    pci230_ao_inttrig_scan_begin()
+24) staging: comedi: amplc_pci230: reduce indentation in
+    pci230_ao_start()
+25) staging: comedi: amplc_pci230: reduce indentation in
+    pci230_ai_inttrig_convert()
+26) staging: comedi: amplc_pci230: reduce indentation in
+    pci230_ai_start()
+27) staging: comedi: amplc_pci230: change pci230_handle_ao_fifo() return
+    type
+28) staging: comedi: amplc_pci230: simplify interrupt enable handling
 
-diff --git a/drivers/staging/comedi/drivers/amplc_pci230.c b/drivers/staging/comedi/drivers/amplc_pci230.c
-index 46977e5..bd2e648 100644
---- a/drivers/staging/comedi/drivers/amplc_pci230.c
-+++ b/drivers/staging/comedi/drivers/amplc_pci230.c
-@@ -2582,8 +2582,6 @@ static int pci230_auto_attach(struct comedi_device *dev,
- 	thisboard = comedi_board(dev);
- 	devpriv = dev->private;
- 
--	comedi_set_hw_dev(dev, &pci_dev->dev);
--
- 	dev->board_name = thisboard->name;
- 
- 	rc = comedi_pci_enable(dev);
--- 
-2.0.4
-
+ drivers/staging/comedi/drivers/amplc_pci230.c | 977 ++++++++++----------------
+ 1 file changed, 384 insertions(+), 593 deletions(-)
