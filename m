@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754253AbaIAP01 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 11:26:27 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:12592 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753829AbaIAP0W (ORCPT
+	id S1754227AbaIAP0Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 11:26:25 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:54202 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751965AbaIAP0V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 11:26:22 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-16-54049019f3a7
+	Mon, 1 Sep 2014 11:26:21 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-49-5404901a2d4e
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Tomasz Figa <t.figa@samsung.com>, Tomasz Figa <tomasz.figa@gmail.com>,
         Mike Turquette <mturquette@linaro.org>,
@@ -23,53 +23,72 @@ To: Tomasz Figa <t.figa@samsung.com>, Tomasz Figa <tomasz.figa@gmail.com>,
 Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 2/3] ARM: dts: exynos3250: Add CMU node for DMC domain clocks
-Date: Mon, 01 Sep 2014 17:26:01 +0200
-Message-id: <1409585162-10523-2-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH 3/3] dt-bindings: clk: samsung: Document the DMC domain of
+ Exynos3250 CMU
+Date: Mon, 01 Sep 2014 17:26:02 +0200
+Message-id: <1409585162-10523-3-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1409585162-10523-1-git-send-email-k.kozlowski@samsung.com>
 References: <1409585162-10523-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t/xq7qSE1hCDA4807bYOGM9q8WkdQeY
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t/xq7pSE1hCDObcULDYOGM9q8WkdQeY
 	LOYfOcdq0f9mIavFuVcrGS1evzC06F1wlc3ibNMbdotNj6+xWlzeNYfNYsb5fUwWty/zWqw9
 	cpfdYun1i0wWTydcZLOYMH0ti0Xr3iPsFofftLNarJ/xmsVi1a4/jA4iHmvmrWH0aGnuYfO4
 	3NfL5PF31Qtmj52z7rJ7rFz+hc1j06pONo871/aweWxeUu/Rt2UVo8fnTXIB3FFcNimpOZll
-	qUX6dglcGR+3zGUsmMpWcbHrG2MDYztrFyMnh4SAicTs5xPYIWwxiQv31rN1MXJxCAksZZS4
-	cWYvM4TTxySx9c8isCo2AWOJzcuXgFWJCDSzSnw4NYMJxGEWmMEocW/hLhaQKmEBX4nf3fPB
-	OlgEVCXW/rzPBmLzCrhLLP28mBFin5zEyWOTge7g4OAU8JBovKUAEhYCKrn69Db7BEbeBYwM
-	qxhFU0uTC4qT0nON9IoTc4tL89L1kvNzNzFCIuLrDsalx6wOMQpwMCrx8L5YyBwixJpYVlyZ
-	e4hRgoNZSYT3Sx9LiBBvSmJlVWpRfnxRaU5q8SFGJg5OqQbGkwZea1ZNn5zyfqfkz7O2kQ9c
-	TsRVtcdvZSs7x2hhVSe0uzJ7wo7u50vuLUqcGc53r18kNqBoXd2Jt8yiK12D6gqa1J4JTzdl
-	Mz54pHPaoS/XGPWS3nF5bTfo3Zmx+CfvHPYX0k42YW1bXi21S09zMXA2OVKzUXVmm2ql2fbv
-	T/SOV8ktnp+kxFKckWioxVxUnAgAeAal0mYCAAA=
+	qUX6dglcGd8e9bMU3OGrWNW0j6mBcQFPFyMHh4SAiUT7f6MuRk4gU0ziwr31bF2MXBxCAksZ
+	Jc5seckK4fQxSez6t5UFpIpNwFhi8/IlYFUiAs2sEh9OzWACcZgFZjBK3Fu4C6xKWCBaYure
+	XewgNouAqsSTNa+YQGxeAXeJn+9/sELsk5M4eWwyK8gZnAIeEo23FEDCQkAlV5/eZp/AyLuA
+	kWEVo2hqaXJBcVJ6rqFecWJucWleul5yfu4mRkg8fNnBuPiY1SFGAQ5GJR7eFwuZQ4RYE8uK
+	K3MPMUpwMCuJ8KZmsIQI8aYkVlalFuXHF5XmpBYfYmTi4JRqYBR3TdhoJNyzRcjhwNvtS1p/
+	/WL5kndGwMMv06QgVfOC8NOoV+skZwgtjNY//p+v99EM3yVfrv05ub/3+oE7pU/WL/h82f2I
+	0uP92Tb2MgcWfpNbZ79/Z/GM5bcXTZk7a9+/TfGqzTVXLjv93iaiMneDI//TG0cfcvJVX7fZ
+	dd746Ke/jB36/JN7lViKMxINtZiLihMBBdKDHGUCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add CMU (Clock Management Unit) node for DMC (Dynamic Memory Controller)
-domain clocks on Exynos3250.
+Document the new compatible for clock ins DMC (Dynamic Memory
+Controller) domain of Exynos3250 Clock Management Unit (CMU).
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- arch/arm/boot/dts/exynos3250.dtsi | 6 ++++++
- 1 file changed, 6 insertions(+)
+ Documentation/devicetree/bindings/clock/exynos3250-clock.txt | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/exynos3250.dtsi b/arch/arm/boot/dts/exynos3250.dtsi
-index 429a6c6cfcf9..8c3a9cc0a4d1 100644
---- a/arch/arm/boot/dts/exynos3250.dtsi
-+++ b/arch/arm/boot/dts/exynos3250.dtsi
-@@ -163,6 +163,12 @@
- 			#clock-cells = <1>;
- 		};
+diff --git a/Documentation/devicetree/bindings/clock/exynos3250-clock.txt b/Documentation/devicetree/bindings/clock/exynos3250-clock.txt
+index aadc9c59e2d1..f57d9dd9ea85 100644
+--- a/Documentation/devicetree/bindings/clock/exynos3250-clock.txt
++++ b/Documentation/devicetree/bindings/clock/exynos3250-clock.txt
+@@ -7,6 +7,8 @@ Required Properties:
  
-+		cmu_dmc: clock-controller@105C0000 {
-+			compatible = "samsung,exynos3250-cmu-dmc";
-+			reg = <0x105C0000 0x2000>;
-+			#clock-cells = <1>;
-+		};
+ - compatible: should be one of the following.
+   - "samsung,exynos3250-cmu" - controller compatible with Exynos3250 SoC.
++  - "samsung,exynos3250-cmu-dmc" - controller compatible with
++    Exynos3250 SoC for Dynamic Memory Controller domain.
+ 
+ - reg: physical base address of the controller and length of memory mapped
+   region.
+@@ -20,7 +22,7 @@ All available clocks are defined as preprocessor macros in
+ dt-bindings/clock/exynos3250.h header and can be used in device
+ tree sources.
+ 
+-Example 1: An example of a clock controller node is listed below.
++Example 1: Examples of clock controller nodes are listed below.
+ 
+ 	cmu: clock-controller@10030000 {
+ 		compatible = "samsung,exynos3250-cmu";
+@@ -28,6 +30,12 @@ Example 1: An example of a clock controller node is listed below.
+ 		#clock-cells = <1>;
+ 	};
+ 
++	cmu_dmc: clock-controller@105C0000 {
++		compatible = "samsung,exynos3250-cmu-dmc";
++		reg = <0x105C0000 0x2000>;
++		#clock-cells = <1>;
++	};
 +
- 		rtc: rtc@10070000 {
- 			compatible = "samsung,exynos3250-rtc";
- 			reg = <0x10070000 0x100>;
+ Example 2: UART controller node that consumes the clock generated by the clock
+ 	   controller. Refer to the standard clock bindings for information
+ 	   about 'clocks' and 'clock-names' property.
 -- 
 1.9.1
 
