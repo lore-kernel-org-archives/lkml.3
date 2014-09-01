@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754547AbaIAPbN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 11:31:13 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:40316 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754526AbaIAPbK (ORCPT
+	id S1754425AbaIAPcN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 11:32:13 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:59815 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753410AbaIAPcL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 11:31:10 -0400
+	Mon, 1 Sep 2014 11:32:11 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Graeme Gregory <graeme.gregory@linaro.org>
+Cc: linaro-acpi@lists.linaro.org, Rob Herring <robh@kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>, Robert Richter <rric@kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>, linux-acpi@vger.kernel.org,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Robert Moore <robert.moore@intel.com>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@kernel.org>, Olof Johansson <olof@lixom.net>,
+        Liviu Dudau <Liviu.Dudau@arm.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-arm-kernel@lists.infradead.org, Lv Zheng <lv.zheng@intel.com>
+Subject: Re: [Linaro-acpi] [RFC PATCH for Juno 1/2] net: smsc911x add support for probing from ACPI
+Date: Mon, 01 Sep 2014 17:32 +0200
+Message-ID: <40491090.z7F1jbVZzH@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140901152854.GJ2953@xora-haswell.xora.org.uk>
+References: <1409583961-7466-1-git-send-email-hanjun.guo@linaro.org> <2861461.8zNpLC3I2n@wuerfel> <20140901152854.GJ2953@xora-haswell.xora.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <CAJhHMCBOeLK-Z_96V_aAWBikS6tjrdYfj6_0w-9kSzQb=UJZsw@mail.gmail.com>
-References: <1409369788-22563-1-git-send-email-bobby.prani@gmail.com>
-	<CAMuHMdV_naTfQOLwOshWq1Q15kSE39a8GWChsjt3RrWRcd6peg@mail.gmail.com>
-	<CAJhHMCDaSAzU3zvhY2FRFoBaQH4oQBTsUsYMU6pvBbCXydROZQ@mail.gmail.com>
-	<CANq1E4SCnDjN5yetrgtaRNdvDr7xqGOm1BXz7dbGvX3mnsm-MA@mail.gmail.com>
-	<54036090.1050104@gmail.com>
-	<CANq1E4QbRLjCGr+PuHqKa6Kx_+4MTmbzd9V1RqrQFS3f5YoSag@mail.gmail.com>
-	<CAJhHMCBOeLK-Z_96V_aAWBikS6tjrdYfj6_0w-9kSzQb=UJZsw@mail.gmail.com>
-Date: Mon, 1 Sep 2014 17:31:09 +0200
-Message-ID: <CANq1E4Sf-XMkODhxEM9Bacr_RBt8p_dHPyeyb7a70_VqrmwXeA@mail.gmail.com>
-Subject: Re: [RFC PATCH] powerpc: Wire up three syscalls
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Anton Blanchard <anton@samba.org>, Fabian Frederick <fabf@skynet.be>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "open list:LINUX FOR POWERPC..." <linuxppc-dev@lists.ozlabs.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:UW5ZLlPq0+TJDFceRcNL4mkK7mVoV8tFy9/4b7fIZfk
+ QvE5xtDVcMytdu+0lqqloXf1dt1mflEfYjIKRXmybVSZktxvsk
+ wT9iHY9P1WnB2DADrkMoqpbKsK7/BYGu9t2UBLC6MZEpM4n9uS
+ PEsDSpBStJrca2VNeCzDjUvzJGE2S+twrL26wnSjQbWInPpzbL
+ knyJM4dXdTtrXufd49KDbRL+jp3DOnDEjed9smBalzws83gkjp
+ mISsRfAZj3oMSBqXGGACJZQLbPCpJI/Da7pzX5OGYaIZJv9/yi
+ XoZXljmgd0WVO+ImFRQ3MozjbdfTcHvxOajMWZLlwlyDAwNsa9
+ oB5JFooSfoyAT/tYWe2Y=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Monday 01 September 2014 16:28:54 Graeme Gregory wrote:
+> On Mon, Sep 01, 2014 at 05:17:51PM +0200, Arnd Bergmann wrote:
+> > On Monday 01 September 2014 23:06:00 Hanjun Guo wrote:
+> > > +#ifdef CONFIG_ACPI
+> > > +/* Configure some sensible defaults for ACPI mode */
+> > > +static int smsc911x_probe_config_acpi(struct smsc911x_platform_config *config,
+> > > +                                   acpi_handle *ahandle)
+> > > +{
+> > > +       if (!ahandle)
+> > > +               return -ENOSYS;
+> > > +
+> > > +       config->phy_interface = PHY_INTERFACE_MODE_MII;
+> > > 
+> > 
+> > Please remove the #ifdef and use 
+> > 
+> >       if (!IS_ENABLED(CONFIG_ACPI) || !ahandle)
+> > 
+> > to check for ACPI support. This should result in the same object code
+> > in all cases, but give better compile-time coverage when ACPI is
+> > disabled.
+> > 
+> struct acpi_handle does not exist in the case !CONFIG_ACPI
 
-On Mon, Sep 1, 2014 at 5:21 PM, Pranith Kumar <bobby.prani@gmail.com> wrote:
-> Hi David,
->
-> On Mon, Sep 1, 2014 at 7:33 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
->>
->> Nice catch. We changed 'flags' from u64 to "unsigned int" in the last
->> revision of the series. Patch looks good, but I'd prefer using
->> "unsigned int" as type, instead of __u32. Just to be consistent with
->> the syscall interface. The return type of F_GET_SEALS is actually
->> "int" and the MSB is reserved for signed error codes, so you can
->> savely use "int r = fcntl(fd, F_GET_SEALS, 0)" in
->> mfd_assert_get_seals().
->>
->
-> OK. Should I send a new patch with these changes or do you have one
-> line up already?
+That should be easy to fix, and a good idea in general, independent
+of this patch.
+We generally make function declarations and type definitions visible
+(possibly empty) for disabled subsystems so the code using them
+silently goes away when that subsystem is disabled.
 
-I'd appreciate if you can resend it.
-
-Btw., the original patch (wire up syscalls) can be applied unchanged.
-
-Thanks
-David
+	Arnd
