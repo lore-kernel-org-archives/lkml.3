@@ -1,151 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753165AbaIAKJd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 06:09:33 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:54986 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752327AbaIAKJb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 06:09:31 -0400
-Date: Mon, 1 Sep 2014 11:09:22 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Chris Zhong <zyw@rock-chips.com>
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        sameo@linux.intel.com, lgirdwood@gmail.com, a.zummo@towertech.it,
-        mturquette@linaro.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        grant.likely@linaro.org, hl@rock-chips.com, huangtao@rock-chips.com,
-        cf@rock-chips.com, zhangqing@rock-chips.com, xxx@rock-chips.com,
-        dianders@chromium.org, heiko@sntech.de, olof@lixom.net,
-        sonnyrao@chromium.org, dtor@chromium.org,
-        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com
-Subject: Re: [PATCH v7 2/5] MFD: RK808: Add new mfd driver for RK808
-Message-ID: <20140901100922.GL7374@lee--X1>
-References: <1409562468-16586-1-git-send-email-zyw@rock-chips.com>
- <1409564384-18380-1-git-send-email-zyw@rock-chips.com>
+	id S1753209AbaIAKMP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 06:12:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58955 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752311AbaIAKMN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 06:12:13 -0400
+Message-ID: <54044647.4030605@redhat.com>
+Date: Mon, 01 Sep 2014 12:11:19 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1409564384-18380-1-git-send-email-zyw@rock-chips.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Eric Auger <eric.auger@linaro.org>, eric.auger@st.com,
+        christoffer.dall@linaro.org, marc.zyngier@arm.com,
+        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
+        kvm@vger.kernel.org, gleb@kernel.org, borntraeger@de.ibm.com,
+        cornelia.huck@de.ibm.com, xiantao.zhang@intel.com, agraf@suse.de
+CC: linux-kernel@vger.kernel.org, patches@linaro.org
+Subject: Re: [PATCH] KVM: EVENTFD: remove inclusion of irq.h
+References: <1409560568-6911-1-git-send-email-eric.auger@linaro.org>
+In-Reply-To: <1409560568-6911-1-git-send-email-eric.auger@linaro.org>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 01 Sep 2014, Chris Zhong wrote:
-
-> The RK808 chip is a power management IC for multimedia and handheld
-> devices. It contains the following components:
+Il 01/09/2014 10:36, Eric Auger ha scritto:
+> No more needed. irq.h would be void on ARM.
 > 
-> - Regulators
-> - RTC
-> - Clkout
+> Signed-off-by: Eric Auger <eric.auger@linaro.org>
 > 
-> The RK808 core driver is registered as a platform driver and provides
-> communication through I2C with the host device for the different
-> components.
+> ---
 > 
-> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
-> Signed-off-by: Zhang Qing <zhangqing@rock-chips.com>
+> I don't think irq.h is needed anymore since Paul Mackerras' work. However
+> I did not compile for all architectures.
+> ---
+>  virt/kvm/eventfd.c | 1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
+> index 3c5981c..0c712a7 100644
+> --- a/virt/kvm/eventfd.c
+> +++ b/virt/kvm/eventfd.c
+> @@ -36,7 +36,6 @@
+>  #include <linux/seqlock.h>
+>  #include <trace/events/kvm.h>
+>  
+> -#include "irq.h"
+>  #include "iodev.h"
+>  
+>  #ifdef CONFIG_HAVE_KVM_IRQFD
+> 
 
-Couple of nits.  Once fixed you can apply my:
+Acked-by: Paolo Bonzini <pbonzini@redhat.com>
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
+Christoffer, please include this via the ARM tree, together with ARM
+irqfd support.  Thanks,
 
-[...]
-
-> +/*
-> + * MFD core driver for Rockchip RK808
-> + *
-> + * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
-
-Author?
-
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms and conditions of the GNU General Public License,
-> + * version 2, as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + */
-
-[...]
-
-> +static int rk808_probe(struct i2c_client *client,
-> +		       const struct i2c_device_id *id)
-> +{
-> +	int i;
-> +	int ret;
-> +	int pm_off = 0;
-> +	struct rk808 *rk808;
-> +	struct device_node *np = client->dev.of_node;
-
-Reverse these declarations please, structs at the top etc.
-
-[...]
-
-> +	rk808->i2c = client;
-> +	i2c_set_clientdata(client, rk808);
-
-'\n' here.
-
-> +	ret = mfd_add_devices(&client->dev, -1,
-> +			      rk808s, ARRAY_SIZE(rk808s),
-> +			      NULL, 0, regmap_irq_get_domain(rk808->irq_data));
-> +	if (ret) {
-> +		dev_err(&client->dev, "failed to add MFD devices %d\n", ret);
-> +		goto err_irq;
-> +	}
-> +
-> +	if (np) {
-
-There has to be an 'np'.  The driver depends on OF.
-
-> +		pm_off = of_property_read_bool(np,
-> +					"rockchip,system-power-controller");
-> +		if (pm_off && !pm_power_off) {
-> +			rk808_i2c_client = client;
-> +			pm_power_off = rk808_device_shutdown;
-> +		}
-> +	}
-> +
-> +	return 0;
-> +
-> +err_irq:
-> +	regmap_del_irq_chip(client->irq, rk808->irq_data);
-> +	return ret;
-> +}
-
-[...]
-
-> +static struct i2c_driver rk808_i2c_driver = {
-> +	.driver = {
-> +		.name = "rk808",
-> +		.of_match_table = of_match_ptr(rk808_of_match),
-
-No need to use of_match_ptr() now that you depend on OF.
-
-> +	},
-> +	.probe    = rk808_probe,
-> +	.remove   = rk808_remove,
-> +	.id_table = rk808_ids,
-> +};
-> +
-> +module_i2c_driver(rk808_i2c_driver);
-> +
-> +MODULE_LICENSE("GPL");
-> +MODULE_AUTHOR("Chris Zhong <zyw@rock-chips.com>");
-> +MODULE_AUTHOR("Zhang Qing <zhangqing@rock-chips.com>");
-> +MODULE_DESCRIPTION("RK808 PMIC driver");
-
-[...]
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Paolo
