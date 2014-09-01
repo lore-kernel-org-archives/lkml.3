@@ -1,74 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752222AbaIADtV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 23:49:21 -0400
-Received: from bastet.se.axis.com ([195.60.68.11]:47878 "EHLO
-	bastet.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751920AbaIADtU convert rfc822-to-8bit (ORCPT
+	id S1752274AbaIADzT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 23:55:19 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:51468 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751990AbaIADzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 23:49:20 -0400
-From: Mikael Starvik <mikael.starvik@axis.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-CC: Guenter Roeck <linux@roeck-us.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-cris-kernel <linux-cris-kernel@axis.com>,
-        Jesper Nilsson <jespern@axis.com>, Mikael Starvik <starvik@axis.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        "Edgar E. Iglesias" <edgar.iglesias@gmail.com>
-Date: Mon, 1 Sep 2014 05:49:11 +0200
-Subject: Re: Status of 'cris' architecture support in Linux kernel
-Thread-Topic: Status of 'cris' architecture support in Linux kernel
-Thread-Index: Ac/Fl7Eo0YtBplO7QDCtA9RZ+zZ4vg==
-Message-ID: <48E8F969-A46E-4AA6-A78D-4141362A05B0@axis.com>
-References: <20140831175010.GA15408@roeck-us.net>
- <20140831183342.GA25437@ravnborg.org>
-In-Reply-To: <20140831183342.GA25437@ravnborg.org>
-Accept-Language: sv-SE
-Content-Language: sv-SE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: sv-SE
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sun, 31 Aug 2014 23:55:17 -0400
+Message-ID: <5403EF50.3080706@gmail.com>
+Date: Mon, 01 Sep 2014 12:00:16 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
+To: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org
+CC: Guan Xuetao <gxt@mprc.pku.edu.cn>, Grant Likely <grant.likely@linaro.org>
+Subject: Re: Status of 'unicore32' architecture in Linux kernel
+References: <20140831235115.GA6248@roeck-us.net>
+In-Reply-To: <20140831235115.GA6248@roeck-us.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jesper is actually back at work today but give him a few days to catch up.
+
+Firstly, what you have done encourage me, thanks.
+
+On 9/1/14 7:51, Guenter Roeck wrote:
+> Status of 'unicore32' architecture in Linux kernel
+> --------------------------------------------------
+> 
+> The idea was to create a working kernel and initramfs for the ongoing Linux
+> kernel test project. This summary describes the result of this effort.
+> 
+> Overall, conclusion is that the architecture would need some work
+> (both in qemu and the kernel itself) to make it testable with qemu.
+> 
+> Guenter
+> 
+> ---------------------
+> Toolchain used was from [1]. I did not attempt to build my own toolchain.
+> 
+
+I also use it, but for me, hope we can use an open source toolchain for
+it, in the future. If possible, I will be glad to join for it (develop
+open source unicore32 gcc cross compiler with other related members).
+
+> Configuration:
+> 
+> make ARCH=unicore32 defconfig && make ARCH=unicore32
+> 
+> This configuration currently fails to build in the upstream kernel.
+> A patch to fix the problem has been submitted and is pending upstream
+> integration [2]. With this patch merged, the 'defconfig' image can
+> be built.
+> 
+
+Thank you for what you have done.
+
+> ----------------
+> qemu
+> 
+> Attempts to load the unicore32:defconfig image with qemu failed.
+> 
+> Research points to [3], which includes a working unicore32 linux kernel
+> in its linux repository [4], in branch unicore32-working. This branch
+> includes a working unicore32 qemu configuration. It also includes
+> a critical patch which is not available in the upstream kernel.
+> 
+> unicore32: Add ocd console and qemu-defconfig to support qemu simulator
+> 	This patch adds a primitive OCD console to communicate with qemu.
+> 	The same code is already used for early console support.
+> 
+> With this patch added, and with qemu_defconfig as provided by the same patch,
+> it is possible to build and load a unicore32 image in qemu using the following
+> qemu command line.
+> 
+> qemu-system-unicore32 -curses -M puv3 -m 512 -kernel arch/unicore32/boot/zImage
+> 
+
+For me, hope they also can be merged into upstream main line, next.
+
+> Caveats:
+> - The use of -nographic instead of -curses causes a qemu crash
+> - The qemu emulation only accepts a built-in initramfs.
+> - The only working image is arch/unicore32/boot/zImage.
+>   All other variants, arch/unicore32/boot/Image and vmlinux, cause a crash.
+>   The same (or a similar) crash is also seen if I don't provide a built-in
+>   kernel command line and try to load zImage.
+> - There is no networking. There is another patch in the github linux
+>   respository [4] which is not available upstream. The driver was submitted
+>   for integration back in 2011 [5] but it was never accepted or merged.
+> 
+
+For me, suggest also Cc to qemu-devel@nongnu.org, and gxt is the related
+maintainer for qemu unicore32, too.
+
+In the future (maybe several months later), I am glad to try to analyze
+these caveats (but excuse me, at present, I have no enough time resource
+on it).
 
 
-> 31 aug 2014 kl. 20:51 skrev "Sam Ravnborg" <sam@ravnborg.org>:
+> [1] http://mprc.pku.edu.cn/~guanxuetao/linux/
+> [2] https://lkml.org/lkml/2014/8/31/86
+> [3] https://github.com/gxt
+> [4] git://github.com/gxt/linux.git
+> [5] https://lkml.org/lkml/2011/5/27/17
 > 
->> On Sun, Aug 31, 2014 at 10:50:10AM -0700, Guenter Roeck wrote:
->> The idea was to create a crisv32 kernel and initramfs to work with qemu
->> for the ongoing Linux kernel test project.
->> 
->> After spending a number of days (and nights) on it, the results don't look
->> very encouraging.
->> 
->> My overall conclusion is that 'cris' architecture support in the Linux kernel
->> is in bad shape, does not work anymore, and would require substantial effort
->> to get it into working state.
->> 
->> Anyway, below are my individual findings. If there is an ongoing effort to
->> improve cris support in the upstream kernel, specifically support for crisv32,
->> please let me know. I'll be happy to test the resulting kernels.
-> 
-> Jesper is on parental leave so do not expect any prompt reply from him.
-> 
->> 
->> Individual findings:
->> 
->> headers_install
->> 
->> make ARCH=cris INSTALL_HDR_PATH=/tmp headers_install
->> 
->> results in:
->> 
->> ./scripts/Makefile.headersinst:14: arch/cris/include/uapi/asm/arch-v10/Kbuild:
->>    No such file or directory
->> make[2]: *** No rule to make target `arch/cris/include/uapi/asm/arch-v10/Kbuild'.  Stop.
-> I have already sent a fix for this that Michael said he wanted to deal with.
-> 
->    Sam
+
+Thanks.
+-- 
+Chen Gang
+
+Open, share, and attitude like air, water, and life which God blessed
