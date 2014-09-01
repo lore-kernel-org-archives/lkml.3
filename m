@@ -1,106 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754507AbaIASBo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 14:01:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50827 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751082AbaIASBm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 14:01:42 -0400
-Date: Mon, 1 Sep 2014 19:58:51 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Kautuk Consul <consul.kautuk@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
-        Ionut Alexa <ionut.m.alexa@gmail.com>,
-        Guillaume Morin <guillaume@morinfr.org>, linux-kernel@vger.kernel.org,
-        Kirill Tkhai <tkhai@yandex.ru>
-Subject: Re: [PATCH 1/1] do_exit(): Solve possibility of BUG() due to race
-	with try_to_wake_up()
-Message-ID: <20140901175851.GA15210@redhat.com>
-References: <1408964064-21447-1-git-send-email-consul.kautuk@gmail.com> <20140825155738.GA5944@redhat.com> <20140901153935.GQ27892@worktop.ger.corp.intel.com>
+	id S1754634AbaIASNA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 14:13:00 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45178 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751954AbaIASM6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 14:12:58 -0400
+Date: Mon, 1 Sep 2014 19:11:52 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Graeme Gregory <gg@slimlogic.co.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Hanjun Guo <hanjun.guo@linaro.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>, Lv Zheng <lv.zheng@intel.com>,
+        Rob Herring <robh@kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Robert Moore <robert.moore@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
+Message-ID: <20140901181152.GL29327@sirena.org.uk>
+References: <1409583961-7466-1-git-send-email-hanjun.guo@linaro.org>
+ <1409583961-7466-2-git-send-email-hanjun.guo@linaro.org>
+ <20140901170447.GF608@arm.com>
+ <21764799.KDNDm9XRax@wuerfel>
+ <20140901173245.GM2953@xora-haswell.xora.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="RVLHdg3qhy1T2deX"
 Content-Disposition: inline
-In-Reply-To: <20140901153935.GQ27892@worktop.ger.corp.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20140901173245.GM2953@xora-haswell.xora.org.uk>
+X-Cookie: Simulated picture.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC PATCH for Juno 1/2] net: smsc911x add support for probing
+ from ACPI
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01, Peter Zijlstra wrote:
->
-> On Mon, Aug 25, 2014 at 05:57:38PM +0200, Oleg Nesterov wrote:
-> > Peter, do you remember another problem with TASK_DEAD we discussed recently?
-> > (prev_state == TASK_DEAD detection in finish_task_switch() still looks racy).
->
-> Uhm, right. That was somewhere on the todo list :-)
->
-> > I am starting to think that perhaps we need something like below, what do
-> > you all think?
->
-> I'm thinking you lost the hunk that adds rq::dead :-), more comments
-> below.
 
-And "goto deactivate" should be moved down, after "switch_count"
-initialization.
+--RVLHdg3qhy1T2deX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> > +	if (unlikely(rq->dead))
-> > +		goto deactivate;
-> > +
->
-> Yeah, it would be best to not have to do that; ideally we would be able
-> to maybe do both; set rq->dead and current->state == TASK_DEAD.
+On Mon, Sep 01, 2014 at 06:32:45PM +0100, Graeme Gregory wrote:
 
-To avoid spin_unlock_wait() in do_exit(). But on a second thought this
-can't work, please see below.
+> This will of course most likely be replaced by _DSD values. I just
+> hardcoded for now as _DSD is not yet in the kernel and issues around
+> maintenance of bindings are not solved (unless this happened at KS where
+> I was not present).
 
-> > --- x/kernel/exit.c
-> > +++ x/kernel/exit.c
-> > @@ -815,25 +815,8 @@ void do_exit(long code)
-> >  		__this_cpu_add(dirty_throttle_leaks, tsk->nr_dirtied);
-> >  	exit_rcu();
-> >
-> > -	/*
-> > -	 * The setting of TASK_RUNNING by try_to_wake_up() may be delayed
-> > -	 * when the following two conditions become true.
-> > -	 *   - There is race condition of mmap_sem (It is acquired by
-> > -	 *     exit_mm()), and
-> > -	 *   - SMI occurs before setting TASK_RUNINNG.
-> > -	 *     (or hypervisor of virtual machine switches to other guest)
-> > -	 *  As a result, we may become TASK_RUNNING after becoming TASK_DEAD
-> > -	 *
-> > -	 * To avoid it, we have to wait for releasing tsk->pi_lock which
-> > -	 * is held by try_to_wake_up()
-> > -	 */
-> > -	smp_mb();
-> > -	raw_spin_unlock_wait(&tsk->pi_lock);
-> > -
-> > -	/* causes final put_task_struct in finish_task_switch(). */
-> > -	tsk->state = TASK_DEAD;
-> >  	tsk->flags |= PF_NOFREEZE;	/* tell freezer to ignore us */
-> > -	schedule();
-> > +	exit_schedule();
-> >  	BUG();
-> >  	/* Avoid "noreturn function does return".  */
-> >  	for (;;)
->
-> Yes, something like this might work fine..
+Not really.  AIUI the official thing is still some combination of
+getting a DT binding defined and then use that verbatim (as the x86
+embedded people want to though I'm still not clear that the Windows
+people are on board with this) and the UEFI processes.  It's possible I
+misunderstood though.
 
-Not really :/ Yes, rq->dead (or just "bool prev_dead") should obviously
-solve the problem with ttwu() after the last schedule(). But only in a
-sense that the dying task won't be activated.
+Realistically if something is usable on x86 embedded it's going to be
+supported on ARMv8 servers too unless we jump through hoops, and even
+there real implementations in the wild will probably win out.
 
-However, the very fact that another CPU can look at this task_struct
-means that we still need spin_unlock_wait(). If nothing else to ensure
-that try_to_wake_up()->spin_unlock(pi_lock) won't write into the memory
-we are are going to free.
+--RVLHdg3qhy1T2deX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-So I think the comment in do exit should be updated too, and smp_mb()
-should be moved under raw_spin_unlock_wait() but ...
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-But. If am right, doesn't this mean we that have even more problems with
-postmortem wakeups??? Why ttwu() can't _start_ after spin_unlock_wait ?
+iQIcBAEBAgAGBQJUBLblAAoJELSic+t+oim9hKMQAITYUj30XtkLsl/9LaN77WvK
+VnHLoAAIv3NSZbFkT4wUCyM7j4YtXWaEPqoiPybEfgYbM7GwdJw2RBlnByFT/3/Q
+cpuBu+CJCrXTlh1RhIKchug8y03V3+MZOCQ/TST3VNOdRvEi62f6fMRl62g5m+IW
+0FtzGJ+6jsqZjUeYucvyZVjik8P5qN5Yg5g/TSVTxy7IRH9pG8cAVlR95ItFuRFr
+WHbRNYqKm7JAxbgm/App4iCwf9SH/6ksZr/xKaP6lZ5hA2Ys6SC29aikUDCYJJB3
+Z8YdMKl9SlirT3JBnSGWZZPSAOsNT0RBIPfRXcvhWThbYImXAsHZov7qJMhF36Ni
+kh0qgZjF2hLpmVi6GFbuZ7zLD7bWGwuttKyq/gR0B6VekHqLFjc3P+8M+5wp4uXo
+5+LupT11dzcimrJ2inYDqaPDaYPcej5cFDkR91N4oGe3WDxmNQi6MsenqVn5sYTv
+EiSHm1Rx2vn959OXiKhxdrZIrhb9OOlzk+a/slvea0hFNLSj42mc374QJn4vIPMY
+m1R8XkJ26ASEglZlXx8R6TscKUq7TczAZRBb7TO83c3Y1wpDC6VOI9QjN3A+qmnh
+6LMzNwkZLvJvtak5Cyvj+8GReSMTNsgInMQ8zmUWxMiDfKaLI+4mvzWIxoxXYhrn
+HktXligdz5WB0/o2z2uB
+=iLQb
+-----END PGP SIGNATURE-----
 
-Oleg.
-
+--RVLHdg3qhy1T2deX--
