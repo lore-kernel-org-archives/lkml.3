@@ -1,79 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753237AbaIAJZw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 05:25:52 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:57098 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751832AbaIAJZv (ORCPT
+	id S1752866AbaIAJcE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 05:32:04 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56056 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752479AbaIAJcC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 05:25:51 -0400
+	Mon, 1 Sep 2014 05:32:02 -0400
+Date: Mon, 1 Sep 2014 11:31:59 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: Jason Wang <jasowang@redhat.com>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, mst@redhat.com,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process is
+ runnable
+Message-ID: <20140901093159.GB27892@worktop.ger.corp.intel.com>
+References: <1408608310-13579-1-git-send-email-jasowang@redhat.com>
+ <1408608310-13579-2-git-send-email-jasowang@redhat.com>
+ <1408683665.5648.69.camel@marge.simpson.net>
 MIME-Version: 1.0
-In-Reply-To: <1409562596.30155.43.camel@linux.intel.com>
-References: <1408957395-404-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1408957395-404-2-git-send-email-andriy.shevchenko@linux.intel.com>
-	<20140830225407.GF7996@ZenIV.linux.org.uk>
-	<1409560606.30155.41.camel@linux.intel.com>
-	<CAMuHMdUU8BVTtEb6QE7zW+XtF4yfbwg=O+Lv84A0F3X9M1t=Rw@mail.gmail.com>
-	<1409562596.30155.43.camel@linux.intel.com>
-Date: Mon, 1 Sep 2014 11:25:49 +0200
-X-Google-Sender-Auth: DqcbFO197Cm4K6erYOBSM2O8IX0
-Message-ID: <CAMuHMdXUsK9Uwd8EVqiWW8rDsUe=h7U8bGntx=bfWYQ5j91x+A@mail.gmail.com>
-Subject: Re: [PATCH v3 1/5] seq_file: provide an analogue of print_hex_dump()
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Tadeusz Struk <tadeusz.struk@intel.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Helge Deller <deller@gmx.de>,
-        Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Joe Perches <joe@perches.com>, Marek Vasut <marex@denx.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408683665.5648.69.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy,
+On Fri, Aug 22, 2014 at 07:01:05AM +0200, Mike Galbraith wrote:
+> > +++ b/include/net/busy_poll.h
+> > @@ -109,7 +109,8 @@ static inline bool sk_busy_loop(struct sock *sk, int nonblock)
+> >  		cpu_relax();
+> >  
+> >  	} while (!nonblock && skb_queue_empty(&sk->sk_receive_queue) &&
+> > -		 !need_resched() && !busy_loop_timeout(end_time));
+> > +		 !need_resched() && !busy_loop_timeout(end_time) &&
+> > +		 nr_running_this_cpu() < 2);
+> >  
 
-On Mon, Sep 1, 2014 at 11:09 AM, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
-> On Mon, 2014-09-01 at 10:58 +0200, Geert Uytterhoeven wrote:
->> On Mon, Sep 1, 2014 at 10:36 AM, Andy Shevchenko
->> <andriy.shevchenko@linux.intel.com> wrote:
->> >> ... and extra copying for no good reason.  Why not check that we have
->> >> enough space in buffer and generate directly into it?  See what e.g.
->> >> seq_escape() is doing...
->> >
->> > What about this variant?
->>
->> I think it needs a call to seq_set_overflow() in case the buffer is too small,
->> so the caller will retry with a bigger buffer.
->
-> Yes, in two places it would be useful to do.
+So as has been said by now; this is horrible.
 
-Two places? I see only one, just before calling hex_dump_to_buffer.
+We should not export nr_running like this ever. Your usage of < 2
+implies this can be hit with nr_running == 0, and therefore you can also
+hit it with nr_running == 1 where the one is not network related and you
+get random delays.
 
-> But what the condition for "buffer is too small", the same groupsize * 2
-> + 1 or you mean something else?
+Worse still, you have BH (and thereby preemption) disabled, you should
+not _ever_ have undefined and indefinite waits like that.
 
-"groupsize * 2 + 1" is not the amount of bytes hex_dump_to_buffer() wants
-to write. It's only the size for one word.
+You also destroy any hope of dropping into lower power states; even when
+there's never going to be a packet ever again, also bad.
 
-You could check if there are at least "32 * 3 + 2 + 32 + 1" bytes (your
-old linebuf size) available.
+All in all, a complete trainwreck.
 
-However, to protect against overflows if hex_dump_to_buffer() ever changes,
-I think it would be better to let hex_dump_to_buffer() indicate if the
-passed buffer was to small (it already checks the passed linebuflen).
-Then you can just check for that.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+NAK.
