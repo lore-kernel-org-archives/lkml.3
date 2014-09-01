@@ -1,168 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406AbaIALsZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 07:48:25 -0400
-Received: from mga09.intel.com ([134.134.136.24]:41108 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753193AbaIALsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 07:48:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,442,1406617200"; 
-   d="scan'208";a="566554578"
-Message-ID: <1409572101.30155.59.camel@linux.intel.com>
-Subject: Re: [PATCH v1 1/5] mfd: lpc_sch: reduce duplicate code
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-Date: Mon, 01 Sep 2014 14:48:21 +0300
-In-Reply-To: <20140901113805.GO7374@lee--X1>
-References: <1408705096-31286-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1408705096-31286-2-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <20140901091317.GG7374@lee--X1> <1409566903.30155.47.camel@linux.intel.com>
-	 <20140901113805.GO7374@lee--X1>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.5-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1753470AbaIALto (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 07:49:44 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:60244 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752623AbaIALtn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 07:49:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <1409571222.30155.55.camel@linux.intel.com>
+References: <1408957395-404-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1408957395-404-2-git-send-email-andriy.shevchenko@linux.intel.com>
+	<20140830225407.GF7996@ZenIV.linux.org.uk>
+	<1409560606.30155.41.camel@linux.intel.com>
+	<CAMuHMdUU8BVTtEb6QE7zW+XtF4yfbwg=O+Lv84A0F3X9M1t=Rw@mail.gmail.com>
+	<1409562596.30155.43.camel@linux.intel.com>
+	<CAMuHMdXUsK9Uwd8EVqiWW8rDsUe=h7U8bGntx=bfWYQ5j91x+A@mail.gmail.com>
+	<CAHp75VeNegxwTB617mRXBomERjLbATASMM0tReUgZWprQEnXng@mail.gmail.com>
+	<CAMuHMdWcWD2nMoRNooC=aMTMk07R9vmOfc1mzeNQJO8JATS8fA@mail.gmail.com>
+	<1409571222.30155.55.camel@linux.intel.com>
+Date: Mon, 1 Sep 2014 13:49:41 +0200
+X-Google-Sender-Auth: Y-Aocro3KgZie9_aIx49B4UzrDY
+Message-ID: <CAMuHMdVE4hf9Z1cAFFu_8Qdk2KVenHn+ygihq4PkQrKdDxNz2w@mail.gmail.com>
+Subject: Re: [PATCH v3 1/5] seq_file: provide an analogue of print_hex_dump()
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Tadeusz Struk <tadeusz.struk@intel.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Helge Deller <deller@gmx.de>,
+        Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Joe Perches <joe@perches.com>, Marek Vasut <marex@denx.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-09-01 at 12:38 +0100, Lee Jones wrote:
-> On Mon, 01 Sep 2014, Andy Shevchenko wrote:
-> 
-> > On Mon, 2014-09-01 at 10:13 +0100, Lee Jones wrote:
-> > > On Fri, 22 Aug 2014, Andy Shevchenko wrote:
-> > > 
-> > > > This patch refactors the driver to use helper functions instead of
-> > > > copy'n'pasted pieces of code.
-> > > > 
-> > > > Tested-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-> > > > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> > > > ---
-> > > >  drivers/mfd/lpc_sch.c | 146 ++++++++++++++++++++++----------------------------
-> > > >  1 file changed, 64 insertions(+), 82 deletions(-)
-> > > > 
-> > > > diff --git a/drivers/mfd/lpc_sch.c b/drivers/mfd/lpc_sch.c
-> > > > index 4ee7550..0f01ef0 100644
-> > > > --- a/drivers/mfd/lpc_sch.c
-> > > > +++ b/drivers/mfd/lpc_sch.c
-> > > > @@ -40,41 +40,6 @@
-> > > 
-> > > [...]
-> > 
-> > Thanks for review, my answers below.
-> > 
-> > > 
-> > > > -static int lpc_sch_probe(struct pci_dev *dev,
-> > > > -				const struct pci_device_id *id)
-> > > > +static int lpc_sch_get_io(struct pci_dev *pdev, int where, const char *name,
-> > > > +			  struct resource *res, int size)
-> > > >  {
-> > > >  	unsigned int base_addr_cfg;
-> > > >  	unsigned short base_addr;
-> > > > -	int i, cells = 0;
-> > > > -	int ret;
-> > > >  
-> > > > -	pci_read_config_dword(dev, SMBASE, &base_addr_cfg);
-> > > > +	pci_read_config_dword(pdev, where, &base_addr_cfg);
-> > > >  	base_addr = 0;
-> > > >  	if (!(base_addr_cfg & (1 << 31)))
-> > > > -		dev_warn(&dev->dev, "Decode of the SMBus I/O range disabled\n");
-> > > > +		dev_warn(&pdev->dev, "Decode of the %s I/O range disabled\n",
-> > > > +			 name);
-> > > >  	else
-> > > >  		base_addr = (unsigned short)base_addr_cfg;
-> > > >  
-> > > >  	if (base_addr == 0) {
-> > > > -		dev_warn(&dev->dev, "I/O space for SMBus uninitialized\n");
-> > > > -	} else {
-> > > > -		lpc_sch_cells[cells++] = isch_smbus_cell;
-> > > > -		smbus_sch_resource.start = base_addr;
-> > > > -		smbus_sch_resource.end = base_addr + SMBUS_IO_SIZE - 1;
-> > > > +		dev_warn(&pdev->dev, "I/O space for %s uninitialized\n", name);
-> > > > +		return -ENODEV;
-> > > 
-> > > If you're going to return an error, you need to use dev_err() above.
-> > 
-> > Okay.
-> > 
-> > > >  	}
-> > > >  
-> > > > -	pci_read_config_dword(dev, GPIOBASE, &base_addr_cfg);
-> > > > -	base_addr = 0;
-> > > > -	if (!(base_addr_cfg & (1 << 31)))
-> > > > -		dev_warn(&dev->dev, "Decode of the GPIO I/O range disabled\n");
-> > > > +	res->start = base_addr;
-> > > > +	res->end = base_addr + size - 1;
-> > > > +	res->flags = IORESOURCE_IO;
-> > > > +
-> > > > +	return 0;
-> > > > +}
-> > > > +
-> > > > +static int lpc_sch_populate_cell(struct pci_dev *pdev, int where,
-> > > > +				 const char *name, int size, int id,
-> > > > +				 struct mfd_cell *cell)
-> > > > +{
-> > > > +	struct resource *res;
-> > > > +	int ret;
-> > > > +
-> > > > +	res = devm_kzalloc(&pdev->dev, sizeof(*res), GFP_KERNEL);
-> > > > +	if (!res)
-> > > > +		return -ENOMEM;
-> > > > +
-> > > > +	ret = lpc_sch_get_io(pdev, where, name, res, size);
-> > > > +	if (ret)
-> > > > +		return ret;
-> > > > +
-> > > > +	memset(cell, 0, sizeof(*cell));
-> > > > +
-> > > > +	cell->name = name;
-> > > > +	cell->resources = res;
-> > > > +	cell->num_resources = 1;
-> > > > +	cell->ignore_resource_conflicts = true;
-> > > > +	cell->id = id;
-> > > > +
-> > > > +	return 0;
-> > > > +}
-> > > > +
-> > > > +static int lpc_sch_probe(struct pci_dev *dev,
-> > > > +			 const struct pci_device_id *id)
-> > > > +{
-> > > > +	struct mfd_cell lpc_sch_cells[3];
-> > > > +	int size, cells = 0;
-> > > > +	int ret;
-> > > > +
-> > > > +	ret = lpc_sch_populate_cell(dev, SMBASE, "isch_smbus", SMBUS_IO_SIZE,
-> > > > +				    id->device, &lpc_sch_cells[cells]);
-> > > > +	if (!ret)
-> > > > +		cells++;
-> > > 
-> > > You're masking errors here.  You need to return on error.
-> > 
-> > No, I don't. It's a local error, I just need to understand if the HW has
-> > or hasn't the IP part we're looking for.
-> 
-> Yes, you do.  -ENOMEM is not a local error, it needs to be returned.
-> 
-> > I could, let's say, return true or false, if you prefer, with the above
-> > meaning.
-> 
-> I don't see this very often, which makes me wonder if it's the right
-> thing to do at all; however, if you're going to this then please
-> return a local state, instead of a Linux Error Code.
+Hi Andy,
 
-Okay, what about 1 — IP is present and we have no error, 0 — no ip, no
-error, -err — error that should be returned, would it work for you?
+On Mon, Sep 1, 2014 at 1:33 PM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+>> >> However, to protect against overflows if hex_dump_to_buffer() ever changes,
+>> >> I think it would be better to let hex_dump_to_buffer() indicate if the
+>> >> passed buffer was to small (it already checks the passed linebuflen).
+>> >> Then you can just check for that.
+>> >
+>> > I thought about that. We may introduce either new call and make
+>> > current one the user of it or change all occurrences.
+>> > Nevertheless, currently it will print only one groupsize if there is
+>> > enough room for it but for two or more.
+>> > Thus, I prefer to keep the behaviour "print until we can".
+>>
+>> The idea of seq_*() is that it will retry with a bigger bufsize if there's
+>> not enough space.
+>
+> Fair enough.
+>
+> So, summarize above, the check before hex_dump_to_buffer() should care
+> about maximum possible buffer needed for one line. But we have already
+> rowsize calculated (we actually can't rely on groupsize in this case).
+>
+> Do you agree with formula rowsize * 3 + 2 + rowsize + 1?
 
-> #define LCP_SKIP_RESOURCE /* Seems resonable? */
+That's the _current_ formula. The day hex_dump_to_buffer() is changed,
+it will break silently.
 
+Gr{oetje,eeting}s,
 
+                        Geert
 
--- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
