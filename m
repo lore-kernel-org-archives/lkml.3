@@ -1,68 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828AbaIAIW2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 04:22:28 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56247 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752715AbaIAIWZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 04:22:25 -0400
-Date: Mon, 1 Sep 2014 10:22:21 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [GIT Pull] x86 fixes for 3.17
-Message-ID: <alpine.DEB.2.10.1409011020460.3333@nanos>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1752870AbaIAIYc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 04:24:32 -0400
+Received: from mail-bn1blp0184.outbound.protection.outlook.com ([207.46.163.184]:55753
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752254AbaIAIYa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 04:24:30 -0400
+Date: Mon, 1 Sep 2014 16:24:14 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Philippe Reynes <tremyfr@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree@vger.kernel.org>, <kernel@pengutronix.de>,
+        <shc_work@mail.ru>
+Subject: Re: [PATCH v3] apf27dev: add max1027 in the dts
+Message-ID: <20140901082413.GE3135@dragon>
+References: <1409517629-5918-1-git-send-email-tremyfr@gmail.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-1827569170-1409559742=:3333"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1409517629-5918-1-git-send-email-tremyfr@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(51704005)(24454002)(199003)(54534003)(85852003)(4396001)(87936001)(46102001)(90102001)(92726001)(92566001)(81542001)(33716001)(77982001)(84676001)(50466002)(83072002)(83506001)(81342001)(104016003)(76482001)(79102001)(99396002)(1411001)(86362001)(85306004)(95666004)(106466001)(31966008)(102836001)(44976005)(19580395003)(57986006)(74502001)(33656002)(26826002)(97736001)(64706001)(107046002)(69596002)(76176999)(74662001)(19580405001)(21056001)(47776003)(23726002)(83322001)(50986999)(81156004)(20776003)(54356999)(105606002)(110136001)(80022001)(68736004)(6806004)(97756001)(46406003);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB571;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03218BFD9F
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Shawn.Guo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Sun, Aug 31, 2014 at 10:40:29PM +0200, Philippe Reynes wrote:
+> 
+> Signed-off-by: Philippe Reynes <tremyfr@gmail.com>
+> ---
+>  arch/arm/boot/dts/imx27-apf27dev.dts |   17 +++++++++++++++++
+>  1 files changed, 17 insertions(+), 0 deletions(-)
+> 
+> Changelog:
+> v3: (thanks Alexander Shiyan for the feedback)
+> - add datasheet pin name as comment
+> 
+> v2: (thanks Alexander Shiyan for the feedback)
+> - spi mode 0 is the default so no need to explicitly define it
+> 
+> diff --git a/arch/arm/boot/dts/imx27-apf27dev.dts b/arch/arm/boot/dts/imx27-apf27dev.dts
+> index b982309..0c08fbb 100644
+> --- a/arch/arm/boot/dts/imx27-apf27dev.dts
+> +++ b/arch/arm/boot/dts/imx27-apf27dev.dts
+> @@ -82,6 +82,16 @@
+>  	pinctrl-names = "default";
+>  	pinctrl-0 = <&pinctrl_cspi1 &pinctrl_cspi1_cs>;
+>  	status = "okay";
+> +
+> +	adc@0 {
+> +		compatible = "maxim,max1027";
+> +		reg = <0>;
+> +		interrupt-parent = <&gpio5>;
+> +		interrupts = <15 IRQ_TYPE_EDGE_FALLING>;
+> +		pinctrl-names = "default";
+> +		pinctrl-0 = <&pinctrl_max1027>;
+> +		spi-max-frequency = <10000000>;
+> +	};
+>  };
+>  
+>  &cspi2 {
+> @@ -230,6 +240,13 @@
+>  		pinctrl_sdhc2_cd: sdhc2cdgrp {
+>  			fsl,pins = <MX27_PAD_TOUT__GPIO3_14 0x0>;
+>  		};
+> +
+> +		pinctrl_max1027: max1027 {
 
---8323329-1827569170-1409559742=:3333
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+The pinctrl entries are alphabetically sorted in there.  Can you also do
+that for your addition?
 
-Linus,
+> +			 fsl,pins = <
+> +				 MX27_PAD_UART1_CTS__GPIO5_14 0 /* CNVST */
+> +				 MX27_PAD_UART1_RTS__GPIO5_15 0 /* EOC */
 
-please pull the latest irq-urgent-for-linus git tree from:
+Can you follow the convention to use hex value for the config cell,
+i.e. s/0/0x0?
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git irq-urgent-for-linus
+Shawn
 
-Just an export for an interrupt flow handler which is now used in gpio
-modules.
-
-Thanks,
-
-	tglx
-
------------------->
-Vincent Stehlé (1):
-      irq: Export handle_fasteoi_irq
-
-
- kernel/irq/chip.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index a2b28a2fd7b1..6223fab9a9d2 100644
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -517,6 +517,7 @@ out:
- 		chip->irq_eoi(&desc->irq_data);
- 	raw_spin_unlock(&desc->lock);
- }
-+EXPORT_SYMBOL_GPL(handle_fasteoi_irq);
- 
- /**
-  *	handle_edge_irq - edge type IRQ handler
---8323329-1827569170-1409559742=:3333--
+> +			>;
+> +		};
+>  	};
+>  };
+>  
+> -- 
+> 1.7.4.4
+> 
