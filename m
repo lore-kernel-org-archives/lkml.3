@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754557AbaIAPAr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 11:00:47 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:64685 "EHLO
+	id S1754575AbaIAPAy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 11:00:54 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:65111 "EHLO
 	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754510AbaIAPA2 (ORCPT
+	with ESMTP id S1754559AbaIAPAv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 11:00:28 -0400
+	Mon, 1 Sep 2014 11:00:51 -0400
 From: Hanjun Guo <hanjun.guo@linaro.org>
 To: Catalin Marinas <catalin.marinas@arm.com>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
@@ -28,9 +28,9 @@ Cc: Graeme Gregory <graeme.gregory@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
         linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org,
         Hanjun Guo <hanjun.guo@linaro.org>,
         Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Subject: [PATCH v3 07/17] ARM64 / ACPI: Parse FADT table to get PSCI flags for PSCI init
-Date: Mon,  1 Sep 2014 22:57:45 +0800
-Message-Id: <1409583475-6978-8-git-send-email-hanjun.guo@linaro.org>
+Subject: [PATCH v3 09/17] ARM64 / ACPI: Parse MADT for SMP initialization
+Date: Mon,  1 Sep 2014 22:57:47 +0800
+Message-Id: <1409583475-6978-10-git-send-email-hanjun.guo@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
 References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
@@ -38,289 +38,318 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are two flags: PSCI_COMPLIANT and PSCI_USE_HVC. When set,
-the former signals to the OS that the firmware is PSCI compliant.
-The latter selects the appropriate conduit for PSCI calls by
-toggling between Hypervisor Calls (HVC) and Secure Monitor Calls
-(SMC).
+MADT contains the information for MPIDR which is essential for
+SMP initialization, parse the GIC cpu interface structures to
+get the MPIDR value and map it to cpu_logical_map(), and add
+enabled cpu with valid MPIDR into cpu_possible_map.
 
-FADT table contains such information, parse FADT to get the flags
-for PSCI init. Since ACPI 5.1 doesn't support self defined PSCI
-function IDs, which means that only PSCI 0.2+ is supported in ACPI.
-
-At the same time, only ACPI 5.1 or higher verison supports PSCI,
-and FADT Major.Minor version was introduced in ACPI 5.1, so we
-will check the version and only parse FADT table with version >= 5.1.
-
-If firmware provides ACPI tables with ACPI version less than 5.1,
-OS will be messed up with those information and have no way to init
-smp and GIC, so disable ACPI if we get an FADT table with version
-less that 5.1.
+ACPI 5.1 only has two explicit methods to boot up SMP, PSCI and
+Parking protocol, but the Parking protocol is only specified for
+ARMv7 now, so make PSCI as the only way for the SMP boot protocol
+before some updates for the ACPI spec or the Parking protocol spec.
 
 Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
 Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
 ---
- arch/arm64/include/asm/acpi.h |   17 +++++++++
- arch/arm64/include/asm/psci.h |    3 +-
- arch/arm64/kernel/acpi.c      |   31 +++++++++++++++-
- arch/arm64/kernel/psci.c      |   78 ++++++++++++++++++++++++++++-------------
- arch/arm64/kernel/setup.c     |    8 +++--
- 5 files changed, 108 insertions(+), 29 deletions(-)
+ arch/arm64/include/asm/acpi.h    |    4 ++
+ arch/arm64/include/asm/cpu_ops.h |    1 +
+ arch/arm64/include/asm/smp.h     |    5 +-
+ arch/arm64/kernel/acpi.c         |  144 ++++++++++++++++++++++++++++++++++++++
+ arch/arm64/kernel/cpu_ops.c      |    4 +-
+ arch/arm64/kernel/setup.c        |    8 ++-
+ arch/arm64/kernel/smp.c          |    2 +-
+ 7 files changed, 161 insertions(+), 7 deletions(-)
 
 diff --git a/arch/arm64/include/asm/acpi.h b/arch/arm64/include/asm/acpi.h
-index 02bbb0b..620057c 100644
+index 620057c..e013dbb 100644
 --- a/arch/arm64/include/asm/acpi.h
 +++ b/arch/arm64/include/asm/acpi.h
-@@ -19,6 +19,18 @@ extern int acpi_disabled;
- extern int acpi_noirq;
- extern int acpi_pci_disabled;
+@@ -51,6 +51,7 @@ static inline bool acpi_has_cpu_in_madt(void)
+ }
  
-+/* 1 to indicate PSCI 0.2+ is implemented */
-+static inline bool acpi_psci_present(void)
-+{
-+	return acpi_gbl_FADT.arm_boot_flags & ACPI_FADT_PSCI_COMPLIANT;
-+}
-+
-+/* 1 to indicate HVC must be used instead of SMC as the PSCI conduit */
-+static inline bool acpi_psci_use_hvc(void)
-+{
-+	return acpi_gbl_FADT.arm_boot_flags & ACPI_FADT_PSCI_USE_HVC;
-+}
-+
- static inline void disable_acpi(void)
- {
- 	acpi_disabled = 1;
-@@ -52,6 +64,11 @@ static inline void arch_fix_phys_package_id(int num, u32 slot) { }
+ static inline void arch_fix_phys_package_id(int num, u32 slot) { }
++void __init acpi_smp_init_cpus(void);
+ 
+ /* Low-level suspend routine.
+  *
+@@ -64,10 +65,13 @@ static inline void arch_fix_phys_package_id(int num, u32 slot) { }
  extern int (*acpi_suspend_lowlevel)(void);
  #define acpi_wakeup_address 0
  
-+#else
++#define ACPI_MAX_GIC_CPU_INTERFACE_ENTRIES 65535
 +
-+static inline bool acpi_psci_present(void) { return false; }
-+static inline bool acpi_psci_use_hvc(void) { return false; }
-+
+ #else
+ 
+ static inline bool acpi_psci_present(void) { return false; }
+ static inline bool acpi_psci_use_hvc(void) { return false; }
++static inline void acpi_smp_init_cpus(void) { }
+ 
  #endif /* CONFIG_ACPI */
  
- #endif /*_ASM_ACPI_H*/
-diff --git a/arch/arm64/include/asm/psci.h b/arch/arm64/include/asm/psci.h
-index e5312ea..2454bc5 100644
---- a/arch/arm64/include/asm/psci.h
-+++ b/arch/arm64/include/asm/psci.h
-@@ -14,6 +14,7 @@
- #ifndef __ASM_PSCI_H
- #define __ASM_PSCI_H
+diff --git a/arch/arm64/include/asm/cpu_ops.h b/arch/arm64/include/asm/cpu_ops.h
+index d7b4b38..d149580 100644
+--- a/arch/arm64/include/asm/cpu_ops.h
++++ b/arch/arm64/include/asm/cpu_ops.h
+@@ -61,6 +61,7 @@ struct cpu_operations {
+ };
  
--int psci_init(void);
-+int psci_dt_init(void);
-+int psci_acpi_init(void);
+ extern const struct cpu_operations *cpu_ops[NR_CPUS];
++const struct cpu_operations *cpu_get_ops(const char *name);
+ extern int __init cpu_read_ops(struct device_node *dn, int cpu);
+ extern void __init cpu_read_bootcpu_ops(void);
  
- #endif /* __ASM_PSCI_H */
+diff --git a/arch/arm64/include/asm/smp.h b/arch/arm64/include/asm/smp.h
+index a498f2c..c877adc 100644
+--- a/arch/arm64/include/asm/smp.h
++++ b/arch/arm64/include/asm/smp.h
+@@ -39,9 +39,10 @@ extern void show_ipi_list(struct seq_file *p, int prec);
+ extern void handle_IPI(int ipinr, struct pt_regs *regs);
+ 
+ /*
+- * Setup the set of possible CPUs (via set_cpu_possible)
++ * Discover the set of possible CPUs and determine their
++ * SMP operations.
+  */
+-extern void smp_init_cpus(void);
++extern void of_smp_init_cpus(void);
+ 
+ /*
+  * Provide a function to raise an IPI cross call on CPUs in callmap.
 diff --git a/arch/arm64/kernel/acpi.c b/arch/arm64/kernel/acpi.c
-index 9547275..470570c 100644
+index 470570c..fbaaf01 100644
 --- a/arch/arm64/kernel/acpi.c
 +++ b/arch/arm64/kernel/acpi.c
-@@ -13,6 +13,8 @@
-  *  published by the Free Software Foundation.
-  */
+@@ -24,6 +24,10 @@
+ #include <linux/bootmem.h>
+ #include <linux/smp.h>
  
-+#define pr_fmt(fmt) "ACPI: " fmt
++#include <asm/smp_plat.h>
++#include <asm/cputype.h>
++#include <asm/cpu_ops.h>
 +
- #include <linux/init.h>
- #include <linux/acpi.h>
- #include <linux/cpumask.h>
-@@ -49,10 +51,32 @@ void __init __acpi_unmap_table(char *map, unsigned long size)
+ int acpi_noirq;			/* skip ACPI IRQ initialization */
+ int acpi_disabled;
+ EXPORT_SYMBOL(acpi_disabled);
+@@ -31,6 +35,8 @@ EXPORT_SYMBOL(acpi_disabled);
+ int acpi_pci_disabled;		/* skip ACPI PCI scan and IRQ initialization */
+ EXPORT_SYMBOL(acpi_pci_disabled);
+ 
++static int enabled_cpus;	/* Processors (GICC) with enabled flag in MADT */
++
+ /*
+  * __acpi_map_table() will be called before page_init(), so early_ioremap()
+  * or early_memremap() should be called here to for ACPI table mapping.
+@@ -51,6 +57,144 @@ void __init __acpi_unmap_table(char *map, unsigned long size)
  	early_memunmap(map, size);
  }
  
-+static int __init acpi_parse_fadt(struct acpi_table_header *table)
++/**
++ * acpi_map_gic_cpu_interface - generates a logical cpu number
++ * and map to MPIDR represented by GICC structure
++ * @mpidr: CPU's hardware id to register, MPIDR represented in MADT
++ * @enabled: this cpu is enabled or not
++ *
++ * Returns the logical cpu number which maps to MPIDR
++ */
++static int acpi_map_gic_cpu_interface(u64 mpidr, u8 enabled)
 +{
-+	struct acpi_table_fadt *fadt = (struct acpi_table_fadt *)table;
++	int cpu;
 +
-+	/*
-+	 * Revision in table header is the FADT Major revision,
-+	 * and there is a minor revision of FADT which was introduced
-+	 * by ACPI 5.1, we only deal with ACPI 5.1 or higher revision
-+	 * to get arm boot flags, or we will disable ACPI.
-+	 */
-+	if (table->revision > 5 ||
-+	    (table->revision == 5 && fadt->minor_revision >= 1))
-+		return 0;
-+
-+	pr_warn("Unsupported FADT revision %d.%d, should be 5.1+, will disable ACPI\n",
-+		table->revision, fadt->minor_revision);
-+	disable_acpi();
-+
-+	return -EINVAL;
-+}
-+
- /*
-  * acpi_boot_table_init() called from setup_arch(), always.
-  *	1. find RSDP and get its address, and then find XSDT
-  *	2. extract all tables and checksums them all
-+ *	3. check ACPI FADT revisoin
-  *
-  * We can parse ACPI boot-time tables such as MADT after
-  * this function is called.
-@@ -64,8 +88,13 @@ void __init acpi_boot_table_init(void)
- 		return;
- 
- 	/* Initialize the ACPI boot-time table parser. */
--	if (acpi_table_init())
-+	if (acpi_table_init()) {
- 		disable_acpi();
-+		return;
++	if (mpidr == INVALID_HWID) {
++		pr_info("Skip invalid cpu hardware ID\n");
++		return -EINVAL;
 +	}
 +
-+	if (acpi_table_parse(ACPI_SIG_FADT, acpi_parse_fadt))
-+		pr_err("Can't find FADT or error happened during parsing FADT\n");
- }
- 
- /*
-diff --git a/arch/arm64/kernel/psci.c b/arch/arm64/kernel/psci.c
-index 5539547..15ba470 100644
---- a/arch/arm64/kernel/psci.c
-+++ b/arch/arm64/kernel/psci.c
-@@ -15,6 +15,7 @@
- 
- #define pr_fmt(fmt) "psci: " fmt
- 
-+#include <linux/acpi.h>
- #include <linux/init.h>
- #include <linux/of.h>
- #include <linux/smp.h>
-@@ -23,6 +24,7 @@
- #include <linux/delay.h>
- #include <uapi/linux/psci.h>
- 
-+#include <asm/acpi.h>
- #include <asm/compiler.h>
- #include <asm/cpu_ops.h>
- #include <asm/errno.h>
-@@ -231,6 +233,33 @@ static void psci_sys_poweroff(void)
- 	invoke_psci_fn(PSCI_0_2_FN_SYSTEM_OFF, 0, 0, 0);
- }
- 
-+static void psci_0_2_set_functions(void)
-+{
-+	pr_info("Using standard PSCI v0.2 function IDs\n");
-+	psci_function_id[PSCI_FN_CPU_SUSPEND] = PSCI_0_2_FN64_CPU_SUSPEND;
-+	psci_ops.cpu_suspend = psci_cpu_suspend;
++	total_cpus++;
++	if (!enabled)
++		return -EINVAL;
 +
-+	psci_function_id[PSCI_FN_CPU_OFF] = PSCI_0_2_FN_CPU_OFF;
-+	psci_ops.cpu_off = psci_cpu_off;
++	if (enabled_cpus >=  NR_CPUS) {
++		pr_warn("NR_CPUS limit of %d reached, Processor %d/0x%llx ignored.\n",
++			NR_CPUS, total_cpus, mpidr);
++		return -EINVAL;
++	}
 +
-+	psci_function_id[PSCI_FN_CPU_ON] = PSCI_0_2_FN64_CPU_ON;
-+	psci_ops.cpu_on = psci_cpu_on;
++	/* No need to check duplicate MPIDRs for the first CPU */
++	if (enabled_cpus) {
++		/*
++		 * Duplicate MPIDRs are a recipe for disaster. Scan
++		 * all initialized entries and check for
++		 * duplicates. If any is found just ignore the CPU.
++		 */
++		for_each_possible_cpu(cpu) {
++			if (cpu_logical_map(cpu) == mpidr) {
++				pr_err("Firmware bug, duplicate CPU MPIDR: 0x%llx in MADT\n",
++				mpidr);
++				return -EINVAL;
++			}
++		}
++	} else {
++		/* Fist GICC entry must be BSP as ACPI spec said */
++		if  (cpu_logical_map(0) != mpidr) {
++			pr_err("First GICC entry is not BSP for MPIDR 0x%llx\n",
++			       mpidr);
++			return -EINVAL;
++		}
++	}
 +
-+	psci_function_id[PSCI_FN_MIGRATE] = PSCI_0_2_FN64_MIGRATE;
-+	psci_ops.migrate = psci_migrate;
++	/* allocate a logical cpu id for the new comer */
++	if (cpu_logical_map(0) == mpidr) {
++		/*
++		 * boot_cpu_init() already hold bit 0 in cpu_present_mask
++		 * for BSP, no need to allocate again.
++		 */
++		cpu = 0;
++	} else {
++		cpu = cpumask_next_zero(-1, cpu_possible_mask);
++	}
 +
-+	psci_function_id[PSCI_FN_AFFINITY_INFO] = PSCI_0_2_FN64_AFFINITY_INFO;
-+	psci_ops.affinity_info = psci_affinity_info;
-+
-+	psci_function_id[PSCI_FN_MIGRATE_INFO_TYPE] =
-+		PSCI_0_2_FN_MIGRATE_INFO_TYPE;
-+	psci_ops.migrate_info_type = psci_migrate_info_type;
-+
-+	arm_pm_restart = psci_sys_reset;
-+
-+	pm_power_off = psci_sys_poweroff;
-+}
-+
- /*
-  * PSCI Function IDs for v0.2+ are well defined so use
-  * standard values.
-@@ -264,29 +293,7 @@ static int __init psci_0_2_init(struct device_node *np)
- 		}
- 	}
- 
--	pr_info("Using standard PSCI v0.2 function IDs\n");
--	psci_function_id[PSCI_FN_CPU_SUSPEND] = PSCI_0_2_FN64_CPU_SUSPEND;
--	psci_ops.cpu_suspend = psci_cpu_suspend;
--
--	psci_function_id[PSCI_FN_CPU_OFF] = PSCI_0_2_FN_CPU_OFF;
--	psci_ops.cpu_off = psci_cpu_off;
--
--	psci_function_id[PSCI_FN_CPU_ON] = PSCI_0_2_FN64_CPU_ON;
--	psci_ops.cpu_on = psci_cpu_on;
--
--	psci_function_id[PSCI_FN_MIGRATE] = PSCI_0_2_FN64_MIGRATE;
--	psci_ops.migrate = psci_migrate;
--
--	psci_function_id[PSCI_FN_AFFINITY_INFO] = PSCI_0_2_FN64_AFFINITY_INFO;
--	psci_ops.affinity_info = psci_affinity_info;
--
--	psci_function_id[PSCI_FN_MIGRATE_INFO_TYPE] =
--		PSCI_0_2_FN_MIGRATE_INFO_TYPE;
--	psci_ops.migrate_info_type = psci_migrate_info_type;
--
--	arm_pm_restart = psci_sys_reset;
--
--	pm_power_off = psci_sys_poweroff;
-+	psci_0_2_set_functions();
- 
- out_put_node:
- 	of_node_put(np);
-@@ -339,7 +346,7 @@ static const struct of_device_id psci_of_match[] __initconst = {
- 	{},
- };
- 
--int __init psci_init(void)
-+int __init psci_dt_init(void)
- {
- 	struct device_node *np;
- 	const struct of_device_id *matched_np;
-@@ -354,6 +361,29 @@ int __init psci_init(void)
- 	return init_fn(np);
- }
- 
-+/*
-+ * We use PSCI 0.2+ when ACPI is deployed on ARM64 and it's
-+ * explicitly clarified in SBBR
-+ */
-+int __init psci_acpi_init(void)
-+{
++	/*
++	 * ACPI 5.1 only has two explicit methods to boot up SMP,
++	 * PSCI and Parking protocol, but the Parking protocol is
++	 * only specified for ARMv7 now, so make PSCI as the only
++	 * way for the SMP boot protocol before some updates for
++	 * the ACPI spec or the Parking protocol spec.
++	 */
 +	if (!acpi_psci_present()) {
-+		pr_info("is not implemented in ACPI.\n");
++		pr_warn("CPU %d has no PSCI support, will not boot\n", cpu);
 +		return -EOPNOTSUPP;
 +	}
 +
-+	pr_info("probing for conduit method from ACPI.\n");
++	/* Get cpu_ops include the boot CPU */
++	cpu_ops[cpu] = cpu_get_ops("psci");
++	if (!cpu_ops[cpu])
++		return -EINVAL;
 +
-+	if (acpi_psci_use_hvc())
-+		invoke_psci_fn = __invoke_psci_fn_hvc;
-+	else
-+		invoke_psci_fn = __invoke_psci_fn_smc;
++	/* CPU 0 was already initialized */
++	if (cpu) {
++		if (cpu_ops[cpu]->cpu_init(NULL, cpu))
++			return -EOPNOTSUPP;
 +
-+	psci_0_2_set_functions();
++		/* map the logical cpu id to cpu MPIDR */
++		cpu_logical_map(cpu) = mpidr;
++
++		set_cpu_possible(cpu, true);
++	}
++
++	enabled_cpus++;
++	return cpu;
++}
++
++static int __init
++acpi_parse_gic_cpu_interface(struct acpi_subtable_header *header,
++				const unsigned long end)
++{
++	struct acpi_madt_generic_interrupt *processor;
++
++	processor = (struct acpi_madt_generic_interrupt *)header;
++
++	if (BAD_MADT_ENTRY(processor, end))
++		return -EINVAL;
++
++	acpi_table_print_madt_entry(header);
++
++	acpi_map_gic_cpu_interface(processor->arm_mpidr,
++		processor->flags & ACPI_MADT_ENABLED);
 +
 +	return 0;
 +}
 +
- #ifdef CONFIG_SMP
++/* Parse GIC cpu interface entries in MADT for SMP init */
++void __init acpi_smp_init_cpus(void)
++{
++	int count;
++
++	/*
++	 * do a partial walk of MADT to determine how many CPUs
++	 * we have including disabled CPUs, and get information
++	 * we need for SMP init
++	 */
++	count = acpi_table_parse_madt(ACPI_MADT_TYPE_GENERIC_INTERRUPT,
++			acpi_parse_gic_cpu_interface,
++			ACPI_MAX_GIC_CPU_INTERFACE_ENTRIES);
++
++	if (!count) {
++		pr_err("No GIC CPU interface entries present\n");
++		return;
++	} else if (count < 0) {
++		pr_err("Error parsing GIC CPU interface entry\n");
++		return;
++	}
++
++	/* Make boot-up look pretty */
++	pr_info("%d CPUs enabled, %d CPUs total\n", enabled_cpus, total_cpus);
++}
++
+ static int __init acpi_parse_fadt(struct acpi_table_header *table)
+ {
+ 	struct acpi_table_fadt *fadt = (struct acpi_table_fadt *)table;
+diff --git a/arch/arm64/kernel/cpu_ops.c b/arch/arm64/kernel/cpu_ops.c
+index cce9524..1a04deb 100644
+--- a/arch/arm64/kernel/cpu_ops.c
++++ b/arch/arm64/kernel/cpu_ops.c
+@@ -27,7 +27,7 @@ extern const struct cpu_operations cpu_psci_ops;
  
- static int __init cpu_psci_cpu_init(struct device_node *dn, unsigned int cpu)
+ const struct cpu_operations *cpu_ops[NR_CPUS];
+ 
+-static const struct cpu_operations *supported_cpu_ops[] __initconst = {
++static const struct cpu_operations *supported_cpu_ops[] = {
+ #ifdef CONFIG_SMP
+ 	&smp_spin_table_ops,
+ #endif
+@@ -35,7 +35,7 @@ static const struct cpu_operations *supported_cpu_ops[] __initconst = {
+ 	NULL,
+ };
+ 
+-static const struct cpu_operations * __init cpu_get_ops(const char *name)
++const struct cpu_operations *cpu_get_ops(const char *name)
+ {
+ 	const struct cpu_operations **ops = supported_cpu_ops;
+ 
 diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
-index ba181ba..ac9ec55 100644
+index ac9ec55..a45ceb3 100644
 --- a/arch/arm64/kernel/setup.c
 +++ b/arch/arm64/kernel/setup.c
-@@ -395,10 +395,12 @@ void __init setup_arch(char **cmdline_p)
- 	efi_idmap_init();
+@@ -60,6 +60,7 @@
+ #include <asm/memblock.h>
+ #include <asm/psci.h>
+ #include <asm/efi.h>
++#include <asm/acpi.h>
  
- 	cpu_logical_map(0) = read_cpuid_mpidr() & MPIDR_HWID_BITMASK;
--	if (acpi_disabled)
-+	if (acpi_disabled) {
+ unsigned int processor_id;
+ EXPORT_SYMBOL(processor_id);
+@@ -398,13 +399,16 @@ void __init setup_arch(char **cmdline_p)
+ 	if (acpi_disabled) {
  		unflatten_device_tree();
--
--	psci_init();
-+		psci_dt_init();
-+	} else {
-+		psci_acpi_init();
-+	}
+ 		psci_dt_init();
++		cpu_read_bootcpu_ops();
++#ifdef CONFIG_SMP
++		of_smp_init_cpus();
++#endif
+ 	} else {
+ 		psci_acpi_init();
++		acpi_smp_init_cpus();
+ 	}
  
- 	cpu_read_bootcpu_ops();
+-	cpu_read_bootcpu_ops();
  #ifdef CONFIG_SMP
+-	smp_init_cpus();
+ 	smp_build_mpidr_hash();
+ #endif
+ 
+diff --git a/arch/arm64/kernel/smp.c b/arch/arm64/kernel/smp.c
+index 4743397..4e390ac 100644
+--- a/arch/arm64/kernel/smp.c
++++ b/arch/arm64/kernel/smp.c
+@@ -321,7 +321,7 @@ void __init smp_prepare_boot_cpu(void)
+  * cpu logical map array containing MPIDR values related to logical
+  * cpus. Assumes that cpu_logical_map(0) has already been initialized.
+  */
+-void __init smp_init_cpus(void)
++void __init of_smp_init_cpus(void)
+ {
+ 	struct device_node *dn = NULL;
+ 	unsigned int i, cpu = 1;
 -- 
 1.7.9.5
 
