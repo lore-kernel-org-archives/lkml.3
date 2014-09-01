@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715AbaIAWFA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 18:05:00 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:38768 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752015AbaIAWE7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 18:04:59 -0400
-X-Greylist: delayed 519 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Sep 2014 18:04:58 EDT
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Mon, 1 Sep 2014 23:56:05 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Sander Nemvalts <snemvalts@gmail.com>
-Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Drivers:firewire: fix style errors in core-card.c This
- is a patch in the core-card.c file which fixes up 2 warnings found by the
- checkpatch.pl tool Signed-off-by: Sander Nemvalts <snemvalts@gmail.com>
-Message-ID: <20140901235605.5466b6a6@kant>
-In-Reply-To: <1409597306-22164-1-git-send-email-snemvalts@gmail.com>
-References: <1409597306-22164-1-git-send-email-snemvalts@gmail.com>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752668AbaIAWNy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 18:13:54 -0400
+Received: from mga02.intel.com ([134.134.136.20]:42172 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752031AbaIAWNx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 18:13:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,445,1406617200"; 
+   d="scan'208";a="566789979"
+Date: Mon, 1 Sep 2014 23:13:44 +0100
+From: Damien Lespiau <damien.lespiau@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Daniel Vetter <daniel@ffwll.ch>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [Intel-gfx] Regression in drm-intel caused by d91a2cb8e510
+Message-ID: <20140901221344.GA22902@strange.ger.corp.intel.com>
+References: <Pine.LNX.4.44L0.1409011609390.13894-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1409011609390.13894-100000@netrider.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sep 01 Sander Nemvalts wrote:
-> --- a/drivers/firewire/core-card.c
-> +++ b/drivers/firewire/core-card.c
-> @@ -89,7 +89,8 @@ static size_t config_rom_length = 1 + 4 + 1 + 1;
->  #define BIB_ISC			((1) << 29)
->  #define BIB_CMC			((1) << 30)
->  #define BIB_IRMC		((1) << 31)
-> -#define NODE_CAPABILITIES	0x0c0083c0 /* per IEEE 1394 clause 8.3.2.6.5.2 */
-> +/* per IEEE 1394 clause 8.3.2.6.5.2 */
-> +#define NODE_CAPABILITIES	0x0c0083c0
+On Mon, Sep 01, 2014 at 04:19:23PM -0400, Alan Stern wrote:
+> Daniel:
+> 
+> I'm encountering a problem with the drm-intel-nightly branch in your
+> drm-intel repository.  The symptom is that when I boot my laptop, at
+> some point during the start-up procedure the screen goes totally blank,
+> as though the backlight were turned off, and it remains that way.  I
+> can't tell if the backlight really is off -- it may be that there's
+> just nothing being displayed -- and playing with the screen-brightness
+> function keys doesn't help.
+> 
+> Git bisect located the source of the problem as commit d91a2cb8e510
+> (drm/i915: Add 180 degree primary plane rotation support).  The problem
+> occurs when I boot a kernel built from that commit, and it doesn't
+> occur when I boot a kernel built from the preceding commit
+> (19ac737dc3c3).
+> 
+> If necessary, I can get debugging info by logging in over a network 
+> connection.  Tell me what you need.
 
-This is no improvement.
+It seems like Ville and Mika already caught a similar bug today, could
+you give Ville's patch a go (available on the intel-gfx):
 
->  /*
->   * IEEE-1394 specifies a default SPLIT_TIMEOUT value of 800 cycles (100 ms),
-> @@ -132,7 +133,7 @@ static void generate_config_rom(struct fw_card *card, __be32 *config_rom)
->  	j = 7 + descriptor_count;
->  
->  	/* Generate root directory entries for descriptors. */
-> -	list_for_each_entry (desc, &descriptor_list, link) {
-> +	list_for_each_entry(desc, &descriptor_list, link) {
->  		if (desc->immediate > 0)
->  			config_rom[i++] = cpu_to_be32(desc->immediate);
->  		config_rom[i] = cpu_to_be32(desc->key | (j - i));
+  drm/i915: Don't call intel_plane_restore() when the prop value didn't change
 
-We are writing
-	for (a; b; c);
-not
-	for(a; b; c);
-and thus a space after list_for_each and friends makes sense.
+
+Thanks,
+
 -- 
-Stefan Richter
--=====-====- =--= ----=
-http://arcgraph.de/sr/
+Damien
