@@ -1,95 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754235AbaIAQU7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 12:20:59 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:33058 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421AbaIAQU5 (ORCPT
+	id S1754357AbaIAQVq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 12:21:46 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57918 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754252AbaIAQVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 12:20:57 -0400
-Date: Mon, 1 Sep 2014 09:20:49 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH tip/core/rcu 11/15] rcu: Break more call_rcu() deadlock
- involving scheduler and perf
-Message-ID: <20140901162049.GM5001@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140828182614.GA23877@linux.vnet.ibm.com>
- <1409250394-25159-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1409250394-25159-11-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140901112934.GH27892@worktop.ger.corp.intel.com>
+	Mon, 1 Sep 2014 12:21:45 -0400
+Date: Mon, 1 Sep 2014 18:21:43 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com
+Subject: Re: [PATCH v4 00/22] perf: Add infrastructure and support for Intel
+ PT
+Message-ID: <20140901162143.GU27892@worktop.ger.corp.intel.com>
+References: <1408538179-792-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <53FAD5E3.1060600@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140901112934.GH27892@worktop.ger.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14090116-6688-0000-0000-0000046EB7A7
+In-Reply-To: <53FAD5E3.1060600@intel.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 01, 2014 at 01:29:34PM +0200, Peter Zijlstra wrote:
-> On Thu, Aug 28, 2014 at 11:26:30AM -0700, Paul E. McKenney wrote:
+On Mon, Aug 25, 2014 at 09:21:23AM +0300, Adrian Hunter wrote:
+> On 08/20/2014 03:35 PM, Alexander Shishkin wrote:
+> > This patchset adds support for Intel Processor Trace (PT) extension [1] of
+> > Intel Architecture that allows the capture of information about software
+> > execution flow, to the perf kernel infrastructure.
+> > 
 > 
-> > diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> > index b6acb9340192..a1af86099a67 100644
-> > --- a/kernel/rcu/tree_plugin.h
-> > +++ b/kernel/rcu/tree_plugin.h
-> > @@ -2121,16 +2121,23 @@ static void __call_rcu_nocb_enqueue(struct rcu_data *rdp,
-> >  			trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
-> >  					    TPS("WakeEmpty"));
-> >  		} else {
-> > -			rdp->nocb_defer_wakeup = true;
-> > +			rdp->nocb_defer_wakeup = RCU_NOGP_WAKE;
-> >  			trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
-> >  					    TPS("WakeEmptyIsDeferred"));
-> >  		}
-> >  		rdp->qlen_last_fqs_check = 0;
-> >  	} else if (len > rdp->qlen_last_fqs_check + qhimark) {
-> >  		/* ... or if many callbacks queued. */
-> > -		wake_nocb_leader(rdp, true);
-> > +		if (!irqs_disabled_flags(flags)) {
-> > +			wake_nocb_leader(rdp, true);
-> > +			trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
-> > +					    TPS("WakeOvf"));
-> > +		} else {
-> > +			rdp->nocb_defer_wakeup = RCU_NOGP_WAKE_FORCE;
-> > +			trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
-> > +					    TPS("WakeOvfIsDeferred"));
-> > +		}
-> >  		rdp->qlen_last_fqs_check = LONG_MAX / 2;
-> > -		trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu, TPS("WakeOvf"));
-> >  	} else {
-> >  		trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu, TPS("WakeNot"));
-> >  	}
-> 
-> Is it possible for the RCU_NOCP_WAKE write to overwrite a WAKE_FORCE ?
-> If not, why not? (Would make a good comment thereabouts).
+> Alex is away, so I would like to know if anyone (Peter?) plans to review or
+> comment on these patches.
 
-Good point.
-
-So RCU_NOGP_WAKE only happens on the empty-to-non-empty transition,
-and that RCU_NOGP_WAKE_FORCE only happens once the queue has a large
-number of entries (10,000 by default).  Because this code runs with irqs
-disabled (and must because you can do call_rcu() from interrupt handlers),
-RCU_NOGP_WAKE_FORCE could overwrite RCU_NOGP_WAKE, but not vice versa.
-
-However, the same effect can be obtained by having the setting of
-RCU_NOGP_WAKE_FORCE race with the call to do_nocb_deferred_wakeup().
-However, this would require that the call to do_nocb_deferred_wakeup()
-was delayed long enough for 9,999 additional callbacks be registered,
-and the next 10,000 callbacks will do another RCU_NOGP_WAKE_FORCE.
-In addition, the RCU_NOGP_WAKE_FORCE shortens delays in the rcuo kthreads
-rather than waking a rcuo kthread that would otherwise sleep indefinitely.
-So I didn't see the point of closing this window.
-
-							Thanx, Paul
-
+I'll get to it (eventually), I had a week of down-time after KS/Linuxcon
+and have now returned to a copiously overflown inbox.
