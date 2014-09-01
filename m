@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753368AbaIAMCt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 08:02:49 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:54221 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751500AbaIAMCs (ORCPT
+	id S1753578AbaIAMDz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 08:03:55 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:36656 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753425AbaIAMDx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 08:02:48 -0400
-Date: Mon, 1 Sep 2014 14:02:44 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: mingo@redhat.com, Mark Rustad <mark.d.rustad@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] semaphore: Resolve some shadow warnings
-Message-ID: <20140901120244.GI27892@worktop.ger.corp.intel.com>
-References: <1409228366-7027-1-git-send-email-jeffrey.t.kirsher@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409228366-7027-1-git-send-email-jeffrey.t.kirsher@intel.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	Mon, 1 Sep 2014 08:03:53 -0400
+From: Shakil A Khan <shakilk1729@gmail.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, paulmcquad@gmail.com,
+        ionut.m.alexa@gmail.com, tglx@linutronix.de, viro@zeniv.linux.org.uk,
+        Shakil A Khan <shakilk1729@gmail.com>
+Subject: [PATCH 3/3] linux.next: kernel/acct.c: Fix for ns(namespace) variable is used only when ACCT_VERSION is 3
+Date: Mon,  1 Sep 2014 08:03:45 -0400
+Message-Id: <1409573025-52281-1-git-send-email-shakilk1729@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 28, 2014 at 05:19:26AM -0700, Jeff Kirsher wrote:
-> From: Mark Rustad <mark.d.rustad@intel.com>
-> 
-> Resolve some shadow warnings resulting from using the name
-> jiffies, which is a well-known global. This is not a problem
-> of course, but it could be a trap for someone copying and
-> pasting code, and it just makes W=2 a little cleaner.
-> 
-> Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
-> Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: Shakil A Khan <shakilk1729@gmail.com>
+---
+ kernel/acct.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Why isn't Mark sending this email?
+diff --git a/kernel/acct.c b/kernel/acct.c
+index b4c667d..5f277f5 100644
+--- a/kernel/acct.c
++++ b/kernel/acct.c
+@@ -472,7 +472,9 @@ static void do_acct_process(struct bsd_acct_struct *acct)
+ 	acct_t ac;
+ 	unsigned long flim;
+ 	const struct cred *orig_cred;
++#if ACCT_VERSION == 3
+ 	struct pid_namespace *ns = acct->ns;
++#endif
+ 	struct file *file = acct->file;
+ 
+ 	/*
+-- 
+1.7.1
 
-> ---
->  kernel/locking/semaphore.c | 12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
-> 
-> diff --git a/kernel/locking/semaphore.c b/kernel/locking/semaphore.c
-> index 6815171..7782dbc 100644
-> --- a/kernel/locking/semaphore.c
-> +++ b/kernel/locking/semaphore.c
-> @@ -36,7 +36,7 @@
->  static noinline void __down(struct semaphore *sem);
->  static noinline int __down_interruptible(struct semaphore *sem);
->  static noinline int __down_killable(struct semaphore *sem);
-> -static noinline int __down_timeout(struct semaphore *sem, long jiffies);
-> +static noinline int __down_timeout(struct semaphore *sem, long njiffies);
->  static noinline void __up(struct semaphore *sem);
-
-So what's wrong with calling it "timeout" instead? That's what most
-other sites do.
