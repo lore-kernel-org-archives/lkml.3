@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639AbaIAG0m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 02:26:42 -0400
-Received: from mail.kapsi.fi ([217.30.184.167]:59552 "EHLO mail.kapsi.fi"
+	id S1752989AbaIAGaf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 02:30:35 -0400
+Received: from mail.kapsi.fi ([217.30.184.167]:54961 "EHLO mail.kapsi.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752611AbaIAG0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752613AbaIAG0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 1 Sep 2014 02:26:40 -0400
 From: Mikko Rapeli <mikko.rapeli@iki.fi>
 To: linux-kernel@vger.kernel.org
 Cc: linux-kbuild@vger.kernel.org, mikko.rapeli@iki.fi
-Subject: [RFC PATCH v2 25/27] via_drm.h: hide struct via_file_private in userspace
-Date: Mon,  1 Sep 2014 09:26:16 +0300
-Message-Id: <1409552778-2537-26-git-send-email-mikko.rapeli@iki.fi>
+Subject: [RFC PATCH v2 24/27] via_drm.h: include linux/types.h instead of non-existing via_drmclient.h
+Date: Mon,  1 Sep 2014 09:26:15 +0300
+Message-Id: <1409552778-2537-25-git-send-email-mikko.rapeli@iki.fi>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1409552778-2537-1-git-send-email-mikko.rapeli@iki.fi>
 References: <1408660449-4011-1-git-send-email-mikko.rapeli@iki.fi>
@@ -23,28 +23,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes compiler error since list_head is not exported to userspace headers.
+Fixes compiler error:
+
+drm/via_drm.h:36:27: fatal error: via_drmclient.h: No such file or directory
 
 Signed-off-by: Mikko Rapeli <mikko.rapeli@iki.fi>
 ---
- include/uapi/drm/via_drm.h | 2 ++
- 1 file changed, 2 insertions(+)
+ include/uapi/drm/via_drm.h | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
 diff --git a/include/uapi/drm/via_drm.h b/include/uapi/drm/via_drm.h
-index 791531e..34ce658 100644
+index 8b0533c..791531e 100644
 --- a/include/uapi/drm/via_drm.h
 +++ b/include/uapi/drm/via_drm.h
-@@ -272,8 +272,10 @@ typedef struct drm_via_dmablit {
- 	drm_via_blitsync_t sync;
- } drm_via_dmablit_t;
+@@ -24,6 +24,7 @@
+ #ifndef _VIA_DRM_H_
+ #define _VIA_DRM_H_
  
-+#ifdef __KERNEL__
- struct via_file_private {
- 	struct list_head obj_list;
- };
-+#endif
++#include <linux/types.h>
+ #include <drm/drm.h>
  
- #endif				/* _VIA_DRM_H_ */
+ /* WARNING: These defines must be the same as what the Xserver uses.
+@@ -33,9 +34,6 @@
+ #ifndef _VIA_DEFINES_
+ #define _VIA_DEFINES_
+ 
+-#ifndef __KERNEL__
+-#include "via_drmclient.h"
+-#endif
+ 
+ #define VIA_NR_SAREA_CLIPRECTS		8
+ #define VIA_NR_XVMC_PORTS               10
 -- 
 2.1.0
 
