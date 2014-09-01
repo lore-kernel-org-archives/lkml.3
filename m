@@ -1,148 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778AbaIATWf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 15:22:35 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55835 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752581AbaIATWd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 15:22:33 -0400
-X-Sasl-enc: IZvhfntLOfdLZh8NDG7n2pdNntlfbJATP799nhRQDYSz 1409599351
-Message-ID: <1409599348.21965.6.camel@localhost>
-Subject: Re: RTNL: assertion failed at net/ipv6/addrconf.c (1699)
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Sabrina Dubroca <sd@queasysnail.net>
-Cc: Cong Wang <cwang@twopensource.com>, Tommi Rantala <tt.rantala@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org,
-        Dave Jones <davej@redhat.com>
-Date: Mon, 01 Sep 2014 21:22:28 +0200
-In-Reply-To: <20140830105821.GB18155@kria>
-References: <CA+ydwtoDwQVg_BWrxxdpUyJ7Up60GtxTCLYe_5vFdV2td_kGhQ@mail.gmail.com>
-	 <CAHA+R7MZCDGRhSf=UuVCGQvNo03wVziZQB_X30rwNf6hmHipQA@mail.gmail.com>
-	 <20140829195339.GA9780@kria> <1409363489.2980.17.camel@localhost>
-	 <20140830105821.GB18155@kria>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
+	id S1752826AbaIATwR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 15:52:17 -0400
+Received: from smtp.infotech.no ([82.134.31.41]:56790 "EHLO smtp.infotech.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752608AbaIATwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 15:52:15 -0400
+Message-ID: <5404CE6A.8090402@interlog.com>
+Date: Mon, 01 Sep 2014 15:52:10 -0400
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Christoph Hellwig <hch@infradead.org>
+CC: SCSI development list <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        James Bottomley <james.bottomley@hansenpartnership.com>,
+        Milan Broz <gmazyland@gmail.com>
+Subject: Re: [PATCH] scsi_debug: deadlock between completions and surprise
+ module removal
+References: <5403AB47.3040706@interlog.com> <20140901153629.GA29938@infradead.org>
+In-Reply-To: <20140901153629.GA29938@infradead.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 14-09-01 11:36 AM, Christoph Hellwig wrote:
+>> --- a/drivers/scsi/scsi_debug.c	2014-08-26 13:24:51.646948507 -0400
+>> +++ b/drivers/scsi/scsi_debug.c	2014-08-30 18:04:54.589226679 -0400
+>> @@ -2743,6 +2743,13 @@ static int stop_queued_cmnd(struct scsi_
+>>   		if (test_bit(k, queued_in_use_bm)) {
+>>   			sqcp = &queued_arr[k];
+>>   			if (cmnd == sqcp->a_cmnd) {
+>> +				devip = (struct sdebug_dev_info *)
+>> +					cmnd->device->hostdata;
+>> +				if (devip)
+>> +					atomic_dec(&devip->num_in_q);
+>> +				sqcp->a_cmnd = NULL;
+>
+> Why would the hostdata every be NULL here?  We should never
+> call ->slave_destroy on a device that has outstanding commands.
 
-On Sa, 2014-08-30 at 12:58 +0200, Sabrina Dubroca wrote:
-> 2014-08-30, 03:51:29 +0200, Hannes Frederic Sowa wrote:
-> > Hi Sabrina,
-> > 
-> > [...]
-> > 
-> > Sorry, just had time to look at this.
-> > 
-> > The reason is not to have list corruption but that the calls down to
-> > ndo_set_rx_mode expect rtnl to be locked by the drivers. Filter lists
-> > are locked by addr_list_lock and that's why I think we never saw any
-> > problems with that, but drivers expect rtnl locked for those calls.
-> > 
-> > But this problem also affects multicast join, so patch seems incomplete
-> > to me (and for that matter ssm multicast join, too).
-> > 
-> > Also rtnl_lock and rcu_read_lock compose in that order, so we don't need
-> > to change dev_get_by_flags, but as this is the only user it sure is
-> > possible. RCU locked version is just easier composeable, so I wouldn't
-> > touch that if needed in future, just also take rcu lock as before.
-> > 
-> > So just adding rtnl_lock add appropriate places seems to be ok to me,
-> > but still need to review parts of the ssm code.
-> > 
-> > Also we should move ASSERT_RTNL checks from addrconf_join_solict to
-> > ipv6_dev_mc_inc/dec.
-> > 
-> > Thanks,
-> > Hannes
-> 
-> Thanks for explaining.
-> 
-> I had a look at what you suggested.
-> 
-> 
-> So, for anycast, on top of the previous patch, we'd have:
-> 
-> ---
-> diff --git a/net/ipv6/anycast.c b/net/ipv6/anycast.c
-> index 210183244689..61dd3046b804 100644
-> --- a/net/ipv6/anycast.c
-> +++ b/net/ipv6/anycast.c
->  static void aca_put(struct ifacaddr6 *ac)
-> @@ -233,6 +235,8 @@ int ipv6_dev_ac_inc(struct net_device *dev, const struct in6_addr *addr)
->  	struct rt6_info *rt;
->  	int err;
->  
-> +	ASSERT_RTNL();
-> +
->  	idev = in6_dev_get(dev);
->  
->  	if (idev == NULL)
-> @@ -302,6 +306,8 @@ int __ipv6_dev_ac_dec(struct inet6_dev *idev, const struct in6_addr *addr)
->  {
->  	struct ifacaddr6 *aca, *prev_aca;
->  
-> +	ASSERT_RTNL();
-> +
->  	write_lock_bh(&idev->lock);
->  	prev_aca = NULL;
->  	for (aca = idev->ac_list; aca; aca = aca->aca_next) {
-> @@ -336,6 +342,8 @@ static int ipv6_dev_ac_dec(struct net_device *dev, const struct in6_addr *addr)
->  {
->  	struct inet6_dev *idev = __in6_dev_get(dev);
->  
-> +	ASSERT_RTNL();
-> +
->  	if (idev == NULL)
->  		return -ENODEV;
->  	return __ipv6_dev_ac_dec(idev, addr);
+To your first question, perhaps it could not be. In
+the scsi_debug driver almost all uses of 'devip'
+check for NULL, so it may not always have been true.
 
-ASSERT_RTNL() still performs a runtime check. While those are not really
-fast paths, I still think it is better to keep them to a minimum and
-place them only at places where we know all code which needs to be
-guarded passes by:
+'rmmod scsi_debug' would lead to scsi_debug_exit()
+being called and that called stop_all_queued() which
+deadlocked with a command completion, or worse command
+commencement. scsi_debug_exit() looks a bit racy: the
+first thing it does is stop_all_queued() but has
+anything been done to stop new commands being issued?
+Later scsi_debug_exit() brings down the hosts.
 
-I would suggest to move ASSERT_RTNL to ipv6_dev_mc_inc and
-__ipv6_dev_mc_dec and even remove the checks from addrconf_join_solict
-and addrconf_leave_solict. Does that cover all code paths and makes
-sense?
 
-> ---
-> 
-> 
-> And for multicast:
->  - locking order in the patch below: rtnl -> rcu -> ipv6_sk_mc_lock
->  - ipv6_sock_mc_join: maybe move all the _unlock()'s together at the end of the function
->  - do we need to modify rcu_dereference_protected in ipv6_sock_mc_drop/ipv6_sock_mc_close
->  - I had a look at the other codepaths that call ipv6_dev_mc_inc/dec
->    - ipv6_mc_destroy_dev, dev_forward_change, ipv6_add_dev,
->      addrconf_join_solict -- all take rtnl or already have an
->      ASSERT_RTNL()
->    - pndisc_destructor, called from pneigh_ifdown/pneigh_delete
->    - pndisc_constructor, called from pneigh_lookup -- pneigh_lookup
->      has ASSERT_RTNL(), but pneigh_lookup is called from ip6_forward and
->      ndisc_recv_na
->    - (hope I didn't miss any callers)
-> 
-> As far as I could see, apart maybe from pndisc_constructor, it seems
-> okay, but I'd like to hear your comments.
+This patch is primarily a bug fix for the lk 3.17 series and
+the code you highlight was simply moved from being under a
+lock to outside that lock. I didn't want to be too creative,
+it's too easy to slip up and upset the management.
 
-The rest of the patch looks good.
 
-Can you or Cong post a final patch with the adapted ac_join/drop
-changes?
+Enhancements could be sent to your drivers-for-3.18 tree. Rob
+Elliott already has a few in mind, to improve performance.
+Removing all 'devip' NULL checks would also improve performance,
+and readability.
 
-Thanks,
-Hannes
+Doug Gilbert
 
 
