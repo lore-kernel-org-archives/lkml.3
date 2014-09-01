@@ -1,83 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345AbaIAKT5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 06:19:57 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:47484 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752722AbaIAKTz (ORCPT
+	id S1753354AbaIAKUK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 06:20:10 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:38574 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752974AbaIAKUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 06:19:55 -0400
-Date: Mon, 1 Sep 2014 12:19:39 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Jason Wang <jasowang@redhat.com>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>,
-        Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process is
- runnable
-Message-ID: <20140901101939.GA31157@worktop.ger.corp.intel.com>
-References: <1408608310-13579-1-git-send-email-jasowang@redhat.com>
- <1408608310-13579-2-git-send-email-jasowang@redhat.com>
- <1408683665.5648.69.camel@marge.simpson.net>
- <20140901093159.GB27892@worktop.ger.corp.intel.com>
- <20140901095219.GD21269@redhat.com>
- <20140901100434.GD27892@worktop.ger.corp.intel.com>
+	Mon, 1 Sep 2014 06:20:07 -0400
+Date: Mon, 1 Sep 2014 11:19:52 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Wang Long <long.wanglong@huawei.com>
+Cc: santosh.shilimkar@ti.com, victor.kamensky@linaro.org, nico@linaro.org,
+        ben.dooks@codethink.co.uk, cov@codeaurora.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [SMP BUG?] the return value of is_smp() is bug?
+Message-ID: <20140901101952.GF30401@n2100.arm.linux.org.uk>
+References: <1409571334-2814-1-git-send-email-long.wanglong@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140901100434.GD27892@worktop.ger.corp.intel.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <1409571334-2814-1-git-send-email-long.wanglong@huawei.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 01, 2014 at 12:04:34PM +0200, Peter Zijlstra wrote:
-> On Mon, Sep 01, 2014 at 12:52:19PM +0300, Michael S. Tsirkin wrote:
-> > On Mon, Sep 01, 2014 at 11:31:59AM +0200, Peter Zijlstra wrote:
-> > > On Fri, Aug 22, 2014 at 07:01:05AM +0200, Mike Galbraith wrote:
-> > > > > +++ b/include/net/busy_poll.h
-> > > > > @@ -109,7 +109,8 @@ static inline bool sk_busy_loop(struct sock *sk, int nonblock)
-> > > > >  		cpu_relax();
-> > > > >  
-> > > > >  	} while (!nonblock && skb_queue_empty(&sk->sk_receive_queue) &&
-> > > > > -		 !need_resched() && !busy_loop_timeout(end_time));
-> > > > > +		 !need_resched() && !busy_loop_timeout(end_time) &&
-> > > > > +		 nr_running_this_cpu() < 2);
-> > > > >  
-> > > 
-> > > So as has been said by now; this is horrible.
-> > > 
-> > > We should not export nr_running like this ever. Your usage of < 2
-> > > implies this can be hit with nr_running == 0, and therefore you can also
-> > > hit it with nr_running == 1 where the one is not network related and you
-> > > get random delays.
-> > > 
-> > > Worse still, you have BH (and thereby preemption) disabled, you should
-> > > not _ever_ have undefined and indefinite waits like that.
-> > > 
-> > > You also destroy any hope of dropping into lower power states; even when
-> > > there's never going to be a packet ever again, also bad.
-> > 
-> > Hmm this patch sometimes makes us exit from the busy loop *earlier*.
-> > How can this interfere with dropping into lower power states?
+Firstly, do not send multiple copies of your message to mailing lists,
+certainly not within the three hours that you sent your three copies.
+If one of the addresses you sent the message to bounces, then it is
+*only* that one recipient who doesn't get your message, everyone else
+receives a copy.  So, there's now three copies of your message in the
+list archives, and people could end up replying to different messages.
+
+On Mon, Sep 01, 2014 at 07:35:34PM +0800, Wang Long wrote:
+> Hi,all
 > 
-> Ah.. jetlag.. :/ I read it like it owuld indefinitely spin if there was
-> only the 'one' task, not avoid the spin unless there was the one task.
+> In kernel 3.17-rc2, when i set CONFIG_HAVE_SMP = y and CONFIG_SMP_ON_UP = y 
+> in .config file. the secondary core can not boot.
 > 
-> The nr_running thing is still horrible, but let me reread this patch
-> description to see if it explains why that is a good thing.
+> when i set CONFIG_HAVE_SMP = y and CONFIG_SMP_ON_UP = n in .config file,
+> the secondary core can boot.
+> 
+> But this does not happen in kernel 3.10 lts kernel, Whether the 
+> CONFIG_SMP_ON_UP is set yes or no ,the secondary core can boot.
+> 
+> Does the meaning of CONFIG_SMP_ON_UP changed or this is a bug in kernel 3.17-rc2 ? 
 
-OK I suppose that more or less makes sense, the contextual behaviour is
-of course tedious in that it makes behaviour less predictable. The
-'other' tasks might not want to generate data and you then destroy
-throughput by not spinning.
+I think the answer is neither, because when the kernel is run on /real/
+hardware:
 
-I'm not entirely sure I see how its all supposed to work though; the
-various poll functions call sk_busy_poll() and do_select() also loops.
+http://www.arm.linux.org.uk/developer/build/result.php?type=boot&idx=2514
 
-The patch only kills the sk_busy_poll() loop, but then do_select() will
-still loop and not sleep, so how is this helping?
+it boots fine, bringing up all four CPUs.
 
+> config:     set CONFIG_HAVE_SMP = y and CONFIG_SMP_ON_UP = y
+> command:    # qemu-system-arm -M vexpress-a9 -smp 2  -m 128M -kernel arch/arm/boot/zImage -nographic
 
+I've no idea how qemu works here, but if the CPU doesn't indicate that
+it's a SMP capable CPU, we will disable SMP extensions.
+
+> The output:
+> 
+> ..........
+> is_smp() return false;
+> CPU: Testing write buffer coherency: ok
+> missing device node for CPU 0
+> CPU0: thread -1, cpu 0, socket 0, mpidr 80000000
+> Setting up static identity map for 0x604643d8 - 0x60464430
+> Brought up 1 CPUs
+> SMP: Total of 1 processors activated.
+> CPU: All CPU(s) started in SVC mode.
+> ...........
+
+You have decided that you'll edit the kernel messages, removing at least
+some of the information that could be relevant to the issue.  Please,
+only cut kernel messages when you are absolutely certain that they are
+not relevant to the problem you're reporting.
+
+However, I don't think it would help much - I suspect that qemu doesn't
+provide emulation of the SCU base address register, and that's what your
+problem is.  qemu needs to be fixed in that regard.
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
