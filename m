@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752127AbaIABb3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 21:31:29 -0400
-Received: from ozlabs.org ([103.22.144.67]:54575 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752024AbaIABb0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 21:31:26 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: Mark Rustad <mark.d.rustad@intel.com>, linux-kernel@vger.kernel.org,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: Re: [PATCH] moduleparam: Resolve missing-field-initializer warning
-In-Reply-To: <1409317709-5005-1-git-send-email-jeffrey.t.kirsher@intel.com>
-References: <1409317709-5005-1-git-send-email-jeffrey.t.kirsher@intel.com>
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Mon, 01 Sep 2014 10:22:00 +0930
-Message-ID: <87ha0skvrj.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752123AbaIABgc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 21:36:32 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:17213 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751574AbaIABgb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Aug 2014 21:36:31 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+To: akpm@linux-foundation.org
+Cc: kirill.shutemov@linux.intel.com, khlebnikov@openvz.org, riel@redhat.com,
+        mgorman@suse.de, n-horiguchi@ah.jp.nec.com, mhocko@suse.cz,
+        hughd@google.com, vbabka@suse.cz, walken@google.com,
+        minchan@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH] mm: use pgprot_val to access vm_page_prot
+Date: Sun, 31 Aug 2014 21:35:56 -0400
+Message-Id: <1409535356-30323-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.9.1
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeff Kirsher <jeffrey.t.kirsher@intel.com> writes:
-> From: Mark Rustad <mark.d.rustad@intel.com>
->
-> Resolve a missing-field-initializer warning, that is produced
-> by every reference to module_param_call, by using designated
-> initialization for the first field. That is enough to silence
-> the complaint.
->
-> Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
-> Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-> ---
->  include/linux/moduleparam.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+pgprot is defined differently in every arch, use the per-arch pgprot_val
+to access it.
 
-Strange, I haven't seen this warning.  Compiler version?  And it's good
-to quote the error message, so people can google it.
+This fixes a build failure on various arches such as tile and powerpc
+caused by "mm: introduce dump_vma".
 
-Cheers,
-Rusty.
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+---
+ mm/page_alloc.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-> diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
-> index 494f99e..d99a9e9 100644
-> --- a/include/linux/moduleparam.h
-> +++ b/include/linux/moduleparam.h
-> @@ -196,7 +196,7 @@ struct kparam_array
->  /* Obsolete - use module_param_cb() */
->  #define module_param_call(name, set, get, arg, perm)			\
->  	static struct kernel_param_ops __param_ops_##name =		\
-> -		{ 0, (void *)set, (void *)get };			\
-> +		{ .flags = 0, (void *)set, (void *)get };		\
->  	__module_param_call(MODULE_PARAM_PREFIX,			\
->  			    name, &__param_ops_##name, arg,		\
->  			    (perm) + sizeof(__check_old_set_param(set))*0, -1)
-> -- 
-> 1.9.3
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index add97b8..1e1bd9a 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -6734,7 +6734,8 @@ void dump_vma(const struct vm_area_struct *vma)
+ 		"prot %lx anon_vma %p vm_ops %p\n"
+ 		"pgoff %lx file %p private_data %p\n",
+ 		vma, (void *)vma->vm_start, (void *)vma->vm_end, vma->vm_next,
+-		vma->vm_prev, vma->vm_mm, vma->vm_page_prot.pgprot,
++		vma->vm_prev, vma->vm_mm,
++		(unsigned long)pgprot_val(vma->vm_page_prot),
+ 		vma->anon_vma, vma->vm_ops, vma->vm_pgoff,
+ 		vma->vm_file, vma->vm_private_data);
+ 	dump_flags(vma->vm_flags, vmaflags_names, ARRAY_SIZE(vmaflags_names));
+-- 
+1.7.10.4
+
