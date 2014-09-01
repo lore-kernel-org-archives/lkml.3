@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670AbaIAPDT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 11:03:19 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:50567 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754228AbaIAPDR (ORCPT
+	id S1754684AbaIAPD0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 11:03:26 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:33756 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754291AbaIAPDX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 11:03:17 -0400
-From: Hanjun Guo <hanjun.guo@linaro.org>
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: Graeme Gregory <graeme.gregory@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <will.deacon@arm.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org,
-        Al Stone <al.stone@linaro.org>, Hanjun Guo <hanjun.guo@linaro.org>
-Subject: [PATCH v3 15/17] ARM64 / ACPI: Select ACPI_REDUCED_HARDWARE_ONLY if ACPI is enabled on ARM64
-Date: Mon,  1 Sep 2014 22:57:53 +0800
-Message-Id: <1409583475-6978-16-git-send-email-hanjun.guo@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
-References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
+	Mon, 1 Sep 2014 11:03:23 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-07-54048ab93c0e
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Pratyush Anand <pratyush.anand@st.com>, Mohit Kumar <mohit.kumar@st.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] phy: spear1310-miphy: fix driver dependencies
+Date: Mon, 01 Sep 2014 17:03:17 +0200
+Message-id: <3192131.G3BCYlDRn6@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMLMWRmVeSWpSXmKPExsVy+t9jAd2dXSwhBqfecVlceNrDZnG26Q27
+	xeVdc9gsNk79xWjRfknZgdWjb8sqRo+nP/Yyexy/sZ3J4/MmuQCWKC6blNSczLLUIn27BK6M
+	RUvvsBTcYKtY17WXtYHxOmsXIyeHhICJxO6HV6BsMYkL99azgdhCAosYJRqWq0DYLUwSMx7E
+	gdhsAlYSE9tXMYLYIgJaEqd3/mDuYuTiYBaYzijx8t10sEHCAnYST35sYAKxWQRUJd7v38oM
+	YvMKaErMmHQbzBYV8JTYsX0lG0RcUOLH5HssIDazgLzEvv1TWSFsLYn1O48zTWDkm4WkbBaS
+	sllIyhYwMq9iFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECA7KZ9I7GFc1WBxiFOBgVOLhfTCL
+	OUSINbGsuDL3EKMEB7OSCG9qBkuIEG9KYmVValF+fFFpTmrxIUZpDhYlcd6DrdaBQgLpiSWp
+	2ampBalFMFkmDk6pBsbim3ParvyVjV/4jN+Q8Xvt1oszz0se3/mkl2erf2Vd8rT/Ut0Plkzn
+	uWOq7utj8Sj+X8ir/1qC6eVrFwY7LDtyOLxT8+GUbWJnE/z/RBuXt1nfNrjrVmBWY9Br/llU
+	duo0/YSdU83MVp3jm7Sk6yfP8paSzst3Nkw9ztfwv/rt+s07AuPNmBYrsRRnJBpqMRcVJwIA
+	pN8rz0YCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Al Stone <al.stone@linaro.org>
+ST SPEAR1310-MIPHY support should be available only on
+ST SPEAr1310 machine.
 
-ACPI reduced hardware mode is disabled by default, but ARM64
-can only run properly in ACPI hardware reduced mode, so select
-ACPI_REDUCED_HARDWARE_ONLY if ACPI is enabled on ARM64.
-
-Reviewed-by: Grant Likely <grant.likely@linaro.org>
-Signed-off-by: Al Stone <al.stone@linaro.org>
-Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Pratyush Anand <pratyush.anand@st.com>
+Cc: Mohit Kumar <mohit.kumar@st.com>
 ---
- arch/arm64/Kconfig |    1 +
+ drivers/phy/Kconfig |    1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index fd4e81a..065438c 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -1,5 +1,6 @@
- config ARM64
- 	def_bool y
-+	select ACPI_REDUCED_HARDWARE_ONLY if ACPI
- 	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
- 	select ARCH_HAS_SG_CHAIN
- 	select ARCH_HAS_TICK_BROADCAST if GENERIC_CLOCKEVENTS_BROADCAST
--- 
-1.7.9.5
+Index: b/drivers/phy/Kconfig
+===================================================================
+--- a/drivers/phy/Kconfig	2014-08-22 16:54:00.465124023 +0200
++++ b/drivers/phy/Kconfig	2014-09-01 16:43:16.808730424 +0200
+@@ -214,6 +214,7 @@ config PHY_QCOM_IPQ806X_SATA
+ config PHY_ST_SPEAR1310_MIPHY
+ 	tristate "ST SPEAR1310-MIPHY driver"
+ 	select GENERIC_PHY
++	depends on MACH_SPEAR1310 || COMPILE_TEST
+ 	help
+ 	  Support for ST SPEAr1310 MIPHY which can be used for PCIe and SATA.
+ 
 
