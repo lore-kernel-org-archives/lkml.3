@@ -1,111 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752731AbaIAWak (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 18:30:40 -0400
-Received: from mail.ispras.ru ([83.149.199.45]:50957 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752245AbaIAWai (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 18:30:38 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Evgeniy Dushistov <dushistov@mail.ru>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: [PATCH] ufs: fix deadlocks after mutex merge
-Date: Tue,  2 Sep 2014 02:30:24 +0400
-Message-Id: <1409610624-10898-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.9.1
+	id S1752808AbaIAWih (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 18:38:37 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:62945 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752629AbaIAWif (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 18:38:35 -0400
+Date: Mon, 1 Sep 2014 23:42:24 +0100
+From: "Carlos R. Mafra" <crmafra@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Johannes Berg <johannes@sipsolutions.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org
+Subject: [3.17-rc3] Warning in ieee80211_can_queue_work
+Message-ID: <20140901224224.GA3885@linux-g29b.site>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 0244756edc4b ("ufs: sb mutex merge + mutex_destroy") introduces
-deadlocks in ufs_new_inode() and ufs_free_inode() that call lock_ufs()
-being already invoked with mutex held.
+I am using the kernel 3.17-rc3 which I compiled today and
+I get the warning below right before suspending to RAM:
 
-ufs_free_inode() is always invoked with mutex locked, while
-ufs_new_inode() is called with mutex locked two times of four.
+[   37.856537] ------------[ cut here ]------------
+[   37.856559] WARNING: CPU: 3 PID: 43 at /home/mafra/linux-2.6/net/mac80211/util.c:716 ieee80211_can_queue_work.isra.38+0x2d/0x40 [mac80211]()
+[   37.856559] queueing ieee80211 work while going to suspend
+[   37.856575] Modules linked in: ctr ccm nls_iso8859_1 nls_cp437 vfat fat arc4 b43 mac80211 snd_hda_codec_hdmi snd_hda_codec_cirrus snd_hda_codec_generic snd_hda_intel snd_hda_controller cfg80211 snd_hda_codec snd_hwdep x86_pkg_temp_thermal snd_pcm crc32c_intel ghash_clmulni_intel uvcvideo rfkill videobuf2_core bcm5974 ssb videobuf2_vmalloc videobuf2_memops snd_timer rtc_cmos
+[   37.856577] CPU: 3 PID: 43 Comm: kworker/3:1 Not tainted 3.17.0-rc3 #44
+[   37.856578] Hardware name: Apple Inc. MacBookPro10,2/Mac-AFD8A9D944EA4843, BIOS MBP102.88Z.0106.B01.1208311637 08/31/2012
+[   37.856583] Workqueue: events led_work_function
+[   37.856586]  0000000000000009 ffff88026409fd18 ffffffff816f6176 ffff88026409fd60
+[   37.856587]  ffff88026409fd50 ffffffff81067343 ffff880263920660 ffff8802639222f0
+[   37.856589]  0000000000000000 0000000000000000 ffff88026f391300 ffff88026409fdb0
+[   37.856589] Call Trace:
+[   37.856594]  [<ffffffff816f6176>] dump_stack+0x4d/0x6f
+[   37.856598]  [<ffffffff81067343>] warn_slowpath_common+0x73/0x90
+[   37.856600]  [<ffffffff810673a7>] warn_slowpath_fmt+0x47/0x50
+[   37.856604]  [<ffffffff81091abc>] ? put_prev_entity+0x2c/0x3b0
+[   37.856606]  [<ffffffff81094957>] ? pick_next_task_fair+0x1f7/0x8a0
+[   37.856615]  [<ffffffffa015a75d>] ieee80211_can_queue_work.isra.38+0x2d/0x40 [mac80211]
+[   37.856622]  [<ffffffffa015a790>] ieee80211_queue_work+0x20/0x40 [mac80211]
+[   37.856630]  [<ffffffffa01e4947>] b43_led_brightness_set+0x27/0x30 [b43]
+[   37.856632]  [<ffffffff815d0d93>] led_work_function+0x113/0x130
+[   37.856634]  [<ffffffff8107bf46>] process_one_work+0x166/0x390
+[   37.856636]  [<ffffffff8107c51b>] worker_thread+0x11b/0x490
+[   37.856638]  [<ffffffff8107c400>] ? rescuer_thread+0x290/0x290
+[   37.856641]  [<ffffffff81080f1d>] kthread+0xcd/0xf0
+[   37.856643]  [<ffffffff81080e50>] ? kthread_create_on_node+0x170/0x170
+[   37.856645]  [<ffffffff816fe62c>] ret_from_fork+0x7c/0xb0
+[   37.856647]  [<ffffffff81080e50>] ? kthread_create_on_node+0x170/0x170
+[   37.856649] ---[ end trace 01a2610015279813 ]---
 
-The patch proposes to resolve the issue by agreement to call
-ufs_new_inode() and ufs_free_inode() with mutex unheld.
 
-Found by Linux Driver Verification project (linuxtesting.org).
+The reason for such an early suspend (37 seconds after booting) is
+related to another issue which I hope to describe in another email but
+which is "fixed" by a suspend cycle.
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- fs/ufs/inode.c |  7 ++-----
- fs/ufs/namei.c | 14 ++++++--------
- 2 files changed, 8 insertions(+), 13 deletions(-)
+The wireless seems to be working fine right now though, using the 'b43'
+module.
 
-diff --git a/fs/ufs/inode.c b/fs/ufs/inode.c
-index 7c580c97990e..be7d42c7d938 100644
---- a/fs/ufs/inode.c
-+++ b/fs/ufs/inode.c
-@@ -902,9 +902,6 @@ void ufs_evict_inode(struct inode * inode)
- 	invalidate_inode_buffers(inode);
- 	clear_inode(inode);
- 
--	if (want_delete) {
--		lock_ufs(inode->i_sb);
--		ufs_free_inode (inode);
--		unlock_ufs(inode->i_sb);
--	}
-+	if (want_delete)
-+		ufs_free_inode(inode);
- }
-diff --git a/fs/ufs/namei.c b/fs/ufs/namei.c
-index 90d74b8f8eba..2df62a73f20c 100644
---- a/fs/ufs/namei.c
-+++ b/fs/ufs/namei.c
-@@ -126,12 +126,12 @@ static int ufs_symlink (struct inode * dir, struct dentry * dentry,
- 	if (l > sb->s_blocksize)
- 		goto out_notlocked;
- 
--	lock_ufs(dir->i_sb);
- 	inode = ufs_new_inode(dir, S_IFLNK | S_IRWXUGO);
- 	err = PTR_ERR(inode);
- 	if (IS_ERR(inode))
--		goto out;
-+		goto out_notlocked;
- 
-+	lock_ufs(dir->i_sb);
- 	if (l > UFS_SB(sb)->s_uspi->s_maxsymlinklen) {
- 		/* slow symlink */
- 		inode->i_op = &ufs_symlink_inode_operations;
-@@ -181,13 +181,9 @@ static int ufs_mkdir(struct inode * dir, struct dentry * dentry, umode_t mode)
- 	struct inode * inode;
- 	int err;
- 
--	lock_ufs(dir->i_sb);
--	inode_inc_link_count(dir);
--
- 	inode = ufs_new_inode(dir, S_IFDIR|mode);
--	err = PTR_ERR(inode);
- 	if (IS_ERR(inode))
--		goto out_dir;
-+		return PTR_ERR(inode);
- 
- 	inode->i_op = &ufs_dir_inode_operations;
- 	inode->i_fop = &ufs_dir_operations;
-@@ -195,6 +191,9 @@ static int ufs_mkdir(struct inode * dir, struct dentry * dentry, umode_t mode)
- 
- 	inode_inc_link_count(inode);
- 
-+	lock_ufs(dir->i_sb);
-+	inode_inc_link_count(dir);
-+
- 	err = ufs_make_empty(inode, dir);
- 	if (err)
- 		goto out_fail;
-@@ -212,7 +211,6 @@ out_fail:
- 	inode_dec_link_count(inode);
- 	inode_dec_link_count(inode);
- 	iput (inode);
--out_dir:
- 	inode_dec_link_count(dir);
- 	unlock_ufs(dir->i_sb);
- 	goto out;
--- 
-1.9.1
+I'm not sure if the warning is new in 3.17-rcX since I haven't tested
+the previous releases for a while (sorry), but I can test patches.
 
+The kernel config and dmesg are here:
+
+http://damtp.cam.ac.uk/user/crm66/dmesg-3.17-rc3.txt
+http://damtp.cam.ac.uk/user/crm66/config-3.17-rc2+
