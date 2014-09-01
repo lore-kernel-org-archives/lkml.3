@@ -1,32 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139AbaIANvd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 09:51:33 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57249 "EHLO
+	id S1753996AbaIANwd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 09:52:33 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57270 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753739AbaIANvb (ORCPT
+	with ESMTP id S1751965AbaIANwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 09:51:31 -0400
-Date: Mon, 1 Sep 2014 15:51:29 +0200
+	Mon, 1 Sep 2014 09:52:32 -0400
+Date: Mon, 1 Sep 2014 15:52:31 +0200
 From: Peter Zijlstra <peterz@infradead.org>
 To: Andi Kleen <andi@firstfloor.org>
 Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
         Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 3/5] perf, x86: Add Broadwell core support
-Message-ID: <20140901135129.GN27892@worktop.ger.corp.intel.com>
+Subject: Re: [PATCH 5/5] perf, x86: Use Broadwell cache event list for Haswell
+Message-ID: <20140901135231.GO27892@worktop.ger.corp.intel.com>
 References: <1409006611-30741-1-git-send-email-andi@firstfloor.org>
- <1409006611-30741-4-git-send-email-andi@firstfloor.org>
+ <1409006611-30741-6-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1409006611-30741-4-git-send-email-andi@firstfloor.org>
+In-Reply-To: <1409006611-30741-6-git-send-email-andi@firstfloor.org>
 User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 03:43:29PM -0700, Andi Kleen wrote:
+On Mon, Aug 25, 2014 at 03:43:31PM -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> Use the newly added Broadwell cache event list for Haswell too.
+> They are identical, but Haswell is very different from the Sandy Bridge
+> list that was used previously. That fixes a wide range of mis-counting
+> cache events.
+> 
+> The node events are now only for retired memory events.
+> 
+> The prefetch events are gone now. They way the hardware counts
+> them is very misleading (some prefetches included, others not), so
+> it seemed best to leave them out.
+> 
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  arch/x86/kernel/cpu/perf_event_intel.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+> index 53bd98d..190b29e 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -2692,8 +2692,8 @@ __init int intel_pmu_init(void)
+>  	case 63: /* 22nm Haswell Server */
+>  	case 69: /* 22nm Haswell ULT */
+>  		x86_pmu.late_ack = true;
+> -		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids, sizeof(hw_cache_event_ids));
+> -		memcpy(hw_cache_extra_regs, snb_hw_cache_extra_regs, sizeof(hw_cache_extra_regs));
+> +		memcpy(hw_cache_event_ids, bdw_hw_cache_event_ids, sizeof(hw_cache_event_ids));
+> +		memcpy(hw_cache_extra_regs, bdw_hw_cache_extra_regs, sizeof(hw_cache_extra_regs));
 
-> +	case 61: /* Broadwell Client */
-
-Again, no other description has "Client" in.
+We name things for the earliest chip they're valid for. This means this
+is inconsistent and 'wrong'. These tables should be called after haswell
+not broadwell.
