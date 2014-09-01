@@ -1,70 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754678AbaIARIK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 13:08:10 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:45864 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464AbaIARIJ convert rfc822-to-8bit (ORCPT
+	id S1754687AbaIARJZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 13:09:25 -0400
+Received: from mail-yk0-f170.google.com ([209.85.160.170]:34514 "EHLO
+	mail-yk0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751998AbaIARJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 13:08:09 -0400
-Message-ID: <5404A821.5020207@arm.com>
-Date: Mon, 01 Sep 2014 18:08:49 +0100
-From: Sudeep Holla <sudeep.holla@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>, Catalin Marinas <Catalin.Marinas@arm.com>
-CC: Sudeep Holla <sudeep.holla@arm.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Rob Herring <robh@kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Robert Moore <robert.moore@intel.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Lv Zheng <lv.zheng@intel.com>
-Subject: Re: [Linaro-acpi] [RFC PATCH for Juno 1/2] net: smsc911x add support
- for probing from ACPI
-References: <1409583961-7466-1-git-send-email-hanjun.guo@linaro.org> <1409583961-7466-2-git-send-email-hanjun.guo@linaro.org> <2861461.8zNpLC3I2n@wuerfel> <20140901152854.GJ2953@xora-haswell.xora.org.uk> <20140901165333.GE608@arm.com> <20140901165853.GJ29327@sirena.org.uk>
-In-Reply-To: <20140901165853.GJ29327@sirena.org.uk>
-X-OriginalArrivalTime: 01 Sep 2014 17:08:03.0824 (UTC) FILETIME=[4AC09700:01CFC607]
-X-MC-Unique: 114090118080503001
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+	Mon, 1 Sep 2014 13:09:23 -0400
+From: Pranith Kumar <bobby.prani@gmail.com>
+To: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH v2] memfd_test: Make it work on 32-bit systems
+Date: Mon,  1 Sep 2014 13:08:59 -0400
+Message-Id: <1409591342-16193-1-git-send-email-bobby.prani@gmail.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+This test currently fails on 32-bit systems since we use u64 type to pass the
+flags to fcntl.
 
-On 01/09/14 17:58, Mark Brown wrote:
-> On Mon, Sep 01, 2014 at 05:53:33PM +0100, Catalin Marinas wrote:
->
->> Confused. Then how come smsc911x_drv_probe() has this line:
->
->> 	acpi_handle *ahandle = ACPI_HANDLE(&pdev->dev);
->
->> without any #ifdef's.
->
-> There's a stub smsc911x_probe_config_acpi() provided in the non-ACPI
-> case, Arnd's suggestion is basically to remove the stub.
->
+This commit changes this to use 'unsigned int' type for flags to fcntl making it
+work on 32-bit systems.
 
-I think Catalin is referring to ACPI_HANDLE used without any #ifdefs
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+---
+v2: use 'unsigned int' instead of u32
 
-Catalin, few macros like ACPI_HANDLE and ACPI_PTR are defined in
-include/linux/acpi.h even when CONFIG_ACPI is not set mainly to
-avoid #ifdef's around simple assignments like the above one and one
-in platform_driver.acpi_match_table
+ tools/testing/selftests/memfd/memfd_test.c | 30 ++++++++++++++----------------
+ 1 file changed, 14 insertions(+), 16 deletions(-)
 
-Regards,
-Sudeep
+diff --git a/tools/testing/selftests/memfd/memfd_test.c b/tools/testing/selftests/memfd/memfd_test.c
+index 3634c90..6f1385a 100644
+--- a/tools/testing/selftests/memfd/memfd_test.c
++++ b/tools/testing/selftests/memfd/memfd_test.c
+@@ -59,9 +59,9 @@ static void mfd_fail_new(const char *name, unsigned int flags)
+ 	}
+ }
+ 
+-static __u64 mfd_assert_get_seals(int fd)
++static int mfd_assert_get_seals(int fd)
+ {
+-	long r;
++	int r;
+ 
+ 	r = fcntl(fd, F_GET_SEALS);
+ 	if (r < 0) {
+@@ -72,36 +72,34 @@ static __u64 mfd_assert_get_seals(int fd)
+ 	return r;
+ }
+ 
+-static void mfd_assert_has_seals(int fd, __u64 seals)
++static void mfd_assert_has_seals(int fd, unsigned int seals)
+ {
+-	__u64 s;
++	int s;
+ 
+ 	s = mfd_assert_get_seals(fd);
+ 	if (s != seals) {
+-		printf("%llu != %llu = GET_SEALS(%d)\n",
+-		       (unsigned long long)seals, (unsigned long long)s, fd);
++		printf("%u != %u = GET_SEALS(%d)\n",
++				seals, (unsigned int)s, fd);
+ 		abort();
+ 	}
+ }
+ 
+-static void mfd_assert_add_seals(int fd, __u64 seals)
++static void mfd_assert_add_seals(int fd, unsigned int seals)
+ {
+-	long r;
+-	__u64 s;
++	int r, s;
+ 
+ 	s = mfd_assert_get_seals(fd);
+ 	r = fcntl(fd, F_ADD_SEALS, seals);
+ 	if (r < 0) {
+-		printf("ADD_SEALS(%d, %llu -> %llu) failed: %m\n",
+-		       fd, (unsigned long long)s, (unsigned long long)seals);
++		printf("ADD_SEALS(%d, %u -> %u) failed: %m\n",
++				fd, (unsigned int)s, seals);
+ 		abort();
+ 	}
+ }
+ 
+-static void mfd_fail_add_seals(int fd, __u64 seals)
++static void mfd_fail_add_seals(int fd, unsigned int seals)
+ {
+-	long r;
+-	__u64 s;
++	int r, s;
+ 
+ 	r = fcntl(fd, F_GET_SEALS);
+ 	if (r < 0)
+@@ -111,8 +109,8 @@ static void mfd_fail_add_seals(int fd, __u64 seals)
+ 
+ 	r = fcntl(fd, F_ADD_SEALS, seals);
+ 	if (r >= 0) {
+-		printf("ADD_SEALS(%d, %llu -> %llu) didn't fail as expected\n",
+-		       fd, (unsigned long long)s, (unsigned long long)seals);
++		printf("ADD_SEALS(%d, %u -> %u) didn't fail as expected\n",
++				fd, (unsigned int)s, seals);
+ 		abort();
+ 	}
+ }
+-- 
+2.1.0
 
