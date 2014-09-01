@@ -1,99 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753856AbaIAN7o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 09:59:44 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:63775 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751500AbaIAN7n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 09:59:43 -0400
-Message-ID: <54047BC8.4010308@monstr.eu>
-Date: Mon, 01 Sep 2014 15:59:36 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arch/microblaze/include/asm/entry.h: Include "linux/linkage.h"
- to avoid compiling issue
-References: <53E22E85.9010205@gmail.com>
-In-Reply-To: <53E22E85.9010205@gmail.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="sUQXAk79h9wv7uJbQTaABk61qctovGofV"
+	id S1753971AbaIAOAS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 10:00:18 -0400
+Received: from mga02.intel.com ([134.134.136.20]:20511 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751952AbaIAOAQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 10:00:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,442,1406617200"; 
+   d="scan'208";a="566621609"
+Message-ID: <1409580006.30155.62.camel@linux.intel.com>
+Subject: Re: [PATCH v1 1/5] mfd: lpc_sch: reduce duplicate code
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+Date: Mon, 01 Sep 2014 17:00:06 +0300
+In-Reply-To: <20140901134610.GB8796@lee--X1>
+References: <1408705096-31286-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1408705096-31286-2-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <20140901091317.GG7374@lee--X1> <1409566903.30155.47.camel@linux.intel.com>
+	 <20140901113805.GO7374@lee--X1> <1409572101.30155.59.camel@linux.intel.com>
+	 <20140901134610.GB8796@lee--X1>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.5-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---sUQXAk79h9wv7uJbQTaABk61qctovGofV
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2014-09-01 at 14:46 +0100, Lee Jones wrote:
 
-On 08/06/2014 03:32 PM, Chen Gang wrote:
-> "entry.h" needs 'asmlinkage', and "asm/linkage.h" does not provide it.
-> So need include "linux/linkage.h" to use generic one instead of.
->=20
-> The related error (with allmodconfig under microblaze):
->=20
->     CC [M]  drivers/net/ethernet/emulex/benet/be_main.o
->   In file included from ./arch/microblaze/include/asm/processor.h:17:0,=
+[]
 
->                    from include/linux/prefetch.h:14,
->                    from drivers/net/ethernet/emulex/benet/be_main.c:18:=
+> > Okay, what about 1 — IP is present and we have no error, 0 — no ip, no
+> > error, -err — error that should be returned, would it work for you?
+> 
+> I would suggest -E<error_message> for messages to be passed back, 0
+> for 'everything found and correct' and >0 (#defined of course) for any
+> local messages you wish to pass 'IP not found', etc.
+> 
+> > > #define LCP_SKIP_RESOURCE /* Seems resonable? */
 
->   ./arch/microblaze/include/asm/entry.h:33:19: error: expected '=3D', '=
-,', ';', 'asm' or '__attribute__' before 'void'
->    extern asmlinkage void do_notify_resume(struct pt_regs *regs, int in=
-_syscall);
->                      ^
->=20
-> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-> ---
->  arch/microblaze/include/asm/entry.h | 1 +
->  1 file changed, 1 insertion(+)
->=20
-> diff --git a/arch/microblaze/include/asm/entry.h b/arch/microblaze/incl=
-ude/asm/entry.h
-> index b4a4cb1..596e485 100644
-> --- a/arch/microblaze/include/asm/entry.h
-> +++ b/arch/microblaze/include/asm/entry.h
-> @@ -15,6 +15,7 @@
-> =20
->  #include <asm/percpu.h>
->  #include <asm/ptrace.h>
-> +#include <linux/linkage.h>
-> =20
->  /*
->   * These are per-cpu variables required in entry.S, among other
->=20
-
-Applied.
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+Okay, makes sense. Will do this in v2.
 
 
+-- 
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
 
---sUQXAk79h9wv7uJbQTaABk61qctovGofV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAlQEe8gACgkQykllyylKDCHjFQCfWjWzpJG8qbufqJSQYAEc8nsn
-LVUAn1O74eyTugyh5cZWNist7gMXwu8W
-=6Tiw
------END PGP SIGNATURE-----
-
---sUQXAk79h9wv7uJbQTaABk61qctovGofV--
