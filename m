@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754079AbaIAOLb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 10:11:31 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:53615 "HELO
+	id S1754154AbaIAOL5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 10:11:57 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:53537 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754022AbaIAOL1 (ORCPT
+	with SMTP id S1753545AbaIAOL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 10:11:27 -0400
+	Mon, 1 Sep 2014 10:11:28 -0400
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 To: Thomas Gleixner <tglx@linutronix.de>
 Cc: Linux PM list <linux-pm@vger.kernel.org>,
@@ -14,9 +14,9 @@ Cc: Linux PM list <linux-pm@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux PCI <linux-pci@vger.kernel.org>,
         Dmitry Torokhov <dtor@google.com>, Aubrey Li <aubrey.li@intel.com>
-Subject: [PATCH 03/13] genirq: Add sanity checks for PM options on shared interrupt lines
-Date: Mon, 01 Sep 2014 16:21:18 +0200
-Message-ID: <1858713.x4D7GFtaer@vostro.rjw.lan>
+Subject: [PATCH 01/13] PM / sleep: Mechanism for aborting system suspends unconditionally
+Date: Mon, 01 Sep 2014 16:19:52 +0200
+Message-ID: <6935419.nmCT0f1CW7@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
 In-Reply-To: <2516134.pmOxkEuOOy@vostro.rjw.lan>
 References: <26580319.OZP7jvJnA9@vostro.rjw.lan> <5320472.coYotHR1d0@vostro.rjw.lan> <2516134.pmOxkEuOOy@vostro.rjw.lan>
@@ -27,133 +27,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Account the IRQF_NO_SUSPEND and IRQF_RESUME_EARLY actions on shared
-interrupt lines and yell loudly if there is a mismatch.
+It sometimes may be necessary to abort a system suspend in
+progress or wake up the system from suspend-to-idle even if the
+pm_wakeup_event()/pm_stay_awake() mechanism is not enabled.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+For this purpose, introduce a new global variable pm_abort_suspend
+and make pm_wakeup_pending() check its value.  Also add routines
+for manipulating that variable.
+
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- include/linux/irqdesc.h |   10 ++++++++++
- kernel/irq/internals.h  |   10 ++++++++++
- kernel/irq/manage.c     |    4 ++++
- kernel/irq/pm.c         |   36 ++++++++++++++++++++++++++++++++++++
- 4 files changed, 60 insertions(+)
+ drivers/base/power/wakeup.c |   16 +++++++++++++++-
+ include/linux/suspend.h     |    4 ++++
+ kernel/power/process.c      |    1 +
+ 3 files changed, 20 insertions(+), 1 deletion(-)
 
-Index: linux/include/linux/irqdesc.h
+Index: linux-pm/include/linux/suspend.h
 ===================================================================
---- linux.orig/include/linux/irqdesc.h
-+++ linux/include/linux/irqdesc.h
-@@ -36,6 +36,11 @@ struct irq_desc;
-  * @threads_oneshot:	bitfield to handle shared oneshot threads
-  * @threads_active:	number of irqaction threads currently running
-  * @wait_for_threads:	wait queue for sync_irq to wait for threaded handlers
-+ * @nr_actions:		number of installed actions on this descriptor
-+ * @no_suspend_depth:	number of irqactions on a irq descriptor with
-+ *			IRQF_NO_SUSPEND set
-+ * @force_resume_depth:	number of irqactions on a irq descriptor with
-+ *			IRQF_FORCE_RESUME set
-  * @dir:		/proc/irq/ procfs entry
-  * @name:		flow handler name for /proc/interrupts output
+--- linux-pm.orig/include/linux/suspend.h
++++ linux-pm/include/linux/suspend.h
+@@ -371,6 +371,8 @@ extern int unregister_pm_notifier(struct
+ extern bool events_check_enabled;
+ 
+ extern bool pm_wakeup_pending(void);
++extern void pm_system_wakeup(void);
++extern void pm_wakeup_clear(void);
+ extern bool pm_get_wakeup_count(unsigned int *count, bool block);
+ extern bool pm_save_wakeup_count(unsigned int count);
+ extern void pm_wakep_autosleep_enabled(bool set);
+@@ -418,6 +420,8 @@ static inline int unregister_pm_notifier
+ #define pm_notifier(fn, pri)	do { (void)(fn); } while (0)
+ 
+ static inline bool pm_wakeup_pending(void) { return false; }
++static inline void pm_system_wakeup(void) {}
++static inline void pm_wakeup_clear(void) {}
+ 
+ static inline void lock_system_sleep(void) {}
+ static inline void unlock_system_sleep(void) {}
+Index: linux-pm/drivers/base/power/wakeup.c
+===================================================================
+--- linux-pm.orig/drivers/base/power/wakeup.c
++++ linux-pm/drivers/base/power/wakeup.c
+@@ -24,6 +24,9 @@
   */
-@@ -68,6 +73,11 @@ struct irq_desc {
- 	unsigned long		threads_oneshot;
- 	atomic_t		threads_active;
- 	wait_queue_head_t       wait_for_threads;
-+#ifdef CONFIG_PM_SLEEP
-+	unsigned int		nr_actions;
-+	unsigned int		no_suspend_depth;
-+	unsigned int		force_resume_depth;
-+#endif
- #ifdef CONFIG_PROC_FS
- 	struct proc_dir_entry	*dir;
- #endif
-Index: linux/kernel/irq/internals.h
-===================================================================
---- linux.orig/kernel/irq/internals.h
-+++ linux/kernel/irq/internals.h
-@@ -194,3 +194,13 @@ static inline void kstat_incr_irqs_this_
- 	__this_cpu_inc(*desc->kstat_irqs);
- 	__this_cpu_inc(kstat.irqs_sum);
+ bool events_check_enabled __read_mostly;
+ 
++/* If set and the system is suspending, terminate the suspend. */
++static bool pm_abort_suspend __read_mostly;
++
+ /*
+  * Combined counters of registered wakeup events and wakeup events in progress.
+  * They need to be modified together atomically, so it's better to use one
+@@ -719,7 +722,18 @@ bool pm_wakeup_pending(void)
+ 		pm_print_active_wakeup_sources();
+ 	}
+ 
+-	return ret;
++	return ret || pm_abort_suspend;
++}
++
++void pm_system_wakeup(void)
++{
++	pm_abort_suspend = true;
++	freeze_wake();
++}
++
++void pm_wakeup_clear(void)
++{
++	pm_abort_suspend = false;
  }
-+
-+#ifdef CONFIG_PM_SLEEP
-+void irq_pm_install_action(struct irq_desc *desc, struct irqaction *action);
-+void irq_pm_remove_action(struct irq_desc *desc, struct irqaction *action);
-+#else
-+static inline void
-+irq_pm_install_action(struct irq_desc *desc, struct irqaction *action) { }
-+static inline void
-+irq_pm_remove_action(struct irq_desc *desc, struct irqaction *action) { }
-+#endif
-Index: linux/kernel/irq/manage.c
+ 
+ /**
+Index: linux-pm/kernel/power/process.c
 ===================================================================
---- linux.orig/kernel/irq/manage.c
-+++ linux/kernel/irq/manage.c
-@@ -1200,6 +1200,8 @@ __setup_irq(unsigned int irq, struct irq
- 	new->irq = irq;
- 	*old_ptr = new;
+--- linux-pm.orig/kernel/power/process.c
++++ linux-pm/kernel/power/process.c
+@@ -129,6 +129,7 @@ int freeze_processes(void)
+ 	if (!pm_freezing)
+ 		atomic_inc(&system_freezing_cnt);
  
-+	irq_pm_install_action(desc, new);
-+
- 	/* Reset broken irq detection when installing new handler */
- 	desc->irq_count = 0;
- 	desc->irqs_unhandled = 0;
-@@ -1318,6 +1320,8 @@ static struct irqaction *__free_irq(unsi
- 	/* Found it - now remove it from the list of entries: */
- 	*action_ptr = action->next;
- 
-+	irq_pm_remove_action(desc, action);
-+
- 	/* If this was the last handler, shut down the IRQ line: */
- 	if (!desc->action) {
- 		irq_shutdown(desc);
-Index: linux/kernel/irq/pm.c
-===================================================================
---- linux.orig/kernel/irq/pm.c
-+++ linux/kernel/irq/pm.c
-@@ -13,6 +13,42 @@
- 
- #include "internals.h"
- 
-+/*
-+ * Called from __setup_irq() with desc->lock held after @action has
-+ * been installed in the action chain.
-+ */
-+void irq_pm_install_action(struct irq_desc *desc, struct irqaction *action)
-+{
-+	desc->nr_actions++;
-+
-+	if (action->flags & IRQF_FORCE_RESUME)
-+		desc->force_resume_depth++;
-+
-+	WARN_ON_ONCE(desc->force_resume_depth &&
-+		     desc->force_resume_depth != desc->nr_actions);
-+
-+	if (action->flags & IRQF_NO_SUSPEND)
-+		desc->no_suspend_depth++;
-+
-+	WARN_ON_ONCE(desc->no_suspend_depth &&
-+		     desc->no_suspend_depth != desc->nr_actions);
-+}
-+
-+/*
-+ * Called from __free_irq() with desc->lock held after @action has
-+ * been removed from the action chain.
-+ */
-+void irq_pm_remove_action(struct irq_desc *desc, struct irqaction *action)
-+{
-+	desc->nr_actions--;
-+
-+	if (action->flags & IRQF_FORCE_RESUME)
-+		desc->force_resume_depth--;
-+
-+	if (action->flags & IRQF_NO_SUSPEND)
-+		desc->no_suspend_depth--;
-+}
-+
- static void suspend_device_irq(struct irq_desc *desc, int irq)
- {
- 	if (!desc->action || (desc->action->flags & IRQF_NO_SUSPEND))
++	pm_wakeup_clear();
+ 	printk("Freezing user space processes ... ");
+ 	pm_freezing = true;
+ 	error = try_to_freeze_tasks(true);
 
