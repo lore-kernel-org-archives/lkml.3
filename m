@@ -1,66 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696AbaIAVTK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 17:19:10 -0400
-Received: from message.mylangara.bc.ca ([142.35.159.25]:47035 "EHLO
-	message.langara.bc.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751500AbaIAVTJ (ORCPT
+	id S1752659AbaIAVWy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 17:22:54 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:42423 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751464AbaIAVWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 17:19:09 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-disposition: inline
-Content-type: text/plain; charset=us-ascii
-From: Steven Stewart-Gallus <sstewartgallus00@mylangara.bc.ca>
-To: linux-kernel@vger.kernel.org
-Message-id: <fc0cb509956.5404e2cc@langara.bc.ca>
-Date: Mon, 01 Sep 2014 21:19:08 +0000 (GMT)
-X-Mailer: Sun Java(tm) System Messenger Express 6.3-6.03 (built Mar 14 2008;
- 32bit)
-Content-language: en
-Subject: How is pivot_root intended to be used?
-X-Accept-Language: en
+	Mon, 1 Sep 2014 17:22:53 -0400
+Date: Mon, 1 Sep 2014 22:22:50 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Rob Jones <rob.jones@codethink.co.uk>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] fs: replace int param with size_t for seq_open_private()
+Message-ID: <20140901212250.GJ7996@ZenIV.linux.org.uk>
+References: <CACVxJT9FWrGV=LOR11MoK1LEc6b9orDrA1dRAqMiT2Z=OnOQsg@mail.gmail.com>
+ <54047A96.1090900@codethink.co.uk>
+ <CACVxJT_nkS9evtCd5x6GH3Fiyg+hO+bJCzvz3pgdxsUj+fwQVw@mail.gmail.com>
+ <540484FB.1060906@codethink.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <540484FB.1060906@codethink.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Mon, Sep 01, 2014 at 03:38:51PM +0100, Rob Jones wrote:
+> >>kmalloc where it is expected to be a size_t.
+> >
+> >Which is a mistake too because allocations are never that large.
+> 
+> Yet.
 
-I am not confused about how I can currently use pivot_root for
-containers on my kernel (version 3.13). Currently a sequence like:
+*raised eyebrow*
 
-    if (-1 == syscall(__NR_pivot_root, ".", ".")) {
-        perror("pivot_root");
-        return EXIT_FAILURE;
-    }
+You do realize that kmalloc() gives physically contiguous allocation, right?
+And refuses to allocate more than KMALLOC_MAX_SIZE, while we are at it.
+With allocations anywhere near such range being very heavily discouraged.
 
-    if (-1 == umount2(".", MNT_DETACH)) {
-        perror("umount");
-        return EXIT_FAILURE;
-    }
-
-    /* pivot_root() may or may not affect its current working
-     * directory.  It is therefore recommended to call chdir("/")
-     * immediately after pivot_root().
-     *
-     * - http://man7.org/linux/man-pages/man2/pivot_root.2.html
-     */
-    if (-1 == chdir("/")) {
-        perror("chdir");
-        return EXIT_FAILURE;
-    }
-
-works. However, I am completely and totally confused about how the
-pivot_root system call is intended to be used here and have absolutely
-no idea if this will work in the future. This concerns me because I
-don't want my program to potentially develop silent security bugs on
-future versions of the Linux kernel.
-
-Some information about the context. I am sandboxing a program just
-after it has done a fork, unshared the mount namespace, setup a
-sandbox directory and changed into it. If you just want to look at the
-code, the actual code is avaliable at
-https://gitorious.org/linted/linted/source/b25685ba4762bfb794c8f36ae74276d32d2b0ca8:src/spawn/spawn.c.
-
-Thank you,
-Steven Stewart-Gallus
+There might or might not be point in using size_t for kmalloc() argument,
+but "future-proofing" isn't it.
