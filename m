@@ -1,51 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218AbaIAJYs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 05:24:48 -0400
-Received: from mga11.intel.com ([192.55.52.93]:13013 "EHLO mga11.intel.com"
+	id S1753223AbaIAJZW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 05:25:22 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:38725 "EHLO mail.mev.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753189AbaIAJYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 05:24:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,441,1406617200"; 
-   d="scan'208";a="592754622"
-Date: Mon, 1 Sep 2014 12:24:32 +0300
-From: Laurentiu Palcu <laurentiu.palcu@intel.com>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: linux-iio@vger.kernel.org, srinivas.pandruvada@linux.intel.com,
-        knaack.h@gmx.de, lars@metafoo.de, pmeerw@pmeerw.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] iio: accel: BMC150: fix issues when
- CONFIG_PM_RUNTIME is not set
-Message-ID: <20140901092431.GA12606@lpalcu-linux>
-References: <1409301488-22166-1-git-send-email-laurentiu.palcu@intel.com>
- <1409301488-22166-3-git-send-email-laurentiu.palcu@intel.com>
- <5401AB4D.4000103@kernel.org>
+	id S1752060AbaIAJZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 05:25:20 -0400
+Message-ID: <54043B7C.6080901@mev.co.uk>
+Date: Mon, 1 Sep 2014 10:25:16 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5401AB4D.4000103@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chase Southwood <chase.southwood@gmail.com>, <gregkh@linuxfoundation.org>
+CC: <hsweeten@visionengravers.com>, <devel@driverdev.osuosl.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging: comedi: hwdrv_apci035: remove useless return
+ statement
+References: <1409542549-27350-1-git-send-email-chase.southwood@gmail.com>
+In-Reply-To: <1409542549-27350-1-git-send-email-chase.southwood@gmail.com>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ClientProxiedBy: MEVEXCHANGE.mev.local (10.0.0.4) To MEVEXCHANGE.mev.local
+ (10.0.0.4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 30, 2014 at 11:45:33AM +0100, Jonathan Cameron wrote:
-> On 29/08/14 09:38, Laurentiu Palcu wrote:
-> > When CONFIG_PM_RUNTIME is not set, the following issues are seen:
-> >  * warning message at compilation time:
-> >     warning: 'bmc150_accel_get_startup_times' defined but not used [-Wunused-function]
-> >  * bmc150_accel_set_power_state() will always fail and reading the
-> >    accelerometer data is impossible;
-> Why? Would be good to have an explanation here...
-> 
-> If on is true then it will call pm_runtime_get_sync which calls __pm_runtime_resume
-> which when CONFIG_PM_RUNTIME is not defined returns 1 which is not an error.
-> 
-> In the on = false case it calls pm_runtime_put_autosuspend which calls __pm_runtime_suspend
-> which returns -ENOSYS and gives our error.
-> 
-> I'll add something to the patch description to this effect.
-Thank you! I'll try to better describe my changes next time.
+On 2014-09-01 04:35, Chase Southwood wrote:
+> Checkpatch pointed out a void function with a return statement.  It can be
+> removed.
+>
+> Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
+> Cc: Ian Abbott <abbotti@mev.co.uk>
+> Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
+> ---
+>   drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c | 2 --
+>   1 file changed, 2 deletions(-)
 
-laurentiu
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
