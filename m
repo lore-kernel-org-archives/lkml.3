@@ -1,196 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752960AbaIAJNX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 05:13:23 -0400
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:51406 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751405AbaIAJNW (ORCPT
+	id S1753046AbaIAJN2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 05:13:28 -0400
+Received: from va-smtp01.263.net ([54.88.144.211]:34862 "EHLO
+	vasmtpcom.263.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752987AbaIAJNZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 05:13:22 -0400
-Date: Mon, 1 Sep 2014 10:13:17 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-Subject: Re: [PATCH v1 1/5] mfd: lpc_sch: reduce duplicate code
-Message-ID: <20140901091317.GG7374@lee--X1>
-References: <1408705096-31286-1-git-send-email-andriy.shevchenko@linux.intel.com>
- <1408705096-31286-2-git-send-email-andriy.shevchenko@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1408705096-31286-2-git-send-email-andriy.shevchenko@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 1 Sep 2014 05:13:25 -0400
+X-Greylist: delayed 314 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Sep 2014 05:13:25 EDT
+X-RL-SENDER: zyw@rock-chips.com
+X-FST-TO: dianders@chromium.org
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: zyw@rock-chips.com
+X-UNIQUE-TAG: <c9d4e47d45b186896447540c677a1b99>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Chris Zhong <zyw@rock-chips.com>
+To: dianders@chromium.org, heiko@sntech.de
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        sameo@linux.intel.com, lee.jones@linaro.org, lgirdwood@gmail.com,
+        a.zummo@towertech.it, mturquette@linaro.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
+        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
+        xxx@rock-chips.com, olof@lixom.net, sonnyrao@chromium.org,
+        dtor@chromium.org, javier.martinez@collabora.co.uk,
+        kever.yang@rock-chips.com, Chris Zhong <zyw@rock-chips.com>
+Subject: [PATCH v7 0/5] Add rockchip RK808 pmic driver
+Date: Mon,  1 Sep 2014 17:07:43 +0800
+Message-Id: <1409562468-16586-1-git-send-email-zyw@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Aug 2014, Andy Shevchenko wrote:
+This is the initial version of the RK808 PMIC. This is a power management IC
+for multimedia products.
 
-> This patch refactors the driver to use helper functions instead of
-> copy'n'pasted pieces of code.
-> 
-> Tested-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> ---
->  drivers/mfd/lpc_sch.c | 146 ++++++++++++++++++++++----------------------------
->  1 file changed, 64 insertions(+), 82 deletions(-)
-> 
-> diff --git a/drivers/mfd/lpc_sch.c b/drivers/mfd/lpc_sch.c
-> index 4ee7550..0f01ef0 100644
-> --- a/drivers/mfd/lpc_sch.c
-> +++ b/drivers/mfd/lpc_sch.c
-> @@ -40,41 +40,6 @@
+It provides regulators that are able to supply power to processor cores
+and other components. The chip provides other modules including RTC, Clockout
 
-[...]
+Changes in v7:
+Advices by Mark Rutland
+- modify description about clock-cells
+- update the example
+Adviced by Lee Jones
+- coding style
+- remove rk808_pre_init function
+Adviced by Doug
+- add "&& OF" to the dependencies
+- add .init_ack_masked = true in rk808_irq_chip
+Adviced by doug
+- read rtc time from shadowed registers
+Adviced by Dmitry
+- use CONFIG_PM_SLEEP replace CONFIG_PM
+- use SIMPLE_DEV_PM_OPS replace dev_pm_ops
+- fix dev_warn
+- coding style
+Adviced by Heiko
+- remove rtc_ctl
+Adviced by doug
+-fix coding style problems
+- remove pdata struct from header file, add rk808_regulator struct
 
-> -static int lpc_sch_probe(struct pci_dev *dev,
-> -				const struct pci_device_id *id)
-> +static int lpc_sch_get_io(struct pci_dev *pdev, int where, const char *name,
-> +			  struct resource *res, int size)
->  {
->  	unsigned int base_addr_cfg;
->  	unsigned short base_addr;
-> -	int i, cells = 0;
-> -	int ret;
->  
-> -	pci_read_config_dword(dev, SMBASE, &base_addr_cfg);
-> +	pci_read_config_dword(pdev, where, &base_addr_cfg);
->  	base_addr = 0;
->  	if (!(base_addr_cfg & (1 << 31)))
-> -		dev_warn(&dev->dev, "Decode of the SMBus I/O range disabled\n");
-> +		dev_warn(&pdev->dev, "Decode of the %s I/O range disabled\n",
-> +			 name);
->  	else
->  		base_addr = (unsigned short)base_addr_cfg;
->  
->  	if (base_addr == 0) {
-> -		dev_warn(&dev->dev, "I/O space for SMBus uninitialized\n");
-> -	} else {
-> -		lpc_sch_cells[cells++] = isch_smbus_cell;
-> -		smbus_sch_resource.start = base_addr;
-> -		smbus_sch_resource.end = base_addr + SMBUS_IO_SIZE - 1;
-> +		dev_warn(&pdev->dev, "I/O space for %s uninitialized\n", name);
-> +		return -ENODEV;
+Changes in v6:
+Advices by Mark Rutland
+- add description about clock-cells
+Advices by Doug
+- modify description about regulator
+- remove pinctrl description
+Adviced by Lee Jones in v2
+- rk808_i2c_client instead of g_rk808
+- remove pdata form struct rk808
+Adviced by doug
+- move RTC_READSEL setting into probe
+Adviced by doug
+- use correct argument call of_clk_add_provider in probe
+- remove the redundant code
 
-If you're going to return an error, you need to use dev_err() above.
->  	}
->  
-> -	pci_read_config_dword(dev, GPIOBASE, &base_addr_cfg);
-> -	base_addr = 0;
-> -	if (!(base_addr_cfg & (1 << 31)))
-> -		dev_warn(&dev->dev, "Decode of the GPIO I/O range disabled\n");
-> +	res->start = base_addr;
-> +	res->end = base_addr + size - 1;
-> +	res->flags = IORESOURCE_IO;
-> +
-> +	return 0;
-> +}
-> +
-> +static int lpc_sch_populate_cell(struct pci_dev *pdev, int where,
-> +				 const char *name, int size, int id,
-> +				 struct mfd_cell *cell)
-> +{
-> +	struct resource *res;
-> +	int ret;
-> +
-> +	res = devm_kzalloc(&pdev->dev, sizeof(*res), GFP_KERNEL);
-> +	if (!res)
-> +		return -ENOMEM;
-> +
-> +	ret = lpc_sch_get_io(pdev, where, name, res, size);
-> +	if (ret)
-> +		return ret;
-> +
-> +	memset(cell, 0, sizeof(*cell));
-> +
-> +	cell->name = name;
-> +	cell->resources = res;
-> +	cell->num_resources = 1;
-> +	cell->ignore_resource_conflicts = true;
-> +	cell->id = id;
-> +
-> +	return 0;
-> +}
-> +
-> +static int lpc_sch_probe(struct pci_dev *dev,
-> +			 const struct pci_device_id *id)
-> +{
-> +	struct mfd_cell lpc_sch_cells[3];
-> +	int size, cells = 0;
-> +	int ret;
-> +
-> +	ret = lpc_sch_populate_cell(dev, SMBASE, "isch_smbus", SMBUS_IO_SIZE,
-> +				    id->device, &lpc_sch_cells[cells]);
-> +	if (!ret)
-> +		cells++;
+Changes in v5:
+Advices by Mark Brown
+- add description about regulator valid name.
+- add a header file "rockchip,rk808".
+- fixed a bug about set_time failed
+Adviced by doug
+- add some error checking in probe
+- move "rockchip,rk808.h" into the patch about dt-bindings
+- re-edit base on Mark's branch
 
-You're masking errors here.  You need to return on error.
+Changes in v4:
+Advices by Doug
+- add a "#clock-cells" propertiy
+- update the example
+Adviced by Lee Jones in v2
+- modify the description in Kconfig
+- remove some unnecessary header files
+- remove dev from struct rk808
+- use enum for define RK808_ID...
+- use &client->dev replace rk808->dev
+Adviced by doug
+- add "clock-output-names" propertiey
+- add a header file "rockchip,rk808.h"
+- use &client->dev replace rk808->dev
 
-> +	if (id->device == PCI_DEVICE_ID_INTEL_CENTERTON_ILB)
-> +		size = GPIO_IO_SIZE_CENTERTON;
->  	else
-> -		base_addr = (unsigned short)base_addr_cfg;
-> +		size = GPIO_IO_SIZE;
->  
-> -	if (base_addr == 0) {
-> -		dev_warn(&dev->dev, "I/O space for GPIO uninitialized\n");
-> -	} else {
-> -		lpc_sch_cells[cells++] = sch_gpio_cell;
-> -		gpio_sch_resource.start = base_addr;
-> -		if (id->device == PCI_DEVICE_ID_INTEL_CENTERTON_ILB)
-> -			gpio_sch_resource.end = base_addr + GPIO_IO_SIZE_CENTERTON - 1;
-> -		else
-> -			gpio_sch_resource.end = base_addr + GPIO_IO_SIZE - 1;
-> -	}
-> +	ret = lpc_sch_populate_cell(dev, GPIOBASE, "sch_gpio", size,
-> +				    id->device, &lpc_sch_cells[cells]);
-> +	if (!ret)
-> +		cells++;
->  
->  	if (id->device == PCI_DEVICE_ID_INTEL_ITC_LPC
->  	    || id->device == PCI_DEVICE_ID_INTEL_CENTERTON_ILB) {
-> -		pci_read_config_dword(dev, WDTBASE, &base_addr_cfg);
-> -		base_addr = 0;
-> -		if (!(base_addr_cfg & (1 << 31)))
-> -			dev_warn(&dev->dev, "Decode of the WDT I/O range disabled\n");
-> -		else
-> -			base_addr = (unsigned short)base_addr_cfg;
-> -		if (base_addr == 0)
-> -			dev_warn(&dev->dev, "I/O space for WDT uninitialized\n");
-> -		else {
-> -			lpc_sch_cells[cells++] = wdt_sch_cell;
-> -			wdt_sch_resource.start = base_addr;
-> -			wdt_sch_resource.end = base_addr + WDT_IO_SIZE - 1;
-> -		}
-> -	}
-> -
-> -	if (WARN_ON(cells > ARRAY_SIZE(lpc_sch_cells))) {
-> -		dev_err(&dev->dev, "Cell count exceeds array size");
-> -		return -ENODEV;
-> +		ret = lpc_sch_populate_cell(dev, WDTBASE, "ie6xx_wdt",
-> +					    WDT_IO_SIZE,
-> +					    id->device, &lpc_sch_cells[cells]);
-> +		if (!ret)
-> +			cells++;
->  	}
->  
->  	if (cells == 0) {
-> @@ -151,9 +136,6 @@ static int lpc_sch_probe(struct pci_dev *dev,
->  		return -ENODEV;
->  	}
->  
-> -	for (i = 0; i < cells; i++)
-> -		lpc_sch_cells[i].id = id->device;
-> -
->  	ret = mfd_add_devices(&dev->dev, 0, lpc_sch_cells, cells, NULL, 0, NULL);
->  	if (ret)
->  		mfd_remove_devices(&dev->dev);
+Changes in v3:
+- fix compile err
+- fix compile err
+
+Changes in v2:
+Adviced by Mark Browm:
+- use defines for register setting value
+- remove rtc alarm disable in shutdown
+- remove while(1) in shutdown
+- remove read 0x2f in probe
+Adviced by javier.martinez
+- Add a separate clock driver, rather than in RTC driver
+Adviced by javier.martinez
+- separated from rtc-rk808.c
+Adviced by Mark Browm:
+- change of_find_node_by_name to find_child_by_name
+- use RK808_NUM_REGULATORS as the name of the constant
+- create a pdata when missing platform data
+- use the rk808_reg name to supply_regulator name
+- replace regulator_register with devm_regulator_register
+- some other problem with coding style
+
+Chris Zhong (5):
+  dt-bindings: Add RK808 device tree bindings document
+  MFD: RK808: Add new mfd driver for RK808
+  RTC: RK808: add RTC driver for RK808
+  clk: RK808: Add clkout driver for RK808
+  regulator: RK808: Remove pdata from the regulator
+
+ Documentation/devicetree/bindings/mfd/rk808.txt |  166 +++++++++
+ drivers/clk/Kconfig                             |    9 +
+ drivers/clk/Makefile                            |    1 +
+ drivers/clk/clk-rk808.c                         |  160 +++++++++
+ drivers/mfd/Kconfig                             |   13 +
+ drivers/mfd/Makefile                            |    1 +
+ drivers/mfd/rk808.c                             |  243 +++++++++++++
+ drivers/regulator/rk808-regulator.c             |   52 ++-
+ drivers/rtc/Kconfig                             |   10 +
+ drivers/rtc/Makefile                            |    1 +
+ drivers/rtc/rtc-rk808.c                         |  419 +++++++++++++++++++++++
+ include/dt-bindings/clock/rockchip,rk808.h      |   11 +
+ include/linux/mfd/rk808.h                       |  196 +++++++++++
+ 13 files changed, 1250 insertions(+), 32 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/rk808.txt
+ create mode 100644 drivers/clk/clk-rk808.c
+ create mode 100644 drivers/mfd/rk808.c
+ create mode 100644 drivers/rtc/rtc-rk808.c
+ create mode 100644 include/dt-bindings/clock/rockchip,rk808.h
+ create mode 100644 include/linux/mfd/rk808.h
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.9.5
+
