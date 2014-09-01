@@ -1,101 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754345AbaIAP0w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 11:26:52 -0400
-Received: from smarthost01d.mail.zen.net.uk ([212.23.1.7]:35547 "EHLO
-	smarthost01d.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754284AbaIAP0u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754310AbaIAP0u (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 1 Sep 2014 11:26:50 -0400
-Message-ID: <1409585190.2948.45.camel@linaro1.home>
-Subject: Re: [PATCH] ARM: probes: return directly when emulate not set
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: Wang Nan <wangnan0@huawei.com>
-Cc: "David A. Long" <dave.long@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        peifeiyue@huawei.com
-Date: Mon, 01 Sep 2014 16:26:30 +0100
-In-Reply-To: <1409116109-67330-1-git-send-email-wangnan0@huawei.com>
-References: <1409116109-67330-1-git-send-email-wangnan0@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2-1+b1 
-Mime-Version: 1.0
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:51209 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753822AbaIAP0s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 11:26:48 -0400
+Message-ID: <54048FDA.7020904@gmail.com>
+Date: Mon, 01 Sep 2014 23:25:14 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Michal Simek <monstr@monstr.eu>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Fwd: [PATCH] arch/microblaze/include/asm/uaccess.h: Use pr_devel()
+ instead of pr_debug()
+References: <53E10590.3070703@gmail.com>
+In-Reply-To: <53E10590.3070703@gmail.com>
+X-Forwarded-Message-Id: <53E10590.3070703@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-smarthost01d-IP: [82.69.122.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-08-27 at 13:08 +0800, Wang Nan wrote:
-> When kprobe decoding instruction, original code calls instruction
-> specific decoder if emulate is set to false.  However, instructions with
-> DECODE_TYPE_EMULATE are in fact don't have their decoder. What in the
-> action table are in fact handlers.  For example:
-> 
-> 	/* LDRD (immediate)	cccc 000x x1x0 xxxx xxxx xxxx 1101 xxxx */
-> 	/* STRD (immediate)	cccc 000x x1x0 xxxx xxxx xxxx 1111 xxxx */
-> 	DECODE_EMULATEX	(0x0e5000d0, 0x004000d0, PROBES_LDRSTRD,
-> 						 REGS(NOPCWB, NOPCX, 0, 0, 0)),
-> 
-> 	and
-> 
-> const union decode_action kprobes_arm_actions[NUM_PROBES_ARM_ACTIONS] = {
-> 	...
-> 	[PROBES_LDRSTRD] = {.handler = emulate_ldrdstrd},
-> 	...
-> 
-> In this situation, original code calls 'emulate_ldrdstrd' as a decoder,
-> which is obviously incorrect.
 
-Except that situation can't occur because when arm_probes_decode_insn()
-is called with kprobes_arm_actions then emulate is set to true (see
-arch_prepare_kprobe).
 
-For the situation where emulate is false, i.e. when called from
-arch_uprobe_analyze_insn(), then this provides these actions...
 
-const union decode_action uprobes_probes_actions[] = {
-	...
-	[PROBES_LDRSTRD] = {.decoder = decode_pc_ro},
-	...
+-------- Original Message --------
+Subject: [PATCH] arch/microblaze/include/asm/uaccess.h: Use pr_devel() instead of pr_debug()
+Date: Wed, 06 Aug 2014 00:25:52 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+To: monstr@monstr.eu
+CC: linux-kernel@vger.kernel.org <linux-kernel@vger.kernel.org>
 
-and we do want that decode function called. Basically, the code is
-behaving as it was designed and when passed emulate=false it turns the
-behaviour of emulated instruction forms into into the 'custom' action. 
+When DYNAMIC_DEBUG enabled, pr_debug() depends on KBUILD_MODNAME which
+also depends on the modules number in Makefile. The related information
+in "scripts/Makefile.lib" line 94:
 
-> 
-> This patch makes it returns INSN_GOOD directly when 'emulate' is not
-> true.
-> 
-> Signed-off-by: Wang Nan <wangnan0@huawei.com>
-> Cc: "David A. Long" <dave.long@linaro.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Jon Medhurst <tixy@linaro.org>
-> Cc: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-> Cc: Ben Dooks <ben.dooks@codethink.co.uk>
-> ---
->  arch/arm/kernel/probes.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/kernel/probes.c b/arch/arm/kernel/probes.c
-> index a8ab540..1c77b8d 100644
-> --- a/arch/arm/kernel/probes.c
-> +++ b/arch/arm/kernel/probes.c
-> @@ -436,8 +436,7 @@ probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
->  			struct decode_emulate *d = (struct decode_emulate *)h;
->  
->  			if (!emulate)
-> -				return actions[d->handler.action].decoder(insn,
-> -					asi, h);
-> +				return INSN_GOOD;
->  
->  			asi->insn_handler = actions[d->handler.action].handler;
->  			set_emulated_insn(insn, asi, thumb);
+  # $(modname_flags) #defines KBUILD_MODNAME as the name of the module it will
+  # end up in (or would, if it gets compiled in)
+  # Note: Files that end up in two or more modules are compiled without the
+  #       KBUILD_MODNAME definition. The reason is that any made-up name would
+  #       differ in different configs.
 
+For this case, 'radio-si470x-i2c.o' and 'radio-si470x-common.o' are in
+one line, so cause compiling issue. And 'uaccess.h' is a common shared
+header (not specially for drivers), so use pr_devel() instead of is OK.
+
+The related error with allmodconfig:
+
+    CC [M]  drivers/media/radio/si470x/radio-si470x-i2c.o
+    CC [M]  drivers/media/radio/si470x/radio-si470x-common.o
+  In file included from include/linux/printk.h:257:0,
+                   from include/linux/kernel.h:13,
+                   from drivers/media/radio/si470x/radio-si470x.h:29,
+                   from drivers/media/radio/si470x/radio-si470x-common.c:115:
+  ./arch/microblaze/include/asm/uaccess.h: In function 'access_ok':
+  include/linux/dynamic_debug.h:66:14: error: 'KBUILD_MODNAME' undeclared (first use in this function)
+     .modname = KBUILD_MODNAME,   \
+                ^
+  include/linux/dynamic_debug.h:76:2: note: in expansion of macro 'DEFINE_DYNAMIC_DEBUG_METADATA'
+    DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);  \
+    ^
+  include/linux/printk.h:263:2: note: in expansion of macro 'dynamic_pr_debug'
+    dynamic_pr_debug(fmt, ##__VA_ARGS__)
+    ^
+  ./arch/microblaze/include/asm/uaccess.h:101:3: note: in expansion of macro 'pr_debug'
+     pr_debug("ACCESS fail: %s at 0x%08x (size 0x%x), seg 0x%08x\n",
+     ^
+
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ arch/microblaze/include/asm/uaccess.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/microblaze/include/asm/uaccess.h b/arch/microblaze/include/asm/uaccess.h
+index 0aa0057..59a89a6 100644
+--- a/arch/microblaze/include/asm/uaccess.h
++++ b/arch/microblaze/include/asm/uaccess.h
+@@ -98,13 +98,13 @@ static inline int access_ok(int type, const void __user *addr,	
+ 
+ 	if ((get_fs().seg < ((unsigned long)addr)) ||
+ 			(get_fs().seg < ((unsigned long)addr + size - 1))) {
+-		pr_debug("ACCESS fail: %s at 0x%08x (size 0x%x), seg 0x%08x\n",
++		pr_devel("ACCESS fail: %s at 0x%08x (size 0x%x), seg 0x%08x\n",
+ 			type ? "WRITE" : "READ ", (__force u32)addr, (u32)size,
+ 			(u32)get_fs().seg);
+ 		return 0;
+ 	}
+ ok:
+-	pr_debug("ACCESS OK: %s at 0x%08x (size 0x%x), seg 0x%08x\n",
++	pr_devel("ACCESS OK: %s at 0x%08x (size 0x%x), seg 0x%08x\n",
+ 			type ? "WRITE" : "READ ", (__force u32)addr, (u32)size,
+ 			(u32)get_fs().seg);
+ 	return 1;
 -- 
-Tixy
+1.7.11.7
 
 
