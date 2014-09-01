@@ -1,81 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887AbaIANPU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 09:15:20 -0400
-Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:35747 "EHLO
-	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753AbaIANPR (ORCPT
+	id S1753921AbaIANPo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 09:15:44 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:26693 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751464AbaIANPl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 09:15:17 -0400
-Message-ID: <5404715F.9070707@codethink.co.uk>
-Date: Mon, 01 Sep 2014 14:15:11 +0100
-From: Rob Jones <rob.jones@codethink.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.7.0
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: linux-fsdevel@vger.kernel.org, viro@zeniv.org.uk,
-        akpm@linux-foundation.org, linux-kernel@codethink.co.uk
-Subject: Re: [PATCH] fs: replace int param with size_t for seq_open_private()
-References: <1409577185-16100-1-git-send-email-rob.jones@codethink.co.uk>
-In-Reply-To: <1409577185-16100-1-git-send-email-rob.jones@codethink.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 1 Sep 2014 09:15:41 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-cd-5404717b5713
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>, netdev@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] net: sh_eth: fix driver dependencies
+Date: Mon, 01 Sep 2014 15:15:37 +0200
+Message-id: <3693021.H9Y3NelqF1@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMLMWRmVeSWpSXmKPExsVy+t9jQd3qQpYQg76NShZzzrewWDRv/cpo
+	cbbpDbvF5V1z2Czm/JnCbPFg9Vs2i2MLxBzYPbasvMnksXPWXXaPvi2rGD3m/PzG4vF5k1wA
+	axSXTUpqTmZZapG+XQJXxsl1txgLPrNVbL+8jrmB8RtrFyMnh4SAicTD7VuYIGwxiQv31rOB
+	2EIC0xklrl7y72LkArJbmCTWrDnLDJJgE7CSmNi+ihHEFhHQllh3oIcVpIhZ4CSjxNpJi8C6
+	hQVMJW5vWMkCYrMIqEosOPYMLM4roCkx9fQEsM2iAp4SO7avhIoLSvyYfA+snllAXmLf/qms
+	ELaWxPqdx5kmMPLNQlI2C0nZLCRlCxiZVzGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEB+0z
+	6R2MqxosDjEKcDAq8fA+mMUcIsSaWFZcmXuIUYKDWUmENzWDJUSINyWxsiq1KD++qDQntfgQ
+	ozQHi5I478FW60AhgfTEktTs1NSC1CKYLBMHp1QDY+r2l++nNBc9lU1p/6IsslfRWWWdU6Dm
+	78PHfcrq3VNOTZPPv6MuadXOISdRtIpN1rvA963Hvtut+RPOLJRVWvDGJkLNxq/tFoPs9rK3
+	p6e7POK7enCSzNdFZzKLiztjlqk8qJ3z9+W/Y3WTE0MywyRObpof4nzh13Ob5SnvXJesMsws
+	e3CkV4mlOCPRUIu5qDgRAEkgsBtWAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resubmitting - mistranscribed Alexander Viro's email address.
+Renesas SuperH Ethernet support should be available only on
+Renesas ARM SoCs and SuperH architecture.
 
-On 01/09/14 14:13, Rob Jones wrote:
-> also for __seq_open_private()
->
-> Signed-off-by: Rob Jones <rob.jones@codethink.co.uk>
-> ---
->   fs/seq_file.c            |    4 ++--
->   include/linux/seq_file.h |    4 ++--
->   2 files changed, 4 insertions(+), 4 deletions(-)
->
-> diff --git a/fs/seq_file.c b/fs/seq_file.c
-> index 1d641bb..dc2dfec 100644
-> --- a/fs/seq_file.c
-> +++ b/fs/seq_file.c
-> @@ -640,7 +640,7 @@ int seq_release_private(struct inode *inode, struct file *file)
->   EXPORT_SYMBOL(seq_release_private);
->
->   void *__seq_open_private(struct file *f, const struct seq_operations *ops,
-> -		int psize)
-> +		size_t psize)
->   {
->   	int rc;
->   	void *private;
-> @@ -666,7 +666,7 @@ out:
->   EXPORT_SYMBOL(__seq_open_private);
->
->   int seq_open_private(struct file *filp, const struct seq_operations *ops,
-> -		int psize)
-> +		size_t psize)
->   {
->   	return __seq_open_private(filp, ops, psize) ? 0 : -ENOMEM;
->   }
-> diff --git a/include/linux/seq_file.h b/include/linux/seq_file.h
-> index 52e0097..9382339 100644
-> --- a/include/linux/seq_file.h
-> +++ b/include/linux/seq_file.h
-> @@ -140,8 +140,8 @@ static inline int seq_nodemask_list(struct seq_file *m, nodemask_t *mask)
->   int single_open(struct file *, int (*)(struct seq_file *, void *), void *);
->   int single_open_size(struct file *, int (*)(struct seq_file *, void *), void *, size_t);
->   int single_release(struct inode *, struct file *);
-> -void *__seq_open_private(struct file *, const struct seq_operations *, int);
-> -int seq_open_private(struct file *, const struct seq_operations *, int);
-> +void *__seq_open_private(struct file *, const struct seq_operations *, size_t);
-> +int seq_open_private(struct file *, const struct seq_operations *, size_t);
->   int seq_release_private(struct inode *, struct file *);
->   int seq_put_decimal_ull(struct seq_file *m, char delimiter,
->   			unsigned long long num);
->
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Simon Horman <horms@verge.net.au>
+Cc: Magnus Damm <magnus.damm@gmail.com>
+---
+ drivers/net/ethernet/renesas/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
--- 
-Rob Jones
-Codethink Ltd
-mailto:rob.jones@codethink.co.uk
-tel:+44 161 236 5575
+Index: b/drivers/net/ethernet/renesas/Kconfig
+===================================================================
+--- a/drivers/net/ethernet/renesas/Kconfig	2014-07-30 14:31:20.479522692 +0200
++++ b/drivers/net/ethernet/renesas/Kconfig	2014-09-01 14:45:36.160544016 +0200
+@@ -5,6 +5,7 @@
+ config SH_ETH
+ 	tristate "Renesas SuperH Ethernet support"
+ 	depends on HAS_DMA
++	depends on ARCH_SHMOBILE || ARCH_SH || COMPILE_TEST
+ 	select CRC32
+ 	select MII
+ 	select MDIO_BITBANG
+
