@@ -1,68 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752441AbaIAGzv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 02:55:51 -0400
-Received: from mga14.intel.com ([192.55.52.115]:39177 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752012AbaIAGzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 02:55:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="379656595"
-Message-ID: <5404186E.4090409@linux.intel.com>
-Date: Mon, 01 Sep 2014 09:55:42 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752235AbaIAHCz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 03:02:55 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:57348 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751987AbaIAHCx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 03:02:53 -0400
 MIME-Version: 1.0
-To: Jason Wang <jasowang@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>
-CC: Ingo Molnar <mingo@kernel.org>, Mike Galbraith <umgwanakikbuti@gmail.com>,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mst@redhat.com,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Ingo Molnar jacob.e.keller@intel.com" <mingo@elte.hu>
-Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process
- is runnable
-References: <1408608310-13579-1-git-send-email-jasowang@redhat.com>	 <1408608310-13579-2-git-send-email-jasowang@redhat.com>	 <1408683665.5648.69.camel@marge.simpson.net>	 <20140822073653.GA7372@gmail.com> <53F70887.8030602@redhat.com> <1408716976.5604.18.camel@edumazet-glaptop2.roam.corp.google.com> <53FB3715.7070009@linux.intel.com> <53FC3466.8000304@redhat.com>
-In-Reply-To: <53FC3466.8000304@redhat.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1409486735.4991.19.camel@marge.simpson.net>
+References: <1409382202.5141.36.camel@marge.simpson.net>
+	<1409486735.4991.19.camel@marge.simpson.net>
+Date: Mon, 1 Sep 2014 17:02:51 +1000
+Message-ID: <CAPM=9txZ5mS3u-7FrjCMF6T3sATfAU2Y+fpyXi-REPWXExBajA@mail.gmail.com>
+Subject: Re: [drm/i915/3.17] panic in i915_digport_work_func
+From: Dave Airlie <airlied@gmail.com>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Dave Airlie <airlied@redhat.com>
+Content-Type: multipart/mixed; boundary=047d7b342ba65a9ec60501fb976c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/08/2014 10:16, Jason Wang wrote:
-> On 08/25/2014 09:16 PM, Eliezer Tamir wrote:
->> Here are my 2 cents:
->> I think Ingo's suggestion of only yielding to tasks with same or higher
->> priority makes sense.
-> 
-> I'm not sure I get your meaning. Do you mean calling yield_to() directly
-> in sk_busy_loop?
+--047d7b342ba65a9ec60501fb976c
+Content-Type: text/plain; charset=UTF-8
 
-Think about the case where two processes are busy polling on the
-same CPU and the same device queue. Since busy polling processes
-incoming packets on the queue from any process, this scenario works
-well currently, and will not work at all when polling yields to other
-processes that are of the same priority that are running on the same
-CPU.
+>     drm/i915: add DP 1.2 MST support (v0.7)
+>
+>     This adds DP 1.2 MST support on Haswell systems.
+>
+I've attached a patch that might fix this, please test and let me know.
 
-As a side note, there is a lot of room for improvement when two
-processes on the same CPU want to busy poll on different device
-queues.
-The RFC code I published for epoll support showed one possible
-way of solving this, but I'm sure that there are other possibilities.
+Dave.
 
-Maybe the networking subsystem should maintain a list of device
-queues that need busypolling and have a thread that would poll
-all of them when there's nothing better to do.
+--047d7b342ba65a9ec60501fb976c
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="0001-drm-i915-handle-G45-GM45-pulse-detection-connected-s.patch"
+Content-Disposition: attachment; 
+	filename="0001-drm-i915-handle-G45-GM45-pulse-detection-connected-s.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hzjgmcm10
 
-I'm aware of similar work on busy polling on NVMe devices, so
-maybe there should be a global busypoll thread for all devices
-that support it.
-
-BTW, I have someone inside Intel that wants to test future patches. Feel
-free to send me patches for testing, even if they are not ready for
-publishing yet.
-
-Cheers,
-Eliezer
+RnJvbSBkNDA3Yzk0NmZiZjVjNDhmMzAxNjA1OTFmNWJkNzFmYmUxNThhZWI0IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBEYXZlIEFpcmxpZSA8YWlybGllZEByZWRoYXQuY29tPgpEYXRl
+OiBNb24sIDEgU2VwIDIwMTQgMTY6NTg6MTIgKzEwMDAKU3ViamVjdDogW1BBVENIXSBkcm0vaTkx
+NTogaGFuZGxlIEc0NS9HTTQ1IHB1bHNlIGRldGVjdGlvbiBjb25uZWN0ZWQgc3RhdGUuCgpJbiB0
+aGUgSFBEIHB1bHNlIGhhbmRsZXIgd2UgY2hlY2sgZm9yIGxvbmcgcHVsc2VzIGlmIHRoZSBwb3J0
+IGlzIGFjdHVhbGx5CmNvbm5lY3RlZCwgaG93ZXZlciB3ZSBkbyB0aGF0IGZvciBJQlgsIGJ1dCB3
+ZSB1c2UgdGhlIHB1bHNlIGhhbmRsaW5nIGNvZGUgb24KR000NSBzeXN0ZW1zIGFzIHdlbGwsIHNv
+IHdlIG5lZWQgdG8gdXNlIGEgZGlmZmVudCBjaGVjay4KClRoaXMgcGF0Y2ggcmVmYWN0b3JzIHRo
+ZSBkaWdpdGFsIHBvcnQgY29ubmVjdGVkIGNoZWNrIG91dCBvZiB0aGUgZzR4IGRldGVjdGlvbgpw
+YXRoIGFuZCByZXVzZXMgaXQgaW4gdGhlIGhwZCBwdWxzZSBwYXRoLgoKU2hvdWxkIGZpeDoKTWVz
+c2FnZS1JRDogPDE0MDkzODIyMDIuNTE0MS4zNi5jYW1lbEBtYXJnZS5zaW1wc29uLm5ldD4KClJl
+cG9ydGVkLWJ5OiBNaWtlIEdhbGJyYWl0aCA8dW1nd2FuYWtpa2J1dGlAZ21haWwuY29tPgpTaWdu
+ZWQtb2ZmLWJ5OiBEYXZlIEFpcmxpZSA8YWlybGllZEByZWRoYXQuY29tPgotLS0KIGRyaXZlcnMv
+Z3B1L2RybS9pOTE1L2ludGVsX2RwLmMgfCA1NSArKysrKysrKysrKysrKysrKysrKysrKysrKyst
+LS0tLS0tLS0tLS0tLQogMSBmaWxlIGNoYW5nZWQsIDM3IGluc2VydGlvbnMoKyksIDE4IGRlbGV0
+aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvZ3B1L2RybS9pOTE1L2ludGVsX2RwLmMgYi9k
+cml2ZXJzL2dwdS9kcm0vaTkxNS9pbnRlbF9kcC5jCmluZGV4IDY3Y2ZlZDYuLjgxZDc2ODEgMTAw
+NjQ0Ci0tLSBhL2RyaXZlcnMvZ3B1L2RybS9pOTE1L2ludGVsX2RwLmMKKysrIGIvZHJpdmVycy9n
+cHUvZHJtL2k5MTUvaW50ZWxfZHAuYwpAQCAtMzY2MSwyNCArMzY2MSwxMiBAQCBpcm9ubGFrZV9k
+cF9kZXRlY3Qoc3RydWN0IGludGVsX2RwICppbnRlbF9kcCkKIAlyZXR1cm4gaW50ZWxfZHBfZGV0
+ZWN0X2RwY2QoaW50ZWxfZHApOwogfQogCi1zdGF0aWMgZW51bSBkcm1fY29ubmVjdG9yX3N0YXR1
+cwotZzR4X2RwX2RldGVjdChzdHJ1Y3QgaW50ZWxfZHAgKmludGVsX2RwKQorc3RhdGljIGludCBn
+NHhfZGlnaXRhbF9wb3J0X2Nvbm5lY3RlZChzdHJ1Y3QgZHJtX2RldmljZSAqZGV2LAorCQkJCSAg
+ICAgICBzdHJ1Y3QgaW50ZWxfZGlnaXRhbF9wb3J0ICppbnRlbF9kaWdfcG9ydCkKIHsKLQlzdHJ1
+Y3QgZHJtX2RldmljZSAqZGV2ID0gaW50ZWxfZHBfdG9fZGV2KGludGVsX2RwKTsKIAlzdHJ1Y3Qg
+ZHJtX2k5MTVfcHJpdmF0ZSAqZGV2X3ByaXYgPSBkZXYtPmRldl9wcml2YXRlOwotCXN0cnVjdCBp
+bnRlbF9kaWdpdGFsX3BvcnQgKmludGVsX2RpZ19wb3J0ID0gZHBfdG9fZGlnX3BvcnQoaW50ZWxf
+ZHApOwogCXVpbnQzMl90IGJpdDsKIAotCS8qIENhbid0IGRpc2Nvbm5lY3QgZURQLCBidXQgeW91
+IGNhbiBjbG9zZSB0aGUgbGlkLi4uICovCi0JaWYgKGlzX2VkcChpbnRlbF9kcCkpIHsKLQkJZW51
+bSBkcm1fY29ubmVjdG9yX3N0YXR1cyBzdGF0dXM7Ci0KLQkJc3RhdHVzID0gaW50ZWxfcGFuZWxf
+ZGV0ZWN0KGRldik7Ci0JCWlmIChzdGF0dXMgPT0gY29ubmVjdG9yX3N0YXR1c191bmtub3duKQot
+CQkJc3RhdHVzID0gY29ubmVjdG9yX3N0YXR1c19jb25uZWN0ZWQ7Ci0JCXJldHVybiBzdGF0dXM7
+Ci0JfQotCiAJaWYgKElTX1ZBTExFWVZJRVcoZGV2KSkgewogCQlzd2l0Y2ggKGludGVsX2RpZ19w
+b3J0LT5wb3J0KSB7CiAJCWNhc2UgUE9SVF9COgpAQCAtMzY5MSw3ICszNjc5LDcgQEAgZzR4X2Rw
+X2RldGVjdChzdHJ1Y3QgaW50ZWxfZHAgKmludGVsX2RwKQogCQkJYml0ID0gUE9SVERfSE9UUExV
+R19MSVZFX1NUQVRVU19WTFY7CiAJCQlicmVhazsKIAkJZGVmYXVsdDoKLQkJCXJldHVybiBjb25u
+ZWN0b3Jfc3RhdHVzX3Vua25vd247CisJCQlyZXR1cm4gLUVJTlZBTDsKIAkJfQogCX0gZWxzZSB7
+CiAJCXN3aXRjaCAoaW50ZWxfZGlnX3BvcnQtPnBvcnQpIHsKQEAgLTM3MDUsMTEgKzM2OTMsMzYg
+QEAgZzR4X2RwX2RldGVjdChzdHJ1Y3QgaW50ZWxfZHAgKmludGVsX2RwKQogCQkJYml0ID0gUE9S
+VERfSE9UUExVR19MSVZFX1NUQVRVU19HNFg7CiAJCQlicmVhazsKIAkJZGVmYXVsdDoKLQkJCXJl
+dHVybiBjb25uZWN0b3Jfc3RhdHVzX3Vua25vd247CisJCQlyZXR1cm4gLUVJTlZBTDsKIAkJfQog
+CX0KIAogCWlmICgoSTkxNV9SRUFEKFBPUlRfSE9UUExVR19TVEFUKSAmIGJpdCkgPT0gMCkKKwkJ
+cmV0dXJuIDA7CisJcmV0dXJuIDE7Cit9CisKK3N0YXRpYyBlbnVtIGRybV9jb25uZWN0b3Jfc3Rh
+dHVzCitnNHhfZHBfZGV0ZWN0KHN0cnVjdCBpbnRlbF9kcCAqaW50ZWxfZHApCit7CisJc3RydWN0
+IGRybV9kZXZpY2UgKmRldiA9IGludGVsX2RwX3RvX2RldihpbnRlbF9kcCk7CisJc3RydWN0IGlu
+dGVsX2RpZ2l0YWxfcG9ydCAqaW50ZWxfZGlnX3BvcnQgPSBkcF90b19kaWdfcG9ydChpbnRlbF9k
+cCk7CisJaW50IHJldDsKKworCS8qIENhbid0IGRpc2Nvbm5lY3QgZURQLCBidXQgeW91IGNhbiBj
+bG9zZSB0aGUgbGlkLi4uICovCisJaWYgKGlzX2VkcChpbnRlbF9kcCkpIHsKKwkJZW51bSBkcm1f
+Y29ubmVjdG9yX3N0YXR1cyBzdGF0dXM7CisKKwkJc3RhdHVzID0gaW50ZWxfcGFuZWxfZGV0ZWN0
+KGRldik7CisJCWlmIChzdGF0dXMgPT0gY29ubmVjdG9yX3N0YXR1c191bmtub3duKQorCQkJc3Rh
+dHVzID0gY29ubmVjdG9yX3N0YXR1c19jb25uZWN0ZWQ7CisJCXJldHVybiBzdGF0dXM7CisJfQor
+CisJcmV0ID0gZzR4X2RpZ2l0YWxfcG9ydF9jb25uZWN0ZWQoZGV2LCBpbnRlbF9kaWdfcG9ydCk7
+CisJaWYgKHJldCA9PSAtRUlOVkFMKQorCQlyZXR1cm4gY29ubmVjdG9yX3N0YXR1c191bmtub3du
+OworCWVsc2UgaWYgKHJldCA9PSAwKQogCQlyZXR1cm4gY29ubmVjdG9yX3N0YXR1c19kaXNjb25u
+ZWN0ZWQ7CiAKIAlyZXR1cm4gaW50ZWxfZHBfZGV0ZWN0X2RwY2QoaW50ZWxfZHApOwpAQCAtNDA2
+Niw4ICs0MDc5LDE0IEBAIGludGVsX2RwX2hwZF9wdWxzZShzdHJ1Y3QgaW50ZWxfZGlnaXRhbF9w
+b3J0ICppbnRlbF9kaWdfcG9ydCwgYm9vbCBsb25nX2hwZCkKIAlpbnRlbF9kaXNwbGF5X3Bvd2Vy
+X2dldChkZXZfcHJpdiwgcG93ZXJfZG9tYWluKTsKIAogCWlmIChsb25nX2hwZCkgewotCQlpZiAo
+IWlieF9kaWdpdGFsX3BvcnRfY29ubmVjdGVkKGRldl9wcml2LCBpbnRlbF9kaWdfcG9ydCkpCi0J
+CQlnb3RvIG1zdF9mYWlsOworCisJCWlmIChIQVNfUENIX1NQTElUKGRldikpIHsKKwkJCWlmICgh
+aWJ4X2RpZ2l0YWxfcG9ydF9jb25uZWN0ZWQoZGV2X3ByaXYsIGludGVsX2RpZ19wb3J0KSkKKwkJ
+CQlnb3RvIG1zdF9mYWlsOworCQl9IGVsc2UgeworCQkJaWYgKGc0eF9kaWdpdGFsX3BvcnRfY29u
+bmVjdGVkKGRldiwgaW50ZWxfZGlnX3BvcnQpICE9IDEpCisJCQkJZ290byBtc3RfZmFpbDsKKwkJ
+fQogCiAJCWlmICghaW50ZWxfZHBfZ2V0X2RwY2QoaW50ZWxfZHApKSB7CiAJCQlnb3RvIG1zdF9m
+YWlsOwotLSAKMS45LjMKCg==
+--047d7b342ba65a9ec60501fb976c--
