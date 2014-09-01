@@ -1,94 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754211AbaIAOVZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 10:21:25 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:50767 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753740AbaIAOVX (ORCPT
+	id S1753978AbaIAOYt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 10:24:49 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:18926 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751965AbaIAOYr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 10:21:23 -0400
-Date: Mon, 1 Sep 2014 19:51:07 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Ryan Mallon <rmallon@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] serial: serial_core.c: printk replacement
-Message-ID: <20140901142107.GA3068@sudip-PC>
-References: <1409235328-24648-1-git-send-email-sudipm.mukherjee@gmail.com>
- <5403B9B1.4010407@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5403B9B1.4010407@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 1 Sep 2014 10:24:47 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-18-540481ad534a
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>, linux-usb@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] usb: renesas_usbhs: fix driver dependencies
+Date: Mon, 01 Sep 2014 16:24:40 +0200
+Message-id: <1601192.oClrOJlUe8@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMLMWRmVeSWpSXmKPExsVy+t9jAd21jSwhBl8vqFo0L17PZtG89Suj
+	xdmmN+wWl3fNYbOY82cKs8WiZa3MFg9Wv2VzYPfYOesuu8f+uWvYPfq2rGL0mPPzG4vH501y
+	AaxRXDYpqTmZZalF+nYJXBmLbv9mLDjPXtE3Xa2BcR9bFyMnh4SAicSCWY2sELaYxIV768Hi
+	QgKLGCVedCh2MXIB2S1MEo1ty8ESbAJWEhPbVzGC2CICxhL9Z2exgxQxC5xhlJj7tYUZJCEs
+	YC/x61AHO4jNIqAq0Tj9Flgzr4CmxNxHv1lAbFEBT4kd21dCxQUlfky+BxZnFpCX2Ld/KiuE
+	rSWxfudxpgmMfLOQlM1CUjYLSdkCRuZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMFB+0x6
+	B+OqBotDjAIcjEo8vA9mMYcIsSaWFVfmHmKU4GBWEuFNzWAJEeJNSaysSi3Kjy8qzUktPsQo
+	zcGiJM57sNU6UEggPbEkNTs1tSC1CCbLxMEp1cC4oVg7wemyf91sP56snWol523nNouov9uW
+	JescGnf11OSDK7eXrNXKW8z68dVWzr/1D9l85BiPKdRLxF1JfnK0S+W08qT76j6umS8Tp4Tf
+	jM6u+7E+UcNA8cPO2DcBF4Riutq2KEya97d8pmnT+is+GSceRs+7GCKxo0JCfu2rSJvK98nZ
+	vJxKLMUZiYZazEXFiQB6/V5RVgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 01, 2014 at 10:11:29AM +1000, Ryan Mallon wrote:
-> 
-> 
-> On 29/08/14 00:15, Sudip Mukherjee wrote:
-> > printk replaced with corresponding pr_err, dev_alert, dev_notice and pr_info.
-> > fixed two broken user-visible strings used by the corresponding printk
-> > 
-> > Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
-> > ---
-> > 
-> > In the first patch i sent Greg suggested to use dev_err instead of pr_err , but as later Jiri pointed out in my later patches that uport->dev is having a null check so can not be used , tty_dev is also having a put_device , so back to pr_err. 
-> > 
-> >  drivers/tty/serial/serial_core.c | 26 +++++++++++++-------------
-> >  1 file changed, 13 insertions(+), 13 deletions(-)
-> > 
-> 
-> > @@ -1975,12 +1976,11 @@ int uart_suspend_port(struct uart_driver *drv, struct uart_port *uport)
-> >  		for (tries = 3; !ops->tx_empty(uport) && tries; tries--)
-> >  			msleep(10);
-> >  		if (!tries)
-> > -			printk(KERN_ERR "%s%s%s%d: Unable to drain "
-> > -					"transmitter\n",
-> > -			       uport->dev ? dev_name(uport->dev) : "",
-> > -			       uport->dev ? ": " : "",
-> > -			       drv->dev_name,
-> > -			       drv->tty_driver->name_base + uport->line);
-> > +			pr_err("%s%s%s%d: Unable to drain transmitter\n",
-> > +				uport->dev ? dev_name(uport->dev) : "",
-> > +				uport->dev ? ": " : "",
-> > +				drv->dev_name,
-> > +				drv->tty_driver->name_base + uport->line);
-> 
-> dev_printk() prints the value of dev_name() and handles the NULL case,
-> so this could be changed to:
-> 
-> 	dev_err(uport->dev, "%s%d: Unable to drain transmitter\n",
-> 		drv->dev_name,
-> 		drv->tty_driver->name_base + uport->line);
-> 
-> It might also be possible to remove drv->dev_name since dev_printk()
-> also prints the driver string, but I don't know if they are equivalent
-> in this case.
-> 
+Renesas USBHS controller support should be available only on
+Renesas ARM SoCs and SuperH architecture.
 
-they are not equivalent. drv->dev_name is giving "ttyS" , and the driver string as printed by dev_printk() is "serial".
-So, I guess I will make a v3 of the patch and mention all these in the commit message.
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Simon Horman <horms@verge.net.au>
+Cc: Magnus Damm <magnus.damm@gmail.com>
+---
+v2:
+- s/ARCH_SH/SUPERH/ (thanks to Sergei Shtylyov)
 
-thanks
-sudip
+ drivers/usb/renesas_usbhs/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-> >  
-> >  		if (console_suspend_enabled || !uart_console(uport))
-> >  			ops->shutdown(uport);
-> > @@ -2109,7 +2109,7 @@ uart_report_port(struct uart_driver *drv, struct uart_port *port)
-> >  		break;
-> >  	}
-> >  
-> > -	printk(KERN_INFO "%s%s%s%d at %s (irq = %d, base_baud = %d) is a %s\n",
-> > +	pr_info("%s%s%s%d at %s (irq = %d, base_baud = %d) is a %s\n",
-> >  	       port->dev ? dev_name(port->dev) : "",
-> >  	       port->dev ? ": " : "",
-> >  	       drv->dev_name,
-> 
-> Same here.
-> 
-> ~Ryan
+Index: b/drivers/usb/renesas_usbhs/Kconfig
+===================================================================
+--- a/drivers/usb/renesas_usbhs/Kconfig	2014-07-30 14:31:51.883523522 +0200
++++ b/drivers/usb/renesas_usbhs/Kconfig	2014-09-01 14:25:42.028512490 +0200
+@@ -5,6 +5,7 @@
+ config USB_RENESAS_USBHS
+ 	tristate 'Renesas USBHS controller'
+ 	depends on USB_GADGET
++	depends on ARCH_SHMOBILE || SUPERH || COMPILE_TEST
+ 	default n
+ 	help
+ 	  Renesas USBHS is a discrete USB host and peripheral controller chip
+
