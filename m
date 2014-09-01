@@ -1,149 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448AbaIAQWn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 12:22:43 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:35988 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754284AbaIAQWk (ORCPT
+	id S1754265AbaIAQ0Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 12:26:24 -0400
+Received: from smtprelay0061.hostedemail.com ([216.40.44.61]:55858 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753963AbaIAQ0X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 12:22:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140901154626.GH8796@lee--X1>
-References: <1409349654-24841-1-git-send-email-octavian.purdila@intel.com>
-	<1409349654-24841-2-git-send-email-octavian.purdila@intel.com>
-	<20140901083744.GE7374@lee--X1>
-	<CAE1zotK0cddns4f4ay-GJie8O2pjb72+-yYndZvW0hbF0D83HA@mail.gmail.com>
-	<20140901095127.GK7374@lee--X1>
-	<CAE1zot+T6eq0jrL6_Qh=5nihNOgGEaWe5RCDk7_1XS8ZWaWKqA@mail.gmail.com>
-	<20140901113949.GP7374@lee--X1>
-	<CAE1zotKNBTEMX8DDYwdwOcq0qZgqxZWazE60TUQeiOmD0a4xbA@mail.gmail.com>
-	<20140901154626.GH8796@lee--X1>
-Date: Mon, 1 Sep 2014 19:22:39 +0300
-Message-ID: <CAE1zotL-cjHqrdymzYhZq24zx+0qGY8-4JnrVZf-TGXDf5Sm3w@mail.gmail.com>
-Subject: Re: [PATCH v2 1/3] mfd: add support for Diolan DLN-2 devices
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: Lee Jones <lee.jones@linaro.org>
+	Mon, 1 Sep 2014 12:26:23 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3866:3867:3872:3874:4321:5007:7652:7903:10004:10400:10848:11026:11232:11657:11658:11914:12043:12517:12519:12740:13069:13141:13230:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: tray94_71ae904313a16
+X-Filterd-Recvd-Size: 1802
+Message-ID: <1409588779.2614.2.camel@joe-AO725>
+Subject: Re: [PATCH] staging: lustre: lov_pack: fix coding style issue
+From: Joe Perches <joe@perches.com>
+To: sunwxg <sun.wxg@gmail.com>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, wsa@the-dreams.de,
-        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Johan Hovold <johan@kernel.org>, linux-usb@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>, linux-gpio@vger.kernel.org,
-        linux-i2c@vger.kernel.org, Daniel Baluta <daniel.baluta@intel.com>,
-        Laurentiu Palcu <laurentiu.palcu@intel.com>
-Content-Type: text/plain; charset=UTF-8
+        Dulshani Gunawardhana <dulshani.gunawardhana89@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        "John L. Hammond" <john.hammond@intel.com>,
+        Andreas Dilger <andreas.dilger@intel.com>,
+        Chi Pham <fempsci@gmail.com>, Oleg Drokin <green@linuxhacker.ru>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Mon, 01 Sep 2014 09:26:19 -0700
+In-Reply-To: <1409586755-805-2-git-send-email-sun.wxg@gmail.com>
+References: <1409586755-805-2-git-send-email-sun.wxg@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 1, 2014 at 6:46 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> On Mon, 01 Sep 2014, Octavian Purdila wrote:
->
->> On Mon, Sep 1, 2014 at 2:39 PM, Lee Jones <lee.jones@linaro.org> wrote:
->> > On Mon, 01 Sep 2014, Octavian Purdila wrote:
->> >
->> >> On Mon, Sep 1, 2014 at 12:51 PM, Lee Jones <lee.jones@linaro.org> wrote:
->> >> > On Mon, 01 Sep 2014, Octavian Purdila wrote:
->> >> >
->> >> >> On Mon, Sep 1, 2014 at 11:37 AM, Lee Jones <lee.jones@linaro.org> wrote:
->> >> >> > On Sat, 30 Aug 2014, Octavian Purdila wrote:
->> >> >> >
->> >> >> >> This patch implements the USB part of the Diolan USB-I2C/SPI/GPIO
->> >> >> >> Master Adapter DLN-2. Details about the device can be found here:
->> >> >> >>
->> >> >> >> https://www.diolan.com/i2c/i2c_interface.html.
->> >> >> >>
->> >> >> >> Information about the USB protocol can be found in the Programmer's
->> >> >> >> Reference Manual [1], see section 1.7.
->> >> >> >>
->> >> >> >> Because the hardware has a single transmit endpoint and a single
->> >> >> >> receive endpoint the communication between the various DLN2 drivers
->> >> >> >> and the hardware will be muxed/demuxed by this driver.
->> >> >> >>
->> >> >> >> Each DLN2 module will be identified by the handle field within the DLN2
->> >> >> >> message header. If a DLN2 module issues multiple commands in parallel
->> >> >> >> they will be identified by the echo counter field in the message header.
->> >> >> >>
->> >> >> >> The DLN2 modules can use the dln2_transfer() function to issue a
->> >> >> >> command and wait for its response. They can also register a callback
->> >> >> >> that is going to be called when a specific event id is generated by
->> >> >> >> the device (e.g. GPIO interrupts). The device uses handle 0 for
->> >> >> >> sending events.
->> >> >> >>
->> >> >> >> [1] https://www.diolan.com/downloads/dln-api-manual.pdf
->> >> >> >
->> >> >> > MFD is not a dumping ground for misfit h/w.  Almost all of this code
->> >> >> > looks like it belongs in drivers/usb.  Please move it there.
->> >> >> >
->> >> >>
->> >> >> We initially submitted this driver as a pure USB driver, with our own
->> >> >> module registration mechanism, but during the first round of reviews
->> >> >> people pointed out that a MFD driver is the better approach, and I
->> >> >> agree. I also see that there are already a couple of USB drivers
->> >> >> implemented as MFD drivers.
->> >> >
->> >> > Can you link me to your previous submission please?
->> >>
->> >> Sure, here it is:
->> >>
->> >> https://lkml.org/lkml/2014/8/20/228
->> >>
->> >> >
->> >> >> Do you see a better approach?
->> >> >
->> >> > You should have a small MFD driver which controls resources and
->> >> > registers children.  All other functionality should live in their
->> >> > respective drivers/X locations i.e. USB functionallity should normally
->> >> > live in drivers/usb.
->> >> >
->> >>
->> >> OK, that sounds better. I am not sure how to handle the registration
->> >> part though, since in this case we need to create the children at
->> >> runtime, from the usb probe routine.
->> >>
->> >> The only solution I see is to move the driver completely to
->> >> usb/drivers and continue to use the MFD infrastructure. Does that
->> >> sound OK to you?
->> >
->> > I have no problem with that.  If this is an MFD driver, it _should_
->> > live in drivers/mfd.  However, all of that USB specific stuff
->> > defiantly should not.
->> >
->>
->> It is a multi-function driver which is using the USB interface, so I
->> am not sure where it belongs. The only driver that calls
->> mfd_add_devices and is not in drivers/mfd is the hid sensor hub
->> driver.
->>
->> BTW, the mfd/viperboard.c driver is very similar with this driver. It
->> has less USB specific stuff because the protocol is simpler, but still
->> has some.
->
-> Looking at viperboard.c, it seems to use some basic generic framework
-> calls to obtain some information about the device information like
-> version numbers.  Your driver is leaps and bounds more USB centric.
->
-> Your MFD driver should know about things like; regmap, platform data,
-> memory allocation, same-chip devices (children), etc.  Your MFD driver
-> should not need to concern itself with; endpoints, slots, URBs, USB
-> device IDs and the like.  The later knowledge belongs in drivers/usb.
->
-> You should be calling mfd_add_devices() from within the MFD driver.
-> At a guess, I would say that you need a new entry for the USB stuff in
-> your mfd_cells structure.
->
+On Mon, 2014-09-01 at 23:52 +0800, sunwxg wrote:
+> Fix the style error checking by checkpatch.pl
+> ERROR: space required after that ','
+[]
+> diff --git a/drivers/staging/lustre/lustre/lov/lov_pack.c b/drivers/staging/lustre/lustre/lov/lov_pack.c
+[]
+> @@ -95,7 +95,7 @@ void lov_dump_lmm_v1(int level, struct lov_mds_md_v1 *lmm)
+>  void lov_dump_lmm_v3(int level, struct lov_mds_md_v3 *lmm)
+>  {
+>  	lov_dump_lmm_common(level, lmm);
+> -	CDEBUG(level,"pool_name "LOV_POOLNAMEF"\n", lmm->lmm_pool_name);
+> +	CDEBUG(level, "pool_name "LOV_POOLNAMEF"\n", lmm->lmm_pool_name);
 
-Makes sense, thanks for making clearing up what the MFD part of the
-driver should do.
+I think it better to separate the pre-coalesced
+bits of the string like:
 
-Here is how I think it could work:
-
- * keep the usb probe routine in the MFD driver (and keep it a usb driver)
-
- * add a new cell for the usb part
-
- * pass the usb_interface via platform_data to the USB sub-driver's
-platform_device probe routine and continue the USB setup there
+	"pool name " LOV_POOLNAMEF "\n",
 
 
-Lee, USB folks, is this acceptable?
