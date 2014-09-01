@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753633AbaIALJO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 07:09:14 -0400
+	id S1753554AbaIALKa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 07:10:30 -0400
 Received: from mail.mev.co.uk ([62.49.15.74]:38999 "EHLO mail.mev.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753194AbaIALEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 07:04:24 -0400
+	id S1753176AbaIALEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 07:04:20 -0400
 From: Ian Abbott <abbotti@mev.co.uk>
 To: driverdev-devel@linuxdriverproject.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Ian Abbott <abbotti@mev.co.uk>,
         H Hartley Sweeten <hartleys@visionengravers.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 16/28] staging: comedi: amplc_pci230: remove 'inline'
-Date: Mon,  1 Sep 2014 12:03:48 +0100
-Message-Id: <1409569440-10979-17-git-send-email-abbotti@mev.co.uk>
+Subject: [PATCH 06/28] staging: comedi: amplc_pci230: no need to manipulate PCI ref count
+Date: Mon,  1 Sep 2014 12:03:38 +0100
+Message-Id: <1409569440-10979-7-git-send-email-abbotti@mev.co.uk>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <1409569440-10979-1-git-send-email-abbotti@mev.co.uk>
 References: <1409569440-10979-1-git-send-email-abbotti@mev.co.uk>
@@ -22,81 +22,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some functions in "amplc_pci230.c" are declared `inline`.  Remove the
-`inline` specifiers and let the compiler do what it wants with them.
+This driver no longer supports a "legacy" attach mechanism that searches
+for a suitable PCI device and increments it's reference count, but since
+the common "detach" handler `pci230_detach()` still has a left-over
+`pci_dev_put()`, a matching `pci_dev_get()` is needed in the
+"auto_attach" handler `pci230_auto_attach()`.  There is no longer any
+reason to "get" and "put" the PCI device, so those calls can be removed.
 
 Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 ---
- drivers/staging/comedi/drivers/amplc_pci230.c | 24 +++++++++++-------------
- 1 file changed, 11 insertions(+), 13 deletions(-)
+ drivers/staging/comedi/drivers/amplc_pci230.c | 11 -----------
+ 1 file changed, 11 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/amplc_pci230.c b/drivers/staging/comedi/drivers/amplc_pci230.c
-index 70b210b..d832268 100644
+index 393712c..39fa2f6 100644
 --- a/drivers/staging/comedi/drivers/amplc_pci230.c
 +++ b/drivers/staging/comedi/drivers/amplc_pci230.c
-@@ -573,8 +573,8 @@ static unsigned short pci230_ai_read(struct comedi_device *dev)
- 	return data;
+@@ -2729,23 +2729,12 @@ static int pci230_auto_attach(struct comedi_device *dev,
+ 			"amplc_pci230: BUG! cannot determine board type!\n");
+ 		return -EINVAL;
+ 	}
+-	/*
+-	 * Need to 'get' the PCI device to match the 'put' in pci230_detach().
+-	 * TODO: Remove the pci_dev_get() and matching pci_dev_put() once
+-	 * support for manual attachment of PCI devices via pci230_attach()
+-	 * has been removed.
+-	 */
+-	pci_dev_get(pci_dev);
+ 	return pci230_attach_common(dev, pci_dev);
  }
  
--static inline unsigned short pci230_ao_mangle_datum(struct comedi_device *dev,
--						    unsigned short datum)
-+static unsigned short pci230_ao_mangle_datum(struct comedi_device *dev,
-+					     unsigned short datum)
+ static void pci230_detach(struct comedi_device *dev)
  {
- 	const struct pci230_board *thisboard = comedi_board(dev);
- 	struct pci230_private *devpriv = dev->private;
-@@ -593,9 +593,8 @@ static inline unsigned short pci230_ao_mangle_datum(struct comedi_device *dev,
- 	return datum;
+-	struct pci_dev *pcidev = comedi_to_pci_dev(dev);
+-
+ 	comedi_pci_detach(dev);
+-	if (pcidev)
+-		pci_dev_put(pcidev);
  }
  
--static inline void pci230_ao_write_nofifo(struct comedi_device *dev,
--					  unsigned short datum,
--					  unsigned int chan)
-+static void pci230_ao_write_nofifo(struct comedi_device *dev,
-+				   unsigned short datum, unsigned int chan)
- {
- 	struct pci230_private *devpriv = dev->private;
- 
-@@ -604,8 +603,8 @@ static inline void pci230_ao_write_nofifo(struct comedi_device *dev,
- 	     devpriv->daqio + ((chan == 0) ? PCI230_DACOUT1 : PCI230_DACOUT2));
- }
- 
--static inline void pci230_ao_write_fifo(struct comedi_device *dev,
--					unsigned short datum, unsigned int chan)
-+static void pci230_ao_write_fifo(struct comedi_device *dev,
-+				 unsigned short datum, unsigned int chan)
- {
- 	struct pci230_private *devpriv = dev->private;
- 
-@@ -650,8 +649,8 @@ static int get_resources(struct comedi_device *dev, unsigned int res_mask,
- 	return ok;
- }
- 
--static inline int get_one_resource(struct comedi_device *dev,
--				   unsigned int resource, unsigned char owner)
-+static int get_one_resource(struct comedi_device *dev,
-+			    unsigned int resource, unsigned char owner)
- {
- 	return get_resources(dev, 1U << resource, owner);
- }
-@@ -675,14 +674,13 @@ static void put_resources(struct comedi_device *dev, unsigned int res_mask,
- 	spin_unlock_irqrestore(&devpriv->res_spinlock, irqflags);
- }
- 
--static inline void put_one_resource(struct comedi_device *dev,
--				    unsigned int resource, unsigned char owner)
-+static void put_one_resource(struct comedi_device *dev,
-+			     unsigned int resource, unsigned char owner)
- {
- 	put_resources(dev, 1U << resource, owner);
- }
- 
--static inline void put_all_resources(struct comedi_device *dev,
--				     unsigned char owner)
-+static void put_all_resources(struct comedi_device *dev, unsigned char owner)
- {
- 	put_resources(dev, (1U << NUM_RESOURCES) - 1, owner);
- }
+ static struct comedi_driver amplc_pci230_driver = {
 -- 
 2.0.4
 
