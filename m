@@ -1,64 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431AbaIAKZU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 06:25:20 -0400
-Received: from mga14.intel.com ([192.55.52.115]:36458 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752748AbaIAKZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 06:25:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,441,1406617200"; 
-   d="scan'208";a="584511186"
-Message-ID: <1409567105.30155.49.camel@linux.intel.com>
-Subject: Re: [PATCH v1 2/5] mfd: lpc_sch: better code manageability with
- chipset info struct
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-Date: Mon, 01 Sep 2014 13:25:05 +0300
-In-Reply-To: <20140901091607.GH7374@lee--X1>
-References: <1408705096-31286-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1408705096-31286-3-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <20140901091607.GH7374@lee--X1>
-Organization: Intel Finland Oy
+	id S1753439AbaIAK0D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 06:26:03 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:17359 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753278AbaIAK0B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 06:26:01 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 01 Sep 2014 03:25:13 -0700
+Message-ID: <540449BC.2050807@nvidia.com>
+Date: Mon, 1 Sep 2014 18:26:04 +0800
+From: Wei Ni <wni@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: "edubezval@gmail.com" <edubezval@gmail.com>
+CC: <khali@linux-fr.org>, <linux@roeck-us.net>,
+        Stephen Warren <swarren@wwwdotorg.org>, <lm-sensors@lm-sensors.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 3/4] thermal: add more description for thermal-zones
+References: <1408948188-4181-1-git-send-email-wni@nvidia.com>	<1408948188-4181-4-git-send-email-wni@nvidia.com>	<20140825110711.GA12349@developer>	<53FBEE39.2020001@nvidia.com>	<20140826121210.GB15219@developer>	<53FD484F.7030504@nvidia.com>	<20140827133217.GB15875@developer>	<53FE8AC9.2070907@nvidia.com>	<20140828132135.GA17074@developer>	<53FFED7B.6010508@nvidia.com> <CAC-25o-9OQ-wfpCJmgDGB0kqDHwUc15XX7Ay7Pes6UmpJakUkQ@mail.gmail.com>
+In-Reply-To: <CAC-25o-9OQ-wfpCJmgDGB0kqDHwUc15XX7Ay7Pes6UmpJakUkQ@mail.gmail.com>
+X-Originating-IP: [10.19.224.131]
+X-ClientProxiedBy: DRBGMAIL103.nvidia.com (10.18.16.22) To
+ HKMAIL101.nvidia.com (10.18.16.10)
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.5-1 
-Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-09-01 at 10:16 +0100, Lee Jones wrote:
-> On Fri, 22 Aug 2014, Andy Shevchenko wrote:
+On 08/29/2014 07:32 PM, edubezval@gmail.com wrote:
+> Hello Wei,
 > 
-> > Introduce additional struct to hold chipset info. This chipset
-> > info will be used to store features that are supported by specific
-> > processor or chipset. LPC_SCH supports SMBUS, GPIO and WDT features.
-> > As this code base might expand further to support more processors,
-> > this implementation will help to keep code base clean and manageable.
-> > 
-> > Signed-off-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-> > Tested-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-> > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> On Thu, Aug 28, 2014 at 11:03 PM, Wei Ni <wni@nvidia.com> wrote:
+>> On 08/28/2014 09:21 PM, Eduardo Valentin wrote:
+>>> Hello Wei,
+>>>
+>>> On Thu, Aug 28, 2014 at 09:50:01AM +0800, Wei Ni wrote:
+>>>> On 08/27/2014 09:32 PM, Eduardo Valentin wrote:
+>>>>> Hello Wei,
+>>>>>
+>>>>> On Wed, Aug 27, 2014 at 10:54:07AM +0800, Wei Ni wrote:
+>>>>>> On 08/26/2014 08:12 PM, Eduardo Valentin wrote:
+>>>>>>> On Tue, Aug 26, 2014 at 10:17:29AM +0800, Wei Ni wrote:
+>>>>>>>> On 08/25/2014 07:07 PM, Eduardo Valentin wrote:
+>>>>>>>>> Hello Wei Ni,
+>>>>>>>>>
+>>>>>>>>> On Mon, Aug 25, 2014 at 02:29:47PM +0800, Wei Ni wrote:
+>>>>>>>>>> Add more description for the "polling-delay" property.
+>>>>>>>>>> Set "trips" and "cooling maps" as optional property, because
+>>>>>>>>>> if missing these two sub-nodes, the thermal zone device still
+>>>>>>>>>> work properly.
+>>>>>>>>>>
+>>>>>>>>>> Signed-off-by: Wei Ni <wni@nvidia.com>
+>>>>>>>>>> ---
+>>>>>>>>>>  Documentation/devicetree/bindings/thermal/thermal.txt | 10 ++++++----
+>>>>>>>>>>  1 file changed, 6 insertions(+), 4 deletions(-)
+>>>>>>>>>>
+>>>>>>>>>> diff --git a/Documentation/devicetree/bindings/thermal/thermal.txt b/Documentation/devicetree/bindings/thermal/thermal.txt
+>>>>>>>>>> index f5db6b7..e3d3ed9 100644
+>>>>>>>>>> --- a/Documentation/devicetree/bindings/thermal/thermal.txt
+>>>>>>>>>> +++ b/Documentation/devicetree/bindings/thermal/thermal.txt
+>>>>>>>>>> @@ -136,8 +136,8 @@ containing trip nodes and one sub-node containing all the zone cooling maps.
+>>>>>>>>>>
+>>>>>>>>>>  Required properties:
+>>>>>>>>>>  - polling-delay:      The maximum number of milliseconds to wait between polls
+>>>>>>>>>> -  Type: unsigned      when checking this thermal zone.
+>>>>>>>>>> -  Size: one cell
+>>>>>>>>>> +  Type: unsigned      when checking this thermal zone. If this value is 0, the
+>>>>>>>>>> +  Size: one cell      driver will not run polling queue, but just cancel it.
+>>>>>>>>>>
+>>>>>>>>>
+>>>>>>>>> The description above is specific to Linux kernel implementation
+>>>>>>>>> nomenclature. DT description needs to be OS agnostic.
+>>>>>>>>>
+>>>>>>>>>>  - polling-delay-passive: The maximum number of milliseconds to wait
+>>>>>>>>>>    Type: unsigned      between polls when performing passive cooling.
+>>>>>>>>>> @@ -148,14 +148,16 @@ Required properties:
+>>>>>>>>>>    phandles + sensor
+>>>>>>>>>>    specifier
+>>>>>>>>>>
+>>>>>>>>>> +Optional property:
+>>>>>>>>>>  - trips:              A sub-node which is a container of only trip point nodes
+>>>>>>>>>>    Type: sub-node      required to describe the thermal zone.
+>>>>>>>>>>
+>>>>>>>>>>  - cooling-maps:               A sub-node which is a container of only cooling device
+>>>>>>>>>>    Type: sub-node      map nodes, used to describe the relation between trips
+>>>>>>>>>> -                      and cooling devices.
+>>>>>>>>>> +                      and cooling devices. If missing the "trips" property,
+>>>>>>>>>> +                      This sub-node will not be parsed, because no trips can
+>>>>>>>>>> +                      be bound to cooling devices.
+>>>>>>>>>
+>>>>>>>>> Do you mean if the thermal zone misses the "trips" property? Actually,
+>>>>>>>>> the binding describes both, cooling-maps and trips, as required
+>>>>>>>>> properties. Thus, both needs to be in place to consider the thermal zone
+>>>>>>>>> as a proper described zone.
+>>>>>>>>
+>>>>>>>> I moved the "trips" and "cooling-maps" to optional property, because if
+>>>>>>>> missing these two properties, the thermal zone devices still can be
+>>>>>>>> registered, and the driver can work properly, it has the basic function,
+>>>>>>>> can read temperature from thermal sysfs, although it doesn't have trips
+>>>>>>>> and bind with cooling devices.
+>>>>>>>
+>>>>>>>
+>>>>>>> If a thermal zone is used only for monitoring, then I believe it lost
+>>>>>>> its purpose. As  Maybe a different framework shall be used, such as hwmon,
+>>>>>>> for instance?
+>>>>>>
+>>>>>> Yes, if we only use it for monitoring, we can use hwmon. But we have
+>>>>>> more functions base on these two thermal zone devices. We have a
+>>>>>> skin-temperature driver, which used nct1008's remote and local
+>>>>>> temperatures to estimator the skin temperature. As you know the thermal
+>>>>>> framework is more powerful, the remote/local sensors can be register as
+>>>>>> thermal zone, then the skin-temp driver can use thermal_zone_get_temp()
+>>>>>> to read their temperatures and then estimator skin's temp. We also will
+>>>>>> set trips and cooling devices for this skin-temp.
+>>>>>
+>>>>> In this case, don't you think it would make sense to create a thermal
+>>>>> zone for the skin temperature and add the required sensors (including
+>>>>> the nct1008) in it?
+>>>>
+>>>> Hi, Eduardo
+>>>> Yes, we will create a thermal zone for the skin-temp driver and add the
+>>>> required sensors in it, but in here we want to register these required
+>>>> sensors as thermal zone devices, then the thermal framework can export
+>>>> functions to read these sensors temperature. If use hwmon framework, it
+>>>> can't export nct1008's internal sensors, such as remote/local sensors,
+>>>> and no exported functions to read these temperatures. If we doesn't use
+>>>> the thermal/of-thermal framework, we have to develop a new framework to
+>>>> parse those sensor nodes, and I think this new one may only have slight
+>>>> difference with current thermal framework.
+>>>> If we set those two properties as optional property, then we can use it
+>>>> in this case simply.
+>>>>
+>>>> The skin-temp nodes will something like this:
+>>>>
+>>>> skin_temp: therm-est {
+>>>>      compatible = "nvidia,tegra124-therm-est";
+>>>>
+>>>>      #thermal-sensor-cells = <0>;
+>>>>
+>>>>      sub-devs {
+>>>>              dev@0 {
+>>>> /* we need to register nct1008_remote as thermal zone devices, so that
+>>>> it's easy to handle it by using thermal framework's exported functions. */
+>>>>                      dev = <&nct1008_remote>;
+>>>>              };
+>>>>              dev@1 {
+>>>>                      dev = <&nct1008_local>;
+>>>>              };
+>>>>      };
+>>>> };
+>>>>
+>>>> thermal-zones {
+>>>>      skin-therm {
+>>>>              polling-delay-passive = <15000>
+>>>>              polling-delay = <0>;
+>>>>
+>>>>              thermal-sensors = <&skin_temp>;
+>>>
+>>> The binding allows you to add several sensors in one thermal zone.
+>>> Please have a look on the example (c) of the thermal.txt binding
+>>> description. It might be that what you want to do is actually:
+>>>               thermal-sensors = <&ntc1008_local>,
+>>>                               <&ntc1008_remote>;
+>>
+>>
+>> Yes, we have considered it, but in current kernel, it only supports 1
+>> sensor per zone. and according to the example (c), it's supposed to only
+>> support simple algorithm, such as:
+>> /* hotspot = 100 * bandgap - 120 * adc + 484 */
+>>  coefficients =          <100    -120    484>;
+>>
+>> but in our skin-temp driver, we will recored 20 history temperatures for
+>> every sensors, and set different coefficients for every history
+>> temperatures, our HW team have private mathematical mode to calculate
+>> these coeffs for different boards. And I think other users may use
+>> different algorithm to calculate thermal zone temperature based on
+>> several sensors.
+>>
+>> So I think it's better to register sensors to thermal zones, not set
+>> trips and binding cooling devices, then user's thermal driver can use
+>> them freely.
+>>
+> 
+> In your system, the used governor is userspace, then?
 
-[]
+No, we developed a new governor named as "pid governor", it manages
+thermals based on output values of PID controller.
 
+Indeed, our thermal management includes skin-temp, soc-thermal,
+cpu-throttle driver and pid governor. This pach set is prepared for the
+skin-temp driver.
+As you know the tegra soc-therm is in upstreaming, and we will post
+other drivers step by step.
 
-> The first patch would look a great deal cleaner if it had these
-> changes in too.  Unless you have a really good reason not to, please
-> consider squashing them.
+Thanks.
+Wei.
 
-The only reason behind is that this patch (in other form) was written by
-Rebecca in the first place. I recommended to clean up before, and
-actually did that clean up and amended Rebecca's patch.
-
-So, if Rebecca has now objections I could squash it.
-
-
--- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
+> 
+>> Thanks.
+>> Wei.
+>>
+>>>
+>>>
+>>>>
+>>>>              trips {
+>>>>              };
+>>>>              cooling-maps {
+>>>>              };
+>>>>      };
+>>>> };
+>>>>
+>>>> Wei.
+>>>>>
+>>>>>>
+>>>>>> Wei.
+>>>>>>
+>>>>>>>
+>>>>>>> The purpose of a thermal zone is to describe thermal behavior of a
+>>>>>>> hardware. As it is mentioned in the thermal.txt file.
+>>>>>>>
+>>>>>>>
+>>>>>>>>
+>>>>>>>> Thanks.
+>>>>>>>> Wei.
+>>>>>>>>
+>>>>>>>>>
+>>>>>>>>>>
+>>>>>>>>>> -Optional property:
+>>>>>>>>>>  - coefficients:               An array of integers (one signed cell) containing
+>>>>>>>>>>    Type: array         coefficients to compose a linear relation between
+>>>>>>>>>>    Elem size: one cell the sensors listed in the thermal-sensors property.
+>>>>>>>>>> --
+>>>>>>>>>> 1.8.1.5
+>>>>>>>>>>
+>>>>>>>>
+>>>>>>> --
+>>>>>>> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
+>>>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>>>>
+>>>>>>
+>>>>
+>>
+> 
+> 
+> 
 
