@@ -1,183 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752060AbaIAFSu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 01:18:50 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:38608 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750865AbaIAFSs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 01:18:48 -0400
-Message-ID: <1409548719.13507.13.camel@localhost.localdomain>
-Subject: Re: [PATCH v2] cpufreq: powernv: Set the cpus to nominal frequency
- during reboot/kexec
-From: Shilpa Bhat <shilpa.bhat@linux.vnet.ibm.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        shilpa.bhat@linux.vnet.ibm.com
-Date: Mon, 01 Sep 2014 10:48:39 +0530
-In-Reply-To: <CAKohpokbYkL=cYQ+9-59vPhBmbAWqhrEz7RBPj5-edDB25DPgw@mail.gmail.com>
-References: <1409234816-10802-1-git-send-email-shilpa.bhat@linux.vnet.ibm.com>
-	 <CAKohpokbYkL=cYQ+9-59vPhBmbAWqhrEz7RBPj5-edDB25DPgw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.2 (3.10.2-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14090105-0017-0000-0000-00000106D139
+	id S1752207AbaIAFVK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 01:21:10 -0400
+Received: from mail-bn1lp0141.outbound.protection.outlook.com ([207.46.163.141]:27980
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751078AbaIAFVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 01:21:08 -0400
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>, <lgirdwood@gmail.com>, <perex@perex.cz>,
+        <tiwai@suse.de>, <kuninori.morimoto.gx@renesas.com>, <moinejf@free.fr>,
+        <andrew@lunn.ch>, <jsarha@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-sh@vger.kernel.org>,
+        <alsa-devel@alsa-project.org>, <shawn.guo@freescale.com>
+CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCHv1 0/7] simple-card: simplify the code.
+Date: Mon, 1 Sep 2014 12:29:34 +0800
+Message-ID: <1409545781-20530-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199003)(104016003)(85306004)(81342001)(68736004)(19580395003)(26826002)(102836001)(76482001)(36756003)(31966008)(83322001)(88136002)(104166001)(81542001)(44976005)(80022001)(229853001)(4396001)(64706001)(47776003)(20776003)(50226001)(87286001)(107046002)(95666004)(62966002)(99396002)(85852003)(48376002)(77156001)(50986999)(90102001)(74502001)(92566001)(106466001)(50466002)(6806004)(21056001)(77982001)(89996001)(79102001)(69596002)(2201001)(84676001)(105606002)(87936001)(74662001)(83072002)(46102001)(86362001)(93916002)(92726001)(97736001)(81156004)(921003)(1121002)(83996005)(2101003);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB340;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03218BFD9F
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Li.Xiubo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Viresh,
-On Fri, 2014-08-29 at 05:33 +0530, Viresh Kumar wrote:
-> On 28 August 2014 19:36, Shilpasri G Bhat
-> <shilpa.bhat@linux.vnet.ibm.com> wrote:
-> >
-> > Changes v1->v2:
-> > Invoke .target() driver callback to set the cpus to nominal frequency
-> > in reboot notifier, instead of calling cpufreq_suspend() as suggested
-> > by Viresh Kumar.
-> > Modified the commit message.
-> 
-> This changelog will get commited, is this what you want?
 
-> > +       if (unlikely(rebooting) && new_index != get_nominal_index())
-> > +               return -EBUSY;
-> 
-> Have you placed the unlikely only around 'rebooting' intentionally or
-> should it cover whole if statement?
-> 
-
-Yes unlikely() should cover the whole if statement. Thank you for pointing it out.
-I have corrected my mistake in the below patch.
-
-Thanks and regards,
-Shilpa
+Change in v1:
+- Add simple-card dts node patches.
+- Fix format parsing bug from Jean-Francois's comment.
+- Rebase to Kuninori-san's newest changes in next branch.
 
 
+Xiubo Li (7):
+  ASoC: simple-card: Merge single and muti DAI link code.
+  ASoC: simple-card: Adjust the comments of simple card.
+  ASoC: dts: vf610-twr: To support simple card newest style.
+  ASoC: dts: kirkwood-t5325: To support simple card newest style.
+  ASoC: dts: r8a7740-armadillo800eva-reference: To support simple card
+    newest style.
+  ASoC: dts: sh73a0-kzm9g-reference: To support simple card newest
+    style.
+  ASoC: dts: kirkwood-openrd-client: To support simple card newest
+    style.
 
-This patch ensures the cpus to kexec/reboot at nominal frequency.
-Nominal frequency is the highest cpu frequency on PowerPC at
-which the cores can run without getting throttled.
+ .../devicetree/bindings/sound/simple-card.txt      | 101 ++++++------
+ arch/arm/boot/dts/kirkwood-openrd-client.dts       |  15 +-
+ arch/arm/boot/dts/kirkwood-t5325.dts               |  15 +-
+ .../boot/dts/r8a7740-armadillo800eva-reference.dts |  21 +--
+ arch/arm/boot/dts/sh73a0-kzm9g-reference.dts       |  18 ++-
+ arch/arm/boot/dts/vf610-twr.dts                    |  17 +-
+ sound/soc/generic/simple-card.c                    | 176 ++++++++-------------
+ 7 files changed, 160 insertions(+), 203 deletions(-)
 
-If the host kernel had set the cpus to a low pstate and then it
-kexecs/reboots to a cpufreq disabled kernel it would cause the target
-kernel to perform poorly. It will also increase the boot up time of
-the target kernel. So set the cpus to high pstate, in this case to
-nominal frequency before rebooting to avoid such scenarios.
-
-The reboot notifier will set the cpus to nominal frequncy.
-
-Changes v1->v2:
-Invoke .target() driver callback to set the cpus to nominal frequency
-in reboot notifier, instead of calling cpufreq_suspend() as suggested
-by Viresh Kumar.
-Modified the commit message.
-
-Signed-off-by: Shilpasri G Bhat <shilpa.bhat@linux.vnet.ibm.com>
-Suggested-by: Viresh Kumar <viresh.kumar@linaro.org>
-Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
----
- drivers/cpufreq/powernv-cpufreq.c | 35 +++++++++++++++++++++++++++++++++++
- 1 file changed, 35 insertions(+)
-
-diff --git a/drivers/cpufreq/powernv-cpufreq.c b/drivers/cpufreq/powernv-cpufreq.c
-index 379c083..f8b83c8 100644
---- a/drivers/cpufreq/powernv-cpufreq.c
-+++ b/drivers/cpufreq/powernv-cpufreq.c
-@@ -26,6 +26,7 @@
- #include <linux/cpufreq.h>
- #include <linux/smp.h>
- #include <linux/of.h>
-+#include <linux/reboot.h>
- 
- #include <asm/cputhreads.h>
- #include <asm/firmware.h>
-@@ -35,6 +36,7 @@
- #define POWERNV_MAX_PSTATES	256
- 
- static struct cpufreq_frequency_table powernv_freqs[POWERNV_MAX_PSTATES+1];
-+static bool rebooting;
- 
- /*
-  * Note: The set of pstates consists of contiguous integers, the
-@@ -284,6 +286,15 @@ static void set_pstate(void *freq_data)
- }
- 
- /*
-+ * get_nominal_index: Returns the index corresponding to the nominal
-+ * pstate in the cpufreq table
-+ */
-+static inline unsigned int get_nominal_index(void)
-+{
-+	return powernv_pstate_info.max - powernv_pstate_info.nominal;
-+}
-+
-+/*
-  * powernv_cpufreq_target_index: Sets the frequency corresponding to
-  * the cpufreq table entry indexed by new_index on the cpus in the
-  * mask policy->cpus
-@@ -293,6 +304,9 @@ static int powernv_cpufreq_target_index(struct cpufreq_policy *policy,
- {
- 	struct powernv_smp_call_data freq_data;
- 
-+	if (unlikely(rebooting && new_index != get_nominal_index()))
-+		return -EBUSY;
-+
- 	freq_data.pstate_id = powernv_freqs[new_index].driver_data;
- 
- 	/*
-@@ -317,6 +331,25 @@ static int powernv_cpufreq_cpu_init(struct cpufreq_policy *policy)
- 	return cpufreq_table_validate_and_show(policy, powernv_freqs);
- }
- 
-+static int powernv_cpufreq_reboot_notifier(struct notifier_block *nb,
-+				unsigned long action, void *unused)
-+{
-+	int cpu;
-+	struct cpufreq_policy cpu_policy;
-+
-+	rebooting = true;
-+	for_each_online_cpu(cpu) {
-+		cpufreq_get_policy(&cpu_policy, cpu);
-+		powernv_cpufreq_target_index(&cpu_policy, get_nominal_index());
-+	}
-+
-+	return NOTIFY_DONE;
-+}
-+
-+static struct notifier_block powernv_cpufreq_reboot_nb = {
-+	.notifier_call = powernv_cpufreq_reboot_notifier,
-+};
-+
- static struct cpufreq_driver powernv_cpufreq_driver = {
- 	.name		= "powernv-cpufreq",
- 	.flags		= CPUFREQ_CONST_LOOPS,
-@@ -342,12 +375,14 @@ static int __init powernv_cpufreq_init(void)
- 		return rc;
- 	}
- 
-+	register_reboot_notifier(&powernv_cpufreq_reboot_nb);
- 	return cpufreq_register_driver(&powernv_cpufreq_driver);
- }
- module_init(powernv_cpufreq_init);
- 
- static void __exit powernv_cpufreq_exit(void)
- {
-+	unregister_reboot_notifier(&powernv_cpufreq_reboot_nb);
- 	cpufreq_unregister_driver(&powernv_cpufreq_driver);
- }
- module_exit(powernv_cpufreq_exit);
 -- 
-1.9.3
-
-
-
-
+1.8.4
 
