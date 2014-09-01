@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753996AbaIANwd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 09:52:33 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57270 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751965AbaIANwc (ORCPT
+	id S1754143AbaIANw7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 09:52:59 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:14385 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751665AbaIANw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 09:52:32 -0400
-Date: Mon, 1 Sep 2014 15:52:31 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 5/5] perf, x86: Use Broadwell cache event list for Haswell
-Message-ID: <20140901135231.GO27892@worktop.ger.corp.intel.com>
-References: <1409006611-30741-1-git-send-email-andi@firstfloor.org>
- <1409006611-30741-6-git-send-email-andi@firstfloor.org>
+	Mon, 1 Sep 2014 09:52:58 -0400
+X-CheckPoint: {54047A39-51-2100090A-C0000000}
+Message-ID: <54047A3D.3090702@tilera.com>
+Date: Mon, 1 Sep 2014 09:53:01 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409006611-30741-6-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+To: Pawel Moll <pawel.moll@arm.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "paul@pwsan.com" <paul@pwsan.com>, Arnd Bergmann <arnd@arndb.de>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/5] char: tile-srom: Remove reference to platform_bus
+References: <1406298233-27876-1-git-send-email-pawel.moll@arm.com>	 <1406298233-27876-2-git-send-email-pawel.moll@arm.com>	 <53DAA605.2030500@tilera.com> <1406913678.22529.46.camel@hornet>	 <53E139C8.9000502@tilera.com> <1407515691.31897.26.camel@hornet>	 <5400C9C1.4060904@tilera.com> <1409574460.4343.7.camel@hornet>
+In-Reply-To: <1409574460.4343.7.camel@hornet>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [108.20.112.127]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 03:43:31PM -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> Use the newly added Broadwell cache event list for Haswell too.
-> They are identical, but Haswell is very different from the Sandy Bridge
-> list that was used previously. That fixes a wide range of mis-counting
-> cache events.
-> 
-> The node events are now only for retired memory events.
-> 
-> The prefetch events are gone now. They way the hardware counts
-> them is very misleading (some prefetches included, others not), so
-> it seemed best to leave them out.
-> 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  arch/x86/kernel/cpu/perf_event_intel.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-> index 53bd98d..190b29e 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-> @@ -2692,8 +2692,8 @@ __init int intel_pmu_init(void)
->  	case 63: /* 22nm Haswell Server */
->  	case 69: /* 22nm Haswell ULT */
->  		x86_pmu.late_ack = true;
-> -		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids, sizeof(hw_cache_event_ids));
-> -		memcpy(hw_cache_extra_regs, snb_hw_cache_extra_regs, sizeof(hw_cache_extra_regs));
-> +		memcpy(hw_cache_event_ids, bdw_hw_cache_event_ids, sizeof(hw_cache_event_ids));
-> +		memcpy(hw_cache_extra_regs, bdw_hw_cache_extra_regs, sizeof(hw_cache_extra_regs));
+On 9/1/2014 8:27 AM, Pawel Moll wrote:
+> On Fri, 2014-08-29 at 19:43 +0100, Chris Metcalf wrote:
+>> If the
+>> consensus is that this is the way to go, I can certainly take this change
+>> into the Tile tree.
+> That would be cool, and left us only with the scsi/DMA as the last user
+> of platform_bus. But this is a completely different story ;-)
 
-We name things for the earliest chip they're valid for. This means this
-is inconsistent and 'wrong'. These tables should be called after haswell
-not broadwell.
+OK, sounds good.  It's in the tile tree at linux-next now.
+
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
