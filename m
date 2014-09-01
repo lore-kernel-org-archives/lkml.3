@@ -1,33 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198AbaIAKcZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 06:32:25 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44404 "EHLO
+	id S1753285AbaIAKeg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 06:34:36 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44416 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752638AbaIAKcX (ORCPT
+	with ESMTP id S1752363AbaIAKef (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 06:32:23 -0400
-Date: Mon, 1 Sep 2014 11:31:58 +0100
+	Mon, 1 Sep 2014 06:34:35 -0400
+Date: Mon, 1 Sep 2014 11:34:14 +0100
 From: Mark Brown <broonie@kernel.org>
-To: Gyungoh Yoo <gyungoh@gmail.com>
-Cc: lgirdwood@gmail.com, grant.likely@linaro.org, robh+dt@kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Gyungoh Yoo <jack.yoo@skyworksinc.com>
-Message-ID: <20140901103158.GO29327@sirena.org.uk>
-References: <20140813190423.GI17528@sirena.org.uk>
- <1409539218-5571-1-git-send-email-jack.yoo@skyworksinc.com>
- <1409539218-5571-3-git-send-email-jack.yoo@skyworksinc.com>
+To: weiyj_lk@163.com
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Sean Cross <xobs@kosagi.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Message-ID: <20140901103414.GP29327@sirena.org.uk>
+References: <1409532470-32364-1-git-send-email-weiyj_lk@163.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="80d3ujMCT5hHQAFF"
+	protocol="application/pgp-signature"; boundary="oDT6ON1uLKeoILhE"
 Content-Disposition: inline
-In-Reply-To: <1409539218-5571-3-git-send-email-jack.yoo@skyworksinc.com>
+In-Reply-To: <1409532470-32364-1-git-send-email-weiyj_lk@163.com>
 X-Cookie: Simulated picture.
 User-Agent: Mutt/1.5.23 (2014-03-12)
 X-SA-Exim-Connect-IP: 94.175.94.161
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2.2 2/2] dt-bindings: Adding compatible attribute for
- SKY81452 regulator
+Subject: Re: [PATCH -next] ASoC: es8328: fix error return code in
+ es8328_codec_probe()
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -35,39 +34,39 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---80d3ujMCT5hHQAFF
+--oDT6ON1uLKeoILhE
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Sep 01, 2014 at 11:40:18AM +0900, Gyungoh Yoo wrote:
-> Adding compatible attribute for SKY81452 regulator driver.
+On Mon, Sep 01, 2014 at 08:47:50AM +0800, weiyj_lk@163.com wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+>=20
+> Fix to return a negative error code from the error handling
+> case instead of 0, as done elsewhere in this function.
 
->  Required properties:
-> +- compatible	: Must be "skyworks,sky81452-regulator"
+Applied, thanks.
 
-Why is this a good idea - can this driver be used for anything other
-than a sky81452?
-
---80d3ujMCT5hHQAFF
+--oDT6ON1uLKeoILhE
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAEBAgAGBQJUBEsbAAoJELSic+t+oim9wwMP/39LlAF9B4DxAOFkaY3rdgpI
-AfaR5m1+Iurgc/9cIZ4a2VYd6wMhnPlxlSglMO8Q+oriXUs+EsdcDWbzj6/81K+j
-46o4+SBE5sQAxHRapDYxlb4ttbtmCE+916TtWj5EBl4WH+ZSVTu+MlyKZf1+zB9L
-0CXK8AKEXUoq0jT8bmRAGtAOi64libjZHftQlBzs2P7dBOjzOtoBDHEkv/JUuGkD
-DQy6ChOj6bNxpWAut0YBpSHiyg2ANOOX7mYMMy2/mCragLFW8JkznCcfHP/ILB8D
-pPXhgTC3nVTEVqOY6NHEu5GJvzr1cs9dkArmEyBvohLxzoEp4gW4GyDPOhVGoWF1
-wFBav5lORcN6gKDtQFxBIF92DCC6XXbuK1fYeLfKxOAbRv84rUxN3SnVWFQ0mHy6
-6CNNiy7+1XrOqoS16+F+07ZaJpk9JOQAR6CvurTEaF8Dm0c0vpfi+nmj5an1EhvP
-uJmcaq6A8COQFMfCoEK15SD20ssx3tIeMSvKZcNn9ekVlI7QmdHSttKiWNuDtser
-8tTLNPBeN+2WrdG166MKp3i8fAOiB9gncKN0a/5lfuXCyAadFND5qnzFy43wmym8
-PLO1G7TDM1RwOhuG+/GL6s6dw+K4tPKcgwXcmy8D5hqZ/+OhP6xQR9tTeI5l9YJ2
-ovxhDnsFqB+xHrwkmv/P
-=nZuN
+iQIcBAEBAgAGBQJUBEujAAoJELSic+t+oim9kYcP/0mQVqeXw/T5VRTsXkXPFuQ7
+6PIl1WOrx+90JdRi0CJIzsdNCTyNIsV3z8HGzFceOJGXuUe0Mj3zp3HPmDQERrlW
+oldk1QFtMgStigp1TUtjWCLUt0igu1KDtp1609IQ0ObRJF+ri4AnGikteQP742rc
+QH+uS/0nNUeiRy/H2xNy+sO3dBXOldSsVg7vrnLS9UJfv53FdbNoHZHkmYRk8or1
+IaJAKHYc9t6nFFuf92QQQfM8nTlglDGoGzI8HlSU9NDuz+AI8Yru6eGnSkEHzUwg
+DfiJwlzoALd9ulEfr8D5nAGH7uocSGm2AoSlSY7j6GTQvC89kv/5v0OYaM48lICU
+csXbhG2uYl5jL8+XYDPUPGhWJn0LIJR41u/XHLveKvR1gjf3G0q3hubIHXSThfVr
+RUvvFsnqQL1VRVBKFYOh+Bkc4tdfQt6NbSbKEmrBfW8v3dRqg12/aUwcFYtMXz9f
+7JA9L+LzCqCYIlUzan5FlWdUCDBm+J5vYf5gK/B7NPrIXEMNHywc5Ss1YbtlIdfp
+vWXlfIAIzvg9sHpWcGBGY+Lak3XEqMsUbRww9VI5aAxZAAO6+7ZsJjZwu6AyATxC
+qPW9/se8CyRF+luu+A9NRMMh6nWLKH//LITq6mm1kyC4acGRwrD/aCPfLiQZKTvx
+H/i3+ZqqnQh1lkJygLpz
+=iQwH
 -----END PGP SIGNATURE-----
 
---80d3ujMCT5hHQAFF--
+--oDT6ON1uLKeoILhE--
