@@ -1,89 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752626AbaIAITV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 04:19:21 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47415 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752012AbaIAITT (ORCPT
+	id S1752701AbaIAIV6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 04:21:58 -0400
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:12330 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751405AbaIAIV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 04:19:19 -0400
-Date: Mon, 1 Sep 2014 01:15:38 -0700
-From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-f3761db1646d3ccb9ada2df8e27553a73ef43826@git.kernel.org>
-Cc: mingo@kernel.org, konrad.wilk@oracle.com, rdunlap@infradead.org,
-        tony.luck@intel.com, gregkh@linuxfoundation.org, tglx@linutronix.de,
-        hpa@zytor.com, jiang.liu@linux.intel.com, grant.likely@linaro.org,
-        linux-kernel@vger.kernel.org, yinghai@kernel.org, joro@8bytes.org,
-        bp@alien8.de, benh@kernel.crashing.org, bhelgaas@google.com,
-        rjw@rjwysocki.net
-Reply-To: mingo@kernel.org, konrad.wilk@oracle.com, rdunlap@infradead.org,
-        tony.luck@intel.com, gregkh@linuxfoundation.org, tglx@linutronix.de,
-        hpa@zytor.com, jiang.liu@linux.intel.com, grant.likely@linaro.org,
-        linux-kernel@vger.kernel.org, yinghai@kernel.org, joro@8bytes.org,
-        bp@alien8.de, benh@kernel.crashing.org, bhelgaas@google.com,
-        rjw@rjwysocki.net
-In-Reply-To: <1409382916-10649-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1409382916-10649-1-git-send-email-jiang.liu@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, irq:
-  Fix build error caused by 9eabc99a635a77cbf09
-Git-Commit-ID: f3761db1646d3ccb9ada2df8e27553a73ef43826
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 1 Sep 2014 04:21:56 -0400
+X-IronPort-AV: E=Sophos;i="5.04,440,1406617200"; 
+   d="scan'208";a="44051744"
+Message-ID: <54042CA1.6010904@broadcom.com>
+Date: Mon, 1 Sep 2014 10:21:53 +0200
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Brett Rudley <brudley@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        <linux-wireless@vger.kernel.org>, <brcm80211-dev-list@broadcom.com>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] brcmfmac: BRCMFMAC should depend on HAS_DMA
+References: <1409329464-768-1-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1409329464-768-1-git-send-email-geert@linux-m68k.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f3761db1646d3ccb9ada2df8e27553a73ef43826
-Gitweb:     http://git.kernel.org/tip/f3761db1646d3ccb9ada2df8e27553a73ef43826
-Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Sat, 30 Aug 2014 15:15:16 +0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 1 Sep 2014 10:12:03 +0200
+On 08/29/14 18:24, Geert Uytterhoeven wrote:
+> If NO_DMA=y:
+>
+> drivers/built-in.o: In function `brcmf_msgbuf_release_array':
+> msgbuf.c:(.text+0x34dbbe): undefined reference to `dma_unmap_single'
+> drivers/built-in.o: In function `brcmf_proto_msgbuf_detach':
+> (.text+0x34dca4): undefined reference to `dma_free_coherent'
+> drivers/built-in.o: In function `brcmf_msgbuf_get_pktid':
+> msgbuf.c:(.text+0x34dd2a): undefined reference to `dma_unmap_single'
+> drivers/built-in.o: In function `brcmf_msgbuf_alloc_pktid':
+> msgbuf.c:(.text+0x34de12): undefined reference to `dma_map_single'
+> msgbuf.c:(.text+0x34de20): undefined reference to `dma_mapping_error'
+> drivers/built-in.o: In function `brcmf_msgbuf_remove_flowring':
+> msgbuf.c:(.text+0x34e3d6): undefined reference to `dma_free_coherent'
+> drivers/built-in.o: In function `brcmf_msgbuf_flowring_create':
+> msgbuf.c:(.text+0x34e4f8): undefined reference to `dma_alloc_coherent'
+> drivers/built-in.o: In function `brcmf_proto_msgbuf_attach':
+> (.text+0x34f5fe): undefined reference to `dma_alloc_coherent'
+> drivers/built-in.o: In function `brcmf_proto_msgbuf_attach':
+> (.text+0x34f798): undefined reference to `dma_free_coherent'
+>
+> Signed-off-by: Geert Uytterhoeven<geert@linux-m68k.org>
+> ---
+>   drivers/net/wireless/brcm80211/Kconfig | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/net/wireless/brcm80211/Kconfig b/drivers/net/wireless/brcm80211/Kconfig
+> index b8e2561ea645..2e0da8925834 100644
+> --- a/drivers/net/wireless/brcm80211/Kconfig
+> +++ b/drivers/net/wireless/brcm80211/Kconfig
+> @@ -19,7 +19,7 @@ config BRCMSMAC
+>
+>   config BRCMFMAC
+>   	tristate "Broadcom IEEE802.11n embedded FullMAC WLAN driver"
+> -	depends on CFG80211
+> +	depends on CFG80211A&&  HAS_DMA
 
-x86, irq: Fix build error caused by 9eabc99a635a77cbf09
+Hi Geert,
 
-Commit 9eabc99a635a77cbf09 causes following build error when
-IOAPIC is disabled.
-   arch/x86/pci/irq.c: In function 'pirq_disable_irq':
->> arch/x86/pci/irq.c:1259:2: error: implicit declaration of function 'mp_should_keep_irq' [-Werror=implicit-function-declaration]
-     if (io_apic_assign_pci_irqs && !mp_should_keep_irq(&dev->dev) &&
-     ^
-   cc1: some warnings being treated as errors
+Not sure what happened here, but CFG80211 kconfig option did was not 
+renamed as far as I know. Anyway, I would like to propose a different 
+solution. Will get back to you when I have it ready.
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Joerg Roedel <joro@8bytes.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Grant Likely <grant.likely@linaro.org>
-Link: http://lkml.kernel.org/r/1409382916-10649-1-git-send-email-jiang.liu@linux.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/include/asm/io_apic.h | 1 +
- 1 file changed, 1 insertion(+)
+Regards,
+Arend
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index 478c490..1733ab4 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -239,6 +239,7 @@ static inline int mp_find_ioapic(u32 gsi) { return 0; }
- static inline u32 mp_pin_to_gsi(int ioapic, int pin) { return UINT_MAX; }
- static inline int mp_map_gsi_to_irq(u32 gsi, unsigned int flags) { return gsi; }
- static inline void mp_unmap_irq(int irq) { }
-+static inline bool mp_should_keep_irq(struct device *dev) { return 1; }
- 
- static inline int save_ioapic_entries(void)
- {
+>   	select BRCMUTIL
+>   	---help---
+>   	  This module adds support for embedded wireless adapters based on
+
