@@ -1,109 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753336AbaIAJit (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 05:38:49 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:64999 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753247AbaIAJiq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 05:38:46 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Thierry Reding <treding@nvidia.com>, Rob Herring <robh@kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Shaik Ameer Basha <shaik.ameer@samsung.com>,
-        Inki Dae <inki.dae@samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joerg Roedel <joro@8bytes.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Olof Johansson <olof@lixom.net>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Cho KyongHo <pullip.cho@samsung.com>
-Subject: Re: [PATCH 10/29] drivers: add DRIVER_HAS_OWN_IOMMU_MANAGER flag
-Date: Mon, 01 Sep 2014 11:38:31 +0200
-Message-ID: <4621634.jlJLccozTJ@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <540425F9.7080307@samsung.com>
-References: <1407235677-26324-1-git-send-email-m.szyprowski@samsung.com> <20140901070748.GA24226@ulmo.nvidia.com> <540425F9.7080307@samsung.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:d58/vUqDx0qDdR0tKZ4LzwyYRAV1W1RLESAQhMmmNPF
- MHW8hMo9MCJpTMvsWT0z0Cr/eKRUYVa6HrqLsHcvm6x9BrBMB4
- o2y4Tlba01/+mP9lXCy6/B+IYuWnZ48V5O5xLmdwavQOFWyYXz
- PM6k3ZaoxU/2LopRjQYEqPnbKhLmLCG6avXM2ztrsbv5OFPOBM
- bpxvldo5JAPNajFxqxsXp6RA+ENdg+29qoBww90mSrUlLq6B++
- LP4pvXpE21woWcKx6TtcI39uUXTIVVNK8UAaUXgtVmmE6eainE
- JNjnSg7Cbywoc8DsympXYgyma9NjiXlhh7ZRq778FiD7Yeo8mF
- 2E70OQm+acul7/N/HGvs=
-X-UI-Out-Filterresults: notjunk:1;
+	id S1753287AbaIAJic (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 05:38:32 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:42706 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753179AbaIAJia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 05:38:30 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org
+Subject: [PATCH 1/2] binfmt_misc: expand the register format limit to 1920 bytes
+Date: Mon,  1 Sep 2014 05:38:28 -0400
+Message-Id: <1409564309-2393-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 01 September 2014 09:53:29 Marek Szyprowski wrote:
-> On 2014-09-01 09:07, Thierry Reding wrote:
-> > On Mon, Sep 01, 2014 at 07:22:32AM +0200, Marek Szyprowski wrote:
-> >> Hi Greg,
-> >>
-> >> On 2014-08-05 12:47, Marek Szyprowski wrote:
-> >>> This patch adds a new flags for device drivers. This flag instructs
-> >>> kernel that the device driver does it own management of IOMMU assisted
-> >>> IO address space translations, so no default dma-mapping structures
-> >>> should be initialized.
-> >>>
-> >>> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> >>> ---
-> >>>    include/linux/device.h | 2 ++
-> >>>    1 file changed, 2 insertions(+)
-> >>>
-> >>> diff --git a/include/linux/device.h b/include/linux/device.h
-> >>> index 5f4ff02..2e62371 100644
-> >>> --- a/include/linux/device.h
-> >>> +++ b/include/linux/device.h
-> >>> @@ -253,6 +253,8 @@ struct device_driver {
-> >>>    
-> >>>    /* disables bind/unbind via sysfs */
-> >>>    #define DRIVER_SUPPRESS_BIND_ATTRS       (1 << 0)
-> >>> +/* driver uses own methods to manage IO address space */
-> >>> +#define DRIVER_HAS_OWN_IOMMU_MANAGER       (1 << 1)
-> >>>    
-> >>>    extern int __must_check driver_register(struct device_driver *drv);
-> >>>    extern void driver_unregister(struct device_driver *drv);
-> >> Could you comment if the approach of using flags in the struct driver
-> >> could be accepted? I've converted suppress_bind_attrs entry to flags to
-> >> avoid extending the structure, please see patch "[PATCH 05/29] drivers:
-> >> convert suppress_bind_attrs parameter into flags".
-> > Is this really necessary? What I did as part of an RFC series for Tegra
-> > IOMMU support is keep this knowledge within the IOMMU driver rather than
-> > export it to the driver core.i
-> 
-> The problem with embedding the list of drivers that you would need to update
-> it everytime when you modify or extend iommu support in the other drivers.
-> I've tried also other approach, like adding respective notifiers to 
-> individual
-> drivers to initialize custom iommu support (or disable default iommu 
-> mapping)
-> before iommu driver gets initialized, but such solution is in my opinion too
-> complex and hard to understand if one is not familiar will all this stuff.
-> 
-> All in all it turned out that the simplest and most generic way is to simply
-> add the flag to the driver core. Flags might be also used in the future
-> to model other kinds of dependencies between device drivers and/or driver
-> core.
+The current code places a 256 byte limit on the registration format.
+This ends up being fairly limited when you try to do matching against
+a binary format like ELF:
+ - the magic & mask formats cannot have any embedded NUL chars
+   (string_unescape_inplace halts at the first NUL)
+ - each escape sequence quadruples the size: \x00 is needed for NUL
+ - trying to match bytes at the start of the file as well as further
+   on leads to a lot of \x00 sequences in the mask
+ - magic & mask have to be the same length (when decoded)
+ - still need bytes for the other fields
+ - impossible!
 
-I don't get it yet. I would expect that a driver doing its own management
-of the iommu gets to use the linux/iommu.h interfaces, while a driver
-using the default iommu setup uses linux/dma-mapping.h. Who do you think
-needs to set this flag, and who needs to read it?
+Let's look at a concrete (and common) example: using QEMU to run MIPS
+ELFs.  The name field uses 11 bytes "qemu-mipsel".  The interp uses 20
+bytes "/usr/bin/qemu-mipsel".  The type & flags takes up 4 bytes.  We
+need 7 bytes for the delimiter (usually ":").  We can skip offset.  So
+already we're down to 107 bytes to use with the magic/mask instead of
+the real limit of 128 (BINPRM_BUF_SIZE).  If people use shell code to
+register (which they do the majority of the time), they're down to ~26
+possible bytes since the escape sequence must be \x##.
 
-	Arnd
+The ELF format looks like (both 32 & 64 bit):
+	e_ident: 16 bytes
+	e_type: 2 bytes
+	e_machine: 2 bytes
+Those 20 bytes are enough for most architectures because they have so
+few formats in the first place, thus they can be uniquely identified.
+That also means for shell users, since 20 is smaller than 26, they can
+sanely register a handler.
+
+But for some targets (like MIPS), we need to poke further.  The ELF
+fields continue on:
+	e_entry: 4 or 8 bytes
+	e_phoff: 4 or 8 bytes
+	e_shoff: 4 or 8 bytes
+	e_flags: 4 bytes
+We only care about e_flags here as that includes the bits to identify
+whether the ELF is O32/N32/N64.  But now we have to consume another 16
+bytes (for 32 bit ELFs) or 28 bytes (for 64 bit ELFs) just to match the
+flags.  If every byte is escaped, we send 288 more bytes to the kernel
+((20 {e_ident,e_type,e_machine} + 12 {e_entry,e_phoff,e_shoff} +
+4 {e_flags}) * 2 {mask,magic} * 4 {escape}) and we've clearly blown our
+budget.
+
+Even if we try to be clever and do the decoding ourselves (rather than
+relying on the kernel to process \x##), we still can't hit the mark --
+string_unescape_inplace treats mask & magic as C strings so NUL cannot
+be embedded.  That leaves us with having to pass \x00 for the 12/24
+entry/phoff/shoff bytes (as those will be completely random addresses),
+and that is a minimum requirement of 48/96 bytes for the mask alone.
+Add up the rest and we blow through it (this is for 64 bit ELFs):
+magic: 20 {e_ident,e_type,e_machine} + 24 {e_entry,e_phoff,e_shoff} +
+       4 {e_flags} = 48              # ^^ See note below.
+mask: 20 {e_ident,e_type,e_machine} + 96 {e_entry,e_phoff,e_shoff} +
+       4 {e_flags} = 120
+Remember above we had 107 left over, and now we're at 168.  This is of
+course the *best* case scenario -- you'll also want to have NUL bytes
+in the magic & mask too to match literal zeros.
+
+Note: the reason we can use 24 in the magic is that we can work off of
+the fact that for bytes the mask would clobber, we can stuff any value
+into magic that we want.  So when mask is \x00, we don't need the magic
+to also be \x00, it can be an unescaped raw byte like '!'.  This lets
+us handle more formats (barely) under the current 256 limit, but that's
+a pretty tall hoop to force people to jump through.
+
+With all that said, let's bump the limit from 256 bytes to 1920.  This
+way we support escaping every byte of the mask & magic field (which is
+1024 bytes by themselves -- 128 * 4 * 2), and we leave plenty of room
+for other fields.  Like long paths to the interpreter (when you have
+source in your /really/long/homedir/qemu/foo).  Since the current code
+stuffs more than one structure into the same buffer, we leave a bit of
+space to easily round up to 2k.  1920 is just as arbitrary as 256 ;).
+
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+---
+ Documentation/binfmt_misc.txt |  2 +-
+ fs/binfmt_misc.c              | 19 +++++++++++++++++--
+ 2 files changed, 18 insertions(+), 3 deletions(-)
+
+diff --git a/Documentation/binfmt_misc.txt b/Documentation/binfmt_misc.txt
+index c1ed694..f64372b 100644
+--- a/Documentation/binfmt_misc.txt
++++ b/Documentation/binfmt_misc.txt
+@@ -58,7 +58,7 @@ Here is what the fields mean:
+ 
+ 
+ There are some restrictions:
+- - the whole register string may not exceed 255 characters
++ - the whole register string may not exceed 1920 characters
+  - the magic must reside in the first 128 bytes of the file, i.e.
+    offset+size(magic) has to be less than 128
+  - the interpreter string may not exceed 127 characters
+diff --git a/fs/binfmt_misc.c b/fs/binfmt_misc.c
+index b605003..c96b855 100644
+--- a/fs/binfmt_misc.c
++++ b/fs/binfmt_misc.c
+@@ -62,7 +62,22 @@ static struct file_system_type bm_fs_type;
+ static struct vfsmount *bm_mnt;
+ static int entry_count;
+ 
+-/* 
++/*
++ * Max length of the register string.  Determined by:
++ *  - 7 delimiters
++ *  - name:   ~50 bytes
++ *  - type:   1 byte
++ *  - offset: 3 bytes (has to be smaller than BINPRM_BUF_SIZE)
++ *  - magic:  128 bytes (512 in escaped form)
++ *  - mask:   128 bytes (512 in escaped form)
++ *  - interp: ~50 bytes
++ *  - flags:  5 bytes
++ * Round that up a bit, and then back off to hold the internal data
++ * (like struct Node).
++ */
++#define MAX_REGISTER_LENGTH 1920
++
++/*
+  * Check if we support the binfmt
+  * if we do, return the node, else NULL
+  * locking is done in load_misc_binary
+@@ -279,7 +294,7 @@ static Node *create_entry(const char __user *buffer, size_t count)
+ 
+ 	/* some sanity checks */
+ 	err = -EINVAL;
+-	if ((count < 11) || (count > 256))
++	if ((count < 11) || (count > MAX_REGISTER_LENGTH))
+ 		goto out;
+ 
+ 	err = -ENOMEM;
+-- 
+2.0.0
+
