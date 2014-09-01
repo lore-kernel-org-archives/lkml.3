@@ -1,77 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754677AbaIASXP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 14:23:15 -0400
-Received: from mail-yk0-f180.google.com ([209.85.160.180]:53329 "EHLO
-	mail-yk0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082AbaIASXO (ORCPT
+	id S1754627AbaIASaN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 14:30:13 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:42861 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082AbaIASaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 14:23:14 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Anton Blanchard <anton@samba.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fabian Frederick <fabf@skynet.be>,
-        linuxppc-dev@lists.ozlabs.org (open list:LINUX FOR POWERPC...),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] powerpc: Wire up three sys calls
-Date: Mon,  1 Sep 2014 14:23:07 -0400
-Message-Id: <1409595790-17437-1-git-send-email-bobby.prani@gmail.com>
-X-Mailer: git-send-email 2.1.0
+	Mon, 1 Sep 2014 14:30:11 -0400
+Message-ID: <5404BB31.3060001@ti.com>
+Date: Mon, 01 Sep 2014 13:30:09 -0500
+From: Nishanth Menon <nm@ti.com>
+Reply-To: nm@ti.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Lee Jones <lee.jones@linaro.org>
+CC: devicetree@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@linaro.org>, Tony Lindgren <tony@atomide.com>,
+        Keerthy <j-keerthy@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] mfd: palmas: Add support for optional wakeup
+References: <1408457197-30487-1-git-send-email-nm@ti.com> <20140829105619.GH24579@lee--X1> <54007515.5080506@ti.com> <20140901093206.GJ7374@lee--X1>
+In-Reply-To: <20140901093206.GJ7374@lee--X1>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch wires up three new syscalls for powerpc. The three
-new syscalls are seccomp, getrandom and memfd_create.
+On 09/01/2014 04:32 AM, Lee Jones wrote:
+> On Fri, 29 Aug 2014, Nishanth Menon wrote:
+>> On 08/29/2014 05:56 AM, Lee Jones wrote:
+>>> On Tue, 19 Aug 2014, Nishanth Menon wrote:
+>>>
+>>>> With the recent pinctrl-single changes, omaps can treat wake-up events
+>>>> from deeper idle states as interrupts.
+>>>>
+>>>> Let's add support for the optional second interrupt for wake-up
+>>>> events. And then SoC can wakeup and handle the event using it's
+>>>> regular handler.
+>>>>
+>>>> Finally, to pass the wake-up interrupt in the dts file,
+>>>> interrupts-extended property needs to be passed.
+>>>>
+>>>> This is similar in approach to commit 2a0b965cfb6e ("serial: omap: Add
+>>>> support for optional wake-up")
+>>>>
+>>>> Signed-off-by: Nishanth Menon <nm@ti.com>
+>>>> ---
+>>>>   Documentation/devicetree/bindings/mfd/palmas.txt |   20 ++++++++
+>>>
+>>> DT Ack please.
+>
+> Please read Documentation/devicetree/bindings/submittingpatches.txt
 
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+I assume you wanted me to note the following:
+"
+The Documentation/ portion of the patch should be a separate patch.
+"
+
+Many maintainers prefer that when the bindings for the device is new, 
+and when additional properties are added, they prefer it part of same 
+patch.. Anyways.. if the above is what you prefer, I can follow that.
+
+In short, I assume you'd like three patches:
+a) fix up style of current documentation - palmas to palmas@40
+b) Split documentation for interrupt-extended from the current patch 
+into it's own patch.
+c) remainder of this patch as is..
+
+Does that sound right?
+
 ---
- arch/powerpc/include/asm/systbl.h      | 3 +++
- arch/powerpc/include/asm/unistd.h      | 2 +-
- arch/powerpc/include/uapi/asm/unistd.h | 3 +++
- 3 files changed, 7 insertions(+), 1 deletion(-)
+Regards,
+Nishanth Menon
 
-diff --git a/arch/powerpc/include/asm/systbl.h b/arch/powerpc/include/asm/systbl.h
-index 542bc0f..7d8a600 100644
---- a/arch/powerpc/include/asm/systbl.h
-+++ b/arch/powerpc/include/asm/systbl.h
-@@ -362,3 +362,6 @@ SYSCALL(ni_syscall) /* sys_kcmp */
- SYSCALL_SPU(sched_setattr)
- SYSCALL_SPU(sched_getattr)
- SYSCALL_SPU(renameat2)
-+SYSCALL_SPU(seccomp)
-+SYSCALL_SPU(getrandom)
-+SYSCALL_SPU(memfd_create)
-diff --git a/arch/powerpc/include/asm/unistd.h b/arch/powerpc/include/asm/unistd.h
-index 5ce5552..4e9af3f 100644
---- a/arch/powerpc/include/asm/unistd.h
-+++ b/arch/powerpc/include/asm/unistd.h
-@@ -12,7 +12,7 @@
- #include <uapi/asm/unistd.h>
- 
- 
--#define __NR_syscalls		358
-+#define __NR_syscalls		361
- 
- #define __NR__exit __NR_exit
- #define NR_syscalls	__NR_syscalls
-diff --git a/arch/powerpc/include/uapi/asm/unistd.h b/arch/powerpc/include/uapi/asm/unistd.h
-index 2d526f7..0688fc0 100644
---- a/arch/powerpc/include/uapi/asm/unistd.h
-+++ b/arch/powerpc/include/uapi/asm/unistd.h
-@@ -380,5 +380,8 @@
- #define __NR_sched_setattr	355
- #define __NR_sched_getattr	356
- #define __NR_renameat2		357
-+#define __NR_seccomp		358
-+#define __NR_getrandom		359
-+#define __NR_memfd_create	360
- 
- #endif /* _UAPI_ASM_POWERPC_UNISTD_H_ */
--- 
-2.1.0
 
