@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753779AbaIALko (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 07:40:44 -0400
-Received: from mga09.intel.com ([134.134.136.24]:57293 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753342AbaIALkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 07:40:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,442,1406617200"; 
-   d="scan'208";a="566551154"
-Message-ID: <1409571613.30155.57.camel@linux.intel.com>
-Subject: Re: [PATCH v1 0/5] mfd: lpc_sch: Intel Quark support
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-Date: Mon, 01 Sep 2014 14:40:13 +0300
-In-Reply-To: <20140829110043.GJ24579@lee--X1>
-References: <1408705096-31286-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1409306274.30155.30.camel@linux.intel.com>
-	 <20140829110043.GJ24579@lee--X1>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.5-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753326AbaIALsG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 07:48:06 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:38667 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751500AbaIALsE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 07:48:04 -0400
+Date: Mon, 1 Sep 2014 12:47:51 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: Will Deacon <will.deacon@arm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Kees Cook <keescook@chromium.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "arndb@arndb.de" <arndb@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v6 2/6] arm64: ptrace: allow tracer to skip a system
+	call
+Message-ID: <20140901114751.GG30401@n2100.arm.linux.org.uk>
+References: <1408611405-8943-1-git-send-email-takahiro.akashi@linaro.org> <1408611405-8943-3-git-send-email-takahiro.akashi@linaro.org> <CAGXu5jJCyqpXkdvNDCu+eMr0qnqwbqUUo4u+2p_7DvFMzfKoEw@mail.gmail.com> <53F69045.7010301@linaro.org> <20140826175128.GD23445@arm.com> <53FD72E2.4020103@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53FD72E2.4020103@linaro.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-08-29 at 12:00 +0100, Lee Jones wrote:
-> On Fri, 29 Aug 2014, Andy Shevchenko wrote:
-> 
-> > On Fri, 2014-08-22 at 13:58 +0300, Andy Shevchenko wrote:
-> > > This brings support of the LPC SCH device found on Intel Quark SoC. Patches
-> > > were compile tested, and driver runs on actual hardware.
-> > > 
-> > > Please, note that PCI ID will be used in future in the gpio-sch driver.
-> > 
-> > Bjorn, could you Ack or comment patch 3/5?
-> > 
-> > Lee, do you have any comments on the series?
-> 
-> I have marked them as 'important' and will get round to them when I
-> can.  This week has been hectic.  I will get round to it next week.
+On Wed, Aug 27, 2014 at 02:55:46PM +0900, AKASHI Takahiro wrote:
+> 1)
+> setting x0 to -ENOSYS is necessary because, otherwise, user-issued syscall(-1) will
+> return a bogus value when audit tracing is on.
+>
+> Please note that, on arm,
+>                  not traced      traced
+>                  ------          ------
+> syscall(-1)      aborted         OOPs(BUG_ON)
+> syscall(-3000)   aborted         aborted
+> syscall(1000)    ENOSYS          ENOSYS
 
-Thanks for your comments. I will fix everything we agreed about and send
-v2. For now I'm waiting for Rebecca's comment regarding to squashing
-patch 1/5 and 2/5.
+Two points here:
 
-> 
-> > > Andy Shevchenko (4):
-> > >   mfd: lpc_sch: reduce duplicate code
-> > >   mfd: lpc_sch: better code manageability with chipset info struct
-> > >   mfd: lpc_sch: Add support for Intel Quark X1000
-> > >   mfd: lpc_sch: remove FSF address
-> > > 
-> > > Josef Ahmad (1):
-> > >   pci_ids: add support for Intel Quark ILB
-> > > 
-> > >  drivers/mfd/lpc_sch.c   | 207 ++++++++++++++++++++++++++++--------------------
-> > >  include/linux/pci_ids.h |   1 +
-> > >  2 files changed, 122 insertions(+), 86 deletions(-)
-> > > 
-> > 
-> > 
-> 
+1. You've found a case which causes a BUG_ON().  Where is the bug report
+   for this, so the problem can be investigated and resolved?
 
+2. What do you mean by "aborted" ?
+
+Please, if you find a problem with 32-bit ARM, report it.  Don't hide it,
+because hiding it can be a security issue or in the case of BUG_ON(), it
+could be a denial of service issue.
+
+As you're part of Linaro, I would have thought you'd be more responsible
+in this regard - after all, Linaro is supposed to be about improving the
+ARM kernel...  Maybe I got that wrong, and Linaro is actually about
+ensuring that the ARM kernel is stuffed full of broken features?
 
 -- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
-
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
