@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754492AbaIAQs5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 12:48:57 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45065 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753965AbaIAQs4 (ORCPT
+	id S1754527AbaIAQvW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 12:51:22 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:64473 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754061AbaIAQvV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 12:48:56 -0400
-Date: Mon, 1 Sep 2014 17:48:23 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: moinejf@free.fr, lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        kuninori.morimoto.gx@renesas.com, jsarha@ti.com,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Message-ID: <20140901164823.GH29327@sirena.org.uk>
-References: <1409554012-1427-1-git-send-email-Li.Xiubo@freescale.com>
+	Mon, 1 Sep 2014 12:51:21 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="MKyq+TZLpK62LzFe"
-Content-Disposition: inline
-In-Reply-To: <1409554012-1427-1-git-send-email-Li.Xiubo@freescale.com>
-X-Cookie: Simulated picture.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCHv3] ASoC: simple-card: Fix bug of wrong decrement DT
- node's refcount
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <54046CA1.4040108@broadcom.com>
+References: <1409329464-768-1-git-send-email-geert@linux-m68k.org>
+	<54042CA1.6010904@broadcom.com>
+	<CAMuHMdV2hV_r_OASkv+U-AGVov18qFOrAVm-nDHHPHXZ6fcxxg@mail.gmail.com>
+	<54046CA1.4040108@broadcom.com>
+Date: Mon, 1 Sep 2014 18:51:19 +0200
+X-Google-Sender-Auth: -aZn_mXSN6iCvP0JZ7uF3pxfnfI
+Message-ID: <CAMuHMdWEbyXmNyPW1Mubv+idYuqsqbVVKuGyML5=vJ+58iTZig@mail.gmail.com>
+Subject: Re: [PATCH] brcmfmac: BRCMFMAC should depend on HAS_DMA
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Arend van Spriel <arend@broadcom.com>
+Cc: Brett Rudley <brudley@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        brcm80211-dev-list@broadcom.com,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Arend,
 
---MKyq+TZLpK62LzFe
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Mon, Sep 1, 2014 at 2:54 PM, Arend van Spriel <arend@broadcom.com> wrote:
+> On 09/01/14 10:44, Geert Uytterhoeven wrote:
+>> On Mon, Sep 1, 2014 at 10:21 AM, Arend van Spriel<arend@broadcom.com>
+>> wrote:
+>>>>
+>>>>    config BRCMFMAC
+>>>>          tristate "Broadcom IEEE802.11n embedded FullMAC WLAN driver"
+>>>> -       depends on CFG80211
+>>>> +       depends on CFG80211A&&   HAS_DMA
+>>>
+>>> Not sure what happened here, but CFG80211 kconfig option did was not
+>>> renamed
+>>> as far as I know. Anyway, I would like to propose a different solution.
+>>> Will get back to you when I have it ready.
 
-On Mon, Sep 01, 2014 at 02:46:52PM +0800, Xiubo Li wrote:
-> DAI links's cpu_of_node's and codec_of_node's refcounts shouldn't
-> be decremented immediately at the end of the probe() fucntion.
-> Because we will still use them before the audio card is removed.
+> I added Kconfig options for the proto layer which are selected by the host
+> interface selection. So the HAS_DMA dependency is checked for BRCMFMAC_PCIE.
 
-Applied, thanks.
+Thanks!
 
---MKyq+TZLpK62LzFe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> I am wondering whether GENERIC_IO should also be checked.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Probably not. Let's see if anyone complains ;-)
 
-iQIcBAEBAgAGBQJUBKNUAAoJELSic+t+oim9ywwP/jNIaGr+FK0cApcEdYIVvCEC
-Hr4QpH4Z188cc9cbXrD8D3ymR/Firr1KkUv2QqTbXfvZqDvMHuxnbLSBXZY4AQRd
-+9iTHdT1zFVWhNNce7pXGV3OQ6ofuKut2tzaLK0+M6/HEq1bbrUnIMkUZsPHYTo5
-cRn3tXXKVS9ZFX2aDDjyze340XI3TH+DO4heXJO92BOg64jHNWavMlq3eT8hb4wf
-4W1CDQqye00fLc2YxPb8e3m2c7Klu3yblARDZu80JZOxfGj4B2hwFBnN7xpnfzCc
-EhVTH/ZvlIhcdxnDUASCiAXWRCwf9Y/q15t08SD3FokKtkBAsubdaDYaC9wENJn7
-jv5AwVjZJbgEMBxftGhphFWljN2l+zUkKlsmy4jQiqCgYJ85tmhE5b1wIQKvbSWN
-OD51kDvmKm45iHmh+FpSE9tzDrByG15pQmFgaZPV5RLKsY31iGMAYev+C9hniLu5
-FUcx4dkyNuYy3bTsrowh9ojUGIbkEj5M4Q7vULdlmULqcTPVcml/2JuLFAmB4G4/
-79Nz5xUaRppE1wlLovOvoouEtUFFjnt2ts4r9zlic9UG4JgzcUPoIkxahEer1xWj
-GCbBd+bJvIHERHe1J443TkWgcTnsHMs2QTBNWp8XjNN776PEKR4jWMyYgzKQ6Fpl
-1P6B2lVvFilsL7OK3XsD
-=/Lsp
------END PGP SIGNATURE-----
+> Can you verify the patch below works with your configuration?
 
---MKyq+TZLpK62LzFe--
+Yes, it compiles and links fine now (after applying it manually due to
+whitespace mess-up).
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
