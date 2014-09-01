@@ -1,165 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752433AbaIAGxJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 02:53:09 -0400
-Received: from smtp1-g21.free.fr ([212.27.42.1]:2041 "EHLO smtp1-g21.free.fr"
+	id S1752441AbaIAGzv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 02:55:51 -0400
+Received: from mga14.intel.com ([192.55.52.115]:39177 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751198AbaIAGxG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 02:53:06 -0400
-Date: Mon, 1 Sep 2014 08:54:25 +0200
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: <broonie@kernel.org>, <lgirdwood@gmail.com>, <perex@perex.cz>,
-        <tiwai@suse.de>, <kuninori.morimoto.gx@renesas.com>, <jsarha@ti.com>,
-        <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2 2/2] ASoC: simple-card: Fix bug of wrong decrement DT
- node's refcount
-Message-ID: <20140901085425.6553dac5@armhf>
-In-Reply-To: <1409535327-11449-3-git-send-email-Li.Xiubo@freescale.com>
-References: <1409535327-11449-1-git-send-email-Li.Xiubo@freescale.com>
-	<1409535327-11449-3-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; arm-unknown-linux-gnueabihf)
+	id S1752012AbaIAGzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 02:55:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="379656595"
+Message-ID: <5404186E.4090409@linux.intel.com>
+Date: Mon, 01 Sep 2014 09:55:42 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Jason Wang <jasowang@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>
+CC: Ingo Molnar <mingo@kernel.org>, Mike Galbraith <umgwanakikbuti@gmail.com>,
+        davem@davemloft.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mst@redhat.com,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Ingo Molnar jacob.e.keller@intel.com" <mingo@elte.hu>
+Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process
+ is runnable
+References: <1408608310-13579-1-git-send-email-jasowang@redhat.com>	 <1408608310-13579-2-git-send-email-jasowang@redhat.com>	 <1408683665.5648.69.camel@marge.simpson.net>	 <20140822073653.GA7372@gmail.com> <53F70887.8030602@redhat.com> <1408716976.5604.18.camel@edumazet-glaptop2.roam.corp.google.com> <53FB3715.7070009@linux.intel.com> <53FC3466.8000304@redhat.com>
+In-Reply-To: <53FC3466.8000304@redhat.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Sep 2014 09:35:27 +0800
-Xiubo Li <Li.Xiubo@freescale.com> wrote:
-
-> DAI links's cpu_of_node's and codec_of_node's refcounts shouldn't
-> be decremented immediately at the end of the probe() fucntion.
-> Because we will still use them before the audio card is removed.
-
-Right, but your patch seems a bit complicated. See below.
-
+On 26/08/2014 10:16, Jason Wang wrote:
+> On 08/25/2014 09:16 PM, Eliezer Tamir wrote:
+>> Here are my 2 cents:
+>> I think Ingo's suggestion of only yielding to tasks with same or higher
+>> priority makes sense.
 > 
-> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-> ---
->  sound/soc/generic/simple-card.c | 52 ++++++++++++++++++++++-------------------
->  1 file changed, 28 insertions(+), 24 deletions(-)
-> 
-> diff --git a/sound/soc/generic/simple-card.c b/sound/soc/generic/simple-card.c
-> index 9e170fe..08c5d7d 100644
-> --- a/sound/soc/generic/simple-card.c
-> +++ b/sound/soc/generic/simple-card.c
-> @@ -307,6 +307,22 @@ dai_link_of_err:
->  	return ret;
->  }
->  
-> +static inline void
-> +asoc_simple_card_unref(const struct snd_soc_dai_link *dai_link,
-> +		       int num_links)
-> +{
-> +	struct device_node *np;
-> +
-> +	while (num_links--) {
-> +		np = dai_link[num_links].cpu_of_node;
-> +		if (np)
-> +			of_node_put(np);
-> +		np = dai_link[num_links].codec_of_node;
-> +		if (np)
-> +			of_node_put(np);
-> +	}
-> +}
-> +
->  static int asoc_simple_card_parse_of(struct device_node *node,
->  				     struct simple_card_data *priv,
->  				     struct device *dev,
-> @@ -355,6 +371,7 @@ static int asoc_simple_card_parse_of(struct device_node *node,
->  							   dai_props + i,
->  							   false);
->  			if (ret < 0) {
-> +				asoc_simple_card_unref(dai_link, i + 1);
->  				of_node_put(np);
->  				return ret;
->  			}
-> @@ -374,27 +391,6 @@ static int asoc_simple_card_parse_of(struct device_node *node,
->  	return 0;
->  }
->  
-> -/* update the reference count of the devices nodes at end of probe */
-> -static int asoc_simple_card_unref(struct platform_device *pdev)
-> -{
-> -	struct snd_soc_card *card = platform_get_drvdata(pdev);
-> -	struct snd_soc_dai_link *dai_link;
-> -	struct device_node *np;
-> -	int num_links;
-> -
-> -	for (num_links = 0, dai_link = card->dai_link;
-> -	     num_links < card->num_links;
-> -	     num_links++, dai_link++) {
-> -		np = (struct device_node *) dai_link->cpu_of_node;
-> -		if (np)
-> -			of_node_put(np);
-> -		np = (struct device_node *) dai_link->codec_of_node;
-> -		if (np)
-> -			of_node_put(np);
-> -	}
-> -	return 0;
-> -}
-> -
->  static int asoc_simple_card_probe(struct platform_device *pdev)
->  {
->  	struct simple_card_data *priv;
-> @@ -441,7 +437,7 @@ static int asoc_simple_card_probe(struct platform_device *pdev)
->  		if (ret < 0) {
->  			if (ret != -EPROBE_DEFER)
->  				dev_err(dev, "parse error %d\n", ret);
-> -			goto err;
-> +			return ret;
->  		}
->  
->  	} else {
-> @@ -483,11 +479,18 @@ static int asoc_simple_card_probe(struct platform_device *pdev)
->  
->  	ret = devm_snd_soc_register_card(&pdev->dev, &priv->snd_card);
->  
-> -err:
-> -	asoc_simple_card_unref(pdev);
->  	return ret;
->  }
+> I'm not sure I get your meaning. Do you mean calling yield_to() directly
+> in sk_busy_loop?
 
-The main problem is there: don't unref the nodes is no error.
-Why not simply:
- 
- 	ret = devm_snd_soc_register_card(&pdev->dev, &priv->snd_card);
-+	if (ret >= 0)
-+		return ret;		/* success */
- 
- err:
-	asoc_simple_card_unref(pdev);
- 	return ret;
- }
+Think about the case where two processes are busy polling on the
+same CPU and the same device queue. Since busy polling processes
+incoming packets on the queue from any process, this scenario works
+well currently, and will not work at all when polling yields to other
+processes that are of the same priority that are running on the same
+CPU.
 
-? Then, the above stuff is not needed.
+As a side note, there is a lot of room for improvement when two
+processes on the same CPU want to busy poll on different device
+queues.
+The RFC code I published for epoll support showed one possible
+way of solving this, but I'm sure that there are other possibilities.
 
-> +static int asoc_simple_card_remove(struct platform_device *pdev)
-> +{
-> +	struct snd_soc_card *card = platform_get_drvdata(pdev);
-> +
-> +	asoc_simple_card_unref(card->dai_link, card->num_links);
-> +
-> +	return 0;
-> +}
-> +
->  static const struct of_device_id asoc_simple_of_match[] = {
->  	{ .compatible = "simple-audio-card", },
->  	{},
-> @@ -501,6 +504,7 @@ static struct platform_driver asoc_simple_card = {
->  		.of_match_table = asoc_simple_of_match,
->  	},
->  	.probe = asoc_simple_card_probe,
-> +	.remove = asoc_simple_card_remove,
->  };
->  
->  module_platform_driver(asoc_simple_card);
+Maybe the networking subsystem should maintain a list of device
+queues that need busypolling and have a thread that would poll
+all of them when there's nothing better to do.
 
-OK.
+I'm aware of similar work on busy polling on NVMe devices, so
+maybe there should be a global busypoll thread for all devices
+that support it.
 
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+BTW, I have someone inside Intel that wants to test future patches. Feel
+free to send me patches for testing, even if they are not ready for
+publishing yet.
+
+Cheers,
+Eliezer
