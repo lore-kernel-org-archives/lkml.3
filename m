@@ -1,86 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754594AbaIAQyc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 12:54:32 -0400
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.218]:44409 "EHLO
-	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754180AbaIAQyb convert rfc822-to-8bit (ORCPT
+	id S1754622AbaIAQzL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 12:55:11 -0400
+Received: from smtprelay0173.hostedemail.com ([216.40.44.173]:53643 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753933AbaIAQzK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 12:54:31 -0400
-X-RZG-AUTH: :JGIXVUS7cutRB/49FwqZ7WcKdUCnXG6JabOfSXKWrat/gtPvyOWM
-X-RZG-CLASS-ID: mo00
-Subject: Re: PROBLEM: bindings for drivers/mfd/twl4030-power.c
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-In-Reply-To: <20140825212652.GR17254@atomide.com>
-Date: Mon, 1 Sep 2014 18:54:16 +0200
-Cc: Lee Jones <lee.jones@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
-        Marek Belisko <marek@goldelico.com>, linux-omap@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <EBD1E2E6-E596-4B3D-B093-144ABDD7DEDE@goldelico.com>
-References: <FAC7D7E5-1D05-4D63-821F-C56D3AAA8FF9@goldelico.com> <20140825212652.GR17254@atomide.com>
-To: Tony Lindgren <tony@atomide.com>
-X-Mailer: Apple Mail (2.1085)
+	Mon, 1 Sep 2014 12:55:10 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:800:960:968:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3865:3866:3867:3872:3874:4250:4321:4362:4823:5007:7652:8604:9393:10004:10400:10848:11232:11658:11914:12517:12519:12555:12740:13019:13069:13095:13161:13221:13229:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: oil39_49d6739396152
+X-Filterd-Recvd-Size: 2126
+Message-ID: <1409590506.2614.4.camel@joe-AO725>
+Subject: [PATCH - resend] checkpatch: Remove unnecessary + after {8,8}
+From: Joe Perches <joe@perches.com>
+To: Greg KH <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: devel@driverdev.osuosl.org,
+        kernel-janitors <kernel-janitors@vger.kernel.org>,
+        kernelnewbies@kernelnewbies.org, LKML <linux-kernel@vger.kernel.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        =?ISO-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>
+Date: Mon, 01 Sep 2014 09:55:06 -0700
+In-Reply-To: <20140712020520.GA18611@kroah.com>
+References: <1405128087.6751.12.camel@joe-AO725>
+	 <20140712013927.GA30781@kroah.com> <1405129612.6751.24.camel@joe-AO725>
+	 <20140712020114.GA12301@kroah.com> <20140712020520.GA18611@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+There's a useless "+" use that needs to be removed as perl 5.20
+emits a "Useless use of greediness modifier '+'" message each
+time it's hit.
 
-Am 25.08.2014 um 23:26 schrieb Tony Lindgren:
+Reported-by: Greg KH <gregkh@linuxfoundation.org>
+Signed-off-by: Joe Perches <joe@perches.com>
+---
 
-> * Dr. H. Nikolaus Schaller <hns@goldelico.com> [140817 08:46]:
->> I am trying to make ti,use_poweroff work on 3.17-rc1 for the GTA04 board.
->> Poweroff was broken for a while and I found that the driver isn't loaded at all.
->> 
->> It appears to me that commit e7cd1d1eb16fcdf53001b926187a82f1f3e1a7e6
->> did rename the compatible entry from "ti,twl4030-power" to "ti,twl4030-power-reset"
->> but this was not documented in the bindings and of course our DT does not
->> match.
->> 
->> Even your commit message talks about "ti,twl4030-power" although I can't find it
->> in the code.
-> 
-> Hmm sorry did I accidentally remove ti,twl4030-power? If so, that should
-> be added back for sure. Do you have a patch for that already?
+Resending, maybe Andrew's all-seeing eye blinked...
 
-No, I have only updated our device tree because I don't know if it really should
-be added back or not.
+On Fri, 2014-07-11 at 19:05 -0700, Greg KH wrote:
+> Ok, with linux-next I get the same thing:
 
-As you say the "ti,twl4030-power" does not configure anything. So what
-is it good for?
+Thanks Greg.
 
-> 
->> Are "ti,twl4030-power" and "ti,twl4030-power-reset" doing the same?
-> 
-> No, they are separate where ti,twl4030-power does not configure the
-> twl4030 in any way where ti,twl4030-power-reset configures the warm
-> reset sequence.
+ scripts/checkpatch.pl | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Yes, that is what I deduced because our old setting of "ti,twl4030-power" did
-no longer configure the power-off and not even load the driver.
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index d5ac001..370a974 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2376,7 +2376,7 @@ sub process {
+ 				"please, no space before tabs\n" . $herevet) &&
+ 			    $fix) {
+ 				while ($fixed[$fixlinenr] =~
+-					   s/(^\+.*) {8,8}+\t/$1\t\t/) {}
++					   s/(^\+.*) {8,8}\t/$1\t\t/) {}
+ 				while ($fixed[$fixlinenr] =~
+ 					   s/(^\+.*) +\t/$1\t/) {}
+ 			}
 
-> 
-> For gta04, what you really want is to use ti,twl4030-power-idle or
-> even ti,twl4030-power-idle-osc-off if the board is wired to support
-> cutting off the oscillator.
 
-Ok, I see (but must admit that I don't understand the details even after
-reading the bindings.txt).
-
-Currently we develop without taking care of suspend (the DT migration was
-much more troublesome work than anticipated) but that should be changed soon.
-
-> 
-> And you probably also want to configure some wake-up interrupts at least
-> for the the UARTs in the board specific .dts file, see for example the
-> UART3 in the existing board files that have:
-> 
-> interrupts-extended = <&intc 74 &omap3_pmx_core OMAP3_UART3_RX>;
-
-thanks for the hint!
-
-BR,
-Nikolaus
 
