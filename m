@@ -1,102 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045AbaIAPUA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 11:20:00 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:33101 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753822AbaIAPT6 (ORCPT
+	id S1754077AbaIAPUs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 11:20:48 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:35173 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753426AbaIAPUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 11:19:58 -0400
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, linux-serial@vger.kernel.org,
+	Mon, 1 Sep 2014 11:20:47 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-2f-54048ecdf095
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v3] serial: serial_core.c: printk replacement
-Date: Mon,  1 Sep 2014 20:49:43 +0530
-Message-Id: <1409584783-3021-1-git-send-email-sudipm.mukherjee@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+Subject: [PATCH] clk: qcom: fix driver dependencies
+Date: Mon, 01 Sep 2014 17:20:41 +0200
+Message-id: <2408462.Vr3YfHniN8@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPLMWRmVeSWpSXmKPExsVy+t9jAd2zfSwhBt97+S3ONr1ht7i8aw6b
+	xdMJF9ksfpzpZnFg8bjc18vkcefaHjaPvi2rGD0+b5ILYInisklJzcksSy3St0vgyljfepGx
+	oIet4tn5H4wNjLNYuxg5OSQETCTWv9gBZYtJXLi3nq2LkYtDSGARo8TWjg5mCKeFSeLziuUs
+	IFVsAlYSE9tXMYLYIgJaEtsOtLKB2MwCRRJLZv0EmsTBISxgLLG6ORAkzCKgKnHt1BOwEl4B
+	TYmPc/rBbFEBT4kd21dCxQUlfky+xwIxRl5i3/6prBC2lsT6nceZJjDyzUJSNgtJ2SwkZQsY
+	mVcxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBAfjM6kdjCsbLA4xCnAwKvHwPpjFHCLEmlhW
+	XJl7iFGCg1lJhDc1gyVEiDclsbIqtSg/vqg0J7X4EKM0B4uSOO+BVutAIYH0xJLU7NTUgtQi
+	mCwTB6dUA2MFbwzDDHW31R/ELy3codY7zaT7+b3C3ONMUhod1VOf3wmzW3XgTgPHkh6W/KI/
+	dh+tFO85r1k66Wrs5aYbFwWu7tgyReK1kO72NMN5F9fzcDPLPJMLOVv+IfR6uM/sqe1rEs+u
+	tP78oqevXm5mqJ+lGfP63L5Lz/3EN6lec+JlS73X2jVB7KASS3FGoqEWc1FxIgCCo5+OQgIA	AA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-printk replaced with corresponding dev_* .
-fixed two broken user-visible strings used by the corresponding printk.
-the null check for uport->dev and port->dev is removed as dev_* will check for
-null while printing.
-printing of dev_name(uport->dev) and dev_name(port->dev) also removed as those
-are being printed by dev_* . 
+Support for Qualcomm's clock controllers should be available only on
+Qualcomm platforms.
 
-Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>
 ---
- drivers/tty/serial/serial_core.c | 26 +++++++++++---------------
- 1 file changed, 11 insertions(+), 15 deletions(-)
+ drivers/clk/qcom/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index 29a7be4..079f18d 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -892,10 +892,11 @@ static int uart_set_info(struct tty_struct *tty, struct tty_port *port,
- 			 */
- 			if (uport->flags & UPF_SPD_MASK) {
- 				char buf[64];
--				printk(KERN_NOTICE
--				       "%s sets custom speed on %s. This "
--				       "is deprecated.\n", current->comm,
--				       tty_name(port->tty, buf));
-+
-+				dev_notice(uport->dev,
-+				       "%s sets custom speed on %s. This is deprecated.\n",
-+				      current->comm,
-+				      tty_name(port->tty, buf));
- 			}
- 			uart_change_speed(tty, state, NULL);
- 		}
-@@ -1975,12 +1976,9 @@ int uart_suspend_port(struct uart_driver *drv, struct uart_port *uport)
- 		for (tries = 3; !ops->tx_empty(uport) && tries; tries--)
- 			msleep(10);
- 		if (!tries)
--			printk(KERN_ERR "%s%s%s%d: Unable to drain "
--					"transmitter\n",
--			       uport->dev ? dev_name(uport->dev) : "",
--			       uport->dev ? ": " : "",
--			       drv->dev_name,
--			       drv->tty_driver->name_base + uport->line);
-+			dev_err(uport->dev, "%s%d: Unable to drain transmitter\n",
-+				drv->dev_name,
-+				drv->tty_driver->name_base + uport->line);
+Index: b/drivers/clk/qcom/Kconfig
+===================================================================
+--- a/drivers/clk/qcom/Kconfig	2014-08-22 16:53:37.429123415 +0200
++++ b/drivers/clk/qcom/Kconfig	2014-09-01 17:13:43.604778653 +0200
+@@ -1,6 +1,7 @@
+ config COMMON_CLK_QCOM
+ 	tristate "Support for Qualcomm's clock controllers"
+ 	depends on OF
++	depends on ARCH_QCOM || COMPILE_TEST
+ 	select REGMAP_MMIO
+ 	select RESET_CONTROLLER
  
- 		if (console_suspend_enabled || !uart_console(uport))
- 			ops->shutdown(uport);
-@@ -2109,9 +2107,7 @@ uart_report_port(struct uart_driver *drv, struct uart_port *port)
- 		break;
- 	}
- 
--	printk(KERN_INFO "%s%s%s%d at %s (irq = %d, base_baud = %d) is a %s\n",
--	       port->dev ? dev_name(port->dev) : "",
--	       port->dev ? ": " : "",
-+	dev_info(port->dev, "%s%d at %s (irq = %d, base_baud = %d) is a %s\n",
- 	       drv->dev_name,
- 	       drv->tty_driver->name_base + port->line,
- 	       address, port->irq, port->uartclk / 16, uart_type(port));
-@@ -2640,7 +2636,7 @@ int uart_add_one_port(struct uart_driver *drv, struct uart_port *uport)
- 	if (likely(!IS_ERR(tty_dev))) {
- 		device_set_wakeup_capable(tty_dev, 1);
- 	} else {
--		printk(KERN_ERR "Cannot register tty device on line %d\n",
-+		dev_err(uport->dev, "Cannot register tty device on line %d\n",
- 		       uport->line);
- 	}
- 
-@@ -2675,7 +2671,7 @@ int uart_remove_one_port(struct uart_driver *drv, struct uart_port *uport)
- 	BUG_ON(in_interrupt());
- 
- 	if (state->uart_port != uport)
--		printk(KERN_ALERT "Removing wrong port: %p != %p\n",
-+		dev_alert(uport->dev, "Removing wrong port: %p != %p\n",
- 			state->uart_port, uport);
- 
- 	mutex_lock(&port_mutex);
--- 
-1.8.1.2
 
