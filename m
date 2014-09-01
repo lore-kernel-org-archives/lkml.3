@@ -1,156 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840AbaIAIuf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 04:50:35 -0400
-Received: from mail.fireflyinternet.com ([87.106.93.118]:61458 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752675AbaIAIub (ORCPT
+	id S1752893AbaIAIus (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 04:50:48 -0400
+Received: from mga14.intel.com ([192.55.52.115]:63439 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752693AbaIAIud convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 04:50:31 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.65.138;
-Date: Mon, 1 Sep 2014 09:50:22 +0100
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: ville.syrjala@linux.intel.com
-Cc: intel-gfx@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
-        Tibor Billes <tbilles@gmx.com>
-Subject: Re: [Intel-gfx] [PATCH] drm/i915: Fix lock dropping in
- intel_tv_detect()
-Message-ID: <20140901085022.GB11648@nuc-i3427.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	ville.syrjala@linux.intel.com, intel-gfx@lists.freedesktop.org,
-	David Airlie <airlied@linux.ie>,
-	Daniel Vetter <daniel.vetter@ffwll.ch>,
-	linux-kernel@vger.kernel.org, Tibor Billes <tbilles@gmx.com>
-References: <877g1ndfh5.fsf@intel.com>
- <1409558986-5099-1-git-send-email-ville.syrjala@linux.intel.com>
+	Mon, 1 Sep 2014 04:50:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,441,1406617200"; 
+   d="scan'208";a="584476600"
+From: "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>
+To: Luis Henriques <luis.henriques@canonical.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "kernel-team@lists.ubuntu.com" <kernel-team@lists.ubuntu.com>,
+        "Coelho, Luciano" <luciano.coelho@intel.com>
+Subject: RE: [PATCH 3.11 005/137] iwlwifi: dvm: don't enable CTS to self
+Thread-Topic: [PATCH 3.11 005/137] iwlwifi: dvm: don't enable CTS to self
+Thread-Index: AQHPuseB6g8+Jto6MEGWBl5OYNwFlpvqsZewgAEo34CAADNYIA==
+Date: Mon, 1 Sep 2014 08:50:28 +0000
+Message-ID: <0BA3FCBA62E2DC44AF3030971E174FB31B27B314@hasmsx107.ger.corp.intel.com>
+References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
+ <1408354398-10226-6-git-send-email-luis.henriques@canonical.com>
+ <0BA3FCBA62E2DC44AF3030971E174FB31B277EB2@hasmsx107.ger.corp.intel.com>
+ <20140901084601.GA6903@hercules>
+In-Reply-To: <20140901084601.GA6903@hercules>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.10]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1409558986-5099-1-git-send-email-ville.syrjala@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 01, 2014 at 11:09:46AM +0300, ville.syrjala@linux.intel.com wrote:
-> From: Ville Syrjälä <ville.syrjala@linux.intel.com>
 > 
-> When intel_tv_detect() fails to do load detection it would forget to
-> drop the locks and clean up the acquire context. Fix it up.
+> On Sun, Aug 31, 2014 at 12:04:19PM +0000, Grumbach, Emmanuel wrote:
+> > > -----Original Message-----
+> > > From: Luis Henriques [mailto:luis.henriques@canonical.com]
+> > > Sent: Monday, August 18, 2014 12:31 PM
+> > > To: linux-kernel@vger.kernel.org; stable@vger.kernel.org; kernel-
+> > > team@lists.ubuntu.com
+> > > Cc: Grumbach, Emmanuel; Luis Henriques
+> > > Subject: [PATCH 3.11 005/137] iwlwifi: dvm: don't enable CTS to self
+> > >
+> > > 3.11.10.15 -stable review patch.  If anyone has any objections,
+> > > please let me know.
+> >
+> > Just came back from a long travel - please drop this one. It has caused
+> trouble to people.
+> > I need to revert it.
+> >
 > 
-> This is a regression from:
->  commit 208bf9fdcd3575aa4a5d48b3e0295f7cdaf6fc44
->  Author: Ville Syrjälä <ville.syrjala@linux.intel.com>
->  Date:   Mon Aug 11 13:15:35 2014 +0300
+> Thank you for your feedback, Emmanuel.
 > 
->     drm/i915: Fix locking for intel_enable_pipe_a()
+> Unfortunately, this kernel has been released already and no more updates
+> are foreseen to the 3.11 extended kernel -- this was its last release.
 > 
-> Cc: Tibor Billes <tbilles@gmx.com>
-> Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-> ---
->  drivers/gpu/drm/i915/intel_tv.c | 15 +++++++++------
->  1 file changed, 9 insertions(+), 6 deletions(-)
+
+Ok -  I just pushed the revert to my tree and sent a pull request.
+
+> Cheers,
+> --
+> Luís
 > 
-> diff --git a/drivers/gpu/drm/i915/intel_tv.c b/drivers/gpu/drm/i915/intel_tv.c
-> index 32186a6..abbf0ea 100644
-> --- a/drivers/gpu/drm/i915/intel_tv.c
-> +++ b/drivers/gpu/drm/i915/intel_tv.c
-> @@ -1311,7 +1311,8 @@ intel_tv_detect(struct drm_connector *connector, bool force)
->  {
->  	struct drm_display_mode mode;
->  	struct intel_tv *intel_tv = intel_attached_tv(connector);
-> -	int type;
-> +	enum drm_connector_status status = connector->status;
-> +	int type = -1;
->  
->  	DRM_DEBUG_KMS("[CONNECTOR:%d:%s] force=%d\n",
->  		      connector->base.id, connector->name,
-> @@ -1328,21 +1329,23 @@ intel_tv_detect(struct drm_connector *connector, bool force)
->  		if (intel_get_load_detect_pipe(connector, &mode, &tmp, &ctx)) {
->  			type = intel_tv_detect_type(intel_tv, connector);
->  			intel_release_load_detect_pipe(connector, &tmp);
-> +			status = type < 0 ?
-> +				connector_status_disconnected :
-> +				connector_status_connected;
->  		} else
-> -			return connector_status_unknown;
-> +			status = connector_status_unknown;
->  
->  		drm_modeset_drop_locks(&ctx);
->  		drm_modeset_acquire_fini(&ctx);
-> -	} else
-> -		return connector->status;
-> +	}
->  
->  	if (type < 0)
-> -		return connector_status_disconnected;
-> +		return status;
->  
->  	intel_tv->type = type;
->  	intel_tv_find_better_format(connector);
->  
-> -	return connector_status_connected;
-> +	return status;
-
-Hmm, this makes the code unclear. if type != -1, status should always be
-connected.
-
-I think:
-
-if (status != connector_status_connected)
-  return status;
-
-if (WARN_ON(type < 0))
-   return connector_status_disconnected;
-
-intel_tv->type = type;
-find_better_format();
-return connector_status_connected;
-
-And leave type unset to encourage gcc.
-
-
-
-diff --git a/drivers/gpu/drm/i915/intel_tv.c b/drivers/gpu/drm/i915/intel_tv.c
-index 32186a6..a109b7b 100644
---- a/drivers/gpu/drm/i915/intel_tv.c
-+++ b/drivers/gpu/drm/i915/intel_tv.c
-@@ -1311,6 +1311,7 @@ intel_tv_detect(struct drm_connector *connector, bool force)
- {
-        struct drm_display_mode mode;
-        struct intel_tv *intel_tv = intel_attached_tv(connector);
-+       enum drm_connector_status status = connector->status;
-        int type;
- 
-        DRM_DEBUG_KMS("[CONNECTOR:%d:%s] force=%d\n",
-@@ -1327,17 +1328,20 @@ intel_tv_detect(struct drm_connector *connector, bool force)
- 
-                if (intel_get_load_detect_pipe(connector, &mode, &tmp, &ctx)) {
-                        type = intel_tv_detect_type(intel_tv, connector);
-+                       status = type < 0 ?
-+                               connector_status_disconnected :
-+                               connector_status_connected;
-+
-                        intel_release_load_detect_pipe(connector, &tmp);
-                } else
--                       return connector_status_unknown;
-+                       status = connector_status_unknown;
- 
-                drm_modeset_drop_locks(&ctx);
-                drm_modeset_acquire_fini(&ctx);
--       } else
--               return connector->status;
-+       }
- 
--       if (type < 0)
--               return connector_status_disconnected;
-+       if (status != connector_status_connected)
-+               return status;
- 
-        intel_tv->type = type;
-        intel_tv_find_better_format(connector);
-
--- 
-Chris Wilson, Intel Open Source Technology Centre
+> > >
+> > > ------------------
+> > >
+> > > From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+> > >
+> > > commit 43d826ca5979927131685cc2092c7ce862cb91cd upstream.
+> > >
+> > > We should always prefer to use full RTS protection. Using CTS to
+> > > self gives a meaningless improvement, but this flow is much harder
+> > > for the firmware which is likely to have issues with it.
+> > >
+> > > Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+> > > Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+> > > ---
+> > >  drivers/net/wireless/iwlwifi/dvm/rxon.c | 12 ------------
+> > >  1 file changed, 12 deletions(-)
+> > >
+> > > diff --git a/drivers/net/wireless/iwlwifi/dvm/rxon.c
+> > > b/drivers/net/wireless/iwlwifi/dvm/rxon.c
+> > > index cd1ad0019185..ca17e4c9eca2 100644
+> > > --- a/drivers/net/wireless/iwlwifi/dvm/rxon.c
+> > > +++ b/drivers/net/wireless/iwlwifi/dvm/rxon.c
+> > > @@ -1072,13 +1072,6 @@ int iwlagn_commit_rxon(struct iwl_priv *priv,
+> > > struct iwl_rxon_context *ctx)
+> > >  	/* recalculate basic rates */
+> > >  	iwl_calc_basic_rates(priv, ctx);
+> > >
+> > > -	/*
+> > > -	 * force CTS-to-self frames protection if RTS-CTS is not preferred
+> > > -	 * one aggregation protection method
+> > > -	 */
+> > > -	if (!priv->hw_params.use_rts_for_aggregation)
+> > > -		ctx->staging.flags |= RXON_FLG_SELF_CTS_EN;
+> > > -
+> > >  	if ((ctx->vif && ctx->vif->bss_conf.use_short_slot) ||
+> > >  	    !(ctx->staging.flags & RXON_FLG_BAND_24G_MSK))
+> > >  		ctx->staging.flags |= RXON_FLG_SHORT_SLOT_MSK; @@ -
+> > > 1484,11 +1477,6 @@ void iwlagn_bss_info_changed(struct ieee80211_hw
+> > > *hw,
+> > >  	else
+> > >  		ctx->staging.flags &= ~RXON_FLG_TGG_PROTECT_MSK;
+> > >
+> > > -	if (bss_conf->use_cts_prot)
+> > > -		ctx->staging.flags |= RXON_FLG_SELF_CTS_EN;
+> > > -	else
+> > > -		ctx->staging.flags &= ~RXON_FLG_SELF_CTS_EN;
+> > > -
+> > >  	memcpy(ctx->staging.bssid_addr, bss_conf->bssid, ETH_ALEN);
+> > >
+> > >  	if (vif->type == NL80211_IFTYPE_AP ||
+> > > --
+> > > 1.9.1
+> >
