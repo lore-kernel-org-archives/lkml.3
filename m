@@ -1,122 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752594AbaIAHsk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 03:48:40 -0400
-Received: from mail-by2lp0241.outbound.protection.outlook.com ([207.46.163.241]:6925
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752165AbaIAHsi convert rfc822-to-8bit (ORCPT
+	id S1752620AbaIAHt0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 03:49:26 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:35450 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751405AbaIAHtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 03:48:38 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>
-CC: "broonie@kernel.org" <broonie@kernel.org>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
-        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>,
-        "moinejf@free.fr" <moinejf@free.fr>, "andrew@lunn.ch" <andrew@lunn.ch>,
-        "jsarha@ti.com" <jsarha@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        Shawn Guo <Shawn.Guo@freescale.com>,
-        "Nicolin Chen" <nicoleotsuka@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [alsa-devel] [PATCHv1 1/7] ASoC: simple-card: Merge single and
- muti	DAI link code.
-Thread-Topic: [alsa-devel] [PATCHv1 1/7] ASoC: simple-card: Merge single and
- muti	DAI link code.
-Thread-Index: AQHPxbhYUt4NIVbtUkuD0vLpW80mr5vr5jeA
-Date: Mon, 1 Sep 2014 07:48:34 +0000
-Message-ID: <ac4db632b6c944dcb2179089076b7871@BY2PR0301MB0613.namprd03.prod.outlook.com>
-References: <1409545781-20530-1-git-send-email-Li.Xiubo@freescale.com>
-	<1409545781-20530-2-git-send-email-Li.Xiubo@freescale.com>
- <87tx4rzszx.wl%kuninori.morimoto.gx@gmail.com>
-In-Reply-To: <87tx4rzszx.wl%kuninori.morimoto.gx@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [123.151.195.49]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-x-forefront-prvs: 03218BFD9F
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(199003)(51704005)(189002)(74316001)(77982001)(76482001)(106116001)(33646002)(90102001)(105586002)(107046002)(50986999)(21056001)(76176999)(4396001)(83322001)(110136001)(108616004)(54356999)(106356001)(19580395003)(76576001)(86362001)(101416001)(92566001)(74502001)(31966008)(79102001)(87936001)(95666004)(46102001)(74662001)(66066001)(2656002)(77096002)(80022001)(85306004)(99286002)(81342001)(85852003)(81542001)(20776003)(21314002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB338;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 1 Sep 2014 03:49:24 -0400
+Date: Mon, 1 Sep 2014 08:49:18 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Pankaj Dubey <pankaj.dubey@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kgene.kim@samsung.com,
+        linux@arm.linux.org.uk, arnd@arndb.de, vikas.sajjan@samsung.com,
+        joshi@samsung.com, naushad@samsung.com, thomas.ab@samsung.com,
+        chow.kim@samsung.com, Tomasz Figa <t.figa@samsung.com>
+Subject: Re: [PATCH] mfd: syscon: Decouple syscon interface from syscon
+ devices
+Message-ID: <20140901074918.GB6226@lee--X1>
+References: <1408694991-21615-1-git-send-email-pankaj.dubey@samsung.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1408694991-21615-1-git-send-email-pankaj.dubey@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hi Xiubo
-> 
-> Thank you for your patch.
-> This clean-up is very nice for me.
-> But, I have 1 small comment
-> 
-> >  asoc_simple_card_sub_parse_of(struct device_node *np,
-> >  			      struct asoc_simple_dai *dai,
-> >  			      struct device_node **p_node,
-> > -			      const char **name)
-> > +			      const char **name,
-> > +			      unsigned int *daifmt)
-> >  {
-> >  	struct device_node *node;
-> >  	struct clk *clk;
-> >  	u32 val;
-> >  	int ret;
-> >
-> > +	if (!daifmt)
-> > +		return -EINVAL;
-> > +
-> > +	/*
-> > +	 * Parse format, bitclock-inversion and frame-inversion
-> > +	 * for DAI each device.
-> > +	 */
-> > +	*daifmt = snd_soc_of_parse_daifmt(np, NULL, NULL, NULL);
-> > +	*daifmt &= ~(SND_SOC_DAIFMT_MASTER_MASK | SND_SOC_DAIFMT_FORMAT_MASK);
-> (snip)
-> >  	ret = asoc_simple_card_sub_parse_of(np, &dai_props->cpu_dai,
-> >  					    &dai_link->cpu_of_node,
-> > -					    &dai_link->cpu_dai_name);
-> > +					    &dai_link->cpu_dai_name,
-> > +					    &daifmt);
-> (snip)
-> > +	dai_props->cpu_dai.fmt |= daifmt;
-> (snip)
-> >  	ret = asoc_simple_card_sub_parse_of(np, &dai_props->codec_dai,
-> >  					    &dai_link->codec_of_node,
-> > -					    &dai_link->codec_dai_name);
-> > +					    &dai_link->codec_dai_name,
-> > +					    &daifmt);
-> (snip)
-> > +	dai_props->codec_dai.fmt |= daifmt;
-> 
-> These are using
-> 
->       asoc_simple_card_sub_parse_of(np, &dai_props->cpu_dai, xxx)
->       asoc_simple_card_sub_parse_of(np, &dai_props->codec_dai, xxx)
-> 
-> I guess, asoc_simple_card_sub_parse_of() can update
-> below inside function
-> 
-> 	dai_props->cpu_dai.fmt |= daifmt;
-> 	dai_props->codec_dai.fmt |= daifmt;
-> 
-> 
+On Fri, 22 Aug 2014, Pankaj Dubey wrote:
 
-Yes, yes, that's very well.
+> From: Tomasz Figa <t.figa@samsung.com>
+> 
+> Currently a syscon entity can be only registered directly through a
+> platform device that binds to a dedicated driver. However in certain use
+> cases it is desirable to make a device used with another driver a syscon
+> interface provider. For example, certain SoCs (e.g. Exynos) contain
+> system controller blocks which perform various functions such as power
+> domain control, CPU power management, low power mode control, but in
+> addition contain certain IP integration glue, such as various signal
+> masks, coprocessor power control, etc. In such case, there is a need to
+> have a dedicated driver for such system controller but also share
+> registers with other drivers. The latter is where the syscon interface
+> is helpful.
+> 
+> This patch decouples syscon object from syscon driver, so that it can be
+> registered from any driver in addition to the original "syscon" platform
+> driver.
+> 
+> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+> ---
+> 
+> RFC patch [1] was posted by Tomasz Figa. This patch addresses some of
+> comments given by Arnd to RFC patch, and further decouples syscon from
+> device model. It also gives flexibility of registering with syscon at
+> early stage using device_node object.
 
-Thanks very much for you advice.
+It would be helpful if Arnd gave this revision his blessing (Ack).
 
-For some reason I must resent this patch series, and then I will
-fix this together.
+> [1]: https://lkml.org/lkml/2014/6/17/331
+> 
+>  drivers/mfd/syscon.c       |  112 ++++++++++++++++++++++++++++----------------
+>  include/linux/mfd/syscon.h |   14 ++++++
+>  2 files changed, 86 insertions(+), 40 deletions(-)
+> 
+> diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
+> index ca15878..a91db30 100644
+> --- a/drivers/mfd/syscon.c
+> +++ b/drivers/mfd/syscon.c
+> @@ -14,6 +14,7 @@
 
+[...]
 
-BRs
-Xiubo
+>  struct regmap *syscon_regmap_lookup_by_pdevname(const char *s)
+>  {
+> -	struct device *dev;
+> -	struct syscon *syscon;
+> -
+> -	dev = driver_find_device(&syscon_driver.driver, NULL, (void *)s,
+> -				 syscon_match_pdevname);
+> -	if (!dev)
+> -		return ERR_PTR(-EPROBE_DEFER);
+> -
+> -	syscon = dev_get_drvdata(dev);
+> +	struct syscon *entry, *syscon = NULL;
+> +	struct platform_device *pdev = NULL;
+> +
+> +	spin_lock(&syscon_list_slock);
+> +	list_for_each_entry(entry, &syscon_list, list) {
+> +		 pdev = of_find_device_by_node(entry->np);
 
+White space error.
+
+Did you run this through checkpatch.pl?
+
+> +		if (pdev && !strcmp(dev_name(&pdev->dev), s)) {
+> +			syscon = entry;
+> +			break;
+> +		}
+> +	}
+> +	spin_unlock(&syscon_list_slock);
+>  
+> -	return syscon->regmap;
+> +	return syscon ? syscon->regmap : ERR_PTR(-EPROBE_DEFER);
+>  }
+>  EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_pdevname);
+
+[...]
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
