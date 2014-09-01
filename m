@@ -1,299 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531AbaIAI5e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 04:57:34 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43757 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751629AbaIAI5d (ORCPT
+	id S1752753AbaIAI64 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 04:58:56 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:63308 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752327AbaIAI6y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 04:57:33 -0400
-From: Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>
-To: broonie@kernel.org, lgirdwood@gmail.com
-Cc: perex@perex.cz, tiwai@suse.de, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: [PATCH v4] ASOC: dapm: add code to configure dai link parameters
-Date: Mon,  1 Sep 2014 09:56:53 +0100
-Message-Id: <1409561813-24753-1-git-send-email-nikesh@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 1 Sep 2014 04:58:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <1409560606.30155.41.camel@linux.intel.com>
+References: <1408957395-404-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1408957395-404-2-git-send-email-andriy.shevchenko@linux.intel.com>
+	<20140830225407.GF7996@ZenIV.linux.org.uk>
+	<1409560606.30155.41.camel@linux.intel.com>
+Date: Mon, 1 Sep 2014 10:58:52 +0200
+X-Google-Sender-Auth: DBEYOZn6cK_wZnvNrFOayxzS9dQ
+Message-ID: <CAMuHMdUU8BVTtEb6QE7zW+XtF4yfbwg=O+Lv84A0F3X9M1t=Rw@mail.gmail.com>
+Subject: Re: [PATCH v3 1/5] seq_file: provide an analogue of print_hex_dump()
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Tadeusz Struk <tadeusz.struk@intel.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Helge Deller <deller@gmx.de>,
+        Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Joe Perches <joe@perches.com>, Marek Vasut <marex@denx.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dai-link params for codec-codec links were fixed. The fixed
-link between codec and another chip which may be another codec,
-baseband, bluetooth codec etc may require run time configuaration
-changes. This change provides an optional alsa control to select
-one of the params from a list of params.
+Hi Andy,
 
-Signed-off-by: Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>
----
- include/sound/soc-dapm.h |    3 +
- include/sound/soc.h      |    1 +
- sound/soc/soc-core.c     |    6 +-
- sound/soc/soc-dapm.c     |  139 ++++++++++++++++++++++++++++++++++++++++++++--
- 4 files changed, 142 insertions(+), 7 deletions(-)
+On Mon, Sep 1, 2014 at 10:36 AM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+>> ... and extra copying for no good reason.  Why not check that we have
+>> enough space in buffer and generate directly into it?  See what e.g.
+>> seq_escape() is doing...
+>
+> What about this variant?
 
-diff --git a/include/sound/soc-dapm.h b/include/sound/soc-dapm.h
-index 6b59471..3ee031e 100644
---- a/include/sound/soc-dapm.h
-+++ b/include/sound/soc-dapm.h
-@@ -378,6 +378,7 @@ int snd_soc_dapm_link_dai_widgets(struct snd_soc_card *card);
- void snd_soc_dapm_connect_dai_link_widgets(struct snd_soc_card *card);
- int snd_soc_dapm_new_pcm(struct snd_soc_card *card,
- 			 const struct snd_soc_pcm_stream *params,
-+			 unsigned int num_params,
- 			 struct snd_soc_dapm_widget *source,
- 			 struct snd_soc_dapm_widget *sink);
- 
-@@ -531,6 +532,8 @@ struct snd_soc_dapm_widget {
- 	void *priv;				/* widget specific data */
- 	struct regulator *regulator;		/* attached regulator */
- 	const struct snd_soc_pcm_stream *params; /* params for dai links */
-+	unsigned int num_params; /* number of params for dai links */
-+	unsigned int params_select; /* currently selected param for dai link */
- 
- 	/* dapm control */
- 	int reg;				/* negative reg = no direct dapm */
-diff --git a/include/sound/soc.h b/include/sound/soc.h
-index ed9e2d7..51c6c4f 100644
---- a/include/sound/soc.h
-+++ b/include/sound/soc.h
-@@ -906,6 +906,7 @@ struct snd_soc_dai_link {
- 	int be_id;	/* optional ID for machine driver BE identification */
- 
- 	const struct snd_soc_pcm_stream *params;
-+	unsigned int num_params;
- 
- 	unsigned int dai_fmt;           /* format to set on init */
- 
-diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
-index b87d7d8..1db2168 100644
---- a/sound/soc/soc-core.c
-+++ b/sound/soc/soc-core.c
-@@ -1461,7 +1461,8 @@ static int soc_link_dai_widgets(struct snd_soc_card *card,
- 	capture_w = cpu_dai->capture_widget;
- 	if (play_w && capture_w) {
- 		ret = snd_soc_dapm_new_pcm(card, dai_link->params,
--					   capture_w, play_w);
-+					   dai_link->num_params, capture_w,
-+					   play_w);
- 		if (ret != 0) {
- 			dev_err(card->dev, "ASoC: Can't link %s to %s: %d\n",
- 				play_w->name, capture_w->name, ret);
-@@ -1473,7 +1474,8 @@ static int soc_link_dai_widgets(struct snd_soc_card *card,
- 	capture_w = codec_dai->capture_widget;
- 	if (play_w && capture_w) {
- 		ret = snd_soc_dapm_new_pcm(card, dai_link->params,
--					   capture_w, play_w);
-+					   dai_link->num_params, capture_w,
-+					   play_w);
- 		if (ret != 0) {
- 			dev_err(card->dev, "ASoC: Can't link %s to %s: %d\n",
- 				play_w->name, capture_w->name, ret);
-diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
-index cdc837e..a9c4c2e 100644
---- a/sound/soc/soc-dapm.c
-+++ b/sound/soc/soc-dapm.c
-@@ -729,6 +729,36 @@ static int dapm_new_pga(struct snd_soc_dapm_widget *w)
- 	return 0;
- }
- 
-+/* create new dapm dai link control */
-+static int dapm_new_dai_link(struct snd_soc_dapm_widget *w)
-+{
-+	int i, ret;
-+	struct snd_kcontrol *kcontrol;
-+	struct snd_soc_dapm_context *dapm = w->dapm;
-+	struct snd_card *card = dapm->card->snd_card;
-+
-+	/* skip control creation for links with 1 config */
-+	if (w->num_params == 1)
-+		return 0;
-+
-+	/* add kcontrol */
-+	for (i = 0; i < w->num_kcontrols; i++) {
-+		kcontrol = snd_soc_cnew(&w->kcontrol_news[i], w,
-+		w->name, NULL);
-+		ret = snd_ctl_add(card, kcontrol);
-+		if (ret < 0) {
-+			dev_err(dapm->dev,
-+				"ASoC: failed to add widget %s dapm kcontrol %s: %d\n",
-+				w->name, w->kcontrol_news[i].name, ret);
-+			return ret;
-+		}
-+		kcontrol->private_data = w;
-+		w->kcontrols[i] = kcontrol;
-+	}
-+
-+	return 0;
-+}
-+
- /* reset 'walked' bit for each dapm path */
- static void dapm_clear_walk_output(struct snd_soc_dapm_context *dapm,
- 				   struct list_head *sink)
-@@ -2664,6 +2694,9 @@ int snd_soc_dapm_new_widgets(struct snd_soc_card *card)
- 		case snd_soc_dapm_out_drv:
- 			dapm_new_pga(w);
- 			break;
-+		case snd_soc_dapm_dai_link:
-+			dapm_new_dai_link(w);
-+			break;
- 		default:
- 			break;
- 		}
-@@ -3142,6 +3175,9 @@ static int snd_soc_dai_link_event(struct snd_soc_dapm_widget *w,
- 	source = source_p->source->priv;
- 	sink = sink_p->sink->priv;
- 
-+	/* Select the configuration set by alsa control */
-+	config += w->params_select;
-+
- 	/* Be a little careful as we don't want to overflow the mask array */
- 	if (config->formats) {
- 		fmt = ffs(config->formats) - 1;
-@@ -3222,8 +3258,35 @@ out:
- 	return ret;
- }
- 
-+static int snd_soc_dapm_dai_link_get(struct snd_kcontrol *kcontrol,
-+			  struct snd_ctl_elem_value *ucontrol)
-+{
-+	struct snd_soc_dapm_widget *w = snd_kcontrol_chip(kcontrol);
-+
-+	ucontrol->value.integer.value[0] = w->params_select;
-+
-+	return 0;
-+}
-+
-+static int snd_soc_dapm_dai_link_put(struct snd_kcontrol *kcontrol,
-+			  struct snd_ctl_elem_value *ucontrol)
-+{
-+	struct snd_soc_dapm_widget *w = snd_kcontrol_chip(kcontrol);
-+
-+	if (ucontrol->value.integer.value[0] == w->params_select)
-+		return 0;
-+
-+	if (ucontrol->value.integer.value[0] >= w->num_params)
-+		return -EINVAL;
-+
-+	w->params_select = ucontrol->value.integer.value[0];
-+
-+	return 0;
-+}
-+
- int snd_soc_dapm_new_pcm(struct snd_soc_card *card,
- 			 const struct snd_soc_pcm_stream *params,
-+			 unsigned int num_params,
- 			 struct snd_soc_dapm_widget *source,
- 			 struct snd_soc_dapm_widget *sink)
- {
-@@ -3231,12 +3294,42 @@ int snd_soc_dapm_new_pcm(struct snd_soc_card *card,
- 	struct snd_soc_dapm_widget *w;
- 	size_t len;
- 	char *link_name;
--	int ret;
-+	int ret, count;
-+	unsigned long private_value;
-+	char **w_param_text;
-+	struct soc_enum w_param_enum[] = {
-+		SOC_ENUM_SINGLE(0, 0, 0, NULL),
-+	};
-+	struct snd_kcontrol_new kcontrol_dai_link[] = {
-+		SOC_ENUM_EXT(NULL, w_param_enum[0],
-+			     snd_soc_dapm_dai_link_get,
-+			     snd_soc_dapm_dai_link_put),
-+	};
-+	const struct snd_soc_pcm_stream *config = params;
-+
-+	w_param_text = kcalloc(num_params, sizeof(char *), GFP_KERNEL);
-+	if (!w_param_text)
-+		return -ENOMEM;
-+
-+	for (count = 0 ; count < num_params; count++) {
-+		w_param_text[count] = kmemdup((void *)(config->stream_name),
-+			strlen(config->stream_name) + 1, GFP_KERNEL);
-+		if (!w_param_text[count]) {
-+			ret = -ENOMEM;
-+			goto  outfree_w_param;
-+		}
-+		config++;
-+	}
-+	w_param_enum[0].items = num_params;
-+	w_param_enum[0].texts = (const char * const *) w_param_text;
- 
- 	len = strlen(source->name) + strlen(sink->name) + 2;
- 	link_name = devm_kzalloc(card->dev, len, GFP_KERNEL);
--	if (!link_name)
--		return -ENOMEM;
-+	if (!link_name) {
-+		ret = -ENOMEM;
-+		goto  outfree_w_param;
-+	}
-+
- 	snprintf(link_name, len, "%s-%s", source->name, sink->name);
- 
- 	memset(&template, 0, sizeof(template));
-@@ -3246,6 +3339,25 @@ int snd_soc_dapm_new_pcm(struct snd_soc_card *card,
- 	template.event = snd_soc_dai_link_event;
- 	template.event_flags = SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMU |
- 		SND_SOC_DAPM_PRE_PMD;
-+	template.num_kcontrols = 1;
-+	private_value =
-+	(unsigned long) kmemdup((void *)(kcontrol_dai_link[0].private_value),
-+		sizeof(struct soc_enum), GFP_KERNEL);
-+	if (!private_value) {
-+		dev_err(card->dev, "ASoC: Failed to create control for %s widget\n",
-+			link_name);
-+		ret = -ENOMEM;
-+		goto outfree_link_name;
-+	}
-+	kcontrol_dai_link[0].private_value = private_value;
-+	template.kcontrol_news = kmemdup(&kcontrol_dai_link[0],
-+			sizeof(struct snd_kcontrol_new), GFP_KERNEL);
-+	if (!template.kcontrol_news) {
-+		dev_err(card->dev, "ASoC: Failed to create control for %s widget\n",
-+			link_name);
-+		ret = -ENOMEM;
-+		goto outfree_private_value;
-+	}
- 
- 	dev_dbg(card->dev, "ASoC: adding %s widget\n", link_name);
- 
-@@ -3253,15 +3365,32 @@ int snd_soc_dapm_new_pcm(struct snd_soc_card *card,
- 	if (!w) {
- 		dev_err(card->dev, "ASoC: Failed to create %s widget\n",
- 			link_name);
--		return -ENOMEM;
-+		ret = -ENOMEM;
-+		goto outfree_kcontrol_news;
- 	}
- 
- 	w->params = params;
-+	w->num_params = num_params;
- 
- 	ret = snd_soc_dapm_add_path(&card->dapm, source, w, NULL, NULL);
- 	if (ret)
--		return ret;
-+		goto outfree_w;
- 	return snd_soc_dapm_add_path(&card->dapm, w, sink, NULL, NULL);
-+
-+outfree_w:
-+	kfree(w);
-+outfree_kcontrol_news:
-+	kfree(template.kcontrol_news);
-+outfree_private_value:
-+	kfree((void *)private_value);
-+outfree_link_name:
-+	kfree(link_name);
-+outfree_w_param:
-+	for (count = 0 ; count < num_params; count++)
-+		kfree(w_param_text[count]);
-+	kfree(w_param_text);
-+
-+	return ret;
- }
- 
- int snd_soc_dapm_new_dai_widgets(struct snd_soc_dapm_context *dapm,
--- 
-1.7.9.5
+I think it needs a call to seq_set_overflow() in case the buffer is too small,
+so the caller will retry with a bigger buffer.
 
+>
+> @@ -794,6 +795,47 @@ void seq_pad(struct seq_file *m, char c)
+>  }
+>  EXPORT_SYMBOL(seq_pad);
+>
+> +/* Analogue of print_hex_dump() */
+> +void seq_hex_dump(struct seq_file *m, const char *prefix_str, int prefix_type,
+> +                 int rowsize, int groupsize, const void *buf, size_t len,
+> +                 bool ascii)
+> +{
+> +       const u8 *ptr = buf;
+> +       int i, linelen, remaining = len;
+> +       int ret;
+> +
+> +       if (rowsize != 16 && rowsize != 32)
+> +               rowsize = 16;
+> +
+> +       for (i = 0; i < len; i += rowsize) {
+> +               linelen = min(remaining, rowsize);
+> +               remaining -= rowsize;
+> +
+> +               ret = seq_printf(m, "%s", prefix_str);
+> +               if (ret < 0)
+> +                       break;
+> +
+> +               if (prefix_type == DUMP_PREFIX_ADDRESS)
+> +                       ret = seq_printf(m, "%p: ", ptr + i);
+> +               else if (prefix_type == DUMP_PREFIX_OFFSET)
+> +                       ret = seq_printf(m, "%.8x: ", i);
+> +               if (ret < 0)
+> +                       break;
+> +
+> +               if (m->size < m->count + groupsize * 2 + 1)
+> +                       break;
+> +
+> +               hex_dump_to_buffer(ptr + i, linelen, rowsize, groupsize,
+> +                                  m->buf + m->count, m->size - m->count,
+> +                                  ascii);
+> +
+> +               ret = seq_putc(m, '\n');
+> +               if (ret < 0)
+> +                       break;
+> +       }
+> +}
+> +EXPORT_SYMBOL(seq_hex_dump);
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
