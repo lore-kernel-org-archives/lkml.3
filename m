@@ -1,57 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752866AbaIAJcE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 05:32:04 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56056 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752479AbaIAJcC (ORCPT
+	id S1753035AbaIAJcQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 05:32:16 -0400
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:59082 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752906AbaIAJcM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 05:32:02 -0400
-Date: Mon, 1 Sep 2014 11:31:59 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: Jason Wang <jasowang@redhat.com>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, mst@redhat.com,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process is
- runnable
-Message-ID: <20140901093159.GB27892@worktop.ger.corp.intel.com>
-References: <1408608310-13579-1-git-send-email-jasowang@redhat.com>
- <1408608310-13579-2-git-send-email-jasowang@redhat.com>
- <1408683665.5648.69.camel@marge.simpson.net>
+	Mon, 1 Sep 2014 05:32:12 -0400
+Date: Mon, 1 Sep 2014 10:32:06 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Nishanth Menon <nm@ti.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@linaro.org>,
+        Tony Lindgren <tony@atomide.com>, Keerthy <j-keerthy@ti.com>,
+        devicetree@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: palmas: Add support for optional wakeup
+Message-ID: <20140901093206.GJ7374@lee--X1>
+References: <1408457197-30487-1-git-send-email-nm@ti.com>
+ <20140829105619.GH24579@lee--X1>
+ <54007515.5080506@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1408683665.5648.69.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <54007515.5080506@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 07:01:05AM +0200, Mike Galbraith wrote:
-> > +++ b/include/net/busy_poll.h
-> > @@ -109,7 +109,8 @@ static inline bool sk_busy_loop(struct sock *sk, int nonblock)
-> >  		cpu_relax();
-> >  
-> >  	} while (!nonblock && skb_queue_empty(&sk->sk_receive_queue) &&
-> > -		 !need_resched() && !busy_loop_timeout(end_time));
-> > +		 !need_resched() && !busy_loop_timeout(end_time) &&
-> > +		 nr_running_this_cpu() < 2);
-> >  
+On Fri, 29 Aug 2014, Nishanth Menon wrote:
+> On 08/29/2014 05:56 AM, Lee Jones wrote:
+> > On Tue, 19 Aug 2014, Nishanth Menon wrote:
+> > 
+> >> With the recent pinctrl-single changes, omaps can treat wake-up events
+> >> from deeper idle states as interrupts.
+> >>
+> >> Let's add support for the optional second interrupt for wake-up
+> >> events. And then SoC can wakeup and handle the event using it's
+> >> regular handler.
+> >>
+> >> Finally, to pass the wake-up interrupt in the dts file,
+> >> interrupts-extended property needs to be passed.
+> >>
+> >> This is similar in approach to commit 2a0b965cfb6e ("serial: omap: Add
+> >> support for optional wake-up")
+> >>
+> >> Signed-off-by: Nishanth Menon <nm@ti.com>
+> >> ---
+> >>  Documentation/devicetree/bindings/mfd/palmas.txt |   20 ++++++++
+> > 
+> > DT Ack please.
 
-So as has been said by now; this is horrible.
+Please read Documentation/devicetree/bindings/submittingpatches.txt
 
-We should not export nr_running like this ever. Your usage of < 2
-implies this can be hit with nr_running == 0, and therefore you can also
-hit it with nr_running == 1 where the one is not network related and you
-get random delays.
+> >>  drivers/mfd/palmas.c                             |   59 ++++++++++++++++++++++
+> >>  include/linux/mfd/palmas.h                       |    2 +
+> >>  3 files changed, 81 insertions(+)
+> >>
+> >> diff --git a/Documentation/devicetree/bindings/mfd/palmas.txt b/Documentation/devicetree/bindings/mfd/palmas.txt
+> >> index eda8989..2627842 100644
+> >> --- a/Documentation/devicetree/bindings/mfd/palmas.txt
+> >> +++ b/Documentation/devicetree/bindings/mfd/palmas.txt
+> >> @@ -51,3 +51,23 @@ palmas {
+> >>  		....
+> >>  	};
+> >>  }
+> >> +
+> >> +Example: with interrupts extended
+> >> + See Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
+> >> + Use pinmux 0x418 as wakeup interrupt and gpio1_0 as interrupt source
+> >> +
+> >> +palmas {
+> > 
+> > Should this be 'palmas@40 {'?
+> 
+> I might have preferred that as well.. I kept the existing style in the
+> documentation. Would you like me to change existing doc style too?
 
-Worse still, you have BH (and thereby preemption) disabled, you should
-not _ever_ have undefined and indefinite waits like that.
+Yes please.  Although you can do this subseqently.
 
-You also destroy any hope of dropping into lower power states; even when
-there's never going to be a packet ever again, also bad.
+[...]
 
-All in all, a complete trainwreck.
+> >> +static irqreturn_t palmas_wake_irq(int irq, void *_palmas)
+> >> +{
+> >> +	/*
+> >> +	 * Return Not handled so that interrupt is disabled.
+> >> +	 * Level event ensures that the event is eventually handled
+> >> +	 * by the appropriate chip handler already registered
+> >> +	 */
+> > 
+> > This looks okay to me, but could do with a second opinion from someone
+> > who is a little more familier with this kind of h/w.
+> > 
+> > How does this differ from threading IRQs?
+> 
+> I could try with an example:
+> consider a GPIO block 7 gpio 4 connected to a pinctrl pin 234 as the
+> interrupt source for palmas.
+> 
+> When the system is active, the GPIO block 7, gpio 4 happily functions
+> as the interrupt source. However, the SoC might not capable of
+> achieving SoC wide deepsleep when GPIO block 7 is active, So we have
+> to power off GPIO block 7. However on achieving low power, the system
+> needs to be capable of waking backup, for this, SoC uses the hardware
+> at the pin itself(TI calls it control module, others have other names,
+> lets for the discussion, call it pinctrl), on going to sleep the
+> action of enabling the pinctrl irq - enables the wakeup capability of
+> the pin, and disabling it disabled the wakeup capability. when the
+> wakeup event does take place, in some cases, it might be a edge event,
+> where by the time we have recofigured GPIO block, the interrupt event
+> is long gone - to support this, pinctrl invokes the driver interrupt
+> handler to ensure this functions. in our case(palmas), we are level
+> event and can depend on GPIO block to handle it when it is configured.
+> 
+> Basically two interrupt sources when SoC is in deep sleep(1 to exit
+> from deepsleep, and other from the module handling the actual event) -
+> Example: powerbutton press OR palmas RTC wakeup OR Palmas GPIO
+> generated wakeup.
+> 
+> However, this is not the same as threading IRQ as the wakeup event is
+> involved only during suspend path.
+> 
+> commit 2a0b965cfb6e ("serial: omap: Add support for optional wake-up")
+> 
+> is a good reference from serial port handling perspective.
 
-NAK.
+Thanks for the explanation.  This makes sense now.
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
