@@ -1,64 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754442AbaIARWv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 13:22:51 -0400
-Received: from smtprelay0128.hostedemail.com ([216.40.44.128]:59655 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751998AbaIARWu (ORCPT
+	id S1754513AbaIAR1W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 13:27:22 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:23196 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751954AbaIAR1V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 13:22:50 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3653:3865:3868:3870:3871:3872:4250:4321:5007:7652:7903:10004:10400:10848:11232:11658:11914:12043:12050:12517:12519:12555:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: train05_188805e18af2b
-X-Filterd-Recvd-Size: 1900
-Message-ID: <1409592167.2614.7.camel@joe-AO725>
-Subject: Re: [PATCH] staging: xillybus: Move out of staging
-From: Joe Perches <joe@perches.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Eli Billauer <eli.billauer@gmail.com>, gregkh@linuxfoundation.org,
-        arnd@arndb.de, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 01 Sep 2014 10:22:47 -0700
-In-Reply-To: <20140901121318.GG5122@mwanda>
-References: <1409471821-11809-1-git-send-email-eli.billauer@gmail.com>
-	 <20140901121318.GG5122@mwanda>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 1 Sep 2014 13:27:21 -0400
+Date: Mon, 1 Sep 2014 18:27:11 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>, Lv Zheng <lv.zheng@intel.com>,
+        Rob Herring <robh@kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Robert Moore <robert.moore@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
+        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
+Subject: Re: [RFC PATCH for Juno 1/2] net: smsc911x add support for probing
+ from ACPI
+Message-ID: <20140901172711.GI608@arm.com>
+References: <1409583961-7466-1-git-send-email-hanjun.guo@linaro.org>
+ <1409583961-7466-2-git-send-email-hanjun.guo@linaro.org>
+ <20140901170447.GF608@arm.com>
+ <21764799.KDNDm9XRax@wuerfel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <21764799.KDNDm9XRax@wuerfel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-09-01 at 15:13 +0300, Dan Carpenter wrote:
-> Pretty nice.  This is very special purpose hardware and the UAPI for
-> this is fine.  The documentation seems good.  I had some minor style
-> comments but nothing major stands out.
+On Mon, Sep 01, 2014 at 06:11:44PM +0100, Arnd Bergmann wrote:
+> On Monday 01 September 2014 18:04:47 Catalin Marinas wrote:
+> > On Mon, Sep 01, 2014 at 04:06:00PM +0100, Hanjun Guo wrote:
+> > > +#ifdef CONFIG_ACPI
+> > > +/* Configure some sensible defaults for ACPI mode */
+> > > +static int smsc911x_probe_config_acpi(struct smsc911x_platform_config *config,
+> > > +                                 acpi_handle *ahandle)
+> > > +{
+> > > +     if (!ahandle)
+> > > +             return -ENOSYS;
+> > > +
+> > > +     config->phy_interface = PHY_INTERFACE_MODE_MII;
+> > > +
+> > > +     config->flags |= SMSC911X_USE_32BIT;
+> > > +
+> > > +     config->irq_polarity = SMSC911X_IRQ_POLARITY_ACTIVE_HIGH;
+> > > +
+> > > +     config->irq_type = SMSC911X_IRQ_TYPE_PUSH_PULL;
+> > > +
+> > > +     return 0;
+> > > +}
+> > > +#else
+> > 
+> > I don't like this and it shows issues we have with ACPI on certain ARM
+> > platforms. You hard-code these values to match the Juno platform. What
+> > if we get another SoC which has different configuration here? For DT, we
+> > have the smsc911x_probe_config_dt() which reads the relevant information
+> > from DT. I think this kind of configuration would be more suitable as
+> > _DSD properties and sharing the similar names with DT (but we go back to
+> > the question about who's in charge of the _DSD properties).
 > 
-> These days I quite like the --strict option for checkpatch.pl.
+> Good point, I totally missed that.
 > 
-> for i in $(find drivers/staging/xillybus/ -name \*\.c)
-> 	do ./scripts/checkpatch.pl --strict -f $i
-> done
+> There is of course the possibility to set those values based on the
+> acpi_device_id, but that is exactly the part that _DSD is trying to
+> avoid.
 
-Maybe --strict should be on by default for staging
-like it is for drivers/net and net?
----
- scripts/checkpatch.pl | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I would prefer to avoid acpi_device_id checks. This would defeat the
+alleged aim of ACPI to run newer hardware configuration with older
+kernels.
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index d89857d..90199a7 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2016,7 +2016,7 @@ sub process {
- 		}
- 
- 		if ($found_file) {
--			if ($realfile =~ m@^(drivers/net/|net/)@) {
-+			if ($realfile =~ m@^(drivers/net/|net/|drivers/staging/)@) {
- 				$check = 1;
- 			} else {
- 				$check = $check_orig;
+> > >  static int smsc911x_drv_probe(struct platform_device *pdev)
+> > >  {
+> > >       struct device_node *np = pdev->dev.of_node;
+> > > +     acpi_handle *ahandle = ACPI_HANDLE(&pdev->dev);
+> > >       struct net_device *dev;
+> > >       struct smsc911x_data *pdata;
+> > >       struct smsc911x_platform_config *config = dev_get_platdata(&pdev->dev);
+> > > @@ -2436,6 +2464,9 @@ static int smsc911x_drv_probe(struct platform_device *pdev)
+> > >       }
+> > >  
+> > >       retval = smsc911x_probe_config_dt(&pdata->config, np);
+> > > +     if (retval)
+> > > +             retval = smsc911x_probe_config_acpi(&pdata->config, ahandle);
+> > > +
+> > 
+> > In most of the ACPI patches so far we check for ACPI first with DT as a
+> > fall-back if ACPI is not enabled. This changes here.
+> 
+> Does this really make a difference?
 
+Not the order (well, someone may think that if they unflatten the DT in
+a vendor kernel even though it boot as ACPI, they could get away with a
+mix of DT and ACPI ;)).
 
+> > I would prefer
+> > something which probes only ACPI if the ACPI is enabled (run-time, not
+> > config) otherwise DT only. E.g.
+> 
+> (example missing?)
+
+I was looking through the code and forgot. Something like:
+
+	if (acpi_disabled)
+		retval = smsc911x_probe_config_dt();
+	else
+		retval = smsc911x_probe_config_acpi();
+
+> I think we should have the equivalent of of_have_populated_dt(), to
+> check whether acpi is being used to boot, and have that new function
+> be hardcoded to zero in case of !IS_ENABLED(CONFIG_ACPI).
+
+I think you meant hardcoded to 1 when !ACPI. That would work as well.
+
+-- 
+Catalin
