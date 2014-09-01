@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752887AbaIASsp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 14:48:45 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:38710 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752339AbaIASsn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 14:48:43 -0400
-From: Sander Nemvalts <snemvalts@gmail.com>
-To: stefanr@s5r6.in-berlin.de
-Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Sander Nemvalts <snemvalts@gmail.com>
-Subject: [PATCH] Drivers:firewire: fix style errors in core-card.c This is a patch in the core-card.c file which fixes up 2 warnings found by the checkpatch.pl tool Signed-off-by: Sander Nemvalts <snemvalts@gmail.com>
-Date: Mon,  1 Sep 2014 21:48:26 +0300
-Message-Id: <1409597306-22164-1-git-send-email-snemvalts@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S1753000AbaIASs4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 14:48:56 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55963 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752914AbaIASsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 14:48:55 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20140901174322.GA15533@khazad-dum.debian.net>
+References: <20140809231911.GA4843@khazad-dum.debian.net> <20140831194548.GA12628@khazad-dum.debian.net> <54037C07.8060703@zytor.com> <20140831201126.GB12628@khazad-dum.debian.net> <20140901051302.GA28402@nazgul.tnic> <5404A035.3070707@zytor.com> <20140901174322.GA15533@khazad-dum.debian.net>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: early microcode: how to disable at runtime?
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, 01 Sep 2014 11:48:03 -0700
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+CC: Borislav Petkov <bp@alien8.de>, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-kernel@vger.kernel.org
+Message-ID: <ea40f7c4-ec8d-4be5-8f8c-bbd11ab07252@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----
- drivers/firewire/core-card.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+No, it is worse to rename it and have older kernels behave differently.  Kernel options are basically super obscure to most people anyway.
 
-diff --git a/drivers/firewire/core-card.c b/drivers/firewire/core-card.c
-index 57ea7f4..825b260 100644
---- a/drivers/firewire/core-card.c
-+++ b/drivers/firewire/core-card.c
-@@ -89,7 +89,8 @@ static size_t config_rom_length = 1 + 4 + 1 + 1;
- #define BIB_ISC			((1) << 29)
- #define BIB_CMC			((1) << 30)
- #define BIB_IRMC		((1) << 31)
--#define NODE_CAPABILITIES	0x0c0083c0 /* per IEEE 1394 clause 8.3.2.6.5.2 */
-+/* per IEEE 1394 clause 8.3.2.6.5.2 */
-+#define NODE_CAPABILITIES	0x0c0083c0
- 
- /*
-  * IEEE-1394 specifies a default SPLIT_TIMEOUT value of 800 cycles (100 ms),
-@@ -132,7 +133,7 @@ static void generate_config_rom(struct fw_card *card, __be32 *config_rom)
- 	j = 7 + descriptor_count;
- 
- 	/* Generate root directory entries for descriptors. */
--	list_for_each_entry (desc, &descriptor_list, link) {
-+	list_for_each_entry(desc, &descriptor_list, link) {
- 		if (desc->immediate > 0)
- 			config_rom[i++] = cpu_to_be32(desc->immediate);
- 		config_rom[i] = cpu_to_be32(desc->key | (j - i));
-@@ -144,7 +145,7 @@ static void generate_config_rom(struct fw_card *card, __be32 *config_rom)
- 	config_rom[5] = cpu_to_be32((i - 5 - 1) << 16);
- 
- 	/* End of root directory, now copy in descriptors. */
--	list_for_each_entry (desc, &descriptor_list, link) {
-+	list_for_each_entry(desc, &descriptor_list, link) {
- 		for (k = 0; k < desc->length; k++)
- 			config_rom[i + k] = cpu_to_be32(desc->data[k]);
- 		i += desc->length;
-@@ -164,7 +165,7 @@ static void update_config_roms(void)
- {
- 	struct fw_card *card;
- 
--	list_for_each_entry (card, &card_list, link) {
-+	list_for_each_entry(card, &card_list, link) {
- 		generate_config_rom(card, tmp_config_rom);
- 		card->driver->set_config_rom(card, tmp_config_rom,
- 					     config_rom_length);
+On September 1, 2014 10:43:22 AM PDT, Henrique de Moraes Holschuh <hmh@hmh.eng.br> wrote:
+>On Mon, 01 Sep 2014, H. Peter Anvin wrote:
+>> On 08/31/2014 10:13 PM, Borislav Petkov wrote:
+>> > On Sun, Aug 31, 2014 at 05:11:26PM -0300, Henrique de Moraes
+>Holschuh wrote:
+>> >>> Probably more like something more like arch/x86/boot/cmdline.c. 
+>Maybe
+>> >>> we could even make it sharable.
+>> >>
+>> >> Looks like that would work, yes.
+>> > 
+>> > Guys, guys, please relax and check the code first: "dis_ucode_ldr".
+>> > 
+>> 
+>> Yeah.  It is an absolutely horrific option name (something like
+>> "noearlyucode" would have been so much nicer; we generally use the
+>no-
+>> prefix and no underscores) but I should have objected to that one
+>much
+>> sooner.
+>
+>It wasn't properly documented, it is obscure as all heck, and early
+>microcode updates active by default is a very recent development on
+>distros.
+>
+>You cannot even find "dis_ucode_ldr" being cited by anyone through
+>google
+>searches.
+>
+>I believe it is actually possible to fix this still: either by directly
+>renaming, or by using a deprecation period and testing for a new name
+>and
+>the "dis_ucode_ldr" name.
+
 -- 
-1.9.1
-
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
