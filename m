@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753764AbaIAMxe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 08:53:34 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:52735 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753642AbaIAMxc (ORCPT
+	id S1753898AbaIAMxm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 08:53:42 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:36678 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753844AbaIAMxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 08:53:32 -0400
+	Mon, 1 Sep 2014 08:53:37 -0400
 From: Eric Auger <eric.auger@linaro.org>
 To: eric.auger@st.com, eric.auger@linaro.org, christoffer.dall@linaro.org,
         marc.zyngier@arm.com, linux-arm-kernel@lists.infradead.org,
@@ -16,10 +16,10 @@ To: eric.auger@st.com, eric.auger@linaro.org, christoffer.dall@linaro.org,
         pbonzini@redhat.com
 Cc: linux-kernel@vger.kernel.org, patches@linaro.org, will.deacon@arm.com,
         a.motakis@virtualopensystems.com, a.rigo@virtualopensystems.com,
-        john.liuli@huawei.com
-Subject: [RFC v2 1/9] KVM: ARM: VGIC: fix multiple injection of level sensitive forwarded IRQ
-Date: Mon,  1 Sep 2014 14:52:40 +0200
-Message-Id: <1409575968-5329-2-git-send-email-eric.auger@linaro.org>
+        john.liuli@huawei.com, Kim Phillips <kim.phillips@linaro.org>
+Subject: [RFC v2 3/9] ARM: KVM: Enable the KVM-VFIO device
+Date: Mon,  1 Sep 2014 14:52:42 +0200
+Message-Id: <1409575968-5329-4-git-send-email-eric.auger@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1409575968-5329-1-git-send-email-eric.auger@linaro.org>
 References: <1409575968-5329-1-git-send-email-eric.auger@linaro.org>
@@ -27,74 +27,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix multiple injection of level sensitive forwarded IRQs.
-With current code, the second injection fails since the state bitmaps
-are not reset (process_maintenance is not called anymore).
-New implementation consists in fully bypassing the vgic state
-management for forwarded IRQ (checks are ignored in
-vgic_update_irq_pending). This obviously assumes the forwarded IRQ is
-injected from kernel side.
+From: Kim Phillips <kim.phillips@linaro.org>
 
-Signed-off-by: Eric Auger <eric.auger@linaro.org>
+Used by KVM-enabled VFIO-based device passthrough support in QEMU.
 
+Signed-off-by: Kim Phillips <kim.phillips@linaro.org>
 ---
+ arch/arm/kvm/Kconfig  | 1 +
+ arch/arm/kvm/Makefile | 2 +-
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
-It was attempted to reset the states in __kvm_vgic_sync_hwstate, checking
-the emptied LR of forwarded IRQ. However surprisingly this solution does
-not seem to work. Some times, a new forwarded IRQ injection is observed
-while the LR of the previous instance was not observed as empty.
-
-v1 -> v2:
-- fix vgic state bypass in vgic_queue_hwirq
----
- virt/kvm/arm/vgic.c | 13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
-
-diff --git a/virt/kvm/arm/vgic.c b/virt/kvm/arm/vgic.c
-index 0007300..8ef495b 100644
---- a/virt/kvm/arm/vgic.c
-+++ b/virt/kvm/arm/vgic.c
-@@ -1259,7 +1259,9 @@ static bool vgic_queue_sgi(struct kvm_vcpu *vcpu, int irq)
+diff --git a/arch/arm/kvm/Kconfig b/arch/arm/kvm/Kconfig
+index e519a40..aace254 100644
+--- a/arch/arm/kvm/Kconfig
++++ b/arch/arm/kvm/Kconfig
+@@ -24,6 +24,7 @@ config KVM
+ 	select KVM_MMIO
+ 	select KVM_ARM_HOST
+ 	depends on ARM_VIRT_EXT && ARM_LPAE
++	select KVM_VFIO
+ 	select HAVE_KVM_EVENTFD
+ 	---help---
+ 	  Support hosting virtualized guest machines. You will also
+diff --git a/arch/arm/kvm/Makefile b/arch/arm/kvm/Makefile
+index 859db09..ea1fa76 100644
+--- a/arch/arm/kvm/Makefile
++++ b/arch/arm/kvm/Makefile
+@@ -15,7 +15,7 @@ AFLAGS_init.o := -Wa,-march=armv7-a$(plus_virt)
+ AFLAGS_interrupts.o := -Wa,-march=armv7-a$(plus_virt)
  
- static bool vgic_queue_hwirq(struct kvm_vcpu *vcpu, int irq)
- {
--	if (vgic_irq_is_queued(vcpu, irq))
-+	bool is_forwarded =  (vgic_get_phys_irq(vcpu, irq) > 0);
-+
-+	if (vgic_irq_is_queued(vcpu, irq) && !is_forwarded)
- 		return true; /* level interrupt, already queued */
+ KVM := ../../../virt/kvm
+-kvm-arm-y = $(KVM)/kvm_main.o $(KVM)/coalesced_mmio.o $(KVM)/eventfd.o
++kvm-arm-y = $(KVM)/kvm_main.o $(KVM)/coalesced_mmio.o $(KVM)/eventfd.o $(KVM)/vfio.o
  
- 	if (vgic_queue_irq(vcpu, 0, irq)) {
-@@ -1517,14 +1519,18 @@ static bool vgic_update_irq_pending(struct kvm *kvm, int cpuid,
- 	int edge_triggered, level_triggered;
- 	int enabled;
- 	bool ret = true;
-+	bool is_forwarded;
- 
- 	spin_lock(&dist->lock);
- 
- 	vcpu = kvm_get_vcpu(kvm, cpuid);
-+	is_forwarded = (vgic_get_phys_irq(vcpu, irq_num) > 0);
-+
- 	edge_triggered = vgic_irq_is_edge(vcpu, irq_num);
- 	level_triggered = !edge_triggered;
- 
--	if (!vgic_validate_injection(vcpu, irq_num, level)) {
-+	if (!is_forwarded &&
-+		!vgic_validate_injection(vcpu, irq_num, level)) {
- 		ret = false;
- 		goto out;
- 	}
-@@ -1557,7 +1563,8 @@ static bool vgic_update_irq_pending(struct kvm *kvm, int cpuid,
- 		goto out;
- 	}
- 
--	if (level_triggered && vgic_irq_is_queued(vcpu, irq_num)) {
-+	if (!is_forwarded &&
-+		level_triggered && vgic_irq_is_queued(vcpu, irq_num)) {
- 		/*
- 		 * Level interrupt in progress, will be picked up
- 		 * when EOId.
+ obj-y += kvm-arm.o init.o interrupts.o
+ obj-y += arm.o handle_exit.o guest.o mmu.o emulate.o reset.o
 -- 
 1.9.1
 
