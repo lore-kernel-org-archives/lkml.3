@@ -1,74 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199AbaIAQGE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 12:06:04 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:46381 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753984AbaIAQGB (ORCPT
+	id S1754132AbaIAQJQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 12:09:16 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:34958 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753822AbaIAQJP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 12:06:01 -0400
-Date: Mon, 1 Sep 2014 09:05:50 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, bobby.prani@gmail.com, <""@rjwysocki.net>,
-        tianyu.lan@intel.com
-Subject: Re: [PATCH RFC tip/core/rcu] Eliminate deadlock between CPU hotplug
- and expedited grace periods
-Message-ID: <20140901160550.GL5001@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140828194745.GA3761@linux.vnet.ibm.com>
- <20140901112059.GG27892@worktop.ger.corp.intel.com>
+	Mon, 1 Sep 2014 12:09:15 -0400
+Date: Mon, 1 Sep 2014 12:08:29 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+CC: <eparis@redhat.com>, <paulmck@linux.vnet.ibm.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>, <zhenglong.cai@cs2c.com.cn>,
+        <khilman@linaro.org>, <ak@linux.intel.com>, <mcgrof@suse.com>,
+        <fabf@skynet.be>, "dhowells@redhat.com" <dhowells@redhat.com>,
+        <pefoley2@pefoley.com>, <mgorman@suse.de>, <biederm@xmission.com>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Jean Delvare <jdelvare@suse.de>
+Subject: Re: [PATCH] init/Kconfig: Add ENDIAN attributes for all
+ architectures using
+Message-ID: <20140901160828.GJ26632@windriver.com>
+References: <540494D6.40701@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20140901112059.GG27892@worktop.ger.corp.intel.com>
+In-Reply-To: <540494D6.40701@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14090116-1542-0000-0000-000004733AD2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 01, 2014 at 01:20:59PM +0200, Peter Zijlstra wrote:
-> On Thu, Aug 28, 2014 at 12:47:45PM -0700, Paul E. McKenney wrote:
-> > Currently, the expedited grace-period primitives do get_online_cpus().
-> > This greatly simplifies their implementation, but means that calls to
-> > them holding locks that are acquired by CPU-hotplug notifiers (to say
-> > nothing of calls to these primitives from CPU-hotplug notifiers) can
-> > deadlock.  But this is starting to become inconvenient:
-> > https://lkml.org/lkml/2014/8/5/754
+[[PATCH] init/Kconfig: Add ENDIAN attributes for all architectures using] On 01/09/2014 (Mon 23:46) Chen Gang wrote:
+
+> Some individual modules want to know the architecture's endian attribute
+> during config time, or may cause compiling break, one sample is below:
+> (with allm dconfig under microblaze):
 > 
-> Please recap the actual problem; the link might die and the actual mail
-> linked to isn't very useful in any case.
-
-Will do.
-
-> > This commit avoids the deadlock and retains the simplicity by creating
-> > a try_get_online_cpus(), which returns false if the get_online_cpus()
-> > reference count could not immediately be incremented.  If a call to
-> > try_get_online_cpus() returns true, the expedited primitives operate
-> > as before.  If a call returns false, the expedited primitives fall back
-> > to normal grace-period operations.  This falling back of course results
-> > in increased grace-period latency, but only during times when CPU
-> > hotplug operations are actually in flight.  The effect should therefore
-> > be negligible during normal operation.
+>     CC [M]  drivers/isdn/hisax/nj_s.o
+>   drivers/isdn/hisax/nj_s.c: In function 'setup_netjet_s':
+>   drivers/isdn/hisax/nj_s.c:265:2: error: #error "not running on big endian machines now"
+>    #error "not running on big endian machines now"
 > 
-> URGH.. I really hate that. The hotplug interface is already too
-> horrible, we should not add such hacks to it.
+> So add endian attributes for all architectures using (next, will let all
+> architectures choose their endians during config time).
+> 
+> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+> ---
+>  init/Kconfig | 6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> diff --git a/init/Kconfig b/init/Kconfig
+> index ac033c3..f301cc8 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -23,6 +23,12 @@ config CONSTRUCTORS
+>  config IRQ_WORK
+>  	bool
+>  
+> +config CPU_LITTLE_ENDIAN
+> +	bool
+> +
+> +config CPU_BIG_ENDIAN
+> +	bool
 
-We do have try_ interfaces to a number of other subsystems, so I don't
-believe that it qualifies as such a hack.
+Perhaps you should take a cursory look at what already exists in tree
+before blindly trying to add more to it?
 
-> How about ripping that rcu_expedited stuff out instead? That's all
-> conditional anyhow, so might as well not do it.
+$ git grep CPU_BIG_ENDIAN | wc -l
+88
 
-In what way is the expedited stuff conditional?
+Paul.
+--
 
-							Thanx, Paul
-
+> +
+>  config BUILDTIME_EXTABLE_SORT
+>  	bool
+>  
+> -- 
+> 1.7.11.7
