@@ -1,44 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752891AbaIAJIN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 05:08:13 -0400
-Received: from mail-bn1bon0061.outbound.protection.outlook.com ([157.56.111.61]:48078
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752608AbaIAJIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 05:08:11 -0400
-X-Greylist: delayed 1999 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Sep 2014 05:08:11 EDT
-Date: Mon, 1 Sep 2014 16:34:38 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: dts: vf610-twr: remove useless property for sound
- card.
-Message-ID: <20140901083435.GA22559@dragon>
-References: <1409278941-16975-1-git-send-email-Li.Xiubo@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1409278941-16975-1-git-send-email-Li.Xiubo@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Matching-Connectors: 130540340898973431;(91ab9b29-cfa4-454e-5278-08d120cd25b8);()
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009013)(6009001)(448002)(24454002)(199003)(189002)(51704005)(95666004)(76482001)(90102001)(74662001)(74502001)(46102001)(31966008)(106466001)(81156004)(33716001)(54356999)(50986999)(97756001)(97736001)(107046002)(50466002)(76176999)(86362001)(21056001)(47776003)(20776003)(558084003)(83322001)(64706001)(92566001)(102836001)(44976005)(92726001)(85852003)(83072002)(84676001)(19580405001)(19580395003)(85326001)(33656002)(83506001)(6806004)(87936001)(23726002)(104016003)(80022001)(26826002)(57986006)(77982001)(110136001)(85306004)(46406003)(79102001)(99396002)(81342001)(4396001)(69596002)(68736004)(81542001);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR03MB368;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 03218BFD9F
-Authentication-Results: spf=permerror (sender IP is 192.88.158.2)
- smtp.mailfrom=shawn.guo@linaro.org; 
+	id S1752935AbaIAJKZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 05:10:25 -0400
+Received: from mga01.intel.com ([192.55.52.88]:38858 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752734AbaIAJKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 05:10:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,441,1406617200"; 
+   d="scan'208";a="584483916"
+Message-ID: <1409562596.30155.43.camel@linux.intel.com>
+Subject: Re: [PATCH v3 1/5] seq_file: provide an analogue of print_hex_dump()
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Tadeusz Struk <tadeusz.struk@intel.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Helge Deller <deller@gmx.de>,
+        Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Joe Perches <joe@perches.com>, Marek Vasut <marex@denx.de>
+Date: Mon, 01 Sep 2014 12:09:56 +0300
+In-Reply-To: <CAMuHMdUU8BVTtEb6QE7zW+XtF4yfbwg=O+Lv84A0F3X9M1t=Rw@mail.gmail.com>
+References: <1408957395-404-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1408957395-404-2-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <20140830225407.GF7996@ZenIV.linux.org.uk>
+	 <1409560606.30155.41.camel@linux.intel.com>
+	 <CAMuHMdUU8BVTtEb6QE7zW+XtF4yfbwg=O+Lv84A0F3X9M1t=Rw@mail.gmail.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.5-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 29, 2014 at 10:22:21AM +0800, Xiubo Li wrote:
-> This was added by:
-> Commit 8128c4f36 ("ARM: dts: vf610-twr: Add simple-card support.")
+On Mon, 2014-09-01 at 10:58 +0200, Geert Uytterhoeven wrote:
+> Hi Andy,
 > 
-> This useless property may cause some confusions for users.
+> On Mon, Sep 1, 2014 at 10:36 AM, Andy Shevchenko
+> <andriy.shevchenko@linux.intel.com> wrote:
+> >> ... and extra copying for no good reason.  Why not check that we have
+> >> enough space in buffer and generate directly into it?  See what e.g.
+> >> seq_escape() is doing...
+> >
+> > What about this variant?
 > 
-> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> I think it needs a call to seq_set_overflow() in case the buffer is too small,
+> so the caller will retry with a bigger buffer.
 
-Applied, thanks.
+Yes, in two places it would be useful to do.
+
+But what the condition for "buffer is too small", the same groupsize * 2
++ 1 or you mean something else?
+
+> 
+> >
+> > @@ -794,6 +795,47 @@ void seq_pad(struct seq_file *m, char c)
+> >  }
+> >  EXPORT_SYMBOL(seq_pad);
+> >
+> > +/* Analogue of print_hex_dump() */
+> > +void seq_hex_dump(struct seq_file *m, const char *prefix_str, int prefix_type,
+> > +                 int rowsize, int groupsize, const void *buf, size_t len,
+> > +                 bool ascii)
+> > +{
+> > +       const u8 *ptr = buf;
+> > +       int i, linelen, remaining = len;
+> > +       int ret;
+> > +
+> > +       if (rowsize != 16 && rowsize != 32)
+> > +               rowsize = 16;
+> > +
+> > +       for (i = 0; i < len; i += rowsize) {
+> > +               linelen = min(remaining, rowsize);
+> > +               remaining -= rowsize;
+> > +
+> > +               ret = seq_printf(m, "%s", prefix_str);
+> > +               if (ret < 0)
+> > +                       break;
+> > +
+> > +               if (prefix_type == DUMP_PREFIX_ADDRESS)
+> > +                       ret = seq_printf(m, "%p: ", ptr + i);
+> > +               else if (prefix_type == DUMP_PREFIX_OFFSET)
+> > +                       ret = seq_printf(m, "%.8x: ", i);
+> > +               if (ret < 0)
+> > +                       break;
+> > +
+> > +               if (m->size < m->count + groupsize * 2 + 1)
+> > +                       break;
+> > +
+> > +               hex_dump_to_buffer(ptr + i, linelen, rowsize, groupsize,
+> > +                                  m->buf + m->count, m->size - m->count,
+> > +                                  ascii);
+> > +
+> > +               ret = seq_putc(m, '\n');
+> > +               if (ret < 0)
+> > +                       break;
+> > +       }
+> > +}
+> > +EXPORT_SYMBOL(seq_hex_dump);
+> 
+> Gr{oetje,eeting}s,
+> 
+>                         Geert
+> 
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+> 
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                 -- Linus Torvalds
+
+
+-- 
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
+
