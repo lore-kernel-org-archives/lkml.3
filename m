@@ -1,149 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754183AbaIAO5T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 10:57:19 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44415 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753729AbaIAO5S (ORCPT
+	id S1754247AbaIAO6a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 10:58:30 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:54650 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753729AbaIAO62 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 10:57:18 -0400
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: lee.jones@linaro.org
-Cc: sameo@linux.intel.com, broonie@kernel.org, lgirdwood@gmail.com,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] mfd: arizona: Add ASYNC_SAMPLE_RATE_2 registers
-Date: Mon,  1 Sep 2014 15:48:52 +0100
-Message-Id: <1409582932-4512-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
+	Mon, 1 Sep 2014 10:58:28 -0400
+From: Hanjun Guo <hanjun.guo@linaro.org>
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@linaro.org>
+Cc: Graeme Gregory <graeme.gregory@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <will.deacon@arm.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org,
+        Hanjun Guo <hanjun.guo@linaro.org>
+Subject: [PATCH v3 00/17] Introduce ACPI for ARM64 based on ACPI 5.1
+Date: Mon,  1 Sep 2014 22:57:38 +0800
+Message-Id: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some arizona devices have a second asynchronous sample rate, add the
-registers necessary to support this.
+ACPI 5.1 has been released and now be freely available for
+download [1]. It fixed some major gaps to run ACPI on ARM,
+this patch just follow the ACPI 5.1 spec and prepare the
+code to run ACPI on ARM64.
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
- drivers/mfd/wm5102-tables.c           |    3 +++
- drivers/mfd/wm5110-tables.c           |    4 ++++
- include/linux/mfd/arizona/registers.h |   28 ++++++++++++++++++++++------
- sound/soc/codecs/arizona.c            |    2 +-
- 4 files changed, 30 insertions(+), 7 deletions(-)
+ACPI 5.1 has some major changes for the following tables and
+method which are essential for ARM platforms:
+1) MADT table updates.
+2) FADT updates for PSCI
+3) GTDT
 
-diff --git a/drivers/mfd/wm5102-tables.c b/drivers/mfd/wm5102-tables.c
-index 6d9b7f8..d6f35bb 100644
---- a/drivers/mfd/wm5102-tables.c
-+++ b/drivers/mfd/wm5102-tables.c
-@@ -1059,6 +1059,8 @@ static bool wm5102_readable_register(struct device *dev, unsigned int reg)
- 	case ARIZONA_ASYNC_CLOCK_1:
- 	case ARIZONA_ASYNC_SAMPLE_RATE_1:
- 	case ARIZONA_ASYNC_SAMPLE_RATE_1_STATUS:
-+	case ARIZONA_ASYNC_SAMPLE_RATE_2:
-+	case ARIZONA_ASYNC_SAMPLE_RATE_2_STATUS:
- 	case ARIZONA_OUTPUT_SYSTEM_CLOCK:
- 	case ARIZONA_OUTPUT_ASYNC_CLOCK:
- 	case ARIZONA_RATE_ESTIMATOR_1:
-@@ -1892,6 +1894,7 @@ static bool wm5102_volatile_register(struct device *dev, unsigned int reg)
- 	case ARIZONA_SAMPLE_RATE_3_STATUS:
- 	case ARIZONA_HAPTICS_STATUS:
- 	case ARIZONA_ASYNC_SAMPLE_RATE_1_STATUS:
-+	case ARIZONA_ASYNC_SAMPLE_RATE_2_STATUS:
- 	case ARIZONA_FLL1_NCO_TEST_0:
- 	case ARIZONA_FLL2_NCO_TEST_0:
- 	case ARIZONA_DAC_COMP_1:
-diff --git a/drivers/mfd/wm5110-tables.c b/drivers/mfd/wm5110-tables.c
-index beae0a3..4642b5b 100644
---- a/drivers/mfd/wm5110-tables.c
-+++ b/drivers/mfd/wm5110-tables.c
-@@ -702,6 +702,7 @@ static const struct reg_default wm5110_reg_default[] = {
- 	{ 0x00000104, 0x0011 },    /* R260   - Sample rate 3 */
- 	{ 0x00000112, 0x0305 },    /* R274   - Async clock 1 */
- 	{ 0x00000113, 0x0011 },    /* R275   - Async sample rate 1 */
-+	{ 0x00000114, 0x0011 },    /* R276   - Async sample rate 2 */
- 	{ 0x00000149, 0x0000 },    /* R329   - Output system clock */
- 	{ 0x0000014A, 0x0000 },    /* R330   - Output async clock */
- 	{ 0x00000152, 0x0000 },    /* R338   - Rate Estimator 1 */
-@@ -1738,6 +1739,8 @@ static bool wm5110_readable_register(struct device *dev, unsigned int reg)
- 	case ARIZONA_ASYNC_CLOCK_1:
- 	case ARIZONA_ASYNC_SAMPLE_RATE_1:
- 	case ARIZONA_ASYNC_SAMPLE_RATE_1_STATUS:
-+	case ARIZONA_ASYNC_SAMPLE_RATE_2:
-+	case ARIZONA_ASYNC_SAMPLE_RATE_2_STATUS:
- 	case ARIZONA_OUTPUT_SYSTEM_CLOCK:
- 	case ARIZONA_OUTPUT_ASYNC_CLOCK:
- 	case ARIZONA_RATE_ESTIMATOR_1:
-@@ -2820,6 +2823,7 @@ static bool wm5110_volatile_register(struct device *dev, unsigned int reg)
- 	case ARIZONA_SAMPLE_RATE_2_STATUS:
- 	case ARIZONA_SAMPLE_RATE_3_STATUS:
- 	case ARIZONA_ASYNC_SAMPLE_RATE_1_STATUS:
-+	case ARIZONA_ASYNC_SAMPLE_RATE_2_STATUS:
- 	case ARIZONA_MIC_DETECT_3:
- 	case ARIZONA_HEADPHONE_DETECT_2:
- 	case ARIZONA_INPUT_ENABLES_STATUS:
-diff --git a/include/linux/mfd/arizona/registers.h b/include/linux/mfd/arizona/registers.h
-index 68913ec..c0b075f 100644
---- a/include/linux/mfd/arizona/registers.h
-+++ b/include/linux/mfd/arizona/registers.h
-@@ -71,7 +71,9 @@
- #define ARIZONA_SAMPLE_RATE_3_STATUS             0x10C
- #define ARIZONA_ASYNC_CLOCK_1                    0x112
- #define ARIZONA_ASYNC_SAMPLE_RATE_1              0x113
-+#define ARIZONA_ASYNC_SAMPLE_RATE_2              0x114
- #define ARIZONA_ASYNC_SAMPLE_RATE_1_STATUS       0x11B
-+#define ARIZONA_ASYNC_SAMPLE_RATE_2_STATUS       0x11C
- #define ARIZONA_OUTPUT_SYSTEM_CLOCK              0x149
- #define ARIZONA_OUTPUT_ASYNC_CLOCK               0x14A
- #define ARIZONA_RATE_ESTIMATOR_1                 0x152
-@@ -1665,16 +1667,30 @@
- /*
-  * R275 (0x113) - Async sample rate 1
-  */
--#define ARIZONA_ASYNC_SAMPLE_RATE_MASK           0x001F  /* ASYNC_SAMPLE_RATE - [4:0] */
--#define ARIZONA_ASYNC_SAMPLE_RATE_SHIFT               0  /* ASYNC_SAMPLE_RATE - [4:0] */
--#define ARIZONA_ASYNC_SAMPLE_RATE_WIDTH               5  /* ASYNC_SAMPLE_RATE - [4:0] */
-+#define ARIZONA_ASYNC_SAMPLE_RATE_1_MASK         0x001F  /* ASYNC_SAMPLE_RATE_1 - [4:0] */
-+#define ARIZONA_ASYNC_SAMPLE_RATE_1_SHIFT             0  /* ASYNC_SAMPLE_RATE_1 - [4:0] */
-+#define ARIZONA_ASYNC_SAMPLE_RATE_1_WIDTH             5  /* ASYNC_SAMPLE_RATE_1 - [4:0] */
-+
-+/*
-+ * R276 (0x114) - Async sample rate 2
-+ */
-+#define ARIZONA_ASYNC_SAMPLE_RATE_2_MASK         0x001F  /* ASYNC_SAMPLE_RATE_2 - [4:0] */
-+#define ARIZONA_ASYNC_SAMPLE_RATE_2_SHIFT             0  /* ASYNC_SAMPLE_RATE_2 - [4:0] */
-+#define ARIZONA_ASYNC_SAMPLE_RATE_2_WIDTH             5  /* ASYNC_SAMPLE_RATE_2 - [4:0] */
- 
- /*
-  * R283 (0x11B) - Async sample rate 1 status
-  */
--#define ARIZONA_ASYNC_SAMPLE_RATE_STS_MASK       0x001F  /* ASYNC_SAMPLE_RATE_STS - [4:0] */
--#define ARIZONA_ASYNC_SAMPLE_RATE_STS_SHIFT           0  /* ASYNC_SAMPLE_RATE_STS - [4:0] */
--#define ARIZONA_ASYNC_SAMPLE_RATE_STS_WIDTH           5  /* ASYNC_SAMPLE_RATE_STS - [4:0] */
-+#define ARIZONA_ASYNC_SAMPLE_RATE_1_STS_MASK     0x001F  /* ASYNC_SAMPLE_RATE_1_STS - [4:0] */
-+#define ARIZONA_ASYNC_SAMPLE_RATE_1_STS_SHIFT         0  /* ASYNC_SAMPLE_RATE_1_STS - [4:0] */
-+#define ARIZONA_ASYNC_SAMPLE_RATE_1_STS_WIDTH         5  /* ASYNC_SAMPLE_RATE_1_STS - [4:0] */
-+
-+/*
-+ * R284 (0x11C) - Async sample rate 2 status
-+ */
-+#define ARIZONA_ASYNC_SAMPLE_RATE_2_STS_MASK     0x001F  /* ASYNC_SAMPLE_RATE_2_STS - [4:0] */
-+#define ARIZONA_ASYNC_SAMPLE_RATE_2_STS_SHIFT         0  /* ASYNC_SAMPLE_RATE_2_STS - [4:0] */
-+#define ARIZONA_ASYNC_SAMPLE_RATE_2_STS_WIDTH         5  /* ASYNC_SAMPLE_RATE_2_STS - [4:0] */
- 
- /*
-  * R329 (0x149) - Output system clock
-diff --git a/sound/soc/codecs/arizona.c b/sound/soc/codecs/arizona.c
-index 2c71f16..0c05e7a 100644
---- a/sound/soc/codecs/arizona.c
-+++ b/sound/soc/codecs/arizona.c
-@@ -1220,7 +1220,7 @@ static int arizona_hw_params_rate(struct snd_pcm_substream *substream,
- 		break;
- 	case ARIZONA_CLK_ASYNCCLK:
- 		snd_soc_update_bits(codec, ARIZONA_ASYNC_SAMPLE_RATE_1,
--				    ARIZONA_ASYNC_SAMPLE_RATE_MASK, sr_val);
-+				    ARIZONA_ASYNC_SAMPLE_RATE_1_MASK, sr_val);
- 		if (base)
- 			snd_soc_update_bits(codec, base + ARIZONA_AIF_RATE_CTRL,
- 					    ARIZONA_AIF1_RATE_MASK,
+This patch set is the ARM64 ACPI core patches covered MADT, FADT
+and GTDT, platform board specific drivers are not covered by this
+patch set, but we provide drivers for Juno to boot with ACPI only
+in the follwing patch set for review purpose.
+
+We first introduce acpi.c and its related head file which are needed
+by ACPI core, and then get RSDP to extract all the ACPI boot-time tables.
+When all the boot-time tables (FADT, MADT, GTDT) are ready, then
+parse them to init the sytem when booted. Specifically, 
+a) we use FADT to init PSCI and use PSCI to boot SMP;
+b) Use MADT for GIC init and SMP init;
+c) GTDT for arch timer init.
+
+This patch set is based on 3.17-rc2 and was tested by Graeme on Juno
+and FVP base model boot with ACPI only OK, if you want to test them,
+you can pull from acpi-5.1-v3 branch in leg/acpi repo:
+git://git.linaro.org/leg/acpi/acpi.git
+
+Updates since v2:
+ - Refactor the code to make SMP/PSCI init with less sperated init
+   path by Tomasz
+ - make ACPI depend on EXPERT
+ - Address lots of comments from Catalin, Sudeep, Geoff
+ - Add Juno device ACPI driver patches for review
+
+Updates since v1:
+ - Set ACPI default off on ARM64 suggested by Olof;
+ - Rebase the patch set on top of linux-next branch/linux-pm tree which
+   includes the ACPICA for full ACPI 5.1 support.
+ - Update the document as suggested;
+ - Adress lots of comments from Mark, Sudeep, Randy, Naresh, Olof, Geoff
+   and more...
+
+[1]: http://www.uefi.org/sites/default/files/resources/ACPI_5_1release.pdf
+
+Al Stone (3):
+  ARM64 / ACPI: Get RSDP and ACPI boot-time tables
+  ARM64 / ACPI: Introduce early_param for "acpi"
+  ARM64 / ACPI: Select ACPI_REDUCED_HARDWARE_ONLY if ACPI is enabled on
+    ARM64
+
+Ashwin Chaugule (1):
+  ACPI / table: Add new function to get table entries
+
+Graeme Gregory (4):
+  ARM64 / ACPI: Introduce lowlevel suspend function
+  ARM64 / ACPI: If we chose to boot from acpi then disable FDT
+  ARM64 / ACPI: Enable ARM64 in Kconfig
+  Documentation: ACPI for ARM64
+
+Hanjun Guo (8):
+  ARM64: Move the init of cpu_logical_map(0) before
+    unflatten_device_tree()
+  ARM64 / ACPI: Make PCI optional for ACPI on ARM64
+  ARM64 / ACPI: Parse FADT table to get PSCI flags for PSCI init
+  ACPI / table: Print GIC information when MADT is parsed
+  ARM64 / ACPI: Parse MADT for SMP initialization
+  ACPI / processor: Make it possible to get CPU hardware ID via GICC
+  ARM64 / ACPI: Introduce ACPI_IRQ_MODEL_GIC and register device's gsi
+  ARM64 / ACPI: Parse GTDT to initialize arch timer
+
+Tomasz Nowicki (1):
+  ARM64 / ACPI: Add GICv2 specific ACPI boot support
+
+ Documentation/arm64/arm-acpi.txt     |  218 +++++++++++++++++++++
+ Documentation/kernel-parameters.txt  |    3 +-
+ arch/arm64/Kconfig                   |    3 +
+ arch/arm64/include/asm/acenv.h       |   18 ++
+ arch/arm64/include/asm/acpi.h        |  108 ++++++++++
+ arch/arm64/include/asm/cpu_ops.h     |    1 +
+ arch/arm64/include/asm/pci.h         |   11 ++
+ arch/arm64/include/asm/psci.h        |    3 +-
+ arch/arm64/include/asm/smp.h         |    5 +-
+ arch/arm64/kernel/Makefile           |    1 +
+ arch/arm64/kernel/acpi.c             |  359 ++++++++++++++++++++++++++++++++++
+ arch/arm64/kernel/cpu_ops.c          |    4 +-
+ arch/arm64/kernel/irq.c              |    5 +
+ arch/arm64/kernel/psci.c             |   78 +++++---
+ arch/arm64/kernel/setup.c            |   23 ++-
+ arch/arm64/kernel/smp.c              |    2 +-
+ arch/arm64/kernel/time.c             |    7 +
+ drivers/acpi/Kconfig                 |    6 +-
+ drivers/acpi/Makefile                |    2 +-
+ drivers/acpi/bus.c                   |    3 +
+ drivers/acpi/internal.h              |    5 +
+ drivers/acpi/processor_core.c        |   37 ++++
+ drivers/acpi/tables.c                |  113 +++++++++--
+ drivers/clocksource/arm_arch_timer.c |  117 +++++++++--
+ drivers/irqchip/irq-gic.c            |  114 +++++++++++
+ include/linux/acpi.h                 |    5 +
+ include/linux/clocksource.h          |    6 +
+ include/linux/irqchip/arm-gic-acpi.h |   33 ++++
+ include/linux/pci.h                  |   37 +++-
+ 29 files changed, 1237 insertions(+), 90 deletions(-)
+ create mode 100644 Documentation/arm64/arm-acpi.txt
+ create mode 100644 arch/arm64/include/asm/acenv.h
+ create mode 100644 arch/arm64/include/asm/acpi.h
+ create mode 100644 arch/arm64/include/asm/pci.h
+ create mode 100644 arch/arm64/kernel/acpi.c
+ create mode 100644 include/linux/irqchip/arm-gic-acpi.h
+
 -- 
-1.7.2.5
+1.7.9.5
 
