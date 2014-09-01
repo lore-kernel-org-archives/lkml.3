@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754504AbaIAPxr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 11:53:47 -0400
-Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:42660 "EHLO
-	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754181AbaIAPxp (ORCPT
+	id S1754605AbaIAPyG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 11:54:06 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44990 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754516AbaIAPyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 11:53:45 -0400
-Message-ID: <54049684.9010005@codethink.co.uk>
-Date: Mon, 01 Sep 2014 16:53:40 +0100
-From: Rob Jones <rob.jones@codethink.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.7.0
+	Mon, 1 Sep 2014 11:54:01 -0400
+Date: Mon, 1 Sep 2014 16:53:50 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Jean Delvare <jdelvare@suse.de>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20140901155350.GF29327@sirena.org.uk>
+References: <20140901132808.c7b08f4ffa7055dc28e6dac7@kernel.org>
+ <54049590.6060500@roeck-us.net>
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        akpm@linux-foundation.org, linux-kernel@codethink.co.uk
-Subject: Re: [PATCH] fs: replace int param with size_t for seq_open_private()
-References: <1409577428-16148-1-git-send-email-rob.jones@codethink.co.uk> <20140901153637.GI7996@ZenIV.linux.org.uk>
-In-Reply-To: <20140901153637.GI7996@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1+kiJ7gFzGEgD6MU"
+Content-Disposition: inline
+In-Reply-To: <54049590.6060500@roeck-us.net>
+X-Cookie: Simulated picture.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: linux-next: jdelvare-hwmon tree unfetchable
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--1+kiJ7gFzGEgD6MU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On 01/09/14 16:36, Al Viro wrote:
-> On Mon, Sep 01, 2014 at 02:17:08PM +0100, Rob Jones wrote:
->
->>   void *__seq_open_private(struct file *f, const struct seq_operations *ops,
->> -		int psize)
->> +		size_t psize)
->
-> <sarcasm>
-> It is a horrible limitation to impose, indeed.  Why, a lousy
-> 2 gigabytes per line in procfs file - that's intolerable...
-> </sarcasm>
->
+On Mon, Sep 01, 2014 at 08:49:36AM -0700, Guenter Roeck wrote:
+> On 09/01/2014 05:28 AM, Mark Brown wrote:
 
-<shrug>
+> >Today's linux-next merge of the jdelvare-hwmon tree got a conflict with Linus'
+> >tree which appeared to be due to the hwmon quilt series I got from Stephen being
+> >based on v3.14-rc3 and subsequent changes from mainline interacting badly with
+> >it. In addition I'm not able to check the original series since linux-fr.org does
+> >not resolve for me.
 
-Consistency?
+> Jean dropped the linux-fr.org domain, and his old e-mail address probably
+> won't work anymore. The alternate (and temporary) pointer he gave me
+> is http://jdelvare.nerim.net/devel/linux-3/jdelvare-hwmon/. It is empty,
+> so you did not miss anything.
 
-kmalloc() expects a size_t and I haven't heard anyone whingeing about that.
+I figured it was something like that - the address definitely does
+bounce.  Thanks for letting me know, I'll update for tomorrow.
 
-Ultimately, this function calls kmalloc().
+--1+kiJ7gFzGEgD6MU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
->
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
--- 
-Rob Jones
-Codethink Ltd
-mailto:rob.jones@codethink.co.uk
-tel:+44 161 236 5575
+iQIcBAEBAgAGBQJUBJaKAAoJELSic+t+oim9H8gP/i4ZeUQNr25VxAuOC8fnCpst
+LDyyLVQOUt+xBhA6vsk8ko2oNR4CFe34zH99TPdEy4K5sYYEOOFaS9pdt7OS2tTm
+XmDb952j0VVcHT8V/PeWvB4d5xGhxqp0eoJLTUUYPAb/JDx5q6U48hzKZZnvhDXc
+oOp+LcqFWAdK31KfFYAuwkAe8nwLP45HP6vFPZMwxCKcKvcj2GCVGV599KH98wy8
+zROZGugP1AHq0Nsm29mWqh5NcPUAMmkA/cy61q8IqYfiTvm6eoHoPnM7VdRUQjYf
+8ubSMu5cVsd1QEusrY/PioGvH2tJ9pz1avnmyVAx7/GTaAvH5PSA5NjtLcLXZjN0
+LD1APWNu8mlkwedAzGclRyG1NhIpRx7z2fskGapsgVXDPqpIed2UkxCEXFwuO1cy
+INudlZ3EFOjVsHJKT22u96qK+BZ49UgzFxIDCciJQjujvsxXOPeMTVwdYQuP7ty4
+eAMZuTYzoZsH4ueoEjkbXztRxqk0dF0NKL6eAl52TMLZC98vkkAXVPyGpLJG+D96
+B4KiOX9IzO1F4oDoZDPERQ5RivvlkgVmBfLOz/nLr1R5UcGs9ZjbCKOHcq+hQZuV
+H+jTxtf1X9G+u3EG4s7iKLzrw0UUH7lYF1R5Us++ld/f6Lqt+IQQ84WpJBkbq6oc
+IE33RVRNWUEC2uBwQcLy
+=32DG
+-----END PGP SIGNATURE-----
+
+--1+kiJ7gFzGEgD6MU--
