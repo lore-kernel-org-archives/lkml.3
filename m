@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807AbaIAL5W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 07:57:22 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:19888 "EHLO
-	mail.work-microwave.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753766AbaIAL5U (ORCPT
+	id S1753457AbaIAL7l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 07:59:41 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:50093 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751832AbaIAL7k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 07:57:20 -0400
-X-Greylist: delayed 623 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Sep 2014 07:57:19 EDT
-From: stigge@antcom.de
-To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH] net: lpc_eth: Fix crash on ip link up
-Date: Mon,  1 Sep 2014 13:46:46 +0200
-Message-Id: <1409572006-26876-1-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 2.1.0
-X-FEAS-SYSTEM-WL: stigge@antcom.de
+	Mon, 1 Sep 2014 07:59:40 -0400
+Message-ID: <54045FA6.70602@mentor.com>
+Date: Mon, 1 Sep 2014 15:59:34 +0400
+From: Dmitry Eremin-Solenikov <dmitry_eremin@mentor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>, Dirk Behme <dirk.behme@de.bosch.com>
+CC: <linux-kernel@vger.kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Gokulkrishnan Nagarajan <Gokulkrishnan.Nagarajan@in.bosch.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] regulator: core: GPIO #0 is a valid GPIO
+References: <1409336356-27682-1-git-send-email-dmitry_eremin@mentor.com> <20140829190129.GZ29327@sirena.org.uk> <5404246E.4090908@de.bosch.com> <20140901101512.GK29327@sirena.org.uk>
+In-Reply-To: <20140901101512.GK29327@sirena.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roland Stigge <stigge@antcom.de>
+On 09/01/2014 02:15 PM, Mark Brown wrote:
+> On Mon, Sep 01, 2014 at 09:46:54AM +0200, Dirk Behme wrote:
+>> I wonder how this fits to
+>
+>> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/gpio/gpio-legacy.txt
+>
+>> "GPIOs are identified by unsigned integers in the range 0..MAX_INT"
+>
+>> "If you want to initialize a structure with an invalid GPIO number, use
+>> some negative number (perhaps "-EINVAL");"
+>
+>> then?
+>
+> There's no practical way to deploy that without breaking users - as soon
+> as you treat 0 as a valid GPIO you make all existing users relying on
+> the natural behaviour of treating 0 as default instantly buggy which is
+> not practical.  Really the GPIO API is badly specified here.
+>
 
-When a link is already up, the following sequence makes the kernel
-block completely:
+Back in the time before DTS conversion started, the 0 was a correct GPIO 
+number. If somebody wanted to specify that no gpio is provided, he 
+provided -1 as an invalid number. I have the feeling that allowing users 
+to use 0 as 'no gpio' is a mistake. Or the API should be changed
+to disallow GPIO 0 to exist at all.
 
-  ip link set dev eth0 down
-  ip link set dev eth0 up
-
-This is because on suspended phy, the following lines
-
-  __lpc_eth_reset(pldat);
-  __lpc_eth_init(pldat);
-
-make the LPC ethernet core block (see LPC32x0 manual). The PHY needs to be
-(re-)activated low-level first.
-
-Signed-off-by: Roland Stigge <stigge@antcom.de>
----
- Applies to v3.17-rc3
-
- drivers/net/ethernet/nxp/lpc_eth.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/drivers/net/ethernet/nxp/lpc_eth.c b/drivers/net/ethernet/nxp/lpc_eth.c
-index 8706c0d..a44a03c 100644
---- a/drivers/net/ethernet/nxp/lpc_eth.c
-+++ b/drivers/net/ethernet/nxp/lpc_eth.c
-@@ -1220,6 +1220,9 @@ static int lpc_eth_open(struct net_device *ndev)
- 
- 	__lpc_eth_clock_enable(pldat, true);
- 
-+	/* Suspended PHY makes LPC ethernet core block, so resume now */
-+	phy_resume(pldat->phy_dev);
-+
- 	/* Reset and initialize */
- 	__lpc_eth_reset(pldat);
- 	__lpc_eth_init(pldat);
 -- 
-2.1.0
-
+With best wishes
+Dmitry
