@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753000AbaIASs4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 14:48:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55963 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752914AbaIASsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 14:48:55 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20140901174322.GA15533@khazad-dum.debian.net>
-References: <20140809231911.GA4843@khazad-dum.debian.net> <20140831194548.GA12628@khazad-dum.debian.net> <54037C07.8060703@zytor.com> <20140831201126.GB12628@khazad-dum.debian.net> <20140901051302.GA28402@nazgul.tnic> <5404A035.3070707@zytor.com> <20140901174322.GA15533@khazad-dum.debian.net>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: early microcode: how to disable at runtime?
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Mon, 01 Sep 2014 11:48:03 -0700
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-CC: Borislav Petkov <bp@alien8.de>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-kernel@vger.kernel.org
-Message-ID: <ea40f7c4-ec8d-4be5-8f8c-bbd11ab07252@email.android.com>
+	id S1752558AbaIAS7g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 14:59:36 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:39373 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752260AbaIAS7d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 14:59:33 -0400
+Message-ID: <1409597968.1055.1.camel@kepstin.ca>
+Subject: Re: [bisected, regression] 3.17-rc2 kernel doesn't load initramfs
+ with EFI stub boot
+From: Calvin Walton <calvin.walton@kepstin.ca>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Yinghai Lu <yinghai@kernel.org>, Matt Fleming <matt.fleming@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        linux-efi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 01 Sep 2014 14:59:28 -0400
+In-Reply-To: <20140901184208.GA3001@console-pimps.org>
+References: <1409155357.1084.1.camel@kepstin.ca>
+	 <20140901184208.GA3001@console-pimps.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.13.5 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No, it is worse to rename it and have older kernels behave differently.  Kernel options are basically super obscure to most people anyway.
+On Mon, 2014-09-01 at 19:42 +0100, Matt Fleming wrote:
+> On Wed, 27 Aug, at 12:02:37PM, Calvin Walton wrote:
+> >  Hi all,
+> > 
+> >  When I tried booting the 3.17-rc2 kernel on my Lenovo ThinkPad 
+> > T440p
+> >  (16gb ram) via Gummiboot/EFI stub, it failed with an error saying 
+> > that
+> >  it could not mount root. A little investigation revealed that the
+> >  initramfs did not load, so mounting by filesystem UUID failed.
+> >  I've bisected the change, and it has led me to:
+> > 
+> >  4bf7111f50167133a71c23530ca852a41355e739 is the first bad commit
+> >  commit 4bf7111f50167133a71c23530ca852a41355e739
+> >  Author: Yinghai Lu <yinghai@kernel.org>
+> >  Date:   Sat Jun 14 12:23:41 2014 -0700
+> > 
+> >      x86/efi: Support initrd loaded above 4G
+> 
+> Thanks for reporting this. Could you try the below commit and see
+> whether it fixes things for you?
+> 
+>   http://article.gmane.org/gmane.linux.kernel.efi/4524
 
-On September 1, 2014 10:43:22 AM PDT, Henrique de Moraes Holschuh <hmh@hmh.eng.br> wrote:
->On Mon, 01 Sep 2014, H. Peter Anvin wrote:
->> On 08/31/2014 10:13 PM, Borislav Petkov wrote:
->> > On Sun, Aug 31, 2014 at 05:11:26PM -0300, Henrique de Moraes
->Holschuh wrote:
->> >>> Probably more like something more like arch/x86/boot/cmdline.c. 
->Maybe
->> >>> we could even make it sharable.
->> >>
->> >> Looks like that would work, yes.
->> > 
->> > Guys, guys, please relax and check the code first: "dis_ucode_ldr".
->> > 
->> 
->> Yeah.  It is an absolutely horrific option name (something like
->> "noearlyucode" would have been so much nicer; we generally use the
->no-
->> prefix and no underscores) but I should have objected to that one
->much
->> sooner.
->
->It wasn't properly documented, it is obscure as all heck, and early
->microcode updates active by default is a very recent development on
->distros.
->
->You cannot even find "dis_ucode_ldr" being cited by anyone through
->google
->searches.
->
->I believe it is actually possible to fix this still: either by directly
->renaming, or by using a deprecation period and testing for a new name
->and
->the "dis_ucode_ldr" name.
+With Yinghai Lu's patch from the linked message, my ThinkPad is now 
+booting correctly. (Admittedly using a rather "small" 7MB intramfs - I 
+don't have any >2GB ones handy).
+
+Feel free to take a
+Tested-by: Calvin Walton <calvin.walton@kepstin.ca>
+
+Thanks!
+
 
 -- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+Calvin Walton <calvin.walton@kepstin.ca>
