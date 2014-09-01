@@ -1,100 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882AbaIAI1V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 04:27:21 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:42478 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752338AbaIAI1T (ORCPT
+	id S1752810AbaIAI3P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 04:29:15 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:40754 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752012AbaIAI3N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 04:27:19 -0400
-Date: Mon, 1 Sep 2014 09:27:12 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Beniamino Galvani <b.galvani@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Wim Van Sebroeck <wim@iguana.be>, Guenter Roeck <linux@roeck-us.net>,
-        linux-watchdog@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Carlo Caione <carlo@caione.org>
-Subject: Re: [PATCH v2 4/4] mfd: rn5t618: document device tree bindings
-Message-ID: <20140901082712.GB7374@lee--X1>
-References: <1409403026-28818-1-git-send-email-b.galvani@gmail.com>
- <1409403026-28818-5-git-send-email-b.galvani@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1409403026-28818-5-git-send-email-b.galvani@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 1 Sep 2014 04:29:13 -0400
+From: Guodong Xu <guodong.xu@linaro.org>
+To: lee.jones@linaro.org, sameo@linux.intel.com, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, grant.likely@linaro.org, khilman@linaro.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, zhangnian@huawei.com
+Cc: Guodong Xu <guodong.xu@linaro.org>
+Subject: [PATCH 0/3] Add MFD and regulator drivers for Hi6421 PMIC SoC
+Date: Mon,  1 Sep 2014 16:28:32 +0800
+Message-Id: <1409560115-30646-1-git-send-email-guodong.xu@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 30 Aug 2014, Beniamino Galvani wrote:
+This patchset adds an MFD core driver and a regulator driver for Hi6421 PMIC
+SoC.
 
-> This adds the device tree bindings documentation for Ricoh RN5T618.
-> 
-> Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
-> Reviewed-by: Mark Brown <broonie@linaro.org>
-> ---
->  Documentation/devicetree/bindings/mfd/rn5t618.txt |   36 +++++++++++++++++++++
->  1 file changed, 36 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/mfd/rn5t618.txt
+Hi6421 is a PMIC SoC designed and manufactured by HiSilicon Ltd. It includes
+multi-functions, such as regulators, codec, ADCs, Coulomb counter, etc.
+Hi6421 can be used in various Hi3620 SoC based boards. Registers in Hi6421 are
+memory bus mapped, so in this design they are accessed by regmap-mmio APIs.
 
-Whoops, should have replied to this one instead of the other one
-twice.
+Hi6421 regulator driver is applied since v5. So move the related patches out.
 
-Applied, thanks.
+---
+changes in v8:
+ * remove unused field in struct hi6421_pmic
+ * fixes of coding style
 
-> diff --git a/Documentation/devicetree/bindings/mfd/rn5t618.txt b/Documentation/devicetree/bindings/mfd/rn5t618.txt
-> new file mode 100644
-> index 0000000..937785a
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mfd/rn5t618.txt
-> @@ -0,0 +1,36 @@
-> +* Ricoh RN5T618 PMIC
-> +
-> +Ricoh RN5T618 is a power management IC which integrates 3 step-down
-> +DCDC converters, 7 low-dropout regulators, a Li-ion battery charger,
-> +fuel gauge, ADC, GPIOs and a watchdog timer. It can be controlled
-> +through a I2C interface.
-> +
-> +Required properties:
-> + - compatible: should be "ricoh,rn5t618"
-> + - reg: the I2C slave address of the device
-> +
-> +Sub-nodes:
-> + - regulators: the node is required if the regulator functionality is
-> +   needed. The valid regulator names are: DCDC1, DCDC2, DCDC3, LDO1,
-> +   LDO2, LDO3, LDO4, LDO5, LDORTC1 and LDORTC2.
-> +   The common bindings for each individual regulator can be found in:
-> +   Documentation/devicetree/bindings/regulator/regulator.txt
-> +
-> +Example:
-> +
-> +	pmic@32 {
-> +		compatible = "ricoh,rn5t618";
-> +		reg = <0x32>;
-> +
-> +		regulators {
-> +			DCDC1 {
-> +				regulator-min-microvolt = <1050000>;
-> +				regulator-max-microvolt = <1050000>;
-> +			};
-> +
-> +			DCDC2 {
-> +				regulator-min-microvolt = <1175000>;
-> +				regulator-max-microvolt = <1175000>;
-> +			};
-> +		};
-> +	};
+changes in v7:
+ * merge conflict in drivers/mfd/Makefile
+ * use devm_ioremap_resource, as devm_request_and_ioremap is deprecated and
+    now removed.
+ * incorporate feedback from maintainer
+    - Documentation as a separate patch
+    - dts node rename from 'pmic' to 'hi6421'
+
+changes in v6:
+ * rebase to v3.17-rc1:
+  - use devm_ioremap_resource in hi6421 mfd driver
+  - add 'const' before var regulator_ops in new funcs in regulator core
+ * fix build error in drivers/regulator/mc13892-regulator.c
+     due to 'const' in regulator_desc.ops
+ * remove patch to hi3xxx_defconfig
+
+changes in v5:
+ * rename _regulator_delay to _regulator_enable_delay
+ * clean up hi6421_regulator_enable(), add 100us protective gap into
+     regulator_desc's .enable_time
+ * code clean up, fixes for style checking
+
+changes in v4:
+ * regulator: core:
+  - add const qualifier to ops in struct regulator_desc
+  - factor out _regulator_delay from _regulator_do_enable
+  - add guard delay between calling regulator_disable and _enable
+ * hi6421 regulator:
+  - bug fix: missing min_uV for linear regualtor BUCK0~2
+  - bug fix: wrong volt values in buck_3_voltages table
+  - add const to hi6421 regulator_ops
+  - use ldo_linear and ldo_linear_range in applicable LDOs.
+  - rename regulator-name to conform to names in board schematics.
+
+changes in v3:
+ * hi6421: regulator: remove setting of constraints on board-specific
+     capabilities
+ * delete unecessary compatible property "hisilicon,hi6421-regulators"
+ * change regulator enable/disable callback APIs to support protection
+gaps, as
+     required by hi6421 spec
+ * split regulator set_mode/get_mode callback APIs to LDOs and BUCKs
+ * delete hi6421.dtsi, mfd and regulator nodes are now in board config .dts
+
+changes in v2:
+ * use MFD APIs to manage sub-devices of Hi6421
+ * use regmap-mmio for register access
+ * use only generic regulator device tree property
+ * rewrite regulator driver using helper APIs from both regulator and regmap
+
+v1: first drop
+
+Guodong Xu (3):
+  Documentation: mfd: add docs for hi6421 dt
+  mfd: Add hi6421 PMIC core driver
+  ARM: dts: hi3620-hi4511: Add HI6421 MFD and regulator nodes
+
+ Documentation/devicetree/bindings/mfd/hi6421.txt |  38 ++++
+ arch/arm/boot/dts/hi3620-hi4511.dts              | 233 +++++++++++++++++++++++
+ drivers/mfd/Kconfig                              |  13 ++
+ drivers/mfd/Makefile                             |   1 +
+ drivers/mfd/hi6421-pmic-core.c                   | 113 +++++++++++
+ include/linux/mfd/hi6421-pmic.h                  |  41 ++++
+ 6 files changed, 439 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/hi6421.txt
+ create mode 100644 drivers/mfd/hi6421-pmic-core.c
+ create mode 100644 include/linux/mfd/hi6421-pmic.h
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.9.1
+
