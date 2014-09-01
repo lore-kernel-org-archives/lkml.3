@@ -1,36 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568AbaIAPgn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 11:36:43 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41171 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754054AbaIAPgk (ORCPT
+	id S1754543AbaIAPge (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 11:36:34 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:34673 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754022AbaIAPga (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 11:36:40 -0400
-Date: Mon, 1 Sep 2014 16:36:38 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Rob Jones <rob.jones@codethink.co.uk>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        akpm@linux-foundation.org, linux-kernel@codethink.co.uk
-Subject: Re: [PATCH] fs: replace int param with size_t for seq_open_private()
-Message-ID: <20140901153637.GI7996@ZenIV.linux.org.uk>
-References: <1409577428-16148-1-git-send-email-rob.jones@codethink.co.uk>
+	Mon, 1 Sep 2014 11:36:30 -0400
+Date: Mon, 1 Sep 2014 08:36:29 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Douglas Gilbert <dgilbert@interlog.com>
+Cc: SCSI development list <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        James Bottomley <james.bottomley@hansenpartnership.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Milan Broz <gmazyland@gmail.com>
+Subject: Re: [PATCH] scsi_debug: deadlock between completions and surprise
+ module removal
+Message-ID: <20140901153629.GA29938@infradead.org>
+References: <5403AB47.3040706@interlog.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1409577428-16148-1-git-send-email-rob.jones@codethink.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5403AB47.3040706@interlog.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 01, 2014 at 02:17:08PM +0100, Rob Jones wrote:
+> --- a/drivers/scsi/scsi_debug.c	2014-08-26 13:24:51.646948507 -0400
+> +++ b/drivers/scsi/scsi_debug.c	2014-08-30 18:04:54.589226679 -0400
+> @@ -2743,6 +2743,13 @@ static int stop_queued_cmnd(struct scsi_
+>  		if (test_bit(k, queued_in_use_bm)) {
+>  			sqcp = &queued_arr[k];
+>  			if (cmnd == sqcp->a_cmnd) {
+> +				devip = (struct sdebug_dev_info *)
+> +					cmnd->device->hostdata;
+> +				if (devip)
+> +					atomic_dec(&devip->num_in_q);
+> +				sqcp->a_cmnd = NULL;
 
->  void *__seq_open_private(struct file *f, const struct seq_operations *ops,
-> -		int psize)
-> +		size_t psize)
+Why would the hostdata every be NULL here?  We should never
+call ->slave_destroy on a device that has outstanding commands.
 
-<sarcasm>
-It is a horrible limitation to impose, indeed.  Why, a lousy
-2 gigabytes per line in procfs file - that's intolerable...
-</sarcasm> 
