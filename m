@@ -1,52 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754230AbaIAPsa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 11:48:30 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:39979 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751665AbaIAPs3 (ORCPT
+	id S1754360AbaIAPtF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 11:49:05 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:60027 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753939AbaIAPtE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 11:48:29 -0400
-From: sunwxg <sun.wxg@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dulshani Gunawardhana <dulshani.gunawardhana89@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        "John L. Hammond" <john.hammond@intel.com>,
-        Andreas Dilger <andreas.dilger@intel.com>,
-        Chi Pham <fempsci@gmail.com>, Oleg Drokin <green@linuxhacker.ru>
-Cc: Sun Wang <sun.wxg@gmail.com>, devel@driverdev.osuosl.org,
+	Mon, 1 Sep 2014 11:49:04 -0400
+Date: Mon, 1 Sep 2014 16:48:57 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
         linux-kernel@vger.kernel.org
-Subject: 
-Date: Mon,  1 Sep 2014 23:47:38 +0800
-Message-Id: <1409586458-723-2-git-send-email-sun.wxg@gmail.com>
-X-Mailer: git-send-email 2.1.0
+Subject: Re: [PATCH] mfd: arizona: Propagate irq_wake through to parent IRQ
+Message-ID: <20140901154857.GI8796@lee--X1>
+References: <1409581751-23724-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1409581751-23724-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sun Wang <sun.wxg@gmail.com>
+On Mon, 01 Sep 2014, Charles Keepax wrote:
 
-Subject: [PATCH] staging: lustre: lov_pack: fix coding style issue
+> If one of the internal Arizona IRQs is set as a wake source this needs
+> to be propogated back to the actual IRQ line that the Arizona device is
+> attached to.
+> 
+> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+> ---
+>  drivers/mfd/arizona-irq.c |    8 ++++++++
+>  1 files changed, 8 insertions(+), 0 deletions(-)
+> 
+> Hi,
+> 
+> Just thought I would resend this one on its own as it is a good
+> bug fix and didn't need to depend on the other extra callbacks patch.
+> And it would be good to get it in whilst I work on the IRQ stuff.
+> 
+> Thanks,
+> Charles
 
-Fix the style error checking by checkpatch.pl
-ERROR: space required after that ','
+Applied, thanks.
 
-Signed-off-by: Sun Wang <sun.wxg@gmail.com>
+> diff --git a/drivers/mfd/arizona-irq.c b/drivers/mfd/arizona-irq.c
+> index 9133d51..5e2f450 100644
+> --- a/drivers/mfd/arizona-irq.c
+> +++ b/drivers/mfd/arizona-irq.c
+> @@ -152,10 +152,18 @@ static void arizona_irq_disable(struct irq_data *data)
+>  {
+>  }
+>  
+> +static int arizona_irq_set_wake(struct irq_data *data, unsigned int on)
+> +{
+> +	struct arizona *arizona = irq_data_get_irq_chip_data(data);
+> +
+> +	return irq_set_irq_wake(arizona->irq, on);
+> +}
+> +
+>  static struct irq_chip arizona_irq_chip = {
+>  	.name			= "arizona",
+>  	.irq_disable		= arizona_irq_disable,
+>  	.irq_enable		= arizona_irq_enable,
+> +	.irq_set_wake		= arizona_irq_set_wake,
+>  };
+>  
+>  static int arizona_irq_map(struct irq_domain *h, unsigned int virq,
 
----
- drivers/staging/lustre/lustre/lov/lov_pack.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/staging/lustre/lustre/lov/lov_pack.c b/drivers/staging/lustre/lustre/lov/lov_pack.c
-index 20e5870..62ea223 100644
---- a/drivers/staging/lustre/lustre/lov/lov_pack.c
-+++ b/drivers/staging/lustre/lustre/lov/lov_pack.c
-@@ -95,7 +95,7 @@ void lov_dump_lmm_v1(int level, struct lov_mds_md_v1 *lmm)
- void lov_dump_lmm_v3(int level, struct lov_mds_md_v3 *lmm)
- {
- 	lov_dump_lmm_common(level, lmm);
--	CDEBUG(level,"pool_name "LOV_POOLNAMEF"\n", lmm->lmm_pool_name);
-+	CDEBUG(level, "pool_name "LOV_POOLNAMEF"\n", lmm->lmm_pool_name);
- 	lov_dump_lmm_objects(level, lmm->lmm_objects,
- 			     le16_to_cpu(lmm->lmm_stripe_count));
- }
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
