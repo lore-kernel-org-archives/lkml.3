@@ -1,170 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343AbaIAJj2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 05:39:28 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:47733 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752389AbaIAJj0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 05:39:26 -0400
-Message-ID: <54043EBE.9020808@ti.com>
-Date: Mon, 1 Sep 2014 12:39:10 +0300
-From: Jyri Sarha <jsarha@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1753386AbaIAJjf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 05:39:35 -0400
+Received: from filter1.ibarracuda.nl ([83.247.7.10]:56671 "EHLO
+	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752980AbaIAJjb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 05:39:31 -0400
+X-ASG-Debug-ID: 1409564368-0759e7416b8702240002-xx1T2L
+X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
+X-Barracuda-AUTH-User: xsenscom
+X-Barracuda-Apparent-Source-IP: 87.249.116.215
+From: Frans Klaver <frans.klaver@xsens.com>
+To: Johan Hovold <johan@kernel.org>
+CC: Frans Klaver <frans.klaver@xsens.com>,
+        Frans Klaver <fransklaver@gmail.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH resend 1/2] usb: serial: xsens_mt: add author and description
+Date: Mon, 1 Sep 2014 11:39:21 +0200
+X-ASG-Orig-Subj: [PATCH resend 1/2] usb: serial: xsens_mt: add author and description
+Message-ID: <1409564362-27571-1-git-send-email-frans.klaver@xsens.com>
+X-Mailer: git-send-email 2.1.0
 MIME-Version: 1.0
-To: Xiubo Li <Li.Xiubo@freescale.com>, <broonie@kernel.org>,
-        <alsa-devel@alsa-project.org>
-CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        Nicolin Chen <nicoleotsuka@gmail.com>
-Subject: Re: [RFC][PATCH] ASoC: simple-card: Merge single and muti DAI link
- code.
-References: <1409294797-21948-1-git-send-email-Li.Xiubo@freescale.com>
-In-Reply-To: <1409294797-21948-1-git-send-email-Li.Xiubo@freescale.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [172.16.11.49]
+X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
+X-Barracuda-Start-Time: 1409564369
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.9055
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch would break the current syntax without introducing any
-improvements over it (actually the opposite, see bellow). So in its
-current form I don't like this patch at all.
+Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
+---
+ drivers/usb/serial/xsens_mt.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-On 08/29/2014 09:46 AM, Xiubo Li wrote:
- > This patch merge single DAI link and muti-DAI links code together,
- > and simply the simple-card driver code.
- >
- > And also do some other improvement:
- >
- > Since from the DAI format micro SND_SOC_DAIFMT_CBx_CFx, the 'CBx'
- > mean Codec's bit clock is as master/slave and the 'CFx' mean Codec's
- > frame clock is as master/slave.
- >
- > So these same DAI formats should be informed to CPU and CODE DAIs at
- > the same time. For the Codec driver will set the bit clock and frame
- > clock as the DAI formats said, but for the CPU driver, if the the
- > bit clock or frame clock is as Codec master, so it should be set CPU
- > DAI device as bit clock or frame clock as slave, and vice versa.
- >
-
-But there is no such problem with the current code any more. The new
-preferred way is to indicate bitclock and frame master with phandles
-that refer to the master DAI on the link (see the examples bellow).
-
- > The old code will cause confusion, and we should be clear that the
- > letter 'C' here mean to Codec.
- >
- > Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
- > Cc: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
- > Cc: Jean-Francois Moine <moinejf@free.fr>
- > Cc: Jyri Sarha <jsarha@ti.com>
- > Cc: Nicolin Chen <nicoleotsuka@gmail.com>
- > ---
- >
- > Hi,
- >
- > This patch will break the old DT, so i just send one RFC version, and
- > will add the old DT patches in next version if this patch can work
- > well.
-
-I do not object in getting rid of this simplified description for a
-single dailink card:
-
-(example 1)
-sound {
-	compatible = "simple-audio-card";
-...
-	simple-audio-card,format = "left_j";
-	simple-audio-card,bitclock-master = <&dailink0_master>;
-	simple-audio-card,frame-master = <&dailink0_master>;
-	simple-audio-card,cpu {
-		sound-dai = <&sh_fsi2 0>;
-	};
-
-	dailink0_master: simple-audio-card,codec {
-		sound-dai = <&ak4648>;
-		clocks = <&osc>;
-	};
-};
-
-and describing the DAI-links always like this:
-
-(example 2)
-sound {
-	compatible = "simple-audio-card";
-...
-	simple-audio-card,dai-link@0 {
-		format = "i2s";
-		bitclock-master = <&dailink0_master>;
-		frame-master = <&dailink0_master>;
-		dailink0_master: cpu {
-			sound-dai = <&audio1 0>;
-		};
-		codec {
-			sound-dai = <&tda998x 0>;
-		};
-	};
-};
-
-But I do object going back to the old syntax exclusively and
-describing the bitclock and frame master always with simple boolean
-properties, like this:
-
-(example 3)
-sound {
-	compatible = "simple-audio-card";
-...
-	simple-audio-card,dai-link@0 {
-		format = "i2s";
-		dailink0_master: cpu {
-			sound-dai = <&audio1 0>;
-		};
-		codec {
-			sound-dai = <&tda998x 0>;
-			bitclock-master;
-			frame-master;
-		};
-	};
-};
-
-In my opinion we should rather get rid of this syntax than move
-exclusively to it.
-
-The syntax of example 2 is simply superior to the syntax of example
-3. With the syntax on example 2 it is possible to describe TDM setups
-where there is multiple codecs on a single i2s bus. The syntax of
-example 3 simply can not describe that kind of setup.
-
-If you need to have the backwards compatibility syntax describing the
-clock masters to work also in the multilink mode (example 3), then do
-just that (it is simple enough [1]). But please do not break the new
-phandle based syntax!!!
-
-Best regards,
-Jyri
-
-[1] To enable legacy syntax in multilink mode just apply this patch:
-
-diff --git a/sound/soc/generic/simple-card.c 
-b/sound/soc/generic/simple-card.c
-index 8dd7957..aed3423 100644
---- a/sound/soc/generic/simple-card.c
-+++ b/sound/soc/generic/simple-card.c
-@@ -242,10 +242,10 @@ static int simple_card_dai_link_of(struct 
-device_node *node,
-         if (ret < 0)
-                 goto dai_link_of_err;
-
--       if (strlen(prefix) && !bitclkmaster && !framemaster) {
--               /* No dai-link level and master setting was not found from
--                  sound node level, revert back to legacy DT parsing and
--                  take the settings from codec node. */
-+       if (!bitclkmaster && !framemaster) {
-+               /* No dai-link level master setting was found, revert
-+                  back to legacy DT parsing and take the settings
-+                  from the codec node boolean properties. */
-                 dev_dbg(dev, "%s: Revert to legacy daifmt parsing\n",
-                         __func__);
-                 dai_props->cpu_dai.fmt = dai_props->codec_dai.fmt =
+diff --git a/drivers/usb/serial/xsens_mt.c b/drivers/usb/serial/xsens_mt.c
+index 4841fb5..d500ccd 100644
+--- a/drivers/usb/serial/xsens_mt.c
++++ b/drivers/usb/serial/xsens_mt.c
+@@ -82,4 +82,6 @@ static struct usb_serial_driver * const serial_drivers[] = {
+ 
+ module_usb_serial_driver(serial_drivers, id_table);
+ 
++MODULE_AUTHOR("Frans Klaver <frans.klaver@xsens.com>");
++MODULE_DESCRIPTION("USB-serial driver for Xsens motion trackers");
+ MODULE_LICENSE("GPL");
+-- 
+2.1.0
 
