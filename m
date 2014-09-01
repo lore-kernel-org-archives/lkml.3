@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754419AbaIAPoh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 11:44:37 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:35975 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754367AbaIAPof (ORCPT
+	id S1754489AbaIAPot (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 11:44:49 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:46245 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754380AbaIAPor (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 11:44:35 -0400
+	Mon, 1 Sep 2014 11:44:47 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 5/8] staging: rtl8188eu: Rename HalPwrSeqCmd.c to pwrseqcmd.c
-Date: Mon,  1 Sep 2014 21:13:40 +0530
-Message-Id: <1409586223-5915-5-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 6/8] staging: rtl8188eu: Rename HalPwrSeqCmd.h to pwrseqcmd.h
+Date: Mon,  1 Sep 2014 21:13:41 +0530
+Message-Id: <1409586223-5915-6-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1409586223-5915-1-git-send-email-navin.patidar@gmail.com>
 References: <1409586223-5915-1-git-send-email-navin.patidar@gmail.com>
@@ -24,32 +24,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/Makefile           |    2 +-
- drivers/staging/rtl8188eu/hal/HalPwrSeqCmd.c |  123 --------------------------
- drivers/staging/rtl8188eu/hal/pwrseqcmd.c    |  123 ++++++++++++++++++++++++++
- 3 files changed, 124 insertions(+), 124 deletions(-)
- delete mode 100644 drivers/staging/rtl8188eu/hal/HalPwrSeqCmd.c
- create mode 100644 drivers/staging/rtl8188eu/hal/pwrseqcmd.c
+ drivers/staging/rtl8188eu/hal/pwrseqcmd.c          |    2 +-
+ drivers/staging/rtl8188eu/include/Hal8188EPwrSeq.h |    2 +-
+ drivers/staging/rtl8188eu/include/HalPwrSeqCmd.h   |   90 --------------------
+ drivers/staging/rtl8188eu/include/pwrseqcmd.h      |   90 ++++++++++++++++++++
+ 4 files changed, 92 insertions(+), 92 deletions(-)
+ delete mode 100644 drivers/staging/rtl8188eu/include/HalPwrSeqCmd.h
+ create mode 100644 drivers/staging/rtl8188eu/include/pwrseqcmd.h
 
-diff --git a/drivers/staging/rtl8188eu/Makefile b/drivers/staging/rtl8188eu/Makefile
-index a309451..8723794 100644
---- a/drivers/staging/rtl8188eu/Makefile
-+++ b/drivers/staging/rtl8188eu/Makefile
-@@ -22,7 +22,7 @@ r8188eu-y :=				\
- 		hal/bb_cfg.o \
- 		hal/rf_cfg.o \
- 		hal/HalPhyRf_8188e.o	\
--		hal/HalPwrSeqCmd.o	\
-+		hal/pwrseqcmd.o \
- 		hal/pwrseq.o \
- 		hal/Hal8188ERateAdaptive.o\
- 		hal/hal_intf.o		\
-diff --git a/drivers/staging/rtl8188eu/hal/HalPwrSeqCmd.c b/drivers/staging/rtl8188eu/hal/HalPwrSeqCmd.c
+diff --git a/drivers/staging/rtl8188eu/hal/pwrseqcmd.c b/drivers/staging/rtl8188eu/hal/pwrseqcmd.c
+index 2565d6e..be0663e 100644
+--- a/drivers/staging/rtl8188eu/hal/pwrseqcmd.c
++++ b/drivers/staging/rtl8188eu/hal/pwrseqcmd.c
+@@ -17,7 +17,7 @@
+  *
+  ******************************************************************************/
+ 
+-#include <HalPwrSeqCmd.h>
++#include <pwrseqcmd.h>
+ #include <usb_ops_linux.h>
+ 
+ /* This routine deals with the Power Configuration CMDs parsing
+diff --git a/drivers/staging/rtl8188eu/include/Hal8188EPwrSeq.h b/drivers/staging/rtl8188eu/include/Hal8188EPwrSeq.h
+index aebf1d3..fabb201 100644
+--- a/drivers/staging/rtl8188eu/include/Hal8188EPwrSeq.h
++++ b/drivers/staging/rtl8188eu/include/Hal8188EPwrSeq.h
+@@ -22,7 +22,7 @@
+ #ifndef __HAL8188EPWRSEQ_H__
+ #define __HAL8188EPWRSEQ_H__
+ 
+-#include "HalPwrSeqCmd.h"
++#include "pwrseqcmd.h"
+ 
+ /*
+ 	Check document WM-20110607-Paul-RTL8188E_Power_Architecture-R02.vsd
+diff --git a/drivers/staging/rtl8188eu/include/HalPwrSeqCmd.h b/drivers/staging/rtl8188eu/include/HalPwrSeqCmd.h
 deleted file mode 100644
-index 2565d6e..0000000
---- a/drivers/staging/rtl8188eu/hal/HalPwrSeqCmd.c
+index 980a497..0000000
+--- a/drivers/staging/rtl8188eu/include/HalPwrSeqCmd.h
 +++ /dev/null
-@@ -1,123 +0,0 @@
+@@ -1,90 +0,0 @@
 -/******************************************************************************
 - *
 - * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
@@ -67,118 +81,85 @@ index 2565d6e..0000000
 - * this program; if not, write to the Free Software Foundation, Inc.,
 - * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
 - *
+- *
 - ******************************************************************************/
+-#ifndef __HALPWRSEQCMD_H__
+-#define __HALPWRSEQCMD_H__
 -
--#include <HalPwrSeqCmd.h>
--#include <usb_ops_linux.h>
+-#include <drv_types.h>
 -
--/* This routine deals with the Power Configuration CMDs parsing
-- * for RTL8723/RTL8188E Series IC.
-- */
+-/* The value of cmd: 4 bits */
+-#define PWR_CMD_READ		0x00
+-#define PWR_CMD_WRITE		0x01
+-#define PWR_CMD_POLLING		0x02
+-#define PWR_CMD_DELAY		0x03
+-#define PWR_CMD_END		0x04
+-
+-/* The value of base: 4 bits */
+-/*  define the base address of each block */
+-#define PWR_BASEADDR_MAC	0x00
+-#define PWR_BASEADDR_USB	0x01
+-#define PWR_BASEADDR_PCIE	0x02
+-#define PWR_BASEADDR_SDIO	0x03
+-
+-/* The value of interface_msk: 4 bits */
+-#define PWR_INTF_SDIO_MSK	BIT(0)
+-#define PWR_INTF_USB_MSK	BIT(1)
+-#define PWR_INTF_PCI_MSK	BIT(2)
+-#define PWR_INTF_ALL_MSK	(BIT(0)|BIT(1)|BIT(2)|BIT(3))
+-
+-/* The value of fab_msk: 4 bits */
+-#define PWR_FAB_TSMC_MSK	BIT(0)
+-#define PWR_FAB_UMC_MSK		BIT(1)
+-#define PWR_FAB_ALL_MSK		(BIT(0)|BIT(1)|BIT(2)|BIT(3))
+-
+-/* The value of cut_msk: 8 bits */
+-#define PWR_CUT_TESTCHIP_MSK	BIT(0)
+-#define PWR_CUT_A_MSK		BIT(1)
+-#define PWR_CUT_B_MSK		BIT(2)
+-#define PWR_CUT_C_MSK		BIT(3)
+-#define PWR_CUT_D_MSK		BIT(4)
+-#define PWR_CUT_E_MSK		BIT(5)
+-#define PWR_CUT_F_MSK		BIT(6)
+-#define PWR_CUT_G_MSK		BIT(7)
+-#define PWR_CUT_ALL_MSK		0xFF
+-
+-
+-enum pwrseq_cmd_delat_unit {
+-	PWRSEQ_DELAY_US,
+-	PWRSEQ_DELAY_MS,
+-};
+-
+-struct wl_pwr_cfg {
+-	u16 offset;
+-	u8 cut_msk;
+-	u8 fab_msk:4;
+-	u8 interface_msk:4;
+-	u8 base:4;
+-	u8 cmd:4;
+-	u8 msk;
+-	u8 value;
+-};
+-
+-#define GET_PWR_CFG_OFFSET(__PWR_CMD)		__PWR_CMD.offset
+-#define GET_PWR_CFG_CUT_MASK(__PWR_CMD)		__PWR_CMD.cut_msk
+-#define GET_PWR_CFG_FAB_MASK(__PWR_CMD)		__PWR_CMD.fab_msk
+-#define GET_PWR_CFG_INTF_MASK(__PWR_CMD)	__PWR_CMD.interface_msk
+-#define GET_PWR_CFG_BASE(__PWR_CMD)		__PWR_CMD.base
+-#define GET_PWR_CFG_CMD(__PWR_CMD)		__PWR_CMD.cmd
+-#define GET_PWR_CFG_MASK(__PWR_CMD)		__PWR_CMD.msk
+-#define GET_PWR_CFG_VALUE(__PWR_CMD)		__PWR_CMD.value
+-
 -u8 rtl88eu_pwrseqcmdparsing(struct adapter *padapter, u8 cut_vers, u8 fab_vers,
--			    u8 ifacetype, struct wl_pwr_cfg pwrseqcmd[])
--{
--	struct wl_pwr_cfg pwrcfgcmd = {0};
--	u8 poll_bit = false;
--	u32 aryidx = 0;
--	u8 value = 0;
--	u32 offset = 0;
--	u32 poll_count = 0; /*  polling autoload done. */
--	u32 max_poll_count = 5000;
+-			    u8 ifacetype, struct wl_pwr_cfg pwrcfgCmd[]);
 -
--	do {
--		pwrcfgcmd = pwrseqcmd[aryidx];
--
--		RT_TRACE(_module_hal_init_c_ , _drv_info_,
--			 ("rtl88eu_pwrseqcmdparsing: offset(%#x) cut_msk(%#x)"
--			  "fab_msk(%#x) interface_msk(%#x) base(%#x) cmd(%#x)"
--			  "msk(%#x) value(%#x)\n",
--			 GET_PWR_CFG_OFFSET(pwrcfgcmd),
--			 GET_PWR_CFG_CUT_MASK(pwrcfgcmd),
--			 GET_PWR_CFG_FAB_MASK(pwrcfgcmd),
--			 GET_PWR_CFG_INTF_MASK(pwrcfgcmd),
--			 GET_PWR_CFG_BASE(pwrcfgcmd),
--			 GET_PWR_CFG_CMD(pwrcfgcmd),
--			 GET_PWR_CFG_MASK(pwrcfgcmd),
--			 GET_PWR_CFG_VALUE(pwrcfgcmd)));
--
--		/* Only Handle the command whose FAB, CUT, and Interface are matched */
--		if ((GET_PWR_CFG_FAB_MASK(pwrcfgcmd) & fab_vers) &&
--		    (GET_PWR_CFG_CUT_MASK(pwrcfgcmd) & cut_vers) &&
--		    (GET_PWR_CFG_INTF_MASK(pwrcfgcmd) & ifacetype)) {
--			switch (GET_PWR_CFG_CMD(pwrcfgcmd)) {
--			case PWR_CMD_READ:
--				RT_TRACE(_module_hal_init_c_, _drv_info_,
--					 ("rtl88eu_pwrseqcmdparsing: PWR_CMD_READ\n"));
--				break;
--			case PWR_CMD_WRITE:
--				RT_TRACE(_module_hal_init_c_, _drv_info_,
--					 ("rtl88eu_pwrseqcmdparsing: PWR_CMD_WRITE\n"));
--				offset = GET_PWR_CFG_OFFSET(pwrcfgcmd);
--
--				/*  Read the value from system register */
--				value = usb_read8(padapter, offset);
--
--				value &= ~(GET_PWR_CFG_MASK(pwrcfgcmd));
--				value |= (GET_PWR_CFG_VALUE(pwrcfgcmd) &
--					  GET_PWR_CFG_MASK(pwrcfgcmd));
--
--				/*  Write the value back to system register */
--				usb_write8(padapter, offset, value);
--				break;
--			case PWR_CMD_POLLING:
--				RT_TRACE(_module_hal_init_c_, _drv_info_,
--					 ("rtl88eu_pwrseqcmdparsing: PWR_CMD_POLLING\n"));
--
--				poll_bit = false;
--				offset = GET_PWR_CFG_OFFSET(pwrcfgcmd);
--				do {
--					value = usb_read8(padapter, offset);
--					value &= GET_PWR_CFG_MASK(pwrcfgcmd);
--
--					if (value == (GET_PWR_CFG_VALUE(pwrcfgcmd) &
--						      GET_PWR_CFG_MASK(pwrcfgcmd)))
--						poll_bit = true;
--					else
--						udelay(10);
--
--					if (poll_count++ > max_poll_count) {
--						DBG_88E("Fail to polling Offset[%#x]\n", offset);
--						return false;
--					}
--				} while (!poll_bit);
--				break;
--			case PWR_CMD_DELAY:
--				RT_TRACE(_module_hal_init_c_, _drv_info_,
--					 ("rtl88eu_pwrseqcmdparsing: PWR_CMD_DELAY\n"));
--				if (GET_PWR_CFG_VALUE(pwrcfgcmd) == PWRSEQ_DELAY_US)
--					udelay(GET_PWR_CFG_OFFSET(pwrcfgcmd));
--				else
--					udelay(GET_PWR_CFG_OFFSET(pwrcfgcmd)*1000);
--				break;
--			case PWR_CMD_END:
--				/* When this command is parsed, end the process */
--				RT_TRACE(_module_hal_init_c_, _drv_info_,
--					 ("rtl88eu_pwrseqcmdparsing: PWR_CMD_END\n"));
--				return true;
--				break;
--			default:
--				RT_TRACE(_module_hal_init_c_, _drv_err_,
--					 ("rtl88eu_pwrseqcmdparsing: Unknown CMD!!\n"));
--				break;
--			}
--		}
--
--		aryidx++;/* Add Array Index */
--	} while (1);
--	return true;
--}
-diff --git a/drivers/staging/rtl8188eu/hal/pwrseqcmd.c b/drivers/staging/rtl8188eu/hal/pwrseqcmd.c
+-#endif
+diff --git a/drivers/staging/rtl8188eu/include/pwrseqcmd.h b/drivers/staging/rtl8188eu/include/pwrseqcmd.h
 new file mode 100644
-index 0000000..2565d6e
+index 0000000..980a497
 --- /dev/null
-+++ b/drivers/staging/rtl8188eu/hal/pwrseqcmd.c
-@@ -0,0 +1,123 @@
++++ b/drivers/staging/rtl8188eu/include/pwrseqcmd.h
+@@ -0,0 +1,90 @@
 +/******************************************************************************
 + *
 + * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
@@ -196,112 +177,79 @@ index 0000000..2565d6e
 + * this program; if not, write to the Free Software Foundation, Inc.,
 + * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
 + *
++ *
 + ******************************************************************************/
++#ifndef __HALPWRSEQCMD_H__
++#define __HALPWRSEQCMD_H__
 +
-+#include <HalPwrSeqCmd.h>
-+#include <usb_ops_linux.h>
++#include <drv_types.h>
 +
-+/* This routine deals with the Power Configuration CMDs parsing
-+ * for RTL8723/RTL8188E Series IC.
-+ */
++/* The value of cmd: 4 bits */
++#define PWR_CMD_READ		0x00
++#define PWR_CMD_WRITE		0x01
++#define PWR_CMD_POLLING		0x02
++#define PWR_CMD_DELAY		0x03
++#define PWR_CMD_END		0x04
++
++/* The value of base: 4 bits */
++/*  define the base address of each block */
++#define PWR_BASEADDR_MAC	0x00
++#define PWR_BASEADDR_USB	0x01
++#define PWR_BASEADDR_PCIE	0x02
++#define PWR_BASEADDR_SDIO	0x03
++
++/* The value of interface_msk: 4 bits */
++#define PWR_INTF_SDIO_MSK	BIT(0)
++#define PWR_INTF_USB_MSK	BIT(1)
++#define PWR_INTF_PCI_MSK	BIT(2)
++#define PWR_INTF_ALL_MSK	(BIT(0)|BIT(1)|BIT(2)|BIT(3))
++
++/* The value of fab_msk: 4 bits */
++#define PWR_FAB_TSMC_MSK	BIT(0)
++#define PWR_FAB_UMC_MSK		BIT(1)
++#define PWR_FAB_ALL_MSK		(BIT(0)|BIT(1)|BIT(2)|BIT(3))
++
++/* The value of cut_msk: 8 bits */
++#define PWR_CUT_TESTCHIP_MSK	BIT(0)
++#define PWR_CUT_A_MSK		BIT(1)
++#define PWR_CUT_B_MSK		BIT(2)
++#define PWR_CUT_C_MSK		BIT(3)
++#define PWR_CUT_D_MSK		BIT(4)
++#define PWR_CUT_E_MSK		BIT(5)
++#define PWR_CUT_F_MSK		BIT(6)
++#define PWR_CUT_G_MSK		BIT(7)
++#define PWR_CUT_ALL_MSK		0xFF
++
++
++enum pwrseq_cmd_delat_unit {
++	PWRSEQ_DELAY_US,
++	PWRSEQ_DELAY_MS,
++};
++
++struct wl_pwr_cfg {
++	u16 offset;
++	u8 cut_msk;
++	u8 fab_msk:4;
++	u8 interface_msk:4;
++	u8 base:4;
++	u8 cmd:4;
++	u8 msk;
++	u8 value;
++};
++
++#define GET_PWR_CFG_OFFSET(__PWR_CMD)		__PWR_CMD.offset
++#define GET_PWR_CFG_CUT_MASK(__PWR_CMD)		__PWR_CMD.cut_msk
++#define GET_PWR_CFG_FAB_MASK(__PWR_CMD)		__PWR_CMD.fab_msk
++#define GET_PWR_CFG_INTF_MASK(__PWR_CMD)	__PWR_CMD.interface_msk
++#define GET_PWR_CFG_BASE(__PWR_CMD)		__PWR_CMD.base
++#define GET_PWR_CFG_CMD(__PWR_CMD)		__PWR_CMD.cmd
++#define GET_PWR_CFG_MASK(__PWR_CMD)		__PWR_CMD.msk
++#define GET_PWR_CFG_VALUE(__PWR_CMD)		__PWR_CMD.value
++
 +u8 rtl88eu_pwrseqcmdparsing(struct adapter *padapter, u8 cut_vers, u8 fab_vers,
-+			    u8 ifacetype, struct wl_pwr_cfg pwrseqcmd[])
-+{
-+	struct wl_pwr_cfg pwrcfgcmd = {0};
-+	u8 poll_bit = false;
-+	u32 aryidx = 0;
-+	u8 value = 0;
-+	u32 offset = 0;
-+	u32 poll_count = 0; /*  polling autoload done. */
-+	u32 max_poll_count = 5000;
++			    u8 ifacetype, struct wl_pwr_cfg pwrcfgCmd[]);
 +
-+	do {
-+		pwrcfgcmd = pwrseqcmd[aryidx];
-+
-+		RT_TRACE(_module_hal_init_c_ , _drv_info_,
-+			 ("rtl88eu_pwrseqcmdparsing: offset(%#x) cut_msk(%#x)"
-+			  "fab_msk(%#x) interface_msk(%#x) base(%#x) cmd(%#x)"
-+			  "msk(%#x) value(%#x)\n",
-+			 GET_PWR_CFG_OFFSET(pwrcfgcmd),
-+			 GET_PWR_CFG_CUT_MASK(pwrcfgcmd),
-+			 GET_PWR_CFG_FAB_MASK(pwrcfgcmd),
-+			 GET_PWR_CFG_INTF_MASK(pwrcfgcmd),
-+			 GET_PWR_CFG_BASE(pwrcfgcmd),
-+			 GET_PWR_CFG_CMD(pwrcfgcmd),
-+			 GET_PWR_CFG_MASK(pwrcfgcmd),
-+			 GET_PWR_CFG_VALUE(pwrcfgcmd)));
-+
-+		/* Only Handle the command whose FAB, CUT, and Interface are matched */
-+		if ((GET_PWR_CFG_FAB_MASK(pwrcfgcmd) & fab_vers) &&
-+		    (GET_PWR_CFG_CUT_MASK(pwrcfgcmd) & cut_vers) &&
-+		    (GET_PWR_CFG_INTF_MASK(pwrcfgcmd) & ifacetype)) {
-+			switch (GET_PWR_CFG_CMD(pwrcfgcmd)) {
-+			case PWR_CMD_READ:
-+				RT_TRACE(_module_hal_init_c_, _drv_info_,
-+					 ("rtl88eu_pwrseqcmdparsing: PWR_CMD_READ\n"));
-+				break;
-+			case PWR_CMD_WRITE:
-+				RT_TRACE(_module_hal_init_c_, _drv_info_,
-+					 ("rtl88eu_pwrseqcmdparsing: PWR_CMD_WRITE\n"));
-+				offset = GET_PWR_CFG_OFFSET(pwrcfgcmd);
-+
-+				/*  Read the value from system register */
-+				value = usb_read8(padapter, offset);
-+
-+				value &= ~(GET_PWR_CFG_MASK(pwrcfgcmd));
-+				value |= (GET_PWR_CFG_VALUE(pwrcfgcmd) &
-+					  GET_PWR_CFG_MASK(pwrcfgcmd));
-+
-+				/*  Write the value back to system register */
-+				usb_write8(padapter, offset, value);
-+				break;
-+			case PWR_CMD_POLLING:
-+				RT_TRACE(_module_hal_init_c_, _drv_info_,
-+					 ("rtl88eu_pwrseqcmdparsing: PWR_CMD_POLLING\n"));
-+
-+				poll_bit = false;
-+				offset = GET_PWR_CFG_OFFSET(pwrcfgcmd);
-+				do {
-+					value = usb_read8(padapter, offset);
-+					value &= GET_PWR_CFG_MASK(pwrcfgcmd);
-+
-+					if (value == (GET_PWR_CFG_VALUE(pwrcfgcmd) &
-+						      GET_PWR_CFG_MASK(pwrcfgcmd)))
-+						poll_bit = true;
-+					else
-+						udelay(10);
-+
-+					if (poll_count++ > max_poll_count) {
-+						DBG_88E("Fail to polling Offset[%#x]\n", offset);
-+						return false;
-+					}
-+				} while (!poll_bit);
-+				break;
-+			case PWR_CMD_DELAY:
-+				RT_TRACE(_module_hal_init_c_, _drv_info_,
-+					 ("rtl88eu_pwrseqcmdparsing: PWR_CMD_DELAY\n"));
-+				if (GET_PWR_CFG_VALUE(pwrcfgcmd) == PWRSEQ_DELAY_US)
-+					udelay(GET_PWR_CFG_OFFSET(pwrcfgcmd));
-+				else
-+					udelay(GET_PWR_CFG_OFFSET(pwrcfgcmd)*1000);
-+				break;
-+			case PWR_CMD_END:
-+				/* When this command is parsed, end the process */
-+				RT_TRACE(_module_hal_init_c_, _drv_info_,
-+					 ("rtl88eu_pwrseqcmdparsing: PWR_CMD_END\n"));
-+				return true;
-+				break;
-+			default:
-+				RT_TRACE(_module_hal_init_c_, _drv_err_,
-+					 ("rtl88eu_pwrseqcmdparsing: Unknown CMD!!\n"));
-+				break;
-+			}
-+		}
-+
-+		aryidx++;/* Add Array Index */
-+	} while (1);
-+	return true;
-+}
++#endif
 -- 
 1.7.10.4
 
