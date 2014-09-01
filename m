@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753520AbaIALyj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 07:54:39 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:47723 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751500AbaIALyh (ORCPT
+	id S1753623AbaIALzy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 07:55:54 -0400
+Received: from mail-yh0-f48.google.com ([209.85.213.48]:47300 "EHLO
+	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752939AbaIALzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 07:54:37 -0400
-From: Shakil A Khan <shakilk1729@gmail.com>
-To: linux-wireless@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, davem@davemloft.net,
-        linville@tuxdriver.com, johannes@sipsolutions.net,
-        Shakil A Khan <shakilk1729@gmail.com>
-Subject: [PATCH 2/2] nl80211.c: Fixed the wdev_id being used uninitialized.
-Date: Mon,  1 Sep 2014 07:54:27 -0400
-Message-Id: <1409572467-50908-1-git-send-email-shakilk1729@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Mon, 1 Sep 2014 07:55:53 -0400
+MIME-Version: 1.0
+X-Google-Sender-Delegation: migueloliv@gmail.com
+In-Reply-To: <20140901095446.GF5122@mwanda>
+References: <1408703558-32167-1-git-send-email-cmroliv@gmail.com>
+	<1408703617-32248-1-git-send-email-cmroliv@gmail.com>
+	<20140830204109.GC16168@kroah.com>
+	<CAMGgR5tmQE2nWJwBkc5jv_TF=xM+XRf6exGUOA6A-X+7iXqbFg@mail.gmail.com>
+	<20140901095446.GF5122@mwanda>
+Date: Mon, 1 Sep 2014 13:55:52 +0200
+X-Google-Sender-Auth: lVJHibEx4RTL78Qqo8SaTkLbQcg
+Message-ID: <CAMGgR5vActZ6Cnv4LCvj1YQSmP26qCc4rps7iPkNhuTvQoVTrg@mail.gmail.com>
+Subject: Re: [PATCH 3/4] staging: rtl8188eu: osdep_intf.h and usb_intf.c
+From: Miguel Oliveira <cmroliv@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
+        Larry.Finger@lwfinger.net, linux-kernel@vger.kernel.org,
+        davem@davemloft.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Shakil A Khan <shakilk1729@gmail.com>
----
- net/wireless/nl80211.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+>> > Same comments as the previous ones, please redo all of these patches.
+>> >
+>> Should all the alterations be in one big single patch, insted of small ones?
+>
+> Your first version broke the build if we applied only the first patch.
+> That's not allowed.
+I now understand that, thank you.
 
-diff --git a/net/wireless/nl80211.c b/net/wireless/nl80211.c
-index df7b133..6cd7df2 100644
---- a/net/wireless/nl80211.c
-+++ b/net/wireless/nl80211.c
-@@ -76,7 +76,7 @@ __cfg80211_wdev_from_attrs(struct net *netns, struct nlattr **attrs)
- 	struct wireless_dev *result = NULL;
- 	bool have_ifidx = attrs[NL80211_ATTR_IFINDEX];
- 	bool have_wdev_id = attrs[NL80211_ATTR_WDEV];
--	u64 wdev_id;
-+	u64 wdev_id = 0;
- 	int wiphy_idx = -1;
- 	int ifidx = -1;
- 
--- 
-1.7.1
+> Also the new rtw_sys_remove_one() function isn't called.  I was confused
+> by it as well.  It doesn't "remove one", it removes everything.
+The function it's not new, I just converted it from the proc to
+defugfs, It can be renamed.
 
+> Do we need to support llseek?
+Probably not... I'll check it.
+
+> How have you tested this?  Have you tested module unloading?
+Yes, I've tested it several times and unloaded without issues.
+
+Thank you for your comments,
+Best Regards,
+Miguel Oliveira
