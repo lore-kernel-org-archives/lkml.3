@@ -1,99 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753592AbaIAMuL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 08:50:11 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44709 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753093AbaIAMuJ (ORCPT
+	id S1753628AbaIAMx3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 08:53:29 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:33392 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752151AbaIAMx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 08:50:09 -0400
-Date: Mon, 1 Sep 2014 13:49:47 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Dmitry Eremin-Solenikov <dmitry_eremin@mentor.com>
-Cc: Dirk Behme <dirk.behme@de.bosch.com>, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Gokulkrishnan Nagarajan <Gokulkrishnan.Nagarajan@in.bosch.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-Message-ID: <20140901124947.GU29327@sirena.org.uk>
-References: <1409336356-27682-1-git-send-email-dmitry_eremin@mentor.com>
- <20140829190129.GZ29327@sirena.org.uk>
- <5404246E.4090908@de.bosch.com>
- <20140901101512.GK29327@sirena.org.uk>
- <54045FA6.70602@mentor.com>
- <20140901120602.GT29327@sirena.org.uk>
- <5404680F.3040308@mentor.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Zltv+KEU+AMUCOPj"
-Content-Disposition: inline
-In-Reply-To: <5404680F.3040308@mentor.com>
-X-Cookie: Simulated picture.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: core: GPIO #0 is a valid GPIO
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Mon, 1 Sep 2014 08:53:27 -0400
+From: Eric Auger <eric.auger@linaro.org>
+To: eric.auger@st.com, eric.auger@linaro.org, christoffer.dall@linaro.org,
+        marc.zyngier@arm.com, linux-arm-kernel@lists.infradead.org,
+        kvmarm@lists.cs.columbia.edu, kvm@vger.kernel.org,
+        alex.williamson@redhat.com, joel.schopp@amd.com,
+        kim.phillips@freescale.com, paulus@samba.org, gleb@kernel.org,
+        pbonzini@redhat.com
+Cc: linux-kernel@vger.kernel.org, patches@linaro.org, will.deacon@arm.com,
+        a.motakis@virtualopensystems.com, a.rigo@virtualopensystems.com,
+        john.liuli@huawei.com
+Subject: [RFC v2 0/9] KVM-VFIO IRQ forward control
+Date: Mon,  1 Sep 2014 14:52:39 +0200
+Message-Id: <1409575968-5329-1-git-send-email-eric.auger@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This RFC proposes an integration of "ARM: Forwarding physical
+interrupts to a guest VM" (http://lwn.net/Articles/603514/) in
+KVM.
 
---Zltv+KEU+AMUCOPj
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+It enables to transform a VFIO platform driver IRQ into a forwarded
+IRQ. The direct benefit is that, for a level sensitive IRQ, a VM
+switch can be avoided on guest virtual IRQ completion. Before this
+patch, a maintenance IRQ was triggered on the virtual IRQ completion.
 
-On Mon, Sep 01, 2014 at 04:35:27PM +0400, Dmitry Eremin-Solenikov wrote:
-> On 09/01/2014 04:06 PM, Mark Brown wrote:
+When the IRQ is forwarded, the VFIO platform driver does not need to
+disable the IRQ anymore. Indeed when returning from the IRQ handler
+the IRQ is not deactivated. Only its priority is lowered. This means
+the same IRQ cannot hit before the guest completes the virtual IRQ
+and the GIC automatically deactivates the corresponding physical IRQ.
 
-> >Please consider my point about making users instantly buggy - it's not
-> >practical to introduce a new field into existing platform data which
-> >needs initialization.  Disallowing the use of 0 as a GPIO seems more
-> >practical here (in that it's something the platform can control with
-> >more reliable coordination).
+Besides, the injection still is based on irqfd triggering. The only
+impact on irqfd process is resamplefd is not called anymore on
+virtual IRQ completion since this latter becomes "transparent".
 
-> I think that this makes other users buggy - those, whose platforms use GPIO
-> numbering starting from 0. IMX platform does. legacy platforms do.
+The current integration is based on an extension of the KVM-VFIO
+device, previously used by KVM to interact with VFIO groups. The
+patch serie now enables KVM to directly interact with a VFIO
+platform device. The VFIO external API was extended for that purpose.
 
-It means that they can't use this feature for these specific GPIOs
-unless someone writes some code to make it happen either by renumbering
-or by adding generic code that provides a way to specify this, it
-doesn't make anything worse than it is already.
+Th KVM-VFIO device can get/put the vfio platform device, check its
+integrity and type, get the IRQ number associated to an IRQ index.
 
-> Consider NO_IRQ which is still defined to -1 on ARM platforms. If a device
-> does not have a connected IRQ, it has to explicitly specify -1 instead of
-> specifying logical default 0. Is it so? What is so different with GPIOs and
-> regulators?
+The IRQ forward programming is architecture specific (virtual interrupt
+controller programming basically). However the whole infrastructure is
+kept generic.
 
-As I'm getting fed up of pointing out we can't make existing users buggy
-- we couldn't do it when we added support for enable GPIOs and we can't
-do it now.  Exactly the same problem would occur if adding platform data
-to specify an interrupt where none was previously specified (which is
-why there's a move away from NO_IRQ being -1).
+from a user point of view, the functionality is provided through new
+KVM-VFIO device commands, KVM_DEV_VFIO_DEVICE_(UN)FORWARD_IRQ
+and the capability can be checked with KVM_HAS_DEVICE_ATTR.
+Assignment can only be changed when the physical IRQ is not active.
+It is the responsability of the user to do this check.
 
-Please, you need to care about other users.
+This patch serie has the following dependencies:
+- "ARM: Forwarding physical interrupts to a guest VM"
+  (http://lwn.net/Articles/603514/) in
+- [PATCH v3] irqfd for ARM
+- and obviously the VFIO platform driver serie:
+  [RFC PATCH v6 00/20] VFIO support for platform devices on ARM
+  https://www.mail-archive.com/kvm@vger.kernel.org/msg103247.html
 
---Zltv+KEU+AMUCOPj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Integrated pieces can be found at
+ssh://git.linaro.org/people/eric.auger/linux.git
+on branch 3.17rc3_irqfd_forward_integ_v2
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+This was was tested on Calxeda Midway, assigning the xgmac main IRQ.
 
-iQIcBAEBAgAGBQJUBGtoAAoJELSic+t+oim9eK8P/jH/Wuo6BilJYiLXrSOtzLsa
-RHt9qMGgsAXSLJti38oaEDfHNwSoFCHNp2+wepxDs9GygdHoVgcKoAh1uWIkAzV5
-aYL6wZ5bcTNZeCsa99HLA83SSxix4jFuTrtplVaKpJ5tcxpgkj1wMFkLTjQS4oOa
-mI4te7xaPUpSPUd9iiNSIRWts0bjGXVN4I1f6nEMEgkzRTriHwQeVT5bgVvR9Btd
-ILQExZyRIh+3V3GXO1i8J3BnGca1zP7TZUtK4yatC3X53YUhzssx6YLsvv4dfixC
-tfWBwfC0X31gF50Vr5Hzlx1bX+0ZyXeHD9l+rrER99Njr52sSWFdafbi/H88lb3j
-r/U/ioXBmEREnuu9l+QLX/ds8SXtFat0vipjAcmtQ/jNV7aggnA08F2sDzFIWDd5
-FEXA9XfBrGSEKK3S5elXmB6tdYy+3J0fHzh5YE+T2r/OOYTY91SauzsqwkOp9YmC
-3CuvVa066f4znTbko1q6oc3rJNkMXP9Ls8Kv0/96k8ukDPt5C+1D9B5Js+CdcZyK
-D68S898ki7FjfDMBeLEvrqi0Fx5g3zm6BYVy4CjKBUSjakzmgiKy9pBJB+FXiCnV
-rshkK4S28wFVV1NH6Nx7OcGJ4plmXoPgZbQ/0YMTx/6fUwS1mRrBNnnnkPps1laE
-P5jTV4C26D3XCHqbULGG
-=UdWm
------END PGP SIGNATURE-----
+v1 -> v2:
+- forward control is moved from architecture specific file into generic
+  vfio.c module.
+  only kvm_arch_set_fwd_state remains architecture specific
+- integrate Kim's patch which enables KVM-VFIO for ARM
+- fix vgic state bypass in vgic_queue_hwirq
+- struct kvm_arch_forwarded_irq moved from arch/arm/include/uapi/asm/kvm.h
+  to include/uapi/linux/kvm.h
+  also irq_index renamed into index and guest_irq renamed into gsi
+- ASSIGN/DEASSIGN renamed into FORWARD/UNFORWARD
+- vfio_external_get_base_device renamed into vfio_external_base_device
+- vfio_external_get_type removed
+- kvm_vfio_external_get_base_device renamed into kvm_vfio_external_base_device
+- __KVM_HAVE_ARCH_KVM_VFIO renamed into __KVM_HAVE_ARCH_KVM_VFIO_FORWARD
 
---Zltv+KEU+AMUCOPj--
+Eric Auger (8):
+  KVM: ARM: VGIC: fix multiple injection of level sensitive forwarded
+    IRQ
+  KVM: ARM: VGIC: add forwarded irq rbtree lock
+  VFIO: platform: handler tests whether the IRQ is forwarded
+  KVM: KVM-VFIO: update user API to program forwarded IRQ
+  VFIO: Extend external user API
+  KVM: KVM-VFIO: add new VFIO external API hooks
+  KVM: KVM-VFIO: generic KVM_DEV_VFIO_DEVICE command and IRQ forwarding
+    control
+  KVM: KVM-VFIO: ARM forwarding control
+
+Kim Phillips (1):
+  ARM: KVM: Enable the KVM-VFIO device
+
+ Documentation/virtual/kvm/devices/vfio.txt |  26 ++
+ arch/arm/include/asm/kvm_host.h            |   7 +
+ arch/arm/kvm/Kconfig                       |   1 +
+ arch/arm/kvm/Makefile                      |   4 +-
+ arch/arm/kvm/kvm_vfio_arm.c                |  85 +++++
+ drivers/vfio/platform/vfio_platform_irq.c  |   7 +-
+ drivers/vfio/vfio.c                        |  24 ++
+ include/kvm/arm_vgic.h                     |   1 +
+ include/linux/kvm_host.h                   |  27 ++
+ include/linux/vfio.h                       |   3 +
+ include/uapi/linux/kvm.h                   |   9 +
+ virt/kvm/arm/vgic.c                        |  59 +++-
+ virt/kvm/vfio.c                            | 497 ++++++++++++++++++++++++++++-
+ 13 files changed, 733 insertions(+), 17 deletions(-)
+ create mode 100644 arch/arm/kvm/kvm_vfio_arm.c
+
+-- 
+1.9.1
+
