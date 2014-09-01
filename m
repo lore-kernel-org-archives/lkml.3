@@ -1,29 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753876AbaIANnj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 09:43:39 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:60162 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751952AbaIANni (ORCPT
+	id S1753920AbaIANqS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 09:46:18 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:54952 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751500AbaIANqQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 09:43:38 -0400
+	Mon, 1 Sep 2014 09:46:16 -0400
+Date: Mon, 1 Sep 2014 14:46:10 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+Subject: Re: [PATCH v1 1/5] mfd: lpc_sch: reduce duplicate code
+Message-ID: <20140901134610.GB8796@lee--X1>
+References: <1408705096-31286-1-git-send-email-andriy.shevchenko@linux.intel.com>
+ <1408705096-31286-2-git-send-email-andriy.shevchenko@linux.intel.com>
+ <20140901091317.GG7374@lee--X1>
+ <1409566903.30155.47.camel@linux.intel.com>
+ <20140901113805.GO7374@lee--X1>
+ <1409572101.30155.59.camel@linux.intel.com>
 MIME-Version: 1.0
-Date: Mon, 1 Sep 2014 16:43:37 +0300
-Message-ID: <CACVxJT9FWrGV=LOR11MoK1LEc6b9orDrA1dRAqMiT2Z=OnOQsg@mail.gmail.com>
-Subject: Re: [PATCH] fs: replace int param with size_t for seq_open_private()
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Rob Jones <rob.jones@codethink.co.uk>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1409572101.30155.59.camel@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->  void *__seq_open_private(struct file *f, const struct seq_operations *ops,
-> - int psize)
-> + size_t psize)
+On Mon, 01 Sep 2014, Andy Shevchenko wrote:
 
-It should be "unsigned int" at most.
-As almost all in-kernel lengths.
+> On Mon, 2014-09-01 at 12:38 +0100, Lee Jones wrote:
+> > On Mon, 01 Sep 2014, Andy Shevchenko wrote:
+> > 
+> > > On Mon, 2014-09-01 at 10:13 +0100, Lee Jones wrote:
+> > > > On Fri, 22 Aug 2014, Andy Shevchenko wrote:
+> > > > 
+> > > > > This patch refactors the driver to use helper functions instead of
+> > > > > copy'n'pasted pieces of code.
+> > > > > 
+> > > > > Tested-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+> > > > > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> > > > > ---
+> > > > >  drivers/mfd/lpc_sch.c | 146 ++++++++++++++++++++++----------------------------
+> > > > >  1 file changed, 64 insertions(+), 82 deletions(-)
+> > > > > 
+> > > > > diff --git a/drivers/mfd/lpc_sch.c b/drivers/mfd/lpc_sch.c
+> > > > > index 4ee7550..0f01ef0 100644
+> > > > > --- a/drivers/mfd/lpc_sch.c
+> > > > > +++ b/drivers/mfd/lpc_sch.c
+> > > > > @@ -40,41 +40,6 @@
+> > > > 
+> > > > [...]
+> > > 
+> > > Thanks for review, my answers below.
+> > > 
+> > > > 
+> > > > > -static int lpc_sch_probe(struct pci_dev *dev,
+> > > > > -				const struct pci_device_id *id)
+> > > > > +static int lpc_sch_get_io(struct pci_dev *pdev, int where, const char *name,
+> > > > > +			  struct resource *res, int size)
+> > > > >  {
+> > > > >  	unsigned int base_addr_cfg;
+> > > > >  	unsigned short base_addr;
+> > > > > -	int i, cells = 0;
+> > > > > -	int ret;
+> > > > >  
+> > > > > -	pci_read_config_dword(dev, SMBASE, &base_addr_cfg);
+> > > > > +	pci_read_config_dword(pdev, where, &base_addr_cfg);
+> > > > >  	base_addr = 0;
+> > > > >  	if (!(base_addr_cfg & (1 << 31)))
+> > > > > -		dev_warn(&dev->dev, "Decode of the SMBus I/O range disabled\n");
+> > > > > +		dev_warn(&pdev->dev, "Decode of the %s I/O range disabled\n",
+> > > > > +			 name);
+> > > > >  	else
+> > > > >  		base_addr = (unsigned short)base_addr_cfg;
+> > > > >  
+> > > > >  	if (base_addr == 0) {
+> > > > > -		dev_warn(&dev->dev, "I/O space for SMBus uninitialized\n");
+> > > > > -	} else {
+> > > > > -		lpc_sch_cells[cells++] = isch_smbus_cell;
+> > > > > -		smbus_sch_resource.start = base_addr;
+> > > > > -		smbus_sch_resource.end = base_addr + SMBUS_IO_SIZE - 1;
+> > > > > +		dev_warn(&pdev->dev, "I/O space for %s uninitialized\n", name);
+> > > > > +		return -ENODEV;
+> > > > 
+> > > > If you're going to return an error, you need to use dev_err() above.
+> > > 
+> > > Okay.
+> > > 
+> > > > >  	}
+> > > > >  
+> > > > > -	pci_read_config_dword(dev, GPIOBASE, &base_addr_cfg);
+> > > > > -	base_addr = 0;
+> > > > > -	if (!(base_addr_cfg & (1 << 31)))
+> > > > > -		dev_warn(&dev->dev, "Decode of the GPIO I/O range disabled\n");
+> > > > > +	res->start = base_addr;
+> > > > > +	res->end = base_addr + size - 1;
+> > > > > +	res->flags = IORESOURCE_IO;
+> > > > > +
+> > > > > +	return 0;
+> > > > > +}
+> > > > > +
+> > > > > +static int lpc_sch_populate_cell(struct pci_dev *pdev, int where,
+> > > > > +				 const char *name, int size, int id,
+> > > > > +				 struct mfd_cell *cell)
+> > > > > +{
+> > > > > +	struct resource *res;
+> > > > > +	int ret;
+> > > > > +
+> > > > > +	res = devm_kzalloc(&pdev->dev, sizeof(*res), GFP_KERNEL);
+> > > > > +	if (!res)
+> > > > > +		return -ENOMEM;
+> > > > > +
+> > > > > +	ret = lpc_sch_get_io(pdev, where, name, res, size);
+> > > > > +	if (ret)
+> > > > > +		return ret;
+> > > > > +
+> > > > > +	memset(cell, 0, sizeof(*cell));
+> > > > > +
+> > > > > +	cell->name = name;
+> > > > > +	cell->resources = res;
+> > > > > +	cell->num_resources = 1;
+> > > > > +	cell->ignore_resource_conflicts = true;
+> > > > > +	cell->id = id;
+> > > > > +
+> > > > > +	return 0;
+> > > > > +}
+> > > > > +
+> > > > > +static int lpc_sch_probe(struct pci_dev *dev,
+> > > > > +			 const struct pci_device_id *id)
+> > > > > +{
+> > > > > +	struct mfd_cell lpc_sch_cells[3];
+> > > > > +	int size, cells = 0;
+> > > > > +	int ret;
+> > > > > +
+> > > > > +	ret = lpc_sch_populate_cell(dev, SMBASE, "isch_smbus", SMBUS_IO_SIZE,
+> > > > > +				    id->device, &lpc_sch_cells[cells]);
+> > > > > +	if (!ret)
+> > > > > +		cells++;
+> > > > 
+> > > > You're masking errors here.  You need to return on error.
+> > > 
+> > > No, I don't. It's a local error, I just need to understand if the HW has
+> > > or hasn't the IP part we're looking for.
+> > 
+> > Yes, you do.  -ENOMEM is not a local error, it needs to be returned.
+> > 
+> > > I could, let's say, return true or false, if you prefer, with the above
+> > > meaning.
+> > 
+> > I don't see this very often, which makes me wonder if it's the right
+> > thing to do at all; however, if you're going to this then please
+> > return a local state, instead of a Linux Error Code.
+> 
+> Okay, what about 1 — IP is present and we have no error, 0 — no ip, no
+> error, -err — error that should be returned, would it work for you?
 
-    Alexey
+I would suggest -E<error_message> for messages to be passed back, 0
+for 'everything found and correct' and >0 (#defined of course) for any
+local messages you wish to pass 'IP not found', etc.
+
+> > #define LCP_SKIP_RESOURCE /* Seems resonable? */
+> 
+> 
+> 
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
