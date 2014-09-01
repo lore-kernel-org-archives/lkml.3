@@ -1,61 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753810AbaIALIm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 07:08:42 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:39018 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753391AbaIALEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 07:04:24 -0400
-From: Ian Abbott <abbotti@mev.co.uk>
-To: driverdev-devel@linuxdriverproject.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 17/28] staging: comedi: amplc_pci230: rename pci230_ai_rinsn()
-Date: Mon,  1 Sep 2014 12:03:49 +0100
-Message-Id: <1409569440-10979-18-git-send-email-abbotti@mev.co.uk>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1409569440-10979-1-git-send-email-abbotti@mev.co.uk>
-References: <1409569440-10979-1-git-send-email-abbotti@mev.co.uk>
+	id S1753832AbaIALIr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 07:08:47 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:62715 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753391AbaIALIo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 07:08:44 -0400
+Message-ID: <540453B8.90403@monstr.eu>
+Date: Mon, 01 Sep 2014 13:08:40 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Michal Simek <michal.simek@xilinx.com>
+CC: Ezra Savard <ezras@xilinx.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Ezra Savard <ezra.savard@xilinx.com>
+Subject: Re: [PATCH v2] ARM: zynq: DT: Add LEDs to zc702 DT
+References: <1409323117-21711-1-git-send-email-soren.brinkmann@xilinx.com>
+In-Reply-To: <1409323117-21711-1-git-send-email-soren.brinkmann@xilinx.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="b4jQF8svN7fMfSR2aV3PhEiDVcFaQs3tW"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename the AI subdevice "insn_read" handler function `pci230_ai_rinsn()`
-to `pci230_ai_insn_read()` for consistency.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--b4jQF8svN7fMfSR2aV3PhEiDVcFaQs3tW
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
----
- drivers/staging/comedi/drivers/amplc_pci230.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+On 08/29/2014 04:38 PM, Soren Brinkmann wrote:
+> From: Ezra Savard <ezra.savard@xilinx.com>
+>=20
+> Adds LEDs to the zc702 devicetree for use with the leds-gpio driver.
+>=20
+> Signed-off-by: Ezra Savard <ezra.savard@xilinx.com>
+> Reviewed-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> ---
+> v2:
+>  - fix node names
+> ---
+>  arch/arm/boot/dts/zynq-zc702.dts | 9 +++++++++
+>  1 file changed, 9 insertions(+)
+>=20
+> diff --git a/arch/arm/boot/dts/zynq-zc702.dts b/arch/arm/boot/dts/zynq-=
+zc702.dts
+> index 835c3089c61c..b29e0f97e764 100644
+> --- a/arch/arm/boot/dts/zynq-zc702.dts
+> +++ b/arch/arm/boot/dts/zynq-zc702.dts
+> @@ -27,6 +27,15 @@
+>  		bootargs =3D "console=3DttyPS0,115200 earlyprintk";
+>  	};
+> =20
+> +	leds {
+> +		compatible =3D "gpio-leds";
+> +
+> +		ds23 {
+> +			label =3D "ds23";
+> +			gpios =3D <&gpio0 10 0>;
+> +			linux,default-trigger =3D "heartbeat";
+> +		};
+> +	};
+>  };
+> =20
+>  &can0 {
+>=20
 
-diff --git a/drivers/staging/comedi/drivers/amplc_pci230.c b/drivers/staging/comedi/drivers/amplc_pci230.c
-index d832268..72da4b6 100644
---- a/drivers/staging/comedi/drivers/amplc_pci230.c
-+++ b/drivers/staging/comedi/drivers/amplc_pci230.c
-@@ -774,9 +774,9 @@ static int pci230_ai_eoc(struct comedi_device *dev,
- 	return -EBUSY;
- }
- 
--static int pci230_ai_rinsn(struct comedi_device *dev,
--			   struct comedi_subdevice *s, struct comedi_insn *insn,
--			   unsigned int *data)
-+static int pci230_ai_insn_read(struct comedi_device *dev,
-+			       struct comedi_subdevice *s,
-+			       struct comedi_insn *insn, unsigned int *data)
- {
- 	struct pci230_private *devpriv = dev->private;
- 	unsigned int n;
-@@ -2649,7 +2649,7 @@ static int pci230_auto_attach(struct comedi_device *dev,
- 	s->n_chan = 16;
- 	s->maxdata = (1 << thisboard->ai_bits) - 1;
- 	s->range_table = &pci230_ai_range;
--	s->insn_read = pci230_ai_rinsn;
-+	s->insn_read = pci230_ai_insn_read;
- 	s->len_chanlist = 256;	/* but there are restrictions. */
- 	if (dev->irq) {
- 		dev->read_subdev = s;
--- 
-2.0.4
+Applied.
 
+Thanks,
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--b4jQF8svN7fMfSR2aV3PhEiDVcFaQs3tW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAlQEU7gACgkQykllyylKDCGRUgCfYQc93eQKjc3In6mtW9oA2ia4
+dBIAoIn1Cy1bWBsmQHwaz3bfbjlylDKN
+=OOof
+-----END PGP SIGNATURE-----
+
+--b4jQF8svN7fMfSR2aV3PhEiDVcFaQs3tW--
