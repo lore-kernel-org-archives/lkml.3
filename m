@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752354AbaIAUOe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 16:14:34 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:52488 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751426AbaIAUOd (ORCPT
+	id S1752570AbaIAUSB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 16:18:01 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46733 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752003AbaIAUR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 16:14:33 -0400
-Date: Mon, 1 Sep 2014 22:14:31 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Dave Jones <davej@redhat.com>, Catalin Iacob <iacobcatalin@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: nohz fail (was: perf related boot hang.)
-Message-ID: <20140901201429.GA1586@lerouge>
-References: <20140811200931.GA18865@redhat.com>
- <1408566691-3023-1-git-send-email-iacobcatalin@gmail.com>
- <CAFTL4hxJ2roTB3tZBmXU3HRetgFSUT0LNVWfX-Y2hbpyXSo2pg@mail.gmail.com>
- <CAHg_5gq1XiZ1A08PtQ7Rof3rUXJ-pVYkXtmHqgFh6hB+++qPNg@mail.gmail.com>
- <20140822140009.GA8567@redhat.com>
+	Mon, 1 Sep 2014 16:17:59 -0400
+X-Sasl-enc: Of2Wa+kSZfzaMzMRBy5hNnOmNaR1UdbQU6LsYnUTYDIQ 1409602678
+Date: Mon, 1 Sep 2014 17:17:52 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Conrad Kostecki <ck@conrad-kostecki.de>
+Cc: "Linux (Kernel) Mailingliste (linux-kernel@vger.kernel.org)" 
+	<linux-kernel@vger.kernel.org>
+Subject: Re: Early microcode not being loaded
+Message-ID: <20140901201752.GB18675@khazad-dum.debian.net>
+References: <d01572d84b834e9d98aef338f7da446a@DB4PR04MB265.eurprd04.prod.outlook.com>
+ <20140718212427.GB11098@pd.tnic>
+ <4c348de3b92a49c58bf17777873410dd@DB4PR04MB265.eurprd04.prod.outlook.com>
+ <06765c8a9ea84f8a81d595e05dcfe10e@DB4PR04MB265.eurprd04.prod.outlook.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140822140009.GA8567@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <06765c8a9ea84f8a81d595e05dcfe10e@DB4PR04MB265.eurprd04.prod.outlook.com>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 10:00:09AM -0400, Dave Jones wrote:
-> On Fri, Aug 22, 2014 at 08:01:48AM +0200, Catalin Iacob wrote:
->  > On Thu, Aug 21, 2014 at 4:56 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->  > > Can you please test the series I just posted: "[RFC PATCH 0/9] nohz:
->  > > Nohz full kick fixes"?
->  > 
->  > Before applying the series I tried one more Firefox build which
->  > triggered the panic after less than 5 minutes.
->  > 
->  > After applying the series I did 2 full builds (around 60 minutes in
->  > total) with no problem.
-> 
-> Seems to be working fine here too after fuzzing for 17 hours so far.
+On Mon, 01 Sep 2014, Conrad Kostecki wrote:
+> -rw-r--r--   1 root     root      1857432 Jul 18 17:01 kernel/x86/microcode/GenuineIntel.bin
 
-Thanks a lot for testing this guys!
+That file is way too big.  In fact, it is exactly the size of the newest
+".dat" file from Intel.  The kernel doesn't grok that text format, the
+microcode updates have to be converted to binary format, first.
 
-I'll send "nohz: Restore NMI safe local irq work for local nohz kick"
-as a fix for 3.17 and the rest will have to wait for 3.18 as it's a complicated
-fix for a long standing bug.
+I suggest you use "iucode_tool -S --write-earlyfw=ucode.cpio" to generate
+your ucode.cpio.
 
-Can I apply your Tested-by from you both?
+You can find iucode-tool at:
+https://gitorious.org/iucode-tool/pages/Home
 
-Thanks.
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
