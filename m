@@ -1,113 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754168AbaIAQEg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 12:04:36 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:35111 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421AbaIAQEe (ORCPT
+	id S1754199AbaIAQGE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 12:06:04 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:46381 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753984AbaIAQGB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 12:04:34 -0400
-Date: Mon, 1 Sep 2014 17:04:26 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
-        linux@arm.linux.org.uk, naushad@samsung.com,
-        Pankaj Dubey <pankaj.dubey@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>, linux-kernel@vger.kernel.org,
-        joshi@samsung.com, linux-samsung-soc@vger.kernel.org,
-        broonie@kernel.org, thomas.ab@samsung.com, vikas.sajjan@samsung.com,
-        chow.kim@samsung.com
-Subject: Re: [PATCH] mfd: syscon: Decouple syscon interface from syscon
- devices
-Message-ID: <20140901160426.GJ8796@lee--X1>
-References: <1408694991-21615-1-git-send-email-pankaj.dubey@samsung.com>
- <4121644.3haxjiIdIo@wuerfel>
- <20140901112549.GM7374@lee--X1>
- <12348292.z1qJl96tVA@wuerfel>
+	Mon, 1 Sep 2014 12:06:01 -0400
+Date: Mon, 1 Sep 2014 09:05:50 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, bobby.prani@gmail.com, <""@rjwysocki.net>,
+        tianyu.lan@intel.com
+Subject: Re: [PATCH RFC tip/core/rcu] Eliminate deadlock between CPU hotplug
+ and expedited grace periods
+Message-ID: <20140901160550.GL5001@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140828194745.GA3761@linux.vnet.ibm.com>
+ <20140901112059.GG27892@worktop.ger.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <12348292.z1qJl96tVA@wuerfel>
+In-Reply-To: <20140901112059.GG27892@worktop.ger.corp.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14090116-1542-0000-0000-000004733AD2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 01 Sep 2014, Arnd Bergmann wrote:
-
-> On Monday 01 September 2014 12:25:49 Lee Jones wrote:
-> > On Mon, 01 Sep 2014, Arnd Bergmann wrote:
-> > > On Monday 01 September 2014 08:49:18 Lee Jones wrote:
-> > > > On Fri, 22 Aug 2014, Pankaj Dubey wrote:
-> > > > 
-> > > > > From: Tomasz Figa <t.figa@samsung.com>
-> > > > > 
-> > > > > Currently a syscon entity can be only registered directly through a
-> > > > > platform device that binds to a dedicated driver. However in certain use
-> > > > > cases it is desirable to make a device used with another driver a syscon
-> > > > > interface provider. For example, certain SoCs (e.g. Exynos) contain
-> > > > > system controller blocks which perform various functions such as power
-> > > > > domain control, CPU power management, low power mode control, but in
-> > > > > addition contain certain IP integration glue, such as various signal
-> > > > > masks, coprocessor power control, etc. In such case, there is a need to
-> > > > > have a dedicated driver for such system controller but also share
-> > > > > registers with other drivers. The latter is where the syscon interface
-> > > > > is helpful.
-> > > > > 
-> > > > > This patch decouples syscon object from syscon driver, so that it can be
-> > > > > registered from any driver in addition to the original "syscon" platform
-> > > > > driver.
-> > > > > 
-> > > > > Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-> > > > > Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> > > > > ---
-> > > > > 
-> > > > > RFC patch [1] was posted by Tomasz Figa. This patch addresses some of
-> > > > > comments given by Arnd to RFC patch, and further decouples syscon from
-> > > > > device model. It also gives flexibility of registering with syscon at
-> > > > > early stage using device_node object.
-> > > > 
-> > > > It would be helpful if Arnd gave this revision his blessing (Ack).
-> > > 
-> > > I never saw a reason why we don't take this all the way as discussed
-> > > a few times: Completely remove the dependency of syscon on having
-> > > a platform driver for it, and make it possible to just call
-> > > syscon_regmap_lookup_by_phandle() without having to register
-> > > it first.
-> > 
-> > I think this sounds like a good end-state.  Migrating over by
-> > supporting both methods in this way does sound like the correct thing
-> > to do though.  Doing so is likely to dramatically reduce the effect on
-> > current users.
+On Mon, Sep 01, 2014 at 01:20:59PM +0200, Peter Zijlstra wrote:
+> On Thu, Aug 28, 2014 at 12:47:45PM -0700, Paul E. McKenney wrote:
+> > Currently, the expedited grace-period primitives do get_online_cpus().
+> > This greatly simplifies their implementation, but means that calls to
+> > them holding locks that are acquired by CPU-hotplug notifiers (to say
+> > nothing of calls to these primitives from CPU-hotplug notifiers) can
+> > deadlock.  But this is starting to become inconvenient:
+> > https://lkml.org/lkml/2014/8/5/754
 > 
-> Maybe I'm misreading the patch, but I don't see how it creates a
-> migration path. What I want to end up with is infrastructure that
-> lets anybody call syscon_regmap_lookup_by_pdevname or
-> syscon_regmap_lookup_by_compatible (if they really need to)
-> without needing the platform_driver for syscon. That should not
-> require any form of compatibility layer because to the driver
-> using it there is no API change.
+> Please recap the actual problem; the link might die and the actual mail
+> linked to isn't very useful in any case.
 
-Somehow I think the likelyhood is that I am misreading the patch.
+Will do.
 
-I thought that before this patch drivers we had to register a syscon
-device to bind to this driver, which was fine for the first use-cases
-of syscon as it wasn't required too early during boot.  However, now
-there are use-cases where systems require access to syscon registers
-eariler in boot we require a means to obtain access prior to device
-probing.  I thought this patch not only provides that possibilty, but
-also leaves in the ability to register direct from DT.
+> > This commit avoids the deadlock and retains the simplicity by creating
+> > a try_get_online_cpus(), which returns false if the get_online_cpus()
+> > reference count could not immediately be incremented.  If a call to
+> > try_get_online_cpus() returns true, the expedited primitives operate
+> > as before.  If a call returns false, the expedited primitives fall back
+> > to normal grace-period operations.  This falling back of course results
+> > in increased grace-period latency, but only during times when CPU
+> > hotplug operations are actually in flight.  The effect should therefore
+> > be negligible during normal operation.
+> 
+> URGH.. I really hate that. The hotplug interface is already too
+> horrible, we should not add such hacks to it.
 
-> In contrast, this patch introduces a new of_syscon_{un,}register()
-> interface that would get removed after the the above has
-> been implemented, causing extra churn for any driver that also
-> wants to provide a regmap-like interface.
+We do have try_ interfaces to a number of other subsystems, so I don't
+believe that it qualifies as such a hack.
 
-When will we ever not have to register syscon?
+> How about ripping that rcu_expedited stuff out instead? That's all
+> conditional anyhow, so might as well not do it.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+In what way is the expedited stuff conditional?
+
+							Thanx, Paul
+
