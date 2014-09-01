@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752570AbaIAUSB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 16:18:01 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46733 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752003AbaIAUR7 (ORCPT
+	id S1752635AbaIAUTZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 16:19:25 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:46738 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751458AbaIAUTY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 16:17:59 -0400
-X-Sasl-enc: Of2Wa+kSZfzaMzMRBy5hNnOmNaR1UdbQU6LsYnUTYDIQ 1409602678
-Date: Mon, 1 Sep 2014 17:17:52 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Conrad Kostecki <ck@conrad-kostecki.de>
-Cc: "Linux (Kernel) Mailingliste (linux-kernel@vger.kernel.org)" 
-	<linux-kernel@vger.kernel.org>
-Subject: Re: Early microcode not being loaded
-Message-ID: <20140901201752.GB18675@khazad-dum.debian.net>
-References: <d01572d84b834e9d98aef338f7da446a@DB4PR04MB265.eurprd04.prod.outlook.com>
- <20140718212427.GB11098@pd.tnic>
- <4c348de3b92a49c58bf17777873410dd@DB4PR04MB265.eurprd04.prod.outlook.com>
- <06765c8a9ea84f8a81d595e05dcfe10e@DB4PR04MB265.eurprd04.prod.outlook.com>
+	Mon, 1 Sep 2014 16:19:24 -0400
+Date: Mon, 1 Sep 2014 16:19:23 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Daniel Vetter <daniel@ffwll.ch>
+cc: intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Regression in drm-intel caused by d91a2cb8e510
+Message-ID: <Pine.LNX.4.44L0.1409011609390.13894-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <06765c8a9ea84f8a81d595e05dcfe10e@DB4PR04MB265.eurprd04.prod.outlook.com>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 01 Sep 2014, Conrad Kostecki wrote:
-> -rw-r--r--   1 root     root      1857432 Jul 18 17:01 kernel/x86/microcode/GenuineIntel.bin
+Daniel:
 
-That file is way too big.  In fact, it is exactly the size of the newest
-".dat" file from Intel.  The kernel doesn't grok that text format, the
-microcode updates have to be converted to binary format, first.
+I'm encountering a problem with the drm-intel-nightly branch in your
+drm-intel repository.  The symptom is that when I boot my laptop, at
+some point during the start-up procedure the screen goes totally blank,
+as though the backlight were turned off, and it remains that way.  I
+can't tell if the backlight really is off -- it may be that there's
+just nothing being displayed -- and playing with the screen-brightness
+function keys doesn't help.
 
-I suggest you use "iucode_tool -S --write-earlyfw=ucode.cpio" to generate
-your ucode.cpio.
+Git bisect located the source of the problem as commit d91a2cb8e510
+(drm/i915: Add 180 degree primary plane rotation support).  The problem
+occurs when I boot a kernel built from that commit, and it doesn't
+occur when I boot a kernel built from the preceding commit
+(19ac737dc3c3).
 
-You can find iucode-tool at:
-https://gitorious.org/iucode-tool/pages/Home
+If necessary, I can get debugging info by logging in over a network 
+connection.  Tell me what you need.
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Alan Stern
+
