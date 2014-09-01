@@ -1,148 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803AbaIAWQS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 18:16:18 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:48357 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751460AbaIAWQR convert rfc822-to-8bit (ORCPT
+	id S1752825AbaIAWR4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 18:17:56 -0400
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:56122 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751460AbaIAWRz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 18:16:17 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: patch "staging: remove nokia_hp4p driver
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <20140831095147.GB24601@amd>
-Date: Mon, 1 Sep 2014 15:16:28 -0700
-Cc: Greg KH <gregkh@linuxfoundation.org>, Miguel Oliveira <cmroliv@gmail.com>,
-        =?iso-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <4CA4FD0A-C167-4A12-A137-766CB3A2D5D5@holtmann.org>
-References: <14094295422869@kroah.com> <20140830213022.GA17147@amd> <20140830220417.GA15000@kroah.com> <20140830224430.GA19622@amd> <B39194F7-2057-4D14-A3F7-EB6E73BF84F8@holtmann.org> <20140831095147.GB24601@amd>
-To: Pavel Machek <pavel@ucw.cz>
-X-Mailer: Apple Mail (2.1878.6)
+	Mon, 1 Sep 2014 18:17:55 -0400
+Message-ID: <1409609873.5546.13.camel@x220>
+Subject: Re: [PATCH] Drivers:firewire: fix style errors in core-card.c This
+ is a patch in the core-card.c file which fixes up 2 warnings found by the
+ checkpatch.pl tool Signed-off-by: Sander Nemvalts <snemvalts@gmail.com>
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: Sander Nemvalts <snemvalts@gmail.com>,
+        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Date: Tue, 02 Sep 2014 00:17:53 +0200
+In-Reply-To: <20140901235605.5466b6a6@kant>
+References: <1409597306-22164-1-git-send-email-snemvalts@gmail.com>
+	 <20140901235605.5466b6a6@kant>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 01 Sep 2014 22:17:52.0882 (UTC) FILETIME=[92B1BD20:01CFC632]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavel,
+Quite a crowded subject line!
 
->>>>> What is going on here? I get flamed for not cleaning up the driver,
->>>>> because I cleaned it up before merging to -staging. Ok, so I did more
->>>>> cleanups, sent 3 cleanup patches, no reaction on those, and now I got
->>>>> a note that you are going to remove the driver...?
->>>> 
->>>> For the 3 "cleanup" patches, the first one was rejected and you said to
->>>> not include it, so I couldn't apply the others.
->>> 
->>> That was different series. I'm talking about:
->>> 
->>> [PATCH 1/3] staging: nokia_h4: switch to right types and use bdaddr_t
->>> [PATCH 2/3] staging: nokia_h4: avoid __uX types
->>> [PATCH 3/3] staging: use inlines where it makes sense
->>> 
->>> That is still valid and received no comments at all.
+On Mon, 2014-09-01 at 23:56 +0200, Stefan Richter wrote:
+> On Sep 01 Sander Nemvalts wrote:
+> > @@ -132,7 +133,7 @@ static void generate_config_rom(struct fw_card *card, __be32 *config_rom)
+> >  	j = 7 + descriptor_count;
+> >  
+> >  	/* Generate root directory entries for descriptors. */
+> > -	list_for_each_entry (desc, &descriptor_list, link) {
+> > +	list_for_each_entry(desc, &descriptor_list, link) {
+> >  		if (desc->immediate > 0)
+> >  			config_rom[i++] = cpu_to_be32(desc->immediate);
+> >  		config_rom[i] = cpu_to_be32(desc->key | (j - i));
 > 
->> and these are all trivial cleanups and could have been done back in
->> January when this driver was merged into staging. It is end of
->> August now and nothing happened to address anything in the TODO
->> file.
-> 
-> [Could you please wrap at 80 characters?]
-> 
-> Would be done in january if someone pointed the problems out.
-> 
-> For the record, 3/3 addresses your comment
-> 
-> "These are a lot of public functions. Are they all really needed or can
-> the code be done smart."
-> 
-> in TODO file.
+> We are writing
+> 	for (a; b; c);
+> not
+> 	for(a; b; c);
+> and thus a space after list_for_each and friends makes sense.
 
-so what about all the other really major details that needed fixing. I mean anybody who was compiling for OMAP platform could have fixed the tons and tons of inlines quickly.
+$ git grep "list_for_each_entry (" | wc -l
+52
+$ git grep "list_for_each_entry(" | wc -l
+5991
 
->> The warning from end of May that this driver will be removed seemed
->> to not have triggered anybody to work on the core issues of the
->> driver.
-> 
-> Actually it did trigger me to work on the patch series above. It is
-> just that the series was ignored, and now I'm told that driver is
-> going to be removed because I did not do the work.
+So "list_for_each_entry(" (without space) seems to be the preferred
+style.
 
-The driver got removed, because nobody started the real work to make it an upstream driver.
 
->> There are 3 major topics that needs addressing before this driver should come anywhere near upstream kernel again, staging or otherwise.
->> 
->> a) Convert to using device tree for device detection
->> 
->> b) Convert to using hdev->setup for firmware loading
->> 
->> c) Convert to using hdev->set_bdaddr and HCI_QUIRK_INVALID_BDADDR
-> 
-> I thought staging is for merging code to be cleaned up. Not "please
-> rewrite, and possibly break the driver before merging it into
-> staging". Merge it into staging, then clean it up there.
-
-The staging tree is for drivers to eventually go upstream. Staging is not a long term solution for a driver. It never was and never will be. So cleanup means whatever is required to get it upstream. And that means that you need to rewrite pieces.
-
-For example a WiFi driver that ships its own 802.11 stack will never get upstream unless you re-write it to use mac80211.
-
-> (Also hopefully get some testing from n900 community; code is more
-> visible in staging).
-
-The problem is that they are testing the wrong thing. And lets face it, we already knew this driver works since Nokia shipped it in products.
-
-> And BTW it is first time I hear about a).
-
-So the whole ARM community is moving over to DT and you are ignoring it. I complained about the platform data before. Someone told me that the N900 will be converted to DT. So I assume that this driver will also use DT then. If that was not clear, then now I made it clear.
-
->> Please keep in mind that this was not an ugly Windows driver with a
->> lot of Windows specific typedefs or bad coding style or OS
->> abstractions. From that point of view it was always good since it
->> was written for Linux in the first place. It was just a bit
->> dated. Any fixes to bring that in sync with all other drivers could
->> have been done easily after it was merged into the Bluetooth
->> subsystem.
-> 
-> So you are saying that most of the comments you had when I attempted
-> to merge the driver did not really need to be addressed? That's news
-> to me, normally maintainers want their comments addressed.
-
-All the coding style and cleanups like moving code around could have been done with a few days. So if the 3 major items would have been fixed, then getting the driver into shape is dead simple.
-
-> And yes, this driver bitroted a lot while being out of tree. It was
-> probably pretty good initially, mergeable with minimum effort. Now you
-> want it to bitrot a bit more.
-
-Back in the days it was hard to merge since most of the OMAP stuff it depends on was not upstream. That why it never made it there. In addition that you need to build for specific OMAP boards makes it really hard to just take the driver. If it would have compiled on x86, I bet it would already been upstream.
-
->> The reason why it ended up in staging is that the 3 core problems needed fixing. And 8 month later they still have not been fixed.
->> 
-> 
-> I attempted hdev->setup conversion, but could not figure it out till
-> now. Clearly it needs to be done.
-> 
-> For doing that, it would be good to have userland to work with, and
-> yes it takes time. (Debugging on 4" screen sucks.)
-
-Actually hdev->setup does not need any userland. As long as request_firmware() works, you are just fine. And since the driver already uses that in the first place, I assume it works.
-
-The Nokia firmware files have been sequences of HCI commands since forever. And I pointed you towards __hci_cmd_sync early on. And we have good examples of that in use already.
-
->>> You asked for more work and explained how easy it is to revert the
->>> removal.
->>> 
->>> I did more work, you ignored it, and are removing the driver, anyway.
->> 
->> I have seen only fluff patches. Someone needs to address the core problems of the driver.
-> 
-> Clearly. But at the same time not taking even the trivial patches is
-> great way of stalling the devopment.
-
-I do not maintain staging. However in this specific case there were pretty clear instructions on what needed changing. You can check for yourself on how much got addressed.
-
-Regards
-
-Marcel
+Paul Bolle
 
