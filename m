@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979AbaIAMx4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 08:53:56 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:51647 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753954AbaIAMxw (ORCPT
+	id S1753952AbaIAMxt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 08:53:49 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:63646 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753907AbaIAMxp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 08:53:52 -0400
+	Mon, 1 Sep 2014 08:53:45 -0400
 From: Eric Auger <eric.auger@linaro.org>
 To: eric.auger@st.com, eric.auger@linaro.org, christoffer.dall@linaro.org,
         marc.zyngier@arm.com, linux-arm-kernel@lists.infradead.org,
@@ -17,9 +17,9 @@ To: eric.auger@st.com, eric.auger@linaro.org, christoffer.dall@linaro.org,
 Cc: linux-kernel@vger.kernel.org, patches@linaro.org, will.deacon@arm.com,
         a.motakis@virtualopensystems.com, a.rigo@virtualopensystems.com,
         john.liuli@huawei.com
-Subject: [RFC v2 7/9] KVM: KVM-VFIO: add new VFIO external API hooks
-Date: Mon,  1 Sep 2014 14:52:46 +0200
-Message-Id: <1409575968-5329-8-git-send-email-eric.auger@linaro.org>
+Subject: [RFC v2 5/9] KVM: KVM-VFIO: update user API to program forwarded IRQ
+Date: Mon,  1 Sep 2014 14:52:44 +0200
+Message-Id: <1409575968-5329-6-git-send-email-eric.auger@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1409575968-5329-1-git-send-email-eric.auger@linaro.org>
 References: <1409575968-5329-1-git-send-email-eric.auger@linaro.org>
@@ -27,97 +27,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-add functions that implement the gateway to the extended
-external VFIO API:
-- kvm_vfio_device_get_external_user
-- kvm_vfio_device_put_external_user
-- kvm_vfio_external_base_device
+add new device group commands:
+- KVM_DEV_VFIO_DEVICE_FORWARD_IRQ and
+  KVM_DEV_VFIO_DEVICE_UNFORWARD_IRQ
+
+which enable to turn forwarded IRQ mode on/off.
+
+the kvm_arch_forwarded_irq struct embodies a forwarded IRQ
 
 Signed-off-by: Eric Auger <eric.auger@linaro.org>
 
 ---
 
 v1 -> v2:
-- kvm_vfio_external_get_base_device renamed into
-  kvm_vfio_external_base_device
-- kvm_vfio_external_get_type removed
+- struct kvm_arch_forwarded_irq moved from arch/arm/include/uapi/asm/kvm.h
+  to include/uapi/linux/kvm.h
+  also irq_index renamed into index and guest_irq renamed into gsi
+- ASSIGN/DEASSIGN renamed into FORWARD/UNFORWARD
 ---
- arch/arm/include/asm/kvm_host.h |  5 +++++
- virt/kvm/vfio.c                 | 45 +++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 50 insertions(+)
+ Documentation/virtual/kvm/devices/vfio.txt | 26 ++++++++++++++++++++++++++
+ include/uapi/linux/kvm.h                   |  9 +++++++++
+ 2 files changed, 35 insertions(+)
 
-diff --git a/arch/arm/include/asm/kvm_host.h b/arch/arm/include/asm/kvm_host.h
-index 6dfb404..1aee6bb 100644
---- a/arch/arm/include/asm/kvm_host.h
-+++ b/arch/arm/include/asm/kvm_host.h
-@@ -171,6 +171,11 @@ void kvm_set_spte_hva(struct kvm *kvm, unsigned long hva, pte_t pte);
- unsigned long kvm_arm_num_regs(struct kvm_vcpu *vcpu);
- int kvm_arm_copy_reg_indices(struct kvm_vcpu *vcpu, u64 __user *indices);
+diff --git a/Documentation/virtual/kvm/devices/vfio.txt b/Documentation/virtual/kvm/devices/vfio.txt
+index ef51740..048baa0 100644
+--- a/Documentation/virtual/kvm/devices/vfio.txt
++++ b/Documentation/virtual/kvm/devices/vfio.txt
+@@ -13,6 +13,7 @@ VFIO-group is held by KVM.
  
-+struct vfio_device;
-+struct vfio_device *kvm_vfio_device_get_external_user(struct file *filep);
-+void kvm_vfio_device_put_external_user(struct vfio_device *vdev);
-+struct device *kvm_vfio_external_base_device(struct vfio_device *vdev);
-+
- /* We do not have shadow page tables, hence the empty hooks */
- static inline int kvm_age_hva(struct kvm *kvm, unsigned long hva)
- {
-diff --git a/virt/kvm/vfio.c b/virt/kvm/vfio.c
-index ba1a93f..76dc7a1 100644
---- a/virt/kvm/vfio.c
-+++ b/virt/kvm/vfio.c
-@@ -59,6 +59,51 @@ static void kvm_vfio_group_put_external_user(struct vfio_group *vfio_group)
- 	symbol_put(vfio_group_put_external_user);
- }
+ Groups:
+   KVM_DEV_VFIO_GROUP
++  KVM_DEV_VFIO_DEVICE
  
-+struct vfio_device *kvm_vfio_device_get_external_user(struct file *filep)
-+{
-+	struct vfio_device *vdev;
-+	struct vfio_device *(*fn)(struct file *);
+ KVM_DEV_VFIO_GROUP attributes:
+   KVM_DEV_VFIO_GROUP_ADD: Add a VFIO group to VFIO-KVM device tracking
+@@ -20,3 +21,28 @@ KVM_DEV_VFIO_GROUP attributes:
+ 
+ For each, kvm_device_attr.addr points to an int32_t file descriptor
+ for the VFIO group.
 +
-+	fn = symbol_get(vfio_device_get_external_user);
-+	if (!fn)
-+		return ERR_PTR(-EINVAL);
++KVM_DEV_VFIO_DEVICE attributes:
++  KVM_DEV_VFIO_DEVICE_FORWARD_IRQ
++  KVM_DEV_VFIO_DEVICE_UNFORWARD_IRQ
 +
-+	vdev = fn(filep);
++For each, kvm_device_attr.addr points to a kvm_arch_forwarded_irq struct.
++This user API makes possible to create a special IRQ handling mode,
++where KVM and a VFIO platform driver collaborate to improve IRQ
++handling performance.
 +
-+	symbol_put(vfio_device_get_external_user);
++fd represents the file descriptor of a valid VFIO device whose physical
++IRQ, referenced by its index, is injected into the VM guest irq (gsi).
 +
-+	return vdev;
-+}
++On FORWARD_IRQ, KVM-VFIO device programs:
++- the host, to not complete the physical IRQ itself.
++- the GIC, to automatically complete the physical IRQ when the guest
++  completes the virtual IRQ.
++This avoids trapping the end-of-interrupt for level sensitive IRQ.
 +
-+void kvm_vfio_device_put_external_user(struct vfio_device *vdev)
-+{
-+	void (*fn)(struct vfio_device *);
++On UNFORWARD_IRQ, one returns to the mode where the host completes the
++physical IRQ and the guest completes the virtual IRQ.
 +
-+	fn = symbol_get(vfio_device_put_external_user);
-+	if (!fn)
-+		return;
++It is up to the caller of this API to make sure the IRQ is not
++outstanding when the FORWARD/UNFORWARD is called. This could lead to
++some inconsistency on who is going to complete the IRQ.
+diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
+index cf3a2ff..8cd7b0e 100644
+--- a/include/uapi/linux/kvm.h
++++ b/include/uapi/linux/kvm.h
+@@ -947,6 +947,12 @@ struct kvm_device_attr {
+ 	__u64	addr;		/* userspace address of attr data */
+ };
+ 
++struct kvm_arch_forwarded_irq {
++	__u32 fd; /* file desciptor of the VFIO device */
++	__u32 index; /* VFIO device IRQ index */
++	__u32 gsi; /* gsi, ie. virtual IRQ number */
++};
 +
-+	fn(vdev);
-+
-+	symbol_put(vfio_device_put_external_user);
-+}
-+
-+struct device *kvm_vfio_external_base_device(struct vfio_device *vdev)
-+{
-+	struct device *(*fn)(struct vfio_device *);
-+	struct device *dev;
-+
-+	fn = symbol_get(vfio_external_base_device);
-+	if (!fn)
-+		return NULL;
-+
-+	dev = fn(vdev);
-+
-+	symbol_put(vfio_external_base_device);
-+
-+	return dev;
-+}
-+
- static bool kvm_vfio_group_is_coherent(struct vfio_group *vfio_group)
- {
- 	long (*fn)(struct vfio_group *, unsigned long);
+ #define KVM_DEV_TYPE_FSL_MPIC_20	1
+ #define KVM_DEV_TYPE_FSL_MPIC_42	2
+ #define KVM_DEV_TYPE_XICS		3
+@@ -954,6 +960,9 @@ struct kvm_device_attr {
+ #define  KVM_DEV_VFIO_GROUP			1
+ #define   KVM_DEV_VFIO_GROUP_ADD			1
+ #define   KVM_DEV_VFIO_GROUP_DEL			2
++#define  KVM_DEV_VFIO_DEVICE			2
++#define   KVM_DEV_VFIO_DEVICE_FORWARD_IRQ			1
++#define   KVM_DEV_VFIO_DEVICE_UNFORWARD_IRQ			2
+ #define KVM_DEV_TYPE_ARM_VGIC_V2	5
+ #define KVM_DEV_TYPE_FLIC		6
+ 
 -- 
 1.9.1
 
