@@ -1,118 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752197AbaIADQw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Aug 2014 23:16:52 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:47271 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751684AbaIADQv (ORCPT
+	id S1752265AbaIADRa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Aug 2014 23:17:30 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:39559 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752219AbaIADR2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Aug 2014 23:16:51 -0400
-From: Wang Long <long.wanglong@huawei.com>
-To: <linux@arm.linux.org.uk>, <r.sricharan@ti.com>, <santosh.shilimkar@ti.com>,
-        <victor.kamensky@linaro.org>, <nico@linaro.org>,
-        <ben.dooks@codethink.co.uk>, <cov@codeaurora.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [SMP BUG?] the return value of is_smp() is bug?
-Date: Mon, 1 Sep 2014 19:15:33 +0800
-Message-ID: <1409570133-2766-1-git-send-email-long.wanglong@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 31 Aug 2014 23:17:28 -0400
+Message-ID: <5403E53F.50806@hitachi.com>
+Date: Mon, 01 Sep 2014 12:17:19 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.110.60.26]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020208.5403E4DC.0047,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2011-05-27 18:58:46
-X-Mirapoint-Loop-Id: cb4e8cd32801adca102209c105356a3a
+To: Shuah Khan <shuahkh@osg.samsung.com>
+Cc: Shuah Khan <shuah.kh@samsung.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH v2 4/4] ftracetest: Add XFAIL/XPASS/UNSUPPORTED as
+ result code
+References: <20140826111511.5711.28493.stgit@kbuild-fedora.novalocal> <20140826111539.5711.93588.stgit@kbuild-fedora.novalocal> <53FFD1E8.6070508@osg.samsung.com>
+In-Reply-To: <53FFD1E8.6070508@osg.samsung.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2014/08/29 10:05), Shuah Khan wrote:
+> On 08/26/2014 05:15 AM, Masami Hiramatsu wrote:
+>> Add XFAIL, XPASS and UNSUPPORTED as a result code. These are
+>> used for the results that test case is expected to fail or
+>> unsupported feature (by config).
+>> This also introduces PASS/FAIL/XFAIL/XPASS/UNSUP result codes
+>> for each testcase. Since the results are not binary, each
+>> testcase must use these code to return the test result.
+>>
+>> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>> ---
+>>  tools/testing/ftrace/ftracetest                    |   61 +++++++++++++++-----
+>>  tools/testing/ftrace/test.d/basic1.tc              |    6 ++
+>>  tools/testing/ftrace/test.d/basic2.tc              |    6 +-
+>>  tools/testing/ftrace/test.d/basic3.tc              |    9 ++-
+>>  .../testing/ftrace/test.d/kprobe/add_and_remove.tc |   15 +++--
+>>  tools/testing/ftrace/test.d/kprobe/busy_check.tc   |   20 +++----
+>>  tools/testing/ftrace/test.d/template               |    6 ++
+>>  7 files changed, 84 insertions(+), 39 deletions(-)
+>>
+>> diff --git a/tools/testing/ftrace/ftracetest b/tools/testing/ftrace/ftracetest
+>> index 0378c8a..bfcd56a 100755
+>> --- a/tools/testing/ftrace/ftracetest
+>> +++ b/tools/testing/ftrace/ftracetest
+>> @@ -107,22 +107,53 @@ catlog() { #file
+>>  }
+>>  
+>>  # Testcase management
+>> +# Test result codes
+>> +PASS=0	# The test succeeded.
+>> +FAIL=1	# The test failed, but was expected to succeed.
+>> +XFAIL=2	# The test failed, and was expected to fail.
+>> +XPASS=3	# The test succeeded, but was expected to fail.
+> 
+> This one is confusing. It is still a failure. XFAIL case is
+> expected to fail, using that convention XPASS should be
+> expected to pass?
 
-Hi,all
+I see, but they have been already used as above by Dejagnu testing framework.
+http://www.delorie.com/gnu/docs/dejagnu/dejagnu_6.html
 
-In kernel 3.17-rc2, when i set CONFIG_HAVE_SMP = y and CONFIG_SMP_ON_UP = y 
-in .config file. the secondary core can not boot.
+Of course, it might be better to support only POSIX compatible results at
+first.
 
-when i set CONFIG_HAVE_SMP = y and CONFIG_SMP_ON_UP = n in .config file,
-the secondary core can boot.
+> Can we use XFAIL0 for XFAIL pass case and XFAIL1 for XFAIL fail
+> case?
 
-But this does not happen in kernel 3.10 lts kernel, Whether the 
-CONFIG_SMP_ON_UP is set yes or no ,the secondary core can boot.
+No, new definition can confuse developers.
+To avoid confusion, I'd like to use the same definitions as Dejegnu does.
 
-Does the meaning of CONFIG_SMP_ON_UP changed or this is a bug in kernel 3.17-rc2 ? 
-
-
-I write the following patch to test the return value of is_smp().
-
-----------------------------------------
-
-Signed-off-by: Wang Long <long.wanglong@huawei.com>
----
- arch/arm/kernel/setup.c |    5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index 84db893d..fbeb67f 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -925,6 +925,11 @@ void __init setup_arch(char **cmdline_p)
- 	arm_dt_init_cpu_maps();
- 	psci_init();
- #ifdef CONFIG_SMP
-+	
-+	if (is_smp() == 1)
-+		printk("is_smp() return true;\n");
-+	else if (is_smp() == 0)
-+		printk("is_smp() return false;\n");
- 	if (is_smp()) {
- 		if (!mdesc->smp_init || !mdesc->smp_init()) {
- 			if (psci_smp_available())
-
-kernel version: 3.17-rc2
-
-config:     set CONFIG_HAVE_SMP = y and CONFIG_SMP_ON_UP = y
-command:    # qemu-system-arm -M vexpress-a9 -smp 2  -m 128M -kernel arch/arm/boot/zImage -nographic
-The output:
-
-..........
-is_smp() return false;
-CPU: Testing write buffer coherency: ok
-missing device node for CPU 0
-CPU0: thread -1, cpu 0, socket 0, mpidr 80000000
-Setting up static identity map for 0x604643d8 - 0x60464430
-Brought up 1 CPUs
-SMP: Total of 1 processors activated.
-CPU: All CPU(s) started in SVC mode.
-...........
-
-config:     set CONFIG_HAVE_SMP = y and not set CONFIG_SMP_ON_UP 
-command:    # qemu-system-arm -M vexpress-a9 -smp 2  -m 128M -kernel arch/arm/boot/zImage -nographic
-The output:
-
-.....
- Memory policy: Data cache writealloc
-is_smp() return true;
-sched_clock: 32 bits at 24MHz, resolution 41ns, wraps every 178956969942ns
-......
-......
-CPU: Testing write buffer coherency: ok
-missing device node for CPU 0
-missing device node for CPU 1
-CPU0: thread -1, cpu 0, socket 0, mpidr 80000000
-Setting up static identity map for 0x60463ef8 - 0x60463f50
-CPU1: Booted secondary processor
-CPU1: thread -1, cpu 1, socket 0, mpidr 80000001
-Brought up 2 CPUs
-SMP: Total of 2 processors activated.
-CPU: All CPU(s) started in SVC mode.
-devtmpfs: initialized
-.......
-
-Any ideas?
+Thank you,
 
 
 -- 
-1.7.9.5
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
