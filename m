@@ -1,43 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752465AbaIAXNK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 19:13:10 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:42794 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751952AbaIAXNI (ORCPT
+	id S1752847AbaIAXSj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 19:18:39 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:49159 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752045AbaIAXSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 19:13:08 -0400
-Date: Tue, 2 Sep 2014 00:13:07 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Cc: Evgeniy Dushistov <dushistov@mail.ru>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: Re: [PATCH] ufs: fix deadlocks after mutex merge
-Message-ID: <20140901231306.GL7996@ZenIV.linux.org.uk>
-References: <1409610624-10898-1-git-send-email-khoroshilov@ispras.ru>
- <20140901230835.GK7996@ZenIV.linux.org.uk>
+	Mon, 1 Sep 2014 19:18:38 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Subject: [PATCH] PM / sleep: Fix test_suspend= command line option
+Date: Tue, 02 Sep 2014 01:37:55 +0200
+Message-ID: <3262231.p5bxWyAveH@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140901230835.GK7996@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 02, 2014 at 12:08:35AM +0100, Al Viro wrote:
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-> Your commit message makes no sense - ufs_evict_inode() is *never* called
-> with that lock held, for one thing.  I agree that "ufs: sb mutex merge +
-> mutex_destroy" was been badly broken and apparently never tested, though -
-> the bugs are real.
-> 
-> 	Please, write a saner commit message; what happens is that
-> ufs_{new,free}_inode() take the damn lock themselves these days, so
-> their caller shouldn't do that.
+After commit d431cbc53cb7 (PM / sleep: Simplify sleep states sysfs
+interface code) the pm_states[] array is not populated initially,
+which causes setup_test_suspend() to always fail and the suspend
+testing during boot doesn't work any more.
 
-PS: after rereading your mail, I see what you meant to say, but it really
-wasn't clear enough.  The crucial part is that the lock is *always* taken
-by free/new, not that some of the callers take it and some do not.
+Fix the problem by using pm_labels[] instead of pm_states[] in
+setup_test_suspend() and storing a pointer to the label of the
+sleep state to test rather than the number representing it,
+because the connection between the state numbers and labels is
+only established by suspend_set_ops().
+
+Fixes: d431cbc53cb7 (PM / sleep: Simplify sleep states sysfs interface code)
+Reported-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ kernel/power/power.h        |    1 +
+ kernel/power/suspend.c      |    2 +-
+ kernel/power/suspend_test.c |   29 +++++++++++++++++------------
+ 3 files changed, 19 insertions(+), 13 deletions(-)
+
+Index: linux-pm/kernel/power/power.h
+===================================================================
+--- linux-pm.orig/kernel/power/power.h
++++ linux-pm/kernel/power/power.h
+@@ -179,6 +179,7 @@ extern void swsusp_show_speed(struct tim
+ 
+ #ifdef CONFIG_SUSPEND
+ /* kernel/power/suspend.c */
++extern const char *pm_labels[];
+ extern const char *pm_states[];
+ 
+ extern int suspend_devices_and_enter(suspend_state_t state);
+Index: linux-pm/kernel/power/suspend.c
+===================================================================
+--- linux-pm.orig/kernel/power/suspend.c
++++ linux-pm/kernel/power/suspend.c
+@@ -31,7 +31,7 @@
+ 
+ #include "power.h"
+ 
+-static const char *pm_labels[] = { "mem", "standby", "freeze", };
++const char *pm_labels[] = { "mem", "standby", "freeze", NULL };
+ const char *pm_states[PM_SUSPEND_MAX];
+ 
+ static const struct platform_suspend_ops *suspend_ops;
+Index: linux-pm/kernel/power/suspend_test.c
+===================================================================
+--- linux-pm.orig/kernel/power/suspend_test.c
++++ linux-pm/kernel/power/suspend_test.c
+@@ -129,20 +129,20 @@ static int __init has_wakealarm(struct d
+  * at startup time.  They're normally disabled, for faster boot and because
+  * we can't know which states really work on this particular system.
+  */
+-static suspend_state_t test_state __initdata = PM_SUSPEND_ON;
++static const char *test_state_label __initdata;
+ 
+ static char warn_bad_state[] __initdata =
+ 	KERN_WARNING "PM: can't test '%s' suspend state\n";
+ 
+ static int __init setup_test_suspend(char *value)
+ {
+-	suspend_state_t i;
++	int i;
+ 
+ 	/* "=mem" ==> "mem" */
+ 	value++;
+-	for (i = PM_SUSPEND_MIN; i < PM_SUSPEND_MAX; i++)
+-		if (!strcmp(pm_states[i], value)) {
+-			test_state = i;
++	for (i = 0; pm_labels[i]; i++)
++		if (!strcmp(pm_labels[i], value)) {
++			test_state_label = pm_labels[i];
+ 			return 0;
+ 		}
+ 
+@@ -158,13 +158,19 @@ static int __init test_suspend(void)
+ 
+ 	struct rtc_device	*rtc = NULL;
+ 	struct device		*dev;
++	suspend_state_t test_state;
+ 
+ 	/* PM is initialized by now; is that state testable? */
+-	if (test_state == PM_SUSPEND_ON)
+-		goto done;
+-	if (!pm_states[test_state]) {
+-		printk(warn_bad_state, pm_states[test_state]);
+-		goto done;
++	if (!test_state_label)
++		return 0;
++
++	for (test_state = PM_SUSPEND_MIN; test_state < PM_SUSPEND_MAX; test_state++)
++		if (!strcmp(test_state_label, pm_states[test_state]))
++			break;
++
++	if (test_state == PM_SUSPEND_MAX) {
++		printk(warn_bad_state, test_state_label);
++		return 0;
+ 	}
+ 
+ 	/* RTCs have initialized by now too ... can we use one? */
+@@ -173,13 +179,12 @@ static int __init test_suspend(void)
+ 		rtc = rtc_class_open(dev_name(dev));
+ 	if (!rtc) {
+ 		printk(warn_no_rtc);
+-		goto done;
++		return 0;
+ 	}
+ 
+ 	/* go for it */
+ 	test_wakealarm(rtc, test_state);
+ 	rtc_class_close(rtc);
+-done:
+ 	return 0;
+ }
+ late_initcall(test_suspend);
+
