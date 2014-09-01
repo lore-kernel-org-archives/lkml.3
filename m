@@ -1,106 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559AbaIAPyE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 11:54:04 -0400
-Received: from mga11.intel.com ([192.55.52.93]:24784 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754513AbaIAPyB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 11:54:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,443,1406617200"; 
-   d="scan'208";a="592927307"
-Message-ID: <1409586696.3318.11.camel@spandruv-hsb-test>
-Subject: Re: [PATCH v3 3/3] iio: accel: BMC150: add support for other Bosch
- chips
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-To: Joe Perches <joe@perches.com>
-Cc: Laurentiu Palcu <laurentiu.palcu@intel.com>,
-        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 01 Sep 2014 08:51:36 -0700
-In-Reply-To: <1409585783.2664.18.camel@joe-AO725>
-References: <1409301488-22166-4-git-send-email-laurentiu.palcu@intel.com>
-	 <1409562698-13202-1-git-send-email-laurentiu.palcu@intel.com>
-	 <1409585783.2664.18.camel@joe-AO725>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754150AbaIAP6L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 11:58:11 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57831 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753829AbaIAP6J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 11:58:09 -0400
+Date: Mon, 1 Sep 2014 17:58:04 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: linux-next: Tree for Aug 23
+Message-ID: <20140901155804.GT27892@worktop.ger.corp.intel.com>
+References: <20140823080422.7895575c@canb.auug.org.au>
+ <20140825045741.GA29723@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140825045741.GA29723@roeck-us.net>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-09-01 at 08:36 -0700, Joe Perches wrote:
-> On Mon, 2014-09-01 at 12:11 +0300, Laurentiu Palcu wrote:
-> > The following chips are either similar or have only the resolution
-> > different. Hence, change this driver to support these chips too:
+On Sun, Aug 24, 2014 at 09:57:41PM -0700, Guenter Roeck wrote:
+> On Sat, Aug 23, 2014 at 08:04:22AM +1000, Stephen Rothwell wrote:
+> > Hi all,
 > > 
-> > BMI055  - combo chip (accelerometer part is identical to BMC150's)
-> > BMA255  - identical to BMC150's accelerometer
-> > BMA222E - 8 bit resolution
-> > BMA250E - 10 bit resolution
-> > BMA280  - 14 bit resolution
+> > Changes since 20140822:
 > > 
-> > Additionally:
-> >  * add bmc150_accel_match_acpi_device() function to check that the device
-> >    has been enumerated through ACPI;
-> >  * rename bmc150_accel_acpi_gpio_probe() to bmc150_accel_gpio_probe()
-> >    since the ACPI matching has been moved to the new function.  Also, this
-> >    will allow for the GPIO matching to be done against a device tree too, not only
-> >    ACPI tree;
-> []
-> > diff --git a/drivers/iio/accel/bmc150-accel.c b/drivers/iio/accel/bmc150-accel.c
-> []
-> > @@ -647,12 +659,13 @@ static int bmc150_accel_read_raw(struct iio_dev *indio_dev,
-> >  		{
-> >  			int i;
-> >  
-> > -			for (i = 0; i < ARRAY_SIZE(bmc150_accel_scale_table);
-> > -									 ++i) {
-> > -				if (bmc150_accel_scale_table[i].range ==
-> > +			for (i = 0;
-> > +			     i < ARRAY_SIZE(data->chip_info->scale_table);
-> > +			     ++i) {
-> > +				if (data->chip_info->scale_table[i].range ==
-> >  								data->range) {
-> >  					*val2 =
-> > -					bmc150_accel_scale_table[i].scale;
-> > +					data->chip_info->scale_table[i].scale;
-> >  					return IIO_VAL_INT_PLUS_MICRO;
-> >  				}
-> >  			}
+> > The mfd tree gained a build failure so I used the version from
+> > next-20140822.
+> > 
+> > The usb-gadget tree gained a conflict against the usb-gadget-fixes tree.
+> > 
+> > The pwm tree gained a build failure for which I reverted a couple of
+> > commits.
+> > 
+> > The staging tree still had its build failure for which I applied a
+> > fix patch.
+> > 
+> > Non-merge commits (relative to Linus' tree): 1435
+> >  1372 files changed, 34371 insertions(+), 25442 deletions(-)
+> > 
 > 
-> This looks like it would read a lot better with
-> a temporary for data->chip_info->scale_table[i]
+> Images build from this tree crash in mips, mips64, and sparc64 qemu tests
+> with memory allocation errors. For mips, bisect points to commit ef31563e950c
+> (locking,arch,mips: Fold atomic_ops).
 > 
-> so these could become:
+> # bad: [eeed658b5a92d957aab7bdb7c469a90016420c7d] Add linux-next specific files for 20140823
+> # good: [7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9] Linux 3.17-rc1
+> git bisect start 'HEAD' 'v3.17-rc1'
+> # good: [a364ac83d553cd223cf1b898a738594f866242ac] Merge remote-tracking branch 'input/next'
+> git bisect good a364ac83d553cd223cf1b898a738594f866242ac
+> # bad: [6804e0868ce1f5f55a16270de65587e35b80231e] Merge remote-tracking branch 'usb-gadget/next'
+> git bisect bad 6804e0868ce1f5f55a16270de65587e35b80231e
+> # bad: [8590e100eca66f5763b4c8a5775e38e4a0c9939d] Merge branch 'x86/xsave'
+> git bisect bad 8590e100eca66f5763b4c8a5775e38e4a0c9939d
+> # good: [e71e79457b79a52827039d9d7f253321bfd342bd] perf symbols: Don't demangle parameters and such by default
+> git bisect good e71e79457b79a52827039d9d7f253321bfd342bd
+> # bad: [100b1cb29333c8ac37e68025b291e4b273c8ad43] Merge branch 'locking/core'
+> git bisect bad 100b1cb29333c8ac37e68025b291e4b273c8ad43
+> # bad: [c6470150dff9aff682063890c9b8eac71b695def] locking,arch,sh: Fold atomic_ops
+> git bisect bad c6470150dff9aff682063890c9b8eac71b695def
+> # good: [50f853e38b0b90a5703ab14b70e20eb5a8ccd5de] locking,arch,hexagon: Fold atomic_ops
+> git bisect good 50f853e38b0b90a5703ab14b70e20eb5a8ccd5de
+> # good: [d6dfe2509da935a15583cace7cd3837b1e8addef] locking,arch,metag: Fold atomic_ops
+> git bisect good d6dfe2509da935a15583cace7cd3837b1e8addef
+> # bad: [e69a0ef76627005e3e83d0e086e6bb1d247bb65b] locking,arch,mn10300: Fold atomic_ops
+> git bisect bad e69a0ef76627005e3e83d0e086e6bb1d247bb65b
+> # bad: [ef31563e950c60bb41b97c2b61c32de874f3c949] locking,arch,mips: Fold atomic_ops
+> git bisect bad ef31563e950c60bb41b97c2b61c32de874f3c949
+> # first bad commit: [ef31563e950c60bb41b97c2b61c32de874f3c949] locking,arch,mips: Fold atomic_ops
 > 
-> 			for (i = 0; i < etc; i++) {
-> 				type *temp = &data->chip_info->scale_table[i];
-> 				if (temp->range == data->range) {
-> 					*val2 = temp->scale;
-> 					return IIO_VAL_INT_PLUS_MICRO;
-> 				}
+> Reverting the first bad commit fixes the problem for mips and mips64.
 > 
-> Maybe all the bmc150_ variable names could be removed.
-> The prefixes don't seem to serve a purpose other than
-> to make the code longer.
-> 
-> The filename could be changed to be more generic.
-Then this will also require change in the CONFIG name to match. This
-will require all current users to change the config file once they
-update to new version of the driver, which they don't like to change
-once product config is finalized. Since the most of the chips will just
-differ by a number at the end and they may not be compatible to each
-other, finding a common name will be challenge.
-Instead the CONFIG description for this module should explicitly state
-the names of chips it is compatible to.
+> For sparc64, given the above, I did not bother to bisect, but just reverted
+> commit 4f3316c (locking,arch,sparc: Fold atomic_ops). This fixes the problem
+> for sparc64.
 
-Thanks,
-Srinivas
-> 
-> 
-
-
+Urgh, I take it this is still current? Would you perhaps have these qemu
+images available so I can try and fix this?
