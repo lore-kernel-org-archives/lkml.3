@@ -1,132 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215AbaIAKCT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 06:02:19 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:39759 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753176AbaIAKCS (ORCPT
+	id S1753252AbaIAKCk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 06:02:40 -0400
+Received: from mail.fireflyinternet.com ([87.106.93.118]:50760 "EHLO
+	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752300AbaIAKCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 06:02:18 -0400
-Message-ID: <540443DA.7030502@huawei.com>
-Date: Mon, 1 Sep 2014 18:00:58 +0800
-From: "long.wanglong" <long.wanglong@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Mon, 1 Sep 2014 06:02:39 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.65.138;
+Date: Mon, 1 Sep 2014 11:02:33 +0100
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
+Cc: intel-gfx@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
+        Tibor Billes <tbilles@gmx.com>
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: Fix lock dropping in
+ intel_tv_detect()
+Message-ID: <20140901100233.GC11648@nuc-i3427.alporthouse.com>
+Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
+	Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>,
+	intel-gfx@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
+	Daniel Vetter <daniel.vetter@ffwll.ch>,
+	linux-kernel@vger.kernel.org, Tibor Billes <tbilles@gmx.com>
+References: <877g1ndfh5.fsf@intel.com>
+ <1409558986-5099-1-git-send-email-ville.syrjala@linux.intel.com>
+ <20140901085022.GB11648@nuc-i3427.alporthouse.com>
+ <20140901094556.GA4193@intel.com>
 MIME-Version: 1.0
-To: Wang Long <long.wanglong@huawei.com>, <arnd@arndb.de>
-CC: <linux@arm.linux.org.uk>, <santosh.shilimkar@ti.com>,
-        <victor.kamensky@linaro.org>, <nico@linaro.org>,
-        <ben.dooks@codethink.co.uk>, <cov@codeaurora.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [SMP BUG?] the return value of is_smp() is bug?
-References: <1409550563-92081-1-git-send-email-long.wanglong@huawei.com>
-In-Reply-To: <1409550563-92081-1-git-send-email-long.wanglong@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.88.174]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020202.540443EE.0060,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2011-05-27 18:58:46
-X-Mirapoint-Loop-Id: 0e34727ccfe9845b9ebc6300ba5ca814
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140901094556.GA4193@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/9/1 13:49, Wang Long wrote:
+On Mon, Sep 01, 2014 at 12:45:56PM +0300, Ville Syrjälä wrote:
+> On Mon, Sep 01, 2014 at 09:50:22AM +0100, Chris Wilson wrote:
+> > diff --git a/drivers/gpu/drm/i915/intel_tv.c b/drivers/gpu/drm/i915/intel_tv.c
+> > index 32186a6..a109b7b 100644
+> > --- a/drivers/gpu/drm/i915/intel_tv.c
+> > +++ b/drivers/gpu/drm/i915/intel_tv.c
+> > @@ -1311,6 +1311,7 @@ intel_tv_detect(struct drm_connector *connector, bool force)
+> >  {
+> >         struct drm_display_mode mode;
+> >         struct intel_tv *intel_tv = intel_attached_tv(connector);
+> > +       enum drm_connector_status status = connector->status;
+> >         int type;
+> >  
+> >         DRM_DEBUG_KMS("[CONNECTOR:%d:%s] force=%d\n",
+> > @@ -1327,17 +1328,20 @@ intel_tv_detect(struct drm_connector *connector, bool force)
+> >  
+> >                 if (intel_get_load_detect_pipe(connector, &mode, &tmp, &ctx)) {
+> >                         type = intel_tv_detect_type(intel_tv, connector);
+> > +                       status = type < 0 ?
+> > +                               connector_status_disconnected :
+> > +                               connector_status_connected;
+> > +
+> >                         intel_release_load_detect_pipe(connector, &tmp);
+> >                 } else
+> > -                       return connector_status_unknown;
+> > +                       status = connector_status_unknown;
+> >  
+> >                 drm_modeset_drop_locks(&ctx);
+> >                 drm_modeset_acquire_fini(&ctx);
+> > -       } else
+> > -               return connector->status;
+> > +       }
+> >  
+> > -       if (type < 0)
+> > -               return connector_status_disconnected;
+> > +       if (status != connector_status_connected)
+> > +               return status;
+> >  
+> >         intel_tv->type = type;
+> >         intel_tv_find_better_format(connector);
 > 
-> Hi,all
-> 
-> In kernel 3.17-rc2, when i set CONFIG_HAVE_SMP = y and CONFIG_SMP_ON_UP = y 
-> in .config file. the secondary core can not boot.
-> 
-> when i set CONFIG_HAVE_SMP = y and CONFIG_SMP_ON_UP = n in .config file,
-> the secondary core can boot.
-> 
-> But this does not happen in kernel 3.10 lts kernel, Whether the 
-> CONFIG_SMP_ON_UP is set yes or no ,the secondary core can boot.
-> 
-> Does the meaning of CONFIG_SMP_ON_UP changed or this is a bug in kernel 3.17-rc2 ? 
-> 
-> 
+> With this approach we're going to have to keep the !force else branch
+> to avoid populating intel_tv->type with stack garbage. But I suppose
+> the resulting code might still be a bit clearer.
 
-hi Arnd
+Or just set intel_tv->type directly inside
 
-In above two cases, i also set  CONFIG_SMP = y. in addtion,
-the CONFIG_SMP_ON_UP depends on CONFIG_SMP. when set
-CONFIG_SMP_ON_UP = y, the value of CONFIG_SMP must be y.
+status = intel_tv_detect_type() ?
+
+Hmm. Indeed, we should not be touching them at all for !forced, as type
+is only set for forced, and so we can similarly ignore hpd of better
+formats.
+
+diff --git a/drivers/gpu/drm/i915/intel_tv.c b/drivers/gpu/drm/i915/intel_tv.c
+index 32186a656816..e80eac5e5239 100644
+--- a/drivers/gpu/drm/i915/intel_tv.c
++++ b/drivers/gpu/drm/i915/intel_tv.c
+@@ -1169,7 +1169,7 @@ static const struct drm_display_mode reported_modes[] = {
+  * \return true if TV is connected.
+  * \return false if TV is disconnected.
+  */
+-static int
++static enum drm_connector_status
+ intel_tv_detect_type(struct intel_tv *intel_tv,
+                      struct drm_connector *connector)
+ {
+@@ -1178,10 +1178,10 @@ intel_tv_detect_type(struct intel_tv *intel_tv,
+        struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
+        struct drm_device *dev = encoder->dev;
+        struct drm_i915_private *dev_priv = dev->dev_private;
++       enum drm_connector_status status;
+        unsigned long irqflags;
+        u32 tv_ctl, save_tv_ctl;
+        u32 tv_dac, save_tv_dac;
+-       int type;
+ 
+        /* Disable TV interrupts around load detect or we'll recurse */
+        if (connector->polled & DRM_CONNECTOR_POLL_HPD) {
+@@ -1229,7 +1229,6 @@ intel_tv_detect_type(struct intel_tv *intel_tv,
+        intel_wait_for_vblank(intel_tv->base.base.dev,
+                              to_intel_crtc(intel_tv->base.base.crtc)->pipe);
+ 
+-       type = -1;
+        tv_dac = I915_READ(TV_DAC);
+        DRM_DEBUG_KMS("TV detected: %x, %x\n", tv_ctl, tv_dac);
+        /*
+@@ -1238,18 +1237,19 @@ intel_tv_detect_type(struct intel_tv *intel_tv,
+         *  1 0 X svideo
+         *  0 0 0 Component
+         */
++       status = connector_status_connected;
+        if ((tv_dac & TVDAC_SENSE_MASK) == (TVDAC_B_SENSE | TVDAC_C_SENSE)) {
+                DRM_DEBUG_KMS("Detected Composite TV connection\n");
+-               type = DRM_MODE_CONNECTOR_Composite;
++               intel_tv->type = DRM_MODE_CONNECTOR_Composite;
+        } else if ((tv_dac & (TVDAC_A_SENSE|TVDAC_B_SENSE)) == TVDAC_A_SENSE) {
+                DRM_DEBUG_KMS("Detected S-Video TV connection\n");
+-               type = DRM_MODE_CONNECTOR_SVIDEO;
++               intel_tv->type = DRM_MODE_CONNECTOR_SVIDEO;
+        } else if ((tv_dac & TVDAC_SENSE_MASK) == 0) {
+                DRM_DEBUG_KMS("Detected Component TV connection\n");
+-               type = DRM_MODE_CONNECTOR_Component;
++               intel_tv->type = DRM_MODE_CONNECTOR_Component;
+        } else {
+                DRM_DEBUG_KMS("Unrecognised TV connection\n");
+-               type = -1;
++               status = connector_status_disconnected;
+        }
+ 
+        I915_WRITE(TV_DAC, save_tv_dac & ~TVDAC_STATE_CHG_EN);
+@@ -1269,7 +1269,7 @@ intel_tv_detect_type(struct intel_tv *intel_tv,
+                spin_unlock_irqrestore(&dev_priv->irq_lock, irqflags);
+        }
+ 
+-       return type;
++       return status;
+ }
+ 
+ /*
+@@ -1309,39 +1309,33 @@ static void intel_tv_find_better_format(struct drm_connector *connector)
+ static enum drm_connector_status
+ intel_tv_detect(struct drm_connector *connector, bool force)
+ {
+-       struct drm_display_mode mode;
+        struct intel_tv *intel_tv = intel_attached_tv(connector);
+-       int type;
++       struct drm_display_mode mode = reported_modes[0];
++       struct intel_load_detect_pipe tmp;
++       struct drm_modeset_acquire_ctx ctx;
++       enum drm_connector_status status;
+ 
+        DRM_DEBUG_KMS("[CONNECTOR:%d:%s] force=%d\n",
+                      connector->base.id, connector->name,
+                      force);
++       if (!force)
++               return connector->status;
+ 
+-       mode = reported_modes[0];
+-
+-       if (force) {
+-               struct intel_load_detect_pipe tmp;
+-               struct drm_modeset_acquire_ctx ctx;
+-
+-               drm_modeset_acquire_init(&ctx, 0);
+-
+-               if (intel_get_load_detect_pipe(connector, &mode, &tmp, &ctx)) {
+-                       type = intel_tv_detect_type(intel_tv, connector);
+-                       intel_release_load_detect_pipe(connector, &tmp);
+-               } else
+-                       return connector_status_unknown;
++       drm_modeset_acquire_init(&ctx, 0);
+ 
+-               drm_modeset_drop_locks(&ctx);
+-               drm_modeset_acquire_fini(&ctx);
++       if (intel_get_load_detect_pipe(connector, &mode, &tmp, &ctx)) {
++               status = intel_tv_detect_type(intel_tv, connector);
++               intel_release_load_detect_pipe(connector, &tmp);
+        } else
+-               return connector->status;
++               status = connector_status_unknown;
+ 
+-       if (type < 0)
+-               return connector_status_disconnected;
++       drm_modeset_drop_locks(&ctx);
++       drm_modeset_acquire_fini(&ctx);
+ 
+-       intel_tv->type = type;
+-       intel_tv_find_better_format(connector);
++       if (status != connector
++               return status;
+ 
++       intel_tv_find_better_format(connector);
+        return connector_status_connected;
+ }
 
 
-
-> I write the following patch to test the return value of is_smp().
-> 
-> ----------------------------------------
-> 
-> Signed-off-by: Wang Long <long.wanglong@huawei.com>
-> ---
->  arch/arm/kernel/setup.c |    5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-> index 84db893d..fbeb67f 100644
-> --- a/arch/arm/kernel/setup.c
-> +++ b/arch/arm/kernel/setup.c
-> @@ -925,6 +925,11 @@ void __init setup_arch(char **cmdline_p)
->  	arm_dt_init_cpu_maps();
->  	psci_init();
->  #ifdef CONFIG_SMP
-> +	
-> +	if (is_smp() == 1)
-> +		printk("is_smp() return true;\n");
-> +	else if (is_smp() == 0)
-> +		printk("is_smp() return false;\n");
->  	if (is_smp()) {
->  		if (!mdesc->smp_init || !mdesc->smp_init()) {
->  			if (psci_smp_available())
-> 
-> kernel version: 3.17-rc2
-> 
-> config:     set CONFIG_HAVE_SMP = y and CONFIG_SMP_ON_UP = y
-> command:    # qemu-system-arm -M vexpress-a9 -smp 2  -m 128M -kernel arch/arm/boot/zImage -nographic
-> The output:
-> 
-> ..........
-> is_smp() return false;
-> CPU: Testing write buffer coherency: ok
-> missing device node for CPU 0
-> CPU0: thread -1, cpu 0, socket 0, mpidr 80000000
-> Setting up static identity map for 0x604643d8 - 0x60464430
-> Brought up 1 CPUs
-> SMP: Total of 1 processors activated.
-> CPU: All CPU(s) started in SVC mode.
-> ...........
-> 
-> config:     set CONFIG_HAVE_SMP = y and not set CONFIG_SMP_ON_UP 
-> command:    # qemu-system-arm -M vexpress-a9 -smp 2  -m 128M -kernel arch/arm/boot/zImage -nographic
-> The output:
-> 
-> .....
->  Memory policy: Data cache writealloc
-> is_smp() return true;
-> sched_clock: 32 bits at 24MHz, resolution 41ns, wraps every 178956969942ns
-> ......
-> ......
-> CPU: Testing write buffer coherency: ok
-> missing device node for CPU 0
-> missing device node for CPU 1
-> CPU0: thread -1, cpu 0, socket 0, mpidr 80000000
-> Setting up static identity map for 0x60463ef8 - 0x60463f50
-> CPU1: Booted secondary processor
-> CPU1: thread -1, cpu 1, socket 0, mpidr 80000001
-> Brought up 2 CPUs
-> SMP: Total of 2 processors activated.
-> CPU: All CPU(s) started in SVC mode.
-> devtmpfs: initialized
-> .......
-> 
-> Any ideas?
-> 
-> 
-
-
+-- 
+Chris Wilson, Intel Open Source Technology Centre
