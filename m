@@ -1,45 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754357AbaIAQVq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 12:21:46 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57918 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754252AbaIAQVp (ORCPT
+	id S1754448AbaIAQWn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 12:22:43 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:35988 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754284AbaIAQWk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 12:21:45 -0400
-Date: Mon, 1 Sep 2014 18:21:43 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com
-Subject: Re: [PATCH v4 00/22] perf: Add infrastructure and support for Intel
- PT
-Message-ID: <20140901162143.GU27892@worktop.ger.corp.intel.com>
-References: <1408538179-792-1-git-send-email-alexander.shishkin@linux.intel.com>
- <53FAD5E3.1060600@intel.com>
+	Mon, 1 Sep 2014 12:22:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53FAD5E3.1060600@intel.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <20140901154626.GH8796@lee--X1>
+References: <1409349654-24841-1-git-send-email-octavian.purdila@intel.com>
+	<1409349654-24841-2-git-send-email-octavian.purdila@intel.com>
+	<20140901083744.GE7374@lee--X1>
+	<CAE1zotK0cddns4f4ay-GJie8O2pjb72+-yYndZvW0hbF0D83HA@mail.gmail.com>
+	<20140901095127.GK7374@lee--X1>
+	<CAE1zot+T6eq0jrL6_Qh=5nihNOgGEaWe5RCDk7_1XS8ZWaWKqA@mail.gmail.com>
+	<20140901113949.GP7374@lee--X1>
+	<CAE1zotKNBTEMX8DDYwdwOcq0qZgqxZWazE60TUQeiOmD0a4xbA@mail.gmail.com>
+	<20140901154626.GH8796@lee--X1>
+Date: Mon, 1 Sep 2014 19:22:39 +0300
+Message-ID: <CAE1zotL-cjHqrdymzYhZq24zx+0qGY8-4JnrVZf-TGXDf5Sm3w@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] mfd: add support for Diolan DLN-2 devices
+From: Octavian Purdila <octavian.purdila@intel.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, wsa@the-dreams.de,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Johan Hovold <johan@kernel.org>, linux-usb@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>, linux-gpio@vger.kernel.org,
+        linux-i2c@vger.kernel.org, Daniel Baluta <daniel.baluta@intel.com>,
+        Laurentiu Palcu <laurentiu.palcu@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 09:21:23AM +0300, Adrian Hunter wrote:
-> On 08/20/2014 03:35 PM, Alexander Shishkin wrote:
-> > This patchset adds support for Intel Processor Trace (PT) extension [1] of
-> > Intel Architecture that allows the capture of information about software
-> > execution flow, to the perf kernel infrastructure.
-> > 
-> 
-> Alex is away, so I would like to know if anyone (Peter?) plans to review or
-> comment on these patches.
+On Mon, Sep 1, 2014 at 6:46 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> On Mon, 01 Sep 2014, Octavian Purdila wrote:
+>
+>> On Mon, Sep 1, 2014 at 2:39 PM, Lee Jones <lee.jones@linaro.org> wrote:
+>> > On Mon, 01 Sep 2014, Octavian Purdila wrote:
+>> >
+>> >> On Mon, Sep 1, 2014 at 12:51 PM, Lee Jones <lee.jones@linaro.org> wrote:
+>> >> > On Mon, 01 Sep 2014, Octavian Purdila wrote:
+>> >> >
+>> >> >> On Mon, Sep 1, 2014 at 11:37 AM, Lee Jones <lee.jones@linaro.org> wrote:
+>> >> >> > On Sat, 30 Aug 2014, Octavian Purdila wrote:
+>> >> >> >
+>> >> >> >> This patch implements the USB part of the Diolan USB-I2C/SPI/GPIO
+>> >> >> >> Master Adapter DLN-2. Details about the device can be found here:
+>> >> >> >>
+>> >> >> >> https://www.diolan.com/i2c/i2c_interface.html.
+>> >> >> >>
+>> >> >> >> Information about the USB protocol can be found in the Programmer's
+>> >> >> >> Reference Manual [1], see section 1.7.
+>> >> >> >>
+>> >> >> >> Because the hardware has a single transmit endpoint and a single
+>> >> >> >> receive endpoint the communication between the various DLN2 drivers
+>> >> >> >> and the hardware will be muxed/demuxed by this driver.
+>> >> >> >>
+>> >> >> >> Each DLN2 module will be identified by the handle field within the DLN2
+>> >> >> >> message header. If a DLN2 module issues multiple commands in parallel
+>> >> >> >> they will be identified by the echo counter field in the message header.
+>> >> >> >>
+>> >> >> >> The DLN2 modules can use the dln2_transfer() function to issue a
+>> >> >> >> command and wait for its response. They can also register a callback
+>> >> >> >> that is going to be called when a specific event id is generated by
+>> >> >> >> the device (e.g. GPIO interrupts). The device uses handle 0 for
+>> >> >> >> sending events.
+>> >> >> >>
+>> >> >> >> [1] https://www.diolan.com/downloads/dln-api-manual.pdf
+>> >> >> >
+>> >> >> > MFD is not a dumping ground for misfit h/w.  Almost all of this code
+>> >> >> > looks like it belongs in drivers/usb.  Please move it there.
+>> >> >> >
+>> >> >>
+>> >> >> We initially submitted this driver as a pure USB driver, with our own
+>> >> >> module registration mechanism, but during the first round of reviews
+>> >> >> people pointed out that a MFD driver is the better approach, and I
+>> >> >> agree. I also see that there are already a couple of USB drivers
+>> >> >> implemented as MFD drivers.
+>> >> >
+>> >> > Can you link me to your previous submission please?
+>> >>
+>> >> Sure, here it is:
+>> >>
+>> >> https://lkml.org/lkml/2014/8/20/228
+>> >>
+>> >> >
+>> >> >> Do you see a better approach?
+>> >> >
+>> >> > You should have a small MFD driver which controls resources and
+>> >> > registers children.  All other functionality should live in their
+>> >> > respective drivers/X locations i.e. USB functionallity should normally
+>> >> > live in drivers/usb.
+>> >> >
+>> >>
+>> >> OK, that sounds better. I am not sure how to handle the registration
+>> >> part though, since in this case we need to create the children at
+>> >> runtime, from the usb probe routine.
+>> >>
+>> >> The only solution I see is to move the driver completely to
+>> >> usb/drivers and continue to use the MFD infrastructure. Does that
+>> >> sound OK to you?
+>> >
+>> > I have no problem with that.  If this is an MFD driver, it _should_
+>> > live in drivers/mfd.  However, all of that USB specific stuff
+>> > defiantly should not.
+>> >
+>>
+>> It is a multi-function driver which is using the USB interface, so I
+>> am not sure where it belongs. The only driver that calls
+>> mfd_add_devices and is not in drivers/mfd is the hid sensor hub
+>> driver.
+>>
+>> BTW, the mfd/viperboard.c driver is very similar with this driver. It
+>> has less USB specific stuff because the protocol is simpler, but still
+>> has some.
+>
+> Looking at viperboard.c, it seems to use some basic generic framework
+> calls to obtain some information about the device information like
+> version numbers.  Your driver is leaps and bounds more USB centric.
+>
+> Your MFD driver should know about things like; regmap, platform data,
+> memory allocation, same-chip devices (children), etc.  Your MFD driver
+> should not need to concern itself with; endpoints, slots, URBs, USB
+> device IDs and the like.  The later knowledge belongs in drivers/usb.
+>
+> You should be calling mfd_add_devices() from within the MFD driver.
+> At a guess, I would say that you need a new entry for the USB stuff in
+> your mfd_cells structure.
+>
 
-I'll get to it (eventually), I had a week of down-time after KS/Linuxcon
-and have now returned to a copiously overflown inbox.
+Makes sense, thanks for making clearing up what the MFD part of the
+driver should do.
+
+Here is how I think it could work:
+
+ * keep the usb probe routine in the MFD driver (and keep it a usb driver)
+
+ * add a new cell for the usb part
+
+ * pass the usb_interface via platform_data to the USB sub-driver's
+platform_device probe routine and continue the USB setup there
+
+
+Lee, USB folks, is this acceptable?
