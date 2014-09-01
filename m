@@ -1,130 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753818AbaIALe0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 07:34:26 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:16860 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753536AbaIALeW (ORCPT
+	id S1753506AbaIALhG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 07:37:06 -0400
+Received: from mail-yh0-f43.google.com ([209.85.213.43]:61290 "EHLO
+	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752985AbaIALhE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 07:34:22 -0400
-X-AuditID: cbfee68d-f79c46d000000b84-99-540459bb972a
-From: Pankaj Dubey <pankaj.dubey@samsung.com>
-To: "'Arnd Bergmann'" <arnd@arndb.de>, "'Lee Jones'" <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kgene.kim@samsung.com,
-        linux@arm.linux.org.uk, vikas.sajjan@samsung.com, joshi@samsung.com,
-        naushad@samsung.com, thomas.ab@samsung.com, chow.kim@samsung.com,
-        "'Tomasz Figa'" <t.figa@samsung.com>, broonie@kernel.org
-References: <1408694991-21615-1-git-send-email-pankaj.dubey@samsung.com>
- <20140901074918.GB6226@lee--X1> <4121644.3haxjiIdIo@wuerfel>
-In-reply-to: <4121644.3haxjiIdIo@wuerfel>
-Subject: RE: [PATCH] mfd: syscon: Decouple syscon interface from syscon devices
-Date: Mon, 01 Sep 2014 17:05:33 +0530
-Message-id: <000c01cfc5d9$03866c30$0a934490$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQHpa/2m/d4/OY0ITARCUM8RI+G5jQGj941vAnXmlLmbmAms0A==
-Content-language: en-us
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPIsWRmVeSWpSXmKPExsWyRsSkSnd3JEuIwbJpVhZ/Jx1jt5j68Amb
-	xbJJd9ksvu/6wm7Ru+Aqm8X9r0cZLTY9vsZqcXnXHDaLGef3MVncvsxr8enof1aL9TNes1h0
-	LGO0uPlsO5MDn0dLcw+bx+9fkxg9Nq3qZPO4c20Pm8fmJfUefVtWMXp83iQXwB7FZZOSmpNZ
-	llqkb5fAlXFmnV5Bv1jF1c5fTA2MPwW7GDk4JARMJJ521nUxcgKZYhIX7q1nA7GFBJYySpw5
-	rgERN5F49+glK0R8OqPE1CVBXYxcQPZfRomzR/pYQBJsAroST97PZQaxRQTcJS603WMCKWIW
-	OM4ksez1f3aI7nZGie69HCA2p4CmxPavexhBbGEBf4kv9xaDNbMIqErsOtYHto1XwFLi8cnn
-	jBC2oMSPyffAljELaEms33mcCcKWl9i85i0zxKUKEjvOvmaEOMJJ4trHP8wQNeISkx48ZAc5
-	SEJgKYfE1e/ToZYJSHybfIgFEhKyEpsOQM2RlDi44gbLBEaJWUhWz0KyehaS1bOQrFjAyLKK
-	UTS1ILmgOCm9yFCvODG3uDQvXS85P3cTIzAdnP73rHcH4+0D1ocYBTgYlXh4H8xiDhFiTSwr
-	rsw9xGgKdNFEZinR5Hxg0skriTc0NjOyMDUxNTYytzRTEudVlPoZLCSQnliSmp2aWpBaFF9U
-	mpNafIiRiYNTqoFx1qucd37f1oSVbrEqePJvx9GQNb8i94sGf1p9fC/L5NlNt/i3326o+v/T
-	/HrVzGyvf9Vcggd+igs9NuTtPVWiX+DBEDbHi+2G0vpv6dwvfsXcYVmb57IoYKHmottndOyX
-	dKsprP4wn1d95mN1lyX/J7DfWzCF1a+Oi1tMh2/f0y9Lfx/bXeu7Q4mlOCPRUIu5qDgRAOkV
-	7FsCAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNKsWRmVeSWpSXmKPExsVy+t9jQd3dkSwhBpuuG1j8nXSM3WLqwyds
-	Fssm3WWz+L7rC7tF74KrbBb3vx5ltNj0+BqrxeVdc9gsZpzfx2Rx+zKvxaej/1kt1s94zWLR
-	sYzR4uaz7UwOfB4tzT1sHr9/TWL02LSqk83jzrU9bB6bl9R79G1ZxejxeZNcAHtUA6NNRmpi
-	SmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtDFSgpliTmlQKGA
-	xOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCGsaMM+v0CvrFKq52/mJqYPwp2MXIySEhYCLx
-	7tFLVghbTOLCvfVsILaQwHRGialLgroYuYDsv4wSZ4/0sYAk2AR0JZ68n8sMYosIuEtcaLvH
-	BFLELHCcSWLZ6//sEN3tjBLdezlAbE4BTYntX/cwgtjCAv4SX+4tBmtmEVCV2HWsD2wzr4Cl
-	xOOTzxkhbEGJH5PvgS1jFtCSWL/zOBOELS+xec1bZohLFSR2nH3NCHGEk8S1j3+YIWrEJSY9
-	eMg+gVFoFpJRs5CMmoVk1CwkLQsYWVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBCecZ1I7
-	GFc2WBxiFOBgVOLhfTCLOUSINbGsuDL3EKMEB7OSCO/0UJYQId6UxMqq1KL8+KLSnNTiQ4ym
-	QJ9OZJYSTc4HJsO8knhDYxNzU2NTSxMLEzNLJXHeA63WgUIC6YklqdmpqQWpRTB9TBycUg2M
-	Rtv5hb9N18s6b/d9ieOkzOPl6n5NNfd/LE4QfXpFxV5wWo+Mx6YdwQs+bKspmf+77YT1EsmF
-	fbs2+rAwx3lZKk8zuzjZNseZqywzK4qhJe3BSRM3w2qtD5U7Q6fJHXM8rd6rKD257fqEwAOC
-	Plr3vr3b93HarJlyJ3fpvH95otw47axOpQWLEktxRqKhFnNRcSIAH/D+7k4DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 1 Sep 2014 07:37:04 -0400
+From: Greg Donald <gdonald@gmail.com>
+To: Greg Kroah-Hartman <greg@kroah.com>,
+        Andreas Dilger <andreas.dilger@intel.com>,
+        Oleg Drokin <oleg.drokin@intel.com>, linux-kernel@vger.kernel.org
+Cc: Greg Donald <gdonald@gmail.com>
+Subject: [PATCH] drivers: staging: lustre: Fix 'do not use C99 // comments' errors
+Date: Mon,  1 Sep 2014 06:36:14 -0500
+Message-Id: <1409571374-12658-1-git-send-email-gdonald@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+Fix checkpatch.pl 'do not use C99 // comments' errors
 
-> -----Original Message-----
-> From: Arnd Bergmann [mailto:arnd@arndb.de]
-> Sent: Monday, September 01, 2014 4:07 PM
-> To: Lee Jones
-> Cc: Pankaj Dubey; linux-arm-kernel@lists.infradead.org; linux-samsung-
-> soc@vger.kernel.org; linux-kernel@vger.kernel.org; kgene.kim@samsung.com;
-> linux@arm.linux.org.uk; vikas.sajjan@samsung.com; joshi@samsung.com;
-> naushad@samsung.com; thomas.ab@samsung.com; chow.kim@samsung.com;
-> Tomasz Figa; broonie@kernel.org
-> Subject: Re: [PATCH] mfd: syscon: Decouple syscon interface from syscon
-devices
-> 
-> On Monday 01 September 2014 08:49:18 Lee Jones wrote:
-> > On Fri, 22 Aug 2014, Pankaj Dubey wrote:
-> >
-> > > From: Tomasz Figa <t.figa@samsung.com>
-> > >
-> > > Currently a syscon entity can be only registered directly through a
-> > > platform device that binds to a dedicated driver. However in certain
-> > > use cases it is desirable to make a device used with another driver
-> > > a syscon interface provider. For example, certain SoCs (e.g. Exynos)
-> > > contain system controller blocks which perform various functions
-> > > such as power domain control, CPU power management, low power mode
-> > > control, but in addition contain certain IP integration glue, such
-> > > as various signal masks, coprocessor power control, etc. In such
-> > > case, there is a need to have a dedicated driver for such system
-> > > controller but also share registers with other drivers. The latter
-> > > is where the syscon interface is helpful.
-> > >
-> > > This patch decouples syscon object from syscon driver, so that it
-> > > can be registered from any driver in addition to the original
-> > > "syscon" platform driver.
-> > >
-> > > Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-> > > Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> > > ---
-> > >
-> > > RFC patch [1] was posted by Tomasz Figa. This patch addresses some
-> > > of comments given by Arnd to RFC patch, and further decouples syscon
-> > > from device model. It also gives flexibility of registering with
-> > > syscon at early stage using device_node object.
-> >
-> > It would be helpful if Arnd gave this revision his blessing (Ack).
-> 
-> I never saw a reason why we don't take this all the way as discussed a few
-times:
-> Completely remove the dependency of syscon on having a platform driver for
-it, and
-> make it possible to just call
-> syscon_regmap_lookup_by_phandle() without having to register it first.
-> 
+Signed-off-by: Greg Donald <gdonald@gmail.com>
+---
+ drivers/staging/lustre/lnet/klnds/socklnd/socklnd_cb.c   | 4 ++--
+ drivers/staging/lustre/lustre/include/lustre_cfg.h       | 2 +-
+ drivers/staging/lustre/lustre/include/lustre_disk.h      | 2 +-
+ drivers/staging/lustre/lustre/libcfs/linux/linux-debug.c | 2 +-
+ drivers/staging/lustre/lustre/llite/dir.c                | 2 +-
+ drivers/staging/lustre/lustre/llite/llite_internal.h     | 6 +++---
+ 6 files changed, 9 insertions(+), 9 deletions(-)
 
-Please have a look at this thread [1], where we discussed the need of syscon
-as platform device.
-Looks like still there are users of syscon_regmap_lookup_by_pdevname
-(clps711x.c).
-So we can't make it completely independent of platform_device. 
-
-[1]
-https://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg35708.html
-
-
-> 	Arnd
+diff --git a/drivers/staging/lustre/lnet/klnds/socklnd/socklnd_cb.c b/drivers/staging/lustre/lnet/klnds/socklnd/socklnd_cb.c
+index b82ba99..6c8b1e1 100644
+--- a/drivers/staging/lustre/lnet/klnds/socklnd/socklnd_cb.c
++++ b/drivers/staging/lustre/lnet/klnds/socklnd/socklnd_cb.c
+@@ -1594,8 +1594,8 @@ void ksocknal_write_callback (ksock_conn_t *conn)
+ 
+ 	conn->ksnc_tx_ready = 1;
+ 
+-	if (!conn->ksnc_tx_scheduled && // not being progressed
+-	    !list_empty(&conn->ksnc_tx_queue)){//packets to send
++	if (!conn->ksnc_tx_scheduled && /* not being progressed */
++	    !list_empty(&conn->ksnc_tx_queue)) { /* packets to send */
+ 		list_add_tail (&conn->ksnc_tx_list,
+ 				   &sched->kss_tx_conns);
+ 		conn->ksnc_tx_scheduled = 1;
+diff --git a/drivers/staging/lustre/lustre/include/lustre_cfg.h b/drivers/staging/lustre/lustre/include/lustre_cfg.h
+index 03017fe..7b385b8 100644
+--- a/drivers/staging/lustre/lustre/include/lustre_cfg.h
++++ b/drivers/staging/lustre/lustre/include/lustre_cfg.h
+@@ -290,4 +290,4 @@ static inline int lustre_cfg_sanity_check(void *buf, int len)
+ 
+ /** @} cfg */
+ 
+-#endif // _LUSTRE_CFG_H
++#endif /* _LUSTRE_CFG_H */
+diff --git a/drivers/staging/lustre/lustre/include/lustre_disk.h b/drivers/staging/lustre/lustre/include/lustre_disk.h
+index 7f191ee..515b835 100644
+--- a/drivers/staging/lustre/lustre/include/lustre_disk.h
++++ b/drivers/staging/lustre/lustre/include/lustre_disk.h
+@@ -545,4 +545,4 @@ int mgc_fsname2resid(char *fsname, struct ldlm_res_id *res_id, int type);
+ 
+ /** @} disk */
+ 
+-#endif // _LUSTRE_DISK_H
++#endif /* _LUSTRE_DISK_H */
+diff --git a/drivers/staging/lustre/lustre/libcfs/linux/linux-debug.c b/drivers/staging/lustre/lustre/libcfs/linux/linux-debug.c
+index eaa423d..be6a144 100644
+--- a/drivers/staging/lustre/lustre/libcfs/linux/linux-debug.c
++++ b/drivers/staging/lustre/lustre/libcfs/linux/linux-debug.c
+@@ -82,7 +82,7 @@ void libcfs_run_debug_log_upcall(char *file)
+ 	argv[0] = lnet_debug_log_upcall;
+ 
+ 	LASSERTF(file != NULL, "called on a null filename\n");
+-	argv[1] = file; //only need to pass the path of the file
++	argv[1] = file; /* only need to pass the path of the file */
+ 
+ 	argv[2] = NULL;
+ 
+diff --git a/drivers/staging/lustre/lustre/llite/dir.c b/drivers/staging/lustre/lustre/llite/dir.c
+index 55b5291..b4e46eb 100644
+--- a/drivers/staging/lustre/lustre/llite/dir.c
++++ b/drivers/staging/lustre/lustre/llite/dir.c
+@@ -42,7 +42,7 @@
+ #include <linux/pagemap.h>
+ #include <linux/mm.h>
+ #include <asm/uaccess.h>
+-#include <linux/buffer_head.h>   // for wait_on_buffer
++#include <linux/buffer_head.h>   /* for wait_on_buffer */
+ #include <linux/pagevec.h>
+ #include <linux/prefetch.h>
+ 
+diff --git a/drivers/staging/lustre/lustre/llite/llite_internal.h b/drivers/staging/lustre/lustre/llite/llite_internal.h
+index 5c4641f..36aa0fd 100644
+--- a/drivers/staging/lustre/lustre/llite/llite_internal.h
++++ b/drivers/staging/lustre/lustre/llite/llite_internal.h
+@@ -305,8 +305,8 @@ int ll_xattr_cache_get(struct inode *inode,
+ void ll_inode_size_lock(struct inode *inode);
+ void ll_inode_size_unlock(struct inode *inode);
+ 
+-// FIXME: replace the name of this with LL_I to conform to kernel stuff
+-// static inline struct ll_inode_info *LL_I(struct inode *inode)
++/* FIXME: replace the name of this with LL_I to conform to kernel stuff */
++/* static inline struct ll_inode_info *LL_I(struct inode *inode) */
+ static inline struct ll_inode_info *ll_i2info(struct inode *inode)
+ {
+ 	return container_of(inode, struct ll_inode_info, lli_vfs_inode);
+@@ -1036,7 +1036,7 @@ static inline struct client_obd *sbi2mdc(struct ll_sb_info *sbi)
+ 	return &obd->u.cli;
+ }
+ 
+-// FIXME: replace the name of this with LL_SB to conform to kernel stuff
++/* FIXME: replace the name of this with LL_SB to conform to kernel stuff */
+ static inline struct ll_sb_info *ll_i2sbi(struct inode *inode)
+ {
+ 	return ll_s2sbi(inode->i_sb);
+-- 
+1.9.1
 
