@@ -1,109 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752769AbaIAIqH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 04:46:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44313 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752707AbaIAIqE (ORCPT
+	id S1752344AbaIAIuG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 04:50:06 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:64831 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751968AbaIAIuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 04:46:04 -0400
-Date: Mon, 1 Sep 2014 09:46:01 +0100
-From: Luis Henriques <luis.henriques@canonical.com>
-To: "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "kernel-team@lists.ubuntu.com" <kernel-team@lists.ubuntu.com>,
-        "Coelho, Luciano" <luciano.coelho@intel.com>
-Subject: Re: [PATCH 3.11 005/137] iwlwifi: dvm: don't enable CTS to self
-Message-ID: <20140901084601.GA6903@hercules>
-References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
- <1408354398-10226-6-git-send-email-luis.henriques@canonical.com>
- <0BA3FCBA62E2DC44AF3030971E174FB31B277EB2@hasmsx107.ger.corp.intel.com>
+	Mon, 1 Sep 2014 04:50:04 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Wang Long <long.wanglong@huawei.com>, linux@arm.linux.org.uk,
+        santosh.shilimkar@ti.com, victor.kamensky@linaro.org, nico@linaro.org,
+        ben.dooks@codethink.co.uk, cov@codeaurora.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [SMP BUG?] the return value of is_smp() is bug?
+Date: Mon, 01 Sep 2014 10:49:09 +0200
+Message-ID: <2846720.hM0WuNVsDY@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1409571334-2814-1-git-send-email-long.wanglong@huawei.com>
+References: <1409571334-2814-1-git-send-email-long.wanglong@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <0BA3FCBA62E2DC44AF3030971E174FB31B277EB2@hasmsx107.ger.corp.intel.com>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:rQeb4q6ImeLi4f8qMJW11qoVfGJWcYhISl/RbbYTv+I
+ u9nQaEQR9tLkCEDiLWwxc6zYgCOQKbVA9euaZeRfKXACttUDzw
+ uKONb5H93MHLSAgGUv+bGMB4YCiecVNj9q8CcttohGA+bvCXcI
+ Zsx0uqDIZJQX5gMUaXd4XypJTYEdnl/hxyQToMt5bCjoS1IpKs
+ DWlAZlBTDfcn4lyg603ntHyuB5B3UNDIV6vER23+BONVML/flq
+ Z3S33wWko2051g3FPZu7tSUCI2A+vrzzUPO15JPcmkW/uNdAww
+ dt5qQnIs4iAiQEAVPC8nDWZbnku6eRImqO4KLghEyyokOWyUik
+ FitSSK74VHUn6BQM+Ugw=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 31, 2014 at 12:04:19PM +0000, Grumbach, Emmanuel wrote:
-> > -----Original Message-----
-> > From: Luis Henriques [mailto:luis.henriques@canonical.com]
-> > Sent: Monday, August 18, 2014 12:31 PM
-> > To: linux-kernel@vger.kernel.org; stable@vger.kernel.org; kernel-
-> > team@lists.ubuntu.com
-> > Cc: Grumbach, Emmanuel; Luis Henriques
-> > Subject: [PATCH 3.11 005/137] iwlwifi: dvm: don't enable CTS to self
-> > 
-> > 3.11.10.15 -stable review patch.  If anyone has any objections, please let me
-> > know.
+On Monday 01 September 2014 19:35:34 Wang Long wrote:
+> In kernel 3.17-rc2, when i set CONFIG_HAVE_SMP = y and CONFIG_SMP_ON_UP = y 
+> in .config file. the secondary core can not boot.
 > 
-> Just came back from a long travel - please drop this one. It has caused trouble to people.
-> I need to revert it.
+> when i set CONFIG_HAVE_SMP = y and CONFIG_SMP_ON_UP = n in .config file,
+> the secondary core can boot.
+> 
+> But this does not happen in kernel 3.10 lts kernel, Whether the 
+> CONFIG_SMP_ON_UP is set yes or no ,the secondary core can boot.
+> 
+> Does the meaning of CONFIG_SMP_ON_UP changed or this is a bug in kernel 3.17-rc2 ? 
+> 
+> 
+> I write the following patch to test the return value of is_smp().
 > 
 
-Thank you for your feedback, Emmanuel.
+Can you check the value of CONFIG_SMP?
 
-Unfortunately, this kernel has been released already and no more
-updates are foreseen to the 3.11 extended kernel -- this was its last
-release.
+CONFIG_HAVE_SMP is set by platforms that allow enabling SMP, but you
+still have the choice to set CONFIG_SMP on or off.
 
-Cheers,
---
-Luís
-
-> > 
-> > ------------------
-> > 
-> > From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-> > 
-> > commit 43d826ca5979927131685cc2092c7ce862cb91cd upstream.
-> > 
-> > We should always prefer to use full RTS protection. Using CTS to self gives a
-> > meaningless improvement, but this flow is much harder for the firmware
-> > which is likely to have issues with it.
-> > 
-> > Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-> > Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
-> > ---
-> >  drivers/net/wireless/iwlwifi/dvm/rxon.c | 12 ------------
-> >  1 file changed, 12 deletions(-)
-> > 
-> > diff --git a/drivers/net/wireless/iwlwifi/dvm/rxon.c
-> > b/drivers/net/wireless/iwlwifi/dvm/rxon.c
-> > index cd1ad0019185..ca17e4c9eca2 100644
-> > --- a/drivers/net/wireless/iwlwifi/dvm/rxon.c
-> > +++ b/drivers/net/wireless/iwlwifi/dvm/rxon.c
-> > @@ -1072,13 +1072,6 @@ int iwlagn_commit_rxon(struct iwl_priv *priv,
-> > struct iwl_rxon_context *ctx)
-> >  	/* recalculate basic rates */
-> >  	iwl_calc_basic_rates(priv, ctx);
-> > 
-> > -	/*
-> > -	 * force CTS-to-self frames protection if RTS-CTS is not preferred
-> > -	 * one aggregation protection method
-> > -	 */
-> > -	if (!priv->hw_params.use_rts_for_aggregation)
-> > -		ctx->staging.flags |= RXON_FLG_SELF_CTS_EN;
-> > -
-> >  	if ((ctx->vif && ctx->vif->bss_conf.use_short_slot) ||
-> >  	    !(ctx->staging.flags & RXON_FLG_BAND_24G_MSK))
-> >  		ctx->staging.flags |= RXON_FLG_SHORT_SLOT_MSK; @@ -
-> > 1484,11 +1477,6 @@ void iwlagn_bss_info_changed(struct ieee80211_hw
-> > *hw,
-> >  	else
-> >  		ctx->staging.flags &= ~RXON_FLG_TGG_PROTECT_MSK;
-> > 
-> > -	if (bss_conf->use_cts_prot)
-> > -		ctx->staging.flags |= RXON_FLG_SELF_CTS_EN;
-> > -	else
-> > -		ctx->staging.flags &= ~RXON_FLG_SELF_CTS_EN;
-> > -
-> >  	memcpy(ctx->staging.bssid_addr, bss_conf->bssid, ETH_ALEN);
-> > 
-> >  	if (vif->type == NL80211_IFTYPE_AP ||
-> > --
-> > 1.9.1
-> 
+	Arnd
