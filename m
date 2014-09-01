@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435AbaIALVH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 07:21:07 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56560 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752939AbaIALVG (ORCPT
+	id S1753239AbaIALYH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 07:24:07 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:36382 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751832AbaIALYF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 07:21:06 -0400
-Date: Mon, 1 Sep 2014 13:20:59 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, bobby.prani@gmail.com, <""@rjwysocki.net>,
-        tianyu.lan@intel.com
-Subject: Re: [PATCH RFC tip/core/rcu] Eliminate deadlock between CPU hotplug
- and expedited grace periods
-Message-ID: <20140901112059.GG27892@worktop.ger.corp.intel.com>
-References: <20140828194745.GA3761@linux.vnet.ibm.com>
+	Mon, 1 Sep 2014 07:24:05 -0400
+Message-ID: <5404574E.1070207@hitachi.com>
+Date: Mon, 01 Sep 2014 20:23:58 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140828194745.GA3761@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+To: Shuah Khan <shuah.kh@samsung.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH v2 4/4] ftracetest: Add XFAIL/XPASS/UNSUPPORTED as
+ result code
+References: <20140826111511.5711.28493.stgit@kbuild-fedora.novalocal> <20140826111539.5711.93588.stgit@kbuild-fedora.novalocal>
+In-Reply-To: <20140826111539.5711.93588.stgit@kbuild-fedora.novalocal>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 28, 2014 at 12:47:45PM -0700, Paul E. McKenney wrote:
-> Currently, the expedited grace-period primitives do get_online_cpus().
-> This greatly simplifies their implementation, but means that calls to
-> them holding locks that are acquired by CPU-hotplug notifiers (to say
-> nothing of calls to these primitives from CPU-hotplug notifiers) can
-> deadlock.  But this is starting to become inconvenient:
-> https://lkml.org/lkml/2014/8/5/754
+(2014/08/26 20:15), Masami Hiramatsu wrote:
+> @@ -132,11 +163,9 @@ run_test() { # testfile
+>    echo "execute: "$1 > $testlog
+>    (cd $TRACING_DIR; set -x ; source $t) >> $testlog 2>&1
+>    ret=$?
+> -  if [ $ret -ne 0 ]; then
+> -    failed
+> -    catlog $testlog
+> -  else
+> -    passed
+> +  eval_result $ret $testlog
+> +  if [ $? -eq 0 ]; then
+> +    # Remove test log if the test was done as it was expected.
+>      [ $KEEP_LOG -eq 0 ] && rm $testlog
+>    fi
 
-Please recap the actual problem; the link might die and the actual mail
-linked to isn't very useful in any case.
+Oops, I missed to print out the logs for failed tests here.
+It should be output.
 
-> This commit avoids the deadlock and retains the simplicity by creating
-> a try_get_online_cpus(), which returns false if the get_online_cpus()
-> reference count could not immediately be incremented.  If a call to
-> try_get_online_cpus() returns true, the expedited primitives operate
-> as before.  If a call returns false, the expedited primitives fall back
-> to normal grace-period operations.  This falling back of course results
-> in increased grace-period latency, but only during times when CPU
-> hotplug operations are actually in flight.  The effect should therefore
-> be negligible during normal operation.
+Thank you,
 
-URGH.. I really hate that. The hotplug interface is already too
-horrible, we should not add such hacks to it.
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-How about ripping that rcu_expedited stuff out instead? That's all
-conditional anyhow, so might as well not do it.
 
