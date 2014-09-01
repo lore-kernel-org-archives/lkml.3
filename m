@@ -1,77 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162AbaIAJOs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 05:14:48 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:47236 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752129AbaIAJOq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 05:14:46 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Shilpa Bhat'" <shilpa.bhat@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Subject: RE: [PATCH v2] cpufreq: powernv: Set the cpus to nominal frequency
- during reboot/kexec
-Thread-Topic: [PATCH v2] cpufreq: powernv: Set the cpus to nominal frequency
- during reboot/kexec
-Thread-Index: AQHPxaQPxbooF0QdhUi7t4xjUtVeYJvr/BDw
-Date: Mon, 1 Sep 2014 09:12:43 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D174849AD@AcuExch.aculab.com>
-References: <1409234816-10802-1-git-send-email-shilpa.bhat@linux.vnet.ibm.com>
- <CAKohpokbYkL=cYQ+9-59vPhBmbAWqhrEz7RBPj5-edDB25DPgw@mail.gmail.com>
- <1409548719.13507.13.camel@localhost.localdomain>
-In-Reply-To: <1409548719.13507.13.camel@localhost.localdomain>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="utf-8"
+	id S1752914AbaIAJQP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 05:16:15 -0400
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:46355 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751405AbaIAJQN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 05:16:13 -0400
+Date: Mon, 1 Sep 2014 10:16:07 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+Subject: Re: [PATCH v1 2/5] mfd: lpc_sch: better code manageability with
+ chipset info struct
+Message-ID: <20140901091607.GH7374@lee--X1>
+References: <1408705096-31286-1-git-send-email-andriy.shevchenko@linux.intel.com>
+ <1408705096-31286-3-git-send-email-andriy.shevchenko@linux.intel.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1408705096-31286-3-git-send-email-andriy.shevchenko@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s819Er0n004136
 
-From: Shilpa Bhat
-> Hi Viresh,
-> On Fri, 2014-08-29 at 05:33 +0530, Viresh Kumar wrote:
-> > On 28 August 2014 19:36, Shilpasri G Bhat
-> > <shilpa.bhat@linux.vnet.ibm.com> wrote:
-> > >
-> > > Changes v1->v2:
-> > > Invoke .target() driver callback to set the cpus to nominal frequency
-> > > in reboot notifier, instead of calling cpufreq_suspend() as suggested
-> > > by Viresh Kumar.
-> > > Modified the commit message.
-> >
-> > This changelog will get commited, is this what you want?
+On Fri, 22 Aug 2014, Andy Shevchenko wrote:
+
+> Introduce additional struct to hold chipset info. This chipset
+> info will be used to store features that are supported by specific
+> processor or chipset. LPC_SCH supports SMBUS, GPIO and WDT features.
+> As this code base might expand further to support more processors,
+> this implementation will help to keep code base clean and manageable.
 > 
-> > > +       if (unlikely(rebooting) && new_index != get_nominal_index())
-> > > +               return -EBUSY;
-> >
-> > Have you placed the unlikely only around 'rebooting' intentionally or
-> > should it cover whole if statement?
-> >
+> Signed-off-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+> Tested-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> ---
+>  drivers/mfd/lpc_sch.c | 65 ++++++++++++++++++++++++++++++++++++---------------
+>  1 file changed, 46 insertions(+), 19 deletions(-)
 > 
-> Yes unlikely() should cover the whole if statement...
+> diff --git a/drivers/mfd/lpc_sch.c b/drivers/mfd/lpc_sch.c
+> index 0f01ef0..c4eb359 100644
+> --- a/drivers/mfd/lpc_sch.c
+> +++ b/drivers/mfd/lpc_sch.c
+> @@ -40,10 +40,39 @@
+>  #define WDTBASE		0x84
+>  #define WDT_IO_SIZE	64
+>  
+> +enum sch_chipsets {
+> +	LPC_SCH = 0,		/* Intel Poulsbo SCH */
+> +	LPC_ITC,		/* Intel Tunnel Creek */
+> +	LPC_CENTERTON,		/* Intel Centerton */
+> +};
+> +
+> +struct lpc_sch_info {
+> +	unsigned int io_size_smbus;
+> +	unsigned int io_size_gpio;
+> +	unsigned int io_size_wdt;
+> +};
+> +
+> +static struct lpc_sch_info sch_chipset_info[] = {
+> +	[LPC_SCH] = {
+> +		.io_size_smbus = SMBUS_IO_SIZE,
+> +		.io_size_gpio = GPIO_IO_SIZE,
+> +	},
+> +	[LPC_ITC] = {
+> +		.io_size_smbus = SMBUS_IO_SIZE,
+> +		.io_size_gpio = GPIO_IO_SIZE,
+> +		.io_size_wdt = WDT_IO_SIZE,
+> +	},
+> +	[LPC_CENTERTON] = {
+> +		.io_size_smbus = SMBUS_IO_SIZE,
+> +		.io_size_gpio = GPIO_IO_SIZE_CENTERTON,
+> +		.io_size_wdt = WDT_IO_SIZE,
+> +	},
+> +};
+> +
+>  static const struct pci_device_id lpc_sch_ids[] = {
+> -	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_SCH_LPC) },
+> -	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ITC_LPC) },
+> -	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_CENTERTON_ILB) },
+> +	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_SCH_LPC), LPC_SCH },
+> +	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_ITC_LPC), LPC_ITC },
+> +	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_CENTERTON_ILB), LPC_CENTERTON },
+>  	{ 0, }
+>  };
+>  MODULE_DEVICE_TABLE(pci, lpc_sch_ids);
+> @@ -54,6 +83,9 @@ static int lpc_sch_get_io(struct pci_dev *pdev, int where, const char *name,
+>  	unsigned int base_addr_cfg;
+>  	unsigned short base_addr;
+>  
+> +	if (size == 0)
+> +		return -EINVAL;
+> +
+>  	pci_read_config_dword(pdev, where, &base_addr_cfg);
+>  	base_addr = 0;
+>  	if (!(base_addr_cfg & (1 << 31)))
+> @@ -104,32 +136,27 @@ static int lpc_sch_probe(struct pci_dev *dev,
+>  			 const struct pci_device_id *id)
+>  {
+>  	struct mfd_cell lpc_sch_cells[3];
+> -	int size, cells = 0;
+> +	struct lpc_sch_info *info = &sch_chipset_info[id->driver_data];
+> +	int cells = 0;
+>  	int ret;
+>  
+> -	ret = lpc_sch_populate_cell(dev, SMBASE, "isch_smbus", SMBUS_IO_SIZE,
+> +	ret = lpc_sch_populate_cell(dev, SMBASE, "isch_smbus",
+> +				    info->io_size_smbus,
+>  				    id->device, &lpc_sch_cells[cells]);
+>  	if (!ret)
+>  		cells++;
+>  
+> -	if (id->device == PCI_DEVICE_ID_INTEL_CENTERTON_ILB)
+> -		size = GPIO_IO_SIZE_CENTERTON;
+> -	else
+> -		size = GPIO_IO_SIZE;
+> -
+> -	ret = lpc_sch_populate_cell(dev, GPIOBASE, "sch_gpio", size,
+> +	ret = lpc_sch_populate_cell(dev, GPIOBASE, "sch_gpio",
+> +				    info->io_size_gpio,
+>  				    id->device, &lpc_sch_cells[cells]);
+>  	if (!ret)
+>  		cells++;
+>  
+> -	if (id->device == PCI_DEVICE_ID_INTEL_ITC_LPC
+> -	    || id->device == PCI_DEVICE_ID_INTEL_CENTERTON_ILB) {
+> -		ret = lpc_sch_populate_cell(dev, WDTBASE, "ie6xx_wdt",
+> -					    WDT_IO_SIZE,
+> -					    id->device, &lpc_sch_cells[cells]);
+> -		if (!ret)
+> -			cells++;
+> -	}
+> +	ret = lpc_sch_populate_cell(dev, WDTBASE, "ie6xx_wdt",
+> +				    info->io_size_wdt,
+> +				    id->device, &lpc_sch_cells[cells]);
+> +	if (!ret)
+> +		cells++;
 
-Actually it probably shouldn't.
-You need to look at the generated code with each different set of 'unlikely()'
-to see how gcc processes them.
-In this case, if 'rebooting' is false you want to 'fall through' on a statically
-predicted 'not taken' branch. You don't ever care about the second clause.
-With an 'unlikely' covering the entire statement gcc could easily add a
-forwards conditional branch (that will be mis-predicted) for the 'rebooting' test.
+The first patch would look a great deal cleaner if it had these
+changes in too.  Unless you have a really good reason not to, please
+consider squashing them.
 
-(Yes, I spent a lot of time getting gcc to generate branches that were
-correctly statically predicted for some code where every cycle mattered.)
+>  	if (cells == 0) {
+>  		dev_err(&dev->dev, "All decode registers disabled.\n");
 
-	David
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org â”‚ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
