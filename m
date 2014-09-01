@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753971AbaIAOAS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 10:00:18 -0400
-Received: from mga02.intel.com ([134.134.136.20]:20511 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751952AbaIAOAQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 10:00:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,442,1406617200"; 
-   d="scan'208";a="566621609"
-Message-ID: <1409580006.30155.62.camel@linux.intel.com>
-Subject: Re: [PATCH v1 1/5] mfd: lpc_sch: reduce duplicate code
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-Date: Mon, 01 Sep 2014 17:00:06 +0300
-In-Reply-To: <20140901134610.GB8796@lee--X1>
-References: <1408705096-31286-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1408705096-31286-2-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <20140901091317.GG7374@lee--X1> <1409566903.30155.47.camel@linux.intel.com>
-	 <20140901113805.GO7374@lee--X1> <1409572101.30155.59.camel@linux.intel.com>
-	 <20140901134610.GB8796@lee--X1>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.5-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1754010AbaIAOBK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 10:01:10 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:55469 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753941AbaIAOBI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 10:01:08 -0400
+Message-ID: <54047C1D.2050003@monstr.eu>
+Date: Mon, 01 Sep 2014 16:01:01 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arch/microblaze/include/asm/entry.h: Include "linux/linkage.h"
+ to avoid compiling issue
+References: <53E22E85.9010205@gmail.com> <53F371A0.8060700@gmail.com>
+In-Reply-To: <53F371A0.8060700@gmail.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="VmAcotmt6HCfn5EnG9LlWMgTcTTkjFWa0"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-09-01 at 14:46 +0100, Lee Jones wrote:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--VmAcotmt6HCfn5EnG9LlWMgTcTTkjFWa0
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-[]
+On 08/19/2014 05:47 PM, Chen Gang wrote:
+> Hello maintainers:
+>=20
+> Please help check the related 2 patches when you have time.
 
-> > Okay, what about 1 — IP is present and we have no error, 0 — no ip, no
-> > error, -err — error that should be returned, would it work for you?
-> 
-> I would suggest -E<error_message> for messages to be passed back, 0
-> for 'everything found and correct' and >0 (#defined of course) for any
-> local messages you wish to pass 'IP not found', etc.
-> 
-> > > #define LCP_SKIP_RESOURCE /* Seems resonable? */
+Can you resend that second one?
+I have just this one.
+arch/microblaze/include/asm/entry.h: Include "linux/linkage.h" to avoid c=
+ompiling issue
 
-Okay, makes sense. Will do this in v2.
+Thanks,
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
 
--- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
 
+--VmAcotmt6HCfn5EnG9LlWMgTcTTkjFWa0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAlQEfB0ACgkQykllyylKDCGJygCgnBxbIONgSiuDPOQpHMrEuQzL
+Bh4An3hiFxPe7uIDJ6+qunchI9uKKc/O
+=8bRe
+-----END PGP SIGNATURE-----
+
+--VmAcotmt6HCfn5EnG9LlWMgTcTTkjFWa0--
