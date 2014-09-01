@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752669AbaIAIZh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 04:25:37 -0400
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:34400 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752165AbaIAIZe (ORCPT
+	id S1752786AbaIAI02 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 04:26:28 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:61407 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752562AbaIAI00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 04:25:34 -0400
-Date: Mon, 1 Sep 2014 09:25:27 +0100
+	Mon, 1 Sep 2014 04:26:26 -0400
+Date: Mon, 1 Sep 2014 09:26:19 +0100
 From: Lee Jones <lee.jones@linaro.org>
 To: Beniamino Galvani <b.galvani@gmail.com>
 Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
@@ -21,7 +21,7 @@ Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
         Grant Likely <grant.likely@linaro.org>,
         Carlo Caione <carlo@caione.org>
 Subject: Re: [PATCH v2 1/4] mfd: Add Ricoh RN5T618 PMIC core driver
-Message-ID: <20140901082527.GD6226@lee--X1>
+Message-ID: <20140901082619.GA7374@lee--X1>
 References: <1409403026-28818-1-git-send-email-b.galvani@gmail.com>
  <1409403026-28818-2-git-send-email-b.galvani@gmail.com>
 MIME-Version: 1.0
@@ -53,7 +53,7 @@ On Sat, 30 Aug 2014, Beniamino Galvani wrote:
 >  create mode 100644 drivers/mfd/rn5t618.c
 >  create mode 100644 include/linux/mfd/rn5t618.h
 
-Applied thanks.
+Applied, thanks.
 
 > diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
 > index 8d5fad2..843da5d 100644
