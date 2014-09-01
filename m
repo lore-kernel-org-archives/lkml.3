@@ -1,152 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246AbaIAKWd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 06:22:33 -0400
-Received: from mga14.intel.com ([192.55.52.115]:36098 "EHLO mga14.intel.com"
+	id S1753394AbaIAKWt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 06:22:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29130 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751832AbaIAKWc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 06:22:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,441,1406617200"; 
-   d="scan'208";a="584510365"
-Message-ID: <1409566903.30155.47.camel@linux.intel.com>
-Subject: Re: [PATCH v1 1/5] mfd: lpc_sch: reduce duplicate code
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-Date: Mon, 01 Sep 2014 13:21:43 +0300
-In-Reply-To: <20140901091317.GG7374@lee--X1>
-References: <1408705096-31286-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1408705096-31286-2-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <20140901091317.GG7374@lee--X1>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.5-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753341AbaIAKWr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 06:22:47 -0400
+Date: Mon, 1 Sep 2014 13:22:14 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Jason Wang <jasowang@redhat.com>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process is
+ runnable
+Message-ID: <20140901102214.GA22141@redhat.com>
+References: <1408608310-13579-1-git-send-email-jasowang@redhat.com>
+ <1408608310-13579-2-git-send-email-jasowang@redhat.com>
+ <1408683665.5648.69.camel@marge.simpson.net>
+ <20140901093159.GB27892@worktop.ger.corp.intel.com>
+ <20140901095219.GD21269@redhat.com>
+ <20140901100434.GD27892@worktop.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140901100434.GD27892@worktop.ger.corp.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-09-01 at 10:13 +0100, Lee Jones wrote:
-> On Fri, 22 Aug 2014, Andy Shevchenko wrote:
-> 
-> > This patch refactors the driver to use helper functions instead of
-> > copy'n'pasted pieces of code.
+On Mon, Sep 01, 2014 at 12:04:34PM +0200, Peter Zijlstra wrote:
+> On Mon, Sep 01, 2014 at 12:52:19PM +0300, Michael S. Tsirkin wrote:
+> > On Mon, Sep 01, 2014 at 11:31:59AM +0200, Peter Zijlstra wrote:
+> > > On Fri, Aug 22, 2014 at 07:01:05AM +0200, Mike Galbraith wrote:
+> > > > > +++ b/include/net/busy_poll.h
+> > > > > @@ -109,7 +109,8 @@ static inline bool sk_busy_loop(struct sock *sk, int nonblock)
+> > > > >  		cpu_relax();
+> > > > >  
+> > > > >  	} while (!nonblock && skb_queue_empty(&sk->sk_receive_queue) &&
+> > > > > -		 !need_resched() && !busy_loop_timeout(end_time));
+> > > > > +		 !need_resched() && !busy_loop_timeout(end_time) &&
+> > > > > +		 nr_running_this_cpu() < 2);
+> > > > >  
+> > > 
+> > > So as has been said by now; this is horrible.
+> > > 
+> > > We should not export nr_running like this ever. Your usage of < 2
+> > > implies this can be hit with nr_running == 0, and therefore you can also
+> > > hit it with nr_running == 1 where the one is not network related and you
+> > > get random delays.
+> > > 
+> > > Worse still, you have BH (and thereby preemption) disabled, you should
+> > > not _ever_ have undefined and indefinite waits like that.
+> > > 
+> > > You also destroy any hope of dropping into lower power states; even when
+> > > there's never going to be a packet ever again, also bad.
 > > 
-> > Tested-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-> > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> > ---
-> >  drivers/mfd/lpc_sch.c | 146 ++++++++++++++++++++++----------------------------
-> >  1 file changed, 64 insertions(+), 82 deletions(-)
-> > 
-> > diff --git a/drivers/mfd/lpc_sch.c b/drivers/mfd/lpc_sch.c
-> > index 4ee7550..0f01ef0 100644
-> > --- a/drivers/mfd/lpc_sch.c
-> > +++ b/drivers/mfd/lpc_sch.c
-> > @@ -40,41 +40,6 @@
+> > Hmm this patch sometimes makes us exit from the busy loop *earlier*.
+> > How can this interfere with dropping into lower power states?
 > 
-> [...]
-
-Thanks for review, my answers below.
-
+> Ah.. jetlag.. :/ I read it like it owuld indefinitely spin if there was
+> only the 'one' task, not avoid the spin unless there was the one task.
 > 
-> > -static int lpc_sch_probe(struct pci_dev *dev,
-> > -				const struct pci_device_id *id)
-> > +static int lpc_sch_get_io(struct pci_dev *pdev, int where, const char *name,
-> > +			  struct resource *res, int size)
-> >  {
-> >  	unsigned int base_addr_cfg;
-> >  	unsigned short base_addr;
-> > -	int i, cells = 0;
-> > -	int ret;
-> >  
-> > -	pci_read_config_dword(dev, SMBASE, &base_addr_cfg);
-> > +	pci_read_config_dword(pdev, where, &base_addr_cfg);
-> >  	base_addr = 0;
-> >  	if (!(base_addr_cfg & (1 << 31)))
-> > -		dev_warn(&dev->dev, "Decode of the SMBus I/O range disabled\n");
-> > +		dev_warn(&pdev->dev, "Decode of the %s I/O range disabled\n",
-> > +			 name);
-> >  	else
-> >  		base_addr = (unsigned short)base_addr_cfg;
-> >  
-> >  	if (base_addr == 0) {
-> > -		dev_warn(&dev->dev, "I/O space for SMBus uninitialized\n");
-> > -	} else {
-> > -		lpc_sch_cells[cells++] = isch_smbus_cell;
-> > -		smbus_sch_resource.start = base_addr;
-> > -		smbus_sch_resource.end = base_addr + SMBUS_IO_SIZE - 1;
-> > +		dev_warn(&pdev->dev, "I/O space for %s uninitialized\n", name);
-> > +		return -ENODEV;
-> 
-> If you're going to return an error, you need to use dev_err() above.
+> The nr_running thing is still horrible,
 
-Okay.
+Yea, it's a kludge, but busy waiting is a heuristic thing anyway,
+so it boils down to whether it's mostly effective.
+I agree it would be better to make it more robust/consistent if we can
+do it without a lot of complexity.
 
-> >  	}
-> >  
-> > -	pci_read_config_dword(dev, GPIOBASE, &base_addr_cfg);
-> > -	base_addr = 0;
-> > -	if (!(base_addr_cfg & (1 << 31)))
-> > -		dev_warn(&dev->dev, "Decode of the GPIO I/O range disabled\n");
-> > +	res->start = base_addr;
-> > +	res->end = base_addr + size - 1;
-> > +	res->flags = IORESOURCE_IO;
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static int lpc_sch_populate_cell(struct pci_dev *pdev, int where,
-> > +				 const char *name, int size, int id,
-> > +				 struct mfd_cell *cell)
-> > +{
-> > +	struct resource *res;
-> > +	int ret;
-> > +
-> > +	res = devm_kzalloc(&pdev->dev, sizeof(*res), GFP_KERNEL);
-> > +	if (!res)
-> > +		return -ENOMEM;
-> > +
-> > +	ret = lpc_sch_get_io(pdev, where, name, res, size);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +	memset(cell, 0, sizeof(*cell));
-> > +
-> > +	cell->name = name;
-> > +	cell->resources = res;
-> > +	cell->num_resources = 1;
-> > +	cell->ignore_resource_conflicts = true;
-> > +	cell->id = id;
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static int lpc_sch_probe(struct pci_dev *dev,
-> > +			 const struct pci_device_id *id)
-> > +{
-> > +	struct mfd_cell lpc_sch_cells[3];
-> > +	int size, cells = 0;
-> > +	int ret;
-> > +
-> > +	ret = lpc_sch_populate_cell(dev, SMBASE, "isch_smbus", SMBUS_IO_SIZE,
-> > +				    id->device, &lpc_sch_cells[cells]);
-> > +	if (!ret)
-> > +		cells++;
-> 
-> You're masking errors here.  You need to return on error.
-
-No, I don't. It's a local error, I just need to understand if the HW has
-or hasn't the IP part we're looking for.
-
-I could, let's say, return true or false, if you prefer, with the above
-meaning.
-
-
--- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
-
+> but let me reread this patch
+> description to see if it explains why that is a good thing.
