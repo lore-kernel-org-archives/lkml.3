@@ -1,78 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754605AbaIAPyG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 11:54:06 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44990 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754516AbaIAPyB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754559AbaIAPyE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 11:54:04 -0400
+Received: from mga11.intel.com ([192.55.52.93]:24784 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754513AbaIAPyB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 1 Sep 2014 11:54:01 -0400
-Date: Mon, 1 Sep 2014 16:53:50 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Jean Delvare <jdelvare@suse.de>, linux-next@vger.kernel.org,
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,443,1406617200"; 
+   d="scan'208";a="592927307"
+Message-ID: <1409586696.3318.11.camel@spandruv-hsb-test>
+Subject: Re: [PATCH v3 3/3] iio: accel: BMC150: add support for other Bosch
+ chips
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+To: Joe Perches <joe@perches.com>
+Cc: Laurentiu Palcu <laurentiu.palcu@intel.com>,
+        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>, linux-iio@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Message-ID: <20140901155350.GF29327@sirena.org.uk>
-References: <20140901132808.c7b08f4ffa7055dc28e6dac7@kernel.org>
- <54049590.6060500@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1+kiJ7gFzGEgD6MU"
-Content-Disposition: inline
-In-Reply-To: <54049590.6060500@roeck-us.net>
-X-Cookie: Simulated picture.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: linux-next: jdelvare-hwmon tree unfetchable
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Date: Mon, 01 Sep 2014 08:51:36 -0700
+In-Reply-To: <1409585783.2664.18.camel@joe-AO725>
+References: <1409301488-22166-4-git-send-email-laurentiu.palcu@intel.com>
+	 <1409562698-13202-1-git-send-email-laurentiu.palcu@intel.com>
+	 <1409585783.2664.18.camel@joe-AO725>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2014-09-01 at 08:36 -0700, Joe Perches wrote:
+> On Mon, 2014-09-01 at 12:11 +0300, Laurentiu Palcu wrote:
+> > The following chips are either similar or have only the resolution
+> > different. Hence, change this driver to support these chips too:
+> > 
+> > BMI055  - combo chip (accelerometer part is identical to BMC150's)
+> > BMA255  - identical to BMC150's accelerometer
+> > BMA222E - 8 bit resolution
+> > BMA250E - 10 bit resolution
+> > BMA280  - 14 bit resolution
+> > 
+> > Additionally:
+> >  * add bmc150_accel_match_acpi_device() function to check that the device
+> >    has been enumerated through ACPI;
+> >  * rename bmc150_accel_acpi_gpio_probe() to bmc150_accel_gpio_probe()
+> >    since the ACPI matching has been moved to the new function.  Also, this
+> >    will allow for the GPIO matching to be done against a device tree too, not only
+> >    ACPI tree;
+> []
+> > diff --git a/drivers/iio/accel/bmc150-accel.c b/drivers/iio/accel/bmc150-accel.c
+> []
+> > @@ -647,12 +659,13 @@ static int bmc150_accel_read_raw(struct iio_dev *indio_dev,
+> >  		{
+> >  			int i;
+> >  
+> > -			for (i = 0; i < ARRAY_SIZE(bmc150_accel_scale_table);
+> > -									 ++i) {
+> > -				if (bmc150_accel_scale_table[i].range ==
+> > +			for (i = 0;
+> > +			     i < ARRAY_SIZE(data->chip_info->scale_table);
+> > +			     ++i) {
+> > +				if (data->chip_info->scale_table[i].range ==
+> >  								data->range) {
+> >  					*val2 =
+> > -					bmc150_accel_scale_table[i].scale;
+> > +					data->chip_info->scale_table[i].scale;
+> >  					return IIO_VAL_INT_PLUS_MICRO;
+> >  				}
+> >  			}
+> 
+> This looks like it would read a lot better with
+> a temporary for data->chip_info->scale_table[i]
+> 
+> so these could become:
+> 
+> 			for (i = 0; i < etc; i++) {
+> 				type *temp = &data->chip_info->scale_table[i];
+> 				if (temp->range == data->range) {
+> 					*val2 = temp->scale;
+> 					return IIO_VAL_INT_PLUS_MICRO;
+> 				}
+> 
+> Maybe all the bmc150_ variable names could be removed.
+> The prefixes don't seem to serve a purpose other than
+> to make the code longer.
+> 
+> The filename could be changed to be more generic.
+Then this will also require change in the CONFIG name to match. This
+will require all current users to change the config file once they
+update to new version of the driver, which they don't like to change
+once product config is finalized. Since the most of the chips will just
+differ by a number at the end and they may not be compatible to each
+other, finding a common name will be challenge.
+Instead the CONFIG description for this module should explicitly state
+the names of chips it is compatible to.
 
---1+kiJ7gFzGEgD6MU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks,
+Srinivas
+> 
+> 
 
-On Mon, Sep 01, 2014 at 08:49:36AM -0700, Guenter Roeck wrote:
-> On 09/01/2014 05:28 AM, Mark Brown wrote:
 
-> >Today's linux-next merge of the jdelvare-hwmon tree got a conflict with Linus'
-> >tree which appeared to be due to the hwmon quilt series I got from Stephen being
-> >based on v3.14-rc3 and subsequent changes from mainline interacting badly with
-> >it. In addition I'm not able to check the original series since linux-fr.org does
-> >not resolve for me.
-
-> Jean dropped the linux-fr.org domain, and his old e-mail address probably
-> won't work anymore. The alternate (and temporary) pointer he gave me
-> is http://jdelvare.nerim.net/devel/linux-3/jdelvare-hwmon/. It is empty,
-> so you did not miss anything.
-
-I figured it was something like that - the address definitely does
-bounce.  Thanks for letting me know, I'll update for tomorrow.
-
---1+kiJ7gFzGEgD6MU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUBJaKAAoJELSic+t+oim9H8gP/i4ZeUQNr25VxAuOC8fnCpst
-LDyyLVQOUt+xBhA6vsk8ko2oNR4CFe34zH99TPdEy4K5sYYEOOFaS9pdt7OS2tTm
-XmDb952j0VVcHT8V/PeWvB4d5xGhxqp0eoJLTUUYPAb/JDx5q6U48hzKZZnvhDXc
-oOp+LcqFWAdK31KfFYAuwkAe8nwLP45HP6vFPZMwxCKcKvcj2GCVGV599KH98wy8
-zROZGugP1AHq0Nsm29mWqh5NcPUAMmkA/cy61q8IqYfiTvm6eoHoPnM7VdRUQjYf
-8ubSMu5cVsd1QEusrY/PioGvH2tJ9pz1avnmyVAx7/GTaAvH5PSA5NjtLcLXZjN0
-LD1APWNu8mlkwedAzGclRyG1NhIpRx7z2fskGapsgVXDPqpIed2UkxCEXFwuO1cy
-INudlZ3EFOjVsHJKT22u96qK+BZ49UgzFxIDCciJQjujvsxXOPeMTVwdYQuP7ty4
-eAMZuTYzoZsH4ueoEjkbXztRxqk0dF0NKL6eAl52TMLZC98vkkAXVPyGpLJG+D96
-B4KiOX9IzO1F4oDoZDPERQ5RivvlkgVmBfLOz/nLr1R5UcGs9ZjbCKOHcq+hQZuV
-H+jTxtf1X9G+u3EG4s7iKLzrw0UUH7lYF1R5Us++ld/f6Lqt+IQQ84WpJBkbq6oc
-IE33RVRNWUEC2uBwQcLy
-=32DG
------END PGP SIGNATURE-----
-
---1+kiJ7gFzGEgD6MU--
