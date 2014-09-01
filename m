@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194AbaIAPXL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 11:23:11 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:39181 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753410AbaIAPXJ (ORCPT
+	id S1754253AbaIAP01 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 11:26:27 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:12592 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753829AbaIAP0W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 11:23:09 -0400
-Date: Mon, 1 Sep 2014 16:22:48 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Marc Zyngier <marc.zyngier@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux@openrisc.net" <linux@openrisc.net>,
-        "shawn.guo@freescale.com" <shawn.guo@freescale.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "tony@atomide.com" <tony@atomide.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "jonas@southpole.se" <jonas@southpole.se>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "shc_work@mail.ru" <shc_work@mail.ru>,
-        "baohua@kernel.org" <baohua@kernel.org>,
-        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
-        "khilman@linaro.org" <khilman@linaro.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        "larry.bassel@linaro.org" <larry.bassel@linaro.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        "stefan.kristiansson@saunalahti.fi" 
-	<stefan.kristiansson@saunalahti.fi>,
-        "vkale@apm.com" <vkale@apm.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        Vladimir Murzin <Vladimir.Murzin@arm.com>
-Subject: Re: [PATCH v2 01/26] genirq: add irq_domain-aware core IRQ handler
-Message-ID: <20140901152248.GA30405@n2100.arm.linux.org.uk>
-References: <1409047421-27649-1-git-send-email-marc.zyngier@arm.com> <1409047421-27649-2-git-send-email-marc.zyngier@arm.com> <53FCC714.3090206@codeaurora.org> <53FCCCC7.9070801@arm.com> <53FCD60E.1030009@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53FCD60E.1030009@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 1 Sep 2014 11:26:22 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-16-54049019f3a7
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Tomasz Figa <t.figa@samsung.com>, Tomasz Figa <tomasz.figa@gmail.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH 2/3] ARM: dts: exynos3250: Add CMU node for DMC domain clocks
+Date: Mon, 01 Sep 2014 17:26:01 +0200
+Message-id: <1409585162-10523-2-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1409585162-10523-1-git-send-email-k.kozlowski@samsung.com>
+References: <1409585162-10523-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t/xq7qSE1hCDA4807bYOGM9q8WkdQeY
+	LOYfOcdq0f9mIavFuVcrGS1evzC06F1wlc3ibNMbdotNj6+xWlzeNYfNYsb5fUwWty/zWqw9
+	cpfdYun1i0wWTydcZLOYMH0ti0Xr3iPsFofftLNarJ/xmsVi1a4/jA4iHmvmrWH0aGnuYfO4
+	3NfL5PF31Qtmj52z7rJ7rFz+hc1j06pONo871/aweWxeUu/Rt2UVo8fnTXIB3FFcNimpOZll
+	qUX6dglcGR+3zGUsmMpWcbHrG2MDYztrFyMnh4SAicTs5xPYIWwxiQv31rN1MXJxCAksZZS4
+	cWYvM4TTxySx9c8isCo2AWOJzcuXgFWJCDSzSnw4NYMJxGEWmMEocW/hLhaQKmEBX4nf3fPB
+	OlgEVCXW/rzPBmLzCrhLLP28mBFin5zEyWOTge7g4OAU8JBovKUAEhYCKrn69Db7BEbeBYwM
+	qxhFU0uTC4qT0nON9IoTc4tL89L1kvNzNzFCIuLrDsalx6wOMQpwMCrx8L5YyBwixJpYVlyZ
+	e4hRgoNZSYT3Sx9LiBBvSmJlVWpRfnxRaU5q8SFGJg5OqQbGkwZea1ZNn5zyfqfkz7O2kQ9c
+	TsRVtcdvZSs7x2hhVSe0uzJ7wo7u50vuLUqcGc53r18kNqBoXd2Jt8yiK12D6gqa1J4JTzdl
+	Mz54pHPaoS/XGPWS3nF5bTfo3Zmx+CfvHPYX0k42YW1bXi21S09zMXA2OVKzUXVmm2ql2fbv
+	T/SOV8ktnp+kxFKckWioxVxUnAgAeAal0mYCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 11:46:38AM -0700, Stephen Boyd wrote:
-> Ah ok. This is the multi-irq handler case? Has this been broken since
-> v3.2 at least for the gic users? Now that we call irq_enter()/irq_exit()
-> a lot more code runs, including things like updating jiffies when
-> interrupts arrive and invoking softirq? Do we only call irq_exit() on
-> the IPI path otherwise?
-> 
-> Are there any plans to send this back to stable trees? Not calling
-> irq_enter()/irq_exit() when we get an interrupt seems like a big problem.
+Add CMU (Clock Management Unit) node for DMC (Dynamic Memory Controller)
+domain clocks on Exynos3250.
 
-gic_handle_irq() calls handle_IRQ() which has the irq_enter()..irq_exit()
-wrappers.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ arch/arm/boot/dts/exynos3250.dtsi | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-If we didn't have irq_exit(), then softirq's would be totally broken on
-all gic-based platforms.
-
+diff --git a/arch/arm/boot/dts/exynos3250.dtsi b/arch/arm/boot/dts/exynos3250.dtsi
+index 429a6c6cfcf9..8c3a9cc0a4d1 100644
+--- a/arch/arm/boot/dts/exynos3250.dtsi
++++ b/arch/arm/boot/dts/exynos3250.dtsi
+@@ -163,6 +163,12 @@
+ 			#clock-cells = <1>;
+ 		};
+ 
++		cmu_dmc: clock-controller@105C0000 {
++			compatible = "samsung,exynos3250-cmu-dmc";
++			reg = <0x105C0000 0x2000>;
++			#clock-cells = <1>;
++		};
++
+ 		rtc: rtc@10070000 {
+ 			compatible = "samsung,exynos3250-rtc";
+ 			reg = <0x10070000 0x100>;
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+1.9.1
+
