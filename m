@@ -1,135 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754513AbaIAR1W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 13:27:22 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:23196 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751954AbaIAR1V (ORCPT
+	id S1754644AbaIAR2R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 13:28:17 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:33258 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754433AbaIAR2Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 13:27:21 -0400
-Date: Mon, 1 Sep 2014 18:27:11 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>, Lv Zheng <lv.zheng@intel.com>,
-        Rob Herring <robh@kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Robert Moore <robert.moore@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
-Subject: Re: [RFC PATCH for Juno 1/2] net: smsc911x add support for probing
- from ACPI
-Message-ID: <20140901172711.GI608@arm.com>
-References: <1409583961-7466-1-git-send-email-hanjun.guo@linaro.org>
- <1409583961-7466-2-git-send-email-hanjun.guo@linaro.org>
- <20140901170447.GF608@arm.com>
- <21764799.KDNDm9XRax@wuerfel>
+	Mon, 1 Sep 2014 13:28:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <21764799.KDNDm9XRax@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAJhHMCCswNtxZvuD5XdP2vhOykRb4yhkBLbNs02SLWdFLyw0Kg@mail.gmail.com>
+References: <1409369788-22563-1-git-send-email-bobby.prani@gmail.com>
+	<CAMuHMdV_naTfQOLwOshWq1Q15kSE39a8GWChsjt3RrWRcd6peg@mail.gmail.com>
+	<CAJhHMCDaSAzU3zvhY2FRFoBaQH4oQBTsUsYMU6pvBbCXydROZQ@mail.gmail.com>
+	<CANq1E4SCnDjN5yetrgtaRNdvDr7xqGOm1BXz7dbGvX3mnsm-MA@mail.gmail.com>
+	<54036090.1050104@gmail.com>
+	<CANq1E4QbRLjCGr+PuHqKa6Kx_+4MTmbzd9V1RqrQFS3f5YoSag@mail.gmail.com>
+	<CAJhHMCBOeLK-Z_96V_aAWBikS6tjrdYfj6_0w-9kSzQb=UJZsw@mail.gmail.com>
+	<CANq1E4Sf-XMkODhxEM9Bacr_RBt8p_dHPyeyb7a70_VqrmwXeA@mail.gmail.com>
+	<CAJhHMCCswNtxZvuD5XdP2vhOykRb4yhkBLbNs02SLWdFLyw0Kg@mail.gmail.com>
+Date: Mon, 1 Sep 2014 19:28:15 +0200
+Message-ID: <CANq1E4R+RdM2SFX1rt1M9+VYcUN6u-CTFJO0vkkscc241AnFYg@mail.gmail.com>
+Subject: Re: [RFC PATCH] powerpc: Wire up three syscalls
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Anton Blanchard <anton@samba.org>, Fabian Frederick <fabf@skynet.be>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "open list:LINUX FOR POWERPC..." <linuxppc-dev@lists.ozlabs.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 01, 2014 at 06:11:44PM +0100, Arnd Bergmann wrote:
-> On Monday 01 September 2014 18:04:47 Catalin Marinas wrote:
-> > On Mon, Sep 01, 2014 at 04:06:00PM +0100, Hanjun Guo wrote:
-> > > +#ifdef CONFIG_ACPI
-> > > +/* Configure some sensible defaults for ACPI mode */
-> > > +static int smsc911x_probe_config_acpi(struct smsc911x_platform_config *config,
-> > > +                                 acpi_handle *ahandle)
-> > > +{
-> > > +     if (!ahandle)
-> > > +             return -ENOSYS;
-> > > +
-> > > +     config->phy_interface = PHY_INTERFACE_MODE_MII;
-> > > +
-> > > +     config->flags |= SMSC911X_USE_32BIT;
-> > > +
-> > > +     config->irq_polarity = SMSC911X_IRQ_POLARITY_ACTIVE_HIGH;
-> > > +
-> > > +     config->irq_type = SMSC911X_IRQ_TYPE_PUSH_PULL;
-> > > +
-> > > +     return 0;
-> > > +}
-> > > +#else
-> > 
-> > I don't like this and it shows issues we have with ACPI on certain ARM
-> > platforms. You hard-code these values to match the Juno platform. What
-> > if we get another SoC which has different configuration here? For DT, we
-> > have the smsc911x_probe_config_dt() which reads the relevant information
-> > from DT. I think this kind of configuration would be more suitable as
-> > _DSD properties and sharing the similar names with DT (but we go back to
-> > the question about who's in charge of the _DSD properties).
-> 
-> Good point, I totally missed that.
-> 
-> There is of course the possibility to set those values based on the
-> acpi_device_id, but that is exactly the part that _DSD is trying to
-> avoid.
+Hi
 
-I would prefer to avoid acpi_device_id checks. This would defeat the
-alleged aim of ACPI to run newer hardware configuration with older
-kernels.
+On Mon, Sep 1, 2014 at 7:16 PM, Pranith Kumar <bobby.prani@gmail.com> wrote:
+> On Mon, Sep 1, 2014 at 11:31 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+>
+>>
+>> Btw., the original patch (wire up syscalls) can be applied unchanged.
+>>
+>
+> Great! Can I use that as an Ack-by? I will send in the patch with
+> updated changelog.
 
-> > >  static int smsc911x_drv_probe(struct platform_device *pdev)
-> > >  {
-> > >       struct device_node *np = pdev->dev.of_node;
-> > > +     acpi_handle *ahandle = ACPI_HANDLE(&pdev->dev);
-> > >       struct net_device *dev;
-> > >       struct smsc911x_data *pdata;
-> > >       struct smsc911x_platform_config *config = dev_get_platdata(&pdev->dev);
-> > > @@ -2436,6 +2464,9 @@ static int smsc911x_drv_probe(struct platform_device *pdev)
-> > >       }
-> > >  
-> > >       retval = smsc911x_probe_config_dt(&pdata->config, np);
-> > > +     if (retval)
-> > > +             retval = smsc911x_probe_config_acpi(&pdata->config, ahandle);
-> > > +
-> > 
-> > In most of the ACPI patches so far we check for ACPI first with DT as a
-> > fall-back if ACPI is not enabled. This changes here.
-> 
-> Does this really make a difference?
+Sure, go ahead! This syscall patch is:
 
-Not the order (well, someone may think that if they unflatten the DT in
-a vendor kernel even though it boot as ACPI, they could get away with a
-mix of DT and ACPI ;)).
+Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
 
-> > I would prefer
-> > something which probes only ACPI if the ACPI is enabled (run-time, not
-> > config) otherwise DT only. E.g.
-> 
-> (example missing?)
-
-I was looking through the code and forgot. Something like:
-
-	if (acpi_disabled)
-		retval = smsc911x_probe_config_dt();
-	else
-		retval = smsc911x_probe_config_acpi();
-
-> I think we should have the equivalent of of_have_populated_dt(), to
-> check whether acpi is being used to boot, and have that new function
-> be hardcoded to zero in case of !IS_ENABLED(CONFIG_ACPI).
-
-I think you meant hardcoded to 1 when !ACPI. That would work as well.
-
--- 
-Catalin
+Thanks
+David
