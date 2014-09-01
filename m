@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754389AbaIAPxF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 11:53:05 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:65406 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753900AbaIAPxC (ORCPT
+	id S1754504AbaIAPxr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 11:53:47 -0400
+Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:42660 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754181AbaIAPxp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 11:53:02 -0400
-From: sunwxg <sun.wxg@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dulshani Gunawardhana <dulshani.gunawardhana89@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        "John L. Hammond" <john.hammond@intel.com>,
-        Andreas Dilger <andreas.dilger@intel.com>,
-        Chi Pham <fempsci@gmail.com>, Oleg Drokin <green@linuxhacker.ru>
-Cc: Sun Wang <sun.wxg@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: lustre: lov_pack: fix coding style issue
-Date: Mon,  1 Sep 2014 23:52:35 +0800
-Message-Id: <1409586755-805-2-git-send-email-sun.wxg@gmail.com>
-X-Mailer: git-send-email 2.1.0
+	Mon, 1 Sep 2014 11:53:45 -0400
+Message-ID: <54049684.9010005@codethink.co.uk>
+Date: Mon, 01 Sep 2014 16:53:40 +0100
+From: Rob Jones <rob.jones@codethink.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.7.0
+MIME-Version: 1.0
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        akpm@linux-foundation.org, linux-kernel@codethink.co.uk
+Subject: Re: [PATCH] fs: replace int param with size_t for seq_open_private()
+References: <1409577428-16148-1-git-send-email-rob.jones@codethink.co.uk> <20140901153637.GI7996@ZenIV.linux.org.uk>
+In-Reply-To: <20140901153637.GI7996@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sun Wang <sun.wxg@gmail.com>
 
-Fix the style error checking by checkpatch.pl
-ERROR: space required after that ','
 
-Signed-off-by: Sun Wang <sun.wxg@gmail.com>
+On 01/09/14 16:36, Al Viro wrote:
+> On Mon, Sep 01, 2014 at 02:17:08PM +0100, Rob Jones wrote:
+>
+>>   void *__seq_open_private(struct file *f, const struct seq_operations *ops,
+>> -		int psize)
+>> +		size_t psize)
+>
+> <sarcasm>
+> It is a horrible limitation to impose, indeed.  Why, a lousy
+> 2 gigabytes per line in procfs file - that's intolerable...
+> </sarcasm>
+>
 
----
- drivers/staging/lustre/lustre/lov/lov_pack.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+<shrug>
 
-diff --git a/drivers/staging/lustre/lustre/lov/lov_pack.c b/drivers/staging/lustre/lustre/lov/lov_pack.c
-index 20e5870..62ea223 100644
---- a/drivers/staging/lustre/lustre/lov/lov_pack.c
-+++ b/drivers/staging/lustre/lustre/lov/lov_pack.c
-@@ -95,7 +95,7 @@ void lov_dump_lmm_v1(int level, struct lov_mds_md_v1 *lmm)
- void lov_dump_lmm_v3(int level, struct lov_mds_md_v3 *lmm)
- {
- 	lov_dump_lmm_common(level, lmm);
--	CDEBUG(level,"pool_name "LOV_POOLNAMEF"\n", lmm->lmm_pool_name);
-+	CDEBUG(level, "pool_name "LOV_POOLNAMEF"\n", lmm->lmm_pool_name);
- 	lov_dump_lmm_objects(level, lmm->lmm_objects,
- 			     le16_to_cpu(lmm->lmm_stripe_count));
- }
+Consistency?
+
+kmalloc() expects a size_t and I haven't heard anyone whingeing about that.
+
+Ultimately, this function calls kmalloc().
+
+>
+
+-- 
+Rob Jones
+Codethink Ltd
+mailto:rob.jones@codethink.co.uk
+tel:+44 161 236 5575
