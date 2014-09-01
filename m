@@ -1,68 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754589AbaIAPqh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 11:46:37 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:62141 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754284AbaIAPqe (ORCPT
+	id S1754561AbaIAPqg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 11:46:36 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:46365 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753963AbaIAPqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 11:46:34 -0400
-Message-ID: <540494D6.40701@gmail.com>
-Date: Mon, 01 Sep 2014 23:46:30 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Mon, 1 Sep 2014 11:46:33 -0400
+Date: Mon, 1 Sep 2014 16:46:26 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Octavian Purdila <octavian.purdila@intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, wsa@the-dreams.de,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Johan Hovold <johan@kernel.org>, linux-usb@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>, linux-gpio@vger.kernel.org,
+        linux-i2c@vger.kernel.org, Daniel Baluta <daniel.baluta@intel.com>,
+        Laurentiu Palcu <laurentiu.palcu@intel.com>
+Subject: Re: [PATCH v2 1/3] mfd: add support for Diolan DLN-2 devices
+Message-ID: <20140901154626.GH8796@lee--X1>
+References: <1409349654-24841-1-git-send-email-octavian.purdila@intel.com>
+ <1409349654-24841-2-git-send-email-octavian.purdila@intel.com>
+ <20140901083744.GE7374@lee--X1>
+ <CAE1zotK0cddns4f4ay-GJie8O2pjb72+-yYndZvW0hbF0D83HA@mail.gmail.com>
+ <20140901095127.GK7374@lee--X1>
+ <CAE1zot+T6eq0jrL6_Qh=5nihNOgGEaWe5RCDk7_1XS8ZWaWKqA@mail.gmail.com>
+ <20140901113949.GP7374@lee--X1>
+ <CAE1zotKNBTEMX8DDYwdwOcq0qZgqxZWazE60TUQeiOmD0a4xbA@mail.gmail.com>
 MIME-Version: 1.0
-To: eparis@redhat.com, paulmck@linux.vnet.ibm.com,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        paul.gortmaker@windriver.com, zhenglong.cai@cs2c.com.cn,
-        khilman@linaro.org, ak@linux.intel.com, mcgrof@suse.com,
-        fabf@skynet.be, "dhowells@redhat.com" <dhowells@redhat.com>,
-        pefoley2@pefoley.com, mgorman@suse.de, biederm@xmission.com,
-        "hpa@zytor.com" <hpa@zytor.com>
-CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Jean Delvare <jdelvare@suse.de>
-Subject: [PATCH] init/Kconfig: Add ENDIAN attributes for all architectures
- using
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAE1zotKNBTEMX8DDYwdwOcq0qZgqxZWazE60TUQeiOmD0a4xbA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some individual modules want to know the architecture's endian attribute
-during config time, or may cause compiling break, one sample is below:
-(with allm dconfig under microblaze):
+On Mon, 01 Sep 2014, Octavian Purdila wrote:
 
-    CC [M]  drivers/isdn/hisax/nj_s.o
-  drivers/isdn/hisax/nj_s.c: In function 'setup_netjet_s':
-  drivers/isdn/hisax/nj_s.c:265:2: error: #error "not running on big endian machines now"
-   #error "not running on big endian machines now"
+> On Mon, Sep 1, 2014 at 2:39 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> > On Mon, 01 Sep 2014, Octavian Purdila wrote:
+> >
+> >> On Mon, Sep 1, 2014 at 12:51 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> >> > On Mon, 01 Sep 2014, Octavian Purdila wrote:
+> >> >
+> >> >> On Mon, Sep 1, 2014 at 11:37 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> >> >> > On Sat, 30 Aug 2014, Octavian Purdila wrote:
+> >> >> >
+> >> >> >> This patch implements the USB part of the Diolan USB-I2C/SPI/GPIO
+> >> >> >> Master Adapter DLN-2. Details about the device can be found here:
+> >> >> >>
+> >> >> >> https://www.diolan.com/i2c/i2c_interface.html.
+> >> >> >>
+> >> >> >> Information about the USB protocol can be found in the Programmer's
+> >> >> >> Reference Manual [1], see section 1.7.
+> >> >> >>
+> >> >> >> Because the hardware has a single transmit endpoint and a single
+> >> >> >> receive endpoint the communication between the various DLN2 drivers
+> >> >> >> and the hardware will be muxed/demuxed by this driver.
+> >> >> >>
+> >> >> >> Each DLN2 module will be identified by the handle field within the DLN2
+> >> >> >> message header. If a DLN2 module issues multiple commands in parallel
+> >> >> >> they will be identified by the echo counter field in the message header.
+> >> >> >>
+> >> >> >> The DLN2 modules can use the dln2_transfer() function to issue a
+> >> >> >> command and wait for its response. They can also register a callback
+> >> >> >> that is going to be called when a specific event id is generated by
+> >> >> >> the device (e.g. GPIO interrupts). The device uses handle 0 for
+> >> >> >> sending events.
+> >> >> >>
+> >> >> >> [1] https://www.diolan.com/downloads/dln-api-manual.pdf
+> >> >> >
+> >> >> > MFD is not a dumping ground for misfit h/w.  Almost all of this code
+> >> >> > looks like it belongs in drivers/usb.  Please move it there.
+> >> >> >
+> >> >>
+> >> >> We initially submitted this driver as a pure USB driver, with our own
+> >> >> module registration mechanism, but during the first round of reviews
+> >> >> people pointed out that a MFD driver is the better approach, and I
+> >> >> agree. I also see that there are already a couple of USB drivers
+> >> >> implemented as MFD drivers.
+> >> >
+> >> > Can you link me to your previous submission please?
+> >>
+> >> Sure, here it is:
+> >>
+> >> https://lkml.org/lkml/2014/8/20/228
+> >>
+> >> >
+> >> >> Do you see a better approach?
+> >> >
+> >> > You should have a small MFD driver which controls resources and
+> >> > registers children.  All other functionality should live in their
+> >> > respective drivers/X locations i.e. USB functionallity should normally
+> >> > live in drivers/usb.
+> >> >
+> >>
+> >> OK, that sounds better. I am not sure how to handle the registration
+> >> part though, since in this case we need to create the children at
+> >> runtime, from the usb probe routine.
+> >>
+> >> The only solution I see is to move the driver completely to
+> >> usb/drivers and continue to use the MFD infrastructure. Does that
+> >> sound OK to you?
+> >
+> > I have no problem with that.  If this is an MFD driver, it _should_
+> > live in drivers/mfd.  However, all of that USB specific stuff
+> > defiantly should not.
+> >
+> 
+> It is a multi-function driver which is using the USB interface, so I
+> am not sure where it belongs. The only driver that calls
+> mfd_add_devices and is not in drivers/mfd is the hid sensor hub
+> driver.
+> 
+> BTW, the mfd/viperboard.c driver is very similar with this driver. It
+> has less USB specific stuff because the protocol is simpler, but still
+> has some.
 
-So add endian attributes for all architectures using (next, will let all
-architectures choose their endians during config time).
+Looking at viperboard.c, it seems to use some basic generic framework
+calls to obtain some information about the device information like
+version numbers.  Your driver is leaps and bounds more USB centric.
 
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
----
- init/Kconfig | 6 ++++++
- 1 file changed, 6 insertions(+)
+Your MFD driver should know about things like; regmap, platform data,
+memory allocation, same-chip devices (children), etc.  Your MFD driver
+should not need to concern itself with; endpoints, slots, URBs, USB
+device IDs and the like.  The later knowledge belongs in drivers/usb. 
 
-diff --git a/init/Kconfig b/init/Kconfig
-index ac033c3..f301cc8 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -23,6 +23,12 @@ config CONSTRUCTORS
- config IRQ_WORK
- 	bool
- 
-+config CPU_LITTLE_ENDIAN
-+	bool
-+
-+config CPU_BIG_ENDIAN
-+	bool
-+
- config BUILDTIME_EXTABLE_SORT
- 	bool
- 
+You should be calling mfd_add_devices() from within the MFD driver.
+At a guess, I would say that you need a new entry for the USB stuff in
+your mfd_cells structure.
+
 -- 
-1.7.11.7
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
