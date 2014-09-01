@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754239AbaIAO0Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 10:26:24 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:34302 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754130AbaIAO0W (ORCPT
+	id S1754278AbaIAO2k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 10:28:40 -0400
+Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:60492 "EHLO
+	smtp.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753527AbaIAO2i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 10:26:22 -0400
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-kernel@vger.kernel.org, monstr@monstr.eu
-Subject: [PATCH 2/2] microblaze: Rename Advance setup to Kernel features
-Date: Mon,  1 Sep 2014 16:26:09 +0200
-Message-Id: <74e465f95e7bdcd9d5a71abdfdd5c35463af8b12.1409581564.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <deb0c99660e9a97a0c5af96105199998cb852add.1409581564.git.michal.simek@xilinx.com>
-References: <deb0c99660e9a97a0c5af96105199998cb852add.1409581564.git.michal.simek@xilinx.com>
-In-Reply-To: <deb0c99660e9a97a0c5af96105199998cb852add.1409581564.git.michal.simek@xilinx.com>
-References: <deb0c99660e9a97a0c5af96105199998cb852add.1409581564.git.michal.simek@xilinx.com>
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-23606-1409581577-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	Mon, 1 Sep 2014 10:28:38 -0400
+From: Chen-Yu Tsai <wens@csie.org>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Chen-Yu Tsai <wens@csie.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Andrew Lunn <andrew@lunn.ch>,
+        linux-sunxi@googlegroups.com, stable@vger.kernel.org
+Subject: [PATCH v2] i2c: mv64xxx: continue probe when clock-frequency is missing
+Date: Mon,  1 Sep 2014 22:28:13 +0800
+Message-Id: <1409581693-15943-1-git-send-email-wens@csie.org>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+The "clock-frequency" DT property is listed as optional, However,
+the current code stores the return value of of_property_read_u32 in
+the return code of mv64xxx_of_config, but then forgets to clear it
+after setting the default value of "clock-frequency". It is then
+passed out to the main probe function, resulting in a probe failure
+when "clock-frequency" is missing.
 
---=_mimegpg-monstr-desktop-23606-1409581577-0001
+This patch checks and then throws away the return value of
+of_property_read_u32, instead of storing it and having to clear it
+afterwards.
 
-"Advance setup: menu is misleading that's why rename it.
+This issue was discovered after the property was removed from all
+sunxi DTs.
 
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+Fixes: 4c730a06c19bb ("i2c: mv64xxx: Set bus frequency to 100kHz if clock-frequency is not provided")
+Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+Cc: stable@vger.kernel.org
+Acked-by: Andrew Lunn <andrew@lunn.ch>
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
+Changes in v2:
 
- arch/microblaze/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ - Added Fixes tag, and Acked-bys from Andrew and Maxime.
+ - Slightly refined commit message to be clear what we're throwing away.
+---
+ drivers/i2c/busses/i2c-mv64xxx.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/arch/microblaze/Kconfig b/arch/microblaze/Kconfig
-index beb9c3fe7e38..6feded3b0c4c 100644
---- a/arch/microblaze/Kconfig
-+++ b/arch/microblaze/Kconfig
-@@ -127,7 +127,7 @@ config SECCOMP
+diff --git a/drivers/i2c/busses/i2c-mv64xxx.c b/drivers/i2c/busses/i2c-mv64xxx.c
+index 6dc5ded..2f64273 100644
+--- a/drivers/i2c/busses/i2c-mv64xxx.c
++++ b/drivers/i2c/busses/i2c-mv64xxx.c
+@@ -746,8 +746,7 @@ mv64xxx_of_config(struct mv64xxx_i2c_data *drv_data,
+ 	}
+ 	tclk = clk_get_rate(drv_data->clk);
+ 
+-	rc = of_property_read_u32(np, "clock-frequency", &bus_freq);
+-	if (rc)
++	if (of_property_read_u32(np, "clock-frequency", &bus_freq))
+ 		bus_freq = 100000; /* 100kHz by default */
+ 
+ 	if (!mv64xxx_find_baud_factors(bus_freq, tclk,
+-- 
+2.1.0
 
- endmenu
-
--menu "Advanced setup"
-+menu "Kernel features"
-
- config ADVANCED_OPTIONS
- 	bool "Prompt for advanced kernel configuration options"
---
-1.8.2.3
-
-
---=_mimegpg-monstr-desktop-23606-1409581577-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlQEggkACgkQykllyylKDCGE9wCeMWCoE/hhi/80pCroPELN42KX
-LPsAn0vkaHA8uX3FD7SG2vlpRyx10X97
-=3iaW
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-23606-1409581577-0001--
