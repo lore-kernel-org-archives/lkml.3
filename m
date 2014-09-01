@@ -1,96 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397AbaIAHQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 03:16:29 -0400
-Received: from mga01.intel.com ([192.55.52.88]:61458 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751078AbaIAHQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 03:16:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,440,1406617200"; 
-   d="scan'208";a="584444447"
-Message-ID: <1409555763.30155.39.camel@linux.intel.com>
-Subject: Re: [PATCH v3 07/11] wireless: hostap: proc: print properly escaped
- SSID
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: "John W . Linville" <linville@tuxdriver.com>
-Cc: Johannes Berg <johannes@sipsolutions.net>, devel@driverdev.osuosl.org,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>
-Date: Mon, 01 Sep 2014 10:16:03 +0300
-In-Reply-To: <1408527772-27224-8-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1408527772-27224-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1408527772-27224-8-git-send-email-andriy.shevchenko@linux.intel.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.5-1 
-Mime-Version: 1.0
+	id S1752563AbaIAHQm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 03:16:42 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:41041 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752524AbaIAHQk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 03:16:40 -0400
+Subject: [PATCH v2 0/4] kconfig: store default ARCH in .config
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org
+Cc: Paul Bolle <pebolle@tiscali.nl>, Geert Uytterhoeven <geert@linux-m68k.org>
+Date: Mon, 01 Sep 2014 11:16:25 +0400
+Message-ID: <20140901065916.28909.35097.stgit@zurg>
+User-Agent: StGit/0.17.1-dirty
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-08-20 at 12:42 +0300, Andy Shevchenko wrote:
-> Instead of substituting non-printable characters by '_' let's print SSID
-> properly escaped by using recently added %*pE specifier.
+This is second attempt of fixing target archecture amnesia.
+v1 patch: http://lkml.kernel.org/r/20140706080234.19520.96704.stgit@zurg
 
-Here is kbuild robot fixup.
+First version saved ARCH as CONFIG_DEFAULT_ARCH and used it as defult ARCH.
 
->From f88ff364a1b117d3c86186206eeaa54ff906147a Mon Sep 17 00:00:00 2001
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Date: Mon, 1 Sep 2014 10:13:28 +0300
-Subject: [PATCH] wireless: hostap: kbuild robot fixup
+This version changes semantic of Kconfig option env="...", now it acts more
+like the user input, except that the value comes from the environment.
+Variable from environment overrides all defaults and value from config file.
+If environment variable is not defined this option has no effect.
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+So, now ARCH is saved as CONFIG_ARCH.
+
+Also this patchset links CONFIG_CROSS_COMPILE and CROSS_COMPILE in the same way.
+Changing it in command line/environment also updates value in the config file.
+
 ---
- drivers/net/wireless/hostap/hostap_proc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/hostap/hostap_proc.c
-b/drivers/net/wireless/hostap/hostap_proc.c
-index 16a06b6..5b1a510 100644
---- a/drivers/net/wireless/hostap/hostap_proc.c
-+++ b/drivers/net/wireless/hostap/hostap_proc.c
-@@ -181,7 +181,7 @@ static int prism2_bss_list_proc_show(struct seq_file
-*m, void *v)
- 		   bss->bssid, bss->last_update,
- 		   bss->count, bss->capab_info);
- 
--	seq_printf(m, "%*pE", bss->ssid_len, bss->ssid);
-+	seq_printf(m, "%*pE", (int)bss->ssid_len, bss->ssid);
- 
- 	seq_putc(m, '\t');
- 	for (i = 0; i < bss->ssid_len; i++)
--- 
-2.1.0
+Konstantin Khlebnikov (4):
+      kconfig: save values imported from environment into config file
+      scripts/config: add option for changing output for undefined options
+      kconfig: get target architecture from config file
+      kconfig: link CONFIG_CROSS_COMPILE with environment variable
 
 
-> 
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> ---
->  drivers/net/wireless/hostap/hostap_proc.c | 4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
-> 
-> diff --git a/drivers/net/wireless/hostap/hostap_proc.c b/drivers/net/wireless/hostap/hostap_proc.c
-> index 4e5c0f8..16a06b6 100644
-> --- a/drivers/net/wireless/hostap/hostap_proc.c
-> +++ b/drivers/net/wireless/hostap/hostap_proc.c
-> @@ -181,9 +181,7 @@ static int prism2_bss_list_proc_show(struct seq_file *m, void *v)
->  		   bss->bssid, bss->last_update,
->  		   bss->count, bss->capab_info);
->  
-> -	for (i = 0; i < bss->ssid_len; i++)
-> -		seq_putc(m,bss->ssid[i] >= 32 && bss->ssid[i] < 127 ?
-> -			   bss->ssid[i] : '_');
-> +	seq_printf(m, "%*pE", bss->ssid_len, bss->ssid);
->  
->  	seq_putc(m, '\t');
->  	for (i = 0; i < bss->ssid_len; i++)
+ Documentation/kbuild/kconfig-language.txt |   10 ++++------
+ Documentation/kbuild/makefiles.txt        |    3 ++-
+ Makefile                                  |   21 +++++++++++++++------
+ init/Kconfig                              |    1 +
+ scripts/config                            |   15 ++++++++++++---
+ scripts/kconfig/confdata.c                |   26 ++++++++++++++++++++++++++
+ scripts/kconfig/expr.h                    |    2 +-
+ scripts/kconfig/symbol.c                  |    3 ---
+ 8 files changed, 61 insertions(+), 20 deletions(-)
 
-
--- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
-
+--
+Signature
