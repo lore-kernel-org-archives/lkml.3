@@ -1,100 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832AbaIALIr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 07:08:47 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:62715 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753391AbaIALIo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 07:08:44 -0400
-Message-ID: <540453B8.90403@monstr.eu>
-Date: Mon, 01 Sep 2014 13:08:40 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Michal Simek <michal.simek@xilinx.com>
-CC: Ezra Savard <ezras@xilinx.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Ezra Savard <ezra.savard@xilinx.com>
-Subject: Re: [PATCH v2] ARM: zynq: DT: Add LEDs to zc702 DT
-References: <1409323117-21711-1-git-send-email-soren.brinkmann@xilinx.com>
-In-Reply-To: <1409323117-21711-1-git-send-email-soren.brinkmann@xilinx.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="b4jQF8svN7fMfSR2aV3PhEiDVcFaQs3tW"
+	id S1753863AbaIALJR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 07:09:17 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:39023 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753368AbaIALEV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 07:04:21 -0400
+From: Ian Abbott <abbotti@mev.co.uk>
+To: driverdev-devel@linuxdriverproject.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 12/28] staging: comedi: amplc_pci230: remove ao_chans member
+Date: Mon,  1 Sep 2014 12:03:44 +0100
+Message-Id: <1409569440-10979-13-git-send-email-abbotti@mev.co.uk>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <1409569440-10979-1-git-send-email-abbotti@mev.co.uk>
+References: <1409569440-10979-1-git-send-email-abbotti@mev.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---b4jQF8svN7fMfSR2aV3PhEiDVcFaQs3tW
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+The PCI230(+) has an AO subdevice with 2 channels, but the PCI260(+) has
+none.
 
-On 08/29/2014 04:38 PM, Soren Brinkmann wrote:
-> From: Ezra Savard <ezra.savard@xilinx.com>
->=20
-> Adds LEDs to the zc702 devicetree for use with the leds-gpio driver.
->=20
-> Signed-off-by: Ezra Savard <ezra.savard@xilinx.com>
-> Reviewed-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> ---
-> v2:
->  - fix node names
-> ---
->  arch/arm/boot/dts/zynq-zc702.dts | 9 +++++++++
->  1 file changed, 9 insertions(+)
->=20
-> diff --git a/arch/arm/boot/dts/zynq-zc702.dts b/arch/arm/boot/dts/zynq-=
-zc702.dts
-> index 835c3089c61c..b29e0f97e764 100644
-> --- a/arch/arm/boot/dts/zynq-zc702.dts
-> +++ b/arch/arm/boot/dts/zynq-zc702.dts
-> @@ -27,6 +27,15 @@
->  		bootargs =3D "console=3DttyPS0,115200 earlyprintk";
->  	};
-> =20
-> +	leds {
-> +		compatible =3D "gpio-leds";
-> +
-> +		ds23 {
-> +			label =3D "ds23";
-> +			gpios =3D <&gpio0 10 0>;
-> +			linux,default-trigger =3D "heartbeat";
-> +		};
-> +	};
->  };
-> =20
->  &can0 {
->=20
+The `ao_chans` member of `struct pci230_board` indicates whether the
+board has an AO subdevice and the number of AO channels.  The
+`ao_bits` member indicates the AO sample width in bits and will only be
+non-zero for boards with an AO subdevice.
 
-Applied.
+Use `ao_bits` to indicate whether the board has an AO subdevice.  If it
+has, assume the the number of AO channels is 2.  Then the `ao_chans`
+member becomes redundant and can be removed.
 
-Thanks,
-Michal
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+---
+ drivers/staging/comedi/drivers/amplc_pci230.c | 11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+diff --git a/drivers/staging/comedi/drivers/amplc_pci230.c b/drivers/staging/comedi/drivers/amplc_pci230.c
+index 42a79d2..75b0e79 100644
+--- a/drivers/staging/comedi/drivers/amplc_pci230.c
++++ b/drivers/staging/comedi/drivers/amplc_pci230.c
+@@ -455,7 +455,6 @@ struct pci230_board {
+ 	const char *name;
+ 	unsigned short id;
+ 	int ai_bits;
+-	int ao_chans;
+ 	int ao_bits;
+ 	int have_dio;
+ 	unsigned int min_hwver;	/* Minimum hardware version supported. */
+@@ -466,7 +465,6 @@ static const struct pci230_board pci230_boards[] = {
+ 		.name		= "pci230+",
+ 		.id		= PCI_DEVICE_ID_PCI230,
+ 		.ai_bits	= 16,
+-		.ao_chans	= 2,
+ 		.ao_bits	= 12,
+ 		.have_dio	= 1,
+ 		.min_hwver	= 1,
+@@ -481,7 +479,6 @@ static const struct pci230_board pci230_boards[] = {
+ 		.name		= "pci230",
+ 		.id		= PCI_DEVICE_ID_PCI230,
+ 		.ai_bits	= 12,
+-		.ao_chans	= 2,
+ 		.ao_bits	= 12,
+ 		.have_dio	= 1,
+ 	},
+@@ -2609,7 +2606,7 @@ static int pci230_auto_attach(struct comedi_device *dev,
+ 				 */
+ 				extfunc |= PCI230P_EXTFUNC_GAT_EXTTRIG;
+ 			}
+-			if (thisboard->ao_chans > 0 && devpriv->hwver >= 2) {
++			if (thisboard->ao_bits && devpriv->hwver >= 2) {
+ 				/* Enable DAC FIFO functionality. */
+ 				extfunc |= PCI230P2_EXTFUNC_DACFIFO;
+ 			}
+@@ -2670,15 +2667,15 @@ static int pci230_auto_attach(struct comedi_device *dev,
+ 
+ 	s = &dev->subdevices[1];
+ 	/* analog output subdevice */
+-	if (thisboard->ao_chans > 0) {
++	if (thisboard->ao_bits) {
+ 		s->type = COMEDI_SUBD_AO;
+ 		s->subdev_flags = SDF_WRITABLE | SDF_GROUND;
+-		s->n_chan = thisboard->ao_chans;
++		s->n_chan = 2;
+ 		s->maxdata = (1 << thisboard->ao_bits) - 1;
+ 		s->range_table = &pci230_ao_range;
+ 		s->insn_write = pci230_ao_insn_write;
+ 		s->insn_read = comedi_readback_insn_read;
+-		s->len_chanlist = thisboard->ao_chans;
++		s->len_chanlist = 2;
+ 		if (dev->irq) {
+ 			dev->write_subdev = s;
+ 			s->subdev_flags |= SDF_CMD_WRITE;
+-- 
+2.0.4
 
-
-
---b4jQF8svN7fMfSR2aV3PhEiDVcFaQs3tW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAlQEU7gACgkQykllyylKDCGRUgCfYQc93eQKjc3In6mtW9oA2ia4
-dBIAoIn1Cy1bWBsmQHwaz3bfbjlylDKN
-=OOof
------END PGP SIGNATURE-----
-
---b4jQF8svN7fMfSR2aV3PhEiDVcFaQs3tW--
