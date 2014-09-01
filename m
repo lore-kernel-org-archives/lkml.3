@@ -1,71 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754001AbaIAPTP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 11:19:15 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:53551 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751665AbaIAPTN (ORCPT
+	id S1754045AbaIAPUA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 11:20:00 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:33101 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753822AbaIAPT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 11:19:13 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linaro-acpi@lists.linaro.org
-Cc: Hanjun Guo <hanjun.guo@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Robert Moore <robert.moore@intel.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>, Lv Zheng <lv.zheng@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [Linaro-acpi] [RFC PATCH for Juno 1/2] net: smsc911x add support for probing from ACPI
-Date: Mon, 01 Sep 2014 17:17:51 +0200
-Message-ID: <2861461.8zNpLC3I2n@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1409583961-7466-2-git-send-email-hanjun.guo@linaro.org>
-References: <1409583961-7466-1-git-send-email-hanjun.guo@linaro.org> <1409583961-7466-2-git-send-email-hanjun.guo@linaro.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:04uxxHfP37yV+GkUsmUHgoFiLnbBpB33x03DvnCGfmf
- 5GDOklIRbdjqpsB5eLCzQV0wF1g0kqdVwLV2gK5QZ7AqWFYR1O
- 8hju53LTR2X/Nq3JQTX8aHaq9iHvJKWFLqVWuCyU9kTrXpZdW5
- QxLvpoIQ1crDIAT3hD4rfgBBww7pKHHsaCb1Tya0DY8lu0p0wO
- 4gblDKaUoFtOVAeIyTdhn9iPWFbTteCxCtYUmrK0fP9rua66/W
- QD36u3SwF0Na4F40jFsST6J9mWEk/EhOcyfUL75CgwjcoS4As6
- cniTmCkpg/Zb7L0aF4rc5MYNftLEwr6NKnmErdDKRTzCErV6pt
- Qr0q9gNdnpWXKVOB1y64=
-X-UI-Out-Filterresults: notjunk:1;
+	Mon, 1 Sep 2014 11:19:58 -0400
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3] serial: serial_core.c: printk replacement
+Date: Mon,  1 Sep 2014 20:49:43 +0530
+Message-Id: <1409584783-3021-1-git-send-email-sudipm.mukherjee@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 01 September 2014 23:06:00 Hanjun Guo wrote:
-> +#ifdef CONFIG_ACPI
-> +/* Configure some sensible defaults for ACPI mode */
-> +static int smsc911x_probe_config_acpi(struct smsc911x_platform_config *config,
-> +                                   acpi_handle *ahandle)
-> +{
-> +       if (!ahandle)
-> +               return -ENOSYS;
-> +
-> +       config->phy_interface = PHY_INTERFACE_MODE_MII;
-> 
+printk replaced with corresponding dev_* .
+fixed two broken user-visible strings used by the corresponding printk.
+the null check for uport->dev and port->dev is removed as dev_* will check for
+null while printing.
+printing of dev_name(uport->dev) and dev_name(port->dev) also removed as those
+are being printed by dev_* . 
 
-Please remove the #ifdef and use 
+Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+---
+ drivers/tty/serial/serial_core.c | 26 +++++++++++---------------
+ 1 file changed, 11 insertions(+), 15 deletions(-)
 
-	if (!IS_ENABLED(CONFIG_ACPI) || !ahandle)
+diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+index 29a7be4..079f18d 100644
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -892,10 +892,11 @@ static int uart_set_info(struct tty_struct *tty, struct tty_port *port,
+ 			 */
+ 			if (uport->flags & UPF_SPD_MASK) {
+ 				char buf[64];
+-				printk(KERN_NOTICE
+-				       "%s sets custom speed on %s. This "
+-				       "is deprecated.\n", current->comm,
+-				       tty_name(port->tty, buf));
++
++				dev_notice(uport->dev,
++				       "%s sets custom speed on %s. This is deprecated.\n",
++				      current->comm,
++				      tty_name(port->tty, buf));
+ 			}
+ 			uart_change_speed(tty, state, NULL);
+ 		}
+@@ -1975,12 +1976,9 @@ int uart_suspend_port(struct uart_driver *drv, struct uart_port *uport)
+ 		for (tries = 3; !ops->tx_empty(uport) && tries; tries--)
+ 			msleep(10);
+ 		if (!tries)
+-			printk(KERN_ERR "%s%s%s%d: Unable to drain "
+-					"transmitter\n",
+-			       uport->dev ? dev_name(uport->dev) : "",
+-			       uport->dev ? ": " : "",
+-			       drv->dev_name,
+-			       drv->tty_driver->name_base + uport->line);
++			dev_err(uport->dev, "%s%d: Unable to drain transmitter\n",
++				drv->dev_name,
++				drv->tty_driver->name_base + uport->line);
+ 
+ 		if (console_suspend_enabled || !uart_console(uport))
+ 			ops->shutdown(uport);
+@@ -2109,9 +2107,7 @@ uart_report_port(struct uart_driver *drv, struct uart_port *port)
+ 		break;
+ 	}
+ 
+-	printk(KERN_INFO "%s%s%s%d at %s (irq = %d, base_baud = %d) is a %s\n",
+-	       port->dev ? dev_name(port->dev) : "",
+-	       port->dev ? ": " : "",
++	dev_info(port->dev, "%s%d at %s (irq = %d, base_baud = %d) is a %s\n",
+ 	       drv->dev_name,
+ 	       drv->tty_driver->name_base + port->line,
+ 	       address, port->irq, port->uartclk / 16, uart_type(port));
+@@ -2640,7 +2636,7 @@ int uart_add_one_port(struct uart_driver *drv, struct uart_port *uport)
+ 	if (likely(!IS_ERR(tty_dev))) {
+ 		device_set_wakeup_capable(tty_dev, 1);
+ 	} else {
+-		printk(KERN_ERR "Cannot register tty device on line %d\n",
++		dev_err(uport->dev, "Cannot register tty device on line %d\n",
+ 		       uport->line);
+ 	}
+ 
+@@ -2675,7 +2671,7 @@ int uart_remove_one_port(struct uart_driver *drv, struct uart_port *uport)
+ 	BUG_ON(in_interrupt());
+ 
+ 	if (state->uart_port != uport)
+-		printk(KERN_ALERT "Removing wrong port: %p != %p\n",
++		dev_alert(uport->dev, "Removing wrong port: %p != %p\n",
+ 			state->uart_port, uport);
+ 
+ 	mutex_lock(&port_mutex);
+-- 
+1.8.1.2
 
-to check for ACPI support. This should result in the same object code
-in all cases, but give better compile-time coverage when ACPI is
-disabled.
-
-Also, -ENOSYS is probably the wrong return value. I think you mean
--ENXIO.
-
-	Arnd
