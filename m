@@ -1,69 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753391AbaIALZx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 07:25:53 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:33800 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752311AbaIALZw (ORCPT
+	id S1753437AbaIAL0A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 07:26:00 -0400
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:48297 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751439AbaIALZ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 07:25:52 -0400
+	Mon, 1 Sep 2014 07:25:57 -0400
+Date: Mon, 1 Sep 2014 12:25:49 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Pankaj Dubey <pankaj.dubey@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kgene.kim@samsung.com, linux@arm.linux.org.uk,
+        vikas.sajjan@samsung.com, joshi@samsung.com, naushad@samsung.com,
+        thomas.ab@samsung.com, chow.kim@samsung.com,
+        Tomasz Figa <t.figa@samsung.com>, broonie@kernel.org
+Subject: Re: [PATCH] mfd: syscon: Decouple syscon interface from syscon
+ devices
+Message-ID: <20140901112549.GM7374@lee--X1>
+References: <1408694991-21615-1-git-send-email-pankaj.dubey@samsung.com>
+ <20140901074918.GB6226@lee--X1>
+ <4121644.3haxjiIdIo@wuerfel>
 MIME-Version: 1.0
-In-Reply-To: <1409068819-11273-1-git-send-email-ricardo.ribalda@gmail.com>
-References: <1409068819-11273-1-git-send-email-ricardo.ribalda@gmail.com>
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Mon, 1 Sep 2014 13:25:31 +0200
-Message-ID: <CAPybu_0h+7PmUj3x+1ba5S3hnWQd3VH77_Y-u=pe7qhR9KsUUg@mail.gmail.com>
-Subject: Re: [PATCH v2] usb: gadget: net2280: Fix invalid handling of Reset irq
-To: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4121644.3haxjiIdIo@wuerfel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Felipe
+On Mon, 01 Sep 2014, Arnd Bergmann wrote:
+> On Monday 01 September 2014 08:49:18 Lee Jones wrote:
+> > On Fri, 22 Aug 2014, Pankaj Dubey wrote:
+> > 
+> > > From: Tomasz Figa <t.figa@samsung.com>
+> > > 
+> > > Currently a syscon entity can be only registered directly through a
+> > > platform device that binds to a dedicated driver. However in certain use
+> > > cases it is desirable to make a device used with another driver a syscon
+> > > interface provider. For example, certain SoCs (e.g. Exynos) contain
+> > > system controller blocks which perform various functions such as power
+> > > domain control, CPU power management, low power mode control, but in
+> > > addition contain certain IP integration glue, such as various signal
+> > > masks, coprocessor power control, etc. In such case, there is a need to
+> > > have a dedicated driver for such system controller but also share
+> > > registers with other drivers. The latter is where the syscon interface
+> > > is helpful.
+> > > 
+> > > This patch decouples syscon object from syscon driver, so that it can be
+> > > registered from any driver in addition to the original "syscon" platform
+> > > driver.
+> > > 
+> > > Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+> > > Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+> > > ---
+> > > 
+> > > RFC patch [1] was posted by Tomasz Figa. This patch addresses some of
+> > > comments given by Arnd to RFC patch, and further decouples syscon from
+> > > device model. It also gives flexibility of registering with syscon at
+> > > early stage using device_node object.
+> > 
+> > It would be helpful if Arnd gave this revision his blessing (Ack).
+> 
+> I never saw a reason why we don't take this all the way as discussed
+> a few times: Completely remove the dependency of syscon on having
+> a platform driver for it, and make it possible to just call
+> syscon_regmap_lookup_by_phandle() without having to register
+> it first.
 
-I think that you have forgotten about this patch :). It is needed by
-usb3380 in usb3.0 mode. Otherwise the device keeps reseting.
-
-Thanks!
-
-On Tue, Aug 26, 2014 at 6:00 PM, Ricardo Ribalda Delgado
-<ricardo.ribalda@gmail.com> wrote:
-> Without this patch, some hosts keep restarting indefinitely the target.
->
-> Fixes: ae8e530 (usb: gadget: net2280: Code Cleanup)
-> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-> ---
->
-> v2: Request by Felipe Balbi
->
-> Use Fixes: on commit message
->
->  drivers/usb/gadget/udc/net2280.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/usb/gadget/udc/net2280.c b/drivers/usb/gadget/udc/net2280.c
-> index f4eac11..2e95715 100644
-> --- a/drivers/usb/gadget/udc/net2280.c
-> +++ b/drivers/usb/gadget/udc/net2280.c
-> @@ -3320,7 +3320,7 @@ static void handle_stat1_irqs(struct net2280 *dev, u32 stat)
->         if (stat & tmp) {
->                 writel(tmp, &dev->regs->irqstat1);
->                 if ((((stat & BIT(ROOT_PORT_RESET_INTERRUPT)) &&
-> -                               (readl(&dev->usb->usbstat) & mask)) ||
-> +                               ((readl(&dev->usb->usbstat) & mask) == 0)) ||
->                                 ((readl(&dev->usb->usbctl) &
->                                         BIT(VBUS_PIN)) == 0)) &&
->                                 (dev->gadget.speed != USB_SPEED_UNKNOWN)) {
-> --
-> 2.1.0
->
-
-
+I think this sounds like a good end-state.  Migrating over by
+supporting both methods in this way does sound like the correct thing
+to do though.  Doing so is likely to dramatically reduce the effect on
+current users.
 
 -- 
-Ricardo Ribalda
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
