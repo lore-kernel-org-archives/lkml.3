@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622AbaIAQzL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 12:55:11 -0400
-Received: from smtprelay0173.hostedemail.com ([216.40.44.173]:53643 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753933AbaIAQzK (ORCPT
+	id S1754499AbaIAQ5d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 12:57:33 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:32964 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751464AbaIAQ5b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 12:55:10 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:800:960:968:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3865:3866:3867:3872:3874:4250:4321:4362:4823:5007:7652:8604:9393:10004:10400:10848:11232:11658:11914:12517:12519:12555:12740:13019:13069:13095:13161:13221:13229:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: oil39_49d6739396152
-X-Filterd-Recvd-Size: 2126
-Message-ID: <1409590506.2614.4.camel@joe-AO725>
-Subject: [PATCH - resend] checkpatch: Remove unnecessary + after {8,8}
-From: Joe Perches <joe@perches.com>
-To: Greg KH <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: devel@driverdev.osuosl.org,
-        kernel-janitors <kernel-janitors@vger.kernel.org>,
-        kernelnewbies@kernelnewbies.org, LKML <linux-kernel@vger.kernel.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        =?ISO-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>
-Date: Mon, 01 Sep 2014 09:55:06 -0700
-In-Reply-To: <20140712020520.GA18611@kroah.com>
-References: <1405128087.6751.12.camel@joe-AO725>
-	 <20140712013927.GA30781@kroah.com> <1405129612.6751.24.camel@joe-AO725>
-	 <20140712020114.GA12301@kroah.com> <20140712020520.GA18611@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 1 Sep 2014 12:57:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140901132808.c7b08f4ffa7055dc28e6dac7@kernel.org>
+References: <20140901132808.c7b08f4ffa7055dc28e6dac7@kernel.org>
+Date: Mon, 1 Sep 2014 18:57:29 +0200
+X-Google-Sender-Auth: 0n4OLYmzB_hgJqmolveqc_xjD24
+Message-ID: <CAMuHMdXmP8v3Grj=0Qay9eZ+zkWYTZAe4Qy+T8zJq=NDFU9tjQ@mail.gmail.com>
+Subject: Re: linux-next: jdelvare-hwmon tree unfetchable
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mark Brown <broonie@kernel.org>, Jean Delvare <jdelvare@suse.de>
+Cc: Jean Delvare <khali@linux-fr.org>, Linux-Next <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Guenter Roeck <linux@roeck-us.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's a useless "+" use that needs to be removed as perl 5.20
-emits a "Useless use of greediness modifier '+'" message each
-time it's hit.
+CC jean @ suse
 
-Reported-by: Greg KH <gregkh@linuxfoundation.org>
-Signed-off-by: Joe Perches <joe@perches.com>
----
+On Mon, Sep 1, 2014 at 2:28 PM, Mark Brown <broonie@kernel.org> wrote:
+> Today's linux-next merge of the jdelvare-hwmon tree got a conflict with Linus'
+> tree which appeared to be due to the hwmon quilt series I got from Stephen being
+> based on v3.14-rc3 and subsequent changes from mainline interacting badly with
+> it. In addition I'm not able to check the original series since linux-fr.org does
+> not resolve for me.
 
-Resending, maybe Andrew's all-seeing eye blinked...
+Same here. The domain exists, and seems to have been updated yesterday,
+possibly breaking it?
 
-On Fri, 2014-07-11 at 19:05 -0700, Greg KH wrote:
-> Ok, with linux-next I get the same thing:
+> I'm really confused by what's going on here so I skipped the tree for today.
 
-Thanks Greg.
+Gr{oetje,eeting}s,
 
- scripts/checkpatch.pl | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+                        Geert
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index d5ac001..370a974 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2376,7 +2376,7 @@ sub process {
- 				"please, no space before tabs\n" . $herevet) &&
- 			    $fix) {
- 				while ($fixed[$fixlinenr] =~
--					   s/(^\+.*) {8,8}+\t/$1\t\t/) {}
-+					   s/(^\+.*) {8,8}\t/$1\t\t/) {}
- 				while ($fixed[$fixlinenr] =~
- 					   s/(^\+.*) +\t/$1\t/) {}
- 			}
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
