@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753AbaIASsb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 14:48:31 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:33487 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752373AbaIASs3 (ORCPT
+	id S1752828AbaIASsi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 14:48:38 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:54164 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752506AbaIASsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 14:48:29 -0400
+	Mon, 1 Sep 2014 14:48:35 -0400
 From: Mike Turquette <mturquette@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: patches@linaro.org, Mike Turquette <mturquette@linaro.org>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Subject: [PATCH 2/3] clk: mvebu: powersave clock is a multiplexer
-Date: Mon,  1 Sep 2014 11:47:04 -0700
-Message-Id: <1409597225-24368-3-git-send-email-mturquette@linaro.org>
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 3/3] cpufreq: kirkwood: use the powersave multiplexer
+Date: Mon,  1 Sep 2014 11:47:05 -0700
+Message-Id: <1409597225-24368-4-git-send-email-mturquette@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1409597225-24368-1-git-send-email-mturquette@linaro.org>
 References: <1409597225-24368-1-git-send-email-mturquette@linaro.org>
@@ -21,131 +23,131 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kirkwood is unique among the mvebu SoCs for having a clock multiplexer
-that feeds into the cpu. This multiplexer can select either the cpu pll
-or the ddr clock as its input signal, allowing for a choice between
-performance and power savings.
+The powersave clock acts like a multiplexer for the cpu, selecting
+either the clock signal derived from the cpu pll or from the ddr clock.
+This patch changes powersave from a gate clock to a mux clock to better
+reflect this behavior.
 
-This patch introduces the code needed to register the clock multiplexer
-on Kirkwood SoCs but does not include the clock data to actually
-register the clock. That will be done in a follow-up patch which is
-necessary to prevent breaking git bisect.
+This is a cleaner approach whereby the frequency of the cpu always
+matches the rate of powersave_clk. The cpufreq driver for the kirkwood
+platform no longer must parse this behavior out of various calls to
+clk_enable and clk_disable, but can instead simply select the parent cpu
+it wants when changing rate. Likewise when requesting the cpu rate we
+need only query powersave_clk's rate through the usual call to
+clk_get_rate.
+
+The new clock data and corresponding changes to the cpufreq driver are
+combined into this single commit to avoid a git bisect issue where this
+cpufreq driver fails to work properly between the commit that updates
+the kirkwood clock driver and the commit that changes how the cpufreq
+driver uses that clock.
 
 Cc: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>
 Tested-by: Andrew Lunn <andrew@lunn.ch>
 Signed-off-by: Mike Turquette <mturquette@linaro.org>
 ---
- drivers/clk/mvebu/kirkwood.c | 87 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 87 insertions(+)
+ drivers/clk/mvebu/kirkwood.c       | 15 +++++++++++++--
+ drivers/cpufreq/kirkwood-cpufreq.c | 14 +++++---------
+ 2 files changed, 18 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/clk/mvebu/kirkwood.c b/drivers/clk/mvebu/kirkwood.c
-index ddb666a..f73a2fa 100644
+index f73a2fa..99550f2 100644
 --- a/drivers/clk/mvebu/kirkwood.c
 +++ b/drivers/clk/mvebu/kirkwood.c
-@@ -13,9 +13,11 @@
-  */
- 
- #include <linux/kernel.h>
-+#include <linux/slab.h>
- #include <linux/clk-provider.h>
- #include <linux/io.h>
- #include <linux/of.h>
-+#include <linux/of_address.h>
- #include "common.h"
- 
- /*
-@@ -225,6 +227,91 @@ static const struct clk_gating_soc_desc kirkwood_gating_desc[] __initconst = {
- 	{ }
+@@ -216,7 +216,6 @@ static const struct clk_gating_soc_desc kirkwood_gating_desc[] __initconst = {
+ 	{ "runit", NULL, 7, 0 },
+ 	{ "xor0", NULL, 8, 0 },
+ 	{ "audio", NULL, 9, 0 },
+-	{ "powersave", "cpuclk", 11, 0 },
+ 	{ "sata0", NULL, 14, 0 },
+ 	{ "sata1", NULL, 15, 0 },
+ 	{ "xor1", NULL, 16, 0 },
+@@ -247,6 +246,16 @@ struct clk_muxing_ctrl {
+ 	int num_muxes;
  };
  
-+
-+/*
-+ * Clock Muxing Control
-+ */
-+
-+struct clk_muxing_soc_desc {
-+	const char *name;
-+	const char **parents;
-+	int num_parents;
-+	int shift;
-+	int width;
-+	unsigned long flags;
++static const char *powersave_parents[] = {
++	"cpuclk",
++	"ddrclk",
 +};
 +
-+struct clk_muxing_ctrl {
-+	spinlock_t *lock;
-+	struct clk **muxes;
-+	int num_muxes;
++static const struct clk_muxing_soc_desc kirkwood_mux_desc[] __initconst = {
++	{ "powersave", powersave_parents, ARRAY_SIZE(powersave_parents),
++		11, 1, 0 },
 +};
 +
-+#define to_clk_mux(_hw) container_of(_hw, struct clk_mux, hw)
-+
-+static struct clk *clk_muxing_get_src(
-+	struct of_phandle_args *clkspec, void *data)
-+{
-+	struct clk_muxing_ctrl *ctrl = (struct clk_muxing_ctrl *)data;
-+	int n;
-+
-+	if (clkspec->args_count < 1)
-+		return ERR_PTR(-EINVAL);
-+
-+	for (n = 0; n < ctrl->num_muxes; n++) {
-+		struct clk_mux *mux =
-+			to_clk_mux(__clk_get_hw(ctrl->muxes[n]));
-+		if (clkspec->args[0] == mux->shift)
-+			return ctrl->muxes[n];
+ #define to_clk_mux(_hw) container_of(_hw, struct clk_mux, hw)
+ 
+ static struct clk *clk_muxing_get_src(
+@@ -323,8 +332,10 @@ static void __init kirkwood_clk_init(struct device_node *np)
+ 	else
+ 		mvebu_coreclk_setup(np, &kirkwood_coreclks);
+ 
+-	if (cgnp)
++	if (cgnp) {
+ 		mvebu_clk_gating_setup(cgnp, kirkwood_gating_desc);
++		kirkwood_clk_muxing_setup(cgnp, kirkwood_mux_desc);
 +	}
-+	return ERR_PTR(-ENODEV);
-+}
-+
-+static void __init kirkwood_clk_muxing_setup(struct device_node *np,
-+				   const struct clk_muxing_soc_desc *desc)
-+{
-+	struct clk_muxing_ctrl *ctrl;
-+	void __iomem *base;
-+	int n;
-+
-+	base = of_iomap(np, 0);
-+	if (WARN_ON(!base))
-+		return;
-+
-+	ctrl = kzalloc(sizeof(*ctrl), GFP_KERNEL);
-+	if (WARN_ON(!ctrl))
-+		goto ctrl_out;
-+
-+	/* lock must already be initialized */
-+	ctrl->lock = &ctrl_gating_lock;
-+
-+	/* Count, allocate, and register clock muxes */
-+	for (n = 0; desc[n].name;)
-+		n++;
-+
-+	ctrl->num_muxes = n;
-+	ctrl->muxes = kcalloc(ctrl->num_muxes, sizeof(struct clk *),
-+			GFP_KERNEL);
-+	if (WARN_ON(!ctrl->muxes))
-+		goto muxes_out;
-+
-+	for (n = 0; n < ctrl->num_muxes; n++) {
-+		ctrl->muxes[n] = clk_register_mux(NULL, desc[n].name,
-+				desc[n].parents, desc[n].num_parents,
-+				desc[n].flags, base, desc[n].shift,
-+				desc[n].width, desc[n].flags, ctrl->lock);
-+		WARN_ON(IS_ERR(ctrl->muxes[n]));
-+	}
-+
-+	of_clk_add_provider(np, clk_muxing_get_src, ctrl);
-+
-+	return;
-+muxes_out:
-+	kfree(ctrl);
-+ctrl_out:
-+	iounmap(base);
-+}
-+
- static void __init kirkwood_clk_init(struct device_node *np)
+ }
+ CLK_OF_DECLARE(kirkwood_clk, "marvell,kirkwood-core-clock",
+ 	       kirkwood_clk_init);
+diff --git a/drivers/cpufreq/kirkwood-cpufreq.c b/drivers/cpufreq/kirkwood-cpufreq.c
+index 37a4806..7906d4a 100644
+--- a/drivers/cpufreq/kirkwood-cpufreq.c
++++ b/drivers/cpufreq/kirkwood-cpufreq.c
+@@ -12,7 +12,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/clk.h>
+-#include <linux/clk-provider.h>
+ #include <linux/cpufreq.h>
+ #include <linux/of_device.h>
+ #include <linux/platform_device.h>
+@@ -39,8 +38,7 @@ static struct priv
+  * - cpu clk
+  * - ddr clk
+  *
+- * The frequencies are set at runtime before registering this *
+- * table.
++ * The frequencies are set at runtime before registering this table.
+  */
+ static struct cpufreq_frequency_table kirkwood_freq_table[] = {
+ 	{0, STATE_CPU_FREQ,	0}, /* CPU uses cpuclk */
+@@ -50,9 +48,7 @@ static struct cpufreq_frequency_table kirkwood_freq_table[] = {
+ 
+ static unsigned int kirkwood_cpufreq_get_cpu_frequency(unsigned int cpu)
  {
- 	struct device_node *cgnp =
+-	if (__clk_is_enabled(priv.powersave_clk))
+-		return kirkwood_freq_table[1].frequency;
+-	return kirkwood_freq_table[0].frequency;
++	return clk_get_rate(priv.powersave_clk) / 1000;
+ }
+ 
+ static int kirkwood_cpufreq_target(struct cpufreq_policy *policy,
+@@ -70,10 +66,10 @@ static int kirkwood_cpufreq_target(struct cpufreq_policy *policy,
+ 
+ 	switch (state) {
+ 	case STATE_CPU_FREQ:
+-		clk_disable(priv.powersave_clk);
++		clk_set_parent(priv.powersave_clk, priv.cpu_clk);
+ 		break;
+ 	case STATE_DDR_FREQ:
+-		clk_enable(priv.powersave_clk);
++		clk_set_parent(priv.powersave_clk, priv.ddr_clk);
+ 		break;
+ 	}
+ 
+@@ -150,7 +146,7 @@ static int kirkwood_cpufreq_probe(struct platform_device *pdev)
+ 		err = PTR_ERR(priv.powersave_clk);
+ 		goto out_ddr;
+ 	}
+-	clk_prepare(priv.powersave_clk);
++	clk_prepare_enable(priv.powersave_clk);
+ 
+ 	of_node_put(np);
+ 	np = NULL;
 -- 
 1.8.3.2
 
