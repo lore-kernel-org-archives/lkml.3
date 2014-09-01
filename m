@@ -1,86 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752743AbaIATQL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 15:16:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18327 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752705AbaIATQJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 15:16:09 -0400
-Date: Mon, 1 Sep 2014 21:15:35 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 20/41] perf tools: Let a user specify a PMU event without
- any config terms
-Message-ID: <20140901191535.GF1900@krava.redhat.com>
-References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
- <1405332185-4050-21-git-send-email-adrian.hunter@intel.com>
- <20140716142510.GE9441@krava.redhat.com>
- <53C6948C.2080103@intel.com>
- <20140716182214.GB32716@krava.redhat.com>
- <5400CB13.4040004@intel.com>
- <20140830085310.GA14358@krava.redhat.com>
- <20140901155142.GA2997@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140901155142.GA2997@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752778AbaIATWf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 15:22:35 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55835 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752581AbaIATWd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 15:22:33 -0400
+X-Sasl-enc: IZvhfntLOfdLZh8NDG7n2pdNntlfbJATP799nhRQDYSz 1409599351
+Message-ID: <1409599348.21965.6.camel@localhost>
+Subject: Re: RTNL: assertion failed at net/ipv6/addrconf.c (1699)
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Sabrina Dubroca <sd@queasysnail.net>
+Cc: Cong Wang <cwang@twopensource.com>, Tommi Rantala <tt.rantala@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org,
+        Dave Jones <davej@redhat.com>
+Date: Mon, 01 Sep 2014 21:22:28 +0200
+In-Reply-To: <20140830105821.GB18155@kria>
+References: <CA+ydwtoDwQVg_BWrxxdpUyJ7Up60GtxTCLYe_5vFdV2td_kGhQ@mail.gmail.com>
+	 <CAHA+R7MZCDGRhSf=UuVCGQvNo03wVziZQB_X30rwNf6hmHipQA@mail.gmail.com>
+	 <20140829195339.GA9780@kria> <1409363489.2980.17.camel@localhost>
+	 <20140830105821.GB18155@kria>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 01, 2014 at 12:51:42PM -0300, Arnaldo Carvalho de Melo wrote:
+Hi,
 
-SNIP
-
-> >   krava alias: "tsc=1,noretcomp=0"
+On Sa, 2014-08-30 at 12:58 +0200, Sabrina Dubroca wrote:
+> 2014-08-30, 03:51:29 +0200, Hannes Frederic Sowa wrote:
+> > Hi Sabrina,
+> > 
+> > [...]
+> > 
+> > Sorry, just had time to look at this.
+> > 
+> > The reason is not to have list corruption but that the calls down to
+> > ndo_set_rx_mode expect rtnl to be locked by the drivers. Filter lists
+> > are locked by addr_list_lock and that's why I think we never saw any
+> > problems with that, but drivers expect rtnl locked for those calls.
+> > 
+> > But this problem also affects multicast join, so patch seems incomplete
+> > to me (and for that matter ssm multicast join, too).
+> > 
+> > Also rtnl_lock and rcu_read_lock compose in that order, so we don't need
+> > to change dev_get_by_flags, but as this is the only user it sure is
+> > possible. RCU locked version is just easier composeable, so I wouldn't
+> > touch that if needed in future, just also take rcu lock as before.
+> > 
+> > So just adding rtnl_lock add appropriate places seems to be ok to me,
+> > but still need to review parts of the ssm code.
+> > 
+> > Also we should move ASSERT_RTNL checks from addrconf_join_solict to
+> > ipv6_dev_mc_inc/dec.
+> > 
+> > Thanks,
+> > Hannes
+> 
+> Thanks for explaining.
+> 
+> I had a look at what you suggested.
+> 
+> 
+> So, for anycast, on top of the previous patch, we'd have:
+> 
+> ---
+> diff --git a/net/ipv6/anycast.c b/net/ipv6/anycast.c
+> index 210183244689..61dd3046b804 100644
+> --- a/net/ipv6/anycast.c
+> +++ b/net/ipv6/anycast.c
+>  static void aca_put(struct ifacaddr6 *ac)
+> @@ -233,6 +235,8 @@ int ipv6_dev_ac_inc(struct net_device *dev, const struct in6_addr *addr)
+>  	struct rt6_info *rt;
+>  	int err;
 >  
-> >   -e intel_pt/krava/
+> +	ASSERT_RTNL();
+> +
+>  	idev = in6_dev_get(dev);
 >  
-> > which gives the same result
-> 
-> So you propose that we start maintaining some table of aliases that
-> would be installed by default, etc? "krava" would not be a good name, I
-> think (:-)), so in this case we would have something like:
-> 
-> 	defaults_intel_pt: "tsc=1,noretcomp=0"
-> 
-> 	-e intel_pt/defaults_intel_pt/
-> 
-> Which of course gets redundant/long, so, using what Adrian suggests, we
-> would instead not pass anything between the slashes, and that would mean
-> "default_" concatenated with the name of the PMU used, so it would
-> become:
-> 
-> 	-e intel_pt//
-> 
-> that would be equivalent to:
-> 
-> 	-e intel_pt/defaults_intel_pt/
-> 
-> and also to:
-> 
-> 	-e intel_pt/tsc=1,noretcomp=0/
-> 
-> ?
-> 
-> I have not looked at the implementation, this is all just from the
-> information I skimmed in this thread.
+>  	if (idev == NULL)
+> @@ -302,6 +306,8 @@ int __ipv6_dev_ac_dec(struct inet6_dev *idev, const struct in6_addr *addr)
+>  {
+>  	struct ifacaddr6 *aca, *prev_aca;
+>  
+> +	ASSERT_RTNL();
+> +
+>  	write_lock_bh(&idev->lock);
+>  	prev_aca = NULL;
+>  	for (aca = idev->ac_list; aca; aca = aca->aca_next) {
+> @@ -336,6 +342,8 @@ static int ipv6_dev_ac_dec(struct net_device *dev, const struct in6_addr *addr)
+>  {
+>  	struct inet6_dev *idev = __in6_dev_get(dev);
+>  
+> +	ASSERT_RTNL();
+> +
+>  	if (idev == NULL)
+>  		return -ENODEV;
+>  	return __ipv6_dev_ac_dec(idev, addr);
 
-well I meant that we already have following directory:
-  /sys/devices/cpu/events
+ASSERT_RTNL() still performs a runtime check. While those are not really
+fast paths, I still think it is better to keep them to a minimum and
+place them only at places where we know all code which needs to be
+guarded passes by:
 
-for aliases.. files with format definitions (even partial)
-I can imagine 'default' file there doing the same job
-for the default format set
+I would suggest to move ASSERT_RTNL to ipv6_dev_mc_inc and
+__ipv6_dev_mc_dec and even remove the checks from addrconf_join_solict
+and addrconf_leave_solict. Does that cover all code paths and makes
+sense?
 
-but I just could be missing something which is not apparent
-from changelog ;-)
+> ---
+> 
+> 
+> And for multicast:
+>  - locking order in the patch below: rtnl -> rcu -> ipv6_sk_mc_lock
+>  - ipv6_sock_mc_join: maybe move all the _unlock()'s together at the end of the function
+>  - do we need to modify rcu_dereference_protected in ipv6_sock_mc_drop/ipv6_sock_mc_close
+>  - I had a look at the other codepaths that call ipv6_dev_mc_inc/dec
+>    - ipv6_mc_destroy_dev, dev_forward_change, ipv6_add_dev,
+>      addrconf_join_solict -- all take rtnl or already have an
+>      ASSERT_RTNL()
+>    - pndisc_destructor, called from pneigh_ifdown/pneigh_delete
+>    - pndisc_constructor, called from pneigh_lookup -- pneigh_lookup
+>      has ASSERT_RTNL(), but pneigh_lookup is called from ip6_forward and
+>      ndisc_recv_na
+>    - (hope I didn't miss any callers)
+> 
+> As far as I could see, apart maybe from pndisc_constructor, it seems
+> okay, but I'd like to hear your comments.
 
-jirka
+The rest of the patch looks good.
+
+Can you or Cong post a final patch with the adapted ac_join/drop
+changes?
+
+Thanks,
+Hannes
+
+
