@@ -1,64 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754117AbaIAOZn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 10:25:43 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:31564 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753673AbaIAOZl (ORCPT
+	id S1754156AbaIAOZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 10:25:56 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:49890 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753398AbaIAOZm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 10:25:41 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-74-540481e364bd
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>, netdev@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] net: sh_eth: fix driver dependencies
-Date: Mon, 01 Sep 2014 16:25:35 +0200
-Message-id: <1749721.1a6rN6K2Gg@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t9jAd3HjSwhBrc6NCzmnG9hsWje+pXR
-	4mzTG3aLy7vmsFnM+TOF2eLB6rdsFscWiDmwe2xZeZPJY+esu+wefVtWMXrM+fmNxePzJrkA
-	1igum5TUnMyy1CJ9uwSujDPvnzEXrGKvaDlwhLGBcRFbFyMnh4SAicTUtsWsELaYxIV764Hi
-	XBxCAosYJVo3bYNyWpgk+ld+ZAepYhOwkpjYvooRxBYR0JZYd6CHFaSIWeAko8TaSRBjhQUs
-	JH7taWUCsVkEVCWWn//BDGLzCmhK3Lo/EWyQqICnxI7tK9kg4oISPybfYwGxmQXkJfbtn8oK
-	YWtJrN95nGkCI98sJGWzkJTNQlK2gJF5FaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZw2D6T
-	3sG4qsHiEKMAB6MSD++DWcwhQqyJZcWVuYcYJTiYlUR4UzNYQoR4UxIrq1KL8uOLSnNSiw8x
-	SnOwKInzHmy1DhQSSE8sSc1OTS1ILYLJMnFwSjUwCp/XUzVsvbh51yNf278Mix6veK7L1mPu
-	tSD06oMFy8LmrD163Xl9Tmz6vx/ZJ2/M1F+/Y8bsQxGis2OVDxgFHVl3ucC60rOjpbNs7RnX
-	gqfrSu4tO7qBPX8rY9RNh5+Jc/5y715isv09a8jDn2Z/o191hFyuE1gUdPoJv0yueaR+kK/e
-	3ZUvLiqxFGckGmoxFxUnAgBH5UAVVwIAAA==
+	Mon, 1 Sep 2014 10:25:42 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Lee Jones <lee.jones@linaro.org>, kgene.kim@samsung.com,
+        linux@arm.linux.org.uk, naushad@samsung.com,
+        Pankaj Dubey <pankaj.dubey@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, linux-kernel@vger.kernel.org,
+        joshi@samsung.com, linux-samsung-soc@vger.kernel.org,
+        broonie@kernel.org, thomas.ab@samsung.com, vikas.sajjan@samsung.com,
+        chow.kim@samsung.com
+Subject: Re: [PATCH] mfd: syscon: Decouple syscon interface from syscon devices
+Date: Mon, 01 Sep 2014 16:24:27 +0200
+Message-ID: <12348292.z1qJl96tVA@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140901112549.GM7374@lee--X1>
+References: <1408694991-21615-1-git-send-email-pankaj.dubey@samsung.com> <4121644.3haxjiIdIo@wuerfel> <20140901112549.GM7374@lee--X1>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:qERyDHGOp8/4GrWJDzhvLRl311yAKqtJ3Tk/E5r2Oyb
+ xc/kwp3zGfYTU1YiunS3gjSs59gNFiB3IRPMdkfzfvX1qNr63d
+ 2pgCVl0xRSXoDlZcZzZ8qa0OeAwtdSGHxbPYiIrovkNICjYC9D
+ UpRabNUxmgJ21Ylded73fEdTJ4H/aE6a1n6ndQmjQxJuLhXoRD
+ 75KRkWrXdDlRpukmeW+hqqn+UAz6mIoOiqahDgIM3mjkmjmaXq
+ VTBSP2tlnvk/09zS0Gh4hKIM/tFnjLX6CtsyLQhCC0p41GKN7u
+ WSHore0P8vF8FkCfWPfVS064hFzO6EVgY3zFRx/Sy0HNHErrgW
+ euavMIbWEHhrnEmMg3bk=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Renesas SuperH Ethernet support should be available only on
-Renesas ARM SoCs and SuperH architecture.
+On Monday 01 September 2014 12:25:49 Lee Jones wrote:
+> On Mon, 01 Sep 2014, Arnd Bergmann wrote:
+> > On Monday 01 September 2014 08:49:18 Lee Jones wrote:
+> > > On Fri, 22 Aug 2014, Pankaj Dubey wrote:
+> > > 
+> > > > From: Tomasz Figa <t.figa@samsung.com>
+> > > > 
+> > > > Currently a syscon entity can be only registered directly through a
+> > > > platform device that binds to a dedicated driver. However in certain use
+> > > > cases it is desirable to make a device used with another driver a syscon
+> > > > interface provider. For example, certain SoCs (e.g. Exynos) contain
+> > > > system controller blocks which perform various functions such as power
+> > > > domain control, CPU power management, low power mode control, but in
+> > > > addition contain certain IP integration glue, such as various signal
+> > > > masks, coprocessor power control, etc. In such case, there is a need to
+> > > > have a dedicated driver for such system controller but also share
+> > > > registers with other drivers. The latter is where the syscon interface
+> > > > is helpful.
+> > > > 
+> > > > This patch decouples syscon object from syscon driver, so that it can be
+> > > > registered from any driver in addition to the original "syscon" platform
+> > > > driver.
+> > > > 
+> > > > Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+> > > > Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+> > > > ---
+> > > > 
+> > > > RFC patch [1] was posted by Tomasz Figa. This patch addresses some of
+> > > > comments given by Arnd to RFC patch, and further decouples syscon from
+> > > > device model. It also gives flexibility of registering with syscon at
+> > > > early stage using device_node object.
+> > > 
+> > > It would be helpful if Arnd gave this revision his blessing (Ack).
+> > 
+> > I never saw a reason why we don't take this all the way as discussed
+> > a few times: Completely remove the dependency of syscon on having
+> > a platform driver for it, and make it possible to just call
+> > syscon_regmap_lookup_by_phandle() without having to register
+> > it first.
+> 
+> I think this sounds like a good end-state.  Migrating over by
+> supporting both methods in this way does sound like the correct thing
+> to do though.  Doing so is likely to dramatically reduce the effect on
+> current users.
 
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Simon Horman <horms@verge.net.au>
-Cc: Magnus Damm <magnus.damm@gmail.com>
----
-v2:
-- s/ARCH_SH/SUPERH/ (thanks to Sergei Shtylyov)
+Maybe I'm misreading the patch, but I don't see how it creates a
+migration path. What I want to end up with is infrastructure that
+lets anybody call syscon_regmap_lookup_by_pdevname or
+syscon_regmap_lookup_by_compatible (if they really need to)
+without needing the platform_driver for syscon. That should not
+require any form of compatibility layer because to the driver
+using it there is no API change.
 
- drivers/net/ethernet/renesas/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+In contrast, this patch introduces a new of_syscon_{un,}register()
+interface that would get removed after the the above has
+been implemented, causing extra churn for any driver that also
+wants to provide a regmap-like interface.
 
-Index: b/drivers/net/ethernet/renesas/Kconfig
-===================================================================
---- a/drivers/net/ethernet/renesas/Kconfig	2014-07-30 14:31:20.479522692 +0200
-+++ b/drivers/net/ethernet/renesas/Kconfig	2014-09-01 14:45:36.160544016 +0200
-@@ -5,6 +5,7 @@
- config SH_ETH
- 	tristate "Renesas SuperH Ethernet support"
- 	depends on HAS_DMA
-+	depends on ARCH_SHMOBILE || SUPERH || COMPILE_TEST
- 	select CRC32
- 	select MII
- 	select MDIO_BITBANG
-
+	Arnd
