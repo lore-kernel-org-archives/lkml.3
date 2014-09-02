@@ -1,214 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307AbaIBJF6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 05:05:58 -0400
-Received: from mail-bl2lp0204.outbound.protection.outlook.com ([207.46.163.204]:18581
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	id S1753064AbaIBJIN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 05:08:13 -0400
+Received: from mail-bn1lp0144.outbound.protection.outlook.com ([207.46.163.144]:27236
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752121AbaIBJFz convert rfc822-to-8bit (ORCPT
+	id S1750722AbaIBJIK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 05:05:55 -0400
+	Tue, 2 Sep 2014 05:08:10 -0400
 From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Jyri Sarha <jsarha@ti.com>, "broonie@kernel.org" <broonie@kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+To: Andrew Lunn <andrew@lunn.ch>
+CC: "broonie@kernel.org" <broonie@kernel.org>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
+        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>,
+        "moinejf@free.fr" <moinejf@free.fr>, "jsarha@ti.com" <jsarha@ti.com>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        Nicolin Chen <nicoleotsuka@gmail.com>
-Subject: RE: [RFC][PATCH] ASoC: simple-card: Merge single and muti DAI link
- code.
-Thread-Topic: [RFC][PATCH] ASoC: simple-card: Merge single and muti DAI link
- code.
-Thread-Index: AQHPw1WlKghmtyQaZ0ed1b/HG05M45vsCn4AgAGG1ZA=
-Date: Tue, 2 Sep 2014 09:05:37 +0000
-Message-ID: <6df8b3abd4ef45b093e15010ca3fd156@BY2PR0301MB0613.namprd03.prod.outlook.com>
-References: <1409294797-21948-1-git-send-email-Li.Xiubo@freescale.com>
- <54043EBE.9020808@ti.com>
-In-Reply-To: <54043EBE.9020808@ti.com>
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Shawn Guo <Shawn.Guo@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: RE: [PATCHv1 4/7] ASoC: dts: kirkwood-t5325: To support simple card
+ newest style.
+Thread-Topic: [PATCHv1 4/7] ASoC: dts: kirkwood-t5325: To support simple card
+ newest style.
+Thread-Index: AQHPxaSPxtMlnd8OW0WJayJnAu1ukZvsSasAgAFFOmA=
+Date: Tue, 2 Sep 2014 09:08:05 +0000
+Message-ID: <e58337783d164e8da966938b27825cda@BY2PR0301MB0613.namprd03.prod.outlook.com>
+References: <1409545781-20530-1-git-send-email-Li.Xiubo@freescale.com>
+ <1409545781-20530-5-git-send-email-Li.Xiubo@freescale.com>
+ <20140901134148.GB11312@lunn.ch>
+In-Reply-To: <20140901134148.GB11312@lunn.ch>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
 x-ms-exchange-transport-fromentityheader: Hosted
 x-originating-ip: [123.151.195.49]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;UriScan:;
 x-forefront-prvs: 0322B4EDE1
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(189002)(24454002)(53474002)(199003)(13464003)(479174003)(377454003)(51704005)(31966008)(106356001)(54356999)(50986999)(74502001)(76176999)(101416001)(33646002)(46102001)(95666004)(21056001)(20776003)(99286002)(85306004)(83072002)(74662001)(105586002)(107046002)(85852003)(77982001)(90102001)(108616004)(77096002)(74316001)(83322001)(81542001)(80022001)(19580405001)(76576001)(106116001)(19580395003)(87936001)(99396002)(86362001)(81342001)(66066001)(92566001)(4396001)(2656002)(2201001)(76482001)(64706001)(2501002)(15866825004)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR0301MB0614;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(13464003)(199003)(189002)(51704005)(377454003)(24454002)(81342001)(108616004)(99396002)(81542001)(31966008)(74316001)(74502001)(74662001)(106356001)(2656002)(77096002)(76176999)(85306004)(76482001)(66066001)(80022001)(46102001)(85852003)(101416001)(83072002)(19580395003)(87936001)(64706001)(92566001)(110136001)(105586002)(86362001)(77982001)(21056001)(106116001)(50986999)(54356999)(4396001)(90102001)(33646002)(20776003)(95666004)(83322001)(19580405001)(575784001)(107046002)(99286002)(76576001)(15866825004)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB342;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;
 X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jyri,
+Hi Andrew,
 
-I'll follow Mark's advice of maintaining compatibility with the old DTs.
+Thanks very much for you comment and advice.
 
-Thanks very much for your comments, and this is very important for me.
-
-And I will also update the binding documet for simple card, please help
-me review it, any comment and advice are welcome.
-
-The goal is to simplify the simple card code and make it more readable and
-Easier to add muti DAI links support from the single DAI link DTs, this will
-Be very useful on my LS1+ SoCs in the future.
-
+I will resend this patch series to compatibility with the old DTs, and it will
+Up to the owners to update the DTs to support the new style of DTs.
 
 BRs
 Xiubo
 
 
 
-> -----Original Message-----
-> From: Jyri Sarha [mailto:jsarha@ti.com]
-> Sent: Monday, September 01, 2014 5:39 PM
-> To: Xiubo Li-B47053; broonie@kernel.org; alsa-devel@alsa-project.org
-> Cc: linux-kernel@vger.kernel.org; devicetree@vger.kernel.org; Kuninori
-> Morimoto; Jean-Francois Moine; Nicolin Chen
-> Subject: Re: [RFC][PATCH] ASoC: simple-card: Merge single and muti DAI link
-> code.
-> 
-> This patch would break the current syntax without introducing any
-> improvements over it (actually the opposite, see bellow). So in its
-> current form I don't like this patch at all.
-> 
-> On 08/29/2014 09:46 AM, Xiubo Li wrote:
->  > This patch merge single DAI link and muti-DAI links code together,
->  > and simply the simple-card driver code.
->  >
->  > And also do some other improvement:
->  >
->  > Since from the DAI format micro SND_SOC_DAIFMT_CBx_CFx, the 'CBx'
->  > mean Codec's bit clock is as master/slave and the 'CFx' mean Codec's
->  > frame clock is as master/slave.
->  >
->  > So these same DAI formats should be informed to CPU and CODE DAIs at
->  > the same time. For the Codec driver will set the bit clock and frame
->  > clock as the DAI formats said, but for the CPU driver, if the the
->  > bit clock or frame clock is as Codec master, so it should be set CPU
->  > DAI device as bit clock or frame clock as slave, and vice versa.
->  >
-> 
-> But there is no such problem with the current code any more. The new
-> preferred way is to indicate bitclock and frame master with phandles
-> that refer to the master DAI on the link (see the examples bellow).
-> 
->  > The old code will cause confusion, and we should be clear that the
->  > letter 'C' here mean to Codec.
->  >
->  > Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
->  > Cc: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
->  > Cc: Jean-Francois Moine <moinejf@free.fr>
->  > Cc: Jyri Sarha <jsarha@ti.com>
->  > Cc: Nicolin Chen <nicoleotsuka@gmail.com>
->  > ---
->  >
->  > Hi,
->  >
->  > This patch will break the old DT, so i just send one RFC version, and
->  > will add the old DT patches in next version if this patch can work
->  > well.
-> 
-> I do not object in getting rid of this simplified description for a
-> single dailink card:
-> 
-> (example 1)
-> sound {
-> 	compatible = "simple-audio-card";
-> ...
-> 	simple-audio-card,format = "left_j";
-> 	simple-audio-card,bitclock-master = <&dailink0_master>;
-> 	simple-audio-card,frame-master = <&dailink0_master>;
-> 	simple-audio-card,cpu {
-> 		sound-dai = <&sh_fsi2 0>;
-> 	};
-> 
-> 	dailink0_master: simple-audio-card,codec {
-> 		sound-dai = <&ak4648>;
-> 		clocks = <&osc>;
-> 	};
-> };
-> 
-> and describing the DAI-links always like this:
-> 
-> (example 2)
-> sound {
-> 	compatible = "simple-audio-card";
-> ...
-> 	simple-audio-card,dai-link@0 {
-> 		format = "i2s";
-> 		bitclock-master = <&dailink0_master>;
-> 		frame-master = <&dailink0_master>;
-> 		dailink0_master: cpu {
-> 			sound-dai = <&audio1 0>;
-> 		};
-> 		codec {
-> 			sound-dai = <&tda998x 0>;
-> 		};
-> 	};
-> };
-> 
-> But I do object going back to the old syntax exclusively and
-> describing the bitclock and frame master always with simple boolean
-> properties, like this:
-> 
-> (example 3)
-> sound {
-> 	compatible = "simple-audio-card";
-> ...
-> 	simple-audio-card,dai-link@0 {
-> 		format = "i2s";
-> 		dailink0_master: cpu {
-> 			sound-dai = <&audio1 0>;
-> 		};
-> 		codec {
-> 			sound-dai = <&tda998x 0>;
-> 			bitclock-master;
-> 			frame-master;
-> 		};
-> 	};
-> };
-> 
-> In my opinion we should rather get rid of this syntax than move
-> exclusively to it.
-> 
-> The syntax of example 2 is simply superior to the syntax of example
-> 3. With the syntax on example 2 it is possible to describe TDM setups
-> where there is multiple codecs on a single i2s bus. The syntax of
-> example 3 simply can not describe that kind of setup.
-> 
-> If you need to have the backwards compatibility syntax describing the
-> clock masters to work also in the multilink mode (example 3), then do
-> just that (it is simple enough [1]). But please do not break the new
-> phandle based syntax!!!
-> 
-> Best regards,
-> Jyri
-> 
-> [1] To enable legacy syntax in multilink mode just apply this patch:
-> 
-> diff --git a/sound/soc/generic/simple-card.c
-> b/sound/soc/generic/simple-card.c
-> index 8dd7957..aed3423 100644
-> --- a/sound/soc/generic/simple-card.c
-> +++ b/sound/soc/generic/simple-card.c
-> @@ -242,10 +242,10 @@ static int simple_card_dai_link_of(struct
-> device_node *node,
->          if (ret < 0)
->                  goto dai_link_of_err;
-> 
-> -       if (strlen(prefix) && !bitclkmaster && !framemaster) {
-> -               /* No dai-link level and master setting was not found from
-> -                  sound node level, revert back to legacy DT parsing and
-> -                  take the settings from codec node. */
-> +       if (!bitclkmaster && !framemaster) {
-> +               /* No dai-link level master setting was found, revert
-> +                  back to legacy DT parsing and take the settings
-> +                  from the codec node boolean properties. */
->                  dev_dbg(dev, "%s: Revert to legacy daifmt parsing\n",
->                          __func__);
->                  dai_props->cpu_dai.fmt = dai_props->codec_dai.fmt =
 
+> -----Original Message-----
+> From: Andrew Lunn [mailto:andrew@lunn.ch]
+> Sent: Monday, September 01, 2014 9:42 PM
+> To: Xiubo Li-B47053
+> Cc: broonie@kernel.org; lgirdwood@gmail.com; perex@perex.cz; tiwai@suse.de;
+> kuninori.morimoto.gx@renesas.com; moinejf@free.fr; andrew@lunn.ch;
+> jsarha@ti.com; devicetree@vger.kernel.org; linux-arm-
+> kernel@lists.infradead.org; linux-sh@vger.kernel.org; alsa-devel@alsa-
+> project.org; Guo Shawn-R65073; linux-kernel@vger.kernel.org; Jason Cooper
+> Subject: Re: [PATCHv1 4/7] ASoC: dts: kirkwood-t5325: To support simple card
+> newest style.
+> 
+> On Mon, Sep 01, 2014 at 12:29:38PM +0800, Xiubo Li wrote:
+> > This patch depends on the following simple card patch:
+> > ===
+> > ASoC: simple-card: Merge single and muti DAI link code.
+> 
+> Saying what a patch depends on, is not the best of ChangeLog.
+> 
+> Say something like:
+> 
+> The simple-card binding has been changed, so that a dai-link subnode
+> is now required, and the properties directly under the sound node are
+> no longer allowed. Modify the DT to fit this new binding.
+> 
+>    Andrew
+> 
+> 
+> >
+> > This patch merge single DAI link and muti-DAI links code together,
+> > and simply the simple-card driver code.
+> >
+> > And also do some other improvement:
+> >
+> > Since from the DAI format micro SND_SOC_DAIFMT_CBx_CFx, the 'CBx'
+> > mean Codec's bit clock is as master/slave and the 'CFx' mean Codec's
+> > frame clock is as master/slave.
+> >
+> > So these same DAI formats should be informed to CPU and CODE DAIs at
+> > the same time. For the Codec driver will set the bit clock and frame
+> > clock as the DAI formats said, but for the CPU driver, if the the
+> > bit clock or frame clock is as Codec master, so it should be set CPU
+> > DAI device as bit clock or frame clock as slave, and vice versa.
+> >
+> > The old code will cause confusion, and we should be clear that the
+> > letter 'C' here mean to Codec.
+> > ===
+> >
+> > Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> > ---
+> >  arch/arm/boot/dts/kirkwood-t5325.dts | 15 ++++++++-------
+> >  1 file changed, 8 insertions(+), 7 deletions(-)
+> >
+> > diff --git a/arch/arm/boot/dts/kirkwood-t5325.dts
+> b/arch/arm/boot/dts/kirkwood-t5325.dts
+> > index 610ec0f..25d1223 100644
+> > --- a/arch/arm/boot/dts/kirkwood-t5325.dts
+> > +++ b/arch/arm/boot/dts/kirkwood-t5325.dts
+> > @@ -189,7 +189,6 @@
+> >
+> >  	sound {
+> >  		compatible = "simple-audio-card";
+> > -		simple-audio-card,format = "i2s";
+> >  		simple-audio-card,routing =
+> >  			"Headphone Jack", "HPL",
+> >  			"Headphone Jack", "HPR",
+> > @@ -204,12 +203,14 @@
+> >
+> >  		simple-audio-card,mclk-fs = <256>;
+> >
+> > -		simple-audio-card,cpu {
+> > -			sound-dai = <&audio>;
+> > -		};
+> > -
+> > -		simple-audio-card,codec {
+> > -			sound-dai = <&alc5621>;
+> > +		simple-audio-card,dai-link {
+> > +			format = "i2s";
+> > +			cpu {
+> > +				sound-dai = <&audio>;
+> > +			};
+> > +			codec {
+> > +				sound-dai = <&alc5621>;
+> > +			};
+> >  		};
+> >  	};
+> >  };
+> > --
+> > 1.8.4
+> >
