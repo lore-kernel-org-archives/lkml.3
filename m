@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755400AbaIBWun (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 18:50:43 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:49389 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752046AbaIBWuj (ORCPT
+	id S1755427AbaIBWwm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 18:52:42 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:33296 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752046AbaIBWwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 18:50:39 -0400
-Date: Tue, 2 Sep 2014 15:50:57 -0700
-From: Darren Hart <dvhart@infradead.org>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: "benjamin.tissoires@redhat.com" <benjamin.tissoires@redhat.com>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] platform/x86: toshiba: re-enable acpi hotkeys after
- suspend to disk
-Message-ID: <20140902225057.GB11195@vmdeb7>
-References: <1409681059-6493-1-git-send-email-benjamin.tissoires@redhat.com>
- <1409681238.11717.4.camel@nebula.com>
+	Tue, 2 Sep 2014 18:52:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409681238.11717.4.camel@nebula.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140816122028.GC9305@htj.dyndns.org>
+References: <1408050926-9525-1-git-send-email-xiyou.wangcong@gmail.com>
+	<20140816122028.GC9305@htj.dyndns.org>
+Date: Tue, 2 Sep 2014 15:52:40 -0700
+Message-ID: <CAM_iQpVaWR-jZN3RByZgGsytRnv0NBxbXh_Y1WSdJqhasuygaQ@mail.gmail.com>
+Subject: Re: [Patch v3 1/2] freezer: check OOM kill while being frozen
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, David Rientjes <rientjes@google.com>,
+        Michal Hocko <mhocko@suse.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 02, 2014 at 06:07:19PM +0000, Matthew Garrett wrote:
-> On Tue, 2014-09-02 at 14:04 -0400, Benjamin Tissoires wrote:
-> 
-> > we noticed this problem on a Toshiba Z40. I kind of brute-forced the thing, and
-> > I ended up that calling "ENAB" was making the keys working again (rmmod/insmod 
-> > the driver was sufficient, and the only command which was different from the
-> > resume was this ACPI call).
-> > 
-> > I am really surprised some toshiba laptops do not need this, so I'd prefer that
-> > an ACPI expert (Matthew???) gives its wisdom regarding that.
-> 
-> Looks good to me. I'd be surprised if this breaks anything.
-> 
-> Acked-by: Matthew Garrett <matthew.garrett@nebula.com>
+On Sat, Aug 16, 2014 at 5:20 AM, Tejun Heo <tj@kernel.org> wrote:
+> On Thu, Aug 14, 2014 at 02:15:25PM -0700, Cong Wang wrote:
+>> +static bool should_thaw_current(bool check_kthr_stop)
+>> +{
+>> +     if (!freezing(current) ||
+>> +         (check_kthr_stop && kthread_should_stop()) ||
+>> +         test_thread_flag(TIF_MEMDIE))
+>> +             return true;
+>> +     else
+>> +             return false;
+>> +}
+>
+> I'm not sure this is safe w.r.t. hibernation.  Please cc Rafael on
+> freezer related changes.
 
-Queued. Thanks.
+Or we can just check for cgroup freeze, something like below:
 
---
-Darren Hart
-Intel Open Source Technology Center
+diff --git a/kernel/freezer.c b/kernel/freezer.c
+index 33cbcb0..b06a059 100644
+--- a/kernel/freezer.c
++++ b/kernel/freezer.c
+@@ -56,7 +56,8 @@ static bool should_thaw_current(bool check_kthr_stop)
+ {
+        if (!freezing(current) ||
+            (check_kthr_stop && kthread_should_stop()) ||
+-           test_thread_flag(TIF_MEMDIE))
++           /* It might not be safe to check TIF_MEMDIE for pm freeze */
++           (cgroup_freezing(current) && test_thread_flag(TIF_MEMDIE)))
+                return true;
+        else
+                return false;
+
+
+Are you happy now, Tejun? :)
