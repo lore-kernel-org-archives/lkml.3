@@ -1,94 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753449AbaIBJ5e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 05:57:34 -0400
-Received: from mga02.intel.com ([134.134.136.20]:16396 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750863AbaIBJ5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 05:57:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,447,1406617200"; 
-   d="scan'208";a="474599041"
-From: ville.syrjala@linux.intel.com
-To: intel-gfx@lists.freedesktop.org
-Cc: "Jani Nikula" <jani.nikula@linux.intel.com>,
-        "Chris Wilson" <chris@chris-wilson.co.uk>,
-        David Airlie <airlied@linux.ie>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, Tibor Billes <tbilles@gmx.com>
-Subject: [PATCH v3] drm/i915: Fix lock dropping in intel_tv_detect()
-Date: Tue,  2 Sep 2014 12:57:22 +0300
-Message-Id: <1409651842-14446-1-git-send-email-ville.syrjala@linux.intel.com>
-X-Mailer: git-send-email 1.8.5.5
-In-Reply-To: <20140902082635.GA25238@nuc-i3427.alporthouse.com>
-References: <20140902082635.GA25238@nuc-i3427.alporthouse.com>
+	id S1752591AbaIBKHL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 06:07:11 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42920 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750722AbaIBKHI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 06:07:08 -0400
+Message-ID: <540596A6.8000608@arm.com>
+Date: Tue, 02 Sep 2014 11:06:30 +0100
+From: Andre Przywara <andre.przywara@arm.com>
+Organization: ARM Ltd.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: Rob Herring <robherring2@gmail.com>
+CC: "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Russell King <linux@arm.linux.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 1/1] drivers: introduce ARM SBSA generic UART driver
+References: <1409328803-1953-1-git-send-email-andre.przywara@arm.com> <1409328803-1953-2-git-send-email-andre.przywara@arm.com> <CAL_JsqJbAWRhduzMwdQMh8sDdVqTWVK2Ej9LQjx4gp2ifwxe6Q@mail.gmail.com>
+In-Reply-To: <CAL_JsqJbAWRhduzMwdQMh8sDdVqTWVK2Ej9LQjx4gp2ifwxe6Q@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Hi Rob,
 
-When intel_tv_detect() fails to do load detection it would forget to
-drop the locks and clean up the acquire context. Fix it up.
+thanks for looking at this.
 
-This is a regression from:
- commit 208bf9fdcd3575aa4a5d48b3e0295f7cdaf6fc44
- Author: Ville Syrjälä <ville.syrjala@linux.intel.com>
- Date:   Mon Aug 11 13:15:35 2014 +0300
+On 02/09/14 04:06, Rob Herring wrote:
+> On Fri, Aug 29, 2014 at 11:13 AM, Andre Przywara <andre.przywara@arm.com> wrote:
+>> The ARM Server Base System Architecture (SBSA) describes a generic
+>> UART which all compliant level 1 systems should implement. This is
+>> actually a PL011 subset, so a full PL011 implementation will satisfy
+>> this requirement.
+>> However if a system does not have a PL011, a very stripped down
+>> implementation complying to the SBSA defined specification will
+>> suffice. The Linux PL011 driver is not guaranteed to drive this
+>> limited device (and indeed the fast model implentation hangs the
+>> kernel if driven by the PL011 driver).
+>> So introduce a new driver just implementing the part specified by the
+>> SBSA (which lacks DMA, the modem control signals and many of the
+>> registers including baud rate control). This driver has been derived
+>> by the actual PL011 one, removing all unnecessary code.
+>>
+>> Signed-off-by: Andre Przywara <andre.przywara@arm.com>
+>> ---
+>>  .../devicetree/bindings/serial/arm_sbsa_uart.txt   |    6 +
+>>  drivers/tty/serial/Kconfig                         |   28 +
+>>  drivers/tty/serial/Makefile                        |    1 +
+>>  drivers/tty/serial/sbsa_uart.c                     |  793 ++++++++++++++++++++
+>>  include/uapi/linux/serial_core.h                   |    1 +
+> 
+> Sorry, but I think this is all wrong. We've now just duplicated some
+> subset of the pl011 driver leaving out the parts like setting baudrate
+> which can never be added since those things could be different for
+> every vendor.
+> 
+> The original intent of the SBSA uart was to provide a common early
+> debug uart. It was not to have a full fledged driver. I think the SBSA
+> has failed in this area and created the potential to create a mess of
+> serial drivers different for every vendor. Reality will hopefully not
+> be that extreme and most vendors will just use the pl011 and create
+> their value add somewhere besides the uart. For the purpose of debug
+> output, we already support that as the pl011 earlycon only touches
+> SBSA compatible registers.
 
-    drm/i915: Fix locking for intel_enable_pipe_a()
+I see your point (and was actually looking for those kind of comments
+when posting this).
+I agree to that debug aspect and understand that earlycon already does
+this, but I think we need some support beyond earlycon, to be able to
+login and use it as a console (which is not possible with earlycon,
+right?) This is probably still for debugging or emergency access to the
+system only, but maybe also for logging - actually quite similar to how
+UARTs are used on today's x86 servers.
+So after having written three incarnations of this driver (goldfish
+based, PL010 based, PL011 based) I wonder if supporting the SBSA subset
+in the real PL011 driver is an option. Either this would be enabled by a
+new explicit DT property or preferably by a clever compatible string.
+Ideally we would just provide a different set of "struct uart_ops"
+members, with some pointing to generic PL011 routines, some to SBSA UART
+specific ones.
+Maybe we make the full featured PL011 support a config option
+(defaulting to y), allowing people to only use the SBSA subset in their
+kernel?
 
-v2: Make the code more readable (Chris)
-v3: Drop WARN_ON(type < 0) (Chris)
+Does that make more sense? (for a general SBSA h/w rationale see below)
 
-Cc: stable@vger.kernel.org
-Cc: Tibor Billes <tbilles@gmx.com>
-Reported-by: Tibor Billes <tbilles@gmx.com>
-Tested-by: Tibor Billes <tbilles@gmx.com>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
----
- drivers/gpu/drm/i915/intel_tv.c | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+>>  5 files changed, 829 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/serial/arm_sbsa_uart.txt
+>>  create mode 100644 drivers/tty/serial/sbsa_uart.c
+>>
+>> diff --git a/Documentation/devicetree/bindings/serial/arm_sbsa_uart.txt b/Documentation/devicetree/bindings/serial/arm_sbsa_uart.txt
+>> new file mode 100644
+>> index 0000000..8e2c5d6
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/serial/arm_sbsa_uart.txt
+>> @@ -0,0 +1,6 @@
+>> +* ARM SBSA defined generic UART
+>> +
+>> +Required properties:
+>> +- compatible: must be "arm,sbsa-uart"
+> 
+> This alone is not okay. There is no such implementation of hardware.
 
-diff --git a/drivers/gpu/drm/i915/intel_tv.c b/drivers/gpu/drm/i915/intel_tv.c
-index 32186a6..c69d3ce 100644
---- a/drivers/gpu/drm/i915/intel_tv.c
-+++ b/drivers/gpu/drm/i915/intel_tv.c
-@@ -1311,6 +1311,7 @@ intel_tv_detect(struct drm_connector *connector, bool force)
- {
- 	struct drm_display_mode mode;
- 	struct intel_tv *intel_tv = intel_attached_tv(connector);
-+	enum drm_connector_status status;
- 	int type;
- 
- 	DRM_DEBUG_KMS("[CONNECTOR:%d:%s] force=%d\n",
-@@ -1328,16 +1329,19 @@ intel_tv_detect(struct drm_connector *connector, bool force)
- 		if (intel_get_load_detect_pipe(connector, &mode, &tmp, &ctx)) {
- 			type = intel_tv_detect_type(intel_tv, connector);
- 			intel_release_load_detect_pipe(connector, &tmp);
-+			status = type < 0 ?
-+				connector_status_disconnected :
-+				connector_status_connected;
- 		} else
--			return connector_status_unknown;
-+			status = connector_status_unknown;
- 
- 		drm_modeset_drop_locks(&ctx);
- 		drm_modeset_acquire_fini(&ctx);
- 	} else
- 		return connector->status;
- 
--	if (type < 0)
--		return connector_status_disconnected;
-+	if (status != connector_status_connected)
-+		return status;
- 
- 	intel_tv->type = type;
- 	intel_tv_find_better_format(connector);
--- 
-1.8.5.5
+But the SBSA explicitly allows this. I don't know of any vendor who just
+implements the subset, but I've been told that this has been asked for.
 
+> The DT must specify the implementation such as pl011.
+
+If it is a full featured PL011: sure. Then we don't need this driver at
+all and just use the SBSA UART spec as a guideline for our earlycon
+implementation.
+I will try to learn if there is someone actually implementing only the
+subset.
+
+Cheers,
+Andre.
