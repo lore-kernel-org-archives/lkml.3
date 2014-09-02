@@ -1,51 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754935AbaIBTxV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 15:53:21 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:33007 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751302AbaIBTxT (ORCPT
+	id S1755034AbaIBTx5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 15:53:57 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:49868 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754830AbaIBTxz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 15:53:19 -0400
-Message-ID: <5406202A.30401@amacapital.net>
-Date: Tue, 02 Sep 2014 12:53:14 -0700
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Tue, 2 Sep 2014 15:53:55 -0400
+Date: Tue, 2 Sep 2014 15:53:51 -0400
+From: Jeff Layton <jlayton@poochiereds.net>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH] locks: Ability to test for flock presence on fd
+Message-ID: <20140902155351.79183446@tlielax.poochiereds.net>
+In-Reply-To: <20140902194300.GE31793@fieldses.org>
+References: <5405FBAE.5020303@parallels.com>
+	<20140902184456.GC31793@fieldses.org>
+	<54061562.4080306@parallels.com>
+	<20140902194300.GE31793@fieldses.org>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-To: Steven Stewart-Gallus <sstewartgallus00@mylangara.bc.ca>,
-        linux-kernel@vger.kernel.org
-Subject: Re: How is pivot_root intended to be used?
-References: <fc0cb509956.5404e2cc@langara.bc.ca>
-In-Reply-To: <fc0cb509956.5404e2cc@langara.bc.ca>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01/2014 02:19 PM, Steven Stewart-Gallus wrote:
-> Hello,
->
-> I am not confused about how I can currently use pivot_root for
-> containers on my kernel (version 3.13). Currently a sequence like:
->
->      if (-1 == syscall(__NR_pivot_root, ".", ".")) {
->          perror("pivot_root");
->          return EXIT_FAILURE;
->      }
->
->      if (-1 == umount2(".", MNT_DETACH)) {
->          perror("umount");
->          return EXIT_FAILURE;
+On Tue, 2 Sep 2014 15:43:00 -0400
+"J. Bruce Fields" <bfields@fieldses.org> wrote:
 
-Given the comment, you don't know what '.' refers to in the umount2 call 
-above.  In fact, I think you're actually detaching the wrong thing, 
-leaving possible security issues.
+> On Tue, Sep 02, 2014 at 11:07:14PM +0400, Pavel Emelyanov wrote:
+> > On 09/02/2014 10:44 PM, J. Bruce Fields wrote:
+> > > On Tue, Sep 02, 2014 at 09:17:34PM +0400, Pavel Emelyanov wrote:
+> > >> Hi,
+> > >>
+> > >> There's a problem with getting information about who has a flock on
+> > >> a specific file. The thing is that the "owner" field, that is shown in
+> > >> /proc/locks is the pid of the task who created the flock, not the one
+> > >> who _may_ hold it.
+> > >>
+> > >> If the flock creator shared the file with some other task (by forking
+> > >> or via scm_rights) and then died or closed the file, the information
+> > >> shown in proc no longer corresponds to the reality.
+> > >>
+> > >> This is critical for CRIU project, that tries to dump (and restore)
+> > >> the state of running tasks. For example, let's take two tasks A and B
+> > >> both opened a file "/foo", one of tasks places a LOCK_SH lock on the 
+> > >> file and then "obfuscated" the owner field in /proc/locks. After this
+> > >> we have no ways to find out who is the lock holder.
+> > >>
+> > >> I'd like to note, that for LOCK_EX this problem is not critical -- we
+> > >> may go to both tasks and "ask" them to LOCK_EX the file again (we can
+> > >> do it in CRIU, I can tell more if required). The one who succeeds is 
+> > >> the lock holder.
+> > > 
+> > > It could be both, actually, right?
+> > 
+> > Two succeeding with LOCK_EX? AFAIU no. Am I missing something?
+> 
+> After a fork, two processes "own" the lock, right?:
+> 
+> 	int main(int argc, char *argv[])
+> 	{
+> 		int fd, ret;
+> 	
+> 		fd = open(argv[1], O_RDWR);
+> 		ret = flock(fd, LOCK_EX);
+> 		if (ret)
+> 			err(1, "flock");
+> 		ret = fork();
+> 		if (ret == -1)
+> 			err(1, "flock");
+> 		ret = flock(fd, LOCK_EX);
+> 		if (ret)
+> 			err(1, "flock");
+> 		printf("%d got exclusive lock\n", getpid());
+> 		sleep(1000);
+> 	}
+> 
+> 	$ touch TMP
+> 	$ ./test TMP
+> 	15882 got exclusive lock
+> 	15883 got exclusive lock
+> 	^C
+> 
+> I may misunderstand what you're doing.
+> 
 
-See:
+Yeah, I don't understand either.
 
-https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/supervisor-main.c%2B%2B#L922
+Flock locks are owned by the file description. The task that set
+them is really irrelevant once they are set.
 
-for a program that does this more carefully.
+In the second flock() call there, you're just "modifying" an existing
+lock (which turns out to be a noop here).
 
---Andy
+So, I don't quite understand the problem this solves. I get that you're
+trying to reestablish the flock "state" after a checkpoint/restore
+event, but why does it matter what task actually sets the locks as long
+as they're set on the correct set of fds?
+
+> > >> With LOCK_SH this doesn't work. Trying to drop the
+> > >> lock doesn't work either, as flock(LOCK_UN) reports 0 in both cases:
+> > >> if the file is locked and if it is not.
+> > >>
+> > >> That said, I'd like to propose the LOCK_TEST flag to the flock call,
+> > >> that would check whether the lock of the given type (LOCK_SH or LOCK_EX)
+> > >> exists on the file we test. It's not the same as the existing in-kernel
+> > >> FL_ACCESS flag, which checks whether the new lock is possible, but
+> > >> it's a new FL_TEST flag, that checks whether the existing lock is there.
+> > >>
+> > >> What do you think?
+> > > 
+> > > I guess I can't see anything really wrong with it.
+> > > 
+> > > It ignores the (poorly documented) LOCK_MAND case, but maybe that's OK.
+> > 
+> > I actually checked it and it seemed to work. What problems do
+> > you see with this case?
+> 
+> On its own it just doesn't tell you whether or not LOCK_MAND is set.
+> But I guess you can still get that out of /proc/locks.
+> 
+> To be honest I don't really know whether LOCK_MAND works or is used.
+> 
+> --b.
+
+
+-- 
+Jeff Layton <jlayton@poochiereds.net>
