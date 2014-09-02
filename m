@@ -1,95 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754329AbaIBNxa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 09:53:30 -0400
-Received: from mail-bl2lp0205.outbound.protection.outlook.com ([207.46.163.205]:1899
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753417AbaIBNx2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 09:53:28 -0400
-Date: Tue, 2 Sep 2014 21:53:05 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Philippe Reynes <tremyfr@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, <kernel@pengutronix.de>,
-        <shc_work@mail.ru>
-Subject: Re: [PATCH v4] apf27dev: add max1027 in the dts
-Message-ID: <20140902135303.GK3135@dragon>
-References: <1409597072-29196-1-git-send-email-tremyfr@gmail.com>
+	id S1754180AbaIBN4X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 09:56:23 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:47055 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751500AbaIBN4U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 09:56:20 -0400
+Message-ID: <5405CC47.2040907@st.com>
+Date: Tue, 2 Sep 2014 15:55:19 +0200
+From: Maxime Coquelin <maxime.coquelin@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1409597072-29196-1-git-send-email-tremyfr@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199003)(24454002)(189002)(54534003)(51704005)(84676001)(110136001)(46102001)(106466001)(33656002)(76482001)(64706001)(107046002)(76176999)(46406003)(97756001)(74662001)(77982001)(104016003)(54356999)(81542001)(47776003)(50986999)(80022001)(23726002)(99396002)(74502001)(85306004)(20776003)(50466002)(81342001)(1411001)(92566001)(105606002)(87936001)(4396001)(26826002)(6806004)(44976005)(31966008)(90102001)(95666004)(68736004)(92726001)(33716001)(19580395003)(83506001)(102836001)(21056001)(97736001)(85852003)(86362001)(83072002)(57986006)(19580405001)(79102001)(83322001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB572;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 0322B4EDE1
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Shawn.Guo@freescale.com; 
-X-OriginatorOrg: freescale.com
+To: Daniel Thompson <daniel.thompson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <kgdb-bugreport@lists.sourceforge.net>, <patches@linaro.org>,
+        <linaro-kernel@lists.linaro.org>, John Stultz <john.stultz@linaro.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Colin Cross <ccross@android.com>, <kernel-team@android.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Nicolas Pitre <nico@linaro.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, <kernel@stlinux.com>,
+        <linux-serial@vger.kernel.org>
+Subject: Re: [PATCH v11 17/19] serial: asc: Adopt readl_/writel_relaxed()
+References: <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org> <1409662853-29313-1-git-send-email-daniel.thompson@linaro.org> <1409662853-29313-18-git-send-email-daniel.thompson@linaro.org>
+In-Reply-To: <1409662853-29313-18-git-send-email-daniel.thompson@linaro.org>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.201.23.80]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
+ definitions=2014-09-02_04:2014-09-02,2014-09-02,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 01, 2014 at 08:44:32PM +0200, Philippe Reynes wrote:
-> 
-> Signed-off-by: Philippe Reynes <tremyfr@gmail.com>
+Hi Daniel,
 
-Added "ARM: dts: " as the patch subject prefix, and applied the patch.
-
-Shawn
-
+On 09/02/2014 03:00 PM, Daniel Thompson wrote:
+> The architectures where this peripheral exists (ARM and SH) have expensive
+> implementations of writel(), reliant on spin locks and explicit L2 cache
+> management. These architectures provide a cheaper writel_relaxed() which
+> is much better suited to peripherals that do not perform DMA. The
+> situation with readl()/readl_relaxed()is similar although less acute.
+>
+> This driver does not use DMA and will be more power efficient and more
+> robust (due to absense of spin locks during console I/O) if it uses the
+> relaxed variants.
+>
+> This change means the driver is no longer portable and therefore no
+> longer suitable for compile testing.
+>
+> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+> Cc: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>
+> Cc: Maxime Coquelin <maxime.coquelin@st.com>
+> Cc: Patrice Chotard <patrice.chotard@st.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Jiri Slaby <jslaby@suse.cz>
+> Cc: kernel@stlinux.com
+> Cc: linux-serial@vger.kernel.org
 > ---
->  arch/arm/boot/dts/imx27-apf27dev.dts |   17 +++++++++++++++++
->  1 files changed, 17 insertions(+), 0 deletions(-)
-> 
-> Changelog:
-> v4: (thanks Shawn Guo for the feedback)
-> - put max1027 pinctl in the right place
-> - use 0x0 instead of 0
-> 
-> v3: (thanks Alexander Shiyan for the feedback)
-> - add datasheet pin name as comment
-> 
-> v2: (thanks Alexander Shiyan for the feedback)
-> - spi mode 0 is the default so no need to explicitly define it
-> 
-> diff --git a/arch/arm/boot/dts/imx27-apf27dev.dts b/arch/arm/boot/dts/imx27-apf27dev.dts
-> index b982309..bba3f41 100644
-> --- a/arch/arm/boot/dts/imx27-apf27dev.dts
-> +++ b/arch/arm/boot/dts/imx27-apf27dev.dts
-> @@ -82,6 +82,16 @@
->  	pinctrl-names = "default";
->  	pinctrl-0 = <&pinctrl_cspi1 &pinctrl_cspi1_cs>;
->  	status = "okay";
-> +
-> +	adc@0 {
-> +		compatible = "maxim,max1027";
-> +		reg = <0>;
-> +		interrupt-parent = <&gpio5>;
-> +		interrupts = <15 IRQ_TYPE_EDGE_FALLING>;
-> +		pinctrl-names = "default";
-> +		pinctrl-0 = <&pinctrl_max1027>;
-> +		spi-max-frequency = <10000000>;
-> +	};
->  };
->  
->  &cspi2 {
-> @@ -210,6 +220,13 @@
->  			>;
->  		};
->  
-> +		pinctrl_max1027: max1027 {
-> +			 fsl,pins = <
-> +				 MX27_PAD_UART1_CTS__GPIO5_14 0x0 /* CNVST */
-> +				 MX27_PAD_UART1_RTS__GPIO5_15 0x0 /* EOC */
-> +			>;
-> +		};
-> +
->  		pinctrl_pwm: pwmgrp {
->  			fsl,pins = <
->  				MX27_PAD_PWMO__PWMO 0x0
-> -- 
-> 1.7.4.4
-> 
+>   drivers/tty/serial/Kconfig  | 2 +-
+>   drivers/tty/serial/st-asc.c | 4 ++--
+>   2 files changed, 3 insertions(+), 3 deletions(-)
+
+
+
+You can add my:
+Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
+
+thanks!
+Maxime
+
