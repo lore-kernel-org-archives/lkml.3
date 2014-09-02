@@ -1,60 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427AbaIBWwm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 18:52:42 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:33296 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752046AbaIBWwk (ORCPT
+	id S1755417AbaIBW6c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 18:58:32 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:56279 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752046AbaIBW6a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 18:52:40 -0400
+	Tue, 2 Sep 2014 18:58:30 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140816122028.GC9305@htj.dyndns.org>
-References: <1408050926-9525-1-git-send-email-xiyou.wangcong@gmail.com>
-	<20140816122028.GC9305@htj.dyndns.org>
-Date: Tue, 2 Sep 2014 15:52:40 -0700
-Message-ID: <CAM_iQpVaWR-jZN3RByZgGsytRnv0NBxbXh_Y1WSdJqhasuygaQ@mail.gmail.com>
-Subject: Re: [Patch v3 1/2] freezer: check OOM kill while being frozen
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, David Rientjes <rientjes@google.com>,
-        Michal Hocko <mhocko@suse.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Andrew Morton <akpm@linux-foundation.org>
+X-Originating-IP: [2001:470:8:ee7:a579:9dc:4af9:4842]
+In-Reply-To: <53FB9DA0.7000301@infradead.org>
+References: <1397743910-18391-1-git-send-email-pefoley2@pefoley.com> <53FB9DA0.7000301@infradead.org>
+From: Peter Foley <pefoley2@pefoley.com>
+Date: Tue, 2 Sep 2014 18:58:09 -0400
+Message-ID: <CAOFdcFP4b0YFMuUFKm4=FoAGbCObf4u=W0UUPwf-ju_TNvuJaA@mail.gmail.com>
+Subject: Re: [PATCH 1/4] Documentation: use subdir-y to avoid unnecessary
+ built-in.o files
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org,
+        Sam Ravnborg <sam@ravnborg.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 16, 2014 at 5:20 AM, Tejun Heo <tj@kernel.org> wrote:
-> On Thu, Aug 14, 2014 at 02:15:25PM -0700, Cong Wang wrote:
->> +static bool should_thaw_current(bool check_kthr_stop)
->> +{
->> +     if (!freezing(current) ||
->> +         (check_kthr_stop && kthread_should_stop()) ||
->> +         test_thread_flag(TIF_MEMDIE))
->> +             return true;
->> +     else
->> +             return false;
->> +}
+On Mon, Aug 25, 2014 at 4:33 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
+> On 04/17/14 07:11, Peter Foley wrote:
+> Hi Peter,
 >
-> I'm not sure this is safe w.r.t. hibernation.  Please cc Rafael on
-> freezer related changes.
+> Sorry about the delay and thanks for the patches.
+>
+> I have now applied all 4 of these patches, with a few small changes in
+> Documentation/laptops/ to account for hpfall.c being renamed to freefall.c
+> and the problems with it having already been fixed by other patches.
+>
+> [testing]
+>
+> Documentation/vDSO/* does not build for me:
+>
+>   HOSTCC  Documentation/vDSO/parse_vdso.o
+>   HOSTCC  Documentation/vDSO/vdso_test.o
+>   LD      Documentation/video4linux/built-in.o
+>   HOSTLD  Documentation/vDSO/vdso_test
+>   CC [M]  Documentation/video4linux/v4l2-pci-skeleton.o
+> /usr/lib64/gcc/x86_64-suse-linux/4.8/../../../../x86_64-suse-linux/bin/ld: warning: cannot find entry symbol _start; defaulting to 000000000040017c
+> Documentation/vDSO/parse_vdso.o: In function `vdso_match_version':
+> parse_vdso.c:(.text+0x48e): undefined reference to `strcmp'
+> Documentation/vDSO/parse_vdso.o: In function `vdso_sym':
+> parse_vdso.c:(.text+0x59c): undefined reference to `strcmp'
+> Documentation/vDSO/vdso_test.o: In function `main':
+> vdso_test.c:(.text+0x15): undefined reference to `getauxval'
+> vdso_test.c:(.text+0x2a): undefined reference to `puts'
+> vdso_test.c:(.text+0x3e): undefined reference to `getauxval'
+> vdso_test.c:(.text+0x6a): undefined reference to `puts'
+> vdso_test.c:(.text+0xa8): undefined reference to `printf'
+> vdso_test.c:(.text+0xb4): undefined reference to `puts'
+> collect2: error: ld returned 1 exit status
+> make[3]: *** [Documentation/vDSO/vdso_test] Error 1
+>
+> I have all of the others building and vDSO commented out for now.
+>
+> Any suggestions, ideas, or fixes?
+>
+>
+> Also, I haven't checked each source file individually, but I expect that
+> many of these are tools that could (should) be moved to $srctree/tools,
+> if you or anyone else is interested in that.
+>
+> Thanks,
+> --
+> ~Randy
 
-Or we can just check for cgroup freeze, something like below:
+So I finally found the time to look at the vDSO test and figure out
+what the issue was.
+However, the commits no longer seem to be in linux-next.
+Is there some other tree I should be looking at?
 
-diff --git a/kernel/freezer.c b/kernel/freezer.c
-index 33cbcb0..b06a059 100644
---- a/kernel/freezer.c
-+++ b/kernel/freezer.c
-@@ -56,7 +56,8 @@ static bool should_thaw_current(bool check_kthr_stop)
- {
-        if (!freezing(current) ||
-            (check_kthr_stop && kthread_should_stop()) ||
--           test_thread_flag(TIF_MEMDIE))
-+           /* It might not be safe to check TIF_MEMDIE for pm freeze */
-+           (cgroup_freezing(current) && test_thread_flag(TIF_MEMDIE)))
-                return true;
-        else
-                return false;
+Thanks,
 
-
-Are you happy now, Tejun? :)
+Peter
