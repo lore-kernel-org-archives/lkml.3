@@ -1,96 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754964AbaIBSYF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 14:24:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57504 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754879AbaIBSYD (ORCPT
+	id S1754815AbaIBSgf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 14:36:35 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:46905 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752455AbaIBSgd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 14:24:03 -0400
-Date: Tue, 2 Sep 2014 11:24:02 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-Cc: Benjamin Romer <benjamin.romer@unisys.com>,
-        David Kershner <david.kershner@unisys.com>, sparmaintainer@unisys.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] staging: unisys: uislib: uisqueue.c: rewrite of
- do_locked_client_insert
-Message-ID: <20140902182402.GA12744@kroah.com>
-References: <1409681795-23262-1-git-send-email-sudipm.mukherjee@gmail.com>
+	Tue, 2 Sep 2014 14:36:33 -0400
+Date: Tue, 2 Sep 2014 19:36:17 +0100
+From: Mark Brown <broonie@kernel.org>
+To: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <20140902183617.GD29327@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="iaYIJ+kOC8t17Zqq"
 Content-Disposition: inline
-In-Reply-To: <1409681795-23262-1-git-send-email-sudipm.mukherjee@gmail.com>
+X-Cookie: Simulated picture.
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: linux-next: Tree for Sep 2
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 02, 2014 at 11:46:35PM +0530, Sudip Mukherjee wrote:
-> From: Sudip Mukherjee <sudip@vectorindia.org>
-> 
-> removed unused variables
-> fixed sparse warning of context imbalance in 'do_locked_client_insert'
->                          different lock contexts for basic block
-> 
-> Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
-> ---
-> 
-> v1 of the patch of the patch just fixed the sparse warning.
-> On suggestion of Dan Carpenter v2 is the total rewrite of the function.
-> Two of the function arguments (interruptHandle,channelId) are also not used. Wanted to remove them as well , 
-> but then thought maybe the original author have planned for some use of those variables.
-> 
->  drivers/staging/unisys/uislib/uisqueue.c | 37 ++++++++------------------------
->  1 file changed, 9 insertions(+), 28 deletions(-)
-> 
-> diff --git a/drivers/staging/unisys/uislib/uisqueue.c b/drivers/staging/unisys/uislib/uisqueue.c
-> index 63dbe7c..acfa46d 100644
-> --- a/drivers/staging/unisys/uislib/uisqueue.c
-> +++ b/drivers/staging/unisys/uislib/uisqueue.c
-> @@ -78,39 +78,20 @@ do_locked_client_insert(struct uisqueue_info *queueinfo,
->  			u64 interruptHandle, u8 *channelId)
->  {
->  	unsigned long flags;
-> -	unsigned char queueWasEmpty;
-> -	unsigned int locked = 0;
-> -	unsigned int acquired = 0;
->  	u8 rc = 0;
->  
->  	spin_lock_irqsave(lock, flags);
-> -	locked = 1;
-> -
->  	if (!ULTRA_CHANNEL_CLIENT_ACQUIRE_OS(queueinfo->chan, channelId, NULL))
-> -		goto Away;
-> -
-> -	acquired = 1;
-> -
-> -	queueWasEmpty = visor_signalqueue_empty(queueinfo->chan, whichqueue);
-> -	if (!visor_signal_insert(queueinfo->chan, whichqueue, pSignal))
-> -		goto Away;
-> -	ULTRA_CHANNEL_CLIENT_RELEASE_OS(queueinfo->chan, channelId, NULL);
-> -	acquired = 0;
-> -
-> -	queueinfo->packets_sent++;
-> -
-> -	rc = 1;
-> -Away:
-> -	if (acquired) {
-> -		ULTRA_CHANNEL_CLIENT_RELEASE_OS(queueinfo->chan, channelId,
-> -						NULL);
-> -		acquired = 0;
-> -	}
-> -	if (locked) {
-> -		spin_unlock_irqrestore((spinlock_t *) lock, flags);
-> -		locked = 0;
-> +		goto unlock;
-> +	visor_signalqueue_empty(queueinfo->chan, whichqueue);
-> +	/*visor_signal_insert() only return 0 or 1 */
 
-Odd comment style (hint, you need a ' ' at the beginning...)
+--iaYIJ+kOC8t17Zqq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-And why comment this at all?
+Changes since 20140901:
 
-thanks,
+The akpm-current tree lost its conflict against Linus' tree and two
+patches from it got applied.
 
-greg k-h
+Non-merge commits (relative to Linus' tree): 3078
+ 2790 files changed, 105584 insertions(+), 81173 deletions(-)
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git .
+If you are tracking the linux-next tree using git, you should not use
+git pull" to do so as that will try to merge the new linux-next release
+with the old one.  You should use "git fetch" and checkout or reset to
+the new master.
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with an
+allmodconfig for x86_64 and a multi_v7_defconfig for arm.
+
+Below is a summary of the state of the merge.
+
+I am currently merging 214 trees (counting Linus' and 30 trees of patches
+pending for Linus' tree).
+
+Stats about the size of the tree over time can be seen at
+http://neuling.org/linux-next-size.html .
+
+Status of Stephen's local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+--iaYIJ+kOC8t17Zqq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUBg4eAAoJELSic+t+oim9LdsP/jOxRP0JY+QwUZwB0vQDeJ1F
+z1epalXIQCmuJZz87+zzOeTalZb1AWy+Fuh18iDWZBFuUva6vwM4SMqeQXAS2bDf
+qMC/bdCTkI8aVT+6n22BzXYkmHDMRFMU/B2rJwtLw0UBZ8pNH+wC1T3+Xp3XyiAg
+Nqnw+A5x9VvYPWmT1WgO8iGylp2iU0ULCd34LW7OdOADgBa0d9Cpa4orAYscJTLZ
+ZD2q6r0ZXI0ai9ndUNFuHESWHD1awlqhYOJYqLshm20uSbR1X3vtSCRzezuxn/lN
+VAf9H7/bv5Tz0OdQJlW8KTgF696c4bdo2nsMV0ANoxwzqSBAthxVPLAP20nfziLY
+Fnx+2zKIGrBH867JO4xrb714YBqxO8gEkGzumeDykD7Ls9FXWTQakbYG73766zwN
+1BPRk5G/ErixNkjKAqJM6BPMddCS0U/z70qNdHuumNYdZHTm2/yVET2Tsff4TBoi
+kjIKJ/HKDTXmpBlO2+rVUdhWz68T1DDDCeF8zTsUQLB+nNhQTZ1NRohcb3JZLO8M
+LerWlSHeeeNN3gie9+3nOQe9GDHhnl2C3vNqe33DV0GR+1TFhNQiFXoCYPPwGhxh
+3JcgsaLQswurPvi5IyqMCEHWNG89Jhtrw1J6Cch5Q0hqnI0f6d+m7zwZFgR1cXPp
+zSCOuX2C+kE61iu+5plW
+=h1F6
+-----END PGP SIGNATURE-----
+
+--iaYIJ+kOC8t17Zqq--
