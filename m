@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761AbaIBPpA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 11:45:00 -0400
-Received: from mail-oi0-f43.google.com ([209.85.218.43]:47808 "EHLO
-	mail-oi0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754102AbaIBPo6 (ORCPT
+	id S1754797AbaIBPpF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 11:45:05 -0400
+Received: from mail-oi0-f49.google.com ([209.85.218.49]:44798 "EHLO
+	mail-oi0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754769AbaIBPpB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 11:44:58 -0400
+	Tue, 2 Sep 2014 11:45:01 -0400
 From: Seth Forshee <seth.forshee@canonical.com>
 To: Miklos Szeredi <miklos@szeredi.hu>
 Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
@@ -15,63 +15,123 @@ Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
         fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org,
         Seth Forshee <seth.forshee@canonical.com>
-Subject: [PATCH v2 0/3] fuse: Add support for mounts from pid/user namespaces
-Date: Tue,  2 Sep 2014 10:44:53 -0500
-Message-Id: <1409672696-15847-1-git-send-email-seth.forshee@canonical.com>
+Subject: [PATCH v2 2/3] fuse: Translate pids passed to userspace into pid namespaces
+Date: Tue,  2 Sep 2014 10:44:55 -0500
+Message-Id: <1409672696-15847-3-git-send-email-seth.forshee@canonical.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1409672696-15847-1-git-send-email-seth.forshee@canonical.com>
+References: <1409672696-15847-1-git-send-email-seth.forshee@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here's an updated set of patches for allowing fuse mounts from pid and
-user namespaces. I discussed some of the issues we debated with the last
-patch set (and a few others) with Eric at LinuxCon, and the updates here
-mainly reflect the outcome of those discussions.
+If the process reading on the fuse fd is executing in a pid
+namespace then giving it the global pid of the process making
+a request doesn't make sense. Instead, capture the pid namespace
+when the filesystem is first mounted and translate pids into this
+namespace before passing them to userspace.
 
-The stickiest issue in the v1 patches was the question of where to get
-the user and pid namespaces from that are used for translating ids for
-communication with userspace. Eric told me that for user namespaces at
-least we need to grab a namespace at open or mount time and use only
-that namespace to prevent certain types of attacks. That rules out the
-suggestion of using the user ns of current in the read/write paths, and
-I think it makes sense to handle pid and user namespaces similarly. So
-in these patches I'm still grabbing the namespaces of current during
-mount, but I've added an additional check to fail the mount if the
-f_cred's userns for the fd to userspace doesn't match.
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+---
+ fs/fuse/dev.c    | 9 +++++----
+ fs/fuse/fuse_i.h | 4 ++++
+ fs/fuse/inode.c  | 3 +++
+ 3 files changed, 12 insertions(+), 4 deletions(-)
 
-Another issue mentioned by Eric was what to use for i_[ug]id if the ids
-from userspace don't map into the user namespace, which is going to be a
-problem for any other filesystems which become mountable from user
-namespaces as well. We discussed a few options for addressing this, the
-most promising of which seems to be either using INVALID_[UG]ID for
-these inodes or creating vfs-wide "nobody" ids for this purpose. After
-thinking about it for a while I'm favoring using the invalid ids, but
-I'm hoping to solicit some more feedback.
-
-For now these patches are using invalid ids if the user doesn't map into
-the namespace. I went through the vfs code and found one place where
-this could be handled better (addressed in patch 1 of the series). The
-only other issue I found was that currently no one, not even root, can
-change onwership of such inodes, but I suspect we can find a way around
-this.
-
-The only other change since v1 is that I now fail changing file
-ownership if the new uid or gid does not map into the namespace used for
-userspace communication.
-
-Thanks,
-Seth
-
-
-Seth Forshee (3):
-  vfs: Check for invalid i_uid in may_follow_link()
-  fuse: Translate pids passed to userspace into pid namespaces
-  fuse: Add support for mounts from user namespaces
-
- fs/fuse/dev.c    | 13 +++++++------
- fs/fuse/dir.c    | 46 +++++++++++++++++++++++++++++++++-------------
- fs/fuse/fuse_i.h |  8 ++++++++
- fs/fuse/inode.c  | 31 +++++++++++++++++++++++--------
- fs/namei.c       |  2 +-
- 5 files changed, 72 insertions(+), 28 deletions(-)
+diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
+index ca887314aba9..839caebd34f1 100644
+--- a/fs/fuse/dev.c
++++ b/fs/fuse/dev.c
+@@ -20,6 +20,7 @@
+ #include <linux/swap.h>
+ #include <linux/splice.h>
+ #include <linux/aio.h>
++#include <linux/sched.h>
+ 
+ MODULE_ALIAS_MISCDEV(FUSE_MINOR);
+ MODULE_ALIAS("devname:fuse");
+@@ -124,11 +125,11 @@ static void __fuse_put_request(struct fuse_req *req)
+ 	atomic_dec(&req->count);
+ }
+ 
+-static void fuse_req_init_context(struct fuse_req *req)
++static void fuse_req_init_context(struct fuse_conn *fc, struct fuse_req *req)
+ {
+ 	req->in.h.uid = from_kuid_munged(&init_user_ns, current_fsuid());
+ 	req->in.h.gid = from_kgid_munged(&init_user_ns, current_fsgid());
+-	req->in.h.pid = current->pid;
++	req->in.h.pid = pid_nr_ns(task_pid(current), fc->pid_ns);
+ }
+ 
+ static bool fuse_block_alloc(struct fuse_conn *fc, bool for_background)
+@@ -168,7 +169,7 @@ static struct fuse_req *__fuse_get_req(struct fuse_conn *fc, unsigned npages,
+ 		goto out;
+ 	}
+ 
+-	fuse_req_init_context(req);
++	fuse_req_init_context(fc, req);
+ 	req->waiting = 1;
+ 	req->background = for_background;
+ 	return req;
+@@ -257,7 +258,7 @@ struct fuse_req *fuse_get_req_nofail_nopages(struct fuse_conn *fc,
+ 	if (!req)
+ 		req = get_reserved_req(fc, file);
+ 
+-	fuse_req_init_context(req);
++	fuse_req_init_context(fc, req);
+ 	req->waiting = 1;
+ 	req->background = 0;
+ 	return req;
+diff --git a/fs/fuse/fuse_i.h b/fs/fuse/fuse_i.h
+index e8e47a6ab518..a3ded071e2c6 100644
+--- a/fs/fuse/fuse_i.h
++++ b/fs/fuse/fuse_i.h
+@@ -22,6 +22,7 @@
+ #include <linux/rbtree.h>
+ #include <linux/poll.h>
+ #include <linux/workqueue.h>
++#include <linux/pid_namespace.h>
+ 
+ /** Max number of pages that can be used in a single read request */
+ #define FUSE_MAX_PAGES_PER_REQ 32
+@@ -386,6 +387,9 @@ struct fuse_conn {
+ 	/** The group id for this mount */
+ 	kgid_t group_id;
+ 
++	/** The pid namespace for this mount */
++	struct pid_namespace *pid_ns;
++
+ 	/** The fuse mount flags for this mount */
+ 	unsigned flags;
+ 
+diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+index 03246cd9d47a..c6d8473b1a80 100644
+--- a/fs/fuse/inode.c
++++ b/fs/fuse/inode.c
+@@ -20,6 +20,7 @@
+ #include <linux/random.h>
+ #include <linux/sched.h>
+ #include <linux/exportfs.h>
++#include <linux/pid_namespace.h>
+ 
+ MODULE_AUTHOR("Miklos Szeredi <miklos@szeredi.hu>");
+ MODULE_DESCRIPTION("Filesystem in Userspace");
+@@ -616,6 +617,7 @@ void fuse_conn_init(struct fuse_conn *fc)
+ 	fc->initialized = 0;
+ 	fc->attr_version = 1;
+ 	get_random_bytes(&fc->scramble_key, sizeof(fc->scramble_key));
++	fc->pid_ns = get_pid_ns(task_active_pid_ns(current));
+ }
+ EXPORT_SYMBOL_GPL(fuse_conn_init);
+ 
+@@ -953,6 +955,7 @@ static void fuse_send_init(struct fuse_conn *fc, struct fuse_req *req)
+ 
+ static void fuse_free_conn(struct fuse_conn *fc)
+ {
++	put_pid_ns(fc->pid_ns);
+ 	kfree_rcu(fc, rcu);
+ }
+ 
+-- 
+1.9.1
 
