@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751963AbaIBG4M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 02:56:12 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:50661 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750824AbaIBG4K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 02:56:10 -0400
+	id S1752157AbaIBG4w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 02:56:52 -0400
+Received: from mga11.intel.com ([192.55.52.93]:51719 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750722AbaIBG4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 02:56:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,447,1406617200"; 
+   d="scan'208";a="584920162"
+Date: Tue, 2 Sep 2014 14:58:36 +0800
+From: Zhuang Jin Can <jin.can.zhuang@intel.com>
+To: mina86@mina86.com, balbi@ti.com, mgautam@codeaurora.org,
+        andrzej.p@samsung.com
+Cc: jin.can.zhuang@intel.com, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org, david.a.cohen@intel.com,
+        hang.yuan@intel.com
+Subject: [PATCH] usb: gadget: f_fs: add usb_functionfs_descs_head_v2
+Message-ID: <20140902065836.GA23094@intel.com>
+Reply-To: jin.can.zhuang@intel.com
 MIME-Version: 1.0
-In-Reply-To: <7567220.FuQYiIRUM7@vostro.rjw.lan>
-References: <1409318001-27586-1-git-send-email-geert+renesas@glider.be>
-	<7567220.FuQYiIRUM7@vostro.rjw.lan>
-Date: Tue, 2 Sep 2014 08:56:08 +0200
-X-Google-Sender-Auth: RzJb36Dz6QuRDuAJ5MFUufSbqCs
-Message-ID: <CAMuHMdU7XSaCY11jEx2Cq=zxYLY5T3n=GaRdXxf7u=H9--T_gA@mail.gmail.com>
-Subject: Re: [PATCH] PM / Domains: Make generic_pm_domain.name const
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Geert Uytterhoeven <geert+renesas@glider.be>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+Add usb_functionfs_descs_head_v2 structure for the new layout of
+descriptors.
 
-On Tue, Sep 2, 2014 at 1:50 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
->> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
->
-> I'm going to apply this one.  Does anything depend on it?
+Signed-off-by: Zhuang Jin Can <jin.can.zhuang@intel.com>
+---
+ include/uapi/linux/usb/functionfs.h |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-Thanks. So far nothing depends on it.
+diff --git a/include/uapi/linux/usb/functionfs.h b/include/uapi/linux/usb/functionfs.h
+index 0154b28..0b3f9fc 100644
+--- a/include/uapi/linux/usb/functionfs.h
++++ b/include/uapi/linux/usb/functionfs.h
+@@ -32,6 +32,15 @@ struct usb_endpoint_descriptor_no_audio {
+ 	__u8  bInterval;
+ } __attribute__((packed));
+ 
++struct usb_functionfs_descs_head_v2 {
++	__le32 magic;
++	__le32 length;
++	__le32 flags;
++	__le32 fs_count;
++	__le32 hs_count;
++	__le32 ss_count;
++} __attribute__((packed));
++
+ /* Legacy format, deprecated as of 3.14. */
+ struct usb_functionfs_descs_head {
+ 	__le32 magic;
+-- 
+1.7.9.5
 
->> ---
->>  include/linux/pm_domain.h |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/include/linux/pm_domain.h b/include/linux/pm_domain.h
->> index 7c1d252b20c0..ebc4c76ffb73 100644
->> --- a/include/linux/pm_domain.h
->> +++ b/include/linux/pm_domain.h
->> @@ -60,7 +60,7 @@ struct generic_pm_domain {
->>       struct mutex lock;
->>       struct dev_power_governor *gov;
->>       struct work_struct power_off_work;
->> -     char *name;
->> +     const char *name;
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
