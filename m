@@ -1,155 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278AbaIBVH7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 17:07:59 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39915 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752455AbaIBVH6 (ORCPT
+	id S1755193AbaIBVK2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 17:10:28 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:46557 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754274AbaIBVK0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 17:07:58 -0400
-Date: Tue, 2 Sep 2014 14:07:33 -0700
-From: "tip-bot for David E. Box" <tipbot@zytor.com>
-Message-ID: <tip-8dc12f933c9d732c5bbfb233daf27377893b109c@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        david.e.box@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        david.e.box@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1409175640-32426-3-git-send-email-david.e.box@linux.intel.com>
-References: <1409175640-32426-3-git-send-email-david.e.box@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] x86/iosf: Add debugfs support
-Git-Commit-ID: 8dc12f933c9d732c5bbfb233daf27377893b109c
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 2 Sep 2014 17:10:26 -0400
+Date: Tue, 2 Sep 2014 23:10:19 +0200
+From: Henrik Austad <henrik@austad.us>
+To: Juri Lelli <juri.lelli@arm.com>
+Cc: peterz@infradead.org, luca.abeni@unitn.it, rdunlap@infradead.org,
+        mingo@redhat.com, raistlin@linux.it, juri.lelli@gmail.com,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/4] Documentation/scheduler/sched-deadline.txt: fix
+ terminology and improve clarity
+Message-ID: <20140902211019.GA22581@sisyphus.home.austad.us>
+References: <1409220029-9002-1-git-send-email-juri.lelli@arm.com>
+ <1409220029-9002-2-git-send-email-juri.lelli@arm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1409220029-9002-2-git-send-email-juri.lelli@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8dc12f933c9d732c5bbfb233daf27377893b109c
-Gitweb:     http://git.kernel.org/tip/8dc12f933c9d732c5bbfb233daf27377893b109c
-Author:     David E. Box <david.e.box@linux.intel.com>
-AuthorDate: Wed, 27 Aug 2014 14:40:40 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 27 Aug 2014 14:48:36 -0700
+On Thu, Aug 28, 2014 at 11:00:26AM +0100, Juri Lelli wrote:
+> From: Luca Abeni <luca.abeni@unitn.it>
+> 
+> Several small changes regarding SCHED_DEADLINE documentation that fix
+> terminology and improve clarity and readability:
+> 
+>  - "current runtime" becomes "remaining runtime"
+> 
+>  - readablity of an equation is improved by introducing more spacing
+> 
+>  - clarify when admission control will certainly fail
+> 
+>  - new URL for CBS technical report
+> 
+>  - substitue "smallest" with "closest"
 
-x86/iosf: Add debugfs support
+I'm tempted to say "earliest" (being part of the algorithm's name and all 
+;)
 
-Allows access to the iosf sideband through debugfs.
+> 
+> Signed-off-by: Luca Abeni <luca.abeni@unitn.it>
+> Signed-off-by: Juri Lelli <juri.lelli@arm.com>
+> Cc: Randy Dunlap <rdunlap@infradead.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Henrik Austad <henrik@austad.us>
+> Cc: Dario Faggioli <raistlin@linux.it>
+> Cc: Juri Lelli <juri.lelli@gmail.com>
+> Cc: linux-doc@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  Documentation/scheduler/sched-deadline.txt | 32 ++++++++++++++++--------------
+>  1 file changed, 17 insertions(+), 15 deletions(-)
+> 
+> diff --git a/Documentation/scheduler/sched-deadline.txt b/Documentation/scheduler/sched-deadline.txt
+> index 18adc92..dce6d63 100644
+> --- a/Documentation/scheduler/sched-deadline.txt
+> +++ b/Documentation/scheduler/sched-deadline.txt
+> @@ -45,14 +45,14 @@ CONTENTS
+>   every time the task wakes up, the scheduler computes a "scheduling deadline"
+>   consistent with the guarantee (using the CBS[2,3] algorithm). Tasks are then
+>   scheduled using EDF[1] on these scheduling deadlines (the task with the
+> - smallest scheduling deadline is selected for execution). Notice that this
+> + closest scheduling deadline is selected for execution). Notice that this
+>   guaranteed is respected if a proper "admission control" strategy (see Section
+>   "4. Bandwidth management") is used.
+>  
+>   Summing up, the CBS[2,3] algorithms assigns scheduling deadlines to tasks so
+>   that each task runs for at most its runtime every period, avoiding any
+>   interference between different tasks (bandwidth isolation), while the EDF[1]
+> - algorithm selects the task with the smallest scheduling deadline as the one
+> + algorithm selects the task with the closest scheduling deadline as the one
+>   to be executed first.  Thanks to this feature, also tasks that do not
 
-Signed-off-by: David E. Box <david.e.box@linux.intel.com>
-Link: http://lkml.kernel.org/r/1409175640-32426-3-git-send-email-david.e.box@linux.intel.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/iosf_mbi.c | 74 ++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 74 insertions(+)
+s/first/next/
 
-diff --git a/arch/x86/kernel/iosf_mbi.c b/arch/x86/kernel/iosf_mbi.c
-index 9030e83..0a2faa3 100644
---- a/arch/x86/kernel/iosf_mbi.c
-+++ b/arch/x86/kernel/iosf_mbi.c
-@@ -22,6 +22,8 @@
- #include <linux/init.h>
- #include <linux/spinlock.h>
- #include <linux/pci.h>
-+#include <linux/debugfs.h>
-+#include <linux/capability.h>
- 
- #include <asm/iosf_mbi.h>
- 
-@@ -187,6 +189,75 @@ bool iosf_mbi_available(void)
- }
- EXPORT_SYMBOL(iosf_mbi_available);
- 
-+/********************** debugfs begin ****************************/
-+static u32	dbg_mdr;
-+static u32	dbg_mcr;
-+static u32	dbg_mcrx;
-+
-+static int mcr_get(void *data, u64 *val)
-+{
-+	*val = *(u32 *)data;
-+	return 0;
-+}
-+
-+static int mcr_set(void *data, u64 val)
-+{
-+	u8 command = ((u32)val & 0xFF000000) >> 24,
-+	   port	   = ((u32)val & 0x00FF0000) >> 16,
-+	   offset  = ((u32)val & 0x0000FF00) >> 8;
-+	int err;
-+
-+	*(u32 *)data = val;
-+
-+	if (!capable(CAP_SYS_RAWIO))
-+		return -EACCES;
-+
-+	if (command & 1u)
-+		err = iosf_mbi_write(port,
-+			       command,
-+			       dbg_mcrx | offset,
-+			       dbg_mdr);
-+	else
-+		err = iosf_mbi_read(port,
-+			      command,
-+			      dbg_mcrx | offset,
-+			      &dbg_mdr);
-+
-+	return err;
-+}
-+DEFINE_SIMPLE_ATTRIBUTE(iosf_mcr_fops, mcr_get, mcr_set , "%llx\n");
-+
-+static struct dentry *iosf_dbg;
-+static void iosf_sideband_debug_init(void)
-+{
-+	struct dentry *d;
-+
-+	iosf_dbg = debugfs_create_dir("iosf_sb", NULL);
-+	if (IS_ERR_OR_NULL(iosf_dbg))
-+		return;
-+
-+	/* mdr */
-+	d = debugfs_create_x32("mdr", 0660, iosf_dbg, &dbg_mdr);
-+	if (IS_ERR_OR_NULL(d))
-+		goto cleanup;
-+
-+	/* mcrx */
-+	debugfs_create_x32("mcrx", 0660, iosf_dbg, &dbg_mcrx);
-+	if (IS_ERR_OR_NULL(d))
-+		goto cleanup;
-+
-+	/* mcr - initiates mailbox tranaction */
-+	debugfs_create_file("mcr", 0660, iosf_dbg, &dbg_mcr, &iosf_mcr_fops);
-+	if (IS_ERR_OR_NULL(d))
-+		goto cleanup;
-+
-+	return;
-+
-+cleanup:
-+	debugfs_remove_recursive(d);
-+}
-+/********************** debugfs end ****************************/
-+
- static int iosf_mbi_probe(struct pci_dev *pdev,
- 			  const struct pci_device_id *unused)
- {
-@@ -217,11 +288,14 @@ static struct pci_driver iosf_mbi_pci_driver = {
- 
- static int __init iosf_mbi_init(void)
- {
-+	iosf_sideband_debug_init();
- 	return pci_register_driver(&iosf_mbi_pci_driver);
- }
- 
- static void __exit iosf_mbi_exit(void)
- {
-+	debugfs_remove_recursive(iosf_dbg);
-+
- 	pci_unregister_driver(&iosf_mbi_pci_driver);
- 	if (mbi_pdev) {
- 		pci_dev_put(mbi_pdev);
+Also, next sentence does not make much sense, I would drop the also;
+
+"Thanks to this feature, tasks that do not strictly comply with the ..."
+
+>   strictly comply with the "traditional" real-time task model (see Section 3)
+>   can effectively use the new policy.
+> @@ -64,45 +64,45 @@ CONTENTS
+>      "deadline", and "period" parameters;
+>  
+>    - The state of the task is described by a "scheduling deadline", and
+> -    a "current runtime". These two parameters are initially set to 0;
+> +    a "remaining runtime". These two parameters are initially set to 0;
+>  
+>    - When a SCHED_DEADLINE task wakes up (becomes ready for execution),
+>      the scheduler checks if
+>  
+> -                    current runtime                runtime
+> -         ---------------------------------- > ----------------
+> -         scheduling deadline - current time         period
+> +                 remaining runtime                  runtime
+> +        ----------------------------------    >    ---------
+> +        scheduling deadline - current time           period
+>
+>      then, if the scheduling deadline is smaller than the current time, or
+>      this condition is verified, the scheduling deadline and the
+> -    current budget are re-initialised as
+> +    remaining runtime are re-initialised as
+>  
+>           scheduling deadline = current time + deadline
+> -         current runtime = runtime
+> +         remaining runtime = runtime
+>  
+> -    otherwise, the scheduling deadline and the current runtime are
+> +    otherwise, the scheduling deadline and the remaining runtime are
+>      left unchanged;
+>  
+>    - When a SCHED_DEADLINE task executes for an amount of time t, its
+> -    current runtime is decreased as
+> +    remaining runtime is decreased as
+>  
+> -         current runtime = current runtime - t
+> +         remaining runtime = remaining runtime - t
+>  
+>      (technically, the runtime is decreased at every tick, or when the
+>      task is descheduled / preempted);
+>  
+> -  - When the current runtime becomes less or equal than 0, the task is
+> +  - When the remaining runtime becomes less or equal than 0, the task is
+>      said to be "throttled" (also known as "depleted" in real-time literature)
+>      and cannot be scheduled until its scheduling deadline. The "replenishment
+>      time" for this task (see next item) is set to be equal to the current
+>      value of the scheduling deadline;
+>  
+>    - When the current time is equal to the replenishment time of a
+> -    throttled task, the scheduling deadline and the current runtime are
+> +    throttled task, the scheduling deadline and the remaining runtime are
+>      updated as
+>  
+>           scheduling deadline = scheduling deadline + period
+> -         current runtime = current runtime + runtime
+> +         remaining runtime = remaining runtime + runtime
+>  
+>  
+>  3. Scheduling Real-Time Tasks
+> @@ -147,6 +147,8 @@ CONTENTS
+>   and the absolute deadlines (d_j) coincide, so a proper admission control
+>   allows to respect the jobs' absolute deadlines for this task (this is what is
+>   called "hard schedulability property" and is an extension of Lemma 1 of [2]).
+> + Notice that if runtime > deadline the admission control will surely reject
+> + this task, as it is not possible to respect its temporal constraints.
+>  
+>   References:
+>    1 - C. L. Liu and J. W. Layland. Scheduling algorithms for multiprogram-
+> @@ -156,7 +158,7 @@ CONTENTS
+>        Real-Time Systems. Proceedings of the 19th IEEE Real-time Systems
+>        Symposium, 1998. http://retis.sssup.it/~giorgio/paps/1998/rtss98-cbs.pdf
+>    3 - L. Abeni. Server Mechanisms for Multimedia Applications. ReTiS Lab
+> -      Technical Report. http://xoomer.virgilio.it/lucabe72/pubs/tr-98-01.ps
+> +      Technical Report. http://disi.unitn.it/~abeni/tr-98-01.pdf
+>  
+>  4. Bandwidth management
+>  =======================
+> -- 
+> 2.0.4
+
+Apart from the minor nitpick, it looks good!
+
+-- 
+Henrik
