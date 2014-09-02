@@ -1,102 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754428AbaIBQ1P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 12:27:15 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:46753 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751666AbaIBQ1N (ORCPT
+	id S1754642AbaIBQ32 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 12:29:28 -0400
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:37844 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751821AbaIBQ30 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 12:27:13 -0400
-Date: Tue, 2 Sep 2014 17:26:06 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linaro-acpi@lists.linaro.org, Catalin Marinas <catalin.marinas@arm.com>,
-        Graeme Gregory <gg@slimlogic.co.uk>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        Lv Zheng <lv.zheng@intel.com>, Rob Herring <robh@kernel.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Robert Moore <robert.moore@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Will Deacon <Will.Deacon@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>
-Message-ID: <20140902162606.GX29327@sirena.org.uk>
-References: <1409583961-7466-1-git-send-email-hanjun.guo@linaro.org>
- <20140901173245.GM2953@xora-haswell.xora.org.uk>
- <20140902132651.GF27056@arm.com>
- <4816592.tj3on6vUaC@wuerfel>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="s3puAW9DMBtS2ARW"
-Content-Disposition: inline
-In-Reply-To: <4816592.tj3on6vUaC@wuerfel>
-X-Cookie: Simulated picture.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [Linaro-acpi] [RFC PATCH for Juno 1/2] net: smsc911x add support
- for probing from ACPI
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Tue, 2 Sep 2014 12:29:26 -0400
+From: Andy King <acking@vmware.com>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Cc: davem@davemloft.net, pv-drivers@vmware.com,
+        penguin-kernel@I-love.SAKURA.ne.jp, Andy King <acking@vmware.com>
+Subject: [PATCH] VMXNET3: Check for map error in vmxnet3_set_mc
+Date: Tue,  2 Sep 2014 09:30:08 -0700
+Message-Id: <1409675408-8440-1-git-send-email-acking@vmware.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We should check if the map of the table actually succeeds, and also free
+resources accordingly. This fixes the kernel panic reported by Tetsuo
+Handa.
 
---s3puAW9DMBtS2ARW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Version bumped to 1.2.1.0
 
-On Tue, Sep 02, 2014 at 03:42:53PM +0200, Arnd Bergmann wrote:
+Acked-by: Shelley Gong <shelleygong@vmware.com>
+Acked-by: Bhavesh Davda <bhavesh@vmware.com>
+Signed-off-by: Andy King <acking@vmware.com>
+---
+ drivers/net/vmxnet3/vmxnet3_drv.c |   14 ++++++++------
+ drivers/net/vmxnet3/vmxnet3_int.h |    4 ++--
+ 2 files changed, 10 insertions(+), 8 deletions(-)
 
-> The way I recall the discussion, most people were on one extreme
-> side of the discussion or the other:
+diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
+index d6e90c7..f450010 100644
+--- a/drivers/net/vmxnet3/vmxnet3_drv.c
++++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+@@ -2056,7 +2056,6 @@ vmxnet3_set_mc(struct net_device *netdev)
+ 		if (!netdev_mc_empty(netdev)) {
+ 			new_table = vmxnet3_copy_mc(netdev);
+ 			if (new_table) {
+-				new_mode |= VMXNET3_RXM_MCAST;
+ 				rxConf->mfTableLen = cpu_to_le16(
+ 					netdev_mc_count(netdev) * ETH_ALEN);
+ 				new_table_pa = dma_map_single(
+@@ -2064,15 +2063,18 @@ vmxnet3_set_mc(struct net_device *netdev)
+ 							new_table,
+ 							rxConf->mfTableLen,
+ 							PCI_DMA_TODEVICE);
++			}
++
++			if (new_table_pa) {
++				new_mode |= VMXNET3_RXM_MCAST;
+ 				rxConf->mfTablePA = cpu_to_le64(new_table_pa);
+ 			} else {
+-				netdev_info(netdev, "failed to copy mcast list"
+-					    ", setting ALL_MULTI\n");
++				netdev_info(netdev,
++					    "failed to copy mcast list, setting ALL_MULTI\n");
+ 				new_mode |= VMXNET3_RXM_ALL_MULTI;
+ 			}
+ 		}
+ 
+-
+ 	if (!(new_mode & VMXNET3_RXM_MCAST)) {
+ 		rxConf->mfTableLen = 0;
+ 		rxConf->mfTablePA = 0;
+@@ -2091,11 +2093,11 @@ vmxnet3_set_mc(struct net_device *netdev)
+ 			       VMXNET3_CMD_UPDATE_MAC_FILTERS);
+ 	spin_unlock_irqrestore(&adapter->cmd_lock, flags);
+ 
+-	if (new_table) {
++	if (new_table_pa)
+ 		dma_unmap_single(&adapter->pdev->dev, new_table_pa,
+ 				 rxConf->mfTableLen, PCI_DMA_TODEVICE);
++	if (new_table)
+ 		kfree(new_table);
+-	}
+ }
+ 
+ void
+diff --git a/drivers/net/vmxnet3/vmxnet3_int.h b/drivers/net/vmxnet3/vmxnet3_int.h
+index 29ee77f2..3759479 100644
+--- a/drivers/net/vmxnet3/vmxnet3_int.h
++++ b/drivers/net/vmxnet3/vmxnet3_int.h
+@@ -69,10 +69,10 @@
+ /*
+  * Version numbers
+  */
+-#define VMXNET3_DRIVER_VERSION_STRING   "1.2.0.0-k"
++#define VMXNET3_DRIVER_VERSION_STRING   "1.2.1.0-k"
+ 
+ /* a 32-bit int, each byte encode a verion number in VMXNET3_DRIVER_VERSION */
+-#define VMXNET3_DRIVER_VERSION_NUM      0x01020000
++#define VMXNET3_DRIVER_VERSION_NUM      0x01020100
+ 
+ #if defined(CONFIG_PCI_MSI)
+ 	/* RSS only makes sense if MSI-X is supported. */
+-- 
+1.7.4.1
 
-> a) We should use _DSD for ARM64 servers to maximize code reuse with
-> DT-enabled drivers, work around the slow UEFI standardization process,
-> remain in control of the actual bindings, and avoid the need for
-> endless per-ID platform-data definitions in drivers.
-
-> b) We should never use _DSD at all, since doing that would have no
-> advantage over using DT directly, and we should force every device
-> manufacturer to specify their bindings in an official ACPI document
-> to prevent random incompatible bindings from being established.
-> Any device that shows up in servers should not need arbitrary detailed
-> properties anyway, as the details are supposed to be hidden in AML.
-
-> I can understand the reasons for both approaches, and I find it hard
-> to say either one is invalid. However, the worst possible outcome in
-> my opinion would be having to support a mix of the two.
-
-Right, and the x86 embedded folks are going full steam ahead with _DSD
-regardless so it seems there will be some systems out there using it
-even if they're not ARM servers.
-
---s3puAW9DMBtS2ARW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUBe+bAAoJELSic+t+oim9sR8P/3DUB6yHWvKAo+9FV3srXLHz
-Dw5T5OmqTXZY3YBeKsGypAXmJRnI4vAjWGEYK+Z8KKSQLwJW9DVwqpaLjxAfNqg8
-GBtXem6nWghp9bFVvyQNCFMKAFvPCV/zSIABQCGp/959tdKJXK088oOGIl0qfGjD
-NlPCD9P5mXY4h7T1+0lJLz6+xha7lB9cxd1N3jAYTMWpSqXkWYxCuNYo/80ZJorl
-JqNZ1u0FokaUS+TjRk6UDPH9Pe3jdS+T0aNOLykPO7oe0r+DCrS9jeLoQ62UxNcy
-JH/jYpSix1hmximYlIvIhTTzBw0uFXFkjS5sg2WzpQEYqv1vDCuhcO1sfar7EtIB
-0XczMj6Wl/uj/zCp+gglbYlwAoAS7ZXMOrzn7KntKqkvfY6cOhlXzYfk2S8bIPzM
-8vLobNsGrcN4tJu3+N0ZsVIxjq2XrE2AZCarGV90fWRxMQ/H9BWYoOzu3Nez0CFA
-HHLE5o3Oqgr6cZ2etnhTcrLF9PxgyRrG+ZRcayD84zUUIZwtxdELGpnwIIdlQoEs
-glQY+S3/qInLM42nnKaoPA4axdnfzcXRkzbFNMYNM2YJgcYxDKTftX+wNuo4yH28
-GHA/SXUmCxupPq3eaI9QRyp211nI3GJBw4pim1EiMxEjGVXgeEWpXi9aUEQeBf/D
-jKjzSpzSbNBpEVG+GNYB
-=+au5
------END PGP SIGNATURE-----
-
---s3puAW9DMBtS2ARW--
