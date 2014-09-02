@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775AbaIBQbj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 12:31:39 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:46771 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752831AbaIBQbh (ORCPT
+	id S1754799AbaIBQdd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 12:33:33 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56556 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753962AbaIBQdc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 12:31:37 -0400
-Date: Tue, 2 Sep 2014 17:31:05 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Chris Zhong <zyw@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>,
-        Heiko Stuebner <heiko@sntech.de>, linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        zhangqing@rock-chips.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140902163105.GY29327@sirena.org.uk>
-References: <1409674469-12123-1-git-send-email-dianders@chromium.org>
- <1409674469-12123-3-git-send-email-dianders@chromium.org>
+	Tue, 2 Sep 2014 12:33:32 -0400
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
+        Vlastimil Babka <vbabka@suse.cz>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: [PATCH] mm: fix dump_vma() compilation
+Date: Tue,  2 Sep 2014 10:33:16 -0600
+Message-Id: <1409675596-19860-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+1tcKVLXPU0QafK6"
-Content-Disposition: inline
-In-Reply-To: <1409674469-12123-3-git-send-email-dianders@chromium.org>
-X-Cookie: Simulated picture.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/2] dt-bindings: Add input supplies to rk808 bindings
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Stephen Warren <swarren@nvidia.com>
 
---+1tcKVLXPU0QafK6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+dump_vma() was written to access fields within vma->vm_page_prot. However,
+pgprot_t is sometimes a scalar and sometimes a struct (At least on ARM;
+see arch/arm/include/asm/pgtable-2level-types.h). use macro pgprot_val()
+to get the value, so the code is immune to these differences.
 
-On Tue, Sep 02, 2014 at 09:14:29AM -0700, Doug Anderson wrote:
-> The original bindings for rk808 didn't include input supplies.  Add
-> them.
+This fixes:
+mm/page_alloc.c: In function ‘dump_vma’:
+mm/page_alloc.c:6742:46: error: request for member ‘pgprot’ in something not a structure or union
 
-Acked-by: Mark Brown <broonie@linaro.org>
+The cast is required to avoid:
 
-You probably want to send this to Lee...
+mm/page_alloc.c: In function ‘dump_vma’:
+mm/page_alloc.c:6745:3: warning: format ‘%lx’ expects argument of type ‘long unsigned int’, but argument 8 has type ‘pgprot_t’ [-Wformat]
 
---+1tcKVLXPU0QafK6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Vlastimil Babka <vbabka@suse.cz>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Fixes: 658f7da49d34 ("mm: introduce dump_vma")
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+ mm/page_alloc.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index cb510c08073b..1578bc98eb29 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -6739,7 +6739,8 @@ void dump_vma(const struct vm_area_struct *vma)
+ 		"prot %lx anon_vma %p vm_ops %p\n"
+ 		"pgoff %lx file %p private_data %p\n",
+ 		vma, (void *)vma->vm_start, (void *)vma->vm_end, vma->vm_next,
+-		vma->vm_prev, vma->vm_mm, vma->vm_page_prot.pgprot,
++		vma->vm_prev, vma->vm_mm,
++		(unsigned long)pgprot_val(vma->vm_page_prot),
+ 		vma->anon_vma, vma->vm_ops, vma->vm_pgoff,
+ 		vma->vm_file, vma->vm_private_data);
+ 	dump_flags(vma->vm_flags, vmaflags_names, ARRAY_SIZE(vmaflags_names));
+-- 
+1.9.1
 
-iQIcBAEBAgAGBQJUBfDGAAoJELSic+t+oim9WG4P/1Xq4YJpZJdp04srl/v3YgUP
-4SjEN3iM+QDQpf6L3AromyqspVOKU9FYpUuqWMyvfiRjPJilS6s+dWaDf+xWdIT5
-Mqx7nc9dOXN3wLYxkC/Lhju8Nib0/gMFI9FmrfqaQ+PyABiIQLm2LHQ2Pj4fCO7+
-+Q4hZZMNpkHfRUbLg02cyWIgaUse5OPyfjaGkGLqjdcgDCp+1ylOMcv+fD1Q5tja
-VURysDkP1DKRiluV2oBGnOgtQvEp+n12kCJo8D+zUs7HwTp795eypt4qxgq9AaFZ
-R8ZyJQzVe6EWl+koFDycWMC57WiKJdpcvGBMNWv4eiPAeW9LEn9Y+ahzKtuyfFgQ
-/k6DR0068o2ts69DW0hdCGIyULKvp/8N6MfALW11r1GE6FF2EqQkDY3pTC/t3e4B
-J7bt3VeNS8OJ0oyeL8m/+4Eo7C5BDeo+ZKV99jv+DcuLlyuEZNrFPtqzeJpfcws3
-PYxtsuMCPnrueSiX9onkYWydPqCFOFo4v3Wd5OZMqvzi6/AZADyHUwYhi6Y+F4CP
-+HyMFn35p8zRu01xjy87GFS6bTTgzkBrukVrPZtxN0n8Iqa440K/iZNzf60Qxjzq
-GZ2r1PyhyYC2UuukMJrSGQO+dTzqZ063XcbJ/zzOSJgXEau3y3AZhtvjchLEMRwI
-3hBPwIpkkHQwyV2gM6bE
-=sJgB
------END PGP SIGNATURE-----
-
---+1tcKVLXPU0QafK6--
