@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754847AbaIBPqb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 11:46:31 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:37249 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753962AbaIBPpA (ORCPT
+	id S1754859AbaIBPq6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 11:46:58 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:49362 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754192AbaIBPqz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 11:45:00 -0400
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org,
-        Seth Forshee <seth.forshee@canonical.com>
-Subject: [PATCH v2 1/3] vfs: Check for invalid i_uid in may_follow_link()
-Date: Tue,  2 Sep 2014 10:44:54 -0500
-Message-Id: <1409672696-15847-2-git-send-email-seth.forshee@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1409672696-15847-1-git-send-email-seth.forshee@canonical.com>
-References: <1409672696-15847-1-git-send-email-seth.forshee@canonical.com>
+	Tue, 2 Sep 2014 11:46:55 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-serial@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Pankaj Dubey <pankaj.dubey@samsung.com>,
+        naveenkrishna.ch@gmail.com
+Subject: Re: [PATCH] tty/serial: fix config dependencies for samsung serial
+Date: Tue, 02 Sep 2014 17:46:23 +0200
+Message-ID: <3749760.naNt3fHoTI@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1409671320-7604-1-git-send-email-ch.naveen@samsung.com>
+References: <1409671320-7604-1-git-send-email-ch.naveen@samsung.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:8Cl3+rPRBG25wUi7LOodLVjbNqN7C/0zxCixny7yzg0
+ 3iafjl+8eOkzrZpfwdp4B6DDe9JKwtGgy0HMEfa2INvA2w+wwn
+ +C6qAwk9pVNhCvMhessfXg1/uT2j5e4aydiFONa5dd0KB/6ezJ
+ DNYVJ6GqVlK4IBCnLDvYlh0J0IOlQvjIFQTYD6umhdrS0031W7
+ GcXZn9enZCL0epuKqfS4WkAvLLRIn0ge+LxK4RtRmlUicge9u1
+ sD694/zv1FLfZasCaacGq+mcZxDl895pARGkojsvpm7upxd3wZ
+ pZoO/hc/1f2YnN5fn2ZHNnoxuSR/xe7QmTiNJiyI3Ntc20frrs
+ VEfnIBOoePMp/9yvWI24=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Filesystem uids which don't map into a user namespace may result
-in inode->i_uid being INVALID_UID. A symlink and its parent
-could have different owners in the filesystem can both get
-mapped to INVALID_UID, which may result in following a symlink
-when this would not have otherwise been permitted. Prevent this
-by adding a check that the uid is valid before the comparison.
+On Tuesday 02 September 2014 20:52:00 Naveen Krishna Chatradhi wrote:
+> Make the config symbols SERIAL_SAMSUNG_UARTS_4 and
+> SERIAL_SAMSUNG_UARTS depend on SERIAL_SAMSUNG rather than
+> PLAT_SAMSUNG.
 
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
----
- fs/namei.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Please always describe why you are doing a change. This patch
+seems really pointless.
 
-diff --git a/fs/namei.c b/fs/namei.c
-index a996bb48dfab..193da09e903e 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -741,7 +741,7 @@ static inline int may_follow_link(struct path *link, struct nameidata *nd)
- 		return 0;
- 
- 	/* Allowed if parent directory and link owner match. */
--	if (uid_eq(parent->i_uid, inode->i_uid))
-+	if (uid_valid(inode->i_uid) && uid_eq(parent->i_uid, inode->i_uid))
- 		return 0;
- 
- 	audit_log_link_denied("follow_link", link);
--- 
-1.9.1
+>  config SERIAL_SAMSUNG_UARTS_4
+>         bool
+> -       depends on PLAT_SAMSUNG
+> +       depends on SERIAL_SAMSUNG
+>         default y if !(CPU_S3C2410 || CPU_S3C2412 || CPU_S3C2440 || CPU_S3C2442)
+>         help
+>           Internal node for the common case of 4 Samsung compatible UARTs
+>  
+>  config SERIAL_SAMSUNG_UARTS
+>         int
+> -       depends on PLAT_SAMSUNG
+> +       depends on SERIAL_SAMSUNG
+>         default 4 if SERIAL_SAMSUNG_UARTS_4 || CPU_S3C2416
+>         default 3
+>         help
+> 
 
+Have you checked that it still builds on all samsung platforms when
+SERIAL_SAMSUNG is disabled? We have had build errors in this area
+in the past.
+
+	Arnd
