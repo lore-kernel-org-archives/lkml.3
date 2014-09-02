@@ -1,79 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752241AbaIBXta (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 19:49:30 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:65258 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751233AbaIBXt3 (ORCPT
+	id S1752801AbaIBXuo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 19:50:44 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:37980 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752429AbaIBXun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 19:49:29 -0400
-Date: Tue, 2 Sep 2014 16:49:24 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Gregory Fong <gregory.0xf0@gmail.com>, Matt Porter <mporter@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>, Christian Daudt <bcm@fixthebug.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Marc Carino <marc.ceeeee@gmail.com>,
-        Kevin Cernekee <cernekee@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: drop ISAR0 workaround for B15
-Message-ID: <20140902234924.GZ18411@ld-irv-0074>
-References: <1407797053-12544-1-git-send-email-gregory.0xf0@gmail.com>
- <20140813194047.GA18411@ld-irv-0074>
+	Tue, 2 Sep 2014 19:50:43 -0400
+Date: Tue, 2 Sep 2014 16:50:38 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: linux-next: Tree for Aug 23
+Message-ID: <20140902235038.GA23286@roeck-us.net>
+References: <20140823080422.7895575c@canb.auug.org.au>
+ <20140825045741.GA29723@roeck-us.net>
+ <20140901155804.GT27892@worktop.ger.corp.intel.com>
+ <5404A2F2.3090908@roeck-us.net>
+ <20140901190438.GB5806@worktop.ger.corp.intel.com>
+ <20140902094016.GD31157@worktop.ger.corp.intel.com>
+ <20140902095553.GE31157@worktop.ger.corp.intel.com>
+ <20140902190445.GB8829@roeck-us.net>
+ <20140902202126.GA3190@worktop.ger.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140813194047.GA18411@ld-irv-0074>
+In-Reply-To: <20140902202126.GA3190@worktop.ger.corp.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping.
+On Tue, Sep 02, 2014 at 10:21:26PM +0200, Peter Zijlstra wrote:
+> On Tue, Sep 02, 2014 at 12:04:45PM -0700, Guenter Roeck wrote:
+> 
+> > I provided qemu images and instructions as follows.
+> > 	http://server.roeck-us.net/qemu/mipsel/		MIPS 32 bit, little endian
+> > 	http://server.roeck-us.net/qemu/mips64el/	MIPS 64 bit, little endian
+> > 
+> > Let me know if you also need big endian images.
+> 
+> Thanks! Does the below work? It appears to work for the mips64 build I did.
+> I'll send a proper patch tomorrow; sleep time :-)
+> 
+Yes, this fixes the problem for both mips32 and mips64.
 
-Is this worthy of 3.17-rc? Or should it just be queued for 3.18, as it's
-only removing redundant info?
+Guenter
 
-On Wed, Aug 13, 2014 at 12:40:47PM -0700, Brian Norris wrote:
-> The Brahma-B15's ISAR0 correcty advertises UDIV/SDIV support in both ARM
-> and Thumb2 modes (CPUID_EXT_ISAR0=02101110), so we don't need to
-> manually apply this hwcap.
-> 
-> The code in question actually predates the following commit, which made
-> our hwcaps unnecessary:
-> 
->     commit 8164f7af88d9ad3a757bd14f634b23997ee77f6b
->     Author: Stephen Boyd <sboyd@codeaurora.org>
->     Date:   Mon Mar 18 19:44:15 2013 +0100
-> 
->         ARM: 7680/1: Detect support for SDIV/UDIV from ISAR0 register
-> 
-> Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
 > ---
-> Supersedes Gregory's previous patch.
+> diff --git a/arch/mips/configs/malta_defconfig b/arch/mips/configs/malta_defconfig
+> index e18741e..869efe7 100644
+> --- a/arch/mips/configs/malta_defconfig
+> +++ b/arch/mips/configs/malta_defconfig
+> @@ -441,3 +441,6 @@ CONFIG_CRYPTO_TEA=m
+>  CONFIG_CRYPTO_TWOFISH=m
+>  # CONFIG_CRYPTO_ANSI_CPRNG is not set
+>  CONFIG_CRC16=m
+> +CONFIG_BLK_DEV_INITRD=y
+> +CONFIG_CPU_MIPS64_R1=y
+> +CONFIG_64BIT=y
+> diff --git a/arch/mips/include/asm/atomic.h b/arch/mips/include/asm/atomic.h
+> index 476fe3b..f3ee721 100644
+> --- a/arch/mips/include/asm/atomic.h
+> +++ b/arch/mips/include/asm/atomic.h
+> @@ -93,7 +93,7 @@ static __inline__ int atomic_##op##_return(int i, atomic_t * v)			\
+>  		"	" #asm_op " %0, %1, %3				\n"	\
+>  		"	sc	%0, %2					\n"	\
+>  		"	beqzl	%0, 1b					\n"	\
+> -		"	addu	%0, %1, %3				\n"	\
+> +		"	" #asm_op " %0, %1, %3				\n"	\
+>  		"	.set	mips0					\n"	\
+>  		: "=&r" (result), "=&r" (temp), "+m" (v->counter)		\
+>  		: "Ir" (i));							\
+> @@ -111,7 +111,7 @@ static __inline__ int atomic_##op##_return(int i, atomic_t * v)			\
+>  			: "Ir" (i));						\
+>  		} while (unlikely(!result));					\
+>  										\
+> -		result = temp + i;						\
+> +		result = temp; result c_op i;					\
+>  	} else {								\
+>  		unsigned long flags;						\
+>  										\
+> @@ -387,7 +387,7 @@ static __inline__ long atomic64_##op##_return(long i, atomic64_t * v)		\
+>  			: "memory");						\
+>  		} while (unlikely(!result));					\
+>  										\
+> -		result = temp + i;						\
+> +		result = temp; result c_op i;					\
+>  	} else {								\
+>  		unsigned long flags;						\
+>  										\
 > 
-> This addresses some very old review comments from Mark and Will:
 > 
->   http://lists.infradead.org/pipermail/linux-arm-kernel/2014-January/225895.html
->   http://lists.infradead.org/pipermail/linux-arm-kernel/2014-January/227916.html
-> 
->  arch/arm/mm/proc-v7.S | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
-> index b5d67db20897..b3a947863ac7 100644
-> --- a/arch/arm/mm/proc-v7.S
-> +++ b/arch/arm/mm/proc-v7.S
-> @@ -570,7 +570,7 @@ __v7_ca15mp_proc_info:
->  __v7_b15mp_proc_info:
->  	.long	0x420f00f0
->  	.long	0xff0ffff0
-> -	__v7_proc __v7_b15mp_setup, hwcaps = HWCAP_IDIV
-> +	__v7_proc __v7_b15mp_setup
->  	.size	__v7_b15mp_proc_info, . - __v7_b15mp_proc_info
->  
->  	/*
