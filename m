@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754970AbaIBRsG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 13:48:06 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:41133 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754710AbaIBRsE (ORCPT
+	id S1754774AbaIBRw5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 13:52:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56825 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753855AbaIBRw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 13:48:04 -0400
-Message-ID: <540602CE.8090503@gmail.com>
-Date: Tue, 02 Sep 2014 20:47:58 +0300
-From: Avi Kivity <avi.kivity@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Tue, 2 Sep 2014 13:52:56 -0400
+Date: Tue, 2 Sep 2014 10:52:55 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dipak Zope <dipakzope.kernel.org@gmail.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: staging: android: uapi: binder.h: Used __packed instead of
+ __attribute__((packed))
+Message-ID: <20140902175255.GA9582@kroah.com>
+References: <20140901124712.GA48606@localhost.localdomain>
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>, Joerg Roedel <jroedel@suse.de>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, agraf@suse.de,
-        valentine.sinitsyn@gmail.com, jan.kiszka@siemens.com,
-        gleb@cloudius-systems.com, avi@cloudius-systems.com
-Subject: Re: [PATCH 2/4] KVM: nSVM: propagate the NPF EXITINFO to the guest
-References: <1409670830-14544-1-git-send-email-pbonzini@redhat.com> <1409670830-14544-3-git-send-email-pbonzini@redhat.com> <20140902163344.GB16722@suse.de> <5405F44E.7090803@redhat.com>
-In-Reply-To: <5405F44E.7090803@redhat.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140901124712.GA48606@localhost.localdomain>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Sep 01, 2014 at 08:47:12AM -0400, Dipak Zope wrote:
+> Signed-off-by: Dipak Zope <dipakzope.kernel.org@gmail.com>
+> ---
+>  drivers/staging/android/uapi/binder.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/staging/android/uapi/binder.h b/drivers/staging/android/uapi/binder.h
+> index 904adb7..dba4cef 100644
+> --- a/drivers/staging/android/uapi/binder.h
+> +++ b/drivers/staging/android/uapi/binder.h
+> @@ -169,7 +169,7 @@ struct binder_ptr_cookie {
+>  struct binder_handle_cookie {
+>  	__u32 handle;
+>  	binder_uintptr_t cookie;
+> -} __attribute__((packed));
+> +} __packed;
+>  
+>  struct binder_pri_desc {
+>  	__s32 priority;
+> -- 
+> 1.8.3.1
 
-On 09/02/2014 07:46 PM, Paolo Bonzini wrote:
-> */
->>>   		if (unlikely(real_gfn == UNMAPPED_GVA))
->>>   			goto error;
->>> @@ -1974,10 +1974,28 @@ static void nested_svm_inject_npf_exit(struct kvm_vcpu *vcpu,
->>>   {
->>>   	struct vcpu_svm *svm = to_svm(vcpu);
->>>   
->>> -	svm->vmcb->control.exit_code = SVM_EXIT_NPF;
->>> -	svm->vmcb->control.exit_code_hi = 0;
->>> -	svm->vmcb->control.exit_info_1 = fault->error_code;
->>> -	svm->vmcb->control.exit_info_2 = fault->address;
->>> +	/*
->>> +	 * We can keep the value that the processor stored in the VMCB,
->>> +	 * but make up something sensible if we hit the WARN.
->>> +	 */
->>> +	if (WARN_ON(svm->vmcb->control.exit_code != SVM_EXIT_NPF)) {
->>> +		svm->vmcb->control.exit_code = SVM_EXIT_NPF;
->>> +		svm->vmcb->control.exit_code_hi = 0;
->>> +		svm->vmcb->control.exit_info_1 = (1ULL << 32);
->>> +		svm->vmcb->control.exit_info_2 = fault->address;
->>> +	}
->> Its been a while since I looked into this, but is an injected NPF exit
->> always the result of a real NPF exit?
-> I think so, but that's why I CCed you. :)
+This is already in my tree, what branch are you working off of here?
 
-It could always be the result of emulation into which L0 was tricked.  I 
-don't think it's a safe assumption.
+thanks,
 
->> How about an io-port emulated on
->> L1 but passed through to L2 by the nested hypervisor. On emulation of
->> INS or OUTS, KVM would need to read/write to an L2 address space,
-> It would need to read/write to *L1* (that's where the VMCB's IOIO map
-> lies), which could result into a regular page fault injected into L1.
->
-> Paolo
->
->> maybe
->> causing NPF faults to be injected. In this case an IOIO exit would cause
->> an injected NPF exit for L1.
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+greg k-h
