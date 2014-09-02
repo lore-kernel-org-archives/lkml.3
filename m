@@ -1,78 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753535AbaIBLjV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 07:39:21 -0400
-Received: from sauhun.de ([89.238.76.85]:54071 "EHLO pokefinder.org"
+	id S1753585AbaIBLl3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 07:41:29 -0400
+Received: from mga02.intel.com ([134.134.136.20]:9739 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752518AbaIBLjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 07:39:19 -0400
-Date: Tue, 2 Sep 2014 13:01:59 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Addy Ke <addy.ke@rock-chips.com>
-Cc: max.schwarz@online.de, heiko@sntech.de, olof@lixom.net,
-        dianders@chromium.org, dmitry.torokhov@gmail.com,
-        sergei.shtylyov@cogentembedded.com, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, cf@rock-chips.com,
-        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
-        yzq@rock-chips.com, hj@rock-chips.com, kever.yang@rock-chips.com,
-        hl@rock-chips.com, caesar.wang@rock-chips.com, zhengsq@rock-chips.com
-Subject: Re: [PATCH v4] i2c: rk3x: fix bug that cause transfer fails in
- master receive mode
-Message-ID: <20140902110159.GF1266@katana>
-References: <1408669991-9703-1-git-send-email-addy.ke@rock-chips.com>
- <1408730452-3552-1-git-send-email-addy.ke@rock-chips.com>
+	id S1752461AbaIBLl1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 07:41:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,448,1406617200"; 
+   d="scan'208";a="567085481"
+From: Jani Nikula <jani.nikula@linux.intel.com>
+To: ville.syrjala@linux.intel.com, intel-gfx@lists.freedesktop.org
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, David Airlie <airlied@linux.ie>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, Tibor Billes <tbilles@gmx.com>
+Subject: Re: [PATCH v3] drm/i915: Fix lock dropping in intel_tv_detect()
+In-Reply-To: <1409651842-14446-1-git-send-email-ville.syrjala@linux.intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+References: <20140902082635.GA25238@nuc-i3427.alporthouse.com> <1409651842-14446-1-git-send-email-ville.syrjala@linux.intel.com>
+User-Agent: Notmuch/0.18.1+85~gcca05ac (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
+Date: Tue, 02 Sep 2014 14:41:22 +0300
+Message-ID: <878um2i719.fsf@intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VuQYccsttdhdIfIP"
-Content-Disposition: inline
-In-Reply-To: <1408730452-3552-1-git-send-email-addy.ke@rock-chips.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 02 Sep 2014, ville.syrjala@linux.intel.com wrote:
+> From: Ville Syrjälä <ville.syrjala@linux.intel.com>
+>
+> When intel_tv_detect() fails to do load detection it would forget to
+> drop the locks and clean up the acquire context. Fix it up.
+>
+> This is a regression from:
+>  commit 208bf9fdcd3575aa4a5d48b3e0295f7cdaf6fc44
+>  Author: Ville Syrjälä <ville.syrjala@linux.intel.com>
+>  Date:   Mon Aug 11 13:15:35 2014 +0300
+>
+>     drm/i915: Fix locking for intel_enable_pipe_a()
+>
+> v2: Make the code more readable (Chris)
+> v3: Drop WARN_ON(type < 0) (Chris)
+>
+> Cc: stable@vger.kernel.org
+> Cc: Tibor Billes <tbilles@gmx.com>
+> Reported-by: Tibor Billes <tbilles@gmx.com>
+> Tested-by: Tibor Billes <tbilles@gmx.com>
+> Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+> Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
 
---VuQYccsttdhdIfIP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Pushed to drm-intel-fixes, thanks for the patch, review, and testing.
 
-On Sat, Aug 23, 2014 at 02:00:52AM +0800, Addy Ke wrote:
-> In rk3x SOC, the I2C controller can receive/transmit up to 32 bytes data
-> in one chunk, so the size of data to be write/read to/from TXDATAx/RXDATAx
-> must be less than or equal 32 bytes at a time.
->=20
-> Tested on rk3288-pinky board, elan receive 158 bytes data.
->=20
-> Suggested-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
-> Acked-by: Max Schwarz <max.schwarz@online.de>
-
-Applied to for-current, thanks! Please don't send new versions of a
-patch as reply-to of a previous version.
+BR,
+Jani.
 
 
---VuQYccsttdhdIfIP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> ---
+>  drivers/gpu/drm/i915/intel_tv.c | 10 +++++++---
+>  1 file changed, 7 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/i915/intel_tv.c b/drivers/gpu/drm/i915/intel_tv.c
+> index 32186a6..c69d3ce 100644
+> --- a/drivers/gpu/drm/i915/intel_tv.c
+> +++ b/drivers/gpu/drm/i915/intel_tv.c
+> @@ -1311,6 +1311,7 @@ intel_tv_detect(struct drm_connector *connector, bool force)
+>  {
+>  	struct drm_display_mode mode;
+>  	struct intel_tv *intel_tv = intel_attached_tv(connector);
+> +	enum drm_connector_status status;
+>  	int type;
+>  
+>  	DRM_DEBUG_KMS("[CONNECTOR:%d:%s] force=%d\n",
+> @@ -1328,16 +1329,19 @@ intel_tv_detect(struct drm_connector *connector, bool force)
+>  		if (intel_get_load_detect_pipe(connector, &mode, &tmp, &ctx)) {
+>  			type = intel_tv_detect_type(intel_tv, connector);
+>  			intel_release_load_detect_pipe(connector, &tmp);
+> +			status = type < 0 ?
+> +				connector_status_disconnected :
+> +				connector_status_connected;
+>  		} else
+> -			return connector_status_unknown;
+> +			status = connector_status_unknown;
+>  
+>  		drm_modeset_drop_locks(&ctx);
+>  		drm_modeset_acquire_fini(&ctx);
+>  	} else
+>  		return connector->status;
+>  
+> -	if (type < 0)
+> -		return connector_status_disconnected;
+> +	if (status != connector_status_connected)
+> +		return status;
+>  
+>  	intel_tv->type = type;
+>  	intel_tv_find_better_format(connector);
+> -- 
+> 1.8.5.5
+>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUBaOnAAoJEBQN5MwUoCm2dMIQAIJTTUnFg+LST4rb9omcbLxI
-gO+HC27P8x2AznVbqPHv8fEOeok2Sjvff58QKpjbQtc3c+86EBCnNAMgRa/QQ5/0
-ZLRuGDYaCqFMqAXwMz3giDYJmeZrwVGKM3ME4Fm5UfnTg+aMKdSUB2V1V5WTYMPE
-5vWVizuWGohhn5rq8OPHUt2c4WFJLn+cDzxwrzl3F/QaOARs7YkELPsYmr8xMpJi
-I+1+y0y+hRcdcM7pnlys+wcQIpgTty6RR/E+2eF/9KsIFhpT57RsvCr0ZeT1tE2L
-60zEwJLPPXUJEPqvcRMNia8LaL9wk1b9q4R8i0B2wKJhb3/T/A7WVmkhFBoynQqi
-RR1rT6XrE7BKdojqaxBzcaMZwH2Kakhz75T/DhSL8gu1oXSVwp/QsqohWoC/X/IH
-rsMi0sOKAJGluYxF3VBngGLZzAi7hhvx2sKhQOpkUNMfdsNZKzqYjJrxdUFvKUwr
-M04ZQmwCAoqUF8ojmKx9KmXMx1rgroVD4wQn3gi64DpuytQ6in+m6caaBAALqxL3
-0/5SEDSy74xOAxOstu868ax654ckonshCH/6smYy/ZJ0846buXJizLdbPEi29mkO
-HZc02FIvww0f9q48HGfSYEJxnhFVOlThOroVPM7i3O5DEhsdOnExy6YEv316LylN
-FFBlhiX4cO7G2c/+3TNx
-=wiRz
------END PGP SIGNATURE-----
-
---VuQYccsttdhdIfIP--
+-- 
+Jani Nikula, Intel Open Source Technology Center
