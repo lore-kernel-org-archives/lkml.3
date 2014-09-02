@@ -1,151 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753766AbaIBNAy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 09:00:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52838 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752868AbaIBNAw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 09:00:52 -0400
-Date: Tue, 2 Sep 2014 14:58:10 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Suresh Siddha <sbsiddha@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Bean Anderson <bean@azulsystems.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] x86, fpu: irq_fpu_usable: kill all checks except
-	!in_kernel_fpu
-Message-ID: <20140902125810.GB18534@redhat.com>
-References: <20140827185138.GA12487@redhat.com> <CA+55aFwi-S27_maZXU+baOqPAYfi_NTGcfbnRnk45+B8+i4hVQ@mail.gmail.com> <20140828111628.GB15276@redhat.com> <20140829181533.GA30659@redhat.com> <20140829181729.GE30659@redhat.com> <CALmL7E8mTeALSjSXkgVQs=KW9AX5K4r5k63foiP0Vy5ue8Vfgg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALmL7E8mTeALSjSXkgVQs=KW9AX5K4r5k63foiP0Vy5ue8Vfgg@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753930AbaIBNBS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 09:01:18 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:50932 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750937AbaIBNBQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 09:01:16 -0400
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Colin Cross <ccross@android.com>, kernel-team@android.com,
+        Rob Herring <robherring2@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Nicolas Pitre <nico@linaro.org>
+Subject: [PATCH v11 00/19] arm: KGDB NMI/FIQ support
+Date: Tue,  2 Sep 2014 14:00:34 +0100
+Message-Id: <1409662853-29313-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org>
+References: <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02, Suresh Siddha wrote:
->
-> On Fri, Aug 29, 2014 at 11:17 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > ONCE AGAIN, THIS IS MORE THE QUESTION THAN THE PATCH.
->
-> this patch I think needs more thought for sure. please see below.
+This patchset makes it possible to use kgdb's NMI infrastructure on ARM
+platforms.
 
-Of course.
+The patches are seperated into three distinct groups:
 
-> > interrupted_kernel_fpu_idle() does:
-> >
-> >         if (use_eager_fpu())
-> >                 return true;
-> >
-> >         return !__thread_has_fpu(current) &&
-> >                 (read_cr0() & X86_CR0_TS);
-> >
-> > and it is absolutely not clear why these 2 cases differ so much.
-> >
-> > To remind, the use_eager_fpu() case is buggy; __save_init_fpu() in
-> > __kernel_fpu_begin() can race with math_state_restore() which does
-> > __thread_fpu_begin() + restore_fpu_checking(). So we should fix this
-> > race anyway and we can't require __thread_has_fpu() == F likes the
-> > !use_eager_fpu() case does, in this case kernel_fpu_begin() will not
-> > work if it interrupts the idle thread (this will reintroduce the
-> > performance regression fixed by 5187b28f).
-> >
-> > Probably math_state_restore() can use kernel_fpu_disable/end() which
-> > sets/clears in_kernel_fpu, or it can disable irqs. Doesn't matter, we
-> > should fix this bug anyway.
-> >
-> > And if we fix this bug, why else !use_eager_fpu() case needs the much
-> > more strict check? Why we can't handle the __thread_has_fpu(current)
-> > case the same way?
-> >
-> > The comment deleted by this change says:
-> >
-> >         and TS must be set so that the clts/stts pair does nothing
-> >
-> > and can explain the difference, but I can not understand this (again,
-> > assuming that we fix the race(s) mentoined above).
-> >
-> > Say, user_fpu_begin(). Yes, kernel_fpu_begin/end() can restore X86_CR0_TS.
-> > But this should be fine?
->
-> No. The reason is that has_fpu state and cr0.TS can get out of sync.
->
-> Let's say you get an interrupt after clts() in __thread_fpu_begin()
-> called as part of user_fpu_begin().
->
-> And because of this proposed change, irq_fpu_usable() returns true and
-> an interrupt can end-up using fpu and after the return from interrupt
-> we can have a state where cr0.TS is set but we end up resuming the
-> execution from __thread_set_has_fpu(). Now after this point has_fpu is
-> set but cr0.TS is set. And now any schedule() with this state (let's
-> say immd after preemption_enable() at the end of user_fpu_begin()) is
-> dangerous. We can get a dna fault in the middle of __switch_to() which
-> can lead to subtle bugs.
+1. arm specific changes; these provide multi-platform support for FIQ
+   (including raising an IPI using FIQ to ensure effective SMP support)
+   and extend ARM KGDB support to use the features provided.
 
-Thanks. Yes, I thought about this race, but I didn't realize that a DNA
-inside __switch_to() is dangerous.
+2. irqchip changes; updates to the gic and vic drivers to provide
+   support for routing certain interrupt sources to FIQ.
 
-Thanks a lot. OK, this is trivially fixable. I had this v2 in mind from
-the very beginning because I was not really sure that unconditional stts()
-in kernel_fpu_end() is safe (but yes, I didn't realize why). Just we need
-to save X86_CR0_TS in the same per-cpu in_kernel_fpu,
+3. serial changes; driver support to allow the UART interrupt to be
+   routed to FIQ. The already mainlined kgdb NMI infrastructure (mostly
+   found in drivers/tty/serial/kgdb_nmi.c) will re-route the kgdb
+   console UART's interrupt signal from IRQ to FIQ. Naturally the UART
+   will no longer function normally and will instead be managed by kgdb
+   using the polled I/O functions. Any character delivered to the UART
+   causes the kgdb handler function to be called.
 
-	static DEFINE_PER_CPU(int, in_kernel_fpu);
+Tested on qemu (versatile), STiH416 (B2020 board) and Freescale i.MX6
+quad (wandboard).
 
-	void __kernel_fpu_begin(void)
-	{
-		struct task_struct *me = current;
+Changes since v10:
 
-		this_cpu_write(in_kernel_fpu, 1);
+- Removed use of RCU notifier chains to encourage code review by
+  ensuring no driver can use FIQ without touching code in arch/arm/kernel
+  (Russell King)
 
-		if (__thread_has_fpu(me)) {
-			__save_init_fpu(me);
-		} else if (!use_eager_fpu()) {
-			this_cpu_write(fpu_owner_task, NULL);
-			if ((read_cr0() & X86_CR0_TS))
-				this_cpu_write(in_kernel_fpu, 2);
-				clts();
-			}
-		}
-	}
+Changes since v9:
 
-	void __kernel_fpu_end(void)
-	{
-		struct task_struct *me = current;
+- Split PL011 code movement into a seperate patch (Peter Hurley)
+- Use container_of() to convert pointers to uart_amba_port (Peter
+  Hurley)
+- Clean up redundant code from pl011_poll_init (Peter Hurley)
+- Call do_unexp_fiq() if we receive a FIQ and CONFIG_FIQ is not set.
+- Ensure irq-gic.c does not call FIQ functions unless CONFIG_FIQ is set.
+- Introduced patch to avoid ttyNMI0 being enabled by default
+  (replaces architecture dependant enable/disable logic).
+- Fixed bug in kgdb_fiq_enable_nmi() that causes SysRq-g (non-NMI
+  debugging) to wedge the debugger.
 
-		if (__thread_has_fpu(me)) {
-			if (WARN_ON(restore_fpu_checking(me)))
-				drop_init_fpu(me);
-		} else if (!use_eager_fpu()) {
-			if (this_cpu_read(in_kernel_fpu) == 2)
-				stts();
-		}
+Changes since v8:
 
-		this_cpu_write(in_kernel_fpu, 0);
-	}
+- Significant rework to separate the FIQ exception handler from kgdb.
+  This allows other features typically implemented using NMI on x86
+  to reuse the same exception handling code (Russell King)
+- Reunited arch/arm and driver code into a single patch series again.
+- Added support for raising IPIs using FIQ (makes kgdb quiesce must
+  more robust).
+- Introduced a workaround for GICv1 devices to avoid FIQs being
+  spuriously handled as IRQs.
 
-Or, perhaps better, we can turn user_fpu_begin()->preempt_disable()
-into kernel_fpu_disable().
+Changes since v7:
 
-Do you think this can work?
+- Introduced ack_fiq() to complement eoi_fiq(). Without this it is
+  not possible to meet the GIC specification (previous versions worked
+  when tested but are unpredictable according to the specification).
+  ack_fiq() also makes is possible for drivers for devices with multiple
+  interrupt lines to discover the interrupt source correctly.
 
-> other than this patch, rest of the changes look ok to me. Can you
-> please resend this patchset with the math_state_restore() race
-> addressed aswell?
+Changes since v6:
 
-OK, will do, but probably next week.
+- Corrected off-by-one comparison in has_fiq() (Nicolas Pitre)
+- Rewrote the FIQ stack initialization (Nicolas Pitre). This fixes a
+  serious data corruption bug due to bad stack mismanagement.
+- Introduced __fiq_abt to ensure lr_abt and spsr_abt are saved and
+  restored if we fast-interrupt an abort (Russell King).
+- Significantly improved the commenting of the exception handlers.
+- Added a call to trace_hardirqs_on() if we clear the I bit as we
+  exit the exception handler.
 
-Will you agree if I add kernel_fpu_disable/enable to fix this race?
-It can probably have more users (see above).
+Changes since v5:
 
-Thanks!
+- Separated anything not strictly impacting arch/arm.
+- Fixed a spurious add/remove of code within the series (there was
+  broken code in intermediate patches)
 
-Oleg.
+For previous changes see:
+http://thread.gmane.org/gmane.linux.ports.arm.kernel/333901
+
+Daniel Thompson (18):
+  arm: fiq: Add callbacks to manage FIQ routings
+  arm: fiq: Allow ACK and EOI to be passed to the intc
+  arm: fiq: Replace default FIQ handler
+  arm: smp: Introduce a special IPI signalled using FIQ
+  arm: KGDB/KDB FIQ support
+  irqchip: gic: Provide support for interrupt grouping
+  irqchip: gic: Add support for FIQ management
+  irqchip: gic: Remove spin locks from eoi_irq
+  irqchip: gic: Add support for IPI FIQ
+  irqchip: gic: Group 0 workaround.
+  irqchip: vic: Add support for FIQ management
+  serial: kgdb_nmi: No CON_ENABLED by default
+  serial: amba-pl011: Use container_of() to get uart_amba_port
+  serial: amba-pl011: Move pl011_hwinit()
+  serial: amba-pl011: Pass FIQ information to KGDB.
+  serial: asc: Add support for KGDB's FIQ/NMI mode
+  serial: asc: Adopt readl_/writel_relaxed()
+  serial: imx: Add support for KGDB's FIQ/NMI mode
+
+Dirk Behme (1):
+  serial: imx: clean up imx_poll_get_char()
+
+ arch/arm/Kconfig                |   2 +
+ arch/arm/Kconfig.debug          |  19 +++
+ arch/arm/include/asm/fiq.h      |  17 +++
+ arch/arm/include/asm/hardirq.h  |   2 +-
+ arch/arm/include/asm/kgdb.h     |   5 +
+ arch/arm/include/asm/smp.h      |   7 +
+ arch/arm/kernel/entry-armv.S    | 129 +++++++++++++++--
+ arch/arm/kernel/fiq.c           | 146 ++++++++++++++++++-
+ arch/arm/kernel/kgdb.c          | 112 ++++++++++++++-
+ arch/arm/kernel/setup.c         |   8 +-
+ arch/arm/kernel/smp.c           |  15 ++
+ arch/arm/mach-versatile/core.c  |   2 +-
+ drivers/irqchip/irq-gic.c       | 302 +++++++++++++++++++++++++++++++++++++---
+ drivers/irqchip/irq-vic.c       |  92 +++++++++---
+ drivers/tty/serial/Kconfig      |   2 +-
+ drivers/tty/serial/amba-pl011.c | 143 +++++++++++--------
+ drivers/tty/serial/imx.c        |  88 +++++++-----
+ drivers/tty/serial/kgdb_nmi.c   |   5 +-
+ drivers/tty/serial/st-asc.c     |  27 +++-
+ include/linux/irqchip/arm-gic.h |   3 +
+ include/linux/irqchip/arm-vic.h |   6 +-
+ 21 files changed, 975 insertions(+), 157 deletions(-)
+
+--
+1.9.3
 
