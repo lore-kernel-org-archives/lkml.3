@@ -1,93 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752769AbaIBIeL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 04:34:11 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:59215 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863AbaIBIeH (ORCPT
+	id S1752929AbaIBIhI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 04:37:08 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:39244 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751231AbaIBIhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 04:34:07 -0400
-Date: Tue, 2 Sep 2014 09:34:00 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
-        linux@arm.linux.org.uk, naushad@samsung.com,
-        Pankaj Dubey <pankaj.dubey@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>, linux-kernel@vger.kernel.org,
-        joshi@samsung.com, vikas.sajjan@samsung.com,
-        linux-samsung-soc@vger.kernel.org, broonie@kernel.org,
-        thomas.ab@samsung.com, chow.kim@samsung.com
-Subject: Re: [PATCH] mfd: syscon: Decouple syscon interface from syscon
- devices
-Message-ID: <20140902083400.GF17117@lee--X1>
-References: <1408694991-21615-1-git-send-email-pankaj.dubey@samsung.com>
- <3343901.7HpqcTBEp1@wuerfel>
- <20140902080516.GE17117@lee--X1>
- <3109076.4UMHArqVbl@wuerfel>
+	Tue, 2 Sep 2014 04:37:05 -0400
+Message-ID: <540581AB.6020101@atmel.com>
+Date: Tue, 2 Sep 2014 10:36:59 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <3109076.4UMHArqVbl@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Brian Norris <computersforpeace@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+CC: Huang Shijie <b32955@freescale.com>, Marek Vasut <marex@denx.de>,
+        <linux-mtd@lists.infradead.org>, Andrew Victor <linux@maxim.org.za>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 06/12] ARM: at91: add MTD_SPI_NOR (new dependency for
+ M25P80)
+References: <1398925607-7482-1-git-send-email-computersforpeace@gmail.com> <1398925607-7482-7-git-send-email-computersforpeace@gmail.com>
+In-Reply-To: <1398925607-7482-7-git-send-email-computersforpeace@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 02 Sep 2014, Arnd Bergmann wrote:
-
-> On Tuesday 02 September 2014 09:05:16 Lee Jones wrote:
-> > On Mon, 01 Sep 2014, Arnd Bergmann wrote:
-> > 
-> > > On Monday 01 September 2014 17:04:26 Lee Jones wrote:
-> > > > On Mon, 01 Sep 2014, Arnd Bergmann wrote:
-> > > > > Maybe I'm misreading the patch, but I don't see how it creates a
-> > > > > migration path. What I want to end up with is infrastructure that
-> > > > > lets anybody call syscon_regmap_lookup_by_pdevname or
-> > > > > syscon_regmap_lookup_by_compatible (if they really need to)
-> > > > > without needing the platform_driver for syscon. That should not
-> > > > > require any form of compatibility layer because to the driver
-> > > > > using it there is no API change.
-> > > > 
-> > > > Somehow I think the likelyhood is that I am misreading the patch.
-> > > > 
-> > > > I thought that before this patch drivers we had to register a syscon
-> > > > device to bind to this driver, which was fine for the first use-cases
-> > > > of syscon as it wasn't required too early during boot.  However, now
-> > > > there are use-cases where systems require access to syscon registers
-> > > > eariler in boot we require a means to obtain access prior to device
-> > > > probing.  I thought this patch not only provides that possibilty, but
-> > > > also leaves in the ability to register direct from DT.
-> > > 
-> > > Right, it does provide the ability to have syscon before devices
-> > > are registered, I missed that part.
-> > > 
-> > > > > In contrast, this patch introduces a new of_syscon_{un,}register()
-> > > > > interface that would get removed after the the above has
-> > > > > been implemented, causing extra churn for any driver that also
-> > > > > wants to provide a regmap-like interface.
-> > > > 
-> > > > When will we ever not have to register syscon?
-> > > 
-> > > The idea is that we implicitly register the syscon block when someone
-> > > calls syscon_regmap_lookup_by_compatible or syscon_regmap_lookup_by_phandle
-> > > and then return a reference to that new syscon. When another driver
-> > > looks up the same device node, we just pass a reference to the existing
-> > > syscon.
-> > 
-> > Doesn't sound too unreasonable.  So how about instead of exporting
-> > these new of_syscon_{un,}register() calls, we make them static and
-> > call them from syscon_regmap_lookup_by_{phandle,compatible}?
+On 01/05/2014 08:26, Brian Norris :
+> This defconfig contains the CONFIG_M25P80 symbol, which is now
+> dependent on the MTD_SPI_NOR symbol. Add CONFIG_MTD_SPI_NOR to satisfy
+> the new dependency.
 > 
-> Yes, that would be a good start. We should think about whether we want
-> to remove the existing DT probing at the same time, since it becomes
-> unused, and we might want to move the code to drivers/base/regmap_*.c
-> at some point
+> At the same time, drop the now-nonexistent CONFIG_MTD_CHAR symbol.
+> 
+> Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+> Cc: Andrew Victor <linux@maxim.org.za>
+> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-I'd support that move - and can even draft the patch if required.
+Okay, now taken in at91-3.18-defconfig, thanks:
+
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+
+
+> Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  arch/arm/configs/sama5_defconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/configs/sama5_defconfig b/arch/arm/configs/sama5_defconfig
+> index dc3881e07630..8282ebab6e52 100644
+> --- a/arch/arm/configs/sama5_defconfig
+> +++ b/arch/arm/configs/sama5_defconfig
+> @@ -65,12 +65,12 @@ CONFIG_DEVTMPFS_MOUNT=y
+>  # CONFIG_PREVENT_FIRMWARE_BUILD is not set
+>  CONFIG_MTD=y
+>  CONFIG_MTD_CMDLINE_PARTS=y
+> -CONFIG_MTD_CHAR=y
+>  CONFIG_MTD_BLOCK=y
+>  CONFIG_MTD_CFI=y
+>  CONFIG_MTD_M25P80=y
+>  CONFIG_MTD_NAND=y
+>  CONFIG_MTD_NAND_ATMEL=y
+> +CONFIG_MTD_SPI_NOR=y
+>  CONFIG_MTD_UBI=y
+>  CONFIG_MTD_UBI_GLUEBI=y
+>  CONFIG_PROC_DEVICETREE=y
+> 
+
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Nicolas Ferre
