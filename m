@@ -1,100 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754351AbaIBPcG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 11:32:06 -0400
-Received: from cernmx11.cern.ch ([188.184.36.50]:23796 "EHLO CERNMX11.cern.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753692AbaIBPcE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 11:32:04 -0400
-From: Federico Vaga <federico.vaga@cern.ch>
-To: Samuel Iglesias Gonsalvez <siglesias@igalia.com>,
-        Jens Taprogge <jens.taprogge@taprogge.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: <industrypack-devel@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>,
-        Federico Vaga <federico.vaga@cern.ch>
-Subject: [PATCH 3/3] ipoctal: get carrier driver to avoid rmmod
-Date: Tue, 2 Sep 2014 17:31:41 +0200
-Message-ID: <1409671901-4009-4-git-send-email-federico.vaga@cern.ch>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1409671901-4009-1-git-send-email-federico.vaga@cern.ch>
-References: <1409671901-4009-1-git-send-email-federico.vaga@cern.ch>
+	id S1754717AbaIBPdH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 11:33:07 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:33783 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753880AbaIBPdF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 11:33:05 -0400
+Date: Tue, 2 Sep 2014 11:33:01 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
+        LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH 1/2] cgroup: Delay the clearing of cgrp->kn->priv
+Message-ID: <20140902153301.GA17424@htj.dyndns.org>
+References: <5405A27A.3090605@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [137.138.193.223]
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5405A27A.3090605@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Federico Vaga <federico.vaga@cern.ch>
----
- drivers/ipack/devices/ipoctal.c |   30 +++++++++++++++++++++++++++---
- 1 file changed, 27 insertions(+), 3 deletions(-)
+Hello, Li.
 
-diff --git a/drivers/ipack/devices/ipoctal.c b/drivers/ipack/devices/ipoctal.c
-index e531379..035d544 100644
---- a/drivers/ipack/devices/ipoctal.c
-+++ b/drivers/ipack/devices/ipoctal.c
-@@ -55,6 +55,12 @@ struct ipoctal {
- 	u8 __iomem			*int_space;
- };
- 
-+static inline struct ipoctal *chan_to_ipoctal(struct ipoctal_channel *chan,
-+					      unsigned int index)
-+{
-+	return container_of(chan, struct ipoctal, channel[index]);
-+}
-+
- static void ipoctal_reset_channel(struct ipoctal_channel *channel)
- {
- 	iowrite8(CR_DISABLE_RX | CR_DISABLE_TX, &channel->regs->w.cr);
-@@ -82,12 +88,20 @@ static int ipoctal_port_activate(struct tty_port *port, struct tty_struct *tty)
- 
- static int ipoctal_open(struct tty_struct *tty, struct file *file)
- {
--	struct ipoctal_channel *channel;
-+	struct ipoctal_channel *channel = dev_get_drvdata(tty->dev);
-+	struct ipoctal *ipoctal = chan_to_ipoctal(channel, tty->index);
-+	int err;
- 
--	channel = dev_get_drvdata(tty->dev);
- 	tty->driver_data = channel;
- 
--	return tty_port_open(&channel->tty_port, tty, file);
-+	if (!ipack_get_carrier(ipoctal->dev))
-+		return -EBUSY;
-+
-+	err = tty_port_open(&channel->tty_port, tty, file);
-+	if (err)
-+		ipack_put_carrier(ipoctal->dev);
-+
-+	return err;
- }
- 
- static void ipoctal_reset_stats(struct ipoctal_stats *stats)
-@@ -631,6 +645,15 @@ static void ipoctal_shutdown(struct tty_struct *tty)
- 	clear_bit(ASYNCB_INITIALIZED, &channel->tty_port.flags);
- }
- 
-+static void ipoctal_cleanup(struct tty_struct *tty)
-+{
-+	struct ipoctal_channel *channel = tty->driver_data;
-+	struct ipoctal *ipoctal = chan_to_ipoctal(channel, tty->index);
-+
-+	/* release the carrier driver */
-+	ipack_put_carrier(ipoctal->dev);
-+}
-+
- static const struct tty_operations ipoctal_fops = {
- 	.ioctl =		NULL,
- 	.open =			ipoctal_open,
-@@ -642,6 +665,7 @@ static const struct tty_operations ipoctal_fops = {
- 	.get_icount =		ipoctal_get_icount,
- 	.hangup =		ipoctal_hangup,
- 	.shutdown =		ipoctal_shutdown,
-+	.cleanup =              ipoctal_cleanup,
- };
- 
- static int ipoctal_probe(struct ipack_device *dev)
+On Tue, Sep 02, 2014 at 06:56:58PM +0800, Li Zefan wrote:
+>     for ((; ;))
+>     {
+>         echo $$ > /cgroup/sub/cgroup.procs
+>         ech $$ > /cgce 6f2e0c38c2108a74 ]---
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          copy & paste error?
+...
+> Reported-by: Toralf Förster <toralf.foerster@gmx.de>
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
+> ---
+> 
+> Toralf, Thanks for reporting the bug. I'm not able to repy to your email,
+> because I was kicked out of the cgroup mailing list so didn't receive
+> emails from mailing list for a week.
+> 
+> ---
+>  kernel/cgroup.c | 19 +++++++++----------
+>  1 file changed, 9 insertions(+), 10 deletions(-)
+> 
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index 1c56924..e03fc62 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -4185,6 +4185,15 @@ static void css_release_work_fn(struct work_struct *work)
+>  
+>  	mutex_unlock(&cgroup_mutex);
+>  
+> +	/*
+> +	 * There are two control paths which try to determine cgroup from
+> +	 * dentry without going through kernfs - cgroupstats_build() and
+> +	 * css_tryget_online_from_dir().  Those are supported by RCU
+> +	 * protecting clearing of cgrp->kn->priv backpointer.
+> +	 */
+> +	if (!ss && cgroup_parent(cgrp))
+> +		RCU_INIT_POINTER(*(void __rcu __force **)&cgrp->kn->priv, NULL);
+
+Can we move the above into the preceding else block?  I don't think
+holding cgroup_mutex or not makes any difference here.  Also, why do
+we need the cgroup_parent() check?  Do we deref root's kn->priv in the
+destruction path?  If so, can you please note that in the comment?
+
+Thanks.
+
 -- 
-1.7.10.4
-
+tejun
