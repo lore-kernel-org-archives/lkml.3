@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755497AbaIBW11 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 18:27:27 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:52088 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755361AbaIBW1Z (ORCPT
+	id S1755251AbaIBWdM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 18:33:12 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:56138 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755274AbaIBWdH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 18:27:25 -0400
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Cong Wang <cwang@twopensource.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>
-Subject: [Patch v2] perf_event: fix a race condition in perf_remove_from_context()
-Date: Tue,  2 Sep 2014 15:27:20 -0700
-Message-Id: <1409696840-843-1-git-send-email-xiyou.wangcong@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
+	Tue, 2 Sep 2014 18:33:07 -0400
+From: behanw@converseincode.com
+To: agk@redhat.com, clm@fb.com, davem@davemloft.net, dm-devel@redhat.com,
+        fabf@skynet.be, herbert@gondor.apana.org.au, jbacik@fb.com,
+        snitzer@redhat.com
+Cc: akpm@linux-foundation.org, james.l.morris@oracle.com,
+        john.johansen@canonical.com, linux-btrfs@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-raid@vger.kernel.org, linux-security-module@vger.kernel.org,
+        neilb@suse.de, serge@hallyn.com, torvalds@linux-foundation.org,
+        Behan Webster <behanw@converseincode.com>
+Subject: [PATCH RFC 0/6] LLVMLinux: Patches to enable the kernel to be compiled with clang/LLVM
+Date: Tue,  2 Sep 2014 15:32:27 -0700
+Message-Id: <1409697153-7006-1-git-send-email-behanw@converseincode.com>
+X-Mailer: git-send-email 1.9.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cong Wang <cwang@twopensource.com>
+From: Behan Webster <behanw@converseincode.com>
 
-We saw a kernel soft lockup in perf_remove_from_context(),
-it looks like the `perf` process, when exiting, could not go
-out of the retry loop. Meanwhile, the target process was forking
-a child. So either the target process should execute the smp
-function call to deactive the event (if it was running) or it should
-do a context switch which deactives the event.
+These patches remove the use of Variable Length Arrays In Structs (VLAIS) in
+crypto related code. Presented here for comments as a whole (since they all do
+the same thing in the same way). Once everyone is happy I will submit them
+individually to their appropriate maintainers.
 
-It seems we optimize out a context switch in perf_event_context_sched_out(),
-and what's more important, we still test an obsolete task pointer when
-retrying, so no one actually would deactive that event in this situation.
-Fix it directly by reloading the task pointer in perf_remove_from_context().
-This should cure the above soft lockup.
+The LLVMLinux project aims to fully build the Linux kernel using both gcc and
+clang (the C front end for the LLVM compiler infrastructure project). 
 
-Cc: stable@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Signed-off-by: Cong Wang <cwang@twopensource.com>
-Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
----
 
-v2: fix perf_install_in_context() too and re-generate this patch
+Jan-Simon Möller (4):
+  crypto, dm: LLVMLinux: Remove VLAIS usage from dm-crypt
+  crypto: LLVMLinux: Remove VLAIS usage from crypto/hmac.c
+  crypto: LLVMLinux: Remove VLAIS usage from libcrc32c.c
+  crypto: LLVMLinux: Remove VLAIS usage from crypto/testmgr.c
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index f9c1ed0..d640a8b 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1524,6 +1524,11 @@ static void perf_remove_from_context(struct perf_event *event, bool detach_group
- 	 */
- 	if (ctx->is_active) {
- 		raw_spin_unlock_irq(&ctx->lock);
-+		/*
-+		 * Reload the task pointer, it might have been changed by
-+		 * a concurrent perf_event_context_sched_out().
-+		 */
-+		task = ctx->task;
- 		goto retry;
- 	}
- 
-@@ -1967,6 +1972,11 @@ perf_install_in_context(struct perf_event_context *ctx,
- 	 */
- 	if (ctx->is_active) {
- 		raw_spin_unlock_irq(&ctx->lock);
-+		/*
-+		 * Reload the task pointer, it might have been changed by
-+		 * a concurrent perf_event_context_sched_out().
-+		 */
-+		task = ctx->task;
- 		goto retry;
- 	}
- 
+Vinícius Tinti (2):
+  apparmor: LLVMLinux: Remove VLAIS
+  btrfs: LLVMLinux: Remove VLAIS
+
+ crypto/hmac.c              | 27 +++++++++++++--------------
+ crypto/testmgr.c           | 16 ++++++++--------
+ drivers/md/dm-crypt.c      | 38 ++++++++++++++++++--------------------
+ fs/btrfs/hash.c            | 18 +++++++++---------
+ lib/libcrc32c.c            | 18 +++++++++---------
+ security/apparmor/crypto.c | 19 +++++++++----------
+ 6 files changed, 66 insertions(+), 70 deletions(-)
+
+-- 
+1.9.1
+
