@@ -1,79 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752929AbaIBIhI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 04:37:08 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:39244 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231AbaIBIhF (ORCPT
+	id S1753056AbaIBIj1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 04:39:27 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:50629 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268AbaIBIjY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 04:37:05 -0400
-Message-ID: <540581AB.6020101@atmel.com>
-Date: Tue, 2 Sep 2014 10:36:59 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 2 Sep 2014 04:39:24 -0400
+From: Mikael Pettersson <mikpelinux@gmail.com>
+X-Google-Original-From: "Mikael Pettersson" <mikpe@cascade>
 MIME-Version: 1.0
-To: Brian Norris <computersforpeace@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-CC: Huang Shijie <b32955@freescale.com>, Marek Vasut <marex@denx.de>,
-        <linux-mtd@lists.infradead.org>, Andrew Victor <linux@maxim.org.za>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 06/12] ARM: at91: add MTD_SPI_NOR (new dependency for
- M25P80)
-References: <1398925607-7482-1-git-send-email-computersforpeace@gmail.com> <1398925607-7482-7-git-send-email-computersforpeace@gmail.com>
-In-Reply-To: <1398925607-7482-7-git-send-email-computersforpeace@gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+Message-ID: <21509.33335.348740.670881@gargle.gargle.HOWL>
+Date: Tue, 2 Sep 2014 10:39:19 +0200
+To: Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
+Cc: Mikael Pettersson <mikpelinux@gmail.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [BISECTED] 3.17-rc1 radeon screen corruption due to "Always flush
+ the HDP cache before submitting a CS to the GPU"
+In-Reply-To: <540572EC.4070909@daenzer.net>
+References: <21505.55482.547592.906934@gargle.gargle.HOWL>
+	<540572EC.4070909@daenzer.net>
+X-Mailer: VM 8.1.2 under 24.3.1 (x86_64-redhat-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/05/2014 08:26, Brian Norris :
-> This defconfig contains the CONFIG_M25P80 symbol, which is now
-> dependent on the MTD_SPI_NOR symbol. Add CONFIG_MTD_SPI_NOR to satisfy
-> the new dependency.
-> 
-> At the same time, drop the now-nonexistent CONFIG_MTD_CHAR symbol.
-> 
-> Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-> Cc: Andrew Victor <linux@maxim.org.za>
-> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+Michel Dänzer writes:
+ > On 30.08.2014 22:59, Mikael Pettersson wrote:
+ > > Since 3.17-rc1 my radeon card (RV370 / X1050 card) causes screen corruption
+ > > after a while in X + firefox.  This still occurs with yesterday's HEAD
+ > > of Linus' repo.  3.16 and ealier kernels are fine.
+ > > 
+ > > I ran a bisect, which identified:
+ > > 
+ > > commit 72a9987edcedb89db988079a03c9b9c65b6ec9ac
+ > > Author: Michel DÃ¤nzer <michel.daenzer@amd.com>
+ > > Date:   Thu Jul 31 18:43:49 2014 +0900
+ > > 
+ > >      drm/radeon: Always flush the HDP cache before submitting a CS to the GPU
+ > > 
+ > > as the cause of my screen corruption.  Reverting this from 3.17-rc2
+ > > (which requires manual intervention due to subsequent changes in
+ > > radeon_ring_commit()) eliminates the screen corruption.
+ > 
+ > Does the patch below help?
 
-Okay, now taken in at91-3.18-defconfig, thanks:
+Thanks for the patch, I'll test it on Friday evening when I'm
+back home and have access to the affected machine.
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-
-> Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  arch/arm/configs/sama5_defconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/configs/sama5_defconfig b/arch/arm/configs/sama5_defconfig
-> index dc3881e07630..8282ebab6e52 100644
-> --- a/arch/arm/configs/sama5_defconfig
-> +++ b/arch/arm/configs/sama5_defconfig
-> @@ -65,12 +65,12 @@ CONFIG_DEVTMPFS_MOUNT=y
->  # CONFIG_PREVENT_FIRMWARE_BUILD is not set
->  CONFIG_MTD=y
->  CONFIG_MTD_CMDLINE_PARTS=y
-> -CONFIG_MTD_CHAR=y
->  CONFIG_MTD_BLOCK=y
->  CONFIG_MTD_CFI=y
->  CONFIG_MTD_M25P80=y
->  CONFIG_MTD_NAND=y
->  CONFIG_MTD_NAND_ATMEL=y
-> +CONFIG_MTD_SPI_NOR=y
->  CONFIG_MTD_UBI=y
->  CONFIG_MTD_UBI_GLUEBI=y
->  CONFIG_PROC_DEVICETREE=y
-> 
-
+ > 
+ > diff --git a/drivers/gpu/drm/radeon/r100.c b/drivers/gpu/drm/radeon/r100.c
+ > index 4c5ec44..3ff9c53 100644
+ > --- a/drivers/gpu/drm/radeon/r100.c
+ > +++ b/drivers/gpu/drm/radeon/r100.c
+ > @@ -1070,6 +1070,20 @@ void r100_ring_hdp_flush(struct radeon_device *rdev, struct radeon_ring *ring)
+ >  	radeon_ring_write(ring, rdev->config.r100.hdp_cntl);
+ >  }
+ >  
+ > +/**
+ > + * r100_mmio_hdp_flush - flush Host Data Path via MMIO
+ > + * rdev: radeon device structure
+ > + */
+ > +void r100_mmio_hdp_flush(struct radeon_device *rdev)
+ > +{
+ > +	WREG32(RADEON_HOST_PATH_CNTL,
+ > +	       rdev->config.r100.hdp_cntl | RADEON_HDP_READ_BUFFER_INVALIDATE);
+ > +	(void)RREG32(RADEON_HOST_PATH_CNTL);
+ > +	WREG32(RADEON_HOST_PATH_CNTL,
+ > +	       rdev->config.r100.hdp_cntl);
+ > +	(void)RREG32(RADEON_HOST_PATH_CNTL);
+ > +}
+ > +
+ >  static void r100_cp_load_microcode(struct radeon_device *rdev)
+ >  {
+ >  	const __be32 *fw_data;
+ > diff --git a/drivers/gpu/drm/radeon/radeon_asic.c b/drivers/gpu/drm/radeon/radeon_asic.c
+ > index eeeeabe..c23a123 100644
+ > --- a/drivers/gpu/drm/radeon/radeon_asic.c
+ > +++ b/drivers/gpu/drm/radeon/radeon_asic.c
+ > @@ -408,7 +408,7 @@ static struct radeon_asic r300_asic_pcie = {
+ >  	.resume = &r300_resume,
+ >  	.vga_set_state = &r100_vga_set_state,
+ >  	.asic_reset = &r300_asic_reset,
+ > -	.mmio_hdp_flush = NULL,
+ > +	.mmio_hdp_flush = r100_mmio_hdp_flush,
+ >  	.gui_idle = &r100_gui_idle,
+ >  	.mc_wait_for_idle = &r300_mc_wait_for_idle,
+ >  	.gart = {
+ > diff --git a/drivers/gpu/drm/radeon/radeon_asic.h b/drivers/gpu/drm/radeon/radeon_asic.h
+ > index 275a5dc..e9b1c35 100644
+ > --- a/drivers/gpu/drm/radeon/radeon_asic.h
+ > +++ b/drivers/gpu/drm/radeon/radeon_asic.h
+ > @@ -150,6 +150,8 @@ void r100_gfx_set_wptr(struct radeon_device *rdev,
+ >  		       struct radeon_ring *ring);
+ >  void r100_ring_hdp_flush(struct radeon_device *rdev,
+ >  			 struct radeon_ring *ring);
+ > +void r100_mmio_hdp_flush(struct radeon_device *rdev);
+ > +
+ >  /*
+ >   * r200,rv250,rs300,rv280
+ >   */
+ > diff --git a/drivers/gpu/drm/radeon/radeon_gem.c b/drivers/gpu/drm/radeon/radeon_gem.c
+ > index bfd7e1b..3d0f564 100644
+ > --- a/drivers/gpu/drm/radeon/radeon_gem.c
+ > +++ b/drivers/gpu/drm/radeon/radeon_gem.c
+ > @@ -368,6 +368,7 @@ int radeon_gem_wait_idle_ioctl(struct drm_device *dev, void *data,
+ >  	r = radeon_bo_wait(robj, &cur_placement, false);
+ >  	/* Flush HDP cache via MMIO if necessary */
+ >  	if (rdev->asic->mmio_hdp_flush &&
+ > +	    !rdev->asic->ring[RADEON_RING_TYPE_GFX_INDEX]->hdp_flush &&
+ >  	    radeon_mem_type_to_domain(cur_placement) == RADEON_GEM_DOMAIN_VRAM)
+ >  		robj->rdev->asic->mmio_hdp_flush(rdev);
+ >  	drm_gem_object_unreference_unlocked(gobj);
+ > diff --git a/drivers/gpu/drm/radeon/radeon_ring.c b/drivers/gpu/drm/radeon/radeon_ring.c
+ > index d656079..b82843b 100644
+ > --- a/drivers/gpu/drm/radeon/radeon_ring.c
+ > +++ b/drivers/gpu/drm/radeon/radeon_ring.c
+ > @@ -188,7 +188,8 @@ void radeon_ring_commit(struct radeon_device *rdev, struct radeon_ring *ring,
+ >  	/* If we are emitting the HDP flush via the ring buffer, we need to
+ >  	 * do it before padding.
+ >  	 */
+ > -	if (hdp_flush && rdev->asic->ring[ring->idx]->hdp_flush)
+ > +	if (hdp_flush && rdev->asic->ring[ring->idx]->hdp_flush &&
+ > +	    !rdev->asic->mmio_hdp_flush)
+ >  		rdev->asic->ring[ring->idx]->hdp_flush(rdev, ring);
+ >  	/* We pad to match fetch size */
+ >  	while (ring->wptr & ring->align_mask) {
+ > 
+ > 
+ > 
+ > -- 
+ > Earthling Michel Dänzer            |                  http://www.amd.com
+ > Libre software enthusiast          |                Mesa and X developer
 
 -- 
-Nicolas Ferre
