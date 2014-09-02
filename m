@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751134AbaIBGD2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 02:03:28 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:34084 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963AbaIBGD0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 02:03:26 -0400
-X-AuditID: 85900ec0-cff26b9000001514-26-54055dab542f
-Message-ID: <54055DAB.2050103@hitachi.com>
-Date: Tue, 02 Sep 2014 15:03:23 +0900
-From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120604 Thunderbird/13.0
+	id S1751436AbaIBGEl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 02:04:41 -0400
+Received: from mga14.intel.com ([192.55.52.115]:50099 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750795AbaIBGEj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 02:04:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,447,1406617200"; 
+   d="scan'208";a="474552897"
+Message-ID: <54055D9F.7000108@linux.intel.com>
+Date: Tue, 02 Sep 2014 09:03:11 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>
-Cc: Hannes Reinecke <hare@suse.de>, linux-scsi@vger.kernel.org,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Robert Elliott <Elliott@hp.com>, yrl.pp-manager.tt@hitachi.com,
-        linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        "Ewan D. Milne" <emilne@redhat.com>,
-        Doug Gilbert <dgilbert@interlog.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: Re: Re: [PATCH 1/3] scsi/trace: Use macros for getting driver
- byte, host byte, msg byte, and status byte
-References: <20140901123325.597.47231.stgit@yuno-kbuild.novalocal> <20140901123327.597.39622.stgit@yuno-kbuild.novalocal> <20140901151531.GA5136@lst.de>
-In-Reply-To: <20140901151531.GA5136@lst.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Jason Wang <jasowang@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>
+CC: Ingo Molnar <mingo@kernel.org>, Mike Galbraith <umgwanakikbuti@gmail.com>,
+        davem@davemloft.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mst@redhat.com,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Ingo Molnar jacob.e.keller@intel.com" <mingo@elte.hu>
+Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process
+ is runnable
+References: <1408608310-13579-1-git-send-email-jasowang@redhat.com>	 <1408608310-13579-2-git-send-email-jasowang@redhat.com>	 <1408683665.5648.69.camel@marge.simpson.net>	 <20140822073653.GA7372@gmail.com> <53F70887.8030602@redhat.com> <1408716976.5604.18.camel@edumazet-glaptop2.roam.corp.google.com> <53FB3715.7070009@linux.intel.com> <53FC3466.8000304@redhat.com> <5404186E.4090409@linux.intel.com> <54053AF8.6070907@redhat.com>
+In-Reply-To: <54053AF8.6070907@redhat.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/09/02 0:15), Christoph Hellwig wrote:
-> On Mon, Sep 01, 2014 at 12:33:28PM +0000, Yoshihiro YUNOMAE wrote:
->> For getting driver byte, host byte, msg byte, and status byte, macros are
->> implemented in scsi/scsi.h, so we use it.
->
-> As mentioned about three times in various previous scsi logging discussions
-> this is entirely wrong and breaks decoding binary trace buffers.
+On 02/09/2014 06:35, Jason Wang wrote:
+> On 09/01/2014 02:55 PM, Eliezer Tamir wrote:
+>> On 26/08/2014 10:16, Jason Wang wrote:
+>>> On 08/25/2014 09:16 PM, Eliezer Tamir wrote:
 
-No, this patch uses just macros, so this does not change decoders.
-However, other patches change decoders in format files, so we need to
-consider about these decoders more, as you say.
-We'll discuss on https://lkml.org/lkml/2014/8/28/657.
+>> Think about the case where two processes are busy polling on the
+>> same CPU and the same device queue. Since busy polling processes
+>> incoming packets on the queue from any process, this scenario works
+>> well currently,
+> 
+> I see, but looks like we can simply do this by exiting the busy loop
+> when ndo_busy_poll() finds something but not for current socket?
 
-Thanks,
-Yoshihiro YUNOMAE
+I don't think there is a need for that.
 
--- 
-Yoshihiro YUNOMAE
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: yoshihiro.yunomae.ez@hitachi.com
+When ndo_busy_poll() finds something it feeds it to the stack, which
+will process the packet, just as if it came from NAPI polling.
+So, if this is data that someone is blocked waiting on, the stack will
+wake them up, and then you presumably can decide which app should get
+the cpu.
 
+Note, that there is no easy way to know, when looking at the
+incoming traffic, whether it is important, or even if you are seeing
+a full message. (Maybe you only have 9 packets out of 10?)
+The only place this knowledge might exist is in the layers of the
+stack closer to the user.
 
+>>  and will not work at all when polling yields to other
+>> processes that are of the same priority that are running on the same
+>> CPU.
+> 
+>>
+>> Maybe the networking subsystem should maintain a list of device
+>> queues that need busypolling and have a thread that would poll
+>> all of them when there's nothing better to do.
+> 
+> Not sure whether this method will scale considering thousands of sockets
+> and processes.
+
+There may be millions of sockets, but in most cases only a handful of
+device queues per CPU to busy poll on. I have tested the epoll rfc
+code with hundreds of thousands of sockets and one or two device
+queues and is scales pretty well.
+
+The part I don't like in that code is the cumbersome mechanism I used
+to track the socket -> queue relationship. I think that if I had more
+time to work on it, I would instead look into extending the epoll
+interface so that libevent can tell the kernel what it wants, instead
+of having the busypoll code try and learn it.
+
+Cheers,
+Eliezer
