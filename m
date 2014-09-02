@@ -1,69 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755482AbaIBWXI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 18:23:08 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:63098 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754848AbaIBWXG (ORCPT
+	id S1755436AbaIBW0L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 18:26:11 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:41643 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755271AbaIBW0I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 18:23:06 -0400
-Message-ID: <54064323.3090406@gmail.com>
-Date: Tue, 02 Sep 2014 15:22:27 -0700
-From: Florian Fainelli <f.fainelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Tue, 2 Sep 2014 18:26:08 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Matt Fleming <matt.fleming@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>
+Cc: =?UTF-8?q?Mantas=20Mikul=C4=97nas?= <grawity@gmail.com>,
+        Anders Darander <anders@chargestorm.se>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH -v3] x86: only load initrd above 4g on second try
+Date: Tue,  2 Sep 2014 15:25:40 -0700
+Message-Id: <1409696740-14981-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.4.5
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>,
-        Brian Norris <computersforpeace@gmail.com>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Matt Porter <mporter@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Gregory Fong <gregory.0xf0@gmail.com>,
-        Marc Carino <marc.ceeeee@gmail.com>
-Subject: Re: [PATCH v8 03/11] ARM: brcmstb: add debug UART for earlyprintk
- support
-References: <1405976886-27807-1-git-send-email-computersforpeace@gmail.com>	<1405976886-27807-4-git-send-email-computersforpeace@gmail.com>	<20140802083040.GY30282@n2100.arm.linux.org.uk>	<20140804165627.GT3711@ld-irv-0074>	<CAN8TOE8w5bUT5byHiJrYr8AzaZ+EADzE+aoH6f2x2tFc1+1eQw@mail.gmail.com> <CAOesGMh5wX5eaCmPvXQs4fmNQsD+370P=O8PSdH2oMHKL_neDQ@mail.gmail.com>
-In-Reply-To: <CAOesGMh5wX5eaCmPvXQs4fmNQsD+370P=O8PSdH2oMHKL_neDQ@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/2014 03:16 PM, Olof Johansson wrote:
+Mantas found that after commit 4bf7111f5016 ("x86/efi: Support initrd
+loaded above 4G"), the kernel freezes at the earliest possible moment
+when trying to boot via UEFI on Asus laptop.
 
-[snip]
+Revert to old way to load initrd under 4G on first try,
+second try will use above 4G buffer when initrd is too big
+and does not fit under 4G.
 
->>>> I noticed that you sent this to the patch system.  I asked Olof last
->>>> night whether he had anything in arm-soc touching Kconfig.debug, and
->>>> he does (a number of other platforms have updated it.)  This means
->>>> that if I apply it to my tree, it may conflict, so I'm reluctant to
->>>> take it.
->>>
->>> OK... Matt told me that such patches go through you. So which is it?
->>> Should all Kconfig.debug patches go through the arm-soc route?
->>
->> How should this get in? Should I rebase/resend through Matt and
->> arm-soc? Or can you pick this up as-is?
-> 
-> Kconfig.debug is something that we usually merge new platforms for
-> through arm-soc. The main exception has been release cycles when
-> Russell has been doing major surgery on the file (one of those was a
-> few releases ago), where we've backed off to avoid conflicts.
-> 
-> That's been the assumed arrangement from our side at least, we haven't
-> had anything more formal than that.
-> 
-> So, go ahead and send it through us -- if we end up having a cycle
-> where we can't apply it we can send it over to Russell for you.
+-v2: add print out for second try, and print out files buf address.
+-v3: can not snprintf
 
-It looks like somehow, this patch got lost somewhere in the submission
-process. Is it too late to accept it for 3.17 if we were to re-submit it?
+Reported-by: Mantas Mikulėnas <grawity@gmail.com>
+Tested-by: Anders Darander <anders@chargestorm.se>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-Thanks
---
-Florian
+---
+ arch/x86/boot/compressed/eboot.c               |   18 +++++++++++-------
+ drivers/firmware/efi/libstub/efi-stub-helper.c |    6 ++++++
+ 2 files changed, 17 insertions(+), 7 deletions(-)
 
+Index: linux-2.6/arch/x86/boot/compressed/eboot.c
+===================================================================
+--- linux-2.6.orig/arch/x86/boot/compressed/eboot.c
++++ linux-2.6/arch/x86/boot/compressed/eboot.c
+@@ -1032,7 +1032,6 @@ struct boot_params *make_boot_params(str
+ 	int i;
+ 	unsigned long ramdisk_addr;
+ 	unsigned long ramdisk_size;
+-	unsigned long initrd_addr_max;
+ 
+ 	efi_early = c;
+ 	sys_table = (efi_system_table_t *)(unsigned long)efi_early->table;
+@@ -1095,15 +1094,20 @@ struct boot_params *make_boot_params(str
+ 
+ 	memset(sdt, 0, sizeof(*sdt));
+ 
+-	if (hdr->xloadflags & XLF_CAN_BE_LOADED_ABOVE_4G)
+-		initrd_addr_max = -1UL;
+-	else
+-		initrd_addr_max = hdr->initrd_addr_max;
+-
+ 	status = handle_cmdline_files(sys_table, image,
+ 				      (char *)(unsigned long)hdr->cmd_line_ptr,
+-				      "initrd=", initrd_addr_max,
++				      "initrd=", hdr->initrd_addr_max,
+ 				      &ramdisk_addr, &ramdisk_size);
++
++	if (status != EFI_SUCCESS &&
++	    hdr->xloadflags & XLF_CAN_BE_LOADED_ABOVE_4G) {
++		efi_printk(sys_table, "Trying to load files to higher address\n");
++		status = handle_cmdline_files(sys_table, image,
++				      (char *)(unsigned long)hdr->cmd_line_ptr,
++				      "initrd=", -1UL,
++				      &ramdisk_addr, &ramdisk_size);
++	}
++
+ 	if (status != EFI_SUCCESS)
+ 		goto fail2;
+ 	hdr->ramdisk_image = ramdisk_addr & 0xffffffff;
+Index: linux-2.6/drivers/firmware/efi/libstub/efi-stub-helper.c
+===================================================================
+--- linux-2.6.orig/drivers/firmware/efi/libstub/efi-stub-helper.c
++++ linux-2.6/drivers/firmware/efi/libstub/efi-stub-helper.c
+@@ -396,6 +396,7 @@ efi_status_t handle_cmdline_files(efi_sy
+ 
+ 	if (file_size_total) {
+ 		unsigned long addr;
++		char buf[64];
+ 
+ 		/*
+ 		 * Multiple files need to be at consecutive addresses in memory,
+@@ -416,6 +417,11 @@ efi_status_t handle_cmdline_files(efi_sy
+ 			goto free_file_total;
+ 		}
+ 
++		memset(buf, 0, sizeof(buf));
++		sprintf(buf, "files buf: [%lx,%lx)\n", file_addr,
++					 file_addr + file_size_total);
++		efi_printk(sys_table_arg, buf);
++
+ 		addr = file_addr;
+ 		for (j = 0; j < nr_files; j++) {
+ 			unsigned long size;
