@@ -1,94 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754684AbaIBNWu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 09:22:50 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:54961 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753720AbaIBNWV (ORCPT
+	id S1753793AbaIBN1M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 09:27:12 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:13258 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751105AbaIBN1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 09:22:21 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-79-5405c48974b8
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v2 3/3] dt-bindings: clk: samsung: Document the DMC domain of
- Exynos3250 CMU
-Date: Tue, 02 Sep 2014 15:21:17 +0200
-Message-id: <1409664077-27121-3-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1409664077-27121-1-git-send-email-k.kozlowski@samsung.com>
-References: <1409664077-27121-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGLMWRmVeSWpSXmKPExsVy+t/xK7qdR1hDDD50GVpsnLGe1WLSugNM
-	FvOPnGO16H+zkNXi3KuVjBavXxha9C64ymZxtukNu8Wmx9dYLS7vmsNmMeP8PiaL25d5LdYe
-	uctusfT6RSaLpxMusllMmL6WxaJ17xF2i8Nv2lkt1s94zeIg7LFm3hpGj5bmHjaPy329TB5/
-	V71g9li5/Aubx6ZVnWwed67tYfPYvKTeo2/LKkaPz5vkAriiuGxSUnMyy1KL9O0SuDKu3b/F
-	XHCbr+Lnjkb2Bsb5PF2MHBwSAiYSF3f7dTFyApliEhfurWfrYuTiEBJYyiix4W8nE4TTxyRx
-	6vUKdpAqNgFjic3Ll7CB2CICTSwSM+8HgBQxC3xhlJh1/RkrSEJYIE7i5dn9rCAbWARUJV5P
-	LgYJ8wq4S8xYOpkNYpucxMljk8HKOQU8JP78/MwCUi4EVDPxZt0ERt4FjAyrGEVTS5MLipPS
-	c430ihNzi0vz0vWS83M3MULC/usOxqXHrA4xCnAwKvHwvljIHCLEmlhWXJl7iFGCg1lJhNdj
-	L2uIEG9KYmVValF+fFFpTmrxIUYmDk6pBkb3i5LbpBf9C/jGyVR5UDtuv+Mkt5V+2ZO61IpU
-	q1vZD8yx8Fjnd/lAe4t0zbuzsXaWewNlnX/mNnzZYL7+ZM/Pfd7Kb6Ij/6tkfNJ+xJ/9if3G
-	POWGz/ZPD3J/nHL0xPebLtu5N//IvqvspChV8k+sncczsSJhht3jrUotQlNe8D3XvLrO3kWJ
-	pTgj0VCLuag4EQDjitaLWQIAAA==
+	Tue, 2 Sep 2014 09:27:09 -0400
+Date: Tue, 2 Sep 2014 14:26:52 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Graeme Gregory <gg@slimlogic.co.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>, Lv Zheng <lv.zheng@intel.com>,
+        Rob Herring <robh@kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Robert Moore <robert.moore@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
+        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
+Subject: Re: [RFC PATCH for Juno 1/2] net: smsc911x add support for probing
+ from ACPI
+Message-ID: <20140902132651.GF27056@arm.com>
+References: <1409583961-7466-1-git-send-email-hanjun.guo@linaro.org>
+ <1409583961-7466-2-git-send-email-hanjun.guo@linaro.org>
+ <20140901170447.GF608@arm.com>
+ <21764799.KDNDm9XRax@wuerfel>
+ <20140901173245.GM2953@xora-haswell.xora.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140901173245.GM2953@xora-haswell.xora.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the new compatible for clock in DMC (Dynamic Memory
-Controller) domain of Exynos3250 Clock Management Unit (CMU).
+On Mon, Sep 01, 2014 at 06:32:45PM +0100, Graeme Gregory wrote:
+> On Mon, Sep 01, 2014 at 07:11:44PM +0200, Arnd Bergmann wrote:
+> > On Monday 01 September 2014 18:04:47 Catalin Marinas wrote:
+> > > On Mon, Sep 01, 2014 at 04:06:00PM +0100, Hanjun Guo wrote:
+> > > > +#ifdef CONFIG_ACPI
+> > > > +/* Configure some sensible defaults for ACPI mode */
+> > > > +static int smsc911x_probe_config_acpi(struct smsc911x_platform_config *config,
+> > > > +                                 acpi_handle *ahandle)
+> > > > +{
+> > > > +     if (!ahandle)
+> > > > +             return -ENOSYS;
+> > > > +
+> > > > +     config->phy_interface = PHY_INTERFACE_MODE_MII;
+> > > > +
+> > > > +     config->flags |= SMSC911X_USE_32BIT;
+> > > > +
+> > > > +     config->irq_polarity = SMSC911X_IRQ_POLARITY_ACTIVE_HIGH;
+> > > > +
+> > > > +     config->irq_type = SMSC911X_IRQ_TYPE_PUSH_PULL;
+> > > > +
+> > > > +     return 0;
+> > > > +}
+> > > > +#else
+> > > 
+> > > I don't like this and it shows issues we have with ACPI on certain ARM
+> > > platforms. You hard-code these values to match the Juno platform. What
+> > > if we get another SoC which has different configuration here? For DT, we
+> > > have the smsc911x_probe_config_dt() which reads the relevant information
+> > > from DT. I think this kind of configuration would be more suitable as
+> > > _DSD properties and sharing the similar names with DT (but we go back to
+> > > the question about who's in charge of the _DSD properties).
+> > 
+> > Good point, I totally missed that.
+> > 
+> > There is of course the possibility to set those values based on the
+> > acpi_device_id, but that is exactly the part that _DSD is trying to
+> > avoid.
+> 
+> This will of course most likely be replaced by _DSD values. I just
+> hardcoded for now as _DSD is not yet in the kernel and issues around
+> maintenance of bindings are not solved (unless this happened at KS where
+> I was not present).
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- Documentation/devicetree/bindings/clock/exynos3250-clock.txt | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+Not much at the KS, I think it will need to be followed up on lkml
+(https://lkml.org/lkml/2014/8/17/10 is the last I'm aware of, not sure
+about any updates in the meantime).
 
-diff --git a/Documentation/devicetree/bindings/clock/exynos3250-clock.txt b/Documentation/devicetree/bindings/clock/exynos3250-clock.txt
-index aadc9c59e2d1..f57d9dd9ea85 100644
---- a/Documentation/devicetree/bindings/clock/exynos3250-clock.txt
-+++ b/Documentation/devicetree/bindings/clock/exynos3250-clock.txt
-@@ -7,6 +7,8 @@ Required Properties:
- 
- - compatible: should be one of the following.
-   - "samsung,exynos3250-cmu" - controller compatible with Exynos3250 SoC.
-+  - "samsung,exynos3250-cmu-dmc" - controller compatible with
-+    Exynos3250 SoC for Dynamic Memory Controller domain.
- 
- - reg: physical base address of the controller and length of memory mapped
-   region.
-@@ -20,7 +22,7 @@ All available clocks are defined as preprocessor macros in
- dt-bindings/clock/exynos3250.h header and can be used in device
- tree sources.
- 
--Example 1: An example of a clock controller node is listed below.
-+Example 1: Examples of clock controller nodes are listed below.
- 
- 	cmu: clock-controller@10030000 {
- 		compatible = "samsung,exynos3250-cmu";
-@@ -28,6 +30,12 @@ Example 1: An example of a clock controller node is listed below.
- 		#clock-cells = <1>;
- 	};
- 
-+	cmu_dmc: clock-controller@105C0000 {
-+		compatible = "samsung,exynos3250-cmu-dmc";
-+		reg = <0x105C0000 0x2000>;
-+		#clock-cells = <1>;
-+	};
-+
- Example 2: UART controller node that consumes the clock generated by the clock
- 	   controller. Refer to the standard clock bindings for information
- 	   about 'clocks' and 'clock-names' property.
+While the above gets sorted, what's the position from an ARM
+perspective (and covered by Documentation/arm64/arm-acpi.txt)? I think
+the "Device Enumeration" section in this document is fine, it's just the
+kernel infrastructure missing.
+
+Alternatively, you can say _DSD is not allowed (yet?) but I don't
+particularly like basing the configuration on acpi_device_id like in
+this patch. Which would leave us with ignoring any SoC containing
+devices that require such specific configuration.
+
 -- 
-1.9.1
-
+Catalin
