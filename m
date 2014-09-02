@@ -1,104 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754997AbaIBSzE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 14:55:04 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:54189 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751850AbaIBSzC (ORCPT
+	id S1754827AbaIBS6u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 14:58:50 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51174 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753889AbaIBS6s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 14:55:02 -0400
-Date: Wed, 3 Sep 2014 00:24:38 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Benjamin Romer <benjamin.romer@unisys.com>,
-        David Kershner <david.kershner@unisys.com>, sparmaintainer@unisys.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] staging: unisys: uislib: uisqueue.c: rewrite of
- do_locked_client_insert
-Message-ID: <20140902185438.GA1688@fool>
-References: <1409681795-23262-1-git-send-email-sudipm.mukherjee@gmail.com>
- <20140902182402.GA12744@kroah.com>
+	Tue, 2 Sep 2014 14:58:48 -0400
+Date: Tue, 2 Sep 2014 19:58:07 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Yan@leverpostej.cambridge.arm.com" 
+	<Yan@leverpostej.cambridge.arm.com>,
+        Zheng <zheng.z.yan@intel.com>, Stephane Eranian <eranian@google.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: Possible race between CPU hotplug and perf_pmu_migrate_context
+Message-ID: <20140902185807.GA7434@leverpostej>
+References: <20140901181808.GA6427@leverpostej>
+ <20140901190534.GC5806@worktop.ger.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140902182402.GA12744@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140901190534.GC5806@worktop.ger.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 02, 2014 at 11:24:02AM -0700, Greg Kroah-Hartman wrote:
-> On Tue, Sep 02, 2014 at 11:46:35PM +0530, Sudip Mukherjee wrote:
-> > From: Sudip Mukherjee <sudip@vectorindia.org>
-> > 
-> > removed unused variables
-> > fixed sparse warning of context imbalance in 'do_locked_client_insert'
-> >                          different lock contexts for basic block
-> > 
-> > Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
-> > ---
-> > 
-> > v1 of the patch of the patch just fixed the sparse warning.
-> > On suggestion of Dan Carpenter v2 is the total rewrite of the function.
-> > Two of the function arguments (interruptHandle,channelId) are also not used. Wanted to remove them as well , 
-> > but then thought maybe the original author have planned for some use of those variables.
-> > 
-> >  drivers/staging/unisys/uislib/uisqueue.c | 37 ++++++++------------------------
-> >  1 file changed, 9 insertions(+), 28 deletions(-)
-> > 
-> > diff --git a/drivers/staging/unisys/uislib/uisqueue.c b/drivers/staging/unisys/uislib/uisqueue.c
-> > index 63dbe7c..acfa46d 100644
-> > --- a/drivers/staging/unisys/uislib/uisqueue.c
-> > +++ b/drivers/staging/unisys/uislib/uisqueue.c
-> > @@ -78,39 +78,20 @@ do_locked_client_insert(struct uisqueue_info *queueinfo,
-> >  			u64 interruptHandle, u8 *channelId)
-> >  {
-> >  	unsigned long flags;
-> > -	unsigned char queueWasEmpty;
-> > -	unsigned int locked = 0;
-> > -	unsigned int acquired = 0;
-> >  	u8 rc = 0;
-> >  
-> >  	spin_lock_irqsave(lock, flags);
-> > -	locked = 1;
-> > -
-> >  	if (!ULTRA_CHANNEL_CLIENT_ACQUIRE_OS(queueinfo->chan, channelId, NULL))
-> > -		goto Away;
-> > -
-> > -	acquired = 1;
-> > -
-> > -	queueWasEmpty = visor_signalqueue_empty(queueinfo->chan, whichqueue);
-> > -	if (!visor_signal_insert(queueinfo->chan, whichqueue, pSignal))
-> > -		goto Away;
-> > -	ULTRA_CHANNEL_CLIENT_RELEASE_OS(queueinfo->chan, channelId, NULL);
-> > -	acquired = 0;
-> > -
-> > -	queueinfo->packets_sent++;
-> > -
-> > -	rc = 1;
-> > -Away:
-> > -	if (acquired) {
-> > -		ULTRA_CHANNEL_CLIENT_RELEASE_OS(queueinfo->chan, channelId,
-> > -						NULL);
-> > -		acquired = 0;
-> > -	}
-> > -	if (locked) {
-> > -		spin_unlock_irqrestore((spinlock_t *) lock, flags);
-> > -		locked = 0;
-> > +		goto unlock;
-> > +	visor_signalqueue_empty(queueinfo->chan, whichqueue);
-> > +	/*visor_signal_insert() only return 0 or 1 */
+On Mon, Sep 01, 2014 at 08:05:34PM +0100, Peter Zijlstra wrote:
+> On Mon, Sep 01, 2014 at 07:18:08PM +0100, Mark Rutland wrote:
+> > Hi all,
 > 
-> Odd comment style (hint, you need a ' ' at the beginning...)
+> > [   66.780759]  [<ffffffff8109dd33>] rcu_process_callbacks+0x1e3/0x540
 > 
-> And why comment this at all?
+> > Has anything seen anything like this before? Is this a known issue?
 > 
-> thanks,
+> I've not seen it reported.. sounds like 'fun' though.
 > 
-> greg k-h
 
-comment is actually not required. thought it will be easier to understant the code if the return values can be see.
-I will delete the comment and send it again.
+This has been a tremendous source of 'fun' so far...
 
-thanks
-sudip
+The rcu_process_callbacks line is a red herring. What seems to be
+happening is:
+
+A CPU goes down, and perf_pmu_migrate_context removes all events from
+per_cpu_ptr(pmu->pmu_cpu_context, src_cpu)->ctx. The events are in a
+state of limbo, with their ctx pointers pointing at the old context,
+whose refcount is 1. The src_ctx->mutex is unlocked.
+
+Concurrently on another CPU the fds are closed, and perf_event_release
+goes and removes each event from their event->ctx. We skip the double
+detach in list_del_event and carry on to __free_event where we put_ctx
+the old context for a second time for each event. The refcount goes to 0
+and we queue a kfree_rcu of the context (inside the PMU's percpu
+perf_event_cpu_context, allocated with alloc_percpu).
+
+We run the queued kfree_rcu, and explode trying to kfree something we
+didn't k*alloc. I'm not sure when exactly we run the queued kfree_rcu
+w.r.t. everything else.
+
+So the problem here seems to be a race between the
+perf_pmu_migrate_context and something down the perf_event_release
+callchain.
+
+Any ideas?
+
+Thanks,
+Mark.
