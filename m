@@ -1,80 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752613AbaIBHZX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 03:25:23 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:62710 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268AbaIBHZV (ORCPT
+	id S1752626AbaIBH2z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 03:28:55 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:37792 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751272AbaIBH2x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 03:25:21 -0400
-Date: Tue, 2 Sep 2014 08:25:16 +0100
+	Tue, 2 Sep 2014 03:28:53 -0400
+Date: Tue, 2 Sep 2014 08:28:46 +0100
 From: Lee Jones <lee.jones@linaro.org>
-To: "Chang, Rebecca Swee Fun" <rebecca.swee.fun.chang@intel.com>
-Cc: "'Andy Shevchenko'" <andriy.shevchenko@linux.intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH v1 2/5] mfd: lpc_sch: better code manageability with
- chipset info struct
-Message-ID: <20140902072516.GB17117@lee--X1>
-References: <1408705096-31286-1-git-send-email-andriy.shevchenko@linux.intel.com>
- <1408705096-31286-3-git-send-email-andriy.shevchenko@linux.intel.com>
- <20140901091607.GH7374@lee--X1>
- <1409567105.30155.49.camel@linux.intel.com>
- <50B33AC5ED75F74F991980326F1C438D0FBD15FE@PGSMSX108.gar.corp.intel.com>
+To: Nishanth Menon <nm@ti.com>
+Cc: devicetree@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@linaro.org>, Tony Lindgren <tony@atomide.com>,
+        Keerthy <j-keerthy@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] mfd: palmas: Add support for optional wakeup
+Message-ID: <20140902072846.GC17117@lee--X1>
+References: <1408457197-30487-1-git-send-email-nm@ti.com>
+ <20140829105619.GH24579@lee--X1>
+ <54007515.5080506@ti.com>
+ <20140901093206.GJ7374@lee--X1>
+ <5404BB31.3060001@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <50B33AC5ED75F74F991980326F1C438D0FBD15FE@PGSMSX108.gar.corp.intel.com>
+In-Reply-To: <5404BB31.3060001@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 02 Sep 2014, Chang, Rebecca Swee Fun wrote:
+On Mon, 01 Sep 2014, Nishanth Menon wrote:
 
+> On 09/01/2014 04:32 AM, Lee Jones wrote:
+> >On Fri, 29 Aug 2014, Nishanth Menon wrote:
+> >>On 08/29/2014 05:56 AM, Lee Jones wrote:
+> >>>On Tue, 19 Aug 2014, Nishanth Menon wrote:
+> >>>
+> >>>>With the recent pinctrl-single changes, omaps can treat wake-up events
+> >>>>from deeper idle states as interrupts.
+> >>>>
+> >>>>Let's add support for the optional second interrupt for wake-up
+> >>>>events. And then SoC can wakeup and handle the event using it's
+> >>>>regular handler.
+> >>>>
+> >>>>Finally, to pass the wake-up interrupt in the dts file,
+> >>>>interrupts-extended property needs to be passed.
+> >>>>
+> >>>>This is similar in approach to commit 2a0b965cfb6e ("serial: omap: Add
+> >>>>support for optional wake-up")
+> >>>>
+> >>>>Signed-off-by: Nishanth Menon <nm@ti.com>
+> >>>>---
+> >>>>  Documentation/devicetree/bindings/mfd/palmas.txt |   20 ++++++++
+> >>>
+> >>>DT Ack please.
+> >
+> >Please read Documentation/devicetree/bindings/submittingpatches.txt
 > 
+> I assume you wanted me to note the following:
+> "
+> The Documentation/ portion of the patch should be a separate patch.
+> "
 > 
-> > -----Original Message-----
-> > From: Andy Shevchenko [mailto:andriy.shevchenko@linux.intel.com]
-> > Sent: 01 September, 2014 6:25 PM
-> > To: Lee Jones
-> > Cc: Bjorn Helgaas; linux-kernel@vger.kernel.org; Samuel Ortiz; Chang, Rebecca
-> > Swee Fun
-> > Subject: Re: [PATCH v1 2/5] mfd: lpc_sch: better code manageability with
-> > chipset info struct
-> > 
-> > On Mon, 2014-09-01 at 10:16 +0100, Lee Jones wrote:
-> > > On Fri, 22 Aug 2014, Andy Shevchenko wrote:
-> > >
-> > > > Introduce additional struct to hold chipset info. This chipset info
-> > > > will be used to store features that are supported by specific
-> > > > processor or chipset. LPC_SCH supports SMBUS, GPIO and WDT features.
-> > > > As this code base might expand further to support more processors,
-> > > > this implementation will help to keep code base clean and manageable.
-> > > >
-> > > > Signed-off-by: Chang Rebecca Swee Fun
-> > > > <rebecca.swee.fun.chang@intel.com>
-> > > > Tested-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-> > > > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> > 
-> > []
-> > 
-> > 
-> > > The first patch would look a great deal cleaner if it had these
-> > > changes in too.  Unless you have a really good reason not to, please
-> > > consider squashing them.
-> > 
-> > The only reason behind is that this patch (in other form) was written by
-> > Rebecca in the first place. I recommended to clean up before, and actually did
-> > that clean up and amended Rebecca's patch.
-> > 
-> > So, if Rebecca has now objections I could squash it.
-> 
-> I have no objections. Thanks.
+> Many maintainers prefer that when the bindings for the device is
+> new, and when additional properties are added, they prefer it part
+> of same patch.. Anyways.. if the above is what you prefer, I can
+> follow that.
 
-Thanks Rebecca.
+I tend to like it done properly please.
+
+> In short, I assume you'd like three patches:
+> a) fix up style of current documentation - palmas to palmas@40
+> b) Split documentation for interrupt-extended from the current patch
+> into it's own patch.
+> c) remainder of this patch as is..
+> 
+> Does that sound right?
+
+That does, thanks.
 
 -- 
 Lee Jones
