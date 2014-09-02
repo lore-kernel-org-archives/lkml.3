@@ -1,155 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948AbaIBQok (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 12:44:40 -0400
-Received: from mga02.intel.com ([134.134.136.20]:37451 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753889AbaIBQoi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 12:44:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,450,1406617200"; 
-   d="scan'208";a="567245938"
-Message-ID: <1409676229.15680.43.camel@spandruv-desktop.jf.intel.com>
-Subject: Re: [PATCH] PM / sleep: Fix test_suspend= command line option
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Tue, 02 Sep 2014 09:43:49 -0700
-In-Reply-To: <3262231.p5bxWyAveH@vostro.rjw.lan>
-References: <3262231.p5bxWyAveH@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754894AbaIBQop (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 12:44:45 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:65527 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753889AbaIBQol (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 12:44:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <1409308277-4021-3-git-send-email-pbonzini@redhat.com>
+References: <1409308277-4021-1-git-send-email-pbonzini@redhat.com> <1409308277-4021-3-git-send-email-pbonzini@redhat.com>
+From: David Matlack <dmatlack@google.com>
+Date: Tue, 2 Sep 2014 09:44:21 -0700
+Message-ID: <CALzav=en9rEpJXrhinE5-jnBKB_x4oEMwY=ODtfrqKYw1oTpyQ@mail.gmail.com>
+Subject: Re: [PATCH 2/3] kvm: fix potentially corrupt mmio cache
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, stable@vger.kernel.org,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-09-02 at 01:37 +0200, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> After commit d431cbc53cb7 (PM / sleep: Simplify sleep states sysfs
-> interface code) the pm_states[] array is not populated initially,
-> which causes setup_test_suspend() to always fail and the suspend
-> testing during boot doesn't work any more.
-> 
-> Fix the problem by using pm_labels[] instead of pm_states[] in
-> setup_test_suspend() and storing a pointer to the label of the
-> sleep state to test rather than the number representing it,
-> because the connection between the state numbers and labels is
-> only established by suspend_set_ops().
-> 
-This is still causing panic when I applied to 3.17.rc2.
-Need further debug.
-
-Thanks,
-Srinivas
-
-> Fixes: d431cbc53cb7 (PM / sleep: Simplify sleep states sysfs interface code)
-> Reported-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Fri, Aug 29, 2014 at 3:31 AM, Paolo Bonzini <pbonzini@redhat.com> wrote:
+> From: David Matlack <dmatlack@google.com>
+>
+> vcpu exits and memslot mutations can run concurrently as long as the
+> vcpu does not aquire the slots mutex. Thus it is theoretically possible
+> for memslots to change underneath a vcpu that is handling an exit.
+>
+> If we increment the memslot generation number again after
+> synchronize_srcu_expedited(), vcpus can safely cache memslot generation
+> without maintaining a single rcu_dereference through an entire vm exit.
+> And much of the x86/kvm code does not maintain a single rcu_dereference
+> of the current memslots during each exit.
+>
+> We can prevent the following case:
+>
+>    vcpu (CPU 0)                             | thread (CPU 1)
+> --------------------------------------------+--------------------------
+> 1  vm exit                                  |
+> 2  srcu_read_unlock(&kvm->srcu)             |
+> 3  decide to cache something based on       |
+>      old memslots                           |
+> 4                                           | change memslots
+>                                             | (increments generation)
+> 5                                           | synchronize_srcu(&kvm->srcu);
+> 6  retrieve generation # from new memslots  |
+> 7  tag cache with new memslot generation    |
+> 8  srcu_read_unlock(&kvm->srcu)             |
+> ...                                         |
+>    <action based on cache occurs even       |
+>     though the caching decision was based   |
+>     on the old memslots>                    |
+> ...                                         |
+>    <action *continues* to occur until next  |
+>     memslot generation change, which may    |
+>     be never>                               |
+>                                             |
+>
+> By incrementing the generation after synchronizing with kvm->srcu readers,
+> we ensure that the generation retrieved in (6) will become invalid soon
+> after (8).
+>
+> Keeping the existing increment is not strictly necessary, but we
+> do keep it and just move it for consistency from update_memslots to
+> install_new_memslots.  It invalidates old cached MMIOs immediately,
+> instead of having to wait for the end of synchronize_srcu_expedited,
+> which makes the code more clearly correct in case CPU 1 is preempted
+> right after synchronize_srcu() returns.
+>
+> To avoid halving the generation space in SPTEs, always presume that the
+> low bit of the generation is zero when reconstructing a generation number
+> out of an SPTE.  This effectively disables MMIO caching in SPTEs during
+> the call to synchronize_srcu_expedited.  Using the low bit this way is
+> somewhat like a seqcount---where the protected thing is a cache, and
+> instead of retrying we can simply punt if we observe the low bit to be 1.
+>
+> Cc: stable@vger.kernel.org
+> Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> Signed-off-by: David Matlack <dmatlack@google.com>
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 > ---
->  kernel/power/power.h        |    1 +
->  kernel/power/suspend.c      |    2 +-
->  kernel/power/suspend_test.c |   29 +++++++++++++++++------------
->  3 files changed, 19 insertions(+), 13 deletions(-)
-> 
-> Index: linux-pm/kernel/power/power.h
-> ===================================================================
-> --- linux-pm.orig/kernel/power/power.h
-> +++ linux-pm/kernel/power/power.h
-> @@ -179,6 +179,7 @@ extern void swsusp_show_speed(struct tim
->  
->  #ifdef CONFIG_SUSPEND
->  /* kernel/power/suspend.c */
-> +extern const char *pm_labels[];
->  extern const char *pm_states[];
->  
->  extern int suspend_devices_and_enter(suspend_state_t state);
-> Index: linux-pm/kernel/power/suspend.c
-> ===================================================================
-> --- linux-pm.orig/kernel/power/suspend.c
-> +++ linux-pm/kernel/power/suspend.c
-> @@ -31,7 +31,7 @@
->  
->  #include "power.h"
->  
-> -static const char *pm_labels[] = { "mem", "standby", "freeze", };
-> +const char *pm_labels[] = { "mem", "standby", "freeze", NULL };
->  const char *pm_states[PM_SUSPEND_MAX];
->  
->  static const struct platform_suspend_ops *suspend_ops;
-> Index: linux-pm/kernel/power/suspend_test.c
-> ===================================================================
-> --- linux-pm.orig/kernel/power/suspend_test.c
-> +++ linux-pm/kernel/power/suspend_test.c
-> @@ -129,20 +129,20 @@ static int __init has_wakealarm(struct d
->   * at startup time.  They're normally disabled, for faster boot and because
->   * we can't know which states really work on this particular system.
+>  Documentation/virtual/kvm/mmu.txt | 14 ++++++++++++++
+>  arch/x86/kvm/mmu.c                | 20 ++++++++++++--------
+>  virt/kvm/kvm_main.c               | 23 ++++++++++++++++-------
+>  3 files changed, 42 insertions(+), 15 deletions(-)
+>
+> diff --git a/Documentation/virtual/kvm/mmu.txt b/Documentation/virtual/kvm/mmu.txt
+> index 290894176142..53838d9c6295 100644
+> --- a/Documentation/virtual/kvm/mmu.txt
+> +++ b/Documentation/virtual/kvm/mmu.txt
+> @@ -425,6 +425,20 @@ fault through the slow path.
+>  Since only 19 bits are used to store generation-number on mmio spte, all
+>  pages are zapped when there is an overflow.
+>
+> +Unfortunately, a single memory access might access kvm_memslots(kvm) multiple
+> +times, the last one happening when the generation number is retrieved and
+> +stored into the MMIO spte.  Thus, the MMIO spte might be created based on
+> +out-of-date information, but with an up-to-date generation number.
+> +
+> +To avoid this, the generation number is incremented again after synchronize_srcu
+> +returns; thus, the low bit of kvm_memslots(kvm)->generation is only 1 during a
+> +memslot update, while some SRCU readers might be using the old copy.  We do not
+> +want to use an MMIO sptes created with an odd generation number, and we can do
+> +this without losing a bit in the MMIO spte.  The low bit of the generation
+> +is not stored in MMIO spte, and presumed zero when it is extracted out of the
+> +spte.  If KVM is unlucky and creates an MMIO spte while the low bit is 1,
+> +the next access to the spte will always be a cache miss.
+> +
+>
+>  Further reading
+>  ===============
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index 323c3f5f5c84..96515957ba82 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -199,16 +199,20 @@ void kvm_mmu_set_mmio_spte_mask(u64 mmio_mask)
+>  EXPORT_SYMBOL_GPL(kvm_mmu_set_mmio_spte_mask);
+>
+>  /*
+> - * spte bits of bit 3 ~ bit 11 are used as low 9 bits of generation number,
+> - * the bits of bits 52 ~ bit 61 are used as high 10 bits of generation
+> - * number.
+> + * the low bit of the generation number is always presumed to be zero.
+> + * This disables mmio caching during memslot updates.  The concept is
+> + * similar to a seqcount but instead of retrying the access we just punt
+> + * and ignore the cache.
+> + *
+> + * spte bits 3-11 are used as bits 1-9 of the generation number,
+> + * the bits 52-61 are used as bits 10-19 of the generation number.
 >   */
-> -static suspend_state_t test_state __initdata = PM_SUSPEND_ON;
-> +static const char *test_state_label __initdata;
->  
->  static char warn_bad_state[] __initdata =
->  	KERN_WARNING "PM: can't test '%s' suspend state\n";
->  
->  static int __init setup_test_suspend(char *value)
->  {
-> -	suspend_state_t i;
-> +	int i;
->  
->  	/* "=mem" ==> "mem" */
->  	value++;
-> -	for (i = PM_SUSPEND_MIN; i < PM_SUSPEND_MAX; i++)
-> -		if (!strcmp(pm_states[i], value)) {
-> -			test_state = i;
-> +	for (i = 0; pm_labels[i]; i++)
-> +		if (!strcmp(pm_labels[i], value)) {
-> +			test_state_label = pm_labels[i];
->  			return 0;
->  		}
->  
-> @@ -158,13 +158,19 @@ static int __init test_suspend(void)
->  
->  	struct rtc_device	*rtc = NULL;
->  	struct device		*dev;
-> +	suspend_state_t test_state;
->  
->  	/* PM is initialized by now; is that state testable? */
-> -	if (test_state == PM_SUSPEND_ON)
-> -		goto done;
-> -	if (!pm_states[test_state]) {
-> -		printk(warn_bad_state, pm_states[test_state]);
-> -		goto done;
-> +	if (!test_state_label)
-> +		return 0;
-> +
-> +	for (test_state = PM_SUSPEND_MIN; test_state < PM_SUSPEND_MAX; test_state++)
-> +		if (!strcmp(test_state_label, pm_states[test_state]))
-> +			break;
-> +
-> +	if (test_state == PM_SUSPEND_MAX) {
-> +		printk(warn_bad_state, test_state_label);
-> +		return 0;
->  	}
->  
->  	/* RTCs have initialized by now too ... can we use one? */
-> @@ -173,13 +179,12 @@ static int __init test_suspend(void)
->  		rtc = rtc_class_open(dev_name(dev));
->  	if (!rtc) {
->  		printk(warn_no_rtc);
-> -		goto done;
-> +		return 0;
->  	}
->  
->  	/* go for it */
->  	test_wakealarm(rtc, test_state);
->  	rtc_class_close(rtc);
-> -done:
->  	return 0;
+> -#define MMIO_SPTE_GEN_LOW_SHIFT                3
+> +#define MMIO_SPTE_GEN_LOW_SHIFT                2
+>  #define MMIO_SPTE_GEN_HIGH_SHIFT       52
+>
+> -#define MMIO_GEN_SHIFT                 19
+> -#define MMIO_GEN_LOW_SHIFT             9
+> -#define MMIO_GEN_LOW_MASK              ((1 << MMIO_GEN_LOW_SHIFT) - 1)
+> +#define MMIO_GEN_SHIFT                 20
+> +#define MMIO_GEN_LOW_SHIFT             10
+> +#define MMIO_GEN_LOW_MASK              ((1 << MMIO_GEN_LOW_SHIFT) - 2)
+>  #define MMIO_GEN_MASK                  ((1 << MMIO_GEN_SHIFT) - 1)
+>  #define MMIO_MAX_GEN                   ((1 << MMIO_GEN_SHIFT) - 1)
+>
+> @@ -4428,7 +4432,7 @@ void kvm_mmu_invalidate_mmio_sptes(struct kvm *kvm)
+>          * The very rare case: if the generation-number is round,
+>          * zap all shadow pages.
+>          */
+> -       if (unlikely(kvm_current_mmio_generation(kvm) >= MMIO_MAX_GEN)) {
+> +       if (unlikely(kvm_current_mmio_generation(kvm) == 0)) {
+
+This should be in patch 1/3.
+
+>                 printk_ratelimited(KERN_INFO "kvm: zapping shadow pages for mmio generation wraparound\n");
+>                 kvm_mmu_invalidate_zap_all_pages(kvm);
+>         }
+> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> index 0bfdb673db26..bb8641b5d83b 100644
+> --- a/virt/kvm/kvm_main.c
+> +++ b/virt/kvm/kvm_main.c
+> @@ -95,8 +95,6 @@ static int hardware_enable_all(void);
+>  static void hardware_disable_all(void);
+>
+>  static void kvm_io_bus_destroy(struct kvm_io_bus *bus);
+> -static void update_memslots(struct kvm_memslots *slots,
+> -                           struct kvm_memory_slot *new, u64 last_generation);
+>
+>  static void kvm_release_pfn_dirty(pfn_t pfn);
+>  static void mark_page_dirty_in_slot(struct kvm *kvm,
+> @@ -695,8 +693,7 @@ static void sort_memslots(struct kvm_memslots *slots)
 >  }
->  late_initcall(test_suspend);
-> 
-
-
+>
+>  static void update_memslots(struct kvm_memslots *slots,
+> -                           struct kvm_memory_slot *new,
+> -                           u64 last_generation)
+> +                           struct kvm_memory_slot *new)
+>  {
+>         if (new) {
+>                 int id = new->id;
+> @@ -707,8 +704,6 @@ static void update_memslots(struct kvm_memslots *slots,
+>                 if (new->npages != npages)
+>                         sort_memslots(slots);
+>         }
+> -
+> -       slots->generation = last_generation + 1;
+>  }
+>
+>  static int check_memory_region_flags(struct kvm_userspace_memory_region *mem)
+> @@ -730,10 +725,24 @@ static struct kvm_memslots *install_new_memslots(struct kvm *kvm,
+>  {
+>         struct kvm_memslots *old_memslots = kvm->memslots;
+>
+> -       update_memslots(slots, new, kvm->memslots->generation);
+> +       /*
+> +        * Set the low bit in the generation, which disables SPTE caching
+> +        * until the end of synchronize_srcu_expedited.
+> +        */
+> +       WARN_ON(old_memslots->generation & 1);
+> +       slots->generation = old_memslots->generation + 1;
+> +
+> +       update_memslots(slots, new);
+>         rcu_assign_pointer(kvm->memslots, slots);
+>         synchronize_srcu_expedited(&kvm->srcu);
+>
+> +       /*
+> +        * Increment the new memslot generation a second time. This prevents
+> +        * vm exits that race with memslot updates from caching a memslot
+> +        * generation that will (potentially) be valid forever.
+> +        */
+> +       slots->generation++;
+> +
+>         kvm_arch_memslots_updated(kvm);
+>
+>         return old_memslots;
+> --
+> 1.8.3.1
+>
+>
