@@ -1,96 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752801AbaIBXuo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 19:50:44 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:37980 "EHLO
+	id S1753132AbaIBXvy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 19:51:54 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:55935 "EHLO
 	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752429AbaIBXun (ORCPT
+	with ESMTP id S1752980AbaIBXvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 19:50:43 -0400
-Date: Tue, 2 Sep 2014 16:50:38 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: linux-next: Tree for Aug 23
-Message-ID: <20140902235038.GA23286@roeck-us.net>
-References: <20140823080422.7895575c@canb.auug.org.au>
- <20140825045741.GA29723@roeck-us.net>
- <20140901155804.GT27892@worktop.ger.corp.intel.com>
- <5404A2F2.3090908@roeck-us.net>
- <20140901190438.GB5806@worktop.ger.corp.intel.com>
- <20140902094016.GD31157@worktop.ger.corp.intel.com>
- <20140902095553.GE31157@worktop.ger.corp.intel.com>
- <20140902190445.GB8829@roeck-us.net>
- <20140902202126.GA3190@worktop.ger.corp.intel.com>
+	Tue, 2 Sep 2014 19:51:52 -0400
+Message-ID: <54065208.3080309@gmail.com>
+Date: Tue, 02 Sep 2014 16:26:00 -0700
+From: Rajat Jain <rajatxjain@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140902202126.GA3190@worktop.ger.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rajat Jain <rajatjain@juniper.net>, Guenter Roeck <groeck@juniper.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Richard Yang <weiyang@linux.vnet.ibm.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v2] pci/probe: Enable CRS for root port if it is supported
+References: <53FFA54D.9000907@gmail.com> <CAErSpo5_WMUmnTHpPZt+j04VZoiW1pthQoGV90A5BDQpQgjwOQ@mail.gmail.com>
+In-Reply-To: <CAErSpo5_WMUmnTHpPZt+j04VZoiW1pthQoGV90A5BDQpQgjwOQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 02, 2014 at 10:21:26PM +0200, Peter Zijlstra wrote:
-> On Tue, Sep 02, 2014 at 12:04:45PM -0700, Guenter Roeck wrote:
-> 
-> > I provided qemu images and instructions as follows.
-> > 	http://server.roeck-us.net/qemu/mipsel/		MIPS 32 bit, little endian
-> > 	http://server.roeck-us.net/qemu/mips64el/	MIPS 64 bit, little endian
-> > 
-> > Let me know if you also need big endian images.
-> 
-> Thanks! Does the below work? It appears to work for the mips64 build I did.
-> I'll send a proper patch tomorrow; sleep time :-)
-> 
-Yes, this fixes the problem for both mips32 and mips64.
 
-Guenter
+As per the PCIe spec, an endpoint may return the configuration cycles
+with CRS if it is not yet fully ready to be accessed. If the CRS visibility
+is not enabled at the root port, the spec leaves the retry behaviour open
+to implementation in such a case. The Intel root ports have chosen to retry
+endlessly in this situation. Thus, the root controller may "hang" (repeatedly
+retrying the configuration requests until it gets a status other than CRS) if
+a device returns CRS for a long time. This can cause a broken endpoint to bring
+down the whole PCI hierarchy.
 
-> ---
-> diff --git a/arch/mips/configs/malta_defconfig b/arch/mips/configs/malta_defconfig
-> index e18741e..869efe7 100644
-> --- a/arch/mips/configs/malta_defconfig
-> +++ b/arch/mips/configs/malta_defconfig
-> @@ -441,3 +441,6 @@ CONFIG_CRYPTO_TEA=m
->  CONFIG_CRYPTO_TWOFISH=m
->  # CONFIG_CRYPTO_ANSI_CPRNG is not set
->  CONFIG_CRC16=m
-> +CONFIG_BLK_DEV_INITRD=y
-> +CONFIG_CPU_MIPS64_R1=y
-> +CONFIG_64BIT=y
-> diff --git a/arch/mips/include/asm/atomic.h b/arch/mips/include/asm/atomic.h
-> index 476fe3b..f3ee721 100644
-> --- a/arch/mips/include/asm/atomic.h
-> +++ b/arch/mips/include/asm/atomic.h
-> @@ -93,7 +93,7 @@ static __inline__ int atomic_##op##_return(int i, atomic_t * v)			\
->  		"	" #asm_op " %0, %1, %3				\n"	\
->  		"	sc	%0, %2					\n"	\
->  		"	beqzl	%0, 1b					\n"	\
-> -		"	addu	%0, %1, %3				\n"	\
-> +		"	" #asm_op " %0, %1, %3				\n"	\
->  		"	.set	mips0					\n"	\
->  		: "=&r" (result), "=&r" (temp), "+m" (v->counter)		\
->  		: "Ir" (i));							\
-> @@ -111,7 +111,7 @@ static __inline__ int atomic_##op##_return(int i, atomic_t * v)			\
->  			: "Ir" (i));						\
->  		} while (unlikely(!result));					\
->  										\
-> -		result = temp + i;						\
-> +		result = temp; result c_op i;					\
->  	} else {								\
->  		unsigned long flags;						\
->  										\
-> @@ -387,7 +387,7 @@ static __inline__ long atomic64_##op##_return(long i, atomic64_t * v)		\
->  			: "memory");						\
->  		} while (unlikely(!result));					\
->  										\
-> -		result = temp + i;						\
-> +		result = temp; result c_op i;					\
->  	} else {								\
->  		unsigned long flags;						\
->  										\
-> 
-> 
+This was recently known to cause problems on Intel systems and
+was discussed here:
+http://marc.info/?t=140926298500002&r=1&w=2
+
+Ref1:
+https://www.pcisig.com/specifications/pciexpress/ECN_CRS_Software_Visibility_No27.pdf
+
+Ref2:
+PCIe spec V3.0, pg119, pg127 for "Configuration Request Retry Status"
+
+Thus enable the CRS visibility for the root ports that support it. This
+patch reverts the following commit, but enables CRS visibility only
+when the root port supports it:
+
+ad7edfe04908 ("[PCI] Do not enable CRS Software Visibility by default")
+
+(Linus' response: http://marc.info/?l=linux-pci&m=140968622520192&w=2)
+
+Signed-off-by: Rajat Jain <rajatxjain@gmail.com>
+Signed-off-by: Rajat Jain <rajatjain@juniper.net>
+Signed-off-by: Guenter Roeck <groeck@juniper.net>
+---
+v2: Remove the white list, that was enabling the CRS for certain known Intel systems.
+    Rather now enable it for all systems that support this capability.
+v1: Enable CRS for only some given Intel systems (maintain a whitelist)
+
+ drivers/pci/probe.c           |   13 +++++++++++++
+ include/uapi/linux/pci_regs.h |    1 +
+ 2 files changed, 14 insertions(+)
+
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index e3cf8a2..3c4c35c 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -740,6 +740,17 @@ struct pci_bus *pci_add_new_bus(struct pci_bus *parent, struct pci_dev *dev,
+ }
+ EXPORT_SYMBOL(pci_add_new_bus);
+ 
++static void pci_enable_crs(struct pci_dev *pdev)
++{
++	u16 root_cap = 0;
++
++	/* Enable CRS Software visibility if supported */
++	pcie_capability_read_word(pdev, PCI_EXP_RTCAP, &root_cap);
++	if (root_cap & PCI_EXP_RTCAP_CRSVIS)
++		pcie_capability_set_word(pdev, PCI_EXP_RTCTL,
++					 PCI_EXP_RTCTL_CRSSVE);
++}
++
+ /*
+  * If it's a bridge, configure it and scan the bus behind it.
+  * For CardBus bridges, we don't scan behind as the devices will
+@@ -787,6 +798,8 @@ int pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max, int pass)
+ 	pci_write_config_word(dev, PCI_BRIDGE_CONTROL,
+ 			      bctl & ~PCI_BRIDGE_CTL_MASTER_ABORT);
+ 
++	pci_enable_crs(dev);
++
+ 	if ((secondary || subordinate) && !pcibios_assign_all_busses() &&
+ 	    !is_cardbus && !broken) {
+ 		unsigned int cmax;
+diff --git a/include/uapi/linux/pci_regs.h b/include/uapi/linux/pci_regs.h
+index 30db069..a75106d 100644
+--- a/include/uapi/linux/pci_regs.h
++++ b/include/uapi/linux/pci_regs.h
+@@ -552,6 +552,7 @@
+ #define  PCI_EXP_RTCTL_PMEIE	0x0008	/* PME Interrupt Enable */
+ #define  PCI_EXP_RTCTL_CRSSVE	0x0010	/* CRS Software Visibility Enable */
+ #define PCI_EXP_RTCAP		30	/* Root Capabilities */
++#define  PCI_EXP_RTCAP_CRSVIS	0x0001	/* CRS software visibility capability */
+ #define PCI_EXP_RTSTA		32	/* Root Status */
+ #define PCI_EXP_RTSTA_PME	0x00010000 /* PME status */
+ #define PCI_EXP_RTSTA_PENDING	0x00020000 /* PME pending */
+-- 
+1.7.9.5
