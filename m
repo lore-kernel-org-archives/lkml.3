@@ -1,139 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373AbaIBJQS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 05:16:18 -0400
-Received: from mail-bl2lp0209.outbound.protection.outlook.com ([207.46.163.209]:55577
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752121AbaIBJQQ convert rfc822-to-8bit (ORCPT
+	id S1753407AbaIBJQi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 05:16:38 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:39673 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752524AbaIBJQg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 05:16:16 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>
-CC: "broonie@kernel.org" <broonie@kernel.org>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
-        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>,
-        "moinejf@free.fr" <moinejf@free.fr>, "andrew@lunn.ch" <andrew@lunn.ch>,
-        "jsarha@ti.com" <jsarha@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	Tue, 2 Sep 2014 05:16:36 -0400
+Date: Tue, 2 Sep 2014 10:16:22 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: Will Deacon <will.deacon@arm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Kees Cook <keescook@chromium.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "arndb@arndb.de" <arndb@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+        Deepak Saxena <dsaxena@linaro.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        Shawn Guo <Shawn.Guo@freescale.com>,
-        "Nicolin Chen" <nicoleotsuka@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [alsa-devel] [PATCHv1 1/7] ASoC: simple-card: Merge single and
- muti	DAI link code.
-Thread-Topic: [alsa-devel] [PATCHv1 1/7] ASoC: simple-card: Merge single and
- muti	DAI link code.
-Thread-Index: AQHPxbhYUt4NIVbtUkuD0vLpW80mr5vtkGhA
-Date: Tue, 2 Sep 2014 09:15:54 +0000
-Message-ID: <6ebdb2b0dcec46ef95084d2fc578b7b8@BY2PR0301MB0613.namprd03.prod.outlook.com>
-References: <1409545781-20530-1-git-send-email-Li.Xiubo@freescale.com>
-	<1409545781-20530-2-git-send-email-Li.Xiubo@freescale.com>
- <87tx4rzszx.wl%kuninori.morimoto.gx@gmail.com>
-In-Reply-To: <87tx4rzszx.wl%kuninori.morimoto.gx@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [123.151.195.49]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-x-forefront-prvs: 0322B4EDE1
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(377454003)(189002)(51704005)(13464003)(199003)(53474002)(4396001)(83072002)(105586002)(54356999)(76176999)(108616004)(80022001)(76482001)(74662001)(31966008)(74502001)(85306004)(90102001)(107046002)(106356001)(46102001)(85852003)(110136001)(106116001)(77982001)(95666004)(99286002)(76576001)(92566001)(81542001)(81342001)(20776003)(2656002)(66066001)(64706001)(74316001)(101416001)(21056001)(83322001)(87936001)(77096002)(86362001)(50986999)(33646002)(19580395003)(99396002)(19580405001)(15866825004)(21314002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB343;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v6 2/6] arm64: ptrace: allow tracer to skip a system
+	call
+Message-ID: <20140902091622.GK30401@n2100.arm.linux.org.uk>
+References: <1408611405-8943-1-git-send-email-takahiro.akashi@linaro.org> <1408611405-8943-3-git-send-email-takahiro.akashi@linaro.org> <CAGXu5jJCyqpXkdvNDCu+eMr0qnqwbqUUo4u+2p_7DvFMzfKoEw@mail.gmail.com> <53F69045.7010301@linaro.org> <20140826175128.GD23445@arm.com> <53FD72E2.4020103@linaro.org> <20140901114751.GG30401@n2100.arm.linux.org.uk> <54058421.5070506@linaro.org>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54058421.5070506@linaro.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kuninori-san
+On Tue, Sep 02, 2014 at 05:47:29PM +0900, AKASHI Takahiro wrote:
+> On 09/01/2014 08:47 PM, Russell King - ARM Linux wrote:
+>> On Wed, Aug 27, 2014 at 02:55:46PM +0900, AKASHI Takahiro wrote:
+>>> 1)
+>>> setting x0 to -ENOSYS is necessary because, otherwise, user-issued syscall(-1) will
+>>> return a bogus value when audit tracing is on.
+>>>
+>>> Please note that, on arm,
+>>>                   not traced      traced
+>>>                   ------          ------
+>>> syscall(-1)      aborted         OOPs(BUG_ON)
+>>> syscall(-3000)   aborted         aborted
+>>> syscall(1000)    ENOSYS          ENOSYS
+>>
+>> Two points here:
+>>
+>> 1. You've found a case which causes a BUG_ON().  Where is the bug report
+>>     for this, so the problem can be investigated and resolved?
+>
+> I think that I mentioned it could also happen on arm somewhere in a talk
+> with Will, but don't remember exactly when.
 
-This patch series will break the old DTs, and I will follow Mark's
-Advice to maintain compatibility with the old DTs.
+Sorry, not good enough.  Please report this bug so it can be investigated
+and fixed.
 
-I will send another version, please help me to review it. And I will also
-split the update patch series to many small ones.
+>> 2. What do you mean by "aborted" ?
+>
+> I mean that the process will receive SIGILL and get aborted.
+> A system call number, like -1 and -3000, won't be trapped by *switch*
+> statement in asm_syscall() and end up with being signaled.
 
-Thanks very much,
+That is correct behaviour - because numbers greater than 0xf0000 (or
+0x9f0000 for OABI - the 0x900000 offset on the syscalls on OABI is to
+distinguish them from syscalls used by RISC OS) are not intended to
+be Linux syscalls per-se.
 
-BRs
-Xiubo
+>> Please, if you find a problem with 32-bit ARM, report it.  Don't hide it,
+>> because hiding it can be a security issue or in the case of BUG_ON(), it
+>> could be a denial of service issue.
+>>
+>> As you're part of Linaro, I would have thought you'd be more responsible
+>> in this regard - after all, Linaro is supposed to be about improving the
+>> ARM kernel...  Maybe I got that wrong, and Linaro is actually about
+>> ensuring that the ARM kernel is stuffed full of broken features?
+>
+> I thought my first priority was on arm64 (and then arm), but now that
+> you and Will seem to want to see the fix first on arm, okey, I will
+> start with arm issue.
 
-> -----Original Message-----
-> From: Kuninori Morimoto [mailto:kuninori.morimoto.gx@gmail.com]
-> Sent: Monday, September 01, 2014 3:43 PM
-> To: Xiubo Li-B47053
-> Cc: broonie@kernel.org; lgirdwood@gmail.com; perex@perex.cz; tiwai@suse.de;
-> kuninori.morimoto.gx@renesas.com; moinejf@free.fr; andrew@lunn.ch;
-> jsarha@ti.com; devicetree@vger.kernel.org; linux-arm-
-> kernel@lists.infradead.org; linux-sh@vger.kernel.org; alsa-devel@alsa-
-> project.org; Guo Shawn-R65073; Nicolin Chen; linux-kernel@vger.kernel.org
-> Subject: Re: [alsa-devel] [PATCHv1 1/7] ASoC: simple-card: Merge single and
-> muti DAI link code.
-> 
-> 
-> Hi Xiubo
-> 
-> Thank you for your patch.
-> This clean-up is very nice for me.
-> But, I have 1 small comment
-> 
-> >  asoc_simple_card_sub_parse_of(struct device_node *np,
-> >  			      struct asoc_simple_dai *dai,
-> >  			      struct device_node **p_node,
-> > -			      const char **name)
-> > +			      const char **name,
-> > +			      unsigned int *daifmt)
-> >  {
-> >  	struct device_node *node;
-> >  	struct clk *clk;
-> >  	u32 val;
-> >  	int ret;
-> >
-> > +	if (!daifmt)
-> > +		return -EINVAL;
-> > +
-> > +	/*
-> > +	 * Parse format, bitclock-inversion and frame-inversion
-> > +	 * for DAI each device.
-> > +	 */
-> > +	*daifmt = snd_soc_of_parse_daifmt(np, NULL, NULL, NULL);
-> > +	*daifmt &= ~(SND_SOC_DAIFMT_MASTER_MASK | SND_SOC_DAIFMT_FORMAT_MASK);
-> (snip)
-> >  	ret = asoc_simple_card_sub_parse_of(np, &dai_props->cpu_dai,
-> >  					    &dai_link->cpu_of_node,
-> > -					    &dai_link->cpu_dai_name);
-> > +					    &dai_link->cpu_dai_name,
-> > +					    &daifmt);
-> (snip)
-> > +	dai_props->cpu_dai.fmt |= daifmt;
-> (snip)
-> >  	ret = asoc_simple_card_sub_parse_of(np, &dai_props->codec_dai,
-> >  					    &dai_link->codec_of_node,
-> > -					    &dai_link->codec_dai_name);
-> > +					    &dai_link->codec_dai_name,
-> > +					    &daifmt);
-> (snip)
-> > +	dai_props->codec_dai.fmt |= daifmt;
-> 
-> These are using
-> 
->       asoc_simple_card_sub_parse_of(np, &dai_props->cpu_dai, xxx)
->       asoc_simple_card_sub_parse_of(np, &dai_props->codec_dai, xxx)
-> 
-> I guess, asoc_simple_card_sub_parse_of() can update
-> below inside function
-> 
-> 	dai_props->cpu_dai.fmt |= daifmt;
-> 	dai_props->codec_dai.fmt |= daifmt;
-> 
-> 
-> Best regards
-> ---
-> Kuninori Morimoto
+So what you're saying there is that if you find a bug in ARM code, which
+everyone is currently using, you can ignore it until you've sorted out
+ARM64 which almost no one is using.
+
+This is absurd, and whoever has set your priorities is clearly on drugs.
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
