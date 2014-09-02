@@ -1,70 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616AbaIBAI1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 20:08:27 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:45050 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752344AbaIBAIZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 20:08:25 -0400
+	id S1752398AbaIBAOY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 20:14:24 -0400
+Received: from mga11.intel.com ([192.55.52.93]:59431 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751965AbaIBAOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 20:14:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,445,1406617200"; 
+   d="scan'208";a="584790065"
+From: "Chang, Rebecca Swee Fun" <rebecca.swee.fun.chang@intel.com>
+To: "'Andy Shevchenko'" <andriy.shevchenko@linux.intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+CC: Lee Jones <lee.jones@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "Ahmad, Josef" <josef.ahmad@intel.com>
+Subject: RE: [PATCH v1 3/5] pci_ids: add support for Intel Quark ILB
+Thread-Topic: [PATCH v1 3/5] pci_ids: add support for Intel Quark ILB
+Thread-Index: AQHPw5VxmNfvjdD8nk6yIqKzleCHy5vrfN0AgAGA4RA=
+Date: Tue, 2 Sep 2014 00:14:18 +0000
+Message-ID: <50B33AC5ED75F74F991980326F1C438D0FBCF5EF@PGSMSX108.gar.corp.intel.com>
+References: <1408705096-31286-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1408705096-31286-4-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <CAErSpo42SMnWrTJceuR1cdhUU7rwiBgSHD75k4rwKkaC6sc5JQ@mail.gmail.com>
+ <1409562842.30155.45.camel@linux.intel.com>
+In-Reply-To: <1409562842.30155.45.camel@linux.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.30.20.205]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <3341001.1Jsp173xyM@wuerfel>
-References: <1409350479-19108-1-git-send-email-abrestic@chromium.org>
-	<6179185.bNbDBEC6tl@wuerfel>
-	<CAL1qeaEEo6-LZz3Kex7oPUfz=Z56nvKoDnqu051rGhhi3ZFTDQ@mail.gmail.com>
-	<3341001.1Jsp173xyM@wuerfel>
-Date: Mon, 1 Sep 2014 17:08:24 -0700
-X-Google-Sender-Auth: DZTy1xrnZZmObEJmvlurMLp9GHA
-Message-ID: <CAL1qeaHryi7noBMiHxJPybByuvVts23reuiiQbV9mCQj+Ngqjw@mail.gmail.com>
-Subject: Re: [PATCH 04/12] MIPS: GIC: Move MIPS_GIC_IRQ_BASE into platform irq.h
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Jeffrey Deans <jeffrey.deans@imgtec.com>,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        Paul Burton <paul.burton@imgtec.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Linux-MIPS <linux-mips@linux-mips.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s820EUCb008949
 
-On Mon, Sep 1, 2014 at 1:34 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Sunday 31 August 2014 11:54:04 Andrew Bresticker wrote:
->> On Sat, Aug 30, 2014 at 12:57 AM, Arnd Bergmann <arnd@arndb.de> wrote:
->> > On Friday 29 August 2014 15:14:31 Andrew Bresticker wrote:
->> >> Define a generic MIPS_GIC_IRQ_BASE which is suitable for Malta and
->> >> the upcoming Danube board in <mach-generic/irq.h>.  Since Sead-3 is
->> >> different and uses a MIPS_GIC_IRQ_BASE equal to the CPU IRQ base (0),
->> >> define its MIPS_GIC_IRQ_BASE in <mach-sead3/irq.h>.
->> >>
->> >> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
->> >>
->> >
->> > Why do you actually have to hardwire an IRQ base? Can't you move
->> > to the linear irqdomain code for DT based MIPS systems yet?
->>
->> Neither Malta nor SEAD-3 use device-tree for interrupts yet, so they
->> still require a hard-coded IRQ base.  For boards using device-tree, I
->> stuck with a legacy IRQ domain as it allows most of the existing GIC
->> irqchip code to be reused.
->
-> I see. Note that we now have irq_domain_add_simple(), which should
-> do the right think in either case: use a legacy domain when a
-> nonzero base is provided for the old boards, but use the simple
-> domain when probed from DT without an irq base.
->
-> This makes the latter case more memory efficient (it avoids
-> allocating the irq descriptors for every possibly but unused
-> IRQ number) and helps ensure that you don't accidentally rely
-> on hardcoded IRQ numbers for the DT based machines, which would
-> be considered a bug.
 
-Ah, ok.  It looks like add_simple() is what I want then.
+
+> -----Original Message-----
+> From: Andy Shevchenko [mailto:andriy.shevchenko@linux.intel.com]
+> Sent: 01 September, 2014 5:14 PM
+> To: Bjorn Helgaas
+> Cc: Lee Jones; linux-kernel@vger.kernel.org; Samuel Ortiz; Chang, Rebecca
+> Swee Fun; Ahmad, Josef
+> Subject: Re: [PATCH v1 3/5] pci_ids: add support for Intel Quark ILB
+> 
+> On Fri, 2014-08-29 at 08:27 -0600, Bjorn Helgaas wrote:
+> > On Fri, Aug 22, 2014 at 4:58 AM, Andy Shevchenko
+> > <andriy.shevchenko@linux.intel.com> wrote:
+> > > From: Josef Ahmad <josef.ahmad@intel.com>
+> > >
+> > > This patch adds the PCI id for Intel Quark ILB.
+> > > It will be used for GPIO and Multifunction device driver.
+> > >
+> > > Signed-off-by: Josef Ahmad <josef.ahmad@intel.com>
+> > > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> >
+> > Assuming that this will actually be used in more than one place:
+> 
+> Yes, look for the other IDs in the same driver (lpc_sch).
+> 
+> The question is will we have the update for sch_gpio in time to be included to
+> v3.18? I think Rebecca can answer to this one.
+
+Yes, we are working on updating sch_gpio but I can't give you a confirm answer whether it will be included in v3.18. Sch_gpio has been scheduled as my 2nd priority work currently. However, I will try to make it in time if possible.
+
+Rebecca
+> 
+> >
+> > Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+> >
+> > > ---
+> > >  include/linux/pci_ids.h | 1 +
+> > >  1 file changed, 1 insertion(+)
+> > >
+> > > diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h index
+> > > 6ed0bb7..4e82195 100644
+> > > --- a/include/linux/pci_ids.h
+> > > +++ b/include/linux/pci_ids.h
+> > > @@ -2557,6 +2557,7 @@
+> > >  #define PCI_DEVICE_ID_INTEL_MFD_EMMC0  0x0823  #define
+> > > PCI_DEVICE_ID_INTEL_MFD_EMMC1  0x0824
+> > >  #define PCI_DEVICE_ID_INTEL_MRST_SD2   0x084F
+> > > +#define PCI_DEVICE_ID_INTEL_QUARK_X1000_ILB    0x095E
+> > >  #define PCI_DEVICE_ID_INTEL_I960       0x0960
+> > >  #define PCI_DEVICE_ID_INTEL_I960RM     0x0962
+> > >  #define PCI_DEVICE_ID_INTEL_CENTERTON_ILB      0x0c60
+> > > --
+> > > 2.1.0
+> > >
+> 
+> 
+> --
+> Andy Shevchenko <andriy.shevchenko@intel.com> Intel Finland Oy
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
