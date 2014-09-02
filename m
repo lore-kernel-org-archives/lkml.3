@@ -1,106 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755814AbaIBXhb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 19:37:31 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:48771 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753685AbaIBXh3 (ORCPT
+	id S1752241AbaIBXta (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 19:49:30 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:65258 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751233AbaIBXt3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 19:37:29 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, Addy Ke <addy.ke@rock-chips.com>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Doug Anderson <dianders@chromium.org>, chris@printf.net,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] mmc: dw_mmc: Don't enable interrupts until we're ready
-Date: Tue,  2 Sep 2014 16:37:14 -0700
-Message-Id: <1409701034-28526-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+	Tue, 2 Sep 2014 19:49:29 -0400
+Date: Tue, 2 Sep 2014 16:49:24 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Gregory Fong <gregory.0xf0@gmail.com>, Matt Porter <mporter@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>, Christian Daudt <bcm@fixthebug.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Marc Carino <marc.ceeeee@gmail.com>,
+        Kevin Cernekee <cernekee@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: drop ISAR0 workaround for B15
+Message-ID: <20140902234924.GZ18411@ld-irv-0074>
+References: <1407797053-12544-1-git-send-email-gregory.0xf0@gmail.com>
+ <20140813194047.GA18411@ld-irv-0074>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140813194047.GA18411@ld-irv-0074>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On dw_mmc there's a small race if you happen to get a card detect
-interrupt at just the wrong time during probe.  You may have enabled
-the interrupt but host->slot[0] may be NULL.
+Ping.
 
-Fix the race by enabling interrupts all the way at the end of the
-probe.  We can also use free_irq() instead of dw_mmc specific masking
-to mask the IRQ at removal time.  Note that since we're now managing
-freeing of the irq ourselves, there's no need to use devm.
+Is this worthy of 3.17-rc? Or should it just be queued for 3.18, as it's
+only removing redundant info?
 
-FYI, the crash would look like:
-  dwmmc_rockchip ff0c0000.dwmmc: DW MMC controller at irq 64, 32 bit host data width, 256 deep fifo
-  Unable to handle kernel NULL pointer dereference at virtual address 00000000
-  pgd = c0004000
-  [00000000] *pgd=00000000
-  ...
-  ...
-  [<c0499380>] (dw_mci_work_routine_card) from [<c0134b94>] (process_one_work+0x260/0x3c4)
-  [<c0134b94>] (process_one_work) from [<c0135b10>] (worker_thread+0x240/0x3a8)
-  [<c0135b10>] (worker_thread) from [<c013b64c>] (kthread+0x100/0x118)
-  [<c013b64c>] (kthread) from [<c0106418>] (ret_from_fork+0x14/0x20)
-
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
-FYI: making dw_mmc into a module and trying module removal was not
-tested.  I'd appreciate any testing that folks can do there.  This
-code should be the equivalent and makes the error case of probe match
-the removal case more closely now.
-
- drivers/mmc/host/dw_mmc.c | 17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 7f227e9..540ba3c 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -2577,10 +2577,6 @@ int dw_mci_probe(struct dw_mci *host)
- 		goto err_dmaunmap;
- 	}
- 	INIT_WORK(&host->card_work, dw_mci_work_routine_card);
--	ret = devm_request_irq(host->dev, host->irq, dw_mci_interrupt,
--			       host->irq_flags, "dw-mci", host);
--	if (ret)
--		goto err_workqueue;
- 
- 	if (host->pdata->num_slots)
- 		host->num_slots = host->pdata->num_slots;
-@@ -2619,11 +2615,21 @@ int dw_mci_probe(struct dw_mci *host)
- 		goto err_workqueue;
- 	}
- 
-+	ret = request_irq(host->irq, dw_mci_interrupt, host->irq_flags,
-+			  "dw-mci", host);
-+	if (ret)
-+		goto err_initted;
-+
- 	if (host->quirks & DW_MCI_QUIRK_IDMAC_DTO)
- 		dev_info(host->dev, "Internal DMAC interrupt fix enabled.\n");
- 
- 	return 0;
- 
-+err_initted:
-+	for (i = 0; i < host->num_slots; i++)
-+		if (host->slot[i])
-+			dw_mci_cleanup_slot(host->slot[i], i);
-+
- err_workqueue:
- 	destroy_workqueue(host->card_workqueue);
- 
-@@ -2649,8 +2655,7 @@ void dw_mci_remove(struct dw_mci *host)
- {
- 	int i;
- 
--	mci_writel(host, RINTSTS, 0xFFFFFFFF);
--	mci_writel(host, INTMASK, 0); /* disable all mmc interrupt first */
-+	free_irq(host->irq, host);
- 
- 	for (i = 0; i < host->num_slots; i++) {
- 		dev_dbg(host->dev, "remove slot %d\n", i);
--- 
-2.1.0.rc2.206.gedb03e5
-
+On Wed, Aug 13, 2014 at 12:40:47PM -0700, Brian Norris wrote:
+> The Brahma-B15's ISAR0 correcty advertises UDIV/SDIV support in both ARM
+> and Thumb2 modes (CPUID_EXT_ISAR0=02101110), so we don't need to
+> manually apply this hwcap.
+> 
+> The code in question actually predates the following commit, which made
+> our hwcaps unnecessary:
+> 
+>     commit 8164f7af88d9ad3a757bd14f634b23997ee77f6b
+>     Author: Stephen Boyd <sboyd@codeaurora.org>
+>     Date:   Mon Mar 18 19:44:15 2013 +0100
+> 
+>         ARM: 7680/1: Detect support for SDIV/UDIV from ISAR0 register
+> 
+> Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+> Cc: Will Deacon <will.deacon@arm.com>
+> Cc: Mark Rutland <mark.rutland@arm.com>
+> ---
+> Supersedes Gregory's previous patch.
+> 
+> This addresses some very old review comments from Mark and Will:
+> 
+>   http://lists.infradead.org/pipermail/linux-arm-kernel/2014-January/225895.html
+>   http://lists.infradead.org/pipermail/linux-arm-kernel/2014-January/227916.html
+> 
+>  arch/arm/mm/proc-v7.S | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
+> index b5d67db20897..b3a947863ac7 100644
+> --- a/arch/arm/mm/proc-v7.S
+> +++ b/arch/arm/mm/proc-v7.S
+> @@ -570,7 +570,7 @@ __v7_ca15mp_proc_info:
+>  __v7_b15mp_proc_info:
+>  	.long	0x420f00f0
+>  	.long	0xff0ffff0
+> -	__v7_proc __v7_b15mp_setup, hwcaps = HWCAP_IDIV
+> +	__v7_proc __v7_b15mp_setup
+>  	.size	__v7_b15mp_proc_info, . - __v7_b15mp_proc_info
+>  
+>  	/*
