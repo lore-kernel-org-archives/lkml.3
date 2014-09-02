@@ -1,86 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751219AbaIBGcg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 02:32:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32113 "EHLO mx1.redhat.com"
+	id S1751532AbaIBGeJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 02:34:09 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:33464 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750771AbaIBGcf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 02:32:35 -0400
-Message-ID: <54056459.4060100@redhat.com>
-Date: Tue, 02 Sep 2014 14:31:53 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1750787AbaIBGeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 02:34:07 -0400
+Date: Tue, 2 Sep 2014 08:33:54 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: early microcode: how to disable at runtime?
+Message-ID: <20140902063354.GA32105@nazgul.tnic>
+References: <20140809231911.GA4843@khazad-dum.debian.net>
+ <20140831194548.GA12628@khazad-dum.debian.net>
+ <54037C07.8060703@zytor.com>
+ <20140831201126.GB12628@khazad-dum.debian.net>
+ <20140901051302.GA28402@nazgul.tnic>
+ <5404A035.3070707@zytor.com>
+ <20140901174322.GA15533@khazad-dum.debian.net>
+ <ea40f7c4-ec8d-4be5-8f8c-bbd11ab07252@email.android.com>
+ <20140901195921.GA18675@khazad-dum.debian.net>
 MIME-Version: 1.0
-To: Eliezer Tamir <eliezer.tamir@linux.intel.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-CC: Ingo Molnar <mingo@kernel.org>, Mike Galbraith <umgwanakikbuti@gmail.com>,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mst@redhat.com,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Ingo Molnar jacob.e.keller@intel.com" <mingo@elte.hu>
-Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process
- is runnable
-References: <1408608310-13579-1-git-send-email-jasowang@redhat.com>	 <1408608310-13579-2-git-send-email-jasowang@redhat.com>	 <1408683665.5648.69.camel@marge.simpson.net>	 <20140822073653.GA7372@gmail.com> <53F70887.8030602@redhat.com> <1408716976.5604.18.camel@edumazet-glaptop2.roam.corp.google.com> <53FB3715.7070009@linux.intel.com> <53FC3466.8000304@redhat.com> <5404186E.4090409@linux.intel.com> <54053AF8.6070907@redhat.com> <54055D9F.7000108@linux.intel.com>
-In-Reply-To: <54055D9F.7000108@linux.intel.com>
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20140901195921.GA18675@khazad-dum.debian.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/2014 02:03 PM, Eliezer Tamir wrote:
-> On 02/09/2014 06:35, Jason Wang wrote:
->> On 09/01/2014 02:55 PM, Eliezer Tamir wrote:
->>> On 26/08/2014 10:16, Jason Wang wrote:
->>>> On 08/25/2014 09:16 PM, Eliezer Tamir wrote:
->>> Think about the case where two processes are busy polling on the
->>> same CPU and the same device queue. Since busy polling processes
->>> incoming packets on the queue from any process, this scenario works
->>> well currently,
->> I see, but looks like we can simply do this by exiting the busy loop
->> when ndo_busy_poll() finds something but not for current socket?
-> I don't think there is a need for that.
->
-> When ndo_busy_poll() finds something it feeds it to the stack, which
-> will process the packet, just as if it came from NAPI polling.
-> So, if this is data that someone is blocked waiting on, the stack will
-> wake them up, and then you presumably can decide which app should get
-> the cpu.
+On Mon, Sep 01, 2014 at 04:59:21PM -0300, Henrique de Moraes Holschuh wrote:
+> On Mon, 01 Sep 2014, H. Peter Anvin wrote:
+> > No, it is worse to rename it and have older kernels behave differently.
+> > Kernel options are basically super obscure to most people anyway.
+> 
+> Ok, so rename is out, although as long as the rename was accepted for
+> 3.16-stable, it would be just 3.16 and 3.16.1 (and maybe 3.16.2) that would
+> not have the new name.
+> 
+> Options left are "keep it as is", or "add new and [optionally] deprecate
+> old".  I can't really tell for sure which one you'd prefer from your
+> previous answer.
 
-Yes, but current code can not do this. In most of the cases, the new
-woke up process have no chance to run if another process is busy loop in
-the same cpu.
->
-> Note, that there is no easy way to know, when looking at the
-> incoming traffic, whether it is important, or even if you are seeing
-> a full message. (Maybe you only have 9 packets out of 10?)
-> The only place this knowledge might exist is in the layers of the
-> stack closer to the user.
->
->>>  and will not work at all when polling yields to other
->>> processes that are of the same priority that are running on the same
->>> CPU.
->>> Maybe the networking subsystem should maintain a list of device
->>> queues that need busypolling and have a thread that would poll
->>> all of them when there's nothing better to do.
->> Not sure whether this method will scale considering thousands of sockets
->> and processes.
-> There may be millions of sockets, but in most cases only a handful of
-> device queues per CPU to busy poll on. I have tested the epoll rfc
-> code with hundreds of thousands of sockets and one or two device
-> queues and is scales pretty well.
->
-> The part I don't like in that code is the cumbersome mechanism I used
-> to track the socket -> queue relationship. I think that if I had more
-> time to work on it, I would instead look into extending the epoll
-> interface so that libevent can tell the kernel what it wants, instead
-> of having the busypoll code try and learn it.
+Let me answer to all the concerns here:
 
-I'd like to have a look at this rfc. Could you please give me a pointer?
-I've done a quick search on kernel mailing list but didn't find it.
+* the parameter is not in kernel-parameters.txt for the simple reason
+that we don't want people to disable ucode loaders left and right.
+The absolutely normal, 99% situation should be loading works fine or
+we don't load the ucode at all - this option is only for the very,
+very, very! obscure and strange situation where we want to rule out any
+microcode interference. Just in case.
 
-Thanks
->
-> Cheers,
-> Eliezer
+This situation should almost never happen.
 
+* The param naming could be argued about - maybe it is ugly and
+unreadable for that same reason.
+
+> This can be a very big deal when things go wrong: it is hard for the
+> regular user to recover from an initramfs image that crashes the
+> system, and the early initramfs has no "disable" trigger.
+
+This maybe is a serious problem but disabling microcode loading is not
+the proper solution. If the microcode in the initrd is corrupted, it
+should simply not get loaded and system should continue as much as it
+can - it *should* *not* be a requirement to disable the ucode loader in
+order to workaround corrupted initrds.
+
+And frankly, I'm trying to imagine how a corrupted microcode in an
+initrd would ever fail the booting. So Henrique, if you have something
+which is *not* hypothetical, please say so. It needs to be fixed
+properly and not with disabling the ucode loader.
+
+-- 
+Regards/Gruss,
+    Boris.
+--
