@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246AbaIBDmc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 23:42:32 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:42403 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753051AbaIBDm2 (ORCPT
+	id S1753324AbaIBDmk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 23:42:40 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:54639 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753051AbaIBDmh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 23:42:28 -0400
+	Mon, 1 Sep 2014 23:42:37 -0400
 MIME-Version: 1.0
 In-Reply-To: <1409562468-16586-2-git-send-email-zyw@rock-chips.com>
 References: <1409562468-16586-1-git-send-email-zyw@rock-chips.com>
 	<1409562468-16586-2-git-send-email-zyw@rock-chips.com>
-Date: Mon, 1 Sep 2014 20:42:26 -0700
-X-Google-Sender-Auth: U3MUILlNlmEhQhPl0oESKoQC0G8
-Message-ID: <CAD=FV=W75OA69xooHhuJT5tEGwOx53GFQEgyxFSr0ZzbfUUwWA@mail.gmail.com>
+Date: Mon, 1 Sep 2014 20:42:36 -0700
+X-Google-Sender-Auth: HS9IlXJj0mnzIhANgFbW5YSJ5WU
+Message-ID: <CAD=FV=VpvBj4ut7SCrKeUFxydL1Tx6BKtUUUxBNcayaOu6Zung@mail.gmail.com>
 Subject: Re: [PATCH v7 1/5] dt-bindings: Add RK808 device tree bindings document
 From: Doug Anderson <dianders@chromium.org>
 To: Chris Zhong <zyw@rock-chips.com>
