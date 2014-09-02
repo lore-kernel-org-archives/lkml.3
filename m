@@ -1,113 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748AbaIBHka (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 03:40:30 -0400
-Received: from mail.ispras.ru ([83.149.199.45]:55691 "EHLO mail.ispras.ru"
+	id S1752768AbaIBHlL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 03:41:11 -0400
+Received: from mga02.intel.com ([134.134.136.20]:45621 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750914AbaIBHk3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 03:40:29 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Evgeniy Dushistov <dushistov@mail.ru>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: [PATCH v2] ufs: fix deadlocks introduced by sb mutex merge
-Date: Tue,  2 Sep 2014 11:40:17 +0400
-Message-Id: <1409643617-13594-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <20140901231306.GL7996@ZenIV.linux.org.uk>
-References: <20140901231306.GL7996@ZenIV.linux.org.uk>
+	id S1750722AbaIBHlJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 03:41:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,447,1406617200"; 
+   d="scan'208";a="566985341"
+From: Jani Nikula <jani.nikula@linux.intel.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>,
+        Ville =?utf-8?B?U3lyasOkbMOk?= <ville.syrjala@linux.intel.com>
+Cc: intel-gfx@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
+        Tibor Billes <tbilles@gmx.com>
+Subject: Re: [PATCH v2] drm/i915: Fix lock dropping in intel_tv_detect()
+In-Reply-To: <20140901104356.GE11648@nuc-i3427.alporthouse.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+References: <20140901085022.GB11648@nuc-i3427.alporthouse.com> <1409566060-21337-1-git-send-email-ville.syrjala@linux.intel.com> <20140901102009.GD11648@nuc-i3427.alporthouse.com> <20140901103637.GB4193@intel.com> <20140901104356.GE11648@nuc-i3427.alporthouse.com>
+User-Agent: Notmuch/0.18.1+84~g658a00e (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
+Date: Tue, 02 Sep 2014 10:41:05 +0300
+Message-ID: <87egvuii5q.fsf@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 0244756edc4b ("ufs: sb mutex merge + mutex_destroy") introduces
-deadlocks in ufs_new_inode() and ufs_free_inode().
-Most callers of that functions acqure the mutex by themselves and
-ufs_{new,free}_inode() do that via lock_ufs(),
-i.e we have an unavoidable double lock.
+On Mon, 01 Sep 2014, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> On Mon, Sep 01, 2014 at 01:36:37PM +0300, Ville Syrjälä wrote:
+>> On Mon, Sep 01, 2014 at 11:20:09AM +0100, Chris Wilson wrote:
+>> > On Mon, Sep 01, 2014 at 01:07:40PM +0300, ville.syrjala@linux.intel.com wrote:
+>> > > From: Ville Syrjälä <ville.syrjala@linux.intel.com>
+>> > > 
+>> > > When intel_tv_detect() fails to do load detection it would forget to
+>> > > drop the locks and clean up the acquire context. Fix it up.
+>> > > 
+>> > > This is a regression from:
+>> > >  commit 208bf9fdcd3575aa4a5d48b3e0295f7cdaf6fc44
+>> > >  Author: Ville Syrjälä <ville.syrjala@linux.intel.com>
+>> > >  Date:   Mon Aug 11 13:15:35 2014 +0300
+>> > > 
+>> > >     drm/i915: Fix locking for intel_enable_pipe_a()
+>> > > 
+>> > > v2: Make the code more readable (Chris)
+>> > > 
+>> > > Cc: Tibor Billes <tbilles@gmx.com>
+>> > > Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+>> > 
+>> > Hmm, if we use WARN_ON() you should init type.
+>> 
+>> type is always set in the branch that sets status=connected.
+>
+> Back to thinking about readability and making sure that the WARN_ON
+> never happens with just a glance. Otherwise, the WARN_ON would be better
+> as WARN_ON(unsigned)type >= last_tv_type); Or something. Anway, take
+> your pick and slap my r-b on it. :)
 
-The patch proposes to resolve the issue by making sure that
-ufs_{new,free}_inode() are not called with the mutex held.
+Ville?
 
-Found by Linux Driver Verification project (linuxtesting.org).
+J.
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- fs/ufs/inode.c |  7 ++-----
- fs/ufs/namei.c | 14 ++++++--------
- 2 files changed, 8 insertions(+), 13 deletions(-)
 
-diff --git a/fs/ufs/inode.c b/fs/ufs/inode.c
-index 7c580c97990e..be7d42c7d938 100644
---- a/fs/ufs/inode.c
-+++ b/fs/ufs/inode.c
-@@ -902,9 +902,6 @@ void ufs_evict_inode(struct inode * inode)
- 	invalidate_inode_buffers(inode);
- 	clear_inode(inode);
- 
--	if (want_delete) {
--		lock_ufs(inode->i_sb);
--		ufs_free_inode (inode);
--		unlock_ufs(inode->i_sb);
--	}
-+	if (want_delete)
-+		ufs_free_inode(inode);
- }
-diff --git a/fs/ufs/namei.c b/fs/ufs/namei.c
-index 90d74b8f8eba..2df62a73f20c 100644
---- a/fs/ufs/namei.c
-+++ b/fs/ufs/namei.c
-@@ -126,12 +126,12 @@ static int ufs_symlink (struct inode * dir, struct dentry * dentry,
- 	if (l > sb->s_blocksize)
- 		goto out_notlocked;
- 
--	lock_ufs(dir->i_sb);
- 	inode = ufs_new_inode(dir, S_IFLNK | S_IRWXUGO);
- 	err = PTR_ERR(inode);
- 	if (IS_ERR(inode))
--		goto out;
-+		goto out_notlocked;
- 
-+	lock_ufs(dir->i_sb);
- 	if (l > UFS_SB(sb)->s_uspi->s_maxsymlinklen) {
- 		/* slow symlink */
- 		inode->i_op = &ufs_symlink_inode_operations;
-@@ -181,13 +181,9 @@ static int ufs_mkdir(struct inode * dir, struct dentry * dentry, umode_t mode)
- 	struct inode * inode;
- 	int err;
- 
--	lock_ufs(dir->i_sb);
--	inode_inc_link_count(dir);
--
- 	inode = ufs_new_inode(dir, S_IFDIR|mode);
--	err = PTR_ERR(inode);
- 	if (IS_ERR(inode))
--		goto out_dir;
-+		return PTR_ERR(inode);
- 
- 	inode->i_op = &ufs_dir_inode_operations;
- 	inode->i_fop = &ufs_dir_operations;
-@@ -195,6 +191,9 @@ static int ufs_mkdir(struct inode * dir, struct dentry * dentry, umode_t mode)
- 
- 	inode_inc_link_count(inode);
- 
-+	lock_ufs(dir->i_sb);
-+	inode_inc_link_count(dir);
-+
- 	err = ufs_make_empty(inode, dir);
- 	if (err)
- 		goto out_fail;
-@@ -212,7 +211,6 @@ out_fail:
- 	inode_dec_link_count(inode);
- 	inode_dec_link_count(inode);
- 	iput (inode);
--out_dir:
- 	inode_dec_link_count(dir);
- 	unlock_ufs(dir->i_sb);
- 	goto out;
+> -Chris
+>
+> -- 
+> Chris Wilson, Intel Open Source Technology Centre
+
 -- 
-1.9.1
-
+Jani Nikula, Intel Open Source Technology Center
