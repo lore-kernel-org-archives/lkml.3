@@ -1,96 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754931AbaIBSQt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 14:16:49 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:61791 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754710AbaIBSQs (ORCPT
+	id S1755000AbaIBSSh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 14:18:37 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46024 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753710AbaIBSSe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 14:16:48 -0400
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Benjamin Romer <benjamin.romer@unisys.com>,
-        David Kershner <david.kershner@unisys.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: sparmaintainer@unisys.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] staging: unisys: uislib: uisqueue.c: rewrite of do_locked_client_insert
-Date: Tue,  2 Sep 2014 23:46:35 +0530
-Message-Id: <1409681795-23262-1-git-send-email-sudipm.mukherjee@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Tue, 2 Sep 2014 14:18:34 -0400
+Message-Id: <1409681914.978561.162800349.5A7FA784@webmail.messagingengine.com>
+X-Sasl-Enc: QLJgd8gqe0vNOWP8DwpYPBq+I0FsreejJcwSzcZYi7YC 1409681914
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Cong Wang <cwang@twopensource.com>
+Cc: Sabrina Dubroca <sd@queasysnail.net>, Tommi Rantala <tt.rantala@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org,
+        Dave Jones <davej@redhat.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Mailer: MessagingEngine.com Webmail Interface - ajax-73bced9a
+Subject: Re: RTNL: assertion failed at net/ipv6/addrconf.c (1699)
+Date: Tue, 02 Sep 2014 20:18:34 +0200
+In-Reply-To: <CAHA+R7Mwy1SCpEUgGf9BdLEro6N-3t89KU=xL0iuzgOppXELrQ@mail.gmail.com>
+References: <CA+ydwtoDwQVg_BWrxxdpUyJ7Up60GtxTCLYe_5vFdV2td_kGhQ@mail.gmail.com>
+ <CAHA+R7MZCDGRhSf=UuVCGQvNo03wVziZQB_X30rwNf6hmHipQA@mail.gmail.com>
+ <20140829195339.GA9780@kria> <1409363489.2980.17.camel@localhost>
+ <CAHA+R7ODa+LrdwSrS7HcBfwwq8_fpj-Ld0OCDtcOqkpCdZCvxg@mail.gmail.com>
+ <1409680684.972417.162793869.03CF8A61@webmail.messagingengine.com>
+ <CAHA+R7Mwy1SCpEUgGf9BdLEro6N-3t89KU=xL0iuzgOppXELrQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sudip Mukherjee <sudip@vectorindia.org>
+On Tue, Sep 2, 2014, at 20:04, Cong Wang wrote:
+> On Tue, Sep 2, 2014 at 10:58 AM, Hannes Frederic Sowa
+> <hannes@stressinduktion.org> wrote:
+> > Hi Cong,
+> >
+> > On Tue, Sep 2, 2014, at 18:50, Cong Wang wrote:
+> >> On Fri, Aug 29, 2014 at 6:51 PM, Hannes Frederic Sowa
+> >> <hannes@stressinduktion.org> wrote:
+> >> >
+> >> > Also rtnl_lock and rcu_read_lock compose in that order, so we don't need
+> >> > to change dev_get_by_flags, but as this is the only user it sure is
+> >> > possible. RCU locked version is just easier composeable, so I wouldn't
+> >> > touch that if needed in future, just also take rcu lock as before.
+> >>
+> >> There is no point to keep RCU read lock if we have rtnl lock,
+> >> I don't know why you don't want to change dev_get_by_flags(),
+> >> it is pretty easy to do since it only has one caller.
+> >
+> > I definitely don't have a problem cleaning this up in net-next. I wanted
+> > a minimal patch for stable because I didn't check history where and when
+> > additional users of dev_get_by_flags_rcu were removed.
+> 
+> `git grep` should show you we only have one caller. Apparently we don't
+> care about any out-of-tree module.
 
-removed unused variables
-fixed sparse warning of context imbalance in 'do_locked_client_insert'
-                         different lock contexts for basic block
+Sure, I don't care about out-of-tree modules either. I just wanted to
+make it easier to backport. Current patch is almost headache free to
+backport.
 
-Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
----
+> >> Even if you really need RCU in future, you are always welcome
+> >> to bring it back when you do, sorry we should never be blocked by
+> >> code NOT merged yet.
+> >>
+> >> >
+> >> > Also we should move ASSERT_RTNL checks from addrconf_join_solict to
+> >> > ipv6_dev_mc_inc/dec.
+> >> >
+> >>
+> >> Make it another patch.
+> >
+> > It is just one logical change, moving ASSERT_RTNLs to places where they
+> > better catch invalid callstacks.
+> >
+> 
+> Conflicts with what you claimed above. :)
 
-v1 of the patch of the patch just fixed the sparse warning.
-On suggestion of Dan Carpenter v2 is the total rewrite of the function.
-Two of the function arguments (interruptHandle,channelId) are also not used. Wanted to remove them as well , 
-but then thought maybe the original author have planned for some use of those variables.
+Those ASSERT_RTNLs were misplaced and only caught the callers mostly
+from addrconf.c. I don't mind getting reports from stable kernel users
+and fixing those, too (or help fixing those). ASSERT_RTNL is not
+dangerous.
 
- drivers/staging/unisys/uislib/uisqueue.c | 37 ++++++++------------------------
- 1 file changed, 9 insertions(+), 28 deletions(-)
+We had a long history in not correctly using rtnl lock in ipv6/multicast
+code and those wrongfully placed ASSERT_RTNLs were my bad when I fixed
+the duplicate address detection handling.
 
-diff --git a/drivers/staging/unisys/uislib/uisqueue.c b/drivers/staging/unisys/uislib/uisqueue.c
-index 63dbe7c..acfa46d 100644
---- a/drivers/staging/unisys/uislib/uisqueue.c
-+++ b/drivers/staging/unisys/uislib/uisqueue.c
-@@ -78,39 +78,20 @@ do_locked_client_insert(struct uisqueue_info *queueinfo,
- 			u64 interruptHandle, u8 *channelId)
- {
- 	unsigned long flags;
--	unsigned char queueWasEmpty;
--	unsigned int locked = 0;
--	unsigned int acquired = 0;
- 	u8 rc = 0;
- 
- 	spin_lock_irqsave(lock, flags);
--	locked = 1;
--
- 	if (!ULTRA_CHANNEL_CLIENT_ACQUIRE_OS(queueinfo->chan, channelId, NULL))
--		goto Away;
--
--	acquired = 1;
--
--	queueWasEmpty = visor_signalqueue_empty(queueinfo->chan, whichqueue);
--	if (!visor_signal_insert(queueinfo->chan, whichqueue, pSignal))
--		goto Away;
--	ULTRA_CHANNEL_CLIENT_RELEASE_OS(queueinfo->chan, channelId, NULL);
--	acquired = 0;
--
--	queueinfo->packets_sent++;
--
--	rc = 1;
--Away:
--	if (acquired) {
--		ULTRA_CHANNEL_CLIENT_RELEASE_OS(queueinfo->chan, channelId,
--						NULL);
--		acquired = 0;
--	}
--	if (locked) {
--		spin_unlock_irqrestore((spinlock_t *) lock, flags);
--		locked = 0;
-+		goto unlock;
-+	visor_signalqueue_empty(queueinfo->chan, whichqueue);
-+	/*visor_signal_insert() only return 0 or 1 */
-+	if (visor_signal_insert(queueinfo->chan, whichqueue, pSignal) == 1) {
-+		queueinfo->packets_sent++;
-+		rc = 1;
- 	}
--
-+	ULTRA_CHANNEL_CLIENT_RELEASE_OS(queueinfo->chan, channelId, NULL);
-+unlock:
-+	spin_unlock_irqrestore((spinlock_t *)lock, flags);
- 	return rc;
- }
- 
--- 
-1.8.1.2
+If enough multicast addresses are subscribed to an interface we might
+again get those splats because enabling promisc mode on an interface
+will also check for rtnl lock.
 
+Bye,
+Hannes
