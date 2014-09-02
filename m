@@ -1,144 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755467AbaIBVkp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 17:40:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9445 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755450AbaIBVkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 17:40:43 -0400
-Date: Tue, 2 Sep 2014 17:40:35 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-api@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
-        linux-audit@redhat.com, serge@hallyn.com
-Subject: Re: [PATCH V4 1/8] namespaces: assign each namespace instance a
- serial number
-Message-ID: <20140902214035.GT4462@madcap2.tricolour.ca>
-References: <cover.1408581429.git.rgb@redhat.com>
- <cover.1408581429.git.rgb@redhat.com>
- <d5bfd81a219c5c45c910494d6a3478ce83052e1f.1408581429.git.rgb@redhat.com>
- <87ioljs968.fsf@x220.int.ebiederm.org>
- <20140824203827.GI9003@madcap2.tricolour.ca>
- <87tx4wmlcj.fsf@x220.int.ebiederm.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87tx4wmlcj.fsf@x220.int.ebiederm.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755498AbaIBVlF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 17:41:05 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:56315 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755341AbaIBVlA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 17:41:00 -0400
+Message-ID: <1409694059.26422.18.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH net-next v2] net: bpf: make eBPF interpreter images
+ read-only
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Brad Spengler <spender@grsecurity.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Kees Cook <keescook@chromium.org>
+Date: Tue, 02 Sep 2014 14:40:59 -0700
+In-Reply-To: <CAMEtUuyoWELJ0Yf+=5sDKxFEfgsiQ3kMCK+Wn_bdJgS8qaH2og@mail.gmail.com>
+References: <aa5126f747594d768e0c518189a13e8674ad8ee5.1409690486.git.hannes@stressinduktion.org>
+	 <2bf2e54282097642db88e2b596b06a9ac3742883.1409690849.git.hannes@stressinduktion.org>
+	 <CAMEtUuyoWELJ0Yf+=5sDKxFEfgsiQ3kMCK+Wn_bdJgS8qaH2og@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/08/28, Eric W. Biederman wrote:
-> Richard Guy Briggs <rgb@redhat.com> writes:
-> > On 14/08/23, Eric W. Biederman wrote:
-> >> Richard Guy Briggs <rgb@redhat.com> writes:
-> >> 
-> >> > Generate and assign a serial number per namespace instance since boot.
-> >> >
-> >> > Use a serial number per namespace (unique across one boot of one kernel)
-> >> > instead of the inode number (which is claimed to have had the right to change
-> >> > reserved and is not necessarily unique if there is more than one proc fs) to
-> >> > uniquely identify it per kernel boot.
-> >> 
-> >> This approach is just broken.
-> >> 
-> >> For this to work with migration (aka criu) you need to implement a
-> >> namespace of namespaces.  You haven't done this, and therefore
-> >> such an interface will break existing userspace.
-> >> 
-> >> Inside of audit I can understand not caring about these issues,
-> >> but you go foward and expose these serial numbers in proc,
-> >> and generally make this infrastructure available to others.
-> >> 
-> >> The deep issue with migration is that we move tasks from one machine
-> >> from another and on the destination machine we need to have all of the
-> >> same global identifiers for software to function properly.
-> >> 
-> >> My weasel words around the proc inode numbers is to preserve to allow us
-> >> room to be able to restore those ids if it every becomes relevant for
-> >> migration.
-> >
-> > What do you do if the inode number is already in use on the target
-> > host?
+On Tue, 2014-09-02 at 14:31 -0700, Alexei Starovoitov wrote:
+
+> > +static inline void bpf_prog_unlock_ro(struct bpf_prog *fp)
+> > +{
+> > +       set_memory_rw((unsigned long)fp, fp->pages);
 > 
-> Since the inode numbers are relative to a superblock or a pid namespace
-> the numbers that are in use can be restored on the target system
-> by creating them in the appropriate namespace.
+> why rw is needed?
+> since fp is allocated with vmalloc, vfree doesn't need
+> to touch the pages to free them, no?
 
-So you seem to be advocating for a namespace of namespaces, since
-neither host can create a new namespace without consulting the others in
-its pool for a new free number.
+That assumes that vmalloc() do not have any debugging features, like
+poisoning content before freeing, to catch some use after free.
 
-> The support does not exist in the kernel today for doing that because no
-> one has cared but as architected the support can be added if needed to
-> support migration.
-> 
-> >> That is the proc inode numbers (technically) live in a pid namespace,
-> >> (aka a mount of proc).  So depending on the pid namespace you are in
-> >> or the mount of proc you look in the numbers could change.
-> >> 
-> >> Qualifications like that must exist to have a prayer of ever supporting
-> >> process migration in the crazy corner cases where people start caring
-> >> about inode numbers.
-> >> 
-> >> We currently don't and inode numbers for a namespace will never change
-> >> after a namespace is created.  So I think you really are ok using the
-> >> proc inode numbers.  I am happy declaring by fiat that the inode numbers
-> >> that audit uses are the numbers connected to the initial pid namespace.
-> >
-> > But once a namespace/container is migrated, it is a different audit that
-> > is looking at it (unless we create an audit manager or entity that
-> > functions at the level of a container manager), so audit should not care.
-> 
-> These numbers were exported to everyone as a general purpose facility in
-> proc.  If audit is global and audit doesn't migrate you are right it
-> doesn't matter.  However if these numbers are used by anyone else for
-> anything else it causes a problem.
+Lets be clean and safe, and give back same memory permission we had
+after vmalloc()
 
-So let us restrict their use to audit, by removing them from
-/proc/<pid>/ns/ and only exposing them via netlink calls to audit gated
-by CAP_AUDIT_WRITE or CAP_AUDIT_CONTROL.
 
-> Further given that people run entire distributions in containers we may
-> reach the point where we wish to run auditd in a container in the
-> future.  I would hate to paint ourselves into a corner with a design
-> that could never allow audit to migrate.  Support that case someday
-> seems a valid naive desire.
 
-Agreed.  That is an option we do not want to rule out at this point.
-I'll need to think about this one more.
-
-> >> At a fairly basic level anything that is used to identify namespaces for
-> >> any general purpose use needs to have most if not all of the same
-> >> properties of the proc inode numbers.  The most important of which is
-> >> being tied to some context/namespace so there is a ability if we ever
-> >> need it to migrate those numbers from one machine to another.
-> >
-> > Sooo...  does it make any sense to have those inode or serial numbers be
-> > blank inside the namespace/container itself, but only visible to its
-> > manager outside the container (unless it is the initial namespace)?
-> 
-> Mostly I think it makes sense to use the inode numbers from the initial
-> pid namespace.  They already exist.  They already are unique.  (Which
-> means I don't need to maintain more code and more special cases).  And
-> the do what you need now.
-
-Will inode numbers never be re-used once they are freed?  Guaranteed?
-
-> I probably haven't followed closely enough but I don't see what makes
-> inode numbers undesirable.
-
-This posting:
-	https://www.redhat.com/archives/linux-audit/2013-March/msg00032.html
-
-> Eric
-
-- RGB
-
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
