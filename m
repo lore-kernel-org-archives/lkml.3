@@ -1,88 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754960AbaIBRjh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 13:39:37 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:57365 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754925AbaIBRjf convert rfc822-to-8bit (ORCPT
+	id S1754919AbaIBRlT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 13:41:19 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:56266 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751739AbaIBRlR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 13:39:35 -0400
-Message-ID: <54060105.5070707@arm.com>
-Date: Tue, 02 Sep 2014 18:40:21 +0100
-From: Sudeep Holla <sudeep.holla@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 2 Sep 2014 13:41:17 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org, Alexander Shiyan <shc_work@mail.ru>
+Cc: kgene.kim@samsung.com, linux@arm.linux.org.uk, naushad@samsung.com,
+        lee.jones@linaro.org, Tomasz Figa <t.figa@samsung.com>,
+        linux-kernel@vger.kernel.org, joshi@samsung.com,
+        linux-samsung-soc@vger.kernel.org, thomas.ab@samsung.com,
+        Pankaj Dubey <pankaj.dubey@samsung.com>, vikas.sajjan@samsung.com,
+        chow.kim@samsung.com, tomasz.figa@gmail.com,
+        Michal Simek <michal.simek@xilinx.com>
+Subject: Re: [PATCH v2] mfd: syscon: Decouple syscon interface from platform devices
+Date: Tue, 02 Sep 2014 19:40:45 +0200
+Message-ID: <3685403.qLrNHfR1Kx@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1409672572.303525842@f75.i.mail.ru>
+References: <1409668935-10667-1-git-send-email-pankaj.dubey@samsung.com> <6034841.GFrG3XCMdb@wuerfel> <1409672572.303525842@f75.i.mail.ru>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Sudeep Holla <sudeep.holla@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        David Herrmann <dh.herrmann@gmail.com>, Kay Sievers <kay@vrfy.org>
-Subject: Re: [PATCH] drivers: base: add cpu_device_create to support per-cpu
- devices
-References: <CAPXgP130hg8uwdmSKAAAKZzxncT-VXYYXvmN-ta7wcXQXgXEmw@mail.gmail.com> <1408706963-23195-1-git-send-email-sudeep.holla@arm.com> <5405FCBF.2050100@arm.com> <20140902172632.GA8238@kroah.com>
-In-Reply-To: <20140902172632.GA8238@kroah.com>
-X-OriginalArrivalTime: 02 Sep 2014 17:39:32.0220 (UTC) FILETIME=[DABCB3C0:01CFC6D4]
-X-MC-Unique: 114090218393300901
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:VJrIwuWVsoD0EzK8xBerwqogmsPEZkBi5vk/Cy+OlNN
+ 3DVZHsYR+q33/yORT3dvBIeDQCIzIQC+gqCFnjMsb1Mx9F6sDO
+ Z7XxHBl99XfvQ2jJ/rEqLpz95WVbgj9ZbTN5C//U+eCMhRrp80
+ ycmq56RJ9FXLaGwexaMj/qMXEy/R2VpO+7+5iOkXPnLW3ptQsB
+ hsdxRXrdba+m39rEoqIVekUjaG6Yl3qaDoCZO4cuX+bDmL59Kt
+ ev76iPjFTbPZFeaSMh0DxqpOG9wtjaVpuCCKIC4gfF2ICo2cQF
+ 5zXmHne7kxn0sptnEC4Kqs5yZ4f38RnJ680FNlqk1lBwho057B
+ Aezp0eQamksIlRBWm4cE=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Tuesday 02 September 2014 19:42:52 Alexander Shiyan wrote:
+> > > -struct regmap *syscon_regmap_lookup_by_pdevname(const char *s)
+> > > -{
+> > > -   struct device *dev;
+> > > -   struct syscon *syscon;
+> > > -
+> > > -   dev = driver_find_device(&syscon_driver.driver, NULL, (void *)s,
+> > > -                            syscon_match_pdevname);
+> > > -   if (!dev)
+> > > -           return ERR_PTR(-EPROBE_DEFER);
+> > > -
+> > > -   syscon = dev_get_drvdata(dev);
+> > > -
+> > > -   return syscon->regmap;
+> > > -}
+> > > -EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_pdevname);
+> > 
+> > I think this can actually be left intact if that helps with clps71xx.
+> > It could be done in a hacky way using bus_find_device_by_name()
+> > to keep it simple, or in a somewhat nicer way by keeping the 
+> > syscon platform_driver around for the non-DT case.
+> 
+> It will not work anyway because the patch involves the use of
+> of_device_is_compatible(), of_iomap() etc...
 
-On 02/09/14 18:26, Greg Kroah-Hartman wrote:
-> On Tue, Sep 02, 2014 at 06:22:07PM +0100, Sudeep Holla wrote:
->> Hi Greg,
->>
->> On 22/08/14 12:29, Sudeep Holla wrote:
->>> From: Sudeep Holla <sudeep.holla@arm.com>
->>>
->>> This patch adds a new function to create per-cpu devices.
->>> This helps in:
->>> 1. reusing the device infrastructure to create any cpu related
->>>     attributes and corresponding sysfs instead of creating and
->>>     dealing with raw kobjects directly
->>> 2. retaining the legacy path(/sys/devices/system/cpu/..) to support
->>>     existing sysfs ABI
->>> 3. avoiding to create links in the bus directory pointing to the
->>>     device as there would be per-cpu instance of these devices with
->>>     the same name since dev->bus is not populated to cpu_sysbus on
->>>     purpose
->>>
->>> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
->>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->>> ---
->>>   drivers/base/cpu.c  | 54 +++++++++++++++++++++++++++++++++++++++++++++++++++++
->>>   include/linux/cpu.h |  4 ++++
->>>   2 files changed, 58 insertions(+)
->>>
->>> Hi Greg,
->>>
->>> Here is the alternate solution I could come up with instead of
->>> creating cpu class. cpu_device_create is very similar to
->>> device_create_groups_vargs w/o class support, but I could not
->>> reuse anything else to avoid creating similar function.
->>>
->>> Let me know your thoughts/suggestions on this.
->>>
->>
->> Any feedback on this ? If ok, I will respin cacheinfo series removing
->> cpu class creation with this patch.
->
-> Please address the issues others have already raised.
->
+What I meant was to have the pdevname stuff keep working the way
+it does today. At that point, you essentially have two completely
+independent drivers, one that registers a platform driver and
+provides syscon_regmap_lookup_by_pdevname, and one that provides
+the other interfaces using DT lookup.
 
-If you meant issues raised on cacheinfo series, I have addressed them
-already in v3(raised by you, Stephen Boyd, Mark and Russell). I have
-retained hotplug notifiers which Stephen wanted to remove as I don't
-know if that's acceptable on all the architectures.
-
-I posted this single patch as a replacement to the patch creating cpu
-class as Kay and David suggested that we can't have class and bus with
-same name.
-
-Regards,
-Sudeep
-
+	Arnd
