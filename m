@@ -1,75 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754356AbaIBQNc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 12:13:32 -0400
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:44552 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751850AbaIBQNa (ORCPT
+	id S1754476AbaIBQOt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 12:14:49 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:63232 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751739AbaIBQOs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 12:13:30 -0400
-From: Laurent Dufour <ldufour@linux.vnet.ibm.com>
-To: linuxppc-dev@lists.ozlabs.org
-Cc: kvm@vger.kernel.org, kvm-ppc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        pbonzini@redhat.com, Laurent Dufour <ldufour@linux.vnet.ibm.com>,
-        Alexey Kardashevskiy <aik@ozlabs.ru>,
-        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH] powerpc/kvm/cma: Fix panic introduces by signed shift operation
-Date: Tue,  2 Sep 2014 18:13:01 +0200
-Message-Id: <1409674381-29465-1-git-send-email-ldufour@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.9.1
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14090216-2966-0000-0000-000000FF83D3
+	Tue, 2 Sep 2014 12:14:48 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Mark Brown <broonie@kernel.org>, Chris Zhong <zyw@rock-chips.com>
+Cc: Sonny Rao <sonnyrao@chromium.org>, Heiko Stuebner <heiko@sntech.de>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org,
+        Doug Anderson <dianders@chromium.org>, mark.rutland@arm.com,
+        devicetree@vger.kernel.org, pawel.moll@arm.com,
+        ijc+devicetree@hellion.org.uk, zhangqing@rock-chips.com,
+        lgirdwood@gmail.com, robh+dt@kernel.org, linux-kernel@vger.kernel.org,
+        galak@codeaurora.org
+Subject: [PATCH 0/2] Add input supplies to rk808 regulator
+Date: Tue,  2 Sep 2014 09:14:27 -0700
+Message-Id: <1409674469-12123-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fc95ca7284bc54953165cba76c3228bd2cdb9591 introduces a memset in
-kvmppc_alloc_hpt since the general CMA doesn't clear the memory it
-allocates.
+We want to specify the input supplies to the rk808 regulator.  This
+patch series adds them to the driver.  Note that the bindings are
+based atop Chris's most recent version at
+<https://patchwork.kernel.org/patch/4817931/>.  If the regulator patch
+is applied before Chris sends out his next version then I think Chris
+could squash my bindings change (patch 2) into his next version.
 
-However, the size argument passed to memset is computed from a signed value
-and its signed bit is extended by the cast the compiler is doing. This lead
-to extremely large size value when dealing with order value >= 31, and
-almost all the memory following the allocated space is cleaned. As a
-consequence, the system is panicing and may even fail spawning the kdump
-kernel.
 
-This fix makes use of an unsigned value for the memset's size argument to
-avoid sign extension. Among this fix, another shift operation which may
-lead to signed extended value too is also fixed.
+Doug Anderson (2):
+  regulator: RK808: Add proper input supplies for rk808
+  dt-bindings: Add input supplies to rk808 bindings
 
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Alexander Graf <agraf@suse.de>
-Cc: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Laurent Dufour <ldufour@linux.vnet.ibm.com>
----
- arch/powerpc/kvm/book3s_64_mmu_hv.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ Documentation/devicetree/bindings/mfd/rk808.txt | 11 +++++++++++
+ drivers/regulator/rk808-regulator.c             | 15 ++++++++++++++-
+ 2 files changed, 25 insertions(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/kvm/book3s_64_mmu_hv.c b/arch/powerpc/kvm/book3s_64_mmu_hv.c
-index 72c20bb16d26..79294c4c5015 100644
---- a/arch/powerpc/kvm/book3s_64_mmu_hv.c
-+++ b/arch/powerpc/kvm/book3s_64_mmu_hv.c
-@@ -62,10 +62,10 @@ long kvmppc_alloc_hpt(struct kvm *kvm, u32 *htab_orderp)
- 	}
- 
- 	kvm->arch.hpt_cma_alloc = 0;
--	page = kvm_alloc_hpt(1 << (order - PAGE_SHIFT));
-+	page = kvm_alloc_hpt(1ul << (order - PAGE_SHIFT));
- 	if (page) {
- 		hpt = (unsigned long)pfn_to_kaddr(page_to_pfn(page));
--		memset((void *)hpt, 0, (1 << order));
-+		memset((void *)hpt, 0, (1ul << order));
- 		kvm->arch.hpt_cma_alloc = 1;
- 	}
- 
 -- 
-1.9.1
+2.1.0.rc2.206.gedb03e5
 
