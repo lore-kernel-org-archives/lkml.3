@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755619AbaIBWe1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 18:34:27 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:54969 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755496AbaIBWdZ (ORCPT
+	id S1755670AbaIBWe4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 18:34:56 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:42705 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755445AbaIBWdW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 18:33:25 -0400
+	Tue, 2 Sep 2014 18:33:22 -0400
 From: behanw@converseincode.com
 To: agk@redhat.com, clm@fb.com, davem@davemloft.net, dm-devel@redhat.com,
         fabf@skynet.be, herbert@gondor.apana.org.au, jbacik@fb.com,
@@ -20,9 +20,9 @@ Cc: akpm@linux-foundation.org, james.l.morris@oracle.com,
         =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
         Behan Webster <behanw@converseincode.com>,
         Mark Charlebois <charlebm@gmail.com>
-Subject: [PATCH RFC 6/6] btrfs: LLVMLinux: Remove VLAIS
-Date: Tue,  2 Sep 2014 15:32:33 -0700
-Message-Id: <1409697153-7006-7-git-send-email-behanw@converseincode.com>
+Subject: [PATCH RFC 5/6] apparmor: LLVMLinux: Remove VLAIS
+Date: Tue,  2 Sep 2014 15:32:32 -0700
+Message-Id: <1409697153-7006-6-git-send-email-behanw@converseincode.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1409697153-7006-1-git-send-email-behanw@converseincode.com>
 References: <1409697153-7006-1-git-send-email-behanw@converseincode.com>
@@ -40,11 +40,11 @@ compliant equivalent. This is the original VLAIS struct.
 
 struct {
 	struct shash_desc shash;
-	char ctx[crypto_shash_descsize(tfm)];
+	char ctx[crypto_shash_descsize(apparmor_tfm)];
 } desc;
 
-This patch instead allocates the appropriate amount of memory using an char
-array.
+This patch instead allocates the appropriate amount of memory using an
+char array.
 
 The new code can be compiled with both gcc and clang.
 
@@ -64,41 +64,53 @@ Signed-off-by: Behan Webster <behanw@converseincode.com>
 Signed-off-by: Vinícius Tinti <viniciustinti@gmail.com>
 Signed-off-by: Mark Charlebois <charlebm@gmail.com>
 ---
- fs/btrfs/hash.c | 18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ security/apparmor/crypto.c | 19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
 
-diff --git a/fs/btrfs/hash.c b/fs/btrfs/hash.c
-index 85889aa..2fdacda 100644
---- a/fs/btrfs/hash.c
-+++ b/fs/btrfs/hash.c
-@@ -33,18 +33,18 @@ void btrfs_hash_exit(void)
- 
- u32 btrfs_crc32c(u32 crc, const void *address, unsigned int length)
+diff --git a/security/apparmor/crypto.c b/security/apparmor/crypto.c
+index 532471d..62b32e7 100644
+--- a/security/apparmor/crypto.c
++++ b/security/apparmor/crypto.c
+@@ -32,10 +32,9 @@ unsigned int aa_hash_size(void)
+ int aa_calc_profile_hash(struct aa_profile *profile, u32 version, void *start,
+ 			 size_t len)
  {
 -	struct {
 -		struct shash_desc shash;
--		char ctx[crypto_shash_descsize(tfm)];
+-		char ctx[crypto_shash_descsize(apparmor_tfm)];
 -	} desc;
 +	char desc[sizeof(struct shash_desc)
-+		+ crypto_shash_descsize(tfm)] CRYPTO_MINALIGN_ATTR;
++		+ crypto_shash_descsize(apparmor_tfm)] CRYPTO_MINALIGN_ATTR;
 +	struct shash_desc *shash = (struct shash_desc *)desc;
-+	u32 *ctx = (u32 *)shash_desc_ctx(shash);
- 	int err;
+ 	int error = -ENOMEM;
+ 	u32 le32_version = cpu_to_le32(version);
  
--	desc.shash.tfm = tfm;
+@@ -46,19 +45,19 @@ int aa_calc_profile_hash(struct aa_profile *profile, u32 version, void *start,
+ 	if (!profile->hash)
+ 		goto fail;
+ 
+-	desc.shash.tfm = apparmor_tfm;
 -	desc.shash.flags = 0;
--	*(u32 *)desc.ctx = crc;
-+	shash->tfm = tfm;
++	shash->tfm = apparmor_tfm;
 +	shash->flags = 0;
-+	*ctx = crc;
  
--	err = crypto_shash_update(&desc.shash, address, length);
-+	err = crypto_shash_update(shash, address, length);
- 	BUG_ON(err);
+-	error = crypto_shash_init(&desc.shash);
++	error = crypto_shash_init(shash);
+ 	if (error)
+ 		goto fail;
+-	error = crypto_shash_update(&desc.shash, (u8 *) &le32_version, 4);
++	error = crypto_shash_update(shash, (u8 *) &le32_version, 4);
+ 	if (error)
+ 		goto fail;
+-	error = crypto_shash_update(&desc.shash, (u8 *) start, len);
++	error = crypto_shash_update(shash, (u8 *) start, len);
+ 	if (error)
+ 		goto fail;
+-	error = crypto_shash_final(&desc.shash, profile->hash);
++	error = crypto_shash_final(shash, profile->hash);
+ 	if (error)
+ 		goto fail;
  
--	return *(u32 *)desc.ctx;
-+	return *ctx;
- }
 -- 
 1.9.1
 
