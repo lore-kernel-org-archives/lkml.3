@@ -1,116 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753132AbaIBXvy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 19:51:54 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:55935 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752980AbaIBXvw (ORCPT
+	id S1753368AbaIBX6e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 19:58:34 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:46646 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753225AbaIBX6c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 19:51:52 -0400
-Message-ID: <54065208.3080309@gmail.com>
-Date: Tue, 02 Sep 2014 16:26:00 -0700
-From: Rajat Jain <rajatxjain@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rajat Jain <rajatjain@juniper.net>, Guenter Roeck <groeck@juniper.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Richard Yang <weiyang@linux.vnet.ibm.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v2] pci/probe: Enable CRS for root port if it is supported
-References: <53FFA54D.9000907@gmail.com> <CAErSpo5_WMUmnTHpPZt+j04VZoiW1pthQoGV90A5BDQpQgjwOQ@mail.gmail.com>
-In-Reply-To: <CAErSpo5_WMUmnTHpPZt+j04VZoiW1pthQoGV90A5BDQpQgjwOQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Tue, 2 Sep 2014 19:58:32 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Asutosh Das <asutoshd@codeaurora.org>,
+        Venkat Gopalakrishnan <venkatg@codeaurora.org>,
+        Georgi Djakov <gdjakov@mm-sol.com>
+Subject: [PATCH] mmc: sdhci-msm: Make tuning block table endian agnostic
+Date: Tue,  2 Sep 2014 16:58:28 -0700
+Message-Id: <1409702308-3023-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 2.1.0.rc2.4.g1a517f0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If we're tuning on a big-endian CPU we'll never determine we properly
+tuned the device because we compare the data we received from the
+controller with a table that assumes the CPU is little-endian.
+Change the table to be an array of bytes instead of 32-bit words
+so we can use memcmp() without needing to byte-swap every word
+depending on the endianess of the CPU.
 
-As per the PCIe spec, an endpoint may return the configuration cycles
-with CRS if it is not yet fully ready to be accessed. If the CRS visibility
-is not enabled at the root port, the spec leaves the retry behaviour open
-to implementation in such a case. The Intel root ports have chosen to retry
-endlessly in this situation. Thus, the root controller may "hang" (repeatedly
-retrying the configuration requests until it gets a status other than CRS) if
-a device returns CRS for a long time. This can cause a broken endpoint to bring
-down the whole PCI hierarchy.
-
-This was recently known to cause problems on Intel systems and
-was discussed here:
-http://marc.info/?t=140926298500002&r=1&w=2
-
-Ref1:
-https://www.pcisig.com/specifications/pciexpress/ECN_CRS_Software_Visibility_No27.pdf
-
-Ref2:
-PCIe spec V3.0, pg119, pg127 for "Configuration Request Retry Status"
-
-Thus enable the CRS visibility for the root ports that support it. This
-patch reverts the following commit, but enables CRS visibility only
-when the root port supports it:
-
-ad7edfe04908 ("[PCI] Do not enable CRS Software Visibility by default")
-
-(Linus' response: http://marc.info/?l=linux-pci&m=140968622520192&w=2)
-
-Signed-off-by: Rajat Jain <rajatxjain@gmail.com>
-Signed-off-by: Rajat Jain <rajatjain@juniper.net>
-Signed-off-by: Guenter Roeck <groeck@juniper.net>
+Cc: Asutosh Das <asutoshd@codeaurora.org>
+Cc: Venkat Gopalakrishnan <venkatg@codeaurora.org>
+Cc: Georgi Djakov <gdjakov@mm-sol.com>
+Fixes: 415b5a75da43 "mmc: sdhci-msm: Add platform_execute_tuning implementation"
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
-v2: Remove the white list, that was enabling the CRS for certain known Intel systems.
-    Rather now enable it for all systems that support this capability.
-v1: Enable CRS for only some given Intel systems (maintain a whitelist)
+ drivers/mmc/host/sdhci-msm.c | 42 +++++++++++++++++++++++++++---------------
+ 1 file changed, 27 insertions(+), 15 deletions(-)
 
- drivers/pci/probe.c           |   13 +++++++++++++
- include/uapi/linux/pci_regs.h |    1 +
- 2 files changed, 14 insertions(+)
-
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index e3cf8a2..3c4c35c 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -740,6 +740,17 @@ struct pci_bus *pci_add_new_bus(struct pci_bus *parent, struct pci_dev *dev,
- }
- EXPORT_SYMBOL(pci_add_new_bus);
+diff --git a/drivers/mmc/host/sdhci-msm.c b/drivers/mmc/host/sdhci-msm.c
+index 40573a58486a..5aabffc15ae8 100644
+--- a/drivers/mmc/host/sdhci-msm.c
++++ b/drivers/mmc/host/sdhci-msm.c
+@@ -47,22 +47,34 @@
+ #define CMUX_SHIFT_PHASE_SHIFT	24
+ #define CMUX_SHIFT_PHASE_MASK	(7 << CMUX_SHIFT_PHASE_SHIFT)
  
-+static void pci_enable_crs(struct pci_dev *pdev)
-+{
-+	u16 root_cap = 0;
-+
-+	/* Enable CRS Software visibility if supported */
-+	pcie_capability_read_word(pdev, PCI_EXP_RTCAP, &root_cap);
-+	if (root_cap & PCI_EXP_RTCAP_CRSVIS)
-+		pcie_capability_set_word(pdev, PCI_EXP_RTCTL,
-+					 PCI_EXP_RTCTL_CRSSVE);
-+}
-+
- /*
-  * If it's a bridge, configure it and scan the bus behind it.
-  * For CardBus bridges, we don't scan behind as the devices will
-@@ -787,6 +798,8 @@ int pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max, int pass)
- 	pci_write_config_word(dev, PCI_BRIDGE_CONTROL,
- 			      bctl & ~PCI_BRIDGE_CTL_MASTER_ABORT);
+-static const u32 tuning_block_64[] = {
+-	0x00ff0fff, 0xccc3ccff, 0xffcc3cc3, 0xeffefffe,
+-	0xddffdfff, 0xfbfffbff, 0xff7fffbf, 0xefbdf777,
+-	0xf0fff0ff, 0x3cccfc0f, 0xcfcc33cc, 0xeeffefff,
+-	0xfdfffdff, 0xffbfffdf, 0xfff7ffbb, 0xde7b7ff7
++static const u8 tuning_block_64[] = {
++	0xff, 0x0f, 0xff, 0x00, 0xff, 0xcc, 0xc3, 0xcc,
++	0xc3, 0x3c, 0xcc, 0xff, 0xfe, 0xff, 0xfe, 0xef,
++	0xff, 0xdf, 0xff, 0xdd, 0xff, 0xfb, 0xff, 0xfb,
++	0xbf, 0xff, 0x7f, 0xff, 0x77, 0xf7, 0xbd, 0xef,
++	0xff, 0xf0, 0xff, 0xf0, 0x0f, 0xfc, 0xcc, 0x3c,
++	0xcc, 0x33, 0xcc, 0xcf, 0xff, 0xef, 0xff, 0xee,
++	0xff, 0xfd, 0xff, 0xfd, 0xdf, 0xff, 0xbf, 0xff,
++	0xbb, 0xff, 0xf7, 0xff, 0xf7, 0x7f, 0x7b, 0xde,
+ };
  
-+	pci_enable_crs(dev);
-+
- 	if ((secondary || subordinate) && !pcibios_assign_all_busses() &&
- 	    !is_cardbus && !broken) {
- 		unsigned int cmax;
-diff --git a/include/uapi/linux/pci_regs.h b/include/uapi/linux/pci_regs.h
-index 30db069..a75106d 100644
---- a/include/uapi/linux/pci_regs.h
-+++ b/include/uapi/linux/pci_regs.h
-@@ -552,6 +552,7 @@
- #define  PCI_EXP_RTCTL_PMEIE	0x0008	/* PME Interrupt Enable */
- #define  PCI_EXP_RTCTL_CRSSVE	0x0010	/* CRS Software Visibility Enable */
- #define PCI_EXP_RTCAP		30	/* Root Capabilities */
-+#define  PCI_EXP_RTCAP_CRSVIS	0x0001	/* CRS software visibility capability */
- #define PCI_EXP_RTSTA		32	/* Root Status */
- #define PCI_EXP_RTSTA_PME	0x00010000 /* PME status */
- #define PCI_EXP_RTSTA_PENDING	0x00020000 /* PME pending */
+-static const u32 tuning_block_128[] = {
+-	0xff00ffff, 0x0000ffff, 0xccccffff, 0xcccc33cc,
+-	0xcc3333cc, 0xffffcccc, 0xffffeeff, 0xffeeeeff,
+-	0xffddffff, 0xddddffff, 0xbbffffff, 0xbbffffff,
+-	0xffffffbb, 0xffffff77, 0x77ff7777, 0xffeeddbb,
+-	0x00ffffff, 0x00ffffff, 0xccffff00, 0xcc33cccc,
+-	0x3333cccc, 0xffcccccc, 0xffeeffff, 0xeeeeffff,
+-	0xddffffff, 0xddffffff, 0xffffffdd, 0xffffffbb,
+-	0xffffbbbb, 0xffff77ff, 0xff7777ff, 0xeeddbb77
++static const u8 tuning_block_128[] = {
++	0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00, 0x00,
++	0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc, 0xcc,
++	0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff, 0xff,
++	0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee, 0xff,
++	0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd, 0xdd,
++	0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff, 0xbb,
++	0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff, 0xff,
++	0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee, 0xff,
++	0xff, 0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00,
++	0x00, 0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc,
++	0xcc, 0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff,
++	0xff, 0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee,
++	0xff, 0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd,
++	0xdd, 0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff,
++	0xbb, 0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff,
++	0xff, 0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee,
+ };
+ 
+ struct sdhci_msm_host {
+@@ -359,7 +371,7 @@ static int sdhci_msm_execute_tuning(struct sdhci_host *host, u32 opcode)
+ {
+ 	int tuning_seq_cnt = 3;
+ 	u8 phase, *data_buf, tuned_phases[16], tuned_phase_cnt = 0;
+-	const u32 *tuning_block_pattern = tuning_block_64;
++	const u8 *tuning_block_pattern = tuning_block_64;
+ 	int size = sizeof(tuning_block_64);	/* Pattern size in bytes */
+ 	int rc;
+ 	struct mmc_host *mmc = host->mmc;
 -- 
-1.7.9.5
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
