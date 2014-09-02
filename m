@@ -1,157 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755253AbaIBVGh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 17:06:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14336 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754164AbaIBVGf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 17:06:35 -0400
-Message-ID: <1409691941.3804.133.camel@ul30vt.home>
-Subject: Re: [RFC v2 0/9] KVM-VFIO IRQ forward control
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Eric Auger <eric.auger@linaro.org>
-Cc: eric.auger@st.com, christoffer.dall@linaro.org, marc.zyngier@arm.com,
-        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
-        kvm@vger.kernel.org, joel.schopp@amd.com, kim.phillips@freescale.com,
-        paulus@samba.org, gleb@kernel.org, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, patches@linaro.org, will.deacon@arm.com,
-        a.motakis@virtualopensystems.com, a.rigo@virtualopensystems.com,
-        john.liuli@huawei.com
-Date: Tue, 02 Sep 2014 15:05:41 -0600
-In-Reply-To: <1409575968-5329-1-git-send-email-eric.auger@linaro.org>
-References: <1409575968-5329-1-git-send-email-eric.auger@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755295AbaIBVIB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 17:08:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39914 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753710AbaIBVH6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 17:07:58 -0400
+Date: Tue, 2 Sep 2014 14:07:17 -0700
+From: "tip-bot for David E. Box" <tipbot@zytor.com>
+Message-ID: <tip-aa8e4f22ab7773352ba3895597189b8097f2c307@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        david.e.box@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        david.e.box@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1409175640-32426-2-git-send-email-david.e.box@linux.intel.com>
+References: <1409175640-32426-2-git-send-email-david.e.box@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/platform] x86/iosf:
+  Add Kconfig prompt for IOSF_MBI selection
+Git-Commit-ID: aa8e4f22ab7773352ba3895597189b8097f2c307
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-09-01 at 14:52 +0200, Eric Auger wrote:
-> This RFC proposes an integration of "ARM: Forwarding physical
-> interrupts to a guest VM" (http://lwn.net/Articles/603514/) in
-> KVM.
-> 
-> It enables to transform a VFIO platform driver IRQ into a forwarded
-> IRQ. The direct benefit is that, for a level sensitive IRQ, a VM
-> switch can be avoided on guest virtual IRQ completion. Before this
-> patch, a maintenance IRQ was triggered on the virtual IRQ completion.
-> 
-> When the IRQ is forwarded, the VFIO platform driver does not need to
-> disable the IRQ anymore. Indeed when returning from the IRQ handler
-> the IRQ is not deactivated. Only its priority is lowered. This means
-> the same IRQ cannot hit before the guest completes the virtual IRQ
-> and the GIC automatically deactivates the corresponding physical IRQ.
-> 
-> Besides, the injection still is based on irqfd triggering. The only
-> impact on irqfd process is resamplefd is not called anymore on
-> virtual IRQ completion since this latter becomes "transparent".
-> 
-> The current integration is based on an extension of the KVM-VFIO
-> device, previously used by KVM to interact with VFIO groups. The
-> patch serie now enables KVM to directly interact with a VFIO
-> platform device. The VFIO external API was extended for that purpose.
-> 
-> Th KVM-VFIO device can get/put the vfio platform device, check its
-> integrity and type, get the IRQ number associated to an IRQ index.
-> 
-> The IRQ forward programming is architecture specific (virtual interrupt
-> controller programming basically). However the whole infrastructure is
-> kept generic.
-> 
-> from a user point of view, the functionality is provided through new
-> KVM-VFIO device commands, KVM_DEV_VFIO_DEVICE_(UN)FORWARD_IRQ
-> and the capability can be checked with KVM_HAS_DEVICE_ATTR.
-> Assignment can only be changed when the physical IRQ is not active.
-> It is the responsability of the user to do this check.
-> 
-> This patch serie has the following dependencies:
-> - "ARM: Forwarding physical interrupts to a guest VM"
->   (http://lwn.net/Articles/603514/) in
-> - [PATCH v3] irqfd for ARM
-> - and obviously the VFIO platform driver serie:
->   [RFC PATCH v6 00/20] VFIO support for platform devices on ARM
->   https://www.mail-archive.com/kvm@vger.kernel.org/msg103247.html
-> 
-> Integrated pieces can be found at
-> ssh://git.linaro.org/people/eric.auger/linux.git
-> on branch 3.17rc3_irqfd_forward_integ_v2
-> 
-> This was was tested on Calxeda Midway, assigning the xgmac main IRQ.
-> 
-> v1 -> v2:
-> - forward control is moved from architecture specific file into generic
->   vfio.c module.
->   only kvm_arch_set_fwd_state remains architecture specific
-> - integrate Kim's patch which enables KVM-VFIO for ARM
-> - fix vgic state bypass in vgic_queue_hwirq
-> - struct kvm_arch_forwarded_irq moved from arch/arm/include/uapi/asm/kvm.h
->   to include/uapi/linux/kvm.h
->   also irq_index renamed into index and guest_irq renamed into gsi
-> - ASSIGN/DEASSIGN renamed into FORWARD/UNFORWARD
-> - vfio_external_get_base_device renamed into vfio_external_base_device
-> - vfio_external_get_type removed
-> - kvm_vfio_external_get_base_device renamed into kvm_vfio_external_base_device
-> - __KVM_HAVE_ARCH_KVM_VFIO renamed into __KVM_HAVE_ARCH_KVM_VFIO_FORWARD
-> 
-> Eric Auger (8):
->   KVM: ARM: VGIC: fix multiple injection of level sensitive forwarded
->     IRQ
->   KVM: ARM: VGIC: add forwarded irq rbtree lock
->   VFIO: platform: handler tests whether the IRQ is forwarded
->   KVM: KVM-VFIO: update user API to program forwarded IRQ
->   VFIO: Extend external user API
->   KVM: KVM-VFIO: add new VFIO external API hooks
->   KVM: KVM-VFIO: generic KVM_DEV_VFIO_DEVICE command and IRQ forwarding
->     control
->   KVM: KVM-VFIO: ARM forwarding control
-> 
-> Kim Phillips (1):
->   ARM: KVM: Enable the KVM-VFIO device
-> 
->  Documentation/virtual/kvm/devices/vfio.txt |  26 ++
->  arch/arm/include/asm/kvm_host.h            |   7 +
->  arch/arm/kvm/Kconfig                       |   1 +
->  arch/arm/kvm/Makefile                      |   4 +-
->  arch/arm/kvm/kvm_vfio_arm.c                |  85 +++++
->  drivers/vfio/platform/vfio_platform_irq.c  |   7 +-
->  drivers/vfio/vfio.c                        |  24 ++
->  include/kvm/arm_vgic.h                     |   1 +
->  include/linux/kvm_host.h                   |  27 ++
->  include/linux/vfio.h                       |   3 +
->  include/uapi/linux/kvm.h                   |   9 +
->  virt/kvm/arm/vgic.c                        |  59 +++-
->  virt/kvm/vfio.c                            | 497 ++++++++++++++++++++++++++++-
->  13 files changed, 733 insertions(+), 17 deletions(-)
->  create mode 100644 arch/arm/kvm/kvm_vfio_arm.c
-> 
+Commit-ID:  aa8e4f22ab7773352ba3895597189b8097f2c307
+Gitweb:     http://git.kernel.org/tip/aa8e4f22ab7773352ba3895597189b8097f2c307
+Author:     David E. Box <david.e.box@linux.intel.com>
+AuthorDate: Wed, 27 Aug 2014 14:40:39 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 27 Aug 2014 14:48:33 -0700
 
-Have we ventured too far in the other direction?  I suppose what I was
-hoping to see was something more like:
+x86/iosf: Add Kconfig prompt for IOSF_MBI selection
 
-	case KVM_DEV_VFIO_DEVICE_FORWARD_IRQ:{
+Fixes an error in having the iosf build as 'default m'. On X86 SoC's the iosf
+sideband is the only way to access information for some registers, as opposed to
+through MSR's on other Intel architectures. While selecting IOSF_MBI is
+preferred, it does mean carrying extra code on non-SoC architectures. This
+exports the selection to the user, allowing those driver writers to compile out
+iosf code if it's not being built.
 
-		/* get vfio_device */
+Signed-off-by: David E. Box <david.e.box@linux.intel.com>
+Link: http://lkml.kernel.org/r/1409175640-32426-2-git-send-email-david.e.box@linux.intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/Kconfig | 14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
-		/* get mutex */
-
-		/* verify device+irq isn't already forwarded */
-
-		/* allocate device/forwarded irq */
-
-		/* get struct device */
-
-		/* callout to arch code passing struct device, gsi, ... */
-
-		/* if success, add to kv, else free and error */
-
-		/* mutex unlock */
-	}
-
-Exposing the internal mutex out to arch code, as in v1, was an
-indication that we were pushing too much out to arch code, but including
-platform_device.h into virt/kvm/vfio.c tells me we're still not
-abstracting at the right point.  Thanks,
-
-Alex
-
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 5d0bf1a..a99988f 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -2433,9 +2433,19 @@ config X86_DMA_REMAP
+ 	depends on STA2X11
+ 
+ config IOSF_MBI
+-	tristate
+-	default m
++	tristate "Intel System On Chip IOSF Sideband support"
+ 	depends on PCI
++	---help---
++	  Enables sideband access to mailbox registers on SoC's. The sideband is
++	  available on the following platforms. This list is not meant to be
++	  exclusive.
++	   - BayTrail
++	   - Cherryview
++	   - Braswell
++	   - Quark
++
++	  You should say Y if you are running a kernel on one of these
++	  platforms.
+ 
+ config PMC_ATOM
+ 	def_bool y
