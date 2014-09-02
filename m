@@ -1,86 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753148AbaIBI0q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 04:26:46 -0400
-Received: from mail.fireflyinternet.com ([87.106.93.118]:58028 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750722AbaIBI0n (ORCPT
+	id S1753183AbaIBI2J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 04:28:09 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:43918 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751421AbaIBI2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 04:26:43 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.65.138;
-Date: Tue, 2 Sep 2014 09:26:35 +0100
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
-Cc: Jani Nikula <jani.nikula@linux.intel.com>, intel-gfx@lists.freedesktop.org,
-        David Airlie <airlied@linux.ie>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
-        Tibor Billes <tbilles@gmx.com>
-Subject: Re: [PATCH v2] drm/i915: Fix lock dropping in intel_tv_detect()
-Message-ID: <20140902082635.GA25238@nuc-i3427.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>,
-	Jani Nikula <jani.nikula@linux.intel.com>,
-	intel-gfx@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
-	Daniel Vetter <daniel.vetter@ffwll.ch>,
-	linux-kernel@vger.kernel.org, Tibor Billes <tbilles@gmx.com>
-References: <20140901085022.GB11648@nuc-i3427.alporthouse.com>
- <1409566060-21337-1-git-send-email-ville.syrjala@linux.intel.com>
- <20140901102009.GD11648@nuc-i3427.alporthouse.com>
- <20140901103637.GB4193@intel.com>
- <20140901104356.GE11648@nuc-i3427.alporthouse.com>
- <87egvuii5q.fsf@intel.com>
- <20140902081612.GH4193@intel.com>
+	Tue, 2 Sep 2014 04:28:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140902081612.GH4193@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5404AE56.80801@arm.com>
+References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
+	<1409583475-6978-14-git-send-email-hanjun.guo@linaro.org>
+	<5404AE56.80801@arm.com>
+Date: Tue, 2 Sep 2014 10:28:00 +0200
+Message-ID: <CAJRNFKKziDydj_HFPam6e+FSZr6D3XPUQ+-iuH0a1Bbh3+Kz3A@mail.gmail.com>
+Subject: Re: [Linaro-acpi] [PATCH v3 13/17] ARM64 / ACPI: Add GICv2 specific
+ ACPI boot support
+From: Alexander Spyridakis <a.spyridakis@virtualopensystems.com>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: Hanjun Guo <hanjun.guo@linaro.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>, Lv Zheng <lv.zheng@intel.com>,
+        Rob Herring <robh@kernel.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Robert Moore <robert.moore@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Arnd Bergmann <arnd@arndb.de>, Liviu Dudau <Liviu.Dudau@arm.com>,
+        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 02, 2014 at 11:16:12AM +0300, Ville Syrjälä wrote:
-> On Tue, Sep 02, 2014 at 10:41:05AM +0300, Jani Nikula wrote:
-> > On Mon, 01 Sep 2014, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> > > On Mon, Sep 01, 2014 at 01:36:37PM +0300, Ville Syrjälä wrote:
-> > >> On Mon, Sep 01, 2014 at 11:20:09AM +0100, Chris Wilson wrote:
-> > >> > On Mon, Sep 01, 2014 at 01:07:40PM +0300, ville.syrjala@linux.intel.com wrote:
-> > >> > > From: Ville Syrjälä <ville.syrjala@linux.intel.com>
-> > >> > > 
-> > >> > > When intel_tv_detect() fails to do load detection it would forget to
-> > >> > > drop the locks and clean up the acquire context. Fix it up.
-> > >> > > 
-> > >> > > This is a regression from:
-> > >> > >  commit 208bf9fdcd3575aa4a5d48b3e0295f7cdaf6fc44
-> > >> > >  Author: Ville Syrjälä <ville.syrjala@linux.intel.com>
-> > >> > >  Date:   Mon Aug 11 13:15:35 2014 +0300
-> > >> > > 
-> > >> > >     drm/i915: Fix locking for intel_enable_pipe_a()
-> > >> > > 
-> > >> > > v2: Make the code more readable (Chris)
-> > >> > > 
-> > >> > > Cc: Tibor Billes <tbilles@gmx.com>
-> > >> > > Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-> > >> > 
-> > >> > Hmm, if we use WARN_ON() you should init type.
-> > >> 
-> > >> type is always set in the branch that sets status=connected.
-> > >
-> > > Back to thinking about readability and making sure that the WARN_ON
-> > > never happens with just a glance. Otherwise, the WARN_ON would be better
-> > > as WARN_ON(unsigned)type >= last_tv_type); Or something. Anway, take
-> > > your pick and slap my r-b on it. :)
-> > 
-> > Ville?
-> 
-> I don't know anymore. Just kill the WARN_ON() if it makes things
-> confusing?
+On 1 September 2014 19:35, Marc Zyngier <marc.zyngier@arm.com> wrote:
+>
+> On 01/09/14 15:57, Hanjun Guo wrote:
+> > From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+> >
+> > ACPI kernel uses MADT table for proper GIC initialization. It needs to
+> > parse GIC related subtables, collect CPU interface and distributor
+> > addresses and call driver initialization function (which is hardware
+> > abstraction agnostic). In a similar way, FDT initialize GICv1/2.
+> >
+> > NOTE: This commit allow to initialize GICv1/2 only.
+>
+> I cannot help but notice that there is no support for KVM here. It'd be
+> good to add a note to that effect, so that people do not expect
+> virtualization support to be working when booting with ACPI.
 
-Just drop the WARN_ON. I prefer the if() using the status rather than
-type, as that seems more idiomatic (when looking at our other detection
-routines).
--Chris
+Just a heads up for this, I run up to this problem too while testing
+and by forcing some values for vgic and arch_timers I could boot a
+QEMU guest without problems.
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+I'll try and see if it will be easy to handle this more properly
+instead of hardcoded values.
+
+Regards.
