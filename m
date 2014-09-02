@@ -1,72 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753736AbaIBLh2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 07:37:28 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:40022 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753198AbaIBLhM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 07:37:12 -0400
-Date: Tue, 2 Sep 2014 12:36:55 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Colin Cross <ccross@android.com>, kernel-team@android.com,
-        Rob Herring <robherring2@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Nicolas Pitre <nico@linaro.org>
-Subject: Re: [PATCH v10 03/19] arm: fiq: Replace default FIQ handler
-Message-ID: <20140902113655.GO30401@n2100.arm.linux.org.uk>
-References: <1408369264-14242-1-git-send-email-daniel.thompson@linaro.org> <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org> <1408466769-20004-4-git-send-email-daniel.thompson@linaro.org> <20140819173742.GG30401@n2100.arm.linux.org.uk> <53F39377.1070308@linaro.org> <20140828150112.GD30401@n2100.arm.linux.org.uk> <53FF50B1.20009@linaro.org> <20140828161551.GC5001@linux.vnet.ibm.com> <5405A3EF.60908@linaro.org>
+	id S1753535AbaIBLjV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 07:39:21 -0400
+Received: from sauhun.de ([89.238.76.85]:54071 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752518AbaIBLjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 07:39:19 -0400
+Date: Tue, 2 Sep 2014 13:01:59 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Addy Ke <addy.ke@rock-chips.com>
+Cc: max.schwarz@online.de, heiko@sntech.de, olof@lixom.net,
+        dianders@chromium.org, dmitry.torokhov@gmail.com,
+        sergei.shtylyov@cogentembedded.com, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, cf@rock-chips.com,
+        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
+        yzq@rock-chips.com, hj@rock-chips.com, kever.yang@rock-chips.com,
+        hl@rock-chips.com, caesar.wang@rock-chips.com, zhengsq@rock-chips.com
+Subject: Re: [PATCH v4] i2c: rk3x: fix bug that cause transfer fails in
+ master receive mode
+Message-ID: <20140902110159.GF1266@katana>
+References: <1408669991-9703-1-git-send-email-addy.ke@rock-chips.com>
+ <1408730452-3552-1-git-send-email-addy.ke@rock-chips.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="VuQYccsttdhdIfIP"
 Content-Disposition: inline
-In-Reply-To: <5405A3EF.60908@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1408730452-3552-1-git-send-email-addy.ke@rock-chips.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 02, 2014 at 12:03:11PM +0100, Daniel Thompson wrote:
-> On 28/08/14 17:15, Paul E. McKenney wrote:
-> > On Thu, Aug 28, 2014 at 04:54:25PM +0100, Daniel Thompson wrote:
-> >> On 28/08/14 16:01, Russell King - ARM Linux wrote:
-> >>> There's concerns with whether either printk() in check_flags() could
-> >>> be reached too (flags there should always indicate that IRQs were
-> >>> disabled, so that reduces down to a question about just the first
-> >>> printk() there.)
-> >>>
-> >>> There's also the very_verbose() stuff for RCU lockdep classes which
-> >>> Paul says must not be enabled.
-> >>>
-> >>> Lastly, Paul isn't a lockdep expert, but he sees nothing that prevents
-> >>> lockdep doing the deadlock checking as a result of the above call.
-> >>>
-> >>> So... this coupled with my feeling that notifiers make it too easy for
-> >>> unreviewed code to be hooked into this path, I'm fairly sure that we
-> >>> don't want to be calling atomic notifier chains from FIQ context.
-> 
-> Having esablished (above) that RCU usage is safe from FIQ I have been
-> working on the assumption that your feeling regarding unreviewed code
-> is sufficient on its own to avoid using notifiers (and also to avoid
-> a list of function pointers like on x86).
 
-I'm assuming that "your" above refers to Paul here, since you addressed
-your message To: Paul and only copied me for information purposes.
+--VuQYccsttdhdIfIP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If not, please address your message more appropriately so as to avoid
-confusion.
+On Sat, Aug 23, 2014 at 02:00:52AM +0800, Addy Ke wrote:
+> In rk3x SOC, the I2C controller can receive/transmit up to 32 bytes data
+> in one chunk, so the size of data to be write/read to/from TXDATAx/RXDATAx
+> must be less than or equal 32 bytes at a time.
+>=20
+> Tested on rk3288-pinky board, elan receive 158 bytes data.
+>=20
+> Suggested-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+> Acked-by: Max Schwarz <max.schwarz@online.de>
 
-Thanks.
+Applied to for-current, thanks! Please don't send new versions of a
+patch as reply-to of a previous version.
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+
+--VuQYccsttdhdIfIP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUBaOnAAoJEBQN5MwUoCm2dMIQAIJTTUnFg+LST4rb9omcbLxI
+gO+HC27P8x2AznVbqPHv8fEOeok2Sjvff58QKpjbQtc3c+86EBCnNAMgRa/QQ5/0
+ZLRuGDYaCqFMqAXwMz3giDYJmeZrwVGKM3ME4Fm5UfnTg+aMKdSUB2V1V5WTYMPE
+5vWVizuWGohhn5rq8OPHUt2c4WFJLn+cDzxwrzl3F/QaOARs7YkELPsYmr8xMpJi
+I+1+y0y+hRcdcM7pnlys+wcQIpgTty6RR/E+2eF/9KsIFhpT57RsvCr0ZeT1tE2L
+60zEwJLPPXUJEPqvcRMNia8LaL9wk1b9q4R8i0B2wKJhb3/T/A7WVmkhFBoynQqi
+RR1rT6XrE7BKdojqaxBzcaMZwH2Kakhz75T/DhSL8gu1oXSVwp/QsqohWoC/X/IH
+rsMi0sOKAJGluYxF3VBngGLZzAi7hhvx2sKhQOpkUNMfdsNZKzqYjJrxdUFvKUwr
+M04ZQmwCAoqUF8ojmKx9KmXMx1rgroVD4wQn3gi64DpuytQ6in+m6caaBAALqxL3
+0/5SEDSy74xOAxOstu868ax654ckonshCH/6smYy/ZJ0846buXJizLdbPEi29mkO
+HZc02FIvww0f9q48HGfSYEJxnhFVOlThOroVPM7i3O5DEhsdOnExy6YEv316LylN
+FFBlhiX4cO7G2c/+3TNx
+=wiRz
+-----END PGP SIGNATURE-----
+
+--VuQYccsttdhdIfIP--
