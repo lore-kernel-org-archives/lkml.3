@@ -1,112 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755073AbaIBTnG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 15:43:06 -0400
-Received: from fieldses.org ([174.143.236.118]:54602 "EHLO fieldses.org"
+	id S1754882AbaIBTqY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 15:46:24 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:54484 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754583AbaIBTnD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 15:43:03 -0400
-Date: Tue, 2 Sep 2014 15:43:00 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: Jeff Layton <jlayton@poochiereds.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-api@vger.kernel.org
-Subject: Re: [PATCH] locks: Ability to test for flock presence on fd
-Message-ID: <20140902194300.GE31793@fieldses.org>
-References: <5405FBAE.5020303@parallels.com>
- <20140902184456.GC31793@fieldses.org>
- <54061562.4080306@parallels.com>
+	id S1754183AbaIBTqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 15:46:22 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Mark Brown <broonie@kernel.org>, Chris Zhong <zyw@rock-chips.com>,
+        Sonny Rao <sonnyrao@chromium.org>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, mark.rutland@arm.com,
+        devicetree@vger.kernel.org, pawel.moll@arm.com,
+        ijc+devicetree@hellion.org.uk, zhangqing@rock-chips.com,
+        lgirdwood@gmail.com, robh+dt@kernel.org, linux-kernel@vger.kernel.org,
+        galak@codeaurora.org
+Subject: Re: [PATCH 0/2] Add input supplies to rk808 regulator
+Date: Tue, 02 Sep 2014 21:48:14 +0200
+Message-ID: <13302580.b33ghgBegF@diego>
+User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <1409674469-12123-1-git-send-email-dianders@chromium.org>
+References: <1409674469-12123-1-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54061562.4080306@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 02, 2014 at 11:07:14PM +0400, Pavel Emelyanov wrote:
-> On 09/02/2014 10:44 PM, J. Bruce Fields wrote:
-> > On Tue, Sep 02, 2014 at 09:17:34PM +0400, Pavel Emelyanov wrote:
-> >> Hi,
-> >>
-> >> There's a problem with getting information about who has a flock on
-> >> a specific file. The thing is that the "owner" field, that is shown in
-> >> /proc/locks is the pid of the task who created the flock, not the one
-> >> who _may_ hold it.
-> >>
-> >> If the flock creator shared the file with some other task (by forking
-> >> or via scm_rights) and then died or closed the file, the information
-> >> shown in proc no longer corresponds to the reality.
-> >>
-> >> This is critical for CRIU project, that tries to dump (and restore)
-> >> the state of running tasks. For example, let's take two tasks A and B
-> >> both opened a file "/foo", one of tasks places a LOCK_SH lock on the 
-> >> file and then "obfuscated" the owner field in /proc/locks. After this
-> >> we have no ways to find out who is the lock holder.
-> >>
-> >> I'd like to note, that for LOCK_EX this problem is not critical -- we
-> >> may go to both tasks and "ask" them to LOCK_EX the file again (we can
-> >> do it in CRIU, I can tell more if required). The one who succeeds is 
-> >> the lock holder.
-> > 
-> > It could be both, actually, right?
+Am Dienstag, 2. September 2014, 09:14:27 schrieb Doug Anderson:
+> We want to specify the input supplies to the rk808 regulator.  This
+> patch series adds them to the driver.  Note that the bindings are
+> based atop Chris's most recent version at
+> <https://patchwork.kernel.org/patch/4817931/>.  If the regulator patch
+> is applied before Chris sends out his next version then I think Chris
+> could squash my bindings change (patch 2) into his next version.
 > 
-> Two succeeding with LOCK_EX? AFAIU no. Am I missing something?
-
-After a fork, two processes "own" the lock, right?:
-
-	int main(int argc, char *argv[])
-	{
-		int fd, ret;
-	
-		fd = open(argv[1], O_RDWR);
-		ret = flock(fd, LOCK_EX);
-		if (ret)
-			err(1, "flock");
-		ret = fork();
-		if (ret == -1)
-			err(1, "flock");
-		ret = flock(fd, LOCK_EX);
-		if (ret)
-			err(1, "flock");
-		printf("%d got exclusive lock\n", getpid());
-		sleep(1000);
-	}
-
-	$ touch TMP
-	$ ./test TMP
-	15882 got exclusive lock
-	15883 got exclusive lock
-	^C
-
-I may misunderstand what you're doing.
-
-> >> With LOCK_SH this doesn't work. Trying to drop the
-> >> lock doesn't work either, as flock(LOCK_UN) reports 0 in both cases:
-> >> if the file is locked and if it is not.
-> >>
-> >> That said, I'd like to propose the LOCK_TEST flag to the flock call,
-> >> that would check whether the lock of the given type (LOCK_SH or LOCK_EX)
-> >> exists on the file we test. It's not the same as the existing in-kernel
-> >> FL_ACCESS flag, which checks whether the new lock is possible, but
-> >> it's a new FL_TEST flag, that checks whether the existing lock is there.
-> >>
-> >> What do you think?
-> > 
-> > I guess I can't see anything really wrong with it.
-> > 
-> > It ignores the (poorly documented) LOCK_MAND case, but maybe that's OK.
 > 
-> I actually checked it and it seemed to work. What problems do
-> you see with this case?
+> Doug Anderson (2):
+>   regulator: RK808: Add proper input supplies for rk808
 
-On its own it just doesn't tell you whether or not LOCK_MAND is set.
-But I guess you can still get that out of /proc/locks.
+Patch 1 didn't apply, as it didn't take the recent pdata removal Chris
+posted. After fixing this [0], it sucessfully solved the missing supplies
+I've seen on the weekend, so
 
-To be honest I don't really know whether LOCK_MAND works or is used.
+Tested-by: Heiko Stuebner <heiko@sntech.de>
 
---b.
+
+>   dt-bindings: Add input supplies to rk808 bindings
+> 
+>  Documentation/devicetree/bindings/mfd/rk808.txt | 11 +++++++++++
+>  drivers/regulator/rk808-regulator.c             | 15 ++++++++++++++-
+>  2 files changed, 25 insertions(+), 1 deletion(-)
+
+
+
+[0]
+--- "[PATCH 1_2] regulator_RK808_Add proper input supplies for rk808.mbox.orig"	2014-09-02 20:49:12.000000000 +0200
++++ "[PATCH 1_2] regulator_RK808_Add proper input supplies for rk808.mbox"	2014-09-02 21:22:57.052197875 +0200
+@@ -203,7 +203,7 @@
+  		.type = REGULATOR_VOLTAGE,
+ @@ -364,7 +378,6 @@ static int rk808_regulator_probe(struct platform_device *pdev)
+  		if (client->dev.of_node)
+- 			config.of_node = pdata->of_node[i];
++ 			config.of_node = rk808_regulator->of_node[i];
+  
+ -		reg_data->supply_regulator = rk808_reg[i].name;
+  		config.init_data = reg_data;
+
+As Chris is supposed to merge these changes into his series, this doesn't
+really matter though.
