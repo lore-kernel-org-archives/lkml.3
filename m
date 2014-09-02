@@ -1,96 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755217AbaIBUPt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 16:15:49 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:61128 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751302AbaIBUPp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 16:15:45 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+jR34vSAuhP8CXlbj7747q
-Date: Tue, 2 Sep 2014 13:15:37 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: balbi@ti.com, linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Vinod Koul <vinod.koul@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paul Walmsley <paul@pwsan.com>
-Subject: Re: [PATCH 15/15] tty: serial: 8250: omap: add dma support
-Message-ID: <20140902201536.GC11766@atomide.com>
-References: <53FE3779.5090908@linutronix.de>
- <20140827202313.GF16006@atomide.com>
- <20140828082348.GA5413@linutronix.de>
- <20140828164645.GG16006@atomide.com>
- <53FF84DF.7080406@linutronix.de>
- <20140828225454.GM16006@atomide.com>
- <540048B4.7010807@linutronix.de>
- <20140829161221.GO16006@atomide.com>
- <5404B149.6010400@linutronix.de>
- <54060EDA.6060204@linutronix.de>
+	id S1755027AbaIBUTG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 16:19:06 -0400
+Received: from mga02.intel.com ([134.134.136.20]:3312 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754728AbaIBUTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 16:19:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,451,1406617200"; 
+   d="scan'208";a="596959007"
+Message-ID: <5406262F.4050705@intel.com>
+Date: Tue, 02 Sep 2014 13:18:55 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54060EDA.6060204@linutronix.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Dave Hansen <dave@sr71.net>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.com>, Hugh Dickins <hughd@google.com>,
+        Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
+Subject: Re: regression caused by cgroups optimization in 3.17-rc2
+References: <54061505.8020500@sr71.net>
+In-Reply-To: <54061505.8020500@sr71.net>
+Content-Type: multipart/mixed;
+ boundary="------------020108010704030702030400"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sebastian Andrzej Siewior <bigeasy@linutronix.de> [140902 11:40]:
-> On 09/01/2014 07:47 PM, Sebastian Andrzej Siewior wrote:
-> > Comparing it with serial-omap I see the same thing: I takes approx the
-> > same amount of data until the first one is displayed. After a lot of
-> > "long" writes which wake the chip up from idle I manage to freeze both,
-> > the serial-omap driver and mine driver.
-> 
-> So after some testing:
-> - it happens with omap-serial as well. Especially after disabling the
->   LED trigger for both LEDs.
-> 
-> - it seemed that disabling the MDR1 check whether or not we lost
->   context made the problem appear less often but it was a trick. Even
->   with restoring the context each time I see the same problem.
-> 
-> - it seems to be easier to trigger with the LED trigger switched off.
->   However sometimes it works for 10 minutes, sometimes it triggers
->   after one.
-> 
-> - I see to face two kind of "deaths":
->   - the LED still goes on and off and the uart just does not respond
->     even if I tell the button print something on the screen (the button
->     also changes the frequency of the LED so I know that the button is
->     doing something).
->     Also from dumping the content of /proc/interrupts it seems that a
->     wake up is made, the uart should have restored the registers.
+This is a multi-part message in MIME format.
+--------------020108010704030702030400
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-OK yeah this is the case I was seeing too. So do you just set the
-LED triggers to none in sysfs to make it easier to reproduce?
+On 09/02/2014 12:05 PM, Dave Hansen wrote:
+> It does not revert cleanly because of the hunks below.  The code in
+> those hunks was removed, so I tried running without properly merging
+> them and it spews warnings because counter->usage is seen going negative.
+> 
+> So, it doesn't appear we can quickly revert this.
 
->   - one where the system is dead and the LED does not blink anymore.
->     Also my button is dead.
+I'm fairly confident that I missed some of the cases (especially in the
+charge-moving code), but the attached patch does at least work around
+the regression for me.  It restores the original performance, or at
+least gets _close_ to it.
 
-This I don't think I've seen. This could also be the errata issue on
-your earlier rev beagleboard-xm with off-idle.
+
+
+--------------020108010704030702030400
+Content-Type: text/x-patch;
+ name="try-partial-revert-of-root-charge-regression-patch.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="try-partial-revert-of-root-charge-regression-patch.patch"
+
+
+
+---
+
+ b/mm/memcontrol.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff -puN mm/memcontrol.c~try-partial-revert-of-root-charge-regression-patch mm/memcontrol.c
+--- a/mm/memcontrol.c~try-partial-revert-of-root-charge-regression-patch	2014-09-02 12:20:11.209527453 -0700
++++ b/mm/memcontrol.c	2014-09-02 13:10:28.756736862 -0700
+@@ -2534,6 +2534,8 @@ static int try_charge(struct mem_cgroup
+ 	unsigned long long size;
+ 	int ret = 0;
  
-> - disabling DMA makes the problem not go away.
-
-OK
++	if (mem_cgroup_is_root(memcg))
++		goto done;
+ retry:
+ 	if (consume_stock(memcg, nr_pages))
+ 		goto done;
+@@ -2640,6 +2642,9 @@ static void __mem_cgroup_cancel_local_ch
+ {
+ 	unsigned long bytes = nr_pages * PAGE_SIZE;
  
-> - mdelay(25) in omap8250_lost_context() is long enough to drop the 403
->   bytes I send in my testcase. That means I see only "good" characters.
->   With this the box remained alive for 2h. However the uart died anyway.
++	if (mem_cgroup_is_root(memcg))
++		return;
++
+ 	res_counter_uncharge_until(&memcg->res, memcg->res.parent, bytes);
+ 	if (do_swap_account)
+ 		res_counter_uncharge_until(&memcg->memsw,
+@@ -6440,6 +6445,9 @@ void mem_cgroup_commit_charge(struct pag
+ 	VM_BUG_ON_PAGE(!page->mapping, page);
+ 	VM_BUG_ON_PAGE(PageLRU(page) && !lrucare, page);
+ 
++	if (mem_cgroup_is_root(memcg))
++		return;
++
+ 	if (mem_cgroup_disabled())
+ 		return;
+ 	/*
+@@ -6484,6 +6492,9 @@ void mem_cgroup_cancel_charge(struct pag
+ {
+ 	unsigned int nr_pages = 1;
+ 
++	if (mem_cgroup_is_root(memcg))
++		return;
++
+ 	if (mem_cgroup_disabled())
+ 		return;
+ 	/*
+@@ -6509,6 +6520,9 @@ static void uncharge_batch(struct mem_cg
+ {
+ 	unsigned long flags;
+ 
++	if (mem_cgroup_is_root(memcg))
++		return;
++
+ 	if (nr_mem)
+ 		res_counter_uncharge(&memcg->res, nr_mem * PAGE_SIZE);
+ 	if (nr_memsw)
+_
 
-I wonder if doing some TX on the uart restores it? So maybe try
-
-$ while [ 1 ]; do date; sleep 10 done &
-
-To have it occasionally print something in the background.
-
-Regards,
-
-Tony
-
+--------------020108010704030702030400--
