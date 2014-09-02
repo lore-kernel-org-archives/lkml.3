@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753589AbaIBKwX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 06:52:23 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:34908 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753539AbaIBKwT (ORCPT
+	id S1753668AbaIBKxE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 06:53:04 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:33118 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750722AbaIBKxB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 06:52:19 -0400
-Message-ID: <5405A15F.2060002@gmail.com>
-Date: Tue, 02 Sep 2014 13:52:15 +0300
-From: Boaz Harrosh <openosd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Tue, 2 Sep 2014 06:53:01 -0400
+Date: Tue, 2 Sep 2014 12:52:44 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jiri Olsa <jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Jen-Cheng(Tommy) Huang" <tommy24@gatech.edu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 2/9] perf: Deny optimized switch for events read by
+ PERF_SAMPLE_READ
+Message-ID: <20140902105244.GI5806@worktop.ger.corp.intel.com>
+References: <1408977943-16594-1-git-send-email-jolsa@kernel.org>
+ <1408977943-16594-3-git-send-email-jolsa@kernel.org>
 MIME-Version: 1.0
-To: Trond Myklebust <trond.myklebust@primarydata.com>,
-        Shakil A Khan <shakilk1729@gmail.com>
-CC: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        William Andros Adamson <andros@netapp.com>,
-        Jeffrey Layton <jlayton@primarydata.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Bruce Fields <bfields@fieldses.org>
-Subject: Re: [PATCH] Next branch: authgss: authgss.c: Fix warnings for uninitizlized
- variable expire
-References: <1409571154-50408-1-git-send-email-shakilk1729@gmail.com> <CAHQdGtQAwp_QuQE-xmjJNkcxbu7g4QtYQv8qrPT_qWpkym1GZg@mail.gmail.com>
-In-Reply-To: <CAHQdGtQAwp_QuQE-xmjJNkcxbu7g4QtYQv8qrPT_qWpkym1GZg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1408977943-16594-3-git-send-email-jolsa@kernel.org>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01/2014 04:50 PM, Trond Myklebust wrote:
-> On Mon, Sep 1, 2014 at 7:32 AM, Shakil A Khan <shakilk1729@gmail.com> wrote:
->> Signed-off-by : Shakil A Khan <shakilk1729@gmail.com>
->> ---
->>  net/sunrpc/auth_gss/auth_gss.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/net/sunrpc/auth_gss/auth_gss.c b/net/sunrpc/auth_gss/auth_gss.c
->> index afb292c..bea0951 100644
->> --- a/net/sunrpc/auth_gss/auth_gss.c
->> +++ b/net/sunrpc/auth_gss/auth_gss.c
->> @@ -1387,7 +1387,7 @@ gss_key_timeout(struct rpc_cred *rc)
->>         struct gss_cred *gss_cred = container_of(rc, struct gss_cred, gc_base);
->>         struct gss_cl_ctx *ctx;
->>         unsigned long now = jiffies;
->> -       unsigned long expire;
->> +       unsigned long expire = 0;
->>
->>         rcu_read_lock();
->>         ctx = rcu_dereference(gss_cred->gc_ctx);
->> --
->> 1.7.1
+On Mon, Aug 25, 2014 at 04:45:36PM +0200, Jiri Olsa wrote:
+> The optimized task context switch for cloned perf events just
+> swaps whole perf event contexts (of current and next process)
+> if it finds them suitable. Events from the 'current' context
+> will now measure data of the 'next' context and vice versa.
 > 
-> That would be a compiler bug, not a kernel bug. The kernel code is
-> perfectly correct as it stands, and will never access the
-> uninitialised variable.
+> This is ok for cases where we are not directly interested in
+> the event->count value of separate child events, like:
+>   - standard sampling, where we take 'period' value for the
+>     event count
+>   - counting, where we accumulate all events (children)
+>     into a single count value
 > 
+> But in case we read event by using the PERF_SAMPLE_READ sample
+> type, we are interested in direct event->count value measured
+> in specific task. Switching events within tasks for this kind
+> of measurements corrupts data.
+> 
+> Fixing this by setting/unsetting pin_count for perf event context
+> once cloned event with PERF_SAMPLE_READ read is added/removed.
+> The pin_count value != 0 makes the context not suitable for
+> optimized switch.
 
-Than you will need the infamous uninitialised_var()
+no.. so the value of the counter is the sum of all the inherited events.
+It doesn't matter if you flip it or not the sum is not affected.
 
-diff --git a/net/sunrpc/auth_gss/auth_gss.c b/net/sunrpc/auth_gss/auth_gss.c
-index afb292c..bea0951 100644
---- a/net/sunrpc/auth_gss/auth_gss.c
-+++ b/net/sunrpc/auth_gss/auth_gss.c
-@@ -1387,7 +1387,7 @@ gss_key_timeout(struct rpc_cred *rc)
- 	struct gss_cred *gss_cred = container_of(rc, struct gss_cred, gc_base);
- 	struct gss_cl_ctx *ctx;
- 	unsigned long now = jiffies;
--	unsigned long expire;
-+	unsigned long uninitialised_var(expire);
- 
- 	rcu_read_lock();
- 	ctx = rcu_dereference(gss_cred->gc_ctx);
-
-Cheers
-Boaz
+PERF_SAMPLE_READ should return the value.
