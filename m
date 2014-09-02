@@ -1,217 +1,364 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753858AbaIBOem (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 10:34:42 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:47438 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963AbaIBOel (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 10:34:41 -0400
-X-IronPort-AV: E=Sophos;i="5.04,449,1406592000"; 
-   d="scan'208";a="168270793"
-Message-ID: <5405D579.9050909@citrix.com>
-Date: Tue, 2 Sep 2014 15:34:33 +0100
-From: Andrew Cooper <andrew.cooper3@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
+	id S1754057AbaIBOfR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 10:35:17 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:55960 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753522AbaIBOfP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 10:35:15 -0400
+Date: Tue, 2 Sep 2014 09:34:38 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Vivek Gautam <gautam.vivek@samsung.com>
+CC: <linux-usb@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <gregkh@linuxfoundation.org>, <kishon@ti.com>, <balbi@ti.com>,
+        <stern@rowland.harvard.edu>, <kgene.kim@samsung.com>,
+        <heikki.krogerus@linux.intel.com>, <mathias.nyman@intel.com>,
+        <sergei.shtylyov@cogentembedded.com>, <jg1.han@samsung.com>
+Subject: Re: [PATCH v6 4/4] phy: exynos5-usbdrd: Calibrate LOS levels for
+ exynos5420/5800
+Message-ID: <20140902143438.GB16872@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1409656338-20337-1-git-send-email-gautam.vivek@samsung.com>
+ <1409656338-20337-5-git-send-email-gautam.vivek@samsung.com>
 MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [Xen-devel] [PATCH] x86/xen: Fix 64bit kernel pagetable setup
- of PV guests
-References: <1409325477-2186-1-git-send-email-stefan.bader@canonical.com>	<5404AE0F.1010207@citrix.com> <5405A3A7.2050406@citrix.com>
-In-Reply-To: <5405A3A7.2050406@citrix.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="f2QGlHpHGjS2mn6Y"
+Content-Disposition: inline
+In-Reply-To: <1409656338-20337-5-git-send-email-gautam.vivek@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/09/14 12:01, David Vrabel wrote:
-> On 01/09/14 18:34, David Vrabel wrote:
->> On 29/08/14 16:17, Stefan Bader wrote:
->>> This change might not be the fully correct approach as it basically
->>> removes the pre-set page table entry for the fixmap that is compile
->>> time set (level2_fixmap_pgt[506]->level1_fixmap_pgt). For one the
->>> level1 page table is not yet declared in C headers (that might be
->>> fixed). But also with the current bug, it was removed, too. Since
->>> the Xen mappings for level2_kernel_pgt only covered kernel + initrd
->>> and some Xen data this did never reach that far. And still, something
->>> does create entries at level2_fixmap_pgt[506..507]. So it should be
->>> ok. At least I was able to successfully boot a kernel with 1G kernel
->>> image size without any vmalloc whinings.
->> [...]
->>> --- a/arch/x86/xen/mmu.c
->>> +++ b/arch/x86/xen/mmu.c
->>> @@ -1902,8 +1902,22 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
->>>  		/* L3_i[0] -> level2_ident_pgt */
->>>  		convert_pfn_mfn(level3_ident_pgt);
->>>  		/* L3_k[510] -> level2_kernel_pgt
->>> -		 * L3_i[511] -> level2_fixmap_pgt */
->>> +		 * L3_k[511] -> level2_fixmap_pgt */
->>>  		convert_pfn_mfn(level3_kernel_pgt);
->>> +
->>> +		/* level2_fixmap_pgt contains a single entry for the
->>> +		 * fixmap area at offset 506. The correct way would
->>> +		 * be to convert level2_fixmap_pgt to mfn and set the
->>> +		 * level1_fixmap_pgt (which is completely empty) to RO,
->>> +		 * too. But currently this page table is not declared,
->>> +		 * so it would be a bit of voodoo to get its address.
->>> +		 * And also the fixmap entry was never set due to using
->>> +		 * the wrong l2 when getting Xen's tables. So let's just
->>> +		 * just nuke it.
->>> +		 * This orphans level1_fixmap_pgt, but that was basically
->>> +		 * done before the change as well.
->>> +		 */
->>> +		memset(level2_fixmap_pgt, 0, 512*sizeof(long));
->> level2_fixmap_pgt etc. are defined for the benefit of Xen only so I
->> think you should add an extern for level1_fixmap_pgt and fix this up
->> properly.
->>
->> It might not matter now, but it might in the future...
-> I found some time to look into this and test it.  Including without
-> enabling KSLAR, but reproing the vmalloc failure with a large (800 MiB
-> module).
->
-> I've clarified the change description, can you review my edits?
->
-> Thanks for investigating and fixing this!
->
-> David
->
-> 8<------------------------------
-> x86/xen: don't copy junk into kernel page tables
+--f2QGlHpHGjS2mn6Y
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Can the patch title and description be adjusted?  It is not junk in the
-pagetables, as Xen would reject such a pagetable update.  It is merely a
-copy of the valid Xen mappings.
+Hi,
 
-~Andrew
-
->
-> When RANDOMIZE_BASE (KASLR) is enabled; or the sum of all loaded
-> modules exceeds 512 MiB, then loading modules fails with a warning
-> (and hence a vmalloc allocation failure) because the PTEs for the
-> newly-allocated vmalloc address space are not zero.
->
->   WARNING: CPU: 0 PID: 494 at linux/mm/vmalloc.c:128
->            vmap_page_range_noflush+0x2a1/0x360()
->
-> This is caused by xen_setup_kernel_pagetables() copying junk into the
-> page tables (to level2_fixmap_pgt), overwriting many non-present
-> entries.
->
-> Without KASLR, the normal kernel image size only covers the first half
-> of level2_kernel_pgt and module space starts after that.
->
-> L4[511]->level3_kernel_pgt[510]->level2_kernel_pgt[  0..255]->kernel
->                                                   [256..511]->module
->                           [511]->level2_fixmap_pgt[  0..505]->module
->
-> This allows 512 MiB of of module vmalloc space to be used before
-> having to use the corrupted level2_fixmap_pgt entries.
->
-> With KASLR enabled, the kernel image uses the full PUD range of 1G and
-> module space starts in the level2_fixmap_pgt. So basically:
->
-> L4[511]->level3_kernel_pgt[510]->level2_kernel_pgt[0..511]->kernel
->                           [511]->level2_fixmap_pgt[0..505]->module
->
-> And now no module vmalloc space can be used without using the corrupt
-> level2_fixmap_pgt entries.
->
-> Fix this by properly converting the level2_fixmap_pgt entries to MFNs,
-> and setting level1_fixmap_pgt as read-only.
->
-> Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
-> Cc: stable@vger.kernel.org
-> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+On Tue, Sep 02, 2014 at 04:42:18PM +0530, Vivek Gautam wrote:
+> Adding phy calibrate callback, which facilitates setting certain
+> PHY settings post initialization of the PHY controller.
+> Exynos5420 and Exynos5800 have 28nm USB 3.0 DRD PHY for which
+> the Loss-of-Signal (LOS) Detector Threshold Level as well as
+> Tx-Vboost-Level should be controlled for Super-Speed operations.
+>=20
+> Additionally set proper time to wait for RxDetect measurement,
+> for desired PHY reference clock, so as to solve issue with enumeration
+> of few USB 3.0 devices, like Samsung SUM-TSB16S 3.0 USB drive
+> on the controller.
+> We are using CR_port for this purpose to send required data
+> to override the LOS values.
+>=20
+> On testing with USB 3.0 devices on USB 3.0 port present on
+> SMDK5420, and peach-pit boards should see following message:
+> usb 2-1: new SuperSpeed USB device number 2 using xhci-hcd
+>=20
+> and without this patch, should see below shown message:
+> usb 1-1: new high-speed USB device number 2 using xhci-hcd
+>=20
+> [Also removed unnecessary extra lines in the register macro definitions]
+>=20
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
 > ---
->  arch/x86/include/asm/pgtable_64.h |    1 +
->  arch/x86/xen/mmu.c                |   27 ++++++++++++---------------
->  2 files changed, 13 insertions(+), 15 deletions(-)
->
-> diff --git a/arch/x86/include/asm/pgtable_64.h b/arch/x86/include/asm/pgtable_64.h
-> index 5be9063..3874693 100644
-> --- a/arch/x86/include/asm/pgtable_64.h
-> +++ b/arch/x86/include/asm/pgtable_64.h
-> @@ -19,6 +19,7 @@ extern pud_t level3_ident_pgt[512];
->  extern pmd_t level2_kernel_pgt[512];
->  extern pmd_t level2_fixmap_pgt[512];
->  extern pmd_t level2_ident_pgt[512];
-> +extern pte_t level1_fixmap_pgt[512];
->  extern pgd_t init_level4_pgt[];
->  
->  #define swapper_pg_dir init_level4_pgt
-> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-> index e8a1201..16fb009 100644
-> --- a/arch/x86/xen/mmu.c
-> +++ b/arch/x86/xen/mmu.c
-> @@ -1866,12 +1866,11 @@ static void __init check_pt_base(unsigned long *pt_base, unsigned long *pt_end,
->   *
->   * We can construct this by grafting the Xen provided pagetable into
->   * head_64.S's preconstructed pagetables.  We copy the Xen L2's into
-> - * level2_ident_pgt, level2_kernel_pgt and level2_fixmap_pgt.  This
-> - * means that only the kernel has a physical mapping to start with -
-> - * but that's enough to get __va working.  We need to fill in the rest
-> - * of the physical mapping once some sort of allocator has been set
-> - * up.
-> - * NOTE: for PVH, the page tables are native.
-> + * level2_ident_pgt, and level2_kernel_pgt.  This means that only the
-> + * kernel has a physical mapping to start with - but that's enough to
-> + * get __va working.  We need to fill in the rest of the physical
-> + * mapping once some sort of allocator has been set up.  NOTE: for
-> + * PVH, the page tables are native.
->   */
->  void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
->  {
-> @@ -1902,8 +1901,11 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
->  		/* L3_i[0] -> level2_ident_pgt */
->  		convert_pfn_mfn(level3_ident_pgt);
->  		/* L3_k[510] -> level2_kernel_pgt
-> -		 * L3_i[511] -> level2_fixmap_pgt */
-> +		 * L3_k[511] -> level2_fixmap_pgt */
->  		convert_pfn_mfn(level3_kernel_pgt);
+>  drivers/phy/phy-exynos5-usbdrd.c |  185 ++++++++++++++++++++++++++++++++=
+++----
+>  1 file changed, 170 insertions(+), 15 deletions(-)
+>=20
+> diff --git a/drivers/phy/phy-exynos5-usbdrd.c b/drivers/phy/phy-exynos5-u=
+sbdrd.c
+> index 47f47fe..85742b0 100644
+> --- a/drivers/phy/phy-exynos5-usbdrd.c
+> +++ b/drivers/phy/phy-exynos5-usbdrd.c
+> @@ -37,13 +37,11 @@
+> =20
+>  /* EXYNOS5: USB 3.0 DRD PHY registers */
+>  #define EXYNOS5_DRD_LINKSYSTEM			0x04
+> -
+>  #define LINKSYSTEM_FLADJ_MASK			(0x3f << 1)
+>  #define LINKSYSTEM_FLADJ(_x)			((_x) << 1)
+>  #define LINKSYSTEM_XHCI_VERSION_CONTROL		BIT(27)
+> =20
+>  #define EXYNOS5_DRD_PHYUTMI			0x08
+> -
+>  #define PHYUTMI_OTGDISABLE			BIT(6)
+>  #define PHYUTMI_FORCESUSPEND			BIT(1)
+>  #define PHYUTMI_FORCESLEEP			BIT(0)
+> @@ -51,26 +49,20 @@
+>  #define EXYNOS5_DRD_PHYPIPE			0x0c
+> =20
+>  #define EXYNOS5_DRD_PHYCLKRST			0x10
+> -
+>  #define PHYCLKRST_EN_UTMISUSPEND		BIT(31)
+> -
+>  #define PHYCLKRST_SSC_REFCLKSEL_MASK		(0xff << 23)
+>  #define PHYCLKRST_SSC_REFCLKSEL(_x)		((_x) << 23)
+> -
+>  #define PHYCLKRST_SSC_RANGE_MASK		(0x03 << 21)
+>  #define PHYCLKRST_SSC_RANGE(_x)			((_x) << 21)
+> -
+>  #define PHYCLKRST_SSC_EN			BIT(20)
+>  #define PHYCLKRST_REF_SSP_EN			BIT(19)
+>  #define PHYCLKRST_REF_CLKDIV2			BIT(18)
+> -
+>  #define PHYCLKRST_MPLL_MULTIPLIER_MASK		(0x7f << 11)
+>  #define PHYCLKRST_MPLL_MULTIPLIER_100MHZ_REF	(0x19 << 11)
+>  #define PHYCLKRST_MPLL_MULTIPLIER_50M_REF	(0x32 << 11)
+>  #define PHYCLKRST_MPLL_MULTIPLIER_24MHZ_REF	(0x68 << 11)
+>  #define PHYCLKRST_MPLL_MULTIPLIER_20MHZ_REF	(0x7d << 11)
+>  #define PHYCLKRST_MPLL_MULTIPLIER_19200KHZ_REF	(0x02 << 11)
+> -
+>  #define PHYCLKRST_FSEL_UTMI_MASK		(0x7 << 5)
+>  #define PHYCLKRST_FSEL_PIPE_MASK		(0x7 << 8)
+>  #define PHYCLKRST_FSEL(_x)			((_x) << 5)
+> @@ -78,46 +70,68 @@
+>  #define PHYCLKRST_FSEL_PAD_24MHZ		(0x2a << 5)
+>  #define PHYCLKRST_FSEL_PAD_20MHZ		(0x31 << 5)
+>  #define PHYCLKRST_FSEL_PAD_19_2MHZ		(0x38 << 5)
+> -
+>  #define PHYCLKRST_RETENABLEN			BIT(4)
+> -
+>  #define PHYCLKRST_REFCLKSEL_MASK		(0x03 << 2)
+>  #define PHYCLKRST_REFCLKSEL_PAD_REFCLK		(0x2 << 2)
+>  #define PHYCLKRST_REFCLKSEL_EXT_REFCLK		(0x3 << 2)
+> -
+>  #define PHYCLKRST_PORTRESET			BIT(1)
+>  #define PHYCLKRST_COMMONONN			BIT(0)
+> =20
+>  #define EXYNOS5_DRD_PHYREG0			0x14
+> +#define PHYREG0_SSC_REF_CLK_SEL			BIT(21)
+> +#define PHYREG0_SSC_RANGE			BIT(20)
+> +#define PHYREG0_CR_WRITE			BIT(19)
+> +#define PHYREG0_CR_READ				BIT(18)
+> +#define PHYREG0_CR_DATA_IN(_x)			((_x) << 2)
+> +#define PHYREG0_CR_CAP_DATA			BIT(1)
+> +#define PHYREG0_CR_CAP_ADDR			BIT(0)
 > +
-> +		/* L3_k[511][506] -> level1_fixmap_pgt */
-> +		convert_pfn_mfn(level2_fixmap_pgt);
->  	}
->  	/* We get [511][511] and have Xen's version of level2_kernel_pgt */
->  	l3 = m2v(pgd[pgd_index(__START_KERNEL_map)].pgd);
-> @@ -1913,21 +1915,15 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
->  	addr[1] = (unsigned long)l3;
->  	addr[2] = (unsigned long)l2;
->  	/* Graft it onto L4[272][0]. Note that we creating an aliasing problem:
-> -	 * Both L4[272][0] and L4[511][511] have entries that point to the same
-> +	 * Both L4[272][0] and L4[511][510] have entries that point to the same
->  	 * L2 (PMD) tables. Meaning that if you modify it in __va space
->  	 * it will be also modified in the __ka space! (But if you just
->  	 * modify the PMD table to point to other PTE's or none, then you
->  	 * are OK - which is what cleanup_highmap does) */
->  	copy_page(level2_ident_pgt, l2);
-> -	/* Graft it onto L4[511][511] */
-> +	/* Graft it onto L4[511][510] */
->  	copy_page(level2_kernel_pgt, l2);
->  
-> -	/* Get [511][510] and graft that in level2_fixmap_pgt */
-> -	l3 = m2v(pgd[pgd_index(__START_KERNEL_map + PMD_SIZE)].pgd);
-> -	l2 = m2v(l3[pud_index(__START_KERNEL_map + PMD_SIZE)].pud);
-> -	copy_page(level2_fixmap_pgt, l2);
-> -	/* Note that we don't do anything with level1_fixmap_pgt which
-> -	 * we don't need. */
->  	if (!xen_feature(XENFEAT_auto_translated_physmap)) {
->  		/* Make pagetable pieces RO */
->  		set_page_prot(init_level4_pgt, PAGE_KERNEL_RO);
-> @@ -1937,6 +1933,7 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
->  		set_page_prot(level2_ident_pgt, PAGE_KERNEL_RO);
->  		set_page_prot(level2_kernel_pgt, PAGE_KERNEL_RO);
->  		set_page_prot(level2_fixmap_pgt, PAGE_KERNEL_RO);
-> +		set_page_prot(level1_fixmap_pgt, PAGE_KERNEL_RO);
->  
->  		/* Pin down new L4 */
->  		pin_pagetable_pfn(MMUEXT_PIN_L4_TABLE,
+>  #define EXYNOS5_DRD_PHYREG1			0x18
+> +#define PHYREG1_CR_DATA_OUT(_x)			((_x) << 1)
+> +#define PHYREG1_CR_ACK				BIT(0)
+> =20
+>  #define EXYNOS5_DRD_PHYPARAM0			0x1c
+> -
+>  #define PHYPARAM0_REF_USE_PAD			BIT(31)
+>  #define PHYPARAM0_REF_LOSLEVEL_MASK		(0x1f << 26)
+>  #define PHYPARAM0_REF_LOSLEVEL			(0x9 << 26)
+> =20
+>  #define EXYNOS5_DRD_PHYPARAM1			0x20
+> -
+>  #define PHYPARAM1_PCS_TXDEEMPH_MASK		(0x1f << 0)
+>  #define PHYPARAM1_PCS_TXDEEMPH			(0x1c)
+> =20
+>  #define EXYNOS5_DRD_PHYTERM			0x24
+> =20
+>  #define EXYNOS5_DRD_PHYTEST			0x28
+> -
+>  #define PHYTEST_POWERDOWN_SSP			BIT(3)
+>  #define PHYTEST_POWERDOWN_HSP			BIT(2)
+> =20
+>  #define EXYNOS5_DRD_PHYADP			0x2c
+> =20
+>  #define EXYNOS5_DRD_PHYUTMICLKSEL		0x30
+> -
 
+this and all above are unrelated to $subject.
+
+>  #define PHYUTMICLKSEL_UTMI_CLKSEL		BIT(2)
+> =20
+>  #define EXYNOS5_DRD_PHYRESUME			0x34
+>  #define EXYNOS5_DRD_LINKPORT			0x44
+> =20
+> +/* USB 3.0 DRD PHY SS Function Control Reg; accessed by CR_PORT */
+> +#define EXYNOS5_DRD_PHYSS_LOSLEVEL_OVRD_IN		(0x15)
+> +#define LOSLEVEL_OVRD_IN_LOS_BIAS_5420			(0x5 << 13)
+> +#define LOSLEVEL_OVRD_IN_LOS_BIAS_DEFAULT		(0x0 << 13)
+> +#define LOSLEVEL_OVRD_IN_EN				(0x1 << 10)
+> +#define LOSLEVEL_OVRD_IN_LOS_LEVEL_DEFAULT		(0x9 << 0)
+> +
+> +#define EXYNOS5_DRD_PHYSS_TX_VBOOSTLEVEL_OVRD_IN	(0x12)
+> +#define TX_VBOOSTLEVEL_OVRD_IN_VBOOST_5420		(0x5 << 13)
+> +#define TX_VBOOSTLEVEL_OVRD_IN_VBOOST_DEFAULT		(0x4 << 13)
+> +
+> +#define EXYNOS5_DRD_PHYSS_LANE0_TX_DEBUG		(0x1010)
+> +#define LANE0_TX_DEBUG_RXDET_MEAS_TIME_19M2_20M		(0x4 << 4)
+> +#define LANE0_TX_DEBUG_RXDET_MEAS_TIME_24M		(0x8 << 4)
+> +#define LANE0_TX_DEBUG_RXDET_MEAS_TIME_25M_26M		(0x8 << 4)
+> +#define LANE0_TX_DEBUG_RXDET_MEAS_TIME_48M_50M_52M	(0x20 << 4)
+> +#define LANE0_TX_DEBUG_RXDET_MEAS_TIME_62M5		(0x20 << 4)
+> +#define LANE0_TX_DEBUG_RXDET_MEAS_TIME_96M_100M		(0x40 << 4)
+> +
+>  #define KHZ	1000
+>  #define MHZ	(KHZ * KHZ)
+> =20
+> @@ -135,12 +149,14 @@ struct exynos5_usbdrd_phy_config {
+>  	void (*phy_isol)(struct phy_usb_instance *inst, u32 on);
+>  	void (*phy_init)(struct exynos5_usbdrd_phy *phy_drd);
+>  	unsigned int (*set_refclk)(struct phy_usb_instance *inst);
+> +	int (*phy_calibrate)(struct phy_usb_instance *inst);
+>  };
+> =20
+>  struct exynos5_usbdrd_phy_drvdata {
+>  	const struct exynos5_usbdrd_phy_config *phy_cfg;
+>  	u32 pmu_offset_usbdrd0_phy;
+>  	u32 pmu_offset_usbdrd1_phy;
+> +	void (*phy_exynos_calibrate)(struct exynos5_usbdrd_phy *phy_drd);
+>  };
+> =20
+>  /**
+> @@ -487,6 +503,142 @@ static int exynos5_usbdrd_phy_power_off(struct phy =
+*phy)
+>  	return 0;
+>  }
+> =20
+> +static void crport_handshake(struct exynos5_usbdrd_phy *phy_drd,
+> +						u32 val, u32 cmd)
+> +{
+> +	u32 usec =3D 100;
+> +	u32 result;
+> +
+> +	writel(val | cmd, phy_drd->reg_phy + EXYNOS5_DRD_PHYREG0);
+> +
+> +	do {
+> +		result =3D readl(phy_drd->reg_phy + EXYNOS5_DRD_PHYREG1);
+> +		if (result & PHYREG1_CR_ACK)
+> +			break;
+> +
+> +		udelay(1);
+> +	} while (usec-- > 0);
+> +
+> +	if (!usec)
+> +		dev_err(phy_drd->dev,
+> +			"CRPORT handshake timeout1 (0x%08x)\n", val);
+
+if handshake timed out, shouldn't you error out here ? IOW, make this
+function return an int and return an error code from this point ? Why
+would you even continue to the next step ?
+
+> +
+> +	usec =3D 100;
+> +
+> +	writel(val, phy_drd->reg_phy + EXYNOS5_DRD_PHYREG0);
+> +
+> +	do {
+> +		result =3D readl(phy_drd->reg_phy + EXYNOS5_DRD_PHYREG1);
+> +		if (!(result & PHYREG1_CR_ACK))
+> +			break;
+> +
+> +		udelay(1);
+> +	} while (usec-- > 0);
+> +
+> +	if (!usec)
+> +		dev_err(phy_drd->dev,
+> +			"CRPORT handshake timeout2 (0x%08x)\n", val);
+
+return an error ?
+
+> +}
+> +
+> +static void crport_ctrl_write(struct exynos5_usbdrd_phy *phy_drd,
+> +						u32 addr, u32 data)
+> +{
+> +	/* Write Address */
+> +	writel(PHYREG0_CR_DATA_IN(addr),
+> +			phy_drd->reg_phy + EXYNOS5_DRD_PHYREG0);
+> +	crport_handshake(phy_drd, PHYREG0_CR_DATA_IN(addr),
+> +			 PHYREG0_CR_CAP_ADDR);
+> +
+> +	/* Write Data */
+> +	writel(PHYREG0_CR_DATA_IN(data),
+> +			phy_drd->reg_phy + EXYNOS5_DRD_PHYREG0);
+> +	crport_handshake(phy_drd, PHYREG0_CR_DATA_IN(data),
+> +			 PHYREG0_CR_CAP_DATA);
+> +	crport_handshake(phy_drd, PHYREG0_CR_DATA_IN(data),
+> +			 PHYREG0_CR_WRITE);
+> +}
+> +
+> +/*
+> + * Override PHY paramaeters using CR_PORT register to calibrate settings
+> + * to meet meet SuperSpeed requirements, on Exynos5420 and Exynos5800 sy=
+stems,
+> + * which have 28nm USB 3.0 DRD PHY.
+> + */
+> +static void exynos5420_usbdrd_phy_calibrate(struct exynos5_usbdrd_phy *p=
+hy_drd)
+> +{
+> +	u32 temp;
+> +
+> +	/*
+> +	 * Change los_bias to (0x5) for 28nm PHY from a
+> +	 * default value (0x0); los_level is set as default
+> +	 * (0x9) as also reflected in los_level[30:26] bits
+> +	 * of PHYPARAM0 register.
+> +	 */
+> +	temp =3D LOSLEVEL_OVRD_IN_LOS_BIAS_5420 |
+> +		LOSLEVEL_OVRD_IN_EN |
+> +		LOSLEVEL_OVRD_IN_LOS_LEVEL_DEFAULT;
+> +	crport_ctrl_write(phy_drd,
+> +			  EXYNOS5_DRD_PHYSS_LOSLEVEL_OVRD_IN,
+> +			  temp);
+> +
+> +	/*
+> +	 * Set tx_vboost_lvl to (0x5) for 28nm PHY Tuning,
+> +	 * to raise Tx signal level from its default value of (0x4)
+> +	 */
+> +	temp =3D TX_VBOOSTLEVEL_OVRD_IN_VBOOST_5420;
+> +	crport_ctrl_write(phy_drd,
+> +			  EXYNOS5_DRD_PHYSS_TX_VBOOSTLEVEL_OVRD_IN,
+> +			  temp);
+> +
+> +	/*
+> +	 * Set proper time to wait for RxDetect measurement, for
+> +	 * desired reference clock of PHY, by tuning the CRPORT
+> +	 * register LANE0.TX_DEBUG which is internal to PHY.
+> +	 * This fixes issue with few USB 3.0 devices, which are
+> +	 * not detected (not even generate interrupts on the bus
+> +	 * on insertion) without this change.
+> +	 * e.g. Samsung SUM-TSB16S 3.0 USB drive.
+> +	 */
+> +	switch (phy_drd->extrefclk) {
+> +	case EXYNOS5_FSEL_50MHZ:
+> +		temp =3D LANE0_TX_DEBUG_RXDET_MEAS_TIME_48M_50M_52M;
+> +		break;
+> +	case EXYNOS5_FSEL_20MHZ:
+> +	case EXYNOS5_FSEL_19MHZ2:
+> +		temp =3D LANE0_TX_DEBUG_RXDET_MEAS_TIME_19M2_20M;
+> +		break;
+> +	case EXYNOS5_FSEL_24MHZ:
+
+why can't this be done during probe() ? Are you going to change external
+reference clock frequency during runtime ? And even if you do,
+wouldn't it be easier to subscribe to clock rate change notifiers
+instead of adding this ->calibrate() ?
+
+It still looks, to me, that this ->calibrate() thing is unnecessary. We
+have a single user for it and this user could very well get this sorted
+out during probe() or by subscribing to clock rate notifiers.
+
+--=20
+balbi
+
+--f2QGlHpHGjS2mn6Y
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUBdV9AAoJEIaOsuA1yqRE4eMP/0M/Ll4iton1UguVAe/lixqL
+F4Ki8ROCcakFCaK39Lp44K7cV9mtl3QVkBaHEiChIyzwg+V//Juc/P7o1pfnLxuG
+wwjpG1YD1tmGRXUE/cKCeD02AOyLTZGc6ZI0N/z9yly4w6hGhAMjcG36+Jc5FUZP
+Sz1oN5tojW57LQnMGJyvU9EiZLYgBShBqRQwM9gaqnXkc80opsgBe3UVJoCi54ST
+8O8cV6ol4CdZ1j7uO5D9a5S3IKdAJnmYrUTHrRhmwbc9IHFCVtRE4MExjUnl+sNy
+yit+sVt7WRchZDR+qxyD7pIiVi4hNxkkKdlA3QfB60Jc/F+dhTqAD9Mnez1CZs+D
+C//LrJtUeyjpAJaIJ46Ry+1ONzNo1g7evlTisNrpQtVtA4WG6mohwKe9zU9PyO/+
+iE2FhbptbYq4QFHQD3RgItrv8IeKrfMOKMr0O014mnscjlXzo4mQV372WKhzIiNp
+Bj4zDrAUGJSTpe9Wug1zfFGj4+U/Pau5QnPXRNWLPH/rLDoeAJO5wXR6GTJS/st7
+PBadiaQU4A/poiy7HrD5UyPGPZta0KDR70ljeKla0D/RonVoig88Nz3uPs31pUOs
+wLOE1IJswCiwKHyFiHszoFFAxNISmG+DNlFOXavDEooGPCQnslXvvw3A1qJgnwGQ
+ad8pNiIEDYETaGQmVG8v
+=wyRp
+-----END PGP SIGNATURE-----
+
+--f2QGlHpHGjS2mn6Y--
