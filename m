@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498AbaIBBol (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 21:44:41 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:46028 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751711AbaIBBoj (ORCPT
+	id S1752722AbaIBBrj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 21:47:39 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:37760 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751003AbaIBBri (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 21:44:39 -0400
-Message-ID: <540520FC.1090709@gmail.com>
-Date: Tue, 02 Sep 2014 09:44:28 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Mon, 1 Sep 2014 21:47:38 -0400
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-CC: eparis@redhat.com, paulmck@linux.vnet.ibm.com,
-        Geert Uytterhoeven <geert@linux-m68k.org>, zhenglong.cai@cs2c.com.cn,
-        khilman@linaro.org, ak@linux.intel.com, mcgrof@suse.com,
-        fabf@skynet.be, "dhowells@redhat.com" <dhowells@redhat.com>,
-        pefoley2@pefoley.com, mgorman@suse.de, biederm@xmission.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Jean Delvare <jdelvare@suse.de>
-Subject: Re: [PATCH] init/Kconfig: Add ENDIAN attributes for all architectures
- using
-References: <540494D6.40701@gmail.com> <20140901160828.GJ26632@windriver.com> <5404A66E.509@zytor.com>
-In-Reply-To: <5404A66E.509@zytor.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [220.129.154.48]
+In-Reply-To: <1407033419.17812.2.camel@phoenix>
+References: <1407033419.17812.2.camel@phoenix>
+Date: Tue, 2 Sep 2014 09:47:37 +0800
+Message-ID: <CAFRkauB=2f5-zN5OAwx0LSYSnwuub_ONL+LuYYdy6-MxWQNzLw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] gpu: ipu-v3: Select GENERIC_IRQ_CHIP to fix build error
+From: Axel Lin <axel.lin@ingics.com>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/2014 01:01 AM, H. Peter Anvin wrote:
-> On 09/01/2014 09:08 AM, Paul Gortmaker wrote:
->>>>
->>> diff --git a/init/Kconfig b/init/Kconfig
->>> index ac033c3..f301cc8 100644
->>> --- a/init/Kconfig
->>> +++ b/init/Kconfig
->>> @@ -23,6 +23,12 @@ config CONSTRUCTORS
->>>  config IRQ_WORK
->>>  	bool
->>>  
->>> +config CPU_LITTLE_ENDIAN
->>> +	bool
->>> +
->>> +config CPU_BIG_ENDIAN
->>> +	bool
->>
->> Perhaps you should take a cursory look at what already exists in tree
->> before blindly trying to add more to it?
->>
->> $ git grep CPU_BIG_ENDIAN | wc -l
->> 88
->>
-> 
-> The whole point of this patchset is to make these already widely-used
-> options universal across the tree.
-> 
+2014-08-03 10:36 GMT+08:00 Axel Lin <axel.lin@ingics.com>:
+> This driver uses GENERIC_IRQ_CHIP, so it needs to select GENERIC_IRQ_CHIP to
+> avoid build error.
+>
+> Fixes below build errors:
+> ERROR: "irq_alloc_domain_generic_chips" [drivers/gpu/ipu-v3/imx-ipu-v3.ko] undefined!
+> ERROR: "irq_gc_mask_clr_bit" [drivers/gpu/ipu-v3/imx-ipu-v3.ko] undefined!
+> ERROR: "irq_gc_mask_set_bit" [drivers/gpu/ipu-v3/imx-ipu-v3.ko] undefined!
+> ERROR: "irq_generic_chip_ops" [drivers/gpu/ipu-v3/imx-ipu-v3.ko] undefined!
+> ERROR: "irq_gc_ack_set_bit" [drivers/gpu/ipu-v3/imx-ipu-v3.ko] undefined!
+> ERROR: "irq_get_domain_generic_chip" [drivers/gpu/ipu-v3/imx-ipu-v3.ko] undefined!
+> make[1]: *** [__modpost] Error 1
+> make: *** [modules] Error 2
 
-Yeah, maybe the patch comments need be improved (mention about what you
-said above) to avoid other members' misunderstanding.
+Hi Greg,
 
-If it is necessary (complete the comments), please let me know (I shall
-send patch v2 for it).
+I still hit this build error in today's linuex-next tree with below config:
+ARCH_MULTIPLATFORM && !SOC_IMX5 && !SOC_IMX6Q && !SOC_IMX6SL
 
+This driver just moved from staging to gpu.
+So it's not clear to me who will pick up this patch.
+Can you pick up this patch?
 
-Thanks.
--- 
-Chen Gang
-
-Open, share, and attitude like air, water, and life which God blessed
+Thanks,
+Axel
