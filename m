@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755065AbaIBWBS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 18:01:18 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:40310 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752135AbaIBWBR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 18:01:17 -0400
-Message-ID: <54063E2B.6090403@codeaurora.org>
-Date: Tue, 02 Sep 2014 15:01:15 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1755191AbaIBWGX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 18:06:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22062 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752135AbaIBWGV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 18:06:21 -0400
+Message-ID: <54063F56.9090606@redhat.com>
+Date: Tue, 02 Sep 2014 15:06:14 -0700
+From: Andy Grover <agrover@redhat.com>
+Organization: Red Hat
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Kumar Gala <galak@codeaurora.org>, Andy Gross <agross@codeaurora.org>
-Subject: Re: [PATCH] clk: qcom: Fix sdc 144kHz frequency entry
-References: <1409341766-24366-1-git-send-email-sboyd@codeaurora.org> <20140902214402.5251.75274@quantum>
-In-Reply-To: <20140902214402.5251.75274@quantum>
-Content-Type: text/plain; charset=UTF-8
+To: "Richard W.M. Jones" <rjones@redhat.com>
+CC: target-devel@vger.kernel.org, linux-scsi@vger.kernel.org, hch@lst.de,
+        nab@linux-iscsi.org, shli@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 1/2] target: Add documentation on the target userspace pass-through
+ driver
+References: <1404241875-29164-1-git-send-email-agrover@redhat.com> <1404241875-29164-2-git-send-email-agrover@redhat.com> <20140830173510.GA11820@redhat.com> <54037C46.1050601@redhat.com> <20140831212257.GO1302@redhat.com>
+In-Reply-To: <20140831212257.GO1302@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/14 14:44, Mike Turquette wrote:
-> Quoting Stephen Boyd (2014-08-29 12:49:26)
->> The pre-divider for the sdc clocks only has 2 bits in it, so we
->> can't possibly divide by anything larger than 4 here.
->> Furthermore, we program the value of ~(n - m) and the n value is
->> larger than 8 bits (max of 256). Replace this entry with 200kHz
->> which is close enough to 144kHz to be usable.
->>
->> Cc: Kumar Gala <galak@codeaurora.org>
->> Cc: Andy Gross <agross@codeaurora.org>
->> Fixes: 24d8fba44af3 "clk: qcom: Add support for IPQ8064's global clock controller (GCC)"
->> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> Do you need this pulled into a 3.17-rc?
+On 08/31/2014 02:22 PM, Richard W.M. Jones wrote:
+> Reading this several times, I now think I get what it's trying to say,
+> but I think it needs to introduces the terms (as the Economist style
+> does).  Something like this:
 >
+>    "TCM is the new name for LIO, an in-kernel iSCSI target (server).
+>    Existing TCM targets run in the kernel.  TCMU (TCM in Userspace)
+>    allows userspace programs to be written which act as iSCSI targets.
+>    This document describes the design.
+>
+>    The existing kernel provides modules for different SCSI transport
+>    protocols.  TCM also modularizes the data storage.  There are
+>    existing modules for file, block device, RAM or using another SCSI
+>    device as storage.  These are called "backstores" or "storage
+>    engines".  These built-in modules are implemented entirely as kernel
+>    code."
+>
+> And hopefully having defined a bit of background, the rest of the
+> document just flows nicely:
 
-Yes that would be helpful since this fixes a driver introduced into 3.17.
+Thanks much! I've put this in the doc, and will hopefully send out a 
+final patchset for inclusion with the new text in the next week or so.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+<begin naming potential-bikeshed wasteoftime>
+
+The only change I made was "another" instead of "the new name" -- 
+because to be honest I don't know if there was actually an attempt at a 
+name change, and if so if it was successful or not :) LIO seems to have 
+stuck, but TCM seems to refer just to the "backend" part of LIO.
+
+<end bikeshed>
+
+Thanks again -- Andy
 
