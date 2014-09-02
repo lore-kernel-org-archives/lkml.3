@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668AbaIBKxE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 06:53:04 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:33118 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750722AbaIBKxB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 06:53:01 -0400
-Date: Tue, 2 Sep 2014 12:52:44 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jiri Olsa <jolsa@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Jen-Cheng(Tommy) Huang" <tommy24@gatech.edu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 2/9] perf: Deny optimized switch for events read by
- PERF_SAMPLE_READ
-Message-ID: <20140902105244.GI5806@worktop.ger.corp.intel.com>
-References: <1408977943-16594-1-git-send-email-jolsa@kernel.org>
- <1408977943-16594-3-git-send-email-jolsa@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <1408977943-16594-3-git-send-email-jolsa@kernel.org>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	id S1753673AbaIBKyv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 06:54:51 -0400
+Received: from mga02.intel.com ([134.134.136.20]:64545 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752643AbaIBKyt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 06:54:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,448,1406617200"; 
+   d="scan'208";a="596691818"
+From: Irina Tirdea <irina.tirdea@intel.com>
+To: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org
+Cc: Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Irina Tirdea <irina.tirdea@intel.com>
+Subject: [PATCH] iio: gyro: bmg160: only set power state if PM_RUNTIME is defined
+Date: Tue,  2 Sep 2014 14:02:39 +0300
+Message-Id: <1409655759-28849-1-git-send-email-irina.tirdea@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 04:45:36PM +0200, Jiri Olsa wrote:
-> The optimized task context switch for cloned perf events just
-> swaps whole perf event contexts (of current and next process)
-> if it finds them suitable. Events from the 'current' context
-> will now measure data of the 'next' context and vice versa.
-> 
-> This is ok for cases where we are not directly interested in
-> the event->count value of separate child events, like:
->   - standard sampling, where we take 'period' value for the
->     event count
->   - counting, where we accumulate all events (children)
->     into a single count value
-> 
-> But in case we read event by using the PERF_SAMPLE_READ sample
-> type, we are interested in direct event->count value measured
-> in specific task. Switching events within tasks for this kind
-> of measurements corrupts data.
-> 
-> Fixing this by setting/unsetting pin_count for perf event context
-> once cloned event with PERF_SAMPLE_READ read is added/removed.
-> The pin_count value != 0 makes the context not suitable for
-> optimized switch.
+When CONFIG_PM_RUNTIME is not defined and bmg160 tries to power
+off the device, bmg160_set_power_state will call pm_runtime_put_autosuspend,
+which is not implemented (wil return -ENOSYS).
 
-no.. so the value of the counter is the sum of all the inherited events.
-It doesn't matter if you flip it or not the sum is not affected.
+Only call bmg160_set_power_state when CONFIG_PM_RUNTIME is defined.
 
-PERF_SAMPLE_READ should return the value.
+Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+Reviewed-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+---
+ drivers/iio/gyro/bmg160.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/drivers/iio/gyro/bmg160.c b/drivers/iio/gyro/bmg160.c
+index 7524698..e41d6b5 100644
+--- a/drivers/iio/gyro/bmg160.c
++++ b/drivers/iio/gyro/bmg160.c
+@@ -235,6 +235,7 @@ static int bmg160_chip_init(struct bmg160_data *data)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM_RUNTIME
+ static int bmg160_set_power_state(struct bmg160_data *data, bool on)
+ {
+ 	int ret;
+@@ -254,6 +255,12 @@ static int bmg160_set_power_state(struct bmg160_data *data, bool on)
+ 
+ 	return 0;
+ }
++#else
++static int bmg160_set_power_state(struct bmg160_data *data, bool on)
++{
++	return 0;
++}
++#endif
+ 
+ static int bmg160_setup_any_motion_interrupt(struct bmg160_data *data,
+ 					     bool status)
+-- 
+1.7.9.5
+
