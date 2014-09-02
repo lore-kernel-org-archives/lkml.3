@@ -1,141 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755463AbaIBWSh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 18:18:37 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:59918 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751326AbaIBWSf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 18:18:35 -0400
-Date: Tue, 2 Sep 2014 18:18:14 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Dave Hansen <dave@sr71.net>
-Cc: Michal Hocko <mhocko@suse.com>, Hugh Dickins <hughd@google.com>,
-        Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
-Subject: Re: regression caused by cgroups optimization in 3.17-rc2
-Message-ID: <20140902221814.GA18069@cmpxchg.org>
-References: <54061505.8020500@sr71.net>
+	id S1755537AbaIBWTA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 18:19:00 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40511 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751326AbaIBWS6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 18:18:58 -0400
+Date: Tue, 2 Sep 2014 15:18:32 -0700
+From: tip-bot for Oleg Nesterov <tipbot@zytor.com>
+Message-ID: <tip-66463db4fc5605d51c7bb81d009d5bf30a783a2c@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        bean@azulsystems.com, oleg@redhat.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, oleg@redhat.com, bean@azulsystems.com,
+        hpa@linux.intel.com
+In-Reply-To: <20140902175713.GA21646@redhat.com>
+References: <20140902175713.GA21646@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/fpu] x86, fpu: shift drop_init_fpu()
+  from save_xstate_sig() to handle_signal()
+Git-Commit-ID: 66463db4fc5605d51c7bb81d009d5bf30a783a2c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <54061505.8020500@sr71.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+Commit-ID:  66463db4fc5605d51c7bb81d009d5bf30a783a2c
+Gitweb:     http://git.kernel.org/tip/66463db4fc5605d51c7bb81d009d5bf30a783a2c
+Author:     Oleg Nesterov <oleg@redhat.com>
+AuthorDate: Tue, 2 Sep 2014 19:57:13 +0200
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 2 Sep 2014 14:51:14 -0700
 
-On Tue, Sep 02, 2014 at 12:05:41PM -0700, Dave Hansen wrote:
-> I'm seeing a pretty large regression in 3.17-rc2 vs 3.16 coming from the
-> memory cgroups code.  This is on a kernel with cgroups enabled at
-> compile time, but not _used_ for anything.  See the green lines in the
-> graph:
-> 
-> 	https://www.sr71.net/~dave/intel/regression-from-05b843012.png
-> 
-> The workload is a little parallel microbenchmark doing page faults:
+x86, fpu: shift drop_init_fpu() from save_xstate_sig() to handle_signal()
 
-Ouch.
+save_xstate_sig()->drop_init_fpu() doesn't look right. setup_rt_frame()
+can fail after that, in this case the next setup_rt_frame() triggered
+by SIGSEGV won't save fpu simply because the old state was lost. This
+obviously mean that fpu won't be restored after sys_rt_sigreturn() from
+SIGSEGV handler.
 
-> > https://github.com/antonblanchard/will-it-scale/blob/master/tests/page_fault2.c
-> 
-> The hardware is an 8-socket Westmere box with 160 hardware threads.  For
-> some reason, this does not affect the version of the microbenchmark
-> which is doing completely anonymous page faults.
-> 
-> I bisected it down to this commit:
-> 
-> > commit 05b8430123359886ef6a4146fba384e30d771b3f
-> > Author: Johannes Weiner <hannes@cmpxchg.org>
-> > Date:   Wed Aug 6 16:05:59 2014 -0700
-> > 
-> >     mm: memcontrol: use root_mem_cgroup res_counter
-> >     
-> >     Due to an old optimization to keep expensive res_counter changes at a
-> >     minimum, the root_mem_cgroup res_counter is never charged; there is no
-> >     limit at that level anyway, and any statistics can be generated on
-> >     demand by summing up the counters of all other cgroups.
-> >     
-> >     However, with per-cpu charge caches, res_counter operations do not even
-> >     show up in profiles anymore, so this optimization is no longer
-> >     necessary.
-> >     
-> >     Remove it to simplify the code.
+Shift drop_init_fpu() into !failed branch in handle_signal().
 
-Accounting new pages is buffered through per-cpu caches, but taking
-them off the counters on free is not, so I'm guessing that above a
-certain allocation rate the cost of locking and changing the counters
-takes over.  Is there a chance you could profile this to see if locks
-and res_counter-related operations show up?
+Test-case (needs -O2):
 
-I can't reproduce this complete breakdown on my smaller test gear, but
-I do see an improvement with the following patch:
+	#include <stdio.h>
+	#include <signal.h>
+	#include <unistd.h>
+	#include <sys/syscall.h>
+	#include <sys/mman.h>
+	#include <pthread.h>
+	#include <assert.h>
 
+	volatile double D;
+
+	void test(double d)
+	{
+		int pid = getpid();
+
+		for (D = d; D == d; ) {
+			/* sys_tkill(pid, SIGHUP); asm to avoid save/reload
+			 * fp regs around "C" call */
+			asm ("" : : "a"(200), "D"(pid), "S"(1));
+			asm ("syscall" : : : "ax");
+		}
+
+		printf("ERR!!\n");
+	}
+
+	void sigh(int sig)
+	{
+	}
+
+	char altstack[4096 * 10] __attribute__((aligned(4096)));
+
+	void *tfunc(void *arg)
+	{
+		for (;;) {
+			mprotect(altstack, sizeof(altstack), PROT_READ);
+			mprotect(altstack, sizeof(altstack), PROT_READ|PROT_WRITE);
+		}
+	}
+
+	int main(void)
+	{
+		stack_t st = {
+			.ss_sp = altstack,
+			.ss_size = sizeof(altstack),
+			.ss_flags = SS_ONSTACK,
+		};
+
+		struct sigaction sa = {
+			.sa_handler = sigh,
+		};
+
+		pthread_t pt;
+
+		sigaction(SIGSEGV, &sa, NULL);
+		sigaltstack(&st, NULL);
+		sa.sa_flags = SA_ONSTACK;
+		sigaction(SIGHUP, &sa, NULL);
+
+		pthread_create(&pt, NULL, tfunc, NULL);
+
+		test(123.456);
+		return 0;
+	}
+
+Reported-by: Bean Anderson <bean@azulsystems.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Link: http://lkml.kernel.org/r/20140902175713.GA21646@redhat.com
+Cc: <stable@kernel.org> # v3.7+
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
->From 29a51326c24b7bb45d17e9c864c34506f10868f6 Mon Sep 17 00:00:00 2001
-From: Johannes Weiner <hannes@cmpxchg.org>
-Date: Tue, 2 Sep 2014 18:11:39 -0400
-Subject: [patch] mm: memcontrol: use per-cpu caches for uncharging
+ arch/x86/kernel/signal.c | 5 +++++
+ arch/x86/kernel/xsave.c  | 2 --
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
----
- mm/memcontrol.c | 28 ++++++++++++++++++++++------
- 1 file changed, 22 insertions(+), 6 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index ec4dcf1b9562..cb79ecff399d 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2365,6 +2365,7 @@ static void drain_stock(struct memcg_stock_pcp *stock)
- 		res_counter_uncharge(&old->res, bytes);
- 		if (do_swap_account)
- 			res_counter_uncharge(&old->memsw, bytes);
-+		memcg_oom_recover(old);
- 		stock->nr_pages = 0;
+diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
+index 2851d63..ed37a76 100644
+--- a/arch/x86/kernel/signal.c
++++ b/arch/x86/kernel/signal.c
+@@ -675,6 +675,11 @@ handle_signal(struct ksignal *ksig, struct pt_regs *regs)
+ 		 * handler too.
+ 		 */
+ 		regs->flags &= ~(X86_EFLAGS_DF|X86_EFLAGS_RF|X86_EFLAGS_TF);
++		/*
++		 * Ensure the signal handler starts with the new fpu state.
++		 */
++		if (used_math())
++			drop_init_fpu(current);
  	}
- 	stock->cached = NULL;
-@@ -2405,6 +2406,13 @@ static void refill_stock(struct mem_cgroup *memcg, unsigned int nr_pages)
- 		stock->cached = memcg;
- 	}
- 	stock->nr_pages += nr_pages;
-+	if (stock->nr_pages > CHARGE_BATCH * 4) {
-+		res_counter_uncharge(&memcg->res, CHARGE_BATCH);
-+		if (do_swap_account)
-+			res_counter_uncharge(&memcg->memsw, CHARGE_BATCH);
-+		memcg_oom_recover(memcg);
-+		stock->nr_pages -= CHARGE_BATCH;
-+	}
- 	put_cpu_var(memcg_stock);
+ 	signal_setup_done(failed, ksig, test_thread_flag(TIF_SINGLESTEP));
+ }
+diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
+index 940b142..cf0b830 100644
+--- a/arch/x86/kernel/xsave.c
++++ b/arch/x86/kernel/xsave.c
+@@ -271,8 +271,6 @@ int save_xstate_sig(void __user *buf, void __user *buf_fx, int size)
+ 	if (use_fxsr() && save_xstate_epilog(buf_fx, ia32_fxstate))
+ 		return -1;
+ 
+-	drop_init_fpu(tsk);	/* trigger finit */
+-
+ 	return 0;
  }
  
-@@ -6509,12 +6517,20 @@ static void uncharge_batch(struct mem_cgroup *memcg, unsigned long pgpgout,
- {
- 	unsigned long flags;
- 
--	if (nr_mem)
--		res_counter_uncharge(&memcg->res, nr_mem * PAGE_SIZE);
--	if (nr_memsw)
--		res_counter_uncharge(&memcg->memsw, nr_memsw * PAGE_SIZE);
--
--	memcg_oom_recover(memcg);
-+	/*
-+	 * The percpu caches count both memory and memsw charges in a
-+	 * single conuter, but there might be less memsw charges when
-+	 * some of the pages have been swapped out.
-+	 */
-+	if (nr_mem == nr_memsw)
-+		refill_stock(memcg, nr_mem);
-+	else {
-+		if (nr_mem)
-+			res_counter_uncharge(&memcg->res, nr_mem * PAGE_SIZE);
-+		if (nr_memsw)
-+			res_counter_uncharge(&memcg->memsw, nr_memsw * PAGE_SIZE);
-+		memcg_oom_recover(memcg);
-+	}
- 
- 	local_irq_save(flags);
- 	__this_cpu_sub(memcg->stat->count[MEM_CGROUP_STAT_RSS], nr_anon);
--- 
-2.0.4
-
