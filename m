@@ -1,98 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122AbaIBNtQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 09:49:16 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:47794 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753972AbaIBNtP (ORCPT
+	id S1754193AbaIBNuc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 09:50:32 -0400
+Received: from smarthost01b.mail.zen.net.uk ([212.23.1.3]:52786 "EHLO
+	smarthost01b.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751500AbaIBNua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 09:49:15 -0400
-Message-ID: <5405CAD4.4090502@atmel.com>
-Date: Tue, 2 Sep 2014 15:49:08 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        <arm@kernel.org>
-CC: Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: Re: [GIT PULL 4/4] at91: dt for 3.18 #2
-References: <1409593127-24049-1-git-send-email-nicolas.ferre@atmel.com> <1409593127-24049-4-git-send-email-nicolas.ferre@atmel.com>
-In-Reply-To: <1409593127-24049-4-git-send-email-nicolas.ferre@atmel.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
+	Tue, 2 Sep 2014 09:50:30 -0400
+Message-ID: <1409665784.2873.49.camel@linaro1.home>
+Subject: Re: [PATCH v5 3/3] kprobes: arm: enable OPTPROBES for ARM 32
+From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+To: Wang Nan <wangnan0@huawei.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        "David A. Long" <dave.long@linaro.org>,
+        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Will Deacon <will.deacon@arm.com>, Pei Feiyue <peifeiyue@huawei.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Tue, 02 Sep 2014 14:49:44 +0100
+In-Reply-To: <1409144552-12751-4-git-send-email-wangnan0@huawei.com>
+References: <1409144552-12751-1-git-send-email-wangnan0@huawei.com>
+	 <1409144552-12751-4-git-send-email-wangnan0@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2-1+b1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+X-Originating-smarthost01b-IP: [82.69.122.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/2014 19:38, Nicolas Ferre :
-> Arnd, Olof, Kevin,
-> 
-> A little bit more material for the DT branch. I didn't want to the one I've
-> just sent you because this material is not related to the big cleanup addressed
-> by previous 3 pull-requests.
-> It is very basic and simple DT updates and a use of phy fixup infrastructure
-> that is now present in phy subsystem.
-> 
-> Thanks, best regards,
-> 
-> The following changes since commit 464d6e18639c4347dafd8dbcee270674dd3d8fba:
-> 
->   Merge tag 'at91-dt-for-3.17' of git://git.kernel.org/pub/scm/linux/kernel/git/mripard/linux (2014-08-19 16:04:10 -0500)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://github.com/at91linux/linux-at91.git tags/at91-dt2
+I gave the patches a quick test and in doing so found a bug which stops
+any probes actually being optimised, and the same bug should affect X86,
+see comment below...
 
-FYI, I've just pushed a branch to show the conflict resolution while
-merging this tag with the tree previous pull-requests:
+On Wed, 2014-08-27 at 21:02 +0800, Wang Nan wrote:
+[...]
+> +int arch_prepare_optimized_kprobe(struct optimized_kprobe *op)
+> +{
+> +	u8 *buf;
+> +	unsigned long rel_chk;
+> +	unsigned long val;
+> +
+> +	if (!can_optimize(op))
+> +		return -EILSEQ;
+> +
+> +	op->optinsn.insn = get_optinsn_slot();
+> +	if (!op->optinsn.insn)
+> +		return -ENOMEM;
+> +
+> +	/*
+> +	 * Verify if the address gap is in 32MiB range, because this uses
+> +	 * a relative jump.
+> +	 *
+> +	 * kprobe opt use a 'b' instruction to branch to optinsn.insn.
+> +	 * According to ARM manual, branch instruction is:
+> +	 *
+> +	 *   31  28 27           24 23             0
+> +	 *  +------+---+---+---+---+----------------+
+> +	 *  | cond | 1 | 0 | 1 | 0 |      imm24     |
+> +	 *  +------+---+---+---+---+----------------+
+> +	 *
+> +	 * imm24 is a signed 24 bits integer. The real branch offset is computed
+> +	 * by: imm32 = SignExtend(imm24:'00', 32);
+> +	 *
+> +	 * So the maximum forward branch should be:
+> +	 *   (0x007fffff << 2) = 0x01fffffc =  0x1fffffc
+> +	 * The maximum backword branch should be:
+> +	 *   (0xff800000 << 2) = 0xfe000000 = -0x2000000
+> +	 *
+> +	 * We can simply check (rel & 0xfe000003):
+> +	 *  if rel is positive, (rel & 0xfe000000) shoule be 0
+> +	 *  if rel is negitive, (rel & 0xfe000000) should be 0xfe000000
+> +	 *  the last '3' is used for alignment checking.
+> +	 */
+> +	rel_chk = (unsigned long)((long)op->optinsn.insn -
+> +			(long)op->kp.addr + 8) & 0xfe000003;
 
-https://github.com/at91linux/linux-at91/commits/at91-3.18-resolved
+This check always fails because op->kp.addr is zero. Debugging this I
+found that this function is called from alloc_aggr_kprobe() and that
+copies the real kprobe into op->kp using copy_kprobe(), which doesn't
+actually copy the 'addr' value...
 
-or:
+        static inline void copy_kprobe(struct kprobe *ap, struct kprobe *p)
+        {
+        	memcpy(&p->opcode, &ap->opcode, sizeof(kprobe_opcode_t));
+        	memcpy(&p->ainsn, &ap->ainsn, sizeof(struct arch_specific_insn));
+        }
 
-git://github.com/at91linux/linux-at91.git at91-3.18-resolved
+Thing is, the new ARM code is a close copy of the existing X86 version
+so that would also suffer the same problem of kp.addr always being zero.
+So either I've miss understood something or this is fundamental bug no
+one has noticed before.
 
-Best regards,
+Throwing in 'p->addr = ap->addr' into the copy_kprobe function fixed the
+behaviour arch_prepare_optimized_kprobe.
 
-> for you to fetch changes up to 5f8157309624929e05ece846d3ca8a3a64988378:
-> 
->   ARM: at91: remove phy fixup for sama5d3xek boards (2014-09-01 19:30:44 +0200)
-> 
-> ----------------------------------------------------------------
-> Second batch of AT91 DT patches for 3.18:
-> - 2 little fixes for at91sam9x5 and at91sam9n12ek
-> - removal of a board specific hook for sama5d3xek about phy fixup
->   replaced with proper DT property definition.
-> 
-> ----------------------------------------------------------------
-> Alexandre Belloni (1):
->       ARM: at91/dt: sam9x5: fix ADC compatible string
-> 
-> Bo Shen (1):
->       ARM: at91/dt: sam9n12ek: ohci: add port and vbus property
-> 
-> Boris BREZILLON (2):
->       ARM: at91/dt: describe rgmii ethernet phy connected to sama5d3xek boards
->       ARM: at91: remove phy fixup for sama5d3xek boards
-> 
->  arch/arm/boot/dts/at91sam9n12ek.dts |  2 ++
->  arch/arm/boot/dts/at91sam9x5.dtsi   |  2 +-
->  arch/arm/boot/dts/sama5d3xcm.dtsi   | 30 ++++++++++++++++++++++++++++++
->  arch/arm/mach-at91/board-dt-sama5.c | 22 ----------------------
->  4 files changed, 33 insertions(+), 23 deletions(-)
-> 
+I was testing this by running the kprobes tests
+(CONFIG_ARM_KPROBES_TEST=y) and putting a few printk's in strategic
+places in kprobes-opt.c to check to see what code paths got executed,
+which is how I discovered the problem.
 
+Two things to note when running kprobes tests...
+
+1. On SMP systems it's very slow because of kprobe's use of stop_machine
+for applying and removing probes, this forces the system to idle and
+wait for the next scheduler tick for each probe change.
+
+2. It's a good idea to enable VERBOSE in kprobes-test.h to get output
+for each test case instruction, this reassures you things are
+progressing and if things explode lets you know what instruction type
+triggered it.
 
 -- 
-Nicolas Ferre
+Tixy
+
