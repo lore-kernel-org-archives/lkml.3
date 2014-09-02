@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755064AbaIBVbu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 17:31:50 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:45173 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751502AbaIBVbs (ORCPT
+	id S1755225AbaIBVcy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 17:32:54 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:61517 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755153AbaIBVcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 17:31:48 -0400
+	Tue, 2 Sep 2014 17:32:52 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: lenb@kernel.org, qbanin@gmail.com, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI/EC: Add msi quirk for Clevo W350etq
+Date: Tue, 02 Sep 2014 23:52:10 +0200
+Message-ID: <1789359.lgutrb7SVa@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1409280608-19714-1-git-send-email-tianyu.lan@intel.com>
+References: <1409280608-19714-1-git-send-email-tianyu.lan@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <2bf2e54282097642db88e2b596b06a9ac3742883.1409690849.git.hannes@stressinduktion.org>
-References: <aa5126f747594d768e0c518189a13e8674ad8ee5.1409690486.git.hannes@stressinduktion.org>
-	<2bf2e54282097642db88e2b596b06a9ac3742883.1409690849.git.hannes@stressinduktion.org>
-Date: Tue, 2 Sep 2014 14:31:47 -0700
-Message-ID: <CAMEtUuyoWELJ0Yf+=5sDKxFEfgsiQ3kMCK+Wn_bdJgS8qaH2og@mail.gmail.com>
-Subject: Re: [PATCH net-next v2] net: bpf: make eBPF interpreter images read-only
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Brad Spengler <spender@grsecurity.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Kees Cook <keescook@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 2, 2014 at 1:53 PM, Hannes Frederic Sowa
-<hannes@stressinduktion.org> wrote:
-> From: Daniel Borkmann <dborkman@redhat.com>
->
-> With eBPF getting more extended and exposure to user space is on it's way,
-> hardening the memory range the interpreter uses to steer its command flow
-> seems appropriate.  This patch moves the to be interpreted bytecode to
-> read-only pages.
-...
->  11 files changed, 144 insertions(+), 32 deletions(-)
+On Friday, August 29, 2014 10:50:08 AM Lan Tianyu wrote:
+> Clevo W350etq's EC will not produce GPE interrupt some time after
+> booting. The ACPI notify event won't trigger when the issue takes
+> place. After debugging, adding msi quirk for the machine can fix
+> the issue. This patch is to add msi quirk for the machine.
+> 
+> Reference: https://bugzilla.kernel.org/show_bug.cgi?id=77431
+> Reported-and-tested-by: qbanin@gmail.com
+> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
 
-nice. quite short.
+Queued up for 3.17-rc4, thanks!
 
-> +#ifdef CONFIG_DEBUG_SET_MODULE_RONX
-> +static inline void bpf_prog_lock_ro(struct bpf_prog *fp)
-> +{
-> +       set_memory_ro((unsigned long)fp, fp->pages);
+> ---
+>  drivers/acpi/ec.c | 4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
+> index a66ab65..d8535b3 100644
+> --- a/drivers/acpi/ec.c
+> +++ b/drivers/acpi/ec.c
+> @@ -1015,6 +1015,10 @@ static struct dmi_system_id ec_dmi_table[] __initdata = {
+>  	DMI_MATCH(DMI_SYS_VENDOR, "Quanta"),
+>  	DMI_MATCH(DMI_PRODUCT_NAME, "TW9/SW9"),}, NULL},
+>  	{
+> +	ec_flag_msi, "Clevo W350etq", {
+> +	DMI_MATCH(DMI_SYS_VENDOR, "CLEVO CO."),
+> +	DMI_MATCH(DMI_PRODUCT_NAME, "W35_37ET"),}, NULL},
+> +	{
+>  	ec_validate_ecdt, "ASUS hardware", {
+>  	DMI_MATCH(DMI_BIOS_VENDOR, "ASUS") }, NULL},
+>  	{
+> 
 
-since ronx are ifdef checked together,
-would probably make sense to set nx too?
-
-> +static inline void bpf_prog_unlock_ro(struct bpf_prog *fp)
-> +{
-> +       set_memory_rw((unsigned long)fp, fp->pages);
-
-why rw is needed?
-since fp is allocated with vmalloc, vfree doesn't need
-to touch the pages to free them, no?
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
