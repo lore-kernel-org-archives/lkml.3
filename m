@@ -1,74 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753165AbaIBIo6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 04:44:58 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:52383 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751503AbaIBIo4 (ORCPT
+	id S1753276AbaIBIqB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 04:46:01 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:60100 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752653AbaIBIp5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 04:44:56 -0400
-Message-ID: <54058376.9090700@mentor.com>
-Date: Tue, 2 Sep 2014 14:14:38 +0530
-From: Harish Jenny Kandiga Nagaraj <harish_kandiga@mentor.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Tue, 2 Sep 2014 04:45:57 -0400
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <dborkman@redhat.com>, <tgraf@suug.ch>, <ebiederm@xmission.com>,
-        <darkjames-ws@darkjames.pl>, <rgb@redhat.com>,
-        <eric.dumazet@gmail.com>, <stephen@networkplumber.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] netlink: Safer deletion of sk_bind_node
-References: <1409555309-5893-1-git-send-email-harish_kandiga@mentor.com> <20140901.220325.955861172520355423.davem@davemloft.net>
-In-Reply-To: <20140901.220325.955861172520355423.davem@davemloft.net>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [137.202.0.76]
+In-Reply-To: <20140902080010.GD17117@lee--X1>
+References: <1409349654-24841-2-git-send-email-octavian.purdila@intel.com>
+	<20140901083744.GE7374@lee--X1>
+	<CAE1zotK0cddns4f4ay-GJie8O2pjb72+-yYndZvW0hbF0D83HA@mail.gmail.com>
+	<20140901095127.GK7374@lee--X1>
+	<CAE1zot+T6eq0jrL6_Qh=5nihNOgGEaWe5RCDk7_1XS8ZWaWKqA@mail.gmail.com>
+	<20140901113949.GP7374@lee--X1>
+	<CAE1zotKNBTEMX8DDYwdwOcq0qZgqxZWazE60TUQeiOmD0a4xbA@mail.gmail.com>
+	<20140901154626.GH8796@lee--X1>
+	<CAE1zotL-cjHqrdymzYhZq24zx+0qGY8-4JnrVZf-TGXDf5Sm3w@mail.gmail.com>
+	<20140901175453.GR4894@localhost>
+	<20140902080010.GD17117@lee--X1>
+Date: Tue, 2 Sep 2014 11:45:55 +0300
+Message-ID: <CAE1zotJzFL0bZvNo4mHK3+EhURarhTPDE5n+SdNzof8Nc-CFew@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] mfd: add support for Diolan DLN-2 devices
+From: Octavian Purdila <octavian.purdila@intel.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Johan Hovold <johan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, wsa@the-dreams.de,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-usb@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        linux-gpio@vger.kernel.org, linux-i2c@vger.kernel.org,
+        Daniel Baluta <daniel.baluta@intel.com>,
+        Laurentiu Palcu <laurentiu.palcu@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In one of our random test runs we observed the crash mentioned in the previous mail.
-
-After debugging we found out that the call flow of the inline and static functions were
-netlink_release
------netlink_remove
----------__sk_del_bind_node
---------------__hlist_del
-
-*pprev was NULL in __hlist_del function while deleting &sk->sk_bind_node hlist_node. Hence the patch was given.
-
-In netlink_remove function , first the sk_del_node_init function will be called. This internally calls __sk_del_node_init function. While deleting &sk->sk_node hlist_node using __sk_del_node function there is a NULL check with sk_hashed function.
-
-Why there is no NULL check for *pprev while deleting &sk->sk_bind_node ?
-
-On Tuesday 02 September 2014 10:33 AM, David Miller wrote:
-> From: Harish Jenny K N
-> Date: Mon, 1 Sep 2014 12:38:29 +0530
->
-> Firstly, you really need to fix your outgoing email so that your email
-> address appears in your From: header properly.
->
->> From: Harish Jenny K N <harish_kandiga@mentor.com>
+On Tue, Sep 2, 2014 at 11:00 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> On Mon, 01 Sep 2014, Johan Hovold wrote:
+>> On Mon, Sep 01, 2014 at 07:22:39PM +0300, Octavian Purdila wrote:
+>> > On Mon, Sep 1, 2014 at 6:46 PM, Lee Jones <lee.jones@linaro.org> wrote:
+>> > > On Mon, 01 Sep 2014, Octavian Purdila wrote:
+>> > >
+>> > >> On Mon, Sep 1, 2014 at 2:39 PM, Lee Jones <lee.jones@linaro.org> wrote:
+>> > >> > On Mon, 01 Sep 2014, Octavian Purdila wrote:
+>> > >> >> On Mon, Sep 1, 2014 at 12:51 PM, Lee Jones <lee.jones@linaro.org> wrote:
 >>
->>     Unable to handle kernel NULL pointer dereference at virtual address 00000000
->>         (netlink_release+0x0/0x2a0) from [<8034e78c>] (sock_release+0x28/0xa4)
->>         (sock_release+0x0/0xa4) from [<8034e830>] (sock_close+0x28/0x34)
->>         (sock_close+0x0/0x34) from [<800f3490>] (__fput+0xf0/0x1ec)
->>         (__fput+0x0/0x1ec) from [<800f3634>] (____fput+0x10/0x14)
->>         (____fput+0x0/0x14) from [<80040a64>] (task_work_run+0xb8/0xd8)
->>         (task_work_run+0x0/0xd8) from [<800113a0>] (do_work_pending+0xb0/0xc4)
->>         (do_work_pending+0x0/0xc4) from [<8000d960>] (work_pending+0xc/0x20)
->>     Call flow of the inline and static functions
->>         netlink_release
->>         -----netlink_remove
->>         ---------__sk_del_bind_node
->>         --------------__hlist_del
+>> > >> >> > You should have a small MFD driver which controls resources and
+>> > >> >> > registers children.  All other functionality should live in their
+>> > >> >> > respective drivers/X locations i.e. USB functionallity should normally
+>> > >> >> > live in drivers/usb.
+>> > >> >> >
+>> > >> >>
+>> > >> >> OK, that sounds better. I am not sure how to handle the registration
+>> > >> >> part though, since in this case we need to create the children at
+>> > >> >> runtime, from the usb probe routine.
+>> > >> >>
+>> > >> >> The only solution I see is to move the driver completely to
+>> > >> >> usb/drivers and continue to use the MFD infrastructure. Does that
+>> > >> >> sound OK to you?
+>> > >> >
+>> > >> > I have no problem with that.  If this is an MFD driver, it _should_
+>> > >> > live in drivers/mfd.  However, all of that USB specific stuff
+>> > >> > defiantly should not.
+>> > >> >
+>> > >> > >> It is a multi-function driver which is using the USB interface, so I
+>> > >> am not sure where it belongs. The only driver that calls
+>> > >> mfd_add_devices and is not in drivers/mfd is the hid sensor hub
+>> > >> driver.
+>> > >>
+>> > >> BTW, the mfd/viperboard.c driver is very similar with this driver. It
+>> > >> has less USB specific stuff because the protocol is simpler, but still
+>> > >> has some.
+>> > >
+>> > > Looking at viperboard.c, it seems to use some basic generic framework
+>> > > calls to obtain some information about the device information like
+>> > > version numbers.  Your driver is leaps and bounds more USB centric.
+>> > >
+>> > > Your MFD driver should know about things like; regmap, platform data,
+>> > > memory allocation, same-chip devices (children), etc.  Your MFD driver
+>> > > should not need to concern itself with; endpoints, slots, URBs, USB
+>> > > device IDs and the like.  The later knowledge belongs in drivers/usb.
+>> > >
+>> > > You should be calling mfd_add_devices() from within the MFD driver.
+>> > > At a guess, I would say that you need a new entry for the USB stuff in
+>> > > your mfd_cells structure.
+>> > >
+>> >
+>> > Makes sense, thanks for making clearing up what the MFD part of the
+>> > driver should do.
+>> >
+>> > Here is how I think it could work:
+>> >
+>> >  * keep the usb probe routine in the MFD driver (and keep it a usb driver)
+>> >
+>> >  * add a new cell for the usb part
+>> >
+>> >  * pass the usb_interface via platform_data to the USB sub-driver's
+>> > platform_device probe routine and continue the USB setup there
+>> >
+>> > Lee, USB folks, is this acceptable?
 >>
->> Signed-off-by: Harish Jenny K N <harish_kandiga@mentor.com>
-> This doesn't tell us anything about how this situation can be
-> arrived at.
+>> No, no. USB is not a function of the MFD device, it's the transport.
+>> Thus there should be no USB MFD-cell. No subdriver can work without it.
+>>
+>> And the USB id belongs in the MFD-driver in the same way that an
+>> i2c id (address) does.
+>>
+>> Just like an MFD device with i2c as a transport, this driver would
+>> function as an arbiter to a shared resource (i.e. the register space).
+>> The reason it seems much more USB-centric than an i2c-mfd driver is that
+>> that transport API is simpler and some code have also already been
+>> generalised (e.g. regmap), whereas we appear to have only two USB
+>> mfd-drivers thus far.
+>>
+>> The viperboard is perhaps a bad example in so far that it has pushed the
+>> transport details down into the subdrivers (and thus into gpio, i2c and
+>> iio subsystems) instead of handling it one place.
 >
-> When subscriptions changes, we delete the node with the table lock
-> held if subscriptions goes to zero.  We only try to delete the node
-> when subscriptions was zero.
+> Thanks for your explanation.  I take your point about the USB ID and I
+> did say I was guessing that the USB part should exist as a child
+> device.
+>
+> So after your comments I decided to do a little investigation.  It
+> appears that this MFD driver is _just_ using the common API which all
+> other devices utilising USB comms are forced to use.  Is that correct?
+>
+> If so, I have a question.  Is there no way to hide more of the USB
+> specifics inside a better, simpler API?  It looks like the drivers
+> which use USB are subjected to a lot (too much) of what might be
+> considered internals.  Or is it just that the client has to tinker
+> with too many dials to get anything sensible out? *shudders*
+>
 
+Yes, the driver is just using the common USB API to communicate with
+the device.
+
+It is more complicated then the average USB driver because there is a
+single interface and a single receive endpoint which needs to serve
+multiple drivers and requests, thus the need to multiplex the
+communication.
+
+>> I haven't looked at the details of the protocol for the device in
+>> question, but it might even be possible to use regmap here (as I
+>> mentioned in my comments on v1).
+>
+> Obviously that would be preferred.
+>
+> Octavian, did you look into that?
+>
+
+Yes, I did. Since this is the first time I am looking at regmap I may
+be wrong but I don't see a way to use it. The dln2 i2c driver needs to
+be able to send and receive arbitrary size buffers and this does not
+seem possible to do with the regmap API.
+
+(Also creating a regmap class for a particular device seems over
+engineering since nobody else is going to use it)
