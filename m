@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755200AbaIBWAl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 18:00:41 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:52762 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820AbaIBWAk (ORCPT
+	id S1755065AbaIBWBS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 18:01:18 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:40310 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752135AbaIBWBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 18:00:40 -0400
+	Tue, 2 Sep 2014 18:01:17 -0400
+Message-ID: <54063E2B.6090403@codeaurora.org>
+Date: Tue, 02 Sep 2014 15:01:15 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <CAKohpomf4a75G5TYr4U1VkdcRUWO-Hp6oyJPyzfOR=6-GuMBbg@mail.gmail.com>
-References: <1409597225-24368-1-git-send-email-mturquette@linaro.org>
- <1409597225-24368-4-git-send-email-mturquette@linaro.org> <CAKohpomf4a75G5TYr4U1VkdcRUWO-Hp6oyJPyzfOR=6-GuMBbg@mail.gmail.com>
-From: Mike Turquette <mturquette@linaro.org>
-Date: Tue, 2 Sep 2014 15:00:17 -0700
-Message-ID: <CAPtuhThLdvRMRT0rdd692v6eepzq2J8wDX=DFDwJbuO5B6fMQw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] cpufreq: kirkwood: use the powersave multiplexer
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Patch Tracking <patches@linaro.org>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Mike Turquette <mturquette@linaro.org>
+CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Kumar Gala <galak@codeaurora.org>, Andy Gross <agross@codeaurora.org>
+Subject: Re: [PATCH] clk: qcom: Fix sdc 144kHz frequency entry
+References: <1409341766-24366-1-git-send-email-sboyd@codeaurora.org> <20140902214402.5251.75274@quantum>
+In-Reply-To: <20140902214402.5251.75274@quantum>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 1, 2014 at 9:49 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 2 September 2014 00:17, Mike Turquette <mturquette@linaro.org> wrote:
->
->> @@ -150,7 +146,7 @@ static int kirkwood_cpufreq_probe(struct platform_device *pdev)
->>                 err = PTR_ERR(priv.powersave_clk);
->>                 goto out_ddr;
->>         }
->> -       clk_prepare(priv.powersave_clk);
->> +       clk_prepare_enable(priv.powersave_clk);
->
-> Shouldn't this be done in a separate patch? Or is this really related?
-
-It is related. Before this change powersave_clk was modeled as a gate.
-The separate clk_enable/clk_disable operations were used to toggle the
-mux. This patch does two things:
-
-1) remove the old gate-style powersave_clk in the clock driver and
-replace with the mux-style powersave_clk data
-2) update the cpufreq driver to handle the mux properly
-
-So the change you pointed out above is part of #2.
-
-These two changes are coupled in one patch to prevent git bisect breakage.
-
->
+On 09/02/14 14:44, Mike Turquette wrote:
+> Quoting Stephen Boyd (2014-08-29 12:49:26)
+>> The pre-divider for the sdc clocks only has 2 bits in it, so we
+>> can't possibly divide by anything larger than 4 here.
+>> Furthermore, we program the value of ~(n - m) and the n value is
+>> larger than 8 bits (max of 256). Replace this entry with 200kHz
+>> which is close enough to 144kHz to be usable.
 >>
->>         of_node_put(np);
->>         np = NULL;
+>> Cc: Kumar Gala <galak@codeaurora.org>
+>> Cc: Andy Gross <agross@codeaurora.org>
+>> Fixes: 24d8fba44af3 "clk: qcom: Add support for IPQ8064's global clock controller (GCC)"
+>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> Do you need this pulled into a 3.17-rc?
 >
-> Other than that: Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
->
-> Yeah, you can take it through clock tree..
 
-Cool.
+Yes that would be helpful since this fixes a driver introduced into 3.17.
 
-Thanks,
-Mike
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
