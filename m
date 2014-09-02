@@ -1,59 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360AbaIBJP3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 05:15:29 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33027 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752076AbaIBJP1 (ORCPT
+	id S1753373AbaIBJQS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 05:16:18 -0400
+Received: from mail-bl2lp0209.outbound.protection.outlook.com ([207.46.163.209]:55577
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752121AbaIBJQQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 05:15:27 -0400
-Message-ID: <1409649317.4449.7.camel@paszta.hi.pengutronix.de>
-Subject: Re: [PATCH 1/2] gpu: ipu-v3: Select GENERIC_IRQ_CHIP to fix build
- error
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Axel Lin <axel.lin@ingics.com>
-Cc: Lucas Stach <l.stach@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
+	Tue, 2 Sep 2014 05:16:16 -0400
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>
+CC: "broonie@kernel.org" <broonie@kernel.org>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
+        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>,
+        "moinejf@free.fr" <moinejf@free.fr>, "andrew@lunn.ch" <andrew@lunn.ch>,
+        "jsarha@ti.com" <jsarha@ti.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Shawn Guo <Shawn.Guo@freescale.com>,
+        "Nicolin Chen" <nicoleotsuka@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 02 Sep 2014 11:15:17 +0200
-In-Reply-To: <20140902032849.GA9056@kroah.com>
-References: <1407033419.17812.2.camel@phoenix>
-	 <CAFRkauB=2f5-zN5OAwx0LSYSnwuub_ONL+LuYYdy6-MxWQNzLw@mail.gmail.com>
-	 <20140902021119.GA2525@kroah.com>
-	 <CAFRkauB3gcNjP-3_kvbYS6Zi3p1QwHsZs6SkPOLE-LAbpb=uyQ@mail.gmail.com>
-	 <20140902032849.GA9056@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Subject: RE: [alsa-devel] [PATCHv1 1/7] ASoC: simple-card: Merge single and
+ muti	DAI link code.
+Thread-Topic: [alsa-devel] [PATCHv1 1/7] ASoC: simple-card: Merge single and
+ muti	DAI link code.
+Thread-Index: AQHPxbhYUt4NIVbtUkuD0vLpW80mr5vtkGhA
+Date: Tue, 2 Sep 2014 09:15:54 +0000
+Message-ID: <6ebdb2b0dcec46ef95084d2fc578b7b8@BY2PR0301MB0613.namprd03.prod.outlook.com>
+References: <1409545781-20530-1-git-send-email-Li.Xiubo@freescale.com>
+	<1409545781-20530-2-git-send-email-Li.Xiubo@freescale.com>
+ <87tx4rzszx.wl%kuninori.morimoto.gx@gmail.com>
+In-Reply-To: <87tx4rzszx.wl%kuninori.morimoto.gx@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [123.151.195.49]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+x-forefront-prvs: 0322B4EDE1
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(377454003)(189002)(51704005)(13464003)(199003)(53474002)(4396001)(83072002)(105586002)(54356999)(76176999)(108616004)(80022001)(76482001)(74662001)(31966008)(74502001)(85306004)(90102001)(107046002)(106356001)(46102001)(85852003)(110136001)(106116001)(77982001)(95666004)(99286002)(76576001)(92566001)(81542001)(81342001)(20776003)(2656002)(66066001)(64706001)(74316001)(101416001)(21056001)(83322001)(87936001)(77096002)(86362001)(50986999)(33646002)(19580395003)(99396002)(19580405001)(15866825004)(21314002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB343;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Kuninori-san
 
-Am Montag, den 01.09.2014, 20:28 -0700 schrieb Greg Kroah-Hartman:
-[...]
-> > I checked the MAINTAINERS file,
-> > I can only find the maintainer for some subfolders of drivers/gpu but no entry
-> > for drivers/gpu/ipu-v3.
-> > So I'm not sure who is the maintainer for drivers/gpu/ipu-v3.
+This patch series will break the old DTs, and I will follow Mark's
+Advice to maintain compatibility with the old DTs.
+
+I will send another version, please help me to review it. And I will also
+split the update patch series to many small ones.
+
+Thanks very much,
+
+BRs
+Xiubo
+
+> -----Original Message-----
+> From: Kuninori Morimoto [mailto:kuninori.morimoto.gx@gmail.com]
+> Sent: Monday, September 01, 2014 3:43 PM
+> To: Xiubo Li-B47053
+> Cc: broonie@kernel.org; lgirdwood@gmail.com; perex@perex.cz; tiwai@suse.de;
+> kuninori.morimoto.gx@renesas.com; moinejf@free.fr; andrew@lunn.ch;
+> jsarha@ti.com; devicetree@vger.kernel.org; linux-arm-
+> kernel@lists.infradead.org; linux-sh@vger.kernel.org; alsa-devel@alsa-
+> project.org; Guo Shawn-R65073; Nicolin Chen; linux-kernel@vger.kernel.org
+> Subject: Re: [alsa-devel] [PATCHv1 1/7] ASoC: simple-card: Merge single and
+> muti DAI link code.
 > 
-> Who moved the file out of staging?  I don't think it was me...
->
-> I think it is Philipp, who sent the patches through the drm tree, so try
-> those developers.
-
-I'll collect gpu/ipu-v3 patches and send them on.
-I've pushed this patch to:
-
-git://git.pengutronix.de/git/pza/linux.git topic/ipu-fixes
-
-regards
-Philipp
-
+> 
+> Hi Xiubo
+> 
+> Thank you for your patch.
+> This clean-up is very nice for me.
+> But, I have 1 small comment
+> 
+> >  asoc_simple_card_sub_parse_of(struct device_node *np,
+> >  			      struct asoc_simple_dai *dai,
+> >  			      struct device_node **p_node,
+> > -			      const char **name)
+> > +			      const char **name,
+> > +			      unsigned int *daifmt)
+> >  {
+> >  	struct device_node *node;
+> >  	struct clk *clk;
+> >  	u32 val;
+> >  	int ret;
+> >
+> > +	if (!daifmt)
+> > +		return -EINVAL;
+> > +
+> > +	/*
+> > +	 * Parse format, bitclock-inversion and frame-inversion
+> > +	 * for DAI each device.
+> > +	 */
+> > +	*daifmt = snd_soc_of_parse_daifmt(np, NULL, NULL, NULL);
+> > +	*daifmt &= ~(SND_SOC_DAIFMT_MASTER_MASK | SND_SOC_DAIFMT_FORMAT_MASK);
+> (snip)
+> >  	ret = asoc_simple_card_sub_parse_of(np, &dai_props->cpu_dai,
+> >  					    &dai_link->cpu_of_node,
+> > -					    &dai_link->cpu_dai_name);
+> > +					    &dai_link->cpu_dai_name,
+> > +					    &daifmt);
+> (snip)
+> > +	dai_props->cpu_dai.fmt |= daifmt;
+> (snip)
+> >  	ret = asoc_simple_card_sub_parse_of(np, &dai_props->codec_dai,
+> >  					    &dai_link->codec_of_node,
+> > -					    &dai_link->codec_dai_name);
+> > +					    &dai_link->codec_dai_name,
+> > +					    &daifmt);
+> (snip)
+> > +	dai_props->codec_dai.fmt |= daifmt;
+> 
+> These are using
+> 
+>       asoc_simple_card_sub_parse_of(np, &dai_props->cpu_dai, xxx)
+>       asoc_simple_card_sub_parse_of(np, &dai_props->codec_dai, xxx)
+> 
+> I guess, asoc_simple_card_sub_parse_of() can update
+> below inside function
+> 
+> 	dai_props->cpu_dai.fmt |= daifmt;
+> 	dai_props->codec_dai.fmt |= daifmt;
+> 
+> 
+> Best regards
+> ---
+> Kuninori Morimoto
