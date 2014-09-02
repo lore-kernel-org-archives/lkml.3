@@ -1,93 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753818AbaIBK6B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 06:58:01 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:60313 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752461AbaIBK57 (ORCPT
+	id S1753506AbaIBLBn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 07:01:43 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43784 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751503AbaIBLBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 06:57:59 -0400
-Message-ID: <5405A2B2.4010406@huawei.com>
-Date: Tue, 2 Sep 2014 18:57:54 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 2 Sep 2014 07:01:41 -0400
+Date: Tue, 2 Sep 2014 12:01:02 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Vivek Gautam <gautam.vivek@samsung.com>
+Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "balbi@ti.com" <balbi@ti.com>, "kishon@ti.com" <kishon@ti.com>,
+        "kgene.kim@samsung.com" <kgene.kim@samsung.com>
+Subject: Re: [PATCH 1/5] usb: dwc3: exynos: Add support for SCLK present on
+ Exynos7
+Message-ID: <20140902110102.GC6725@leverpostej>
+References: <1409212920-28526-1-git-send-email-gautam.vivek@samsung.com>
+ <1409212920-28526-2-git-send-email-gautam.vivek@samsung.com>
+ <20140828184847.GA18464@leverpostej>
+ <CAFp+6iHLSaUjHqaKXXX0QLiRd3h+O67DRSQdExag-KUH0dnpag@mail.gmail.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>,
-        LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH 2/2] cgroup: check cgroup liveliness before unbreaking kernfs
- protection
-References: <5405A27A.3090605@huawei.com>
-In-Reply-To: <5405A27A.3090605@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020207.5405A2B5.00D9,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2011-05-27 18:58:46
-X-Mirapoint-Loop-Id: d70464cfe201343c54ecb22fa0e1b6d3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFp+6iHLSaUjHqaKXXX0QLiRd3h+O67DRSQdExag-KUH0dnpag@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When cgroup_kn_lock_live() is called through some kernfs operation and
-another thread is calling cgroup_rmdir(), we may trigger the warning in
-cgroup_get().
+On Tue, Sep 02, 2014 at 11:39:08AM +0100, Vivek Gautam wrote:
+> Hi,
+> 
+> 
+> On Fri, Aug 29, 2014 at 12:18 AM, Mark Rutland <mark.rutland@arm.com> wrote:
+> > On Thu, Aug 28, 2014 at 09:01:56AM +0100, Vivek Gautam wrote:
+> >> Exynos7 also has a separate special gate clock going to the IP
+> >> apart from the usual AHB clock. So add support for the same.
+> >>
+> >> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> >> ---
+> >>  drivers/usb/dwc3/dwc3-exynos.c |   16 ++++++++++++++++
+> >>  1 file changed, 16 insertions(+)
+> >>
+> >> diff --git a/drivers/usb/dwc3/dwc3-exynos.c b/drivers/usb/dwc3/dwc3-exynos.c
+> >> index f9fb8ad..bab6395 100644
+> >> --- a/drivers/usb/dwc3/dwc3-exynos.c
+> >> +++ b/drivers/usb/dwc3/dwc3-exynos.c
+> >> @@ -35,6 +35,7 @@ struct dwc3_exynos {
+> >>       struct device           *dev;
+> >>
+> >>       struct clk              *clk;
+> >> +     struct clk              *sclk;
+> >>       struct regulator        *vdd33;
+> >>       struct regulator        *vdd10;
+> >>  };
+> >> @@ -141,10 +142,17 @@ static int dwc3_exynos_probe(struct platform_device *pdev)
+> >>               return -EINVAL;
+> >>       }
+> >>
+> >> +     /* Exynos7 has a special gate clock going to this IP */
+> >> +     exynos->sclk = devm_clk_get(dev, "usbdrd30_sclk");
+> >> +     if (IS_ERR(exynos->sclk))
+> >> +             dev_warn(dev, "couldn't get sclk\n");
+> >
+> > Doesn't this introduce a pointless warning for Exynos SoCs other than
+> > Exynos7?
+> 
+> True, it will introduce an unnecessary warning for non-Exynos7 systems.
+> I initially thought of introducing a compatible check for Exynos7-dwc3, but that
+> way we may end up adding such checks for future SoCs which have similar
+> controller but have some clock difference or some other small change, no ?
 
-------------[ cut here ]------------
-WARNING: CPU: 1 PID: 1228 at kernel/cgroup.c:1034 cgroup_get+0x89/0xa0()
-...
-Call Trace:
- [<c16ee73d>] dump_stack+0x41/0x52
- [<c10468ef>] warn_slowpath_common+0x7f/0xa0
- [<c104692d>] warn_slowpath_null+0x1d/0x20
- [<c10bb999>] cgroup_get+0x89/0xa0
- [<c10bbe58>] cgroup_kn_lock_live+0x28/0x70
- [<c10be3c1>] __cgroup_procs_write.isra.26+0x51/0x230
- [<c10be5b2>] cgroup_tasks_write+0x12/0x20
- [<c10bb7b0>] cgroup_file_write+0x40/0x130
- [<c11aee71>] kernfs_fop_write+0xd1/0x160
- [<c1148e58>] vfs_write+0x98/0x1e0
- [<c114934d>] SyS_write+0x4d/0xa0
- [<c16f656b>] sysenter_do_call+0x12/0x12
----[ end trace 6f2e0c38c2108a74 ]---
+Perhaps. I don't know what your future hardware will look like.
 
-Fix this by calling css_tryget() instead of cgroup_get().
+Is the usbdrd30_sclk input unique to Exynos7, or was it previously there
+but just without an input?
 
-Reported-by: Toralf Förster <toralf.foerster@gmx.de>
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- kernel/cgroup.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+If the latter you could just reduce this to:
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index e03fc62..c8d07e5 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1025,6 +1025,11 @@ static umode_t cgroup_file_mode(const struct cftype *cft)
- 	return mode;
- }
- 
-+static bool cgroup_tryget(struct cgroup *cgrp)
-+{
-+	return css_tryget(&cgrp->self);
-+}
-+
- static void cgroup_get(struct cgroup *cgrp)
- {
- 	WARN_ON_ONCE(cgroup_is_dead(cgrp));
-@@ -1091,7 +1096,8 @@ static struct cgroup *cgroup_kn_lock_live(struct kernfs_node *kn)
- 	 * protection against removal.  Ensure @cgrp stays accessible and
- 	 * break the active_ref protection.
- 	 */
--	cgroup_get(cgrp);
-+	if (!cgroup_tryget(cgrp))
-+		return NULL;
- 	kernfs_break_active_protection(kn);
- 
- 	mutex_lock(&cgroup_mutex);
--- 
-1.8.0.2
+dev_info(dev, "no sclk specified");
+
+Mark.
