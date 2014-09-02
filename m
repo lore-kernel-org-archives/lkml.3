@@ -1,168 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314AbaIBV6Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 17:58:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40604 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750820AbaIBV6W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 17:58:22 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, Peter Tyser <ptyser@xes-inc.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH] x86, lpc, Allow only one load of lpc_ich
-Date: Tue,  2 Sep 2014 17:58:17 -0400
-Message-Id: <1409695097-5831-1-git-send-email-prarit@redhat.com>
+	id S1755340AbaIBV6v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 17:58:51 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:42901 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750820AbaIBV6s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 17:58:48 -0400
+Message-ID: <54063D96.30703@hurleysoftware.com>
+Date: Tue, 02 Sep 2014 17:58:46 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Murali Karicheri <m-karicheri2@ti.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>
+Subject: Re: [PATCH 01/26] Revert "serial: uart: add hw flow control support
+ configuration"
+References: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com> <1409693975-1028-2-git-send-email-peter@hurleysoftware.com> <54063BA1.2030206@ti.com>
+In-Reply-To: <54063BA1.2030206@ti.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On multi-socket systems the following confusing splats are seen:
+On 09/02/2014 05:50 PM, Murali Karicheri wrote:
+> Peter,
+> 
+> On 09/02/2014 05:39 PM, Peter Hurley wrote:
+>>  Finally, this patch
+>> supposes to fix existing bugs in the serial core for auto CTS-enabled
+>> hardware, but does not include the class of hardware for which these
+>> bugs exist.
+> 
+> What is this? What class of hardware are you referring to?
 
- ACPI: If an ACPI driver is available for this device, you should use it instead of the native driver
- lpc_ich: Resource conflict(s) found affecting gpio_ich
- ------------[ cut here ]------------
- WARNING: CPU: 7 PID: 1813 at fs/sysfs/dir.c:31 sysfs_warn_dup+0x64/0x80()
- sysfs: cannot create duplicate filename '/bus/platform/devices/iTCO_wdt'
- Modules linked in: lpc_ich(+) crc32c_intel shpchp mfd_core acpi_cpufreq i2c_i801 dca xfs libcrc32c sd_mod crc_t10dif crct10dif_common ata_generic pata_acpi mgag200 syscopyarea sysfillrect sysimgblt i2c_algo_bit drm_kms_helper ttm mptsas drm scsi_transport_sas ata_piix mptscsih i2ccore libata mptbase dm_mirror dm_region_hash dm_log dm_mod
- CPU: 7 PID: 1813 Comm: systemd-udevd Not tainted 3.17.0-rc3+ #1
- Hardware name: IBM System x3950 M3 -[7145AC1]-/Node 1, Processor Card, BIOS -[G0E130WUS-1.31]- 07/23/2010
-  0000000000000000 00000000f205abcf ffff88066bb7b8d0 ffffffff81647056
-  ffff88066bb7b918 ffff88066bb7b908 ffffffff81072c9d ffff880273d05000
-  ffff88027349d110 ffff880874c5cc30 0000000000000001 ffffffffffffffef
- Call Trace:
-  [<ffffffff81647056>] dump_stack+0x45/0x56
-  [<ffffffff81072c9d>] warn_slowpath_common+0x7d/0xa0
-  [<ffffffff81072d1c>] warn_slowpath_fmt+0x5c/0x80
-  [<ffffffff81256598>] ? kernfs_path+0x48/0x60
-  [<ffffffff81259e34>] sysfs_warn_dup+0x64/0x80
-  [<ffffffff8125a1b1>] sysfs_do_create_link_sd.isra.2+0xc1/0xd0
-  [<ffffffff8125a1e5>] sysfs_create_link+0x25/0x50
-  [<ffffffff81401689>] bus_add_device+0x119/0x200
-  [<ffffffff813ff4b8>] device_add+0x498/0x630
-  [<ffffffff810778f6>] ? __insert_resource+0x26/0x150
-  [<ffffffff81404391>] platform_device_add+0xd1/0x2d0
-  [<ffffffffa050b3f5>] mfd_add_device+0x285/0x320 [mfd_core]
-  [<ffffffffa050b705>] mfd_add_devices+0xb5/0x9b0 [mfd_core]
-  [<ffffffffa0abf55b>] lpc_ich_probe+0x3cb/0x600 [lpc_ich]
-  [<ffffffff8132eb55>] local_pci_probe+0x45/0xa0
-  [<ffffffff8132fd45>] ? pci_match_device+0xe5/0x110
-  [<ffffffff8132fea9>] pci_device_probe+0xf9/0x150
-  [<ffffffff814024b0>] driver_probe_device+0x90/0x3c0
-  [<ffffffff814028b3>] __driver_attach+0x93/0xa0
-  [<ffffffff81402820>] ? __device_attach+0x40/0x40
-  [<ffffffff814003f3>] bus_for_each_dev+0x73/0xc0
-  [<ffffffff81401f4e>] driver_attach+0x1e/0x20
-  [<ffffffff81401b30>] bus_add_driver+0x180/0x250
-  [<ffffffffa0acb000>] ? 0xffffffffa0acb000
-  [<ffffffff81403094>] driver_register+0x64/0xf0
-  [<ffffffff8132e4ec>] __pci_register_driver+0x4c/0x50
-  [<ffffffffa0acb01e>] lpc_ich_driver_init+0x1e/0x1000 [lpc_ich]
-  [<ffffffff81002144>] do_one_initcall+0xd4/0x210
-  [<ffffffff811c2fed>] ? kfree+0xfd/0x140
-  [<ffffffff811a8b42>] ? __vunmap+0xb2/0x100
-  [<ffffffff810f2839>] load_module+0x1619/0x1a70
-  [<ffffffff810edde0>] ? store_uevent+0x70/0x70
-  [<ffffffff810eea39>] ? copy_module_from_fd.isra.44+0x129/0x180
-  [<ffffffff810f2e46>] SyS_finit_module+0xa6/0xd0
-  [<ffffffff8164f069>] system_call_fastpath+0x16/0x1b
- ---[ end trace 1429eb73c1995841 ]---
- ------------[ cut here ]------------
- WARNING: CPU: 71 PID: 1813 at fs/sysfs/dir.c:31 sysfs_warn_dup+0x64/0x80()
- sysfs: cannot create duplicate filename '/bus/platform/devices/gpio_ich'
- Modules linked in: serio_raw lpc_ich(+) crc32c_intel shpchp mfd_core acpi_cpufreq i2c_i801 dca xfs libcrc32c sd_mod crc_t10dif crct10dif_common ata_generic pata_acpi mgag200 syscopyarea sysfillrect sysimgblt i2c_algo_bit drm_kms_helper ttm mptsas drm scsi_transport_sas ata_piix mptscsih i2ccore libata mptbase dm_mirror dm_region_hash dm_log dm_mod
- CPU: 71 PID: 1813 Comm: systemd-udevd Tainted: G        W      3.17.0-rc3+ #1
- Hardware name: IBM System x3950 M3 -[7145AC1]-/Node 1, Processor Card, BIOS -[G0E130WUS-1.31]- 07/23/2010
-  0000000000000000 00000000f205abcf ffff88066bb7b8d0 ffffffff81647056
-  ffff88066bb7b918 ffff88066bb7b908 ffffffff81072c9d ffff88027382d000
-  ffff880273640030 ffff880874c5cc30 0000000000000001 ffffffffffffffef
- Call Trace:
-  [<ffffffff81647056>] dump_stack+0x45/0x56
-  [<ffffffff81072c9d>] warn_slowpath_common+0x7d/0xa0
-  [<ffffffff81072d1c>] warn_slowpath_fmt+0x5c/0x80
-  [<ffffffff81256598>] ? kernfs_path+0x48/0x60
-  [<ffffffff81259e34>] sysfs_warn_dup+0x64/0x80
-  [<ffffffff8125a1b1>] sysfs_do_create_link_sd.isra.2+0xc1/0xd0
-  [<ffffffff8125a1e5>] sysfs_create_link+0x25/0x50
-  [<ffffffff81401689>] bus_add_device+0x119/0x200
-  [<ffffffff813ff4b8>] device_add+0x498/0x630
-  [<ffffffff810778f6>] ? __insert_resource+0x26/0x150
-  [<ffffffff81404391>] platform_device_add+0xd1/0x2d0
-  [<ffffffffa050b3f5>] mfd_add_device+0x285/0x320 [mfd_core]
-  [<ffffffffa050b705>] mfd_add_devices+0xb5/0x9b0 [mfd_core]
-  [<ffffffffa0abf464>] lpc_ich_probe+0x2d4/0x600 [lpc_ich]
-  [<ffffffff8132eb55>] local_pci_probe+0x45/0xa0
-  [<ffffffff8132fd45>] ? pci_match_device+0xe5/0x110
-  [<ffffffff8132fea9>] pci_device_probe+0xf9/0x150
-  [<ffffffff814024b0>] driver_probe_device+0x90/0x3c0
-  [<ffffffff814028b3>] __driver_attach+0x93/0xa0
-  [<ffffffff81402820>] ? __device_attach+0x40/0x40
-  [<ffffffff814003f3>] bus_for_each_dev+0x73/0xc0
-  [<ffffffff81401f4e>] driver_attach+0x1e/0x20
-  [<ffffffff81401b30>] bus_add_driver+0x180/0x250
-  [<ffffffffa0acb000>] ? 0xffffffffa0acb000
-  [<ffffffff81403094>] driver_register+0x64/0xf0
-  [<ffffffff8132e4ec>] __pci_register_driver+0x4c/0x50
-  [<ffffffffa0acb01e>] lpc_ich_driver_init+0x1e/0x1000 [lpc_ich]
-  [<ffffffff81002144>] do_one_initcall+0xd4/0x210
-  [<ffffffff811c2fed>] ? kfree+0xfd/0x140
-  [<ffffffff811a8b42>] ? __vunmap+0xb2/0x100
-  [<ffffffff810f2839>] load_module+0x1619/0x1a70
-  [<ffffffff810edde0>] ? store_uevent+0x70/0x70
-  [<ffffffff810eea39>] ? copy_module_from_fd.isra.44+0x129/0x180
-  [<ffffffff810f2e46>] SyS_finit_module+0xa6/0xd0
-  [<ffffffff8164f069>] system_call_fastpath+0x16/0x1b
- ---[ end trace 1429eb73c1995842 ]---
- lpc_ich 0000:80:1f.0: No MFD cells added
+UART_CAP_AFE and UART_CAP_EFR hardware.
 
-This occurs because there are two LPC devices on the system:
+> As discussed, I will send an updated patch for this as discussed..
 
-00:1f.0 ISA bridge: Intel Corporation 82801JIB (ICH10) LPC Interface Controller
-80:1f.0 ISA bridge: Intel Corporation 82801JIB (ICH10) LPC Interface Controller
+Great.
 
-which AFAICT is a hardware configuration error that can be resolved in
-firmware by hiding the second LPC device.  Having two of these results in
-two GPIO mappings and two Watchdog Timers which doesn't make much sense.
+And since that patch will touch every single line this reverts (and more)
+with a different solution, I see no reason not to back this out.
 
-An end user has no idea what the splats mean.  We should inform the user that
-the issue lies with the hardware and that they should contact their vendor
-for resolution.
+Plus, as you can see, you're holding up progress.
 
-After the patch, the following warning is displayed:
-
- lpc_ich 0000:80:1f.0: [Firmware Bug]: This system has two LPC devices.  Additional driver loads would result in multiple GPIO and Watchdog Devices being initialized.  Please report this problem to your hardware vendor.
-
-Cc: Peter Tyser <ptyser@xes-inc.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
----
- drivers/mfd/lpc_ich.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/mfd/lpc_ich.c b/drivers/mfd/lpc_ich.c
-index 7d8482f..eba66bc 100644
---- a/drivers/mfd/lpc_ich.c
-+++ b/drivers/mfd/lpc_ich.c
-@@ -998,12 +998,17 @@ wdt_done:
- 	return ret;
- }
- 
-+static bool cell_added;
- static int lpc_ich_probe(struct pci_dev *dev,
- 				const struct pci_device_id *id)
- {
- 	struct lpc_ich_priv *priv;
- 	int ret;
--	bool cell_added = false;
-+
-+	if (cell_added) {
-+		dev_warn(&dev->dev, FW_BUG "This system has two LPC devices.  Additional driver loads would result in multiple GPIO and Watchdog Devices being initialized.  Please report this problem to your hardware vendor.\n");
-+		return -EBUSY;
-+	}
- 
- 	priv = devm_kzalloc(&dev->dev,
- 			    sizeof(struct lpc_ich_priv), GFP_KERNEL);
--- 
-1.7.9.3
+Regards,
+Peter Hurley
 
