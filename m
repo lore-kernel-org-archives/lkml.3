@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753742AbaIBKzT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 06:55:19 -0400
-Received: from mga01.intel.com ([192.55.52.88]:15035 "EHLO mga01.intel.com"
+	id S1753662AbaIBK5I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 06:57:08 -0400
+Received: from sauhun.de ([89.238.76.85]:53783 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753200AbaIBKzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 06:55:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,448,1406617200"; 
-   d="scan'208";a="593287941"
-From: Irina Tirdea <irina.tirdea@intel.com>
-To: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org
-Cc: Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Beomho Seo <beomho.seo@samsung.com>,
-        Irina Tirdea <irina.tirdea@intel.com>
-Subject: [PATCH] iio: magn: ak8975: fix unnecessary casting between char* and const char*
-Date: Tue,  2 Sep 2014 14:04:25 +0300
-Message-Id: <1409655865-28912-1-git-send-email-irina.tirdea@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753048AbaIBK5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 06:57:06 -0400
+Date: Tue, 2 Sep 2014 12:56:23 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Simon Lindgren <simon@aqwary.com>
+Cc: ludovic.desroches@atmel.com, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c:at91: Fix a race condition during signal handling in
+ at91_do_twi_xfer.
+Message-ID: <20140902105623.GE1266@katana>
+References: <1409080404-19069-1-git-send-email-simon@aqwary.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SWTRyWv/ijrBap1m"
+Content-Disposition: inline
+In-Reply-To: <1409080404-19069-1-git-send-email-simon@aqwary.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use const char* instead of casting const char* to char*.
 
-Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
----
- drivers/iio/magnetometer/ak8975.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+--SWTRyWv/ijrBap1m
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/iio/magnetometer/ak8975.c b/drivers/iio/magnetometer/ak8975.c
-index a235792..61edc66 100644
---- a/drivers/iio/magnetometer/ak8975.c
-+++ b/drivers/iio/magnetometer/ak8975.c
-@@ -477,7 +477,7 @@ static const struct acpi_device_id ak_acpi_match[] = {
- };
- MODULE_DEVICE_TABLE(acpi, ak_acpi_match);
- 
--static char *ak8975_match_acpi_device(struct device *dev,
-+static const char *ak8975_match_acpi_device(struct device *dev,
- 				enum asahi_compass_chipset *chipset)
- {
- 	const struct acpi_device_id *id;
-@@ -487,7 +487,7 @@ static char *ak8975_match_acpi_device(struct device *dev,
- 		return NULL;
- 	*chipset = (int)id->driver_data;
- 
--	return (char *)dev_name(dev);
-+	return dev_name(dev);
- }
- 
- static int ak8975_probe(struct i2c_client *client,
-@@ -497,7 +497,7 @@ static int ak8975_probe(struct i2c_client *client,
- 	struct iio_dev *indio_dev;
- 	int eoc_gpio;
- 	int err;
--	char *name = NULL;
-+	const char *name = NULL;
- 
- 	/* Grab and set up the supplied GPIO. */
- 	if (client->dev.platform_data)
-@@ -539,7 +539,7 @@ static int ak8975_probe(struct i2c_client *client,
- 	if (id) {
- 		data->chipset =
- 			(enum asahi_compass_chipset)(id->driver_data);
--		name = (char *) id->name;
-+		name = id->name;
- 	} else if (ACPI_HANDLE(&client->dev))
- 		name = ak8975_match_acpi_device(&client->dev, &data->chipset);
- 	else
--- 
-1.7.9.5
+On Tue, Aug 26, 2014 at 09:13:24PM +0200, Simon Lindgren wrote:
+> There is a race condition in at91_do_twi_xfer when signals arrive.
+> If a signal is recieved while waiting for a transfer to complete
+> wait_for_completion_interruptible_timeout() will return -ERESTARTSYS.
+> This is not handled correctly resulting in interrupts still being
+> enabled and a transfer being in flight when we return.
+>=20
+> Symptoms include a range of oopses and bus lockups. Oopses can happen
+> when the transfer completes because the interrupt handler will corrupt
+> the stack. If a new transfer is started before the interrupt fires
+> the controller will start a new transfer in the middle of the old one,
+> resulting in confused slaves and a locked bus.
+>=20
+> To avoid this, use wait_for_completion_io_timeout instead so that we
+> don't have to deal with gracefully shutting down the transfer and
+> disabling the interrupts.
+>=20
+> Signed-off-by: Simon Lindgren <simon@aqwary.com>
 
+Applied to for-current, thanks!
+
+
+--SWTRyWv/ijrBap1m
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUBaJXAAoJEBQN5MwUoCm2lMAQAKtY21GNyxAPYTmQFYw2xJp/
+e67Pit9TL1d2VqvNkR3YDpTsgmDC6ws0qSB4BnubmigY92Bq8378VYSKZ5Pkpe+4
+UiHy0K0e1VnyDusZm+LnqcnTct3WsR5WLUkphkrlRZnAFnUQtp8M+tw5y9QRXz/u
+H97mianmVfm9JCzyVcxMSBfglcsKZRt4RkB4/7A3L0/Hl2Xb5PQttupZU2kUpRex
+dOuJT/flLI0F2M6FYhX1SLzW5bZCRtBIZBHtPC4Pfn3fH+J34D3kCKToKfMwnala
+PF4axHt3o7cnoTyrRUO5zU24t68Bi/2bZErlOECmTenUkacw7jzYZQz56by8oPIl
+XlPsSNMG0Hq3/4zWXYtveVRSikYZ00tKBtlm10tVjUJ9BBPzU+bskprX+dsHylQM
+TGnEXd6KOp5ebOABGFqeGKLjT6AMAbANn+MqMLaffAlqe47jrhNeOpLO7T8AOcxl
+Y2rLChAJlFFRvyC/1hvq7P5JSIrBgHNZmh9OfQRqrw6pe0hN+S7GsKYlHYM8aUVB
+jJnBxHtC2L0So8S9PAYBVHXx+0WA9DfP+P9ZllLDNURqfv/5WbJoFX8irp9ZXfrq
+HJ+vUXVCzbabpJnin/t8JKF7I9fJ17pK9vOjUy5FESFu1DKTYcVEudezGBeqGgw2
+E58vbjTLqlwvrq2RsSM6
+=Sm5H
+-----END PGP SIGNATURE-----
+
+--SWTRyWv/ijrBap1m--
