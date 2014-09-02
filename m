@@ -1,111 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753960AbaIBOyt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 10:54:49 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54046 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753703AbaIBOys (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 10:54:48 -0400
-Date: Tue, 2 Sep 2014 09:54:35 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Kiran Kumar Raparthy <kiran.kumar@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, Todd Poynor <toddpoynor@google.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [RFC v2 2/2] usb: phy: Temporarily hold wakeupsource on charger
- connect and disconnect events
-Message-ID: <20140902145435.GF16872@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1409658558-12318-1-git-send-email-kiran.kumar@linaro.org>
+	id S1754064AbaIBO4o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 10:56:44 -0400
+Received: from tundra.namei.org ([65.99.196.166]:34407 "EHLO namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751129AbaIBO4m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 10:56:42 -0400
+Date: Wed, 3 Sep 2014 00:56:36 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: David Howells <dhowells@redhat.com>
+cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] KEYS: Miscellaneous fixes
+In-Reply-To: <20140902125159.9247.11970.stgit@warthog.procyon.org.uk>
+Message-ID: <alpine.LRH.2.11.1409030056130.7126@namei.org>
+References: <20140902125159.9247.11970.stgit@warthog.procyon.org.uk>
+User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="p8PhoBjPxaQXD0vg"
-Content-Disposition: inline
-In-Reply-To: <1409658558-12318-1-git-send-email-kiran.kumar@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---p8PhoBjPxaQXD0vg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2 Sep 2014, David Howells wrote:
 
-Hi,
+> 
+> Hi James,
+> 
+> Here are some fixes to go upstream:
 
-On Tue, Sep 02, 2014 at 05:19:18PM +0530, Kiran Kumar Raparthy wrote:
-> From: Todd Poynor <toddpoynor@google.com>
->=20
-> usb: phy: Temporarily hold wakeupsource on charger connect and disconnect
-> events
->=20
-> Allow other parts of the system to react to the charger connect/disconnect
-> event without allowing the system to suspend before the other parts can p=
-rocess
-> the event. This wakeup_source times out after 2 seconds; if nobody else h=
-olds a
-> wakeup_source by that time then the device can sleep.
->=20
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: linux-kernel@vger.kernel.org
-> Cc: linux-usb@vger.kernel.org
-> Cc: Android Kernel Team <kernel-team@android.com>
-> Cc: John Stultz <john.stultz@linaro.org>
-> Signed-off-by: Todd Poynor <toddpoynor@google.com>
-> [kiran: Added context to commit message
-> 	wakeupsource handling implemented per PHY in phy core]
-> Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
+
+Which of these need to go into current Linus?
+
+#4 looks like it should.
+
+> 
+>  (1) Increase root's key quotas so that the DNS resolver doesn't run out of
+>      capacity.  This is a bit of a stop-gap whilst I try to improve quota
+>      recycling, but that's proving to be a bit tricky.
+> 
+>  (2) Fix the definition of the public_key subtype to give the name length.
+> 
+>  (3) Set a prefix for printing from signature handling.
+> 
+>  (4) Fix a use after free in assoc_array_gc().
+> 
+>  (5) Relax a check in the PKCS#7 parser to allow for padding inserted after a
+>      PKCS#7 message.
+> 
+> They can be found here also:
+> 
+> 	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=keys-fixes
+> 
+> Tagged with:
+> 
+> 	keys-fixes-20140902
+> 
+> David
 > ---
->  drivers/usb/phy/otg-wakeupsource.c |  2 +-
->  drivers/usb/phy/phy.c              | 10 ++++++++++
->  include/linux/usb/phy.h            |  3 +++
->  3 files changed, 14 insertions(+), 1 deletion(-)
->=20
-> diff --git a/drivers/usb/phy/otg-wakeupsource.c b/drivers/usb/phy/otg-wak=
-eupsource.c
-> index fca2010..70fa05e 100644
-> --- a/drivers/usb/phy/otg-wakeupsource.c
-> +++ b/drivers/usb/phy/otg-wakeupsource.c
-> @@ -48,7 +48,7 @@ static void otgws_handle_event(struct usb_phy *otgws_xc=
-eiv, unsigned long event)
->  	case USB_EVENT_NONE:
->  	case USB_EVENT_ID:
->  	case USB_EVENT_CHARGER:
-> -		usb_drop_wsource(otgws_xceiv);
-> +		usb_temporary_hold_wsource(otgws_xceiv);
+> David Howells (4):
+>       KEYS: Fix public_key asymmetric key subtype name
+>       KEYS: Set pr_fmt() in asymmetric key signature handling
+>       KEYS: Fix use-after-free in assoc_array_gc()
+>       PEFILE: Relax the check on the length of the PKCS#7 cert
+> 
+> Steve Dickson (1):
+>       KEYS: Increase root_maxkeys and root_maxbytes sizes
+> 
+> 
+>  crypto/asymmetric_keys/public_key.c    |    1 +
+>  crypto/asymmetric_keys/signature.c     |    1 +
+>  crypto/asymmetric_keys/verify_pefile.c |   49 ++++++++++++++++++++++----------
+>  lib/assoc_array.c                      |    2 +
+>  security/keys/key.c                    |    4 +--
+>  5 files changed, 38 insertions(+), 19 deletions(-)
+> 
 
-looks like this won't work. You're holding the lock even on
-USB_EVEN_NONE. Why ?
+-- 
+James Morris
+<jmorris@namei.org>
 
---=20
-balbi
-
---p8PhoBjPxaQXD0vg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUBdorAAoJEIaOsuA1yqREQe4P/Rp8+Ba3evmbc9dWYpPpjtuV
-/r2oQfD4ur8BLZpLScNTIvBA9h/m1at/Zw7NSdTUhPYfRWwhc9QVk5joN6vfr3u7
-2qPwT/0gGp35ReyoIpDzTcBdlONYU3SlJ2h5sZNvEHVeFAje9PjtxLyLDRVPGlzw
-vMjF6vR3a6GsaBgKw/BIN6cp4ZSwFALkQwh7ufD7O5ZvoB5qlqUfrUUwbiLP/eC0
-cq7n9CTB9gfLGg5pN/cRFzpwnDqpUqTda+9vdlTNaz9+7FOkRCiwnuYUQwNycPcp
-1UpC7zSRwdSvC9hvQqVnlQ4xgFCsMOQvXEFA150KONrWhRaaXZZUWdiVER5fYO7N
-5njKHaOLJ0fdoT4GX9Le0cNe1s+U3KZAhRqH+sxJGPu3socjbTNBQchOUGirUW9P
-8PJN7/vb73gnhvQ8LUM/BdcSnCoLw1xORdLtw73j/VbOCn3smqa6XOdIoVnb1lmU
-EYgB8rJ3Dg2DgLO3c0YA11XW5ieRLWSXXr7BHI+AmEt4RyN4BHZyZ8om6VkTV6Zh
-XF3noPwSLlPjyOh70BRQsKIOm8WD9r0VWvXut1Wzz62Rc/XyWHLRdbc0MyVasu3S
-DDCjZnm2cKHq7NzM2b8J3wl3TitwP8tXkB0n6M7smjn3uj+6Kgz//9VTAMnX1C+T
-5UWh5AXboXi5qRx+P3hv
-=05Ue
------END PGP SIGNATURE-----
-
---p8PhoBjPxaQXD0vg--
