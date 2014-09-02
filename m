@@ -1,76 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807AbaIBLK5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 07:10:57 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:47246 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753454AbaIBLK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 07:10:56 -0400
-Message-ID: <5405A598.4050208@ti.com>
-Date: Tue, 2 Sep 2014 14:10:16 +0300
-From: Jyri Sarha <jsarha@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Xiubo Li <Li.Xiubo@freescale.com>, <broonie@kernel.org>, <perex@perex.cz>,
-        <lgirdwood@gmail.com>, <tiwai@suse.de>, <moinejf@free.fr>,
-        <andrew@lunn.ch>, <kuninori.morimoto.gx@renesas.com>,
-        <devicetree@vger.kernel.org>, <alsa-devel@alsa-project.org>,
-        <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2 1/4] ASoC: simple-card: add asoc_simple_card_fmt_master()
- to simplify the code.
-References: <1409649969-15759-1-git-send-email-Li.Xiubo@freescale.com> <1409649969-15759-2-git-send-email-Li.Xiubo@freescale.com>
-In-Reply-To: <1409649969-15759-2-git-send-email-Li.Xiubo@freescale.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753875AbaIBLMk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 07:12:40 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:35904 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753248AbaIBLMi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 07:12:38 -0400
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: linux-usb@vger.kernel.org
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, gregkh@linuxfoundation.org,
+        kishon@ti.com, balbi@ti.com, stern@rowland.harvard.edu,
+        kgene.kim@samsung.com, heikki.krogerus@linux.intel.com,
+        mathias.nyman@intel.com, sergei.shtylyov@cogentembedded.com,
+        jg1.han@samsung.com, Vivek Gautam <gautam.vivek@samsung.com>
+Subject: [PATCH v6 0/4] Fine tune USB 3.0 PHY on exynos5420
+Date: Tue,  2 Sep 2014 16:42:14 +0530
+Message-Id: <1409656338-20337-1-git-send-email-gautam.vivek@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/2014 12:26 PM, Xiubo Li wrote:
-> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-> ---
->   sound/soc/generic/simple-card.c | 61 ++++++++++++++++++++---------------------
->   1 file changed, 29 insertions(+), 32 deletions(-)
->
-> diff --git a/sound/soc/generic/simple-card.c b/sound/soc/generic/simple-card.c
-> index 986d2c7..cad2b30 100644
-> --- a/sound/soc/generic/simple-card.c
-> +++ b/sound/soc/generic/simple-card.c
-> @@ -163,6 +163,26 @@ asoc_simple_card_sub_parse_of(struct device_node *np,
->   	return 0;
->   }
->
-> +static inline unsigned int
-> +asoc_simple_card_fmt_master(struct device_node *np,
-> +			    struct device_node *bitclkmaster,
-> +			    struct device_node *framemaster)
-> +{
-> +	switch (((np == bitclkmaster) << 4) | (np == framemaster)) {
-> +	case 0x11:
-> +		return SND_SOC_DAIFMT_CBS_CFS;
-> +	case 0x10:
-> +		return SND_SOC_DAIFMT_CBS_CFM;
-> +	case 0x01:
-> +		return SND_SOC_DAIFMT_CBM_CFS;
-> +	default:
-> +		return SND_SOC_DAIFMT_CBM_CFM;
-> +	}
-> +
-> +	/* Shouldn't be here */
-> +	return -EINVAL;
-> +}
-> +
-....
-> +	fmt = asoc_simple_card_fmt_master(np, bitclkmaster, framemaster);
-> +	dai_props->cpu_dai.fmt = daifmt | fmt;
-...
-> +		fmt = asoc_simple_card_fmt_master(np, bitclkmaster,
-> +						  framemaster);
-> +		dai_props->codec_dai.fmt = daifmt | fmt;
+This series is based on Heikki's patches for simpliefied phy lookup table:
+[PATCHv3 0/6] phy: simplified phy lookup [1], applied against 'usb-next' branch
+alongwith Sergei's patch for adding generic phy support to usb hcd [2].
 
-This won't work. The logic for cpu node needs to be negated for codec node.
+NOTE: We need to get above dependencies merged first in order to merge this
+      series.
+      As of now patches @ [1] are posted with all the comments addressed
+      and we are waiting for an ACK on them, but
+      patch @ [2] needs to be re-spined as Sergie says in [3]:
+            "Yes, I'm planning this since Greg has lost v4."
 
-Best regards,
-Jyri
+Changes since v5:
+ - Assigned NULL to hcd->gen_phy in error path in xhci-plat.c, so that
+   we don't need to check for IS_ERR() while calibrating the PHYs in
+   core/hcd.c
+ - Removed extra empty lines in register definitions in exynos5-usbdrd
+   phy driver.
+ - Added write access for EXYNOS5_DRD_PHYREG0 register before any
+   crport_handshake() call as suggested by Jingoo Han.
+ - Renamed member 'calibrate' to 'phy_exynos_calibrate' of
+   struct exynos5_usbdrd_phy_drvdata.
+
+Changes since v4:
+ - Rebased on latest patches by Heikki.
+ - Took care of handling -EPROBE_DEFER error number while getting PHY in
+   xhci plat.
+
+Changes from v3:
+ - Modified error message as per review comments from Julius.
+
+Changes since v2:
+ - Removed any check for DWC3 in xhci-plat for getting usb2-phy and usb3-phy,
+   in order to make it more generic.
+ - Moved the phy_calibration calls to core/hcd.c to enable a more generic
+   solution for issues of calibrating the PHYs.
+
+Changes since v1:
+ - Using 'gen_phy' member of 'hcd' instead of declaring more variables
+   to hold phys.
+ - Added a check for compatible match for 'Synopsys-dwc3' controller,
+   since the 'gen_phy' member of 'hcd' already gets the 'usb' PHY
+   in core/hcd.c; but XHCI on Synopsys-dwc3 doesn't need that,
+   instead two separate PHYs for UTMI+ and PIPE3 for the two HCDs
+   (main hcd and shared hcd).
+ - Restructured the code in 'xhci_plat_setup()' and 'xhci_plat_resume()'
+   to use hcd->gen_phy directly. Also added the check for Synopsys's DWC3
+   controller while trying to calibrate the PHY.
+
+Explanation for the need of this patch-series:
+"The DWC3-exynos eXtensible host controller present on Exynos5420/5800
+SoCs is quirky. The PHY serving this controller operates at High-Speed
+by default, so it detects even Super-speed devices as high-speed ones.
+Certain PHY parameters like Tx LOS levels and Boost levels need to be
+calibrated further post initialization of xHCI controller, to get
+SuperSpeed operations working."
+
+[1] https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg710094.html
+[2] http://comments.gmane.org/gmane.linux.ports.sh.devel/35932
+[3] http://www.spinics.net/lists/linux-usb/msg112300.html
+
+Vivek Gautam (4):
+  phy: Add provision for calibrating phy.
+  usb: host: xhci-plat: Get PHYs for xhci's hcds
+  usb: hcd: Calibrate PHY post hcd reset
+  phy: exynos5-usbdrd: Calibrate LOS levels for exynos5420/5800
+
+ drivers/phy/phy-core.c           |   36 ++++++++
+ drivers/phy/phy-exynos5-usbdrd.c |  185 ++++++++++++++++++++++++++++++++++----
+ drivers/usb/core/hcd.c           |   18 ++++
+ drivers/usb/host/xhci-plat.c     |   27 ++++++
+ include/linux/phy/phy.h          |    8 ++
+ 5 files changed, 259 insertions(+), 15 deletions(-)
+
+-- 
+1.7.10.4
+
