@@ -1,299 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274AbaIBI3v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 04:29:51 -0400
-Received: from smtp2-g21.free.fr ([212.27.42.2]:44122 "EHLO smtp2-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750722AbaIBI3r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 04:29:47 -0400
-Date: Tue, 2 Sep 2014 10:29:29 +0200
-From: Sabrina Dubroca <sd@queasysnail.net>
-To: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: Cong Wang <cwang@twopensource.com>, Tommi Rantala <tt.rantala@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org,
-        Dave Jones <davej@redhat.com>
-Subject: [PATCH net v2] ipv6: fix rtnl locking in setsockopt for anycast and
- multicast
-Message-ID: <20140902082929.GA8483@kria>
-References: <CA+ydwtoDwQVg_BWrxxdpUyJ7Up60GtxTCLYe_5vFdV2td_kGhQ@mail.gmail.com>
- <CAHA+R7MZCDGRhSf=UuVCGQvNo03wVziZQB_X30rwNf6hmHipQA@mail.gmail.com>
- <20140829195339.GA9780@kria>
- <1409363489.2980.17.camel@localhost>
- <20140830105821.GB18155@kria>
- <1409599348.21965.6.camel@localhost>
- <20140901210520.GB25543@kria>
- <1409610378.21965.52.camel@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1409610378.21965.52.camel@localhost>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753314AbaIBIau (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 04:30:50 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:59147 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751421AbaIBIap (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 04:30:45 -0400
+X-AuditID: cbfee68e-f79536d000000fd1-49-540580336579
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
+To: "'Arnd Bergmann'" <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
+Cc: "'Lee Jones'" <lee.jones@linaro.org>, kgene.kim@samsung.com,
+        linux@arm.linux.org.uk, naushad@samsung.com,
+        "'Tomasz Figa'" <t.figa@samsung.com>, linux-kernel@vger.kernel.org,
+        joshi@samsung.com, vikas.sajjan@samsung.com,
+        linux-samsung-soc@vger.kernel.org, broonie@kernel.org,
+        thomas.ab@samsung.com, chow.kim@samsung.com
+References: <1408694991-21615-1-git-send-email-pankaj.dubey@samsung.com>
+ <3343901.7HpqcTBEp1@wuerfel> <20140902080516.GE17117@lee--X1>
+ <3109076.4UMHArqVbl@wuerfel>
+In-reply-to: <3109076.4UMHArqVbl@wuerfel>
+Subject: RE: [PATCH] mfd: syscon: Decouple syscon interface from syscon devices
+Date: Tue, 02 Sep 2014 14:02:48 +0530
+Message-id: <001401cfc688$85c07bf0$914173d0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQHpa/2m/d4/OY0ITARCUM8RI+G5jQHOmKtTAm8SxMwCNVQ9I5uGn1Gg
+Content-language: en-us
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrEIsWRmVeSWpSXmKPExsWyRsSkVte4gTXEYGe7jMXfScfYLaY+fMJm
+	sWzSXTaL77u+sFv0LrjKZnH/61FGi02Pr7FaXN41h81ixvl9TBa3L/NafDr6n9Vi/YzXLBYd
+	yxgtbj7bzuTA59HS3MPm8fvXJEaPTas62TzuXNvD5rF5Sb1H35ZVjB6fN8kFsEdx2aSk5mSW
+	pRbp2yVwZfzatIy94J5kxcfbPSwNjJtEuhg5OCQETCSO9pp1MXICmWISF+6tZ+ti5OIQEljK
+	KHHu9jIWiISJxIz3L9lBbCGBRYwS23tdIYr+Mko8nLKQDSTBJqAr8eT9XGYQW0TAU+LMyQUs
+	IEXMAseZJI7tmMAC0bGcUeL+g4tgozgFNCW+NUxlBLGFBfwlvtxbDNbNIqAq0TX3JZjNK2Ap
+	cejkUiYIW1Dix+R7YCcxC2hJrN95nAnClpfYvOYtM8SpChI7zr5mhLjCTeL4zImsEDXiEpMe
+	PGQHOUJCYCmHxIPn3xkhlglIfJt8iAUSFrISmw5AzZGUOLjiBssERolZSFbPQrJ6FpLVs5Cs
+	WMDIsopRNLUguaA4Kb3ISK84Mbe4NC9dLzk/dxMjMCmc/vesbwfjzQPWhxgFOBiVeHglfrCE
+	CLEmlhVX5h5iNAW6aCKzlGhyPjD15JXEGxqbGVmYmpgaG5lbmimJ8yZI/QwWEkhPLEnNTk0t
+	SC2KLyrNSS0+xMjEwSnVwCj66Nvxd7Wcr3dkr5R8fJ8l6siyV7FmMmW+hm3//GK/7uznUT34
+	+sPhaUoyy5or70ZP3XivzC9nwg8Wn9YJbevvhFzZvjo9Wf3YDg3/extEL/400GKZ9nFz6Y+t
+	OnJ5E4VW895ae6nj9xfPhxszVSMlWZvFrU9stj6T7/NVZ459nz4r56bJj32VWIozEg21mIuK
+	EwGTjOBIBQMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLKsWRmVeSWpSXmKPExsVy+t9jAV3jBtYQg4l7hSz+TjrGbjH14RM2
+	i2WT7rJZfN/1hd2id8FVNov7X48yWmx6fI3V4vKuOWwWM87vY7K4fZnX4tPR/6wW62e8ZrHo
+	WMZocfPZdiYHPo+W5h42j9+/JjF6bFrVyeZx59oeNo/NS+o9+rasYvT4vEkugD2qgdEmIzUx
+	JbVIITUvOT8lMy/dVsk7ON453tTMwFDX0NLCXEkhLzE31VbJxSdA1y0zB+hiJYWyxJxSoFBA
+	YnGxkr4dpgmhIW66FjCNEbq+IUFwPUYGaCBhDWPGr03L2AvuSVZ8vN3D0sC4SaSLkZNDQsBE
+	Ysb7l+wQtpjEhXvr2UBsIYFFjBLbe127GLmA7L+MEg+nLARLsAnoSjx5P5cZxBYR8JQ4c3IB
+	C0gRs8BxJoljOyawQHQsZ5S4/+Ai2FhOAU2Jbw1TGUFsYQF/iS/3FoN1swioSnTNfQlm8wpY
+	Shw6uZQJwhaU+DH5HguIzSygJbF+53EmCFteYvOat8wQpypI7Dj7mhHiCjeJ4zMnskLUiEtM
+	evCQfQKj0Cwko2YhGTULyahZSFoWMLKsYhRNLUguKE5KzzXSK07MLS7NS9dLzs/dxAhOOs+k
+	dzCuarA4xCjAwajEwyvxgyVEiDWxrLgy9xCjBAezkgjvi0TWECHelMTKqtSi/Pii0pzU4kOM
+	pkCfTmSWEk3OBybEvJJ4Q2MTc1NjU0sTCxMzSyVx3oOt1oFCAumJJanZqakFqUUwfUwcnFIN
+	jFO3RobO3RUs4/abwUWap/9zya7Qfi62xHVyG3XK1KZlGDxbcfvhpQKx0MpDPrnWsfOmf9W0
+	4ynleB8t8fnkjnpjuzTpwvc7b9xwU1pRmlt/5FGBxy9BhhjrTdK8x3m4zy7NNt0RvmrJZt7P
+	93aw/FRtEOo8P3/CP23/Ut0T3J3LhYzOX2+Zp8RSnJFoqMVcVJwIAPwH0RFQAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Calling setsockopt with IPV6_JOIN_ANYCAST or IPV6_LEAVE_ANYCAST
-triggers the assertion in addrconf_join_solict()/addrconf_leave_solict()
 
-ipv6_sock_ac_join(), ipv6_sock_ac_drop(), ipv6_sock_ac_close() need to
-take RTNL before calling ipv6_dev_ac_inc/dec. Same thing with
-ipv6_sock_mc_join(), ipv6_sock_mc_drop(), ipv6_sock_mc_close() before
-calling ipv6_dev_mc_inc/dec.
 
-This patch moves ASSERT_RTNL() up a level in the call stack.
+> -----Original Message-----
+> From: Arnd Bergmann [mailto:arnd@arndb.de]
+> Sent: Tuesday, September 02, 2014 1:45 PM
+> To: linux-arm-kernel@lists.infradead.org
+> Cc: Lee Jones; kgene.kim@samsung.com; linux@arm.linux.org.uk;
+> naushad@samsung.com; Pankaj Dubey; Tomasz Figa;
+linux-kernel@vger.kernel.org;
+> joshi@samsung.com; vikas.sajjan@samsung.com; linux-samsung-
+> soc@vger.kernel.org; broonie@kernel.org; thomas.ab@samsung.com;
+> chow.kim@samsung.com
+> Subject: Re: [PATCH] mfd: syscon: Decouple syscon interface from syscon
+devices
+> 
+> On Tuesday 02 September 2014 09:05:16 Lee Jones wrote:
+> > On Mon, 01 Sep 2014, Arnd Bergmann wrote:
+> >
+> > > On Monday 01 September 2014 17:04:26 Lee Jones wrote:
+> > > > On Mon, 01 Sep 2014, Arnd Bergmann wrote:
+> > > > > Maybe I'm misreading the patch, but I don't see how it creates a
+> > > > > migration path. What I want to end up with is infrastructure
+> > > > > that lets anybody call syscon_regmap_lookup_by_pdevname or
+> > > > > syscon_regmap_lookup_by_compatible (if they really need to)
+> > > > > without needing the platform_driver for syscon. That should not
+> > > > > require any form of compatibility layer because to the driver
+> > > > > using it there is no API change.
+> > > >
+> > > > Somehow I think the likelyhood is that I am misreading the patch.
+> > > >
+> > > > I thought that before this patch drivers we had to register a
+> > > > syscon device to bind to this driver, which was fine for the first
+> > > > use-cases of syscon as it wasn't required too early during boot.
+> > > > However, now there are use-cases where systems require access to
+> > > > syscon registers eariler in boot we require a means to obtain
+> > > > access prior to device probing.  I thought this patch not only
+> > > > provides that possibilty, but also leaves in the ability to register
+direct from
+> DT.
+> > >
+> > > Right, it does provide the ability to have syscon before devices are
+> > > registered, I missed that part.
+> > >
+> > > > > In contrast, this patch introduces a new
+> > > > > of_syscon_{un,}register() interface that would get removed after
+> > > > > the the above has been implemented, causing extra churn for any
+> > > > > driver that also wants to provide a regmap-like interface.
+> > > >
+> > > > When will we ever not have to register syscon?
+> > >
+> > > The idea is that we implicitly register the syscon block when
+> > > someone calls syscon_regmap_lookup_by_compatible or
+> > > syscon_regmap_lookup_by_phandle and then return a reference to that
+> > > new syscon. When another driver looks up the same device node, we
+> > > just pass a reference to the existing syscon.
+> >
+> > Doesn't sound too unreasonable.  So how about instead of exporting
+> > these new of_syscon_{un,}register() calls, we make them static and
+> > call them from syscon_regmap_lookup_by_{phandle,compatible}?
+> 
+> Yes, that would be a good start. We should think about whether we want to
+remove
+> the existing DT probing at the same time, since it becomes unused, and we
+might
+> want to move the code to drivers/base/regmap_*.c at some point.
+> 
 
-Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
-Signed-off-by: Sabrina Dubroca <sd@queasysnail.net>
-Reported-by: Tommi Rantala <tt.rantala@gmail.com>
----
-As was said earlier, this should go in stable.
 
-v2:
- - based on net
- - keep dev_get_by_flags_rcu and RCU in ipv6_sock_ac_*
- - remove two ASSERT_RTNL() that are not necessary
+OK, I am working on these two parts. Once code is in proper form and tested
+on
+our setup I will post here.
 
-Thank you for your help, Hannes!
+Thanks,
+Pankaj
 
- net/ipv6/addrconf.c | 15 +++++----------
- net/ipv6/anycast.c  | 12 ++++++++++++
- net/ipv6/mcast.c    | 14 ++++++++++++++
- 3 files changed, 31 insertions(+), 10 deletions(-)
-
-diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-index 0b239fc1816e..aa0e135b808c 100644
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -1690,14 +1690,12 @@ void addrconf_dad_failure(struct inet6_ifaddr *ifp)
- 	addrconf_mod_dad_work(ifp, 0);
- }
- 
--/* Join to solicited addr multicast group. */
--
-+/* Join to solicited addr multicast group.
-+ * caller must hold RTNL */
- void addrconf_join_solict(struct net_device *dev, const struct in6_addr *addr)
- {
- 	struct in6_addr maddr;
- 
--	ASSERT_RTNL();
--
- 	if (dev->flags&(IFF_LOOPBACK|IFF_NOARP))
- 		return;
- 
-@@ -1705,12 +1703,11 @@ void addrconf_join_solict(struct net_device *dev, const struct in6_addr *addr)
- 	ipv6_dev_mc_inc(dev, &maddr);
- }
- 
-+/* caller must hold RTNL */
- void addrconf_leave_solict(struct inet6_dev *idev, const struct in6_addr *addr)
- {
- 	struct in6_addr maddr;
- 
--	ASSERT_RTNL();
--
- 	if (idev->dev->flags&(IFF_LOOPBACK|IFF_NOARP))
- 		return;
- 
-@@ -1718,12 +1715,11 @@ void addrconf_leave_solict(struct inet6_dev *idev, const struct in6_addr *addr)
- 	__ipv6_dev_mc_dec(idev, &maddr);
- }
- 
-+/* caller must hold RTNL */
- static void addrconf_join_anycast(struct inet6_ifaddr *ifp)
- {
- 	struct in6_addr addr;
- 
--	ASSERT_RTNL();
--
- 	if (ifp->prefix_len >= 127) /* RFC 6164 */
- 		return;
- 	ipv6_addr_prefix(&addr, &ifp->addr, ifp->prefix_len);
-@@ -1732,12 +1728,11 @@ static void addrconf_join_anycast(struct inet6_ifaddr *ifp)
- 	ipv6_dev_ac_inc(ifp->idev->dev, &addr);
- }
- 
-+/* caller must hold RTNL */
- static void addrconf_leave_anycast(struct inet6_ifaddr *ifp)
- {
- 	struct in6_addr addr;
- 
--	ASSERT_RTNL();
--
- 	if (ifp->prefix_len >= 127) /* RFC 6164 */
- 		return;
- 	ipv6_addr_prefix(&addr, &ifp->addr, ifp->prefix_len);
-diff --git a/net/ipv6/anycast.c b/net/ipv6/anycast.c
-index 210183244689..45b9d81d91e8 100644
---- a/net/ipv6/anycast.c
-+++ b/net/ipv6/anycast.c
-@@ -77,6 +77,7 @@ int ipv6_sock_ac_join(struct sock *sk, int ifindex, const struct in6_addr *addr)
- 	pac->acl_next = NULL;
- 	pac->acl_addr = *addr;
- 
-+	rtnl_lock();
- 	rcu_read_lock();
- 	if (ifindex == 0) {
- 		struct rt6_info *rt;
-@@ -137,6 +138,7 @@ int ipv6_sock_ac_join(struct sock *sk, int ifindex, const struct in6_addr *addr)
- 
- error:
- 	rcu_read_unlock();
-+	rtnl_unlock();
- 	if (pac)
- 		sock_kfree_s(sk, pac, sizeof(*pac));
- 	return err;
-@@ -171,13 +173,17 @@ int ipv6_sock_ac_drop(struct sock *sk, int ifindex, const struct in6_addr *addr)
- 
- 	spin_unlock_bh(&ipv6_sk_ac_lock);
- 
-+	rtnl_lock();
- 	rcu_read_lock();
- 	dev = dev_get_by_index_rcu(net, pac->acl_ifindex);
- 	if (dev)
- 		ipv6_dev_ac_dec(dev, &pac->acl_addr);
- 	rcu_read_unlock();
-+	rtnl_unlock();
- 
- 	sock_kfree_s(sk, pac, sizeof(*pac));
-+	if (!dev)
-+		return -ENODEV;
- 	return 0;
- }
- 
-@@ -198,6 +204,7 @@ void ipv6_sock_ac_close(struct sock *sk)
- 	spin_unlock_bh(&ipv6_sk_ac_lock);
- 
- 	prev_index = 0;
-+	rtnl_lock();
- 	rcu_read_lock();
- 	while (pac) {
- 		struct ipv6_ac_socklist *next = pac->acl_next;
-@@ -212,6 +219,7 @@ void ipv6_sock_ac_close(struct sock *sk)
- 		pac = next;
- 	}
- 	rcu_read_unlock();
-+	rtnl_unlock();
- }
- 
- static void aca_put(struct ifacaddr6 *ac)
-@@ -233,6 +241,8 @@ int ipv6_dev_ac_inc(struct net_device *dev, const struct in6_addr *addr)
- 	struct rt6_info *rt;
- 	int err;
- 
-+	ASSERT_RTNL();
-+
- 	idev = in6_dev_get(dev);
- 
- 	if (idev == NULL)
-@@ -302,6 +312,8 @@ int __ipv6_dev_ac_dec(struct inet6_dev *idev, const struct in6_addr *addr)
- {
- 	struct ifacaddr6 *aca, *prev_aca;
- 
-+	ASSERT_RTNL();
-+
- 	write_lock_bh(&idev->lock);
- 	prev_aca = NULL;
- 	for (aca = idev->ac_list; aca; aca = aca->aca_next) {
-diff --git a/net/ipv6/mcast.c b/net/ipv6/mcast.c
-index 617f0958e164..a23b655a7627 100644
---- a/net/ipv6/mcast.c
-+++ b/net/ipv6/mcast.c
-@@ -172,6 +172,7 @@ int ipv6_sock_mc_join(struct sock *sk, int ifindex, const struct in6_addr *addr)
- 	mc_lst->next = NULL;
- 	mc_lst->addr = *addr;
- 
-+	rtnl_lock();
- 	rcu_read_lock();
- 	if (ifindex == 0) {
- 		struct rt6_info *rt;
-@@ -185,6 +186,7 @@ int ipv6_sock_mc_join(struct sock *sk, int ifindex, const struct in6_addr *addr)
- 
- 	if (dev == NULL) {
- 		rcu_read_unlock();
-+		rtnl_unlock();
- 		sock_kfree_s(sk, mc_lst, sizeof(*mc_lst));
- 		return -ENODEV;
- 	}
-@@ -202,6 +204,7 @@ int ipv6_sock_mc_join(struct sock *sk, int ifindex, const struct in6_addr *addr)
- 
- 	if (err) {
- 		rcu_read_unlock();
-+		rtnl_unlock();
- 		sock_kfree_s(sk, mc_lst, sizeof(*mc_lst));
- 		return err;
- 	}
-@@ -212,6 +215,7 @@ int ipv6_sock_mc_join(struct sock *sk, int ifindex, const struct in6_addr *addr)
- 	spin_unlock(&ipv6_sk_mc_lock);
- 
- 	rcu_read_unlock();
-+	rtnl_unlock();
- 
- 	return 0;
- }
-@@ -229,6 +233,7 @@ int ipv6_sock_mc_drop(struct sock *sk, int ifindex, const struct in6_addr *addr)
- 	if (!ipv6_addr_is_multicast(addr))
- 		return -EINVAL;
- 
-+	rtnl_lock();
- 	spin_lock(&ipv6_sk_mc_lock);
- 	for (lnk = &np->ipv6_mc_list;
- 	     (mc_lst = rcu_dereference_protected(*lnk,
-@@ -252,12 +257,15 @@ int ipv6_sock_mc_drop(struct sock *sk, int ifindex, const struct in6_addr *addr)
- 			} else
- 				(void) ip6_mc_leave_src(sk, mc_lst, NULL);
- 			rcu_read_unlock();
-+			rtnl_unlock();
-+
- 			atomic_sub(sizeof(*mc_lst), &sk->sk_omem_alloc);
- 			kfree_rcu(mc_lst, rcu);
- 			return 0;
- 		}
- 	}
- 	spin_unlock(&ipv6_sk_mc_lock);
-+	rtnl_unlock();
- 
- 	return -EADDRNOTAVAIL;
- }
-@@ -302,6 +310,7 @@ void ipv6_sock_mc_close(struct sock *sk)
- 	if (!rcu_access_pointer(np->ipv6_mc_list))
- 		return;
- 
-+	rtnl_lock();
- 	spin_lock(&ipv6_sk_mc_lock);
- 	while ((mc_lst = rcu_dereference_protected(np->ipv6_mc_list,
- 				lockdep_is_held(&ipv6_sk_mc_lock))) != NULL) {
-@@ -328,6 +337,7 @@ void ipv6_sock_mc_close(struct sock *sk)
- 		spin_lock(&ipv6_sk_mc_lock);
- 	}
- 	spin_unlock(&ipv6_sk_mc_lock);
-+	rtnl_unlock();
- }
- 
- int ip6_mc_source(int add, int omode, struct sock *sk,
-@@ -845,6 +855,8 @@ int ipv6_dev_mc_inc(struct net_device *dev, const struct in6_addr *addr)
- 	struct ifmcaddr6 *mc;
- 	struct inet6_dev *idev;
- 
-+	ASSERT_RTNL();
-+
- 	/* we need to take a reference on idev */
- 	idev = in6_dev_get(dev);
- 
-@@ -916,6 +928,8 @@ int __ipv6_dev_mc_dec(struct inet6_dev *idev, const struct in6_addr *addr)
- {
- 	struct ifmcaddr6 *ma, **map;
- 
-+	ASSERT_RTNL();
-+
- 	write_lock_bh(&idev->lock);
- 	for (map = &idev->mc_list; (ma=*map) != NULL; map = &ma->next) {
- 		if (ipv6_addr_equal(&ma->mca_addr, addr)) {
--- 
-2.1.0
+> 	Arnd
 
