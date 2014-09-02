@@ -1,75 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754922AbaIBShM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 14:37:12 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:61452 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754830AbaIBShK (ORCPT
+	id S1754965AbaIBSjj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 14:39:39 -0400
+Received: from www.linutronix.de ([62.245.132.108]:38925 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751850AbaIBSjg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 14:37:10 -0400
+	Tue, 2 Sep 2014 14:39:36 -0400
+Message-ID: <54060EDA.6060204@linutronix.de>
+Date: Tue, 02 Sep 2014 20:39:22 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-In-Reply-To: <1409682093.26422.5.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <CA+ydwtoDwQVg_BWrxxdpUyJ7Up60GtxTCLYe_5vFdV2td_kGhQ@mail.gmail.com>
-	<CAHA+R7MZCDGRhSf=UuVCGQvNo03wVziZQB_X30rwNf6hmHipQA@mail.gmail.com>
-	<20140829195339.GA9780@kria>
-	<1409363489.2980.17.camel@localhost>
-	<CAHA+R7ODa+LrdwSrS7HcBfwwq8_fpj-Ld0OCDtcOqkpCdZCvxg@mail.gmail.com>
-	<1409680684.972417.162793869.03CF8A61@webmail.messagingengine.com>
-	<CAHA+R7Mwy1SCpEUgGf9BdLEro6N-3t89KU=xL0iuzgOppXELrQ@mail.gmail.com>
-	<1409681487.26422.1.camel@edumazet-glaptop2.roam.corp.google.com>
-	<CAHA+R7PY=Pu7VKA3wp1DxeJRckxPNWL-xfv2XXkpaY935kt61A@mail.gmail.com>
-	<1409682093.26422.5.camel@edumazet-glaptop2.roam.corp.google.com>
-Date: Tue, 2 Sep 2014 11:37:08 -0700
-Message-ID: <CAHA+R7N6ZApvDi+JPW+2V98Rfm==jv1ES7xB0pzMDZx=q53rkA@mail.gmail.com>
-Subject: Re: RTNL: assertion failed at net/ipv6/addrconf.c (1699)
-From: Cong Wang <cwang@twopensource.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Sabrina Dubroca <sd@queasysnail.net>,
-        Tommi Rantala <tt.rantala@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org,
-        Dave Jones <davej@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Tony Lindgren <tony@atomide.com>
+CC: balbi@ti.com, linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Vinod Koul <vinod.koul@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Walmsley <paul@pwsan.com>
+Subject: Re: [PATCH 15/15] tty: serial: 8250: omap: add dma support
+References: <20140815210211.GD9239@atomide.com> <53F5AF0D.5060409@linutronix.de> <20140821184416.GF10066@atomide.com> <53FE3779.5090908@linutronix.de> <20140827202313.GF16006@atomide.com> <20140828082348.GA5413@linutronix.de> <20140828164645.GG16006@atomide.com> <53FF84DF.7080406@linutronix.de> <20140828225454.GM16006@atomide.com> <540048B4.7010807@linutronix.de> <20140829161221.GO16006@atomide.com> <5404B149.6010400@linutronix.de>
+In-Reply-To: <5404B149.6010400@linutronix.de>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 2, 2014 at 11:21 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> On Tue, 2014-09-02 at 11:15 -0700, Cong Wang wrote:
->
->> That is what we do when backporting patches, I can do that if David asks
->> me to backport it, but you know for netdev that is David's work.
+On 09/01/2014 07:47 PM, Sebastian Andrzej Siewior wrote:
+> Comparing it with serial-omap I see the same thing: I takes approx the
+> same amount of data until the first one is displayed. After a lot of
+> "long" writes which wake the chip up from idle I manage to freeze both,
+> the serial-omap driver and mine driver.
+
+So after some testing:
+- it happens with omap-serial as well. Especially after disabling the
+  LED trigger for both LEDs.
+
+- it seemed that disabling the MDR1 check whether or not we lost
+  context made the problem appear less often but it was a trick. Even
+  with restoring the context each time I see the same problem.
+
+- it seems to be easier to trigger with the LED trigger switched off.
+  However sometimes it works for 10 minutes, sometimes it triggers
+  after one.
+
+- I see to face two kind of "deaths":
+  - the LED still goes on and off and the uart just does not respond
+    even if I tell the button print something on the screen (the button
+    also changes the frequency of the LED so I know that the button is
+    doing something).
+    Also from dumping the content of /proc/interrupts it seems that a
+    wake up is made, the uart should have restored the registers.
+
+  - one where the system is dead and the LED does not blink anymore.
+    Also my button is dead.
+
+- disabling DMA makes the problem not go away.
+
+- mdelay(25) in omap8250_lost_context() is long enough to drop the 403
+  bytes I send in my testcase. That means I see only "good" characters.
+  With this the box remained alive for 2h. However the uart died anyway.
+
 >>
->> (I am not saying I don't want to help him, I just want to point out the fact.
->> I am very pleased to help David for stable backports as long as he asks)
->
-> Problem is : your patch submission do not identify bug origin.
->
-> You claim you want to help, but you do not provide the basic thing that
-> _really_ helps.
->
-> The proper way to identify bug origin is to add in the headers one
-> line :
->
-> Fixes: 12-digit-SHA1 ("patch title")
->
+>> Regards,
+>>
+>> Tony
+>>
+> 
 
-Since when "Fixes:" tag becomes mandatory for a stable patch?
-At least netdev-FAQ is not updated. ;-) I 100% agree "Fixes:"
-is helpful when backporting patches, but it is not mandatory currently.
+Sebastian
 
-For this patch, I was too lazy to dig the history, it looks like this is
-caused by the following commit:
-
-commit c15b1ccadb323ea50023e8f1cca2954129a62b51
-Author: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Date:   Thu Mar 27 18:28:07 2014 +0100
-
-    ipv6: move DAD and addrconf_verify processing to workqueue
-
-Thanks.
