@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751132AbaIBEo7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 00:44:59 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:37249 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910AbaIBEo6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 00:44:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <1409574225-5618-1-git-send-email-gabriele.mzt@gmail.com>
-References: <1409574225-5618-1-git-send-email-gabriele.mzt@gmail.com>
-Date: Tue, 2 Sep 2014 10:14:57 +0530
-Message-ID: <CAKohpomMPiMALaamoio_+aBRaJfiONXanFMzFx+iuOKYjDfwFg@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: intel_pstate: Remove unneeded variable
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1751359AbaIBEpM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 00:45:12 -0400
+Received: from plane.gmane.org ([80.91.229.3]:57937 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751135AbaIBEpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 00:45:07 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Leon Yu <"Leon Yu"@ccca.nctu.edu.tw>
+Subject: Re: [SMP BUG?] the return value of is_smp() is bug?
+Date: Tue, 2 Sep 2014 04:40:44 +0000 (UTC)
+Message-ID: <lu3hoc$lrl$1@ger.gmane.org>
+References: <1409570133-2766-1-git-send-email-long.wanglong@huawei.com>
+Reply-To: Leon Yu <chianglungyu@gmail.com>
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: 218-161-27-39.hinet-ip.hinet.net
+User-Agent: slrn/1.0.1 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1 September 2014 17:53, Gabriele Mazzotta <gabriele.mzt@gmail.com> wrote:
-> It should have been removed with commit d1b6848590af
-> ("cpufreq / intel_pstate: Optimize intel_pstate_set_policy")
+On 2014-09-01, Wang Long <long.wanglong@huawei.com> wrote:
 >
-> Signed-off-by: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-> ---
->  drivers/cpufreq/intel_pstate.c | 4 ----
->  1 file changed, 4 deletions(-)
+> Hi,all
 >
-> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-> index e396ad3..0668b38 100644
-> --- a/drivers/cpufreq/intel_pstate.c
-> +++ b/drivers/cpufreq/intel_pstate.c
-> @@ -708,10 +708,6 @@ static unsigned int intel_pstate_get(unsigned int cpu_num)
+> In kernel 3.17-rc2, when i set CONFIG_HAVE_SMP = y and CONFIG_SMP_ON_UP = y 
+> in .config file. the secondary core can not boot.
 >
->  static int intel_pstate_set_policy(struct cpufreq_policy *policy)
->  {
-> -       struct cpudata *cpu;
-> -
-> -       cpu = all_cpu_data[policy->cpu];
-> -
->         if (!policy->cpuinfo.max_freq)
->                 return -ENODEV;
+> when i set CONFIG_HAVE_SMP = y and CONFIG_SMP_ON_UP = n in .config file,
+> the secondary core can boot.
+>
+> But this does not happen in kernel 3.10 lts kernel, Whether the 
+> CONFIG_SMP_ON_UP is set yes or no ,the secondary core can boot.
+>
+> Does the meaning of CONFIG_SMP_ON_UP changed or this is a bug in kernel3.17-rc2 ? 
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Update qemu to at least 2.0.
+
+qemu of older version fails to smp-boot Linux 3.12+ with CONFIG_SMP_ON_UP
+enabled.
+
+-Leon
+
