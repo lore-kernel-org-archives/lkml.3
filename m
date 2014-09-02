@@ -1,275 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840AbaIBPpx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 11:45:53 -0400
-Received: from mail-oi0-f48.google.com ([209.85.218.48]:35599 "EHLO
-	mail-oi0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754102AbaIBPpD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 11:45:03 -0400
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org,
-        Seth Forshee <seth.forshee@canonical.com>
-Subject: [PATCH v2 3/3] fuse: Add support for mounts from user namespaces
-Date: Tue,  2 Sep 2014 10:44:56 -0500
-Message-Id: <1409672696-15847-4-git-send-email-seth.forshee@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1409672696-15847-1-git-send-email-seth.forshee@canonical.com>
-References: <1409672696-15847-1-git-send-email-seth.forshee@canonical.com>
+	id S1754823AbaIBPpw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 11:45:52 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:39322 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754774AbaIBPpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 11:45:04 -0400
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Rob Herring <robherring2@gmail.com>,
+        Rob Herring <rob.herring@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Lee Jones <lee.jones@linaro.org>, Stephen Boyd <sboyd@codeaurora.org>,
+        Stanimir Varbanov <svarbanov@mm-sol.com>
+Subject: [PATCH] RFC: add function for localbus address
+Date: Tue,  2 Sep 2014 18:45:00 +0300
+Message-Id: <1409672700-21697-1-git-send-email-svarbanov@mm-sol.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <20140729234522.E9FF1C40738@trevor.secretlab.ca>
+References: <20140729234522.E9FF1C40738@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update fuse to support mounts from within user namespaces. This
-is mostly a matter of translating uids and gids into the
-namespace of the process reading requests before handing the
-requests off to userspace.
+Hi Grant,
 
-Due to security concerns the namespace used should be fixed,
-otherwise a user might be able to pass the fuse fd to
-init_user_ns and inject suid files owned by a user outside the
-namespace in order to gain elevated privileges. For fuse we
-stash current_user_ns() when a filesystem is first mounted and
-abort the mount if this namespace is different than the one used
-to open the fd passed in the mount options.
+I came down to this. Could you review? Is that
+implementation closer to the suggestion made by you.
 
-The allow_others options could also be a problem, as a userns
-mount could bypass system policy for this option and thus open
-the possiblity of DoS attacks. This is prevented by restricting
-the scope of allow_other to apply only to that superblock's
-userns and its children, giving the expected behavior within the
-userns while preventing DoS attacks on more privileged contexts.
-
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
 ---
- fs/fuse/dev.c    |  4 ++--
- fs/fuse/dir.c    | 46 +++++++++++++++++++++++++++++++++-------------
- fs/fuse/fuse_i.h |  4 ++++
- fs/fuse/inode.c  | 28 ++++++++++++++++++++--------
- 4 files changed, 59 insertions(+), 23 deletions(-)
+ drivers/of/address.c       |   49 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/of/platform.c      |   20 ++++++++++++++---
+ include/linux/of_address.h |   19 +++++++++++++++++
+ 3 files changed, 84 insertions(+), 4 deletions(-)
 
-diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
-index 839caebd34f1..03c8785ed731 100644
---- a/fs/fuse/dev.c
-+++ b/fs/fuse/dev.c
-@@ -127,8 +127,8 @@ static void __fuse_put_request(struct fuse_req *req)
- 
- static void fuse_req_init_context(struct fuse_conn *fc, struct fuse_req *req)
- {
--	req->in.h.uid = from_kuid_munged(&init_user_ns, current_fsuid());
--	req->in.h.gid = from_kgid_munged(&init_user_ns, current_fsgid());
-+	req->in.h.uid = from_kuid_munged(fc->user_ns, current_fsuid());
-+	req->in.h.gid = from_kgid_munged(fc->user_ns, current_fsgid());
- 	req->in.h.pid = pid_nr_ns(task_pid(current), fc->pid_ns);
+diff --git a/drivers/of/address.c b/drivers/of/address.c
+index e371825..86c2166 100644
+--- a/drivers/of/address.c
++++ b/drivers/of/address.c
+@@ -601,6 +601,32 @@ const __be32 *of_get_address(struct device_node *dev, int index, u64 *size,
  }
+ EXPORT_SYMBOL(of_get_address);
  
-diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
-index de1d84af9f7c..c0b9968db6a1 100644
---- a/fs/fuse/dir.c
-+++ b/fs/fuse/dir.c
-@@ -905,8 +905,8 @@ static void fuse_fillattr(struct inode *inode, struct fuse_attr *attr,
- 	stat->ino = attr->ino;
- 	stat->mode = (inode->i_mode & S_IFMT) | (attr->mode & 07777);
- 	stat->nlink = attr->nlink;
--	stat->uid = make_kuid(&init_user_ns, attr->uid);
--	stat->gid = make_kgid(&init_user_ns, attr->gid);
-+	stat->uid = make_kuid(fc->user_ns, attr->uid);
-+	stat->gid = make_kgid(fc->user_ns, attr->gid);
- 	stat->rdev = inode->i_rdev;
- 	stat->atime.tv_sec = attr->atime;
- 	stat->atime.tv_nsec = attr->atimensec;
-@@ -1085,12 +1085,20 @@ int fuse_reverse_inval_entry(struct super_block *sb, u64 parent_nodeid,
-  */
- int fuse_allow_current_process(struct fuse_conn *fc)
- {
--	const struct cred *cred;
-+	const struct cred *cred = current_cred();
- 
--	if (fc->flags & FUSE_ALLOW_OTHER)
--		return 1;
-+	if (fc->flags & FUSE_ALLOW_OTHER) {
-+		if (kuid_has_mapping(fc->user_ns, cred->euid) &&
-+		    kuid_has_mapping(fc->user_ns, cred->suid) &&
-+		    kuid_has_mapping(fc->user_ns, cred->uid) &&
-+		    kgid_has_mapping(fc->user_ns, cred->egid) &&
-+		    kgid_has_mapping(fc->user_ns, cred->sgid) &&
-+		    kgid_has_mapping(fc->user_ns, cred->gid))
-+			return 1;
++const __be32 *of_get_localbus_address(struct device_node *np, int index,
++				      u64 *size)
++{
++	struct device_node *root, *parent;
++	const __be32 *ranges, *prop = NULL;
 +
-+		return 0;
++	parent = of_get_parent(np);
++	if (!parent)
++		return NULL;
++
++	root = of_find_node_by_path("/");
++
++	if (parent == root) {
++		of_node_put(parent);
++		return NULL;
 +	}
- 
--	cred = current_cred();
- 	if (uid_eq(cred->euid, fc->user_id) &&
- 	    uid_eq(cred->suid, fc->user_id) &&
- 	    uid_eq(cred->uid,  fc->user_id) &&
-@@ -1556,17 +1564,25 @@ static bool update_mtime(unsigned ivalid, bool trust_local_mtime)
- 	return true;
- }
- 
--static void iattr_to_fattr(struct iattr *iattr, struct fuse_setattr_in *arg,
--			   bool trust_local_cmtime)
-+static int iattr_to_fattr(struct fuse_conn *fc, struct iattr *iattr,
-+			   struct fuse_setattr_in *arg, bool trust_local_cmtime)
++
++	ranges = of_get_property(parent, "ranges", NULL);
++	of_node_put(parent);
++
++	if (!ranges)
++		prop = of_get_address(np, index, size, NULL);
++
++	return prop;
++}
++
+ unsigned long __weak pci_address_to_pio(phys_addr_t address)
  {
- 	unsigned ivalid = iattr->ia_valid;
+ 	if (address > IO_SPACE_LIMIT)
+@@ -665,6 +691,29 @@ int of_address_to_resource(struct device_node *dev, int index,
+ }
+ EXPORT_SYMBOL_GPL(of_address_to_resource);
  
- 	if (ivalid & ATTR_MODE)
- 		arg->valid |= FATTR_MODE,   arg->mode = iattr->ia_mode;
--	if (ivalid & ATTR_UID)
--		arg->valid |= FATTR_UID,    arg->uid = from_kuid(&init_user_ns, iattr->ia_uid);
--	if (ivalid & ATTR_GID)
--		arg->valid |= FATTR_GID,    arg->gid = from_kgid(&init_user_ns, iattr->ia_gid);
-+	if (ivalid & ATTR_UID) {
-+		arg->uid = from_kuid(fc->user_ns, iattr->ia_uid);
-+		if (arg->uid == (uid_t)-1)
-+			return -EINVAL;
-+		arg->valid |= FATTR_UID;
-+	}
-+	if (ivalid & ATTR_GID) {
-+		arg->gid = from_kgid(fc->user_ns, iattr->ia_gid);
-+		if (arg->gid == (gid_t)-1)
-+			return -EINVAL;
-+		arg->valid |= FATTR_GID;
-+	}
- 	if (ivalid & ATTR_SIZE)
- 		arg->valid |= FATTR_SIZE,   arg->size = iattr->ia_size;
- 	if (ivalid & ATTR_ATIME) {
-@@ -1588,6 +1604,8 @@ static void iattr_to_fattr(struct iattr *iattr, struct fuse_setattr_in *arg,
- 		arg->ctime = iattr->ia_ctime.tv_sec;
- 		arg->ctimensec = iattr->ia_ctime.tv_nsec;
- 	}
++int of_localbus_address_to_resource(struct device_node *dev, int index,
++				    struct resource *r)
++{
++	const char *name = NULL;
++	const __be32 *addrp;
++	u64 size;
++
++	addrp = of_get_localbus_address(dev, index, &size);
++	if (!addrp)
++		return -EINVAL;
++
++	of_property_read_string_index(dev, "reg-names", index, &name);
++
++	memset(r, 0, sizeof(*r));
++	r->start = be32_to_cpup(addrp);
++	r->end = r->start + size - 1;
++	r->flags = IORESOURCE_REG;
++	r->name = name ? name : dev->full_name;
 +
 +	return 0;
- }
- 
- /*
-@@ -1741,7 +1759,9 @@ int fuse_do_setattr(struct inode *inode, struct iattr *attr,
- 
- 	memset(&inarg, 0, sizeof(inarg));
- 	memset(&outarg, 0, sizeof(outarg));
--	iattr_to_fattr(attr, &inarg, trust_local_cmtime);
-+	err = iattr_to_fattr(fc, attr, &inarg, trust_local_cmtime);
-+	if (err)
-+		goto error;
- 	if (file) {
- 		struct fuse_file *ff = file->private_data;
- 		inarg.valid |= FATTR_FH;
-diff --git a/fs/fuse/fuse_i.h b/fs/fuse/fuse_i.h
-index a3ded071e2c6..2cfd0ca3407a 100644
---- a/fs/fuse/fuse_i.h
-+++ b/fs/fuse/fuse_i.h
-@@ -22,6 +22,7 @@
- #include <linux/rbtree.h>
- #include <linux/poll.h>
- #include <linux/workqueue.h>
-+#include <linux/user_namespace.h>
- #include <linux/pid_namespace.h>
- 
- /** Max number of pages that can be used in a single read request */
-@@ -387,6 +388,9 @@ struct fuse_conn {
- 	/** The group id for this mount */
- 	kgid_t group_id;
- 
-+	/** The user namespace for this mount */
-+	struct user_namespace *user_ns;
++}
++EXPORT_SYMBOL_GPL(of_localbus_address_to_resource);
 +
- 	/** The pid namespace for this mount */
- 	struct pid_namespace *pid_ns;
- 
-diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
-index c6d8473b1a80..f3a3ded82f85 100644
---- a/fs/fuse/inode.c
-+++ b/fs/fuse/inode.c
-@@ -167,8 +167,8 @@ void fuse_change_attributes_common(struct inode *inode, struct fuse_attr *attr,
- 	inode->i_ino     = fuse_squash_ino(attr->ino);
- 	inode->i_mode    = (inode->i_mode & S_IFMT) | (attr->mode & 07777);
- 	set_nlink(inode, attr->nlink);
--	inode->i_uid     = make_kuid(&init_user_ns, attr->uid);
--	inode->i_gid     = make_kgid(&init_user_ns, attr->gid);
-+	inode->i_uid     = make_kuid(fc->user_ns, attr->uid);
-+	inode->i_gid     = make_kgid(fc->user_ns, attr->gid);
- 	inode->i_blocks  = attr->blocks;
- 	inode->i_atime.tv_sec   = attr->atime;
- 	inode->i_atime.tv_nsec  = attr->atimensec;
-@@ -496,6 +496,8 @@ static int parse_fuse_opt(char *opt, struct fuse_mount_data *d, int is_bdev)
- 	memset(d, 0, sizeof(struct fuse_mount_data));
- 	d->max_read = ~0;
- 	d->blksize = FUSE_DEFAULT_BLKSIZE;
-+	d->user_id = make_kuid(current_user_ns(), 0);
-+	d->group_id = make_kgid(current_user_ns(), 0);
- 
- 	while ((p = strsep(&opt, ",")) != NULL) {
- 		int token;
-@@ -578,8 +580,10 @@ static int fuse_show_options(struct seq_file *m, struct dentry *root)
- 	struct super_block *sb = root->d_sb;
- 	struct fuse_conn *fc = get_fuse_conn_super(sb);
- 
--	seq_printf(m, ",user_id=%u", from_kuid_munged(&init_user_ns, fc->user_id));
--	seq_printf(m, ",group_id=%u", from_kgid_munged(&init_user_ns, fc->group_id));
-+	seq_printf(m, ",user_id=%u",
-+		   from_kuid_munged(fc->user_ns, fc->user_id));
-+	seq_printf(m, ",group_id=%u",
-+		   from_kgid_munged(fc->user_ns, fc->group_id));
- 	if (fc->flags & FUSE_DEFAULT_PERMISSIONS)
- 		seq_puts(m, ",default_permissions");
- 	if (fc->flags & FUSE_ALLOW_OTHER)
-@@ -618,6 +622,7 @@ void fuse_conn_init(struct fuse_conn *fc)
- 	fc->attr_version = 1;
- 	get_random_bytes(&fc->scramble_key, sizeof(fc->scramble_key));
- 	fc->pid_ns = get_pid_ns(task_active_pid_ns(current));
-+	fc->user_ns = get_user_ns(current_user_ns());
- }
- EXPORT_SYMBOL_GPL(fuse_conn_init);
- 
-@@ -956,6 +961,7 @@ static void fuse_send_init(struct fuse_conn *fc, struct fuse_req *req)
- static void fuse_free_conn(struct fuse_conn *fc)
+ struct device_node *of_find_matching_node_by_address(struct device_node *from,
+ 					const struct of_device_id *matches,
+ 					u64 base_address)
+diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+index 0197725..36dcbd7 100644
+--- a/drivers/of/platform.c
++++ b/drivers/of/platform.c
+@@ -106,8 +106,9 @@ struct platform_device *of_device_alloc(struct device_node *np,
+ 				  struct device *parent)
  {
- 	put_pid_ns(fc->pid_ns);
-+	put_user_ns(fc->user_ns);
- 	kfree_rcu(fc, rcu);
+ 	struct platform_device *dev;
+-	int rc, i, num_reg = 0, num_irq;
++	int rc, i, num_reg = 0, num_localbus_reg = 0, num_irq;
+ 	struct resource *res, temp_res;
++	int num_resources;
+ 
+ 	dev = platform_device_alloc("", -1);
+ 	if (!dev)
+@@ -116,22 +117,33 @@ struct platform_device *of_device_alloc(struct device_node *np,
+ 	/* count the io and irq resources */
+ 	while (of_address_to_resource(np, num_reg, &temp_res) == 0)
+ 		num_reg++;
++
++	while (of_localbus_address_to_resource(np,
++					num_localbus_reg, &temp_res) == 0)
++		num_localbus_reg++;
++
+ 	num_irq = of_irq_count(np);
+ 
++	num_resources = num_reg + num_localbus_reg + num_irq;
++
+ 	/* Populate the resource table */
+-	if (num_irq || num_reg) {
+-		res = kzalloc(sizeof(*res) * (num_irq + num_reg), GFP_KERNEL);
++	if (num_resources) {
++		res = kzalloc(sizeof(*res) * num_resources, GFP_KERNEL);
+ 		if (!res) {
+ 			platform_device_put(dev);
+ 			return NULL;
+ 		}
+ 
+-		dev->num_resources = num_reg + num_irq;
++		dev->num_resources = num_resources;
+ 		dev->resource = res;
+ 		for (i = 0; i < num_reg; i++, res++) {
+ 			rc = of_address_to_resource(np, i, res);
+ 			WARN_ON(rc);
+ 		}
++		for (i = 0; i < num_localbus_reg; i++, res++) {
++			rc = of_localbus_address_to_resource(np, i, res);
++			WARN_ON(rc);
++		}
+ 		if (of_irq_to_resource_table(np, res, num_irq) != num_irq)
+ 			pr_debug("not all legacy IRQ resources mapped for %s\n",
+ 				 np->name);
+diff --git a/include/linux/of_address.h b/include/linux/of_address.h
+index fb7b722..10112ea 100644
+--- a/include/linux/of_address.h
++++ b/include/linux/of_address.h
+@@ -42,6 +42,8 @@ extern u64 of_translate_dma_address(struct device_node *dev,
+ extern u64 of_translate_address(struct device_node *np, const __be32 *addr);
+ extern int of_address_to_resource(struct device_node *dev, int index,
+ 				  struct resource *r);
++extern int of_localbus_address_to_resource(struct device_node *dev, int index,
++				  struct resource *r);
+ extern struct device_node *of_find_matching_node_by_address(
+ 					struct device_node *from,
+ 					const struct of_device_id *matches,
+@@ -55,6 +57,9 @@ extern void __iomem *of_iomap(struct device_node *device, int index);
+ extern const __be32 *of_get_address(struct device_node *dev, int index,
+ 			   u64 *size, unsigned int *flags);
+ 
++extern const __be32 *of_get_localbus_address(struct device_node *np, int index,
++			   u64 *size);
++
+ extern unsigned long pci_address_to_pio(phys_addr_t addr);
+ 
+ extern int of_pci_range_parser_init(struct of_pci_range_parser *parser,
+@@ -80,6 +85,12 @@ static inline const __be32 *of_get_address(struct device_node *dev, int index,
+ 	return NULL;
  }
  
-@@ -1042,8 +1048,14 @@ static int fuse_fill_super(struct super_block *sb, void *data, int silent)
- 	if (!file)
- 		goto err;
++static inline const __be32 *of_get_localbus_address(struct device_node *dev,
++						    int index, u64 *size)
++{
++	return NULL;
++}
++
+ static inline int of_pci_range_parser_init(struct of_pci_range_parser *parser,
+ 			struct device_node *node)
+ {
+@@ -108,6 +119,8 @@ static inline bool of_dma_is_coherent(struct device_node *np)
+ #ifdef CONFIG_OF
+ extern int of_address_to_resource(struct device_node *dev, int index,
+ 				  struct resource *r);
++extern int of_localbus_address_to_resource(struct device_node *dev, int index,
++				  struct resource *r);
+ void __iomem *of_iomap(struct device_node *node, int index);
+ void __iomem *of_io_request_and_map(struct device_node *device,
+ 					int index, char *name);
+@@ -121,6 +134,12 @@ static inline int of_address_to_resource(struct device_node *dev, int index,
+ 	return -EINVAL;
+ }
  
--	if ((file->f_op != &fuse_dev_operations) ||
--	    (file->f_cred->user_ns != &init_user_ns))
-+	/*
-+	 * Require mount to happen from the same user namespace which
-+	 * opened /dev/fuse, otherwise users might be able to
-+	 * elevate privileges by opening in init_user_ns then
-+	 * mounting from a different namespace without MNT_NOSUID.
-+	 */
-+	if (file->f_op != &fuse_dev_operations ||
-+	    file->f_cred->user_ns != current_user_ns())
- 		goto err_fput;
- 
- 	fc = kmalloc(sizeof(*fc), GFP_KERNEL);
-@@ -1157,7 +1169,7 @@ static void fuse_kill_sb_anon(struct super_block *sb)
- static struct file_system_type fuse_fs_type = {
- 	.owner		= THIS_MODULE,
- 	.name		= "fuse",
--	.fs_flags	= FS_HAS_SUBTYPE,
-+	.fs_flags	= FS_HAS_SUBTYPE | FS_USERNS_MOUNT,
- 	.mount		= fuse_mount,
- 	.kill_sb	= fuse_kill_sb_anon,
- };
-@@ -1189,7 +1201,7 @@ static struct file_system_type fuseblk_fs_type = {
- 	.name		= "fuseblk",
- 	.mount		= fuse_mount_blk,
- 	.kill_sb	= fuse_kill_sb_blk,
--	.fs_flags	= FS_REQUIRES_DEV | FS_HAS_SUBTYPE,
-+	.fs_flags	= FS_REQUIRES_DEV | FS_HAS_SUBTYPE | FS_USERNS_MOUNT,
- };
- MODULE_ALIAS_FS("fuseblk");
- 
++static inline int of_localbus_address_to_resource(struct device_node *dev,
++						  int index, struct resource *r)
++{
++	return -EINVAL;
++}
++
+ static inline void __iomem *of_iomap(struct device_node *device, int index)
+ {
+ 	return NULL;
 -- 
-1.9.1
+1.7.0.4
 
