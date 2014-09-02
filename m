@@ -1,107 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755062AbaIBUNP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 16:13:15 -0400
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:36811 "EHLO
+	id S1754951AbaIBUNO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 16:13:14 -0400
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:36807 "EHLO
 	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754581AbaIBUNN (ORCPT
+	by vger.kernel.org with ESMTP id S1754404AbaIBUNN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 2 Sep 2014 16:13:13 -0400
 From: Andy King <acking@vmware.com>
 To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         virtualization@lists.linux-foundation.org
 Cc: davem@davemloft.net, pv-drivers@vmware.com,
-        penguin-kernel@I-love.SAKURA.ne.jp, sergei.shtylyov@cogentembedded.com,
-        Andy King <acking@vmware.com>
-Subject: [PATCH] VMXNET3: Check for map error in vmxnet3_set_mc
-Date: Tue,  2 Sep 2014 13:13:44 -0700
-Message-Id: <1409688824-32619-2-git-send-email-acking@vmware.com>
+        penguin-kernel@I-love.SAKURA.ne.jp, sergei.shtylyov@cogentembedded.com
+Subject: 
+Date: Tue,  2 Sep 2014 13:13:43 -0700
+Message-Id: <1409688824-32619-1-git-send-email-acking@vmware.com>
 X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1409688824-32619-1-git-send-email-acking@vmware.com>
-References: <1409688824-32619-1-git-send-email-acking@vmware.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should check if the map of the table actually succeeds, and also free
-resources accordingly.
+This version addresses Sergei's comments.
 
-Version bumped to 1.2.1.0
-
-Acked-by: Shelley Gong <shelleygong@vmware.com>
-Acked-by: Bhavesh Davda <bhavesh@vmware.com>
-Signed-off-by: Andy King <acking@vmware.com>
-Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
----
- drivers/net/vmxnet3/vmxnet3_drv.c |   15 ++++++++-------
- drivers/net/vmxnet3/vmxnet3_int.h |    4 ++--
- 2 files changed, 10 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
-index d6e90c7..6dfcbf5 100644
---- a/drivers/net/vmxnet3/vmxnet3_drv.c
-+++ b/drivers/net/vmxnet3/vmxnet3_drv.c
-@@ -2056,7 +2056,6 @@ vmxnet3_set_mc(struct net_device *netdev)
- 		if (!netdev_mc_empty(netdev)) {
- 			new_table = vmxnet3_copy_mc(netdev);
- 			if (new_table) {
--				new_mode |= VMXNET3_RXM_MCAST;
- 				rxConf->mfTableLen = cpu_to_le16(
- 					netdev_mc_count(netdev) * ETH_ALEN);
- 				new_table_pa = dma_map_single(
-@@ -2064,15 +2063,18 @@ vmxnet3_set_mc(struct net_device *netdev)
- 							new_table,
- 							rxConf->mfTableLen,
- 							PCI_DMA_TODEVICE);
-+			}
-+
-+			if (new_table_pa) {
-+				new_mode |= VMXNET3_RXM_MCAST;
- 				rxConf->mfTablePA = cpu_to_le64(new_table_pa);
- 			} else {
--				netdev_info(netdev, "failed to copy mcast list"
--					    ", setting ALL_MULTI\n");
-+				netdev_info(netdev,
-+					    "failed to copy mcast list, setting ALL_MULTI\n");
- 				new_mode |= VMXNET3_RXM_ALL_MULTI;
- 			}
- 		}
- 
--
- 	if (!(new_mode & VMXNET3_RXM_MCAST)) {
- 		rxConf->mfTableLen = 0;
- 		rxConf->mfTablePA = 0;
-@@ -2091,11 +2093,10 @@ vmxnet3_set_mc(struct net_device *netdev)
- 			       VMXNET3_CMD_UPDATE_MAC_FILTERS);
- 	spin_unlock_irqrestore(&adapter->cmd_lock, flags);
- 
--	if (new_table) {
-+	if (new_table_pa)
- 		dma_unmap_single(&adapter->pdev->dev, new_table_pa,
- 				 rxConf->mfTableLen, PCI_DMA_TODEVICE);
--		kfree(new_table);
--	}
-+	kfree(new_table);
- }
- 
- void
-diff --git a/drivers/net/vmxnet3/vmxnet3_int.h b/drivers/net/vmxnet3/vmxnet3_int.h
-index 29ee77f2..3759479 100644
---- a/drivers/net/vmxnet3/vmxnet3_int.h
-+++ b/drivers/net/vmxnet3/vmxnet3_int.h
-@@ -69,10 +69,10 @@
- /*
-  * Version numbers
-  */
--#define VMXNET3_DRIVER_VERSION_STRING   "1.2.0.0-k"
-+#define VMXNET3_DRIVER_VERSION_STRING   "1.2.1.0-k"
- 
- /* a 32-bit int, each byte encode a verion number in VMXNET3_DRIVER_VERSION */
--#define VMXNET3_DRIVER_VERSION_NUM      0x01020000
-+#define VMXNET3_DRIVER_VERSION_NUM      0x01020100
- 
- #if defined(CONFIG_PCI_MSI)
- 	/* RSS only makes sense if MSI-X is supported. */
--- 
-1.7.4.1
+o Fixed description and added Reported-by
+o Removed NULL check for kfree()
 
