@@ -1,570 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753141AbaIBD6z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 23:58:55 -0400
-Received: from mail-oi0-f50.google.com ([209.85.218.50]:33386 "EHLO
-	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751925AbaIBD6w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 23:58:52 -0400
+	id S1750882AbaIBEEZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 00:04:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13909 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750701AbaIBEEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 00:04:24 -0400
+Message-ID: <5405419E.7020103@redhat.com>
+Date: Tue, 02 Sep 2014 12:03:42 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <1409564586-18421-1-git-send-email-zyw@rock-chips.com>
-References: <1409562468-16586-1-git-send-email-zyw@rock-chips.com>
-	<1409564586-18421-1-git-send-email-zyw@rock-chips.com>
-Date: Mon, 1 Sep 2014 20:58:51 -0700
-X-Google-Sender-Auth: plqF6qD8vKNz-j1dzW9dykZXYFc
-Message-ID: <CAD=FV=X-hSHKe4_QRxFLejok-qVYM_FyXO7L7X6AzW8sTaVPnQ@mail.gmail.com>
-Subject: Re: [PATCH v7 3/5] RTC: RK808: add RTC driver for RK808
-From: Doug Anderson <dianders@chromium.org>
-To: Chris Zhong <zyw@rock-chips.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Mike Turquette <mturquette@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        rtc-linux@googlegroups.com, Grant Likely <grant.likely@linaro.org>,
-        Lin Huang <hl@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, zhangqing <zhangqing@rock-chips.com>,
-        xxx <xxx@rock-chips.com>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        Dmitry Torokhov <dtor@chromium.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Kever Yang <kever.yang@rock-chips.com>
-Content-Type: text/plain; charset=UTF-8
+To: Peter Zijlstra <peterz@infradead.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+CC: Mike Galbraith <umgwanakikbuti@gmail.com>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>,
+        Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process
+ is runnable
+References: <1408608310-13579-1-git-send-email-jasowang@redhat.com> <1408608310-13579-2-git-send-email-jasowang@redhat.com> <1408683665.5648.69.camel@marge.simpson.net> <20140901093159.GB27892@worktop.ger.corp.intel.com> <20140901095219.GD21269@redhat.com> <20140901100434.GD27892@worktop.ger.corp.intel.com> <20140901101939.GA31157@worktop.ger.corp.intel.com>
+In-Reply-To: <20140901101939.GA31157@worktop.ger.corp.intel.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chris,
+On 09/01/2014 06:19 PM, Peter Zijlstra wrote:
+> On Mon, Sep 01, 2014 at 12:04:34PM +0200, Peter Zijlstra wrote:
+>> > On Mon, Sep 01, 2014 at 12:52:19PM +0300, Michael S. Tsirkin wrote:
+>>> > > On Mon, Sep 01, 2014 at 11:31:59AM +0200, Peter Zijlstra wrote:
+>>>> > > > On Fri, Aug 22, 2014 at 07:01:05AM +0200, Mike Galbraith wrote:
+>>>>>> > > > > > +++ b/include/net/busy_poll.h
+>>>>>> > > > > > @@ -109,7 +109,8 @@ static inline bool sk_busy_loop(struct sock *sk, int nonblock)
+>>>>>> > > > > >  		cpu_relax();
+>>>>>> > > > > >  
+>>>>>> > > > > >  	} while (!nonblock && skb_queue_empty(&sk->sk_receive_queue) &&
+>>>>>> > > > > > -		 !need_resched() && !busy_loop_timeout(end_time));
+>>>>>> > > > > > +		 !need_resched() && !busy_loop_timeout(end_time) &&
+>>>>>> > > > > > +		 nr_running_this_cpu() < 2);
+>>>>>> > > > > >  
+>>>> > > > 
+>>>> > > > So as has been said by now; this is horrible.
+>>>> > > > 
+>>>> > > > We should not export nr_running like this ever. Your usage of < 2
+>>>> > > > implies this can be hit with nr_running == 0, and therefore you can also
+>>>> > > > hit it with nr_running == 1 where the one is not network related and you
+>>>> > > > get random delays.
+>>>> > > > 
+>>>> > > > Worse still, you have BH (and thereby preemption) disabled, you should
+>>>> > > > not _ever_ have undefined and indefinite waits like that.
+>>>> > > > 
+>>>> > > > You also destroy any hope of dropping into lower power states; even when
+>>>> > > > there's never going to be a packet ever again, also bad.
+>>> > > 
+>>> > > Hmm this patch sometimes makes us exit from the busy loop *earlier*.
+>>> > > How can this interfere with dropping into lower power states?
+>> > 
+>> > Ah.. jetlag.. :/ I read it like it owuld indefinitely spin if there was
+>> > only the 'one' task, not avoid the spin unless there was the one task.
+>> > 
+>> > The nr_running thing is still horrible, but let me reread this patch
+>> > description to see if it explains why that is a good thing.
+> OK I suppose that more or less makes sense, the contextual behaviour is
+> of course tedious in that it makes behaviour less predictable. The
+> 'other' tasks might not want to generate data and you then destroy
+> throughput by not spinning.
 
-On Mon, Sep 1, 2014 at 2:43 AM, Chris Zhong <zyw@rock-chips.com> wrote:
-> Adding RTC driver for supporting RTC device present inside RK808 PMIC.
+The patch try to make sure:
+- the the performance of busy read was not worse than it was disabled in
+any cases.
+- the performance improvement of a single socket was not achieved by
+sacrificing the total performance (all other processes) of the system
+ 
+If 'other' tasks are also CPU or I/O intensive jobs, we switch to do
+them so the total performance were kept or even increased, and the
+performance of current process were guaranteed not worse than when busy
+read was disabled (or even better since it may still do busy read
+sometimes when it was the only runnable process). If 'other' task are
+not intensive, they just do little work and sleep soon, then the busy
+read can still work in most of the time during the future reads, we may
+still get obvious improvements.
+> I'm not entirely sure I see how its all supposed to work though; the
+> various poll functions call sk_busy_poll() and do_select() also loops.
 >
-> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
-> Signed-off-by: Zhang Qing <zhangqing@rock-chips.com>
->
-> ---
->
-> Changes in v7:
-> Adviced by doug
-> - read rtc time from shadowed registers
-> Adviced by Dmitry
-> - use CONFIG_PM_SLEEP replace CONFIG_PM
-> - use SIMPLE_DEV_PM_OPS replace dev_pm_ops
-> - fix dev_warn
-> - coding style
-> Adviced by Heiko
-> - remove rtc_ctl
->
-> Changes in v6:
-> Adviced by doug
-> - move RTC_READSEL setting into probe
->
-> Changes in v5:
-> - fixed a bug about set_time failed
->
-> Changes in v4:
-> - use &client->dev replace rk808->dev
->
-> Changes in v3: None
-> Changes in v2:
-> Adviced by javier.martinez
-> - Add a separate clock driver, rather than in RTC driver
->
->  drivers/rtc/Kconfig     |   10 ++
->  drivers/rtc/Makefile    |    1 +
->  drivers/rtc/rtc-rk808.c |  419 +++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 430 insertions(+)
->  create mode 100644 drivers/rtc/rtc-rk808.c
->
-> diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-> index a168e96..aeab9d9 100644
-> --- a/drivers/rtc/Kconfig
-> +++ b/drivers/rtc/Kconfig
-> @@ -288,6 +288,16 @@ config RTC_DRV_MAX77686
->           This driver can also be built as a module. If so, the module
->           will be called rtc-max77686.
->
-> +config RTC_DRV_RK808
-> +       tristate "Rockchip RK808 RTC"
-> +       depends on MFD_RK808
-> +       help
-> +         If you say yes here you will get support for the
-> +         RTC of RK808 PMIC.
-> +
-> +         This driver can also be built as a module. If so, the module
-> +         will be called rk808-rtc.
-> +
->  config RTC_DRV_RS5C372
->         tristate "Ricoh R2025S/D, RS5C372A/B, RV5C386, RV5C387A"
->         help
-> diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-> index 56f061c..91fe4647 100644
-> --- a/drivers/rtc/Makefile
-> +++ b/drivers/rtc/Makefile
-> @@ -109,6 +109,7 @@ obj-$(CONFIG_RTC_DRV_PUV3)  += rtc-puv3.o
->  obj-$(CONFIG_RTC_DRV_PXA)      += rtc-pxa.o
->  obj-$(CONFIG_RTC_DRV_R9701)    += rtc-r9701.o
->  obj-$(CONFIG_RTC_DRV_RC5T583)  += rtc-rc5t583.o
-> +obj-$(CONFIG_RTC_DRV_RK808)    += rtc-rk808.o
->  obj-$(CONFIG_RTC_DRV_RP5C01)   += rtc-rp5c01.o
->  obj-$(CONFIG_RTC_DRV_RS5C313)  += rtc-rs5c313.o
->  obj-$(CONFIG_RTC_DRV_RS5C348)  += rtc-rs5c348.o
-> diff --git a/drivers/rtc/rtc-rk808.c b/drivers/rtc/rtc-rk808.c
-> new file mode 100644
-> index 0000000..3de78e8
-> --- /dev/null
-> +++ b/drivers/rtc/rtc-rk808.c
-> @@ -0,0 +1,419 @@
-> +/*
-> + * RTC driver for Rockchip RK808
-> + *
-> + * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms and conditions of the GNU General Public License,
-> + * version 2, as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/kernel.h>
-> +#include <linux/rtc.h>
-> +#include <linux/bcd.h>
-> +#include <linux/mfd/rk808.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/i2c.h>
-> +
-> +/* RTC_CTRL_REG bitfields */
-> +#define BIT_RTC_CTRL_REG_STOP_RTC_M            BIT(0)
-> +
-> +/* RK808 has a shadowed register for saving a "frozen" RTC time.
-> + * When user setting "GET_TIME" to 1, the time will save in this shadowed
-> + * register. If set "READSEL" to 1, user read rtc time register, actually
-> + * get the time of that moment. If we need the real time, clr this bit.
-> + */
-> +#define BIT_RTC_CTRL_REG_RTC_GET_TIME          BIT(6)
-> +#define BIT_RTC_CTRL_REG_RTC_READSEL_M         BIT(7)
-> +#define BIT_RTC_INTERRUPTS_REG_IT_ALARM_M      BIT(3)
-> +#define RTC_STATUS_MASK                0xFE
-> +
-> +#define SECONDS_REG_MSK                0x7F
-> +#define MINUTES_REG_MAK                0x7F
-> +#define HOURS_REG_MSK          0x3F
-> +#define DAYS_REG_MSK           0x3F
-> +#define MONTHS_REG_MSK         0x1F
-> +#define YEARS_REG_MSK          0xFF
-> +#define WEEKS_REG_MSK          0x7
-> +
-> +/* REG_SECONDS_REG through REG_YEARS_REG is how many registers? */
-> +
-> +#define NUM_TIME_REGS  (RK808_WEEKS_REG - RK808_SECONDS_REG + 1)
-> +#define NUM_ALARM_REGS (RK808_ALARM_YEARS_REG - RK808_ALARM_SECONDS_REG + 1)
-> +
-> +struct rk808_rtc {
-> +       struct rk808 *rk808;
-> +       struct rtc_device *rtc;
-> +       int irq;
-> +};
-> +
-> +/* Read current time and date in RTC */
-> +static int rk808_rtc_readtime(struct device *dev, struct rtc_time *tm)
-> +{
-> +       struct rk808_rtc *rk808_rtc = dev_get_drvdata(dev);
-> +       struct rk808 *rk808 = rk808_rtc->rk808;
-> +       u8 rtc_data[NUM_TIME_REGS];
-> +       int ret;
-> +
-> +       ret = regmap_update_bits(rk808->regmap, RK808_RTC_CTRL_REG,
-> +                                BIT_RTC_CTRL_REG_RTC_GET_TIME,
-> +                                BIT_RTC_CTRL_REG_RTC_GET_TIME);
-> +       if (ret) {
-> +               dev_err(dev, "Failed to update bits rtc_ctrl: %d\n", ret);
-> +               return ret;
-> +       }
-> +
-> +       ret = regmap_bulk_read(rk808->regmap, RK808_SECONDS_REG,
-> +                              rtc_data, NUM_TIME_REGS);
-> +       if (ret) {
-> +               dev_err(dev, "Failed to bulk read rtc_data: %d\n", ret);
-> +               goto reset_read_sel;
-> +       }
-> +
-> +       tm->tm_sec = bcd2bin(rtc_data[0] & SECONDS_REG_MSK);
-> +       tm->tm_min = bcd2bin(rtc_data[1] & MINUTES_REG_MAK);
-> +       tm->tm_hour = bcd2bin(rtc_data[2] & HOURS_REG_MSK);
-> +       tm->tm_mday = bcd2bin(rtc_data[3] & DAYS_REG_MSK);
-> +       tm->tm_mon = (bcd2bin(rtc_data[4] & MONTHS_REG_MSK)) - 1;
-> +       tm->tm_year = (bcd2bin(rtc_data[5] & YEARS_REG_MSK)) + 100;
-> +       tm->tm_wday = bcd2bin(rtc_data[6] & WEEKS_REG_MSK);
-> +       dev_dbg(dev, "RTC date/time %4d-%02d-%02d(%d) %02d:%02d:%02d\n",
-> +               1900 + tm->tm_year, tm->tm_mon + 1, tm->tm_mday,
-> +               tm->tm_wday, tm->tm_hour , tm->tm_min, tm->tm_sec);
-> +
-> +reset_read_sel:
-> +       ret = regmap_update_bits(rk808->regmap, RK808_RTC_CTRL_REG,
-> +                                BIT_RTC_CTRL_REG_RTC_GET_TIME, 0);
-> +       if (ret)
-> +               dev_err(dev, "Failed to update bits rtc_ctrl: %d\n", ret);
-> +       return ret;
+> The patch only kills the sk_busy_poll() loop, but then do_select() will
+> still loop and not sleep, so how is this helping?
 
-Nit: blank line before "return ret;"
-
-> +}
-> +
-> +/* Set current time and date in RTC */
-> +static int rk808_rtc_set_time(struct device *dev, struct rtc_time *tm)
-> +{
-> +       struct rk808_rtc *rk808_rtc = dev_get_drvdata(dev);
-> +       struct rk808 *rk808 = rk808_rtc->rk808;
-> +       u8 rtc_data[NUM_TIME_REGS];
-> +       int ret;
-> +
-> +       rtc_data[0] = bin2bcd(tm->tm_sec);
-> +       rtc_data[1] = bin2bcd(tm->tm_min);
-> +       rtc_data[2] = bin2bcd(tm->tm_hour);
-> +       rtc_data[3] = bin2bcd(tm->tm_mday);
-> +       rtc_data[4] = bin2bcd(tm->tm_mon + 1);
-> +       rtc_data[5] = bin2bcd(tm->tm_year - 100);
-> +       rtc_data[6] = bin2bcd(tm->tm_wday);
-> +       dev_dbg(dev, "set RTC date/time %4d-%02d-%02d(%d) %02d:%02d:%02d\n",
-> +               1900 + tm->tm_year, tm->tm_mon + 1, tm->tm_mday,
-> +               tm->tm_wday, tm->tm_hour , tm->tm_min, tm->tm_sec);
-> +
-> +       /* Stop RTC while updating the RTC registers */
-> +       ret = regmap_update_bits(rk808->regmap, RK808_RTC_CTRL_REG,
-> +                                BIT_RTC_CTRL_REG_STOP_RTC_M,
-> +                                BIT_RTC_CTRL_REG_STOP_RTC_M);
-> +       if (ret) {
-> +               dev_err(dev, "Failed to update RTC control: %d\n", ret);
-> +               return ret;
-> +       }
-> +
-> +       ret = regmap_bulk_write(rk808->regmap, RK808_SECONDS_REG,
-> +                               rtc_data, NUM_TIME_REGS);
-> +       if (ret) {
-> +               dev_err(dev, "Failed to bull write rtc_data: %d\n", ret);
-> +               return ret;
-> +       }
-> +       /* Start RTC again */
-> +       ret = regmap_update_bits(rk808->regmap, RK808_RTC_CTRL_REG,
-> +                                BIT_RTC_CTRL_REG_STOP_RTC_M, 0);
-> +       if (ret) {
-> +               dev_err(dev, "Failed to update RTC control: %d\n", ret);
-> +               return ret;
-> +       }
-> +       return 0;
-> +}
-> +
-> +/* Read alarm time and date in RTC */
-> +static int rk808_rtc_readalarm(struct device *dev, struct rtc_wkalrm *alrm)
-> +{
-> +       struct rk808_rtc *rk808_rtc = dev_get_drvdata(dev);
-> +       struct rk808 *rk808 = rk808_rtc->rk808;
-> +       u8 alrm_data[NUM_ALARM_REGS];
-> +       uint32_t int_reg;
-> +       int ret;
-> +
-> +       ret = regmap_bulk_read(rk808->regmap, RK808_ALARM_SECONDS_REG,
-> +                              alrm_data, NUM_ALARM_REGS);
-> +
-> +       alrm->time.tm_sec = bcd2bin(alrm_data[0] & SECONDS_REG_MSK);
-> +       alrm->time.tm_min = bcd2bin(alrm_data[1] & MINUTES_REG_MAK);
-> +       alrm->time.tm_hour = bcd2bin(alrm_data[2] & HOURS_REG_MSK);
-> +       alrm->time.tm_mday = bcd2bin(alrm_data[3] & DAYS_REG_MSK);
-> +       alrm->time.tm_mon = (bcd2bin(alrm_data[4] & MONTHS_REG_MSK)) - 1;
-> +       alrm->time.tm_year = (bcd2bin(alrm_data[5] & YEARS_REG_MSK)) + 100;
-> +
-> +       ret = regmap_read(rk808->regmap, RK808_RTC_INT_REG, &int_reg);
-> +       if (ret) {
-> +               dev_err(dev, "Failed to read RTC INT REG: %d\n", ret);
-> +               return ret;
-> +       }
-> +
-> +       dev_dbg(dev, "alrm read RTC date/time %4d-%02d-%02d(%d) %02d:%02d:%02d\n",
-> +               1900 + alrm->time.tm_year, alrm->time.tm_mon + 1,
-> +               alrm->time.tm_mday, alrm->time.tm_wday, alrm->time.tm_hour,
-> +               alrm->time.tm_min, alrm->time.tm_sec);
-> +
-> +       alrm->enabled = (int_reg & BIT_RTC_INTERRUPTS_REG_IT_ALARM_M) ? 1 : 0;
-> +
-> +       return 0;
-> +}
-> +
-> +static int rk808_rtc_stop_alarm(struct rk808_rtc *rk808_rtc)
-> +{
-> +       struct rk808 *rk808 = rk808_rtc->rk808;
-> +       int ret;
-> +
-> +       ret = regmap_update_bits(rk808->regmap, RK808_RTC_INT_REG,
-> +                                BIT_RTC_INTERRUPTS_REG_IT_ALARM_M, 0);
-> +
-> +       return ret;
-> +}
-> +
-> +static int rk808_rtc_start_alarm(struct rk808_rtc *rk808_rtc)
-> +{
-> +       struct rk808 *rk808 = rk808_rtc->rk808;
-> +       int ret;
-> +
-> +       ret = regmap_update_bits(rk808->regmap, RK808_RTC_INT_REG,
-> +                                BIT_RTC_INTERRUPTS_REG_IT_ALARM_M,
-> +                                BIT_RTC_INTERRUPTS_REG_IT_ALARM_M);
-> +
-> +       return ret;
-> +}
-> +
-> +static int rk808_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
-> +{
-> +       struct rk808_rtc *rk808_rtc = dev_get_drvdata(dev);
-> +       struct rk808 *rk808 = rk808_rtc->rk808;
-> +       u8 alrm_data[NUM_ALARM_REGS];
-> +       int ret;
-> +
-> +       ret = rk808_rtc_stop_alarm(rk808_rtc);
-> +       if (ret) {
-> +               dev_err(dev, "Failed to stop alarm: %d\n", ret);
-> +               return ret;
-> +       }
-> +       dev_dbg(dev, "alrm set RTC date/time %4d-%02d-%02d(%d) %02d:%02d:%02d\n",
-> +               1900 + alrm->time.tm_year, alrm->time.tm_mon + 1,
-> +               alrm->time.tm_mday, alrm->time.tm_wday, alrm->time.tm_hour,
-> +               alrm->time.tm_min, alrm->time.tm_sec);
-> +
-> +       alrm_data[0] = bin2bcd(alrm->time.tm_sec);
-> +       alrm_data[1] = bin2bcd(alrm->time.tm_min);
-> +       alrm_data[2] = bin2bcd(alrm->time.tm_hour);
-> +       alrm_data[3] = bin2bcd(alrm->time.tm_mday);
-> +       alrm_data[4] = bin2bcd(alrm->time.tm_mon + 1);
-> +       alrm_data[5] = bin2bcd(alrm->time.tm_year - 100);
-> +
-> +       ret = regmap_bulk_write(rk808->regmap, RK808_ALARM_SECONDS_REG,
-> +                               alrm_data, NUM_ALARM_REGS);
-> +       if (ret) {
-> +               dev_err(dev, "Failed to bulk write: %d\n", ret);
-> +               return ret;
-> +       }
-> +       if (alrm->enabled) {
-> +               ret = rk808_rtc_start_alarm(rk808_rtc);
-> +               if (ret) {
-> +                       dev_err(dev, "Failed to start alarm: %d\n", ret);
-> +                       return ret;
-> +               }
-> +       }
-> +       return 0;
-> +}
-> +
-> +static int rk808_rtc_alarm_irq_enable(struct device *dev,
-> +                                     unsigned int enabled)
-> +{
-> +       struct rk808_rtc *rk808_rtc = dev_get_drvdata(dev);
-> +
-> +       if (enabled)
-> +               return rk808_rtc_start_alarm(rk808_rtc);
-> +
-> +       return rk808_rtc_stop_alarm(rk808_rtc);
-> +}
-> +
-> +/*
-> + * We will just handle setting the frequency and make use the framework for
-> + * reading the periodic interupts.
-> + *
-> + * @freq: Current periodic IRQ freq:
-> + * bit 0: every second
-> + * bit 1: every minute
-> + * bit 2: every hour
-> + * bit 3: every day
-> + */
-> +static irqreturn_t rk808_alarm_irq(int irq, void *data)
-> +{
-> +       struct rk808_rtc *rk808_rtc = data;
-> +       struct rk808 *rk808 = rk808_rtc->rk808;
-> +       struct i2c_client *client = rk808->i2c;
-> +       int ret;
-> +
-> +       ret = regmap_write(rk808->regmap, RK808_RTC_STATUS_REG,
-> +                          RTC_STATUS_MASK);
-> +       if (ret) {
-> +               dev_err(&client->dev,
-> +                       "%s:Failed to update RTC status: %d\n", __func__, ret);
-> +               return ret;
-> +       }
-> +
-> +       rtc_update_irq(rk808_rtc->rtc, 1, RTC_IRQF | RTC_AF);
-> +       dev_dbg(&client->dev,
-> +                "%s:irq=%d\n", __func__, irq);
-> +       return IRQ_HANDLED;
-> +}
-> +
-> +static const struct rtc_class_ops rk808_rtc_ops = {
-> +       .read_time = rk808_rtc_readtime,
-> +       .set_time = rk808_rtc_set_time,
-> +       .read_alarm = rk808_rtc_readalarm,
-> +       .set_alarm = rk808_rtc_setalarm,
-> +       .alarm_irq_enable = rk808_rtc_alarm_irq_enable,
-> +};
-> +
-> +#ifdef CONFIG_PM_SLEEP
-> +/* Turn off the alarm if it should not be a wake source. */
-> +static int rk808_rtc_suspend(struct device *dev)
-> +{
-> +       struct platform_device *pdev = to_platform_device(dev);
-> +       struct rk808_rtc *rk808_rtc = dev_get_drvdata(&pdev->dev);
-> +
-> +       if (device_may_wakeup(dev))
-> +               enable_irq_wake(rk808_rtc->irq);
-> +
-> +       return 0;
-> +}
-> +
-> +/* Enable the alarm if it should be enabled (in case it was disabled to
-> + * prevent use as a wake source).
-> + */
-> +static int rk808_rtc_resume(struct device *dev)
-> +{
-> +       struct platform_device *pdev = to_platform_device(dev);
-> +       struct rk808_rtc *rk808_rtc = dev_get_drvdata(&pdev->dev);
-> +
-> +       if (device_may_wakeup(dev))
-> +               disable_irq_wake(rk808_rtc->irq);
-> +
-> +       return 0;
-> +}
-> +#endif
-> +
-> +static SIMPLE_DEV_PM_OPS(rk808_rtc_pm_ops,
-> +       rk808_rtc_suspend, rk808_rtc_resume);
-> +
-> +/* 2014.1.1 12:00:00 Saturday */
-> +struct rtc_time tm_def = {
-> +                       .tm_wday = 6,
-> +                       .tm_year = 114,
-> +                       .tm_mon = 0,
-> +                       .tm_mday = 1,
-> +                       .tm_hour = 12,
-> +                       .tm_min = 0,
-> +                       .tm_sec = 0,
-> +};
-> +
-> +static int rk808_rtc_probe(struct platform_device *pdev)
-> +{
-> +       struct rk808 *rk808 = dev_get_drvdata(pdev->dev.parent);
-> +       struct rk808_rtc *rk808_rtc;
-> +       struct rtc_time tm;
-> +       int ret;
-> +
-> +       rk808_rtc = devm_kzalloc(&pdev->dev, sizeof(*rk808_rtc), GFP_KERNEL);
-> +       if (rk808_rtc == NULL)
-> +               return -ENOMEM;
-> +
-> +       platform_set_drvdata(pdev, rk808_rtc);
-> +       rk808_rtc->rk808 = rk808;
-> +
-> +       /* start rtc running by default, and use shadowed timer. */
-> +       ret = regmap_update_bits(rk808->regmap, RK808_RTC_CTRL_REG,
-> +                                BIT_RTC_CTRL_REG_STOP_RTC_M |
-> +                                BIT_RTC_CTRL_REG_RTC_READSEL_M,
-> +                                BIT_RTC_CTRL_REG_RTC_READSEL_M);
-
-I think this should still be setting to 0, not to
-BIT_RTC_CTRL_REG_RTC_READSEL_M.  Otherwise the first read of the time
-will return that time that was frozen at probe time, right?  AKA: if
-probe happens at 11:00:00 and then we read the time at 11:00:05 we'll
-still read 11:00:00 the first time.
-
-
-> +       if (ret) {
-> +               dev_err(&pdev->dev,
-> +                       "Failed to update RTC control: %d\n", ret);
-> +               return ret;
-> +       }
-> +
-> +       ret = regmap_write(rk808->regmap, RK808_RTC_STATUS_REG,
-> +                          RTC_STATUS_MASK);
-> +       if (ret) {
-> +               dev_err(&pdev->dev,
-> +                       "Failed to write RTC status: %d\n", ret);
-> +                       return ret;
-> +       }
-> +
-> +       /* set init time */
-> +       ret = rk808_rtc_readtime(&pdev->dev, &tm);
-> +       if (ret) {
-> +               dev_err(&pdev->dev, "Failed to read RTC time\n");
-> +               return ret;
-> +       }
-> +       ret = rtc_valid_tm(&tm);
-> +       if (ret) {
-> +               dev_warn(&pdev->dev, "invalid date/time and init time\n");
-> +               rk808_rtc_set_time(&pdev->dev, &tm_def);
-> +       }
-> +
-> +       device_init_wakeup(&pdev->dev, 1);
-> +
-> +       rk808_rtc->rtc = devm_rtc_device_register(&pdev->dev, "rk808-rtc",
-> +                                                 &rk808_rtc_ops, THIS_MODULE);
-> +       if (IS_ERR(rk808_rtc->rtc)) {
-> +               ret = PTR_ERR(rk808_rtc->rtc);
-> +               return ret;
-> +       }
-> +
-> +       rk808_rtc->irq = platform_get_irq(pdev, 0);
-> +       if (rk808_rtc->irq <= 0) {
-> +               dev_err(&pdev->dev, "Wake up is not possible as irq = %d\n",
-> +                       rk808_rtc->irq);
-> +               return -ENXIO;
-> +       }
-
-I think you misinterpreted Dmitry.  He said this block was wrong, but
-you didn't quite make the right fix.  I believe the correct fix is
-that an IRQ of "0" is a valid IRQ.  Thus, you should have:
-
-       rk808_rtc->irq = platform_get_irq(pdev, 0);
-       if (rk808_rtc->irq < 0) {
-               dev_err(&pdev->dev, "Wake up is not possible as irq = %d\n",
-                       rk808_rtc->irq);
-               return rk808_rtc->irq;
-       }
-
-
-> +
-> +       /* request alarm irq of rk808 */
-> +       ret = devm_request_threaded_irq(&pdev->dev, rk808_rtc->irq, NULL,
-> +                                       rk808_alarm_irq, 0,
-> +                                       "RTC alarm", rk808_rtc);
-> +       if (ret) {
-> +               dev_err(&pdev->dev, "Failed to request alarm IRQ %d: %d\n",
-> +                       rk808_rtc->irq, ret);
-> +       }
-> +
-> +       return ret;
-> +}
-> +
-> +static struct platform_driver rk808_rtc_driver = {
-> +       .probe = rk808_rtc_probe,
-> +       .driver = {
-> +               .name = "rk808-rtc",
-> +               .pm = &rk808_rtc_pm_ops,
-> +       },
-> +};
-> +
-> +module_platform_driver(rk808_rtc_driver);
-> +
-> +MODULE_DESCRIPTION("RTC driver for the rk808 series PMICs");
-> +MODULE_AUTHOR("Chris Zhong <zyw@rock-chips.com>");
-> +MODULE_AUTHOR("Zhang Qing <zhanqging@rock-chips.com>");
-> +MODULE_LICENSE("GPL");
-> +MODULE_ALIAS("platform:rk808-rtc");
-> --
-> 1.7.9.5
->
+Yes, the patch only help for processes who did a blocking reads (busy
+read). For select(), maybe we can do the same thing but need more test
+and thoughts.
