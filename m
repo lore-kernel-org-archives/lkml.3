@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755389AbaIBWLx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 18:11:53 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:33875 "EHLO
+	id S1755412AbaIBWMB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 18:12:01 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:53433 "EHLO
 	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755078AbaIBWLv (ORCPT
+	with ESMTP id S1755078AbaIBWL7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 18:11:51 -0400
+	Tue, 2 Sep 2014 18:11:59 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>,
         One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
         linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
         Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 14/26] serial: core: Document and assert lock requirements for irq helpers
-Date: Tue,  2 Sep 2014 17:39:23 -0400
-Message-Id: <1409693975-1028-15-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH 15/26] serial: core: Privatize modem status enable flags
+Date: Tue,  2 Sep 2014 17:39:24 -0400
+Message-Id: <1409693975-1028-16-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com>
 References: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com>
@@ -25,55 +25,163 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The serial core provides two helper functions, uart_handle_dcd_change()
-and uart_handle_cts_change(), for UART drivers to use at interrupt
-time. The serial core expects the UART driver to hold the uart port lock
-when calling these helpers to prevent state corruption.
+The serial core uses the tty port flags, ASYNC_CTS_FLOW and
+ASYNC_CD_CHECK, to track whether CTS and DCD changes should be
+ignored or handled. However, the tty port flags are not safe for
+atomic bit operations and no lock provides serialized updates.
+
+Introduce the struct uart_port status field to track CTS and DCD
+enable states, and serialize access with uart port lock. Substitute
+uart_cts_enabled() helper for tty_port_cts_enabled().
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/serial/serial_core.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/tty/serial/mxs-auart.c   |  2 +-
+ drivers/tty/serial/serial_core.c | 29 +++++++++++++++++------------
+ include/linux/serial_core.h      | 12 ++++++++++++
+ 3 files changed, 30 insertions(+), 13 deletions(-)
 
+diff --git a/drivers/tty/serial/mxs-auart.c b/drivers/tty/serial/mxs-auart.c
+index b5c3292..10c2933 100644
+--- a/drivers/tty/serial/mxs-auart.c
++++ b/drivers/tty/serial/mxs-auart.c
+@@ -408,7 +408,7 @@ static void mxs_auart_set_mctrl(struct uart_port *u, unsigned mctrl)
+ 
+ 	ctrl &= ~(AUART_CTRL2_RTSEN | AUART_CTRL2_RTS);
+ 	if (mctrl & TIOCM_RTS) {
+-		if (tty_port_cts_enabled(&u->state->port))
++		if (uart_cts_enabled(u))
+ 			ctrl |= AUART_CTRL2_RTSEN;
+ 		else
+ 			ctrl |= AUART_CTRL2_RTS;
 diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index 732d386..b50050d 100644
+index b50050d..288dc2e 100644
 --- a/drivers/tty/serial/serial_core.c
 +++ b/drivers/tty/serial/serial_core.c
-@@ -2731,6 +2731,8 @@ EXPORT_SYMBOL(uart_match_port);
-  *	uart_handle_dcd_change - handle a change of carrier detect state
-  *	@uport: uart_port structure for the open port
-  *	@status: new carrier detect status, nonzero if active
-+ *
-+ *	Caller must hold uport->lock
-  */
- void uart_handle_dcd_change(struct uart_port *uport, unsigned int status)
- {
-@@ -2738,6 +2740,8 @@ void uart_handle_dcd_change(struct uart_port *uport, unsigned int status)
- 	struct tty_struct *tty = port->tty;
- 	struct tty_ldisc *ld;
+@@ -58,6 +58,11 @@ static void uart_change_pm(struct uart_state *state,
  
-+	warn_not_spin_locked(&uport->lock);
-+
- 	if (tty) {
- 		ld = tty_ldisc_ref(tty);
- 		if (ld) {
-@@ -2762,12 +2766,16 @@ EXPORT_SYMBOL_GPL(uart_handle_dcd_change);
-  *	uart_handle_cts_change - handle a change of clear-to-send state
-  *	@uport: uart_port structure for the open port
-  *	@status: new clear to send status, nonzero if active
-+ *
-+ *	Caller must hold uport->lock
-  */
- void uart_handle_cts_change(struct uart_port *uport, unsigned int status)
- {
- 	struct tty_port *port = &uport->state->port;
- 	struct tty_struct *tty = port->tty;
+ static void uart_port_shutdown(struct tty_port *port);
  
-+	warn_not_spin_locked(&uport->lock);
++static int uart_dcd_enabled(struct uart_port *uport)
++{
++	return uport->status & UPSTAT_DCD_ENABLE;
++}
 +
+ /*
+  * This routine is used by the interrupt handler to schedule processing in
+  * the software interrupt portion of the driver.
+@@ -129,7 +134,6 @@ static int uart_port_startup(struct tty_struct *tty, struct uart_state *state,
+ 		int init_hw)
+ {
+ 	struct uart_port *uport = state->uart_port;
+-	struct tty_port *port = &state->port;
+ 	unsigned long page;
+ 	int retval = 0;
+ 
+@@ -175,12 +179,12 @@ static int uart_port_startup(struct tty_struct *tty, struct uart_state *state,
+ 				uart_set_mctrl(uport, TIOCM_RTS | TIOCM_DTR);
+ 		}
+ 
+-		if (tty_port_cts_enabled(port)) {
+-			spin_lock_irq(&uport->lock);
++		spin_lock_irq(&uport->lock);
++		if (uart_cts_enabled(uport)) {
+ 			if (!(uport->ops->get_mctrl(uport) & TIOCM_CTS))
+ 				tty->hw_stopped = 1;
+-			spin_unlock_irq(&uport->lock);
+ 		}
++		spin_unlock_irq(&uport->lock);
+ 	}
+ 
+ 	/*
+@@ -431,7 +435,6 @@ EXPORT_SYMBOL(uart_get_divisor);
+ static void uart_change_speed(struct tty_struct *tty, struct uart_state *state,
+ 					struct ktermios *old_termios)
+ {
+-	struct tty_port *port = &state->port;
+ 	struct uart_port *uport = state->uart_port;
+ 	struct ktermios *termios;
+ 
+@@ -446,17 +449,19 @@ static void uart_change_speed(struct tty_struct *tty, struct uart_state *state,
+ 	uport->ops->set_termios(uport, termios, old_termios);
+ 
+ 	/*
+-	 * Set flags based on termios cflag
++	 * Set modem status enables based on termios cflag
+ 	 */
++	spin_lock_irq(&uport->lock);
+ 	if (termios->c_cflag & CRTSCTS)
+-		set_bit(ASYNCB_CTS_FLOW, &port->flags);
++		uport->status |= UPSTAT_CTS_ENABLE;
+ 	else
+-		clear_bit(ASYNCB_CTS_FLOW, &port->flags);
++		uport->status &= ~UPSTAT_CTS_ENABLE;
+ 
+ 	if (termios->c_cflag & CLOCAL)
+-		clear_bit(ASYNCB_CHECK_CD, &port->flags);
++		uport->status &= ~UPSTAT_DCD_ENABLE;
+ 	else
+-		set_bit(ASYNCB_CHECK_CD, &port->flags);
++		uport->status |= UPSTAT_DCD_ENABLE;
++	spin_unlock_irq(&uport->lock);
+ }
+ 
+ static inline int __uart_put_char(struct uart_port *port,
+@@ -2753,7 +2758,7 @@ void uart_handle_dcd_change(struct uart_port *uport, unsigned int status)
+ 
+ 	uport->icount.dcd++;
+ 
+-	if (port->flags & ASYNC_CHECK_CD) {
++	if (uart_dcd_enabled(uport)) {
+ 		if (status)
+ 			wake_up_interruptible(&port->open_wait);
+ 		else if (tty)
+@@ -2778,7 +2783,7 @@ void uart_handle_cts_change(struct uart_port *uport, unsigned int status)
+ 
  	uport->icount.cts++;
  
- 	if (tty_port_cts_enabled(port)) {
+-	if (tty_port_cts_enabled(port)) {
++	if (uart_cts_enabled(uport)) {
+ 		if (tty->hw_stopped) {
+ 			if (status) {
+ 				tty->hw_stopped = 0;
+diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
+index 4a43292..bc70048 100644
+--- a/include/linux/serial_core.h
++++ b/include/linux/serial_core.h
+@@ -112,6 +112,7 @@ struct uart_icount {
+ };
+ 
+ typedef unsigned int __bitwise__ upf_t;
++typedef unsigned int __bitwise__ upstat_t;
+ 
+ struct uart_port {
+ 	spinlock_t		lock;			/* port lock */
+@@ -188,6 +189,12 @@ struct uart_port {
+ #define UPF_CHANGE_MASK		((__force upf_t) (0x17fff))
+ #define UPF_USR_MASK		((__force upf_t) (UPF_SPD_MASK|UPF_LOW_LATENCY))
+ 
++	/* status must be updated while holding port lock */
++	upstat_t		status;
++
++#define UPSTAT_CTS_ENABLE	((__force upstat_t) (1 << 0))
++#define UPSTAT_DCD_ENABLE	((__force upstat_t) (1 << 1))
++
+ 	unsigned int		mctrl;			/* current modem ctrl settings */
+ 	unsigned int		timeout;		/* character-based timeout */
+ 	unsigned int		type;			/* port type */
+@@ -351,6 +358,11 @@ static inline int uart_tx_stopped(struct uart_port *port)
+ 	return 0;
+ }
+ 
++static inline bool uart_cts_enabled(struct uart_port *uport)
++{
++	return uport->status & UPSTAT_CTS_ENABLE;
++}
++
+ /*
+  * The following are helper functions for the low level drivers.
+  */
 -- 
 2.1.0
 
