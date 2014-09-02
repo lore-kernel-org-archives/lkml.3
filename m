@@ -1,76 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754852AbaIBQCp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 12:02:45 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:58718 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754037AbaIBQCm (ORCPT
+	id S1754869AbaIBQCy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 12:02:54 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:55227 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754037AbaIBQCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 12:02:42 -0400
+	Tue, 2 Sep 2014 12:02:52 -0400
+X-Greylist: delayed 1519 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Sep 2014 12:02:52 EDT
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Seunghun Lee <waydi1@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] fat: Simplify calc_fat_clusters code
+References: <1409664810-31960-1-git-send-email-waydi1@gmail.com>
+Date: Wed, 03 Sep 2014 00:37:29 +0900
+In-Reply-To: <1409664810-31960-1-git-send-email-waydi1@gmail.com> (Seunghun
+	Lee's message of "Tue, 2 Sep 2014 22:33:30 +0900")
+Message-ID: <87k35m3ufa.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4.50 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1409668745-31693-1-git-send-email-bobby.prani@gmail.com>
-References: <1409668745-31693-1-git-send-email-bobby.prani@gmail.com>
-Date: Tue, 2 Sep 2014 18:02:40 +0200
-X-Google-Sender-Auth: F5HuNYCoTkv8KkBT43X9tYZd0mE
-Message-ID: <CAMuHMdXbKqcm1H3F6ML++XSjkWQzOSbzMQnb5aVwe8W2ohr0fw@mail.gmail.com>
-Subject: Re: [PATCH] sh: Fix build error caused by missing dependencies
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Vivek Goyal <vgoyal@redhat.com>,
-        Magnus Damm <damm@opensource.se>,
-        Simon Horman <horms+renesas@verge.net.au>,
-        Mark Salter <msalter@redhat.com>, Kees Cook <keescook@chromium.org>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Robert Graffham <psquid@psquid.net>, Paul Bolle <pebolle@tiscali.nl>,
-        "open list:SUPERH" <linux-sh@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pranith,
+Seunghun Lee <waydi1@gmail.com> writes:
 
-On Tue, Sep 2, 2014 at 4:39 PM, Pranith Kumar <bobby.prani@gmail.com> wrote:
-> Fix a sh4-randconfig build failure which has the following splat:
->
-> arch/sh/mm/cache-sh4.c:99:17: error: 'cached_to_uncached' undeclared (first use in this function)
-> arch/sh/mm/cache-sh4.c:192:2: error: implicit declaration of function 'cpu_context' [-Werror=implicit-function-declaration]
->
-> These errors are caused by missing dependencies on UNCACHED_MAPPING and MMU.
->
-> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-> ---
->  arch/sh/Kconfig | 2 ++
->  1 file changed, 2 insertions(+)
->
-> diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
-> index 244fb4c..619d5eb 100644
-> --- a/arch/sh/Kconfig
-> +++ b/arch/sh/Kconfig
-> @@ -194,6 +194,8 @@ config CPU_SH4
->         select SH_INTC
->         select SYS_SUPPORTS_SH_TMU
->         select SYS_SUPPORTS_HUGETLBFS if MMU
-> +       select UNCACHED_MAPPING
-> +       select MMU
+> diff --git a/fs/fat/inode.c b/fs/fat/inode.c
+> index 756aead..6992dea 100644
+> --- a/fs/fat/inode.c
+> +++ b/fs/fat/inode.c
+> @@ -1307,12 +1307,9 @@ static unsigned long calc_fat_clusters(struct super_block *sb)
+>  	struct msdos_sb_info *sbi = MSDOS_SB(sb);
+>  
+>  	/* Divide first to avoid overflow */
+> -	if (sbi->fat_bits != 12) {
+> -		unsigned long ent_per_sec = sb->s_blocksize * 8 / sbi->fat_bits;
+> -		return ent_per_sec * sbi->fat_length;
+> -	}
+> +	unsigned long ent_per_sec = sb->s_blocksize * 8 / sbi->fat_bits;
+>  
+> -	return sbi->fat_length * sb->s_blocksize * 8 / sbi->fat_bits;
+> +	return ent_per_sec * sbi->fat_length;
+>  }
 
-Selecting MMU is never the correct solution, as it's a platform feature.
-Making something depend on MMU is something different, but I doubt
-SH4 can only work with a MMU, cfr. the "if MMU" in the line above.
+When sbi->fat_bits == 12, it doesn't work, right? (there is the remainder)
 
-Back to the drawing board...
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Thanks.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
