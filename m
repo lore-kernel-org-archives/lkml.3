@@ -1,90 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753189AbaIBHxE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 03:53:04 -0400
-Received: from mout.gmx.net ([212.227.15.18]:57783 "EHLO mout.gmx.net"
+	id S1752757AbaIBHzA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 03:55:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34696 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751525AbaIBHxC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 03:53:02 -0400
-Date: Tue, 2 Sep 2014 11:52:54 +0200
-From: Andreas Werner <wernerandy@gmx.de>
-To: kavitha bk <bk.kavitha1@gmail.com>
-Cc: linux-kernel@vger.kernel.org, andreas.werner@men.de
-Subject: Re: eeprom Board Information EEPROM
-Message-ID: <20140902095253.GA693@awedesk.fritz.box>
-References: <20140829205639.GA584@awedesk.fritz.box>
- <CACx5bVzvJ-x7EdnGX+AraNBwKaxKNwRVvBwN1-0DNY3O155U5Q@mail.gmail.com>
+	id S1750903AbaIBHy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 03:54:59 -0400
+Date: Tue, 2 Sep 2014 09:54:55 +0200
+From: Jean Delvare <jdelvare@suse.de>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Mark Brown <broonie@kernel.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: linux-next: jdelvare-hwmon tree unfetchable
+Message-ID: <20140902095455.77a91b40@endymion.delvare>
+In-Reply-To: <54049590.6060500@roeck-us.net>
+References: <20140901132808.c7b08f4ffa7055dc28e6dac7@kernel.org>
+	<54049590.6060500@roeck-us.net>
+Organization: SUSE Linux
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACx5bVzvJ-x7EdnGX+AraNBwKaxKNwRVvBwN1-0DNY3O155U5Q@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Provags-ID: V03:K0:B0pqiWu6yExfh8V9bXnHOzzGWK5Eu/XZsiHnok8rwlILJbKLrAZ
- u6gXSboOE5QxxjNkaO94ZM/Klg8CjueHbj1Q1ZivRb9c1G1Fwwc64dX7xx0Yo8kwTdpwmIO
- 193Ayj25UBIzzX94ECx2tFaHECQ9JoXyvUowjf4CLtqrmOdgSRmcMI6IlA8EI0M87MTxIAm
- IwC0Yw87pOYbUkFUofcoA==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 01, 2014 at 01:52:10PM +0530, kavitha bk wrote:
-> On Sat, Aug 30, 2014 at 2:26 AM, Andreas Werner <wernerandy@gmx.de> wrote:
-> 
-> > I have a question regarding a driver for a Board Information EEPROM.
-> >
-> > I want to give our customer easy access to our Board Information EEPROM
-> > which is an 256byte I2C eeprom.
-> >
-> 
-> 
-> >
-> > There is a defined structure of information at the beginning of the eeprom
-> > which includes board name, serialnumber, production date, repair date and
-> > a eeprom structure ident number.
-> >
-> > The rest of the eeprom is for user defined settings where customer can
-> > write
-> > any data to.
-> >
-> > I want to have access to the eeprom without any special to and without
-> > installing
-> > anything just running linux and to a cat/echo to sysfs entries to
-> > read/write
-> > data to the eeprom.
-> >
-> > What i want to do is to create sysfs entries for the pre defined settings
-> > and
-> > on entrie where customer can access the rest of the eeprom bytes.
-> >
-> > Is drivers/misc/eeprom the right place to put those kind of driver in?
-> 
-> 
-> Yes You can add here
-> 
-> > Or are
-> > there any other options to write those kind of driver?
-> >
-> 
-> Which eeprom are you using? You can explore CONFIG_EEPROM_AT24 driver for
-> writing a sys interface
-> 
+Hi all,
 
-Ok i will check it out.
-
-Thanks.
-
-Regards
-Andy
-
+On Mon, 01 Sep 2014 08:49:36 -0700, Guenter Roeck wrote:
+> On 09/01/2014 05:28 AM, Mark Brown wrote:
+> > Today's linux-next merge of the jdelvare-hwmon tree got a conflict with Linus'
+> > tree which appeared to be due to the hwmon quilt series I got from Stephen being
+> > based on v3.14-rc3 and subsequent changes from mainline interacting badly with
+> > it. In addition I'm not able to check the original series since linux-fr.org does
+> > not resolve for me.
 > 
-> >
-> >
-> > Regards
-> > Andy
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> >
+> Jean dropped the linux-fr.org domain, and his old e-mail address probably
+> won't work anymore.
+
+I can confirm that. linux-fr.org is history, from now on I'll be using
+my @suse.de address for all open source related work. I thought I had
+already updated all references and let everyone involved know about the
+change, but apparently I failed to do so, sorry about that.
+
+> The alternate (and temporary) pointer he gave me
+> is http://jdelvare.nerim.net/devel/linux-3/jdelvare-hwmon/. It is empty,
+> so you did not miss anything.
+
+That's right. As many temporary things, I'm afraid it's there to
+last ;-)
+
+-- 
+Jean Delvare
+SUSE L3 Support
