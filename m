@@ -1,50 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755446AbaIBVkY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 17:40:24 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:49786 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755425AbaIBVkJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 17:40:09 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 09/26] serial: blackfin: Fix missing gpio.h
-Date: Tue,  2 Sep 2014 17:39:18 -0400
-Message-Id: <1409693975-1028-10-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com>
-References: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com>
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+	id S1755467AbaIBVkp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 17:40:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9445 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755450AbaIBVkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 17:40:43 -0400
+Date: Tue, 2 Sep 2014 17:40:35 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-api@vger.kernel.org, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
+        linux-audit@redhat.com, serge@hallyn.com
+Subject: Re: [PATCH V4 1/8] namespaces: assign each namespace instance a
+ serial number
+Message-ID: <20140902214035.GT4462@madcap2.tricolour.ca>
+References: <cover.1408581429.git.rgb@redhat.com>
+ <cover.1408581429.git.rgb@redhat.com>
+ <d5bfd81a219c5c45c910494d6a3478ce83052e1f.1408581429.git.rgb@redhat.com>
+ <87ioljs968.fsf@x220.int.ebiederm.org>
+ <20140824203827.GI9003@madcap2.tricolour.ca>
+ <87tx4wmlcj.fsf@x220.int.ebiederm.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87tx4wmlcj.fsf@x220.int.ebiederm.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If CONFIG_SERIAL_BFIN_CTSRTS is set, compile fails because of missing
-declarations for the gpio_* api. Include necessary header.
+On 14/08/28, Eric W. Biederman wrote:
+> Richard Guy Briggs <rgb@redhat.com> writes:
+> > On 14/08/23, Eric W. Biederman wrote:
+> >> Richard Guy Briggs <rgb@redhat.com> writes:
+> >> 
+> >> > Generate and assign a serial number per namespace instance since boot.
+> >> >
+> >> > Use a serial number per namespace (unique across one boot of one kernel)
+> >> > instead of the inode number (which is claimed to have had the right to change
+> >> > reserved and is not necessarily unique if there is more than one proc fs) to
+> >> > uniquely identify it per kernel boot.
+> >> 
+> >> This approach is just broken.
+> >> 
+> >> For this to work with migration (aka criu) you need to implement a
+> >> namespace of namespaces.  You haven't done this, and therefore
+> >> such an interface will break existing userspace.
+> >> 
+> >> Inside of audit I can understand not caring about these issues,
+> >> but you go foward and expose these serial numbers in proc,
+> >> and generally make this infrastructure available to others.
+> >> 
+> >> The deep issue with migration is that we move tasks from one machine
+> >> from another and on the destination machine we need to have all of the
+> >> same global identifiers for software to function properly.
+> >> 
+> >> My weasel words around the proc inode numbers is to preserve to allow us
+> >> room to be able to restore those ids if it every becomes relevant for
+> >> migration.
+> >
+> > What do you do if the inode number is already in use on the target
+> > host?
+> 
+> Since the inode numbers are relative to a superblock or a pid namespace
+> the numbers that are in use can be restored on the target system
+> by creating them in the appropriate namespace.
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/serial/bfin_sport_uart.c | 1 +
- 1 file changed, 1 insertion(+)
+So you seem to be advocating for a namespace of namespaces, since
+neither host can create a new namespace without consulting the others in
+its pool for a new free number.
 
-diff --git a/drivers/tty/serial/bfin_sport_uart.c b/drivers/tty/serial/bfin_sport_uart.c
-index 7810aa2..d62d8da 100644
---- a/drivers/tty/serial/bfin_sport_uart.c
-+++ b/drivers/tty/serial/bfin_sport_uart.c
-@@ -33,6 +33,7 @@
- #include <linux/tty.h>
- #include <linux/tty_flip.h>
- #include <linux/serial_core.h>
-+#include <linux/gpio.h>
- 
- #include <asm/bfin_sport.h>
- #include <asm/delay.h>
--- 
-2.1.0
+> The support does not exist in the kernel today for doing that because no
+> one has cared but as architected the support can be added if needed to
+> support migration.
+> 
+> >> That is the proc inode numbers (technically) live in a pid namespace,
+> >> (aka a mount of proc).  So depending on the pid namespace you are in
+> >> or the mount of proc you look in the numbers could change.
+> >> 
+> >> Qualifications like that must exist to have a prayer of ever supporting
+> >> process migration in the crazy corner cases where people start caring
+> >> about inode numbers.
+> >> 
+> >> We currently don't and inode numbers for a namespace will never change
+> >> after a namespace is created.  So I think you really are ok using the
+> >> proc inode numbers.  I am happy declaring by fiat that the inode numbers
+> >> that audit uses are the numbers connected to the initial pid namespace.
+> >
+> > But once a namespace/container is migrated, it is a different audit that
+> > is looking at it (unless we create an audit manager or entity that
+> > functions at the level of a container manager), so audit should not care.
+> 
+> These numbers were exported to everyone as a general purpose facility in
+> proc.  If audit is global and audit doesn't migrate you are right it
+> doesn't matter.  However if these numbers are used by anyone else for
+> anything else it causes a problem.
 
+So let us restrict their use to audit, by removing them from
+/proc/<pid>/ns/ and only exposing them via netlink calls to audit gated
+by CAP_AUDIT_WRITE or CAP_AUDIT_CONTROL.
+
+> Further given that people run entire distributions in containers we may
+> reach the point where we wish to run auditd in a container in the
+> future.  I would hate to paint ourselves into a corner with a design
+> that could never allow audit to migrate.  Support that case someday
+> seems a valid naive desire.
+
+Agreed.  That is an option we do not want to rule out at this point.
+I'll need to think about this one more.
+
+> >> At a fairly basic level anything that is used to identify namespaces for
+> >> any general purpose use needs to have most if not all of the same
+> >> properties of the proc inode numbers.  The most important of which is
+> >> being tied to some context/namespace so there is a ability if we ever
+> >> need it to migrate those numbers from one machine to another.
+> >
+> > Sooo...  does it make any sense to have those inode or serial numbers be
+> > blank inside the namespace/container itself, but only visible to its
+> > manager outside the container (unless it is the initial namespace)?
+> 
+> Mostly I think it makes sense to use the inode numbers from the initial
+> pid namespace.  They already exist.  They already are unique.  (Which
+> means I don't need to maintain more code and more special cases).  And
+> the do what you need now.
+
+Will inode numbers never be re-used once they are freed?  Guaranteed?
+
+> I probably haven't followed closely enough but I don't see what makes
+> inode numbers undesirable.
+
+This posting:
+	https://www.redhat.com/archives/linux-audit/2013-March/msg00032.html
+
+> Eric
+
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
