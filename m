@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755653AbaIBXY6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 19:24:58 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:44595 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755620AbaIBXY4 (ORCPT
+	id S1755715AbaIBX02 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 19:26:28 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:33299 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753391AbaIBX00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 19:24:56 -0400
-Message-ID: <540651C6.1000000@codeaurora.org>
-Date: Tue, 02 Sep 2014 17:24:54 -0600
-From: Jeffrey Hugo <jhugo@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Tue, 2 Sep 2014 19:26:26 -0400
+Message-ID: <5406521E.9090006@converseincode.com>
+Date: Tue, 02 Sep 2014 16:26:22 -0700
+From: Behan Webster <behanw@converseincode.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-CC: Ohad Ben-Cohen <ohad@wizery.com>, Kumar Gala <galak@codeaurora.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Likely <grant.likely@linaro.org>, Suman Anna <s-anna@ti.com>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Eric Holmberg <eholmber@codeaurora.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>
-Subject: Re: [PATCH v3] hwspinlock: qcom: Add support for Qualcomm HW Mutex
- block
-References: <1409688246-16530-1-git-send-email-bjorn.andersson@sonymobile.com>
-In-Reply-To: <1409688246-16530-1-git-send-email-bjorn.andersson@sonymobile.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: John Johansen <john.johansen@canonical.com>, agk@redhat.com, clm@fb.com,
+        davem@davemloft.net, dm-devel@redhat.com, fabf@skynet.be,
+        herbert@gondor.apana.org.au, jbacik@fb.com, snitzer@redhat.com
+CC: akpm@linux-foundation.org, james.l.morris@oracle.com,
+        linux-btrfs@vger.kernel.org, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
+        linux-security-module@vger.kernel.org, neilb@suse.de, serge@hallyn.com,
+        torvalds@linux-foundation.org,
+        =?UTF-8?B?Vmluw61jaXVzIFRpbnRp?= <viniciustinti@gmail.com>,
+        =?UTF-8?B?SmFuLVNpbW9uIE3DtmxsZXI=?= <dl9pf@gmx.de>,
+        Mark Charlebois <charlebm@gmail.com>
+Subject: Re: [PATCH RFC 5/6] apparmor: LLVMLinux: Remove VLAIS
+References: <1409697153-7006-1-git-send-email-behanw@converseincode.com> <1409697153-7006-6-git-send-email-behanw@converseincode.com> <54064FD1.6060900@canonical.com>
+In-Reply-To: <54064FD1.6060900@canonical.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/2/2014 2:04 PM, Bjorn Andersson wrote:
-> From: Kumar Gala <galak@codeaurora.org>
+On 09/02/14 16:16, John Johansen wrote:
 >
-> Add driver for Qualcomm Hardware Mutex block that exists on newer
-> Qualcomm SoCs.
+> I'm fine with this, do you want me to pull it into my tree for our next push
+> or do you want this all to go together as a set?
 >
-> Cc: Jeffrey Hugo <jhugo@codeaurora.org>
-> Cc: Eric Holmberg <eholmber@codeaurora.org>
-> Cc: Courtney Cavin <courtney.cavin@sonymobile.com>
-> Signed-off-by: Kumar Gala <galak@codeaurora.org>
-> [bjorn: added pm_runtime calls, from Courtney,
-> 	added sfpb-mutex compatible,
-> 	updated DT binding documentation formatting,
-> 	based stride on resource size instead of hardcoded values,
-> 	replaced msm prefix with qcom,
-> 	cleaned up includes]
-> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-> ---
-<snip>
+> Acked-by: John Johansen <john.johansen@canonical.com>
+I'm more than happy for individual maintainers to pull relevant patches 
+into their trees for the next merge window.
 
-For what its worth, this looks good to me.
+They were presented as a RFC patch set purely to get consensus as a 
+group since its the same change across the board.
 
-Jeffrey Hugo
+Happy to push your patch to you now.
+
+Behan
+
 -- 
-The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, 
-hosted by The Linux Foundation.
+Behan Webster
+behanw@converseincode.com
+
