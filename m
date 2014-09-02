@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755191AbaIBWGX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 18:06:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22062 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752135AbaIBWGV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 18:06:21 -0400
-Message-ID: <54063F56.9090606@redhat.com>
-Date: Tue, 02 Sep 2014 15:06:14 -0700
-From: Andy Grover <agrover@redhat.com>
-Organization: Red Hat
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1755305AbaIBWIy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 18:08:54 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:61518 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752180AbaIBWIx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 18:08:53 -0400
 MIME-Version: 1.0
-To: "Richard W.M. Jones" <rjones@redhat.com>
-CC: target-devel@vger.kernel.org, linux-scsi@vger.kernel.org, hch@lst.de,
-        nab@linux-iscsi.org, shli@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 1/2] target: Add documentation on the target userspace pass-through
- driver
-References: <1404241875-29164-1-git-send-email-agrover@redhat.com> <1404241875-29164-2-git-send-email-agrover@redhat.com> <20140830173510.GA11820@redhat.com> <54037C46.1050601@redhat.com> <20140831212257.GO1302@redhat.com>
-In-Reply-To: <20140831212257.GO1302@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1409694182.1034977.162882841.29AA6A80@webmail.messagingengine.com>
+References: <aa5126f747594d768e0c518189a13e8674ad8ee5.1409690486.git.hannes@stressinduktion.org>
+	<2bf2e54282097642db88e2b596b06a9ac3742883.1409690849.git.hannes@stressinduktion.org>
+	<CAMEtUuyoWELJ0Yf+=5sDKxFEfgsiQ3kMCK+Wn_bdJgS8qaH2og@mail.gmail.com>
+	<1409694059.26422.18.camel@edumazet-glaptop2.roam.corp.google.com>
+	<1409694182.1034977.162882841.29AA6A80@webmail.messagingengine.com>
+Date: Tue, 2 Sep 2014 15:08:51 -0700
+Message-ID: <CAMEtUuwPbX5yczeUCJ1rq+YLXcenWJggxZCei2HpSBQ-ps68VQ@mail.gmail.com>
+Subject: Re: [PATCH net-next v2] net: bpf: make eBPF interpreter images read-only
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Brad Spengler <spender@grsecurity.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Kees Cook <keescook@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/31/2014 02:22 PM, Richard W.M. Jones wrote:
-> Reading this several times, I now think I get what it's trying to say,
-> but I think it needs to introduces the terms (as the Economist style
-> does).  Something like this:
+On Tue, Sep 2, 2014 at 2:43 PM, Hannes Frederic Sowa
+<hannes@stressinduktion.org> wrote:
+> On Tue, Sep 2, 2014, at 23:40, Eric Dumazet wrote:
+>> On Tue, 2014-09-02 at 14:31 -0700, Alexei Starovoitov wrote:
+>>
+>> > > +static inline void bpf_prog_unlock_ro(struct bpf_prog *fp)
+>> > > +{
+>> > > +       set_memory_rw((unsigned long)fp, fp->pages);
+>> >
+>> > why rw is needed?
+>> > since fp is allocated with vmalloc, vfree doesn't need
+>> > to touch the pages to free them, no?
+>>
+>> That assumes that vmalloc() do not have any debugging features, like
+>> poisoning content before freeing, to catch some use after free.
+>>
+>> Lets be clean and safe, and give back same memory permission we had
+>> after vmalloc()
 >
->    "TCM is the new name for LIO, an in-kernel iSCSI target (server).
->    Existing TCM targets run in the kernel.  TCMU (TCM in Userspace)
->    allows userspace programs to be written which act as iSCSI targets.
->    This document describes the design.
->
->    The existing kernel provides modules for different SCSI transport
->    protocols.  TCM also modularizes the data storage.  There are
->    existing modules for file, block device, RAM or using another SCSI
->    device as storage.  These are called "backstores" or "storage
->    engines".  These built-in modules are implemented entirely as kernel
->    code."
->
-> And hopefully having defined a bit of background, the rest of the
-> document just flows nicely:
+> Yes, I agree. I just went down the kmemleak codepaths and we certainly
+> don't want to cause issues in there if the implementation changes one
+> day.
 
-Thanks much! I've put this in the doc, and will hopefully send out a 
-final patchset for inclusion with the new text in the next week or so.
+agree.
+I asked, because skipping set_memory_rw() would have
+removed the need for 'struct bpf_work_struct' and complexity
+around it.
 
-<begin naming potential-bikeshed wasteoftime>
+Simple testing looks good, so:
+Acked-by: Alexei Starovoitov <ast@plumgrid.com>
 
-The only change I made was "another" instead of "the new name" -- 
-because to be honest I don't know if there was actually an attempt at a 
-name change, and if so if it was successful or not :) LIO seems to have 
-stuck, but TCM seems to refer just to the "backend" part of LIO.
-
-<end bikeshed>
-
-Thanks again -- Andy
-
+will rebase with all of my stuff and do some more tests.
