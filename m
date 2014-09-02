@@ -1,124 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752591AbaIBKHL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 06:07:11 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42920 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750722AbaIBKHI (ORCPT
+	id S1752993AbaIBKHd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 06:07:33 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37218 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752627AbaIBKH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 06:07:08 -0400
-Message-ID: <540596A6.8000608@arm.com>
-Date: Tue, 02 Sep 2014 11:06:30 +0100
-From: Andre Przywara <andre.przywara@arm.com>
-Organization: ARM Ltd.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Russell King <linux@arm.linux.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 1/1] drivers: introduce ARM SBSA generic UART driver
-References: <1409328803-1953-1-git-send-email-andre.przywara@arm.com> <1409328803-1953-2-git-send-email-andre.przywara@arm.com> <CAL_JsqJbAWRhduzMwdQMh8sDdVqTWVK2Ej9LQjx4gp2ifwxe6Q@mail.gmail.com>
-In-Reply-To: <CAL_JsqJbAWRhduzMwdQMh8sDdVqTWVK2Ej9LQjx4gp2ifwxe6Q@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+	Tue, 2 Sep 2014 06:07:28 -0400
+X-Sasl-enc: Dukq+AHMihRTRfczZn7OWKcPbZyO/6xBi4hEnwJZTA3R 1409652447
+Message-ID: <1409652445.22584.16.camel@localhost>
+Subject: Re: [PATCH net v2] ipv6: fix rtnl locking in setsockopt for anycast
+ and multicast
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Sabrina Dubroca <sd@queasysnail.net>
+Cc: Cong Wang <cwang@twopensource.com>, Tommi Rantala <tt.rantala@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org,
+        Dave Jones <davej@redhat.com>
+Date: Tue, 02 Sep 2014 12:07:25 +0200
+In-Reply-To: <20140902082929.GA8483@kria>
+References: <CA+ydwtoDwQVg_BWrxxdpUyJ7Up60GtxTCLYe_5vFdV2td_kGhQ@mail.gmail.com>
+	 <CAHA+R7MZCDGRhSf=UuVCGQvNo03wVziZQB_X30rwNf6hmHipQA@mail.gmail.com>
+	 <20140829195339.GA9780@kria> <1409363489.2980.17.camel@localhost>
+	 <20140830105821.GB18155@kria> <1409599348.21965.6.camel@localhost>
+	 <20140901210520.GB25543@kria> <1409610378.21965.52.camel@localhost>
+	 <20140902082929.GA8483@kria>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
-
-thanks for looking at this.
-
-On 02/09/14 04:06, Rob Herring wrote:
-> On Fri, Aug 29, 2014 at 11:13 AM, Andre Przywara <andre.przywara@arm.com> wrote:
->> The ARM Server Base System Architecture (SBSA) describes a generic
->> UART which all compliant level 1 systems should implement. This is
->> actually a PL011 subset, so a full PL011 implementation will satisfy
->> this requirement.
->> However if a system does not have a PL011, a very stripped down
->> implementation complying to the SBSA defined specification will
->> suffice. The Linux PL011 driver is not guaranteed to drive this
->> limited device (and indeed the fast model implentation hangs the
->> kernel if driven by the PL011 driver).
->> So introduce a new driver just implementing the part specified by the
->> SBSA (which lacks DMA, the modem control signals and many of the
->> registers including baud rate control). This driver has been derived
->> by the actual PL011 one, removing all unnecessary code.
->>
->> Signed-off-by: Andre Przywara <andre.przywara@arm.com>
->> ---
->>  .../devicetree/bindings/serial/arm_sbsa_uart.txt   |    6 +
->>  drivers/tty/serial/Kconfig                         |   28 +
->>  drivers/tty/serial/Makefile                        |    1 +
->>  drivers/tty/serial/sbsa_uart.c                     |  793 ++++++++++++++++++++
->>  include/uapi/linux/serial_core.h                   |    1 +
+On Di, 2014-09-02 at 10:29 +0200, Sabrina Dubroca wrote:
+> Calling setsockopt with IPV6_JOIN_ANYCAST or IPV6_LEAVE_ANYCAST
+> triggers the assertion in addrconf_join_solict()/addrconf_leave_solict()
 > 
-> Sorry, but I think this is all wrong. We've now just duplicated some
-> subset of the pl011 driver leaving out the parts like setting baudrate
-> which can never be added since those things could be different for
-> every vendor.
+> ipv6_sock_ac_join(), ipv6_sock_ac_drop(), ipv6_sock_ac_close() need to
+> take RTNL before calling ipv6_dev_ac_inc/dec. Same thing with
+> ipv6_sock_mc_join(), ipv6_sock_mc_drop(), ipv6_sock_mc_close() before
+> calling ipv6_dev_mc_inc/dec.
 > 
-> The original intent of the SBSA uart was to provide a common early
-> debug uart. It was not to have a full fledged driver. I think the SBSA
-> has failed in this area and created the potential to create a mess of
-> serial drivers different for every vendor. Reality will hopefully not
-> be that extreme and most vendors will just use the pl011 and create
-> their value add somewhere besides the uart. For the purpose of debug
-> output, we already support that as the pl011 earlycon only touches
-> SBSA compatible registers.
-
-I see your point (and was actually looking for those kind of comments
-when posting this).
-I agree to that debug aspect and understand that earlycon already does
-this, but I think we need some support beyond earlycon, to be able to
-login and use it as a console (which is not possible with earlycon,
-right?) This is probably still for debugging or emergency access to the
-system only, but maybe also for logging - actually quite similar to how
-UARTs are used on today's x86 servers.
-So after having written three incarnations of this driver (goldfish
-based, PL010 based, PL011 based) I wonder if supporting the SBSA subset
-in the real PL011 driver is an option. Either this would be enabled by a
-new explicit DT property or preferably by a clever compatible string.
-Ideally we would just provide a different set of "struct uart_ops"
-members, with some pointing to generic PL011 routines, some to SBSA UART
-specific ones.
-Maybe we make the full featured PL011 support a config option
-(defaulting to y), allowing people to only use the SBSA subset in their
-kernel?
-
-Does that make more sense? (for a general SBSA h/w rationale see below)
-
->>  5 files changed, 829 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/serial/arm_sbsa_uart.txt
->>  create mode 100644 drivers/tty/serial/sbsa_uart.c
->>
->> diff --git a/Documentation/devicetree/bindings/serial/arm_sbsa_uart.txt b/Documentation/devicetree/bindings/serial/arm_sbsa_uart.txt
->> new file mode 100644
->> index 0000000..8e2c5d6
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/serial/arm_sbsa_uart.txt
->> @@ -0,0 +1,6 @@
->> +* ARM SBSA defined generic UART
->> +
->> +Required properties:
->> +- compatible: must be "arm,sbsa-uart"
+> This patch moves ASSERT_RTNL() up a level in the call stack.
 > 
-> This alone is not okay. There is no such implementation of hardware.
+> Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+> Signed-off-by: Sabrina Dubroca <sd@queasysnail.net>
+> Reported-by: Tommi Rantala <tt.rantala@gmail.com>
+> ---
+> As was said earlier, this should go in stable.
+> 
+> v2:
+>  - based on net
+>  - keep dev_get_by_flags_rcu and RCU in ipv6_sock_ac_*
+>  - remove two ASSERT_RTNL() that are not necessary
+> 
+> Thank you for your help, Hannes!
 
-But the SBSA explicitly allows this. I don't know of any vendor who just
-implements the subset, but I've been told that this has been asked for.
+Thanks for fixing! ;)
 
-> The DT must specify the implementation such as pl011.
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-If it is a full featured PL011: sure. Then we don't need this driver at
-all and just use the SBSA UART spec as a guideline for our earlycon
-implementation.
-I will try to learn if there is someone actually implementing only the
-subset.
 
-Cheers,
-Andre.
