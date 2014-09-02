@@ -1,59 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753133AbaIBKhj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 06:37:39 -0400
-Received: from smtp2-g21.free.fr ([212.27.42.2]:14314 "EHLO smtp2-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751180AbaIBKhi convert rfc822-to-8bit (ORCPT
+	id S1753339AbaIBKjN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 06:39:13 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:64060 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752599AbaIBKjK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 06:37:38 -0400
-Date: Tue, 2 Sep 2014 12:38:48 +0200
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Varka Bhadram <varkabhadram@gmail.com>
-Cc: Xiubo Li <Li.Xiubo@freescale.com>, broonie@kernel.org, perex@perex.cz,
-        lgirdwood@gmail.com, tiwai@suse.de, andrew@lunn.ch,
-        kuninori.morimoto.gx@renesas.com, jsarha@ti.com,
-        devicetree@vger.kernel.org, alsa-devel@alsa-project.org,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 1/4] ASoC: simple-card: add
- asoc_simple_card_fmt_master() to simplify the code.
-Message-ID: <20140902123848.78c4c62a@armhf>
-In-Reply-To: <54059A35.3020303@gmail.com>
-References: <1409649969-15759-1-git-send-email-Li.Xiubo@freescale.com>
-	<1409649969-15759-2-git-send-email-Li.Xiubo@freescale.com>
-	<54059A35.3020303@gmail.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; arm-unknown-linux-gnueabihf)
+	Tue, 2 Sep 2014 06:39:10 -0400
 MIME-Version: 1.0
+In-Reply-To: <20140828184847.GA18464@leverpostej>
+References: <1409212920-28526-1-git-send-email-gautam.vivek@samsung.com>
+	<1409212920-28526-2-git-send-email-gautam.vivek@samsung.com>
+	<20140828184847.GA18464@leverpostej>
+Date: Tue, 2 Sep 2014 16:09:08 +0530
+X-Google-Sender-Auth: YLgCWWDys7cxUojJV0tLPLNe11w
+Message-ID: <CAFp+6iHLSaUjHqaKXXX0QLiRd3h+O67DRSQdExag-KUH0dnpag@mail.gmail.com>
+Subject: Re: [PATCH 1/5] usb: dwc3: exynos: Add support for SCLK present on Exynos7
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "balbi@ti.com" <balbi@ti.com>, "kishon@ti.com" <kishon@ti.com>,
+        "kgene.kim@samsung.com" <kgene.kim@samsung.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 02 Sep 2014 15:51:41 +0530
-Varka Bhadram <varkabhadram@gmail.com> wrote:
+Hi,
 
-> > +	switch (((np == bitclkmaster) << 4) | (np == framemaster)) {
-> > +	case 0x11:
-> > +		return SND_SOC_DAIFMT_CBS_CFS;
-> > +	case 0x10:
-> > +		return SND_SOC_DAIFMT_CBS_CFM;
-> > +	case 0x01:
-> > +		return SND_SOC_DAIFMT_CBM_CFS;
-> > +	default:
-> > +		return SND_SOC_DAIFMT_CBM_CFM;
-> > +	}
-> > +
-> > +	/* Shouldn't be here */
-> > +	return -EINVAL;
-> > +}  
-> 
-> It will be nice if we declare the switch case numbers as macros (specific name)...
 
-I don't see which macros: the values are just 2 booleans.
+On Fri, Aug 29, 2014 at 12:18 AM, Mark Rutland <mark.rutland@arm.com> wrote:
+> On Thu, Aug 28, 2014 at 09:01:56AM +0100, Vivek Gautam wrote:
+>> Exynos7 also has a separate special gate clock going to the IP
+>> apart from the usual AHB clock. So add support for the same.
+>>
+>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>> ---
+>>  drivers/usb/dwc3/dwc3-exynos.c |   16 ++++++++++++++++
+>>  1 file changed, 16 insertions(+)
+>>
+>> diff --git a/drivers/usb/dwc3/dwc3-exynos.c b/drivers/usb/dwc3/dwc3-exynos.c
+>> index f9fb8ad..bab6395 100644
+>> --- a/drivers/usb/dwc3/dwc3-exynos.c
+>> +++ b/drivers/usb/dwc3/dwc3-exynos.c
+>> @@ -35,6 +35,7 @@ struct dwc3_exynos {
+>>       struct device           *dev;
+>>
+>>       struct clk              *clk;
+>> +     struct clk              *sclk;
+>>       struct regulator        *vdd33;
+>>       struct regulator        *vdd10;
+>>  };
+>> @@ -141,10 +142,17 @@ static int dwc3_exynos_probe(struct platform_device *pdev)
+>>               return -EINVAL;
+>>       }
+>>
+>> +     /* Exynos7 has a special gate clock going to this IP */
+>> +     exynos->sclk = devm_clk_get(dev, "usbdrd30_sclk");
+>> +     if (IS_ERR(exynos->sclk))
+>> +             dev_warn(dev, "couldn't get sclk\n");
+>
+> Doesn't this introduce a pointless warning for Exynos SoCs other than
+> Exynos7?
+
+True, it will introduce an unnecessary warning for non-Exynos7 systems.
+I initially thought of introducing a compatible check for Exynos7-dwc3, but that
+way we may end up adding such checks for future SoCs which have similar
+controller but have some clock difference or some other small change, no ?
+
+>
+>> +
+>>       exynos->dev     = dev;
+>>       exynos->clk     = clk;
+>>
+>>       clk_prepare_enable(exynos->clk);
+>> +     if (!IS_ERR(exynos->sclk))
+>> +             clk_prepare_enable(exynos->sclk);
+>
+> If you replaced the returned err value with NULL you could avoid these
+> IS_ERR cases.
+
+Right, point taken.
+
+[snip]
+
+
 
 -- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
