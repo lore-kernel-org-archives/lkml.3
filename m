@@ -1,60 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754837AbaIBSPk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 14:15:40 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:50066 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751640AbaIBSPi (ORCPT
+	id S1754931AbaIBSQt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 14:16:49 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:61791 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754710AbaIBSQs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 14:15:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <1409681487.26422.1.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <CA+ydwtoDwQVg_BWrxxdpUyJ7Up60GtxTCLYe_5vFdV2td_kGhQ@mail.gmail.com>
-	<CAHA+R7MZCDGRhSf=UuVCGQvNo03wVziZQB_X30rwNf6hmHipQA@mail.gmail.com>
-	<20140829195339.GA9780@kria>
-	<1409363489.2980.17.camel@localhost>
-	<CAHA+R7ODa+LrdwSrS7HcBfwwq8_fpj-Ld0OCDtcOqkpCdZCvxg@mail.gmail.com>
-	<1409680684.972417.162793869.03CF8A61@webmail.messagingengine.com>
-	<CAHA+R7Mwy1SCpEUgGf9BdLEro6N-3t89KU=xL0iuzgOppXELrQ@mail.gmail.com>
-	<1409681487.26422.1.camel@edumazet-glaptop2.roam.corp.google.com>
-Date: Tue, 2 Sep 2014 11:15:36 -0700
-Message-ID: <CAHA+R7PY=Pu7VKA3wp1DxeJRckxPNWL-xfv2XXkpaY935kt61A@mail.gmail.com>
-Subject: Re: RTNL: assertion failed at net/ipv6/addrconf.c (1699)
-From: Cong Wang <cwang@twopensource.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Sabrina Dubroca <sd@queasysnail.net>,
-        Tommi Rantala <tt.rantala@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org,
-        Dave Jones <davej@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 2 Sep 2014 14:16:48 -0400
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Benjamin Romer <benjamin.romer@unisys.com>,
+        David Kershner <david.kershner@unisys.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: sparmaintainer@unisys.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] staging: unisys: uislib: uisqueue.c: rewrite of do_locked_client_insert
+Date: Tue,  2 Sep 2014 23:46:35 +0530
+Message-Id: <1409681795-23262-1-git-send-email-sudipm.mukherjee@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 2, 2014 at 11:11 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> On Tue, 2014-09-02 at 11:04 -0700, Cong Wang wrote:
->> On Tue, Sep 2, 2014 at 10:58 AM, Hannes Frederic Sowa
->
->> > I definitely don't have a problem cleaning this up in net-next. I wanted
->> > a minimal patch for stable because I didn't check history where and when
->> > additional users of dev_get_by_flags_rcu were removed.
->>
->> `git grep` should show you we only have one caller. Apparently we don't
->> care about any out-of-tree module.
->
-> Point is : you did not check if some stable versions had more callers.
->
-> Its very nice you checked current version, but it is not enough for a
-> stable candidate.
+From: Sudip Mukherjee <sudip@vectorindia.org>
 
-That is what we do when backporting patches, I can do that if David asks
-me to backport it, but you know for netdev that is David's work.
+removed unused variables
+fixed sparse warning of context imbalance in 'do_locked_client_insert'
+                         different lock contexts for basic block
 
-(I am not saying I don't want to help him, I just want to point out the fact.
-I am very pleased to help David for stable backports as long as he asks)
+Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+---
+
+v1 of the patch of the patch just fixed the sparse warning.
+On suggestion of Dan Carpenter v2 is the total rewrite of the function.
+Two of the function arguments (interruptHandle,channelId) are also not used. Wanted to remove them as well , 
+but then thought maybe the original author have planned for some use of those variables.
+
+ drivers/staging/unisys/uislib/uisqueue.c | 37 ++++++++------------------------
+ 1 file changed, 9 insertions(+), 28 deletions(-)
+
+diff --git a/drivers/staging/unisys/uislib/uisqueue.c b/drivers/staging/unisys/uislib/uisqueue.c
+index 63dbe7c..acfa46d 100644
+--- a/drivers/staging/unisys/uislib/uisqueue.c
++++ b/drivers/staging/unisys/uislib/uisqueue.c
+@@ -78,39 +78,20 @@ do_locked_client_insert(struct uisqueue_info *queueinfo,
+ 			u64 interruptHandle, u8 *channelId)
+ {
+ 	unsigned long flags;
+-	unsigned char queueWasEmpty;
+-	unsigned int locked = 0;
+-	unsigned int acquired = 0;
+ 	u8 rc = 0;
+ 
+ 	spin_lock_irqsave(lock, flags);
+-	locked = 1;
+-
+ 	if (!ULTRA_CHANNEL_CLIENT_ACQUIRE_OS(queueinfo->chan, channelId, NULL))
+-		goto Away;
+-
+-	acquired = 1;
+-
+-	queueWasEmpty = visor_signalqueue_empty(queueinfo->chan, whichqueue);
+-	if (!visor_signal_insert(queueinfo->chan, whichqueue, pSignal))
+-		goto Away;
+-	ULTRA_CHANNEL_CLIENT_RELEASE_OS(queueinfo->chan, channelId, NULL);
+-	acquired = 0;
+-
+-	queueinfo->packets_sent++;
+-
+-	rc = 1;
+-Away:
+-	if (acquired) {
+-		ULTRA_CHANNEL_CLIENT_RELEASE_OS(queueinfo->chan, channelId,
+-						NULL);
+-		acquired = 0;
+-	}
+-	if (locked) {
+-		spin_unlock_irqrestore((spinlock_t *) lock, flags);
+-		locked = 0;
++		goto unlock;
++	visor_signalqueue_empty(queueinfo->chan, whichqueue);
++	/*visor_signal_insert() only return 0 or 1 */
++	if (visor_signal_insert(queueinfo->chan, whichqueue, pSignal) == 1) {
++		queueinfo->packets_sent++;
++		rc = 1;
+ 	}
+-
++	ULTRA_CHANNEL_CLIENT_RELEASE_OS(queueinfo->chan, channelId, NULL);
++unlock:
++	spin_unlock_irqrestore((spinlock_t *)lock, flags);
+ 	return rc;
+ }
+ 
+-- 
+1.8.1.2
+
