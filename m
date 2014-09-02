@@ -1,106 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753640AbaIBLtv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 07:49:51 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:42469 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753252AbaIBLtu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 07:49:50 -0400
-From: Kiran Kumar Raparthy <kiran.kumar@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Todd Poynor <toddpoynor@google.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Kiran Raparthy <kiran.kumar@linaro.org>
-Subject: [RFC v2 2/2] usb: phy: Temporarily hold wakeupsource on charger connect and disconnect events
-Date: Tue,  2 Sep 2014 17:19:18 +0530
-Message-Id: <1409658558-12318-1-git-send-email-kiran.kumar@linaro.org>
-X-Mailer: git-send-email 1.8.2.1
+	id S1753828AbaIBLvQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 07:51:16 -0400
+Received: from mga14.intel.com ([192.55.52.115]:30414 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753704AbaIBLvN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 07:51:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,448,1406617200"; 
+   d="scan'208";a="585035590"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next 0/6] mei: remove pci dependency from mei module
+Date: Tue,  2 Sep 2014 14:49:58 +0300
+Message-Id: <1409658604-31615-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Todd Poynor <toddpoynor@google.com>
+In order to support testing hw module we remove dependency on
+pci from mei module
 
-usb: phy: Temporarily hold wakeupsource on charger connect and disconnect
-events
+Tomas Winkler (6):
+  mei: push all standard settings into mei_device_init
+  mei: get rid of most of the pci dependencies in mei
+  mei: move fw_status back to hw ops handlers
+  mei: remove the reference to pdev from mei_deivce
+  mei: push pci cfg structure me hw
+  mei: remove include to pci header from mei module files
 
-Allow other parts of the system to react to the charger connect/disconnect
-event without allowing the system to suspend before the other parts can process
-the event. This wakeup_source times out after 2 seconds; if nobody else holds a
-wakeup_source by that time then the device can sleep.
+ drivers/misc/mei/amthif.c    |  70 +++++++++++++--------------
+ drivers/misc/mei/bus.c       |  11 ++---
+ drivers/misc/mei/client.c    |  48 +++++++++----------
+ drivers/misc/mei/client.h    |   4 +-
+ drivers/misc/mei/debugfs.c   |   7 ++-
+ drivers/misc/mei/hbm.c       |  71 ++++++++++++++--------------
+ drivers/misc/mei/hw-me.c     |  70 ++++++++++++++++++---------
+ drivers/misc/mei/hw-me.h     |  26 ++++++++++-
+ drivers/misc/mei/hw-txe.c    | 109 +++++++++++++++++++++++++------------------
+ drivers/misc/mei/hw-txe.h    |   5 +-
+ drivers/misc/mei/init.c      |  78 +++++++++++++------------------
+ drivers/misc/mei/interrupt.c |  46 +++++++++---------
+ drivers/misc/mei/main.c      |  42 ++++++++---------
+ drivers/misc/mei/mei_dev.h   |  37 ++++++---------
+ drivers/misc/mei/nfc.c       |  46 +++++++++---------
+ drivers/misc/mei/pci-me.c    |   4 +-
+ drivers/misc/mei/pci-txe.c   |  10 ++--
+ drivers/misc/mei/wd.c        |  35 ++++++--------
+ include/linux/mei_cl_bus.h   |   1 +
+ 19 files changed, 377 insertions(+), 343 deletions(-)
 
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-usb@vger.kernel.org
-Cc: Android Kernel Team <kernel-team@android.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Todd Poynor <toddpoynor@google.com>
-[kiran: Added context to commit message
-	wakeupsource handling implemented per PHY in phy core]
-Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
----
- drivers/usb/phy/otg-wakeupsource.c |  2 +-
- drivers/usb/phy/phy.c              | 10 ++++++++++
- include/linux/usb/phy.h            |  3 +++
- 3 files changed, 14 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/usb/phy/otg-wakeupsource.c b/drivers/usb/phy/otg-wakeupsource.c
-index fca2010..70fa05e 100644
---- a/drivers/usb/phy/otg-wakeupsource.c
-+++ b/drivers/usb/phy/otg-wakeupsource.c
-@@ -48,7 +48,7 @@ static void otgws_handle_event(struct usb_phy *otgws_xceiv, unsigned long event)
- 	case USB_EVENT_NONE:
- 	case USB_EVENT_ID:
- 	case USB_EVENT_CHARGER:
--		usb_drop_wsource(otgws_xceiv);
-+		usb_temporary_hold_wsource(otgws_xceiv);
- 		break;
- 
- 	default:
-diff --git a/drivers/usb/phy/phy.c b/drivers/usb/phy/phy.c
-index 659b1e8..c488716 100644
---- a/drivers/usb/phy/phy.c
-+++ b/drivers/usb/phy/phy.c
-@@ -483,3 +483,13 @@ void usb_drop_wsource(struct usb_phy *x)
- 	__pm_relax(&x->wsource);
- }
- EXPORT_SYMBOL_GPL(usb_drop_wsource);
-+
-+/**
-+ * usb_temporary_hold_wsource - temporarily hold wakeupsource
-+ * @usb_phy: the phy returned by usb_get_phy()
-+ */
-+void usb_temporary_hold_wsource(struct usb_phy *x)
-+{
-+	__pm_wakeup_event(&x->wsource, msecs_to_jiffies(TEMPORARY_HOLD_TIME));
-+}
-+EXPORT_SYMBOL_GPL(usb_temporary_hold_wsource);
-diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
-index 6c680e6..5f9b70e 100644
---- a/include/linux/usb/phy.h
-+++ b/include/linux/usb/phy.h
-@@ -13,6 +13,8 @@
- #include <linux/usb.h>
- #include <linux/pm_wakeup.h>
- 
-+#define TEMPORARY_HOLD_TIME    2000
-+
- enum usb_phy_interface {
- 	USBPHY_INTERFACE_MODE_UNKNOWN,
- 	USBPHY_INTERFACE_MODE_UTMI,
-@@ -218,6 +220,7 @@ void usb_wsource_init(struct usb_phy *x, char *phy_dev_name);
- void usb_wsource_trash(struct usb_phy *x);
- void usb_grab_wsource(struct usb_phy *x);
- void usb_drop_wsource(struct usb_phy *x);
-+void usb_temporary_hold_wsource(struct usb_phy *x);
- #else
- static inline struct usb_phy *usb_get_phy(enum usb_phy_type type)
- {
 -- 
-1.8.2.1
+1.9.3
 
