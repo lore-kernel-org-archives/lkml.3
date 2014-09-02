@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755046AbaIBT3p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 15:29:45 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:47713 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754692AbaIBT3o (ORCPT
+	id S1755152AbaIBTaZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 15:30:25 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:35104 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755106AbaIBTaW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 15:29:44 -0400
-Date: Tue, 2 Sep 2014 20:29:41 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: Ulf Winkelvos <ulf@winkelvos.de>, Matt Fleming <matt.fleming@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-efi@vger.kernel.org,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [REGRESSION] "efi: efistub: Convert into static library" and
- preparation patches
-Message-ID: <20140902192941.GB3001@console-pimps.org>
-References: <5405E186.2080406@canonical.com>
+	Tue, 2 Sep 2014 15:30:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5405E186.2080406@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAErSpo5_WMUmnTHpPZt+j04VZoiW1pthQoGV90A5BDQpQgjwOQ@mail.gmail.com>
+References: <53FFA54D.9000907@gmail.com>
+	<CAErSpo5_WMUmnTHpPZt+j04VZoiW1pthQoGV90A5BDQpQgjwOQ@mail.gmail.com>
+Date: Tue, 2 Sep 2014 12:30:21 -0700
+X-Google-Sender-Auth: 3mkCnSy5UYSDm8OQR1z0jpezCso
+Message-ID: <CA+55aFy63sEs2zvr0LzKSjxSRuH5paLG378qQ6_QyLmmJw=D3w@mail.gmail.com>
+Subject: Re: [PATCH] pci/probe: Enable CRS for Intel Haswell root ports
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Rajat Jain <rajatxjain@gmail.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rajat Jain <rajatjain@juniper.net>, Guenter Roeck <groeck@juniper.net>,
+        Richard Yang <weiyang@linux.vnet.ibm.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 02 Sep, at 05:25:58PM, Maarten Lankhorst wrote:
-> Hey,
-> 
-> My macbook pro 8.2 fails to do a efi stub boot with these patches.
-> 
-> Commit f23cf8bd5c1f49 "efi/x86: efistub: Move shared dependencies to <asm/efi.h>"
-> causes the first break, but this can be averted by changing
-> 
-> struct efi_config *efi_early;
-> 
-> to
-> 
-> struct efi_config *efi_early __attribute__((visibility("hidden")));
- 
-Weird. That sounds like a bug in the Apple EFI PE loader. Does any other
-visibility result in a working kernel?
+On Mon, Sep 1, 2014 at 9:14 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>
+> I'm not a fan of adding a whitelist for devices that work correctly.
+> I don't think that's a maintainable solution.  Since we haven't had
+> many systems yet that care about CRS, some kind of "enable CRS on
+> machines newer than X" might work.
 
-> I also need to revert commit f4f75ad5741fe "efi: efistub: Convert into static library"
-> to get boot working.
- 
-I'll take a look at the symbol changes between these commits and try and
-guess what's going on.
+I'd suggest trying to just enable CRS unconditionally (ie revert my
+old commit ad7edfe04908). We've done other changes in this area since,
+and in particular, it's entirely possible that the original problem we
+had doesn't even trigger any more.
 
-> I'm not an early boot expert, so I have no idea what's going on here.
-> Only console output I see when the boot fails is "setup_efi_pci() failed!" after
-> the commit that adds this message.
+In particular, looking at one of the old reports, I don't see that
+"Device %04x:%02x:%02x.%d not responding" warning that we *should*
+have triggered in pci_scan_device(). So I wonder if we had some case
+that read the vendor ID without that whole loop, and that _that_ was
+our fundamental problem.
 
-Yeah, that should be unrelated.
+It would be great if somebody could test with the old hardware that
+triggered the problem originally, but those reports are from 2007, so
+it might be hard to find anything relevant today. But trying to just
+go back to unconditionally enabling CRS (say, in 3.18-rc1) and seeing
+if anybody hollers, might just be the right approach.
 
-Thanks for the report.
-
--- 
-Matt Fleming, Intel Open Source Technology Center
+            Linus
