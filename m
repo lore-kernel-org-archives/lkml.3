@@ -1,186 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754711AbaIBQHv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 12:07:51 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:29631 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754620AbaIBQHu (ORCPT
+	id S1754736AbaIBQIs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 12:08:48 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:48410 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751739AbaIBQIr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 12:07:50 -0400
-X-IronPort-AV: E=Sophos;i="5.04,449,1406592000"; 
-   d="scan'208";a="168347184"
-From: David Vrabel <david.vrabel@citrix.com>
-To: <linux-kernel@vger.kernel.org>
-CC: David Vrabel <david.vrabel@citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
-        Suresh Siddha <sbsiddha@gmail.com>
-Subject: [PATCHv3] x86, fpu: remove the logic of non-eager fpu mem allocation at the first usage
-Date: Tue, 2 Sep 2014 17:06:53 +0100
-Message-ID: <1409674013-10321-1-git-send-email-david.vrabel@citrix.com>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 2 Sep 2014 12:08:47 -0400
+Date: Tue, 2 Sep 2014 09:08:41 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] doc: memory-barriers.txt: Correct example for reorderings
+Message-ID: <20140902160841.GA5001@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1408972138-12246-1-git-send-email-bobby.prani@gmail.com>
+ <53FF8B77.7000103@infradead.org>
+ <20140828210010.GM5001@linux.vnet.ibm.com>
+ <CAJhHMCDxsukXe_HW55iJp0oCAWgrosxCRX1AfocS6QBzxaD0pw@mail.gmail.com>
+ <20140828213945.GP5001@linux.vnet.ibm.com>
+ <CAJhHMCDaMH0b0Np8vNf=RBH8i76AUK78qf213aWfHY-F4j3OOw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJhHMCDaMH0b0Np8vNf=RBH8i76AUK78qf213aWfHY-F4j3OOw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14090216-8236-0000-0000-00000512853A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Suresh Siddha <sbsiddha@gmail.com>
+On Thu, Aug 28, 2014 at 05:45:10PM -0400, Pranith Kumar wrote:
+> On Thu, Aug 28, 2014 at 5:39 PM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > On Thu, Aug 28, 2014 at 05:15:50PM -0400, Pranith Kumar wrote:
+> >> On Thu, Aug 28, 2014 at 5:00 PM, Paul E. McKenney
+> >> <paulmck@linux.vnet.ibm.com> wrote:
+> >> >
+> >> > I am really confused by the ordering of the new lines, as I would have
+> >> > expected the "x"s to be replaced with "y"s and vice versa.  But the
+> >> > ordering of the various combinations does not matter, and each line
+> >> > looks OK.
+> >>
+> >> Since x = A was replaced by x = B and y = B was replaced by y = A, I
+> >> just converted all x = load A to x = load B. Similarly for y. I think
+> >> we can do either this or as you suggested replacing x's with y's.
+> >
+> > Fair enough.  The other thing that confused me was the "STORE B=4,"
+> > showing up early in your replacement.
+> 
+> So I converted
+> 
+> STORE A=3, x=LOAD A->3
+> 
+> to
+> 
+> STORE B=4, x=LOAD B->4
+> 
+> since the later load into x wanted an updated value of B and not the
+> default. That is the reason you see STORE B = 4  in place of STORE A =
+> 3
 
-For non-eager fpu mode, thread's fpu state is allocated during the first
-fpu usage (in the context of device not available exception). This can be
-a blocking call and hence we enable interrupts (which were originally
-disabled when the exception happened), allocate memory and disable
-interrupts etc. While this saves 512 bytes or so per-thread, there
-are some issues in general.
+Fair enough.
 
-a.  Most of the future cases will be anyway using eager
-FPU (because of processor features like xsaveopt, LWP, MPX etc) and
-they do the allocation at the thread creation itself. Nice to have
-one common mechanism as all the state save/restore code is
-shared. Avoids the confusion and minimizes the subtle bugs
-in the core piece involved with context-switch.
+However, the list is supposed to be part of the full set of 24 possible
+outcomes.  Many readers would therefore expect the permutations to be
+ordered in some way, so that the first column would have six of one thing,
+six of the next thing, and so on, according to some pattern.
 
-b. If a parent thread uses FPU, during fork() we allocate
-the FPU state in the child and copy the state etc. Shortly after this,
-during exec() we free it up, so that we can later allocate during
-the first usage of FPU. So this free/allocate might be slower
-for some workloads.
+Could you please adjust in this way?  Again, the point is to be the
+first few items in a full set of permutations, not to illustrate selected
+orderings/outcomes.
 
-c. math_state_restore() is called from multiple places
-and it is error pone if the caller expects interrupts to be disabled
-throughout the execution of math_state_restore(). Can lead to subtle
-bugs like Ubuntu bug #1265841.
-
-Memory savings will be small anyways and the code complexity
-introducing subtle bugs is not worth it. So remove
-the logic of non-eager fpu mem allocation at the first usage.
-
-Signed-off-by: Suresh Siddha <sbsiddha@gmail.com>
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
----
-v3:
-- Rebase on 3.17-rc3.
-
-v2:
-- Tweak condition for allocating the first thread's FPU state.
----
- arch/x86/kernel/i387.c    |   20 +++++++++++---------
- arch/x86/kernel/process.c |    6 ------
- arch/x86/kernel/traps.c   |   16 ++--------------
- arch/x86/kernel/xsave.c   |    2 --
- 4 files changed, 13 insertions(+), 31 deletions(-)
-
-diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-index a9a4229..956ea86 100644
---- a/arch/x86/kernel/i387.c
-+++ b/arch/x86/kernel/i387.c
-@@ -5,6 +5,7 @@
-  *  General FPU state handling cleanups
-  *	Gareth Hughes <gareth@valinux.com>, May 2000
-  */
-+#include <linux/bootmem.h>
- #include <linux/module.h>
- #include <linux/regset.h>
- #include <linux/sched.h>
-@@ -197,6 +198,16 @@ void fpu_init(void)
- 
- 	mxcsr_feature_mask_init();
- 	xsave_init();
-+
-+	/*
-+	 * Now we know the final size of the xsave data, allocate the
-+	 * FPU state area for the first task. All other tasks have
-+	 * this allocated in arch_dup_task_struct().
-+	 */
-+	if (!current->thread.fpu.state)
-+		current->thread.fpu.state = alloc_bootmem_align(xstate_size,
-+				__alignof__(struct xsave_struct));
-+
- 	eager_fpu_init();
- }
- 
-@@ -228,8 +239,6 @@ EXPORT_SYMBOL_GPL(fpu_finit);
-  */
- int init_fpu(struct task_struct *tsk)
- {
--	int ret;
--
- 	if (tsk_used_math(tsk)) {
- 		if (cpu_has_fpu && tsk == current)
- 			unlazy_fpu(tsk);
-@@ -237,13 +246,6 @@ int init_fpu(struct task_struct *tsk)
- 		return 0;
- 	}
- 
--	/*
--	 * Memory allocation at the first usage of the FPU and other state.
--	 */
--	ret = fpu_alloc(&tsk->thread.fpu);
--	if (ret)
--		return ret;
--
- 	fpu_finit(&tsk->thread.fpu);
- 
- 	set_stopped_child_used_math(tsk);
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index f804dc9..4137f81 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -129,12 +129,6 @@ void flush_thread(void)
- 	flush_ptrace_hw_breakpoint(tsk);
- 	memset(tsk->thread.tls_array, 0, sizeof(tsk->thread.tls_array));
- 	drop_init_fpu(tsk);
--	/*
--	 * Free the FPU state for non xsave platforms. They get reallocated
--	 * lazily at the first use.
--	 */
--	if (!use_eager_fpu())
--		free_thread_xstate(tsk);
- }
- 
- static void hard_disable_TSC(void)
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 0d0e922..36fc898 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -652,20 +652,8 @@ void math_state_restore(void)
- {
- 	struct task_struct *tsk = current;
- 
--	if (!tsk_used_math(tsk)) {
--		local_irq_enable();
--		/*
--		 * does a slab alloc which can sleep
--		 */
--		if (init_fpu(tsk)) {
--			/*
--			 * ran out of memory!
--			 */
--			do_group_exit(SIGKILL);
--			return;
--		}
--		local_irq_disable();
--	}
-+	if (!tsk_used_math(tsk))
-+		init_fpu(tsk);
- 
- 	__thread_fpu_begin(tsk);
- 
-diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-index 940b142..eed95d6 100644
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -677,8 +677,6 @@ void xsave_init(void)
- 
- static inline void __init eager_fpu_init_bp(void)
- {
--	current->thread.fpu.state =
--	    alloc_bootmem_align(xstate_size, __alignof__(struct xsave_struct));
- 	if (!init_xstate_buf)
- 		setup_init_fpu_buf();
- }
--- 
-1.7.10.4
+							Thanx, Paul
 
