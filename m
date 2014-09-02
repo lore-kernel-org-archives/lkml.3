@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752869AbaIBHlj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 03:41:39 -0400
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:44341 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750722AbaIBHli (ORCPT
+	id S1752966AbaIBHnj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 03:43:39 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:55352 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752272AbaIBHnh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 03:41:38 -0400
-Message-ID: <1409643684.19197.15.camel@j-VirtualBox>
-Subject: Re: [PATCH v2] sched: Reduce contention in
- update_cfs_rq_blocked_load
-From: Jason Low <jason.low2@hp.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>, Paul Turner <pjt@google.com>,
-        Ingo Molnar <mingo@kernel.org>, Ben Segall <bsegall@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, jason.low2@hp.com
-Date: Tue, 02 Sep 2014 00:41:24 -0700
-In-Reply-To: <20140901125505.GK27892@worktop.ger.corp.intel.com>
-References: <1409094682.29189.23.camel@j-VirtualBox>
-	 <CAPM31RJcYakzwo9mByoadw6DGcg5SfYDOdX79NPo08hBP5PGjA@mail.gmail.com>
-	 <1409160893.31379.24.camel@j-VirtualBox>
-	 <1409182369.27939.9.camel@schen9-desk2.jf.intel.com>
-	 <1409255196.4945.7.camel@j-VirtualBox>
-	 <20140901125505.GK27892@worktop.ger.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Tue, 2 Sep 2014 03:43:37 -0400
+Message-ID: <54057526.9050503@gmail.com>
+Date: Tue, 02 Sep 2014 09:43:34 +0200
+From: Daniel Mack <zonque@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Klaus Goger <klaus.goger@theobroma-systems.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: cap1106 - fix register definition
+References: <1409639544-30420-1-git-send-email-klaus.goger@theobroma-systems.com>
+In-Reply-To: <1409639544-30420-1-git-send-email-klaus.goger@theobroma-systems.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-09-01 at 14:55 +0200, Peter Zijlstra wrote:
-> But yes, unbounded errors here are a problem, sure relaxing the updates
-> makes things go fast, they also make things go skew.
+On 09/02/2014 08:32 AM, Klaus Goger wrote:
+> Use the correct register address for Calibration Active and Interrupt
+> Enable
+> 
+> Signed-off-by: Klaus Goger <klaus.goger@theobroma-systems.com>
 
-Okay. In that case, would you like to take our original patch which
-avoids unnecessary updates?
+These register definitions are currently unused, but your fix is
+correct. Just curious - are you planning to send patches that make use
+of them?
 
------
-Subject: [PATCH] sched: Reduce contention in update_cfs_rq_blocked_load
-
-When running workloads on 2+ socket systems, based on perf profiles, the
-update_cfs_rq_blocked_load function often shows up as taking up a
-noticeable % of run time.
-
-Much of the contention is in __update_cfs_rq_tg_load_contrib when we
-update the tg load contribution stats.  However, it turns out that in many
-cases, they don't need to be updated and "tg_contrib" is 0.
-
-This patch adds a check in __update_cfs_rq_tg_load_contrib to skip updating
-tg load contribution stats when nothing needs to be updated. This reduces the
-cacheline contention that would be unnecessary.
-
-Cc: Yuyang Du <yuyang.du@intel.com>
-Cc: Aswin Chandramouleeswaran <aswin@hp.com>
-Cc: Chegu Vinod <chegu_vinod@hp.com>
-Cc: Scott J Norton <scott.norton@hp.com>
-Reviewed-by: Ben Segall <bsegall@google.com>
-Reviewed-by: Waiman Long <Waiman.Long@hp.com>
-Signed-off-by: Jason Low <jason.low2@hp.com>
----
- kernel/sched/fair.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index d3427a8..45e346c 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2382,6 +2382,9 @@ static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
- 	tg_contrib = cfs_rq->runnable_load_avg + cfs_rq->blocked_load_avg;
- 	tg_contrib -= cfs_rq->tg_load_contrib;
- 
-+	if (!tg_contrib)
-+		return;
-+
- 	if (force_update || abs(tg_contrib) > cfs_rq->tg_load_contrib / 8) {
- 		atomic_long_add(tg_contrib, &tg->load_avg);
- 		cfs_rq->tg_load_contrib += tg_contrib;
--- 
-1.7.1
+  Acked-by: Daniel Mack <zonque@gmail.com>
 
 
+Thanks,
+Daniel
+
+> ---
+>  drivers/input/keyboard/cap1106.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/input/keyboard/cap1106.c b/drivers/input/keyboard/cap1106.c
+> index 180b184..d70b65a 100644
+> --- a/drivers/input/keyboard/cap1106.c
+> +++ b/drivers/input/keyboard/cap1106.c
+> @@ -33,8 +33,8 @@
+>  #define CAP1106_REG_SENSOR_CONFIG	0x22
+>  #define CAP1106_REG_SENSOR_CONFIG2	0x23
+>  #define CAP1106_REG_SAMPLING_CONFIG	0x24
+> -#define CAP1106_REG_CALIBRATION		0x25
+> -#define CAP1106_REG_INT_ENABLE		0x26
+> +#define CAP1106_REG_CALIBRATION		0x26
+> +#define CAP1106_REG_INT_ENABLE		0x27
+>  #define CAP1106_REG_REPEAT_RATE		0x28
+>  #define CAP1106_REG_MT_CONFIG		0x2a
+>  #define CAP1106_REG_MT_PATTERN_CONFIG	0x2b
+> 
 
