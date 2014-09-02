@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755224AbaIBVW7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 17:22:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50748 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754164AbaIBVW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 17:22:58 -0400
-Date: Tue, 2 Sep 2014 23:22:55 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Bryan Wu <cooloney@gmail.com>
-cc: Vincent Donnefort <vdonnefort@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Revert "leds: convert blink timer to workqueue"
-In-Reply-To: <CAK5ve-KnjD58aAsqdtYSNgmZt7mNCP5fsr809y7D1_AtBaB7wg@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1409022322330.12309@pobox.suse.cz>
-References: <alpine.LNX.2.00.1409021101450.2481@pobox.suse.cz> <CAK5ve-KnjD58aAsqdtYSNgmZt7mNCP5fsr809y7D1_AtBaB7wg@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755064AbaIBVbu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 17:31:50 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:45173 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751502AbaIBVbs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 17:31:48 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <2bf2e54282097642db88e2b596b06a9ac3742883.1409690849.git.hannes@stressinduktion.org>
+References: <aa5126f747594d768e0c518189a13e8674ad8ee5.1409690486.git.hannes@stressinduktion.org>
+	<2bf2e54282097642db88e2b596b06a9ac3742883.1409690849.git.hannes@stressinduktion.org>
+Date: Tue, 2 Sep 2014 14:31:47 -0700
+Message-ID: <CAMEtUuyoWELJ0Yf+=5sDKxFEfgsiQ3kMCK+Wn_bdJgS8qaH2og@mail.gmail.com>
+Subject: Re: [PATCH net-next v2] net: bpf: make eBPF interpreter images read-only
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Brad Spengler <spender@grsecurity.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Kees Cook <keescook@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Sep 2014, Bryan Wu wrote:
+On Tue, Sep 2, 2014 at 1:53 PM, Hannes Frederic Sowa
+<hannes@stressinduktion.org> wrote:
+> From: Daniel Borkmann <dborkman@redhat.com>
+>
+> With eBPF getting more extended and exposure to user space is on it's way,
+> hardening the memory range the interpreter uses to steer its command flow
+> seems appropriate.  This patch moves the to be interpreted bytecode to
+> read-only pages.
+...
+>  11 files changed, 144 insertions(+), 32 deletions(-)
 
-> On Tue, Sep 2, 2014 at 2:03 AM, Jiri Kosina <jkosina@suse.cz> wrote:
-> > This reverts commit 8b37e1bef5a6b60e949e28a4db3006e4b00bd758.
-> >
-> > It's broken as it changes led_blink_set() in a way that it can now sleep
-> > (while synchronously waiting for workqueue to be cancelled). That's a
-> > problem, because it's possible that this function gets called from atomic
-> > context (tpt_trig_timer() takes a readlock and thus disables preemption).
-> >
-> > This has been brought up 3 weeks ago already [1] but no proper fix has
-> > materialized, and I keep seeing the problem since 3.18-rc1.
-> 
-> Is this 3.18-rc1? I think it should be 3.17-rc1, right?
+nice. quite short.
 
-Indeed, brainfart on my side, thanks for noticing.
+> +#ifdef CONFIG_DEBUG_SET_MODULE_RONX
+> +static inline void bpf_prog_lock_ro(struct bpf_prog *fp)
+> +{
+> +       set_memory_ro((unsigned long)fp, fp->pages);
 
--- 
-Jiri Kosina
-SUSE Labs
+since ronx are ifdef checked together,
+would probably make sense to set nx too?
+
+> +static inline void bpf_prog_unlock_ro(struct bpf_prog *fp)
+> +{
+> +       set_memory_rw((unsigned long)fp, fp->pages);
+
+why rw is needed?
+since fp is allocated with vmalloc, vfree doesn't need
+to touch the pages to free them, no?
