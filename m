@@ -1,89 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815AbaIBSgf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 14:36:35 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:46905 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752455AbaIBSgd (ORCPT
+	id S1754922AbaIBShM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 14:37:12 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:61452 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754830AbaIBShK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 14:36:33 -0400
-Date: Tue, 2 Sep 2014 19:36:17 +0100
-From: Mark Brown <broonie@kernel.org>
-To: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20140902183617.GD29327@sirena.org.uk>
+	Tue, 2 Sep 2014 14:37:10 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="iaYIJ+kOC8t17Zqq"
-Content-Disposition: inline
-X-Cookie: Simulated picture.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: linux-next: Tree for Sep 2
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <1409682093.26422.5.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <CA+ydwtoDwQVg_BWrxxdpUyJ7Up60GtxTCLYe_5vFdV2td_kGhQ@mail.gmail.com>
+	<CAHA+R7MZCDGRhSf=UuVCGQvNo03wVziZQB_X30rwNf6hmHipQA@mail.gmail.com>
+	<20140829195339.GA9780@kria>
+	<1409363489.2980.17.camel@localhost>
+	<CAHA+R7ODa+LrdwSrS7HcBfwwq8_fpj-Ld0OCDtcOqkpCdZCvxg@mail.gmail.com>
+	<1409680684.972417.162793869.03CF8A61@webmail.messagingengine.com>
+	<CAHA+R7Mwy1SCpEUgGf9BdLEro6N-3t89KU=xL0iuzgOppXELrQ@mail.gmail.com>
+	<1409681487.26422.1.camel@edumazet-glaptop2.roam.corp.google.com>
+	<CAHA+R7PY=Pu7VKA3wp1DxeJRckxPNWL-xfv2XXkpaY935kt61A@mail.gmail.com>
+	<1409682093.26422.5.camel@edumazet-glaptop2.roam.corp.google.com>
+Date: Tue, 2 Sep 2014 11:37:08 -0700
+Message-ID: <CAHA+R7N6ZApvDi+JPW+2V98Rfm==jv1ES7xB0pzMDZx=q53rkA@mail.gmail.com>
+Subject: Re: RTNL: assertion failed at net/ipv6/addrconf.c (1699)
+From: Cong Wang <cwang@twopensource.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Sabrina Dubroca <sd@queasysnail.net>,
+        Tommi Rantala <tt.rantala@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org,
+        Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Sep 2, 2014 at 11:21 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> On Tue, 2014-09-02 at 11:15 -0700, Cong Wang wrote:
+>
+>> That is what we do when backporting patches, I can do that if David asks
+>> me to backport it, but you know for netdev that is David's work.
+>>
+>> (I am not saying I don't want to help him, I just want to point out the fact.
+>> I am very pleased to help David for stable backports as long as he asks)
+>
+> Problem is : your patch submission do not identify bug origin.
+>
+> You claim you want to help, but you do not provide the basic thing that
+> _really_ helps.
+>
+> The proper way to identify bug origin is to add in the headers one
+> line :
+>
+> Fixes: 12-digit-SHA1 ("patch title")
+>
 
---iaYIJ+kOC8t17Zqq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Since when "Fixes:" tag becomes mandatory for a stable patch?
+At least netdev-FAQ is not updated. ;-) I 100% agree "Fixes:"
+is helpful when backporting patches, but it is not mandatory currently.
 
-Changes since 20140901:
+For this patch, I was too lazy to dig the history, it looks like this is
+caused by the following commit:
 
-The akpm-current tree lost its conflict against Linus' tree and two
-patches from it got applied.
+commit c15b1ccadb323ea50023e8f1cca2954129a62b51
+Author: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Date:   Thu Mar 27 18:28:07 2014 +0100
 
-Non-merge commits (relative to Linus' tree): 3078
- 2790 files changed, 105584 insertions(+), 81173 deletions(-)
+    ipv6: move DAD and addrconf_verify processing to workqueue
 
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git .
-If you are tracking the linux-next tree using git, you should not use
-git pull" to do so as that will try to merge the new linux-next release
-with the old one.  You should use "git fetch" and checkout or reset to
-the new master.
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with an
-allmodconfig for x86_64 and a multi_v7_defconfig for arm.
-
-Below is a summary of the state of the merge.
-
-I am currently merging 214 trees (counting Linus' and 30 trees of patches
-pending for Linus' tree).
-
-Stats about the size of the tree over time can be seen at
-http://neuling.org/linux-next-size.html .
-
-Status of Stephen's local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
---iaYIJ+kOC8t17Zqq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUBg4eAAoJELSic+t+oim9LdsP/jOxRP0JY+QwUZwB0vQDeJ1F
-z1epalXIQCmuJZz87+zzOeTalZb1AWy+Fuh18iDWZBFuUva6vwM4SMqeQXAS2bDf
-qMC/bdCTkI8aVT+6n22BzXYkmHDMRFMU/B2rJwtLw0UBZ8pNH+wC1T3+Xp3XyiAg
-Nqnw+A5x9VvYPWmT1WgO8iGylp2iU0ULCd34LW7OdOADgBa0d9Cpa4orAYscJTLZ
-ZD2q6r0ZXI0ai9ndUNFuHESWHD1awlqhYOJYqLshm20uSbR1X3vtSCRzezuxn/lN
-VAf9H7/bv5Tz0OdQJlW8KTgF696c4bdo2nsMV0ANoxwzqSBAthxVPLAP20nfziLY
-Fnx+2zKIGrBH867JO4xrb714YBqxO8gEkGzumeDykD7Ls9FXWTQakbYG73766zwN
-1BPRk5G/ErixNkjKAqJM6BPMddCS0U/z70qNdHuumNYdZHTm2/yVET2Tsff4TBoi
-kjIKJ/HKDTXmpBlO2+rVUdhWz68T1DDDCeF8zTsUQLB+nNhQTZ1NRohcb3JZLO8M
-LerWlSHeeeNN3gie9+3nOQe9GDHhnl2C3vNqe33DV0GR+1TFhNQiFXoCYPPwGhxh
-3JcgsaLQswurPvi5IyqMCEHWNG89Jhtrw1J6Cch5Q0hqnI0f6d+m7zwZFgR1cXPp
-zSCOuX2C+kE61iu+5plW
-=h1F6
------END PGP SIGNATURE-----
-
---iaYIJ+kOC8t17Zqq--
+Thanks.
