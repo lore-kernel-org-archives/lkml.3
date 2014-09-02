@@ -1,81 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768AbaIBQhE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 12:37:04 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:49615 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751666AbaIBQhC (ORCPT
+	id S1754843AbaIBQhg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 12:37:36 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:58550 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754172AbaIBQhe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 12:37:02 -0400
-Date: Tue, 2 Sep 2014 09:36:56 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, bobby.prani@gmail.com, <""@rjwysocki.net>,
-        tianyu.lan@intel.com
-Subject: Re: [PATCH RFC tip/core/rcu] Eliminate deadlock between CPU hotplug
- and expedited grace periods
-Message-ID: <20140902163656.GC5001@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140828194745.GA3761@linux.vnet.ibm.com>
- <20140901112059.GG27892@worktop.ger.corp.intel.com>
- <20140901160550.GL5001@linux.vnet.ibm.com>
- <20140901161735.GA5806@worktop.ger.corp.intel.com>
+	Tue, 2 Sep 2014 12:37:34 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18K9I9dFN/Dh7ZXK/5tN4I8
+Date: Tue, 2 Sep 2014 09:37:18 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: kpark3469@gmail.com
+Cc: linux@arm.linux.org.uk, keun-o.park@windriver.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        afzal.mohd.ma@gmail.com, linux-omap@vger.kernel.org
+Subject: Re: [PATCHv2] ARM: debug: uncompress debug support for omap2plus
+Message-ID: <20140902163718.GA11766@atomide.com>
+References: <1409041717-8673-1-git-send-email-kpark3469@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140901161735.GA5806@worktop.ger.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14090216-9332-0000-0000-000001E07A45
+In-Reply-To: <1409041717-8673-1-git-send-email-kpark3469@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 01, 2014 at 06:17:35PM +0200, Peter Zijlstra wrote:
-> On Mon, Sep 01, 2014 at 09:05:50AM -0700, Paul E. McKenney wrote:
-> > > URGH.. I really hate that. The hotplug interface is already too
-> > > horrible, we should not add such hacks to it.
-> > 
-> > We do have try_ interfaces to a number of other subsystems, so I don't
-> > believe that it qualifies as such a hack.
+* kpark3469@gmail.com <kpark3469@gmail.com> [140826 01:29]:
+> From: Sahara <keun-o.park@windriver.com>
 > 
-> We do indeed, but I'm not sure about adding this to the hotplug stuff.
+> Since OMAP low-level debug code places data in the .data section,
+> The symbol DEBUG_UNCOMPRESS was defined with !DEBUG_OMAP2PLUS_UART.
+> This patch removes the part using data section in debug/omap2plus.S,
+> so DEBUG_UNCOMPRESS is now available on OMAP system.
 
-Looks pretty straightforward to me.
+Hmm the plan is to switch over to using the standard
+DEBUG_LL_UART_8250 code and remove the runtime detection.
 
-> Also; not really understanding the problem doesn't help. 
+That will simplify things quite a bit and probably means this
+patch won't be needed AFAIK.
 
-The current implementation of synchronize_sched_expedited()
-calls get_online_cpus().  Some of the ACPI code needs to hold the
-acpi_ioremap_lock mutex across synchronize_sched_expedited(), and
-also needs to acquire this same mutex from a CPU hotplug notifier.
-This results in deadlock between the cpu_hotplug.lock mutex and the
-acpi_ioremap_lock mutex.
+Care to take a look at doing that instead? See for example
+"[PATCH v9 5/9] arm: omap1: Migrate debug_ll macros to use 8250.S".
 
-Normal RCU grace periods avoid this by synchronizing on a lock acquired by
-the RCU CPU-hotplug notifiers, but this does not work for the expedited
-grace periods because the outgoing CPU can be running random tasks for
-quite some time after RCU's notifier executes.  So the fix is just to
-drop back to a normal grace period when there is a CPU-hotplug operation
-in progress.
+Regards,
 
-> > > How about ripping that rcu_expedited stuff out instead? That's all
-> > > conditional anyhow, so might as well not do it.
-> > 
-> > In what way is the expedited stuff conditional?
+Tony
+ 
+> Signed-off-by: Sahara <keun-o.park@windriver.com>
+> Tested-by: Afzal Mohammed <afzal.mohd.ma@gmail.com> (on am335x beagle
+> bone white)
+> ---
+>  arch/arm/Kconfig.debug             |    3 +-
+>  arch/arm/include/debug/omap2plus.S |   96 ++++++++++--------------------------
+>  2 files changed, 27 insertions(+), 72 deletions(-)
 > 
-> synchronize_sched() conditionally calls synchronize_sched_expedited()
-> and its condition: rcu_expedited, gets set/cleared on pm notifiers and
-> nr_cpu_ids.
-
-There are also direct calls to both synchronize_sched_expedited() and
-synchronize_rcu_expedited().
-
-							Thanx, Paul
-
+> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+> index b11ad54..c0ad3e4 100644
+> --- a/arch/arm/Kconfig.debug
+> +++ b/arch/arm/Kconfig.debug
+> @@ -1220,8 +1220,7 @@ config DEBUG_UART_8250_FLOW_CONTROL
+>  config DEBUG_UNCOMPRESS
+>  	bool
+>  	depends on ARCH_MULTIPLATFORM || ARCH_MSM || PLAT_SAMSUNG
+> -	default y if DEBUG_LL && !DEBUG_OMAP2PLUS_UART && \
+> -		     (!DEBUG_TEGRA_UART || !ZBOOT_ROM)
+> +	default y if DEBUG_LL && (!DEBUG_TEGRA_UART || !ZBOOT_ROM)
+>  	help
+>  	  This option influences the normal decompressor output for
+>  	  multiplatform kernels.  Normally, multiplatform kernels disable
+> diff --git a/arch/arm/include/debug/omap2plus.S b/arch/arm/include/debug/omap2plus.S
+> index 6d867ae..0b7ec89 100644
+> --- a/arch/arm/include/debug/omap2plus.S
+> +++ b/arch/arm/include/debug/omap2plus.S
+> @@ -58,115 +58,71 @@
+>  
+>  #define UART_OFFSET(addr)	((addr) & 0x00ffffff)
+>  
+> -		.pushsection .data
+> -omap_uart_phys:	.word	0
+> -omap_uart_virt:	.word	0
+> -omap_uart_lsr:	.word	0
+> -		.popsection
+> -
+>  		.macro	addruart, rp, rv, tmp
+>  
+> -		/* Use omap_uart_phys/virt if already configured */
+> -10:		adr	\rp, 99f		@ get effective addr of 99f
+> -		ldr	\rv, [\rp]		@ get absolute addr of 99f
+> -		sub	\rv, \rv, \rp		@ offset between the two
+> -		ldr	\rp, [\rp, #4]		@ abs addr of omap_uart_phys
+> -		sub	\tmp, \rp, \rv		@ make it effective
+> -		ldr	\rp, [\tmp, #0]		@ omap_uart_phys
+> -		ldr	\rv, [\tmp, #4]		@ omap_uart_virt
+> -		cmp	\rp, #0			@ is port configured?
+> -		cmpne	\rv, #0
+> -		bne	100f			@ already configured
+> -
+>  		/* Configure the UART offset from the phys/virt base */
+> -#ifdef CONFIG_DEBUG_OMAP2UART1
+> +#if defined(CONFIG_DEBUG_OMAP2UART1)
+>  		mov	\rp, #UART_OFFSET(OMAP2_UART1_BASE)	@ omap2/3/4
+>  		b	98f
+> -#endif
+> -#ifdef CONFIG_DEBUG_OMAP2UART2
+> +#elif defined(CONFIG_DEBUG_OMAP2UART2)
+>  		mov	\rp, #UART_OFFSET(OMAP2_UART2_BASE)	@ omap2/3/4
+>  		b	98f
+> -#endif
+> -#ifdef CONFIG_DEBUG_OMAP2UART3
+> +#elif defined(CONFIG_DEBUG_OMAP2UART3)
+>  		mov	\rp, #UART_OFFSET(OMAP2_UART3_BASE)
+>  		b	98f
+> -#endif
+> -#ifdef CONFIG_DEBUG_OMAP3UART3
+> +#elif defined(CONFIG_DEBUG_OMAP3UART3)
+>  		mov	\rp, #UART_OFFSET(OMAP3_UART1_BASE)
+>  		add	\rp, \rp, #0x00fb0000
+>  		add	\rp, \rp, #0x00006000		@ OMAP3_UART3_BASE
+>  		b	98f
+> -#endif
+> -#ifdef CONFIG_DEBUG_OMAP4UART3
+> +#elif defined(CONFIG_DEBUG_OMAP4UART3)
+>  		mov	\rp, #UART_OFFSET(OMAP4_UART3_BASE)
+>  		b	98f
+> -#endif
+> -#ifdef CONFIG_DEBUG_OMAP3UART4
+> +#elif defined(CONFIG_DEBUG_OMAP3UART4)
+>  		mov	\rp, #UART_OFFSET(OMAP3_UART1_BASE)
+>  		add	\rp, \rp, #0x00fb0000
+>  		add	\rp, \rp, #0x00028000		@ OMAP3_UART4_BASE
+>  		b	98f
+> -#endif
+> -#ifdef CONFIG_DEBUG_OMAP4UART4
+> +#elif defined(CONFIG_DEBUG_OMAP4UART4)
+>  		mov	\rp, #UART_OFFSET(OMAP4_UART4_BASE)
+>  		b	98f
+> -#endif
+> -#ifdef CONFIG_DEBUG_TI81XXUART1
+> +#elif defined(CONFIG_DEBUG_TI81XXUART1)
+>  		mov	\rp, #UART_OFFSET(TI81XX_UART1_BASE)
+>  		b	98f
+> -#endif
+> -#ifdef CONFIG_DEBUG_TI81XXUART2
+> +#elif defined(CONFIG_DEBUG_TI81XXUART2)
+>  		mov	\rp, #UART_OFFSET(TI81XX_UART2_BASE)
+>  		b	98f
+> -#endif
+> -#ifdef CONFIG_DEBUG_TI81XXUART3
+> +#elif defined(CONFIG_DEBUG_TI81XXUART3)
+>  		mov	\rp, #UART_OFFSET(TI81XX_UART3_BASE)
+>  		b	98f
+> -#endif
+> -#ifdef CONFIG_DEBUG_AM33XXUART1
+> +#elif defined(CONFIG_DEBUG_AM33XXUART1)
+>  		ldr	\rp, =AM33XX_UART1_BASE
+>  		and	\rp, \rp, #0x00ffffff
+>  		b	97f
+> -#endif
+> -#ifdef CONFIG_DEBUG_ZOOM_UART
+> +#elif defined(CONFIG_DEBUG_ZOOM_UART)
+>  		ldr	\rp, =ZOOM_UART_BASE
+> -		str	\rp, [\tmp, #0]		@ omap_uart_phys
+> -		ldr	\rp, =ZOOM_UART_VIRT
+> -		str	\rp, [\tmp, #4]		@ omap_uart_virt
+> -		mov	\rp, #(UART_LSR << ZOOM_PORT_SHIFT)
+> -		str	\rp, [\tmp, #8]		@ omap_uart_lsr
+> +		ldr	\rv, =ZOOM_UART_VIRT
+> +		mov	\tmp, #(UART_LSR << ZOOM_PORT_SHIFT)
+> +		b	100f
+> +#else
+> +#error "Error! No proper debug option is defined."
+>  #endif
+> -		b	10b
+>  
+>  		/* AM33XX: Store both phys and virt address for the uart */
+>  97:		add	\rp, \rp, #0x44000000	@ phys base
+> -		str	\rp, [\tmp, #0]		@ omap_uart_phys
+> -		sub	\rp, \rp, #0x44000000	@ phys base
+> -		add	\rp, \rp, #0xf9000000	@ virt base
+> -		str	\rp, [\tmp, #4]		@ omap_uart_virt
+> -		mov	\rp, #(UART_LSR << OMAP_PORT_SHIFT)
+> -		str	\rp, [\tmp, #8]		@ omap_uart_lsr
+> +		sub	\rv, \rp, #0x44000000	@ phys base
+> +		add	\rv, \rv, #0xf9000000	@ virt base
+> +		mov	\tmp, #(UART_LSR << OMAP_PORT_SHIFT)
+>  
+> -		b	10b
+> +		b	100f
+>  
+>  		/* Store both phys and virt address for the uart */
+>  98:		add	\rp, \rp, #0x48000000	@ phys base
+> -		str	\rp, [\tmp, #0]		@ omap_uart_phys
+> -		sub	\rp, \rp, #0x48000000	@ phys base
+> -		add	\rp, \rp, #0xfa000000	@ virt base
+> -		str	\rp, [\tmp, #4]		@ omap_uart_virt
+> -		mov	\rp, #(UART_LSR << OMAP_PORT_SHIFT)
+> -		str	\rp, [\tmp, #8]		@ omap_uart_lsr
+> -
+> -		b	10b
+> -
+> -		.align
+> -99:		.word	.
+> -		.word	omap_uart_phys
+> -		.ltorg
+> -
+> -100:		/* Pass the UART_LSR reg address */
+> -		ldr	\tmp, [\tmp, #8]	@ omap_uart_lsr
+> +		sub	\rv, \rp, #0x48000000	@ phys base
+> +		add	\rv, \rv, #0xfa000000	@ virt base
+> +		mov	\tmp, #(UART_LSR << OMAP_PORT_SHIFT)
+> +
+> +100:		/* Add the UART_LSR reg address */
+>  		add	\rp, \rp, \tmp
+>  		add	\rv, \rv, \tmp
+>  		.endm
+> -- 
+> 1.7.9.5
+> 
