@@ -1,150 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755522AbaIBVmU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 17:42:20 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:50183 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751383AbaIBVmR (ORCPT
+	id S1755530AbaIBVmm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 17:42:42 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:37166 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755332AbaIBVkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 17:42:17 -0400
-Date: Tue, 2 Sep 2014 14:42:14 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: clean up zone flags
-In-Reply-To: <1409668074-16875-1-git-send-email-hannes@cmpxchg.org>
-Message-ID: <alpine.DEB.2.02.1409021437160.28054@chino.kir.corp.google.com>
-References: <1409668074-16875-1-git-send-email-hannes@cmpxchg.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 2 Sep 2014 17:40:07 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Hurley <peter@hurleysoftware.com>,
+        "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>
+Subject: [PATCH 06/26] serial: Fix send_xchar() handlers
+Date: Tue,  2 Sep 2014 17:39:15 -0400
+Message-Id: <1409693975-1028-7-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com>
+References: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com>
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Sep 2014, Johannes Weiner wrote:
+START_CHAR() & STOP_CHAR() can be disabled if set to '\0'
+(__DISABLED_CHAR).  UART drivers which define a send_xchar()
+handler must not transmit __DISABLED_CHAR.
 
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index 318df7051850..48bf12ef6620 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -521,13 +521,13 @@ struct zone {
->  	atomic_long_t		vm_stat[NR_VM_ZONE_STAT_ITEMS];
->  } ____cacheline_internodealigned_in_smp;
->  
-> -typedef enum {
-> +enum zone_flags {
->  	ZONE_RECLAIM_LOCKED,		/* prevents concurrent reclaim */
->  	ZONE_OOM_LOCKED,		/* zone is in OOM killer zonelist */
->  	ZONE_CONGESTED,			/* zone has many dirty pages backed by
->  					 * a congested BDI
->  					 */
-> -	ZONE_TAIL_LRU_DIRTY,		/* reclaim scanning has recently found
-> +	ZONE_DIRTY,			/* reclaim scanning has recently found
->  					 * many dirty file pages at the tail
->  					 * of the LRU.
->  					 */
-> @@ -535,52 +535,7 @@ typedef enum {
->  					 * many pages under writeback
->  					 */
->  	ZONE_FAIR_DEPLETED,		/* fair zone policy batch depleted */
-> -} zone_flags_t;
-> -
-> -static inline void zone_set_flag(struct zone *zone, zone_flags_t flag)
-> -{
-> -	set_bit(flag, &zone->flags);
-> -}
-> -
-> -static inline int zone_test_and_set_flag(struct zone *zone, zone_flags_t flag)
-> -{
-> -	return test_and_set_bit(flag, &zone->flags);
-> -}
-> -
-> -static inline void zone_clear_flag(struct zone *zone, zone_flags_t flag)
-> -{
-> -	clear_bit(flag, &zone->flags);
-> -}
-> -
-> -static inline int zone_is_reclaim_congested(const struct zone *zone)
-> -{
-> -	return test_bit(ZONE_CONGESTED, &zone->flags);
-> -}
-> -
-> -static inline int zone_is_reclaim_dirty(const struct zone *zone)
-> -{
-> -	return test_bit(ZONE_TAIL_LRU_DIRTY, &zone->flags);
-> -}
-> -
-> -static inline int zone_is_reclaim_writeback(const struct zone *zone)
-> -{
-> -	return test_bit(ZONE_WRITEBACK, &zone->flags);
-> -}
-> -
-> -static inline int zone_is_reclaim_locked(const struct zone *zone)
-> -{
-> -	return test_bit(ZONE_RECLAIM_LOCKED, &zone->flags);
-> -}
-> -
-> -static inline int zone_is_fair_depleted(const struct zone *zone)
-> -{
-> -	return test_bit(ZONE_FAIR_DEPLETED, &zone->flags);
-> -}
-> -
-> -static inline int zone_is_oom_locked(const struct zone *zone)
-> -{
-> -	return test_bit(ZONE_OOM_LOCKED, &zone->flags);
-> -}
-> +};
->  
->  static inline unsigned long zone_end_pfn(const struct zone *zone)
->  {
-> diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-> index 1706cbbdf5f0..d7a9051a6db5 100644
-> --- a/mm/backing-dev.c
-> +++ b/mm/backing-dev.c
-> @@ -631,7 +631,7 @@ long wait_iff_congested(struct zone *zone, int sync, long timeout)
->  	 * of sleeping on the congestion queue
->  	 */
->  	if (atomic_read(&nr_bdi_congested[sync]) == 0 ||
-> -			!zone_is_reclaim_congested(zone)) {
-> +	    test_bit(ZONE_CONGESTED, &zone->flags)) {
->  		cond_resched();
->  
->  		/* In case we scheduled, work out time remaining */
+Document requirement.
 
-That's not equivalent.
+Affected drivers:
+sunsab
+sunhv
 
-[snip]
+cc: David S. Miller <davem@davemloft.net>
+cc: <sparclinux@vger.kernel.org>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ Documentation/serial/driver | 2 ++
+ drivers/tty/serial/sunhv.c  | 3 +++
+ drivers/tty/serial/sunsab.c | 3 +++
+ 3 files changed, 8 insertions(+)
 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 2836b5373b2e..590a92bec6a4 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -920,7 +920,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  			/* Case 1 above */
->  			if (current_is_kswapd() &&
->  			    PageReclaim(page) &&
-> -			    zone_is_reclaim_writeback(zone)) {
-> +			    test_bit(ZONE_WRITEBACK, &zone->flags)) {
->  				nr_immediate++;
->  				goto keep_locked;
->  
-> @@ -1002,7 +1002,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  			 */
->  			if (page_is_file_cache(page) &&
->  					(!current_is_kswapd() ||
-> -					 !zone_is_reclaim_dirty(zone))) {
-> +					 test_bit(ZONE_DIRTY, &zone->flags))) {
->  				/*
->  				 * Immediately reclaim when written back.
->  				 * Similar in principal to deactivate_page()
+diff --git a/Documentation/serial/driver b/Documentation/serial/driver
+index 3bba1ae..ba64e4b 100644
+--- a/Documentation/serial/driver
++++ b/Documentation/serial/driver
+@@ -140,6 +140,8 @@ hardware.
+ 	will append the character to the circular buffer and then call
+ 	start_tx() / stop_tx() to flush the data out.
+ 
++	Do not transmit if ch == '\0' (__DISABLED_CHAR).
++
+ 	Locking: none.
+ 	Interrupts: caller dependent.
+ 
+diff --git a/drivers/tty/serial/sunhv.c b/drivers/tty/serial/sunhv.c
+index 20521db..25d43ce 100644
+--- a/drivers/tty/serial/sunhv.c
++++ b/drivers/tty/serial/sunhv.c
+@@ -268,6 +268,9 @@ static void sunhv_send_xchar(struct uart_port *port, char ch)
+ 	unsigned long flags;
+ 	int limit = 10000;
+ 
++	if (ch == __DISABLED_CHAR)
++		return;
++
+ 	spin_lock_irqsave(&port->lock, flags);
+ 
+ 	while (limit-- > 0) {
+diff --git a/drivers/tty/serial/sunsab.c b/drivers/tty/serial/sunsab.c
+index bb09920..c83b1c6 100644
+--- a/drivers/tty/serial/sunsab.c
++++ b/drivers/tty/serial/sunsab.c
+@@ -459,6 +459,9 @@ static void sunsab_send_xchar(struct uart_port *port, char ch)
+ 	struct uart_sunsab_port *up = (struct uart_sunsab_port *) port;
+ 	unsigned long flags;
+ 
++	if (ch == __DISABLED_CHAR)
++		return;
++
+ 	spin_lock_irqsave(&up->port.lock, flags);
+ 
+ 	sunsab_tec_wait(up);
+-- 
+2.1.0
 
-Nor is this.
-
-After fixed, for the oom killer bits:
-
-	Acked-by: David Rientjes <rientjes@google.com>
-
-since this un-obscurification is most welcome.
