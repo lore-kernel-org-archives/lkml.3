@@ -1,93 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753120AbaIBIZb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 04:25:31 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:35524 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752517AbaIBIZ1 (ORCPT
+	id S1753148AbaIBI0q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 04:26:46 -0400
+Received: from mail.fireflyinternet.com ([87.106.93.118]:58028 "EHLO
+	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750722AbaIBI0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 04:25:27 -0400
-Message-ID: <54057EF2.2090405@monom.org>
-Date: Tue, 02 Sep 2014 10:25:22 +0200
-From: Daniel Wagner <wagi@monom.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Tue, 2 Sep 2014 04:26:43 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.65.138;
+Date: Tue, 2 Sep 2014 09:26:35 +0100
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
+Cc: Jani Nikula <jani.nikula@linux.intel.com>, intel-gfx@lists.freedesktop.org,
+        David Airlie <airlied@linux.ie>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
+        Tibor Billes <tbilles@gmx.com>
+Subject: Re: [PATCH v2] drm/i915: Fix lock dropping in intel_tv_detect()
+Message-ID: <20140902082635.GA25238@nuc-i3427.alporthouse.com>
+Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
+	Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>,
+	Jani Nikula <jani.nikula@linux.intel.com>,
+	intel-gfx@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
+	Daniel Vetter <daniel.vetter@ffwll.ch>,
+	linux-kernel@vger.kernel.org, Tibor Billes <tbilles@gmx.com>
+References: <20140901085022.GB11648@nuc-i3427.alporthouse.com>
+ <1409566060-21337-1-git-send-email-ville.syrjala@linux.intel.com>
+ <20140901102009.GD11648@nuc-i3427.alporthouse.com>
+ <20140901103637.GB4193@intel.com>
+ <20140901104356.GE11648@nuc-i3427.alporthouse.com>
+ <87egvuii5q.fsf@intel.com>
+ <20140902081612.GH4193@intel.com>
 MIME-Version: 1.0
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: linux-nfc@ml01.01.org, linux-kernel@vger.kernel.org
-Subject: Re: NFC depmod dependecy cycles
-References: <54057E6F.70308@monom.org>
-In-Reply-To: <54057E6F.70308@monom.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140902081612.GH4193@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 09/02/2014 10:23 AM, Daniel Wagner wrote:
-> Hi Samuel,
+On Tue, Sep 02, 2014 at 11:16:12AM +0300, Ville Syrjälä wrote:
+> On Tue, Sep 02, 2014 at 10:41:05AM +0300, Jani Nikula wrote:
+> > On Mon, 01 Sep 2014, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> > > On Mon, Sep 01, 2014 at 01:36:37PM +0300, Ville Syrjälä wrote:
+> > >> On Mon, Sep 01, 2014 at 11:20:09AM +0100, Chris Wilson wrote:
+> > >> > On Mon, Sep 01, 2014 at 01:07:40PM +0300, ville.syrjala@linux.intel.com wrote:
+> > >> > > From: Ville Syrjälä <ville.syrjala@linux.intel.com>
+> > >> > > 
+> > >> > > When intel_tv_detect() fails to do load detection it would forget to
+> > >> > > drop the locks and clean up the acquire context. Fix it up.
+> > >> > > 
+> > >> > > This is a regression from:
+> > >> > >  commit 208bf9fdcd3575aa4a5d48b3e0295f7cdaf6fc44
+> > >> > >  Author: Ville Syrjälä <ville.syrjala@linux.intel.com>
+> > >> > >  Date:   Mon Aug 11 13:15:35 2014 +0300
+> > >> > > 
+> > >> > >     drm/i915: Fix locking for intel_enable_pipe_a()
+> > >> > > 
+> > >> > > v2: Make the code more readable (Chris)
+> > >> > > 
+> > >> > > Cc: Tibor Billes <tbilles@gmx.com>
+> > >> > > Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+> > >> > 
+> > >> > Hmm, if we use WARN_ON() you should init type.
+> > >> 
+> > >> type is always set in the branch that sets status=connected.
+> > >
+> > > Back to thinking about readability and making sure that the WARN_ON
+> > > never happens with just a glance. Otherwise, the WARN_ON would be better
+> > > as WARN_ON(unsigned)type >= last_tv_type); Or something. Anway, take
+> > > your pick and slap my r-b on it. :)
+> > 
+> > Ville?
 > 
-> I just tried 3.17-rc3 and run into this problem:
-> 
-> # make modules_install
-> 
->   DEPMOD  3.17.0-rc3-00002-g7505cea
-> depmod: WARNING: found 6 modules in dependency cycles!
-> depmod: WARNING:
-> /lib/modules/3.17.0-rc3-00002-g7505cea/kernel/drivers/nfc/st21nfcb/st21nfcb.ko
-> in dependency cycle!
-> depmod: WARNING:
-> /lib/modules/3.17.0-rc3-00002-g7505cea/kernel/drivers/nfc/st21nfcb/ndlc.ko
-> in dependency cycle!
-> depmod: WARNING:
-> /lib/modules/3.17.0-rc3-00002-g7505cea/kernel/net/rfkill/rfkill.ko in
-> dependency cycle!
-> depmod: WARNING:
-> /lib/modules/3.17.0-rc3-00002-g7505cea/kernel/net/nfc/nfc.ko in
-> dependency cycle!
-> depmod: WARNING:
-> /lib/modules/3.17.0-rc3-00002-g7505cea/kernel/net/nfc/nci/nci.ko in
-> dependency cycle!
-> depmod: WARNING:
-> /lib/modules/3.17.0-rc3-00002-g7505cea/kernel/lib/crc-ccitt.ko in
-> dependency cycle!
-> ./scripts/depmod.sh: line 57: 23387 Segmentation fault      (core
-> dumped) "$DEPMOD" "$@" "$KERNELRELEASE" $SYMBOL_PREFIX
-> make: *** [_modinst_post] Error 139
-> 
-> 
-> After disabling the whole NFC subsystem depmod was happy again.
+> I don't know anymore. Just kill the WARN_ON() if it makes things
+> confusing?
 
-Forgot to add my configuration:
+Just drop the WARN_ON. I prefer the if() using the status rather than
+type, as that seems more idiomatic (when looking at our other detection
+routines).
+-Chris
 
-CONFIG_NFC=m
-CONFIG_NFC_DIGITAL=m
-CONFIG_NFC_NCI=m
-CONFIG_NFC_NCI_SPI=y
-CONFIG_NFC_HCI=m
-CONFIG_NFC_SHDLC=y
-
-#
-# Near Field Communication (NFC) devices
-#
-CONFIG_NFC_PN533=m
-CONFIG_NFC_WILINK=m
-CONFIG_NFC_TRF7970A=m
-CONFIG_NFC_MEI_PHY=m
-CONFIG_NFC_SIM=m
-CONFIG_NFC_PORT100=m
-CONFIG_NFC_PN544=m
-CONFIG_NFC_PN544_I2C=m
-CONFIG_NFC_PN544_MEI=m
-CONFIG_NFC_MICROREAD=m
-CONFIG_NFC_MICROREAD_I2C=m
-CONFIG_NFC_MICROREAD_MEI=m
-CONFIG_NFC_MRVL=m
-CONFIG_NFC_MRVL_USB=m
-CONFIG_NFC_ST21NFCA=m
-CONFIG_NFC_ST21NFCA_I2C=m
-CONFIG_NFC_ST21NFCB=m
-CONFIG_NFC_ST21NFCB_I2C=m
-
-cheers,
-daniel
+-- 
+Chris Wilson, Intel Open Source Technology Centre
