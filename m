@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932074AbaIBWWe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 18:22:34 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:39449 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755251AbaIBWWc (ORCPT
+	id S1755482AbaIBWXI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 18:23:08 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:63098 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754848AbaIBWXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 18:22:32 -0400
+	Tue, 2 Sep 2014 18:23:06 -0400
+Message-ID: <54064323.3090406@gmail.com>
+Date: Tue, 02 Sep 2014 15:22:27 -0700
+From: Florian Fainelli <f.fainelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <CAL1qeaHryi7noBMiHxJPybByuvVts23reuiiQbV9mCQj+Ngqjw@mail.gmail.com>
-References: <1409350479-19108-1-git-send-email-abrestic@chromium.org>
-	<6179185.bNbDBEC6tl@wuerfel>
-	<CAL1qeaEEo6-LZz3Kex7oPUfz=Z56nvKoDnqu051rGhhi3ZFTDQ@mail.gmail.com>
-	<3341001.1Jsp173xyM@wuerfel>
-	<CAL1qeaHryi7noBMiHxJPybByuvVts23reuiiQbV9mCQj+Ngqjw@mail.gmail.com>
-Date: Tue, 2 Sep 2014 15:22:31 -0700
-X-Google-Sender-Auth: KKLUbcHnmdW7RGZPnnvfbdDl6Zs
-Message-ID: <CAL1qeaETzZ3EaC8RVXm3K4GLZbknk5iMUR1X2naaAboon4s6fQ@mail.gmail.com>
-Subject: Re: [PATCH 04/12] MIPS: GIC: Move MIPS_GIC_IRQ_BASE into platform irq.h
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Jeffrey Deans <jeffrey.deans@imgtec.com>,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        Paul Burton <paul.burton@imgtec.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Linux-MIPS <linux-mips@linux-mips.org>,
+To: Olof Johansson <olof@lixom.net>,
+        Brian Norris <computersforpeace@gmail.com>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Matt Porter <mporter@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Gregory Fong <gregory.0xf0@gmail.com>,
+        Marc Carino <marc.ceeeee@gmail.com>
+Subject: Re: [PATCH v8 03/11] ARM: brcmstb: add debug UART for earlyprintk
+ support
+References: <1405976886-27807-1-git-send-email-computersforpeace@gmail.com>	<1405976886-27807-4-git-send-email-computersforpeace@gmail.com>	<20140802083040.GY30282@n2100.arm.linux.org.uk>	<20140804165627.GT3711@ld-irv-0074>	<CAN8TOE8w5bUT5byHiJrYr8AzaZ+EADzE+aoH6f2x2tFc1+1eQw@mail.gmail.com> <CAOesGMh5wX5eaCmPvXQs4fmNQsD+370P=O8PSdH2oMHKL_neDQ@mail.gmail.com>
+In-Reply-To: <CAOesGMh5wX5eaCmPvXQs4fmNQsD+370P=O8PSdH2oMHKL_neDQ@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 1, 2014 at 5:08 PM, Andrew Bresticker <abrestic@chromium.org> wrote:
-> On Mon, Sep 1, 2014 at 1:34 AM, Arnd Bergmann <arnd@arndb.de> wrote:
->> On Sunday 31 August 2014 11:54:04 Andrew Bresticker wrote:
->>> On Sat, Aug 30, 2014 at 12:57 AM, Arnd Bergmann <arnd@arndb.de> wrote:
->>> > On Friday 29 August 2014 15:14:31 Andrew Bresticker wrote:
->>> >> Define a generic MIPS_GIC_IRQ_BASE which is suitable for Malta and
->>> >> the upcoming Danube board in <mach-generic/irq.h>.  Since Sead-3 is
->>> >> different and uses a MIPS_GIC_IRQ_BASE equal to the CPU IRQ base (0),
->>> >> define its MIPS_GIC_IRQ_BASE in <mach-sead3/irq.h>.
->>> >>
->>> >> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
->>> >>
->>> >
->>> > Why do you actually have to hardwire an IRQ base? Can't you move
->>> > to the linear irqdomain code for DT based MIPS systems yet?
->>>
->>> Neither Malta nor SEAD-3 use device-tree for interrupts yet, so they
->>> still require a hard-coded IRQ base.  For boards using device-tree, I
->>> stuck with a legacy IRQ domain as it allows most of the existing GIC
->>> irqchip code to be reused.
->>
->> I see. Note that we now have irq_domain_add_simple(), which should
->> do the right think in either case: use a legacy domain when a
->> nonzero base is provided for the old boards, but use the simple
->> domain when probed from DT without an irq base.
->>
->> This makes the latter case more memory efficient (it avoids
->> allocating the irq descriptors for every possibly but unused
->> IRQ number) and helps ensure that you don't accidentally rely
->> on hardcoded IRQ numbers for the DT based machines, which would
->> be considered a bug.
->
-> Ah, ok.  It looks like add_simple() is what I want then.
+On 08/13/2014 03:16 PM, Olof Johansson wrote:
 
-Actually, never mind.  To re-use the existing GIC irqchip code I want
-a legacy IRQ domain.
+[snip]
+
+>>>> I noticed that you sent this to the patch system.  I asked Olof last
+>>>> night whether he had anything in arm-soc touching Kconfig.debug, and
+>>>> he does (a number of other platforms have updated it.)  This means
+>>>> that if I apply it to my tree, it may conflict, so I'm reluctant to
+>>>> take it.
+>>>
+>>> OK... Matt told me that such patches go through you. So which is it?
+>>> Should all Kconfig.debug patches go through the arm-soc route?
+>>
+>> How should this get in? Should I rebase/resend through Matt and
+>> arm-soc? Or can you pick this up as-is?
+> 
+> Kconfig.debug is something that we usually merge new platforms for
+> through arm-soc. The main exception has been release cycles when
+> Russell has been doing major surgery on the file (one of those was a
+> few releases ago), where we've backed off to avoid conflicts.
+> 
+> That's been the assumed arrangement from our side at least, we haven't
+> had anything more formal than that.
+> 
+> So, go ahead and send it through us -- if we end up having a cycle
+> where we can't apply it we can send it over to Russell for you.
+
+It looks like somehow, this patch got lost somewhere in the submission
+process. Is it too late to accept it for 3.17 if we were to re-submit it?
+
+Thanks
+--
+Florian
+
