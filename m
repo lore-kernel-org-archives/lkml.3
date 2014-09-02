@@ -1,159 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932087AbaIBVfh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 17:35:37 -0400
-Received: from mail-oi0-f73.google.com ([209.85.218.73]:58591 "EHLO
-	mail-oi0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755317AbaIBVfK (ORCPT
+	id S932070AbaIBVff (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 17:35:35 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44656 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751783AbaIBVfc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 17:35:10 -0400
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org
-Cc: Andrew Bresticker <abrestic@chromium.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
-        Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org
-Subject: [PATCH v3 9/9] ARM: tegra: venice2: Add xHCI support
-Date: Tue,  2 Sep 2014 14:35:01 -0700
-Message-Id: <1409693701-16520-10-git-send-email-abrestic@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1409693701-16520-1-git-send-email-abrestic@chromium.org>
-References: <1409693701-16520-1-git-send-email-abrestic@chromium.org>
+	Tue, 2 Sep 2014 17:35:32 -0400
+Message-Id: <1409693731.1032736.162879961.54F4A55B@webmail.messagingengine.com>
+X-Sasl-Enc: iUJkbzChOy3gJgpcplGSME3teJJxG2UVkOcFmNS+vVQL 1409693731
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Brad Spengler <spender@grsecurity.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Kees Cook <keescook@chromium.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Mailer: MessagingEngine.com Webmail Interface - ajax-73bced9a
+Subject: Re: [PATCH net-next v2] net: bpf: make eBPF interpreter images read-only
+Date: Tue, 02 Sep 2014 23:35:31 +0200
+In-Reply-To: <CAMEtUuyoWELJ0Yf+=5sDKxFEfgsiQ3kMCK+Wn_bdJgS8qaH2og@mail.gmail.com>
+References: <aa5126f747594d768e0c518189a13e8674ad8ee5.1409690486.git.hannes@stressinduktion.org>
+ <2bf2e54282097642db88e2b596b06a9ac3742883.1409690849.git.hannes@stressinduktion.org>
+ <CAMEtUuyoWELJ0Yf+=5sDKxFEfgsiQ3kMCK+Wn_bdJgS8qaH2og@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Assign ports previously owned by the EHCI controllers to the xHCI
-controller.  There are two external USB ports (UTMI ports 0/2 and
-USB3 ports 0/1) and an internal USB port (UTMI port 1).  PCIe lanes
-0 and 1 are used by the USB3 ports.
+On Tue, Sep 2, 2014, at 23:31, Alexei Starovoitov wrote:
+> On Tue, Sep 2, 2014 at 1:53 PM, Hannes Frederic Sowa
+> <hannes@stressinduktion.org> wrote:
+> > From: Daniel Borkmann <dborkman@redhat.com>
+> >
+> > With eBPF getting more extended and exposure to user space is on it's way,
+> > hardening the memory range the interpreter uses to steer its command flow
+> > seems appropriate.  This patch moves the to be interpreted bytecode to
+> > read-only pages.
+> ...
+> >  11 files changed, 144 insertions(+), 32 deletions(-)
+> 
+> nice. quite short.
+> 
+> > +#ifdef CONFIG_DEBUG_SET_MODULE_RONX
+> > +static inline void bpf_prog_lock_ro(struct bpf_prog *fp)
+> > +{
+> > +       set_memory_ro((unsigned long)fp, fp->pages);
+> 
+> since ronx are ifdef checked together,
+> would probably make sense to set nx too?
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
----
-Changes from v2:
- - Updated VBUS power supply names.
-Changes from v1:
- - Updated USB power supplies.
----
- arch/arm/boot/dts/tegra124-venice2.dts | 79 ++++++++++++++++++++++------------
- 1 file changed, 51 insertions(+), 28 deletions(-)
+NX bit is already set, because we didn't request page with
+PAGE_KERNEL_EXEC.
 
-diff --git a/arch/arm/boot/dts/tegra124-venice2.dts b/arch/arm/boot/dts/tegra124-venice2.dts
-index 70ad91d..1cc3be2 100644
---- a/arch/arm/boot/dts/tegra124-venice2.dts
-+++ b/arch/arm/boot/dts/tegra124-venice2.dts
-@@ -736,7 +736,7 @@
- 					regulator-always-on;
- 				};
- 
--				ldo0 {
-+				avdd_1v05_run: ldo0 {
- 					regulator-name = "+1.05V_RUN_AVDD";
- 					regulator-min-microvolt = <1050000>;
- 					regulator-max-microvolt = <1050000>;
-@@ -878,6 +878,56 @@
- 		status = "okay";
- 	};
- 
-+	usb@0,70090000 {
-+		status = "okay";
-+		phys = <&padctl TEGRA_XUSB_PADCTL_UTMI_P0>, /* 1st USB A */
-+		       <&padctl TEGRA_XUSB_PADCTL_UTMI_P1>, /* Internal USB */
-+		       <&padctl TEGRA_XUSB_PADCTL_UTMI_P2>, /* 2nd USB A */
-+		       <&padctl TEGRA_XUSB_PADCTL_USB3_P0>, /* 1st USB A */
-+		       <&padctl TEGRA_XUSB_PADCTL_USB3_P1>; /* 2nd USB A */
-+		phy-names = "utmi-0", "utmi-1", "utmi-2", "usb3-0", "usb3-1";
-+		avddio-pex-supply = <&vdd_1v05_run>;
-+		dvddio-pex-supply = <&vdd_1v05_run>;
-+		avdd-usb-supply = <&vdd_3v3_lp0>;
-+		avdd-pll-utmip-supply = <&vddio_1v8>;
-+		avdd-pll-erefe-supply = <&avdd_1v05_run>;
-+		avdd-pex-pll-supply = <&vdd_1v05_run>;
-+		hvdd-pex-supply = <&vdd_3v3_lp0>;
-+		hvdd-pex-plle-supply = <&vdd_3v3_lp0>;
-+	};
-+
-+	padctl@0,7009f000 {
-+		pinctrl-0 = <&padctl_default>;
-+		pinctrl-names = "default";
-+
-+		vbus-0-supply = <&vdd_usb1_vbus>;
-+		vbus-1-supply = <&vdd_run_cam>;
-+		vbus-2-supply = <&vdd_usb3_vbus>;
-+		nvidia,usb3-port-0-lane = <TEGRA_XUSB_PADCTL_PIN_PCIE_0>;
-+		nvidia,usb3-port-1-lane = <TEGRA_XUSB_PADCTL_PIN_PCIE_1>;
-+
-+		padctl_default: pinmux {
-+			otg {
-+				nvidia,lanes = "otg-0", "otg-1", "otg-2";
-+				nvidia,function = "xusb";
-+			};
-+
-+			usb3p0 {
-+				nvidia,lanes = "pcie-0";
-+				nvidia,function = "usb3";
-+				nvidia,iddq = <0>;
-+				nvidia,usb2-port-num = <0>;
-+			};
-+
-+			usb3p1 {
-+				nvidia,lanes = "pcie-1";
-+				nvidia,function = "usb3";
-+				nvidia,iddq = <0>;
-+				nvidia,usb2-port-num = <2>;
-+			};
-+		};
-+	};
-+
- 	sdhci@0,700b0400 {
- 		cd-gpios = <&gpio TEGRA_GPIO(V, 2) GPIO_ACTIVE_HIGH>;
- 		power-gpios = <&gpio TEGRA_GPIO(R, 0) GPIO_ACTIVE_HIGH>;
-@@ -898,33 +948,6 @@
- 		};
- 	};
- 
--	usb@0,7d000000 {
--		status = "okay";
--	};
--
--	usb-phy@0,7d000000 {
--		status = "okay";
--		vbus-supply = <&vdd_usb1_vbus>;
--	};
--
--	usb@0,7d004000 {
--		status = "okay";
--	};
--
--	usb-phy@0,7d004000 {
--		status = "okay";
--		vbus-supply = <&vdd_run_cam>;
--	};
--
--	usb@0,7d008000 {
--		status = "okay";
--	};
--
--	usb-phy@0,7d008000 {
--		status = "okay";
--		vbus-supply = <&vdd_usb3_vbus>;
--	};
--
- 	backlight: backlight {
- 		compatible = "pwm-backlight";
- 
--- 
-2.1.0.rc2.206.gedb03e5
+E.g. in kernel_page_tables:
+0xffffc90000a94000-0xffffc90000a96000           8K     ro            
+GLB NX pte
 
+> > +static inline void bpf_prog_unlock_ro(struct bpf_prog *fp)
+> > +{
+> > +       set_memory_rw((unsigned long)fp, fp->pages);
+> 
+> why rw is needed?
+> since fp is allocated with vmalloc, vfree doesn't need
+> to touch the pages to free them, no?
+
+We will check that. It basically was copied from jit hardening code.
+Maybe we can omit the call.
+
+Thanks,
+Hannes
