@@ -1,99 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362AbaIBJzw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 05:55:52 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:43400 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752365AbaIBJzZ (ORCPT
+	id S1753408AbaIBJ4F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 05:56:05 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:57435 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752076AbaIBJ4A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 05:55:25 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s829tLdR015902, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>
-Subject: [PATCH net-next 2/2] r8152: use eth_hw_addr_random
-Date: Tue, 2 Sep 2014 17:55:11 +0800
-Message-ID: <1394712342-15778-28-Taiwan-albertk@realtek.com>
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <1394712342-15778-26-Taiwan-albertk@realtek.com>
-References: <1394712342-15778-26-Taiwan-albertk@realtek.com>
+	Tue, 2 Sep 2014 05:56:00 -0400
+Date: Tue, 2 Sep 2014 11:55:53 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: linux-next: Tree for Aug 23
+Message-ID: <20140902095553.GE31157@worktop.ger.corp.intel.com>
+References: <20140823080422.7895575c@canb.auug.org.au>
+ <20140825045741.GA29723@roeck-us.net>
+ <20140901155804.GT27892@worktop.ger.corp.intel.com>
+ <5404A2F2.3090908@roeck-us.net>
+ <20140901190438.GB5806@worktop.ger.corp.intel.com>
+ <20140902094016.GD31157@worktop.ger.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140902094016.GD31157@worktop.ger.corp.intel.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the hw doesn't have a valid MAC address, give a random one and
-set it to the hw.
+On Tue, Sep 02, 2014 at 11:40:16AM +0200, Peter Zijlstra wrote:
+> On Mon, Sep 01, 2014 at 09:04:38PM +0200, Peter Zijlstra wrote:
+> > On Mon, Sep 01, 2014 at 09:46:42AM -0700, Guenter Roeck wrote:
+> > > Yes, the problem is still seen in next-140829. See qemu test results at
+> > > http://server.roeck-us.net:8010/builders.
+> > > 
+> > > I provided sparc64 images at http://server.roeck-us.net/qemu/sparc64/.
+> > > The README file includes instructions on how to run the image in qemu
+> > > and how to build a kernel.
+> > > 
+> > > I can do the same for mips and mips64 if needed; let me know.
+> > 
+> > Thanks, that's enough to get started.
+> 
+> This makes sparc64 go again, silly oversight indeed.
+> 
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+The same for mips. Can you either provide the mips image or verify this works?
+
+
+
 ---
- drivers/net/usb/r8152.c | 39 ++++++++++++++++++++++++---------------
- 1 file changed, 24 insertions(+), 15 deletions(-)
-
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index b5ff933..2bc1b8d 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -992,32 +992,41 @@ static int rtl8152_set_mac_address(struct net_device *netdev, void *p)
- 	return 0;
- }
- 
--static inline void set_ethernet_addr(struct r8152 *tp)
-+static int set_ethernet_addr(struct r8152 *tp)
- {
- 	struct net_device *dev = tp->netdev;
-+	struct sockaddr sa;
- 	int ret;
--	u8 node_id[8] = {0};
- 
- 	if (tp->version == RTL_VER_01)
--		ret = pla_ocp_read(tp, PLA_IDR, sizeof(node_id), node_id);
-+		ret = pla_ocp_read(tp, PLA_IDR, 8, sa.sa_data);
- 	else
--		ret = pla_ocp_read(tp, PLA_BACKUP, sizeof(node_id), node_id);
-+		ret = pla_ocp_read(tp, PLA_BACKUP, 8, sa.sa_data);
- 
- 	if (ret < 0) {
--		netif_notice(tp, probe, dev, "inet addr fail\n");
-+		netif_err(tp, probe, dev, "Get ether addr fail\n");
-+	} else if (!is_valid_ether_addr(sa.sa_data)) {
-+		netif_err(tp, probe, dev,
-+			  "Invalid ether addr %02x:%02x:%02x:%02x:%02x:%02x\n",
-+			  sa.sa_data[0], sa.sa_data[1], sa.sa_data[2],
-+			  sa.sa_data[3], sa.sa_data[4], sa.sa_data[5]);
-+		eth_hw_addr_random(dev);
-+		ether_addr_copy(sa.sa_data, dev->dev_addr);
-+		ret = rtl8152_set_mac_address(dev, &sa);
-+		netif_info(tp, probe, dev,
-+			   "Random ether addr %02x:%02x:%02x:%02x:%02x:%02x\n",
-+			   sa.sa_data[0], sa.sa_data[1], sa.sa_data[2],
-+			   sa.sa_data[3], sa.sa_data[4], sa.sa_data[5]);
- 	} else {
--		if (tp->version != RTL_VER_01) {
--			ocp_write_byte(tp, MCU_TYPE_PLA, PLA_CRWECR,
--				       CRWECR_CONFIG);
--			pla_ocp_write(tp, PLA_IDR, BYTE_EN_SIX_BYTES,
--				      sizeof(node_id), node_id);
--			ocp_write_byte(tp, MCU_TYPE_PLA, PLA_CRWECR,
--				       CRWECR_NORAML);
--		}
-+		if (tp->version == RTL_VER_01)
-+			ether_addr_copy(dev->dev_addr, sa.sa_data);
-+		else
-+			ret = rtl8152_set_mac_address(dev, &sa);
- 
--		memcpy(dev->dev_addr, node_id, dev->addr_len);
--		memcpy(dev->perm_addr, dev->dev_addr, dev->addr_len);
-+		ether_addr_copy(dev->perm_addr, dev->dev_addr);
- 	}
-+
-+	return ret;
- }
- 
- static void read_bulk_callback(struct urb *urb)
--- 
-1.9.3
+diff --git a/arch/mips/include/asm/atomic.h b/arch/mips/include/asm/atomic.h
+index 476fe3b..b3dd612 100644
+--- a/arch/mips/include/asm/atomic.h
++++ b/arch/mips/include/asm/atomic.h
+@@ -93,7 +93,7 @@ static __inline__ int atomic_##op##_return(int i, atomic_t * v)			\
+ 		"	" #asm_op " %0, %1, %3				\n"	\
+ 		"	sc	%0, %2					\n"	\
+ 		"	beqzl	%0, 1b					\n"	\
+-		"	addu	%0, %1, %3				\n"	\
++		"	" #asm_op " %0, %1, %3				\n"	\
+ 		"	.set	mips0					\n"	\
+ 		: "=&r" (result), "=&r" (temp), "+m" (v->counter)		\
+ 		: "Ir" (i));							\
 
