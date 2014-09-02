@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754827AbaIBS6u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 14:58:50 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51174 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753889AbaIBS6s (ORCPT
+	id S1754947AbaIBTC5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 15:02:57 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:36719 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753889AbaIBTCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 14:58:48 -0400
-Date: Tue, 2 Sep 2014 19:58:07 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Yan@leverpostej.cambridge.arm.com" 
-	<Yan@leverpostej.cambridge.arm.com>,
-        Zheng <zheng.z.yan@intel.com>, Stephane Eranian <eranian@google.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: Possible race between CPU hotplug and perf_pmu_migrate_context
-Message-ID: <20140902185807.GA7434@leverpostej>
-References: <20140901181808.GA6427@leverpostej>
- <20140901190534.GC5806@worktop.ger.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140901190534.GC5806@worktop.ger.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 2 Sep 2014 15:02:54 -0400
+X-Sasl-enc: yeS+c475l8qvYkGNWfGLbpPi6IP1BUqIJ5qxzghRbv5O 1409684573
+Message-ID: <1409684570.15984.6.camel@localhost>
+Subject: Re: RTNL: assertion failed at net/ipv6/addrconf.c (1699)
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Cong Wang <cwang@twopensource.com>
+Cc: Sabrina Dubroca <sd@queasysnail.net>, Tommi Rantala <tt.rantala@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org,
+        Dave Jones <davej@redhat.com>
+Date: Tue, 02 Sep 2014 21:02:50 +0200
+In-Reply-To: <CAHA+R7MMe+O9-sNHQvgOO78tBzDy+hO+GtJFsuJPKx0eG6eMaw@mail.gmail.com>
+References: <CA+ydwtoDwQVg_BWrxxdpUyJ7Up60GtxTCLYe_5vFdV2td_kGhQ@mail.gmail.com>
+	 <CAHA+R7MZCDGRhSf=UuVCGQvNo03wVziZQB_X30rwNf6hmHipQA@mail.gmail.com>
+	 <20140829195339.GA9780@kria> <1409363489.2980.17.camel@localhost>
+	 <CAHA+R7ODa+LrdwSrS7HcBfwwq8_fpj-Ld0OCDtcOqkpCdZCvxg@mail.gmail.com>
+	 <1409680684.972417.162793869.03CF8A61@webmail.messagingengine.com>
+	 <CAHA+R7Mwy1SCpEUgGf9BdLEro6N-3t89KU=xL0iuzgOppXELrQ@mail.gmail.com>
+	 <1409681914.978561.162800349.5A7FA784@webmail.messagingengine.com>
+	 <CAHA+R7MMe+O9-sNHQvgOO78tBzDy+hO+GtJFsuJPKx0eG6eMaw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 01, 2014 at 08:05:34PM +0100, Peter Zijlstra wrote:
-> On Mon, Sep 01, 2014 at 07:18:08PM +0100, Mark Rutland wrote:
-> > Hi all,
+On Di, 2014-09-02 at 11:40 -0700, Cong Wang wrote:
+> On Tue, Sep 2, 2014 at 11:18 AM, Hannes Frederic Sowa
+> <hannes@stressinduktion.org> wrote:
+> > Those ASSERT_RTNLs were misplaced and only caught the callers mostly
+> > from addrconf.c. I don't mind getting reports from stable kernel users
+> > and fixing those, too (or help fixing those). ASSERT_RTNL is not
+> > dangerous.
+> >
+> > We had a long history in not correctly using rtnl lock in ipv6/multicast
+> > code and those wrongfully placed ASSERT_RTNLs were my bad when I fixed
+> > the duplicate address detection handling.
+> >
+> > If enough multicast addresses are subscribed to an interface we might
+> > again get those splats because enabling promisc mode on an interface
+> > will also check for rtnl lock.
+> >
 > 
-> > [   66.780759]  [<ffffffff8109dd33>] rcu_process_callbacks+0x1e3/0x540
-> 
-> > Has anything seen anything like this before? Is this a known issue?
-> 
-> I've not seen it reported.. sounds like 'fun' though.
-> 
+> Sure, I never doubt adding ASSERT_RTNL() is helpful, I just still think
+> this should be for net-next, or at least a separated patch. I don't want
+> my patch to be blamed in others' "Fixes:". :)
 
-This has been a tremendous source of 'fun' so far...
+Come on, that's why we have community review. Nobody blames anyone
+because of added regressions. It's more a fault of the community then,
+and it works out fairly good I think! Even others are keen on fixing
+your bugs sometimes. ;)
 
-The rcu_process_callbacks line is a red herring. What seems to be
-happening is:
+If fixes tag is well researched, it won't point to the addition of
+ASSERT_RTNL() but your patch would help to discover a bug somewhere else
+in the stack.
 
-A CPU goes down, and perf_pmu_migrate_context removes all events from
-per_cpu_ptr(pmu->pmu_cpu_context, src_cpu)->ctx. The events are in a
-state of limbo, with their ctx pointers pointing at the old context,
-whose refcount is 1. The src_ctx->mutex is unlocked.
+I think for this patch a fixes-tag is hard to find because it is hard to
+find because it dates back to the beginning of the git history IMHO.
 
-Concurrently on another CPU the fds are closed, and perf_event_release
-goes and removes each event from their event->ctx. We skip the double
-detach in list_del_event and carry on to __free_event where we put_ctx
-the old context for a second time for each event. The refcount goes to 0
-and we queue a kfree_rcu of the context (inside the PMU's percpu
-perf_event_cpu_context, allocated with alloc_percpu).
+Bye,
+Hannes
 
-We run the queued kfree_rcu, and explode trying to kfree something we
-didn't k*alloc. I'm not sure when exactly we run the queued kfree_rcu
-w.r.t. everything else.
 
-So the problem here seems to be a race between the
-perf_pmu_migrate_context and something down the perf_event_release
-callchain.
-
-Any ideas?
-
-Thanks,
-Mark.
