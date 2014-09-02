@@ -1,37 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755005AbaIBSIH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 14:08:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54764 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750954AbaIBSIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 14:08:04 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <alpine.LRH.2.11.1409030056130.7126@namei.org>
-References: <alpine.LRH.2.11.1409030056130.7126@namei.org> <20140902125159.9247.11970.stgit@warthog.procyon.org.uk>
-To: James Morris <jmorris@namei.org>
-Cc: dhowells@redhat.com, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] KEYS: Miscellaneous fixes
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <13490.1409681276.1@warthog.procyon.org.uk>
-Date: Tue, 02 Sep 2014 19:07:56 +0100
-Message-ID: <13491.1409681276@warthog.procyon.org.uk>
+	id S1754909AbaIBSLb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 14:11:31 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:51393 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954AbaIBSL3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 14:11:29 -0400
+Message-ID: <1409681487.26422.1.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: RTNL: assertion failed at net/ipv6/addrconf.c (1699)
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Cong Wang <cwang@twopensource.com>
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Sabrina Dubroca <sd@queasysnail.net>,
+        Tommi Rantala <tt.rantala@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org,
+        Dave Jones <davej@redhat.com>
+Date: Tue, 02 Sep 2014 11:11:27 -0700
+In-Reply-To: <CAHA+R7Mwy1SCpEUgGf9BdLEro6N-3t89KU=xL0iuzgOppXELrQ@mail.gmail.com>
+References: <CA+ydwtoDwQVg_BWrxxdpUyJ7Up60GtxTCLYe_5vFdV2td_kGhQ@mail.gmail.com>
+	 <CAHA+R7MZCDGRhSf=UuVCGQvNo03wVziZQB_X30rwNf6hmHipQA@mail.gmail.com>
+	 <20140829195339.GA9780@kria> <1409363489.2980.17.camel@localhost>
+	 <CAHA+R7ODa+LrdwSrS7HcBfwwq8_fpj-Ld0OCDtcOqkpCdZCvxg@mail.gmail.com>
+	 <1409680684.972417.162793869.03CF8A61@webmail.messagingengine.com>
+	 <CAHA+R7Mwy1SCpEUgGf9BdLEro6N-3t89KU=xL0iuzgOppXELrQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James Morris <jmorris@namei.org> wrote:
+On Tue, 2014-09-02 at 11:04 -0700, Cong Wang wrote:
+> On Tue, Sep 2, 2014 at 10:58 AM, Hannes Frederic Sowa
 
-> Which of these need to go into current Linus?
+> > I definitely don't have a problem cleaning this up in net-next. I wanted
+> > a minimal patch for stable because I didn't check history where and when
+> > additional users of dev_get_by_flags_rcu were removed.
 > 
-> #4 looks like it should.
+> `git grep` should show you we only have one caller. Apparently we don't
+> care about any out-of-tree module.
 
-All of them, preferably, though I'm okay with #3 being deferred.
+Point is : you did not check if some stable versions had more callers.
 
-David
+Its very nice you checked current version, but it is not enough for a
+stable candidate.
+
+
+
