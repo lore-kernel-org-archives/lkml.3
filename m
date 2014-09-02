@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755104AbaIBTI0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 15:08:26 -0400
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:60604 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754710AbaIBTIY (ORCPT
+	id S1755139AbaIBTIf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 15:08:35 -0400
+Received: from www.linutronix.de ([62.245.132.108]:39103 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755084AbaIBTIe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 15:08:24 -0400
-Message-ID: <540615A5.4070902@gmail.com>
-Date: Tue, 02 Sep 2014 15:08:21 -0400
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Tue, 2 Sep 2014 15:08:34 -0400
+Date: Tue, 2 Sep 2014 21:08:31 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Itzcak Pechtalt <itzcak@flashnetworks.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Race condition in HR timers that cause double insertion and hard
+ lockup -- all latest versions
+In-Reply-To: <CA+55aFw9HL4E=3eofs4=hzY=LvWEcKzzJZOTDDTGkeF1_vDcog@mail.gmail.com>
+Message-ID: <alpine.DEB.2.10.1409022101080.3333@nanos>
+References: <5dfbace37c434be58ed26ea524aa0675@AM3PR06MB388.eurprd06.prod.outlook.com> <CA+55aFw9HL4E=3eofs4=hzY=LvWEcKzzJZOTDDTGkeF1_vDcog@mail.gmail.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Cong Wang <cwang@twopensource.com>, Eric Dumazet <eric.dumazet@gmail.com>
-CC: Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Sabrina Dubroca <sd@queasysnail.net>,
-        Tommi Rantala <tt.rantala@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org,
-        Dave Jones <davej@redhat.com>
-Subject: Re: RTNL: assertion failed at net/ipv6/addrconf.c (1699)
-References: <CA+ydwtoDwQVg_BWrxxdpUyJ7Up60GtxTCLYe_5vFdV2td_kGhQ@mail.gmail.com>	<CAHA+R7MZCDGRhSf=UuVCGQvNo03wVziZQB_X30rwNf6hmHipQA@mail.gmail.com>	<20140829195339.GA9780@kria>	<1409363489.2980.17.camel@localhost>	<CAHA+R7ODa+LrdwSrS7HcBfwwq8_fpj-Ld0OCDtcOqkpCdZCvxg@mail.gmail.com>	<1409680684.972417.162793869.03CF8A61@webmail.messagingengine.com>	<CAHA+R7Mwy1SCpEUgGf9BdLEro6N-3t89KU=xL0iuzgOppXELrQ@mail.gmail.com>	<1409681487.26422.1.camel@edumazet-glaptop2.roam.corp.google.com> <CAHA+R7PY=Pu7VKA3wp1DxeJRckxPNWL-xfv2XXkpaY935kt61A@mail.gmail.com>
-In-Reply-To: <CAHA+R7PY=Pu7VKA3wp1DxeJRckxPNWL-xfv2XXkpaY935kt61A@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/2014 02:15 PM, Cong Wang wrote:
-> On Tue, Sep 2, 2014 at 11:11 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
->> On Tue, 2014-09-02 at 11:04 -0700, Cong Wang wrote:
->>> On Tue, Sep 2, 2014 at 10:58 AM, Hannes Frederic Sowa
->>
->>>> I definitely don't have a problem cleaning this up in net-next. I wanted
->>>> a minimal patch for stable because I didn't check history where and when
->>>> additional users of dev_get_by_flags_rcu were removed.
->>>
->>> `git grep` should show you we only have one caller. Apparently we don't
->>> care about any out-of-tree module.
->>
->> Point is : you did not check if some stable versions had more callers.
->>
->> Its very nice you checked current version, but it is not enough for a
->> stable candidate.
+On Tue, 2 Sep 2014, Linus Torvalds wrote:
+
+> On Tue, Sep 2, 2014 at 8:45 AM, Itzcak Pechtalt
+> <itzcak@flashnetworks.com> wrote:
+> >
+> > I opened a bug in https://bugzilla.kernel.org/show_bug.cgi?id=83601  for this subject with full description.
+> > There is also a short fix patch for kernel/hrtimer.c file.
+> > Even if this bug occurs rary, however it resolves system hard lockup option.
 > 
-> That is what we do when backporting patches, I can do that if David asks
-> me to backport it, but you know for netdev that is David's work.
+> The patch is whitespace-damaged, but with a small oneliner like this
+> that doesn't much matter (the timer files moved to kernel/time/ during
+> this merge window, so the patch wouldn't apply as-is anyway).
 > 
-> (I am not saying I don't want to help him, I just want to point out the fact.
-> I am very pleased to help David for stable backports as long as he asks)
+> It needs a sign-off (see Documentation/SubmittingPatches), but even
+> more importantly it needs to go to the right people for
+> double-checking.
+> 
+> But the patch is more broken than whitespace and even lack of
+> sign-off. It cannot even have compiled. I'm assuming "timer_state" was
+> intended to be "timer->state". Also, every caller but one already has
+> "HRTIMER_STATE_CALLBACK" set unconditionally or to the old state in
+> "newstate", so I suspect if this patch is the real fix (which I'll
+> leave for Thomas to comment more on), afaik the actual problem can
+> only happen through migrate_hrtimer_list() which uconditionally sets
+> the whole state to HRTIMER_STATE_MIGRATE.
+> 
+> Thomas? Leaving damaged patch quoted below.
 
-Instead of helping after the fact, why not arrange the patches so that it's
-not such a big issue.  Leave the _rcu variant alone.  Add an _rtnl variant
-of the function and use that in the patch.  Have a follow-on patch that
-removes the _rcu variant all by itself.  This way backports become easier,
-and if anyone wants the _rcu variant back, all they have to do is revert
-a very simple commit.
+Right. It's been fixed long ago and the migrate path cannot suffer
+from this problem because at this point a callback running on the dead
+cpu would cause the 
 
--vlad
+    BUG_ON(hrtimer_callback_running(timer));
 
+a few lines above the remove_hrtimer() call to trigger and send the
+machine into lala land.
+
+Thanks,
+
+	tglx
