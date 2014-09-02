@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190AbaIBA2a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 20:28:30 -0400
-Received: from mga11.intel.com ([192.55.52.93]:29561 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752722AbaIBA10 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 20:27:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,446,1406617200"; 
-   d="scan'208";a="474510587"
-From: Lv Zheng <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>
-Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        Hanjun Guo <hanjun.guo@linaro.org>, Bob Moore <robert.moore@intel.com>
-Subject: [PATCH 3/6] ACPICA: Headers: Add GTDT flag definitions for the timer subtable.
-Date: Tue,  2 Sep 2014 08:27:19 +0800
-Message-Id: <c956f63dfac832377831339b85d6a40dabfd40bf.1409617516.git.lv.zheng@intel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <cover.1409617516.git.lv.zheng@intel.com>
-References: <cover.1409617516.git.lv.zheng@intel.com>
+	id S1752689AbaIBAao (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 20:30:44 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:41677 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751952AbaIBAan (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 20:30:43 -0400
+From: An Ha <zero579911@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        An Ha <zero579911@gmail.com>
+Subject: [PATCH 01/12] Staging: rtl8821ae: hal_bt_coexist: fix commenting style
+Date: Mon,  1 Sep 2014 20:29:25 -0400
+Message-Id: <1409617776-30730-1-git-send-email-zero579911@gmail.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hanjun Guo <hanjun.guo@linaro.org>
+Fix commenting style from C99 comments to C89 comments
 
-Mostly by Hanjun Guo <hanjun.guo@linaro.org>
-
-Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-Signed-off-by: Bob Moore <robert.moore@intel.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: An Ha <zero579911@gmail.com>
 ---
- include/acpi/actbl3.h |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/staging/rtl8821ae/rtl8821ae/hal_bt_coexist.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/acpi/actbl3.h b/include/acpi/actbl3.h
-index 787bcc8..5480cb2 100644
---- a/include/acpi/actbl3.h
-+++ b/include/acpi/actbl3.h
-@@ -310,10 +310,15 @@ struct acpi_gtdt_timer_entry {
- 	u32 common_flags;
- };
+diff --git a/drivers/staging/rtl8821ae/rtl8821ae/hal_bt_coexist.c b/drivers/staging/rtl8821ae/rtl8821ae/hal_bt_coexist.c
+index 8bee772..cff300c 100644
+--- a/drivers/staging/rtl8821ae/rtl8821ae/hal_bt_coexist.c
++++ b/drivers/staging/rtl8821ae/rtl8821ae/hal_bt_coexist.c
+@@ -44,7 +44,7 @@ void rtl8821ae_dm_bt_reject_ap_aggregated_packet(struct ieee80211_hw *hw, bool b
+ 	PRX_TS_RECORD			pRxTs = NULL;
  
-+/* Flag Definitions: timer_flags and virtual_timer_flags above */
-+
-+#define ACPI_GTDT_GT_IRQ_MODE               (1)
-+#define ACPI_GTDT_GT_IRQ_POLARITY           (1<<1)
-+
- /* Flag Definitions: common_flags above */
- 
--#define ACPI_GTDT_GT_IS_SECURE_TIMER    (1)
--#define ACPI_GTDT_GT_ALWAYS_ON          (1<<1)
-+#define ACPI_GTDT_GT_IS_SECURE_TIMER        (1)
-+#define ACPI_GTDT_GT_ALWAYS_ON              (1<<1)
- 
- /* 1: SBSA Generic Watchdog Structure */
- 
+ 	if(b_reject){
+-		// Do not allow receiving A-MPDU aggregation.
++		/* Do not allow receiving A-MPDU aggregation. */
+ 		if (rtlpriv->mac80211.vendor == PEER_CISCO) {
+ 				if (pHTInfo->bAcceptAddbaReq) {
+ 					RTPRINT(FBT, BT_TRACE, ("BT_Disallow AMPDU \n"));
 -- 
-1.7.10
+2.1.0
 
