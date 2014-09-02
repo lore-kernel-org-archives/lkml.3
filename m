@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751726AbaIBFD2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 01:03:28 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:47603 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750706AbaIBFD0 (ORCPT
+	id S1752235AbaIBFEE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 01:04:04 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:63480 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750903AbaIBFEC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 01:03:26 -0400
-Date: Mon, 01 Sep 2014 22:03:25 -0700 (PDT)
-Message-Id: <20140901.220325.955861172520355423.davem@davemloft.net>
-To: HarishJennyKN <harish_kandiga@mentor.com>
-Cc: dborkman@redhat.com, tgraf@suug.ch, ebiederm@xmission.com,
-        darkjames-ws@darkjames.pl, rgb@redhat.com, eric.dumazet@gmail.com,
-        stephen@networkplumber.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] netlink: Safer deletion of sk_bind_node
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1409555309-5893-1-git-send-email-harish_kandiga@mentor.com>
-References: <1409555309-5893-1-git-send-email-harish_kandiga@mentor.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 01 Sep 2014 22:03:26 -0700 (PDT)
+	Tue, 2 Sep 2014 01:04:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140827185138.GA12487@redhat.com>
+References: <20140827185138.GA12487@redhat.com>
+Date: Mon, 1 Sep 2014 22:04:00 -0700
+Message-ID: <CALmL7E8kjWRvPk-jVzXBLW51qbsWnt7tgrC8Gcm6unYA5m3R7Q@mail.gmail.com>
+Subject: Re: [PATCH 0/4] x86, fpu: copy_process's FPU paths cleanups
+From: Suresh Siddha <sbsiddha@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Bean Anderson <bean@azulsystems.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Harish Jenny K N
-Date: Mon, 1 Sep 2014 12:38:29 +0530
+On Wed, Aug 27, 2014 at 11:51 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> Hello,
+>
+> Who can review this? And where should I send FPU changes?
+>
+> And it seems that nobody cares about 2 fixes I sent before.
+> Linus, I understand that you won't take them into v3.17, but
+> perhaps you can ack/nack them explicitly? It seems that nobody
+> can do this.
+>
+> Oleg.
+>
+>  arch/x86/include/asm/fpu-internal.h |    2 +-
+>  arch/x86/kernel/process.c           |   16 +++++++++-------
+>  arch/x86/kernel/process_32.c        |    2 --
+>  arch/x86/kernel/process_64.c        |    1 -
+>  4 files changed, 10 insertions(+), 11 deletions(-)
 
-Firstly, you really need to fix your outgoing email so that your email
-address appears in your From: header properly.
+These 4 patches also look good to me.
 
-> From: Harish Jenny K N <harish_kandiga@mentor.com>
-> 
->     Unable to handle kernel NULL pointer dereference at virtual address 00000000
->         (netlink_release+0x0/0x2a0) from [<8034e78c>] (sock_release+0x28/0xa4)
->         (sock_release+0x0/0xa4) from [<8034e830>] (sock_close+0x28/0x34)
->         (sock_close+0x0/0x34) from [<800f3490>] (__fput+0xf0/0x1ec)
->         (__fput+0x0/0x1ec) from [<800f3634>] (____fput+0x10/0x14)
->         (____fput+0x0/0x14) from [<80040a64>] (task_work_run+0xb8/0xd8)
->         (task_work_run+0x0/0xd8) from [<800113a0>] (do_work_pending+0xb0/0xc4)
->         (do_work_pending+0x0/0xc4) from [<8000d960>] (work_pending+0xc/0x20)
->     Call flow of the inline and static functions
->         netlink_release
->         -----netlink_remove
->         ---------__sk_del_bind_node
->         --------------__hlist_del
-> 
-> Signed-off-by: Harish Jenny K N <harish_kandiga@mentor.com>
-
-This doesn't tell us anything about how this situation can be
-arrived at.
-
-When subscriptions changes, we delete the node with the table lock
-held if subscriptions goes to zero.  We only try to delete the node
-when subscriptions was zero.
+Reviewed-by: Suresh Siddha <sbsiddha@gmail.com>
