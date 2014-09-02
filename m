@@ -1,101 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339AbaIBKjN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 06:39:13 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:64060 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752599AbaIBKjK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 06:39:10 -0400
+	id S1753421AbaIBKjz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 06:39:55 -0400
+Received: from sauhun.de ([89.238.76.85]:53671 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752272AbaIBKjy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 06:39:54 -0400
+Date: Tue, 2 Sep 2014 12:39:59 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Chen-Yu Tsai <wens@csie.org>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Andrew Lunn <andrew@lunn.ch>,
+        linux-sunxi@googlegroups.com, stable@vger.kernel.org
+Subject: Re: [PATCH v2] i2c: mv64xxx: continue probe when clock-frequency is
+ missing
+Message-ID: <20140902103959.GC1266@katana>
+References: <1409581693-15943-1-git-send-email-wens@csie.org>
 MIME-Version: 1.0
-In-Reply-To: <20140828184847.GA18464@leverpostej>
-References: <1409212920-28526-1-git-send-email-gautam.vivek@samsung.com>
-	<1409212920-28526-2-git-send-email-gautam.vivek@samsung.com>
-	<20140828184847.GA18464@leverpostej>
-Date: Tue, 2 Sep 2014 16:09:08 +0530
-X-Google-Sender-Auth: YLgCWWDys7cxUojJV0tLPLNe11w
-Message-ID: <CAFp+6iHLSaUjHqaKXXX0QLiRd3h+O67DRSQdExag-KUH0dnpag@mail.gmail.com>
-Subject: Re: [PATCH 1/5] usb: dwc3: exynos: Add support for SCLK present on Exynos7
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "balbi@ti.com" <balbi@ti.com>, "kishon@ti.com" <kishon@ti.com>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DIOMP1UsTsWJauNi"
+Content-Disposition: inline
+In-Reply-To: <1409581693-15943-1-git-send-email-wens@csie.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+
+--DIOMP1UsTsWJauNi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Mon, Sep 01, 2014 at 10:28:13PM +0800, Chen-Yu Tsai wrote:
+> The "clock-frequency" DT property is listed as optional, However,
+> the current code stores the return value of of_property_read_u32 in
+> the return code of mv64xxx_of_config, but then forgets to clear it
+> after setting the default value of "clock-frequency". It is then
+> passed out to the main probe function, resulting in a probe failure
+> when "clock-frequency" is missing.
+>=20
+> This patch checks and then throws away the return value of
+> of_property_read_u32, instead of storing it and having to clear it
+> afterwards.
+>=20
+> This issue was discovered after the property was removed from all
+> sunxi DTs.
+
+Hmm, I don't like that removal. Probably I should take care that this
+property is not "optional" but "recommended". The default value is
+depending on the driver, mostly because of historic reasons. It is
+definately better to explicitly state it. Despite all that...
+
+>=20
+> Fixes: 4c730a06c19bb ("i2c: mv64xxx: Set bus frequency to 100kHz if clock=
+-frequency is not provided")
+> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+> Cc: stable@vger.kernel.org
+> Acked-by: Andrew Lunn <andrew@lunn.ch>
+> Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+
+Applied to for-current, thanks!
 
 
-On Fri, Aug 29, 2014 at 12:18 AM, Mark Rutland <mark.rutland@arm.com> wrote:
-> On Thu, Aug 28, 2014 at 09:01:56AM +0100, Vivek Gautam wrote:
->> Exynos7 also has a separate special gate clock going to the IP
->> apart from the usual AHB clock. So add support for the same.
->>
->> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->> ---
->>  drivers/usb/dwc3/dwc3-exynos.c |   16 ++++++++++++++++
->>  1 file changed, 16 insertions(+)
->>
->> diff --git a/drivers/usb/dwc3/dwc3-exynos.c b/drivers/usb/dwc3/dwc3-exynos.c
->> index f9fb8ad..bab6395 100644
->> --- a/drivers/usb/dwc3/dwc3-exynos.c
->> +++ b/drivers/usb/dwc3/dwc3-exynos.c
->> @@ -35,6 +35,7 @@ struct dwc3_exynos {
->>       struct device           *dev;
->>
->>       struct clk              *clk;
->> +     struct clk              *sclk;
->>       struct regulator        *vdd33;
->>       struct regulator        *vdd10;
->>  };
->> @@ -141,10 +142,17 @@ static int dwc3_exynos_probe(struct platform_device *pdev)
->>               return -EINVAL;
->>       }
->>
->> +     /* Exynos7 has a special gate clock going to this IP */
->> +     exynos->sclk = devm_clk_get(dev, "usbdrd30_sclk");
->> +     if (IS_ERR(exynos->sclk))
->> +             dev_warn(dev, "couldn't get sclk\n");
->
-> Doesn't this introduce a pointless warning for Exynos SoCs other than
-> Exynos7?
+--DIOMP1UsTsWJauNi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-True, it will introduce an unnecessary warning for non-Exynos7 systems.
-I initially thought of introducing a compatible check for Exynos7-dwc3, but that
-way we may end up adding such checks for future SoCs which have similar
-controller but have some clock difference or some other small change, no ?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
->
->> +
->>       exynos->dev     = dev;
->>       exynos->clk     = clk;
->>
->>       clk_prepare_enable(exynos->clk);
->> +     if (!IS_ERR(exynos->sclk))
->> +             clk_prepare_enable(exynos->sclk);
->
-> If you replaced the returned err value with NULL you could avoid these
-> IS_ERR cases.
+iQIcBAEBAgAGBQJUBZ5/AAoJEBQN5MwUoCm20C8P/jMBBZ/8ko6qmQ8OsKJfaY2C
+5zl+S9dKllOcee6xITNDdwZPEhm7whGnJbxgw822CokOpaxtZtRsQlF6d3FLZqiK
+Unrzc7kGGKSBkUNGtTOuwix2YfbJ3EtBkVxPwPX3VpWtQDxY6FrvQbRSIJn84Wqz
+o8byrnuFhxVHYg6f4AjFpv0hM0APjSrLcy4NV8qN18qSap2WEzZmxk/wOcaf0VLb
+h/KkLErzwU9edBVJ4G09PTrElwwGDZ+QbVUNIY6oVw+5dCWbuIFSrYZMjzW21Zq5
++mzQiQXnrIbXsr+d2GtuianbZ6KDXDvFN4FbL7uG+LHlqlWDZZDNNAPUe3K4bQkh
++fKIpXpNX/XRUEmXPVXeOKdhtExE8ZYiPSAVQJ4dpAodbpo5MhOVkYH1e0QQpmmV
+UtB5YYJlsiFzfDncwv897+sM4mTAnYYYE27/SPGjvM7nzc1POdNe/pXUxW5NphJ8
++8jl5kIjiiN4BeuDvWWWdcZi03BUF/RsUsQ7b0Zfn3rVxyhGxV9Tq6McojkORHDd
+EGbfFEfB7FiGxoBqmjdJih0D2upDS/EpwOhLP87u35llFhXpjd9FwGpsSSydZKVO
++tcLkYgmeJXKAYI5QkugDghgiPNATG3P84zP3hYObg1YuxfGWHnACbqXdCyCBFqK
+nbeMjtuBNtYX8obzymRb
+=Aw/R
+-----END PGP SIGNATURE-----
 
-Right, point taken.
-
-[snip]
-
-
-
--- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
+--DIOMP1UsTsWJauNi--
