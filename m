@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754987AbaIBSuL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 14:50:11 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:40505 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753889AbaIBSuI (ORCPT
+	id S1755082AbaIBSvn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 14:51:43 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:40882 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754751AbaIBSvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 14:50:08 -0400
-Date: Tue, 2 Sep 2014 14:50:05 -0400
-From: Tejun Heo <tj@kernel.org>
-To: akpm@linux-foundation.org, cl@linux-foundation.org
-Cc: laijs@cn.fujitsu.com, linux-kernel@vger.kernel.org, vgoyal@redhat.com
-Subject: Re: [PATCHSET REPOST percpu/for-3.18] percpu: implement atomic
- allocation support
-Message-ID: <20140902185005.GA28687@mtj.dyndns.org>
-References: <1408726399-4436-1-git-send-email-tj@kernel.org>
+	Tue, 2 Sep 2014 14:51:41 -0400
+Date: Tue, 2 Sep 2014 19:51:27 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Colin Cross <ccross@android.com>, kernel-team@android.com,
+        Rob Herring <robherring2@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Nicolas Pitre <nico@linaro.org>
+Subject: Re: [PATCH v11 01/19] arm: fiq: Add callbacks to manage FIQ
+	routings
+Message-ID: <20140902185127.GV30401@n2100.arm.linux.org.uk>
+References: <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org> <1409662853-29313-1-git-send-email-daniel.thompson@linaro.org> <1409662853-29313-2-git-send-email-daniel.thompson@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1408726399-4436-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1409662853-29313-2-git-send-email-daniel.thompson@linaro.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 12:53:04PM -0400, Tejun Heo wrote:
-> (the initial posting was missing cc's, reposting)
-> 
-> Due to the use of vmalloc area allocations and page table populations,
-> preparing percpu areas require GFP_KERNEL and all the allocator users
-> are expected to be able to perform GFP_KERNEL allocations.  This is
-> mostly okay but there are cases where atomic percpu allocations are
-> necessary usually in the IO path.
-> 
-> Currently, blk-throttle is implementing its own ad-hoc async
-> allocation and there are some more planned similar usages.  I posted
-> [1] percpu_pool which generalizes the percpu atomic allocation a bit
-> but this was a bit too cumbersome especially to use with other library
-> data structures which make use of percpu memory as a part of it.
-> 
-> This patchset implements proper atomic allocation support in the
-> percpu allocator.  It's largely composed of two parts.  The first is
-> updates to the area allocator so that it can skip non-populated areas.
-> The second is async filling mechanisms which try to maintain a certain
-> level of empty populated areas.  The allocator currently tries to keep
-> the number of empty populated pages between 2 and 4.  Even with fairly
-> aggressive back-to-back allocations, this seems enough to satisfy most
-> allocations as long as the allocation size is under a page.
+On Tue, Sep 02, 2014 at 02:00:35PM +0100, Daniel Thompson wrote:
+>  void enable_fiq(int fiq)
+>  {
+> +	struct fiq_data *data = lookup_fiq_data(fiq);
+> +
+> +	if (data) {
+> +		if (data->fiq_chip->fiq_enable)
+> +			data->fiq_chip->fiq_enable(data->irq_data);
+> +		enable_irq(fiq);
 
-1-2 applied to percpu/for-3.17-fixes.  The rest applied to
-percpu/for-3.18.
+Why do we call the FIQ chip's enable and enable_irq() as well?
 
-Thanks.
+>  void disable_fiq(int fiq)
+>  {
+> +	struct fiq_data *data = lookup_fiq_data(fiq);
+> +
+> +	if (data) {
+> +		if (data->fiq_chip->fiq_disable)
+> +			data->fiq_chip->fiq_disable(data->irq_data);
+> +		disable_irq(fiq);
+
+Same question here.
+
+> +bool has_fiq(int fiq)
+> +{
+> +	struct fiq_data *data = lookup_fiq_data(fiq);
+> +
+> +	if (data)
+> +		return true;
+> +
+> +	if (fiq_start == -1)
+> +		return false;
+> +
+> +	return fiq >= fiq_start;
+
+Are you sure this is correct... it looks wrong to me.
 
 -- 
-tejun
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
