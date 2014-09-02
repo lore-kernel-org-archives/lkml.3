@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755541AbaIBVm7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 17:42:59 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:41859 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755311AbaIBVkG (ORCPT
+	id S1755559AbaIBVnH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 17:43:07 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33018 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752049AbaIBVnD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 17:40:06 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 05/26] serial: core: Remove unsafe x_char optimization
-Date: Tue,  2 Sep 2014 17:39:14 -0400
-Message-Id: <1409693975-1028-6-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com>
-References: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com>
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+	Tue, 2 Sep 2014 17:43:03 -0400
+Message-Id: <1409694182.1034977.162882841.29AA6A80@webmail.messagingengine.com>
+X-Sasl-Enc: 1FYyL6VbKpknxv7zVBAMdS3ww11pu8Fs4DzKyfBpK+So 1409694182
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>
+Cc: Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Brad Spengler <spender@grsecurity.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Kees Cook <keescook@chromium.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Mailer: MessagingEngine.com Webmail Interface - ajax-73bced9a
+In-Reply-To: <1409694059.26422.18.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <aa5126f747594d768e0c518189a13e8674ad8ee5.1409690486.git.hannes@stressinduktion.org>
+ <2bf2e54282097642db88e2b596b06a9ac3742883.1409690849.git.hannes@stressinduktion.org>
+ <CAMEtUuyoWELJ0Yf+=5sDKxFEfgsiQ3kMCK+Wn_bdJgS8qaH2og@mail.gmail.com>
+ <1409694059.26422.18.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH net-next v2] net: bpf: make eBPF interpreter images read-only
+Date: Tue, 02 Sep 2014 23:43:02 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-uart_unthrottle() attempts to avoid sending START and the previous
-x_char if the previous x_char has not yet been sent. However, this
-optimization could leave the sender in a throttled state; for example,
-if the sender is throttled and this unthrottle coincides with a manual
-tcflow(TCION) from user-space, then neither START would be sent.
+On Tue, Sep 2, 2014, at 23:40, Eric Dumazet wrote:
+> On Tue, 2014-09-02 at 14:31 -0700, Alexei Starovoitov wrote:
+> 
+> > > +static inline void bpf_prog_unlock_ro(struct bpf_prog *fp)
+> > > +{
+> > > +       set_memory_rw((unsigned long)fp, fp->pages);
+> > 
+> > why rw is needed?
+> > since fp is allocated with vmalloc, vfree doesn't need
+> > to touch the pages to free them, no?
+> 
+> That assumes that vmalloc() do not have any debugging features, like
+> poisoning content before freeing, to catch some use after free.
+> 
+> Lets be clean and safe, and give back same memory permission we had
+> after vmalloc()
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/serial/serial_core.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+Yes, I agree. I just went down the kmemleak codepaths and we certainly
+don't want to cause issues in there if the implementation changes one
+day.
 
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index a68bff0..11c8fe6 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -643,12 +643,8 @@ static void uart_unthrottle(struct tty_struct *tty)
- 		mask &= ~port->flags;
- 	}
- 
--	if (mask & UPF_SOFT_FLOW) {
--		if (port->x_char)
--			port->x_char = 0;
--		else
--			uart_send_xchar(tty, START_CHAR(tty));
--	}
-+	if (mask & UPF_SOFT_FLOW)
-+		uart_send_xchar(tty, START_CHAR(tty));
- 
- 	if (mask & UPF_HARD_FLOW)
- 		uart_set_mctrl(port, TIOCM_RTS);
--- 
-2.1.0
-
+Bye,
+Hannes
