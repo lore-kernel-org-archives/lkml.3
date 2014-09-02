@@ -1,75 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251AbaIBIQW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 04:16:22 -0400
-Received: from mga11.intel.com ([192.55.52.93]:36153 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753043AbaIBIQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 04:16:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,447,1406617200"; 
-   d="scan'208";a="584954257"
-Date: Tue, 2 Sep 2014 11:16:12 +0300
-From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
-To: Jani Nikula <jani.nikula@linux.intel.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, intel-gfx@lists.freedesktop.org,
-        David Airlie <airlied@linux.ie>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
-        Tibor Billes <tbilles@gmx.com>
-Subject: Re: [PATCH v2] drm/i915: Fix lock dropping in intel_tv_detect()
-Message-ID: <20140902081612.GH4193@intel.com>
-References: <20140901085022.GB11648@nuc-i3427.alporthouse.com>
- <1409566060-21337-1-git-send-email-ville.syrjala@linux.intel.com>
- <20140901102009.GD11648@nuc-i3427.alporthouse.com>
- <20140901103637.GB4193@intel.com>
- <20140901104356.GE11648@nuc-i3427.alporthouse.com>
- <87egvuii5q.fsf@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <87egvuii5q.fsf@intel.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	id S1753319AbaIBIRD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 04:17:03 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35846 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752769AbaIBIPb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 04:15:31 -0400
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+To: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org
+Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Raphael Rigo <ml-arm@syscall.eu>, Arnaud Ebalard <arno@natisbad.org>,
+        Simon Boulay <simon.boulay@vitec.com>,
+        Leigh Brown <leigh@solinno.co.uk>
+Subject: [PATCH V2 1/4] clk: mvebu: Fix clk frequency value if SSCG is enabled
+Date: Tue,  2 Sep 2014 10:15:16 +0200
+Message-Id: <1409645719-20003-2-git-send-email-gregory.clement@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1409645719-20003-1-git-send-email-gregory.clement@free-electrons.com>
+References: <1409645719-20003-1-git-send-email-gregory.clement@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 02, 2014 at 10:41:05AM +0300, Jani Nikula wrote:
-> On Mon, 01 Sep 2014, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> > On Mon, Sep 01, 2014 at 01:36:37PM +0300, Ville Syrjälä wrote:
-> >> On Mon, Sep 01, 2014 at 11:20:09AM +0100, Chris Wilson wrote:
-> >> > On Mon, Sep 01, 2014 at 01:07:40PM +0300, ville.syrjala@linux.intel.com wrote:
-> >> > > From: Ville Syrjälä <ville.syrjala@linux.intel.com>
-> >> > > 
-> >> > > When intel_tv_detect() fails to do load detection it would forget to
-> >> > > drop the locks and clean up the acquire context. Fix it up.
-> >> > > 
-> >> > > This is a regression from:
-> >> > >  commit 208bf9fdcd3575aa4a5d48b3e0295f7cdaf6fc44
-> >> > >  Author: Ville Syrjälä <ville.syrjala@linux.intel.com>
-> >> > >  Date:   Mon Aug 11 13:15:35 2014 +0300
-> >> > > 
-> >> > >     drm/i915: Fix locking for intel_enable_pipe_a()
-> >> > > 
-> >> > > v2: Make the code more readable (Chris)
-> >> > > 
-> >> > > Cc: Tibor Billes <tbilles@gmx.com>
-> >> > > Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-> >> > 
-> >> > Hmm, if we use WARN_ON() you should init type.
-> >> 
-> >> type is always set in the branch that sets status=connected.
-> >
-> > Back to thinking about readability and making sure that the WARN_ON
-> > never happens with just a glance. Otherwise, the WARN_ON would be better
-> > as WARN_ON(unsigned)type >= last_tv_type); Or something. Anway, take
-> > your pick and slap my r-b on it. :)
-> 
-> Ville?
+When the SSCG (Spread Spectrum Clock Generator) is enabled, it shifts
+the frequency of the clock. The percentage is no more than 1% but when
+the clock is used for a timer it leads to a clock drift.
 
-I don't know anymore. Just kill the WARN_ON() if it makes things
-confusing?
+This patch allows to correct the affected clock when the SSCG is
+enabled. The check is done in an new optional function related to each
+SoC: is_sscg_enabled(). The fix is done with the other new optional
+function related to each SoC: fix_sscg_deviation. If one these
+functions are not present then no correction is done on the clock
+frequency.
 
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+---
+ drivers/clk/mvebu/common.c | 82 ++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/clk/mvebu/common.h |  7 ++++
+ 2 files changed, 89 insertions(+)
+
+diff --git a/drivers/clk/mvebu/common.c b/drivers/clk/mvebu/common.c
+index 25ceccf939ad..354bbadb3bce 100644
+--- a/drivers/clk/mvebu/common.c
++++ b/drivers/clk/mvebu/common.c
+@@ -26,8 +26,85 @@
+  * Core Clocks
+  */
+ 
++#define SSCG_CONF_MODE(reg)	(((reg) >> 16) & 0x3)
++#define SSCG_SPREAD_DOWN	0x0
++#define SSCG_SPREAD_UP		0x1
++#define SSCG_SPREAD_CENTRAL	0x2
++#define SSCG_CONF_LOW(reg)	(((reg) >> 8) & 0xFF)
++#define SSCG_CONF_HIGH(reg)	((reg) & 0xFF)
++
+ static struct clk_onecell_data clk_data;
+ 
++/*
++ * This function can be used by the Kirkwood, the Armada 370, the
++ * Armada XP and the Armada 375 SoC. The name of the function was
++ * chosen following the dt convention: using the first known SoC
++ * compatible with it.
++ */
++u32 kirkwood_fix_sscg_deviation(struct device_node *np, u32 system_clk)
++{
++	struct device_node *sscg_np = NULL;
++	void __iomem *sscg_map;
++	u32 sscg_reg;
++	s32 low_bound, high_bound;
++	u64 freq_swing_half;
++
++	sscg_np = of_find_node_by_name(np, "sscg");
++	if (sscg_np == NULL) {
++		pr_err("cannot get SSCG register node\n");
++		return system_clk;
++	}
++
++	sscg_map = of_iomap(sscg_np, 0);
++	if (sscg_map == NULL) {
++		pr_err("cannot map SSCG register\n");
++		goto out;
++	}
++
++	sscg_reg = readl(sscg_map);
++	high_bound = SSCG_CONF_HIGH(sscg_reg);
++	low_bound = SSCG_CONF_LOW(sscg_reg);
++
++	if ((high_bound - low_bound) <= 0)
++		goto out;
++	/*
++	 * From Marvell engineer we got the following formula (when
++	 * this code was written, the datasheet was erroneous)
++	 * Spread percentage = 1/96 * (H - L) / H
++	 * H = SSCG_High_Boundary
++	 * L = SSCG_Low_Boundary
++	 *
++	 * As the deviation is half of spread then it lead to the
++	 * following formula in the code.
++	 *
++	 * To avoid an overflow and not lose any significant digit in
++	 * the same time we have to use a 64 bit integer.
++	 */
++
++	freq_swing_half = (((u64)high_bound - (u64)low_bound)
++			* (u64)system_clk);
++	do_div(freq_swing_half, (2 * 96 * high_bound));
++
++	switch (SSCG_CONF_MODE(sscg_reg)) {
++	case SSCG_SPREAD_DOWN:
++		system_clk -= freq_swing_half;
++		break;
++	case SSCG_SPREAD_UP:
++		system_clk += freq_swing_half;
++		break;
++	case SSCG_SPREAD_CENTRAL:
++	default:
++		break;
++	}
++
++	iounmap(sscg_map);
++
++out:
++	of_node_put(sscg_np);
++
++	return system_clk;
++}
++
+ void __init mvebu_coreclk_setup(struct device_node *np,
+ 				const struct coreclk_soc_desc *desc)
+ {
+@@ -62,6 +139,11 @@ void __init mvebu_coreclk_setup(struct device_node *np,
+ 	of_property_read_string_index(np, "clock-output-names", 1,
+ 				      &cpuclk_name);
+ 	rate = desc->get_cpu_freq(base);
++
++	if (desc->is_sscg_enabled && desc->fix_sscg_deviation
++		&& desc->is_sscg_enabled(base))
++		rate = desc->fix_sscg_deviation(np, rate);
++
+ 	clk_data.clks[1] = clk_register_fixed_rate(NULL, cpuclk_name, NULL,
+ 						   CLK_IS_ROOT, rate);
+ 	WARN_ON(IS_ERR(clk_data.clks[1]));
+diff --git a/drivers/clk/mvebu/common.h b/drivers/clk/mvebu/common.h
+index f968b4d9df92..59efaa850bde 100644
+--- a/drivers/clk/mvebu/common.h
++++ b/drivers/clk/mvebu/common.h
+@@ -28,6 +28,8 @@ struct coreclk_soc_desc {
+ 	u32 (*get_tclk_freq)(void __iomem *sar);
+ 	u32 (*get_cpu_freq)(void __iomem *sar);
+ 	void (*get_clk_ratio)(void __iomem *sar, int id, int *mult, int *div);
++	bool (*is_sscg_enabled)(void __iomem *sar);
++	u32 (*fix_sscg_deviation)(struct device_node *np, u32 system_clk);
+ 	const struct coreclk_ratio *ratios;
+ 	int num_ratios;
+ };
+@@ -45,4 +47,9 @@ void __init mvebu_coreclk_setup(struct device_node *np,
+ void __init mvebu_clk_gating_setup(struct device_node *np,
+ 				   const struct clk_gating_soc_desc *desc);
+ 
++/*
++ * This function is shared among the Kirkwood, Armada 370, Armada XP
++ * and Armada 375 SoC
++ */
++u32 kirkwood_fix_sscg_deviation(struct device_node *np, u32 system_clk);
+ #endif
 -- 
-Ville Syrjälä
-Intel OTC
+1.9.1
+
