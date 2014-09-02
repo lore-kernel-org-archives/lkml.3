@@ -1,214 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753567AbaIBLCM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 07:02:12 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:27914 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752546AbaIBLCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 07:02:11 -0400
-X-IronPort-AV: E=Sophos;i="5.04,448,1406592000"; 
-   d="scan'208";a="167290470"
-Message-ID: <5405A3A7.2050406@citrix.com>
-Date: Tue, 2 Sep 2014 12:01:59 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1753603AbaIBLDP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 07:03:15 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:33524 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751231AbaIBLDM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 07:03:12 -0400
+Message-ID: <5405A3EF.60908@linaro.org>
+Date: Tue, 02 Sep 2014 12:03:11 +0100
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: Kees Cook <keescook@chromium.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Subject: Re: [Xen-devel] [PATCH] x86/xen: Fix 64bit kernel pagetable setup
- of PV guests
-References: <1409325477-2186-1-git-send-email-stefan.bader@canonical.com> <5404AE0F.1010207@citrix.com>
-In-Reply-To: <5404AE0F.1010207@citrix.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
+To: paulmck@linux.vnet.ibm.com
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Colin Cross <ccross@android.com>, kernel-team@android.com,
+        Rob Herring <robherring2@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Nicolas Pitre <nico@linaro.org>
+Subject: Re: [PATCH v10 03/19] arm: fiq: Replace default FIQ handler
+References: <1408369264-14242-1-git-send-email-daniel.thompson@linaro.org> <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org> <1408466769-20004-4-git-send-email-daniel.thompson@linaro.org> <20140819173742.GG30401@n2100.arm.linux.org.uk> <53F39377.1070308@linaro.org> <20140828150112.GD30401@n2100.arm.linux.org.uk> <53FF50B1.20009@linaro.org> <20140828161551.GC5001@linux.vnet.ibm.com>
+In-Reply-To: <20140828161551.GC5001@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/14 18:34, David Vrabel wrote:
-> On 29/08/14 16:17, Stefan Bader wrote:
+On 28/08/14 17:15, Paul E. McKenney wrote:
+> On Thu, Aug 28, 2014 at 04:54:25PM +0100, Daniel Thompson wrote:
+>> On 28/08/14 16:01, Russell King - ARM Linux wrote:
+>>> On Tue, Aug 19, 2014 at 07:12:07PM +0100, Daniel Thompson wrote:
+>>>> On 19/08/14 18:37, Russell King - ARM Linux wrote:
+>>>>> On Tue, Aug 19, 2014 at 05:45:53PM +0100, Daniel Thompson wrote:
+>>>>>> +int register_fiq_nmi_notifier(struct notifier_block *nb)
+>>>>>> +{
+>>>>>> +	return atomic_notifier_chain_register(&fiq_nmi_chain, nb);
+>>>>>> +}
+>>>>>> +
+>>>>>> +asmlinkage void __exception_irq_entry fiq_nmi_handler(struct pt_regs *regs)
+>>>>>> +{
+>>>>>> +	struct pt_regs *old_regs = set_irq_regs(regs);
+>>>>>> +
+>>>>>> +	nmi_enter();
+>>>>>> +	atomic_notifier_call_chain(&fiq_nmi_chain, (unsigned long)regs, NULL);
+>>>>>> +	nmi_exit();
+>>>>>> +	set_irq_regs(old_regs);
+>>>>>> +}
+>>>>>
+>>>>> Really not happy with this.  What happens if a FIQ occurs while we're
+>>>>> inside register_fiq_nmi_notifier() - more specifically inside
+>>>>> atomic_notifier_chain_register() ?
+>>>>
+>>>> Should depend on which side of the rcu update we're on.
+>>>
+>>> I just asked Paul McKenney, our RCU expert... essentially, yes, RCU
+>>> stuff itself is safe in this context.  However, RCU stuff can call into
+>>> lockdep if lockdep is configured, and there are questions over lockdep.
 >>
->> This change might not be the fully correct approach as it basically
->> removes the pre-set page table entry for the fixmap that is compile
->> time set (level2_fixmap_pgt[506]->level1_fixmap_pgt). For one the
->> level1 page table is not yet declared in C headers (that might be
->> fixed). But also with the current bug, it was removed, too. Since
->> the Xen mappings for level2_kernel_pgt only covered kernel + initrd
->> and some Xen data this did never reach that far. And still, something
->> does create entries at level2_fixmap_pgt[506..507]. So it should be
->> ok. At least I was able to successfully boot a kernel with 1G kernel
->> image size without any vmalloc whinings.
-> [...]
->> --- a/arch/x86/xen/mmu.c
->> +++ b/arch/x86/xen/mmu.c
->> @@ -1902,8 +1902,22 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
->>  		/* L3_i[0] -> level2_ident_pgt */
->>  		convert_pfn_mfn(level3_ident_pgt);
->>  		/* L3_k[510] -> level2_kernel_pgt
->> -		 * L3_i[511] -> level2_fixmap_pgt */
->> +		 * L3_k[511] -> level2_fixmap_pgt */
->>  		convert_pfn_mfn(level3_kernel_pgt);
->> +
->> +		/* level2_fixmap_pgt contains a single entry for the
->> +		 * fixmap area at offset 506. The correct way would
->> +		 * be to convert level2_fixmap_pgt to mfn and set the
->> +		 * level1_fixmap_pgt (which is completely empty) to RO,
->> +		 * too. But currently this page table is not declared,
->> +		 * so it would be a bit of voodoo to get its address.
->> +		 * And also the fixmap entry was never set due to using
->> +		 * the wrong l2 when getting Xen's tables. So let's just
->> +		 * just nuke it.
->> +		 * This orphans level1_fixmap_pgt, but that was basically
->> +		 * done before the change as well.
->> +		 */
->> +		memset(level2_fixmap_pgt, 0, 512*sizeof(long));
+>> Thanks for following this up.
+>>
+>> I originally formed the opinion RCU was safe from FIQ because it is also
+>> used to manage the NMI notification handlers for x86
+>> (register_nmi_handler) and I understood the runtime constraints on FIQ
+>> to be very similar.
+>>
+>> Note that x86 manages the notifiers itself so it uses
+>> list_for_each_entry_rcu() rather atomic_notifier_call_chain() but
+>> nevertheless I think this boils down to the same thing w.r.t. safety
+>> concerns.
+>>
+>>
+>>> There's some things which can be done to reduce the lockdep exposure
+>>> to it, such as ensuring that rcu_read_lock() is first called outside
+>>> of FIQ context.
+>>
+>> lockdep is automatically disabled by calling nmi_enter() so all the
+>> lockdep calls should end up following the early exit path based on
+>> current->lockdep_recursion.
 > 
-> level2_fixmap_pgt etc. are defined for the benefit of Xen only so I
-> think you should add an extern for level1_fixmap_pgt and fix this up
-> properly.
+> Ah, that was what I was missing.  Then the notification should be
+> safe from NMI, so have at it!  ;-)
 > 
-> It might not matter now, but it might in the future...
+> 							Thanx, Paul
+> 
+>>> There's concerns with whether either printk() in check_flags() could
+>>> be reached too (flags there should always indicate that IRQs were
+>>> disabled, so that reduces down to a question about just the first
+>>> printk() there.)
+>>>
+>>> There's also the very_verbose() stuff for RCU lockdep classes which
+>>> Paul says must not be enabled.
+>>>
+>>> Lastly, Paul isn't a lockdep expert, but he sees nothing that prevents
+>>> lockdep doing the deadlock checking as a result of the above call.
+>>>
+>>> So... this coupled with my feeling that notifiers make it too easy for
+>>> unreviewed code to be hooked into this path, I'm fairly sure that we
+>>> don't want to be calling atomic notifier chains from FIQ context.
 
-I found some time to look into this and test it.  Including without
-enabling KSLAR, but reproing the vmalloc failure with a large (800 MiB
-module).
+Having esablished (above) that RCU usage is safe from FIQ I have been
+working on the assumption that your feeling regarding unreviewed code
+is sufficient on its own to avoid using notifiers (and also to avoid
+a list of function pointers like on x86).
 
-I've clarified the change description, can you review my edits?
+Therefore I have made these changes I've produced a before/after patch
+to show the impact of this. I will merge this into the FIQ patchset
+shortly.
 
-Thanks for investigating and fixing this!
+Personally I still favour using notifiers and think the coupling below is
+excessive. Nevertheless I've run a couple of basic tests on the code
+below and it works fine.
 
-David
-
-8<------------------------------
-x86/xen: don't copy junk into kernel page tables
-
-When RANDOMIZE_BASE (KASLR) is enabled; or the sum of all loaded
-modules exceeds 512 MiB, then loading modules fails with a warning
-(and hence a vmalloc allocation failure) because the PTEs for the
-newly-allocated vmalloc address space are not zero.
-
-  WARNING: CPU: 0 PID: 494 at linux/mm/vmalloc.c:128
-           vmap_page_range_noflush+0x2a1/0x360()
-
-This is caused by xen_setup_kernel_pagetables() copying junk into the
-page tables (to level2_fixmap_pgt), overwriting many non-present
-entries.
-
-Without KASLR, the normal kernel image size only covers the first half
-of level2_kernel_pgt and module space starts after that.
-
-L4[511]->level3_kernel_pgt[510]->level2_kernel_pgt[  0..255]->kernel
-                                                  [256..511]->module
-                          [511]->level2_fixmap_pgt[  0..505]->module
-
-This allows 512 MiB of of module vmalloc space to be used before
-having to use the corrupted level2_fixmap_pgt entries.
-
-With KASLR enabled, the kernel image uses the full PUD range of 1G and
-module space starts in the level2_fixmap_pgt. So basically:
-
-L4[511]->level3_kernel_pgt[510]->level2_kernel_pgt[0..511]->kernel
-                          [511]->level2_fixmap_pgt[0..505]->module
-
-And now no module vmalloc space can be used without using the corrupt
-level2_fixmap_pgt entries.
-
-Fix this by properly converting the level2_fixmap_pgt entries to MFNs,
-and setting level1_fixmap_pgt as read-only.
-
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
----
- arch/x86/include/asm/pgtable_64.h |    1 +
- arch/x86/xen/mmu.c                |   27 ++++++++++++---------------
- 2 files changed, 13 insertions(+), 15 deletions(-)
-
-diff --git a/arch/x86/include/asm/pgtable_64.h b/arch/x86/include/asm/pgtable_64.h
-index 5be9063..3874693 100644
---- a/arch/x86/include/asm/pgtable_64.h
-+++ b/arch/x86/include/asm/pgtable_64.h
-@@ -19,6 +19,7 @@ extern pud_t level3_ident_pgt[512];
- extern pmd_t level2_kernel_pgt[512];
- extern pmd_t level2_fixmap_pgt[512];
- extern pmd_t level2_ident_pgt[512];
-+extern pte_t level1_fixmap_pgt[512];
- extern pgd_t init_level4_pgt[];
+diff --git a/arch/arm/include/asm/fiq.h b/arch/arm/include/asm/fiq.h
+index 175bfed..a25c952 100644
+--- a/arch/arm/include/asm/fiq.h
++++ b/arch/arm/include/asm/fiq.h
+@@ -54,7 +54,6 @@ extern void disable_fiq(int fiq);
+ extern int ack_fiq(int fiq);
+ extern void eoi_fiq(int fiq);
+ extern bool has_fiq(int fiq);
+-extern int register_fiq_nmi_notifier(struct notifier_block *nb);
+ extern void fiq_register_mapping(int irq, struct fiq_chip *chip);
  
- #define swapper_pg_dir init_level4_pgt
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index e8a1201..16fb009 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -1866,12 +1866,11 @@ static void __init check_pt_base(unsigned long *pt_base, unsigned long *pt_end,
-  *
-  * We can construct this by grafting the Xen provided pagetable into
-  * head_64.S's preconstructed pagetables.  We copy the Xen L2's into
-- * level2_ident_pgt, level2_kernel_pgt and level2_fixmap_pgt.  This
-- * means that only the kernel has a physical mapping to start with -
-- * but that's enough to get __va working.  We need to fill in the rest
-- * of the physical mapping once some sort of allocator has been set
-- * up.
-- * NOTE: for PVH, the page tables are native.
-+ * level2_ident_pgt, and level2_kernel_pgt.  This means that only the
-+ * kernel has a physical mapping to start with - but that's enough to
-+ * get __va working.  We need to fill in the rest of the physical
-+ * mapping once some sort of allocator has been set up.  NOTE: for
-+ * PVH, the page tables are native.
-  */
- void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+ /* helpers defined in fiqasm.S: */
+diff --git a/arch/arm/include/asm/kgdb.h b/arch/arm/include/asm/kgdb.h
+index 6563da0..cb5ccd6 100644
+--- a/arch/arm/include/asm/kgdb.h
++++ b/arch/arm/include/asm/kgdb.h
+@@ -51,6 +51,7 @@ extern void kgdb_handle_bus_error(void);
+ extern int kgdb_fault_expected;
+ 
+ extern int kgdb_register_fiq(unsigned int fiq);
++extern void kgdb_handle_fiq(struct pt_regs *regs);
+ 
+ #endif /* !__ASSEMBLY__ */
+ 
+diff --git a/arch/arm/kernel/fiq.c b/arch/arm/kernel/fiq.c
+index b2bd1c7..7422b58 100644
+--- a/arch/arm/kernel/fiq.c
++++ b/arch/arm/kernel/fiq.c
+@@ -43,12 +43,14 @@
+ #include <linux/irq.h>
+ #include <linux/radix-tree.h>
+ #include <linux/slab.h>
++#include <linux/irqchip/arm-gic.h>
+ 
+ #include <asm/cacheflush.h>
+ #include <asm/cp15.h>
+ #include <asm/exception.h>
+ #include <asm/fiq.h>
+ #include <asm/irq.h>
++#include <asm/kgdb.h>
+ #include <asm/traps.h>
+ 
+ #define FIQ_OFFSET ({					\
+@@ -65,7 +67,6 @@ static unsigned long no_fiq_insn;
+ static int fiq_start = -1;
+ static RADIX_TREE(fiq_data_tree, GFP_KERNEL);
+ static DEFINE_MUTEX(fiq_data_mutex);
+-static ATOMIC_NOTIFIER_HEAD(fiq_nmi_chain);
+ 
+ /* Default reacquire function
+  * - we always relinquish FIQ control
+@@ -218,17 +219,19 @@ bool has_fiq(int fiq)
+ }
+ EXPORT_SYMBOL(has_fiq);
+ 
+-int register_fiq_nmi_notifier(struct notifier_block *nb)
+-{
+-	return atomic_notifier_chain_register(&fiq_nmi_chain, nb);
+-}
+-
+ asmlinkage void __exception_irq_entry fiq_nmi_handler(struct pt_regs *regs)
  {
-@@ -1902,8 +1901,11 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
- 		/* L3_i[0] -> level2_ident_pgt */
- 		convert_pfn_mfn(level3_ident_pgt);
- 		/* L3_k[510] -> level2_kernel_pgt
--		 * L3_i[511] -> level2_fixmap_pgt */
-+		 * L3_k[511] -> level2_fixmap_pgt */
- 		convert_pfn_mfn(level3_kernel_pgt);
+ 	struct pt_regs *old_regs = set_irq_regs(regs);
+ 
+ 	nmi_enter();
+-	atomic_notifier_call_chain(&fiq_nmi_chain, (unsigned long)regs, NULL);
 +
-+		/* L3_k[511][506] -> level1_fixmap_pgt */
-+		convert_pfn_mfn(level2_fixmap_pgt);
++	/* these callbacks deliberately avoid using a notifier chain in
++	 * order to ensure code review happens (drivers cannot "secretly"
++	 * employ FIQ without modifying this chain of calls).
++	 */
++	kgdb_handle_fiq(regs);
++	gic_handle_fiq_ipi();
++
+ 	nmi_exit();
+ 	set_irq_regs(old_regs);
+ }
+diff --git a/arch/arm/kernel/kgdb.c b/arch/arm/kernel/kgdb.c
+index b77b885..630a3ef 100644
+--- a/arch/arm/kernel/kgdb.c
++++ b/arch/arm/kernel/kgdb.c
+@@ -312,12 +312,13 @@ struct kgdb_arch arch_kgdb_ops = {
+ };
+ 
+ #ifdef CONFIG_KGDB_FIQ
+-static int kgdb_handle_fiq(struct notifier_block *nb, unsigned long arg,
+-			   void *data)
++void kgdb_handle_fiq(struct pt_regs *regs)
+ {
+-	struct pt_regs *regs = (void *) arg;
+ 	int actual;
+ 
++	if (!kgdb_fiq)
++		return;
++
+ 	if (!kgdb_nmicallback(raw_smp_processor_id(), regs))
+ 		return NOTIFY_OK;
+ 
+@@ -333,11 +334,6 @@ static int kgdb_handle_fiq(struct notifier_block *nb, unsigned long arg,
+ 	return NOTIFY_OK;
+ }
+ 
+-static struct notifier_block kgdb_fiq_notifier = {
+-	.notifier_call = kgdb_handle_fiq,
+-	.priority = 100,
+-};
+-
+ int kgdb_register_fiq(unsigned int fiq)
+ {
+ 	static struct fiq_handler kgdb_fiq_desc = { .name = "kgdb", };
+@@ -357,7 +353,6 @@ int kgdb_register_fiq(unsigned int fiq)
  	}
- 	/* We get [511][511] and have Xen's version of level2_kernel_pgt */
- 	l3 = m2v(pgd[pgd_index(__START_KERNEL_map)].pgd);
-@@ -1913,21 +1915,15 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
- 	addr[1] = (unsigned long)l3;
- 	addr[2] = (unsigned long)l2;
- 	/* Graft it onto L4[272][0]. Note that we creating an aliasing problem:
--	 * Both L4[272][0] and L4[511][511] have entries that point to the same
-+	 * Both L4[272][0] and L4[511][510] have entries that point to the same
- 	 * L2 (PMD) tables. Meaning that if you modify it in __va space
- 	 * it will be also modified in the __ka space! (But if you just
- 	 * modify the PMD table to point to other PTE's or none, then you
- 	 * are OK - which is what cleanup_highmap does) */
- 	copy_page(level2_ident_pgt, l2);
--	/* Graft it onto L4[511][511] */
-+	/* Graft it onto L4[511][510] */
- 	copy_page(level2_kernel_pgt, l2);
  
--	/* Get [511][510] and graft that in level2_fixmap_pgt */
--	l3 = m2v(pgd[pgd_index(__START_KERNEL_map + PMD_SIZE)].pgd);
--	l2 = m2v(l3[pud_index(__START_KERNEL_map + PMD_SIZE)].pud);
--	copy_page(level2_fixmap_pgt, l2);
--	/* Note that we don't do anything with level1_fixmap_pgt which
--	 * we don't need. */
- 	if (!xen_feature(XENFEAT_auto_translated_physmap)) {
- 		/* Make pagetable pieces RO */
- 		set_page_prot(init_level4_pgt, PAGE_KERNEL_RO);
-@@ -1937,6 +1933,7 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
- 		set_page_prot(level2_ident_pgt, PAGE_KERNEL_RO);
- 		set_page_prot(level2_kernel_pgt, PAGE_KERNEL_RO);
- 		set_page_prot(level2_fixmap_pgt, PAGE_KERNEL_RO);
-+		set_page_prot(level1_fixmap_pgt, PAGE_KERNEL_RO);
+ 	kgdb_fiq = fiq;
+-	register_fiq_nmi_notifier(&kgdb_fiq_notifier);
  
- 		/* Pin down new L4 */
- 		pin_pagetable_pfn(MMUEXT_PIN_L4_TABLE,
--- 
-1.7.10.4
-
+ 	return 0;
+ }
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index bda5a91..8821160 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -502,13 +502,17 @@ static void __init gic_init_fiq(struct gic_chip_data *gic,
+ /*
+  * Fully acknowledge (both ack and eoi) a FIQ-based IPI
+  */
+-static int gic_handle_fiq_ipi(struct notifier_block *nb, unsigned long regs,
+-			   void *data)
++void gic_handle_fiq_ipi(void)
+ {
+ 	struct gic_chip_data *gic = &gic_data[0];
+-	void __iomem *cpu_base = gic_data_cpu_base(gic);
++	void __iomem *cpu_base;
+ 	unsigned long irqstat, irqnr;
+ 
++	if (!gic || !gic->fiq_enable)
++		return;
++
++	cpu_base = gic_data_cpu_base(gic);
++
+ 	if (WARN_ON(!in_nmi()))
+ 		return NOTIFY_BAD;
+ 
+@@ -525,13 +529,6 @@ static int gic_handle_fiq_ipi(struct notifier_block *nb, unsigned long regs,
+ 
+ 	return NOTIFY_OK;
+ }
+-
+-/*
+- * Notifier to ensure IPI FIQ is acknowledged correctly.
+- */
+-static struct notifier_block gic_fiq_ipi_notifier = {
+-	.notifier_call = gic_handle_fiq_ipi,
+-};
+ #else /* CONFIG_FIQ */
+ static inline void gic_set_group_irq(void __iomem *base, unsigned int hwirq,
+ 				     int group) {}
+@@ -1250,10 +1247,6 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
+ #ifdef CONFIG_SMP
+ 		set_smp_cross_call(gic_raise_softirq);
+ 		register_cpu_notifier(&gic_cpu_notifier);
+-#ifdef CONFIG_FIQ
+-		if (gic_data_fiq_enable(gic))
+-			register_fiq_nmi_notifier(&gic_fiq_ipi_notifier);
+-#endif
+ #endif
+ 		set_handle_irq(gic_handle_irq);
+ 	}
+diff --git a/include/linux/irqchip/arm-gic.h b/include/linux/irqchip/arm-gic.h
+index 45e2d8c..52a5676 100644
+--- a/include/linux/irqchip/arm-gic.h
++++ b/include/linux/irqchip/arm-gic.h
+@@ -101,5 +101,8 @@ static inline void __init register_routable_domain_ops
+ {
+ 	gic_routable_irq_domain_ops = ops;
+ }
++
++void gic_handle_fiq_ipi(void);
++
+ #endif /* __ASSEMBLY */
+ #endif
