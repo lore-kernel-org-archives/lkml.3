@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966AbaIBHnj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 03:43:39 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:55352 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752272AbaIBHnh (ORCPT
+	id S1752756AbaIBHuZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 03:50:25 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35628 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751421AbaIBHuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 03:43:37 -0400
-Message-ID: <54057526.9050503@gmail.com>
-Date: Tue, 02 Sep 2014 09:43:34 +0200
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Tue, 2 Sep 2014 03:50:23 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Mike Turquette <mturquette@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Ga=C3=ABl=20PORTAY?= <gael.portay@gmail.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH 1/5] clk: at91: fix PLL_MAX_COUNT macro definition
+Date: Tue,  2 Sep 2014 09:50:14 +0200
+Message-Id: <1409644218-13677-2-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1409644218-13677-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1409644218-13677-1-git-send-email-boris.brezillon@free-electrons.com>
 MIME-Version: 1.0
-To: Klaus Goger <klaus.goger@theobroma-systems.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: cap1106 - fix register definition
-References: <1409639544-30420-1-git-send-email-klaus.goger@theobroma-systems.com>
-In-Reply-To: <1409639544-30420-1-git-send-email-klaus.goger@theobroma-systems.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/2014 08:32 AM, Klaus Goger wrote:
-> Use the correct register address for Calibration Active and Interrupt
-> Enable
-> 
-> Signed-off-by: Klaus Goger <klaus.goger@theobroma-systems.com>
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Reported-by: Gaël PORTAY <gael.portay@gmail.com>
+---
+ drivers/clk/at91/clk-pll.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-These register definitions are currently unused, but your fix is
-correct. Just curious - are you planning to send patches that make use
-of them?
-
-  Acked-by: Daniel Mack <zonque@gmail.com>
-
-
-Thanks,
-Daniel
-
-> ---
->  drivers/input/keyboard/cap1106.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/input/keyboard/cap1106.c b/drivers/input/keyboard/cap1106.c
-> index 180b184..d70b65a 100644
-> --- a/drivers/input/keyboard/cap1106.c
-> +++ b/drivers/input/keyboard/cap1106.c
-> @@ -33,8 +33,8 @@
->  #define CAP1106_REG_SENSOR_CONFIG	0x22
->  #define CAP1106_REG_SENSOR_CONFIG2	0x23
->  #define CAP1106_REG_SAMPLING_CONFIG	0x24
-> -#define CAP1106_REG_CALIBRATION		0x25
-> -#define CAP1106_REG_INT_ENABLE		0x26
-> +#define CAP1106_REG_CALIBRATION		0x26
-> +#define CAP1106_REG_INT_ENABLE		0x27
->  #define CAP1106_REG_REPEAT_RATE		0x28
->  #define CAP1106_REG_MT_CONFIG		0x2a
->  #define CAP1106_REG_MT_PATTERN_CONFIG	0x2b
-> 
+diff --git a/drivers/clk/at91/clk-pll.c b/drivers/clk/at91/clk-pll.c
+index cf6ed02..7b453b9 100644
+--- a/drivers/clk/at91/clk-pll.c
++++ b/drivers/clk/at91/clk-pll.c
+@@ -31,7 +31,7 @@
+ 				 (layout)->mul_mask)
+ #define PLL_ICPR_SHIFT(id)	((id) * 16)
+ #define PLL_ICPR_MASK(id)	(0xffff << PLL_ICPR_SHIFT(id))
+-#define PLL_MAX_COUNT		0x3ff
++#define PLL_MAX_COUNT		0x3f
+ #define PLL_COUNT_SHIFT		8
+ #define PLL_OUT_SHIFT		14
+ #define PLL_MAX_ID		1
+-- 
+1.9.1
 
