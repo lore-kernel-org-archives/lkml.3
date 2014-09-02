@@ -1,80 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736AbaIBQIs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 12:08:48 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:48410 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751739AbaIBQIr (ORCPT
+	id S1754780AbaIBQIv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 12:08:51 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:63991 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753526AbaIBQIt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 12:08:47 -0400
-Date: Tue, 2 Sep 2014 09:08:41 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] doc: memory-barriers.txt: Correct example for reorderings
-Message-ID: <20140902160841.GA5001@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1408972138-12246-1-git-send-email-bobby.prani@gmail.com>
- <53FF8B77.7000103@infradead.org>
- <20140828210010.GM5001@linux.vnet.ibm.com>
- <CAJhHMCDxsukXe_HW55iJp0oCAWgrosxCRX1AfocS6QBzxaD0pw@mail.gmail.com>
- <20140828213945.GP5001@linux.vnet.ibm.com>
- <CAJhHMCDaMH0b0Np8vNf=RBH8i76AUK78qf213aWfHY-F4j3OOw@mail.gmail.com>
+	Tue, 2 Sep 2014 12:08:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJhHMCDaMH0b0Np8vNf=RBH8i76AUK78qf213aWfHY-F4j3OOw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14090216-8236-0000-0000-00000512853A
+In-Reply-To: <5dfbace37c434be58ed26ea524aa0675@AM3PR06MB388.eurprd06.prod.outlook.com>
+References: <5dfbace37c434be58ed26ea524aa0675@AM3PR06MB388.eurprd06.prod.outlook.com>
+Date: Tue, 2 Sep 2014 09:08:48 -0700
+X-Google-Sender-Auth: NKq6dbpR63VTyoCbPBe93XipauQ
+Message-ID: <CA+55aFw9HL4E=3eofs4=hzY=LvWEcKzzJZOTDDTGkeF1_vDcog@mail.gmail.com>
+Subject: Re: Race condition in HR timers that cause double insertion and hard
+ lockup -- all latest versions
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Itzcak Pechtalt <itzcak@flashnetworks.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 28, 2014 at 05:45:10PM -0400, Pranith Kumar wrote:
-> On Thu, Aug 28, 2014 at 5:39 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Thu, Aug 28, 2014 at 05:15:50PM -0400, Pranith Kumar wrote:
-> >> On Thu, Aug 28, 2014 at 5:00 PM, Paul E. McKenney
-> >> <paulmck@linux.vnet.ibm.com> wrote:
-> >> >
-> >> > I am really confused by the ordering of the new lines, as I would have
-> >> > expected the "x"s to be replaced with "y"s and vice versa.  But the
-> >> > ordering of the various combinations does not matter, and each line
-> >> > looks OK.
-> >>
-> >> Since x = A was replaced by x = B and y = B was replaced by y = A, I
-> >> just converted all x = load A to x = load B. Similarly for y. I think
-> >> we can do either this or as you suggested replacing x's with y's.
-> >
-> > Fair enough.  The other thing that confused me was the "STORE B=4,"
-> > showing up early in your replacement.
-> 
-> So I converted
-> 
-> STORE A=3, x=LOAD A->3
-> 
-> to
-> 
-> STORE B=4, x=LOAD B->4
-> 
-> since the later load into x wanted an updated value of B and not the
-> default. That is the reason you see STORE B = 4  in place of STORE A =
-> 3
+On Tue, Sep 2, 2014 at 8:45 AM, Itzcak Pechtalt
+<itzcak@flashnetworks.com> wrote:
+>
+> I opened a bug in https://bugzilla.kernel.org/show_bug.cgi?id=83601  for this subject with full description.
+> There is also a short fix patch for kernel/hrtimer.c file.
+> Even if this bug occurs rary, however it resolves system hard lockup option.
 
-Fair enough.
+The patch is whitespace-damaged, but with a small oneliner like this
+that doesn't much matter (the timer files moved to kernel/time/ during
+this merge window, so the patch wouldn't apply as-is anyway).
 
-However, the list is supposed to be part of the full set of 24 possible
-outcomes.  Many readers would therefore expect the permutations to be
-ordered in some way, so that the first column would have six of one thing,
-six of the next thing, and so on, according to some pattern.
+It needs a sign-off (see Documentation/SubmittingPatches), but even
+more importantly it needs to go to the right people for
+double-checking.
 
-Could you please adjust in this way?  Again, the point is to be the
-first few items in a full set of permutations, not to illustrate selected
-orderings/outcomes.
+But the patch is more broken than whitespace and even lack of
+sign-off. It cannot even have compiled. I'm assuming "timer_state" was
+intended to be "timer->state". Also, every caller but one already has
+"HRTIMER_STATE_CALLBACK" set unconditionally or to the old state in
+"newstate", so I suspect if this patch is the real fix (which I'll
+leave for Thomas to comment more on), afaik the actual problem can
+only happen through migrate_hrtimer_list() which uconditionally sets
+the whole state to HRTIMER_STATE_MIGRATE.
 
-							Thanx, Paul
+Thomas? Leaving damaged patch quoted below.
 
+           Linus
+
+> I suspect that it was targeted by mistake to not active list (timers_realtime-clock@kernel-bugs.osdl.org).
+> Following is the fix patch based on kernel 3.16.1 (just simple):
+> diff -uNr a/kernel/hrtimer.c b/kernel/hrtimer.c
+> --- a/kernel/hrtimer.c 2014-08-31 20:59:52.177452123 +0300
+> +++ b/kernel/hrtimer.c 2014-08-31 21:02:14.972166540 +0300
+> @@ -941,7 +941,7 @@
+> if (!timerqueue_getnext(&base->active))
+> base->cpu_base->active_bases &= ~(1 << base->index);
+> out:
+> - timer->state = newstate;
+> + timer->state = (newstate | (timer_state & HRTIMER_STATE_CALLBACK));
+> }
+>
+> /*
+>
+> Is there a chance for this patch fix to insert into next kernel release?
+>
+> Thanks
+>
+> Itzcak Pechtalt
+>
