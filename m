@@ -1,89 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089AbaIBTWY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 15:22:24 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:58798 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754945AbaIBTWW (ORCPT
+	id S1755116AbaIBTYM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 15:24:12 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:53255 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754951AbaIBTYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 15:22:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140827205129.GA25227@kroah.com>
-References: <1409144277-23379-1-git-send-email-ricardo.ribalda@gmail.com>
- <20140827202301.GA13800@kroah.com> <20140827205129.GA25227@kroah.com>
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Tue, 2 Sep 2014 21:22:01 +0200
-Message-ID: <CAPybu_37y9XoMp+qfvo_qsJYQhJQiOpPsrXtyC5ofD2SMbinwg@mail.gmail.com>
-Subject: Re: [PATCH] pci/pci-sysfs: Set pci interface in uppercase
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 2 Sep 2014 15:24:10 -0400
+From: Grzegorz Swirski <grzegorz@swirski.name>
+To: gregkh@linuxfoundation.org
+Cc: john.stultz@linaro.org, dipakzope.kernel.org@gmail.com, daniel@ffwll.ch,
+        waydi1@gmail.com, grzegorz@swirski.name, alistair.strachan@imgtec.com,
+        pkamliya@codeaurora.org, maarten.lankhorst@canonical.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: android: use braces on all arms of if
+Date: Tue,  2 Sep 2014 20:24:04 +0100
+Message-Id: <1409685844-827-1-git-send-email-grzegorz@swirski.name>
+X-Mailer: git-send-email 1.8.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hej Bjorn
+Signed-off-by: Grzegorz Swirski <grzegorz@swirski.name>
+---
+ drivers/staging/android/sync.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-I have seen that you have updated your pci tree without this patch. Is
-there something wrong with it?
-
-If you are already considering it, sorry for the mail, but I wanted to
-make sure that it is in 3.17 and then back ported.
-
-
-Thanks!!
-
-On Wed, Aug 27, 2014 at 10:51 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Wed, Aug 27, 2014 at 01:23:01PM -0700, Greg KH wrote:
->> On Wed, Aug 27, 2014 at 02:57:57PM +0200, Ricardo Ribalda Delgado wrote:
->> > There is a missmatch between the way file2alias generates the modalias
->> > and the way the pci driver generates it.
->> >
->> > Some implementations of modprobe will fail to load the driver for a pci
->> > device automatically when the pci interface is defined on the driver. As
->> > one will be in uppercase and the other in lowercase.
->> >
->> > Fortunatelly not many drivers define this.
->> >
->> > Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
->> > ---
->> >  drivers/pci/pci-sysfs.c | 2 +-
->> >  1 file changed, 1 insertion(+), 1 deletion(-)
->> >
->> > diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
->> > index 9ff0a90..76ef791 100644
->> > --- a/drivers/pci/pci-sysfs.c
->> > +++ b/drivers/pci/pci-sysfs.c
->> > @@ -177,7 +177,7 @@ static ssize_t modalias_show(struct device *dev, struct device_attribute *attr,
->> >  {
->> >     struct pci_dev *pci_dev = to_pci_dev(dev);
->> >
->> > -   return sprintf(buf, "pci:v%08Xd%08Xsv%08Xsd%08Xbc%02Xsc%02Xi%02x\n",
->> > +   return sprintf(buf, "pci:v%08Xd%08Xsv%08Xsd%08Xbc%02Xsc%02Xi%02X\n",
->> >                    pci_dev->vendor, pci_dev->device,
->> >                    pci_dev->subsystem_vendor, pci_dev->subsystem_device,
->> >                    (u8)(pci_dev->class >> 16), (u8)(pci_dev->class >> 8),
->>
->> As said in the other thread about this issue, no, this code has been
->> here for over 9 years just fine.  Please fix your userspace code that is
->> trying to compare hex values as a string and not a numeric value, that
->> is the stuff that is wrong, not the kernel.
->
-> Oh wait, I see what you are worried about now, the mis-match for just
-> the upper bits of the class value.
->
-> Yeah, that's a bug, sorry about that, a 9+ year old one, nice catch :)
->
-> Bjorn, feel free to apply this, sorry for the earlier objection.  Also
-> please mark it for stable tree inclusion so this gets backported
-> properly.
->
-> thanks,
->
-> greg k-h
-
-
-
+diff --git a/drivers/staging/android/sync.c b/drivers/staging/android/sync.c
+index 0d37495..c5255dc 100644
+--- a/drivers/staging/android/sync.c
++++ b/drivers/staging/android/sync.c
+@@ -387,9 +387,9 @@ int sync_fence_wait(struct sync_fence *fence, long timeout)
+ 					       timeout);
+ 	trace_sync_wait(fence, 0);
+ 
+-	if (ret < 0)
++	if (ret < 0) {
+ 		return ret;
+-	else if (ret == 0) {
++	} else if (ret == 0) {
+ 		if (timeout) {
+ 			pr_info("fence timeout on [%p] after %dms\n", fence,
+ 				jiffies_to_msecs(timeout));
 -- 
-Ricardo Ribalda
+1.9.1
+
