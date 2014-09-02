@@ -1,55 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754917AbaIBRj3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 13:39:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56773 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754751AbaIBRj1 (ORCPT
+	id S1754960AbaIBRjh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 13:39:37 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:57365 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754925AbaIBRjf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 13:39:27 -0400
-Date: Tue, 2 Sep 2014 10:39:27 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Ian Abbott <abbotti@mev.co.uk>
-Cc: Chase Southwood <chase.southwood@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: comedi: usbduxsigma: fix more sparse endianness
- warnings
-Message-ID: <20140902173927.GA6783@kroah.com>
-References: <1409514300-15493-1-git-send-email-chase.southwood@gmail.com>
- <54043B09.4000602@mev.co.uk>
- <54043B58.6030108@mev.co.uk>
+	Tue, 2 Sep 2014 13:39:35 -0400
+Message-ID: <54060105.5070707@arm.com>
+Date: Tue, 02 Sep 2014 18:40:21 +0100
+From: Sudeep Holla <sudeep.holla@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54043B58.6030108@mev.co.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Sudeep Holla <sudeep.holla@arm.com>, LKML <linux-kernel@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        David Herrmann <dh.herrmann@gmail.com>, Kay Sievers <kay@vrfy.org>
+Subject: Re: [PATCH] drivers: base: add cpu_device_create to support per-cpu
+ devices
+References: <CAPXgP130hg8uwdmSKAAAKZzxncT-VXYYXvmN-ta7wcXQXgXEmw@mail.gmail.com> <1408706963-23195-1-git-send-email-sudeep.holla@arm.com> <5405FCBF.2050100@arm.com> <20140902172632.GA8238@kroah.com>
+In-Reply-To: <20140902172632.GA8238@kroah.com>
+X-OriginalArrivalTime: 02 Sep 2014 17:39:32.0220 (UTC) FILETIME=[DABCB3C0:01CFC6D4]
+X-MC-Unique: 114090218393300901
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 01, 2014 at 10:24:40AM +0100, Ian Abbott wrote:
-> On 2014-09-01 10:23, Ian Abbott wrote:
-> >On 2014-08-31 20:45, Chase Southwood wrote:
-> >>Sparse shows a couple of warnings like:
-> >>
-> >>drivers/staging/comedi/drivers/usbduxsigma.c:787:23: warning: cast to
-> >>restricted __be32
-> >>
-> >>Looking at the indicated lines shows that the issue is caused by an
-> >>incorrect cast to uint32_t instead of __be32.  Fix this cast.
-> >>
-> >>Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
-> >>Cc: Ian Abbott <abbotti@mev.co.uk>
-> >>Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
-> >>---
-> >>  drivers/staging/comedi/drivers/usbduxsigma.c | 4 ++--
-> >>  1 file changed, 2 insertions(+), 2 deletions(-)
-> >
-> >Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-> 
-> I meant:
-> 
-> Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+Hi Greg,
 
-Either is fine, especially as you are listed as the maintainer of this
-subsystem :)
+On 02/09/14 18:26, Greg Kroah-Hartman wrote:
+> On Tue, Sep 02, 2014 at 06:22:07PM +0100, Sudeep Holla wrote:
+>> Hi Greg,
+>>
+>> On 22/08/14 12:29, Sudeep Holla wrote:
+>>> From: Sudeep Holla <sudeep.holla@arm.com>
+>>>
+>>> This patch adds a new function to create per-cpu devices.
+>>> This helps in:
+>>> 1. reusing the device infrastructure to create any cpu related
+>>>     attributes and corresponding sysfs instead of creating and
+>>>     dealing with raw kobjects directly
+>>> 2. retaining the legacy path(/sys/devices/system/cpu/..) to support
+>>>     existing sysfs ABI
+>>> 3. avoiding to create links in the bus directory pointing to the
+>>>     device as there would be per-cpu instance of these devices with
+>>>     the same name since dev->bus is not populated to cpu_sysbus on
+>>>     purpose
+>>>
+>>> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+>>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>>> ---
+>>>   drivers/base/cpu.c  | 54 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+>>>   include/linux/cpu.h |  4 ++++
+>>>   2 files changed, 58 insertions(+)
+>>>
+>>> Hi Greg,
+>>>
+>>> Here is the alternate solution I could come up with instead of
+>>> creating cpu class. cpu_device_create is very similar to
+>>> device_create_groups_vargs w/o class support, but I could not
+>>> reuse anything else to avoid creating similar function.
+>>>
+>>> Let me know your thoughts/suggestions on this.
+>>>
+>>
+>> Any feedback on this ? If ok, I will respin cacheinfo series removing
+>> cpu class creation with this patch.
+>
+> Please address the issues others have already raised.
+>
+
+If you meant issues raised on cacheinfo series, I have addressed them
+already in v3(raised by you, Stephen Boyd, Mark and Russell). I have
+retained hotplug notifiers which Stephen wanted to remove as I don't
+know if that's acceptable on all the architectures.
+
+I posted this single patch as a replacement to the patch creating cpu
+class as Kay and David suggested that we can't have class and bus with
+same name.
+
+Regards,
+Sudeep
+
