@@ -1,154 +1,426 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755721AbaIBWfR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 18:35:17 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:51872 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755378AbaIBWdK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 18:33:10 -0400
-From: behanw@converseincode.com
-To: agk@redhat.com, clm@fb.com, davem@davemloft.net, dm-devel@redhat.com,
-        fabf@skynet.be, herbert@gondor.apana.org.au, jbacik@fb.com,
-        snitzer@redhat.com
-Cc: akpm@linux-foundation.org, james.l.morris@oracle.com,
-        john.johansen@canonical.com, linux-btrfs@vger.kernel.org,
-        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-raid@vger.kernel.org, linux-security-module@vger.kernel.org,
-        neilb@suse.de, serge@hallyn.com, torvalds@linux-foundation.org,
-        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
-        Behan Webster <behanw@converseincode.com>, pageexec@freemail.hu
-Subject: [PATCH RFC 1/6] crypto, dm: LLVMLinux: Remove VLAIS usage from dm-crypt
-Date: Tue,  2 Sep 2014 15:32:28 -0700
-Message-Id: <1409697153-7006-2-git-send-email-behanw@converseincode.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1409697153-7006-1-git-send-email-behanw@converseincode.com>
-References: <1409697153-7006-1-git-send-email-behanw@converseincode.com>
+	id S1755764AbaIBWgd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 18:36:33 -0400
+Received: from www.sr71.net ([198.145.64.142]:54378 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755489AbaIBWgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 18:36:32 -0400
+Message-ID: <5406466D.1020000@sr71.net>
+Date: Tue, 02 Sep 2014 15:36:29 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Michal Hocko <mhocko@suse.com>, Hugh Dickins <hughd@google.com>,
+        Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
+Subject: Re: regression caused by cgroups optimization in 3.17-rc2
+References: <54061505.8020500@sr71.net> <20140902221814.GA18069@cmpxchg.org>
+In-Reply-To: <20140902221814.GA18069@cmpxchg.org>
+Content-Type: multipart/mixed;
+ boundary="------------090300080702060409030200"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan-Simon Möller <dl9pf@gmx.de>
+This is a multi-part message in MIME format.
+--------------090300080702060409030200
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-The use of variable length arrays in structs (VLAIS) in the Linux Kernel code
-precludes the use of compilers which don't implement VLAIS (for instance the
-Clang compiler). This patch instead allocates the appropriate amount of memory
-using an char array.
+On 09/02/2014 03:18 PM, Johannes Weiner wrote:
+> Accounting new pages is buffered through per-cpu caches, but taking
+> them off the counters on free is not, so I'm guessing that above a
+> certain allocation rate the cost of locking and changing the counters
+> takes over.  Is there a chance you could profile this to see if locks
+> and res_counter-related operations show up?
 
-struct shash_desc contains a flexible array member member ctx declared with
-CRYPTO_MINALIGN_ATTR, so sizeof(struct shash_desc) aligns the beginning
-of the array declared after struct shash_desc with long long.
+It looks pretty much the same, although it might have equalized the
+charge and uncharge sides a bit.  Full 'perf top' output attached.
 
-No trailing padding is required because it is not a struct type that can
-be used in an array.
+--------------090300080702060409030200
+Content-Type: text/plain; charset=UTF-8;
+ name="perf-20140902-johannes-take1.txt"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="perf-20140902-johannes-take1.txt"
 
-The CRYPTO_MINALIGN_ATTR is required so that desc is aligned with long long
-as would be the case for a struct containing a member with
-CRYPTO_MINALIGN_ATTR.
+   PerfTop:  275580 irqs/sec  kernel:98.0%  exact:  0.0% [4000Hz cycles],  (all, 160 CPUs)
+-------------------------------------------------------------------------------
 
-Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
-Signed-off-by: Behan Webster <behanw@converseincode.com>
-Cc: pageexec@freemail.hu
----
- drivers/md/dm-crypt.c | 38 ++++++++++++++++++--------------------
- 1 file changed, 18 insertions(+), 20 deletions(-)
+    68.10%    68.10%  [kernel]               [k] _raw_spin_lock           
+                  |
+                  --- _raw_spin_lock
+                     |          
+                     |--57.35%-- __res_counter_charge
+                     |          res_counter_charge
+                     |          try_charge
+                     |          mem_cgroup_try_charge
+                     |          |          
+                     |          |--99.93%-- do_cow_fault
+                     |          |          handle_mm_fault
+                     |          |          __do_page_fault
+                     |          |          do_page_fault
+                     |          |          page_fault
+                     |          |          testcase
+                     |           --0.07%-- [...]
+                     |          
+                     |--53.93%-- res_counter_uncharge_until
+                     |          res_counter_uncharge
+                     |          refill_stock
+                     |          uncharge_batch
+                     |          uncharge_list
+                     |          mem_cgroup_uncharge_list
+                     |          release_pages
+                     |          free_pages_and_swap_cache
+                     |          tlb_flush_mmu_free
+                     |          |          
+                     |          |--98.62%-- unmap_single_vma
+                     |          |          unmap_vmas
+                     |          |          unmap_region
+                     |          |          do_munmap
+                     |          |          vm_munmap
+                     |          |          sys_munmap
+                     |          |          system_call_fastpath
+                     |          |          __GI___munmap
+                     |          |          
+                     |           --1.38%-- tlb_flush_mmu
+                     |                     tlb_finish_mmu
+                     |                     unmap_region
+                     |                     do_munmap
+                     |                     vm_munmap
+                     |                     sys_munmap
+                     |                     system_call_fastpath
+                     |                     __GI___munmap
+                     |          
+                     |--2.18%-- do_cow_fault
+                     |          handle_mm_fault
+                     |          __do_page_fault
+                     |          do_page_fault
+                     |          page_fault
+                     |          testcase
+                      --9307219025.55%-- [...]
 
-diff --git a/drivers/md/dm-crypt.c b/drivers/md/dm-crypt.c
-index cd15e08..4d940d3 100644
---- a/drivers/md/dm-crypt.c
-+++ b/drivers/md/dm-crypt.c
-@@ -526,29 +526,28 @@ static int crypt_iv_lmk_one(struct crypt_config *cc, u8 *iv,
- 			    u8 *data)
- {
- 	struct iv_lmk_private *lmk = &cc->iv_gen_private.lmk;
--	struct {
--		struct shash_desc desc;
--		char ctx[crypto_shash_descsize(lmk->hash_tfm)];
--	} sdesc;
-+	char sdesc[sizeof(struct shash_desc)
-+		+ crypto_shash_descsize(lmk->hash_tfm)] CRYPTO_MINALIGN_ATTR;
-+	struct shash_desc *desc = (struct shash_desc *)sdesc;
- 	struct md5_state md5state;
- 	__le32 buf[4];
- 	int i, r;
- 
--	sdesc.desc.tfm = lmk->hash_tfm;
--	sdesc.desc.flags = CRYPTO_TFM_REQ_MAY_SLEEP;
-+	desc->tfm = lmk->hash_tfm;
-+	desc->flags = CRYPTO_TFM_REQ_MAY_SLEEP;
- 
--	r = crypto_shash_init(&sdesc.desc);
-+	r = crypto_shash_init(desc);
- 	if (r)
- 		return r;
- 
- 	if (lmk->seed) {
--		r = crypto_shash_update(&sdesc.desc, lmk->seed, LMK_SEED_SIZE);
-+		r = crypto_shash_update(desc, lmk->seed, LMK_SEED_SIZE);
- 		if (r)
- 			return r;
- 	}
- 
- 	/* Sector is always 512B, block size 16, add data of blocks 1-31 */
--	r = crypto_shash_update(&sdesc.desc, data + 16, 16 * 31);
-+	r = crypto_shash_update(desc, data + 16, 16 * 31);
- 	if (r)
- 		return r;
- 
-@@ -557,12 +556,12 @@ static int crypt_iv_lmk_one(struct crypt_config *cc, u8 *iv,
- 	buf[1] = cpu_to_le32((((u64)dmreq->iv_sector >> 32) & 0x00FFFFFF) | 0x80000000);
- 	buf[2] = cpu_to_le32(4024);
- 	buf[3] = 0;
--	r = crypto_shash_update(&sdesc.desc, (u8 *)buf, sizeof(buf));
-+	r = crypto_shash_update(desc, (u8 *)buf, sizeof(buf));
- 	if (r)
- 		return r;
- 
- 	/* No MD5 padding here */
--	r = crypto_shash_export(&sdesc.desc, &md5state);
-+	r = crypto_shash_export(desc, &md5state);
- 	if (r)
- 		return r;
- 
-@@ -679,10 +678,9 @@ static int crypt_iv_tcw_whitening(struct crypt_config *cc,
- 	struct iv_tcw_private *tcw = &cc->iv_gen_private.tcw;
- 	u64 sector = cpu_to_le64((u64)dmreq->iv_sector);
- 	u8 buf[TCW_WHITENING_SIZE];
--	struct {
--		struct shash_desc desc;
--		char ctx[crypto_shash_descsize(tcw->crc32_tfm)];
--	} sdesc;
-+	char sdesc[sizeof(struct shash_desc)
-+		+ crypto_shash_descsize(tcw->crc32_tfm)] CRYPTO_MINALIGN_ATTR;
-+	struct shash_desc *desc = (struct shash_desc *)sdesc;
- 	int i, r;
- 
- 	/* xor whitening with sector number */
-@@ -691,16 +689,16 @@ static int crypt_iv_tcw_whitening(struct crypt_config *cc,
- 	crypto_xor(&buf[8], (u8 *)&sector, 8);
- 
- 	/* calculate crc32 for every 32bit part and xor it */
--	sdesc.desc.tfm = tcw->crc32_tfm;
--	sdesc.desc.flags = CRYPTO_TFM_REQ_MAY_SLEEP;
-+	desc->tfm = tcw->crc32_tfm;
-+	desc->flags = CRYPTO_TFM_REQ_MAY_SLEEP;
- 	for (i = 0; i < 4; i++) {
--		r = crypto_shash_init(&sdesc.desc);
-+		r = crypto_shash_init(desc);
- 		if (r)
- 			goto out;
--		r = crypto_shash_update(&sdesc.desc, &buf[i * 4], 4);
-+		r = crypto_shash_update(desc, &buf[i * 4], 4);
- 		if (r)
- 			goto out;
--		r = crypto_shash_final(&sdesc.desc, &buf[i * 4]);
-+		r = crypto_shash_final(desc, &buf[i * 4]);
- 		if (r)
- 			goto out;
- 	}
--- 
-1.9.1
+    64.00%     1.34%  page_fault2_processes  [.] testcase                 
+                  |
+                  --- testcase
 
+    62.64%     0.37%  [kernel]               [k] page_fault               
+                  |
+                  --- page_fault
+                     |          
+                     |--114.21%-- testcase
+                      --10118485450.89%-- [...]
+
+    62.27%     0.01%  [kernel]               [k] do_page_fault            
+                  |
+                  --- do_page_fault
+                     |          
+                     |--114.28%-- page_fault
+                     |          |          
+                     |          |--99.93%-- testcase
+                     |           --0.07%-- [...]
+                      --10178525138.33%-- [...]
+
+    62.25%     0.07%  [kernel]               [k] __do_page_fault          
+                  |
+                  --- __do_page_fault
+                     |          
+                     |--114.27%-- do_page_fault
+                     |          page_fault
+                     |          |          
+                     |          |--99.93%-- testcase
+                     |           --0.07%-- [...]
+                      --10182230022.41%-- [...]
+
+    62.08%     0.26%  [kernel]               [k] handle_mm_fault          
+                  |
+                  --- handle_mm_fault
+                     |          
+                     |--114.28%-- __do_page_fault
+                     |          do_page_fault
+                     |          page_fault
+                     |          |          
+                     |          |--99.94%-- testcase
+                     |           --0.06%-- [...]
+                      --10210709377.69%-- [...]
+
+    44.32%     0.22%  [kernel]               [k] do_cow_fault             
+                  |
+                  --- do_cow_fault
+                     |          
+                     |--114.28%-- handle_mm_fault
+                     |          __do_page_fault
+                     |          do_page_fault
+                     |          page_fault
+                     |          testcase
+                      --14302986980.21%-- [...]
+
+    35.23%     0.00%  [kernel]               [k] sys_munmap               
+                  |
+                  --- sys_munmap
+                      system_call_fastpath
+                      __GI___munmap
+
+    34.84%     0.04%  [kernel]               [k] mem_cgroup_try_charge    
+                  |
+                  --- mem_cgroup_try_charge
+                     |          
+                     |--114.18%-- do_cow_fault
+                     |          handle_mm_fault
+                     |          __do_page_fault
+                     |          do_page_fault
+                     |          page_fault
+                     |          testcase
+                      --18195666899.12%-- [...]
+
+    34.74%     0.49%  [kernel]               [k] unmap_single_vma         
+                  |
+                  --- unmap_single_vma
+                      unmap_vmas
+                      unmap_region
+                      do_munmap
+                      vm_munmap
+                      sys_munmap
+                      system_call_fastpath
+                      __GI___munmap
+
+    34.66%     0.00%  [kernel]               [k] tlb_flush_mmu_free       
+                  |
+                  --- tlb_flush_mmu_free
+                     |          
+                     |--112.70%-- unmap_single_vma
+                     |          unmap_vmas
+                     |          unmap_region
+                     |          do_munmap
+                     |          vm_munmap
+                     |          sys_munmap
+                     |          system_call_fastpath
+                     |          __GI___munmap
+                     |          
+                     |--1.59%-- tlb_flush_mmu
+                     |          tlb_finish_mmu
+                     |          unmap_region
+                     |          do_munmap
+                     |          vm_munmap
+                     |          sys_munmap
+                     |          system_call_fastpath
+                     |          __GI___munmap
+                      --18285481100.94%-- [...]
+
+    34.66%     0.12%  [kernel]               [k] free_pages_and_swap_cache
+                  |
+                  --- free_pages_and_swap_cache
+                      tlb_flush_mmu_free
+                     |          
+                     |--112.70%-- unmap_single_vma
+                     |          unmap_vmas
+                     |          unmap_region
+                     |          do_munmap
+                     |          vm_munmap
+                     |          sys_munmap
+                     |          system_call_fastpath
+                     |          __GI___munmap
+                     |          
+                     |--1.59%-- tlb_flush_mmu
+                     |          tlb_finish_mmu
+                     |          unmap_region
+                     |          do_munmap
+                     |          vm_munmap
+                     |          sys_munmap
+                     |          system_call_fastpath
+                     |          __GI___munmap
+                      --18286531934.97%-- [...]
+
+    34.61%     0.04%  [kernel]               [k] try_charge               
+                  |
+                  --- try_charge
+                     |          
+                     |--114.26%-- mem_cgroup_try_charge
+                     |          |          
+                     |          |--99.93%-- do_cow_fault
+                     |          |          handle_mm_fault
+                     |          |          __do_page_fault
+                     |          |          do_page_fault
+                     |          |          page_fault
+                     |          |          testcase
+                     |           --0.07%-- [...]
+                      --18312751937.56%-- [...]
+
+    34.57%     0.00%  [kernel]               [k] res_counter_charge       
+                  |
+                  --- res_counter_charge
+                     |          
+                     |--114.27%-- try_charge
+                     |          mem_cgroup_try_charge
+                     |          |          
+                     |          |--99.93%-- do_cow_fault
+                     |          |          handle_mm_fault
+                     |          |          __do_page_fault
+                     |          |          do_page_fault
+                     |          |          page_fault
+                     |          |          testcase
+                     |           --0.07%-- [...]
+                      --18334689838.42%-- [...]
+
+    34.56%     0.08%  [kernel]               [k] release_pages            
+                  |
+                  --- release_pages
+                     |          
+                     |--114.21%-- free_pages_and_swap_cache
+                     |          tlb_flush_mmu_free
+                     |          |          
+                     |          |--98.61%-- unmap_single_vma
+                     |          |          unmap_vmas
+                     |          |          unmap_region
+                     |          |          do_munmap
+                     |          |          vm_munmap
+                     |          |          sys_munmap
+                     |          |          system_call_fastpath
+                     |          |          __GI___munmap
+                     |          |          
+                     |           --1.39%-- tlb_flush_mmu
+                     |                     tlb_finish_mmu
+                     |                     unmap_region
+                     |                     do_munmap
+                     |                     vm_munmap
+                     |                     sys_munmap
+                     |                     system_call_fastpath
+                     |                     __GI___munmap
+                      --18340488029.00%-- [...]
+
+    34.26%     0.08%  [kernel]               [k] __res_counter_charge     
+                  |
+                  --- __res_counter_charge
+                     |          
+                     |--114.28%-- res_counter_charge
+                     |          try_charge
+                     |          mem_cgroup_try_charge
+                     |          |          
+                     |          |--99.93%-- do_cow_fault
+                     |          |          handle_mm_fault
+                     |          |          __do_page_fault
+                     |          |          do_page_fault
+                     |          |          page_fault
+                     |          |          testcase
+                     |           --0.07%-- [...]
+                      --18502823676.22%-- [...]
+
+    33.45%     0.00%  [kernel]               [k] mem_cgroup_uncharge_list 
+                  |
+                  --- mem_cgroup_uncharge_list
+                     |          
+                     |--114.28%-- release_pages
+                     |          free_pages_and_swap_cache
+                     |          tlb_flush_mmu_free
+                     |          |          
+                     |          |--98.62%-- unmap_single_vma
+                     |          |          unmap_vmas
+                     |          |          unmap_region
+                     |          |          do_munmap
+                     |          |          vm_munmap
+                     |          |          sys_munmap
+                     |          |          system_call_fastpath
+                     |          |          __GI___munmap
+                     |          |          
+                     |           --1.38%-- tlb_flush_mmu
+                     |                     tlb_finish_mmu
+                     |                     unmap_region
+                     |                     do_munmap
+                     |                     vm_munmap
+                     |                     sys_munmap
+                     |                     system_call_fastpath
+                     |                     __GI___munmap
+                      --18949679654.78%-- [...]
+
+    33.45%     0.01%  [kernel]               [k] uncharge_list            
+                  |
+                  --- uncharge_list
+                     |          
+                     |--114.29%-- mem_cgroup_uncharge_list
+                     |          release_pages
+                     |          free_pages_and_swap_cache
+                     |          tlb_flush_mmu_free
+                     |          |          
+                     |          |--98.62%-- unmap_single_vma
+                     |          |          unmap_vmas
+                     |          |          unmap_region
+                     |          |          do_munmap
+                     |          |          vm_munmap
+                     |          |          sys_munmap
+                     |          |          system_call_fastpath
+                     |          |          __GI___munmap
+                     |          |          
+                     |           --1.38%-- tlb_flush_mmu
+                     |                     tlb_finish_mmu
+                     |                     unmap_region
+                     |                     do_munmap
+                     |                     vm_munmap
+                     |                     sys_munmap
+                     |                     system_call_fastpath
+                     |                     __GI___munmap
+                      --18951232568.52%-- [...]
+
+    33.43%     0.02%  [kernel]               [k] uncharge_batch           
+                  |
+                  --- uncharge_batch
+                     |          
+                     |--114.28%-- uncharge_list
+                     |          mem_cgroup_uncharge_list
+                     |          release_pages
+                     |          free_pages_and_swap_cache
+                     |          tlb_flush_mmu_free
+                     |          |          
+                     |          |--98.62%-- unmap_single_vma
+                     |          |          unmap_vmas
+                     |          |          unmap_region
+                     |          |          do_munmap
+                     |          |          vm_munmap
+                     |          |          sys_munmap
+                     |          |          system_call_fastpath
+                     |          |          __GI___munmap
+                     |          |          
+                     |           --1.38%-- tlb_flush_mmu
+                     |                     tlb_finish_mmu
+                     |                     unmap_region
+                     |                     do_munmap
+                     |                     vm_munmap
+                     |                     sys_munmap
+                     |                     system_call_fastpath
+                     |                     __GI___munmap
+                      --18962452122.61%-- [...]
+
+    32.43%     0.01%  [kernel]               [k] refill_stock             
+                  |
+                  --- refill_stock
+                     |          
+                     |--114.27%-- uncharge_batch
+                     |          uncharge_list
+                     |          mem_cgroup_uncharge_list
+                     |          release_pages
+                     |          free_pages_and_swap_cache
+                     |          tlb_flush_mmu_free
+                     |          |          
+                     |          |--98.62%-- unmap_single_vma
+                     |          |          unmap_vmas
+                     |          |          unmap_region
+                     |          |          do_munmap
+                     |          |          vm_munmap
+                     |          |          sys_munmap
+                     |          |          system_call_fastpath
+                     |          |          __GI___munmap
+                     |          |          
+                     |           --1.38%-- tlb_flush_mmu
+                     |                     tlb_finish_mmu
+                     |                     unmap_region
+                     |                     do_munmap
+                     |                     vm_munmap
+                     |                     sys_munmap
+                     |                     system_call_fastpath
+                     |                     __GI___munmap
+                      --19543678319.29%-- [...]
+
+--------------090300080702060409030200--
