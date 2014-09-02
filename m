@@ -1,132 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789AbaIBR1o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 13:27:44 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:45958 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754125AbaIBR1m (ORCPT
+	id S1754856AbaIBR2i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 13:28:38 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:48113 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751739AbaIBR2h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 13:27:42 -0400
-Message-ID: <5405FE07.4030400@gmail.com>
-Date: Tue, 02 Sep 2014 10:27:35 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Tue, 2 Sep 2014 13:28:37 -0400
+Message-ID: <5405FE42.90809@codeaurora.org>
+Date: Tue, 02 Sep 2014 11:28:34 -0600
+From: Jeffrey Hugo <jhugo@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Andrew Bresticker <abrestic@chromium.org>
-CC: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+CC: Ohad Ben-Cohen <ohad@wizery.com>, Kumar Gala <galak@codeaurora.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Jeffrey Deans <jeffrey.deans@imgtec.com>,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        Paul Burton <paul.burton@imgtec.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>, linux-mips@linux-mips.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/12] of: Add binding document for MIPS GIC
-References: <1409350479-19108-1-git-send-email-abrestic@chromium.org> <1409350479-19108-4-git-send-email-abrestic@chromium.org>
-In-Reply-To: <1409350479-19108-4-git-send-email-abrestic@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+        Grant Likely <grant.likely@linaro.org>, Suman Anna <s-anna@ti.com>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Eric Holmberg <eholmber@codeaurora.org>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>
+Subject: Re: [PATCH v2] hwspinlock/msm: Add support for Qualcomm MSM HW Mutex
+ block
+References: <1409354063-20289-1-git-send-email-bjorn.andersson@sonymobile.com>
+In-Reply-To: <1409354063-20289-1-git-send-email-bjorn.andersson@sonymobile.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2014 03:14 PM, Andrew Bresticker wrote:
-> The Global Interrupt Controller (GIC) present on certain MIPS systems
-> can be used to route external interrupts to individual VPEs and CPU
-> interrupt vectors.  It also supports a timer and software-generated
-> interrupts.
+On 8/29/2014 5:14 PM, Bjorn Andersson wrote:
+> From: Kumar Gala <galak@codeaurora.org>
 >
-> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+> Add driver for Qualcomm MSM Hardware Mutex block that exists on
+> newer Qualcomm SoCs.
+>
+> Cc: Jeffrey Hugo <jhugo@codeaurora.org>
+> Cc: Eric Holmberg <eholmber@codeaurora.org>
+> Cc: Courtney Cavin <courtney.cavin@sonymobile.com>
+> Signed-off-by: Kumar Gala <galak@codeaurora.org>
+> [bjorn: added pm_runtime calls, from Courtney,
+> 	added sfpb-mutex compatible,
+> 	updated DT binding documentation formatting]
+> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
 > ---
->   Documentation/devicetree/bindings/mips/gic.txt | 50 ++++++++++++++++++++++++++
->   1 file changed, 50 insertions(+)
->   create mode 100644 Documentation/devicetree/bindings/mips/gic.txt
->
-> diff --git a/Documentation/devicetree/bindings/mips/gic.txt b/Documentation/devicetree/bindings/mips/gic.txt
+[...]
+> diff --git a/drivers/hwspinlock/msm_hwspinlock.c b/drivers/hwspinlock/msm_hwspinlock.c
 > new file mode 100644
-> index 0000000..725f1ef
+> index 0000000..9ddd020
 > --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mips/gic.txt
-> @@ -0,0 +1,50 @@
-> +MIPS Global Interrupt Controller (GIC)
+> +++ b/drivers/hwspinlock/msm_hwspinlock.c
+> @@ -0,0 +1,155 @@
+> +/*
+> + * Copyright (c) 2013, The Linux Foundation. All rights reserved.
+
+Should the copyright range be updated to include your changes which I 
+presume were authored in 2014?
+
+> + *
+> + * This software is licensed under the terms of the GNU General Public
+> + * License version 2, as published by the Free Software Foundation, and
+> + * may be copied, distributed, and modified under those terms.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
 > +
-> +The MIPS GIC routes external interrupts to individual VPEs and IRQ pins.
-> +It also supports a timer and software-generated interrupts which can be
-> +used as IPIs.
+> +#include <linux/err.h>
+> +#include <linux/kernel.h>
+> +#include <linux/slab.h>
+> +#include <linux/device.h>
+> +#include <linux/module.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/pm_runtime.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+> +#include <linux/of_device.h>
+> +#include <linux/hwspinlock.h>
+> +#include <linux/io.h>
+
+Could these be put in alphabetical order?  I vaguely recall a few 
+maintainers expressing this preference to avoid merge issues.
+
 > +
-> +Required properties:
-> +- compatible : Should be "mti,global-interrupt-controller"
-> +- reg : Base address and length of the GIC registers.
-> +- interrupts : Core interrupts to which the GIC may route external interrupts.
-
-This doesn't make sense to me.  The GIC can, and does, route interrupts 
-to all CPU cores in a SMP system.  How can there be a concept of only 
-associating it with several interrupt lines on a single CPU in the 
-system?  That is not what the GIC does, is it?  It is a Global 
-interrupts controller, not local.  So specifying device tree bindings 
-that don't show its Global nature seems wrong.
-
-
-> +- interrupt-controller : Identifies the node as an interrupt controller
-> +- #interrupt-cells : Specifies the number of cells needed to encode an
-> +  interrupt specifier.  Should be 3.
-> +  - The first cell is the GIC interrupt number.
-> +  - The second cell encodes the interrupt flags.
-> +    See <include/dt-bindings/interrupt-controller/irq.h> for a list of valid
-> +    flags.
-> +  - The optional third cell indicates which CPU interrupt vector the GIC
-> +    interrupt should be routed to.  It is a 0-based index into the list of
-> +    GIC-to-CPU interrupts specified in the "interrupts" property described
-> +    above.  For example, a '2' in this cell will route the interrupt to the
-> +    3rd core interrupt listed in 'interrupts'.  If omitted, the interrupt will
-> +    be routed to the 1st core interrupt.
+> +#include "hwspinlock_internal.h"
 > +
-
-This seems like a really convoluted way of doing things that really goes 
-against the device tree model.
-
-The routing of interrupts through the GIC to a core interrupt is 
-controlled entirely within the GIC hardware and therefore should be a 
-property of the GIC itself, not all the random devices connected 
-upstream to the GIC.
-
-It also places policy about the priority of the various interrupts into 
-the device tree.  Typically the device tree would contain only 
-information about the topology of the hardware blocks, not arbitrary 
-policy decisions that software could change and still have a perfectly 
-functional system.
-
-Therefore I would recommend removing the third cell from the interrupt 
-specifier.
-
-
-> +Example:
+> +#define SPINLOCK_ID_APPS_PROC	1
+> +#define BASE_ID			0
+[...]
+> +static int msm_hwspinlock_probe(struct platform_device *pdev)
+> +{
+> +	int ret, i, stride;
+> +	size_t array_size;
+> +	u32 num_locks;
+> +	struct hwspinlock_device *bank;
+> +	struct hwspinlock *hwlock;
+> +	struct resource *res;
+> +	void __iomem *iobase;
+> +	struct device_node *node = pdev->dev.of_node;
+> +	const struct of_device_id *match;
 > +
-> +	cpu_intc: interrupt-controller@0 {
-> +		compatible = "mti,cpu-interrupt-controller";
-> +
-> +		interrupt-controller;
-> +		#interrupt-cells = <1>;
-> +	};
-> +
-> +	gic: interrupt-controller@1bdc0000 {
-> +		compatible = "mti,global-interrupt-controller";
-> +		reg = <0x1bdc0000 0x20000>;
-> +
-> +		interrupt-controller;
-> +		#interrupt-cells = <3>;
-> +
-> +		interrupt-parent = <&cpu_intc>;
-> +		interrupts = <3>, <4>;
-> +	};
-> +
-> +	uart@18101400 {
-> +		...
-> +		interrupt-parent = <&gic>;
-> +		interrupts = <24 IRQ_TYPE_LEVEL_HIGH 0>;
-> +		...
-> +	};
->
+> +	match = of_match_device(msm_hwspinlock_of_match, &pdev->dev);
+> +	if (!match)
+> +		return -EINVAL;
 
+This seems redundant.  It is my understanding that probe will only be 
+called for a matching device.  What are we attempting to accomplish here?
+
+> +
+> +	ret = of_property_read_u32(node, "qcom,num-locks", &num_locks);
+> +	if (ret || num_locks == 0)
+> +		return -ENODEV;
+> +
+> +	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "mutex-base");
+> +	iobase = devm_ioremap_resource(&pdev->dev, res);
+> +	if (IS_ERR(iobase))
+> +		return PTR_ERR(iobase);
+> +
+> +	array_size = num_locks * sizeof(*hwlock);
+> +	bank = devm_kzalloc(&pdev->dev, sizeof(*bank) + array_size, GFP_KERNEL);
+> +	if (!bank)
+> +		return -ENOMEM;
+> +
+> +	platform_set_drvdata(pdev, bank);
+> +
+> +	stride = (int)match->data;
+> +	for (i = 0, hwlock = &bank->lock[0]; i < num_locks; i++, hwlock++)
+> +		hwlock->priv = iobase + i * stride;
+
+I am not a fan of this method for determining the stride.  We already 
+have 0x4 and 0x80 in this driver, and will soon need 0x1000 for some of 
+the current chips (still listed as TCSR too).  The stride is completely 
+up to our hardware designers, and it seems like encoding stride in this 
+manner will require constant updates and maintenance.  I prefer 
+calculating stride by dividing the reg size by num_locks since that will 
+automatically adjust for whatever the hardware designers decide to use 
+next month.  If you wanted to, with the reg size calculation, you could 
+remove the "qcom,sfpb-mutex" since there is no functional difference 
+other than stride.  What are your thoughts?
+
+> +
+> +	pm_runtime_enable(&pdev->dev);
+> +
+> +	ret = hwspin_lock_register(bank, &pdev->dev, &msm_hwspinlock_ops,
+> +						BASE_ID, num_locks);
+> +	if (ret)
+> +		pm_runtime_disable(&pdev->dev);
+> +
+> +	return ret;
+> +}
+[...]
+
+
+Jeffrey Hugo
+-- 
+The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, 
+hosted by The Linux Foundation.
