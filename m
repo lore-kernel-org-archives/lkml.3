@@ -1,51 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754869AbaIBQCy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 12:02:54 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:55227 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754037AbaIBQCw (ORCPT
+	id S1754221AbaIBQFy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 12:05:54 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:36246 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753526AbaIBQFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 12:02:52 -0400
-X-Greylist: delayed 1519 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Sep 2014 12:02:52 EDT
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Seunghun Lee <waydi1@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] fat: Simplify calc_fat_clusters code
-References: <1409664810-31960-1-git-send-email-waydi1@gmail.com>
-Date: Wed, 03 Sep 2014 00:37:29 +0900
-In-Reply-To: <1409664810-31960-1-git-send-email-waydi1@gmail.com> (Seunghun
-	Lee's message of "Tue, 2 Sep 2014 22:33:30 +0900")
-Message-ID: <87k35m3ufa.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4.50 (gnu/linux)
+	Tue, 2 Sep 2014 12:05:53 -0400
+Message-ID: <5405EADC.6080302@gmail.com>
+Date: Tue, 02 Sep 2014 19:05:48 +0300
+From: Boaz Harrosh <openosd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Bruce Fields <bfields@fieldses.org>
+CC: Trond Myklebust <trond.myklebust@primarydata.com>,
+        Shakil A Khan <shakilk1729@gmail.com>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        William Andros Adamson <andros@netapp.com>,
+        Jeffrey Layton <jlayton@primarydata.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH] Next branch: authgss: authgss.c: Fix warnings for uninitizlized
+ variable expire
+References: <1409571154-50408-1-git-send-email-shakilk1729@gmail.com> <CAHQdGtQAwp_QuQE-xmjJNkcxbu7g4QtYQv8qrPT_qWpkym1GZg@mail.gmail.com> <5405A15F.2060002@gmail.com> <20140902132140.GA31793@fieldses.org> <5405CD51.9020601@gmail.com> <20140902141739.GB31793@fieldses.org>
+In-Reply-To: <20140902141739.GB31793@fieldses.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seunghun Lee <waydi1@gmail.com> writes:
+On 09/02/2014 05:17 PM, Bruce Fields wrote:
+> On Tue, Sep 02, 2014 at 04:59:45PM +0300, Boaz Harrosh wrote:
+>> uninitialized_var was made to be a friend not an enemy, in the face of real
+>> ugliness it is the best we can do. And that is what it should communicate to
+>> everyone. Why has it become everyone's favorite blasphemy I do not know.
+> 
+> Not personally claiming it should never be used, just that this
+> particular case is kind of extreme, since unless I'm missing a real
+> compilication it's basically just:
+> 
+> 	if (ctx)
+> 		assign to expire
+> 	...
+> 	if (ctx)
+> 		use expire
+> 
+> A compiler wouldn't have to be that smart to actually prove to itself
+> that expire is initialized at the last step, and that it's not only
+> failing to do that but actually flagging it as possibly unitialized is
+> weird.
 
-> diff --git a/fs/fat/inode.c b/fs/fat/inode.c
-> index 756aead..6992dea 100644
-> --- a/fs/fat/inode.c
-> +++ b/fs/fat/inode.c
-> @@ -1307,12 +1307,9 @@ static unsigned long calc_fat_clusters(struct super_block *sb)
->  	struct msdos_sb_info *sbi = MSDOS_SB(sb);
->  
->  	/* Divide first to avoid overflow */
-> -	if (sbi->fat_bits != 12) {
-> -		unsigned long ent_per_sec = sb->s_blocksize * 8 / sbi->fat_bits;
-> -		return ent_per_sec * sbi->fat_length;
-> -	}
-> +	unsigned long ent_per_sec = sb->s_blocksize * 8 / sbi->fat_bits;
->  
-> -	return sbi->fat_length * sb->s_blocksize * 8 / sbi->fat_bits;
-> +	return ent_per_sec * sbi->fat_length;
->  }
+Actually that is a complicated case for a compiler. Because of the two
+different scopes. I think it only optimizes that on higher optimization
+values. Cross scope analysis is not done at parsing time but more on
+code generation time, the "warning" is more of the former phase.
 
-When sbi->fat_bits == 12, it doesn't work, right? (there is the remainder)
+Perhaps change the code, if possible, so the assign and use of "expire"
+is under the last if (or the first)? That would be also easier on the
+reader.
 
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+BTW: You are most probably right though, because here I do not have this
+     problem. I guess it is the case of an old compiler with a certain
+     compilation environment.
+
+Thanks
+Boaz
+
+> 
+> --b.
+> 
+
