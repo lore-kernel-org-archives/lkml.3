@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194AbaIBMzc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 08:55:32 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:37256 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753703AbaIBMzZ (ORCPT
+	id S1754008AbaIBM4d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 08:56:33 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:53264 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752233AbaIBM4b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 08:55:25 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-34-5405be3a6070
+	Tue, 2 Sep 2014 08:56:31 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-b5-5405be7cca1e
 From: Andrzej Hajda <a.hajda@samsung.com>
 To: Inki Dae <inki.dae@samsung.com>
 Cc: Andrzej Hajda <a.hajda@samsung.com>,
@@ -18,103 +18,155 @@ Cc: Andrzej Hajda <a.hajda@samsung.com>,
         dri-devel@lists.freedesktop.org,
         linux-kernel@vger.kernel.org (open list),
         linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...)
-Subject: [PATCH v3 16/17] drm/exynos/ipp: remove file argument from node
- related functions
-Date: Tue, 02 Sep 2014 14:55:06 +0200
-Message-id: <1409662506-30270-1-git-send-email-a.hajda@samsung.com>
+Subject: [PATCH v3 17/17] drm/exynos/ipp: add file checks for ioctls
+Date: Tue, 02 Sep 2014 14:56:21 +0200
+Message-id: <1409662581-30357-1-git-send-email-a.hajda@samsung.com>
 X-Mailer: git-send-email 1.9.1
-In-reply-to: <1409216861-12452-17-git-send-email-a.hajda@samsung.com>
-References: <1409216861-12452-17-git-send-email-a.hajda@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOJMWRmVeSWpSXmKPExsVy+t/xq7pW+1hDDBbNkLO4te4cq8WVr+/Z
+In-reply-to: <1409216861-12452-18-git-send-email-a.hajda@samsung.com>
+References: <1409216861-12452-18-git-send-email-a.hajda@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKJMWRmVeSWpSXmKPExsVy+t/xq7o1+1hDDCb8krC4te4cq8WVr+/Z
 	LCbdn8Bi8eLeRRaLs01v2C0u75rDZjHj/D4mi7VH7rJbzJj8ks2B0+N+93Emj74tqxg9Pm+S
-	C2CO4rJJSc3JLEst0rdL4MqYsLGfveC9WMWtj5NZGhi/CXUxcnJICJhIvJnxiw3CFpO4cG89
-	kM3FISSwlFHi4uTF7BBOH5PE4+8fWUCq2AQ0Jf5uvgnWISKgLLFqXztYEbPARyaJK0vfMIMk
-	hAViJJasagOzWQRUJZoe3wZr4BVwlnj/5DEjxDo5iZPHJrOC2JwCrhK7z7wDWyAk4CLR1DGb
-	aQIj7wJGhlWMoqmlyQXFSem5RnrFibnFpXnpesn5uZsYIYH1dQfj0mNWhxgFOBiVeHhfLGQO
-	EWJNLCuuzD3EKMHBrCTCu2gna4gQb0piZVVqUX58UWlOavEhRiYOTqkGRgfPe+eCOFPNTXtu
-	eDZIK6TtdTqsF5rk+XTXfYWywlUTjm9QuzTxpH+UeE/0/vd+W323V6iY78/KL1F4zeVu8Mt6
-	eXRaHptslSv7teQ3RyVmX1xdmt9kmLjONk3uY9T5J3Zen5ryXdpsLgneTdzqyLLLN/Fers5y
-	61zPYN29c60TTl37k5mqxFKckWioxVxUnAgAvb2gNAoCAAA=
+	C2CO4rJJSc3JLEst0rdL4Mp4fLidveCSQsW5vUUNjNekuhg5OSQETCSWnfnNDmGLSVy4t56t
+	i5GLQ0hgKaPE5ZN9UE4fk8SE+22MIFVsApoSfzffZAOxRQSUJVbta2cHKWIW+MgkcWXpG2aQ
+	hLCAi8SXT7eZuhg5OFgEVCX65hiBhHkFnCXafr6D2iYncfLYZFYQm1PAVeLapHNgM4WAWs++
+	7GWawMi7gJFhFaNoamlyQXFSeq6hXnFibnFpXrpecn7uJkZIUH3Zwbj4mNUhRgEORiUe3hcL
+	mUOEWBPLiitzDzFKcDArifB67GUNEeJNSaysSi3Kjy8qzUktPsTIxMEp1cDYxePiUsi7hqvj
+	GNvpBXFWAoERs6deDNW7b+na47lAVqh77bw895CpFbybrV7WSbyVWX/lr/9ptd6V6sV3U57M
+	nbas/dequxrCKXmSZ5uvzUr5KHqo4vhmr5JpL42ybim8M910Z0eM/7wrN44H3bVpFew2E20J
+	8DjAW8r5XjNj3e5Fpxaus9+sxFKckWioxVxUnAgAIXoWvwgCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since file pointer is preserved in c_node passing it
-as argument in node functions is redundant.
+Process should not have access to ipp nodes created by another
+process. The patch adds necessary checks.
+It also simplifies lookup for command node.
 
 Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
 ---
 v3:
-- file check moved to next patch
+- added file check from previous commit
+- simplified c_node lookup
 ---
- drivers/gpu/drm/exynos/exynos_drm_ipp.c | 12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+ drivers/gpu/drm/exynos/exynos_drm_ipp.c | 69 +++++++++++----------------------
+ 1 file changed, 22 insertions(+), 47 deletions(-)
 
 diff --git a/drivers/gpu/drm/exynos/exynos_drm_ipp.c b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
-index 05f0f4e..9e9714a 100644
+index 9e9714a..4f36a9d 100644
 --- a/drivers/gpu/drm/exynos/exynos_drm_ipp.c
 +++ b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
-@@ -529,7 +529,6 @@ static int ipp_put_mem_node(struct drm_device *drm_dev,
- 
- static struct drm_exynos_ipp_mem_node
- 		*ipp_get_mem_node(struct drm_device *drm_dev,
--		struct drm_file *file,
- 		struct drm_exynos_ipp_cmd_node *c_node,
- 		struct drm_exynos_ipp_queue_buf *qbuf)
- {
-@@ -560,7 +559,7 @@ static struct drm_exynos_ipp_mem_node
- 			dma_addr_t *addr;
- 
- 			addr = exynos_drm_gem_get_dma_addr(drm_dev,
--					qbuf->handle[i], file);
-+					qbuf->handle[i], c_node->filp);
- 			if (IS_ERR(addr)) {
- 				DRM_ERROR("failed to get addr.\n");
- 				ipp_put_mem_node(drm_dev, c_node, m_node);
-@@ -606,7 +605,6 @@ static void ipp_free_event(struct drm_pending_event *event)
+@@ -318,44 +318,6 @@ static void ipp_print_property(struct drm_exynos_ipp_property *property,
+ 		sz->hsize, sz->vsize, config->flip, config->degree);
  }
  
- static int ipp_get_event(struct drm_device *drm_dev,
--		struct drm_file *file,
- 		struct drm_exynos_ipp_cmd_node *c_node,
- 		struct drm_exynos_ipp_queue_buf *qbuf)
+-static int ipp_find_and_set_property(struct drm_exynos_ipp_property *property)
+-{
+-	struct exynos_drm_ippdrv *ippdrv;
+-	struct drm_exynos_ipp_cmd_node *c_node;
+-	u32 prop_id = property->prop_id;
+-
+-	DRM_DEBUG_KMS("prop_id[%d]\n", prop_id);
+-
+-	ippdrv = ipp_find_drv_by_handle(prop_id);
+-	if (IS_ERR(ippdrv)) {
+-		DRM_ERROR("failed to get ipp driver.\n");
+-		return -EINVAL;
+-	}
+-
+-	/*
+-	 * Find command node using command list in ippdrv.
+-	 * when we find this command no using prop_id.
+-	 * return property information set in this command node.
+-	 */
+-	mutex_lock(&ippdrv->cmd_lock);
+-	list_for_each_entry(c_node, &ippdrv->cmd_list, list) {
+-		if ((c_node->property.prop_id == prop_id) &&
+-		    (c_node->state == IPP_STATE_STOP)) {
+-			mutex_unlock(&ippdrv->cmd_lock);
+-			DRM_DEBUG_KMS("found cmd[%d]ippdrv[0x%x]\n",
+-				property->cmd, (int)ippdrv);
+-
+-			c_node->property = *property;
+-			return 0;
+-		}
+-	}
+-	mutex_unlock(&ippdrv->cmd_lock);
+-
+-	DRM_ERROR("failed to search property.\n");
+-
+-	return -EINVAL;
+-}
+-
+ static struct drm_exynos_ipp_cmd_work *ipp_create_cmd_work(void)
  {
-@@ -618,7 +616,7 @@ static int ipp_get_event(struct drm_device *drm_dev,
- 	e = kzalloc(sizeof(*e), GFP_KERNEL);
- 	if (!e) {
- 		spin_lock_irqsave(&drm_dev->event_lock, flags);
--		file->event_space += sizeof(e->event);
-+		c_node->filp->event_space += sizeof(e->event);
- 		spin_unlock_irqrestore(&drm_dev->event_lock, flags);
- 		return -ENOMEM;
+ 	struct drm_exynos_ipp_cmd_work *cmd_work;
+@@ -391,6 +353,7 @@ int exynos_drm_ipp_set_property(struct drm_device *drm_dev, void *data,
+ 	struct drm_exynos_ipp_property *property = data;
+ 	struct exynos_drm_ippdrv *ippdrv;
+ 	struct drm_exynos_ipp_cmd_node *c_node;
++	u32 prop_id;
+ 	int ret, i;
+ 
+ 	if (!ctx) {
+@@ -403,6 +366,8 @@ int exynos_drm_ipp_set_property(struct drm_device *drm_dev, void *data,
+ 		return -EINVAL;
  	}
-@@ -630,7 +628,7 @@ static int ipp_get_event(struct drm_device *drm_dev,
- 	e->event.prop_id = qbuf->prop_id;
- 	e->event.buf_id[EXYNOS_DRM_OPS_DST] = qbuf->buf_id;
- 	e->base.event = &e->event.base;
--	e->base.file_priv = file;
-+	e->base.file_priv = c_node->filp;
- 	e->base.destroy = ipp_free_event;
- 	mutex_lock(&c_node->event_lock);
- 	list_add_tail(&e->base.link, &c_node->event_list);
-@@ -908,7 +906,7 @@ int exynos_drm_ipp_queue_buf(struct drm_device *drm_dev, void *data,
- 	switch (qbuf->buf_type) {
- 	case IPP_BUF_ENQUEUE:
- 		/* get memory node */
--		m_node = ipp_get_mem_node(drm_dev, file, c_node, qbuf);
-+		m_node = ipp_get_mem_node(drm_dev, c_node, qbuf);
- 		if (IS_ERR(m_node)) {
- 			DRM_ERROR("failed to get m_node.\n");
- 			return PTR_ERR(m_node);
-@@ -921,7 +919,7 @@ int exynos_drm_ipp_queue_buf(struct drm_device *drm_dev, void *data,
- 		 */
- 		if (qbuf->ops_id == EXYNOS_DRM_OPS_DST) {
- 			/* get event for destination buffer */
--			ret = ipp_get_event(drm_dev, file, c_node, qbuf);
-+			ret = ipp_get_event(drm_dev, c_node, qbuf);
- 			if (ret) {
- 				DRM_ERROR("failed to get event.\n");
- 				goto err_clean_node;
+ 
++	prop_id = property->prop_id;
++
+ 	/*
+ 	 * This is log print for user application property.
+ 	 * user application set various property.
+@@ -411,14 +376,24 @@ int exynos_drm_ipp_set_property(struct drm_device *drm_dev, void *data,
+ 		ipp_print_property(property, i);
+ 
+ 	/*
+-	 * set property ioctl generated new prop_id.
+-	 * but in this case already asigned prop_id using old set property.
+-	 * e.g PAUSE state. this case supports find current prop_id and use it
+-	 * instead of allocation.
++	 * In case prop_id is not zero try to set existing property.
+ 	 */
+-	if (property->prop_id) {
+-		DRM_DEBUG_KMS("prop_id[%d]\n", property->prop_id);
+-		return ipp_find_and_set_property(property);
++	if (prop_id) {
++		c_node = ipp_find_obj(&ctx->prop_idr, &ctx->prop_lock, prop_id);
++
++		if (!c_node || c_node->filp != file) {
++			DRM_DEBUG_KMS("prop_id[%d] not found\n", prop_id);
++			return -EINVAL;
++		}
++
++		if (c_node->state != IPP_STATE_STOP) {
++			DRM_DEBUG_KMS("prop_id[%d] not stopped\n", prop_id);
++			return -EINVAL;
++		}
++
++		c_node->property = *property;
++
++		return 0;
+ 	}
+ 
+ 	/* find ipp driver using ipp id */
+@@ -897,7 +872,7 @@ int exynos_drm_ipp_queue_buf(struct drm_device *drm_dev, void *data,
+ 	/* find command node */
+ 	c_node = ipp_find_obj(&ctx->prop_idr, &ctx->prop_lock,
+ 		qbuf->prop_id);
+-	if (!c_node) {
++	if (!c_node || c_node->filp != file) {
+ 		DRM_ERROR("failed to get command node.\n");
+ 		return -ENODEV;
+ 	}
+@@ -1032,7 +1007,7 @@ int exynos_drm_ipp_cmd_ctrl(struct drm_device *drm_dev, void *data,
+ 
+ 	c_node = ipp_find_obj(&ctx->prop_idr, &ctx->prop_lock,
+ 		cmd_ctrl->prop_id);
+-	if (!c_node) {
++	if (!c_node || c_node->filp != file) {
+ 		DRM_ERROR("invalid command node list.\n");
+ 		return -ENODEV;
+ 	}
 -- 
 1.9.1
 
