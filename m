@@ -1,54 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755268AbaIBVAs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 17:00:48 -0400
-Received: from bowie.eng.utah.edu ([155.98.110.113]:47810 "EHLO
-	bowie.eng.utah.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755225AbaIBVAq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 17:00:46 -0400
-X-Greylist: delayed 1499 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Sep 2014 17:00:46 EDT
-Message-ID: <54062A22.6090804@eng.utah.edu>
-Date: Tue, 02 Sep 2014 14:35:46 -0600
-From: Scotty Bauer <sbauer@eng.utah.edu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Compat sysinfo syscall (kernel/sys.c) relying on undefined behavior?
-Content-Type: text/plain; charset=utf-8
+	id S1755253AbaIBVGh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 17:06:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14336 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754164AbaIBVGf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 17:06:35 -0400
+Message-ID: <1409691941.3804.133.camel@ul30vt.home>
+Subject: Re: [RFC v2 0/9] KVM-VFIO IRQ forward control
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Eric Auger <eric.auger@linaro.org>
+Cc: eric.auger@st.com, christoffer.dall@linaro.org, marc.zyngier@arm.com,
+        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
+        kvm@vger.kernel.org, joel.schopp@amd.com, kim.phillips@freescale.com,
+        paulus@samba.org, gleb@kernel.org, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, patches@linaro.org, will.deacon@arm.com,
+        a.motakis@virtualopensystems.com, a.rigo@virtualopensystems.com,
+        john.liuli@huawei.com
+Date: Tue, 02 Sep 2014 15:05:41 -0600
+In-Reply-To: <1409575968-5329-1-git-send-email-eric.auger@linaro.org>
+References: <1409575968-5329-1-git-send-email-eric.auger@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- am getting acquainted with the linux kernel and to do so I've been browsing the source.
+On Mon, 2014-09-01 at 14:52 +0200, Eric Auger wrote:
+> This RFC proposes an integration of "ARM: Forwarding physical
+> interrupts to a guest VM" (http://lwn.net/Articles/603514/) in
+> KVM.
+> 
+> It enables to transform a VFIO platform driver IRQ into a forwarded
+> IRQ. The direct benefit is that, for a level sensitive IRQ, a VM
+> switch can be avoided on guest virtual IRQ completion. Before this
+> patch, a maintenance IRQ was triggered on the virtual IRQ completion.
+> 
+> When the IRQ is forwarded, the VFIO platform driver does not need to
+> disable the IRQ anymore. Indeed when returning from the IRQ handler
+> the IRQ is not deactivated. Only its priority is lowered. This means
+> the same IRQ cannot hit before the guest completes the virtual IRQ
+> and the GIC automatically deactivates the corresponding physical IRQ.
+> 
+> Besides, the injection still is based on irqfd triggering. The only
+> impact on irqfd process is resamplefd is not called anymore on
+> virtual IRQ completion since this latter becomes "transparent".
+> 
+> The current integration is based on an extension of the KVM-VFIO
+> device, previously used by KVM to interact with VFIO groups. The
+> patch serie now enables KVM to directly interact with a VFIO
+> platform device. The VFIO external API was extended for that purpose.
+> 
+> Th KVM-VFIO device can get/put the vfio platform device, check its
+> integrity and type, get the IRQ number associated to an IRQ index.
+> 
+> The IRQ forward programming is architecture specific (virtual interrupt
+> controller programming basically). However the whole infrastructure is
+> kept generic.
+> 
+> from a user point of view, the functionality is provided through new
+> KVM-VFIO device commands, KVM_DEV_VFIO_DEVICE_(UN)FORWARD_IRQ
+> and the capability can be checked with KVM_HAS_DEVICE_ATTR.
+> Assignment can only be changed when the physical IRQ is not active.
+> It is the responsability of the user to do this check.
+> 
+> This patch serie has the following dependencies:
+> - "ARM: Forwarding physical interrupts to a guest VM"
+>   (http://lwn.net/Articles/603514/) in
+> - [PATCH v3] irqfd for ARM
+> - and obviously the VFIO platform driver serie:
+>   [RFC PATCH v6 00/20] VFIO support for platform devices on ARM
+>   https://www.mail-archive.com/kvm@vger.kernel.org/msg103247.html
+> 
+> Integrated pieces can be found at
+> ssh://git.linaro.org/people/eric.auger/linux.git
+> on branch 3.17rc3_irqfd_forward_integ_v2
+> 
+> This was was tested on Calxeda Midway, assigning the xgmac main IRQ.
+> 
+> v1 -> v2:
+> - forward control is moved from architecture specific file into generic
+>   vfio.c module.
+>   only kvm_arch_set_fwd_state remains architecture specific
+> - integrate Kim's patch which enables KVM-VFIO for ARM
+> - fix vgic state bypass in vgic_queue_hwirq
+> - struct kvm_arch_forwarded_irq moved from arch/arm/include/uapi/asm/kvm.h
+>   to include/uapi/linux/kvm.h
+>   also irq_index renamed into index and guest_irq renamed into gsi
+> - ASSIGN/DEASSIGN renamed into FORWARD/UNFORWARD
+> - vfio_external_get_base_device renamed into vfio_external_base_device
+> - vfio_external_get_type removed
+> - kvm_vfio_external_get_base_device renamed into kvm_vfio_external_base_device
+> - __KVM_HAVE_ARCH_KVM_VFIO renamed into __KVM_HAVE_ARCH_KVM_VFIO_FORWARD
+> 
+> Eric Auger (8):
+>   KVM: ARM: VGIC: fix multiple injection of level sensitive forwarded
+>     IRQ
+>   KVM: ARM: VGIC: add forwarded irq rbtree lock
+>   VFIO: platform: handler tests whether the IRQ is forwarded
+>   KVM: KVM-VFIO: update user API to program forwarded IRQ
+>   VFIO: Extend external user API
+>   KVM: KVM-VFIO: add new VFIO external API hooks
+>   KVM: KVM-VFIO: generic KVM_DEV_VFIO_DEVICE command and IRQ forwarding
+>     control
+>   KVM: KVM-VFIO: ARM forwarding control
+> 
+> Kim Phillips (1):
+>   ARM: KVM: Enable the KVM-VFIO device
+> 
+>  Documentation/virtual/kvm/devices/vfio.txt |  26 ++
+>  arch/arm/include/asm/kvm_host.h            |   7 +
+>  arch/arm/kvm/Kconfig                       |   1 +
+>  arch/arm/kvm/Makefile                      |   4 +-
+>  arch/arm/kvm/kvm_vfio_arm.c                |  85 +++++
+>  drivers/vfio/platform/vfio_platform_irq.c  |   7 +-
+>  drivers/vfio/vfio.c                        |  24 ++
+>  include/kvm/arm_vgic.h                     |   1 +
+>  include/linux/kvm_host.h                   |  27 ++
+>  include/linux/vfio.h                       |   3 +
+>  include/uapi/linux/kvm.h                   |   9 +
+>  virt/kvm/arm/vgic.c                        |  59 +++-
+>  virt/kvm/vfio.c                            | 497 ++++++++++++++++++++++++++++-
+>  13 files changed, 733 insertions(+), 17 deletions(-)
+>  create mode 100644 arch/arm/kvm/kvm_vfio_arm.c
+> 
 
+Have we ventured too far in the other direction?  I suppose what I was
+hoping to see was something more like:
 
-In the compat version of sysinfo, kernel/sys.c we see the following:
+	case KVM_DEV_VFIO_DEVICE_FORWARD_IRQ:{
 
-COMPAT_SYSCALL_DEFINE1(sysinfo, struct compat_sysinfo __user *, info)
-{
-    struct sysinfo s;
+		/* get vfio_device */
 
-    do_sysinfo(&s);
+		/* get mutex */
 
-    /* Check to see if any memory value is too large for 32-bit and scale
-     *  down if needed
-     */
-    if ((s.totalram >> 32) || (s.totalswap >> 32)) {
-        int bitcount = 0;
+		/* verify device+irq isn't already forwarded */
 
-...
+		/* allocate device/forwarded irq */
 
+		/* get struct device */
 
-s.totalram is a u32, and the standard says:
-"If the value of the right operand is negative or is greater than or equal to the width 
-of the promoted left operand, the behavior is undefined."
+		/* callout to arch code passing struct device, gsi, ... */
 
-Is there some promotion, compiler flag, something obvious that I am missing, or is this a 
-problem?
+		/* if success, add to kv, else free and error */
 
+		/* mutex unlock */
+	}
 
-Best,
-Scotty
+Exposing the internal mutex out to arch code, as in v1, was an
+indication that we were pushing too much out to arch code, but including
+platform_device.h into virt/kvm/vfio.c tells me we're still not
+abstracting at the right point.  Thanks,
+
+Alex
 
