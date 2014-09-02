@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025AbaIBLvb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 07:51:31 -0400
-Received: from mga14.intel.com ([192.55.52.115]:30460 "EHLO mga14.intel.com"
+	id S1753982AbaIBLv3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 07:51:29 -0400
+Received: from mga14.intel.com ([192.55.52.115]:30427 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753838AbaIBLvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 07:51:24 -0400
+	id S1753850AbaIBLvU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 07:51:20 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,448,1406617200"; 
-   d="scan'208";a="585035666"
+   d="scan'208";a="585035648"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org
 Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
         Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 6/6] mei: remove include to pci header from mei module files
-Date: Tue,  2 Sep 2014 14:50:04 +0300
-Message-Id: <1409658604-31615-7-git-send-email-tomas.winkler@intel.com>
+Subject: [char-misc-next 4/6] mei: remove the reference to pdev from mei_deivce
+Date: Tue,  2 Sep 2014 14:50:02 +0300
+Message-Id: <1409658604-31615-5-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1409658604-31615-1-git-send-email-tomas.winkler@intel.com>
 References: <1409658604-31615-1-git-send-email-tomas.winkler@intel.com>
@@ -23,189 +23,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove inclusion of linux/pci.h in mei layer
-however we need to include the headers that before
-got included implicitly from linux/pci.h.
+For purpose of adding testing HW we would like
+to get rid of pci dependency in generic mei code.
 
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- drivers/misc/mei/amthif.c    | 2 +-
- drivers/misc/mei/bus.c       | 1 -
- drivers/misc/mei/client.c    | 2 +-
- drivers/misc/mei/debugfs.c   | 1 -
- drivers/misc/mei/hbm.c       | 5 +++--
- drivers/misc/mei/init.c      | 1 -
- drivers/misc/mei/interrupt.c | 2 +-
- drivers/misc/mei/main.c      | 2 +-
- drivers/misc/mei/nfc.c       | 3 ++-
- drivers/misc/mei/wd.c        | 1 -
- include/linux/mei_cl_bus.h   | 1 +
- 11 files changed, 10 insertions(+), 11 deletions(-)
+ drivers/misc/mei/hw-me.c   | 3 +--
+ drivers/misc/mei/hw-txe.c  | 3 +--
+ drivers/misc/mei/mei_dev.h | 2 --
+ drivers/misc/mei/pci-me.c  | 2 +-
+ drivers/misc/mei/pci-txe.c | 2 +-
+ 5 files changed, 4 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/misc/mei/amthif.c b/drivers/misc/mei/amthif.c
-index 5d47d1b..d9b0e761f 100644
---- a/drivers/misc/mei/amthif.c
-+++ b/drivers/misc/mei/amthif.c
-@@ -20,7 +20,6 @@
- #include <linux/types.h>
- #include <linux/fcntl.h>
- #include <linux/aio.h>
--#include <linux/pci.h>
- #include <linux/ioctl.h>
- #include <linux/cdev.h>
- #include <linux/list.h>
-@@ -29,6 +28,7 @@
- #include <linux/uuid.h>
- #include <linux/jiffies.h>
- #include <linux/uaccess.h>
-+#include <linux/slab.h>
+diff --git a/drivers/misc/mei/hw-me.c b/drivers/misc/mei/hw-me.c
+index 678531c..da86310 100644
+--- a/drivers/misc/mei/hw-me.c
++++ b/drivers/misc/mei/hw-me.c
+@@ -676,7 +676,7 @@ irqreturn_t mei_me_irq_thread_handler(int irq, void *dev_id)
  
- #include <linux/mei.h>
+ 	/* Ack the interrupt here
+ 	 * In case of MSI we don't go through the quick handler */
+-	if (pci_dev_msi_enabled(dev->pdev))
++	if (pci_dev_msi_enabled(to_pci_dev(dev->dev)))
+ 		mei_clear_interrupts(dev);
  
-diff --git a/drivers/misc/mei/bus.c b/drivers/misc/mei/bus.c
-index 4cc1a66..4d20d60 100644
---- a/drivers/misc/mei/bus.c
-+++ b/drivers/misc/mei/bus.c
-@@ -22,7 +22,6 @@
- #include <linux/slab.h>
- #include <linux/mutex.h>
- #include <linux/interrupt.h>
--#include <linux/pci.h>
- #include <linux/mei_cl_bus.h>
+ 	/* check if ME wants a reset */
+@@ -854,7 +854,6 @@ struct mei_device *mei_me_dev_init(struct pci_dev *pdev,
  
- #include "mei_dev.h"
-diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
-index 03c1e14..4b58fce 100644
---- a/drivers/misc/mei/client.c
-+++ b/drivers/misc/mei/client.c
-@@ -14,10 +14,10 @@
-  *
+ 	mei_device_init(dev, &pdev->dev, &mei_me_hw_ops);
+ 	dev->cfg  = cfg;
+-	dev->pdev = pdev;
+ 	return dev;
+ }
+ 
+diff --git a/drivers/misc/mei/hw-txe.c b/drivers/misc/mei/hw-txe.c
+index e4cb9dc..6eef676 100644
+--- a/drivers/misc/mei/hw-txe.c
++++ b/drivers/misc/mei/hw-txe.c
+@@ -998,7 +998,7 @@ irqreturn_t mei_txe_irq_thread_handler(int irq, void *dev_id)
+ 	mutex_lock(&dev->device_lock);
+ 	mei_io_list_init(&complete_list);
+ 
+-	if (pci_dev_msi_enabled(dev->pdev))
++	if (pci_dev_msi_enabled(to_pci_dev(dev->dev)))
+ 		mei_txe_check_and_ack_intrs(dev, true);
+ 
+ 	/* show irq events */
+@@ -1157,7 +1157,6 @@ struct mei_device *mei_txe_dev_init(struct pci_dev *pdev,
+ 	init_waitqueue_head(&hw->wait_aliveness_resp);
+ 
+ 	dev->cfg  = cfg;
+-	dev->pdev = pdev;
+ 	return dev;
+ }
+ 
+diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
+index 7080fff..5a16cc4 100644
+--- a/drivers/misc/mei/mei_dev.h
++++ b/drivers/misc/mei/mei_dev.h
+@@ -401,7 +401,6 @@ struct mei_cfg {
+ /**
+  * struct mei_device -  MEI private device struct
+ 
+- * @pdev - pointer to pci device struct
+  * @dev  - device on a bus
+  * @cdev - character device
+  * @minor - minor number allocated for device
+@@ -420,7 +419,6 @@ struct mei_cfg {
+  * @cfg - per device generation config and ops
   */
- 
--#include <linux/pci.h>
- #include <linux/sched.h>
- #include <linux/wait.h>
- #include <linux/delay.h>
-+#include <linux/slab.h>
- #include <linux/pm_runtime.h>
- 
- #include <linux/mei.h>
-diff --git a/drivers/misc/mei/debugfs.c b/drivers/misc/mei/debugfs.c
-index e14a7db..aca7847 100644
---- a/drivers/misc/mei/debugfs.c
-+++ b/drivers/misc/mei/debugfs.c
-@@ -17,7 +17,6 @@
- #include <linux/kernel.h>
- #include <linux/device.h>
- #include <linux/debugfs.h>
--#include <linux/pci.h>
- 
- #include <linux/mei.h>
- 
-diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
-index 209650b..c874fdd 100644
---- a/drivers/misc/mei/hbm.c
-+++ b/drivers/misc/mei/hbm.c
-@@ -15,11 +15,12 @@
+ struct mei_device {
+-	struct pci_dev *pdev;	/* pointer to pci device struct */
+ 	struct device *dev;
+ 	struct cdev cdev;
+ 	int minor;
+diff --git a/drivers/misc/mei/pci-me.c b/drivers/misc/mei/pci-me.c
+index 83e8892..a910717 100644
+--- a/drivers/misc/mei/pci-me.c
++++ b/drivers/misc/mei/pci-me.c
+@@ -430,7 +430,7 @@ static int mei_me_pm_runtime_resume(struct device *device)
   */
+ static inline void mei_me_set_pm_domain(struct mei_device *dev)
+ {
+-	struct pci_dev *pdev  = dev->pdev;
++	struct pci_dev *pdev  = to_pci_dev(dev->dev);
  
- #include <linux/export.h>
--#include <linux/pci.h>
- #include <linux/sched.h>
- #include <linux/wait.h>
--#include <linux/mei.h>
- #include <linux/pm_runtime.h>
-+#include <linux/slab.h>
-+
-+#include <linux/mei.h>
- 
- #include "mei_dev.h"
- #include "hbm.h"
-diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
-index dd233fd..76ef8ff 100644
---- a/drivers/misc/mei/init.c
-+++ b/drivers/misc/mei/init.c
-@@ -15,7 +15,6 @@
+ 	if (pdev->dev.bus && pdev->dev.bus->pm) {
+ 		dev->pg_domain.ops = *pdev->dev.bus->pm;
+diff --git a/drivers/misc/mei/pci-txe.c b/drivers/misc/mei/pci-txe.c
+index a1f60be..cd9dda7 100644
+--- a/drivers/misc/mei/pci-txe.c
++++ b/drivers/misc/mei/pci-txe.c
+@@ -378,7 +378,7 @@ static int mei_txe_pm_runtime_resume(struct device *device)
   */
+ static inline void mei_txe_set_pm_domain(struct mei_device *dev)
+ {
+-	struct pci_dev *pdev  = dev->pdev;
++	struct pci_dev *pdev  = to_pci_dev(dev->dev);
  
- #include <linux/export.h>
--#include <linux/pci.h>
- #include <linux/sched.h>
- #include <linux/wait.h>
- #include <linux/delay.h>
-diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
-index 8dac769..8844e17 100644
---- a/drivers/misc/mei/interrupt.c
-+++ b/drivers/misc/mei/interrupt.c
-@@ -16,11 +16,11 @@
- 
- 
- #include <linux/export.h>
--#include <linux/pci.h>
- #include <linux/kthread.h>
- #include <linux/interrupt.h>
- #include <linux/fs.h>
- #include <linux/jiffies.h>
-+#include <linux/slab.h>
- 
- #include <linux/mei.h>
- 
-diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
-index 4d738c8..d31f271 100644
---- a/drivers/misc/mei/main.c
-+++ b/drivers/misc/mei/main.c
-@@ -17,12 +17,12 @@
- #include <linux/moduleparam.h>
- #include <linux/kernel.h>
- #include <linux/device.h>
-+#include <linux/slab.h>
- #include <linux/fs.h>
- #include <linux/errno.h>
- #include <linux/types.h>
- #include <linux/fcntl.h>
- #include <linux/aio.h>
--#include <linux/pci.h>
- #include <linux/poll.h>
- #include <linux/init.h>
- #include <linux/ioctl.h>
-diff --git a/drivers/misc/mei/nfc.c b/drivers/misc/mei/nfc.c
-index 9f32fd6..5b369f4 100644
---- a/drivers/misc/mei/nfc.c
-+++ b/drivers/misc/mei/nfc.c
-@@ -19,7 +19,8 @@
- #include <linux/module.h>
- #include <linux/moduleparam.h>
- #include <linux/device.h>
--#include <linux/pci.h>
-+#include <linux/slab.h>
-+
- #include <linux/mei_cl_bus.h>
- 
- #include "mei_dev.h"
-diff --git a/drivers/misc/mei/wd.c b/drivers/misc/mei/wd.c
-index d28511b..626b4c1 100644
---- a/drivers/misc/mei/wd.c
-+++ b/drivers/misc/mei/wd.c
-@@ -17,7 +17,6 @@
- #include <linux/module.h>
- #include <linux/moduleparam.h>
- #include <linux/device.h>
--#include <linux/pci.h>
- #include <linux/sched.h>
- #include <linux/watchdog.h>
- 
-diff --git a/include/linux/mei_cl_bus.h b/include/linux/mei_cl_bus.h
-index d14af7b..164aad1 100644
---- a/include/linux/mei_cl_bus.h
-+++ b/include/linux/mei_cl_bus.h
-@@ -3,6 +3,7 @@
- 
- #include <linux/device.h>
- #include <linux/uuid.h>
-+#include <linux/mod_devicetable.h>
- 
- struct mei_cl_device;
- 
+ 	if (pdev->dev.bus && pdev->dev.bus->pm) {
+ 		dev->pg_domain.ops = *pdev->dev.bus->pm;
 -- 
 1.9.3
 
