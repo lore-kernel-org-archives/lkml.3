@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753673AbaIBKyv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 06:54:51 -0400
-Received: from mga02.intel.com ([134.134.136.20]:64545 "EHLO mga02.intel.com"
+	id S1753742AbaIBKzT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 06:55:19 -0400
+Received: from mga01.intel.com ([192.55.52.88]:15035 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752643AbaIBKyt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 06:54:49 -0400
+	id S1753200AbaIBKzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 06:55:17 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,448,1406617200"; 
-   d="scan'208";a="596691818"
+   d="scan'208";a="593287941"
 From: Irina Tirdea <irina.tirdea@intel.com>
 To: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org
 Cc: Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
         Peter Meerwald <pmeerw@pmeerw.net>,
         Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Irina Tirdea <irina.tirdea@intel.com>
-Subject: [PATCH] iio: gyro: bmg160: only set power state if PM_RUNTIME is defined
-Date: Tue,  2 Sep 2014 14:02:39 +0300
-Message-Id: <1409655759-28849-1-git-send-email-irina.tirdea@intel.com>
+        linux-kernel@vger.kernel.org, Beomho Seo <beomho.seo@samsung.com>,
+        Irina Tirdea <irina.tirdea@intel.com>
+Subject: [PATCH] iio: magn: ak8975: fix unnecessary casting between char* and const char*
+Date: Tue,  2 Sep 2014 14:04:25 +0300
+Message-Id: <1409655865-28912-1-git-send-email-irina.tirdea@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When CONFIG_PM_RUNTIME is not defined and bmg160 tries to power
-off the device, bmg160_set_power_state will call pm_runtime_put_autosuspend,
-which is not implemented (wil return -ENOSYS).
-
-Only call bmg160_set_power_state when CONFIG_PM_RUNTIME is defined.
+Use const char* instead of casting const char* to char*.
 
 Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
-Reviewed-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
 ---
- drivers/iio/gyro/bmg160.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/iio/magnetometer/ak8975.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/iio/gyro/bmg160.c b/drivers/iio/gyro/bmg160.c
-index 7524698..e41d6b5 100644
---- a/drivers/iio/gyro/bmg160.c
-+++ b/drivers/iio/gyro/bmg160.c
-@@ -235,6 +235,7 @@ static int bmg160_chip_init(struct bmg160_data *data)
- 	return 0;
- }
+diff --git a/drivers/iio/magnetometer/ak8975.c b/drivers/iio/magnetometer/ak8975.c
+index a235792..61edc66 100644
+--- a/drivers/iio/magnetometer/ak8975.c
++++ b/drivers/iio/magnetometer/ak8975.c
+@@ -477,7 +477,7 @@ static const struct acpi_device_id ak_acpi_match[] = {
+ };
+ MODULE_DEVICE_TABLE(acpi, ak_acpi_match);
  
-+#ifdef CONFIG_PM_RUNTIME
- static int bmg160_set_power_state(struct bmg160_data *data, bool on)
+-static char *ak8975_match_acpi_device(struct device *dev,
++static const char *ak8975_match_acpi_device(struct device *dev,
+ 				enum asahi_compass_chipset *chipset)
  {
- 	int ret;
-@@ -254,6 +255,12 @@ static int bmg160_set_power_state(struct bmg160_data *data, bool on)
+ 	const struct acpi_device_id *id;
+@@ -487,7 +487,7 @@ static char *ak8975_match_acpi_device(struct device *dev,
+ 		return NULL;
+ 	*chipset = (int)id->driver_data;
  
- 	return 0;
+-	return (char *)dev_name(dev);
++	return dev_name(dev);
  }
-+#else
-+static int bmg160_set_power_state(struct bmg160_data *data, bool on)
-+{
-+	return 0;
-+}
-+#endif
  
- static int bmg160_setup_any_motion_interrupt(struct bmg160_data *data,
- 					     bool status)
+ static int ak8975_probe(struct i2c_client *client,
+@@ -497,7 +497,7 @@ static int ak8975_probe(struct i2c_client *client,
+ 	struct iio_dev *indio_dev;
+ 	int eoc_gpio;
+ 	int err;
+-	char *name = NULL;
++	const char *name = NULL;
+ 
+ 	/* Grab and set up the supplied GPIO. */
+ 	if (client->dev.platform_data)
+@@ -539,7 +539,7 @@ static int ak8975_probe(struct i2c_client *client,
+ 	if (id) {
+ 		data->chipset =
+ 			(enum asahi_compass_chipset)(id->driver_data);
+-		name = (char *) id->name;
++		name = id->name;
+ 	} else if (ACPI_HANDLE(&client->dev))
+ 		name = ak8975_match_acpi_device(&client->dev, &data->chipset);
+ 	else
 -- 
 1.7.9.5
 
