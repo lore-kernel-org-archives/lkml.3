@@ -1,56 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755074AbaIBSkd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 14:40:33 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:56384 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755051AbaIBSkb (ORCPT
+	id S1754929AbaIBSnM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 14:43:12 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:57044 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754692AbaIBSnK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 14:40:31 -0400
+	Tue, 2 Sep 2014 14:43:10 -0400
+Date: Tue, 2 Sep 2014 12:43:05 -0600
+From: Lina Iyer <lina.iyer@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: khilman@linaro.org, ulf.hansson@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, rjw@rjwysocki.net,
+        daniel.lezcano@linaro.org
+Subject: Re: [PATCH v3 3/4] irq: Allow multiple clients to register for irq
+ affinity notification
+Message-ID: <20140902184305.GB91995@ilina-mac.local>
+References: <1409170479-29955-1-git-send-email-lina.iyer@linaro.org>
+ <1409170479-29955-4-git-send-email-lina.iyer@linaro.org>
+ <alpine.DEB.2.10.1408272239190.3323@nanos>
 MIME-Version: 1.0
-In-Reply-To: <1409681914.978561.162800349.5A7FA784@webmail.messagingengine.com>
-References: <CA+ydwtoDwQVg_BWrxxdpUyJ7Up60GtxTCLYe_5vFdV2td_kGhQ@mail.gmail.com>
-	<CAHA+R7MZCDGRhSf=UuVCGQvNo03wVziZQB_X30rwNf6hmHipQA@mail.gmail.com>
-	<20140829195339.GA9780@kria>
-	<1409363489.2980.17.camel@localhost>
-	<CAHA+R7ODa+LrdwSrS7HcBfwwq8_fpj-Ld0OCDtcOqkpCdZCvxg@mail.gmail.com>
-	<1409680684.972417.162793869.03CF8A61@webmail.messagingengine.com>
-	<CAHA+R7Mwy1SCpEUgGf9BdLEro6N-3t89KU=xL0iuzgOppXELrQ@mail.gmail.com>
-	<1409681914.978561.162800349.5A7FA784@webmail.messagingengine.com>
-Date: Tue, 2 Sep 2014 11:40:30 -0700
-Message-ID: <CAHA+R7MMe+O9-sNHQvgOO78tBzDy+hO+GtJFsuJPKx0eG6eMaw@mail.gmail.com>
-Subject: Re: RTNL: assertion failed at net/ipv6/addrconf.c (1699)
-From: Cong Wang <cwang@twopensource.com>
-To: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: Sabrina Dubroca <sd@queasysnail.net>, Tommi Rantala <tt.rantala@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org,
-        Dave Jones <davej@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1408272239190.3323@nanos>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 2, 2014 at 11:18 AM, Hannes Frederic Sowa
-<hannes@stressinduktion.org> wrote:
-> Those ASSERT_RTNLs were misplaced and only caught the callers mostly
-> from addrconf.c. I don't mind getting reports from stable kernel users
-> and fixing those, too (or help fixing those). ASSERT_RTNL is not
-> dangerous.
+On Wed, Aug 27 2014 at 14:56 -0600, Thomas Gleixner wrote:
+>On Wed, 27 Aug 2014, Lina Iyer wrote:
 >
-> We had a long history in not correctly using rtnl lock in ipv6/multicast
-> code and those wrongfully placed ASSERT_RTNLs were my bad when I fixed
-> the duplicate address detection handling.
+>> PM QoS and other idle frameworks can do a better job of addressing power
+>> and performance requirements for a cpu, knowing the IRQs that are
+>> affine to that cpu. If a performance request is placed against serving
+>> the IRQ faster and if the IRQ is affine to a set of cpus, then setting
+>> the performance requirements only on those cpus help save power on the
+>> rest of the cpus. PM QoS framework is one such framework interested in
+>> knowing the smp_affinity of an IRQ and the change notificiation in this
+>> regard. QoS requests for the CPU_DMA_LATENCY constraint currently apply
+>> to all cpus, but when attached to an IRQ, can be applied only to the set
+>> of cpus that IRQ's smp_affinity is set to. This allows other cpus to
+>> enter deeper sleep states to save power. More than one framework/driver
+>> can be interested in such information.
 >
-> If enough multicast addresses are subscribed to an interface we might
-> again get those splats because enabling promisc mode on an interface
-> will also check for rtnl lock.
+>All you are describing is the fact, that there is only a single
+>notifier possible right now, but you completely miss to describe WHY
+>you need multiple ones.
 >
+>The existing notifier was introduced to tell the driver that the irq
+>affinity has changed, so it can move its buffers to the proper NUMA
+>node. So if that driver gets this information then it can tell the PM
+>QoS code that its affinity changed so that stuff can react
+>accordingly, right?
+>
+With the new PM QoS changes, multiple drivers would now be interested in
+knowing the smp_affinity changes of the same IRQ. PM QoS abstracts the
+notifier in the framework, so individual drivers dont have to register
+for notification themselves and handle affinity notifications. But PM
+QoS needs to coexist with NUMA and other arch drivers that need to
+modify based on their arch specific needs upon affinity change
+notifications.
+Modifying the IRQ notifications to list, benefits having a simpler
+mechanism to notify all arch drivers and frameworks like PM QoS.
 
-Sure, I never doubt adding ASSERT_RTNL() is helpful, I just still think
-this should be for net-next, or at least a separated patch. I don't want
-my patch to be blamed in others' "Fixes:". :)
+
+>This is going nowhere unless you provide a proper usecase and
+>arguments why this is necessary. Handwaving and I want a pony
+>arguments are not sufficient.
+>
+>Thanks,
+>
+>	tglx
