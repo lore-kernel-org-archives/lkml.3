@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755544AbaIBWMs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 18:12:48 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:39499 "EHLO
+	id S1755557AbaIBWNO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 18:13:14 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:54022 "EHLO
 	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755275AbaIBWMp (ORCPT
+	with ESMTP id S1754615AbaIBWNL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 18:12:45 -0400
+	Tue, 2 Sep 2014 18:13:11 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>,
         One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
         linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 13/26] locking: Add non-fatal spin lock assert
-Date: Tue,  2 Sep 2014 17:39:22 -0400
-Message-Id: <1409693975-1028-14-git-send-email-peter@hurleysoftware.com>
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH 25/26] tty: Move and rename send_prio_char() as tty_send_xchar()
+Date: Tue,  2 Sep 2014 17:39:34 -0400
+Message-Id: <1409693975-1028-26-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com>
 References: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com>
@@ -27,55 +25,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide method for non-essential or non-critical code to warn of
-invariant errors.
+Relocate the file-scope function, send_prio_char(), as a global
+helper tty_send_xchar(). Remove the global declarations for
+tty_write_lock()/tty_write_unlock(), as these are file-scope only now.
 
-CC: Ingo Molnar <mingo@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>
-CC: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- include/linux/spinlock.h         | 1 +
- include/linux/spinlock_api_smp.h | 1 +
- include/linux/spinlock_api_up.h  | 1 +
- 3 files changed, 3 insertions(+)
+ drivers/tty/tty_io.c    | 33 +++++++++++++++++++++++++++++++--
+ drivers/tty/tty_ioctl.c | 33 ++-------------------------------
+ include/linux/tty.h     |  3 +--
+ 3 files changed, 34 insertions(+), 35 deletions(-)
 
-diff --git a/include/linux/spinlock.h b/include/linux/spinlock.h
-index 3f2867f..8a9aaf1 100644
---- a/include/linux/spinlock.h
-+++ b/include/linux/spinlock.h
-@@ -394,6 +394,7 @@ static inline int spin_can_lock(spinlock_t *lock)
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index 55b9103..54e359b 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -1037,14 +1037,14 @@ static ssize_t tty_read(struct file *file, char __user *buf, size_t count,
+ 	return i;
  }
  
- #define assert_spin_locked(lock)	assert_raw_spin_locked(&(lock)->rlock)
-+#define warn_not_spin_locked(lock)	warn_not_raw_spin_locked(&(lock)->rlock)
+-void tty_write_unlock(struct tty_struct *tty)
++static void tty_write_unlock(struct tty_struct *tty)
+ 	__releases(&tty->atomic_write_lock)
+ {
+ 	mutex_unlock(&tty->atomic_write_lock);
+ 	wake_up_interruptible_poll(&tty->write_wait, POLLOUT);
+ }
  
- /*
-  * Pull the atomic_t declaration:
-diff --git a/include/linux/spinlock_api_smp.h b/include/linux/spinlock_api_smp.h
-index 42dfab8..0ddd499 100644
---- a/include/linux/spinlock_api_smp.h
-+++ b/include/linux/spinlock_api_smp.h
-@@ -18,6 +18,7 @@
- int in_lock_functions(unsigned long addr);
+-int tty_write_lock(struct tty_struct *tty, int ndelay)
++static int tty_write_lock(struct tty_struct *tty, int ndelay)
+ 	__acquires(&tty->atomic_write_lock)
+ {
+ 	if (!mutex_trylock(&tty->atomic_write_lock)) {
+@@ -1231,6 +1231,35 @@ ssize_t redirected_tty_write(struct file *file, const char __user *buf,
+ 	return tty_write(file, buf, count, ppos);
+ }
  
- #define assert_raw_spin_locked(x)	BUG_ON(!raw_spin_is_locked(x))
-+#define warn_not_raw_spin_locked(x)	WARN_ON_ONCE(!raw_spin_is_locked(x))
++/**
++ *	tty_send_xchar	-	send priority character
++ *
++ *	Send a high priority character to the tty even if stopped
++ *
++ *	Locking: none for xchar method, write ordering for write method.
++ */
++
++int tty_send_xchar(struct tty_struct *tty, char ch)
++{
++	int	was_stopped = tty->stopped;
++
++	if (tty->ops->send_xchar) {
++		tty->ops->send_xchar(tty, ch);
++		return 0;
++	}
++
++	if (tty_write_lock(tty, 0) < 0)
++		return -ERESTARTSYS;
++
++	if (was_stopped)
++		start_tty(tty);
++	tty->ops->write(tty, &ch, 1);
++	if (was_stopped)
++		stop_tty(tty);
++	tty_write_unlock(tty);
++	return 0;
++}
++
+ static char ptychar[] = "pqrstuvwxyzabcde";
  
- void __lockfunc _raw_spin_lock(raw_spinlock_t *lock)		__acquires(lock);
- void __lockfunc _raw_spin_lock_nested(raw_spinlock_t *lock, int subclass)
-diff --git a/include/linux/spinlock_api_up.h b/include/linux/spinlock_api_up.h
-index d0d1888..f890f12 100644
---- a/include/linux/spinlock_api_up.h
-+++ b/include/linux/spinlock_api_up.h
-@@ -17,6 +17,7 @@
- #define in_lock_functions(ADDR)		0
+ /**
+diff --git a/drivers/tty/tty_ioctl.c b/drivers/tty/tty_ioctl.c
+index ffed466..14d9002 100644
+--- a/drivers/tty/tty_ioctl.c
++++ b/drivers/tty/tty_ioctl.c
+@@ -912,35 +912,6 @@ static int set_ltchars(struct tty_struct *tty, struct ltchars __user *ltchars)
+ #endif
  
- #define assert_raw_spin_locked(lock)	do { (void)(lock); } while (0)
-+#define warn_not_raw_spin_locked(lock)	do { (void)(lock); } while (0)
+ /**
+- *	send_prio_char		-	send priority character
+- *
+- *	Send a high priority character to the tty even if stopped
+- *
+- *	Locking: none for xchar method, write ordering for write method.
+- */
+-
+-static int send_prio_char(struct tty_struct *tty, char ch)
+-{
+-	int	was_stopped = tty->stopped;
+-
+-	if (tty->ops->send_xchar) {
+-		tty->ops->send_xchar(tty, ch);
+-		return 0;
+-	}
+-
+-	if (tty_write_lock(tty, 0) < 0)
+-		return -ERESTARTSYS;
+-
+-	if (was_stopped)
+-		start_tty(tty);
+-	tty->ops->write(tty, &ch, 1);
+-	if (was_stopped)
+-		stop_tty(tty);
+-	tty_write_unlock(tty);
+-	return 0;
+-}
+-
+-/**
+  *	tty_change_softcar	-	carrier change ioctl helper
+  *	@tty: tty to update
+  *	@arg: enable/disable CLOCAL
+@@ -1194,11 +1165,11 @@ int n_tty_ioctl_helper(struct tty_struct *tty, struct file *file,
+ 			break;
+ 		case TCIOFF:
+ 			if (STOP_CHAR(tty) != __DISABLED_CHAR)
+-				return send_prio_char(tty, STOP_CHAR(tty));
++				return tty_send_xchar(tty, STOP_CHAR(tty));
+ 			break;
+ 		case TCION:
+ 			if (START_CHAR(tty) != __DISABLED_CHAR)
+-				return send_prio_char(tty, START_CHAR(tty));
++				return tty_send_xchar(tty, START_CHAR(tty));
+ 			break;
+ 		default:
+ 			return -EINVAL;
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index 0a457c9..dea0f36 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -417,6 +417,7 @@ extern void tty_unregister_device(struct tty_driver *driver, unsigned index);
+ extern int tty_read_raw_data(struct tty_struct *tty, unsigned char *bufp,
+ 			     int buflen);
+ extern void tty_write_message(struct tty_struct *tty, char *msg);
++extern int tty_send_xchar(struct tty_struct *tty, char ch);
+ extern int tty_put_char(struct tty_struct *tty, unsigned char c);
+ extern int tty_chars_in_buffer(struct tty_struct *tty);
+ extern int tty_write_room(struct tty_struct *tty);
+@@ -503,8 +504,6 @@ extern struct tty_struct *tty_pair_get_pty(struct tty_struct *tty);
+ extern struct mutex tty_mutex;
+ extern spinlock_t tty_files_lock;
  
- /*
-  * In the UP-nondebug case there's no real locking going on, so the
+-extern void tty_write_unlock(struct tty_struct *tty);
+-extern int tty_write_lock(struct tty_struct *tty, int ndelay);
+ #define tty_is_writelocked(tty)  (mutex_is_locked(&tty->atomic_write_lock))
+ 
+ extern void tty_port_init(struct tty_port *port);
 -- 
 2.1.0
 
