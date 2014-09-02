@@ -1,78 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904AbaIBC45 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 22:56:57 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:60412 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751832AbaIBC4z (ORCPT
+	id S1752423AbaIBDBl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 23:01:41 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:41394 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436AbaIBDBk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 22:56:55 -0400
-From: Daniel Kurtz <djkurtz@chromium.org>
-To: Thierry Reding <thierry.reding@gmail.com>, dri-devel@lists.freedesktop.org
-Cc: David Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>,
-        Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH] drm/panel: update innolux n116bge timings
-Date: Tue,  2 Sep 2014 10:56:46 +0800
-Message-Id: <1409626606-15225-1-git-send-email-djkurtz@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+	Mon, 1 Sep 2014 23:01:40 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s82310DZ009639, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: Zhang Rui <rui.zhang@intel.com>, nic_swsd <nic_swsd@realtek.com>
+CC: "fireandfuel@hotmail.de" <fireandfuel@hotmail.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: RE: Regression:  Wake up from Suspend to RAM crashes ToshibaSatellitelaptop to black screen
+Thread-Topic: Regression:  Wake up from Suspend to RAM crashes Toshiba
+ Satellitelaptop to black screen
+Thread-Index: AQHPxbv4sO0CgarWu0WbRG4BR8GSlZvtJcAg
+Date: Tue, 2 Sep 2014 03:01:00 +0000
+Message-ID: <0835B3720019904CB8F7AA43166CEEB2516CC5@RTITMBSV03.realtek.com.tw>
+References: <1409558924.8085.46.camel@rzhang1-toshiba>
+In-Reply-To: <1409558924.8085.46.camel@rzhang1-toshiba>
+Accept-Language: zh-TW, en-US
+Content-Language: zh-TW
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.21.71.143]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are several different models of N116BGE.  According to the commit
-that added innolux_n116bge_mode [0], this N116BGE is for the eDP variety.
+> From: Zhang Rui [mailto:rui.zhang@intel.com] 
+> Sent: Monday, September 01, 2014 4:09 PM
+[...]
+> Hi, Hayes,
+> 
+> We got a regression report complaining that wakeup from Suspend to RAM
+> crashes, please refer to
+> https://bugzilla.kernel.org/show_bug.cgi?id=82741
+> 
+> and it seems that it is introduced by commit
+> b51ecea852b712618796d9eab8428a7d5f1f106f.
 
-[0] commit 0a2288c06aab73c966e82045c8f20b0e713baf2a
- Author: Thierry Reding <treding@nvidia.com>
- Date:   Thu Jul 3 14:02:59 2014 +0200
-
-   drm/panel: simple: Add Innolux N116BGE panel support
-
-The clock and htotal values from add by that patch are out of spec according to
-the datasheets I have seen for the eDP N116BGE (-EA2 and -EB2).
-
-This patch changes the values to the "Typ" values on the datasheet.
-
-Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
----
-
-Thierry,
-
-It is possible that your timings were correct for the panel you are using on
-the norrin reference board.  In that case I'm happy to upload a new patch
-that creates a new panel entry.  However, I'm pretty sure we are using the
-same N116BGE.
-
- drivers/gpu/drm/panel/panel-simple.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/gpu/drm/panel/panel-simple.c b/drivers/gpu/drm/panel/panel-simple.c
-index 4ce1db0..776764a 100644
---- a/drivers/gpu/drm/panel/panel-simple.c
-+++ b/drivers/gpu/drm/panel/panel-simple.c
-@@ -519,15 +519,15 @@ static const struct panel_desc foxlink_fl500wvr00_a0t = {
- };
+I couldn't reproduce the issue on my PC.
+It would be better if I could borrow the platform to debug.
  
- static const struct drm_display_mode innolux_n116bge_mode = {
--	.clock = 71000,
-+	.clock = 76420,
- 	.hdisplay = 1366,
--	.hsync_start = 1366 + 64,
--	.hsync_end = 1366 + 64 + 6,
--	.htotal = 1366 + 64 + 6 + 64,
-+	.hsync_start = 1366 + 136,
-+	.hsync_end = 1366 + 136 + 30,
-+	.htotal = 1366 + 136 + 30 + 60,
- 	.vdisplay = 768,
- 	.vsync_start = 768 + 8,
--	.vsync_end = 768 + 8 + 4,
--	.vtotal = 768 + 8 + 4 + 8,
-+	.vsync_end = 768 + 8 + 12,
-+	.vtotal = 768 + 8 + 12 + 12,
- 	.vrefresh = 60,
- 	.flags = DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC,
- };
--- 
-2.1.0.rc2.206.gedb03e5
-
+Best Regards,
+Hayes
