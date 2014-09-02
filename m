@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754066AbaIBNB0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 09:01:26 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:38704 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963AbaIBNBV (ORCPT
+	id S1754151AbaIBNBc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 09:01:32 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:34198 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754105AbaIBNB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 09:01:21 -0400
+	Tue, 2 Sep 2014 09:01:29 -0400
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Russell King <linux@arm.linux.org.uk>
 Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
@@ -21,10 +21,10 @@ Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
         Catalin Marinas <catalin.marinas@arm.com>,
         Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Nicolas Pitre <nico@linaro.org>
-Subject: [PATCH v11 01/19] arm: fiq: Add callbacks to manage FIQ routings
-Date: Tue,  2 Sep 2014 14:00:35 +0100
-Message-Id: <1409662853-29313-2-git-send-email-daniel.thompson@linaro.org>
+        Nicolas Pitre <nico@linaro.org>, Omar Sandoval <osandov@osandov.com>
+Subject: [PATCH v11 05/19] arm: KGDB/KDB FIQ support
+Date: Tue,  2 Sep 2014 14:00:39 +0100
+Message-Id: <1409662853-29313-6-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1409662853-29313-1-git-send-email-daniel.thompson@linaro.org>
 References: <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org>
@@ -33,201 +33,268 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently enable_fiq/disable_fiq use a simple offset to convert an IRQ
-virq into a FIQ virq. This is too inflexible for multi-platform kernels
-and makes runtime error checking impossible.
+The FIQ debugger may be used to debug situations when the kernel stuck
+in uninterruptable sections, e.g. the kernel infinitely loops or
+deadlocked in an interrupt or with interrupts disabled.
 
-We solve this by introducing a flexible mapping that allows interrupt
-controllers that support FIQ to register those mappings. This, in turn,
-makes it much possible for drivers in DT kernels to install FIQ handlers
-without knowing anything about the interrupt controller.
+Credit:
+
+    This patch is a near complete re-write of a patch originally
+    provided by Anton Vorontsov. Today only a couple of comments and
+    other small fragments still survive, however without Anton's work
+    to build from this patch would not exist.
 
 Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Acked-by: Nicolas Pitre <nico@linaro.org>
 Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Fabio Estevam <festevam@gmail.com>
+Cc: Ben Dooks <ben.dooks@codethink.co.uk>
+Cc: Omar Sandoval <osandov@osandov.com>
 ---
- arch/arm/include/asm/fiq.h |   8 ++++
- arch/arm/kernel/fiq.c      | 103 ++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 109 insertions(+), 2 deletions(-)
+ arch/arm/Kconfig            |   2 +
+ arch/arm/Kconfig.debug      |  19 ++++++++
+ arch/arm/include/asm/kgdb.h |   5 ++
+ arch/arm/kernel/fiq.c       |   4 +-
+ arch/arm/kernel/kgdb.c      | 112 +++++++++++++++++++++++++++++++++++++++++---
+ 5 files changed, 135 insertions(+), 7 deletions(-)
 
-diff --git a/arch/arm/include/asm/fiq.h b/arch/arm/include/asm/fiq.h
-index d493d0b..ed44528 100644
---- a/arch/arm/include/asm/fiq.h
-+++ b/arch/arm/include/asm/fiq.h
-@@ -16,8 +16,14 @@
- #ifndef __ASM_FIQ_H
- #define __ASM_FIQ_H
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index c49a775..e6380b3 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -305,6 +305,7 @@ choice
+ config ARCH_MULTIPLATFORM
+ 	bool "Allow multiple platforms to be selected"
+ 	depends on MMU
++	select ARCH_MIGHT_HAVE_KGDB_FIQ
+ 	select ARCH_WANT_OPTIONAL_GPIOLIB
+ 	select ARM_HAS_SG_CHAIN
+ 	select ARM_PATCH_PHYS_VIRT
+@@ -352,6 +353,7 @@ config ARCH_REALVIEW
  
-+#include <linux/irq.h>
- #include <asm/ptrace.h>
+ config ARCH_VERSATILE
+ 	bool "ARM Ltd. Versatile family"
++	select ARCH_MIGHT_HAVE_KGDB_FIQ
+ 	select ARCH_WANT_OPTIONAL_GPIOLIB
+ 	select ARM_AMBA
+ 	select ARM_TIMER_SP804
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index b11ad54..df3f0bf 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -2,6 +2,25 @@ menu "Kernel hacking"
  
-+struct fiq_chip {
-+	void (*fiq_enable)(struct irq_data *data);
-+	void (*fiq_disable)(struct irq_data *data);
-+};
+ source "lib/Kconfig.debug"
+ 
++config ARCH_MIGHT_HAVE_KGDB_FIQ
++	bool
 +
- struct fiq_handler {
- 	struct fiq_handler *next;
- 	/* Name
-@@ -38,6 +44,8 @@ extern void release_fiq(struct fiq_handler *f);
- extern void set_fiq_handler(void *start, unsigned int length);
- extern void enable_fiq(int fiq);
- extern void disable_fiq(int fiq);
-+extern bool has_fiq(int fiq);
-+extern void fiq_register_mapping(int irq, struct fiq_chip *chip);
++config KGDB_FIQ
++	bool "KGDB FIQ support"
++	depends on KGDB_KDB && ARCH_MIGHT_HAVE_KGDB_FIQ && !THUMB2_KERNEL
++	select FIQ
++	help
++	  The FIQ debugger may be used to debug situations when the
++	  kernel stuck in uninterruptable sections, e.g. the kernel
++	  infinitely loops or deadlocked in an interrupt or with
++	  interrupts disabled.
++
++	  By default KGDB FIQ is disabled at runtime, but can be enabled
++	  by setting the console to ttyNMI0 (and choosing the underlying
++	  serial port using kgdboc)
++
++	  If unsure, say N.
++
+ config ARM_PTDUMP
+ 	bool "Export kernel pagetable layout to userspace via debugfs"
+ 	depends on DEBUG_KERNEL
+diff --git a/arch/arm/include/asm/kgdb.h b/arch/arm/include/asm/kgdb.h
+index 0a9d5dd..cb5ccd6 100644
+--- a/arch/arm/include/asm/kgdb.h
++++ b/arch/arm/include/asm/kgdb.h
+@@ -11,7 +11,9 @@
+ #define __ARM_KGDB_H__
  
- /* helpers defined in fiqasm.S: */
- extern void __set_fiq_regs(unsigned long const *regs);
+ #include <linux/ptrace.h>
++#include <linux/linkage.h>
+ #include <asm/opcodes.h>
++#include <asm/exception.h>
+ 
+ /*
+  * GDB assumes that we're a user process being debugged, so
+@@ -48,6 +50,9 @@ static inline void arch_kgdb_breakpoint(void)
+ extern void kgdb_handle_bus_error(void);
+ extern int kgdb_fault_expected;
+ 
++extern int kgdb_register_fiq(unsigned int fiq);
++extern void kgdb_handle_fiq(struct pt_regs *regs);
++
+ #endif /* !__ASSEMBLY__ */
+ 
+ /*
 diff --git a/arch/arm/kernel/fiq.c b/arch/arm/kernel/fiq.c
-index 918875d..5d831cf 100644
+index 77c62b2..c6b3bed 100644
 --- a/arch/arm/kernel/fiq.c
 +++ b/arch/arm/kernel/fiq.c
-@@ -40,6 +40,9 @@
- #include <linux/init.h>
- #include <linux/interrupt.h>
- #include <linux/seq_file.h>
-+#include <linux/irq.h>
-+#include <linux/radix-tree.h>
-+#include <linux/slab.h>
+@@ -229,7 +229,9 @@ asmlinkage void __exception_irq_entry fiq_nmi_handler(struct pt_regs *regs)
+ 	 * order to ensure code review happens (drivers cannot "secretly"
+ 	 * employ FIQ without modifying this chain of calls).
+ 	 */
+-	/* list is currently empty */
++#ifdef CONFIG_KGDB_FIQ
++	kgdb_handle_fiq(regs);
++#endif
  
- #include <asm/cacheflush.h>
- #include <asm/cp15.h>
-@@ -52,7 +55,15 @@
- 		(unsigned)&vector_fiq_offset;		\
- 	})
+ 	nmi_exit();
+ 	set_irq_regs(old_regs);
+diff --git a/arch/arm/kernel/kgdb.c b/arch/arm/kernel/kgdb.c
+index a74b53c..630a3ef 100644
+--- a/arch/arm/kernel/kgdb.c
++++ b/arch/arm/kernel/kgdb.c
+@@ -12,8 +12,11 @@
+ #include <linux/irq.h>
+ #include <linux/kdebug.h>
+ #include <linux/kgdb.h>
++#include <asm/fiq.h>
+ #include <asm/traps.h>
  
-+struct fiq_data {
-+	struct fiq_chip *fiq_chip;
-+	struct irq_data *irq_data;
-+};
++static unsigned int kgdb_fiq;
 +
- static unsigned long no_fiq_insn;
-+static int fiq_start = -1;
-+static RADIX_TREE(fiq_data_tree, GFP_KERNEL);
-+static DEFINE_MUTEX(fiq_data_mutex);
+ struct dbg_reg_def_t dbg_reg_def[DBG_MAX_REG_NUM] =
+ {
+ 	{ "r0", 4, offsetof(struct pt_regs, ARM_r0)},
+@@ -175,14 +178,26 @@ static struct undef_hook kgdb_compiled_brkpt_hook = {
  
- /* Default reacquire function
-  * - we always relinquish FIQ control
-@@ -127,18 +138,65 @@ void release_fiq(struct fiq_handler *f)
- 	while (current_fiq->fiq_op(current_fiq->dev_id, 0));
+ static void kgdb_call_nmi_hook(void *ignored)
+ {
+-       kgdb_nmicallback(raw_smp_processor_id(), get_irq_regs());
++	kgdb_nmicallback(raw_smp_processor_id(), get_irq_regs());
  }
  
--static int fiq_start;
-+static struct fiq_data *lookup_fiq_data(int fiq)
-+{
-+	struct fiq_data *data;
-+
-+	rcu_read_lock();
-+	data = radix_tree_lookup(&fiq_data_tree, fiq);
-+	rcu_read_unlock();
-+
-+	return data;
-+}
- 
- void enable_fiq(int fiq)
+ void kgdb_roundup_cpus(unsigned long flags)
  {
-+	struct fiq_data *data = lookup_fiq_data(fiq);
+-       local_irq_enable();
+-       smp_call_function(kgdb_call_nmi_hook, NULL, 0);
+-       local_irq_disable();
++#if defined CONFIG_KGDB_FIQ && defined CONFIG_SMP
++	struct cpumask mask;
 +
-+	if (data) {
-+		if (data->fiq_chip->fiq_enable)
-+			data->fiq_chip->fiq_enable(data->irq_data);
-+		enable_irq(fiq);
++	if (in_nmi()) {
++		cpumask_copy(&mask, cpu_online_mask);
++		cpumask_clear_cpu(raw_smp_processor_id(), &mask);
++		if (!cpumask_empty(&mask))
++			send_fiq_ipi_mask(&mask);
 +		return;
 +	}
++#endif
 +
-+	if (WARN_ON(fiq_start == -1))
-+		return;
-+
- 	enable_irq(fiq + fiq_start);
++	local_irq_enable();
++	smp_call_function(kgdb_call_nmi_hook, NULL, 0);
++	local_irq_disable();
  }
  
- void disable_fiq(int fiq)
- {
-+	struct fiq_data *data = lookup_fiq_data(fiq);
-+
-+	if (data) {
-+		if (data->fiq_chip->fiq_disable)
-+			data->fiq_chip->fiq_disable(data->irq_data);
-+		disable_irq(fiq);
+ static int __kgdb_notify(struct die_args *args, unsigned long cmd)
+@@ -244,6 +259,43 @@ void kgdb_arch_exit(void)
+ 	unregister_die_notifier(&kgdb_notifier);
+ }
+ 
++/**
++ * kgdb_fiq_enable_nmi - Manage NMI-triggered entry to KGDB
++ * @on: Flag to either enable or disable an NMI
++ *
++ * The call counts disable requests, and thus allows to nest disables. But
++ * trying to enable already enabled NMI is an error.
++ */
++static void kgdb_fiq_enable_nmi(bool on)
++{
++	if (!kgdb_fiq)
 +		return;
++
++#ifdef CONFIG_KGDB_FIQ
++	static atomic_t cnt;
++	int ret;
++
++	if (on) {
++		ret = atomic_add_return(1, &cnt);
++		if (ret == 1)
++			enable_fiq(kgdb_fiq);
++
++		/*
++		 * There should be only one instance that calls this function
++		 * in "enable, disable" order. All other users must call
++		 * disable first, then enable. If not, something is wrong.
++		 */
++		if (WARN_ON(ret > 1))
++			return;
++	} else {
++		ret = atomic_add_return(-1, &cnt);
++		if (ret == 0)
++			disable_fiq(kgdb_fiq);
++	}
++#endif
++}
++
++
+ /*
+  * Register our undef instruction hooks with ARM undef core.
+  * We regsiter a hook specifically looking for the KGB break inst
+@@ -252,8 +304,56 @@ void kgdb_arch_exit(void)
+  */
+ struct kgdb_arch arch_kgdb_ops = {
+ #ifndef __ARMEB__
+-	.gdb_bpt_instr		= {0xfe, 0xde, 0xff, 0xe7}
++	.gdb_bpt_instr		= {0xfe, 0xde, 0xff, 0xe7},
+ #else /* ! __ARMEB__ */
+-	.gdb_bpt_instr		= {0xe7, 0xff, 0xde, 0xfe}
++	.gdb_bpt_instr		= {0xe7, 0xff, 0xde, 0xfe},
+ #endif
++	.enable_nmi		= kgdb_fiq_enable_nmi
+ };
++
++#ifdef CONFIG_KGDB_FIQ
++void kgdb_handle_fiq(struct pt_regs *regs)
++{
++	int actual;
++
++	if (!kgdb_fiq)
++		return;
++
++	if (!kgdb_nmicallback(raw_smp_processor_id(), regs))
++		return NOTIFY_OK;
++
++	actual = ack_fiq(kgdb_fiq);
++	WARN_ON(actual != kgdb_fiq);
++
++	/* there's no harm in doing this regardless of the above WARN_ON() */
++	if (kgdb_nmi_poll_knock())
++		kgdb_handle_exception(1, 0, 0, regs);
++
++	eoi_fiq(actual);
++
++	return NOTIFY_OK;
++}
++
++int kgdb_register_fiq(unsigned int fiq)
++{
++	static struct fiq_handler kgdb_fiq_desc = { .name = "kgdb", };
++	int err;
++
++	if (!has_fiq(fiq)) {
++		pr_warn(
++		    "%s: Cannot register %u (no FIQ with this number)\n",
++		    __func__, fiq);
++		return -ENODEV;
 +	}
 +
-+	if (WARN_ON(fiq_start == -1))
-+		return;
++	err = claim_fiq(&kgdb_fiq_desc);
++	if (err) {
++		pr_warn("%s: unable to claim fiq", __func__);
++		return err;
++	}
 +
- 	disable_irq(fiq + fiq_start);
- }
- 
-+bool has_fiq(int fiq)
-+{
-+	struct fiq_data *data = lookup_fiq_data(fiq);
++	kgdb_fiq = fiq;
 +
-+	if (data)
-+		return true;
-+
-+	if (fiq_start == -1)
-+		return false;
-+
-+	return fiq >= fiq_start;
-+}
-+EXPORT_SYMBOL(has_fiq);
-+
- EXPORT_SYMBOL(set_fiq_handler);
- EXPORT_SYMBOL(__set_fiq_regs);	/* defined in fiqasm.S */
- EXPORT_SYMBOL(__get_fiq_regs);	/* defined in fiqasm.S */
-@@ -147,9 +205,50 @@ EXPORT_SYMBOL(release_fiq);
- EXPORT_SYMBOL(enable_fiq);
- EXPORT_SYMBOL(disable_fiq);
- 
-+/*
-+ * Add a mapping from a Linux irq to the fiq data.
-+ */
-+void fiq_register_mapping(int irq, struct fiq_chip *chip)
-+{
-+	struct fiq_data *fiq_data = NULL;
-+	int res;
-+
-+	/* fiq_register_mapping can't be mixed with init_FIQ */
-+	BUG_ON(fiq_start != -1);
-+
-+	fiq_data = kmalloc(sizeof(*fiq_data), GFP_KERNEL);
-+	if (!fiq_data)
-+		goto err;
-+
-+	fiq_data->fiq_chip = chip;
-+	fiq_data->irq_data = irq_get_irq_data(irq);
-+	BUG_ON(!fiq_data->irq_data);
-+
-+	mutex_lock(&fiq_data_mutex);
-+	res = radix_tree_insert(&fiq_data_tree, irq, fiq_data);
-+	mutex_unlock(&fiq_data_mutex);
-+	if (res)
-+		goto err;
-+
-+	return;
-+
-+err:
-+	kfree(fiq_data);
-+	pr_err("fiq: Cannot register mapping %d\n", irq);
-+}
-+
-+/*
-+ * Set the offset between normal IRQs and their FIQ shadows.
-+ */
- void __init init_FIQ(int start)
- {
-+	fiq_start = start;
-+}
-+
-+static int __init init_default_fiq_handler(void)
-+{
- 	unsigned offset = FIQ_OFFSET;
- 	no_fiq_insn = *(unsigned long *)(0xffff0000 + offset);
--	fiq_start = start;
 +	return 0;
- }
-+pure_initcall(init_default_fiq_handler);
++}
++#endif
 -- 
 1.9.3
 
