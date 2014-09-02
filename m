@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755464AbaIBWMX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 18:12:23 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:43764 "EHLO
+	id S1755506AbaIBWMd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 18:12:33 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:33542 "EHLO
 	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754581AbaIBWMS (ORCPT
+	with ESMTP id S1755492AbaIBWMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 18:12:18 -0400
+	Tue, 2 Sep 2014 18:12:31 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>,
         One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
         linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
         Peter Hurley <peter@hurleysoftware.com>,
-        Karsten Keil <isdn@linux-pingi.de>, <netdev@vger.kernel.org>
-Subject: [PATCH 16/26] isdn: i4l: Remove ASYNC_CTS_FLOW
-Date: Tue,  2 Sep 2014 17:39:25 -0400
-Message-Id: <1409693975-1028-17-git-send-email-peter@hurleysoftware.com>
+        Sonic Zhang <sonic.zhang@analog.com>
+Subject: [PATCH 19/26] serial: bfin-uart: Fix auto CTS
+Date: Tue,  2 Sep 2014 17:39:28 -0400
+Message-Id: <1409693975-1028-20-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com>
 References: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com>
@@ -26,33 +26,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ISDN4Linux always enables CTS flow control and does not use the
-tty_port_cts_enabled() helper function; remove ASYNC_CTS_FLOW
-state enable/disable.
+Commit 64851636d568ae9f167cd5d1dcdbfe17e6eef73c,
+serial: bfin-uart: Remove ASYNC_CTS_FLOW flag for hardware automatic CTS,
+open-codes uart_handle_cts_change() when CONFIG_SERIAL_BFIN_HARD_CTSRTS
+to skip start and stop tx.
 
-cc: Karsten Keil <isdn@linux-pingi.de>
-cc: <netdev@vger.kernel.org>
+But the CTS interrupt handler _still_ calls uart_handle_cts_change();
+only call uart_handle_cts_change() if !CONFIG_SERIAL_BFIN_HARD_CTSRTS.
+
+cc: Sonic Zhang <sonic.zhang@analog.com>
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/isdn/i4l/isdn_tty.c | 5 -----
- 1 file changed, 5 deletions(-)
+ drivers/tty/serial/bfin_uart.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/isdn/i4l/isdn_tty.c b/drivers/isdn/i4l/isdn_tty.c
-index 3c5f249..bc91261 100644
---- a/drivers/isdn/i4l/isdn_tty.c
-+++ b/drivers/isdn/i4l/isdn_tty.c
-@@ -1043,11 +1043,6 @@ isdn_tty_change_speed(modem_info *info)
- 	if (!(cflag & PARODD))
- 		cval |= UART_LCR_EPAR;
+diff --git a/drivers/tty/serial/bfin_uart.c b/drivers/tty/serial/bfin_uart.c
+index fc9fbf3..7da9911 100644
+--- a/drivers/tty/serial/bfin_uart.c
++++ b/drivers/tty/serial/bfin_uart.c
+@@ -122,8 +122,9 @@ static irqreturn_t bfin_serial_mctrl_cts_int(int irq, void *dev_id)
+ 		if (!status)
+ 			uport->hw_stopped = 1;
+ 	}
+-#endif
++#else
+ 	uart_handle_cts_change(uport, status & TIOCM_CTS);
++#endif
  
--	/* CTS flow control flag and modem status interrupts */
--	if (cflag & CRTSCTS) {
--		port->flags |= ASYNC_CTS_FLOW;
--	} else
--		port->flags &= ~ASYNC_CTS_FLOW;
- 	if (cflag & CLOCAL)
- 		port->flags &= ~ASYNC_CHECK_CD;
- 	else {
+ 	return IRQ_HANDLED;
+ }
 -- 
 2.1.0
 
