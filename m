@@ -1,127 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677AbaIBHeO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 03:34:14 -0400
-Received: from darkcity.gna.ch ([195.226.6.51]:49146 "EHLO mail.gna.ch"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750912AbaIBHeN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 03:34:13 -0400
-Message-ID: <540572EC.4070909@daenzer.net>
-Date: Tue, 02 Sep 2014 16:34:04 +0900
-From: =?windows-1252?Q?Michel_D=E4nzer?= <michel@daenzer.net>
-User-Agent: Mozilla/5.0 (X11; Linux ppc; rv:31.0) Gecko/20100101 Icedove/31.0
+	id S1752571AbaIBHiC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 03:38:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42415 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751180AbaIBHiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 03:38:00 -0400
+Message-ID: <540573B3.2010904@redhat.com>
+Date: Tue, 02 Sep 2014 15:37:23 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Mikael Pettersson <mikpelinux@gmail.com>
-CC: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [BISECTED] 3.17-rc1 radeon screen corruption due to "Always flush
- the HDP cache before submitting a CS to the GPU"
-References: <21505.55482.547592.906934@gargle.gargle.HOWL>
-In-Reply-To: <21505.55482.547592.906934@gargle.gargle.HOWL>
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        Ingo Molnar <mingo@kernel.org>
+CC: Mike Galbraith <umgwanakikbuti@gmail.com>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, mst@redhat.com,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process
+ is runnable
+References: <1408608310-13579-1-git-send-email-jasowang@redhat.com> <1408608310-13579-2-git-send-email-jasowang@redhat.com> <1408683665.5648.69.camel@marge.simpson.net> <53F6F14B.1030609@redhat.com> <20140822074224.GB7372@gmail.com> <53FFEEC0.4000304@redhat.com> <540414AB.9000004@linux.intel.com> <54053998.4040604@redhat.com> <54056076.2030603@linux.intel.com>
+In-Reply-To: <54056076.2030603@linux.intel.com>
 Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30.08.2014 22:59, Mikael Pettersson wrote:
-> Since 3.17-rc1 my radeon card (RV370 / X1050 card) causes screen corruption
-> after a while in X + firefox.  This still occurs with yesterday's HEAD
-> of Linus' repo.  3.16 and ealier kernels are fine.
-> 
-> I ran a bisect, which identified:
-> 
-> commit 72a9987edcedb89db988079a03c9b9c65b6ec9ac
-> Author: Michel DÃ¤nzer <michel.daenzer@amd.com>
-> Date:   Thu Jul 31 18:43:49 2014 +0900
-> 
->      drm/radeon: Always flush the HDP cache before submitting a CS to the GPU
-> 
-> as the cause of my screen corruption.  Reverting this from 3.17-rc2
-> (which requires manual intervention due to subsequent changes in
-> radeon_ring_commit()) eliminates the screen corruption.
+On 09/02/2014 02:15 PM, Eliezer Tamir wrote:
+> On 02/09/2014 06:29, Jason Wang wrote:
+>> On 09/01/2014 02:39 PM, Eliezer Tamir wrote:
+>>> On 29/08/2014 06:08, Jason Wang wrote:
+>>>>> Yes, but rx busy polling only works in process context and does not
+>>>>> disable bh, so it may be not an issue.
+>>> sk_busy_loop() uses rcu_read_lock_bh(), so it does run with bh disabled.
+>> True, so we need probably also exit the loop when there are pending bhs.
+> I'm not so sure, in the typical busy poll scenario, the incoming
+> traffic is the most time-critical thing in the system.
+> It's so important that you are willing to trade lots of CPU power
+> for better latency. The user has decided that he wants to dedicate
+> this CPU mostly for that. 
 
-Does the patch below help?
+But user should increase the process priority or cgroup in this case.
+> This is not something that plays nice with
+> other apps, but this is what the user wants.
 
-diff --git a/drivers/gpu/drm/radeon/r100.c b/drivers/gpu/drm/radeon/r100.c
-index 4c5ec44..3ff9c53 100644
---- a/drivers/gpu/drm/radeon/r100.c
-+++ b/drivers/gpu/drm/radeon/r100.c
-@@ -1070,6 +1070,20 @@ void r100_ring_hdp_flush(struct radeon_device *rdev, struct radeon_ring *ring)
- 	radeon_ring_write(ring, rdev->config.r100.hdp_cntl);
- }
- 
-+/**
-+ * r100_mmio_hdp_flush - flush Host Data Path via MMIO
-+ * rdev: radeon device structure
-+ */
-+void r100_mmio_hdp_flush(struct radeon_device *rdev)
-+{
-+	WREG32(RADEON_HOST_PATH_CNTL,
-+	       rdev->config.r100.hdp_cntl | RADEON_HDP_READ_BUFFER_INVALIDATE);
-+	(void)RREG32(RADEON_HOST_PATH_CNTL);
-+	WREG32(RADEON_HOST_PATH_CNTL,
-+	       rdev->config.r100.hdp_cntl);
-+	(void)RREG32(RADEON_HOST_PATH_CNTL);
-+}
-+
- static void r100_cp_load_microcode(struct radeon_device *rdev)
- {
- 	const __be32 *fw_data;
-diff --git a/drivers/gpu/drm/radeon/radeon_asic.c b/drivers/gpu/drm/radeon/radeon_asic.c
-index eeeeabe..c23a123 100644
---- a/drivers/gpu/drm/radeon/radeon_asic.c
-+++ b/drivers/gpu/drm/radeon/radeon_asic.c
-@@ -408,7 +408,7 @@ static struct radeon_asic r300_asic_pcie = {
- 	.resume = &r300_resume,
- 	.vga_set_state = &r100_vga_set_state,
- 	.asic_reset = &r300_asic_reset,
--	.mmio_hdp_flush = NULL,
-+	.mmio_hdp_flush = r100_mmio_hdp_flush,
- 	.gui_idle = &r100_gui_idle,
- 	.mc_wait_for_idle = &r300_mc_wait_for_idle,
- 	.gart = {
-diff --git a/drivers/gpu/drm/radeon/radeon_asic.h b/drivers/gpu/drm/radeon/radeon_asic.h
-index 275a5dc..e9b1c35 100644
---- a/drivers/gpu/drm/radeon/radeon_asic.h
-+++ b/drivers/gpu/drm/radeon/radeon_asic.h
-@@ -150,6 +150,8 @@ void r100_gfx_set_wptr(struct radeon_device *rdev,
- 		       struct radeon_ring *ring);
- void r100_ring_hdp_flush(struct radeon_device *rdev,
- 			 struct radeon_ring *ring);
-+void r100_mmio_hdp_flush(struct radeon_device *rdev);
-+
- /*
-  * r200,rv250,rs300,rv280
-  */
-diff --git a/drivers/gpu/drm/radeon/radeon_gem.c b/drivers/gpu/drm/radeon/radeon_gem.c
-index bfd7e1b..3d0f564 100644
---- a/drivers/gpu/drm/radeon/radeon_gem.c
-+++ b/drivers/gpu/drm/radeon/radeon_gem.c
-@@ -368,6 +368,7 @@ int radeon_gem_wait_idle_ioctl(struct drm_device *dev, void *data,
- 	r = radeon_bo_wait(robj, &cur_placement, false);
- 	/* Flush HDP cache via MMIO if necessary */
- 	if (rdev->asic->mmio_hdp_flush &&
-+	    !rdev->asic->ring[RADEON_RING_TYPE_GFX_INDEX]->hdp_flush &&
- 	    radeon_mem_type_to_domain(cur_placement) == RADEON_GEM_DOMAIN_VRAM)
- 		robj->rdev->asic->mmio_hdp_flush(rdev);
- 	drm_gem_object_unreference_unlocked(gobj);
-diff --git a/drivers/gpu/drm/radeon/radeon_ring.c b/drivers/gpu/drm/radeon/radeon_ring.c
-index d656079..b82843b 100644
---- a/drivers/gpu/drm/radeon/radeon_ring.c
-+++ b/drivers/gpu/drm/radeon/radeon_ring.c
-@@ -188,7 +188,8 @@ void radeon_ring_commit(struct radeon_device *rdev, struct radeon_ring *ring,
- 	/* If we are emitting the HDP flush via the ring buffer, we need to
- 	 * do it before padding.
- 	 */
--	if (hdp_flush && rdev->asic->ring[ring->idx]->hdp_flush)
-+	if (hdp_flush && rdev->asic->ring[ring->idx]->hdp_flush &&
-+	    !rdev->asic->mmio_hdp_flush)
- 		rdev->asic->ring[ring->idx]->hdp_flush(rdev, ring);
- 	/* We pad to match fetch size */
- 	while (ring->wptr & ring->align_mask) {
+So the busy polling looks have a higher priority somehow than other
+processes.
+> So, you definitely don't want to starve any bh, and you should
+> regularly re-enable bh's, but you also don't want to stop everything
+> at any time a bh is scheduled.
 
+If I get your meaning, you may want call to rcu_read_lock_bh() and get
+socket napi id inside the do{} loop? This seems can prevent bhs from
+being starved and can also handle the case that the packets were from
+different NAPIs.
+>
+> You also want network processing on the queues that are busy polled
+> to come through busy polling and not through NAPI, which is run in bh
+> context.
+>
+> -Eliezer
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-
--- 
-Earthling Michel Dänzer            |                  http://www.amd.com
-Libre software enthusiast          |                Mesa and X developer
