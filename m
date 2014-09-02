@@ -1,77 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026AbaIBDf4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 23:35:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14788 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751832AbaIBDfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 23:35:55 -0400
-Message-ID: <54053AF8.6070907@redhat.com>
-Date: Tue, 02 Sep 2014 11:35:20 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Eliezer Tamir <eliezer.tamir@linux.intel.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-CC: Ingo Molnar <mingo@kernel.org>, Mike Galbraith <umgwanakikbuti@gmail.com>,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mst@redhat.com,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Ingo Molnar jacob.e.keller@intel.com" <mingo@elte.hu>
-Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process
- is runnable
-References: <1408608310-13579-1-git-send-email-jasowang@redhat.com>	 <1408608310-13579-2-git-send-email-jasowang@redhat.com>	 <1408683665.5648.69.camel@marge.simpson.net>	 <20140822073653.GA7372@gmail.com> <53F70887.8030602@redhat.com> <1408716976.5604.18.camel@edumazet-glaptop2.roam.corp.google.com> <53FB3715.7070009@linux.intel.com> <53FC3466.8000304@redhat.com> <5404186E.4090409@linux.intel.com>
-In-Reply-To: <5404186E.4090409@linux.intel.com>
-Content-Type: text/plain; charset=utf-8
+	id S1753156AbaIBDg4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 23:36:56 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:46868 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752006AbaIBDgz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Sep 2014 23:36:55 -0400
+Date: Mon, 01 Sep 2014 20:36:54 -0700 (PDT)
+Message-Id: <20140901.203654.169816832338808793.davem@davemloft.net>
+To: geert@linux-m68k.org
+Cc: isubramanian@apm.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: net: NET_XGENE should depend on HAS_DMA
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1409329301-6747-1-git-send-email-geert@linux-m68k.org>
+References: <1409329301-6747-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 01 Sep 2014 20:36:54 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01/2014 02:55 PM, Eliezer Tamir wrote:
-> On 26/08/2014 10:16, Jason Wang wrote:
->> On 08/25/2014 09:16 PM, Eliezer Tamir wrote:
->>> Here are my 2 cents:
->>> I think Ingo's suggestion of only yielding to tasks with same or higher
->>> priority makes sense.
->> I'm not sure I get your meaning. Do you mean calling yield_to() directly
->> in sk_busy_loop?
-> Think about the case where two processes are busy polling on the
-> same CPU and the same device queue. Since busy polling processes
-> incoming packets on the queue from any process, this scenario works
-> well currently,
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+Date: Fri, 29 Aug 2014 18:21:41 +0200
 
-I see, but looks like we can simply do this by exiting the busy loop
-when ndo_busy_poll() finds something but not for current socket?
->  and will not work at all when polling yields to other
-> processes that are of the same priority that are running on the same
-> CPU.
+> If NO_DMA=y:
+ ...
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-So yielding has its limitation, we need let scheduler to do the choice
-instead.
->
-> As a side note, there is a lot of room for improvement when two
-> processes on the same CPU want to busy poll on different device
-> queues.
-> The RFC code I published for epoll support showed one possible
-> way of solving this, but I'm sure that there are other possibilities.
->
-> Maybe the networking subsystem should maintain a list of device
-> queues that need busypolling and have a thread that would poll
-> all of them when there's nothing better to do.
-
-Not sure whether this method will scale considering thousands of sockets
-and processes.
->
-> I'm aware of similar work on busy polling on NVMe devices, so
-> maybe there should be a global busypoll thread for all devices
-> that support it.
->
-> BTW, I have someone inside Intel that wants to test future patches. Feel
-> free to send me patches for testing, even if they are not ready for
-> publishing yet.
->
-> Cheers,
-> Eliezer
-
-Ok, will do it, thanks a lot.
+Applied.
