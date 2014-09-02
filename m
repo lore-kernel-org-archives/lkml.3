@@ -1,100 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753075AbaIBBNL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 21:13:11 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:49882 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752529AbaIBBNI (ORCPT
+	id S1752060AbaIBBWd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 21:22:33 -0400
+Received: from fgwmail8.fujitsu.co.jp ([192.51.44.38]:46040 "EHLO
+	fgwmail8.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751711AbaIBBWa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 21:13:08 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Harish Jenny K N <harish_kandiga@mentor.com>
-Cc: <davem@davemloft.net>, <dborkman@redhat.com>, <tgraf@suug.ch>,
-        <darkjames-ws@darkjames.pl>, <rgb@redhat.com>,
-        <eric.dumazet@gmail.com>, <stephen@networkplumber.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <1409555309-5893-1-git-send-email-harish_kandiga@mentor.com>
-Date: Mon, 01 Sep 2014 20:12:56 -0500
-In-Reply-To: <1409555309-5893-1-git-send-email-harish_kandiga@mentor.com>
-	(Harish Jenny K. N.'s message of "Mon, 1 Sep 2014 12:38:29 +0530")
-Message-ID: <87ha0qdduv.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Mon, 1 Sep 2014 21:22:30 -0400
+X-Greylist: delayed 530 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Sep 2014 21:22:30 EDT
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <5405199B.50601@jp.fujitsu.com>
+Date: Tue, 02 Sep 2014 10:12:59 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX18hM/fvIxBZYrYHt39uoFbSeQqsYbDnNnE=
-X-SA-Exim-Connect-IP: 97.85.93.202
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 TVD_RCVD_IP Message was received from an IP address
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.5000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  1.0 T_XMDrugObfuBody_12 obfuscated drug references
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Harish Jenny K N <harish_kandiga@mentor.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH]     netlink: Safer deletion of sk_bind_node
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>
+CC: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        David Rientjes <rientjes@google.com>,
+        Fengguang Wu <fengguang.wu@intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: page_alloc: Default to node-ordering on 64-bit NUMA
+ machines
+References: <20140901125551.GI12424@suse.de>
+In-Reply-To: <20140901125551.GI12424@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Harish Jenny K N writes:
-
-> From: Harish Jenny K N <harish_kandiga@mentor.com>
+(2014/09/01 21:55), Mel Gorman wrote:
+> Zones are allocated by the page allocator in either node or zone order.
+> Node ordering is preferred in terms of locality and is applied automatically
+> in one of three cases.
 >
->     Unable to handle kernel NULL pointer dereference at virtual address 00000000
->         (netlink_release+0x0/0x2a0) from [<8034e78c>] (sock_release+0x28/0xa4)
->         (sock_release+0x0/0xa4) from [<8034e830>] (sock_close+0x28/0x34)
->         (sock_close+0x0/0x34) from [<800f3490>] (__fput+0xf0/0x1ec)
->         (__fput+0x0/0x1ec) from [<800f3634>] (____fput+0x10/0x14)
->         (____fput+0x0/0x14) from [<80040a64>] (task_work_run+0xb8/0xd8)
->         (task_work_run+0x0/0xd8) from [<800113a0>] (do_work_pending+0xb0/0xc4)
->         (do_work_pending+0x0/0xc4) from [<8000d960>] (work_pending+0xc/0x20)
->     Call flow of the inline and static functions
->         netlink_release
->         -----netlink_remove
->         ---------__sk_del_bind_node
->         --------------__hlist_del
+>    1. If a node has only low memory
+>
+>    2. If DMA/DMA32 is a high percentage of memory
+>
+>    3. If low memory on a single node is greater than 70% of the node size
+>
+> Otherwise zone ordering is used to preserve low memory. Unfortunately
+> a consequence of this is that a machine with balanced NUMA nodes will
+> experience different performance characteristics depending on which node
+> they happen to start from.
+>
+> The point of zone ordering is to protect lower nodes for devices that require
+> DMA/DMA32 memory. When NUMA was first introduced, this was critical as 32-bit
+> NUMA machines commonly suffered from low memory exhaustion problems. On
+> 64-bit machines the primary concern is devices that are 32-bit only which
+> is less severe than the low memory exhaustion problem on 32-bit NUMA. It
+> seems there are really few devices that depends on it.
+>
+> AGP -- I assume this is getting more rare but even then I think the allocations
+> 	happen early in boot time where lowmem pressure is less of a problem
+>
+> DRM -- If the device is 32-bit only then there may be low pressure. I didn't
+> 	evaluate these in detail but it looks like some of these are mobile
+> 	graphics card. Not many NUMA laptops out there. DRM folk should know
+> 	better though.
+>
+> Some TV cards -- Much demand for 32-bit capable TV cards on NUMA machines?
+>
+> B43 wireless card -- again not really a NUMA thing.
+>
+> I cannot find a good reason to incur a performance penalty on all 64-bit NUMA
+> machines in case someone throws a brain damanged TV or graphics card in there.
+> This patch defaults to node-ordering on 64-bit NUMA machines. I was tempted
+> to make it default everywhere but I understand that some embedded arches may
+> be using 32-bit NUMA where I cannot predict the consequences.
+>
+> The performance impact depends on the workload and the characteristics of the
+> machine and the machine I tested on had a large Normal zone on node 0 so the
+> impact is within the noise for the majority of tests. The allocation stats
+> show more allocation requests were from DMA32 and local node. Running SpecJBB
+> with multiple JVMs and automatic NUMA balancing disabled the results were
+>
+> specjbb
+>                       3.17.0-rc2            3.17.0-rc2
+>                          vanilla        nodeorder-v1r1
+> Min    1      29534.00 (  0.00%)     30020.00 (  1.65%)
+> Min    10    115717.00 (  0.00%)    134038.00 ( 15.83%)
+> Min    19    109718.00 (  0.00%)    114186.00 (  4.07%)
+> Min    28    104459.00 (  0.00%)    103639.00 ( -0.78%)
+> Min    37     98245.00 (  0.00%)    103756.00 (  5.61%)
+> Min    46     97198.00 (  0.00%)     96197.00 ( -1.03%)
+> Mean   1      30953.25 (  0.00%)     31917.75 (  3.12%)
+> Mean   10    124432.50 (  0.00%)    140904.00 ( 13.24%)
+> Mean   19    116033.50 (  0.00%)    119294.75 (  2.81%)
+> Mean   28    108365.25 (  0.00%)    106879.50 ( -1.37%)
+> Mean   37    102984.75 (  0.00%)    106924.25 (  3.83%)
+> Mean   46    100783.25 (  0.00%)    105368.50 (  4.55%)
+> Stddev 1       1260.38 (  0.00%)      1109.66 ( 11.96%)
+> Stddev 10      7434.03 (  0.00%)      5171.91 ( 30.43%)
+> Stddev 19      8453.84 (  0.00%)      5309.59 ( 37.19%)
+> Stddev 28      4184.55 (  0.00%)      2906.63 ( 30.54%)
+> Stddev 37      5409.49 (  0.00%)      3192.12 ( 40.99%)
+> Stddev 46      4521.95 (  0.00%)      7392.52 (-63.48%)
+> Max    1      32738.00 (  0.00%)     32719.00 ( -0.06%)
+> Max    10    136039.00 (  0.00%)    148614.00 (  9.24%)
+> Max    19    130566.00 (  0.00%)    127418.00 ( -2.41%)
+> Max    28    115404.00 (  0.00%)    111254.00 ( -3.60%)
+> Max    37    112118.00 (  0.00%)    111732.00 ( -0.34%)
+> Max    46    108541.00 (  0.00%)    116849.00 (  7.65%)
+> TPut   1     123813.00 (  0.00%)    127671.00 (  3.12%)
+> TPut   10    497730.00 (  0.00%)    563616.00 ( 13.24%)
+> TPut   19    464134.00 (  0.00%)    477179.00 (  2.81%)
+> TPut   28    433461.00 (  0.00%)    427518.00 ( -1.37%)
+> TPut   37    411939.00 (  0.00%)    427697.00 (  3.83%)
+> TPut   46    403133.00 (  0.00%)    421474.00 (  4.55%)
+>
+>                              3.17.0-rc2  3.17.0-rc2
+>                                 vanillanodeorder-v1r1
+> DMA allocs                           0           0
+> DMA32 allocs                        57     1491992
+> Normal allocs                 32543566    30026383
+> Movable allocs                       0           0
+> Direct pages scanned                 0           0
+> Kswapd pages scanned                 0           0
+> Kswapd pages reclaimed               0           0
+> Direct pages reclaimed               0           0
+> Kswapd efficiency                 100%        100%
+> Kswapd velocity                  0.000       0.000
+> Direct efficiency                 100%        100%
+> Direct velocity                  0.000       0.000
+> Percentage direct scans             0%          0%
+> Zone normal velocity             0.000       0.000
+> Zone dma32 velocity              0.000       0.000
+> Zone dma velocity                0.000       0.000
+> THP fault alloc                  55164       52987
+> THP collapse alloc                 139         147
+> THP splits                          26          21
+> NUMA alloc hit                 4169066     4250692
+> NUMA alloc miss                      0           0
+>
+> Note that there were more DMA32 allocations with the patch applied.  In this
+> particular case there was no difference in numa_hit and numa_miss. The
+> expectation is that DMA32 was being used at the low watermark instead of
+> falling into the slow path. kswapd was not woken but it's not worken for
+> THP allocations.
+>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-Is there any reason __sk_del_bind_node should not be changed instead?
+I agree. When I introduced the option(at ia64 numa development), there might be
+some troubles. Recent NUMA tend to have enough memory on node0.
 
-If not there should be a description of what makes netlink's use of
-__sk_del_bind_node special....
+And problems can be avoided with numa_zonelist_order" "boot option, anyway.
 
-Eric
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-p.s. Your name was in your from line, but not your email address making
-it hard to reply to you.
 
-> Signed-off-by: Harish Jenny K N <harish_kandiga@mentor.com>
+
+
+
 > ---
->  net/netlink/af_netlink.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+>   mm/page_alloc.c | 12 ++++++++++++
+>   1 file changed, 12 insertions(+)
 >
-> diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
-> index c416725..21a6b32 100644
-> --- a/net/netlink/af_netlink.c
-> +++ b/net/netlink/af_netlink.c
-> @@ -1103,7 +1103,7 @@ static void netlink_remove(struct sock *sk)
->  
->  	netlink_table_grab();
->  	if (nlk_sk(sk)->subscriptions)
-> -		__sk_del_bind_node(sk);
-> +		hlist_del_init(&sk->sk_bind_node);
->  	netlink_table_ungrab();
->  }
->  
-> @@ -1382,7 +1382,7 @@ netlink_update_subscriptions(struct sock *sk, unsigned int subscriptions)
->  	struct netlink_sock *nlk = nlk_sk(sk);
->  
->  	if (nlk->subscriptions && !subscriptions)
-> -		__sk_del_bind_node(sk);
-> +		hlist_del_init(&sk->sk_bind_node);
->  	else if (!nlk->subscriptions && subscriptions)
->  		sk_add_bind_node(sk, &nl_table[sk->sk_protocol].mc_list);
->  	nlk->subscriptions = subscriptions;
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 18cee0d..20059aa 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -3579,6 +3579,17 @@ static void build_zonelists_in_zone_order(pg_data_t *pgdat, int nr_nodes)
+>   	zonelist->_zonerefs[pos].zone_idx = 0;
+>   }
+>
+> +#if defined(CONFIG_64BIT)
+> +
+> +/* Devices that require DMA32/DMA are relatively rare and do not justify a
+> + * penalty to every machine in case the specialised case applies. Default
+> + * to Node-ordering on 64-bit NUMA machines
+> + */
+> +static int default_zonelist_order(void)
+> +{
+> +	return ZONELIST_ORDER_NODE;
+> +}
+> +#else
+>   static int default_zonelist_order(void)
+>   {
+>   	int nid, zone_type;
+> @@ -3641,6 +3652,7 @@ static int default_zonelist_order(void)
+>   	}
+>   	return ZONELIST_ORDER_ZONE;
+>   }
+> +#endif /* CONFIG_64BIT */
+>
+>   static void set_zonelist_order(void)
+>   {
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
+
+
