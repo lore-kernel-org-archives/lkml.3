@@ -1,290 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951AbaIBO2D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 10:28:03 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:59894 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753647AbaIBO2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 10:28:00 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch] mm: clean up zone flags
-Date: Tue,  2 Sep 2014 10:27:54 -0400
-Message-Id: <1409668074-16875-1-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 2.0.4
+	id S1753858AbaIBOem (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 10:34:42 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:47438 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750963AbaIBOel (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 10:34:41 -0400
+X-IronPort-AV: E=Sophos;i="5.04,449,1406592000"; 
+   d="scan'208";a="168270793"
+Message-ID: <5405D579.9050909@citrix.com>
+Date: Tue, 2 Sep 2014 15:34:33 +0100
+From: Andrew Cooper <andrew.cooper3@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
+MIME-Version: 1.0
+To: David Vrabel <david.vrabel@citrix.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [Xen-devel] [PATCH] x86/xen: Fix 64bit kernel pagetable setup
+ of PV guests
+References: <1409325477-2186-1-git-send-email-stefan.bader@canonical.com>	<5404AE0F.1010207@citrix.com> <5405A3A7.2050406@citrix.com>
+In-Reply-To: <5405A3A7.2050406@citrix.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Page reclaim tests zone_is_reclaim_dirty(), but the site that actually
-sets this state does zone_set_flag(zone, ZONE_TAIL_LRU_DIRTY), sending
-the reader through layers indirection just to track down a simple bit.
+On 02/09/14 12:01, David Vrabel wrote:
+> On 01/09/14 18:34, David Vrabel wrote:
+>> On 29/08/14 16:17, Stefan Bader wrote:
+>>> This change might not be the fully correct approach as it basically
+>>> removes the pre-set page table entry for the fixmap that is compile
+>>> time set (level2_fixmap_pgt[506]->level1_fixmap_pgt). For one the
+>>> level1 page table is not yet declared in C headers (that might be
+>>> fixed). But also with the current bug, it was removed, too. Since
+>>> the Xen mappings for level2_kernel_pgt only covered kernel + initrd
+>>> and some Xen data this did never reach that far. And still, something
+>>> does create entries at level2_fixmap_pgt[506..507]. So it should be
+>>> ok. At least I was able to successfully boot a kernel with 1G kernel
+>>> image size without any vmalloc whinings.
+>> [...]
+>>> --- a/arch/x86/xen/mmu.c
+>>> +++ b/arch/x86/xen/mmu.c
+>>> @@ -1902,8 +1902,22 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+>>>  		/* L3_i[0] -> level2_ident_pgt */
+>>>  		convert_pfn_mfn(level3_ident_pgt);
+>>>  		/* L3_k[510] -> level2_kernel_pgt
+>>> -		 * L3_i[511] -> level2_fixmap_pgt */
+>>> +		 * L3_k[511] -> level2_fixmap_pgt */
+>>>  		convert_pfn_mfn(level3_kernel_pgt);
+>>> +
+>>> +		/* level2_fixmap_pgt contains a single entry for the
+>>> +		 * fixmap area at offset 506. The correct way would
+>>> +		 * be to convert level2_fixmap_pgt to mfn and set the
+>>> +		 * level1_fixmap_pgt (which is completely empty) to RO,
+>>> +		 * too. But currently this page table is not declared,
+>>> +		 * so it would be a bit of voodoo to get its address.
+>>> +		 * And also the fixmap entry was never set due to using
+>>> +		 * the wrong l2 when getting Xen's tables. So let's just
+>>> +		 * just nuke it.
+>>> +		 * This orphans level1_fixmap_pgt, but that was basically
+>>> +		 * done before the change as well.
+>>> +		 */
+>>> +		memset(level2_fixmap_pgt, 0, 512*sizeof(long));
+>> level2_fixmap_pgt etc. are defined for the benefit of Xen only so I
+>> think you should add an extern for level1_fixmap_pgt and fix this up
+>> properly.
+>>
+>> It might not matter now, but it might in the future...
+> I found some time to look into this and test it.  Including without
+> enabling KSLAR, but reproing the vmalloc failure with a large (800 MiB
+> module).
+>
+> I've clarified the change description, can you review my edits?
+>
+> Thanks for investigating and fixing this!
+>
+> David
+>
+> 8<------------------------------
+> x86/xen: don't copy junk into kernel page tables
 
-Remove all zone flag wrappers and just use bitops against zone->flags
-directly.  It's just as readable and the lines are barely any longer.
+Can the patch title and description be adjusted?  It is not junk in the
+pagetables, as Xen would reject such a pagetable update.  It is merely a
+copy of the valid Xen mappings.
 
-Also rename ZONE_TAIL_LRU_DIRTY to ZONE_DIRTY to match ZONE_WRITEBACK,
-and remove the zone_flags_t typedef.
+~Andrew
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- include/linux/mmzone.h | 51 +++-----------------------------------------------
- mm/backing-dev.c       |  2 +-
- mm/oom_kill.c          |  6 +++---
- mm/page_alloc.c        |  8 ++++----
- mm/vmscan.c            | 28 +++++++++++++--------------
- 5 files changed, 25 insertions(+), 70 deletions(-)
-
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 318df7051850..48bf12ef6620 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -521,13 +521,13 @@ struct zone {
- 	atomic_long_t		vm_stat[NR_VM_ZONE_STAT_ITEMS];
- } ____cacheline_internodealigned_in_smp;
- 
--typedef enum {
-+enum zone_flags {
- 	ZONE_RECLAIM_LOCKED,		/* prevents concurrent reclaim */
- 	ZONE_OOM_LOCKED,		/* zone is in OOM killer zonelist */
- 	ZONE_CONGESTED,			/* zone has many dirty pages backed by
- 					 * a congested BDI
- 					 */
--	ZONE_TAIL_LRU_DIRTY,		/* reclaim scanning has recently found
-+	ZONE_DIRTY,			/* reclaim scanning has recently found
- 					 * many dirty file pages at the tail
- 					 * of the LRU.
- 					 */
-@@ -535,52 +535,7 @@ typedef enum {
- 					 * many pages under writeback
- 					 */
- 	ZONE_FAIR_DEPLETED,		/* fair zone policy batch depleted */
--} zone_flags_t;
--
--static inline void zone_set_flag(struct zone *zone, zone_flags_t flag)
--{
--	set_bit(flag, &zone->flags);
--}
--
--static inline int zone_test_and_set_flag(struct zone *zone, zone_flags_t flag)
--{
--	return test_and_set_bit(flag, &zone->flags);
--}
--
--static inline void zone_clear_flag(struct zone *zone, zone_flags_t flag)
--{
--	clear_bit(flag, &zone->flags);
--}
--
--static inline int zone_is_reclaim_congested(const struct zone *zone)
--{
--	return test_bit(ZONE_CONGESTED, &zone->flags);
--}
--
--static inline int zone_is_reclaim_dirty(const struct zone *zone)
--{
--	return test_bit(ZONE_TAIL_LRU_DIRTY, &zone->flags);
--}
--
--static inline int zone_is_reclaim_writeback(const struct zone *zone)
--{
--	return test_bit(ZONE_WRITEBACK, &zone->flags);
--}
--
--static inline int zone_is_reclaim_locked(const struct zone *zone)
--{
--	return test_bit(ZONE_RECLAIM_LOCKED, &zone->flags);
--}
--
--static inline int zone_is_fair_depleted(const struct zone *zone)
--{
--	return test_bit(ZONE_FAIR_DEPLETED, &zone->flags);
--}
--
--static inline int zone_is_oom_locked(const struct zone *zone)
--{
--	return test_bit(ZONE_OOM_LOCKED, &zone->flags);
--}
-+};
- 
- static inline unsigned long zone_end_pfn(const struct zone *zone)
- {
-diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index 1706cbbdf5f0..d7a9051a6db5 100644
---- a/mm/backing-dev.c
-+++ b/mm/backing-dev.c
-@@ -631,7 +631,7 @@ long wait_iff_congested(struct zone *zone, int sync, long timeout)
- 	 * of sleeping on the congestion queue
- 	 */
- 	if (atomic_read(&nr_bdi_congested[sync]) == 0 ||
--			!zone_is_reclaim_congested(zone)) {
-+	    test_bit(ZONE_CONGESTED, &zone->flags)) {
- 		cond_resched();
- 
- 		/* In case we scheduled, work out time remaining */
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 1e11df8fa7ec..bbf405a3a18f 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -565,7 +565,7 @@ bool oom_zonelist_trylock(struct zonelist *zonelist, gfp_t gfp_mask)
- 
- 	spin_lock(&zone_scan_lock);
- 	for_each_zone_zonelist(zone, z, zonelist, gfp_zone(gfp_mask))
--		if (zone_is_oom_locked(zone)) {
-+		if (test_bit(ZONE_OOM_LOCKED, &zone->flags)) {
- 			ret = false;
- 			goto out;
- 		}
-@@ -575,7 +575,7 @@ bool oom_zonelist_trylock(struct zonelist *zonelist, gfp_t gfp_mask)
- 	 * call to oom_zonelist_trylock() doesn't succeed when it shouldn't.
- 	 */
- 	for_each_zone_zonelist(zone, z, zonelist, gfp_zone(gfp_mask))
--		zone_set_flag(zone, ZONE_OOM_LOCKED);
-+		set_bit(ZONE_OOM_LOCKED, &zone->flags);
- 
- out:
- 	spin_unlock(&zone_scan_lock);
-@@ -594,7 +594,7 @@ void oom_zonelist_unlock(struct zonelist *zonelist, gfp_t gfp_mask)
- 
- 	spin_lock(&zone_scan_lock);
- 	for_each_zone_zonelist(zone, z, zonelist, gfp_zone(gfp_mask))
--		zone_clear_flag(zone, ZONE_OOM_LOCKED);
-+		clear_bit(ZONE_OOM_LOCKED, &zone->flags);
- 	spin_unlock(&zone_scan_lock);
- }
- 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 18cee0d4c8a2..f0eb97de6cad 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1613,8 +1613,8 @@ again:
- 
- 	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
- 	if (zone_page_state(zone, NR_ALLOC_BATCH) == 0 &&
--	    !zone_is_fair_depleted(zone))
--		zone_set_flag(zone, ZONE_FAIR_DEPLETED);
-+	    !test_bit(ZONE_FAIR_DEPLETED, &zone->flags))
-+		set_bit(ZONE_FAIR_DEPLETED, &zone->flags);
- 
- 	__count_zone_vm_events(PGALLOC, zone, 1 << order);
- 	zone_statistics(preferred_zone, zone, gfp_flags);
-@@ -1934,7 +1934,7 @@ static void reset_alloc_batches(struct zone *preferred_zone)
- 		mod_zone_page_state(zone, NR_ALLOC_BATCH,
- 			high_wmark_pages(zone) - low_wmark_pages(zone) -
- 			atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]));
--		zone_clear_flag(zone, ZONE_FAIR_DEPLETED);
-+		clear_bit(ZONE_FAIR_DEPLETED, &zone->flags);
- 	} while (zone++ != preferred_zone);
- }
- 
-@@ -1985,7 +1985,7 @@ zonelist_scan:
- 		if (alloc_flags & ALLOC_FAIR) {
- 			if (!zone_local(preferred_zone, zone))
- 				break;
--			if (zone_is_fair_depleted(zone)) {
-+			if (test_bit(ZONE_FAIR_DEPLETED, &zone->flags)) {
- 				nr_fair_skipped++;
- 				continue;
- 			}
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 2836b5373b2e..590a92bec6a4 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -920,7 +920,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 			/* Case 1 above */
- 			if (current_is_kswapd() &&
- 			    PageReclaim(page) &&
--			    zone_is_reclaim_writeback(zone)) {
-+			    test_bit(ZONE_WRITEBACK, &zone->flags)) {
- 				nr_immediate++;
- 				goto keep_locked;
- 
-@@ -1002,7 +1002,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 			 */
- 			if (page_is_file_cache(page) &&
- 					(!current_is_kswapd() ||
--					 !zone_is_reclaim_dirty(zone))) {
-+					 test_bit(ZONE_DIRTY, &zone->flags))) {
- 				/*
- 				 * Immediately reclaim when written back.
- 				 * Similar in principal to deactivate_page()
-@@ -1563,7 +1563,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
- 	 * are encountered in the nr_immediate check below.
- 	 */
- 	if (nr_writeback && nr_writeback == nr_taken)
--		zone_set_flag(zone, ZONE_WRITEBACK);
-+		set_bit(ZONE_WRITEBACK, &zone->flags);
- 
- 	/*
- 	 * memcg will stall in page writeback so only consider forcibly
-@@ -1575,16 +1575,16 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
- 		 * backed by a congested BDI and wait_iff_congested will stall.
- 		 */
- 		if (nr_dirty && nr_dirty == nr_congested)
--			zone_set_flag(zone, ZONE_CONGESTED);
-+			set_bit(ZONE_CONGESTED, &zone->flags);
- 
- 		/*
- 		 * If dirty pages are scanned that are not queued for IO, it
- 		 * implies that flushers are not keeping up. In this case, flag
--		 * the zone ZONE_TAIL_LRU_DIRTY and kswapd will start writing
--		 * pages from reclaim context.
-+		 * the zone ZONE_DIRTY and kswapd will start writing pages from
-+		 * reclaim context.
- 		 */
- 		if (nr_unqueued_dirty == nr_taken)
--			zone_set_flag(zone, ZONE_TAIL_LRU_DIRTY);
-+			set_bit(ZONE_DIRTY, &zone->flags);
- 
- 		/*
- 		 * If kswapd scans pages marked marked for immediate
-@@ -2978,7 +2978,7 @@ static bool kswapd_shrink_zone(struct zone *zone,
- 	/* Account for the number of pages attempted to reclaim */
- 	*nr_attempted += sc->nr_to_reclaim;
- 
--	zone_clear_flag(zone, ZONE_WRITEBACK);
-+	clear_bit(ZONE_WRITEBACK, &zone->flags);
- 
- 	/*
- 	 * If a zone reaches its high watermark, consider it to be no longer
-@@ -2988,8 +2988,8 @@ static bool kswapd_shrink_zone(struct zone *zone,
- 	 */
- 	if (zone_reclaimable(zone) &&
- 	    zone_balanced(zone, testorder, 0, classzone_idx)) {
--		zone_clear_flag(zone, ZONE_CONGESTED);
--		zone_clear_flag(zone, ZONE_TAIL_LRU_DIRTY);
-+		clear_bit(ZONE_CONGESTED, &zone->flags);
-+		clear_bit(ZONE_DIRTY, &zone->flags);
- 	}
- 
- 	return sc->nr_scanned >= sc->nr_to_reclaim;
-@@ -3080,8 +3080,8 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 				 * If balanced, clear the dirty and congested
- 				 * flags
- 				 */
--				zone_clear_flag(zone, ZONE_CONGESTED);
--				zone_clear_flag(zone, ZONE_TAIL_LRU_DIRTY);
-+				clear_bit(ZONE_CONGESTED, &zone->flags);
-+				clear_bit(ZONE_DIRTY, &zone->flags);
- 			}
- 		}
- 
-@@ -3708,11 +3708,11 @@ int zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
- 	if (node_state(node_id, N_CPU) && node_id != numa_node_id())
- 		return ZONE_RECLAIM_NOSCAN;
- 
--	if (zone_test_and_set_flag(zone, ZONE_RECLAIM_LOCKED))
-+	if (test_and_set_bit(ZONE_RECLAIM_LOCKED, &zone->flags))
- 		return ZONE_RECLAIM_NOSCAN;
- 
- 	ret = __zone_reclaim(zone, gfp_mask, order);
--	zone_clear_flag(zone, ZONE_RECLAIM_LOCKED);
-+	clear_bit(ZONE_RECLAIM_LOCKED, &zone->flags);
- 
- 	if (!ret)
- 		count_vm_event(PGSCAN_ZONE_RECLAIM_FAILED);
--- 
-2.0.4
+>
+> When RANDOMIZE_BASE (KASLR) is enabled; or the sum of all loaded
+> modules exceeds 512 MiB, then loading modules fails with a warning
+> (and hence a vmalloc allocation failure) because the PTEs for the
+> newly-allocated vmalloc address space are not zero.
+>
+>   WARNING: CPU: 0 PID: 494 at linux/mm/vmalloc.c:128
+>            vmap_page_range_noflush+0x2a1/0x360()
+>
+> This is caused by xen_setup_kernel_pagetables() copying junk into the
+> page tables (to level2_fixmap_pgt), overwriting many non-present
+> entries.
+>
+> Without KASLR, the normal kernel image size only covers the first half
+> of level2_kernel_pgt and module space starts after that.
+>
+> L4[511]->level3_kernel_pgt[510]->level2_kernel_pgt[  0..255]->kernel
+>                                                   [256..511]->module
+>                           [511]->level2_fixmap_pgt[  0..505]->module
+>
+> This allows 512 MiB of of module vmalloc space to be used before
+> having to use the corrupted level2_fixmap_pgt entries.
+>
+> With KASLR enabled, the kernel image uses the full PUD range of 1G and
+> module space starts in the level2_fixmap_pgt. So basically:
+>
+> L4[511]->level3_kernel_pgt[510]->level2_kernel_pgt[0..511]->kernel
+>                           [511]->level2_fixmap_pgt[0..505]->module
+>
+> And now no module vmalloc space can be used without using the corrupt
+> level2_fixmap_pgt entries.
+>
+> Fix this by properly converting the level2_fixmap_pgt entries to MFNs,
+> and setting level1_fixmap_pgt as read-only.
+>
+> Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+> ---
+>  arch/x86/include/asm/pgtable_64.h |    1 +
+>  arch/x86/xen/mmu.c                |   27 ++++++++++++---------------
+>  2 files changed, 13 insertions(+), 15 deletions(-)
+>
+> diff --git a/arch/x86/include/asm/pgtable_64.h b/arch/x86/include/asm/pgtable_64.h
+> index 5be9063..3874693 100644
+> --- a/arch/x86/include/asm/pgtable_64.h
+> +++ b/arch/x86/include/asm/pgtable_64.h
+> @@ -19,6 +19,7 @@ extern pud_t level3_ident_pgt[512];
+>  extern pmd_t level2_kernel_pgt[512];
+>  extern pmd_t level2_fixmap_pgt[512];
+>  extern pmd_t level2_ident_pgt[512];
+> +extern pte_t level1_fixmap_pgt[512];
+>  extern pgd_t init_level4_pgt[];
+>  
+>  #define swapper_pg_dir init_level4_pgt
+> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+> index e8a1201..16fb009 100644
+> --- a/arch/x86/xen/mmu.c
+> +++ b/arch/x86/xen/mmu.c
+> @@ -1866,12 +1866,11 @@ static void __init check_pt_base(unsigned long *pt_base, unsigned long *pt_end,
+>   *
+>   * We can construct this by grafting the Xen provided pagetable into
+>   * head_64.S's preconstructed pagetables.  We copy the Xen L2's into
+> - * level2_ident_pgt, level2_kernel_pgt and level2_fixmap_pgt.  This
+> - * means that only the kernel has a physical mapping to start with -
+> - * but that's enough to get __va working.  We need to fill in the rest
+> - * of the physical mapping once some sort of allocator has been set
+> - * up.
+> - * NOTE: for PVH, the page tables are native.
+> + * level2_ident_pgt, and level2_kernel_pgt.  This means that only the
+> + * kernel has a physical mapping to start with - but that's enough to
+> + * get __va working.  We need to fill in the rest of the physical
+> + * mapping once some sort of allocator has been set up.  NOTE: for
+> + * PVH, the page tables are native.
+>   */
+>  void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+>  {
+> @@ -1902,8 +1901,11 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+>  		/* L3_i[0] -> level2_ident_pgt */
+>  		convert_pfn_mfn(level3_ident_pgt);
+>  		/* L3_k[510] -> level2_kernel_pgt
+> -		 * L3_i[511] -> level2_fixmap_pgt */
+> +		 * L3_k[511] -> level2_fixmap_pgt */
+>  		convert_pfn_mfn(level3_kernel_pgt);
+> +
+> +		/* L3_k[511][506] -> level1_fixmap_pgt */
+> +		convert_pfn_mfn(level2_fixmap_pgt);
+>  	}
+>  	/* We get [511][511] and have Xen's version of level2_kernel_pgt */
+>  	l3 = m2v(pgd[pgd_index(__START_KERNEL_map)].pgd);
+> @@ -1913,21 +1915,15 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+>  	addr[1] = (unsigned long)l3;
+>  	addr[2] = (unsigned long)l2;
+>  	/* Graft it onto L4[272][0]. Note that we creating an aliasing problem:
+> -	 * Both L4[272][0] and L4[511][511] have entries that point to the same
+> +	 * Both L4[272][0] and L4[511][510] have entries that point to the same
+>  	 * L2 (PMD) tables. Meaning that if you modify it in __va space
+>  	 * it will be also modified in the __ka space! (But if you just
+>  	 * modify the PMD table to point to other PTE's or none, then you
+>  	 * are OK - which is what cleanup_highmap does) */
+>  	copy_page(level2_ident_pgt, l2);
+> -	/* Graft it onto L4[511][511] */
+> +	/* Graft it onto L4[511][510] */
+>  	copy_page(level2_kernel_pgt, l2);
+>  
+> -	/* Get [511][510] and graft that in level2_fixmap_pgt */
+> -	l3 = m2v(pgd[pgd_index(__START_KERNEL_map + PMD_SIZE)].pgd);
+> -	l2 = m2v(l3[pud_index(__START_KERNEL_map + PMD_SIZE)].pud);
+> -	copy_page(level2_fixmap_pgt, l2);
+> -	/* Note that we don't do anything with level1_fixmap_pgt which
+> -	 * we don't need. */
+>  	if (!xen_feature(XENFEAT_auto_translated_physmap)) {
+>  		/* Make pagetable pieces RO */
+>  		set_page_prot(init_level4_pgt, PAGE_KERNEL_RO);
+> @@ -1937,6 +1933,7 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+>  		set_page_prot(level2_ident_pgt, PAGE_KERNEL_RO);
+>  		set_page_prot(level2_kernel_pgt, PAGE_KERNEL_RO);
+>  		set_page_prot(level2_fixmap_pgt, PAGE_KERNEL_RO);
+> +		set_page_prot(level1_fixmap_pgt, PAGE_KERNEL_RO);
+>  
+>  		/* Pin down new L4 */
+>  		pin_pagetable_pfn(MMUEXT_PIN_L4_TABLE,
 
