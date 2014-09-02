@@ -1,78 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753697AbaIBN7w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 09:59:52 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:49949 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750752AbaIBN7u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 09:59:50 -0400
-Message-ID: <5405CD51.9020601@gmail.com>
-Date: Tue, 02 Sep 2014 16:59:45 +0300
-From: Boaz Harrosh <openosd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1753945AbaIBOBY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 10:01:24 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:59889 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753586AbaIBOBW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 10:01:22 -0400
+Date: Tue, 2 Sep 2014 10:01:16 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 6/6] mm: page_alloc: Reduce cost of the fair zone
+ allocation policy
+Message-ID: <20140902140116.GD29501@cmpxchg.org>
+References: <1404893588-21371-1-git-send-email-mgorman@suse.de>
+ <1404893588-21371-7-git-send-email-mgorman@suse.de>
+ <53E4EC53.1050904@suse.cz>
+ <20140811121241.GD7970@suse.de>
+ <53E8B83D.1070004@suse.cz>
 MIME-Version: 1.0
-To: Bruce Fields <bfields@fieldses.org>
-CC: Trond Myklebust <trond.myklebust@primarydata.com>,
-        Shakil A Khan <shakilk1729@gmail.com>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        William Andros Adamson <andros@netapp.com>,
-        Jeffrey Layton <jlayton@primarydata.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH] Next branch: authgss: authgss.c: Fix warnings for uninitizlized
- variable expire
-References: <1409571154-50408-1-git-send-email-shakilk1729@gmail.com> <CAHQdGtQAwp_QuQE-xmjJNkcxbu7g4QtYQv8qrPT_qWpkym1GZg@mail.gmail.com> <5405A15F.2060002@gmail.com> <20140902132140.GA31793@fieldses.org>
-In-Reply-To: <20140902132140.GA31793@fieldses.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53E8B83D.1070004@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/2014 04:21 PM, Bruce Fields wrote:
+On Mon, Aug 11, 2014 at 02:34:05PM +0200, Vlastimil Babka wrote:
+> On 08/11/2014 02:12 PM, Mel Gorman wrote:
+> >On Fri, Aug 08, 2014 at 05:27:15PM +0200, Vlastimil Babka wrote:
+> >>On 07/09/2014 10:13 AM, Mel Gorman wrote:
+> >>>--- a/mm/page_alloc.c
+> >>>+++ b/mm/page_alloc.c
+> >>>@@ -1604,6 +1604,9 @@ again:
+> >>>  	}
+> >>>
+> >>>  	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
+> >>
+> >>This can underflow zero, right?
+> >>
+> >
+> >Yes, because of per-cpu accounting drift.
 > 
-> You'd rather avoid sprinkling that all over, though.  If nothing else it
-> increases the chances you'll suppress a legimate warning some day.
+> I meant mainly because of order > 0.
 > 
-
-But this is exactly why it was created.
-
-If you do the "= 0" then it is gone forever. If you have missed a legitimate
-needed assignment, it will be missed as well.
-
-But if you do the uninitialized_var() dance then there is a make option that turns
-it off and every once in a while people do a make with it to see if it still
-holds.
-
-The diff between foo = 0; and uninitialized_var(foo) is that the programmer is
-communicating to his friends that:
-	"I have encountered a bogus compiler, this is falsely initialized"
-
-As opposed to =0 the compiler bug is covered up and forgotten
-
-> And unless I'm missing something this one really does look like an
-> unambiguous compiler bug.
+> >>>+	if (zone_page_state(zone, NR_ALLOC_BATCH) == 0 &&
+> >>
+> >>AFAICS, zone_page_state will correct negative values to zero only for
+> >>CONFIG_SMP. Won't this check be broken on !CONFIG_SMP?
+> >>
+> >
+> >On !CONFIG_SMP how can there be per-cpu accounting drift that would make
+> >that counter negative?
 > 
+> Well original code used "if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)"
+> elsewhere, that you are replacing with zone_is_fair_depleted check. I
+> assumed it's because it can get negative due to order > 0. I might have not
+> looked thoroughly enough but it seems to me there's nothing that would
+> prevent it, such as skipping a zone because its remaining batch is lower
+> than 1 << order.
+> So I think the check should be "<= 0" to be safe.
 
-Right! so that is how you specify this in code at Linux: uninitialized_var(foo);
+Any updates on this?
 
-Putting =0 is way way worse, because it will never be revised and specially
-not automatically with a make switch.
+The counter can definitely underflow on !CONFIG_SMP, and then the flag
+gets out of sync with the actual batch state.  I'd still prefer just
+removing this flag again; it's extra complexity and error prone (case
+in point) while the upsides are not even measurable in real life.
 
-And leaving the warning on is even worse because two three of these and people
-start to ignore warnings.
+---
 
-> --b.
-> 
-
-uninitialized_var was made to be a friend not an enemy, in the face of real
-ugliness it is the best we can do. And that is what it should communicate to
-everyone. Why has it become everyone's favorite blasphemy I do not know.
-
-Cheers
-Boaz
-
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 318df7051850..0bd77f730b38 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -534,7 +534,6 @@ typedef enum {
+ 	ZONE_WRITEBACK,			/* reclaim scanning has recently found
+ 					 * many pages under writeback
+ 					 */
+-	ZONE_FAIR_DEPLETED,		/* fair zone policy batch depleted */
+ } zone_flags_t;
+ 
+ static inline void zone_set_flag(struct zone *zone, zone_flags_t flag)
+@@ -572,11 +571,6 @@ static inline int zone_is_reclaim_locked(const struct zone *zone)
+ 	return test_bit(ZONE_RECLAIM_LOCKED, &zone->flags);
+ }
+ 
+-static inline int zone_is_fair_depleted(const struct zone *zone)
+-{
+-	return test_bit(ZONE_FAIR_DEPLETED, &zone->flags);
+-}
+-
+ static inline int zone_is_oom_locked(const struct zone *zone)
+ {
+ 	return test_bit(ZONE_OOM_LOCKED, &zone->flags);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 18cee0d4c8a2..d913809a328f 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1612,9 +1612,6 @@ again:
+ 	}
+ 
+ 	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
+-	if (zone_page_state(zone, NR_ALLOC_BATCH) == 0 &&
+-	    !zone_is_fair_depleted(zone))
+-		zone_set_flag(zone, ZONE_FAIR_DEPLETED);
+ 
+ 	__count_zone_vm_events(PGALLOC, zone, 1 << order);
+ 	zone_statistics(preferred_zone, zone, gfp_flags);
+@@ -1934,7 +1931,6 @@ static void reset_alloc_batches(struct zone *preferred_zone)
+ 		mod_zone_page_state(zone, NR_ALLOC_BATCH,
+ 			high_wmark_pages(zone) - low_wmark_pages(zone) -
+ 			atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]));
+-		zone_clear_flag(zone, ZONE_FAIR_DEPLETED);
+ 	} while (zone++ != preferred_zone);
+ }
+ 
+@@ -1985,7 +1981,7 @@ zonelist_scan:
+ 		if (alloc_flags & ALLOC_FAIR) {
+ 			if (!zone_local(preferred_zone, zone))
+ 				break;
+-			if (zone_is_fair_depleted(zone)) {
++			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0) {
+ 				nr_fair_skipped++;
+ 				continue;
+ 			}
