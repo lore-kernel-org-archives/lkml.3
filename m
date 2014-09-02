@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755003AbaIBR6H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 13:58:07 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:53342 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754974AbaIBR6F (ORCPT
+	id S1755040AbaIBR6h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 13:58:37 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:56143 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754073AbaIBR6f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 13:58:05 -0400
-Message-Id: <1409680684.972417.162793869.03CF8A61@webmail.messagingengine.com>
-X-Sasl-Enc: neYgbAm69mi3G86UJeVQ8W5TcmNjBZhrpm6gz0JvQkFm 1409680684
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Cong Wang <cwang@twopensource.com>
-Cc: Sabrina Dubroca <sd@queasysnail.net>, Tommi Rantala <tt.rantala@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org,
-        Dave Jones <davej@redhat.com>
+	Tue, 2 Sep 2014 13:58:35 -0400
+Date: Tue, 2 Sep 2014 11:58:31 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sachin Kamat <sachin.kamat@samsung.com>,
+        Mark Brown <broonie@kernel.org>, Mohit Kumar <mohit.kumar@st.com>
+Subject: [GIT PULL] PCI fixes for v3.17
+Message-ID: <20140902175831.GA10577@google.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
-X-Mailer: MessagingEngine.com Webmail Interface - ajax-73bced9a
-Subject: Re: RTNL: assertion failed at net/ipv6/addrconf.c (1699)
-Date: Tue, 02 Sep 2014 19:58:04 +0200
-In-Reply-To: <CAHA+R7ODa+LrdwSrS7HcBfwwq8_fpj-Ld0OCDtcOqkpCdZCvxg@mail.gmail.com>
-References: <CA+ydwtoDwQVg_BWrxxdpUyJ7Up60GtxTCLYe_5vFdV2td_kGhQ@mail.gmail.com>
- <CAHA+R7MZCDGRhSf=UuVCGQvNo03wVziZQB_X30rwNf6hmHipQA@mail.gmail.com>
- <20140829195339.GA9780@kria> <1409363489.2980.17.camel@localhost>
- <CAHA+R7ODa+LrdwSrS7HcBfwwq8_fpj-Ld0OCDtcOqkpCdZCvxg@mail.gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Cong,
+Hi Linus,
 
-On Tue, Sep 2, 2014, at 18:50, Cong Wang wrote:
-> On Fri, Aug 29, 2014 at 6:51 PM, Hannes Frederic Sowa
-> <hannes@stressinduktion.org> wrote:
-> >
-> > Also rtnl_lock and rcu_read_lock compose in that order, so we don't need
-> > to change dev_get_by_flags, but as this is the only user it sure is
-> > possible. RCU locked version is just easier composeable, so I wouldn't
-> > touch that if needed in future, just also take rcu lock as before.
-> 
-> There is no point to keep RCU read lock if we have rtnl lock,
-> I don't know why you don't want to change dev_get_by_flags(),
-> it is pretty easy to do since it only has one caller.
+This fixes an ARM allmodconfig build problem.
 
-I definitely don't have a problem cleaning this up in net-next. I wanted
-a minimal patch for stable because I didn't check history where and when
-additional users of dev_get_by_flags_rcu were removed.
+Bjorn
 
-> Even if you really need RCU in future, you are always welcome
-> to bring it back when you do, sorry we should never be blocked by
-> code NOT merged yet.
-> 
-> >
-> > Also we should move ASSERT_RTNL checks from addrconf_join_solict to
-> > ipv6_dev_mc_inc/dec.
-> >
-> 
-> Make it another patch.
 
-It is just one logical change, moving ASSERT_RTNLs to places where they
-better catch invalid callstacks.
+The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
 
-Bye,
-Hannes
+  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git tags/pci-v3.17-fixes-1
+
+for you to fetch changes up to 8d7004a6904cf089e0ebfe5a27e9674cee5db9dc:
+
+  PCI: spear: Remove module option (2014-08-17 22:09:16 -0600)
+
+----------------------------------------------------------------
+PCI update for v3.17:
+
+  ST Microelectronics SPEAr13xx
+    - Remove module option (Sachin Kamat)
+
+----------------------------------------------------------------
+Sachin Kamat (1):
+      PCI: spear: Remove module option
+
+ drivers/pci/host/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
