@@ -1,85 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323AbaIBJob (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 05:44:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15283 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750903AbaIBJoa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 05:44:30 -0400
-Date: Tue, 2 Sep 2014 11:17:44 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 20/41] perf tools: Let a user specify a PMU event without
- any config terms
-Message-ID: <20140902091744.GC8044@krava.redhat.com>
-References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
- <1405332185-4050-21-git-send-email-adrian.hunter@intel.com>
- <20140716142510.GE9441@krava.redhat.com>
- <53C6948C.2080103@intel.com>
- <20140716182214.GB32716@krava.redhat.com>
- <5400CB13.4040004@intel.com>
- <20140830085310.GA14358@krava.redhat.com>
- <540411C5.8030207@intel.com>
- <20140901191107.GE1900@krava.redhat.com>
- <5405582C.6070402@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5405582C.6070402@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753287AbaIBJvn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 05:51:43 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:11717 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751503AbaIBJvl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 05:51:41 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-57-5405932a879a
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Rob Herring <robh@kernel.org>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] net: calxedaxgmac: fix driver dependencies
+Date: Tue, 02 Sep 2014 11:51:34 +0200
+Message-id: <10071967.pgEgsHtCJd@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <CAL_JsqJV0rJ_PCLBsZNYdYdbER7UR_MV40BGjpykh7uubLh__g@mail.gmail.com>
+References: <7268934.nBXHizFkl4@amdc1032>
+ <CAL_JsqJV0rJ_PCLBsZNYdYdbER7UR_MV40BGjpykh7uubLh__g@mail.gmail.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=UTF-8
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t9jAV2tyawhBtOn6lnMOd/CYnG26Q27
+	xeVdc9gsji0Qs/i/Zwe7A6vHlpU3mTw2repk8+jbsorR4/MmuQCWKC6blNSczLLUIn27BK6M
+	u/O/MBf85q2Yd/k0UwPjeu4uRg4OCQETiW8L5LoYOYFMMYkL99azdTFycQgJLGKUuPqoBcpp
+	YZJ4uH01K0gVm4CVxMT2VYwgtoiAosTvtmmsIEXMArsYJZZ1XGIBSQgL2Et0zN0JVsQioCrR
+	se0PG4jNK6AlsX3FSXYQW1TAU2LH9pVgcU6BYIn5L/uZQGwhgQKJ/ftvsULUC0r8mHwPbCaz
+	gLzEvv1TWSFsdYlJ8xYxT2AUmIWkbBaSsllIyhYwMq9iFE0tSC4oTkrPNdIrTswtLs1L10vO
+	z93ECA7jZ9I7GFc1WBxiFOBgVOLhlfjBEiLEmlhWXJl7iFGCg1lJhFewgzVEiDclsbIqtSg/
+	vqg0J7X4EKM0B4uSOO/BVutAIYH0xJLU7NTUgtQimCwTB6dUA6P68/+t/wS1HS8mzZG7lBmz
+	7nLMi/49M4MiTrOa8uR7ruktfBu5dILBo3MhLZNnHhUqW8B5o/3k7SRb2R1TdbxSVE6WnmjZ
+	FpE+41glW8TR063iDhkfqlbn90XfsDJjuSen6Kmdo2uwQG6JssEHMebnxpdZz8xS6xc4dPfy
+	Xzuf3dWTlFPmNyixFGckGmoxFxUnAgC5jclmXwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 02, 2014 at 08:39:56AM +0300, Adrian Hunter wrote:
 
-SNIP
+Hi,
 
-> >>>   -e intel_pt/tsc=1,noretcomp=0/
-> >>>
-> >>> I guess I wanted to hear more elaboration why is this better
-> >>> than the current way we have by defining an alias, like:
-> >>>
-> >>>   krava alias: "tsc=1,noretcomp=0"
-> >>>
-> >>>   -e intel_pt/krava/
-> >>>
-> >>> which gives the same result
-> >>
-> >> The default value must be provided by perf tools not the kernel e.g.
-> >> an older version of perf tools will not be aware of new hardware
-> >> features that the kernel may know about.  If the kernel enables
-> >> new features by default then the tool may fail.  Thus the default
-> >> value has to be under the control of the tools not the kernel, so
-> >> a sysfs alias will not work.
-> >>
-> > 
-> > I dont follow, could u provide some example?
+On Monday, September 01, 2014 09:36:39 PM Rob Herring wrote:
+> On Mon, Sep 1, 2014 at 10:39 AM, Bartlomiej Zolnierkiewicz
+> <b.zolnierkie@samsung.com> wrote:
+> > Calxeda 1G/10G XGMAC Ethernet support should be available only on
+> > Calxeda ECX-1000/2000 (Highbank/Midway) platforms.
+> >
+> > Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> > Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> > Cc: Rob Herring <robh@kernel.org>
+> > ---
+> >  drivers/net/ethernet/calxeda/Kconfig |    1 +
+> >  1 file changed, 1 insertion(+)
+> >
+> > Index: b/drivers/net/ethernet/calxeda/Kconfig
+> > ===================================================================
+> > --- a/drivers/net/ethernet/calxeda/Kconfig      2014-07-30 14:31:12.159522474 +0200
+> > +++ b/drivers/net/ethernet/calxeda/Kconfig      2014-09-01 17:33:49.232810483 +0200
+> > @@ -1,6 +1,7 @@
+> >  config NET_CALXEDA_XGMAC
+> >         tristate "Calxeda 1G/10G XGMAC Ethernet driver"
+> >         depends on HAS_IOMEM && HAS_DMA
+> > +       depends on ARCH_HIGHBANK || COMPILE_TEST
 > 
-> Imagine that the 'tsc' term did not exist.  Intel PT trace data
-> would not contain TSC packets, and the decoder would not know how to
-> decode them.  Then imagine that a new version of the hardware adds
-> 'tsc'.  It is such a useful feature that we want it by default, but
-> older versions of the tools don't know how to decode it, so the
-> kernel cannot turn it on by default.
-> 
-> > 
-> > why the tool needs to understand.. it will just take the alias
-> > and apply/use it? The alias follows the format logic, which tells
-> > how to apply values on perf_event_attr.. and the kernel knows best
-> > what's supported in its version..
-> 
-> It is similar to why the kernel does not select mmap2 by default.  The
-> kernel doesn't know whether the tool supports it.
-> 
+> Opinions differ on whether drivers should be restricted in this way.
+> There is no actual dependency requiring ARCH_HIGHBANK. So I leave it
+> to David.
 
-ook, could you please add some kind of this explanation to the changelog?
+The hardware is specific to ARCH_HIGHBANK and it is just unavailble on
+any other platform (i.e. I have completely no use for this option on
+ARM Exynos platform).  In such cases we restrict drivers to the specific
+hardware platform so they don't pollute configs for other platforms
+(i.e. this option is enabled by default in multi_v7_defconfig and once
+I go from multi defconfing to single platform one, the option stays
+enabled).
 
-thanks,
-jirka
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
+
