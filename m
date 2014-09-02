@@ -1,60 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754814AbaIBRiq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 13:38:46 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:48158 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751295AbaIBRio (ORCPT
+	id S1754886AbaIBRjW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 13:39:22 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35305 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754827AbaIBRjV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 13:38:44 -0400
+	Tue, 2 Sep 2014 13:39:21 -0400
+Date: Tue, 2 Sep 2014 19:39:10 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Kautuk Consul <consul.kautuk@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
+        Ionut Alexa <ionut.m.alexa@gmail.com>,
+        Guillaume Morin <guillaume@morinfr.org>, linux-kernel@vger.kernel.org,
+        Kirill Tkhai <tkhai@yandex.ru>
+Subject: Re: [PATCH 1/1] do_exit(): Solve possibility of BUG() due to race
+ with try_to_wake_up()
+Message-ID: <20140902173910.GF27892@worktop.ger.corp.intel.com>
+References: <1408964064-21447-1-git-send-email-consul.kautuk@gmail.com>
+ <20140825155738.GA5944@redhat.com>
+ <20140901153935.GQ27892@worktop.ger.corp.intel.com>
+ <20140901175851.GA15210@redhat.com>
+ <20140901190931.GD5806@worktop.ger.corp.intel.com>
+ <20140902155208.GA28668@redhat.com>
+ <20140902164714.GA17033@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <3749748.k4a1nSHDdj@wuerfel>
-References: <1409328803-1953-1-git-send-email-andre.przywara@arm.com>
- <540596A6.8000608@arm.com> <CAL_Jsq+Rs5MXC7s7EeWAEAPxxqaShAVGt=cdQxud5Us+-Zp6jw@mail.gmail.com>
- <3749748.k4a1nSHDdj@wuerfel>
-From: Rob Herring <robherring2@gmail.com>
-Date: Tue, 2 Sep 2014 12:38:23 -0500
-Message-ID: <CAL_JsqKGbSd5BymnFhT8KBjbBCPO8wsrHhG9Qn20c7mrrxTDDA@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/1] drivers: introduce ARM SBSA generic UART driver
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Andre Przywara <andre.przywara@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20140902164714.GA17033@redhat.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 2, 2014 at 8:48 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Tuesday 02 September 2014 08:20:53 Rob Herring wrote:
->> >>
->> >> This alone is not okay. There is no such implementation of hardware.
->> >
->> > But the SBSA explicitly allows this. I don't know of any vendor who just
->> > implements the subset, but I've been told that this has been asked for.
->>
->> To use baudrate as an example, that must be configurable somehow
->> either with pl011 registers or in a vendor specific way. I suppose you
->> could do an actual implementation with all those things hardcoded in
->> the design, but that seems unlikely.
->
-> Why does the baudrate need to be configurable? I think it's completely
-> reasonable to specify a console port that has a fixed (as in the
-> OS must not care) rate, and that can be implemented either as a UART
-> with a programmable rate or as a set of registers that directly talks
-> to a remote system management device over whatever hardware protocol
-> they choose.
+On Tue, Sep 02, 2014 at 06:47:14PM +0200, Oleg Nesterov wrote:
 
-Sure. It is also completely reasonable that baudrate is configurable
-and vendors can implement it however they choose since the SBSA does
-not specify it. IIRC, the enabling and disabling bits are not
-specified either.
+> But since I already wrote v2 yesterday, let me show it anyway. Perhaps
+> you will notice something wrong immediately...
+> 
+> So, once again, this patch adds the ugly "goto" into schedule(). OTOH,
+> it removes the ugly spin_unlock_wait(pi_lock).
 
-Not having configurability is simply one variation on possible implementations.
+But schedule() is called _far_ more often than exit(). It would be
+really good not to have to do that. 
 
-Rob
+> TASK_DEAD can die. The only valid user is schedule_debug(), trivial to
+> change. The usage of TASK_DEAD in task_numa_fault() is wrong in any case.
+> 
+> In fact, I think that the next change can change exit_schedule() to use
+> PREEMPT_ACTIVE, and then we can simply remove the TASK_DEAD check in
+> schedule_debug().
+
+So you worry about concurrent wakeups vs setting TASK_DEAD and thereby
+loosing it, right?
+
+Would not something like:
+
+	spin_lock_irq(&current->pi_lock);
+	__set_current_state(TASK_DEAD);
+	spin_unlock_irq(&current->pi_lock);
+
+Not be race free and similarly expensive to the smp_mb() we have there
+now?
+
+> -	BUG();
+> -	/* Avoid "noreturn function does return".  */
+> -	for (;;)
+> -		cpu_relax();	/* For when BUG is null */
+
+
+> +void exit_schedule(void)
+> +{
+> +	current->state = TASK_DEAD; /* TODO: kill TASK_DEAD altogether */
+> +	task_rq(current)->prev_dead = true;
+> +	__schedule();
+> +	BUG();
+
+you lost that for loop.
