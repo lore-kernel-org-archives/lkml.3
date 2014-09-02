@@ -1,84 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932157AbaIBXE1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 19:04:27 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:35346 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932106AbaIBXEJ (ORCPT
+	id S1755540AbaIBXHa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 19:07:30 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:35591 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755353AbaIBXH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 19:04:09 -0400
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Michal Simek <michal.simek@xilinx.com>,
-        Mike Turquette <mturquette@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH 3/3] clk: zynq: Move const initdata into correct code section
-Date: Tue,  2 Sep 2014 16:02:09 -0700
-Message-Id: <1409698929-30143-4-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 2.1.0.1.g27b9230
-In-Reply-To: <1409698929-30143-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1409698929-30143-1-git-send-email-soren.brinkmann@xilinx.com>
+	Tue, 2 Sep 2014 19:07:27 -0400
+Message-ID: <54064DAC.9050602@converseincode.com>
+Date: Tue, 02 Sep 2014 16:07:24 -0700
+From: Behan Webster <behanw@converseincode.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Marcel Holtmann <marcel@holtmann.org>
+CC: Alasdair Kergon <agk@redhat.com>, clm@fb.com,
+        "David S. Miller" <davem@davemloft.net>, dm-devel@redhat.com,
+        Fabian Frederick <fabf@skynet.be>,
+        Herbert Xu <herbert@gondor.apana.org.au>, jbacik@fb.com,
+        snitzer@redhat.com, Andrew Morton <akpm@linux-foundation.org>,
+        james.l.morris@oracle.com, john.johansen@canonical.com,
+        linux-btrfs@vger.kernel.org, linux-crypto@vger.kernel.org,
+        kernel list <linux-kernel@vger.kernel.org>, linux-raid@vger.kernel.org,
+        linux-security-module@vger.kernel.org, neilb@suse.de, serge@hallyn.com,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH RFC 0/6] LLVMLinux: Patches to enable the kernel to be
+ compiled with clang/LLVM
+References: <1409697153-7006-1-git-send-email-behanw@converseincode.com> <05DCB0B8-AA7C-495F-B8E6-0803052DD273@holtmann.org>
+In-Reply-To: <05DCB0B8-AA7C-495F-B8E6-0803052DD273@holtmann.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use __initconst instead of __initdata for constant init data.
+On 09/02/14 16:01, Marcel Holtmann wrote:
+> Hi Behan,
+>
+>> These patches remove the use of Variable Length Arrays In Structs (VLAIS) in
+>> crypto related code. Presented here for comments as a whole (since they all do
+>> the same thing in the same way). Once everyone is happy I will submit them
+>> individually to their appropriate maintainers.
+>>
+>> The LLVMLinux project aims to fully build the Linux kernel using both gcc and
+>> clang (the C front end for the LLVM compiler infrastructure project).
+>>
+>>
+>> Jan-Simon Möller (4):
+>>   crypto, dm: LLVMLinux: Remove VLAIS usage from dm-crypt
+>>   crypto: LLVMLinux: Remove VLAIS usage from crypto/hmac.c
+>>   crypto: LLVMLinux: Remove VLAIS usage from libcrc32c.c
+>>   crypto: LLVMLinux: Remove VLAIS usage from crypto/testmgr.c
+>>
+>> Vinícius Tinti (2):
+>>   apparmor: LLVMLinux: Remove VLAIS
+>>   btrfs: LLVMLinux: Remove VLAIS
+>>
+>> crypto/hmac.c              | 27 +++++++++++++--------------
+>> crypto/testmgr.c           | 16 ++++++++--------
+>> drivers/md/dm-crypt.c      | 38 ++++++++++++++++++--------------------
+>> fs/btrfs/hash.c            | 18 +++++++++---------
+>> lib/libcrc32c.c            | 18 +++++++++---------
+>> security/apparmor/crypto.c | 19 +++++++++----------
+>> 6 files changed, 66 insertions(+), 70 deletions(-)
+> are you sure these are all of them? I know for a fact that we are using the same construct in net/bluetooth/amp.c as well.
+There have been other places where this was an issue before too (ext4, 
+mac80211, USB gadget, ...). Some have already been fixed.
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
----
- drivers/clk/zynq/clkc.c | 29 ++++++++++++++---------------
- 1 file changed, 14 insertions(+), 15 deletions(-)
+Hmm. Yeah, I thought we had a patch for bluetooth too. I can't find it 
+now though.
 
-diff --git a/drivers/clk/zynq/clkc.c b/drivers/clk/zynq/clkc.c
-index 6ab793ac8c2c..9037bebd69f7 100644
---- a/drivers/clk/zynq/clkc.c
-+++ b/drivers/clk/zynq/clkc.c
-@@ -85,24 +85,22 @@ static DEFINE_SPINLOCK(canmioclk_lock);
- static DEFINE_SPINLOCK(dbgclk_lock);
- static DEFINE_SPINLOCK(aperclk_lock);
- 
--static const char dummy_nm[] __initconst = "dummy_name";
--
--static const char *armpll_parents[] __initdata = {"armpll_int", "ps_clk"};
--static const char *ddrpll_parents[] __initdata = {"ddrpll_int", "ps_clk"};
--static const char *iopll_parents[] __initdata = {"iopll_int", "ps_clk"};
--static const char *gem0_mux_parents[] __initdata = {"gem0_div1", dummy_nm};
--static const char *gem1_mux_parents[] __initdata = {"gem1_div1", dummy_nm};
--static const char *can0_mio_mux2_parents[] __initdata = {"can0_gate",
-+static const char *armpll_parents[] __initconst = {"armpll_int", "ps_clk"};
-+static const char *ddrpll_parents[] __initconst = {"ddrpll_int", "ps_clk"};
-+static const char *iopll_parents[] __initconst = {"iopll_int", "ps_clk"};
-+static const char *gem0_mux_parents[] __initconst = {"gem0_div1", "dummy_name"};
-+static const char *gem1_mux_parents[] __initconst = {"gem1_div1", "dummy_name"};
-+static const char *can0_mio_mux2_parents[] __initconst = {"can0_gate",
- 	"can0_mio_mux"};
--static const char *can1_mio_mux2_parents[] __initdata = {"can1_gate",
-+static const char *can1_mio_mux2_parents[] __initconst = {"can1_gate",
- 	"can1_mio_mux"};
--static const char *dbg_emio_mux_parents[] __initdata = {"dbg_div",
--	dummy_nm};
-+static const char *dbg_emio_mux_parents[] __initconst = {"dbg_div",
-+	"dummy_name"};
- 
--static const char *dbgtrc_emio_input_names[] __initdata = {"trace_emio_clk"};
--static const char *gem0_emio_input_names[] __initdata = {"gem0_emio_clk"};
--static const char *gem1_emio_input_names[] __initdata = {"gem1_emio_clk"};
--static const char *swdt_ext_clk_input_names[] __initdata = {"swdt_ext_clk"};
-+static const char *dbgtrc_emio_input_names[] __initconst = {"trace_emio_clk"};
-+static const char *gem0_emio_input_names[] __initconst = {"gem0_emio_clk"};
-+static const char *gem1_emio_input_names[] __initconst = {"gem1_emio_clk"};
-+static const char *swdt_ext_clk_input_names[] __initconst = {"swdt_ext_clk"};
- 
- static void __init zynq_clk_register_fclk(enum zynq_clk fclk,
- 		const char *clk_name, void __iomem *fclk_ctrl_reg,
-@@ -230,6 +228,7 @@ static void __init zynq_clk_setup(struct device_node *np)
- 	const char *periph_parents[4];
- 	const char *swdt_ext_clk_mux_parents[2];
- 	const char *can_mio_mux_parents[NUM_MIO_PINS];
-+	const char *dummy_nm = "dummy_name";
- 
- 	pr_info("Zynq clock init\n");
- 
+Suffice it to say that similar patches are required for the other 
+instances of this kind of code elsewhere as well.
+
+Thanks Marcel,
+
+Behan
+
 -- 
-2.1.0.1.g27b9230
+Behan Webster
+behanw@converseincode.com
 
