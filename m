@@ -1,461 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755182AbaIBUyB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 16:54:01 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:38673 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755078AbaIBUx7 (ORCPT
+	id S1755232AbaIBU4W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 16:56:22 -0400
+Received: from www.linutronix.de ([62.245.132.108]:39503 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754759AbaIBU4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 16:53:59 -0400
-X-Sasl-enc: z2TS72JfDCFE4VbSnBOswAQqH6BXDTE3uS0kTrIj+qyC 1409691238
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Brad Spengler <spender@grsecurity.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Kees Cook <keescook@chromium.org>
-Subject: [PATCH net-next v2] net: bpf: make eBPF interpreter images read-only
-Date: Tue,  2 Sep 2014 22:53:44 +0200
-Message-Id: <2bf2e54282097642db88e2b596b06a9ac3742883.1409690849.git.hannes@stressinduktion.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <aa5126f747594d768e0c518189a13e8674ad8ee5.1409690486.git.hannes@stressinduktion.org>
-References: <aa5126f747594d768e0c518189a13e8674ad8ee5.1409690486.git.hannes@stressinduktion.org>
+	Tue, 2 Sep 2014 16:56:20 -0400
+Date: Tue, 2 Sep 2014 22:56:17 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Lina Iyer <lina.iyer@linaro.org>
+cc: khilman@linaro.org, ulf.hansson@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, rjw@rjwysocki.net,
+        daniel.lezcano@linaro.org
+Subject: Re: [PATCH v3 3/4] irq: Allow multiple clients to register for irq
+ affinity notification
+In-Reply-To: <20140902184305.GB91995@ilina-mac.local>
+Message-ID: <alpine.DEB.2.10.1409022109050.3333@nanos>
+References: <1409170479-29955-1-git-send-email-lina.iyer@linaro.org> <1409170479-29955-4-git-send-email-lina.iyer@linaro.org> <alpine.DEB.2.10.1408272239190.3323@nanos> <20140902184305.GB91995@ilina-mac.local>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel Borkmann <dborkman@redhat.com>
+On Tue, 2 Sep 2014, Lina Iyer wrote:
+> On Wed, Aug 27 2014 at 14:56 -0600, Thomas Gleixner wrote:
+> > On Wed, 27 Aug 2014, Lina Iyer wrote:
+> > 
+> > All you are describing is the fact, that there is only a single
+> > notifier possible right now, but you completely miss to describe WHY
+> > you need multiple ones.
+> > 
+> > The existing notifier was introduced to tell the driver that the irq
+> > affinity has changed, so it can move its buffers to the proper NUMA
+> > node. So if that driver gets this information then it can tell the PM
+> > QoS code that its affinity changed so that stuff can react
+> > accordingly, right?
+> > 
+> With the new PM QoS changes, multiple drivers would now be interested in
+> knowing the smp_affinity changes of the same IRQ. PM QoS abstracts the
 
-With eBPF getting more extended and exposure to user space is on it's way,
-hardening the memory range the interpreter uses to steer its command flow
-seems appropriate.  This patch moves the to be interpreted bytecode to
-read-only pages.
+Again, you fail to tell me WHY multiple drivers are interested and
+which drivers are interested and what they do with that information.
 
-In case we execute a corrupted BPF interpreter image for some reason e.g.
-caused by an attacker which got past a verifier stage, it would not only
-provide arbitrary read/write memory access but arbitrary function calls
-as well. After setting up the BPF interpreter image, its contents do not
-change until destruction time, thus we can setup the image on immutable
-made pages in order to mitigate modifications to that code. The idea
-is derived from commit 314beb9bcabf ("x86: bpf_jit_comp: secure bpf jit
-against spraying attacks").
+> notifier in the framework, so individual drivers dont have to register
+> for notification themselves and handle affinity notifications. But PM
+> QoS needs to coexist with NUMA and other arch drivers that need to
+> modify based on their arch specific needs upon affinity change
+> notifications.
 
-This is possible because bpf_prog is not part of sk_filter anymore.
-After setup bpf_prog cannot be altered during its life-time. This prevents
-any modifications to the entire bpf_prog structure (incl. function/JIT
-image pointer).
+Lots of unspecified blurb. What has NUMA to do with other arch
+drivers? Are you actually understanding what this is all about?
 
-Every eBPF program (including classic BPF that are migrated) have to call
-bpf_prog_select_runtime() to select either interpreter or a JIT image
-as a last setup step, and they all are being freed via bpf_prog_free(),
-including non-JIT. Therefore, we can easily integrate this into the
-eBPF life-time, plus since we directly allocate a bpf_prog, we have no
-performance penalty.
+> Modifying the IRQ notifications to list, benefits having a simpler
+> mechanism to notify all arch drivers and frameworks like PM QoS.
 
-Tested with seccomp and test_bpf testsuite in JIT/non-JIT mode and manual
-inspection of kernel_page_tables.  Brad Spengler proposed the same idea
-via Twitter during development of this patch.
+Painting my bikeshed blue benefits all neighbours and institutions
+like the Royal Navy, right?
 
-Joint work with Hannes Frederic Sowa.
+Lina, this is leading nowhere. You just make completely unspecified
+claims and try to push your solution to a not explained problem
+through. That's not how it works, at least not with me.
 
-Suggested-by: Brad Spengler <spender@grsecurity.net>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: Alexei Starovoitov <ast@plumgrid.com>
-Cc: Kees Cook <keescook@chromium.org>
----
-v2) During proofreading I accidentally did not remove the old duplicate
-    paragraph from the changelog.
+So please sit down and write up a proper description of the problem
+you are trying to solve.
 
- arch/arm/net/bpf_jit_32.c       |  3 +-
- arch/mips/net/bpf_jit.c         |  3 +-
- arch/powerpc/net/bpf_jit_comp.c |  3 +-
- arch/s390/net/bpf_jit_comp.c    |  2 +-
- arch/sparc/net/bpf_jit_comp.c   |  3 +-
- arch/x86/net/bpf_jit_comp.c     | 18 ++++------
- include/linux/filter.h          | 49 ++++++++++++++++++++++---
- kernel/bpf/core.c               | 80 +++++++++++++++++++++++++++++++++++++++--
- kernel/seccomp.c                |  7 ++--
- lib/test_bpf.c                  |  2 +-
- net/core/filter.c               |  6 ++--
- 11 files changed, 144 insertions(+), 32 deletions(-)
+All I can see from your postings so far is:
 
-diff --git a/arch/arm/net/bpf_jit_32.c b/arch/arm/net/bpf_jit_32.c
-index a37b989..a76623b 100644
---- a/arch/arm/net/bpf_jit_32.c
-+++ b/arch/arm/net/bpf_jit_32.c
-@@ -930,5 +930,6 @@ void bpf_jit_free(struct bpf_prog *fp)
- {
- 	if (fp->jited)
- 		module_free(NULL, fp->bpf_func);
--	kfree(fp);
-+
-+	bpf_prog_unlock_free(fp);
- }
-diff --git a/arch/mips/net/bpf_jit.c b/arch/mips/net/bpf_jit.c
-index 05a5661..cfa83cf 100644
---- a/arch/mips/net/bpf_jit.c
-+++ b/arch/mips/net/bpf_jit.c
-@@ -1427,5 +1427,6 @@ void bpf_jit_free(struct bpf_prog *fp)
- {
- 	if (fp->jited)
- 		module_free(NULL, fp->bpf_func);
--	kfree(fp);
-+
-+	bpf_prog_unlock_free(fp);
- }
-diff --git a/arch/powerpc/net/bpf_jit_comp.c b/arch/powerpc/net/bpf_jit_comp.c
-index 3afa6f4..40c53ff 100644
---- a/arch/powerpc/net/bpf_jit_comp.c
-+++ b/arch/powerpc/net/bpf_jit_comp.c
-@@ -697,5 +697,6 @@ void bpf_jit_free(struct bpf_prog *fp)
- {
- 	if (fp->jited)
- 		module_free(NULL, fp->bpf_func);
--	kfree(fp);
-+
-+	bpf_prog_unlock_free(fp);
- }
-diff --git a/arch/s390/net/bpf_jit_comp.c b/arch/s390/net/bpf_jit_comp.c
-index 61e45b7..f2833c5 100644
---- a/arch/s390/net/bpf_jit_comp.c
-+++ b/arch/s390/net/bpf_jit_comp.c
-@@ -887,5 +887,5 @@ void bpf_jit_free(struct bpf_prog *fp)
- 	module_free(NULL, header);
- 
- free_filter:
--	kfree(fp);
-+	bpf_prog_unlock_free(fp);
- }
-diff --git a/arch/sparc/net/bpf_jit_comp.c b/arch/sparc/net/bpf_jit_comp.c
-index 1f76c22..f7a736b 100644
---- a/arch/sparc/net/bpf_jit_comp.c
-+++ b/arch/sparc/net/bpf_jit_comp.c
-@@ -812,5 +812,6 @@ void bpf_jit_free(struct bpf_prog *fp)
- {
- 	if (fp->jited)
- 		module_free(NULL, fp->bpf_func);
--	kfree(fp);
-+
-+	bpf_prog_unlock_free(fp);
- }
-diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
-index b08a98c..39ccfbb 100644
---- a/arch/x86/net/bpf_jit_comp.c
-+++ b/arch/x86/net/bpf_jit_comp.c
-@@ -972,23 +972,17 @@ out:
- 	kfree(addrs);
- }
- 
--static void bpf_jit_free_deferred(struct work_struct *work)
-+void bpf_jit_free(struct bpf_prog *fp)
- {
--	struct bpf_prog *fp = container_of(work, struct bpf_prog, work);
- 	unsigned long addr = (unsigned long)fp->bpf_func & PAGE_MASK;
- 	struct bpf_binary_header *header = (void *)addr;
- 
-+	if (!fp->jited)
-+		goto free_filter;
-+
- 	set_memory_rw(addr, header->pages);
- 	module_free(NULL, header);
--	kfree(fp);
--}
- 
--void bpf_jit_free(struct bpf_prog *fp)
--{
--	if (fp->jited) {
--		INIT_WORK(&fp->work, bpf_jit_free_deferred);
--		schedule_work(&fp->work);
--	} else {
--		kfree(fp);
--	}
-+free_filter:
-+	bpf_prog_unlock_free(fp);
- }
-diff --git a/include/linux/filter.h b/include/linux/filter.h
-index a5227ab..c789945 100644
---- a/include/linux/filter.h
-+++ b/include/linux/filter.h
-@@ -9,6 +9,11 @@
- #include <linux/skbuff.h>
- #include <linux/workqueue.h>
- #include <uapi/linux/filter.h>
-+#include <asm/cacheflush.h>
-+
-+struct sk_buff;
-+struct sock;
-+struct seccomp_data;
- 
- /* Internally used and optimized filter representation with extended
-  * instruction set based on top of classic BPF.
-@@ -320,20 +325,23 @@ struct sock_fprog_kern {
- 	struct sock_filter	*filter;
- };
- 
--struct sk_buff;
--struct sock;
--struct seccomp_data;
-+struct bpf_work_struct {
-+	struct bpf_prog *prog;
-+	struct work_struct work;
-+};
- 
- struct bpf_prog {
-+	u32			pages;		/* Number of allocated pages */
- 	u32			jited:1,	/* Is our filter JIT'ed? */
- 				len:31;		/* Number of filter blocks */
- 	struct sock_fprog_kern	*orig_prog;	/* Original BPF program */
-+	struct bpf_work_struct	*work;		/* Deferred free work struct */
- 	unsigned int		(*bpf_func)(const struct sk_buff *skb,
- 					    const struct bpf_insn *filter);
-+	/* Instructions for interpreter */
- 	union {
- 		struct sock_filter	insns[0];
- 		struct bpf_insn		insnsi[0];
--		struct work_struct	work;
- 	};
- };
- 
-@@ -353,6 +361,26 @@ static inline unsigned int bpf_prog_size(unsigned int proglen)
- 
- #define bpf_classic_proglen(fprog) (fprog->len * sizeof(fprog->filter[0]))
- 
-+#ifdef CONFIG_DEBUG_SET_MODULE_RONX
-+static inline void bpf_prog_lock_ro(struct bpf_prog *fp)
-+{
-+	set_memory_ro((unsigned long)fp, fp->pages);
-+}
-+
-+static inline void bpf_prog_unlock_ro(struct bpf_prog *fp)
-+{
-+	set_memory_rw((unsigned long)fp, fp->pages);
-+}
-+#else
-+static inline void bpf_prog_lock_ro(struct bpf_prog *fp)
-+{
-+}
-+
-+static inline void bpf_prog_unlock_ro(struct bpf_prog *fp)
-+{
-+}
-+#endif /* CONFIG_DEBUG_SET_MODULE_RONX */
-+
- int sk_filter(struct sock *sk, struct sk_buff *skb);
- 
- void bpf_prog_select_runtime(struct bpf_prog *fp);
-@@ -361,6 +389,17 @@ void bpf_prog_free(struct bpf_prog *fp);
- int bpf_convert_filter(struct sock_filter *prog, int len,
- 		       struct bpf_insn *new_prog, int *new_len);
- 
-+struct bpf_prog *bpf_prog_alloc(unsigned int size, gfp_t gfp_extra_flags);
-+struct bpf_prog *bpf_prog_realloc(struct bpf_prog *fp_old, unsigned int size,
-+				  gfp_t gfp_extra_flags);
-+void __bpf_prog_free(struct bpf_prog *fp);
-+
-+static inline void bpf_prog_unlock_free(struct bpf_prog *fp)
-+{
-+	bpf_prog_unlock_ro(fp);
-+	__bpf_prog_free(fp);
-+}
-+
- int bpf_prog_create(struct bpf_prog **pfp, struct sock_fprog_kern *fprog);
- void bpf_prog_destroy(struct bpf_prog *fp);
- 
-@@ -450,7 +489,7 @@ static inline void bpf_jit_compile(struct bpf_prog *fp)
- 
- static inline void bpf_jit_free(struct bpf_prog *fp)
- {
--	kfree(fp);
-+	bpf_prog_unlock_free(fp);
- }
- #endif /* CONFIG_BPF_JIT */
- 
-diff --git a/kernel/bpf/core.c b/kernel/bpf/core.c
-index 7f0dbcb..b54bb2c 100644
---- a/kernel/bpf/core.c
-+++ b/kernel/bpf/core.c
-@@ -22,6 +22,7 @@
-  */
- #include <linux/filter.h>
- #include <linux/skbuff.h>
-+#include <linux/vmalloc.h>
- #include <asm/unaligned.h>
- 
- /* Registers */
-@@ -63,6 +64,67 @@ void *bpf_internal_load_pointer_neg_helper(const struct sk_buff *skb, int k, uns
- 	return NULL;
- }
- 
-+struct bpf_prog *bpf_prog_alloc(unsigned int size, gfp_t gfp_extra_flags)
-+{
-+	gfp_t gfp_flags = GFP_KERNEL | __GFP_HIGHMEM | __GFP_ZERO |
-+			  gfp_extra_flags;
-+	struct bpf_work_struct *ws;
-+	struct bpf_prog *fp;
-+
-+	size = round_up(size, PAGE_SIZE);
-+	fp = __vmalloc(size, gfp_flags, PAGE_KERNEL);
-+	if (fp == NULL)
-+		return NULL;
-+
-+	ws = kmalloc(sizeof(*ws), GFP_KERNEL | gfp_extra_flags);
-+	if (ws == NULL) {
-+		vfree(fp);
-+		return NULL;
-+	}
-+
-+	fp->pages = size / PAGE_SIZE;
-+	fp->work = ws;
-+
-+	return fp;
-+}
-+EXPORT_SYMBOL_GPL(bpf_prog_alloc);
-+
-+struct bpf_prog *bpf_prog_realloc(struct bpf_prog *fp_old, unsigned int size,
-+				  gfp_t gfp_extra_flags)
-+{
-+	gfp_t gfp_flags = GFP_KERNEL | __GFP_HIGHMEM | __GFP_ZERO |
-+			  gfp_extra_flags;
-+	struct bpf_prog *fp;
-+
-+	BUG_ON(fp_old == NULL);
-+
-+	size = round_up(size, PAGE_SIZE);
-+	if (size <= fp_old->pages * PAGE_SIZE)
-+		return fp_old;
-+
-+	fp = __vmalloc(size, gfp_flags, PAGE_KERNEL);
-+	if (fp != NULL) {
-+		memcpy(fp, fp_old, fp_old->pages * PAGE_SIZE);
-+		fp->pages = size / PAGE_SIZE;
-+
-+		/* We keep fp->work from fp_old around in the new
-+		 * reallocated structure.
-+		 */
-+		fp_old->work = NULL;
-+		__bpf_prog_free(fp_old);
-+	}
-+
-+	return fp;
-+}
-+EXPORT_SYMBOL_GPL(bpf_prog_realloc);
-+
-+void __bpf_prog_free(struct bpf_prog *fp)
-+{
-+	kfree(fp->work);
-+	vfree(fp);
-+}
-+EXPORT_SYMBOL_GPL(__bpf_prog_free);
-+
- /* Base function for offset calculation. Needs to go into .text section,
-  * therefore keeping it non-static as well; will also be used by JITs
-  * anyway later on, so do not let the compiler omit it.
-@@ -523,12 +585,26 @@ void bpf_prog_select_runtime(struct bpf_prog *fp)
- 
- 	/* Probe if internal BPF can be JITed */
- 	bpf_int_jit_compile(fp);
-+	/* Lock whole bpf_prog as read-only */
-+	bpf_prog_lock_ro(fp);
- }
- EXPORT_SYMBOL_GPL(bpf_prog_select_runtime);
- 
--/* free internal BPF program */
-+static void bpf_prog_free_deferred(struct work_struct *work)
-+{
-+	struct bpf_work_struct *ws;
-+
-+	ws = container_of(work, struct bpf_work_struct, work);
-+	bpf_jit_free(ws->prog);
-+}
-+
-+/* Free internal BPF program */
- void bpf_prog_free(struct bpf_prog *fp)
- {
--	bpf_jit_free(fp);
-+	struct bpf_work_struct *ws = fp->work;
-+
-+	INIT_WORK(&ws->work, bpf_prog_free_deferred);
-+	ws->prog = fp;
-+	schedule_work(&ws->work);
- }
- EXPORT_SYMBOL_GPL(bpf_prog_free);
-diff --git a/kernel/seccomp.c b/kernel/seccomp.c
-index 44eb005..84922be 100644
---- a/kernel/seccomp.c
-+++ b/kernel/seccomp.c
-@@ -395,16 +395,15 @@ static struct seccomp_filter *seccomp_prepare_filter(struct sock_fprog *fprog)
- 	if (!filter)
- 		goto free_prog;
- 
--	filter->prog = kzalloc(bpf_prog_size(new_len),
--			       GFP_KERNEL|__GFP_NOWARN);
-+	filter->prog = bpf_prog_alloc(bpf_prog_size(new_len), __GFP_NOWARN);
- 	if (!filter->prog)
- 		goto free_filter;
- 
- 	ret = bpf_convert_filter(fp, fprog->len, filter->prog->insnsi, &new_len);
- 	if (ret)
- 		goto free_filter_prog;
--	kfree(fp);
- 
-+	kfree(fp);
- 	atomic_set(&filter->usage, 1);
- 	filter->prog->len = new_len;
- 
-@@ -413,7 +412,7 @@ static struct seccomp_filter *seccomp_prepare_filter(struct sock_fprog *fprog)
- 	return filter;
- 
- free_filter_prog:
--	kfree(filter->prog);
-+	__bpf_prog_free(filter->prog);
- free_filter:
- 	kfree(filter);
- free_prog:
-diff --git a/lib/test_bpf.c b/lib/test_bpf.c
-index 8c66c6a..9a67456 100644
---- a/lib/test_bpf.c
-+++ b/lib/test_bpf.c
-@@ -1836,7 +1836,7 @@ static struct bpf_prog *generate_filter(int which, int *err)
- 		break;
- 
- 	case INTERNAL:
--		fp = kzalloc(bpf_prog_size(flen), GFP_KERNEL);
-+		fp = bpf_prog_alloc(bpf_prog_size(flen), 0);
- 		if (fp == NULL) {
- 			pr_cont("UNEXPECTED_FAIL no memory left\n");
- 			*err = -ENOMEM;
-diff --git a/net/core/filter.c b/net/core/filter.c
-index d814b8a..37f8eb0 100644
---- a/net/core/filter.c
-+++ b/net/core/filter.c
-@@ -933,7 +933,7 @@ static struct bpf_prog *bpf_migrate_filter(struct bpf_prog *fp)
- 
- 	/* Expand fp for appending the new filter representation. */
- 	old_fp = fp;
--	fp = krealloc(old_fp, bpf_prog_size(new_len), GFP_KERNEL);
-+	fp = bpf_prog_realloc(old_fp, bpf_prog_size(new_len), 0);
- 	if (!fp) {
- 		/* The old_fp is still around in case we couldn't
- 		 * allocate new memory, so uncharge on that one.
-@@ -1013,7 +1013,7 @@ int bpf_prog_create(struct bpf_prog **pfp, struct sock_fprog_kern *fprog)
- 	if (fprog->filter == NULL)
- 		return -EINVAL;
- 
--	fp = kmalloc(bpf_prog_size(fprog->len), GFP_KERNEL);
-+	fp = bpf_prog_alloc(bpf_prog_size(fprog->len), 0);
- 	if (!fp)
- 		return -ENOMEM;
- 
-@@ -1069,7 +1069,7 @@ int sk_attach_filter(struct sock_fprog *fprog, struct sock *sk)
- 	if (fprog->filter == NULL)
- 		return -EINVAL;
- 
--	prog = kmalloc(bpf_fsize, GFP_KERNEL);
-+	prog = bpf_prog_alloc(bpf_fsize, 0);
- 	if (!prog)
- 		return -ENOMEM;
- 
--- 
-1.9.3
+    1) You want to use the notification for PM QoS
+
+    2) You run into conflicts with the existing notifiers
+
+    3) You want to solve that conflict
+
+What you are not telling is:
+
+    1) In which way is PM QoS going to use that notifier
+
+    2) How does that conflict with the existing users. And we only
+       have two of them:
+
+       - InfiniPath 7322 chip driver
+
+       - cpu_rmap driver, which is used by
+
+       	- solarflare NIC driver
+	- mellanox mlx4 driver
+	- cisco enic driver
+
+	So how is that conflicting with your ARM centric PM QoS work?
+
+	Please provide proper debug info about such a conflict, if it
+	exists at all.
+
+    3) Which arch drivers are involved?
+
+       So far none, at least not in mainline according to
+       "grep irq_set_affinity_notifier arch/".
+
+       If you have out of tree code which uses this, then we want to
+       see it first to understand what the arch driver is trying to
+       solve by using that notification mechanism.
+
+The more I think about what you are not telling the more I get the
+feeling that this whole PM QoS thing you try to do is a complete
+design disaster.
+
+>From your changelog:
+
+ "PM QoS and other idle frameworks can do a better job of addressing
+  power and performance requirements for a cpu, knowing the IRQs that
+  are affine to that cpu."
+
+I agree with that. PM might make better decisions if it knows which
+activities are targeted at a particular cpu.
+
+So someone figured that out and you got tasked to implement it. So you
+looked for a way to get to this information and you found the existing
+notifier and decided to (ab)use it for your purpose. But you did not
+spend a split second to figure out why this is wrong and even useless.
+
+At the point where PM QoS or whatever decides to use that information,
+it does not know at all what the current affinity mask is. So in your
+patch 4/4, which I ignored so far you do:
+
++     	   	 struct irq_desc *desc = irq_to_desc(req->irq);
++ 		 struct cpumask *mask = desc->irq_data.affinity;
+
+WTF?
+
+You did not even have the courtesy to use the proper functions for
+this. And of course you access all of this unlocked. So how is that
+supposed to work with a concurrent affinity update? Not at
+all.
+
+Fiddling with irq_desc is a NONO: Consult your preferred search
+machine or just the kernel changelogs about the consequences.
+
+Looking at the other patches you really seem to have missed out on
+some other NONOs:
+
+ struct pm_qos_request {
++	enum pm_qos_req_type type;
++	struct cpumask cpus_affine;
++	/* Internal structure members */
+ 	struct plist_node node;
+ 	int pm_qos_class;
+ 	struct delayed_work work; /* for pm_qos_update_request_timeout */
+@@ -80,6 +90,7 @@ enum pm_qos_type {
+ struct pm_qos_constraints {
+ 	struct plist_head list;
+ 	s32 target_value; /* Do not change to 64 bit */
++	s32 target_per_cpu[NR_CPUS];
+ 	s32 default_value;
+ 	s32 no_constraint_value;
+ 	enum pm_qos_type type;
+
+Go figure how well "struct cpumask" and a s32 array sizeof NR_CPUS
+bodes on kernels compiled for NR_CPUS=8192 or larger.
+
+Just get it: You are hacking core code, not some random ARM SoC
+driver.
+
+That aside, your design or the lack thereof sucks. While your hackery
+might work somehow for the PM QoS problem at hand - ignoring the hard
+to debug race window of the concurrent affinity update - it's
+completely useless for other PM related decisions despite your claims
+that its a benefit for all of that.
+
+How would a general "keep track of the targets of all interrupts in
+the system" mechanism make use of this? Not at all. Simply because it
+has no idea which interrupts are requested at any given time. Sure
+your answer will be "add another notifier" to solve that problem. But
+that's the completely wrong answer because notifiers are a PITA and
+should go away. Here is Linus' POV of notifiers and I really agree
+with it:
+
+ "Notifiers are a disgrace, and almost all of them are a major design
+  mistake. They all have locking problems, the introduce internal
+  arbitrary API's that are hard to fix later (because you have random
+  people who decided to hook into them, which is the whole *point* of
+  those notifier chains)."
+
+And so I really fight that notifier chain tooth and nails until someone
+provides me a proper argument WHY it cant be solved with proper
+explicit and understandable mechanisms.
+
+Back to your PM QoS trainwreck:
+
+I'm really impressed that you did not notice at all how inaccurate and
+therefor useless the affinity information which you are consulting is.
+
+Did it ever hit even the outer hemisphere of your brain, that
+irqdata.affinity is the affinity which was requested by the caller of
+an affinity setter function and not the effective affinity?
+
+I bet it did not, simply because you did not pay any attention and
+bother to analyze that proper. Otherwise you would have tried to hack
+around this as well in some disgusting way.
+
+Really great savings, if the affinity is left at default to all cpus,
+but the effective affinity is a single cpu due to irq routing
+restrictions in the hardware.
+
+Surely you tested against single CPU affinities and achieved great
+results, but that's not a generic and useful solution.
+
+Thanks,
+
+	tglx
+
+
+
+
+
+
 
