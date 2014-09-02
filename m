@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755251AbaIBWdM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 18:33:12 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:56138 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755274AbaIBWdH (ORCPT
+	id S1755582AbaIBWdc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 18:33:32 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:35317 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755438AbaIBWdT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 18:33:07 -0400
+	Tue, 2 Sep 2014 18:33:19 -0400
 From: behanw@converseincode.com
 To: agk@redhat.com, clm@fb.com, davem@davemloft.net, dm-devel@redhat.com,
         fabf@skynet.be, herbert@gondor.apana.org.au, jbacik@fb.com,
@@ -16,11 +16,14 @@ Cc: akpm@linux-foundation.org, james.l.morris@oracle.com,
         linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-raid@vger.kernel.org, linux-security-module@vger.kernel.org,
         neilb@suse.de, serge@hallyn.com, torvalds@linux-foundation.org,
-        Behan Webster <behanw@converseincode.com>
-Subject: [PATCH RFC 0/6] LLVMLinux: Patches to enable the kernel to be compiled with clang/LLVM
-Date: Tue,  2 Sep 2014 15:32:27 -0700
-Message-Id: <1409697153-7006-1-git-send-email-behanw@converseincode.com>
+        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
+        Behan Webster <behanw@converseincode.com>, pageexec@freemail.hu
+Subject: [PATCH RFC 4/6] crypto: LLVMLinux: Remove VLAIS usage from crypto/testmgr.c
+Date: Tue,  2 Sep 2014 15:32:31 -0700
+Message-Id: <1409697153-7006-5-git-send-email-behanw@converseincode.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1409697153-7006-1-git-send-email-behanw@converseincode.com>
+References: <1409697153-7006-1-git-send-email-behanw@converseincode.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -28,35 +31,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Behan Webster <behanw@converseincode.com>
+From: Jan-Simon Möller <dl9pf@gmx.de>
 
-These patches remove the use of Variable Length Arrays In Structs (VLAIS) in
-crypto related code. Presented here for comments as a whole (since they all do
-the same thing in the same way). Once everyone is happy I will submit them
-individually to their appropriate maintainers.
+The use of variable length arrays in structs (VLAIS) in the Linux Kernel code
+precludes the use of compilers which don't implement VLAIS (for instance the
+Clang compiler). This patch instead allocates the appropriate amount of memory
+using an char array.
 
-The LLVMLinux project aims to fully build the Linux kernel using both gcc and
-clang (the C front end for the LLVM compiler infrastructure project). 
+struct shash_desc contains a flexible array member member ctx declared with
+CRYPTO_MINALIGN_ATTR, so sizeof(struct shash_desc) aligns the beginning
+of the array declared after struct shash_desc with long long.
 
+No trailing padding is required because it is not a struct type that can
+be used in an array.
 
-Jan-Simon Möller (4):
-  crypto, dm: LLVMLinux: Remove VLAIS usage from dm-crypt
-  crypto: LLVMLinux: Remove VLAIS usage from crypto/hmac.c
-  crypto: LLVMLinux: Remove VLAIS usage from libcrc32c.c
-  crypto: LLVMLinux: Remove VLAIS usage from crypto/testmgr.c
+The CRYPTO_MINALIGN_ATTR is required so that desc is aligned with long long
+as would be the case for a struct containing a member with
+CRYPTO_MINALIGN_ATTR.
 
-Vinícius Tinti (2):
-  apparmor: LLVMLinux: Remove VLAIS
-  btrfs: LLVMLinux: Remove VLAIS
+Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
+Signed-off-by: Behan Webster <behanw@converseincode.com>
+Cc: pageexec@freemail.hu
+---
+ crypto/testmgr.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
- crypto/hmac.c              | 27 +++++++++++++--------------
- crypto/testmgr.c           | 16 ++++++++--------
- drivers/md/dm-crypt.c      | 38 ++++++++++++++++++--------------------
- fs/btrfs/hash.c            | 18 +++++++++---------
- lib/libcrc32c.c            | 18 +++++++++---------
- security/apparmor/crypto.c | 19 +++++++++----------
- 6 files changed, 66 insertions(+), 70 deletions(-)
-
+diff --git a/crypto/testmgr.c b/crypto/testmgr.c
+index ac2b631..f4bf5c2 100644
+--- a/crypto/testmgr.c
++++ b/crypto/testmgr.c
+@@ -1714,16 +1714,16 @@ static int alg_test_crc32c(const struct alg_test_desc *desc,
+ 	}
+ 
+ 	do {
+-		struct {
+-			struct shash_desc shash;
+-			char ctx[crypto_shash_descsize(tfm)];
+-		} sdesc;
++		char sdesc[sizeof(struct shash_desc)
++			+ crypto_shash_descsize(tfm)] CRYPTO_MINALIGN_ATTR;
++		struct shash_desc *shash = (struct shash_desc *)sdesc;
++		u32 *ctx = (u32 *)shash_desc_ctx(shash);
+ 
+-		sdesc.shash.tfm = tfm;
+-		sdesc.shash.flags = 0;
++		shash->tfm = tfm;
++		shash->flags = 0;
+ 
+-		*(u32 *)sdesc.ctx = le32_to_cpu(420553207);
+-		err = crypto_shash_final(&sdesc.shash, (u8 *)&val);
++		*ctx = le32_to_cpu(420553207);
++		err = crypto_shash_final(shash, (u8 *)&val);
+ 		if (err) {
+ 			printk(KERN_ERR "alg: crc32c: Operation failed for "
+ 			       "%s: %d\n", driver, err);
 -- 
 1.9.1
 
