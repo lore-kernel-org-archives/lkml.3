@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755406AbaIBViY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 17:38:24 -0400
-Received: from mail-ie0-f201.google.com ([209.85.223.201]:42204 "EHLO
-	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754990AbaIBVfG (ORCPT
+	id S1755387AbaIBViW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 17:38:22 -0400
+Received: from mail-oi0-f73.google.com ([209.85.218.73]:47518 "EHLO
+	mail-oi0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755266AbaIBVfG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 2 Sep 2014 17:35:06 -0400
 From: Andrew Bresticker <abrestic@chromium.org>
@@ -25,9 +25,9 @@ Cc: Andrew Bresticker <abrestic@chromium.org>,
         Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-usb@vger.kernel.org
-Subject: [PATCH v3 2/9] mailbox: Add NVIDIA Tegra XUSB mailbox driver
-Date: Tue,  2 Sep 2014 14:34:54 -0700
-Message-Id: <1409693701-16520-3-git-send-email-abrestic@chromium.org>
+Subject: [PATCH v3 3/9] of: Update Tegra XUSB pad controller binding for USB
+Date: Tue,  2 Sep 2014 14:34:55 -0700
+Message-Id: <1409693701-16520-4-git-send-email-abrestic@chromium.org>
 X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 In-Reply-To: <1409693701-16520-1-git-send-email-abrestic@chromium.org>
 References: <1409693701-16520-1-git-send-email-abrestic@chromium.org>
@@ -35,410 +35,168 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Tegra xHCI controller's firmware communicates requests to the host
-processor through a mailbox interface.  While there is only a single
-physical channel, messages sent by the controller can be divided
-into two groups: those intended for the PHY driver and those intended
-for the host-controller driver.  The requesting driver is assigned
-one of two virtual channels when the single physical channel is
-requested.  All incoming messages are sent to both virtual channels.
+Add new bindings used for USB support by the Tegra XUSB pad controller.
+This includes additional PHY types, USB-specific pinconfig properties, etc.
 
 Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
 ---
-Jassi: I've handled the sharing by making the channels in the Tegra
-driver 'virtual' channels.  Having the mailbox core handle channel
-sharing would be a much more invasive change, but let me know if that's
-what you'd prefer.
-
 Changes from v2:
- - Fixed mailbox IRQ vs. channel alloc/free race.
- - Renamed defines to match TRM.
- - Dropped channel specifier and instead allocated virtual channels as they
-   were requested.
- - Removed MODULE_ALIAS.
+ - Added nvidia,otg-hs-curr-level-offset property.
+ - Dropped "-otg" from VBUS supplies.
+ - Added mbox-names property.
+ - Removed extra whitespace.
 Changes from v1:
- - Converted to common mailbox framework.
- - Removed useless polling sequences in TX path.
- - Moved xusb include from linux/ to soc/tegra/
+ - Updated to use common mailbox bindings.
+ - Made USB3 port-to-lane mappins a top-level binding rather than a pinconfig
+   binding.
+ - Add #defines for the padctl lanes.
 ---
- drivers/mailbox/Kconfig              |   3 +
- drivers/mailbox/Makefile             |   2 +
- drivers/mailbox/tegra-xusb-mailbox.c | 290 +++++++++++++++++++++++++++++++++++
- include/soc/tegra/xusb.h             |  46 ++++++
- 4 files changed, 341 insertions(+)
- create mode 100644 drivers/mailbox/tegra-xusb-mailbox.c
- create mode 100644 include/soc/tegra/xusb.h
+ .../pinctrl/nvidia,tegra124-xusb-padctl.txt        | 56 ++++++++++++++++++++--
+ include/dt-bindings/pinctrl/pinctrl-tegra-xusb.h   | 20 ++++++++
+ 2 files changed, 72 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/mailbox/Kconfig b/drivers/mailbox/Kconfig
-index 9fd9c67..97369c2 100644
---- a/drivers/mailbox/Kconfig
-+++ b/drivers/mailbox/Kconfig
-@@ -33,4 +33,7 @@ config OMAP_MBOX_KFIFO_SIZE
- 	  Specify the default size of mailbox's kfifo buffers (bytes).
- 	  This can also be changed at runtime (via the mbox_kfifo_size
- 	  module parameter).
+diff --git a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-xusb-padctl.txt b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-xusb-padctl.txt
+index 2f9c0bd..4a1b9475 100644
+--- a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-xusb-padctl.txt
++++ b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-xusb-padctl.txt
+@@ -21,6 +21,18 @@ Required properties:
+   - padctl
+ - #phy-cells: Should be 1. The specifier is the index of the PHY to reference.
+   See <dt-bindings/pinctrl/pinctrl-tegra-xusb.h> for the list of valid values.
++- mboxes: Must contain an entry for the XUSB mailbox channel.
++  See ../mailbox/mailbox.txt for details.
++- mbox-names: Must include the following entries:
++  - xusb
 +
-+config TEGRA_XUSB_MBOX
-+	def_bool y if ARCH_TEGRA
- endif
-diff --git a/drivers/mailbox/Makefile b/drivers/mailbox/Makefile
-index 94ed7ce..7f0af9c 100644
---- a/drivers/mailbox/Makefile
-+++ b/drivers/mailbox/Makefile
-@@ -5,3 +5,5 @@ obj-$(CONFIG_MAILBOX)		+= mailbox.o
- obj-$(CONFIG_PL320_MBOX)	+= pl320-ipc.o
++Optional properties:
++-------------------
++- vbus-{0,1,2}-supply: VBUS regulator for the corresponding UTMI pad.
++- vddio-hsic-supply: VDDIO regulator for the HSIC pads.
++- nvidia,usb3-port-{0,1}-lane: PCIe/SATA lane to which the corresponding USB3
++  port is mapped.  See <dt-bindings/pinctrl/pinctrl-tegra-xusb.h> for the list
++  of valid values.
  
- obj-$(CONFIG_OMAP2PLUS_MBOX)	+= omap-mailbox.o
+ Lane muxing:
+ ------------
+@@ -50,6 +62,17 @@ Optional properties:
+   pin or group should be assigned to. Valid values for function names are
+   listed below.
+ - nvidia,iddq: Enables IDDQ mode of the lane. (0: no, 1: yes)
++- nvidia,usb2-port-num: USB2 port (0, 1, or 2) to which the lane is mapped.
++- nvidia,hsic-strobe-trim: HSIC strobe trimmer value.
++- nvidia,hsic-rx-strobe-trim: HSIC RX strobe trimmer value.
++- nvidia,hsic-rx-data-trim: HSIC RX data trimmer value.
++- nvidia,hsic-tx-rtune-n: HSIC TX RTUNEN value.
++- nvidia,hsic-tx-rtune-p: HSIC TX RTUNEP value.
++- nvidia,hsic-tx-slew-n: HSIC TX SLEWN value.
++- nvidia,hsic-tx-slew-p: HSIC TX SLEWP value.
++- nvidia,hsic-auto-term: Enables HSIC AUTO_TERM. (0: no, 1: yes)
++- nvidia,otg-hs-curr-level-offset: Offset to be applied to the pad's fused
++  HS_CURR_LEVEL value.
+ 
+ Note that not all of these properties are valid for all lanes. Lanes can be
+ divided into three groups:
+@@ -58,18 +81,21 @@ divided into three groups:
+ 
+     Valid functions for this group are: "snps", "xusb", "uart", "rsvd".
+ 
+-    The nvidia,iddq property does not apply to this group.
++    The nvidia,otg-hs-curr-level-offset property only applies.
+ 
+   - ulpi-0, hsic-0, hsic-1:
+ 
+     Valid functions for this group are: "snps", "xusb".
+ 
+-    The nvidia,iddq property does not apply to this group.
++    The nvidia,hsic-* properties apply only to the pins hsic-{0,1} when
++    the function is xusb.
+ 
+   - pcie-0, pcie-1, pcie-2, pcie-3, pcie-4, sata-0:
+ 
+     Valid functions for this group are: "pcie", "usb3", "sata", "rsvd".
+ 
++    The nvidia,usb2-port-num property only applies and is required when
++    the function is usb3.
+ 
+ Example:
+ ========
+@@ -82,6 +108,8 @@ SoC file extract:
+ 		reg = <0x0 0x7009f000 0x0 0x1000>;
+ 		resets = <&tegra_car 142>;
+ 		reset-names = "padctl";
++		mboxes = <&xusb_mbox>;
++		mbox-names = "xusb";
+ 
+ 		#phy-cells = <1>;
+ 	};
+@@ -100,15 +128,35 @@ Board file extract:
+ 
+ 	...
+ 
++	usb@0,70090000 {
++		...
 +
-+obj-$(CONFIG_TEGRA_XUSB_MBOX)	+= tegra-xusb-mailbox.o
-diff --git a/drivers/mailbox/tegra-xusb-mailbox.c b/drivers/mailbox/tegra-xusb-mailbox.c
-new file mode 100644
-index 0000000..2d87b8a
---- /dev/null
-+++ b/drivers/mailbox/tegra-xusb-mailbox.c
-@@ -0,0 +1,290 @@
-+/*
-+ * NVIDIA Tegra XUSB mailbox driver
-+ *
-+ * Copyright (C) 2014 NVIDIA Corporation
-+ * Copyright (C) 2014 Google, Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ */
++		phys = <&padctl 5>, <&padctl 6>, <&padctl 7>;
++		phy-names = "utmi-1", "utmi-2", "usb3-0";
 +
-+#include <linux/interrupt.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/mailbox_controller.h>
-+#include <linux/module.h>
-+#include <linux/of_device.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+
-+#include <soc/tegra/xusb.h>
-+
-+#define XUSB_CFG_ARU_MBOX_CMD			0xe4
-+#define  MBOX_DEST_FALC				BIT(27)
-+#define  MBOX_DEST_PME				BIT(28)
-+#define  MBOX_DEST_SMI				BIT(29)
-+#define  MBOX_DEST_XHCI				BIT(30)
-+#define  MBOX_INT_EN				BIT(31)
-+#define XUSB_CFG_ARU_MBOX_DATA_IN		0xe8
-+#define  CMD_DATA_SHIFT				0
-+#define  CMD_DATA_MASK				0xffffff
-+#define  CMD_TYPE_SHIFT				24
-+#define  CMD_TYPE_MASK				0xff
-+#define XUSB_CFG_ARU_MBOX_DATA_OUT		0xec
-+#define XUSB_CFG_ARU_MBOX_OWNER			0xf0
-+#define  MBOX_OWNER_NONE			0
-+#define  MBOX_OWNER_FW				1
-+#define  MBOX_OWNER_SW				2
-+#define XUSB_CFG_ARU_SMI_INTR			0x428
-+#define  MBOX_SMI_INTR_FW_HANG			BIT(1)
-+#define  MBOX_SMI_INTR_EN			BIT(3)
-+
-+struct tegra_xusb_mbox {
-+	struct mbox_controller mbox;
-+	int irq;
-+	void __iomem *regs;
-+	spinlock_t lock;
-+	bool vchan_allocated[TEGRA_XUSB_MBOX_NUM_CHANS];
-+};
-+
-+static inline u32 mbox_readl(struct tegra_xusb_mbox *mbox, unsigned long offset)
-+{
-+	return readl(mbox->regs + offset);
-+}
-+
-+static inline void mbox_writel(struct tegra_xusb_mbox *mbox, u32 val,
-+			       unsigned long offset)
-+{
-+	writel(val, mbox->regs + offset);
-+}
-+
-+static inline u32 mbox_pack_msg(struct tegra_xusb_mbox_msg *msg)
-+{
-+	u32 val;
-+
-+	val = (msg->cmd & CMD_TYPE_MASK) << CMD_TYPE_SHIFT;
-+	val |= (msg->data & CMD_DATA_MASK) << CMD_DATA_SHIFT;
-+
-+	return val;
-+}
-+
-+static inline void mbox_unpack_msg(u32 val, struct tegra_xusb_mbox_msg *msg)
-+{
-+	msg->cmd = (val >> CMD_TYPE_SHIFT) & CMD_TYPE_MASK;
-+	msg->data = (val >> CMD_DATA_SHIFT) & CMD_DATA_MASK;
-+}
-+
-+static int tegra_xusb_mbox_send_data(struct mbox_chan *chan, void *data)
-+{
-+	struct tegra_xusb_mbox *mbox = dev_get_drvdata(chan->mbox->dev);
-+	struct tegra_xusb_mbox_msg *msg = data;
-+	unsigned long flags;
-+	u32 reg, owner;
-+
-+	dev_dbg(mbox->mbox.dev, "TX message 0x%x:0x%x\n", msg->cmd, msg->data);
-+
-+	/* ACK/NAK must be sent with the controller as the mailbox owner */
-+	if (msg->cmd == MBOX_CMD_ACK || msg->cmd == MBOX_CMD_NAK)
-+		owner = MBOX_OWNER_FW;
-+	else
-+		owner = MBOX_OWNER_SW;
-+
-+	spin_lock_irqsave(&mbox->lock, flags);
-+
-+	/* Acquire mailbox */
-+	if (mbox_readl(mbox, XUSB_CFG_ARU_MBOX_OWNER) != MBOX_OWNER_NONE) {
-+		dev_err(mbox->mbox.dev, "Mailbox not idle\n");
-+		goto busy;
-+	}
-+	mbox_writel(mbox, owner, XUSB_CFG_ARU_MBOX_OWNER);
-+	if (mbox_readl(mbox, XUSB_CFG_ARU_MBOX_OWNER) != owner) {
-+		dev_err(mbox->mbox.dev, "Failed to acquire mailbox");
-+		goto busy;
++		...
 +	}
 +
-+	mbox_writel(mbox, mbox_pack_msg(msg), XUSB_CFG_ARU_MBOX_DATA_IN);
-+	reg = mbox_readl(mbox, XUSB_CFG_ARU_MBOX_CMD);
-+	reg |= MBOX_INT_EN | MBOX_DEST_FALC;
-+	mbox_writel(mbox, reg, XUSB_CFG_ARU_MBOX_CMD);
++	...
 +
-+	spin_unlock_irqrestore(&mbox->lock, flags);
+ 	padctl: padctl@0,7009f000 {
+ 		pinctrl-0 = <&padctl_default>;
+ 		pinctrl-names = "default";
+ 
++		nvidia,usb3-port-0-lane = <TEGRA_XUSB_PADCTL_PIN_PCIE_0>;
++		vbus-2-supply = <&vdd_usb3_vbus>;
 +
-+	return 0;
-+busy:
-+	spin_unlock_irqrestore(&mbox->lock, flags);
-+	return -EBUSY;
-+}
+ 		padctl_default: pinmux {
+-			usb3 {
+-				nvidia,lanes = "pcie-0", "pcie-1";
++			otg {
++				nvidia,lanes = "otg-1", "otg-2";
++				nvidia,function = "xusb";
++			};
 +
-+static int tegra_xusb_mbox_startup(struct mbox_chan *chan)
-+{
-+	struct tegra_xusb_mbox *mbox = dev_get_drvdata(chan->mbox->dev);
-+	int idx = chan - mbox->mbox.chans;
-+	unsigned long flags;
++			usb3p0 {
++				nvidia,lanes = "pcie-0";
+ 				nvidia,function = "usb3";
+ 				nvidia,iddq = <0>;
++				nvidia,usb2-port-num = <2>;
+ 			};
+ 
+ 			pcie {
+diff --git a/include/dt-bindings/pinctrl/pinctrl-tegra-xusb.h b/include/dt-bindings/pinctrl/pinctrl-tegra-xusb.h
+index 914d56d..17b1aab 100644
+--- a/include/dt-bindings/pinctrl/pinctrl-tegra-xusb.h
++++ b/include/dt-bindings/pinctrl/pinctrl-tegra-xusb.h
+@@ -3,5 +3,25 @@
+ 
+ #define TEGRA_XUSB_PADCTL_PCIE 0
+ #define TEGRA_XUSB_PADCTL_SATA 1
++#define TEGRA_XUSB_PADCTL_USB3_P0 2
++#define TEGRA_XUSB_PADCTL_USB3_P1 3
++#define TEGRA_XUSB_PADCTL_UTMI_P0 4
++#define TEGRA_XUSB_PADCTL_UTMI_P1 5
++#define TEGRA_XUSB_PADCTL_UTMI_P2 6
++#define TEGRA_XUSB_PADCTL_HSIC_P0 7
++#define TEGRA_XUSB_PADCTL_HSIC_P1 8
 +
-+	spin_lock_irqsave(&mbox->lock, flags);
-+	mbox->vchan_allocated[idx] = true;
-+	spin_unlock_irqrestore(&mbox->lock, flags);
-+
-+	return 0;
-+}
-+
-+static void tegra_xusb_mbox_shutdown(struct mbox_chan *chan)
-+{
-+	struct tegra_xusb_mbox *mbox = dev_get_drvdata(chan->mbox->dev);
-+	int idx = chan - mbox->mbox.chans;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&mbox->lock, flags);
-+	mbox->vchan_allocated[idx] = false;
-+	spin_unlock_irqrestore(&mbox->lock, flags);
-+}
-+
-+static bool tegra_xusb_mbox_last_tx_done(struct mbox_chan *chan)
-+{
-+	/*
-+	 * Transmissions are assumed to be completed as soon as they are
-+	 * written to the mailbox.
-+	 */
-+	return true;
-+}
-+
-+static struct mbox_chan_ops tegra_xusb_mbox_chan_ops = {
-+	.send_data = tegra_xusb_mbox_send_data,
-+	.startup = tegra_xusb_mbox_startup,
-+	.shutdown = tegra_xusb_mbox_shutdown,
-+	.last_tx_done = tegra_xusb_mbox_last_tx_done,
-+};
-+
-+static irqreturn_t tegra_xusb_mbox_irq(int irq, void *p)
-+{
-+	struct tegra_xusb_mbox *mbox = (struct tegra_xusb_mbox *)p;
-+	struct tegra_xusb_mbox_msg msg;
-+	int i;
-+	u32 reg;
-+
-+	spin_lock(&mbox->lock);
-+
-+	/* Clear mbox interrupts */
-+	reg = mbox_readl(mbox, XUSB_CFG_ARU_SMI_INTR);
-+	if (reg & MBOX_SMI_INTR_FW_HANG)
-+		dev_err(mbox->mbox.dev, "Controller firmware hang\n");
-+	mbox_writel(mbox, reg, XUSB_CFG_ARU_SMI_INTR);
-+
-+	reg = mbox_readl(mbox, XUSB_CFG_ARU_MBOX_DATA_OUT);
-+	mbox_unpack_msg(reg, &msg);
-+
-+	/*
-+	 * Set the mailbox back to idle.  The recipient of the message is
-+	 * responsible for sending an ACK/NAK, if necessary.
-+	 */
-+	reg = mbox_readl(mbox, XUSB_CFG_ARU_MBOX_CMD);
-+	reg &= ~MBOX_DEST_SMI;
-+	mbox_writel(mbox, reg, XUSB_CFG_ARU_MBOX_CMD);
-+	mbox_writel(mbox, MBOX_OWNER_NONE, XUSB_CFG_ARU_MBOX_OWNER);
-+
-+	dev_dbg(mbox->mbox.dev, "RX message 0x%x:0x%x\n", msg.cmd, msg.data);
-+	for (i = 0; i < ARRAY_SIZE(mbox->vchan_allocated); i++) {
-+		if (mbox->vchan_allocated[i])
-+			mbox_chan_received_data(&mbox->mbox.chans[i], &msg);
-+	}
-+
-+	spin_unlock(&mbox->lock);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static struct mbox_chan *tegra_xusb_mbox_of_xlate(struct mbox_controller *ctlr,
-+					const struct of_phandle_args *sp)
-+{
-+	struct tegra_xusb_mbox *mbox = dev_get_drvdata(ctlr->dev);
-+	struct mbox_chan *chan = NULL;
-+	unsigned long flags;
-+	int i;
-+
-+	/* Pick the first available (virtual) channel. */
-+	spin_lock_irqsave(&mbox->lock, flags);
-+	for (i = 0; i < ARRAY_SIZE(mbox->vchan_allocated); i++) {
-+		if (!mbox->vchan_allocated[i]) {
-+			chan = &ctlr->chans[i];
-+			break;
-+		}
-+	}
-+	spin_unlock_irqrestore(&mbox->lock, flags);
-+
-+	return chan;
-+}
-+
-+static struct of_device_id tegra_xusb_mbox_of_match[] = {
-+	{ .compatible = "nvidia,tegra124-xusb-mbox" },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, tegra_xusb_mbox_of_match);
-+
-+static int tegra_xusb_mbox_probe(struct platform_device *pdev)
-+{
-+	struct tegra_xusb_mbox *mbox;
-+	struct resource *res;
-+	int ret;
-+
-+	mbox = devm_kzalloc(&pdev->dev, sizeof(*mbox), GFP_KERNEL);
-+	if (!mbox)
-+		return -ENOMEM;
-+	platform_set_drvdata(pdev, mbox);
-+	spin_lock_init(&mbox->lock);
-+
-+	mbox->mbox.dev = &pdev->dev;
-+	mbox->mbox.chans = devm_kcalloc(&pdev->dev, TEGRA_XUSB_MBOX_NUM_CHANS,
-+					sizeof(*mbox->mbox.chans), GFP_KERNEL);
-+	if (!mbox->mbox.chans)
-+		return -ENOMEM;
-+	mbox->mbox.num_chans = TEGRA_XUSB_MBOX_NUM_CHANS;
-+	mbox->mbox.ops = &tegra_xusb_mbox_chan_ops;
-+	mbox->mbox.txdone_poll = true;
-+	mbox->mbox.txpoll_period = 0; /* no need to actually poll */
-+	mbox->mbox.of_xlate = tegra_xusb_mbox_of_xlate;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res)
-+		return -ENODEV;
-+	mbox->regs = devm_ioremap(&pdev->dev, res->start, resource_size(res));
-+	if (!mbox->regs)
-+		return -ENOMEM;
-+
-+	mbox->irq = platform_get_irq(pdev, 0);
-+	if (mbox->irq < 0)
-+		return mbox->irq;
-+	ret = devm_request_irq(&pdev->dev, mbox->irq, tegra_xusb_mbox_irq, 0,
-+			       dev_name(&pdev->dev), mbox);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = mbox_controller_register(&mbox->mbox);
-+	if (ret < 0)
-+		dev_err(&pdev->dev, "failed to register mailbox: %d\n", ret);
-+
-+	return ret;
-+}
-+
-+static int tegra_xusb_mbox_remove(struct platform_device *pdev)
-+{
-+	struct tegra_xusb_mbox *mbox = platform_get_drvdata(pdev);
-+
-+	mbox_controller_unregister(&mbox->mbox);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver tegra_xusb_mbox_driver = {
-+	.probe	= tegra_xusb_mbox_probe,
-+	.remove	= tegra_xusb_mbox_remove,
-+	.driver	= {
-+		.name = "tegra-xusb-mbox",
-+		.of_match_table = of_match_ptr(tegra_xusb_mbox_of_match),
-+	},
-+};
-+module_platform_driver(tegra_xusb_mbox_driver);
-+
-+MODULE_AUTHOR("Andrew Bresticker <abrestic@chromium.org>");
-+MODULE_DESCRIPTION("NVIDIA Tegra XUSB mailbox driver");
-+MODULE_LICENSE("GPL v2");
-diff --git a/include/soc/tegra/xusb.h b/include/soc/tegra/xusb.h
-new file mode 100644
-index 0000000..cfe211d
---- /dev/null
-+++ b/include/soc/tegra/xusb.h
-@@ -0,0 +1,46 @@
-+/*
-+ * Copyright (C) 2014 NVIDIA Corporation
-+ * Copyright (C) 2014 Google, Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ */
-+
-+#ifndef __SOC_TEGRA_XUSB_H__
-+#define __SOC_TEGRA_XUSB_H__
-+
-+/* Two virtual channels: host + phy */
-+#define TEGRA_XUSB_MBOX_NUM_CHANS 2
-+
-+/* Command requests from the firmware */
-+enum tegra_xusb_mbox_cmd {
-+	MBOX_CMD_MSG_ENABLED = 1,
-+	MBOX_CMD_INC_FALC_CLOCK,
-+	MBOX_CMD_DEC_FALC_CLOCK,
-+	MBOX_CMD_INC_SSPI_CLOCK,
-+	MBOX_CMD_DEC_SSPI_CLOCK,
-+	MBOX_CMD_SET_BW, /* no ACK/NAK required */
-+	MBOX_CMD_SET_SS_PWR_GATING,
-+	MBOX_CMD_SET_SS_PWR_UNGATING,
-+	MBOX_CMD_SAVE_DFE_CTLE_CTX,
-+	MBOX_CMD_AIRPLANE_MODE_ENABLED, /* unused */
-+	MBOX_CMD_AIRPLANE_MODE_DISABLED, /* unused */
-+	MBOX_CMD_START_HSIC_IDLE,
-+	MBOX_CMD_STOP_HSIC_IDLE,
-+	MBOX_CMD_DBC_WAKE_STACK, /* unused */
-+	MBOX_CMD_HSIC_PRETEND_CONNECT,
-+
-+	MBOX_CMD_MAX,
-+
-+	/* Response message to above commands */
-+	MBOX_CMD_ACK = 128,
-+	MBOX_CMD_NAK
-+};
-+
-+struct tegra_xusb_mbox_msg {
-+	u32 cmd;
-+	u32 data;
-+};
-+
-+#endif /* __SOC_TEGRA_XUSB_H__ */
++#define TEGRA_XUSB_PADCTL_PIN_OTG_0   0
++#define TEGRA_XUSB_PADCTL_PIN_OTG_1   1
++#define TEGRA_XUSB_PADCTL_PIN_OTG_2   2
++#define TEGRA_XUSB_PADCTL_PIN_ULPI_0  3
++#define TEGRA_XUSB_PADCTL_PIN_HSIC_0  4
++#define TEGRA_XUSB_PADCTL_PIN_HSIC_1  5
++#define TEGRA_XUSB_PADCTL_PIN_PCIE_0  6
++#define TEGRA_XUSB_PADCTL_PIN_PCIE_1  7
++#define TEGRA_XUSB_PADCTL_PIN_PCIE_2  8
++#define TEGRA_XUSB_PADCTL_PIN_PCIE_3  9
++#define TEGRA_XUSB_PADCTL_PIN_PCIE_4 10
++#define TEGRA_XUSB_PADCTL_PIN_SATA_0 11
+ 
+ #endif /* _DT_BINDINGS_PINCTRL_TEGRA_XUSB_H */
 -- 
 2.1.0.rc2.206.gedb03e5
 
