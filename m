@@ -1,85 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754799AbaIBQdd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 12:33:33 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:56556 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753962AbaIBQdc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 12:33:32 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
-        Vlastimil Babka <vbabka@suse.cz>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: [PATCH] mm: fix dump_vma() compilation
-Date: Tue,  2 Sep 2014 10:33:16 -0600
-Message-Id: <1409675596-19860-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.9.1
+	id S1754832AbaIBQdt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 12:33:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46523 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754804AbaIBQdr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 12:33:47 -0400
+Date: Tue, 2 Sep 2014 18:33:44 +0200
+From: Joerg Roedel <jroedel@suse.de>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, agraf@suse.de,
+        valentine.sinitsyn@gmail.com, jan.kiszka@siemens.com,
+        gleb@cloudius-systems.com, avi@cloudius-systems.com
+Subject: Re: [PATCH 2/4] KVM: nSVM: propagate the NPF EXITINFO to the guest
+Message-ID: <20140902163344.GB16722@suse.de>
+References: <1409670830-14544-1-git-send-email-pbonzini@redhat.com>
+ <1409670830-14544-3-git-send-email-pbonzini@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-NVConfidentiality: public
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409670830-14544-3-git-send-email-pbonzini@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+Ah, here you add emulation of these bits.
 
-dump_vma() was written to access fields within vma->vm_page_prot. However,
-pgprot_t is sometimes a scalar and sometimes a struct (At least on ARM;
-see arch/arm/include/asm/pgtable-2level-types.h). use macro pgprot_val()
-to get the value, so the code is immune to these differences.
+On Tue, Sep 02, 2014 at 05:13:48PM +0200, Paolo Bonzini wrote:
+> This is similar to what the EPT code does with the exit qualification.
+> This allows the guest to see a valid value for bits 33:32.
+> 
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+>  arch/x86/kvm/paging_tmpl.h |  6 ++++++
+>  arch/x86/kvm/svm.c         | 26 ++++++++++++++++++++++----
+>  2 files changed, 28 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+> index 410776528265..99d4c4e836a0 100644
+> --- a/arch/x86/kvm/paging_tmpl.h
+> +++ b/arch/x86/kvm/paging_tmpl.h
+> @@ -322,8 +322,14 @@ retry_walk:
+>  
+>  		real_gfn = mmu->translate_gpa(vcpu, gfn_to_gpa(table_gfn),
+>  					      PFERR_USER_MASK|PFERR_WRITE_MASK);
+> +
+> +		/*
+> +		 * Can this happen (except if the guest is playing TOCTTOU games)?
+> +		 * We should have gotten a nested page fault on table_gfn instead.
+> +		 */
 
-This fixes:
-mm/page_alloc.c: In function ‘dump_vma’:
-mm/page_alloc.c:6742:46: error: request for member ‘pgprot’ in something not a structure or union
+Comment is true, but doesn't make the check below obsolete, no?
 
-The cast is required to avoid:
+>  		if (unlikely(real_gfn == UNMAPPED_GVA))
+>  			goto error;
+> @@ -1974,10 +1974,28 @@ static void nested_svm_inject_npf_exit(struct kvm_vcpu *vcpu,
+>  {
+>  	struct vcpu_svm *svm = to_svm(vcpu);
+>  
+> -	svm->vmcb->control.exit_code = SVM_EXIT_NPF;
+> -	svm->vmcb->control.exit_code_hi = 0;
+> -	svm->vmcb->control.exit_info_1 = fault->error_code;
+> -	svm->vmcb->control.exit_info_2 = fault->address;
+> +	/*
+> +	 * We can keep the value that the processor stored in the VMCB,
+> +	 * but make up something sensible if we hit the WARN.
+> +	 */
+> +	if (WARN_ON(svm->vmcb->control.exit_code != SVM_EXIT_NPF)) {
+> +		svm->vmcb->control.exit_code = SVM_EXIT_NPF;
+> +		svm->vmcb->control.exit_code_hi = 0;
+> +		svm->vmcb->control.exit_info_1 = (1ULL << 32);
+> +		svm->vmcb->control.exit_info_2 = fault->address;
+> +	}
 
-mm/page_alloc.c: In function ‘dump_vma’:
-mm/page_alloc.c:6745:3: warning: format ‘%lx’ expects argument of type ‘long unsigned int’, but argument 8 has type ‘pgprot_t’ [-Wformat]
+Its been a while since I looked into this, but is an injected NPF exit
+always the result of a real NPF exit? How about an io-port emulated on
+L1 but passed through to L2 by the nested hypervisor. On emulation of
+INS or OUTS, KVM would need to read/write to an L2 address space, maybe
+causing NPF faults to be injected. In this case an IOIO exit would cause
+an injected NPF exit for L1.
 
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Vlastimil Babka <vbabka@suse.cz>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Fixes: 658f7da49d34 ("mm: introduce dump_vma")
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
- mm/page_alloc.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index cb510c08073b..1578bc98eb29 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -6739,7 +6739,8 @@ void dump_vma(const struct vm_area_struct *vma)
- 		"prot %lx anon_vma %p vm_ops %p\n"
- 		"pgoff %lx file %p private_data %p\n",
- 		vma, (void *)vma->vm_start, (void *)vma->vm_end, vma->vm_next,
--		vma->vm_prev, vma->vm_mm, vma->vm_page_prot.pgprot,
-+		vma->vm_prev, vma->vm_mm,
-+		(unsigned long)pgprot_val(vma->vm_page_prot),
- 		vma->anon_vma, vma->vm_ops, vma->vm_pgoff,
- 		vma->vm_file, vma->vm_private_data);
- 	dump_flags(vma->vm_flags, vmaflags_names, ARRAY_SIZE(vmaflags_names));
--- 
-1.9.1
+	Joerg
 
