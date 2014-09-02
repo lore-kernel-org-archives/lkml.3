@@ -1,303 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755123AbaIBUEK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 16:04:10 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:8590 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754137AbaIBUEI (ORCPT
+	id S1755062AbaIBUNP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 16:13:15 -0400
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:36811 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754581AbaIBUNN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 16:04:08 -0400
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>, Kumar Gala <galak@codeaurora.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Likely <grant.likely@linaro.org>
-CC: Suman Anna <s-anna@ti.com>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
-        Jeffrey Hugo <jhugo@codeaurora.org>,
-        Eric Holmberg <eholmber@codeaurora.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>
-Subject: [PATCH v3] hwspinlock: qcom: Add support for Qualcomm HW Mutex block
-Date: Tue, 2 Sep 2014 13:04:06 -0700
-Message-ID: <1409688246-16530-1-git-send-email-bjorn.andersson@sonymobile.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 2 Sep 2014 16:13:13 -0400
+From: Andy King <acking@vmware.com>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Cc: davem@davemloft.net, pv-drivers@vmware.com,
+        penguin-kernel@I-love.SAKURA.ne.jp, sergei.shtylyov@cogentembedded.com,
+        Andy King <acking@vmware.com>
+Subject: [PATCH] VMXNET3: Check for map error in vmxnet3_set_mc
+Date: Tue,  2 Sep 2014 13:13:44 -0700
+Message-Id: <1409688824-32619-2-git-send-email-acking@vmware.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1409688824-32619-1-git-send-email-acking@vmware.com>
+References: <1409688824-32619-1-git-send-email-acking@vmware.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kumar Gala <galak@codeaurora.org>
+We should check if the map of the table actually succeeds, and also free
+resources accordingly.
 
-Add driver for Qualcomm Hardware Mutex block that exists on newer
-Qualcomm SoCs.
+Version bumped to 1.2.1.0
 
-Cc: Jeffrey Hugo <jhugo@codeaurora.org>
-Cc: Eric Holmberg <eholmber@codeaurora.org>
-Cc: Courtney Cavin <courtney.cavin@sonymobile.com>
-Signed-off-by: Kumar Gala <galak@codeaurora.org>
-[bjorn: added pm_runtime calls, from Courtney,
-	added sfpb-mutex compatible,
-	updated DT binding documentation formatting,
-	based stride on resource size instead of hardcoded values,
-	replaced msm prefix with qcom,
-	cleaned up includes]
-Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Acked-by: Shelley Gong <shelleygong@vmware.com>
+Acked-by: Bhavesh Davda <bhavesh@vmware.com>
+Signed-off-by: Andy King <acking@vmware.com>
+Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 ---
+ drivers/net/vmxnet3/vmxnet3_drv.c |   15 ++++++++-------
+ drivers/net/vmxnet3/vmxnet3_int.h |    4 ++--
+ 2 files changed, 10 insertions(+), 9 deletions(-)
 
-We need this driver to add support for the shared memory manager, so I'm
-reviving Kumars patch from a year ago, with some additional sprinkles on top.
-
-Changes since v2:
- - MODULE_DEVICE_TABLE
- - Changed prefix to qcom
- - Cleaned up includes
- - Rely on reg and num-locks to figure out stride, instead of of_match data
-
-Changes since v1:
- - Added the pm_runtime calls needed to be able to boot a kernel with
-   pm_runtime and this driver, patch from Courtney.
- - Added sfpb-mutex compatible, for re-use of the driver in family A platforms.
- - Updated formatting of DT binding documentation, while adding the extra
-   compatible.
- - Dropped Stephen Boyds Reviewed-by due to these changes.
-
- .../devicetree/bindings/hwlock/qcom-hwspinlock.txt |   35 +++++
- drivers/hwspinlock/Kconfig                         |   11 ++
- drivers/hwspinlock/Makefile                        |    1 +
- drivers/hwspinlock/qcom_hwspinlock.c               |  147 ++++++++++++++++++++
- 4 files changed, 194 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/hwlock/qcom-hwspinlock.txt
- create mode 100644 drivers/hwspinlock/qcom_hwspinlock.c
-
-diff --git a/Documentation/devicetree/bindings/hwlock/qcom-hwspinlock.txt b/Documentation/devicetree/bindings/hwlock/qcom-hwspinlock.txt
-new file mode 100644
-index 0000000..27c7c80
---- /dev/null
-+++ b/Documentation/devicetree/bindings/hwlock/qcom-hwspinlock.txt
-@@ -0,0 +1,35 @@
-+Qualcomm Hardware Mutex Block:
+diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
+index d6e90c7..6dfcbf5 100644
+--- a/drivers/net/vmxnet3/vmxnet3_drv.c
++++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+@@ -2056,7 +2056,6 @@ vmxnet3_set_mc(struct net_device *netdev)
+ 		if (!netdev_mc_empty(netdev)) {
+ 			new_table = vmxnet3_copy_mc(netdev);
+ 			if (new_table) {
+-				new_mode |= VMXNET3_RXM_MCAST;
+ 				rxConf->mfTableLen = cpu_to_le16(
+ 					netdev_mc_count(netdev) * ETH_ALEN);
+ 				new_table_pa = dma_map_single(
+@@ -2064,15 +2063,18 @@ vmxnet3_set_mc(struct net_device *netdev)
+ 							new_table,
+ 							rxConf->mfTableLen,
+ 							PCI_DMA_TODEVICE);
++			}
 +
-+The hardware block provides mutexes utilized between different processors
-+on the SoC as part of the communication protocol used by these processors.
-+
-+- compatible:
-+	Usage: required
-+	Value type: <string>
-+	Definition: must be one of:
-+		    "qcom,sfpb-mutex",
-+		    "qcom,tcsr-mutex"
-+
-+- reg:
-+	Usage: required
-+	Value type: <prop-encoded-array>
-+	Definition: base address and size of the mutex registers
-+
-+- reg-names:
-+	Usage: required
-+	Value type: <string>
-+	Definition: must be "mutex-base"
-+
-+- qcom,num-locks:
-+	Usage: required
-+	Value type: <u32>
-+	Definition: the number of locks/mutex available in this block
-+
-+Example:
-+
-+	hwlock@fd484000 {
-+		compatible = "qcom,tcsr-mutex";
-+		reg = <0xfd484000 0x1000>;
-+		reg-names = "mutex-base";
-+		qcom,num-locks = <32>;
-+	};
-diff --git a/drivers/hwspinlock/Kconfig b/drivers/hwspinlock/Kconfig
-index 3612cb5..af4c7e6 100644
---- a/drivers/hwspinlock/Kconfig
-+++ b/drivers/hwspinlock/Kconfig
-@@ -8,6 +8,17 @@ config HWSPINLOCK
++			if (new_table_pa) {
++				new_mode |= VMXNET3_RXM_MCAST;
+ 				rxConf->mfTablePA = cpu_to_le64(new_table_pa);
+ 			} else {
+-				netdev_info(netdev, "failed to copy mcast list"
+-					    ", setting ALL_MULTI\n");
++				netdev_info(netdev,
++					    "failed to copy mcast list, setting ALL_MULTI\n");
+ 				new_mode |= VMXNET3_RXM_ALL_MULTI;
+ 			}
+ 		}
  
- menu "Hardware Spinlock drivers"
+-
+ 	if (!(new_mode & VMXNET3_RXM_MCAST)) {
+ 		rxConf->mfTableLen = 0;
+ 		rxConf->mfTablePA = 0;
+@@ -2091,11 +2093,10 @@ vmxnet3_set_mc(struct net_device *netdev)
+ 			       VMXNET3_CMD_UPDATE_MAC_FILTERS);
+ 	spin_unlock_irqrestore(&adapter->cmd_lock, flags);
  
-+config HWSPINLOCK_QCOM
-+	tristate "Qualcomm Hardware Spinlock device"
-+	depends on ARCH_QCOM
-+	select HWSPINLOCK
-+	help
-+	  Say y here to support the Qualcomm Hardware Mutex functionality, which
-+	  provides a synchronisation mechanism for the various processors on
-+	  the SoC.
-+
-+	  If unsure, say N.
-+
- config HWSPINLOCK_OMAP
- 	tristate "OMAP Hardware Spinlock device"
- 	depends on ARCH_OMAP4 || SOC_OMAP5 || SOC_DRA7XX || SOC_AM33XX || SOC_AM43XX
-diff --git a/drivers/hwspinlock/Makefile b/drivers/hwspinlock/Makefile
-index 93eb64b..f3bff48 100644
---- a/drivers/hwspinlock/Makefile
-+++ b/drivers/hwspinlock/Makefile
-@@ -3,5 +3,6 @@
- #
+-	if (new_table) {
++	if (new_table_pa)
+ 		dma_unmap_single(&adapter->pdev->dev, new_table_pa,
+ 				 rxConf->mfTableLen, PCI_DMA_TODEVICE);
+-		kfree(new_table);
+-	}
++	kfree(new_table);
+ }
  
- obj-$(CONFIG_HWSPINLOCK)		+= hwspinlock_core.o
-+obj-$(CONFIG_HWSPINLOCK_QCOM)		+= qcom_hwspinlock.o
- obj-$(CONFIG_HWSPINLOCK_OMAP)		+= omap_hwspinlock.o
- obj-$(CONFIG_HSEM_U8500)		+= u8500_hsem.o
-diff --git a/drivers/hwspinlock/qcom_hwspinlock.c b/drivers/hwspinlock/qcom_hwspinlock.c
-new file mode 100644
-index 0000000..a9e5fa4
---- /dev/null
-+++ b/drivers/hwspinlock/qcom_hwspinlock.c
-@@ -0,0 +1,147 @@
-+/*
-+ * Copyright (c) 2013, The Linux Foundation. All rights reserved.
-+ * Copyright (c) 2014, Sony Mobile Communications AB
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/hwspinlock.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/pm_runtime.h>
-+
-+#include "hwspinlock_internal.h"
-+
-+#define SPINLOCK_ID_APPS_PROC	1
-+#define BASE_ID			0
-+
-+static int qcom_hwspinlock_trylock(struct hwspinlock *lock)
-+{
-+	void __iomem *lock_addr = lock->priv;
-+
-+	writel_relaxed(SPINLOCK_ID_APPS_PROC, lock_addr);
-+
-+	return readl_relaxed(lock_addr) == SPINLOCK_ID_APPS_PROC;
-+}
-+
-+static void qcom_hwspinlock_unlock(struct hwspinlock *lock)
-+{
-+	void __iomem *lock_addr = lock->priv;
-+	u32 lock_owner;
-+
-+	lock_owner = readl_relaxed(lock_addr);
-+	if (lock_owner != SPINLOCK_ID_APPS_PROC) {
-+		pr_err("%s: spinlock not owned by us (actual owner is %d)\n",
-+				__func__, lock_owner);
-+	}
-+
-+	writel_relaxed(0, lock_addr);
-+}
-+
-+static const struct hwspinlock_ops qcom_hwspinlock_ops = {
-+	.trylock	= qcom_hwspinlock_trylock,
-+	.unlock		= qcom_hwspinlock_unlock,
-+};
-+
-+static const struct of_device_id qcom_hwspinlock_of_match[] = {
-+	{ .compatible = "qcom,sfpb-mutex" },
-+	{ .compatible = "qcom,tcsr-mutex" },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, qcom_hwspinlock_of_match);
-+
-+static int qcom_hwspinlock_probe(struct platform_device *pdev)
-+{
-+	struct device_node *node = pdev->dev.of_node;
-+	struct hwspinlock_device *bank;
-+	struct hwspinlock *hwlock;
-+	struct resource *res;
-+	void __iomem *iobase;
-+	size_t array_size;
-+	long stride, i;
-+	u32 num_locks;
-+	int ret;
-+
-+	ret = of_property_read_u32(node, "qcom,num-locks", &num_locks);
-+	if (ret || num_locks == 0)
-+		return -ENODEV;
-+
-+	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "mutex-base");
-+	iobase = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(iobase))
-+		return PTR_ERR(iobase);
-+
-+	array_size = num_locks * sizeof(*hwlock);
-+	bank = devm_kzalloc(&pdev->dev, sizeof(*bank) + array_size, GFP_KERNEL);
-+	if (!bank)
-+		return -ENOMEM;
-+
-+	platform_set_drvdata(pdev, bank);
-+
-+	stride = (long)resource_size(res) / num_locks;
-+	for (i = 0, hwlock = &bank->lock[0]; i < num_locks; i++, hwlock++)
-+		hwlock->priv = iobase + i * stride;
-+
-+	pm_runtime_enable(&pdev->dev);
-+
-+	ret = hwspin_lock_register(bank, &pdev->dev, &qcom_hwspinlock_ops,
-+						BASE_ID, num_locks);
-+	if (ret)
-+		pm_runtime_disable(&pdev->dev);
-+
-+	return ret;
-+}
-+
-+static int qcom_hwspinlock_remove(struct platform_device *pdev)
-+{
-+	struct hwspinlock_device *bank = platform_get_drvdata(pdev);
-+	int ret;
-+
-+	ret = hwspin_lock_unregister(bank);
-+	if (ret) {
-+		dev_err(&pdev->dev, "%s failed: %d\n", __func__, ret);
-+		return ret;
-+	}
-+
-+	pm_runtime_disable(&pdev->dev);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver qcom_hwspinlock_driver = {
-+	.probe		= qcom_hwspinlock_probe,
-+	.remove		= qcom_hwspinlock_remove,
-+	.driver		= {
-+		.name	= "qcom_hwspinlock",
-+		.of_match_table = qcom_hwspinlock_of_match,
-+	},
-+};
-+
-+static int __init qcom_hwspinlock_init(void)
-+{
-+	return platform_driver_register(&qcom_hwspinlock_driver);
-+}
-+/* board init code might need to reserve hwspinlocks for predefined purposes */
-+postcore_initcall(qcom_hwspinlock_init);
-+
-+static void __exit qcom_hwspinlock_exit(void)
-+{
-+	platform_driver_unregister(&qcom_hwspinlock_driver);
-+}
-+module_exit(qcom_hwspinlock_exit);
-+
-+MODULE_LICENSE("GPL v2");
-+MODULE_DESCRIPTION("Hardware spinlock driver for Qualcomm SoCs");
-+MODULE_AUTHOR("Kumar Gala <galak@codeaurora.org>");
-+MODULE_AUTHOR("Jeffrey Hugo <jhugo@codeaurora.org>");
-+MODULE_AUTHOR("Eric Holmberg <eholmber@codeaurora.org>");
+ void
+diff --git a/drivers/net/vmxnet3/vmxnet3_int.h b/drivers/net/vmxnet3/vmxnet3_int.h
+index 29ee77f2..3759479 100644
+--- a/drivers/net/vmxnet3/vmxnet3_int.h
++++ b/drivers/net/vmxnet3/vmxnet3_int.h
+@@ -69,10 +69,10 @@
+ /*
+  * Version numbers
+  */
+-#define VMXNET3_DRIVER_VERSION_STRING   "1.2.0.0-k"
++#define VMXNET3_DRIVER_VERSION_STRING   "1.2.1.0-k"
+ 
+ /* a 32-bit int, each byte encode a verion number in VMXNET3_DRIVER_VERSION */
+-#define VMXNET3_DRIVER_VERSION_NUM      0x01020000
++#define VMXNET3_DRIVER_VERSION_NUM      0x01020100
+ 
+ #if defined(CONFIG_PCI_MSI)
+ 	/* RSS only makes sense if MSI-X is supported. */
 -- 
-1.7.9.5
+1.7.4.1
 
