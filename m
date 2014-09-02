@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755225AbaIBVcy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 17:32:54 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:61517 "HELO
+	id S1755259AbaIBVdL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 17:33:11 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:63756 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755153AbaIBVcw (ORCPT
+	with SMTP id S1755153AbaIBVdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 17:32:52 -0400
+	Tue, 2 Sep 2014 17:33:09 -0400
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: lenb@kernel.org, qbanin@gmail.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI/EC: Add msi quirk for Clevo W350etq
-Date: Tue, 02 Sep 2014 23:52:10 +0200
-Message-ID: <1789359.lgutrb7SVa@vostro.rjw.lan>
+To: Lv Zheng <lv.zheng@intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Bob Moore <robert.moore@intel.com>
+Subject: Re: [PATCH] ACPICA: ACPI 5.1: Add support for runtime validation of _DSD package.
+Date: Tue, 02 Sep 2014 23:52:27 +0200
+Message-ID: <1928853.GNCaIt2FMa@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1409280608-19714-1-git-send-email-tianyu.lan@intel.com>
-References: <1409280608-19714-1-git-send-email-tianyu.lan@intel.com>
+In-Reply-To: <856f29de2607cab36bb3936fae26daa275e0b129.1409275857.git.lv.zheng@intel.com>
+References: <856f29de2607cab36bb3936fae26daa275e0b129.1409275857.git.lv.zheng@intel.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -24,37 +27,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 29, 2014 10:50:08 AM Lan Tianyu wrote:
-> Clevo W350etq's EC will not produce GPE interrupt some time after
-> booting. The ACPI notify event won't trigger when the issue takes
-> place. After debugging, adding msi quirk for the machine can fix
-> the issue. This patch is to add msi quirk for the machine.
+On Friday, August 29, 2014 09:32:42 AM Lv Zheng wrote:
+> From: Mika Westerberg <mika.westerberg@linux.intel.com>
 > 
-> Reference: https://bugzilla.kernel.org/show_bug.cgi?id=77431
-> Reported-and-tested-by: qbanin@gmail.com
-> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> Adds ACPICA kernel runtime support to validate contents/format
+> of the _DSD package, similar to the iASL support. Ported by
+> Mika Westerberg.
+> 
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Signed-off-by: Bob Moore <robert.moore@intel.com>
+> Signed-off-by: Lv Zheng <lv.zheng@intel.com>
 
 Queued up for 3.17-rc4, thanks!
 
 > ---
->  drivers/acpi/ec.c | 4 ++++
->  1 file changed, 4 insertions(+)
+>  drivers/acpi/acpica/nsprepkg.c |   39 +++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 39 insertions(+)
 > 
-> diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-> index a66ab65..d8535b3 100644
-> --- a/drivers/acpi/ec.c
-> +++ b/drivers/acpi/ec.c
-> @@ -1015,6 +1015,10 @@ static struct dmi_system_id ec_dmi_table[] __initdata = {
->  	DMI_MATCH(DMI_SYS_VENDOR, "Quanta"),
->  	DMI_MATCH(DMI_PRODUCT_NAME, "TW9/SW9"),}, NULL},
->  	{
-> +	ec_flag_msi, "Clevo W350etq", {
-> +	DMI_MATCH(DMI_SYS_VENDOR, "CLEVO CO."),
-> +	DMI_MATCH(DMI_PRODUCT_NAME, "W35_37ET"),}, NULL},
-> +	{
->  	ec_validate_ecdt, "ASUS hardware", {
->  	DMI_MATCH(DMI_BIOS_VENDOR, "ASUS") }, NULL},
->  	{
+> diff --git a/drivers/acpi/acpica/nsprepkg.c b/drivers/acpi/acpica/nsprepkg.c
+> index 68f7258..1b13b92 100644
+> --- a/drivers/acpi/acpica/nsprepkg.c
+> +++ b/drivers/acpi/acpica/nsprepkg.c
+> @@ -316,6 +316,45 @@ acpi_ns_check_package(struct acpi_evaluate_info *info,
+>  		    acpi_ns_check_package_list(info, package, elements, count);
+>  		break;
+>  
+> +	case ACPI_PTYPE2_UUID_PAIR:
+> +
+> +		/* The package must contain pairs of (UUID + type) */
+> +
+> +		if (count & 1) {
+> +			expected_count = count + 1;
+> +			goto package_too_small;
+> +		}
+> +
+> +		while (count > 0) {
+> +			status = acpi_ns_check_object_type(info, elements,
+> +							   package->ret_info.
+> +							   object_type1, 0);
+> +			if (ACPI_FAILURE(status)) {
+> +				return (status);
+> +			}
+> +
+> +			/* Validate length of the UUID buffer */
+> +
+> +			if ((*elements)->buffer.length != 16) {
+> +				ACPI_WARN_PREDEFINED((AE_INFO,
+> +						      info->full_pathname,
+> +						      info->node_flags,
+> +						      "Invalid length for UUID Buffer"));
+> +				return (AE_AML_OPERAND_VALUE);
+> +			}
+> +
+> +			status = acpi_ns_check_object_type(info, elements + 1,
+> +							   package->ret_info.
+> +							   object_type2, 0);
+> +			if (ACPI_FAILURE(status)) {
+> +				return (status);
+> +			}
+> +
+> +			elements += 2;
+> +			count -= 2;
+> +		}
+> +		break;
+> +
+>  	default:
+>  
+>  		/* Should not get here if predefined info table is correct */
 > 
 
 -- 
