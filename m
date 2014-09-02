@@ -1,185 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754586AbaIBQHZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 12:07:25 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:44690 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751295AbaIBQHX (ORCPT
+	id S1754711AbaIBQHv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 12:07:51 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:29631 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754620AbaIBQHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 12:07:23 -0400
+	Tue, 2 Sep 2014 12:07:50 -0400
+X-IronPort-AV: E=Sophos;i="5.04,449,1406592000"; 
+   d="scan'208";a="168347184"
+From: David Vrabel <david.vrabel@citrix.com>
+To: <linux-kernel@vger.kernel.org>
+CC: David Vrabel <david.vrabel@citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
+        Suresh Siddha <sbsiddha@gmail.com>
+Subject: [PATCHv3] x86, fpu: remove the logic of non-eager fpu mem allocation at the first usage
+Date: Tue, 2 Sep 2014 17:06:53 +0100
+Message-ID: <1409674013-10321-1-git-send-email-david.vrabel@citrix.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-X-Originating-IP: [80.15.154.113]
-In-Reply-To: <20140608100924.GA3279@lvm>
-References: <1401987808-23596-1-git-send-email-a.motakis@virtualopensystems.com>
- <1401987808-23596-15-git-send-email-a.motakis@virtualopensystems.com> <20140608100924.GA3279@lvm>
-From: Antonios Motakis <a.motakis@virtualopensystems.com>
-Date: Tue, 2 Sep 2014 18:07:03 +0200
-Message-ID: <CAG8rG2xDNGmDNv5a-bLxuJ7_y09E=aGCFWEU6doLEDRyNQL4XQ@mail.gmail.com>
-Subject: Re: [RFC PATCH v6 14/20] vfio/platform: initial interrupts support
-To: Christoffer Dall <christoffer.dall@linaro.org>
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        kvm-arm <kvmarm@lists.cs.columbia.edu>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        VirtualOpenSystems Technical Team <tech@virtualopensystems.com>,
-        alvise rigo <a.rigo@virtualopensystems.com>,
-        KVM devel mailing list <kvm@vger.kernel.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Kim Phillips <kim.phillips@freescale.com>,
-        Stuart Yoder <stuart.yoder@freescale.com>,
-        Eric Auger <eric.auger@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Vladimir Murzin <vladimir.murzin@arm.com>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 8, 2014 at 12:09 PM, Christoffer Dall
-<christoffer.dall@linaro.org> wrote:
->
-> On Thu, Jun 05, 2014 at 07:03:22PM +0200, Antonios Motakis wrote:
-> > This patch allows to set an eventfd for a patform device's interrupt,
-> > and also to trigger the interrupt eventfd from userspace for testing.
-> >
-> > Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
-> > ---
-> >  drivers/vfio/platform/vfio_platform.c         |  36 ++++++-
-> >  drivers/vfio/platform/vfio_platform_irq.c     | 130 +++++++++++++++++++++++++-
-> >  drivers/vfio/platform/vfio_platform_private.h |   7 ++
-> >  3 files changed, 169 insertions(+), 4 deletions(-)
-> >
-> > diff --git a/drivers/vfio/platform/vfio_platform.c b/drivers/vfio/platform/vfio_platform.c
-> > index 192291c..f4c06c6 100644
-> > --- a/drivers/vfio/platform/vfio_platform.c
-> > +++ b/drivers/vfio/platform/vfio_platform.c
-> > @@ -177,10 +177,40 @@ static long vfio_platform_ioctl(void *device_data,
-> >
-> >               return copy_to_user((void __user *)arg, &info, minsz);
-> >
-> > -     } else if (cmd == VFIO_DEVICE_SET_IRQS)
-> > -             return -EINVAL;
-> > +     } else if (cmd == VFIO_DEVICE_SET_IRQS) {
-> > +             struct vfio_irq_set hdr;
-> > +             int ret = 0;
-> > +
-> > +             minsz = offsetofend(struct vfio_irq_set, count);
-> > +
-> > +             if (copy_from_user(&hdr, (void __user *)arg, minsz))
-> > +                     return -EFAULT;
-> > +
-> > +             if (hdr.argsz < minsz)
-> > +                     return -EINVAL;
-> > +
-> > +             if (hdr.index >= vdev->num_irqs)
-> > +                     return -EINVAL;
-> > +
-> > +             if (hdr.start != 0 || hdr.count > 1)
-> > +                     return -EINVAL;
-> > +
-> > +             if (hdr.count == 0 &&
-> > +                     (!(hdr.flags & VFIO_IRQ_SET_DATA_NONE) ||
-> > +                      !(hdr.flags & VFIO_IRQ_SET_ACTION_TRIGGER)))
-> > +                     return -EINVAL;
-> > +
-> > +             if (hdr.flags & ~(VFIO_IRQ_SET_DATA_TYPE_MASK |
-> > +                               VFIO_IRQ_SET_ACTION_TYPE_MASK))
-> > +                     return -EINVAL;
-> > +
-> > +             ret = vfio_platform_set_irqs_ioctl(vdev, hdr.flags, hdr.index,
-> > +                                                hdr.start, hdr.count,
-> > +                                                (void *)arg+minsz);
-> > +
-> > +             return ret;
-> >
-> > -     else if (cmd == VFIO_DEVICE_RESET)
-> > +     } else if (cmd == VFIO_DEVICE_RESET)
-> >               return -EINVAL;
-> >
-> >       return -ENOTTY;
-> > diff --git a/drivers/vfio/platform/vfio_platform_irq.c b/drivers/vfio/platform/vfio_platform_irq.c
-> > index 22c214f..d79f5af 100644
-> > --- a/drivers/vfio/platform/vfio_platform_irq.c
-> > +++ b/drivers/vfio/platform/vfio_platform_irq.c
-> > @@ -31,6 +31,9 @@
-> >
-> >  #include "vfio_platform_private.h"
-> >
-> > +static int vfio_set_trigger(struct vfio_platform_device *vdev,
-> > +                         int index, int fd);
-> > +
-> >  int vfio_platform_irq_init(struct vfio_platform_device *vdev)
-> >  {
-> >       int cnt = 0, i;
-> > @@ -43,17 +46,142 @@ int vfio_platform_irq_init(struct vfio_platform_device *vdev)
-> >               return -ENOMEM;
-> >
-> >       for (i = 0; i < cnt; i++) {
-> > -             vdev->irq[i].flags = 0;
-> > +             int hwirq = platform_get_irq(vdev->pdev, i);
-> > +
-> > +             if (hwirq < 0)
-> > +                     goto err;
-> > +
-> > +             vdev->irq[i].flags = VFIO_IRQ_INFO_EVENTFD;
-> >               vdev->irq[i].count = 1;
-> > +             vdev->irq[i].hwirq = hwirq;
-> >       }
-> >
-> >       vdev->num_irqs = cnt;
-> >
-> >       return 0;
-> > +err:
-> > +     kfree(vdev->irq);
-> > +     return -EINVAL;
-> >  }
-> >
-> >  void vfio_platform_irq_cleanup(struct vfio_platform_device *vdev)
-> >  {
-> > +     int i;
-> > +
-> > +     for (i = 0; i < vdev->num_irqs; i++)
-> > +             vfio_set_trigger(vdev, i, -1);
-> > +
-> >       vdev->num_irqs = 0;
-> >       kfree(vdev->irq);
-> >  }
-> > +
-> > +static irqreturn_t vfio_irq_handler(int irq, void *dev_id)
-> > +{
-> > +     struct eventfd_ctx *trigger = dev_id;
-> > +
-> > +     eventfd_signal(trigger, 1);
-> > +
-> > +     return IRQ_HANDLED;
-> > +}
-> > +
-> > +static int vfio_set_trigger(struct vfio_platform_device *vdev,
-> > +                         int index, int fd)
-> > +{
-> > +     struct vfio_platform_irq *irq = &vdev->irq[index];
-> > +     struct eventfd_ctx *trigger;
-> > +     int ret;
-> > +
-> > +     if (irq->trigger) {
-> > +             free_irq(irq->hwirq, irq);
-> > +             kfree(irq->name);
-> > +             eventfd_ctx_put(irq->trigger);
-> > +             irq->trigger = NULL;
-> > +     }
->
-> this feels incredibly racy, is some lock protecting this access?
->
+From: Suresh Siddha <sbsiddha@gmail.com>
 
-Good catch; there should have been a mutex earlier protecting it, but
-it is missing. Thanks.
+For non-eager fpu mode, thread's fpu state is allocated during the first
+fpu usage (in the context of device not available exception). This can be
+a blocking call and hence we enable interrupts (which were originally
+disabled when the exception happened), allocate memory and disable
+interrupts etc. While this saves 512 bytes or so per-thread, there
+are some issues in general.
 
-> -Christoffer
+a.  Most of the future cases will be anyway using eager
+FPU (because of processor features like xsaveopt, LWP, MPX etc) and
+they do the allocation at the thread creation itself. Nice to have
+one common mechanism as all the state save/restore code is
+shared. Avoids the confusion and minimizes the subtle bugs
+in the core piece involved with context-switch.
 
+b. If a parent thread uses FPU, during fork() we allocate
+the FPU state in the child and copy the state etc. Shortly after this,
+during exec() we free it up, so that we can later allocate during
+the first usage of FPU. So this free/allocate might be slower
+for some workloads.
 
+c. math_state_restore() is called from multiple places
+and it is error pone if the caller expects interrupts to be disabled
+throughout the execution of math_state_restore(). Can lead to subtle
+bugs like Ubuntu bug #1265841.
 
+Memory savings will be small anyways and the code complexity
+introducing subtle bugs is not worth it. So remove
+the logic of non-eager fpu mem allocation at the first usage.
 
+Signed-off-by: Suresh Siddha <sbsiddha@gmail.com>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+---
+v3:
+- Rebase on 3.17-rc3.
+
+v2:
+- Tweak condition for allocating the first thread's FPU state.
+---
+ arch/x86/kernel/i387.c    |   20 +++++++++++---------
+ arch/x86/kernel/process.c |    6 ------
+ arch/x86/kernel/traps.c   |   16 ++--------------
+ arch/x86/kernel/xsave.c   |    2 --
+ 4 files changed, 13 insertions(+), 31 deletions(-)
+
+diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+index a9a4229..956ea86 100644
+--- a/arch/x86/kernel/i387.c
++++ b/arch/x86/kernel/i387.c
+@@ -5,6 +5,7 @@
+  *  General FPU state handling cleanups
+  *	Gareth Hughes <gareth@valinux.com>, May 2000
+  */
++#include <linux/bootmem.h>
+ #include <linux/module.h>
+ #include <linux/regset.h>
+ #include <linux/sched.h>
+@@ -197,6 +198,16 @@ void fpu_init(void)
+ 
+ 	mxcsr_feature_mask_init();
+ 	xsave_init();
++
++	/*
++	 * Now we know the final size of the xsave data, allocate the
++	 * FPU state area for the first task. All other tasks have
++	 * this allocated in arch_dup_task_struct().
++	 */
++	if (!current->thread.fpu.state)
++		current->thread.fpu.state = alloc_bootmem_align(xstate_size,
++				__alignof__(struct xsave_struct));
++
+ 	eager_fpu_init();
+ }
+ 
+@@ -228,8 +239,6 @@ EXPORT_SYMBOL_GPL(fpu_finit);
+  */
+ int init_fpu(struct task_struct *tsk)
+ {
+-	int ret;
+-
+ 	if (tsk_used_math(tsk)) {
+ 		if (cpu_has_fpu && tsk == current)
+ 			unlazy_fpu(tsk);
+@@ -237,13 +246,6 @@ int init_fpu(struct task_struct *tsk)
+ 		return 0;
+ 	}
+ 
+-	/*
+-	 * Memory allocation at the first usage of the FPU and other state.
+-	 */
+-	ret = fpu_alloc(&tsk->thread.fpu);
+-	if (ret)
+-		return ret;
+-
+ 	fpu_finit(&tsk->thread.fpu);
+ 
+ 	set_stopped_child_used_math(tsk);
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index f804dc9..4137f81 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -129,12 +129,6 @@ void flush_thread(void)
+ 	flush_ptrace_hw_breakpoint(tsk);
+ 	memset(tsk->thread.tls_array, 0, sizeof(tsk->thread.tls_array));
+ 	drop_init_fpu(tsk);
+-	/*
+-	 * Free the FPU state for non xsave platforms. They get reallocated
+-	 * lazily at the first use.
+-	 */
+-	if (!use_eager_fpu())
+-		free_thread_xstate(tsk);
+ }
+ 
+ static void hard_disable_TSC(void)
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 0d0e922..36fc898 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -652,20 +652,8 @@ void math_state_restore(void)
+ {
+ 	struct task_struct *tsk = current;
+ 
+-	if (!tsk_used_math(tsk)) {
+-		local_irq_enable();
+-		/*
+-		 * does a slab alloc which can sleep
+-		 */
+-		if (init_fpu(tsk)) {
+-			/*
+-			 * ran out of memory!
+-			 */
+-			do_group_exit(SIGKILL);
+-			return;
+-		}
+-		local_irq_disable();
+-	}
++	if (!tsk_used_math(tsk))
++		init_fpu(tsk);
+ 
+ 	__thread_fpu_begin(tsk);
+ 
+diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
+index 940b142..eed95d6 100644
+--- a/arch/x86/kernel/xsave.c
++++ b/arch/x86/kernel/xsave.c
+@@ -677,8 +677,6 @@ void xsave_init(void)
+ 
+ static inline void __init eager_fpu_init_bp(void)
+ {
+-	current->thread.fpu.state =
+-	    alloc_bootmem_align(xstate_size, __alignof__(struct xsave_struct));
+ 	if (!init_xstate_buf)
+ 		setup_init_fpu_buf();
+ }
 -- 
-Antonios Motakis
-Virtual Open Systems
+1.7.10.4
+
