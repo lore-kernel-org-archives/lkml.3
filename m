@@ -1,210 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754826AbaIBQ7D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 12:59:03 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:11372 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754183AbaIBQ7B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 12:59:01 -0400
-Date: Tue, 2 Sep 2014 09:58:59 -0700
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: Georgi Djakov <gdjakov@mm-sol.com>
-CC: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "agross@codeaurora.org" <agross@codeaurora.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
-        "iivanov@mm-sol.com" <iivanov@mm-sol.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH v3 4/4] pinctrl: qcom: Make the target processor value
- configurable
-Message-ID: <20140902165858.GN12494@sonymobile.com>
-References: <1409663625-3185-1-git-send-email-gdjakov@mm-sol.com>
- <1409663625-3185-5-git-send-email-gdjakov@mm-sol.com>
+	id S1754328AbaIBRBP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 13:01:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29414 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751295AbaIBRBN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 13:01:13 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Ming Lei <ming.lei@canonical.com>, linux-kernel@vger.kernel.org,
+        Kick In <pierre-andre.morey@canonical.com>,
+        Chris J Arges <chris.j.arges@canonical.com>
+Subject: Re: [PATCH] blk-merge: fix blk_recount_segments
+References: <1409670180-17352-1-git-send-email-ming.lei@canonical.com>
+	<5405EF48.9070601@kernel.dk>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 02 Sep 2014 13:01:07 -0400
+In-Reply-To: <5405EF48.9070601@kernel.dk> (Jens Axboe's message of "Tue, 02
+	Sep 2014 10:24:40 -0600")
+Message-ID: <x498um26jos.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1409663625-3185-5-git-send-email-gdjakov@mm-sol.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 02 Sep 06:13 PDT 2014, Georgi Djakov wrote:
+Jens Axboe <axboe@kernel.dk> writes:
 
-> Currently the value used for specify that interrupts from the gpio should
-> be routed to the application processor is hardcoded for all Qualcomm SoCs.
-> But the new APQ8084 SoC uses a different value. To resolve this, we make
-> this value configurable for each SoC. For all existing SoCs we continue
-> to use the current value, and only for APQ8084 we use the new value.
-> 
-> Suggested-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
+> On 09/02/2014 09:02 AM, Ming Lei wrote:
+>> QUEUE_FLAG_NO_SG_MERGE is set at default for blk-mq devices,
+>> so bio->bi_phys_segment computed may be bigger than
+>> queue_max_segments(q) for blk-mq devices, then drivers will
+>> fail to handle the case, for example, BUG_ON() in
+>> virtio_queue_rq() can be triggerd for virtio-blk:
+>> 
+>> 	https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1359146
+>> 
+>> This patch fixes the issue by ignoring the QUEUE_FLAG_NO_SG_MERGE
+>> flag if the computed bio->bi_phys_segment is bigger than
+>> queue_max_segments(q), and the regression is caused by commit
+>> 05f1dd53152173(block: add queue flag for disabling SG merging).
+>> 
+>> Reported-by: Kick In <pierre-andre.morey@canonical.com>
+>> Tested-by: Chris J Arges <chris.j.arges@canonical.com>
+>> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+>
+> Thanks Ming, this looks nice and clean. Will apply for 3.17.
 
-Looks good.
+This sounds an awful lot like the bug I fixed in dm:
 
-Acked-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+commit 200612ec33e555a356eebc717630b866ae2b694f
+Author: Jeff Moyer <jmoyer@redhat.com>
+Date:   Fri Aug 8 11:03:41 2014 -0400
 
-> ---
->  drivers/pinctrl/qcom/pinctrl-apq8064.c |    2 ++
->  drivers/pinctrl/qcom/pinctrl-apq8084.c |    2 ++
->  drivers/pinctrl/qcom/pinctrl-ipq8064.c |    2 ++
->  drivers/pinctrl/qcom/pinctrl-msm.c     |    4 +---
->  drivers/pinctrl/qcom/pinctrl-msm.h     |    3 +++
->  drivers/pinctrl/qcom/pinctrl-msm8960.c |    2 ++
->  drivers/pinctrl/qcom/pinctrl-msm8x74.c |    2 ++
->  7 files changed, 14 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/pinctrl/qcom/pinctrl-apq8064.c b/drivers/pinctrl/qcom/pinctrl-apq8064.c
-> index feb6f15..f877aed 100644
-> --- a/drivers/pinctrl/qcom/pinctrl-apq8064.c
-> +++ b/drivers/pinctrl/qcom/pinctrl-apq8064.c
-> @@ -258,6 +258,7 @@ static const unsigned int sdc3_data_pins[] = { 95 };
->  		.intr_status_bit = 0,			\
->  		.intr_ack_high = 1,			\
->  		.intr_target_bit = 0,			\
-> +		.intr_target_kpss_val = 4,		\
->  		.intr_raw_status_bit = 3,		\
->  		.intr_polarity_bit = 1,			\
->  		.intr_detection_bit = 2,		\
-> @@ -283,6 +284,7 @@ static const unsigned int sdc3_data_pins[] = { 95 };
->  		.intr_enable_bit = -1,			\
->  		.intr_status_bit = -1,			\
->  		.intr_target_bit = -1,			\
-> +		.intr_target_kpss_val = -1,		\
->  		.intr_raw_status_bit = -1,		\
->  		.intr_polarity_bit = -1,		\
->  		.intr_detection_bit = -1,		\
-> diff --git a/drivers/pinctrl/qcom/pinctrl-apq8084.c b/drivers/pinctrl/qcom/pinctrl-apq8084.c
-> index 5362959..138cbf6 100644
-> --- a/drivers/pinctrl/qcom/pinctrl-apq8084.c
-> +++ b/drivers/pinctrl/qcom/pinctrl-apq8084.c
-> @@ -371,6 +371,7 @@ static const unsigned int sdc2_data_pins[] = { 152 };
->  		.intr_status_bit = 0,			\
->  		.intr_ack_high = 0,			\
->  		.intr_target_bit = 5,			\
-> +		.intr_target_kpss_val = 3,		\
->  		.intr_raw_status_bit = 4,		\
->  		.intr_polarity_bit = 1,			\
->  		.intr_detection_bit = 2,		\
-> @@ -396,6 +397,7 @@ static const unsigned int sdc2_data_pins[] = { 152 };
->  		.intr_enable_bit = -1,                  \
->  		.intr_status_bit = -1,                  \
->  		.intr_target_bit = -1,                  \
-> +		.intr_target_kpss_val = -1,		\
->  		.intr_raw_status_bit = -1,              \
->  		.intr_polarity_bit = -1,                \
->  		.intr_detection_bit = -1,               \
-> diff --git a/drivers/pinctrl/qcom/pinctrl-ipq8064.c b/drivers/pinctrl/qcom/pinctrl-ipq8064.c
-> index 767cf11..81f49a9 100644
-> --- a/drivers/pinctrl/qcom/pinctrl-ipq8064.c
-> +++ b/drivers/pinctrl/qcom/pinctrl-ipq8064.c
-> @@ -211,6 +211,7 @@ static const unsigned int sdc3_data_pins[] = { 71 };
->  		.intr_status_bit = 0,			\
->  		.intr_ack_high = 1,			\
->  		.intr_target_bit = 0,			\
-> +		.intr_target_kpss_val = 4,		\
->  		.intr_raw_status_bit = 3,		\
->  		.intr_polarity_bit = 1,			\
->  		.intr_detection_bit = 2,		\
-> @@ -236,6 +237,7 @@ static const unsigned int sdc3_data_pins[] = { 71 };
->  		.intr_enable_bit = -1,                  \
->  		.intr_status_bit = -1,                  \
->  		.intr_target_bit = -1,                  \
-> +		.intr_target_kpss_val = -1,		\
->  		.intr_raw_status_bit = -1,              \
->  		.intr_polarity_bit = -1,                \
->  		.intr_detection_bit = -1,               \
-> diff --git a/drivers/pinctrl/qcom/pinctrl-msm.c b/drivers/pinctrl/qcom/pinctrl-msm.c
-> index 2738108..592c6fc 100644
-> --- a/drivers/pinctrl/qcom/pinctrl-msm.c
-> +++ b/drivers/pinctrl/qcom/pinctrl-msm.c
-> @@ -649,8 +649,6 @@ static void msm_gpio_irq_ack(struct irq_data *d)
->  	spin_unlock_irqrestore(&pctrl->lock, flags);
->  }
->  
-> -#define INTR_TARGET_PROC_APPS    4
-> -
->  static int msm_gpio_irq_set_type(struct irq_data *d, unsigned int type)
->  {
->  	struct gpio_chip *gc = irq_data_get_irq_chip_data(d);
-> @@ -674,7 +672,7 @@ static int msm_gpio_irq_set_type(struct irq_data *d, unsigned int type)
->  	/* Route interrupts to application cpu */
->  	val = readl(pctrl->regs + g->intr_target_reg);
->  	val &= ~(7 << g->intr_target_bit);
-> -	val |= INTR_TARGET_PROC_APPS << g->intr_target_bit;
-> +	val |= g->intr_target_kpss_val << g->intr_target_bit;
->  	writel(val, pctrl->regs + g->intr_target_reg);
->  
->  	/* Update configuration for gpio.
-> diff --git a/drivers/pinctrl/qcom/pinctrl-msm.h b/drivers/pinctrl/qcom/pinctrl-msm.h
-> index 7b2a227..b952c4b 100644
-> --- a/drivers/pinctrl/qcom/pinctrl-msm.h
-> +++ b/drivers/pinctrl/qcom/pinctrl-msm.h
-> @@ -53,6 +53,8 @@ struct msm_function {
->   * @intr_status_bit:      Offset in @intr_status_reg for reading and acking the interrupt
->   *                        status.
->   * @intr_target_bit:      Offset in @intr_target_reg for configuring the interrupt routing.
-> + * @intr_target_kpss_val: Value in @intr_target_bit for specifying that the interrupt from
-> + *                        this gpio should get routed to the KPSS processor.
->   * @intr_raw_status_bit:  Offset in @intr_cfg_reg for the raw status bit.
->   * @intr_polarity_bit:    Offset in @intr_cfg_reg for specifying polarity of the interrupt.
->   * @intr_detection_bit:   Offset in @intr_cfg_reg for specifying interrupt type.
-> @@ -88,6 +90,7 @@ struct msm_pingroup {
->  	unsigned intr_ack_high:1;
->  
->  	unsigned intr_target_bit:5;
-> +	unsigned intr_target_kpss_val:5;
->  	unsigned intr_raw_status_bit:5;
->  	unsigned intr_polarity_bit:5;
->  	unsigned intr_detection_bit:5;
-> diff --git a/drivers/pinctrl/qcom/pinctrl-msm8960.c b/drivers/pinctrl/qcom/pinctrl-msm8960.c
-> index 3504703..2ab21ce 100644
-> --- a/drivers/pinctrl/qcom/pinctrl-msm8960.c
-> +++ b/drivers/pinctrl/qcom/pinctrl-msm8960.c
-> @@ -384,6 +384,7 @@ static const unsigned int sdc3_data_pins[] = { 157 };
->  		.intr_status_bit = 0,			\
->  		.intr_ack_high = 1,			\
->  		.intr_target_bit = 0,			\
-> +		.intr_target_kpss_val = 4,		\
->  		.intr_raw_status_bit = 3,		\
->  		.intr_polarity_bit = 1,			\
->  		.intr_detection_bit = 2,		\
-> @@ -409,6 +410,7 @@ static const unsigned int sdc3_data_pins[] = { 157 };
->  		.intr_enable_bit = -1,			\
->  		.intr_status_bit = -1,			\
->  		.intr_target_bit = -1,			\
-> +		.intr_target_kpss_val = -1,		\
->  		.intr_raw_status_bit = -1,		\
->  		.intr_polarity_bit = -1,		\
->  		.intr_detection_bit = -1,		\
-> diff --git a/drivers/pinctrl/qcom/pinctrl-msm8x74.c b/drivers/pinctrl/qcom/pinctrl-msm8x74.c
-> index 8c97201..3c85838 100644
-> --- a/drivers/pinctrl/qcom/pinctrl-msm8x74.c
-> +++ b/drivers/pinctrl/qcom/pinctrl-msm8x74.c
-> @@ -366,6 +366,7 @@ static const unsigned int sdc2_data_pins[] = { 151 };
->  		.intr_enable_bit = 0,			\
->  		.intr_status_bit = 0,			\
->  		.intr_target_bit = 5,			\
-> +		.intr_target_kpss_val = 4,		\
->  		.intr_raw_status_bit = 4,		\
->  		.intr_polarity_bit = 1,			\
->  		.intr_detection_bit = 2,		\
-> @@ -391,6 +392,7 @@ static const unsigned int sdc2_data_pins[] = { 151 };
->  		.intr_enable_bit = -1,			\
->  		.intr_status_bit = -1,			\
->  		.intr_target_bit = -1,			\
-> +		.intr_target_kpss_val = -1,		\
->  		.intr_raw_status_bit = -1,		\
->  		.intr_polarity_bit = -1,		\
->  		.intr_detection_bit = -1,		\
-> -- 
-> 1.7.9.5
-> 
+    dm table: propagate QUEUE_FLAG_NO_SG_MERGE
+    
+    Commit 05f1dd5 ("block: add queue flag for disabling SG merging")
+    introduced a new queue flag: QUEUE_FLAG_NO_SG_MERGE.  This gets set by
+    default in blk_mq_init_queue for mq-enabled devices.  The effect of
+    the flag is to bypass the SG segment merging.  Instead, the
+    bio->bi_vcnt is used as the number of hardware segments.
+    
+    With a device mapper target on top of a device with
+    QUEUE_FLAG_NO_SG_MERGE set, we can end up sending down more segments
+    than a driver is prepared to handle.  I ran into this when backporting
+    the virtio_blk mq support.  It triggerred this BUG_ON, in
+    virtio_queue_rq:
+    
+            BUG_ON(req->nr_phys_segments + 2 > vblk->sg_elems);
+
+    ...
+
+Is bcache a stacking driver in this case?  Should it not inherit this
+flag, just as DM now does?
+
+-Jeff
