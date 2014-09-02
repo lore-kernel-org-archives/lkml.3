@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754293AbaIBQSm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 12:18:42 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34882 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751821AbaIBQSl (ORCPT
+	id S1754383AbaIBQVQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 12:21:16 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:50092 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753703AbaIBQVP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 12:18:41 -0400
-Message-ID: <5405EDDC.4050808@infradead.org>
-Date: Tue, 02 Sep 2014 09:18:36 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Tue, 2 Sep 2014 12:21:15 -0400
+Date: Tue, 2 Sep 2014 09:21:10 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
+        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
+        LKP <lkp@01.org>, linux-kernel@vger.kernel.org
+Subject: Re: [percpu] BUG: unable to handle kernel NULL pointer dereference
+ at (null)
+Message-ID: <20140902162110.GB5001@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140902045830.GA11321@localhost>
+ <20140902153403.GY5001@linux.vnet.ibm.com>
+ <alpine.DEB.2.11.1409021052400.10607@gentwo.org>
 MIME-Version: 1.0
-To: Masanari Iida <standby24x7@gmail.com>, a.p.zijlstra@chello.nl,
-        paulus@samba.org, mingo@redhat.com, acme@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf/documentation: Fix typo in perf/Documentation
-References: <1409543182-19589-1-git-send-email-standby24x7@gmail.com>
-In-Reply-To: <1409543182-19589-1-git-send-email-standby24x7@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1409021052400.10607@gentwo.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14090216-1542-0000-0000-0000047966CA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/31/14 20:46, Masanari Iida wrote:
-> This patch fix spelling typo found in tool/perf/Documentation.
+On Tue, Sep 02, 2014 at 11:00:12AM -0500, Christoph Lameter wrote:
+> On Tue, 2 Sep 2014, Paul E. McKenney wrote:
 > 
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-> ---
->  tools/perf/Documentation/perf-diff.txt          | 6 +++---
->  tools/perf/Documentation/perf-kvm.txt           | 4 ++--
->  tools/perf/Documentation/perf-list.txt          | 2 +-
->  tools/perf/Documentation/perf-record.txt        | 2 +-
->  tools/perf/Documentation/perf-script-perl.txt   | 4 ++--
->  tools/perf/Documentation/perf-script-python.txt | 6 +++---
->  tools/perf/Documentation/perf-script.txt        | 2 +-
->  tools/perf/Documentation/perf-test.txt          | 2 +-
->  tools/perf/Documentation/perf-trace.txt         | 2 +-
->  9 files changed, 15 insertions(+), 15 deletions(-)
+> > Before this commit, raw_cpu_add_return() didn't build.  The commit
+> > didn't affect anything else.
+> >
+> > So I don't understand how anything could work before this commit and
+> > be broken after it.  Enlightenment?
 > 
-> diff --git a/tools/perf/Documentation/perf-kvm.txt b/tools/perf/Documentation/perf-kvm.txt
-> index 6e689dc..6039eb0 100644
-> --- a/tools/perf/Documentation/perf-kvm.txt
-> +++ b/tools/perf/Documentation/perf-kvm.txt
-> @@ -100,7 +100,7 @@ OPTIONS
->  STAT REPORT OPTIONS
->  -------------------
->  --vcpu=<value>::
-> -       analyze events which occures on this vcpu. (default: all vcpus)
-> +       analyze events which occurres on this vcpu. (default: all vcpus)
+> Where is that raw_cpu_add_return statement?
+> 
+> grep does not match anything like that in kernel/rcu/*
+> and this_cpu_add_return is used extensively in the network subsystem for
+> statistics.
 
-	                       occurs
+Heh!  Good point!
 
->  
->  --event=<value>::
->         event to be analyzed. Possible values: vmexit, mmio (x86 only),
-> @@ -134,7 +134,7 @@ STAT LIVE OPTIONS
->      Analyze events only for given process ID(s) (comma separated list).
->  
->  --vcpu=<value>::
-> -       analyze events which occures on this vcpu. (default: all vcpus)
-> +       analyze events which occurres on this vcpu. (default: all vcpus)
+Added by ac1bea85781e (sched,rcu: Make cond_resched() report RCU quiescent
+states), removed by 4a81e8328d379 (rcu: Reduce overhead of cond_resched()
+checks for RCU).  So, as you say, no effect on contemporary kernels.
 
-	                       occurs
+							Thanx, Paul
 
->  
->  
->  --event=<value>::
-
--- 
-~Randy
