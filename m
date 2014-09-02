@@ -1,130 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753945AbaIBOBY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 10:01:24 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:59889 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753586AbaIBOBW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 10:01:22 -0400
-Date: Tue, 2 Sep 2014 10:01:16 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 6/6] mm: page_alloc: Reduce cost of the fair zone
- allocation policy
-Message-ID: <20140902140116.GD29501@cmpxchg.org>
-References: <1404893588-21371-1-git-send-email-mgorman@suse.de>
- <1404893588-21371-7-git-send-email-mgorman@suse.de>
- <53E4EC53.1050904@suse.cz>
- <20140811121241.GD7970@suse.de>
- <53E8B83D.1070004@suse.cz>
+	id S1754043AbaIBOCN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 10:02:13 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45499 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753755AbaIBOCM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 10:02:12 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <5405CDB7.8040808@jp.fujitsu.com>
+Date: Tue, 02 Sep 2014 23:01:27 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53E8B83D.1070004@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        David Rientjes <rientjes@google.com>,
+        Fengguang Wu <fengguang.wu@intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: page_alloc: Default to node-ordering on 64-bit NUMA
+ machines
+References: <20140901125551.GI12424@suse.de> <20140902135120.GC29501@cmpxchg.org>
+In-Reply-To: <20140902135120.GC29501@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014 at 02:34:05PM +0200, Vlastimil Babka wrote:
-> On 08/11/2014 02:12 PM, Mel Gorman wrote:
-> >On Fri, Aug 08, 2014 at 05:27:15PM +0200, Vlastimil Babka wrote:
-> >>On 07/09/2014 10:13 AM, Mel Gorman wrote:
-> >>>--- a/mm/page_alloc.c
-> >>>+++ b/mm/page_alloc.c
-> >>>@@ -1604,6 +1604,9 @@ again:
-> >>>  	}
-> >>>
-> >>>  	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
-> >>
-> >>This can underflow zero, right?
-> >>
-> >
-> >Yes, because of per-cpu accounting drift.
-> 
-> I meant mainly because of order > 0.
-> 
-> >>>+	if (zone_page_state(zone, NR_ALLOC_BATCH) == 0 &&
-> >>
-> >>AFAICS, zone_page_state will correct negative values to zero only for
-> >>CONFIG_SMP. Won't this check be broken on !CONFIG_SMP?
-> >>
-> >
-> >On !CONFIG_SMP how can there be per-cpu accounting drift that would make
-> >that counter negative?
-> 
-> Well original code used "if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)"
-> elsewhere, that you are replacing with zone_is_fair_depleted check. I
-> assumed it's because it can get negative due to order > 0. I might have not
-> looked thoroughly enough but it seems to me there's nothing that would
-> prevent it, such as skipping a zone because its remaining batch is lower
-> than 1 << order.
-> So I think the check should be "<= 0" to be safe.
+(2014/09/02 22:51), Johannes Weiner wrote:
+> On Mon, Sep 01, 2014 at 01:55:51PM +0100, Mel Gorman wrote:
+>> Zones are allocated by the page allocator in either node or zone order.
+>> Node ordering is preferred in terms of locality and is applied automatically
+>> in one of three cases.
+>>
+>>    1. If a node has only low memory
+>>
+>>    2. If DMA/DMA32 is a high percentage of memory
+>>
+>>    3. If low memory on a single node is greater than 70% of the node size
+>>
+>> Otherwise zone ordering is used to preserve low memory. Unfortunately
+>> a consequence of this is that a machine with balanced NUMA nodes will
+>> experience different performance characteristics depending on which node
+>> they happen to start from.
+>>
+>> The point of zone ordering is to protect lower nodes for devices that require
+>> DMA/DMA32 memory. When NUMA was first introduced, this was critical as 32-bit
+>> NUMA machines commonly suffered from low memory exhaustion problems. On
+>> 64-bit machines the primary concern is devices that are 32-bit only which
+>> is less severe than the low memory exhaustion problem on 32-bit NUMA. It
+>> seems there are really few devices that depends on it.
+>>
+>> AGP -- I assume this is getting more rare but even then I think the allocations
+>> 	happen early in boot time where lowmem pressure is less of a problem
+>>
+>> DRM -- If the device is 32-bit only then there may be low pressure. I didn't
+>> 	evaluate these in detail but it looks like some of these are mobile
+>> 	graphics card. Not many NUMA laptops out there. DRM folk should know
+>> 	better though.
+>>
+>> Some TV cards -- Much demand for 32-bit capable TV cards on NUMA machines?
+>>
+>> B43 wireless card -- again not really a NUMA thing.
+>>
+>> I cannot find a good reason to incur a performance penalty on all 64-bit NUMA
+>> machines in case someone throws a brain damanged TV or graphics card in there.
+>> This patch defaults to node-ordering on 64-bit NUMA machines. I was tempted
+>> to make it default everywhere but I understand that some embedded arches may
+>> be using 32-bit NUMA where I cannot predict the consequences.
+>
+> This patch is a step in the right direction, but I'm not too fond of
+> further fragmenting this code and where it applies, while leaving all
+> the complexity from the heuristics and the zonelist building in, just
+> on spec.  Could we at least remove the heuristics too?  If anybody is
+> affected by this, they can always override the default on the cmdline.
+>
+I'm okay with removing heuristics. There were a request to add "automatic detection"
+at the time this feature was developped. But I'm not sure whether the logic is
+still required. i.e. at that age, node-0 memory was small and default node order
+can cause OOM easily.
 
-Any updates on this?
+Thanks,
+-Kame
 
-The counter can definitely underflow on !CONFIG_SMP, and then the flag
-gets out of sync with the actual batch state.  I'd still prefer just
-removing this flag again; it's extra complexity and error prone (case
-in point) while the upsides are not even measurable in real life.
-
----
-
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 318df7051850..0bd77f730b38 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -534,7 +534,6 @@ typedef enum {
- 	ZONE_WRITEBACK,			/* reclaim scanning has recently found
- 					 * many pages under writeback
- 					 */
--	ZONE_FAIR_DEPLETED,		/* fair zone policy batch depleted */
- } zone_flags_t;
- 
- static inline void zone_set_flag(struct zone *zone, zone_flags_t flag)
-@@ -572,11 +571,6 @@ static inline int zone_is_reclaim_locked(const struct zone *zone)
- 	return test_bit(ZONE_RECLAIM_LOCKED, &zone->flags);
- }
- 
--static inline int zone_is_fair_depleted(const struct zone *zone)
--{
--	return test_bit(ZONE_FAIR_DEPLETED, &zone->flags);
--}
--
- static inline int zone_is_oom_locked(const struct zone *zone)
- {
- 	return test_bit(ZONE_OOM_LOCKED, &zone->flags);
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 18cee0d4c8a2..d913809a328f 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1612,9 +1612,6 @@ again:
- 	}
- 
- 	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
--	if (zone_page_state(zone, NR_ALLOC_BATCH) == 0 &&
--	    !zone_is_fair_depleted(zone))
--		zone_set_flag(zone, ZONE_FAIR_DEPLETED);
- 
- 	__count_zone_vm_events(PGALLOC, zone, 1 << order);
- 	zone_statistics(preferred_zone, zone, gfp_flags);
-@@ -1934,7 +1931,6 @@ static void reset_alloc_batches(struct zone *preferred_zone)
- 		mod_zone_page_state(zone, NR_ALLOC_BATCH,
- 			high_wmark_pages(zone) - low_wmark_pages(zone) -
- 			atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]));
--		zone_clear_flag(zone, ZONE_FAIR_DEPLETED);
- 	} while (zone++ != preferred_zone);
- }
- 
-@@ -1985,7 +1981,7 @@ zonelist_scan:
- 		if (alloc_flags & ALLOC_FAIR) {
- 			if (!zone_local(preferred_zone, zone))
- 				break;
--			if (zone_is_fair_depleted(zone)) {
-+			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0) {
- 				nr_fair_skipped++;
- 				continue;
- 			}
