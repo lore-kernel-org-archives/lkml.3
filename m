@@ -1,68 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752993AbaIBKHd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 06:07:33 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37218 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752627AbaIBKH2 (ORCPT
+	id S1753207AbaIBKIo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 06:08:44 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:48115 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750863AbaIBKIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 06:07:28 -0400
-X-Sasl-enc: Dukq+AHMihRTRfczZn7OWKcPbZyO/6xBi4hEnwJZTA3R 1409652447
-Message-ID: <1409652445.22584.16.camel@localhost>
-Subject: Re: [PATCH net v2] ipv6: fix rtnl locking in setsockopt for anycast
- and multicast
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Sabrina Dubroca <sd@queasysnail.net>
-Cc: Cong Wang <cwang@twopensource.com>, Tommi Rantala <tt.rantala@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org,
-        Dave Jones <davej@redhat.com>
-Date: Tue, 02 Sep 2014 12:07:25 +0200
-In-Reply-To: <20140902082929.GA8483@kria>
-References: <CA+ydwtoDwQVg_BWrxxdpUyJ7Up60GtxTCLYe_5vFdV2td_kGhQ@mail.gmail.com>
-	 <CAHA+R7MZCDGRhSf=UuVCGQvNo03wVziZQB_X30rwNf6hmHipQA@mail.gmail.com>
-	 <20140829195339.GA9780@kria> <1409363489.2980.17.camel@localhost>
-	 <20140830105821.GB18155@kria> <1409599348.21965.6.camel@localhost>
-	 <20140901210520.GB25543@kria> <1409610378.21965.52.camel@localhost>
-	 <20140902082929.GA8483@kria>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 2 Sep 2014 06:08:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <1407852737-17265-1-git-send-email-matthias.bgg@gmail.com>
+References: <1407852737-17265-1-git-send-email-matthias.bgg@gmail.com>
+Date: Tue, 2 Sep 2014 12:08:40 +0200
+Message-ID: <CABuKBeKBr_-riVqDzhepE9goosuaNocHH0K=5XsONEEvSXPi_w@mail.gmail.com>
+Subject: Re: [PATCH v4 0/2] tty: serial: Add mediatek UART driver
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>, jslaby@suse.cz,
+        Grant Likely <grant.likely@linaro.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Alan Cox <alan@linux.intel.com>,
+        Varka Bhadram <varkabhadram@gmail.com>,
+        Tobias Klauser <tklauser@distanz.ch>,
+        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+        Yingjoe Chen <yingjoe.chen@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-serial@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Di, 2014-09-02 at 10:29 +0200, Sabrina Dubroca wrote:
-> Calling setsockopt with IPV6_JOIN_ANYCAST or IPV6_LEAVE_ANYCAST
-> triggers the assertion in addrconf_join_solict()/addrconf_leave_solict()
-> 
-> ipv6_sock_ac_join(), ipv6_sock_ac_drop(), ipv6_sock_ac_close() need to
-> take RTNL before calling ipv6_dev_ac_inc/dec. Same thing with
-> ipv6_sock_mc_join(), ipv6_sock_mc_drop(), ipv6_sock_mc_close() before
-> calling ipv6_dev_mc_inc/dec.
-> 
-> This patch moves ASSERT_RTNL() up a level in the call stack.
-> 
-> Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
-> Signed-off-by: Sabrina Dubroca <sd@queasysnail.net>
-> Reported-by: Tommi Rantala <tt.rantala@gmail.com>
+2014-08-12 16:12 GMT+02:00 Matthias Brugger <matthias.bgg@gmail.com>:
+> This patch set adds support for the UART found in Mediatek SoCs.
+> The chip is a changed version of a 8250 controller.
+> Especially it introduces a new register called highspeed. The value
+> in this register has to be set depending on the baudrate. The value
+> in the register influences the way the divisor has to be calculated.
+>
+> The patch series is build against v3.16-rc1 and tested on mt6589. Should
+> work as well on mt6577 and mt6582.
+>
+> Thanks,
+> Matthias
+
+Ping: Does anyone has any comment on this series?
+Sorry, last mail was HTML by accident.
+
+>
+> Changes for v4:
+> - delete owner in platform driver instance
+> - pass plattform_device to mtk8250_probe_of
+> - reorganise probe function to error out early
+> - Fix DTS documentation
+>
+> Changes for v3:
+> - use dev_warn instead of pr_warn
+> - use 8250_core function to update termios
+>
+> Changes for v2:
+> - drop 8250_core capability extension for the chip
+> - encapsulate set_termios in the driver method
+>
 > ---
-> As was said earlier, this should go in stable.
-> 
-> v2:
->  - based on net
->  - keep dev_get_by_flags_rcu and RCU in ipv6_sock_ac_*
->  - remove two ASSERT_RTNL() that are not necessary
-> 
-> Thank you for your help, Hannes!
+>
+> Matthias Brugger (2):
+>   tty: serial: 8250: Add Mediatek UART driver
+>   DTS: serial: Add bindings documention for the Mediatek UARTs
+>
+>  .../devicetree/bindings/serial/mtk-uart.txt        |   20 ++
+>  drivers/tty/serial/8250/8250_mtk.c                 |  294 ++++++++++++++++++++
+>  drivers/tty/serial/8250/Kconfig                    |    7 +
+>  drivers/tty/serial/8250/Makefile                   |    1 +
+>  4 files changed, 322 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/serial/mtk-uart.txt
+>  create mode 100644 drivers/tty/serial/8250/8250_mtk.c
+>
+> --
+> 1.7.9.5
+>
 
-Thanks for fixing! ;)
-
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
 
+-- 
+motzblog.wordpress.com
