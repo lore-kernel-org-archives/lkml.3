@@ -1,105 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754907AbaIBRUc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 13:20:32 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:39598 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752895AbaIBRUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 13:20:31 -0400
-Date: Tue, 2 Sep 2014 11:20:15 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Scot Doyle <lkml14@scotdoyle.com>
-Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        Stefan Berger <stefanb@linux.vnet.ibm.com>,
-        Luigi Semenzato <semenzato@google.com>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v5] tpm_tis: verify interrupt during init
-Message-ID: <20140902172015.GD13956@obsidianresearch.com>
-References: <20140825182414.GB1298@obsidianresearch.com>
- <alpine.LNX.2.11.1408270410190.701@localhost.localdomain>
- <20140827173142.GA11183@obsidianresearch.com>
- <alpine.LNX.2.11.1408271755470.4371@localhost.localdomain>
- <20140827214743.GC11183@obsidianresearch.com>
- <alpine.LNX.2.11.1408280017420.1064@localhost.localdomain>
- <20140828165348.GE11183@obsidianresearch.com>
- <alpine.LNX.2.11.1408290234060.1020@localhost.localdomain>
- <20140830174920.GA26218@obsidianresearch.com>
- <alpine.LNX.2.11.1408302229001.579@localhost.localdomain>
+	id S1754932AbaIBRVX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 13:21:23 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:42934 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754033AbaIBRVW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 13:21:22 -0400
+Message-ID: <5405FCBF.2050100@arm.com>
+Date: Tue, 02 Sep 2014 18:22:07 +0100
+From: Sudeep Holla <sudeep.holla@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.11.1408302229001.579@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+To: LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Sudeep Holla <Sudeep.Holla@arm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        David Herrmann <dh.herrmann@gmail.com>, Kay Sievers <kay@vrfy.org>
+Subject: Re: [PATCH] drivers: base: add cpu_device_create to support per-cpu
+ devices
+References: <CAPXgP130hg8uwdmSKAAAKZzxncT-VXYYXvmN-ta7wcXQXgXEmw@mail.gmail.com> <1408706963-23195-1-git-send-email-sudeep.holla@arm.com>
+In-Reply-To: <1408706963-23195-1-git-send-email-sudeep.holla@arm.com>
+X-OriginalArrivalTime: 02 Sep 2014 17:21:17.0915 (UTC) FILETIME=[4E7B02B0:01CFC6D2]
+X-MC-Unique: 114090218212000501
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 30, 2014 at 11:23:56PM +0000, Scot Doyle wrote:
-> On Sat, 30 Aug 2014, Jason Gunthorpe wrote:
-> 
-> > On Fri, Aug 29, 2014 at 11:59:32PM +0000, Scot Doyle wrote:
-> >
-> >> I tried calling tpm_get_timeouts only during the interrupt test, but again
-> >> was timed out after 30 seconds. The interrupt wait in tis_send calls
-> >> tpm_calc_ordinal_duration, which uses a default timeout of two minutes
-> >> when chip->vendor.duration[duration_idx] hasn't been set. Thus the second
-> >> call to tpm_get_timeouts in tpm_tis_init.
-> >
-> > So the strategy is to read the timeouts and hope that the chip reports
-> > something small and reasonable, then do a second read?
-> >
-> > Seems reasonable, but with this new arrangement we could also use an
-> > alternate polling logic for 'testing_int' that did the normal polling
-> > loop unconditionally and then checked if the interrupt was
-> > delivered. This would give a minimal dealy.
-> 
-> I like the idea. And then tpm_do_selftest could be used for the interrupt 
-> verification instead of a second tpm_get_timeouts?
+Hi Greg,
 
-Yes, or the first tpm_get_timeouts can be used - Long term I would
-like to see the entire tpm_get_timeouts,self_test,startup, etc
-sequence moved into core code, so I don't really want to see drivers
-splitting the sequence up.
-
-Ideally the driver will just automatically test the IRQ on the very
-first command it executes. That is now a very small easy step, so lets
-just do that..
-
-> The output is now
-> [    1.526798] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
-> [    5.914732] tpm_tis 00:08: [Firmware Bug]: TPM interrupt not working, polling instead
-
-Cool, why did it take 4 seconds though?
- 
-> +struct priv_data {
-> +	int test_irq;
-
-Probably don't need this...
-
-> @@ -358,13 +379,27 @@ static int tpm_tis_send(struct tpm_chip *chip, u8 *buf, size_t len)
+On 22/08/14 12:29, Sudeep Holla wrote:
+> From: Sudeep Holla <sudeep.holla@arm.com>
+>
+> This patch adds a new function to create per-cpu devices.
+> This helps in:
+> 1. reusing the device infrastructure to create any cpu related
+>     attributes and corresponding sysfs instead of creating and
+>     dealing with raw kobjects directly
+> 2. retaining the legacy path(/sys/devices/system/cpu/..) to support
+>     existing sysfs ABI
+> 3. avoiding to create links in the bus directory pointing to the
+>     device as there would be per-cpu instance of these devices with
+>     the same name since dev->bus is not populated to cpu_sysbus on
+>     purpose
+>
+> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> ---
+>   drivers/base/cpu.c  | 54 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+>   include/linux/cpu.h |  4 ++++
+>   2 files changed, 58 insertions(+)
+>
+> Hi Greg,
+>
+> Here is the alternate solution I could come up with instead of
+> creating cpu class. cpu_device_create is very similar to
+> device_create_groups_vargs w/o class support, but I could not
+> reuse anything else to avoid creating similar function.
+>
+> Let me know your thoughts/suggestions on this.
 >
 
-And this can probably just become:
+Any feedback on this ? If ok, I will respin cacheinfo series removing
+cpu class creation with this patch.
 
-bool test_irq = priv->int_count == 0;
-int oldirq = chip->vendor.irq;
+Regards,
+Sudeep
 
-> +	((struct priv_data*)chip->vendor.priv)->int_count++;
-
-.. Seems like there was no need for it to count, this can just be =
-true?
-
-> -	if (tpm_do_selftest(chip)) {
-> -		dev_err(dev, "TPM self test failed\n");
-> -		rc = -ENODEV;
-> -		goto out_err;
-> -	}
-
-And move tpm_get_timeouts down too.. Keep the sequence together.
-
-Looks really good to me, I can try and test the next version here this
-week.
-
-Jason
