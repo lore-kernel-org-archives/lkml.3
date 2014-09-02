@@ -1,146 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754198AbaIBPU2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 11:20:28 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:55404 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751735AbaIBPU1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 11:20:27 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Pankaj Dubey <pankaj.dubey@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lee.jones@linaro.org,
-        kgene.kim@samsung.com, linux@arm.linux.org.uk,
-        vikas.sajjan@samsung.com, joshi@samsung.com, naushad@samsung.com,
-        thomas.ab@samsung.com, chow.kim@samsung.com, tomasz.figa@gmail.com,
-        Tomasz Figa <t.figa@samsung.com>, Alexander Shiyan <shc_work@mail.ru>,
-        Michal Simek <michal.simek@xilinx.com>
-Subject: Re: [PATCH v2] mfd: syscon: Decouple syscon interface from platform devices
-Date: Tue, 02 Sep 2014 17:20:03 +0200
-Message-ID: <6034841.GFrG3XCMdb@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1409668935-10667-1-git-send-email-pankaj.dubey@samsung.com>
-References: <1409668935-10667-1-git-send-email-pankaj.dubey@samsung.com>
+	id S1754227AbaIBPVv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 11:21:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44517 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751735AbaIBPVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 11:21:50 -0400
+Date: Tue, 2 Sep 2014 16:21:43 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Fengguang Wu <fengguang.wu@intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: page_alloc: Default to node-ordering on 64-bit NUMA
+ machines
+Message-ID: <20140902152143.GL12424@suse.de>
+References: <20140901125551.GI12424@suse.de>
+ <20140902135120.GC29501@cmpxchg.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:KE5lXrZ3HNqxqpKbbnk4n0gF8Vt4DcBREz3grPE5sbB
- DKR3KZW+hkSfE6DpzdPr5QTXwJ1V9ajLU2QWnTeJl56se6Qnc6
- jhsuLuTJwZYYhiT1lkjo2M/LJI5uX6MO+eM2Rkm8qY8wn+BEjl
- ewh3kZCR69o6LkqDarnK9gAs/nlURJPLpIys+VqxXFkkpsLpv7
- OTR8T8xr2UgZDwHefvIpZuXS2MGUZrni43Deq7+Q5ZxEpdSCKA
- OzSNMLmmW/XOqbnvbTStbCiUc8UONjI3qz1n6uKBnkfVWVeqTH
- kJg0/Et6+0kaaZ7BhIzlMzwxYZg7jkd5ctZPQjoSgRZvORuHst
- iquACpVfMn32YJLt9Wic=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20140902135120.GC29501@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 02 September 2014 20:12:15 Pankaj Dubey wrote:
-> Currently a syscon entity can only be registered directly through a
-> platform device that binds to a dedicated syscon driver. However in
-> certain cases it is required to bind a device with it's dedicated
-> driver rather than binding with syscon driver.
+On Tue, Sep 02, 2014 at 09:51:20AM -0400, Johannes Weiner wrote:
+> On Mon, Sep 01, 2014 at 01:55:51PM +0100, Mel Gorman wrote:
+> > Zones are allocated by the page allocator in either node or zone order.
+> > Node ordering is preferred in terms of locality and is applied automatically
+> > in one of three cases.
+> > 
+> >   1. If a node has only low memory
+> > 
+> >   2. If DMA/DMA32 is a high percentage of memory
+> > 
+> >   3. If low memory on a single node is greater than 70% of the node size
+> > 
+> > Otherwise zone ordering is used to preserve low memory. Unfortunately
+> > a consequence of this is that a machine with balanced NUMA nodes will
+> > experience different performance characteristics depending on which node
+> > they happen to start from.
+> > 
+> > The point of zone ordering is to protect lower nodes for devices that require
+> > DMA/DMA32 memory. When NUMA was first introduced, this was critical as 32-bit
+> > NUMA machines commonly suffered from low memory exhaustion problems. On
+> > 64-bit machines the primary concern is devices that are 32-bit only which
+> > is less severe than the low memory exhaustion problem on 32-bit NUMA. It
+> > seems there are really few devices that depends on it.
+> > 
+> > AGP -- I assume this is getting more rare but even then I think the allocations
+> > 	happen early in boot time where lowmem pressure is less of a problem
+> > 
+> > DRM -- If the device is 32-bit only then there may be low pressure. I didn't
+> > 	evaluate these in detail but it looks like some of these are mobile
+> > 	graphics card. Not many NUMA laptops out there. DRM folk should know
+> > 	better though.
+> > 
+> > Some TV cards -- Much demand for 32-bit capable TV cards on NUMA machines?
+> > 
+> > B43 wireless card -- again not really a NUMA thing.
+> > 
+> > I cannot find a good reason to incur a performance penalty on all 64-bit NUMA
+> > machines in case someone throws a brain damanged TV or graphics card in there.
+> > This patch defaults to node-ordering on 64-bit NUMA machines. I was tempted
+> > to make it default everywhere but I understand that some embedded arches may
+> > be using 32-bit NUMA where I cannot predict the consequences.
 > 
-> For example, certain SoCs (e.g. Exynos) contain system controller
-> blocks which perform various functions such as power domain control,
-> CPU power management, low power mode control, but in addition contain
-> certain IP integration glue, such as various signal masks,
-> coprocessor power control, etc. In such case, there is a need to have
-> a dedicated driver for such system controller but also share registers
-> with other drivers. The latter is where the syscon interface is helpful.
-> 
-> This patch decouples syscon object from syscon platform driver, and
-> allows to create syscon objects first time when it is required by
-> calling of syscon_regmap_lookup_by APIs and keeps a list of such syscon
-> objects along with syscon provider device_nodes and regmap handles.
-> 
-> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-> ---
-> V1 of this patchset [1] and related discussion can be found here [1].
->  
-> Changes since v1:
->  - Removed of_syscon_unregister function.
->  - Modified of_syscon_register function and it will be used by syscon.c 
->    to create syscon objects whenever required. 
->  - Removed platform device support from syscon.
->  - Removed syscon_regmap_lookup_by_pdevname API support.
->  - As there are significant changes w.r.t patchset v1, I am taking over
->    author for this patchset from Tomasz Figa.
+> This patch is a step in the right direction, but I'm not too fond of
+> further fragmenting this code and where it applies, while leaving all
+> the complexity from the heuristics and the zonelist building in, just
+> on spec.  Could we at least remove the heuristics too?  If anybody is
+> affected by this, they can always override the default on the cmdline.
 
-Note that you got the Signed-off-by: list wrong, you should never have
-any people listed as Signed-off-by after your own name, and they should
-be listed before your name only when you are forwarding their patches.
+I see no problem with deleting the heuristics. Default node for 64-bit
+and default zone for 32-bit sound ok to you?
 
-> Note: Current kernel has clps711x user of syscon_regmap_lookup_by_pdevname and 
-> will be broken after this patch. As per discussion over here [1], patches 
-> for making these drivers DT based are ready and once that is done they can use
-> syscon_regmap_lookup_by_phandle or syscon_regmap_lookup_by_compatible.
-> 
-> [1]: https://lkml.org/lkml/2014/8/22/81
-
-Adding Alexander Shiyan to Cc here, so we can make sure this is well
-coordinated.
-
-I'm also adding Michal Simek, since here was involved in earlier discussions
-about doing this.
-
->  drivers/mfd/syscon.c       |  143 +++++++++++++-------------------------------
->  include/linux/mfd/syscon.h |    1 +
->  2 files changed, 44 insertions(+), 100 deletions(-)
-
-I certainly like the diffstat ;-)
-
->  struct syscon {
-> +	struct device_node *np;
->  	struct regmap *regmap;
-> +	struct list_head list;
->  };
-
-Right
-
-> @@ -68,27 +72,6 @@ struct regmap *syscon_regmap_lookup_by_compatible(const char *s)
->  }
->  EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_compatible);
->  
-> -static int syscon_match_pdevname(struct device *dev, void *data)
-> -{
-> -	return !strcmp(dev_name(dev), (const char *)data);
-> -}
-> -
-> -struct regmap *syscon_regmap_lookup_by_pdevname(const char *s)
-> -{
-> -	struct device *dev;
-> -	struct syscon *syscon;
-> -
-> -	dev = driver_find_device(&syscon_driver.driver, NULL, (void *)s,
-> -				 syscon_match_pdevname);
-> -	if (!dev)
-> -		return ERR_PTR(-EPROBE_DEFER);
-> -
-> -	syscon = dev_get_drvdata(dev);
-> -
-> -	return syscon->regmap;
-> -}
-> -EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_pdevname);
-
-I think this can actually be left intact if that helps with clps71xx.
-It could be done in a hacky way using bus_find_device_by_name()
-to keep it simple, or in a somewhat nicer way by keeping the 
-syscon platform_driver around for the non-DT case.
-
-
-> +	regmap = regmap_init_mmio(NULL, base, &syscon_regmap_config);
-> +	if (IS_ERR(regmap)) {
-> +		pr_err("regmap init failed\n");
-> +		return ERR_CAST(regmap);
-> +	}
-
-The last time I looked over this code, I think it was not safe to
-call regmap_init_mmio() with a NULL device pointer, and we decided
-that should be fixed. Have you checked whether it is ok now?
-
-	Arnd
+-- 
+Mel Gorman
+SUSE Labs
