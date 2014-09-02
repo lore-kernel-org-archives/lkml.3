@@ -1,68 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753408AbaIBJ4F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 05:56:05 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:57435 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752076AbaIBJ4A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 05:56:00 -0400
-Date: Tue, 2 Sep 2014 11:55:53 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: linux-next: Tree for Aug 23
-Message-ID: <20140902095553.GE31157@worktop.ger.corp.intel.com>
-References: <20140823080422.7895575c@canb.auug.org.au>
- <20140825045741.GA29723@roeck-us.net>
- <20140901155804.GT27892@worktop.ger.corp.intel.com>
- <5404A2F2.3090908@roeck-us.net>
- <20140901190438.GB5806@worktop.ger.corp.intel.com>
- <20140902094016.GD31157@worktop.ger.corp.intel.com>
+	id S1753449AbaIBJ5e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 05:57:34 -0400
+Received: from mga02.intel.com ([134.134.136.20]:16396 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750863AbaIBJ5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 05:57:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,447,1406617200"; 
+   d="scan'208";a="474599041"
+From: ville.syrjala@linux.intel.com
+To: intel-gfx@lists.freedesktop.org
+Cc: "Jani Nikula" <jani.nikula@linux.intel.com>,
+        "Chris Wilson" <chris@chris-wilson.co.uk>,
+        David Airlie <airlied@linux.ie>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, Tibor Billes <tbilles@gmx.com>
+Subject: [PATCH v3] drm/i915: Fix lock dropping in intel_tv_detect()
+Date: Tue,  2 Sep 2014 12:57:22 +0300
+Message-Id: <1409651842-14446-1-git-send-email-ville.syrjala@linux.intel.com>
+X-Mailer: git-send-email 1.8.5.5
+In-Reply-To: <20140902082635.GA25238@nuc-i3427.alporthouse.com>
+References: <20140902082635.GA25238@nuc-i3427.alporthouse.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140902094016.GD31157@worktop.ger.corp.intel.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 02, 2014 at 11:40:16AM +0200, Peter Zijlstra wrote:
-> On Mon, Sep 01, 2014 at 09:04:38PM +0200, Peter Zijlstra wrote:
-> > On Mon, Sep 01, 2014 at 09:46:42AM -0700, Guenter Roeck wrote:
-> > > Yes, the problem is still seen in next-140829. See qemu test results at
-> > > http://server.roeck-us.net:8010/builders.
-> > > 
-> > > I provided sparc64 images at http://server.roeck-us.net/qemu/sparc64/.
-> > > The README file includes instructions on how to run the image in qemu
-> > > and how to build a kernel.
-> > > 
-> > > I can do the same for mips and mips64 if needed; let me know.
-> > 
-> > Thanks, that's enough to get started.
-> 
-> This makes sparc64 go again, silly oversight indeed.
-> 
+From: Ville Syrjälä <ville.syrjala@linux.intel.com>
 
-The same for mips. Can you either provide the mips image or verify this works?
+When intel_tv_detect() fails to do load detection it would forget to
+drop the locks and clean up the acquire context. Fix it up.
 
+This is a regression from:
+ commit 208bf9fdcd3575aa4a5d48b3e0295f7cdaf6fc44
+ Author: Ville Syrjälä <ville.syrjala@linux.intel.com>
+ Date:   Mon Aug 11 13:15:35 2014 +0300
 
+    drm/i915: Fix locking for intel_enable_pipe_a()
 
+v2: Make the code more readable (Chris)
+v3: Drop WARN_ON(type < 0) (Chris)
+
+Cc: stable@vger.kernel.org
+Cc: Tibor Billes <tbilles@gmx.com>
+Reported-by: Tibor Billes <tbilles@gmx.com>
+Tested-by: Tibor Billes <tbilles@gmx.com>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
 ---
-diff --git a/arch/mips/include/asm/atomic.h b/arch/mips/include/asm/atomic.h
-index 476fe3b..b3dd612 100644
---- a/arch/mips/include/asm/atomic.h
-+++ b/arch/mips/include/asm/atomic.h
-@@ -93,7 +93,7 @@ static __inline__ int atomic_##op##_return(int i, atomic_t * v)			\
- 		"	" #asm_op " %0, %1, %3				\n"	\
- 		"	sc	%0, %2					\n"	\
- 		"	beqzl	%0, 1b					\n"	\
--		"	addu	%0, %1, %3				\n"	\
-+		"	" #asm_op " %0, %1, %3				\n"	\
- 		"	.set	mips0					\n"	\
- 		: "=&r" (result), "=&r" (temp), "+m" (v->counter)		\
- 		: "Ir" (i));							\
+ drivers/gpu/drm/i915/intel_tv.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/intel_tv.c b/drivers/gpu/drm/i915/intel_tv.c
+index 32186a6..c69d3ce 100644
+--- a/drivers/gpu/drm/i915/intel_tv.c
++++ b/drivers/gpu/drm/i915/intel_tv.c
+@@ -1311,6 +1311,7 @@ intel_tv_detect(struct drm_connector *connector, bool force)
+ {
+ 	struct drm_display_mode mode;
+ 	struct intel_tv *intel_tv = intel_attached_tv(connector);
++	enum drm_connector_status status;
+ 	int type;
+ 
+ 	DRM_DEBUG_KMS("[CONNECTOR:%d:%s] force=%d\n",
+@@ -1328,16 +1329,19 @@ intel_tv_detect(struct drm_connector *connector, bool force)
+ 		if (intel_get_load_detect_pipe(connector, &mode, &tmp, &ctx)) {
+ 			type = intel_tv_detect_type(intel_tv, connector);
+ 			intel_release_load_detect_pipe(connector, &tmp);
++			status = type < 0 ?
++				connector_status_disconnected :
++				connector_status_connected;
+ 		} else
+-			return connector_status_unknown;
++			status = connector_status_unknown;
+ 
+ 		drm_modeset_drop_locks(&ctx);
+ 		drm_modeset_acquire_fini(&ctx);
+ 	} else
+ 		return connector->status;
+ 
+-	if (type < 0)
+-		return connector_status_disconnected;
++	if (status != connector_status_connected)
++		return status;
+ 
+ 	intel_tv->type = type;
+ 	intel_tv_find_better_format(connector);
+-- 
+1.8.5.5
 
