@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754382AbaIBRNt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 13:13:49 -0400
-Received: from mail-oi0-f45.google.com ([209.85.218.45]:42127 "EHLO
-	mail-oi0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751295AbaIBRNs (ORCPT
+	id S1754638AbaIBRRG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 13:17:06 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:51077 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753703AbaIBRRD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 13:13:48 -0400
+	Tue, 2 Sep 2014 13:17:03 -0400
+Date: Tue, 2 Sep 2014 10:16:57 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
+        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
+        LKP <lkp@01.org>, linux-kernel@vger.kernel.org
+Subject: Re: [percpu] BUG: unable to handle kernel NULL pointer dereference
+ at (null)
+Message-ID: <20140902171657.GG5001@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140902045830.GA11321@localhost>
+ <20140902153403.GY5001@linux.vnet.ibm.com>
+ <alpine.DEB.2.11.1409021052400.10607@gentwo.org>
+ <20140902162110.GB5001@linux.vnet.ibm.com>
+ <alpine.DEB.2.11.1409021155410.10607@gentwo.org>
 MIME-Version: 1.0
-In-Reply-To: <CAK5ve-KnjD58aAsqdtYSNgmZt7mNCP5fsr809y7D1_AtBaB7wg@mail.gmail.com>
-References: <alpine.LNX.2.00.1409021101450.2481@pobox.suse.cz>
-	<CAK5ve-KnjD58aAsqdtYSNgmZt7mNCP5fsr809y7D1_AtBaB7wg@mail.gmail.com>
-Date: Tue, 2 Sep 2014 13:13:47 -0400
-X-Google-Sender-Auth: sgzTeVMWU2HRv7JfbhBkffaQV3U
-Message-ID: <CA+5PVA7pqqVo6f3bjdwNM42rOWLLr+R308vjvS7bZSrTn2+0QQ@mail.gmail.com>
-Subject: Re: [PATCH] Revert "leds: convert blink timer to workqueue"
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Bryan Wu <cooloney@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, Vincent Donnefort <vdonnefort@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1409021155410.10607@gentwo.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14090217-6688-0000-0000-00000474F3C7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 2, 2014 at 1:02 PM, Bryan Wu <cooloney@gmail.com> wrote:
-> On Tue, Sep 2, 2014 at 2:03 AM, Jiri Kosina <jkosina@suse.cz> wrote:
->> This reverts commit 8b37e1bef5a6b60e949e28a4db3006e4b00bd758.
->>
->> It's broken as it changes led_blink_set() in a way that it can now sleep
->> (while synchronously waiting for workqueue to be cancelled). That's a
->> problem, because it's possible that this function gets called from atomic
->> context (tpt_trig_timer() takes a readlock and thus disables preemption).
->>
->> This has been brought up 3 weeks ago already [1] but no proper fix has
->> materialized, and I keep seeing the problem since 3.18-rc1.
->>
->
-> Is this 3.18-rc1? I think it should be 3.17-rc1, right?
+On Tue, Sep 02, 2014 at 11:55:58AM -0500, Christoph Lameter wrote:
+> On Tue, 2 Sep 2014, Paul E. McKenney wrote:
+> 
+> > Added by ac1bea85781e (sched,rcu: Make cond_resched() report RCU quiescent
+> > states), removed by 4a81e8328d379 (rcu: Reduce overhead of cond_resched()
+> > checks for RCU).  So, as you say, no effect on contemporary kernels.
+> 
+> Well not sure what to make out of all of this....
 
-Yes
-.
-josh
+Yep, still confused as to how the patch adding the definition could have
+caused a failure.  Fengguang, any thoughts?
+
+							Thanx, Paul
+
