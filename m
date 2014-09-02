@@ -1,187 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754962AbaIBTHU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 15:07:20 -0400
-Received: from relay.parallels.com ([195.214.232.42]:60800 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbaIBTHR (ORCPT
+	id S1755104AbaIBTI0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 15:08:26 -0400
+Received: from mail-qg0-f52.google.com ([209.85.192.52]:60604 "EHLO
+	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754710AbaIBTIY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 15:07:17 -0400
-Message-ID: <54061562.4080306@parallels.com>
-Date: Tue, 2 Sep 2014 23:07:14 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 2 Sep 2014 15:08:24 -0400
+Message-ID: <540615A5.4070902@gmail.com>
+Date: Tue, 02 Sep 2014 15:08:21 -0400
+From: Vlad Yasevich <vyasevich@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: Jeff Layton <jlayton@poochiereds.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        <linux-api@vger.kernel.org>
-Subject: Re: [PATCH] locks: Ability to test for flock presence on fd
-References: <5405FBAE.5020303@parallels.com> <20140902184456.GC31793@fieldses.org>
-In-Reply-To: <20140902184456.GC31793@fieldses.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Cong Wang <cwang@twopensource.com>, Eric Dumazet <eric.dumazet@gmail.com>
+CC: Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Sabrina Dubroca <sd@queasysnail.net>,
+        Tommi Rantala <tt.rantala@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org,
+        Dave Jones <davej@redhat.com>
+Subject: Re: RTNL: assertion failed at net/ipv6/addrconf.c (1699)
+References: <CA+ydwtoDwQVg_BWrxxdpUyJ7Up60GtxTCLYe_5vFdV2td_kGhQ@mail.gmail.com>	<CAHA+R7MZCDGRhSf=UuVCGQvNo03wVziZQB_X30rwNf6hmHipQA@mail.gmail.com>	<20140829195339.GA9780@kria>	<1409363489.2980.17.camel@localhost>	<CAHA+R7ODa+LrdwSrS7HcBfwwq8_fpj-Ld0OCDtcOqkpCdZCvxg@mail.gmail.com>	<1409680684.972417.162793869.03CF8A61@webmail.messagingengine.com>	<CAHA+R7Mwy1SCpEUgGf9BdLEro6N-3t89KU=xL0iuzgOppXELrQ@mail.gmail.com>	<1409681487.26422.1.camel@edumazet-glaptop2.roam.corp.google.com> <CAHA+R7PY=Pu7VKA3wp1DxeJRckxPNWL-xfv2XXkpaY935kt61A@mail.gmail.com>
+In-Reply-To: <CAHA+R7PY=Pu7VKA3wp1DxeJRckxPNWL-xfv2XXkpaY935kt61A@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [89.169.95.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/2014 10:44 PM, J. Bruce Fields wrote:
-> On Tue, Sep 02, 2014 at 09:17:34PM +0400, Pavel Emelyanov wrote:
->> Hi,
+On 09/02/2014 02:15 PM, Cong Wang wrote:
+> On Tue, Sep 2, 2014 at 11:11 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>> On Tue, 2014-09-02 at 11:04 -0700, Cong Wang wrote:
+>>> On Tue, Sep 2, 2014 at 10:58 AM, Hannes Frederic Sowa
 >>
->> There's a problem with getting information about who has a flock on
->> a specific file. The thing is that the "owner" field, that is shown in
->> /proc/locks is the pid of the task who created the flock, not the one
->> who _may_ hold it.
+>>>> I definitely don't have a problem cleaning this up in net-next. I wanted
+>>>> a minimal patch for stable because I didn't check history where and when
+>>>> additional users of dev_get_by_flags_rcu were removed.
+>>>
+>>> `git grep` should show you we only have one caller. Apparently we don't
+>>> care about any out-of-tree module.
 >>
->> If the flock creator shared the file with some other task (by forking
->> or via scm_rights) and then died or closed the file, the information
->> shown in proc no longer corresponds to the reality.
+>> Point is : you did not check if some stable versions had more callers.
 >>
->> This is critical for CRIU project, that tries to dump (and restore)
->> the state of running tasks. For example, let's take two tasks A and B
->> both opened a file "/foo", one of tasks places a LOCK_SH lock on the 
->> file and then "obfuscated" the owner field in /proc/locks. After this
->> we have no ways to find out who is the lock holder.
->>
->> I'd like to note, that for LOCK_EX this problem is not critical -- we
->> may go to both tasks and "ask" them to LOCK_EX the file again (we can
->> do it in CRIU, I can tell more if required). The one who succeeds is 
->> the lock holder.
+>> Its very nice you checked current version, but it is not enough for a
+>> stable candidate.
 > 
-> It could be both, actually, right?
+> That is what we do when backporting patches, I can do that if David asks
+> me to backport it, but you know for netdev that is David's work.
+> 
+> (I am not saying I don't want to help him, I just want to point out the fact.
+> I am very pleased to help David for stable backports as long as he asks)
 
-Two succeeding with LOCK_EX? AFAIU no. Am I missing something?
+Instead of helping after the fact, why not arrange the patches so that it's
+not such a big issue.  Leave the _rcu variant alone.  Add an _rtnl variant
+of the function and use that in the patch.  Have a follow-on patch that
+removes the _rcu variant all by itself.  This way backports become easier,
+and if anyone wants the _rcu variant back, all they have to do is revert
+a very simple commit.
 
->> With LOCK_SH this doesn't work. Trying to drop the
->> lock doesn't work either, as flock(LOCK_UN) reports 0 in both cases:
->> if the file is locked and if it is not.
->>
->> That said, I'd like to propose the LOCK_TEST flag to the flock call,
->> that would check whether the lock of the given type (LOCK_SH or LOCK_EX)
->> exists on the file we test. It's not the same as the existing in-kernel
->> FL_ACCESS flag, which checks whether the new lock is possible, but
->> it's a new FL_TEST flag, that checks whether the existing lock is there.
->>
->> What do you think?
-> 
-> I guess I can't see anything really wrong with it.
-> 
-> It ignores the (poorly documented) LOCK_MAND case, but maybe that's OK.
-
-I actually checked it and it seemed to work. What problems do
-you see with this case?
-
-> Would it make sense to return the lock type held instead, so you could
-> do one flock(fd, LOCK_TEST) instead of flock(fd, LOCK_TEST|LOCK_SH) and
-> flock(fd, LOCK_TEST|LOCK_EX) ?
-
-Well, in our case we parse /proc/locks anyway to see what
-files at least to test for being locked. But what you propose
-looks even better. I'll look what can be done here.
-
-> It'd be nice if we could fix /proc/locks.  (You'd think I'd know better,
-> but I've certainly been confused before when /proc/locks told me a lock
-> was owned by a nonexistant PID.)  But as long as multiple PIDs can "own"
-> a flock and as long as there's no simple ID we can use to refer to a
-> given struct file, I don't see an easy solution.
-> 
-> --b.
-> 
-> 
->>
->> Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
->>
->> ---
->>
->> diff --git a/fs/locks.c b/fs/locks.c
->> index bb08857..50842bf 100644
->> --- a/fs/locks.c
->> +++ b/fs/locks.c
->> @@ -830,7 +830,7 @@ static int flock_lock_file(struct file *filp, struct file_lock *request)
->>  	int found = 0;
->>  	LIST_HEAD(dispose);
->>  
->> -	if (!(request->fl_flags & FL_ACCESS) && (request->fl_type != F_UNLCK)) {
->> +	if (!(request->fl_flags & (FL_ACCESS|FL_TEST)) && (request->fl_type != F_UNLCK)) {
->>  		new_fl = locks_alloc_lock();
->>  		if (!new_fl)
->>  			return -ENOMEM;
->> @@ -850,11 +850,18 @@ static int flock_lock_file(struct file *filp, struct file_lock *request)
->>  			continue;
->>  		if (request->fl_type == fl->fl_type)
->>  			goto out;
->> +		if (request->fl_flags & FL_TEST)
->> +			break;
->>  		found = 1;
->>  		locks_delete_lock(before, &dispose);
->>  		break;
->>  	}
->>  
->> +	if (request->fl_flags & FL_TEST) {
->> +		error = -ENOENT;
->> +		goto out;
->> +	}
->> +
->>  	if (request->fl_type == F_UNLCK) {
->>  		if ((request->fl_flags & FL_EXISTS) && !found)
->>  			error = -ENOENT;
->> @@ -1852,15 +1859,16 @@ SYSCALL_DEFINE2(flock, unsigned int, fd, unsigned int, cmd)
->>  {
->>  	struct fd f = fdget(fd);
->>  	struct file_lock *lock;
->> -	int can_sleep, unlock;
->> +	int can_sleep, unlock, test;
->>  	int error;
->>  
->>  	error = -EBADF;
->>  	if (!f.file)
->>  		goto out;
->>  
->> +	test = (cmd & LOCK_TEST);
->>  	can_sleep = !(cmd & LOCK_NB);
->> -	cmd &= ~LOCK_NB;
->> +	cmd &= ~(LOCK_NB|LOCK_TEST);
->>  	unlock = (cmd == LOCK_UN);
->>  
->>  	if (!unlock && !(cmd & LOCK_MAND) &&
->> @@ -1872,6 +1880,8 @@ SYSCALL_DEFINE2(flock, unsigned int, fd, unsigned int, cmd)
->>  		goto out_putf;
->>  	if (can_sleep)
->>  		lock->fl_flags |= FL_SLEEP;
->> +	if (test)
->> +		lock->fl_flags |= FL_TEST;
->>  
->>  	error = security_file_lock(f.file, lock->fl_type);
->>  	if (error)
->> diff --git a/include/linux/fs.h b/include/linux/fs.h
->> index 9418772..9230e1d 100644
->> --- a/include/linux/fs.h
->> +++ b/include/linux/fs.h
->> @@ -844,6 +844,7 @@ static inline struct file *get_file(struct file *f)
->>  #define FL_DOWNGRADE_PENDING	256 /* Lease is being downgraded */
->>  #define FL_UNLOCK_PENDING	512 /* Lease is being broken */
->>  #define FL_OFDLCK	1024	/* lock is "owned" by struct file */
->> +#define FL_TEST		2048
->>  
->>  /*
->>   * Special return value from posix_lock_file() and vfs_lock_file() for
->> diff --git a/include/uapi/asm-generic/fcntl.h b/include/uapi/asm-generic/fcntl.h
->> index 7543b3e..7302e36 100644
->> --- a/include/uapi/asm-generic/fcntl.h
->> +++ b/include/uapi/asm-generic/fcntl.h
->> @@ -184,6 +184,7 @@ struct f_owner_ex {
->>  #define LOCK_READ	64	/* which allows concurrent read operations */
->>  #define LOCK_WRITE	128	/* which allows concurrent write operations */
->>  #define LOCK_RW		192	/* which allows concurrent read & write ops */
->> +#define LOCK_TEST	256	/* check for my SH|EX locks present */
->>  
->>  #define F_LINUX_SPECIFIC_BASE	1024
->>  
->>
-> .
-> 
+-vlad
 
