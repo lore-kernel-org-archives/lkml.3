@@ -1,64 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755305AbaIBWIy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 18:08:54 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:61518 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752180AbaIBWIx (ORCPT
+	id S1755326AbaIBWLj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 18:11:39 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:36008 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755078AbaIBWLh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 18:08:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <1409694182.1034977.162882841.29AA6A80@webmail.messagingengine.com>
-References: <aa5126f747594d768e0c518189a13e8674ad8ee5.1409690486.git.hannes@stressinduktion.org>
-	<2bf2e54282097642db88e2b596b06a9ac3742883.1409690849.git.hannes@stressinduktion.org>
-	<CAMEtUuyoWELJ0Yf+=5sDKxFEfgsiQ3kMCK+Wn_bdJgS8qaH2og@mail.gmail.com>
-	<1409694059.26422.18.camel@edumazet-glaptop2.roam.corp.google.com>
-	<1409694182.1034977.162882841.29AA6A80@webmail.messagingengine.com>
-Date: Tue, 2 Sep 2014 15:08:51 -0700
-Message-ID: <CAMEtUuwPbX5yczeUCJ1rq+YLXcenWJggxZCei2HpSBQ-ps68VQ@mail.gmail.com>
-Subject: Re: [PATCH net-next v2] net: bpf: make eBPF interpreter images read-only
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Brad Spengler <spender@grsecurity.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Kees Cook <keescook@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 2 Sep 2014 18:11:37 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH 23/26] tty: Move packet mode flow control notifications to pty driver
+Date: Tue,  2 Sep 2014 17:39:32 -0400
+Message-Id: <1409693975-1028-24-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com>
+References: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com>
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 2, 2014 at 2:43 PM, Hannes Frederic Sowa
-<hannes@stressinduktion.org> wrote:
-> On Tue, Sep 2, 2014, at 23:40, Eric Dumazet wrote:
->> On Tue, 2014-09-02 at 14:31 -0700, Alexei Starovoitov wrote:
->>
->> > > +static inline void bpf_prog_unlock_ro(struct bpf_prog *fp)
->> > > +{
->> > > +       set_memory_rw((unsigned long)fp, fp->pages);
->> >
->> > why rw is needed?
->> > since fp is allocated with vmalloc, vfree doesn't need
->> > to touch the pages to free them, no?
->>
->> That assumes that vmalloc() do not have any debugging features, like
->> poisoning content before freeing, to catch some use after free.
->>
->> Lets be clean and safe, and give back same memory permission we had
->> after vmalloc()
->
-> Yes, I agree. I just went down the kmemleak codepaths and we certainly
-> don't want to cause issues in there if the implementation changes one
-> day.
+When a master pty is set to packet mode, flow control changes to
+the slave pty cause notifications to the master pty via reads and
+polls. However, these tests are occurring for all ttys, not
+just ptys.
 
-agree.
-I asked, because skipping set_memory_rw() would have
-removed the need for 'struct bpf_work_struct' and complexity
-around it.
+Implement flow control packet mode notifications in the pty driver.
+Only the slave side implements the flow control handlers since
+packet mode is asymmetric; the master pty receives notifications
+for slave-side changes, but not vice versa.
 
-Simple testing looks good, so:
-Acked-by: Alexei Starovoitov <ast@plumgrid.com>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/pty.c    | 41 +++++++++++++++++++++++++++++++++++++++++
+ drivers/tty/tty_io.c | 31 ++++---------------------------
+ 2 files changed, 45 insertions(+), 27 deletions(-)
 
-will rebase with all of my stuff and do some more tests.
+diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
+index 25c9bc7..c344de0 100644
+--- a/drivers/tty/pty.c
++++ b/drivers/tty/pty.c
+@@ -24,6 +24,7 @@
+ #include <linux/devpts_fs.h>
+ #include <linux/slab.h>
+ #include <linux/mutex.h>
++#include <linux/poll.h>
+ 
+ 
+ #ifdef CONFIG_UNIX98_PTYS
+@@ -313,6 +314,42 @@ done:
+ }
+ 
+ /**
++ *	pty_start - start() handler
++ *	pty_stop  - stop() handler
++ *	@tty: tty being flow-controlled
++ *
++ *	Propagates the TIOCPKT status to the master pty.
++ *
++ *	NB: only the master pty can be in packet mode so only the slave
++ *	    needs start()/stop() handlers
++ */
++static void pty_start(struct tty_struct *tty)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&tty->ctrl_lock, flags);
++	if (tty->link && tty->link->packet) {
++		tty->ctrl_status &= ~TIOCPKT_STOP;
++		tty->ctrl_status |= TIOCPKT_START;
++		wake_up_interruptible_poll(&tty->link->read_wait, POLLIN);
++	}
++	spin_unlock_irqrestore(&tty->ctrl_lock, flags);
++}
++
++static void pty_stop(struct tty_struct *tty)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&tty->ctrl_lock, flags);
++	if (tty->link && tty->link->packet) {
++		tty->ctrl_status &= ~TIOCPKT_START;
++		tty->ctrl_status |= TIOCPKT_STOP;
++		wake_up_interruptible_poll(&tty->link->read_wait, POLLIN);
++	}
++	spin_unlock_irqrestore(&tty->ctrl_lock, flags);
++}
++
++/**
+  *	pty_common_install		-	set up the pty pair
+  *	@driver: the pty driver
+  *	@tty: the tty being instantiated
+@@ -472,6 +509,8 @@ static const struct tty_operations slave_pty_ops_bsd = {
+ 	.set_termios = pty_set_termios,
+ 	.cleanup = pty_cleanup,
+ 	.resize = pty_resize,
++	.start = pty_start,
++	.stop = pty_stop,
+ 	.remove = pty_remove
+ };
+ 
+@@ -647,6 +686,8 @@ static const struct tty_operations pty_unix98_ops = {
+ 	.chars_in_buffer = pty_chars_in_buffer,
+ 	.unthrottle = pty_unthrottle,
+ 	.set_termios = pty_set_termios,
++	.start = pty_start,
++	.stop = pty_stop,
+ 	.shutdown = pty_unix98_shutdown,
+ 	.cleanup = pty_cleanup,
+ };
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index b898e29..55b9103 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -922,8 +922,7 @@ void no_tty(void)
+  *	stop_tty	-	propagate flow control
+  *	@tty: tty to stop
+  *
+- *	Perform flow control to the driver. For PTY/TTY pairs we
+- *	must also propagate the TIOCKPKT status. May be called
++ *	Perform flow control to the driver. May be called
+  *	on an already stopped device and will not re-call the driver
+  *	method.
+  *
+@@ -933,24 +932,14 @@ void no_tty(void)
+  *	but not always.
+  *
+  *	Locking:
+- *		ctrl_lock
+  *		flow_lock
+  */
+ 
+ void __stop_tty(struct tty_struct *tty)
+ {
+-	unsigned long flags;
+-
+ 	if (tty->stopped)
+ 		return;
+ 	tty->stopped = 1;
+-	spin_lock_irqsave(&tty->ctrl_lock, flags);
+-	if (tty->link && tty->link->packet) {
+-		tty->ctrl_status &= ~TIOCPKT_START;
+-		tty->ctrl_status |= TIOCPKT_STOP;
+-		wake_up_interruptible_poll(&tty->link->read_wait, POLLIN);
+-	}
+-	spin_unlock_irqrestore(&tty->ctrl_lock, flags);
+ 	if (tty->ops->stop)
+ 		(tty->ops->stop)(tty);
+ }
+@@ -969,33 +958,21 @@ EXPORT_SYMBOL(stop_tty);
+  *	start_tty	-	propagate flow control
+  *	@tty: tty to start
+  *
+- *	Start a tty that has been stopped if at all possible. Perform
+- *	any necessary wakeups and propagate the TIOCPKT status. If this
+- *	is the tty was previous stopped and is being started then the
+- *	driver start method is invoked and the line discipline woken.
++ *	Start a tty that has been stopped if at all possible. If this
++ *	tty was previous stopped and is now being started, the driver
++ *	start method is invoked and the line discipline woken.
+  *
+  *	Locking:
+- *		ctrl_lock
+  *		flow_lock
+  */
+ 
+ void __start_tty(struct tty_struct *tty)
+ {
+-	unsigned long flags;
+-
+ 	if (!tty->stopped || tty->flow_stopped)
+ 		return;
+ 	tty->stopped = 0;
+-	spin_lock_irqsave(&tty->ctrl_lock, flags);
+-	if (tty->link && tty->link->packet) {
+-		tty->ctrl_status &= ~TIOCPKT_STOP;
+-		tty->ctrl_status |= TIOCPKT_START;
+-		wake_up_interruptible_poll(&tty->link->read_wait, POLLIN);
+-	}
+-	spin_unlock_irqrestore(&tty->ctrl_lock, flags);
+ 	if (tty->ops->start)
+ 		(tty->ops->start)(tty);
+-	/* If we have a running line discipline it may need kicking */
+ 	tty_wakeup(tty);
+ }
+ 
+-- 
+2.1.0
+
