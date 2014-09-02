@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506AbaIBWMd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 18:12:33 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:33542 "EHLO
+	id S1755525AbaIBWMm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 18:12:42 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:39369 "EHLO
 	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755492AbaIBWMb (ORCPT
+	with ESMTP id S1755328AbaIBWMh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 18:12:31 -0400
+	Tue, 2 Sep 2014 18:12:37 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>,
         One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
         linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Sonic Zhang <sonic.zhang@analog.com>
-Subject: [PATCH 19/26] serial: bfin-uart: Fix auto CTS
-Date: Tue,  2 Sep 2014 17:39:28 -0400
-Message-Id: <1409693975-1028-20-git-send-email-peter@hurleysoftware.com>
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH 20/26] serial: core: Use spin_lock_irq() in uart_set_termios()
+Date: Tue,  2 Sep 2014 17:39:29 -0400
+Message-Id: <1409693975-1028-21-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com>
 References: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com>
@@ -26,35 +25,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 64851636d568ae9f167cd5d1dcdbfe17e6eef73c,
-serial: bfin-uart: Remove ASYNC_CTS_FLOW flag for hardware automatic CTS,
-open-codes uart_handle_cts_change() when CONFIG_SERIAL_BFIN_HARD_CTSRTS
-to skip start and stop tx.
+uart_set_termios() is called with interrupts enabled; no need to
+save and restore the interrupt state when taking the uart port lock.
 
-But the CTS interrupt handler _still_ calls uart_handle_cts_change();
-only call uart_handle_cts_change() if !CONFIG_SERIAL_BFIN_HARD_CTSRTS.
-
-cc: Sonic Zhang <sonic.zhang@analog.com>
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/serial/bfin_uart.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/tty/serial/serial_core.c | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/tty/serial/bfin_uart.c b/drivers/tty/serial/bfin_uart.c
-index fc9fbf3..7da9911 100644
---- a/drivers/tty/serial/bfin_uart.c
-+++ b/drivers/tty/serial/bfin_uart.c
-@@ -122,8 +122,9 @@ static irqreturn_t bfin_serial_mctrl_cts_int(int irq, void *dev_id)
- 		if (!status)
- 			uport->hw_stopped = 1;
- 	}
--#endif
-+#else
- 	uart_handle_cts_change(uport, status & TIOCM_CTS);
-+#endif
+diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+index 95277a2..200fa8c 100644
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -1244,7 +1244,6 @@ static void uart_set_termios(struct tty_struct *tty,
+ {
+ 	struct uart_state *state = tty->driver_data;
+ 	struct uart_port *uport = state->uart_port;
+-	unsigned long flags;
+ 	unsigned int cflag = tty->termios.c_cflag;
+ 	unsigned int iflag_mask = IGNBRK|BRKINT|IGNPAR|PARMRK|INPCK;
+ 	bool sw_changed = false;
+@@ -1298,19 +1297,19 @@ static void uart_set_termios(struct tty_struct *tty,
  
- 	return IRQ_HANDLED;
+ 	/* Handle turning off CRTSCTS */
+ 	if ((old_termios->c_cflag & CRTSCTS) && !(cflag & CRTSCTS)) {
+-		spin_lock_irqsave(&uport->lock, flags);
++		spin_lock_irq(&uport->lock);
+ 		uport->hw_stopped = 0;
+ 		__uart_start(tty);
+-		spin_unlock_irqrestore(&uport->lock, flags);
++		spin_unlock_irq(&uport->lock);
+ 	}
+ 	/* Handle turning on CRTSCTS */
+ 	else if (!(old_termios->c_cflag & CRTSCTS) && (cflag & CRTSCTS)) {
+-		spin_lock_irqsave(&uport->lock, flags);
++		spin_lock_irq(&uport->lock);
+ 		if (!(uport->ops->get_mctrl(uport) & TIOCM_CTS)) {
+ 			uport->hw_stopped = 1;
+ 			uport->ops->stop_tx(uport);
+ 		}
+-		spin_unlock_irqrestore(&uport->lock, flags);
++		spin_unlock_irq(&uport->lock);
+ 	}
  }
+ 
 -- 
 2.1.0
 
