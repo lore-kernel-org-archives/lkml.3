@@ -1,164 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754397AbaIBNTc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 09:19:32 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:58941 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbaIBNTa (ORCPT
+	id S1754163AbaIBNVR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 09:21:17 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:59470 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751105AbaIBNVP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 09:19:30 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-82-5405c3e0ba21
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nicolas.pitre@linaro.org, Russell King <rmk+kernel@arm.linux.org.uk>,
-        Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: linux-next: Tree for Sep 1
-Date: Tue, 02 Sep 2014 15:19:22 +0200
-Message-id: <1627064.QhxvejlWdk@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <20140901230728.GM29327@sirena.org.uk>
-References: <20140901230728.GM29327@sirena.org.uk>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=ISO-8859-1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOLMWRmVeSWpSXmKPExsVy+t9jQd0Hh1lDDObtErCY+vAJm8X1b28Y
-	Lc42vWG3uLxrDpvFwYVtjBafnv1jt9j84SWbxa/lRxkdODxamnvYPDat6mTzuHNtD5vHkyvT
-	mTz6tqxi9Pi8SS6ALYrLJiU1J7MstUjfLoEr4+Gdt8wFu7QqnrfMZGpgnKTcxcjJISFgIrGk
-	cxIThC0mceHeerYuRi4OIYHpjBInZt6GclqYJJ7ffwdWxSZgJTGxfRUjiC0ioCxx9fteFpAi
-	ZoEPjBIflz4HSwgLqEscnrmGHcRmEVCVuH/mHCuIzSugKfH71XE2EFtUwFNix/aVYDangLHE
-	lzszwHqFBIwk9nZ8Y4eoF5T4MfkeC4jNLCAvsW//VFYIW0dif+s0tgmMArOQlM1CUjYLSdkC
-	RuZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMHB/0x6B+OqBotDjAIcjEo8vBI/WEKEWBPL
-	iitzDzFKcDArifB67GUNEeJNSaysSi3Kjy8qzUktPsQozcGiJM57sNU6UEggPbEkNTs1tSC1
-	CCbLxMEp1cC4dPJ3G43Su5wrv3Aw7VNdnsr48funrJuHNj1K//lnZbO/7OxrLrONeRd41WWz
-	60/2ZL5RsuG4b6lo527fiNRvVu6Jx64UZW/xCXvJtu3tBSdzddYHye/8Iv9EFHUtY+z8f0l7
-	lc7WGW9K+va/Pn5n+pmVdbtcfHdm8Z8/na/2eN8BhnWXfKseKbEUZyQaajEXFScCAK4xpv56	AgAA
+	Tue, 2 Sep 2014 09:21:15 -0400
+MIME-Version: 1.0
+In-Reply-To: <540596A6.8000608@arm.com>
+References: <1409328803-1953-1-git-send-email-andre.przywara@arm.com>
+ <1409328803-1953-2-git-send-email-andre.przywara@arm.com> <CAL_JsqJbAWRhduzMwdQMh8sDdVqTWVK2Ej9LQjx4gp2ifwxe6Q@mail.gmail.com>
+ <540596A6.8000608@arm.com>
+From: Rob Herring <robherring2@gmail.com>
+Date: Tue, 2 Sep 2014 08:20:53 -0500
+Message-ID: <CAL_Jsq+Rs5MXC7s7EeWAEAPxxqaShAVGt=cdQxud5Us+-Zp6jw@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/1] drivers: introduce ARM SBSA generic UART driver
+To: Andre Przywara <andre.przywara@arm.com>
+Cc: "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Russell King <linux@arm.linux.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Sep 2, 2014 at 5:06 AM, Andre Przywara <andre.przywara@arm.com> wrote:
+> Hi Rob,
+>
+> thanks for looking at this.
+>
+> On 02/09/14 04:06, Rob Herring wrote:
+>> On Fri, Aug 29, 2014 at 11:13 AM, Andre Przywara <andre.przywara@arm.com> wrote:
+>>> The ARM Server Base System Architecture (SBSA) describes a generic
+>>> UART which all compliant level 1 systems should implement. This is
+>>> actually a PL011 subset, so a full PL011 implementation will satisfy
+>>> this requirement.
+>>> However if a system does not have a PL011, a very stripped down
+>>> implementation complying to the SBSA defined specification will
+>>> suffice. The Linux PL011 driver is not guaranteed to drive this
+>>> limited device (and indeed the fast model implentation hangs the
+>>> kernel if driven by the PL011 driver).
+>>> So introduce a new driver just implementing the part specified by the
+>>> SBSA (which lacks DMA, the modem control signals and many of the
+>>> registers including baud rate control). This driver has been derived
+>>> by the actual PL011 one, removing all unnecessary code.
+>>>
+>>> Signed-off-by: Andre Przywara <andre.przywara@arm.com>
+>>> ---
+>>>  .../devicetree/bindings/serial/arm_sbsa_uart.txt   |    6 +
+>>>  drivers/tty/serial/Kconfig                         |   28 +
+>>>  drivers/tty/serial/Makefile                        |    1 +
+>>>  drivers/tty/serial/sbsa_uart.c                     |  793 ++++++++++++++++++++
+>>>  include/uapi/linux/serial_core.h                   |    1 +
+>>
+>> Sorry, but I think this is all wrong. We've now just duplicated some
+>> subset of the pl011 driver leaving out the parts like setting baudrate
+>> which can never be added since those things could be different for
+>> every vendor.
+>>
+>> The original intent of the SBSA uart was to provide a common early
+>> debug uart. It was not to have a full fledged driver. I think the SBSA
+>> has failed in this area and created the potential to create a mess of
+>> serial drivers different for every vendor. Reality will hopefully not
+>> be that extreme and most vendors will just use the pl011 and create
+>> their value add somewhere besides the uart. For the purpose of debug
+>> output, we already support that as the pl011 earlycon only touches
+>> SBSA compatible registers.
+>
+> I see your point (and was actually looking for those kind of comments
+> when posting this).
+> I agree to that debug aspect and understand that earlycon already does
+> this, but I think we need some support beyond earlycon, to be able to
+> login and use it as a console (which is not possible with earlycon,
+> right?) This is probably still for debugging or emergency access to the
+> system only, but maybe also for logging - actually quite similar to how
+> UARTs are used on today's x86 servers.
+> So after having written three incarnations of this driver (goldfish
+> based, PL010 based, PL011 based) I wonder if supporting the SBSA subset
+> in the real PL011 driver is an option. Either this would be enabled by a
+> new explicit DT property or preferably by a clever compatible string.
+> Ideally we would just provide a different set of "struct uart_ops"
+> members, with some pointing to generic PL011 routines, some to SBSA UART
+> specific ones.
+> Maybe we make the full featured PL011 support a config option
+> (defaulting to y), allowing people to only use the SBSA subset in their
+> kernel?
 
-[ this time with the patch and right cc: list, sorry for the noise ]
+I think your choices are add the option into pl011 driver or move the
+common parts of pl011 driver into a common lib.
 
-Hi,
+>
+> Does that make more sense? (for a general SBSA h/w rationale see below)
+>
+>>>  5 files changed, 829 insertions(+)
+>>>  create mode 100644 Documentation/devicetree/bindings/serial/arm_sbsa_uart.txt
+>>>  create mode 100644 drivers/tty/serial/sbsa_uart.c
+>>>
+>>> diff --git a/Documentation/devicetree/bindings/serial/arm_sbsa_uart.txt b/Documentation/devicetree/bindings/serial/arm_sbsa_uart.txt
+>>> new file mode 100644
+>>> index 0000000..8e2c5d6
+>>> --- /dev/null
+>>> +++ b/Documentation/devicetree/bindings/serial/arm_sbsa_uart.txt
+>>> @@ -0,0 +1,6 @@
+>>> +* ARM SBSA defined generic UART
+>>> +
+>>> +Required properties:
+>>> +- compatible: must be "arm,sbsa-uart"
+>>
+>> This alone is not okay. There is no such implementation of hardware.
+>
+> But the SBSA explicitly allows this. I don't know of any vendor who just
+> implements the subset, but I've been told that this has been asked for.
 
-On Tuesday, September 02, 2014 12:07:28 AM Mark Brown wrote:
-> Changes since 20140829:
-> 
-> The akpm-current gained a conflict against Linus' tree.
-> 
-> Non-merge commits (relative to Linus' tree): 2553
->  2686 files changed, 98625 insertions(+), 79475 deletions(-)
-> 
-> I have created today's linux-next tree at
-> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git .
-> If you are tracking the linux-next tree using git, you should not use
-> "git pull" to do so as that will try to merge the new linux-next release
-> with the old one.  You should use "git fetch" and checkout or reset to
-> the new master.
-> 
-> You can see which trees have been included by looking in the Next/Trees
-> file in the source.  There are also quilt-import.log and merge.log files
-> in the Next directory.  Between each merge, the tree was built with an
-> allmodconfig for x86_64 and a multi_v7_defconfig for arm.
-> 
-> Below is a summary of the state of the merge.
-> 
-> I am currently merging 214 trees (counting Linus' and 30 trees of patches
-> pending for Linus' tree).
-> 
-> Stats about the size of the tree over time can be seen at
-> http://neuling.org/linux-next-size.html .
-> 
-> Status of Stephen's local build tests will be at
-> http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-> advice about cross compilers/configs that work, we are always open to add
-> more builds.
+To use baudrate as an example, that must be configurable somehow
+either with pl011 registers or in a vendor specific way. I suppose you
+could do an actual implementation with all those things hardcoded in
+the design, but that seems unlikely.
 
-I need following patch to make it boot on ODROID U3 board
-(ARM Exynos4412 SoC based).  next-20140825 was good, next-20140828
-is bad (I haven't tried next-20140826 and next-20140827).
+Regardless of config registers, if you have 10 different implementers
+of a spec, you need 10 different compatible strings because you will
+have 10 different sets of quirks. See the 8250 driver if you need
+proof of that.
 
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
+>> The DT must specify the implementation such as pl011.
+>
+> If it is a full featured PL011: sure. Then we don't need this driver at
+> all and just use the SBSA UART spec as a guideline for our earlycon
+> implementation.
+> I will try to learn if there is someone actually implementing only the
+> subset.
 
+I would have assumed you knew someone is. Otherwise, I don't really
+think anything should be implemented at this point. Perhaps adding
+SBSA uart as an explicit earlycon option would be worthwhile. Also, we
+should consider using ttySx instead of ttyAMAx for SBSA compliant
+systems (including ones with pl011).
 
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: [RFC PATCH] irqchips: gic_get_percpu_base() fix
-
-Commit 532d0d0690d1 ("irqchips: Replace __this_cpu_ptr uses")
-incorrectly converted *__this_cpu_ptr() to raw_cpu_read() instead
-of *raw_cpu_ptr().  Fix it.
-
-Fixes following panic on ODROID U3 board (using ARM Exynos4412 SoC):
-
-Unable to handle kernel NULL pointer dereference at virtual address 00000004
-pgd = c0004000
-[00000004] *pgd=00000000
-Internal error: Oops: 5 [#1] PREEMPT SMP ARM
-Modules linked in:
-CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.17.0-rc2-next-20140828-dirty #837
-task: c05ece28 ti: c05e2000 task.ti: c05e2000
-PC is at gic_init_bases+0x170/0x380
-LR is at gic_init_bases+0x170/0x380
-pc : [<c05b12bc>]    lr : [<c05b12bc>]    psr: 600001d3
-sp : c05e3f18  ip : 00000004  fp : c05edd7c
-r10: c05ea560  r9 : c05ea488  r8 : 00000010
-r7 : 00004000  r6 : c05ea93c  r5 : c05ea93c  r4 : c05ea93c
-r3 : 2a1a0000  r2 : ffffffff  r1 : 00000008  r0 : 00000000
-Flags: nZCv  IRQs off  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
-Control: 10c5387d  Table: 4000404a  DAC: 00000015
-Process swapper/0 (pid: 0, stack limit = 0xc05e2240)
-Stack: (0xc05e3f18 to 0xc05e4000)
-3f00:                                                       c05e3f88 c040b2bc
-3f20: c061c3b8 ffffffff 00000004 c05e3f64 00000000 ea7a3b20 c05c5ff0 00000000
-3f40: f8820000 f8810000 c05de880 00200200 c05e3f88 c05b157c 00004000 ea7a3b20
-3f60: c061c3b8 00004000 ea0027c0 ea002800 c05e3f80 00000000 00100100 c05b89c8
-3f80: ea002800 ea002800 c05e3f88 c05e3f88 413fc090 c05c3f50 ffffffff c0626600
-3fa0: c05c3f60 eb7ff780 413fc090 00000000 00000000 c05a2e80 c05c3f50 c059e1c4
-3fc0: 00000001 c059ba24 ffffffff ffffffff c059b600 00000000 00000000 c05c3f60
-3fe0: c06269d4 c05ea47c c05c3f5c c05edeac 4000406a 40008074 00000000 00000000
-[<c05b12bc>] (gic_init_bases) from [<c05b157c>] (gic_of_init+0xb0/0x118)
-[<c05b157c>] (gic_of_init) from [<c05b89c8>] (of_irq_init+0x164/0x29c)
-[<c05b89c8>] (of_irq_init) from [<c05a2e80>] (exynos_init_irq+0x8/0x50)
-[<c05a2e80>] (exynos_init_irq) from [<c059e1c4>] (init_IRQ+0x24/0x74)
-[<c059e1c4>] (init_IRQ) from [<c059ba24>] (start_kernel+0x200/0x384)
-[<c059ba24>] (start_kernel) from [<40008074>] (0x40008074)
-Code: e59f61d8 e5953594 e1a00006 e12fff33 (e5907004) 
----[ end trace cb88537fdc8fa200 ]---
-Kernel panic - not syncing: Attempted to kill the idle task!
----[ end Kernel panic - not syncing: Attempted to kill the idle task!
-
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: nicolas.pitre@linaro.org
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>
----
-I'm not sure that it is a correct fix but some other *__this_cpu_ptr()
-usages were not converted to raw_cpu_read() but also to *raw_cpu_ptr()
-(like arch_local_irqs_enabled() in arch/tile/include/asm/irqflags.h).
-
- drivers/irqchip/irq-gic.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Index: b/drivers/irqchip/irq-gic.c
-===================================================================
---- a/drivers/irqchip/irq-gic.c	2014-09-02 14:03:41.026758653 +0200
-+++ b/drivers/irqchip/irq-gic.c	2014-09-02 14:37:04.466811546 +0200
-@@ -102,7 +102,7 @@ static struct gic_chip_data gic_data[MAX
- #ifdef CONFIG_GIC_NON_BANKED
- static void __iomem *gic_get_percpu_base(union gic_base *base)
- {
--	return raw_cpu_read(base->percpu_base);
-+	return *raw_cpu_ptr(base->percpu_base);
- }
- 
- static void __iomem *gic_get_common_base(union gic_base *base)
-
-
+Rob
