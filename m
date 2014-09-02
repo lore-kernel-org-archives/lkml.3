@@ -1,79 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754459AbaIBNRH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 09:17:07 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57738 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753978AbaIBNRF (ORCPT
+	id S1754201AbaIBNSi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 09:18:38 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:52250 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753140AbaIBNSh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 09:17:05 -0400
-X-Sasl-enc: +fto86vtaf+isLdqkQJsMsA1Yr6ekSsvY0vA/WFhKtCM 1409663823
-Date: Tue, 2 Sep 2014 10:16:51 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: early microcode: how to disable at runtime?
-Message-ID: <20140902131651.GA10691@khazad-dum.debian.net>
-References: <20140809231911.GA4843@khazad-dum.debian.net>
- <20140831194548.GA12628@khazad-dum.debian.net>
- <54037C07.8060703@zytor.com>
- <20140831201126.GB12628@khazad-dum.debian.net>
- <20140901051302.GA28402@nazgul.tnic>
- <5404A035.3070707@zytor.com>
- <20140901174322.GA15533@khazad-dum.debian.net>
- <ea40f7c4-ec8d-4be5-8f8c-bbd11ab07252@email.android.com>
- <20140901195921.GA18675@khazad-dum.debian.net>
- <20140902063354.GA32105@nazgul.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140902063354.GA32105@nazgul.tnic>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 2 Sep 2014 09:18:37 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Tue, 2 Sep 2014 15:18:19 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Sander Nemvalts <snemvalts@gmail.com>, Paul Bolle <pebolle@tiscali.nl>
+Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Drivers:firewire: fix style errors in core-card.c This
+ is a patch in the core-card.c file which fixes up 2 warnings found by the
+ checkpatch.pl tool Signed-off-by: Sander Nemvalts <snemvalts@gmail.com>
+Message-ID: <20140902151819.29c3f154@kant>
+In-Reply-To: <CAAagr2=oG7dyKMBW0DZAJLDoW+2k=vFYADv-JVC6Q2sr7tEYcQ@mail.gmail.com>
+References: <1409597306-22164-1-git-send-email-snemvalts@gmail.com>
+	<20140901235605.5466b6a6@kant>
+	<CAAagr2=oG7dyKMBW0DZAJLDoW+2k=vFYADv-JVC6Q2sr7tEYcQ@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 02 Sep 2014, Borislav Petkov wrote:
-> > This can be a very big deal when things go wrong: it is hard for the
-> > regular user to recover from an initramfs image that crashes the
-> > system, and the early initramfs has no "disable" trigger.
+Folding two replies into one.
+
+On Sep 02 Sander Nemvalts wrote:
+> On Sep 2, 2014 12:56 AM, "Stefan Richter" <stefanr@s5r6.in-berlin.de> wrote:
 > 
-> This maybe is a serious problem but disabling microcode loading is not
-> the proper solution. If the microcode in the initrd is corrupted, it
-> should simply not get loaded and system should continue as much as it
-> can - it *should* *not* be a requirement to disable the ucode loader in
-> order to workaround corrupted initrds.
+> > On Sep 01 Sander Nemvalts wrote:
+> > > --- a/drivers/firewire/core-card.c
+> > > +++ b/drivers/firewire/core-card.c
+> > > @@ -89,7 +89,8 @@ static size_t config_rom_length = 1 + 4 + 1 + 1;
+> > >  #define BIB_ISC                      ((1) << 29)
+> > >  #define BIB_CMC                      ((1) << 30)
+> > >  #define BIB_IRMC             ((1) << 31)
+> > > -#define NODE_CAPABILITIES    0x0c0083c0 /* per IEEE 1394 clause 8.3.2.6.5.2 */
+> > > +/* per IEEE 1394 clause 8.3.2.6.5.2 */
+> > > +#define NODE_CAPABILITIES    0x0c0083c0
+> >
+> > This is no improvement.
+> >
+> The comment after NODE_CAPABILITIES was moved to front of statement because
+> the line would otherwise be over 80 characters long.
 
-Things do go wrong in other ways, not just corrupt microcode data/initramfs
-images.
+There is no problem with this line's remaining 81 characters long.
 
-This stuff runs too early.  It is easy to break, and annoying to debug.
+> Also, commenting before the line is demonstrated in the next statement.
 
-> And frankly, I'm trying to imagine how a corrupted microcode in an
-> initrd would ever fail the booting. So Henrique, if you have something
-> which is *not* hypothetical, please say so. It needs to be fixed
-> properly and not with disabling the ucode loader.
+This block of statements is entirely unrelated to the next statement;
+furthermore the nature and form of this and the next comment are unrelated.
 
-I am not worried about corrupted microcode, or even corrupted initramfs
-images.  I am just worried about regular bugs introduced by a kernel update
-causing systems to fail to reboot later.
 
-I don't want to tell an user he has to use rescue media to get his system
-back into working order when a kernel parameter would have been enough to
-get it to boot.
+On Sep 02 Paul Bolle wrote:
+> On Mon, 2014-09-01 at 23:56 +0200, Stefan Richter wrote:
+> > On Sep 01 Sander Nemvalts wrote:
+> > > @@ -132,7 +133,7 @@ static void generate_config_rom(struct fw_card *card, __be32 *config_rom)
+> > >  	j = 7 + descriptor_count;
+> > >  
+> > >  	/* Generate root directory entries for descriptors. */
+> > > -	list_for_each_entry (desc, &descriptor_list, link) {
+> > > +	list_for_each_entry(desc, &descriptor_list, link) {
+> > >  		if (desc->immediate > 0)
+> > >  			config_rom[i++] = cpu_to_be32(desc->immediate);
+> > >  		config_rom[i] = cpu_to_be32(desc->key | (j - i));
+> > 
+> > We are writing
+> > 	for (a; b; c);
+> > not
+> > 	for(a; b; c);
+> > and thus a space after list_for_each and friends makes sense.
+> 
+> $ git grep "list_for_each_entry (" | wc -l
+> 52
+> $ git grep "list_for_each_entry(" | wc -l
+> 5991
+> 
+> So "list_for_each_entry(" (without space) seems to be the preferred
+> style.
 
-Although, on the corrupted microcode topic, I have this very strong feeling
-that at least the Intel driver would benefit from a careful audit on the
-microcode container handling if we want to be sure it won't do stupid things
-when fed specially crafted hostile data.
+'Seems to be' is an appropriate wording indeed, since grep shows
+occurrences, not preferences.
 
+
+All,
+
+here are some tips for whitespace changes and similar patches:
+
+  - As a general rule, do not propose style changes to code on which you
+    are not working on.
+
+  - Do not propose style changes to code on which you are working on,
+    unless you can significantly improve the code this way.
+
+    Rationale:  Style changes (outside of drivers/staging/) tend to worsen
+    rather than improve code.  Style changes obfuscate code history.  Style
+    changes are of doubtfule value but create nonzero work for those who
+    handle the code together with you or after you.
+
+  - checkpatch.pl is a help for you to evaluate stylistic conformance of
+    your own new code submissions.  Use checkpatch.pl for its original
+    purpose.
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Stefan Richter
+-=====-====- =--= ---=-
+http://arcgraph.de/sr/
