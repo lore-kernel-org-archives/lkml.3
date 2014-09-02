@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813AbaIBTut (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 15:50:49 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:64107 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754125AbaIBTur convert rfc822-to-8bit (ORCPT
+	id S1754935AbaIBTxV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 15:53:21 -0400
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:33007 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751302AbaIBTxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 15:50:47 -0400
+	Tue, 2 Sep 2014 15:53:19 -0400
+Message-ID: <5406202A.30401@amacapital.net>
+Date: Tue, 02 Sep 2014 12:53:14 -0700
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-In-Reply-To: <13302580.b33ghgBegF@diego>
-References: <1409674469-12123-1-git-send-email-dianders@chromium.org>
-	<13302580.b33ghgBegF@diego>
-Date: Tue, 2 Sep 2014 12:50:46 -0700
-X-Google-Sender-Auth: jngDqTg5z6B2Zt5Qp3uWafkCnl0
-Message-ID: <CAD=FV=WiB6XnNFz9rPq=DOVU3qOr0yvmpdRN3DK1cKZ+K9hAhw@mail.gmail.com>
-Subject: Re: [PATCH 0/2] Add input supplies to rk808 regulator
-From: Doug Anderson <dianders@chromium.org>
-To: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
-Cc: Mark Brown <broonie@kernel.org>, Chris Zhong <zyw@rock-chips.com>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-rockchip@lists.infradead.org,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        zhangqing <zhangqing@rock-chips.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kumar Gala <galak@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Steven Stewart-Gallus <sstewartgallus00@mylangara.bc.ca>,
+        linux-kernel@vger.kernel.org
+Subject: Re: How is pivot_root intended to be used?
+References: <fc0cb509956.5404e2cc@langara.bc.ca>
+In-Reply-To: <fc0cb509956.5404e2cc@langara.bc.ca>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Heiko,
-
-On Tue, Sep 2, 2014 at 12:48 PM, Heiko Stübner <heiko@sntech.de> wrote:
-> Am Dienstag, 2. September 2014, 09:14:27 schrieb Doug Anderson:
->> We want to specify the input supplies to the rk808 regulator.  This
->> patch series adds them to the driver.  Note that the bindings are
->> based atop Chris's most recent version at
->> <https://patchwork.kernel.org/patch/4817931/>.  If the regulator patch
->> is applied before Chris sends out his next version then I think Chris
->> could squash my bindings change (patch 2) into his next version.
->>
->>
->> Doug Anderson (2):
->>   regulator: RK808: Add proper input supplies for rk808
+On 09/01/2014 02:19 PM, Steven Stewart-Gallus wrote:
+> Hello,
 >
-> Patch 1 didn't apply, as it didn't take the recent pdata removal Chris
-> posted. After fixing this [0], it sucessfully solved the missing supplies
-> I've seen on the weekend, so
+> I am not confused about how I can currently use pivot_root for
+> containers on my kernel (version 3.13). Currently a sequence like:
 >
-> Tested-by: Heiko Stuebner <heiko@sntech.de>
+>      if (-1 == syscall(__NR_pivot_root, ".", ".")) {
+>          perror("pivot_root");
+>          return EXIT_FAILURE;
+>      }
+>
+>      if (-1 == umount2(".", MNT_DETACH)) {
+>          perror("umount");
+>          return EXIT_FAILURE;
 
-Thanks!  ...ah, I guess I usually apply things with "git am -3" and it
-didn't complain about applying my patch atop Chris's or not atop
-Chris's.  Sorry for not making it clear.
+Given the comment, you don't know what '.' refers to in the umount2 call 
+above.  In fact, I think you're actually detaching the wrong thing, 
+leaving possible security issues.
+
+See:
+
+https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/supervisor-main.c%2B%2B#L922
+
+for a program that does this more carefully.
+
+--Andy
