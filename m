@@ -1,199 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755146AbaIBU0L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 16:26:11 -0400
-Received: from mx1.scotdoyle.com ([23.226.141.211]:35505 "EHLO
-	mx1.scotdoyle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754581AbaIBU0J (ORCPT
+	id S1754781AbaIBUhb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 16:37:31 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:52199 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754125AbaIBUha (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 16:26:09 -0400
-Date: Tue, 2 Sep 2014 20:22:58 +0000 (UTC)
-From: Scot Doyle <lkml14@scotdoyle.com>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        Stefan Berger <stefanb@linux.vnet.ibm.com>,
-        Luigi Semenzato <semenzato@google.com>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [RFC PATCH v6] tpm_tis: verify interrupt during init
-In-Reply-To: <20140902172015.GD13956@obsidianresearch.com>
-Message-ID: <alpine.LNX.2.11.1409021954110.1026@localhost.localdomain>
-References: <20140825182414.GB1298@obsidianresearch.com> <alpine.LNX.2.11.1408270410190.701@localhost.localdomain> <20140827173142.GA11183@obsidianresearch.com> <alpine.LNX.2.11.1408271755470.4371@localhost.localdomain> <20140827214743.GC11183@obsidianresearch.com>
- <alpine.LNX.2.11.1408280017420.1064@localhost.localdomain> <20140828165348.GE11183@obsidianresearch.com> <alpine.LNX.2.11.1408290234060.1020@localhost.localdomain> <20140830174920.GA26218@obsidianresearch.com> <alpine.LNX.2.11.1408302229001.579@localhost.localdomain>
- <20140902172015.GD13956@obsidianresearch.com>
-User-Agent: Alpine 2.11 (LNX 23 2013-08-11)
+	Tue, 2 Sep 2014 16:37:30 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PM / sleep: Fix test_suspend= command line option
+Date: Tue, 02 Sep 2014 22:56:47 +0200
+Message-ID: <2640278.IM5xKOxRyX@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1409676229.15680.43.camel@spandruv-desktop.jf.intel.com>
+References: <3262231.p5bxWyAveH@vostro.rjw.lan> <1409676229.15680.43.camel@spandruv-desktop.jf.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Sep 2014, Jason Gunthorpe wrote:
-> On Sat, Aug 30, 2014 at 11:23:56PM +0000, Scot Doyle wrote:
->> The output is now
->> [    1.526798] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
->> [    5.914732] tpm_tis 00:08: [Firmware Bug]: TPM interrupt not working, polling instead
->
-> Cool, why did it take 4 seconds though?
+On Tuesday, September 02, 2014 09:43:49 AM Srinivas Pandruvada wrote:
+> On Tue, 2014-09-02 at 01:37 +0200, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > 
+> > After commit d431cbc53cb7 (PM / sleep: Simplify sleep states sysfs
+> > interface code) the pm_states[] array is not populated initially,
+> > which causes setup_test_suspend() to always fail and the suspend
+> > testing during boot doesn't work any more.
+> > 
+> > Fix the problem by using pm_labels[] instead of pm_states[] in
+> > setup_test_suspend() and storing a pointer to the label of the
+> > sleep state to test rather than the number representing it,
+> > because the connection between the state numbers and labels is
+> > only established by suspend_set_ops().
+> > 
+> This is still causing panic when I applied to 3.17.rc2.
+> Need further debug.
 
-It's spending that time (now 3 seconds) in tpm_tis_send_data.
+Well, it works for me, so it would be good to know some details.
 
-Output is
-[    2.928481] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
-[    5.943468] tpm_tis 00:08: [Firmware Bug]: TPM interrupt not working, polling instead
+Perhaps the one below works better?
 
-
-> Looks really good to me, I can try and test the next version here this
-> week.
-
-Thanks!
-
+Rafael
 
 ---
-diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
-index 2c46734..6e42d60 100644
---- a/drivers/char/tpm/tpm_tis.c
-+++ b/drivers/char/tpm/tpm_tis.c
-@@ -75,6 +75,10 @@ enum tis_defaults {
- #define	TPM_DID_VID(l)			(0x0F00 | ((l) << 12))
- #define	TPM_RID(l)			(0x0F04 | ((l) << 12))
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Subject: PM / sleep: Fix test_suspend= command line option
 
-+struct priv_data {
-+	bool irq_tested;
-+};
-+
- static LIST_HEAD(tis_chips);
- static DEFINE_MUTEX(tis_lock);
+After commit d431cbc53cb7 (PM / sleep: Simplify sleep states sysfs
+interface code) the pm_states[] array is not populated initially,
+which causes setup_test_suspend() to always fail and the suspend
+testing during boot doesn't work any more.
 
-@@ -338,6 +342,21 @@ out_err:
- 	return rc;
- }
+Fix the problem by using pm_labels[] instead of pm_states[] in
+setup_test_suspend() and storing a pointer to the label of the
+sleep state to test rather than the number representing it,
+because the connection between the state numbers and labels is
+only established by suspend_set_ops().
 
-+static void disable_interrupts(struct tpm_chip *chip)
-+{
-+	u32 intmask;
-+	intmask =
-+	    ioread32(chip->vendor.iobase +
-+		     TPM_INT_ENABLE(chip->vendor.locality));
-+	intmask |= TPM_INTF_CMD_READY_INT | TPM_INTF_LOCALITY_CHANGE_INT |
-+		   TPM_INTF_DATA_AVAIL_INT | TPM_INTF_STS_VALID_INT;
-+	iowrite32(intmask,
-+		  chip->vendor.iobase +
-+		  TPM_INT_ENABLE(chip->vendor.locality));
-+	free_irq(chip->vendor.irq, chip);
-+	chip->vendor.irq = 0;
-+}
-+
- /*
-  * If interrupts are used (signaled by an irq set in the vendor structure)
-  * tpm.c can skip polling for the data to be available as the interrupt is
-@@ -345,8 +364,10 @@ out_err:
+Fixes: d431cbc53cb7 (PM / sleep: Simplify sleep states sysfs interface code)
+Reported-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ kernel/power/power.h        |    1 +
+ kernel/power/suspend.c      |    2 +-
+ kernel/power/suspend_test.c |   31 +++++++++++++++++++------------
+ 3 files changed, 21 insertions(+), 13 deletions(-)
+
+Index: linux-pm/kernel/power/power.h
+===================================================================
+--- linux-pm.orig/kernel/power/power.h
++++ linux-pm/kernel/power/power.h
+@@ -179,6 +179,7 @@ extern void swsusp_show_speed(struct tim
+ 
+ #ifdef CONFIG_SUSPEND
+ /* kernel/power/suspend.c */
++extern const char *pm_labels[];
+ extern const char *pm_states[];
+ 
+ extern int suspend_devices_and_enter(suspend_state_t state);
+Index: linux-pm/kernel/power/suspend.c
+===================================================================
+--- linux-pm.orig/kernel/power/suspend.c
++++ linux-pm/kernel/power/suspend.c
+@@ -31,7 +31,7 @@
+ 
+ #include "power.h"
+ 
+-static const char *pm_labels[] = { "mem", "standby", "freeze", };
++const char *pm_labels[] = { "mem", "standby", "freeze", NULL };
+ const char *pm_states[PM_SUSPEND_MAX];
+ 
+ static const struct platform_suspend_ops *suspend_ops;
+Index: linux-pm/kernel/power/suspend_test.c
+===================================================================
+--- linux-pm.orig/kernel/power/suspend_test.c
++++ linux-pm/kernel/power/suspend_test.c
+@@ -129,20 +129,20 @@ static int __init has_wakealarm(struct d
+  * at startup time.  They're normally disabled, for faster boot and because
+  * we can't know which states really work on this particular system.
   */
- static int tpm_tis_send(struct tpm_chip *chip, u8 *buf, size_t len)
+-static suspend_state_t test_state __initdata = PM_SUSPEND_ON;
++static const char *test_state_label __initdata;
+ 
+ static char warn_bad_state[] __initdata =
+ 	KERN_WARNING "PM: can't test '%s' suspend state\n";
+ 
+ static int __init setup_test_suspend(char *value)
  {
--	int rc;
-+	int rc, irq;
- 	u32 ordinal;
-+	bool test_irq;
-+	struct priv_data *priv = chip->vendor.priv;
-
- 	rc = tpm_tis_send_data(chip, buf, len);
- 	if (rc < 0)
-@@ -358,13 +379,30 @@ static int tpm_tis_send(struct tpm_chip *chip, u8 *buf, size_t len)
-
- 	if (chip->vendor.irq) {
- 		ordinal = be32_to_cpu(*((__be32 *) (buf + 6)));
--		if (wait_for_tpm_stat
--		    (chip, TPM_STS_DATA_AVAIL | TPM_STS_VALID,
--		     tpm_calc_ordinal_duration(chip, ordinal),
--		     &chip->vendor.read_queue, false) < 0) {
-+		test_irq = !priv->irq_tested;
-+		if (test_irq) {
-+			irq = chip->vendor.irq;
-+			chip->vendor.irq = 0;
-+		}
-+		rc = wait_for_tpm_stat
-+		     (chip, TPM_STS_DATA_AVAIL | TPM_STS_VALID,
-+		      tpm_calc_ordinal_duration(chip, ordinal),
-+		      &chip->vendor.read_queue, false);
-+		if (test_irq)
-+			chip->vendor.irq = irq;
-+		if (rc < 0) {
- 			rc = -ETIME;
- 			goto out_err;
+-	suspend_state_t i;
++	int i;
+ 
+ 	/* "=mem" ==> "mem" */
+ 	value++;
+-	for (i = PM_SUSPEND_MIN; i < PM_SUSPEND_MAX; i++)
+-		if (!strcmp(pm_states[i], value)) {
+-			test_state = i;
++	for (i = 0; pm_labels[i]; i++)
++		if (!strcmp(pm_labels[i], value)) {
++			test_state_label = pm_labels[i];
+ 			return 0;
  		}
-+		if (test_irq) {
-+			msleep(1);
-+			if (!priv->irq_tested) {
-+				disable_interrupts(chip);
-+				dev_err(chip->dev,
-+					FW_BUG "TPM interrupt not working, polling instead\n");
-+			}
-+			priv->irq_tested = true;
-+		}
- 	}
- 	return len;
- out_err:
-@@ -505,6 +543,7 @@ static irqreturn_t tis_int_handler(int dummy, void *dev_id)
- 	if (interrupt == 0)
- 		return IRQ_NONE;
-
-+	((struct priv_data*)chip->vendor.priv)->irq_tested = true;
- 	if (interrupt & TPM_INTF_DATA_AVAIL_INT)
- 		wake_up_interruptible(&chip->vendor.read_queue);
- 	if (interrupt & TPM_INTF_LOCALITY_CHANGE_INT)
-@@ -534,10 +573,14 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
- 	u32 vendor, intfcaps, intmask;
- 	int rc, i, irq_s, irq_e, probe;
- 	struct tpm_chip *chip;
-+	struct priv_data *priv;
-
- 	if (!(chip = tpm_register_hardware(dev, &tpm_tis)))
- 		return -ENODEV;
-
-+	priv = devm_kzalloc(dev, sizeof(struct priv_data), GFP_KERNEL);
-+	chip->vendor.priv = priv;
+ 
+@@ -158,13 +158,21 @@ static int __init test_suspend(void)
+ 
+ 	struct rtc_device	*rtc = NULL;
+ 	struct device		*dev;
++	suspend_state_t test_state;
+ 
+ 	/* PM is initialized by now; is that state testable? */
+-	if (test_state == PM_SUSPEND_ON)
+-		goto done;
+-	if (!pm_states[test_state]) {
+-		printk(warn_bad_state, pm_states[test_state]);
+-		goto done;
++	if (!test_state_label)
++		return 0;
 +
- 	chip->vendor.iobase = ioremap(start, len);
- 	if (!chip->vendor.iobase) {
- 		rc = -EIO;
-@@ -605,19 +648,6 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
- 	if (intfcaps & TPM_INTF_DATA_AVAIL_INT)
- 		dev_dbg(dev, "\tData Avail Int Support\n");
-
--	/* get the timeouts before testing for irqs */
--	if (tpm_get_timeouts(chip)) {
--		dev_err(dev, "Could not get TPM timeouts and durations\n");
--		rc = -ENODEV;
--		goto out_err;
--	}
--
--	if (tpm_do_selftest(chip)) {
--		dev_err(dev, "TPM self test failed\n");
--		rc = -ENODEV;
--		goto out_err;
--	}
--
- 	/* INTERRUPT Setup */
- 	init_waitqueue_head(&chip->vendor.read_queue);
- 	init_waitqueue_head(&chip->vendor.int_queue);
-@@ -719,6 +749,18 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
- 		}
- 	}
-
-+	if (tpm_get_timeouts(chip)) {
-+		dev_err(dev, "Could not get TPM timeouts and durations\n");
-+		rc = -ENODEV;
-+		goto out_err;
++	for (test_state = PM_SUSPEND_MIN; test_state < PM_SUSPEND_MAX; test_state++) {
++		const char *state_label = pm_states[test_state];
++
++		if (state_label && !strcmp(test_state_label, state_label))
++			break;
 +	}
-+
-+	if (tpm_do_selftest(chip)) {
-+		dev_err(dev, "TPM self test failed\n");
-+		rc = -ENODEV;
-+		goto out_err;
-+	}
-+
- 	INIT_LIST_HEAD(&chip->vendor.list);
- 	mutex_lock(&tis_lock);
- 	list_add(&chip->vendor.list, &tis_chips);
++	if (test_state == PM_SUSPEND_MAX) {
++		printk(warn_bad_state, test_state_label);
++		return 0;
+ 	}
+ 
+ 	/* RTCs have initialized by now too ... can we use one? */
+@@ -173,13 +181,12 @@ static int __init test_suspend(void)
+ 		rtc = rtc_class_open(dev_name(dev));
+ 	if (!rtc) {
+ 		printk(warn_no_rtc);
+-		goto done;
++		return 0;
+ 	}
+ 
+ 	/* go for it */
+ 	test_wakealarm(rtc, test_state);
+ 	rtc_class_close(rtc);
+-done:
+ 	return 0;
+ }
+ late_initcall(test_suspend);
 
