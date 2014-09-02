@@ -1,82 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754180AbaIBN4X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 09:56:23 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:47055 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751500AbaIBN4U (ORCPT
+	id S1753697AbaIBN7w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 09:59:52 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:49949 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750752AbaIBN7u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 09:56:20 -0400
-Message-ID: <5405CC47.2040907@st.com>
-Date: Tue, 2 Sep 2014 15:55:19 +0200
-From: Maxime Coquelin <maxime.coquelin@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Tue, 2 Sep 2014 09:59:50 -0400
+Message-ID: <5405CD51.9020601@gmail.com>
+Date: Tue, 02 Sep 2014 16:59:45 +0300
+From: Boaz Harrosh <openosd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Daniel Thompson <daniel.thompson@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <kgdb-bugreport@lists.sourceforge.net>, <patches@linaro.org>,
-        <linaro-kernel@lists.linaro.org>, John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Colin Cross <ccross@android.com>, <kernel-team@android.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Nicolas Pitre <nico@linaro.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, <kernel@stlinux.com>,
-        <linux-serial@vger.kernel.org>
-Subject: Re: [PATCH v11 17/19] serial: asc: Adopt readl_/writel_relaxed()
-References: <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org> <1409662853-29313-1-git-send-email-daniel.thompson@linaro.org> <1409662853-29313-18-git-send-email-daniel.thompson@linaro.org>
-In-Reply-To: <1409662853-29313-18-git-send-email-daniel.thompson@linaro.org>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
+To: Bruce Fields <bfields@fieldses.org>
+CC: Trond Myklebust <trond.myklebust@primarydata.com>,
+        Shakil A Khan <shakilk1729@gmail.com>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        William Andros Adamson <andros@netapp.com>,
+        Jeffrey Layton <jlayton@primarydata.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH] Next branch: authgss: authgss.c: Fix warnings for uninitizlized
+ variable expire
+References: <1409571154-50408-1-git-send-email-shakilk1729@gmail.com> <CAHQdGtQAwp_QuQE-xmjJNkcxbu7g4QtYQv8qrPT_qWpkym1GZg@mail.gmail.com> <5405A15F.2060002@gmail.com> <20140902132140.GA31793@fieldses.org>
+In-Reply-To: <20140902132140.GA31793@fieldses.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.80]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
- definitions=2014-09-02_04:2014-09-02,2014-09-02,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+On 09/02/2014 04:21 PM, Bruce Fields wrote:
+> 
+> You'd rather avoid sprinkling that all over, though.  If nothing else it
+> increases the chances you'll suppress a legimate warning some day.
+> 
 
-On 09/02/2014 03:00 PM, Daniel Thompson wrote:
-> The architectures where this peripheral exists (ARM and SH) have expensive
-> implementations of writel(), reliant on spin locks and explicit L2 cache
-> management. These architectures provide a cheaper writel_relaxed() which
-> is much better suited to peripherals that do not perform DMA. The
-> situation with readl()/readl_relaxed()is similar although less acute.
->
-> This driver does not use DMA and will be more power efficient and more
-> robust (due to absense of spin locks during console I/O) if it uses the
-> relaxed variants.
->
-> This change means the driver is no longer portable and therefore no
-> longer suitable for compile testing.
->
-> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-> Cc: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>
-> Cc: Maxime Coquelin <maxime.coquelin@st.com>
-> Cc: Patrice Chotard <patrice.chotard@st.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Jiri Slaby <jslaby@suse.cz>
-> Cc: kernel@stlinux.com
-> Cc: linux-serial@vger.kernel.org
-> ---
->   drivers/tty/serial/Kconfig  | 2 +-
->   drivers/tty/serial/st-asc.c | 4 ++--
->   2 files changed, 3 insertions(+), 3 deletions(-)
+But this is exactly why it was created.
 
+If you do the "= 0" then it is gone forever. If you have missed a legitimate
+needed assignment, it will be missed as well.
 
+But if you do the uninitialized_var() dance then there is a make option that turns
+it off and every once in a while people do a make with it to see if it still
+holds.
 
-You can add my:
-Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
+The diff between foo = 0; and uninitialized_var(foo) is that the programmer is
+communicating to his friends that:
+	"I have encountered a bogus compiler, this is falsely initialized"
 
-thanks!
-Maxime
+As opposed to =0 the compiler bug is covered up and forgotten
+
+> And unless I'm missing something this one really does look like an
+> unambiguous compiler bug.
+> 
+
+Right! so that is how you specify this in code at Linux: uninitialized_var(foo);
+
+Putting =0 is way way worse, because it will never be revised and specially
+not automatically with a make switch.
+
+And leaving the warning on is even worse because two three of these and people
+start to ignore warnings.
+
+> --b.
+> 
+
+uninitialized_var was made to be a friend not an enemy, in the face of real
+ugliness it is the best we can do. And that is what it should communicate to
+everyone. Why has it become everyone's favorite blasphemy I do not know.
+
+Cheers
+Boaz
 
