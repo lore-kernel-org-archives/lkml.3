@@ -1,112 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755793AbaIBXcD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 19:32:03 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:41649 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755771AbaIBXcB (ORCPT
+	id S1755814AbaIBXhb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 19:37:31 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:48771 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753685AbaIBXh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 19:32:01 -0400
-From: behanw@converseincode.com
-To: john.johansen@canonical.com
-Cc: james.l.morris@oracle.com, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, serge@hallyn.com,
-        =?UTF-8?q?Vin=C3=ADcius=20Tinti?= <viniciustinti@gmail.com>,
-        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
-        Behan Webster <behanw@converseincode.com>,
-        Mark Charlebois <charlebm@gmail.com>
-Subject: [PATCH v2] apparmor: LLVMLinux: Remove VLAIS
-Date: Tue,  2 Sep 2014 16:31:47 -0700
-Message-Id: <1409700707-12853-1-git-send-email-behanw@converseincode.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <54064FD1.6060900@canonical.com>
-References: <54064FD1.6060900@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Tue, 2 Sep 2014 19:37:29 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, Addy Ke <addy.ke@rock-chips.com>,
+        Sonny Rao <sonnyrao@chromium.org>,
+        Doug Anderson <dianders@chromium.org>, chris@printf.net,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] mmc: dw_mmc: Don't enable interrupts until we're ready
+Date: Tue,  2 Sep 2014 16:37:14 -0700
+Message-Id: <1409701034-28526-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vinícius Tinti <viniciustinti@gmail.com>
+On dw_mmc there's a small race if you happen to get a card detect
+interrupt at just the wrong time during probe.  You may have enabled
+the interrupt but host->slot[0] may be NULL.
 
-Replaced the use of a Variable Length Array In Struct (VLAIS) with a C99
-compliant equivalent. This is the original VLAIS struct.
+Fix the race by enabling interrupts all the way at the end of the
+probe.  We can also use free_irq() instead of dw_mmc specific masking
+to mask the IRQ at removal time.  Note that since we're now managing
+freeing of the irq ourselves, there's no need to use devm.
 
-struct {
-	struct shash_desc shash;
-	char ctx[crypto_shash_descsize(apparmor_tfm)];
-} desc;
+FYI, the crash would look like:
+  dwmmc_rockchip ff0c0000.dwmmc: DW MMC controller at irq 64, 32 bit host data width, 256 deep fifo
+  Unable to handle kernel NULL pointer dereference at virtual address 00000000
+  pgd = c0004000
+  [00000000] *pgd=00000000
+  ...
+  ...
+  [<c0499380>] (dw_mci_work_routine_card) from [<c0134b94>] (process_one_work+0x260/0x3c4)
+  [<c0134b94>] (process_one_work) from [<c0135b10>] (worker_thread+0x240/0x3a8)
+  [<c0135b10>] (worker_thread) from [<c013b64c>] (kthread+0x100/0x118)
+  [<c013b64c>] (kthread) from [<c0106418>] (ret_from_fork+0x14/0x20)
 
-This patch instead allocates the appropriate amount of memory using an
-char array.
-
-The new code can be compiled with both gcc and clang.
-
-struct shash_desc contains a flexible array member member ctx declared with
-CRYPTO_MINALIGN_ATTR, so sizeof(struct shash_desc) aligns the beginning
-of the array declared after struct shash_desc with long long.
-
-No trailing padding is required because it is not a struct type that can
-be used in an array.
-
-The CRYPTO_MINALIGN_ATTR is required so that desc is aligned with long long
-as would be the case for a struct containing a member with
-CRYPTO_MINALIGN_ATTR.
-
-Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
-Signed-off-by: Behan Webster <behanw@converseincode.com>
-Signed-off-by: Vinícius Tinti <viniciustinti@gmail.com>
-Signed-off-by: Mark Charlebois <charlebm@gmail.com>
-Acked-by: John Johansen <john.johansen@canonical.com>
+Signed-off-by: Doug Anderson <dianders@chromium.org>
 ---
- security/apparmor/crypto.c | 19 +++++++++----------
- 1 file changed, 9 insertions(+), 10 deletions(-)
+FYI: making dw_mmc into a module and trying module removal was not
+tested.  I'd appreciate any testing that folks can do there.  This
+code should be the equivalent and makes the error case of probe match
+the removal case more closely now.
 
-diff --git a/security/apparmor/crypto.c b/security/apparmor/crypto.c
-index 532471d..62b32e7 100644
---- a/security/apparmor/crypto.c
-+++ b/security/apparmor/crypto.c
-@@ -32,10 +32,9 @@ unsigned int aa_hash_size(void)
- int aa_calc_profile_hash(struct aa_profile *profile, u32 version, void *start,
- 			 size_t len)
+ drivers/mmc/host/dw_mmc.c | 17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index 7f227e9..540ba3c 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -2577,10 +2577,6 @@ int dw_mci_probe(struct dw_mci *host)
+ 		goto err_dmaunmap;
+ 	}
+ 	INIT_WORK(&host->card_work, dw_mci_work_routine_card);
+-	ret = devm_request_irq(host->dev, host->irq, dw_mci_interrupt,
+-			       host->irq_flags, "dw-mci", host);
+-	if (ret)
+-		goto err_workqueue;
+ 
+ 	if (host->pdata->num_slots)
+ 		host->num_slots = host->pdata->num_slots;
+@@ -2619,11 +2615,21 @@ int dw_mci_probe(struct dw_mci *host)
+ 		goto err_workqueue;
+ 	}
+ 
++	ret = request_irq(host->irq, dw_mci_interrupt, host->irq_flags,
++			  "dw-mci", host);
++	if (ret)
++		goto err_initted;
++
+ 	if (host->quirks & DW_MCI_QUIRK_IDMAC_DTO)
+ 		dev_info(host->dev, "Internal DMAC interrupt fix enabled.\n");
+ 
+ 	return 0;
+ 
++err_initted:
++	for (i = 0; i < host->num_slots; i++)
++		if (host->slot[i])
++			dw_mci_cleanup_slot(host->slot[i], i);
++
+ err_workqueue:
+ 	destroy_workqueue(host->card_workqueue);
+ 
+@@ -2649,8 +2655,7 @@ void dw_mci_remove(struct dw_mci *host)
  {
--	struct {
--		struct shash_desc shash;
--		char ctx[crypto_shash_descsize(apparmor_tfm)];
--	} desc;
-+	char desc[sizeof(struct shash_desc)
-+		+ crypto_shash_descsize(apparmor_tfm)] CRYPTO_MINALIGN_ATTR;
-+	struct shash_desc *shash = (struct shash_desc *)desc;
- 	int error = -ENOMEM;
- 	u32 le32_version = cpu_to_le32(version);
+ 	int i;
  
-@@ -46,19 +45,19 @@ int aa_calc_profile_hash(struct aa_profile *profile, u32 version, void *start,
- 	if (!profile->hash)
- 		goto fail;
+-	mci_writel(host, RINTSTS, 0xFFFFFFFF);
+-	mci_writel(host, INTMASK, 0); /* disable all mmc interrupt first */
++	free_irq(host->irq, host);
  
--	desc.shash.tfm = apparmor_tfm;
--	desc.shash.flags = 0;
-+	shash->tfm = apparmor_tfm;
-+	shash->flags = 0;
- 
--	error = crypto_shash_init(&desc.shash);
-+	error = crypto_shash_init(shash);
- 	if (error)
- 		goto fail;
--	error = crypto_shash_update(&desc.shash, (u8 *) &le32_version, 4);
-+	error = crypto_shash_update(shash, (u8 *) &le32_version, 4);
- 	if (error)
- 		goto fail;
--	error = crypto_shash_update(&desc.shash, (u8 *) start, len);
-+	error = crypto_shash_update(shash, (u8 *) start, len);
- 	if (error)
- 		goto fail;
--	error = crypto_shash_final(&desc.shash, profile->hash);
-+	error = crypto_shash_final(shash, profile->hash);
- 	if (error)
- 		goto fail;
- 
+ 	for (i = 0; i < host->num_slots; i++) {
+ 		dev_dbg(host->dev, "remove slot %d\n", i);
 -- 
-1.9.1
+2.1.0.rc2.206.gedb03e5
 
