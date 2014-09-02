@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754947AbaIBTC5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 15:02:57 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:36719 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753889AbaIBTCy (ORCPT
+	id S1755016AbaIBTEw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 15:04:52 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:56287 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754426AbaIBTEu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 15:02:54 -0400
-X-Sasl-enc: yeS+c475l8qvYkGNWfGLbpPi6IP1BUqIJ5qxzghRbv5O 1409684573
-Message-ID: <1409684570.15984.6.camel@localhost>
-Subject: Re: RTNL: assertion failed at net/ipv6/addrconf.c (1699)
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Cong Wang <cwang@twopensource.com>
-Cc: Sabrina Dubroca <sd@queasysnail.net>, Tommi Rantala <tt.rantala@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org,
-        Dave Jones <davej@redhat.com>
-Date: Tue, 02 Sep 2014 21:02:50 +0200
-In-Reply-To: <CAHA+R7MMe+O9-sNHQvgOO78tBzDy+hO+GtJFsuJPKx0eG6eMaw@mail.gmail.com>
-References: <CA+ydwtoDwQVg_BWrxxdpUyJ7Up60GtxTCLYe_5vFdV2td_kGhQ@mail.gmail.com>
-	 <CAHA+R7MZCDGRhSf=UuVCGQvNo03wVziZQB_X30rwNf6hmHipQA@mail.gmail.com>
-	 <20140829195339.GA9780@kria> <1409363489.2980.17.camel@localhost>
-	 <CAHA+R7ODa+LrdwSrS7HcBfwwq8_fpj-Ld0OCDtcOqkpCdZCvxg@mail.gmail.com>
-	 <1409680684.972417.162793869.03CF8A61@webmail.messagingengine.com>
-	 <CAHA+R7Mwy1SCpEUgGf9BdLEro6N-3t89KU=xL0iuzgOppXELrQ@mail.gmail.com>
-	 <1409681914.978561.162800349.5A7FA784@webmail.messagingengine.com>
-	 <CAHA+R7MMe+O9-sNHQvgOO78tBzDy+hO+GtJFsuJPKx0eG6eMaw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 2 Sep 2014 15:04:50 -0400
+Date: Tue, 2 Sep 2014 12:04:45 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: linux-next: Tree for Aug 23
+Message-ID: <20140902190445.GB8829@roeck-us.net>
+References: <20140823080422.7895575c@canb.auug.org.au>
+ <20140825045741.GA29723@roeck-us.net>
+ <20140901155804.GT27892@worktop.ger.corp.intel.com>
+ <5404A2F2.3090908@roeck-us.net>
+ <20140901190438.GB5806@worktop.ger.corp.intel.com>
+ <20140902094016.GD31157@worktop.ger.corp.intel.com>
+ <20140902095553.GE31157@worktop.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140902095553.GE31157@worktop.ger.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Di, 2014-09-02 at 11:40 -0700, Cong Wang wrote:
-> On Tue, Sep 2, 2014 at 11:18 AM, Hannes Frederic Sowa
-> <hannes@stressinduktion.org> wrote:
-> > Those ASSERT_RTNLs were misplaced and only caught the callers mostly
-> > from addrconf.c. I don't mind getting reports from stable kernel users
-> > and fixing those, too (or help fixing those). ASSERT_RTNL is not
-> > dangerous.
-> >
-> > We had a long history in not correctly using rtnl lock in ipv6/multicast
-> > code and those wrongfully placed ASSERT_RTNLs were my bad when I fixed
-> > the duplicate address detection handling.
-> >
-> > If enough multicast addresses are subscribed to an interface we might
-> > again get those splats because enabling promisc mode on an interface
-> > will also check for rtnl lock.
-> >
+On Tue, Sep 02, 2014 at 11:55:53AM +0200, Peter Zijlstra wrote:
+> On Tue, Sep 02, 2014 at 11:40:16AM +0200, Peter Zijlstra wrote:
+> > On Mon, Sep 01, 2014 at 09:04:38PM +0200, Peter Zijlstra wrote:
+> > > On Mon, Sep 01, 2014 at 09:46:42AM -0700, Guenter Roeck wrote:
+> > > > Yes, the problem is still seen in next-140829. See qemu test results at
+> > > > http://server.roeck-us.net:8010/builders.
+> > > > 
+> > > > I provided sparc64 images at http://server.roeck-us.net/qemu/sparc64/.
+> > > > The README file includes instructions on how to run the image in qemu
+> > > > and how to build a kernel.
+> > > > 
+> > > > I can do the same for mips and mips64 if needed; let me know.
+> > > 
+> > > Thanks, that's enough to get started.
+> > 
+> > This makes sparc64 go again, silly oversight indeed.
+> > 
 > 
-> Sure, I never doubt adding ASSERT_RTNL() is helpful, I just still think
-> this should be for net-next, or at least a separated patch. I don't want
-> my patch to be blamed in others' "Fixes:". :)
+> The same for mips. Can you either provide the mips image or verify this works?
+> 
+Still fails, unfortunately.
 
-Come on, that's why we have community review. Nobody blames anyone
-because of added regressions. It's more a fault of the community then,
-and it works out fairly good I think! Even others are keen on fixing
-your bugs sometimes. ;)
+I provided qemu images and instructions as follows.
+	http://server.roeck-us.net/qemu/mipsel/		MIPS 32 bit, little endian
+	http://server.roeck-us.net/qemu/mips64el/	MIPS 64 bit, little endian
 
-If fixes tag is well researched, it won't point to the addition of
-ASSERT_RTNL() but your patch would help to discover a bug somewhere else
-in the stack.
+Let me know if you also need big endian images.
 
-I think for this patch a fixes-tag is hard to find because it is hard to
-find because it dates back to the beginning of the git history IMHO.
-
-Bye,
-Hannes
-
-
+Thanks,
+Guenter
