@@ -1,118 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754913AbaIBQjH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 12:39:07 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:15703 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754216AbaIBQi2 (ORCPT
+	id S1754841AbaIBQkd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 12:40:33 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:45407 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751850AbaIBQkc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 12:38:28 -0400
-X-IronPort-AV: E=Sophos;i="5.04,450,1406592000"; 
-   d="scan'208";a="168375982"
-From: David Vrabel <david.vrabel@citrix.com>
-To: <linux-kernel@vger.kernel.org>
-CC: David Vrabel <david.vrabel@citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
-        <xen-devel@lists.xenproject.org>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Subject: [PATCH 1/3] x86: skip check for spurious faults for non-present faults
-Date: Tue, 2 Sep 2014 17:37:43 +0100
-Message-ID: <1409675865-11608-2-git-send-email-david.vrabel@citrix.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1409675865-11608-1-git-send-email-david.vrabel@citrix.com>
-References: <1409675865-11608-1-git-send-email-david.vrabel@citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA1
+	Tue, 2 Sep 2014 12:40:32 -0400
+From: Mathieu OTHACEHE <m.othacehe@gmail.com>
+To: gregkh@linuxfoundation.org, andreas.dilger@intel.com,
+        oleg.drokin@intel.com, bergwolf@gmail.com, toby@tismith.id.au
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Mathieu OTHACEHE <m.othacehe@gmail.com>
+Subject: [PATCH] staging: lustre: Fix space prohibited between function name and open parenthesis
+Date: Tue,  2 Sep 2014 18:39:44 +0200
+Message-Id: <1409675984-2712-1-git-send-email-m.othacehe@gmail.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a fault on a kernel address is due to a non-present page, then it
-cannot be the result of stale TLB entry from a protection change (RO
-to RW or NX to X).  Thus the pagetable walk in spurious_fault() can be
-skipped.
+This patch fixes the following checkpatch.pl warning in lnet/lnet/lib-eq.c:
+WARNING: space prohibited between function name and open parenthesis '('
 
-See the initial if in spurious_fault() and the tests in
-spurious_fault_check()) for the set of possible error codes checked
-for spurious faults.  These are:
-
-         IRUWP
-Before   x00xx && ( 1xxxx || xxx1x )
-After  ( 10001 || 00011 ) && ( 1xxxx || xxx1x )
-
-Thus the new condition is a subset of the previous one, excluding only
-non-present faults (I == 1 and W == 1 are mutually exclusive).
-
-This avoids spurious_fault() oopsing in some cases if the pagetables
-it attempts to walk are not accessible.  This obscures the location of
-the original fault.
-
-This also fixes a crash with Xen PV guests when they access entries in
-the M2P corresponding to device MMIO regions.  The M2P is mapped
-(read-only) by Xen into the kernel address space of the guest and this
-mapping may contains holes for non-RAM regions.  Read faults will
-result in calls to spurious_fault(), but because the page tables for
-the M2P mappings are not accessible by the guest the pagetable walk
-would fault.
-
-This was not normally a problem as MMIO mappings would not normally
-result in a M2P lookup because of the use of the _PAGE_IOMAP bit the
-PTE.  However, removing the _PAGE_IOMAP bit requires M2P lookups for
-MMIO mappings as well.
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Acked-by: Dave Hansen <dave.hansen@intel.com>
+Signed-off-by: Mathieu OTHACEHE <m.othacehe@gmail.com>
 ---
- arch/x86/mm/fault.c |   22 ++++++++++++++++++++--
- 1 file changed, 20 insertions(+), 2 deletions(-)
+This patch is part of task 10 of the eudyptula challenge
+ drivers/staging/lustre/lnet/lnet/lib-eq.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index a241946..83bb03b 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -933,8 +933,17 @@ static int spurious_fault_check(unsigned long error_code, pte_t *pte)
-  * cross-processor TLB flush, even if no stale TLB entries exist
-  * on other processors.
-  *
-+ * Spurious faults may only occur if the TLB contains an entry with
-+ * fewer permission than the page table entry.  Non-present (P = 0)
-+ * and reserved bit (R = 1) faults are never spurious.
-+ *
-  * There are no security implications to leaving a stale TLB when
-  * increasing the permissions on a page.
-+ *
-+ * Returns non-zero if a spurious fault was handled, zero otherwise.
-+ *
-+ * See Intel Developer's Manual Vol 3 Section 4.10.4.3, bullet 3
-+ * (Optional Invalidation).
+diff --git a/drivers/staging/lustre/lnet/lnet/lib-eq.c b/drivers/staging/lustre/lnet/lnet/lib-eq.c
+index bd45478..6c04842 100644
+--- a/drivers/staging/lustre/lnet/lnet/lib-eq.c
++++ b/drivers/staging/lustre/lnet/lnet/lib-eq.c
+@@ -72,8 +72,8 @@ LNetEQAlloc(unsigned int count, lnet_eq_handler_t callback,
+ {
+ 	lnet_eq_t     *eq;
+ 
+-	LASSERT (the_lnet.ln_init);
+-	LASSERT (the_lnet.ln_refcount > 0);
++	LASSERT(the_lnet.ln_init);
++	LASSERT(the_lnet.ln_refcount > 0);
+ 
+ 	/* We need count to be a power of 2 so that when eq_{enq,deq}_seq
+ 	 * overflow, they don't skip entries, so the queue has the same
+@@ -287,7 +287,7 @@ lnet_eq_dequeue_event(lnet_eq_t *eq, lnet_event_t *ev)
+  * EQ has been dropped due to limited space in the EQ.
   */
- static noinline int
- spurious_fault(unsigned long error_code, unsigned long address)
-@@ -945,8 +954,17 @@ spurious_fault(unsigned long error_code, unsigned long address)
- 	pte_t *pte;
- 	int ret;
+ int
+-LNetEQGet (lnet_handle_eq_t eventq, lnet_event_t *event)
++LNetEQGet(lnet_handle_eq_t eventq, lnet_event_t *event)
+ {
+ 	int which;
  
--	/* Reserved-bit violation or user access to kernel space? */
--	if (error_code & (PF_USER | PF_RSVD))
-+	/*
-+	 * Only writes to RO or instruction fetches from NX may cause
-+	 * spurious faults.
-+	 *
-+	 * These could be from user or supervisor accesses but the TLB
-+	 * is only lazily flushed after a kernel mapping protection
-+	 * change, so user accesses are not expected to cause spurious
-+	 * faults.
-+	 */
-+	if (error_code != (PF_WRITE | PF_PROT)
-+	    && error_code != (PF_INSTR | PF_PROT))
- 		return 0;
+@@ -313,7 +313,7 @@ EXPORT_SYMBOL(LNetEQGet);
+  * EQ has been dropped due to limited space in the EQ.
+  */
+ int
+-LNetEQWait (lnet_handle_eq_t eventq, lnet_event_t *event)
++LNetEQWait(lnet_handle_eq_t eventq, lnet_event_t *event)
+ {
+ 	int which;
  
- 	pgd = init_mm.pgd + pgd_index(address);
+@@ -400,8 +400,8 @@ LNetEQPoll(lnet_handle_eq_t *eventqs, int neq, int timeout_ms,
+ 	int	rc;
+ 	int	i;
+ 
+-	LASSERT (the_lnet.ln_init);
+-	LASSERT (the_lnet.ln_refcount > 0);
++	LASSERT(the_lnet.ln_init);
++	LASSERT(the_lnet.ln_refcount > 0);
+ 
+ 	if (neq < 1)
+ 		return -ENOENT;
 -- 
-1.7.10.4
+2.1.0
 
