@@ -1,110 +1,351 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755436AbaIBW0L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 18:26:11 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:41643 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755271AbaIBW0I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 18:26:08 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Matt Fleming <matt.fleming@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>
-Cc: =?UTF-8?q?Mantas=20Mikul=C4=97nas?= <grawity@gmail.com>,
-        Anders Darander <anders@chargestorm.se>, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH -v3] x86: only load initrd above 4g on second try
-Date: Tue,  2 Sep 2014 15:25:40 -0700
-Message-Id: <1409696740-14981-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.4.5
+	id S1755457AbaIBW1A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 18:27:00 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:59924 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752049AbaIBW07 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 18:26:59 -0400
+Date: Tue, 2 Sep 2014 18:26:53 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: clean up zone flags
+Message-ID: <20140902222653.GA20186@cmpxchg.org>
+References: <1409668074-16875-1-git-send-email-hannes@cmpxchg.org>
+ <alpine.DEB.2.02.1409021437160.28054@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1409021437160.28054@chino.kir.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mantas found that after commit 4bf7111f5016 ("x86/efi: Support initrd
-loaded above 4G"), the kernel freezes at the earliest possible moment
-when trying to boot via UEFI on Asus laptop.
+On Tue, Sep 02, 2014 at 02:42:14PM -0700, David Rientjes wrote:
+> On Tue, 2 Sep 2014, Johannes Weiner wrote:
+> > @@ -631,7 +631,7 @@ long wait_iff_congested(struct zone *zone, int sync, long timeout)
+> >  	 * of sleeping on the congestion queue
+> >  	 */
+> >  	if (atomic_read(&nr_bdi_congested[sync]) == 0 ||
+> > -			!zone_is_reclaim_congested(zone)) {
+> > +	    test_bit(ZONE_CONGESTED, &zone->flags)) {
+> >  		cond_resched();
+> >  
+> >  		/* In case we scheduled, work out time remaining */
+> 
+> That's not equivalent.
+> 
+> [snip]
+> 
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index 2836b5373b2e..590a92bec6a4 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -920,7 +920,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+> >  			/* Case 1 above */
+> >  			if (current_is_kswapd() &&
+> >  			    PageReclaim(page) &&
+> > -			    zone_is_reclaim_writeback(zone)) {
+> > +			    test_bit(ZONE_WRITEBACK, &zone->flags)) {
+> >  				nr_immediate++;
+> >  				goto keep_locked;
+> >  
+> > @@ -1002,7 +1002,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+> >  			 */
+> >  			if (page_is_file_cache(page) &&
+> >  					(!current_is_kswapd() ||
+> > -					 !zone_is_reclaim_dirty(zone))) {
+> > +					 test_bit(ZONE_DIRTY, &zone->flags))) {
+> >  				/*
+> >  				 * Immediately reclaim when written back.
+> >  				 * Similar in principal to deactivate_page()
+> 
+> Nor is this.
+>
+> After fixed, for the oom killer bits:
+> 
+> 	Acked-by: David Rientjes <rientjes@google.com>
+> 
+> since this un-obscurification is most welcome.
 
-Revert to old way to load initrd under 4G on first try,
-second try will use above 4G buffer when initrd is too big
-and does not fit under 4G.
-
--v2: add print out for second try, and print out files buf address.
--v3: can not snprintf
-
-Reported-by: Mantas Mikulėnas <grawity@gmail.com>
-Tested-by: Anders Darander <anders@chargestorm.se>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Yikes, thanks for catching those and acking.  Updated patch:
 
 ---
- arch/x86/boot/compressed/eboot.c               |   18 +++++++++++-------
- drivers/firmware/efi/libstub/efi-stub-helper.c |    6 ++++++
- 2 files changed, 17 insertions(+), 7 deletions(-)
+>From 2420ad16df0634e073ad327f0f72472d9b03762b Mon Sep 17 00:00:00 2001
+From: Johannes Weiner <hannes@cmpxchg.org>
+Date: Tue, 2 Sep 2014 10:14:36 -0400
+Subject: [patch] mm: clean up zone flags
 
-Index: linux-2.6/arch/x86/boot/compressed/eboot.c
-===================================================================
---- linux-2.6.orig/arch/x86/boot/compressed/eboot.c
-+++ linux-2.6/arch/x86/boot/compressed/eboot.c
-@@ -1032,7 +1032,6 @@ struct boot_params *make_boot_params(str
- 	int i;
- 	unsigned long ramdisk_addr;
- 	unsigned long ramdisk_size;
--	unsigned long initrd_addr_max;
+Page reclaim tests zone_is_reclaim_dirty(), but the site that actually
+sets this state does zone_set_flag(zone, ZONE_TAIL_LRU_DIRTY), sending
+the reader through layers indirection just to track down a simple bit.
+
+Remove all zone flag wrappers and just use bitops against zone->flags
+directly.  It's just as readable and the lines are barely any longer.
+
+Also rename ZONE_TAIL_LRU_DIRTY to ZONE_DIRTY to match ZONE_WRITEBACK,
+and remove the zone_flags_t typedef.
+
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: David Rientjes <rientjes@google.com>
+---
+ include/linux/mmzone.h | 51 +++-----------------------------------------------
+ mm/backing-dev.c       |  2 +-
+ mm/oom_kill.c          |  6 +++---
+ mm/page_alloc.c        |  8 ++++----
+ mm/vmscan.c            | 28 +++++++++++++--------------
+ 5 files changed, 25 insertions(+), 70 deletions(-)
+
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 318df7051850..48bf12ef6620 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -521,13 +521,13 @@ struct zone {
+ 	atomic_long_t		vm_stat[NR_VM_ZONE_STAT_ITEMS];
+ } ____cacheline_internodealigned_in_smp;
  
- 	efi_early = c;
- 	sys_table = (efi_system_table_t *)(unsigned long)efi_early->table;
-@@ -1095,15 +1094,20 @@ struct boot_params *make_boot_params(str
- 
- 	memset(sdt, 0, sizeof(*sdt));
- 
--	if (hdr->xloadflags & XLF_CAN_BE_LOADED_ABOVE_4G)
--		initrd_addr_max = -1UL;
--	else
--		initrd_addr_max = hdr->initrd_addr_max;
+-typedef enum {
++enum zone_flags {
+ 	ZONE_RECLAIM_LOCKED,		/* prevents concurrent reclaim */
+ 	ZONE_OOM_LOCKED,		/* zone is in OOM killer zonelist */
+ 	ZONE_CONGESTED,			/* zone has many dirty pages backed by
+ 					 * a congested BDI
+ 					 */
+-	ZONE_TAIL_LRU_DIRTY,		/* reclaim scanning has recently found
++	ZONE_DIRTY,			/* reclaim scanning has recently found
+ 					 * many dirty file pages at the tail
+ 					 * of the LRU.
+ 					 */
+@@ -535,52 +535,7 @@ typedef enum {
+ 					 * many pages under writeback
+ 					 */
+ 	ZONE_FAIR_DEPLETED,		/* fair zone policy batch depleted */
+-} zone_flags_t;
 -
- 	status = handle_cmdline_files(sys_table, image,
- 				      (char *)(unsigned long)hdr->cmd_line_ptr,
--				      "initrd=", initrd_addr_max,
-+				      "initrd=", hdr->initrd_addr_max,
- 				      &ramdisk_addr, &ramdisk_size);
-+
-+	if (status != EFI_SUCCESS &&
-+	    hdr->xloadflags & XLF_CAN_BE_LOADED_ABOVE_4G) {
-+		efi_printk(sys_table, "Trying to load files to higher address\n");
-+		status = handle_cmdline_files(sys_table, image,
-+				      (char *)(unsigned long)hdr->cmd_line_ptr,
-+				      "initrd=", -1UL,
-+				      &ramdisk_addr, &ramdisk_size);
-+	}
-+
- 	if (status != EFI_SUCCESS)
- 		goto fail2;
- 	hdr->ramdisk_image = ramdisk_addr & 0xffffffff;
-Index: linux-2.6/drivers/firmware/efi/libstub/efi-stub-helper.c
-===================================================================
---- linux-2.6.orig/drivers/firmware/efi/libstub/efi-stub-helper.c
-+++ linux-2.6/drivers/firmware/efi/libstub/efi-stub-helper.c
-@@ -396,6 +396,7 @@ efi_status_t handle_cmdline_files(efi_sy
+-static inline void zone_set_flag(struct zone *zone, zone_flags_t flag)
+-{
+-	set_bit(flag, &zone->flags);
+-}
+-
+-static inline int zone_test_and_set_flag(struct zone *zone, zone_flags_t flag)
+-{
+-	return test_and_set_bit(flag, &zone->flags);
+-}
+-
+-static inline void zone_clear_flag(struct zone *zone, zone_flags_t flag)
+-{
+-	clear_bit(flag, &zone->flags);
+-}
+-
+-static inline int zone_is_reclaim_congested(const struct zone *zone)
+-{
+-	return test_bit(ZONE_CONGESTED, &zone->flags);
+-}
+-
+-static inline int zone_is_reclaim_dirty(const struct zone *zone)
+-{
+-	return test_bit(ZONE_TAIL_LRU_DIRTY, &zone->flags);
+-}
+-
+-static inline int zone_is_reclaim_writeback(const struct zone *zone)
+-{
+-	return test_bit(ZONE_WRITEBACK, &zone->flags);
+-}
+-
+-static inline int zone_is_reclaim_locked(const struct zone *zone)
+-{
+-	return test_bit(ZONE_RECLAIM_LOCKED, &zone->flags);
+-}
+-
+-static inline int zone_is_fair_depleted(const struct zone *zone)
+-{
+-	return test_bit(ZONE_FAIR_DEPLETED, &zone->flags);
+-}
+-
+-static inline int zone_is_oom_locked(const struct zone *zone)
+-{
+-	return test_bit(ZONE_OOM_LOCKED, &zone->flags);
+-}
++};
  
- 	if (file_size_total) {
- 		unsigned long addr;
-+		char buf[64];
+ static inline unsigned long zone_end_pfn(const struct zone *zone)
+ {
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index 1706cbbdf5f0..b27714f1b40f 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -631,7 +631,7 @@ long wait_iff_congested(struct zone *zone, int sync, long timeout)
+ 	 * of sleeping on the congestion queue
+ 	 */
+ 	if (atomic_read(&nr_bdi_congested[sync]) == 0 ||
+-			!zone_is_reclaim_congested(zone)) {
++	    !test_bit(ZONE_CONGESTED, &zone->flags)) {
+ 		cond_resched();
+ 
+ 		/* In case we scheduled, work out time remaining */
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 1e11df8fa7ec..bbf405a3a18f 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -565,7 +565,7 @@ bool oom_zonelist_trylock(struct zonelist *zonelist, gfp_t gfp_mask)
+ 
+ 	spin_lock(&zone_scan_lock);
+ 	for_each_zone_zonelist(zone, z, zonelist, gfp_zone(gfp_mask))
+-		if (zone_is_oom_locked(zone)) {
++		if (test_bit(ZONE_OOM_LOCKED, &zone->flags)) {
+ 			ret = false;
+ 			goto out;
+ 		}
+@@ -575,7 +575,7 @@ bool oom_zonelist_trylock(struct zonelist *zonelist, gfp_t gfp_mask)
+ 	 * call to oom_zonelist_trylock() doesn't succeed when it shouldn't.
+ 	 */
+ 	for_each_zone_zonelist(zone, z, zonelist, gfp_zone(gfp_mask))
+-		zone_set_flag(zone, ZONE_OOM_LOCKED);
++		set_bit(ZONE_OOM_LOCKED, &zone->flags);
+ 
+ out:
+ 	spin_unlock(&zone_scan_lock);
+@@ -594,7 +594,7 @@ void oom_zonelist_unlock(struct zonelist *zonelist, gfp_t gfp_mask)
+ 
+ 	spin_lock(&zone_scan_lock);
+ 	for_each_zone_zonelist(zone, z, zonelist, gfp_zone(gfp_mask))
+-		zone_clear_flag(zone, ZONE_OOM_LOCKED);
++		clear_bit(ZONE_OOM_LOCKED, &zone->flags);
+ 	spin_unlock(&zone_scan_lock);
+ }
+ 
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 18cee0d4c8a2..f0eb97de6cad 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1613,8 +1613,8 @@ again:
+ 
+ 	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
+ 	if (zone_page_state(zone, NR_ALLOC_BATCH) == 0 &&
+-	    !zone_is_fair_depleted(zone))
+-		zone_set_flag(zone, ZONE_FAIR_DEPLETED);
++	    !test_bit(ZONE_FAIR_DEPLETED, &zone->flags))
++		set_bit(ZONE_FAIR_DEPLETED, &zone->flags);
+ 
+ 	__count_zone_vm_events(PGALLOC, zone, 1 << order);
+ 	zone_statistics(preferred_zone, zone, gfp_flags);
+@@ -1934,7 +1934,7 @@ static void reset_alloc_batches(struct zone *preferred_zone)
+ 		mod_zone_page_state(zone, NR_ALLOC_BATCH,
+ 			high_wmark_pages(zone) - low_wmark_pages(zone) -
+ 			atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]));
+-		zone_clear_flag(zone, ZONE_FAIR_DEPLETED);
++		clear_bit(ZONE_FAIR_DEPLETED, &zone->flags);
+ 	} while (zone++ != preferred_zone);
+ }
+ 
+@@ -1985,7 +1985,7 @@ zonelist_scan:
+ 		if (alloc_flags & ALLOC_FAIR) {
+ 			if (!zone_local(preferred_zone, zone))
+ 				break;
+-			if (zone_is_fair_depleted(zone)) {
++			if (test_bit(ZONE_FAIR_DEPLETED, &zone->flags)) {
+ 				nr_fair_skipped++;
+ 				continue;
+ 			}
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 2836b5373b2e..a14f1642759c 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -920,7 +920,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 			/* Case 1 above */
+ 			if (current_is_kswapd() &&
+ 			    PageReclaim(page) &&
+-			    zone_is_reclaim_writeback(zone)) {
++			    test_bit(ZONE_WRITEBACK, &zone->flags)) {
+ 				nr_immediate++;
+ 				goto keep_locked;
+ 
+@@ -1002,7 +1002,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 			 */
+ 			if (page_is_file_cache(page) &&
+ 					(!current_is_kswapd() ||
+-					 !zone_is_reclaim_dirty(zone))) {
++					 !test_bit(ZONE_DIRTY, &zone->flags))) {
+ 				/*
+ 				 * Immediately reclaim when written back.
+ 				 * Similar in principal to deactivate_page()
+@@ -1563,7 +1563,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+ 	 * are encountered in the nr_immediate check below.
+ 	 */
+ 	if (nr_writeback && nr_writeback == nr_taken)
+-		zone_set_flag(zone, ZONE_WRITEBACK);
++		set_bit(ZONE_WRITEBACK, &zone->flags);
+ 
+ 	/*
+ 	 * memcg will stall in page writeback so only consider forcibly
+@@ -1575,16 +1575,16 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+ 		 * backed by a congested BDI and wait_iff_congested will stall.
+ 		 */
+ 		if (nr_dirty && nr_dirty == nr_congested)
+-			zone_set_flag(zone, ZONE_CONGESTED);
++			set_bit(ZONE_CONGESTED, &zone->flags);
  
  		/*
- 		 * Multiple files need to be at consecutive addresses in memory,
-@@ -416,6 +417,11 @@ efi_status_t handle_cmdline_files(efi_sy
- 			goto free_file_total;
+ 		 * If dirty pages are scanned that are not queued for IO, it
+ 		 * implies that flushers are not keeping up. In this case, flag
+-		 * the zone ZONE_TAIL_LRU_DIRTY and kswapd will start writing
+-		 * pages from reclaim context.
++		 * the zone ZONE_DIRTY and kswapd will start writing pages from
++		 * reclaim context.
+ 		 */
+ 		if (nr_unqueued_dirty == nr_taken)
+-			zone_set_flag(zone, ZONE_TAIL_LRU_DIRTY);
++			set_bit(ZONE_DIRTY, &zone->flags);
+ 
+ 		/*
+ 		 * If kswapd scans pages marked marked for immediate
+@@ -2978,7 +2978,7 @@ static bool kswapd_shrink_zone(struct zone *zone,
+ 	/* Account for the number of pages attempted to reclaim */
+ 	*nr_attempted += sc->nr_to_reclaim;
+ 
+-	zone_clear_flag(zone, ZONE_WRITEBACK);
++	clear_bit(ZONE_WRITEBACK, &zone->flags);
+ 
+ 	/*
+ 	 * If a zone reaches its high watermark, consider it to be no longer
+@@ -2988,8 +2988,8 @@ static bool kswapd_shrink_zone(struct zone *zone,
+ 	 */
+ 	if (zone_reclaimable(zone) &&
+ 	    zone_balanced(zone, testorder, 0, classzone_idx)) {
+-		zone_clear_flag(zone, ZONE_CONGESTED);
+-		zone_clear_flag(zone, ZONE_TAIL_LRU_DIRTY);
++		clear_bit(ZONE_CONGESTED, &zone->flags);
++		clear_bit(ZONE_DIRTY, &zone->flags);
+ 	}
+ 
+ 	return sc->nr_scanned >= sc->nr_to_reclaim;
+@@ -3080,8 +3080,8 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 				 * If balanced, clear the dirty and congested
+ 				 * flags
+ 				 */
+-				zone_clear_flag(zone, ZONE_CONGESTED);
+-				zone_clear_flag(zone, ZONE_TAIL_LRU_DIRTY);
++				clear_bit(ZONE_CONGESTED, &zone->flags);
++				clear_bit(ZONE_DIRTY, &zone->flags);
+ 			}
  		}
  
-+		memset(buf, 0, sizeof(buf));
-+		sprintf(buf, "files buf: [%lx,%lx)\n", file_addr,
-+					 file_addr + file_size_total);
-+		efi_printk(sys_table_arg, buf);
-+
- 		addr = file_addr;
- 		for (j = 0; j < nr_files; j++) {
- 			unsigned long size;
+@@ -3708,11 +3708,11 @@ int zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+ 	if (node_state(node_id, N_CPU) && node_id != numa_node_id())
+ 		return ZONE_RECLAIM_NOSCAN;
+ 
+-	if (zone_test_and_set_flag(zone, ZONE_RECLAIM_LOCKED))
++	if (test_and_set_bit(ZONE_RECLAIM_LOCKED, &zone->flags))
+ 		return ZONE_RECLAIM_NOSCAN;
+ 
+ 	ret = __zone_reclaim(zone, gfp_mask, order);
+-	zone_clear_flag(zone, ZONE_RECLAIM_LOCKED);
++	clear_bit(ZONE_RECLAIM_LOCKED, &zone->flags);
+ 
+ 	if (!ret)
+ 		count_vm_event(PGSCAN_ZONE_RECLAIM_FAILED);
+-- 
+2.0.4
+
