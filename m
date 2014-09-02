@@ -1,131 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755323AbaIBVuW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 17:50:22 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:47167 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751383AbaIBVuT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 17:50:19 -0400
-Message-ID: <54063BA1.2030206@ti.com>
-Date: Tue, 2 Sep 2014 17:50:25 -0400
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1755042AbaIBVxl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 17:53:41 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:62890 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751326AbaIBVxj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 17:53:39 -0400
+Date: Tue, 2 Sep 2014 23:53:32 +0200
+From: Henrik Austad <henrik@austad.us>
+To: Juri Lelli <juri.lelli@arm.com>
+Cc: peterz@infradead.org, luca.abeni@unitn.it, rdunlap@infradead.org,
+        mingo@redhat.com, raistlin@linux.it, juri.lelli@gmail.com,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 4/4] Documentation/scheduler/sched-deadline.txt: add
+ tests suite appendix
+Message-ID: <20140902215332.GD22581@sisyphus.home.austad.us>
+References: <1409220029-9002-1-git-send-email-juri.lelli@arm.com>
+ <1409220029-9002-5-git-send-email-juri.lelli@arm.com>
 MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>
-Subject: Re: [PATCH 01/26] Revert "serial: uart: add hw flow control support
- configuration"
-References: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com> <1409693975-1028-2-git-send-email-peter@hurleysoftware.com>
-In-Reply-To: <1409693975-1028-2-git-send-email-peter@hurleysoftware.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409220029-9002-5-git-send-email-juri.lelli@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
-
-On 09/02/2014 05:39 PM, Peter Hurley wrote:
->  Finally, this patch
-> supposes to fix existing bugs in the serial core for auto CTS-enabled
-> hardware, but does not include the class of hardware for which these
-> bugs exist.
-
-What is this? What class of hardware are you referring to?
-
-As discussed, I will send an updated patch for this as discussed..
-
-Regards,
-
-Murali
->
-> CC: Murali Karicheri<m-karicheri2@ti.com>
-> CC: Rob Herring<robh+dt@kernel.org>
-> Signed-off-by: Peter Hurley<peter@hurleysoftware.com>
+On Thu, Aug 28, 2014 at 11:00:29AM +0100, Juri Lelli wrote:
+> Add an appendix briefly describing tools that can be used to test SCHED_DEADLINE
+> (and the scheduler in general). Links to where source code of the tools is hosted
+> are also provided.
+> 
+> Signed-off-by: Juri Lelli <juri.lelli@arm.com>
+> Cc: Randy Dunlap <rdunlap@infradead.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Henrik Austad <henrik@austad.us>
+> Cc: Dario Faggioli <raistlin@linux.it>
+> Cc: Juri Lelli <juri.lelli@gmail.com>
+> Cc: linux-doc@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
 > ---
->   Documentation/devicetree/bindings/serial/of-serial.txt |  1 -
->   drivers/tty/serial/8250/8250_core.c                    |  6 ++----
->   drivers/tty/serial/of_serial.c                         |  4 ----
->   drivers/tty/serial/serial_core.c                       | 12 +++---------
->   4 files changed, 5 insertions(+), 18 deletions(-)
->
-> diff --git a/Documentation/devicetree/bindings/serial/of-serial.txt b/Documentation/devicetree/bindings/serial/of-serial.txt
-> index 7705477..1928a3e 100644
-> --- a/Documentation/devicetree/bindings/serial/of-serial.txt
-> +++ b/Documentation/devicetree/bindings/serial/of-serial.txt
-> @@ -37,7 +37,6 @@ Optional properties:
->   - auto-flow-control: one way to enable automatic flow control support. The
->     driver is allowed to detect support for the capability even without this
->     property.
-> -- has-hw-flow-control: the hardware has flow control capability.
->
->   Example:
->
-> diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-> index 7a91c6d..109da60 100644
-> --- a/drivers/tty/serial/8250/8250_core.c
-> +++ b/drivers/tty/serial/8250/8250_core.c
-> @@ -2333,11 +2333,9 @@ serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
->   	 * the trigger, or the MCR RTS bit is cleared.  In the case where
->   	 * the remote UART is not using CTS auto flow control, we must
->   	 * have sufficient FIFO entries for the latency of the remote
-> -	 * UART to respond.  IOW, at least 32 bytes of FIFO. Also enable
-> -	 * AFE if hw flow control is supported
-> +	 * UART to respond.  IOW, at least 32 bytes of FIFO.
->   	 */
-> -	if ((up->capabilities&  UART_CAP_AFE&&  (port->fifosize>= 32)) ||
-> -	    (port->flags&  UPF_HARD_FLOW)) {
-> +	if (up->capabilities&  UART_CAP_AFE&&  port->fifosize>= 32) {
->   		up->mcr&= ~UART_MCR_AFE;
->   		if (termios->c_cflag&  CRTSCTS)
->   			up->mcr |= UART_MCR_AFE;
-> diff --git a/drivers/tty/serial/of_serial.c b/drivers/tty/serial/of_serial.c
-> index 68d4455..27981e2 100644
-> --- a/drivers/tty/serial/of_serial.c
-> +++ b/drivers/tty/serial/of_serial.c
-> @@ -183,10 +183,6 @@ static int of_platform_serial_probe(struct platform_device *ofdev)
->   					  "auto-flow-control"))
->   			port8250.capabilities |= UART_CAP_AFE;
->
-> -		if (of_property_read_bool(ofdev->dev.of_node,
-> -					  "has-hw-flow-control"))
-> -			port8250.port.flags |= UPF_HARD_FLOW;
-> -
->   		ret = serial8250_register_8250_port(&port8250);
->   		break;
->   	}
-> diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-> index c2f90ec..261e49e 100644
-> --- a/drivers/tty/serial/serial_core.c
-> +++ b/drivers/tty/serial/serial_core.c
-> @@ -174,12 +174,8 @@ static int uart_port_startup(struct tty_struct *tty, struct uart_state *state,
->   			if (tty->termios.c_cflag&  CBAUD)
->   				uart_set_mctrl(uport, TIOCM_RTS | TIOCM_DTR);
->   		}
-> -		/*
-> -		 * if hw support flow control without software intervention,
-> -		 * then skip the below check
-> -		 */
-> -		if (tty_port_cts_enabled(port)&&
-> -		    !(uport->flags&  UPF_HARD_FLOW)) {
+>  Documentation/scheduler/sched-deadline.txt | 52 ++++++++++++++++++++++++++++++
+>  1 file changed, 52 insertions(+)
+> 
+> diff --git a/Documentation/scheduler/sched-deadline.txt b/Documentation/scheduler/sched-deadline.txt
+> index 641395e..2f5b174 100644
+> --- a/Documentation/scheduler/sched-deadline.txt
+> +++ b/Documentation/scheduler/sched-deadline.txt
+> @@ -15,6 +15,7 @@ CONTENTS
+>   5. Tasks CPU affinity
+>     5.1 SCHED_DEADLINE and cpusets HOWTO
+>   6. Future plans
+> + A. Test suite
+>  
+>  
+>  0. WARNING
+> @@ -341,3 +342,54 @@ CONTENTS
+>   throttling patches [https://lkml.org/lkml/2010/2/23/239] but we still are in
+>   the preliminary phases of the merge and we really seek feedback that would
+>   help us decide on the direction it should take.
 > +
-> +		if (tty_port_cts_enabled(port)) {
->   			spin_lock_irq(&uport->lock);
->   			if (!(uport->ops->get_mctrl(uport)&  TIOCM_CTS))
->   				tty->hw_stopped = 1;
-> @@ -2777,9 +2773,7 @@ void uart_handle_cts_change(struct uart_port *uport, unsigned int status)
->
->   	uport->icount.cts++;
->
-> -	/* skip below code if the hw flow control is supported */
-> -	if (tty_port_cts_enabled(port)&&
-> -	    !(uport->flags&  UPF_HARD_FLOW)) {
-> +	if (tty_port_cts_enabled(port)) {
->   		if (tty->hw_stopped) {
->   			if (status) {
->   				tty->hw_stopped = 0;
+> +Appendix A. Test suite
+> +======================
+> +
+> + The SCHED_DEADLINE policy can be easily tested using two applications that
+> + are part of a wider Linux Scheduler validation suite. The suite is
+> + available as a GitHub repository: https://github.com/scheduler-tools.
+> +
+> + The first testing application is called rt-app and can be used to
+> + start multiple threads with specific parameters. rt-app supports
+> + SCHED_{OTHER,FIFO,RR,DEADLINE} scheduling policies and their related
+> + parameters (e.g., niceness, priority, runtime/deadline/period). rt-app
+> + is a valuable tool, as it can be used to synthetically recreate certain
+> + workloads (maybe mimicking real use-cases) and evaluate how the scheduler
+> + behaves under such workloads. In this way, results are easily reproducible.
+> + rt-app is available at: https://github.com/scheduler-tools/rt-app.
+> +
+> + Thread parameters can be specified from the command line, with something like
+> + this:
+> +
+> +  # rt-app -t 100000:10000:d -t 150000:20000:f:10 -D5
+> +
+> + The above creates two threads. The first one, scheduled by SCHED_DEADLINE,
+> + executes for 10ms every 100ms and the second one, scheduled at RT priority 10
+> + with SCHED_FIFO, executes for 20ms every 150ms. The configuration runs
+> + for 5 seconds.
 
+I'd prefer
+
+The above creates 2 threads, T1 and T2. T1 is scheduled by SCHED_DEADLINE 
+with a 100ms period and 10ms WCET. T2 is handled by SCHED_FIFO priority 10, 
+150ms period and 20ms WCET. The test will run for a total of 5 seconds.
+
+One can expect the eager reader to have at least a grasp of the terminology 
+at this stage, using WCET should be acceptable.
+
+> +
+> + More interestingly, configurations can be described with a json file that
+> + can be passed as input to rt-app with something like this:
+> +
+> +  # rt-app my_config.json
+> +
+> + The parameters that can be specified with the second method are a superset
+> + of the command line options. Please refer to rt-app documentation for more
+> + details.
+
+This can be found that this url: ....
+
+> +
+> + The second testing application is a modification of schedtool, called
+> + schedtool-dl, which can be used to setup SCHED_DEADLINE parameters for a
+> + certain pid/application. schedtool-dl is available at:
+> + https://github.com/scheduler-tools/schedtool-dl.git.
+> +
+> + The usage is straightforward:
+> +
+> +  # schedtool -E -t 10000000:100000000 -e ./my_cpuhog_app
+> +
+> + With this, my_cpuhog_app is put to run inside a SCHED_DEADLINE reservation
+> + of 10ms every 100ms (note that parameters are expressed in microseconds).
+> + You can also use schedtool to create a reservation for an already running
+> + application, given that you know its pid:
+> +
+> +  # schedtool -E -t 10000000:100000000 my_app_pid
+> -- 
+> 2.0.4
+
+Would it make sense to add an appendix B with a minimal SCHED_DEADLINE 
+main() ? I for one like to invent my own wheels.
+
+Just my $0.02
+
+-- 
+Henrik
