@@ -1,72 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752393AbaIBCZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Sep 2014 22:25:58 -0400
-Received: from mail-qg0-f53.google.com ([209.85.192.53]:47373 "EHLO
-	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751702AbaIBCZ4 (ORCPT
+	id S1752907AbaIBC2L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Sep 2014 22:28:11 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:38457 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751405AbaIBC2J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Sep 2014 22:25:56 -0400
+	Mon, 1 Sep 2014 22:28:09 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s822S5n6024411, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+Subject: [PATCH net-next] r8152: rename rx_buf_sz
+Date: Tue, 2 Sep 2014 10:27:52 +0800
+Message-ID: <1394712342-15778-25-Taiwan-albertk@realtek.com>
+X-Mailer: Microsoft Office Outlook 11
 MIME-Version: 1.0
-X-Originating-IP: [220.129.154.48]
-In-Reply-To: <20140902021119.GA2525@kroah.com>
-References: <1407033419.17812.2.camel@phoenix>
-	<CAFRkauB=2f5-zN5OAwx0LSYSnwuub_ONL+LuYYdy6-MxWQNzLw@mail.gmail.com>
-	<20140902021119.GA2525@kroah.com>
-Date: Tue, 2 Sep 2014 10:25:55 +0800
-Message-ID: <CAFRkauB3gcNjP-3_kvbYS6Zi3p1QwHsZs6SkPOLE-LAbpb=uyQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] gpu: ipu-v3: Select GENERIC_IRQ_CHIP to fix build error
-From: Axel Lin <axel.lin@ingics.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Philipp Zabel <p.zabel@pengutronix.de>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-09-02 10:11 GMT+08:00 Greg Kroah-Hartman <gregkh@linuxfoundation.org>:
-> On Tue, Sep 02, 2014 at 09:47:37AM +0800, Axel Lin wrote:
->> 2014-08-03 10:36 GMT+08:00 Axel Lin <axel.lin@ingics.com>:
->> > This driver uses GENERIC_IRQ_CHIP, so it needs to select GENERIC_IRQ_CHIP to
->> > avoid build error.
->> >
->> > Fixes below build errors:
->> > ERROR: "irq_alloc_domain_generic_chips" [drivers/gpu/ipu-v3/imx-ipu-v3.ko] undefined!
->> > ERROR: "irq_gc_mask_clr_bit" [drivers/gpu/ipu-v3/imx-ipu-v3.ko] undefined!
->> > ERROR: "irq_gc_mask_set_bit" [drivers/gpu/ipu-v3/imx-ipu-v3.ko] undefined!
->> > ERROR: "irq_generic_chip_ops" [drivers/gpu/ipu-v3/imx-ipu-v3.ko] undefined!
->> > ERROR: "irq_gc_ack_set_bit" [drivers/gpu/ipu-v3/imx-ipu-v3.ko] undefined!
->> > ERROR: "irq_get_domain_generic_chip" [drivers/gpu/ipu-v3/imx-ipu-v3.ko] undefined!
->> > make[1]: *** [__modpost] Error 1
->> > make: *** [modules] Error 2
->>
->> Hi Greg,
->>
->> I still hit this build error in today's linuex-next tree with below config:
->> ARCH_MULTIPLATFORM && !SOC_IMX5 && !SOC_IMX6Q && !SOC_IMX6SL
->>
->> This driver just moved from staging to gpu.
->> So it's not clear to me who will pick up this patch.
->> Can you pick up this patch?
->
-> As the code isn't in the staging tree, why shouldn't it go through the
-> drivers/gpu/* maintainer?
+The variable "rx_buf_sz" is used by both tx and rx buffers. Replace
+it with "agg_buf_sz".
 
-scripts/get_maintainer.pl
-sent/0001-gpu-ipu-v3-select-GENERIC_IRQ_CHIP-to-fix-build-erro.patch
-Greg Kroah-Hartman <gregkh@linuxfoundation.org> (commit_signer:1/1=100%)
-Lucas Stach <l.stach@pengutronix.de> (commit_signer:1/1=100%)
-Philipp Zabel <p.zabel@pengutronix.de>
-(commit_signer:1/1=100%,authored:1/1=100%,added_lines:7/7=100%)
-linux-kernel@vger.kernel.org (open list)
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/usb/r8152.c | 22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
-I checked the MAINTAINERS file,
-I can only find the maintainer for some subfolders of drivers/gpu but no entry
-for drivers/gpu/ipu-v3.
-So I'm not sure who is the maintainer for drivers/gpu/ipu-v3.
+diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+index cc64dc0..80b0179 100644
+--- a/drivers/net/usb/r8152.c
++++ b/drivers/net/usb/r8152.c
+@@ -607,9 +607,9 @@ enum tx_csum_stat {
+  * The RTL chips use a 64 element hash table based on the Ethernet CRC.
+  */
+ static const int multicast_filter_limit = 32;
+-static unsigned int rx_buf_sz = 16384;
++static unsigned int agg_buf_sz = 16384;
+ 
+-#define RTL_LIMITED_TSO_SIZE	(rx_buf_sz - sizeof(struct tx_desc) - \
++#define RTL_LIMITED_TSO_SIZE	(agg_buf_sz - sizeof(struct tx_desc) - \
+ 				 VLAN_ETH_HLEN - VLAN_HLEN)
+ 
+ static
+@@ -1248,13 +1248,13 @@ static int alloc_all_mem(struct r8152 *tp)
+ 	skb_queue_head_init(&tp->tx_queue);
+ 
+ 	for (i = 0; i < RTL8152_MAX_RX; i++) {
+-		buf = kmalloc_node(rx_buf_sz, GFP_KERNEL, node);
++		buf = kmalloc_node(agg_buf_sz, GFP_KERNEL, node);
+ 		if (!buf)
+ 			goto err1;
+ 
+ 		if (buf != rx_agg_align(buf)) {
+ 			kfree(buf);
+-			buf = kmalloc_node(rx_buf_sz + RX_ALIGN, GFP_KERNEL,
++			buf = kmalloc_node(agg_buf_sz + RX_ALIGN, GFP_KERNEL,
+ 					   node);
+ 			if (!buf)
+ 				goto err1;
+@@ -1274,13 +1274,13 @@ static int alloc_all_mem(struct r8152 *tp)
+ 	}
+ 
+ 	for (i = 0; i < RTL8152_MAX_TX; i++) {
+-		buf = kmalloc_node(rx_buf_sz, GFP_KERNEL, node);
++		buf = kmalloc_node(agg_buf_sz, GFP_KERNEL, node);
+ 		if (!buf)
+ 			goto err1;
+ 
+ 		if (buf != tx_agg_align(buf)) {
+ 			kfree(buf);
+-			buf = kmalloc_node(rx_buf_sz + TX_ALIGN, GFP_KERNEL,
++			buf = kmalloc_node(agg_buf_sz + TX_ALIGN, GFP_KERNEL,
+ 					   node);
+ 			if (!buf)
+ 				goto err1;
+@@ -1518,7 +1518,7 @@ static int r8152_tx_agg_fill(struct r8152 *tp, struct tx_agg *agg)
+ 	tx_data = agg->head;
+ 	agg->skb_num = 0;
+ 	agg->skb_len = 0;
+-	remain = rx_buf_sz;
++	remain = agg_buf_sz;
+ 
+ 	while (remain >= ETH_ZLEN + sizeof(struct tx_desc)) {
+ 		struct tx_desc *tx_desc;
+@@ -1565,7 +1565,7 @@ static int r8152_tx_agg_fill(struct r8152 *tp, struct tx_agg *agg)
+ 
+ 		dev_kfree_skb_any(skb);
+ 
+-		remain = rx_buf_sz - (int)(tx_agg_align(tx_data) - agg->head);
++		remain = agg_buf_sz - (int)(tx_agg_align(tx_data) - agg->head);
+ 	}
+ 
+ 	if (!skb_queue_empty(&skb_head)) {
+@@ -1771,7 +1771,7 @@ static
+ int r8152_submit_rx(struct r8152 *tp, struct rx_agg *agg, gfp_t mem_flags)
+ {
+ 	usb_fill_bulk_urb(agg->urb, tp->udev, usb_rcvbulkpipe(tp->udev, 1),
+-			  agg->head, rx_buf_sz,
++			  agg->head, agg_buf_sz,
+ 			  (usb_complete_t)read_bulk_callback, agg);
+ 
+ 	return usb_submit_urb(agg->urb, mem_flags);
+@@ -1915,8 +1915,8 @@ static void set_tx_qlen(struct r8152 *tp)
+ {
+ 	struct net_device *netdev = tp->netdev;
+ 
+-	tp->tx_qlen = rx_buf_sz / (netdev->mtu + VLAN_ETH_HLEN + VLAN_HLEN +
+-				   sizeof(struct tx_desc));
++	tp->tx_qlen = agg_buf_sz / (netdev->mtu + VLAN_ETH_HLEN + VLAN_HLEN +
++				    sizeof(struct tx_desc));
+ }
+ 
+ static inline u8 rtl8152_get_speed(struct r8152 *tp)
+-- 
+1.9.3
 
-Thanks,
-Axel
