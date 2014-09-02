@@ -1,98 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755031AbaIBTlT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 15:41:19 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:40952 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754581AbaIBTlS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 15:41:18 -0400
-Date: Tue, 2 Sep 2014 20:40:47 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Colin Cross <ccross@android.com>, kernel-team@android.com,
-        Rob Herring <robherring2@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Nicolas Pitre <nico@linaro.org>,
-        Hartley Sweeten <hsweeten@visionengravers.com>,
-        Ryan Mallon <rmallon@gmail.com>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>, linux-samsung-soc@vger.kernel.org
-Subject: Re: [PATCH v11 11/19] irqchip: vic: Add support for FIQ management
-Message-ID: <20140902194047.GY30401@n2100.arm.linux.org.uk>
-References: <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org> <1409662853-29313-1-git-send-email-daniel.thompson@linaro.org> <1409662853-29313-12-git-send-email-daniel.thompson@linaro.org>
+	id S1755073AbaIBTnG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 15:43:06 -0400
+Received: from fieldses.org ([174.143.236.118]:54602 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754583AbaIBTnD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 15:43:03 -0400
+Date: Tue, 2 Sep 2014 15:43:00 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: Jeff Layton <jlayton@poochiereds.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH] locks: Ability to test for flock presence on fd
+Message-ID: <20140902194300.GE31793@fieldses.org>
+References: <5405FBAE.5020303@parallels.com>
+ <20140902184456.GC31793@fieldses.org>
+ <54061562.4080306@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1409662853-29313-12-git-send-email-daniel.thompson@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <54061562.4080306@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 02, 2014 at 02:00:45PM +0100, Daniel Thompson wrote:
-> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-> index bda5a91..8821160 100644
-> --- a/drivers/irqchip/irq-gic.c
-> +++ b/drivers/irqchip/irq-gic.c
-> @@ -502,13 +502,17 @@ static void __init gic_init_fiq(struct gic_chip_data *gic,
->  /*
->   * Fully acknowledge (both ack and eoi) a FIQ-based IPI
->   */
-> -static int gic_handle_fiq_ipi(struct notifier_block *nb, unsigned long regs,
-> -			   void *data)
-> +void gic_handle_fiq_ipi(void)
->  {
->  	struct gic_chip_data *gic = &gic_data[0];
-> -	void __iomem *cpu_base = gic_data_cpu_base(gic);
-> +	void __iomem *cpu_base;
->  	unsigned long irqstat, irqnr;
->  
-> +	if (!gic || !gic->fiq_enable)
-> +		return;
-> +
-> +	cpu_base = gic_data_cpu_base(gic);
-> +
->  	if (WARN_ON(!in_nmi()))
->  		return NOTIFY_BAD;
->  
-> @@ -525,13 +529,6 @@ static int gic_handle_fiq_ipi(struct notifier_block *nb, unsigned long regs,
->  
->  	return NOTIFY_OK;
->  }
-> -
-> -/*
-> - * Notifier to ensure IPI FIQ is acknowledged correctly.
-> - */
-> -static struct notifier_block gic_fiq_ipi_notifier = {
-> -	.notifier_call = gic_handle_fiq_ipi,
-> -};
->  #else /* CONFIG_FIQ */
->  static inline void gic_set_group_irq(void __iomem *base, unsigned int hwirq,
->  				     int group) {}
-> @@ -1250,10 +1247,6 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
->  #ifdef CONFIG_SMP
->  		set_smp_cross_call(gic_raise_softirq);
->  		register_cpu_notifier(&gic_cpu_notifier);
-> -#ifdef CONFIG_FIQ
-> -		if (gic_data_fiq_enable(gic))
-> -			register_fiq_nmi_notifier(&gic_fiq_ipi_notifier);
-> -#endif
->  #endif
->  		set_handle_irq(gic_handle_irq);
->  	}
+On Tue, Sep 02, 2014 at 11:07:14PM +0400, Pavel Emelyanov wrote:
+> On 09/02/2014 10:44 PM, J. Bruce Fields wrote:
+> > On Tue, Sep 02, 2014 at 09:17:34PM +0400, Pavel Emelyanov wrote:
+> >> Hi,
+> >>
+> >> There's a problem with getting information about who has a flock on
+> >> a specific file. The thing is that the "owner" field, that is shown in
+> >> /proc/locks is the pid of the task who created the flock, not the one
+> >> who _may_ hold it.
+> >>
+> >> If the flock creator shared the file with some other task (by forking
+> >> or via scm_rights) and then died or closed the file, the information
+> >> shown in proc no longer corresponds to the reality.
+> >>
+> >> This is critical for CRIU project, that tries to dump (and restore)
+> >> the state of running tasks. For example, let's take two tasks A and B
+> >> both opened a file "/foo", one of tasks places a LOCK_SH lock on the 
+> >> file and then "obfuscated" the owner field in /proc/locks. After this
+> >> we have no ways to find out who is the lock holder.
+> >>
+> >> I'd like to note, that for LOCK_EX this problem is not critical -- we
+> >> may go to both tasks and "ask" them to LOCK_EX the file again (we can
+> >> do it in CRIU, I can tell more if required). The one who succeeds is 
+> >> the lock holder.
+> > 
+> > It could be both, actually, right?
+> 
+> Two succeeding with LOCK_EX? AFAIU no. Am I missing something?
 
-Shouldn't this be merged into some other patch?
+After a fork, two processes "own" the lock, right?:
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+	int main(int argc, char *argv[])
+	{
+		int fd, ret;
+	
+		fd = open(argv[1], O_RDWR);
+		ret = flock(fd, LOCK_EX);
+		if (ret)
+			err(1, "flock");
+		ret = fork();
+		if (ret == -1)
+			err(1, "flock");
+		ret = flock(fd, LOCK_EX);
+		if (ret)
+			err(1, "flock");
+		printf("%d got exclusive lock\n", getpid());
+		sleep(1000);
+	}
+
+	$ touch TMP
+	$ ./test TMP
+	15882 got exclusive lock
+	15883 got exclusive lock
+	^C
+
+I may misunderstand what you're doing.
+
+> >> With LOCK_SH this doesn't work. Trying to drop the
+> >> lock doesn't work either, as flock(LOCK_UN) reports 0 in both cases:
+> >> if the file is locked and if it is not.
+> >>
+> >> That said, I'd like to propose the LOCK_TEST flag to the flock call,
+> >> that would check whether the lock of the given type (LOCK_SH or LOCK_EX)
+> >> exists on the file we test. It's not the same as the existing in-kernel
+> >> FL_ACCESS flag, which checks whether the new lock is possible, but
+> >> it's a new FL_TEST flag, that checks whether the existing lock is there.
+> >>
+> >> What do you think?
+> > 
+> > I guess I can't see anything really wrong with it.
+> > 
+> > It ignores the (poorly documented) LOCK_MAND case, but maybe that's OK.
+> 
+> I actually checked it and it seemed to work. What problems do
+> you see with this case?
+
+On its own it just doesn't tell you whether or not LOCK_MAND is set.
+But I guess you can still get that out of /proc/locks.
+
+To be honest I don't really know whether LOCK_MAND works or is used.
+
+--b.
