@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754529AbaIBNOf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 09:14:35 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:55822 "EHLO extserv.mm-sol.com"
+	id S1754213AbaIBNOZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 09:14:25 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:55801 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754350AbaIBNOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 09:14:32 -0400
+	id S1753774AbaIBNOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 09:14:21 -0400
 From: Georgi Djakov <gdjakov@mm-sol.com>
 To: linus.walleij@linaro.org, galak@codeaurora.org,
         bjorn.andersson@sonymobile.com, agross@codeaurora.org
@@ -13,9 +13,9 @@ Cc: robh+dt@kernel.org, mark.rutland@arm.com, grant.likely@linaro.org,
         sboyd@codeaurora.org, iivanov@mm-sol.com, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-arm-msm@vger.kernel.org, Georgi Djakov <gdjakov@mm-sol.com>
-Subject: [PATCH v3 4/4] pinctrl: qcom: Make the target processor value configurable
-Date: Tue,  2 Sep 2014 16:13:45 +0300
-Message-Id: <1409663625-3185-5-git-send-email-gdjakov@mm-sol.com>
+Subject: [PATCH v3 2/4] dt: Document Qualcomm APQ8084 pinctrl binding
+Date: Tue,  2 Sep 2014 16:13:43 +0300
+Message-Id: <1409663625-3185-3-git-send-email-gdjakov@mm-sol.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1409663625-3185-1-git-send-email-gdjakov@mm-sol.com>
 References: <1409663625-3185-1-git-send-email-gdjakov@mm-sol.com>
@@ -23,167 +23,201 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the value used for specify that interrupts from the gpio should
-be routed to the application processor is hardcoded for all Qualcomm SoCs.
-But the new APQ8084 SoC uses a different value. To resolve this, we make
-this value configurable for each SoC. For all existing SoCs we continue
-to use the current value, and only for APQ8084 we use the new value.
+Define a new binding for the Qualcomm TLMM (Top-Level Mode Mux) based pin
+controller inside the APQ8084.
 
-Suggested-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Acked-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
 Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
 ---
- drivers/pinctrl/qcom/pinctrl-apq8064.c |    2 ++
- drivers/pinctrl/qcom/pinctrl-apq8084.c |    2 ++
- drivers/pinctrl/qcom/pinctrl-ipq8064.c |    2 ++
- drivers/pinctrl/qcom/pinctrl-msm.c     |    4 +---
- drivers/pinctrl/qcom/pinctrl-msm.h     |    3 +++
- drivers/pinctrl/qcom/pinctrl-msm8960.c |    2 ++
- drivers/pinctrl/qcom/pinctrl-msm8x74.c |    2 ++
- 7 files changed, 14 insertions(+), 3 deletions(-)
+ .../bindings/pinctrl/qcom,apq8084-pinctrl.txt      |  179 ++++++++++++++++++++
+ 1 file changed, 179 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/qcom,apq8084-pinctrl.txt
 
-diff --git a/drivers/pinctrl/qcom/pinctrl-apq8064.c b/drivers/pinctrl/qcom/pinctrl-apq8064.c
-index feb6f15..f877aed 100644
---- a/drivers/pinctrl/qcom/pinctrl-apq8064.c
-+++ b/drivers/pinctrl/qcom/pinctrl-apq8064.c
-@@ -258,6 +258,7 @@ static const unsigned int sdc3_data_pins[] = { 95 };
- 		.intr_status_bit = 0,			\
- 		.intr_ack_high = 1,			\
- 		.intr_target_bit = 0,			\
-+		.intr_target_kpss_val = 4,		\
- 		.intr_raw_status_bit = 3,		\
- 		.intr_polarity_bit = 1,			\
- 		.intr_detection_bit = 2,		\
-@@ -283,6 +284,7 @@ static const unsigned int sdc3_data_pins[] = { 95 };
- 		.intr_enable_bit = -1,			\
- 		.intr_status_bit = -1,			\
- 		.intr_target_bit = -1,			\
-+		.intr_target_kpss_val = -1,		\
- 		.intr_raw_status_bit = -1,		\
- 		.intr_polarity_bit = -1,		\
- 		.intr_detection_bit = -1,		\
-diff --git a/drivers/pinctrl/qcom/pinctrl-apq8084.c b/drivers/pinctrl/qcom/pinctrl-apq8084.c
-index 5362959..138cbf6 100644
---- a/drivers/pinctrl/qcom/pinctrl-apq8084.c
-+++ b/drivers/pinctrl/qcom/pinctrl-apq8084.c
-@@ -371,6 +371,7 @@ static const unsigned int sdc2_data_pins[] = { 152 };
- 		.intr_status_bit = 0,			\
- 		.intr_ack_high = 0,			\
- 		.intr_target_bit = 5,			\
-+		.intr_target_kpss_val = 3,		\
- 		.intr_raw_status_bit = 4,		\
- 		.intr_polarity_bit = 1,			\
- 		.intr_detection_bit = 2,		\
-@@ -396,6 +397,7 @@ static const unsigned int sdc2_data_pins[] = { 152 };
- 		.intr_enable_bit = -1,                  \
- 		.intr_status_bit = -1,                  \
- 		.intr_target_bit = -1,                  \
-+		.intr_target_kpss_val = -1,		\
- 		.intr_raw_status_bit = -1,              \
- 		.intr_polarity_bit = -1,                \
- 		.intr_detection_bit = -1,               \
-diff --git a/drivers/pinctrl/qcom/pinctrl-ipq8064.c b/drivers/pinctrl/qcom/pinctrl-ipq8064.c
-index 767cf11..81f49a9 100644
---- a/drivers/pinctrl/qcom/pinctrl-ipq8064.c
-+++ b/drivers/pinctrl/qcom/pinctrl-ipq8064.c
-@@ -211,6 +211,7 @@ static const unsigned int sdc3_data_pins[] = { 71 };
- 		.intr_status_bit = 0,			\
- 		.intr_ack_high = 1,			\
- 		.intr_target_bit = 0,			\
-+		.intr_target_kpss_val = 4,		\
- 		.intr_raw_status_bit = 3,		\
- 		.intr_polarity_bit = 1,			\
- 		.intr_detection_bit = 2,		\
-@@ -236,6 +237,7 @@ static const unsigned int sdc3_data_pins[] = { 71 };
- 		.intr_enable_bit = -1,                  \
- 		.intr_status_bit = -1,                  \
- 		.intr_target_bit = -1,                  \
-+		.intr_target_kpss_val = -1,		\
- 		.intr_raw_status_bit = -1,              \
- 		.intr_polarity_bit = -1,                \
- 		.intr_detection_bit = -1,               \
-diff --git a/drivers/pinctrl/qcom/pinctrl-msm.c b/drivers/pinctrl/qcom/pinctrl-msm.c
-index 2738108..592c6fc 100644
---- a/drivers/pinctrl/qcom/pinctrl-msm.c
-+++ b/drivers/pinctrl/qcom/pinctrl-msm.c
-@@ -649,8 +649,6 @@ static void msm_gpio_irq_ack(struct irq_data *d)
- 	spin_unlock_irqrestore(&pctrl->lock, flags);
- }
- 
--#define INTR_TARGET_PROC_APPS    4
--
- static int msm_gpio_irq_set_type(struct irq_data *d, unsigned int type)
- {
- 	struct gpio_chip *gc = irq_data_get_irq_chip_data(d);
-@@ -674,7 +672,7 @@ static int msm_gpio_irq_set_type(struct irq_data *d, unsigned int type)
- 	/* Route interrupts to application cpu */
- 	val = readl(pctrl->regs + g->intr_target_reg);
- 	val &= ~(7 << g->intr_target_bit);
--	val |= INTR_TARGET_PROC_APPS << g->intr_target_bit;
-+	val |= g->intr_target_kpss_val << g->intr_target_bit;
- 	writel(val, pctrl->regs + g->intr_target_reg);
- 
- 	/* Update configuration for gpio.
-diff --git a/drivers/pinctrl/qcom/pinctrl-msm.h b/drivers/pinctrl/qcom/pinctrl-msm.h
-index 7b2a227..b952c4b 100644
---- a/drivers/pinctrl/qcom/pinctrl-msm.h
-+++ b/drivers/pinctrl/qcom/pinctrl-msm.h
-@@ -53,6 +53,8 @@ struct msm_function {
-  * @intr_status_bit:      Offset in @intr_status_reg for reading and acking the interrupt
-  *                        status.
-  * @intr_target_bit:      Offset in @intr_target_reg for configuring the interrupt routing.
-+ * @intr_target_kpss_val: Value in @intr_target_bit for specifying that the interrupt from
-+ *                        this gpio should get routed to the KPSS processor.
-  * @intr_raw_status_bit:  Offset in @intr_cfg_reg for the raw status bit.
-  * @intr_polarity_bit:    Offset in @intr_cfg_reg for specifying polarity of the interrupt.
-  * @intr_detection_bit:   Offset in @intr_cfg_reg for specifying interrupt type.
-@@ -88,6 +90,7 @@ struct msm_pingroup {
- 	unsigned intr_ack_high:1;
- 
- 	unsigned intr_target_bit:5;
-+	unsigned intr_target_kpss_val:5;
- 	unsigned intr_raw_status_bit:5;
- 	unsigned intr_polarity_bit:5;
- 	unsigned intr_detection_bit:5;
-diff --git a/drivers/pinctrl/qcom/pinctrl-msm8960.c b/drivers/pinctrl/qcom/pinctrl-msm8960.c
-index 3504703..2ab21ce 100644
---- a/drivers/pinctrl/qcom/pinctrl-msm8960.c
-+++ b/drivers/pinctrl/qcom/pinctrl-msm8960.c
-@@ -384,6 +384,7 @@ static const unsigned int sdc3_data_pins[] = { 157 };
- 		.intr_status_bit = 0,			\
- 		.intr_ack_high = 1,			\
- 		.intr_target_bit = 0,			\
-+		.intr_target_kpss_val = 4,		\
- 		.intr_raw_status_bit = 3,		\
- 		.intr_polarity_bit = 1,			\
- 		.intr_detection_bit = 2,		\
-@@ -409,6 +410,7 @@ static const unsigned int sdc3_data_pins[] = { 157 };
- 		.intr_enable_bit = -1,			\
- 		.intr_status_bit = -1,			\
- 		.intr_target_bit = -1,			\
-+		.intr_target_kpss_val = -1,		\
- 		.intr_raw_status_bit = -1,		\
- 		.intr_polarity_bit = -1,		\
- 		.intr_detection_bit = -1,		\
-diff --git a/drivers/pinctrl/qcom/pinctrl-msm8x74.c b/drivers/pinctrl/qcom/pinctrl-msm8x74.c
-index 8c97201..3c85838 100644
---- a/drivers/pinctrl/qcom/pinctrl-msm8x74.c
-+++ b/drivers/pinctrl/qcom/pinctrl-msm8x74.c
-@@ -366,6 +366,7 @@ static const unsigned int sdc2_data_pins[] = { 151 };
- 		.intr_enable_bit = 0,			\
- 		.intr_status_bit = 0,			\
- 		.intr_target_bit = 5,			\
-+		.intr_target_kpss_val = 4,		\
- 		.intr_raw_status_bit = 4,		\
- 		.intr_polarity_bit = 1,			\
- 		.intr_detection_bit = 2,		\
-@@ -391,6 +392,7 @@ static const unsigned int sdc2_data_pins[] = { 151 };
- 		.intr_enable_bit = -1,			\
- 		.intr_status_bit = -1,			\
- 		.intr_target_bit = -1,			\
-+		.intr_target_kpss_val = -1,		\
- 		.intr_raw_status_bit = -1,		\
- 		.intr_polarity_bit = -1,		\
- 		.intr_detection_bit = -1,		\
+diff --git a/Documentation/devicetree/bindings/pinctrl/qcom,apq8084-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/qcom,apq8084-pinctrl.txt
+new file mode 100644
+index 0000000..9d95700
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pinctrl/qcom,apq8084-pinctrl.txt
+@@ -0,0 +1,179 @@
++Qualcomm APQ8084 TLMM block
++
++This binding describes the Top Level Mode Multiplexer block found in the
++MSM8960 platform.
++
++- compatible:
++	Usage: required
++	Value type: <string>
++	Definition: must be "qcom,apq8084-pinctrl"
++
++- reg:
++	Usage: required
++	Value type: <prop-encoded-array>
++	Definition: the base address and size of the TLMM register space.
++
++- interrupts:
++	Usage: required
++	Value type: <prop-encoded-array>
++	Definition: should specify the TLMM summary IRQ.
++
++- interrupt-controller:
++	Usage: required
++	Value type: <none>
++	Definition: identifies this node as an interrupt controller
++
++- #interrupt-cells:
++	Usage: required
++	Value type: <u32>
++	Definition: must be 2. Specifying the pin number and flags, as defined
++		    in <dt-bindings/interrupt-controller/irq.h>
++
++- gpio-controller:
++	Usage: required
++	Value type: <none>
++	Definition: identifies this node as a gpio controller
++
++- #gpio-cells:
++	Usage: required
++	Value type: <u32>
++	Definition: must be 2. Specifying the pin number and flags, as defined
++		    in <dt-bindings/gpio/gpio.h>
++
++Please refer to ../gpio/gpio.txt and ../interrupt-controller/interrupts.txt for
++a general description of GPIO and interrupt bindings.
++
++Please refer to pinctrl-bindings.txt in this directory for details of the
++common pinctrl bindings used by client devices, including the meaning of the
++phrase "pin configuration node".
++
++The pin configuration nodes act as a container for an abitrary number of
++subnodes. Each of these subnodes represents some desired configuration for a
++pin, a group, or a list of pins or groups. This configuration can include the
++mux function to select on those pin(s)/group(s), and various pin configuration
++parameters, such as pull-up, drive strength, etc.
++
++
++PIN CONFIGURATION NODES:
++
++The name of each subnode is not important; all subnodes should be enumerated
++and processed purely based on their content.
++
++Each subnode only affects those parameters that are explicitly listed. In
++other words, a subnode that lists a mux function but no pin configuration
++parameters implies no information about any pin configuration parameters.
++Similarly, a pin subnode that describes a pullup parameter implies no
++information about e.g. the mux function.
++
++
++The following generic properties as defined in pinctrl-bindings.txt are valid
++to specify in a pin configuration subnode:
++
++- pins:
++	Usage: required
++	Value type: <string-array>
++	Definition: List of gpio pins affected by the properties specified in
++		    this subnode.  Valid pins are:
++		    gpio0-gpio146,
++		    sdc1_clk,
++		    sdc1_cmd,
++		    sdc1_data
++		    sdc3_clk,
++		    sdc3_cmd,
++		    sdc3_data
++
++- function:
++	Usage: required
++	Value type: <string>
++	Definition: Specify the alternative function to be configured for the
++		    specified pins. Functions are only valid for gpio pins.
++		    Valid values are:
++		    adsp_ext, audio_ref, blsp_i2c1, blsp_i2c2, blsp_i2c3,
++		    blsp_i2c4, blsp_i2c5, blsp_i2c6, blsp_i2c7, blsp_i2c8,
++		    blsp_i2c9, blsp_i2c10, blsp_i2c11, blsp_i2c12,
++		    blsp_spi1, blsp_spi2, blsp_spi3, blsp_spi4, blsp_spi5,
++		    blsp_spi6, blsp_spi7, blsp_spi8, blsp_spi9, blsp_spi10,
++		    blsp_spi11, blsp_spi12, blsp_uart1, blsp_uart2, blsp_uart3,
++		    blsp_uart4, blsp_uart5, blsp_uart6, blsp_uart7, blsp_uart8,
++		    blsp_uart9, blsp_uart10, blsp_uart11, blsp_uart12,
++		    blsp_uim1, blsp_uim2, blsp_uim3, blsp_uim4, blsp_uim5,
++		    blsp_uim6, blsp_uim7, blsp_uim8, blsp_uim9, blsp_uim10,
++		    blsp_uim11, blsp_uim12, cam_mclk0, cam_mclk1, cam_mclk2,
++		    cam_mclk3, cci_async, cci_async_in0, cci_i2c0, cci_i2c1,
++		    cci_timer0, cci_timer1, cci_timer2, cci_timer3, cci_timer4,
++		    edp_hpd, gcc_gp1, gcc_gp2, gcc_gp3, gcc_obt, gcc_vtt,i
++		    gp_mn, gp_pdm0, gp_pdm1, gp_pdm2, gp0_clk, gp1_clk, gpio,
++		    hdmi_cec, hdmi_ddc, hdmi_dtest, hdmi_hpd, hdmi_rcv, hsic,
++		    ldo_en, ldo_update, mdp_vsync, pci_e0, pci_e0_n, pci_e0_rst,
++		    pci_e1, pci_e1_rst, pci_e1_rst_n, pci_e1_clkreq_n, pri_mi2s,
++		    qua_mi2s, sata_act, sata_devsleep, sata_devsleep_n,
++		    sd_write, sdc_emmc_mode, sdc3, sdc4, sec_mi2s, slimbus,
++		    spdif_tx, spkr_i2s, spkr_i2s_ws, spss_geni, ter_mi2s, tsif1,
++		    tsif2, uim, uim_batt_alarm
++
++- bias-disable:
++	Usage: optional
++	Value type: <none>
++	Definition: The specified pins should be configued as no pull.
++
++- bias-pull-down:
++	Usage: optional
++	Value type: <none>
++	Definition: The specified pins should be configued as pull down.
++
++- bias-pull-up:
++	Usage: optional
++	Value type: <none>
++	Definition: The specified pins should be configued as pull up.
++
++- output-high:
++	Usage: optional
++	Value type: <none>
++	Definition: The specified pins are configured in output mode, driven
++		    high.
++		    Not valid for sdc pins.
++
++- output-low:
++	Usage: optional
++	Value type: <none>
++	Definition: The specified pins are configured in output mode, driven
++		    low.
++		    Not valid for sdc pins.
++
++- drive-strength:
++	Usage: optional
++	Value type: <u32>
++	Definition: Selects the drive strength for the specified pins, in mA.
++		    Valid values are: 2, 4, 6, 8, 10, 12, 14 and 16
++
++Example:
++
++	tlmm: pinctrl@fd510000 {
++		compatible = "qcom,apq8084-pinctrl";
++		reg = <0xfd510000 0x4000>;
++
++		gpio-controller;
++		#gpio-cells = <2>;
++		interrupt-controller;
++		#interrupt-cells = <2>;
++		interrupts = <0 208 0>;
++
++		uart2: uart2-default {
++			mux {
++				pins = "gpio4", "gpio5";
++				function = "blsp_uart2";
++			};
++
++			tx {
++				pins = "gpio4";
++				drive-strength = <4>;
++				bias-disable;
++			};
++
++			rx {
++				pins = "gpio5";
++				drive-strength = <2>;
++				bias-pull-up;
++			};
++		};
++	};
 -- 
 1.7.9.5
 
