@@ -1,136 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509AbaIBVlj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 17:41:39 -0400
-Received: from mail-oi0-f73.google.com ([209.85.218.73]:54313 "EHLO
-	mail-oi0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755226AbaIBVlg (ORCPT
+	id S1755423AbaIBVkI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 17:40:08 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:58056 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754164AbaIBVkD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 17:41:36 -0400
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org
-Cc: Andrew Bresticker <abrestic@chromium.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
-        Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org
-Subject: [PATCH v3 8/9] ARM: tegra: jetson-tk1: Add xHCI support
-Date: Tue,  2 Sep 2014 14:35:00 -0700
-Message-Id: <1409693701-16520-9-git-send-email-abrestic@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1409693701-16520-1-git-send-email-abrestic@chromium.org>
-References: <1409693701-16520-1-git-send-email-abrestic@chromium.org>
+	Tue, 2 Sep 2014 17:40:03 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Murali Karicheri <m-karicheri2@ti.com>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: [PATCH 01/26] Revert "serial: uart: add hw flow control support configuration"
+Date: Tue,  2 Sep 2014 17:39:10 -0400
+Message-Id: <1409693975-1028-2-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com>
+References: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com>
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Assign USB ports previously owned by the EHCI controllers to the xHCI
-controller.  There is a mini-PCIe USB port (UTMI port 1) and a USB A
-connector (UTMI port 2, USB3 port 0).  PCIe lane 0 is used for USB3
-port 0.
+This reverts commit 06aa82e498c144c7784a6f3d3b55458b272d6146.
+This commit purports to enable auto CTS flow control for the 8250
+UART driver. However, the 8250 UART driver already supports auto
+CTS flow control via UART_CAP_AFE and UART_CAP_EFR. Indeed, this
+patch introduces another DT attribute for which an existing firmware
+flag already exists ("auto-flow-control"). Furthermore, the use of
+UPF_HARD_FLOW requires the UART driver to define .throttle and
+.unthrottle methods, neither of which are defined for the 8250 UART
+driver (which will result in a NULL ptr dereference). Finally, this patch
+supposes to fix existing bugs in the serial core for auto CTS-enabled
+hardware, but does not include the class of hardware for which these
+bugs exist.
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+CC: Murali Karicheri <m-karicheri2@ti.com>
+CC: Rob Herring <robh+dt@kernel.org>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
-Changes from v2:
- - Updated VBUS power supply names.
-Changes from v1:
- - Updated USB power supplies.
----
- arch/arm/boot/dts/tegra124-jetson-tk1.dts | 48 +++++++++++++++++--------------
- 1 file changed, 27 insertions(+), 21 deletions(-)
+ Documentation/devicetree/bindings/serial/of-serial.txt |  1 -
+ drivers/tty/serial/8250/8250_core.c                    |  6 ++----
+ drivers/tty/serial/of_serial.c                         |  4 ----
+ drivers/tty/serial/serial_core.c                       | 12 +++---------
+ 4 files changed, 5 insertions(+), 18 deletions(-)
 
-diff --git a/arch/arm/boot/dts/tegra124-jetson-tk1.dts b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
-index 624b0fb..a473750 100644
---- a/arch/arm/boot/dts/tegra124-jetson-tk1.dts
-+++ b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
-@@ -1515,7 +1515,7 @@
- 					regulator-always-on;
- 				};
+diff --git a/Documentation/devicetree/bindings/serial/of-serial.txt b/Documentation/devicetree/bindings/serial/of-serial.txt
+index 7705477..1928a3e 100644
+--- a/Documentation/devicetree/bindings/serial/of-serial.txt
++++ b/Documentation/devicetree/bindings/serial/of-serial.txt
+@@ -37,7 +37,6 @@ Optional properties:
+ - auto-flow-control: one way to enable automatic flow control support. The
+   driver is allowed to detect support for the capability even without this
+   property.
+-- has-hw-flow-control: the hardware has flow control capability.
  
--				ldo0 {
-+				avdd_1v05_run: ldo0 {
- 					regulator-name = "+1.05V_RUN_AVDD";
- 					regulator-min-microvolt = <1050000>;
- 					regulator-max-microvolt = <1050000>;
-@@ -1619,15 +1619,40 @@
- 		nvidia,sys-clock-req-active-high;
- 	};
+ Example:
  
-+	usb@0,70090000 {
-+		status = "okay";
-+		phys = <&padctl TEGRA_XUSB_PADCTL_UTMI_P1>, /* mini-PCIe USB */
-+		       <&padctl TEGRA_XUSB_PADCTL_UTMI_P2>, /* USB A */
-+		       <&padctl TEGRA_XUSB_PADCTL_USB3_P0>; /* USB A */
-+		phy-names = "utmi-1", "utmi-2", "usb3-0";
-+		avddio-pex-supply = <&vdd_1v05_run>;
-+		dvddio-pex-supply = <&vdd_1v05_run>;
-+		avdd-usb-supply = <&vdd_3v3_lp0>;
-+		avdd-pll-utmip-supply = <&vddio_1v8>;
-+		avdd-pll-erefe-supply = <&avdd_1v05_run>;
-+		avdd-pex-pll-supply = <&vdd_1v05_run>;
-+		hvdd-pex-supply = <&vdd_3v3_lp0>;
-+		hvdd-pex-plle-supply = <&vdd_3v3_lp0>;
-+	};
+diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
+index 7a91c6d..109da60 100644
+--- a/drivers/tty/serial/8250/8250_core.c
++++ b/drivers/tty/serial/8250/8250_core.c
+@@ -2333,11 +2333,9 @@ serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
+ 	 * the trigger, or the MCR RTS bit is cleared.  In the case where
+ 	 * the remote UART is not using CTS auto flow control, we must
+ 	 * have sufficient FIFO entries for the latency of the remote
+-	 * UART to respond.  IOW, at least 32 bytes of FIFO. Also enable
+-	 * AFE if hw flow control is supported
++	 * UART to respond.  IOW, at least 32 bytes of FIFO.
+ 	 */
+-	if ((up->capabilities & UART_CAP_AFE && (port->fifosize >= 32)) ||
+-	    (port->flags & UPF_HARD_FLOW)) {
++	if (up->capabilities & UART_CAP_AFE && port->fifosize >= 32) {
+ 		up->mcr &= ~UART_MCR_AFE;
+ 		if (termios->c_cflag & CRTSCTS)
+ 			up->mcr |= UART_MCR_AFE;
+diff --git a/drivers/tty/serial/of_serial.c b/drivers/tty/serial/of_serial.c
+index 68d4455..27981e2 100644
+--- a/drivers/tty/serial/of_serial.c
++++ b/drivers/tty/serial/of_serial.c
+@@ -183,10 +183,6 @@ static int of_platform_serial_probe(struct platform_device *ofdev)
+ 					  "auto-flow-control"))
+ 			port8250.capabilities |= UART_CAP_AFE;
+ 
+-		if (of_property_read_bool(ofdev->dev.of_node,
+-					  "has-hw-flow-control"))
+-			port8250.port.flags |= UPF_HARD_FLOW;
+-
+ 		ret = serial8250_register_8250_port(&port8250);
+ 		break;
+ 	}
+diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+index c2f90ec..261e49e 100644
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -174,12 +174,8 @@ static int uart_port_startup(struct tty_struct *tty, struct uart_state *state,
+ 			if (tty->termios.c_cflag & CBAUD)
+ 				uart_set_mctrl(uport, TIOCM_RTS | TIOCM_DTR);
+ 		}
+-		/*
+-		 * if hw support flow control without software intervention,
+-		 * then skip the below check
+-		 */
+-		if (tty_port_cts_enabled(port) &&
+-		    !(uport->flags & UPF_HARD_FLOW)) {
 +
- 	padctl@0,7009f000 {
- 		pinctrl-0 = <&padctl_default>;
- 		pinctrl-names = "default";
++		if (tty_port_cts_enabled(port)) {
+ 			spin_lock_irq(&uport->lock);
+ 			if (!(uport->ops->get_mctrl(uport) & TIOCM_CTS))
+ 				tty->hw_stopped = 1;
+@@ -2777,9 +2773,7 @@ void uart_handle_cts_change(struct uart_port *uport, unsigned int status)
  
-+		vbus-2-supply = <&vdd_usb3_vbus>;
-+		nvidia,usb3-port-0-lane = <TEGRA_XUSB_PADCTL_PIN_PCIE_0>;
-+
- 		padctl_default: pinmux {
-+			otg {
-+				nvidia,lanes = "otg-1", "otg-2";
-+				nvidia,function = "xusb";
-+			};
-+
- 			usb3 {
--				nvidia,lanes = "pcie-0", "pcie-1";
-+				nvidia,lanes = "pcie-0";
- 				nvidia,function = "usb3";
- 				nvidia,iddq = <0>;
-+				nvidia,usb2-port-num = <2>;
- 			};
+ 	uport->icount.cts++;
  
- 			pcie {
-@@ -1668,25 +1693,6 @@
- 		};
- 	};
- 
--	/* mini-PCIe USB */
--	usb@0,7d004000 {
--		status = "okay";
--	};
--
--	usb-phy@0,7d004000 {
--		status = "okay";
--	};
--
--	/* USB A connector */
--	usb@0,7d008000 {
--		status = "okay";
--	};
--
--	usb-phy@0,7d008000 {
--		status = "okay";
--		vbus-supply = <&vdd_usb3_vbus>;
--	};
--
- 	clocks {
- 		compatible = "simple-bus";
- 		#address-cells = <1>;
+-	/* skip below code if the hw flow control is supported */
+-	if (tty_port_cts_enabled(port) &&
+-	    !(uport->flags & UPF_HARD_FLOW)) {
++	if (tty_port_cts_enabled(port)) {
+ 		if (tty->hw_stopped) {
+ 			if (status) {
+ 				tty->hw_stopped = 0;
 -- 
-2.1.0.rc2.206.gedb03e5
+2.1.0
 
