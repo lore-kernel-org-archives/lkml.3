@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755371AbaIBVTk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 17:19:40 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:55115 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755184AbaIBVTh (ORCPT
+	id S1755399AbaIBVTt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 17:19:49 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:49518 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755173AbaIBVTp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 17:19:37 -0400
+	Tue, 2 Sep 2014 17:19:45 -0400
 From: Soren Brinkmann <soren.brinkmann@xilinx.com>
 To: Michal Simek <michal.simek@xilinx.com>,
         Daniel Lezcano <daniel.lezcano@linaro.org>
@@ -19,9 +19,9 @@ Cc: Russell King <linux@arm.linux.org.uk>,
         Pawel Moll <pawel.moll@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>
-Subject: [PATCH v2 6/9] ARM: zynq: cpuidle: Remove pointless code
-Date: Tue,  2 Sep 2014 14:19:11 -0700
-Message-Id: <1409692754-13437-7-git-send-email-soren.brinkmann@xilinx.com>
+Subject: [PATCH v2 9/9] ARM: zynq: Rename 'zynq_platform_cpu_die'
+Date: Tue,  2 Sep 2014 14:19:14 -0700
+Message-Id: <1409692754-13437-10-git-send-email-soren.brinkmann@xilinx.com>
 X-Mailer: git-send-email 2.1.0.1.g27b9230
 In-Reply-To: <1409692754-13437-1-git-send-email-soren.brinkmann@xilinx.com>
 References: <1409692754-13437-1-git-send-email-soren.brinkmann@xilinx.com>
@@ -29,55 +29,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
+Match the naming pattern of all other SMP ops and rename
+zynq_platform_cpu_die --> zynq_cpu_die.
 
-The core is not powered down, it is pointless to call the cpu_pm notifiers and
-switch to the global timer.
-
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-Reviewed-and-tested-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 ---
- drivers/cpuidle/cpuidle-zynq.c | 10 +---------
- 1 file changed, 1 insertion(+), 9 deletions(-)
+v2:
+ - make comments comply to kernel-doc format
+---
+ arch/arm/mach-zynq/platsmp.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/cpuidle/cpuidle-zynq.c b/drivers/cpuidle/cpuidle-zynq.c
-index aded75928028..c61b8b2a7c77 100644
---- a/drivers/cpuidle/cpuidle-zynq.c
-+++ b/drivers/cpuidle/cpuidle-zynq.c
-@@ -26,7 +26,6 @@
-  */
- 
- #include <linux/init.h>
--#include <linux/cpu_pm.h>
- #include <linux/cpuidle.h>
- #include <linux/platform_device.h>
- #include <asm/proc-fns.h>
-@@ -38,15 +37,9 @@
- static int zynq_enter_idle(struct cpuidle_device *dev,
- 			   struct cpuidle_driver *drv, int index)
- {
--	/* Devices must be stopped here */
--	cpu_pm_enter();
--
- 	/* Add code for DDR self refresh start */
- 	cpu_do_idle();
- 
--	/* Add code for DDR self refresh stop */
--	cpu_pm_exit();
--
- 	return index;
+diff --git a/arch/arm/mach-zynq/platsmp.c b/arch/arm/mach-zynq/platsmp.c
+index f722b5a83a45..52d768ff7857 100644
+--- a/arch/arm/mach-zynq/platsmp.c
++++ b/arch/arm/mach-zynq/platsmp.c
+@@ -137,12 +137,14 @@ static int zynq_cpu_kill(unsigned cpu)
+ 	return 1;
  }
  
-@@ -59,8 +52,7 @@ static struct cpuidle_driver zynq_idle_driver = {
- 			.enter			= zynq_enter_idle,
- 			.exit_latency		= 10,
- 			.target_residency	= 10000,
--			.flags			= CPUIDLE_FLAG_TIME_VALID |
--						  CPUIDLE_FLAG_TIMER_STOP,
-+			.flags			= CPUIDLE_FLAG_TIME_VALID,
- 			.name			= "RAM_SR",
- 			.desc			= "WFI and RAM Self Refresh",
- 		},
+-/*
+- * platform-specific code to shutdown a CPU
++/**
++ * zynq_cpu_die - Let a CPU core die
++ * @cpu:	Dying CPU
+  *
+- * Called with IRQs disabled
++ * Platform-specific code to shutdown a CPU.
++ * Called with IRQs disabled on the dying CPU.
+  */
+-static void zynq_platform_cpu_die(unsigned int cpu)
++static void zynq_cpu_die(unsigned int cpu)
+ {
+ 	zynq_slcr_cpu_state_write(cpu, true);
+ 
+@@ -162,7 +164,7 @@ struct smp_operations zynq_smp_ops __initdata = {
+ 	.smp_boot_secondary	= zynq_boot_secondary,
+ 	.smp_secondary_init	= zynq_secondary_init,
+ #ifdef CONFIG_HOTPLUG_CPU
+-	.cpu_die		= zynq_platform_cpu_die,
++	.cpu_die		= zynq_cpu_die,
+ 	.cpu_kill		= zynq_cpu_kill,
+ #endif
+ };
 -- 
 2.1.0.1.g27b9230
 
