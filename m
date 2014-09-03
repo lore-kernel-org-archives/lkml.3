@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935944AbaICXZo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:25:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45854 "EHLO
+	id S935929AbaICXZn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:25:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45858 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757145AbaICWP4 (ORCPT
+	with ESMTP id S1757146AbaICWP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:15:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [PATCH 3.14 36/88] ext4: fix ext4_discard_allocated_blocks() if we cant allocate the pa struct
-Date: Wed,  3 Sep 2014 15:05:10 -0700
-Message-Id: <20140903220517.038806060@linuxfoundation.org>
+        Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>
+Subject: [PATCH 3.14 76/88] ARM: OMAP2+: hwmod: Rearm wake-up interrupts for DT when MUSB is idled
+Date: Wed,  3 Sep 2014 15:05:50 -0700
+Message-Id: <20140903220518.225562532@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -28,62 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Tony Lindgren <tony@atomide.com>
 
-commit 86f0afd463215fc3e58020493482faa4ac3a4d69 upstream.
+commit cc824534d4fef0e46e4486d5c1e10d3c6b1ebadc upstream.
 
-If there is a failure while allocating the preallocation structure, a
-number of blocks can end up getting marked in the in-memory buddy
-bitmap, and then not getting released.  This can result in the
-following corruption getting reported by the kernel:
+Looks like MUSB cable removal can cause wake-up interrupts to
+stop working for device tree based booting at least for UART3
+even as nothing is dynamically remuxed. This can be fixed by
+calling reconfigure_io_chain() for device tree based booting
+in hwmod code. Note that we already do that for legacy booting
+if the legacy mux is configured.
 
-EXT4-fs error (device sda3): ext4_mb_generate_buddy:758: group 1126,
-12793 clusters in bitmap, 12729 in gd
+My guess is that this is related to UART3 and MUSB ULPI
+hsusb0_data0 and hsusb0_data1 support for Carkit mode that
+somehow affect the configured IO chain for UART3 and require
+rearming the wake-up interrupts.
 
-In that case, we need to release the blocks using mb_free_blocks().
+In general, for device tree based booting, pinctrl-single
+calls the rearm hook that in turn calls reconfigure_io_chain
+so calling reconfigure_io_chain should not be needed from the
+hwmod code for other events.
 
-Tested: fs smoke test; also demonstrated that with injected errors,
-	the file system is no longer getting corrupted
+So let's limit the hwmod rearming of iochain only to
+HWMOD_FORCE_MSTANDBY where MUSB is currently the only user
+of it. If we see other devices needing similar changes we can
+add more checks for it.
 
-Google-Bug-Id: 16657874
-
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Paul Walmsley <paul@pwsan.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/mballoc.c |   21 ++++++++++++++++++++-
- 1 file changed, 20 insertions(+), 1 deletion(-)
+ arch/arm/mach-omap2/omap_hwmod.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -3196,8 +3196,27 @@ static void ext4_mb_collect_stats(struct
- static void ext4_discard_allocated_blocks(struct ext4_allocation_context *ac)
- {
- 	struct ext4_prealloc_space *pa = ac->ac_pa;
-+	struct ext4_buddy e4b;
-+	int err;
+--- a/arch/arm/mach-omap2/omap_hwmod.c
++++ b/arch/arm/mach-omap2/omap_hwmod.c
+@@ -2185,6 +2185,8 @@ static int _enable(struct omap_hwmod *oh
+ 			 oh->mux->pads_dynamic))) {
+ 		omap_hwmod_mux(oh->mux, _HWMOD_STATE_ENABLED);
+ 		_reconfigure_io_chain();
++	} else if (oh->flags & HWMOD_FORCE_MSTANDBY) {
++		_reconfigure_io_chain();
+ 	}
  
--	if (pa && pa->pa_type == MB_INODE_PA)
-+	if (pa == NULL) {
-+		err = ext4_mb_load_buddy(ac->ac_sb, ac->ac_f_ex.fe_group, &e4b);
-+		if (err) {
-+			/*
-+			 * This should never happen since we pin the
-+			 * pages in the ext4_allocation_context so
-+			 * ext4_mb_load_buddy() should never fail.
-+			 */
-+			WARN(1, "mb_load_buddy failed (%d)", err);
-+			return;
-+		}
-+		ext4_lock_group(ac->ac_sb, ac->ac_f_ex.fe_group);
-+		mb_free_blocks(ac->ac_inode, &e4b, ac->ac_f_ex.fe_start,
-+			       ac->ac_f_ex.fe_len);
-+		ext4_unlock_group(ac->ac_sb, ac->ac_f_ex.fe_group);
-+		return;
-+	}
-+	if (pa->pa_type == MB_INODE_PA)
- 		pa->pa_free += ac->ac_b_ex.fe_len;
- }
+ 	_add_initiator_dep(oh, mpu_oh);
+@@ -2291,6 +2293,8 @@ static int _idle(struct omap_hwmod *oh)
+ 	if (oh->mux && oh->mux->pads_dynamic) {
+ 		omap_hwmod_mux(oh->mux, _HWMOD_STATE_IDLE);
+ 		_reconfigure_io_chain();
++	} else if (oh->flags & HWMOD_FORCE_MSTANDBY) {
++		_reconfigure_io_chain();
+ 	}
  
+ 	oh->_state = _HWMOD_STATE_IDLE;
 
 
