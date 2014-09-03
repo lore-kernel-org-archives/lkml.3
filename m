@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756878AbaICWMU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:12:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45638 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933673AbaICWIw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:08:52 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        Robert Elliott <elliott@hp.com>, Joe Handzik <joseph.t.handzik@hp.com>,
-        Scott Teel <scott.teel@hp.com>, Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.14 60/88] hpsa: fix bad -ENOMEM return value in hpsa_big_passthru_ioctl
-Date: Wed,  3 Sep 2014 15:05:34 -0700
-Message-Id: <20140903220517.754808904@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
-References: <20140903220515.958924632@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	id S1756883AbaICWMm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:12:42 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:59813 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755898AbaICWMi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 18:12:38 -0400
+Date: Wed, 3 Sep 2014 15:12:31 -0700
+From: Kees Cook <keescook@chromium.org>
+To: James Morris <jmorris@namei.org>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>
+Subject: [PULL] seccomp update (3.18)
+Message-ID: <20140903221231.GA21608@www.outflux.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+Hi,
 
-------------------
+Please pull these seccomp changes for 3.18.
 
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Thanks!
 
-commit 0758f4f732b08b6ef07f2e5f735655cf69fea477 upstream.
+-Kees
 
-When copy_from_user fails, return -EFAULT, not -ENOMEM
+The following changes since commit c3ce6dfa48e3879206382cdfdc015bffc50dce30:
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-Reported-by: Robert Elliott <elliott@hp.com>
-Reviewed-by: Joe Handzik <joseph.t.handzik@hp.com>
-Reviewed-by: Scott Teel <scott.teel@hp.com>
-Reviewed by: Mike MIller <michael.miller@canonical.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+  KEYS: Set pr_fmt() in asymmetric key signature handling (2014-09-03 11:08:45 +1000)
 
----
- drivers/scsi/hpsa.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+are available in the git repository at:
 
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -3131,7 +3131,7 @@ static int hpsa_big_passthru_ioctl(struc
- 		}
- 		if (ioc->Request.Type.Direction == XFER_WRITE) {
- 			if (copy_from_user(buff[sg_used], data_ptr, sz)) {
--				status = -ENOMEM;
-+				status = -EFAULT;
- 				goto cleanup1;
- 			}
- 		} else
+  git://git.kernel.org/pub/scm/linux/kernel/git/kees/linux.git tags/seccomp-3.18
 
+for you to fetch changes up to a0cfd75fdc46b56978ece383a7d6f6b04e9087ad:
 
+  seccomp: Add reviewers to MAINTAINERS (2014-09-03 15:09:54 -0700)
+
+----------------------------------------------------------------
+adding reviewers
+
+----------------------------------------------------------------
+Kees Cook (1):
+      seccomp: Add reviewers to MAINTAINERS
+
+ MAINTAINERS | 2 ++
+ 1 file changed, 2 insertions(+)
+
+-- 
+Kees Cook
+Chrome OS Security
