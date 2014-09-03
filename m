@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754758AbaICDPY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 23:15:24 -0400
-Received: from mail-by2lp0237.outbound.protection.outlook.com ([207.46.163.237]:21581
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	id S1755238AbaICDPr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 23:15:47 -0400
+Received: from dns-bn1lp0143.outbound.protection.outlook.com ([207.46.163.143]:51552
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753968AbaICDPT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 23:15:19 -0400
+	id S1754192AbaICDPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 23:15:13 -0400
 From: Xiubo Li <Li.Xiubo@freescale.com>
 To: <broonie@kernel.org>, <perex@perex.cz>, <lgirdwood@gmail.com>,
         <tiwai@suse.de>, <moinejf@free.fr>, <andrew@lunn.ch>,
@@ -15,14 +15,14 @@ To: <broonie@kernel.org>, <perex@perex.cz>, <lgirdwood@gmail.com>,
         <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
         <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>
 CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCHv3 3/3] ASoC: simple-card: binding: update binding to support the new style.
-Date: Wed, 3 Sep 2014 10:23:41 +0800
-Message-ID: <1409711021-19277-4-git-send-email-Li.Xiubo@freescale.com>
+Subject: [PATCHv3 2/3] ASoC: simple-card: Adjust the comments of simple card.
+Date: Wed, 3 Sep 2014 10:23:40 +0800
+Message-ID: <1409711021-19277-3-git-send-email-Li.Xiubo@freescale.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1409711021-19277-1-git-send-email-Li.Xiubo@freescale.com>
 References: <1409711021-19277-1-git-send-email-Li.Xiubo@freescale.com>
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199003)(62966002)(64706001)(50986999)(47776003)(87286001)(80022001)(4396001)(50226001)(85306004)(99396002)(50466002)(90102001)(86362001)(21056001)(76176999)(93916002)(68736004)(81542001)(97736001)(69596002)(83322001)(6806004)(44976005)(20776003)(19580405001)(19580395003)(84676001)(89996001)(88136002)(92566001)(2201001)(92726001)(83072002)(85852003)(26826002)(74662001)(74502001)(31966008)(87936001)(81156004)(76482001)(104016003)(107046002)(95666004)(79102001)(106466001)(36756003)(104166001)(102836001)(77156001)(46102001)(77982001)(81342001)(48376002)(105606002)(229853001)(921003)(1121002);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR0301MB0612;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199003)(36756003)(80022001)(229853001)(69596002)(50986999)(76176999)(95666004)(84676001)(90102001)(81156004)(44976005)(107046002)(31966008)(64706001)(81342001)(77156001)(104166001)(106466001)(81542001)(97736001)(85306004)(21056001)(88136002)(50226001)(102836001)(85852003)(89996001)(74662001)(26826002)(68736004)(83322001)(19580405001)(104016003)(105606002)(92566001)(74502001)(19580395003)(62966002)(87286001)(87936001)(4396001)(99396002)(93916002)(76482001)(48376002)(20776003)(46102001)(83072002)(92726001)(86362001)(47776003)(50466002)(79102001)(77982001)(6806004)(2201001)(1121002)(21314002)(921003);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR0301MB0609;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
@@ -34,258 +34,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This update patch will split the DT node into old style and new style:
-The new style will will be easier to add muti DAI links from old single
-DAI link DTs.
-
-This patch will maintian compatibility with the old DTs.
-
 Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
 ---
- .../devicetree/bindings/sound/simple-card.txt      | 183 ++++++++++++++-------
- 1 file changed, 125 insertions(+), 58 deletions(-)
+ sound/soc/generic/simple-card.c | 48 ++++++++++++++++++++---------------------
+ 1 file changed, 24 insertions(+), 24 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/sound/simple-card.txt b/Documentation/devicetree/bindings/sound/simple-card.txt
-index c2e9841..8c1bd30 100644
---- a/Documentation/devicetree/bindings/sound/simple-card.txt
-+++ b/Documentation/devicetree/bindings/sound/simple-card.txt
-@@ -1,15 +1,19 @@
--Simple-Card:
-+Device-Tree bindings for Simple Card
+diff --git a/sound/soc/generic/simple-card.c b/sound/soc/generic/simple-card.c
+index 1597a24..07f7fb6 100644
+--- a/sound/soc/generic/simple-card.c
++++ b/sound/soc/generic/simple-card.c
+@@ -120,7 +120,7 @@ asoc_simple_card_sub_parse_of(struct device_node *np,
+ 	int ret;
  
- Simple-Card specifies audio DAI connections of SoC <-> codec.
+ 	/*
+-	 * get node via "sound-dai = <&phandle port>"
++	 * Get node via "sound-dai = <&phandle port>"
+ 	 * it will be used as xxx_of_node on soc_bind_dai_link()
+ 	 */
+ 	node = of_parse_phandle(np, "sound-dai", 0);
+@@ -128,19 +128,19 @@ asoc_simple_card_sub_parse_of(struct device_node *np,
+ 		return -ENODEV;
+ 	*p_node = node;
  
--Required properties:
-+=== Top level's properties and subnodes ===
+-	/* get dai->name */
++	/* Get dai->name */
+ 	ret = snd_soc_of_get_dai_name(np, name);
+ 	if (ret < 0)
+ 		return ret;
  
-+*** Required properties ***
- - compatible				: "simple-audio-card"
+-	/* parse TDM slot */
++	/* Parse TDM slot */
+ 	ret = snd_soc_of_parse_tdm_slot(np, &dai->slots, &dai->slot_width);
+ 	if (ret)
+ 		return ret;
  
--Optional properties:
--
-+*** Optional properties ***
- - simple-audio-card,name		: User specified audio sound card name, one string
- 					  property.
-+- simple-audio-card,format		: CPU/CODEC common audio format.
-+					  "i2s", "right_j", "left_j" , "dsp_a"
-+					  "dsp_b", "ac97", "pdm", "msb", "lsb"
-+					  (This is used for single DAI link & old style.)
- - simple-audio-card,widgets		: Please refer to widgets.txt.
- - simple-audio-card,routing		: A list of the connections between audio components.
- 					  Each entry is a pair of strings, the first being the
-@@ -17,63 +21,85 @@ Optional properties:
- 					  source.
- - simple-audio-card,mclk-fs             : Multiplication factor between stream rate and codec
-   					  mclk.
--
--Optional subnodes:
--
--- simple-audio-card,dai-link		: Container for dai-link level
--					  properties and the CPU and CODEC
--					  sub-nodes. This container may be
--					  omitted when the card has only one
--					  DAI link. See the examples and the
--					  section bellow.
--
--Dai-link subnode properties and subnodes:
--
--If dai-link subnode is omitted and the subnode properties are directly
--under "sound"-node the subnode property and subnode names have to be
--prefixed with "simple-audio-card,"-prefix.
--
--Required dai-link subnodes:
--
--- cpu					: CPU   sub-node
--- codec					: CODEC sub-node
--
--Optional dai-link subnode properties:
--
-+- simple-audio-card,frame-master	: Indicates DAI link frame master. One phandle to a cpu
-+					  or codec subnode.
-+					  (This is used for single DAI link & old style.)
-+- simple-audio-card,bitclock-master	: Indicates DAI link bit clock master. One phandle to a
-+					  cpu or codec subnode.
-+					  (This is used for single DAI link & old style.)
-+
-+*** Optional subnodes ***
-+- simple-audio-card,dai-link		: Container for DAI link level properties and the CPU
-+					  and CODEC sub-nodes. This container may be omitted
-+					  when the card has only one DAI link and using the old
-+					  style. See the examples and the section bellow.
-+- simple-audio-card,cpu			: CPU DAI sub-node.
-+					  (This is used for single DAI link & old style.)
-+- simple-audio-card,codec		: CODEC DAI sub-node.
-+					  (This is used for single DAI link & old style.)
-+
-+=== DAI link node's properties and its subnodes ===
-+
-+*** Required subnodes ***
-+- cpu					: CPU DAI sub-node
-+- codec					: CODEC DAI sub-node
-+
-+*** Optional properties ***
- - format				: CPU/CODEC common audio format.
- 					  "i2s", "right_j", "left_j" , "dsp_a"
- 					  "dsp_b", "ac97", "pdm", "msb", "lsb"
--- frame-master				: Indicates dai-link frame master.
--					  phandle to a cpu or codec subnode.
--- bitclock-master			: Indicates dai-link bit clock master.
--					  phandle to a cpu or codec subnode.
--- bitclock-inversion			: bool property. Add this if the
--					  dai-link uses bit clock inversion.
--- frame-inversion			: bool property. Add this if the
--					  dai-link uses frame clock inversion.
-+- frame-master				: Indicates DAI link frame master. One phandle to a cpu
-+					  or codec subnode.
-+					  (This is One boolean property for old style.)
-+- bitclock-master			: Indicates DAI link bit clock master. One phandle to a
-+					  cpu or codec subnode.
-+					  (This is one boolean property for old style.)
+ 	/*
+-	 * dai->sysclk come from
+-	 *  "clocks = <&xxx>" (if system has common clock)
++	 * Parse dai->sysclk come from "clocks = <&xxx>"
++	 * (if system has common clock)
+ 	 *  or "system-clock-frequency = <xxx>"
+ 	 *  or device's module clock.
+ 	 */
+@@ -232,9 +232,11 @@ static int asoc_simple_card_dai_link_of(struct device_node *node,
+ 		goto dai_link_of_err;
  
- For backward compatibility the frame-master and bitclock-master
- properties can be used as booleans in codec subnode to indicate if the
--codec is the dai-link frame or bit clock master. In this case there
--should be no dai-link node, the same properties should not be present
-+codec is the DAI link frame or bit clock master. In this case there
-+should be no DAI link node, the same properties should not be present
- at sound-node level, and the bitclock-inversion and frame-inversion
- properties should also be placed in the codec node if needed.
+ 	if (strlen(prefix) && !bitclkmaster && !framemaster) {
+-		/* No dai-link level and master setting was not found from
+-		   sound node level, revert back to legacy DT parsing and
+-		   take the settings from codec node. */
++		/*
++		 * No DAI link level and master setting was found
++		 * from sound node level, revert back to legacy DT
++		 * parsing and take the settings from codec node.
++		 */
+ 		dev_dbg(dev, "%s: Revert to legacy daifmt parsing\n",
+ 			__func__);
+ 		dai_props->cpu_dai.fmt = dai_props->codec_dai.fmt =
+@@ -263,10 +265,10 @@ static int asoc_simple_card_dai_link_of(struct device_node *node,
+ 		goto dai_link_of_err;
+ 	}
  
--Required CPU/CODEC subnodes properties:
+-	/* simple-card assumes platform == cpu */
++	/* Simple Card assumes platform == cpu */
+ 	dai_link->platform_of_node = dai_link->cpu_of_node;
  
--- sound-dai				: phandle and port of CPU/CODEC
-+=== CPU/CODEC DAI node's properties and its subnodes ===
+-	/* Link name is created from CPU/CODEC dai name */
++	/* DAI link name is created from CPU/CODEC dai name */
+ 	name = devm_kzalloc(dev,
+ 			    strlen(dai_link->cpu_dai_name)   +
+ 			    strlen(dai_link->codec_dai_name) + 2,
+@@ -288,11 +290,11 @@ static int asoc_simple_card_dai_link_of(struct device_node *node,
+ 		dai_props->codec_dai.sysclk);
  
--Optional CPU/CODEC subnodes properties:
-+*** Required properties ***
-+- sound-dai				: One phandle and port of CPU/CODEC
+ 	/*
+-	 * soc_bind_dai_link() will check cpu name
+-	 * after of_node matching if dai_link has cpu_dai_name.
+-	 * but, it will never match if name was created by fmt_single_name()
+-	 * remove cpu_dai_name to escape name matching.
+-	 * see
++	 * In soc_bind_dai_link() will check cpu name after
++	 * of_node matching if dai_link has cpu_dai_name.
++	 * but, it will never match if name was created by
++	 * fmt_single_name() remove cpu_dai_name to escape
++	 * name matching. Please see:
+ 	 *	fmt_single_name()
+ 	 *	fmt_multiple_name()
+ 	 */
+@@ -320,10 +322,10 @@ static int asoc_simple_card_parse_of(struct device_node *node,
+ 	if (!node)
+ 		return -EINVAL;
  
-+*** Optional properties ***
-+- bitclock-inversion			: Boolean property. Add this if the DAI device uses bit
-+					  clock inversion.
-+- frame-inversion			: Boolean property. Add this if the DAI device uses frame
-+					  clock inversion.
- - dai-tdm-slot-num			: Please refer to tdm-slot.txt.
- - dai-tdm-slot-width			: Please refer to tdm-slot.txt.
--- clocks / system-clock-frequency	: specify subnode's clock if needed.
--					  it can be specified via "clocks" if system has
--					  clock node (= common clock), or "system-clock-frequency"
--					  (if system doens't support common clock)
-+- clocks / system-clock-frequency	: specify CPU/CODEC DAI node's clock if needed. It can be
-+					  specified via "clocks" if system has clock node
-+					  (= common clock), or "system-clock-frequency"(if system
-+					  doens't support common clock)
+-	/* parsing the card name from DT */
++	/* Parse the card name from DT */
+ 	snd_soc_of_parse_card_name(&priv->snd_card, "simple-audio-card,name");
  
--Example 1 - single DAI link:
-+=== Examples ===
-+*** CPU & CODEC DAI DT nodes ***
-+&i2c0 {
-+	ak4648: ak4648@12 {
-+		#sound-dai-cells = <0>;
-+		compatible = "asahi-kasei,ak4648";
-+		reg = <0x12>;
-+	};
-+};
+-	/* off-codec widgets */
++	/* The off-codec widgets */
+ 	if (of_property_read_bool(node, "simple-audio-card,widgets")) {
+ 		ret = snd_soc_of_parse_audio_simple_widgets(&priv->snd_card,
+ 					"simple-audio-card,widgets");
+@@ -378,7 +380,7 @@ static int asoc_simple_card_parse_of(struct device_node *node,
+ 	return 0;
+ }
  
-+sh_fsi2: sh_fsi2@ec230000 {
-+	#sound-dai-cells = <1>;
-+	compatible = "renesas,sh_fsi2";
-+	reg = <0xec230000 0x400>;
-+	interrupt-parent = <&gic>;
-+	interrupts = <0 146 0x4>;
-+};
-+
-+Example 1 - single DAI link & old style:
-+bitclock-master and frame-master as phandles.
- sound {
- 	compatible = "simple-audio-card";
- 	simple-audio-card,name = "VF610-Tower-Sound-Card";
-@@ -91,6 +117,7 @@ sound {
+-/* update the reference count of the devices nodes at end of probe */
++/* Decrease the reference count of the device nodes */
+ static int asoc_simple_card_unref(struct platform_device *pdev)
+ {
+ 	struct snd_soc_card *card = platform_get_drvdata(pdev);
+@@ -407,29 +409,27 @@ static int asoc_simple_card_probe(struct platform_device *pdev)
+ 	struct device *dev = &pdev->dev;
+ 	int num_links, ret;
  
- 	simple-audio-card,cpu {
- 		sound-dai = <&sh_fsi2 0>;
-+		bitclock-inversion;
- 	};
+-	/* get the number of DAI links */
++	/* Get the number of DAI links */
+ 	if (np && of_get_child_by_name(np, "simple-audio-card,dai-link"))
+ 		num_links = of_get_child_count(np);
+ 	else
+ 		num_links = 1;
  
- 	dailink0_master: simple-audio-card,codec {
-@@ -99,24 +126,64 @@ sound {
- 	};
- };
+-	/* allocate the private data and the DAI link array */
++	/* Allocate the private data and the DAI link array */
+ 	priv = devm_kzalloc(dev,
+ 			sizeof(*priv) + sizeof(*dai_link) * num_links,
+ 			GFP_KERNEL);
+ 	if (!priv)
+ 		return -ENOMEM;
  
--&i2c0 {
--	ak4648: ak4648@12 {
--		#sound-dai-cells = <0>;
--		compatible = "asahi-kasei,ak4648";
--		reg = <0x12>;
-+Example 2 - single DAI link & old style:
-+bitclock-master and frame-master as boolean properties.
-+sound {
-+	compatible = "simple-audio-card";
-+	simple-audio-card,name = "VF610-Tower-Sound-Card";
-+	simple-audio-card,format = "left_j";
-+	simple-audio-card,widgets =
-+		"Microphone", "Microphone Jack",
-+		"Headphone", "Headphone Jack",
-+		"Speaker", "External Speaker";
-+	simple-audio-card,routing =
-+		"MIC_IN", "Microphone Jack",
-+		"Headphone Jack", "HP_OUT",
-+		"External Speaker", "LINE_OUT";
-+
-+	simple-audio-card,cpu {
-+		sound-dai = <&sh_fsi2 0>;
- 	};
--};
+-	/*
+-	 * init snd_soc_card
+-	 */
++	/* Init snd_soc_card */
+ 	priv->snd_card.owner = THIS_MODULE;
+ 	priv->snd_card.dev = dev;
+ 	dai_link = priv->dai_link;
+ 	priv->snd_card.dai_link = dai_link;
+ 	priv->snd_card.num_links = num_links;
  
--sh_fsi2: sh_fsi2@ec230000 {
--	#sound-dai-cells = <1>;
--	compatible = "renesas,sh_fsi2";
--	reg = <0xec230000 0x400>;
--	interrupt-parent = <&gic>;
--	interrupts = <0 146 0x4>;
-+	simple-audio-card,codec {
-+		sound-dai = <&ak4648>;
-+		clocks = <&osc>;
-+		bitclock-master;
-+		frame-master;
-+		bitclock-inversion;
-+	};
- };
- 
--Example 2 - many DAI links:
-+Example 3 - single DAI link & new style:
-+sound {
-+	compatible = "simple-audio-card";
-+	simple-audio-card,name = "VF610-Tower-Sound-Card";
-+	simple-audio-card,widgets =
-+		"Microphone", "Microphone Jack",
-+		"Headphone", "Headphone Jack",
-+		"Speaker", "External Speaker";
-+	simple-audio-card,routing =
-+		"MIC_IN", "Microphone Jack",
-+		"Headphone Jack", "HP_OUT",
-+		"External Speaker", "LINE_OUT";
-+
-+	simple-audio-card,dai-link {
-+		format = "i2s";
-+		bitclock-master = <&dailink0_master>;
-+		frame-master = <&dailink0_master>;
-+		cpu {
-+			sound-dai = <&sh_fsi2 0>;
-+			frame-inversion;
-+		};
-+		dailink0_master: codec {
-+			sound-dai = <&ak4648>;
-+			clocks = <&osc>;
-+			frame-inversion;
-+		};
-+	};
-+};
- 
-+Example 4 - many DAI links:
- sound {
- 	compatible = "simple-audio-card";
- 	simple-audio-card,name = "Cubox Audio";
+-	/* get room for the other properties */
++	/* Get room for the other properties */
+ 	priv->dai_props = devm_kzalloc(dev,
+ 			sizeof(*priv->dai_props) * num_links,
+ 			GFP_KERNEL);
 -- 
 1.8.4
 
