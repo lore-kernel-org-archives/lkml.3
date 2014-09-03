@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965AbaICTFq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 15:05:46 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:44706 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755198AbaICTFo convert rfc822-to-8bit (ORCPT
+	id S1756017AbaICTF6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 15:05:58 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:33245 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753402AbaICTF5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 15:05:44 -0400
+	Wed, 3 Sep 2014 15:05:57 -0400
 Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8BIT
@@ -17,7 +17,7 @@ To: Guenter Roeck <linux@roeck-us.net>,
         "Maxime Ripard" <maxime.ripard@free-electrons.com>,
         "Andrew Morton" <akpm@linux-foundation.org>
 From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1408495538-27480-11-git-send-email-linux@roeck-us.net>
+In-Reply-To: <1408495538-27480-12-git-send-email-linux@roeck-us.net>
 Cc: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-pm@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         "Will Deacon" <will.deacon@arm.com>, "Arnd Bergmann" <arnd@arndb.de>,
@@ -31,25 +31,20 @@ Cc: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         "Tomasz Figa" <t.figa@samsung.com>, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, "Guenter Roeck" <linux@roeck-us.net>
 References: <1408495538-27480-1-git-send-email-linux@roeck-us.net>
- <1408495538-27480-11-git-send-email-linux@roeck-us.net>
-Message-ID: <20140903190526.11368.71063@quantum>
+ <1408495538-27480-12-git-send-email-linux@roeck-us.net>
+Message-ID: <20140903190542.11368.20755@quantum>
 User-Agent: alot/0.3.5
-Subject: Re: [PATCH v7 10/11] clk: samsung: register restart handlers for s3c2412 and
- s3c2443
-Date: Wed, 03 Sep 2014 12:05:26 -0700
+Subject: Re: [PATCH v7 11/11] clk: rockchip: add restart handler
+Date: Wed, 03 Sep 2014 12:05:42 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Guenter Roeck (2014-08-19 17:45:37)
+Quoting Guenter Roeck (2014-08-19 17:45:38)
 > From: Heiko Stübner <heiko@sntech.de>
 > 
-> S3C2412, S3C2443 and their derivatives contain a special software-reset
-> register in their system-controller.
-> 
-> Therefore register a restart handler for those.
-> 
-> Tested on a s3c2416-based board, s3c2412 compile-tested.
+> Add infrastructure to write the correct value to the restart register and
+> register the restart notifier for both rk3188 (including rk3066) and rk3288.
 > 
 > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
 > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
@@ -59,136 +54,89 @@ Acked-by: Mike Turquette <mturquette@linaro.org>
 > ---
 > v7: Added patch to series.
 > 
->  drivers/clk/samsung/clk-s3c2412.c | 29 +++++++++++++++++++++++++++++
->  drivers/clk/samsung/clk-s3c2443.c | 19 +++++++++++++++++++
->  2 files changed, 48 insertions(+)
+>  drivers/clk/rockchip/clk-rk3188.c |  2 ++
+>  drivers/clk/rockchip/clk-rk3288.c |  2 ++
+>  drivers/clk/rockchip/clk.c        | 25 +++++++++++++++++++++++++
+>  drivers/clk/rockchip/clk.h        |  1 +
+>  4 files changed, 30 insertions(+)
 > 
-> diff --git a/drivers/clk/samsung/clk-s3c2412.c b/drivers/clk/samsung/clk-s3c2412.c
-> index 34af09f..2ceedaf 100644
-> --- a/drivers/clk/samsung/clk-s3c2412.c
-> +++ b/drivers/clk/samsung/clk-s3c2412.c
-> @@ -14,6 +14,7 @@
->  #include <linux/of.h>
->  #include <linux/of_address.h>
->  #include <linux/syscore_ops.h>
-> +#include <linux/reboot.h>
+> diff --git a/drivers/clk/rockchip/clk-rk3188.c b/drivers/clk/rockchip/clk-rk3188.c
+> index a83a6d8..71b661a 100644
+> --- a/drivers/clk/rockchip/clk-rk3188.c
+> +++ b/drivers/clk/rockchip/clk-rk3188.c
+> @@ -631,6 +631,8 @@ static void __init rk3188_common_clk_init(struct device_node *np)
 >  
->  #include <dt-bindings/clock/s3c2412.h>
->  
-> @@ -26,6 +27,7 @@
->  #define CLKCON         0x0c
->  #define CLKDIVN                0x14
->  #define CLKSRC         0x1c
-> +#define SWRST          0x30
->  
->  /* list of PLLs to be registered */
->  enum s3c2412_plls {
-> @@ -204,6 +206,28 @@ struct samsung_clock_alias s3c2412_aliases[] __initdata = {
->         ALIAS(MSYSCLK, NULL, "fclk"),
->  };
->  
-> +static int s3c2412_restart(struct notifier_block *this,
-> +                          unsigned long mode, void *cmd)
-> +{
-> +       /* errata "Watch-dog/Software Reset Problem" specifies that
-> +        * this reset must be done with the SYSCLK sourced from
-> +        * EXTCLK instead of FOUT to avoid a glitch in the reset
-> +        * mechanism.
-> +        *
-> +        * See the watchdog section of the S3C2412 manual for more
-> +        * information on this fix.
-> +        */
+>         rockchip_register_softrst(np, 9, reg_base + RK2928_SOFTRST_CON(0),
+>                                   ROCKCHIP_SOFTRST_HIWORD_MASK);
 > +
-> +       __raw_writel(0x00, reg_base + CLKSRC);
-> +       __raw_writel(0x533C2412, reg_base + SWRST);
+> +       rockchip_register_restart_notifier(RK2928_GLB_SRST_FST);
+>  }
+>  
+>  static void __init rk3066a_clk_init(struct device_node *np)
+> diff --git a/drivers/clk/rockchip/clk-rk3288.c b/drivers/clk/rockchip/clk-rk3288.c
+> index 0d8c6c5..b604217 100644
+> --- a/drivers/clk/rockchip/clk-rk3288.c
+> +++ b/drivers/clk/rockchip/clk-rk3288.c
+> @@ -713,5 +713,7 @@ static void __init rk3288_clk_init(struct device_node *np)
+>  
+>         rockchip_register_softrst(np, 9, reg_base + RK3288_SOFTRST_CON(0),
+>                                   ROCKCHIP_SOFTRST_HIWORD_MASK);
+> +
+> +       rockchip_register_restart_notifier(RK3288_GLB_SRST_FST);
+>  }
+>  CLK_OF_DECLARE(rk3288_cru, "rockchip,rk3288-cru", rk3288_clk_init);
+> diff --git a/drivers/clk/rockchip/clk.c b/drivers/clk/rockchip/clk.c
+> index 278cf9d..aa41433 100644
+> --- a/drivers/clk/rockchip/clk.c
+> +++ b/drivers/clk/rockchip/clk.c
+> @@ -25,6 +25,7 @@
+>  #include <linux/clk-provider.h>
+>  #include <linux/mfd/syscon.h>
+>  #include <linux/regmap.h>
+> +#include <linux/reboot.h>
+>  #include "clk.h"
+>  
+>  /**
+> @@ -242,3 +243,27 @@ void __init rockchip_clk_register_branches(
+>                 rockchip_clk_add_lookup(clk, list->id);
+>         }
+>  }
+> +
+> +static unsigned int reg_restart;
+> +static int rockchip_restart_notify(struct notifier_block *this,
+> +                                  unsigned long mode, void *cmd)
+> +{
+> +       writel(0xfdb9, reg_base + reg_restart);
 > +       return NOTIFY_DONE;
 > +}
 > +
-> +static struct notifier_block s3c2412_restart_handler = {
-> +       .notifier_call = s3c2412_restart,
-> +       .priority = 129,
+> +static struct notifier_block rockchip_restart_handler = {
+> +       .notifier_call = rockchip_restart_notify,
+> +       .priority = 128,
 > +};
 > +
->  /*
->   * fixed rate clocks generated outside the soc
->   * Only necessary until the devicetree-move is complete
-> @@ -233,6 +257,7 @@ void __init s3c2412_common_clk_init(struct device_node *np, unsigned long xti_f,
->                                     unsigned long ext_f, void __iomem *base)
->  {
->         struct samsung_clk_provider *ctx;
-> +       int ret;
->         reg_base = base;
->  
->         if (np) {
-> @@ -267,6 +292,10 @@ void __init s3c2412_common_clk_init(struct device_node *np, unsigned long xti_f,
->         s3c2412_clk_sleep_init();
->  
->         samsung_clk_of_add_provider(np, ctx);
-> +
-> +       ret = register_restart_handler(&s3c2412_restart_handler);
-> +       if (ret)
-> +               pr_warn("cannot register restart handler, %d\n", ret);
->  }
->  
->  static void __init s3c2412_clk_init(struct device_node *np)
-> diff --git a/drivers/clk/samsung/clk-s3c2443.c b/drivers/clk/samsung/clk-s3c2443.c
-> index c92f853..0c3c182 100644
-> --- a/drivers/clk/samsung/clk-s3c2443.c
-> +++ b/drivers/clk/samsung/clk-s3c2443.c
-> @@ -14,6 +14,7 @@
->  #include <linux/of.h>
->  #include <linux/of_address.h>
->  #include <linux/syscore_ops.h>
-> +#include <linux/reboot.h>
->  
->  #include <dt-bindings/clock/s3c2443.h>
->  
-> @@ -33,6 +34,7 @@
->  #define HCLKCON                0x30
->  #define PCLKCON                0x34
->  #define SCLKCON                0x38
-> +#define SWRST          0x44
->  
->  /* the soc types */
->  enum supported_socs {
-> @@ -354,6 +356,18 @@ struct samsung_clock_alias s3c2450_aliases[] __initdata = {
->         ALIAS(PCLK_I2C1, "s3c2410-i2c.1", "i2c"),
->  };
->  
-> +static int s3c2443_restart(struct notifier_block *this,
-> +                          unsigned long mode, void *cmd)
+> +void __init rockchip_register_restart_notifier(unsigned int reg)
 > +{
-> +       __raw_writel(0x533c2443, reg_base + SWRST);
-> +       return NOTIFY_DONE;
-> +}
-> +
-> +static struct notifier_block s3c2443_restart_handler = {
-> +       .notifier_call = s3c2443_restart,
-> +       .priority = 129,
-> +};
-> +
->  /*
->   * fixed rate clocks generated outside the soc
->   * Only necessary until the devicetree-move is complete
-> @@ -378,6 +392,7 @@ void __init s3c2443_common_clk_init(struct device_node *np, unsigned long xti_f,
->                                     void __iomem *base)
->  {
->         struct samsung_clk_provider *ctx;
 > +       int ret;
->         reg_base = base;
->  
->         if (np) {
-> @@ -447,6 +462,10 @@ void __init s3c2443_common_clk_init(struct device_node *np, unsigned long xti_f,
->         s3c2443_clk_sleep_init();
->  
->         samsung_clk_of_add_provider(np, ctx);
 > +
-> +       ret = register_restart_handler(&s3c2443_restart_handler);
+> +       reg_restart = reg;
+> +       ret = register_restart_handler(&rockchip_restart_handler);
 > +       if (ret)
-> +               pr_warn("cannot register restart handler, %d\n", ret);
->  }
+> +               pr_err("%s: cannot register restart handler, %d\n",
+> +                      __func__, ret);
+> +}
+> diff --git a/drivers/clk/rockchip/clk.h b/drivers/clk/rockchip/clk.h
+> index 887cbde..0b5eab5 100644
+> --- a/drivers/clk/rockchip/clk.h
+> +++ b/drivers/clk/rockchip/clk.h
+> @@ -329,6 +329,7 @@ void rockchip_clk_register_branches(struct rockchip_clk_branch *clk_list,
+>                                     unsigned int nr_clk);
+>  void rockchip_clk_register_plls(struct rockchip_pll_clock *pll_list,
+>                                 unsigned int nr_pll, int grf_lock_offset);
+> +void rockchip_register_restart_notifier(unsigned int reg);
 >  
->  static void __init s3c2416_clk_init(struct device_node *np)
+>  #define ROCKCHIP_SOFTRST_HIWORD_MASK   BIT(0)
+>  
 > -- 
 > 1.9.1
 > 
