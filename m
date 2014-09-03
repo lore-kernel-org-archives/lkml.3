@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933960AbaICWTA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:19:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46190 "EHLO
+	id S933945AbaICWS7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:18:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46198 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933871AbaICWSv (ORCPT
+	with ESMTP id S933874AbaICWSv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:18:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        Robert Elliott <elliott@hp.com>, Joe Handzik <joseph.t.handzik@hp.com>,
-        Scott Teel <scott.teel@hp.com>, Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.16 083/125] hpsa: fix bad -ENOMEM return value in hpsa_big_passthru_ioctl
-Date: Wed,  3 Sep 2014 15:07:20 -0700
-Message-Id: <20140903220626.161243776@linuxfoundation.org>
+        Filipe Manana <fdmanana@suse.com>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.16 085/125] Btrfs: fix csum tree corruption, duplicate and outdated checksums
+Date: Wed,  3 Sep 2014 15:07:22 -0700
+Message-Id: <20140903220626.226676675@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -30,34 +28,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+From: Filipe Manana <fdmanana@suse.com>
 
-commit 0758f4f732b08b6ef07f2e5f735655cf69fea477 upstream.
+commit 27b9a8122ff71a8cadfbffb9c4f0694300464f3b upstream.
 
-When copy_from_user fails, return -EFAULT, not -ENOMEM
+Under rare circumstances we can end up leaving 2 versions of a checksum
+for the same file extent range.
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-Reported-by: Robert Elliott <elliott@hp.com>
-Reviewed-by: Joe Handzik <joseph.t.handzik@hp.com>
-Reviewed-by: Scott Teel <scott.teel@hp.com>
-Reviewed by: Mike MIller <michael.miller@canonical.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+The reason for this is that after calling btrfs_next_leaf we process
+slot 0 of the leaf it returns, instead of processing the slot set in
+path->slots[0]. Most of the time (by far) path->slots[0] is 0, but after
+btrfs_next_leaf() releases the path and before it searches for the next
+leaf, another task might cause a split of the next leaf, which migrates
+some of its keys to the leaf we were processing before calling
+btrfs_next_leaf(). In this case btrfs_next_leaf() returns again the
+same leaf but with path->slots[0] having a slot number corresponding
+to the first new key it got, that is, a slot number that didn't exist
+before calling btrfs_next_leaf(), as the leaf now has more keys than
+it had before. So we must really process the returned leaf starting at
+path->slots[0] always, as it isn't always 0, and the key at slot 0 can
+have an offset much lower than our search offset/bytenr.
+
+For example, consider the following scenario, where we have:
+
+sums->bytenr: 40157184, sums->len: 16384, sums end: 40173568
+four 4kb file data blocks with offsets 40157184, 40161280, 40165376, 40169472
+
+  Leaf N:
+
+    slot = 0                           slot = btrfs_header_nritems() - 1
+  |-------------------------------------------------------------------|
+  | [(CSUM CSUM 39239680), size 8] ... [(CSUM CSUM 40116224), size 4] |
+  |-------------------------------------------------------------------|
+
+  Leaf N + 1:
+
+      slot = 0                          slot = btrfs_header_nritems() - 1
+  |--------------------------------------------------------------------|
+  | [(CSUM CSUM 40161280), size 32] ... [((CSUM CSUM 40615936), size 8 |
+  |--------------------------------------------------------------------|
+
+Because we are at the last slot of leaf N, we call btrfs_next_leaf() to
+find the next highest key, which releases the current path and then searches
+for that next key. However after releasing the path and before finding that
+next key, the item at slot 0 of leaf N + 1 gets moved to leaf N, due to a call
+to ctree.c:push_leaf_left() (via ctree.c:split_leaf()), and therefore
+btrfs_next_leaf() will returns us a path again with leaf N but with the slot
+pointing to its new last key (CSUM CSUM 40161280). This new version of leaf N
+is then:
+
+    slot = 0                        slot = btrfs_header_nritems() - 2  slot = btrfs_header_nritems() - 1
+  |----------------------------------------------------------------------------------------------------|
+  | [(CSUM CSUM 39239680), size 8] ... [(CSUM CSUM 40116224), size 4]  [(CSUM CSUM 40161280), size 32] |
+  |----------------------------------------------------------------------------------------------------|
+
+And incorrecly using slot 0, makes us set next_offset to 39239680 and we jump
+into the "insert:" label, which will set tmp to:
+
+    tmp = min((sums->len - total_bytes) >> blocksize_bits,
+        (next_offset - file_key.offset) >> blocksize_bits) =
+    min((16384 - 0) >> 12, (39239680 - 40157184) >> 12) =
+    min(4, (u64)-917504 = 18446744073708634112 >> 12) = 4
+
+and
+
+   ins_size = csum_size * tmp = 4 * 4 = 16 bytes.
+
+In other words, we insert a new csum item in the tree with key
+(CSUM_OBJECTID CSUM_KEY 40157184 = sums->bytenr) that contains the checksums
+for all the data (4 blocks of 4096 bytes each = sums->len). Which is wrong,
+because the item with key (CSUM CSUM 40161280) (the one that was moved from
+leaf N + 1 to the end of leaf N) contains the old checksums of the last 12288
+bytes of our data and won't get those old checksums removed.
+
+So this leaves us 2 different checksums for 3 4kb blocks of data in the tree,
+and breaks the logical rule:
+
+   Key_N+1.offset >= Key_N.offset + length_of_data_its_checksums_cover
+
+An obvious bad effect of this is that a subsequent csum tree lookup to get
+the checksum of any of the blocks with logical offset of 40161280, 40165376
+or 40169472 (the last 3 4kb blocks of file data), will get the old checksums.
+
+Signed-off-by: Filipe Manana <fdmanana@suse.com>
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/hpsa.c |    2 +-
+ fs/btrfs/file-item.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -5092,7 +5092,7 @@ static int hpsa_big_passthru_ioctl(struc
+--- a/fs/btrfs/file-item.c
++++ b/fs/btrfs/file-item.c
+@@ -756,7 +756,7 @@ again:
+ 				found_next = 1;
+ 			if (ret != 0)
+ 				goto insert;
+-			slot = 0;
++			slot = path->slots[0];
  		}
- 		if (ioc->Request.Type.Direction & XFER_WRITE) {
- 			if (copy_from_user(buff[sg_used], data_ptr, sz)) {
--				status = -ENOMEM;
-+				status = -EFAULT;
- 				goto cleanup1;
- 			}
- 		} else
+ 		btrfs_item_key_to_cpu(path->nodes[0], &found_key, slot);
+ 		if (found_key.objectid != BTRFS_EXTENT_CSUM_OBJECTID ||
 
 
