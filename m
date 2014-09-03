@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932998AbaICRAx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 13:00:53 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53521 "EHLO
+	id S933081AbaICRBR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 13:01:17 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53789 "EHLO
 	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932515AbaICRAv (ORCPT
+	by vger.kernel.org with ESMTP id S933053AbaICRBN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 13:00:51 -0400
+	Wed, 3 Sep 2014 13:01:13 -0400
 From: Sudeep Holla <sudeep.holla@arm.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Sudeep Holla <sudeep.holla@arm.com>,
         Heiko Carstens <heiko.carstens@de.ibm.com>,
         Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>, x86@kernel.org,
-        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [PATCH v4 01/11] cpumask: factor out show_cpumap into separate helper function
-Date: Wed,  3 Sep 2014 18:00:07 +0100
-Message-Id: <1409763617-17074-2-git-send-email-sudeep.holla@arm.com>
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v4 10/11] ARM: kernel: add support for cpu cache information
+Date: Wed,  3 Sep 2014 18:00:16 +0100
+Message-Id: <1409763617-17074-11-git-send-email-sudeep.holla@arm.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1409763617-17074-1-git-send-email-sudeep.holla@arm.com>
 References: <1409763617-17074-1-git-send-email-sudeep.holla@arm.com>
@@ -29,359 +28,382 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sudeep Holla <sudeep.holla@arm.com>
 
-Many sysfs *_show function use cpu{list,mask}_scnprintf to copy cpumap
-to the buffer aligned to PAGE_SIZE, append '\n' and '\0' to return null
-terminated buffer with newline.
+This patch adds support for cacheinfo on ARM platforms.
 
-This patch creates a new helper function cpumap_copy_to_buf in
-cpumask.h and consolidates most of them using this new helper.
+On ARMv7, the cache hierarchy can be identified through Cache Level ID
+register(CLIDR) while the cache geometry is provided by Cache Size ID
+register(CCSIDR).
+
+On architecture versions before ARMv7, CLIDR and CCSIDR is not
+implemented. The cache type register(CTR) provides both cache hierarchy
+and geometry if implemented. For implementations that doesn't support
+CTR, we need to list the probable value of CTR if it was implemented
+along with the cpuid for the sake of simplicity to handle them.
+
+Since the architecture doesn't provide any way of detecting the cpus
+sharing particular cache, device tree is used fo the same purpose.
+On non-DT platforms, first level caches are per-cpu while higher level
+caches are assumed system-wide.
 
 Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
-Suggested-by: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: x86@kernel.org
-Cc: linux-acpi@vger.kernel.org
-Cc: linux-pci@vger.kernel.org
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org
 ---
- arch/x86/kernel/cpu/perf_event_amd_iommu.c    |  5 +---
- arch/x86/kernel/cpu/perf_event_amd_uncore.c   |  6 +----
- arch/x86/kernel/cpu/perf_event_intel_rapl.c   |  6 +----
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |  6 +----
- drivers/acpi/acpi_pad.c                       |  6 +----
- drivers/base/cpu.c                            |  5 +---
- drivers/base/node.c                           | 14 +++-------
- drivers/base/topology.c                       | 22 ++-------------
- drivers/pci/pci-sysfs.c                       | 39 +++++++--------------------
- include/linux/cpumask.h                       | 27 +++++++++++++++++++
- 10 files changed, 49 insertions(+), 87 deletions(-)
+ arch/arm/kernel/Makefile    |   1 +
+ arch/arm/kernel/cacheinfo.c | 275 ++++++++++++++++++++++++++++++++++++++++++++
+ arch/arm/mm/Kconfig         |  13 +++
+ 3 files changed, 289 insertions(+)
+ create mode 100644 arch/arm/kernel/cacheinfo.c
 
-diff --git a/arch/x86/kernel/cpu/perf_event_amd_iommu.c b/arch/x86/kernel/cpu/perf_event_amd_iommu.c
-index 639d1289b1ba..61a670de0ef2 100644
---- a/arch/x86/kernel/cpu/perf_event_amd_iommu.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd_iommu.c
-@@ -130,10 +130,7 @@ static ssize_t _iommu_cpumask_show(struct device *dev,
- 				   struct device_attribute *attr,
- 				   char *buf)
- {
--	int n = cpulist_scnprintf(buf, PAGE_SIZE - 2, &iommu_cpumask);
--	buf[n++] = '\n';
--	buf[n] = '\0';
--	return n;
-+	return cpumap_copy_to_buf(true, &iommu_cpumask, buf);
- }
- static DEVICE_ATTR(cpumask, S_IRUGO, _iommu_cpumask_show, NULL);
+diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
+index 38ddd9f83d0e..2c5ff0efb670 100644
+--- a/arch/arm/kernel/Makefile
++++ b/arch/arm/kernel/Makefile
+@@ -29,6 +29,7 @@ obj-y		+= entry-v7m.o v7m.o
+ else
+ obj-y		+= entry-armv.o
+ endif
++obj-$(CONFIG_CPU_HAS_CACHE) += cacheinfo.o
  
-diff --git a/arch/x86/kernel/cpu/perf_event_amd_uncore.c b/arch/x86/kernel/cpu/perf_event_amd_uncore.c
-index 30790d798e6b..d96a37ed8570 100644
---- a/arch/x86/kernel/cpu/perf_event_amd_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd_uncore.c
-@@ -219,7 +219,6 @@ static ssize_t amd_uncore_attr_show_cpumask(struct device *dev,
- 					    struct device_attribute *attr,
- 					    char *buf)
- {
--	int n;
- 	cpumask_t *active_mask;
- 	struct pmu *pmu = dev_get_drvdata(dev);
- 
-@@ -230,10 +229,7 @@ static ssize_t amd_uncore_attr_show_cpumask(struct device *dev,
- 	else
- 		return 0;
- 
--	n = cpulist_scnprintf(buf, PAGE_SIZE - 2, active_mask);
--	buf[n++] = '\n';
--	buf[n] = '\0';
--	return n;
-+	return cpumap_copy_to_buf(true, active_mask, buf);
- }
- static DEVICE_ATTR(cpumask, S_IRUGO, amd_uncore_attr_show_cpumask, NULL);
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_rapl.c b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-index 619f7699487a..8a673e138e2e 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-@@ -365,11 +365,7 @@ static void rapl_pmu_event_read(struct perf_event *event)
- static ssize_t rapl_get_attr_cpumask(struct device *dev,
- 				struct device_attribute *attr, char *buf)
- {
--	int n = cpulist_scnprintf(buf, PAGE_SIZE - 2, &rapl_cpu_mask);
--
--	buf[n++] = '\n';
--	buf[n] = '\0';
--	return n;
-+	return cpumap_copy_to_buf(true, &rapl_cpu_mask, buf);
- }
- 
- static DEVICE_ATTR(cpumask, S_IRUGO, rapl_get_attr_cpumask, NULL);
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index 0939f86f543d..a0b810951743 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -3617,11 +3617,7 @@ static int uncore_pmu_event_init(struct perf_event *event)
- static ssize_t uncore_get_attr_cpumask(struct device *dev,
- 				struct device_attribute *attr, char *buf)
- {
--	int n = cpulist_scnprintf(buf, PAGE_SIZE - 2, &uncore_cpu_mask);
--
--	buf[n++] = '\n';
--	buf[n] = '\0';
--	return n;
-+	return cpumap_copy_to_buf(true, &uncore_cpu_mask, buf);
- }
- 
- static DEVICE_ATTR(cpumask, S_IRUGO, uncore_get_attr_cpumask, NULL);
-diff --git a/drivers/acpi/acpi_pad.c b/drivers/acpi/acpi_pad.c
-index f148a0580e04..0dbe52ed6a0d 100644
---- a/drivers/acpi/acpi_pad.c
-+++ b/drivers/acpi/acpi_pad.c
-@@ -350,11 +350,7 @@ static ssize_t acpi_pad_idlecpus_store(struct device *dev,
- static ssize_t acpi_pad_idlecpus_show(struct device *dev,
- 	struct device_attribute *attr, char *buf)
- {
--	int n = 0;
--	n = cpumask_scnprintf(buf, PAGE_SIZE-2, to_cpumask(pad_busy_cpus_bits));
--	buf[n++] = '\n';
--	buf[n] = '\0';
--	return n;
-+	return cpumap_copy_to_buf(false, to_cpumask(pad_busy_cpus_bits), buf);
- }
- static DEVICE_ATTR(idlecpus, S_IRUGO|S_IWUSR,
- 	acpi_pad_idlecpus_show,
-diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
-index 006b1bc5297d..277a9cfa9040 100644
---- a/drivers/base/cpu.c
-+++ b/drivers/base/cpu.c
-@@ -207,11 +207,8 @@ static ssize_t show_cpus_attr(struct device *dev,
- 			      char *buf)
- {
- 	struct cpu_attr *ca = container_of(attr, struct cpu_attr, attr);
--	int n = cpulist_scnprintf(buf, PAGE_SIZE-2, *(ca->map));
- 
--	buf[n++] = '\n';
--	buf[n] = '\0';
--	return n;
-+	return cpumap_copy_to_buf(true, *ca->map, buf);
- }
- 
- #define _CPU_ATTR(name, map) \
-diff --git a/drivers/base/node.c b/drivers/base/node.c
-index c6d3ae05f1ca..6e58ad566c13 100644
---- a/drivers/base/node.c
-+++ b/drivers/base/node.c
-@@ -25,32 +25,26 @@ static struct bus_type node_subsys = {
- };
- 
- 
--static ssize_t node_read_cpumap(struct device *dev, int type, char *buf)
-+static ssize_t node_read_cpumap(struct device *dev, bool list, char *buf)
- {
- 	struct node *node_dev = to_node(dev);
- 	const struct cpumask *mask = cpumask_of_node(node_dev->dev.id);
--	int len;
- 
- 	/* 2008/04/07: buf currently PAGE_SIZE, need 9 chars per 32 bits. */
- 	BUILD_BUG_ON((NR_CPUS/32 * 9) > (PAGE_SIZE-1));
- 
--	len = type?
--		cpulist_scnprintf(buf, PAGE_SIZE-2, mask) :
--		cpumask_scnprintf(buf, PAGE_SIZE-2, mask);
-- 	buf[len++] = '\n';
-- 	buf[len] = '\0';
--	return len;
-+	return cpumap_copy_to_buf(list, mask, buf);
- }
- 
- static inline ssize_t node_read_cpumask(struct device *dev,
- 				struct device_attribute *attr, char *buf)
- {
--	return node_read_cpumap(dev, 0, buf);
-+	return node_read_cpumap(dev, false, buf);
- }
- static inline ssize_t node_read_cpulist(struct device *dev,
- 				struct device_attribute *attr, char *buf)
- {
--	return node_read_cpumap(dev, 1, buf);
-+	return node_read_cpumap(dev, true, buf);
- }
- 
- static DEVICE_ATTR(cpumap,  S_IRUGO, node_read_cpumask, NULL);
-diff --git a/drivers/base/topology.c b/drivers/base/topology.c
-index be7c1fb7c0c9..39b294bd769b 100644
---- a/drivers/base/topology.c
-+++ b/drivers/base/topology.c
-@@ -42,29 +42,11 @@ static ssize_t show_##name(struct device *dev,			\
- 	return sprintf(buf, "%d\n", topology_##name(dev->id));	\
- }
- 
--#if defined(topology_thread_cpumask) || defined(topology_core_cpumask) || \
--    defined(topology_book_cpumask)
--static ssize_t show_cpumap(int type, const struct cpumask *mask, char *buf)
--{
--	ptrdiff_t len = PTR_ALIGN(buf + PAGE_SIZE - 1, PAGE_SIZE) - buf;
--	int n = 0;
--
--	if (len > 1) {
--		n = type?
--			cpulist_scnprintf(buf, len-2, mask) :
--			cpumask_scnprintf(buf, len-2, mask);
--		buf[n++] = '\n';
--		buf[n] = '\0';
--	}
--	return n;
--}
--#endif
--
- #define define_siblings_show_map(name)					\
- static ssize_t show_##name(struct device *dev,				\
- 			   struct device_attribute *attr, char *buf)	\
- {									\
--	return show_cpumap(0, topology_##name(dev->id), buf);		\
-+	return cpumap_copy_to_buf(false, topology_##name(dev->id), buf);\
- }
- 
- #define define_siblings_show_list(name)					\
-@@ -72,7 +54,7 @@ static ssize_t show_##name##_list(struct device *dev,			\
- 				  struct device_attribute *attr,	\
- 				  char *buf)				\
- {									\
--	return show_cpumap(1, topology_##name(dev->id), buf);		\
-+	return cpumap_copy_to_buf(true, topology_##name(dev->id), buf);	\
- }
- 
- #define define_siblings_show_func(name)		\
-diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-index 9ff0a901ecf7..aa0f1359ef30 100644
---- a/drivers/pci/pci-sysfs.c
-+++ b/drivers/pci/pci-sysfs.c
-@@ -77,11 +77,10 @@ static ssize_t broken_parity_status_store(struct device *dev,
- }
- static DEVICE_ATTR_RW(broken_parity_status);
- 
--static ssize_t pci_dev_show_local_cpu(struct device *dev, int type,
-+static ssize_t pci_dev_show_local_cpu(struct device *dev, bool list,
- 				      struct device_attribute *attr, char *buf)
- {
- 	const struct cpumask *mask;
--	int len;
- 
- #ifdef CONFIG_NUMA
- 	mask = (dev_to_node(dev) == -1) ? cpu_online_mask :
-@@ -89,59 +88,41 @@ static ssize_t pci_dev_show_local_cpu(struct device *dev, int type,
- #else
- 	mask = cpumask_of_pcibus(to_pci_dev(dev)->bus);
- #endif
--	len = type ?
--		cpumask_scnprintf(buf, PAGE_SIZE-2, mask) :
--		cpulist_scnprintf(buf, PAGE_SIZE-2, mask);
--
--	buf[len++] = '\n';
--	buf[len] = '\0';
--	return len;
-+	return cpumap_copy_to_buf(list, mask, buf);
- }
- 
- static ssize_t local_cpus_show(struct device *dev,
- 			       struct device_attribute *attr, char *buf)
- {
--	return pci_dev_show_local_cpu(dev, 1, attr, buf);
-+	return pci_dev_show_local_cpu(dev, false, attr, buf);
- }
- static DEVICE_ATTR_RO(local_cpus);
- 
- static ssize_t local_cpulist_show(struct device *dev,
- 				  struct device_attribute *attr, char *buf)
- {
--	return pci_dev_show_local_cpu(dev, 0, attr, buf);
-+	return pci_dev_show_local_cpu(dev, true, attr, buf);
- }
- static DEVICE_ATTR_RO(local_cpulist);
- 
- /*
-  * PCI Bus Class Devices
-  */
--static ssize_t pci_bus_show_cpuaffinity(struct device *dev, int type,
--					struct device_attribute *attr,
--					char *buf)
--{
--	int ret;
--	const struct cpumask *cpumask;
--
--	cpumask = cpumask_of_pcibus(to_pci_bus(dev));
--	ret = type ?
--		cpulist_scnprintf(buf, PAGE_SIZE-2, cpumask) :
--		cpumask_scnprintf(buf, PAGE_SIZE-2, cpumask);
--	buf[ret++] = '\n';
--	buf[ret] = '\0';
--	return ret;
--}
--
- static ssize_t cpuaffinity_show(struct device *dev,
- 				struct device_attribute *attr, char *buf)
- {
--	return pci_bus_show_cpuaffinity(dev, 0, attr, buf);
-+	const struct cpumask *cpumask = cpumask_of_pcibus(to_pci_bus(dev));
-+
-+	return cpumap_copy_to_buf(false, cpumask, buf);
- }
- static DEVICE_ATTR_RO(cpuaffinity);
- 
- static ssize_t cpulistaffinity_show(struct device *dev,
- 				    struct device_attribute *attr, char *buf)
- {
--	return pci_bus_show_cpuaffinity(dev, 1, attr, buf);
-+	const struct cpumask *cpumask = cpumask_of_pcibus(to_pci_bus(dev));
-+
-+	return cpumap_copy_to_buf(true, cpumask, buf);
- }
- static DEVICE_ATTR_RO(cpulistaffinity);
- 
-diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
-index 2997af6d2ccd..26d8348292dd 100644
---- a/include/linux/cpumask.h
-+++ b/include/linux/cpumask.h
-@@ -11,6 +11,8 @@
- #include <linux/bitmap.h>
- #include <linux/bug.h>
- 
-+#include <asm/page.h>
-+
- typedef struct cpumask { DECLARE_BITMAP(bits, NR_CPUS); } cpumask_t;
- 
- /**
-@@ -792,6 +794,31 @@ static inline const struct cpumask *get_cpu_mask(unsigned int cpu)
- }
- #endif /* NR_CPUS > BITS_PER_LONG */
- 
-+/**
-+ * cpumap_copy_to_buf  - copies the cpumask into the buffer either
-+ *	as comma-separated list of cpus or hex values of cpumask
-+ * @list: indicates whether the cpumap must be list
-+ * @mask: the cpumask to copy
-+ * @buf: the buffer to copy into
+ obj-$(CONFIG_OC_ETM)		+= etm.o
+ obj-$(CONFIG_CPU_IDLE)		+= cpuidle.o
+diff --git a/arch/arm/kernel/cacheinfo.c b/arch/arm/kernel/cacheinfo.c
+new file mode 100644
+index 000000000000..d2659563de31
+--- /dev/null
++++ b/arch/arm/kernel/cacheinfo.c
+@@ -0,0 +1,275 @@
++/*
++ *  ARM cacheinfo support
 + *
-+ * Returns the length of the (null-terminated) @buf string, zero if
-+ * nothing is copied.
++ *  Copyright (C) 2014 ARM Ltd.
++ *  All Rights Reserved
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether express or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
-+static inline ssize_t
-+cpumap_copy_to_buf(bool list, const struct cpumask *mask, char *buf)
-+{
-+	ptrdiff_t len = PTR_ALIGN(buf + PAGE_SIZE - 1, PAGE_SIZE) - buf - 2;
-+	int n = 0;
 +
-+	if (len > 1) {
-+		n = list ? cpulist_scnprintf(buf, len, mask) :
-+			   cpumask_scnprintf(buf, len, mask);
-+		buf[n++] = '\n';
-+		buf[n] = '\0';
-+	}
-+	return n;
++#include <linux/bitops.h>
++#include <linux/cacheinfo.h>
++#include <linux/cpu.h>
++#include <linux/compiler.h>
++#include <linux/of.h>
++
++#include <asm/cputype.h>
++#include <asm/processor.h>
++#include <asm/system_info.h>
++
++#define cache_is_armv7() \
++	(cpu_architecture() >= CPU_ARCH_ARMv7 && !armv6_extended())
++#define MAX_CACHE_LEVEL		(cache_is_armv7() ? 7 : 1)
++
++#define CTR_CTYPE_SHIFT		24
++#define CTR_CTYPE_MASK		(1 << CTR_CTYPE_SHIFT)
++
++struct ctr_info {
++	unsigned int cpuid_part;
++	unsigned int ctr;
++};
++
++/*
++ *  Cache Type Register
++ *  +---------------------------------+
++ *  | 31 29 | 28 25 |24| 23 12 | 11 0 |
++ *  +---------------------------------+
++ *  | 0 0 0 | Ctype | S| Dsize | Isize|
++ *  +---------------------------------+
++ * The table below encodes only Dsize and Isize
++ */
++static struct ctr_info cache_ctr_list[] = {
++	{0x4400a100, 0x0016A16A }, /* SA-110:  32kB D$, 32kB I$ */
++	{0x4400a110, 0x0012A16A }, /* SA-1100: 16kB D$, 32kB I$ */
++	{0x6900b110, 0x0012A16A }, /* SA-1110: 16kB D$, 32kB I$ */
++};
++
++/*
++ * List of CPUs reported as ARMv7 but don't implement CLIDR,
++ * CSSELR and CCSIDR. Cache information is still available from CTR
++ */
++static int armv6_ext_cpuid_part[] = {
++	0x4100b020, /* ARM11MP */
++	0x4100b760, /* ARM1176 */
++};
++
++static bool armv6_extended(void)
++{
++	int i, cpuid_part = read_cpuid_part();
++
++	for (i = 0; i < ARRAY_SIZE(armv6_ext_cpuid_part); i++)
++		if (armv6_ext_cpuid_part[i] == cpuid_part)
++			return true;
++	return false;
 +}
 +
- /*
-  *
-  * From here down, all obsolete.  Use cpumask_ variants!
++static int get_unimplemented_ctr(unsigned int *ctr)
++{
++	int i, cpuid_part = read_cpuid_part();
++
++	for (i = 0; i < ARRAY_SIZE(cache_ctr_list); i++)
++		if (cache_ctr_list[i].cpuid_part == cpuid_part) {
++			*ctr = cache_ctr_list[i].ctr;
++			return 0;
++		}
++	return -ENOENT;
++}
++
++static unsigned int get_ctr(void)
++{
++	unsigned int ctr;
++
++	if (get_unimplemented_ctr(&ctr))
++		ctr = read_cpuid_cachetype();
++	return ctr;
++}
++
++static enum cache_type __get_cache_type(int level)
++{
++	if (level > MAX_CACHE_LEVEL)
++		return CACHE_TYPE_NOCACHE;
++	return get_ctr() & CTR_CTYPE_MASK ?
++		CACHE_TYPE_SEPARATE : CACHE_TYPE_UNIFIED;
++}
++
++/*
++ *  +---------------------------------+
++ *  | 9  8  7  6 | 5  4  3 | 2 | 1  0 |
++ *  +---------------------------------+
++ *  |    size    |  assoc  | m |  len |
++ *  +---------------------------------+
++ * linelen        = 1 << (len + 3)
++ * multiplier     = 2 + m
++ * nsets          = 1 << (size + 6 - assoc - len)
++ * associativity  = multiplier << (assoc - 1)
++ * cache_size     = multiplier << (size + 8)
++ */
++#define CTR_LINESIZE_MASK	0x3
++#define CTR_MULTIPLIER_SHIFT	2
++#define CTR_MULTIPLIER_MASK	0x1
++#define CTR_ASSOCIAT_SHIFT	3
++#define CTR_ASSOCIAT_MASK	0x7
++#define CTR_SIZE_SHIFT		6
++#define CTR_SIZE_MASK		0xF
++#define CTR_DCACHE_SHIFT	12
++
++static void __ci_leaf_init(enum cache_type type, struct cacheinfo *this_leaf)
++{
++	unsigned int size, multiplier, assoc, len, tmp = get_ctr();
++
++	if (type == CACHE_TYPE_DATA)
++		tmp >>= CTR_DCACHE_SHIFT;
++
++	len = tmp & CTR_LINESIZE_MASK;
++	size = (tmp >> CTR_SIZE_SHIFT) & CTR_SIZE_MASK;
++	assoc = (tmp >> CTR_ASSOCIAT_SHIFT) & CTR_ASSOCIAT_MASK;
++	multiplier = ((tmp >> CTR_MULTIPLIER_SHIFT) & CTR_MULTIPLIER_MASK) + 2;
++
++	this_leaf->type = type;
++	this_leaf->coherency_line_size = 1 << (len + 3);
++	this_leaf->number_of_sets = 1 << (size + 6 - assoc - len);
++	this_leaf->ways_of_associativity = multiplier << (assoc - 1);
++	this_leaf->size = multiplier << (size + 8);
++}
++
++/* Ctypen, bits[3(n - 1) + 2 : 3(n - 1)], for n = 1 to 7 */
++#define CLIDR_CTYPE_SHIFT(level)	(3 * (level - 1))
++#define CLIDR_CTYPE_MASK(level)		(7 << CLIDR_CTYPE_SHIFT(level))
++#define CLIDR_CTYPE(clidr, level)	\
++	(((clidr) & CLIDR_CTYPE_MASK(level)) >> CLIDR_CTYPE_SHIFT(level))
++
++static inline enum cache_type __armv7_get_cache_type(int level)
++{
++	unsigned int clidr;
++
++	if (level > MAX_CACHE_LEVEL)
++		return CACHE_TYPE_NOCACHE;
++	asm volatile ("mrc p15, 1, %0, c0, c0, 1" : "=r" (clidr));
++	return CLIDR_CTYPE(clidr, level);
++}
++
++/*
++ * NumSets, bits[27:13] - (Number of sets in cache) - 1
++ * Associativity, bits[12:3] - (Associativity of cache) - 1
++ * LineSize, bits[2:0] - (Log2(Number of words in cache line)) - 2
++ */
++#define CCSIDR_WRITE_THROUGH		BIT(31)
++#define CCSIDR_WRITE_BACK		BIT(30)
++#define CCSIDR_READ_ALLOCATE		BIT(29)
++#define CCSIDR_WRITE_ALLOCATE		BIT(28)
++#define CCSIDR_LINESIZE_MASK		0x7
++#define CCSIDR_ASSOCIATIVITY_SHIFT	3
++#define CCSIDR_ASSOCIATIVITY_MASK	0x3FF
++#define CCSIDR_NUMSETS_SHIFT		13
++#define CCSIDR_NUMSETS_MASK		0x7FF
++
++/*
++ * Which cache CCSIDR represents depends on CSSELR value
++ * Make sure no one else changes CSSELR during this
++ * smp_call_function_single prevents preemption for us
++ */
++static inline u32 get_ccsidr(u32 csselr)
++{
++	u32 ccsidr;
++
++	/* Put value into CSSELR */
++	asm volatile ("mcr p15, 2, %0, c0, c0, 0" : : "r" (csselr));
++	isb();
++	/* Read result out of CCSIDR */
++	asm volatile ("mrc p15, 1, %0, c0, c0, 0" : "=r" (ccsidr));
++
++	return ccsidr;
++}
++
++static void __armv7_ci_leaf_init(enum cache_type type,
++				 struct cacheinfo *this_leaf)
++{
++	bool is_instr_cache = type & CACHE_TYPE_INST;
++	u32 tmp = get_ccsidr((this_leaf->level - 1) << 1 | is_instr_cache);
++
++	this_leaf->type = type;
++	this_leaf->coherency_line_size =
++	    (1 << ((tmp & CCSIDR_LINESIZE_MASK) + 2)) * 4;
++	this_leaf->number_of_sets =
++	    ((tmp >> CCSIDR_NUMSETS_SHIFT) & CCSIDR_NUMSETS_MASK) + 1;
++	this_leaf->ways_of_associativity = ((tmp >> CCSIDR_ASSOCIATIVITY_SHIFT)
++					    & CCSIDR_ASSOCIATIVITY_MASK) + 1;
++	this_leaf->size = this_leaf->number_of_sets *
++	    this_leaf->coherency_line_size * this_leaf->ways_of_associativity;
++	this_leaf->attributes =
++		((tmp & CCSIDR_WRITE_THROUGH) ? CACHE_WRITE_THROUGH : 0) |
++		((tmp & CCSIDR_WRITE_BACK) ? CACHE_WRITE_BACK : 0) |
++		((tmp & CCSIDR_READ_ALLOCATE) ? CACHE_READ_ALLOCATE : 0) |
++		((tmp & CCSIDR_WRITE_ALLOCATE) ? CACHE_WRITE_ALLOCATE : 0);
++}
++
++static inline enum cache_type get_cache_type(int level)
++{
++	if (cache_is_armv7())
++		return __armv7_get_cache_type(level);
++	return __get_cache_type(level);
++}
++
++static void ci_leaf_init(struct cacheinfo *this_leaf,
++			 enum cache_type type, unsigned int level)
++{
++	this_leaf->level = level;
++	if (cache_is_armv7())
++		__armv7_ci_leaf_init(type, this_leaf);
++	else
++		__ci_leaf_init(type, this_leaf);
++}
++
++static int __init_cache_level(unsigned int cpu)
++{
++	unsigned int ctype, level, leaves;
++	struct cpu_cacheinfo *this_cpu_ci = get_cpu_cacheinfo(cpu);
++
++	for (level = 1, leaves = 0; level <= MAX_CACHE_LEVEL; level++) {
++		ctype = get_cache_type(level);
++		if (ctype == CACHE_TYPE_NOCACHE) {
++			level--;
++			break;
++		}
++		/* Separate instruction and data caches */
++		leaves += (ctype == CACHE_TYPE_SEPARATE) ? 2 : 1;
++	}
++
++	this_cpu_ci->num_levels = level;
++	this_cpu_ci->num_leaves = leaves;
++
++	return 0;
++}
++
++static int __populate_cache_leaves(unsigned int cpu)
++{
++	unsigned int level, idx;
++	enum cache_type type;
++	struct cpu_cacheinfo *this_cpu_ci = get_cpu_cacheinfo(cpu);
++	struct cacheinfo *this_leaf = this_cpu_ci->info_list;
++
++	for (idx = 0, level = 1; level <= this_cpu_ci->num_levels &&
++	     idx < this_cpu_ci->num_leaves; idx++, level++) {
++		type = get_cache_type(level);
++		if (type == CACHE_TYPE_SEPARATE) {
++			ci_leaf_init(this_leaf++, CACHE_TYPE_DATA, level);
++			ci_leaf_init(this_leaf++, CACHE_TYPE_INST, level);
++		} else {
++			ci_leaf_init(this_leaf++, type, level);
++		}
++	}
++	return 0;
++}
++
++DEFINE_SMP_CALL_CACHE_FUNCTION(init_cache_level)
++DEFINE_SMP_CALL_CACHE_FUNCTION(populate_cache_leaves)
+diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
+index ae69809a9e47..9cfbf2fa8bc4 100644
+--- a/arch/arm/mm/Kconfig
++++ b/arch/arm/mm/Kconfig
+@@ -494,30 +494,42 @@ config CPU_PABRT_V7
+ # The cache model
+ config CPU_CACHE_V4
+ 	bool
++	select CPU_HAS_CACHE
+ 
+ config CPU_CACHE_V4WT
+ 	bool
++	select CPU_HAS_CACHE
+ 
+ config CPU_CACHE_V4WB
+ 	bool
++	select CPU_HAS_CACHE
+ 
+ config CPU_CACHE_V6
+ 	bool
++	select CPU_HAS_CACHE
+ 
+ config CPU_CACHE_V7
+ 	bool
++	select CPU_HAS_CACHE
+ 
+ config CPU_CACHE_NOP
+ 	bool
++	select CPU_HAS_CACHE
+ 
+ config CPU_CACHE_VIVT
+ 	bool
++	select CPU_HAS_CACHE
+ 
+ config CPU_CACHE_VIPT
+ 	bool
++	select CPU_HAS_CACHE
+ 
+ config CPU_CACHE_FA
+ 	bool
++	select CPU_HAS_CACHE
++
++config CPU_HAS_CACHE
++	bool
+ 
+ if MMU
+ # The copy-page model
+@@ -845,6 +857,7 @@ config DMA_CACHE_RWFO
+ 
+ config OUTER_CACHE
+ 	bool
++	select CPU_HAS_CACHE
+ 
+ config OUTER_CACHE_SYNC
+ 	bool
 -- 
 1.8.3.2
 
