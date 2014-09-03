@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932180AbaICT52 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 15:57:28 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:62597 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932108AbaICT50 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 15:57:26 -0400
-Message-ID: <540772A1.8080101@cogentembedded.com>
-Date: Wed, 03 Sep 2014 23:57:21 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: mturquette@linaro.org, linux-kernel@vger.kernel.org
-CC: linux-sh@vger.kernel.org, vksavl@gmail.com
-Subject: Re: [PATCH] clk-rcar-gen2: RCAN clock support
-References: <201407310023.43605.sergei.shtylyov@cogentembedded.com>
-In-Reply-To: <201407310023.43605.sergei.shtylyov@cogentembedded.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756052AbaICUYo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 16:24:44 -0400
+Received: from syn.loicp.eu ([176.31.96.212]:56929 "EHLO mx0.loicp.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755520AbaICUXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 16:23:31 -0400
+From: Loic Pefferkorn <loic@loicp.eu>
+To: gregkh@linuxfoundation.org, alan@linux.intel.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 6/6] staging: goldfish: avoid multiple assignments
+Date: Wed,  3 Sep 2014 22:23:15 +0200
+Message-Id: <1409775795-12521-7-git-send-email-loic@loicp.eu>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <1409775795-12521-1-git-send-email-loic@loicp.eu>
+References: <1409775795-12521-1-git-send-email-loic@loicp.eu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Coding style: avoid multiple assignments
 
-On 07/31/2014 12:23 AM, Sergei Shtylyov wrote:
+Signed-off-by: Loic Pefferkorn <loic@loicp.eu>
+---
+ drivers/staging/goldfish/goldfish_nand.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-> Add RCAN clock support to the R-Car generation 2 CPG driver. This clock gets
-> derived from the USB_EXTAL clock by dividing it by 6. The layout of RCANCKCR
-> register is close to those of the clocks supported by the 'clk-div6'  driver
-> but has no divider field, and so can't be supported by that driver...
-
-> Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-
-> ---
-> The patch is against the 'clk-next' branch of Mike Turquette's 'linux.git' repo.
-
->   drivers/clk/shmobile/clk-rcar-gen2.c |   99 +++++++++++++++++++++++++++++++++++
->   1 file changed, 99 insertions(+)
-
-    More than a months has passed, there hasn't been any feedback, patch 
-hasn't been applied... what's wrong with it?
-
-WBR, Sergei
+diff --git a/drivers/staging/goldfish/goldfish_nand.c b/drivers/staging/goldfish/goldfish_nand.c
+index c6c85d3..d68f216 100644
+--- a/drivers/staging/goldfish/goldfish_nand.c
++++ b/drivers/staging/goldfish/goldfish_nand.c
+@@ -329,9 +329,10 @@ static int goldfish_nand_init_device(struct platform_device *pdev,
+ 
+ 	mtd->priv = nand;
+ 
+-	mtd->name = name = devm_kzalloc(&pdev->dev, name_len + 1, GFP_KERNEL);
++	name = devm_kzalloc(&pdev->dev, name_len + 1, GFP_KERNEL);
+ 	if (name == NULL)
+ 		return -ENOMEM;
++	mtd->name = name;
+ 
+ 	result = goldfish_nand_cmd(mtd, NAND_CMD_GET_DEV_NAME, 0, name_len,
+ 				   name);
+-- 
+2.0.4
 
