@@ -1,103 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755280AbaICSpj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 14:45:39 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:47832 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751389AbaICSph (ORCPT
+	id S1755349AbaICSqt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 14:46:49 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:45339 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753504AbaICSqr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 14:45:37 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+gLl+h+npMpyqPzzuzNh/9
-Date: Wed, 3 Sep 2014 11:45:28 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-Cc: Lee Jones <lee.jones@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
-        Marek Belisko <marek@goldelico.com>, linux-omap@vger.kernel.org
-Subject: Re: PROBLEM: bindings for drivers/mfd/twl4030-power.c
-Message-ID: <20140903184527.GG11766@atomide.com>
-References: <FAC7D7E5-1D05-4D63-821F-C56D3AAA8FF9@goldelico.com>
- <20140825212652.GR17254@atomide.com>
- <EBD1E2E6-E596-4B3D-B093-144ABDD7DEDE@goldelico.com>
+	Wed, 3 Sep 2014 14:46:47 -0400
+From: Nishanth Menon <nm@ti.com>
+To: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>
+CC: <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>
+Subject: [PATCH] ARM: dts: am437x-gp: switch i2c0 to 100KHz
+Date: Wed, 3 Sep 2014 13:46:21 -0500
+Message-ID: <1409769981-17669-1-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <EBD1E2E6-E596-4B3D-B093-144ABDD7DEDE@goldelico.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Dr. H. Nikolaus Schaller <hns@goldelico.com> [140901 09:54]:
-> Hi,
-> 
-> Am 25.08.2014 um 23:26 schrieb Tony Lindgren:
-> 
-> > * Dr. H. Nikolaus Schaller <hns@goldelico.com> [140817 08:46]:
-> >> I am trying to make ti,use_poweroff work on 3.17-rc1 for the GTA04 board.
-> >> Poweroff was broken for a while and I found that the driver isn't loaded at all.
-> >> 
-> >> It appears to me that commit e7cd1d1eb16fcdf53001b926187a82f1f3e1a7e6
-> >> did rename the compatible entry from "ti,twl4030-power" to "ti,twl4030-power-reset"
-> >> but this was not documented in the bindings and of course our DT does not
-> >> match.
-> >> 
-> >> Even your commit message talks about "ti,twl4030-power" although I can't find it
-> >> in the code.
-> > 
-> > Hmm sorry did I accidentally remove ti,twl4030-power? If so, that should
-> > be added back for sure. Do you have a patch for that already?
-> 
-> No, I have only updated our device tree because I don't know if it really should
-> be added back or not.
-> 
-> As you say the "ti,twl4030-power" does not configure anything. So what
-> is it good for?
+On the GP EVM, the ambient light sensor is limited to 100KHz on the
+I2C bus.
 
-Only for the poweroff if "ti,use_poweroff" is set. Care to do a patch
-as you clearly have a use case to test it with?
+So use 100kHz for I2C on the GP EVM due to this limitation on the
+ambient light sensor.
 
-> >> Are "ti,twl4030-power" and "ti,twl4030-power-reset" doing the same?
-> > 
-> > No, they are separate where ti,twl4030-power does not configure the
-> > twl4030 in any way where ti,twl4030-power-reset configures the warm
-> > reset sequence.
-> 
-> Yes, that is what I deduced because our old setting of "ti,twl4030-power" did
-> no longer configure the power-off and not even load the driver.
-> 
-> > 
-> > For gta04, what you really want is to use ti,twl4030-power-idle or
-> > even ti,twl4030-power-idle-osc-off if the board is wired to support
-> > cutting off the oscillator.
-> 
-> Ok, I see (but must admit that I don't understand the details even after
-> reading the bindings.txt).
+Reported-by: Aparna Balasubramanian <aparnab@ti.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+based on v3.17-rc1
 
-Well the twl4030 has resources such as GPIO pins and regulators that can
-be configured to automatically change state for retention and off-idle.
-That's how we can cut off the core voltage for idle.
+ arch/arm/boot/dts/am437x-gp-evm.dts |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/am437x-gp-evm.dts b/arch/arm/boot/dts/am437x-gp-evm.dts
+index 646a6ea..9559c19 100644
+--- a/arch/arm/boot/dts/am437x-gp-evm.dts
++++ b/arch/arm/boot/dts/am437x-gp-evm.dts
+@@ -260,7 +260,7 @@
+ 	status = "okay";
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&i2c0_pins>;
+-	clock-frequency = <400000>;
++	clock-frequency = <100000>;
  
-> Currently we develop without taking care of suspend (the DT migration was
-> much more troublesome work than anticipated) but that should be changed soon.
+ 	tps65218: tps65218@24 {
+ 		reg = <0x24>;
+-- 
+1.7.9.5
 
-OK, yeah the PM features should be finally working now with mainline
-and DT :)
- 
-> > And you probably also want to configure some wake-up interrupts at least
-> > for the the UARTs in the board specific .dts file, see for example the
-> > UART3 in the existing board files that have:
-> > 
-> > interrupts-extended = <&intc 74 &omap3_pmx_core OMAP3_UART3_RX>;
-> 
-> thanks for the hint!
-
-No problem. And FYI, the reason why we can't add that automatically is
-because there are alternate pins for UART3 pins depending on the
-packaging and which pin is actually wired up.
-
-Regards,
-
-Tony
