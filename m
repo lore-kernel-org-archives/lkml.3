@@ -1,88 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932078AbaICGsG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 02:48:06 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:22592 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755185AbaICGsD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 02:48:03 -0400
-X-AuditID: cbfee68f-f797f6d000001173-05-5406b9a12dd5
-From: Jonghwa Lee <jonghwa3.lee@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com, r.baldyga@samsung.com,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>
-Subject: [PATCH v2] extcon: max77693: Fix a bug occured at changing ADC
- debounce time.
-Date: Wed, 03 Sep 2014 15:47:58 +0900
-Message-id: <1409726878-25781-1-git-send-email-jonghwa3.lee@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBLMWRmVeSWpSXmKPExsWyRsSkUHfhTrYQgwcnVC2uf3nOatF59gmz
-	xeVdc9gsbjeuYLN4cHgnuwOrR9+WVYwenzfJBTBFcdmkpOZklqUW6dslcGWcX7uEreAOd8Xu
-	lxINjIc4uxg5OSQETCSOzO5hhLDFJC7cW8/WxcjFISSwlFFi46MljDBFXSuamCAS0xklGu8v
-	ZwdJCAm0MUlcXeIIYrMJ6Ej833cTLC4ioCCxufcZK4jNLFAisfjMXzBbWCBC4vbi3WA1LAKq
-	EtM2bGMDsXkFPCR+bn8ItIwDaJmCxJxJNiC7JARus0kcOLmGEaJeQOLb5EMsEDWyEpsOMEPc
-	JilxcMUNlgmMggsYGVYxiqYWJBcUJ6UXGesVJ+YWl+al6yXn525iBAbg6X/P+ncw3j1gfYhR
-	gINRiYd3QQBbiBBrYllxZe4hRlOgDROZpUST84FhnlcSb2hsZmRhamJqbGRuaaYkzrtQ6mew
-	kEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBsaDt9xV5v5qFFg3eZ1Fzfsjwnn+7QUWp3+Yq02x
-	f8a5wMsmS5NP0fPhyuelV/3W/xE2ODXFzCTi7TT2kO4HB2Nim/6XiJWdW6pZcsUok2tltMFh
-	icBsuxvRMxX0PTgXzuNQ59zm6bHpxy0Ng/ow/1Xrp1U/ebbufgjPx6lNXHd/Pa/5zfwy+L0S
-	S3FGoqEWc1FxIgBjoY1POwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrELMWRmVeSWpSXmKPExsVy+t9jQd2FO9lCDG4uk7O4/uU5q0Xn2SfM
-	Fpd3zWGzuN24gs3iweGd7A6sHn1bVjF6fN4kF8AU1cBok5GamJJapJCal5yfkpmXbqvkHRzv
-	HG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQO0TkmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Su
-	b0gQXI+RARpIWMOYcX7tEraCO9wVu19KNDAe4uxi5OSQEDCR6FrRxARhi0lcuLeerYuRi0NI
-	YDqjROP95ewgCSGBNiaJq0scQWw2AR2J//tugsVFBBQkNvc+YwWxmQVKJBaf+QtmCwtESNxe
-	vBushkVAVWLahm1sIDavgIfEz+0PGbsYOYCWKUjMmWQzgZF7ASPDKkbR1ILkguKk9FwjveLE
-	3OLSvHS95PzcTYzg8H4mvYNxVYPFIUYBDkYlHt4FAWwhQqyJZcWVuYcYJTiYlUR4fROBQrwp
-	iZVVqUX58UWlOanFhxhNgZZPZJYSTc4Hxl5eSbyhsYmZkaWRuaGFkbG5kjjvwVbrQCGB9MSS
-	1OzU1ILUIpg+Jg5OqQZGZc9n2gbqrXOSZae+iz1/NsFb0E672TRDJW52gdEsK77vr1ecKDFU
-	sBP6qqTAfTTyiYqwWe5d1v54qRc/+ne2/0wXDTsV4fvTfN6/OrZJUtsePda5Fy62x6l5NTtz
-	VtHkAk6lGZ/5T38LKFvN7TjJ+Kfhq7cTF3D5Nx0+75Qv/mJCNftXJiYlluKMREMt5qLiRAD8
-	Q7BHhQIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1755597AbaICGtX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 02:49:23 -0400
+Received: from mga14.intel.com ([192.55.52.115]:8546 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752873AbaICGtV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 02:49:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,455,1406617200"; 
+   d="scan'208";a="585481693"
+Message-ID: <5406B9E6.6050103@linux.intel.com>
+Date: Wed, 03 Sep 2014 09:49:10 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Jason Wang <jasowang@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process
+ is runnable
+References: <1408608310-13579-1-git-send-email-jasowang@redhat.com> <1408608310-13579-2-git-send-email-jasowang@redhat.com> <1408683665.5648.69.camel@marge.simpson.net> <53F6F14B.1030609@redhat.com> <20140822074224.GB7372@gmail.com> <53FFEEC0.4000304@redhat.com> <540414AB.9000004@linux.intel.com> <54053998.4040604@redhat.com> <54056076.2030603@linux.intel.com> <20140902083124.GB10356@redhat.com>
+In-Reply-To: <20140902083124.GB10356@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When it writes some value other than 0 to BTLDset and JIGset, muic device
-will be reset automatically. And it happens during updating ADC debounce time,
-because it shares same register. To update ADC debounce time without reset,
-set value only to ADCDbset and 0 to BTLDset and JIGset.
+On 02/09/2014 11:31, Michael S. Tsirkin wrote:
+> On Tue, Sep 02, 2014 at 09:15:18AM +0300, Eliezer Tamir wrote:
+>> On 02/09/2014 06:29, Jason Wang wrote:
+>>> On 09/01/2014 02:39 PM, Eliezer Tamir wrote:
+>>>> On 29/08/2014 06:08, Jason Wang wrote:
+>>>>>> Yes, but rx busy polling only works in process context and does not
+>>>>>> disable bh, so it may be not an issue.
+>>>> sk_busy_loop() uses rcu_read_lock_bh(), so it does run with bh disabled.
+>>>
+>>> True, so we need probably also exit the loop when there are pending bhs.
+>>
+>> I'm not so sure, in the typical busy poll scenario, the incoming
+>> traffic is the most time-critical thing in the system.
+>> It's so important that you are willing to trade lots of CPU power
+>> for better latency. The user has decided that he wants to dedicate
+>> this CPU mostly for that. This is not something that plays nice with
+>> other apps, but this is what the user wants.
+> 
+> I think most applications wouldn't interpret this flag as "burn up CPU I don't
+> care what is the result", what apps want is more of "maximise throughput
+> and minimise latency even if throughput/CPU ratio goes down".
+> Jason posted benchmarks that show throughput going up because other
+> processes get more of a chance to run, so this seems consistent
+> with that goal.
 
-Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
----
-Changes in v2
- - Fix comments.
+Busy polling is not a general purpose feature, it's not something you
+can casually turn on and will "just work". Most applications should not
+be using busy polling. Currently it is used by multiserver applications
+that you spend days tuning to specific platforms.
 
- drivers/extcon/extcon-max77693.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+What the user wants is to lower both avg and maximum latencies, at the
+expense of everything else including power efficiency and sometimes
+even throughput. The only exception is making the system crash ;)
 
-diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
-index 77460f2..171f35a 100644
---- a/drivers/extcon/extcon-max77693.c
-+++ b/drivers/extcon/extcon-max77693.c
-@@ -255,10 +255,15 @@ static int max77693_muic_set_debounce_time(struct max77693_muic_info *info,
- 	case ADC_DEBOUNCE_TIME_10MS:
- 	case ADC_DEBOUNCE_TIME_25MS:
- 	case ADC_DEBOUNCE_TIME_38_62MS:
--		ret = regmap_update_bits(info->max77693->regmap_muic,
-+		/*
-+		 * Don't touch BTLDset, JIGset when you want to change adc
-+		 * debounce time. If it writes other than 0 to BTLDset, JIGset
-+		 * muic device will be reset and loose current state.
-+		 */
-+		ret = regmap_write_bits(info->max77693->regmap_muic,
- 					  MAX77693_MUIC_REG_CTRL3,
--					  CONTROL3_ADCDBSET_MASK,
--					  time << CONTROL3_ADCDBSET_SHIFT);
-+					  (CONTROL3_ADCDBSET_MASK &
-+					  time << CONTROL3_ADCDBSET_SHIFT));
- 		if (ret) {
- 			dev_err(info->dev, "failed to set ADC debounce time\n");
- 			return ret;
--- 
-1.7.9.5
+While letting other things take precedence over busy polling might not
+hurt the avg latency much, it will kill your maximum latency.
 
+-Eliezer
