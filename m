@@ -1,107 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935393AbaICXn2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:43:28 -0400
-Received: from mga09.intel.com ([134.134.136.24]:10320 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934570AbaICXnX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 19:43:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,461,1406617200"; 
-   d="scan'208";a="568011476"
-Message-ID: <1409787800.31585.26.camel@schen9-desk2.jf.intel.com>
-Subject: Re: [PATCH v5 03/12] sched: fix avg_load computation
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Rik van Riel <riel@redhat.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>
-Date: Wed, 03 Sep 2014 16:43:20 -0700
-In-Reply-To: <CAKfTPtAt_X99p4KHNmZtVAnMdYm8_QLZ796WO+McqGf5RyM+iQ@mail.gmail.com>
-References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
-	 <1409051215-16788-4-git-send-email-vincent.guittot@linaro.org>
-	 <5401BCDF.3040503@linux.vnet.ibm.com>
-	 <CAKfTPtAt_X99p4KHNmZtVAnMdYm8_QLZ796WO+McqGf5RyM+iQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S935489AbaICXnd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:43:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45234 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756750AbaICWF4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 18:05:56 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [PATCH 3.10 16/55] drm: omapdrm: fix compiler errors
+Date: Wed,  3 Sep 2014 15:05:06 -0700
+Message-Id: <20140903220456.520495378@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
+References: <20140903220453.653576908@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-09-03 at 13:09 +0200, Vincent Guittot wrote:
-> On 30 August 2014 14:00, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
-> > Hi Vincent,
-> >
-> > On 08/26/2014 04:36 PM, Vincent Guittot wrote:
-> >> The computation of avg_load and avg_load_per_task should only takes into
-> >> account the number of cfs tasks. The non cfs task are already taken into
-> >> account by decreasing the cpu's capacity and they will be tracked in the
-> >> CPU's utilization (group_utilization) of the next patches
-> >>
-> >> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-> >> ---
-> >>  kernel/sched/fair.c | 4 ++--
-> >>  1 file changed, 2 insertions(+), 2 deletions(-)
-> >>
-> >> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> >> index 87b9dc7..b85e9f7 100644
-> >> --- a/kernel/sched/fair.c
-> >> +++ b/kernel/sched/fair.c
-> >> @@ -4092,7 +4092,7 @@ static unsigned long capacity_of(int cpu)
-> >>  static unsigned long cpu_avg_load_per_task(int cpu)
-> >>  {
-> >>       struct rq *rq = cpu_rq(cpu);
-> >> -     unsigned long nr_running = ACCESS_ONCE(rq->nr_running);
-> >> +     unsigned long nr_running = ACCESS_ONCE(rq->cfs.h_nr_running);
-> >>       unsigned long load_avg = rq->cfs.runnable_load_avg;
-> >>
-> >>       if (nr_running)
-> >> @@ -5985,7 +5985,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
-> >>                       load = source_load(i, load_idx);
-> >>
-> >>               sgs->group_load += load;
-> >> -             sgs->sum_nr_running += rq->nr_running;
-> >> +             sgs->sum_nr_running += rq->cfs.h_nr_running;
-> >>
-> >>               if (rq->nr_running > 1)
-> >>                       *overload = true;
-> >>
-> >
-> > Why do we probe rq->nr_running while we do load balancing? Should not we
-> > be probing cfs_rq->nr_running instead? We are interested after all in
-> > load balancing fair tasks right? The reason I ask this is, I was
-> > wondering if we need to make the above similar change in more places in
-> > load balancing.
-> 
-> Hi Preeti,
-> 
-> Yes, we should probably the test   rq->cfs.h_nr_running > 0 before
-> setting overload.
-> 
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-The overload indicator is used for knowing when we can totally avoid
-load balancing to a cpu that is about to go idle.  
-We can avoid load balancing when no cpu has more than 1 task.  So if you
-have say just one fair task and multiple deadline tasks on a cpu,
-and another cpu about to go idle, you should turn on normal load
-balancing in the idle path by setting overload to true. 
+------------------
 
-So setting overload should be set based on rq->nr_running and not on
-rq->cfs.h_nr_running. 
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-Thanks.
+commit 2d31ca3ad7d5d44c8adc7f253c96ce33f3a2e931 upstream.
+
+Regular randconfig nightly testing has detected problems with omapdrm.
+
+omapdrm fails to build when the kernel is built to support 64-bit DMA
+addresses and/or 64-bit physical addresses due to an assumption about
+the width of these types.
+
+Use %pad to print DMA addresses, rather than %x or %Zx (which is even
+more wrong than %x).  Avoid passing a uint32_t pointer into a function
+which expects dma_addr_t pointer.
+
+drivers/gpu/drm/omapdrm/omap_plane.c: In function 'omap_plane_pre_apply':
+drivers/gpu/drm/omapdrm/omap_plane.c:145:2: error: format '%x' expects argument of type 'unsigned int', but argument 5 has type 'dma_addr_t' [-Werror=format]
+drivers/gpu/drm/omapdrm/omap_plane.c:145:2: error: format '%x' expects argument of type 'unsigned int', but argument 6 has type 'dma_addr_t' [-Werror=format]
+make[5]: *** [drivers/gpu/drm/omapdrm/omap_plane.o] Error 1
+drivers/gpu/drm/omapdrm/omap_gem.c: In function 'omap_gem_get_paddr':
+drivers/gpu/drm/omapdrm/omap_gem.c:794:4: error: format '%x' expects argument of type 'unsigned int', but argument 3 has type 'dma_addr_t' [-Werror=format]
+drivers/gpu/drm/omapdrm/omap_gem.c: In function 'omap_gem_describe':
+drivers/gpu/drm/omapdrm/omap_gem.c:991:4: error: format '%Zx' expects argument of type 'size_t', but argument 7 has type 'dma_addr_t' [-Werror=format]
+drivers/gpu/drm/omapdrm/omap_gem.c: In function 'omap_gem_init':
+drivers/gpu/drm/omapdrm/omap_gem.c:1470:4: error: format '%x' expects argument of type 'unsigned int', but argument 7 has type 'dma_addr_t' [-Werror=format]
+make[5]: *** [drivers/gpu/drm/omapdrm/omap_gem.o] Error 1
+drivers/gpu/drm/omapdrm/omap_dmm_tiler.c: In function 'dmm_txn_append':
+drivers/gpu/drm/omapdrm/omap_dmm_tiler.c:226:2: error: passing argument 3 of 'alloc_dma' from incompatible pointer type [-Werror]
+make[5]: *** [drivers/gpu/drm/omapdrm/omap_dmm_tiler.o] Error 1
+make[5]: Target `__build' not remade because of errors.
+make[4]: *** [drivers/gpu/drm/omapdrm] Error 2
+
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/gpu/drm/omapdrm/omap_dmm_tiler.c |    6 ++++--
+ drivers/gpu/drm/omapdrm/omap_gem.c       |   10 +++++-----
+ drivers/gpu/drm/omapdrm/omap_plane.c     |    4 ++--
+ 3 files changed, 11 insertions(+), 9 deletions(-)
+
+--- a/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c
++++ b/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c
+@@ -199,7 +199,7 @@ static struct dmm_txn *dmm_txn_init(stru
+ static void dmm_txn_append(struct dmm_txn *txn, struct pat_area *area,
+ 		struct page **pages, uint32_t npages, uint32_t roll)
+ {
+-	dma_addr_t pat_pa = 0;
++	dma_addr_t pat_pa = 0, data_pa = 0;
+ 	uint32_t *data;
+ 	struct pat *pat;
+ 	struct refill_engine *engine = txn->engine_handle;
+@@ -223,7 +223,9 @@ static void dmm_txn_append(struct dmm_tx
+ 			.lut_id = engine->tcm->lut_id,
+ 		};
  
-Tim
+-	data = alloc_dma(txn, 4*i, &pat->data_pa);
++	data = alloc_dma(txn, 4*i, &data_pa);
++	/* FIXME: what if data_pa is more than 32-bit ? */
++	pat->data_pa = data_pa;
+ 
+ 	while (i--) {
+ 		int n = i + roll;
+--- a/drivers/gpu/drm/omapdrm/omap_gem.c
++++ b/drivers/gpu/drm/omapdrm/omap_gem.c
+@@ -806,7 +806,7 @@ int omap_gem_get_paddr(struct drm_gem_ob
+ 			omap_obj->paddr = tiler_ssptr(block);
+ 			omap_obj->block = block;
+ 
+-			DBG("got paddr: %08x", omap_obj->paddr);
++			DBG("got paddr: %pad", &omap_obj->paddr);
+ 		}
+ 
+ 		omap_obj->paddr_cnt++;
+@@ -1004,9 +1004,9 @@ void omap_gem_describe(struct drm_gem_ob
+ 	if (obj->map_list.map)
+ 		off = (uint64_t)obj->map_list.hash.key;
+ 
+-	seq_printf(m, "%08x: %2d (%2d) %08llx %08Zx (%2d) %p %4d",
++	seq_printf(m, "%08x: %2d (%2d) %08llx %pad (%2d) %p %4d",
+ 			omap_obj->flags, obj->name, obj->refcount.refcount.counter,
+-			off, omap_obj->paddr, omap_obj->paddr_cnt,
++			off, &omap_obj->paddr, omap_obj->paddr_cnt,
+ 			omap_obj->vaddr, omap_obj->roll);
+ 
+ 	if (omap_obj->flags & OMAP_BO_TILED) {
+@@ -1489,8 +1489,8 @@ void omap_gem_init(struct drm_device *de
+ 			entry->paddr = tiler_ssptr(block);
+ 			entry->block = block;
+ 
+-			DBG("%d:%d: %dx%d: paddr=%08x stride=%d", i, j, w, h,
+-					entry->paddr,
++			DBG("%d:%d: %dx%d: paddr=%pad stride=%d", i, j, w, h,
++					&entry->paddr,
+ 					usergart[i].stride_pfn << PAGE_SHIFT);
+ 		}
+ 	}
+--- a/drivers/gpu/drm/omapdrm/omap_plane.c
++++ b/drivers/gpu/drm/omapdrm/omap_plane.c
+@@ -146,8 +146,8 @@ static void omap_plane_pre_apply(struct
+ 	DBG("%dx%d -> %dx%d (%d)", info->width, info->height,
+ 			info->out_width, info->out_height,
+ 			info->screen_width);
+-	DBG("%d,%d %08x %08x", info->pos_x, info->pos_y,
+-			info->paddr, info->p_uv_addr);
++	DBG("%d,%d %pad %pad", info->pos_x, info->pos_y,
++			&info->paddr, &info->p_uv_addr);
+ 
+ 	/* TODO: */
+ 	ilace = false;
 
 
