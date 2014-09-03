@@ -1,147 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756126AbaICHxl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 03:53:41 -0400
-Received: from smtp3.mundo-r.com ([212.51.32.191]:6683 "EHLO smtp4.mundo-r.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755659AbaICHxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 03:53:38 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgYFAKvIBlRbdWOb/2dsb2JhbABagw2BKoJ8zREBgQ0Wd4QEAQUjBEASEAsYKgICVwYTiEYBp1KVeQEXGI81B4J5gVMFqV+IG4NjaoJPAQEB
-X-IPAS-Result: AgYFAKvIBlRbdWOb/2dsb2JhbABagw2BKoJ8zREBgQ0Wd4QEAQUjBEASEAsYKgICVwYTiEYBp1KVeQEXGI81B4J5gVMFqV+IG4NjaoJPAQEB
-X-IronPort-AV: E=Sophos;i="5.04,455,1406584800"; 
-   d="asc'?scan'208";a="266281636"
-Message-ID: <1409730785.9087.8.camel@fourier>
-Subject: Re: [PATCH 3/3] ipoctal: get carrier driver to avoid rmmod
-From: Samuel Iglesias =?ISO-8859-1?Q?Gons=E1lvez?= 
-	<siglesias@igalia.com>
-To: Federico Vaga <federico.vaga@cern.ch>
-Cc: Jens Taprogge <jens.taprogge@taprogge.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        industrypack-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Date: Wed, 03 Sep 2014 09:53:05 +0200
-In-Reply-To: <1409671901-4009-4-git-send-email-federico.vaga@cern.ch>
-References: <1409671901-4009-1-git-send-email-federico.vaga@cern.ch>
-	 <1409671901-4009-4-git-send-email-federico.vaga@cern.ch>
-Content-Type: multipart/signed; micalg="pgp-sha256";
-	protocol="application/pgp-signature"; boundary="=-kyXbM1es95IrUNo3AAmy"
-X-Mailer: Evolution 3.12.2-1+b1 
-Mime-Version: 1.0
+	id S1755206AbaICIBT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 04:01:19 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:65088 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751387AbaICIBS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 04:01:18 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        <arm@kernel.org>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [GIT PULL] at91: defconfig for 3.18 #1
+Date: Wed, 3 Sep 2014 10:01:14 +0200
+Message-ID: <1409731274-23483-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+Organization: atmel
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Arnd, Olof, Kevin,
 
---=-kyXbM1es95IrUNo3AAmy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Some defconfig updates for AT91. May be included after my 4 previous
+pull-requests but it is certainly not a hard dependency as it won't break
+compilation anyway.
 
+Thanks, best regards,
 
-On Tue, 2014-09-02 at 17:31 +0200, Federico Vaga wrote:
-> Signed-off-by: Federico Vaga <federico.vaga@cern.ch>
-> ---
->  drivers/ipack/devices/ipoctal.c |   30 +++++++++++++++++++++++++++---
->  1 file changed, 27 insertions(+), 3 deletions(-)
->=20
-> diff --git a/drivers/ipack/devices/ipoctal.c b/drivers/ipack/devices/ipoc=
-tal.c
-> index e531379..035d544 100644
-> --- a/drivers/ipack/devices/ipoctal.c
-> +++ b/drivers/ipack/devices/ipoctal.c
-> @@ -55,6 +55,12 @@ struct ipoctal {
->  	u8 __iomem			*int_space;
->  };
-> =20
-> +static inline struct ipoctal *chan_to_ipoctal(struct ipoctal_channel *ch=
-an,
-> +					      unsigned int index)
-> +{
-> +	return container_of(chan, struct ipoctal, channel[index]);
-> +}
-> +
->  static void ipoctal_reset_channel(struct ipoctal_channel *channel)
->  {
->  	iowrite8(CR_DISABLE_RX | CR_DISABLE_TX, &channel->regs->w.cr);
-> @@ -82,12 +88,20 @@ static int ipoctal_port_activate(struct tty_port *por=
-t, struct tty_struct *tty)
-> =20
->  static int ipoctal_open(struct tty_struct *tty, struct file *file)
->  {
-> -	struct ipoctal_channel *channel;
-> +	struct ipoctal_channel *channel =3D dev_get_drvdata(tty->dev);
-> +	struct ipoctal *ipoctal =3D chan_to_ipoctal(channel, tty->index);
-> +	int err;
-> =20
-> -	channel =3D dev_get_drvdata(tty->dev);
->  	tty->driver_data =3D channel;
-> =20
-> -	return tty_port_open(&channel->tty_port, tty, file);
-> +	if (!ipack_get_carrier(ipoctal->dev))
-> +		return -EBUSY;
-> +
-> +	err =3D tty_port_open(&channel->tty_port, tty, file);
-> +	if (err)
-> +		ipack_put_carrier(ipoctal->dev);
-> +
-> +	return err;
->  }
-> =20
->  static void ipoctal_reset_stats(struct ipoctal_stats *stats)
-> @@ -631,6 +645,15 @@ static void ipoctal_shutdown(struct tty_struct *tty)
->  	clear_bit(ASYNCB_INITIALIZED, &channel->tty_port.flags);
->  }
-> =20
-> +static void ipoctal_cleanup(struct tty_struct *tty)
-> +{
-> +	struct ipoctal_channel *channel =3D tty->driver_data;
-> +	struct ipoctal *ipoctal =3D chan_to_ipoctal(channel, tty->index);
-> +
-> +	/* release the carrier driver */
-> +	ipack_put_carrier(ipoctal->dev);
-> +}
-> +
->  static const struct tty_operations ipoctal_fops =3D {
->  	.ioctl =3D		NULL,
->  	.open =3D			ipoctal_open,
-> @@ -642,6 +665,7 @@ static const struct tty_operations ipoctal_fops =3D {
->  	.get_icount =3D		ipoctal_get_icount,
->  	.hangup =3D		ipoctal_hangup,
->  	.shutdown =3D		ipoctal_shutdown,
-> +	.cleanup =3D              ipoctal_cleanup,
->  };
-> =20
->  static int ipoctal_probe(struct ipack_device *dev)
+The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
 
-Acked-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
 
-Greg, Can you this series through your char-misc tree?
+are available in the git repository at:
 
-Sam
+  git://github.com/at91linux/linux-at91.git tags/at91-defconfig
 
+for you to fetch changes up to 7cc5f270ee6e271df466f9d3c1c4522593002ac4:
 
+  ARM: at91: sama5: update defconfig (2014-09-02 15:06:11 +0200)
 
---=-kyXbM1es95IrUNo3AAmy
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+----------------------------------------------------------------
+First batch of AT91 defconfig update for 3.18:
+- a dependency needed for SPI flash
+- enable sound on DT platforms
+- cleanup of current defconfigs:
+  - addition of new PWM subsystem and related drivers
+  - addition of ADC/touchscreen, watchdog or USB depending on the SoC
+  - addition of power/reset drivers activated during this development cycle
+  - removal of obsolete config options
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+----------------------------------------------------------------
+Alexandre Belloni (7):
+      ARM: at91: at91_dt: update defconfig
+      ARM: at91: at91sam9260_9g20: update defconfig
+      ARM: at91: at91sam9261_9g10: update defconfig
+      ARM: at91: at91sam9263: update defconfig
+      ARM: at91: at91sam9g45: update defconfig
+      ARM: at91: at91sam9rl: update defconfig
+      ARM: at91: sama5: update defconfig
 
-iQIcBAABCAAGBQJUBsjiAAoJEH/0ujLxfcNDIZEP/AvFfNp8Pl1DPqTwXhNNvmPK
-b100lZnwVVKc/UOv4s88GeNm6HZE5m9ain0U67du1aY2czhBxI0acjZCaLT+HY7d
-DXPbRWqHGoATuyLzjIcyzhfI7TfY1UsqRsf47jZymuSSsmmgzxTW1/P2ahH3GR0B
-RlUobdf8AbcAz0Zgute/LtUa45y8cNUQMBWgSGuU2pDQOh9KPvbwdd6fXJrUYqtE
-2L1bz+iEkXfvEaOVKo4LOD0YzP1pOsJYsA+6Ir1224OVyAU13SP2AGWJ95Zk8t5r
-DBa+tXQgd1CNDrJikweGS1Amkznwk7JEc4xFqM4qQTaleC/OPVioQAaDOC3sh+BM
-4zxkmOKYUh+MJgQFOmFCKqRwnV6aKvhQoBz7+czSdKUH3+IpaxlEAmPvugIeLqr4
-G2YN5Pl7bhTNwKYynEIV2lDKFIOil2V2E4FOfvH7M0EhyHFNPwi1FUHTGRqZlAuO
-5WvdQpIheH8hKysui+QUqGu8fZUTLV78L7Mo35MD3k4t85KLwxN4qZaCNZQfzWtz
-loAXexRHwFsdIMiTWAhdPCnjxV4/W1H/urRjE6PFhgmnSvmU/PCfp7Rh6z6HgCWT
-/Ax3nbGTpTCF2dMkfE4Ea0Y0YXxKWD2n4rrrsOnd9oQxO89YbYNNUrO/KZNHhP4e
-191KiRiOSzDYU342NYj4
-=HucO
------END PGP SIGNATURE-----
+Bo Shen (2):
+      ARM: at91/at91_dt_defconfig: enable sound support
+      ARM: at91/sama5_defconfig: enable sound support
 
---=-kyXbM1es95IrUNo3AAmy--
+Brian Norris (1):
+      ARM: at91: add MTD_SPI_NOR (new dependency for M25P80)
 
+ arch/arm/configs/at91_dt_defconfig          | 35 +++++++++++++++++++----------
+ arch/arm/configs/at91sam9260_9g20_defconfig | 13 +++++------
+ arch/arm/configs/at91sam9261_9g10_defconfig |  5 ++---
+ arch/arm/configs/at91sam9263_defconfig      | 13 +++++------
+ arch/arm/configs/at91sam9g45_defconfig      | 19 +++++++++-------
+ arch/arm/configs/at91sam9rl_defconfig       | 19 +++++++++++-----
+ arch/arm/configs/sama5_defconfig            | 18 ++++++++++-----
+ 7 files changed, 73 insertions(+), 49 deletions(-)
+
+-- 
+Nicolas Ferre
