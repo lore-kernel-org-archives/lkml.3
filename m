@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020AbaICIrS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 04:47:18 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:43941 "EHLO
+	id S1756042AbaICIrq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 04:47:46 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:43930 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755505AbaICIpl (ORCPT
+	with ESMTP id S1755388AbaICIpk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 04:45:41 -0400
+	Wed, 3 Sep 2014 04:45:40 -0400
 From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -19,9 +19,9 @@ Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH 4/5] rtc: at91sam9: retain slow clock and check its rate
-Date: Wed,  3 Sep 2014 10:45:33 +0200
-Message-Id: <1409733934-14465-5-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH 3/5] rtc: at91sam9: add DT support
+Date: Wed,  3 Sep 2014 10:45:32 +0200
+Message-Id: <1409733934-14465-4-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1409733934-14465-1-git-send-email-boris.brezillon@free-electrons.com>
 References: <1409733934-14465-1-git-send-email-boris.brezillon@free-electrons.com>
@@ -29,70 +29,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The RTT block is using the slow clock and expect it to run at 32KHz.
-Now that we moved to the CCF it's better to retain the clk reference so
-that the CCF can't disable the slow clock considering it is unused.
+Add of_match_table to the existing driver so that rtc nodes defined in at91
+DTs can be attached to this driver.
 
 Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
 ---
- drivers/rtc/rtc-at91sam9.c | 24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+ drivers/rtc/rtc-at91sam9.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
 diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
-index 57014b7..5c5093b 100644
+index 74a9ca0..57014b7 100644
 --- a/drivers/rtc/rtc-at91sam9.c
 +++ b/drivers/rtc/rtc-at91sam9.c
-@@ -21,6 +21,7 @@
- #include <linux/slab.h>
- #include <linux/platform_data/atmel.h>
- #include <linux/io.h>
-+#include <linux/clk.h>
+@@ -454,6 +454,14 @@ static int at91_rtc_resume(struct device *dev)
  
- /*
-  * This driver uses two configurable hardware resources that live in the
-@@ -74,6 +75,7 @@ struct sam9_rtc {
- 	u32			imr;
- 	void __iomem		*gpbr;
- 	int 			irq;
-+	struct clk		*sclk;
+ static SIMPLE_DEV_PM_OPS(at91_rtc_pm_ops, at91_rtc_suspend, at91_rtc_resume);
+ 
++#ifdef CONFIG_OF
++static const struct of_device_id at91_rtc_dt_ids[] = {
++	{ .compatible = "atmel,at91sam9260-rtt" },
++	{ /* sentinel */ }
++};
++MODULE_DEVICE_TABLE(of, at91_rtc_dt_ids);
++#endif
++
+ static struct platform_driver at91_rtc_driver = {
+ 	.probe		= at91_rtc_probe,
+ 	.remove		= at91_rtc_remove,
+@@ -462,6 +470,7 @@ static struct platform_driver at91_rtc_driver = {
+ 		.name	= "rtc-at91sam9",
+ 		.owner	= THIS_MODULE,
+ 		.pm	= &at91_rtc_pm_ops,
++		.of_match_table = of_match_ptr(at91_rtc_dt_ids),
+ 	},
  };
- 
- #define rtt_readl(rtc, field) \
-@@ -373,6 +375,25 @@ static int at91_rtc_probe(struct platform_device *pdev)
- 		return ret;
- 	}
- 
-+	/* Retain slow clk if it is specified in the DT.
-+	 * Do not complain if slow clk is missing, but check its rate
-+	 * if it is available.
-+	 */
-+	rtc->sclk = devm_clk_get(&pdev->dev, NULL);
-+	if (!IS_ERR(rtc->sclk)) {
-+		if (clk_get_rate(rtc->sclk) != AT91_SLOW_CLOCK) {
-+			dev_err(&pdev->dev,
-+				"Invalid slow clock rate (expecting %lu got %lu)",
-+				(unsigned long)AT91_SLOW_CLOCK,
-+				clk_get_rate(rtc->sclk));
-+			return -EINVAL;
-+		}
-+
-+		ret = clk_prepare_enable(rtc->sclk);
-+		if (ret)
-+			return ret;
-+	}
-+
- 	/* NOTE:  sam9260 rev A silicon has a ROM bug which resets the
- 	 * RTT on at least some reboots.  If you have that chip, you must
- 	 * initialize the time from some external source like a GPS, wall
-@@ -397,6 +418,9 @@ static int at91_rtc_remove(struct platform_device *pdev)
- 	/* disable all interrupts */
- 	rtt_writel(rtc, MR, mr & ~(AT91_RTT_ALMIEN | AT91_RTT_RTTINCIEN));
- 
-+	if (!IS_ERR(rtc->sclk))
-+		clk_disable_unprepare(rtc->sclk);
-+
- 	return 0;
- }
  
 -- 
 1.9.1
