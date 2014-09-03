@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933657AbaICWIt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:08:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45638 "EHLO
+	id S1754861AbaICWOy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:14:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45641 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933574AbaICWIq (ORCPT
+	with ESMTP id S933089AbaICWIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:08:46 -0400
+	Wed, 3 Sep 2014 18:08:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.14 47/88] drm/radeon: add new bonaire pci ids
-Date: Wed,  3 Sep 2014 15:05:21 -0700
-Message-Id: <20140903220517.376038295@linuxfoundation.org>
+        "Brian W. Hart" <hartb@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.14 53/88] powerpc/powernv: Update dev->dma_mask in pci_set_dma_mask() path
+Date: Wed,  3 Sep 2014 15:05:27 -0700
+Message-Id: <20140903220517.550292429@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -28,27 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Brian W Hart <hartb@linux.vnet.ibm.com>
 
-commit 5fc540edc8ea1297c76685f74bc82a2107fe6731 upstream.
+commit a32305bf90a2ae0e6a9a93370c7616565f75e15a upstream.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+powerpc defines various machine-specific routines for handling
+pci_set_dma_mask().  The routines for machine "PowerNV" may neglect
+to set dev->dma_mask.  This could confuse anyone (e.g. drivers) that
+consult dev->dma_mask to find the current mask.  Set the dma_mask in
+the PowerNV leaf routine.
+
+Signed-off-by: Brian W. Hart <hartb@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/drm/drm_pciids.h |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/powerpc/platforms/powernv/pci-ioda.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/include/drm/drm_pciids.h
-+++ b/include/drm/drm_pciids.h
-@@ -176,6 +176,8 @@
- 	{0x1002, 0x6631, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6640, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_BONAIRE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6641, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_BONAIRE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x6646, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_BONAIRE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x6647, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_BONAIRE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6649, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_BONAIRE|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6650, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_BONAIRE|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6651, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_BONAIRE|RADEON_NEW_MEMMAP}, \
+--- a/arch/powerpc/platforms/powernv/pci-ioda.c
++++ b/arch/powerpc/platforms/powernv/pci-ioda.c
+@@ -491,6 +491,7 @@ static int pnv_pci_ioda_dma_set_mask(str
+ 		set_dma_ops(&pdev->dev, &dma_iommu_ops);
+ 		set_iommu_table_base(&pdev->dev, &pe->tce32_table);
+ 	}
++	*pdev->dev.dma_mask = dma_mask;
+ 	return 0;
+ }
+ 
 
 
