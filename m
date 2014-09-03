@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936110AbaICX3Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:29:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45617 "EHLO
+	id S936127AbaICX3u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:29:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45607 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933596AbaICWIn (ORCPT
+	with ESMTP id S933547AbaICWIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:08:43 -0400
+	Wed, 3 Sep 2014 18:08:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        "Zhang, Yang Z" <yang.z.zhang@intel.com>,
-        "Liu, RongrongX" <rongrongx.liu@intel.com>,
-        Felipe Reyes <freyes@suse.com>,
-        Wanpeng Li <wanpeng.li@linux.intel.com>
-Subject: [PATCH 3.14 42/88] KVM: nVMX: fix "acknowledge interrupt on exit" when APICv is in use
-Date: Wed,  3 Sep 2014 15:05:16 -0700
-Message-Id: <20140903220517.231480248@linuxfoundation.org>
+        Nadav Amit <namit@cs.technion.ac.il>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.14 40/88] KVM: x86: Inter-privilege level ret emulation is not implemeneted
+Date: Wed,  3 Sep 2014 15:05:14 -0700
+Message-Id: <20140903220517.174312210@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -32,145 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
+From: Nadav Amit <namit@cs.technion.ac.il>
 
-commit 56cc2406d68c0f09505c389e276f27a99f495cbd upstream.
+commit 9e8919ae793f4edfaa29694a70f71a515ae9942a upstream.
 
-After commit 77b0f5d (KVM: nVMX: Ack and write vector info to intr_info
-if L1 asks us to), "Acknowledge interrupt on exit" behavior can be
-emulated. To do so, KVM will ask the APIC for the interrupt vector if
-during a nested vmexit if VM_EXIT_ACK_INTR_ON_EXIT is set.  With APICv,
-kvm_get_apic_interrupt would return -1 and give the following WARNING:
+Return unhandlable error on inter-privilege level ret instruction.  This is
+since the current emulation does not check the privilege level correctly when
+loading the CS, and does not pop RSP/SS as needed.
 
-Call Trace:
- [<ffffffff81493563>] dump_stack+0x49/0x5e
- [<ffffffff8103f0eb>] warn_slowpath_common+0x7c/0x96
- [<ffffffffa059709a>] ? nested_vmx_vmexit+0xa4/0x233 [kvm_intel]
- [<ffffffff8103f11a>] warn_slowpath_null+0x15/0x17
- [<ffffffffa059709a>] nested_vmx_vmexit+0xa4/0x233 [kvm_intel]
- [<ffffffffa0594295>] ? nested_vmx_exit_handled+0x6a/0x39e [kvm_intel]
- [<ffffffffa0537931>] ? kvm_apic_has_interrupt+0x80/0xd5 [kvm]
- [<ffffffffa05972ec>] vmx_check_nested_events+0xc3/0xd3 [kvm_intel]
- [<ffffffffa051ebe9>] inject_pending_event+0xd0/0x16e [kvm]
- [<ffffffffa051efa0>] vcpu_enter_guest+0x319/0x704 [kvm]
-
-To fix this, we cannot rely on the processor's virtual interrupt delivery,
-because "acknowledge interrupt on exit" must only update the virtual
-ISR/PPR/IRR registers (and SVI, which is just a cache of the virtual ISR)
-but it should not deliver the interrupt through the IDT.  Thus, KVM has
-to deliver the interrupt "by hand", similar to the treatment of EOI in
-commit fc57ac2c9ca8 (KVM: lapic: sync highest ISR to hardware apic on
-EOI, 2014-05-14).
-
-The patch modifies kvm_cpu_get_interrupt to always acknowledge an
-interrupt; there are only two callers, and the other is not affected
-because it is never reached with kvm_apic_vid_enabled() == true.  Then it
-modifies apic_set_isr and apic_clear_irr to update SVI and RVI in addition
-to the registers.
-
-Suggested-by: Paolo Bonzini <pbonzini@redhat.com>
-Suggested-by: "Zhang, Yang Z" <yang.z.zhang@intel.com>
-Tested-by: Liu, RongrongX <rongrongx.liu@intel.com>
-Tested-by: Felipe Reyes <freyes@suse.com>
-Fixes: 77b0f5d67ff2781f36831cba79674c3e97bd7acf
-Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/irq.c   |    2 -
- arch/x86/kvm/lapic.c |   52 ++++++++++++++++++++++++++++++++++++++-------------
- 2 files changed, 40 insertions(+), 14 deletions(-)
+ arch/x86/kvm/emulate.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/arch/x86/kvm/irq.c
-+++ b/arch/x86/kvm/irq.c
-@@ -108,7 +108,7 @@ int kvm_cpu_get_interrupt(struct kvm_vcp
- 
- 	vector = kvm_cpu_get_extint(v);
- 
--	if (kvm_apic_vid_enabled(v->kvm) || vector != -1)
-+	if (vector != -1)
- 		return vector;			/* PIC */
- 
- 	return kvm_get_apic_interrupt(v);	/* APIC */
---- a/arch/x86/kvm/lapic.c
-+++ b/arch/x86/kvm/lapic.c
-@@ -352,25 +352,46 @@ static inline int apic_find_highest_irr(
- 
- static inline void apic_clear_irr(int vec, struct kvm_lapic *apic)
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -2006,6 +2006,7 @@ static int em_ret_far(struct x86_emulate
  {
--	apic->irr_pending = false;
-+	struct kvm_vcpu *vcpu;
-+
-+	vcpu = apic->vcpu;
-+
- 	apic_clear_vector(vec, apic->regs + APIC_IRR);
--	if (apic_search_irr(apic) != -1)
--		apic->irr_pending = true;
-+	if (unlikely(kvm_apic_vid_enabled(vcpu->kvm)))
-+		/* try to update RVI */
-+		kvm_make_request(KVM_REQ_EVENT, vcpu);
-+	else {
-+		vec = apic_search_irr(apic);
-+		apic->irr_pending = (vec != -1);
-+	}
+ 	int rc;
+ 	unsigned long cs;
++	int cpl = ctxt->ops->cpl(ctxt);
+ 
+ 	rc = emulate_pop(ctxt, &ctxt->_eip, ctxt->op_bytes);
+ 	if (rc != X86EMUL_CONTINUE)
+@@ -2015,6 +2016,9 @@ static int em_ret_far(struct x86_emulate
+ 	rc = emulate_pop(ctxt, &cs, ctxt->op_bytes);
+ 	if (rc != X86EMUL_CONTINUE)
+ 		return rc;
++	/* Outer-privilege level return is not implemented */
++	if (ctxt->mode >= X86EMUL_MODE_PROT16 && (cs & 3) > cpl)
++		return X86EMUL_UNHANDLEABLE;
+ 	rc = load_segment_descriptor(ctxt, (u16)cs, VCPU_SREG_CS);
+ 	return rc;
  }
- 
- static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
- {
--	/* Note that we never get here with APIC virtualization enabled.  */
-+	struct kvm_vcpu *vcpu;
-+
-+	if (__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
-+		return;
-+
-+	vcpu = apic->vcpu;
- 
--	if (!__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
--		++apic->isr_count;
--	BUG_ON(apic->isr_count > MAX_APIC_VECTOR);
- 	/*
--	 * ISR (in service register) bit is set when injecting an interrupt.
--	 * The highest vector is injected. Thus the latest bit set matches
--	 * the highest bit in ISR.
-+	 * With APIC virtualization enabled, all caching is disabled
-+	 * because the processor can modify ISR under the hood.  Instead
-+	 * just set SVI.
- 	 */
--	apic->highest_isr_cache = vec;
-+	if (unlikely(kvm_apic_vid_enabled(vcpu->kvm)))
-+		kvm_x86_ops->hwapic_isr_update(vcpu->kvm, vec);
-+	else {
-+		++apic->isr_count;
-+		BUG_ON(apic->isr_count > MAX_APIC_VECTOR);
-+		/*
-+		 * ISR (in service register) bit is set when injecting an interrupt.
-+		 * The highest vector is injected. Thus the latest bit set matches
-+		 * the highest bit in ISR.
-+		 */
-+		apic->highest_isr_cache = vec;
-+	}
- }
- 
- static inline int apic_find_highest_isr(struct kvm_lapic *apic)
-@@ -1627,11 +1648,16 @@ int kvm_get_apic_interrupt(struct kvm_vc
- 	int vector = kvm_apic_has_interrupt(vcpu);
- 	struct kvm_lapic *apic = vcpu->arch.apic;
- 
--	/* Note that we never get here with APIC virtualization enabled.  */
--
- 	if (vector == -1)
- 		return -1;
- 
-+	/*
-+	 * We get here even with APIC virtualization enabled, if doing
-+	 * nested virtualization and L1 runs with the "acknowledge interrupt
-+	 * on exit" mode.  Then we cannot inject the interrupt via RVI,
-+	 * because the process would deliver it through the IDT.
-+	 */
-+
- 	apic_set_isr(vector, apic);
- 	apic_update_ppr(apic);
- 	apic_clear_irr(vector, apic);
 
 
