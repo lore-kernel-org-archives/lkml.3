@@ -1,187 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754061AbaICHsB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 03:48:01 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:63735 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751319AbaICHr7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 03:47:59 -0400
-Date: Wed, 3 Sep 2014 17:47:24 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, willy@linux.intel.com
-Subject: Re: [PATCH v10 09/21] Replace the XIP page fault handler with the
- DAX page fault handler
-Message-ID: <20140903074724.GE20473@dastard>
-References: <cover.1409110741.git.matthew.r.wilcox@intel.com>
- <4d71d7a13bec3acf703e26bf6b0c7da21a71ebe0.1409110741.git.matthew.r.wilcox@intel.com>
+	id S1755652AbaICHsc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 03:48:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52409 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754975AbaICHsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 03:48:30 -0400
+Date: Wed, 3 Sep 2014 10:51:04 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Cc: Jason Wang <jasowang@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process is
+ runnable
+Message-ID: <20140903075104.GA6187@redhat.com>
+References: <1408608310-13579-2-git-send-email-jasowang@redhat.com>
+ <1408683665.5648.69.camel@marge.simpson.net>
+ <53F6F14B.1030609@redhat.com>
+ <20140822074224.GB7372@gmail.com>
+ <53FFEEC0.4000304@redhat.com>
+ <540414AB.9000004@linux.intel.com>
+ <54053998.4040604@redhat.com>
+ <54056076.2030603@linux.intel.com>
+ <20140902083124.GB10356@redhat.com>
+ <5406B9E6.6050103@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4d71d7a13bec3acf703e26bf6b0c7da21a71ebe0.1409110741.git.matthew.r.wilcox@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5406B9E6.6050103@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 11:45:29PM -0400, Matthew Wilcox wrote:
-> Instead of calling aops->get_xip_mem from the fault handler, the
-> filesystem passes a get_block_t that is used to find the appropriate
-> blocks.
+On Wed, Sep 03, 2014 at 09:49:10AM +0300, Eliezer Tamir wrote:
+> On 02/09/2014 11:31, Michael S. Tsirkin wrote:
+> > On Tue, Sep 02, 2014 at 09:15:18AM +0300, Eliezer Tamir wrote:
+> >> On 02/09/2014 06:29, Jason Wang wrote:
+> >>> On 09/01/2014 02:39 PM, Eliezer Tamir wrote:
+> >>>> On 29/08/2014 06:08, Jason Wang wrote:
+> >>>>>> Yes, but rx busy polling only works in process context and does not
+> >>>>>> disable bh, so it may be not an issue.
+> >>>> sk_busy_loop() uses rcu_read_lock_bh(), so it does run with bh disabled.
+> >>>
+> >>> True, so we need probably also exit the loop when there are pending bhs.
+> >>
+> >> I'm not so sure, in the typical busy poll scenario, the incoming
+> >> traffic is the most time-critical thing in the system.
+> >> It's so important that you are willing to trade lots of CPU power
+> >> for better latency. The user has decided that he wants to dedicate
+> >> this CPU mostly for that. This is not something that plays nice with
+> >> other apps, but this is what the user wants.
+> > 
+> > I think most applications wouldn't interpret this flag as "burn up CPU I don't
+> > care what is the result", what apps want is more of "maximise throughput
+> > and minimise latency even if throughput/CPU ratio goes down".
+> > Jason posted benchmarks that show throughput going up because other
+> > processes get more of a chance to run, so this seems consistent
+> > with that goal.
 > 
-> Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
-> Reviewed-by: Jan Kara <jack@suse.cz>
+> Busy polling is not a general purpose feature, it's not something you
+> can casually turn on and will "just work". Most applications should not
+> be using busy polling. Currently it is used by multiserver applications
+> that you spend days tuning to specific platforms.
+> 
+> What the user wants is to lower both avg and maximum latencies, at the
+> expense of everything else including power efficiency and sometimes
+> even throughput. The only exception is making the system crash ;)
+> 
+> While letting other things take precedence over busy polling might not
+> hurt the avg latency much, it will kill your maximum latency.
+> 
+> -Eliezer
 
-There's a problem in this code to do with faults into unwritten
-extents.
+If scheduler happens to run both server and client on the
+same CPU, polling will hurt maximum latency even more.
+So I guess different users want different things.
 
-> +static int do_dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
-> +			get_block_t get_block)
-> +{
-> +	struct file *file = vma->vm_file;
-> +	struct inode *inode = file_inode(file);
-> +	struct address_space *mapping = file->f_mapping;
-> +	struct page *page;
-> +	struct buffer_head bh;
-> +	unsigned long vaddr = (unsigned long)vmf->virtual_address;
-> +	unsigned blkbits = inode->i_blkbits;
-> +	sector_t block;
-> +	pgoff_t size;
-> +	unsigned long pfn;
-> +	int error;
-> +	int major = 0;
-> +
-> +	size = (i_size_read(inode) + PAGE_SIZE - 1) >> PAGE_SHIFT;
-> +	if (vmf->pgoff >= size)
-> +		return VM_FAULT_SIGBUS;
-> +
-> +	memset(&bh, 0, sizeof(bh));
-> +	block = (sector_t)vmf->pgoff << (PAGE_SHIFT - blkbits);
-> +	bh.b_size = PAGE_SIZE;
-> +
-> + repeat:
-> +	page = find_get_page(mapping, vmf->pgoff);
-> +	if (page) {
-> +		if (!lock_page_or_retry(page, vma->vm_mm, vmf->flags)) {
-> +			page_cache_release(page);
-> +			return VM_FAULT_RETRY;
-> +		}
-> +		if (unlikely(page->mapping != mapping)) {
-> +			unlock_page(page);
-> +			page_cache_release(page);
-> +			goto repeat;
-> +		}
-> +	}
-> +
-> +	error = get_block(inode, block, &bh, 0);
-> +	if (!error && (bh.b_size < PAGE_SIZE))
-> +		error = -EIO;
-> +	if (error)
-> +		goto unlock_page;
+How about applications giving us a hint what they prefer?
+For example, a new flag that says "I don't have anything useful to do so
+let's do busy polling but my server is on the local system, so please
+only poll if CPU is otherwise idle".
 
-page fault into unwritten region, returns buffer_unwritten(bh) ==
-true. Hence buffer_written(bh) is false, and we take this branch:
 
-> +	if (!buffer_written(&bh) && !vmf->cow_page) {
-> +		if (vmf->flags & FAULT_FLAG_WRITE) {
-> +			error = get_block(inode, block, &bh, 1);
-
-Exactly what are you expecting to happen here? We don't do
-allocation because there are already unwritten blocks over this
-extent, and so bh will be unchanged when returning. i.e. it will
-still be mapping an unwritten extent.
-
-There's another issue here, too. Allocate the block, sets
-buffer_new, and we crash before the block is zeroed. Stale data is
-exposed to the user if the allocation transaction has already hit
-the log. i.e. at minimum data corruption, at worst we just exposed
-the contents of /etc/shadow....
-
-....
-
-> +	if (buffer_unwritten(&bh) || buffer_new(&bh))
-> +		dax_clear_blocks(inode, bh.b_blocknr, bh.b_size);
-
-Back to unwritten extents, we zero the block here, but the
-filesystem still thinks it's an unwritten extent. There's been no IO
-completion for the filesystem to mark the extent as containing valid
-data.
-
-We do this properly for the do_dax_IO path, but we do not do it
-properly in the fault path.
-
-Back to that stale exposure bug: to avoid this stale data exposure,
-XFS allocates unwritten extents when doing direct allocation into
-holes, then uses IO completion to convert them to written. For DAX,
-we are doing direct allocation for page faults (as delayed allocation
-makes no sense at all) as well as the IO path, and so we have need
-for IO completion callbacks after zeroing just like we do for a
-write() via dax_do_io().
-
-Now, I think we can do this pretty easily - the bufferhead has an
-endio callback we can use for exactly this purpose. i.e. if the
-extent mapping bh is unwritten and the mapping bh->b_end_io is
-present, then that end io function needs to be called after
-dax_clear_blocks() has run. This will allow the filesystem to then
-mark the extents are written, and we have no stale data exposure
-issues at all.
-
-In case you hadn't guessed, mmap write IO via DAX doesn't work at
-all on XFS with this code. patch below that adds the end_io callback
-that makes things work for XFS. I haven't changed the second
-get_block() call, but that needs to be removed for unwritten
-extents found during the initial lookup (i.e. page fault into
-preallocated space).
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
-
-dax: add IO completion callback for page faults
-
-From: Dave Chinner <dchinner@redhat.com>
-
-When a page fault drops into a hole, it needs to allocate an extent.
-Filesystems may allocate unwritten extents so that the underlying
-contents are not exposed until data is written to the extent. In
-that case, we need an io completion callback to run once the blocks
-have been zeroed to indicate that it is safe for the filesystem to
-mark those blocks written without exposing stale data in the event
-of a crash.
-
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
----
- fs/dax.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
-diff --git a/fs/dax.c b/fs/dax.c
-index 96c4fed..387ca78 100644
---- a/fs/dax.c
-+++ b/fs/dax.c
-@@ -306,6 +306,7 @@ static int do_dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
- 	memset(&bh, 0, sizeof(bh));
- 	block = (sector_t)vmf->pgoff << (PAGE_SHIFT - blkbits);
- 	bh.b_size = PAGE_SIZE;
-+	bh.b_end_io = NULL;
- 
-  repeat:
- 	page = find_get_page(mapping, vmf->pgoff);
-@@ -364,8 +365,12 @@ static int do_dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
- 		return VM_FAULT_LOCKED;
- 	}
- 
--	if (buffer_unwritten(&bh) || buffer_new(&bh))
-+	if (buffer_unwritten(&bh) || buffer_new(&bh)) {
-+		/* XXX: errors zeroing the blocks are propagated how? */
- 		dax_clear_blocks(inode, bh.b_blocknr, bh.b_size);
-+		if (bh.b_end_io)
-+			bh.b_end_io(&bh, 1);
-+	}
- 
- 	/* Check we didn't race with a read fault installing a new page */
- 	if (!page && major)
+MST
