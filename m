@@ -1,79 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755057AbaICSnW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 14:43:22 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:49764 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752643AbaICSnU (ORCPT
+	id S1755280AbaICSpj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 14:45:39 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:47832 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751389AbaICSph (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 14:43:20 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Hanjun Guo <hanjun.guo@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>, linaro-acpi@lists.linaro.org,
-        Liviu Dudau <Liviu.Dudau@arm.com>, Lv Zheng <lv.zheng@intel.com>,
-        Rob Herring <robh@kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Robert Moore <robert.moore@intel.com>, linux-acpi@vger.kernel.org,
-        Charles.Garcia-Tobin@arm.com, Robert Richter <rric@kernel.org>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>, Will Deacon <will.deacon@arm.com>,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
-        Sudeep Holla <Sudeep.Holla@arm.com>
-Subject: Re: [PATCH v3 13/17] ARM64 / ACPI: Add GICv2 specific ACPI boot support
-Date: Wed, 03 Sep 2014 20:42:44 +0200
-Message-ID: <2893693.4bZJXXENof@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1409583475-6978-14-git-send-email-hanjun.guo@linaro.org>
-References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org> <1409583475-6978-14-git-send-email-hanjun.guo@linaro.org>
+	Wed, 3 Sep 2014 14:45:37 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+gLl+h+npMpyqPzzuzNh/9
+Date: Wed, 3 Sep 2014 11:45:28 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+Cc: Lee Jones <lee.jones@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
+        Marek Belisko <marek@goldelico.com>, linux-omap@vger.kernel.org
+Subject: Re: PROBLEM: bindings for drivers/mfd/twl4030-power.c
+Message-ID: <20140903184527.GG11766@atomide.com>
+References: <FAC7D7E5-1D05-4D63-821F-C56D3AAA8FF9@goldelico.com>
+ <20140825212652.GR17254@atomide.com>
+ <EBD1E2E6-E596-4B3D-B093-144ABDD7DEDE@goldelico.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:6ejRh+hdWAs67lPLNSO2Zbkr5MyxYZ8Uq9lcZmCAL89
- M0jrEtCYhThiphPG95rw8lWrrzSAIY2lajE2aS7ZBV02XT8PZj
- 9RC15UM3gRcSc5EUXszLHv9a8ziRbxHbGK+cw+dVq1/ZD2krru
- 0hyFSrX9UjWnpA/feMwbU7PXWwTwkLSrloEip9KfZ0na3Hun6G
- jXgt/UlkZptWdSaJpzh47s3bmaHTHcOFRIN7lLTMZwxDM1Qc/s
- CFybuFggjUtGeYfsuENBnqsugc6mLB+a+h2JDr39gOyF0E3oU0
- QOheF5wEGX2XoA3SuZ6OwVFpMkNgF9AOzb3RuM1jHqAmUrZum0
- Tc/xJCCRBKFbXuSS+bss=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <EBD1E2E6-E596-4B3D-B093-144ABDD7DEDE@goldelico.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 01 September 2014 22:57:51 Hanjun Guo wrote:
-> +       /* Collect CPU base addresses */
-> +       count = acpi_parse_entries(sizeof(struct acpi_table_madt),
-> +                                  gic_acpi_parse_madt_cpu, table,
-> +                                  ACPI_MADT_TYPE_GENERIC_INTERRUPT,
-> +                                  ACPI_MAX_GIC_CPU_INTERFACE_ENTRIES);
-> +       if (count < 0) {
-> +               pr_err("Error during GICC entries parsing\n");
-> +               return -EFAULT;
-> +       } else if (!count) {
-> +               /* No GICC entries provided, use address from MADT header */
-> +               struct acpi_table_madt *madt = (struct acpi_table_madt *)table;
-> +
-> +               if (!madt->address)
-> +                       return -EFAULT;
-> +
-> +               cpu_phy_base = (u64)madt->address;
-> +       }
+* Dr. H. Nikolaus Schaller <hns@goldelico.com> [140901 09:54]:
+> Hi,
+> 
+> Am 25.08.2014 um 23:26 schrieb Tony Lindgren:
+> 
+> > * Dr. H. Nikolaus Schaller <hns@goldelico.com> [140817 08:46]:
+> >> I am trying to make ti,use_poweroff work on 3.17-rc1 for the GTA04 board.
+> >> Poweroff was broken for a while and I found that the driver isn't loaded at all.
+> >> 
+> >> It appears to me that commit e7cd1d1eb16fcdf53001b926187a82f1f3e1a7e6
+> >> did rename the compatible entry from "ti,twl4030-power" to "ti,twl4030-power-reset"
+> >> but this was not documented in the bindings and of course our DT does not
+> >> match.
+> >> 
+> >> Even your commit message talks about "ti,twl4030-power" although I can't find it
+> >> in the code.
+> > 
+> > Hmm sorry did I accidentally remove ti,twl4030-power? If so, that should
+> > be added back for sure. Do you have a patch for that already?
+> 
+> No, I have only updated our device tree because I don't know if it really should
+> be added back or not.
+> 
+> As you say the "ti,twl4030-power" does not configure anything. So what
+> is it good for?
 
-After I read through ACPI-5.1 section 5.2.12.14, I wonder if this is the
-best way to treat a missing ACPI_MADT_TYPE_GENERIC_INTERRUPT table.
+Only for the poweroff if "ti,use_poweroff" is set. Care to do a patch
+as you clearly have a use case to test it with?
 
-Do we expect to see those in practice? It seems like using the x86 local
-APIC address as a fallback for the GIC address is not something we
-should do unless we absolutely have to support a system that doesn't
-have the GIC table.
+> >> Are "ti,twl4030-power" and "ti,twl4030-power-reset" doing the same?
+> > 
+> > No, they are separate where ti,twl4030-power does not configure the
+> > twl4030 in any way where ti,twl4030-power-reset configures the warm
+> > reset sequence.
+> 
+> Yes, that is what I deduced because our old setting of "ti,twl4030-power" did
+> no longer configure the power-off and not even load the driver.
+> 
+> > 
+> > For gta04, what you really want is to use ti,twl4030-power-idle or
+> > even ti,twl4030-power-idle-osc-off if the board is wired to support
+> > cutting off the oscillator.
+> 
+> Ok, I see (but must admit that I don't understand the details even after
+> reading the bindings.txt).
 
-	Arnd
+Well the twl4030 has resources such as GPIO pins and regulators that can
+be configured to automatically change state for retention and off-idle.
+That's how we can cut off the core voltage for idle.
+ 
+> Currently we develop without taking care of suspend (the DT migration was
+> much more troublesome work than anticipated) but that should be changed soon.
+
+OK, yeah the PM features should be finally working now with mainline
+and DT :)
+ 
+> > And you probably also want to configure some wake-up interrupts at least
+> > for the the UARTs in the board specific .dts file, see for example the
+> > UART3 in the existing board files that have:
+> > 
+> > interrupts-extended = <&intc 74 &omap3_pmx_core OMAP3_UART3_RX>;
+> 
+> thanks for the hint!
+
+No problem. And FYI, the reason why we can't add that automatically is
+because there are alternate pins for UART3 pins depending on the
+packaging and which pin is actually wired up.
+
+Regards,
+
+Tony
