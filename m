@@ -1,38 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756310AbaICUdm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 16:33:42 -0400
-Received: from 6.77.broadband6.iol.cz ([88.101.77.6]:41593 "EHLO
-	dhcp-27-160.brq.redhat.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756059AbaICUdk (ORCPT
+	id S1755845AbaICTzs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 15:55:48 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:50480 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751523AbaICTzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 16:33:40 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>, Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 0/3] blk-mq: Minor tweaks
-Date: Wed,  3 Sep 2014 22:33:04 +0200
-Message-Id: <cover.1409775956.git.agordeev@redhat.com>
-X-Mailer: git-send-email 1.9.3
+	Wed, 3 Sep 2014 15:55:47 -0400
+Date: Wed, 3 Sep 2014 12:55:41 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: stable@vger.kernel.org, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3.12 00/56] 3.12.28-stable review
+Message-ID: <20140903195541.GA7240@roeck-us.net>
+References: <cover.1409735865.git.jslaby@suse.cz>
+ <5407170F.2070701@roeck-us.net>
+ <54076CB2.6040004@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54076CB2.6040004@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jens,
+On Wed, Sep 03, 2014 at 09:32:02PM +0200, Jiri Slaby wrote:
+> On 09/03/2014, 03:26 PM, Guenter Roeck wrote:
+> > On 09/03/2014 02:26 AM, Jiri Slaby wrote:
+> >> This is the start of the stable review cycle for the 3.12.28 release.
+> >> There are 56 patches in this series, all will be posted as a response
+> >> to this one.  If anyone has any issues with these being applied, please
+> >> let me know.
+> >>
+> >> Responses should be made by Fri Sep  5 11:17:45 CEST 2014.
+> >> Anything received after that time might be too late.
+> >>
+> > 
+> > Jiri,
+> > 
+> > I get a large number of build failures.
+> ...
+> > In file included from drivers/usb/host/ohci-hcd.c:85:0:
+> > drivers/usb/host/ohci-dbg.c:411:20: error: conflicting types for
+> > 'ohci_dump'
+> > drivers/usb/host/ohci-hcd.c:81:13: note: previous declaration of
+> > 'ohci_dump' was here
+> > drivers/usb/host/ohci-hcd.c: In function 'ohci_run':
+> > drivers/usb/host/ohci-hcd.c:757:2: error: too few arguments to function
+> > 'ohci_dump'
+> 
+> Oh, !USB_DEBUG. It should be fixed, could you retry?
+> 
+I triggered a rebuild. I'll let you know after it is complete.
 
-These are few changes to blk-mq/blk-mq-tag, nothing really serious.
-
-Cc: Jens Axboe <axboe@kernel.dk>
-
-Alexander Gordeev (3):
-  blk-mq: Cleanup blk_mq_tag_busy() and blk_mq_tag_idle()
-  blk-mq: Eliminate superfluous check of BLK_MQ_S_TAG_ACTIVE flag
-  blk-mq: Fix formula to calculate fair share of tags
-
- block/blk-mq-tag.c |  9 +++------
- block/blk-mq-tag.h | 17 ++++++++---------
- 2 files changed, 11 insertions(+), 15 deletions(-)
-
--- 
-1.9.3
-
+Guenter
