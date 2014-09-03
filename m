@@ -1,73 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755370AbaICDx7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 23:53:59 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:51144 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754568AbaICDx5 (ORCPT
+	id S1754759AbaICD6R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 23:58:17 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:47649 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753790AbaICD6Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 23:53:57 -0400
+	Tue, 2 Sep 2014 23:58:16 -0400
+Date: Tue, 2 Sep 2014 20:58:11 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Xuetao Guan <gxt@pku.edu.cn>
+Cc: linux-kernel@vger.kernel.org, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Chen Gang <gang.chen.5i5j@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: Re: =?utf-8?B?5Zue5aSN77yaIFJlOiDlm57lpI0=?= =?utf-8?B?77ya?= Status
+ of 'unicore32' architecture in Linux kernel
+Message-ID: <20140903035811.GA954@roeck-us.net>
+References: <20140902155856.GA16029@roeck-us.net>
+ <717685015.32253.1409702968099.JavaMail.root@bj-mail03.pku.edu.cn>
 MIME-Version: 1.0
-In-Reply-To: <20140828192824.GR16689@saruman.home>
-References: <1409212920-28526-1-git-send-email-gautam.vivek@samsung.com>
-	<1409212920-28526-5-git-send-email-gautam.vivek@samsung.com>
-	<20140828192824.GR16689@saruman.home>
-Date: Wed, 3 Sep 2014 09:23:55 +0530
-X-Google-Sender-Auth: 9QDy_F7iFyvkct1gNvKlxiQKH1E
-Message-ID: <CAFp+6iExPJf8bfzG9DjXo1Jwr4maqj0C9x_WNwXiSyTcubDAZg@mail.gmail.com>
-Subject: Re: [PATCH 4/5] usb: dwc3: Adding Kconfig dependency for Exynos7
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>, kishon <kishon@ti.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <717685015.32253.1409702968099.JavaMail.root@bj-mail03.pku.edu.cn>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 29, 2014 at 12:58 AM, Felipe Balbi <balbi@ti.com> wrote:
-> On Thu, Aug 28, 2014 at 01:31:59PM +0530, Vivek Gautam wrote:
->> The Exynos-DWC3 USB 3.0 DRD controller is also present on
->> Exynos7 platform, so adding the dependency on ARCH_EXYNOS7
->> for this driver.
->>
->> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->> ---
->>  drivers/usb/dwc3/Kconfig |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/usb/dwc3/Kconfig b/drivers/usb/dwc3/Kconfig
->> index 785510a..e235894 100644
->> --- a/drivers/usb/dwc3/Kconfig
->> +++ b/drivers/usb/dwc3/Kconfig
->> @@ -55,7 +55,7 @@ config USB_DWC3_OMAP
->>
->>  config USB_DWC3_EXYNOS
->>       tristate "Samsung Exynos Platform"
->> -     depends on ARCH_EXYNOS || COMPILE_TEST
->> +     depends on (ARCH_EXYNOS || ARCH_EXYNOS7) || COMPILE_TEST
->
-> wait when building for ARCH_EXYNOS7 you don't get ARCH_EXYNOS ?
+On Wed, Sep 03, 2014 at 08:09:28AM +0800, Xuetao Guan  wrote:
+> 
+> [...]
+> > > 
+> > > > 
+> > > > unicore32: Add ocd console and qemu-defconfig to support qemu simulator
+> > > > 	This patch adds a primitive OCD console to communicate with qemu.
+> > > > 	The same code is already used for early console support.
+> > > 
+> > > Do you mean there's the same/similar code in QEMU.
+> > > 
+> > No, I mean that the ocd functions in the linux kernel (such as ocd_putc) are
+> > used by both earlyprintk and the ocd console code.
+> Yes. By the way, it's only for qemu and fpga debug.
+> 
+> > 
+> > > > 
+> > > > With this patch added, and with qemu_defconfig as provided by the same patch,
+> > > > it is possible to build and load a unicore32 image in qemu using the following
+> > > > qemu command line.
+> > > > 
+> > > > qemu-system-unicore32 -curses -M puv3 -m 512 -kernel arch/unicore32/boot/zImage
+> > > > 
+> > > > Caveats:
+> > > > - The use of -nographic instead of -curses causes a qemu crash
+> > > Yes, since qemu curses code was modified to meet the simple OCD console requirement.
+> > > 
+> > The lack of support for -nographic is a problem for scripted testing.
+> > The issue is that we have to interpret console output for scripted testing,
+> > and having to go through curses makes that a bit difficult.
+> > 
+> > Wonder if '-nographic' can be modeled as '-curses' with no available terminal
+> > configuration. At least in theory that should work, but executing the above
+> > command with TERM=dumb yields no output. Wonder how difficult it would be to
+> > change that.
+> 
+> I see. I'll try to make -nographic work anyway.
+> 
+Please try the following patch. That seems to do it.
+I am sure it can be improved, but it is a start.
 
-Right, we do get it now in V2 patch series for Exynos7 [1],
-but it wasn't available in the first series [2].
-Will drop this patch now.
+Thanks,
+Guenter
 
-[1] http://www.spinics.net/lists/linux-samsung-soc/msg36378.html
-[2] http://www.spinics.net/lists/arm-kernel/msg357382.html
+---
+>From a7c89177b3c00e4c16bea25a0b4b2f9dc511e07b Mon Sep 17 00:00:00 2001
+From: Guenter Roeck <linux@roeck-us.net>
+Date: Tue, 2 Sep 2014 20:55:02 -0700
+Subject: [PATCH] qemu: unicore32: Add support for non-curses display
 
+Add basic support for DT_NONE and DT_NOGRAPHIC display types.
 
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ target-unicore32/helper.c | 14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
+diff --git a/target-unicore32/helper.c b/target-unicore32/helper.c
+index e5ebbf4..dda3772 100644
+--- a/target-unicore32/helper.c
++++ b/target-unicore32/helper.c
+@@ -13,6 +13,7 @@
+ #include "exec/gdbstub.h"
+ #include "exec/helper-proto.h"
+ #include "qemu/host-utils.h"
++#include "sysemu/sysemu.h"
+ #ifndef CONFIG_USER_ONLY
+ #include "ui/console.h"
+ #endif
+@@ -223,7 +224,18 @@ static void putc_on_screen(unsigned char ch)
+ 
+ void helper_cp1_putc(target_ulong x)
+ {
+-    putc_on_screen((unsigned char)x);   /* Output to screen */
++    switch(display_type) {
++    case DT_CURSES:
++	putc_on_screen((unsigned char)x);   /* Output to screen */
++	break;
++    case DT_NOGRAPHIC:
++    case DT_NONE:
++	putchar((int)x);
++	break;
++    default:
++	break;
++    }
++
+     DPRINTF("%c", x);                   /* Output to stdout */
+ }
+ #endif
 -- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
+1.9.1
+
