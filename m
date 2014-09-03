@@ -1,91 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932811AbaICNEe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 09:04:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34903 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932379AbaICNEc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 09:04:32 -0400
-Date: Wed, 3 Sep 2014 15:04:28 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "Gautham R. Shenoy" <ego@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Oleg Nesterov <oleg@redhat.com>, "Srivatsa S. Bhat" <srivatsa@mit.edu>,
-        Ingo Molnar <mingo@kernel.org>
-cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: [PATCH] ACPI / cpuidle: fix deadlock between cpuidle_lock and
- cpu_hotplug.lock
-In-Reply-To: <alpine.LNX.2.00.1409031404110.12309@pobox.suse.cz>
-Message-ID: <alpine.LNX.2.00.1409031503140.12309@pobox.suse.cz>
-References: <alpine.LNX.2.00.1409031404110.12309@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932551AbaICNIf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 09:08:35 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:52472 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755893AbaICNIc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 09:08:32 -0400
+Message-ID: <1409749704.21827.66.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH 6/8] ima: remove unnecessary code
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Cc: linux-ima-devel@lists.sourceforge.net,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmitry.kasatkin@gmail.com
+Date: Wed, 03 Sep 2014 09:08:24 -0400
+In-Reply-To: <b698bd0778ead0491205b0fda4bf5ed6c67ecec3.1409728712.git.d.kasatkin@samsung.com>
+References: <cover.1409728712.git.d.kasatkin@samsung.com>
+	 <b698bd0778ead0491205b0fda4bf5ed6c67ecec3.1409728712.git.d.kasatkin@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14090313-1344-0000-0000-000003E9D729
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a following AB-BA dependency between cpu_hotplug.lock and 
-cpuidle_lock:
+On Wed, 2014-09-03 at 10:19 +0300, Dmitry Kasatkin wrote: 
+> If ima_appraise is 0, then action would not mandate to perform
+> appraisal and ima_appraise_measurement will never be called.
+> 
+> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
 
-1) cpu_hotplug.lock -> cpuidle_lock
-enable_nonboot_cpus()
- _cpu_up()
-  cpu_hotplug_being()
-   LOCK(cpu_hotplug.lock)
- cpu_notify()
-  ...
-  acpi_processor_hotplug()
-   cpuidle_pause_and_lock()
-    LOCK(cpuidle_lock)
+The policy determines whether or not a file should be appraised.
+Whether IMA is configured and enabled to appraise files is a different
+issue.  The test is not done in process_measurement(), but deferred to
+here.
 
-2) cpuidle_lock -> cpu_hotplug.lock
-acpi_os_execute_deferred() workqueue
- ...
- acpi_processor_cst_has_changed()
-  cpuidle_pause_and_lock()
-   LOCK(cpuidle_lock)
-  get_online_cpus()
-   LOCK(cpu_hotplug.lock)
+Mimi
 
-Fix this by reversing the order acpi_processor_cst_has_changed() does 
-thigs -- let it first execute the protection against CPU hotplug by 
-calling get_online_cpus() and obtain the cpuidle lock only after that (and 
-perform the symmentric change when allowing CPUs hotplug again and 
-dropping cpuidle lock).
+> ---
+>  security/integrity/ima/ima_appraise.c | 2 --
+>  1 file changed, 2 deletions(-)
+> 
+> diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+> index 225fd94..013ec3f 100644
+> --- a/security/integrity/ima/ima_appraise.c
+> +++ b/security/integrity/ima/ima_appraise.c
+> @@ -192,8 +192,6 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
+>  	enum integrity_status status = INTEGRITY_UNKNOWN;
+>  	int rc = xattr_len, hash_start = 0;
+> 
+> -	if (!ima_appraise)
+> -		return 0;
+>  	if (!inode->i_op->getxattr)
+>  		return INTEGRITY_UNKNOWN;
+> 
 
-Spotted by lockdep.
 
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
----
- drivers/acpi/processor_idle.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-index 3dca36d..17f9ec5 100644
---- a/drivers/acpi/processor_idle.c
-+++ b/drivers/acpi/processor_idle.c
-@@ -1071,9 +1071,9 @@ int acpi_processor_cst_has_changed(struct acpi_processor *pr)
- 
- 	if (pr->id == 0 && cpuidle_get_driver() == &acpi_idle_driver) {
- 
--		cpuidle_pause_and_lock();
- 		/* Protect against cpu-hotplug */
- 		get_online_cpus();
-+		cpuidle_pause_and_lock();
- 
- 		/* Disable all cpuidle devices */
- 		for_each_online_cpu(cpu) {
-@@ -1100,8 +1100,8 @@ int acpi_processor_cst_has_changed(struct acpi_processor *pr)
- 				cpuidle_enable_device(dev);
- 			}
- 		}
--		put_online_cpus();
- 		cpuidle_resume_and_unlock();
-+		put_online_cpus();
- 	}
- 
- 	return 0;
--- 
-Jiri Kosina
-SUSE Labs
