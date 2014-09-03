@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755505AbaICS7v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 14:59:51 -0400
-Received: from mail-pa0-f67.google.com ([209.85.220.67]:48266 "EHLO
-	mail-pa0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755319AbaICS7q (ORCPT
+	id S1755575AbaICS76 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 14:59:58 -0400
+Received: from mail-pd0-f196.google.com ([209.85.192.196]:50990 "EHLO
+	mail-pd0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754746AbaICS74 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 14:59:46 -0400
+	Wed, 3 Sep 2014 14:59:56 -0400
 From: Chris Zhong <zyw@rock-chips.com>
 To: lee.jones@linaro.org, lgirdwood@gmail.com, broonie@kernel.org,
         a.zummo@towertech.it, mturquette@linaro.org, akpm@linux-foundation.org,
@@ -21,8 +21,8 @@ Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         javier.martinez@collabora.co.uk, kever.yang@rock-chips.com,
         Chris Zhong <zyw@rock-chips.com>
 Subject: [PATCH v8 3/5] RTC: RK808: add RTC driver for RK808
-Date: Thu,  4 Sep 2014 01:11:00 +0800
-Message-Id: <1409764260-29896-1-git-send-email-zyw@rock-chips.com>
+Date: Thu,  4 Sep 2014 01:18:18 +0800
+Message-Id: <1409764698-30016-1-git-send-email-zyw@rock-chips.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1409752307-29044-1-git-send-email-zyw@rock-chips.com>
 References: <1409752307-29044-1-git-send-email-zyw@rock-chips.com>
