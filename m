@@ -1,114 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932864AbaICQ6h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 12:58:37 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:59503 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932743AbaICQ6f (ORCPT
+	id S932921AbaICRAm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 13:00:42 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53452 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753538AbaICRAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 12:58:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <540707D9.4040208@linux.vnet.ibm.com>
-References: <540707D9.4040208@linux.vnet.ibm.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Wed, 3 Sep 2014 18:58:14 +0200
-Message-ID: <CAKfTPtD7rzOONDeBL7ZBXQMkX_fh2wwOeLt6bA7rTQVzUVwjKw@mail.gmail.com>
-Subject: Re: [QUERY] Confusing usage of rq->nr_running in load balancing
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: "peterz@infradead.org" <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Rik van Riel <riel@redhat.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 3 Sep 2014 13:00:40 -0400
+From: Sudeep Holla <sudeep.holla@arm.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Sudeep Holla <sudeep.holla@arm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH v4 02/11] topology: replace custom attribute macros with standard DEVICE_ATTR*
+Date: Wed,  3 Sep 2014 18:00:08 +0100
+Message-Id: <1409763617-17074-3-git-send-email-sudeep.holla@arm.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1409763617-17074-1-git-send-email-sudeep.holla@arm.com>
+References: <1409763617-17074-1-git-send-email-sudeep.holla@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 September 2014 14:21, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
-> Hi,
+From: Sudeep Holla <sudeep.holla@arm.com>
 
-Hi Preeti,
+Currently couple of custom macros are defined to declare the
+device attributes. However there are already standard macros
+defined in device.h that suffice the need and these custom
+macros can be removed.
 
->
-> There are places in kernel/sched/fair.c in the load balancing part where
-> rq->nr_running is used as against cfs_rq->nr_running. At least I could
-> not make out why the former was used in the following scenarios.
-> It looks to me that it can very well lead to incorrect load balancing.
-> Also I did not pay attention to the numa balancing part of the code
-> while skimming through this file to catch this scenario. There are a
-> couple of places there too which need to be scrutinized.
->
-> 1. load_balance(): The check (busiest->nr_running > 1)
-> The load balancing would be futile if there are tasks of other
-> scheduling classes, wouldn't it?
+This patch replaces custom attribute macros with standard
+DEVICE_ATTR_RO attribute
 
-agree with you
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/base/topology.c | 53 ++++++++++++++++++++++---------------------------
+ 1 file changed, 24 insertions(+), 29 deletions(-)
 
->
-> 2. active_load_balance_cpu_stop(): A similar check and a similar
-> consequence as 1 here.
+diff --git a/drivers/base/topology.c b/drivers/base/topology.c
+index 39b294bd769b..71251ef96e0a 100644
+--- a/drivers/base/topology.c
++++ b/drivers/base/topology.c
+@@ -29,57 +29,52 @@
+ #include <linux/hardirq.h>
+ #include <linux/topology.h>
+ 
+-#define define_one_ro_named(_name, _func)				\
+-	static DEVICE_ATTR(_name, 0444, _func, NULL)
+-
+-#define define_one_ro(_name)				\
+-	static DEVICE_ATTR(_name, 0444, show_##_name, NULL)
+-
+ #define define_id_show_func(name)				\
+-static ssize_t show_##name(struct device *dev,			\
++static ssize_t name##_show(struct device *dev,			\
+ 		struct device_attribute *attr, char *buf)	\
+ {								\
+ 	return sprintf(buf, "%d\n", topology_##name(dev->id));	\
+ }
+ 
+-#define define_siblings_show_map(name)					\
+-static ssize_t show_##name(struct device *dev,				\
++#define define_siblings_show_map(name, mask)				\
++static ssize_t name##_show(struct device *dev,				\
+ 			   struct device_attribute *attr, char *buf)	\
+ {									\
+-	return cpumap_copy_to_buf(false, topology_##name(dev->id), buf);\
++	return cpumap_copy_to_buf(false, topology_##mask(dev->id), buf);\
+ }
+ 
+-#define define_siblings_show_list(name)					\
+-static ssize_t show_##name##_list(struct device *dev,			\
+-				  struct device_attribute *attr,	\
+-				  char *buf)				\
++#define define_siblings_show_list(name, mask)				\
++static ssize_t name##_list_show(struct device *dev,			\
++				struct device_attribute *attr,		\
++				char *buf)				\
+ {									\
+-	return cpumap_copy_to_buf(true, topology_##name(dev->id), buf);	\
++	return cpumap_copy_to_buf(true, topology_##mask(dev->id), buf);	\
+ }
+ 
+-#define define_siblings_show_func(name)		\
+-	define_siblings_show_map(name); define_siblings_show_list(name)
++#define define_siblings_show_func(name, mask)	\
++	define_siblings_show_map(name, mask);	\
++	define_siblings_show_list(name, mask)
+ 
+ define_id_show_func(physical_package_id);
+-define_one_ro(physical_package_id);
++static DEVICE_ATTR_RO(physical_package_id);
+ 
+ define_id_show_func(core_id);
+-define_one_ro(core_id);
++static DEVICE_ATTR_RO(core_id);
+ 
+-define_siblings_show_func(thread_cpumask);
+-define_one_ro_named(thread_siblings, show_thread_cpumask);
+-define_one_ro_named(thread_siblings_list, show_thread_cpumask_list);
++define_siblings_show_func(thread_siblings, thread_cpumask);
++static DEVICE_ATTR_RO(thread_siblings);
++static DEVICE_ATTR_RO(thread_siblings_list);
+ 
+-define_siblings_show_func(core_cpumask);
+-define_one_ro_named(core_siblings, show_core_cpumask);
+-define_one_ro_named(core_siblings_list, show_core_cpumask_list);
++define_siblings_show_func(core_siblings, core_cpumask);
++static DEVICE_ATTR_RO(core_siblings);
++static DEVICE_ATTR_RO(core_siblings_list);
+ 
+ #ifdef CONFIG_SCHED_BOOK
+ define_id_show_func(book_id);
+-define_one_ro(book_id);
+-define_siblings_show_func(book_cpumask);
+-define_one_ro_named(book_siblings, show_book_cpumask);
+-define_one_ro_named(book_siblings_list, show_book_cpumask_list);
++static DEVICE_ATTR_RO(book_id);
++define_siblings_show_func(book_siblings, book_cpumask);
++static DEVICE_ATTR_RO(book_siblings);
++static DEVICE_ATTR_RO(book_siblings_list);
+ #endif
+ 
+ static struct attribute *default_attrs[] = {
+-- 
+1.8.3.2
 
-agree with you
-
->
-> 3. nohz_kick_needed() : We check for more than one task on the runqueue
-> and hence trigger load balancing even if there are rt-tasks.
-
-I can see one potentiel reason why rq->nr_running is interesting that
-is the group capacity might have changed because of non cfs tasks
-since last load balance. So we need to monitor the change of the
-groups' capacity to ensure that the average load of each group is
-still in the same level
-
->
-> 4. cpu_avg_load_per_task(): This stands out among the rest as an
-> incorrect usage of rq->nr_running in place of cfs_rq->nr_running. We
-> divide the load associated with the cfs_rq by the number of tasks on the
-> rq. This will make the cfs_rq load look smaller.
-
-This one is solved in the consolidation of cpu_capacity patchset
-
->
-> 5. task_hot() : I am not too sure about the consequences of using
-> rq->nr_running here.
-
-IIUC, the goal is to check if other tasks are running on the dst_rq so
-rq->nr_running is the good one
-
->
-> 6. update_sg_lb_stats(): sgs->sum_nr_running is the sum of
-> rq->nr_running and propogates thus throughout the load balancing code path.
-
-This one is solved in the consolidation of cpu_capacity patchset
->
-> 7. sg_capacity_factor(): Returns the capacity factor measured against
-> the cpu capacity available to fair tasks. We then compare this with the
-> rq->nr_running in update_sg_lb_stats(), update_sd_pick_busiest() and
-> calculate_imbalance()
-
-This one is removed with the consolidation of cpu_capacity patchset
-
->
-> 8. find_busiest_queue(): This anomaly shows up when we filter against
-> rq->nr_running == 1 and imbalance cannot be taken care of by the
-> existing task on this rq.
-
-agree with you even if the test with wl should prevent wrong decision
-as a wl will be null if no cfs task are present
-
-Regards
-Vincent
->
-> Did I miss something or is it true that the usage of rq->nr_running in
-> the above places is incorrect?
->
-> Thanks
->
-> Regards
-> Preeti U Murthy
->
