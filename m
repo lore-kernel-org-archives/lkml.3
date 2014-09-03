@@ -1,122 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213AbaICSTi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 14:19:38 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:35050 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751538AbaICSTg (ORCPT
+	id S1753760AbaICSZg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 14:25:36 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:49821 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877AbaICSZe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 14:19:36 -0400
-Date: Wed, 3 Sep 2014 11:19:31 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] dynticks: dynticks_idle is only modified locally use
- this_cpu ops
-Message-ID: <20140903181931.GB5001@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140902203743.GL5001@linux.vnet.ibm.com>
- <alpine.DEB.2.11.1409021545370.32690@gentwo.org>
- <20140902211517.GO5001@linux.vnet.ibm.com>
- <alpine.DEB.2.11.1409021819500.5437@gentwo.org>
- <20140903021152.GA14069@linux.vnet.ibm.com>
- <alpine.DEB.2.11.1409030846310.9372@gentwo.org>
- <20140903144349.GT5001@linux.vnet.ibm.com>
- <alpine.DEB.2.11.1409031043540.24085@gentwo.org>
- <20140903171409.GZ5001@linux.vnet.ibm.com>
- <alpine.DEB.2.11.1409031226001.24691@gentwo.org>
+	Wed, 3 Sep 2014 14:25:34 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1409031226001.24691@gentwo.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14090318-3532-0000-0000-00000457F9D1
+Content-Transfer-Encoding: 8BIT
+To: Doug Anderson <dianders@chromium.org>, "Heiko Stuebner" <heiko@sntech.de>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1408726169-25515-1-git-send-email-dianders@chromium.org>
+Cc: "Addy Ke" <addy.ke@rock-chips.com>, "Eddie Cai" <eddie.cai@rock-chips.com>,
+        "Sonny Rao" <sonnyrao@chromium.org>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org,
+        "Doug Anderson" <dianders@chromium.org>, linux-kernel@vger.kernel.org
+References: <1408726169-25515-1-git-send-email-dianders@chromium.org>
+Message-ID: <20140903182518.11368.99877@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH v2] clk: rockchip: Fix the clocks for i2c1 and i2c2
+Date: Wed, 03 Sep 2014 11:25:18 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 03, 2014 at 12:43:15PM -0500, Christoph Lameter wrote:
-> On Wed, 3 Sep 2014, Paul E. McKenney wrote:
+Quoting Doug Anderson (2014-08-22 09:49:29)
+> The clocks for i2c1 and i2c2 are flipped.  The clock tree matched the
+> Technical Reference Manual (TRM) but the TRM was wrong.  Swap them in
+> the clock tree.  This was determined experimentally (by Addy) and
+> confirmed by the Rockchip IC team.
 > 
-> > > Well, a shared data structure would be cleaner in general but there are
-> > > certainly other approaches.
-> >
-> > Per-CPU variables -are- a shared data structure.
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> Reported-by: Addy Ke <addy.ke@rock-chips.com>
+> Reviewed-by: Heiko Stuebner <heiko@sntech.de>
+
+Applied to clk-fixes.
+
+Regards,
+Mike
+
+> ---
+> Changes in v2:
+> - Fixed typo in commit message.
 > 
-> No the intent is for them to be for the particular cpu and therefore
-> there is limited support for sharing. Its not a shared data structure in
-> the classic sense.
-
-It really is shared.  Normal memory at various addresses and all that.
-
-So what is your real concern here, anyway?
-
-> The code in the rcu subsystem operates like other percpu code: There is a
-> modification of local variables by the current processor and other
-> processors inspect the state once in awhile. The other percpu code does
-> not need atomics and barriers. RCU for some reason (that is not clear to
-> me) does.
-
-Like I have said several times before in multiple email threads, including
-this one, RCU needs to reliably detect quiescent states.  To do this, it
-needs do know that the accesses prior to the quiescent state will reliably
-be seen by all as having happened before the quiescent state started.
-Similarly, it needs to know that the accesses after the quiescent state
-will reliably be seen by all as having happened after the quiescent
-state ended.  The memory barriers are required to enforce this ordering.
-
-As noted earlier, in theory, the atomic operations could be nonatomic,
-but on x86 this would require adding explicit memory-barrier instructions.
-Not clear to me which would be faster.
-
-> > > But lets focus on the dynticks_idle case we are discussing here rather
-> > > than tackle the more difficult other atomics. What is checked in the loop
-> > > over the remote cpus is the dynticks_idle value plus
-> > > dynticks_idle_jiffies. So it seems that memory ordering is only used to
-> > > ensure that the jiffies are seen correctly.
-> > >
-> > > In that case both the dynticks_idle and dynticks_idle_jiffies could be
-> > > placed in one 64 bit value. If this is stored and retrieved as one then
-> > > there is no issue with ordering anymore and the barriers would no longer
-> > > be needed.
-> >
-> > If there was an upper bound on the propagation of values through a system,
-> > I could buy this.
+>  drivers/clk/rockchip/clk-rk3288.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 > 
-> What is different in propagation speeds? The atomic read on the function
-> that checks for the quiescent period having passed is a regular read
-> anyways. The atomic_inc makes the cacheline propagate faster through the
-> system? I understand that it evicts the cachelines from other processors
-> caches (containing other percpu data by the way). That is the desired
-> effect?
-
-The smp_mb__{before,after}_atomic() guarantee the ordering.
-
-> > But Mike Galbraith checked the overhead of ->dynticks_idle and found
-> > it to be too small to measure.  So doesn't seem to be a problem worth
-> > extraordinary efforts, especially given that many systems can avoid
-> > it simply by leaving CONFIG_NO_HZ_SYSIDLE=n.
+> diff --git a/drivers/clk/rockchip/clk-rk3288.c b/drivers/clk/rockchip/clk-rk3288.c
+> index 0d8c6c5..b22a2d2 100644
+> --- a/drivers/clk/rockchip/clk-rk3288.c
+> +++ b/drivers/clk/rockchip/clk-rk3288.c
+> @@ -545,7 +545,7 @@ static struct rockchip_clk_branch rk3288_clk_branches[] __initdata = {
+>         GATE(PCLK_PWM, "pclk_pwm", "pclk_cpu", 0, RK3288_CLKGATE_CON(10), 0, GFLAGS),
+>         GATE(PCLK_TIMER, "pclk_timer", "pclk_cpu", 0, RK3288_CLKGATE_CON(10), 1, GFLAGS),
+>         GATE(PCLK_I2C0, "pclk_i2c0", "pclk_cpu", 0, RK3288_CLKGATE_CON(10), 2, GFLAGS),
+> -       GATE(PCLK_I2C1, "pclk_i2c1", "pclk_cpu", 0, RK3288_CLKGATE_CON(10), 3, GFLAGS),
+> +       GATE(PCLK_I2C2, "pclk_i2c2", "pclk_cpu", 0, RK3288_CLKGATE_CON(10), 3, GFLAGS),
+>         GATE(0, "pclk_ddrupctl0", "pclk_cpu", 0, RK3288_CLKGATE_CON(10), 14, GFLAGS),
+>         GATE(0, "pclk_publ0", "pclk_cpu", 0, RK3288_CLKGATE_CON(10), 15, GFLAGS),
+>         GATE(0, "pclk_ddrupctl1", "pclk_cpu", 0, RK3288_CLKGATE_CON(11), 0, GFLAGS),
+> @@ -603,7 +603,7 @@ static struct rockchip_clk_branch rk3288_clk_branches[] __initdata = {
+>         GATE(PCLK_I2C4, "pclk_i2c4", "pclk_peri", 0, RK3288_CLKGATE_CON(6), 15, GFLAGS),
+>         GATE(PCLK_UART3, "pclk_uart3", "pclk_peri", 0, RK3288_CLKGATE_CON(6), 11, GFLAGS),
+>         GATE(PCLK_UART4, "pclk_uart4", "pclk_peri", 0, RK3288_CLKGATE_CON(6), 12, GFLAGS),
+> -       GATE(PCLK_I2C2, "pclk_i2c2", "pclk_peri", 0, RK3288_CLKGATE_CON(6), 13, GFLAGS),
+> +       GATE(PCLK_I2C1, "pclk_i2c1", "pclk_peri", 0, RK3288_CLKGATE_CON(6), 13, GFLAGS),
+>         GATE(PCLK_I2C3, "pclk_i2c3", "pclk_peri", 0, RK3288_CLKGATE_CON(6), 14, GFLAGS),
+>         GATE(PCLK_SARADC, "pclk_saradc", "pclk_peri", 0, RK3288_CLKGATE_CON(7), 1, GFLAGS),
+>         GATE(PCLK_TSADC, "pclk_tsadc", "pclk_peri", 0, RK3288_CLKGATE_CON(7), 2, GFLAGS),
+> -- 
+> 2.1.0.rc2.206.gedb03e5
 > 
-> The code looks fragile and bound to have issues in the future given the
-> barriers/atomics etc. Its going to be cleaner without that.
-
-What exactly looks fragile about it, and exactly what issues do you
-anticipate?
-
-> And we are right now focusing on the simplest case. The atomics scheme is
-> used multiple times in the RCU subsystem. There is more weird looking code
-> there like atomic_add using zero etc.
-
-The atomic_add_return(0,...) reads the value out, forcing full ordering.
-Again, in theory, this could be a volatile read with explicit memory-barrier
-instructions on either side, but it is not clear which wins.  (Keep in
-mind that almost all of the atomic_add_return(0,...) calls for a given
-dynticks counter are executed from a single kthread.)
-
-If systems continue to add CPUs like they have over the past decade or
-so, I expect that you will be seeing more code like RCU's, not less.
-
-							Thanx, Paul
-
