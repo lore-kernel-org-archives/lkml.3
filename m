@@ -1,115 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933159AbaICRC4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 13:02:56 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41185 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932739AbaICRCx (ORCPT
+	id S933171AbaICREA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 13:04:00 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:38133 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932791AbaICRD5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 13:02:53 -0400
-Message-ID: <540749B8.5090302@infradead.org>
-Date: Wed, 03 Sep 2014 10:02:48 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Wed, 3 Sep 2014 13:03:57 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Masanari Iida <standby24x7@gmail.com>, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        acme@kernel.org
-Subject: Re: [PATCH/v2] perf/documentation: Fix typo in perf/Documentation
-References: <5405EDDC.4050808@infradead.org> <1409715963-513-1-git-send-email-standby24x7@gmail.com>
-In-Reply-To: <1409715963-513-1-git-send-email-standby24x7@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+To: Leigh Brown <leigh@solinno.co.uk>,
+        "Gregory CLEMENT" <gregory.clement@free-electrons.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <902cee907da9c532822dcf5db722b47c@doppler.thel33t.co.uk>
+Cc: linux-kernel@vger.kernel.org, "Jason Cooper" <jason@lakedaemon.net>,
+        "Andrew Lunn" <andrew@lunn.ch>,
+        "Sebastian Hesselbarth" <sebastian.hesselbarth@gmail.com>,
+        "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
+        "Ezequiel Garcia" <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        "Lior Amsalem" <alior@marvell.com>,
+        "Tawfik Bayouk" <tawfik@marvell.com>,
+        "Nadav Haklai" <nadavh@marvell.com>,
+        "Raphael Rigo" <ml-arm@syscall.eu>,
+        "Arnaud Ebalard" <arno@natisbad.org>,
+        "Simon Boulay" <simon.boulay@vitec.com>
+References: <1409645719-20003-1-git-send-email-gregory.clement@free-electrons.com>
+ <902cee907da9c532822dcf5db722b47c@doppler.thel33t.co.uk>
+Message-ID: <20140903170339.11368.17168@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH V2 0/4] clk: mvebu: Improve clock drift
+Date: Wed, 03 Sep 2014 10:03:39 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/14 20:46, Masanari Iida wrote:
-> This patch fix spelling typo found in tool/perf/Documentation.
+Quoting Leigh Brown (2014-09-03 07:40:56)
+> On 2014-09-02 09:15, Gregory CLEMENT wrote:
+> > Few users reported a timer drift on the Armada 370 based board such as
+> > the mirabox or the Netgear ReadyNAS 102. This is the second series
+> > with few improvements after the review of the 1st version.
+> > 
+> > The reason is that when the SSCG (Spread Spectrum Clock Generator) is
+> > enabled, it shifts the frequency of the clock. The percentage is no
+> > more than 1% but when the clock is used for a timer it leads to a
+> > clock drift.
+> > 
+> > This series allows to correct the affected clock when the SSCG is
+> > enabled. This drift can happen on all the mvebu SoC on the cpu clock
+> > block (ie cpu, ddr and l2 cache). Currently the only notable effect is
+> > for the Armada 370 because this SoC use the l2cache clock as source
+> > for the timer. That's why even if the series allow any of the mvebu
+> > SoC to benefit to this correction, Armada 370 is the only user of it.
+> > 
+> > The first 2 patches should go through the clk subsystem, whereas the
+> > third one should go to the arm-soc through the mvebu tree.
+> > 
+> > The last one is just to fix a typo I found while I was reading the clk
+> > code.
 > 
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-
-Sorry, I found a few more items that could be fixed...
-and I seem to have mucked up yesterday's comments.  :(
-
-> ---
->  tools/perf/Documentation/perf-diff.txt          | 6 +++---
->  tools/perf/Documentation/perf-kvm.txt           | 4 ++--
->  tools/perf/Documentation/perf-list.txt          | 2 +-
->  tools/perf/Documentation/perf-record.txt        | 2 +-
->  tools/perf/Documentation/perf-script-perl.txt   | 4 ++--
->  tools/perf/Documentation/perf-script-python.txt | 6 +++---
->  tools/perf/Documentation/perf-script.txt        | 2 +-
->  tools/perf/Documentation/perf-test.txt          | 2 +-
->  tools/perf/Documentation/perf-trace.txt         | 2 +-
->  9 files changed, 15 insertions(+), 15 deletions(-)
+> This is working superbly for me on my Mirabox, and ntpd is now 
+> completely stable.
 > 
-> diff --git a/tools/perf/Documentation/perf-kvm.txt b/tools/perf/Documentation/perf-kvm.txt
-> index 6e689dc..4edbc2b 100644
-> --- a/tools/perf/Documentation/perf-kvm.txt
-> +++ b/tools/perf/Documentation/perf-kvm.txt
-> @@ -100,7 +100,7 @@ OPTIONS
->  STAT REPORT OPTIONS
->  -------------------
->  --vcpu=<value>::
-> -       analyze events which occures on this vcpu. (default: all vcpus)
-> +       analyze events which occurs on this vcpu. (default: all vcpus)
-
-	                       occur
-
->  
->  --event=<value>::
->         event to be analyzed. Possible values: vmexit, mmio (x86 only),
-> @@ -134,7 +134,7 @@ STAT LIVE OPTIONS
->      Analyze events only for given process ID(s) (comma separated list).
->  
->  --vcpu=<value>::
-> -       analyze events which occures on this vcpu. (default: all vcpus)
-> +       analyze events which occurs on this vcpu. (default: all vcpus)
-
-	                       occur
-
->  
->  
->  --event=<value>::
-> diff --git a/tools/perf/Documentation/perf-test.txt b/tools/perf/Documentation/perf-test.txt
-> index d1d3e5121..9fc5c5d 100644
-> --- a/tools/perf/Documentation/perf-test.txt
-> +++ b/tools/perf/Documentation/perf-test.txt
-> @@ -25,7 +25,7 @@ OPTIONS
->  -------
->  -s::
->  --skip::
-> -	Tests to skip (comma separater numeric list).
-> +	Tests to skip (comma separator numeric list).
-
-	                     separated
-
->  
->  -v::
->  --verbose::
-> diff --git a/tools/perf/Documentation/perf-trace.txt b/tools/perf/Documentation/perf-trace.txt
-> index 02aac83..524c169 100644
-> --- a/tools/perf/Documentation/perf-trace.txt
-> +++ b/tools/perf/Documentation/perf-trace.txt
-> @@ -20,7 +20,7 @@ scheduling events, etc.
->  This is a live mode tool in addition to working with perf.data files like
->  the other perf tools. Files can be generated using the 'perf record' command
->  but the session needs to include the raw_syscalls events (-e 'raw_syscalls:*').
-> -Alernatively, the 'perf trace record' can be used as a shortcut to
-> +Alternatively, the 'perf trace record' can be used as a shortcut to
-
-either:
-                  the 'perf trace record' command can be used ...
-or
-                  'perf trace record' can be used ...
-
->  automatically include the raw_syscalls events when writing events to a file.
->  
->  The following options apply to perf trace; options to perf trace record are
+> Tested-by: Leigh Brown <leigh@solinno.co.uk>
 > 
 
-Thanks.
+Clock patches look good to me.
 
--- 
-~Randy
+Regards,
+Mike
