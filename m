@@ -1,55 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932904AbaICPue (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 11:50:34 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:39033 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753076AbaICPuc (ORCPT
+	id S932969AbaICPvR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 11:51:17 -0400
+Received: from qmta15.emeryville.ca.mail.comcast.net ([76.96.27.228]:50608
+	"EHLO qmta15.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932678AbaICPvQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 11:50:32 -0400
-Message-ID: <540738C7.5000106@gmail.com>
-Date: Wed, 03 Sep 2014 23:50:31 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: stern@rowland.harvard.edu
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, michal.simek@xilinx.com,
-        linux-usb@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] drivers/usb/host/ehci-xilinx-of.c: Include "linux/of_irq.h"
- to avoid compiling error
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+	Wed, 3 Sep 2014 11:51:16 -0400
+Date: Wed, 3 Sep 2014 10:51:13 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] dynticks: dynticks_idle is only modified locally use
+ this_cpu ops
+In-Reply-To: <20140903144349.GT5001@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.11.1409031043540.24085@gentwo.org>
+References: <alpine.DEB.2.11.1409021513490.26284@gentwo.org> <20140902203743.GL5001@linux.vnet.ibm.com> <alpine.DEB.2.11.1409021545370.32690@gentwo.org> <20140902211517.GO5001@linux.vnet.ibm.com> <alpine.DEB.2.11.1409021819500.5437@gentwo.org>
+ <20140903021152.GA14069@linux.vnet.ibm.com> <alpine.DEB.2.11.1409030846310.9372@gentwo.org> <20140903144349.GT5001@linux.vnet.ibm.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Need include it for irq_of_parse_and_map(), the related error with
-allmodconfig under microblaze:
+On Wed, 3 Sep 2014, Paul E. McKenney wrote:
 
-  drivers/usb/host/ehci-xilinx-of.c: In function ‘ehci_hcd_xilinx_of_probe’:
-  drivers/usb/host/ehci-xilinx-of.c:156:2: error: implicit declaration of function ‘irq_of_parse_and_map’ [-Werror=implicit-function-declaration]
-    irq = irq_of_parse_and_map(dn, 0);
-    ^
+> You would prefer that I instead allocated an NR_CPUS-sized array?
 
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
----
- drivers/usb/host/ehci-xilinx-of.c | 1 +
- 1 file changed, 1 insertion(+)
+Well, a shared data structure would be cleaner in general but there are
+certainly other approaches.
 
-diff --git a/drivers/usb/host/ehci-xilinx-of.c b/drivers/usb/host/ehci-xilinx-of.c
-index fe57710..a232836 100644
---- a/drivers/usb/host/ehci-xilinx-of.c
-+++ b/drivers/usb/host/ehci-xilinx-of.c
-@@ -31,6 +31,7 @@
- #include <linux/of.h>
- #include <linux/of_platform.h>
- #include <linux/of_address.h>
-+#include <linux/of_irq.h>
- 
- /**
-  * ehci_xilinx_port_handed_over - hand the port out if failed to enable it
--- 
-1.9.3
+But lets focus on the dynticks_idle case we are discussing here rather
+than tackle the more difficult other atomics. What is checked in the loop
+over the remote cpus is the dynticks_idle value plus
+dynticks_idle_jiffies. So it seems that memory ordering is only used to
+ensure that the jiffies are seen correctly.
+
+In that case both the dynticks_idle and dynticks_idle_jiffies could be
+placed in one 64 bit value. If this is stored and retrieved as one then
+there is no issue with ordering anymore and the barriers would no longer
+be needed.
