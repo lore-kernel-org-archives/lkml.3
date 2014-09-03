@@ -1,109 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933062AbaICVby (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 17:31:54 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:58510 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932327AbaICVbw (ORCPT
+	id S932327AbaICVlY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 17:41:24 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:49432 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932175AbaICVlX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 17:31:52 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-Cc: Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] acpi: fan.c: printk replacement
-Date: Wed, 03 Sep 2014 23:51:12 +0200
-Message-ID: <13181466.m5lsFWfZvz@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1409233639-9165-1-git-send-email-sudipm.mukherjee@gmail.com>
-References: <1409233639-9165-1-git-send-email-sudipm.mukherjee@gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Wed, 3 Sep 2014 17:41:23 -0400
+From: Mark Einon <mark.einon@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Mark Einon <mark.einon@gmail.com>
+Subject: [PATCH 1/4] staging: et131x: Remove dead code in isr
+Date: Wed,  3 Sep 2014 22:40:54 +0100
+Message-Id: <1409780457-6060-1-git-send-email-mark.einon@gmail.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, August 28, 2014 07:17:19 PM Sudip Mukherjee wrote:
-> printk replaced with corresponding dev_err and dev_info 
-> fixed one broken user-visible string 
-> multiine comment edited for correct commenting style 
-> asm/uaccess.h replaced with linux/uaccess.h
-> PREFIX removed
-> 
-> Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
-> ---
-> 
-> modified with reference to the discussion at https://lkml.org/lkml/2014/8/22/176 
+Dan Carpenter reports:
+The patch c2ebf58ba089: "staging: et131x: Implement NAPI support"
+from Aug 21, 2014, leads to the following static checker warning:
 
-Queued up for 3.18, thanks!
+        drivers/staging/et131x/et131x.c:4004 et131x_isr()
+        warn: we tested 'status' before and it was 'true'
 
->  drivers/acpi/fan.c | 18 ++++++++----------
->  1 file changed, 8 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/acpi/fan.c b/drivers/acpi/fan.c
-> index 8acf53e..5328b10 100644
-> --- a/drivers/acpi/fan.c
-> +++ b/drivers/acpi/fan.c
-> @@ -27,12 +27,10 @@
->  #include <linux/module.h>
->  #include <linux/init.h>
->  #include <linux/types.h>
-> -#include <asm/uaccess.h>
-> +#include <linux/uaccess.h>
->  #include <linux/thermal.h>
->  #include <linux/acpi.h>
->  
-> -#define PREFIX "ACPI: "
-> -
->  #define ACPI_FAN_CLASS			"fan"
->  #define ACPI_FAN_FILE_STATE		"state"
->  
-> @@ -127,8 +125,9 @@ static const struct thermal_cooling_device_ops fan_cooling_ops = {
->  };
->  
->  /* --------------------------------------------------------------------------
-> -                                 Driver Interface
-> -   -------------------------------------------------------------------------- */
-> + *                               Driver Interface
-> + * --------------------------------------------------------------------------
-> +*/
->  
->  static int acpi_fan_add(struct acpi_device *device)
->  {
-> @@ -143,7 +142,7 @@ static int acpi_fan_add(struct acpi_device *device)
->  
->  	result = acpi_bus_update_power(device->handle, NULL);
->  	if (result) {
-> -		printk(KERN_ERR PREFIX "Setting initial power state\n");
-> +		dev_err(&device->dev, "Setting initial power state\n");
->  		goto end;
->  	}
->  
-> @@ -168,10 +167,9 @@ static int acpi_fan_add(struct acpi_device *device)
->  				   &device->dev.kobj,
->  				   "device");
->  	if (result)
-> -		dev_err(&device->dev, "Failed to create sysfs link "
-> -			"'device'\n");
-> +		dev_err(&device->dev, "Failed to create sysfs link 'device'\n");
->  
-> -	printk(KERN_INFO PREFIX "%s [%s] (%s)\n",
-> +	dev_info(&device->dev, "ACPI: %s [%s] (%s)\n",
->  	       acpi_device_name(device), acpi_device_bid(device),
->  	       !device->power.state ? "on" : "off");
->  
-> @@ -217,7 +215,7 @@ static int acpi_fan_resume(struct device *dev)
->  
->  	result = acpi_bus_update_power(to_acpi_device(dev)->handle, NULL);
->  	if (result)
-> -		printk(KERN_ERR PREFIX "Error updating fan power state\n");
-> +		dev_err(dev, "Error updating fan power state\n");
->  
->  	return result;
->  }
-> 
+We don't actually need the dead code, as we're now using NAPI to
+handle enabling interrupts - but we do need to enable interrupts if
+NAPI is not scheduled - so enable interrupts if this is the case.
 
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Mark Einon <mark.einon@gmail.com>
+---
+ drivers/staging/et131x/et131x.c | 18 ++++++++----------
+ 1 file changed, 8 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
+index 1037d93..7a1df8a 100644
+--- a/drivers/staging/et131x/et131x.c
++++ b/drivers/staging/et131x/et131x.c
+@@ -3793,6 +3793,7 @@ static SIMPLE_DEV_PM_OPS(et131x_pm_ops, et131x_suspend, et131x_resume);
+ static irqreturn_t et131x_isr(int irq, void *dev_id)
+ {
+ 	bool handled = true;
++	bool enable_interrupts = true;
+ 	struct net_device *netdev = (struct net_device *)dev_id;
+ 	struct et131x_adapter *adapter = netdev_priv(netdev);
+ 	struct address_map __iomem *iomem = adapter->regs;
+@@ -3802,6 +3803,7 @@ static irqreturn_t et131x_isr(int irq, void *dev_id)
+ 
+ 	if (!netif_device_present(netdev)) {
+ 		handled = false;
++		enable_interrupts = false;
+ 		goto out;
+ 	}
+ 
+@@ -3847,8 +3849,10 @@ static irqreturn_t et131x_isr(int irq, void *dev_id)
+ 		status &= ~ET_INTR_WATCHDOG;
+ 	}
+ 
+-	if (status & (ET_INTR_RXDMA_XFR_DONE | ET_INTR_TXDMA_ISR))
++	if (status & (ET_INTR_RXDMA_XFR_DONE | ET_INTR_TXDMA_ISR)) {
++		enable_interrupts = false;
+ 		napi_schedule(&adapter->napi);
++	}
+ 
+ 	status &= ~(ET_INTR_TXDMA_ISR | ET_INTR_RXDMA_XFR_DONE);
+ 
+@@ -4001,16 +4005,10 @@ static irqreturn_t et131x_isr(int irq, void *dev_id)
+ 		 */
+ 	}
+ 
+-	if (!status) {
+-		/* This interrupt has in some way been "handled" by
+-		 * the ISR. Either it was a spurious Rx interrupt, or
+-		 * it was a Tx interrupt that has been filtered by
+-		 * the ISR.
+-		 */
++out:
++	if (enable_interrupts)
+ 		et131x_enable_interrupts(adapter);
+-	}
+ 
+-out:
+ 	return IRQ_RETVAL(handled);
+ }
+ 
+@@ -4257,7 +4255,7 @@ static void et131x_multicast(struct net_device *netdev)
+ }
+ 
+ /* et131x_tx - The handler to tx a packet on the device */
+-static int et131x_tx(struct sk_buff *skb, struct net_device *netdev)
++static netdev_tx_t et131x_tx(struct sk_buff *skb, struct net_device *netdev)
+ {
+ 	int status = 0;
+ 	struct et131x_adapter *adapter = netdev_priv(netdev);
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+2.1.0
+
