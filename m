@@ -1,107 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932706AbaICOOQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 10:14:16 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:51941 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755286AbaICOOP (ORCPT
+	id S1756218AbaICOPd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 10:15:33 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:46532 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755817AbaICOPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 10:14:15 -0400
-Message-ID: <5407222F.9040200@collabora.com>
-Date: Wed, 03 Sep 2014 16:14:07 +0200
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Wed, 3 Sep 2014 10:15:31 -0400
+Date: Wed, 3 Sep 2014 16:15:28 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Pankaj Dubey <pankaj.dubey@samsung.com>, kgene.kim@samsung.com,
+        linux@arm.linux.org.uk, Alexander Shiyan <shc_work@mail.ru>,
+        naushad@samsung.com, Tomasz Figa <t.figa@samsung.com>,
+        linux-kernel@vger.kernel.org, joshi@samsung.com,
+        linux-samsung-soc@vger.kernel.org, thomas.ab@samsung.com,
+        tomasz.figa@gmail.com, vikas.sajjan@samsung.com, chow.kim@samsung.com,
+        lee.jones@linaro.org, Michal Simek <michal.simek@xilinx.com>,
+        linux-arm-kernel@lists.infradead.org, Mark Brown <broonie@kernel.org>
+Subject: Re: [PATCH v2] mfd: syscon: Decouple syscon interface from platform
+ devices
+Message-ID: <20140903161528.05f566e1@bbrezillon>
+In-Reply-To: <4224773.hl3QDeILqz@wuerfel>
+References: <1409668935-10667-1-git-send-email-pankaj.dubey@samsung.com>
+	<6034841.GFrG3XCMdb@wuerfel>
+	<20140903151611.260a7218@bbrezillon>
+	<4224773.hl3QDeILqz@wuerfel>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>, rabin@rab.in,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: Re: [PATCH v8 6/7] clk: Add floor and ceiling constraints to clock
- rates
-References: <1409585377-26091-1-git-send-email-tomeu.vizoso@collabora.com> <1409585675-26894-1-git-send-email-tomeu.vizoso@collabora.com> <1409585675-26894-3-git-send-email-tomeu.vizoso@collabora.com> <20140903001346.5251.47709@quantum>
-In-Reply-To: <20140903001346.5251.47709@quantum>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2014 02:13 AM, Mike Turquette wrote:
-> Quoting Tomeu Vizoso (2014-09-01 08:34:34)
->> @@ -1633,6 +1636,13 @@ int clk_provider_set_rate(struct clk_core *clk, unsigned long rate)
->>          /* prevent racing with updates to the clock topology */
->>          clk_prepare_lock();
->>
->> +       hlist_for_each_entry(clk_user, &clk->per_user_clks, child_node) {
->> +               rate = max(rate, clk_user->floor_constraint);
->> +
->> +               if (clk_user->ceiling_constraint > 0)
->> +                       rate = min(rate, clk_user->ceiling_constraint);
->
-> A ceiling_constraint from consumer_A could be less than a
-> floor_constraint from consumer_B. What should we do in this case?
->
-> In the code above the ceiling_constraint will always win. Is that by
-> design? We should document that behavior in Documentation/clk.txt.
->
-> This is the right place to check for the aforementioned corner case,
-> since we not only care about a single consumer having sane constraints
-> (e.g. min < max) but also mixing constraints across consumers.
+On Wed, 03 Sep 2014 15:49:04 +0200
+Arnd Bergmann <arnd@arndb.de> wrote:
 
-Yeah. I think I lean towards first applying all floors, then applying 
-all ceilings. Because hardware damage could happen if a ceiling from 
-thermal isn't applied because of a bug in some other driver.
+> On Wednesday 03 September 2014 15:16:11 Boris BREZILLON wrote:
+> > I checked that part, and it appears most of the code is already there
+> > (see usage of regmap_attach_dev function here [1]).
+> > 
+> > The only problem I see is that errors are still printed with dev_err,
+> > which, AFAIK, will trigger a kernel panic if dev is NULL.
+> 
+> Actually not:
+> 
+> static int __dev_printk(const char *level, const struct device *dev,
+>                         struct va_format *vaf)
+> {
+>         if (!dev)
+>                 return printk("%s(NULL device *): %pV", level, vaf);
+> 
+>         return dev_printk_emit(level[1] - '0', dev,
+>                                "%s %s: %pV",
+>                                dev_driver_string(dev), dev_name(dev), vaf);
+> }
+> 
 
-This also has the advantage of being deterministic, when with the 
-current approach the result depends on the order in which the per-user 
-clocks are iterated.
+My bad then (I don't know where I looked at to think NULL dev was not
+gracefully handled :-)). Thanks for pointing this out.
+Given that, I think it should work fine even with a NULL dev.
+I'll give it a try on at91 ;-).
 
-> However ...
->
->> +       }
->> +
->>          /* bail early if nothing to do */
->>          if (rate == clk_provider_get_rate(clk))
->>                  goto out;
->> @@ -1699,6 +1709,24 @@ int clk_set_rate(struct clk *clk_user, unsigned long rate)
->>   }
->>   EXPORT_SYMBOL_GPL(clk_set_rate);
->>
->> +int clk_set_floor_rate(struct clk *clk_user, unsigned long rate)
->> +{
->> +       struct clk_core *clk = clk_to_clk_core(clk_user);
->> +
->> +       clk_user->floor_constraint = rate;
->> +       return clk_provider_set_rate(clk, clk_provider_get_rate(clk));
->> +}
->> +EXPORT_SYMBOL_GPL(clk_set_floor_rate);
->> +
->> +int clk_set_ceiling_rate(struct clk *clk_user, unsigned long rate)
->> +{
->> +       struct clk_core *clk = clk_to_clk_core(clk_user);
->> +
->> +       clk_user->ceiling_constraint = rate;
->> +       return clk_provider_set_rate(clk, clk_provider_get_rate(clk));
->> +}
->> +EXPORT_SYMBOL_GPL(clk_set_ceiling_rate);
->
-> ... we should probably sanity-check constraints here to make sure that
-> ceiling_rates for a given consumer are higher than floor_constraints for
-> that same consumer. It's a bit extra overhead but a WARN would probably
-> be helpful in this case.
+Best Regards,
 
-Sounds like a good idea to me, will do.
+Boris
 
-Thanks,
-
-Tomeu
-
-> Rest of the patch looks good.
->
-> Regards,
-> Mike
->
-
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
