@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932635AbaICVoh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 17:44:37 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:32953 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932262AbaICVof (ORCPT
+	id S932671AbaICVqI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 17:46:08 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:29166 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754861AbaICVqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 17:44:35 -0400
-Message-ID: <54078BBF.3030600@cogentembedded.com>
-Date: Thu, 04 Sep 2014 01:44:31 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Antoine Tenart <antoine.tenart@free-electrons.com>, balbi@ti.com,
-        gregkh@linuxfoundation.org, Peter.Chen@freescale.com, kishon@ti.com,
-        stern@rowland.harvard.edu
-CC: yoshihiro.shimoda.uh@renesas.com, alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-usb@vger.kernel.org,
+	Wed, 3 Sep 2014 17:46:06 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+NHO1NhuKxf1RWbkEdzZXg
+Date: Wed, 3 Sep 2014 14:45:59 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Nishanth Menon <nm@ti.com>
+Cc: =?utf-8?Q?Beno=C3=AEt?= Cousson <bcousson@baylibre.com>,
+        Tom Rini <trini@ti.com>, linux-omap@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 4/9] usb: rename phy to usb_phy in HCD
-References: <1409730040-14200-1-git-send-email-antoine.tenart@free-electrons.com> <1409730040-14200-5-git-send-email-antoine.tenart@free-electrons.com>
-In-Reply-To: <1409730040-14200-5-git-send-email-antoine.tenart@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] ARM: dts: am335x-bone*: Fix model name and update
+ compatibility information
+Message-ID: <20140903214558.GN11766@atomide.com>
+References: <1409760190-17275-1-git-send-email-nm@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409760190-17275-1-git-send-email-nm@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+* Nishanth Menon <nm@ti.com> [140903 09:03]:
+> Beaglebone white and beaglebone black differ in tiny little aspects.
+> This is the reason why we maintain seperate dts for these platforms.
+> However, there is no real way to decode from dtb which platform it is
+> since compatible and model name are the same for both platforms.
+> 
+> Fix this so that beaglebone black and beaglebone are identifiable,
+> while maintaining compatibility for older zImages which might use old
+> beaglebone compatible flag for black as well.
+> 
+> Reported-by: Tom Rini <trini@ti.com>
+> Signed-off-by: Nishanth Menon <nm@ti.com>
 
-On 09/03/2014 11:40 AM, Antoine Tenart wrote:
+Thanks applying into omap-for-v3.18/fixes-not-urgent.
 
-> The USB PHY member of the HCD structure is renamed to 'usb_phy' and
-> modifications are done in all drivers accessing it.
+Regards,
 
-> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
-> Acked-by: Alan Stern <stern@rowland.harvard.edu>
-
-    I'm going to steal this patch and post it along with the HCD generic PHY 
-support to avoid the need for the follow-up 'gen_phy'->'phy' rename.
-
-WBR, Sergei
-
+Tony
