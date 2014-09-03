@@ -1,67 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932946AbaICPAm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 11:00:42 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:56242 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932862AbaICPAE (ORCPT
+	id S932968AbaICPCp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 11:02:45 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56999 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755013AbaICPCn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 11:00:04 -0400
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, jolsa@redhat.com,
-        namhyung@kernel.org, dsahern@gmail.com
-Subject: [PATCH v4 5/6] perf record: add new -I option to sample interrupted machine state
-Date: Wed,  3 Sep 2014 16:59:10 +0200
-Message-Id: <1409756351-25743-6-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1409756351-25743-1-git-send-email-eranian@google.com>
-References: <1409756351-25743-1-git-send-email-eranian@google.com>
+	Wed, 3 Sep 2014 11:02:43 -0400
+Message-ID: <54072D96.6070906@wwwdotorg.org>
+Date: Wed, 03 Sep 2014 09:02:46 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+CC: linux-gpio@vger.kernel.org, Fan Wu <fwu@marvell.com>
+Subject: Re: [PATCH] pinctrl: clean up after enable refactoring
+References: <1409742329-17411-1-git-send-email-linus.walleij@linaro.org>
+In-Reply-To: <1409742329-17411-1-git-send-email-linus.walleij@linaro.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add -I/--intr-regs option to capture machine state registers at
-interrupt.
+On 09/03/2014 05:05 AM, Linus Walleij wrote:
+> commit 2243a87d90b42eb38bc281957df3e57c712b5e56
+> "pinctrl: avoid duplicated calling enable_pinmux_setting for a pin"
+> removed the .disable callback from the struct pinmux_ops,
+> making the .enable() callback the only remaining callback.
+>
+> However .enable() is a bad name as it seems to imply that a
+> muxing can also be disabled. Rename the callback to .set_mux()
+> and also take this opportunity to clean out any remaining
+> mentions of .disable() from the documentation.
 
-Add the corresponding man page description
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
- tools/perf/Documentation/perf-record.txt |    6 ++++++
- tools/perf/builtin-record.c              |    2 ++
- 2 files changed, 8 insertions(+)
-
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index d460049..1a36259 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -214,6 +214,12 @@ if combined with -a or -C options.
- After starting the program, wait msecs before measuring. This is useful to
- filter out the startup phase of the program, which is often very different.
- 
-+-I::
-+--intr-regs::
-+Capture machine state (registers) at interrupt, i.e., on counter overflows for
-+each sample. List of captured registers depends on the architecture. This option
-+is off by default.
-+
- SEE ALSO
- --------
- linkperf:perf-stat[1], linkperf:perf-list[1]
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 87e28a4..27378d5 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -883,6 +883,8 @@ const struct option record_options[] = {
- 		    "sample transaction flags (special events only)"),
- 	OPT_BOOLEAN(0, "per-thread", &record.opts.target.per_thread,
- 		    "use per-thread mmaps"),
-+	OPT_BOOLEAN('I', "intr-regs", &record.opts.sample_intr_regs,
-+		    "Sample machine registers on interrupt"),
- 	OPT_END()
- };
- 
--- 
-1.7.9.5
-
+Acked-by: Stephen Warren <swarren@nvidia.com>
