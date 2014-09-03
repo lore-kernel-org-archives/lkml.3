@@ -1,74 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072AbaICJoP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 05:44:15 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:43251 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755341AbaICJoO (ORCPT
+	id S1756181AbaICJoj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 05:44:39 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:52695 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755341AbaICJoi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 05:44:14 -0400
-Message-ID: <5406E2EC.4050201@linaro.org>
-Date: Wed, 03 Sep 2014 10:44:12 +0100
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Wed, 3 Sep 2014 05:44:38 -0400
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kgdb-bugreport@lists.sourceforge.net" 
-	<kgdb-bugreport@lists.sourceforge.net>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Colin Cross <ccross@android.com>,
-        "kernel-team@android.com" <kernel-team@android.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        Fabio Estevam <festevam@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Nicolas Pitre <nico@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Sricharan R <r.sricharan@ti.com>, Marc Zyngier <Marc.Zyngier@arm.com>
-Subject: Re: [PATCH v11 06/19] irqchip: gic: Provide support for interrupt
- grouping
-References: <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org> <1409662853-29313-1-git-send-email-daniel.thompson@linaro.org> <1409662853-29313-7-git-send-email-daniel.thompson@linaro.org> <20140902193355.GW30401@n2100.arm.linux.org.uk> <CBF5C246-DBB2-4FC3-A507-CA3E15013F7C@arm.com>
-In-Reply-To: <CBF5C246-DBB2-4FC3-A507-CA3E15013F7C@arm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+From: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
+Date: Wed, 3 Sep 2014 11:44:22 +0200
+X-Google-Sender-Auth: Z5ORaUXZ_AnetKP2cziDXgbz9ac
+Message-ID: <CAL8zT=hNnRU3gbprVXOMt6FC9veRvQKRmS9gSeCm5-DNfGv-xg@mail.gmail.com>
+Subject: PFUZE100 regulator not going off when PWRON is 0
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: lgirdwood@gmail.com, devicetree@vger.kernel.org, robh+dt@kernel.org,
+        grant.likely@linaro.org, broonie@kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/09/14 22:36, Catalin Marinas wrote:
-> On 2 Sep 2014, at 20:33, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
->> On Tue, Sep 02, 2014 at 02:00:40PM +0100, Daniel Thompson wrote:
->>> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
->>> index 4b959e6..423707c 100644
->>> --- a/drivers/irqchip/irq-gic.c
->>> +++ b/drivers/irqchip/irq-gic.c
->>> @@ -41,6 +41,9 @@
->>> #include <linux/irqchip/arm-gic.h>
->>>
->>> #include <asm/cputype.h>
->>> +#ifdef CONFIG_FIQ
->>> +#include <asm/fiq.h>
->>> +#endif
->>
->> Is there much advantage to this ifdef over providing a dummy asm/fiq.h
->> in ARM64?
-> 
-> While it’s unlikely we’ll use FIQs on arm64 (they are generally
-> reserved for the secure world/firmware), I don’t mind an empty
-> asm/fiq.h file.
+Hi,
 
-Thanks Catalin, Thanks Russell.
+I have a custom i.MX6 based board, but PMIC part is exactly the same
+as the Freescale SabreSD board.
+I have a reset button, which makes the PWRON signal on PFUZE100 go from 1 to 0.
+I thought this would reset the chip, and thus all voltages would go to
+0, but this is not the case. It seems that SWxOMODE registers are
+involved in this process, accorgind to the datasheet, but I don't
+think this is implemented right now.
 
-I will do this.
+I also removed regulator-always-on for my SW2 pin in order to get it
+off, but this has no effect.
 
+Thanks for your advices,
+JM
