@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756608AbaICKcl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 06:32:41 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43211 "EHLO
+	id S1756163AbaICKit (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 06:38:49 -0400
+Received: from www.linutronix.de ([62.245.132.108]:43267 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755979AbaICKcj (ORCPT
+	with ESMTP id S1755690AbaICKir (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 06:32:39 -0400
-Date: Wed, 3 Sep 2014 12:32:27 +0200 (CEST)
+	Wed, 3 Sep 2014 06:38:47 -0400
+Date: Wed, 3 Sep 2014 12:38:43 +0200 (CEST)
 From: Thomas Gleixner <tglx@linutronix.de>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Hugh Dickins <hughd@google.com>, Chintan Pandya <cpandya@codeaurora.org>,
-        akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH v4 2/2] ksm: provide support to use deferrable timers
- for scanner thread
-In-Reply-To: <20140903095815.GK4783@worktop.ger.corp.intel.com>
-Message-ID: <alpine.DEB.2.10.1409031212300.3333@nanos>
-References: <1408536628-29379-1-git-send-email-cpandya@codeaurora.org> <1408536628-29379-2-git-send-email-cpandya@codeaurora.org> <alpine.LSU.2.11.1408272258050.10518@eggly.anvils> <20140903095815.GK4783@worktop.ger.corp.intel.com>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+cc: daniel.lezcano@linaro.org, dongsheng.wang@freescale.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] Clocksource: Flextimer: Use internal clocksource
+ read API.
+In-Reply-To: <1409031951-39021-3-git-send-email-Li.Xiubo@freescale.com>
+Message-ID: <alpine.DEB.2.10.1409031236450.3333@nanos>
+References: <1409031951-39021-1-git-send-email-Li.Xiubo@freescale.com> <1409031951-39021-3-git-send-email-Li.Xiubo@freescale.com>
 User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -29,67 +27,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Sep 2014, Peter Zijlstra wrote:
-> On Wed, Aug 27, 2014 at 11:02:20PM -0700, Hugh Dickins wrote:
-> > Sorry for holding you up, I'm slow. and needed to think about this more,
-> > 
-> > On Wed, 20 Aug 2014, Chintan Pandya wrote:
-> > 
-> > > KSM thread to scan pages is scheduled on definite timeout. That wakes up
-> > > CPU from idle state and hence may affect the power consumption. Provide
-> > > an optional support to use deferrable timer which suites low-power
-> > > use-cases.
-> > > 
-> > > Typically, on our setup we observed, 10% less power consumption with some
-> > > use-cases in which CPU goes to power collapse frequently. For example,
-> > > playing audio on Soc which has HW based Audio encoder/decoder, CPU
-> > > remains idle for longer duration of time. This idle state will save
-> > > significant CPU power consumption if KSM don't wakes them up
-> > > periodically.
-> > > 
-> > > Note that, deferrable timers won't be deferred if any CPU is active and
-> > > not in IDLE state.
+On Tue, 26 Aug 2014, Xiubo Li wrote:
 
-This is completely wrong. A deferrable timer enqueued on a given CPU
-is deferred if that very CPU goes idle. The timer subsystem does not
-care at all about the other CPUs.
+> Since the Flextimer device will be implemented in BE mode on
+> LS1 SoC, and in LE mode on Vybrid, LS2 SoCs, so here we need
+> the endianness judgment before doing the mmio.
 
-And that very much explains Hughs observations. If the ksm thread
-sleeps deferrable on a CPU which is idle for a very long time, it will
-be deferred despite work accumulating on other CPUs.
+Brilliant. So for every clocksource read you take a conditional.
+ 
+> @@ -238,7 +243,7 @@ static int __init ftm_clocksource_init(unsigned long freq)
+>  	sched_clock_register(ftm_read_sched_clock, 16, freq / (1 << priv->ps));
+>  	err = clocksource_mmio_init(priv->clksrc_base + FTM_CNT, "fsl-ftm",
+>  				    freq / (1 << priv->ps), 300, 16,
+> -				    clocksource_mmio_readl_up);
+> +				    ftm_clocksource_read_up);
 
-> > > By default, deferrable timers is enabled. To disable deferrable timers,
-> > > $ echo 0 > /sys/kernel/mm/ksm/deferrable_timer
-> > 
-> > I have now experimented.  And, much as I wanted to eliminate the
-> > tunable, and just have deferrable timers on, I have come right back
-> > to your original position.
-> > 
-> > I was impressed by how quiet ksmd goes when there's nothing much
-> > happening on the machine; but equally, disappointed in how slow
-> > it then is to fulfil the outstanding merge work.  I agree with your
-> > original assessment, that not everybody will want deferrable timer,
-> > the way it is working at present.
-> > 
-> > I expect that can be fixed, partly by doing more work on wakeup from
-> > a deferred timer, according to how long it has been deferred; and
-> > partly by not deferring on idle until two passes of the list have been
-> > completed.  But that's easier said than done, and might turn out to
-> 
-> So why not have the timer cancel itself when there is no more work to do
-> and start itself up again when there's work added?
+What's wrong with having endianess aware clocksource_mmio functions
+and make the decision at init time?
 
-Because that requires more work and thoughts than simply slapping a
-deferrable timer at the problem and creating a sysfs variable to turn
-it on/off.
-
-So looking at Hughs test results I'm quite sure that the deferrable
-timer is just another tunable bandaid with dubious value and the
-potential of predictable bug/regresssion reports.
-
-So no, I wont merge the schedule_timeout_deferrable() hackery unless
-the whole mechanism is usable w/o tunables and regressions.
-
-Thanks,
+Thanks
 
 	tglx
