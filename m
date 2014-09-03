@@ -1,85 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740AbaICFuR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 01:50:17 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:15544 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751447AbaICFuP (ORCPT
+	id S1754993AbaICFxK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 01:53:10 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:37726 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751209AbaICFxJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 01:50:15 -0400
-X-AuditID: cbfee68e-f79536d000000fd1-7e-5406ac11312d
-From: Jonghwa Lee <jonghwa3.lee@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com, r.baldyga@samsung.com,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>
-Subject: [PATCH] extcon: max77693: Fix a bug occured at changing ADC debounce
- time.
-Date: Wed, 03 Sep 2014 14:50:07 +0900
-Message-id: <1409723407-21221-1-git-send-email-jonghwa3.lee@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJLMWRmVeSWpSXmKPExsWyRsSkRFdoDVuIwYOtTBbXvzxnteg8+4TZ
-	4vKuOWwWtxtXsFk8OLyT3YHVo2/LKkaPz5vkApiiuGxSUnMyy1KL9O0SuDLOXWlmKZjHXfGt
-	t4GpgXE6ZxcjJ4eEgInE6sszmSBsMYkL99azdTFycQgJLGWUeDthDTtM0Z/9jawQiemMErOu
-	PoNy2pgkHh76wgpSxSagI/F/302wDhEBBYnNvc/A4swCJRKLz/wFs4UFQiV+rdkHZHNwsAio
-	Snza4QQS5hXwkOjuewkWlgBqnTPJBmS8hMB1NomuN2fArmMREJD4NvkQC0SNrMSmA8wQt0lK
-	HFxxg2UCo+ACRoZVjKKpBckFxUnpRUZ6xYm5xaV56XrJ+bmbGIEhePrfs74djDcPWB9iFOBg
-	VOLhXRDAFiLEmlhWXJl7iNEUaMNEZinR5HxgoOeVxBsamxlZmJqYGhuZW5opifMmSP0MFhJI
-	TyxJzU5NLUgtii8qzUktPsTIxMEp1cDIJ66ou7dsq+F+I17Xmp/f7rhEanxRf9/x9eSLuA3m
-	rfUJ0overNd4H8AyOzK3cbbq7WQN7uNnH1h0W1xo/Rhnef5y6rRYjc4t3AfnrdmoFKAwKXdr
-	wuuPJdN7Iq42Rqt8sE2v+CN7Ltte26jfvuLf1dxvh4J0Dq4TDtMMmrvXuJ2dbapsxVQlluKM
-	REMt5qLiRADX/AdJPAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMLMWRmVeSWpSXmKPExsVy+t9jQV3BNWwhBit+Wlhc//Kc1aLz7BNm
-	i8u75rBZ3G5cwWbx4PBOdgdWj74tqxg9Pm+SC2CKamC0yUhNTEktUkjNS85PycxLt1XyDo53
-	jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAFap6RQlphTChQKSCwuVtK3wzQhNMRN1wKmMULX
-	NyQIrsfIAA0krGHMOHelmaVgHnfFt94GpgbG6ZxdjJwcEgImEn/2N7JC2GISF+6tZ+ti5OIQ
-	EpjOKDHr6jNWCKeNSeLhoS9gVWwCOhL/991kB7FFBBQkNvc+A4szC5RILD7zF8wWFgiV+LVm
-	H5DNwcEioCrxaYcTSJhXwEOiu+8lWFgCqHXOJJsJjNwLGBlWMYqmFiQXFCel5xrqFSfmFpfm
-	pesl5+duYgQH+DOpHYwrGywOMQpwMCrx8C4IYAsRYk0sK67MPcQowcGsJMLrmwgU4k1JrKxK
-	LcqPLyrNSS0+xGgKtHsis5Rocj4w+vJK4g2NTcyMLI3MDS2MjM2VxHkPtFoHCgmkJ5akZqem
-	FqQWwfQxcXBKNTA2Tl7I9sW9Y7rBgrfPp7VkP9no3VSSuPBwzOTa+ea8rTtuv5O8LjApaYrz
-	t+rlQcofl9nViSexmC689sSt0DyHT3relxVXvvRv8//GtqH3hVlCv3zD2tu3PjTkRUo+Z1SX
-	viBZsaTEXbHVwGT2Qnufh8unut53PbfHU845LUJ+5UGFs7qBly4rsRRnJBpqMRcVJwIALcgR
-	Q4YCAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 3 Sep 2014 01:53:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <1409591342-16193-1-git-send-email-bobby.prani@gmail.com>
+References: <1409591342-16193-1-git-send-email-bobby.prani@gmail.com>
+Date: Wed, 3 Sep 2014 07:53:08 +0200
+Message-ID: <CANq1E4SDefxqr0wn70d4Nh3vVQ22kUcZL=Mqv6NpiZUXUVqWkQ@mail.gmail.com>
+Subject: Re: [PATCH v2] memfd_test: Make it work on 32-bit systems
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When it writes some value other than 0 to BTLDset and JIGset, muic device
-will be reset automatically. And it happens during updating ADC debounce time,
-because it shares same register. To update ADC debounce time without reset,
-set value only to ADCDbset and 0 to BTLDset and JIGset.
+Hi
 
-Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
----
- drivers/extcon/extcon-max77693.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+On Mon, Sep 1, 2014 at 7:08 PM, Pranith Kumar <bobby.prani@gmail.com> wrote:
+> This test currently fails on 32-bit systems since we use u64 type to pass the
+> flags to fcntl.
+>
+> This commit changes this to use 'unsigned int' type for flags to fcntl making it
+> work on 32-bit systems.
+>
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+> ---
+> v2: use 'unsigned int' instead of u32
+>
+>  tools/testing/selftests/memfd/memfd_test.c | 30 ++++++++++++++----------------
+>  1 file changed, 14 insertions(+), 16 deletions(-)
+>
+> diff --git a/tools/testing/selftests/memfd/memfd_test.c b/tools/testing/selftests/memfd/memfd_test.c
+> index 3634c90..6f1385a 100644
+> --- a/tools/testing/selftests/memfd/memfd_test.c
+> +++ b/tools/testing/selftests/memfd/memfd_test.c
+> @@ -59,9 +59,9 @@ static void mfd_fail_new(const char *name, unsigned int flags)
+>         }
+>  }
+>
+> -static __u64 mfd_assert_get_seals(int fd)
+> +static int mfd_assert_get_seals(int fd)
+>  {
+> -       long r;
+> +       int r;
 
-diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
-index 77460f2..661a3bb 100644
---- a/drivers/extcon/extcon-max77693.c
-+++ b/drivers/extcon/extcon-max77693.c
-@@ -255,10 +255,15 @@ static int max77693_muic_set_debounce_time(struct max77693_muic_info *info,
- 	case ADC_DEBOUNCE_TIME_10MS:
- 	case ADC_DEBOUNCE_TIME_25MS:
- 	case ADC_DEBOUNCE_TIME_38_62MS:
--		ret = regmap_update_bits(info->max77693->regmap_muic,
-+		/*
-+		 * Don't touch BTLDset, JIGset when you want to change adc
-+		 * debounce time. BTLDset, JIGset reflects actual pin status
-+		 * and are not configurable.
-+		 */
-+		ret = regmap_write_bits(info->max77693->regmap_muic,
- 					  MAX77693_MUIC_REG_CTRL3,
--					  CONTROL3_ADCDBSET_MASK,
--					  time << CONTROL3_ADCDBSET_SHIFT);
-+					  (CONTROL3_ADCDBSET_MASK &
-+					  time << CONTROL3_ADCDBSET_SHIFT));
- 		if (ret) {
- 			dev_err(info->dev, "failed to set ADC debounce time\n");
- 			return ret;
--- 
-1.7.9.5
+This function can be declared as returning "unsigned int", but keep
+"r" as int. negative return codes cause an abort(), so we're fine.
 
+>
+>         r = fcntl(fd, F_GET_SEALS);
+>         if (r < 0) {
+> @@ -72,36 +72,34 @@ static __u64 mfd_assert_get_seals(int fd)
+>         return r;
+>  }
+>
+> -static void mfd_assert_has_seals(int fd, __u64 seals)
+> +static void mfd_assert_has_seals(int fd, unsigned int seals)
+>  {
+> -       __u64 s;
+> +       int s;
+>
+>         s = mfd_assert_get_seals(fd);
+>         if (s != seals) {
+> -               printf("%llu != %llu = GET_SEALS(%d)\n",
+> -                      (unsigned long long)seals, (unsigned long long)s, fd);
+> +               printf("%u != %u = GET_SEALS(%d)\n",
+> +                               seals, (unsigned int)s, fd);
+
+By making mfd_assert_get_seals() return "unsigned int", you can
+declare 's' as unsigned, too, and drop this cast.
+
+>                 abort();
+>         }
+>  }
+>
+> -static void mfd_assert_add_seals(int fd, __u64 seals)
+> +static void mfd_assert_add_seals(int fd, unsigned int seals)
+>  {
+> -       long r;
+> -       __u64 s;
+> +       int r, s;
+>
+>         s = mfd_assert_get_seals(fd);
+>         r = fcntl(fd, F_ADD_SEALS, seals);
+>         if (r < 0) {
+> -               printf("ADD_SEALS(%d, %llu -> %llu) failed: %m\n",
+> -                      fd, (unsigned long long)s, (unsigned long long)seals);
+> +               printf("ADD_SEALS(%d, %u -> %u) failed: %m\n",
+> +                               fd, (unsigned int)s, seals);
+
+same here
+
+>                 abort();
+>         }
+>  }
+>
+> -static void mfd_fail_add_seals(int fd, __u64 seals)
+> +static void mfd_fail_add_seals(int fd, unsigned int seals)
+>  {
+> -       long r;
+> -       __u64 s;
+> +       int r, s;
+>
+>         r = fcntl(fd, F_GET_SEALS);
+>         if (r < 0)
+> @@ -111,8 +109,8 @@ static void mfd_fail_add_seals(int fd, __u64 seals)
+>
+>         r = fcntl(fd, F_ADD_SEALS, seals);
+>         if (r >= 0) {
+> -               printf("ADD_SEALS(%d, %llu -> %llu) didn't fail as expected\n",
+> -                      fd, (unsigned long long)s, (unsigned long long)seals);
+> +               printf("ADD_SEALS(%d, %u -> %u) didn't fail as expected\n",
+> +                               fd, (unsigned int)s, seals);
+
+same here
+
+Sorry for the bike-shedding. Patch looks good, otherwise. With, or
+without, this changed, this is:
+
+Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+
+Thanks
+David
+
+>                 abort();
+>         }
+>  }
+> --
+> 2.1.0
+>
