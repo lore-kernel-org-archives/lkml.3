@@ -1,94 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755143AbaICDKl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 23:10:41 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:56522 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754020AbaICDKj (ORCPT
+	id S1755208AbaICDMI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 23:12:08 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:57160 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752453AbaICDMG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 23:10:39 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AoAgAGmFBlR5LDJ8/2dsb2JhbABagw2BKoIsrUgBAQEBBppAhWkBAwEBAYERF3eEBAEFJxMcIxAIAxgJJQ8FJQMhE4hBvTEBFxiFZIlRB4MvgR0FnFuVH4NzKy+CTwEBAQ
-Date: Wed, 3 Sep 2014 13:10:23 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Junxiao Bi <junxiao.bi@oracle.com>
-Cc: xuejiufei@huawei.com, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        "ocfs2-devel@oss.oracle.com" <ocfs2-devel@oss.oracle.com>
-Subject: Re: [PATCH] fs/super.c: do not shrink fs slab during direct memory
- reclaim
-Message-ID: <20140903031023.GC20473@dastard>
-References: <54004E82.3060608@huawei.com>
- <20140901235102.GI26465@dastard>
- <540587DF.6040302@huawei.com>
- <54067117.4060201@oracle.com>
+	Tue, 2 Sep 2014 23:12:06 -0400
+Message-ID: <540686FF.4060907@hitachi.com>
+Date: Wed, 03 Sep 2014 12:11:59 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54067117.4060201@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Lucas De Marchi <lucas.demarchi@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Josh Poimboeuf <jpoimboe@redhat.com>
+Subject: Re: [RFC PATCH 0/5] module: Remove stop_machine from module unloading
+References: <20140825105520.21089.26870.stgit@kbuild-fedora.novalocal>
+In-Reply-To: <20140825105520.21089.26870.stgit@kbuild-fedora.novalocal>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 03, 2014 at 09:38:31AM +0800, Junxiao Bi wrote:
-> Hi Jiufei,
+Ping? :)
+
+(2014/08/25 19:55), Masami Hiramatsu wrote:
+> Hi,
 > 
-> On 09/02/2014 05:03 PM, Xue jiufei wrote:
-> > Hi, Dave
-> > On 2014/9/2 7:51, Dave Chinner wrote:
-> >> On Fri, Aug 29, 2014 at 05:57:22PM +0800, Xue jiufei wrote:
-> >>> The patch trys to solve one deadlock problem caused by cluster
-> >>> fs, like ocfs2. And the problem may happen at least in the below
-> >>> situations:
-> >>> 1)Receiving a connect message from other nodes, node queues a
-> >>> work_struct o2net_listen_work.
-> >>> 2)o2net_wq processes this work and calls sock_alloc() to allocate
-> >>> memory for a new socket.
-> >>> 3)It would do direct memory reclaim when available memory is not
-> >>> enough and trigger the inode cleanup. That inode being cleaned up
-> >>> is happened to be ocfs2 inode, so call evict()->ocfs2_evict_inode()
-> >>> ->ocfs2_drop_lock()->dlmunlock()->o2net_send_message_vec(),
-> >>> and wait for the unlock response from master.
-> >>> 4)tcp layer received the response, call o2net_data_ready() and
-> >>> queue sc_rx_work, waiting o2net_wq to process this work.
-> >>> 5)o2net_wq is a single thread workqueue, it process the work one by
-> >>> one. Right now it is still doing o2net_listen_work and cannot handle
-> >>> sc_rx_work. so we deadlock.
-> >>>
-> >>> It is impossible to set GFP_NOFS for memory allocation in sock_alloc().
-> >>> So we use PF_FSTRANS to avoid the task reentering filesystem when
-> >>> available memory is not enough.
-> >>>
-> >>> Signed-off-by: joyce.xue <xuejiufei@huawei.com>
-> >>
-> >> For the second time: use memalloc_noio_save/memalloc_noio_restore.
-> >> And please put a great big comment in the code explaining why you
-> >> need to do this special thing with memory reclaim flags.
-> >>
-> >> Cheers,
-> >>
-> >> Dave.
-> >>
-> > Thanks for your reply. But I am afraid that memalloc_noio_save/
-> > memalloc_noio_restore can not solve my problem. __GFP_IO is cleared
-> > if PF_MEMALLOC_NOIO is set and can avoid doing IO in direct memory
-> > reclaim. However, __GFP_FS is still set that can not avoid pruning
-> > dcache and icache in memory allocation, resulting in the deadlock I
-> > described.
+> Here is a series of patches which remove stop_machine() from
+> module unloading.
 > 
-> You can use PF_MEMALLOC_NOIO to replace PF_FSTRANS, set this flag in
-> ocfs2 and check it in sb shrinker.
+> Currently, each module unloading calls stop_machine()s 2 times.
+> One is for safely removing module from lists and one is to
+> check the reference counter. However, both are not necessary
+> for those purposes (required by current implementation).
+> 
+> First, we can use RCU for the list operation, we just need
+> a synchronize_rcu right before cleaning up.
+> Second, the reference counter can be checked atomically by
+> using atomic_t, instead of per-cpu module_ref. Of course,
+> for BIG SMP machines, atomic operation is not efficient.
+> However, they usually don't need to remove most of modules too.
+> 
+> In this series, I just fixed to use RCU for the module(and
+> bugs) list for the first stop_machine.
+> And for the second one, I replaced module_ref with atomic_t
+> and introduced a "module lockup" module load option, which
+> makes a module un-removable (lock up the module in kernel).
+> The lockup modules can not be removed except forced, and the
+> kernel skips module refcounting on those modules. Thus we
+> can minimize the performance impact on the BIG SMP machines.
+> 
+> BTW, of course this requires to update libkmod to support
+> new MODULE_INIT_LOCKUP_MODULE flag. I'm not sure where is
+> good to send the patches I have. Sould I better sending
+> kmod patches on LKML?
+> 
+> Thank you,
+> 
+> ---
+> 
+> Masami Hiramatsu (5):
+>       module: Wait for RCU synchronizing before releasing a module
+>       module: Unlink module with RCU synchronizing instead of stop_machine
+>       lib/bug: Use RCU list ops for module_bug_list
+>       module: Lock up a module when loading with a LOCLUP flag
+>       module: Remove stop_machine from module unloading
+> 
+> 
+>  include/linux/module.h        |   22 ++----
+>  include/trace/events/module.h |    2 -
+>  include/uapi/linux/module.h   |    1 
+>  kernel/module.c               |  147 +++++++++++++++++------------------------
+>  lib/bug.c                     |   20 ++++--
+>  5 files changed, 85 insertions(+), 107 deletions(-)
+> 
+> --
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-No changes to the superblock shrinker, please. The flag should
-modify the gfp_mask in the struct shrink_control passed to the
-shrinker, just like the noio flag is used in the rest of the mm
-code.
 
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
