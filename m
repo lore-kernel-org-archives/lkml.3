@@ -1,74 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877AbaICUxW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 16:53:22 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:51797 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751544AbaICUxV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 16:53:21 -0400
-Date: Wed, 3 Sep 2014 13:53:13 -0700
-From: Mukesh Rathor <mukesh.rathor@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: <boris.ostrovsky@oracle.com>, <xen-devel@lists.xenproject.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [V2 PATCH 1/1] PVH: set EFER.NX and EFER.SCE
-Message-ID: <20140903135313.04535452@mantra.us.oracle.com>
-In-Reply-To: <54071E6C.4080901@citrix.com>
-References: <1409707176-16487-1-git-send-email-mukesh.rathor@oracle.com>
-	<1409707176-16487-2-git-send-email-mukesh.rathor@oracle.com>
-	<54071E6C.4080901@citrix.com>
-Organization: Oracle Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	id S1753949AbaICUOk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 16:14:40 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:50472 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751487AbaICUOj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 16:14:39 -0400
+Date: Wed, 3 Sep 2014 15:13:53 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Stefan Agner <stefan@agner.ch>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <jingchang.lu@freescale.com>, <peter.chen@freescale.com>,
+        <s.hauer@pengutronix.de>, <kernel@pengutronix.de>,
+        <shawn.guo@freescale.com>
+Subject: Re: [PATCH RESEND v2 3/7] usb: phy: mxs: Add VF610 USB PHY support
+Message-ID: <20140903201353.GI31855@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <cover.1408391385.git.stefan@agner.ch>
+ <acb7c055ded38c74291d0f0d8d2fdca54a8b95f8.1408391385.git.stefan@agner.ch>
+ <147749d74a57dcf72ed9bd81249d0ca5@agner.ch>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="CD/aTaZybdUisKIc"
+Content-Disposition: inline
+In-Reply-To: <147749d74a57dcf72ed9bd81249d0ca5@agner.ch>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Sep 2014 14:58:04 +0100
-David Vrabel <david.vrabel@citrix.com> wrote:
+--CD/aTaZybdUisKIc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On 03/09/14 02:19, Mukesh Rathor wrote:
-> > This patch addresses two things for a pvh boot vcpu:
-> > 
-> >   - NX bug on intel: It was recenlty discovered that NX is not being
-> >     honored in PVH on intel since EFER.NX is not being set.
-> > 
-> >   - PVH boot hang on newer xen:  Following c/s on xen
-> > 
-> >         c/s 7645640:  x86/PVH: don't set EFER_SCE for pvh guest
-> > 
-> >     removes setting of EFER.SCE for PVH guests. As such, existing
-> > intel pvh guest will no longer boot on xen after that c/s.
-> > 
-> > Both above changes will be applicable to AMD also when xen support
-> > of AMD pvh is added.
-> > 
-> > Also, we create a new glue assembly entry point for secondary vcpus
-> > because they come up on kernel page tables that have pte.NX
-> > bits set. As such, before anything is touched in DS/SS, EFER.NX
-> > must be set.
-> [...]
-> > --- a/arch/x86/xen/xen-head.S
-> > +++ b/arch/x86/xen/xen-head.S
-> > @@ -47,6 +47,35 @@ ENTRY(startup_xen)
-> >  
-> >  	__FINIT
-> >  
-> > +#ifdef CONFIG_XEN_PVH
-> > +#ifdef CONFIG_X86_64
-> > +.macro PVH_EARLY_SET_EFER
-> 
-> I don't think a macro is the right way to do this.  We can instead
-> pass a parameter to say whether it is a boot or secondary CPU.
-> 
-> Something like this (untested) patch?
+Hi,
 
-That's fine too. But, since vcpu 0 is always primary vcpu, we can
-just use that and not worry about passing another parameter.
+On Mon, Sep 01, 2014 at 06:36:50PM +0530, Stefan Agner wrote:
+> I think I still miss a Signed-Off-By Felipe Balbi here...
+>=20
+> All the rest should make it into 3.18, but USB without PHY is no fun to
+> use ;-)
 
--Mukesh
+this is already in my testing/next
 
+https://git.kernel.org/cgit/linux/kernel/git/balbi/usb.git/commit/?h=3Dtest=
+ing/next&id=3Dd0ee68b59e6aa33221445dc555efac3736b89026
+
+--=20
+balbi
+
+--CD/aTaZybdUisKIc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUB3aBAAoJEIaOsuA1yqREzWkP/AwxYnfuDIHeIElr6un7UEX6
+Xf4UjoFkPe+IPlV3oXS1n7VsORXmbkp9EdJ3rpiZtd1TeJ1oK1hNk3ikxuupQlmm
+94j6FtCgD3FDmD2vK32d2ppIC9DvxrYdRXBlzVFPMHaDW7PupmCS26BI/cdk1Dwi
+D0PbkCvXGHnUnsPmE2gE9DRuItDn5yp6KfvMj/twBOYO7P6d6UFBlg1o+91wc4Wr
+pw7ScgB7fGLMCCA0oMj0pG+gTadJc8/xo9kfnhtfiwk+VK+N3XCW5VL4sYJUU95t
+zSbbBFOmuK6Vrf3QJ7K8mafe3A2KbpkCLDn69oR+W/V2cZuwDVKncgOoX8ypydPO
+9xt3eDwgD1rTOhNwSM2xWwbJ6uMz4tGDSkn7e8+a9pBXSXHWaSm9SwoxoXqUfXL9
+8amJuHwLhGgETB45IaMtxfmUjLl5dZzkxrOnSpajRZxgNzmsvMNcXulllJOkoH/J
+h46Jb0fkow2k6vw1vuHTGbr98tHCJZqhg6kyi7lLGD5l/V9Y5VfJg2k9qqAEIMON
+23maOwrZrlV5U6VcHRlJ4RzyHqB09eUxCKUYXbL9W4dpHqFocyMZBr5VXmKfzJLM
+wcKElS8KJpc6MTfUejxoDTXAwSsU59jcSqtCEYkwHhmb//iWGGTWFly91EkmvW7P
+IDewbtScxdQs1ef7so54
+=CijQ
+-----END PGP SIGNATURE-----
+
+--CD/aTaZybdUisKIc--
