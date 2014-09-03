@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756907AbaICWNR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:13:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45736 "EHLO
+	id S1756914AbaICWNg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:13:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45652 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756604AbaICWNO (ORCPT
+	with ESMTP id S933076AbaICWIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:13:14 -0400
+	Wed, 3 Sep 2014 18:08:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Murphy <lists@colorremedies.com>, Liu Bo <bo.li.liu@oracle.com>,
-        Chris Mason <clm@fb.com>
-Subject: [PATCH 3.14 65/88] Btrfs: fix crash on endio of reading corrupted block
-Date: Wed,  3 Sep 2014 15:05:39 -0700
-Message-Id: <20140903220517.902079033@linuxfoundation.org>
+        David Vrabel <david.vrabel@citrix.com>,
+        Mukesh Rathor <mukesh.rathor@oracle.com>
+Subject: [PATCH 3.14 58/88] x86/xen: use vmap() to map grant table pages in PVH guests
+Date: Wed,  3 Sep 2014 15:05:32 -0700
+Message-Id: <20140903220517.696388260@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -29,43 +29,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Liu Bo <bo.li.liu@oracle.com>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit 38c1c2e44bacb37efd68b90b3f70386a8ee370ee upstream.
+commit 7d951f3ccb0308c95bf76d5eef9886dea35a7013 upstream.
 
-The crash is
+Commit b7dd0e350e0b (x86/xen: safely map and unmap grant frames when
+in atomic context) causes PVH guests to crash in
+arch_gnttab_map_shared() when they attempted to map the pages for the
+grant table.
 
-------------[ cut here ]------------
-kernel BUG at fs/btrfs/extent_io.c:2124!
-[...]
-Workqueue: btrfs-endio normal_work_helper [btrfs]
-RIP: 0010:[<ffffffffa02d6055>]  [<ffffffffa02d6055>] end_bio_extent_readpage+0xb45/0xcd0 [btrfs]
+This use of a PV-specific function during the PVH grant table setup is
+non-obvious and not needed.  The standard vmap() function does the
+right thing.
 
-This is in fact a regression.
-
-It is because we forgot to increase @offset properly in reading corrupted block,
-so that the @offset remains, and this leads to checksum errors while reading
-left blocks queued up in the same bio, and then ends up with hiting the above
-BUG_ON.
-
-Reported-by: Chris Murphy <lists@colorremedies.com>
-Signed-off-by: Liu Bo <bo.li.liu@oracle.com>
-Signed-off-by: Chris Mason <clm@fb.com>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Reported-by: Mukesh Rathor <mukesh.rathor@oracle.com>
+Tested-by: Mukesh Rathor <mukesh.rathor@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/extent_io.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/xen/grant-table.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/fs/btrfs/extent_io.c
-+++ b/fs/btrfs/extent_io.c
-@@ -2525,6 +2525,7 @@ static void end_bio_extent_readpage(stru
- 					test_bit(BIO_UPTODATE, &bio->bi_flags);
- 				if (err)
- 					uptodate = 0;
-+				offset += len;
- 				continue;
- 			}
- 		}
+--- a/arch/x86/xen/grant-table.c
++++ b/arch/x86/xen/grant-table.c
+@@ -134,6 +134,7 @@ static int __init xlated_setup_gnttab_pa
+ {
+ 	struct page **pages;
+ 	xen_pfn_t *pfns;
++	void *vaddr;
+ 	int rc;
+ 	unsigned int i;
+ 	unsigned long nr_grant_frames = gnttab_max_grant_frames();
+@@ -159,21 +160,20 @@ static int __init xlated_setup_gnttab_pa
+ 	for (i = 0; i < nr_grant_frames; i++)
+ 		pfns[i] = page_to_pfn(pages[i]);
+ 
+-	rc = arch_gnttab_map_shared(pfns, nr_grant_frames, nr_grant_frames,
+-				    &xen_auto_xlat_grant_frames.vaddr);
+-
+-	if (rc) {
++	vaddr = vmap(pages, nr_grant_frames, 0, PAGE_KERNEL);
++	if (!vaddr) {
+ 		pr_warn("%s Couldn't map %ld pfns rc:%d\n", __func__,
+ 			nr_grant_frames, rc);
+ 		free_xenballooned_pages(nr_grant_frames, pages);
+ 		kfree(pages);
+ 		kfree(pfns);
+-		return rc;
++		return -ENOMEM;
+ 	}
+ 	kfree(pages);
+ 
+ 	xen_auto_xlat_grant_frames.pfn = pfns;
+ 	xen_auto_xlat_grant_frames.count = nr_grant_frames;
++	xen_auto_xlat_grant_frames.vaddr = vaddr;
+ 
+ 	return 0;
+ }
 
 
