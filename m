@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755378AbaICGk1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 02:40:27 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:54136 "EHLO mail.skyhub.de"
+	id S1755107AbaICGnO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 02:43:14 -0400
+Received: from mail3.unitn.it ([193.205.206.24]:59295 "EHLO mail3.unitn.it"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750817AbaICGkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 02:40:25 -0400
-Date: Wed, 3 Sep 2014 08:40:15 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: early microcode: how to disable at runtime?
-Message-ID: <20140903064015.GA3941@nazgul.tnic>
-References: <20140831194548.GA12628@khazad-dum.debian.net>
- <54037C07.8060703@zytor.com>
- <20140831201126.GB12628@khazad-dum.debian.net>
- <20140901051302.GA28402@nazgul.tnic>
- <5404A035.3070707@zytor.com>
- <20140901174322.GA15533@khazad-dum.debian.net>
- <ea40f7c4-ec8d-4be5-8f8c-bbd11ab07252@email.android.com>
- <20140901195921.GA18675@khazad-dum.debian.net>
- <20140902063354.GA32105@nazgul.tnic>
- <20140902131651.GA10691@khazad-dum.debian.net>
+	id S1751508AbaICGnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 02:43:13 -0400
+Message-ID: <5406B874.5040507@unitn.it>
+Date: Wed, 03 Sep 2014 08:43:00 +0200
+From: Luca Abeni <luca.abeni@unitn.it>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140902131651.GA10691@khazad-dum.debian.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Henrik Austad <henrik@austad.us>, Juri Lelli <juri.lelli@arm.com>
+CC: peterz@infradead.org, rdunlap@infradead.org, mingo@redhat.com,
+        raistlin@linux.it, juri.lelli@gmail.com, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/4] Documentation/scheduler/sched-deadline.txt: fix
+ terminology and improve clarity
+References: <1409220029-9002-1-git-send-email-juri.lelli@arm.com> <1409220029-9002-2-git-send-email-juri.lelli@arm.com> <20140902211019.GA22581@sisyphus.home.austad.us>
+In-Reply-To: <20140902211019.GA22581@sisyphus.home.austad.us>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 02, 2014 at 10:16:51AM -0300, Henrique de Moraes Holschuh wrote:
-> Things do go wrong in other ways, not just corrupt microcode data/initramfs
-> images.
-> 
-> This stuff runs too early.  It is easy to break, and annoying to debug.
+Hi,
 
-How is this stuff easy to break? Please stop with the conjectures and
-give concrete issues, if any.
+On 09/02/2014 11:10 PM, Henrik Austad wrote:
+> On Thu, Aug 28, 2014 at 11:00:26AM +0100, Juri Lelli wrote:
+>> From: Luca Abeni <luca.abeni@unitn.it>
+>>
+>> Several small changes regarding SCHED_DEADLINE documentation that fix
+>> terminology and improve clarity and readability:
+>>
+>>   - "current runtime" becomes "remaining runtime"
+>>
+>>   - readablity of an equation is improved by introducing more spacing
+>>
+>>   - clarify when admission control will certainly fail
+>>
+>>   - new URL for CBS technical report
+>>
+>>   - substitue "smallest" with "closest"
+>
+> I'm tempted to say "earliest" (being part of the algorithm's name and all
+> ;)
+Well, AFAIR "closest" was suggested during the initial review some months ago...
+Anyway, if now there is agreement on "earliest" I can change to it; let me know.
 
-> Although, on the corrupted microcode topic, I have this very strong
-> feeling that at least the Intel driver would benefit from a careful
-> audit on the microcode container handling if we want to be sure it
-> won't do stupid things when fed specially crafted hostile data.
+[...]
+>>    Summing up, the CBS[2,3] algorithms assigns scheduling deadlines to tasks so
+>>    that each task runs for at most its runtime every period, avoiding any
+>>    interference between different tasks (bandwidth isolation), while the EDF[1]
+>> - algorithm selects the task with the smallest scheduling deadline as the one
+>> + algorithm selects the task with the closest scheduling deadline as the one
+>>    to be executed first.  Thanks to this feature, also tasks that do not
+>
+> s/first/next/
+>
+> Also, next sentence does not make much sense, I would drop the also;
+>
+> "Thanks to this feature, tasks that do not strictly comply with the ..."
+I agree with these changes, but they are in text that is not changed by my
+patch, right?
+What should I do? Add these changes to the patch, or send an additional incremental
+patch with these changes?
 
-If loading the microcode can disrupt the system (and not simply be
-ignored if faulty) then we have to fix that. Disabling the loader is only
-a stop-gap measure in such situation anyway - not a real solution.
 
--- 
-Regards/Gruss,
-    Boris.
---
+
+				Thanks,
+					Luca
