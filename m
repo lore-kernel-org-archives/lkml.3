@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932913AbaICWRB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:17:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45824 "EHLO
+	id S933445AbaICWSP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:18:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45854 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757254AbaICWQK (ORCPT
+	with ESMTP id S1757233AbaICWQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:16:10 -0400
+	Wed, 3 Sep 2014 18:16:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [PATCH 3.16 036/125] drm: omapdrm: fix compiler errors
-Date: Wed,  3 Sep 2014 15:06:33 -0700
-Message-Id: <20140903220624.740642010@linuxfoundation.org>
+        Alexander Usyskin <alexander.usyskin@intel.com>,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [PATCH 3.16 027/125] mei: fix return value on disconnect timeout
+Date: Wed,  3 Sep 2014 15:06:24 -0700
+Message-Id: <20140903220624.478492165@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -29,115 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Alexander Usyskin <alexander.usyskin@intel.com>
 
-commit 2d31ca3ad7d5d44c8adc7f253c96ce33f3a2e931 upstream.
+commit fe2f17eb3da38ac0d5a00c511255bf3a33d16d24 upstream.
 
-Regular randconfig nightly testing has detected problems with omapdrm.
+wait_event_timeout can return 0 or the remaining jiffies
+so return -ETIME if disconnected state not reached.
 
-omapdrm fails to build when the kernel is built to support 64-bit DMA
-addresses and/or 64-bit physical addresses due to an assumption about
-the width of these types.
-
-Use %pad to print DMA addresses, rather than %x or %Zx (which is even
-more wrong than %x).  Avoid passing a uint32_t pointer into a function
-which expects dma_addr_t pointer.
-
-drivers/gpu/drm/omapdrm/omap_plane.c: In function 'omap_plane_pre_apply':
-drivers/gpu/drm/omapdrm/omap_plane.c:145:2: error: format '%x' expects argument of type 'unsigned int', but argument 5 has type 'dma_addr_t' [-Werror=format]
-drivers/gpu/drm/omapdrm/omap_plane.c:145:2: error: format '%x' expects argument of type 'unsigned int', but argument 6 has type 'dma_addr_t' [-Werror=format]
-make[5]: *** [drivers/gpu/drm/omapdrm/omap_plane.o] Error 1
-drivers/gpu/drm/omapdrm/omap_gem.c: In function 'omap_gem_get_paddr':
-drivers/gpu/drm/omapdrm/omap_gem.c:794:4: error: format '%x' expects argument of type 'unsigned int', but argument 3 has type 'dma_addr_t' [-Werror=format]
-drivers/gpu/drm/omapdrm/omap_gem.c: In function 'omap_gem_describe':
-drivers/gpu/drm/omapdrm/omap_gem.c:991:4: error: format '%Zx' expects argument of type 'size_t', but argument 7 has type 'dma_addr_t' [-Werror=format]
-drivers/gpu/drm/omapdrm/omap_gem.c: In function 'omap_gem_init':
-drivers/gpu/drm/omapdrm/omap_gem.c:1470:4: error: format '%x' expects argument of type 'unsigned int', but argument 7 has type 'dma_addr_t' [-Werror=format]
-make[5]: *** [drivers/gpu/drm/omapdrm/omap_gem.o] Error 1
-drivers/gpu/drm/omapdrm/omap_dmm_tiler.c: In function 'dmm_txn_append':
-drivers/gpu/drm/omapdrm/omap_dmm_tiler.c:226:2: error: passing argument 3 of 'alloc_dma' from incompatible pointer type [-Werror]
-make[5]: *** [drivers/gpu/drm/omapdrm/omap_dmm_tiler.o] Error 1
-make[5]: Target `__build' not remade because of errors.
-make[4]: *** [drivers/gpu/drm/omapdrm] Error 2
-
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/omapdrm/omap_dmm_tiler.c |    6 ++++--
- drivers/gpu/drm/omapdrm/omap_gem.c       |   10 +++++-----
- drivers/gpu/drm/omapdrm/omap_plane.c     |    4 ++--
- 3 files changed, 11 insertions(+), 9 deletions(-)
+ drivers/misc/mei/client.c |   15 +++++----------
+ 1 file changed, 5 insertions(+), 10 deletions(-)
 
---- a/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c
-+++ b/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c
-@@ -199,7 +199,7 @@ static struct dmm_txn *dmm_txn_init(stru
- static void dmm_txn_append(struct dmm_txn *txn, struct pat_area *area,
- 		struct page **pages, uint32_t npages, uint32_t roll)
+--- a/drivers/misc/mei/client.c
++++ b/drivers/misc/mei/client.c
+@@ -459,7 +459,7 @@ int mei_cl_disconnect(struct mei_cl *cl)
  {
--	dma_addr_t pat_pa = 0;
-+	dma_addr_t pat_pa = 0, data_pa = 0;
- 	uint32_t *data;
- 	struct pat *pat;
- 	struct refill_engine *engine = txn->engine_handle;
-@@ -223,7 +223,9 @@ static void dmm_txn_append(struct dmm_tx
- 			.lut_id = engine->tcm->lut_id,
- 		};
+ 	struct mei_device *dev;
+ 	struct mei_cl_cb *cb;
+-	int rets, err;
++	int rets;
  
--	data = alloc_dma(txn, 4*i, &pat->data_pa);
-+	data = alloc_dma(txn, 4*i, &data_pa);
-+	/* FIXME: what if data_pa is more than 32-bit ? */
-+	pat->data_pa = data_pa;
- 
- 	while (i--) {
- 		int n = i + roll;
---- a/drivers/gpu/drm/omapdrm/omap_gem.c
-+++ b/drivers/gpu/drm/omapdrm/omap_gem.c
-@@ -791,7 +791,7 @@ int omap_gem_get_paddr(struct drm_gem_ob
- 			omap_obj->paddr = tiler_ssptr(block);
- 			omap_obj->block = block;
- 
--			DBG("got paddr: %08x", omap_obj->paddr);
-+			DBG("got paddr: %pad", &omap_obj->paddr);
- 		}
- 
- 		omap_obj->paddr_cnt++;
-@@ -985,9 +985,9 @@ void omap_gem_describe(struct drm_gem_ob
- 
- 	off = drm_vma_node_start(&obj->vma_node);
- 
--	seq_printf(m, "%08x: %2d (%2d) %08llx %08Zx (%2d) %p %4d",
-+	seq_printf(m, "%08x: %2d (%2d) %08llx %pad (%2d) %p %4d",
- 			omap_obj->flags, obj->name, obj->refcount.refcount.counter,
--			off, omap_obj->paddr, omap_obj->paddr_cnt,
-+			off, &omap_obj->paddr, omap_obj->paddr_cnt,
- 			omap_obj->vaddr, omap_obj->roll);
- 
- 	if (omap_obj->flags & OMAP_BO_TILED) {
-@@ -1467,8 +1467,8 @@ void omap_gem_init(struct drm_device *de
- 			entry->paddr = tiler_ssptr(block);
- 			entry->block = block;
- 
--			DBG("%d:%d: %dx%d: paddr=%08x stride=%d", i, j, w, h,
--					entry->paddr,
-+			DBG("%d:%d: %dx%d: paddr=%pad stride=%d", i, j, w, h,
-+					&entry->paddr,
- 					usergart[i].stride_pfn << PAGE_SHIFT);
- 		}
+ 	if (WARN_ON(!cl || !cl->dev))
+ 		return -ENODEV;
+@@ -501,23 +501,18 @@ int mei_cl_disconnect(struct mei_cl *cl)
  	}
---- a/drivers/gpu/drm/omapdrm/omap_plane.c
-+++ b/drivers/gpu/drm/omapdrm/omap_plane.c
-@@ -142,8 +142,8 @@ static void omap_plane_pre_apply(struct
- 	DBG("%dx%d -> %dx%d (%d)", info->width, info->height,
- 			info->out_width, info->out_height,
- 			info->screen_width);
--	DBG("%d,%d %08x %08x", info->pos_x, info->pos_y,
--			info->paddr, info->p_uv_addr);
-+	DBG("%d,%d %pad %pad", info->pos_x, info->pos_y,
-+			&info->paddr, &info->p_uv_addr);
+ 	mutex_unlock(&dev->device_lock);
  
- 	/* TODO: */
- 	ilace = false;
+-	err = wait_event_timeout(dev->wait_recvd_msg,
++	wait_event_timeout(dev->wait_recvd_msg,
+ 			MEI_FILE_DISCONNECTED == cl->state,
+ 			mei_secs_to_jiffies(MEI_CL_CONNECT_TIMEOUT));
+ 
+ 	mutex_lock(&dev->device_lock);
++
+ 	if (MEI_FILE_DISCONNECTED == cl->state) {
+ 		rets = 0;
+ 		cl_dbg(dev, cl, "successfully disconnected from FW client.\n");
+ 	} else {
+-		rets = -ENODEV;
+-		if (MEI_FILE_DISCONNECTED != cl->state)
+-			cl_err(dev, cl, "wrong status client disconnect.\n");
+-
+-		if (err)
+-			cl_dbg(dev, cl, "wait failed disconnect err=%d\n", err);
+-
+-		cl_err(dev, cl, "failed to disconnect from FW client.\n");
++		cl_dbg(dev, cl, "timeout on disconnect from FW client.\n");
++		rets = -ETIME;
+ 	}
+ 
+ 	mei_io_list_flush(&dev->ctrl_rd_list, cl);
 
 
