@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933752AbaICWSl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:18:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46028 "EHLO
+	id S934917AbaICXIP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:08:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46063 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933488AbaICWSe (ORCPT
+	with ESMTP id S933750AbaICWSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:18:34 -0400
+	Wed, 3 Sep 2014 18:18:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.16 040/125] hwmon: (amc6821) Fix possible race condition bug
-Date: Wed,  3 Sep 2014 15:06:37 -0700
-Message-Id: <20140903220624.856910842@linuxfoundation.org>
+        Theodore Tso <tytso@mit.edu>
+Subject: [PATCH 3.16 063/125] ext4: fix BUG_ON in mb_free_blocks()
+Date: Wed,  3 Sep 2014 15:07:00 -0700
+Message-Id: <20140903220625.578237284@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -28,84 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit cf44819c98db11163f58f08b822d626c7a8f5188 upstream.
+commit c99d1e6e83b06744c75d9f5e491ed495a7086b7b upstream.
 
-Ensure mutex lock protects the read-modify-write period to prevent possible
-race condition bug.
-In additional, update data->valid should also be protected by the mutex lock.
+If we suffer a block allocation failure (for example due to a memory
+allocation failure), it's possible that we will call
+ext4_discard_allocated_blocks() before we've actually allocated any
+blocks.  In that case, fe_len and fe_start in ac->ac_f_ex will still
+be zero, and this will result in mb_free_blocks(inode, e4b, 0, 0)
+triggering the BUG_ON on mb_free_blocks():
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+	BUG_ON(last >= (sb->s_blocksize << 3));
+
+Fix this by bailing out of ext4_discard_allocated_blocks() if fs_len
+is zero.
+
+Also fix a missing ext4_mb_unload_buddy() call in
+ext4_discard_allocated_blocks().
+
+Google-Bug-Id: 16844242
+
+Fixes: 86f0afd463215fc3e58020493482faa4ac3a4d69
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/amc6821.c |   17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
+ fs/ext4/mballoc.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/hwmon/amc6821.c
-+++ b/drivers/hwmon/amc6821.c
-@@ -360,11 +360,13 @@ static ssize_t set_pwm1_enable(
- 	if (config)
- 		return config;
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -1412,6 +1412,8 @@ static void mb_free_blocks(struct inode
+ 	int last = first + count - 1;
+ 	struct super_block *sb = e4b->bd_sb;
  
-+	mutex_lock(&data->update_lock);
- 	config = i2c_smbus_read_byte_data(client, AMC6821_REG_CONF1);
- 	if (config < 0) {
- 			dev_err(&client->dev,
- 			"Error reading configuration register, aborting.\n");
--			return config;
-+			count = config;
-+			goto unlock;
- 	}
++	if (WARN_ON(count == 0))
++		return;
+ 	BUG_ON(last >= (sb->s_blocksize << 3));
+ 	assert_spin_locked(ext4_group_lock_ptr(sb, e4b->bd_group));
+ 	/* Don't bother if the block group is corrupt. */
+@@ -3220,6 +3222,8 @@ static void ext4_discard_allocated_block
+ 	int err;
  
- 	switch (val) {
-@@ -381,14 +383,15 @@ static ssize_t set_pwm1_enable(
- 		config |= AMC6821_CONF1_FDRC1;
- 		break;
- 	default:
--		return -EINVAL;
-+		count = -EINVAL;
-+		goto unlock;
+ 	if (pa == NULL) {
++		if (ac->ac_f_ex.fe_len == 0)
++			return;
+ 		err = ext4_mb_load_buddy(ac->ac_sb, ac->ac_f_ex.fe_group, &e4b);
+ 		if (err) {
+ 			/*
+@@ -3234,6 +3238,7 @@ static void ext4_discard_allocated_block
+ 		mb_free_blocks(ac->ac_inode, &e4b, ac->ac_f_ex.fe_start,
+ 			       ac->ac_f_ex.fe_len);
+ 		ext4_unlock_group(ac->ac_sb, ac->ac_f_ex.fe_group);
++		ext4_mb_unload_buddy(&e4b);
+ 		return;
  	}
--	mutex_lock(&data->update_lock);
- 	if (i2c_smbus_write_byte_data(client, AMC6821_REG_CONF1, config)) {
- 			dev_err(&client->dev,
- 			"Configuration register write error, aborting.\n");
- 			count = -EIO;
- 	}
-+unlock:
- 	mutex_unlock(&data->update_lock);
- 	return count;
- }
-@@ -493,8 +496,9 @@ static ssize_t set_temp_auto_point_temp(
- 		return -EINVAL;
- 	}
- 
--	data->valid = 0;
- 	mutex_lock(&data->update_lock);
-+	data->valid = 0;
-+
- 	switch (ix) {
- 	case 0:
- 		ptemp[0] = clamp_val(val / 1000, 0,
-@@ -658,13 +662,14 @@ static ssize_t set_fan1_div(
- 	if (config)
- 		return config;
- 
-+	mutex_lock(&data->update_lock);
- 	config = i2c_smbus_read_byte_data(client, AMC6821_REG_CONF4);
- 	if (config < 0) {
- 		dev_err(&client->dev,
- 			"Error reading configuration register, aborting.\n");
--		return config;
-+		count = config;
-+		goto EXIT;
- 	}
--	mutex_lock(&data->update_lock);
- 	switch (val) {
- 	case 2:
- 		config &= ~AMC6821_CONF4_PSPR;
+ 	if (pa->pa_type == MB_INODE_PA)
 
 
