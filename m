@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932681AbaICJ7U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 05:59:20 -0400
-Received: from mga09.intel.com ([134.134.136.24]:1989 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932645AbaICJ7M convert rfc822-to-8bit (ORCPT
+	id S932712AbaICKA0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 06:00:26 -0400
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:57473 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932577AbaICJ7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 05:59:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,456,1406617200"; 
-   d="scan'208";a="474867570"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>,
-        Andy Lutomirski <luto@amacapital.net>
-CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Wang, Xiaoming" <xiaoming.wang@intel.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        "Chakravarty, Souvik K" <souvik.k.chakravarty@intel.com>,
-        "Liu, Changcheng" <changcheng.liu@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/3] sched: Add new API wake_up_if_idle() to wake up the
- idle cpu
-Thread-Topic: [PATCH 1/3] sched: Add new API wake_up_if_idle() to wake up
- the idle cpu
-Thread-Index: AQHPx10ObrW7VCSGJEyzwycJ5tUKy5vvLGZQ
-Date: Wed, 3 Sep 2014 09:58:56 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A01E69C5E@SHSMSX101.ccr.corp.intel.com>
-References: <1408351052-25075-1-git-send-email-chuansheng.liu@intel.com>
- <CALCETrWns2cPzS+goDmXjhVuxzD2OczxTF9UtARBFnw3hibjZg@mail.gmail.com>
- <20140903095410.GJ4783@worktop.ger.corp.intel.com>
-In-Reply-To: <20140903095410.GJ4783@worktop.ger.corp.intel.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 3 Sep 2014 05:59:08 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Preston Fick <preston.fick@silabs.com>,
+        Johan Hovold <johan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 03/56] USB: serial: cp210x: Removing unncessary `usb_reset_device` on startup
+Date: Wed,  3 Sep 2014 11:26:22 +0200
+Message-Id: <664dc48e6aaa67b14a4742d1bf77bde15b1603e6.1409735865.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <b4839e6cd4a236a81725e422b2e05c26fe36048a.1409735865.git.jslaby@suse.cz>
+References: <b4839e6cd4a236a81725e422b2e05c26fe36048a.1409735865.git.jslaby@suse.cz>
+In-Reply-To: <cover.1409735865.git.jslaby@suse.cz>
+References: <cover.1409735865.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Preston Fick <preston.fick@silabs.com>
 
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-> -----Original Message-----
-> From: Peter Zijlstra [mailto:peterz@infradead.org]
-> Sent: Wednesday, September 03, 2014 5:54 PM
-> To: Andy Lutomirski
-> Cc: Liu, Chuansheng; linux-pm@vger.kernel.org; Rafael J. Wysocki; Daniel
-> Lezcano; Wang, Xiaoming; Ingo Molnar; Chakravarty, Souvik K; Liu, Changcheng;
-> linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 1/3] sched: Add new API wake_up_if_idle() to wake up the
-> idle cpu
-> 
-> On Thu, Aug 21, 2014 at 02:21:51PM -0700, Andy Lutomirski wrote:
-> > On Aug 18, 2014 3:52 AM, "Chuansheng Liu" <chuansheng.liu@intel.com>
-> wrote:
-> 
-> > > +void wake_up_if_idle(int cpu)
-> > > +{
-> > > +       struct rq *rq = cpu_rq(cpu);
-> > > +       unsigned long flags;
-> > > +
-> > > +       if (set_nr_if_polling(rq->idle)) {
-> > > +               trace_sched_wake_idle_without_ipi(cpu);
-> > > +       } else {
-> > > +
-> >
-> > FWIW, adding:
-> >
-> > if (rq->curr != rq->idle)
-> >     return;
-> >
-> > Right here could improve performance on large, mostly non-idle
-> > systems.  It would skip the spinlock in most cases.
-> >
-> 
->  !is_idle_task() :-)
-Thanks Peter and Andy, will refine the patches again:)
+===============
 
+commit 934ef5aca9daea10507eebcbd0fb8f6d57d55359 upstream.
+
+This `usb_reset_device` command has been around since the driver was
+originally reverse engineered. It doesn't cause much issue on single
+interface CP210x devices, but on the CP2105 and CP2108 with 2 and 4
+interfaces respectively it will cause instability on enumeration and
+delays enumeration noticably. There should be no reason to reset a device
+at startup, per the CP210x AN571 spec.
+
+Signed-off-by: Preston Fick <preston.fick@silabs.com>
+Cc: Johan Hovold <johan@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/usb/serial/cp210x.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
+index 1db213a6e843..e5ac744ac73f 100644
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -860,9 +860,6 @@ static int cp210x_startup(struct usb_serial *serial)
+ 	struct usb_host_interface *cur_altsetting;
+ 	struct cp210x_serial_private *spriv;
+ 
+-	/* cp210x buffers behave strangely unless device is reset */
+-	usb_reset_device(serial->dev);
+-
+ 	spriv = kzalloc(sizeof(*spriv), GFP_KERNEL);
+ 	if (!spriv)
+ 		return -ENOMEM;
+-- 
+2.1.0
 
