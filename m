@@ -1,56 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933516AbaICWGz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:06:55 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:37745 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932836AbaICWGv (ORCPT
+	id S933465AbaICWGQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:06:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45243 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933398AbaICWGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:06:51 -0400
-Message-ID: <540790F7.8040006@cogentembedded.com>
-Date: Thu, 04 Sep 2014 02:06:47 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Wed, 3 Sep 2014 18:06:05 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Filipe Manana <fdmanana@suse.com>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.10 39/55] Btrfs: fix csum tree corruption, duplicate and outdated checksums
+Date: Wed,  3 Sep 2014 15:05:29 -0700
+Message-Id: <20140903220500.230486932@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
+References: <20140903220453.653576908@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-To: Antoine Tenart <antoine.tenart@free-electrons.com>, balbi@ti.com,
-        gregkh@linuxfoundation.org, Peter.Chen@freescale.com, kishon@ti.com,
-        stern@rowland.harvard.edu
-CC: yoshihiro.shimoda.uh@renesas.com, alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 4/9] usb: rename phy to usb_phy in HCD
-References: <1409730040-14200-1-git-send-email-antoine.tenart@free-electrons.com> <1409730040-14200-5-git-send-email-antoine.tenart@free-electrons.com>
-In-Reply-To: <1409730040-14200-5-git-send-email-antoine.tenart@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-On 09/03/2014 11:40 AM, Antoine Tenart wrote:
+------------------
 
-> The USB PHY member of the HCD structure is renamed to 'usb_phy' and
-> modifications are done in all drivers accessing it.
+From: Filipe Manana <fdmanana@suse.com>
 
-> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
-> Acked-by: Alan Stern <stern@rowland.harvard.edu>
-> ---
->   drivers/usb/chipidea/host.c   |  2 +-
->   drivers/usb/core/hcd.c        | 20 ++++++++++----------
->   drivers/usb/core/hub.c        |  8 ++++----
->   drivers/usb/host/ehci-fsl.c   | 16 ++++++++--------
->   drivers/usb/host/ehci-hub.c   |  2 +-
->   drivers/usb/host/ehci-msm.c   |  4 ++--
->   drivers/usb/host/ehci-tegra.c | 16 ++++++++--------
->   drivers/usb/host/ohci-omap.c  | 20 ++++++++++----------
->   include/linux/usb/hcd.h       |  2 +-
->   9 files changed, 45 insertions(+), 45 deletions(-)
+commit 27b9a8122ff71a8cadfbffb9c4f0694300464f3b upstream.
 
-    It looks like you left out drivers/usb/misc/lvstest.c...
+Under rare circumstances we can end up leaving 2 versions of a checksum
+for the same file extent range.
 
-WBR, Sergei
+The reason for this is that after calling btrfs_next_leaf we process
+slot 0 of the leaf it returns, instead of processing the slot set in
+path->slots[0]. Most of the time (by far) path->slots[0] is 0, but after
+btrfs_next_leaf() releases the path and before it searches for the next
+leaf, another task might cause a split of the next leaf, which migrates
+some of its keys to the leaf we were processing before calling
+btrfs_next_leaf(). In this case btrfs_next_leaf() returns again the
+same leaf but with path->slots[0] having a slot number corresponding
+to the first new key it got, that is, a slot number that didn't exist
+before calling btrfs_next_leaf(), as the leaf now has more keys than
+it had before. So we must really process the returned leaf starting at
+path->slots[0] always, as it isn't always 0, and the key at slot 0 can
+have an offset much lower than our search offset/bytenr.
+
+For example, consider the following scenario, where we have:
+
+sums->bytenr: 40157184, sums->len: 16384, sums end: 40173568
+four 4kb file data blocks with offsets 40157184, 40161280, 40165376, 40169472
+
+  Leaf N:
+
+    slot = 0                           slot = btrfs_header_nritems() - 1
+  |-------------------------------------------------------------------|
+  | [(CSUM CSUM 39239680), size 8] ... [(CSUM CSUM 40116224), size 4] |
+  |-------------------------------------------------------------------|
+
+  Leaf N + 1:
+
+      slot = 0                          slot = btrfs_header_nritems() - 1
+  |--------------------------------------------------------------------|
+  | [(CSUM CSUM 40161280), size 32] ... [((CSUM CSUM 40615936), size 8 |
+  |--------------------------------------------------------------------|
+
+Because we are at the last slot of leaf N, we call btrfs_next_leaf() to
+find the next highest key, which releases the current path and then searches
+for that next key. However after releasing the path and before finding that
+next key, the item at slot 0 of leaf N + 1 gets moved to leaf N, due to a call
+to ctree.c:push_leaf_left() (via ctree.c:split_leaf()), and therefore
+btrfs_next_leaf() will returns us a path again with leaf N but with the slot
+pointing to its new last key (CSUM CSUM 40161280). This new version of leaf N
+is then:
+
+    slot = 0                        slot = btrfs_header_nritems() - 2  slot = btrfs_header_nritems() - 1
+  |----------------------------------------------------------------------------------------------------|
+  | [(CSUM CSUM 39239680), size 8] ... [(CSUM CSUM 40116224), size 4]  [(CSUM CSUM 40161280), size 32] |
+  |----------------------------------------------------------------------------------------------------|
+
+And incorrecly using slot 0, makes us set next_offset to 39239680 and we jump
+into the "insert:" label, which will set tmp to:
+
+    tmp = min((sums->len - total_bytes) >> blocksize_bits,
+        (next_offset - file_key.offset) >> blocksize_bits) =
+    min((16384 - 0) >> 12, (39239680 - 40157184) >> 12) =
+    min(4, (u64)-917504 = 18446744073708634112 >> 12) = 4
+
+and
+
+   ins_size = csum_size * tmp = 4 * 4 = 16 bytes.
+
+In other words, we insert a new csum item in the tree with key
+(CSUM_OBJECTID CSUM_KEY 40157184 = sums->bytenr) that contains the checksums
+for all the data (4 blocks of 4096 bytes each = sums->len). Which is wrong,
+because the item with key (CSUM CSUM 40161280) (the one that was moved from
+leaf N + 1 to the end of leaf N) contains the old checksums of the last 12288
+bytes of our data and won't get those old checksums removed.
+
+So this leaves us 2 different checksums for 3 4kb blocks of data in the tree,
+and breaks the logical rule:
+
+   Key_N+1.offset >= Key_N.offset + length_of_data_its_checksums_cover
+
+An obvious bad effect of this is that a subsequent csum tree lookup to get
+the checksum of any of the blocks with logical offset of 40161280, 40165376
+or 40169472 (the last 3 4kb blocks of file data), will get the old checksums.
+
+Signed-off-by: Filipe Manana <fdmanana@suse.com>
+Signed-off-by: Chris Mason <clm@fb.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/btrfs/file-item.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/fs/btrfs/file-item.c
++++ b/fs/btrfs/file-item.c
+@@ -754,7 +754,7 @@ again:
+ 				found_next = 1;
+ 			if (ret != 0)
+ 				goto insert;
+-			slot = 0;
++			slot = path->slots[0];
+ 		}
+ 		btrfs_item_key_to_cpu(path->nodes[0], &found_key, slot);
+ 		if (found_key.objectid != BTRFS_EXTENT_CSUM_OBJECTID ||
+
 
