@@ -1,35 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935365AbaICXJE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:09:04 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:34975 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935352AbaICXI7 (ORCPT
+	id S935352AbaICXJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:09:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46028 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933722AbaICWSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 19:08:59 -0400
+	Wed, 3 Sep 2014 18:18:40 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.16 044/125] hwmon: (lm85) Fix various errors on attribute writes
+Date: Wed,  3 Sep 2014 15:06:41 -0700
+Message-Id: <20140903220624.972434916@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
+References: <20140903220623.649748296@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-X-Originating-IP: [2001:470:8:ee7:b1d3:270e:d486:bce3]
-In-Reply-To: <20140902232906.GG29327@sirena.org.uk>
-References: <1397743910-18391-1-git-send-email-pefoley2@pefoley.com>
- <53FB9DA0.7000301@infradead.org> <CAOFdcFP4b0YFMuUFKm4=FoAGbCObf4u=W0UUPwf-ju_TNvuJaA@mail.gmail.com>
- <540651B3.8030400@infradead.org> <20140902232906.GG29327@sirena.org.uk>
-From: Peter Foley <pefoley2@pefoley.com>
-Date: Wed, 3 Sep 2014 19:08:38 -0400
-Message-ID: <CAOFdcFPmHH9z+6Kuc5Agu6PDC9+t+420Cb5R6VuHp+MebG+2LQ@mail.gmail.com>
-Subject: Re: [PATCH 1/4] Documentation: use subdir-y to avoid unnecessary
- built-in.o files
-To: Mark Brown <broonie@kernel.org>
-Cc: Randy Dunlap <rdunlap@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        linux-doc@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 2, 2014 at 7:29 PM, Mark Brown <broonie@kernel.org> wrote:
-> Your tree either wasn't in the control file that Stephen handed off or
-> got eaten by one off his scripts for some reason.  I've tried adding it
-> back, we'll see if that works tomorrow.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
-The patches still seem to be missing from the 20140903 -next tree,
-unfortunately.
+------------------
+
+From: Guenter Roeck <linux@roeck-us.net>
+
+commit 3248c3b771ddd9d31695da17ba350eb6e1b80a53 upstream.
+
+Temperature limit register writes did not account for negative numbers.
+As a result, writing -127000 resulted in -126000 written into the
+temperature limit register. This problem affected temp[1-3]_min,
+temp[1-3]_max, temp[1-3]_auto_temp_crit, and temp[1-3]_auto_temp_min.
+
+When writing pwm[1-3]_freq, a long variable was auto-converted into an int
+without range check. Wiring values larger than MAXINT resulted in unexpected
+register values.
+
+When writing temp[1-3]_auto_temp_max, an unsigned long variable was
+auto-converted into an int without range check. Writing values larger than
+MAXINT resulted in unexpected register values.
+
+vrm is an u8, so the written value needs to be limited to [0, 255].
+
+Cc: Axel Lin <axel.lin@ingics.com>
+Reviewed-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/hwmon/lm85.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+--- a/drivers/hwmon/lm85.c
++++ b/drivers/hwmon/lm85.c
+@@ -155,7 +155,7 @@ static inline u16 FAN_TO_REG(unsigned lo
+ 
+ /* Temperature is reported in .001 degC increments */
+ #define TEMP_TO_REG(val)	\
+-		clamp_val(SCALE(val, 1000, 1), -127, 127)
++		DIV_ROUND_CLOSEST(clamp_val((val), -127000, 127000), 1000)
+ #define TEMPEXT_FROM_REG(val, ext)	\
+ 		SCALE(((val) << 4) + (ext), 16, 1000)
+ #define TEMP_FROM_REG(val)	((val) * 1000)
+@@ -189,7 +189,7 @@ static const int lm85_range_map[] = {
+ 	13300, 16000, 20000, 26600, 32000, 40000, 53300, 80000
+ };
+ 
+-static int RANGE_TO_REG(int range)
++static int RANGE_TO_REG(long range)
+ {
+ 	int i;
+ 
+@@ -211,7 +211,7 @@ static const int adm1027_freq_map[8] = {
+ 	11, 15, 22, 29, 35, 44, 59, 88
+ };
+ 
+-static int FREQ_TO_REG(const int *map, int freq)
++static int FREQ_TO_REG(const int *map, unsigned long freq)
+ {
+ 	int i;
+ 
+@@ -460,6 +460,9 @@ static ssize_t store_vrm_reg(struct devi
+ 	if (err)
+ 		return err;
+ 
++	if (val > 255)
++		return -EINVAL;
++
+ 	data->vrm = val;
+ 	return count;
+ }
+
+
