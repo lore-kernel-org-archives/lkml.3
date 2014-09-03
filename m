@@ -1,88 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755652AbaICHsc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 03:48:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52409 "EHLO mx1.redhat.com"
+	id S1754933AbaICHs2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 03:48:28 -0400
+Received: from mga09.intel.com ([134.134.136.24]:12777 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754975AbaICHsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 03:48:30 -0400
-Date: Wed, 3 Sep 2014 10:51:04 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Cc: Jason Wang <jasowang@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process is
- runnable
-Message-ID: <20140903075104.GA6187@redhat.com>
-References: <1408608310-13579-2-git-send-email-jasowang@redhat.com>
- <1408683665.5648.69.camel@marge.simpson.net>
- <53F6F14B.1030609@redhat.com>
- <20140822074224.GB7372@gmail.com>
- <53FFEEC0.4000304@redhat.com>
- <540414AB.9000004@linux.intel.com>
- <54053998.4040604@redhat.com>
- <54056076.2030603@linux.intel.com>
- <20140902083124.GB10356@redhat.com>
- <5406B9E6.6050103@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5406B9E6.6050103@linux.intel.com>
+	id S1754355AbaICHs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 03:48:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,455,1406617200"; 
+   d="scan'208";a="567579828"
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: akpm@linux-foundation.org
+Cc: Mark Rustad <mark.d.rustad@intel.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [PATCH] mm: Use min3/max3 macros to avoid shadow warnings
+Date: Wed,  3 Sep 2014 00:48:17 -0700
+Message-Id: <1409730497-25438-1-git-send-email-jeffrey.t.kirsher@intel.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 03, 2014 at 09:49:10AM +0300, Eliezer Tamir wrote:
-> On 02/09/2014 11:31, Michael S. Tsirkin wrote:
-> > On Tue, Sep 02, 2014 at 09:15:18AM +0300, Eliezer Tamir wrote:
-> >> On 02/09/2014 06:29, Jason Wang wrote:
-> >>> On 09/01/2014 02:39 PM, Eliezer Tamir wrote:
-> >>>> On 29/08/2014 06:08, Jason Wang wrote:
-> >>>>>> Yes, but rx busy polling only works in process context and does not
-> >>>>>> disable bh, so it may be not an issue.
-> >>>> sk_busy_loop() uses rcu_read_lock_bh(), so it does run with bh disabled.
-> >>>
-> >>> True, so we need probably also exit the loop when there are pending bhs.
-> >>
-> >> I'm not so sure, in the typical busy poll scenario, the incoming
-> >> traffic is the most time-critical thing in the system.
-> >> It's so important that you are willing to trade lots of CPU power
-> >> for better latency. The user has decided that he wants to dedicate
-> >> this CPU mostly for that. This is not something that plays nice with
-> >> other apps, but this is what the user wants.
-> > 
-> > I think most applications wouldn't interpret this flag as "burn up CPU I don't
-> > care what is the result", what apps want is more of "maximise throughput
-> > and minimise latency even if throughput/CPU ratio goes down".
-> > Jason posted benchmarks that show throughput going up because other
-> > processes get more of a chance to run, so this seems consistent
-> > with that goal.
-> 
-> Busy polling is not a general purpose feature, it's not something you
-> can casually turn on and will "just work". Most applications should not
-> be using busy polling. Currently it is used by multiserver applications
-> that you spend days tuning to specific platforms.
-> 
-> What the user wants is to lower both avg and maximum latencies, at the
-> expense of everything else including power efficiency and sometimes
-> even throughput. The only exception is making the system crash ;)
-> 
-> While letting other things take precedence over busy polling might not
-> hurt the avg latency much, it will kill your maximum latency.
-> 
-> -Eliezer
+From: Mark Rustad <mark.d.rustad@intel.com>
 
-If scheduler happens to run both server and client on the
-same CPU, polling will hurt maximum latency even more.
-So I guess different users want different things.
+Nested calls to min/max functions result in shadow warnings in
+W=2 builds. Avoid the warning by using the min3 and max3 macros
+to get the min/max of 3 values instead of nested calls.
 
-How about applications giving us a hint what they prefer?
-For example, a new flag that says "I don't have anything useful to do so
-let's do busy polling but my server is on the local system, so please
-only poll if CPU is otherwise idle".
+Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+---
+ mm/page-writeback.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 91d73ef..35ca710 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -1075,13 +1075,13 @@ static void bdi_update_dirty_ratelimit(struct backing_dev_info *bdi,
+ 	}
+ 
+ 	if (dirty < setpoint) {
+-		x = min(bdi->balanced_dirty_ratelimit,
+-			 min(balanced_dirty_ratelimit, task_ratelimit));
++		x = min3(bdi->balanced_dirty_ratelimit,
++			 balanced_dirty_ratelimit, task_ratelimit);
+ 		if (dirty_ratelimit < x)
+ 			step = x - dirty_ratelimit;
+ 	} else {
+-		x = max(bdi->balanced_dirty_ratelimit,
+-			 max(balanced_dirty_ratelimit, task_ratelimit));
++		x = max3(bdi->balanced_dirty_ratelimit,
++			 balanced_dirty_ratelimit, task_ratelimit);
+ 		if (dirty_ratelimit > x)
+ 			step = dirty_ratelimit - x;
+ 	}
 -- 
-MST
+1.9.3
+
