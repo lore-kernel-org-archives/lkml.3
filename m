@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934883AbaICXBk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:01:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46333 "EHLO
+	id S934829AbaICXBi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:01:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46344 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756928AbaICWZ6 (ORCPT
+	with ESMTP id S1756930AbaICWZ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:25:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Chen <peter.chen@freescale.com>,
+        Roger Quadros <rogerq@ti.com>, Michael Welling <mwelling@emacinc.com>,
         Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 3.16 114/125] usb: ehci: using wIndex + 1 for hub port
-Date: Wed,  3 Sep 2014 15:07:51 -0700
-Message-Id: <20140903220627.119526681@linuxfoundation.org>
+Subject: [PATCH 3.16 115/125] usb: hub: Prevent hub autosuspend if usbcore.autosuspend is -1
+Date: Wed,  3 Sep 2014 15:07:52 -0700
+Message-Id: <20140903220627.148549302@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -29,34 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Chen <peter.chen@freescale.com>
+From: Roger Quadros <rogerq@ti.com>
 
-commit 5cbcc35e5bf0eae3c7494ce3efefffc9977827ae upstream.
+commit bdd405d2a5287bdb9b04670ea255e1f122138e66 upstream.
 
-The roothub's index per controller is from 0, but the hub port index per hub
-is from 1, this patch fixes "can't find device at roohub" problem for connecting
-test fixture at roohub when do USB-IF Embedded Host High-Speed Electrical Test.
+If user specifies that USB autosuspend must be disabled by module
+parameter "usbcore.autosuspend=-1" then we must prevent
+autosuspend of USB hub devices as well.
 
-This patch is for v3.12+.
+commit 596d789a211d introduced in v3.8 changed the original behaivour
+and stopped respecting the usbcore.autosuspend parameter for hubs.
 
-Signed-off-by: Peter Chen <peter.chen@freescale.com>
+Fixes: 596d789a211d "USB: set hub's default autosuspend delay as 0"
+
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Tested-by: Michael Welling <mwelling@emacinc.com>
 Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ehci-hub.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/core/hub.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/ehci-hub.c
-+++ b/drivers/usb/host/ehci-hub.c
-@@ -1230,7 +1230,7 @@ int ehci_hub_control(
- 			if (selector == EHSET_TEST_SINGLE_STEP_SET_FEATURE) {
- 				spin_unlock_irqrestore(&ehci->lock, flags);
- 				retval = ehset_single_step_set_feature(hcd,
--									wIndex);
-+								wIndex + 1);
- 				spin_lock_irqsave(&ehci->lock, flags);
- 				break;
- 			}
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -1728,8 +1728,12 @@ static int hub_probe(struct usb_interfac
+ 	 * - Change autosuspend delay of hub can avoid unnecessary auto
+ 	 *   suspend timer for hub, also may decrease power consumption
+ 	 *   of USB bus.
++	 *
++	 * - If user has indicated to prevent autosuspend by passing
++	 *   usbcore.autosuspend = -1 then keep autosuspend disabled.
+ 	 */
+-	pm_runtime_set_autosuspend_delay(&hdev->dev, 0);
++	if (hdev->dev.power.autosuspend_delay >= 0)
++		pm_runtime_set_autosuspend_delay(&hdev->dev, 0);
+ 
+ 	/*
+ 	 * Hubs have proper suspend/resume support, except for root hubs
 
 
