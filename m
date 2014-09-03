@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935293AbaICXGN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:06:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46032 "EHLO
+	id S934852AbaICXGL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:06:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46072 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933786AbaICWSn (ORCPT
+	with ESMTP id S933791AbaICWSn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:18:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 3.16 069/125] PCI: pciehp: Clear Data Link Layer State Changed during init
-Date: Wed,  3 Sep 2014 15:07:06 -0700
-Message-Id: <20140903220625.751871854@linuxfoundation.org>
+        Simone Gotti <simone.gotti@gmail.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+Subject: [PATCH 3.16 070/125] ACPI / PCI: Fix sysfs acpi_index and label errors
+Date: Wed,  3 Sep 2014 15:07:07 -0700
+Message-Id: <20140903220625.780516552@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -29,54 +30,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Myron Stowe <myron.stowe@redhat.com>
+From: Simone Gotti <simone.gotti@gmail.com>
 
-commit 0d25d35c987d7b0b63368d9c1ae35a917e1a7bab upstream.
+commit dcfa9be83866e28fcb8b7e22b4eeb4ba63bd3174 upstream.
 
-During PCIe hot-plug initialization - pciehp_probe() - data structures
-related to slot capabilities are set up.  As part of this set up, ISRs are
-put in place to handle slot events and all event bits are cleared out.
+Fix errors in handling "device label" _DSM return values.
 
-This patch adds the Data Link Layer State Changed (PCI_EXP_SLTSTA_DLLSC)
-Slot Status bit to the event bits that are cleared out during
-initialization.
+If _DSM returns a Unicode string, the ACPI type is ACPI_TYPE_BUFFER, not
+ACPI_TYPE_STRING.  Fix dsm_label_utf16s_to_utf8s() to convert UTF-16 from
+acpi_object->buffer instead of acpi_object->string.
 
-If the BIOS doesn't clear DLLSC before handoff to the OS, pciehp notices
-that it's set and interprets it as a new Link Up event, which results in
-spurious messages:
+Prior to v3.14, we accepted Unicode labels (ACPI_TYPE_BUFFER return
+values).  But after 1d0fcef73283, we accepted only ASCII (ACPI_TYPE_STRING)
+(and we incorrectly tried to convert those ASCII labels from UTF-16 to
+UTF-8).
 
-  pciehp 0000:82:04.0:pcie24: slot(4): Link Up event
-  pciehp 0000:82:04.0:pcie24: Device 0000:83:00.0 already exists at 0000:83:00, cannot hot-add
-  pciehp 0000:82:04.0:pcie24: Cannot add device at 0000:83:00
+Rejecting Unicode labels made us return -EPERM when reading sysfs
+"acpi_index" or "label" files, which in turn caused on-board network
+interfaces on a Dell PowerEdge E420 to be renamed (by udev net_id internal)
+from eno1/eno2 to enp2s0f0/enp2s0f1.
 
-Prior to e48f1b67f668 ("PCI: pciehp: Use link change notifications for
-hot-plug and removal"), pciehp ignored DLLSC.
+Fix this by accepting either ACPI_TYPE_STRING (and treating it as ASCII) or
+ACPI_TYPE_BUFFER (and converting from UTF-16 to UTF-8).
 
-Reference:
-  PCI-SIG.  PCI Express Base Specification Revision 4.0 Version 0.3
-  (PCI-SIG, 2014): 7.8.11. Slot Status Register (Offset 1Ah).
-
-[bhelgaas: add e48f1b67f668 ref and stable tag]
-Fixes: e48f1b67f668 ("PCI: pciehp: Use link change notifications for hot-plug and removal")
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=79611
-Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
+[bhelgaas: changelog]
+Fixes: 1d0fcef73283 ("ACPI / PCI: replace open-coded _DSM code with helper functions")
+Signed-off-by: Simone Gotti <simone.gotti@gmail.com>
 Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Reviewed-by: Jiang Liu <jiang.liu@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/hotplug/pciehp_hpc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/pci/pci-label.c |   18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
 
---- a/drivers/pci/hotplug/pciehp_hpc.c
-+++ b/drivers/pci/hotplug/pciehp_hpc.c
-@@ -794,7 +794,7 @@ struct controller *pcie_init(struct pcie
- 	pcie_capability_write_word(pdev, PCI_EXP_SLTSTA,
- 		PCI_EXP_SLTSTA_ABP | PCI_EXP_SLTSTA_PFD |
- 		PCI_EXP_SLTSTA_MRLSC | PCI_EXP_SLTSTA_PDC |
--		PCI_EXP_SLTSTA_CC);
-+		PCI_EXP_SLTSTA_CC | PCI_EXP_SLTSTA_DLLSC);
+--- a/drivers/pci/pci-label.c
++++ b/drivers/pci/pci-label.c
+@@ -161,8 +161,8 @@ enum acpi_attr_enum {
+ static void dsm_label_utf16s_to_utf8s(union acpi_object *obj, char *buf)
+ {
+ 	int len;
+-	len = utf16s_to_utf8s((const wchar_t *)obj->string.pointer,
+-			      obj->string.length,
++	len = utf16s_to_utf8s((const wchar_t *)obj->buffer.pointer,
++			      obj->buffer.length,
+ 			      UTF16_LITTLE_ENDIAN,
+ 			      buf, PAGE_SIZE);
+ 	buf[len] = '\n';
+@@ -187,16 +187,22 @@ static int dsm_get_label(struct device *
+ 	tmp = obj->package.elements;
+ 	if (obj->type == ACPI_TYPE_PACKAGE && obj->package.count == 2 &&
+ 	    tmp[0].type == ACPI_TYPE_INTEGER &&
+-	    tmp[1].type == ACPI_TYPE_STRING) {
++	    (tmp[1].type == ACPI_TYPE_STRING ||
++	     tmp[1].type == ACPI_TYPE_BUFFER)) {
+ 		/*
+ 		 * The second string element is optional even when
+ 		 * this _DSM is implemented; when not implemented,
+ 		 * this entry must return a null string.
+ 		 */
+-		if (attr == ACPI_ATTR_INDEX_SHOW)
++		if (attr == ACPI_ATTR_INDEX_SHOW) {
+ 			scnprintf(buf, PAGE_SIZE, "%llu\n", tmp->integer.value);
+-		else if (attr == ACPI_ATTR_LABEL_SHOW)
+-			dsm_label_utf16s_to_utf8s(tmp + 1, buf);
++		} else if (attr == ACPI_ATTR_LABEL_SHOW) {
++			if (tmp[1].type == ACPI_TYPE_STRING)
++				scnprintf(buf, PAGE_SIZE, "%s\n",
++					  tmp[1].string.pointer);
++			else if (tmp[1].type == ACPI_TYPE_BUFFER)
++				dsm_label_utf16s_to_utf8s(tmp + 1, buf);
++		}
+ 		len = strlen(buf) > 0 ? strlen(buf) : -1;
+ 	}
  
- 	/* Disable software notification */
- 	pcie_disable_notification(ctrl);
 
 
