@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932676AbaICKIq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 06:08:46 -0400
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:57388 "EHLO
+	id S932723AbaICKKX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 06:10:23 -0400
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:57372 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932142AbaICJ5E (ORCPT
+	by vger.kernel.org with ESMTP id S1756216AbaICJ4d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 05:57:04 -0400
+	Wed, 3 Sep 2014 05:56:33 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Axel Lin <axel.lin@ingics.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 35/56] hwmon: (lm85) Fix various errors on attribute writes
-Date: Wed,  3 Sep 2014 11:26:54 +0200
-Message-Id: <bdd8ea4ca417deeb1ce077bfa8cf80a145981fc5.1409735865.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@fb.com>
+Subject: [PATCH 3.12 09/56] bio-integrity: add "bip_max_vcnt" into struct bio_integrity_payload
+Date: Wed,  3 Sep 2014 11:26:28 +0200
+Message-Id: <c27a4fe151abf351665639eef0ee2fef7e6fb4f9.1409735865.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <b4839e6cd4a236a81725e422b2e05c26fe36048a.1409735865.git.jslaby@suse.cz>
 References: <b4839e6cd4a236a81725e422b2e05c26fe36048a.1409735865.git.jslaby@suse.cz>
@@ -23,78 +24,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 3248c3b771ddd9d31695da17ba350eb6e1b80a53 upstream.
+commit cbcd1054a1fd2aa980fc11ff28e436fc4aaa2d54 upstream.
 
-Temperature limit register writes did not account for negative numbers.
-As a result, writing -127000 resulted in -126000 written into the
-temperature limit register. This problem affected temp[1-3]_min,
-temp[1-3]_max, temp[1-3]_auto_temp_crit, and temp[1-3]_auto_temp_min.
+Commit 08778795 ("block: Fix nr_vecs for inline integrity vectors") from
+Martin introduces the function bip_integrity_vecs(get the useful vectors)
+to fix the issue about nr_vecs for inline integrity vectors that reported
+by David Milburn.
 
-When writing pwm[1-3]_freq, a long variable was auto-converted into an int
-without range check. Wiring values larger than MAXINT resulted in unexpected
-register values.
+But it seems that bip_integrity_vecs() will return the wrong number if the
+bio is not based on any bio_set for some reason(bio->bi_pool == NULL),
+because in that case, the bip_inline_vecs[0] is malloced directly.  So
+here we add the bip_max_vcnt to record the count of vector slots, and
+cleanup the function bip_integrity_vecs().
 
-When writing temp[1-3]_auto_temp_max, an unsigned long variable was
-auto-converted into an int without range check. Writing values larger than
-MAXINT resulted in unexpected register values.
-
-vrm is an u8, so the written value needs to be limited to [0, 255].
-
-Cc: Axel Lin <axel.lin@ingics.com>
-Reviewed-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: Martin K. Petersen <martin.petersen@oracle.com>
+Cc: Kent Overstreet <kmo@daterainc.com>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 ---
- drivers/hwmon/lm85.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ fs/bio-integrity.c  | 12 +++---------
+ include/linux/bio.h |  1 +
+ 2 files changed, 4 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/hwmon/lm85.c b/drivers/hwmon/lm85.c
-index 3894c408fda3..b9d6e7d0ba37 100644
---- a/drivers/hwmon/lm85.c
-+++ b/drivers/hwmon/lm85.c
-@@ -158,7 +158,7 @@ static inline u16 FAN_TO_REG(unsigned long val)
+diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
+index 76273c1d26a6..04a43c011a66 100644
+--- a/fs/bio-integrity.c
++++ b/fs/bio-integrity.c
+@@ -70,8 +70,10 @@ struct bio_integrity_payload *bio_integrity_alloc(struct bio *bio,
+ 					  bs->bvec_integrity_pool);
+ 		if (!bip->bip_vec)
+ 			goto err;
++		bip->bip_max_vcnt = bvec_nr_vecs(idx);
+ 	} else {
+ 		bip->bip_vec = bip->bip_inline_vecs;
++		bip->bip_max_vcnt = inline_vecs;
+ 	}
  
- /* Temperature is reported in .001 degC increments */
- #define TEMP_TO_REG(val)	\
--		clamp_val(SCALE(val, 1000, 1), -127, 127)
-+		DIV_ROUND_CLOSEST(clamp_val((val), -127000, 127000), 1000)
- #define TEMPEXT_FROM_REG(val, ext)	\
- 		SCALE(((val) << 4) + (ext), 16, 1000)
- #define TEMP_FROM_REG(val)	((val) * 1000)
-@@ -192,7 +192,7 @@ static const int lm85_range_map[] = {
- 	13300, 16000, 20000, 26600, 32000, 40000, 53300, 80000
- };
- 
--static int RANGE_TO_REG(int range)
-+static int RANGE_TO_REG(long range)
- {
- 	int i;
- 
-@@ -214,7 +214,7 @@ static const int adm1027_freq_map[8] = { /* 1 Hz */
- 	11, 15, 22, 29, 35, 44, 59, 88
- };
- 
--static int FREQ_TO_REG(const int *map, int freq)
-+static int FREQ_TO_REG(const int *map, unsigned long freq)
- {
- 	int i;
- 
-@@ -463,6 +463,9 @@ static ssize_t store_vrm_reg(struct device *dev, struct device_attribute *attr,
- 	if (err)
- 		return err;
- 
-+	if (val > 255)
-+		return -EINVAL;
-+
- 	data->vrm = val;
- 	return count;
+ 	bip->bip_slab = idx;
+@@ -114,14 +116,6 @@ void bio_integrity_free(struct bio *bio)
  }
+ EXPORT_SYMBOL(bio_integrity_free);
+ 
+-static inline unsigned int bip_integrity_vecs(struct bio_integrity_payload *bip)
+-{
+-	if (bip->bip_slab == BIO_POOL_NONE)
+-		return BIP_INLINE_VECS;
+-
+-	return bvec_nr_vecs(bip->bip_slab);
+-}
+-
+ /**
+  * bio_integrity_add_page - Attach integrity metadata
+  * @bio:	bio to update
+@@ -137,7 +131,7 @@ int bio_integrity_add_page(struct bio *bio, struct page *page,
+ 	struct bio_integrity_payload *bip = bio->bi_integrity;
+ 	struct bio_vec *iv;
+ 
+-	if (bip->bip_vcnt >= bip_integrity_vecs(bip)) {
++	if (bip->bip_vcnt >= bip->bip_max_vcnt) {
+ 		printk(KERN_ERR "%s: bip_vec full\n", __func__);
+ 		return 0;
+ 	}
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index ec48bac5b039..6c17ad5cc814 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -187,6 +187,7 @@ struct bio_integrity_payload {
+ 	unsigned short		bip_slab;	/* slab the bip came from */
+ 	unsigned short		bip_vcnt;	/* # of integrity bio_vecs */
+ 	unsigned short		bip_idx;	/* current bip_vec index */
++	unsigned short		bip_max_vcnt;	/* integrity bio_vec slots */
+ 	unsigned		bip_owns_buf:1;	/* should free bip_buf */
+ 
+ 	struct work_struct	bip_work;	/* I/O completion */
 -- 
 2.1.0
 
