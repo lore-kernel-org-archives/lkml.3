@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934592AbaICWoX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:44:23 -0400
-Received: from mail-bl2lp0207.outbound.protection.outlook.com ([207.46.163.207]:21087
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933473AbaICWoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:44:19 -0400
-From: "J. German Rivera" <German.Rivera@freescale.com>
-To: <gregkh@linuxfoundation.org>, <arnd@arndb.de>,
-        <linux-kernel@vger.kernel.org>
-CC: <stuart.yoder@freescale.com>, <Kim.Phillips@freescale.com>,
-        <scottwood@freescale.com>, <agraf@suse.de>,
-        <linuxppc-release@linux.freescale.net>,
-        "J. German Rivera" <German.Rivera@freescale.com>
-Subject: [RFC PATCH 4/4 v4] Update MAINTAINERS file
-Date: Wed, 3 Sep 2014 17:25:46 -0500
-Message-ID: <1409783146-13418-5-git-send-email-German.Rivera@freescale.com>
-X-Mailer: git-send-email 1.7.9.7
-In-Reply-To: <1409783146-13418-1-git-send-email-German.Rivera@freescale.com>
-References: <1409783146-13418-1-git-send-email-German.Rivera@freescale.com>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199003)(105606002)(87936001)(104166001)(64706001)(80022001)(81156004)(92726001)(79102001)(2201001)(92566001)(26826002)(88136002)(19580405001)(83322001)(19580395003)(77982001)(68736004)(69596002)(44976005)(6806004)(81342001)(229853001)(47776003)(107046002)(81542001)(62966002)(20776003)(95666004)(106466001)(89996001)(90102001)(36756003)(99396002)(77156001)(97736001)(50986999)(93916002)(86362001)(21056001)(104016003)(50466002)(48376002)(85852003)(46102001)(85306004)(83072002)(102836001)(4396001)(50226001)(76176999)(76482001)(31966008)(87286001)(74662001)(84676001)(74502001)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB326;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+	id S934901AbaICWov (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:44:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46551 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934425AbaICW2j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 18:28:39 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>,
+        Aleksei Besogonov <alex.besogonov@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.16 125/125] vm_is_stack: use for_each_thread() rather then buggy while_each_thread()
+Date: Wed,  3 Sep 2014 15:08:02 -0700
+Message-Id: <20140903220627.447813092@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
+References: <20140903220623.649748296@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 032334F434
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=German.Rivera@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "J. German Rivera" <German.Rivera@freescale.com>
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: J. German Rivera <German.Rivera@freescale.com>
-Signed-off-by: Stuart Yoder <stuart.yoder@freescale.com>
+------------------
+
+From: Oleg Nesterov <oleg@redhat.com>
+
+commit 4449a51a7c281602d3a385044ab928322a122a02 upstream.
+
+Aleksei hit the soft lockup during reading /proc/PID/smaps.  David
+investigated the problem and suggested the right fix.
+
+while_each_thread() is racy and should die, this patch updates
+vm_is_stack().
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Reported-by: Aleksei Besogonov <alex.besogonov@gmail.com>
+Tested-by: Aleksei Besogonov <alex.besogonov@gmail.com>
+Suggested-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
-Changes in v4:
-none
+ mm/util.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
-Changes in v3:
-none
+--- a/mm/util.c
++++ b/mm/util.c
+@@ -277,17 +277,14 @@ pid_t vm_is_stack(struct task_struct *ta
+ 
+ 	if (in_group) {
+ 		struct task_struct *t;
+-		rcu_read_lock();
+-		if (!pid_alive(task))
+-			goto done;
+ 
+-		t = task;
+-		do {
++		rcu_read_lock();
++		for_each_thread(task, t) {
+ 			if (vm_is_stack_for_task(t, vma)) {
+ 				ret = t->pid;
+ 				goto done;
+ 			}
+-		} while_each_thread(task, t);
++		}
+ done:
+ 		rcu_read_unlock();
+ 	}
 
-Changes in v2:
-none
-
- MAINTAINERS |    8 ++++++++
- 1 file changed, 8 insertions(+)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 7e2eb4c..eb8597d 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -3841,6 +3841,14 @@ S:	Maintained
- F:	sound/soc/fsl/fsl*
- F:	sound/soc/fsl/mpc8610_hpcd.c
-
-+FREESCALE QORIQ MANAGEMENT COMPLEX DRIVER
-+M:	J. German Rivera <German.Rivera@freescale.com>
-+L:	linux-kernel@vger.kernel.org
-+S:	Maintained
-+F:	include/linux/fsl_mc*
-+F:	include/linux/fsl_dp*
-+F:	drivers/bus/fsl-mc/*
-+
- FREEVXFS FILESYSTEM
- M:	Christoph Hellwig <hch@infradead.org>
- W:	ftp://ftp.openlinux.org/pub/people/hch/vxfs
---
-1.7.9.7
 
