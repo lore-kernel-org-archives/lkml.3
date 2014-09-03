@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126AbaICCLr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 22:11:47 -0400
-Received: from regular1.263xmail.com ([211.150.99.131]:34450 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750871AbaICCLJ (ORCPT
+	id S1754342AbaICCMD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 22:12:03 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:48566 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752483AbaICCMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 22:11:09 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: wxt@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: wxt@rock-chips.com
-X-UNIQUE-TAG: <f226c7e00b4abe262ad6124882ffbbc3>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Caesar Wang <caesar.wang@rock-chips.com>
-To: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, huangtao@rock-chips.com, cf@rock-chips.com,
-        dianders@chromium.org, dtor@chromium.org, zyw@rock-chips.com,
-        addy.ke@rock-chips.com, dmitry.torokhov@gmail.com,
-        Caesar Wang <caesar.wang@rock-chips.com>
-Subject: [PATCH v4 3/4] ARM: dts: add main Thermal info to rk3288
-Date: Wed,  3 Sep 2014 10:10:38 +0800
-Message-Id: <1409710239-19941-4-git-send-email-caesar.wang@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1409710239-19941-1-git-send-email-caesar.wang@rock-chips.com>
-References: <1409710239-19941-1-git-send-email-caesar.wang@rock-chips.com>
+	Tue, 2 Sep 2014 22:12:00 -0400
+Date: Tue, 2 Sep 2014 19:11:52 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] dynticks: dynticks_idle is only modified locally use
+ this_cpu ops
+Message-ID: <20140903021152.GA14069@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <alpine.DEB.2.11.1409021513490.26284@gentwo.org>
+ <20140902203743.GL5001@linux.vnet.ibm.com>
+ <alpine.DEB.2.11.1409021545370.32690@gentwo.org>
+ <20140902211517.GO5001@linux.vnet.ibm.com>
+ <alpine.DEB.2.11.1409021819500.5437@gentwo.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1409021819500.5437@gentwo.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14090302-1344-0000-0000-000003E66BA9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
----
- arch/arm/boot/dts/rk3288.dtsi | 18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+On Tue, Sep 02, 2014 at 06:22:52PM -0500, Christoph Lameter wrote:
+> On Tue, 2 Sep 2014, Paul E. McKenney wrote:
+> 
+> > Yep, these two have been on my "when I am feeling insanely gutsy" list
+> > for quite some time.
+> >
+> > But I have to ask...  On x86, is a pair of mfence instructions really
+> > cheaper than an atomic increment?
+> 
+> Not sure why you would need an mfence instruction?
 
-diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
-index 36be7bb..3d672e3 100644
---- a/arch/arm/boot/dts/rk3288.dtsi
-+++ b/arch/arm/boot/dts/rk3288.dtsi
-@@ -224,6 +224,17 @@
- 		status = "disabled";
- 	};
- 
-+	tsadc: tsadc@ff280000 {
-+		compatible = "rockchip,rk3288-tsadc";
-+		reg = <0xff280000 0x100>;
-+		interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&cru SCLK_TSADC>, <&cru PCLK_TSADC>;
-+		clock-names = "tsadc", "apb_pclk";
-+		pinctrl-names = "default";
-+		pinctrl-1 = <&tsadc_int>;
-+		status = "disabled";
-+	};
-+
- 	/* NOTE: ohci@ff520000 doesn't actually work on hardware */
- 
- 	usb_hsic: usb@ff5c0000 {
-@@ -611,5 +622,12 @@
- 				rockchip,pins = <5 15 3 &pcfg_pull_none>;
- 			};
- 		};
-+
-+		tsadc {
-+			tsadc_int: tsadc-int {
-+				rockchip,pins = <0 10 RK_FUNC_1 &pcfg_pull_up>;
-+			};
-+		};
-+
- 	};
- };
--- 
-1.9.1
+Because otherwise RCU can break.  As soon as the grace-period machinery
+sees that the value of this variable is even, it assumes a quiescent
+state.  If there are no memory barriers, the non-quiescent code might
+not have completed executing, and your kernel's actuarial statistics
+become sub-optimal.
 
+							Thanx, Paul
+
+> > > If the first patch I send gets merged then a lot of other this_cpu related
+> > > optimizations become possible regardless of the ones in the RFC.
+> >
+> > Yep, I am queuing that one.
+> 
+> Great.
+> 
+> > But could you please do future patches against the rcu/dev branch of
+> > git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git?
+> > I had to hand-apply due to conflicts.  Please see below for my version,
+> > and please check to make sure that I didn't mess something up in the
+> > translation.
+> 
+> Looks ok. Will use the correct tree next time.
+> 
+> 
 
