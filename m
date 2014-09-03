@@ -1,98 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935341AbaICXIc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:08:32 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48973 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933750AbaICXI1 (ORCPT
+	id S935350AbaICXIu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:08:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46032 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933704AbaICWSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 19:08:27 -0400
-Date: Thu, 4 Sep 2014 00:08:21 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Message-ID: <20140903230821.GF29327@sirena.org.uk>
+	Wed, 3 Sep 2014 18:18:40 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jack Morgenstein <jackm@mellanox.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.16 062/125] kvm: iommu: fix the third parameter of kvm_iommu_put_pages (CVE-2014-3601)
+Date: Wed,  3 Sep 2014 15:06:59 -0700
+Message-Id: <20140903220625.549152297@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
+References: <20140903220623.649748296@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pEX2GA8pip5RjAtK"
-Content-Disposition: inline
-X-Cookie: Simulated picture.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [GIT PULL] regmap fixes for v3.17
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
---pEX2GA8pip5RjAtK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+------------------
 
-The following changes since commit 52addcf9d6669fa439387610bc65c92fa0980cef:
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-  Linux 3.17-rc2 (2014-08-25 15:36:20 -0700)
+commit 350b8bdd689cd2ab2c67c8a86a0be86cfa0751a7 upstream.
 
-are available in the git repository at:
+The third parameter of kvm_iommu_put_pages is wrong,
+It should be 'gfn - slot->base_gfn'.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git tags/regmap-v3.17-rc1
+By making gfn very large, malicious guest or userspace can cause kvm to
+go to this error path, and subsequently to pass a huge value as size.
+Alternatively if gfn is small, then pages would be pinned but never
+unpinned, causing host memory leak and local DOS.
 
-for you to fetch changes up to d3b05339873d42a1820d9215ce3885b61d9a95a1:
+Passing a reasonable but large value could be the most dangerous case,
+because it would unpin a page that should have stayed pinned, and thus
+allow the device to DMA into arbitrary memory.  However, this cannot
+happen because of the condition that can trigger the error:
 
-  Merge remote-tracking branches 'regmap/fix/cache', 'regmap/fix/debugfs' and 'regmap/fix/volatile' into regmap-linus (2014-08-31 13:23:45 +0100)
+- out of memory (where you can't allocate even a single page)
+  should not be possible for the attacker to trigger
 
-----------------------------------------------------------------
-regmap: Fixes for v3.17
+- when exceeding the iommu's address space, guest pages after gfn
+  will also exceed the iommu's address space, and inside
+  kvm_iommu_put_pages() the iommu_iova_to_phys() will fail.  The
+  page thus would not be unpinned at all.
 
-Several bug fixes for issues that have been lurking for a while:
+Reported-by: Jack Morgenstein <jackm@mellanox.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
- - Check that devices haven't set the flag saying they only support
-   register at a time operation while we're doing cache syncs, otherwise
-   we fail to restore caches.
- - Ensure that we don't mark all registers on devices using format_write()
-   as cacheable, avoiding adding a cache of things like reset registers
-   which we don't want to rewrite during cache sync.
- - Make sure we create the debugfs files in the correct directory.
+---
+ virt/kvm/iommu.c |   19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
 
-----------------------------------------------------------------
-Lars-Peter Clausen (1):
-      regmap: Fix regcache debugfs initialization
+--- a/virt/kvm/iommu.c
++++ b/virt/kvm/iommu.c
+@@ -61,6 +61,14 @@ static pfn_t kvm_pin_pages(struct kvm_me
+ 	return pfn;
+ }
+ 
++static void kvm_unpin_pages(struct kvm *kvm, pfn_t pfn, unsigned long npages)
++{
++	unsigned long i;
++
++	for (i = 0; i < npages; ++i)
++		kvm_release_pfn_clean(pfn + i);
++}
++
+ int kvm_iommu_map_pages(struct kvm *kvm, struct kvm_memory_slot *slot)
+ {
+ 	gfn_t gfn, end_gfn;
+@@ -123,6 +131,7 @@ int kvm_iommu_map_pages(struct kvm *kvm,
+ 		if (r) {
+ 			printk(KERN_ERR "kvm_iommu_map_address:"
+ 			       "iommu failed to map pfn=%llx\n", pfn);
++			kvm_unpin_pages(kvm, pfn, page_size);
+ 			goto unmap_pages;
+ 		}
+ 
+@@ -134,7 +143,7 @@ int kvm_iommu_map_pages(struct kvm *kvm,
+ 	return 0;
+ 
+ unmap_pages:
+-	kvm_iommu_put_pages(kvm, slot->base_gfn, gfn);
++	kvm_iommu_put_pages(kvm, slot->base_gfn, gfn - slot->base_gfn);
+ 	return r;
+ }
+ 
+@@ -266,14 +275,6 @@ out_unlock:
+ 	return r;
+ }
+ 
+-static void kvm_unpin_pages(struct kvm *kvm, pfn_t pfn, unsigned long npages)
+-{
+-	unsigned long i;
+-
+-	for (i = 0; i < npages; ++i)
+-		kvm_release_pfn_clean(pfn + i);
+-}
+-
+ static void kvm_iommu_put_pages(struct kvm *kvm,
+ 				gfn_t base_gfn, unsigned long npages)
+ {
 
-Mark Brown (3):
-      regmap: Fix handling of volatile registers for format_write() chips
-      regmap: Don't attempt block writes when syncing cache on single_rw devices
-      Merge remote-tracking branches 'regmap/fix/cache', 'regmap/fix/debugfs' and 'regmap/fix/volatile' into regmap-linus
 
- drivers/base/regmap/internal.h        | 3 +++
- drivers/base/regmap/regcache-rbtree.c | 9 +++------
- drivers/base/regmap/regcache.c        | 2 +-
- drivers/base/regmap/regmap-debugfs.c  | 3 +++
- drivers/base/regmap/regmap.c          | 2 +-
- 5 files changed, 11 insertions(+), 8 deletions(-)
-
---pEX2GA8pip5RjAtK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUB59iAAoJELSic+t+oim9gFcP/00qvtDJRaWXZ+ZCDJYVWhRq
-GFIEdFjaIks3Go6PsTMs3uL+eJ/wzAGLhCLUzNuwyi6F8Om1CNmACcxUdettI8tl
-Fjs43zx9fTrJgKcsGQmut08hs+6owf1BalXZHxY/ln99bErKudfmVwDXZFk2i242
-SZaVJBrorjGy11cgRbMXSfyL6IJZZ5f4xFe2vWm7H779DhblHfw/he//0YnVaBP4
-NARSSGPVsxkbgZusXAYqYNsi3aTR8EFl8TqBJChLDCAofmCX2pDkATd6DTKaCHi+
-8VwrOFEHyaIR+38eARhk2MarQmGWQhjngAiyeba02ZGpWfsju0puMpoMlC7pWZJN
-+sb1+tvA42X+8Yur2+v14+SgJr4A6BvLQ83zMWHu4jMO/bSboK3NZL5FcvM3rmaY
-JIAND4F+Wc9dBrgLJYgZDJ942TN+Zt+FucC7XuS6DGylvzJVbuWLyS7dey0oMj8W
-3+qzhiMURbX1NqyG/ghaTO5IDfQgQk34RAWYVHnOgABHgVQb6rXUtIbwgSSwkpPw
-6Agyclx4mKiewsz9Y7mBlYQ357eOcKEF4wd0JiKd4y0mgvT5plbmz62eIu5PKSWF
-DBiMp1DgN12JMr4AsX8eJe8Dzw8s+JlgdnToBDUAF7ff6sjsgQlnUwY+g1hQWdWW
-IrUgE90V/IHyVRJhUSDR
-=Zpoc
------END PGP SIGNATURE-----
-
---pEX2GA8pip5RjAtK--
