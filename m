@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755591AbaICIWW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 04:22:22 -0400
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:46383 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751662AbaICIWT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 04:22:19 -0400
+	id S1755686AbaICI1I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 04:27:08 -0400
+Received: from mail3.unitn.it ([193.205.206.24]:54563 "EHLO mail3.unitn.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753530AbaICI1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 04:27:06 -0400
+Message-ID: <5406D0D5.8030001@unitn.it>
+Date: Wed, 03 Sep 2014 10:27:01 +0200
+From: Luca Abeni <luca.abeni@unitn.it>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <3749760.naNt3fHoTI@wuerfel>
-References: <1409671320-7604-1-git-send-email-ch.naveen@samsung.com> <3749760.naNt3fHoTI@wuerfel>
-From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Date: Wed, 3 Sep 2014 13:51:56 +0530
-Message-ID: <CAHfPSqAn5gHjDA75Zf1W5=GH9_W+X6+4oc9rDK7CqeSoF3DURw@mail.gmail.com>
-Subject: Re: [PATCH] tty/serial: fix config dependencies for samsung serial
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-serial@vger.kernel.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Pankaj Dubey <pankaj.dubey@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+To: Henrik Austad <henrik@austad.us>
+CC: Juri Lelli <juri.lelli@arm.com>, Peter Zijlstra <peterz@infradead.org>,
+        rdunlap <rdunlap@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Dario Faggioli <raistlin@linux.it>, Juri Lelli <juri.lelli@gmail.com>,
+        LKML doc <linux-doc@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 1/4] Documentation/scheduler/sched-deadline.txt: fix
+ terminology and improve clarity
+References: <1409220029-9002-1-git-send-email-juri.lelli@arm.com>	<1409220029-9002-2-git-send-email-juri.lelli@arm.com>	<20140902211019.GA22581@sisyphus.home.austad.us>	<5406B874.5040507@unitn.it> <CAM6o_m19T7OV=4_5rh_m1XSZKQmpKD0TaSSkiOxthNLz7uJ8Gw@mail.gmail.com>
+In-Reply-To: <CAM6o_m19T7OV=4_5rh_m1XSZKQmpKD0TaSSkiOxthNLz7uJ8Gw@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
-
-On 2 September 2014 21:16, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Tuesday 02 September 2014 20:52:00 Naveen Krishna Chatradhi wrote:
->> Make the config symbols SERIAL_SAMSUNG_UARTS_4 and
->> SERIAL_SAMSUNG_UARTS depend on SERIAL_SAMSUNG rather than
->> PLAT_SAMSUNG.
->
-> Please always describe why you are doing a change. This patch
-> seems really pointless.
-
-The SERIAL_SAMSUNG_UARTS_4 and SERIAL_SAMSUNG_UARTS config options are
-meaningful only if SERIAL_SAMSUNG is enabled. Hence the dependency
-rules were changed. I will repost this patch with better description.
-
->
->>  config SERIAL_SAMSUNG_UARTS_4
->>         bool
->> -       depends on PLAT_SAMSUNG
->> +       depends on SERIAL_SAMSUNG
->>         default y if !(CPU_S3C2410 || CPU_S3C2412 || CPU_S3C2440 || CPU_S3C2442)
->>         help
->>           Internal node for the common case of 4 Samsung compatible UARTs
->>
->>  config SERIAL_SAMSUNG_UARTS
->>         int
->> -       depends on PLAT_SAMSUNG
->> +       depends on SERIAL_SAMSUNG
->>         default 4 if SERIAL_SAMSUNG_UARTS_4 || CPU_S3C2416
->>         default 3
->>         help
+On 09/03/2014 09:45 AM, Henrik Austad wrote:
+[...]
+>>      Summing up, the CBS[2,3] algorithms assigns scheduling deadlines to
+>>>> tasks so
+>>>>     that each task runs for at most its runtime every period, avoiding any
+>>>>     interference between different tasks (bandwidth isolation), while the
+>>>> EDF[1]
+>>>> - algorithm selects the task with the smallest scheduling deadline as
+>>>> the one
+>>>> + algorithm selects the task with the closest scheduling deadline as the
+>>>> one
+>>>>     to be executed first.  Thanks to this feature, also tasks that do not
+>>>>
+>>>
+>>> s/first/next/
+>>>
+>>> Also, next sentence does not make much sense, I would drop the also;
+>>>
+>>> "Thanks to this feature, tasks that do not strictly comply with the ..."
+>>>
+>> I agree with these changes, but they are in text that is not changed by my
+>> patch, right?
+>> What should I do? Add these changes to the patch, or send an additional
+>> incremental
+>> patch with these changes?
 >>
 >
-> Have you checked that it still builds on all samsung platforms when
-> SERIAL_SAMSUNG is disabled? We have had build errors in this area
-> in the past.
+> Patch is about clarity, right? I'd just add it to this patch.
+Ok; I'll send an updated patch to Juri.
 
-Yes, it builds for other Samsung platforms.
 
->
->         Arnd
 
-Thanks.
+			Thanks,
+				Luca
 
--- 
-Shine bright,
-(: Nav :)
