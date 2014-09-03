@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756156AbaICTGz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 15:06:55 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:46330 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754995AbaICTGw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756111AbaICTGy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 15:06:54 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:35347 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754387AbaICTGw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 15:06:52 -0400
 From: Nishanth Menon <nm@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Lee Jones <lee.jones@linaro.org>,
         Samuel Ortiz <sameo@linux.intel.com>
 CC: <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH 1/2] Documentation: devicetree: mfd: twl4030-power: Use the standard 'ti,system-power-controller' to mark power control
-Date: Wed, 3 Sep 2014 14:06:47 -0500
-Message-ID: <1409771208-21867-2-git-send-email-nm@ti.com>
+Subject: [PATCH 2/2] mfd: twl4030-power: use 'ti,system-power-controller' as alternative way to support system power off
+Date: Wed, 3 Sep 2014 14:06:48 -0500
+Message-ID: <1409771208-21867-3-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1409771208-21867-1-git-send-email-nm@ti.com>
 References: <1409771208-21867-1-git-send-email-nm@ti.com>
@@ -35,27 +34,23 @@ switching off the system.
 
 Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- .../devicetree/bindings/mfd/twl4030-power.txt      |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/mfd/twl4030-power.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/mfd/twl4030-power.txt b/Documentation/devicetree/bindings/mfd/twl4030-power.txt
-index b9ee7b9..e1dff57 100644
---- a/Documentation/devicetree/bindings/mfd/twl4030-power.txt
-+++ b/Documentation/devicetree/bindings/mfd/twl4030-power.txt
-@@ -23,8 +23,11 @@ down during off-idle. Note that this does not work on all boards
- depending on how the external oscillator is wired.
+diff --git a/drivers/mfd/twl4030-power.c b/drivers/mfd/twl4030-power.c
+index 3bc969a..1c129ba 100644
+--- a/drivers/mfd/twl4030-power.c
++++ b/drivers/mfd/twl4030-power.c
+@@ -627,6 +627,9 @@ static bool twl4030_power_use_poweroff(const struct twl4030_power_data *pdata,
+ 	if (pdata && pdata->use_poweroff)
+ 		return true;
  
- Optional properties:
--- ti,use_poweroff: With this flag, the chip will initiates an ACTIVE-to-OFF or
--		   SLEEP-to-OFF transition when the system poweroffs.
++	if (of_property_read_bool(node, "ti,system-power-controller"))
++		return true;
 +
-+- ti,system-power-controller OR ti,use_poweroff: This indicates that
-+  TWL4030 is the power supply master of the system. With this flag, the
-+  chip will initiates an ACTIVE-to-OFF or SLEEP-to-OFF transition when
-+  the system poweroffs.
+ 	if (of_property_read_bool(node, "ti,use_poweroff"))
+ 		return true;
  
- Example:
- &i2c1 {
 -- 
 1.7.9.5
 
