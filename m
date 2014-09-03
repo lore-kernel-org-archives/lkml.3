@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256AbaICGVr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 02:21:47 -0400
-Received: from mga14.intel.com ([192.55.52.115]:50311 "EHLO mga14.intel.com"
+	id S1755420AbaICGYt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 02:24:49 -0400
+Received: from mga01.intel.com ([192.55.52.88]:41712 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755083AbaICGVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 02:21:45 -0400
+	id S1752873AbaICGYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 02:24:47 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,455,1406617200"; 
-   d="scan'208";a="585473761"
-Message-ID: <5406B365.5040604@linux.intel.com>
-Date: Wed, 03 Sep 2014 09:21:25 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+   d="scan'208";a="593756516"
+Date: Wed, 3 Sep 2014 14:26:34 +0800
+From: Zhuang Jin Can <jin.can.zhuang@intel.com>
+To: balbi@ti.com
+Cc: david.a.cohen@intel.com, jiebing.li@intel.com, hang.yuan@intel.com,
+        hao.wu@intel.com, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] usb: dwc3: gadget: Fix desc NULL pointer in
+ dwc3_gadget_ep_queue()
+Message-ID: <20140903062634.GA27870@intel.com>
+Reply-To: jin.can.zhuang@intel.com
 MIME-Version: 1.0
-To: Jason Wang <jasowang@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>
-CC: Ingo Molnar <mingo@kernel.org>, Mike Galbraith <umgwanakikbuti@gmail.com>,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mst@redhat.com,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Ingo Molnar jacob.e.keller@intel.com" <mingo@elte.hu>
-Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process
- is runnable
-References: <1408608310-13579-1-git-send-email-jasowang@redhat.com>	 <1408608310-13579-2-git-send-email-jasowang@redhat.com>	 <1408683665.5648.69.camel@marge.simpson.net>	 <20140822073653.GA7372@gmail.com> <53F70887.8030602@redhat.com> <1408716976.5604.18.camel@edumazet-glaptop2.roam.corp.google.com> <53FB3715.7070009@linux.intel.com> <53FC3466.8000304@redhat.com> <5404186E.4090409@linux.intel.com> <54053AF8.6070907@redhat.com> <54055D9F.7000108@linux.intel.com> <54056459.4060100@redhat.com>
-In-Reply-To: <54056459.4060100@redhat.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/09/2014 09:31, Jason Wang wrote:
-> On 09/02/2014 02:03 PM, Eliezer Tamir wrote:
->> On 02/09/2014 06:35, Jason Wang wrote:
->>> Not sure whether this method will scale considering thousands of sockets
->>> and processes.
->> There may be millions of sockets, but in most cases only a handful of
->> device queues per CPU to busy poll on. I have tested the epoll rfc
->> code with hundreds of thousands of sockets and one or two device
->> queues and is scales pretty well.
->>
->> The part I don't like in that code is the cumbersome mechanism I used
->> to track the socket -> queue relationship. I think that if I had more
->> time to work on it, I would instead look into extending the epoll
->> interface so that libevent can tell the kernel what it wants, instead
->> of having the busypoll code try and learn it.
-> 
-> I'd like to have a look at this rfc. Could you please give me a pointer?
-> I've done a quick search on kernel mailing list but didn't find it.
+dep->endpoint.desc is checked at the beginning of
+dwc3_gadget_ep_queue(), but after that it may be set to NULL
+by another thread and then accessed again in dwc3_gadget_ep_queue().
+This will lead to kernel oops.
 
-https://lkml.org/lkml/2013/8/21/192
+Expand spinlock protection area to aviod race condition.
 
-Cheers,
-Eliezer
+Signed-off-by: Zhuang Jin Can <jin.can.zhuang@intel.com>
+Signed-off-by: Jiebing Li <jiebing.li@intel.com>
+---
+ drivers/usb/dwc3/gadget.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
+index 349cacc..e8fb231 100644
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -1225,16 +1225,17 @@ static int dwc3_gadget_ep_queue(struct usb_ep *ep, struct usb_request *request,
+ 
+ 	int				ret;
+ 
++	spin_lock_irqsave(&dwc->lock, flags);
+ 	if (!dep->endpoint.desc) {
+ 		dev_dbg(dwc->dev, "trying to queue request %p to disabled %s\n",
+ 				request, ep->name);
++		spin_unlock_irqrestore(&dwc->lock, flags);
+ 		return -ESHUTDOWN;
+ 	}
+ 
+ 	dev_vdbg(dwc->dev, "queing request %p to %s length %d\n",
+ 			request, ep->name, request->length);
+ 
+-	spin_lock_irqsave(&dwc->lock, flags);
+ 	ret = __dwc3_gadget_ep_queue(dep, req);
+ 	spin_unlock_irqrestore(&dwc->lock, flags);
+ 
+-- 
+1.7.9.5
+
