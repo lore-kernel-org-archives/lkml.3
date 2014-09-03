@@ -1,96 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756232AbaICJ4e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 05:56:34 -0400
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:57369 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755904AbaICJ4b (ORCPT
+	id S932337AbaICKHI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 06:07:08 -0400
+Received: from www.linutronix.de ([62.245.132.108]:42961 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932601AbaICKHE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 05:56:31 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jiang Liu <jiang.liu@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 06/56] USB: core: hcd-pci: free IRQ before disabling PCI device when shutting down
-Date: Wed,  3 Sep 2014 11:26:25 +0200
-Message-Id: <e5063845457f8a8c7fdb49bb9338a3af1a362714.1409735865.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <b4839e6cd4a236a81725e422b2e05c26fe36048a.1409735865.git.jslaby@suse.cz>
-References: <b4839e6cd4a236a81725e422b2e05c26fe36048a.1409735865.git.jslaby@suse.cz>
-In-Reply-To: <cover.1409735865.git.jslaby@suse.cz>
-References: <cover.1409735865.git.jslaby@suse.cz>
+	Wed, 3 Sep 2014 06:07:04 -0400
+Date: Wed, 3 Sep 2014 12:06:56 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+cc: Russell King <linux@arm.linux.org.uk>, linaro-kernel@lists.linaro.org,
+        Catalin Marinas <catalin.marinas@arm.com>, patches@linaro.org,
+        kgdb-bugreport@lists.sourceforge.net, Nicolas Pitre <nico@linaro.org>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Fabio Estevam <festevam@gmail.com>, Colin Cross <ccross@android.com>,
+        kernel-team@android.com, Dave Martin <Dave.Martin@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v11 00/19] arm: KGDB NMI/FIQ support
+In-Reply-To: <5406D91A.9090209@linaro.org>
+Message-ID: <alpine.DEB.2.10.1409031140350.3333@nanos>
+References: <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org> <1409662853-29313-1-git-send-email-daniel.thompson@linaro.org> <alpine.DEB.2.10.1409030032010.3333@nanos> <5406D91A.9090209@linaro.org>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiang Liu <jiang.liu@linux.intel.com>
+On Wed, 3 Sep 2014, Daniel Thompson wrote:
+> On 03/09/14 00:02, Thomas Gleixner wrote:
+> > The use case you are looking for is the most irrelevant of all. Just
+> > because KGDB is on some managerial "must have items" checklist does
+> > not make it useful.
+> 
+> The FIQ based interactive debugger use case is fairly common on Android,
+> especially for Nexus devices (they have an out-of-tree debugger similar
+> to kdb for this).
+> 
+> I think it finds favour there because during the development phases
+> where the console is unplugged to allow developers to go walkabout live
+> with a prototype phone. The interactive debugger is used for
+> post-morteming when something breaks. At this stage of development are
+> reluctant to expose/consume hardware resources (JTAG pins, RAM, FLASH)
+> for JTAG or kexec/kdump post-mortems.
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+If things are common and favoured for whatever reasons, that does not
+make them a proper solution per se.
 
-===============
+I rather have a kexec debug kernel started if my production/test
+kernel explodes than hooking up a lousy debugger via serial, but thats
+a matter of taste and reason.
 
-commit c5946f9d286ad368329c79107fdf4d825d2091bd upstream.
+> > The only relevant use cases of FIQs are the same as those of NMIs on
+> > x86:
+> > 
+> >   - Watchdog to detect stuck cpus and issue stack traces
+> 
+> Russell put together a quick 'n dirty version of the NMI stack trace
+> code based on a subset of my patchset. Based on his feedback, later
+> revisions of my patchset are structured to simplify adding this code.
 
-The assigned IRQ should be freed before calling pci_disable_device()
-when shutting down system, otherwise it will cause following warning.
-[  568.879482] ------------[ cut here ]------------
-[  568.884236] WARNING: CPU: 1 PID: 3300 at /home/konrad/ssd/konrad/xtt-i386/bootstrap/linux-usb/fs/proc/generic.c:521 remove_proc_entry+0x165/0x170()
-[  568.897846] remove_proc_entry: removing non-empty directory 'irq/16', leaking at least 'ohci_hcd:usb4'
-[  568.907430] Modules linked in: dm_multipath dm_mod iscsi_boot_sysfs iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi libcrc32c crc32c_generic sg sd_mod crct10dif_generic crc_t10dif crct10dif_common radeon fbcon tileblit ttm font bitblit softcursor ata_generic ahci libahci drm_kms_helper skge r8169 libata mii scsi_mod wmi acpi_cpufreq
-[  568.938539] CPU: 1 PID: 3300 Comm: init Tainted: G        W     3.16.0-rc5upstream-01651-g03b9189 #1
-[  568.947946] Hardware name: ECS A780GM-A Ultra/A780GM-A Ultra, BIOS 080015  04/01/2010
-[  568.956008]  00000209 ed0f1cd0 c1617946 c175403c ed0f1d00 c1090c3f c1754084 ed0f1d2c
-[  568.964068]  00000ce4 c175403c 00000209 c11f22a5 c11f22a5 f755e8c0 ed0f1d78 f755e90d
-[  568.972128]  ed0f1d18 c1090cde 00000009 ed0f1d10 c1754084 ed0f1d2c ed0f1d60 c11f22a5
-[  568.980194] Call Trace:
-[  568.982715]  [<c1617946>] dump_stack+0x48/0x60
-[  568.987294]  [<c1090c3f>] warn_slowpath_common+0x7f/0xa0
-[  569.003887]  [<c1090cde>] warn_slowpath_fmt+0x2e/0x30
-[  569.009092]  [<c11f22a5>] remove_proc_entry+0x165/0x170
-[  569.014476]  [<c10da6ca>] unregister_irq_proc+0xaa/0xc0
-[  569.019858]  [<c10d582f>] free_desc+0x1f/0x60
-[  569.024346]  [<c10d58aa>] irq_free_descs+0x3a/0x80
-[  569.029283]  [<c10d9e9d>] irq_dispose_mapping+0x2d/0x50
-[  569.034666]  [<c1078fd3>] mp_unmap_irq+0x73/0xa0
-[  569.039423]  [<c107196b>] acpi_unregister_gsi_ioapic+0x2b/0x40
-[  569.045431]  [<c107180f>] acpi_unregister_gsi+0xf/0x20
-[  569.050725]  [<c1339cad>] acpi_pci_irq_disable+0x4b/0x50
-[  569.056196]  [<c14daa38>] pcibios_disable_device+0x18/0x20
-[  569.061848]  [<c130123d>] do_pci_disable_device+0x4d/0x60
-[  569.067410]  [<c13012b7>] pci_disable_device+0x47/0xb0
-[  569.077814]  [<c14800b1>] usb_hcd_pci_shutdown+0x31/0x40
-[  569.083285]  [<c1304b19>] pci_device_shutdown+0x19/0x50
-[  569.088667]  [<c13fda64>] device_shutdown+0x14/0x120
-[  569.093777]  [<c10ac29d>] kernel_restart_prepare+0x2d/0x30
-[  569.099429]  [<c10ac41e>] kernel_restart+0xe/0x60
-[  569.109028]  [<c10ac611>] SYSC_reboot+0x191/0x220
-[  569.159269]  [<c10ac6ba>] SyS_reboot+0x1a/0x20
-[  569.163843]  [<c161c718>] sysenter_do_call+0x12/0x16
-[  569.168951] ---[ end trace ccc1ec4471c289c9 ]---
+And I still say, that this is the first use case which should be
+provided as it is simple enough, immediately usefull and testable for
+everyone.
 
-Tested-by: Aaron Lu <aaron.lu@intel.com>
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Reviewed-by: Huang Rui <ray.huang@amd.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/usb/core/hcd-pci.c | 2 ++
- 1 file changed, 2 insertions(+)
+So, really what I want to see in the first place is a minimalistic
+patch series which
 
-diff --git a/drivers/usb/core/hcd-pci.c b/drivers/usb/core/hcd-pci.c
-index 3f7ef6129874..5e1a1790c2f6 100644
---- a/drivers/usb/core/hcd-pci.c
-+++ b/drivers/usb/core/hcd-pci.c
-@@ -377,6 +377,8 @@ void usb_hcd_pci_shutdown(struct pci_dev *dev)
- 	if (test_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags) &&
- 			hcd->driver->shutdown) {
- 		hcd->driver->shutdown(hcd);
-+		if (usb_hcd_is_primary_hcd(hcd) && hcd->irq > 0)
-+			free_irq(hcd->irq, hcd);
- 		pci_disable_device(dev);
- 	}
- }
--- 
-2.1.0
+ 1) Implements the core infrastructure for FIQ support
 
+ 2) Converts a single interrupt controller to play with #1
+
+ 3) Provides the simplest useful use case using #1
+
+That's at max 5 patches, which are easy enough to review, and not a
+patch series which changes the world and some more in one go.
+
+We need to get the design and the infrastructure right in the first
+place. What I've seen so far is just a complete lack of design. If you
+take off your KGDB blinkers, you might notice that yourself.
+
+As I said before:
+
+> > KGDB falls into place once you solved the above.
+
+Thanks,
+
+	tglx
