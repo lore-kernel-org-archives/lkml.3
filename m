@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964926AbaICXcK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:32:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45554 "EHLO
+	id S964936AbaICXcu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:32:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45549 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933532AbaICWIg (ORCPT
+	with ESMTP id S933092AbaICWIg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:08:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [PATCH 3.14 25/88] drm: omapdrm: fix compiler errors
-Date: Wed,  3 Sep 2014 15:04:59 -0700
-Message-Id: <20140903220516.703966888@linuxfoundation.org>
+        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.14 16/88] ALSA: usb-audio: fix BOSS ME-25 MIDI regression
+Date: Wed,  3 Sep 2014 15:04:50 -0700
+Message-Id: <20140903220516.444650042@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -29,115 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit 2d31ca3ad7d5d44c8adc7f253c96ce33f3a2e931 upstream.
+commit 53da5ebfef66ea6e478ad9c6add3781472b79475 upstream.
 
-Regular randconfig nightly testing has detected problems with omapdrm.
+The BOSS ME-25 turns out not to have any useful descriptors in its MIDI
+interface, so its needs a quirk entry after all.
 
-omapdrm fails to build when the kernel is built to support 64-bit DMA
-addresses and/or 64-bit physical addresses due to an assumption about
-the width of these types.
-
-Use %pad to print DMA addresses, rather than %x or %Zx (which is even
-more wrong than %x).  Avoid passing a uint32_t pointer into a function
-which expects dma_addr_t pointer.
-
-drivers/gpu/drm/omapdrm/omap_plane.c: In function 'omap_plane_pre_apply':
-drivers/gpu/drm/omapdrm/omap_plane.c:145:2: error: format '%x' expects argument of type 'unsigned int', but argument 5 has type 'dma_addr_t' [-Werror=format]
-drivers/gpu/drm/omapdrm/omap_plane.c:145:2: error: format '%x' expects argument of type 'unsigned int', but argument 6 has type 'dma_addr_t' [-Werror=format]
-make[5]: *** [drivers/gpu/drm/omapdrm/omap_plane.o] Error 1
-drivers/gpu/drm/omapdrm/omap_gem.c: In function 'omap_gem_get_paddr':
-drivers/gpu/drm/omapdrm/omap_gem.c:794:4: error: format '%x' expects argument of type 'unsigned int', but argument 3 has type 'dma_addr_t' [-Werror=format]
-drivers/gpu/drm/omapdrm/omap_gem.c: In function 'omap_gem_describe':
-drivers/gpu/drm/omapdrm/omap_gem.c:991:4: error: format '%Zx' expects argument of type 'size_t', but argument 7 has type 'dma_addr_t' [-Werror=format]
-drivers/gpu/drm/omapdrm/omap_gem.c: In function 'omap_gem_init':
-drivers/gpu/drm/omapdrm/omap_gem.c:1470:4: error: format '%x' expects argument of type 'unsigned int', but argument 7 has type 'dma_addr_t' [-Werror=format]
-make[5]: *** [drivers/gpu/drm/omapdrm/omap_gem.o] Error 1
-drivers/gpu/drm/omapdrm/omap_dmm_tiler.c: In function 'dmm_txn_append':
-drivers/gpu/drm/omapdrm/omap_dmm_tiler.c:226:2: error: passing argument 3 of 'alloc_dma' from incompatible pointer type [-Werror]
-make[5]: *** [drivers/gpu/drm/omapdrm/omap_dmm_tiler.o] Error 1
-make[5]: Target `__build' not remade because of errors.
-make[4]: *** [drivers/gpu/drm/omapdrm] Error 2
-
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Reported-and-tested-by: Kees van Veen <kees.vanveen@gmail.com>
+Fixes: 8e5ced83dd1c ("ALSA: usb-audio: remove superfluous Roland quirks")
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/omapdrm/omap_dmm_tiler.c |    6 ++++--
- drivers/gpu/drm/omapdrm/omap_gem.c       |   10 +++++-----
- drivers/gpu/drm/omapdrm/omap_plane.c     |    4 ++--
- 3 files changed, 11 insertions(+), 9 deletions(-)
+ sound/usb/quirks-table.h |   29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
 
---- a/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c
-+++ b/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c
-@@ -199,7 +199,7 @@ static struct dmm_txn *dmm_txn_init(stru
- static void dmm_txn_append(struct dmm_txn *txn, struct pat_area *area,
- 		struct page **pages, uint32_t npages, uint32_t roll)
- {
--	dma_addr_t pat_pa = 0;
-+	dma_addr_t pat_pa = 0, data_pa = 0;
- 	uint32_t *data;
- 	struct pat *pat;
- 	struct refill_engine *engine = txn->engine_handle;
-@@ -223,7 +223,9 @@ static void dmm_txn_append(struct dmm_tx
- 			.lut_id = engine->tcm->lut_id,
- 		};
- 
--	data = alloc_dma(txn, 4*i, &pat->data_pa);
-+	data = alloc_dma(txn, 4*i, &data_pa);
-+	/* FIXME: what if data_pa is more than 32-bit ? */
-+	pat->data_pa = data_pa;
- 
- 	while (i--) {
- 		int n = i + roll;
---- a/drivers/gpu/drm/omapdrm/omap_gem.c
-+++ b/drivers/gpu/drm/omapdrm/omap_gem.c
-@@ -791,7 +791,7 @@ int omap_gem_get_paddr(struct drm_gem_ob
- 			omap_obj->paddr = tiler_ssptr(block);
- 			omap_obj->block = block;
- 
--			DBG("got paddr: %08x", omap_obj->paddr);
-+			DBG("got paddr: %pad", &omap_obj->paddr);
- 		}
- 
- 		omap_obj->paddr_cnt++;
-@@ -988,9 +988,9 @@ void omap_gem_describe(struct drm_gem_ob
- 
- 	off = drm_vma_node_start(&obj->vma_node);
- 
--	seq_printf(m, "%08x: %2d (%2d) %08llx %08Zx (%2d) %p %4d",
-+	seq_printf(m, "%08x: %2d (%2d) %08llx %pad (%2d) %p %4d",
- 			omap_obj->flags, obj->name, obj->refcount.refcount.counter,
--			off, omap_obj->paddr, omap_obj->paddr_cnt,
-+			off, &omap_obj->paddr, omap_obj->paddr_cnt,
- 			omap_obj->vaddr, omap_obj->roll);
- 
- 	if (omap_obj->flags & OMAP_BO_TILED) {
-@@ -1468,8 +1468,8 @@ void omap_gem_init(struct drm_device *de
- 			entry->paddr = tiler_ssptr(block);
- 			entry->block = block;
- 
--			DBG("%d:%d: %dx%d: paddr=%08x stride=%d", i, j, w, h,
--					entry->paddr,
-+			DBG("%d:%d: %dx%d: paddr=%pad stride=%d", i, j, w, h,
-+					&entry->paddr,
- 					usergart[i].stride_pfn << PAGE_SHIFT);
- 		}
+--- a/sound/usb/quirks-table.h
++++ b/sound/usb/quirks-table.h
+@@ -1581,6 +1581,35 @@ YAMAHA_DEVICE(0x7010, "UB99"),
  	}
---- a/drivers/gpu/drm/omapdrm/omap_plane.c
-+++ b/drivers/gpu/drm/omapdrm/omap_plane.c
-@@ -142,8 +142,8 @@ static void omap_plane_pre_apply(struct
- 	DBG("%dx%d -> %dx%d (%d)", info->width, info->height,
- 			info->out_width, info->out_height,
- 			info->screen_width);
--	DBG("%d,%d %08x %08x", info->pos_x, info->pos_y,
--			info->paddr, info->p_uv_addr);
-+	DBG("%d,%d %pad %pad", info->pos_x, info->pos_y,
-+			&info->paddr, &info->p_uv_addr);
- 
- 	/* TODO: */
- 	ilace = false;
+ },
+ {
++	/* BOSS ME-25 */
++	USB_DEVICE(0x0582, 0x0113),
++	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
++		.ifnum = QUIRK_ANY_INTERFACE,
++		.type = QUIRK_COMPOSITE,
++		.data = (const struct snd_usb_audio_quirk[]) {
++			{
++				.ifnum = 0,
++				.type = QUIRK_AUDIO_STANDARD_INTERFACE
++			},
++			{
++				.ifnum = 1,
++				.type = QUIRK_AUDIO_STANDARD_INTERFACE
++			},
++			{
++				.ifnum = 2,
++				.type = QUIRK_MIDI_FIXED_ENDPOINT,
++				.data = & (const struct snd_usb_midi_endpoint_info) {
++					.out_cables = 0x0001,
++					.in_cables  = 0x0001
++				}
++			},
++			{
++				.ifnum = -1
++			}
++		}
++	}
++},
++{
+ 	/* only 44.1 kHz works at the moment */
+ 	USB_DEVICE(0x0582, 0x0120),
+ 	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
 
 
