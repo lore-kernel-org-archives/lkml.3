@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757250AbaICWQI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:16:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45858 "EHLO
+	id S1757289AbaICWRI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:17:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45848 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757196AbaICWQB (ORCPT
+	with ESMTP id S1757245AbaICWQI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:16:01 -0400
+	Wed, 3 Sep 2014 18:16:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Patrick Riphagen <patrick.riphagen@xsens.com>,
-        Frans Klaver <frans.klaver@xsens.com>, Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.16 012/125] USB: serial: ftdi_sio: Annotate the current Xsens PID assignments
-Date: Wed,  3 Sep 2014 15:06:09 -0700
-Message-Id: <20140903220624.036050573@linuxfoundation.org>
+        Ben Hawkes <hawkes@google.com>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.16 003/125] HID: logitech: fix bounds checking on LED report size
+Date: Wed,  3 Sep 2014 15:06:00 -0700
+Message-Id: <20140903220623.753016873@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -29,41 +30,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Patrick Riphagen <patrick.riphagen@xsens.com>
+From: Jiri Kosina <jkosina@suse.cz>
 
-commit 9273b8a270878906540349422ab24558b9d65716 upstream.
+commit 51217e69697fba92a06e07e16f55c9a52d8e8945 upstream.
 
-The converters are used in specific products. It can be useful to know
-which they are exactly.
+The check on report size for REPORT_TYPE_LEDS in logi_dj_ll_raw_request()
+is wrong; the current check doesn't make any sense -- the report allocated
+by HID core in hid_hw_raw_request() can be much larger than
+DJREPORT_SHORT_LENGTH, and currently logi_dj_ll_raw_request() doesn't
+handle this properly at all.
 
-Signed-off-by: Patrick Riphagen <patrick.riphagen@xsens.com>
-Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
-Cc: Johan Hovold <johan@kernel.org>
+Fix the check by actually trimming down the report size properly if it is
+too large.
+
+Reported-by: Ben Hawkes <hawkes@google.com>
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio_ids.h |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/hid/hid-logitech-dj.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -140,12 +140,12 @@
- /*
-  * Xsens Technologies BV products (http://www.xsens.com).
-  */
--#define XSENS_CONVERTER_0_PID	0xD388
--#define XSENS_CONVERTER_1_PID	0xD389
-+#define XSENS_CONVERTER_0_PID	0xD388	/* Xsens USB converter */
-+#define XSENS_CONVERTER_1_PID	0xD389	/* Xsens Wireless Receiver */
- #define XSENS_CONVERTER_2_PID	0xD38A
--#define XSENS_CONVERTER_3_PID	0xD38B
--#define XSENS_CONVERTER_4_PID	0xD38C
--#define XSENS_CONVERTER_5_PID	0xD38D
-+#define XSENS_CONVERTER_3_PID	0xD38B	/* Xsens USB-serial converter */
-+#define XSENS_CONVERTER_4_PID	0xD38C	/* Xsens Wireless Receiver */
-+#define XSENS_CONVERTER_5_PID	0xD38D	/* Xsens Awinda Station */
- #define XSENS_CONVERTER_6_PID	0xD38E
- #define XSENS_CONVERTER_7_PID	0xD38F
+--- a/drivers/hid/hid-logitech-dj.c
++++ b/drivers/hid/hid-logitech-dj.c
+@@ -557,7 +557,7 @@ static int logi_dj_ll_raw_request(struct
+ 	if (!out_buf)
+ 		return -ENOMEM;
  
+-	if (count < DJREPORT_SHORT_LENGTH - 2)
++	if (count > DJREPORT_SHORT_LENGTH - 2)
+ 		count = DJREPORT_SHORT_LENGTH - 2;
+ 
+ 	out_buf[0] = REPORT_ID_DJ_SHORT;
 
 
