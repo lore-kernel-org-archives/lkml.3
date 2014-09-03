@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935800AbaICXW6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:22:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45858 "EHLO
+	id S1757181AbaICWP7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:15:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45824 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757124AbaICWQA (ORCPT
+	with ESMTP id S1757142AbaICWP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:16:00 -0400
+	Wed, 3 Sep 2014 18:15:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arindam Nath <arindam.nath@amd.com>,
-        Shriraj-Rai P <shriraj-rai.p@amd.com>, Huang Rui <ray.huang@amd.com>,
+        Hans de Goede <hdegoede@redhat.com>,
         Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [PATCH 3.14 75/88] usb: xhci: amd chipset also needs short TX quirk
-Date: Wed,  3 Sep 2014 15:05:49 -0700
-Message-Id: <20140903220518.196869844@linuxfoundation.org>
+Subject: [PATCH 3.14 74/88] xhci: Treat not finding the event_seg on COMP_STOP the same as COMP_STOP_INVAL
+Date: Wed,  3 Sep 2014 15:05:48 -0700
+Message-Id: <20140903220518.168241352@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -30,48 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Huang Rui <ray.huang@amd.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 2597fe99bb0259387111d0431691f5daac84f5a5 upstream.
+commit 9a54886342e227433aebc9d374f8ae268a836475 upstream.
 
-AMD xHC also needs short tx quirk after tested on most of chipset
-generations. That's because there is the same incorrect behavior like
-Fresco Logic host. Please see below message with on USB webcam
-attached on xHC host:
+When using a Renesas uPD720231 chipset usb-3 uas to sata bridge with a 120G
+Crucial M500 ssd, model string: Crucial_ CT120M500SSD1, together with a
+the integrated Intel xhci controller on a Haswell laptop:
 
-[  139.262944] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
-[  139.266934] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
-[  139.270913] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
-[  139.274937] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
-[  139.278914] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
-[  139.282936] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
-[  139.286915] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
-[  139.290938] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
-[  139.294913] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
-[  139.298917] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
+00:14.0 USB controller [0c03]: Intel Corporation 8 Series USB xHCI HC [8086:9c31] (rev 04)
 
-Reported-by: Arindam Nath <arindam.nath@amd.com>
-Tested-by: Shriraj-Rai P <shriraj-rai.p@amd.com>
-Signed-off-by: Huang Rui <ray.huang@amd.com>
+The following error gets logged to dmesg:
+
+xhci error: Transfer event TRB DMA ptr not part of current TD
+
+Treating COMP_STOP the same as COMP_STOP_INVAL when no event_seg gets found
+fixes this.
+
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
 Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-pci.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/host/xhci-ring.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -101,6 +101,10 @@ static void xhci_pci_quirks(struct devic
- 	/* AMD PLL quirk */
- 	if (pdev->vendor == PCI_VENDOR_ID_AMD && usb_amd_find_chipset_info())
- 		xhci->quirks |= XHCI_AMD_PLL_FIX;
-+
-+	if (pdev->vendor == PCI_VENDOR_ID_AMD)
-+		xhci->quirks |= XHCI_TRUST_TX_LENGTH;
-+
- 	if (pdev->vendor == PCI_VENDOR_ID_INTEL) {
- 		xhci->quirks |= XHCI_LPM_SUPPORT;
- 		xhci->quirks |= XHCI_INTEL_HOST;
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -2612,7 +2612,8 @@ static int handle_tx_event(struct xhci_h
+ 		 * last TRB of the previous TD. The command completion handle
+ 		 * will take care the rest.
+ 		 */
+-		if (!event_seg && trb_comp_code == COMP_STOP_INVAL) {
++		if (!event_seg && (trb_comp_code == COMP_STOP ||
++				   trb_comp_code == COMP_STOP_INVAL)) {
+ 			ret = 0;
+ 			goto cleanup;
+ 		}
 
 
