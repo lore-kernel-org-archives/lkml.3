@@ -1,89 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933708AbaICWSj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:18:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46026 "EHLO
+	id S934921AbaICXLE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:11:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47054 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933487AbaICWSd (ORCPT
+	with ESMTP id S933716AbaICXKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:18:33 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hawkes <hawkes@google.com>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.16 004/125] HID: logitech: perform bounds checking on device_id early enough
-Date: Wed,  3 Sep 2014 15:06:01 -0700
-Message-Id: <20140903220623.789579208@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
-References: <20140903220623.649748296@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Wed, 3 Sep 2014 19:10:02 -0400
+Date: Wed, 3 Sep 2014 16:10:00 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Junxiao Bi <junxiao.bi@oracle.com>
+Cc: david@fromorbit.com, xuejiufei@huawei.com, ming.lei@canonical.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] mm: clear __GFP_FS when PF_MEMALLOC_NOIO is set
+Message-Id: <20140903161000.f383fa4c1a4086de054cb6a0@linux-foundation.org>
+In-Reply-To: <1409723694-16047-1-git-send-email-junxiao.bi@oracle.com>
+References: <1409723694-16047-1-git-send-email-junxiao.bi@oracle.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+On Wed,  3 Sep 2014 13:54:54 +0800 Junxiao Bi <junxiao.bi@oracle.com> wrote:
 
-------------------
+> commit 21caf2fc1931 ("mm: teach mm by current context info to not do I/O during memory allocation")
+> introduces PF_MEMALLOC_NOIO flag to avoid doing I/O inside memory allocation, __GFP_IO is cleared
+> when this flag is set, but __GFP_FS implies __GFP_IO, it should also be cleared. Or it may still
+> run into I/O, like in superblock shrinker.
 
-From: Jiri Kosina <jkosina@suse.cz>
+Is there an actual bug which inspired this fix?  If so, please describe
+it.
 
-commit ad3e14d7c5268c2e24477c6ef54bbdf88add5d36 upstream.
+I don't think it's accurate to say that __GFP_FS implies __GFP_IO. 
+Where did that info come from?
 
-device_index is a char type and the size of paired_dj_deivces is 7
-elements, therefore proper bounds checking has to be applied to
-device_index before it is used.
+And the superblock shrinker is a good example of why this shouldn't be
+the case.  The main thing that code does is to reclaim clean fs objects
+without performing IO.  AFAICT the proposed patch will significantly
+weaken PF_MEMALLOC_NOIO allocation attempts by needlessly preventing
+the kernel from reclaiming such objects?
 
-We are currently performing the bounds checking in
-logi_dj_recv_add_djhid_device(), which is too late, as malicious device
-could send REPORT_TYPE_NOTIF_DEVICE_UNPAIRED early enough and trigger the
-problem in one of the report forwarding functions called from
-logi_dj_raw_event().
-
-Fix this by performing the check at the earliest possible ocasion in
-logi_dj_raw_event().
-
-Reported-by: Ben Hawkes <hawkes@google.com>
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/hid/hid-logitech-dj.c |   13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
-
---- a/drivers/hid/hid-logitech-dj.c
-+++ b/drivers/hid/hid-logitech-dj.c
-@@ -238,13 +238,6 @@ static void logi_dj_recv_add_djhid_devic
- 		return;
- 	}
- 
--	if ((dj_report->device_index < DJ_DEVICE_INDEX_MIN) ||
--	    (dj_report->device_index > DJ_DEVICE_INDEX_MAX)) {
--		dev_err(&djrcv_hdev->dev, "%s: invalid device index:%d\n",
--			__func__, dj_report->device_index);
--		return;
--	}
--
- 	if (djrcv_dev->paired_dj_devices[dj_report->device_index]) {
- 		/* The device is already known. No need to reallocate it. */
- 		dbg_hid("%s: device is already known\n", __func__);
-@@ -690,6 +683,12 @@ static int logi_dj_raw_event(struct hid_
- 	 * device (via hid_input_report() ) and return 1 so hid-core does not do
- 	 * anything else with it.
- 	 */
-+	if ((dj_report->device_index < DJ_DEVICE_INDEX_MIN) ||
-+	    (dj_report->device_index > DJ_DEVICE_INDEX_MAX)) {
-+		dev_err(&hdev->dev, "%s: invalid device index:%d\n",
-+				__func__, dj_report->device_index);
-+		return false;
-+	}
- 
- 	spin_lock_irqsave(&djrcv_dev->lock, flags);
- 	if (dj_report->report_id == REPORT_ID_DJ_SHORT) {
-
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1936,11 +1936,13 @@ extern void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut,
+>  #define tsk_used_math(p) ((p)->flags & PF_USED_MATH)
+>  #define used_math() tsk_used_math(current)
+>  
+> -/* __GFP_IO isn't allowed if PF_MEMALLOC_NOIO is set in current->flags */
+> +/* __GFP_IO isn't allowed if PF_MEMALLOC_NOIO is set in current->flags
+> + * __GFP_FS is also cleared as it implies __GFP_IO.
+> + */
+>  static inline gfp_t memalloc_noio_flags(gfp_t flags)
+>  {
+>  	if (unlikely(current->flags & PF_MEMALLOC_NOIO))
+> -		flags &= ~__GFP_IO;
+> +		flags &= ~(__GFP_IO | __GFP_FS);
+>  	return flags;
+>  }
 
