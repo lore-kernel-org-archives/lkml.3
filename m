@@ -1,65 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756243AbaICVIZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 17:08:25 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:52399 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755957AbaICVIX (ORCPT
+	id S1756528AbaICVLk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 17:11:40 -0400
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:60747 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756488AbaICVLh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 17:08:23 -0400
-Date: Wed, 3 Sep 2014 14:08:12 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: stable@vger.kernel.org, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.12 00/56] 3.12.28-stable review
-Message-ID: <20140903210812.GA22289@roeck-us.net>
-References: <cover.1409735865.git.jslaby@suse.cz>
- <5407170F.2070701@roeck-us.net>
- <54076CB2.6040004@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54076CB2.6040004@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 3 Sep 2014 17:11:37 -0400
+Message-ID: <1409778695.5546.55.camel@x220>
+Subject: Re: [PATCH v2 4/4] kconfig: link CONFIG_CROSS_COMPILE with
+ environment variable
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Date: Wed, 03 Sep 2014 23:11:35 +0200
+In-Reply-To: <20140901071639.28909.88888.stgit@zurg>
+References: <20140901065916.28909.35097.stgit@zurg>
+	 <20140901071639.28909.88888.stgit@zurg>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 03 Sep 2014 21:11:35.0054 (UTC) FILETIME=[A48CDAE0:01CFC7BB]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 03, 2014 at 09:32:02PM +0200, Jiri Slaby wrote:
-> On 09/03/2014, 03:26 PM, Guenter Roeck wrote:
-> > On 09/03/2014 02:26 AM, Jiri Slaby wrote:
-> >> This is the start of the stable review cycle for the 3.12.28 release.
-> >> There are 56 patches in this series, all will be posted as a response
-> >> to this one.  If anyone has any issues with these being applied, please
-> >> let me know.
-> >>
-> >> Responses should be made by Fri Sep  5 11:17:45 CEST 2014.
-> >> Anything received after that time might be too late.
-> >>
-> > 
-> > Jiri,
-> > 
-> > I get a large number of build failures.
-> ...
-> > In file included from drivers/usb/host/ohci-hcd.c:85:0:
-> > drivers/usb/host/ohci-dbg.c:411:20: error: conflicting types for
-> > 'ohci_dump'
-> > drivers/usb/host/ohci-hcd.c:81:13: note: previous declaration of
-> > 'ohci_dump' was here
-> > drivers/usb/host/ohci-hcd.c: In function 'ohci_run':
-> > drivers/usb/host/ohci-hcd.c:757:2: error: too few arguments to function
-> > 'ohci_dump'
+Hi Konstantin,
+
+On Mon, 2014-09-01 at 11:16 +0400, Konstantin Khlebnikov wrote:
+> Cross-compiler tool prefix can be set in command line, in the environment
+> variable CROSS_COMPILE or in config file, in option CONFIG_COROSS_COMPILE.
+> Also some arch/*/Makefile provides default value.
 > 
-> Oh, !USB_DEBUG. It should be fixed, could you retry?
+> This patch links config option CONFIG_CROSS_COMPILE and variable CROSS_COMPILE
+> in both directions: environment/command line has higher priority and updates
+> value saved in the config file, config option acts as default value for it.
 > 
-Much better.
+> This is especially useful together with option O=dir which allows to create
+> separate directory for each target architecture and kernel flavor:
+> 
+> # make O=build/arm ARCH=arm CROSS_COMPILE=arm-none-eabi- defconfig
+> # make -C build/arm
+> 
+> Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
 
-Build results:
-	total: 135 pass: 135 fail: 0
+I have only had a quick glance at this series. Just a quick question to
+help me understand where it is going.
 
-Qemu tests all passed.
+Would this patch mean that, if a (def)config file has both ARCH and
+CROSS_COMPILE set, one could use that (def)config file and invoke "make
+$whatever_target" and expect it to do the right thing (provided a
+suitable cross compiler is installed)?
 
-Details are available at http://server.roeck-us.net:8010/builders.
+This implies cross compiler prefixes are standardized across
+distributions, I guess. Maybe they're not.
 
-Guenter
+> ---
+>  Makefile     |    6 +++++-
+>  init/Kconfig |    1 +
+>  2 files changed, 6 insertions(+), 1 deletion(-)
+> 
+> diff --git a/Makefile b/Makefile
+> index f648405..1044f40 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -263,7 +263,11 @@ endif
+>  # "make" in the configured kernel build directory always uses that.
+>  # Default value for CROSS_COMPILE is not to prefix executables
+>  # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
+> -CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
+> +ifndef CROSS_COMPILE
+> +	CROSS_COMPILE := $(shell $(srctree)/scripts/config \
+> +				--file $(KBUILD_OUTPUT)$(KCONFIG_CONFIG) \
+> +				--if-undef "" --state "CROSS_COMPILE")
+> +endif
+>  
+>  # Architecture as present in compile.h
+>  UTS_MACHINE 	:= $(ARCH)
+> diff --git a/init/Kconfig b/init/Kconfig
+> index e84c642..1c2f621 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -47,6 +47,7 @@ config INIT_ENV_ARG_LIMIT
+>  
+>  config CROSS_COMPILE
+>  	string "Cross-compiler tool prefix"
+> +	option env="CROSS_COMPILE"
+>  	help
+>  	  Same as running 'make CROSS_COMPILE=prefix-' but stored for
+>  	  default make runs in this kernel build directory.  You don't
+> 
+
+
+Paul Bolle
+
