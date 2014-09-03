@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757119AbaICWPv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:15:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45652 "EHLO
+	id S1757148AbaICWP4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:15:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45799 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933635AbaICWIs (ORCPT
+	with ESMTP id S1757122AbaICWPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:08:48 -0400
+	Wed, 3 Sep 2014 18:15:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Robert Resch <fli4l@robert.reschpara.de>,
-        Christoph Schulz <develop@kristov.de>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 3.14 51/88] x86: dont exclude low BIOS area when allocating address space for non-PCI cards
-Date: Wed,  3 Sep 2014 15:05:25 -0700
-Message-Id: <20140903220517.493082391@linuxfoundation.org>
+        Alexander Usyskin <alexander.usyskin@intel.com>,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [PATCH 3.14 67/88] mei: nfc: fix memory leak in error path
+Date: Wed,  3 Sep 2014 15:05:41 -0700
+Message-Id: <20140903220517.965288933@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -30,90 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Schulz <develop@kristov.de>
+From: Alexander Usyskin <alexander.usyskin@intel.com>
 
-commit cbace46a9710a480cae51e4611697df5de41713e upstream.
+commit 8e8248b1369c97c7bb6f8bcaee1f05deeabab8ef upstream.
 
-Commit 30919b0bf356 ("x86: avoid low BIOS area when allocating address
-space") moved the test for resource allocations that fall within the first
-1MB of address space from the PCI-specific path to a generic path, such
-that all resource allocations will avoid this area.  However, this breaks
-ISA cards which need to allocate a memory region within the first 1MB.  An
-example is the i82365 PCMCIA controller and derivatives like the Ricoh
-RF5C296/396 which map part of the PCMCIA socket memory address space into
-the first 1MB of system memory address space.  They do not work anymore as
-no usable memory region exists due to this change:
+NFC will leak buffer if send failed.
+Use single exit point that does the freeing
 
-  Intel ISA PCIC probe: Ricoh RF5C296/396 ISA-to-PCMCIA at port 0x3e0 ofs 0x00, 2 sockets
-  host opts [0]: none
-  host opts [1]: none
-  ISA irqs (scanned) = 3,4,5,9,10 status change on irq 10
-  pcmcia_socket pcmcia_socket1: pccard: PCMCIA card inserted into slot 1
-  pcmcia_socket pcmcia_socket0: cs: IO port probe 0xc00-0xcff: excluding 0xcf8-0xcff
-  pcmcia_socket pcmcia_socket0: cs: IO port probe 0xa00-0xaff: clean.
-  pcmcia_socket pcmcia_socket0: cs: IO port probe 0x100-0x3ff: excluding 0x170-0x177 0x1f0-0x1f7 0x2f8-0x2ff 0x370-0x37f 0x3c0-0x3e7 0x3f0-0x3ff
-  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0a0000-0x0affff: excluding 0xa0000-0xaffff
-  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0b0000-0x0bffff: excluding 0xb0000-0xbffff
-  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0c0000-0x0cffff: excluding 0xc0000-0xcbfff
-  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0d0000-0x0dffff: clean.
-  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0e0000-0x0effff: clean.
-  pcmcia_socket pcmcia_socket0: cs: memory probe 0x60000000-0x60ffffff: clean.
-  pcmcia_socket pcmcia_socket0: cs: memory probe 0xa0000000-0xa0ffffff: clean.
-  pcmcia_socket pcmcia_socket1: cs: IO port probe 0xc00-0xcff: excluding 0xcf8-0xcff
-  pcmcia_socket pcmcia_socket1: cs: IO port probe 0xa00-0xaff: clean.
-  pcmcia_socket pcmcia_socket1: cs: IO port probe 0x100-0x3ff: excluding 0x170-0x177 0x1f0-0x1f7 0x2f8-0x2ff 0x370-0x37f 0x3c0-0x3e7 0x3f0-0x3ff
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0a0000-0x0affff: excluding 0xa0000-0xaffff
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0b0000-0x0bffff: excluding 0xb0000-0xbffff
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0c0000-0x0cffff: excluding 0xc0000-0xcbfff
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0d0000-0x0dffff: clean.
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0e0000-0x0effff: clean.
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0x60000000-0x60ffffff: clean.
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0xa0000000-0xa0ffffff: clean.
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0cc000-0x0effff: excluding 0xe0000-0xeffff
-  pcmcia_socket pcmcia_socket1: cs: unable to map card memory!
-
-If filtering out the first 1MB is reverted, everything works as expected.
-
-Tested-by: Robert Resch <fli4l@robert.reschpara.de>
-Signed-off-by: Christoph Schulz <develop@kristov.de>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/resource.c |    8 +++++---
- arch/x86/pci/i386.c        |    4 ++++
- 2 files changed, 9 insertions(+), 3 deletions(-)
+ drivers/misc/mei/nfc.c |   11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
---- a/arch/x86/kernel/resource.c
-+++ b/arch/x86/kernel/resource.c
-@@ -37,10 +37,12 @@ static void remove_e820_regions(struct r
+--- a/drivers/misc/mei/nfc.c
++++ b/drivers/misc/mei/nfc.c
+@@ -342,9 +342,10 @@ static int mei_nfc_send(struct mei_cl_de
+ 	ndev = (struct mei_nfc_dev *) cldev->priv_data;
+ 	dev = ndev->cl->dev;
  
- void arch_remove_reservations(struct resource *avail)
- {
--	/* Trim out BIOS areas (low 1MB and high 2MB) and E820 regions */
-+	/*
-+	 * Trim out BIOS area (high 2MB) and E820 regions. We do not remove
-+	 * the low 1MB unconditionally, as this area is needed for some ISA
-+	 * cards requiring a memory range, e.g. the i82365 PCMCIA controller.
-+	 */
- 	if (avail->flags & IORESOURCE_MEM) {
--		if (avail->start < BIOS_END)
--			avail->start = BIOS_END;
- 		resource_clip(avail, BIOS_ROM_BASE, BIOS_ROM_END);
++	err = -ENOMEM;
+ 	mei_buf = kzalloc(length + MEI_NFC_HEADER_SIZE, GFP_KERNEL);
+ 	if (!mei_buf)
+-		return -ENOMEM;
++		goto out;
  
- 		remove_e820_regions(avail);
---- a/arch/x86/pci/i386.c
-+++ b/arch/x86/pci/i386.c
-@@ -162,6 +162,10 @@ pcibios_align_resource(void *data, const
- 			return start;
- 		if (start & 0x300)
- 			start = (start + 0x3ff) & ~0x3ff;
-+	} else if (res->flags & IORESOURCE_MEM) {
-+		/* The low 1MB range is reserved for ISA cards */
-+		if (start < BIOS_END)
-+			start = BIOS_END;
+ 	hdr = (struct mei_nfc_hci_hdr *) mei_buf;
+ 	hdr->cmd = MEI_NFC_CMD_HCI_SEND;
+@@ -354,12 +355,9 @@ static int mei_nfc_send(struct mei_cl_de
+ 	hdr->data_size = length;
+ 
+ 	memcpy(mei_buf + MEI_NFC_HEADER_SIZE, buf, length);
+-
+ 	err = __mei_cl_send(ndev->cl, mei_buf, length + MEI_NFC_HEADER_SIZE);
+ 	if (err < 0)
+-		return err;
+-
+-	kfree(mei_buf);
++		goto out;
+ 
+ 	if (!wait_event_interruptible_timeout(ndev->send_wq,
+ 				ndev->recv_req_id == ndev->req_id, HZ)) {
+@@ -368,7 +366,8 @@ static int mei_nfc_send(struct mei_cl_de
+ 	} else {
+ 		ndev->req_id++;
  	}
- 	return start;
+-
++out:
++	kfree(mei_buf);
+ 	return err;
  }
+ 
 
 
