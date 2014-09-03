@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756558AbaICKFX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 06:05:23 -0400
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:57433 "EHLO
+	id S932609AbaICJ65 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 05:58:57 -0400
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:57468 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932307AbaICJ5v (ORCPT
+	by vger.kernel.org with ESMTP id S932577AbaICJ6w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 05:57:51 -0400
+	Wed, 3 Sep 2014 05:58:52 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 39/56] drivers/i2c/busses: use correct type for dma_map/unmap
-Date: Wed,  3 Sep 2014 11:26:58 +0200
-Message-Id: <54a4167859c75a9bd83434b7547ebd398aeb2d05.1409735865.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Christoph Schulz <develop@kristov.de>,
+        Bjorn Helgaas <bhelgaas@google.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 52/56] x86: don't exclude low BIOS area when allocating address space for non-PCI cards
+Date: Wed,  3 Sep 2014 11:27:11 +0200
+Message-Id: <9d565cce8e8cc043f6067f7482de25c38c6b3a03.1409735865.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <b4839e6cd4a236a81725e422b2e05c26fe36048a.1409735865.git.jslaby@suse.cz>
 References: <b4839e6cd4a236a81725e422b2e05c26fe36048a.1409735865.git.jslaby@suse.cz>
@@ -23,45 +23,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wolfram Sang <wsa@the-dreams.de>
+From: Christoph Schulz <develop@kristov.de>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 28772ac8711e4d7268c06e765887dd8cb6924f98 upstream.
+commit cbace46a9710a480cae51e4611697df5de41713e upstream.
 
-dma_{un}map_* uses 'enum dma_data_direction' not 'enum dma_transfer_direction'.
+Commit 30919b0bf356 ("x86: avoid low BIOS area when allocating address
+space") moved the test for resource allocations that fall within the first
+1MB of address space from the PCI-specific path to a generic path, such
+that all resource allocations will avoid this area.  However, this breaks
+ISA cards which need to allocate a memory region within the first 1MB.  An
+example is the i82365 PCMCIA controller and derivatives like the Ricoh
+RF5C296/396 which map part of the PCMCIA socket memory address space into
+the first 1MB of system memory address space.  They do not work anymore as
+no usable memory region exists due to this change:
 
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+  Intel ISA PCIC probe: Ricoh RF5C296/396 ISA-to-PCMCIA at port 0x3e0 ofs 0x00, 2 sockets
+  host opts [0]: none
+  host opts [1]: none
+  ISA irqs (scanned) = 3,4,5,9,10 status change on irq 10
+  pcmcia_socket pcmcia_socket1: pccard: PCMCIA card inserted into slot 1
+  pcmcia_socket pcmcia_socket0: cs: IO port probe 0xc00-0xcff: excluding 0xcf8-0xcff
+  pcmcia_socket pcmcia_socket0: cs: IO port probe 0xa00-0xaff: clean.
+  pcmcia_socket pcmcia_socket0: cs: IO port probe 0x100-0x3ff: excluding 0x170-0x177 0x1f0-0x1f7 0x2f8-0x2ff 0x370-0x37f 0x3c0-0x3e7 0x3f0-0x3ff
+  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0a0000-0x0affff: excluding 0xa0000-0xaffff
+  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0b0000-0x0bffff: excluding 0xb0000-0xbffff
+  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0c0000-0x0cffff: excluding 0xc0000-0xcbfff
+  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0d0000-0x0dffff: clean.
+  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0e0000-0x0effff: clean.
+  pcmcia_socket pcmcia_socket0: cs: memory probe 0x60000000-0x60ffffff: clean.
+  pcmcia_socket pcmcia_socket0: cs: memory probe 0xa0000000-0xa0ffffff: clean.
+  pcmcia_socket pcmcia_socket1: cs: IO port probe 0xc00-0xcff: excluding 0xcf8-0xcff
+  pcmcia_socket pcmcia_socket1: cs: IO port probe 0xa00-0xaff: clean.
+  pcmcia_socket pcmcia_socket1: cs: IO port probe 0x100-0x3ff: excluding 0x170-0x177 0x1f0-0x1f7 0x2f8-0x2ff 0x370-0x37f 0x3c0-0x3e7 0x3f0-0x3ff
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0a0000-0x0affff: excluding 0xa0000-0xaffff
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0b0000-0x0bffff: excluding 0xb0000-0xbffff
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0c0000-0x0cffff: excluding 0xc0000-0xcbfff
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0d0000-0x0dffff: clean.
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0e0000-0x0effff: clean.
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0x60000000-0x60ffffff: clean.
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0xa0000000-0xa0ffffff: clean.
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0cc000-0x0effff: excluding 0xe0000-0xeffff
+  pcmcia_socket pcmcia_socket1: cs: unable to map card memory!
+
+If filtering out the first 1MB is reverted, everything works as expected.
+
+Tested-by: Robert Resch <fli4l@robert.reschpara.de>
+Signed-off-by: Christoph Schulz <develop@kristov.de>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/i2c/busses/i2c-at91.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kernel/resource.c | 8 +++++---
+ arch/x86/pci/i386.c        | 4 ++++
+ 2 files changed, 9 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-at91.c b/drivers/i2c/busses/i2c-at91.c
-index fd059308affa..9d3e846e0137 100644
---- a/drivers/i2c/busses/i2c-at91.c
-+++ b/drivers/i2c/busses/i2c-at91.c
-@@ -210,7 +210,7 @@ static void at91_twi_write_data_dma_callback(void *data)
- 	struct at91_twi_dev *dev = (struct at91_twi_dev *)data;
+diff --git a/arch/x86/kernel/resource.c b/arch/x86/kernel/resource.c
+index 2a26819bb6a8..80eab01c1a68 100644
+--- a/arch/x86/kernel/resource.c
++++ b/arch/x86/kernel/resource.c
+@@ -37,10 +37,12 @@ static void remove_e820_regions(struct resource *avail)
  
- 	dma_unmap_single(dev->dev, sg_dma_address(&dev->dma.sg),
--			 dev->buf_len, DMA_MEM_TO_DEV);
-+			 dev->buf_len, DMA_TO_DEVICE);
+ void arch_remove_reservations(struct resource *avail)
+ {
+-	/* Trim out BIOS areas (low 1MB and high 2MB) and E820 regions */
++	/*
++	 * Trim out BIOS area (high 2MB) and E820 regions. We do not remove
++	 * the low 1MB unconditionally, as this area is needed for some ISA
++	 * cards requiring a memory range, e.g. the i82365 PCMCIA controller.
++	 */
+ 	if (avail->flags & IORESOURCE_MEM) {
+-		if (avail->start < BIOS_END)
+-			avail->start = BIOS_END;
+ 		resource_clip(avail, BIOS_ROM_BASE, BIOS_ROM_END);
  
- 	at91_twi_write(dev, AT91_TWI_CR, AT91_TWI_STOP);
+ 		remove_e820_regions(avail);
+diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
+index db6b1ab43255..96a159afe3c6 100644
+--- a/arch/x86/pci/i386.c
++++ b/arch/x86/pci/i386.c
+@@ -162,6 +162,10 @@ pcibios_align_resource(void *data, const struct resource *res,
+ 			return start;
+ 		if (start & 0x300)
+ 			start = (start + 0x3ff) & ~0x3ff;
++	} else if (res->flags & IORESOURCE_MEM) {
++		/* The low 1MB range is reserved for ISA cards */
++		if (start < BIOS_END)
++			start = BIOS_END;
+ 	}
+ 	return start;
  }
-@@ -289,7 +289,7 @@ static void at91_twi_read_data_dma_callback(void *data)
- 	struct at91_twi_dev *dev = (struct at91_twi_dev *)data;
- 
- 	dma_unmap_single(dev->dev, sg_dma_address(&dev->dma.sg),
--			 dev->buf_len, DMA_DEV_TO_MEM);
-+			 dev->buf_len, DMA_FROM_DEVICE);
- 
- 	/* The last two bytes have to be read without using dma */
- 	dev->buf += dev->buf_len - 2;
 -- 
 2.1.0
 
