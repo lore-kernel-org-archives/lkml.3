@@ -1,89 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932764AbaICQjG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 12:39:06 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:59838 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751193AbaICQjD (ORCPT
+	id S1756264AbaICQkW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 12:40:22 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:36516 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752889AbaICQkV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 12:39:03 -0400
-Date: Wed, 3 Sep 2014 09:38:52 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, bobby.prani@gmail.com, <""@rjwysocki.net>,
-        tianyu.lan@intel.com
-Subject: Re: [PATCH RFC tip/core/rcu] Eliminate deadlock between CPU hotplug
- and expedited grace periods
-Message-ID: <20140903163852.GY5001@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140828194745.GA3761@linux.vnet.ibm.com>
- <20140901112059.GG27892@worktop.ger.corp.intel.com>
- <20140901160550.GL5001@linux.vnet.ibm.com>
- <20140901161735.GA5806@worktop.ger.corp.intel.com>
- <20140902163656.GC5001@linux.vnet.ibm.com>
- <20140903113112.GM4783@worktop.ger.corp.intel.com>
- <20140903150306.GU5001@linux.vnet.ibm.com>
- <20140903152850.GQ4783@worktop.ger.corp.intel.com>
+	Wed, 3 Sep 2014 12:40:21 -0400
+Message-ID: <5407444C.2080107@gmail.com>
+Date: Wed, 03 Sep 2014 09:39:40 -0700
+From: Florian Fainelli <f.fainelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140903152850.GQ4783@worktop.ger.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14090316-0928-0000-0000-0000049AE82D
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: linux-kernel@vger.kernel.org, jason@lakedaemon.net,
+        computersforpeace@gmail.com
+Subject: Re: [PATCH 1/2] irqchip: add Broadcom BCM7120-style Level 2 interrupt
+ controller
+References: <1409265326-7579-1-git-send-email-f.fainelli@gmail.com> <1409265326-7579-2-git-send-email-f.fainelli@gmail.com> <alpine.DEB.2.10.1409031413230.3333@nanos>
+In-Reply-To: <alpine.DEB.2.10.1409031413230.3333@nanos>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 03, 2014 at 05:28:50PM +0200, Peter Zijlstra wrote:
-> On Wed, Sep 03, 2014 at 08:03:06AM -0700, Paul E. McKenney wrote:
-> > > > Normal RCU grace periods avoid this by synchronizing on a lock acquired by
-> > > > the RCU CPU-hotplug notifiers, but this does not work for the expedited
-> > > > grace periods because the outgoing CPU can be running random tasks for
-> > > > quite some time after RCU's notifier executes.  So the fix is just to
-> > > > drop back to a normal grace period when there is a CPU-hotplug operation
-> > > > in progress.
-> > > 
-> > > So why are we 'normally' doing an expedited call here anyhow? 
-> > 
-> > Presumably because they set either the boot parameter or
-> > the sysfs variable that causes synchronize_sched() to so
-> > synchronize_sched_expedited().
+On 09/03/2014 05:18 AM, Thomas Gleixner wrote:
+> On Thu, 28 Aug 2014, Florian Fainelli wrote:
+>> +static void bcm7120_l2_intc_irq_handle(unsigned int irq, struct irq_desc *desc)
+>> +{
+>> +	struct bcm7120_l2_intc_data *b = irq_desc_get_handler_data(desc);
+>> +	struct irq_chip *chip = irq_desc_get_chip(desc);
+>> +	struct irq_chip_generic *gc = irq_get_domain_generic_chip(b->domain, 0);
+>> +	u32 status;
+>> +
+>> +	chained_irq_enter(chip, desc);
+>> +
+>> +	irq_gc_lock(gc);
+>> +	status = __raw_readl(b->base + IRQSTAT);
+>> +	irq_gc_unlock(gc);
 > 
-> That's not a why but a how. Why does that option exist, why are we doing
-> this?
+> Why do you need locking around the status read out?
 
-As you say below, to reduce RCU grace-period latency on small systems.
-And one level of abstraction's why is another level's how.  ;-)
+I was worried about potential concurrency issues, but I suppose that
+this is just extra carefulness that brings nothing.
 
-> I cannot actually find a sysfs variable that controls this though; only
-> the rcu_pm_notifier. It seems to favour doing an expedited call when
-> suspending on 'small' machines.
-
-See rcu_expedited_store() in kernel/ksysfs.c.  Or the rcu_expedited
-module_param() in kernel/rcu/update.c.
-
-> > > But those are not within hotplug bits. Also weren't we removing them? I
-> > > thought we didn't appreciate spraying IPIs like they do?
-> > 
-> > I hadn't heard anything about removing them, but making the
-> > expedited primitives a bit less IPI-happy is on my list.
 > 
-> I had some recollections of removing a fair number of expedited calls,
-> but its was a long while ago so what do I know ;-)
+>> +	for (irq = 0; irq < num_parent_irqs; irq++) {
+>> +		ret = bcm7120_l2_intc_init_one(dn, data, irq, map_mask);
+>> +		if (ret)
+>> +			continue;
+> 
+> What's the exact purpose of this "if (ret)" construct?
 
-If a given use case can tolerate the latency of normal calls, then the
-normal calls certainly are preferable, no two ways about it.
+It's pretty much useless the way it is now, I will rework that.
 
-> Making them less IPI happy would be good indeed.
-
-Priority of this task duly increased.  ;-)
-
-							Thanx, Paul
-
+Thanks for the review!
+--
+Florian
