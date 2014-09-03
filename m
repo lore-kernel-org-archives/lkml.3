@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757202AbaICWQB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:16:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45844 "EHLO
+	id S935720AbaICXUv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:20:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45848 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757151AbaICWP5 (ORCPT
+	with ESMTP id S1757201AbaICWQC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:15:57 -0400
+	Wed, 3 Sep 2014 18:16:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        James Drews <drews@engr.wisc.edu>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.14 87/88] NFSv4: Fix problems with close in the presence of a delegation
-Date: Wed,  3 Sep 2014 15:06:01 -0700
-Message-Id: <20140903220518.550964878@linuxfoundation.org>
+        Patrick Riphagen <patrick.riphagen@xsens.com>,
+        Frans Klaver <frans.klaver@xsens.com>, Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.16 013/125] USB: serial: ftdi_sio: Add support for new Xsens devices
+Date: Wed,  3 Sep 2014 15:06:10 -0700
+Message-Id: <20140903220624.064726975@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
-References: <20140903220515.958924632@linuxfoundation.org>
+In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
+References: <20140903220623.649748296@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,67 +25,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Patrick Riphagen <patrick.riphagen@xsens.com>
 
-commit aee7af356e151494d5014f57b33460b162f181b5 upstream.
+commit 4bdcde358b4bda74e356841d351945ca3f2245dd upstream.
 
-In the presence of delegations, we can no longer assume that the
-state->n_rdwr, state->n_rdonly, state->n_wronly reflect the open
-stateid share mode, and so we need to calculate the initial value
-for calldata->arg.fmode using the state->flags.
+This adds support for new Xsens devices, using Xsens' own Vendor ID.
 
-Reported-by: James Drews <drews@engr.wisc.edu>
-Fixes: 88069f77e1ac5 (NFSv41: Fix a potential state leakage when...)
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Patrick Riphagen <patrick.riphagen@xsens.com>
+Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
+Cc: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |   17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |    2 ++
+ drivers/usb/serial/ftdi_sio_ids.h |    3 +++
+ 2 files changed, 5 insertions(+)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -2546,6 +2546,7 @@ static void nfs4_close_prepare(struct rp
- 	struct nfs4_closedata *calldata = data;
- 	struct nfs4_state *state = calldata->state;
- 	struct inode *inode = calldata->inode;
-+	bool is_rdonly, is_wronly, is_rdwr;
- 	int call_close = 0;
- 
- 	dprintk("%s: begin!\n", __func__);
-@@ -2553,18 +2554,24 @@ static void nfs4_close_prepare(struct rp
- 		goto out_wait;
- 
- 	task->tk_msg.rpc_proc = &nfs4_procedures[NFSPROC4_CLNT_OPEN_DOWNGRADE];
--	calldata->arg.fmode = FMODE_READ|FMODE_WRITE;
- 	spin_lock(&state->owner->so_lock);
-+	is_rdwr = test_bit(NFS_O_RDWR_STATE, &state->flags);
-+	is_rdonly = test_bit(NFS_O_RDONLY_STATE, &state->flags);
-+	is_wronly = test_bit(NFS_O_WRONLY_STATE, &state->flags);
-+	/* Calculate the current open share mode */
-+	calldata->arg.fmode = 0;
-+	if (is_rdonly || is_rdwr)
-+		calldata->arg.fmode |= FMODE_READ;
-+	if (is_wronly || is_rdwr)
-+		calldata->arg.fmode |= FMODE_WRITE;
- 	/* Calculate the change in open mode */
- 	if (state->n_rdwr == 0) {
- 		if (state->n_rdonly == 0) {
--			call_close |= test_bit(NFS_O_RDONLY_STATE, &state->flags);
--			call_close |= test_bit(NFS_O_RDWR_STATE, &state->flags);
-+			call_close |= is_rdonly || is_rdwr;
- 			calldata->arg.fmode &= ~FMODE_READ;
- 		}
- 		if (state->n_wronly == 0) {
--			call_close |= test_bit(NFS_O_WRONLY_STATE, &state->flags);
--			call_close |= test_bit(NFS_O_RDWR_STATE, &state->flags);
-+			call_close |= is_wronly || is_rdwr;
- 			calldata->arg.fmode &= ~FMODE_WRITE;
- 		}
- 	}
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -673,6 +673,8 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_5_PID) },
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_6_PID) },
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_7_PID) },
++	{ USB_DEVICE(XSENS_VID, XSENS_CONVERTER_PID) },
++	{ USB_DEVICE(XSENS_VID, XSENS_MTW_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OMNI1509) },
+ 	{ USB_DEVICE(MOBILITY_VID, MOBILITY_USB_SERIAL_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ACTIVE_ROBOTS_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -140,6 +140,9 @@
+ /*
+  * Xsens Technologies BV products (http://www.xsens.com).
+  */
++#define XSENS_VID		0x2639
++#define XSENS_CONVERTER_PID	0xD00D	/* Xsens USB-serial converter */
++#define XSENS_MTW_PID		0x0200	/* Xsens MTw */
+ #define XSENS_CONVERTER_0_PID	0xD388	/* Xsens USB converter */
+ #define XSENS_CONVERTER_1_PID	0xD389	/* Xsens Wireless Receiver */
+ #define XSENS_CONVERTER_2_PID	0xD38A
 
 
