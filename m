@@ -1,114 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756803AbaICV1l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 17:27:41 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:49009 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755659AbaICV1j (ORCPT
+	id S932549AbaICV20 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 17:28:26 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:63195 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932130AbaICV2Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 17:27:39 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18+2dn3rNUFL01Fts3xSdz4
-Date: Wed, 3 Sep 2014 14:27:33 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: =?utf-8?Q?Beno=C3=AEt?= Cousson <bcousson@baylibre.com>,
-        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: dts: omap4-panda: Fix model and SoC family details
-Message-ID: <20140903212732.GI11766@atomide.com>
-References: <1409258703-21188-1-git-send-email-nm@ti.com>
+	Wed, 3 Sep 2014 17:28:24 -0400
+Date: Wed, 3 Sep 2014 14:26:37 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: Re: [PATCH v3 6/6] mm/hugetlb: remove unused argument of
+ follow_huge_addr()
+In-Reply-To: <1409276340-7054-7-git-send-email-n-horiguchi@ah.jp.nec.com>
+Message-ID: <alpine.LSU.2.11.1409031418420.9811@eggly.anvils>
+References: <1409276340-7054-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1409276340-7054-7-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409258703-21188-1-git-send-email-nm@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nishanth Menon <nm@ti.com> [140828 13:45]:
-> Currently we claim that omap4-panda and omap4-panda-es are essentially
-> the same, but they are not since PandaBoard-ES uses OMAP4460 and
-> PandaBoard uses OMAP4430.
+On Thu, 28 Aug 2014, Naoya Horiguchi wrote:
+
+> follow_huge_addr()'s parameter write is not used, so let's remove it.
 > 
-> So, split the common definition and make the model name available.
-> 
-> Signed-off-by: Nishanth Menon <nm@ti.com>
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+
+I think this patch is a waste of time: that it should be replaced
+by a patch which replaces the "write" argument by a "flags" argument,
+so that follow_huge_addr() can do get_page() for FOLL_GET while holding
+appropriate lock, instead of the BUG_ON(flags & FOLL_GET) we currently
+have.
+
+Once that is implemented, you could try getting hugetlb migration
+tested on ia64 and powerpc; but yes, keep hugetlb migration disabled
+on all but x86 until it has been tested elsewhere.
+
 > ---
-> Based on v3.17-rc2
+>  arch/ia64/mm/hugetlbpage.c    | 2 +-
+>  arch/powerpc/mm/hugetlbpage.c | 2 +-
+>  arch/x86/mm/hugetlbpage.c     | 2 +-
+>  include/linux/hugetlb.h       | 5 ++---
+>  mm/gup.c                      | 2 +-
+>  mm/hugetlb.c                  | 3 +--
+>  6 files changed, 7 insertions(+), 9 deletions(-)
 > 
-> Testing logs: (boot test):
-> Before Patch(v3.17-rc2)
-> 1: pandaboard-es:  Boot PASS: http://slexy.org/raw/s209HfpVTs
-> 2: pandaboard-vanilla:  Boot PASS: http://slexy.org/raw/s21YNmOhQL
-> 
-> After Patch
-> 1: pandaboard-es:  Boot PASS: http://slexy.org/raw/s20FH76BTn
-> 2: pandaboard-vanilla:  Boot PASS: http://slexy.org/raw/s2vFLcfkBu
- 
-Thanks applying into omap-for-v3.18/fixes-not-urgent.
-
-> Note: 'ti,omap4-panda-es' is not documented in bindings, not entirely
-> sure if we should be doing the same for every board compatibility.
-
-That should probably be done on regular basis with some script
-if we want to keep the documentation updated.
-
-Regards,
-
-Tony
- 
->  arch/arm/boot/dts/omap4-panda-common.dtsi |    3 ---
->  arch/arm/boot/dts/omap4-panda-es.dts      |    5 +++++
->  arch/arm/boot/dts/omap4-panda.dts         |    5 +++++
->  3 files changed, 10 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi b/arch/arm/boot/dts/omap4-panda-common.dtsi
-> index 8cfa3c8..1505135 100644
-> --- a/arch/arm/boot/dts/omap4-panda-common.dtsi
-> +++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
-> @@ -8,9 +8,6 @@
->  #include "elpida_ecb240abacn.dtsi"
+> diff --git mmotm-2014-08-25-16-52.orig/arch/ia64/mm/hugetlbpage.c mmotm-2014-08-25-16-52/arch/ia64/mm/hugetlbpage.c
+> index 6170381bf074..524a4e001bda 100644
+> --- mmotm-2014-08-25-16-52.orig/arch/ia64/mm/hugetlbpage.c
+> +++ mmotm-2014-08-25-16-52/arch/ia64/mm/hugetlbpage.c
+> @@ -89,7 +89,7 @@ int prepare_hugepage_range(struct file *file,
+>  	return 0;
+>  }
 >  
->  / {
-> -	model = "TI OMAP4 PandaBoard";
-> -	compatible = "ti,omap4-panda", "ti,omap4430", "ti,omap4";
-> -
->  	memory {
->  		device_type = "memory";
->  		reg = <0x80000000 0x40000000>; /* 1 GB */
-> diff --git a/arch/arm/boot/dts/omap4-panda-es.dts b/arch/arm/boot/dts/omap4-panda-es.dts
-> index 816d1c9..2f1dabc 100644
-> --- a/arch/arm/boot/dts/omap4-panda-es.dts
-> +++ b/arch/arm/boot/dts/omap4-panda-es.dts
-> @@ -10,6 +10,11 @@
->  #include "omap4460.dtsi"
->  #include "omap4-panda-common.dtsi"
+> -struct page *follow_huge_addr(struct mm_struct *mm, unsigned long addr, int write)
+> +struct page *follow_huge_addr(struct mm_struct *mm, unsigned long addr)
+>  {
+>  	struct page *page = NULL;
+>  	pte_t *ptep;
+> diff --git mmotm-2014-08-25-16-52.orig/arch/powerpc/mm/hugetlbpage.c mmotm-2014-08-25-16-52/arch/powerpc/mm/hugetlbpage.c
+> index 1d8854a56309..5b6fe8b0cde3 100644
+> --- mmotm-2014-08-25-16-52.orig/arch/powerpc/mm/hugetlbpage.c
+> +++ mmotm-2014-08-25-16-52/arch/powerpc/mm/hugetlbpage.c
+> @@ -674,7 +674,7 @@ void hugetlb_free_pgd_range(struct mmu_gather *tlb,
+>  }
 >  
-> +/ {
-> +	model = "TI OMAP4 PandaBoard-ES";
-> +	compatible = "ti,omap4-panda-es", "ti,omap4-panda", "ti,omap4460", "ti,omap4430", "ti,omap4";
-> +};
-> +
->  /* Audio routing is differnet between PandaBoard4430 and PandaBoardES */
->  &sound {
->  	ti,model = "PandaBoardES";
-> diff --git a/arch/arm/boot/dts/omap4-panda.dts b/arch/arm/boot/dts/omap4-panda.dts
-> index 6189a8b..a0e28b2 100644
-> --- a/arch/arm/boot/dts/omap4-panda.dts
-> +++ b/arch/arm/boot/dts/omap4-panda.dts
-> @@ -9,3 +9,8 @@
+>  struct page *
+> -follow_huge_addr(struct mm_struct *mm, unsigned long address, int write)
+> +follow_huge_addr(struct mm_struct *mm, unsigned long address)
+>  {
+>  	pte_t *ptep;
+>  	struct page *page = ERR_PTR(-EINVAL);
+> diff --git mmotm-2014-08-25-16-52.orig/arch/x86/mm/hugetlbpage.c mmotm-2014-08-25-16-52/arch/x86/mm/hugetlbpage.c
+> index 03b8a7c11817..cab09d87ae65 100644
+> --- mmotm-2014-08-25-16-52.orig/arch/x86/mm/hugetlbpage.c
+> +++ mmotm-2014-08-25-16-52/arch/x86/mm/hugetlbpage.c
+> @@ -18,7 +18,7 @@
 >  
->  #include "omap443x.dtsi"
->  #include "omap4-panda-common.dtsi"
-> +
-> +/ {
-> +	model = "TI OMAP4 PandaBoard";
-> +	compatible = "ti,omap4-panda", "ti,omap4430", "ti,omap4";
-> +};
+>  #if 0	/* This is just for testing */
+>  struct page *
+> -follow_huge_addr(struct mm_struct *mm, unsigned long address, int write)
+> +follow_huge_addr(struct mm_struct *mm, unsigned long address)
+>  {
+>  	unsigned long start = address;
+>  	int length = 1;
+> diff --git mmotm-2014-08-25-16-52.orig/include/linux/hugetlb.h mmotm-2014-08-25-16-52/include/linux/hugetlb.h
+> index b3200fce07aa..cdff1bd393bb 100644
+> --- mmotm-2014-08-25-16-52.orig/include/linux/hugetlb.h
+> +++ mmotm-2014-08-25-16-52/include/linux/hugetlb.h
+> @@ -96,8 +96,7 @@ pte_t *huge_pte_alloc(struct mm_struct *mm,
+>  			unsigned long addr, unsigned long sz);
+>  pte_t *huge_pte_offset(struct mm_struct *mm, unsigned long addr);
+>  int huge_pmd_unshare(struct mm_struct *mm, unsigned long *addr, pte_t *ptep);
+> -struct page *follow_huge_addr(struct mm_struct *mm, unsigned long address,
+> -			      int write);
+> +struct page *follow_huge_addr(struct mm_struct *mm, unsigned long address);
+>  struct page *follow_huge_pmd(struct vm_area_struct *vma, unsigned long address,
+>  				pmd_t *pmd, int flags);
+>  struct page *follow_huge_pud(struct vm_area_struct *vma, unsigned long address,
+> @@ -124,7 +123,7 @@ static inline unsigned long hugetlb_total_pages(void)
+>  }
+>  
+>  #define follow_hugetlb_page(m,v,p,vs,a,b,i,w)	({ BUG(); 0; })
+> -#define follow_huge_addr(mm, addr, write)	ERR_PTR(-EINVAL)
+> +#define follow_huge_addr(mm, addr)	ERR_PTR(-EINVAL)
+>  #define copy_hugetlb_page_range(src, dst, vma)	({ BUG(); 0; })
+>  static inline void hugetlb_report_meminfo(struct seq_file *m)
+>  {
+> diff --git mmotm-2014-08-25-16-52.orig/mm/gup.c mmotm-2014-08-25-16-52/mm/gup.c
+> index 597a5e92e265..8f0550f1770d 100644
+> --- mmotm-2014-08-25-16-52.orig/mm/gup.c
+> +++ mmotm-2014-08-25-16-52/mm/gup.c
+> @@ -149,7 +149,7 @@ struct page *follow_page_mask(struct vm_area_struct *vma,
+>  
+>  	*page_mask = 0;
+>  
+> -	page = follow_huge_addr(mm, address, flags & FOLL_WRITE);
+> +	page = follow_huge_addr(mm, address);
+>  	if (!IS_ERR(page)) {
+>  		BUG_ON(flags & FOLL_GET);
+>  		return page;
+> diff --git mmotm-2014-08-25-16-52.orig/mm/hugetlb.c mmotm-2014-08-25-16-52/mm/hugetlb.c
+> index 0a4511115ee0..f7dcad3474ec 100644
+> --- mmotm-2014-08-25-16-52.orig/mm/hugetlb.c
+> +++ mmotm-2014-08-25-16-52/mm/hugetlb.c
+> @@ -3690,8 +3690,7 @@ pte_t *huge_pte_offset(struct mm_struct *mm, unsigned long addr)
+>   * behavior.
+>   */
+>  struct page * __weak
+> -follow_huge_addr(struct mm_struct *mm, unsigned long address,
+> -			      int write)
+> +follow_huge_addr(struct mm_struct *mm, unsigned long address)
+>  {
+>  	return ERR_PTR(-EINVAL);
+>  }
 > -- 
-> 1.7.9.5
-> 
+> 1.9.3
