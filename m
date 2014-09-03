@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935413AbaICXKI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:10:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46046 "EHLO
+	id S935400AbaICXKG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:10:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46063 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933705AbaICWSj (ORCPT
+	with ESMTP id S933487AbaICWSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:18:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [PATCH 3.16 058/125] KVM: s390/mm: Fix page table locking vs. split pmd lock
-Date: Wed,  3 Sep 2014 15:06:55 -0700
-Message-Id: <20140903220625.419757077@linuxfoundation.org>
+        Alexey Kardashevskiy <aik@ozlabs.ru>,
+        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>
+Subject: [PATCH 3.16 059/125] KVM: PPC: Book3S: Fix LPCR one_reg interface
+Date: Wed,  3 Sep 2014 15:06:56 -0700
+Message-Id: <20140903220625.449056707@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -29,51 +29,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Borntraeger <borntraeger@de.ibm.com>
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
 
-commit 55e4283c3eb1d850893f645dd695c9c75d5fa1fc upstream.
+commit a0840240c0c6bcbac8f0f5db11f95c19aaf9b52f upstream.
 
-commit ec66ad66a0de87866be347b5ecc83bd46427f53b (s390/mm: enable
-split page table lock for PMD level) activated the split pmd lock
-for s390. Turns out that we missed one place: We also have to take
-the pmd lock instead of the page table lock when we reallocate the
-page tables (==> changing entries in the PMD) during sie enablement.
+Unfortunately, the LPCR got defined as a 32-bit register in the
+one_reg interface.  This is unfortunate because KVM allows userspace
+to control the DPFD (default prefetch depth) field, which is in the
+upper 32 bits.  The result is that DPFD always get set to 0, which
+reduces performance in the guest.
 
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+We can't just change KVM_REG_PPC_LPCR to be a 64-bit register ID,
+since that would break existing userspace binaries.  Instead we define
+a new KVM_REG_PPC_LPCR_64 id which is 64-bit.  Userspace can still use
+the old KVM_REG_PPC_LPCR id, but it now only modifies those fields in
+the bottom 32 bits that userspace can modify (ILE, TC and AIL).
+If userspace uses the new KVM_REG_PPC_LPCR_64 id, it can modify DPFD
+as well.
+
+Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+Signed-off-by: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Alexander Graf <agraf@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/mm/pgtable.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ Documentation/virtual/kvm/api.txt   |    3 ++-
+ arch/powerpc/include/uapi/asm/kvm.h |    1 +
+ arch/powerpc/kvm/book3s_hv.c        |   13 +++++++++++--
+ arch/powerpc/kvm/book3s_pr.c        |    2 ++
+ 4 files changed, 16 insertions(+), 3 deletions(-)
 
---- a/arch/s390/mm/pgtable.c
-+++ b/arch/s390/mm/pgtable.c
-@@ -1279,6 +1279,7 @@ static unsigned long page_table_realloc_
+--- a/Documentation/virtual/kvm/api.txt
++++ b/Documentation/virtual/kvm/api.txt
+@@ -1869,7 +1869,8 @@ registers, find a list below:
+   PPC   | KVM_REG_PPC_PID	| 64
+   PPC   | KVM_REG_PPC_ACOP	| 64
+   PPC   | KVM_REG_PPC_VRSAVE	| 32
+-  PPC   | KVM_REG_PPC_LPCR	| 64
++  PPC   | KVM_REG_PPC_LPCR	| 32
++  PPC   | KVM_REG_PPC_LPCR_64	| 64
+   PPC   | KVM_REG_PPC_PPR	| 64
+   PPC   | KVM_REG_PPC_ARCH_COMPAT 32
+   PPC   | KVM_REG_PPC_DABRX     | 32
+--- a/arch/powerpc/include/uapi/asm/kvm.h
++++ b/arch/powerpc/include/uapi/asm/kvm.h
+@@ -548,6 +548,7 @@ struct kvm_get_htab_header {
+ 
+ #define KVM_REG_PPC_VRSAVE	(KVM_REG_PPC | KVM_REG_SIZE_U32 | 0xb4)
+ #define KVM_REG_PPC_LPCR	(KVM_REG_PPC | KVM_REG_SIZE_U32 | 0xb5)
++#define KVM_REG_PPC_LPCR_64	(KVM_REG_PPC | KVM_REG_SIZE_U64 | 0xb5)
+ #define KVM_REG_PPC_PPR		(KVM_REG_PPC | KVM_REG_SIZE_U64 | 0xb6)
+ 
+ /* Architecture compatibility level */
+--- a/arch/powerpc/kvm/book3s_hv.c
++++ b/arch/powerpc/kvm/book3s_hv.c
+@@ -785,7 +785,8 @@ static int kvm_arch_vcpu_ioctl_set_sregs
+ 	return 0;
+ }
+ 
+-static void kvmppc_set_lpcr(struct kvm_vcpu *vcpu, u64 new_lpcr)
++static void kvmppc_set_lpcr(struct kvm_vcpu *vcpu, u64 new_lpcr,
++		bool preserve_top32)
  {
- 	unsigned long next, *table, *new;
- 	struct page *page;
-+	spinlock_t *ptl;
- 	pmd_t *pmd;
- 
- 	pmd = pmd_offset(pud, addr);
-@@ -1296,7 +1297,7 @@ again:
- 		if (!new)
- 			return -ENOMEM;
- 
--		spin_lock(&mm->page_table_lock);
-+		ptl = pmd_lock(mm, pmd);
- 		if (likely((unsigned long *) pmd_deref(*pmd) == table)) {
- 			/* Nuke pmd entry pointing to the "short" page table */
- 			pmdp_flush_lazy(mm, addr, pmd);
-@@ -1310,7 +1311,7 @@ again:
- 			page_table_free_rcu(tlb, table);
- 			new = NULL;
- 		}
--		spin_unlock(&mm->page_table_lock);
-+		spin_unlock(ptl);
- 		if (new) {
- 			page_table_free_pgste(new);
- 			goto again;
+ 	struct kvmppc_vcore *vc = vcpu->arch.vcore;
+ 	u64 mask;
+@@ -820,6 +821,10 @@ static void kvmppc_set_lpcr(struct kvm_v
+ 	mask = LPCR_DPFD | LPCR_ILE | LPCR_TC;
+ 	if (cpu_has_feature(CPU_FTR_ARCH_207S))
+ 		mask |= LPCR_AIL;
++
++	/* Broken 32-bit version of LPCR must not clear top bits */
++	if (preserve_top32)
++		mask &= 0xFFFFFFFF;
+ 	vc->lpcr = (vc->lpcr & ~mask) | (new_lpcr & mask);
+ 	spin_unlock(&vc->lock);
+ }
+@@ -939,6 +944,7 @@ static int kvmppc_get_one_reg_hv(struct
+ 		*val = get_reg_val(id, vcpu->arch.vcore->tb_offset);
+ 		break;
+ 	case KVM_REG_PPC_LPCR:
++	case KVM_REG_PPC_LPCR_64:
+ 		*val = get_reg_val(id, vcpu->arch.vcore->lpcr);
+ 		break;
+ 	case KVM_REG_PPC_PPR:
+@@ -1150,7 +1156,10 @@ static int kvmppc_set_one_reg_hv(struct
+ 			ALIGN(set_reg_val(id, *val), 1UL << 24);
+ 		break;
+ 	case KVM_REG_PPC_LPCR:
+-		kvmppc_set_lpcr(vcpu, set_reg_val(id, *val));
++		kvmppc_set_lpcr(vcpu, set_reg_val(id, *val), true);
++		break;
++	case KVM_REG_PPC_LPCR_64:
++		kvmppc_set_lpcr(vcpu, set_reg_val(id, *val), false);
+ 		break;
+ 	case KVM_REG_PPC_PPR:
+ 		vcpu->arch.ppr = set_reg_val(id, *val);
+--- a/arch/powerpc/kvm/book3s_pr.c
++++ b/arch/powerpc/kvm/book3s_pr.c
+@@ -1233,6 +1233,7 @@ static int kvmppc_get_one_reg_pr(struct
+ 		*val = get_reg_val(id, to_book3s(vcpu)->hior);
+ 		break;
+ 	case KVM_REG_PPC_LPCR:
++	case KVM_REG_PPC_LPCR_64:
+ 		/*
+ 		 * We are only interested in the LPCR_ILE bit
+ 		 */
+@@ -1268,6 +1269,7 @@ static int kvmppc_set_one_reg_pr(struct
+ 		to_book3s(vcpu)->hior_explicit = true;
+ 		break;
+ 	case KVM_REG_PPC_LPCR:
++	case KVM_REG_PPC_LPCR_64:
+ 		kvmppc_set_lpcr_pr(vcpu, set_reg_val(id, *val));
+ 		break;
+ 	default:
 
 
