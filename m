@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757026AbaICWOw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:14:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45652 "EHLO
+	id S1757086AbaICWPh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:15:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45638 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933647AbaICWIt (ORCPT
+	with ESMTP id S933637AbaICWIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:08:49 -0400
+	Wed, 3 Sep 2014 18:08:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.14 54/88] x86_64/vsyscall: Fix warn_bad_vsyscall log output
-Date: Wed,  3 Sep 2014 15:05:28 -0700
-Message-Id: <20140903220517.578717968@linuxfoundation.org>
+        Tyrel Datwyler <tyreld@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.14 52/88] powerpc/pci: Reorder pci bus/bridge unregistration during PHB removal
+Date: Wed,  3 Sep 2014 15:05:26 -0700
+Message-Id: <20140903220517.522038717@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -29,50 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
 
-commit 53b884ac3745353de220d92ef792515c3ae692f0 upstream.
+commit 7340056567e32b2c9d3554eb146e1977c93da116 upstream.
 
-This commit in Linux 3.6:
+Commit bcdde7e made __sysfs_remove_dir() recursive and introduced a BUG_ON
+during PHB removal while attempting to delete the power managment attribute
+group of the bus. This is a result of tearing the bridge and bus devices down
+out of order in remove_phb_dynamic. Since, the the bus resides below the bridge
+in the sysfs device tree it should be torn down first.
 
-    commit c767a54ba0657e52e6edaa97cbe0b0a8bf1c1655
-    Author: Joe Perches <joe@perches.com>
-    Date:   Mon May 21 19:50:07 2012 -0700
+This patch simply moves the device_unregister call for the PHB bridge device
+after the device_unregister call for the PHB bus.
 
-        x86/debug: Add KERN_<LEVEL> to bare printks, convert printks to pr_<level>
-
-caused warn_bad_vsyscall to output garbage in the middle of the
-line.  Revert the bad part of it.
-
-The printk in question isn't actually bare; the level is "%s".
-
-The bug this fixes is purely cosmetic; backports are optional.
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Link: http://lkml.kernel.org/r/03eac1f24110bbe496ecc12a4df467e0d88466d4.1406330947.git.luto@amacapital.net
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Fixes: bcdde7e221a8 ("sysfs: make __sysfs_remove_dir() recursive")
+Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/vsyscall_64.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/powerpc/platforms/pseries/pci_dlpar.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -125,10 +125,10 @@ static void warn_bad_vsyscall(const char
- 	if (!show_unhandled_signals)
- 		return;
+--- a/arch/powerpc/platforms/pseries/pci_dlpar.c
++++ b/arch/powerpc/platforms/pseries/pci_dlpar.c
+@@ -118,10 +118,10 @@ int remove_phb_dynamic(struct pci_contro
+ 		}
+ 	}
  
--	pr_notice_ratelimited("%s%s[%d] %s ip:%lx cs:%lx sp:%lx ax:%lx si:%lx di:%lx\n",
--			      level, current->comm, task_pid_nr(current),
--			      message, regs->ip, regs->cs,
--			      regs->sp, regs->ax, regs->si, regs->di);
-+	printk_ratelimited("%s%s[%d] %s ip:%lx cs:%lx sp:%lx ax:%lx si:%lx di:%lx\n",
-+			   level, current->comm, task_pid_nr(current),
-+			   message, regs->ip, regs->cs,
-+			   regs->sp, regs->ax, regs->si, regs->di);
- }
+-	/* Unregister the bridge device from sysfs and remove the PCI bus */
+-	device_unregister(b->bridge);
++	/* Remove the PCI bus and unregister the bridge device from sysfs */
+ 	phb->bus = NULL;
+ 	pci_remove_bus(b);
++	device_unregister(b->bridge);
  
- static int addr_to_vsyscall_nr(unsigned long addr)
+ 	/* Now release the IO resource */
+ 	if (res->flags & IORESOURCE_IO)
 
 
