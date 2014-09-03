@@ -1,99 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754903AbaICTe3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 15:34:29 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:56230 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751452AbaICTe1 (ORCPT
+	id S1755234AbaICTfO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 15:35:14 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:42366 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753119AbaICTfM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 15:34:27 -0400
-From: =?UTF-8?q?Filipe=20Gon=C3=A7alves?= <filipe@codinghighway.com>
-To: oleg.drokin@intel.com, andreas.dilger@intel.com,
-        gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Filipe=20Gon=C3=A7alves?= <filipe@codinghighway.com>
-Subject: [PATCH 1/1] staging - lustre: Fixed coding style issues
-Date: Wed,  3 Sep 2014 20:33:46 +0100
-Message-Id: <1409772826-3516-1-git-send-email-filipe@codinghighway.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 3 Sep 2014 15:35:12 -0400
+Date: Wed, 3 Sep 2014 20:34:53 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Colin Cross <ccross@android.com>, kernel-team@android.com,
+        Rob Herring <robherring2@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Nicolas Pitre <nico@linaro.org>
+Subject: Re: [PATCH v10 03/19] arm: fiq: Replace default FIQ handler
+Message-ID: <20140903193453.GA30401@n2100.arm.linux.org.uk>
+References: <1408369264-14242-1-git-send-email-daniel.thompson@linaro.org> <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org> <1408466769-20004-4-git-send-email-daniel.thompson@linaro.org> <20140819173742.GG30401@n2100.arm.linux.org.uk> <53F39377.1070308@linaro.org> <20140828150112.GD30401@n2100.arm.linux.org.uk> <5405AEBC.9020904@linaro.org> <20140902164204.GT30401@n2100.arm.linux.org.uk> <5406EBAA.9040206@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5406EBAA.9040206@linaro.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes several coding style issues that were reported by checkpath on lproc_lmv.c.
+On Wed, Sep 03, 2014 at 11:21:30AM +0100, Daniel Thompson wrote:
+> On 02/09/14 17:42, Russell King - ARM Linux wrote:
+> > Yes, it does, because unlike the x86 community, we have a wide range
+> > of platforms, and platform code does not go through the same path or
+> > get the same review as core ARM code.
+> > 
+> > As I already pointed out, with a notifier, it's very easy to sneak
+> > something into the FIQ path by submitting a patch for platform code
+> > which calls the registration function.  That's going to be pretty
+> > difficult to spot amongst the 3000+ messages on the linux-arm-kernel
+> > list each month in order to give it the review that it would need.
+> > That's especially true as I now ignore almost all most platform
+> > code patches as we have Arnd and Olof to look at that.
+> > 
+> > So, unless you can come up with a proposal which ensures that there
+> > is sufficient review triggered when someone decides to call the
+> > notifier registration function...
+> 
+> Reflecting upon this and upon Thomas' comments about only using FIQ for
+> watchdog, backtrace and performance monitoring...
+> 
+> The short version is, "I was wrong and should have done what you said in
+> the first place".
+> 
+> The long version adds, "because the coupling concerns were spurious; the
+> only proposed users of the default FIQ handler outside of core ARM code,
+> are ARM-centric irqchip drivers."
 
-Signed-off-by: Filipe Gonçalves <filipe@codinghighway.com>
----
- drivers/staging/lustre/lustre/lmv/lproc_lmv.c | 13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+I would say that the ARM specific changes to entry-armv.S and setup.c
+are correct.  All that you're doing there is to replace the existing
+default no-op FIQ handler with some additional code which gets us into
+SVC mode and back out, but itself is also a no-op.  In other words, no
+real change.
 
-diff --git a/drivers/staging/lustre/lustre/lmv/lproc_lmv.c b/drivers/staging/lustre/lustre/lmv/lproc_lmv.c
-index 310df44..ce6c14f 100644
---- a/drivers/staging/lustre/lustre/lmv/lproc_lmv.c
-+++ b/drivers/staging/lustre/lustre/lmv/lproc_lmv.c
-@@ -37,7 +37,7 @@
- #define DEBUG_SUBSYSTEM S_CLASS
- 
- #include <linux/seq_file.h>
--#include <asm/statfs.h>
-+#include <linux/statfs.h>
- #include "../include/lprocfs_status.h"
- #include "../include/obd_class.h"
- 
-@@ -52,7 +52,7 @@ static int lmv_numobd_seq_show(struct seq_file *m, void *v)
- }
- LPROC_SEQ_FOPS_RO(lmv_numobd);
- 
--static const char *placement_name[] = {
-+static const char *const placement_name[] = {
- 	[PLACEMENT_CHAR_POLICY] = "CHAR",
- 	[PLACEMENT_NID_POLICY]  = "NID",
- 	[PLACEMENT_INVAL_POLICY]  = "INVAL"
-@@ -91,7 +91,8 @@ static ssize_t lmv_placement_seq_write(struct file *file,
- 					const char __user *buffer,
- 					size_t count, loff_t *off)
- {
--	struct obd_device *dev = ((struct seq_file *)file->private_data)->private;
-+	struct obd_device *dev =
-+		((struct seq_file *)file->private_data)->private;
- 	char		     dummy[MAX_POLICY_STRING_SIZE + 1];
- 	int		      len = count;
- 	placement_policy_t       policy;
-@@ -149,12 +150,12 @@ static void *lmv_tgt_seq_start(struct seq_file *p, loff_t *pos)
- {
- 	struct obd_device       *dev = p->private;
- 	struct lmv_obd	  *lmv = &dev->u.lmv;
-+
- 	return (*pos >= lmv->desc.ld_tgt_count) ? NULL : lmv->tgts[*pos];
- }
- 
- static void lmv_tgt_seq_stop(struct seq_file *p, void *v)
- {
--	return;
- }
- 
- static void *lmv_tgt_seq_next(struct seq_file *p, void *v, loff_t *pos)
-@@ -175,7 +176,7 @@ static int lmv_tgt_seq_show(struct seq_file *p, void *v)
- 			  tgt->ltd_uuid.uuid, tgt->ltd_active ? "" : "IN");
- }
- 
--struct seq_operations lmv_tgt_sops = {
-+static const struct seq_operations lmv_tgt_sops = {
- 	.start		 = lmv_tgt_seq_start,
- 	.stop		  = lmv_tgt_seq_stop,
- 	.next		  = lmv_tgt_seq_next,
-@@ -215,7 +216,7 @@ static struct lprocfs_vars lprocfs_lmv_module_vars[] = {
- 	{ NULL }
- };
- 
--struct file_operations lmv_proc_target_fops = {
-+static const struct file_operations lmv_proc_target_fops = {
- 	.owner		= THIS_MODULE,
- 	.open		 = lmv_target_seq_open,
- 	.read		 = seq_read,
+That's a good first patch, and one which I would actually like to have
+in my tree sooner rather than later, so that I can split that out from
+my prototype code.
+
+I can also split out from it the ARM generic changes for implementing
+the FIQ dumping too, which gives us a second patch.  With a bit of
+additional work, much of that should actually be generic code, not
+ARM or x86 specific code.  That's going to annoy x86 people a little
+because some of that is being reworked...
+
+That will leave the problem of how to deal with the IRQ controller
+specifics, and how to properly wire it together with the IRQ controller
+in the loop - that is where Thomas' concerns are focused.
+
 -- 
-1.9.1
-
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
