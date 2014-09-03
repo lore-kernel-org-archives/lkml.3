@@ -1,94 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756045AbaICJmb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 05:42:31 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:64457 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754974AbaICJma (ORCPT
+	id S1756072AbaICJoP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 05:44:15 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:43251 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755341AbaICJoO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 05:42:30 -0400
+	Wed, 3 Sep 2014 05:44:14 -0400
+Message-ID: <5406E2EC.4050201@linaro.org>
+Date: Wed, 03 Sep 2014 10:44:12 +0100
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-In-Reply-To: <1408317500-28146-1-git-send-email-eranian@google.com>
-References: <1408317500-28146-1-git-send-email-eranian@google.com>
-Date: Wed, 3 Sep 2014 11:42:29 +0200
-Message-ID: <CABPqkBSYjZTqbLqLpRzPJpbw_T=qPVVG06GTHvP0COPXHXakmQ@mail.gmail.com>
-Subject: Re: [PATCH v3 0/6] perf: add ability to sample interrupted machine state
-From: Stephane Eranian <eranian@google.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        David Ahern <dsahern@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kgdb-bugreport@lists.sourceforge.net" 
+	<kgdb-bugreport@lists.sourceforge.net>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Colin Cross <ccross@android.com>,
+        "kernel-team@android.com" <kernel-team@android.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        Fabio Estevam <festevam@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Nicolas Pitre <nico@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Sricharan R <r.sricharan@ti.com>, Marc Zyngier <Marc.Zyngier@arm.com>
+Subject: Re: [PATCH v11 06/19] irqchip: gic: Provide support for interrupt
+ grouping
+References: <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org> <1409662853-29313-1-git-send-email-daniel.thompson@linaro.org> <1409662853-29313-7-git-send-email-daniel.thompson@linaro.org> <20140902193355.GW30401@n2100.arm.linux.org.uk> <CBF5C246-DBB2-4FC3-A507-CA3E15013F7C@arm.com>
+In-Reply-To: <CBF5C246-DBB2-4FC3-A507-CA3E15013F7C@arm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 02/09/14 22:36, Catalin Marinas wrote:
+> On 2 Sep 2014, at 20:33, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+>> On Tue, Sep 02, 2014 at 02:00:40PM +0100, Daniel Thompson wrote:
+>>> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+>>> index 4b959e6..423707c 100644
+>>> --- a/drivers/irqchip/irq-gic.c
+>>> +++ b/drivers/irqchip/irq-gic.c
+>>> @@ -41,6 +41,9 @@
+>>> #include <linux/irqchip/arm-gic.h>
+>>>
+>>> #include <asm/cputype.h>
+>>> +#ifdef CONFIG_FIQ
+>>> +#include <asm/fiq.h>
+>>> +#endif
+>>
+>> Is there much advantage to this ifdef over providing a dummy asm/fiq.h
+>> in ARM64?
+> 
+> While it’s unlikely we’ll use FIQs on arm64 (they are generally
+> reserved for the secure world/firmware), I don’t mind an empty
+> asm/fiq.h file.
 
-On Mon, Aug 18, 2014 at 1:18 AM, Stephane Eranian <eranian@google.com> wrote:
-> This short patch series add the ability to sample the interrupted
-> machine state for each hardware sample. This is useful to analyze
-> the state after certain events, for instance for function value
-> profiling after a call instruction.
->
-> The patch extends the interface with a new PERF_SAMPLE_REGS_INTR
-> smaple_type flag. The register to sample can be named in the
-> sample_regs_intr bitmask for each event. The name and bit
-> position for each register is architecture dependent and
-> provided, just like for PERF_SAMPLE_REGS_USER by asm/perf_regs.h.
->
-> The support is similar to PERF_SAMPLE_REGS_USER.
->
-> On Intel x86, the series includes support for capturing the
-> PEBS state as well. When precise sampling is used, the interrupted
-> state is collect from the PEBS records, at least partially.
-> The PEBS machine state is a subset of the machine state.
->
-> The series provides access to this new feature in perf record
-> with the -I option. It is possible to display the sampled
-> register values using perf report -D.
->
-> This patch series is the fundation for a future series adding
-> function value profiling.
->
-> In V2, we address the issues raised during reviews:
->  - add sample parsing test
->  - shorten perf record option to --intr-regs
->  - added man page for perf record -I/--intr-regs option
->  - refactor register printf code between user and intr regs
->  - rebase to v3.16-rc3
->
-> In V3, we rebase to 3.16.0+ and made the modifications suggested
-> by PeterZ. We also integrated his patch to improve the layout
-> of perf_sample_data.
->
->
-> Peter Zijlstra (1):
->   perf: improve perf_sample_data struct layout
->
-> Stephane Eranian (5):
->   perf: add ability to sample machine state on interrupt
->   perf/x86: add support for sampling PEBS machine state registers
->   perf tools: add core support for sampling intr machine state regs
->   perf/tests: add interrupted state sample parsing test
->   perf record: add new -I option to sample interrupted machine state
->
-any comment on this updated series?
+Thanks Catalin, Thanks Russell.
 
->  arch/x86/kernel/cpu/perf_event_intel_ds.c |   17 +++++++++
->  include/linux/perf_event.h                |   37 ++++++++++---------
->  include/uapi/linux/perf_event.h           |   14 +++++++-
->  kernel/events/core.c                      |   49 +++++++++++++++++++++++--
->  tools/perf/Documentation/perf-record.txt  |    6 ++++
->  tools/perf/builtin-record.c               |    2 ++
->  tools/perf/perf.h                         |    1 +
->  tools/perf/tests/sample-parsing.c         |   55 +++++++++++++++++++++--------
->  tools/perf/util/event.h                   |    1 +
->  tools/perf/util/evsel.c                   |   46 +++++++++++++++++++++++-
->  tools/perf/util/session.c                 |   44 ++++++++++++++++++++---
->  11 files changed, 230 insertions(+), 42 deletions(-)
->
-> --
-> 1.7.9.5
->
+I will do this.
+
