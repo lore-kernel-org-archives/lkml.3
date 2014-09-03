@@ -1,63 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932923AbaICOo4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 10:44:56 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40465 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932515AbaICOoy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 10:44:54 -0400
-Date: Wed, 3 Sep 2014 16:44:50 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Kautuk Consul <consul.kautuk@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
-        Ionut Alexa <ionut.m.alexa@gmail.com>,
-        Guillaume Morin <guillaume@morinfr.org>, linux-kernel@vger.kernel.org,
-        Kirill Tkhai <tkhai@yandex.ru>
-Subject: Re: [PATCH 1/1] do_exit(): Solve possibility of BUG() due to race
- with try_to_wake_up()
-Message-ID: <20140903144450.GB7083@twins.programming.kicks-ass.net>
-References: <1408964064-21447-1-git-send-email-consul.kautuk@gmail.com>
- <20140825155738.GA5944@redhat.com>
- <20140901153935.GQ27892@worktop.ger.corp.intel.com>
- <20140901175851.GA15210@redhat.com>
- <20140901190931.GD5806@worktop.ger.corp.intel.com>
- <20140902155208.GA28668@redhat.com>
- <20140902164714.GA17033@redhat.com>
- <20140902173910.GF27892@worktop.ger.corp.intel.com>
- <20140903133640.GA25439@redhat.com>
+	id S932870AbaICOqq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 10:46:46 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:33781 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753751AbaICOqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 10:46:43 -0400
+Date: Wed, 3 Sep 2014 09:46:11 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Vivek Gautam <gautam.vivek@samsung.com>
+CC: Felipe Balbi <balbi@ti.com>, Daniele Forsi <dforsi@gmail.com>,
+        USB list <linux-usb@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        kishon <kishon@ti.com>, Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH 5/5] phy: exynos5-usbdrd: Adding Kconfig dependency for
+ Exynos7
+Message-ID: <20140903144611.GE31855@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1409212920-28526-1-git-send-email-gautam.vivek@samsung.com>
+ <1409212920-28526-6-git-send-email-gautam.vivek@samsung.com>
+ <CAN_we7MQAqEsRaQc_pkRE_KXx9zZNLDBR2aHUrazM30Nv3udmQ@mail.gmail.com>
+ <CAFp+6iHsfg6Ru0LBN=JviV=-mSdmuSo9Te3EXYF+X8jssD_BYQ@mail.gmail.com>
+ <20140902143711.GD16872@saruman.home>
+ <CAFp+6iE4V4bWHGasr2qNC14mGNAfjQbgerCDMLLatnQQJ86NuA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SNIs70sCzqvszXB4"
 Content-Disposition: inline
-In-Reply-To: <20140903133640.GA25439@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CAFp+6iE4V4bWHGasr2qNC14mGNAfjQbgerCDMLLatnQQJ86NuA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 03, 2014 at 03:36:40PM +0200, Oleg Nesterov wrote:
-> Peter, sorry for slow responses.
+--SNIs70sCzqvszXB4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-No worries, I'm not entirely fast myself. Slept most of the day :-)
+On Wed, Sep 03, 2014 at 09:32:14AM +0530, Vivek Gautam wrote:
+> On Tue, Sep 2, 2014 at 8:07 PM, Felipe Balbi <balbi@ti.com> wrote:
+> > On Mon, Sep 01, 2014 at 01:30:21PM +0530, Vivek Gautam wrote:
+> >> On Thu, Aug 28, 2014 at 8:36 PM, Daniele Forsi <dforsi@gmail.com> wrot=
+e:
+> >> > 2014-08-28 10:02 GMT+02:00 Vivek Gautam:
+> >> >
+> >> >> This USB 3.0 PHY controller is also present on Exynos7
+> >> >> platform, so adding the dependency on ARCH_EXYNOS7 for this driver.
+> >> >
+> >> >> +++ b/drivers/phy/Kconfig
+> >> >> @@ -186,7 +186,7 @@ config PHY_EXYNOS5250_USB2
+> >> >>
+> >> >>  config PHY_EXYNOS5_USBDRD
+> >> >>         tristate "Exynos5 SoC series USB DRD PHY driver"
+> >> >> -       depends on ARCH_EXYNOS5 && OF
+> >> >> +       depends on (ARCH_EXYNOS5 || ARCH_EXYNOS7) && OF
+> >> >
+> >> > shouldn't that prompt and its help text be updated to mention also E=
+xynos7?
+> >>
+> >> Right, even that has to be updated accordingly. Will update the same i=
+n next
+> >> version of the patch. Thanks for pointing this.
+> >
+> > I would rather change that to ARCH_EXYNOS, unless Kishon doesn't like
+> > that idea. The thing is that this will likely need to be patches for
+> > exynos8, 9, 10, 11...
+>=20
+> Yes, after we have the 2nd version of Exynos7 support patches, it makes
+> more sense to keep dependency on ARCH_EXYNOS.
 
-> Ah, I simply do not know what is cheaper, even on x86. Well, we need
-> to enable/disable irqs, but again I do not really know how much does
-> this cost. 
+thank you, that'll help new silicon wakeup; one less thing to patch :-p
 
-Ah good point about that IRQ thing, yes that's horribly expensive.
+--=20
+balbi
 
-> I can even say what (imo) looks better, lock/unlock above or
-> 
-> 	// Ensure that the previous __set_current_state(RUNNING) can't
-> 	// leak after spin_unlock_wait()
-> 	smp_mb();
-> 	spin_unlock_wait();
-> 	// Another mb to ensure this too can't be reordered with unlock_wait
-> 	set_current_state(TASK_DEAD);
-> 
-> What do you think looks better?
+--SNIs70sCzqvszXB4
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-spin_unlock_wait() would be a control dependency right? Therefore that
-store could not creep up anyhow.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUBymzAAoJEIaOsuA1yqREYaEQAJ9dKi8ErbHY2N98fpeo3a3W
+pqe496n8nmczlK3x1mCcEYwqPQcX95mDI11iKArSfCnaSQA5shMoGel3tjWFS6yQ
+3nCVpoi78PLvgwCu6HDPOuCCa74HRnW1eRS+gnnnEoVA2oufxU76G/f8WkYJFQkm
+EyMUZ+4nn1XrdXyudpaf8hWzVu7Ru2TvUx4HTe0QLRmFr1uxpfN/sAKAcjmx+Kn1
+zITKZ22qYt1RlN+mB3YqpENZzF9LV57AWHvy+RtJarFbMtHBJsbYruXKoxLbHbHK
+Q9qtDHNNq27cNAWlLsjFVAXMgAfUNkVfX/9qsH0NCidGVf4yD/SlM8QALaH5fKHX
+/JjBvjWU9qTScXCa3IcQxv8uOcgQdAioePEHQ7cvU2aVZzvRC3rbbXgsW46AtJqO
+0niicdNmkhv2E0ImlSWgc3ZvG9z440AaeMKJuqH22utUNUR6I0hngf1jlyJUa59P
+m5yrWXkYJVnSwKkW9I/KhDPGWYbygAcMVsS9ReN0p5I+fXAiqi0BfQlcNgrCyJfs
+QPQ6snXCFdQJMkz5xDC0rumxgdLELMNuMd83HeHuOfRZaurHkXswS76rsI8yVRQ5
++eIuSDB2/XGrrWlTo5YThB32dd+Ak54g0rtpl1Yqg13gSbmnmQif7fByGJ7RxHIp
+eqrAfEoXvlxElVLR6bSu
+=ASkT
+-----END PGP SIGNATURE-----
+
+--SNIs70sCzqvszXB4--
