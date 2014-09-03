@@ -1,234 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932500AbaICJ6e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 05:58:34 -0400
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:57456 "EHLO
+	id S932521AbaICJ6j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 05:58:39 -0400
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:57460 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932470AbaICJ6a (ORCPT
+	by vger.kernel.org with ESMTP id S932470AbaICJ6h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 05:58:30 -0400
+	Wed, 3 Sep 2014 05:58:37 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 13/56] isofs: Fix unbounded recursion when processing relocated directories
-Date: Wed,  3 Sep 2014 11:26:32 +0200
-Message-Id: <e4ca8b780c82c04ec03fcd05d9e3f92fc6de6347.1409735865.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 54/56] x86/efi: Enforce CONFIG_RELOCATABLE for EFI boot stub
+Date: Wed,  3 Sep 2014 11:27:13 +0200
+Message-Id: <0defc6bd73004bc91727595c1380d2b0992ac79e.1409735865.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <b4839e6cd4a236a81725e422b2e05c26fe36048a.1409735865.git.jslaby@suse.cz>
 References: <b4839e6cd4a236a81725e422b2e05c26fe36048a.1409735865.git.jslaby@suse.cz>
 In-Reply-To: <cover.1409735865.git.jslaby@suse.cz>
 References: <cover.1409735865.git.jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kara <jack@suse.cz>
+From: Matt Fleming <matt.fleming@intel.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 410dd3cf4c9b36f27ed4542ee18b1af5e68645a4 upstream.
+commit 7b2a583afb4ab894f78bc0f8bd136e96b6499a7e upstream.
 
-We did not check relocated directory in any way when processing Rock
-Ridge 'CL' tag. Thus a corrupted isofs image can possibly have a CL
-entry pointing to another CL entry leading to possibly unbounded
-recursion in kernel code and thus stack overflow or deadlocks (if there
-is a loop created from CL entries).
+Without CONFIG_RELOCATABLE the early boot code will decompress the
+kernel to LOAD_PHYSICAL_ADDR. While this may have been fine in the BIOS
+days, that isn't going to fly with UEFI since parts of the firmware
+code/data may be located at LOAD_PHYSICAL_ADDR.
 
-Fix the problem by not allowing CL entry to point to a directory entry
-with CL entry (such use makes no good sense anyway) and by checking
-whether CL entry doesn't point to itself.
+Straying outside of the bounds of the regions we've explicitly requested
+from the firmware will cause all sorts of trouble. Bruno reports that
+his machine resets while trying to decompress the kernel image.
 
-Reported-by: Chris Evans <cevans@google.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+We already go to great pains to ensure the kernel is loaded into a
+suitably aligned buffer, it's just that the address isn't necessarily
+LOAD_PHYSICAL_ADDR, because we can't guarantee that address isn't in-use
+by the firmware.
+
+Explicitly enforce CONFIG_RELOCATABLE for the EFI boot stub, so that we
+can load the kernel at any address with the correct alignment.
+
+Reported-by: Bruno Prémont <bonbons@linux-vserver.org>
+Tested-by: Bruno Prémont <bonbons@linux-vserver.org>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/isofs/inode.c | 15 ++++++++-------
- fs/isofs/isofs.h | 23 +++++++++++++++++++----
- fs/isofs/rock.c  | 39 ++++++++++++++++++++++++++++-----------
- 3 files changed, 55 insertions(+), 22 deletions(-)
+ arch/x86/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/isofs/inode.c b/fs/isofs/inode.c
-index e5d408a7ea4a..2e2af97df075 100644
---- a/fs/isofs/inode.c
-+++ b/fs/isofs/inode.c
-@@ -61,7 +61,7 @@ static void isofs_put_super(struct super_block *sb)
- 	return;
- }
- 
--static int isofs_read_inode(struct inode *);
-+static int isofs_read_inode(struct inode *, int relocated);
- static int isofs_statfs (struct dentry *, struct kstatfs *);
- 
- static struct kmem_cache *isofs_inode_cachep;
-@@ -1258,7 +1258,7 @@ out_toomany:
- 	goto out;
- }
- 
--static int isofs_read_inode(struct inode *inode)
-+static int isofs_read_inode(struct inode *inode, int relocated)
- {
- 	struct super_block *sb = inode->i_sb;
- 	struct isofs_sb_info *sbi = ISOFS_SB(sb);
-@@ -1403,7 +1403,7 @@ static int isofs_read_inode(struct inode *inode)
- 	 */
- 
- 	if (!high_sierra) {
--		parse_rock_ridge_inode(de, inode);
-+		parse_rock_ridge_inode(de, inode, relocated);
- 		/* if we want uid/gid set, override the rock ridge setting */
- 		if (sbi->s_uid_set)
- 			inode->i_uid = sbi->s_uid;
-@@ -1482,9 +1482,10 @@ static int isofs_iget5_set(struct inode *ino, void *data)
-  * offset that point to the underlying meta-data for the inode.  The
-  * code below is otherwise similar to the iget() code in
-  * include/linux/fs.h */
--struct inode *isofs_iget(struct super_block *sb,
--			 unsigned long block,
--			 unsigned long offset)
-+struct inode *__isofs_iget(struct super_block *sb,
-+			   unsigned long block,
-+			   unsigned long offset,
-+			   int relocated)
- {
- 	unsigned long hashval;
- 	struct inode *inode;
-@@ -1506,7 +1507,7 @@ struct inode *isofs_iget(struct super_block *sb,
- 		return ERR_PTR(-ENOMEM);
- 
- 	if (inode->i_state & I_NEW) {
--		ret = isofs_read_inode(inode);
-+		ret = isofs_read_inode(inode, relocated);
- 		if (ret < 0) {
- 			iget_failed(inode);
- 			inode = ERR_PTR(ret);
-diff --git a/fs/isofs/isofs.h b/fs/isofs/isofs.h
-index 99167238518d..0ac4c1f73fbd 100644
---- a/fs/isofs/isofs.h
-+++ b/fs/isofs/isofs.h
-@@ -107,7 +107,7 @@ extern int iso_date(char *, int);
- 
- struct inode;		/* To make gcc happy */
- 
--extern int parse_rock_ridge_inode(struct iso_directory_record *, struct inode *);
-+extern int parse_rock_ridge_inode(struct iso_directory_record *, struct inode *, int relocated);
- extern int get_rock_ridge_filename(struct iso_directory_record *, char *, struct inode *);
- extern int isofs_name_translate(struct iso_directory_record *, char *, struct inode *);
- 
-@@ -118,9 +118,24 @@ extern struct dentry *isofs_lookup(struct inode *, struct dentry *, unsigned int
- extern struct buffer_head *isofs_bread(struct inode *, sector_t);
- extern int isofs_get_blocks(struct inode *, sector_t, struct buffer_head **, unsigned long);
- 
--extern struct inode *isofs_iget(struct super_block *sb,
--                                unsigned long block,
--                                unsigned long offset);
-+struct inode *__isofs_iget(struct super_block *sb,
-+			   unsigned long block,
-+			   unsigned long offset,
-+			   int relocated);
-+
-+static inline struct inode *isofs_iget(struct super_block *sb,
-+				       unsigned long block,
-+				       unsigned long offset)
-+{
-+	return __isofs_iget(sb, block, offset, 0);
-+}
-+
-+static inline struct inode *isofs_iget_reloc(struct super_block *sb,
-+					     unsigned long block,
-+					     unsigned long offset)
-+{
-+	return __isofs_iget(sb, block, offset, 1);
-+}
- 
- /* Because the inode number is no longer relevant to finding the
-  * underlying meta-data for an inode, we are free to choose a more
-diff --git a/fs/isofs/rock.c b/fs/isofs/rock.c
-index c0bf42472e40..f488bbae541a 100644
---- a/fs/isofs/rock.c
-+++ b/fs/isofs/rock.c
-@@ -288,12 +288,16 @@ eio:
- 	goto out;
- }
- 
-+#define RR_REGARD_XA 1
-+#define RR_RELOC_DE 2
-+
- static int
- parse_rock_ridge_inode_internal(struct iso_directory_record *de,
--				struct inode *inode, int regard_xa)
-+				struct inode *inode, int flags)
- {
- 	int symlink_len = 0;
- 	int cnt, sig;
-+	unsigned int reloc_block;
- 	struct inode *reloc;
- 	struct rock_ridge *rr;
- 	int rootflag;
-@@ -305,7 +309,7 @@ parse_rock_ridge_inode_internal(struct iso_directory_record *de,
- 
- 	init_rock_state(&rs, inode);
- 	setup_rock_ridge(de, inode, &rs);
--	if (regard_xa) {
-+	if (flags & RR_REGARD_XA) {
- 		rs.chr += 14;
- 		rs.len -= 14;
- 		if (rs.len < 0)
-@@ -485,12 +489,22 @@ repeat:
- 					"relocated directory\n");
- 			goto out;
- 		case SIG('C', 'L'):
--			ISOFS_I(inode)->i_first_extent =
--			    isonum_733(rr->u.CL.location);
--			reloc =
--			    isofs_iget(inode->i_sb,
--				       ISOFS_I(inode)->i_first_extent,
--				       0);
-+			if (flags & RR_RELOC_DE) {
-+				printk(KERN_ERR
-+				       "ISOFS: Recursive directory relocation "
-+				       "is not supported\n");
-+				goto eio;
-+			}
-+			reloc_block = isonum_733(rr->u.CL.location);
-+			if (reloc_block == ISOFS_I(inode)->i_iget5_block &&
-+			    ISOFS_I(inode)->i_iget5_offset == 0) {
-+				printk(KERN_ERR
-+				       "ISOFS: Directory relocation points to "
-+				       "itself\n");
-+				goto eio;
-+			}
-+			ISOFS_I(inode)->i_first_extent = reloc_block;
-+			reloc = isofs_iget_reloc(inode->i_sb, reloc_block, 0);
- 			if (IS_ERR(reloc)) {
- 				ret = PTR_ERR(reloc);
- 				goto out;
-@@ -637,9 +651,11 @@ static char *get_symlink_chunk(char *rpnt, struct rock_ridge *rr, char *plimit)
- 	return rpnt;
- }
- 
--int parse_rock_ridge_inode(struct iso_directory_record *de, struct inode *inode)
-+int parse_rock_ridge_inode(struct iso_directory_record *de, struct inode *inode,
-+			   int relocated)
- {
--	int result = parse_rock_ridge_inode_internal(de, inode, 0);
-+	int flags = relocated ? RR_RELOC_DE : 0;
-+	int result = parse_rock_ridge_inode_internal(de, inode, flags);
- 
- 	/*
- 	 * if rockridge flag was reset and we didn't look for attributes
-@@ -647,7 +663,8 @@ int parse_rock_ridge_inode(struct iso_directory_record *de, struct inode *inode)
- 	 */
- 	if ((ISOFS_SB(inode->i_sb)->s_rock_offset == -1)
- 	    && (ISOFS_SB(inode->i_sb)->s_rock == 2)) {
--		result = parse_rock_ridge_inode_internal(de, inode, 14);
-+		result = parse_rock_ridge_inode_internal(de, inode,
-+							 flags | RR_REGARD_XA);
- 	}
- 	return result;
- }
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 9b6f78f57d86..f968d8527190 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1608,6 +1608,7 @@ config EFI
+ config EFI_STUB
+        bool "EFI stub support"
+        depends on EFI
++       select RELOCATABLE
+        ---help---
+           This kernel feature allows a bzImage to be loaded directly
+ 	  by EFI firmware without the use of a bootloader.
 -- 
 2.1.0
 
