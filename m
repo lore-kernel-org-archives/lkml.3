@@ -1,215 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754865AbaICS5s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 14:57:48 -0400
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:57339 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754141AbaICS5r (ORCPT
+	id S1755168AbaICS6Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 14:58:16 -0400
+Received: from smtp01.post.sk ([195.146.144.201]:55074 "EHLO smtp01.post.sk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750833AbaICS6O convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 14:57:47 -0400
+	Wed, 3 Sep 2014 14:58:14 -0400
+Date: Wed, 3 Sep 2014 20:58:10 +0200 (CEST)
+From: Husam Al Sayed <oscar55@post.sk>
+Reply-To: "alsayedhusa@hotmail.com" <alsayedhusa@hotmail.com>
+Cc: sjenning@linux.vnet.ibm.com, linux-mm@kvack.org,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+Message-ID: <1189993338.347316.1409770690209.JavaMail.root@mbox05>
+Subject: FROM: Husam Al Sayed.
 MIME-Version: 1.0
-In-Reply-To: <1407456558-18509-1-git-send-email-ahh@google.com>
-References: <1407456558-18509-1-git-send-email-ahh@google.com>
-From: Paul Turner <pjt@google.com>
-Date: Wed, 3 Sep 2014 11:57:14 -0700
-Message-ID: <CAPM31R+1=pOPkHT1O87=GXFOYP77YR=7aGugP+BZi+ixypE2qg@mail.gmail.com>
-Subject: Re: [PATCH] sched: fix timeval conversion to jiffies
-To: Andrew Hunter <ahh@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, unmobile@gmail.com,
-        Aaron Jacobs <jacobsa@google.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Zimbra 6.0.10_GA_2692 (ZimbraWebClient - FF3.0 (Win)/6.0.10_GA_2692)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-John -- Any chance to take a look at this?  (The dilation is pretty
-unfortunate when profiling reprograms a timer with it.)
+FROM: Husam Al Sayed.
 
-On Thu, Aug 7, 2014 at 5:09 PM, Andrew Hunter <ahh@google.com> wrote:
-> timeval_to_jiffies rounding was broken.  It essentially computed
-> (eliding seconds)
->
-> jiffies = usec  * (NSEC_PER_USEC/TICK_NSEC)
->
-> by using scaling arithmetic, which took the best approximation of
-> NSEC_PER_USEC/TICK_NSEC with denominator of 2^USEC_JIFFIE_SC =
-> x/(2^USEC_JIFFIE_SC), and computed:
->
-> jiffies = (usec * x) >> USEC_JIFFIE_SC
->
-> and it rounded this calculation up in the intermediate form (since we
-> can't necessarily exactly represent TICK_NSEC in usec.) But the
-> scaling arithmetic is a (very slight) *over*approximation of the true
-> value: rounding the division up by adding 2^USEC_JIFFIE_SC - 1, when
-> the error in scaling was added in, was sufficient to add one jiffie to
-> the final result.
->
-> In particular, with HZ=1000, we consistently computed that 10000 usec
-> was 11 jiffies; the same was true for any exact multiple of
-> TICK_NSEC. This is obviously bad as a general rule, and caused
-> observable user problems with setitimer() at the very least:
->
-> setitimer(ITIMER_PROF, &val, NULL);
-> setitimer(ITIMER_PROF, NULL, &val);
->
-> would actually add a tick to val!
->
-> We could possibly still round in the intermediate form, adding
-> something less than 2^USEC_JIFFIE_SC - 1, but easier still is to
-> convert usec->nsec, round in nanoseconds, and then convert using
-> time*spec*_to_jiffies.  This adds one constant multiplication, and is
-> not observably slower in microbenchmarks on recent x86 hardware.
->
-> Tested: the following program:
->
-> int main() {
->   struct itimerval zero = {{0, 0}, {0, 0}};
->   /* Initially set to 10 ms. */
->   struct itimerval initial = zero;
->   initial.it_interval.tv_usec = 10000;
->   setitimer(ITIMER_PROF, &initial, NULL);
->   /* Save and restore several times. */
->   for (size_t i = 0; i < 10; ++i) {
->     struct itimerval prev;
->     setitimer(ITIMER_PROF, &zero, &prev);
->     /* on old kernels, this goes up by TICK_USEC every iteration */
->     printf("previous value: %ld %ld %ld %ld\n",
->            prev.it_interval.tv_sec, prev.it_interval.tv_usec,
->            prev.it_value.tv_sec, prev.it_value.tv_usec);
->     setitimer(ITIMER_PROF, &prev, NULL);
->   }
->     return 0;
-> }
->
-> Signed-off-by: Andrew Hunter <ahh@google.com>
-> Reviewed-by: Paul Turner <pjt@google.com>
-> Reported-by: Aaron Jacobs <jacobsa@google.com>
-> Change-Id: I7cd0f0764847fd055d39531f54e6ea3dd3ce5453
-> ---
->  include/linux/jiffies.h | 12 -----------
->  kernel/time.c           | 54 +++++++++++++++++++++++++++----------------------
->  2 files changed, 30 insertions(+), 36 deletions(-)
->
-> diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
-> index 1f44466..c367cbd 100644
-> --- a/include/linux/jiffies.h
-> +++ b/include/linux/jiffies.h
-> @@ -258,23 +258,11 @@ extern unsigned long preset_lpj;
->  #define SEC_JIFFIE_SC (32 - SHIFT_HZ)
->  #endif
->  #define NSEC_JIFFIE_SC (SEC_JIFFIE_SC + 29)
-> -#define USEC_JIFFIE_SC (SEC_JIFFIE_SC + 19)
->  #define SEC_CONVERSION ((unsigned long)((((u64)NSEC_PER_SEC << SEC_JIFFIE_SC) +\
->                                  TICK_NSEC -1) / (u64)TICK_NSEC))
->
->  #define NSEC_CONVERSION ((unsigned long)((((u64)1 << NSEC_JIFFIE_SC) +\
->                                          TICK_NSEC -1) / (u64)TICK_NSEC))
-> -#define USEC_CONVERSION  \
-> -                    ((unsigned long)((((u64)NSEC_PER_USEC << USEC_JIFFIE_SC) +\
-> -                                        TICK_NSEC -1) / (u64)TICK_NSEC))
-> -/*
-> - * USEC_ROUND is used in the timeval to jiffie conversion.  See there
-> - * for more details.  It is the scaled resolution rounding value.  Note
-> - * that it is a 64-bit value.  Since, when it is applied, we are already
-> - * in jiffies (albit scaled), it is nothing but the bits we will shift
-> - * off.
-> - */
-> -#define USEC_ROUND (u64)(((u64)1 << USEC_JIFFIE_SC) - 1)
->  /*
->   * The maximum jiffie value is (MAX_INT >> 1).  Here we translate that
->   * into seconds.  The 64-bit case will overflow if we are not careful,
-> diff --git a/kernel/time.c b/kernel/time.c
-> index 7c7964c..3c49ab4 100644
-> --- a/kernel/time.c
-> +++ b/kernel/time.c
-> @@ -496,17 +496,20 @@ EXPORT_SYMBOL(usecs_to_jiffies);
->   * that a remainder subtract here would not do the right thing as the
->   * resolution values don't fall on second boundries.  I.e. the line:
->   * nsec -= nsec % TICK_NSEC; is NOT a correct resolution rounding.
-> + * Note that due to the small error in the multiplier here, this
-> + * rounding is incorrect for sufficiently large values of tv_nsec, but
-> + * well formed timespecs should have tv_nsec < NSEC_PER_SEC, so we're
-> + * OK.
->   *
->   * Rather, we just shift the bits off the right.
->   *
->   * The >> (NSEC_JIFFIE_SC - SEC_JIFFIE_SC) converts the scaled nsec
->   * value to a scaled second value.
->   */
-> -unsigned long
-> -timespec_to_jiffies(const struct timespec *value)
-> +static unsigned long
-> +__timespec_to_jiffies(unsigned long sec, long nsec)
->  {
-> -       unsigned long sec = value->tv_sec;
-> -       long nsec = value->tv_nsec + TICK_NSEC - 1;
-> +       nsec = nsec + TICK_NSEC - 1;
->
->         if (sec >= MAX_SEC_IN_JIFFIES){
->                 sec = MAX_SEC_IN_JIFFIES;
-> @@ -517,6 +520,13 @@ timespec_to_jiffies(const struct timespec *value)
->                  (NSEC_JIFFIE_SC - SEC_JIFFIE_SC))) >> SEC_JIFFIE_SC;
->
->  }
-> +
-> +unsigned long
-> +timespec_to_jiffies(const struct timespec *value)
-> +{
-> +       return __timespec_to_jiffies(value->tv_sec, value->tv_nsec);
-> +}
-> +
->  EXPORT_SYMBOL(timespec_to_jiffies);
->
->  void
-> @@ -533,31 +543,27 @@ jiffies_to_timespec(const unsigned long jiffies, struct timespec *value)
->  }
->  EXPORT_SYMBOL(jiffies_to_timespec);
->
-> -/* Same for "timeval"
-> +/*
-> + * We could use a similar algorithm to timespec_to_jiffies (with a
-> + * different multiplier for usec instead of nsec). But this has a
-> + * problem with rounding: we can't exactly add TICK_NSEC - 1 to the
-> + * usec value, since it's not necessarily integral.
->   *
-> - * Well, almost.  The problem here is that the real system resolution is
-> - * in nanoseconds and the value being converted is in micro seconds.
-> - * Also for some machines (those that use HZ = 1024, in-particular),
-> - * there is a LARGE error in the tick size in microseconds.
-> -
-> - * The solution we use is to do the rounding AFTER we convert the
-> - * microsecond part.  Thus the USEC_ROUND, the bits to be shifted off.
-> - * Instruction wise, this should cost only an additional add with carry
-> - * instruction above the way it was done above.
-> + * We could instead round in the intermediate scaled representation
-> + * (i.e. in units of 1/2^(large scale) jiffies) but that's also
-> + * perilous: the scaling introduces a small positive error, which
-> + * combined with a division-rounding-upward (i.e. adding 2^(scale) - 1
-> + * units to the intermediate before shifting) leads to accidental
-> + * overflow and overestimates.
-> + *
-> + * At the cost of one additional multiplication by a constant, just
-> + * use the timespec implementation.
->   */
->  unsigned long
->  timeval_to_jiffies(const struct timeval *value)
->  {
-> -       unsigned long sec = value->tv_sec;
-> -       long usec = value->tv_usec;
-> -
-> -       if (sec >= MAX_SEC_IN_JIFFIES){
-> -               sec = MAX_SEC_IN_JIFFIES;
-> -               usec = 0;
-> -       }
-> -       return (((u64)sec * SEC_CONVERSION) +
-> -               (((u64)usec * USEC_CONVERSION + USEC_ROUND) >>
-> -                (USEC_JIFFIE_SC - SEC_JIFFIE_SC))) >> SEC_JIFFIE_SC;
-> +       return __timespec_to_jiffies(value->tv_sec,
-> +                                    value->tv_usec * NSEC_PER_USEC);
->  }
->  EXPORT_SYMBOL(timeval_to_jiffies);
->
-> --
-> 2.0.0.526.g5318336
->
+EMAIL:alsayedhusa@hotmail.com
+ 
+Hello,
+ 
+I decided to write you this proposal in good faith, believing that you will
+not betray me. I am Mr. Husam Al Sayed, a Bank officer here in U.A.E.
+ 
+One Mr. Peter Adams, a citizen of your country and Crude Oil dealer made a fixed deposit with my bank in 2005 for 108 calendar months, valued at US$30,000,000.00 (Thirty Million United State Dollars) the due date for this deposit contract was last 22nd of January 2014. Sadly Peter was among the death victims in the May 27 2006 Earthquake disaster in Java, Indonesia that killed over 5,000 people. He was in Indonesia on a business trip and that was how he met his untimely end. My bank management is yet to know about his death, I knew about it because he was my friend and I am his Account Officer. Peter did not mention any Next of Kin/ Heir when the account was opened, he was not married and no children. Last week my Bank Management requested that Peter should give instructions on what to do about his funds, if to renew the contract.
+ 
+I know this will happen and that is why I have been looking for a means to handle the situation, because if my Bank Directors happens to know that Peter is dead and do not have any Heir, they will take the funds for their personal use, so I don't want such to happen. That is why I am seeking your co-operation to present you as the Next of Kin/ Heir to the account, since you are a foreigner and my bank head quarters will release the account to you. There is no risk involved; the transaction will be executed under a legitimate arrangement that will protect us from any breach of law. It is better that we claim the money, than allowing the Bank Directors to take it, they are rich already. I am not a greedy person, so I am suggesting we share the funds in this ratio, 50/50%, equal sharing. Let me know your mind on this and please do treat this information highly confidential. We shall go over the details once I receive your urgent response. Please Urgently get back to me through this email address as soon as possible:
+ 
+ 
+ 
+Have a nice day and God bless. Anticipating your communication.
+ 
+Regards,
+FROM: Husam Al Sayed.
+EMAIL: alsayedhusa@hotmail.com
+_____________________________________________________________________
+
+Denne vyberame najlepsie hry - http://www.hrymat.sk
