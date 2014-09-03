@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932304AbaICJ5s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 05:57:48 -0400
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:57429 "EHLO
+	id S1756214AbaICJ4a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 05:56:30 -0400
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:57364 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932285AbaICJ5q (ORCPT
+	by vger.kernel.org with ESMTP id S1755904AbaICJ43 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 05:57:46 -0400
+	Wed, 3 Sep 2014 05:56:29 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Vidya Sagar <sagar.tv@gmail.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 51/56] PCI: Configure ASPM when enabling device
-Date: Wed,  3 Sep 2014 11:27:10 +0200
-Message-Id: <314db2642ade1eb728b661abfcc1c14fc51fa814.1409735865.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 46/56] Revert "KVM: x86: Increase the number of fixed MTRR regs to 10"
+Date: Wed,  3 Sep 2014 11:27:05 +0200
+Message-Id: <96de8d44b459c60fc5c854bbe58794f87b245449.1409735865.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <b4839e6cd4a236a81725e422b2e05c26fe36048a.1409735865.git.jslaby@suse.cz>
 References: <b4839e6cd4a236a81725e422b2e05c26fe36048a.1409735865.git.jslaby@suse.cz>
@@ -23,84 +23,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vidya Sagar <sagar.tv@gmail.com>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 1f6ae47ecff7f23da73417e068018b311f3b5583 upstream.
+commit 0d234daf7e0a3290a3a20c8087eefbd6335a5bd4 upstream.
 
-We can't do ASPM configuration at enumeration-time because enabling it
-makes some defective hardware unresponsive, even if ASPM is disabled later
-(see 41cd766b0659 ("PCI: Don't enable aspm before drivers have had a chance
-to veto it").  Therefore, we have to do it after a driver claims the
-device.
+This reverts commit 682367c494869008eb89ef733f196e99415ae862,
+which causes 32-bit SMP Windows 7 guests to panic.
 
-We previously configured ASPM in pci_set_power_state(), but that's not a
-very good place because it's not really related to setting the PCI device
-power state, and doing it there means:
+SeaBIOS has a limit on the number of MTRRs that it can handle,
+and this patch exceeded the limit.  Better revert it.
+Thanks to Nadav Amit for debugging the cause.
 
-  - We incorrectly skipped ASPM config when setting a device that's
-    already in D0 to D0.
-
-  - We unnecessarily configured ASPM when setting a device to a low-power
-    state (the ASPM feature only applies when the device is in D0).
-
-  - We unnecessarily configured ASPM when called from a .resume() method
-    (ASPM configuration needs to be restored during resume, but
-    pci_restore_pcie_state() should already do this).
-
-Move ASPM configuration from pci_set_power_state() to
-do_pci_enable_device() so we do it when a driver enables a device.
-
-[bhelgaas: changelog]
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=79621
-Fixes: db288c9c5f9d ("PCI / PM: restore the original behavior of pci_set_power_state()")
-Suggested-by: Bjorn Helgaas <bhelgaas@google.com>
-Signed-off-by: Vidya Sagar <sagar.tv@gmail.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Reported-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/pci/pci.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ arch/x86/include/asm/kvm_host.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 4108166ffdf4..2d163544fa51 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -782,12 +782,6 @@ int pci_set_power_state(struct pci_dev *dev, pci_power_t state)
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 694851592399..ec6c0395b512 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -92,7 +92,7 @@
+ #define KVM_REFILL_PAGES 25
+ #define KVM_MAX_CPUID_ENTRIES 80
+ #define KVM_NR_FIXED_MTRR_REGION 88
+-#define KVM_NR_VAR_MTRR 10
++#define KVM_NR_VAR_MTRR 8
  
- 	if (!__pci_complete_power_transition(dev, state))
- 		error = 0;
--	/*
--	 * When aspm_policy is "powersave" this call ensures
--	 * that ASPM is configured.
--	 */
--	if (!error && dev->bus->self)
--		pcie_aspm_powersave_config_link(dev->bus->self);
+ #define ASYNC_PF_PER_VCPU 64
  
- 	return error;
- }
-@@ -1120,12 +1114,18 @@ EXPORT_SYMBOL_GPL(pci_load_and_free_saved_state);
- static int do_pci_enable_device(struct pci_dev *dev, int bars)
- {
- 	int err;
-+	struct pci_dev *bridge;
- 	u16 cmd;
- 	u8 pin;
- 
- 	err = pci_set_power_state(dev, PCI_D0);
- 	if (err < 0 && err != -EIO)
- 		return err;
-+
-+	bridge = pci_upstream_bridge(dev);
-+	if (bridge)
-+		pcie_aspm_powersave_config_link(bridge);
-+
- 	err = pcibios_enable_device(dev, bars);
- 	if (err < 0)
- 		return err;
 -- 
 2.1.0
 
