@@ -1,59 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932867AbaICNhr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 09:37:47 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:43737 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932411AbaICNho (ORCPT
+	id S932874AbaICNiZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 09:38:25 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:41771 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755478AbaICNiX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 09:37:44 -0400
-Date: Wed, 3 Sep 2014 06:37:42 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Chris Ball <chris@printf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Asutosh Das <asutoshd@codeaurora.org>,
-        Venkat Gopalakrishnan <venkatg@codeaurora.org>,
-        Georgi Djakov <gdjakov@mm-sol.com>
-Subject: Re: [PATCH] mmc: sdhci-msm: Make tuning block table endian agnostic
-Message-ID: <20140903133742.GB28256@codeaurora.org>
-References: <1409702308-3023-1-git-send-email-sboyd@codeaurora.org>
- <CAPDyKFoboJGTzF3aQ=YBpWyVT6opTMgz_6gpOo5BRX30+hfCBQ@mail.gmail.com>
+	Wed, 3 Sep 2014 09:38:23 -0400
+Date: Wed, 3 Sep 2014 14:38:05 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Anand Moon <moon.linux@yahoo.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Nimrod Andy <B38611@freescale.com>, Frank Li <frank.li@freescale.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        fugang.duan@freescale.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] v2 fec_main iMX6Q DMA-API: device driver tries to free
+	DMA memory it has not allocated
+Message-ID: <20140903133805.GZ30401@n2100.arm.linux.org.uk>
+References: <1409746850-30850-1-git-send-email-moon.linux@yahoo.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAPDyKFoboJGTzF3aQ=YBpWyVT6opTMgz_6gpOo5BRX30+hfCBQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1409746850-30850-1-git-send-email-moon.linux@yahoo.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03, Ulf Hansson wrote:
-> On 3 September 2014 01:58, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> > If we're tuning on a big-endian CPU we'll never determine we properly
-> > tuned the device because we compare the data we received from the
-> > controller with a table that assumes the CPU is little-endian.
-> > Change the table to be an array of bytes instead of 32-bit words
-> > so we can use memcmp() without needing to byte-swap every word
-> > depending on the endianess of the CPU.
-> >
-> > Cc: Asutosh Das <asutoshd@codeaurora.org>
-> > Cc: Venkat Gopalakrishnan <venkatg@codeaurora.org>
-> > Cc: Georgi Djakov <gdjakov@mm-sol.com>
-> > Fixes: 415b5a75da43 "mmc: sdhci-msm: Add platform_execute_tuning implementation"
-> > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> 
-> Hi Stephen,
-> 
-> If you want me to pick this up, please repost to linux-mmc as well.
-> Otherwise you have my ack for it!
-> 
+On Wed, Sep 03, 2014 at 05:50:50PM +0530, Anand Moon wrote:
+> Check was added to check dma address should not be 0x0000000000000000
+> before unmap the dma.
+>  v1: remove unnecessary of bdp->cbd_bufaddr as suggested
+>  by  Andy <fugang.duan@freescale.com>
 
-Ok I'll repost it now.
+I still have a whole pile of commits, one of them cleans up the handling
+of this stuff.  Please hold off on this for the time being until I can
+dig out the appropriate commit.
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
