@@ -1,63 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932551AbaICNIf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 09:08:35 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:52472 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755893AbaICNIc (ORCPT
+	id S932645AbaICNJK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 09:09:10 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:47865 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932520AbaICNJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 09:08:32 -0400
-Message-ID: <1409749704.21827.66.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [PATCH 6/8] ima: remove unnecessary code
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Cc: linux-ima-devel@lists.sourceforge.net,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmitry.kasatkin@gmail.com
-Date: Wed, 03 Sep 2014 09:08:24 -0400
-In-Reply-To: <b698bd0778ead0491205b0fda4bf5ed6c67ecec3.1409728712.git.d.kasatkin@samsung.com>
-References: <cover.1409728712.git.d.kasatkin@samsung.com>
-	 <b698bd0778ead0491205b0fda4bf5ed6c67ecec3.1409728712.git.d.kasatkin@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14090313-1344-0000-0000-000003E9D729
+	Wed, 3 Sep 2014 09:09:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAPDyKFrnF4biUGkLgkzz2RNdY1yLp2_bfvoWMM55yx-_TG6ENw@mail.gmail.com>
+References: <1409672977-26972-1-git-send-email-jean-michel.hautbois@vodalys.com>
+ <CAPDyKFrwCzQJvbpbue4T=HWLmbq5sZOP3RXwiupKvXe71uboUw@mail.gmail.com>
+ <5406D942.4080405@intel.com> <CAPDyKFrnF4biUGkLgkzz2RNdY1yLp2_bfvoWMM55yx-_TG6ENw@mail.gmail.com>
+From: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
+Date: Wed, 3 Sep 2014 15:08:51 +0200
+X-Google-Sender-Auth: MF9KyeO2CN237M8Mx721iaFLzWs
+Message-ID: <CAL8zT=j0TfC=RaA5L+Zm3ACk=D57tb+k6HNrQnSjd4JY_iupCQ@mail.gmail.com>
+Subject: Re: [PATCH] mmc: sdhci-esdhc-imx: Enable boot partition access from DT
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Shawn Guo <shawn.guo@linaro.org>, Dong Aisheng <b29396@freescale.com>,
+        Peter Griffin <peter.griffin@linaro.org>,
+        "tgih.jun@samsung.com" <tgih.jun@samsung.com>, h80.chung@samsung.com,
+        Chris Ball <chris@printf.net>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-09-03 at 10:19 +0300, Dmitry Kasatkin wrote: 
-> If ima_appraise is 0, then action would not mandate to perform
-> appraisal and ima_appraise_measurement will never be called.
-> 
-> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+2014-09-03 11:09 GMT+02:00 Ulf Hansson <ulf.hansson@linaro.org>:
+> On 3 September 2014 11:02, Adrian Hunter <adrian.hunter@intel.com> wrote:
+>> On 09/03/2014 11:30 AM, Ulf Hansson wrote:
+>>> On 2 September 2014 17:49, Jean-Michel Hautbois
+>>> <jean-michel.hautbois@vodalys.com> wrote:
+>>>> This property is useful when we don't want to access boot partitions on eMMC
+>>>>
+>>>> Signed-off-by: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
+>>>> ---
+>>>>  Documentation/devicetree/bindings/mmc/mmc.txt | 1 +
+>>>>  drivers/mmc/host/sdhci-esdhc-imx.c            | 8 ++++++++
+>>>>  include/linux/platform_data/mmc-esdhc-imx.h   | 1 +
+>>>>  3 files changed, 10 insertions(+)
+>>>>
+>>>> diff --git a/Documentation/devicetree/bindings/mmc/mmc.txt b/Documentation/devicetree/bindings/mmc/mmc.txt
+>>>> index 431716e..59cc854 100644
+>>>> --- a/Documentation/devicetree/bindings/mmc/mmc.txt
+>>>> +++ b/Documentation/devicetree/bindings/mmc/mmc.txt
+>>>> @@ -40,6 +40,7 @@ Optional properties:
+>>>>  - mmc-hs200-1_2v: eMMC HS200 mode(1.2V I/O) is supported
+>>>>  - mmc-hs400-1_8v: eMMC HS400 mode(1.8V I/O) is supported
+>>>>  - mmc-hs400-1_2v: eMMC HS400 mode(1.2V I/O) is supported
+>>>> +- no-boot-part : when preset, tells to access boot partitions
+>>>>
+>>>>  *NOTE* on CD and WP polarity. To use common for all SD/MMC host controllers line
+>>>>  polarity properties, we have to fix the meaning of the "normal" and "inverted"
+>>>> diff --git a/drivers/mmc/host/sdhci-esdhc-imx.c b/drivers/mmc/host/sdhci-esdhc-imx.c
+>>>> index ccec0e3..439e663 100644
+>>>> --- a/drivers/mmc/host/sdhci-esdhc-imx.c
+>>>> +++ b/drivers/mmc/host/sdhci-esdhc-imx.c
+>>>> @@ -942,6 +942,11 @@ sdhci_esdhc_imx_probe_dt(struct platform_device *pdev,
+>>>>         if (of_property_read_u32(np, "fsl,delay-line", &boarddata->delay_line))
+>>>>                 boarddata->delay_line = 0;
+>>>>
+>>>> +       if (of_find_property(np, "no-boot-part", NULL))
+>>>> +               boarddata->access_boot_part = false;
+>>>> +       else
+>>>> +               boarddata->access_boot_part = true;
+>>>> +
+>>>>         return 0;
+>>>>  }
+>>>>  #else
+>>>> @@ -1119,6 +1124,9 @@ static int sdhci_esdhc_imx_probe(struct platform_device *pdev)
+>>>>                 host->quirks2 |= SDHCI_QUIRK2_NO_1_8_V;
+>>>>         }
+>>>>
+>>>> +       if (!boarddata->access_boot_part)
+>>>> +               host->mmc->caps2 |= MMC_CAP2_BOOTPART_NOACC;
+>>>> +
+>>>
+>>> Hmm, I don't think MMC_CAP2_BOOTPART_NOACC should have a DT binding.
+>>> Does it describe the hardware in some form?
+>>>
+>>> Actually I would like to question why MMC_CAP2_BOOTPART_NOACC exists
+>>> at all. If there are cards that don't supports the BOOT area,
+>>> shouldn't we have a card quirk for it instead of a host cap? Maybe
+>>> Adrian Hunter, how originally wrote the patch for adding
+>>> MMC_CAP2_BOOTPART_NOACC, could help me understand the reasons behind
+>>> it!?
+>>
+>> It was added because platform firmware was able to prevent access to the
+>> boot partitions (for security I think), so attempts to access them would
+>> fail messily.  It was not related to any specific card.
+>
+> Adrian, appreciate your clarification. After all it seems like adding
+> a DT binding for it should be appropriate.
+>
+> Kind regards
+> Uffe
 
-The policy determines whether or not a file should be appraised.
-Whether IMA is configured and enabled to appraise files is a different
-issue.  The test is not done in process_measurement(), but deferred to
-here.
+Thanks Adrian :).
+Well, there is boot partitions and rpmb partition, and maybe should we
+have a binding to prevent access to both of them ?
+Something else came to my mind, when you want to boot on eMMC, do you
+need to write u-boot in boot partitions or is it written at the
+logical adress 0 which is what fdisk uses as start ?
+Because, if this is not usuable but just scanned I can't see why we
+bother doing it... ?
 
-Mimi
-
-> ---
->  security/integrity/ima/ima_appraise.c | 2 --
->  1 file changed, 2 deletions(-)
-> 
-> diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-> index 225fd94..013ec3f 100644
-> --- a/security/integrity/ima/ima_appraise.c
-> +++ b/security/integrity/ima/ima_appraise.c
-> @@ -192,8 +192,6 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
->  	enum integrity_status status = INTEGRITY_UNKNOWN;
->  	int rc = xattr_len, hash_start = 0;
-> 
-> -	if (!ima_appraise)
-> -		return 0;
->  	if (!inode->i_op->getxattr)
->  		return INTEGRITY_UNKNOWN;
-> 
-
-
+Thanks,
+JM
