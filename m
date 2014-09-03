@@ -1,273 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756326AbaICKNP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 06:13:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23990 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753530AbaICKNK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 06:13:10 -0400
-Message-ID: <5406E9B0.101@redhat.com>
-Date: Wed, 03 Sep 2014 06:13:04 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
-MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: linux-kernel@vger.kernel.org, Peter Tyser <ptyser@xes-inc.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH] x86, lpc, Allow only one load of lpc_ich
-References: <1409695097-5831-1-git-send-email-prarit@redhat.com> <20140903074315.GB28985@lee--X1>
-In-Reply-To: <20140903074315.GB28985@lee--X1>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1756371AbaICKOD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 06:14:03 -0400
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:57306 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756071AbaICJzx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 05:55:53 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Russell King <rmk+kernel@arm.linux.org.uk>,
+        Dave Airlie <airlied@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 29/56] drm: omapdrm: fix compiler errors
+Date: Wed,  3 Sep 2014 11:26:48 +0200
+Message-Id: <8d46ae9b0ae92fde0d5b19406b43707a9562ff9c.1409735865.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <b4839e6cd4a236a81725e422b2e05c26fe36048a.1409735865.git.jslaby@suse.cz>
+References: <b4839e6cd4a236a81725e422b2e05c26fe36048a.1409735865.git.jslaby@suse.cz>
+In-Reply-To: <cover.1409735865.git.jslaby@suse.cz>
+References: <cover.1409735865.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-On 09/03/2014 03:43 AM, Lee Jones wrote:
-> [PATCH] x86, lpc, Allow only one load of lpc_ich
-> 
-> Please use $SUBJECT format corresponding to the subsystem.
-> 
-> This is not an X86 patch, it's an MFD one.
-> 
-> I would expecte to see something along the lines of:
-> 
->   mfd: lpc_ich: Prevent LCP devices from probing twice
+===============
 
-Sure, okay ... I was unsure as this relates only to x86 IIUC.
+commit 2d31ca3ad7d5d44c8adc7f253c96ce33f3a2e931 upstream.
 
-> 
-> On Tue, 02 Sep 2014, Prarit Bhargava wrote:
->> On multi-socket systems the following confusing splats are seen:
->>
->>  ACPI: If an ACPI driver is available for this device, you should use it instead of the native driver
->>  lpc_ich: Resource conflict(s) found affecting gpio_ich
->>  ------------[ cut here ]------------
->>  WARNING: CPU: 7 PID: 1813 at fs/sysfs/dir.c:31 sysfs_warn_dup+0x64/0x80()
->>  sysfs: cannot create duplicate filename '/bus/platform/devices/iTCO_wdt'
-> 
-> All this from here
-> 
-> ------------------8<--------------------
-> 
->>  Modules linked in: lpc_ich(+) crc32c_intel shpchp mfd_core acpi_cpufreq i2c_i801 dca xfs libcrc32c sd_mod crc_t10dif crct10dif_common ata_generic pata_acpi mgag200 syscopyarea sysfillrect sysimgblt i2c_algo_bit drm_kms_helper ttm mptsas drm scsi_transport_sas ata_piix mptscsih i2ccore libata mptbase dm_mirror dm_region_hash dm_log dm_mod
->>  CPU: 7 PID: 1813 Comm: systemd-udevd Not tainted 3.17.0-rc3+ #1
->>  Hardware name: IBM System x3950 M3 -[7145AC1]-/Node 1, Processor Card, BIOS -[G0E130WUS-1.31]- 07/23/2010
->>   0000000000000000 00000000f205abcf ffff88066bb7b8d0 ffffffff81647056
->>   ffff88066bb7b918 ffff88066bb7b908 ffffffff81072c9d ffff880273d05000
->>   ffff88027349d110 ffff880874c5cc30 0000000000000001 ffffffffffffffef
->>  Call Trace:
->>   [<ffffffff81647056>] dump_stack+0x45/0x56
->>   [<ffffffff81072c9d>] warn_slowpath_common+0x7d/0xa0
->>   [<ffffffff81072d1c>] warn_slowpath_fmt+0x5c/0x80
->>   [<ffffffff81256598>] ? kernfs_path+0x48/0x60
->>   [<ffffffff81259e34>] sysfs_warn_dup+0x64/0x80
->>   [<ffffffff8125a1b1>] sysfs_do_create_link_sd.isra.2+0xc1/0xd0
->>   [<ffffffff8125a1e5>] sysfs_create_link+0x25/0x50
->>   [<ffffffff81401689>] bus_add_device+0x119/0x200
->>   [<ffffffff813ff4b8>] device_add+0x498/0x630
->>   [<ffffffff810778f6>] ? __insert_resource+0x26/0x150
->>   [<ffffffff81404391>] platform_device_add+0xd1/0x2d0
->>   [<ffffffffa050b3f5>] mfd_add_device+0x285/0x320 [mfd_core]
->>   [<ffffffffa050b705>] mfd_add_devices+0xb5/0x9b0 [mfd_core]
->>   [<ffffffffa0abf55b>] lpc_ich_probe+0x3cb/0x600 [lpc_ich]
->>   [<ffffffff8132eb55>] local_pci_probe+0x45/0xa0
->>   [<ffffffff8132fd45>] ? pci_match_device+0xe5/0x110
->>   [<ffffffff8132fea9>] pci_device_probe+0xf9/0x150
->>   [<ffffffff814024b0>] driver_probe_device+0x90/0x3c0
->>   [<ffffffff814028b3>] __driver_attach+0x93/0xa0
->>   [<ffffffff81402820>] ? __device_attach+0x40/0x40
->>   [<ffffffff814003f3>] bus_for_each_dev+0x73/0xc0
->>   [<ffffffff81401f4e>] driver_attach+0x1e/0x20
->>   [<ffffffff81401b30>] bus_add_driver+0x180/0x250
->>   [<ffffffffa0acb000>] ? 0xffffffffa0acb000
->>   [<ffffffff81403094>] driver_register+0x64/0xf0
->>   [<ffffffff8132e4ec>] __pci_register_driver+0x4c/0x50
->>   [<ffffffffa0acb01e>] lpc_ich_driver_init+0x1e/0x1000 [lpc_ich]
->>   [<ffffffff81002144>] do_one_initcall+0xd4/0x210
->>   [<ffffffff811c2fed>] ? kfree+0xfd/0x140
->>   [<ffffffff811a8b42>] ? __vunmap+0xb2/0x100
->>   [<ffffffff810f2839>] load_module+0x1619/0x1a70
->>   [<ffffffff810edde0>] ? store_uevent+0x70/0x70
->>   [<ffffffff810eea39>] ? copy_module_from_fd.isra.44+0x129/0x180
->>   [<ffffffff810f2e46>] SyS_finit_module+0xa6/0xd0
->>   [<ffffffff8164f069>] system_call_fastpath+0x16/0x1b
->>  ---[ end trace 1429eb73c1995841 ]---
->>  ------------[ cut here ]------------
-> 
-> ------------------8<--------------------
-> 
-> To here.
-> 
->>  WARNING: CPU: 71 PID: 1813 at fs/sysfs/dir.c:31 sysfs_warn_dup+0x64/0x80()
->>  sysfs: cannot create duplicate filename '/bus/platform/devices/gpio_ich'
-> 
-> And from here:
-> 
-> ------------------8<--------------------
-> 
->>  Modules linked in: serio_raw lpc_ich(+) crc32c_intel shpchp mfd_core acpi_cpufreq i2c_i801 dca xfs libcrc32c sd_mod crc_t10dif crct10dif_common ata_generic pata_acpi mgag200 syscopyarea sysfillrect sysimgblt i2c_algo_bit drm_kms_helper ttm mptsas drm scsi_transport_sas ata_piix mptscsih i2ccore libata mptbase dm_mirror dm_region_hash dm_log dm_mod
->>  CPU: 71 PID: 1813 Comm: systemd-udevd Tainted: G        W      3.17.0-rc3+ #1
->>  Hardware name: IBM System x3950 M3 -[7145AC1]-/Node 1, Processor Card, BIOS -[G0E130WUS-1.31]- 07/23/2010
->>   0000000000000000 00000000f205abcf ffff88066bb7b8d0 ffffffff81647056
->>   ffff88066bb7b918 ffff88066bb7b908 ffffffff81072c9d ffff88027382d000
->>   ffff880273640030 ffff880874c5cc30 0000000000000001 ffffffffffffffef
->>  Call Trace:
->>   [<ffffffff81647056>] dump_stack+0x45/0x56
->>   [<ffffffff81072c9d>] warn_slowpath_common+0x7d/0xa0
->>   [<ffffffff81072d1c>] warn_slowpath_fmt+0x5c/0x80
->>   [<ffffffff81256598>] ? kernfs_path+0x48/0x60
->>   [<ffffffff81259e34>] sysfs_warn_dup+0x64/0x80
->>   [<ffffffff8125a1b1>] sysfs_do_create_link_sd.isra.2+0xc1/0xd0
->>   [<ffffffff8125a1e5>] sysfs_create_link+0x25/0x50
->>   [<ffffffff81401689>] bus_add_device+0x119/0x200
->>   [<ffffffff813ff4b8>] device_add+0x498/0x630
->>   [<ffffffff810778f6>] ? __insert_resource+0x26/0x150
->>   [<ffffffff81404391>] platform_device_add+0xd1/0x2d0
->>   [<ffffffffa050b3f5>] mfd_add_device+0x285/0x320 [mfd_core]
->>   [<ffffffffa050b705>] mfd_add_devices+0xb5/0x9b0 [mfd_core]
->>   [<ffffffffa0abf464>] lpc_ich_probe+0x2d4/0x600 [lpc_ich]
->>   [<ffffffff8132eb55>] local_pci_probe+0x45/0xa0
->>   [<ffffffff8132fd45>] ? pci_match_device+0xe5/0x110
->>   [<ffffffff8132fea9>] pci_device_probe+0xf9/0x150
->>   [<ffffffff814024b0>] driver_probe_device+0x90/0x3c0
->>   [<ffffffff814028b3>] __driver_attach+0x93/0xa0
->>   [<ffffffff81402820>] ? __device_attach+0x40/0x40
->>   [<ffffffff814003f3>] bus_for_each_dev+0x73/0xc0
->>   [<ffffffff81401f4e>] driver_attach+0x1e/0x20
->>   [<ffffffff81401b30>] bus_add_driver+0x180/0x250
->>   [<ffffffffa0acb000>] ? 0xffffffffa0acb000
->>   [<ffffffff81403094>] driver_register+0x64/0xf0
->>   [<ffffffff8132e4ec>] __pci_register_driver+0x4c/0x50
->>   [<ffffffffa0acb01e>] lpc_ich_driver_init+0x1e/0x1000 [lpc_ich]
->>   [<ffffffff81002144>] do_one_initcall+0xd4/0x210
->>   [<ffffffff811c2fed>] ? kfree+0xfd/0x140
->>   [<ffffffff811a8b42>] ? __vunmap+0xb2/0x100
->>   [<ffffffff810f2839>] load_module+0x1619/0x1a70
->>   [<ffffffff810edde0>] ? store_uevent+0x70/0x70
->>   [<ffffffff810eea39>] ? copy_module_from_fd.isra.44+0x129/0x180
->>   [<ffffffff810f2e46>] SyS_finit_module+0xa6/0xd0
->>   [<ffffffff8164f069>] system_call_fastpath+0x16/0x1b
->>  ---[ end trace 1429eb73c1995842 ]---
->>  lpc_ich 0000:80:1f.0: No MFD cells added
-> 
-> ------------------8<--------------------
-> 
-> To here - should be removed from the commit log.
+Regular randconfig nightly testing has detected problems with omapdrm.
 
-No, that's not the right thing to do.  A lot of other commit log messages
-contain backtraces.  If I do it your way we lose the log of exactly what the bug
-was and how it appeared.
+omapdrm fails to build when the kernel is built to support 64-bit DMA
+addresses and/or 64-bit physical addresses due to an assumption about
+the width of these types.
 
-See recent commits 39b5552cd5090d4c210d278cd2732f493075f033, and
-5e3c516b512c0f8f18359413b04918f6347f67e7 for examples.
+Use %pad to print DMA addresses, rather than %x or %Zx (which is even
+more wrong than %x).  Avoid passing a uint32_t pointer into a function
+which expects dma_addr_t pointer.
 
+drivers/gpu/drm/omapdrm/omap_plane.c: In function 'omap_plane_pre_apply':
+drivers/gpu/drm/omapdrm/omap_plane.c:145:2: error: format '%x' expects argument of type 'unsigned int', but argument 5 has type 'dma_addr_t' [-Werror=format]
+drivers/gpu/drm/omapdrm/omap_plane.c:145:2: error: format '%x' expects argument of type 'unsigned int', but argument 6 has type 'dma_addr_t' [-Werror=format]
+make[5]: *** [drivers/gpu/drm/omapdrm/omap_plane.o] Error 1
+drivers/gpu/drm/omapdrm/omap_gem.c: In function 'omap_gem_get_paddr':
+drivers/gpu/drm/omapdrm/omap_gem.c:794:4: error: format '%x' expects argument of type 'unsigned int', but argument 3 has type 'dma_addr_t' [-Werror=format]
+drivers/gpu/drm/omapdrm/omap_gem.c: In function 'omap_gem_describe':
+drivers/gpu/drm/omapdrm/omap_gem.c:991:4: error: format '%Zx' expects argument of type 'size_t', but argument 7 has type 'dma_addr_t' [-Werror=format]
+drivers/gpu/drm/omapdrm/omap_gem.c: In function 'omap_gem_init':
+drivers/gpu/drm/omapdrm/omap_gem.c:1470:4: error: format '%x' expects argument of type 'unsigned int', but argument 7 has type 'dma_addr_t' [-Werror=format]
+make[5]: *** [drivers/gpu/drm/omapdrm/omap_gem.o] Error 1
+drivers/gpu/drm/omapdrm/omap_dmm_tiler.c: In function 'dmm_txn_append':
+drivers/gpu/drm/omapdrm/omap_dmm_tiler.c:226:2: error: passing argument 3 of 'alloc_dma' from incompatible pointer type [-Werror]
+make[5]: *** [drivers/gpu/drm/omapdrm/omap_dmm_tiler.o] Error 1
+make[5]: Target `__build' not remade because of errors.
+make[4]: *** [drivers/gpu/drm/omapdrm] Error 2
 
-> 
->> This occurs because there are two LPC devices on the system:
->>
->> 00:1f.0 ISA bridge: Intel Corporation 82801JIB (ICH10) LPC Interface Controller
->> 80:1f.0 ISA bridge: Intel Corporation 82801JIB (ICH10) LPC Interface Controller
->>
->> which AFAICT is a hardware configuration error that can be resolved in
->> firmware by hiding the second LPC device.  Having two of these results in
->> two GPIO mappings and two Watchdog Timers which doesn't make much sense.
->>
->> An end user has no idea what the splats mean.  We should inform the user that
->> the issue lies with the hardware and that they should contact their vendor
->> for resolution.
-> 
-> Why is it a problem for 2 of these devices to exist on a single system?
-> 
-> Shouldn't the driver just be able to handle 2 devices?
-> 
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/gpu/drm/omapdrm/omap_dmm_tiler.c |  6 ++++--
+ drivers/gpu/drm/omapdrm/omap_gem.c       | 10 +++++-----
+ drivers/gpu/drm/omapdrm/omap_plane.c     |  4 ++--
+ 3 files changed, 11 insertions(+), 9 deletions(-)
 
-You end up with two watchdogs on the same system (and more confusingly they use
-the same global interface).  Additionally you end up with two sets of GPIOs
-which also use the same global interface ... not good.  I asked Intel about this
-earlier and they said it was an error on FW/HW; a suggestion was made that the
-vendor hide the second devices in FW.
+diff --git a/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c b/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c
+index acf667859cb6..9501728bf479 100644
+--- a/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c
++++ b/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c
+@@ -199,7 +199,7 @@ static struct dmm_txn *dmm_txn_init(struct dmm *dmm, struct tcm *tcm)
+ static void dmm_txn_append(struct dmm_txn *txn, struct pat_area *area,
+ 		struct page **pages, uint32_t npages, uint32_t roll)
+ {
+-	dma_addr_t pat_pa = 0;
++	dma_addr_t pat_pa = 0, data_pa = 0;
+ 	uint32_t *data;
+ 	struct pat *pat;
+ 	struct refill_engine *engine = txn->engine_handle;
+@@ -223,7 +223,9 @@ static void dmm_txn_append(struct dmm_txn *txn, struct pat_area *area,
+ 			.lut_id = engine->tcm->lut_id,
+ 		};
+ 
+-	data = alloc_dma(txn, 4*i, &pat->data_pa);
++	data = alloc_dma(txn, 4*i, &data_pa);
++	/* FIXME: what if data_pa is more than 32-bit ? */
++	pat->data_pa = data_pa;
+ 
+ 	while (i--) {
+ 		int n = i + roll;
+diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_gem.c
+index 533f6ebec531..6b01276a7fe8 100644
+--- a/drivers/gpu/drm/omapdrm/omap_gem.c
++++ b/drivers/gpu/drm/omapdrm/omap_gem.c
+@@ -791,7 +791,7 @@ int omap_gem_get_paddr(struct drm_gem_object *obj,
+ 			omap_obj->paddr = tiler_ssptr(block);
+ 			omap_obj->block = block;
+ 
+-			DBG("got paddr: %08x", omap_obj->paddr);
++			DBG("got paddr: %pad", &omap_obj->paddr);
+ 		}
+ 
+ 		omap_obj->paddr_cnt++;
+@@ -988,9 +988,9 @@ void omap_gem_describe(struct drm_gem_object *obj, struct seq_file *m)
+ 
+ 	off = drm_vma_node_start(&obj->vma_node);
+ 
+-	seq_printf(m, "%08x: %2d (%2d) %08llx %08Zx (%2d) %p %4d",
++	seq_printf(m, "%08x: %2d (%2d) %08llx %pad (%2d) %p %4d",
+ 			omap_obj->flags, obj->name, obj->refcount.refcount.counter,
+-			off, omap_obj->paddr, omap_obj->paddr_cnt,
++			off, &omap_obj->paddr, omap_obj->paddr_cnt,
+ 			omap_obj->vaddr, omap_obj->roll);
+ 
+ 	if (omap_obj->flags & OMAP_BO_TILED) {
+@@ -1473,8 +1473,8 @@ void omap_gem_init(struct drm_device *dev)
+ 			entry->paddr = tiler_ssptr(block);
+ 			entry->block = block;
+ 
+-			DBG("%d:%d: %dx%d: paddr=%08x stride=%d", i, j, w, h,
+-					entry->paddr,
++			DBG("%d:%d: %dx%d: paddr=%pad stride=%d", i, j, w, h,
++					&entry->paddr,
+ 					usergart[i].stride_pfn << PAGE_SHIFT);
+ 		}
+ 	}
+diff --git a/drivers/gpu/drm/omapdrm/omap_plane.c b/drivers/gpu/drm/omapdrm/omap_plane.c
+index 046d5e660c04..5b62e212cbe5 100644
+--- a/drivers/gpu/drm/omapdrm/omap_plane.c
++++ b/drivers/gpu/drm/omapdrm/omap_plane.c
+@@ -142,8 +142,8 @@ static void omap_plane_pre_apply(struct omap_drm_apply *apply)
+ 	DBG("%dx%d -> %dx%d (%d)", info->width, info->height,
+ 			info->out_width, info->out_height,
+ 			info->screen_width);
+-	DBG("%d,%d %08x %08x", info->pos_x, info->pos_y,
+-			info->paddr, info->p_uv_addr);
++	DBG("%d,%d %pad %pad", info->pos_x, info->pos_y,
++			&info->paddr, &info->p_uv_addr);
+ 
+ 	/* TODO: */
+ 	ilace = false;
+-- 
+2.1.0
 
->> After the patch, the following warning is displayed:
->>
->>  lpc_ich 0000:80:1f.0: [Firmware Bug]: This system has two LPC devices.  Additional driver loads would result in multiple GPIO and Watchdog Devices being initialized.  Please report this problem to your hardware vendor.
-> 
-> Your commit log goes way over 72 chars here.
-
-For *years* we haven't conformed to this style requirement.  Please don't do it
-here.
-
-> 
->> Cc: Peter Tyser <ptyser@xes-inc.com>
->> Cc: Samuel Ortiz <sameo@linux.intel.com>
->> Cc: Lee Jones <lee.jones@linaro.org>
->> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
->> ---
->>  drivers/mfd/lpc_ich.c |    7 ++++++-
->>  1 file changed, 6 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/mfd/lpc_ich.c b/drivers/mfd/lpc_ich.c
->> index 7d8482f..eba66bc 100644
->> --- a/drivers/mfd/lpc_ich.c
->> +++ b/drivers/mfd/lpc_ich.c
->> @@ -998,12 +998,17 @@ wdt_done:
->>  	return ret;
->>  }
->>  
->> +static bool cell_added;
-> 
-> Why have you globalised this?
-> 
-
-See below.
-
->>  static int lpc_ich_probe(struct pci_dev *dev,
->>  				const struct pci_device_id *id)
->>  {
->>  	struct lpc_ich_priv *priv;
->>  	int ret;
->> -	bool cell_added = false;
-
-I thought about making this a 'static bool' here, but that violates CodingStyle
-IIUC.  Admittedly I've seen some exceptions over the years about the declaration
-of statics within functions so maybe this is one of them.  I'll leave it up to
-the maintainer to make a decision.
-
-Peter -- any objection to making this a static here?
-
->> +
->> +	if (cell_added) {
->> +		dev_warn(&dev->dev, FW_BUG "This system has two LPC devices.  Additional driver loads would result in multiple GPIO and Watchdog Devices being initialized.  Please report this problem to your hardware vendor.\n");
-> 
-> Did you run this patch through checkpatch.pl?
-
-Yes, and output messages are okay as we search for these in the code.  Breaks
-result in not finding error messages easily.
-
-> 
->> +		return -EBUSY;
-> 
-> You print a warning, but return an error here.  One of them is wrong.
-> 
-
-I suppose dev_bug() might be more appropriate, but bug implies an absolute
-failure of the driver which hasn't happened here.  The first device has loaded
-the driver.
-
-> But why is it a problem for two of these devices to exist anyway?
-> 
-
-The big issue is that we initialize two iTCO_wdt's and two sets of GPIOs -- the
-system should only have one o/w we'll end up in a bizarre state of two watchdog
-timers and GPIOs.  I asked Intel about this previously and they said that it is
-not expected that two exist on the same platform.
-
-P.
-
->> +	}
->>  
->>  	priv = devm_kzalloc(&dev->dev,
->>  			    sizeof(struct lpc_ich_priv), GFP_KERNEL);
-> 
